@@ -11,8 +11,8 @@ use clap::builder::{
 };
 use cli_types::CommandAction;
 use commands::{
-    abi::ABI, account::Account, bitcoin::Bitcoin, dynamic_field::DynamicField, env::Env,
-    genesis::Genesis, init::Init, move_cli::MoveCli, object::ObjectCommand,
+    abi::ABI, account::Account, bitcoin::Bitcoin, bitseed::Bitseed, dynamic_field::DynamicField,
+    env::Env, genesis::Genesis, init::Init, move_cli::MoveCli, object::ObjectCommand,
     resource::ResourceCommand, rpc::Rpc, server::Server, session_key::SessionKey,
     state::StateCommand, transaction::Transaction, upgrade::Upgrade, util::Util, version::Version,
 };
@@ -47,6 +47,7 @@ pub enum Command {
     Version(Version),
     Account(Account),
     Bitcoin(Bitcoin),
+    Bitseed(Bitseed),
     Init(Init),
     Move(MoveCli),
     Server(Server),
@@ -74,6 +75,7 @@ pub async fn run_cli(opt: RoochCli) -> RoochResult<String> {
         Command::Version(version) => version.execute().await,
         Command::Account(account) => account.execute().await,
         Command::Bitcoin(bitcoin) => bitcoin.execute().await,
+        Command::Bitseed(bitseed) => bitseed.execute().await,
         Command::Move(move_cli) => move_cli.execute().await,
         Command::Server(server) => server.execute().await,
         Command::Init(init) => init.execute_serialized().await,

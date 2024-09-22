@@ -5,6 +5,8 @@ use super::types::{OutPoint, Transaction};
 use crate::addresses::BITCOIN_MOVE_ADDRESS;
 use crate::into_address::{FromAddress, IntoAddress};
 use anyhow::{bail, Result};
+use bitcoin::constants::MAX_SCRIPT_ELEMENT_SIZE;
+use bitcoin::{opcodes, script};
 use move_core_types::language_storage::{StructTag, TypeTag};
 use move_core_types::value::MoveTypeLayout;
 use move_core_types::{account_address::AccountAddress, ident_str, identifier::IdentStr};
@@ -23,8 +25,13 @@ use serde::de::DeserializeOwned;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt::{Debug, Display};
 use std::str::FromStr;
+use tag::Tag;
 
 pub const MODULE_NAME: &IdentStr = ident_str!("ord");
+pub const PROTOCOL_ID: [u8; 3] = *b"ord";
+pub const BODY_TAG: [u8; 0] = [];
+
+pub mod tag;
 
 #[derive(PartialEq, Clone, Copy, Hash, Eq, PartialOrd, Ord)]
 pub struct InscriptionID {
@@ -42,8 +49,11 @@ impl Default for InscriptionID {
 }
 
 impl InscriptionID {
-    pub fn new(txid: AccountAddress, index: u32) -> Self {
-        Self { txid, index }
+    pub fn new<TID: IntoAddress>(txid: TID, index: u32) -> Self {
+        Self {
+            txid: txid.into_address(),
+            index,
+        }
     }
 
     pub fn object_id(&self) -> ObjectID {
@@ -222,6 +232,66 @@ impl Inscription {
             self.inscription_number as i32
         }
     }
+
+    pub fn metaprotocol(&self) -> Option<&str> {
+        self.metaprotocol.as_ref().map(|s| s.as_str())
+    }
+
+    pub fn metadata(&self) -> &[u8] {
+        &self.metadata
+    }
+
+    pub fn parents(&self) -> &[InscriptionID] {
+        &self.parents
+    }
+
+    pub fn content_type(&self) -> Option<&str> {
+        self.content_type.as_ref().map(|s| s.as_str())
+    }
+
+    pub fn content_encoding(&self) -> Option<&str> {
+        self.content_encoding.as_ref().map(|s| s.as_str())
+    }
+
+    pub fn pointer(&self) -> Option<u64> {
+        self.pointer.as_ref().map(|p| *p)
+    }
+
+    pub fn body(&self) -> &[u8] {
+        &self.body
+    }
+
+    pub fn set_metaprotocol(&mut self, metaprotocol: String) {
+        self.metaprotocol = Some(metaprotocol.into()).into();
+    }
+
+    pub fn set_metadata(&mut self, metadata: Vec<u8>) {
+        self.metadata = metadata;
+    }
+
+    pub fn set_parents(&mut self, parents: Vec<InscriptionID>) {
+        self.parents = parents;
+    }
+
+    pub fn set_content_type(&mut self, content_type: String) {
+        self.content_type = Some(content_type.into()).into();
+    }
+
+    pub fn set_content_encoding(&mut self, content_encoding: String) {
+        self.content_encoding = Some(content_encoding.into()).into();
+    }
+
+    pub fn set_pointer(&mut self, pointer: u64) {
+        self.pointer = Some(pointer).into();
+    }
+
+    pub fn set_body(&mut self, body: Vec<u8>) {
+        self.body = body;
+    }
+
+    pub fn set_rune(&mut self, rune: u128) {
+        self.rune = Some(rune).into();
+    }
 }
 
 pub fn derive_inscription_id(inscription_id: &InscriptionID) -> ObjectID {
@@ -290,6 +360,137 @@ pub struct InscriptionRecord {
     pub pointer: MoveOption<u64>,
     pub unrecognized_even_field: bool,
     pub rune: Option<u128>,
+}
+
+impl InscriptionRecord {
+    pub fn body(&self) -> &[u8] {
+        &self.body
+    }
+
+    pub fn content_type(&self) -> Option<&str> {
+        self.content_type.as_ref().map(|s| s.as_str())
+    }
+
+    pub fn content_encoding(&self) -> Option<&str> {
+        self.content_encoding.as_ref().map(|s| s.as_str())
+    }
+
+    pub fn metadata(&self) -> &[u8] {
+        &self.metadata
+    }
+
+    pub fn metaprotocol(&self) -> Option<&str> {
+        self.metaprotocol.as_ref().map(|s| s.as_str())
+    }
+
+    pub fn parents(&self) -> &[InscriptionID] {
+        &self.parents
+    }
+
+    pub fn pointer(&self) -> Option<u64> {
+        self.pointer.as_ref().map(|p| *p)
+    }
+
+    pub fn rune(&self) -> Option<u128> {
+        self.rune
+    }
+
+    pub fn set_content_type(&mut self, content_type: String) {
+        self.content_type = Some(content_type.into()).into();
+    }
+
+    pub fn set_content_encoding(&mut self, content_encoding: String) {
+        self.content_encoding = Some(content_encoding.into()).into();
+    }
+
+    pub fn set_metadata(&mut self, metadata: Vec<u8>) {
+        self.metadata = metadata;
+    }
+
+    pub fn set_metaprotocol(&mut self, metaprotocol: String) {
+        self.metaprotocol = Some(metaprotocol.into()).into();
+    }
+
+    pub fn set_parents(&mut self, parents: Vec<InscriptionID>) {
+        self.parents = parents;
+    }
+
+    pub fn set_pointer(&mut self, pointer: u64) {
+        self.pointer = Some(pointer).into();
+    }
+
+    pub fn set_rune(&mut self, rune: u128) {
+        self.rune = Some(rune);
+    }
+
+    pub fn append_reveal_script_to_builder(&self, mut builder: script::Builder) -> script::Builder {
+        builder = builder
+            .push_opcode(opcodes::OP_FALSE)
+            .push_opcode(opcodes::all::OP_IF)
+            .push_slice(PROTOCOL_ID);
+
+        Tag::ContentType.append(
+            &mut builder,
+            &self
+                .content_type
+                .as_ref()
+                .map(|content_type| content_type.as_str().as_bytes().to_vec()),
+        );
+        Tag::ContentEncoding.append(
+            &mut builder,
+            &self
+                .content_encoding
+                .as_ref()
+                .map(|content_encoding| content_encoding.as_str().as_bytes().to_vec()),
+        );
+        Tag::Metaprotocol.append(
+            &mut builder,
+            &self
+                .metaprotocol
+                .as_ref()
+                .map(|metaprotocol| metaprotocol.as_str().as_bytes().to_vec()),
+        );
+        Tag::Parent.append_array(
+            &mut builder,
+            &self
+                .parents
+                .iter()
+                .map(|parent| {
+                    let mut buffer = parent.txid.to_vec();
+                    buffer.extend_from_slice(&parent.index.to_le_bytes());
+                    buffer
+                })
+                .collect(),
+        );
+        //TODO should support delegate
+        //Tag::Delegate.append(&mut builder, &self.delegate);
+        Tag::Pointer.append(
+            &mut builder,
+            &self
+                .pointer
+                .as_ref()
+                .map(|pointer| pointer.to_le_bytes().to_vec()),
+        );
+        let metadata = if self.metadata.is_empty() {
+            None
+        } else {
+            Some(self.metadata.clone())
+        };
+        Tag::Metadata.append(&mut builder, &metadata);
+        Tag::Rune.append(
+            &mut builder,
+            &self.rune.as_ref().map(|rune| rune.to_le_bytes().to_vec()),
+        );
+
+        if !self.body.is_empty() {
+            builder = builder.push_slice(BODY_TAG);
+            for chunk in self.body.chunks(MAX_SCRIPT_ELEMENT_SIZE) {
+                builder = builder.push_slice::<&script::PushBytes>(chunk.try_into().unwrap());
+            }
+        }
+
+        builder.push_opcode(opcodes::all::OP_ENDIF)
+    }
 }
 
 impl Debug for InscriptionRecord {
@@ -388,6 +589,12 @@ impl MoveStructState for InscriptionStore {
 pub struct SatPoint {
     pub outpoint: OutPoint,
     pub offset: u64,
+}
+
+impl SatPoint {
+    pub fn outpoint(&self) -> bitcoin::OutPoint {
+        self.outpoint.clone().into()
+    }
 }
 
 impl MoveStructType for SatPoint {
@@ -492,8 +699,6 @@ pub struct OrdModule<'a> {
 impl<'a> OrdModule<'a> {
     pub const PARSE_INSCRIPTION_FROM_TX_FUNCTION_NAME: &'static IdentStr =
         ident_str!("parse_inscription_from_tx");
-    pub const MATCH_UTXO_AND_GENERATE_SAT_POINT_FUNCTION_NAME: &'static IdentStr =
-        ident_str!("match_utxo_and_generate_sat_point");
 
     pub fn parse_inscription_from_tx(
         &self,

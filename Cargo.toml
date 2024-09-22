@@ -70,6 +70,10 @@ default-members = [
     "crates/rooch-oracle"
 ]
 
+exclude = [
+    "generator/rust",
+]
+
 # All workspace members should inherit these keys
 # for package declarations.
 [workspace.package]
@@ -204,7 +208,6 @@ reqwest = { version = "0.12", features = ["json"] }
 schemars = { version = "0.8.21", features = ["either"] }
 serde = { version = "1.0.210", features = ["derive", "rc"] }
 serde_bytes = "0.11.15"
-#serde_json = { version = "1.0.111", features = ["preserve_order", "arbitrary_precision"] }
 serde_json = { version = "1.0.127", features = ["preserve_order"] }
 serde_yaml = "0.9"
 serde_repr = "0.1"

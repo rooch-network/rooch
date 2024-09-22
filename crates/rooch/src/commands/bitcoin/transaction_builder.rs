@@ -1,8 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use std::str::FromStr;
-
 use super::utxo_selector::UTXOSelector;
 use anyhow::{anyhow, bail, Result};
 use bitcoin::{
@@ -10,12 +8,9 @@ use bitcoin::{
     OutPoint, Psbt, ScriptBuf, Sequence, Transaction, TxIn, TxOut, Witness,
 };
 use moveos_types::{module_binding::MoveFunctionCaller, moveos_std::object::ObjectID};
-use rooch_rpc_api::jsonrpc_types::{btc::utxo::UTXOView, ObjectMetaView};
+use rooch_rpc_api::jsonrpc_types::btc::utxo::UTXOObjectView;
 use rooch_rpc_client::{wallet_context::WalletContext, Client};
-use rooch_types::{
-    address::BitcoinAddress,
-    bitcoin::multisign_account::{self},
-};
+use rooch_types::bitcoin::multisign_account::{self};
 use tracing::debug;
 
 #[derive(Debug)]
@@ -113,10 +108,13 @@ impl<'a> TransactionBuilder<'a> {
                     + Self::ADDITIONAL_OUTPUT_VBYTES) as u64,
             )
             .ok_or_else(|| anyhow!("Failed to estimate fee: {}", self.fee_rate))?;
-        let mut utxos = self.select_utxos(total_output + estimate_fee).await?;
+        let mut utxos = self
+            .utxo_selector
+            .select_utxos(total_output + estimate_fee)
+            .await?;
         let mut tx_inputs = vec![];
         let mut total_input = Amount::from_sat(0);
-        for (_, utxo) in utxos.iter() {
+        for utxo in utxos.iter() {
             tx_inputs.push(Self::utxo_to_txin(utxo));
             total_input += utxo.amount();
         }
@@ -141,15 +139,15 @@ impl<'a> TransactionBuilder<'a> {
             .ok_or_else(|| anyhow!("Failed to estimate fee: {}", self.fee_rate))?;
         if fee > estimate_fee && total_input < total_output + fee {
             //we need to add more inputs
-            let additional_utxos = self.select_utxos(total_output + fee - total_input).await?;
-            tx.input.extend(
-                additional_utxos
-                    .iter()
-                    .map(|(_, utxo)| Self::utxo_to_txin(utxo)),
-            );
+            let additional_utxos = self
+                .utxo_selector
+                .select_utxos(total_output + fee - total_input)
+                .await?;
+            tx.input
+                .extend(additional_utxos.iter().map(Self::utxo_to_txin));
             total_input += additional_utxos
                 .iter()
-                .map(|(_, utxo)| utxo.amount())
+                .map(|utxo| utxo.amount())
                 .sum::<Amount>();
             utxos.extend(additional_utxos);
         }
@@ -166,35 +164,24 @@ impl<'a> TransactionBuilder<'a> {
         let multisign_account_module = self
             .client
             .as_module_binding::<multisign_account::MultisignAccountModule>();
-        for (idx, (utxo_obj_meta, utxo)) in utxos.iter().enumerate() {
+        for (idx, utxo) in utxos.iter().enumerate() {
             let input = &mut psbt.inputs[idx];
-            let bitcoin_addr_str =
-                utxo_obj_meta
-                    .owner_bitcoin_address
-                    .as_ref()
-                    .ok_or_else(|| {
-                        anyhow!("Can not recognize the owner of UTXO {}", utxo.outpoint())
-                    })?;
-            let bitcoin_addr = Address::from_str(bitcoin_addr_str)?;
-            let bitcoin_addr = bitcoin_addr.assume_checked();
 
-            let is_witness = match bitcoin_addr.address_type() {
-                Some(addr_type) => !matches!(
-                    addr_type,
-                    bitcoin::AddressType::P2pkh | bitcoin::AddressType::P2sh
-                ),
-                None => true,
-            };
-            if is_witness {
+            let bitcoin_addr = utxo.owner_bitcoin_address().ok_or_else(|| {
+                anyhow!("Can not recognize the owner of UTXO {}", utxo.outpoint())
+            })?;
+
+            if bitcoin_addr.is_witness() {
                 input.witness_utxo = Some(TxOut {
                     value: utxo.amount(),
-                    script_pubkey: bitcoin_addr.script_pubkey(),
+                    script_pubkey: bitcoin_addr.script_pubkey()?,
                 });
             } else {
                 //TODO add non-witness utxo
+                bail!("Non-witness UTXO is not supported yet");
             }
 
-            let rooch_addr = BitcoinAddress::from(bitcoin_addr.clone()).to_rooch_address();
+            let rooch_addr = bitcoin_addr.to_rooch_address();
 
             if multisign_account_module.is_multisign_account(rooch_addr.into())? {
                 let account_info = self
@@ -217,25 +204,7 @@ impl<'a> TransactionBuilder<'a> {
         Ok(psbt)
     }
 
-    async fn select_utxos(
-        &mut self,
-        expected_amount: Amount,
-    ) -> Result<Vec<(ObjectMetaView, UTXOView)>> {
-        let mut utxos = vec![];
-        let mut total_input = Amount::from_sat(0);
-        while total_input < expected_amount {
-            let utxo = self.utxo_selector.next_utxo().await?;
-            if utxo.is_none() {
-                bail!("not enough BTC funds");
-            }
-            let utxo = utxo.unwrap();
-            total_input += utxo.1.amount();
-            utxos.push(utxo);
-        }
-        Ok(utxos)
-    }
-
-    fn utxo_to_txin(utxo: &UTXOView) -> TxIn {
+    fn utxo_to_txin(utxo: &UTXOObjectView) -> TxIn {
         TxIn {
             previous_output: utxo.outpoint().into(),
             script_sig: ScriptBuf::default(),

@@ -96,6 +96,7 @@ if [ ! -z "$CHECK" ]; then
 fi
 
 if [ ! -z "$ALSO_TEST" ]; then
+    export RUST_BACKTRACE=1
     cargo nextest run --workspace --all-features --exclude rooch-framework-tests --exclude rooch-integration-test-runner -v
     cargo test -p rooch-framework-tests -p rooch-integration-test-runner
     cargo test --release -p rooch-framework-tests bitcoin_test

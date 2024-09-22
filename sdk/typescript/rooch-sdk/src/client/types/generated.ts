@@ -46,7 +46,7 @@ export interface BalanceInfoView {
   supply: string
   symbol: string
 }
-export interface BitcoinOutPointView {
+export interface OutPointView {
   txid: string
   vout: number
 }
@@ -473,7 +473,7 @@ export type RepairIndexerParamsView =
     }
 export interface SatPointView {
   offset: string
-  output: BitcoinOutPointView
+  output: OutPointView
 }
 export interface ScriptCallView {
   args: string[]

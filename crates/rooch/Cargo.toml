@@ -52,6 +52,10 @@ prometheus = { workspace = true }
 lazy_static = { workspace = true }
 schemars = { workspace = true }
 bitcoin = { workspace = true }
+bitcoincore-rpc = { workspace = true }
+ciborium = { workspace = true }
+wasmer = { workspace = true }
+tiny-keccak = { workspace = true }
 
 move-bytecode-utils = { workspace = true }
 move-binary-format = { workspace = true }
