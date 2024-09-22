@@ -58,7 +58,7 @@ impl BitcoinRelayer {
             sync_block_interval,
             latest_sync_timestamp: 0u64,
             sync_to_latest: false,
-            batch_size: 5,
+            batch_size: 10,
         })
     }
 

@@ -191,6 +191,28 @@ impl RelayerActor {
 
             // Get all ready l1 block and put them into Move contract
             loop {
+                
+                // Execute all ready l1 txs
+                match self.get_ready_l1_txs(&relayer) {
+                    Ok(txs) => {
+                        for tx in txs {
+                            if let Err(err) = self.handle_l1_tx(tx).await {
+                                warn!("Relayer {} error: {:?}", relayer_name, err);
+                            }
+                        }
+                    }
+                    Err(err) => {
+                        warn!("Relayer {} error: {:?}", relayer_name, err);
+                    }
+                }
+
+                // Notify the relayer to sync the latest block
+                // The sync task will block the relayer actor, but call sync() will not block this actor
+                // It a notify call.
+                if let Err(e) = relayer.sync().await {
+                    warn!("Relayer {} sync error: {:?}", relayer_name, e);
+                }
+
                 match relayer.get_ready_l1_block().await {
                     Ok(Some(l1_block)) => {
                         if let Err(err) = self.handle_l1_block(l1_block).await {
@@ -200,34 +222,6 @@ impl RelayerActor {
                     Ok(None) => {
                         //skip
                         break;
-                    }
-                    Err(err) => {
-                        warn!("Relayer {} error: {:?}", relayer_name, err);
-                        break;
-                    }
-                }
-            }
-
-            // Notify the relayer to sync the latest block
-            // The sync task will block the relayer actor, but call sync() will not block this actor
-            // It a notify call.
-
-            if let Err(e) = relayer.sync().await {
-                warn!("Relayer {} sync error: {:?}", relayer_name, e);
-            }
-
-            // Execute all ready l1 txs
-            loop {
-                match self.get_ready_l1_txs(&relayer) {
-                    Ok(txs) => {
-                        if txs.is_empty() {
-                            break;
-                        }
-                        for tx in txs {
-                            if let Err(err) = self.handle_l1_tx(tx).await {
-                                warn!("Relayer {} error: {:?}", relayer_name, err);
-                            }
-                        }
                     }
                     Err(err) => {
                         warn!("Relayer {} error: {:?}", relayer_name, err);
