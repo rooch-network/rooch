@@ -6,7 +6,6 @@ use super::transaction_builder::TransactionBuilder;
 use crate::cli_types::{CommandAction, WalletContextOptions};
 use crate::commands::bitcoin::sign_tx::sign_psbt;
 use async_trait::async_trait;
-use bitcoin::consensus::Encodable;
 use bitcoin::{Amount, FeeRate};
 use clap::Parser;
 use rooch_types::address::ParsedAddress;
@@ -76,14 +75,7 @@ impl CommandAction<String> for Transfer {
                     "The sender address should not be a multisig address".to_string(),
                 ))
             }
-            SignOutput::Tx(tx) => {
-                let mut raw_tx = vec![];
-                tx.consensus_encode(&mut raw_tx)?;
-                Ok(client
-                    .rooch
-                    .broadcast_bitcoin_tx(raw_tx.into(), None)
-                    .await?)
-            }
+            SignOutput::Tx(tx) => Ok(client.rooch.broadcast_bitcoin_tx(&tx, None, None).await?),
         }
     }
 }

@@ -350,7 +350,9 @@ module bitcoin_move::ord {
                     event_type: InscriptionEventTypeBurn,
                 });
             };
-            object::to_frozen(inscription_obj);
+            //Transfer the burned inscription to system address @bitcoin_move
+            //We do not freeze the inscription, because the Inscription maybe include the metaprotocol attachment
+            object::transfer_extend(inscription_obj, @bitcoin_move);
         }else{
             object::transfer_extend(inscription_obj, to);
         };
@@ -782,6 +784,32 @@ module bitcoin_move::ord {
         assert!(metaprotocol_protocol_match(inscription_obj, protocol_type), ErrorMetaprotocolProtocolMismatch);
         object::add_field(inscription_obj, protocol_type, attachment);
     }
+
+    #[private_generics(T)]
+    public fun remove_metaprotocol_attachment<T>(inscription_id: InscriptionID) : Object<T> {
+        let inscription_object_id = derive_inscription_id(inscription_id);
+        let inscription_obj = object::borrow_mut_object_extend<Inscription>(inscription_object_id);
+        let protocol_type = type_info::type_name<T>();
+        assert!(metaprotocol_protocol_match(inscription_obj, protocol_type), ErrorMetaprotocolProtocolMismatch);
+        object::remove_field(inscription_obj, protocol_type)
+    }
+
+    public fun exists_metaprotocol_attachment<T>(inscription_id: InscriptionID): bool {
+        let inscription_object_id = derive_inscription_id(inscription_id);
+        let exists = object::exists_object_with_type<Inscription>(inscription_object_id);
+        if (!exists) {
+            return false
+        };
+
+        let inscription_obj = object::borrow_object<Inscription>(inscription_object_id);
+        let protocol_type = type_info::type_name<T>();
+        if(metaprotocol_protocol_match(inscription_obj, protocol_type)){
+            object::contains_field(inscription_obj, protocol_type)
+        }else{
+            false
+        }
+    }
+
 
     /// Returns true if Inscription `object` contains metaprotocol validity
     public fun exists_metaprotocol_validity(inscription_id: InscriptionID): bool {

@@ -16,3 +16,7 @@ rustflags = [
     "-C",
     "link-arg=/STACK:8000000" # Set stack to 8 MB
 ]
+
+[alias]
+wasm = "build --target wasm32-unknown-unknown --release"
+wasm-debug = "build --target wasm32-unknown-unknown"

@@ -10,6 +10,7 @@
 
 
 <pre><code><b>use</b> <a href="ethereum.md#0xa_ethereum">0xa::ethereum</a>;
+<b>use</b> <a href="inscribe_factory.md#0xa_inscribe_factory">0xa::inscribe_factory</a>;
 <b>use</b> <a href="tick_info.md#0xa_tick_info">0xa::tick_info</a>;
 </code></pre>
 

@@ -4,14 +4,15 @@
 use crate::jsonrpc_types::btc::transaction::TxidView;
 use crate::jsonrpc_types::{
     H256View, IndexerObjectStateView, IndexerStateIDView, ObjectIDVecView, ObjectIDView,
-    ObjectMetaView, StrView, UnitedAddressView,
+    ObjectMetaView, ObjectStateView, StrView, UnitedAddressView,
 };
 use anyhow::Result;
 use bitcoin::hashes::Hash;
-use bitcoin::{Amount, Txid};
+use bitcoin::{Amount, TxOut, Txid};
 
 use moveos_types::move_std::string::MoveString;
 use moveos_types::state::{MoveState, MoveStructType};
+use rooch_types::address::BitcoinAddress;
 use rooch_types::bitcoin::types::OutPoint;
 use rooch_types::bitcoin::utxo::{self, UTXO};
 use rooch_types::indexer::state::ObjectStateFilter;
@@ -22,20 +23,29 @@ use std::collections::HashMap;
 use std::str::FromStr;
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize, Eq, JsonSchema)]
-pub struct BitcoinOutPointView {
+pub struct OutPointView {
     pub txid: TxidView,
     pub vout: u32,
 }
 
-impl From<BitcoinOutPointView> for bitcoin::OutPoint {
-    fn from(view: BitcoinOutPointView) -> Self {
-        bitcoin::OutPoint::new(view.txid.into(), view.vout)
+impl From<OutPointView> for bitcoin::OutPoint {
+    fn from(view: OutPointView) -> Self {
+        bitcoin::OutPoint::new(view.txid.0, view.vout)
     }
 }
 
-impl From<OutPoint> for BitcoinOutPointView {
+impl From<OutPointView> for OutPoint {
+    fn from(view: OutPointView) -> Self {
+        OutPoint {
+            txid: view.txid.0.into_address(),
+            vout: view.vout,
+        }
+    }
+}
+
+impl From<OutPoint> for OutPointView {
     fn from(outpoint: OutPoint) -> Self {
-        BitcoinOutPointView {
+        OutPointView {
             txid: Txid::from_address(outpoint.txid).into(),
             vout: outpoint.vout,
         }
@@ -110,7 +120,7 @@ impl UTXOView {
         let mut seals_view: HashMap<String, Vec<ObjectIDView>> = HashMap::new();
         utxo.seals.data.into_iter().for_each(|element| {
             seals_view.insert(
-                format!("0x{}", element.key),
+                element.key.to_string(),
                 element
                     .value
                     .into_iter()
@@ -187,6 +197,70 @@ impl TryFrom<IndexerObjectStateView> for UTXOStateView {
             metadata: state.metadata,
             value: utxo_view,
             indexer_id: state.indexer_id,
+        })
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
+pub struct UTXOObjectView {
+    #[serde(flatten)]
+    pub metadata: ObjectMetaView,
+    pub value: UTXOView,
+}
+
+impl From<UTXOStateView> for UTXOObjectView {
+    fn from(state: UTXOStateView) -> Self {
+        UTXOObjectView {
+            metadata: state.metadata,
+            value: state.value,
+        }
+    }
+}
+
+impl UTXOObjectView {
+    pub fn owner_bitcoin_address(&self) -> Option<BitcoinAddress> {
+        self.metadata
+            .owner_bitcoin_address
+            .as_ref()
+            .and_then(|addr| BitcoinAddress::from_str(addr).ok())
+    }
+
+    pub fn outpoint(&self) -> OutPoint {
+        self.value.outpoint()
+    }
+
+    pub fn amount(&self) -> Amount {
+        self.value.amount()
+    }
+
+    pub fn tx_output(&self) -> Result<TxOut> {
+        // Rooch UTXO does keep the original tx output script_pubkey,
+        // We convert the owner bitcoin address to script_pubkey here.
+        // But if the TxOut is a non-standard script_pubkey, we can not convert it back to bitcoin address.
+        // Find a way to keep the original script_pubkey in UTXO.
+        let script_pubkey = self
+            .owner_bitcoin_address()
+            .map(|addr| addr.script_pubkey())
+            .transpose()?
+            .ok_or_else(|| {
+                anyhow::anyhow!("Can not recognize the owner of UTXO {}", self.outpoint())
+            })?;
+        Ok(TxOut {
+            value: self.amount(),
+            script_pubkey,
+        })
+    }
+}
+
+impl TryFrom<ObjectStateView> for UTXOObjectView {
+    type Error = anyhow::Error;
+
+    fn try_from(state: ObjectStateView) -> Result<Self, Self::Error> {
+        let utxo = UTXO::from_bytes(&state.value.0)?;
+        let utxo_view = UTXOView::try_new_from_utxo(utxo)?;
+        Ok(UTXOObjectView {
+            metadata: state.metadata,
+            value: utxo_view,
         })
     }
 }

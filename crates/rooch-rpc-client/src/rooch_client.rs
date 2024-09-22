@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{Ok, Result};
+use bitcoincore_rpc::RawTx;
 use jsonrpsee::http_client::HttpClient;
 use move_core_types::account_address::AccountAddress;
 use moveos_types::h256::H256;
@@ -12,8 +13,8 @@ use moveos_types::state::{FieldKey, MoveStructState};
 use moveos_types::{access_path::AccessPath, state::ObjectState, transaction::FunctionCall};
 use rooch_rpc_api::api::btc_api::BtcAPIClient;
 use rooch_rpc_api::api::rooch_api::RoochAPIClient;
-use rooch_rpc_api::jsonrpc_types::btc::ord::InscriptionFilterView;
-use rooch_rpc_api::jsonrpc_types::btc::utxo::UTXOFilterView;
+use rooch_rpc_api::jsonrpc_types::btc::ord::{InscriptionFilterView, InscriptionObjectView};
+use rooch_rpc_api::jsonrpc_types::btc::utxo::{UTXOFilterView, UTXOObjectView};
 use rooch_rpc_api::jsonrpc_types::transaction_view::TransactionFilterView;
 use rooch_rpc_api::jsonrpc_types::{
     account_view::BalanceInfoView, transaction_view::TransactionWithInfoView,
@@ -35,6 +36,7 @@ use rooch_types::framework::address_mapping::RoochToBitcoinAddressMapping;
 use rooch_types::indexer::state::IndexerStateID;
 use rooch_types::transaction::RoochTransactionData;
 use rooch_types::{address::RoochAddress, transaction::rooch::RoochTransaction};
+use std::str::FromStr;
 use std::sync::Arc;
 
 #[derive(Clone, Debug)]
@@ -399,11 +401,32 @@ impl RoochRpcClient {
             })?)
     }
 
-    pub async fn broadcast_bitcoin_tx(
+    pub async fn broadcast_bitcoin_tx<T: RawTx>(
         &self,
-        raw_tx: BytesView,
+        raw_tx: T,
         maxfeerate: Option<f64>,
+        maxburnamount: Option<f64>,
     ) -> Result<String> {
-        Ok(self.http.broadcast_tx(raw_tx, maxfeerate, None).await?)
+        let hex = raw_tx.raw_hex();
+        let bytes_view = BytesView::from_str(&hex)?;
+        Ok(self
+            .http
+            .broadcast_tx(bytes_view, maxfeerate, maxburnamount)
+            .await?)
+    }
+
+    pub async fn get_utxo_object(&self, utxo_obj_id: ObjectID) -> Result<Option<UTXOObjectView>> {
+        let objects = self.get_object_states(vec![utxo_obj_id], None).await?;
+        let obj_state = objects.into_iter().next().flatten();
+        obj_state.map(UTXOObjectView::try_from).transpose()
+    }
+
+    pub async fn get_inscription_object(
+        &self,
+        ins_obj_id: ObjectID,
+    ) -> Result<Option<InscriptionObjectView>> {
+        let objects = self.get_object_states(vec![ins_obj_id], None).await?;
+        let obj_state = objects.into_iter().next().flatten();
+        obj_state.map(InscriptionObjectView::try_from).transpose()
     }
 }
