@@ -130,6 +130,10 @@ impl RoochDB {
 
         let tx_order = last_order;
 
+        if tx_order == 0 {
+            return Err(Error::msg("Can not revert the genesis tx"));
+        }
+
         // check tx hash exist via tx_order
         let (tx_hash_opt, ledger_tx_opt) = if tx_hashes.is_empty() || tx_hashes[0].is_none() {
             (None, None)
@@ -147,33 +151,60 @@ impl RoochDB {
             (Some(tx_hash), Some(_ledger_tx)) => {
                 self.do_revert_tx_ignore_check(tx_hash)?;
             }
+            (Some(tx_hash), None) => {
+                println!("the ledger tx not exist via tx_hash {}, remove the hash record, continue to update last sequence info", tx_hash);
+                self.rooch_store
+                    .transaction_store
+                    .remove_transaction(tx_hash, tx_order)?;
+            }
             (_, _) => {
                 println!("the ledger tx not exist via tx_order {}, continue to update last sequence info", tx_order);
             }
         }
 
-        let previous_tx_order = if tx_order > 0 { tx_order - 1 } else { 0 };
-        let previous_tx_hash_opt = self
-            .rooch_store
-            .transaction_store
-            .get_tx_hashes(vec![previous_tx_order])?;
-        if previous_tx_hash_opt.is_empty() || previous_tx_hash_opt[0].is_none() {
-            return Err(Error::msg(format!(
-                "the previous tx hash not exist via previous_tx_order  {}",
-                previous_tx_order
-            )));
+        let mut previous_tx_order = tx_order - 1;
+
+        let mut previous_tx_hash_opt = None;
+        let mut previous_ledger_tx_opt = None;
+
+        while previous_tx_hash_opt.is_none() || previous_ledger_tx_opt.is_none() {
+            let previous_tx_hashes = self
+                .rooch_store
+                .transaction_store
+                .get_tx_hashes(vec![previous_tx_order])?;
+            previous_tx_hash_opt = if previous_tx_hashes.is_empty() {
+                None
+            } else {
+                previous_tx_hashes[0]
+            };
+
+            previous_ledger_tx_opt = if previous_tx_hash_opt.is_none() {
+                None
+            } else {
+                self.rooch_store
+                    .transaction_store
+                    .get_transaction_by_hash(previous_tx_hash_opt.unwrap())?
+            };
+
+            match (&previous_tx_hash_opt, &previous_ledger_tx_opt) {
+                (Some(_tx_hash), Some(_ledger_tx)) => {
+                    break;
+                }
+                (Some(tx_hash), None) => {
+                    println!("the ledger tx not exist via previous_tx_hash {}, remove the hash record, continue to update last sequence info", tx_hash);
+                    self.rooch_store
+                        .transaction_store
+                        .remove_transaction(*tx_hash, previous_tx_order)?;
+                }
+                (_, _) => {
+                    println!("the ledger tx not exist via previous_tx_order {}, continue to find last sequence info", previous_tx_order);
+                }
+            }
+            previous_tx_order = previous_tx_order - 1;
         }
-        let previous_tx_hash = previous_tx_hash_opt[0].unwrap();
-        let previous_ledger_tx_opt = self
-            .rooch_store
-            .transaction_store
-            .get_transaction_by_hash(previous_tx_hash)?;
-        if previous_ledger_tx_opt.is_none() {
-            return Err(Error::msg(format!(
-                "the previous ledger tx not exist via tx_hash {}, revert tx failed",
-                previous_tx_hash
-            )));
-        }
+
+        let previous_tx_hash = previous_tx_hash_opt.unwrap();
+        let previous_ledger_tx = previous_ledger_tx_opt.unwrap();
 
         let previous_execution_info_opt = self
             .moveos_store
@@ -185,7 +216,7 @@ impl RoochDB {
                 previous_tx_hash
             )));
         }
-        let previous_sequencer_info = previous_ledger_tx_opt.unwrap().sequence_info;
+        let previous_sequencer_info = previous_ledger_tx.sequence_info;
         let previous_execution_info = previous_execution_info_opt.unwrap();
         let revert_sequencer_info = SequencerInfo::new(
             previous_tx_order,
