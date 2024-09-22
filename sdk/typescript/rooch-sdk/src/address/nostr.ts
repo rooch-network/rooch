@@ -16,7 +16,6 @@ export class NoStrAddress {
     this.bytes = input
     this.str = bech32.encode(PREFIX_BECH32_PUBLIC_KEY, bech32.toWords(input))
   }
-
   genRoochAddress(): RoochAddress {
     return BitcoinAddress.fromPublicKey(this.bytes).genRoochAddress()
   }
