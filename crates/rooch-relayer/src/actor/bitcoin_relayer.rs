@@ -58,12 +58,12 @@ impl BitcoinRelayer {
             sync_block_interval,
             latest_sync_timestamp: 0u64,
             sync_to_latest: false,
-            batch_size: 10,
+            batch_size: 5,
         })
     }
 
     async fn sync_block(&mut self) -> Result<()> {
-        if !self.buffer.is_empty() {
+        if self.buffer.len() > self.batch_size {
             return Ok(());
         }
         if self.sync_to_latest
@@ -118,6 +118,7 @@ impl BitcoinRelayer {
 
         let mut next_block_hash = start_block_hash;
 
+        let mut batch = vec![];
         while let Some(next_hash) = next_block_hash {
             let header_info = self.rpc_client.get_block_header_info(next_hash).await?;
             let block = self.rpc_client.get_block(next_hash).await?;
@@ -132,11 +133,16 @@ impl BitcoinRelayer {
                 );
                 break;
             }
-            self.buffer.push(BlockResult { header_info, block });
-            if self.buffer.len() > self.batch_size {
+            info!(
+                "BitcoinRelayer buffer block, height: {}, hash: {}",
+                next_block_height, header_info.hash
+            );
+            batch.push(BlockResult { header_info, block });
+            if batch.len() > self.batch_size {
                 break;
             }
         }
+        self.buffer.extend(batch);
         Ok(())
     }
 

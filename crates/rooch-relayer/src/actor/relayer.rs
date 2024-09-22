@@ -12,11 +12,14 @@ use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor, LocalActorRef};
 use move_core_types::vm_status::KeptVMStatus;
 use moveos_eventbus::bus::EventData;
+use moveos_types::module_binding::MoveFunctionCaller;
 use rooch_config::{BitcoinRelayerConfig, EthereumRelayerConfig};
 use rooch_event::actor::{EventActor, EventActorSubscribeMessage};
 use rooch_event::event::ServiceStatusEvent;
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_pipeline_processor::proxy::PipelineProcessorProxy;
+use rooch_types::bitcoin::pending_block::PendingBlockModule;
+use rooch_types::multichain_id::RoochMultiChainID;
 use rooch_types::service_status::ServiceStatus;
 use rooch_types::transaction::{L1BlockWithBody, L1Transaction};
 use std::ops::Deref;
@@ -138,6 +141,45 @@ impl RelayerActor {
         Ok(())
     }
 
+    //We migrate this function from Relayer to here
+    //Becase the relayer actor will blocked when sync block
+    //TODO refactor the relayer, put the sync task in a separate actor
+    fn get_ready_l1_txs(&self, relayer: &RelayerProxy) -> Result<Vec<L1Transaction>> {
+        if relayer.is_bitcoin() {
+            self.get_ready_l1_txs_bitcoin()
+        } else {
+            Ok(vec![])
+        }
+    }
+
+    fn get_ready_l1_txs_bitcoin(&self) -> Result<Vec<L1Transaction>> {
+        let pending_block_module = self.executor.as_module_binding::<PendingBlockModule>();
+        let pending_txs = pending_block_module.get_ready_pending_txs()?;
+        match pending_txs {
+            Some(pending_txs) => {
+                let block_hash = pending_txs.block_hash;
+                let mut txs = pending_txs.txs;
+                if txs.len() > 1 {
+                    // move coinbase tx to the end
+                    let coinbase_tx = txs.remove(0);
+                    txs.push(coinbase_tx);
+                }
+                let l1_txs = txs
+                    .into_iter()
+                    .map(|txid| {
+                        L1Transaction::new(
+                            RoochMultiChainID::Bitcoin.multichain_id(),
+                            block_hash.to_vec(),
+                            txid.to_vec(),
+                        )
+                    })
+                    .collect();
+                Ok(l1_txs)
+            }
+            None => Ok(vec![]),
+        }
+    }
+
     async fn sync(&mut self) {
         let relayers = self.relayers.clone();
         for relayer in relayers {
@@ -146,24 +188,9 @@ impl RelayerActor {
                 continue;
             }
             let relayer_name = relayer.name();
-            if let Err(e) = relayer.sync().await {
-                warn!("Relayer {} sync error: {:?}", relayer_name, e);
-            }
 
+            // Get all ready l1 block and put them into Move contract
             loop {
-                match relayer.get_ready_l1_txs().await {
-                    Ok(txs) => {
-                        for tx in txs {
-                            if let Err(err) = self.handle_l1_tx(tx).await {
-                                warn!("Relayer {} error: {:?}", relayer_name, err);
-                            }
-                        }
-                    }
-                    Err(err) => {
-                        warn!("Relayer {} error: {:?}", relayer_name, err);
-                        break;
-                    }
-                }
                 match relayer.get_ready_l1_block().await {
                     Ok(Some(l1_block)) => {
                         if let Err(err) = self.handle_l1_block(l1_block).await {
@@ -173,6 +200,34 @@ impl RelayerActor {
                     Ok(None) => {
                         //skip
                         break;
+                    }
+                    Err(err) => {
+                        warn!("Relayer {} error: {:?}", relayer_name, err);
+                        break;
+                    }
+                }
+            }
+
+            // Notify the relayer to sync the latest block
+            // The sync task will block the relayer actor, but call sync() will not block this actor
+            // It a notify call.
+
+            if let Err(e) = relayer.sync().await {
+                warn!("Relayer {} sync error: {:?}", relayer_name, e);
+            }
+
+            // Execute all ready l1 txs
+            loop {
+                match self.get_ready_l1_txs(&relayer) {
+                    Ok(txs) => {
+                        if txs.is_empty() {
+                            break;
+                        }
+                        for tx in txs {
+                            if let Err(err) = self.handle_l1_tx(tx).await {
+                                warn!("Relayer {} error: {:?}", relayer_name, err);
+                            }
+                        }
                     }
                     Err(err) => {
                         warn!("Relayer {} error: {:?}", relayer_name, err);
