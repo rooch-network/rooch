@@ -222,6 +222,7 @@ impl PipelineProcessorActor {
             .sequence_transaction(LedgerTxData::L2Tx(tx.clone()))
             .await?;
         let size = moveos_tx.ctx.tx_size;
+        let tx_order = ledger_tx.sequence_info.tx_order;
         let result = match self.execute_tx(ledger_tx, moveos_tx).await {
             Ok(v) => v,
             Err(err) => {
@@ -231,8 +232,7 @@ impl PipelineProcessorActor {
                         "Execute L2 Tx failed while VM panic occurred and revert tx. error: {:?} tx info {}",
                         err, hex::encode(l2_tx_bcs_bytes)
                     );
-                    let tx_hash = tx.tx_hash();
-                    self.rooch_db.revert_tx(tx_hash)?;
+                    self.rooch_db.revert_tx(Some(tx_order))?;
                 }
                 return Err(err);
             }

@@ -96,7 +96,8 @@ impl RoochDB {
         Ok(startup_info.map(|s| s.into_root_metadata()))
     }
 
-    pub fn revert_tx(&self, tx_hash: H256) -> Result<()> {
+    /// Revert the latest transaction, the expect_tx_order is used to check the latest tx order
+    pub fn revert_tx(&self, expect_tx_order: Option<u64>) -> Result<()> {
         let last_sequencer_info = self
             .rooch_store
             .get_meta_store()
@@ -112,23 +113,44 @@ impl RoochDB {
             last_accumulator_info
         );
 
-        let ledger_tx_opt = self
+        if let Some(expect_tx_order) = expect_tx_order {
+            if last_order != expect_tx_order {
+                return Err(anyhow!(
+                    "The latest tx order {} is not equal to expect tx order {}",
+                    last_order,
+                    expect_tx_order
+                ));
+            }
+        }
+
+        let tx_hashes = self
             .rooch_store
             .transaction_store
-            .get_transaction_by_hash(tx_hash)?;
-        if ledger_tx_opt.is_none() {
-            println!("the ledger tx not exist via tx_hash {}", tx_hash);
-            return Ok(());
-        }
-        let sequencer_info = ledger_tx_opt.unwrap().sequence_info;
-        let tx_order = sequencer_info.tx_order;
-        assert_eq!(
-            sequencer_info.tx_order, last_sequencer_info.last_order,
-            "the last order {} should match current sequencer info tx order {}, tx_hash {}",
-            last_sequencer_info.last_order, sequencer_info.tx_order, tx_hash
-        );
+            .get_tx_hashes(vec![last_order])?;
 
-        self.do_revert_tx_ignore_check(tx_hash)?;
+        let tx_order = last_order;
+
+        // check tx hash exist via tx_order
+        let (tx_hash_opt, ledger_tx_opt) = if tx_hashes.is_empty() || tx_hashes[0].is_none() {
+            (None, None)
+        } else {
+            let tx_hash = tx_hashes[0].unwrap();
+            (
+                Some(tx_hash),
+                self.rooch_store
+                    .transaction_store
+                    .get_transaction_by_hash(tx_hash)?,
+            )
+        };
+
+        match (tx_hash_opt, ledger_tx_opt) {
+            (Some(tx_hash), Some(_ledger_tx)) => {
+                self.do_revert_tx_ignore_check(tx_hash)?;
+            }
+            (_, _) => {
+                println!("the ledger tx not exist via tx_order {}, continue to update last sequence info", tx_order);
+            }
+        }
 
         let previous_tx_order = if tx_order > 0 { tx_order - 1 } else { 0 };
         let previous_tx_hash_opt = self
@@ -181,7 +203,7 @@ impl RoochDB {
 
         println!(
             "revert tx succ, tx_hash: {:?}, tx_order {}",
-            tx_hash, tx_order
+            tx_hash_opt, tx_order
         );
 
         Ok(())
