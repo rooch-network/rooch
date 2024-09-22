@@ -189,9 +189,16 @@ impl RelayerActor {
             }
             let relayer_name = relayer.name();
 
-            // Get all ready l1 block and put them into Move contract
             loop {
-                
+                // Notify the relayer to sync the latest block
+                // The sync task will block the relayer actor, but call sync() will not block this actor
+                // It a notify call.
+                if let Err(e) = relayer.sync().await {
+                    warn!("Relayer {} sync error: {:?}", relayer_name, e);
+                }
+
+                let mut break_flag = false;
+
                 // Execute all ready l1 txs
                 match self.get_ready_l1_txs(&relayer) {
                     Ok(txs) => {
@@ -203,14 +210,8 @@ impl RelayerActor {
                     }
                     Err(err) => {
                         warn!("Relayer {} error: {:?}", relayer_name, err);
+                        break_flag = true;
                     }
-                }
-
-                // Notify the relayer to sync the latest block
-                // The sync task will block the relayer actor, but call sync() will not block this actor
-                // It a notify call.
-                if let Err(e) = relayer.sync().await {
-                    warn!("Relayer {} sync error: {:?}", relayer_name, e);
                 }
 
                 match relayer.get_ready_l1_block().await {
@@ -221,12 +222,16 @@ impl RelayerActor {
                     }
                     Ok(None) => {
                         //skip
-                        break;
+                        break_flag = true;
                     }
                     Err(err) => {
                         warn!("Relayer {} error: {:?}", relayer_name, err);
-                        break;
+                        break_flag = true;
                     }
+                }
+
+                if break_flag {
+                    break;
                 }
             }
         }

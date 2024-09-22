@@ -58,7 +58,7 @@ impl BitcoinRelayer {
             sync_block_interval,
             latest_sync_timestamp: 0u64,
             sync_to_latest: false,
-            batch_size: 10,
+            batch_size: 5,
         })
     }
 
@@ -76,7 +76,17 @@ impl BitcoinRelayer {
         self.latest_sync_timestamp = chrono::Utc::now().timestamp() as u64;
 
         let pending_block_module = self.move_caller.as_module_binding::<PendingBlockModule>();
-        let best_block_in_rooch = pending_block_module.get_best_block()?;
+        let best_block_in_rooch = if self.buffer.is_empty() {
+            pending_block_module.get_best_block()?
+        } else {
+            let last_block = self.buffer.last().unwrap();
+            let last_block_hash = last_block.header_info.hash;
+            let last_block_height = last_block.header_info.height;
+            Some(BlockHeightHash {
+                block_hash: last_block_hash.into_address(),
+                block_height: last_block_height as u64,
+            })
+        };
         let best_block_hash_in_bitcoin = self.rpc_client.get_best_block_hash().await?;
 
         //The start block is included
