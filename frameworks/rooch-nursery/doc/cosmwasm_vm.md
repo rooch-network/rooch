@@ -21,7 +21,6 @@
 <pre><code><b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x2::features</a>;
-<b>use</b> <a href="">0x2::json</a>;
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::result</a>;
 <b>use</b> <a href="">0x2::table</a>;

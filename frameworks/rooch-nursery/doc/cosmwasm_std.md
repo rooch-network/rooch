@@ -31,6 +31,7 @@
 -  [Function `new_reply`](#0xa_cosmwasm_std_new_reply)
 -  [Function `serialize_env`](#0xa_cosmwasm_std_serialize_env)
 -  [Function `serialize_message_info`](#0xa_cosmwasm_std_serialize_message_info)
+-  [Function `serialize_message`](#0xa_cosmwasm_std_serialize_message)
 -  [Function `deserialize_response`](#0xa_cosmwasm_std_deserialize_response)
 -  [Function `deserialize_error`](#0xa_cosmwasm_std_deserialize_error)
 -  [Function `error_code_to_string`](#0xa_cosmwasm_std_error_code_to_string)
@@ -38,7 +39,8 @@
 -  [Function `current_message_info`](#0xa_cosmwasm_std_current_message_info)
 
 
-<pre><code><b>use</b> <a href="">0x1::option</a>;
+<pre><code><b>use</b> <a href="">0x1::debug</a>;
+<b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x2::json</a>;
 <b>use</b> <a href="">0x2::result</a>;
@@ -209,6 +211,16 @@
 ## Constants
 
 
+<a name="0xa_cosmwasm_std_ErrorDeserialize"></a>
+
+This error code is returned when a deserialization error occurs.
+
+
+<pre><code><b>const</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std_ErrorDeserialize">ErrorDeserialize</a>: u32 = 1;
+</code></pre>
+
+
+
 <a name="0xa_cosmwasm_std_REPLY_ALWAYS"></a>
 
 
@@ -368,13 +380,24 @@
 
 
 
+<a name="0xa_cosmwasm_std_serialize_message"></a>
+
+## Function `serialize_message`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std_serialize_message">serialize_message</a>&lt;T: drop&gt;(msg: &T): <a href="">vector</a>&lt;u8&gt;
+</code></pre>
+
+
+
 <a name="0xa_cosmwasm_std_deserialize_response"></a>
 
 ## Function `deserialize_response`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std_deserialize_response">deserialize_response</a>(raw: <a href="">vector</a>&lt;u8&gt;): <a href="cosmwasm_std.md#0xa_cosmwasm_std_Response">cosmwasm_std::Response</a>
+<pre><code><b>public</b> <b>fun</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std_deserialize_response">deserialize_response</a>(raw: <a href="">vector</a>&lt;u8&gt;): <a href="_Result">result::Result</a>&lt;<a href="cosmwasm_std.md#0xa_cosmwasm_std_Response">cosmwasm_std::Response</a>, <a href="cosmwasm_std.md#0xa_cosmwasm_std_Error">cosmwasm_std::Error</a>&gt;
 </code></pre>
 
 

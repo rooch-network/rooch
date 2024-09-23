@@ -2,14 +2,20 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module rooch_nursery::cosmwasm_std {
+    use std::debug;
     use std::vector;
-    use std::string::String;
-    use std::option::Option;
+    use std::string::{Self, String};
+    use std::option::{Self, Option};
 
-    use moveos_std::result::{Result, err};
     use moveos_std::json;
     use moveos_std::timestamp;
     use moveos_std::tx_context;
+    use moveos_std::result::{Result, err, ok};
+
+    // Error codes
+
+    /// This error code is returned when a deserialization error occurs.
+    const ErrorDeserialize: u32 = 1;
 
     // Basic types
     #[data_struct]
@@ -163,21 +169,39 @@ module rooch_nursery::cosmwasm_std {
 
     // Helper functions (these would need to be implemented)
     public fun serialize_env(env: &Env): vector<u8> {
-        json::to_json(env)
+        let env_str = json::to_json(env);
+        debug::print(&string::utf8(b"serialize_env str:"));
+        debug::print(&string::utf8(env_str));
+
+        return env_str
     }
 
     public fun serialize_message_info(info: &MessageInfo): vector<u8> {
-        json::to_json(info)
+        let info_str = json::to_json(info);
+        debug::print(&string::utf8(b"serialize_message_info str:"));
+        debug::print(&string::utf8(info_str));
+
+        return info_str
     }
 
-    public fun deserialize_response(raw: vector<u8>): Response {
-        // Implementation to deserialize bytes to Response struct
-        Response { 
-            messages: vector::empty(), 
-            attributes: vector::empty(), 
-            events: vector::empty(), 
-            data: raw 
-        } // Placeholder
+    public fun serialize_message<T: drop>(msg: &T): vector<u8> {
+        let msg_str = json::to_json(msg);
+        debug::print(&string::utf8(b"serialize_message str:"));
+        debug::print(&string::utf8(msg_str));
+
+        return msg_str
+    }
+
+    public fun deserialize_response(raw: vector<u8>): Result<Response, Error> {
+        debug::print(&string::utf8(b"deserialize_response raw:"));
+        debug::print(&string::utf8(raw));
+
+        let resp_option = json::from_json_option<Response>(raw);
+        if (option::is_none(&resp_option)) {
+            return new_error_result(ErrorDeserialize, string::utf8(b"deserialize_response_error"))
+        };
+
+        ok(option::extract(&mut resp_option))
     }
 
     public fun deserialize_error(raw: vector<u8>): String {
@@ -198,7 +222,7 @@ module rooch_nursery::cosmwasm_std {
         Env {
             block: BlockInfo {
                 height: sequence_number,
-                time: timestamp::now_milliseconds(),
+                time: timestamp::now_milliseconds() * 1000000, // nanos
                 chain_id: std::string::utf8(b"rooch"),
             },
             contract: ContractInfo {

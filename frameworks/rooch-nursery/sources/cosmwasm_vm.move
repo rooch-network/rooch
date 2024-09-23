@@ -12,7 +12,7 @@ module rooch_nursery::cosmwasm_vm {
     use moveos_std::result::{Result, ok};
 
     use rooch_nursery::cosmwasm_std::{Response, Error, Env, MessageInfo, Reply,
-        new_error, new_error_result, serialize_env, serialize_message_info, deserialize_response};
+        new_error, new_error_result, serialize_env, serialize_message_info, serialize_message, deserialize_response};
 
     struct Instance has key, store {
         code_checksum: vector<u8>,
@@ -48,13 +48,13 @@ module rooch_nursery::cosmwasm_vm {
     #[data_struct(T)]
     public fun call_instantiate<T: drop>(instance: &mut Instance, env: &Env, info: &MessageInfo, msg: &T): Result<Response, Error> {
         let store_handle = table::handle(&mut instance.store);
-        let env_bytes = json::to_json(env);
-        let info_bytes = json::to_json(info);
-        let msg_bytes = json::to_json(msg);
+        let env_bytes = serialize_env(env);
+        let info_bytes = serialize_message_info(info);
+        let msg_bytes = serialize_message(msg);
 
         let (raw_response, error_code) = native_call_instantiate_raw(instance.code_checksum, store_handle, env_bytes, info_bytes, msg_bytes);
         if (error_code == 0) {
-            ok(deserialize_response(raw_response))
+            deserialize_response(raw_response)
         } else {
             new_error_result(error_code, string::utf8(b"native_call_instantiate_raw_error"))
         }
@@ -63,13 +63,13 @@ module rooch_nursery::cosmwasm_vm {
     #[data_struct(T)]
     public fun call_execute<T: drop>(instance: &mut Instance, env: &Env, info: &MessageInfo, msg: &T): Result<Response, Error> {
         let store_handle = table::handle(&mut instance.store);
-        let env_bytes = json::to_json(env);
-        let info_bytes = json::to_json(info);
-        let msg_bytes = json::to_json(msg);
+        let env_bytes = serialize_env(env);
+        let info_bytes = serialize_message_info(info);
+        let msg_bytes = serialize_message(msg);
 
         let (raw_response, error_code) = native_call_execute_raw(instance.code_checksum, store_handle, env_bytes, info_bytes, msg_bytes);
         if (error_code == 0) {
-            ok(deserialize_response(raw_response))
+            deserialize_response(raw_response)
         } else {
             new_error_result(error_code, string::utf8(b"native_call_execute_raw_error"))
         }
@@ -78,12 +78,12 @@ module rooch_nursery::cosmwasm_vm {
     #[data_struct(T)]
     public fun call_query<T: drop>(instance: &Instance, env: &Env, msg: &T): Result<Response, Error> {
         let store_handle = table::handle(&instance.store);
-        let env_bytes = json::to_json(env);
-        let msg_bytes = json::to_json(msg);
+        let env_bytes = serialize_env(env);
+        let msg_bytes = serialize_message(msg);
 
         let (raw_response, error_code) = native_call_query_raw(instance.code_checksum, store_handle, env_bytes, msg_bytes);
         if (error_code == 0) {
-            ok(deserialize_response(raw_response))
+            deserialize_response(raw_response)
         } else {
             new_error_result(error_code, string::utf8(b"native_call_query_raw_error"))
         }
@@ -92,12 +92,12 @@ module rooch_nursery::cosmwasm_vm {
     #[data_struct(T)]
     public fun call_migrate<T: drop>(instance: &mut Instance, env: &Env, msg: &T): Result<Response, Error> {
         let store_handle = table::handle(&instance.store);
-        let env_bytes = json::to_json(env);
-        let msg_bytes = json::to_json(msg);
+        let env_bytes = serialize_env(env);
+        let msg_bytes = serialize_message(msg);
 
         let (raw_response, error_code) = native_call_migrate_raw(instance.code_checksum, store_handle, env_bytes, msg_bytes);
         if (error_code == 0) {
-            ok(deserialize_response(raw_response))
+            deserialize_response(raw_response)
         } else {
             new_error_result(error_code, string::utf8(b"native_call_migrate_raw_error"))
         }
@@ -105,12 +105,12 @@ module rooch_nursery::cosmwasm_vm {
 
     public fun call_reply(instance: &mut Instance, env: &Env, reply: &Reply): Result<Response, Error> {
         let store_handle = table::handle(&mut instance.store);
-        let env_bytes = json::to_json(env);
-        let msg_bytes = json::to_json(reply);
+        let env_bytes = serialize_env(env);
+        let msg_bytes = serialize_message(reply);
 
         let (raw_response, error_code) = native_call_reply_raw(instance.code_checksum, store_handle, env_bytes, msg_bytes);
         if (error_code == 0) {
-            ok(deserialize_response(raw_response))
+            deserialize_response(raw_response)
         } else {
             new_error_result(error_code, string::utf8(b"native_call_reply_raw_error"))
         }
@@ -119,12 +119,12 @@ module rooch_nursery::cosmwasm_vm {
     #[data_struct(T)]
     public fun call_sudo<T: drop>(instance: &mut Instance, env: &Env, msg: &T): Result<Response, Error> {
         let store_handle = table::handle(&mut instance.store);
-        let env_bytes = json::to_json(env);
-        let msg_bytes = json::to_json(msg);
+        let env_bytes = serialize_env(env);
+        let msg_bytes = serialize_message(msg);
 
         let (raw_response, error_code) = native_call_sudo_raw(instance.code_checksum, store_handle, env_bytes, msg_bytes);
         if (error_code == 0) {
-            ok(deserialize_response(raw_response))
+            deserialize_response(raw_response)
         } else {
             new_error_result(error_code, string::utf8(b"native_call_sudo_raw_error"))
         }
