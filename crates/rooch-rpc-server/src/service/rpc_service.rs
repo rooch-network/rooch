@@ -14,7 +14,6 @@ use moveos_types::moveos_std::event::{AnnotatedEvent, Event, EventID};
 use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::state::{AnnotatedState, FieldKey, ObjectState, StateChangeSet};
 use moveos_types::state_resolver::{AnnotatedStateKV, StateKV};
-use moveos_types::state_root_hash::StateRootHash;
 use moveos_types::transaction::{FunctionCall, TransactionExecutionInfo};
 use rooch_executor::actor::messages::DryRunTransactionResult;
 use rooch_executor::proxy::ExecutorProxy;
@@ -116,14 +115,14 @@ impl RpcService {
     pub async fn get_states(
         &self,
         access_path: AccessPath,
-        state_root: StateRootHash,
+        state_root: Option<H256>,
     ) -> Result<Vec<Option<ObjectState>>> {
         self.executor.get_states(access_path, state_root).await
     }
 
     pub async fn exists_module(&self, module_id: ModuleId) -> Result<bool> {
         let mut resp = self
-            .get_states(AccessPath::module(&module_id), StateRootHash::empty())
+            .get_states(AccessPath::module(&module_id), None)
             .await?;
         Ok(resp.pop().flatten().is_some())
     }
@@ -137,11 +136,14 @@ impl RpcService {
 
     pub async fn list_states(
         &self,
+        state_root: Option<H256>,
         access_path: AccessPath,
         cursor: Option<FieldKey>,
         limit: usize,
     ) -> Result<Vec<StateKV>> {
-        self.executor.list_states(access_path, cursor, limit).await
+        self.executor
+            .list_states(state_root, access_path, cursor, limit)
+            .await
     }
 
     pub async fn list_annotated_states(
@@ -375,7 +377,7 @@ impl RpcService {
                     .filter_map(|s| s.as_ref())
                     .collect::<Vec<&AnnotatedState>>();
                 let valid_display_field_views = self
-                    .get_display_fields_and_render(&valid_states, StateRootHash::empty())
+                    .get_display_fields_and_render(&valid_states, None)
                     .await?;
                 valid_states
                     .iter()
@@ -413,7 +415,7 @@ impl RpcService {
             }
             object_states
         } else {
-            let states = self.get_states(access_path, StateRootHash::empty()).await?;
+            let states = self.get_states(access_path, None).await?;
             states
                 .into_iter()
                 .zip(indexer_ids)
@@ -474,7 +476,7 @@ impl RpcService {
 
         let access_path = AccessPath::fields(mapping_object_id, owner_keys);
         let address_mapping = self
-            .get_states(access_path, StateRootHash::empty())
+            .get_states(access_path, None)
             .await?
             .into_iter()
             .zip(user_addresses)
@@ -497,7 +499,7 @@ impl RpcService {
     pub async fn get_display_fields_and_render(
         &self,
         states: &[&AnnotatedState],
-        state_root: StateRootHash,
+        state_root: Option<H256>,
     ) -> Result<Vec<Option<DisplayFieldsView>>> {
         let mut display_ids = vec![];
         let mut displayable_states = vec![];
@@ -605,10 +607,7 @@ impl RpcService {
     ) -> Result<()> {
         {
             let states = self
-                .get_states(
-                    AccessPath::objects(object_ids.clone()),
-                    StateRootHash::empty(),
-                )
+                .get_states(AccessPath::objects(object_ids.clone()), None)
                 .await?;
 
             let mut remove_object_ids = vec![];

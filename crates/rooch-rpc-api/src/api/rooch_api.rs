@@ -12,12 +12,11 @@ use crate::jsonrpc_types::{
     FieldKeyView, FunctionCallView, H256View, IndexerEventPageView, IndexerObjectStatePageView,
     IndexerStateIDView, ModuleABIView, ObjectIDVecView, ObjectIDView, ObjectStateFilterView,
     ObjectStateView, QueryOptions, RoochAddressView, StateChangeSetPageView, StateOptions,
-    StatePageView, StateRootHashView, StrView, StructTagView, SyncStateFilterView,
-    TransactionWithInfoPageView, TxOptions,
+    StatePageView, StrView, StructTagView, SyncStateFilterView, TransactionWithInfoPageView,
+    TxOptions,
 };
 use crate::RpcResult;
 use jsonrpsee::proc_macros::rpc;
-use moveos_types::state_root_hash::StateRootHash;
 use moveos_types::{access_path::AccessPath, state::FieldKey};
 use rooch_open_rpc_macros::open_rpc;
 
@@ -59,7 +58,6 @@ pub trait RoochAPI {
     async fn get_states(
         &self,
         access_path: AccessPathView,
-        state_root: StateRootHashView,
         state_option: Option<StateOptions>,
     ) -> RpcResult<Vec<Option<ObjectStateView>>>;
 
@@ -93,12 +91,7 @@ pub trait RoochAPI {
         let key_states = field_key.into_iter().map(FieldKey::from).collect();
         let access_path_view =
             AccessPathView::from(AccessPath::fields(object_id.into(), key_states));
-        self.get_states(
-            access_path_view,
-            StrView::from(StateRootHash::empty()),
-            state_option,
-        )
-        .await
+        self.get_states(access_path_view, state_option).await
     }
 
     /// List Object Fields via ObjectID.

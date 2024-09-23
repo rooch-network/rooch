@@ -12,7 +12,6 @@ use moveos_types::moveos_std::event::{AnnotatedEvent, Event, EventID};
 use moveos_types::moveos_std::object::ObjectMeta;
 use moveos_types::state::{AnnotatedState, FieldKey, ObjectState, StateChangeSetExt};
 use moveos_types::state_resolver::{AnnotatedStateKV, StateKV};
-use moveos_types::state_root_hash::StateRootHash;
 use moveos_types::transaction::TransactionExecutionInfo;
 use moveos_types::transaction::TransactionOutput;
 use moveos_types::transaction::VerifiedMoveOSTransaction;
@@ -100,7 +99,7 @@ impl Message for ExecuteViewFunctionMessage {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct StatesMessage {
-    pub state_root: StateRootHash,
+    pub state_root: Option<H256>,
     pub access_path: AccessPath,
 }
 
@@ -128,6 +127,7 @@ impl Message for AnnotatedStatesMessage {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ListStatesMessage {
+    pub state_root: Option<H256>,
     pub access_path: AccessPath,
     pub cursor: Option<FieldKey>,
     pub limit: usize,

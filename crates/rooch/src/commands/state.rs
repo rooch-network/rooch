@@ -5,7 +5,6 @@ use crate::cli_types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
 use clap::Parser;
 use moveos_types::access_path::AccessPath;
-use moveos_types::state_root_hash::StateRootHash;
 use rooch_rpc_api::jsonrpc_types::ObjectStateView;
 use rooch_types::error::{RoochError, RoochResult};
 
@@ -43,7 +42,7 @@ impl CommandAction<Vec<Option<ObjectStateView>>> for StateCommand {
         } else {
             client
                 .rooch
-                .get_decoded_states(self.access_path, StateRootHash::empty())
+                .get_decoded_states(self.access_path, None)
                 .await
                 .map_err(RoochError::from)?
         };

@@ -21,7 +21,6 @@ use moveos_store::transaction_store::TransactionStore;
 use moveos_store::MoveOSStore;
 use moveos_types::function_return_value::AnnotatedFunctionResult;
 use moveos_types::function_return_value::AnnotatedFunctionReturnValue;
-use moveos_types::h256::H256;
 use moveos_types::moveos_std::event::EventHandle;
 use moveos_types::moveos_std::event::{AnnotatedEvent, Event};
 use moveos_types::moveos_std::object::ObjectMeta;
@@ -147,9 +146,7 @@ impl Handler<StatesMessage> for ReaderExecutorActor {
         msg: StatesMessage,
         _ctx: &mut ActorContext,
     ) -> Result<Vec<Option<ObjectState>>, anyhow::Error> {
-        let resolver = if !msg.state_root.is_empty() {
-            let hex_bytes = hex::decode(msg.state_root.0).expect("decode root state failed");
-            let state_root = H256::from_slice(hex_bytes.as_slice());
+        let resolver = if let Some(state_root) = msg.state_root {
             let root_object_meta = ObjectMeta::root_metadata(state_root, 55);
             RootObjectResolver::new(root_object_meta, &self.moveos_store)
         } else {
@@ -178,7 +175,12 @@ impl Handler<ListStatesMessage> for ReaderExecutorActor {
         msg: ListStatesMessage,
         _ctx: &mut ActorContext,
     ) -> Result<Vec<StateKV>, anyhow::Error> {
-        let resolver = RootObjectResolver::new(self.root.clone(), &self.moveos_store);
+        let resolver = if let Some(state_root) = msg.state_root {
+            let root_object_meta = ObjectMeta::root_metadata(state_root, 55);
+            RootObjectResolver::new(root_object_meta, &self.moveos_store)
+        } else {
+            RootObjectResolver::new(self.root.clone(), &self.moveos_store)
+        };
         resolver.list_states(msg.access_path, msg.cursor, msg.limit)
     }
 }

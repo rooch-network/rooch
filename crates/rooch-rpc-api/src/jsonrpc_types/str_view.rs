@@ -6,7 +6,6 @@
 
 use move_core_types::account_address::AccountAddress;
 use moveos_types::move_std::string::MoveString;
-use moveos_types::state_root_hash::StateRootHash;
 use schemars::gen::SchemaGenerator;
 use schemars::schema::{InstanceType, Schema, SchemaObject};
 use schemars::JsonSchema;
@@ -324,21 +323,5 @@ where
 {
     fn to_human_readable_string(&self, verbose: bool, indent: usize) -> String {
         self.0.to_human_readable_string(verbose, indent)
-    }
-}
-
-pub type StateRootHashView = StrView<StateRootHash>;
-
-impl FromStr for StateRootHashView {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> anyhow::Result<Self, Self::Err> {
-        Ok(Self(StateRootHash(s.to_string())))
-    }
-}
-
-impl std::fmt::Display for StateRootHashView {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", &self.0)
     }
 }

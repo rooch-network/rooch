@@ -16,7 +16,6 @@ use moveos_types::moveos_std::move_module::MoveModule;
 use moveos_types::moveos_std::object::{ObjectID, ObjectMeta, RawField};
 use moveos_types::state::{FieldKey, MoveType, ObjectState};
 use moveos_types::state_resolver::{StateKV, StateResolver, StatelessResolver};
-use moveos_types::state_root_hash::StateRootHash;
 use moveos_types::{
     function_return_value::FunctionResult, module_binding::MoveFunctionCaller,
     moveos_std::tx_context::TxContext, transaction::FunctionCall,
@@ -115,10 +114,7 @@ impl ModuleResolver for &Client {
     fn get_module(&self, id: &ModuleId) -> Result<Option<Vec<u8>>> {
         tokio::task::block_in_place(|| {
             Handle::current().block_on(async {
-                let mut states = self
-                    .rooch
-                    .get_states(AccessPath::module(id), StateRootHash::empty())
-                    .await?;
+                let mut states = self.rooch.get_states(AccessPath::module(id), None).await?;
                 states
                     .pop()
                     .flatten()
@@ -200,10 +196,7 @@ impl StatelessResolver for ClientResolver {
                 let mut object_state_view_list = self
                     .client
                     .rooch
-                    .get_states(
-                        access_path,
-                        StateRootHash::new(hex::encode(state_root.0.as_slice()).as_str()),
-                    )
+                    .get_states(access_path, Some(state_root))
                     .await?;
                 Ok(object_state_view_list.pop().flatten().map(|state_view| {
                     let v: ObjectState = state_view.into();

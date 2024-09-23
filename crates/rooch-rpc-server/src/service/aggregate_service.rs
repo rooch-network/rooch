@@ -9,7 +9,6 @@ use moveos_types::access_path::AccessPath;
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::state::PlaceholderStruct;
-use moveos_types::state_root_hash::StateRootHash;
 use rooch_rpc_api::jsonrpc_types::account_view::BalanceInfoView;
 use rooch_rpc_api::jsonrpc_types::CoinInfoView;
 use rooch_types::address::RoochAddress;
@@ -46,7 +45,7 @@ impl AggregateService {
                 .collect(),
         );
         self.rpc_service
-            .get_states(access_path, StateRootHash::empty())
+            .get_states(access_path, None)
             .await?
             .into_iter()
             .zip(coin_types)
@@ -73,7 +72,7 @@ impl AggregateService {
     ) -> Result<Vec<Option<CoinStoreInfo>>> {
         let access_path = AccessPath::objects(coin_store_ids);
         self.rpc_service
-            .get_states(access_path, StateRootHash::empty())
+            .get_states(access_path, None)
             .await?
             .into_iter()
             .map(|state_opt| state_opt.map(CoinStoreInfo::try_from).transpose())

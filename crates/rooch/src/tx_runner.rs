@@ -34,7 +34,7 @@ pub fn execute_tx_locally(state_root_bytes: Vec<u8>, client: Client, tx: RoochTr
     let (move_mv, object_runtime, client_resolver, action, cost_table) =
         prepare_execute_env(root_object_meta, &client_resolver, tx.clone());
 
-    let mut gas_meter = MoveOSGasMeter::new(cost_table, GasScheduleConfig::READONLY_MAX_GAS_AMOUNT);
+    let mut gas_meter = MoveOSGasMeter::new(cost_table, GasScheduleConfig::CLI_DEFAULT_MAX_GAS_AMOUNT);
     gas_meter.charge_io_write(tx.tx_size()).unwrap();
 
     let mut moveos_session = MoveOSSession::new(
@@ -72,7 +72,7 @@ pub fn execute_tx_locally_with_gas_profile(
     let (move_mv, object_runtime, client_resolver, action, cost_table) =
         prepare_execute_env(root_object_meta, &client_resolver, tx.clone());
 
-    let mut gas_meter = MoveOSGasMeter::new(cost_table, GasScheduleConfig::READONLY_MAX_GAS_AMOUNT);
+    let mut gas_meter = MoveOSGasMeter::new(cost_table, GasScheduleConfig::CLI_DEFAULT_MAX_GAS_AMOUNT);
     gas_meter.charge_io_write(tx.tx_size()).unwrap();
 
     let mut gas_profiler = new_gas_profiler(tx.clone().action, gas_meter);
@@ -146,7 +146,7 @@ pub fn prepare_execute_env(
         gas_parameters.all_natives(),
         MoveOSConfig::default().vm_config,
     )
-        .expect("create MoveVM failed");
+    .expect("create MoveVM failed");
 
     (vm, object_runtime, client_resolver, action, cost_table)
 }
