@@ -28,7 +28,7 @@ module rooch_nursery::cosmwasm_std {
     #[data_struct]
     struct BlockInfo has store, copy, drop {
         height: u64,
-        time: u64,
+        time: u128,
         chain_id: String,
     }
 
@@ -102,6 +102,12 @@ module rooch_nursery::cosmwasm_std {
     #[data_struct]
     struct ReplyOn has store, copy, drop {
         value: u8,
+    }
+
+    #[data_struct]
+    struct StdResult has copy, drop {
+        ok: Option<Response>,
+        error: Option<String>,
     }
 
     // Constants for ReplyOn
@@ -204,6 +210,26 @@ module rooch_nursery::cosmwasm_std {
         ok(option::extract(&mut resp_option))
     }
 
+    public fun deserialize_stdresult(raw: vector<u8>): Result<Response, Error> {
+        debug::print(&string::utf8(b"deserialize_response raw:"));
+        debug::print(&string::utf8(raw));
+
+        let result_option = json::from_json_option<StdResult>(raw);
+        if (option::is_none(&result_option)) {
+            return new_error_result(ErrorDeserialize, string::utf8(b"deserialize_response_error"))
+        };
+
+        let std_result = option::extract(&mut result_option);
+        debug::print(&string::utf8(b"deserialize_response std_result:"));
+        debug::print(&std_result);
+
+        if (option::is_some(&std_result.ok)) {
+            ok(option::extract(&mut std_result.ok))
+        } else {
+            err(new_error(1, option::extract(&mut std_result.error)))
+        }
+    }
+
     public fun deserialize_error(raw: vector<u8>): String {
         // Implementation to deserialize bytes to Error string
         std::string::utf8(raw) // Placeholder
@@ -222,7 +248,7 @@ module rooch_nursery::cosmwasm_std {
         Env {
             block: BlockInfo {
                 height: sequence_number,
-                time: timestamp::now_milliseconds() * 1000000, // nanos
+                time: (timestamp::now_milliseconds() as u128) * 1000000u128, // nanos
                 chain_id: std::string::utf8(b"rooch"),
             },
             contract: ContractInfo {

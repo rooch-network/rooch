@@ -11,8 +11,8 @@ module rooch_nursery::cosmwasm_vm {
     use moveos_std::table::{Self, Table};
     use moveos_std::result::{Result, ok};
 
-    use rooch_nursery::cosmwasm_std::{Response, Error, Env, MessageInfo, Reply,
-        new_error, new_error_result, serialize_env, serialize_message_info, serialize_message, deserialize_response};
+    use rooch_nursery::cosmwasm_std::{Response, Error, Env, MessageInfo, Reply, StdResult,
+        new_error, new_error_result, serialize_env, serialize_message_info, serialize_message, deserialize_response, deserialize_stdresult};
 
     struct Instance has key, store {
         code_checksum: vector<u8>,
@@ -52,9 +52,9 @@ module rooch_nursery::cosmwasm_vm {
         let info_bytes = serialize_message_info(info);
         let msg_bytes = serialize_message(msg);
 
-        let (raw_response, error_code) = native_call_instantiate_raw(instance.code_checksum, store_handle, env_bytes, info_bytes, msg_bytes);
+        let (std_result, error_code) = native_call_instantiate_raw(instance.code_checksum, store_handle, env_bytes, info_bytes, msg_bytes);
         if (error_code == 0) {
-            deserialize_response(raw_response)
+            deserialize_stdresult(std_result)
         } else {
             new_error_result(error_code, string::utf8(b"native_call_instantiate_raw_error"))
         }
@@ -67,9 +67,9 @@ module rooch_nursery::cosmwasm_vm {
         let info_bytes = serialize_message_info(info);
         let msg_bytes = serialize_message(msg);
 
-        let (raw_response, error_code) = native_call_execute_raw(instance.code_checksum, store_handle, env_bytes, info_bytes, msg_bytes);
+        let (std_result, error_code) = native_call_execute_raw(instance.code_checksum, store_handle, env_bytes, info_bytes, msg_bytes);
         if (error_code == 0) {
-            deserialize_response(raw_response)
+            deserialize_stdresult(std_result)
         } else {
             new_error_result(error_code, string::utf8(b"native_call_execute_raw_error"))
         }
@@ -81,9 +81,9 @@ module rooch_nursery::cosmwasm_vm {
         let env_bytes = serialize_env(env);
         let msg_bytes = serialize_message(msg);
 
-        let (raw_response, error_code) = native_call_query_raw(instance.code_checksum, store_handle, env_bytes, msg_bytes);
+        let (std_result, error_code) = native_call_query_raw(instance.code_checksum, store_handle, env_bytes, msg_bytes);
         if (error_code == 0) {
-            deserialize_response(raw_response)
+            deserialize_stdresult(std_result)
         } else {
             new_error_result(error_code, string::utf8(b"native_call_query_raw_error"))
         }
@@ -95,9 +95,9 @@ module rooch_nursery::cosmwasm_vm {
         let env_bytes = serialize_env(env);
         let msg_bytes = serialize_message(msg);
 
-        let (raw_response, error_code) = native_call_migrate_raw(instance.code_checksum, store_handle, env_bytes, msg_bytes);
+        let (std_result, error_code) = native_call_migrate_raw(instance.code_checksum, store_handle, env_bytes, msg_bytes);
         if (error_code == 0) {
-            deserialize_response(raw_response)
+            deserialize_stdresult(std_result)
         } else {
             new_error_result(error_code, string::utf8(b"native_call_migrate_raw_error"))
         }
@@ -108,9 +108,9 @@ module rooch_nursery::cosmwasm_vm {
         let env_bytes = serialize_env(env);
         let msg_bytes = serialize_message(reply);
 
-        let (raw_response, error_code) = native_call_reply_raw(instance.code_checksum, store_handle, env_bytes, msg_bytes);
+        let (std_result, error_code) = native_call_reply_raw(instance.code_checksum, store_handle, env_bytes, msg_bytes);
         if (error_code == 0) {
-            deserialize_response(raw_response)
+            deserialize_stdresult(std_result)
         } else {
             new_error_result(error_code, string::utf8(b"native_call_reply_raw_error"))
         }
@@ -122,9 +122,9 @@ module rooch_nursery::cosmwasm_vm {
         let env_bytes = serialize_env(env);
         let msg_bytes = serialize_message(msg);
 
-        let (raw_response, error_code) = native_call_sudo_raw(instance.code_checksum, store_handle, env_bytes, msg_bytes);
+        let (std_result, error_code) = native_call_sudo_raw(instance.code_checksum, store_handle, env_bytes, msg_bytes);
         if (error_code == 0) {
-            deserialize_response(raw_response)
+            deserialize_stdresult(std_result)
         } else {
             new_error_result(error_code, string::utf8(b"native_call_sudo_raw_error"))
         }

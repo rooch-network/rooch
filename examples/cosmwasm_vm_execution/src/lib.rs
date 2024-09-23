@@ -226,8 +226,8 @@ mod tests {
 
     #[test]
     fn test_parse_env_json() {
-        let env_json = "{\"block\":{\"height\":1,\"time\":1727053520520,\"chain_id\":\"rooch\"},\"contract\":{\"address\":\"0xaba866e3ad72b8326c57a56722474c7a3cebb4b00ff8948d58d4c7921b4aa0a\"},\"transaction\":{\"index\":0}}";
+        let env_json = "{\"block\":{\"height\":12345,\"time\":\"1571797419879305533\",\"chain_id\":\"cosmos-testnet-14002\"},\"contract\":{\"address\":\"cosmos2contract\"},\"transaction\":{\"index\":3}}";
         let env: Env = from_json(env_json).unwrap();
-        assert_eq!(env.block.height, 1);
+        assert_eq!(env.block.height, 12345);
     }
 }

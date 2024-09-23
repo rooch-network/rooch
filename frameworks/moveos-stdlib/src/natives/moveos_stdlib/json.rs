@@ -81,6 +81,27 @@ fn parse_struct_value_from_json(
             Ok(Struct::pack(vec![Value::vector_u8(
                 str_value.as_bytes().to_vec(),
             )]))
+        } else if is_std_option(struct_type, &MOVE_STD_ADDRESS) {
+            let vec_layout = fields
+                .first()
+                .ok_or_else(|| anyhow::anyhow!("Invalid std option layout"))?;
+            let type_tag: TypeTag = (&vec_layout.layout).try_into()?;
+            let ty = context.load_type(&type_tag)?;
+
+            if json_value.is_null() {
+                let value = Vector::pack(&ty, vec![])?;
+                return Ok(Struct::pack(vec![value]));
+            }
+
+            if let MoveTypeLayout::Vector(vec_layout) = vec_layout.layout.clone() {
+                let struct_layout = vec_layout.as_ref();
+                let move_struct_value =
+                    parse_move_value_from_json(struct_layout, json_value, context)?;
+                let value = Vector::pack(&ty, vec![move_struct_value])?;
+                return Ok(Struct::pack(vec![value]));
+            }
+
+            Err(anyhow::anyhow!("Invalid std option layout"))
         } else if struct_type == &SimpleMap::<MoveString, MoveString>::struct_tag() {
             let key_value_pairs = json_obj_to_key_value_pairs(json_value)?;
             let mut key_values = Vec::new();
@@ -101,9 +122,20 @@ fn parse_struct_value_from_json(
                 .iter()
                 .map(|field| -> Result<Value> {
                     let name = field.name.as_str();
-                    let json_field = json_value.get(name).ok_or_else(|| {
-                        anyhow::anyhow!("type: {}, Missing field {}", struct_type, name)
-                    })?;
+                    let json_field = match json_value.get(name) {
+                        Some(value) => value,
+                        None => {
+                            if let MoveTypeLayout::Struct(_) | MoveTypeLayout::Vector(_) = field.layout {
+                                &JsonValue::Null
+                            } else {
+                                return Err(anyhow::anyhow!(
+                                    "type: {}, Missing field {}",
+                                    struct_type,
+                                    name
+                                ));
+                            }
+                        }
+                    };
                     parse_move_value_from_json(&field.layout, json_field, context)
                 })
                 .collect::<Result<Vec<Value>>>()?;
@@ -156,16 +188,37 @@ fn parse_move_value_from_json(
             Ok(Value::address(addr))
         }
         MoveTypeLayout::Vector(item_layout) => {
-            let vec_value = json_value
-                .as_array()
-                .ok_or_else(|| anyhow::anyhow!("Invalid vector value"))?
-                .iter()
-                .map(|v| parse_move_value_from_json(item_layout, v, context))
-                .collect::<Result<Vec<_>>>()?;
-            let type_tag: TypeTag = (&**item_layout).try_into()?;
-            let ty = context.load_type(&type_tag)?;
-            let value = Vector::pack(&ty, vec_value)?;
-            Ok(value)
+            let layout = item_layout.as_ref();
+
+            if let MoveTypeLayout::U8 = layout {
+                if json_value.is_null() {
+                    return Ok(Value::vector_u8(vec![]));
+                }
+
+                let bytes = json_value
+                    .as_str()
+                    .ok_or_else(|| anyhow::anyhow!("Invalid bytes"))?
+                    .as_bytes()
+                    .to_vec();
+                Ok(Value::vector_u8(bytes))
+            } else {
+                if json_value.is_null() {
+                    let type_tag: TypeTag = (&**item_layout).try_into()?;
+                    let ty = context.load_type(&type_tag)?;
+                    return Ok(Vector::pack(&ty, vec![])?);
+                }
+
+                let vec_value = json_value
+                    .as_array()
+                    .ok_or_else(|| anyhow::anyhow!("Invalid vector value"))?
+                    .iter()
+                    .map(|v| parse_move_value_from_json(item_layout, v, context))
+                    .collect::<Result<Vec<_>>>()?;
+                let type_tag: TypeTag = (&**item_layout).try_into()?;
+                let ty = context.load_type(&type_tag)?;
+                let value = Vector::pack(&ty, vec_value)?;
+                Ok(value)
+            }
         }
         MoveTypeLayout::Struct(struct_layout) => {
             let struct_value = parse_struct_value_from_json(struct_layout, json_value, context)?;

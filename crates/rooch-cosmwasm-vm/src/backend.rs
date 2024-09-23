@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
+use std::ops::Bound;
+use std::collections::BTreeMap;
 
 use cosmwasm_std::{Binary, ContractResult, Order, Record, SystemResult};
 use cosmwasm_vm::{Backend, BackendApi, BackendError, BackendResult, GasInfo, Querier, Storage};
@@ -283,39 +284,81 @@ pub fn build_move_backend<'a, 'b: 'a>(
     }
 }
 
-pub struct MockStorage {}
+pub struct MockStorage {
+    data: BTreeMap<Vec<u8>, Vec<u8>>,
+    iterators: Vec<Vec<(Vec<u8>, Vec<u8>)>>,
+}
+
+impl MockStorage {
+    pub fn new() -> Self {
+        MockStorage {
+            data: BTreeMap::new(),
+            iterators: Vec::new(),
+        }
+    }
+}
 
 impl Storage for MockStorage {
-    fn get(&self, _key: &[u8]) -> BackendResult<Option<Vec<u8>>> {
-        todo!();
+    fn get(&self, key: &[u8]) -> BackendResult<Option<Vec<u8>>> {
+        let result = Ok(self.data.get(key).cloned());
+        let gas_info = GasInfo::free();
+        (result, gas_info)
     }
 
-    fn set(&mut self, _key: &[u8], _value: &[u8]) -> BackendResult<()> {
-        todo!();
+    fn set(&mut self, key: &[u8], value: &[u8]) -> BackendResult<()> {
+        self.data.insert(key.to_vec(), value.to_vec());
+        let result = Ok(());
+        let gas_info = GasInfo::free();
+        (result, gas_info)
     }
 
-    fn remove(&mut self, _key: &[u8]) -> BackendResult<()> {
-        todo!();
+    fn remove(&mut self, key: &[u8]) -> BackendResult<()> {
+        self.data.remove(key);
+        let result = Ok(());
+        let gas_info = GasInfo::free();
+        (result, gas_info)
     }
 
     fn scan(
         &mut self,
-        _start: Option<&[u8]>,
-        _end: Option<&[u8]>,
-        _order: Order,
+        start: Option<&[u8]>,
+        end: Option<&[u8]>,
+        order: Order,
     ) -> BackendResult<u32> {
-        todo!();
+        let start_bound = start.map_or(Bound::Unbounded, |s| Bound::Included(s.to_vec()));
+        let end_bound = end.map_or(Bound::Unbounded, |e| Bound::Excluded(e.to_vec()));
+    
+        let mut items: Vec<_> = self.data
+            .range::<Vec<u8>, (Bound<Vec<u8>>, Bound<Vec<u8>>)>((start_bound, end_bound))
+            .map(|(k, v)| (k.clone(), v.clone()))
+            .collect();
+
+        if order == Order::Descending {
+            items.reverse();
+        }
+
+        self.iterators.push(items);
+        let result = Ok((self.iterators.len() - 1) as u32);
+        let gas_info = GasInfo::free(); 
+        (result, gas_info)
     }
 
-    fn next(&mut self, _iterator_id: u32) -> BackendResult<Option<Record>> {
-        todo!()
+    fn next(&mut self, iterator_id: u32) -> BackendResult<Option<Record>> {
+        let iterator = match self.iterators.get_mut(iterator_id as usize) {
+            Some(iter) => iter,
+            None => return (Err(BackendError::IteratorDoesNotExist {id: iterator_id}), GasInfo::free()),
+        };
+        
+        let result = Ok(iterator.pop().map(|(k, v)| (k, v)));
+        let gas_info = GasInfo::free(); 
+        (result, gas_info)
     }
 }
 
 pub fn build_mock_backend() -> Backend<MoveBackendApi, MockStorage, MoveBackendQuerier> {
     Backend {
         api: MoveBackendApi,
-        storage: MockStorage {},
+        storage: MockStorage::new(),
         querier: MoveBackendQuerier,
     }
 }

@@ -18,6 +18,7 @@
 -  [Struct `Error`](#0xa_cosmwasm_std_Error)
 -  [Struct `Reply`](#0xa_cosmwasm_std_Reply)
 -  [Struct `ReplyOn`](#0xa_cosmwasm_std_ReplyOn)
+-  [Struct `StdResult`](#0xa_cosmwasm_std_StdResult)
 -  [Constants](#@Constants_0)
 -  [Function `new_response`](#0xa_cosmwasm_std_new_response)
 -  [Function `add_attribute`](#0xa_cosmwasm_std_add_attribute)
@@ -33,6 +34,7 @@
 -  [Function `serialize_message_info`](#0xa_cosmwasm_std_serialize_message_info)
 -  [Function `serialize_message`](#0xa_cosmwasm_std_serialize_message)
 -  [Function `deserialize_response`](#0xa_cosmwasm_std_deserialize_response)
+-  [Function `deserialize_stdresult`](#0xa_cosmwasm_std_deserialize_stdresult)
 -  [Function `deserialize_error`](#0xa_cosmwasm_std_deserialize_error)
 -  [Function `error_code_to_string`](#0xa_cosmwasm_std_error_code_to_string)
 -  [Function `current_env`](#0xa_cosmwasm_std_current_env)
@@ -202,6 +204,18 @@
 
 <pre><code>#[data_struct]
 <b>struct</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std_ReplyOn">ReplyOn</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
+<a name="0xa_cosmwasm_std_StdResult"></a>
+
+## Struct `StdResult`
+
+
+
+<pre><code>#[data_struct]
+<b>struct</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std_StdResult">StdResult</a> <b>has</b> <b>copy</b>, drop
 </code></pre>
 
 
@@ -398,6 +412,17 @@ This error code is returned when a deserialization error occurs.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std_deserialize_response">deserialize_response</a>(raw: <a href="">vector</a>&lt;u8&gt;): <a href="_Result">result::Result</a>&lt;<a href="cosmwasm_std.md#0xa_cosmwasm_std_Response">cosmwasm_std::Response</a>, <a href="cosmwasm_std.md#0xa_cosmwasm_std_Error">cosmwasm_std::Error</a>&gt;
+</code></pre>
+
+
+
+<a name="0xa_cosmwasm_std_deserialize_stdresult"></a>
+
+## Function `deserialize_stdresult`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std_deserialize_stdresult">deserialize_stdresult</a>(raw: <a href="">vector</a>&lt;u8&gt;): <a href="_Result">result::Result</a>&lt;<a href="cosmwasm_std.md#0xa_cosmwasm_std_Response">cosmwasm_std::Response</a>, <a href="cosmwasm_std.md#0xa_cosmwasm_std_Error">cosmwasm_std::Error</a>&gt;
 </code></pre>
 
 

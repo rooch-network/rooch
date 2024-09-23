@@ -12,7 +12,9 @@ module rooch_examples::cosmwasm_vm_execution {
    use rooch_nursery::cosmwasm_vm;
 
    #[data_struct]
-   struct InstantiateMsg has store, copy, drop {}
+   struct InstantiateMsg has store, copy, drop {
+      initial_value: u64
+   }
 
    #[data_struct]
    struct Add has store, copy, drop {
@@ -66,7 +68,9 @@ module rooch_examples::cosmwasm_vm_execution {
       let info = cosmwasm_std::current_message_info();
 
       // 3. call instantiate of the instance
-      let msg = InstantiateMsg{};
+      let msg = InstantiateMsg{
+         initial_value: 1
+      };
       let instantiate_result = cosmwasm_vm::call_instantiate(&mut instance, &env, &info, &msg);
       let instantiate_resp = result::assert_ok(instantiate_result, 3); // Use assert_ok here
       debug::print(&string::utf8(b"instantiate_resp:"));
