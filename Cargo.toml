@@ -220,7 +220,7 @@ strum_macros = "^0.26"
 sha2 = "0.10.2"
 sha3 = "0.10.8"
 smallvec = "1.6.1"
-thiserror = "1.0.63"
+thiserror = "1.0.64"
 tiny-keccak = { version = "2", features = ["keccak", "sha3"] }
 tiny-bip39 = "1.0.0"
 tokio = { version = "1.40.0", features = ["full"] }
@@ -286,7 +286,7 @@ diesel = { version = "2.2.4", features = [
 ] }
 diesel-derive-enum = { version = "2.1.0", features = ["sqlite"] }
 diesel_migrations = { version = "2.2.0" }
-axum = { version = "0.7.5", default-features = false, features = [
+axum = { version = "0.7.6", default-features = false, features = [
     "tokio",
     "http1",
     "http2",
