@@ -424,13 +424,6 @@
           }
         },
         {
-          "name": "state_root",
-          "required": true,
-          "schema": {
-            "$ref": "#/components/schemas/moveos_types::state_root_hash::StateRootHash"
-          }
-        },
-        {
           "name": "state_option",
           "schema": {
             "$ref": "#/components/schemas/StateOptions"
@@ -2834,6 +2827,18 @@
             "description": "If true, result with display rendered is returned",
             "default": false,
             "type": "boolean"
+          },
+          "stateRoot": {
+            "description": "The state root of remote stateDB",
+            "default": null,
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/primitive_types::H256"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         }
       },
@@ -3407,9 +3412,6 @@
         "type": "string"
       },
       "moveos_types::state::FieldKey": {
-        "type": "string"
-      },
-      "moveos_types::state_root_hash::StateRootHash": {
         "type": "string"
       },
       "primitive_types::H256": {
