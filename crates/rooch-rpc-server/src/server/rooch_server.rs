@@ -25,9 +25,8 @@ use rooch_rpc_api::jsonrpc_types::{
     IndexerEventPageView, IndexerObjectStatePageView, IndexerStateIDView, ModuleABIView,
     ObjectIDVecView, ObjectStateFilterView, ObjectStateView, QueryOptions,
     RawTransactionOutputView, RoochAddressView, StateChangeSetPageView,
-    StateChangeSetWithTxOrderView, StateKVView, StateOptions, StatePageView,
-    StrView, StructTagView, SyncStateFilterView, TransactionWithInfoPageView, TxOptions,
-    UnitedAddressView,
+    StateChangeSetWithTxOrderView, StateKVView, StateOptions, StatePageView, StrView,
+    StructTagView, SyncStateFilterView, TransactionWithInfoPageView, TxOptions, UnitedAddressView,
 };
 use rooch_rpc_api::{
     api::rooch_api::RoochAPIServer,
