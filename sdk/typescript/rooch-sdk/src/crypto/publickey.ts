@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { Bytes } from '../types/index.js'
-import { Address } from '../address/index.js'
 import { bytesEqual, toB64 } from '../utils/index.js'
 
 /**
@@ -13,7 +12,7 @@ export type PublicKeyInitData = string | Bytes | Iterable<number>
 /**
  * A public key
  */
-export abstract class PublicKey<T extends Address> {
+export abstract class PublicKey<T> {
   /**
    * Checks if two public keys are equal
    */
