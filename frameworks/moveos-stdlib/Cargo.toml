@@ -27,6 +27,7 @@ rlp = { workspace = true }
 primitive-types = { workspace = true }
 bech32 = { workspace = true }
 bs58 = { workspace = true, features = ["check"] }
+base64 = { workspace = true }
 revm-precompile = { workspace = true }
 revm-primitives = { workspace = true }
 ripemd = { workspace = true }

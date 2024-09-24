@@ -12,7 +12,7 @@ module rooch_nursery::cosmwasm_vm {
     use moveos_std::result::{Result, ok};
 
     use rooch_nursery::cosmwasm_std::{Response, Error, Env, MessageInfo, Reply, StdResult,
-        new_error, new_error_result, serialize_env, serialize_message_info, serialize_message, deserialize_response, deserialize_stdresult};
+        new_error, new_error_result, serialize_env, serialize_message_info, serialize_message, deserialize_stdresult};
 
     struct Instance has key, store {
         code_checksum: vector<u8>,

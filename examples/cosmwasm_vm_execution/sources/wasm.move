@@ -94,7 +94,7 @@ module rooch_examples::cosmwasm_vm_execution {
       };
 
       let query_result = cosmwasm_vm::call_query(&instance, &env, &msg);
-      let query_resp = result::assert_ok(query_result, 4); // Use assert_ok here
+      let query_resp = result::assert_ok(query_result, 5); // Use assert_ok here
       debug::print(&string::utf8(b"query_resp:"));
       debug::print(&query_resp);
 
@@ -104,15 +104,16 @@ module rooch_examples::cosmwasm_vm_execution {
       };
 
       let migrate_result = cosmwasm_vm::call_migrate(&mut instance, &env, &msg);
-      let migrate_resp = result::assert_ok(migrate_result, 4); // Use assert_ok here
+      let migrate_resp = result::assert_ok(migrate_result, 6); // Use assert_ok here
       debug::print(&string::utf8(b"migrate_resp:"));
       debug::print(&migrate_resp);
 
       // 7. call reply of the instance
-      let msg = cosmwasm_std::new_reply(1, b"hello", 10);
+      let resp = cosmwasm_std::new_sub_msg_response();
+      let msg = cosmwasm_std::new_reply(1, cosmwasm_std::new_binary(b"hello"), 10, resp);
 
       let reply_result = cosmwasm_vm::call_reply(&mut instance, &env, &msg);
-      let reply_resp = result::assert_ok(reply_result, 4); // Use assert_ok here
+      let reply_resp = result::assert_ok(reply_result, 7); // Use assert_ok here
       debug::print(&string::utf8(b"reply_resp:"));
       debug::print(&reply_resp);
 
@@ -124,12 +125,12 @@ module rooch_examples::cosmwasm_vm_execution {
       };
 
       let sudo_result = cosmwasm_vm::call_sudo(&mut instance, &env, &msg);
-      let sudo_resp = result::assert_ok(sudo_result, 4); // Use assert_ok here
+      let sudo_resp = result::assert_ok(sudo_result, 8); // Use assert_ok here
       debug::print(&string::utf8(b"sudo_resp:"));
       debug::print(&sudo_resp);
 
       // 8. Destroy the instance
       let destroy_result = cosmwasm_vm::destroy_instance(instance);
-      assert!(option::is_none(&destroy_result), 4);
+      assert!(option::is_none(&destroy_result), 9);
    }
 }

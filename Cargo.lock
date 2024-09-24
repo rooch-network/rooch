@@ -7114,6 +7114,7 @@ name = "moveos-stdlib"
 version = "0.7.2"
 dependencies = [
  "anyhow",
+ "base64 0.22.1",
  "bech32 0.11.0",
  "better_any",
  "bs58 0.5.1",

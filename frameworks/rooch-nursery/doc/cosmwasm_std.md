@@ -16,11 +16,16 @@
 -  [Struct `Response`](#0xa_cosmwasm_std_Response)
 -  [Struct `SubMsg`](#0xa_cosmwasm_std_SubMsg)
 -  [Struct `Error`](#0xa_cosmwasm_std_Error)
+-  [Struct `MsgResponse`](#0xa_cosmwasm_std_MsgResponse)
+-  [Struct `SubMsgResponse`](#0xa_cosmwasm_std_SubMsgResponse)
+-  [Struct `SubMsgResult`](#0xa_cosmwasm_std_SubMsgResult)
 -  [Struct `Reply`](#0xa_cosmwasm_std_Reply)
 -  [Struct `ReplyOn`](#0xa_cosmwasm_std_ReplyOn)
 -  [Struct `StdResult`](#0xa_cosmwasm_std_StdResult)
 -  [Constants](#@Constants_0)
 -  [Function `new_response`](#0xa_cosmwasm_std_new_response)
+-  [Function `new_sub_msg_response`](#0xa_cosmwasm_std_new_sub_msg_response)
+-  [Function `new_sub_msg_error`](#0xa_cosmwasm_std_new_sub_msg_error)
 -  [Function `add_attribute`](#0xa_cosmwasm_std_add_attribute)
 -  [Function `add_event`](#0xa_cosmwasm_std_add_event)
 -  [Function `set_data`](#0xa_cosmwasm_std_set_data)
@@ -33,10 +38,10 @@
 -  [Function `serialize_env`](#0xa_cosmwasm_std_serialize_env)
 -  [Function `serialize_message_info`](#0xa_cosmwasm_std_serialize_message_info)
 -  [Function `serialize_message`](#0xa_cosmwasm_std_serialize_message)
--  [Function `deserialize_response`](#0xa_cosmwasm_std_deserialize_response)
 -  [Function `deserialize_stdresult`](#0xa_cosmwasm_std_deserialize_stdresult)
 -  [Function `deserialize_error`](#0xa_cosmwasm_std_deserialize_error)
 -  [Function `error_code_to_string`](#0xa_cosmwasm_std_error_code_to_string)
+-  [Function `new_binary`](#0xa_cosmwasm_std_new_binary)
 -  [Function `current_env`](#0xa_cosmwasm_std_current_env)
 -  [Function `current_message_info`](#0xa_cosmwasm_std_current_message_info)
 
@@ -44,6 +49,7 @@
 <pre><code><b>use</b> <a href="">0x1::debug</a>;
 <b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::string</a>;
+<b>use</b> <a href="">0x2::base64</a>;
 <b>use</b> <a href="">0x2::json</a>;
 <b>use</b> <a href="">0x2::result</a>;
 <b>use</b> <a href="">0x2::timestamp</a>;
@@ -184,6 +190,42 @@
 
 
 
+<a name="0xa_cosmwasm_std_MsgResponse"></a>
+
+## Struct `MsgResponse`
+
+
+
+<pre><code>#[data_struct]
+<b>struct</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std_MsgResponse">MsgResponse</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
+<a name="0xa_cosmwasm_std_SubMsgResponse"></a>
+
+## Struct `SubMsgResponse`
+
+
+
+<pre><code>#[data_struct]
+<b>struct</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std_SubMsgResponse">SubMsgResponse</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
+<a name="0xa_cosmwasm_std_SubMsgResult"></a>
+
+## Struct `SubMsgResult`
+
+
+
+<pre><code>#[data_struct]
+<b>struct</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std_SubMsgResult">SubMsgResult</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
 <a name="0xa_cosmwasm_std_Reply"></a>
 
 ## Struct `Reply`
@@ -269,6 +311,28 @@ This error code is returned when a deserialization error occurs.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std_new_response">new_response</a>(): <a href="cosmwasm_std.md#0xa_cosmwasm_std_Response">cosmwasm_std::Response</a>
+</code></pre>
+
+
+
+<a name="0xa_cosmwasm_std_new_sub_msg_response"></a>
+
+## Function `new_sub_msg_response`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std_new_sub_msg_response">new_sub_msg_response</a>(): <a href="cosmwasm_std.md#0xa_cosmwasm_std_SubMsgResult">cosmwasm_std::SubMsgResult</a>
+</code></pre>
+
+
+
+<a name="0xa_cosmwasm_std_new_sub_msg_error"></a>
+
+## Function `new_sub_msg_error`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std_new_sub_msg_error">new_sub_msg_error</a>(err: <a href="_String">string::String</a>): <a href="cosmwasm_std.md#0xa_cosmwasm_std_SubMsgResult">cosmwasm_std::SubMsgResult</a>
 </code></pre>
 
 
@@ -367,7 +431,7 @@ This error code is returned when a deserialization error occurs.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std_new_reply">new_reply</a>(id: u64, payload: <a href="">vector</a>&lt;u8&gt;, gas_used: u64): <a href="cosmwasm_std.md#0xa_cosmwasm_std_Reply">cosmwasm_std::Reply</a>
+<pre><code><b>public</b> <b>fun</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std_new_reply">new_reply</a>(id: u64, payload: <a href="_String">string::String</a>, gas_used: u64, <a href="">result</a>: <a href="cosmwasm_std.md#0xa_cosmwasm_std_SubMsgResult">cosmwasm_std::SubMsgResult</a>): <a href="cosmwasm_std.md#0xa_cosmwasm_std_Reply">cosmwasm_std::Reply</a>
 </code></pre>
 
 
@@ -405,17 +469,6 @@ This error code is returned when a deserialization error occurs.
 
 
 
-<a name="0xa_cosmwasm_std_deserialize_response"></a>
-
-## Function `deserialize_response`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std_deserialize_response">deserialize_response</a>(raw: <a href="">vector</a>&lt;u8&gt;): <a href="_Result">result::Result</a>&lt;<a href="cosmwasm_std.md#0xa_cosmwasm_std_Response">cosmwasm_std::Response</a>, <a href="cosmwasm_std.md#0xa_cosmwasm_std_Error">cosmwasm_std::Error</a>&gt;
-</code></pre>
-
-
-
 <a name="0xa_cosmwasm_std_deserialize_stdresult"></a>
 
 ## Function `deserialize_stdresult`
@@ -445,6 +498,17 @@ This error code is returned when a deserialization error occurs.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std_error_code_to_string">error_code_to_string</a>(_code: u64): <a href="_String">string::String</a>
+</code></pre>
+
+
+
+<a name="0xa_cosmwasm_std_new_binary"></a>
+
+## Function `new_binary`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std_new_binary">new_binary</a>(data: <a href="">vector</a>&lt;u8&gt;): <a href="_String">string::String</a>
 </code></pre>
 
 

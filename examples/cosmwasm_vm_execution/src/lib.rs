@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use cosmwasm_std::{
-    entry_point, to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
+    entry_point, to_json_binary, to_json_string, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
     Reply, SubMsgResponse, SubMsgResult,
 };
 use serde::{Deserialize, Serialize};
@@ -230,4 +230,28 @@ mod tests {
         let env: Env = from_json(env_json).unwrap();
         assert_eq!(env.block.height, 12345);
     }
+
+    #[test]
+    fn test_parse_reply_json() {
+        let result = SubMsgResult::Ok(SubMsgResponse {
+            data: None,
+            msg_responses: vec![],
+            events: vec![],
+        });
+
+        let reply_msg = Reply { 
+            id: 1, 
+            payload: Binary::new(vec![1, 2, 3]), 
+            gas_used: 0, 
+            result: result,
+        };
+
+        let reply_json1 = to_json_string(&reply_msg).unwrap();
+        let reply_json = "{\"id\":1,\"payload\":[104,101,108,108,111],\"gas_used\":0,\"result\":{\"ok\":{\"events\":[],\"data\":null,\"msg_responses\":[]}}}";
+        //assert_eq!(reply_json1, reply_json);
+        
+        let reply: Reply = from_json(reply_json).unwrap();
+        assert_eq!(reply.id, 1);
+    }
+
 }

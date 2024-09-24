@@ -7,6 +7,7 @@ module rooch_nursery::cosmwasm_std {
     use std::string::{Self, String};
     use std::option::{Self, Option};
 
+    use moveos_std::base64;
     use moveos_std::json;
     use moveos_std::timestamp;
     use moveos_std::tx_context;
@@ -91,11 +92,29 @@ module rooch_nursery::cosmwasm_std {
     }
 
     #[data_struct]
+    struct MsgResponse has store, copy, drop {
+        type_url: String,
+        value: vector<u8>,
+    }
+
+    #[data_struct]
+    struct SubMsgResponse has store, copy, drop {
+        events: vector<Event>,
+        msg_responses: vector<MsgResponse>,
+    }
+
+    #[data_struct]
+    struct SubMsgResult has store, copy, drop {
+        ok: Option<SubMsgResponse>,
+        err: Option<String>,
+    }
+
+    #[data_struct]
     struct Reply has store, copy, drop {
         id: u64,
-        payload: vector<u8>,
+        payload: String,
         gas_used: u64,
-        //result: SubMsgResult, TOOD support SubMsgResult
+        result: SubMsgResult,
     }
 
     // Enums
@@ -123,6 +142,25 @@ module rooch_nursery::cosmwasm_std {
             attributes: vector::empty(),
             events: vector::empty(),
             data: vector::empty(),
+        }
+    }
+
+    public fun new_sub_msg_response(): SubMsgResult {
+        SubMsgResult{
+            ok: option::some(
+                SubMsgResponse {
+                    events: vector::empty(),
+                    msg_responses: vector::empty(),
+                }
+            ),
+            err: option::none(),
+        }
+    }
+
+    public fun new_sub_msg_error(err: String): SubMsgResult {
+        SubMsgResult{
+            ok: option::none(),
+            err: option::some(err),
         }
     }
 
@@ -163,11 +201,12 @@ module rooch_nursery::cosmwasm_std {
         err(new_error(code, message))
     }
 
-    public fun new_reply(id: u64, payload: vector<u8>, gas_used: u64): Reply {
+    public fun new_reply(id: u64, payload: String, gas_used: u64, result: SubMsgResult): Reply {
         Reply {
             id: id,
             payload: payload,
             gas_used: gas_used,
+            result: result,
         }
     }
 
@@ -198,18 +237,6 @@ module rooch_nursery::cosmwasm_std {
         return msg_str
     }
 
-    public fun deserialize_response(raw: vector<u8>): Result<Response, Error> {
-        debug::print(&string::utf8(b"deserialize_response raw:"));
-        debug::print(&string::utf8(raw));
-
-        let resp_option = json::from_json_option<Response>(raw);
-        if (option::is_none(&resp_option)) {
-            return new_error_result(ErrorDeserialize, string::utf8(b"deserialize_response_error"))
-        };
-
-        ok(option::extract(&mut resp_option))
-    }
-
     public fun deserialize_stdresult(raw: vector<u8>): Result<Response, Error> {
         debug::print(&string::utf8(b"deserialize_response raw:"));
         debug::print(&string::utf8(raw));
@@ -238,6 +265,11 @@ module rooch_nursery::cosmwasm_std {
     public fun error_code_to_string(_code: u64): String {
         // Implementation to convert error code to string
         std::string::utf8(vector::empty()) // Placeholder
+    }
+
+    public fun new_binary(data: vector<u8>): String {
+        let encode_bytes = base64::encode(&data);
+        string::utf8(encode_bytes)
     }
 
     public fun current_env(): Env {
