@@ -8,6 +8,7 @@ members = [
     "moveos/moveos-commons/bcs_ext",
     "moveos/moveos-commons/moveos-common",
     "moveos/moveos-commons/timeout-join-handler",
+    "moveos/moveos-commons/moveos-common",
     "moveos/moveos-compiler",
     "moveos/moveos-config",
     "moveos/moveos-object-runtime",
@@ -18,6 +19,7 @@ members = [
     "moveos/raw-store",
     "moveos/smt",
     "moveos/moveos-eventbus",
+    "moveos/moveos-gas-profiling",
     "crates/data_verify",
     "crates/rooch",
     "crates/rooch-benchmarks",
@@ -103,6 +105,7 @@ moveos-object-runtime = { path = "moveos/moveos-object-runtime" }
 moveos-compiler = { path = "moveos/moveos-compiler" }
 moveos-eventbus = { path = "moveos/moveos-eventbus" }
 accumulator = { path = "moveos/moveos-commons/accumulator" }
+moveos-gas-profiling = { path = "moveos/moveos-gas-profiling" }
 
 # crates for Rooch
 rooch = { path = "crates/rooch" }
@@ -346,6 +349,9 @@ xorf = { version = "0.11.0" }
 vergen-git2 = { version = "1.0.0", features = ["build", "cargo", "rustc"] }
 vergen-pretty = "0.3.5"
 crossbeam-channel = "0.5.13"
+
+inferno = "0.11.14"
+handlebars = "4.2.2"
 
 # Note: the BEGIN and END comments below are required for external tooling. Do not remove.
 # BEGIN MOVE DEPENDENCIES

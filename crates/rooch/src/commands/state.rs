@@ -42,7 +42,7 @@ impl CommandAction<Vec<Option<ObjectStateView>>> for StateCommand {
         } else {
             client
                 .rooch
-                .get_decoded_states(self.access_path)
+                .get_decoded_states(self.access_path, None)
                 .await
                 .map_err(RoochError::from)?
         };

@@ -49,7 +49,7 @@ impl CommandAction<Option<ObjectStateView>> for ResourceCommand {
         } else {
             client
                 .rooch
-                .get_decoded_states(AccessPath::resource(address, resource))
+                .get_decoded_states(AccessPath::resource(address, resource), None)
                 .await?
                 .pop()
                 .flatten()

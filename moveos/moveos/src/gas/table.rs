@@ -1,7 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use super::SwitchableGasMeter;
 use crate::gas::gas_member::{FromOnChainGasSchedule, InitialGasSchedule, ToOnChainGasSchedule};
 use crate::gas::r#abstract::{
     AbstractValueSize, AbstractValueSizePerArg, InternalGasPerAbstractValueUnit,
@@ -16,11 +15,11 @@ use move_core_types::gas_algebra::{
 };
 use move_core_types::language_storage::ModuleId;
 use move_core_types::vm_status::StatusCode;
-use move_vm_types::gas::{GasMeter, SimpleInstruction, UnmeteredGasMeter};
+use move_vm_types::gas::{GasMeter, SimpleInstruction};
 use move_vm_types::views::{TypeView, ValueView};
+use moveos_common::types::{ClassifiedGasMeter, GasStatement, SwitchableGasMeter};
 use moveos_types::moveos_std::gas_schedule::GasSchedule;
 use moveos_types::state_resolver::StateResolver;
-use moveos_types::transaction::GasStatement;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
@@ -712,16 +711,6 @@ impl MoveOSGasMeter {
     }
 }
 
-pub trait ClassifiedGasMeter {
-    fn charge_execution(&mut self, gas_cost: u64) -> PartialVMResult<()>;
-    // fn charge_io_read(&mut self);
-    fn charge_io_write(&mut self, data_size: u64) -> PartialVMResult<()>;
-    //fn charge_event(&mut self, events: &[TransactionEvent]) -> PartialVMResult<()>;
-    //fn charge_change_set(&mut self, change_set: &StateChangeSet) -> PartialVMResult<()>;
-    fn check_constrains(&self, max_gas_amount: u64) -> PartialVMResult<()>;
-    fn gas_statement(&self) -> GasStatement;
-}
-
 impl ClassifiedGasMeter for MoveOSGasMeter {
     fn charge_execution(&mut self, gas_cost: u64) -> PartialVMResult<()> {
         if !self.charge {
@@ -1402,27 +1391,6 @@ pub fn get_gas_schedule_entries<Resolver: StateResolver>(
                 .map(|entry| (entry.key.to_string(), entry.val))
                 .collect::<BTreeMap<_, _>>();
             Ok(Some(entries))
-        }
-    }
-}
-
-impl ClassifiedGasMeter for UnmeteredGasMeter {
-    fn charge_execution(&mut self, _gas_cost: u64) -> PartialVMResult<()> {
-        Ok(())
-    }
-
-    fn charge_io_write(&mut self, _data_size: u64) -> PartialVMResult<()> {
-        Ok(())
-    }
-
-    fn check_constrains(&self, _max_gas_amount: u64) -> PartialVMResult<()> {
-        Ok(())
-    }
-
-    fn gas_statement(&self) -> GasStatement {
-        GasStatement {
-            execution_gas_used: InternalGas::from(0),
-            storage_gas_used: InternalGas::from(0),
         }
     }
 }
