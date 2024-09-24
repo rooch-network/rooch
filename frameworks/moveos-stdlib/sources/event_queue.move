@@ -7,7 +7,7 @@ module moveos_std::event_queue {
     use std::string::String;
     use moveos_std::timestamp;
     use moveos_std::event;
-    use moveos_std::object::{Self, Object, ObjectID};
+    use moveos_std::object::{Self, Object, ObjectID, borrow_object};
 
     const EVENT_EXPIRE_TIME: u64 = 1000 * 60 * 60 * 24 * 31; // 31 days
     const REMOVE_EXPIRED_EVENT_BATCH_SIZE: u64 = 10;
@@ -175,7 +175,38 @@ module moveos_std::event_queue {
         let event_queue_obj = borrow_mut_queue<E>(queue_id);
         internal_remove_expired_events(event_queue_obj);
     }
-    
+
+
+    public fun subscriber_info<E: copy + drop + store>(subscriber_obj: &Object<Subscriber<E>>):(u64, u64, u64) {
+        let subscriber = object::borrow(subscriber_obj);
+        let subscriber_sequence_number = subscriber.sequence_number;
+        // If the subscriber_obj is exsited, the queue must be existed
+        let event_queue_obj = borrow_object<EventQueue<E>>(subscriber.queue_id);
+        let head_sequence_number = object::borrow(event_queue_obj).head_sequence_number;
+        let tail_sequence_number = object::borrow(event_queue_obj).tail_sequence_number;
+        (subscriber_sequence_number, head_sequence_number, tail_sequence_number)
+    }
+
+    public fun exist_new_events<E: copy + drop + store>(subscriber_obj: &Object<Subscriber<E>>): bool {
+        let subscriber = object::borrow(subscriber_obj);
+        let subscriber_sequence_number = subscriber.sequence_number;
+        // If the subscriber_obj is exsited, the queue must be existed
+        let event_queue_obj = borrow_object<EventQueue<E>>(subscriber.queue_id);
+        let head_sequence_number = object::borrow(event_queue_obj).head_sequence_number;
+        let tail_sequence_number = object::borrow(event_queue_obj).tail_sequence_number;
+        if(head_sequence_number == tail_sequence_number){
+            return false
+        };
+        if (subscriber_sequence_number >= head_sequence_number) {
+            return false
+        };
+        subscriber_sequence_number = if (tail_sequence_number > subscriber_sequence_number) {
+            tail_sequence_number
+        } else {
+            subscriber_sequence_number
+        };
+        return object::contains_field(event_queue_obj, subscriber_sequence_number)
+    }
     fun internal_remove_expired_events<E: copy + drop + store>(event_queue_obj: &mut Object<EventQueue<E>>){
         let head_sequence_number = object::borrow(event_queue_obj).head_sequence_number;
         let tail_sequence_number = object::borrow(event_queue_obj).tail_sequence_number;
