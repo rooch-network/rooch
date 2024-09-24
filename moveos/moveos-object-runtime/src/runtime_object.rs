@@ -243,7 +243,7 @@ impl RuntimeObject {
     }
 
     /// Retrieves a field of the object from the state store.
-    pub fn retrieve_field(
+    fn retrieve_field_object_from_db(
         &self,
         layout_loader: &dyn TypeLayoutLoader,
         resolver: &dyn StatelessResolver,
@@ -275,7 +275,7 @@ impl RuntimeObject {
     }
 
     /// List fields of the object from the state store.
-    pub fn list_fields(
+    fn list_field_objects_from_db(
         &self,
         layout_loader: &dyn TypeLayoutLoader,
         resolver: &dyn StatelessResolver,
@@ -592,7 +592,14 @@ impl RuntimeObject {
         rt_type: &Type,
     ) -> PartialVMResult<(Value, Option<Option<NumBytes>>)> {
         let expect_value_type = layout_loader.type_to_type_tag(rt_type)?;
-        let (tv, field_load_gas) = self.retrieve_field(layout_loader, resolver, field_key)?;
+
+        if let Some(cached_field) = self.get_loaded_field(&field_key) {
+            let value = cached_field.borrow_value(Some(&expect_value_type))?;
+            return Ok((value, Some(Some(NumBytes::zero()))));
+        }
+
+        let (tv, field_load_gas) =
+            self.retrieve_field_object_from_db(layout_loader, resolver, field_key)?;
         let value = tv.borrow_value(Some(&expect_value_type))?;
         Ok((value, field_load_gas))
     }
@@ -606,16 +613,28 @@ impl RuntimeObject {
         limit: usize,
         field_type: &Type,
     ) -> PartialVMResult<(ScanFieldList, Option<NumBytes>)> {
-        let fields_with_objects = self.list_fields(layout_loader, resolver, cursor, limit)?;
-
         let expect_value_type = layout_loader.type_to_type_tag(field_type)?;
+        let fields_with_objects =
+            self.list_field_objects_from_db(layout_loader, resolver, cursor, limit)?;
 
         let mut fields = Vec::with_capacity(fields_with_objects.len());
         let mut total_bytes_len = NumBytes::zero();
-        for (key, tv, bytes_len_opt) in fields_with_objects {
-            let value = tv.borrow_value(Some(&expect_value_type))?;
+
+        for (key, db_obj, bytes_len_opt) in fields_with_objects {
+            let (value, bytes_len) = if let Some(cached_field) = self.get_loaded_field(&key) {
+                (
+                    cached_field.borrow_value(Some(&expect_value_type))?,
+                    Some(NumBytes::zero()),
+                )
+            } else {
+                (
+                    db_obj.borrow_value(Some(&expect_value_type))?,
+                    bytes_len_opt.flatten(),
+                )
+            };
+
             fields.push((key, value));
-            if let Some(Some(bytes_len)) = bytes_len_opt {
+            if let Some(bytes_len) = bytes_len {
                 total_bytes_len += bytes_len;
             }
         }

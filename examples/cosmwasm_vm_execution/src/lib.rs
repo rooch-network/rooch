@@ -187,6 +187,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(deprecated)]
     fn test_reply() {
         let mut deps = mock_dependencies();
         let env = mock_env();

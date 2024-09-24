@@ -58,8 +58,6 @@ members = [
     "frameworks/moveos-stdlib",
     "frameworks/rooch-framework",
     "frameworks/rooch-nursery",
-    "examples/bitseed_generator",
-    "examples/cosmwasm_vm_execution",
 ]
 
 default-members = [

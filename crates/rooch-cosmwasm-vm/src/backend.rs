@@ -20,12 +20,15 @@ use moveos_types::state::FieldKey;
 use moveos_types::state::MoveState;
 use moveos_types::state_resolver::StatelessResolver;
 
+type IteratorItem = (FieldKey, Vec<u8>);
+type IteratorState = (Vec<IteratorItem>, usize);
+
 pub struct MoveStorage<'a> {
     object: &'a mut RuntimeObject,
     layout_loader: &'a dyn TypeLayoutLoader,
     resolver: &'a dyn StatelessResolver,
     iterator_id_counter: u32,
-    iterators: HashMap<u32, (Vec<(FieldKey, Vec<u8>)>, usize)>,
+    iterators: HashMap<u32, IteratorState>,
 }
 
 impl<'a> MoveStorage<'a> {
@@ -65,6 +68,12 @@ impl<'a> MoveStorage<'a> {
             None => return Err(BackendError::BadArgument {}),
         };
         Ok(value)
+    }
+}
+
+impl Default for MockStorage {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -221,7 +230,7 @@ impl<'a> Storage for MoveStorage<'a> {
         let (key, value) = &records[*index];
         *index += 1;
 
-        let key_bytes: [u8; 32] = key.0.into();
+        let key_bytes: [u8; 32] = key.0;
 
         (
             Ok(Some((key_bytes.to_vec(), value.clone()))),
@@ -355,7 +364,7 @@ impl Storage for MockStorage {
             }
         };
 
-        let result = Ok(iterator.pop().map(|(k, v)| (k, v)));
+        let result = Ok(iterator.pop());
         let gas_info = GasInfo::free();
         (result, gas_info)
     }

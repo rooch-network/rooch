@@ -195,9 +195,7 @@ fn wasm_instance_fn_dispatch(
 
 // Helper function: convert PartialVMError to abort code
 fn error_to_abort_code(err: PartialVMError) -> u64 {
-    match err.major_status() {
-        _ => err.major_status().into(),
-    }
+    err.major_status().into()
 }
 
 #[derive(Debug, Clone)]
@@ -223,7 +221,7 @@ fn native_destroy_instance(
     ty_args: Vec<Type>,
     arguments: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
-    assert!(ty_args.len() == 0, "Wrong number of type arguments");
+    assert!(ty_args.is_empty(), "Wrong number of type arguments");
     assert!(arguments.len() == 1, "Wrong number of arguments");
 
     Ok(NativeResult::ok(
@@ -294,8 +292,8 @@ where
             .common
             .calculate_load_cost(Some(Some(NumBytes::new(code_checksum.len() as u64))));
 
-    let checksum = Checksum::try_from(code_checksum.as_slice()).map_err(|e| vm_error(e))?;
-    let (module, store) = WASM_CACHE.get_module(&checksum).map_err(|e| vm_error(e))?;
+    let checksum = Checksum::try_from(code_checksum.as_slice()).map_err(vm_error)?;
+    let (module, store) = WASM_CACHE.get_module(&checksum).map_err(vm_error)?;
 
     let backend = build_mock_backend();
     let instance_options = InstanceOptions {
