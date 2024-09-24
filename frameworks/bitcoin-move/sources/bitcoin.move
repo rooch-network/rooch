@@ -37,6 +37,8 @@ module bitcoin_move::bitcoin{
     /// https://github.com/bitcoin/bips/blob/master/bip-0034.mediawiki
     const BIP_34_HEIGHT:u64 = 227835;
 
+    const ORDINALS_PAUSE_HEIGHT:u64 = 861150;
+
     struct UTXONotExistsEvent has copy, drop{
         outpoint: OutPoint,
     }
@@ -162,16 +164,19 @@ module bitcoin_move::bitcoin{
 
             idx = idx + 1;
         };
-
-        let seal_outs = bitcoin_move::inscription_updater::process_tx(pending_block, tx, &mut input_utxos);
-        let seal_outs_len = vector::length(&seal_outs);
-        if (seal_outs_len > 0) {
-            let seal_out_idx = 0;
-            while (seal_out_idx < seal_outs_len) {
-                let seal_out = vector::pop_back(&mut seal_outs);
-                let (output_index, utxo_seal) = utxo::unpack_seal_out(seal_out);
-                simple_multimap::add(&mut output_seals, output_index, utxo_seal);
-                seal_out_idx = seal_out_idx + 1;
+        //temporary pause the ordinals process for the performance reason
+        let skip_ordinals = block_height >= ORDINALS_PAUSE_HEIGHT && network::is_mainnet() && rooch_framework::chain_id::is_main();
+        if(!skip_ordinals){
+            let seal_outs = bitcoin_move::inscription_updater::process_tx(pending_block, tx, &mut input_utxos);
+            let seal_outs_len = vector::length(&seal_outs);
+            if (seal_outs_len > 0) {
+                let seal_out_idx = 0;
+                while (seal_out_idx < seal_outs_len) {
+                    let seal_out = vector::pop_back(&mut seal_outs);
+                    let (output_index, utxo_seal) = utxo::unpack_seal_out(seal_out);
+                    simple_multimap::add(&mut output_seals, output_index, utxo_seal);
+                    seal_out_idx = seal_out_idx + 1;
+                };
             };
         };
     

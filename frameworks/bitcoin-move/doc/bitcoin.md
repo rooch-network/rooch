@@ -139,6 +139,15 @@ The reorg is too deep, we need to stop the system and fix the issue
 
 
 
+<a name="0x4_bitcoin_ORDINAL_PAUSE_HEIGHT"></a>
+
+
+
+<pre><code><b>const</b> <a href="bitcoin.md#0x4_bitcoin_ORDINAL_PAUSE_HEIGHT">ORDINAL_PAUSE_HEIGHT</a>: u64 = 861150;
+</code></pre>
+
+
+
 <a name="0x4_bitcoin_genesis_init"></a>
 
 ## Function `genesis_init`
