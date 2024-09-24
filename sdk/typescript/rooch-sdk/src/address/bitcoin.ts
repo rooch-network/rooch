@@ -4,15 +4,16 @@
 import { bech32, bech32m } from '@scure/base'
 
 import { bcs } from '../bcs/index.js'
-import { Bytes } from '../types/index.js'
+import { Bytes, EmptyBytes } from '../types/index.js'
 import { blake2b, bytes, isHex, validateWitness } from '../utils/index.js'
 
-import { Address, ROOCH_ADDRESS_LENGTH } from './address.js'
+import { ROOCH_ADDRESS_LENGTH } from './address.js'
 import { RoochAddress } from './rooch.js'
 import { MultiChainID } from './types.js'
 import { ThirdPartyAddress } from './thirdparty-address.js'
 import { Buffer } from 'buffer'
 import bs58check from 'bs58check'
+import { schnorr, secp256k1 } from '@noble/curves/secp256k1'
 
 export enum BitcoinNetowkType {
   Bitcoin,
@@ -69,7 +70,7 @@ export class BitcoinNetwork {
   }
 }
 
-export class BitcoinAddress extends ThirdPartyAddress implements Address {
+export class BitcoinAddress extends ThirdPartyAddress {
   private readonly bytes: Bytes
   private roochAddress: RoochAddress | undefined
 
@@ -108,6 +109,32 @@ export class BitcoinAddress extends ThirdPartyAddress implements Address {
       let info = this.decode()
       this.bytes = this.wrapAddress(info.type, info.bytes, info.version)
     }
+  }
+
+  static fromPublicKey(publicKey: Bytes, network: BitcoinNetowkType = BitcoinNetowkType.Regtest) {
+    const tapTweak = (a: Bytes, b: Bytes) => {
+      const u = schnorr.utils
+      const t = u.taggedHash('TapTweak', a, b)
+      const tn = u.bytesToNumberBE(t)
+      if (tn >= secp256k1.CURVE.n) throw new Error('tweak higher than curve order')
+      return tn
+    }
+
+    // Each hex char represents half a byte, hence hex address doubles the length
+    const u = schnorr.utils
+    const t = tapTweak(publicKey, EmptyBytes) // t = int_from_bytes(tagged_hash("TapTweak", pubkey + h))
+    const P = u.lift_x(u.bytesToNumberBE(publicKey)) // P = lift_x(int_from_bytes(pubkey))
+    const Q = P.add(secp256k1.ProjectivePoint.fromPrivateKey(t)) // Q = point_add(P, point_mul(G, t))
+    const tweakedPubkey = u.pointToBytes(Q)
+
+    // p2tr version with 1
+    return new BitcoinAddress(
+      bech32m.encode(
+        new BitcoinNetwork(network).bech32HRP(),
+        [1].concat(bech32m.toWords(tweakedPubkey)),
+        false,
+      ),
+    )
   }
 
   private getPubkeyAddressPrefix(network: BitcoinNetowkType = BitcoinNetowkType.Bitcoin): number {

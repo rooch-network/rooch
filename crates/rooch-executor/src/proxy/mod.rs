@@ -116,9 +116,16 @@ impl ExecutorProxy {
             .await?
     }
 
-    pub async fn get_states(&self, access_path: AccessPath) -> Result<Vec<Option<ObjectState>>> {
+    pub async fn get_states(
+        &self,
+        access_path: AccessPath,
+        state_root: Option<H256>,
+    ) -> Result<Vec<Option<ObjectState>>> {
         self.reader_actor
-            .send(StatesMessage { access_path })
+            .send(StatesMessage {
+                state_root,
+                access_path,
+            })
             .await?
     }
 
@@ -133,12 +140,14 @@ impl ExecutorProxy {
 
     pub async fn list_states(
         &self,
+        state_root: Option<H256>,
         access_path: AccessPath,
         cursor: Option<FieldKey>,
         limit: usize,
     ) -> Result<Vec<StateKV>> {
         self.reader_actor
             .send(ListStatesMessage {
+                state_root,
                 access_path,
                 cursor,
                 limit,
@@ -261,7 +270,7 @@ impl ExecutorProxy {
     }
 
     pub async fn chain_id(&self) -> Result<ChainID> {
-        self.get_states(AccessPath::object(ChainID::chain_id_object_id()))
+        self.get_states(AccessPath::object(ChainID::chain_id_object_id()), None)
             .await?
             .into_iter()
             .next()
@@ -271,7 +280,7 @@ impl ExecutorProxy {
     }
 
     pub async fn bitcoin_network(&self) -> Result<BitcoinNetwork> {
-        self.get_states(AccessPath::object(BitcoinNetwork::object_id()))
+        self.get_states(AccessPath::object(BitcoinNetwork::object_id()), None)
             .await?
             .into_iter()
             .next()
@@ -283,7 +292,10 @@ impl ExecutorProxy {
     //TODO provide a trait to abstract the async state reader, elemiate the duplicated code bwteen RpcService and Client
     pub async fn get_sequence_number(&self, address: AccountAddress) -> Result<u64> {
         Ok(self
-            .get_states(AccessPath::object(Account::account_object_id(address)))
+            .get_states(
+                AccessPath::object(Account::account_object_id(address)),
+                None,
+            )
             .await?
             .pop()
             .flatten()

@@ -22,8 +22,8 @@ describe('Bitcoin Assets API', () => {
   it('query utxo should be success', async () => {
     const addr = testBox.keypair
       .getSchnorrPublicKey()
-      .buildAddress(1, BitcoinNetowkType.Regtest)
-      .toStr()
+      .toAddress().bitcoinAddress.toStr()
+
     const result = await testBox.bitcoinContainer?.executeRpcCommandRaw([], 'generatetoaddress', [
       '50',
       addr,

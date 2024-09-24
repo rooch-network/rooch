@@ -10,7 +10,6 @@ use crate::{
     },
     state::StateChangeSet,
 };
-use move_core_types::gas_algebra::InternalGas;
 use move_core_types::{
     account_address::AccountAddress,
     language_storage::{ModuleId, TypeTag},
@@ -386,12 +385,6 @@ impl<'de> Deserialize<'de> for MoveOSTransaction {
             MoveOSTransactionVisitor,
         )
     }
-}
-
-#[derive(Debug, Clone)]
-pub struct GasStatement {
-    pub execution_gas_used: InternalGas,
-    pub storage_gas_used: InternalGas,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

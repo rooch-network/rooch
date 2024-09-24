@@ -146,7 +146,12 @@ impl Handler<StatesMessage> for ReaderExecutorActor {
         msg: StatesMessage,
         _ctx: &mut ActorContext,
     ) -> Result<Vec<Option<ObjectState>>, anyhow::Error> {
-        let resolver = RootObjectResolver::new(self.root.clone(), &self.moveos_store);
+        let resolver = if let Some(state_root) = msg.state_root {
+            let root_object_meta = ObjectMeta::root_metadata(state_root, 0);
+            RootObjectResolver::new(root_object_meta, &self.moveos_store)
+        } else {
+            RootObjectResolver::new(self.root.clone(), &self.moveos_store)
+        };
         resolver.get_states(msg.access_path)
     }
 }
@@ -170,7 +175,12 @@ impl Handler<ListStatesMessage> for ReaderExecutorActor {
         msg: ListStatesMessage,
         _ctx: &mut ActorContext,
     ) -> Result<Vec<StateKV>, anyhow::Error> {
-        let resolver = RootObjectResolver::new(self.root.clone(), &self.moveos_store);
+        let resolver = if let Some(state_root) = msg.state_root {
+            let root_object_meta = ObjectMeta::root_metadata(state_root, 0);
+            RootObjectResolver::new(root_object_meta, &self.moveos_store)
+        } else {
+            RootObjectResolver::new(self.root.clone(), &self.moveos_store)
+        };
         resolver.list_states(msg.access_path, msg.cursor, msg.limit)
     }
 }

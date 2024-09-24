@@ -86,6 +86,7 @@ moveos-compiler = { workspace = true }
 moveos-config = { workspace = true }
 accumulator = { workspace = true }
 metrics = { workspace = true }
+moveos-gas-profiling = { workspace = true }
 
 framework-builder = { workspace = true }
 framework-types = { workspace = true }

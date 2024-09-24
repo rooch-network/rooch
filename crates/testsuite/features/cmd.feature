@@ -3,15 +3,15 @@ Feature: Rooch CLI integration tests
     @serial
     Scenario: rooch rpc test
       Given a server for rooch_rpc_test
-      Then cmd: "rpc request --method rooch_getStates --params '["/resource/0x3/0x3::account_coin_store::AutoAcceptCoins",{"decode":true}]' --json"
+      Then cmd: "rpc request --method rooch_getStates --params '["/resource/0x3/0x3::account_coin_store::AutoAcceptCoins", {"decode":true}]' --json"
       #The object_type contians blank space, so, we should quote it
       Then assert: "'{{$.rpc[-1][0].object_type}}' == '0x2::object::DynamicField<0x1::string::String, 0x3::account_coin_store::AutoAcceptCoins>'"
-      Then cmd: "rpc request --method rooch_getStates --params '["/object/0x3",{"decode":true}]' --json"
+      Then cmd: "rpc request --method rooch_getStates --params '["/object/0x3", {"decode":true}]' --json"
       Then assert: "{{$.rpc[-1][0].object_type}} == '0x2::account::Account'"
       Then cmd: "rpc request --method rooch_listStates --params '["/resource/0x3", null, null, {"decode":true}]' --json"
       Then assert: "'{{$.rpc[-1]}}' contains '0x3::account_coin_store::AutoAcceptCoins'"
             # named_object_id(0x2::timestamp::Timestamp) == 0x3a7dfe7a9a5cd608810b5ebd60c7adf7316667b17ad5ae703af301b74310bcca
-      Then cmd: "rpc request --method rooch_getStates --params '["/object/0x3a7dfe7a9a5cd608810b5ebd60c7adf7316667b17ad5ae703af301b74310bcca",{"decode":true}]' --json"
+      Then cmd: "rpc request --method rooch_getStates --params '["/object/0x3a7dfe7a9a5cd608810b5ebd60c7adf7316667b17ad5ae703af301b74310bcca", {"decode":true}]' --json"
       Then assert: "{{$.rpc[-1][0].object_type}} == '0x2::timestamp::Timestamp'"
       Then assert: "{{$.rpc[-1][0].decoded_value.value.milliseconds}} == 0"
       Then cmd: "rpc request --method rooch_getStates --params '["/object/0x2::timestamp::Timestamp",{"decode":true}]' --json"
@@ -58,7 +58,7 @@ Feature: Rooch CLI integration tests
       Then cmd: "move run --function rooch_framework::gas_coin::faucet_entry --args u256:10000000000 --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
-      Then cmd: "rpc request --method rooch_getStates --params '["/object/0x3a7dfe7a9a5cd608810b5ebd60c7adf7316667b17ad5ae703af301b74310bcca",{"decode":true}]' --json"
+      Then cmd: "rpc request --method rooch_getStates --params '["/object/0x3a7dfe7a9a5cd608810b5ebd60c7adf7316667b17ad5ae703af301b74310bcca", {"decode":true}]' --json"
       Then assert: "{{$.rpc[-1][0].object_type}} == '0x2::timestamp::Timestamp'"
       # ensure the tx_timestamp update the global timestamp
       Then assert: "{{$.rpc[-1][0].decoded_value.value.milliseconds}} != 0"

@@ -294,4 +294,15 @@ module moveos_std::simple_multimap {
 
         destroy_empty(map);
     }
+
+    #[test]
+    public fun test_empty(){
+        let map = new<u64, u64>();
+        assert!(is_empty(&map), 0);
+        assert!(length(&map) == 0, 1);
+        assert!(!contains_key(&map, &3), 2);
+        assert!(borrow_first_with_default(&map, &3, &0) == &0, 3);
+        assert!(keys(&map) == vector[], 4);
+        assert!(values(&map) == vector[], 5);
+    }
 }

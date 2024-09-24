@@ -57,32 +57,6 @@ describe('Checkpoints Reading API', () => {
     expect(result.length).eq(0)
   })
 
-  // it('Resolve rooch address should be success', async () => {
-  //   const caces = ['tb1q3245npm404htfzvulx6v4w65maqzu6atpxyzja']
-  //
-  //   const account = Secp256k1Keypair.generate()
-  //
-  //   const result = await testBox.getClient().executeViewFunction({
-  //     target: '0x3::address_mapping::resolve_or_generate',
-  //     args: [Args.struct(account.getBitcoinAddress().genMultiChainAddress())],
-  //   })
-  //
-  //   const expectAddr = account.getRoochAddress().toHexAddress()
-  //   expect(result.return_values![0].decoded_value).eq(expectAddr)
-  //
-  //   for (let item of caces) {
-  //     const address = new BitcoinAddress(item)
-  //
-  //     const result = await testBox.getClient().executeViewFunction({
-  //       target: '0x3::address_mapping::resolve_or_generate',
-  //       args: [Args.struct(address.genMultiChainAddress())],
-  //     })
-  //
-  //     const expectAddr = address.genRoochAddress().toHexAddress()
-  //     expect(result.return_values![0].decoded_value).eq(expectAddr)
-  //   }
-  // })
-
   it('resolve btc address should be ok', async () => {
     const tx = new Transaction()
     tx.callFunction({
@@ -98,7 +72,7 @@ describe('Checkpoints Reading API', () => {
 
     const result1 = await testBox.getClient().resolveBTCAddress({
       roochAddress: testBox.keypair.getRoochAddress(),
-      network: BitcoinNetowkType.Testnet,
+      network: BitcoinNetowkType.Regtest,
     })
 
     expect(result1?.toStr()).eq(testBox.keypair.getBitcoinAddress().toStr())

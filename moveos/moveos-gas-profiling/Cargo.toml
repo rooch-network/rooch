@@ -1,0 +1,26 @@
+[package]
+name = "moveos-gas-profiling"
+
+# Workspace inherited keys
+version = { workspace = true }
+authors = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+publish = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+
+[dependencies]
+inferno = { workspace = true }
+move-core-types = { workspace = true }
+move-vm-types = { workspace = true }
+move-binary-format = { workspace = true }
+anyhow = { workspace = true }
+regex = { workspace = true }
+serde_json = { workspace = true }
+smallvec = { workspace = true }
+handlebars = { workspace = true }
+
+moveos-types = { workspace = true }
+moveos-common = { workspace = true }
