@@ -132,6 +132,7 @@ export class BitcoinAddress extends ThirdPartyAddress {
       bech32m.encode(
         new BitcoinNetwork(network).bech32HRP(),
         [1].concat(bech32m.toWords(tweakedPubkey)),
+        false,
       ),
     )
   }
