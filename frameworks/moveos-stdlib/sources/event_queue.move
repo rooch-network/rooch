@@ -187,7 +187,7 @@ module moveos_std::event_queue {
         (subscriber_sequence_number, head_sequence_number, tail_sequence_number)
     }
 
-    public fun exist_new_events<E: copy + drop + store>(subscriber_obj: &Object<Subscriber<E>>): bool {
+    public fun exists_new_events<E: copy + drop + store>(subscriber_obj: &Object<Subscriber<E>>): bool {
         let subscriber = object::borrow(subscriber_obj);
         let subscriber_sequence_number = subscriber.sequence_number;
         // If the subscriber_obj is exsited, the queue must be existed

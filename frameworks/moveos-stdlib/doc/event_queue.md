@@ -15,6 +15,8 @@
 -  [Function `subscribe`](#0x2_event_queue_subscribe)
 -  [Function `unsubscribe`](#0x2_event_queue_unsubscribe)
 -  [Function `remove_expired_events`](#0x2_event_queue_remove_expired_events)
+-  [Function `subscriber_info`](#0x2_event_queue_subscriber_info)
+-  [Function `exists_new_events`](#0x2_event_queue_exists_new_events)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
@@ -200,4 +202,26 @@ Anyone can call this function to remove the expired events
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="event_queue.md#0x2_event_queue_remove_expired_events">remove_expired_events</a>&lt;E: <b>copy</b>, drop, store&gt;(queue_name: <a href="_String">string::String</a>)
+</code></pre>
+
+
+
+<a name="0x2_event_queue_subscriber_info"></a>
+
+## Function `subscriber_info`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="event_queue.md#0x2_event_queue_subscriber_info">subscriber_info</a>&lt;E: <b>copy</b>, drop, store&gt;(subscriber_obj: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="event_queue.md#0x2_event_queue_Subscriber">event_queue::Subscriber</a>&lt;E&gt;&gt;): (u64, u64, u64)
+</code></pre>
+
+
+
+<a name="0x2_event_queue_exists_new_events"></a>
+
+## Function `exists_new_events`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="event_queue.md#0x2_event_queue_exists_new_events">exists_new_events</a>&lt;E: <b>copy</b>, drop, store&gt;(subscriber_obj: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="event_queue.md#0x2_event_queue_Subscriber">event_queue::Subscriber</a>&lt;E&gt;&gt;): bool
 </code></pre>

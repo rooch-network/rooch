@@ -34,6 +34,7 @@
 <b>use</b> <a href="">0x2::timestamp</a>;
 <b>use</b> <a href="">0x3::address_mapping</a>;
 <b>use</b> <a href="">0x3::bitcoin_address</a>;
+<b>use</b> <a href="">0x3::chain_id</a>;
 <b>use</b> <a href="inscription_updater.md#0x4_inscription_updater">0x4::inscription_updater</a>;
 <b>use</b> <a href="network.md#0x4_network">0x4::network</a>;
 <b>use</b> <a href="pending_block.md#0x4_pending_block">0x4::pending_block</a>;
@@ -139,11 +140,11 @@ The reorg is too deep, we need to stop the system and fix the issue
 
 
 
-<a name="0x4_bitcoin_ORDINAL_PAUSE_HEIGHT"></a>
+<a name="0x4_bitcoin_ORDINALS_PAUSE_HEIGHT"></a>
 
 
 
-<pre><code><b>const</b> <a href="bitcoin.md#0x4_bitcoin_ORDINAL_PAUSE_HEIGHT">ORDINAL_PAUSE_HEIGHT</a>: u64 = 861150;
+<pre><code><b>const</b> <a href="bitcoin.md#0x4_bitcoin_ORDINALS_PAUSE_HEIGHT">ORDINALS_PAUSE_HEIGHT</a>: u64 = 861150;
 </code></pre>
 
 
