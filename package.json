@@ -13,6 +13,7 @@
     "bitseed-sdk": "pnpm --filter ./sdk/typescript/bitseed-sdk/",
     "rooch-state": "pnpm --filter ./sdk/typescript/rooch-state/",
     "rooch-game": "pnpm --filter ./sdk/typescript/rooch-game/",
+    "examples-web": "pnpm --filter ./examples-web/",
     "changeset-version": "pnpm changeset version && pnpm sdk codegen:version",
     "prettier:check": "prettier -c --ignore-unknown .",
     "prettier:fix": "prettier -w --ignore-unknown .",
