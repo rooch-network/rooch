@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::data_cache::{into_change_set, MoveosDataCache};
-use crate::gas::table::ClassifiedGasMeter;
-use crate::gas::SwitchableGasMeter;
 use move_binary_format::compatibility::Compatibility;
 use move_binary_format::file_format::CompiledScript;
 use move_binary_format::normalized;
@@ -31,6 +29,7 @@ use move_vm_runtime::{
 };
 use move_vm_types::gas::UnmeteredGasMeter;
 use move_vm_types::loaded_data::runtime_types::{CachedStructIndex, StructType, Type};
+use moveos_common::types::{ClassifiedGasMeter, SwitchableGasMeter};
 use moveos_object_runtime::runtime::{ObjectRuntime, ObjectRuntimeContext};
 use moveos_stdlib::natives::moveos_stdlib::{
     event::NativeEventContext, move_module::NativeModuleContext,
@@ -125,6 +124,10 @@ impl MoveOSVM {
 
     pub fn mark_loader_cache_as_invalid(&self) {
         self.inner.mark_loader_cache_as_invalid()
+    }
+
+    pub fn inner(&self) -> &MoveVM {
+        &self.inner
     }
 }
 
@@ -300,7 +303,7 @@ where
     /// The caller should ensure call verify_move_action before execute.
     /// Once we start executing transactions, we must ensure that the transaction execution has a result, regardless of success or failure,
     /// and we need to save the result and deduct gas
-    pub(crate) fn execute_move_action(&mut self, action: VerifiedMoveAction) -> VMResult<()> {
+    pub fn execute_move_action(&mut self, action: VerifiedMoveAction) -> VMResult<()> {
         let action_result = match action {
             VerifiedMoveAction::Script { call } => {
                 let loaded_function = self
@@ -671,7 +674,7 @@ where
         ))
     }
 
-    pub(crate) fn execute_function_call(
+    pub fn execute_function_call(
         &mut self,
         functions: Vec<FunctionCall>,
         meter_gas: bool,

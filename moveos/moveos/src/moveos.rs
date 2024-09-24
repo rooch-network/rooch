@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::gas::table::{
-    get_gas_schedule_entries, initial_cost_schedule, ClassifiedGasMeter, CostTable, MoveOSGasMeter,
+    get_gas_schedule_entries, initial_cost_schedule, CostTable, MoveOSGasMeter,
 };
 use crate::vm::data_cache::MoveosDataCache;
 use crate::vm::moveos_vm::{MoveOSSession, MoveOSVM};
@@ -23,6 +23,7 @@ use move_core_types::{
 use move_vm_runtime::config::VMConfig;
 use move_vm_runtime::data_cache::TransactionCache;
 use move_vm_runtime::native_functions::NativeFunction;
+use moveos_common::types::ClassifiedGasMeter;
 use moveos_store::config_store::ConfigDBStore;
 use moveos_store::event_store::EventDBStore;
 use moveos_store::state_store::statedb::StateDBStore;

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_types::{CommandAction, FunctionArg, TransactionOptions, WalletContextOptions};
+use crate::tx_runner::execute_tx_locally_with_gas_profile;
 use anyhow::Result;
 use async_trait::async_trait;
 use clap::Parser;
@@ -58,6 +59,10 @@ pub struct RunFunction {
     /// Return command outputs in json format
     #[clap(long, default_value = "false")]
     json: bool,
+
+    /// Run the gas profiler and output html report
+    #[clap(long, default_value = "false")]
+    gas_profile: bool,
 }
 
 #[async_trait]
@@ -160,9 +165,33 @@ impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
                         ));
                     }
 
-                    context
-                        .sign_and_execute(sender, action, Some(password), max_gas_amount)
-                        .await?
+                    let tx_execution_result = context
+                        .sign_and_execute(
+                            sender,
+                            action.clone(),
+                            Some(password.clone()),
+                            max_gas_amount,
+                        )
+                        .await?;
+
+                    if self.gas_profile {
+                        let state_root = tx_execution_result
+                            .execution_info
+                            .state_root
+                            .0
+                            .as_bytes()
+                            .to_vec();
+                        let tx = context
+                            .sign(sender, action, Some(password), max_gas_amount)
+                            .await?;
+                        execute_tx_locally_with_gas_profile(
+                            state_root,
+                            context.get_client().await?,
+                            tx.data,
+                        );
+                    }
+
+                    tx_execution_result
                 }
             }
         };

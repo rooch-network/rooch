@@ -202,6 +202,8 @@ impl RoochAPIServer for RoochServer {
         let show_display =
             state_option.show_display && (access_path.0.is_object() || access_path.0.is_resource());
 
+        let state_root = state_option.state_root.map(|h256_view| h256_view.0);
+
         let state_views = if state_option.decode || show_display {
             let states = self
                 .rpc_service
@@ -212,7 +214,7 @@ impl RoochAPIServer for RoochServer {
                 let valid_states = states.iter().filter_map(|s| s.as_ref()).collect::<Vec<_>>();
                 let mut valid_display_field_views = self
                     .rpc_service
-                    .get_display_fields_and_render(valid_states.as_slice())
+                    .get_display_fields_and_render(valid_states.as_slice(), state_root)
                     .await?;
                 valid_display_field_views.reverse();
                 states
@@ -236,7 +238,7 @@ impl RoochAPIServer for RoochServer {
             }
         } else {
             self.rpc_service
-                .get_states(access_path.into())
+                .get_states(access_path.into(), state_root)
                 .await?
                 .into_iter()
                 .map(|s| s.map(ObjectStateView::from))
@@ -255,6 +257,8 @@ impl RoochAPIServer for RoochServer {
         let state_option = state_option.unwrap_or_default();
         let show_display =
             state_option.show_display && (access_path.0.is_object() || access_path.0.is_resource());
+
+        let state_root = state_option.state_root.map(|h256_view| h256_view.0);
 
         let limit_of = min(
             limit.map(Into::into).unwrap_or(DEFAULT_RESULT_LIMIT_USIZE),
@@ -275,7 +279,7 @@ impl RoochAPIServer for RoochServer {
             if show_display {
                 let display_field_views = self
                     .rpc_service
-                    .get_display_fields_and_render(state_refs.as_slice())
+                    .get_display_fields_and_render(state_refs.as_slice(), state_root)
                     .await?;
                 key_states
                     .into_iter()
@@ -297,7 +301,7 @@ impl RoochAPIServer for RoochServer {
             }
         } else {
             self.rpc_service
-                .list_states(access_path.into(), cursor_of, limit_of + 1)
+                .list_states(state_root, access_path.into(), cursor_of, limit_of + 1)
                 .await?
                 .into_iter()
                 .map(|(key, state)| StateKVView::new(key.into(), state.into()))
@@ -335,7 +339,7 @@ impl RoochAPIServer for RoochServer {
             let mut valid_display_field_views = if show_display {
                 let valid_states = states.iter().filter_map(|s| s.as_ref()).collect::<Vec<_>>();
                 self.rpc_service
-                    .get_display_fields_and_render(valid_states.as_slice())
+                    .get_display_fields_and_render(valid_states.as_slice(), None)
                     .await?
             } else {
                 vec![]
@@ -368,7 +372,7 @@ impl RoochAPIServer for RoochServer {
             }
         } else {
             self.rpc_service
-                .get_states(access_path)
+                .get_states(access_path, None)
                 .await?
                 .into_iter()
                 .map(|s| s.map(Into::into))
@@ -621,7 +625,7 @@ impl RoochAPIServer for RoochServer {
         let access_path = AccessPath::module(&module_id);
         let module = self
             .rpc_service
-            .get_states(access_path)
+            .get_states(access_path, None)
             .await?
             .pop()
             .flatten();

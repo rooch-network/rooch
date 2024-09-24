@@ -45,7 +45,7 @@ impl AggregateService {
                 .collect(),
         );
         self.rpc_service
-            .get_states(access_path)
+            .get_states(access_path, None)
             .await?
             .into_iter()
             .zip(coin_types)
@@ -72,7 +72,7 @@ impl AggregateService {
     ) -> Result<Vec<Option<CoinStoreInfo>>> {
         let access_path = AccessPath::objects(coin_store_ids);
         self.rpc_service
-            .get_states(access_path)
+            .get_states(access_path, None)
             .await?
             .into_iter()
             .map(|state_opt| state_opt.map(CoinStoreInfo::try_from).transpose())
