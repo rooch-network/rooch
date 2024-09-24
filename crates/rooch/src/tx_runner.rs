@@ -28,7 +28,7 @@ use std::str::FromStr;
 
 pub fn execute_tx_locally(state_root_bytes: Vec<u8>, client: Client, tx: RoochTransactionData) {
     let state_root = H256::from_slice(state_root_bytes.as_slice());
-    let root_object_meta = ObjectMeta::root_metadata(state_root, 55);
+    let root_object_meta = ObjectMeta::root_metadata(state_root, 0);
     let client_resolver = ClientResolver::new(client, root_object_meta.clone());
 
     let (move_mv, object_runtime, client_resolver, action, cost_table) =
@@ -67,7 +67,7 @@ pub fn execute_tx_locally_with_gas_profile(
     tx: RoochTransactionData,
 ) {
     let state_root = H256::from_slice(state_root_bytes.as_slice());
-    let root_object_meta = ObjectMeta::root_metadata(state_root, 55);
+    let root_object_meta = ObjectMeta::root_metadata(state_root, 0);
     let client_resolver = ClientResolver::new(client, root_object_meta.clone());
 
     let (move_mv, object_runtime, client_resolver, action, cost_table) =
