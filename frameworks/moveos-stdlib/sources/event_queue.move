@@ -182,12 +182,13 @@ module moveos_std::event_queue {
         let subscriber_sequence_number = subscriber.sequence_number;
         // If the subscriber_obj is exsited, the queue must be existed
         let event_queue_obj = borrow_object<EventQueue<E>>(subscriber.queue_id);
-        let head_sequence_number = object::borrow(event_queue_obj).head_sequence_number;
-        let tail_sequence_number = object::borrow(event_queue_obj).tail_sequence_number;
+        let event_queue = object::borrow(event_queue_obj);
+        let head_sequence_number = event_queue.head_sequence_number;
+        let tail_sequence_number = event_queue.tail_sequence_number;
         (subscriber_sequence_number, head_sequence_number, tail_sequence_number)
     }
 
-    public fun exist_new_events<E: copy + drop + store>(subscriber_obj: &Object<Subscriber<E>>): bool {
+    public fun exists_new_events<E: copy + drop + store>(subscriber_obj: &Object<Subscriber<E>>): bool {
         let subscriber = object::borrow(subscriber_obj);
         let subscriber_sequence_number = subscriber.sequence_number;
         // If the subscriber_obj is exsited, the queue must be existed
@@ -207,6 +208,7 @@ module moveos_std::event_queue {
         };
         return object::contains_field(event_queue_obj, subscriber_sequence_number)
     }
+    
     fun internal_remove_expired_events<E: copy + drop + store>(event_queue_obj: &mut Object<EventQueue<E>>){
         let head_sequence_number = object::borrow(event_queue_obj).head_sequence_number;
         let tail_sequence_number = object::borrow(event_queue_obj).tail_sequence_number;
