@@ -15,3 +15,6 @@ std = "0x1"
 moveos_std = "0x2"
 rooch_framework = "0x3"
 bitcoin_move =  "0x4"
+
+[dev-addresses]
+gas_market = "0x42"

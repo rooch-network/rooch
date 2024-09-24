@@ -69,11 +69,10 @@ module gas_market::gas_market {
         to_shared(rgas_market_obj)
     }
 
-    public entry fun add_rgas_coin(
+    public entry fun deposit_rgas_coin(
         account: &signer, rgas_market_obj: &mut Object<RGasMarket>, amount: u256
     ) {
         let rgas_market = object::borrow_mut(rgas_market_obj);
-        assert!(rgas_market.is_open, ErrorMarketNotOpen);
         let rgas_coin = account_coin_store::withdraw<RGas>(account, amount);
         coin_store::deposit(&mut rgas_market.rgas_store, rgas_coin);
 
@@ -86,8 +85,6 @@ module gas_market::gas_market {
         amount: u256
     ) {
         let rgas_market = object::borrow_mut(rgas_market_obj);
-        assert!(rgas_market.is_open, ErrorMarketNotOpen);
-
         let rgas_coin = coin_store::withdraw<RGas>(&mut rgas_market.rgas_store, amount);
         account_coin_store::deposit(sender(), rgas_coin);
         rgas_market.market_info.total_withdraw = rgas_market.market_info.total_withdraw
@@ -145,7 +142,6 @@ module gas_market::gas_market {
         amount: u256
     ) {
         let rgas_market = object::borrow_mut(rgas_market_obj);
-        assert!(rgas_market.is_open, ErrorMarketNotOpen);
         let rgas_coin = coin_store::withdraw<RGas>(&mut rgas_market.rgas_store, amount);
         account_coin_store::deposit(sender_addr, rgas_coin);
         assert!(
@@ -178,6 +174,14 @@ module gas_market::gas_market {
     ) {
         let rgas_market = object::borrow_mut(rgas_market_obj);
         table::remove(&mut rgas_market.market_info.uncheck_info, txid);
+    }
+
+    public entry fun close_market(
+        _admin: &mut Object<AdminCap>,
+        rgas_market_obj: &mut Object<RGasMarket>
+    ) {
+        let rgas_market = object::borrow_mut(rgas_market_obj);
+        rgas_market.is_open = false;
     }
 
     public fun btc_to_rgas(sats_amount: u64): u256 {
