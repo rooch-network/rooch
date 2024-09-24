@@ -49,8 +49,8 @@ module rooch_examples::cosmwasm_vm_execution {
       update_value: UpdateValue
    }
 
-   entry public fun run_cosmwasm_bitseed_generator(_account: &signer, wasm_bytes: vector<u8>) {
-      debug::print(&string::utf8(b"run_cosmwasm_bitseed_generator start"));
+   entry public fun run_cosmwasm_example(_account: &signer, wasm_bytes: vector<u8>) {
+      debug::print(&string::utf8(b"run_cosmwasm_example start"));
 
       // 1. create wasm VM instance (required step)
       let instance_result = cosmwasm_vm::from_code(wasm_bytes);

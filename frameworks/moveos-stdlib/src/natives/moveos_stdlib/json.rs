@@ -125,7 +125,9 @@ fn parse_struct_value_from_json(
                     let json_field = match json_value.get(name) {
                         Some(value) => value,
                         None => {
-                            if let MoveTypeLayout::Struct(_) | MoveTypeLayout::Vector(_) = field.layout {
+                            if let MoveTypeLayout::Struct(_) | MoveTypeLayout::Vector(_) =
+                                field.layout
+                            {
                                 &JsonValue::Null
                             } else {
                                 return Err(anyhow::anyhow!(
@@ -598,7 +600,7 @@ fn serialize_move_fields_to_json(
 
     for (field_layout, (name, value)) in layout_fields.iter().zip(value_fields) {
         let json_value = serialize_move_value_to_json(&field_layout.layout, value)?;
-        
+
         if !json_value.is_null() {
             fields.insert(name.clone().into_string(), json_value);
         }

@@ -1,9 +1,9 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::ops::Bound;
-use std::collections::BTreeMap;
 
 use cosmwasm_std::{Binary, ContractResult, Order, Record, SystemResult};
 use cosmwasm_vm::{Backend, BackendApi, BackendError, BackendResult, GasInfo, Querier, Storage};
@@ -327,8 +327,9 @@ impl Storage for MockStorage {
     ) -> BackendResult<u32> {
         let start_bound = start.map_or(Bound::Unbounded, |s| Bound::Included(s.to_vec()));
         let end_bound = end.map_or(Bound::Unbounded, |e| Bound::Excluded(e.to_vec()));
-    
-        let mut items: Vec<_> = self.data
+
+        let mut items: Vec<_> = self
+            .data
             .range::<Vec<u8>, (Bound<Vec<u8>>, Bound<Vec<u8>>)>((start_bound, end_bound))
             .map(|(k, v)| (k.clone(), v.clone()))
             .collect();
@@ -339,18 +340,23 @@ impl Storage for MockStorage {
 
         self.iterators.push(items);
         let result = Ok((self.iterators.len() - 1) as u32);
-        let gas_info = GasInfo::free(); 
+        let gas_info = GasInfo::free();
         (result, gas_info)
     }
 
     fn next(&mut self, iterator_id: u32) -> BackendResult<Option<Record>> {
         let iterator = match self.iterators.get_mut(iterator_id as usize) {
             Some(iter) => iter,
-            None => return (Err(BackendError::IteratorDoesNotExist {id: iterator_id}), GasInfo::free()),
+            None => {
+                return (
+                    Err(BackendError::IteratorDoesNotExist { id: iterator_id }),
+                    GasInfo::free(),
+                )
+            }
         };
-        
+
         let result = Ok(iterator.pop().map(|(k, v)| (k, v)));
-        let gas_info = GasInfo::free(); 
+        let gas_info = GasInfo::free();
         (result, gas_info)
     }
 }

@@ -34,7 +34,7 @@ use moveos_types::{moveos_std::object::ObjectID, state_resolver::StatelessResolv
 
 use moveos_stdlib::natives::helpers::{make_module_natives, make_native};
 
-use crate::natives::helper::{pop_object_id, CommonGasParameters};
+use crate::natives::helper::{pop_object_id, CommonGasParametersOption};
 
 const DEFAULT_GAS_LIMIT: u64 = 10000000;
 
@@ -50,16 +50,16 @@ static WASM_CACHE: Lazy<Arc<Cache<MoveBackendApi, MockStorage, MoveBackendQuerie
     });
 
 #[derive(Debug, Clone)]
-pub struct CosmWasmCreateInstanceGasParameters {
-    pub base: InternalGas,
-    pub per_byte_wasm: InternalGasPerByte,
+pub struct CosmWasmCreateInstanceGasParametersOption {
+    pub base: Option<InternalGas>,
+    pub per_byte_wasm: Option<InternalGasPerByte>,
 }
 
-impl CosmWasmCreateInstanceGasParameters {
+impl CosmWasmCreateInstanceGasParametersOption {
     pub fn zeros() -> Self {
         Self {
-            base: 0.into(),
-            per_byte_wasm: InternalGasPerByte::zero(),
+            base: Some(0.into()),
+            per_byte_wasm: Some(InternalGasPerByte::zero()),
         }
     }
 }
@@ -92,8 +92,12 @@ pub fn native_create_instance(
 
     wasm_instance_fn_dispatch(
         &common_gas_parameter,
-        create_instance_gas_parameter.base,
-        create_instance_gas_parameter.per_byte_wasm,
+        create_instance_gas_parameter
+            .base
+            .unwrap_or_else(InternalGas::zero),
+        create_instance_gas_parameter
+            .per_byte_wasm
+            .unwrap_or_else(InternalGasPerByte::zero),
         context,
         store_obj_id,
         wasm_code,
@@ -149,7 +153,7 @@ pub fn native_create_instance(
 }
 
 fn wasm_instance_fn_dispatch(
-    common_gas_params: &CommonGasParameters,
+    common_gas_params: &CommonGasParametersOption,
     base: InternalGas,
     per_byte_wasm: InternalGasPerByte,
     context: &mut NativeContext,
@@ -197,13 +201,15 @@ fn error_to_abort_code(err: PartialVMError) -> u64 {
 }
 
 #[derive(Debug, Clone)]
-pub struct CosmWasmDestroyInstanceGasParameters {
-    pub base: InternalGas,
+pub struct CosmWasmDestroyInstanceGasParametersOption {
+    pub base: Option<InternalGas>,
 }
 
-impl CosmWasmDestroyInstanceGasParameters {
+impl CosmWasmDestroyInstanceGasParametersOption {
     pub fn zeros() -> Self {
-        Self { base: 0.into() }
+        Self {
+            base: Some(0.into()),
+        }
     }
 }
 
@@ -221,7 +227,10 @@ fn native_destroy_instance(
     assert!(arguments.len() == 1, "Wrong number of arguments");
 
     Ok(NativeResult::ok(
-        gas_params.common.load_base,
+        gas_params
+            .common
+            .load_base
+            .unwrap_or_else(InternalGas::zero),
         smallvec![Value::u32(0)],
     ))
 }
@@ -276,7 +285,10 @@ where
     let _resolver = object_runtime.resolver();
     let (_rt_obj, object_load_gas) = object_runtime.load_object(context, &store_obj_id)?;
 
-    let gas_cost = gas_params.common.load_base
+    let gas_cost = gas_params
+        .common
+        .load_base
+        .unwrap_or_else(InternalGas::zero)
         + gas_params.common.calculate_load_cost(object_load_gas)
         + gas_params
             .common
@@ -494,56 +506,65 @@ fn native_call_sudo_raw(
 
 #[derive(Debug, Clone)]
 pub struct GasParameters {
-    pub common: CommonGasParameters,
-    pub native_create_instance: CosmWasmCreateInstanceGasParameters,
-    pub native_destroy_instance: CosmWasmDestroyInstanceGasParameters,
+    pub common: CommonGasParametersOption,
+    pub native_create_instance: CosmWasmCreateInstanceGasParametersOption,
+    pub native_destroy_instance: CosmWasmDestroyInstanceGasParametersOption,
 }
 
 impl GasParameters {
     pub fn zeros() -> Self {
         Self {
-            common: CommonGasParameters::zeros(),
-            native_create_instance: CosmWasmCreateInstanceGasParameters::zeros(),
-            native_destroy_instance: CosmWasmDestroyInstanceGasParameters::zeros(),
+            common: CommonGasParametersOption::zeros(),
+            native_create_instance: CosmWasmCreateInstanceGasParametersOption::zeros(),
+            native_destroy_instance: CosmWasmDestroyInstanceGasParametersOption::zeros(),
         }
     }
 }
 
 pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, NativeFunction)> {
-    let natives = [
-        (
+    let mut natives = Vec::new();
+
+    if gas_params.common.load_base.is_some() || gas_params.common.load_per_byte.is_some() {
+        natives.push((
             "native_create_instance",
             make_native(gas_params.clone(), native_create_instance),
-        ),
-        (
+        ));
+
+        natives.push((
             "native_destroy_instance",
             make_native(gas_params.clone(), native_destroy_instance),
-        ),
-        (
+        ));
+
+        natives.push((
             "native_call_instantiate_raw",
             make_native(gas_params.clone(), native_call_instantiate_raw),
-        ),
-        (
+        ));
+
+        natives.push((
             "native_call_execute_raw",
             make_native(gas_params.clone(), native_call_execute_raw),
-        ),
-        (
+        ));
+
+        natives.push((
             "native_call_query_raw",
             make_native(gas_params.clone(), native_call_query_raw),
-        ),
-        (
+        ));
+
+        natives.push((
             "native_call_migrate_raw",
             make_native(gas_params.clone(), native_call_migrate_raw),
-        ),
-        (
+        ));
+
+        natives.push((
             "native_call_reply_raw",
             make_native(gas_params.clone(), native_call_reply_raw),
-        ),
-        (
+        ));
+
+        natives.push((
             "native_call_sudo_raw",
             make_native(gas_params.clone(), native_call_sudo_raw),
-        ),
-    ];
+        ));
+    }
 
     make_module_natives(natives)
 }

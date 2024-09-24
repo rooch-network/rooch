@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use cosmwasm_std::{
-    entry_point, to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
-    Reply, SubMsgResponse, SubMsgResult,
+    entry_point, to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response,
+    StdResult, SubMsgResponse, SubMsgResult,
 };
 use serde::{Deserialize, Serialize};
 
@@ -89,20 +89,26 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
 #[entry_point]
 pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> StdResult<Response> {
     deps.storage.set(b"value", &msg.new_value.to_be_bytes());
-    Ok(Response::new().add_attribute("action", "migrate").add_attribute("new_value", msg.new_value.to_string()))
+    Ok(Response::new()
+        .add_attribute("action", "migrate")
+        .add_attribute("new_value", msg.new_value.to_string()))
 }
 
 #[entry_point]
 pub fn reply(_deps: DepsMut, _env: Env, msg: Reply) -> StdResult<Response> {
-    Ok(Response::new().add_attribute("action", "reply").add_attribute("id", msg.id.to_string()))
+    Ok(Response::new()
+        .add_attribute("action", "reply")
+        .add_attribute("id", msg.id.to_string()))
 }
 
 #[entry_point]
 pub fn sudo(deps: DepsMut, _env: Env, msg: SudoMsg) -> StdResult<Response> {
     match msg {
-        SudoMsg::UpdateValue{ value } => {
+        SudoMsg::UpdateValue { value } => {
             deps.storage.set(b"value", &value.to_be_bytes());
-            Ok(Response::new().add_attribute("action", "sudo_update_value").add_attribute("new_value", value.to_string()))
+            Ok(Response::new()
+                .add_attribute("action", "sudo_update_value")
+                .add_attribute("new_value", value.to_string()))
         }
     }
 }
@@ -111,7 +117,7 @@ pub fn sudo(deps: DepsMut, _env: Env, msg: SudoMsg) -> StdResult<Response> {
 mod tests {
     use super::*;
     use cosmwasm_std::from_json;
-    use cosmwasm_std::testing::{mock_dependencies, mock_env, message_info};
+    use cosmwasm_std::testing::{message_info, mock_dependencies, mock_env};
 
     #[test]
     fn test_instantiate() {
@@ -191,11 +197,11 @@ mod tests {
             events: vec![],
         });
 
-        let reply_msg = Reply { 
-            id: 1, 
-            payload: Binary::new(vec![1, 2, 3]), 
-            gas_used: 0, 
-            result: result,
+        let reply_msg = Reply {
+            id: 1,
+            payload: Binary::new(vec![1, 2, 3]),
+            gas_used: 0,
+            result,
         };
         let res = reply(deps.as_mut(), env, reply_msg).unwrap();
 
@@ -237,5 +243,4 @@ mod tests {
         let reply: Reply = from_json(reply_json).unwrap();
         assert_eq!(reply.id, 1);
     }
-
 }

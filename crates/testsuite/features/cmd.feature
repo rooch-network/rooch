@@ -445,8 +445,8 @@ Feature: Rooch CLI integration tests
       Then cmd: "move publish -p ../../examples/cosmwasm_vm_execution  --named-addresses rooch_examples=default --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
-      # run wasm rust generator
-      Then cmd: "move run --function default::cosmwasm_vm_execution::run_cosmwasm_bitseed_generator --sender default --args 'file:./data/cosmwasm_vm_execution_opt.wasm' --json"
+      # run cosmwasm execute example
+      Then cmd: "move run --function default::cosmwasm_vm_execution::run_cosmwasm_example --sender default --args 'file:./data/cosmwasm_vm_execution_opt.wasm' --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       # release servers
