@@ -32,6 +32,9 @@ use moveos_types::{
 };
 use std::collections::{btree_map::Entry, BTreeMap};
 
+type ScanFieldList = Vec<(FieldKey, Value)>;
+type FieldList = Vec<(FieldKey, RuntimeObject, Option<Option<NumBytes>>)>;
+
 /// A structure representing a single runtime object.
 pub struct RuntimeObject {
     pub(crate) rt_meta: RuntimeObjectMeta,
@@ -278,7 +281,7 @@ impl RuntimeObject {
         resolver: &dyn StatelessResolver,
         cursor: Option<FieldKey>,
         limit: usize,
-    ) -> PartialVMResult<Vec<(FieldKey, RuntimeObject, Option<Option<NumBytes>>)>> {
+    ) -> PartialVMResult<FieldList> {
         let state_root = self.state_root()?;
         let state_kvs = resolver
             .list_fields_at(state_root, cursor, limit)
@@ -602,7 +605,7 @@ impl RuntimeObject {
         cursor: Option<FieldKey>,
         limit: usize,
         field_type: &Type,
-    ) -> PartialVMResult<(Vec<(FieldKey, Value)>, Option<NumBytes>)> {
+    ) -> PartialVMResult<(ScanFieldList, Option<NumBytes>)> {
         let fields_with_objects = self.list_fields(layout_loader, resolver, cursor, limit)?;
 
         let expect_value_type = layout_loader.type_to_type_tag(field_type)?;
