@@ -1,6 +1,9 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 import { useEffect } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { renderHook, waitFor } from '@testing-library/react'
+import { renderHook, waitFor, act } from '@testing-library/react'
 import {
   ErrorValidateSessionIsExpired,
   JsonRpcError,
@@ -25,7 +28,7 @@ describe('useDefaultClient', () => {
 
   // issue-2481
   it('should remove expired session from storage when receives expired error', async () => {
-    const { mockWallet } = registerMockWallet()
+    const { mockWallet, unregister } = registerMockWallet()
 
     const mockClient = new RoochClient({ url: 'http://localhost:6767' })
     mockClient.signAndExecuteTransaction = vi.fn().mockResolvedValue({
@@ -89,10 +92,13 @@ describe('useDefaultClient', () => {
       return cachedCurrentSession!.getAuthKey() === s.getAuthKey()
     }
 
-    await expect(result.current.triggerSessionExpiredError).rejects.toThrow(
-      '[test] session expired',
-    )
+    await act(async () => {
+      expect(result.current.triggerSessionExpiredError).rejects.toThrow('[test] session expired')
+    })
+
     expect(result.current.sessions).toHaveLength(1)
     expect(result.current.sessions.find(getMatchedSessionByAuthKey)).toBeUndefined()
+
+    act(() => unregister())
   })
 })

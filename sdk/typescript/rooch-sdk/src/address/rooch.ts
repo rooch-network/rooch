@@ -17,7 +17,7 @@ export class RoochAddress implements Address {
       if (isHex(address)) {
         this.address = fromHEX(address)
       } else {
-        this.address = bech32m.fromWords(bech32m.decode(address as `${string}1${string}`).words)
+        this.address = bech32m.decodeToBytes(address).bytes
       }
     } else {
       this.address = address
