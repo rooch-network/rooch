@@ -23,6 +23,8 @@ pub mod cli_types;
 pub mod commands;
 pub mod utils;
 
+pub mod tx_runner;
+
 #[derive(clap::Parser)]
 #[clap(author, long_version = LONG_VERSION.as_str(), about, long_about = None,
 styles = Styles::styled()

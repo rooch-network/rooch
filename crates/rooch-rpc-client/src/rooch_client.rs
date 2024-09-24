@@ -92,19 +92,27 @@ impl RoochRpcClient {
     pub async fn get_states(
         &self,
         access_path: AccessPath,
-    ) -> Result<Vec<Option<ObjectStateView>>> {
-        Ok(self.http.get_states(access_path.into(), None).await?)
-    }
-
-    pub async fn get_decoded_states(
-        &self,
-        access_path: AccessPath,
+        state_root: Option<H256>,
     ) -> Result<Vec<Option<ObjectStateView>>> {
         Ok(self
             .http
             .get_states(
                 access_path.into(),
-                Some(StateOptions::default().decode(true)),
+                Some(StateOptions::new().state_root(state_root)),
+            )
+            .await?)
+    }
+
+    pub async fn get_decoded_states(
+        &self,
+        access_path: AccessPath,
+        state_root: Option<H256>,
+    ) -> Result<Vec<Option<ObjectStateView>>> {
+        Ok(self
+            .http
+            .get_states(
+                access_path.into(),
+                Some(StateOptions::default().decode(true).state_root(state_root)),
             )
             .await?)
     }
@@ -168,9 +176,10 @@ impl RoochRpcClient {
 
     pub async fn get_sequence_number(&self, sender: RoochAddress) -> Result<u64> {
         Ok(self
-            .get_states(AccessPath::object(Account::account_object_id(
-                sender.into(),
-            )))
+            .get_states(
+                AccessPath::object(Account::account_object_id(sender.into())),
+                None,
+            )
             .await?
             .pop()
             .flatten()
@@ -375,7 +384,7 @@ impl RoochRpcClient {
         account: RoochAddress,
     ) -> Result<Option<T>> {
         let access_path = AccessPath::resource(account.into(), T::struct_tag());
-        let mut states = self.get_states(access_path).await?;
+        let mut states = self.get_states(access_path, None).await?;
         let state = states.pop().flatten();
         if let Some(state) = state {
             let state = ObjectState::from(state);

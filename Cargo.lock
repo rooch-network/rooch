@@ -3427,6 +3427,15 @@ dependencies = [
 
 [[package]]
 name = "env_logger"
+version = "0.10.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4cd405aab171cb85d6735e5c8d9db038c17d3ca007a4d2c25f337935c3d90580"
+dependencies = [
+ "log",
+]
+
+[[package]]
+name = "env_logger"
 version = "0.11.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e13fa619b91fb2381732789fc5de83b45675e882f66623b7d8cb4f643017018d"
@@ -4641,6 +4650,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "handlebars"
+version = "4.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "faa67bab9ff362228eb3d00bd024a4965d8231bbb7921167f0cfa66c6626b225"
+dependencies = [
+ "log",
+ "pest",
+ "pest_derive",
+ "serde 1.0.210",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
 name = "hashbrown"
 version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5194,6 +5217,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "321f0f839cd44a4686e9504b0a62b4d69a50b62072144c71c68f5873c167b8d9"
 dependencies = [
  "ahash 0.8.11",
+ "clap 4.5.17",
+ "crossbeam-channel",
+ "crossbeam-utils",
+ "dashmap 5.5.3",
+ "env_logger 0.10.2",
  "indexmap 2.2.6",
  "is-terminal",
  "itoa",
@@ -6934,7 +6962,9 @@ dependencies = [
  "move-transactional-test-runner",
  "move-vm-runtime",
  "move-vm-types",
+ "moveos-common",
  "moveos-eventbus",
+ "moveos-gas-profiling",
  "moveos-object-runtime",
  "moveos-stdlib",
  "moveos-store",
@@ -6959,6 +6989,9 @@ dependencies = [
  "itertools 0.13.0",
  "libc",
  "log",
+ "move-binary-format",
+ "move-core-types",
+ "move-vm-types",
  "serde 1.0.210",
 ]
 
@@ -6992,6 +7025,23 @@ dependencies = [
  "once_cell",
  "thiserror",
  "tokio",
+]
+
+[[package]]
+name = "moveos-gas-profiling"
+version = "0.7.2"
+dependencies = [
+ "anyhow",
+ "handlebars",
+ "inferno",
+ "move-binary-format",
+ "move-core-types",
+ "move-vm-types",
+ "moveos-common",
+ "moveos-types",
+ "regex",
+ "serde_json",
+ "smallvec",
 ]
 
 [[package]]
@@ -9377,6 +9427,7 @@ dependencies = [
  "moveos-common",
  "moveos-compiler",
  "moveos-config",
+ "moveos-gas-profiling",
  "moveos-object-runtime",
  "moveos-stdlib",
  "moveos-store",
@@ -9558,6 +9609,7 @@ dependencies = [
  "async-trait",
  "coerce",
  "function_name",
+ "hex",
  "log",
  "metrics",
  "move-core-types",
@@ -11897,7 +11949,7 @@ dependencies = [
  "backtrace",
  "clap 4.5.17",
  "cucumber",
- "env_logger",
+ "env_logger 0.11.5",
  "futures",
  "hex",
  "hmac",

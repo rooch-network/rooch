@@ -5,9 +5,12 @@ use crate::cli_types::{CommandAction, TransactionOptions, WalletContextOptions};
 use async_trait::async_trait;
 use clap::Parser;
 use move_cli::Move;
+use move_core_types::account_address::AccountAddress;
 use move_core_types::effects::Op;
+use move_core_types::resolver::ModuleResolver;
 use move_core_types::{identifier::Identifier, language_storage::ModuleId};
 use moveos_compiler::dependency_order::sort_by_dependency_order;
+use moveos_types::access_path::AccessPath;
 use moveos_types::move_std::string::MoveString;
 use moveos_types::moveos_std::module_store::{ModuleStore, PackageData};
 use moveos_types::moveos_std::move_module::MoveModule;
@@ -22,11 +25,93 @@ use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_rpc_api::jsonrpc_types::{
     ExecuteTransactionResponseView, HumanReadableDisplay, KeptVMStatusView,
 };
+use rooch_rpc_client::Client;
 use rooch_types::error::{RoochError, RoochResult};
 use rooch_types::transaction::rooch::RoochTransaction;
 use rpassword::prompt_password;
 use std::collections::BTreeMap;
 use std::io::stderr;
+use tokio::runtime::Handle;
+
+struct MemoryModuleResolver {
+    packages: BTreeMap<AccountAddress, BTreeMap<String, Vec<u8>>>,
+    client: Client,
+}
+
+impl MemoryModuleResolver {
+    fn new(client: Client) -> Self {
+        Self {
+            packages: BTreeMap::new(),
+            client,
+        }
+    }
+
+    fn download(&mut self, module_ids: Vec<ModuleId>) -> Result<(), anyhow::Error> {
+        // group module_ids by ModuleId.address
+        let mut package_group = BTreeMap::new();
+        module_ids.into_iter().for_each(|mid| {
+            package_group
+                .entry(*mid.address())
+                .or_insert_with(Vec::new)
+                .push(Identifier::from(mid.name()))
+        });
+
+        // download each package
+        for (package_address, module_names) in package_group {
+            let access_path = AccessPath::modules(package_address, module_names);
+            let mut modules = BTreeMap::new();
+            tokio::task::block_in_place(|| {
+                Handle::current().block_on(async {
+                    let states = self.client.rooch.get_states(access_path, None).await?;
+
+                    states.into_iter().try_for_each(|state_view| {
+                        if let Some(sv) = state_view {
+                            let state = ObjectState::from(sv);
+                            let module = match state.value_as_df::<MoveString, MoveModule>() {
+                                Ok(module) => module,
+                                Err(e) => return Err(e),
+                            };
+                            modules.insert(
+                                module.name.clone().as_str().to_owned(),
+                                module.value.byte_codes,
+                            );
+                        };
+                        Ok(())
+                    })
+                })
+            })?;
+            if !modules.is_empty() {
+                self.packages.insert(package_address, modules);
+            };
+        }
+
+        Ok(())
+    }
+}
+
+impl ModuleResolver for MemoryModuleResolver {
+    fn get_module(&self, module_id: &ModuleId) -> Result<Option<Vec<u8>>, anyhow::Error> {
+        let pkg_addr = module_id.address();
+        let module_name = module_id.name();
+        match self.packages.get(pkg_addr) {
+            Some(modules) => {
+                let module = modules.get(module_name.as_str());
+                match module {
+                    Some(module) => Ok(Some(module.clone())),
+                    None => Ok(None),
+                }
+            }
+            None => Ok(None),
+        }
+    }
+
+    fn get_module_metadata(
+        &self,
+        _module_id: &ModuleId,
+    ) -> Vec<move_core_types::metadata::Metadata> {
+        unimplemented!("get_module_metadata not implemented")
+    }
+}
 
 #[derive(Parser)]
 pub struct Publish {
@@ -100,11 +185,20 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
         // Initialize bundles vector and sort modules by dependency order
         let mut bundles: Vec<Vec<u8>> = vec![];
         let sorted_modules = sort_by_dependency_order(modules.iter_modules())?;
+
+        // Download all modules from remote
+        let all_module_ids = package
+            .all_modules_map()
+            .get_map()
+            .iter()
+            .map(|(mid, _)| mid.clone())
+            .collect::<Vec<_>>();
+
         //Because the verify modules function will load many modules from the rpc server,
-        //We need to find a more efficient way to verify the modules.
-        //let resolver = context.get_client().await?;
-        // Serialize and collect module binaries into bundles
-        //verifier::verify_modules(&sorted_modules, &resolver)?;
+        //We need to download all modules in one rpc request and then verify the modules.
+        let mut resolver = MemoryModuleResolver::new(context.get_client().await?);
+        resolver.download(all_module_ids)?;
+        moveos_verifier::verifier::verify_modules(&sorted_modules, &resolver)?;
         for module in sorted_modules {
             let module_address = module.self_id().address().to_owned();
             if module_address != pkg_address {

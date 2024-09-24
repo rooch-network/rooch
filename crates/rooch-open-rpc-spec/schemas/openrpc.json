@@ -2827,6 +2827,18 @@
             "description": "If true, result with display rendered is returned",
             "default": false,
             "type": "boolean"
+          },
+          "stateRoot": {
+            "description": "The state root of remote stateDB",
+            "default": null,
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/primitive_types::H256"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         }
       },

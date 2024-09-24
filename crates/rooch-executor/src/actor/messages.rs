@@ -99,6 +99,7 @@ impl Message for ExecuteViewFunctionMessage {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct StatesMessage {
+    pub state_root: Option<H256>,
     pub access_path: AccessPath,
 }
 
@@ -126,6 +127,7 @@ impl Message for AnnotatedStatesMessage {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ListStatesMessage {
+    pub state_root: Option<H256>,
     pub access_path: AccessPath,
     pub cursor: Option<FieldKey>,
     pub limit: usize,
