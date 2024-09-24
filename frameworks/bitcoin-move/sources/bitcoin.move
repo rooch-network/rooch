@@ -37,7 +37,7 @@ module bitcoin_move::bitcoin{
     /// https://github.com/bitcoin/bips/blob/master/bip-0034.mediawiki
     const BIP_34_HEIGHT:u64 = 227835;
 
-    const ORDINALS_PAUSE_HEIGHT:u64 = 861150;
+    const ORDINALS_PAUSE_HEIGHT:u64 = 859001;
 
     struct UTXONotExistsEvent has copy, drop{
         outpoint: OutPoint,
