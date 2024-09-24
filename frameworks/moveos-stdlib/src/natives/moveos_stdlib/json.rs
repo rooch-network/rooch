@@ -598,7 +598,10 @@ fn serialize_move_fields_to_json(
 
     for (field_layout, (name, value)) in layout_fields.iter().zip(value_fields) {
         let json_value = serialize_move_value_to_json(&field_layout.layout, value)?;
-        fields.insert(name.clone().into_string(), json_value);
+        
+        if !json_value.is_null() {
+            fields.insert(name.clone().into_string(), json_value);
+        }
     }
 
     Ok(JsonValue::Object(fields))

@@ -117,7 +117,7 @@ module rooch_examples::cosmwasm_vm_execution {
       debug::print(&string::utf8(b"reply_resp:"));
       debug::print(&reply_resp);
 
-      // 7. call sudo of the instance
+      // 8. call sudo of the instance
       let msg = SudoMsg{
          update_value: UpdateValue {
             value: 2
@@ -129,7 +129,7 @@ module rooch_examples::cosmwasm_vm_execution {
       debug::print(&string::utf8(b"sudo_resp:"));
       debug::print(&sudo_resp);
 
-      // 8. Destroy the instance
+      // 9. Destroy the instance
       let destroy_result = cosmwasm_vm::destroy_instance(instance);
       assert!(option::is_none(&destroy_result), 9);
    }

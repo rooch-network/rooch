@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module rooch_nursery::cosmwasm_std {
-    use std::debug;
     use std::vector;
     use std::string::{Self, String};
     use std::option::{Self, Option};
@@ -12,6 +11,8 @@ module rooch_nursery::cosmwasm_std {
     use moveos_std::timestamp;
     use moveos_std::tx_context;
     use moveos_std::result::{Result, err, ok};
+
+    use rooch_framework::chain_id;
 
     // Error codes
 
@@ -135,7 +136,6 @@ module rooch_nursery::cosmwasm_std {
     const REPLY_ALWAYS: u8 = 3;
 
     // Functions
-
     public fun new_response(): Response {
         Response {
             messages: vector::empty(),
@@ -211,45 +211,25 @@ module rooch_nursery::cosmwasm_std {
     }
 
     // Helper functions
-
-    // Helper functions (these would need to be implemented)
     public fun serialize_env(env: &Env): vector<u8> {
-        let env_str = json::to_json(env);
-        debug::print(&string::utf8(b"serialize_env str:"));
-        debug::print(&string::utf8(env_str));
-
-        return env_str
+        json::to_json(env)
     }
 
     public fun serialize_message_info(info: &MessageInfo): vector<u8> {
-        let info_str = json::to_json(info);
-        debug::print(&string::utf8(b"serialize_message_info str:"));
-        debug::print(&string::utf8(info_str));
-
-        return info_str
+        json::to_json(info)
     }
 
     public fun serialize_message<T: drop>(msg: &T): vector<u8> {
-        let msg_str = json::to_json(msg);
-        debug::print(&string::utf8(b"serialize_message str:"));
-        debug::print(&string::utf8(msg_str));
-
-        return msg_str
+        json::to_json(msg)
     }
 
     public fun deserialize_stdresult(raw: vector<u8>): Result<Response, Error> {
-        debug::print(&string::utf8(b"deserialize_response raw:"));
-        debug::print(&string::utf8(raw));
-
         let result_option = json::from_json_option<StdResult>(raw);
         if (option::is_none(&result_option)) {
             return new_error_result(ErrorDeserialize, string::utf8(b"deserialize_response_error"))
         };
 
         let std_result = option::extract(&mut result_option);
-        debug::print(&string::utf8(b"deserialize_response std_result:"));
-        debug::print(&std_result);
-
         if (option::is_some(&std_result.ok)) {
             ok(option::extract(&mut std_result.ok))
         } else {
@@ -257,19 +237,21 @@ module rooch_nursery::cosmwasm_std {
         }
     }
 
-    public fun deserialize_error(raw: vector<u8>): String {
-        // Implementation to deserialize bytes to Error string
-        std::string::utf8(raw) // Placeholder
-    }
-
-    public fun error_code_to_string(_code: u64): String {
-        // Implementation to convert error code to string
-        std::string::utf8(vector::empty()) // Placeholder
-    }
-
     public fun new_binary(data: vector<u8>): String {
         let encode_bytes = base64::encode(&data);
         string::utf8(encode_bytes)
+    }
+
+    public fun current_chain(): vector<u8> {
+        if (chain_id::is_main()) {
+            b"rooch_main"
+        } else if (chain_id::is_test()) {
+            b"rooch_test"
+        } else if (chain_id::is_dev()) {
+            b"rooch_dev"
+        } else {
+            b"rooch_local"
+        }
     }
 
     public fun current_env(): Env {
@@ -281,7 +263,7 @@ module rooch_nursery::cosmwasm_std {
             block: BlockInfo {
                 height: sequence_number,
                 time: (timestamp::now_milliseconds() as u128) * 1000000u128, // nanos
-                chain_id: std::string::utf8(b"rooch"),
+                chain_id: std::string::utf8(current_chain()),
             },
             contract: ContractInfo {
                 address: sender,

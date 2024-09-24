@@ -62,7 +62,7 @@ pub fn native_decode(
     let decoded = match general_purpose::STANDARD.decode(encoded_input.as_bytes_ref().to_vec()) {
         Ok(bytes) => bytes,
         Err(_) => return Ok(NativeResult::err(cost, E_DECODE_FAILED)),
-    };
+    }; 
 
     Ok(NativeResult::ok(
         cost,

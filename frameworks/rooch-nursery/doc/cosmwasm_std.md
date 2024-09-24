@@ -39,21 +39,20 @@
 -  [Function `serialize_message_info`](#0xa_cosmwasm_std_serialize_message_info)
 -  [Function `serialize_message`](#0xa_cosmwasm_std_serialize_message)
 -  [Function `deserialize_stdresult`](#0xa_cosmwasm_std_deserialize_stdresult)
--  [Function `deserialize_error`](#0xa_cosmwasm_std_deserialize_error)
--  [Function `error_code_to_string`](#0xa_cosmwasm_std_error_code_to_string)
 -  [Function `new_binary`](#0xa_cosmwasm_std_new_binary)
+-  [Function `current_chain`](#0xa_cosmwasm_std_current_chain)
 -  [Function `current_env`](#0xa_cosmwasm_std_current_env)
 -  [Function `current_message_info`](#0xa_cosmwasm_std_current_message_info)
 
 
-<pre><code><b>use</b> <a href="">0x1::debug</a>;
-<b>use</b> <a href="">0x1::option</a>;
+<pre><code><b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x2::base64</a>;
 <b>use</b> <a href="">0x2::json</a>;
 <b>use</b> <a href="">0x2::result</a>;
 <b>use</b> <a href="">0x2::timestamp</a>;
 <b>use</b> <a href="">0x2::tx_context</a>;
+<b>use</b> <a href="">0x3::chain_id</a>;
 </code></pre>
 
 
@@ -480,28 +479,6 @@ This error code is returned when a deserialization error occurs.
 
 
 
-<a name="0xa_cosmwasm_std_deserialize_error"></a>
-
-## Function `deserialize_error`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std_deserialize_error">deserialize_error</a>(raw: <a href="">vector</a>&lt;u8&gt;): <a href="_String">string::String</a>
-</code></pre>
-
-
-
-<a name="0xa_cosmwasm_std_error_code_to_string"></a>
-
-## Function `error_code_to_string`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std_error_code_to_string">error_code_to_string</a>(_code: u64): <a href="_String">string::String</a>
-</code></pre>
-
-
-
 <a name="0xa_cosmwasm_std_new_binary"></a>
 
 ## Function `new_binary`
@@ -509,6 +486,17 @@ This error code is returned when a deserialization error occurs.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std_new_binary">new_binary</a>(data: <a href="">vector</a>&lt;u8&gt;): <a href="_String">string::String</a>
+</code></pre>
+
+
+
+<a name="0xa_cosmwasm_std_current_chain"></a>
+
+## Function `current_chain`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="cosmwasm_std.md#0xa_cosmwasm_std_current_chain">current_chain</a>(): <a href="">vector</a>&lt;u8&gt;
 </code></pre>
 
 
