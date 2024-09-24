@@ -62,7 +62,7 @@ impl MemoryModuleResolver {
             let mut modules = BTreeMap::new();
             tokio::task::block_in_place(|| {
                 Handle::current().block_on(async {
-                    let states = self.client.rooch.get_states(access_path).await?;
+                    let states = self.client.rooch.get_states(access_path, None).await?;
 
                     states.into_iter().try_for_each(|state_view| {
                         if let Some(sv) = state_view {
