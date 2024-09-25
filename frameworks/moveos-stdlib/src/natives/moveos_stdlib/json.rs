@@ -190,37 +190,22 @@ fn parse_move_value_from_json(
             Ok(Value::address(addr))
         }
         MoveTypeLayout::Vector(item_layout) => {
-            let layout = item_layout.as_ref();
-
-            if let MoveTypeLayout::U8 = layout {
-                if json_value.is_null() {
-                    return Ok(Value::vector_u8(vec![]));
-                }
-
-                let bytes = json_value
-                    .as_str()
-                    .ok_or_else(|| anyhow::anyhow!("Invalid bytes"))?
-                    .as_bytes()
-                    .to_vec();
-                Ok(Value::vector_u8(bytes))
-            } else {
-                if json_value.is_null() {
-                    let type_tag: TypeTag = (&**item_layout).try_into()?;
-                    let ty = context.load_type(&type_tag)?;
-                    return Ok(Vector::pack(&ty, vec![])?);
-                }
-
-                let vec_value = json_value
-                    .as_array()
-                    .ok_or_else(|| anyhow::anyhow!("Invalid vector value"))?
-                    .iter()
-                    .map(|v| parse_move_value_from_json(item_layout, v, context))
-                    .collect::<Result<Vec<_>>>()?;
+            if json_value.is_null() {
                 let type_tag: TypeTag = (&**item_layout).try_into()?;
                 let ty = context.load_type(&type_tag)?;
-                let value = Vector::pack(&ty, vec_value)?;
-                Ok(value)
+                return Ok(Vector::pack(&ty, vec![])?);
             }
+
+            let vec_value = json_value
+                .as_array()
+                .ok_or_else(|| anyhow::anyhow!("Invalid vector value"))?
+                .iter()
+                .map(|v| parse_move_value_from_json(item_layout, v, context))
+                .collect::<Result<Vec<_>>>()?;
+            let type_tag: TypeTag = (&**item_layout).try_into()?;
+            let ty = context.load_type(&type_tag)?;
+            let value = Vector::pack(&ty, vec_value)?;
+            Ok(value)
         }
         MoveTypeLayout::Struct(struct_layout) => {
             let struct_value = parse_struct_value_from_json(struct_layout, json_value, context)?;
