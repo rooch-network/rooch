@@ -23,7 +23,7 @@ use rooch_types::multichain_id::RoochMultiChainID;
 use rooch_types::service_status::ServiceStatus;
 use rooch_types::transaction::{L1BlockWithBody, L1Transaction};
 use std::ops::Deref;
-use tracing::{error, info, log, warn};
+use tracing::{debug, error, info, log, warn};
 
 pub struct RelayerActor {
     relayers: Vec<RelayerProxy>,
@@ -183,36 +183,15 @@ impl RelayerActor {
     async fn sync(&mut self) {
         let relayers = self.relayers.clone();
         for relayer in relayers {
-            if self.paused {
-                tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
-                continue;
-            }
             let relayer_name = relayer.name();
 
             loop {
-                // Notify the relayer to sync the latest block
-                // The sync task will block the relayer actor, but call sync() will not block this actor
-                // It a notify call.
-                if let Err(e) = relayer.sync().await {
-                    warn!("Relayer {} sync error: {:?}", relayer_name, e);
+                if self.paused {
+                    debug!("Relayer {} is paused, skip sync", relayer_name);
+                    break;
                 }
 
                 let mut break_flag = false;
-
-                // Execute all ready l1 txs
-                match self.get_ready_l1_txs(&relayer) {
-                    Ok(txs) => {
-                        for tx in txs {
-                            if let Err(err) = self.handle_l1_tx(tx).await {
-                                warn!("Relayer {} error: {:?}", relayer_name, err);
-                            }
-                        }
-                    }
-                    Err(err) => {
-                        warn!("Relayer {} error: {:?}", relayer_name, err);
-                        break_flag = true;
-                    }
-                }
 
                 match relayer.get_ready_l1_block().await {
                     Ok(Some(l1_block)) => {
@@ -223,6 +202,28 @@ impl RelayerActor {
                     Ok(None) => {
                         //skip
                         break_flag = true;
+                    }
+                    Err(err) => {
+                        warn!("Relayer {} error: {:?}", relayer_name, err);
+                        break_flag = true;
+                    }
+                }
+
+                // Notify the relayer to sync the latest block
+                // The sync task will block the relayer actor, but call sync() will not block this actor
+                // It a notify call.
+                if let Err(e) = relayer.sync().await {
+                    warn!("Relayer {} sync error: {:?}", relayer_name, e);
+                }
+
+                // Execute all ready l1 txs
+                match self.get_ready_l1_txs(&relayer) {
+                    Ok(txs) => {
+                        for tx in txs {
+                            if let Err(err) = self.handle_l1_tx(tx).await {
+                                warn!("Relayer {} error: {:?}", relayer_name, err);
+                            }
+                        }
                     }
                     Err(err) => {
                         warn!("Relayer {} error: {:?}", relayer_name, err);

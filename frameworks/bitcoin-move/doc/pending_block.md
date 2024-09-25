@@ -198,7 +198,7 @@ This is a hot potato struct, can not be store and drop
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="pending_block.md#0x4_pending_block_add_pending_block">add_pending_block</a>(block_height: u64, block_hash: <b>address</b>, block: <a href="types.md#0x4_types_Block">types::Block</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="pending_block.md#0x4_pending_block_add_pending_block">add_pending_block</a>(block_height: u64, block_hash: <b>address</b>, block: <a href="types.md#0x4_types_Block">types::Block</a>): bool
 </code></pre>
 
 
