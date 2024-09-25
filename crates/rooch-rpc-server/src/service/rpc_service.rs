@@ -358,13 +358,23 @@ impl RpcService {
         show_display: bool,
         state_type: ObjectStateType,
     ) -> Result<Vec<IndexerObjectStateView>> {
+        const MAX_OBJECT_IDS: usize = 100;
+
         let indexer_ids = match filter {
             // Compatible with object_ids query after split object_states
             // Do not query the indexer, directly return the states query results.
-            ObjectStateFilter::ObjectId(object_ids) => object_ids
-                .into_iter()
-                .map(|v| (v, IndexerStateID::default()))
-                .collect(),
+            ObjectStateFilter::ObjectId(object_ids) => {
+                if object_ids.len() > MAX_OBJECT_IDS {
+                    return Err(anyhow::anyhow!(
+                        "Too many object IDs requested. Maximum allowed: {}",
+                        MAX_OBJECT_IDS
+                    ));
+                }
+                object_ids
+                    .into_iter()
+                    .map(|v| (v, IndexerStateID::default()))
+                    .collect()
+            }
             _ => {
                 self.indexer
                     .query_object_ids(filter, cursor, limit, descending_order, state_type)
