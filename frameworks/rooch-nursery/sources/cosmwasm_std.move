@@ -257,7 +257,6 @@ module rooch_nursery::cosmwasm_std {
     public fun current_env(): Env {
         let sender = tx_context::sender();
         let sequence_number = tx_context::sequence_number();
-        let tx_hash = tx_context::tx_hash();
 
         Env {
             block: BlockInfo {
