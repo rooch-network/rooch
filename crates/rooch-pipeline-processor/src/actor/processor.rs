@@ -1,7 +1,9 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use super::messages::{ExecuteL1BlockMessage, ExecuteL1TxMessage, ExecuteL2TxMessage};
+use super::messages::{
+    ExecuteL1BlockMessage, ExecuteL1TxMessage, ExecuteL2TxMessage, GetServiceStatusMessage,
+};
 use crate::metrics::PipelineProcessorMetrics;
 use anyhow::{Error, Result};
 use async_trait::async_trait;
@@ -12,7 +14,7 @@ use moveos_types::state::StateChangeSetExt;
 use moveos_types::transaction::VerifiedMoveOSTransaction;
 use prometheus::Registry;
 use rooch_db::RoochDB;
-use rooch_event::actor::{EventActor, ServiceStatusMessage};
+use rooch_event::actor::{EventActor, UpdateServiceStatusMessage};
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_indexer::proxy::IndexerProxy;
 use rooch_proposer::proxy::ProposerProxy;
@@ -136,12 +138,27 @@ impl PipelineProcessorActor {
             .with_label_values(&[fn_name])
             .start_timer();
         let moveos_tx = self.executor.validate_l1_block(l1_block.clone()).await?;
+        let block_height = l1_block.block.block_height;
         let ledger_tx = self
             .sequencer
             .sequence_transaction(LedgerTxData::L1Block(l1_block.block))
             .await?;
+        let tx_order = ledger_tx.sequence_info.tx_order;
         let size = moveos_tx.ctx.tx_size;
-        let result = self.execute_tx(ledger_tx, moveos_tx).await?;
+        let result = match self.execute_tx(ledger_tx, moveos_tx).await {
+            Ok(v) => v,
+            Err(err) => {
+                if is_vm_panic_error(&err) {
+                    log::error!(
+                        "Execute L1 Block failed while VM panic occurred then \
+                        set service to Maintenance mode and pause the relayer. error: {:?}, block {}, tx order {}",
+                        err, block_height, tx_order
+                    );
+                    self.update_service_status(ServiceStatus::Maintenance).await;
+                }
+                return Err(err);
+            }
+        };
 
         let gas_used = result.output.gas_used;
         self.metrics
@@ -171,23 +188,17 @@ impl PipelineProcessorActor {
             .sequence_transaction(LedgerTxData::L1Tx(l1_tx.clone()))
             .await?;
         let size = moveos_tx.ctx.tx_size;
+        let tx_order = ledger_tx.sequence_info.tx_order;
         let result = match self.execute_tx(ledger_tx, moveos_tx).await {
             Ok(v) => v,
             Err(err) => {
                 if is_vm_panic_error(&err) {
-                    let l1_tx_bcs_bytes = bcs::to_bytes(&l1_tx)?;
-                    log::warn!(
+                    log::error!(
                         "Execute L1 Tx failed while VM panic occurred then \
-                        set sequencer to Maintenance mode and pause the relayer. error: {:?}, tx bytes {}",
-                        err, hex::encode(&l1_tx_bcs_bytes)
+                        set service to Maintenance mode and pause the relayer. error: {:?}, tx order {}",
+                        err, tx_order
                     );
-                    if let Some(event_actor) = self.event_actor.clone() {
-                        let _ = event_actor
-                            .send(ServiceStatusMessage {
-                                status: ServiceStatus::Maintenance,
-                            })
-                            .await;
-                    }
+                    self.update_service_status(ServiceStatus::Maintenance).await;
                 }
                 return Err(err);
             }
@@ -202,6 +213,15 @@ impl PipelineProcessorActor {
             .with_label_values(&[fn_name])
             .observe(size as f64);
         Ok(result)
+    }
+
+    async fn update_service_status(&mut self, status: ServiceStatus) {
+        self.service_status = status;
+        if let Some(event_actor) = self.event_actor.clone() {
+            let _ = event_actor
+                .send(UpdateServiceStatusMessage { status })
+                .await;
+        }
     }
 
     #[named]
@@ -227,7 +247,7 @@ impl PipelineProcessorActor {
             Err(err) => {
                 if is_vm_panic_error(&err) {
                     let l2_tx_bcs_bytes = bcs::to_bytes(&tx)?;
-                    log::warn!(
+                    log::error!(
                         "Execute L2 Tx failed while VM panic occurred and revert tx. error: {:?} tx info {}",
                         err, hex::encode(l2_tx_bcs_bytes)
                     );
@@ -352,6 +372,17 @@ impl Handler<ExecuteL1TxMessage> for PipelineProcessorActor {
         _ctx: &mut ActorContext,
     ) -> Result<ExecuteTransactionResponse> {
         self.execute_l1_tx(msg.tx).await
+    }
+}
+
+#[async_trait]
+impl Handler<GetServiceStatusMessage> for PipelineProcessorActor {
+    async fn handle(
+        &mut self,
+        _msg: GetServiceStatusMessage,
+        _ctx: &mut ActorContext,
+    ) -> Result<ServiceStatus> {
+        Ok(self.service_status)
     }
 }
 

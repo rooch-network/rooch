@@ -4,7 +4,10 @@
 use anyhow::Result;
 use coerce::actor::message::Message;
 use moveos_types::h256::H256;
-use rooch_types::transaction::{LedgerTransaction, LedgerTxData};
+use rooch_types::{
+    sequencer::SequencerInfo,
+    transaction::{LedgerTransaction, LedgerTxData},
+};
 use serde::{Deserialize, Serialize};
 
 /// Transaction Sequence Message
@@ -51,4 +54,11 @@ pub struct GetSequencerOrderMessage {}
 
 impl Message for GetSequencerOrderMessage {
     type Result = Result<u64>;
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GetSequencerInfoMessage {}
+
+impl Message for GetSequencerInfoMessage {
+    type Result = Result<SequencerInfo>;
 }

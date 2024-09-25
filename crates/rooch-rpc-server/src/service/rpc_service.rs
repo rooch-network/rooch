@@ -8,6 +8,7 @@ use move_core_types::language_storage::{ModuleId, StructTag};
 use moveos_types::access_path::AccessPath;
 use moveos_types::function_return_value::AnnotatedFunctionResult;
 use moveos_types::h256::H256;
+use moveos_types::module_binding::MoveFunctionCaller;
 use moveos_types::move_types::type_tag_match;
 use moveos_types::moveos_std::display::{get_object_display_id, RawDisplay};
 use moveos_types::moveos_std::event::{AnnotatedEvent, Event, EventID};
@@ -20,9 +21,13 @@ use rooch_executor::proxy::ExecutorProxy;
 use rooch_indexer::proxy::IndexerProxy;
 use rooch_pipeline_processor::proxy::PipelineProcessorProxy;
 use rooch_relayer::actor::bitcoin_client_proxy::BitcoinClientProxy;
-use rooch_rpc_api::jsonrpc_types::{DisplayFieldsView, IndexerObjectStateView, ObjectMetaView};
+use rooch_rpc_api::jsonrpc_types::{
+    BitcoinStatus, DisplayFieldsView, IndexerObjectStateView, ObjectMetaView, RoochStatus, Status,
+};
 use rooch_sequencer::proxy::SequencerProxy;
 use rooch_types::address::{BitcoinAddress, RoochAddress};
+use rooch_types::bitcoin::pending_block::PendingBlockModule;
+use rooch_types::bitcoin::BitcoinModule;
 use rooch_types::framework::address_mapping::RoochToBitcoinAddressMapping;
 use rooch_types::indexer::event::{
     AnnotatedIndexerEvent, EventFilter, IndexerEvent, IndexerEventID,
@@ -762,5 +767,36 @@ impl RpcService {
         };
 
         Ok(result)
+    }
+
+    pub async fn status(&self) -> Result<Status> {
+        let service_status = self.pipeline_processor.get_service_status().await?;
+        let sequencer_info = self.sequencer.get_sequencer_info().await?;
+        let root_state = self.executor.get_root().await?;
+
+        let rooch_status = RoochStatus {
+            sequencer_info: sequencer_info.into(),
+            root_state: root_state.into(),
+        };
+
+        let pending_block = {
+            let pending_block_module = self.executor.as_module_binding::<PendingBlockModule>();
+            pending_block_module.get_best_block()?
+        };
+        let confirmed_block = {
+            let bitcoin_module = self.executor.as_module_binding::<BitcoinModule>();
+            bitcoin_module.get_latest_block()?
+        };
+
+        let bitcoin_status = BitcoinStatus {
+            confirmed_block: confirmed_block.map(Into::into),
+            pending_block: pending_block.map(Into::into),
+        };
+
+        Ok(Status {
+            service_status,
+            rooch_status,
+            bitcoin_status,
+        })
     }
 }
