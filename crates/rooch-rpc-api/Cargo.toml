@@ -29,6 +29,7 @@ move-resource-viewer = { workspace = true }
 move-binary-format = { workspace = true }
 
 moveos-types = { workspace = true }
+accumulator = { workspace = true }
 
 rooch-types = { workspace = true }
 rooch-open-rpc = { workspace = true }

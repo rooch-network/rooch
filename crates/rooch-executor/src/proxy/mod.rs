@@ -237,12 +237,16 @@ impl ExecutorProxy {
             .await?
     }
 
+    /// Get latest root object
+    pub async fn get_root(&self) -> Result<ObjectState> {
+        self.actor
+            .send(crate::actor::messages::GetRootMessage {})
+            .await?
+    }
+
     // This is a workaround function to sync the state of the executor to reader
     pub async fn sync_state(&self) -> Result<()> {
-        let root = self
-            .actor
-            .send(crate::actor::messages::GetRootMessage {})
-            .await??;
+        let root = self.get_root().await?;
         self.refresh_state(root.metadata, false).await
     }
 

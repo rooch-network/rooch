@@ -45,19 +45,19 @@ impl Handler<GasUpgradeMessage> for EventActor {
 }
 
 #[derive(Default, Clone, Debug)]
-pub struct ServiceStatusMessage {
+pub struct UpdateServiceStatusMessage {
     pub status: ServiceStatus,
 }
 
-impl Message for ServiceStatusMessage {
+impl Message for UpdateServiceStatusMessage {
     type Result = anyhow::Result<()>;
 }
 
 #[async_trait]
-impl Handler<ServiceStatusMessage> for EventActor {
+impl Handler<UpdateServiceStatusMessage> for EventActor {
     async fn handle(
         &mut self,
-        message: ServiceStatusMessage,
+        message: UpdateServiceStatusMessage,
         _ctx: &mut ActorContext,
     ) -> anyhow::Result<()> {
         log::debug!("EventActor receive message {:?}", message);

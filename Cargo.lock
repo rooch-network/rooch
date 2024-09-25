@@ -10033,6 +10033,7 @@ dependencies = [
 name = "rooch-rpc-api"
 version = "0.7.2"
 dependencies = [
+ "accumulator",
  "anyhow",
  "bcs",
  "bitcoin 0.32.2",

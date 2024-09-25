@@ -12,8 +12,8 @@ use crate::jsonrpc_types::{
     FieldKeyView, FunctionCallView, H256View, IndexerEventPageView, IndexerObjectStatePageView,
     IndexerStateIDView, ModuleABIView, ObjectIDVecView, ObjectIDView, ObjectStateFilterView,
     ObjectStateView, QueryOptions, RoochAddressView, StateChangeSetPageView, StateOptions,
-    StatePageView, StrView, StructTagView, SyncStateFilterView, TransactionWithInfoPageView,
-    TxOptions,
+    StatePageView, Status, StrView, StructTagView, SyncStateFilterView,
+    TransactionWithInfoPageView, TxOptions,
 };
 use crate::RpcResult;
 use jsonrpsee::proc_macros::rpc;
@@ -210,4 +210,8 @@ pub trait RoochAPI {
         limit: Option<StrView<u64>>,
         query_option: Option<QueryOptions>,
     ) -> RpcResult<StateChangeSetPageView>;
+
+    /// Get the chain and service status
+    #[method(name = "status")]
+    async fn status(&self) -> RpcResult<Status>;
 }
