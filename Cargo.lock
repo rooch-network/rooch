@@ -3447,15 +3447,6 @@ dependencies = [
 
 [[package]]
 name = "env_logger"
-version = "0.10.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4cd405aab171cb85d6735e5c8d9db038c17d3ca007a4d2c25f337935c3d90580"
-dependencies = [
- "log",
-]
-
-[[package]]
-name = "env_logger"
 version = "0.11.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e13fa619b91fb2381732789fc5de83b45675e882f66623b7d8cb4f643017018d"
@@ -5232,16 +5223,16 @@ dependencies = [
 
 [[package]]
 name = "inferno"
-version = "0.11.19"
+version = "0.11.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "321f0f839cd44a4686e9504b0a62b4d69a50b62072144c71c68f5873c167b8d9"
+checksum = "232929e1d75fe899576a3d5c7416ad0d88dbfbb3c3d6aa00873a7408a50ddb88"
 dependencies = [
  "ahash 0.8.11",
  "clap 4.5.17",
  "crossbeam-channel",
  "crossbeam-utils",
- "dashmap 5.5.3",
- "env_logger 0.10.2",
+ "dashmap 6.0.1",
+ "env_logger",
  "indexmap 2.2.6",
  "is-terminal",
  "itoa",
@@ -5951,7 +5942,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c2a198fb6b0eada2a8df47933734e6d35d350665a33a3593d7164fa52c75c19"
 dependencies = [
  "cfg-if",
- "windows-targets 0.48.5",
+ "windows-targets 0.52.6",
 ]
 
 [[package]]
@@ -10081,6 +10072,7 @@ dependencies = [
 name = "rooch-rpc-api"
 version = "0.7.2"
 dependencies = [
+ "accumulator",
  "anyhow",
  "bcs",
  "bitcoin 0.32.2",
@@ -11997,7 +11989,7 @@ dependencies = [
  "backtrace",
  "clap 4.5.17",
  "cucumber",
- "env_logger 0.11.5",
+ "env_logger",
  "futures",
  "hex",
  "hmac",
