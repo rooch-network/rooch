@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 import { useCallback, useMemo } from 'react'
 import { isRoochClient, RoochClient } from '@roochnetwork/rooch-sdk'
 import { useSessionStore } from '../hooks/useSessionsStore.js'
