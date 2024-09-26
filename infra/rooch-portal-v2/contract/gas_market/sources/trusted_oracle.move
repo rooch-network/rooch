@@ -19,8 +19,7 @@ module gas_market::trusted_oracle {
     #[test_only]
     use rooch_framework::genesis;
 
-
-    struct Oracle has key{
+    struct Oracle has key {
         ids: vector<ObjectID>
     }
 
@@ -31,28 +30,54 @@ module gas_market::trusted_oracle {
     }
 
     fun init() {
-        let (oracle1, admin_cap1)= oracle::create(utf8(b"pyth"), utf8(b"https://hermes.pyth.network"), utf8(b"Price Data From Pyth"));
-        let (oracle2, admin_cap2)= oracle::create(utf8(b"binance"), utf8(b"https://api.binance.com/api/v3/ticker/price"), utf8(b"Price Data From Binance"));
-        let (oracle3, admin_cap3)= oracle::create(utf8(b"okex"), utf8(b"https://www.okx.com/api/v5/market/tickers?instType=SPOT"), utf8(b"Price Data From Okex"));
+        let (oracle1, admin_cap1) =
+            oracle::create(
+                utf8(b"pyth"),
+                utf8(b"https://hermes.pyth.network"),
+                utf8(b"Price Data From Pyth")
+            );
+        let (oracle2, admin_cap2) =
+            oracle::create(
+                utf8(b"binance"),
+                utf8(b"https://api.binance.com/api/v3/ticker/price"),
+                utf8(b"Price Data From Binance")
+            );
+        let (oracle3, admin_cap3) =
+            oracle::create(
+                utf8(b"okex"),
+                utf8(b"https://www.okx.com/api/v5/market/tickers?instType=SPOT"),
+                utf8(b"Price Data From Okex")
+            );
         let signer = module_signer<Oracle>();
-        move_resource_to(&signer, Oracle{
-            ids: vector[object::id(&oracle1), object::id(&oracle2), object::id(&oracle3)]
-        });
-        emit(NewOracleEvent{
-            name: utf8(b"pyth"),
-            oracle_id: object::id(&oracle1),
-            admin_id: object::id(&admin_cap1)
-        });
-        emit(NewOracleEvent{
-            name: utf8(b"binance"),
-            oracle_id: object::id(&oracle2),
-            admin_id: object::id(&admin_cap2)
-        });
-        emit(NewOracleEvent{
-            name: utf8(b"okex"),
-            oracle_id: object::id(&oracle3),
-            admin_id: object::id(&admin_cap3)
-        });
+        move_resource_to(
+            &signer,
+            Oracle {
+                ids: vector[object::id(&oracle1), object::id(&oracle2), object::id(
+                    &oracle3
+                )]
+            }
+        );
+        emit(
+            NewOracleEvent {
+                name: utf8(b"pyth"),
+                oracle_id: object::id(&oracle1),
+                admin_id: object::id(&admin_cap1)
+            }
+        );
+        emit(
+            NewOracleEvent {
+                name: utf8(b"binance"),
+                oracle_id: object::id(&oracle2),
+                admin_id: object::id(&admin_cap2)
+            }
+        );
+        emit(
+            NewOracleEvent {
+                name: utf8(b"okex"),
+                oracle_id: object::id(&oracle3),
+                admin_id: object::id(&admin_cap3)
+            }
+        );
 
         to_shared(oracle1);
         to_shared(oracle2);
@@ -68,9 +93,11 @@ module gas_market::trusted_oracle {
         let signer = module_signer<Oracle>();
         let oracle = borrow_resource<Oracle>(address_of(&signer));
         let i = 0;
-        while (i < vector::length(&oracle.ids)){
+        while (i < vector::length(&oracle.ids)) {
             let oracle_id = vector::borrow(&oracle.ids, i);
-            oracle_meta::add_simple_oracle(&mut meta_oracle, object::borrow_object(*oracle_id));
+            oracle_meta::add_simple_oracle(
+                &mut meta_oracle, object::borrow_object(*oracle_id)
+            );
             i = i + 1;
         };
 
@@ -84,8 +111,8 @@ module gas_market::trusted_oracle {
         value: u256,
         decimal: u8,
         identifier: String,
-        admin_obj: &mut Object<OracleAdminCap>,
-    ){
+        admin_obj: &mut Object<OracleAdminCap>
+    ) {
         let decimal_value = new(value, decimal);
         oracle::submit_data(oracle_obj, ticker, decimal_value, identifier, admin_obj)
     }
@@ -93,17 +120,58 @@ module gas_market::trusted_oracle {
     #[test]
     fun test_btc_price() {
         genesis::init_for_test();
-        let (oracle1, admin_cap1)= oracle::create(utf8(b"pyth"), utf8(b"https://hermes.pyth.network"), utf8(b"Price Data From Pyth"));
-        let (oracle2, admin_cap2)= oracle::create(utf8(b"binance"), utf8(b"https://api.binance.com/api/v3/ticker/price"), utf8(b"Price Data From Binance"));
-        let (oracle3, admin_cap3)= oracle::create(utf8(b"okex"), utf8(b"https://www.okx.com/api/v5/market/tickers?instType=SPOT"), utf8(b"Price Data From Okex"));
+        let (oracle1, admin_cap1) =
+            oracle::create(
+                utf8(b"pyth"),
+                utf8(b"https://hermes.pyth.network"),
+                utf8(b"Price Data From Pyth")
+            );
+        let (oracle2, admin_cap2) =
+            oracle::create(
+                utf8(b"binance"),
+                utf8(b"https://api.binance.com/api/v3/ticker/price"),
+                utf8(b"Price Data From Binance")
+            );
+        let (oracle3, admin_cap3) =
+            oracle::create(
+                utf8(b"okex"),
+                utf8(b"https://www.okx.com/api/v5/market/tickers?instType=SPOT"),
+                utf8(b"Price Data From Okex")
+            );
         let signer = module_signer<Oracle>();
-        move_resource_to(&signer, Oracle{
-            ids: vector[object::id(&oracle1), object::id(&oracle2), object::id(&oracle3)]
-        });
+        move_resource_to(
+            &signer,
+            Oracle {
+                ids: vector[object::id(&oracle1), object::id(&oracle2), object::id(
+                    &oracle3
+                )]
+            }
+        );
         timestamp::fast_forward_milliseconds_for_test(100000000);
-        submit_data(&mut oracle1, utf8(b"BTCUSD"), 5805106000000, 8, utf8(b"1"), &mut admin_cap1);
-        submit_data(&mut oracle2, utf8(b"BTCUSD"), 5805206000000, 8, utf8(b"2"), &mut admin_cap2);
-        submit_data(&mut oracle3, utf8(b"BTCUSD"), 5805306000000, 8, utf8(b"3"), &mut admin_cap3);
+        submit_data(
+            &mut oracle1,
+            utf8(b"BTCUSD"),
+            5805106000000,
+            8,
+            utf8(b"1"),
+            &mut admin_cap1
+        );
+        submit_data(
+            &mut oracle2,
+            utf8(b"BTCUSD"),
+            5805206000000,
+            8,
+            utf8(b"2"),
+            &mut admin_cap2
+        );
+        submit_data(
+            &mut oracle3,
+            utf8(b"BTCUSD"),
+            5805306000000,
+            8,
+            utf8(b"3"),
+            &mut admin_cap3
+        );
         to_shared(oracle1);
         to_shared(oracle2);
         to_shared(oracle3);
