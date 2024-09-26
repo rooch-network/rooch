@@ -52,7 +52,7 @@ module gas_market::gas_airdrop {
     }
 
     /// Anyone can call this function to help the claimer claim the airdrop
-    public fun claim(claimer: address, utxo_ids: vector<ObjectID>){
+    public entry fun claim(claimer: address, utxo_ids: vector<ObjectID>){
       let total_sat_amount = Self::total_sat_amount(claimer, utxo_ids);
       let claim_rgas_amount = Self::sat_amount_to_rgas(total_sat_amount);
       let airdrop_obj_id = object::named_object_id<RGasAirdrop>();
