@@ -14,7 +14,7 @@ use futures::StreamExt;
 
 use rooch_config::da_config::{DAConfig, InternalDAServerConfigType};
 
-use crate::messages::{Batch, PutBatchInternalDAMessage};
+use crate::messages::{DABatch, PutBatchInternalDAMessage};
 use crate::server::celestia::actor::server::DAServerCelestiaActor;
 use crate::server::celestia::proxy::DAServerCelestiaProxy;
 use crate::server::openda::actor::server::DAServerOpenDAActor;
@@ -89,7 +89,7 @@ impl DAActor {
         })
     }
 
-    pub async fn submit_batch(&self, batch: Batch) -> Result<()> {
+    pub async fn submit_batch(&self, batch: DABatch) -> Result<()> {
         // TODO calc checksum
         // TODO richer policy for multi servers
         // TODO verify checksum
@@ -138,8 +138,8 @@ impl DAActor {
 }
 
 #[async_trait]
-impl Handler<Batch> for DAActor {
-    async fn handle(&mut self, msg: Batch, _ctx: &mut ActorContext) -> Result<()> {
+impl Handler<DABatch> for DAActor {
+    async fn handle(&mut self, msg: DABatch, _ctx: &mut ActorContext) -> Result<()> {
         self.submit_batch(msg).await
     }
 }

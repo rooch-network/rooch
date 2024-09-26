@@ -9560,6 +9560,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "bcs",
+ "bitcoin_hashes 0.14.0",
  "celestia-rpc",
  "celestia-types",
  "coerce",

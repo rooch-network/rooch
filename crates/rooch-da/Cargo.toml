@@ -31,3 +31,4 @@ rooch-config = { workspace = true }
 serde_yaml = { workspace = true }
 xxhash-rust = { workspace = true, features = ["xxh3"] }
 lz4 = { workspace = true }
+bitcoin_hashes = { workspace = true }

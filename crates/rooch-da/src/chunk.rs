@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::messages::Batch;
+use crate::messages::DABatch;
 use crate::segment::{Segment, SegmentID, SegmentV0};
 use lz4::EncoderBuilder;
 use serde::{Deserialize, Serialize};
@@ -36,7 +36,7 @@ pub trait Chunk {
     fn to_bytes(&self) -> Vec<u8>;
     fn get_version(&self) -> ChunkVersion;
     fn to_segments(&self, max_segment_size: usize) -> Vec<Box<dyn Segment>>;
-    fn get_batch(&self) -> Batch;
+    fn get_batch(&self) -> DABatch;
 }
 
 // ChunkV0:
@@ -45,20 +45,19 @@ pub trait Chunk {
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct ChunkV0 {
     pub version: ChunkVersion,
-    pub batch: Batch,
+    pub batch: DABatch,
 }
 
-impl From<Batch> for ChunkV0 {
-    fn from(batch: Batch) -> Self {
+impl From<DABatch> for ChunkV0 {
+    fn from(batch: DABatch) -> Self {
         Self {
             version: ChunkVersion::V0,
-            batch: Batch {
-                block_number: batch.block_number,
+            batch: DABatch {
                 tx_count: batch.tx_count,
                 prev_tx_accumulator_root: batch.prev_tx_accumulator_root,
                 tx_accumulator_root: batch.tx_accumulator_root,
                 batch_hash: batch.batch_hash,
-                data: batch.data,
+                tx_list_bytes: batch.tx_list_bytes,
             },
         }
     }
@@ -87,6 +86,7 @@ impl Chunk for ChunkV0 {
         let segments_data = bytes.chunks(max_segment_size);
         let segments_count = segments_data.len();
 
+        //
         let chunk_id = self.batch.block_number;
         segments_data
             .enumerate()
@@ -107,7 +107,7 @@ impl Chunk for ChunkV0 {
             .collect::<Vec<_>>()
     }
 
-    fn get_batch(&self) -> Batch {
+    fn get_batch(&self) -> DABatch {
         self.batch.clone()
     }
 }
@@ -179,13 +179,12 @@ mod tests {
 
     #[test]
     fn test_chunk_v0() {
-        let batch = Batch {
-            block_number: 1,
+        let batch = DABatch {
             tx_count: 1,
             prev_tx_accumulator_root: Default::default(),
             tx_accumulator_root: Default::default(),
             batch_hash: h256::sha2_256_of(&[1, 2, 3, 4, 5]),
-            data: vec![1, 2, 3, 4, 5],
+            tx_list_bytes: vec![1, 2, 3, 4, 5],
         };
 
         let chunk = ChunkV0::from(batch.clone());

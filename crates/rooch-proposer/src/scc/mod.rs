@@ -4,7 +4,7 @@
 use crate::actor::messages::TransactionProposeMessage;
 use moveos_types::h256;
 use moveos_types::h256::H256;
-use rooch_da::messages::Batch;
+use rooch_da::messages::DABatch;
 use rooch_da::proxy::DAProxy;
 use rooch_types::block::Block;
 
@@ -81,13 +81,12 @@ impl StateCommitmentChain {
         let batch_hash = h256::sha2_256_of(&batch_data);
         if let Err(e) = self
             .da
-            .submit_batch(Batch {
-                block_number,
+            .submit_batch(DABatch {
                 tx_count: batch_size,
                 prev_tx_accumulator_root,
                 tx_accumulator_root,
                 batch_hash,
-                data: batch_data,
+                tx_list_bytes: batch_data,
             })
             .await
         {

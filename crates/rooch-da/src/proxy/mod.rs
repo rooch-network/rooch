@@ -4,7 +4,7 @@
 use coerce::actor::ActorRef;
 
 use crate::actor::da::DAActor;
-use crate::messages::Batch;
+use crate::messages::DABatch;
 
 #[derive(Clone)]
 pub struct DAProxy {
@@ -16,7 +16,7 @@ impl DAProxy {
         Self { actor }
     }
 
-    pub async fn submit_batch(&self, batch: Batch) -> anyhow::Result<()> {
+    pub async fn submit_batch(&self, batch: DABatch) -> anyhow::Result<()> {
         self.actor.send(batch).await?
     }
 }
