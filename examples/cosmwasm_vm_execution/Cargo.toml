@@ -1,0 +1,12 @@
+[package]
+name = "cosmwasm_vm_execution"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+cosmwasm-std = { version = "2.1.3", features = ["staking"] }
+serde = { version = "1.0.103", default-features = false, features = ["derive"] }
+

@@ -50,6 +50,7 @@ members = [
     "crates/rooch-test-transaction-builder",
     "crates/rooch-types",
     "crates/rooch-event",
+    "crates/rooch-cosmwasm-vm",
     "crates/testsuite",
     "crates/rooch-ord",
     "frameworks/bitcoin-move",
@@ -59,7 +60,6 @@ members = [
     "frameworks/moveos-stdlib",
     "frameworks/rooch-framework",
     "frameworks/rooch-nursery",
-    "examples/bitseed_generator",
 ]
 
 default-members = [
@@ -139,6 +139,7 @@ data-verify = { path = "crates/data_verify" }
 rooch-db = { path = "crates/rooch-db" }
 rooch-event = { path = "crates/rooch-event" }
 rooch-ord = { path = "crates/rooch-ord" }
+rooch-cosmwasm-vm = { path = "crates/rooch-cosmwasm-vm" }
 
 # frameworks
 framework-types = { path = "frameworks/framework-types" }
@@ -322,7 +323,9 @@ base64 = "0.22.1"
 #criterion-cpu-time = "0.1.0"
 wasmer = "4.2.5"
 wasmer-types = "4.2.5"
-wasmer-compiler-singlepass = "4.3.6"
+wasmer-compiler-singlepass = "4.2.2"
+cosmwasm-vm = { git = "https://github.com/rooch-network/cosmwasm", rev = "597d3e8437d8c4d1afce07e5a676c29c751a8a81" }
+cosmwasm-std = { git = "https://github.com/rooch-network/cosmwasm", rev = "597d3e8437d8c4d1afce07e5a676c29c751a8a81" }
 ciborium = "0.2.1"
 pprof = { version = "0.13.0", features = ["flamegraph", "criterion", "cpp", "frame-pointer", "protobuf-codec"] }
 celestia-rpc = { git = "https://github.com/eigerco/celestia-node-rs.git", rev = "129272e8d926b4c7badf27a26dea915323dd6489" }

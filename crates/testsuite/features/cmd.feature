@@ -436,6 +436,22 @@ Feature: Rooch CLI integration tests
       # release servers
       Then stop the server
 
+    @serial
+    Scenario: cosmwasm-vm test
+      # prepare servers
+      Given a server for wasm_test
+
+      # publish wasm execution
+      Then cmd: "move publish -p ../../examples/cosmwasm_vm_execution  --named-addresses rooch_examples=default --json"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+
+      # run cosmwasm execute example
+      Then cmd: "move run --function default::cosmwasm_vm_execution::run_cosmwasm_example --sender default --args 'file:./data/cosmwasm_vm_execution_opt.wasm' --json"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+
+      # release servers
+      Then stop the server
+
   @serial
     Scenario: view_function_loop example
       Given a server for view_function_loop

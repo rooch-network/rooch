@@ -25,6 +25,9 @@ serde_json = { workspace = true }
 ciborium = { workspace = true }
 wasmer = { workspace = true }
 libc = { workspace = true }
+cosmwasm-vm = { workspace = true }
+cosmwasm-std = { workspace = true }
+once_cell = { workspace = true }
 
 move-binary-format = { workspace = true }
 move-core-types = { workspace = true }
@@ -37,6 +40,8 @@ moveos-types = { workspace = true }
 moveos-stdlib = { workspace = true }
 moveos = { workspace = true }
 moveos-wasm = { workspace = true }
+moveos-object-runtime = { workspace = true }
 
+rooch-cosmwasm-vm = { workspace = true }
 rooch-types = { workspace = true }
 rooch-framework = { workspace = true }
