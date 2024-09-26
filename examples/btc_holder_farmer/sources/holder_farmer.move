@@ -5,7 +5,12 @@ module btc_holder_farmer::hold_farmer {
     
     use std::string;
     use std::option;
-    
+    use std::option::is_none;
+    use std::u64;
+    use bitcoin_move::types;
+    use bitcoin_move::types::tx_lock_time;
+    use bitcoin_move::bitcoin;
+
     use moveos_std::event::emit;
     use moveos_std::tx_context::sender;
     use moveos_std::table;
@@ -27,6 +32,15 @@ module btc_holder_farmer::hold_farmer {
 
     const DEPLOYER: address = @btc_holder_farmer;
 
+    const MaxLockDay: u64 = 180;
+    // 1 Day seconds
+    const PerDaySeconds: u32 = 86400;
+    // 1 Day blocks
+    const PerDayBlocks: u64 = 144;
+    // LockTime values below the threshold are interpreted as block heights
+    // values above (or equal to) the threshold are interpreted as block times (UNIX timestamp, seconds since epoch).
+    const LOCK_TIME_THRESHOLD: u32 = 500_000_000;
+
     const ErrorWrongDeployer: u64 = 1;
     const ErrorAlreadyDeployed: u64 = 2;
     const ErrorWrongFarmTime: u64 = 3;
@@ -40,6 +54,7 @@ module btc_holder_farmer::hold_farmer {
     const ErrorAlreadyStaked: u64 = 11;
     const ErrorNotStaked: u64 = 12;
     const ErrorAssetExist: u64 = 13;
+    const ErrorBitcoinClientError: u64 = 14;
 
     spec module {
         pragma verify = false;
@@ -91,8 +106,8 @@ module btc_holder_farmer::hold_farmer {
         return exp.mantissa / EXP_SCALE
     }
 
-    /// The `BTC Holder Coin`
-    struct HDC has key, store {}
+    /// The `GROW Coin`
+    struct GROW has key, store {}
 
     struct FarmingAsset has key {
         asset_total_weight: u64,
@@ -105,7 +120,7 @@ module btc_holder_farmer::hold_farmer {
         // Farming end time
         end_time: u64,
         // Hold the CoinInfo object
-        coin_info: Object<CoinInfo<HDC>>,
+        coin_info: Object<CoinInfo<GROW>>,
         // utxo id ==> address
         stake_table: Table<ObjectID, address>,
         // Representing the pool is alive, false: not alive, true: alive.
@@ -190,7 +205,7 @@ module btc_holder_farmer::hold_farmer {
         assert!(!account::exists_resource<FarmingAsset>(DEPLOYER), ErrorAlreadyDeployed);
 
         let now_seconds = timestamp::now_seconds();
-        let coin_info = coin::register_extend<HDC>(
+        let coin_info = coin::register_extend<GROW>(
             string::utf8(name),
             string::utf8(symbol),
             option::none(),
@@ -249,8 +264,8 @@ module btc_holder_farmer::hold_farmer {
     ) {
         process_expired_state();
         assert!(!utxo::contains_temp_state<StakeInfo>(asset), ErrorAlreadyStaked);
-
-        let asset_weight = value(object::borrow(asset));
+        let utxo = object::borrow(asset);
+        let asset_weight = value(utxo) * calculate_utxo_time_lock_weight(utxo::txid(utxo));
         let account = signer::address_of(signer);
 
         let farming_asset = account::borrow_mut_resource<FarmingAsset>(DEPLOYER);
@@ -312,7 +327,7 @@ module btc_holder_farmer::hold_farmer {
         account_coin_store::deposit(sender(), coin);
     }
 
-    public fun do_unstake(signer: &signer, asset: &mut Object<UTXO>): Coin<HDC> {
+    public fun do_unstake(signer: &signer, asset: &mut Object<UTXO>): Coin<GROW> {
         process_expired_state();
         utxo::remove_temp_state<StakeInfo>(asset);
         let account = signer::address_of(signer);
@@ -356,7 +371,7 @@ module btc_holder_farmer::hold_farmer {
         account_coin_store::deposit(sender(), coin);
     }
 
-    public fun do_harvest(signer:&signer, asset: &mut Object<UTXO>): Coin<HDC> {
+    public fun do_harvest(signer:&signer, asset: &mut Object<UTXO>): Coin<GROW> {
         process_expired_state();
         let farming_asset = account::borrow_mut_resource<FarmingAsset>(DEPLOYER);
         let account = signer::address_of(signer);
@@ -548,6 +563,42 @@ module btc_holder_farmer::hold_farmer {
             let (asset_id, _outpoint, _value) = utxo::unpack_temp_state_drop_event(event);
             remove_expired_stake(asset_id);
         }
+    }
+
+    public fun calculate_utxo_time_lock_weight(txid: address): u64{
+        let option_tx = bitcoin::get_tx(txid);
+        if (is_none(&option_tx)){
+            return 1
+        };
+        let transaction = option::destroy_some(option_tx);
+        let tx_lock_time = tx_lock_time(&transaction);
+        if (tx_lock_time < LOCK_TIME_THRESHOLD) {
+            // lock_time is a block heigh
+            // We assume that each block takes 10 minutes, 1day ~ 144 block
+            let btc_block = latest_block_height();
+            if (btc_block >= (tx_lock_time as u64)){
+                return 1
+            };
+            let tx_lock_day = (btc_block - (tx_lock_time as u64))/PerDayBlocks;
+            return 1 + u64::min(tx_lock_day, MaxLockDay)
+        };
+        // lock_time is a bitcoin time
+        // TODO here should be btc time or rooch time?
+        let btc_time = bitcoin::get_bitcoin_time();
+        if (btc_time >= tx_lock_time){
+            return 1
+        };
+        let tx_lock_day = (btc_time - tx_lock_time)/PerDaySeconds;
+
+        1 + u64::min((tx_lock_day as u64), MaxLockDay)
+
+    }
+
+    fun latest_block_height(): u64 {
+        let height_hash = bitcoin::get_latest_block();
+        assert!(option::is_some(&height_hash), ErrorBitcoinClientError);
+        let (height,_hash) = types::unpack_block_height_hash(option::destroy_some(height_hash));
+        height
     }
     
     public entry fun remove_expired_stake(asset_id: ObjectID) {
