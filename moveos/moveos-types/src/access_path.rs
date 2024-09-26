@@ -143,9 +143,6 @@ impl FromStr for Path {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let s = s.trim_start_matches('/');
         let mut iter = s.split('/');
-        if iter.clone().count() != 2 {
-            return Err(anyhow::anyhow!("Invalid access path"));
-        }
         let path_type = iter
             .next()
             .ok_or_else(|| anyhow::anyhow!("Invalid access path"))?;
@@ -154,6 +151,7 @@ impl FromStr for Path {
                 let object_ids = iter.next().unwrap_or("");
                 let object_ids = object_ids
                     .split(',')
+                    .filter(|s| !s.is_empty())
                     .map(ObjectID::from_str)
                     .collect::<Result<Vec<_>, _>>()?;
                 Ok(Path::Object { object_ids })
@@ -423,6 +421,7 @@ mod tests {
         test_path_roundtrip("/module/0x2/m1");
         test_path_roundtrip("/module/0x2/m1,m2");
         test_path_roundtrip("/fields/0x1/key1");
+        test_path_roundtrip("/fields/0x1/key1,");
         test_path_roundtrip("/fields/0x1/key1,key2");
         test_path_roundtrip(
             "/fields/0x1/0x2159d0daf46fb5a9e6f75e3ec0a892c1d7d3f447aec35e48674e19bbb080a2ca",
