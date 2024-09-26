@@ -34,7 +34,7 @@ Feature: Rooch CLI multisign integration tests
       Then sleep: "10" # wait for the transaction to be confirmed
 
       Then cmd: "account balance -a {{$.account[-2].account0.address}} --json"
-      Then assert: "{{$.account[-1].Bitcoin.balance}} == 100000000"
+      Then assert: "{{$.account[-1].BTC.balance}} == 100000000"
 
       #transfer some gas to multisign account
       Then cmd: "account transfer --to {{$.account[-2].multisign_address}} --amount 10000000000 --coin-type rooch_framework::gas_coin::RGas"
