@@ -151,6 +151,7 @@ impl FromStr for Path {
                 let object_ids = iter.next().unwrap_or("");
                 let object_ids = object_ids
                     .split(',')
+                    .filter(|s| !s.is_empty())
                     .map(ObjectID::from_str)
                     .collect::<Result<Vec<_>, _>>()?;
                 Ok(Path::Object { object_ids })
@@ -414,6 +415,7 @@ mod tests {
     #[test]
     pub fn test_path() {
         test_path_roundtrip("/object/0x1");
+        test_path_roundtrip("/object/0x1,");
         test_path_roundtrip("/object/0x1,0x2");
         test_path_roundtrip("/resource/0x1/0x2::m::S");
         test_path_roundtrip("/resource/0x1/0x2::m1::S1,0x3::m2::S2");
