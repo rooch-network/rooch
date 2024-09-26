@@ -17,8 +17,8 @@ use rooch_rpc_api::jsonrpc_types::btc::ord::{InscriptionFilterView, InscriptionO
 use rooch_rpc_api::jsonrpc_types::btc::utxo::{UTXOFilterView, UTXOObjectView};
 use rooch_rpc_api::jsonrpc_types::transaction_view::TransactionFilterView;
 use rooch_rpc_api::jsonrpc_types::{
-    account_view::BalanceInfoView, transaction_view::TransactionWithInfoView,
-    DryRunTransactionResponseView, InscriptionPageView, UTXOPageView,
+    account_view::BalanceInfoView, transaction_view::TransactionWithInfoView, InscriptionPageView,
+    UTXOPageView,
 };
 use rooch_rpc_api::jsonrpc_types::{
     AccessPathView, AnnotatedFunctionResultView, BalanceInfoPageView, BytesView, EventOptions,
@@ -34,7 +34,6 @@ use rooch_types::address::BitcoinAddress;
 use rooch_types::bitcoin::multisign_account::MultisignAccountInfo;
 use rooch_types::framework::address_mapping::RoochToBitcoinAddressMapping;
 use rooch_types::indexer::state::IndexerStateID;
-use rooch_types::transaction::RoochTransactionData;
 use rooch_types::{address::RoochAddress, transaction::rooch::RoochTransaction};
 use std::str::FromStr;
 use std::sync::Arc;
@@ -64,17 +63,6 @@ impl RoochRpcClient {
         let tx_payload = bcs::to_bytes(&tx)?;
         self.http
             .execute_raw_transaction(tx_payload.into(), tx_option)
-            .await
-            .map_err(|e| anyhow::anyhow!(e))
-    }
-
-    pub async fn dry_run_tx(
-        &self,
-        tx: RoochTransactionData,
-    ) -> Result<DryRunTransactionResponseView> {
-        let tx_payload = bcs::to_bytes(&tx)?;
-        self.http
-            .dry_run(tx_payload.into())
             .await
             .map_err(|e| anyhow::anyhow!(e))
     }
@@ -437,5 +425,9 @@ impl RoochRpcClient {
         let objects = self.get_object_states(vec![ins_obj_id], None).await?;
         let obj_state = objects.into_iter().next().flatten();
         obj_state.map(InscriptionObjectView::try_from).transpose()
+    }
+
+    pub async fn sequencer_order(&self) -> Result<u64> {
+        Ok(self.http.sequencer_order().await?)
     }
 }

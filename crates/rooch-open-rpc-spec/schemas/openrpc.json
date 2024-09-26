@@ -126,25 +126,6 @@
       }
     },
     {
-      "name": "rooch_dryRunRawTransaction",
-      "params": [
-        {
-          "name": "tx_bcs_hex",
-          "required": true,
-          "schema": {
-            "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
-          }
-        }
-      ],
-      "result": {
-        "name": "DryRunTransactionResponseView",
-        "required": true,
-        "schema": {
-          "$ref": "#/components/schemas/DryRunTransactionResponseView"
-        }
-      }
-    },
-    {
       "name": "rooch_executeRawTransaction",
       "description": "Send the signed transaction in bcs hex format This method blocks waiting for the transaction to be executed.",
       "params": [
@@ -744,6 +725,20 @@
         "required": true,
         "schema": {
           "$ref": "#/components/schemas/primitive_types::H256"
+        }
+      }
+    },
+    {
+      "name": "rooch_sequencerOrder",
+      "description": "Get the current sequencer order",
+      "params": [],
+      "result": {
+        "name": "u64",
+        "required": true,
+        "schema": {
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0.0
         }
       }
     },

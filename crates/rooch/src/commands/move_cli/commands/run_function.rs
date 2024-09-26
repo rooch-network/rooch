@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_types::{CommandAction, FunctionArg, TransactionOptions, WalletContextOptions};
-use crate::tx_runner::execute_tx_locally_with_gas_profile;
+use crate::tx_runner::{dry_run_tx_locally, execute_tx_locally_with_gas_profile};
 use anyhow::Result;
 use async_trait::async_trait;
 use clap::Parser;
@@ -89,17 +89,16 @@ impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
             .collect::<Result<Vec<_>>>()?;
         let action = MoveAction::new_function_call(function_id, type_args, args);
 
-        let dry_run_result = context
-            .dry_run(
-                context
-                    .build_tx_data(sender, action.clone(), max_gas_amount)
-                    .await?,
-            )
+        let rooch_tx_data = context
+            .build_tx_data(sender, action.clone(), max_gas_amount)
             .await?;
+        let dry_run_result_opt = dry_run_tx_locally(context.get_client().await?, rooch_tx_data)?;
 
-        if dry_run_result.raw_output.status != KeptVMStatusView::Executed {
-            return Ok(dry_run_result.into());
-        };
+        if let Some(dry_run_result) = dry_run_result_opt {
+            if dry_run_result.raw_output.status != KeptVMStatusView::Executed {
+                return Ok(dry_run_result.into());
+            };
+        }
 
         let result = match (self.tx_options.authenticator, self.tx_options.session_key) {
             (Some(authenticator), _) => {
@@ -188,7 +187,7 @@ impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
                             state_root,
                             context.get_client().await?,
                             tx.data,
-                        );
+                        )?;
                     }
 
                     tx_execution_result

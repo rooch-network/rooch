@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::messages::{
-    ConvertL2TransactionData, DryRunTransactionMessage, DryRunTransactionResult,
     ExecuteTransactionMessage, ExecuteTransactionResult, GetRootMessage, SaveStateChangeSetMessage,
     ValidateL1BlockMessage, ValidateL1TxMessage, ValidateL2TxMessage,
 };
@@ -112,21 +111,6 @@ impl ExecutorActor {
 
     pub fn moveos(&self) -> &MoveOS {
         &self.moveos
-    }
-
-    #[named]
-    pub fn dry_run(&mut self, tx: VerifiedMoveOSTransaction) -> Result<DryRunTransactionResult> {
-        let fn_name = function_name!();
-        let _timer = self
-            .metrics
-            .executor_execute_tx_latency_seconds
-            .with_label_values(&[fn_name])
-            .start_timer();
-        let (raw_output, vm_error_info) = self.moveos.execute_only(tx)?;
-        Ok(DryRunTransactionResult {
-            raw_output,
-            vm_error_info,
-        })
     }
 
     #[named]
@@ -450,17 +434,6 @@ impl Handler<ValidateL2TxMessage> for ExecutorActor {
 }
 
 #[async_trait]
-impl Handler<ConvertL2TransactionData> for ExecutorActor {
-    async fn handle(
-        &mut self,
-        msg: ConvertL2TransactionData,
-        _ctx: &mut ActorContext,
-    ) -> Result<VerifiedMoveOSTransaction> {
-        self.convert_to_verified_tx(msg.tx_data)
-    }
-}
-
-#[async_trait]
 impl Handler<ValidateL1BlockMessage> for ExecutorActor {
     async fn handle(
         &mut self,
@@ -490,17 +463,6 @@ impl Handler<ExecuteTransactionMessage> for ExecutorActor {
         _ctx: &mut ActorContext,
     ) -> Result<ExecuteTransactionResult> {
         self.execute(msg.tx)
-    }
-}
-
-#[async_trait]
-impl Handler<DryRunTransactionMessage> for ExecutorActor {
-    async fn handle(
-        &mut self,
-        msg: DryRunTransactionMessage,
-        _ctx: &mut ActorContext,
-    ) -> Result<DryRunTransactionResult> {
-        self.dry_run(msg.tx)
     }
 }
 
