@@ -131,7 +131,7 @@ impl CommandAction<Option<BalancesView>> for BalanceCommand {
                                 other_balance.coin_info.coin_type.to_string(),
                                 other_balance.into(),
                             );
-                        }else{
+                        } else {
                             balances_view.insert(
                                 other_balance.coin_info.symbol.to_string(),
                                 other_balance.into(),
