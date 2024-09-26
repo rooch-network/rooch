@@ -77,4 +77,16 @@ export class UniSatWallet extends BitcoinWallet {
     const sign = await this.getTarget().signMessage(msgStr)
     return bytes('base64', sign).subarray(1) // remove recover id
   }
+
+  sendBtc(input: {
+    toAddress: string
+    satoshis: number
+    options?: { feeRate: number }
+  }): Promise<string> {
+    return this.getTarget().sendBitcoin(input.toAddress, input.satoshis, input.options)
+  }
+
+  getBalance(): Promise<{ confirmed: number; unconfirmed: number; total: string }> {
+    return this.getTarget().getBalance()
+  }
 }

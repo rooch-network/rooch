@@ -24,6 +24,16 @@ export abstract class Wallet extends Signer {
 
   abstract getDescription(): string
 
+  abstract sendBtc(input: {
+    toAddress: string
+    satoshis: number
+    options?: {
+      feeRate: number
+    }
+  }): Promise<string>
+
+  abstract getBalance(): Promise<{ confirmed: number; unconfirmed: number; total: string }>
+
   /**
    * Signs a message.
    * @param msg - The message to sign.
