@@ -5,6 +5,7 @@ module gas_market::gas_airdrop {
     use moveos_std::signer;
     use moveos_std::object::{Self, Object, ObjectID, to_shared};
     use moveos_std::tx_context::{sender};
+    use moveos_std::table::{Self, Table};
 
     use rooch_framework::coin_store::CoinStore;
     use rooch_framework::gas_coin::RGas;
@@ -26,10 +27,13 @@ module gas_market::gas_airdrop {
     const ErrorAirdropNotOpen: u64 = 0;
     const ErrorInvalidUTXO: u64 = 1;
     const ErrorAirdropNotEnoughRGas: u64 = 2;
+    const ErrorAlreadyClaimed: u64 = 3;
+    const ErrorUTXOValueIsZero: u64 = 4;
 
 
     struct RGasAirdrop has key{
         rgas_store: Object<CoinStore<RGas>>,
+        claim_records: Table<address, u256>, 
         is_open: bool
     }
 
@@ -46,23 +50,25 @@ module gas_market::gas_airdrop {
       Self::deposit_to_rgas_store(sender, &mut rgas_store, airdrop_gas_amount);
       let rgas_airdrop_obj = object::new_named_object(RGasAirdrop{
           rgas_store,
+          claim_records: table::new(),
           is_open: true
       });
       to_shared(rgas_airdrop_obj)
     }
 
     /// Anyone can call this function to help the claimer claim the airdrop
-    public entry fun claim(claimer: address, utxo_ids: vector<ObjectID>){
-      let total_sat_amount = Self::total_sat_amount(claimer, utxo_ids);
-      let claim_rgas_amount = Self::sat_amount_to_rgas(total_sat_amount);
-      let airdrop_obj_id = object::named_object_id<RGasAirdrop>();
-      let airdrop_obj = object::borrow_mut_object_extend<RGasAirdrop>(airdrop_obj_id);
+    public entry fun claim(airdrop_obj: &mut Object<RGasAirdrop>, claimer: address, utxo_ids: vector<ObjectID>){      
       let airdrop = object::borrow_mut(airdrop_obj);
+      assert!(!table::contains(&airdrop.claim_records, claimer), ErrorAlreadyClaimed);
 
+      let total_sat_amount = Self::total_sat_amount(claimer, utxo_ids);
+      assert!(total_sat_amount > 0, ErrorUTXOValueIsZero);
+      let claim_rgas_amount = Self::sat_amount_to_rgas(total_sat_amount);
       let remaining_rgas_amount = coin_store::balance(&airdrop.rgas_store);
       assert!(claim_rgas_amount <= remaining_rgas_amount, ErrorAirdropNotEnoughRGas);
       let rgas_coin = coin_store::withdraw(&mut airdrop.rgas_store, claim_rgas_amount);
       account_coin_store::deposit<RGas>(claimer, rgas_coin);
+      table::add(&mut airdrop.claim_records, claimer, claim_rgas_amount);
     }
 
     public entry fun deposit_rgas_coin(
@@ -109,7 +115,9 @@ module gas_market::gas_airdrop {
     }
 
     fun sat_amount_to_rgas(sat_amount: u64): u256{
-      if(sat_amount <= SAT_LEVEL_ONE){
+      if (sat_amount == 0){
+        0
+      }else if(sat_amount <= SAT_LEVEL_ONE){
         ONE_RGAS
       }else if(sat_amount <= SAT_LEVEL_TWO){
         2 * ONE_RGAS
