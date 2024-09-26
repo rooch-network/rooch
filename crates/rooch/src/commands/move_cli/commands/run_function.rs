@@ -63,6 +63,10 @@ pub struct RunFunction {
     /// Run the gas profiler and output html report
     #[clap(long, default_value = "false")]
     gas_profile: bool,
+
+    /// Run the DryRun for this transaction
+    #[clap(long, default_value = "false")]
+    dry_run: bool,
 }
 
 #[async_trait]
@@ -89,15 +93,18 @@ impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
             .collect::<Result<Vec<_>>>()?;
         let action = MoveAction::new_function_call(function_id, type_args, args);
 
-        let rooch_tx_data = context
-            .build_tx_data(sender, action.clone(), max_gas_amount)
-            .await?;
-        let dry_run_result_opt = dry_run_tx_locally(context.get_client().await?, rooch_tx_data)?;
+        if self.dry_run {
+            let rooch_tx_data = context
+                .build_tx_data(sender, action.clone(), max_gas_amount)
+                .await?;
+            let dry_run_result_opt =
+                dry_run_tx_locally(context.get_client().await?, rooch_tx_data)?;
 
-        if let Some(dry_run_result) = dry_run_result_opt {
-            if dry_run_result.raw_output.status != KeptVMStatusView::Executed {
-                return Ok(dry_run_result.into());
-            };
+            if let Some(dry_run_result) = dry_run_result_opt {
+                if dry_run_result.raw_output.status != KeptVMStatusView::Executed {
+                    return Ok(dry_run_result.into());
+                };
+            }
         }
 
         let result = match (self.tx_options.authenticator, self.tx_options.session_key) {

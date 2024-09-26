@@ -12,12 +12,14 @@ use moveos_types::moveos_std::event::{AnnotatedEvent, Event, EventID};
 use moveos_types::moveos_std::object::ObjectMeta;
 use moveos_types::state::{AnnotatedState, FieldKey, ObjectState, StateChangeSetExt};
 use moveos_types::state_resolver::{AnnotatedStateKV, StateKV};
-use moveos_types::transaction::FunctionCall;
 use moveos_types::transaction::TransactionExecutionInfo;
 use moveos_types::transaction::TransactionOutput;
 use moveos_types::transaction::VerifiedMoveOSTransaction;
+use moveos_types::transaction::{FunctionCall, RawTransactionOutput, VMErrorInfo};
 use rooch_types::address::MultiChainAddress;
-use rooch_types::transaction::{L1BlockWithBody, L1Transaction, RoochTransaction};
+use rooch_types::transaction::{
+    L1BlockWithBody, L1Transaction, RoochTransaction, RoochTransactionData,
+};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug)]
@@ -207,4 +209,26 @@ pub struct GetStateChangeSetsMessage {
 
 impl Message for GetStateChangeSetsMessage {
     type Result = Result<Vec<Option<StateChangeSetExt>>>;
+}
+
+#[derive(Debug)]
+pub struct ConvertL2TransactionData {
+    pub tx_data: RoochTransactionData,
+}
+impl Message for ConvertL2TransactionData {
+    type Result = Result<VerifiedMoveOSTransaction>;
+}
+
+#[derive(Debug)]
+pub struct DryRunTransactionMessage {
+    pub tx: VerifiedMoveOSTransaction,
+}
+impl Message for DryRunTransactionMessage {
+    type Result = Result<DryRunTransactionResult>;
+}
+
+#[derive(Debug)]
+pub struct DryRunTransactionResult {
+    pub raw_output: RawTransactionOutput,
+    pub vm_error_info: Option<VMErrorInfo>,
 }

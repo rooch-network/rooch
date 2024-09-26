@@ -6,7 +6,6 @@ use crate::jsonrpc_types::address::UnitedAddressView;
 use crate::jsonrpc_types::event_view::{EventFilterView, IndexerEventIDView};
 use crate::jsonrpc_types::repair_view::{RepairIndexerParamsView, RepairIndexerTypeView};
 use crate::jsonrpc_types::transaction_view::{TransactionFilterView, TransactionWithInfoView};
-use crate::jsonrpc_types::Status;
 use crate::jsonrpc_types::{
     AccessPathView, AnnotatedFunctionResultView, BalanceInfoPageView, BytesView, EventOptions,
     EventPageView, ExecuteTransactionResponseView, FieldKeyView, FunctionCallView, H256View,
@@ -15,6 +14,7 @@ use crate::jsonrpc_types::{
     RoochAddressView, StateChangeSetPageView, StateOptions, StatePageView, StrView, StructTagView,
     SyncStateFilterView, TransactionWithInfoPageView, TxOptions,
 };
+use crate::jsonrpc_types::{DryRunTransactionResponseView, Status};
 use crate::RpcResult;
 use jsonrpsee::proc_macros::rpc;
 use moveos_types::{access_path::AccessPath, state::FieldKey};
@@ -40,6 +40,9 @@ pub trait RoochAPI {
         tx_bcs_hex: BytesView,
         tx_option: Option<TxOptions>,
     ) -> RpcResult<ExecuteTransactionResponseView>;
+
+    #[method(name = "dryRunRawTransaction")]
+    async fn dry_run(&self, tx_bcs_hex: BytesView) -> RpcResult<DryRunTransactionResponseView>;
 
     /// Execute a read-only function call
     /// The function do not change the state of Application
