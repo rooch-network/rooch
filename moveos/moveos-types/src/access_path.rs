@@ -415,13 +415,13 @@ mod tests {
     #[test]
     pub fn test_path() {
         test_path_roundtrip("/object/0x1");
+        test_path_roundtrip("/object/0x1,");
         test_path_roundtrip("/object/0x1,0x2");
         test_path_roundtrip("/resource/0x1/0x2::m::S");
         test_path_roundtrip("/resource/0x1/0x2::m1::S1,0x3::m2::S2");
         test_path_roundtrip("/module/0x2/m1");
         test_path_roundtrip("/module/0x2/m1,m2");
         test_path_roundtrip("/fields/0x1/key1");
-        test_path_roundtrip("/fields/0x1/key1,");
         test_path_roundtrip("/fields/0x1/key1,key2");
         test_path_roundtrip(
             "/fields/0x1/0x2159d0daf46fb5a9e6f75e3ec0a892c1d7d3f447aec35e48674e19bbb080a2ca",
