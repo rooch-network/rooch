@@ -143,6 +143,9 @@ impl FromStr for Path {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let s = s.trim_start_matches('/');
         let mut iter = s.split('/');
+        if iter.clone().count() != 2 {
+            return Err(anyhow::anyhow!("Invalid access path"));
+        }
         let path_type = iter
             .next()
             .ok_or_else(|| anyhow::anyhow!("Invalid access path"))?;
