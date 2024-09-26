@@ -6,7 +6,8 @@ module btc_holder_farmer::hold_farmer {
     use std::string;
     use std::option;
     use std::option::is_none;
-    use std::u32;
+    use std::u64;
+    use bitcoin_move::types;
     use bitcoin_move::types::tx_lock_time;
     use bitcoin_move::bitcoin;
 
@@ -31,9 +32,14 @@ module btc_holder_farmer::hold_farmer {
 
     const DEPLOYER: address = @btc_holder_farmer;
 
-    const MaxLockDay: u32 = 180;
+    const MaxLockDay: u64 = 180;
     // 1 Day seconds
     const PerDaySeconds: u32 = 86400;
+    // 1 Day blocks
+    const PerDayBlocks: u64 = 144;
+    // LockTime values below the threshold are interpreted as block heights
+    // values above (or equal to) the threshold are interpreted as block times (UNIX timestamp, seconds since epoch).
+    const LOCK_TIME_THRESHOLD: u32 = 500_000_000;
 
     const ErrorWrongDeployer: u64 = 1;
     const ErrorAlreadyDeployed: u64 = 2;
@@ -48,6 +54,7 @@ module btc_holder_farmer::hold_farmer {
     const ErrorAlreadyStaked: u64 = 11;
     const ErrorNotStaked: u64 = 12;
     const ErrorAssetExist: u64 = 13;
+    const ErrorBitcoinClientError: u64 = 14;
 
     spec module {
         pragma verify = false;
@@ -565,6 +572,17 @@ module btc_holder_farmer::hold_farmer {
         };
         let transaction = option::destroy_some(option_tx);
         let tx_lock_time = tx_lock_time(&transaction);
+        if (tx_lock_time < LOCK_TIME_THRESHOLD) {
+            // lock_time is a block heigh
+            // We assume that each block takes 10 minutes, 1day ~ 144 block
+            let btc_block = latest_block_height();
+            if (btc_block >= (tx_lock_time as u64)){
+                return 1
+            };
+            let tx_lock_day = (btc_block - (tx_lock_time as u64))/PerDayBlocks;
+            return 1 + u64::min(tx_lock_day, MaxLockDay)
+        };
+        // lock_time is a bitcoin time
         // TODO here should be btc time or rooch time?
         let btc_time = bitcoin::get_bitcoin_time();
         if (btc_time >= tx_lock_time){
@@ -572,8 +590,15 @@ module btc_holder_farmer::hold_farmer {
         };
         let tx_lock_day = (btc_time - tx_lock_time)/PerDaySeconds;
 
-        (1 + u32::min(tx_lock_day, MaxLockDay) as u64)
+        1 + u64::min((tx_lock_day as u64), MaxLockDay)
 
+    }
+
+    fun latest_block_height(): u64 {
+        let height_hash = bitcoin::get_latest_block();
+        assert!(option::is_some(&height_hash), ErrorBitcoinClientError);
+        let (height,_hash) = types::unpack_block_height_hash(option::destroy_some(height_hash));
+        height
     }
     
     public entry fun remove_expired_stake(asset_id: ObjectID) {
