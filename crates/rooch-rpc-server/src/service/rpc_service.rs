@@ -122,6 +122,7 @@ impl RpcService {
         access_path: AccessPath,
         state_root: Option<H256>,
     ) -> Result<Vec<Option<ObjectState>>> {
+        access_path.validate_max_object_ids()?;
         self.executor.get_states(access_path, state_root).await
     }
 
@@ -136,6 +137,7 @@ impl RpcService {
         &self,
         access_path: AccessPath,
     ) -> Result<Vec<Option<AnnotatedState>>> {
+        access_path.validate_max_object_ids()?;
         self.executor.get_annotated_states(access_path).await
     }
 
@@ -146,6 +148,7 @@ impl RpcService {
         cursor: Option<FieldKey>,
         limit: usize,
     ) -> Result<Vec<StateKV>> {
+        access_path.validate_max_object_ids()?;
         self.executor
             .list_states(state_root, access_path, cursor, limit)
             .await
@@ -157,6 +160,7 @@ impl RpcService {
         cursor: Option<FieldKey>,
         limit: usize,
     ) -> Result<Vec<AnnotatedStateKV>> {
+        access_path.validate_max_object_ids()?;
         self.executor
             .list_annotated_states(access_path, cursor, limit)
             .await
@@ -588,18 +592,23 @@ impl RpcService {
             match repair_type {
                 RepairIndexerType::ObjectState => match repair_params {
                     RepairIndexerParams::ObjectId(object_ids) => {
-                        self.repair_indexer_object_states(
-                            object_ids.clone(),
+                        let states = self
+                            .get_states(AccessPath::objects(object_ids.clone()), None)
+                            .await?;
+                        for state_type in [
                             ObjectStateType::ObjectState,
-                        )
-                        .await?;
-                        self.repair_indexer_object_states(
-                            object_ids.clone(),
                             ObjectStateType::UTXO,
-                        )
-                        .await?;
-                        self.repair_indexer_object_states(object_ids, ObjectStateType::Inscription)
-                            .await
+                            ObjectStateType::Inscription,
+                        ] {
+                            self.repair_indexer_object_states(
+                                states.clone(),
+                                &object_ids,
+                                state_type,
+                            )
+                            .await?;
+                        }
+
+                        Ok(())
                     }
                     _ => Err(format_err!(
                         "Invalid params when repair indexer for ObjectState"
@@ -617,14 +626,11 @@ impl RpcService {
 
     pub async fn repair_indexer_object_states(
         &self,
-        object_ids: Vec<ObjectID>,
+        states: Vec<Option<ObjectState>>,
+        object_ids: &[ObjectID],
         state_type: ObjectStateType,
     ) -> Result<()> {
         {
-            let states = self
-                .get_states(AccessPath::objects(object_ids.clone()), None)
-                .await?;
-
             let mut remove_object_ids = vec![];
             let mut object_states_mapping = HashMap::new();
             for (idx, state_opt) in states.into_iter().enumerate() {

@@ -291,6 +291,19 @@ impl AccessPath {
         })
     }
 
+    pub fn validate_max_object_ids(&self) -> Result<()> {
+        const MAX_OBJECT_IDS: usize = 100;
+        if let Path::Object { object_ids } = &self.0 {
+            if object_ids.len() > MAX_OBJECT_IDS {
+                return Err(anyhow::anyhow!(
+                    "Too many object IDs requested. Maximum allowed: {}",
+                    MAX_OBJECT_IDS
+                ));
+            }
+        }
+        Ok(())
+    }
+
     /// Convert AccessPath to StateQuery, return the ObjectID and field keys
     pub fn into_state_query(self) -> StateQuery {
         match self.0 {
