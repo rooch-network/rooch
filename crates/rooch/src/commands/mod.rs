@@ -20,6 +20,7 @@ pub mod server;
 pub mod session_key;
 pub mod state;
 pub mod statedb;
+pub mod task;
 pub mod transaction;
 pub mod upgrade;
 pub mod util;

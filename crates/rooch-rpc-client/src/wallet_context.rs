@@ -228,11 +228,13 @@ impl WalletContext {
         &self,
         sender: RoochAddress,
         action: MoveAction,
-        password: Option<String>,
+        _password: Option<String>,
         max_gas_amount: Option<u64>,
     ) -> RoochResult<RoochTransaction> {
         let tx_data = self.build_tx_data(sender, action, max_gas_amount).await?;
-        let tx = self.keystore.sign_transaction(&sender, tx_data, password)?;
+        let tx = self
+            .keystore
+            .sign_transaction(&sender, tx_data, self.password.clone())?;
         Ok(tx)
     }
 

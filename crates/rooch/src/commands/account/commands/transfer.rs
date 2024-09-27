@@ -44,7 +44,7 @@ pub struct TransferCommand {
 #[async_trait]
 impl CommandAction<ExecuteTransactionResponseView> for TransferCommand {
     async fn execute(self) -> RoochResult<ExecuteTransactionResponseView> {
-        let context = self.context.build()?;
+        let context = self.context.build_require_password()?;
         let mapping = context.address_mapping();
         let sender: RoochAddress = context.resolve_address(self.tx_options.sender)?.into();
         let max_gas_amount: Option<u64> = self.tx_options.max_gas_amount;
