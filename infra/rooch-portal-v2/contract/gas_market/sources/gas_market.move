@@ -107,6 +107,11 @@ module gas_market::gas_market {
             + amount
     }
 
+    public fun exists_new_events(rgas_market_obj: &Object<RGasMarket>): bool {
+        let rgas_market = object::borrow(rgas_market_obj);
+        event_queue::exists_new_events(&rgas_market.utxo_subscriber)
+    }
+
     public entry fun consume_event(
         rgas_market_obj: &mut Object<RGasMarket>,
     ) {
