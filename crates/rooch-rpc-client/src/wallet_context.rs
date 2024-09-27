@@ -16,9 +16,7 @@ use rooch_config::{rooch_config_dir, ROOCH_CLIENT_CONFIG};
 use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_key::keystore::file_keystore::FileBasedKeystore;
 use rooch_key::keystore::Keystore;
-use rooch_rpc_api::jsonrpc_types::{
-    DryRunTransactionResponseView, ExecuteTransactionResponseView, KeptVMStatusView, TxOptions,
-};
+use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, KeptVMStatusView, TxOptions};
 use rooch_types::address::RoochAddress;
 use rooch_types::address::{BitcoinAddress, ParsedAddress};
 use rooch_types::bitcoin::network::Network;
@@ -280,18 +278,6 @@ impl WalletContext {
 
     pub fn get_key_pair(&self, address: &RoochAddress) -> Result<RoochKeyPair> {
         self.keystore.get_key_pair(address, self.password.clone())
-    }
-
-    pub async fn dry_run(
-        &self,
-        tx: RoochTransactionData,
-    ) -> RoochResult<DryRunTransactionResponseView> {
-        let client = self.get_client().await?;
-        client
-            .rooch
-            .dry_run_tx(tx)
-            .await
-            .map_err(|e| RoochError::DryRunTransactionError(e.to_string()))
     }
 
     pub fn assert_execute_success(

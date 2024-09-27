@@ -64,15 +64,6 @@ impl ExecutorProxy {
         self.actor.send(ValidateL2TxMessage { tx }).await?
     }
 
-    pub async fn convert_to_verified_tx(
-        &self,
-        tx_data: RoochTransactionData,
-    ) -> Result<VerifiedMoveOSTransaction> {
-        self.actor
-            .send(ConvertL2TransactionData { tx_data })
-            .await?
-    }
-
     pub async fn validate_l1_block(
         &self,
         l1_block: L1BlockWithBody,
@@ -82,6 +73,15 @@ impl ExecutorProxy {
 
     pub async fn validate_l1_tx(&self, l1_tx: L1Transaction) -> Result<VerifiedMoveOSTransaction> {
         self.actor.send(ValidateL1TxMessage { l1_tx }).await?
+    }
+
+    pub async fn convert_to_verified_tx(
+        &self,
+        tx_data: RoochTransactionData,
+    ) -> Result<VerifiedMoveOSTransaction> {
+        self.actor
+            .send(ConvertL2TransactionData { tx_data })
+            .await?
     }
 
     //TODO ensure the execute result

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_types::{CommandAction, TransactionOptions, WalletContextOptions};
+use crate::tx_runner::dry_run_tx_locally;
 use async_trait::async_trait;
 use clap::Parser;
 use move_cli::Move;
@@ -144,6 +145,10 @@ pub struct Publish {
     /// Return command outputs in json format
     #[clap(long, default_value = "false")]
     json: bool,
+
+    /// Run the DryRun for this transaction
+    #[clap(long, default_value = "false")]
+    dry_run: bool,
 }
 
 #[async_trait]
@@ -240,16 +245,22 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
                 vec![args],
             );
 
-            let dry_run_result = context
-                .dry_run(
-                    context
-                        .build_tx_data(sender, action.clone(), max_gas_amount)
-                        .await?,
-                )
-                .await;
+            if self.dry_run {
+                let rooch_tx_data = context
+                    .build_tx_data(sender, action.clone(), max_gas_amount)
+                    .await?;
+                let dry_run_result_opt =
+                    dry_run_tx_locally(context.get_client().await?, rooch_tx_data).await?;
+
+                if let Some(dry_run_result) = dry_run_result_opt {
+                    if dry_run_result.raw_output.status != KeptVMStatusView::Executed {
+                        return Ok(dry_run_result.into());
+                    }
+                }
+            }
 
             // Handle transaction with or without authenticator
-            let mut result = match self.tx_options.authenticator {
+            match self.tx_options.authenticator {
                 Some(authenticator) => {
                     let tx_data = context
                         .build_tx_data(sender, action, max_gas_amount)
@@ -281,15 +292,7 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
                             .await?
                     }
                 }
-            };
-
-            if let Ok(dry_run_resp) = dry_run_result {
-                if dry_run_resp.raw_output.status != KeptVMStatusView::Executed {
-                    result.error_info = Some(dry_run_resp);
-                }
             }
-
-            result
         } else {
             // Handle MoveAction.ModuleBundle case
             let action = MoveAction::ModuleBundle(bundles);

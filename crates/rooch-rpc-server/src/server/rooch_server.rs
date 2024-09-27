@@ -170,18 +170,15 @@ impl RoochAPIServer for RoochServer {
         let tx = bcs::from_bytes::<RoochTransactionData>(&payload.0)?;
         let tx_result = self.rpc_service.dry_run_tx(tx).await?;
         let raw_output = tx_result.raw_output;
-
         let raw_output_view = RawTransactionOutputView {
             status: raw_output.status.into(),
             gas_used: raw_output.gas_used.into(),
             is_upgrade: raw_output.is_upgrade,
         };
-
         let tx_response = DryRunTransactionResponseView {
             raw_output: raw_output_view,
             vm_error_info: tx_result.vm_error_info.unwrap_or_default(),
         };
-
         Ok(tx_response)
     }
 
