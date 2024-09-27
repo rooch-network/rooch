@@ -12,7 +12,7 @@ use moveos_types::module_binding::MoveFunctionCaller;
 use moveos_types::move_types::type_tag_match;
 use moveos_types::moveos_std::display::{get_object_display_id, RawDisplay};
 use moveos_types::moveos_std::event::{AnnotatedEvent, Event, EventID};
-use moveos_types::moveos_std::object::ObjectID;
+use moveos_types::moveos_std::object::{ObjectID, MAX_OBJECT_IDS_PER_QUERY};
 use moveos_types::state::{AnnotatedState, FieldKey, ObjectState, StateChangeSet};
 use moveos_types::state_resolver::{AnnotatedStateKV, StateKV};
 use moveos_types::transaction::{FunctionCall, TransactionExecutionInfo};
@@ -122,7 +122,6 @@ impl RpcService {
         access_path: AccessPath,
         state_root: Option<H256>,
     ) -> Result<Vec<Option<ObjectState>>> {
-        access_path.validate_max_object_ids()?;
         self.executor.get_states(access_path, state_root).await
     }
 
@@ -137,7 +136,6 @@ impl RpcService {
         &self,
         access_path: AccessPath,
     ) -> Result<Vec<Option<AnnotatedState>>> {
-        access_path.validate_max_object_ids()?;
         self.executor.get_annotated_states(access_path).await
     }
 
@@ -148,7 +146,6 @@ impl RpcService {
         cursor: Option<FieldKey>,
         limit: usize,
     ) -> Result<Vec<StateKV>> {
-        access_path.validate_max_object_ids()?;
         self.executor
             .list_states(state_root, access_path, cursor, limit)
             .await
@@ -160,7 +157,6 @@ impl RpcService {
         cursor: Option<FieldKey>,
         limit: usize,
     ) -> Result<Vec<AnnotatedStateKV>> {
-        access_path.validate_max_object_ids()?;
         self.executor
             .list_annotated_states(access_path, cursor, limit)
             .await
@@ -362,16 +358,14 @@ impl RpcService {
         show_display: bool,
         state_type: ObjectStateType,
     ) -> Result<Vec<IndexerObjectStateView>> {
-        const MAX_OBJECT_IDS: usize = 100;
-
         let indexer_ids = match filter {
             // Compatible with object_ids query after split object_states
             // Do not query the indexer, directly return the states query results.
             ObjectStateFilter::ObjectId(object_ids) => {
-                if object_ids.len() > MAX_OBJECT_IDS {
+                if object_ids.len() > MAX_OBJECT_IDS_PER_QUERY {
                     return Err(anyhow::anyhow!(
                         "Too many object IDs requested. Maximum allowed: {}",
-                        MAX_OBJECT_IDS
+                        MAX_OBJECT_IDS_PER_QUERY
                     ));
                 }
                 object_ids
@@ -592,6 +586,12 @@ impl RpcService {
             match repair_type {
                 RepairIndexerType::ObjectState => match repair_params {
                     RepairIndexerParams::ObjectId(object_ids) => {
+                        if object_ids.len() > MAX_OBJECT_IDS_PER_QUERY {
+                            return Err(anyhow::anyhow!(
+                                "Too many object IDs requested. Maximum allowed: {}",
+                                MAX_OBJECT_IDS_PER_QUERY
+                            ));
+                        }
                         let states = self
                             .get_states(AccessPath::objects(object_ids.clone()), None)
                             .await?;
