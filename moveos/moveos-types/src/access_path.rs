@@ -6,7 +6,7 @@ use crate::moveos_std::module_store::Package;
 use crate::state::FieldKey;
 use crate::{
     move_types::{random_identity, random_struct_tag},
-    moveos_std::object::ObjectID,
+    moveos_std::object::{ObjectID, MAX_OBJECT_IDS_PER_QUERY},
 };
 use anyhow::{ensure, Result};
 use move_core_types::language_storage::ModuleId;
@@ -289,6 +289,18 @@ impl AccessPath {
             object_id,
             fields: vec![],
         })
+    }
+
+    pub fn validate_max_object_ids(&self) -> Result<()> {
+        if let Path::Object { object_ids } = &self.0 {
+            if object_ids.len() > MAX_OBJECT_IDS_PER_QUERY {
+                return Err(anyhow::anyhow!(
+                    "Too many object IDs requested. Maximum allowed: {}",
+                    MAX_OBJECT_IDS_PER_QUERY
+                ));
+            }
+        }
+        Ok(())
     }
 
     /// Convert AccessPath to StateQuery, return the ObjectID and field keys

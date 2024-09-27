@@ -12,7 +12,7 @@ use moveos_types::module_binding::MoveFunctionCaller;
 use moveos_types::move_types::type_tag_match;
 use moveos_types::moveos_std::display::{get_object_display_id, RawDisplay};
 use moveos_types::moveos_std::event::{AnnotatedEvent, Event, EventID};
-use moveos_types::moveos_std::object::ObjectID;
+use moveos_types::moveos_std::object::{ObjectID, MAX_OBJECT_IDS_PER_QUERY};
 use moveos_types::state::{AnnotatedState, FieldKey, ObjectState, StateChangeSet};
 use moveos_types::state_resolver::{AnnotatedStateKV, StateKV};
 use moveos_types::transaction::{FunctionCall, TransactionExecutionInfo};
@@ -358,16 +358,14 @@ impl RpcService {
         show_display: bool,
         state_type: ObjectStateType,
     ) -> Result<Vec<IndexerObjectStateView>> {
-        const MAX_OBJECT_IDS: usize = 100;
-
         let indexer_ids = match filter {
             // Compatible with object_ids query after split object_states
             // Do not query the indexer, directly return the states query results.
             ObjectStateFilter::ObjectId(object_ids) => {
-                if object_ids.len() > MAX_OBJECT_IDS {
+                if object_ids.len() > MAX_OBJECT_IDS_PER_QUERY {
                     return Err(anyhow::anyhow!(
                         "Too many object IDs requested. Maximum allowed: {}",
-                        MAX_OBJECT_IDS
+                        MAX_OBJECT_IDS_PER_QUERY
                     ));
                 }
                 object_ids
@@ -588,18 +586,29 @@ impl RpcService {
             match repair_type {
                 RepairIndexerType::ObjectState => match repair_params {
                     RepairIndexerParams::ObjectId(object_ids) => {
-                        self.repair_indexer_object_states(
-                            object_ids.clone(),
+                        if object_ids.len() > MAX_OBJECT_IDS_PER_QUERY {
+                            return Err(anyhow::anyhow!(
+                                "Too many object IDs requested. Maximum allowed: {}",
+                                MAX_OBJECT_IDS_PER_QUERY
+                            ));
+                        }
+                        let states = self
+                            .get_states(AccessPath::objects(object_ids.clone()), None)
+                            .await?;
+                        for state_type in [
                             ObjectStateType::ObjectState,
-                        )
-                        .await?;
-                        self.repair_indexer_object_states(
-                            object_ids.clone(),
                             ObjectStateType::UTXO,
-                        )
-                        .await?;
-                        self.repair_indexer_object_states(object_ids, ObjectStateType::Inscription)
-                            .await
+                            ObjectStateType::Inscription,
+                        ] {
+                            self.repair_indexer_object_states(
+                                states.clone(),
+                                &object_ids,
+                                state_type,
+                            )
+                            .await?;
+                        }
+
+                        Ok(())
                     }
                     _ => Err(format_err!(
                         "Invalid params when repair indexer for ObjectState"
@@ -617,14 +626,11 @@ impl RpcService {
 
     pub async fn repair_indexer_object_states(
         &self,
-        object_ids: Vec<ObjectID>,
+        states: Vec<Option<ObjectState>>,
+        object_ids: &[ObjectID],
         state_type: ObjectStateType,
     ) -> Result<()> {
         {
-            let states = self
-                .get_states(AccessPath::objects(object_ids.clone()), None)
-                .await?;
-
             let mut remove_object_ids = vec![];
             let mut object_states_mapping = HashMap::new();
             for (idx, state_opt) in states.into_iter().enumerate() {

@@ -201,6 +201,7 @@ impl RoochAPIServer for RoochServer {
         access_path: AccessPathView,
         state_option: Option<StateOptions>,
     ) -> RpcResult<Vec<Option<ObjectStateView>>> {
+        access_path.0.validate_max_object_ids()?;
         let state_option = state_option.unwrap_or_default();
         let show_display =
             state_option.show_display && (access_path.0.is_object() || access_path.0.is_resource());
@@ -257,6 +258,7 @@ impl RoochAPIServer for RoochServer {
         limit: Option<StrView<u64>>,
         state_option: Option<StateOptions>,
     ) -> RpcResult<StatePageView> {
+        access_path.0.validate_max_object_ids()?;
         let state_option = state_option.unwrap_or_default();
         let show_display =
             state_option.show_display && (access_path.0.is_object() || access_path.0.is_resource());
