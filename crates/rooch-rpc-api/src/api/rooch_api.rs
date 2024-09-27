@@ -214,8 +214,4 @@ pub trait RoochAPI {
     /// Get the chain and service status
     #[method(name = "status")]
     async fn status(&self) -> RpcResult<Status>;
-
-    /// Get the current sequencer order
-    #[method(name = "sequencerOrder")]
-    async fn sequencer_order(&self) -> RpcResult<u64>;
 }

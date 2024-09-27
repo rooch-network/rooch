@@ -856,10 +856,6 @@ impl RoochAPIServer for RoochServer {
         let status = self.rpc_service.status().await?;
         Ok(status)
     }
-
-    async fn sequencer_order(&self) -> RpcResult<u64> {
-        Ok(self.rpc_service.get_sequencer_order().await?)
-    }
 }
 
 impl RoochRpcModule for RoochServer {

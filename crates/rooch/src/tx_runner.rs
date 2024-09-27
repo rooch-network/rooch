@@ -37,7 +37,6 @@ use rooch_types::framework::system_pre_execute_functions;
 use rooch_types::transaction::RoochTransactionData;
 use std::rc::Rc;
 use std::str::FromStr;
-use tokio::runtime::Handle;
 
 pub fn execute_tx_locally(
     state_root_bytes: Vec<u8>,
@@ -265,12 +264,11 @@ fn convert_to_verified_tx(
     ))
 }
 
-pub fn dry_run_tx_locally(
+pub async fn dry_run_tx_locally(
     client: Client,
     tx: RoochTransactionData,
 ) -> anyhow::Result<Option<DryRunTransactionResponseView>> {
-    let state_root =
-        get_latest_state_root(&client)?.expect("getting the latest state root is failed");
+    let state_root = get_latest_state_root(&client).await?;
     let (_, raw_transaction_output, error_info_opt) = execute_tx_locally(state_root, client, tx)?;
 
     match error_info_opt {
@@ -289,26 +287,15 @@ pub fn dry_run_tx_locally(
     }
 }
 
-fn get_latest_state_root(client: &Client) -> anyhow::Result<Option<Vec<u8>>> {
-    tokio::task::block_in_place(|| {
-        Handle::current().block_on(async {
-            let sequencer_order = client.rooch.sequencer_order().await?;
-            let transaction = client
-                .rooch
-                .get_transactions_by_order(Some(sequencer_order), Some(1), Some(false))
-                .await?;
-            match transaction.data.first() {
-                Some(tx_view_info) => {
-                    if let Some(tx_execution_info) = tx_view_info.clone().execution_info {
-                        Ok(Some(tx_execution_info.state_root.0.as_bytes().to_vec()))
-                    } else {
-                        Ok(None)
-                    }
-                }
-                None => Ok(None),
-            }
-        })
-    })
+async fn get_latest_state_root(client: &Client) -> anyhow::Result<Vec<u8>> {
+    let status = client.rooch.status().await?;
+    Ok(status
+        .rooch_status
+        .root_state
+        .state_root
+        .0
+        .as_bytes()
+        .to_vec())
 }
 
 fn extract_execution_state(

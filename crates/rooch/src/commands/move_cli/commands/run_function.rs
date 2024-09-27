@@ -98,7 +98,7 @@ impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
                 .build_tx_data(sender, action.clone(), max_gas_amount)
                 .await?;
             let dry_run_result_opt =
-                dry_run_tx_locally(context.get_client().await?, rooch_tx_data)?;
+                dry_run_tx_locally(context.get_client().await?, rooch_tx_data).await?;
 
             if let Some(dry_run_result) = dry_run_result_opt {
                 if dry_run_result.raw_output.status != KeptVMStatusView::Executed {

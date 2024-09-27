@@ -18,7 +18,7 @@ use rooch_rpc_api::jsonrpc_types::btc::utxo::{UTXOFilterView, UTXOObjectView};
 use rooch_rpc_api::jsonrpc_types::transaction_view::TransactionFilterView;
 use rooch_rpc_api::jsonrpc_types::{
     account_view::BalanceInfoView, transaction_view::TransactionWithInfoView, InscriptionPageView,
-    UTXOPageView,
+    Status, UTXOPageView,
 };
 use rooch_rpc_api::jsonrpc_types::{
     AccessPathView, AnnotatedFunctionResultView, BalanceInfoPageView, BytesView, EventOptions,
@@ -427,7 +427,7 @@ impl RoochRpcClient {
         obj_state.map(InscriptionObjectView::try_from).transpose()
     }
 
-    pub async fn sequencer_order(&self) -> Result<u64> {
-        Ok(self.http.sequencer_order().await?)
+    pub async fn status(&self) -> Result<Status> {
+        Ok(self.http.status().await?)
     }
 }
