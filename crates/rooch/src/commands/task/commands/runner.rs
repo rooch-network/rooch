@@ -92,15 +92,15 @@ pub struct FunctionRunner<'a> {
 
 impl<'a> FunctionRunner<'a> {
     pub async fn run_function(&self) -> Result<ExecuteTransactionResponseView> {
-        let response = self
+        let tx_data = self
             .context
-            .sign_and_execute(
+            .build_tx_data(
                 self.sender,
                 MoveAction::Function(self.function_call.clone()),
-                None,
                 self.max_gas_amount,
             )
             .await?;
+        let response = self.context.sign_and_execute(self.sender, tx_data).await?;
         if response.execution_info.status != KeptVMStatusView::Executed {
             bail!("{:?}, ", response.execution_info.status);
         }

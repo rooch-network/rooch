@@ -6,8 +6,6 @@ use async_trait::async_trait;
 use clap::Parser;
 use move_command_line_common::types::ParsedStructType;
 use move_core_types::u256::U256;
-use rooch_key::key_derive::verify_password;
-use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_rpc_api::jsonrpc_types::ExecuteTransactionResponseView;
 use rooch_types::address::ParsedAddress;
 use rooch_types::address::RoochAddress;
@@ -16,7 +14,6 @@ use rooch_types::{
     error::{RoochError, RoochResult},
     transaction::rooch::RoochTransaction,
 };
-use rpassword::prompt_password;
 
 /// Transfer coins
 #[derive(Debug, Parser)]
@@ -53,75 +50,23 @@ impl CommandAction<ExecuteTransactionResponseView> for TransferCommand {
         let action =
             TransferModule::create_transfer_coin_action(coin_type, address_addr, self.amount);
 
+        let tx_data = context
+            .build_tx_data(sender, action, max_gas_amount)
+            .await?;
         match (self.tx_options.authenticator, self.tx_options.session_key) {
             (Some(authenticator), _) => {
-                let tx_data = context
-                    .build_tx_data(sender, action, max_gas_amount)
-                    .await?;
                 //TODO the authenticator usually is associated with the RoochTransactinData
                 //So we need to find a way to let user generate the authenticator based on the tx_data.
                 let tx = RoochTransaction::new(tx_data, authenticator.into());
                 context.execute(tx).await
             }
-            (_, Some(session_key)) => {
-                let tx_data = context
-                    .build_tx_data(sender, action, max_gas_amount)
-                    .await?;
-                let tx = if context.keystore.get_if_password_is_empty() {
-                    context
-                        .keystore
-                        .sign_transaction_via_session_key(&sender, tx_data, &session_key, None)
-                        .map_err(|e| RoochError::SignMessageError(e.to_string()))?
-                } else {
-                    let password =
-                        prompt_password("Enter the password to run functions:").unwrap_or_default();
-                    let is_verified = verify_password(
-                        Some(password.clone()),
-                        context.keystore.get_password_hash(),
-                    )?;
-
-                    if !is_verified {
-                        return Err(RoochError::InvalidPasswordError(
-                            "Password is invalid".to_owned(),
-                        ));
-                    }
-
-                    context
-                        .keystore
-                        .sign_transaction_via_session_key(
-                            &sender,
-                            tx_data,
-                            &session_key,
-                            Some(password),
-                        )
-                        .map_err(|e| RoochError::SignMessageError(e.to_string()))?
-                };
+            (_, Some(auth_key)) => {
+                let tx = context
+                    .sign_transaction_via_session_key(&sender, tx_data, &auth_key)
+                    .map_err(|e| RoochError::SignMessageError(e.to_string()))?;
                 context.execute(tx).await
             }
-            (None, None) => {
-                if context.keystore.get_if_password_is_empty() {
-                    context
-                        .sign_and_execute(sender, action, None, max_gas_amount)
-                        .await
-                } else {
-                    let password =
-                        prompt_password("Enter the password to run functions:").unwrap_or_default();
-                    let is_verified = verify_password(
-                        Some(password.clone()),
-                        context.keystore.get_password_hash(),
-                    )?;
-
-                    if !is_verified {
-                        return Err(RoochError::InvalidPasswordError(
-                            "Password is invalid".to_owned(),
-                        ));
-                    }
-
-                    context
-                        .sign_and_execute(sender, action, Some(password), max_gas_amount)
-                        .await
-                }
-            }
+            (None, None) => context.sign_and_execute(sender, tx_data).await,
         }
     }
 }

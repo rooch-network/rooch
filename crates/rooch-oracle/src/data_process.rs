@@ -89,7 +89,6 @@ pub async fn subscribe_http(url: String, tx: mpsc::Sender<Value>, interval: u64)
 }
 
 pub struct State {
-    pub(crate) wallet_pwd: Option<String>,
     pub context: WalletContext,
 }
 
@@ -99,11 +98,8 @@ pub async fn execute_transaction<'a>(
     state: RwLockWriteGuard<'a, State>,
 ) -> Result<()> {
     let sender: RoochAddress = state.context.client_config.active_address.unwrap();
-    let pwd = state.wallet_pwd.clone();
-    let result = state
-        .context
-        .sign_and_execute(sender, action, pwd, None)
-        .await;
+    let tx_data = state.context.build_tx_data(sender, action, None).await?;
+    let result = state.context.sign_and_execute(sender, tx_data).await;
     match result {
         Ok(tx) => match tx.execution_info.status {
             KeptVMStatusView::Executed => {

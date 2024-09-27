@@ -153,52 +153,28 @@ impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
                 context.execute(tx).await?
             }
             (None, None) => {
-                if context.keystore.get_if_password_is_empty() {
-                    context
-                        .sign_and_execute(sender, action, None, max_gas_amount)
-                        .await?
-                } else {
-                    let password =
-                        prompt_password("Enter the password to run functions:").unwrap_or_default();
-                    let is_verified = verify_password(
-                        Some(password.clone()),
-                        context.keystore.get_password_hash(),
+                let tx_data = context
+                    .build_tx_data(sender, action.clone(), max_gas_amount)
+                    .await?;
+                let tx_execution_result = context.sign_and_execute(sender, tx_data.clone()).await?;
+
+                if self.gas_profile {
+                    //TODO FIXME we should use the state_root from previous tx
+                    let state_root = tx_execution_result
+                        .execution_info
+                        .state_root
+                        .0
+                        .as_bytes()
+                        .to_vec();
+
+                    execute_tx_locally_with_gas_profile(
+                        state_root,
+                        context.get_client().await?,
+                        tx_data,
                     )?;
-
-                    if !is_verified {
-                        return Err(RoochError::InvalidPasswordError(
-                            "Password is invalid".to_owned(),
-                        ));
-                    }
-
-                    let tx_execution_result = context
-                        .sign_and_execute(
-                            sender,
-                            action.clone(),
-                            Some(password.clone()),
-                            max_gas_amount,
-                        )
-                        .await?;
-
-                    if self.gas_profile {
-                        let state_root = tx_execution_result
-                            .execution_info
-                            .state_root
-                            .0
-                            .as_bytes()
-                            .to_vec();
-                        let tx = context
-                            .sign(sender, action, Some(password), max_gas_amount)
-                            .await?;
-                        execute_tx_locally_with_gas_profile(
-                            state_root,
-                            context.get_client().await?,
-                            tx.data,
-                        )?;
-                    }
-
-                    tx_execution_result
                 }
+
+                tx_execution_result
             }
         };
 

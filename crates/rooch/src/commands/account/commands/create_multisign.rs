@@ -83,7 +83,7 @@ impl CommandAction<Option<MultisignAccountOutput>> for CreateMultisignCommand {
             let tx_data = context
                 .build_tx_data(sender, action, self.tx_options.max_gas_amount)
                 .await?;
-            let signed_tx = context.sign_transaction(sender, tx_data).await?;
+            let signed_tx = context.sign_transaction(sender, tx_data)?;
             let result = context.execute(signed_tx).await?;
             context.assert_execute_success(result)?;
         }

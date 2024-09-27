@@ -52,13 +52,11 @@ pub struct Binance {
 
 impl Binance {
     pub async fn new(config: BinanceConfig) -> Self {
-        let wallet = WalletContext::new(config.binance_wallet_dir.clone()).unwrap();
+        let mut wallet = WalletContext::new(config.binance_wallet_dir.clone()).unwrap();
         let wallet_pwd = config.binance_wallet_pwd.clone();
+        wallet.set_password(wallet_pwd);
         Self {
-            wallet_state: Arc::new(RwLock::new(State {
-                wallet_pwd,
-                context: wallet,
-            })),
+            wallet_state: Arc::new(RwLock::new(State { context: wallet })),
             binance_config: config,
         }
     }
