@@ -121,15 +121,22 @@ impl CommandAction<Option<BalancesView>> for BalanceCommand {
                 match balance_info {
                     BalanceInfoViewUnion::Bitcoin(bitcoin_balance) => {
                         balances_view.insert(
-                            bitcoin_balance.coin_info.name.to_string(),
+                            bitcoin_balance.coin_info.symbol.to_string(),
                             bitcoin_balance.into(),
                         );
                     }
                     BalanceInfoViewUnion::Other(other_balance) => {
-                        balances_view.insert(
-                            other_balance.coin_info.coin_type.to_string(),
-                            other_balance.into(),
-                        );
+                        if balances_view.contains_key(&other_balance.coin_info.symbol) {
+                            balances_view.insert(
+                                other_balance.coin_info.coin_type.to_string(),
+                                other_balance.into(),
+                            );
+                        } else {
+                            balances_view.insert(
+                                other_balance.coin_info.symbol.to_string(),
+                                other_balance.into(),
+                            );
+                        }
                     }
                 }
             }

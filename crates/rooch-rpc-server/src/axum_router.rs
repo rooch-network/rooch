@@ -161,7 +161,7 @@ async fn process_request(req: Request<'_>, call: CallData<'_>) -> MethodResponse
     let id = req.id;
 
     tracing::event!(
-        tracing::Level::INFO,
+        tracing::Level::DEBUG,
         event = "on_call",
         method = name_str,
         params = params_str,
@@ -221,7 +221,7 @@ async fn process_request(req: Request<'_>, call: CallData<'_>) -> MethodResponse
     };
 
     tracing::event!(
-        tracing::Level::INFO,
+        tracing::Level::DEBUG,
         event = "on_result",
         method = name_str,
         result = response.as_result(),
