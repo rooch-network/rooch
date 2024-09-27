@@ -1,0 +1,59 @@
+# 多签账户
+
+## 概述
+
+## 使用演示
+
+### 创建多签
+
+```bash
+rooch account create-multisign -t 2 -p $Pubkey1 -p $Pubkey2 -p $Pubkey3
+```
+
+### 生成多签交易
+
+```bash
+rooch bitcoin build-tx --sender $multisign_bitcoin_address -o $to_address:amount_sats
+```
+
+### 签名交易
+
+```bash
+rooch bitcoin sign-tx -s $Pubkey1_address /tmp/xxxxx.psbt
+rooch bitcoin sign-tx -s $Pubkey2_address /tmp/xxxxx.psbt
+```
+
+### 广播交易
+
+```bash
+rooch bitcoin broadcast-tx /tmp/xxxxx.tx
+```
+
+<++>
+
+
+Summary
+Implement rooch bitcoin command
+bump bitcoin to 0.32.2, and remove nostr
+close #2414 and close #2581
+
+Usage:
+
+Create multisign
+Got the multisign_bitcoin_address
+
+Build tx
+rooch bitcoin build-tx --sender $multisign_bitcoin_address -o $to_address:amount_sats
+{
+  "content": "hex content",
+  "output_type": "psbt",
+  "path": "/tmp/xxxxx.psbt"
+}
+Sign tx
+rooch bitcoin sign-tx -s $Pubkey1_address /tmp/xxxxx.psbt
+rooch bitcoin sign-tx -s $Pubkey2_address /tmp/xxxxx.psbt
+Got xxxxx.tx
+
+Broadcast tx
+rooch bitcoin broadcast-tx /tmp/xxxxx.tx
+Note: the taproot multisign signature order in the witness should be reversed with the public key order in the script. Thanks to rust-bitcoin/rust-bitcoin#2241
