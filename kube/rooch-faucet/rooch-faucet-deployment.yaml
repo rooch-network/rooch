@@ -20,6 +20,7 @@ spec:
         - |
           if [ ! -f /root/.rooch/initialized ]; then
             /rooch/rooch init -m "${INIT_SECRET}" --skip-password
+            /rooch/rooch env switch --alias test
             ls -la /root/.rooch/rooch_config/
             touch /root/.rooch/initialized
           fi
