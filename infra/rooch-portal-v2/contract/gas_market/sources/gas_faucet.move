@@ -25,11 +25,11 @@ module gas_market::gas_faucet {
     //0.1 BTC
     const SAT_LEVEL_TWO: u64 = 10000000;
 
-    const ErrorAirdropNotOpen: u64 = 0;
-    const ErrorInvalidUTXO: u64 = 1;
-    const ErrorAirdropNotEnoughRGas: u64 = 2;
-    const ErrorAlreadyClaimed: u64 = 3;
-    const ErrorUTXOValueIsZero: u64 = 4;
+    const ErrorFaucetNotOpen: u64 = 1;
+    const ErrorInvalidUTXO: u64 = 2;
+    const ErrorFaucetNotEnoughRGas: u64 = 3;
+    const ErrorAlreadyClaimed: u64 = 4;
+    const ErrorUTXOValueIsZero: u64 = 5;
 
 
     struct RGasFaucet has key{
@@ -67,23 +67,8 @@ module gas_market::gas_faucet {
 
     /// Anyone can call this function to help the claimer claim the faucet
     public entry fun claim(faucet_obj: &mut Object<RGasFaucet>, claimer: address, utxo_ids: vector<ObjectID>){      
+      let claim_rgas_amount = Self::check_claim(faucet_obj, claimer, utxo_ids);
       let faucet = object::borrow_mut(faucet_obj);
-      assert!(faucet.is_open, ErrorAirdropNotOpen);
-      if (!faucet.allow_repeat) {
-        assert!(!table::contains(&faucet.claim_records, claimer), ErrorAlreadyClaimed);
-      };
-      let total_sat_amount = Self::total_sat_amount(claimer, utxo_ids);
-      let claim_rgas_amount = Self::sat_amount_to_rgas(total_sat_amount);
-      if (claim_rgas_amount == 0) {
-        if(faucet.require_utxo){
-          abort ErrorUTXOValueIsZero
-        }else{
-          claim_rgas_amount = ONE_RGAS;
-        }
-      };
-
-      let remaining_rgas_amount = coin_store::balance(&faucet.rgas_store);
-      assert!(claim_rgas_amount <= remaining_rgas_amount, ErrorAirdropNotEnoughRGas);
       let rgas_coin = coin_store::withdraw(&mut faucet.rgas_store, claim_rgas_amount);
       account_coin_store::deposit<RGas>(claimer, rgas_coin);
       let total_claim_amount = table::borrow_mut_with_default(&mut faucet.claim_records, claimer, 0u256);
@@ -118,10 +103,35 @@ module gas_market::gas_faucet {
         coin_store::deposit(rgas_store, rgas_coin);
     }
 
-    /// A view function to get the amount of RGas that can be claimed
-    public fun get_claimable_rgas(claimer: address, utxo_ids: vector<ObjectID>): u256 {
+    /// A view function to check the amount of RGas that can be claimed
+    /// Return the amount of RGas that can be claimed
+    /// Abort if the claimer is not allowed to claim
+    public fun check_claim(faucet_obj: &mut Object<RGasFaucet>, claimer: address, utxo_ids: vector<ObjectID>): u256 {
+      let faucet = object::borrow(faucet_obj);
+      assert!(faucet.is_open, ErrorFaucetNotOpen);
+
+      if (!faucet.allow_repeat && table::contains(&faucet.claim_records, claimer)) {
+        abort ErrorAlreadyClaimed
+      };
+      
       let total_sat_amount = Self::total_sat_amount(claimer, utxo_ids);
-      Self::sat_amount_to_rgas(total_sat_amount)
+      if (faucet.require_utxo && total_sat_amount == 0) {
+        abort ErrorUTXOValueIsZero
+      };
+      let claim_rgas_amount = Self::sat_amount_to_rgas(total_sat_amount);
+      if (claim_rgas_amount == 0) {
+        claim_rgas_amount = ONE_RGAS;
+      };
+      let remaining_rgas_amount = coin_store::balance(&faucet.rgas_store);
+      if (claim_rgas_amount > remaining_rgas_amount) {
+        abort ErrorFaucetNotEnoughRGas
+      };
+      claim_rgas_amount
+    }
+
+    public fun balance(faucet_obj: &Object<RGasFaucet>): u256 {
+        let faucet = object::borrow(faucet_obj);
+        coin_store::balance(&faucet.rgas_store)
     }
 
     public entry fun close_faucet(

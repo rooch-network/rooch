@@ -40,8 +40,4 @@ impl FaucetError {
     pub(crate) fn internal(e: impl ToString) -> Self {
         FaucetError::Internal(e.to_string())
     }
-
-    pub(crate) fn transfer(e: impl ToString) -> Self {
-        FaucetError::Transfer(e.to_string())
-    }
 }

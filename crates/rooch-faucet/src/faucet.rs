@@ -1,192 +1,228 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{metrics::FaucetMetrics, FaucetError, FaucetRequest};
-use anyhow::Result;
+use crate::faucet_module;
+use crate::{metrics::FaucetMetrics, FaucetError};
+use anyhow::{bail, Result};
+use async_trait::async_trait;
 use clap::Parser;
-use move_core_types::language_storage::StructTag;
+use coerce::actor::context::ActorContext;
+use coerce::actor::message::{Handler, Message};
+use coerce::actor::Actor;
+use move_core_types::account_address::AccountAddress;
+use move_core_types::u256::U256;
+use move_core_types::vm_status::AbortLocation;
+use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::transaction::MoveAction;
 use prometheus::Registry;
+use rooch_rpc_api::jsonrpc_types::btc::utxo::UTXOFilterView;
+use rooch_rpc_api::jsonrpc_types::{KeptVMStatusView, UnitedAddressView, VMStatusView};
 use rooch_rpc_client::wallet_context::WalletContext;
-use rooch_types::address::{MultiChainAddress, RoochAddress};
-use rooch_types::authentication_key::AuthenticationKey;
-use rooch_types::framework::transfer::TransferModule;
-use std::env;
-use std::path::PathBuf;
-use std::str::FromStr;
-use std::sync::Arc;
-use tokio::sync::{
-    mpsc::{Receiver, Sender},
-    RwLock, RwLockWriteGuard,
-};
-
-use rooch_rpc_api::jsonrpc_types::KeptVMStatusView;
-use rooch_types::error::RoochError;
-
-pub const DEFAULT_AMOUNT: u64 = 1_000_000_000;
+use rooch_rpc_client::Client;
+use rooch_types::address::{ParsedAddress, RoochAddress};
+use tokio::sync::mpsc::Sender;
 
 #[derive(Parser, Debug, Clone)]
 pub struct FaucetConfig {
-    /// The amount of funds to grant to each account on startup in Rooch.
-    #[arg(
-        long, default_value_t = DEFAULT_AMOUNT,
-    )]
-    pub faucet_grant_amount: u64,
-
-    pub wallet_config_dir: Option<PathBuf>,
-
     #[clap(long, default_value_t = 10000)]
     pub max_request_queue_length: u64,
 
-    pub(crate) session_key: Option<AuthenticationKey>,
-}
+    #[clap(long)]
+    pub faucet_module_address: ParsedAddress,
 
-impl Default for FaucetConfig {
-    fn default() -> Self {
-        Self {
-            faucet_grant_amount: DEFAULT_AMOUNT,
-            wallet_config_dir: None,
-            session_key: None,
-            max_request_queue_length: 1000,
-        }
-    }
-}
+    #[clap(long)]
+    pub faucet_object_id: ObjectID,
 
-struct State {
-    config: FaucetConfig,
-    context: WalletContext,
-    // metrics: FaucetMetrics,
+    /// The address to send the faucet claim transaction
+    /// Default is the active address in the wallet
+    #[clap(long, default_value = "default")]
+    pub faucet_sender: ParsedAddress,
 }
 
 pub struct Faucet {
-    state: Arc<RwLock<State>>,
-    faucet_receiver: Arc<RwLock<Receiver<FaucetRequest>>>,
+    faucet_sender: RoochAddress,
+    faucet_module_address: AccountAddress,
+    faucet_object_id: ObjectID,
+    context: WalletContext,
     faucet_error_sender: Sender<FaucetError>,
+    // metrics: FaucetMetrics,
+}
+
+pub struct ClaimMessage {
+    pub claimer: UnitedAddressView,
+}
+
+impl Message for ClaimMessage {
+    type Result = Result<U256>;
+}
+
+pub struct BalanceMessage;
+
+impl Message for BalanceMessage {
+    type Result = Result<U256>;
+}
+
+#[async_trait]
+impl Actor for Faucet {}
+
+#[async_trait]
+impl Handler<ClaimMessage> for Faucet {
+    async fn handle(&mut self, msg: ClaimMessage, _ctx: &mut ActorContext) -> Result<U256> {
+        self.claim(msg.claimer).await
+    }
+}
+
+#[async_trait]
+impl Handler<BalanceMessage> for Faucet {
+    async fn handle(&mut self, _msg: BalanceMessage, _ctx: &mut ActorContext) -> Result<U256> {
+        self.balance().await
+    }
 }
 
 impl Faucet {
-    pub async fn new(
+    pub fn new(
         prometheus_registry: &Registry,
+        wallet_context: WalletContext,
         config: FaucetConfig,
-        faucet_receiver: Receiver<FaucetRequest>,
         faucet_error_sender: Sender<FaucetError>,
     ) -> Result<Self> {
-        let mut wallet = WalletContext::new(config.wallet_config_dir.clone()).unwrap();
         let _metrics = FaucetMetrics::new(prometheus_registry);
-        let wallet_pwd = match env::var("ROOCH_FAUCET_PWD") {
-            Ok(val) => Some(val.parse::<String>().unwrap()),
-            _ => None,
-        };
-        wallet.set_password(wallet_pwd);
+        let faucet_module_address = wallet_context.resolve_address(config.faucet_module_address)?;
+        let faucet_sender = wallet_context.resolve_address(config.faucet_sender)?;
         Ok(Self {
-            state: Arc::new(RwLock::new(State {
-                config,
-                context: wallet,
-            })),
+            faucet_sender: faucet_sender.into(),
+            faucet_module_address,
+            faucet_object_id: config.faucet_object_id,
+            context: wallet_context,
             faucet_error_sender,
-            faucet_receiver: Arc::new(RwLock::new(faucet_receiver)),
         })
     }
 
-    pub async fn start(self) -> Result<()> {
-        self.monitor_faucet_requests().await
-    }
+    async fn claim(&mut self, claimer: UnitedAddressView) -> Result<U256> {
+        tracing::debug!("claim address: {}", claimer);
+        let claimer_addr: AccountAddress = claimer.clone().into();
 
-    async fn monitor_faucet_requests(&self) -> Result<()> {
-        while let Some(request) = self.faucet_receiver.write().await.recv().await {
-            match request {
-                FaucetRequest::FixedBTCAddressRequest(req) => {
-                    let mul_addr = MultiChainAddress::from(req.recipient);
-                    self.transfer_gases_with_multi_addr(mul_addr)
-                        .await
-                        .expect("TODO: panic message");
-                }
-                FaucetRequest::FixedRoochAddressRequest(req) => {
-                    self.transfer_gases(req.recipient)
-                        .await
-                        .expect("TODO: panic message");
-                }
-                _ => {}
-            }
-        }
+        let client = self.context.get_client().await?;
+        let utxo_ids = Self::get_utxos(&client, claimer.clone()).await?;
+        let claim_amount = Self::check_claim(
+            &client,
+            self.faucet_module_address,
+            self.faucet_object_id.clone(),
+            claimer_addr,
+            utxo_ids.clone(),
+        )
+        .await?;
 
-        Ok(())
-    }
-
-    async fn execute_transaction<'a>(
-        &self,
-        action: MoveAction,
-        state: RwLockWriteGuard<'a, State>,
-    ) -> Result<()> {
-        let sender: RoochAddress = state.context.client_config.active_address.unwrap();
-        let tx_data = state
+        let function_call = faucet_module::claim_function_call(
+            self.faucet_module_address,
+            self.faucet_object_id.clone(),
+            claimer_addr,
+            utxo_ids,
+        );
+        let action = MoveAction::Function(function_call);
+        let tx_data = self
             .context
-            .build_tx_data(sender, action, None)
-            .await
-            .map_err(FaucetError::internal)?;
-        let result = if let Some(session_key) = state.config.session_key.clone() {
-            let tx = state
-                .context
-                .sign_transaction_via_session_key(&sender, tx_data, &session_key)
-                .map_err(|e| RoochError::SignMessageError(e.to_string()))
-                .map_err(FaucetError::internal)?;
-            state.context.execute(tx).await
-        } else {
-            state.context.sign_and_execute(sender, tx_data).await
-        };
-
-        match result {
-            Ok(tx) => match tx.execution_info.status {
-                KeptVMStatusView::Executed => {
-                    tracing::info!(
-                        "Transfer gases success tx_has: {}",
-                        tx.execution_info.tx_hash
-                    );
-                }
-                _ => {
-                    let err = FaucetError::Transfer(format!("{:?}", tx.execution_info.status));
-                    tracing::error!("Transfer gases failed {}", err);
-                    if let Err(e) = self.faucet_error_sender.try_send(err) {
-                        tracing::warn!("Failed to send error to faucet_error_sender: {:?}", e);
-                    }
-                }
-            },
-            Err(e) => {
-                let err = FaucetError::transfer(e);
-                tracing::error!("Transfer gases failed {}", err);
+            .build_tx_data(self.faucet_sender, action, None)
+            .await?;
+        let response = self
+            .context
+            .sign_and_execute(self.faucet_sender, tx_data)
+            .await?;
+        match response.execution_info.status {
+            KeptVMStatusView::Executed => {
+                tracing::info!("Claim success for {}", claimer);
+                Ok(claim_amount)
+            }
+            status => {
+                let err = FaucetError::Transfer(format!("{:?}", status));
                 if let Err(e) = self.faucet_error_sender.try_send(err) {
                     tracing::warn!("Failed to send error to faucet_error_sender: {:?}", e);
                 }
+                bail!("Claim failed, Unexpected VM status: {:?}", status)
             }
-        };
-        Ok(())
+        }
     }
 
-    async fn transfer_gases_with_multi_addr(&self, recipient: MultiChainAddress) -> Result<()> {
-        tracing::info!("transfer gases recipient: {}", recipient);
-
-        let state = self.state.write().await;
-
-        let move_action = TransferModule::create_transfer_coin_to_multichain_address_action(
-            StructTag::from_str("0x3::gas_coin::RGas").unwrap(),
-            recipient,
-            state.config.faucet_grant_amount.into(),
-        );
-
-        self.execute_transaction(move_action, state).await
+    async fn balance(&self) -> Result<U256> {
+        let client = self.context.get_client().await?;
+        let function_call =
+            faucet_module::balance_call(self.faucet_module_address, self.faucet_object_id.clone());
+        let response = client.rooch.execute_view_function(function_call).await?;
+        match response.vm_status {
+            VMStatusView::Executed => {
+                let first_return = response
+                    .return_values
+                    .and_then(|mut values| values.pop())
+                    .ok_or_else(|| anyhow::anyhow!("Get Balance failed, No return values"))?;
+                let balance: U256 = bcs::from_bytes(&first_return.value.value.0)?;
+                Ok(balance)
+            }
+            status => {
+                bail!("Get Balance failed, Unexpected VM status: {:?}", status)
+            }
+        }
     }
 
-    async fn transfer_gases(&self, recipient: RoochAddress) -> Result<()> {
-        tracing::info!("transfer gases recipient: {}", recipient);
+    async fn check_claim(
+        client: &Client,
+        faucet_module_address: AccountAddress,
+        faucet_object_id: ObjectID,
+        claimer: AccountAddress,
+        utxo_ids: Vec<ObjectID>,
+    ) -> Result<U256> {
+        tracing::debug!("check claim address: {}", claimer);
 
-        let state = self.state.write().await;
-
-        let move_action = TransferModule::create_transfer_coin_action(
-            StructTag::from_str("0x3::gas_coin::RGas").unwrap(),
-            recipient.into(),
-            state.config.faucet_grant_amount.into(),
+        let function_call = faucet_module::check_claim_function_call(
+            faucet_module_address,
+            faucet_object_id,
+            claimer,
+            utxo_ids,
         );
+        let response = client.rooch.execute_view_function(function_call).await?;
+        match response.vm_status {
+            VMStatusView::Executed => {
+                let first_return = response
+                    .return_values
+                    .and_then(|mut values| values.pop())
+                    .ok_or_else(|| anyhow::anyhow!("Check claim failed, No return values"))?;
+                let claim_amount: U256 = bcs::from_bytes(&first_return.value.value.0)?;
+                Ok(claim_amount)
+            }
+            VMStatusView::MoveAbort {
+                location,
+                abort_code,
+            } => match location.0 {
+                AbortLocation::Module(module_id) => {
+                    if module_id.name() == faucet_module::MODULE_NAME {
+                        let reason = faucet_module::error_code_to_reason(abort_code.0);
+                        bail!("Check claim failed, Module abort: {}", reason)
+                    } else {
+                        bail!(
+                            "Check claim failed, Module abort in {}, abort_code: {}",
+                            module_id,
+                            abort_code
+                        )
+                    }
+                }
+                _ => {
+                    bail!("Check claim failed, Unknown abort location")
+                }
+            },
+            status => {
+                bail!("Check claim failed, Unexpected VM status: {:?}", status)
+            }
+        }
+    }
 
-        self.execute_transaction(move_action, state).await
+    async fn get_utxos(client: &Client, address: UnitedAddressView) -> Result<Vec<ObjectID>> {
+        let utxos = client
+            .rooch
+            .query_utxos(UTXOFilterView::Owner(address), None, None, Some(false))
+            .await?;
+        Ok(utxos
+            .data
+            .into_iter()
+            .map(|utxo| utxo.metadata.id)
+            .collect())
     }
 }

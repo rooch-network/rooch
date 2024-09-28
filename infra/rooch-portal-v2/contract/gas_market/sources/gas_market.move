@@ -49,10 +49,10 @@ module gas_market::gas_market {
 
     const INIT_GAS_AMOUNT: u256 = 50000000_00000000;
 
-    const ErrorMarketNotOpen: u64 = 0;
-    const ErrorReceiverAddress: u64 = 1;
-    const ErrorTokenPrice: u64 = 2;
-    const ErrorNoUncheckTxid: u64 = 3;
+    const ErrorMarketNotOpen: u64 = 1;
+    const ErrorReceiverAddress: u64 = 2;
+    const ErrorTokenPrice: u64 = 3;
+    const ErrorNoUncheckTxid: u64 = 4;
 
     fun init(sender: &signer) {
         let sender_addr = signer::address_of(sender);
