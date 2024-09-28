@@ -7,7 +7,6 @@ use clap::Parser;
 use move_core_types::language_storage::StructTag;
 use moveos_types::transaction::MoveAction;
 use prometheus::Registry;
-use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_rpc_client::wallet_context::WalletContext;
 use rooch_types::address::{MultiChainAddress, RoochAddress};
 use rooch_types::authentication_key::AuthenticationKey;
@@ -55,7 +54,6 @@ impl Default for FaucetConfig {
 
 struct State {
     config: FaucetConfig,
-    wallet_pwd: Option<String>,
     context: WalletContext,
     // metrics: FaucetMetrics,
 }
@@ -73,17 +71,16 @@ impl Faucet {
         faucet_receiver: Receiver<FaucetRequest>,
         faucet_error_sender: Sender<FaucetError>,
     ) -> Result<Self> {
-        let wallet = WalletContext::new(config.wallet_config_dir.clone()).unwrap();
+        let mut wallet = WalletContext::new(config.wallet_config_dir.clone()).unwrap();
         let _metrics = FaucetMetrics::new(prometheus_registry);
         let wallet_pwd = match env::var("ROOCH_FAUCET_PWD") {
             Ok(val) => Some(val.parse::<String>().unwrap()),
             _ => None,
         };
-
+        wallet.set_password(wallet_pwd);
         Ok(Self {
             state: Arc::new(RwLock::new(State {
                 config,
-                wallet_pwd,
                 context: wallet,
             })),
             faucet_error_sender,
@@ -122,25 +119,20 @@ impl Faucet {
         state: RwLockWriteGuard<'a, State>,
     ) -> Result<()> {
         let sender: RoochAddress = state.context.client_config.active_address.unwrap();
-        let pwd = state.wallet_pwd.clone();
+        let tx_data = state
+            .context
+            .build_tx_data(sender, action, None)
+            .await
+            .map_err(FaucetError::internal)?;
         let result = if let Some(session_key) = state.config.session_key.clone() {
-            let tx_data = state
-                .context
-                .build_tx_data(sender, action, None)
-                .await
-                .map_err(FaucetError::internal)?;
             let tx = state
                 .context
-                .keystore
-                .sign_transaction_via_session_key(&sender, tx_data, &session_key, pwd)
+                .sign_transaction_via_session_key(&sender, tx_data, &session_key)
                 .map_err(|e| RoochError::SignMessageError(e.to_string()))
                 .map_err(FaucetError::internal)?;
             state.context.execute(tx).await
         } else {
-            state
-                .context
-                .sign_and_execute(sender, action, pwd, None)
-                .await
+            state.context.sign_and_execute(sender, tx_data).await
         };
 
         match result {

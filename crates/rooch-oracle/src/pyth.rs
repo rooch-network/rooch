@@ -49,13 +49,11 @@ pub struct Pyth {
 
 impl Pyth {
     pub async fn new(config: PythConfig) -> Self {
-        let wallet = WalletContext::new(config.pyth_wallet_dir.clone()).unwrap();
+        let mut wallet = WalletContext::new(config.pyth_wallet_dir.clone()).unwrap();
         let wallet_pwd = config.pyth_wallet_pwd.clone();
+        wallet.set_password(wallet_pwd);
         Self {
-            wallet_state: Arc::new(RwLock::new(State {
-                wallet_pwd,
-                context: wallet,
-            })),
+            wallet_state: Arc::new(RwLock::new(State { context: wallet })),
             pyth_config: config,
         }
     }

@@ -14,7 +14,8 @@ use commands::{
     abi::ABI, account::Account, bitcoin::Bitcoin, bitseed::Bitseed, dynamic_field::DynamicField,
     env::Env, genesis::Genesis, init::Init, move_cli::MoveCli, object::ObjectCommand,
     resource::ResourceCommand, rpc::Rpc, server::Server, session_key::SessionKey,
-    state::StateCommand, transaction::Transaction, upgrade::Upgrade, util::Util, version::Version,
+    state::StateCommand, task::Task, transaction::Transaction, upgrade::Upgrade, util::Util,
+    version::Version,
 };
 use once_cell::sync::Lazy;
 use rooch_types::error::RoochResult;
@@ -53,6 +54,7 @@ pub enum Command {
     Init(Init),
     Move(MoveCli),
     Server(Server),
+    Task(Task),
     State(StateCommand),
     Object(ObjectCommand),
     DynamicField(DynamicField),
@@ -80,6 +82,7 @@ pub async fn run_cli(opt: RoochCli) -> RoochResult<String> {
         Command::Bitseed(bitseed) => bitseed.execute().await,
         Command::Move(move_cli) => move_cli.execute().await,
         Command::Server(server) => server.execute().await,
+        Command::Task(task) => task.execute().await,
         Command::Init(init) => init.execute_serialized().await,
         Command::State(state) => state.execute_serialized().await,
         Command::Object(object) => object.execute().await,

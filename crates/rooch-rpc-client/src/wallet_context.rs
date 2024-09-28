@@ -19,6 +19,7 @@ use rooch_key::keystore::Keystore;
 use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, KeptVMStatusView, TxOptions};
 use rooch_types::address::RoochAddress;
 use rooch_types::address::{BitcoinAddress, ParsedAddress};
+use rooch_types::authentication_key::AuthenticationKey;
 use rooch_types::bitcoin::network::Network;
 use rooch_types::crypto::RoochKeyPair;
 use rooch_types::error::{RoochError, RoochResult};
@@ -224,19 +225,27 @@ impl WalletContext {
         Ok(tx_data)
     }
 
-    pub async fn sign(
+    pub fn generate_session_key(&mut self, address: &RoochAddress) -> Result<AuthenticationKey> {
+        self.keystore
+            .generate_session_key(address, self.password.clone())
+    }
+
+    pub fn sign_transaction_via_session_key(
         &self,
-        sender: RoochAddress,
-        action: MoveAction,
-        password: Option<String>,
-        max_gas_amount: Option<u64>,
+        signer: &RoochAddress,
+        tx_data: RoochTransactionData,
+        authentication_key: &AuthenticationKey,
     ) -> RoochResult<RoochTransaction> {
-        let tx_data = self.build_tx_data(sender, action, max_gas_amount).await?;
-        let tx = self.keystore.sign_transaction(&sender, tx_data, password)?;
+        let tx = self.keystore.sign_transaction_via_session_key(
+            signer,
+            tx_data,
+            authentication_key,
+            self.password.clone(),
+        )?;
         Ok(tx)
     }
 
-    pub async fn sign_transaction(
+    pub fn sign_transaction(
         &self,
         signer: RoochAddress,
         tx_data: RoochTransactionData,
@@ -268,11 +277,9 @@ impl WalletContext {
     pub async fn sign_and_execute(
         &self,
         sender: RoochAddress,
-        action: MoveAction,
-        password: Option<String>,
-        max_gas_amount: Option<u64>,
+        tx_data: RoochTransactionData,
     ) -> RoochResult<ExecuteTransactionResponseView> {
-        let tx = self.sign(sender, action, password, max_gas_amount).await?;
+        let tx = self.sign_transaction(sender, tx_data)?;
         self.execute(tx).await
     }
 

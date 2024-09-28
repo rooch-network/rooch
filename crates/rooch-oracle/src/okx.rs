@@ -49,13 +49,11 @@ pub struct Okx {
 
 impl Okx {
     pub async fn new(config: OkxConfig) -> Self {
-        let wallet = WalletContext::new(config.okx_wallet_dir.clone()).unwrap();
+        let mut wallet = WalletContext::new(config.okx_wallet_dir.clone()).unwrap();
         let wallet_pwd = config.okx_wallet_pwd.clone();
+        wallet.set_password(wallet_pwd);
         Self {
-            wallet_state: Arc::new(RwLock::new(State {
-                wallet_pwd,
-                context: wallet,
-            })),
+            wallet_state: Arc::new(RwLock::new(State { context: wallet })),
             okx_config: config,
         }
     }

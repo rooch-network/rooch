@@ -21,15 +21,12 @@ use moveos_types::{
     transaction::MoveAction,
 };
 use moveos_verifier::build::run_verifier;
-use rooch_key::key_derive::verify_password;
-use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_rpc_api::jsonrpc_types::{
     ExecuteTransactionResponseView, HumanReadableDisplay, KeptVMStatusView,
 };
 use rooch_rpc_client::Client;
 use rooch_types::error::{RoochError, RoochResult};
 use rooch_types::transaction::rooch::RoochTransaction;
-use rpassword::prompt_password;
 use std::collections::BTreeMap;
 use std::io::stderr;
 use tokio::runtime::Handle;
@@ -155,7 +152,7 @@ pub struct Publish {
 impl CommandAction<ExecuteTransactionResponseView> for Publish {
     async fn execute(self) -> RoochResult<ExecuteTransactionResponseView> {
         // Build context and handle errors
-        let context = self.context_options.build()?;
+        let context = self.context_options.build_require_password()?;
 
         // Clone variables for later use
         let package_path = self
@@ -259,64 +256,24 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
                 }
             }
 
+            let tx_data = context
+                .build_tx_data(sender, action, max_gas_amount)
+                .await?;
             // Handle transaction with or without authenticator
             match self.tx_options.authenticator {
                 Some(authenticator) => {
-                    let tx_data = context
-                        .build_tx_data(sender, action, max_gas_amount)
-                        .await?;
                     let tx = RoochTransaction::new(tx_data, authenticator.into());
                     context.execute(tx).await?
                 }
-                None => {
-                    if context.keystore.get_if_password_is_empty() {
-                        context
-                            .sign_and_execute(sender, action, None, max_gas_amount)
-                            .await?
-                    } else {
-                        let password =
-                            prompt_password("Enter the password to publish:").unwrap_or_default();
-                        let is_verified = verify_password(
-                            Some(password.clone()),
-                            context.keystore.get_password_hash(),
-                        )?;
-
-                        if !is_verified {
-                            return Err(RoochError::InvalidPasswordError(
-                                "Password is invalid".to_owned(),
-                            ));
-                        }
-
-                        context
-                            .sign_and_execute(sender, action, Some(password), max_gas_amount)
-                            .await?
-                    }
-                }
+                None => context.sign_and_execute(sender, tx_data).await?,
             }
         } else {
             // Handle MoveAction.ModuleBundle case
             let action = MoveAction::ModuleBundle(bundles);
-
-            if context.keystore.get_if_password_is_empty() {
-                context
-                    .sign_and_execute(sender, action, None, max_gas_amount)
-                    .await?
-            } else {
-                let password =
-                    prompt_password("Enter the password to publish:").unwrap_or_default();
-                let is_verified =
-                    verify_password(Some(password.clone()), context.keystore.get_password_hash())?;
-
-                if !is_verified {
-                    return Err(RoochError::InvalidPasswordError(
-                        "Password is invalid".to_owned(),
-                    ));
-                }
-
-                context
-                    .sign_and_execute(sender, action, Some(password), max_gas_amount)
-                    .await?
-            }
+            let tx_data = context
+                .build_tx_data(sender, action, max_gas_amount)
+                .await?;
+            context.sign_and_execute(sender, tx_data).await?
         };
         //Directly return the result, the publish transaction may be failed.
         //Caller need to check the `execution_info.status` field.

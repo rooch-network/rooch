@@ -46,16 +46,17 @@ Feature: Rooch Portal contract tests
       # transfer 0.01 BTC to the gas market address
       Then cmd: "bitcoin transfer -s {{$.account[2].account0.bitcoin_address}} -t {{$.account[2].default.bitcoin_address}} -a 1000000"
       Then cmd bitcoin-cli: "generatetoaddress 1 {{$.account[2].account0.bitcoin_address}}"
-      Then sleep: "10"
 
       Then cmd: "object -t default::gas_market::RGasMarket"
-      # consume the utxo event
-      Then cmd: "move run --function default::gas_market::consume_event --args object:{{$.object[-1].data[0].id}} --json"
-      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+      # schedule a task to consume the utxo event
+      Then cmd: "task schedule --stop-on-checker-error --stop-on-runner-error --stop-after-executed-times 1 --checker-function default::gas_market::exists_new_events --checker-args object:{{$.object[-1].data[0].id}} --checker-interval 1 --runner-function default::gas_market::consume_event --runner-args object:{{$.object[-1].data[0].id}}"
+      Then assert: "'{{$.task[-1]}}' not_contains error"
 
       # check the RGas balance of account0
       Then cmd: "account balance -a {{$.account[2].account0.address}} --coin-type 0x3::gas_coin::RGas --json"
       Then assert: "{{$.account[-1].RGAS.balance}} != 0"
+
+      # start test gas airdrop
 
       # ensure the account1 RGas balance is 0
       Then cmd: "account balance -a {{$.account[2].account1.address}} --coin-type 0x3::gas_coin::RGas --json"
