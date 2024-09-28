@@ -25,3 +25,4 @@ pub mod transaction;
 pub mod upgrade;
 pub mod util;
 pub mod version;
+pub mod faucet;

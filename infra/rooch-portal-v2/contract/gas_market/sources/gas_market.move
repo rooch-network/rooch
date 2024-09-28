@@ -204,6 +204,14 @@ module gas_market::gas_market {
         rgas_market.is_open = false;
     }
 
+    public entry fun open_market(
+        _admin: &mut Object<AdminCap>,
+        rgas_market_obj: &mut Object<RGasMarket>
+    ) {
+        let rgas_market = object::borrow_mut(rgas_market_obj);
+        rgas_market.is_open = true;
+    }
+
     public fun btc_to_rgas(sats_amount: u64): u256 {
         let price_info = trusted_price(utf8(BTC_USD));
         let btc_price = value(&price_info);

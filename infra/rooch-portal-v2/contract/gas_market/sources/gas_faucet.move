@@ -1,4 +1,4 @@
-module gas_market::gas_airdrop {
+module gas_market::gas_faucet {
 
     use std::vector;
 
@@ -11,6 +11,7 @@ module gas_market::gas_airdrop {
     use rooch_framework::gas_coin::RGas;
     use rooch_framework::coin_store;
     use rooch_framework::account_coin_store;
+    use rooch_framework::chain_id;
 
     use bitcoin_move::utxo::{Self, UTXO};
 
@@ -31,10 +32,14 @@ module gas_market::gas_airdrop {
     const ErrorUTXOValueIsZero: u64 = 4;
 
 
-    struct RGasAirdrop has key{
+    struct RGasFaucet has key{
         rgas_store: Object<CoinStore<RGas>>,
         claim_records: Table<address, u256>, 
-        is_open: bool
+        is_open: bool,
+        /// Is allow user to claim multiple times
+        allow_repeat: bool,
+        /// Is require utxo to claim
+        require_utxo: bool,
     }
 
 
@@ -42,62 +47,67 @@ module gas_market::gas_airdrop {
       let sender_addr = signer::address_of(sender);
       let rgas_store = coin_store::create_coin_store<RGas>();
       let rgas_balance = account_coin_store::balance<RGas>(sender_addr);
-      let airdrop_gas_amount = if(rgas_balance > INIT_GAS_AMOUNT) {
+      let faucet_gas_amount = if(rgas_balance > INIT_GAS_AMOUNT) {
         INIT_GAS_AMOUNT
       } else {
         rgas_balance/3
       };
-      Self::deposit_to_rgas_store(sender, &mut rgas_store, airdrop_gas_amount);
-      let rgas_airdrop_obj = object::new_named_object(RGasAirdrop{
+      Self::deposit_to_rgas_store(sender, &mut rgas_store, faucet_gas_amount);
+      let allow_repeat = !chain_id::is_main();
+      let require_utxo = chain_id::is_main();
+      let faucet_obj = object::new_named_object(RGasFaucet{
           rgas_store,
           claim_records: table::new(),
-          is_open: true
+          is_open: true,
+          allow_repeat,
+          require_utxo,
       });
-      to_shared(rgas_airdrop_obj)
+      to_shared(faucet_obj)
     }
 
-    /// Anyone can call this function to help the claimer claim the airdrop
-    public entry fun claim(airdrop_obj: &mut Object<RGasAirdrop>, claimer: address, utxo_ids: vector<ObjectID>){      
-      let airdrop = object::borrow_mut(airdrop_obj);
-      assert!(!table::contains(&airdrop.claim_records, claimer), ErrorAlreadyClaimed);
-
+    /// Anyone can call this function to help the claimer claim the faucet
+    public entry fun claim(faucet_obj: &mut Object<RGasFaucet>, claimer: address, utxo_ids: vector<ObjectID>){      
+      let faucet = object::borrow_mut(faucet_obj);
+      assert!(faucet.is_open, ErrorAirdropNotOpen);
+      if (!faucet.allow_repeat) {
+        assert!(!table::contains(&faucet.claim_records, claimer), ErrorAlreadyClaimed);
+      };
       let total_sat_amount = Self::total_sat_amount(claimer, utxo_ids);
-      assert!(total_sat_amount > 0, ErrorUTXOValueIsZero);
       let claim_rgas_amount = Self::sat_amount_to_rgas(total_sat_amount);
-      let remaining_rgas_amount = coin_store::balance(&airdrop.rgas_store);
+      if (claim_rgas_amount == 0) {
+        if(faucet.require_utxo){
+          abort ErrorUTXOValueIsZero
+        }else{
+          claim_rgas_amount = ONE_RGAS;
+        }
+      };
+
+      let remaining_rgas_amount = coin_store::balance(&faucet.rgas_store);
       assert!(claim_rgas_amount <= remaining_rgas_amount, ErrorAirdropNotEnoughRGas);
-      let rgas_coin = coin_store::withdraw(&mut airdrop.rgas_store, claim_rgas_amount);
+      let rgas_coin = coin_store::withdraw(&mut faucet.rgas_store, claim_rgas_amount);
       account_coin_store::deposit<RGas>(claimer, rgas_coin);
-      table::add(&mut airdrop.claim_records, claimer, claim_rgas_amount);
+      let total_claim_amount = table::borrow_mut_with_default(&mut faucet.claim_records, claimer, 0u256);
+      *total_claim_amount = *total_claim_amount + claim_rgas_amount;
     }
 
     public entry fun deposit_rgas_coin(
         account: &signer,
-        rgas_airdrop_obj: &mut Object<RGasAirdrop>,
+        faucet_obj: &mut Object<RGasFaucet>,
         amount: u256
     ){
-        let rgas_airdrop = object::borrow_mut(rgas_airdrop_obj);
-        deposit_to_rgas_store(account, &mut rgas_airdrop.rgas_store, amount);
+        let faucet = object::borrow_mut(faucet_obj);
+        deposit_to_rgas_store(account, &mut faucet.rgas_store, amount);
     }
 
     public entry fun withdraw_rgas_coin(
         _admin: &mut Object<AdminCap>,
-        rgas_airdrop_obj: &mut Object<RGasAirdrop>,
+        faucet_obj: &mut Object<RGasFaucet>,
         amount: u256
     ){
-        let rgas_airdrop = object::borrow_mut(rgas_airdrop_obj);
-        let rgas_coin = coin_store::withdraw(&mut rgas_airdrop.rgas_store, amount);
+        let faucet = object::borrow_mut(faucet_obj);
+        let rgas_coin = coin_store::withdraw(&mut faucet.rgas_store, amount);
         account_coin_store::deposit<RGas>(sender(), rgas_coin);
     }
-
-    public entry fun close_airdrop(
-        _admin: &mut Object<AdminCap>,
-        rgas_airdrop_obj: &mut Object<RGasAirdrop>
-    ){
-        let rgas_airdrop = object::borrow_mut(rgas_airdrop_obj);
-        rgas_airdrop.is_open = false;
-    }
-
 
     fun deposit_to_rgas_store(
         account: &signer,
@@ -114,8 +124,42 @@ module gas_market::gas_airdrop {
       Self::sat_amount_to_rgas(total_sat_amount)
     }
 
+    public entry fun close_faucet(
+        _admin: &mut Object<AdminCap>,
+        faucet_obj: &mut Object<RGasFaucet>
+    ){
+        let faucet = object::borrow_mut(faucet_obj);
+        faucet.is_open = false;
+    }
+
+    public entry fun open_faucet(
+        _admin: &mut Object<AdminCap>,
+        faucet_obj: &mut Object<RGasFaucet>
+    ) {
+        let faucet = object::borrow_mut(faucet_obj);
+        faucet.is_open = true;
+    }
+
+    public entry fun set_allow_repeat(
+        _admin: &mut Object<AdminCap>,
+        faucet_obj: &mut Object<RGasFaucet>,
+        allow_repeat: bool
+    ) {
+        let faucet = object::borrow_mut(faucet_obj);
+        faucet.allow_repeat = allow_repeat;
+    }
+
+    public entry fun set_require_utxo(
+        _admin: &mut Object<AdminCap>,
+        faucet_obj: &mut Object<RGasFaucet>,
+        require_utxo: bool
+    ) {
+        let faucet = object::borrow_mut(faucet_obj);
+        faucet.require_utxo = require_utxo;
+    }
+
     fun sat_amount_to_rgas(sat_amount: u64): u256{
-      if (sat_amount == 0){
+      if (sat_amount == 0) {
         0
       }else if(sat_amount <= SAT_LEVEL_ONE){
         ONE_RGAS
