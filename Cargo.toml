@@ -140,6 +140,7 @@ rooch-db = { path = "crates/rooch-db" }
 rooch-event = { path = "crates/rooch-event" }
 rooch-ord = { path = "crates/rooch-ord" }
 rooch-cosmwasm-vm = { path = "crates/rooch-cosmwasm-vm" }
+rooch-oracle = { path = "crates/rooch-oracle" }
 
 # frameworks
 framework-types = { path = "frameworks/framework-types" }
@@ -205,7 +206,7 @@ proptest-derive = "0.3.0"
 rayon = "1.5.2"
 rand = "0.8.5"
 rand_core = { version = "0.6.3", default-features = false }
-reqwest = { version = "0.12", features = ["json"] }
+reqwest = { version = "0.12", features = ["json", "stream"] }
 schemars = { version = "0.8.21", features = ["either"] }
 serde = { version = "1.0.210", features = ["derive", "rc"] }
 serde_bytes = "0.11.15"
@@ -227,6 +228,7 @@ tiny-bip39 = "1.0.0"
 tokio = { version = "1.40.0", features = ["full"] }
 tokio-util = "0.7.12"
 tokio-tungstenite = { version = "0.23.1", features = ["native-tls"] }
+tokio-stream = "0.1.16"
 tonic = { version = "0.8", features = ["gzip"] }
 tracing = "0.1.37"
 tracing-appender = "0.2.2"
