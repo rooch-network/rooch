@@ -56,7 +56,16 @@ Feature: Rooch Portal contract tests
       Then cmd: "account balance -a {{$.account[2].account0.address}} --coin-type 0x3::gas_coin::RGas --json"
       Then assert: "{{$.account[-1].RGAS.balance}} != 0"
 
-      # start test gas airdrop
+      # start test gas faucet
+
+      Then cmd: "object -t default::gas_faucet::RGasFaucet"
+      Then cmd: "object -t default::gas_market::AdminCap"
+
+      Then cmd: "move run --function default::gas_faucet::set_allow_repeat --args object:{{$.object[-1].data[0].id}} --args object:{{$.object[-2].data[0].id}} --args bool:false --json"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed" 
+
+      Then cmd: "move run --function default::gas_faucet::set_require_utxo --args object:{{$.object[-1].data[0].id}} --args object:{{$.object[-2].data[0].id}} --args bool:true --json"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed" 
 
       # ensure the account1 RGas balance is 0
       Then cmd: "account balance -a {{$.account[2].account1.address}} --coin-type 0x3::gas_coin::RGas --json"
@@ -68,11 +77,11 @@ Feature: Rooch Portal contract tests
       Then cmd bitcoin-cli: "generatetoaddress 1 {{$.account[2].account0.bitcoin_address}}"
       Then sleep: "10"
 
-      Then cmd: "object -t default::gas_airdrop::RGasAirdrop"
+      Then cmd: "object -t default::gas_faucet::RGasFaucet"
       Then cmd: "object -o {{$.account[2].account1.bitcoin_address}} -t 0x4::utxo::UTXO"
       
       # the default address help the account1 to claim the airdrop
-      Then cmd: "move run --function default::gas_airdrop::claim --args object:{{$.object[-2].data[0].id}} --args address:{{$.account[2].account1.address}} --args vector<object_id>:{{$.object[-1].data[0].id}},{{$.object[-1].data[1].id}} --json"
+      Then cmd: "move run --function default::gas_faucet::claim --args object:{{$.object[-2].data[0].id}} --args address:{{$.account[2].account1.address}} --args vector<object_id>:{{$.object[-1].data[0].id}},{{$.object[-1].data[1].id}} --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       # check the RGas balance of account0
@@ -80,7 +89,7 @@ Feature: Rooch Portal contract tests
       Then assert: "{{$.account[-1].RGAS.balance}} != 0"
 
       # try claim again
-      Then cmd: "move run --function default::gas_airdrop::claim --args object:{{$.object[-2].data[0].id}} --args address:{{$.account[2].account1.address}} --args vector<object_id>:{{$.object[-1].data[0].id}},{{$.object[-1].data[1].id}} --json"
+      Then cmd: "move run --function default::gas_faucet::claim --args object:{{$.object[-2].data[0].id}} --args address:{{$.account[2].account1.address}} --args vector<object_id>:{{$.object[-1].data[0].id}},{{$.object[-1].data[1].id}} --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} != executed"
 
 

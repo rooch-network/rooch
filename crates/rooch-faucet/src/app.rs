@@ -1,76 +1,48 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use std::{
-    path::PathBuf,
-    str::FromStr,
-    sync::{atomic::AtomicBool, Arc},
-};
-
-use tokio::sync::{
-    mpsc::{Receiver, Sender},
-    RwLock,
-};
-
-use crate::{DiscordConfig, FaucetError, FaucetRequest};
-
-use rooch_rpc_api::jsonrpc_types::StructTagView;
-use rooch_rpc_client::wallet_context::WalletContext;
+use crate::{faucet_proxy::FaucetProxy, DiscordConfig, FaucetError, FaucetRequest};
+use move_core_types::u256::U256;
+use std::sync::{atomic::AtomicBool, Arc};
+use tokio::sync::{mpsc::Receiver, RwLock};
 
 #[derive(Clone, Debug)]
 pub struct App {
-    pub faucet_queue: Sender<FaucetRequest>,
+    pub faucet_proxy: FaucetProxy,
     pub err_receiver: Arc<RwLock<Receiver<FaucetError>>>,
-    pub wallet_config_dir: Option<PathBuf>,
     pub discord_config: DiscordConfig,
-    pub faucet_funds: u64,
     pub is_loop_running: Arc<AtomicBool>,
 }
 
 impl App {
     pub fn new(
-        faucet_queue: Sender<FaucetRequest>,
-        wallet_config_dir: Option<PathBuf>,
-        discord_config: DiscordConfig,
+        faucet_proxy: FaucetProxy,
         err_receiver: Receiver<FaucetError>,
-        faucet_funds: u64,
+        discord_config: DiscordConfig,
     ) -> Self {
         Self {
-            faucet_queue,
-            wallet_config_dir,
-            discord_config,
-            faucet_funds,
-            is_loop_running: Arc::new(AtomicBool::new(false)),
+            faucet_proxy,
             err_receiver: Arc::new(RwLock::new(err_receiver)),
+            discord_config,
+            is_loop_running: Arc::new(AtomicBool::new(false)),
         }
     }
 
-    pub async fn request(&self, address: FaucetRequest) -> Result<(), FaucetError> {
-        self.faucet_queue
-            .send(address)
+    pub async fn request(&self, request: FaucetRequest) -> Result<U256, FaucetError> {
+        let amount = self
+            .faucet_proxy
+            .claim(request.claimer)
             .await
             .map_err(FaucetError::internal)?;
-        Ok(())
+        Ok(amount)
     }
 
-    pub async fn check_gas_balance(&self) -> Result<f64, FaucetError> {
-        let context = WalletContext::new(self.wallet_config_dir.clone())
-            .map_err(|e| FaucetError::Wallet(e.to_string()))?;
-        let client = context.get_client().await.unwrap();
-        let faucet_address = context.client_config.active_address.unwrap();
-
-        let s = client
-            .rooch
-            .get_balance(
-                faucet_address.into(),
-                StructTagView::from_str("0x3::gas_coin::RGas").unwrap(),
-            )
+    pub async fn check_gas_balance(&self) -> Result<U256, FaucetError> {
+        let balance = self
+            .faucet_proxy
+            .balance()
             .await
             .map_err(FaucetError::internal)?;
-
-        let divisor: u64 = 10u64.pow(s.coin_info.decimals as u32);
-        let result = s.balance.0.unchecked_as_u64() as f64 / divisor as f64;
-
-        Ok(result)
+        Ok(balance)
     }
 }

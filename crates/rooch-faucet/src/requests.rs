@@ -1,24 +1,19 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use rooch_rpc_api::jsonrpc_types::UnitedAddressView;
 use rooch_types::address::{BitcoinAddress, EthereumAddress, RoochAddress};
 use serde::{Deserialize, Deserializer, Serialize};
 use std::str::FromStr;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub enum FaucetRequest {
-    FixedRoochAddressRequest(FixedRoochAddressRequest),
-    FixedETHAddressRequest(FixedETHAddressRequest),
-    FixedBTCAddressRequest(FixedBTCAddressRequest),
+pub struct FaucetRequest {
+    pub claimer: UnitedAddressView,
 }
 
 impl FaucetRequest {
-    pub fn recipient(&self) -> &dyn std::fmt::Display {
-        match self {
-            FaucetRequest::FixedRoochAddressRequest(req) => &req.recipient,
-            FaucetRequest::FixedBTCAddressRequest(req) => &req.recipient,
-            FaucetRequest::FixedETHAddressRequest(req) => &req.recipient,
-        }
+    pub fn recipient(&self) -> UnitedAddressView {
+        self.claimer.clone()
     }
 }
 

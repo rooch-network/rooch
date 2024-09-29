@@ -12,10 +12,10 @@ use clap::builder::{
 use cli_types::CommandAction;
 use commands::{
     abi::ABI, account::Account, bitcoin::Bitcoin, bitseed::Bitseed, dynamic_field::DynamicField,
-    env::Env, genesis::Genesis, init::Init, move_cli::MoveCli, object::ObjectCommand,
-    resource::ResourceCommand, rpc::Rpc, server::Server, session_key::SessionKey,
-    state::StateCommand, task::Task, transaction::Transaction, upgrade::Upgrade, util::Util,
-    version::Version,
+    env::Env, faucet::Faucet, genesis::Genesis, init::Init, move_cli::MoveCli,
+    object::ObjectCommand, resource::ResourceCommand, rpc::Rpc, server::Server,
+    session_key::SessionKey, state::StateCommand, task::Task, transaction::Transaction,
+    upgrade::Upgrade, util::Util, version::Version,
 };
 use once_cell::sync::Lazy;
 use rooch_types::error::RoochResult;
@@ -72,6 +72,7 @@ pub enum Command {
     Upgrade(Upgrade),
     DB(DB),
     Util(Util),
+    Faucet(Faucet),
 }
 
 pub async fn run_cli(opt: RoochCli) -> RoochResult<String> {
@@ -100,5 +101,6 @@ pub async fn run_cli(opt: RoochCli) -> RoochResult<String> {
         Command::Upgrade(upgrade) => upgrade.execute().await,
         Command::DB(db) => db.execute().await,
         Command::Util(util) => util.execute().await,
+        Command::Faucet(faucet) => faucet.execute().await,
     }
 }

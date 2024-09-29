@@ -9,6 +9,7 @@ pub mod db;
 pub mod dynamic_field;
 pub mod env;
 pub mod event;
+pub mod faucet;
 pub mod genesis;
 pub mod indexer;
 pub mod init;
