@@ -1,6 +1,49 @@
 # 多签账户
 
+本文档介绍多签账户的使用，包括如何通过 CLI 在链上创建多签账户，以及如何发起多签交易。关于多签账户的原理和实现请参看账户概念的多签账户部分。
+
 ## 概述
+
+
+### 准备账户公钥
+
+接下来准备 3 个账户来演示多签账户的功能。
+
+```
+$ rooch account list --json
+
+{
+  "account0": {
+    "address": "rooch1jf2fwru9jlzpwxfyj8rv9ggw6n8xdyc2npvmmjvfczmawwn320gszc90zx",
+    "hex_address": "0x9254970f8597c417192491c6c2a10ed4ce66930a9859bdc989c0b7d73a7153d1",
+    "bitcoin_address": "bcrt1p3vckrr2fmephltkc63xdhp28agc9mxprjtvalrtz8zrzdtphjj9svghgwr",
+    "nostr_public_key": "npub1s5fqrxkphg3ptnm32365pjs22w8jsjafvn4wfm86hmsssz7sw5gqr7xr89",
+    "public_key": "0x028512019ac1ba2215cf71547540ca0a538f284ba964eae4ecfabee1080bd07510",    <= Note here!
+    "has_session_key": false,
+    "active": false
+  },
+  "default": {
+    "address": "rooch18e97u229hr2cxcc885xffctzcrqtwzyusrn7fmus6aafh8vcvvtqguxgdw",
+    "hex_address": "0x3e4bee2945b8d58363073d0c94e162c0c0b7089c80e7e4ef90d77a9b9d986316",
+    "bitcoin_address": "bcrt1ps0n5hrg8gxxhnmhmly6ay7zcpmp8zruud3r7yqm83alg7v72gtsstlevul",
+    "nostr_public_key": "npub1wkacxpzm7ewxu6e7tkk4la855uaxnzup2uzw24zyhtrjgkwdxmqqm7c00a",
+    "public_key": "0x0375bb83045bf65c6e6b3e5dad5ff4f4a73a698b815704e55444bac72459cd36c0",    <= Note here!
+    "has_session_key": false,
+    "active": true
+  },
+  "account1": {
+    "address": "rooch1cxnxttwktxwq2suazxvnl5hq687xcvcj2xnmfy5pwfec750z67hs6zztcs",
+    "hex_address": "0xc1a665add6599c05439d11993fd2e0d1fc6c331251a7b4928172738f51e2d7af",
+    "bitcoin_address": "bcrt1pl94fuer39tk3df2txvvzndzdva2k0lh020w228jsl6crhxxsmmqs3tw0xa",
+    "nostr_public_key": "npub18q62aejdg297an2j3q7ql46tj5e35lj0qktfkxhj7xz7kdmz3qgqlf52h3",
+    "public_key": "0x033834aee64d428beecd52883c0fd74b95331a7e4f05969b1af2f185eb37628810",    <= Note here!
+    "has_session_key": false,
+    "active": false
+  }
+}
+```
+
+通过 `rooch account list --json` 可以查看对应账户的公钥。
 
 ## 使用演示
 
@@ -9,6 +52,29 @@
 ```bash
 rooch account create-multisign -t 2 -p $Pubkey1 -p $Pubkey2 -p $Pubkey3
 ```
+
+- `-t` 或 `--threshold` 指定多签的门槛数。假如，指定 3 个账户生成的多签账户，指定 `-t 2` 则表示 3 个账户中需要任意 2 个账户共同签名交易，这笔多签交易才能够验证。
+- `-p` 或 `--public-keys` 指定参与多签的账户公钥。
+
+```
+$ rooch account create-multisign -t 2 -p 0x0375bb83045bf65c6e6b3e5dad5ff4f4a73a698b815704e55444bac72459cd36c0 -p 0x033834aee64d428beecd52883c0fd74b95331a7e4f05969b1af2f185eb37628810 -p 0x028512019ac1ba2215cf71547540ca0a538f284ba964eae4ecfabee1080bd07510
+
+MulitsignAddress: rooch1eyhcpvl4c6x043ds50j30wcn2a5v74e3eew7hj2xmvheqjug08yqfg9v20
+Multisign Bitcoin Address: bcrt1pevwap6zf8akqn3ynk6a2c0kjfpyrn8cyywsafjvtaugw9c5jyu5qh04ge5
+Threshold: 2
+Participants: 3
+Participant 0 Address: rooch18e97u229hr2cxcc885xffctzcrqtwzyusrn7fmus6aafh8vcvvtqguxgdw
+Participant 0 Bitcoin Address: bcrt1ps0n5hrg8gxxhnmhmly6ay7zcpmp8zruud3r7yqm83alg7v72gtsstlevul
+Participant 0 Public Key: 0x0375bb83045bf65c6e6b3e5dad5ff4f4a73a698b815704e55444bac72459cd36c0
+Participant 1 Address: rooch1cxnxttwktxwq2suazxvnl5hq687xcvcj2xnmfy5pwfec750z67hs6zztcs
+Participant 1 Bitcoin Address: bcrt1pl94fuer39tk3df2txvvzndzdva2k0lh020w228jsl6crhxxsmmqs3tw0xa
+Participant 1 Public Key: 0x033834aee64d428beecd52883c0fd74b95331a7e4f05969b1af2f185eb37628810
+Participant 2 Address: rooch1jf2fwru9jlzpwxfyj8rv9ggw6n8xdyc2npvmmjvfczmawwn320gszc90zx
+Participant 2 Bitcoin Address: bcrt1p3vckrr2fmephltkc63xdhp28agc9mxprjtvalrtz8zrzdtphjj9svghgwr
+Participant 2 Public Key: 0x028512019ac1ba2215cf71547540ca0a538f284ba964eae4ecfabee1080bd07510
+```
+
+
 
 ### 生成多签交易
 
