@@ -65,6 +65,7 @@ impl OracleModule {
         value: U256,
         decimal: u8,
         identifier: String,
+        timestamp: u64,
         admin_obj: ObjectID,
     ) -> MoveAction {
         Self::create_move_action(
@@ -76,6 +77,7 @@ impl OracleModule {
                 MoveValue::U256(value),
                 MoveValue::U8(decimal),
                 MoveString::from(identifier).to_move_value(),
+                MoveValue::U64(timestamp),
                 admin_obj.to_move_value(),
             ],
         )

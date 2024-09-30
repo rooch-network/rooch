@@ -42,8 +42,12 @@ fn parse_data(response: Value) -> Result<OracleDecimalData> {
         .as_str()
         .ok_or_else(|| anyhow!("price field not found in response: {}", response))?
         .parse::<U256>()?;
+    let publish_time = response["parsed"][0]["ema_price"]["publish_time"]
+        .as_u64()
+        .ok_or_else(|| anyhow!("publish_time field not found in response: {}", response))?;
     Ok(OracleDecimalData {
         value: price,
         decimal: 8,
+        timestamp: publish_time * 1000,
     })
 }

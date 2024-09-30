@@ -56,9 +56,11 @@ impl AggregateStrategy {
                     sum += d.value;
                 }
                 let avg = sum / U256::from(data.len() as u64);
+                let last_data = data.last().unwrap();
                 OracleDecimalData {
                     value: avg,
-                    decimal: data[0].decimal,
+                    decimal: last_data.decimal,
+                    timestamp: last_data.timestamp,
                 }
             }
             AggregateStrategy::Median => {
@@ -70,9 +72,11 @@ impl AggregateStrategy {
                 } else {
                     sorted_data[mid].value
                 };
+                let last_data = data.last().unwrap();
                 OracleDecimalData {
                     value: median,
-                    decimal: data[0].decimal,
+                    decimal: last_data.decimal,
+                    timestamp: last_data.timestamp,
                 }
             }
             AggregateStrategy::Mode => {
@@ -81,9 +85,11 @@ impl AggregateStrategy {
                     *freq_map.entry(d.value).or_insert(0) += 1;
                 }
                 let mode = freq_map.iter().max_by_key(|&(_, count)| count).unwrap().0;
+                let last_data = data.last().unwrap();
                 OracleDecimalData {
                     value: *mode,
-                    decimal: data[0].decimal,
+                    decimal: last_data.decimal,
+                    timestamp: last_data.timestamp,
                 }
             }
         }
@@ -151,26 +157,32 @@ mod tests {
             OracleDecimalData {
                 value: U256::from(100u64),
                 decimal: 2,
+                timestamp: 0,
             },
             OracleDecimalData {
                 value: U256::from(200u64),
                 decimal: 2,
+                timestamp: 0,
             },
             OracleDecimalData {
                 value: U256::from(300u64),
                 decimal: 2,
+                timestamp: 0,
             },
             OracleDecimalData {
                 value: U256::from(400u64),
                 decimal: 2,
+                timestamp: 0,
             },
             OracleDecimalData {
                 value: U256::from(500u64),
                 decimal: 2,
+                timestamp: 0,
             },
             OracleDecimalData {
                 value: U256::from(100u64),
                 decimal: 2,
+                timestamp: 0,
             }, //two 100s
         ];
 
@@ -193,22 +205,27 @@ mod tests {
             Ok(OracleDecimalData {
                 value: U256::from(100u64),
                 decimal: 2,
+                timestamp: 0,
             }),
             Ok(OracleDecimalData {
                 value: U256::from(200u64),
                 decimal: 2,
+                timestamp: 0,
             }),
             Ok(OracleDecimalData {
                 value: U256::from(300u64),
                 decimal: 2,
+                timestamp: 0,
             }),
             Ok(OracleDecimalData {
                 value: U256::from(400u64),
                 decimal: 2,
+                timestamp: 0,
             }),
             Ok(OracleDecimalData {
                 value: U256::from(500u64),
                 decimal: 2,
+                timestamp: 0,
             }),
         ]);
         let mut agg_stream = AggregatorStream::new(data_stream, AggregateStrategy::Average);
@@ -218,7 +235,8 @@ mod tests {
             result,
             Some(OracleDecimalData {
                 value: U256::from(300u64),
-                decimal: 2
+                decimal: 2,
+                timestamp: 0,
             })
         );
     }

@@ -114,6 +114,22 @@ module rooch_framework::oracle {
         identifier: String,
         admin_obj: &mut Object<OracleAdminCap>,
     ) {
+        let timestamp = now_milliseconds();
+        submit_data_with_timestamp(oracle_obj, ticker, value, identifier, timestamp, admin_obj); 
+    }
+
+    /// Submit data with timestamp.
+    /// This function is used to submit data with a specific timestamp.
+    /// The timestamp is the time from the oracle's data source.
+    /// The timestamp is measured in milliseconds.
+    public fun submit_data_with_timestamp<T: store + copy + drop>(
+        oracle_obj: &mut Object<SimpleOracle>,
+        ticker: String,
+        value: T,
+        identifier: String,
+        timestamp: u64,
+        admin_obj: &mut Object<OracleAdminCap>,
+    ) {
         let oracle_id = object::id(oracle_obj);
         let admin_id = object::borrow(admin_obj).oracle_id;
         assert!(oracle_id == admin_id, ErrorSenderNotOracle);
@@ -129,7 +145,7 @@ module rooch_framework::oracle {
         let new_data = StoredData {
             value,
             sequence_number,
-            timestamp: now_milliseconds(),
+            timestamp,
             identifier,
         };
         object::add_field(&mut oracle.id, ticker, new_data);
@@ -141,10 +157,11 @@ module rooch_framework::oracle {
         value: u256,
         decimal: u8,
         identifier: String,
+        timestamp: u64,
         admin_obj: &mut Object<OracleAdminCap>
     ) {
         let decimal_value = decimal_value::new(value, decimal);
-        submit_data(oracle_obj, ticker, decimal_value, identifier, admin_obj)
+        submit_data_with_timestamp(oracle_obj, ticker, decimal_value, identifier, timestamp, admin_obj);
     }
 
     public fun archive_data<K: store + copy + drop, V: store + copy + drop>(

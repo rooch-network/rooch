@@ -117,12 +117,14 @@ module gas_market::trusted_oracle {
         add_trusted_oracle(&oracle3, admin_cap);
 
         timestamp::fast_forward_milliseconds_for_test(100000000);
+        let timestamp = timestamp::now_milliseconds();
         oracle::submit_decimal_data(
             &mut oracle1,
             utf8(b"BTCUSD"),
             5805106000000,
             8,
             utf8(b"1"),
+            timestamp,
             &mut admin_cap1
         );
         oracle::submit_decimal_data(
@@ -131,6 +133,7 @@ module gas_market::trusted_oracle {
             5805206000000,
             8,
             utf8(b"2"),
+            timestamp,
             &mut admin_cap2
         );
         oracle::submit_decimal_data(
@@ -139,6 +142,7 @@ module gas_market::trusted_oracle {
             5805306000000,
             8,
             utf8(b"3"),
+            timestamp,
             &mut admin_cap3
         );
         to_shared(oracle1);

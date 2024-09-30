@@ -50,6 +50,7 @@ pub fn subscribe_websocket(
             while let Some(message) = read.next().await {
                 match message {
                     Ok(Message::Text(text)) => {
+                        info!("Received message: {}", text);
                         if let Err(e) =
                             tx.try_send(serde_json::from_str(&text).map_err(|e| anyhow::anyhow!(e)))
                         {
@@ -198,6 +199,7 @@ pub async fn execute_submit_data_tx(
         data.value,
         data.decimal,
         identifier,
+        data.timestamp,
         admin_obj,
     );
     let tx_data = wallet_context.build_tx_data(sender, action, None).await?;
@@ -206,8 +208,11 @@ pub async fn execute_submit_data_tx(
         Ok(tx) => match tx.execution_info.status {
             KeptVMStatusView::Executed => {
                 info!(
-                    "Submit data success, value: {}, tx_hash: {}, gas_used:{}",
-                    data.value, tx.execution_info.tx_hash, tx.execution_info.gas_used
+                    "Submit data value: {}, timestamp:{}, tx_hash: {}, gas_used:{}",
+                    data.value,
+                    data.timestamp,
+                    tx.execution_info.tx_hash,
+                    tx.execution_info.gas_used
                 );
             }
             _ => {
