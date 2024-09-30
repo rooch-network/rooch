@@ -11,9 +11,12 @@ BitcoinMove = { local = "../../../../frameworks/bitcoin-move" }
 
 [addresses]
 #bc1prcajaj9n7e29u4dfp33x3hcf52yqeegspdpcd79pqu4fpr6llx4sugkfjt
-gas_market = "0x701c21bf1c8cd5af8c42983890d8ca55e7a820171b8e744c13f2d9998bf76cc3"
+#0x701c21bf1c8cd5af8c42983890d8ca55e7a820171b8e744c13f2d9998bf76cc3
+gas_market = "_"
 std = "0x1"
 moveos_std = "0x2"
 rooch_framework = "0x3"
 bitcoin_move =  "0x4"
 
+[dev-addresses]
+gas_market = "0x42"
