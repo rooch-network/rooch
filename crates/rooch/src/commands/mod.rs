@@ -15,6 +15,7 @@ pub mod indexer;
 pub mod init;
 pub mod move_cli;
 pub mod object;
+pub mod oracle;
 pub mod resource;
 pub mod rpc;
 pub mod server;
