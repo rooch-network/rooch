@@ -42,6 +42,7 @@ impl Display for Ticker {
 pub struct OracleDecimalData {
     pub value: U256,
     pub decimal: u8,
+    pub timestamp: u64,
 }
 
 #[async_trait]

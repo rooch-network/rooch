@@ -16,6 +16,7 @@
 -  [Function `create_entry`](#0x3_oracle_create_entry)
 -  [Function `create`](#0x3_oracle_create)
 -  [Function `submit_data`](#0x3_oracle_submit_data)
+-  [Function `submit_data_with_timestamp`](#0x3_oracle_submit_data_with_timestamp)
 -  [Function `submit_decimal_data`](#0x3_oracle_submit_decimal_data)
 -  [Function `archive_data`](#0x3_oracle_archive_data)
 
@@ -168,13 +169,28 @@ Create a new SimpleOracle object for publishing data.
 
 
 
+<a name="0x3_oracle_submit_data_with_timestamp"></a>
+
+## Function `submit_data_with_timestamp`
+
+Submit data with timestamp.
+This function is used to submit data with a specific timestamp.
+The timestamp is the time from the oracle's data source.
+The timestamp is measured in milliseconds.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="oracle.md#0x3_oracle_submit_data_with_timestamp">submit_data_with_timestamp</a>&lt;T: <b>copy</b>, drop, store&gt;(oracle_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="oracle.md#0x3_oracle_SimpleOracle">oracle::SimpleOracle</a>&gt;, ticker: <a href="_String">string::String</a>, value: T, identifier: <a href="_String">string::String</a>, <a href="">timestamp</a>: u64, admin_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="oracle.md#0x3_oracle_OracleAdminCap">oracle::OracleAdminCap</a>&gt;)
+</code></pre>
+
+
+
 <a name="0x3_oracle_submit_decimal_data"></a>
 
 ## Function `submit_decimal_data`
 
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="oracle.md#0x3_oracle_submit_decimal_data">submit_decimal_data</a>(oracle_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="oracle.md#0x3_oracle_SimpleOracle">oracle::SimpleOracle</a>&gt;, ticker: <a href="_String">string::String</a>, value: <a href="">u256</a>, decimal: u8, identifier: <a href="_String">string::String</a>, admin_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="oracle.md#0x3_oracle_OracleAdminCap">oracle::OracleAdminCap</a>&gt;)
+<pre><code><b>public</b> entry <b>fun</b> <a href="oracle.md#0x3_oracle_submit_decimal_data">submit_decimal_data</a>(oracle_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="oracle.md#0x3_oracle_SimpleOracle">oracle::SimpleOracle</a>&gt;, ticker: <a href="_String">string::String</a>, value: <a href="">u256</a>, decimal: u8, identifier: <a href="_String">string::String</a>, <a href="">timestamp</a>: u64, admin_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="oracle.md#0x3_oracle_OracleAdminCap">oracle::OracleAdminCap</a>&gt;)
 </code></pre>
 
 
