@@ -1,26 +1,30 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: rooch-faucet
+  name: testnet-oracle-okx
+  namespace: testnet
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: rooch-faucet
+      app: testnet-oracle-okx
   template:
     metadata:
       labels:
-        app: rooch-faucet
+        app: testnet-oracle-okx
     spec:
       initContainers:
       - name: init-rooch
-        image: ghcr.io/rooch-network/rooch:v0.7.0
+        image: ghcr.io/rooch-network/rooch:main
         command: ["/bin/sh", "-c"]
         args:
         - |
           if [ ! -f /root/.rooch/initialized ]; then
             /rooch/rooch init -m "${INIT_SECRET}" --skip-password
             /rooch/rooch env switch --alias test
+            /rooch/rooch account create
+            /rooch/rooch account create
+            /rooch/rooch account create
             ls -la /root/.rooch/rooch_config/
             touch /root/.rooch/initialized
           fi
@@ -35,23 +39,26 @@ spec:
           mountPath: /root
       containers:
       - name: rooch-faucet
-        image: ghcr.io/rooch-network/rooch:v0.7.0
-        command: ["/rooch-faucet/rooch-faucet"]
+        image: ghcr.io/rooch-network/rooch:main
+        command: ["/rooch/rooch"]
         args: 
-        - "--discord-token"
-        - "$(DISCORD_TOKEN)"
-        - "--faucet-grant-amount"
-        - "1000000000"
-        env:
-        - name: DISCORD_TOKEN
-          valueFrom:
-            secretKeyRef:
-              name: rooch-faucet-secrets
-              key: discord-token
+        - "oracle"
+        - "report"
+        - "--oracle-id"
+        - ""
+        - "--oracle-admin-id"
+        - ""
+        - "--data-source"
+        - "okx"
+        - "--ticker"
+        - "btcusd"
+        - "--aggregate-strategy"
+        - "--report-interval"
+        - "10"
         volumeMounts:
         - name: rooch-data
           mountPath: /root
       volumes:
       - name: rooch-data
         persistentVolumeClaim:
-          claimName: rooch-faucet-data
+          claimName: testnet-oracle-okx-data
