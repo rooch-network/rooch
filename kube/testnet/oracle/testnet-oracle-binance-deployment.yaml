@@ -1,17 +1,17 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: testnet-oracle-okx
+  name: testnet-oracle-binance
   namespace: testnet
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: testnet-oracle-okx
+      app: testnet-oracle-binance
   template:
     metadata:
       labels:
-        app: testnet-oracle-okx
+        app: testnet-oracle-binance
     spec:
       initContainers:
       - name: init-rooch
@@ -32,27 +32,31 @@ spec:
         - name: INIT_SECRET
           valueFrom:
             secretKeyRef:
-              name: rooch-faucet-secrets
+              name: rooch-testnet-secrets
               key: init-phrase
         volumeMounts:
         - name: rooch-data
           mountPath: /root
       containers:
-      - name: rooch-faucet
+      - name: rooch-oracle
         image: ghcr.io/rooch-network/rooch:main
         command: ["/rooch/rooch"]
         args: 
         - "oracle"
-        - "report"
+        - "reporter"
+        - "--sender"
+        #the fourth account
+        - "rooch1h7pdshjeyqcfq8x2jj2ddqhdjzhtjyll0jxw39d87aqp483qp8mqrsul3q"
         - "--oracle-id"
-        - ""
+        - "0x5e56b5fe247d3e77997a1a981cc3103c9a1fa9040ba5054cd831c1fdf1c03a6d"
         - "--oracle-admin-id"
-        - ""
+        - "0xc11d4323a12688492f5abd96cb5e5c1854d8a54562e3dec74c5fd46c7623b684"
         - "--data-source"
-        - "okx"
+        - "binance"
         - "--ticker"
         - "btcusd"
         - "--aggregate-strategy"
+        - "average"
         - "--report-interval"
         - "10"
         volumeMounts:
@@ -61,4 +65,4 @@ spec:
       volumes:
       - name: rooch-data
         persistentVolumeClaim:
-          claimName: testnet-oracle-okx-data
+          claimName: testnet-oracle-binance-data

@@ -1,17 +1,17 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: testnet-faucet
+  name: testnet-oracle-okx
   namespace: testnet
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: testnet-faucet
+      app: testnet-oracle-okx
   template:
     metadata:
       labels:
-        app: testnet-faucet
+        app: testnet-oracle-okx
     spec:
       initContainers:
       - name: init-rooch
@@ -38,31 +38,31 @@ spec:
         - name: rooch-data
           mountPath: /root
       containers:
-      - name: rooch-faucet
+      - name: rooch-oracle
         image: ghcr.io/rooch-network/rooch:main
         command: ["/rooch/rooch"]
         args: 
-        - "faucet"
-        - "server"
-        - "--faucet-sender"
-        # the first account
-        - "rooch19p2jn4laz0lum2wcnnf9pdqztw5jymqw9etltj3awwwtydkuykwsas4mgf"
-        - "--faucet-module-address"
-        - "0x701c21bf1c8cd5af8c42983890d8ca55e7a820171b8e744c13f2d9998bf76cc3"
-        - "--faucet-object-id"
-        - "0xd5723eda84f691ae2623da79312c7909b1737c5b3866ecc5dbd6aa21718ff15d"
-        - "--discord-token"
-        - "$(DISCORD_TOKEN)"
-        env:
-        - name: DISCORD_TOKEN
-          valueFrom:
-            secretKeyRef:
-              name: rooch-testnet-secrets
-              key: discord-token
+        - "oracle"
+        - "reporter"
+        - "--sender"
+        #the second account
+        - "rooch1nt0yvc6dzhcqpl98htp0ygfpr8vz83zns3hs6hzwgsqndt9q7ewqlrhhz8"
+        - "--oracle-id"
+        - "0x107ea9cde1caae6bcb97f2939fff45eff81838bfa1fbdca810f37e51f0d26930"
+        - "--oracle-admin-id"
+        - "0x39d4d3a82f8bda01c2c3b00ab03892dd5ba44eb062d828bae5322b07daf326d1"
+        - "--data-source"
+        - "okx"
+        - "--ticker"
+        - "btcusd"
+        - "--aggregate-strategy"
+        - "average"
+        - "--report-interval"
+        - "10"
         volumeMounts:
         - name: rooch-data
           mountPath: /root
       volumes:
       - name: rooch-data
         persistentVolumeClaim:
-          claimName: testnet-faucet-data
+          claimName: testnet-oracle-okx-data
