@@ -42,9 +42,8 @@ fn parse_data(response: Value) -> Result<OracleDecimalData> {
         .parse::<f64>()?
         * 10f64.powi(8);
     let e = response["E"]
-        .as_str()
-        .ok_or_else(|| anyhow!("E field not found in response: {}", response))?
-        .parse::<u64>()?;
+        .as_u64()
+        .ok_or_else(|| anyhow!("E field not found in response: {}", response))?;
     Ok(OracleDecimalData {
         value: U256::from(c as u64),
         decimal: 8,
