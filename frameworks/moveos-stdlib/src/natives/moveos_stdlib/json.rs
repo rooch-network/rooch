@@ -104,7 +104,7 @@ fn parse_struct_value_from_json(
             Err(anyhow::anyhow!("Invalid std option layout"))
         } else if struct_type == &SimpleMap::<MoveString, MoveString>::struct_tag() {
             let key_value_pairs = json_obj_to_key_value_pairs(json_value)?;
-            let mut key_values = Vec::new();
+            let mut key_values = Vec::with_capacity(key_value_pairs.len());
             for (key, value) in key_value_pairs {
                 key_values.push(Value::struct_(Struct::pack(vec![
                     Value::struct_(Struct::pack(vec![Value::vector_u8(
@@ -243,7 +243,7 @@ fn parse_move_value_from_json(
 
 fn json_obj_to_key_value_pairs(json_obj: &JsonValue) -> Result<Vec<(String, String)>> {
     if let JsonValue::Object(obj) = json_obj {
-        let mut key_value_pairs = Vec::new();
+        let mut key_value_pairs = Vec::with_capacity(obj.len());
         for (key, value) in obj.iter() {
             let key = key.to_string();
             let value = match value {
@@ -394,7 +394,7 @@ fn serialize_move_value_to_json(layout: &MoveTypeLayout, value: &MoveValue) -> R
 
                 JsonValue::Array(json_vec)
             } else {
-                let mut json_vec = Vec::new();
+                let mut json_vec = Vec::with_capacity(vec.len());
 
                 for item in vec.iter() {
                     let json_value = serialize_move_value_to_json(layout, item)?;
