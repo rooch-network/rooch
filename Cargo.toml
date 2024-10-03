@@ -289,7 +289,7 @@ diesel = { version = "2.2.4", features = [
 ] }
 diesel-derive-enum = { version = "2.1.0", features = ["sqlite"] }
 diesel_migrations = { version = "2.2.0" }
-axum = { version = "0.7.6", default-features = false, features = [
+axum = { version = "0.7.7", default-features = false, features = [
     "tokio",
     "http1",
     "http2",

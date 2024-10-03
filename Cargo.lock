@@ -730,13 +730,13 @@ dependencies = [
 
 [[package]]
 name = "axum"
-version = "0.7.6"
+version = "0.7.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8f43644eed690f5374f1af436ecd6aea01cd201f6fbdf0178adaf6907afb2cec"
+checksum = "504e3947307ac8326a5437504c517c4b56716c9d98fac0028c2acc7ca47d70ae"
 dependencies = [
  "async-trait",
- "axum-core 0.4.4",
- "base64 0.21.7",
+ "axum-core 0.4.5",
+ "base64 0.22.1",
  "bytes",
  "futures-util",
  "http 1.1.0",
@@ -758,7 +758,7 @@ dependencies = [
  "sha1",
  "sync_wrapper 1.0.1",
  "tokio",
- "tokio-tungstenite 0.23.1",
+ "tokio-tungstenite 0.24.0",
  "tower 0.5.1",
  "tower-layer",
  "tower-service",
@@ -784,9 +784,9 @@ dependencies = [
 
 [[package]]
 name = "axum-core"
-version = "0.4.4"
+version = "0.4.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5e6b8ba012a258d63c9adfa28b9ddcf66149da6f986c5b5452e629d5ee64bf00"
+checksum = "09f2bd6146b97ae3359fa0cc6d6b376d9539582c7b4220f041a33ec24c226199"
 dependencies = [
  "async-trait",
  "bytes",
@@ -1103,7 +1103,7 @@ name = "bitcoin-move"
 version = "0.7.3"
 dependencies = [
  "anyhow",
- "axum 0.7.6",
+ "axum 0.7.7",
  "bitcoin 0.32.3",
  "brotli 3.5.0",
  "hex",
@@ -5942,7 +5942,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c2a198fb6b0eada2a8df47933734e6d35d350665a33a3593d7164fa52c75c19"
 dependencies = [
  "cfg-if",
- "windows-targets 0.48.5",
+ "windows-targets 0.52.6",
 ]
 
 [[package]]
@@ -6162,7 +6162,7 @@ version = "0.7.3"
 dependencies = [
  "anyhow",
  "async-trait",
- "axum 0.7.6",
+ "axum 0.7.7",
  "axum-server",
  "dashmap 6.0.1",
  "futures",
@@ -9675,7 +9675,7 @@ version = "0.7.3"
 dependencies = [
  "anyhow",
  "async-trait",
- "axum 0.7.6",
+ "axum 0.7.7",
  "axum-server",
  "bcs",
  "clap 4.5.17",
@@ -10138,7 +10138,7 @@ name = "rooch-rpc-server"
 version = "0.7.3"
 dependencies = [
  "anyhow",
- "axum 0.7.6",
+ "axum 0.7.7",
  "bcs",
  "bitcoincore-rpc",
  "coerce",
@@ -12316,6 +12316,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "tokio-tungstenite"
+version = "0.24.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "edc5f74e248dc973e0dbb7b74c7e0d6fcc301c694ff50049504004ef4d0cdcd9"
+dependencies = [
+ "futures-util",
+ "log",
+ "tokio",
+ "tungstenite 0.24.0",
+]
+
+[[package]]
 name = "tokio-util"
 version = "0.7.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -12545,7 +12557,7 @@ version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "313fa625fea5790ed56360a30ea980e41229cf482b4835801a67ef1922bf63b9"
 dependencies = [
- "axum 0.7.6",
+ "axum 0.7.7",
  "forwarded-header-value",
  "governor",
  "http 1.1.0",
