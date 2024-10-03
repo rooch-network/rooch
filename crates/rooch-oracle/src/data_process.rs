@@ -70,7 +70,7 @@ pub fn subscribe_websocket(
                     }
                     Err(e) => {
                         error!("Failed to read message: {}", e);
-                        return;
+                        break;
                     }
                 }
             }
