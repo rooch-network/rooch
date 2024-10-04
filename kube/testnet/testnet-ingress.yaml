@@ -1,0 +1,38 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: testnet-ingress
+  namespace: testnet
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: "testnet-ingress-static-ip"
+spec:
+  tls:
+  - hosts:
+    - test-faucet.rooch.network
+    secretName: rooch-tls-secret
+  rules:
+  - host: test-faucet.rooch.network
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: testnet-faucet-service
+            port: 
+              number: 6868
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: testnet-faucet-service
+  namespace: testnet
+spec:
+  type: NodePort
+  ports:
+    - port: 6868
+      targetPort: 6868
+      protocol: TCP
+      name: http
+  selector:
+    app: testnet-faucet
