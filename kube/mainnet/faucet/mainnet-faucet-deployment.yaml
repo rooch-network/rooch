@@ -59,6 +59,20 @@ spec:
             secretKeyRef:
               name: rooch-mainnet-secrets
               key: discord-token
+        ports:
+        - containerPort: 6868
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 6868
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 6868
+          initialDelaySeconds: 15
+          periodSeconds: 10
         volumeMounts:
         - name: rooch-data
           mountPath: /root

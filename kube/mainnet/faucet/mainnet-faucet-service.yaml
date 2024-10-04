@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mainnet-faucet-service
+  namespace: mainnet
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 80
+      targetPort: 6868
+  selector:
+    app: mainnet-faucet
