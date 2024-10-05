@@ -4,10 +4,12 @@ metadata:
   name: testnet-ingress
   namespace: testnet
   annotations:
-    kubernetes.io/ingress.global-static-ip-name: "testnet-ingress-static-ip"
+    kubernetes.io/ingress.global-static-ip-name: "testnet-ingress-static-ip" 
+    #Note: there is a waring: Warning: annotation "kubernetes.io/ingress.class" is deprecated, please use 'spec.ingressClassName' instead
+    #But if we set the spec.ingressClassName, it do not worked.
+    kubernetes.io/ingress.class: "gce"
     networking.gke.io/managed-certificates: "testnet-cert"
 spec:
-  ingressClassName: gce
   rules:
   - host: test-faucet.rooch.network
     http:

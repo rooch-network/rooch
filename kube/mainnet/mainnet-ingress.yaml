@@ -5,9 +5,11 @@ metadata:
   namespace: mainnet
   annotations:
     kubernetes.io/ingress.global-static-ip-name: "mainnet-ingress-static-ip"
+    #Note: there is a waring: Warning: annotation "kubernetes.io/ingress.class" is deprecated, please use 'spec.ingressClassName' instead
+    #But if we set the spec.ingressClassName, it do not worked.
+    kubernetes.io/ingress.class: "gce"
     networking.gke.io/managed-certificates: "mainnet-cert"
 spec:
-  ingressClassName: gce 
   rules:
   - host: main-faucet.rooch.network
     http:
