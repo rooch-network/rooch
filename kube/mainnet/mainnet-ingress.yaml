@@ -5,11 +5,9 @@ metadata:
   namespace: mainnet
   annotations:
     kubernetes.io/ingress.global-static-ip-name: "mainnet-ingress-static-ip"
+    networking.gke.io/managed-certificates: "mainnet-cert"
 spec:
-  tls:
-  - hosts:
-    - main-faucet.rooch.network
-    secretName: rooch-tls-secret
+  ingressClassName: gce 
   rules:
   - host: main-faucet.rooch.network
     http:

@@ -5,11 +5,9 @@ metadata:
   namespace: testnet
   annotations:
     kubernetes.io/ingress.global-static-ip-name: "testnet-ingress-static-ip"
+    networking.gke.io/managed-certificates: "testnet-cert"
 spec:
-  tls:
-  - hosts:
-    - test-faucet.rooch.network
-    secretName: rooch-tls-secret
+  ingressClassName: gce
   rules:
   - host: test-faucet.rooch.network
     http:
