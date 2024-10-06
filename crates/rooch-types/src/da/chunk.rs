@@ -179,7 +179,7 @@ mod tests {
     #[test]
     fn test_chunk_v0() {
         let tx_list_bytes = vec![1, 2, 3, 4, 5];
-        let batch = DABatch::new(
+        let batch = DABatch::new_no_sign(
             1,
             1,
             10,

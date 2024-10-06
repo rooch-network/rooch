@@ -69,7 +69,7 @@ pub struct DABatch {
 }
 
 impl DABatch {
-    pub fn new(
+    pub fn new_no_sign(
         block_number: u128,
         tx_order_start: u64,
         tx_order_end: u64,
@@ -90,7 +90,7 @@ impl DABatch {
         }
     }
 
-    pub fn new_with_sign(
+    pub fn new(
         block_number: u128,
         tx_order_start: u64,
         tx_order_end: u64,
