@@ -13,11 +13,3 @@ pub struct PutDABatchMessage {
 impl Message for PutDABatchMessage {
     type Result = anyhow::Result<()>;
 }
-
-pub struct Shit {
-    pub a: DABatch,
-}
-
-impl Message for Shit {
-    type Result = anyhow::Result<()>;
-}
