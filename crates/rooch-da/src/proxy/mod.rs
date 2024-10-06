@@ -1,22 +1,21 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::actor::messages::PutDABatchMessage;
+use crate::actor::server::DAServerActor;
 use coerce::actor::ActorRef;
 
-use crate::actor::da::DAActor;
-use crate::messages::DABatch;
-
 #[derive(Clone)]
-pub struct DAProxy {
-    pub actor: ActorRef<DAActor>,
+pub struct DAServerProxy {
+    pub actor: ActorRef<DAServerActor>,
 }
 
-impl DAProxy {
-    pub fn new(actor: ActorRef<DAActor>) -> Self {
+impl DAServerProxy {
+    pub fn new(actor: ActorRef<DAServerActor>) -> Self {
         Self { actor }
     }
 
-    pub async fn submit_batch(&self, batch: DABatch) -> anyhow::Result<()> {
-        self.actor.send(batch).await?
+    pub async fn pub_batch(&self, msg: PutDABatchMessage) -> anyhow::Result<()> {
+        self.actor.send(msg).await?
     }
 }

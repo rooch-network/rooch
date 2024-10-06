@@ -1,36 +1,44 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::{anyhow, Result};
+use crate::backend::DABackend;
+use anyhow::anyhow;
 use async_trait::async_trait;
 use coerce::actor::context::ActorContext;
 use coerce::actor::message::Handler;
-use coerce::actor::Actor;
+use coerce::actor::{Actor, ActorRef};
 use opendal::layers::{LoggingLayer, RetryLayer};
 use opendal::{Operator, Scheme};
 use rooch_config::config::retrieve_map_config_value;
+use rooch_config::da_config::{DABackendOpenDAConfig, OpenDAScheme};
+use rooch_types::da::batch::DABatch;
+use rooch_types::da::chunk::{Chunk, ChunkV0};
+use rooch_types::da::segment::SegmentID;
 use std::collections::HashMap;
 use std::path::Path;
 
-use crate::chunk::{Chunk, ChunkV0};
-use rooch_config::da_config::{DAServerOpenDAConfig, OpenDAScheme};
+pub const DEFAULT_MAX_SEGMENT_SIZE: u64 = 4 * 1024 * 1024;
+pub const DEFAULT_MAX_RETRY_TIMES: usize = 4;
 
-use crate::messages::PutBatchInternalDAMessage;
-use crate::segment::SegmentID;
+pub const OPENDA_DEFAULT_PREFIX: &str = "openda";
 
-pub struct DAServerOpenDAActor {
+#[async_trait]
+impl DABackend for OpenDABackend {
+    async fn submit_batch(&self, batch: DABatch) -> anyhow::Result<()> {
+        let chunk: ChunkV0 = batch.into();
+        self.pub_chunk(Box::new(chunk)).await
+    }
+}
+
+pub struct OpenDABackend {
+    prefix: String,
+    scheme: OpenDAScheme,
     max_segment_size: usize,
     operator: Operator,
 }
 
-pub const CHUNK_V0_PREFIX: &str = "chunk_v0";
-pub const DEFAULT_MAX_SEGMENT_SIZE: u64 = 4 * 1024 * 1024;
-pub const DEFAULT_MAX_RETRY_TIMES: usize = 4;
-
-impl Actor for DAServerOpenDAActor {}
-
-impl DAServerOpenDAActor {
-    pub async fn new(cfg: &DAServerOpenDAConfig) -> Result<DAServerOpenDAActor> {
+impl OpenDABackend {
+    pub async fn new(cfg: &DABackendOpenDAConfig) -> anyhow::Result<OpenDABackend> {
         let mut config = cfg.clone();
 
         let op: Operator = match config.scheme {
@@ -111,30 +119,35 @@ impl DAServerOpenDAActor {
         };
 
         Ok(Self {
+            prefix: config.prefix.unwrap_or(OPENDA_DEFAULT_PREFIX.to_string()),
+            scheme: config.scheme,
             max_segment_size: cfg.max_segment_size.unwrap_or(DEFAULT_MAX_SEGMENT_SIZE) as usize,
             operator: op,
         })
     }
 
-    pub async fn pub_batch(&self, batch_msg: PutBatchInternalDAMessage) -> Result<()> {
-        let chunk: ChunkV0 = batch_msg.batch.into();
-        let segments = chunk.to_segments(self.max_segment_size);
+    pub async fn pub_chunk(&self, chunk: Box<dyn Chunk>) -> anyhow::Result<()> {
+        let prefix = self.prefix.clone();
+        let max_segment_size = self.max_segment_size;
+        let segments = chunk.to_segments(max_segment_size);
         for segment in segments {
             let bytes = segment.to_bytes();
 
             match self
-                .write_segment(segment.get_id(), bytes, CHUNK_V0_PREFIX.to_string())
+                .write_segment(segment.get_id(), bytes, Some(prefix.clone()))
                 .await
             {
                 Ok(_) => {
                     log::info!(
-                        "submitted segment to open-da node, segment: {:?}",
+                        "submitted segment to open-da scheme: {:?}, segment_id: {:?}",
+                        self.scheme,
                         segment.get_id(),
                     );
                 }
                 Err(e) => {
                     log::warn!(
-                        "failed to submit segment to open-da node, segment_id: {:?}, error:{:?}",
+                        "failed to submit segment to open-da scheme: {:?}, segment_id: {:?}, error:{:?}",
+                        self.scheme,
                         segment.get_id(),
                         e,
                     );
@@ -150,9 +163,12 @@ impl DAServerOpenDAActor {
         &self,
         segment_id: SegmentID,
         segment_bytes: Vec<u8>,
-        prefix: String,
-    ) -> Result<()> {
-        let path = format!("{}/{}", prefix, segment_id);
+        prefix: Option<String>,
+    ) -> anyhow::Result<()> {
+        let path = match prefix {
+            Some(prefix) => format!("{}/{}", prefix, segment_id),
+            None => segment_id.to_string(),
+        };
         let mut w = self.operator.writer(&path).await?;
         w.write(segment_bytes).await?;
         w.close().await?;
@@ -164,7 +180,7 @@ fn check_config_exist(
     scheme: OpenDAScheme,
     config: &HashMap<String, String>,
     key: &str,
-) -> Result<()> {
+) -> anyhow::Result<()> {
     if config.contains_key(key) {
         Ok(())
     } else {
@@ -180,7 +196,7 @@ async fn new_retry_operator(
     scheme: Scheme,
     config: HashMap<String, String>,
     max_retry_times: Option<usize>,
-) -> Result<Operator> {
+) -> anyhow::Result<Operator> {
     let mut op = Operator::via_map(scheme, config)?;
     let max_times = max_retry_times.unwrap_or(DEFAULT_MAX_RETRY_TIMES);
     op = op
@@ -188,15 +204,4 @@ async fn new_retry_operator(
         .layer(LoggingLayer::default());
     op.check().await?;
     Ok(op)
-}
-
-#[async_trait]
-impl Handler<PutBatchInternalDAMessage> for DAServerOpenDAActor {
-    async fn handle(
-        &mut self,
-        msg: PutBatchInternalDAMessage,
-        _ctx: &mut ActorContext,
-    ) -> Result<()> {
-        self.pub_batch(msg).await
-    }
 }
