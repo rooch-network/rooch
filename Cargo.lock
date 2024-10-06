@@ -5942,7 +5942,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c2a198fb6b0eada2a8df47933734e6d35d350665a33a3593d7164fa52c75c19"
 dependencies = [
  "cfg-if",
- "windows-targets 0.48.5",
+ "windows-targets 0.52.6",
 ]
 
 [[package]]
@@ -12126,14 +12126,13 @@ dependencies = [
 
 [[package]]
 name = "tiny-bip39"
-version = "1.0.0"
+version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "62cc94d358b5a1e84a5cb9109f559aa3c4d634d2b1b4de3d0fa4adc7c78e2861"
+checksum = "4a6e875ccbd782b2d91350816d4ab27da3c9424c381f9ba07ed3e2e1ae680d90"
 dependencies = [
  "anyhow",
- "hmac",
  "once_cell",
- "pbkdf2 0.11.0",
+ "pbkdf2 0.12.2",
  "rand 0.8.5",
  "rustc-hash 1.1.0",
  "sha2 0.10.8",
