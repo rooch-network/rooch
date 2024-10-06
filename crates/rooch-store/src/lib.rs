@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::accumulator_store::{AccumulatorStore, TransactionAccumulatorStore};
+use crate::da_store::DAMetaDBStore;
 use crate::meta_store::{MetaDBStore, MetaStore};
 use crate::state_store::{StateDBStore, StateStore};
 use crate::transaction_store::{TransactionDBStore, TransactionStore};
@@ -23,11 +24,13 @@ use std::path::Path;
 use std::sync::Arc;
 
 pub mod accumulator_store;
+pub mod da_store;
 pub mod meta_store;
 pub mod state_store;
+pub mod transaction_store;
+
 #[cfg(test)]
 mod tests;
-pub mod transaction_store;
 
 // pub const DEFAULT_COLUMN_FAMILY_NAME: ColumnFamilyName = "default";
 pub const TRANSACTION_COLUMN_FAMILY_NAME: ColumnFamilyName = "transaction";
@@ -38,6 +41,9 @@ pub const TX_ACCUMULATOR_NODE_COLUMN_FAMILY_NAME: ColumnFamilyName = "transactio
 
 pub const STATE_CHANGE_SET_COLUMN_FAMILY_NAME: ColumnFamilyName = "state_change_set";
 
+pub const DA_BLOCK_SUBMIT_STATE_COLUMN_FAMILY_NAME: ColumnFamilyName = "da_block_submit_state";
+pub const DA_BLOCK_CURSOR_COLUMN_FAMILY_NAME: ColumnFamilyName = "da_last_block_number";
+
 ///db store use cf_name vec to init
 /// Please note that adding a column family needs to be added in vec simultaneously, remember！！
 static VEC_COLUMN_FAMILY_NAME: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
@@ -47,6 +53,8 @@ static VEC_COLUMN_FAMILY_NAME: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
         META_SEQUENCER_INFO_COLUMN_FAMILY_NAME,
         TX_ACCUMULATOR_NODE_COLUMN_FAMILY_NAME,
         STATE_CHANGE_SET_COLUMN_FAMILY_NAME,
+        DA_BLOCK_SUBMIT_STATE_COLUMN_FAMILY_NAME,
+        DA_BLOCK_CURSOR_COLUMN_FAMILY_NAME,
     ]
 });
 
@@ -65,6 +73,7 @@ pub struct RoochStore {
     pub meta_store: MetaDBStore,
     pub transaction_accumulator_store: AccumulatorStore<TransactionAccumulatorStore>,
     pub state_store: StateDBStore,
+    pub da_meta_store: DAMetaDBStore,
 }
 
 impl RoochStore {
@@ -82,13 +91,15 @@ impl RoochStore {
     }
 
     pub fn new_with_instance(instance: StoreInstance, _registry: &Registry) -> Result<Self> {
+        let da_meta_store = DAMetaDBStore::new(instance.clone())?;
         let store = Self {
             transaction_store: TransactionDBStore::new(instance.clone()),
             meta_store: MetaDBStore::new(instance.clone()),
             transaction_accumulator_store: AccumulatorStore::new_transaction_accumulator_store(
                 instance.clone(),
             ),
-            state_store: StateDBStore::new(instance),
+            state_store: StateDBStore::new(instance.clone()),
+            da_meta_store,
         };
         Ok(store)
     }
@@ -115,6 +126,10 @@ impl RoochStore {
 
     pub fn get_state_store(&self) -> &StateDBStore {
         &self.state_store
+    }
+
+    pub fn get_da_meta_store(&self) -> &DAMetaDBStore {
+        &self.da_meta_store
     }
 }
 

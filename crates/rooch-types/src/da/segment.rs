@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::chunk::ChunkVersion;
+use crate::da::chunk::ChunkVersion;
 use serde::Serialize;
 use std::fmt;
 use std::str::FromStr;
