@@ -50,9 +50,9 @@ pub enum OpenDAScheme {
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(rename_all = "kebab-case")]
-pub enum InternalDAServerConfigType {
-    Celestia(DAServerCelestiaConfig),
-    OpenDa(DAServerOpenDAConfig),
+pub enum DABackendConfigType {
+    Celestia(DABackendCelestiaConfig),
+    OpenDa(DABackendOpenDAConfig),
 }
 
 #[derive(Clone, Default, Debug, PartialEq, Deserialize, Serialize, Parser)]
@@ -60,12 +60,11 @@ pub enum InternalDAServerConfigType {
 #[serde(rename_all = "kebab-case")]
 pub struct DAConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(name = "internal-da-server", long, help = "internal da server config")]
-    pub internal_da_server: Option<InternalDAServerConfig>,
+    #[clap(name = "da-backend", long, help = "da backend config")]
+    pub da_backend: Option<DABackendConfig>,
     #[serde(skip)]
     #[clap(skip)]
     base: Option<Arc<BaseConfig>>,
-    // TODO external da server config
 }
 
 impl Display for DAConfig {
@@ -96,9 +95,12 @@ impl DAConfig {
 
         let default_fs_root = self.get_openda_fs_dir();
 
-        if let Some(InternalDAServerConfig { servers, .. }) = &mut self.internal_da_server {
+        if let Some(DABackendConfig {
+            backends: servers, ..
+        }) = &mut self.da_backend
+        {
             for server in servers {
-                if let InternalDAServerConfigType::OpenDa(open_da_config) = server {
+                if let DABackendConfigType::OpenDa(open_da_config) = server {
                     if matches!(open_da_config.scheme, OpenDAScheme::Fs) {
                         let var_source = retrieve_map_config_value(
                             &mut open_da_config.config,
@@ -134,25 +136,25 @@ impl DAConfig {
 
 #[derive(Clone, Default, Debug, PartialEq, Deserialize, Serialize, Parser)]
 #[serde(deny_unknown_fields)]
-pub struct InternalDAServerConfig {
+pub struct DABackendConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[clap(
         name = "submit-strategy",
         long,
-        help = "specifies the submission strategy of internal DA servers to be used. 'all' with all servers, 'quorum' with quorum servers, 'n' with n servers, etc."
+        help = "specifies the submission strategy of DA. 'all' with all backends, 'quorum' with quorum backends, 'n' with n backends, etc."
     )]
     pub submit_strategy: Option<DAServerSubmitStrategy>,
     #[clap(
-        name = "servers",
+        name = "backends",
         long,
-        help = "specifies the type of internal DA servers to be used. 'celestia' with corresponding Celestia server configuration, 'xxx' with corresponding xxx server configuration, etc."
+        help = "specifies the type of DA backends to be used. 'celestia' with corresponding Celestia backend configuration, 'foo' with corresponding foo backend configuration, etc."
     )]
-    pub servers: Vec<InternalDAServerConfigType>,
+    pub backends: Vec<DABackendConfigType>,
 }
 
-impl InternalDAServerConfig {
+impl DABackendConfig {
     pub fn adjust_submit_strategy(&mut self) {
-        let servers_count = self.servers.len();
+        let servers_count = self.backends.len();
 
         // Set default strategy to All if it's None.
         let strategy = self
@@ -168,7 +170,7 @@ impl InternalDAServerConfig {
     pub fn calculate_submit_threshold(&mut self) -> usize {
         self.adjust_submit_strategy(); // Make sure submit_strategy is adjusted before calling this function.
 
-        let servers_count = self.servers.len();
+        let servers_count = self.backends.len();
         match self.submit_strategy {
             Some(DAServerSubmitStrategy::All) => servers_count,
             Some(DAServerSubmitStrategy::Quorum) => servers_count / 2 + 1,
@@ -178,7 +180,7 @@ impl InternalDAServerConfig {
     }
 }
 
-impl FromStr for InternalDAServerConfig {
+impl FromStr for DABackendConfig {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -189,7 +191,7 @@ impl FromStr for InternalDAServerConfig {
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize, Parser)]
 #[serde(deny_unknown_fields)]
-pub struct DAServerCelestiaConfig {
+pub struct DABackendCelestiaConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[clap(name = "namespace", long, help = "celestia namespace")]
     pub namespace: Option<String>,
@@ -210,7 +212,7 @@ pub struct DAServerCelestiaConfig {
     pub max_segment_size: Option<u64>,
 }
 
-impl Default for DAServerCelestiaConfig {
+impl Default for DABackendCelestiaConfig {
     fn default() -> Self {
         Self {
             namespace: None,
@@ -221,9 +223,9 @@ impl Default for DAServerCelestiaConfig {
     }
 }
 
-impl DAServerCelestiaConfig {
+impl DABackendCelestiaConfig {
     pub fn new_with_defaults(mut self) -> Self {
-        let default = DAServerCelestiaConfig::default();
+        let default = DABackendCelestiaConfig::default();
         if self.max_segment_size.is_none() {
             self.max_segment_size = default.max_segment_size;
         }
@@ -231,7 +233,7 @@ impl DAServerCelestiaConfig {
     }
 }
 
-impl FromStr for InternalDAServerConfigType {
+impl FromStr for DABackendConfigType {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -240,23 +242,23 @@ impl FromStr for InternalDAServerConfigType {
 
         if let Some(obj) = v.as_object() {
             if let Some(celestia) = obj.get("celestia") {
-                let celestia_config: DAServerCelestiaConfig =
+                let celestia_config: DABackendCelestiaConfig =
                     serde_json::from_value(celestia.clone()).map_err(|e| {
                         format!(
                             "invalid celestia config: {} error: {}, original: {}",
                             celestia, e, s
                         )
                     })?;
-                Ok(InternalDAServerConfigType::Celestia(celestia_config))
+                Ok(DABackendConfigType::Celestia(celestia_config))
             } else if let Some(openda) = obj.get("open-da") {
-                let openda_config: DAServerOpenDAConfig = serde_json::from_value(openda.clone())
+                let openda_config: DABackendOpenDAConfig = serde_json::from_value(openda.clone())
                     .map_err(|e| {
-                        format!(
-                            "invalid open-da config: {}, error: {}, original: {}",
-                            openda, e, s
-                        )
-                    })?;
-                Ok(InternalDAServerConfigType::OpenDa(openda_config))
+                    format!(
+                        "invalid open-da config: {}, error: {}, original: {}",
+                        openda, e, s
+                    )
+                })?;
+                Ok(DABackendConfigType::OpenDa(openda_config))
             } else {
                 Err(format!("Invalid value: {}", s))
             }
@@ -269,7 +271,7 @@ impl FromStr for InternalDAServerConfigType {
 // Open DA provides ability to access various storage services
 #[derive(Clone, Default, Debug, PartialEq, Deserialize, Serialize, Parser)]
 #[serde(deny_unknown_fields)]
-pub struct DAServerOpenDAConfig {
+pub struct DABackendOpenDAConfig {
     #[clap(
         name = "scheme",
         long,
@@ -287,6 +289,14 @@ pub struct DAServerOpenDAConfig {
     )]
     #[serde(default)]
     pub config: HashMap<String, String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[clap(
+        name = "prefix",
+        long,
+        help = "<prefix>/<segment_id> is the path to store the segment. If not set, the segment_id is the path."
+    )]
+    pub prefix: Option<String>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     #[clap(
@@ -344,9 +354,9 @@ mod tests {
 
     #[test]
     fn test_adjust_submit_strategy_default_to_all() {
-        let mut config = InternalDAServerConfig {
+        let mut config = DABackendConfig {
             submit_strategy: None,
-            servers: vec![], // Empty for this test
+            backends: vec![], // Empty for this test
         };
         config.adjust_submit_strategy();
         assert_eq!(config.submit_strategy, Some(DAServerSubmitStrategy::All));
@@ -354,12 +364,9 @@ mod tests {
 
     #[test]
     fn test_adjust_submit_strategy_number_too_low() {
-        let mut config = InternalDAServerConfig {
+        let mut config = DABackendConfig {
             submit_strategy: Some(DAServerSubmitStrategy::Number(0)),
-            servers: vec![
-                InternalDAServerConfigType::Celestia(DAServerCelestiaConfig::default());
-                2
-            ], // Two servers for this test
+            backends: vec![DABackendConfigType::Celestia(DABackendCelestiaConfig::default()); 2], // Two servers for this test
         };
         config.adjust_submit_strategy();
         assert_eq!(
@@ -370,12 +377,9 @@ mod tests {
 
     #[test]
     fn test_adjust_submit_strategy_number_too_high() {
-        let mut config = InternalDAServerConfig {
+        let mut config = DABackendConfig {
             submit_strategy: Some(DAServerSubmitStrategy::Number(5)),
-            servers: vec![
-                InternalDAServerConfigType::Celestia(DAServerCelestiaConfig::default());
-                3
-            ], // Three servers for this test
+            backends: vec![DABackendConfigType::Celestia(DABackendCelestiaConfig::default()); 3], // Three servers for this test
         };
         config.adjust_submit_strategy();
         assert_eq!(
@@ -386,12 +390,9 @@ mod tests {
 
     #[test]
     fn test_adjust_submit_strategy_number_within_range() {
-        let mut config = InternalDAServerConfig {
+        let mut config = DABackendConfig {
             submit_strategy: Some(DAServerSubmitStrategy::Number(2)),
-            servers: vec![
-                InternalDAServerConfigType::Celestia(DAServerCelestiaConfig::default());
-                4
-            ], // Four servers for this test
+            backends: vec![DABackendConfigType::Celestia(DABackendCelestiaConfig::default()); 4], // Four servers for this test
         };
         config.adjust_submit_strategy();
         assert_eq!(
@@ -406,11 +407,11 @@ mod tests {
         let openda_config_str = r#"{"open-da": {"scheme": "gcs", "config": {"Param1": "value1", "param2": "Value2"}, "max_segment_size": 2048}}"#;
         let invalid_config_str = r#"{"unknown": {...}}"#;
 
-        match InternalDAServerConfigType::from_str(celestia_config_str) {
-            Ok(InternalDAServerConfigType::Celestia(celestia_config)) => {
+        match DABackendConfigType::from_str(celestia_config_str) {
+            Ok(DABackendConfigType::Celestia(celestia_config)) => {
                 assert_eq!(
                     celestia_config,
-                    DAServerCelestiaConfig {
+                    DABackendCelestiaConfig {
                         namespace: Some("test_namespace".to_string()),
                         conn: Some("test_conn".to_string()),
                         auth_token: Some("test_token".to_string()),
@@ -430,11 +431,11 @@ mod tests {
         config.insert("Param1".to_string(), "value1".to_string());
         config.insert("param2".to_string(), "Value2".to_string());
 
-        match InternalDAServerConfigType::from_str(openda_config_str) {
-            Ok(InternalDAServerConfigType::OpenDa(openda_config)) => {
+        match DABackendConfigType::from_str(openda_config_str) {
+            Ok(DABackendConfigType::OpenDa(openda_config)) => {
                 assert_eq!(
                     openda_config,
-                    DAServerOpenDAConfig {
+                    DABackendOpenDAConfig {
                         scheme: OpenDAScheme::Gcs,
                         config,
                         max_segment_size: Some(2048),
@@ -449,7 +450,7 @@ mod tests {
             }
         }
 
-        if InternalDAServerConfigType::from_str(invalid_config_str).is_err() {
+        if DABackendConfigType::from_str(invalid_config_str).is_err() {
         } else {
             panic!("Expected Error for invalid config");
         }
