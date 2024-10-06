@@ -1,8 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::messages::DABatch;
-use crate::segment::{Segment, SegmentID, SegmentV0};
+use crate::da::batch::DABatch;
+use crate::da::segment::{Segment, SegmentID, SegmentV0};
 use lz4::EncoderBuilder;
 use serde::{Deserialize, Serialize};
 use std::io;
@@ -36,11 +36,12 @@ pub trait Chunk {
     fn to_bytes(&self) -> Vec<u8>;
     fn get_version(&self) -> ChunkVersion;
     fn to_segments(&self, max_segment_size: usize) -> Vec<Box<dyn Segment>>;
-    fn get_batch(&self) -> DABatch;
+    fn get_batches(&self) -> Vec<DABatch>;
+    fn get_chunk_id(&self) -> u128;
 }
 
 // ChunkV0:
-// 1. each chunk maps to a batch
+// 1. each chunk maps to a batch (block number is chunk_id)
 // 2. batch_data compressed by lz4
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct ChunkV0 {
@@ -52,13 +53,7 @@ impl From<DABatch> for ChunkV0 {
     fn from(batch: DABatch) -> Self {
         Self {
             version: ChunkVersion::V0,
-            batch: DABatch {
-                tx_count: batch.tx_count,
-                prev_tx_accumulator_root: batch.prev_tx_accumulator_root,
-                tx_accumulator_root: batch.tx_accumulator_root,
-                batch_hash: batch.batch_hash,
-                tx_list_bytes: batch.tx_list_bytes,
-            },
+            batch,
         }
     }
 }
@@ -86,8 +81,7 @@ impl Chunk for ChunkV0 {
         let segments_data = bytes.chunks(max_segment_size);
         let segments_count = segments_data.len();
 
-        //
-        let chunk_id = self.batch.block_number;
+        let chunk_id = self.get_chunk_id();
         segments_data
             .enumerate()
             .map(|(i, data)| {
@@ -107,8 +101,13 @@ impl Chunk for ChunkV0 {
             .collect::<Vec<_>>()
     }
 
-    fn get_batch(&self) -> DABatch {
-        self.batch.clone()
+    fn get_batches(&self) -> Vec<DABatch> {
+        vec![self.batch.clone()]
+    }
+
+    /// using batch.meta.block_number as chunk_id
+    fn get_chunk_id(&self) -> u128 {
+        self.batch.meta.block_range.block_number
     }
 }
 
@@ -179,24 +178,19 @@ mod tests {
 
     #[test]
     fn test_chunk_v0() {
-        let batch = DABatch {
-            tx_count: 1,
-            prev_tx_accumulator_root: Default::default(),
-            tx_accumulator_root: Default::default(),
-            batch_hash: h256::sha2_256_of(&[1, 2, 3, 4, 5]),
-            tx_list_bytes: vec![1, 2, 3, 4, 5],
-        };
-
+        let tx_list_bytes = vec![1, 2, 3, 4, 5];
+        let batch = DABatch::new(
+            1,
+            1,
+            10,
+            tx_list_bytes.clone(),
+            h256::sha2_256_of(&tx_list_bytes),
+        );
         let chunk = ChunkV0::from(batch.clone());
         let segments = chunk.to_segments(3);
-        assert_eq!(segments.len(), 39);
+        assert_eq!(segments.len(), 38);
 
         let chunk = chunk_from_segments(segments).unwrap();
-        assert_eq!(chunk.get_batch(), batch);
-
-        assert_eq!(
-            chunk.get_batch().batch_hash,
-            h256::sha2_256_of(&[1, 2, 3, 4, 5])
-        );
+        assert_eq!(chunk.get_batches().first().unwrap(), &batch);
     }
 }
