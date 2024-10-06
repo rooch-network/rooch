@@ -44,20 +44,22 @@ In Verifier's perspective (verifier verifies tx), the data flow is as follows:
 
 ### Sequencer
 
-Tx batch maker. Each sequencer maintains its own DA server. Has responsibility to public DA server and DA Backend info
-for anyone could access DA data easily.
+Tx batch maker. Each sequencer maintains its own DA server.
 
-## DA Server
+### DA Server
 
-Provides Put/Get interface for DA.
+Has responsibilities:
+
+1. public DA Backend info for anyone could access DA data easily.
+2. provides Put/Get interface for DA by DA Server.
+
+Each DA server could connect to multiple DA backends.
 
 ## DA Backend
 
 The purpose of DA backend is to mitigate the single point of risk associated with DA server. DA server,
 not the backend, remains the principal party responsible for data publication. Therefore, the DA server may elect to
 submit data to DA backend asynchronously.
-
-Each DA server could connect to multiple DA backends.
 
 ## DA Server APIs
 
