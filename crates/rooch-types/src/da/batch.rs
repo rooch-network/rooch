@@ -75,6 +75,7 @@ impl DABatchMeta {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct SignedDABatchMeta {
     pub meta: DABatchMeta,
     pub signature: Vec<u8>,

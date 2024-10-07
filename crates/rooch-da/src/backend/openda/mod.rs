@@ -4,9 +4,6 @@
 use crate::backend::DABackend;
 use anyhow::anyhow;
 use async_trait::async_trait;
-use coerce::actor::context::ActorContext;
-use coerce::actor::message::Handler;
-use coerce::actor::{Actor, ActorRef};
 use opendal::layers::{LoggingLayer, RetryLayer};
 use opendal::{Operator, Scheme};
 use rooch_config::config::retrieve_map_config_value;
@@ -25,8 +22,7 @@ pub const OPENDA_DEFAULT_PREFIX: &str = "openda";
 #[async_trait]
 impl DABackend for OpenDABackend {
     async fn submit_batch(&self, batch: DABatch) -> anyhow::Result<()> {
-        let chunk: ChunkV0 = batch.into();
-        self.pub_chunk(Box::new(chunk)).await
+        self.pub_batch(batch).await
     }
 }
 
@@ -126,7 +122,9 @@ impl OpenDABackend {
         })
     }
 
-    pub async fn pub_chunk(&self, chunk: Box<dyn Chunk>) -> anyhow::Result<()> {
+    pub async fn pub_batch(&self, batch: DABatch) -> anyhow::Result<()> {
+        let chunk: ChunkV0 = batch.into();
+
         let prefix = self.prefix.clone();
         let max_segment_size = self.max_segment_size;
         let segments = chunk.to_segments(max_segment_size);

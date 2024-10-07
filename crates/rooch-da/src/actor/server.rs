@@ -9,29 +9,23 @@ use anyhow::anyhow;
 use async_trait::async_trait;
 use coerce::actor::context::ActorContext;
 use coerce::actor::message::Handler;
-use coerce::actor::system::ActorSystem;
-use coerce::actor::{Actor, IntoActor};
-use futures::stream::FuturesUnordered;
-use futures::StreamExt;
+use coerce::actor::Actor;
 use moveos_types::h256;
 use moveos_types::h256::H256;
 use rooch_config::da_config::{DABackendConfigType, DAConfig};
-use rooch_store::da_store::{DAMetaDBStore, DAMetaStore};
+use rooch_store::da_store::DAMetaStore;
 use rooch_store::transaction_store::TransactionStore;
 use rooch_store::RoochStore;
 use rooch_types::crypto::{RoochKeyPair, Signature};
 use rooch_types::da::batch::{BlockRange, DABatch, DABatchMeta, SignedDABatchMeta};
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 
 pub struct DAServerActor {
     sequencer_key: RoochKeyPair,
     rooch_store: RoochStore,
-    backends: DABackends,
     last_block_number: Option<u128>,
-}
 
-struct DABackends {
-    backends: Arc<RwLock<Vec<Arc<dyn DABackend + Send + Sync>>>>,
+    backends: Vec<Arc<dyn DABackend>>,
     submit_threshold: usize,
 }
 
@@ -44,12 +38,12 @@ impl DAServerActor {
         rooch_store: RoochStore,
         last_tx_order: Option<u64>,
     ) -> anyhow::Result<Self> {
-        let mut backends: Vec<Arc<dyn DABackend + Send + Sync>> = Vec::new();
+        let mut backends: Vec<Arc<dyn DABackend>> = Vec::new();
         let mut submit_threshold = 1;
         let mut act_backends = 0;
 
         // backend config has higher priority than submit threshold
-        if let Some(mut backend_config) = &da_config.da_backend {
+        if let Some(mut backend_config) = da_config.da_backend {
             submit_threshold = backend_config.calculate_submit_threshold();
 
             for backend_type in &backend_config.backends {
@@ -80,18 +74,17 @@ impl DAServerActor {
         rooch_store.catchup_submitting_blocks(last_tx_order)?;
         let last_block_number = rooch_store.get_last_block_number()?;
 
-        let sequencer_actor = DAServerActor {
-            sequencer_key,
-            rooch_store,
-            backends: DABackends {
-                backends: Arc::new(RwLock::new(backends)),
-                submit_threshold,
-            },
-            last_block_number,
-        };
         if let Some(last_block_number) = last_block_number {
+            let background_da_server = DAServerActor {
+                sequencer_key: sequencer_key.copy(),
+                rooch_store: rooch_store.clone(),
+                last_block_number: Some(last_block_number),
+                backends: backends.clone(),
+                submit_threshold,
+            };
+
             tokio::spawn(async move {
-                if let Err(e) = sequencer_actor
+                if let Err(e) = background_da_server
                     .start_background_submit(last_block_number)
                     .await
                 {
@@ -100,7 +93,13 @@ impl DAServerActor {
             });
         }
 
-        Ok(sequencer_actor)
+        Ok(DAServerActor {
+            sequencer_key,
+            rooch_store,
+            last_block_number,
+            backends,
+            submit_threshold,
+        })
     }
 
     pub async fn submit_batch(
@@ -112,22 +111,19 @@ impl DAServerActor {
         let block_number = self
             .rooch_store
             .append_submitting_block(self.last_block_number, tx_order_start, tx_order_end)
-            .expect(
-                format!(
-                    "fail to append submitting block: last_block_number: {:?}; new block: tx_order_start: {:?}, tx_order_end: {:?}",
-                    self.last_block_number, tx_order_start, tx_order_end
-                )
-                .as_str(),
-            );
+            .unwrap_or_else(|_| panic!("fail to append submitting block: last_block_number: {:?}; new block: tx_order_start: {:?}, tx_order_end: {:?}",
+                   self.last_block_number, tx_order_start, tx_order_end));
 
-        let signed_meta = self.submit_batch_raw(
-            BlockRange {
-                block_number,
-                tx_order_start,
-                tx_order_end,
-            },
-            msg.tx_list_bytes,
-        );
+        let signed_meta = self
+            .submit_batch_raw(
+                BlockRange {
+                    block_number,
+                    tx_order_start,
+                    tx_order_end,
+                },
+                msg.tx_list_bytes,
+            )
+            .await?;
         self.last_block_number = Some(block_number);
 
         Ok(signed_meta)
@@ -176,32 +172,31 @@ impl DAServerActor {
     }
 
     async fn submit_batch_to_backends(&self, batch: DABatch) -> anyhow::Result<()> {
-        let backends = self.backends.backends.read()?.to_vec();
-        let submit_threshold = self.backends.submit_threshold;
-        let mut submit_jobs = FuturesUnordered::new();
-        for backend_arc in backends {
-            let backend = Arc::clone(&backend_arc);
-            submit_jobs.push(async move { backend.submit_batch(batch.clone()) });
-        }
+        let backends = self.backends.clone();
+        let submit_threshold = self.submit_threshold;
+        // submit to backend in order until meet submit_threshold
         let mut success_count = 0;
-        while let Some(result) = submit_jobs.next().await {
-            match result {
+        for backend in &backends {
+            let submit_fut = backend.submit_batch(batch.clone());
+            match submit_fut.await {
                 Ok(_) => {
                     success_count += 1;
                     if success_count >= submit_threshold {
-                        return Ok(());
+                        break;
                     }
                 }
                 Err(e) => {
-                    log::warn!("{:?}, fail to submit batch to da server.", e);
+                    log::warn!("{:?}, fail to submit batch to backend.", e);
                 }
             }
         }
+
         if success_count < submit_threshold {
-            return Err(anyhow::Error::msg(format!(
+            return Err(anyhow!(
                 "not enough successful submissions. exp>= {} act: {}",
-                submit_threshold, success_count
-            )));
+                submit_threshold,
+                success_count
+            ));
         };
         Ok(())
     }
@@ -219,7 +214,8 @@ impl DAServerActor {
 
         let mut submit_count = 0;
         for block in unsubmitted_blocks {
-            if block.block_number > stop_block_number {
+            let block_number = block.block_number;
+            if block_number > stop_block_number {
                 break;
             }
             let tx_order_start = block.tx_order_start;
@@ -236,14 +232,14 @@ impl DAServerActor {
                 let tx = self
                     .rooch_store
                     .get_transaction_by_hash(tx_hash)?
-                    .expect(format!("tx not found for hash: {:?}", tx_hash).as_str());
+                    .unwrap_or_else(|| panic!("tx not found for hash: {:?}", tx_hash));
                 tx_list_bytes.append(&mut tx.encode());
             }
             self.submit_batch_raw(block, tx_list_bytes).await?;
             submit_count += 1;
             if submit_count % 1024 == 0 {
                 self.rooch_store
-                    .set_background_submit_block_cursor(block.block_number)?;
+                    .set_background_submit_block_cursor(block_number)?;
                 log::info!("da: submitted {} blocks in background", submit_count);
             }
         }

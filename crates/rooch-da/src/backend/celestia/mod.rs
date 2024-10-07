@@ -1,7 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::backend::openda::OpenDABackend;
 use crate::backend::DABackend;
 use async_trait::async_trait;
 use celestia_rpc::{BlobClient, Client};
@@ -12,7 +11,6 @@ use rooch_config::da_config::DABackendCelestiaConfig;
 use rooch_types::da::batch::DABatch;
 use rooch_types::da::chunk::{Chunk, ChunkV0};
 use rooch_types::da::segment::{Segment, SegmentID};
-use std::cmp::max;
 
 pub struct CelestiaBackend {
     max_segment_size: usize,
@@ -86,7 +84,7 @@ impl CelestiaClient {
         segment: Box<dyn Segment + Send>,
     ) -> anyhow::Result<SubmitBackendResult> {
         let data = segment.to_bytes();
-        let blob = Blob::new(self.namespace, data).unwrap();
+        let blob = Blob::new(self.namespace, data)?;
         let segment_id = segment.get_id();
         // TODO backoff retry
         match self

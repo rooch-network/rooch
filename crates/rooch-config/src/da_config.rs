@@ -438,6 +438,7 @@ mod tests {
                     DABackendOpenDAConfig {
                         scheme: OpenDAScheme::Gcs,
                         config,
+                        prefix: None,
                         max_segment_size: Some(2048),
                     }
                 );
