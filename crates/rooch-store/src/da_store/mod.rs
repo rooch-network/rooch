@@ -7,7 +7,7 @@ use rooch_types::da::batch::{BlockRange, BlockSubmitState};
 use std::cmp::min;
 
 pub const SUBMITTING_BLOCKS_PAGE_SIZE: usize = 1024;
-pub const MAX_TXS_PER_BLOCK_IN_FIX: usize = 16384; // avoid OOM when fix submitting blocks after collapse
+pub const MAX_TXS_PER_BLOCK_IN_FIX: usize = 8192; // avoid OOM when fix submitting blocks after collapse
 
 pub const BACKGROUND_SUBMIT_BLOCK_CURSOR_KEY: &str = "background_submit_block_cursor";
 pub const LAST_BLOCK_NUMBER_KEY: &str = "last_block_number";
