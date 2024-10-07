@@ -4,9 +4,10 @@
 use crate::actor::messages::TransactionProposeMessage;
 use moveos_types::h256;
 use moveos_types::h256::H256;
-use rooch_da::messages::DABatch;
-use rooch_da::proxy::DAProxy;
+use rooch_da::actor::messages::PutDABatchMessage;
+use rooch_da::proxy::DAServerProxy;
 use rooch_types::block::Block;
+use rooch_types::da::batch::DABatch;
 
 /// State Commitment Chain(SCC) is a chain of transaction state root
 /// This SCC is a mirror of the on-chain SCC
@@ -14,12 +15,12 @@ pub struct StateCommitmentChain {
     //TODO save to the storage
     last_block: Option<Block>,
     buffer: Vec<TransactionProposeMessage>,
-    da: DAProxy,
+    da: DAServerProxy,
 }
 
 impl StateCommitmentChain {
     /// Create a new SCC
-    pub fn new(da_proxy: DAProxy) -> Self {
+    pub fn new(da_proxy: DAServerProxy) -> Self {
         Self {
             last_block: None,
             buffer: Vec::new(),
@@ -77,23 +78,26 @@ impl StateCommitmentChain {
 
         // submit batch to DA server
         // TODO move batch submit out of proposer
-        let batch_data: Vec<u8> = self.buffer.iter().flat_map(|tx| tx.tx.encode()).collect();
-        let batch_hash = h256::sha2_256_of(&batch_data);
-        if let Err(e) = self
+        let tx_list_bytes: Vec<u8> = self.buffer.iter().flat_map(|tx| tx.tx.encode()).collect();
+        let batch_meta = self
             .da
-            .submit_batch(DABatch {
-                tx_count: batch_size,
-                prev_tx_accumulator_root,
-                tx_accumulator_root,
-                batch_hash,
-                tx_list_bytes: batch_data,
+            .pub_batch(PutDABatchMessage {
+                tx_order_start: 0,
+                tx_order_end: 0,
+                tx_list_bytes,
             })
-            .await
-        {
-            log::error!("submit batch to DA server failed: {}", e);
-            return None;
+            .await;
+        match batch_meta {
+            Ok(batch_meta) => {
+                log::info!("submit batch to DA success: {:?}", batch_meta);
+            }
+            Err(e) => {
+                log::error!("submit batch to DA failed: {:?}", e);
+            }
         }
+        // even if the batch submission failed, new block must have been created(otherwise panic)
 
+        // TODO update block struct and add propose logic
         let new_block = Block::new(
             block_number,
             batch_size,
