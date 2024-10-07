@@ -89,7 +89,7 @@ impl DAMetaDBStore {
             .put_sync(LAST_BLOCK_NUMBER_KEY.to_string(), block_number)
     }
 
-    #[warn(dead_code)]
+    #[allow(dead_code)]
     fn add_submitting_block(
         &self,
         block_number: u128,
@@ -142,16 +142,16 @@ impl DAMetaDBStore {
         let mut tx_order_start: u64 = 1; // tx_order_start starts from 1 (bypass genesis_tx)
         let mut tx_order_end: u64 = min(MAX_TXS_PER_BLOCK_IN_FIX as u64, last_order);
         if let Some(last_block_number) = last_block_number {
-            let last_range = self.block_submit_state_store.kv_get(last_block_number)?;
-            let last_range = last_range
-                .expect(
-                    format!(
+            let last_block_state = self
+                .block_submit_state_store
+                .kv_get(last_block_number)?
+                .unwrap_or_else(|| {
+                    panic!(
                         "submitting block not found for existed last block: {}",
                         last_block_number
                     )
-                    .as_str(),
-                )
-                .block_range;
+                });
+            let last_range = last_block_state.block_range;
             block_number = last_block_number + 1;
             tx_order_start = last_range.tx_order_end + 1;
             tx_order_end = min(
@@ -231,10 +231,7 @@ impl DAMetaStore for DAMetaDBStore {
         tx_order_end: u64,
     ) -> anyhow::Result<u128> {
         let block_number = match last_block_number {
-            Some(last_block_number) => {
-                let next_block_number = last_block_number + 1;
-                next_block_number
-            }
+            Some(last_block_number) => last_block_number + 1,
             None => 0,
         };
 

@@ -167,7 +167,7 @@ fn check_block_ranges(
         return;
     }
     assert!(
-        block_ranges.len() > 0,
+        !block_ranges.is_empty(),
         "Test case {}: expected some block ranges, but got none",
         test_case,
     );
