@@ -55,7 +55,28 @@ pub struct DABatchMeta {
     pub block_range: BlockRange,
     /// sha256h of tx_list_bytes
     pub tx_list_hash: H256,
-    /// meta signature, signed by sequencer.
+}
+
+impl DABatchMeta {
+    pub fn new(
+        block_number: u128,
+        tx_order_start: u64,
+        tx_order_end: u64,
+        tx_list_hash: H256,
+    ) -> Self {
+        Self {
+            block_range: BlockRange {
+                block_number,
+                tx_order_start,
+                tx_order_end,
+            },
+            tx_list_hash,
+        }
+    }
+}
+
+pub struct SignedDABatchMeta {
+    pub meta: DABatchMeta,
     pub signature: Vec<u8>,
 }
 
@@ -64,6 +85,8 @@ pub struct DABatchMeta {
 pub struct DABatch {
     /// The metadata of the batch
     pub meta: DABatchMeta,
+    /// meta signature, signed by sequencer.
+    pub meta_signature: Vec<u8>,
     /// encoded tx(LedgerTransaction) list
     pub tx_list_bytes: Vec<u8>,
 }
@@ -102,8 +125,8 @@ impl DABatch {
                     tx_order_end,
                 },
                 tx_list_hash,
-                signature,
             },
+            meta_signature: signature,
             tx_list_bytes,
         }
     }
