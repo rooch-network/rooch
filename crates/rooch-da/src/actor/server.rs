@@ -109,11 +109,16 @@ impl DAServerActor {
     ) -> anyhow::Result<SignedDABatchMeta> {
         let tx_order_start = msg.tx_order_start;
         let tx_order_end = msg.tx_order_end;
-        let block_number = self.rooch_store.append_submitting_block(
-            self.last_block_number,
-            tx_order_start,
-            tx_order_end,
-        )?;
+        let block_number = self
+            .rooch_store
+            .append_submitting_block(self.last_block_number, tx_order_start, tx_order_end)
+            .expect(
+                format!(
+                    "fail to append submitting block: last_block_number: {:?}; new block: tx_order_start: {:?}, tx_order_end: {:?}",
+                    self.last_block_number, tx_order_start, tx_order_end
+                )
+                .as_str(),
+            );
 
         let signed_meta = self.submit_batch_raw(
             BlockRange {
