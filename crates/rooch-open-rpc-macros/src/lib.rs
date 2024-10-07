@@ -49,7 +49,7 @@ pub fn open_rpc(attr: TokenStream, item: TokenStream) -> TokenStream {
         let name = &method.name;
         let deprecated = method.deprecated;
         let doc = &method.doc;
-        let mut inputs = Vec::new();
+        let mut inputs = Vec::with_capacity(method.params.len());
         for (name, ty, description) in &method.params {
             let (ty, required) = extract_type_from_option(ty.clone());
             let description = if let Some(description) = description {

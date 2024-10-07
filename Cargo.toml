@@ -50,6 +50,7 @@ members = [
     "crates/rooch-test-transaction-builder",
     "crates/rooch-types",
     "crates/rooch-event",
+    "crates/rooch-cosmwasm-vm",
     "crates/testsuite",
     "crates/rooch-ord",
     "frameworks/bitcoin-move",
@@ -59,7 +60,6 @@ members = [
     "frameworks/moveos-stdlib",
     "frameworks/rooch-framework",
     "frameworks/rooch-nursery",
-    "examples/bitseed_generator",
 ]
 
 default-members = [
@@ -84,7 +84,7 @@ license = "Apache-2.0"
 publish = false
 repository = "https://github.com/rooch-network/rooch"
 rust-version = "1.78.0"
-version = "0.7.2"
+version = "0.7.3"
 
 [workspace.dependencies]
 # Internal crate dependencies.
@@ -139,6 +139,8 @@ data-verify = { path = "crates/data_verify" }
 rooch-db = { path = "crates/rooch-db" }
 rooch-event = { path = "crates/rooch-event" }
 rooch-ord = { path = "crates/rooch-ord" }
+rooch-cosmwasm-vm = { path = "crates/rooch-cosmwasm-vm" }
+rooch-oracle = { path = "crates/rooch-oracle" }
 
 # frameworks
 framework-types = { path = "frameworks/framework-types" }
@@ -159,7 +161,7 @@ bcs = "0.1.3"
 bytes = "1.7.2"
 bech32 = "0.11.0"
 better_any = "0.1.1"
-bitcoin = { version = "0.32.2", features = ["rand-std", "bitcoinconsensus"] }
+bitcoin = { version = "0.32.3", features = ["rand-std", "bitcoinconsensus"] }
 bitcoin_hashes = { version = "0.14.0", features = ["serde"] }
 bitcoincore-rpc = "0.19.0"
 bitcoincore-rpc-json = "0.19.0"
@@ -179,7 +181,7 @@ ethers = { version = "2.0.7", features = ["legacy"] }
 eyre = "0.6.8"
 fastcrypto = { git = "https://github.com/MystenLabs/fastcrypto", rev = "56f6223b84ada922b6cb2c672c69db2ea3dc6a13" }
 futures = "0.3.28"
-futures-util = "0.3.30"
+futures-util = "0.3.31"
 hex = "0.4.3"
 rustc-hex = "2.1"
 itertools = "0.13.0"
@@ -191,7 +193,7 @@ log = "0.4.22"
 more-asserts = "0.3.0"
 num-derive = "0.3.3"
 num-traits = "0.2.15"
-once_cell = "1.20.0"
+once_cell = "1.20.2"
 ordinals = "0.0.9"
 parking_lot = "0.12.3"
 pathdiff = "0.2.1"
@@ -204,7 +206,7 @@ proptest-derive = "0.3.0"
 rayon = "1.5.2"
 rand = "0.8.5"
 rand_core = { version = "0.6.3", default-features = false }
-reqwest = { version = "0.12", features = ["json"] }
+reqwest = { version = "0.12", features = ["json", "stream"] }
 schemars = { version = "0.8.21", features = ["either"] }
 serde = { version = "1.0.210", features = ["derive", "rc"] }
 serde_bytes = "0.11.15"
@@ -225,7 +227,8 @@ tiny-keccak = { version = "2", features = ["keccak", "sha3"] }
 tiny-bip39 = "1.0.0"
 tokio = { version = "1.40.0", features = ["full"] }
 tokio-util = "0.7.12"
-tokio-tungstenite = { version = "0.23.1", features = ["native-tls"] }
+tokio-tungstenite = { version = "0.24.0", features = ["native-tls"] }
+tokio-stream = "0.1.16"
 tonic = { version = "0.8", features = ["gzip"] }
 tracing = "0.1.37"
 tracing-appender = "0.2.2"
@@ -259,7 +262,7 @@ serde-reflection = "0.3.6"
 serde-generate = "0.25.1"
 bcs-ext = { path = "moveos/moveos-commons/bcs_ext" }
 http = "1.0.0"
-tower = { version = "0.4.13", features = ["full", "util", "timeout", "load-shed", "limit"] }
+tower = { version = "0.5.1", features = ["full", "util", "timeout", "load-shed", "limit"] }
 tower-http = { version = "0.5.2", features = ["cors", "full", "trace", "set-header", "propagate-header"] }
 tower_governor = "0.4.2"
 pin-project = "1.0.12"
@@ -275,7 +278,7 @@ rpassword = "7.2.0"
 fixed-hash = "0.8.0"
 uint = "0.9.5"
 rlp = "0.5.2"
-const-hex = "1.12.0"
+const-hex = "1.13.1"
 cached = "0.43.0"
 diesel = { version = "2.2.4", features = [
     "chrono",
@@ -286,7 +289,7 @@ diesel = { version = "2.2.4", features = [
 ] }
 diesel-derive-enum = { version = "2.1.0", features = ["sqlite"] }
 diesel_migrations = { version = "2.2.0" }
-axum = { version = "0.7.6", default-features = false, features = [
+axum = { version = "0.7.7", default-features = false, features = [
     "tokio",
     "http1",
     "http2",
@@ -322,7 +325,9 @@ base64 = "0.22.1"
 #criterion-cpu-time = "0.1.0"
 wasmer = "4.2.5"
 wasmer-types = "4.2.5"
-wasmer-compiler-singlepass = "4.3.6"
+wasmer-compiler-singlepass = "4.2.2"
+cosmwasm-vm = { git = "https://github.com/rooch-network/cosmwasm", rev = "597d3e8437d8c4d1afce07e5a676c29c751a8a81" }
+cosmwasm-std = { git = "https://github.com/rooch-network/cosmwasm", rev = "597d3e8437d8c4d1afce07e5a676c29c751a8a81" }
 ciborium = "0.2.1"
 pprof = { version = "0.13.0", features = ["flamegraph", "criterion", "cpp", "frame-pointer", "protobuf-codec"] }
 celestia-rpc = { git = "https://github.com/eigerco/celestia-node-rs.git", rev = "129272e8d926b4c7badf27a26dea915323dd6489" }
@@ -339,7 +344,7 @@ uuid = { version = "1.10.0", features = ["v4", "fast-rng"] }
 protobuf = { version = "2.28", features = ["with-bytes"] }
 redb = { version = "2.1.1" }
 rocksdb = { git = "https://github.com/rooch-network/rust-rocksdb.git", rev = "41d102327ba3cf9a2335d1192e8312c92bc3d6f9", features = ["lz4"] }
-lz4 = { version = "1.27.0" }
+lz4 = { version = "1.28.0" }
 
 ripemd = { version = "0.1.3" }
 fastcrypto-zkp = { version = "0.1.3" }
@@ -350,7 +355,7 @@ vergen-git2 = { version = "1.0.0", features = ["build", "cargo", "rustc"] }
 vergen-pretty = "0.3.5"
 crossbeam-channel = "0.5.13"
 
-inferno = "0.11.14"
+inferno = "0.11.21"
 handlebars = "4.2.2"
 
 # Note: the BEGIN and END comments below are required for external tooling. Do not remove.

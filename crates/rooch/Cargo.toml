@@ -17,7 +17,7 @@ rust-version = { workspace = true }
 [dependencies]
 anyhow = { workspace = true }
 bcs = { workspace = true }
-clap = { features = ["derive", ], workspace = true }
+clap = { features = ["derive"], workspace = true }
 chrono = { workspace = true }
 datatest-stable = { git = "https://github.com/rooch-network/diem-devtools", branch = "feature/pub-test-opts" }
 tokio = { features = ["full"], workspace = true }
@@ -56,6 +56,14 @@ bitcoincore-rpc = { workspace = true }
 ciborium = { workspace = true }
 wasmer = { workspace = true }
 tiny-keccak = { workspace = true }
+serenity = { features = [
+    "client",
+    "gateway",
+    "rustls_backend",
+    "cache",
+    "model",
+], workspace = true }
+futures = { workspace = true }
 
 move-bytecode-utils = { workspace = true }
 move-binary-format = { workspace = true }
@@ -108,6 +116,8 @@ rooch-db = { workspace = true }
 rooch-common = { workspace = true }
 rooch-store = { workspace = true }
 rooch-sequencer = { workspace = true }
+rooch-faucet = { workspace = true }
+rooch-oracle = { workspace = true }
 
 framework-release = { workspace = true }
 

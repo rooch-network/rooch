@@ -14,7 +14,7 @@ dependencies = [
 
 [[package]]
 name = "accumulator"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "bcs-ext",
@@ -730,13 +730,13 @@ dependencies = [
 
 [[package]]
 name = "axum"
-version = "0.7.6"
+version = "0.7.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8f43644eed690f5374f1af436ecd6aea01cd201f6fbdf0178adaf6907afb2cec"
+checksum = "504e3947307ac8326a5437504c517c4b56716c9d98fac0028c2acc7ca47d70ae"
 dependencies = [
  "async-trait",
- "axum-core 0.4.4",
- "base64 0.21.7",
+ "axum-core 0.4.5",
+ "base64 0.22.1",
  "bytes",
  "futures-util",
  "http 1.1.0",
@@ -758,7 +758,7 @@ dependencies = [
  "sha1",
  "sync_wrapper 1.0.1",
  "tokio",
- "tokio-tungstenite 0.23.1",
+ "tokio-tungstenite 0.24.0",
  "tower 0.5.1",
  "tower-layer",
  "tower-service",
@@ -784,9 +784,9 @@ dependencies = [
 
 [[package]]
 name = "axum-core"
-version = "0.4.4"
+version = "0.4.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5e6b8ba012a258d63c9adfa28b9ddcf66149da6f986c5b5452e629d5ee64bf00"
+checksum = "09f2bd6146b97ae3359fa0cc6d6b376d9539582c7b4220f041a33ec24c226199"
 dependencies = [
  "async-trait",
  "bytes",
@@ -1066,9 +1066,9 @@ dependencies = [
 
 [[package]]
 name = "bitcoin"
-version = "0.32.2"
+version = "0.32.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ea507acc1cd80fc084ace38544bbcf7ced7c2aa65b653b102de0ce718df668f6"
+checksum = "0032b0e8ead7074cda7fc4f034409607e3f03a6f71d66ade8a307f79b4d99e73"
 dependencies = [
  "base58ck",
  "bech32 0.11.0",
@@ -1100,11 +1100,11 @@ checksum = "340e09e8399c7bd8912f495af6aa58bea0c9214773417ffaa8f6460f93aaee56"
 
 [[package]]
 name = "bitcoin-move"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
- "axum 0.7.6",
- "bitcoin 0.32.2",
+ "axum 0.7.7",
+ "bitcoin 0.32.3",
  "brotli 3.5.0",
  "hex",
  "move-binary-format",
@@ -1185,7 +1185,7 @@ version = "0.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d8909583c5fab98508e80ef73e5592a651c954993dc6b7739963257d19f0e71a"
 dependencies = [
- "bitcoin 0.32.2",
+ "bitcoin 0.32.3",
  "serde 1.0.210",
  "serde_json",
 ]
@@ -1209,14 +1209,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "031043d04099746d8db04daf1fa424b2bc8bd69d92b25962dcde24da39ab64a2"
 dependencies = [
  "typenum",
-]
-
-[[package]]
-name = "bitseed_generator"
-version = "0.1.0"
-dependencies = [
- "cosmwasm-std",
- "serde 1.0.210",
 ]
 
 [[package]]
@@ -1889,6 +1881,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "98cc8fbded0c607b7ba9dd60cd98df59af97e84d24e49c8557331cfc26d301ce"
 
 [[package]]
+name = "clru"
+version = "0.6.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cbd0f76e066e64fdc5631e3bb46381254deab9ef1158292f27c8c57e3bf3fe59"
+
+[[package]]
 name = "codespan"
 version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2037,9 +2035,9 @@ dependencies = [
 
 [[package]]
 name = "const-hex"
-version = "1.12.0"
+version = "1.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "94fb8a24a26d37e1ffd45343323dc9fe6654ceea44c12f2fcb3d7ac29e610bc6"
+checksum = "0121754e84117e65f9d90648ee6aa4882a6e63110307ab73967a4c5e7e69e586"
 dependencies = [
  "cfg-if",
  "cpufeatures",
@@ -2142,14 +2140,12 @@ dependencies = [
 [[package]]
 name = "cosmwasm-core"
 version = "2.1.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d905990ef3afb5753bb709dc7de88e9e370aa32bcc2f31731d4b533b63e82490"
+source = "git+https://github.com/rooch-network/cosmwasm?rev=597d3e8437d8c4d1afce07e5a676c29c751a8a81#597d3e8437d8c4d1afce07e5a676c29c751a8a81"
 
 [[package]]
 name = "cosmwasm-crypto"
 version = "2.1.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5b2a7bd9c1dd9a377a4dc0f4ad97d24b03c33798cd5a6d7ceb8869b41c5d2f2d"
+source = "git+https://github.com/rooch-network/cosmwasm?rev=597d3e8437d8c4d1afce07e5a676c29c751a8a81#597d3e8437d8c4d1afce07e5a676c29c751a8a81"
 dependencies = [
  "ark-bls12-381",
  "ark-ec",
@@ -2171,8 +2167,7 @@ dependencies = [
 [[package]]
 name = "cosmwasm-derive"
 version = "2.1.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "029910b409398fdf81955d7301b906caf81f2c42b013ea074fbd89720229c424"
+source = "git+https://github.com/rooch-network/cosmwasm?rev=597d3e8437d8c4d1afce07e5a676c29c751a8a81#597d3e8437d8c4d1afce07e5a676c29c751a8a81"
 dependencies = [
  "proc-macro2 1.0.86",
  "quote 1.0.37",
@@ -2182,8 +2177,7 @@ dependencies = [
 [[package]]
 name = "cosmwasm-std"
 version = "2.1.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "51dec99a2e478715c0a4277f0dbeadbb8466500eb7dec873d0924edd086e77f1"
+source = "git+https://github.com/rooch-network/cosmwasm?rev=597d3e8437d8c4d1afce07e5a676c29c751a8a81#597d3e8437d8c4d1afce07e5a676c29c751a8a81"
 dependencies = [
  "base64 0.22.1",
  "bech32 0.11.0",
@@ -2200,6 +2194,32 @@ dependencies = [
  "sha2 0.10.8",
  "static_assertions",
  "thiserror",
+]
+
+[[package]]
+name = "cosmwasm-vm"
+version = "2.1.3"
+source = "git+https://github.com/rooch-network/cosmwasm?rev=597d3e8437d8c4d1afce07e5a676c29c751a8a81#597d3e8437d8c4d1afce07e5a676c29c751a8a81"
+dependencies = [
+ "bech32 0.11.0",
+ "bytes",
+ "clru",
+ "cosmwasm-core",
+ "cosmwasm-crypto",
+ "cosmwasm-std",
+ "crc32fast",
+ "derivative",
+ "hex",
+ "rand_core 0.6.4",
+ "schemars",
+ "serde 1.0.210",
+ "serde_json",
+ "sha2 0.10.8",
+ "strum",
+ "thiserror",
+ "tracing",
+ "wasmer",
+ "wasmer-middlewares",
 ]
 
 [[package]]
@@ -2765,7 +2785,7 @@ dependencies = [
 
 [[package]]
 name = "data-verify"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "rooch-rpc-api",
@@ -3423,15 +3443,6 @@ checksum = "a009aa4810eb158359dda09d0c87378e4bbb89b5a801f016885a4707ba24f7ea"
 dependencies = [
  "log",
  "regex",
-]
-
-[[package]]
-name = "env_logger"
-version = "0.10.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4cd405aab171cb85d6735e5c8d9db038c17d3ca007a4d2c25f337935c3d90580"
-dependencies = [
- "log",
 ]
 
 [[package]]
@@ -4167,7 +4178,7 @@ dependencies = [
 
 [[package]]
 name = "framework-builder"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "bcs",
@@ -4191,7 +4202,7 @@ dependencies = [
 
 [[package]]
 name = "framework-release"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "bcs",
@@ -4207,7 +4218,7 @@ dependencies = [
 
 [[package]]
 name = "framework-types"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "move-core-types",
  "moveos-stdlib",
@@ -4268,9 +4279,9 @@ dependencies = [
 
 [[package]]
 name = "futures-channel"
-version = "0.3.30"
+version = "0.3.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eac8f7d7865dcb88bd4373ab671c8cf4508703796caa2b1985a9ca867b3fcb78"
+checksum = "2dff15bf788c671c1934e366d07e30c1814a8ef514e1af724a602e8a2fbe1b10"
 dependencies = [
  "futures-core",
  "futures-sink",
@@ -4278,9 +4289,9 @@ dependencies = [
 
 [[package]]
 name = "futures-core"
-version = "0.3.30"
+version = "0.3.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dfc6580bb841c5a68e9ef15c77ccc837b40a7504914d52e47b8b0e9bbda25a1d"
+checksum = "05f29059c0c2090612e8d742178b0580d2dc940c837851ad723096f87af6663e"
 
 [[package]]
 name = "futures-executor"
@@ -4295,9 +4306,9 @@ dependencies = [
 
 [[package]]
 name = "futures-io"
-version = "0.3.30"
+version = "0.3.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a44623e20b9681a318efdd71c299b6b222ed6f231972bfe2f224ebad6311f0c1"
+checksum = "9e5c1b78ca4aae1ac06c48a526a655760685149f0d465d21f37abfe57ce075c6"
 
 [[package]]
 name = "futures-locks"
@@ -4311,9 +4322,9 @@ dependencies = [
 
 [[package]]
 name = "futures-macro"
-version = "0.3.30"
+version = "0.3.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "87750cf4b7a4c0625b1529e4c543c2182106e4dedc60a2a6455e00d212c489ac"
+checksum = "162ee34ebcb7c64a8abebc059ce0fee27c2262618d7b60ed8faf72fef13c3650"
 dependencies = [
  "proc-macro2 1.0.86",
  "quote 1.0.37",
@@ -4322,15 +4333,15 @@ dependencies = [
 
 [[package]]
 name = "futures-sink"
-version = "0.3.30"
+version = "0.3.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9fb8e00e87438d937621c1c6269e53f536c14d3fbd6a042bb24879e57d474fb5"
+checksum = "e575fab7d1e0dcb8d0c7bcf9a63ee213816ab51902e6d244a95819acacf1d4f7"
 
 [[package]]
 name = "futures-task"
-version = "0.3.30"
+version = "0.3.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "38d84fa142264698cdce1a9f9172cf383a0c82de1bddcf3092901442c4097004"
+checksum = "f90f7dce0722e95104fcb095585910c0977252f286e354b5e3bd38902cd99988"
 
 [[package]]
 name = "futures-timer"
@@ -4344,9 +4355,9 @@ dependencies = [
 
 [[package]]
 name = "futures-util"
-version = "0.3.30"
+version = "0.3.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3d6401deb83407ab3da39eba7e33987a73c3df0c82b4bb5813ee871c19c41d48"
+checksum = "9fa08315bb612088cc391249efdc3bc77536f16c91f6cf495e6fbe85b20a4a81"
 dependencies = [
  "futures-channel",
  "futures-core",
@@ -5212,16 +5223,16 @@ dependencies = [
 
 [[package]]
 name = "inferno"
-version = "0.11.19"
+version = "0.11.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "321f0f839cd44a4686e9504b0a62b4d69a50b62072144c71c68f5873c167b8d9"
+checksum = "232929e1d75fe899576a3d5c7416ad0d88dbfbb3c3d6aa00873a7408a50ddb88"
 dependencies = [
  "ahash 0.8.11",
  "clap 4.5.17",
  "crossbeam-channel",
  "crossbeam-utils",
- "dashmap 5.5.3",
- "env_logger 0.10.2",
+ "dashmap 6.0.1",
+ "env_logger",
  "indexmap 2.2.6",
  "is-terminal",
  "itoa",
@@ -6147,11 +6158,11 @@ dependencies = [
 
 [[package]]
 name = "metrics"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "async-trait",
- "axum 0.7.6",
+ "axum 0.7.7",
  "axum-server",
  "dashmap 6.0.1",
  "futures",
@@ -6940,7 +6951,7 @@ dependencies = [
 
 [[package]]
 name = "moveos"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "backtrace",
@@ -6982,7 +6993,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-common"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "bcs",
@@ -6997,7 +7008,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-compiler"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "move-binary-format",
@@ -7006,7 +7017,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-config"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "clap 4.5.17",
  "serde 1.0.210",
@@ -7015,7 +7026,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-eventbus"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "coerce",
@@ -7029,7 +7040,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-gas-profiling"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "handlebars",
@@ -7046,7 +7057,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-object-runtime"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "better_any",
  "hex",
@@ -7062,9 +7073,10 @@ dependencies = [
 
 [[package]]
 name = "moveos-stdlib"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
+ "base64 0.22.1",
  "bech32 0.11.0",
  "better_any",
  "bs58 0.5.1",
@@ -7096,7 +7108,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-store"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "accumulator",
  "anyhow",
@@ -7118,7 +7130,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-types"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "bcs",
@@ -7145,7 +7157,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-verifier"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "bcs",
@@ -7171,7 +7183,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-wasm"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "once_cell",
@@ -7556,9 +7568,9 @@ dependencies = [
 
 [[package]]
 name = "once_cell"
-version = "1.20.0"
+version = "1.20.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "33ea5043e58958ee56f3e15a90aee535795cd7dfd319846288d93c5b57d85cbe"
+checksum = "1261fe7e33c73b354eab43b1273a57c8f967d0391e80353e51f764ac02cf6775"
 
 [[package]]
 name = "oorandom"
@@ -8911,7 +8923,7 @@ dependencies = [
 
 [[package]]
 name = "raw-store"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "metrics",
@@ -9381,13 +9393,13 @@ dependencies = [
 
 [[package]]
 name = "rooch"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "accumulator",
  "anyhow",
  "async-trait",
  "bcs",
- "bitcoin 0.32.2",
+ "bitcoin 0.32.3",
  "bitcoin-move",
  "bitcoincore-rpc",
  "chrono",
@@ -9400,6 +9412,7 @@ dependencies = [
  "framework-builder",
  "framework-release",
  "framework-types",
+ "futures",
  "hex",
  "itertools 0.13.0",
  "jemallocator",
@@ -9442,11 +9455,13 @@ dependencies = [
  "rooch-common",
  "rooch-config",
  "rooch-db",
+ "rooch-faucet",
  "rooch-framework",
  "rooch-genesis",
  "rooch-indexer",
  "rooch-integration-test-runner",
  "rooch-key",
+ "rooch-oracle",
  "rooch-rpc-api",
  "rooch-rpc-client",
  "rooch-rpc-server",
@@ -9461,6 +9476,7 @@ dependencies = [
  "serde_json",
  "serde_with 2.3.3",
  "serde_yaml 0.9.34+deprecated",
+ "serenity",
  "smt",
  "tempfile",
  "termcolor",
@@ -9477,11 +9493,11 @@ dependencies = [
 
 [[package]]
 name = "rooch-benchmarks"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "bcs",
- "bitcoin 0.32.2",
+ "bitcoin 0.32.3",
  "bitcoincore-rpc",
  "bitcoincore-rpc-json",
  "clap 4.5.17",
@@ -9532,14 +9548,14 @@ dependencies = [
 
 [[package]]
 name = "rooch-common"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "libc",
 ]
 
 [[package]]
 name = "rooch-config"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "clap 4.5.17",
@@ -9554,8 +9570,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "rooch-cosmwasm-vm"
+version = "0.7.3"
+dependencies = [
+ "accumulator",
+ "anyhow",
+ "cosmwasm-std",
+ "cosmwasm-vm",
+ "move-binary-format",
+ "move-core-types",
+ "move-resource-viewer",
+ "move-vm-types",
+ "moveos-config",
+ "moveos-object-runtime",
+ "moveos-types",
+ "once_cell",
+ "prometheus",
+ "raw-store",
+ "rooch-types",
+ "tokio",
+]
+
+[[package]]
 name = "rooch-da"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9576,7 +9614,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-db"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "moveos-store",
@@ -9591,7 +9629,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-event"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9603,7 +9641,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-executor"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9629,12 +9667,15 @@ dependencies = [
 
 [[package]]
 name = "rooch-faucet"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
- "axum 0.7.6",
+ "async-trait",
+ "axum 0.7.7",
  "axum-server",
+ "bcs",
  "clap 4.5.17",
+ "coerce",
  "futures",
  "move-core-types",
  "moveos-types",
@@ -9647,7 +9688,7 @@ dependencies = [
  "serenity",
  "thiserror",
  "tokio",
- "tower 0.4.13",
+ "tower 0.5.1",
  "tower-http",
  "tracing",
  "tracing-subscriber",
@@ -9655,10 +9696,10 @@ dependencies = [
 
 [[package]]
 name = "rooch-framework"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "bcs",
- "bitcoin 0.32.2",
+ "bitcoin 0.32.3",
  "fastcrypto 0.1.8 (git+https://github.com/MystenLabs/fastcrypto?rev=56f6223b84ada922b6cb2c672c69db2ea3dc6a13)",
  "hex",
  "move-binary-format",
@@ -9676,11 +9717,11 @@ dependencies = [
 
 [[package]]
 name = "rooch-framework-tests"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "bcs",
- "bitcoin 0.32.2",
+ "bitcoin 0.32.3",
  "bitcoin-move",
  "clap 4.5.17",
  "coerce",
@@ -9716,7 +9757,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-genesis"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "accumulator",
  "anyhow",
@@ -9747,7 +9788,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-indexer"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9777,7 +9818,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-integration-test-runner"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "bcs",
@@ -9810,7 +9851,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-key"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "argon2",
@@ -9829,11 +9870,13 @@ dependencies = [
 
 [[package]]
 name = "rooch-nursery"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "bcs",
- "bitcoin 0.32.2",
+ "bitcoin 0.32.3",
  "ciborium",
+ "cosmwasm-std",
+ "cosmwasm-vm",
  "fastcrypto 0.1.8 (git+https://github.com/MystenLabs/fastcrypto?rev=56f6223b84ada922b6cb2c672c69db2ea3dc6a13)",
  "hex",
  "libc",
@@ -9844,9 +9887,12 @@ dependencies = [
  "move-vm-runtime",
  "move-vm-types",
  "moveos",
+ "moveos-object-runtime",
  "moveos-stdlib",
  "moveos-types",
  "moveos-wasm",
+ "once_cell",
+ "rooch-cosmwasm-vm",
  "rooch-framework",
  "rooch-types",
  "serde_json",
@@ -9857,7 +9903,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-open-rpc"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "clap 4.5.17",
@@ -9872,7 +9918,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-open-rpc-macros"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "derive-syn-parse",
  "itertools 0.13.0",
@@ -9884,7 +9930,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-open-rpc-spec"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "clap 4.5.17",
  "pretty_assertions",
@@ -9896,7 +9942,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-open-rpc-spec-builder"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "clap 4.5.17",
@@ -9912,30 +9958,36 @@ name = "rooch-oracle"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "async-trait",
  "bcs",
  "clap 4.5.17",
+ "futures",
  "futures-util",
  "log",
  "move-core-types",
  "moveos-types",
+ "pin-project",
  "reqwest 0.12.7",
  "rooch-rpc-api",
  "rooch-rpc-client",
  "rooch-types",
+ "serde 1.0.210",
  "serde_json",
  "tokio",
- "tokio-tungstenite 0.23.1",
+ "tokio-stream",
+ "tokio-tungstenite 0.24.0",
+ "tracing",
  "tracing-subscriber",
  "tungstenite 0.24.0",
 ]
 
 [[package]]
 name = "rooch-ord"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "async-trait",
- "bitcoin 0.32.2",
+ "bitcoin 0.32.3",
  "bitcoincore-rpc",
  "chrono",
  "coerce",
@@ -9957,7 +10009,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-pipeline-processor"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9985,7 +10037,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-proposer"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -10001,11 +10053,11 @@ dependencies = [
 
 [[package]]
 name = "rooch-relayer"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "async-trait",
- "bitcoin 0.32.2",
+ "bitcoin 0.32.3",
  "bitcoincore-rpc",
  "chrono",
  "coerce",
@@ -10030,11 +10082,12 @@ dependencies = [
 
 [[package]]
 name = "rooch-rpc-api"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
+ "accumulator",
  "anyhow",
  "bcs",
- "bitcoin 0.32.2",
+ "bitcoin 0.32.3",
  "ethers",
  "hex",
  "jsonrpsee 0.23.2",
@@ -10054,11 +10107,11 @@ dependencies = [
 
 [[package]]
 name = "rooch-rpc-client"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "bcs",
- "bitcoin 0.32.2",
+ "bitcoin 0.32.3",
  "bitcoincore-rpc",
  "futures",
  "hex",
@@ -10078,10 +10131,10 @@ dependencies = [
 
 [[package]]
 name = "rooch-rpc-server"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
- "axum 0.7.6",
+ "axum 0.7.7",
  "bcs",
  "bitcoincore-rpc",
  "coerce",
@@ -10119,7 +10172,7 @@ dependencies = [
  "serde_json",
  "tokio",
  "tokio-util",
- "tower 0.4.13",
+ "tower 0.5.1",
  "tower-http",
  "tower_governor",
  "tracing",
@@ -10128,7 +10181,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-sequencer"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "accumulator",
  "anyhow",
@@ -10153,7 +10206,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-store"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "accumulator",
  "anyhow",
@@ -10169,7 +10222,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-test-transaction-builder"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "bcs",
@@ -10183,14 +10236,14 @@ dependencies = [
 
 [[package]]
 name = "rooch-types"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "accumulator",
  "anyhow",
  "argon2",
  "bcs",
  "bech32 0.11.0",
- "bitcoin 0.32.2",
+ "bitcoin 0.32.3",
  "bitcoincore-rpc",
  "bs58 0.5.1",
  "chacha20poly1305",
@@ -11399,7 +11452,7 @@ checksum = "b7c388c1b5e93756d0c740965c41e8822f866621d41acbdf6336a6a168f8840c"
 
 [[package]]
 name = "smt"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "backtrace",
@@ -11944,14 +11997,14 @@ dependencies = [
 
 [[package]]
 name = "testsuite"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "assert_cmd",
  "backtrace",
  "clap 4.5.17",
  "cucumber",
- "env_logger 0.11.5",
+ "env_logger",
  "futures",
  "hex",
  "hmac",
@@ -12055,7 +12108,7 @@ dependencies = [
 
 [[package]]
 name = "timeout-join-handler"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "thiserror",
@@ -12206,9 +12259,9 @@ dependencies = [
 
 [[package]]
 name = "tokio-stream"
-version = "0.1.15"
+version = "0.1.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "267ac89e0bec6e691e5813911606935d77c476ff49024f98abcea3e7b15e37af"
+checksum = "4f4e6ce100d0eb49a2734f8c0812bcd324cf357d21810932c5df6b96ef2b86f1"
 dependencies = [
  "futures-core",
  "pin-project-lite",
@@ -12249,16 +12302,16 @@ dependencies = [
 
 [[package]]
 name = "tokio-tungstenite"
-version = "0.23.1"
+version = "0.24.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c6989540ced10490aaf14e6bad2e3d33728a2813310a0c71d1574304c49631cd"
+checksum = "edc5f74e248dc973e0dbb7b74c7e0d6fcc301c694ff50049504004ef4d0cdcd9"
 dependencies = [
  "futures-util",
  "log",
  "native-tls",
  "tokio",
  "tokio-native-tls",
- "tungstenite 0.23.0",
+ "tungstenite 0.24.0",
 ]
 
 [[package]]
@@ -12410,7 +12463,6 @@ checksum = "b8fa9be0de6cf49e536ce1851f987bd21a43b771b09473c3549a6c853db37c1c"
 dependencies = [
  "futures-core",
  "futures-util",
- "hdrhistogram",
  "indexmap 1.9.3",
  "pin-project",
  "pin-project-lite",
@@ -12431,9 +12483,13 @@ checksum = "2873938d487c3cfb9aed7546dc9f2711d867c9f90c46b889989a2cb84eba6b4f"
 dependencies = [
  "futures-core",
  "futures-util",
+ "hdrhistogram",
+ "indexmap 2.2.6",
  "pin-project-lite",
+ "slab",
  "sync_wrapper 0.1.2",
  "tokio",
+ "tokio-util",
  "tower-layer",
  "tower-service",
  "tracing",
@@ -12488,7 +12544,7 @@ version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "313fa625fea5790ed56360a30ea980e41229cf482b4835801a67ef1922bf63b9"
 dependencies = [
- "axum 0.7.6",
+ "axum 0.7.7",
  "forwarded-header-value",
  "governor",
  "http 1.1.0",
@@ -12650,25 +12706,6 @@ dependencies = [
 
 [[package]]
 name = "tungstenite"
-version = "0.23.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6e2e2ce1e47ed2994fd43b04c8f618008d4cabdd5ee34027cf14f9d918edd9c8"
-dependencies = [
- "byteorder",
- "bytes",
- "data-encoding",
- "http 1.1.0",
- "httparse",
- "log",
- "native-tls",
- "rand 0.8.5",
- "sha1",
- "thiserror",
- "utf-8",
-]
-
-[[package]]
-name = "tungstenite"
 version = "0.24.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "18e5b8366ee7a95b16d32197d0b2604b43a0be89dc5fac9f8e96ccafbaedda8a"
@@ -12679,6 +12716,7 @@ dependencies = [
  "http 1.1.0",
  "httparse",
  "log",
+ "native-tls",
  "rand 0.8.5",
  "sha1",
  "thiserror",
@@ -13205,9 +13243,9 @@ dependencies = [
 
 [[package]]
 name = "wasmer"
-version = "4.3.6"
+version = "4.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3be5fa49d7d97f83e095f090dcc178d923f2970f588443283cd7a94974ab8cbe"
+checksum = "3de82c1520fb75ade394d6c89cac2b05d1b7b4205a45099efcd078b0bc828375"
 dependencies = [
  "bytes",
  "cfg-if",
@@ -13225,18 +13263,19 @@ dependencies = [
  "wasm-bindgen",
  "wasmer-compiler",
  "wasmer-compiler-cranelift",
+ "wasmer-compiler-singlepass",
  "wasmer-derive",
  "wasmer-types",
  "wasmer-vm",
  "wat",
- "windows-sys 0.59.0",
+ "winapi",
 ]
 
 [[package]]
 name = "wasmer-compiler"
-version = "4.3.6"
+version = "4.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9696a040f935903db440078cd287c0288ab152394122de442fdd21b3eaa8cd2c"
+checksum = "d6c18588e4b92adb2ea88a2897c93615538c7e40cfec8dc6efc3fcee63299a81"
 dependencies = [
  "backtrace",
  "bytes",
@@ -13257,15 +13296,15 @@ dependencies = [
  "wasmer-types",
  "wasmer-vm",
  "wasmparser",
- "windows-sys 0.59.0",
+ "winapi",
  "xxhash-rust",
 ]
 
 [[package]]
 name = "wasmer-compiler-cranelift"
-version = "4.3.6"
+version = "4.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c5959da148d41a5870d1b18a880e19353add47c0ca95e510061275ea467b6b44"
+checksum = "cf497986b83f1ae8589a22f046b803d6d1d77bbeda93e75baa89ab6501838f7c"
 dependencies = [
  "cranelift-codegen",
  "cranelift-entity",
@@ -13282,9 +13321,9 @@ dependencies = [
 
 [[package]]
 name = "wasmer-compiler-singlepass"
-version = "4.3.6"
+version = "4.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5fcaa0fa11a5680268d85b17dc032ec90b63138caa66c8484b8f8f6923d7619f"
+checksum = "a1093545b718fdba6dc0b9d5cfac843fa859fbc10d1dfaa72a21fac19c6a5d67"
 dependencies = [
  "byteorder",
  "dynasm",
@@ -13323,9 +13362,9 @@ dependencies = [
 
 [[package]]
 name = "wasmer-derive"
-version = "4.3.6"
+version = "4.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6f448efbe12d656ba96d997c9e338f15cd80934c81f2286c2730cb9224d4e41d"
+checksum = "45ab99baa393da623dbca6390c17bd9cd7666e8c48f6b42b4f8c635106a09ca8"
 dependencies = [
  "proc-macro-error",
  "proc-macro2 1.0.86",
@@ -13334,10 +13373,21 @@ dependencies = [
 ]
 
 [[package]]
-name = "wasmer-types"
-version = "4.3.6"
+name = "wasmer-middlewares"
+version = "4.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c8b383ef63005176be3bc2056d3b4078ae1497b324f573d79acbf81036f1c9ec"
+checksum = "ef5f8fee717085401399c343b5c0daa37179c9f31c64889e9ae183a4bad15e37"
+dependencies = [
+ "wasmer",
+ "wasmer-types",
+ "wasmer-vm",
+]
+
+[[package]]
+name = "wasmer-types"
+version = "4.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0aebf59870ee6e2ef0264d87e6a83f767f5cfe83e21470c0cc32e06231335e23"
 dependencies = [
  "bytecheck",
  "enum-iterator",
@@ -13356,16 +13406,16 @@ dependencies = [
 
 [[package]]
 name = "wasmer-vm"
-version = "4.3.6"
+version = "4.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3c371597ec33248e775de641c7a475173fb60f2b5ea085c74d34cee9fad06b83"
+checksum = "0df3b84ac2c450ad04931b558392cadd03d606d94ab15496e13ce56ee8320634"
 dependencies = [
  "backtrace",
  "cc",
  "cfg-if",
  "corosensei",
  "crossbeam-queue",
- "dashmap 6.0.1",
+ "dashmap 5.5.3",
  "derivative",
  "enum-iterator",
  "fnv",
@@ -13379,7 +13429,7 @@ dependencies = [
  "scopeguard",
  "thiserror",
  "wasmer-types",
- "windows-sys 0.59.0",
+ "winapi",
 ]
 
 [[package]]

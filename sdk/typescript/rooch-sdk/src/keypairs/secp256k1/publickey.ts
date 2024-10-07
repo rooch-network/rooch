@@ -1,12 +1,10 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { bech32m } from '@scure/base'
-import { schnorr, secp256k1 } from '@noble/curves/secp256k1'
+import { secp256k1 } from '@noble/curves/secp256k1'
 
-import { BitcoinAddress, BitcoinNetowkType, BitcoinNetwork } from '../../address/index.js'
+import { AddressView, BitcoinNetowkType } from '../../address/index.js'
 import { PublicKey, PublicKeyInitData, SIGNATURE_SCHEME_TO_FLAG } from '../../crypto/index.js'
-import { Bytes, EmptyBytes } from '../../types/index.js'
 import { fromB64, sha256, toHEX } from '../../utils/index.js'
 
 const SCHNORR_PUBLIC_KEY_SIZE = 32
@@ -14,7 +12,7 @@ const SCHNORR_PUBLIC_KEY_SIZE = 32
 /**
  * A Secp256k1 public key
  */
-export class Secp256k1PublicKey extends PublicKey<BitcoinAddress> {
+export class Secp256k1PublicKey extends PublicKey<AddressView> {
   static SIZE = SCHNORR_PUBLIC_KEY_SIZE
 
   private readonly data: Uint8Array
@@ -62,34 +60,12 @@ export class Secp256k1PublicKey extends PublicKey<BitcoinAddress> {
   /**
    * Return the Bitcoin address associated with this Secp256k1 public key
    */
-  override toAddress(): BitcoinAddress {
-    /// default version = 1 & network = testnet
-    return this.buildAddress(1, BitcoinNetowkType.Testnet)
+  override toAddress(): AddressView {
+    return new AddressView(this.data)
   }
 
-  buildAddress(version: number, network: BitcoinNetowkType) {
-    const tapTweak = (a: Bytes, b: Bytes) => {
-      const u = schnorr.utils
-      const t = u.taggedHash('TapTweak', a, b)
-      const tn = u.bytesToNumberBE(t)
-      if (tn >= secp256k1.CURVE.n) throw new Error('tweak higher than curve order')
-      return tn
-    }
-
-    // Each hex char represents half a byte, hence hex address doubles the length
-    const u = schnorr.utils
-    const t = tapTweak(this.data, EmptyBytes) // t = int_from_bytes(tagged_hash("TapTweak", pubkey + h))
-    const P = u.lift_x(u.bytesToNumberBE(this.data)) // P = lift_x(int_from_bytes(pubkey))
-    const Q = P.add(secp256k1.ProjectivePoint.fromPrivateKey(t)) // Q = point_add(P, point_mul(G, t))
-    const tweakedPubkey = u.pointToBytes(Q)
-
-    return new BitcoinAddress(
-      bech32m.encode(
-        new BitcoinNetwork(network).bech32HRP(),
-        [version].concat(bech32m.toWords(tweakedPubkey)),
-        false,
-      ),
-    )
+  toAddressWith(network: BitcoinNetowkType) {
+    return new AddressView(this.data, network)
   }
 
   /**

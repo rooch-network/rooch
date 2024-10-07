@@ -7,7 +7,6 @@ use crate::gas::table::{
 use crate::vm::data_cache::MoveosDataCache;
 use crate::vm::moveos_vm::{MoveOSSession, MoveOSVM};
 use anyhow::{bail, format_err, Error, Result};
-use backtrace::Backtrace;
 use move_binary_format::binary_views::BinaryIndexedView;
 use move_binary_format::errors::VMError;
 use move_binary_format::errors::{vm_status_of_result, Location, PartialVMError, VMResult};
@@ -433,8 +432,7 @@ impl MoveOS {
             Ok(kept_status) => {
                 if is_system_call && kept_status != KeptVMStatus::Executed {
                     // system call should always success
-                    let backtrace = Backtrace::new();
-                    log::warn!("System call failed: {:?}\n{:?}", kept_status, backtrace);
+                    log::warn!("System call failed: {:?}", kept_status);
                     return Err(Error::from(VMPanicError::SystemCallPanicError(
                         format_err!("Execute system call with Panic {:?}", vm_error_info),
                     )));
@@ -444,8 +442,7 @@ impl MoveOS {
             }
             Err(discard_status) => {
                 //This should not happen, if it happens, it means that the VM or verifer has a bug
-                let backtrace = Backtrace::new();
-                log::warn!("Discard status: {:?}\n{:?}", discard_status, backtrace);
+                log::warn!("Discard status: {:?}", discard_status);
                 return Err(Error::from(VMPanicError::VerifierPanicError(format_err!(
                     "Execute Action with Panic {:?}",
                     vm_error_info

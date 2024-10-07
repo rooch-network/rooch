@@ -2,13 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::messages::{
-    GetSequencerOrderMessage, GetTransactionByHashMessage, GetTransactionsByHashMessage,
-    GetTxHashsMessage,
+    GetSequencerInfoMessage, GetSequencerOrderMessage, GetTransactionByHashMessage,
+    GetTransactionsByHashMessage, GetTxHashsMessage,
 };
 use crate::{actor::sequencer::SequencerActor, messages::TransactionSequenceMessage};
 use anyhow::Result;
 use coerce::actor::ActorRef;
 use moveos_types::h256::H256;
+use rooch_types::sequencer::SequencerInfo;
 use rooch_types::transaction::{LedgerTransaction, LedgerTxData};
 
 #[derive(Clone)]
@@ -46,5 +47,9 @@ impl SequencerProxy {
 
     pub async fn get_sequencer_order(&self) -> Result<u64> {
         self.actor.send(GetSequencerOrderMessage {}).await?
+    }
+
+    pub async fn get_sequencer_info(&self) -> Result<SequencerInfo> {
+        self.actor.send(GetSequencerInfoMessage {}).await?
     }
 }

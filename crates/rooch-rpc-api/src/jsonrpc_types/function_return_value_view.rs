@@ -13,7 +13,7 @@ use moveos_types::function_return_value::{
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 pub enum VMStatusView {
     Executed,
     MoveAbort {

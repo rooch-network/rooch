@@ -17,6 +17,7 @@ This is the reference documentation of the MoveOS standard library.
 -  [`0x2::any`](any.md#0x2_any)
 -  [`0x2::bag`](bag.md#0x2_bag)
 -  [`0x2::base58`](base58.md#0x2_base58)
+-  [`0x2::base64`](base64.md#0x2_base64)
 -  [`0x2::bcs`](bcs.md#0x2_bcs)
 -  [`0x2::bech32`](bech32.md#0x2_bech32)
 -  [`0x2::big_vector`](big_vector.md#0x2_big_vector)

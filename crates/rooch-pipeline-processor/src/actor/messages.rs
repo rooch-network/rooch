@@ -3,8 +3,9 @@
 
 use anyhow::Result;
 use coerce::actor::message::Message;
-use rooch_types::transaction::{
-    ExecuteTransactionResponse, L1BlockWithBody, L1Transaction, RoochTransaction,
+use rooch_types::{
+    service_status::ServiceStatus,
+    transaction::{ExecuteTransactionResponse, L1BlockWithBody, L1Transaction, RoochTransaction},
 };
 
 #[derive(Clone)]
@@ -32,4 +33,11 @@ pub struct ExecuteL1TxMessage {
 
 impl Message for ExecuteL1TxMessage {
     type Result = Result<ExecuteTransactionResponse>;
+}
+
+#[derive(Clone)]
+pub struct GetServiceStatusMessage {}
+
+impl Message for GetServiceStatusMessage {
+    type Result = Result<ServiceStatus>;
 }

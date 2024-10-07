@@ -15,7 +15,6 @@ use moveos_types::{
     moveos_std::{move_module::MoveModule, object::ObjectID},
     state::{AnnotatedState, FieldKey},
 };
-use rooch_rpc_api::jsonrpc_types::repair_view::{RepairIndexerParamsView, RepairIndexerTypeView};
 use rooch_rpc_api::jsonrpc_types::{
     account_view::BalanceInfoView,
     event_view::{EventFilterView, EventView, IndexerEventIDView, IndexerEventView},
@@ -27,6 +26,10 @@ use rooch_rpc_api::jsonrpc_types::{
     RawTransactionOutputView, RoochAddressView, StateChangeSetPageView,
     StateChangeSetWithTxOrderView, StateKVView, StateOptions, StatePageView, StrView,
     StructTagView, SyncStateFilterView, TransactionWithInfoPageView, TxOptions, UnitedAddressView,
+};
+use rooch_rpc_api::jsonrpc_types::{
+    repair_view::{RepairIndexerParamsView, RepairIndexerTypeView},
+    Status,
 };
 use rooch_rpc_api::{
     api::rooch_api::RoochAPIServer,
@@ -167,18 +170,15 @@ impl RoochAPIServer for RoochServer {
         let tx = bcs::from_bytes::<RoochTransactionData>(&payload.0)?;
         let tx_result = self.rpc_service.dry_run_tx(tx).await?;
         let raw_output = tx_result.raw_output;
-
         let raw_output_view = RawTransactionOutputView {
             status: raw_output.status.into(),
             gas_used: raw_output.gas_used.into(),
             is_upgrade: raw_output.is_upgrade,
         };
-
         let tx_response = DryRunTransactionResponseView {
             raw_output: raw_output_view,
             vm_error_info: tx_result.vm_error_info.unwrap_or_default(),
         };
-
         Ok(tx_response)
     }
 
@@ -198,6 +198,7 @@ impl RoochAPIServer for RoochServer {
         access_path: AccessPathView,
         state_option: Option<StateOptions>,
     ) -> RpcResult<Vec<Option<ObjectStateView>>> {
+        access_path.0.validate_max_object_ids()?;
         let state_option = state_option.unwrap_or_default();
         let show_display =
             state_option.show_display && (access_path.0.is_object() || access_path.0.is_resource());
@@ -254,6 +255,7 @@ impl RoochAPIServer for RoochServer {
         limit: Option<StrView<u64>>,
         state_option: Option<StateOptions>,
     ) -> RpcResult<StatePageView> {
+        access_path.0.validate_max_object_ids()?;
         let state_option = state_option.unwrap_or_default();
         let show_display =
             state_option.show_display && (access_path.0.is_object() || access_path.0.is_resource());
@@ -850,6 +852,11 @@ impl RoochAPIServer for RoochServer {
             next_cursor,
             has_next_page,
         })
+    }
+
+    async fn status(&self) -> RpcResult<Status> {
+        let status = self.rpc_service.status().await?;
+        Ok(status)
     }
 }
 

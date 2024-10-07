@@ -17,7 +17,7 @@ import {
 } from '@roochnetwork/rooch-sdk'
 import { SupportChain } from '../../src/feature/index.js'
 import { Wallet } from '../../src/wellet/wallet.js'
-import { Mock } from 'vitest'
+import { Mock, vi } from 'vitest'
 
 export class MockBitcoinWallet extends Wallet {
   private kp: Keypair
@@ -99,4 +99,16 @@ export class MockBitcoinWallet extends Wallet {
   switchAccount(_: string): void {}
 
   switchNetwork(_: string): void {}
+
+  getDescription(): string {
+    return ''
+  }
+
+  getIcon(theme?: 'dark' | 'light'): string {
+    return theme ?? ''
+  }
+
+  getInstallUrl(): string {
+    return ''
+  }
 }

@@ -7,14 +7,14 @@ use crate::jsonrpc_types::event_view::{EventFilterView, IndexerEventIDView};
 use crate::jsonrpc_types::repair_view::{RepairIndexerParamsView, RepairIndexerTypeView};
 use crate::jsonrpc_types::transaction_view::{TransactionFilterView, TransactionWithInfoView};
 use crate::jsonrpc_types::{
-    AccessPathView, AnnotatedFunctionResultView, BalanceInfoPageView, BytesView,
-    DryRunTransactionResponseView, EventOptions, EventPageView, ExecuteTransactionResponseView,
-    FieldKeyView, FunctionCallView, H256View, IndexerEventPageView, IndexerObjectStatePageView,
-    IndexerStateIDView, ModuleABIView, ObjectIDVecView, ObjectIDView, ObjectStateFilterView,
-    ObjectStateView, QueryOptions, RoochAddressView, StateChangeSetPageView, StateOptions,
-    StatePageView, StrView, StructTagView, SyncStateFilterView, TransactionWithInfoPageView,
-    TxOptions,
+    AccessPathView, AnnotatedFunctionResultView, BalanceInfoPageView, BytesView, EventOptions,
+    EventPageView, ExecuteTransactionResponseView, FieldKeyView, FunctionCallView, H256View,
+    IndexerEventPageView, IndexerObjectStatePageView, IndexerStateIDView, ModuleABIView,
+    ObjectIDVecView, ObjectIDView, ObjectStateFilterView, ObjectStateView, QueryOptions,
+    RoochAddressView, StateChangeSetPageView, StateOptions, StatePageView, StrView, StructTagView,
+    SyncStateFilterView, TransactionWithInfoPageView, TxOptions,
 };
+use crate::jsonrpc_types::{DryRunTransactionResponseView, Status};
 use crate::RpcResult;
 use jsonrpsee::proc_macros::rpc;
 use moveos_types::{access_path::AccessPath, state::FieldKey};
@@ -210,4 +210,8 @@ pub trait RoochAPI {
         limit: Option<StrView<u64>>,
         query_option: Option<QueryOptions>,
     ) -> RpcResult<StateChangeSetPageView>;
+
+    /// Get the chain and service status
+    #[method(name = "status")]
+    async fn status(&self) -> RpcResult<Status>;
 }

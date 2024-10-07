@@ -62,14 +62,14 @@ export function useAutoConnectWallet(): 'disabled' | 'idle' | 'attempted' {
     gcTime: 0,
     staleTime: 0,
     networkMode: 'always',
-    retry: (failureCount) => {
+    retry: (_) => {
       // Retry only if there is a wallet to connect and we haven't exceeded 3 attempts
-      if (
-        wallets.find((wallet) => wallet.getName() === lastConnectedWalletName) &&
-        failureCount < 3
-      ) {
-        return true
-      }
+      // if (
+      //   wallets.find((wallet) => wallet.getName() === lastConnectedWalletName) &&
+      //   failureCount < 3
+      // ) {
+      //   return true
+      // }
       return false
     },
     retryOnMount: false,
@@ -93,5 +93,5 @@ export function useAutoConnectWallet(): 'disabled' | 'idle' | 'attempted' {
     return 'attempted'
   }
 
-  return isError ? 'attempted' : data ?? 'idle'
+  return isError ? 'attempted' : (data ?? 'idle')
 }

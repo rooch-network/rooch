@@ -11,7 +11,7 @@ use move_core_types::{account_address::AccountAddress, ident_str, identifier::Id
 use moveos_types::h256::sha2_256_of;
 use moveos_types::state::{MoveState, MoveStructState, MoveStructType};
 use serde::{Deserialize, Serialize};
-use std::fmt;
+use std::fmt::{self, Debug};
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
@@ -460,10 +460,17 @@ impl MoveStructState for TxOut {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct BlockHeightHash {
     pub block_height: u64,
     pub block_hash: AccountAddress,
+}
+
+impl Debug for BlockHeightHash {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        let block_hash = BlockHash::from_address(self.block_hash);
+        write!(f, "BlockHeightHash({},{})", self.block_height, block_hash)
+    }
 }
 
 impl MoveStructType for BlockHeightHash {

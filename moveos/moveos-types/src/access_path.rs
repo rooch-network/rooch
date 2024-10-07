@@ -6,7 +6,7 @@ use crate::moveos_std::module_store::Package;
 use crate::state::FieldKey;
 use crate::{
     move_types::{random_identity, random_struct_tag},
-    moveos_std::object::ObjectID,
+    moveos_std::object::{ObjectID, MAX_OBJECT_IDS_PER_QUERY},
 };
 use anyhow::{ensure, Result};
 use move_core_types::language_storage::ModuleId;
@@ -151,6 +151,7 @@ impl FromStr for Path {
                 let object_ids = iter.next().unwrap_or("");
                 let object_ids = object_ids
                     .split(',')
+                    .filter(|s| !s.is_empty())
                     .map(ObjectID::from_str)
                     .collect::<Result<Vec<_>, _>>()?;
                 Ok(Path::Object { object_ids })
@@ -290,6 +291,18 @@ impl AccessPath {
         })
     }
 
+    pub fn validate_max_object_ids(&self) -> Result<()> {
+        if let Path::Object { object_ids } = &self.0 {
+            if object_ids.len() > MAX_OBJECT_IDS_PER_QUERY {
+                return Err(anyhow::anyhow!(
+                    "Too many object IDs requested. Maximum allowed: {}",
+                    MAX_OBJECT_IDS_PER_QUERY
+                ));
+            }
+        }
+        Ok(())
+    }
+
     /// Convert AccessPath to StateQuery, return the ObjectID and field keys
     pub fn into_state_query(self) -> StateQuery {
         match self.0 {
@@ -414,6 +427,7 @@ mod tests {
     #[test]
     pub fn test_path() {
         test_path_roundtrip("/object/0x1");
+        test_path_roundtrip("/object/0x1,");
         test_path_roundtrip("/object/0x1,0x2");
         test_path_roundtrip("/resource/0x1/0x2::m::S");
         test_path_roundtrip("/resource/0x1/0x2::m1::S1,0x3::m2::S2");

@@ -68,7 +68,7 @@ impl RoochDB {
         column_families.append(&mut rooch_store::StoreMeta::get_column_family_names().to_vec());
         //ensure no duplicate column families
         {
-            let mut set = HashSet::new();
+            let mut set = HashSet::with_capacity(column_families.len());
             column_families.iter().for_each(|cf| {
                 if !set.insert(cf) {
                     panic!("Duplicate column family: {}", cf);

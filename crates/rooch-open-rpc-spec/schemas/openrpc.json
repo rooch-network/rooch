@@ -12,7 +12,7 @@
       "name": "Apache-2.0",
       "url": "https://raw.githubusercontent.com/rooch-network/rooch/main/LICENSE"
     },
-    "version": "0.7.2"
+    "version": "0.7.3"
   },
   "methods": [
     {
@@ -748,6 +748,18 @@
       }
     },
     {
+      "name": "rooch_status",
+      "description": "Get the chain and service status",
+      "params": [],
+      "result": {
+        "name": "Status",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/Status"
+        }
+      }
+    },
+    {
       "name": "rooch_syncStates",
       "description": "Sync state change sets",
       "params": [
@@ -788,6 +800,32 @@
   ],
   "components": {
     "schemas": {
+      "AccumulatorInfoView": {
+        "type": "object",
+        "required": [
+          "accumulator_root",
+          "frozen_subtree_roots",
+          "num_leaves",
+          "num_nodes"
+        ],
+        "properties": {
+          "accumulator_root": {
+            "$ref": "#/components/schemas/primitive_types::H256"
+          },
+          "frozen_subtree_roots": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/primitive_types::H256"
+            }
+          },
+          "num_leaves": {
+            "$ref": "#/components/schemas/u64"
+          },
+          "num_nodes": {
+            "$ref": "#/components/schemas/u64"
+          }
+        }
+      },
       "AnnotatedFunctionResultView": {
         "type": "object",
         "required": [
@@ -937,6 +975,46 @@
           },
           "symbol": {
             "type": "string"
+          }
+        }
+      },
+      "BitcoinStatus": {
+        "type": "object",
+        "properties": {
+          "confirmed_block": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BlockHeightHashView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "pending_block": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BlockHeightHashView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "BlockHeightHashView": {
+        "type": "object",
+        "required": [
+          "block_hash",
+          "block_height"
+        ],
+        "properties": {
+          "block_hash": {
+            "type": "string"
+          },
+          "block_height": {
+            "$ref": "#/components/schemas/u64"
           }
         }
       },
@@ -2709,6 +2787,36 @@
           }
         ]
       },
+      "RoochStatus": {
+        "type": "object",
+        "required": [
+          "root_state",
+          "sequencer_info"
+        ],
+        "properties": {
+          "root_state": {
+            "$ref": "#/components/schemas/RootStateView"
+          },
+          "sequencer_info": {
+            "$ref": "#/components/schemas/SequencerInfoView"
+          }
+        }
+      },
+      "RootStateView": {
+        "type": "object",
+        "required": [
+          "size",
+          "state_root"
+        ],
+        "properties": {
+          "size": {
+            "$ref": "#/components/schemas/u64"
+          },
+          "state_root": {
+            "$ref": "#/components/schemas/primitive_types::H256"
+          }
+        }
+      },
       "SatPointView": {
         "type": "object",
         "required": [
@@ -2748,6 +2856,53 @@
             }
           }
         }
+      },
+      "SequencerInfoView": {
+        "type": "object",
+        "required": [
+          "last_accumulator_info",
+          "last_order"
+        ],
+        "properties": {
+          "last_accumulator_info": {
+            "$ref": "#/components/schemas/AccumulatorInfoView"
+          },
+          "last_order": {
+            "$ref": "#/components/schemas/u64"
+          }
+        }
+      },
+      "ServiceStatus": {
+        "oneOf": [
+          {
+            "description": "The service is active and running normally.",
+            "type": "string",
+            "enum": [
+              "active"
+            ]
+          },
+          {
+            "description": "The service is in maintenance mode.",
+            "type": "string",
+            "enum": [
+              "maintenance"
+            ]
+          },
+          {
+            "description": "The service is in read-only mode.",
+            "type": "string",
+            "enum": [
+              "read-only-mode"
+            ]
+          },
+          {
+            "description": "The service is in date import mode.",
+            "type": "string",
+            "enum": [
+              "date-import-mode"
+            ]
+          }
+        ]
       },
       "SpecificStructView": {
         "description": "Some specific struct that we want to display in a special way for better readability",
@@ -2837,6 +2992,40 @@
               },
               {
                 "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "Status": {
+        "type": "object",
+        "required": [
+          "bitcoin_status",
+          "rooch_status",
+          "service_status"
+        ],
+        "properties": {
+          "bitcoin_status": {
+            "description": "The status of the Bitcoin chain",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BitcoinStatus"
+              }
+            ]
+          },
+          "rooch_status": {
+            "description": "The status of the Rooch chain",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RoochStatus"
+              }
+            ]
+          },
+          "service_status": {
+            "description": "The status of the rpc service",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ServiceStatus"
               }
             ]
           }

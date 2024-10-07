@@ -117,7 +117,8 @@ impl UTXOView {
         // reversed bytes of txid
         let bitcoin_txid = Txid::from_byte_array(utxo.txid.into_bytes());
 
-        let mut seals_view: HashMap<String, Vec<ObjectIDView>> = HashMap::new();
+        let mut seals_view: HashMap<String, Vec<ObjectIDView>> =
+            HashMap::with_capacity(utxo.seals.len());
         utxo.seals.data.into_iter().for_each(|element| {
             seals_view.insert(
                 element.key.to_string(),

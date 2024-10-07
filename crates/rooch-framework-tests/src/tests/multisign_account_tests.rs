@@ -112,7 +112,7 @@ async fn test_multisign_account_random() {
     let binding_test = binding_test::RustBindingTest::new().unwrap();
 
     let count = rand::thread_rng().gen_range(3..10);
-    let mut pubkeys = Vec::new();
+    let mut pubkeys = Vec::with_capacity(count);
     for _ in 0..count {
         let kp = RoochKeyPair::generate_secp256k1();
         pubkeys.push(kp.bitcoin_public_key().unwrap().to_bytes());

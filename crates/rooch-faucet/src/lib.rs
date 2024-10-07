@@ -26,3 +26,7 @@ pub use discord::*;
 
 pub mod metrics_layer;
 pub use metrics_layer::*;
+
+mod faucet_module;
+mod faucet_proxy;
+pub mod server;

@@ -77,8 +77,7 @@ impl CommandAction<Option<Value>> for TestCommand {
 
         let resolution_graph = build_config
             .clone()
-            .resolution_graph_for_package(&root_path, &mut Vec::new())
-            .expect("resolve package dep failed");
+            .resolution_graph_for_package(&root_path, &mut Vec::new())?;
 
         let mut additional_named_address = BTreeMap::new();
         let _: Vec<_> = resolution_graph

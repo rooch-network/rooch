@@ -1,25 +1,21 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use std::collections::BTreeMap;
-
+use crate::cli_types::{CommandAction, TransactionOptions, WalletContextOptions};
+use crate::commands::transaction::commands::{FileOutput, FileOutputData};
 use async_trait::async_trait;
+use framework_types::addresses::ROOCH_FRAMEWORK_ADDRESS;
 use move_core_types::identifier::Identifier;
 use move_core_types::language_storage::ModuleId;
-
-use framework_types::addresses::ROOCH_FRAMEWORK_ADDRESS;
 use moveos_types::module_binding::MoveFunctionCaller;
 use moveos_types::move_types::FunctionId;
 use moveos_types::state::MoveState;
 use moveos_types::transaction::MoveAction;
 use rooch_framework::natives::gas_parameter::gas_member::ToOnChainGasSchedule;
 use rooch_genesis::{FrameworksGasParameters, LATEST_GAS_SCHEDULE_VERSION};
-use rooch_rpc_api::jsonrpc_types::ExecuteTransactionResponseView;
 use rooch_types::error::{RoochError, RoochResult};
 use rooch_types::rooch_network::BuiltinChainID;
-use rooch_types::transaction::RoochTransaction;
-
-use crate::cli_types::{CommandAction, TransactionOptions, WalletContextOptions};
+use std::collections::BTreeMap;
 
 /// Upgrade the onchain gas config
 #[derive(Debug, clap::Parser)]
@@ -29,12 +25,21 @@ pub struct UpgradeGasConfigCommand {
 
     #[clap(flatten)]
     tx_options: TransactionOptions,
+
+    /// File destination for the file being written
+    /// If not specified, will write to temp directory
+    #[clap(long, short = 'o')]
+    output: Option<String>,
+
+    /// Return command outputs in json format
+    #[clap(long, default_value = "false")]
+    json: bool,
 }
 
 #[async_trait]
-impl CommandAction<ExecuteTransactionResponseView> for UpgradeGasConfigCommand {
-    async fn execute(self) -> RoochResult<ExecuteTransactionResponseView> {
-        let context = self.context_options.build_require_password()?;
+impl CommandAction<Option<FileOutput>> for UpgradeGasConfigCommand {
+    async fn execute(self) -> RoochResult<Option<FileOutput>> {
+        let context = self.context_options.build()?;
 
         let client = context.get_client().await?;
         let gas_schedule_module =
@@ -159,20 +164,21 @@ impl CommandAction<ExecuteTransactionResponseView> for UpgradeGasConfigCommand {
 
         let sender = context.resolve_address(self.tx_options.sender)?.into();
         let max_gas_amount: Option<u64> = self.tx_options.max_gas_amount;
+        let sequenc_number = self.tx_options.sequence_number;
+        let tx_data = context
+            .build_tx_data_with_sequence_number(sender, action, max_gas_amount, sequenc_number)
+            .await?;
 
-        match self.tx_options.authenticator {
-            Some(authenticator) => {
-                let tx_data = context
-                    .build_tx_data(sender, action, max_gas_amount)
-                    .await?;
-                let tx = RoochTransaction::new(tx_data, authenticator.into());
-                context.execute(tx).await
-            }
-            None => {
-                context
-                    .sign_and_execute(sender, action, context.get_password(), max_gas_amount)
-                    .await
-            }
+        let output =
+            FileOutput::write_to_file(FileOutputData::RoochTransactionData(tx_data), self.output)?;
+        if self.json {
+            Ok(Some(output))
+        } else {
+            println!(
+                "Gas update transaction succeeded write to file: {}",
+                output.path
+            );
+            Ok(None)
         }
     }
 }

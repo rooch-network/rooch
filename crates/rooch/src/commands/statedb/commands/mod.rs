@@ -544,7 +544,7 @@ mod tests {
 
     // all outpoints are unique
     fn random_outpoints(n: usize) -> Vec<OutPoint> {
-        let mut outpoints = HashSet::new();
+        let mut outpoints = HashSet::with_capacity(n);
         while outpoints.len() < n {
             outpoints.insert(random_outpoint());
         }
@@ -553,7 +553,7 @@ mod tests {
 
     // all inscriptions are unique
     fn random_inscriptions(n: usize) -> Vec<InscriptionID> {
-        let mut inscriptions = HashSet::new();
+        let mut inscriptions = HashSet::with_capacity(n);
         while inscriptions.len() < n {
             inscriptions.insert(random_inscription_id());
         }
