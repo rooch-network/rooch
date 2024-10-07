@@ -2,9 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{DA_BLOCK_CURSOR_COLUMN_FAMILY_NAME, DA_BLOCK_SUBMIT_STATE_COLUMN_FAMILY_NAME};
-use raw_store::{derive_store, CodecKVStore};
-use rooch_types::da;
-use rooch_types::da::{BlockRange, BlockSubmitState};
+use raw_store::{derive_store, CodecKVStore, CodecWriteBatch};
+use rooch_types::da::batch::{BlockRange, BlockSubmitState};
 use std::cmp::min;
 
 pub const SUBMITTING_BLOCKS_PAGE_SIZE: usize = 1024;
@@ -16,7 +15,7 @@ pub const LAST_BLOCK_NUMBER_KEY: &str = "last_block_number";
 derive_store!(
     DABlockSubmitStateStore,
     u128,
-    da::BlockSubmitState,
+    BlockSubmitState,
     DA_BLOCK_SUBMIT_STATE_COLUMN_FAMILY_NAME
 );
 
@@ -48,7 +47,12 @@ pub trait DAMetaStore {
 
     fn get_background_submit_block_cursor(&self) -> anyhow::Result<Option<u128>>;
     fn set_background_submit_block_cursor(&self, cursor: u128) -> anyhow::Result<()>;
+
     fn get_last_block_number(&self) -> anyhow::Result<Option<u128>>;
+
+    // try to fix submitting blocks by last tx order(if not None) at starting,
+    // only could be called after try_fix_last_block_number(which has been invoked in new)
+    fn catchup_submitting_blocks(&self, last_order: Option<u64>) -> anyhow::Result<()>;
 }
 
 #[derive(Clone)]
@@ -85,6 +89,7 @@ impl DAMetaDBStore {
             .put_sync(LAST_BLOCK_NUMBER_KEY.to_string(), block_number)
     }
 
+    #[warn(dead_code)]
     fn add_submitting_block(
         &self,
         block_number: u128,
@@ -100,6 +105,32 @@ impl DAMetaDBStore {
         Ok(())
     }
 
+    fn add_submitting_blocks(&self, ranges: Vec<BlockRange>) -> anyhow::Result<()> {
+        if ranges.is_empty() {
+            return Ok(());
+        }
+
+        let last_block_number = ranges.last().unwrap().block_number;
+        let kvs: Vec<(u128, BlockSubmitState)> = ranges
+            .into_iter()
+            .map(|range| {
+                (
+                    range.block_number,
+                    BlockSubmitState::new(
+                        range.block_number,
+                        range.tx_order_start,
+                        range.tx_order_end,
+                    ),
+                )
+            })
+            .collect();
+        let batch = CodecWriteBatch::new_puts(kvs);
+        self.block_submit_state_store.write_batch_sync(batch)?;
+
+        self.set_last_block_number(last_block_number)?;
+        Ok(())
+    }
+
     pub(crate) fn calc_needed_block_for_fix_submitting(
         &self,
         last_block_number: Option<u128>,
@@ -108,8 +139,8 @@ impl DAMetaDBStore {
         // each block has n txs, n = [1, MAX_TXS_PER_BLOCK_IN_FIX], so we need to split txs into multiple blocks
         let mut blocks = Vec::new();
         let mut block_number: u128 = 0;
-        let mut tx_order_start: u64 = 0;
-        let mut tx_order_end: u64 = min(MAX_TXS_PER_BLOCK_IN_FIX as u64 - 1, last_order);
+        let mut tx_order_start: u64 = 1; // tx_order_start starts from 1 (bypass genesis_tx)
+        let mut tx_order_end: u64 = min(MAX_TXS_PER_BLOCK_IN_FIX as u64, last_order);
         if let Some(last_block_number) = last_block_number {
             let last_range = self.block_submit_state_store.kv_get(last_block_number)?;
             let last_range = last_range
@@ -148,16 +179,14 @@ impl DAMetaDBStore {
     // only could be called after try_fix_last_block_number
     fn try_fix_submitting_blocks(&self, last_order: Option<u64>) -> anyhow::Result<()> {
         if let Some(last_order) = last_order {
+            if last_order == 0 {
+                // only has genesis_tx
+                return Ok(());
+            }
             let last_block_number = self.get_last_block_number()?;
             let ranges =
                 self.calc_needed_block_for_fix_submitting(last_block_number, last_order)?;
-            for range in ranges {
-                self.add_submitting_block(
-                    range.block_number,
-                    range.tx_order_start,
-                    range.tx_order_end,
-                )?;
-            }
+            self.add_submitting_blocks(ranges)?;
         }
         Ok(())
     }
@@ -243,5 +272,9 @@ impl DAMetaStore for DAMetaDBStore {
     fn get_last_block_number(&self) -> anyhow::Result<Option<u128>> {
         self.block_cursor_store
             .kv_get(LAST_BLOCK_NUMBER_KEY.to_string())
+    }
+
+    fn catchup_submitting_blocks(&self, last_order: Option<u64>) -> anyhow::Result<()> {
+        self.try_fix_submitting_blocks(last_order)
     }
 }

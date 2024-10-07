@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::accumulator_store::{AccumulatorStore, TransactionAccumulatorStore};
-use crate::da_store::DAMetaDBStore;
+use crate::da_store::{DAMetaDBStore, DAMetaStore};
 use crate::meta_store::{MetaDBStore, MetaStore};
 use crate::state_store::{StateDBStore, StateStore};
 use crate::transaction_store::{TransactionDBStore, TransactionStore};
@@ -17,6 +17,7 @@ use prometheus::Registry;
 use raw_store::metrics::DBMetrics;
 use raw_store::rocks::RocksDB;
 use raw_store::{ColumnFamilyName, StoreInstance};
+use rooch_types::da::batch::BlockRange;
 use rooch_types::sequencer::SequencerInfo;
 use rooch_types::transaction::LedgerTransaction;
 use std::fmt::{Debug, Display, Formatter};
@@ -210,5 +211,61 @@ impl StateStore for RoochStore {
 
     fn remove_state_change_set(&self, tx_order: u64) -> Result<()> {
         self.get_state_store().remove_state_change_set(tx_order)
+    }
+}
+
+impl DAMetaStore for RoochStore {
+    fn get_submitting_blocks(
+        &self,
+        start_block: u128,
+        exp_count: Option<usize>,
+    ) -> Result<Vec<BlockRange>> {
+        self.get_da_meta_store()
+            .get_submitting_blocks(start_block, exp_count)
+    }
+
+    fn append_submitting_block(
+        &self,
+        last_block_number: Option<u128>,
+        tx_order_start: u64,
+        tx_order_end: u64,
+    ) -> Result<u128> {
+        self.get_da_meta_store().append_submitting_block(
+            last_block_number,
+            tx_order_start,
+            tx_order_end,
+        )
+    }
+
+    fn set_submitting_block_done(
+        &self,
+        block_number: u128,
+        tx_order_start: u64,
+        tx_order_end: u64,
+    ) -> Result<()> {
+        self.get_da_meta_store().set_submitting_block_done(
+            block_number,
+            tx_order_start,
+            tx_order_end,
+        )
+    }
+
+    fn get_background_submit_block_cursor(&self) -> Result<Option<u128>> {
+        self.get_da_meta_store()
+            .get_background_submit_block_cursor()
+    }
+
+    fn set_background_submit_block_cursor(&self, cursor: u128) -> Result<()> {
+        self.get_da_meta_store()
+            .set_background_submit_block_cursor(cursor)
+    }
+
+    fn get_last_block_number(&self) -> Result<Option<u128>> {
+        self.get_da_meta_store().get_last_block_number()
+    }
+
+    fn catchup_submitting_blocks(&self, last_order: Option<u64>) -> Result<()> {
+        self.get_da_meta_store()
+            .catchup_submitting_blocks(last_order)
     }
 }

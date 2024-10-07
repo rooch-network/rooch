@@ -76,18 +76,14 @@ impl DABatch {
         tx_list_bytes: Vec<u8>,
         tx_list_hash: H256,
     ) -> Self {
-        Self {
-            meta: DABatchMeta {
-                block_range: BlockRange {
-                    block_number,
-                    tx_order_start,
-                    tx_order_end,
-                },
-                tx_list_hash,
-                signature: vec![],
-            },
+        Self::new(
+            block_number,
+            tx_order_start,
+            tx_order_end,
             tx_list_bytes,
-        }
+            tx_list_hash,
+            vec![],
+        )
     }
 
     pub fn new(
