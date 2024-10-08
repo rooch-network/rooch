@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: testnet-oracle-okx
+  namespace: testnet
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: testnet-oracle-okx
+  template:
+    metadata:
+      labels:
+        app: testnet-oracle-okx
+    spec:
+      initContainers:
+      - name: init-rooch
+        image: ghcr.io/rooch-network/rooch:main
+        command: ["/bin/sh", "-c"]
+        args:
+        - |
+          if [ ! -f /root/.rooch/initialized ]; then
+            /rooch/rooch init -m "${INIT_SECRET}" --skip-password
+            /rooch/rooch env switch --alias test
+            /rooch/rooch account create
+            /rooch/rooch account create
+            /rooch/rooch account create
+            ls -la /root/.rooch/rooch_config/
+            touch /root/.rooch/initialized
+          fi
+        env:
+        - name: INIT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: rooch-testnet-secrets
+              key: init-phrase
+        volumeMounts:
+        - name: rooch-data
+          mountPath: /root
+      containers:
+      - name: rooch-oracle
+        image: ghcr.io/rooch-network/rooch:main
+        command: ["/rooch/rooch"]
+        args: 
+        - "oracle"
+        - "reporter"
+        - "--sender"
+        #the second account
+        - "rooch1nt0yvc6dzhcqpl98htp0ygfpr8vz83zns3hs6hzwgsqndt9q7ewqlrhhz8"
+        - "--oracle-id"
+        - "0x107ea9cde1caae6bcb97f2939fff45eff81838bfa1fbdca810f37e51f0d26930"
+        - "--oracle-admin-id"
+        - "0x39d4d3a82f8bda01c2c3b00ab03892dd5ba44eb062d828bae5322b07daf326d1"
+        - "--data-source"
+        - "okx"
+        - "--ticker"
+        - "btcusd"
+        - "--aggregate-strategy"
+        - "average"
+        - "--report-interval"
+        - "10"
+        volumeMounts:
+        - name: rooch-data
+          mountPath: /root
+      volumes:
+      - name: rooch-data
+        persistentVolumeClaim:
+          claimName: testnet-oracle-okx-data
