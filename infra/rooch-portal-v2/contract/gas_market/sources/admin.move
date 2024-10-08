@@ -1,12 +1,16 @@
 module gas_market::admin {
 
-    use moveos_std::object::{Self,to_shared};
+    use moveos_std::object::{Self,transfer};
 
     struct AdminCap has store, key {}
 
     fun init() {
         let admin_cap = object::new_named_object(AdminCap {});
-        to_shared(admin_cap)
+        transfer(admin_cap, @gas_market)
+    }
+
+    #[deprecated]
+    public entry fun fix_admin_cap() {
     }
 
     #[test_only]

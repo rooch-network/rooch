@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mainnet-oracle-binance
+  namespace: mainnet
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mainnet-oracle-binance
+  template:
+    metadata:
+      labels:
+        app: mainnet-oracle-binance
+    spec:
+      initContainers:
+      - name: init-rooch
+        image: ghcr.io/rooch-network/rooch:main
+        command: ["/bin/sh", "-c"]
+        args:
+        - |
+          if [ ! -f /root/.rooch/initialized ]; then
+            /rooch/rooch init -m "${INIT_SECRET}" --skip-password
+            /rooch/rooch env switch --alias main
+            /rooch/rooch account create
+            /rooch/rooch account create
+            /rooch/rooch account create
+            ls -la /root/.rooch/rooch_config/
+            touch /root/.rooch/initialized
+          fi
+        env:
+        - name: INIT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: rooch-mainnet-secrets
+              key: init-phrase
+        volumeMounts:
+        - name: rooch-data
+          mountPath: /root
+      containers:
+      - name: rooch-oracle
+        image: ghcr.io/rooch-network/rooch:main
+        command: ["/rooch/rooch"]
+        args: 
+        - "oracle"
+        - "reporter"
+        - "--sender"
+        #the fourth account
+        - "rooch1mfaa7tnexzyzq3rrcwf5h9u5s3lly7wshcznk69uvn9q4fw5te6qtpwwsg"
+        - "--oracle-id"
+        - "0x8316bdaf22b346fcbe43dab84faab08d039cf753a08342164150afcab718c1d2"
+        - "--oracle-admin-id"
+        - "0x54dcf30e42ef37ba2fc3f700cecb7f9ab92717247b0e4e8b5e32a54e26ce39cd"
+        - "--data-source"
+        - "binance"
+        - "--ticker"
+        - "btcusd"
+        - "--aggregate-strategy"
+        - "average"
+        - "--report-interval"
+        - "10"
+        volumeMounts:
+        - name: rooch-data
+          mountPath: /root
+      volumes:
+      - name: rooch-data
+        persistentVolumeClaim:
+          claimName: mainnet-oracle-binance-data

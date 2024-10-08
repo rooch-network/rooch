@@ -1,0 +1,8 @@
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: testnet-cert
+  namespace: testnet
+spec:
+  domains:
+    - test-faucet.rooch.network

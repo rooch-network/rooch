@@ -14,7 +14,7 @@ dependencies = [
 
 [[package]]
 name = "accumulator"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "bcs-ext",
@@ -730,13 +730,13 @@ dependencies = [
 
 [[package]]
 name = "axum"
-version = "0.7.6"
+version = "0.7.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8f43644eed690f5374f1af436ecd6aea01cd201f6fbdf0178adaf6907afb2cec"
+checksum = "504e3947307ac8326a5437504c517c4b56716c9d98fac0028c2acc7ca47d70ae"
 dependencies = [
  "async-trait",
- "axum-core 0.4.4",
- "base64 0.21.7",
+ "axum-core 0.4.5",
+ "base64 0.22.1",
  "bytes",
  "futures-util",
  "http 1.1.0",
@@ -758,7 +758,7 @@ dependencies = [
  "sha1",
  "sync_wrapper 1.0.1",
  "tokio",
- "tokio-tungstenite 0.23.1",
+ "tokio-tungstenite 0.24.0",
  "tower 0.5.1",
  "tower-layer",
  "tower-service",
@@ -784,9 +784,9 @@ dependencies = [
 
 [[package]]
 name = "axum-core"
-version = "0.4.4"
+version = "0.4.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5e6b8ba012a258d63c9adfa28b9ddcf66149da6f986c5b5452e629d5ee64bf00"
+checksum = "09f2bd6146b97ae3359fa0cc6d6b376d9539582c7b4220f041a33ec24c226199"
 dependencies = [
  "async-trait",
  "bytes",
@@ -1100,10 +1100,10 @@ checksum = "340e09e8399c7bd8912f495af6aa58bea0c9214773417ffaa8f6460f93aaee56"
 
 [[package]]
 name = "bitcoin-move"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
- "axum 0.7.6",
+ "axum 0.7.7",
  "bitcoin 0.32.3",
  "brotli 3.5.0",
  "hex",
@@ -2035,9 +2035,9 @@ dependencies = [
 
 [[package]]
 name = "const-hex"
-version = "1.13.0"
+version = "1.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3c5beedbbcf3526d3c8d195e43d9590066887651099c306a7cab75339ab56773"
+checksum = "0121754e84117e65f9d90648ee6aa4882a6e63110307ab73967a4c5e7e69e586"
 dependencies = [
  "cfg-if",
  "cpufeatures",
@@ -2785,7 +2785,7 @@ dependencies = [
 
 [[package]]
 name = "data-verify"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "rooch-rpc-api",
@@ -4178,7 +4178,7 @@ dependencies = [
 
 [[package]]
 name = "framework-builder"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "bcs",
@@ -4202,7 +4202,7 @@ dependencies = [
 
 [[package]]
 name = "framework-release"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "bcs",
@@ -4218,7 +4218,7 @@ dependencies = [
 
 [[package]]
 name = "framework-types"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "move-core-types",
  "moveos-stdlib",
@@ -4279,9 +4279,9 @@ dependencies = [
 
 [[package]]
 name = "futures-channel"
-version = "0.3.30"
+version = "0.3.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eac8f7d7865dcb88bd4373ab671c8cf4508703796caa2b1985a9ca867b3fcb78"
+checksum = "2dff15bf788c671c1934e366d07e30c1814a8ef514e1af724a602e8a2fbe1b10"
 dependencies = [
  "futures-core",
  "futures-sink",
@@ -4289,9 +4289,9 @@ dependencies = [
 
 [[package]]
 name = "futures-core"
-version = "0.3.30"
+version = "0.3.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dfc6580bb841c5a68e9ef15c77ccc837b40a7504914d52e47b8b0e9bbda25a1d"
+checksum = "05f29059c0c2090612e8d742178b0580d2dc940c837851ad723096f87af6663e"
 
 [[package]]
 name = "futures-executor"
@@ -4306,9 +4306,9 @@ dependencies = [
 
 [[package]]
 name = "futures-io"
-version = "0.3.30"
+version = "0.3.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a44623e20b9681a318efdd71c299b6b222ed6f231972bfe2f224ebad6311f0c1"
+checksum = "9e5c1b78ca4aae1ac06c48a526a655760685149f0d465d21f37abfe57ce075c6"
 
 [[package]]
 name = "futures-locks"
@@ -4322,9 +4322,9 @@ dependencies = [
 
 [[package]]
 name = "futures-macro"
-version = "0.3.30"
+version = "0.3.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "87750cf4b7a4c0625b1529e4c543c2182106e4dedc60a2a6455e00d212c489ac"
+checksum = "162ee34ebcb7c64a8abebc059ce0fee27c2262618d7b60ed8faf72fef13c3650"
 dependencies = [
  "proc-macro2 1.0.86",
  "quote 1.0.37",
@@ -4333,15 +4333,15 @@ dependencies = [
 
 [[package]]
 name = "futures-sink"
-version = "0.3.30"
+version = "0.3.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9fb8e00e87438d937621c1c6269e53f536c14d3fbd6a042bb24879e57d474fb5"
+checksum = "e575fab7d1e0dcb8d0c7bcf9a63ee213816ab51902e6d244a95819acacf1d4f7"
 
 [[package]]
 name = "futures-task"
-version = "0.3.30"
+version = "0.3.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "38d84fa142264698cdce1a9f9172cf383a0c82de1bddcf3092901442c4097004"
+checksum = "f90f7dce0722e95104fcb095585910c0977252f286e354b5e3bd38902cd99988"
 
 [[package]]
 name = "futures-timer"
@@ -4355,9 +4355,9 @@ dependencies = [
 
 [[package]]
 name = "futures-util"
-version = "0.3.30"
+version = "0.3.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3d6401deb83407ab3da39eba7e33987a73c3df0c82b4bb5813ee871c19c41d48"
+checksum = "9fa08315bb612088cc391249efdc3bc77536f16c91f6cf495e6fbe85b20a4a81"
 dependencies = [
  "futures-channel",
  "futures-core",
@@ -5942,7 +5942,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c2a198fb6b0eada2a8df47933734e6d35d350665a33a3593d7164fa52c75c19"
 dependencies = [
  "cfg-if",
- "windows-targets 0.48.5",
+ "windows-targets 0.52.6",
 ]
 
 [[package]]
@@ -6158,11 +6158,11 @@ dependencies = [
 
 [[package]]
 name = "metrics"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "async-trait",
- "axum 0.7.6",
+ "axum 0.7.7",
  "axum-server",
  "dashmap 6.0.1",
  "futures",
@@ -6951,7 +6951,7 @@ dependencies = [
 
 [[package]]
 name = "moveos"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "backtrace",
@@ -6993,7 +6993,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-common"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "bcs",
@@ -7008,7 +7008,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-compiler"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "move-binary-format",
@@ -7017,7 +7017,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-config"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "clap 4.5.17",
  "serde 1.0.210",
@@ -7026,7 +7026,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-eventbus"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "coerce",
@@ -7040,7 +7040,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-gas-profiling"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "handlebars",
@@ -7057,7 +7057,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-object-runtime"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "better_any",
  "hex",
@@ -7073,7 +7073,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-stdlib"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "base64 0.22.1",
@@ -7108,7 +7108,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-store"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "accumulator",
  "anyhow",
@@ -7130,7 +7130,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-types"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "bcs",
@@ -7157,7 +7157,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-verifier"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "bcs",
@@ -7183,7 +7183,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-wasm"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "once_cell",
@@ -7568,12 +7568,9 @@ dependencies = [
 
 [[package]]
 name = "once_cell"
-version = "1.20.1"
+version = "1.20.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "82881c4be219ab5faaf2ad5e5e5ecdff8c66bd7402ca3160975c93b24961afd1"
-dependencies = [
- "portable-atomic",
-]
+checksum = "1261fe7e33c73b354eab43b1273a57c8f967d0391e80353e51f764ac02cf6775"
 
 [[package]]
 name = "oorandom"
@@ -8926,7 +8923,7 @@ dependencies = [
 
 [[package]]
 name = "raw-store"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "metrics",
@@ -9396,7 +9393,7 @@ dependencies = [
 
 [[package]]
 name = "rooch"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "accumulator",
  "anyhow",
@@ -9496,7 +9493,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-benchmarks"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "bcs",
@@ -9551,14 +9548,14 @@ dependencies = [
 
 [[package]]
 name = "rooch-common"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "libc",
 ]
 
 [[package]]
 name = "rooch-config"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "clap 4.5.17",
@@ -9574,7 +9571,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-cosmwasm-vm"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "accumulator",
  "anyhow",
@@ -9596,7 +9593,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-da"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9617,7 +9614,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-db"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "moveos-store",
@@ -9632,7 +9629,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-event"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9644,7 +9641,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-executor"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9671,11 +9668,11 @@ dependencies = [
 
 [[package]]
 name = "rooch-faucet"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "async-trait",
- "axum 0.7.6",
+ "axum 0.7.7",
  "axum-server",
  "bcs",
  "clap 4.5.17",
@@ -9700,7 +9697,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-framework"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "bcs",
  "bitcoin 0.32.3",
@@ -9721,7 +9718,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-framework-tests"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "bcs",
@@ -9761,7 +9758,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-genesis"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "accumulator",
  "anyhow",
@@ -9792,7 +9789,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-indexer"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9822,7 +9819,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-integration-test-runner"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "bcs",
@@ -9855,7 +9852,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-key"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "argon2",
@@ -9874,7 +9871,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-nursery"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "bcs",
  "bitcoin 0.32.3",
@@ -9907,7 +9904,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-open-rpc"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "clap 4.5.17",
@@ -9922,7 +9919,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-open-rpc-macros"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "derive-syn-parse",
  "itertools 0.13.0",
@@ -9934,7 +9931,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-open-rpc-spec"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "clap 4.5.17",
  "pretty_assertions",
@@ -9946,7 +9943,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-open-rpc-spec-builder"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "clap 4.5.17",
@@ -9979,7 +9976,7 @@ dependencies = [
  "serde_json",
  "tokio",
  "tokio-stream",
- "tokio-tungstenite 0.23.1",
+ "tokio-tungstenite 0.24.0",
  "tracing",
  "tracing-subscriber",
  "tungstenite 0.24.0",
@@ -9987,7 +9984,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-ord"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -10013,7 +10010,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-pipeline-processor"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -10041,7 +10038,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-proposer"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -10057,7 +10054,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-relayer"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -10086,7 +10083,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-rpc-api"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "accumulator",
  "anyhow",
@@ -10111,7 +10108,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-rpc-client"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "bcs",
@@ -10135,10 +10132,10 @@ dependencies = [
 
 [[package]]
 name = "rooch-rpc-server"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
- "axum 0.7.6",
+ "axum 0.7.7",
  "bcs",
  "bitcoincore-rpc",
  "coerce",
@@ -10185,7 +10182,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-sequencer"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "accumulator",
  "anyhow",
@@ -10210,7 +10207,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-store"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "accumulator",
  "anyhow",
@@ -10225,7 +10222,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-test-transaction-builder"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "bcs",
@@ -10239,7 +10236,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-types"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "accumulator",
  "anyhow",
@@ -11453,7 +11450,7 @@ checksum = "b7c388c1b5e93756d0c740965c41e8822f866621d41acbdf6336a6a168f8840c"
 
 [[package]]
 name = "smt"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "backtrace",
@@ -11998,7 +11995,7 @@ dependencies = [
 
 [[package]]
 name = "testsuite"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "assert_cmd",
@@ -12109,7 +12106,7 @@ dependencies = [
 
 [[package]]
 name = "timeout-join-handler"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "thiserror",
@@ -12303,16 +12300,16 @@ dependencies = [
 
 [[package]]
 name = "tokio-tungstenite"
-version = "0.23.1"
+version = "0.24.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c6989540ced10490aaf14e6bad2e3d33728a2813310a0c71d1574304c49631cd"
+checksum = "edc5f74e248dc973e0dbb7b74c7e0d6fcc301c694ff50049504004ef4d0cdcd9"
 dependencies = [
  "futures-util",
  "log",
  "native-tls",
  "tokio",
  "tokio-native-tls",
- "tungstenite 0.23.0",
+ "tungstenite 0.24.0",
 ]
 
 [[package]]
@@ -12545,7 +12542,7 @@ version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "313fa625fea5790ed56360a30ea980e41229cf482b4835801a67ef1922bf63b9"
 dependencies = [
- "axum 0.7.6",
+ "axum 0.7.7",
  "forwarded-header-value",
  "governor",
  "http 1.1.0",
@@ -12707,25 +12704,6 @@ dependencies = [
 
 [[package]]
 name = "tungstenite"
-version = "0.23.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6e2e2ce1e47ed2994fd43b04c8f618008d4cabdd5ee34027cf14f9d918edd9c8"
-dependencies = [
- "byteorder",
- "bytes",
- "data-encoding",
- "http 1.1.0",
- "httparse",
- "log",
- "native-tls",
- "rand 0.8.5",
- "sha1",
- "thiserror",
- "utf-8",
-]
-
-[[package]]
-name = "tungstenite"
 version = "0.24.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "18e5b8366ee7a95b16d32197d0b2604b43a0be89dc5fac9f8e96ccafbaedda8a"
@@ -12736,6 +12714,7 @@ dependencies = [
  "http 1.1.0",
  "httparse",
  "log",
+ "native-tls",
  "rand 0.8.5",
  "sha1",
  "thiserror",

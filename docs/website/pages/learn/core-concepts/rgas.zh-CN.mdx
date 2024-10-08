@@ -1,0 +1,64 @@
+# RGas
+
+import { Callout, FileTree } from 'nextra/components'
+
+`RGas` 是 Rooch 网络的原生 Gas 代币，属于 [Coin](/learn/core-concepts/coins) 类型。
+
+## 基本信息
+
+* 唯一标识：`0x3::gas_coin::RGas`
+* 名称：Rooch Gas Coin
+* 符号：RGAS
+* 精度：8（小数点后8位）
+
+## 用途
+
+RGas 主要用于支付 Rooch 网络上的交易费用。用户在执行交易时，需要消耗一定数量的 RGas 来支付计算和存储成本。
+
+## 分发方式
+
+1. 初始分配：在创世（Genesis）时，5亿 RGas（`500,000,000.00000000`）被分配给 Rooch DAO 多签账户。这相当于 Rooch DAO 向协议借出 5 亿个 RGas，用于启动 [PreMainnet](/learn/miscellaneous/roadmap#premainnet) 生态。
+
+2. 初始定价：1 RGas = 0.01 USD
+
+3. 分配明细：
+   - 1亿 RGas（`100,000,000.00000000`）用于空投给用户和开发者，以激励他们使用 Rooch 网络。这部分被视为协议债务，将通过未来 Sequencer 的交易费收入来偿还。
+   - 剩余 4亿 RGas（`400,000,000.00000000`）由 Rooch DAO 多签账户持有，作为 Rooch DAO 的负债，需要由 Rooch DAO 偿还。
+
+4. 主网启动后：RGas 将通过抵押主网资产的方式铸造，价格将由市场决定。
+
+## 获取方式
+
+### 1. 通过水龙头获取
+
+Rooch PreMainnet 和 Testnet 都提供了水龙头服务，用户可以通过这些水龙头免费获取 RGas。
+
+PreMainnet 水龙头的使用条件：
+- 领取地址必须在 Bitcoin 主网上有 BTC 余额
+- 获取的 RGas 数量与 BTC 余额相关
+- 每个地址仅能领取一次
+
+### 2. 直接用 BTC 购买
+
+用户可以直接在 Bitcoin 主网上向 Rooch DAO 多签地址转账 BTC，即可获得等值的 RGas。
+
+- Rooch DAO 多签地址：`bc1prcajaj9n7e29u4dfp33x3hcf52yqeegspdpcd79pqu4fpr6llx4sugkfjt`
+- RGas 价格：通过 Oracle 获取，以 BTC 转账交易确认时的 Bitcoin 价格为准
+
+## 交易 Gas 费的分配
+
+每笔交易的 Gas 费用将按以下比例分配：
+
+1. 排序器（Sequencer）：30%
+   - 给该交易排序的排序器获得
+
+2. 应用开发者：30%
+   - 交易调用的入口合约（entry function）开发者获得
+   - 如果入口合约是系统 Framework 合约，则这部分归入 Rooch 网络
+
+3. Rooch 网络：40%
+   - 主网启动前：用于归还空投 Gas 的债务
+   - 主网启动后：用于回购主网代币
+
+以上分配比例会根据 PreMainnet 的运行情况进行调整，最终形成 Rooch 的经济模型，在 Mainnet 上实施。
+

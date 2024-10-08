@@ -84,7 +84,7 @@ license = "Apache-2.0"
 publish = false
 repository = "https://github.com/rooch-network/rooch"
 rust-version = "1.78.0"
-version = "0.7.2"
+version = "0.7.3"
 
 [workspace.dependencies]
 # Internal crate dependencies.
@@ -181,7 +181,7 @@ ethers = { version = "2.0.7", features = ["legacy"] }
 eyre = "0.6.8"
 fastcrypto = { git = "https://github.com/MystenLabs/fastcrypto", rev = "56f6223b84ada922b6cb2c672c69db2ea3dc6a13" }
 futures = "0.3.28"
-futures-util = "0.3.30"
+futures-util = "0.3.31"
 hex = "0.4.3"
 rustc-hex = "2.1"
 itertools = "0.13.0"
@@ -193,7 +193,7 @@ log = "0.4.22"
 more-asserts = "0.3.0"
 num-derive = "0.3.3"
 num-traits = "0.2.15"
-once_cell = "1.20.1"
+once_cell = "1.20.2"
 ordinals = "0.0.9"
 parking_lot = "0.12.3"
 pathdiff = "0.2.1"
@@ -227,7 +227,7 @@ tiny-keccak = { version = "2", features = ["keccak", "sha3"] }
 tiny-bip39 = "1.0.0"
 tokio = { version = "1.40.0", features = ["full"] }
 tokio-util = "0.7.12"
-tokio-tungstenite = { version = "0.23.1", features = ["native-tls"] }
+tokio-tungstenite = { version = "0.24.0", features = ["native-tls"] }
 tokio-stream = "0.1.16"
 tonic = { version = "0.8", features = ["gzip"] }
 tracing = "0.1.37"
@@ -278,7 +278,7 @@ rpassword = "7.2.0"
 fixed-hash = "0.8.0"
 uint = "0.9.5"
 rlp = "0.5.2"
-const-hex = "1.13.0"
+const-hex = "1.13.1"
 cached = "0.43.0"
 diesel = { version = "2.2.4", features = [
     "chrono",
@@ -289,7 +289,7 @@ diesel = { version = "2.2.4", features = [
 ] }
 diesel-derive-enum = { version = "2.1.0", features = ["sqlite"] }
 diesel_migrations = { version = "2.2.0" }
-axum = { version = "0.7.6", default-features = false, features = [
+axum = { version = "0.7.7", default-features = false, features = [
     "tokio",
     "http1",
     "http2",

@@ -3,9 +3,7 @@
   "accounts": "账户",
   "transaction": "交易",
   "objects": "对象",
-  "move-contracts": "Move 概念",
-  "token": {
-    "title": "Token",
-    "display": "hidden"
-  }
+  "coins": "代币",
+  "rgas": "RGas",
+  "move-contracts": "Move 概念"
 }

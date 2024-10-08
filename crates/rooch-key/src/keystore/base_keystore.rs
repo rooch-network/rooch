@@ -239,7 +239,7 @@ impl AccountKeystore for BaseKeyStore {
 
     fn addresses(&self) -> Vec<RoochAddress> {
         // Create an empty Vec to store the addresses.
-        let mut addresses = Vec::new();
+        let mut addresses = Vec::with_capacity(self.keys.len() + self.session_keys.len());
 
         // Iterate over the `keys` and `session_keys` BTreeMaps.
         for key in self.keys.keys() {

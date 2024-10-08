@@ -18,4 +18,4 @@ docker run -d --name rooch-mainnet --restart unless-stopped -v /data:/root -p 67
     --btc-rpc-username rooch-main \
     --btc-rpc-password "$BTC_MAIN_RPC_PWD" \
     --traffic-burst-size 100000 \
-    --traffic-per-second 10000
+    --traffic-per-second 1

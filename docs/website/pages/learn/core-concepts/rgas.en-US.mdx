@@ -1,0 +1,61 @@
+# RGas
+
+import { Callout, FileTree } from 'nextra/components'
+
+`RGas` is the native Gas token of the Rooch network, belonging to the [Coin](/learn/core-concepts/coins) type.
+
+## Basic Information
+
+* Unique identifier: `0x3::gas_coin::RGas`
+* Name: Rooch Gas Coin
+* Symbol: RGAS
+* Precision: 8 (8 decimal places)
+
+## Purpose
+
+RGas is primarily used to pay transaction fees on the Rooch network. Users need to consume a certain amount of RGas to pay for computation and storage costs when executing transactions.
+
+## Distribution Method
+
+1. Initial allocation: At Genesis, 500 million RGas (`500,000,000.00000000`) were allocated to the Rooch DAO multi-signature account. This is equivalent to Rooch DAO lending 500 million RGas to the protocol to bootstrap the [PreMainnet](/learn/miscellaneous/roadmap#premainnet)  ecosystem.
+
+2. Initial pricing: 1 RGas = 0.01 USD
+
+3. Allocation details:
+   - 100 million RGas (`100,000,000.00000000`) are used for airdrops to users and developers to incentivize them to use the Rooch network. This portion is considered protocol debt and will be repaid through future Sequencer transaction fee income.
+   - The remaining 400 million RGas (`400,000,000.00000000`) are held by the Rooch DAO multi-signature account, considered as Rooch DAO's liability, to be repaid by Rooch DAO.
+
+4. After Mainnet launch: RGas will be minted by collateralizing Mainnet assets, and its price will be determined by the market.
+
+## How to Obtain
+
+### 1. Through Faucets
+
+Both Rooch PreMainnet and Testnet provide faucet services where users can obtain RGas for free.
+
+Conditions for using the PreMainnet faucet:
+- The receiving address must have a BTC balance on the Bitcoin Mainnet
+- The amount of RGas received is related to the BTC balance
+- Each address can only claim once
+
+### 2. Direct Purchase with BTC
+
+Users can directly transfer BTC to the Rooch DAO multi-signature address on the Bitcoin Mainnet to receive an equivalent value of RGas.
+
+- Rooch DAO multi-signature address: `bc1prcajaj9n7e29u4dfp33x3hcf52yqeegspdpcd79pqu4fpr6llx4sugkfjt`
+- RGas price: Obtained through Oracle, based on the Bitcoin price at the time of BTC transfer confirmation
+
+## Distribution of Transaction Gas Fees
+
+The Gas fee for each transaction will be distributed according to the following proportions:
+
+1. Sequencer: 30%
+   - Goes to the sequencer that ordered the transaction
+
+2. Application Developer: 30%
+   - Goes to the developer of the entry function contract called by the transaction
+   - If the entry contract is a system Framework contract, this portion goes to the Rooch network
+
+3. Rooch Network: 40%
+   - Before Mainnet launch: Used to repay the debt from Gas airdrops
+   - After Mainnet launch: Used to buy back Mainnet tokens

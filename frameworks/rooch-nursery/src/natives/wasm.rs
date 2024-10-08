@@ -453,7 +453,7 @@ fn execute_wasm_function_inner(
                     gas_meter.reset();
                     drop(gas_meter);
 
-                    let mut wasm_func_args = Vec::new();
+                    let mut wasm_func_args = Vec::with_capacity(func_args.len());
                     for arg in func_args.iter() {
                         wasm_func_args.push(wasmer::Value::I32(*arg as i32));
                     }

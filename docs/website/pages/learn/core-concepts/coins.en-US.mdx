@@ -1,0 +1,65 @@
+# Coin and Fungible Token
+
+import { Callout, FileTree } from 'nextra/components'
+
+In Rooch, `Coin` is a concrete implementation of `Fungible Token`. It is included in the [`coin` module](https://github.com/rooch-network/rooch/blob/main/frameworks/rooch-framework/sources/coin.move) of the RoochFramework.
+
+## Coin Type
+
+```move
+struct Coin<phantom CoinType : key> {
+    value: u256,
+}
+```
+
+`Coin` is a generic type that contains a `value` field representing the value of the `Coin`. The type parameter `CoinType` of `Coin` represents the type of the `Coin`. In Rooch, the unique identifier for an asset type is `CoinType`, not the contract address, which is different from the ERC20 standard.
+
+For example, the type of Gas Coin in Rooch is `0x3::gas_coin::RGas`. Here, `0x3` is the contract address of RoochFramework, `gas_coin` is the module name, and `RGas` is the type name. These three together form a unique type identifier.
+
+## Registering Coin Type
+
+First, developers need to define a custom `CoinType`, then use the `coin::register_extend` function to create a `CoinInfo` object. The `CoinInfo` object stores relevant information about the `Coin` type, such as name, symbol, icon, decimals, etc. It also represents the management authority of the `Coin`.
+
+```move
+    #[private_generics(CoinType)]
+    public fun register_extend<CoinType: key>(
+        name: string::String,
+        symbol: string::String,
+        icon_url: Option<string::String>,
+        decimals: u8,
+    ): Object<CoinInfo<CoinType>>
+```
+
+Note that this function is protected by [`private_generics`](/build/rooch-framework/private-generics) and can only be called within the `CoinType` module.
+
+## CoinStore
+
+The `Coin` type doesn't have any `ability`, so it can't be stored directly in structures. It needs to be stored through `CoinStore`. By default, the system creates a `CoinStore` for each address of each `CoinType`. Developers can also use the `coin::create_coin_store` function to create `Object<CoinStore<CoinType>>`. `CoinStore` objects can be stored in any structure.
+
+```move
+    public fun create_coin_store<CoinType: key + store>(): Object<CoinStore<CoinType>>
+```
+
+## Private Coin and Public Coin
+
+In Rooch, if `CoinType` doesn't have the `store` ability, then the `Coin` is a `Private Coin`, otherwise it's a `Public Coin`.
+
+* `Private Coin` can only be transferred within the `CoinType` module and cannot be transferred outside the module.
+* `Public Coin` can be transferred by any module. Users can directly call the `transfer::transfer_coin` function to transfer `Public Coin`.
+
+If developers need to customize the transfer logic of `Coin`, they can implement it by calling the `coin::transfer_extend` function within their own module.
+
+Note that all functions with the `extend` keyword in `coin` and `coin_store` are protected by [`private_generics`](/build/rooch-framework/private-generics), indicating that these functions are for `CoinType` module developers to extend.
+
+<Callout>
+This section is still being improved! More explanations about Coin methods need to be added:
+
+* `mint` and `burn` methods.
+* `coin_store` related methods.
+* `account_coin_store` related methods.
+</Callout>
+
+## Coins Examples
+
+* [private_coin](https://github.com/rooch-network/rooch/blob/main/examples/coins/sources/private_coin.move)
+* [fixed_supply_coin](https://github.com/rooch-network/rooch/

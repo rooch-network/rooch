@@ -55,3 +55,34 @@ Implement an application network based on [DSTP](/learn/in-depth-tech/dstp), exp
 3. Implement state channel applications based on DSTP and explore incentive models on the P2P network.
 
 </Steps>
+
+## PreMainnet
+
+PreMainnet is Rooch's pre-release mainnet. We will conduct the following work on PreMainnet:
+
+1. Gradual iteration and improvement
+2. Enhancement of security
+3. Implementation of decentralization
+4. Exploration of application scenarios in the Bitcoin ecosystem
+5. Gradual transition to the official Mainnet
+
+Key features of PreMainnet:
+
+1. Synchronization and Compatibility: PreMainnet will synchronize transactions from the Bitcoin mainnet, using Bitcoin mainnet addresses and assets. Its network ID will be the same as the future Mainnet.
+
+2. Data Continuity: User application data and assets on PreMainnet will seamlessly migrate to Mainnet, ensuring that user interests are preserved.
+
+3. Contract Deployment Strategy:
+   - Initial phase: Adopt a whitelist system, limiting contract deployment.
+   - Later phase: Gradually transition to an open deployment model.
+
+4. Operation and Security Measures:
+   - Initially, the Rooch development team will be responsible for running the Sequencer.
+   - If serious security issues are discovered, the following measures will be taken:
+     a. Pause Sequencer operation
+     b. Fix the issue
+     c. Roll back transactions if necessary
+
+5. Token Usage: Only [RGas](/learn/core-concepts/rgas) will be used to pay for Gas fees on PreMainnet. Rooch's mainnet token will be launched on the official Mainnet.
+
+Through this PreMainnet phase, we aim to lay a solid foundation for Rooch's official mainnet, ensuring the network's security, stability, and scalability.

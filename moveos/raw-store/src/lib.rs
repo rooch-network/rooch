@@ -598,13 +598,13 @@ where
     }
 
     pub fn new_puts(kvs: Vec<(K, V)>) -> Self {
-        let mut rows = Vec::new();
+        let mut rows = Vec::with_capacity(kvs.len());
         rows.extend(kvs.into_iter().map(|(k, v)| (k, WriteOp::Value(v))));
         Self { rows }
     }
 
     pub fn new_deletes(ks: Vec<K>) -> Self {
-        let mut rows = Vec::new();
+        let mut rows = Vec::with_capacity(ks.len());
         rows.extend(ks.into_iter().map(|k| (k, WriteOp::Deletion)));
         Self { rows }
     }

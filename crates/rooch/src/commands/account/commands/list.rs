@@ -98,7 +98,7 @@ impl CommandAction<Option<AccountsView>> for ListCommand {
             .collect();
 
         if self.json {
-            let mut accounts_view: AccountsView = HashMap::new();
+            let mut accounts_view: AccountsView = HashMap::with_capacity(account_views.len());
             let mut i = 0;
             for account in account_views {
                 if account.active {

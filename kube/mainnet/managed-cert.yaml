@@ -1,0 +1,8 @@
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: mainnet-cert
+  namespace: mainnet
+spec:
+  domains:
+    - main-faucet.rooch.network
