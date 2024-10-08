@@ -36,17 +36,17 @@ export const navData = [
   /**
    * Tokens
    */
-  {
-    subheader: 'Tokens',
-    items: [
-      {
-        title: 'Mint',
-        path: paths.dashboard.mint,
-        icon: <Iconify icon="solar:star-fall-bold-duotone" />,
-        noAddressRequired: true,
-      },
-    ],
-  },
+//  {
+//    subheader: 'Tokens',
+//    items: [
+//      {
+//        title: 'Mint',
+//        path: paths.dashboard.mint,
+//        icon: <Iconify icon="solar:star-fall-bold-duotone" />,
+//        noAddressRequired: true,
+//      },
+//    ],
+//  },
   /**
    * Tools
    */
