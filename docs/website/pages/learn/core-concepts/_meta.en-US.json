@@ -3,9 +3,7 @@
   "accounts": "Account",
   "transaction": "Transaction",
   "objects": "Object",
-  "move-contracts": "Move concepts",
-  "token": {
-    "title": "Token",
-    "display": "hidden"
-  }
+  "coins": "Coin",
+  "rgas": "RGas",
+  "move-contracts": "Move concepts" 
 }
