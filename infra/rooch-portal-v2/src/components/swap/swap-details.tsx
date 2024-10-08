@@ -1,0 +1,308 @@
+import { formatCurrency, fromDustToPrecision, toBigNumber } from '../../utils/number';
+import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
+  Box,
+  CircularProgress,
+  Divider,
+  Stack,
+  Typography,
+} from '@mui/material';
+import { ReactNode, useMemo, useState } from 'react';
+import PoolVersionSelect from './pool-version-select';
+import { PoolVersion, PriceImpactSeverity, SwapProps } from './types';
+import Label from './typography/label';
+import Text from './typography/text';
+import { Iconify } from '../iconify';
+import { error, grey, success, warning } from 'src/theme/core';
+
+export default function SwapDetails({
+  loading,
+  interactiveMode,
+  fromCoin,
+  toCoin,
+  swapAmount,
+  convertRate,
+  slippagePercent,
+  slippageAmount,
+  platformFeePercent,
+  platformFeeAmount,
+  msafeFeePercent,
+  msafeFeeAmount,
+  priceImpact,
+  priceImpactSeverity,
+  canSelectCurve,
+  curve,
+  canSelectVersion,
+  version,
+  variant,
+  onVersionChange,
+}: Omit<
+  SwapProps,
+  | 'coins'
+  | 'onSlippageChange'
+  | 'onCurveTypeChange'
+  | 'onVersionChange'
+  | 'getUsdEquivalent'
+  | 'onSwap'
+  | 'onSwitch'
+  | 'onPreview'
+  | 'onPropose'
+> & { variant: 'propose' | 'transaction'; onVersionChange?: (version: PoolVersion) => void }) {
+  const [showDetails, setShowDetails] = useState(false);
+
+  const targetToken = useMemo(() => {
+    return interactiveMode === 'from' ? fromCoin : toCoin;
+  }, [interactiveMode, fromCoin, toCoin]);
+
+  const header = useMemo(() => {
+    if (variant === 'propose') {
+      return (
+        <Typography
+          sx={{
+            fontSize: '0.875rem',
+            fontWeight: 500,
+            lineHeight: '24px',
+            color: grey[900],
+          }}
+        >
+          1 {fromCoin?.symbol} = {toBigNumber(convertRate).toString()} {toCoin?.symbol} (including
+          fee)
+        </Typography>
+      );
+    } else {
+      return (
+        <Stack sx={{ width: '100%' }}>
+          {interactiveMode === 'from' && (
+            <DetailsItem
+              left={<Text>Expected Output</Text>}
+              right={
+                <Label>
+                  {fromDustToPrecision(swapAmount || 0, toCoin?.decimals || 1)} {toCoin?.symbol}
+                </Label>
+              }
+            />
+          )}
+          {interactiveMode === 'to' && (
+            <DetailsItem
+              left={<Text>Expected Input</Text>}
+              right={
+                <Label>
+                  {fromDustToPrecision(swapAmount || 0, fromCoin?.decimals || 1)} {fromCoin?.symbol}
+                </Label>
+              }
+            />
+          )}
+        </Stack>
+      );
+    }
+  }, [variant, fromCoin, toCoin, convertRate, swapAmount, interactiveMode]);
+
+  return (
+    <Stack spacing={1.5}>
+      <Accordion
+        disableGutters
+        elevation={0}
+        expanded={loading ? false : true}
+        sx={{
+          '&.MuiAccordion-root:before': { opacity: 0 },
+          '& .MuiAccordionDetails-root': {
+            transition: 'all 0.3s ease-in-out',
+          },
+        }}
+      >
+        <AccordionSummary
+          expandIcon={
+            <Iconify
+              icon="solar:alt-arrow-down-linear"
+              style={{
+                transition: 'all 0.1s ease-in-out',
+                transform: showDetails ? '' : 'rotate(180deg)',
+              }}
+            />
+          }
+          onClick={() => {
+            setShowDetails(!showDetails);
+          }}
+          sx={{
+            borderRadius: '8px 8px 0 0',
+            border: `1px solid ${grey[300]}`,
+            padding: '4px 16px',
+          }}
+        >
+          {loading ? <CircularProgress size="1.5rem" /> : header}
+        </AccordionSummary>
+        <AccordionDetails
+          sx={{
+            borderRadius: '0 0 8px 8px',
+            border: `1px solid ${grey[300]}`,
+            borderTop: 'none',
+            padding: '18px 16px',
+          }}
+        >
+          {interactiveMode === 'from' && (
+            <Stack spacing={0.5}>
+              {variant === 'propose' && (
+                <DetailsItem
+                  left={<Text>Expected Output</Text>}
+                  right={
+                    <Label>
+                      {fromDustToPrecision(swapAmount || 0, toCoin?.decimals || 1) +
+                        ' ' +
+                        toCoin?.symbol}
+                    </Label>
+                  }
+                />
+              )}
+              <DetailsItem
+                left={
+                  <Text>Minimum Received after Slippage ({(slippagePercent || 0) * 100} %)</Text>
+                }
+                right={
+                  <Label>
+                    {formatCurrency(slippageAmount || 0, toCoin?.decimals || 1) +
+                      ' ' +
+                      toCoin?.symbol}
+                  </Label>
+                }
+              />
+            </Stack>
+          )}
+          {interactiveMode === 'to' && (
+            <Stack spacing={0.5}>
+              {variant === 'propose' && (
+                <DetailsItem
+                  left={<Text>Expected Input</Text>}
+                  right={
+                    <Label>
+                      {fromDustToPrecision(swapAmount || 0, fromCoin?.decimals || 1) +
+                        ' ' +
+                        fromCoin?.symbol}
+                    </Label>
+                  }
+                />
+              )}
+              <DetailsItem
+                left={<Text>Maximum Send after Slippage ({(slippagePercent || 0) * 100} %)</Text>}
+                right={
+                  <Label>
+                    {formatCurrency(slippageAmount || 0, fromCoin?.decimals || 1) +
+                      ' ' +
+                      fromCoin?.symbol}
+                  </Label>
+                }
+              />
+            </Stack>
+          )}
+          {showDetails && (
+            <>
+              <Divider sx={{ my: '10px' }} />
+              <Stack spacing={0.5}>
+                {variant === 'propose' && (
+                  <DetailsItem
+                    left={<Label>Price Impact</Label>}
+                    right={
+                      <PriceImpactLabel
+                        priceImpact={(priceImpact || 0) * 100}
+                        priceImpactSeverity={priceImpactSeverity || 'alert'}
+                      />
+                    }
+                  />
+                )}
+                <DetailsItem
+                  left={
+                    <Label>
+                      Platform Fee ({toBigNumber(platformFeePercent).times(100).toString()} %)
+                    </Label>
+                  }
+                  right={
+                    <Label>
+                      {formatCurrency(platformFeeAmount || 0, targetToken?.decimals || 1)}{' '}
+                      {targetToken?.symbol}
+                    </Label>
+                  }
+                />
+                <DetailsItem
+                  left={
+                    <Label>
+                      MSafe Fee ({toBigNumber(msafeFeePercent).times(100).toString()} %)
+                    </Label>
+                  }
+                  right={
+                    <Label>
+                      {formatCurrency(msafeFeeAmount || 0, targetToken?.decimals || 1)}{' '}
+                      {targetToken?.symbol}
+                    </Label>
+                  }
+                />
+                {variant === 'propose' && !canSelectCurve && (
+                  <DetailsItem left={<Label>Curve Type</Label>} right={<Label>{curve}</Label>} />
+                )}
+                {variant === 'propose' && canSelectVersion && (
+                  <DetailsItem
+                    left={<Label>Pool Version</Label>}
+                    right={<PoolVersionSelect version={version} onChange={onVersionChange} />}
+                  />
+                )}
+              </Stack>
+            </>
+          )}
+        </AccordionDetails>
+      </Accordion>
+    </Stack>
+  );
+}
+
+function DetailsItem({ left, right }: { left: ReactNode; right: ReactNode }) {
+  return (
+    <Stack direction="row" spacing={3} alignItems="center">
+      <Box sx={{ flexGrow: 1 }}>{left}</Box>
+      <Box sx={{ flexShrink: 0 }}>{right}</Box>
+    </Stack>
+  );
+}
+
+function PriceImpactLabel({
+  priceImpact,
+  priceImpactSeverity,
+}: {
+  priceImpact: number;
+  priceImpactSeverity: PriceImpactSeverity;
+}) {
+  const color = useMemo(() => {
+    if (priceImpactSeverity === 'normal') {
+      return success[700];
+    }
+    if (priceImpactSeverity === 'warning') {
+      return warning[500];
+    }
+    return error[800];
+  }, [priceImpactSeverity]);
+
+  return (
+    <Stack
+      direction="row"
+      alignItems="center"
+      justifyContent="center"
+      spacing={1}
+      sx={{
+        padding: '4px 8px',
+        borderRadius: '6px',
+        background: color,
+      }}
+    >
+      <img src="assets/icons/swap/alert-triangle.svg" />
+      <Typography
+        sx={{
+          fontSize: '0.75rem',
+          fontWeight: 500,
+          lineHeight: '24px',
+          color: '#fff',
+        }}
+      >
+        {toBigNumber(priceImpact).toFixed(2)} %
+      </Typography>
+    </Stack>
+  );
+}
