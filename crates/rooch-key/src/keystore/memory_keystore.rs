@@ -81,7 +81,8 @@ impl AccountKeystore for InMemKeystore {
 
     fn addresses(&self) -> Vec<RoochAddress> {
         // Create an empty Vec to store the addresses.
-        let mut addresses = Vec::new();
+        let mut addresses =
+            Vec::with_capacity(self.keystore.keys.len() + self.keystore.session_keys.len());
 
         // Iterate over the `keys` and `session_keys` BTreeMaps.
         for key in self.keystore.keys.keys() {

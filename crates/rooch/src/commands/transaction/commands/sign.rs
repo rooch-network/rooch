@@ -175,7 +175,7 @@ impl SignCommand {
                     ))
                 }
             };
-            SignOutput::SignedRoochTransaction(context.sign_transaction(sender, tx_data).await?)
+            SignOutput::SignedRoochTransaction(context.sign_transaction(sender, tx_data)?)
         };
         Ok(output)
     }

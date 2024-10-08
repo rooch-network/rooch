@@ -52,6 +52,8 @@ pub const SYSTEM_OWNER_ADDRESS: AccountAddress = AccountAddress::ZERO;
 pub const SHARED_OBJECT_FLAG_MASK: u8 = 1;
 pub const FROZEN_OBJECT_FLAG_MASK: u8 = 1 << 1;
 
+pub const MAX_OBJECT_IDS_PER_QUERY: usize = 100;
+
 // New table's state_root should be the place holder hash.
 pub static GENESIS_STATE_ROOT: Lazy<H256> = Lazy::new(|| *SPARSE_MERKLE_PLACEHOLDER_HASH);
 

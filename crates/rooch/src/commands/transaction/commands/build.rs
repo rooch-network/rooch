@@ -47,7 +47,7 @@ pub struct BuildCommand {
     context: WalletContextOptions,
 
     /// File destination for the file being written
-    /// If not specified, will write to current directory
+    /// If not specified, will write to temp directory
     #[clap(long, short = 'o')]
     output: Option<String>,
 

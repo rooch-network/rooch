@@ -83,16 +83,12 @@ module rooch_framework::auth_validator_registry {
     }
 
     public fun borrow_validator(id: u64): &AuthValidator {
-        features::ensure_testnet_enabled();
-
         let registry = account::borrow_resource<ValidatorRegistry>(@rooch_framework);
         assert!(table::contains(&registry.validators, id), ErrorValidatorUnregistered);
         table::borrow(&registry.validators, id)
     }
 
     public fun borrow_validator_by_type<ValidatorType: store>(): &AuthValidator {
-        features::ensure_testnet_enabled();
-        
         let registry = account::borrow_resource<ValidatorRegistry>(@rooch_framework);
         assert!(type_table::contains<AuthValidatorWithType<ValidatorType>>(&registry.validators_with_type), ErrorValidatorUnregistered);
         let validator_with_type = type_table::borrow<AuthValidatorWithType<ValidatorType>>(&registry.validators_with_type);

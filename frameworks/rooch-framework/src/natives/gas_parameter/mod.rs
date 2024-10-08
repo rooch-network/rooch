@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 mod account;
 mod base58;
+mod base64;
 mod bcs;
 mod bech32;
 mod bitcoin_address;

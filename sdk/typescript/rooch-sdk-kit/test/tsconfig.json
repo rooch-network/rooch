@@ -8,6 +8,6 @@
     "module": "NodeNext",
     "emitDeclarationOnly": false,
     "resolveJsonModule": true,
-    "types": ["vitest/globals"],
+    "types": ["vitest/globals"]
   }
 }

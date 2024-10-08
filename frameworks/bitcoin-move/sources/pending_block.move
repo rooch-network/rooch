@@ -111,14 +111,16 @@ module bitcoin_move::pending_block{
         obj
     }
 
-    public(friend) fun add_pending_block(block_height: u64, block_hash: address, block: Block){
+    public(friend) fun add_pending_block(block_height: u64, block_hash: address, block: Block) : bool{
         let block_obj_id = pending_block_obj_id(block_hash);
-        assert!(!object::exists_object(block_obj_id), ErrorBlockAlreadyProcessed);
+        if(object::exists_object(block_obj_id)){
+            return false
+        };
 
         let store = borrow_mut_store();
         if(simple_map::contains_key(&store.pending_blocks, &block_height)){
             // block already exists, need to process reorg
-            handle_reog(store, block_height);
+            handle_reorg(store, block_height);
         };
         let (header, txs) = types::unpack_block(block);
         let prev_block_hash = types::prev_blockhash(&header);
@@ -149,9 +151,10 @@ module bitcoin_move::pending_block{
         //The relayer should ensure the new block is the best block
         //Maybe we should calculate the difficulty here in the future
         store.best_block = option::some(types::new_block_height_hash(block_height, block_hash));
+        true
     }
 
-    fun handle_reog(store: &mut PendingStore, reorg_block_height: u64){
+    fun handle_reorg(store: &mut PendingStore, reorg_block_height: u64){
         let (_, reorg_block_hash) = simple_map::remove(&mut store.pending_blocks, &reorg_block_height);
         let reorg_block = take_pending_block(reorg_block_hash);
         let next_block_hash_option = object::borrow(&reorg_block).next_block_hash;
@@ -308,6 +311,13 @@ module bitcoin_move::pending_block{
         };
         let block_hash = *simple_map::borrow(&store.pending_blocks, &ready_block_height);
         let block_obj = borrow_pending_block(block_hash);
+        let prev_block_hash = types::prev_blockhash(&object::borrow(block_obj).header);
+        while(exists_pending_block(prev_block_hash)){
+            let prev_block_obj = borrow_pending_block(prev_block_hash);
+            prev_block_hash = types::prev_blockhash(&object::borrow(prev_block_obj).header);
+            block_obj = prev_block_obj;
+        };
+
         let tx_ids: vector<address> = *object::borrow_field(block_obj, TX_IDS_KEY);
         let unprocessed_tx_ids : vector<address> = vector::filter(tx_ids, |txid| {
             object::contains_field(block_obj, *txid)

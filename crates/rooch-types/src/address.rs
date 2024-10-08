@@ -987,6 +987,12 @@ pub enum ParsedAddress {
     Bitcoin(BitcoinAddress),
 }
 
+impl Default for ParsedAddress {
+    fn default() -> Self {
+        Self::Named("default".to_string())
+    }
+}
+
 impl ParsedAddress {
     pub fn into_rooch_address(
         self,

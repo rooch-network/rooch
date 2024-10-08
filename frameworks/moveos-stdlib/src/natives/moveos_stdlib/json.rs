@@ -81,9 +81,30 @@ fn parse_struct_value_from_json(
             Ok(Struct::pack(vec![Value::vector_u8(
                 str_value.as_bytes().to_vec(),
             )]))
+        } else if is_std_option(struct_type, &MOVE_STD_ADDRESS) {
+            let vec_layout = fields
+                .first()
+                .ok_or_else(|| anyhow::anyhow!("Invalid std option layout"))?;
+            let type_tag: TypeTag = (&vec_layout.layout).try_into()?;
+            let ty = context.load_type(&type_tag)?;
+
+            if json_value.is_null() {
+                let value = Vector::pack(&ty, vec![])?;
+                return Ok(Struct::pack(vec![value]));
+            }
+
+            if let MoveTypeLayout::Vector(vec_layout) = vec_layout.layout.clone() {
+                let struct_layout = vec_layout.as_ref();
+                let move_struct_value =
+                    parse_move_value_from_json(struct_layout, json_value, context)?;
+                let value = Vector::pack(&ty, vec![move_struct_value])?;
+                return Ok(Struct::pack(vec![value]));
+            }
+
+            Err(anyhow::anyhow!("Invalid std option layout"))
         } else if struct_type == &SimpleMap::<MoveString, MoveString>::struct_tag() {
             let key_value_pairs = json_obj_to_key_value_pairs(json_value)?;
-            let mut key_values = Vec::new();
+            let mut key_values = Vec::with_capacity(key_value_pairs.len());
             for (key, value) in key_value_pairs {
                 key_values.push(Value::struct_(Struct::pack(vec![
                     Value::struct_(Struct::pack(vec![Value::vector_u8(
@@ -101,9 +122,22 @@ fn parse_struct_value_from_json(
                 .iter()
                 .map(|field| -> Result<Value> {
                     let name = field.name.as_str();
-                    let json_field = json_value.get(name).ok_or_else(|| {
-                        anyhow::anyhow!("type: {}, Missing field {}", struct_type, name)
-                    })?;
+                    let json_field = match json_value.get(name) {
+                        Some(value) => value,
+                        None => {
+                            if let MoveTypeLayout::Struct(_) | MoveTypeLayout::Vector(_) =
+                                field.layout
+                            {
+                                &JsonValue::Null
+                            } else {
+                                return Err(anyhow::anyhow!(
+                                    "type: {}, Missing field {}",
+                                    struct_type,
+                                    name
+                                ));
+                            }
+                        }
+                    };
                     parse_move_value_from_json(&field.layout, json_field, context)
                 })
                 .collect::<Result<Vec<Value>>>()?;
@@ -156,6 +190,12 @@ fn parse_move_value_from_json(
             Ok(Value::address(addr))
         }
         MoveTypeLayout::Vector(item_layout) => {
+            if json_value.is_null() {
+                let type_tag: TypeTag = (&**item_layout).try_into()?;
+                let ty = context.load_type(&type_tag)?;
+                return Ok(Vector::pack(&ty, vec![])?);
+            }
+
             let vec_value = json_value
                 .as_array()
                 .ok_or_else(|| anyhow::anyhow!("Invalid vector value"))?
@@ -203,7 +243,7 @@ fn parse_move_value_from_json(
 
 fn json_obj_to_key_value_pairs(json_obj: &JsonValue) -> Result<Vec<(String, String)>> {
     if let JsonValue::Object(obj) = json_obj {
-        let mut key_value_pairs = Vec::new();
+        let mut key_value_pairs = Vec::with_capacity(obj.len());
         for (key, value) in obj.iter() {
             let key = key.to_string();
             let value = match value {
@@ -354,7 +394,7 @@ fn serialize_move_value_to_json(layout: &MoveTypeLayout, value: &MoveValue) -> R
 
                 JsonValue::Array(json_vec)
             } else {
-                let mut json_vec = Vec::new();
+                let mut json_vec = Vec::with_capacity(vec.len());
 
                 for item in vec.iter() {
                     let json_value = serialize_move_value_to_json(layout, item)?;
@@ -545,7 +585,10 @@ fn serialize_move_fields_to_json(
 
     for (field_layout, (name, value)) in layout_fields.iter().zip(value_fields) {
         let json_value = serialize_move_value_to_json(&field_layout.layout, value)?;
-        fields.insert(name.clone().into_string(), json_value);
+
+        if !json_value.is_null() {
+            fields.insert(name.clone().into_string(), json_value);
+        }
     }
 
     Ok(JsonValue::Object(fields))

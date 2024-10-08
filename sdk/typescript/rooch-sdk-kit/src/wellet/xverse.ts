@@ -77,4 +77,16 @@ export class XVerseWallet extends BitcoinWallet {
   removeNetworkChanged(callback: (network: string) => void): void {
     this.getTarget().removeListener('networkChanged', callback)
   }
+
+  sendBtc(input: {
+    toAddress: string
+    satoshis: number
+    options?: { feeRate: number }
+  }): Promise<string> {
+    return this.getTarget().sendBitcoin(input.toAddress, input.satoshis, input.options)
+  }
+
+  getBalance(): Promise<{ confirmed: number; unconfirmed: number; total: string }> {
+    return this.getTarget().getBalance()
+  }
 }

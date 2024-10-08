@@ -37,7 +37,7 @@ module bitcoin_move::bitcoin{
     /// https://github.com/bitcoin/bips/blob/master/bip-0034.mediawiki
     const BIP_34_HEIGHT:u64 = 227835;
 
-    const ORDINALS_PAUSE_HEIGHT:u64 = 861150;
+    const ORDINALS_PAUSE_HEIGHT:u64 = 859001;
 
     struct UTXONotExistsEvent has copy, drop{
         outpoint: OutPoint,
@@ -254,15 +254,19 @@ module bitcoin_move::bitcoin{
     /// The the sequencer submit a new Bitcoin block to execute
     /// This function is a system function, is the execute_l1_block entry point
     fun execute_l1_block(block_height: u64, block_hash: address, block_bytes: vector<u8>){
+        let btc_block_store_obj = borrow_block_store();
+        let btc_block_store = object::borrow(btc_block_store_obj);
+        assert!(!table::contains(&btc_block_store.height_to_hash, block_height), ErrorReorgTooDeep);
         let block = bcs::from_bytes<Block>(block_bytes);
         let block_header = types::header(&block);
         let time = types::time(block_header);
-        pending_block::add_pending_block(block_height, block_hash, block);
-        //We directly update the global time do not wait the pending block to be confirmed
-        //The reorg do not affect the global time
-        let timestamp_seconds = (time as u64);
-        let module_signer = signer::module_signer<BitcoinBlockStore>();
-        timestamp::try_update_global_time(&module_signer, timestamp::seconds_to_milliseconds(timestamp_seconds));
+        if(pending_block::add_pending_block(block_height, block_hash, block)){
+            //We directly update the global time do not wait the pending block to be confirmed
+            //The reorg do not affect the global time
+            let timestamp_seconds = (time as u64);
+            let module_signer = signer::module_signer<BitcoinBlockStore>();
+            timestamp::try_update_global_time(&module_signer, timestamp::seconds_to_milliseconds(timestamp_seconds));
+        };
     }
 
     /// This is the execute_l1_tx entry point

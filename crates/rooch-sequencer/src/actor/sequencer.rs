@@ -6,8 +6,8 @@ use std::sync::Arc;
 use std::time::SystemTime;
 
 use crate::messages::{
-    GetSequencerOrderMessage, GetTransactionByHashMessage, GetTransactionsByHashMessage,
-    GetTxHashsMessage, TransactionSequenceMessage,
+    GetSequencerInfoMessage, GetSequencerOrderMessage, GetTransactionByHashMessage,
+    GetTransactionsByHashMessage, GetTxHashsMessage, TransactionSequenceMessage,
 };
 use crate::metrics::SequencerMetrics;
 use accumulator::{Accumulator, MerkleAccumulator};
@@ -241,5 +241,16 @@ impl Handler<EventData> for SequencerActor {
         }
 
         Ok(())
+    }
+}
+
+#[async_trait]
+impl Handler<GetSequencerInfoMessage> for SequencerActor {
+    async fn handle(
+        &mut self,
+        _msg: GetSequencerInfoMessage,
+        _ctx: &mut ActorContext,
+    ) -> Result<SequencerInfo> {
+        Ok(self.last_sequencer_info.clone())
     }
 }

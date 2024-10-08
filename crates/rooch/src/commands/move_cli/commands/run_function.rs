@@ -2,15 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_types::{CommandAction, FunctionArg, TransactionOptions, WalletContextOptions};
-use crate::tx_runner::execute_tx_locally_with_gas_profile;
+use crate::tx_runner::{dry_run_tx_locally, execute_tx_locally_with_gas_profile};
 use anyhow::Result;
 use async_trait::async_trait;
 use clap::Parser;
 use move_command_line_common::types::ParsedStructType;
 use move_core_types::language_storage::TypeTag;
 use moveos_types::transaction::MoveAction;
-use rooch_key::key_derive::verify_password;
-use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_rpc_api::jsonrpc_types::{
     ExecuteTransactionResponseView, HumanReadableDisplay, KeptVMStatusView,
 };
@@ -21,7 +19,6 @@ use rooch_types::{
     function_arg::ParsedFunctionId,
     transaction::rooch::RoochTransaction,
 };
-use rpassword::prompt_password;
 
 /// Run a Move function
 #[derive(Parser)]
@@ -63,12 +60,16 @@ pub struct RunFunction {
     /// Run the gas profiler and output html report
     #[clap(long, default_value = "false")]
     gas_profile: bool,
+
+    /// Run the DryRun for this transaction
+    #[clap(long, default_value = "false")]
+    dry_run: bool,
 }
 
 #[async_trait]
 impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
     async fn execute(self) -> RoochResult<ExecuteTransactionResponseView> {
-        let context = self.context.build()?;
+        let context = self.context.build_require_password()?;
         let address_mapping = context.address_mapping();
         let sender: RoochAddress = context.resolve_address(self.tx_options.sender)?.into();
         let max_gas_amount: Option<u64> = self.tx_options.max_gas_amount;
@@ -89,17 +90,19 @@ impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
             .collect::<Result<Vec<_>>>()?;
         let action = MoveAction::new_function_call(function_id, type_args, args);
 
-        let dry_run_result = context
-            .dry_run(
-                context
-                    .build_tx_data(sender, action.clone(), max_gas_amount)
-                    .await?,
-            )
-            .await?;
+        if self.dry_run {
+            let rooch_tx_data = context
+                .build_tx_data(sender, action.clone(), max_gas_amount)
+                .await?;
+            let dry_run_result_opt =
+                dry_run_tx_locally(context.get_client().await?, rooch_tx_data).await?;
 
-        if dry_run_result.raw_output.status != KeptVMStatusView::Executed {
-            return Ok(dry_run_result.into());
-        };
+            if let Some(dry_run_result) = dry_run_result_opt {
+                if dry_run_result.raw_output.status != KeptVMStatusView::Executed {
+                    return Ok(dry_run_result.into());
+                };
+            }
+        }
 
         let result = match (self.tx_options.authenticator, self.tx_options.session_key) {
             (Some(authenticator), _) => {
@@ -115,84 +118,34 @@ impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
                 let tx_data = context
                     .build_tx_data(sender, action, max_gas_amount)
                     .await?;
-                let tx = if context.keystore.get_if_password_is_empty() {
-                    context
-                        .keystore
-                        .sign_transaction_via_session_key(&sender, tx_data, &session_key, None)
-                        .map_err(|e| RoochError::SignMessageError(e.to_string()))?
-                } else {
-                    let password =
-                        prompt_password("Enter the password to run functions:").unwrap_or_default();
-                    let is_verified = verify_password(
-                        Some(password.clone()),
-                        context.keystore.get_password_hash(),
-                    )?;
-
-                    if !is_verified {
-                        return Err(RoochError::InvalidPasswordError(
-                            "Password is invalid".to_owned(),
-                        ));
-                    }
-
-                    context
-                        .keystore
-                        .sign_transaction_via_session_key(
-                            &sender,
-                            tx_data,
-                            &session_key,
-                            Some(password),
-                        )
-                        .map_err(|e| RoochError::SignMessageError(e.to_string()))?
-                };
+                let tx = context
+                    .sign_transaction_via_session_key(&sender, tx_data, &session_key)
+                    .map_err(|e| RoochError::SignMessageError(e.to_string()))?;
                 context.execute(tx).await?
             }
             (None, None) => {
-                if context.keystore.get_if_password_is_empty() {
-                    context
-                        .sign_and_execute(sender, action, None, max_gas_amount)
-                        .await?
-                } else {
-                    let password =
-                        prompt_password("Enter the password to run functions:").unwrap_or_default();
-                    let is_verified = verify_password(
-                        Some(password.clone()),
-                        context.keystore.get_password_hash(),
+                let tx_data = context
+                    .build_tx_data(sender, action.clone(), max_gas_amount)
+                    .await?;
+                let tx_execution_result = context.sign_and_execute(sender, tx_data.clone()).await?;
+
+                if self.gas_profile {
+                    //TODO FIXME we should use the state_root from previous tx
+                    let state_root = tx_execution_result
+                        .execution_info
+                        .state_root
+                        .0
+                        .as_bytes()
+                        .to_vec();
+
+                    execute_tx_locally_with_gas_profile(
+                        state_root,
+                        context.get_client().await?,
+                        tx_data,
                     )?;
-
-                    if !is_verified {
-                        return Err(RoochError::InvalidPasswordError(
-                            "Password is invalid".to_owned(),
-                        ));
-                    }
-
-                    let tx_execution_result = context
-                        .sign_and_execute(
-                            sender,
-                            action.clone(),
-                            Some(password.clone()),
-                            max_gas_amount,
-                        )
-                        .await?;
-
-                    if self.gas_profile {
-                        let state_root = tx_execution_result
-                            .execution_info
-                            .state_root
-                            .0
-                            .as_bytes()
-                            .to_vec();
-                        let tx = context
-                            .sign(sender, action, Some(password), max_gas_amount)
-                            .await?;
-                        execute_tx_locally_with_gas_profile(
-                            state_root,
-                            context.get_client().await?,
-                            tx.data,
-                        );
-                    }
-
-                    tx_execution_result
                 }
+
+                tx_execution_result
             }
         };
 

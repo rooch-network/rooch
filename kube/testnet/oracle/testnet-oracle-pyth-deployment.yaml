@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: testnet-oracle-pyth
+  namespace: testnet
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: testnet-oracle-pyth
+  template:
+    metadata:
+      labels:
+        app: testnet-oracle-pyth
+    spec:
+      initContainers:
+      - name: init-rooch
+        image: ghcr.io/rooch-network/rooch:main
+        command: ["/bin/sh", "-c"]
+        args:
+        - |
+          if [ ! -f /root/.rooch/initialized ]; then
+            /rooch/rooch init -m "${INIT_SECRET}" --skip-password
+            /rooch/rooch env switch --alias test
+            /rooch/rooch account create
+            /rooch/rooch account create
+            /rooch/rooch account create
+            ls -la /root/.rooch/rooch_config/
+            touch /root/.rooch/initialized
+          fi
+        env:
+        - name: INIT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: rooch-testnet-secrets
+              key: init-phrase
+        volumeMounts:
+        - name: rooch-data
+          mountPath: /root
+      containers:
+      - name: rooch-oracle
+        image: ghcr.io/rooch-network/rooch:main
+        command: ["/rooch/rooch"]
+        args: 
+        - "oracle"
+        - "reporter"
+        - "--sender"
+        #the third account
+        - "rooch1n0fhj4dgwsrekglx0pqqertfh5eehv8cphhxhg2tgjdw48u6er5qe3jwh3"
+        - "--oracle-id"
+        - "0x1dced3d6de05a08e229fbba350cfffe159e0e123f54c35cca9f6723b0a5b8b1a"
+        - "--oracle-admin-id"
+        - "0xdb5988bfeeca0605aacab4d5b426feafa68af0b26d43be7c5eb3e938b4da65eb"
+        - "--data-source"
+        - "pyth"
+        - "--ticker"
+        - "btcusd"
+        - "--aggregate-strategy"
+        - "average"
+        - "--report-interval"
+        - "10"
+        volumeMounts:
+        - name: rooch-data
+          mountPath: /root
+      volumes:
+      - name: rooch-data
+        persistentVolumeClaim:
+          claimName: testnet-oracle-pyth-data

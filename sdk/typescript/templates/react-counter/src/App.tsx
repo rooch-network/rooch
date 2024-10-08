@@ -81,6 +81,7 @@ function App() {
     setLoading(false)
   }
 
+
   return (
     <>
       <Flex
@@ -95,16 +96,6 @@ function App() {
         <Box>
           <Heading>dApp Counter Template</Heading>
         </Box>
-        {wallet ? (
-          <img
-            key={"1"}
-            src={wallet.getIcon()}
-            alt="Unisat Icon"
-            className="h-[1.1rem] w-[1.1rem] rotate-0 scale-100"
-          />
-        ) : (
-          <></>
-        )}
         {wallets.length === 0 ? (
           "Please install the wallet and try again"
         ) : isConnected ? (
@@ -113,9 +104,13 @@ function App() {
           <Box>
             <Button
               onClick={async () => {
-                await connectWallet({
-                  wallet: wallets[0],
-                });
+                try {
+                  await connectWallet({
+                    wallet: wallets[0],
+                  });
+                } catch (e) {
+                  console.log(e)
+                }
               }}
             >
               Connect Wallet
@@ -154,6 +149,21 @@ function App() {
         <Heading size="3" mt="6">
           {sessionKey ? "Counter" : "Create session key"}
         </Heading>
+
+        <Button onClick={async () => {
+          if (wallet) {
+            const b = await wallet.getBalance()
+            console.log(b)
+          }
+
+          wallet?.sendBtc({ // pr tb1qxvrzdqlnmpzxr6zsg7g2c62gu6l33qxzz6z5l2
+            toAddress: 'tb1qxvrzdqlnmpzxr6zsg7g2c62gu6l33qxzz6z5l2',
+            satoshis: 10000000
+          })
+        }
+        }>
+          trn
+        </Button>
 
         {devCounterAddress.length !== 0 ? (
           <Flex direction="column" gap="2">

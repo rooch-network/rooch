@@ -144,7 +144,7 @@ The reorg is too deep, we need to stop the system and fix the issue
 
 
 
-<pre><code><b>const</b> <a href="bitcoin.md#0x4_bitcoin_ORDINALS_PAUSE_HEIGHT">ORDINALS_PAUSE_HEIGHT</a>: u64 = 861150;
+<pre><code><b>const</b> <a href="bitcoin.md#0x4_bitcoin_ORDINALS_PAUSE_HEIGHT">ORDINALS_PAUSE_HEIGHT</a>: u64 = 859001;
 </code></pre>
 
 

@@ -2,13 +2,18 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::actor::{
-    messages::{ExecuteL1BlockMessage, ExecuteL1TxMessage, ExecuteL2TxMessage},
+    messages::{
+        ExecuteL1BlockMessage, ExecuteL1TxMessage, ExecuteL2TxMessage, GetServiceStatusMessage,
+    },
     processor::PipelineProcessorActor,
 };
 use anyhow::Result;
 use coerce::actor::ActorRef;
-use rooch_types::transaction::{
-    rooch::RoochTransaction, ExecuteTransactionResponse, L1BlockWithBody, L1Transaction,
+use rooch_types::{
+    service_status::ServiceStatus,
+    transaction::{
+        rooch::RoochTransaction, ExecuteTransactionResponse, L1BlockWithBody, L1Transaction,
+    },
 };
 
 #[derive(Clone)]
@@ -34,6 +39,10 @@ impl PipelineProcessorProxy {
 
     pub async fn execute_l1_tx(&self, tx: L1Transaction) -> Result<ExecuteTransactionResponse> {
         self.actor.send(ExecuteL1TxMessage { tx }).await?
+    }
+
+    pub async fn get_service_status(&self) -> Result<ServiceStatus> {
+        self.actor.send(GetServiceStatusMessage {}).await?
     }
 }
 

@@ -1,9 +1,12 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Copy, Debug, Default, Serialize, Deserialize, clap::ValueEnum, PartialEq)]
+#[derive(
+    Clone, Copy, Debug, Default, Serialize, Deserialize, clap::ValueEnum, PartialEq, JsonSchema,
+)]
 #[serde(rename_all = "kebab-case")]
 pub enum ServiceStatus {
     /// The service is active and running normally.

@@ -3,6 +3,7 @@
 
 pub mod account;
 pub mod base58;
+pub mod base64;
 pub mod bcs;
 pub mod bech32;
 pub mod bls12381;
