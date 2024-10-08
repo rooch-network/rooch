@@ -15,7 +15,7 @@ module gas_market::gas_faucet {
 
     use bitcoin_move::utxo::{Self, UTXO};
 
-    use gas_market::gas_market::AdminCap;
+    use gas_market::admin::AdminCap;
 
     const INIT_GAS_AMOUNT: u256 = 5000000_00000000;
     const ONE_RGAS: u256 = 1_00000000;
@@ -84,10 +84,10 @@ module gas_market::gas_faucet {
         deposit_to_rgas_store(account, &mut faucet.rgas_store, amount);
     }
 
-    public entry fun withdraw_rgas_coin(
-        _admin: &mut Object<AdminCap>,
+    public entry fun withdraw_rgas_coin( 
         faucet_obj: &mut Object<RGasFaucet>,
-        amount: u256
+        amount: u256,
+        _admin: &mut Object<AdminCap>,
     ){
         let faucet = object::borrow_mut(faucet_obj);
         let rgas_coin = coin_store::withdraw(&mut faucet.rgas_store, amount);
@@ -135,34 +135,34 @@ module gas_market::gas_faucet {
     }
 
     public entry fun close_faucet(
+        faucet_obj: &mut Object<RGasFaucet>,
         _admin: &mut Object<AdminCap>,
-        faucet_obj: &mut Object<RGasFaucet>
     ){
         let faucet = object::borrow_mut(faucet_obj);
         faucet.is_open = false;
     }
 
     public entry fun open_faucet(
+        faucet_obj: &mut Object<RGasFaucet>,
         _admin: &mut Object<AdminCap>,
-        faucet_obj: &mut Object<RGasFaucet>
     ) {
         let faucet = object::borrow_mut(faucet_obj);
         faucet.is_open = true;
     }
 
     public entry fun set_allow_repeat(
-        _admin: &mut Object<AdminCap>,
         faucet_obj: &mut Object<RGasFaucet>,
-        allow_repeat: bool
+        allow_repeat: bool,
+        _admin: &mut Object<AdminCap>,
     ) {
         let faucet = object::borrow_mut(faucet_obj);
         faucet.allow_repeat = allow_repeat;
     }
 
     public entry fun set_require_utxo(
-        _admin: &mut Object<AdminCap>,
         faucet_obj: &mut Object<RGasFaucet>,
-        require_utxo: bool
+        require_utxo: bool,
+        _admin: &mut Object<AdminCap>,
     ) {
         let faucet = object::borrow_mut(faucet_obj);
         faucet.require_utxo = require_utxo;

@@ -10,8 +10,9 @@ module rooch_framework::oracle {
     use moveos_std::tx_context::sender;
     use moveos_std::object;
     use moveos_std::object::{Object, ObjectID};
-    use moveos_std::table::Table;
-    use moveos_std::table;
+    use moveos_std::table::{Self, Table};
+    use moveos_std::event;
+    use moveos_std::decimal_value;
 
     use rooch_framework::oracle_data::{Self, Data};
 
@@ -46,6 +47,12 @@ module rooch_framework::oracle {
         identifier: String,
     }
 
+    struct NewOracleEvent has copy, drop {
+        name: String,
+        oracle_id: ObjectID,
+        admin_id: ObjectID
+    }
+
     public fun get_historical_data<K: copy + drop + store, V: store + copy>(
         oracle_obj: &Object<SimpleOracle>,
         ticker: String,
@@ -73,17 +80,9 @@ module rooch_framework::oracle {
 
     /// Create a new shared SimpleOracle object for publishing data.
     public entry fun create_entry(name: String, url: String, description: String) {
-        let oracle = object::new(
-            SimpleOracle {
-                id: object::new(TablePlaceholder { _placeholder: false }), address: sender(
-                ), name, description, url
-            }
-        );
-        let oracle_id = object::id(&oracle);
+        let (oracle, admin_cap) = create(name, url, description);
         object::to_shared(oracle);
-        object::transfer(object::new(OracleAdminCap {
-            oracle_id
-        }), sender())
+        object::transfer(admin_cap, sender())
     }
 
     /// Create a new SimpleOracle object for publishing data.
@@ -95,9 +94,17 @@ module rooch_framework::oracle {
             }
         );
         let oracle_id = object::id(&oracle);
-        (oracle, object::new(OracleAdminCap {
+        let admin_cap = object::new(OracleAdminCap {
             oracle_id
-        }))
+        });
+        event::emit(
+            NewOracleEvent {
+                name,
+                oracle_id,
+                admin_id: object::id(&admin_cap)
+            }
+        );
+        (oracle, admin_cap)
     }
 
     public fun submit_data<T: store + copy + drop>(
@@ -105,6 +112,22 @@ module rooch_framework::oracle {
         ticker: String,
         value: T,
         identifier: String,
+        admin_obj: &mut Object<OracleAdminCap>,
+    ) {
+        let timestamp = now_milliseconds();
+        submit_data_with_timestamp(oracle_obj, ticker, value, identifier, timestamp, admin_obj); 
+    }
+
+    /// Submit data with timestamp.
+    /// This function is used to submit data with a specific timestamp.
+    /// The timestamp is the time from the oracle's data source.
+    /// The timestamp is measured in milliseconds.
+    public fun submit_data_with_timestamp<T: store + copy + drop>(
+        oracle_obj: &mut Object<SimpleOracle>,
+        ticker: String,
+        value: T,
+        identifier: String,
+        timestamp: u64,
         admin_obj: &mut Object<OracleAdminCap>,
     ) {
         let oracle_id = object::id(oracle_obj);
@@ -122,10 +145,23 @@ module rooch_framework::oracle {
         let new_data = StoredData {
             value,
             sequence_number,
-            timestamp: now_milliseconds(),
+            timestamp,
             identifier,
         };
         object::add_field(&mut oracle.id, ticker, new_data);
+    }
+
+    public entry fun submit_decimal_data(
+        oracle_obj: &mut Object<SimpleOracle>,
+        ticker: String,
+        value: u256,
+        decimal: u8,
+        identifier: String,
+        timestamp: u64,
+        admin_obj: &mut Object<OracleAdminCap>
+    ) {
+        let decimal_value = decimal_value::new(value, decimal);
+        submit_data_with_timestamp(oracle_obj, ticker, decimal_value, identifier, timestamp, admin_obj);
     }
 
     public fun archive_data<K: store + copy + drop, V: store + copy + drop>(

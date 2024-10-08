@@ -54,3 +54,33 @@ Root 到 Bitcoin 网络，运行 Rooch PreMainnet，并升级到 Mainnet。探�
 3. 实现基于 DSTP 的状态通道应用，探索 P2P 网络上的激励模型。
 
 </Steps>
+
+## PreMainnet
+
+PreMainnet 是 Rooch 的预发布主网。我们将在 PreMainnet 上进行以下工作：
+
+1. 逐步迭代和改进
+2. 提升安全性
+3. 实现去中心化
+4. 探索 Bitcoin 生态的应用场景
+5. 逐步过渡到正式的 Mainnet
+
+PreMainnet 的主要特点：
+
+1. 同步与兼容性：PreMainnet 会同步 Bitcoin 主网的交易，使用 Bitcoin 主网的地址和资产。其网络 ID 与未来的 Mainnet 相同。
+
+2. 数据延续性：用户在 PreMainnet 上的应用数据和资产将无缝迁移到 Mainnet，确保用户利益不会丢失。
+
+3. 合约部署策略：
+   - 初期：采用白名单制度，限制合约部署。
+   - 后期：逐步过渡到开放部署模式。
+
+4. 运营与安全措施：
+   - 初期由 Rooch 开发团队负责运行 Sequencer。
+   - 如发现严重安全问题，将采取以下措施：
+     a. 暂停 Sequencer 运行
+     b. 修复问题并升级网络，必要时回滚交易
+
+5. 代币使用：PreMainnet 上仅使用 [RGas](/learn/core-concepts/rgas) 支付 Gas 费。Rooch 的主网代币将在正式 Mainnet 上发布。
+
+通过这个 PreMainnet 阶段，我们旨在为 Rooch 的正式主网打下坚实的基础，确保网络的安全性、稳定性和可扩展性。
