@@ -57,7 +57,7 @@ if [ ! -z "$UNIT_TEST" ]; then
 fi
 
 if [ ! -z "$WASM_INT_TEST" ]; then
-  cargo test -p testsuite --test integration -- --name "wasm test"
+  cargo test -p testsuite --test integration -- --name "cosmwasm-vm test"
 fi
 
 if [ ! -z "$BITCOIN_INT_TEST" ]; then

@@ -5,14 +5,12 @@ use crate::cli_types::{TransactionOptions, WalletContextOptions};
 use clap::Parser;
 use moveos_types::module_binding::MoveFunctionCaller;
 use moveos_types::move_std::string::MoveString;
-use rooch_key::key_derive::verify_password;
 use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_types::{
     address::RoochAddress,
     error::{RoochError, RoochResult},
     framework::session_key::{SessionKey, SessionKeyModule, SessionScope},
 };
-use rpassword::prompt_password;
 
 /// Create a new session key on-chain
 #[derive(Debug, Parser)]
@@ -42,29 +40,12 @@ pub struct CreateCommand {
 
 impl CreateCommand {
     pub async fn execute(self) -> RoochResult<SessionKey> {
-        let mut context = self.context_options.build()?;
+        let mut context = self.context_options.build_require_password()?;
 
         let sender: RoochAddress = context.resolve_address(self.tx_options.sender)?.into();
         let max_gas_amount: Option<u64> = self.tx_options.max_gas_amount;
 
-        let session_auth_key = if context.keystore.get_if_password_is_empty() {
-            context.keystore.generate_session_key(&sender, None)?
-        } else {
-            let password =
-                prompt_password("Enter the password to create a new key pair:").unwrap_or_default();
-            let is_verified =
-                verify_password(Some(password.clone()), context.keystore.get_password_hash())?;
-
-            if !is_verified {
-                return Err(RoochError::InvalidPasswordError(
-                    "Password is invalid".to_owned(),
-                ));
-            }
-
-            context
-                .keystore
-                .generate_session_key(&sender, Some(password))?
-        };
+        let session_auth_key = context.generate_session_key(&sender)?;
         let session_scope = self.scope;
 
         let action =
@@ -78,26 +59,10 @@ impl CreateCommand {
 
         println!("Generated new session key {session_auth_key} for address [{sender}]",);
 
-        let result = if context.keystore.get_if_password_is_empty() {
-            context
-                .sign_and_execute(sender, action, None, max_gas_amount)
-                .await?
-        } else {
-            let password =
-                prompt_password("Enter the password to create a new key pair:").unwrap_or_default();
-            let is_verified =
-                verify_password(Some(password.clone()), context.keystore.get_password_hash())?;
-
-            if !is_verified {
-                return Err(RoochError::InvalidPasswordError(
-                    "Password is invalid".to_owned(),
-                ));
-            }
-
-            context
-                .sign_and_execute(sender, action, Some(password), max_gas_amount)
-                .await?
-        };
+        let tx_data = context
+            .build_tx_data(sender, action, max_gas_amount)
+            .await?;
+        let result = context.sign_and_execute(sender, tx_data).await?;
         context.assert_execute_success(result)?;
         let client = context.get_client().await?;
         let session_key_module = client.as_module_binding::<SessionKeyModule>();

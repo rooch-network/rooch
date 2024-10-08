@@ -13,6 +13,7 @@ use rooch_types::error::{RoochError, RoochResult};
 use rooch_types::transaction::authenticator::Authenticator;
 use rpassword::prompt_password;
 use serde::Serialize;
+use std::env;
 use std::fs::File;
 use std::io::Read;
 use std::path::PathBuf;
@@ -132,6 +133,8 @@ pub struct TransactionFilterOptions {
     pub(crate) to_order: Option<u64>,
 }
 
+pub const ROOCH_PASSWORD_ENV: &str = "ROOCH_PASSWORD";
+
 #[derive(Debug, Parser)]
 pub struct WalletContextOptions {
     /// The key store password
@@ -153,9 +156,16 @@ impl WalletContextOptions {
             Ok(ctx)
         } else {
             let password = self.password.clone().or_else(|| {
-                let password = prompt_password("Enter the keystore password:").ok();
-                println!();
-                password
+                //first try to get password from env
+                //then prompt password
+                match env::var(ROOCH_PASSWORD_ENV) {
+                    Ok(val) => Some(val),
+                    _ => {
+                        let password = prompt_password("Enter the keystore password:").ok();
+                        println!();
+                        password
+                    }
+                }
             });
             let is_verified = verify_password(password.clone(), ctx.keystore.get_password_hash())?;
             if !is_verified {

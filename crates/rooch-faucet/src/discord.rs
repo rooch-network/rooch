@@ -1,9 +1,10 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{App, FaucetRequest, FixedBTCAddressRequest, FixedRoochAddressRequest};
+use crate::{App, FaucetRequest};
 use clap::Parser;
-use rooch_types::address::{BitcoinAddress, RoochAddress};
+use move_core_types::u256::U256;
+use rooch_rpc_api::jsonrpc_types::UnitedAddressView;
 use serenity::all::{CommandDataOption, CommandDataOptionValue, CommandOptionType};
 use serenity::async_trait;
 use serenity::builder::{
@@ -34,8 +35,12 @@ pub struct DiscordConfig {
     #[arg(long, env = "ROOCH_FAUCET_CHECK_INTERVAL", default_value = "3600")]
     pub check_interval: u64,
 
-    #[arg(long, env = "ROOCH_FAUCET_NOTIFY_THRESHOLD", default_value = "1000")]
-    pub notify_threshold: u64,
+    #[arg(
+        long,
+        env = "ROOCH_FAUCET_NOTIFY_THRESHOLD",
+        default_value = "10000000000"
+    )]
+    pub notify_threshold: U256,
 }
 
 impl App {
@@ -47,25 +52,30 @@ impl App {
             .clone();
 
         match value {
-            CommandDataOptionValue::String(address) => {
-                let request = match address.starts_with("0x") {
-                    true => FaucetRequest::FixedRoochAddressRequest(FixedRoochAddressRequest {
-                        recipient: RoochAddress::from_str(address.as_str())
-                            .expect("Invalid address"),
-                    }),
-                    false => FaucetRequest::FixedBTCAddressRequest(FixedBTCAddressRequest {
-                        recipient: BitcoinAddress::from_str(address.as_str())
-                            .expect("Invalid address"),
-                    }),
-                };
-
-                if let Err(err) = self.request(request).await {
-                    tracing::error!("Failed make faucet request for {address:?}: {}", err);
-                    format!("Internal Error: Failed to send funds to {address:?}")
-                } else {
-                    //TODO: use coin decimals
-                    let funds = self.faucet_funds as f64 / 100000000f64;
-                    format!("Sending {funds} Rooch Gas Coin to {address:?}")
+            CommandDataOptionValue::String(origin_address) => {
+                match UnitedAddressView::from_str(&origin_address) {
+                    Ok(parsed_address) => {
+                        let request = FaucetRequest {
+                            claimer: parsed_address.clone(),
+                        };
+                        match self.request(request).await {
+                            Ok(amount) => {
+                                let funds = amount.unchecked_as_u64() as f64 / 100000000f64;
+                                format!("Sending {} RGas to {origin_address:?}", funds)
+                            }
+                            Err(err) => {
+                                tracing::error!(
+                                    "Failed make faucet request for {parsed_address:?}: {}",
+                                    err
+                                );
+                                format!("Internal Error: Failed to send funds to {origin_address:?}, error: {}", err)
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        tracing::error!("Failed to parse address: {}", e);
+                        format!("Invalid address: {origin_address:?}")
+                    }
                 }
             }
             _ => "No address found!".to_string(),
@@ -137,7 +147,7 @@ impl EventHandler for App {
 
                             match result {
                                 Ok(v) => {
-                                    if v < discord_cfg.notify_threshold as f64 {
+                                    if v < discord_cfg.notify_threshold {
                                         let embed = CreateEmbed::new()
                                             .title("Insufficient gas balance")
                                             .field("current balance", v.to_string(), true);

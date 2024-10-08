@@ -14,8 +14,8 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <Theme appearance="dark">
       <QueryClientProvider client={queryClient}>
-            <RoochProvider networks={networkConfig} defaultNetwork='localnet'>
-              <WalletProvider preferredWallets={['UniSat']} chain={'bitcoin'} autoConnect>
+            <RoochProvider networks={networkConfig} defaultNetwork='testnet'>
+              <WalletProvider preferredWallets={['OneKey']} chain={'bitcoin'} autoConnect>
                 <App/>
               </WalletProvider>
             </RoochProvider>

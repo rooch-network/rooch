@@ -60,7 +60,7 @@ describe('useDefaultClient', () => {
         }
 
         connectAndCreateSession()
-      }, [])
+      }, [connectWallet, createSessionKey])
 
       const triggerSessionExpiredError = async () => {
         const SDK = await import('@roochnetwork/rooch-sdk')

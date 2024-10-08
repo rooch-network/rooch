@@ -1,0 +1,66 @@
+# Coin 和 Fungible Token
+
+import { Callout, FileTree } from 'nextra/components'
+
+在 Rooch 中，`Coin` 是 `Fungible Token` 的具体实现。它包含在 RoochFramework 的 [`coin` 模块](https://github.com/rooch-network/rooch/blob/main/frameworks/rooch-framework/sources/coin.move) 中。
+
+
+## Coin 的类型
+
+```move
+struct Coin<phantom CoinType : key> {
+    value: u256,
+}
+```
+
+`Coin` 是一个泛型类型，它包含一个 `value` 字段，表示该 `Coin` 的值。`Coin` 的类型参数 `CoinType` 代表了该 `Coin` 的类型。在 Rooch 中，资产类型的唯一标识符是 `CoinType`，而不是合约地址，这点和 ERC20 标准不同。
+
+比如 Rooch 中的 Gas Coin 的类型是 `0x3::gas_coin::RGas`。其中 `0x3` 是 RoochFramework 的合约地址，`gas_coin` 是模块名称，`RGas` 是类型名称，三者共同构成了唯一的类型标识符。
+
+## 注册 Coin 类型
+
+首先，开发者需要自定义一个 `CoinType`，然后通过 `coin::register_extend` 函数来创建出 `CoinInfo` 对象，而 `CoinInfo` 对象保存了该 `Coin` 类型的相关信息，比如名称、符号、图标、精度等，同时它也代表着对该 `Coin` 的管理权限。
+
+```move
+    #[private_generics(CoinType)]
+    public fun register_extend<CoinType: key>(
+        name: string::String,
+        symbol: string::String,
+        icon_url: Option<string::String>,
+        decimals: u8,
+    ): Object<CoinInfo<CoinType>>
+```
+
+注意，该函数受  [`private_generics`](/build/rooch-framework/private-generics) 保护，只能在 `CoinType` 模块内调用。
+
+## CoinStore
+
+`Coin` 类型没有任何 `ability`，所以它不能被直接存储在结构中，需要通过 `CoinStore` 来存储。系统默认会给每个地址的每种 `CoinType` 创建一个 `CoinStore`，开发者也可以通过 `coin::create_coin_store` 函数来创建 `Object<CoinStore<CoinType>>`，`CoinStore` 对象可以存储在任何结构体中。
+
+```move
+    public fun create_coin_store<CoinType: key + store>(): Object<CoinStore<CoinType>>
+```
+
+## Private Coin 和 Public Coin
+
+在 Rooch 中，如果 `CoinType` 没有 `store` `ability`，那么该 `Coin` 就是 `Private Coin`，否则就是 `Public Coin`。
+
+* `Private Coin` 只能由 `CoinType` 模块内部转移，不能在模块外部转移。
+* `Public Coin` 可以由任何模块转移，用户可以直接调用 `transfer::transfer_coin` 函数来转移 `Public Coin`。
+
+如果开发者需要自定义 `Coin` 的转账逻辑，可以在自己的模块内，通过调用 `coin::transfer_extend` 函数来实现。
+
+注意，`coin` 以及 `coin_store` 中，所有带有 `extend` 关键字的函数，都是受 [`private_generics`](/build/rooch-framework/private-generics) 保护的，表示这些函数是给 `CoinType` 模块开发者用来扩展的。
+
+<Callout>
+本节内容正在完善中。需要补充更多的关于 Coin 的方法的说明：
+
+* `mint` 和 `burn` 方法。
+* `coin_store` 相关方法。
+* `account_coin_store` 相关方法。
+</Callout>
+
+## Coins 例子
+
+* [private_coin](https://github.com/rooch-network/rooch/blob/main/examples/coins/sources/private_coin.move)
+* [fixed_supply_coin](https://github.com/rooch-network/rooch/blob/main/examples/coins/sources/fixed_supply_coin.move)

@@ -37,6 +37,7 @@ export function useConnectWallet({
   const sessions = useSession()
   const setCurrentSession = useSessionStore((state) => state.setCurrentSession)
   const setWalletConnected = useWalletStore((state) => state.setWalletConnected)
+  const setWalletDisconnected = useWalletStore((state) => state.setWalletDisconnected)
   const setConnectionStatus = useWalletStore((state) => state.setConnectionStatus)
 
   return useMutation({
@@ -59,7 +60,8 @@ export function useConnectWallet({
 
         return connectAddress
       } catch (error) {
-        setConnectionStatus('disconnected')
+        // TODO: one key, A retry will be performed after the rejection
+        setWalletDisconnected()
         throw error
       }
     },
