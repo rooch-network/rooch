@@ -15,7 +15,6 @@ use coerce::actor::scheduler::timer::Timer;
 use coerce::actor::{system::ActorSystem, IntoActor};
 use jsonrpsee::RpcModule;
 use moveos_eventbus::bus::EventBus;
-use moveos_types::h256::sha2_256_of;
 use raw_store::errors::RawStoreError;
 use rooch_config::da_config::derive_genesis_namespace;
 use rooch_config::server_config::ServerConfig;
@@ -295,7 +294,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     let sequencer_proxy = SequencerProxy::new(sequencer.into());
 
     // Init DA
-    let genesis_bytes = RoochGenesis::build(network)?.encode();
+    let genesis_bytes = RoochGenesis::build(network.clone())?.encode();
     let genesis_namespace = derive_genesis_namespace(&genesis_bytes);
     let last_tx_order = sequencer_proxy.get_sequencer_order().await?;
     let da_config = opt.da_config().clone();

@@ -4,7 +4,7 @@
 use crate::config::Config;
 use crate::{retrieve_map_config_value, BaseConfig, MapConfigValueSource};
 use celestia_types::nmt::Namespace;
-use hex::{encode, ToHex};
+use hex::encode;
 use moveos_types::h256::sha2_256_of;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
@@ -270,7 +270,7 @@ pub struct DABackendOpenDAConfig {
 
 /// Derive a namespace from genesis config for DA backend (could be used for open-da backend)
 pub fn derive_genesis_namespace(genesis: &[u8]) -> String {
-    let raw = encode(&sha2_256_of(genesis).0);
+    let raw = encode(sha2_256_of(genesis).0);
     // get first 7 bytes is enough to avoid collision for genesis config
     raw.chars().take(7).collect()
 }

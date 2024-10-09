@@ -54,7 +54,8 @@ impl DAServerActor {
                     act_backends += 1;
                 }
                 if let DABackendConfigType::OpenDa(openda_config) = backend_type {
-                    let backend = OpenDABackend::new(openda_config, genesis_namespace).await?;
+                    let backend =
+                        OpenDABackend::new(openda_config, genesis_namespace.clone()).await?;
                     backends.push(Arc::new(backend));
                     act_backends += 1;
                 }
