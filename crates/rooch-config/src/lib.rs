@@ -135,9 +135,17 @@ pub struct RoochOpt {
     #[clap(long, default_value_t, value_enum)]
     pub service_status: ServiceStatus,
 
+    /// Set quota size that defines how many requests can occur
+    /// before the governor middleware starts blocking requests from an IP address and
+    /// clients have to wait until the elements of the quota are replenished.
+    ///
+    /// **The burst_size must not be zero.**
     #[clap(long)]
     pub traffic_burst_size: Option<u32>,
 
+    /// Set the interval after which one element of the quota is replenished in seconds.
+    ///
+    /// **The interval must not be zero.**
     #[clap(long)]
     pub traffic_per_second: Option<u64>,
 
