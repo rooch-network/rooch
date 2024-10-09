@@ -32,6 +32,9 @@ export type PriceImpactSeverity = 'normal' | 'warning' | 'alert';
 export type PoolVersion = typeof VERSION_0 | typeof VERSION_0_5;
 
 export interface SwapProps {
+  fixedSwap?: boolean;
+  hiddenValue?: boolean;
+  txHash?: string;
   /**
    * Current supported token list
    */
@@ -166,7 +169,7 @@ export interface SwapProps {
    * On switch token
    * @returns
    */
-  onSwitch: () => void;
+  onSwitch?: () => void;
 
   /**
    * On swap parameter change

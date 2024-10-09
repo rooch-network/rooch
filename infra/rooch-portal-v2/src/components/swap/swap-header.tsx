@@ -1,14 +1,16 @@
 import type { ReactNode } from 'react';
 
 import { useMemo, useState } from 'react';
+
+import { Box, Stack, Button, Popover, Tooltip, TextField, InputAdornment } from '@mui/material';
+
 import { toBigNumber } from 'src/utils/number';
 
-import { Box, Stack, Popover, Tooltip, InputAdornment, TextField, Button } from '@mui/material';
+import { grey } from 'src/theme/core';
 
 import Label from './typography/label';
 import Header from './typography/header';
 import { Iconify } from '../iconify/iconify';
-import { grey } from 'src/theme/core';
 
 export interface SwapWidgetHeaderProps {
   slippage: number;

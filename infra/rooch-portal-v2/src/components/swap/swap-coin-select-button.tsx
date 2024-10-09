@@ -1,33 +1,40 @@
-import { formatCoin, toBigNumber } from 'src/utils/number';
+import type { DialogProps } from '@mui/material';
+
+import { useState, useEffect } from 'react';
+
 import {
   Box,
-  Dialog,
-  DialogContent,
-  DialogProps,
-  Divider,
-  InputAdornment,
   List,
-  ListItem,
-  ListItemButton,
-  ListItemIcon,
-  ListItemSecondaryAction,
-  ListItemText,
   Stack,
-  TextField,
-  Typography,
+  Dialog,
   darken,
   styled,
+  Divider,
+  ListItem,
+  TextField,
+  Typography,
+  ListItemIcon,
+  ListItemText,
+  DialogContent,
+  InputAdornment,
+  ListItemButton,
+  ListItemSecondaryAction,
 } from '@mui/material';
-import { useEffect, useState } from 'react';
-import Text from './typography/text';
-import { UserCoin } from './types';
+
+import { formatCoin, toBigNumber } from 'src/utils/number';
+
 import { grey } from 'src/theme/core';
+
+import Text from './typography/text';
 import { Iconify } from '../iconify';
+
+import type { UserCoin } from './types';
 
 export interface CoinSelectButtonProps {
   coins: UserCoin[];
   coin?: UserCoin;
   disabledCoins: string[];
+  fixedSwap?: boolean;
   onSelect: (coin: UserCoin) => void;
 }
 
@@ -35,6 +42,7 @@ export default function SwapCoinSelectButton({
   coins,
   coin,
   disabledCoins,
+  fixedSwap,
   onSelect,
 }: CoinSelectButtonProps) {
   const [showModal, setShowModal] = useState(false);
@@ -51,30 +59,47 @@ export default function SwapCoinSelectButton({
 
   return (
     <Stack>
-      <Stack
-        direction="row"
-        spacing={1}
-        onClick={() => {
-          setShowModal(true);
-        }}
-        sx={{
-          width: '160px',
-          height: '48px',
-          padding: '12px',
-          borderRadius: '6px',
-          border: '1px solid #D0D5DD',
-          background: '#FFF',
-          boxShadow: '0px 1px 2px 0px rgba(16, 24, 40, 0.05)',
-          cursor: 'pointer',
-          '&:hover': {
-            background: darken('#FFF', 0.025),
-          },
-        }}
-      >
-        {coin && <Box component="img" src={coin.icon} width={24} />}
-        <Text sx={{ flexGrow: 1 }}>{coin ? coin.symbol : 'Select Token'}</Text>
-        <Box component="img" src="assets/icons/swap/chevron-down.svg" />
-      </Stack>
+      {fixedSwap ? (
+        <Stack
+          direction="row"
+          spacing={1}
+          justifyContent="flex-end"
+          sx={{
+            width: '160px',
+            height: '48px',
+            padding: '12px',
+            borderRadius: '6px',
+          }}
+        >
+          {coin && <Box component="img" src={coin.icon} width={24} />}
+          <Text>{coin ? coin.symbol : 'Select Token'}</Text>
+        </Stack>
+      ) : (
+        <Stack
+          direction="row"
+          spacing={1}
+          onClick={() => {
+            setShowModal(true);
+          }}
+          sx={{
+            width: '160px',
+            height: '48px',
+            padding: '12px',
+            borderRadius: '6px',
+            border: '1px solid #D0D5DD',
+            background: '#FFF',
+            boxShadow: '0px 1px 2px 0px rgba(16, 24, 40, 0.05)',
+            cursor: 'pointer',
+            '&:hover': {
+              background: darken('#FFF', 0.025),
+            },
+          }}
+        >
+          {coin && <Box component="img" src={coin.icon} width={24} />}
+          <Text sx={{ flexGrow: 1 }}>{coin ? coin.symbol : 'Select Token'}</Text>
+          <Box component="img" src="assets/icons/swap/chevron-down.svg" />
+        </Stack>
+      )}
 
       <CoinSelectDialog
         open={showModal}
@@ -125,41 +150,39 @@ export default function SwapCoinSelectButton({
               p: '8px',
             }}
           >
-            {filterCoins.map((coin, index) => {
-              return (
-                <ListItem
-                  key={index}
-                  disablePadding
-                  onClick={() => {
-                    if (!disabledCoins.includes(coin.coinType)) {
-                      onSelect(coin);
-                      setSearch('');
-                      setShowModal(false);
-                    }
+            {filterCoins.map((coin, index) => (
+              <ListItem
+                key={index}
+                disablePadding
+                onClick={() => {
+                  if (!disabledCoins.includes(coin.coinType)) {
+                    onSelect(coin);
+                    setSearch('');
+                    setShowModal(false);
+                  }
+                }}
+              >
+                <ListItemButton
+                  disabled={disabledCoins.includes(coin.coinType)}
+                  sx={{
+                    borderRadius: '4px',
                   }}
                 >
-                  <ListItemButton
-                    disabled={disabledCoins.includes(coin.coinType)}
-                    sx={{
-                      borderRadius: '4px',
-                    }}
-                  >
-                    <ListItemIcon>
-                      <Box component="img" src={coin.icon} alt={coin.name} />
-                    </ListItemIcon>
-                    <ListItemText>
-                      <Typography className="name">{coin.symbol}</Typography>
-                      <Typography className="desc">{coin.name}</Typography>
-                    </ListItemText>
-                    {toBigNumber(coin.balance).gt(0) && (
-                      <ListItemSecondaryAction>
-                        <Typography className="amount">{formatCoin(coin, true)}</Typography>
-                      </ListItemSecondaryAction>
-                    )}
-                  </ListItemButton>
-                </ListItem>
-              );
-            })}
+                  <ListItemIcon>
+                    <Box component="img" src={coin.icon} alt={coin.name} />
+                  </ListItemIcon>
+                  <ListItemText>
+                    <Typography className="name">{coin.symbol}</Typography>
+                    <Typography className="desc">{coin.name}</Typography>
+                  </ListItemText>
+                  {toBigNumber(coin.balance).gt(0) && (
+                    <ListItemSecondaryAction>
+                      <Typography className="amount">{formatCoin(coin, true)}</Typography>
+                    </ListItemSecondaryAction>
+                  )}
+                </ListItemButton>
+              </ListItem>
+            ))}
           </List>
         </DialogContent>
       </CoinSelectDialog>

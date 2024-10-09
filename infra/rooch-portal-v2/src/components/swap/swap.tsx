@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 
 import { LoadingButton } from '@mui/lab';
-import { Alert, Stack, darken } from '@mui/material';
+import { Alert, Stack, darken, CircularProgress } from '@mui/material';
 
 import { grey, secondary } from 'src/theme/core';
 
@@ -35,6 +35,9 @@ export default function Swap({
   validationError,
   canSelectVersion,
   version,
+  fixedSwap,
+  hiddenValue,
+  txHash,
   gasInfo,
   simulationStatus,
   simulationError,
@@ -47,8 +50,6 @@ export default function Swap({
   onPreview,
   onPropose,
 }: SwapProps) {
-  const [openPreview, setOpenPreview] = useState(false);
-
   const disabledCoins: string[] = useMemo(
     () => [fromCoin?.coinType || '', toCoin?.coinType || ''],
     [fromCoin?.coinType, toCoin?.coinType]
@@ -90,11 +91,11 @@ export default function Swap({
 
     if (showDetails) {
       return {
-        text: 'Propose',
+        text: 'Submit',
       };
     }
     return {
-      text: 'Propose',
+      text: 'Submit',
       disabled: true,
     };
   }, [validationError, fromCoin?.amount, fromCoin?.balance, slippagePercent, showDetails]);
@@ -123,6 +124,8 @@ export default function Swap({
       <Stack spacing={3} padding={4}>
         <Stack spacing={-1} alignItems="center">
           <SwapCoinInput
+            hiddenValue={hiddenValue}
+            fixedSwap={fixedSwap}
             coins={coins}
             coin={fromCoin}
             type="from"
@@ -138,13 +141,15 @@ export default function Swap({
           />
           <SwapSwitchIcon onClick={onSwitch} />
           <SwapCoinInput
+            hiddenValue={hiddenValue}
+            fixedSwap={fixedSwap}
             coins={sortedBalanceCoins}
             coin={toCoin}
             type="to"
             interactiveMode={interactiveMode}
             disabledCoins={disabledCoins}
-            onChange={(coin, source) => {
-              onSwap({
+            onChange={async (coin, source) => {
+              await onSwap({
                 fromCoin,
                 toCoin: coin,
                 interactiveMode: source === 'amount' ? 'to' : 'from',
@@ -183,6 +188,7 @@ export default function Swap({
             curve={curve}
             canSelectVersion={canSelectVersion}
             version={version}
+            fixedSwap={fixedSwap}
             variant="propose"
             onVersionChange={onVersionChange}
           />
@@ -190,7 +196,7 @@ export default function Swap({
         <LoadingButton
           color="primary"
           variant="contained"
-          loading={loading}
+          loading={proposing}
           disabled={proposeButtonContent.disabled}
           sx={{
             background: secondary.light,
@@ -198,12 +204,39 @@ export default function Swap({
             '&:hover': { background: darken(secondary.light, 0.2) },
           }}
           onClick={() => {
-            setOpenPreview(true);
             onPreview();
           }}
         >
           {proposeButtonContent.text}
         </LoadingButton>
+        {txHash && (
+          <Stack>
+            <Stack
+              className="text-sm font-semibold"
+              direction="row"
+              spacing={1}
+              alignItems="center"
+            >
+              Transaction has been submitted, awaiting confirmation
+              <CircularProgress variant="indeterminate" color="secondary" size={16} />
+            </Stack>
+            <Stack
+              className="text-sm font-semibold"
+              direction="row"
+              spacing={0.5}
+              alignItems="center"
+            >
+              check in the{' '}
+              <a
+                href={`https://mempool.space/testnet/tx/${txHash}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                mempool.space
+              </a>
+            </Stack>
+          </Stack>
+        )}
       </Stack>
       {/* <SwapPreviewModal
         open={openPreview}

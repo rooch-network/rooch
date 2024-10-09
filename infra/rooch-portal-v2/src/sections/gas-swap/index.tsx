@@ -1,17 +1,17 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import type { UserCoin, CurveType, PoolVersion, InteractiveMode } from 'src/components/swap/types';
+import type { CurveType, PoolVersion, InteractiveMode } from 'src/components/swap/types';
 
+import BigNumber from 'bignumber.js';
 import { useState, useEffect } from 'react';
-import { useCurrentWallet, useCurrentAddress } from '@roochnetwork/rooch-sdk-kit';
+import { Args } from '@roochnetwork/rooch-sdk';
+import { useRoochClient, useCurrentWallet, useCurrentAddress } from '@roochnetwork/rooch-sdk-kit';
 
 import { Stack } from '@mui/material';
 
-import { sleep } from 'src/utils/common';
-
 import Swap from 'src/components/swap/swap';
-import { DEFAULT_SLIPPAGE } from 'src/components/swap/types';
+import { toast } from 'src/components/snackbar';
 
 const swapCoins = [
   {
@@ -20,138 +20,133 @@ const swapCoins = [
     symbol: 'BTC',
     name: 'BTC Coin',
     icon: 'https://s2.coinmarketcap.com/static/img/coins/64x64/1.png',
-    balance: 0n,
-    amount: 0n,
-    price: 1,
+    price: 0,
   },
   {
     coinType: 'rgas',
-    decimals: 6,
+    decimals: 8,
     symbol: 'RGas',
     name: 'Rooch Gas',
-    icon: 'https://s2.coinmarketcap.com/static/img/coins/64x64/1.png',
-    balance: 0n,
-    amount: 0n,
-    price: 1,
+    icon: '/logo/logo-square.svg',
+    price: 0,
   },
 ];
 
 export default function GasSwapOverview() {
   const [loading, setLoading] = useState<boolean>(false);
-  const [coins, setCoins] = useState<UserCoin[]>([]);
-  const [fromCoin, setFromCoin] = useState<UserCoin>(swapCoins[0]);
+  const [submitting, setSubmitting] = useState<boolean>(false);
   const [btcBalance, setBtcBalance] = useState(0n);
-  const [toCoin, setToCoin] = useState<UserCoin>(swapCoins[1]);
+  const [rGasBalance, setRGasBalance] = useState(0n);
   const [interactiveMode, setInteractiveMode] = useState<InteractiveMode>('from');
-  const [slippage, setSlippage] = useState<number>(DEFAULT_SLIPPAGE);
-  const [canSelectCurve, setCanSelectCurve] = useState<boolean>(false);
   const [curve, setCurve] = useState<CurveType>('uncorrelated');
   const [warning, setWarning] = useState<ReactNode>();
   const [convertRate, setConvertRate] = useState<number>();
   const [platformFeePercent] = useState<number>(0.003);
-  const [platformFeeAmount, setPlatformFeeAmount] = useState<number>();
-  const [swapAmount, setSwapAmount] = useState(0n);
-  const [slippageAmount, setSlippageAmount] = useState<number>();
-  const [canSelectVersion, setCanSelectVersion] = useState<boolean>(false);
   const [version, setVersion] = useState<PoolVersion>(0);
+
+  const [fromSwapAmount, setFromSwapAmount] = useState(0n);
+  const [toSwapAmount, setToSwapAmount] = useState(0n);
+  const [txHash, setTxHash] = useState<string>();
 
   const address = useCurrentAddress();
   const wallet = useCurrentWallet();
+  const client = useRoochClient();
 
   useEffect(() => {
     async function getBTCBalance() {
       const res = await wallet.wallet?.getBalance();
-      console.log('🚀 ~ file: index.tsx:69 ~ getBTCBalance ~ res:', res);
       if (res) {
         setBtcBalance(BigInt(res.confirmed));
       }
     }
+    async function getRGasBalance() {
+      if (!address) {
+        return;
+      }
+      const res = await client.getBalance({
+        owner: address?.genRoochAddress().toStr(),
+        coinType: '0x3::gas_coin::RGas',
+      });
+      if (res) {
+        setRGasBalance(BigInt(res.balance));
+      }
+    }
     getBTCBalance();
-  }, [wallet]);
+    getRGasBalance();
+  }, [wallet, address, client]);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setCoins(swapCoins);
-      // setFromCoin(swapCoins[0]);
-    }, 500);
-    return () => clearTimeout(timer);
-  }, []);
-
-  // useEffect(() => {
-  //   const execute = async () => {
-  //     if (fromCoin && toCoin) {
-  //       setLoading(true);
-  //       await fetchFee();
-  //       // await fetchRate();
-
-  //       setCanSelectVersion(true);
-  //       setCurve('uncorrelated');
-  //       setCanSelectCurve(true);
-  //       setWarning(
-  //         'Caution: make sure the pair you are trading should be stable or uncorrelated. i.e USDC/USDT is stable and USDC/BTC is uncorrelated'
-  //       );
-  //       setLoading(false);
-  //     }
-  //   };
-
-  //   execute();
-  // }, [fromCoin?.coinType, fromCoin?.amount, toCoin?.coinType, toCoin?.amount, interactiveMode]);
-
-  const fetchRate = async (): Promise<void> => {
-    if (fromCoin && toCoin) {
-      await sleep(500);
+    async function fetchRate() {
+      try {
+        setLoading(true);
+        const res = await client.executeViewFunction({
+          address: '0x872502737008ac71c4c008bb3846a688bfd9fa54c6724089ea51b72f813dc71e',
+          module: 'gas_market',
+          function: 'btc_to_rgas',
+          args: [Args.u64(fromSwapAmount)],
+        });
+        setToSwapAmount(BigInt(Number(res.return_values?.[0]?.decoded_value || 0)) || 0n);
+        setConvertRate(
+          new BigNumber(Number(res.return_values?.[0]?.decoded_value || 0))
+            .div(fromSwapAmount.toString())
+            .toNumber()
+        );
+      } catch (error) {
+        toast.error(String(error));
+      } finally {
+        setLoading(false);
+      }
     }
-  };
-
-  const fetchFee = async (): Promise<void> => {
-    await sleep(500);
-    setConvertRate(1);
-    setPlatformFeeAmount(1);
-    setSlippageAmount(1);
-    setSwapAmount(1n);
-  };
+    fetchRate();
+  }, [client, fromSwapAmount]);
 
   return (
     <Stack className="w-full justify-center items-center">
       <Stack className="w-3/4 max-w-[600px]">
         <Swap
+          hiddenValue
+          fixedSwap
           loading={loading}
-          coins={coins}
-          fromCoin={{ ...swapCoins[0], balance: btcBalance }}
-          toCoin={toCoin}
+          coins={[]}
+          fromCoin={{ ...swapCoins[0], balance: btcBalance, amount: fromSwapAmount }}
+          toCoin={{ ...swapCoins[1], balance: rGasBalance, amount: toSwapAmount }}
           interactiveMode={interactiveMode}
-          slippagePercent={slippage}
-          canSelectCurve={canSelectCurve}
+          canSelectCurve={false}
           curve={curve}
+          txHash={txHash}
           warning={warning}
           convertRate={convertRate}
           platformFeePercent={platformFeePercent}
-          platformFeeAmount={platformFeeAmount}
-          slippageAmount={slippageAmount}
-          swapAmount={swapAmount}
-          priceImpact={0.1}
+          priceImpact={0}
           priceImpactSeverity="normal"
-          canSelectVersion={canSelectVersion}
+          proposing={submitting}
           version={version}
-          onSlippageChange={(slippage: number) => {
-            setSlippage(slippage);
-          }}
+          onSlippageChange={(slippage: number) => {}}
           onCurveTypeChange={(curveType: CurveType) => setCurve(curveType)}
           onVersionChange={(version: PoolVersion) => setVersion(version)}
-          onSwitch={() => {
-            // setFromCoin(toCoin);
-            // setToCoin(fromCoin);
-          }}
           onSwap={async (payload) => {
             const { fromCoin, toCoin, interactiveMode } = payload;
-            // setFromCoin(fromCoin);
-            // setToCoin(toCoin);
+            if (!fromCoin || !toCoin) {
+              return;
+            }
+            setFromSwapAmount(fromCoin.amount);
             setInteractiveMode(interactiveMode);
           }}
-          onPreview={async () => {}}
-          onPropose={async () => {
-            // enqueueSnackbar('Propose swap transaction', { variant: 'success' });
+          onPreview={async () => {
+            try {
+              setSubmitting(true);
+              const txHash = await wallet.wallet?.sendBtc({
+                toAddress: 'tb1prcajaj9n7e29u4dfp33x3hcf52yqeegspdpcd79pqu4fpr6llx4stqqxgy',
+                satoshis: Number(fromSwapAmount.toString()),
+              });
+              setTxHash(txHash);
+            } catch (error) {
+              toast.error(String(error.message));
+            } finally {
+              setSubmitting(false);
+            }
           }}
+          onPropose={async () => {}}
         />
       </Stack>
     </Stack>
