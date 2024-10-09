@@ -1,13 +1,16 @@
-module vm_reserved::bbn {
+module bitcoin_move::bbn {
 
     use std::option;
-    use std::option::{is_none, Option, none};
+    use std::option::{is_none, Option, none, is_some, some};
     use std::vector;
     use std::vector::{for_each_ref, length};
+    use rooch_framework::transaction;
+    use bitcoin_move::bitcoin;
+    use bitcoin_move::utxo::UTXO;
     use bitcoin_move::types;
     use bitcoin_move::utxo;
     use bitcoin_move::script_buf;
-    use bitcoin_move::types::{Transaction, tx_id, tx_output, TxOut, txout_value};
+    use bitcoin_move::types::{Transaction, tx_id, tx_output, TxOut, txout_value, tx_lock_time};
     use bitcoin_move::bitcoin::get_tx_height;
     use rooch_framework::bitcoin_address::{derive_bitcoin_taproot_address_from_pubkey, to_rooch_address};
     use bitcoin_move::script_buf::{unpack_bbn_stake_data};
@@ -42,6 +45,13 @@ module vm_reserved::bbn {
         finality_provider_pub_key: vector<u8>,
         staking_time: u16
     }
+
+    const UNSPENDABLEKEYPATHKEY: vector<u8> = b"0250929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0";
+
+    const ErrorNotBabylonUTXO: u64 = 0;
+    const ErrorNotTransaction: u64 = 1;
+    const ErrorNotBabylonOpReturn: u64 = 2;
+    const ErrorTransactionLockTime: u64 = 3;
 
     public(friend) fun genesis_init(_genesis_account: &signer) {
         // TODO here just add bbn test-4 version 2
@@ -140,7 +150,7 @@ module vm_reserved::bbn {
         return (false, 0, bbn_op_return_data)
     }
 
-    public fun try_get_staking_out_put(transaction: Transaction, staking_output_script: &vector<u8>): (bool, u64, Option<ObjectID>){
+    public fun try_get_staking_output(transaction: Transaction, staking_output_script: &vector<u8>): (bool, u64, Option<ObjectID>){
         let tx_outputs = tx_output(&transaction);
         let tx_id = tx_id(&transaction);
         if (vector::length(tx_outputs) == 0) {
@@ -157,6 +167,40 @@ module vm_reserved::bbn {
             index = index + 1;
         });
         return (false, index , none())
+    }
+
+    public fun derive_bbn_utxo(utxo_obj: &Object<UTXO>) {
+        assert!(object::owner(utxo_obj) == @bitcoin_move, ErrorNotBabylonUTXO);
+        let utxo = object::borrow(utxo_obj);
+        let txid = utxo::txid(utxo);
+        let option_tx = bitcoin::get_tx(txid);
+        assert!(is_some(&option_tx), ErrorNotTransaction);
+        let transaction = option::destroy_some(option_tx);
+        let (is_true, op_return_index, op_return_data) = try_get_bbn_op_return_data(transaction);
+        assert!(is_true, ErrorNotBabylonOpReturn);
+        // TODO here should replace to check staking output
+        // try_get_staking_output()
+
+        assert!(tx_lock_time(&transaction) >= (op_return_data.staking_time as u32), ErrorTransactionLockTime);
+        let tx_outputs = tx_output(&transaction);
+        let index = 0;
+        // TODO bbn should not multiple staking outputs, we temporarily support
+        for_each_ref(tx_outputs, |tx_output| {
+            if (index == op_return_index) {
+                continue
+            };
+            let out_point = types::new_outpoint(txid, (txout_value(tx_output) as u32));
+            let borrow_utxo = utxo::borrow_utxo(out_point);
+            if (object::owner(borrow_utxo) != @bitcoin_move){
+                continue
+            };
+            let utxo_id = utxo::derive_utxo_id(out_point);
+            let utxo_obj = utxo::take(utxo_id);
+            utxo::add_temp_state(&mut utxo_obj, op_return_data);
+            // TODO here should modify sender to trigger event queue?
+            utxo::transfer(utxo_obj, some(@bitcoin_move), pubkey_to_rooch_address(&op_return_data.staker_pub_key));
+            index = index + 1;
+        });
     }
 
     // TODO build stake info
