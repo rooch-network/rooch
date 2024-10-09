@@ -1,14 +1,16 @@
 import { Box } from '@mui/material';
+
 import { secondary } from 'src/theme/core';
 
 export interface SwapSwitchIconProps {
-  onClick: () => void;
+  onClick?: () => void;
 }
 
 export default function SwapSwitchIcon({ onClick }: SwapSwitchIconProps) {
   return (
     <Box
       component="button"
+      className="flex justify-center items-center cursor-none"
       sx={{
         width: '32px',
         height: '32px',
@@ -25,7 +27,12 @@ export default function SwapSwitchIcon({ onClick }: SwapSwitchIconProps) {
       }}
       // onClick={onClick}
     >
-      <Box component="img" src="assets/icons/swap/swap-down.svg" width="100%" />
+      <Box
+        component="img"
+        src="assets/icons/swap/swap-down.svg"
+        width="100%"
+        className="ml-[1px]"
+      />
     </Box>
   );
 }

@@ -25,6 +25,12 @@ export const navData = [
         icon: <Iconify icon="solar:clipboard-list-bold-duotone" />,
       },
       {
+        title: 'Purchase Gas',
+        path: paths.dashboard['gas-swap'],
+        icon: <Iconify icon="solar:gas-station-bold-duotone" />,
+        noAddressRequired: true,
+      },
+      {
         title: 'Settings',
         path: paths.dashboard.settings,
         icon: <Iconify icon="solar:settings-bold-duotone" />,

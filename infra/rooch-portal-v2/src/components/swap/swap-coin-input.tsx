@@ -1,14 +1,16 @@
 import { useDebounce } from 'react-use';
 import { useMemo, useState, useEffect } from 'react';
-import { toDust, fromDust, formatCoin, toBigNumber } from 'src/utils/number';
 
 import { Stack, TextField } from '@mui/material';
+
+import { toDust, fromDust, formatCoin, toBigNumber } from 'src/utils/number';
+
+import { grey } from 'src/theme/core';
 
 import Label from './typography/label';
 import SwapCoinSelectButton from './swap-coin-select-button';
 
-import type { InteractiveMode, UserCoin } from './types';
-import { grey } from 'src/theme/core';
+import type { UserCoin, InteractiveMode } from './types';
 
 export interface SwapCoinInputProps {
   coins: UserCoin[];
@@ -16,6 +18,8 @@ export interface SwapCoinInputProps {
   type: InteractiveMode;
   interactiveMode: InteractiveMode;
   disabledCoins: string[];
+  fixedSwap?: boolean;
+  hiddenValue?: boolean;
   onChange: (coin: UserCoin, source: 'amount' | 'coin') => void;
 }
 
@@ -25,6 +29,8 @@ export default function SwapCoinInput({
   type,
   interactiveMode,
   disabledCoins,
+  fixedSwap,
+  hiddenValue,
   onChange,
 }: SwapCoinInputProps) {
   const [value, setValue] = useState('');
@@ -35,13 +41,18 @@ export default function SwapCoinInput({
     () => {
       if (coin) {
         try {
-          const amount = toDust(value, coin.decimals);
+          let temp = value;
+          const decimalIndex = value.indexOf('.');
+          if (decimalIndex !== -1 && value.length - decimalIndex - 1 > coin.decimals) {
+            temp = value.substring(0, decimalIndex + coin.decimals + 1);
+          }
+          const amount = toDust(temp, coin.decimals);
           setDebouncedValue(amount);
         } catch (e) {}
       }
     },
-    1000,
-    [value]
+    300,
+    [value, coin]
   );
 
   useEffect(() => {
@@ -49,7 +60,7 @@ export default function SwapCoinInput({
       setShouldUpdate(false);
       setValue(fromDust(coin.amount, coin.decimals).decimalPlaces(coin.decimals).toString());
     }
-  }, [coin?.amount]);
+  }, [coin, coin?.amount]);
 
   useEffect(() => {
     if (coin && shouldUpdate && toBigNumber(debouncedValue).gt(0)) {
@@ -61,7 +72,7 @@ export default function SwapCoinInput({
         'amount'
       );
     }
-  }, [debouncedValue, shouldUpdate]);
+  }, [coin, debouncedValue, onChange, shouldUpdate]);
 
   const active = useMemo(() => type === interactiveMode, [type, interactiveMode]);
   const coinUsd = useMemo(() => {
@@ -69,7 +80,7 @@ export default function SwapCoinInput({
       return 0;
     }
     return fromDust(coin.amount, coin.decimals).times(coin.price).decimalPlaces(2).toNumber();
-  }, [coin?.amount, coin?.price]);
+  }, [coin]);
 
   return (
     <Stack
@@ -102,6 +113,7 @@ export default function SwapCoinInput({
         <Stack spacing={0.25} sx={{ flexGrow: 1 }}>
           <TextField
             value={value}
+            disabled={type === 'to' && fixedSwap}
             onChange={(e) => {
               setValue(e.target.value);
               setShouldUpdate(true);
@@ -124,19 +136,25 @@ export default function SwapCoinInput({
                 lineHeight: '24px',
                 color: grey[900],
               },
+              '& .MuiInputBase-input.Mui-disabled': {
+                WebkitTextFillColor: grey[900],
+              },
               '& fieldset': {
                 border: 'none',
               },
             }}
           />
-          <Stack direction="row" spacing={1} alignItems="center">
-            <Label>$ {coinUsd}</Label>
-          </Stack>
+          {!hiddenValue && (
+            <Stack direction="row" spacing={1} alignItems="center">
+              <Label>$ {coinUsd}</Label>
+            </Stack>
+          )}
         </Stack>
         <SwapCoinSelectButton
           coins={coins}
           coin={coin}
           disabledCoins={disabledCoins}
+          fixedSwap={fixedSwap}
           onSelect={(coin) => onChange(coin, 'coin')}
         />
       </Stack>

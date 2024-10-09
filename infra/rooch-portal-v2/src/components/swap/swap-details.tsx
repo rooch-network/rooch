@@ -13,6 +13,8 @@ import {
   CircularProgress,
 } from '@mui/material';
 
+import { fNumber } from 'src/utils/format-number';
+
 import { grey, error, success, warning } from 'src/theme/core';
 
 import Text from './typography/text';
@@ -41,6 +43,7 @@ export default function SwapDetails({
   canSelectVersion,
   version,
   variant,
+  fixedSwap,
   onVersionChange,
 }: Omit<
   SwapProps,
@@ -72,14 +75,16 @@ export default function SwapDetails({
             color: grey[900],
           }}
         >
-          1 {fromCoin?.symbol} = {toBigNumber(convertRate).toString()} {toCoin?.symbol} (including
-          fee)
+          1 {fromCoin?.symbol} = {fNumber(toBigNumber(convertRate).toString())} {toCoin?.symbol}{' '}
+          {!fixedSwap &&
+            `(including
+          fee)`}
         </Typography>
       );
     }
     return (
       <Stack sx={{ width: '100%' }}>
-        {interactiveMode === 'from' && (
+        {interactiveMode === 'from' && !fixedSwap && (
           <DetailsItem
             left={<Text>Expected Output</Text>}
             right={
@@ -101,7 +106,17 @@ export default function SwapDetails({
         )}
       </Stack>
     );
-  }, [variant, fromCoin, toCoin, convertRate, swapAmount, interactiveMode]);
+  }, [
+    variant,
+    interactiveMode,
+    fixedSwap,
+    swapAmount,
+    toCoin?.decimals,
+    toCoin?.symbol,
+    fromCoin?.decimals,
+    fromCoin?.symbol,
+    convertRate,
+  ]);
 
   return (
     <Stack spacing={1.5}>
@@ -118,15 +133,20 @@ export default function SwapDetails({
       >
         <AccordionSummary
           expandIcon={
-            <Iconify
-              icon="solar:alt-arrow-down-linear"
-              style={{
-                transition: 'all 0.1s ease-in-out',
-                transform: showDetails ? '' : 'rotate(180deg)',
-              }}
-            />
+            fixedSwap ? null : (
+              <Iconify
+                icon="solar:alt-arrow-down-linear"
+                style={{
+                  transition: 'all 0.1s ease-in-out',
+                  transform: showDetails ? '' : 'rotate(180deg)',
+                }}
+              />
+            )
           }
           onClick={() => {
+            if (fixedSwap) {
+              return;
+            }
             setShowDetails(!showDetails);
           }}
           sx={{
@@ -149,28 +169,37 @@ export default function SwapDetails({
             <Stack spacing={0.5}>
               {variant === 'propose' && (
                 <DetailsItem
-                  left={<Text>Expected Output</Text>}
+                  left={
+                    <Text className="!text-gray-400">
+                      Estimated rate, the actual amount received depends on the rate at the time of
+                      transaction confirmation block.
+                    </Text>
+                  }
+                  right={
+                    fixedSwap ? null : (
+                      <Label>
+                        {`${fromDustToPrecision(swapAmount || 0, toCoin?.decimals || 1)} ${
+                          toCoin?.symbol
+                        }`}
+                      </Label>
+                    )
+                  }
+                />
+              )}
+              {!fixedSwap && (
+                <DetailsItem
+                  left={
+                    <Text>Minimum Received after Slippage ({(slippagePercent || 0) * 100} %)</Text>
+                  }
                   right={
                     <Label>
-                      {`${fromDustToPrecision(swapAmount || 0, toCoin?.decimals || 1)} ${
+                      {`${formatCurrency(slippageAmount || 0, toCoin?.decimals || 1)} ${
                         toCoin?.symbol
                       }`}
                     </Label>
                   }
                 />
               )}
-              <DetailsItem
-                left={
-                  <Text>Minimum Received after Slippage ({(slippagePercent || 0) * 100} %)</Text>
-                }
-                right={
-                  <Label>
-                    {`${formatCurrency(slippageAmount || 0, toCoin?.decimals || 1)} ${
-                      toCoin?.symbol
-                    }`}
-                  </Label>
-                }
-              />
             </Stack>
           )}
           {interactiveMode === 'to' && (
@@ -199,11 +228,11 @@ export default function SwapDetails({
               />
             </Stack>
           )}
-          {showDetails && (
+          {showDetails && !fixedSwap && (
             <>
               <Divider sx={{ my: '10px' }} />
               <Stack spacing={0.5}>
-                {variant === 'propose' && (
+                {variant === 'propose' && !fixedSwap && (
                   <DetailsItem
                     left={<Label>Price Impact</Label>}
                     right={
@@ -227,18 +256,10 @@ export default function SwapDetails({
                     </Label>
                   }
                 />
-                <DetailsItem
-                  left={<Label>0</Label>}
-                  right={
-                    <Label>
-                      {0} {targetToken?.symbol}
-                    </Label>
-                  }
-                />
-                {variant === 'propose' && !canSelectCurve && (
+                {variant === 'propose' && !canSelectCurve && !fixedSwap && (
                   <DetailsItem left={<Label>Curve Type</Label>} right={<Label>{curve}</Label>} />
                 )}
-                {variant === 'propose' && canSelectVersion && (
+                {variant === 'propose' && canSelectVersion && !fixedSwap && (
                   <DetailsItem
                     left={<Label>Pool Version</Label>}
                     right={<PoolVersionSelect version={version} onChange={onVersionChange} />}
@@ -291,7 +312,7 @@ function PriceImpactLabel({
         background: color,
       }}
     >
-      <img src="assets/icons/swap/alert-triangle.svg" />
+      <img src="assets/icons/swap/alert-triangle.svg" alt="alert" />
       <Typography
         sx={{
           fontSize: '0.75rem',
