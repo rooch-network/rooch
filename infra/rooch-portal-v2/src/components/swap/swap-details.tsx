@@ -1,21 +1,27 @@
-import { formatCurrency, fromDustToPrecision, toBigNumber } from '../../utils/number';
+import type { ReactNode } from 'react';
+
+import { useMemo, useState } from 'react';
+
 import {
+  Box,
+  Stack,
+  Divider,
   Accordion,
+  Typography,
   AccordionDetails,
   AccordionSummary,
-  Box,
   CircularProgress,
-  Divider,
-  Stack,
-  Typography,
 } from '@mui/material';
-import { ReactNode, useMemo, useState } from 'react';
-import PoolVersionSelect from './pool-version-select';
-import { PoolVersion, PriceImpactSeverity, SwapProps } from './types';
-import Label from './typography/label';
+
+import { grey, error, success, warning } from 'src/theme/core';
+
 import Text from './typography/text';
 import { Iconify } from '../iconify';
-import { error, grey, success, warning } from 'src/theme/core';
+import Label from './typography/label';
+import PoolVersionSelect from './pool-version-select';
+import { toBigNumber, formatCurrency, fromDustToPrecision } from '../../utils/number';
+
+import type { SwapProps, PoolVersion, PriceImpactSeverity } from './types';
 
 export default function SwapDetails({
   loading,
@@ -28,8 +34,6 @@ export default function SwapDetails({
   slippageAmount,
   platformFeePercent,
   platformFeeAmount,
-  msafeFeePercent,
-  msafeFeeAmount,
   priceImpact,
   priceImpactSeverity,
   canSelectCurve,
@@ -52,9 +56,10 @@ export default function SwapDetails({
 > & { variant: 'propose' | 'transaction'; onVersionChange?: (version: PoolVersion) => void }) {
   const [showDetails, setShowDetails] = useState(false);
 
-  const targetToken = useMemo(() => {
-    return interactiveMode === 'from' ? fromCoin : toCoin;
-  }, [interactiveMode, fromCoin, toCoin]);
+  const targetToken = useMemo(
+    () => (interactiveMode === 'from' ? fromCoin : toCoin),
+    [interactiveMode, fromCoin, toCoin]
+  );
 
   const header = useMemo(() => {
     if (variant === 'propose') {
@@ -71,32 +76,31 @@ export default function SwapDetails({
           fee)
         </Typography>
       );
-    } else {
-      return (
-        <Stack sx={{ width: '100%' }}>
-          {interactiveMode === 'from' && (
-            <DetailsItem
-              left={<Text>Expected Output</Text>}
-              right={
-                <Label>
-                  {fromDustToPrecision(swapAmount || 0, toCoin?.decimals || 1)} {toCoin?.symbol}
-                </Label>
-              }
-            />
-          )}
-          {interactiveMode === 'to' && (
-            <DetailsItem
-              left={<Text>Expected Input</Text>}
-              right={
-                <Label>
-                  {fromDustToPrecision(swapAmount || 0, fromCoin?.decimals || 1)} {fromCoin?.symbol}
-                </Label>
-              }
-            />
-          )}
-        </Stack>
-      );
     }
+    return (
+      <Stack sx={{ width: '100%' }}>
+        {interactiveMode === 'from' && (
+          <DetailsItem
+            left={<Text>Expected Output</Text>}
+            right={
+              <Label>
+                {fromDustToPrecision(swapAmount || 0, toCoin?.decimals || 1)} {toCoin?.symbol}
+              </Label>
+            }
+          />
+        )}
+        {interactiveMode === 'to' && (
+          <DetailsItem
+            left={<Text>Expected Input</Text>}
+            right={
+              <Label>
+                {fromDustToPrecision(swapAmount || 0, fromCoin?.decimals || 1)} {fromCoin?.symbol}
+              </Label>
+            }
+          />
+        )}
+      </Stack>
+    );
   }, [variant, fromCoin, toCoin, convertRate, swapAmount, interactiveMode]);
 
   return (
@@ -104,7 +108,7 @@ export default function SwapDetails({
       <Accordion
         disableGutters
         elevation={0}
-        expanded={loading ? false : true}
+        expanded={!loading}
         sx={{
           '&.MuiAccordion-root:before': { opacity: 0 },
           '& .MuiAccordionDetails-root': {
@@ -148,9 +152,9 @@ export default function SwapDetails({
                   left={<Text>Expected Output</Text>}
                   right={
                     <Label>
-                      {fromDustToPrecision(swapAmount || 0, toCoin?.decimals || 1) +
-                        ' ' +
-                        toCoin?.symbol}
+                      {`${fromDustToPrecision(swapAmount || 0, toCoin?.decimals || 1)} ${
+                        toCoin?.symbol
+                      }`}
                     </Label>
                   }
                 />
@@ -161,9 +165,9 @@ export default function SwapDetails({
                 }
                 right={
                   <Label>
-                    {formatCurrency(slippageAmount || 0, toCoin?.decimals || 1) +
-                      ' ' +
-                      toCoin?.symbol}
+                    {`${formatCurrency(slippageAmount || 0, toCoin?.decimals || 1)} ${
+                      toCoin?.symbol
+                    }`}
                   </Label>
                 }
               />
@@ -176,9 +180,9 @@ export default function SwapDetails({
                   left={<Text>Expected Input</Text>}
                   right={
                     <Label>
-                      {fromDustToPrecision(swapAmount || 0, fromCoin?.decimals || 1) +
-                        ' ' +
-                        fromCoin?.symbol}
+                      {`${fromDustToPrecision(swapAmount || 0, fromCoin?.decimals || 1)} ${
+                        fromCoin?.symbol
+                      }`}
                     </Label>
                   }
                 />
@@ -187,9 +191,9 @@ export default function SwapDetails({
                 left={<Text>Maximum Send after Slippage ({(slippagePercent || 0) * 100} %)</Text>}
                 right={
                   <Label>
-                    {formatCurrency(slippageAmount || 0, fromCoin?.decimals || 1) +
-                      ' ' +
-                      fromCoin?.symbol}
+                    {`${formatCurrency(slippageAmount || 0, fromCoin?.decimals || 1)} ${
+                      fromCoin?.symbol
+                    }`}
                   </Label>
                 }
               />
@@ -224,15 +228,10 @@ export default function SwapDetails({
                   }
                 />
                 <DetailsItem
-                  left={
-                    <Label>
-                      MSafe Fee ({toBigNumber(msafeFeePercent).times(100).toString()} %)
-                    </Label>
-                  }
+                  left={<Label>0</Label>}
                   right={
                     <Label>
-                      {formatCurrency(msafeFeeAmount || 0, targetToken?.decimals || 1)}{' '}
-                      {targetToken?.symbol}
+                      {0} {targetToken?.symbol}
                     </Label>
                   }
                 />

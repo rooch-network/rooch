@@ -18,7 +18,7 @@ export interface SwapWidgetHeaderProps {
 
 export default function SwapHeader({
   slippage,
-  header = 'Purchase rGas',
+  header = 'Purchase RGas',
   onSlippageChange,
 }: SwapWidgetHeaderProps) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);

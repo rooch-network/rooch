@@ -1,4 +1,5 @@
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
+
 export const DEFAULT_SLIPPAGE = 0.005;
 export const VERSION_0 = 0;
 export const VERSION_0_5 = 0.5;
@@ -90,16 +91,6 @@ export interface SwapProps {
    * Platform fee amount
    */
   platformFeeAmount?: number;
-
-  /**
-   * MSafe fee percent
-   */
-  msafeFeePercent?: number;
-
-  /**
-   * MSafe fee amount
-   */
-  msafeFeeAmount?: number;
 
   /**
    * Price impact percentage

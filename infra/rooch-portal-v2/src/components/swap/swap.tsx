@@ -1,14 +1,19 @@
-import { Alert, Stack, darken } from '@mui/material';
 import { useMemo, useState } from 'react';
-import CurveTypeSelect from './curve-type-select';
-import SwapCoinInput from './swap-coin-input';
-import SwapDetails from './swap-details';
+
+import { LoadingButton } from '@mui/lab';
+import { Alert, Stack, darken } from '@mui/material';
+
+import { grey, secondary } from 'src/theme/core';
+
 import SwapHeader from './swap-header';
+import SwapDetails from './swap-details';
+import { DEFAULT_SLIPPAGE } from './types';
+import SwapCoinInput from './swap-coin-input';
 // import SwapPreviewModal from './swap-preview-modal';
 import SwapSwitchIcon from './swap-switch-icon';
-import { DEFAULT_SLIPPAGE, SwapProps } from './types';
-import { grey, secondary } from 'src/theme/core';
-import { LoadingButton } from '@mui/lab';
+import CurveTypeSelect from './curve-type-select';
+
+import type { SwapProps } from './types';
 
 export default function Swap({
   loading,
@@ -23,8 +28,6 @@ export default function Swap({
   slippageAmount,
   platformFeePercent,
   platformFeeAmount,
-  msafeFeePercent,
-  msafeFeeAmount,
   priceImpact,
   priceImpactSeverity,
   curve,
@@ -46,19 +49,22 @@ export default function Swap({
 }: SwapProps) {
   const [openPreview, setOpenPreview] = useState(false);
 
-  const disabledCoins: string[] = useMemo(() => {
-    return [fromCoin?.coinType || '', toCoin?.coinType || ''];
-  }, [fromCoin?.coinType, toCoin?.coinType]);
+  const disabledCoins: string[] = useMemo(
+    () => [fromCoin?.coinType || '', toCoin?.coinType || ''],
+    [fromCoin?.coinType, toCoin?.coinType]
+  );
 
-  const showDetails = useMemo(() => {
-    return !!(
-      fromCoin?.coinType &&
-      fromCoin?.amount &&
-      toCoin?.coinType &&
-      toCoin?.amount &&
-      interactiveMode
-    );
-  }, [fromCoin?.coinType, fromCoin?.amount, toCoin?.coinType, toCoin?.amount, interactiveMode]);
+  const showDetails = useMemo(
+    () =>
+      !!(
+        fromCoin?.coinType &&
+        fromCoin?.amount &&
+        toCoin?.coinType &&
+        toCoin?.amount &&
+        interactiveMode
+      ),
+    [fromCoin?.coinType, fromCoin?.amount, toCoin?.coinType, toCoin?.amount, interactiveMode]
+  );
 
   const proposeButtonContent: { text: string; disabled?: boolean } = useMemo(() => {
     if (validationError) {
@@ -86,32 +92,23 @@ export default function Swap({
       return {
         text: 'Propose',
       };
-    } else {
-      return {
-        text: 'Propose',
-        disabled: true,
-      };
     }
-  }, [
-    coins,
-    fromCoin?.coinType,
-    fromCoin?.amount,
-    toCoin?.coinType,
-    toCoin?.amount,
-    interactiveMode,
-    slippagePercent,
-    validationError,
-    showDetails,
-  ]);
+    return {
+      text: 'Propose',
+      disabled: true,
+    };
+  }, [validationError, fromCoin?.amount, fromCoin?.balance, slippagePercent, showDetails]);
 
-  const sortedBalanceCoins = useMemo(() => {
-    return coins.sort((a, b) => {
-      if (a.balance === 0n) {
-        return 1;
-      }
-      return -1;
-    });
-  }, [coins]);
+  const sortedBalanceCoins = useMemo(
+    () =>
+      coins.sort((a, b) => {
+        if (a.balance === 0n) {
+          return 1;
+        }
+        return -1;
+      }),
+    [coins]
+  );
 
   return (
     <Stack
@@ -179,8 +176,6 @@ export default function Swap({
             slippageAmount={slippageAmount}
             platformFeePercent={platformFeePercent}
             platformFeeAmount={platformFeeAmount}
-            msafeFeePercent={msafeFeePercent}
-            msafeFeeAmount={msafeFeeAmount}
             convertRate={convertRate}
             priceImpact={priceImpact}
             priceImpactSeverity={priceImpactSeverity}
@@ -221,8 +216,6 @@ export default function Swap({
         slippageAmount={slippageAmount}
         platformFeePercent={platformFeePercent}
         platformFeeAmount={platformFeeAmount}
-        msafeFeePercent={msafeFeePercent}
-        msafeFeeAmount={msafeFeeAmount}
         convertRate={convertRate}
         priceImpact={priceImpact}
         priceImpactSeverity={priceImpactSeverity}
