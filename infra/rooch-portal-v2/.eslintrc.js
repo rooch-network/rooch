@@ -31,6 +31,7 @@ module.exports = {
     'no-console': 0,
     'no-unused-vars': 0,
     'no-nested-ternary': 0,
+    'no-shadow': 'off',
     'no-param-reassign': 0,
     'no-underscore-dangle': 0,
     'no-restricted-exports': 0,
@@ -44,6 +45,7 @@ module.exports = {
     '@typescript-eslint/consistent-type-exports': 1,
     '@typescript-eslint/consistent-type-imports': 1,
     '@typescript-eslint/no-unused-vars': [1, { args: 'none' }],
+    '@typescript-eslint/no-shadow': 0,
     // react
     'react/no-children-prop': 0,
     'react/react-in-jsx-scope': 0,

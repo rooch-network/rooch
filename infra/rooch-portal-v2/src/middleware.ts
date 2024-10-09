@@ -1,4 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+
+import { NextResponse } from 'next/server';
 
 const iconDomains = [
   'https://api.unisvg.com',
@@ -24,7 +26,7 @@ export function middleware(request: NextRequest) {
       name: 'style-src',
       values: ["'self'", "'unsafe-inline'"],
     },
-    { name: 'img-src', values: ["'self'", 'data:', 'blob:'] },
+    { name: 'img-src', values: ["'self'", 'data:', 'blob:', 'https:'] },
     { name: 'font-src', values: ["'self'", 'data:'] },
     { name: 'object-src', values: ["'none'"] },
     { name: 'base-uri', values: ["'self'"] },
