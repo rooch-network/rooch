@@ -1,49 +1,46 @@
 # 多签账户
 
-本文档介绍多签账户的使用，包括如何通过 CLI 在链上创建多签账户，以及如何发起多签交易。关于多签账户的原理和实现请参看账户概念的多签账户部分。
+本文档介绍多签账户的使用，包括如何通过 Rooch CLI 在链上创建多签账户，以及如何发起多签交易，如何签名交易，如何广播交易。
 
-## 概述
-
-
-### 准备账户公钥
+## 准备账户公钥
 
 接下来准备 3 个账户来演示多签账户的功能。
+
+通过 `rooch account create` 创建好账户，通过 `rooch account list --json` 可以查看对应账户的公钥。
 
 ```
 $ rooch account list --json
 
 {
+  "account1": {
+    "address": "rooch1hh9p0twq7yze06tys4lp2dzh3k6s4jgrcu68vqnr5ku8cwuaprjq0y8pml",
+    "hex_address": "0xbdca17adc0f10597e964857e1534578db50ac903c734760263a5b87c3b9d08e4",
+    "bitcoin_address": "tb1pmmx3fk9e2umvshm4r8j6va9xcrmp2s75r96upfxxyhp8mwyfwwssrql720",
+    "nostr_public_key": "npub1ttel8sev7svd5zkw3hmte2wanc33x57uct2nkvgn3vp9djyh67wswma74z",
+    "public_key": "0x035af3f3c32cf418da0ace8df6bca9dd9e231353dcc2d53b31138b0256c897d79d",    <= Note here!
+    "has_session_key": false,
+    "active": false
+  },
   "account0": {
-    "address": "rooch1jf2fwru9jlzpwxfyj8rv9ggw6n8xdyc2npvmmjvfczmawwn320gszc90zx",
-    "hex_address": "0x9254970f8597c417192491c6c2a10ed4ce66930a9859bdc989c0b7d73a7153d1",
-    "bitcoin_address": "bcrt1p3vckrr2fmephltkc63xdhp28agc9mxprjtvalrtz8zrzdtphjj9svghgwr",
-    "nostr_public_key": "npub1s5fqrxkphg3ptnm32365pjs22w8jsjafvn4wfm86hmsssz7sw5gqr7xr89",
-    "public_key": "0x028512019ac1ba2215cf71547540ca0a538f284ba964eae4ecfabee1080bd07510",    <= Note here!
+    "address": "rooch1r2xgp9uyf7elphd39mssdtf8s99wgjm3fywazgfcdf7pzhnx637skura9n",
+    "hex_address": "0x1a8c8097844fb3f0ddb12ee106ad27814ae44b71491dd121386a7c115e66d47d",
+    "bitcoin_address": "tb1p488sz4vv4rnc267hd0m7st5dufpmtzv4nw70r7exyfwz60s3rhsqca94sg",
+    "nostr_public_key": "npub15te2hf6a65zs8jgu83l33mskc99sm98m8vu4rfsjmujjg7y0xc5sf0u9uy",
+    "public_key": "0x02a2f2aba75dd50503c91c3c7f18ee16c14b0d94fb3b3951a612df2524788f3629",    <= Note here!
     "has_session_key": false,
     "active": false
   },
   "default": {
-    "address": "rooch18e97u229hr2cxcc885xffctzcrqtwzyusrn7fmus6aafh8vcvvtqguxgdw",
-    "hex_address": "0x3e4bee2945b8d58363073d0c94e162c0c0b7089c80e7e4ef90d77a9b9d986316",
-    "bitcoin_address": "bcrt1ps0n5hrg8gxxhnmhmly6ay7zcpmp8zruud3r7yqm83alg7v72gtsstlevul",
-    "nostr_public_key": "npub1wkacxpzm7ewxu6e7tkk4la855uaxnzup2uzw24zyhtrjgkwdxmqqm7c00a",
-    "public_key": "0x0375bb83045bf65c6e6b3e5dad5ff4f4a73a698b815704e55444bac72459cd36c0",    <= Note here!
+    "address": "rooch1qe8s8rkcds2q0xxq9xhjmfq2mxgs4zmjvlle7dmtnrthndzes0uqmhwzzr",
+    "hex_address": "0x064f038ed86c140798c029af2da40ad9910a8b7267ff9f376b98d779b45983f8",
+    "bitcoin_address": "tb1ph25pk4xm36y3mt6uwclm0fgj8dgdnf5u7xf987qvyv58x987cldsefe2dh",
+    "nostr_public_key": "npub192ydmn6ctgucuc47t4x504844e0grrlt4uztlfr9l44g83a2dw0se6k3p8",
+    "public_key": "0x022a88ddcf585a398e62be5d4d47d4f5ae5e818febaf04bfa465fd6a83c7aa6b9f",    <= Note here!
     "has_session_key": false,
     "active": true
-  },
-  "account1": {
-    "address": "rooch1cxnxttwktxwq2suazxvnl5hq687xcvcj2xnmfy5pwfec750z67hs6zztcs",
-    "hex_address": "0xc1a665add6599c05439d11993fd2e0d1fc6c331251a7b4928172738f51e2d7af",
-    "bitcoin_address": "bcrt1pl94fuer39tk3df2txvvzndzdva2k0lh020w228jsl6crhxxsmmqs3tw0xa",
-    "nostr_public_key": "npub18q62aejdg297an2j3q7ql46tj5e35lj0qktfkxhj7xz7kdmz3qgqlf52h3",
-    "public_key": "0x033834aee64d428beecd52883c0fd74b95331a7e4f05969b1af2f185eb37628810",    <= Note here!
-    "has_session_key": false,
-    "active": false
   }
 }
 ```
-
-通过 `rooch account list --json` 可以查看对应账户的公钥。
 
 ## 使用演示
 
@@ -57,30 +54,59 @@ rooch account create-multisign -t 2 -p $Pubkey1 -p $Pubkey2 -p $Pubkey3
 - `-p` 或 `--public-keys` 指定参与多签的账户公钥。
 
 ```
-$ rooch account create-multisign -t 2 -p 0x0375bb83045bf65c6e6b3e5dad5ff4f4a73a698b815704e55444bac72459cd36c0 -p 0x033834aee64d428beecd52883c0fd74b95331a7e4f05969b1af2f185eb37628810 -p 0x028512019ac1ba2215cf71547540ca0a538f284ba964eae4ecfabee1080bd07510
+$ rooch account create-multisign -t 2 -p 0x022a88ddcf585a398e62be5d4d47d4f5ae5e818febaf04bfa465fd6a83c7aa6b9f -p 0x02a2f2aba75dd50503c91c3c7f18ee16c14b0d94fb3b3951a612df2524788f3629 -p 0x035af3f3c32cf418da0ace8df6bca9dd9e231353dcc2d53b31138b0256c897d79d
 
-MulitsignAddress: rooch1eyhcpvl4c6x043ds50j30wcn2a5v74e3eew7hj2xmvheqjug08yqfg9v20
-Multisign Bitcoin Address: bcrt1pevwap6zf8akqn3ynk6a2c0kjfpyrn8cyywsafjvtaugw9c5jyu5qh04ge5
+MulitsignAddress: rooch1vrg7lzdml74mvhnpke9mfrvgn0esnedf3l6sn52t29qs2j5zy35s6qdlty
+Multisign Bitcoin Address: tb1przxwx6xdyehpnspdr70jaqjm4g62dedcm4gcvf62qu6xjae6e8tq4mpqvn
 Threshold: 2
 Participants: 3
-Participant 0 Address: rooch18e97u229hr2cxcc885xffctzcrqtwzyusrn7fmus6aafh8vcvvtqguxgdw
-Participant 0 Bitcoin Address: bcrt1ps0n5hrg8gxxhnmhmly6ay7zcpmp8zruud3r7yqm83alg7v72gtsstlevul
-Participant 0 Public Key: 0x0375bb83045bf65c6e6b3e5dad5ff4f4a73a698b815704e55444bac72459cd36c0
-Participant 1 Address: rooch1cxnxttwktxwq2suazxvnl5hq687xcvcj2xnmfy5pwfec750z67hs6zztcs
-Participant 1 Bitcoin Address: bcrt1pl94fuer39tk3df2txvvzndzdva2k0lh020w228jsl6crhxxsmmqs3tw0xa
-Participant 1 Public Key: 0x033834aee64d428beecd52883c0fd74b95331a7e4f05969b1af2f185eb37628810
-Participant 2 Address: rooch1jf2fwru9jlzpwxfyj8rv9ggw6n8xdyc2npvmmjvfczmawwn320gszc90zx
-Participant 2 Bitcoin Address: bcrt1p3vckrr2fmephltkc63xdhp28agc9mxprjtvalrtz8zrzdtphjj9svghgwr
-Participant 2 Public Key: 0x028512019ac1ba2215cf71547540ca0a538f284ba964eae4ecfabee1080bd07510
+Participant 0 Address: rooch1qe8s8rkcds2q0xxq9xhjmfq2mxgs4zmjvlle7dmtnrthndzes0uqmhwzzr
+Participant 0 Bitcoin Address: tb1ph25pk4xm36y3mt6uwclm0fgj8dgdnf5u7xf987qvyv58x987cldsefe2dh
+Participant 0 Public Key: 0x022a88ddcf585a398e62be5d4d47d4f5ae5e818febaf04bfa465fd6a83c7aa6b9f
+Participant 1 Address: rooch1r2xgp9uyf7elphd39mssdtf8s99wgjm3fywazgfcdf7pzhnx637skura9n
+Participant 1 Bitcoin Address: tb1p488sz4vv4rnc267hd0m7st5dufpmtzv4nw70r7exyfwz60s3rhsqca94sg
+Participant 1 Public Key: 0x02a2f2aba75dd50503c91c3c7f18ee16c14b0d94fb3b3951a612df2524788f3629
+Participant 2 Address: rooch1hh9p0twq7yze06tys4lp2dzh3k6s4jgrcu68vqnr5ku8cwuaprjq0y8pml
+Participant 2 Bitcoin Address: tb1pmmx3fk9e2umvshm4r8j6va9xcrmp2s75r96upfxxyhp8mwyfwwssrql720
+Participant 2 Public Key: 0x035af3f3c32cf418da0ace8df6bca9dd9e231353dcc2d53b31138b0256c897d79d
 ```
 
+我们在 Discord 给多签地址领取 `tBTC` 后，将 `100` sats 的 `tBTC` 转账到一个没有余额的账户，这里演示的目标账户为 `tb1pmmx3fk9e2umvshm4r8j6va9xcrmp2s75r96upfxxyhp8mwyfwwssrql720`。
 
+```bash
+# 切换到要转账的目标地址
+$ rooch account switch --address tb1pmmx3fk9e2umvshm4r8j6va9xcrmp2s75r96upfxxyhp8mwyfwwssrql720
+The active account was successfully switched to `rooch1hh9p0twq7yze06tys4lp2dzh3k6s4jgrcu68vqnr5ku8cwuaprjq0y8pml`
+
+# 查看目标地址的余额
+$ rooch account balance
+                                              Coin Type                                                |      Symbol      | Decimals |             Balance     
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------
+                                               Bitcoin                                                 |       BTC        |    8     |                 0       
+```
+
+可以看到目标地址的余额为 `0` sats。
 
 ### 生成多签交易
 
 ```bash
 rooch bitcoin build-tx --sender $multisign_bitcoin_address -o $to_address:amount_sats
 ```
+
+- `--sender` 指定多签账户地址。
+- `-o` 指定交易输出，即转账的比特币地址和比特币的数量（单位为 sats），这里使用 `:` 分隔。
+
+```bash
+$ rooch bitcoin build-tx --sender tb1ph25pk4xm36y3mt6uwclm0fgj8dgdnf5u7xf987qvyv58x987cldsefe2dh -o tb1pmmx3fk9e2umvshm4r8j6va9xcrmp2s75r96upfxxyhp8mwyfwwssrql720:100
+
+{
+  "content": "70736274ff0100890200000001cc96ee0d7eb17ebc2c1087c2c06d81d2596440b61d0abac4db830461779a5fdd0100000000fdffffff026400000000000000225120decd14d8b95736c85f7519e5a674a6c0f61543d41975c0a4c625c27db88973a19082010000000000225120baa81b54db8e891daf5c763fb7a5123b50d9a69cf19253f80c23287314fec7db000000000001012ba086010000000000225120baa81b54db8e891daf5c763fb7a5123b50d9a69cf19253f80c23287314fec7db2206022a88ddcf585a398e62be5d4d47d4f5ae5e818febaf04bfa465fd6a83c7aa6b9f0400000000000000",
+  "output_type": "psbt",
+  "path": "/tmp/305da9d77a2af176.psbt"
+}
+```
+
+此时这笔多签交易存放在 `/tmp/305da9d77a2af176.psbt` 这个文件里，接下来我们会使用多签参与者的账户来对这笔交易进行签名。
 
 ### 签名交易
 
@@ -89,37 +115,90 @@ rooch bitcoin sign-tx -s $Pubkey1_address /tmp/xxxxx.psbt
 rooch bitcoin sign-tx -s $Pubkey2_address /tmp/xxxxx.psbt
 ```
 
+- `-s` 指定多签参与者公钥的地址。
+
+第一个参与者，这里为 `tb1ph25pk4xm36y3mt6uwclm0fgj8dgdnf5u7xf987qvyv58x987cldsefe2dh`：
+
+```bash
+$ rooch bitcoin sign-tx -s tb1ph25pk4xm36y3mt6uwclm0fgj8dgdnf5u7xf987qvyv58x987cldsefe2dh /tmp/305da9d77a2af176.psbt
+Transaction details before signing:
+  Version: 2
+  Lock time: 0
+  Inputs:
+    Input 0:
+      Previous output: dd5f9a77610483dbc4ba0a1db6406459d2816dc0c287102cbc7eb17e0dee96cc:1
+      Sequence: 4294967293
+      Script pubkey: OP_PUSHNUM_1 OP_PUSHBYTES_32 baa81b54db8e891daf5c763fb7a5123b50d9a69cf19253f80c23287314fec7db
+  Outputs:
+    Output 0:
+      Value: 0.00000100 BTC
+      Script pubkey: OP_PUSHNUM_1 OP_PUSHBYTES_32 decd14d8b95736c85f7519e5a674a6c0f61543d41975c0a4c625c27db88973a1
+    Output 1:
+      Value: 0.00098960 BTC
+      Script pubkey: OP_PUSHNUM_1 OP_PUSHBYTES_32 baa81b54db8e891daf5c763fb7a5123b50d9a69cf19253f80c23287314fec7db
+
+Do you want to sign this transaction? [yes/no] >
+yes
+{
+  "content": "02000000000101cc96ee0d7eb17ebc2c1087c2c06d81d2596440b61d0abac4db830461779a5fdd0100000000fdffffff026400000000000000225120decd14d8b95736c85f7519e5a674a6c0f61543d41975c0a4c625c27db88973a19082010000000000225120baa81b54db8e891daf5c763fb7a5123b50d9a69cf19253f80c23287314fec7db0140ac2f1e5e911948450ce37e4033b502edf0750ae04078231f13d382d0efdec3ca1368b9bea7f0bb92d3053baa61ead56ed71796886a57721cc2b2c4acd9412ebb00000000",
+  "output_type": "tx",
+  "path": "/tmp/305da9d77a2af176.tx"
+}
+```
+
+第二个参与者，这里为 `tb1p488sz4vv4rnc267hd0m7st5dufpmtzv4nw70r7exyfwz60s3rhsqca94sg`：
+
+```bash
+$ rooch bitcoin sign-tx -s tb1p488sz4vv4rnc267hd0m7st5dufpmtzv4nw70r7exyfwz60s3rhsqca94sg /tmp/305da9d77a2af176.psbt
+Transaction details before signing:
+  Version: 2
+  Lock time: 0
+  Inputs:
+    Input 0:
+      Previous output: dd5f9a77610483dbc4ba0a1db6406459d2816dc0c287102cbc7eb17e0dee96cc:1
+      Sequence: 4294967293
+      Script pubkey: OP_PUSHNUM_1 OP_PUSHBYTES_32 baa81b54db8e891daf5c763fb7a5123b50d9a69cf19253f80c23287314fec7db
+  Outputs:
+    Output 0:
+      Value: 0.00000100 BTC
+      Script pubkey: OP_PUSHNUM_1 OP_PUSHBYTES_32 decd14d8b95736c85f7519e5a674a6c0f61543d41975c0a4c625c27db88973a1
+    Output 1:
+      Value: 0.00098960 BTC
+      Script pubkey: OP_PUSHNUM_1 OP_PUSHBYTES_32 baa81b54db8e891daf5c763fb7a5123b50d9a69cf19253f80c23287314fec7db
+
+Do you want to sign this transaction? [yes/no] >
+yes
+{
+  "content": "02000000000101cc96ee0d7eb17ebc2c1087c2c06d81d2596440b61d0abac4db830461779a5fdd0100000000fdffffff026400000000000000225120decd14d8b95736c85f7519e5a674a6c0f61543d41975c0a4c625c27db88973a19082010000000000225120baa81b54db8e891daf5c763fb7a5123b50d9a69cf19253f80c23287314fec7db0140ed98589b4abc20b02f9cb66492cddc02239b36712d53d3c88ac61ff67ddb0b9b748aeb270d8857a7229b8268bce4de073d328514246619117ff9cf998067bf5e00000000",
+  "output_type": "tx",
+  "path": "/tmp/305da9d77a2af176.tx"
+}
+```
+
+当多签交易满足门槛数后，我们就可以将这笔多签交易广播出去，交易就会上链了。
+
 ### 广播交易
 
 ```bash
 rooch bitcoin broadcast-tx /tmp/xxxxx.tx
 ```
 
-<++>
+多签参与者对多签的交易签名后，会在相同的目录生成一个 `.tx` 文件，此处为 `/tmp/305da9d77a2af176.tx`，这个文件存放着这笔多签交易的内容，我们将这笔交易广播出去，就会上链了。
 
+```bash
+[joe@mx ~]$ rooch bitcoin broadcast-tx /tmp/305da9d77a2af176.tx
+"59142915d9a1f301dcd26120fe747a18a9e577cb9d357eae76f12a7ad7a95d30"
+```
 
-Summary
-Implement rooch bitcoin command
-bump bitcoin to 0.32.2, and remove nostr
-close #2414 and close #2581
+接下来，我们检查一下目标账户的余额：
 
-Usage:
+```bash
+$ rooch account balance
+                                              Coin Type                                                |      Symbol      | Decimals |             Balance     
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------
+                                               Bitcoin                                                 |       BTC        |    8     |                100      
+```
 
-Create multisign
-Got the multisign_bitcoin_address
+目前，我们的目标账户已经有了 `100` sats 的 BTC 了。
 
-Build tx
-rooch bitcoin build-tx --sender $multisign_bitcoin_address -o $to_address:amount_sats
-{
-  "content": "hex content",
-  "output_type": "psbt",
-  "path": "/tmp/xxxxx.psbt"
-}
-Sign tx
-rooch bitcoin sign-tx -s $Pubkey1_address /tmp/xxxxx.psbt
-rooch bitcoin sign-tx -s $Pubkey2_address /tmp/xxxxx.psbt
-Got xxxxx.tx
-
-Broadcast tx
-rooch bitcoin broadcast-tx /tmp/xxxxx.tx
-Note: the taproot multisign signature order in the witness should be reversed with the public key order in the script. Thanks to rust-bitcoin/rust-bitcoin#2241
+至此，相信你已经熟悉 Rooch 在命令行下如何发送多签交易的整体流程了！
