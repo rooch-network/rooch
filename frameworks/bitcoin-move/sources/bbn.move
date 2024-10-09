@@ -4,18 +4,19 @@ module bitcoin_move::bbn {
     use std::option::{is_none, Option, none, is_some, some};
     use std::vector;
     use std::vector::{for_each_ref, length};
-    use rooch_framework::transaction;
     use bitcoin_move::bitcoin;
     use bitcoin_move::utxo::UTXO;
     use bitcoin_move::types;
     use bitcoin_move::utxo;
     use bitcoin_move::script_buf;
-    use bitcoin_move::types::{Transaction, tx_id, tx_output, TxOut, txout_value, tx_lock_time};
+    use bitcoin_move::types::{Transaction, tx_id, tx_output, txout_value, tx_lock_time, txout_script_pubkey};
     use bitcoin_move::bitcoin::get_tx_height;
     use rooch_framework::bitcoin_address::{derive_bitcoin_taproot_address_from_pubkey, to_rooch_address};
     use bitcoin_move::script_buf::{unpack_bbn_stake_data};
     use moveos_std::object::{Object, ObjectID};
     use moveos_std::object;
+
+    friend bitcoin_move::genesis;
 
     struct BBNGlobalParam has key {
         version: u64,
@@ -53,7 +54,7 @@ module bitcoin_move::bbn {
     const ErrorNotBabylonOpReturn: u64 = 2;
     const ErrorTransactionLockTime: u64 = 3;
 
-    public(friend) fun genesis_init(_genesis_account: &signer) {
+    public(friend) fun genesis_init() {
         // TODO here just add bbn test-4 version 2
         let bbn_global_params_2 = BBNGlobalParam{
             version: 2,
@@ -116,7 +117,7 @@ module bitcoin_move::bbn {
 		// return an error.
         let index = 0;
         for_each_ref(tx_output, |output| {
-            (bbn_op_return_data.tag, bbn_op_return_data.version, bbn_op_return_data.staker_pub_key, bbn_op_return_data.finality_provider_pub_key, bbn_op_return_data.staking_time) = unpack_bbn_stake_data(output.txout_script_pubkey());
+            (bbn_op_return_data.tag, bbn_op_return_data.version, bbn_op_return_data.staker_pub_key, bbn_op_return_data.finality_provider_pub_key, bbn_op_return_data.staking_time) = unpack_bbn_stake_data(txout_script_pubkey(output));
             if (vector::length(&bbn_op_return_data.tag) != 0){
                 break
             };
@@ -170,7 +171,7 @@ module bitcoin_move::bbn {
     }
 
     public fun derive_bbn_utxo(utxo_obj: &Object<UTXO>) {
-        assert!(object::owner(utxo_obj) == @bitcoin_move, ErrorNotBabylonUTXO);
+        // assert!(object::owner(utxo_obj) == @bitcoin_move, ErrorNotBabylonUTXO);
         let utxo = object::borrow(utxo_obj);
         let txid = utxo::txid(utxo);
         let option_tx = bitcoin::get_tx(txid);
