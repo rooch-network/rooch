@@ -10,6 +10,12 @@
  * /crates/rooch-open-rpc-spec/openrpc.json
  */
 
+export interface AccumulatorInfoView {
+  accumulator_root: string
+  frozen_subtree_roots: string[]
+  num_leaves: string
+  num_nodes: string
+}
 export interface AnnotatedFunctionResultView {
   return_values?: AnnotatedFunctionReturnValueView[] | null
   vm_status: VMStatusView
@@ -42,13 +48,18 @@ export interface BalanceInfoView {
   balance: string
   coin_type: string
   decimals: number
+  icon_url?: string | null
   name: string
   supply: string
   symbol: string
 }
-export interface OutPointView {
-  txid: string
-  vout: number
+export interface BitcoinStatus {
+  confirmed_block?: BlockHeightHashView | null
+  pending_block?: BlockHeightHashView | null
+}
+export interface BlockHeightHashView {
+  block_hash: string
+  block_height: string
 }
 export interface DisplayFieldsView {
   fields: {
@@ -226,6 +237,7 @@ export interface LedgerTransactionView {
 }
 export type LedgerTxDataView =
   | {
+      bitcoin_block_hash?: string | null
       block_hash: string
       block_height: string
       chain_id: string
@@ -368,6 +380,10 @@ export type OpView =
   | {
       modify: string
     }
+export interface OutPointView {
+  txid: string
+  vout: number
+}
 /**
  * `next_cursor` points to the last item in the page; Reading with `next_cursor` will start from the
  * next item after `next_cursor` if `next_cursor` is `Some`, otherwise it will start from the first
@@ -423,6 +439,16 @@ export interface PaginatedInscriptionStateViews {
  * next item after `next_cursor` if `next_cursor` is `Some`, otherwise it will start from the first
  * item.
  */
+export interface PaginatedStateChangeSetWithTxOrderViews {
+  data: StateChangeSetWithTxOrderView[]
+  has_next_page: boolean
+  next_cursor?: string | null
+}
+/**
+ * `next_cursor` points to the last item in the page; Reading with `next_cursor` will start from the
+ * next item after `next_cursor` if `next_cursor` is `Some`, otherwise it will start from the first
+ * item.
+ */
 export interface PaginatedStateKVViews {
   data: StateKVView[]
   has_next_page: boolean
@@ -471,6 +497,14 @@ export type RepairIndexerParamsView =
   | {
       object_id: string
     }
+export interface RoochStatus {
+  root_state: RootStateView
+  sequencer_info: SequencerInfoView
+}
+export interface RootStateView {
+  size: string
+  state_root: string
+}
 export interface SatPointView {
   offset: string
   output: OutPointView
@@ -480,12 +514,21 @@ export interface ScriptCallView {
   code: string
   ty_args: string[]
 }
+export interface SequencerInfoView {
+  last_accumulator_info: AccumulatorInfoView
+  last_order: string
+}
+export type ServiceStatus = 'active' | 'maintenance' | 'read-only-mode' | 'date-import-mode'
 /** Some specific struct that we want to display in a special way for better readability */
 export type SpecificStructView = MoveString | MoveAsciiString | string
 export interface StateChangeSetView {
   changes: ObjectChangeView[]
   global_size: string
   state_root: string
+}
+export interface StateChangeSetWithTxOrderView {
+  state_change_set: StateChangeSetView
+  tx_order: string
 }
 export interface StateKVView {
   field_key: string
@@ -496,7 +539,23 @@ export interface StateOptions {
   decode?: boolean
   /** If true, result with display rendered is returned */
   showDisplay?: boolean
+  /** The state root of remote stateDB */
+  stateRoot?: string | null
 }
+export interface Status {
+  /** The status of the Bitcoin chain */
+  bitcoin_status: BitcoinStatus
+  /** The status of the Rooch chain */
+  rooch_status: RoochStatus
+  /** The status of the rpc service */
+  service_status: ServiceStatus
+}
+export type SyncStateFilterView =
+  /** Sync by object id. */
+  | {
+      object_i_d: string
+    }
+  | 'all'
 export interface TransactionExecutionInfoView {
   event_root: string
   gas_used: string

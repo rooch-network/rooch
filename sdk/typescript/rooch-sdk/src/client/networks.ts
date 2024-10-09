@@ -1,8 +1,10 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-export function getRoochNodeUrl(network: 'testnet' | 'devnet' | 'localnet') {
+export function getRoochNodeUrl(network: 'mainnet' | 'testnet' | 'devnet' | 'localnet') {
   switch (network) {
+    case 'mainnet':
+      return 'https://main-seed.rooch.network'
     case 'testnet':
       return 'https://test-seed.rooch.network'
     case 'devnet':

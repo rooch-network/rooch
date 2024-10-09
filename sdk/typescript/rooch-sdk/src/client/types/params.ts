@@ -148,3 +148,12 @@ export interface RepairIndexerParams {
 export interface SendRawTransactionParams {
   txBcsHex: string
 }
+/** Get the chain and service status */
+export interface StatusParams {}
+/** Sync state change sets */
+export interface SyncStatesParams {
+  filter: RpcTypes.SyncStateFilterView
+  cursor?: string | null | undefined
+  limit?: string | null | undefined
+  queryOption?: RpcTypes.QueryOptions | null | undefined
+}
