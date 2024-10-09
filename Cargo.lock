@@ -9558,10 +9558,13 @@ name = "rooch-config"
 version = "0.7.3"
 dependencies = [
  "anyhow",
+ "celestia-types",
  "clap 4.5.17",
  "dirs",
  "dirs-next",
+ "hex",
  "moveos-config",
+ "moveos-types",
  "once_cell",
  "rooch-types",
  "serde 1.0.210",

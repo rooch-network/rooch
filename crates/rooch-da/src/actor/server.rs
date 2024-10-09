@@ -37,6 +37,7 @@ impl DAServerActor {
         sequencer_key: RoochKeyPair,
         rooch_store: RoochStore,
         last_tx_order: Option<u64>,
+        genesis_namespace: String,
     ) -> anyhow::Result<Self> {
         let mut backends: Vec<Arc<dyn DABackend>> = Vec::new();
         let mut submit_threshold = 1;
@@ -53,7 +54,7 @@ impl DAServerActor {
                     act_backends += 1;
                 }
                 if let DABackendConfigType::OpenDa(openda_config) = backend_type {
-                    let backend = OpenDABackend::new(openda_config).await?;
+                    let backend = OpenDABackend::new(openda_config, genesis_namespace).await?;
                     backends.push(Arc::new(backend));
                     act_backends += 1;
                 }

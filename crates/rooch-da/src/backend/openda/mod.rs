@@ -6,8 +6,8 @@ use anyhow::anyhow;
 use async_trait::async_trait;
 use opendal::layers::{LoggingLayer, RetryLayer};
 use opendal::{Operator, Scheme};
-use rooch_config::config::retrieve_map_config_value;
 use rooch_config::da_config::{DABackendOpenDAConfig, OpenDAScheme};
+use rooch_config::retrieve_map_config_value;
 use rooch_types::da::batch::DABatch;
 use rooch_types::da::chunk::{Chunk, ChunkV0};
 use rooch_types::da::segment::SegmentID;
@@ -16,8 +16,6 @@ use std::path::Path;
 
 pub const DEFAULT_MAX_SEGMENT_SIZE: u64 = 4 * 1024 * 1024;
 pub const DEFAULT_MAX_RETRY_TIMES: usize = 4;
-
-pub const OPENDA_DEFAULT_PREFIX: &str = "openda";
 
 #[async_trait]
 impl DABackend for OpenDABackend {
@@ -34,32 +32,25 @@ pub struct OpenDABackend {
 }
 
 impl OpenDABackend {
-    pub async fn new(cfg: &DABackendOpenDAConfig) -> anyhow::Result<OpenDABackend> {
+    pub async fn new(
+        cfg: &DABackendOpenDAConfig,
+        genesis_namespace: String,
+    ) -> anyhow::Result<OpenDABackend> {
         let mut config = cfg.clone();
 
         let op: Operator = match config.scheme {
             OpenDAScheme::Fs => {
                 // root must be existed
-                if !config.config.contains_key("root") {
-                    return Err(anyhow!(
-                        "key 'root' must be existed in config for scheme {:?}",
-                        OpenDAScheme::Fs
-                    ));
-                }
+                check_config_exist(OpenDAScheme::Fs, &config.config, "root")?;
                 new_retry_operator(Scheme::Fs, config.config, None).await?
             }
             OpenDAScheme::Gcs => {
-                // If certain keys don't exist in the map, set them from environment
-                if !config.config.contains_key("bucket") {
-                    if let Ok(bucket) = std::env::var("OPENDA_GCS_BUCKET") {
-                        config.config.insert("bucket".to_string(), bucket);
-                    }
-                }
-                if !config.config.contains_key("root") {
-                    if let Ok(root) = std::env::var("OPENDA_GCS_ROOT") {
-                        config.config.insert("root".to_string(), root);
-                    }
-                }
+                retrieve_map_config_value(
+                    &mut config.config,
+                    "bucket",
+                    Some("OPENDA_GCS_BUCKET"),
+                    Some("rooch-openda-dev"),
+                );
                 if !config.config.contains_key("credential") {
                     if let Ok(credential) = std::env::var("OPENDA_GCS_CREDENTIAL") {
                         config.config.insert("credential".to_string(), credential);
@@ -88,7 +79,7 @@ impl OpenDABackend {
                     &mut config.config,
                     "default_storage_class",
                     Some("OPENDA_GCS_DEFAULT_STORAGE_CLASS"),
-                    "STANDARD",
+                    Some("STANDARD"),
                 );
 
                 check_config_exist(OpenDAScheme::Gcs, &config.config, "bucket")?;
@@ -104,18 +95,23 @@ impl OpenDABackend {
                     (Err(_), Ok(_)) => (),
 
                     (Err(_), Err(_)) => {
-                        return Err(anyhow!("either 'credential' or 'credential_path' must exist in config for scheme {:?}", OpenDAScheme::Gcs));
+                        return Err(anyhow!(
+                            "credential no found in config for scheme {:?}",
+                            OpenDAScheme::Gcs
+                        ));
                     }
                 }
 
                 // After setting defaults, proceed with creating Operator
                 new_retry_operator(Scheme::Gcs, config.config, None).await?
             }
-            _ => Err(anyhow!("unsupported open-da scheme: {:?}", config.scheme))?,
+            OpenDAScheme::S3 => {
+                todo!("s3 backend is not implemented yet");
+            }
         };
 
         Ok(Self {
-            prefix: config.prefix.unwrap_or(OPENDA_DEFAULT_PREFIX.to_string()),
+            prefix: config.namespace.unwrap_or(genesis_namespace),
             scheme: config.scheme,
             max_segment_size: cfg.max_segment_size.unwrap_or(DEFAULT_MAX_SEGMENT_SIZE) as usize,
             operator: op,
