@@ -6,6 +6,7 @@ use moveos_types::h256::H256;
 use rooch_da::actor::messages::PutDABatchMessage;
 use rooch_da::proxy::DAServerProxy;
 use rooch_types::block::Block;
+use rooch_types::transaction::LedgerTransaction;
 
 /// State Commitment Chain(SCC) is a chain of transaction state root
 /// This SCC is a mirror of the on-chain SCC
@@ -76,13 +77,17 @@ impl StateCommitmentChain {
 
         // submit batch to DA server
         // TODO move batch submit out of proposer
-        let tx_list_bytes: Vec<u8> = self.buffer.iter().flat_map(|tx| tx.tx.encode()).collect();
+        let tx_list: Vec<LedgerTransaction> = self.buffer.iter().map(|tx| tx.tx.clone()).collect();
         let batch_meta = self
             .da
             .pub_batch(PutDABatchMessage {
-                tx_order_start: 0,
-                tx_order_end: 0,
-                tx_list_bytes,
+                tx_order_start: tx_list
+                    .first()
+                    .expect("tx list must not empty")
+                    .sequence_info
+                    .tx_order,
+                tx_order_end: latest_transaction.tx.sequence_info.tx_order,
+                tx_list,
             })
             .await;
         match batch_meta {

@@ -10,14 +10,14 @@ use async_trait::async_trait;
 use coerce::actor::context::ActorContext;
 use coerce::actor::message::Handler;
 use coerce::actor::Actor;
-use moveos_types::h256;
 use moveos_types::h256::H256;
 use rooch_config::da_config::{DABackendConfigType, DAConfig};
 use rooch_store::da_store::DAMetaStore;
 use rooch_store::transaction_store::TransactionStore;
 use rooch_store::RoochStore;
-use rooch_types::crypto::{RoochKeyPair, Signature};
-use rooch_types::da::batch::{BlockRange, DABatch, DABatchMeta, SignedDABatchMeta};
+use rooch_types::crypto::RoochKeyPair;
+use rooch_types::da::batch::{BlockRange, DABatch, SignedDABatchMeta};
+use rooch_types::transaction::LedgerTransaction;
 use std::sync::Arc;
 
 pub struct DAServerActor {
@@ -121,7 +121,7 @@ impl DAServerActor {
                     tx_order_start,
                     tx_order_end,
                 },
-                msg.tx_list_bytes,
+                msg.tx_list,
             )
             .await?;
         self.last_block_number = Some(block_number);
@@ -129,28 +129,26 @@ impl DAServerActor {
         Ok(signed_meta)
     }
 
+    // should be idempotent
     async fn submit_batch_raw(
         &self,
         block_range: BlockRange,
-        tx_list_bytes: Vec<u8>,
+        tx_list: Vec<LedgerTransaction>,
     ) -> anyhow::Result<SignedDABatchMeta> {
         let block_number = block_range.block_number;
         let tx_order_start = block_range.tx_order_start;
         let tx_order_end = block_range.tx_order_end;
 
         // create batch
-        let tx_list_hash = h256::sha2_256_of(&tx_list_bytes);
-        let batch_meta = DABatchMeta::new(block_number, tx_order_start, tx_order_end, tx_list_hash);
-        let meta_bytes = bcs::to_bytes(&batch_meta)?;
-        let meta_hash = h256::sha3_256_of(&meta_bytes);
-        let meta_signature = Signature::sign(&meta_hash.0, &self.sequencer_key)
-            .as_ref()
-            .to_vec();
-        let batch = DABatch {
-            meta: batch_meta.clone(),
-            meta_signature: meta_signature.clone(),
-            tx_list_bytes,
-        };
+        let batch = DABatch::new(
+            block_number,
+            tx_order_start,
+            tx_order_end,
+            &tx_list,
+            self.sequencer_key.copy(),
+        );
+        let batch_meta = batch.meta.clone();
+        let meta_signature = batch.meta_signature.clone();
 
         // submit batch
         self.submit_batch_to_backends(batch).await?;
@@ -227,17 +225,18 @@ impl DAServerActor {
                 .into_iter()
                 .map(|tx_hash| tx_hash.unwrap())
                 .collect();
-            let mut tx_list_bytes = Vec::new();
+            let mut tx_list: Vec<LedgerTransaction> = Vec::new();
             for tx_hash in tx_hashes {
                 let tx = self
                     .rooch_store
                     .get_transaction_by_hash(tx_hash)?
                     .unwrap_or_else(|| panic!("tx not found for hash: {:?}", tx_hash));
-                tx_list_bytes.append(&mut tx.encode());
+                tx_list.push(tx);
             }
-            self.submit_batch_raw(block, tx_list_bytes).await?;
+            self.submit_batch_raw(block, tx_list).await?;
             submit_count += 1;
             if submit_count % 1024 == 0 {
+                // it's okay to set cursor a bit behind: submit_batch_raw set submitting block done, so it won't be submitted again after restart
                 self.rooch_store
                     .set_background_submit_block_cursor(block_number)?;
                 log::info!("da: submitted {} blocks in background", submit_count);
