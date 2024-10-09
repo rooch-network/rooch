@@ -3,6 +3,7 @@
 
 module bitcoin_move::genesis{
     use std::option;
+    use bitcoin_move::bbn;
     use moveos_std::tx_context;
     use moveos_std::signer;
     use rooch_framework::bitcoin_address::{Self, BitcoinAddress};
@@ -40,6 +41,7 @@ module bitcoin_move::genesis{
         network::genesis_init(genesis_context.network);
         utxo::genesis_init();
         ord::genesis_init();
+        bbn::genesis_init();
         bitcoin::genesis_init(&genesis_account, genesis_context.genesis_block_height, genesis_context.genesis_block_hash);
         pending_block::genesis_init(genesis_context.reorg_block_count);
         bitcoin_multisign_validator::genesis_init();

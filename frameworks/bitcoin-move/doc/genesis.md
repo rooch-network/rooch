@@ -14,6 +14,7 @@
 <b>use</b> <a href="">0x2::signer</a>;
 <b>use</b> <a href="">0x2::tx_context</a>;
 <b>use</b> <a href="">0x3::bitcoin_address</a>;
+<b>use</b> <a href="bbn.md#0x4_bbn">0x4::bbn</a>;
 <b>use</b> <a href="bitcoin.md#0x4_bitcoin">0x4::bitcoin</a>;
 <b>use</b> <a href="bitcoin_multisign_validator.md#0x4_bitcoin_multisign_validator">0x4::bitcoin_multisign_validator</a>;
 <b>use</b> <a href="multisign_account.md#0x4_multisign_account">0x4::multisign_account</a>;
