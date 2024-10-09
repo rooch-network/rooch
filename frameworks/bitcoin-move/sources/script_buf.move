@@ -6,6 +6,7 @@ module bitcoin_move::script_buf{
     use bitcoin_move::opcode;
 
     const ErrorInvalidKeySize: u64 = 1;
+    const ErrorInvalidBytesLen: u64 = 2;
 
     const BITCOIN_X_ONLY_PUBKEY_SIZE: u64 = 32;
     const BITCOIN_PUBKEY_SIZE: u64 = 33;
@@ -91,6 +92,37 @@ module bitcoin_move::script_buf{
     public fun is_op_return(self: &ScriptBuf): bool {
         vector::length(&self.bytes) > 0 &&
             *vector::borrow(&self.bytes, 0) == opcode::op_return()
+    }
+
+    public fun unpack_bbn_stake_data(self: &ScriptBuf): (vector<u8>, u64, vector<u8>, vector<u8>, u16){
+        // 1. OP_RETURN opcode - which signalizes that data is provably unspendable
+	    // 2. OP_DATA_71 opcode - which pushes 71 bytes of data to the stack
+        if (vector::length(&self.bytes) != 73 || *vector::borrow(&self.bytes, 0) != opcode::op_return() || *vector::borrow(&self.bytes, 1) != opcode::op_pushbytes_71()){
+            return (vector[], 0, vector[], vector[], 0)
+        };
+        let tag = vector::slice(&self.bytes, 2, 6);
+        let version = bytes_to_u64(vector::slice(&self.bytes, 6, 7));
+        let staker_pub_key = vector::slice(&self.bytes, 7, 39);
+        let finality_provider_pub_key = vector::slice(&self.bytes, 39, 71);
+        let staking_time = bytes_to_u16(vector::slice(&self.bytes, 71, 73));
+        return (tag, version, staker_pub_key, finality_provider_pub_key, staking_time)
+    }
+
+    fun bytes_to_u16(bytes: vector<u8>): u16 {
+        assert!(vector::length(&bytes) == 2, ErrorInvalidBytesLen);
+        let high_byte = vector::borrow(&bytes, 0);
+        let low_byte = vector::borrow(&bytes, 1);
+        ((*high_byte as u16) << 8) | (*low_byte as u16)
+    }
+
+    fun bytes_to_u64(bytes: vector<u8>): u64 {
+        let value = 0u64;
+        let i = 0u64;
+        while (i < 8) {
+            value = value | ((*vector::borrow(&bytes, i) as u64) << ((8 * (7 - i)) as u8));
+            i = i + 1;
+        };
+        return value
     }
 
     // ====== Script Builder ======

@@ -17,6 +17,7 @@ module bitcoin_move::utxo{
     friend bitcoin_move::ord;
     friend bitcoin_move::bitcoin;
     friend bitcoin_move::inscription_updater;
+    friend bitcoin_move::bbn;
 
     const TEMPORARY_AREA: vector<u8> = b"temporary_area";
 
