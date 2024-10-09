@@ -157,6 +157,11 @@ where
                 }
             },
         };
+
+        tracing::debug!("requset headers: {:?}", &req.headers());
+        tracing::debug!("client ip: {:?}", &client);
+        tracing::debug!("proxied client ip: {:?}", &proxied_client);
+
         let s = self.check_impl(&client, &proxied_client);
 
         // Extraction worked, let's check blocklist needed.
