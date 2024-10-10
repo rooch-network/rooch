@@ -2,6 +2,10 @@
 
 本文档介绍多签账户的使用，包括如何通过 Rooch CLI 在链上创建多签账户，以及如何发起多签交易，如何签名交易，如何广播交易。
 
+## 概述
+
+Rooch 作为 Bitcoin 的 L2，Rooch 提供了 L1 交易和 L2 交易的多签功能。本文首先演示 L1 交易，即演示 Bitcoin 的原生资产 `BTC` 的多签交易，然后演示 L2 交易，即演示 Rooch 的 `RGAS` 的多签交易。
+
 ## 准备账户公钥
 
 接下来准备 3 个账户来演示多签账户的功能。
@@ -42,7 +46,7 @@ $ rooch account list --json
 }
 ```
 
-## 使用演示
+## L1 交易演示
 
 ### 创建多签
 
@@ -97,7 +101,7 @@ rooch bitcoin build-tx --sender $multisign_bitcoin_address -o $to_address:amount
 - `-o` 指定交易输出，即转账的比特币地址和比特币的数量（单位为 sats），这里使用 `:` 分隔。
 
 ```bash
-$ rooch bitcoin build-tx --sender tb1ph25pk4xm36y3mt6uwclm0fgj8dgdnf5u7xf987qvyv58x987cldsefe2dh -o tb1pmmx3fk9e2umvshm4r8j6va9xcrmp2s75r96upfxxyhp8mwyfwwssrql720:100
+$ rooch bitcoin build-tx --sender tb1przxwx6xdyehpnspdr70jaqjm4g62dedcm4gcvf62qu6xjae6e8tq4mpqvn -o tb1pmmx3fk9e2umvshm4r8j6va9xcrmp2s75r96upfxxyhp8mwyfwwssrql720:100
 
 {
   "content": "70736274ff0100890200000001cc96ee0d7eb17ebc2c1087c2c06d81d2596440b61d0abac4db830461779a5fdd0100000000fdffffff026400000000000000225120decd14d8b95736c85f7519e5a674a6c0f61543d41975c0a4c625c27db88973a19082010000000000225120baa81b54db8e891daf5c763fb7a5123b50d9a69cf19253f80c23287314fec7db000000000001012ba086010000000000225120baa81b54db8e891daf5c763fb7a5123b50d9a69cf19253f80c23287314fec7db2206022a88ddcf585a398e62be5d4d47d4f5ae5e818febaf04bfa465fd6a83c7aa6b9f0400000000000000",
@@ -200,5 +204,92 @@ $ rooch account balance
 ```
 
 目前，我们的目标账户已经有了 `100` sats 的 BTC 了。
+
+## L2 交易演示
+
+### 创建多签
+
+### 生成多签交易
+
+```bash
+[joe@mx bitcoin]$ rooch bitcoin build-tx --sender rooch1vrg7lzdml74mvhnpke9mfrvgn0esnedf3l6sn52t29qs2j5zy35s6qdlty -o rooch1hh9p0twq7yze06tys4lp2dzh3k6s4jgrcu68vqnr5ku8cwuaprjq0y8pml:500
+
+{
+  "content": "70736274ff010089020000000123a20900b24fe6a35762e2952861304acd7fb28f177aa4a2f54459df0df955b80000000000fdffffff02f401000000000000225120decd14d8b95736c85f7519e5a674a6c0f61543d41975c0a4c625c27db88973a10081010000000000225120188ce368cd266e19c02d1f9f2e825baa34a6e5b8dd5186274a073469773ac9d6000000000001012ba086010000000000225120188ce368cd266e19c02d1f9f2e825baa34a6e5b8dd5186274a073469773ac9d62215c12a88ddcf585a398e62be5d4d47d4f5ae5e818febaf04bfa465fd6a83c7aa6b9f69202a88ddcf585a398e62be5d4d47d4f5ae5e818febaf04bfa465fd6a83c7aa6b9fac205af3f3c32cf418da0ace8df6bca9dd9e231353dcc2d53b31138b0256c897d79dba20a2f2aba75dd50503c91c3c7f18ee16c14b0d94fb3b3951a612df2524788f3629ba52a2c021162a88ddcf585a398e62be5d4d47d4f5ae5e818febaf04bfa465fd6a83c7aa6b9f25011e797e9bfac88d1f0e20b6481d46e2114c65430a19ea9e34f3e661ad9d1548280000000021165af3f3c32cf418da0ace8df6bca9dd9e231353dcc2d53b31138b0256c897d79d25011e797e9bfac88d1f0e20b6481d46e2114c65430a19ea9e34f3e661ad9d154828000000002116a2f2aba75dd50503c91c3c7f18ee16c14b0d94fb3b3951a612df2524788f362925011e797e9bfac88d1f0e20b6481d46e2114c65430a19ea9e34f3e661ad9d154828000000000117202a88ddcf585a398e62be5d4d47d4f5ae5e818febaf04bfa465fd6a83c7aa6b9f0118201e797e9bfac88d1f0e20b6481d46e2114c65430a19ea9e34f3e661ad9d154828000000",
+  "output_type": "psbt",
+  "path": "/tmp/b3218c09717920b1.psbt"
+}
+```
+
+<++>
+
+### 签名交易
+
+```bash
+[joe@mx bitcoin]$ rooch bitcoin sign-tx -s rooch1qe8s8rkcds2q0xxq9xhjmfq2mxgs4zmjvlle7dmtnrthndzes0uqmhwzzr /tmp/b3218c09717920b1.psbt
+Transaction details before signing:
+  Version: 2
+  Lock time: 0
+  Inputs:
+    Input 0:
+      Previous output: b855f90ddf5944f5a2a47a178fb27fcd4a30612895e26257a3e64fb20009a223:0
+      Sequence: 4294967293
+      Script pubkey: OP_PUSHNUM_1 OP_PUSHBYTES_32 188ce368cd266e19c02d1f9f2e825baa34a6e5b8dd5186274a073469773ac9d6
+  Outputs:
+    Output 0:
+      Value: 0.00000500 BTC
+      Script pubkey: OP_PUSHNUM_1 OP_PUSHBYTES_32 decd14d8b95736c85f7519e5a674a6c0f61543d41975c0a4c625c27db88973a1
+    Output 1:
+      Value: 0.00098560 BTC
+      Script pubkey: OP_PUSHNUM_1 OP_PUSHBYTES_32 188ce368cd266e19c02d1f9f2e825baa34a6e5b8dd5186274a073469773ac9d6
+
+Do you want to sign this transaction? [yes/no] >
+yes
+{
+  "content": "70736274ff010089020000000123a20900b24fe6a35762e2952861304acd7fb28f177aa4a2f54459df0df955b80000000000fdffffff02f401000000000000225120decd14d8b95736c85f7519e5a674a6c0f61543d41975c0a4c625c27db88973a10081010000000000225120188ce368cd266e19c02d1f9f2e825baa34a6e5b8dd5186274a073469773ac9d6000000000001012ba086010000000000225120188ce368cd266e19c02d1f9f2e825baa34a6e5b8dd5186274a073469773ac9d641142a88ddcf585a398e62be5d4d47d4f5ae5e818febaf04bfa465fd6a83c7aa6b9f1e797e9bfac88d1f0e20b6481d46e2114c65430a19ea9e34f3e661ad9d15482840054f1de2f851e675722b433c56ee55bfa699790a7dcab5ad420f22ec1e7879e1b344283e2004ea6190b39984ee250087b0a472b3feebdce36d240adbd7b8098b2215c12a88ddcf585a398e62be5d4d47d4f5ae5e818febaf04bfa465fd6a83c7aa6b9f69202a88ddcf585a398e62be5d4d47d4f5ae5e818febaf04bfa465fd6a83c7aa6b9fac205af3f3c32cf418da0ace8df6bca9dd9e231353dcc2d53b31138b0256c897d79dba20a2f2aba75dd50503c91c3c7f18ee16c14b0d94fb3b3951a612df2524788f3629ba52a2c021162a88ddcf585a398e62be5d4d47d4f5ae5e818febaf04bfa465fd6a83c7aa6b9f25011e797e9bfac88d1f0e20b6481d46e2114c65430a19ea9e34f3e661ad9d1548280000000021165af3f3c32cf418da0ace8df6bca9dd9e231353dcc2d53b31138b0256c897d79d25011e797e9bfac88d1f0e20b6481d46e2114c65430a19ea9e34f3e661ad9d154828000000002116a2f2aba75dd50503c91c3c7f18ee16c14b0d94fb3b3951a612df2524788f362925011e797e9bfac88d1f0e20b6481d46e2114c65430a19ea9e34f3e661ad9d154828000000000117202a88ddcf585a398e62be5d4d47d4f5ae5e818febaf04bfa465fd6a83c7aa6b9f0118201e797e9bfac88d1f0e20b6481d46e2114c65430a19ea9e34f3e661ad9d154828000000",
+  "output_type": "psbt",
+  "path": "/tmp/b3218c09717920b1.psbt"
+}
+```
+
+```bash
+[joe@mx bitcoin]$ rooch bitcoin sign-tx -s rooch1r2xgp9uyf7elphd39mssdtf8s99wgjm3fywazgfcdf7pzhnx637skura9n /tmp/b3218c09717920b1.psbt
+Transaction details before signing:
+  Version: 2
+  Lock time: 0
+  Inputs:
+    Input 0:
+      Previous output: b855f90ddf5944f5a2a47a178fb27fcd4a30612895e26257a3e64fb20009a223:0
+      Sequence: 4294967293
+      Script pubkey: OP_PUSHNUM_1 OP_PUSHBYTES_32 188ce368cd266e19c02d1f9f2e825baa34a6e5b8dd5186274a073469773ac9d6
+  Outputs:
+    Output 0:
+      Value: 0.00000500 BTC
+      Script pubkey: OP_PUSHNUM_1 OP_PUSHBYTES_32 decd14d8b95736c85f7519e5a674a6c0f61543d41975c0a4c625c27db88973a1
+    Output 1:
+      Value: 0.00098560 BTC
+      Script pubkey: OP_PUSHNUM_1 OP_PUSHBYTES_32 188ce368cd266e19c02d1f9f2e825baa34a6e5b8dd5186274a073469773ac9d6
+
+Do you want to sign this transaction? [yes/no] >
+yes
+{
+  "content": "0200000000010123a20900b24fe6a35762e2952861304acd7fb28f177aa4a2f54459df0df955b80000000000fdffffff02f401000000000000225120decd14d8b95736c85f7519e5a674a6c0f61543d41975c0a4c625c27db88973a10081010000000000225120188ce368cd266e19c02d1f9f2e825baa34a6e5b8dd5186274a073469773ac9d60540b77ff010a5e9b7d73769ab74b503546e5fceaa1829f1a97454688bb4b6d6328009a9f2c90823d37d7e1b9eef60604176f7dbc5fbe74a1ec42f628d7c2821487b0040054f1de2f851e675722b433c56ee55bfa699790a7dcab5ad420f22ec1e7879e1b344283e2004ea6190b39984ee250087b0a472b3feebdce36d240adbd7b8098b68202a88ddcf585a398e62be5d4d47d4f5ae5e818febaf04bfa465fd6a83c7aa6b9fac205af3f3c32cf418da0ace8df6bca9dd9e231353dcc2d53b31138b0256c897d79dba20a2f2aba75dd50503c91c3c7f18ee16c14b0d94fb3b3951a612df2524788f3629ba52a221c12a88ddcf585a398e62be5d4d47d4f5ae5e818febaf04bfa465fd6a83c7aa6b9f00000000",
+  "output_type": "tx",
+  "path": "/tmp/b3218c09717920b1.tx"
+}
+```
+
+
+
+### 广播交易
+
+```bash
+[joe@mx bitcoin]$ rooch bitcoin broadcast-tx /tmp/b3218c09717920b1.tx
+"cfb3945aecdc2d3ea04468750996e7ecc8e99c09a30e7a19b1207971098c21b3"
+```
+
+
+
+## 总结
 
 至此，相信你已经熟悉 Rooch 在命令行下如何发送多签交易的整体流程了！
