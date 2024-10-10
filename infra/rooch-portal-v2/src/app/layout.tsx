@@ -3,15 +3,16 @@ import '@fontsource-variable/raleway/wght.css';
 import '@fontsource-variable/plus-jakarta-sans/wght.css';
 
 import type { Viewport } from 'next';
-import { headers } from 'next/headers';
 
+import { headers } from 'next/headers';
 import '@fontsource-variable/red-hat-mono';
+
+import InitColorSchemeScript from '@mui/material/InitColorSchemeScript';
 
 import { primary } from 'src/theme/core/palette';
 import { DashboardLayout } from 'src/layouts/dashboard';
 import { ThemeProvider } from 'src/theme/theme-provider';
 import { schemeConfig } from 'src/theme/color-scheme-script';
-import InitColorSchemeScript from '@mui/material/InitColorSchemeScript';
 
 import { Snackbar } from 'src/components/snackbar';
 import { ProgressBar } from 'src/components/progress-bar';

@@ -1,6 +1,7 @@
-import headerIcon from '@/assets/swap/swap-header-icon.svg';
-import { base, gray } from '@/colors';
 import { Box, Stack, Typography } from '@mui/material';
+
+import { grey } from 'src/theme/core';
+import headerIcon from '@/assets/swap/swap-header-icon.svg';
 
 export default function SwapTransactionHeader({ invert = false }: { invert?: boolean }) {
   return (
@@ -22,7 +23,7 @@ export default function SwapTransactionHeader({ invert = false }: { invert?: boo
           sx={{
             padding: '7px 9px 9px 7px',
             borderRadius: '10px',
-            border: `1px solid ${gray[200]}`,
+            border: `1px solid ${grey[200]}`,
             boxShadow: '0px 1px 2px 0px rgba(16, 24, 40, 0.05)',
           }}
         />
@@ -32,7 +33,7 @@ export default function SwapTransactionHeader({ invert = false }: { invert?: boo
           fontSize: invert ? '1.8125rem' : '2rem',
           fontWeight: 600,
           lineHeight: invert ? '36px' : '100%',
-          color: invert ? base.white : gray[900],
+          color: invert ? '#fff' : grey[900],
         }}
       >
         Swap

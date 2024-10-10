@@ -7,6 +7,8 @@ import { toDust, fromDust, formatCoin, toBigNumber } from 'src/utils/number';
 
 import { grey } from 'src/theme/core';
 
+import { toast } from 'src/components/snackbar';
+
 import Label from './typography/label';
 import SwapCoinSelectButton from './swap-coin-select-button';
 
@@ -48,7 +50,9 @@ export default function SwapCoinInput({
           }
           const amount = toDust(temp, coin.decimals);
           setDebouncedValue(amount);
-        } catch (e) {}
+        } catch (e) {
+          toast.error(String(e));
+        }
       }
     },
     300,

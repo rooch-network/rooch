@@ -1,6 +1,7 @@
-import { BigNumber } from 'bignumber.js';
+import type { UserCoin } from 'src/components/swap/types';
+
 import numeral from 'numeral';
-import { UserCoin } from 'src/components/swap/types';
+import { BigNumber } from 'bignumber.js';
 
 export function decimalsMultiplier(decimals?: BigNumber.Value) {
   return toBigNumber(10).pow(toBigNumber(decimals).abs());
@@ -20,7 +21,7 @@ export const splitValue = (value: string) => {
 };
 
 export function formatCurrency(amount: BigNumber.Value, decimals: number, suffix?: string) {
-  let value = +(amount || 0) / Math.pow(10, decimals);
+  let value = +(amount || 0) / 10 ** decimals;
   let fixed = decimals;
   let prefix = '';
 
@@ -34,9 +35,9 @@ export function formatCurrency(amount: BigNumber.Value, decimals: number, suffix
 
   if (value === 0) {
     fixed = 0;
-  } else if (value < 1 / Math.pow(10, decimals)) {
+  } else if (value < 1 / 10 ** decimals) {
     fixed = decimals;
-    value = +Number(1 / Math.pow(10, decimals));
+    value = +Number(1 / 10 ** decimals);
     prefix = '~';
   }
 
@@ -95,12 +96,12 @@ export function fromDustToPrecision(
   if (real.isLessThan(1)) {
     return real.toPrecision(3).replace(/\.?0+$/, '');
     // >=1 && <1,000,000
-  } else if (real.isGreaterThanOrEqualTo(1) && real.isLessThan(1000000)) {
+  }
+  if (real.isGreaterThanOrEqualTo(1) && real.isLessThan(1000000)) {
     return real.toFixed(2);
     // >1,000,000
-  } else {
-    return real.toFixed(0);
   }
+  return real.toFixed(0);
 }
 
 export function formatCoin(coin: UserCoin, useBalance?: boolean) {
@@ -155,9 +156,9 @@ export function currencyNumberFormatter(val: string | number | bigint) {
   const formatString = '0,0.00';
   if (bn.isLessThan(1)) {
     return numeral(bn.toNumber().toPrecision(3)).format(formatStringWithLessThanOne);
-  } else if (bn.isGreaterThanOrEqualTo(1e6)) {
-    return numeral(bn.toNumber()).format(formatStringWithGreaterThanM);
-  } else {
-    return numeral(bn.toNumber()).format(formatString);
   }
+  if (bn.isGreaterThanOrEqualTo(1e6)) {
+    return numeral(bn.toNumber()).format(formatStringWithGreaterThanM);
+  }
+  return numeral(bn.toNumber()).format(formatString);
 }

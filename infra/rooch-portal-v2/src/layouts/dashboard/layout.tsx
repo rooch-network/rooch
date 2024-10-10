@@ -20,10 +20,10 @@ import { useSettingsContext } from 'src/components/settings';
 import { Main } from './main';
 import { NavMobile } from './nav-mobile';
 import { layoutClasses } from '../classes';
+import { NavVertical } from './nav-vertical';
 import { HeaderBase } from '../core/header-base';
 import { LayoutSection } from '../core/layout-section';
 import { navData as dashboardNavData } from '../config-nav-dashboard';
-import { NavVertical } from './nav-vertical';
 
 export type DashboardLayoutProps = {
   sx?: SxProps<Theme>;
@@ -119,18 +119,20 @@ export function DashboardLayout({ sx, children, data }: DashboardLayoutProps) {
             }}
           />
         }
-        sidebarSection={<NavVertical
-          data={navDataWithAddress}
-          isNavMini={isNavMini}
-          layoutQuery={layoutQuery}
-          cssVars={navColorVars.section}
-          onToggleNav={() =>
-            settings.onUpdateField(
-              'navLayout',
-              settings.navLayout === 'vertical' ? 'mini' : 'vertical'
-            )
-          }
-        />}
+        sidebarSection={
+          <NavVertical
+            data={navDataWithAddress}
+            isNavMini={isNavMini}
+            layoutQuery={layoutQuery}
+            cssVars={navColorVars.section}
+            onToggleNav={() =>
+              settings.onUpdateField(
+                'navLayout',
+                settings.navLayout === 'vertical' ? 'mini' : 'vertical'
+              )
+            }
+          />
+        }
         footerSection={null}
         cssVars={{
           ...navColorVars.layout,

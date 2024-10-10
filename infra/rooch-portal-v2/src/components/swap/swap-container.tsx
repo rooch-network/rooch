@@ -1,5 +1,7 @@
-import { Box, Container, SxProps } from '@mui/material';
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
+import type { SxProps } from '@mui/material';
+
+import { Box, Container } from '@mui/material';
 
 export interface SwapContainerProps {
   width?: number;

@@ -1,6 +1,10 @@
-import { gray } from '@/colors';
 import { Box } from '@mui/material';
-import SwapInfoCard, { SwapInfoCardProps } from './swap-info-card';
+
+import { grey } from 'src/theme/core';
+
+import SwapInfoCard from './swap-info-card';
+
+import type { SwapInfoCardProps } from './swap-info-card';
 
 export interface SwapTransactionInfoCardProps extends SwapInfoCardProps {
   type: 'pending' | 'history';
@@ -18,7 +22,7 @@ export default function SwapTransactionInfoCard({
       sx={{
         padding: '10px 20px',
         borderRadius: '8px',
-        background: gray[50],
+        background: grey[50],
       }}
     >
       <SwapInfoCard
