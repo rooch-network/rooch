@@ -47,7 +47,7 @@ function OptionButton({
     <Button
       variant="outlined"
       color={curveType === value ? 'primary' : 'secondary'}
-      startIcon={<img src={icon} />}
+      startIcon={<img src={icon} alt="curve" />}
       endIcon={
         <Tooltip title={tooltip}>
           <Iconify icon="solar:question-circle-outline" width="20px" />

@@ -1,10 +1,14 @@
-import swapDownIcon from '@/assets/swap/swap-down.svg';
-import { formatCoin } from '../../utils/number';
-import { Box, CircularProgress, Stack, Typography } from '@mui/material';
 import { useMemo } from 'react';
-import { InteractiveMode, UserCoin } from './types';
-import Label from './typography/label';
+
+import { Box, CircularProgress, Stack, Typography } from '@mui/material';
+
 import { grey, secondary } from 'src/theme/core';
+import swapDownIcon from '@/assets/swap/swap-down.svg';
+
+import Label from './typography/label';
+import { formatCoin } from '../../utils/number';
+
+import type { UserCoin, InteractiveMode } from './types';
 
 export interface SwapInfoCardProps {
   fromCoin: UserCoin;
@@ -73,25 +77,22 @@ function SwapItem({
   const bgColor = useMemo(() => {
     if (variant === 'propose') {
       return interactiveMode === type ? '#FCFDFD' : '#F1F5F5';
-    } else {
-      return '#FFF';
     }
+    return '#FFF';
   }, [interactiveMode, type, variant]);
 
-  const imageSize = useMemo(() => {
-    return variant === 'propose' ? '32px' : '24px';
-  }, [variant]);
+  const imageSize = useMemo(() => (variant === 'propose' ? '32px' : '24px'), [variant]);
 
-  const border = useMemo(() => {
-    return variant === 'propose' ? '1px solid #F1F5F5' : '1px solid #E2E4E9';
-  }, [variant]);
+  const border = useMemo(
+    () => (variant === 'propose' ? '1px solid #F1F5F5' : '1px solid #E2E4E9'),
+    [variant]
+  );
 
   const label = useMemo(() => {
     if (variant === 'propose' || variant === 'history') {
       return type.toUpperCase();
-    } else {
-      return interactiveMode === type ? type.toUpperCase() : `${type.toUpperCase()} (OBSERVED)`;
     }
+    return interactiveMode === type ? type.toUpperCase() : `${type.toUpperCase()} (OBSERVED)`;
   }, [variant, interactiveMode, type]);
 
   return (
@@ -101,7 +102,7 @@ function SwapItem({
         position: 'relative',
         padding: '8px 24px',
         borderRadius: '8px',
-        border: border,
+        border,
         background: bgColor,
         boxShadow: '0px 1px 2px 0px rgba(16, 24, 40, 0.05)',
         width: '100%',

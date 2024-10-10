@@ -1,7 +1,10 @@
-import { formatCoin } from 'src/utils/number';
-import { Typography } from '@mui/material';
 import { useMemo } from 'react';
-import { InteractiveMode, UserCoin } from './types';
+
+import { Typography } from '@mui/material';
+
+import { formatCoin } from 'src/utils/number';
+
+import type { UserCoin, InteractiveMode } from './types';
 
 export interface SwapHintTextProps {
   fromCoin: UserCoin;
@@ -45,32 +48,31 @@ export default function SwapHintText({
           or the transaction will revert.
         </Typography>
       );
-    } else {
-      return (
+    }
+    return (
+      <Typography
+        sx={{
+          fontSize: '0.875rem',
+          fontWeight: 400,
+          lineHeight: '24px',
+          color: '#667075',
+        }}
+      >
+        Input is estimated. You will send at least{' '}
         <Typography
+          component="span"
           sx={{
             fontSize: '0.875rem',
             fontWeight: 400,
             lineHeight: '24px',
-            color: '#667075',
+            color: '#101828',
           }}
         >
-          Input is estimated. You will send at least{' '}
-          <Typography
-            component="span"
-            sx={{
-              fontSize: '0.875rem',
-              fontWeight: 400,
-              lineHeight: '24px',
-              color: '#101828',
-            }}
-          >
-            {formatCoin(fromCoin)} {fromCoin.symbol}
-          </Typography>{' '}
-          or the transaction will revert.
-        </Typography>
-      );
-    }
+          {formatCoin(fromCoin)} {fromCoin.symbol}
+        </Typography>{' '}
+        or the transaction will revert.
+      </Typography>
+    );
   }, [interactiveMode, fromCoin, toCoin, amount]);
 
   return hintText;
