@@ -117,4 +117,9 @@ impl DABatch {
             tx_list_bytes,
         }
     }
+
+    pub fn get_hash(&self) -> H256 {
+        let meta_bytes = bcs::to_bytes(&self.meta).expect("encode batch_meta should success");
+        sha2_256_of(&meta_bytes)
+    }
 }

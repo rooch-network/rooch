@@ -17,7 +17,7 @@ verification:
 ### Target
 
 1. **Equivalent to Bitcoin Consensus**: Pack DA into Bitcoin block.
-2. **Self-Verifying**: Anyone could verify DA by checksum and sign.
+2. **Self-Verifying**: Anyone could verify DA by checksum and its signature.
 3. **Open**: DA could be anywhere, anyone could access it without permission.
 
 ## Key Concepts
@@ -33,11 +33,11 @@ verification:
 In Verifier's perspective (verifier verifies tx), the data flow is as follows:
 
 1. user submits tx to sequencer
-2. sequencer batch maker buffer transactions to batch for lower average latency & gas cost
-3. sequencer batch maker put to DA server
+2. sequencer buffers transactions to a batch for lower average latency & gas cost
+3. sequencer puts batch to DA server
 4. verifier get batch from DA server by:
     1. pull DA stream from DA server (after booking)
-    2. get batch from DA server by batch hash
+    2. get batch from DA server by batch hash/block number
     3. get segments from DA backend (after being submitted to DA backend)
 
 ## Roles
@@ -50,8 +50,9 @@ Tx batch maker. Each sequencer maintains its own DA server.
 
 Has responsibilities:
 
-1. public DA Backend info for anyone could access DA data easily.
-2. provides Put/Get interface for DA by DA Server.
+1. public DA Backend info.
+2. provides Put/Get interface for DA.
+3. Response to DA challenges.
 
 Each DA server could connect to multiple DA backends.
 
@@ -68,7 +69,7 @@ submit data to DA backend asynchronously.
 Put includes these actions:
 
 1. Sequencer puts data to DA server
-2. Sequencer packs data meta to Bitcoin
+2. Sequencer packs data meta to Proposer
 3. DA server put data to DA backends
 
 ### Get
