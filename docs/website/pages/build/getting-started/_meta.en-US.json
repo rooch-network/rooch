@@ -6,5 +6,6 @@
   "get-test-btc": "Get tBTC",
   "first-contract": "First contract",
   "first-dapp": "First dApp",
-  "first-token": "First token"
+  "first-token": "First token",
+  "multisign-account": "Multi-signature account"
 }
