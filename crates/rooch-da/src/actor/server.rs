@@ -25,6 +25,7 @@ pub struct DAServerActor {
     rooch_store: RoochStore,
     last_block_number: Option<u128>,
 
+    nop_backend: bool,
     backends: Vec<Arc<dyn DABackend>>,
     submit_threshold: usize,
 }
@@ -43,6 +44,7 @@ impl DAServerActor {
         let mut submit_threshold = 1;
         let mut act_backends = 0;
 
+        let mut nop_backend = false;
         // backend config has higher priority than submit threshold
         if let Some(mut backend_config) = da_config.da_backend {
             submit_threshold = backend_config.calculate_submit_threshold();
@@ -61,6 +63,7 @@ impl DAServerActor {
                 }
             }
         } else {
+            nop_backend = true;
             backends.push(Arc::new(crate::backend::DABackendNopProxy {}));
             act_backends += 1;
         }
@@ -77,28 +80,32 @@ impl DAServerActor {
         let last_block_number = rooch_store.get_last_block_number()?;
 
         if let Some(last_block_number) = last_block_number {
-            let background_da_server = DAServerActor {
-                sequencer_key: sequencer_key.copy(),
-                rooch_store: rooch_store.clone(),
-                last_block_number: Some(last_block_number),
-                backends: backends.clone(),
-                submit_threshold,
-            };
+            if !nop_backend {
+                let background_da_server = DAServerActor {
+                    sequencer_key: sequencer_key.copy(),
+                    rooch_store: rooch_store.clone(),
+                    last_block_number: Some(last_block_number),
+                    nop_backend,
+                    backends: backends.clone(),
+                    submit_threshold,
+                };
 
-            tokio::spawn(async move {
-                if let Err(e) = background_da_server
-                    .start_background_submit(last_block_number)
-                    .await
-                {
-                    log::error!("{:?}, fail to start background da submit.", e);
-                }
-            });
+                tokio::spawn(async move {
+                    if let Err(e) = background_da_server
+                        .start_background_submit(last_block_number)
+                        .await
+                    {
+                        log::error!("{:?}, fail to start background da submit.", e);
+                    }
+                });
+            }
         }
 
         Ok(DAServerActor {
             sequencer_key,
             rooch_store,
             last_block_number,
+            nop_backend,
             backends,
             submit_threshold,
         })
@@ -155,15 +162,19 @@ impl DAServerActor {
         // submit batch
         self.submit_batch_to_backends(batch).await?;
 
-        // update block submitting state
-        match self
-            .rooch_store
-            .set_submitting_block_done(block_number, tx_order_start, tx_order_end)
-        {
-            Ok(_) => {}
-            Err(e) => {
-                log::warn!("{:?}, fail to set submitting block done.", e);
-            }
+        // update block submitting state if it's not nop-backend
+        // if it's nop-backend, we don't need to update submitting state, we may need to submit batch to other backends later by fetch unsubmitted blocks
+        if !self.nop_backend {
+            match self.rooch_store.set_submitting_block_done(
+                block_number,
+                tx_order_start,
+                tx_order_end,
+            ) {
+                Ok(_) => {}
+                Err(e) => {
+                    log::warn!("{:?}, fail to set submitting block done.", e);
+                }
+            };
         };
         Ok(SignedDABatchMeta {
             meta: batch_meta,
