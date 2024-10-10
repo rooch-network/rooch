@@ -27,6 +27,7 @@ derive_store!(
 );
 
 pub trait DAMetaStore {
+    /// Get submitting blocks from start_block(inclusive) with expected count until the end of submitting blocks
     fn get_submitting_blocks(
         &self,
         start_block: u128,
@@ -201,9 +202,9 @@ impl DAMetaStore for DAMetaDBStore {
         let exp_count = exp_count.unwrap_or(SUBMITTING_BLOCKS_PAGE_SIZE);
         // try to get exp_count unsubmitted blocks
         let mut blocks = Vec::with_capacity(exp_count);
-        let mut blocks_count = 0;
+        let mut done_count = 0;
         let mut block_number = start_block;
-        while blocks_count < exp_count {
+        while done_count < exp_count {
             let state = self.block_submit_state_store.kv_get(block_number)?;
             if let Some(state) = state {
                 if !state.done {
@@ -212,7 +213,7 @@ impl DAMetaStore for DAMetaDBStore {
                         tx_order_start: state.block_range.tx_order_start,
                         tx_order_end: state.block_range.tx_order_end,
                     });
-                    blocks_count += 1;
+                    done_count += 1;
                 }
             } else {
                 break;
