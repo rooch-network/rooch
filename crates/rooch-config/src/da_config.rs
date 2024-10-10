@@ -260,7 +260,9 @@ pub struct DABackendOpenDAConfig {
     /// specifies the configuration of the storage service. 'gcs' with corresponding GCS server configuration, 's3' with corresponding S3 server configuration, etc.
     pub config: HashMap<String, String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    /// <namespace>/<segment_id> is the path to store the segment. If not set, the <derive_genesis_namespace>/<segment_id> is the full path
+    /// <namespace>/<segment_id> is the path to store the segment.
+    /// If not set, the <derive_genesis_namespace>/<segment_id> is the full path
+    /// If root is set in config, the <root>/<namespace>/<segment_id> is the full path
     pub namespace: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// max segment size.
@@ -268,10 +270,10 @@ pub struct DABackendOpenDAConfig {
     pub max_segment_size: Option<u64>,
 }
 
-/// Derive a namespace from genesis config for DA backend (could be used for open-da backend)
+/// Derive a namespace from genesis config for DA backend (as default namespace open-da backend)
+/// first 7 chars of sha256 of genesis in hex is used as namespace
 pub fn derive_genesis_namespace(genesis: &[u8]) -> String {
     let raw = encode(sha2_256_of(genesis).0);
-    // get first 7 bytes is enough to avoid collision for genesis config
     raw.chars().take(7).collect()
 }
 
