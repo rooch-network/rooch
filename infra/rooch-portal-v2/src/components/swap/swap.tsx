@@ -120,7 +120,11 @@ export default function Swap({
         boxShadow: '0px 5px 40px 0px rgba(16, 16, 40, 0.10)',
       }}
     >
-      <SwapHeader slippage={slippagePercent} onSlippageChange={onSlippageChange} />
+      <SwapHeader
+        fixedSwap={fixedSwap}
+        slippage={slippagePercent}
+        onSlippageChange={onSlippageChange}
+      />
       <Stack spacing={3} padding={4}>
         <Stack spacing={-1} alignItems="center">
           <SwapCoinInput
