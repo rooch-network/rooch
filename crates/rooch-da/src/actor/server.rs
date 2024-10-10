@@ -213,20 +213,25 @@ impl DAServerActor {
     }
 
     // TODO: continue to submit blocks in the background even after all blocks <= init last_block_number have been submitted
-    async fn start_background_submit(&self, stop_block_number: u128) -> anyhow::Result<()> {
+    async fn start_background_submit(&self, last_block_number: u128) -> anyhow::Result<()> {
         let cursor = self.rooch_store.get_background_submit_block_cursor()?;
+        let exp_count = if let Some(cursor) = cursor {
+            last_block_number - cursor
+        } else {
+            last_block_number + 1
+        };
         let unsubmitted_blocks = self
             .rooch_store
-            .get_submitting_blocks(cursor.unwrap_or(0), None)?;
+            .get_submitting_blocks(cursor.unwrap_or(0), Some(exp_count as usize))?;
 
         if unsubmitted_blocks.is_empty() {
             return Ok(()); // nothing to do
         }
 
-        let mut submit_count = 0;
+        let mut submit_count: u128 = 0;
         for block in unsubmitted_blocks {
             let block_number = block.block_number;
-            if block_number > stop_block_number {
+            if block_number > last_block_number {
                 break;
             }
             let tx_order_start = block.tx_order_start;
@@ -256,7 +261,7 @@ impl DAServerActor {
             }
         }
         self.rooch_store
-            .set_background_submit_block_cursor(stop_block_number)?;
+            .set_background_submit_block_cursor(last_block_number)?;
         Ok(())
     }
 }
