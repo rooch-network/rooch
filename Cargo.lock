@@ -9558,10 +9558,13 @@ name = "rooch-config"
 version = "0.7.3"
 dependencies = [
  "anyhow",
+ "celestia-types",
  "clap 4.5.17",
  "dirs",
  "dirs-next",
+ "hex",
  "moveos-config",
+ "moveos-types",
  "once_cell",
  "rooch-types",
  "serde 1.0.210",
@@ -9601,15 +9604,15 @@ dependencies = [
  "celestia-rpc",
  "celestia-types",
  "coerce",
- "futures",
  "log",
- "lz4",
  "moveos-types",
  "opendal",
  "rooch-config",
+ "rooch-store",
+ "rooch-types",
  "serde 1.0.210",
  "serde_yaml 0.9.34+deprecated",
- "xxhash-rust",
+ "tokio",
 ]
 
 [[package]]
@@ -9647,7 +9650,6 @@ dependencies = [
  "async-trait",
  "coerce",
  "function_name",
- "hex",
  "log",
  "metrics",
  "move-core-types",
@@ -10211,6 +10213,7 @@ version = "0.7.3"
 dependencies = [
  "accumulator",
  "anyhow",
+ "moveos-common",
  "moveos-config",
  "moveos-types",
  "once_cell",
@@ -10256,6 +10259,7 @@ dependencies = [
  "framework-builder",
  "framework-types",
  "hex",
+ "lz4",
  "move-binary-format",
  "move-command-line-common",
  "move-core-types",
@@ -10276,6 +10280,7 @@ dependencies = [
  "strum_macros",
  "thiserror",
  "tracing",
+ "xxhash-rust",
 ]
 
 [[package]]

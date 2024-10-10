@@ -1,15 +1,14 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::metrics::ProposerMetrics;
 use anyhow::Result;
 use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
 use prometheus::Registry;
-use std::sync::Arc;
-
-use crate::metrics::ProposerMetrics;
-use rooch_da::proxy::DAProxy;
+use rooch_da::proxy::DAServerProxy;
 use rooch_types::crypto::RoochKeyPair;
+use std::sync::Arc;
 
 use crate::scc::StateCommitmentChain;
 
@@ -25,7 +24,7 @@ pub struct ProposerActor {
 }
 
 impl ProposerActor {
-    pub fn new(proposer_key: RoochKeyPair, da_proxy: DAProxy, registry: &Registry) -> Self {
+    pub fn new(proposer_key: RoochKeyPair, da_proxy: DAServerProxy, registry: &Registry) -> Self {
         Self {
             proposer_key,
             scc: StateCommitmentChain::new(da_proxy),

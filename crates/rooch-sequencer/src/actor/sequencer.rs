@@ -47,7 +47,7 @@ impl SequencerActor {
         registry: &Registry,
         event_actor: Option<LocalActorRef<EventActor>>,
     ) -> Result<Self> {
-        // The sequencer info would be inited when genesis, so the sequencer info should not be None
+        // The sequencer info would be initialized when genesis, so the sequencer info should not be None
         let last_sequencer_info = rooch_store
             .get_meta_store()
             .get_sequencer_info()?
@@ -155,6 +155,7 @@ impl SequencerActor {
         );
 
         let sequencer_info = SequencerInfo::new(tx.sequence_info.tx_order, tx_accumulator_info);
+        // TODO sequencer_info & tx should be saved in a transaction
         self.rooch_store
             .save_sequencer_info(sequencer_info.clone())?;
         self.rooch_store.save_transaction(tx.clone())?;

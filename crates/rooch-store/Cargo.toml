@@ -20,8 +20,10 @@ prometheus = { workspace = true }
 tokio = { workspace = true }
 
 raw-store = { workspace = true }
+accumulator = { workspace = true }
+
 moveos-config = { workspace = true }
 moveos-types = { workspace = true }
-accumulator = { workspace = true }
+moveos-common = { workspace = true }
 
 rooch-types = { workspace = true }

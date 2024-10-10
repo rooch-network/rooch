@@ -8,6 +8,7 @@ pub mod bitcoin;
 pub mod block;
 pub mod coin_type;
 pub mod crypto;
+pub mod da;
 pub mod error;
 pub mod framework;
 pub mod function_arg;

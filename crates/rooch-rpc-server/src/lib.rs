@@ -16,10 +16,11 @@ use coerce::actor::{system::ActorSystem, IntoActor};
 use jsonrpsee::RpcModule;
 use moveos_eventbus::bus::EventBus;
 use raw_store::errors::RawStoreError;
+use rooch_config::da_config::derive_genesis_namespace;
 use rooch_config::server_config::ServerConfig;
 use rooch_config::{RoochOpt, ServerOpt};
-use rooch_da::actor::da::DAActor;
-use rooch_da::proxy::DAProxy;
+use rooch_da::actor::server::DAServerActor;
+use rooch_da::proxy::DAServerProxy;
 use rooch_db::RoochDB;
 use rooch_event::actor::EventActor;
 use rooch_executor::actor::executor::ExecutorActor;
@@ -283,7 +284,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     info!("RPC Server sequencer address: {:?}", sequencer_account);
     let sequencer = SequencerActor::new(
         sequencer_keypair.copy(),
-        rooch_store,
+        rooch_store.clone(),
         service_status,
         &prometheus_registry,
         Some(event_actor_ref.clone()),
@@ -293,13 +294,22 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     let sequencer_proxy = SequencerProxy::new(sequencer.into());
 
     // Init DA
+    let genesis_bytes = RoochGenesis::build(network.clone())?.encode();
+    let genesis_namespace = derive_genesis_namespace(&genesis_bytes);
+    let last_tx_order = sequencer_proxy.get_sequencer_order().await?;
     let da_config = opt.da_config().clone();
-    let da_proxy = DAProxy::new(
-        DAActor::new(da_config, &actor_system)
-            .await?
-            .into_actor(Some("DAProxy"), &actor_system)
-            .await?
-            .into(),
+    let da_proxy = DAServerProxy::new(
+        DAServerActor::new(
+            da_config,
+            sequencer_keypair.copy(),
+            rooch_store,
+            Some(last_tx_order),
+            genesis_namespace,
+        )
+        .await?
+        .into_actor(Some("DAServer"), &actor_system)
+        .await?
+        .into(),
     );
 
     // Init proposer

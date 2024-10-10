@@ -1,61 +1,56 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::{anyhow, Result};
+use crate::backend::DABackend;
+use anyhow::anyhow;
 use async_trait::async_trait;
-use coerce::actor::context::ActorContext;
-use coerce::actor::message::Handler;
-use coerce::actor::Actor;
 use opendal::layers::{LoggingLayer, RetryLayer};
 use opendal::{Operator, Scheme};
-use rooch_config::config::retrieve_map_config_value;
+use rooch_config::da_config::{DABackendOpenDAConfig, OpenDAScheme};
+use rooch_config::retrieve_map_config_value;
+use rooch_types::da::batch::DABatch;
+use rooch_types::da::chunk::{Chunk, ChunkV0};
+use rooch_types::da::segment::SegmentID;
 use std::collections::HashMap;
 use std::path::Path;
 
-use crate::chunk::{Chunk, ChunkV0};
-use rooch_config::da_config::{DAServerOpenDAConfig, OpenDAScheme};
+pub const DEFAULT_MAX_SEGMENT_SIZE: u64 = 4 * 1024 * 1024;
+pub const DEFAULT_MAX_RETRY_TIMES: usize = 4;
 
-use crate::messages::PutBatchInternalDAMessage;
-use crate::segment::SegmentID;
+#[async_trait]
+impl DABackend for OpenDABackend {
+    async fn submit_batch(&self, batch: DABatch) -> anyhow::Result<()> {
+        self.pub_batch(batch).await
+    }
+}
 
-pub struct DAServerOpenDAActor {
+pub struct OpenDABackend {
+    prefix: String,
+    scheme: OpenDAScheme,
     max_segment_size: usize,
     operator: Operator,
 }
 
-pub const CHUNK_V0_PREFIX: &str = "chunk_v0";
-pub const DEFAULT_MAX_SEGMENT_SIZE: u64 = 4 * 1024 * 1024;
-pub const DEFAULT_MAX_RETRY_TIMES: usize = 4;
-
-impl Actor for DAServerOpenDAActor {}
-
-impl DAServerOpenDAActor {
-    pub async fn new(cfg: &DAServerOpenDAConfig) -> Result<DAServerOpenDAActor> {
+impl OpenDABackend {
+    pub async fn new(
+        cfg: &DABackendOpenDAConfig,
+        genesis_namespace: String,
+    ) -> anyhow::Result<OpenDABackend> {
         let mut config = cfg.clone();
 
         let op: Operator = match config.scheme {
             OpenDAScheme::Fs => {
                 // root must be existed
-                if !config.config.contains_key("root") {
-                    return Err(anyhow!(
-                        "key 'root' must be existed in config for scheme {:?}",
-                        OpenDAScheme::Fs
-                    ));
-                }
+                check_config_exist(OpenDAScheme::Fs, &config.config, "root")?;
                 new_retry_operator(Scheme::Fs, config.config, None).await?
             }
             OpenDAScheme::Gcs => {
-                // If certain keys don't exist in the map, set them from environment
-                if !config.config.contains_key("bucket") {
-                    if let Ok(bucket) = std::env::var("OPENDA_GCS_BUCKET") {
-                        config.config.insert("bucket".to_string(), bucket);
-                    }
-                }
-                if !config.config.contains_key("root") {
-                    if let Ok(root) = std::env::var("OPENDA_GCS_ROOT") {
-                        config.config.insert("root".to_string(), root);
-                    }
-                }
+                retrieve_map_config_value(
+                    &mut config.config,
+                    "bucket",
+                    Some("OPENDA_GCS_BUCKET"),
+                    Some("rooch-openda-dev"),
+                );
                 if !config.config.contains_key("credential") {
                     if let Ok(credential) = std::env::var("OPENDA_GCS_CREDENTIAL") {
                         config.config.insert("credential".to_string(), credential);
@@ -84,7 +79,7 @@ impl DAServerOpenDAActor {
                     &mut config.config,
                     "default_storage_class",
                     Some("OPENDA_GCS_DEFAULT_STORAGE_CLASS"),
-                    "STANDARD",
+                    Some("STANDARD"),
                 );
 
                 check_config_exist(OpenDAScheme::Gcs, &config.config, "bucket")?;
@@ -100,41 +95,53 @@ impl DAServerOpenDAActor {
                     (Err(_), Ok(_)) => (),
 
                     (Err(_), Err(_)) => {
-                        return Err(anyhow!("either 'credential' or 'credential_path' must exist in config for scheme {:?}", OpenDAScheme::Gcs));
+                        return Err(anyhow!(
+                            "credential no found in config for scheme {:?}",
+                            OpenDAScheme::Gcs
+                        ));
                     }
                 }
 
                 // After setting defaults, proceed with creating Operator
                 new_retry_operator(Scheme::Gcs, config.config, None).await?
             }
-            _ => Err(anyhow!("unsupported open-da scheme: {:?}", config.scheme))?,
+            OpenDAScheme::S3 => {
+                todo!("s3 backend is not implemented yet");
+            }
         };
 
         Ok(Self {
+            prefix: config.namespace.unwrap_or(genesis_namespace),
+            scheme: config.scheme,
             max_segment_size: cfg.max_segment_size.unwrap_or(DEFAULT_MAX_SEGMENT_SIZE) as usize,
             operator: op,
         })
     }
 
-    pub async fn pub_batch(&self, batch_msg: PutBatchInternalDAMessage) -> Result<()> {
-        let chunk: ChunkV0 = batch_msg.batch.into();
-        let segments = chunk.to_segments(self.max_segment_size);
+    pub async fn pub_batch(&self, batch: DABatch) -> anyhow::Result<()> {
+        let chunk: ChunkV0 = batch.into();
+
+        let prefix = self.prefix.clone();
+        let max_segment_size = self.max_segment_size;
+        let segments = chunk.to_segments(max_segment_size);
         for segment in segments {
             let bytes = segment.to_bytes();
 
             match self
-                .write_segment(segment.get_id(), bytes, CHUNK_V0_PREFIX.to_string())
+                .write_segment(segment.get_id(), bytes, Some(prefix.clone()))
                 .await
             {
                 Ok(_) => {
                     log::info!(
-                        "submitted segment to open-da node, segment: {:?}",
+                        "submitted segment to open-da scheme: {:?}, segment_id: {:?}",
+                        self.scheme,
                         segment.get_id(),
                     );
                 }
                 Err(e) => {
                     log::warn!(
-                        "failed to submit segment to open-da node, segment_id: {:?}, error:{:?}",
+                        "failed to submit segment to open-da scheme: {:?}, segment_id: {:?}, error:{:?}",
+                        self.scheme,
                         segment.get_id(),
                         e,
                     );
@@ -150,9 +157,12 @@ impl DAServerOpenDAActor {
         &self,
         segment_id: SegmentID,
         segment_bytes: Vec<u8>,
-        prefix: String,
-    ) -> Result<()> {
-        let path = format!("{}/{}", prefix, segment_id);
+        prefix: Option<String>,
+    ) -> anyhow::Result<()> {
+        let path = match prefix {
+            Some(prefix) => format!("{}/{}", prefix, segment_id),
+            None => segment_id.to_string(),
+        };
         let mut w = self.operator.writer(&path).await?;
         w.write(segment_bytes).await?;
         w.close().await?;
@@ -164,7 +174,7 @@ fn check_config_exist(
     scheme: OpenDAScheme,
     config: &HashMap<String, String>,
     key: &str,
-) -> Result<()> {
+) -> anyhow::Result<()> {
     if config.contains_key(key) {
         Ok(())
     } else {
@@ -180,7 +190,7 @@ async fn new_retry_operator(
     scheme: Scheme,
     config: HashMap<String, String>,
     max_retry_times: Option<usize>,
-) -> Result<Operator> {
+) -> anyhow::Result<Operator> {
     let mut op = Operator::via_map(scheme, config)?;
     let max_times = max_retry_times.unwrap_or(DEFAULT_MAX_RETRY_TIMES);
     op = op
@@ -188,15 +198,4 @@ async fn new_retry_operator(
         .layer(LoggingLayer::default());
     op.check().await?;
     Ok(op)
-}
-
-#[async_trait]
-impl Handler<PutBatchInternalDAMessage> for DAServerOpenDAActor {
-    async fn handle(
-        &mut self,
-        msg: PutBatchInternalDAMessage,
-        _ctx: &mut ActorContext,
-    ) -> Result<()> {
-        self.pub_batch(msg).await
-    }
 }

@@ -41,6 +41,8 @@ bs58 = { workspace = true, features = ["check"] }
 chacha20poly1305 = { workspace = true }
 argon2 = { workspace = true }
 tracing = { workspace = true }
+xxhash-rust = { workspace = true, features = ["xxh3"] }
+lz4 = { workspace = true }
 
 move-core-types = { workspace = true }
 move-vm-types = { workspace = true }

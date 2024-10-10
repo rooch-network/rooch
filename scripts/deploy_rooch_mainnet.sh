@@ -17,5 +17,6 @@ docker run -d --name rooch-mainnet --restart unless-stopped -v /data:/root -p 67
     --btc-rpc-url "$BTC_MAIN_RPC_URL" \
     --btc-rpc-username rooch-main \
     --btc-rpc-password "$BTC_MAIN_RPC_PWD" \
+    --da "{\"da-backend\": {\"backends\": [{\"open-da\": {\"scheme\": \"gcs\", \"config\": {\"bucket\": \"$OPENDA_GCP_MAINNET_BUCKET\", \"credential\": \"$OPENDA_GCP_MAINNET_CREDENTIAL\"}}}]}}" \
     --traffic-burst-size 100000 \
     --traffic-per-second 1

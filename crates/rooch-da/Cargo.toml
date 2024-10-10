@@ -24,10 +24,11 @@ bcs = { workspace = true }
 log = { workspace = true }
 coerce = { workspace = true }
 async-trait = { workspace = true }
-futures = { workspace = true }
 opendal = { workspace = true }
+serde_yaml = { workspace = true }
+tokio = { workspace = true }
 
 rooch-config = { workspace = true }
-serde_yaml = { workspace = true }
-xxhash-rust = { workspace = true, features = ["xxh3"] }
-lz4 = { workspace = true }
+rooch-types = { workspace = true }
+rooch-store = { workspace = true }
+

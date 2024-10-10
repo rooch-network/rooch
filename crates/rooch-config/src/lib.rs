@@ -13,6 +13,7 @@ use rooch_types::rooch_network::{BuiltinChainID, RoochChainID, RoochNetwork};
 use rooch_types::service_status::ServiceStatus;
 use rooch_types::service_type::ServiceType;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::fs::create_dir_all;
 use std::str::FromStr;
 use std::sync::Arc;
@@ -33,6 +34,13 @@ pub static R_DEFAULT_BASE_DATA_DIR: Lazy<PathBuf> = Lazy::new(|| {
         .expect("read home dir should ok")
         .join(".rooch")
 });
+
+pub enum MapConfigValueSource {
+    MapConfig,   // Value came from the presence of a key in the map configuration
+    Environment, // Value came from the environment
+    Default,     // Value came from a defined default value
+    None,        // Value is not present in the map configuration, environment, or default value
+}
 
 pub fn rooch_config_dir() -> Result<PathBuf, anyhow::Error> {
     get_rooch_config_dir().and_then(|dir| {
@@ -372,4 +380,34 @@ impl ServerOpt {
             .clone()
             .unwrap_or_else(|| RoochChainID::default().chain_name())
     }
+}
+
+// value order:
+// 1. config map
+// 2. env value
+// 3. default value
+pub fn retrieve_map_config_value(
+    map_config: &mut HashMap<String, String>,
+    key: &str,
+    env_var: Option<&str>,
+    default_var: Option<&str>,
+) -> MapConfigValueSource {
+    if map_config.contains_key(key) {
+        return MapConfigValueSource::MapConfig;
+    }
+
+    if let Some(env_var) = env_var {
+        if let Ok(env_var_value) = std::env::var(env_var) {
+            // env_var exists
+            map_config.insert(key.to_string(), env_var_value.clone());
+            return MapConfigValueSource::Environment;
+        }
+    }
+
+    // Use the default
+    if let Some(default_var) = default_var {
+        map_config.insert(key.to_string(), default_var.to_string());
+        return MapConfigValueSource::Default;
+    }
+    MapConfigValueSource::None
 }
