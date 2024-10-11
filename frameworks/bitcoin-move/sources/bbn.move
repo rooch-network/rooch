@@ -225,6 +225,11 @@ module bitcoin_move::bbn {
         return (false, 0, bbn_op_return_data)
     }
 
+    fun try_get_bbn_op_return_data_from_tx_bytes(bytes: vector<u8>): (bool, u64, BBNOpReturnData) {
+        let transaction = bcs::from_bytes<Transaction>(&bytes).expect("should be a valid transaction");
+        try_get_bbn_op_return_data(transaction)
+    }
+
     public fun is_bbn_tx(txid: address): bool {
         let tx_opt = bitcoin::get_tx(txid);
         if (is_none(&tx_opt)) {
