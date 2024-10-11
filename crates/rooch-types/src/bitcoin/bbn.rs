@@ -12,6 +12,7 @@ use move_core_types::{
 };
 use moveos_types::{
     module_binding::{ModuleBinding, MoveFunctionCaller},
+    move_std::option::MoveOption,
     moveos_std::tx_context::TxContext,
     state::{MoveState, MoveStructState, MoveStructType},
     transaction::FunctionCall,
@@ -31,7 +32,6 @@ pub struct BBNStakeSeal {
     /// The stake utxo output index
     pub vout: u32,
     pub tag: Vec<u8>,
-    pub version: u64,
     pub staker_pub_key: Vec<u8>,
     pub finality_provider_pub_key: Vec<u8>,
     /// The stake time in block count
@@ -53,7 +53,6 @@ impl MoveStructState for BBNStakeSeal {
             MoveTypeLayout::Address,
             MoveTypeLayout::U32,
             MoveTypeLayout::Vector(Box::new(MoveTypeLayout::U8)),
-            MoveTypeLayout::U64,
             MoveTypeLayout::Vector(Box::new(MoveTypeLayout::U8)),
             MoveTypeLayout::Vector(Box::new(MoveTypeLayout::U8)),
             MoveTypeLayout::U16,
@@ -65,9 +64,9 @@ impl MoveStructState for BBNStakeSeal {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BBNOpReturnData {
     pub tag: Vec<u8>,
-    pub version: u64,
     pub staker_pub_key: Vec<u8>,
     pub finality_provider_pub_key: Vec<u8>,
+    pub staking_time: u16,
 }
 
 impl MoveStructType for BBNOpReturnData {
@@ -80,11 +79,17 @@ impl MoveStructState for BBNOpReturnData {
     fn struct_layout() -> MoveStructLayout {
         MoveStructLayout::new(vec![
             MoveTypeLayout::Vector(Box::new(MoveTypeLayout::U8)),
-            MoveTypeLayout::U64,
             MoveTypeLayout::Vector(Box::new(MoveTypeLayout::U8)),
             MoveTypeLayout::Vector(Box::new(MoveTypeLayout::U8)),
+            MoveTypeLayout::U16,
         ])
     }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BBNOpReturnOutput {
+    pub vout: u32,
+    pub bbn_op_return_data: BBNOpReturnData,
 }
 
 /// Rust bindings for BitcoinMove bitcoin module
@@ -93,40 +98,34 @@ pub struct BBNModule<'a> {
 }
 
 impl<'a> BBNModule<'a> {
-    pub const TRY_GET_BBN_OP_RETURN_DATA_FROM_TX_BYTES_FUNCTION_NAME: &'static IdentStr =
-        ident_str!("try_get_bbn_op_return_data_from_tx_bytes");
+    pub const TRY_GET_BBN_OP_RETURN_OUTPUT_FROM_TX_BYTES_FUNCTION_NAME: &'static IdentStr =
+        ident_str!("try_get_bbn_op_return_output_from_tx_bytes");
     pub const IS_BBN_TX_FUNCTION_NAME: &'static IdentStr = ident_str!("is_bbn_tx");
     pub const PROCESS_BBN_TX_ENTRY_FUNCTION_NAME: &'static IdentStr =
         ident_str!("process_bbn_tx_entry");
 
-    pub fn try_get_bbn_op_return_data_from_tx(
+    pub fn try_get_bbn_op_return_output_from_tx(
         &self,
         tx: Transaction,
-    ) -> Result<(bool, u64, BBNOpReturnData)> {
+    ) -> Result<Option<BBNOpReturnOutput>> {
         let rooch_btc_tx = types::Transaction::from(tx);
         let tx_bytes = bcs::to_bytes(&rooch_btc_tx).expect("should be a valid transaction");
         let call = Self::create_function_call(
-            Self::TRY_GET_BBN_OP_RETURN_DATA_FROM_TX_BYTES_FUNCTION_NAME,
+            Self::TRY_GET_BBN_OP_RETURN_OUTPUT_FROM_TX_BYTES_FUNCTION_NAME,
             vec![],
             vec![tx_bytes.to_move_value()],
         );
         let ctx = TxContext::new_readonly_ctx(AccountAddress::ZERO);
         let result = self.caller.call_function(&ctx, call)?;
-        let (is_true, block_height, bbn_op_return_data) = result
+        let bbn_op_return_output_opt = result
             .into_result()
             .map(|mut values| {
-                let is_true = values.pop().expect("should have one return value");
-                let vout = values.pop().expect("should have one return value");
-                let bbn_op_return_data = values.pop().expect("should have one return value");
-                (
-                    bcs::from_bytes::<bool>(&is_true.value).expect("should be a valid bool"),
-                    bcs::from_bytes::<u64>(&vout.value).expect("should be a valid u64"),
-                    bcs::from_bytes::<BBNOpReturnData>(&bbn_op_return_data.value)
-                        .expect("should be a valid bbn op return data"),
-                )
+                let bbn_op_return_output = values.pop().expect("should have one return value");
+                bcs::from_bytes::<MoveOption<BBNOpReturnOutput>>(&bbn_op_return_output.value)
+                    .expect("should be a valid BBNOpReturnOutput")
             })
             .map_err(|e| anyhow::anyhow!("Failed to get bbn op return data: {:?}", e))?;
-        Ok((is_true, block_height, bbn_op_return_data))
+        Ok(bbn_op_return_output_opt.into())
     }
 
     pub fn is_bbn_tx(&self, txid: Txid) -> Result<bool> {
