@@ -20,7 +20,6 @@
 -  [Function `is_witness_program`](#0x4_script_buf_is_witness_program)
 -  [Function `witness_program`](#0x4_script_buf_witness_program)
 -  [Function `is_op_return`](#0x4_script_buf_is_op_return)
--  [Function `unpack_bbn_stake_data`](#0x4_script_buf_unpack_bbn_stake_data)
 -  [Function `push_opcode`](#0x4_script_buf_push_opcode)
 -  [Function `push_data`](#0x4_script_buf_push_data)
 -  [Function `push_int`](#0x4_script_buf_push_int)
@@ -65,15 +64,6 @@
 
 
 <pre><code><b>const</b> <a href="script_buf.md#0x4_script_buf_BITCOIN_X_ONLY_PUBKEY_SIZE">BITCOIN_X_ONLY_PUBKEY_SIZE</a>: u64 = 32;
-</code></pre>
-
-
-
-<a name="0x4_script_buf_ErrorInvalidBytesLen"></a>
-
-
-
-<pre><code><b>const</b> <a href="script_buf.md#0x4_script_buf_ErrorInvalidBytesLen">ErrorInvalidBytesLen</a>: u64 = 2;
 </code></pre>
 
 
@@ -234,17 +224,6 @@ Checks if the given script is an OP_RETURN script.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="script_buf.md#0x4_script_buf_is_op_return">is_op_return</a>(self: &<a href="script_buf.md#0x4_script_buf_ScriptBuf">script_buf::ScriptBuf</a>): bool
-</code></pre>
-
-
-
-<a name="0x4_script_buf_unpack_bbn_stake_data"></a>
-
-## Function `unpack_bbn_stake_data`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="script_buf.md#0x4_script_buf_unpack_bbn_stake_data">unpack_bbn_stake_data</a>(self: &<a href="script_buf.md#0x4_script_buf_ScriptBuf">script_buf::ScriptBuf</a>): (<a href="">vector</a>&lt;u8&gt;, u64, <a href="">vector</a>&lt;u8&gt;, <a href="">vector</a>&lt;u8&gt;, u16)
 </code></pre>
 
 

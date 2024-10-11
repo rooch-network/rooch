@@ -1,14 +1,19 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 module bitcoin_move::bbn {
 
     use std::option;
-    use std::option::{is_none, Option, none, is_some, some};
+    use std::option::{is_none, is_some};
     use std::vector;
     use std::vector::{length, borrow};
+    use moveos_std::object::{Self, Object};
+    use moveos_std::type_info;
     use bitcoin_move::bitcoin;
-    use bitcoin_move::utxo::UTXO;
     use bitcoin_move::types;
     use bitcoin_move::utxo;
-    use bitcoin_move::script_buf;
+    use bitcoin_move::opcode;
+    use bitcoin_move::script_buf::{Self, ScriptBuf};
     use bitcoin_move::types::{
         Transaction,
         tx_id,
@@ -18,13 +23,11 @@ module bitcoin_move::bbn {
         txout_script_pubkey
     };
     use bitcoin_move::bitcoin::get_tx_height;
+    use bitcoin_move::temp_state;
     use rooch_framework::bitcoin_address::{
         derive_bitcoin_taproot_address_from_pubkey,
         to_rooch_address
     };
-    use bitcoin_move::script_buf::{unpack_bbn_stake_data};
-    use moveos_std::object::{Object, ObjectID};
-    use moveos_std::object;
 
     friend bitcoin_move::genesis;
 
@@ -57,12 +60,32 @@ module bitcoin_move::bbn {
         staking_time: u16
     }
 
-    const UNSPENDABLEKEYPATHKEY: vector<u8> = b"0250929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0";
+    struct BBNStakeSeal has key {
+        /// The stake transaction block height
+        block_height: u64,
+        /// The stake transaction hash
+        txid: address,
+        /// The stake utxo output index
+        vout: u32,
+        tag: vector<u8>,
+        version: u64,
+        staker_pub_key: vector<u8>,
+        finality_provider_pub_key: vector<u8>,
+        /// The stake time in block count
+        staking_time: u16,
+        /// The stake amount in satoshi
+        staking_amount: u64,
+    }
 
-    const ErrorNotBabylonUTXO: u64 = 0;
-    const ErrorNotTransaction: u64 = 1;
-    const ErrorNotBabylonOpReturn: u64 = 2;
-    const ErrorTransactionLockTime: u64 = 3;
+    const UNSPENDABLEKEYPATHKEY: vector<u8> = b"0250929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0";
+    const TEMPORARY_AREA: vector<u8> = b"temporary_area";
+
+    const ErrorAlreadyInit: u64 = 1;
+    const ErrorNotBabylonUTXO: u64 = 2;
+    const ErrorTransactionNotFound: u64 = 3;
+    const ErrorNotBabylonOpReturn: u64 = 4;
+    const ErrorTransactionLockTime: u64 = 5;
+    const ErrorInvalidBytesLen: u64 = 6;
 
     public(friend) fun genesis_init() {
         // TODO here just add bbn test-4 version 2
@@ -99,6 +122,29 @@ module bitcoin_move::bbn {
         object::to_shared(obj);
     }
 
+    public fun init_for_upgrade(){
+        let object_id = object::named_object_id<BBNGlobalParams>();
+        assert!(!object::exists_object(object_id), ErrorAlreadyInit);
+        genesis_init()
+    }
+
+    fun new_bbn_stake_seal(
+        block_height: u64, txid: address, vout: u32, tag: vector<u8>, version: u64, staker_pub_key: vector<u8>,
+        finality_provider_pub_key: vector<u8>, staking_time: u16, staking_amount: u64
+    ): Object<BBNStakeSeal> {
+        object::new(BBNStakeSeal {
+            block_height: block_height,
+            txid: txid,
+            vout: vout,
+            tag: tag,
+            version: version,
+            staker_pub_key: staker_pub_key,
+            finality_provider_pub_key: finality_provider_pub_key,
+            staking_time: staking_time,
+            staking_amount: staking_amount
+        })
+    }
+
     fun borrow_bbn_params(): &Object<BBNGlobalParams> {
         let object_id = object::named_object_id<BBNGlobalParams>();
         object::borrow_object(object_id)
@@ -109,7 +155,7 @@ module bitcoin_move::bbn {
         object::borrow_mut_object_shared(object_id)
     }
 
-    public fun try_get_bbn_op_return_data(transaction: Transaction):
+    fun try_get_bbn_op_return_data(transaction: Transaction):
         (bool, u64, BBNOpReturnData) {
         let bbn_op_return_data = BBNOpReturnData {
             tag: vector[],
@@ -179,77 +225,145 @@ module bitcoin_move::bbn {
         return (false, 0, bbn_op_return_data)
     }
 
-    public fun try_get_staking_output(
-        transaction: Transaction, staking_output_script: &vector<u8>
-    ): (bool, u64, Option<ObjectID>) {
-        let tx_outputs = tx_output(&transaction);
-        let tx_id = tx_id(&transaction);
-        if (vector::length(tx_outputs) == 0) {
-            return (false, 0, none())
+    public fun is_bbn_tx(txid: address): bool {
+        let tx_opt = bitcoin::get_tx(txid);
+        if (is_none(&tx_opt)) {
+            return false
         };
-        let index = 0;
-
-        // should not multiple staking outputs
-        while (index < length(tx_outputs)) {
-            let tx_output = borrow(tx_outputs, index);
-            if (script_buf::bytes(txout_script_pubkey(tx_output))
-                == staking_output_script) {
-                let out_point = types::new_outpoint(
-                    tx_id, (txout_value(tx_output) as u32)
-                );
-                return (true, index, option::some(utxo::derive_utxo_id(out_point)))
-            };
-            index = index + 1;
-        };
-        return (false, index, none())
+        let transaction = option::destroy_some(tx_opt);
+        let (is_true, _, _) = try_get_bbn_op_return_data(transaction);
+        is_true
     }
 
-    public fun derive_bbn_utxo(utxo_obj: &Object<UTXO>) {
-        // assert!(object::owner(utxo_obj) == @bitcoin_move, ErrorNotBabylonUTXO);
-        let utxo = object::borrow(utxo_obj);
-        let txid = utxo::txid(utxo);
-        let option_tx = bitcoin::get_tx(txid);
-        assert!(is_some(&option_tx), ErrorNotTransaction);
-        let transaction = option::destroy_some(option_tx);
+    public entry fun process_bbn_tx_entry(txid: address){
+        process_bbn_tx(txid)
+    }
+
+    fun process_bbn_tx(txid: address) {
+        let block_height_opt = bitcoin::get_tx_height(txid);
+        assert!(is_some(&block_height_opt), ErrorTransactionNotFound);
+        let block_height = option::destroy_some(block_height_opt);
+        let tx_opt = bitcoin::get_tx(txid);
+        assert!(is_some(&tx_opt), ErrorTransactionNotFound);
+        let transaction = option::destroy_some(tx_opt);
+
         let (is_true, op_return_index, op_return_data) =
             try_get_bbn_op_return_data(transaction);
+        
         assert!(is_true, ErrorNotBabylonOpReturn);
-        // TODO here should replace to check staking output
-        // try_get_staking_output()
+        
+        assert!(tx_lock_time(&transaction) >= (op_return_data.staking_time as u32), ErrorTransactionLockTime);
 
-        assert!(
-            tx_lock_time(&transaction) >= (op_return_data.staking_time as u32),
-            ErrorTransactionLockTime
-        );
+        let seal_protocol = type_info::type_name<BBNStakeSeal>();
         let tx_outputs = tx_output(&transaction);
         let index = 0;
-        // TODO bbn should not multiple staking outputs, we temporarily support
+        let has_stake_seal = false;
+        //bbn should not multiple staking outputs yet, we support it for in case
         while (index < length(tx_outputs)) {
             let tx_output = borrow(tx_outputs, index);
             if (index == op_return_index) {
                 continue
             };
-            let out_point = types::new_outpoint(txid, (txout_value(tx_output) as u32));
-            let borrow_utxo = utxo::borrow_utxo(out_point);
-            if (object::owner(borrow_utxo) != @bitcoin_move) {
+            let vout = (index as u32);
+            let txout_value = txout_value(tx_output);
+            let out_point = types::new_outpoint(txid, vout);
+            let utxo_obj = utxo::borrow_mut_utxo(out_point);
+            let utxo = object::borrow_mut(utxo_obj);
+            if (utxo::has_seal_internal(utxo, &seal_protocol)){
                 continue
             };
-            let utxo_id = utxo::derive_utxo_id(out_point);
-            let utxo_obj = utxo::take(utxo_id);
-            utxo::add_temp_state(&mut utxo_obj, op_return_data);
-            // TODO here should modify sender to trigger event queue?
-            utxo::transfer(
-                utxo_obj,
-                some(@bitcoin_move),
-                pubkey_to_rooch_address(&op_return_data.staker_pub_key)
+            let bbn_stake_seal_obj = new_bbn_stake_seal(
+                block_height, txid, vout, op_return_data.tag, op_return_data.version,
+                op_return_data.staker_pub_key, op_return_data.finality_provider_pub_key,
+                op_return_data.staking_time, txout_value
             );
+            let seal_object_id = object::id(&bbn_stake_seal_obj);
+            let staker_address = pubkey_to_rooch_address(&op_return_data.staker_pub_key);
+            object::transfer_extend(bbn_stake_seal_obj, staker_address);
+            
+            let seal = utxo::new_utxo_seal(seal_protocol, seal_object_id);
+            utxo::add_seal_internal(utxo, seal);
+            has_stake_seal = true;
             index = index + 1;
         };
+        assert!(has_stake_seal, ErrorNotBabylonUTXO);
     }
-
-    // TODO build stake info
 
     fun pubkey_to_rooch_address(pubkey: &vector<u8>): address {
         to_rooch_address(&derive_bitcoin_taproot_address_from_pubkey(pubkey))
+    }
+
+    fun unpack_bbn_stake_data(script_buf: &ScriptBuf): (vector<u8>, u64, vector<u8>, vector<u8>, u16){
+        let script_bytes = script_buf::bytes(script_buf);
+        // 1. OP_RETURN opcode - which signalizes that data is provably unspendable
+	    // 2. OP_DATA_71 opcode - which pushes 71 bytes of data to the stack
+        if (vector::length(script_bytes) != 73 || *vector::borrow(script_bytes, 0) != opcode::op_return() || *vector::borrow(script_bytes, 1) != opcode::op_pushbytes_71()){
+            return (vector[], 0, vector[], vector[], 0)
+        };
+        let tag = vector::slice(script_bytes, 2, 6);
+        let version = bytes_to_u64(vector::slice(script_bytes, 6, 7));
+        let staker_pub_key = vector::slice(script_bytes, 7, 39);
+        let finality_provider_pub_key = vector::slice(script_bytes, 39, 71);
+        let staking_time = bytes_to_u16(vector::slice(script_bytes, 71, 73));
+        return (tag, version, staker_pub_key, finality_provider_pub_key, staking_time)
+    }
+
+    //TODO migrate to `std::u16`
+    fun bytes_to_u16(bytes: vector<u8>): u16 {
+        assert!(vector::length(&bytes) == 2, ErrorInvalidBytesLen);
+        let high_byte = vector::borrow(&bytes, 0);
+        let low_byte = vector::borrow(&bytes, 1);
+        ((*high_byte as u16) << 8) | (*low_byte as u16)
+    }
+
+    //TODO migrate to `std::u64`
+    fun bytes_to_u64(bytes: vector<u8>): u64 {
+        let value = 0u64;
+        let i = 0u64;
+        while (i < 8) {
+            value = value | ((*vector::borrow(&bytes, i) as u64) << ((8 * (7 - i)) as u8));
+            i = i + 1;
+        };
+        return value
+    }
+
+    // ==== Temporary Area ===
+
+    #[private_generics(S)]
+    public fun add_temp_state<S: store + drop>(stake: &mut Object<BBNStakeSeal>, state: S){
+        if(object::contains_field(stake, TEMPORARY_AREA)){
+            let temp_state = object::borrow_mut_field(stake, TEMPORARY_AREA);
+            temp_state::add_state(temp_state, state);
+        }else{
+            let temp_state = temp_state::new();
+            temp_state::add_state(&mut temp_state, state);
+            object::add_field(stake, TEMPORARY_AREA, temp_state);
+        }
+    }
+
+    public fun contains_temp_state<S: store + drop>(stake: &Object<BBNStakeSeal>) : bool {
+        if(object::contains_field(stake, TEMPORARY_AREA)){
+            let temp_state = object::borrow_field(stake, TEMPORARY_AREA);
+            temp_state::contains_state<S>(temp_state)
+        }else{
+            false
+        }
+    }
+
+    public fun borrow_temp_state<S: store + drop>(stake: &Object<BBNStakeSeal>) : &S {
+        let temp_state = object::borrow_field(stake, TEMPORARY_AREA);
+        temp_state::borrow_state(temp_state)
+    }
+
+    #[private_generics(S)]
+    public fun borrow_mut_temp_state<S: store + drop>(stake: &mut Object<BBNStakeSeal>) : &mut S {
+        let temp_state = object::borrow_mut_field(stake, TEMPORARY_AREA);
+        temp_state::borrow_mut_state(temp_state)
+    }
+
+    #[private_generics(S)]
+    public fun remove_temp_state<S: store + drop>(stake: &mut Object<BBNStakeSeal>) : S {
+        let temp_state = object::borrow_mut_field(stake, TEMPORARY_AREA);
+        temp_state::remove_state(temp_state)
     }
 }

@@ -8,19 +8,29 @@
 -  [Resource `BBNGlobalParam`](#0x4_bbn_BBNGlobalParam)
 -  [Resource `BBNGlobalParams`](#0x4_bbn_BBNGlobalParams)
 -  [Struct `BBNOpReturnData`](#0x4_bbn_BBNOpReturnData)
+-  [Resource `BBNStakeSeal`](#0x4_bbn_BBNStakeSeal)
 -  [Constants](#@Constants_0)
 -  [Function `genesis_init`](#0x4_bbn_genesis_init)
--  [Function `try_get_bbn_op_return_data`](#0x4_bbn_try_get_bbn_op_return_data)
--  [Function `try_get_staking_output`](#0x4_bbn_try_get_staking_output)
--  [Function `derive_bbn_utxo`](#0x4_bbn_derive_bbn_utxo)
+-  [Function `init_for_upgrade`](#0x4_bbn_init_for_upgrade)
+-  [Function `is_bbn_tx`](#0x4_bbn_is_bbn_tx)
+-  [Function `process_bbn_tx_entry`](#0x4_bbn_process_bbn_tx_entry)
+-  [Function `add_temp_state`](#0x4_bbn_add_temp_state)
+-  [Function `contains_temp_state`](#0x4_bbn_contains_temp_state)
+-  [Function `borrow_temp_state`](#0x4_bbn_borrow_temp_state)
+-  [Function `borrow_mut_temp_state`](#0x4_bbn_borrow_mut_temp_state)
+-  [Function `remove_temp_state`](#0x4_bbn_remove_temp_state)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
+<b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="">0x2::object</a>;
+<b>use</b> <a href="">0x2::type_info</a>;
 <b>use</b> <a href="">0x3::bitcoin_address</a>;
 <b>use</b> <a href="bitcoin.md#0x4_bitcoin">0x4::bitcoin</a>;
+<b>use</b> <a href="opcode.md#0x4_opcode">0x4::opcode</a>;
 <b>use</b> <a href="script_buf.md#0x4_script_buf">0x4::script_buf</a>;
+<b>use</b> <a href="temp_state.md#0x4_temp_state">0x4::temp_state</a>;
 <b>use</b> <a href="types.md#0x4_types">0x4::types</a>;
 <b>use</b> <a href="utxo.md#0x4_utxo">0x4::utxo</a>;
 </code></pre>
@@ -60,16 +70,54 @@
 
 
 
+<a name="0x4_bbn_BBNStakeSeal"></a>
+
+## Resource `BBNStakeSeal`
+
+
+
+<pre><code><b>struct</b> <a href="bbn.md#0x4_bbn_BBNStakeSeal">BBNStakeSeal</a> <b>has</b> key
+</code></pre>
+
+
+
 <a name="@Constants_0"></a>
 
 ## Constants
+
+
+<a name="0x4_bbn_TEMPORARY_AREA"></a>
+
+
+
+<pre><code><b>const</b> <a href="bbn.md#0x4_bbn_TEMPORARY_AREA">TEMPORARY_AREA</a>: <a href="">vector</a>&lt;u8&gt; = [116, 101, 109, 112, 111, 114, 97, 114, 121, 95, 97, 114, 101, 97];
+</code></pre>
+
+
+
+<a name="0x4_bbn_ErrorAlreadyInit"></a>
+
+
+
+<pre><code><b>const</b> <a href="bbn.md#0x4_bbn_ErrorAlreadyInit">ErrorAlreadyInit</a>: u64 = 1;
+</code></pre>
+
+
+
+<a name="0x4_bbn_ErrorInvalidBytesLen"></a>
+
+
+
+<pre><code><b>const</b> <a href="bbn.md#0x4_bbn_ErrorInvalidBytesLen">ErrorInvalidBytesLen</a>: u64 = 6;
+</code></pre>
+
 
 
 <a name="0x4_bbn_ErrorNotBabylonOpReturn"></a>
 
 
 
-<pre><code><b>const</b> <a href="bbn.md#0x4_bbn_ErrorNotBabylonOpReturn">ErrorNotBabylonOpReturn</a>: u64 = 2;
+<pre><code><b>const</b> <a href="bbn.md#0x4_bbn_ErrorNotBabylonOpReturn">ErrorNotBabylonOpReturn</a>: u64 = 4;
 </code></pre>
 
 
@@ -78,16 +126,7 @@
 
 
 
-<pre><code><b>const</b> <a href="bbn.md#0x4_bbn_ErrorNotBabylonUTXO">ErrorNotBabylonUTXO</a>: u64 = 0;
-</code></pre>
-
-
-
-<a name="0x4_bbn_ErrorNotTransaction"></a>
-
-
-
-<pre><code><b>const</b> <a href="bbn.md#0x4_bbn_ErrorNotTransaction">ErrorNotTransaction</a>: u64 = 1;
+<pre><code><b>const</b> <a href="bbn.md#0x4_bbn_ErrorNotBabylonUTXO">ErrorNotBabylonUTXO</a>: u64 = 2;
 </code></pre>
 
 
@@ -96,7 +135,16 @@
 
 
 
-<pre><code><b>const</b> <a href="bbn.md#0x4_bbn_ErrorTransactionLockTime">ErrorTransactionLockTime</a>: u64 = 3;
+<pre><code><b>const</b> <a href="bbn.md#0x4_bbn_ErrorTransactionLockTime">ErrorTransactionLockTime</a>: u64 = 5;
+</code></pre>
+
+
+
+<a name="0x4_bbn_ErrorTransactionNotFound"></a>
+
+
+
+<pre><code><b>const</b> <a href="bbn.md#0x4_bbn_ErrorTransactionNotFound">ErrorTransactionNotFound</a>: u64 = 3;
 </code></pre>
 
 
@@ -121,33 +169,91 @@
 
 
 
-<a name="0x4_bbn_try_get_bbn_op_return_data"></a>
+<a name="0x4_bbn_init_for_upgrade"></a>
 
-## Function `try_get_bbn_op_return_data`
+## Function `init_for_upgrade`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bbn.md#0x4_bbn_try_get_bbn_op_return_data">try_get_bbn_op_return_data</a>(<a href="">transaction</a>: <a href="types.md#0x4_types_Transaction">types::Transaction</a>): (bool, u64, <a href="bbn.md#0x4_bbn_BBNOpReturnData">bbn::BBNOpReturnData</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="bbn.md#0x4_bbn_init_for_upgrade">init_for_upgrade</a>()
 </code></pre>
 
 
 
-<a name="0x4_bbn_try_get_staking_output"></a>
+<a name="0x4_bbn_is_bbn_tx"></a>
 
-## Function `try_get_staking_output`
+## Function `is_bbn_tx`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bbn.md#0x4_bbn_try_get_staking_output">try_get_staking_output</a>(<a href="">transaction</a>: <a href="types.md#0x4_types_Transaction">types::Transaction</a>, staking_output_script: &<a href="">vector</a>&lt;u8&gt;): (bool, u64, <a href="_Option">option::Option</a>&lt;<a href="_ObjectID">object::ObjectID</a>&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="bbn.md#0x4_bbn_is_bbn_tx">is_bbn_tx</a>(txid: <b>address</b>): bool
 </code></pre>
 
 
 
-<a name="0x4_bbn_derive_bbn_utxo"></a>
+<a name="0x4_bbn_process_bbn_tx_entry"></a>
 
-## Function `derive_bbn_utxo`
+## Function `process_bbn_tx_entry`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bbn.md#0x4_bbn_derive_bbn_utxo">derive_bbn_utxo</a>(utxo_obj: &<a href="_Object">object::Object</a>&lt;<a href="utxo.md#0x4_utxo_UTXO">utxo::UTXO</a>&gt;)
+<pre><code><b>public</b> entry <b>fun</b> <a href="bbn.md#0x4_bbn_process_bbn_tx_entry">process_bbn_tx_entry</a>(txid: <b>address</b>)
+</code></pre>
+
+
+
+<a name="0x4_bbn_add_temp_state"></a>
+
+## Function `add_temp_state`
+
+
+
+<pre><code>#[private_generics(#[S])]
+<b>public</b> <b>fun</b> <a href="bbn.md#0x4_bbn_add_temp_state">add_temp_state</a>&lt;S: drop, store&gt;(stake: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="bbn.md#0x4_bbn_BBNStakeSeal">bbn::BBNStakeSeal</a>&gt;, state: S)
+</code></pre>
+
+
+
+<a name="0x4_bbn_contains_temp_state"></a>
+
+## Function `contains_temp_state`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bbn.md#0x4_bbn_contains_temp_state">contains_temp_state</a>&lt;S: drop, store&gt;(stake: &<a href="_Object">object::Object</a>&lt;<a href="bbn.md#0x4_bbn_BBNStakeSeal">bbn::BBNStakeSeal</a>&gt;): bool
+</code></pre>
+
+
+
+<a name="0x4_bbn_borrow_temp_state"></a>
+
+## Function `borrow_temp_state`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bbn.md#0x4_bbn_borrow_temp_state">borrow_temp_state</a>&lt;S: drop, store&gt;(stake: &<a href="_Object">object::Object</a>&lt;<a href="bbn.md#0x4_bbn_BBNStakeSeal">bbn::BBNStakeSeal</a>&gt;): &S
+</code></pre>
+
+
+
+<a name="0x4_bbn_borrow_mut_temp_state"></a>
+
+## Function `borrow_mut_temp_state`
+
+
+
+<pre><code>#[private_generics(#[S])]
+<b>public</b> <b>fun</b> <a href="bbn.md#0x4_bbn_borrow_mut_temp_state">borrow_mut_temp_state</a>&lt;S: drop, store&gt;(stake: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="bbn.md#0x4_bbn_BBNStakeSeal">bbn::BBNStakeSeal</a>&gt;): &<b>mut</b> S
+</code></pre>
+
+
+
+<a name="0x4_bbn_remove_temp_state"></a>
+
+## Function `remove_temp_state`
+
+
+
+<pre><code>#[private_generics(#[S])]
+<b>public</b> <b>fun</b> <a href="bbn.md#0x4_bbn_remove_temp_state">remove_temp_state</a>&lt;S: drop, store&gt;(stake: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="bbn.md#0x4_bbn_BBNStakeSeal">bbn::BBNStakeSeal</a>&gt;): S
 </code></pre>

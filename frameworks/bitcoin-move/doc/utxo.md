@@ -24,7 +24,9 @@
 -  [Function `vout`](#0x4_utxo_vout)
 -  [Function `exists_utxo`](#0x4_utxo_exists_utxo)
 -  [Function `borrow_utxo`](#0x4_utxo_borrow_utxo)
+-  [Function `borrow_mut_utxo`](#0x4_utxo_borrow_mut_utxo)
 -  [Function `has_seal`](#0x4_utxo_has_seal)
+-  [Function `has_seal_internal`](#0x4_utxo_has_seal_internal)
 -  [Function `get_seals`](#0x4_utxo_get_seals)
 -  [Function `remove_seals_internal`](#0x4_utxo_remove_seals_internal)
 -  [Function `add_seal_internal`](#0x4_utxo_add_seal_internal)
@@ -299,6 +301,17 @@ Get the UTXO's vout
 
 
 
+<a name="0x4_utxo_borrow_mut_utxo"></a>
+
+## Function `borrow_mut_utxo`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="utxo.md#0x4_utxo_borrow_mut_utxo">borrow_mut_utxo</a>(outpoint: <a href="types.md#0x4_types_OutPoint">types::OutPoint</a>): &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="utxo.md#0x4_utxo_UTXO">utxo::UTXO</a>&gt;
+</code></pre>
+
+
+
 <a name="0x4_utxo_has_seal"></a>
 
 ## Function `has_seal`
@@ -306,6 +319,17 @@ Get the UTXO's vout
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="utxo.md#0x4_utxo_has_seal">has_seal</a>&lt;T&gt;(<a href="utxo.md#0x4_utxo">utxo</a>: &<a href="utxo.md#0x4_utxo_UTXO">utxo::UTXO</a>): bool
+</code></pre>
+
+
+
+<a name="0x4_utxo_has_seal_internal"></a>
+
+## Function `has_seal_internal`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="utxo.md#0x4_utxo_has_seal_internal">has_seal_internal</a>(<a href="utxo.md#0x4_utxo">utxo</a>: &<a href="utxo.md#0x4_utxo_UTXO">utxo::UTXO</a>, protocol: &<a href="_String">string::String</a>): bool
 </code></pre>
 
 
