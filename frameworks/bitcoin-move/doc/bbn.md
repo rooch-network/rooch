@@ -5,8 +5,9 @@
 
 
 
--  [Resource `BBNGlobalParam`](#0x4_bbn_BBNGlobalParam)
+-  [Struct `BBNGlobalParam`](#0x4_bbn_BBNGlobalParam)
 -  [Resource `BBNGlobalParams`](#0x4_bbn_BBNGlobalParams)
+-  [Struct `BBNOpReturnOutput`](#0x4_bbn_BBNOpReturnOutput)
 -  [Struct `BBNOpReturnData`](#0x4_bbn_BBNOpReturnData)
 -  [Resource `BBNStakeSeal`](#0x4_bbn_BBNStakeSeal)
 -  [Constants](#@Constants_0)
@@ -24,7 +25,6 @@
 -  [Function `vout`](#0x4_bbn_vout)
 -  [Function `outpoint`](#0x4_bbn_outpoint)
 -  [Function `tag`](#0x4_bbn_tag)
--  [Function `version`](#0x4_bbn_version)
 -  [Function `staker_pub_key`](#0x4_bbn_staker_pub_key)
 -  [Function `finality_provider_pub_key`](#0x4_bbn_finality_provider_pub_key)
 -  [Function `staking_time`](#0x4_bbn_staking_time)
@@ -35,6 +35,7 @@
 <pre><code><b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x1::vector</a>;
+<b>use</b> <a href="">0x2::bcs</a>;
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::type_info</a>;
 <b>use</b> <a href="">0x3::bitcoin_address</a>;
@@ -50,11 +51,11 @@
 
 <a name="0x4_bbn_BBNGlobalParam"></a>
 
-## Resource `BBNGlobalParam`
+## Struct `BBNGlobalParam`
 
 
 
-<pre><code><b>struct</b> <a href="bbn.md#0x4_bbn_BBNGlobalParam">BBNGlobalParam</a> <b>has</b> store, key
+<pre><code><b>struct</b> <a href="bbn.md#0x4_bbn_BBNGlobalParam">BBNGlobalParam</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -66,6 +67,17 @@
 
 
 <pre><code><b>struct</b> <a href="bbn.md#0x4_bbn_BBNGlobalParams">BBNGlobalParams</a> <b>has</b> key
+</code></pre>
+
+
+
+<a name="0x4_bbn_BBNOpReturnOutput"></a>
+
+## Struct `BBNOpReturnOutput`
+
+
+
+<pre><code><b>struct</b> <a href="bbn.md#0x4_bbn_BBNOpReturnOutput">BBNOpReturnOutput</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -115,29 +127,47 @@
 
 
 
+<a name="0x4_bbn_ErrorInvalidBabylonOpReturn"></a>
+
+
+
+<pre><code><b>const</b> <a href="bbn.md#0x4_bbn_ErrorInvalidBabylonOpReturn">ErrorInvalidBabylonOpReturn</a>: u64 = 5;
+</code></pre>
+
+
+
 <a name="0x4_bbn_ErrorInvalidBytesLen"></a>
 
 
 
-<pre><code><b>const</b> <a href="bbn.md#0x4_bbn_ErrorInvalidBytesLen">ErrorInvalidBytesLen</a>: u64 = 6;
+<pre><code><b>const</b> <a href="bbn.md#0x4_bbn_ErrorInvalidBytesLen">ErrorInvalidBytesLen</a>: u64 = 7;
 </code></pre>
 
 
 
-<a name="0x4_bbn_ErrorNotBabylonOpReturn"></a>
+<a name="0x4_bbn_ErrorNoBabylonOpReturn"></a>
 
 
 
-<pre><code><b>const</b> <a href="bbn.md#0x4_bbn_ErrorNotBabylonOpReturn">ErrorNotBabylonOpReturn</a>: u64 = 4;
+<pre><code><b>const</b> <a href="bbn.md#0x4_bbn_ErrorNoBabylonOpReturn">ErrorNoBabylonOpReturn</a>: u64 = 4;
 </code></pre>
 
 
 
-<a name="0x4_bbn_ErrorNotBabylonUTXO"></a>
+<a name="0x4_bbn_ErrorNoBabylonUTXO"></a>
 
 
 
-<pre><code><b>const</b> <a href="bbn.md#0x4_bbn_ErrorNotBabylonUTXO">ErrorNotBabylonUTXO</a>: u64 = 2;
+<pre><code><b>const</b> <a href="bbn.md#0x4_bbn_ErrorNoBabylonUTXO">ErrorNoBabylonUTXO</a>: u64 = 2;
+</code></pre>
+
+
+
+<a name="0x4_bbn_ErrorNotBabylonTx"></a>
+
+
+
+<pre><code><b>const</b> <a href="bbn.md#0x4_bbn_ErrorNotBabylonTx">ErrorNotBabylonTx</a>: u64 = 8;
 </code></pre>
 
 
@@ -146,7 +176,7 @@
 
 
 
-<pre><code><b>const</b> <a href="bbn.md#0x4_bbn_ErrorTransactionLockTime">ErrorTransactionLockTime</a>: u64 = 5;
+<pre><code><b>const</b> <a href="bbn.md#0x4_bbn_ErrorTransactionLockTime">ErrorTransactionLockTime</a>: u64 = 6;
 </code></pre>
 
 
@@ -322,17 +352,6 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="bbn.md#0x4_bbn_tag">tag</a>(stake: &<a href="bbn.md#0x4_bbn_BBNStakeSeal">bbn::BBNStakeSeal</a>): &<a href="">vector</a>&lt;u8&gt;
-</code></pre>
-
-
-
-<a name="0x4_bbn_version"></a>
-
-## Function `version`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="bbn.md#0x4_bbn_version">version</a>(stake: &<a href="bbn.md#0x4_bbn_BBNStakeSeal">bbn::BBNStakeSeal</a>): u64
 </code></pre>
 
 

@@ -4,11 +4,12 @@
 module bitcoin_move::bbn {
 
     use std::option;
-    use std::option::{is_none, is_some};
+    use std::option::{Option, is_none, is_some, none, some};
     use std::vector;
     use std::vector::{length, borrow};
     use moveos_std::object::{Self, Object};
     use moveos_std::type_info;
+    use moveos_std::bcs;
     use bitcoin_move::bitcoin;
     use bitcoin_move::types;
     use bitcoin_move::utxo;
@@ -16,13 +17,11 @@ module bitcoin_move::bbn {
     use bitcoin_move::script_buf::{Self, ScriptBuf};
     use bitcoin_move::types::{
         Transaction,
-        tx_id,
         tx_output,
         txout_value,
         tx_lock_time,
         txout_script_pubkey
     };
-    use bitcoin_move::bitcoin::get_tx_height;
     use bitcoin_move::temp_state;
     use rooch_framework::bitcoin_address::{
         derive_bitcoin_taproot_address_from_pubkey,
@@ -31,10 +30,9 @@ module bitcoin_move::bbn {
 
     friend bitcoin_move::genesis;
 
-    struct BBNGlobalParam has key, store {
+    struct BBNGlobalParam has copy, drop, store {
         version: u64,
         activation_height: u64,
-        staking_cap: u64,
         cap_height: u64,
         tag: vector<u8>,
         covenant_pks: vector<vector<u8>>,
@@ -52,9 +50,13 @@ module bitcoin_move::bbn {
         bbn_global_param: vector<BBNGlobalParam>
     }
 
+    struct BBNOpReturnOutput has copy, store, drop {
+        vout: u32,
+        op_return_data: BBNOpReturnData
+    }
+
     struct BBNOpReturnData has copy, store, drop {
         tag: vector<u8>,
-        version: u64,
         staker_pub_key: vector<u8>,
         finality_provider_pub_key: vector<u8>,
         staking_time: u16
@@ -68,7 +70,6 @@ module bitcoin_move::bbn {
         /// The stake utxo output index
         vout: u32,
         tag: vector<u8>,
-        version: u64,
         staker_pub_key: vector<u8>,
         finality_provider_pub_key: vector<u8>,
         /// The stake time in block count
@@ -81,43 +82,72 @@ module bitcoin_move::bbn {
     const TEMPORARY_AREA: vector<u8> = b"temporary_area";
 
     const ErrorAlreadyInit: u64 = 1;
-    const ErrorNotBabylonUTXO: u64 = 2;
+    const ErrorNoBabylonUTXO: u64 = 2;
     const ErrorTransactionNotFound: u64 = 3;
-    const ErrorNotBabylonOpReturn: u64 = 4;
-    const ErrorTransactionLockTime: u64 = 5;
-    const ErrorInvalidBytesLen: u64 = 6;
+    const ErrorNoBabylonOpReturn: u64 = 4;
+    const ErrorInvalidBabylonOpReturn: u64 = 5;
+    const ErrorTransactionLockTime: u64 = 6;
+    const ErrorInvalidBytesLen: u64 = 7;
+    const ErrorNotBabylonTx: u64 = 8;
+    
 
+    //https://github.com/babylonlabs-io/networks/blob/main/bbn-1/parameters/global-params.json
+    // {
+    //     "version": 1,
+    //     "activation_height": 864790,
+    //     "cap_height": 864799,
+    //     "tag": "62626e31",
+    //     "covenant_pks": [
+    //         "03d45c70d28f169e1f0c7f4a78e2bc73497afe585b70aa897955989068f3350aaa",
+    //         "034b15848e495a3a62283daaadb3f458a00859fe48e321f0121ebabbdd6698f9fa",
+    //         "0223b29f89b45f4af41588dcaf0ca572ada32872a88224f311373917f1b37d08d1",
+    //         "02d3c79b99ac4d265c2f97ac11e3232c07a598b020cf56c6f055472c893c0967ae",
+    //         "038242640732773249312c47ca7bdb50ca79f15f2ecc32b9c83ceebba44fb74df7",
+    //         "03e36200aaa8dce9453567bba108bdc51f7f1174b97a65e4dc4402fc5de779d41c",
+    //         "03cbdd028cfe32c1c1f2d84bfec71e19f92df509bba7b8ad31ca6c1a134fe09204",
+    //         "03f178fcce82f95c524b53b077e6180bd2d779a9057fdff4255a0af95af918cee0",
+    //         "03de13fc96ea6899acbdc5db3afaa683f62fe35b60ff6eb723dad28a11d2b12f8c"
+    //     ],
+    //     "covenant_quorum": 6,
+    //     "unbonding_time": 1008,
+    //     "unbonding_fee": 32000,
+    //     "max_staking_amount": 50000000000,
+    //     "min_staking_amount": 500000,
+    //     "max_staking_time": 64000,
+    //     "min_staking_time": 64000,
+    //     "confirmation_depth": 10
+    // }
     public(friend) fun genesis_init() {
-        // TODO here just add bbn test-4 version 2
-        let bbn_global_params_2 = BBNGlobalParam {
-            version: 2,
-            activation_height: 200665,
-            staking_cap: 0,
-            cap_height: 201385,
-            tag: b"62627434",
+        // bbn-1 version 1
+        let bbn_global_params_1 = BBNGlobalParam {
+            version: 1,
+            activation_height: 864790,
+            cap_height: 864799,
+            //bbn1
+            tag: x"62626e31",
             covenant_pks: vector[
-                b"03fa9d882d45f4060bdb8042183828cd87544f1ea997380e586cab77d5fd698737",
-                b"020aee0509b16db71c999238a4827db945526859b13c95487ab46725357c9a9f25",
-                b"0217921cf156ccb4e73d428f996ed11b245313e37e27c978ac4d2cc21eca4672e4",
-                b"02113c3a32a9d320b72190a04a020a0db3976ef36972673258e9a38a364f3dc3b0",
-                b"0379a71ffd71c503ef2e2f91bccfc8fcda7946f4653cef0d9f3dde20795ef3b9f0",
-                b"023bb93dfc8b61887d771f3630e9a63e97cbafcfcc78556a474df83a31a0ef899c",
-                b"03d21faf78c6751a0d38e6bd8028b907ff07e9a869a43fc837d6b3f8dff6119a36",
-                b"0340afaf47c4ffa56de86410d8e47baa2bb6f04b604f4ea24323737ddc3fe092df",
-                b"03f5199efae3f28bb82476163a7e458c7ad445d9bffb0682d10d3bdb2cb41f8e8e"
+                b"03d45c70d28f169e1f0c7f4a78e2bc73497afe585b70aa897955989068f3350aaa",
+                b"034b15848e495a3a62283daaadb3f458a00859fe48e321f0121ebabbdd6698f9fa",
+                b"0223b29f89b45f4af41588dcaf0ca572ada32872a88224f311373917f1b37d08d1",
+                b"02d3c79b99ac4d265c2f97ac11e3232c07a598b020cf56c6f055472c893c0967ae",
+                b"038242640732773249312c47ca7bdb50ca79f15f2ecc32b9c83ceebba44fb74df7",
+                b"03e36200aaa8dce9453567bba108bdc51f7f1174b97a65e4dc4402fc5de779d41c",
+                b"03cbdd028cfe32c1c1f2d84bfec71e19f92df509bba7b8ad31ca6c1a134fe09204",
+                b"03f178fcce82f95c524b53b077e6180bd2d779a9057fdff4255a0af95af918cee0",
+                b"03de13fc96ea6899acbdc5db3afaa683f62fe35b60ff6eb723dad28a11d2b12f8c"
             ],
             covenant_quorum: 6,
             unbonding_time: 1008,
-            unbonding_fee: 10000,
-            max_staking_amount: 5000000,
-            min_staking_amount: 50000,
+            unbonding_fee: 32000,
+            max_staking_amount: 50000000000,
+            min_staking_amount: 500000,
             min_staking_time: 64000,
             max_staking_time: 64000,
             confirmation_depth: 10
         };
         let obj =
             object::new_named_object(
-                BBNGlobalParams { bbn_global_param: vector[bbn_global_params_2] }
+                BBNGlobalParams { bbn_global_param: vector[bbn_global_params_1] }
             );
         object::to_shared(obj);
     }
@@ -129,7 +159,7 @@ module bitcoin_move::bbn {
     }
 
     fun new_bbn_stake_seal(
-        block_height: u64, txid: address, vout: u32, tag: vector<u8>, version: u64, staker_pub_key: vector<u8>,
+        block_height: u64, txid: address, vout: u32, tag: vector<u8>, staker_pub_key: vector<u8>,
         finality_provider_pub_key: vector<u8>, staking_time: u16, staking_amount: u64
     ): Object<BBNStakeSeal> {
         object::new(BBNStakeSeal {
@@ -137,7 +167,6 @@ module bitcoin_move::bbn {
             txid: txid,
             vout: vout,
             tag: tag,
-            version: version,
             staker_pub_key: staker_pub_key,
             finality_provider_pub_key: finality_provider_pub_key,
             staking_time: staking_time,
@@ -145,119 +174,129 @@ module bitcoin_move::bbn {
         })
     }
 
-    fun borrow_bbn_params(): &Object<BBNGlobalParams> {
+    fun get_bbn_param(block_height: u64): Option<BBNGlobalParam> {
         let object_id = object::named_object_id<BBNGlobalParams>();
-        object::borrow_object(object_id)
-    }
-
-    fun borrow_bbn_params_mut(): &mut Object<BBNGlobalParams> {
-        let object_id = object::named_object_id<BBNGlobalParams>();
-        object::borrow_mut_object_shared(object_id)
-    }
-
-    fun try_get_bbn_op_return_data(transaction: Transaction):
-        (bool, u64, BBNOpReturnData) {
-        let bbn_op_return_data = BBNOpReturnData {
-            tag: vector[],
-            version: 0,
-            staker_pub_key: vector[],
-            finality_provider_pub_key: vector[],
-            staking_time: 0
+        let params = object::borrow(object::borrow_object<BBNGlobalParams>(object_id));
+        let i = 0;
+        let len = length(&params.bbn_global_param);
+        while (i < len) {
+            let param = borrow(&params.bbn_global_param, i);
+            i = i + 1;
+            if (param.cap_height !=0 && block_height > param.cap_height) {
+                continue
+            };
+            if (block_height < param.activation_height) {
+                continue
+            };
+            return some(*param)
         };
+        none()
+    }
+
+    fun try_get_bbn_op_return_output(transaction: Transaction): Option<BBNOpReturnOutput> {
         let tx_output = tx_output(&transaction);
         if (vector::length(tx_output) < 2) {
-            return (false, 0, bbn_op_return_data)
+            return none()
         };
 
-        // this case should not happen as standard bitcoin node propagation rules
-        // disallow multiple op return outputs in a single transaction. However, miner could
-        // include multiple op return outputs in a single transaction. In such case, we should
-        // return an error.
+        let result = none();
         let index = 0;
-        let i = 0;
-        while (i < length(tx_output)) {
-            let output = borrow(tx_output, i);
-            let (tag, version, staker_pub_key, finality_provider_pub_key, staking_time) =
-                unpack_bbn_stake_data(txout_script_pubkey(output));
-            bbn_op_return_data.tag = tag;
-            bbn_op_return_data.version = version;
-            bbn_op_return_data.staker_pub_key = staker_pub_key;
-            bbn_op_return_data.finality_provider_pub_key = finality_provider_pub_key;
-            bbn_op_return_data.staking_time = staking_time;
-            if (vector::length(&bbn_op_return_data.tag) != 0) { break };
+        let output_len = length(tx_output);
+        while (index < output_len) {
+            let output = borrow(tx_output, index);
+            let op_return_data_opt = parse_bbn_op_return_data(txout_script_pubkey(output));
+            if (is_some(&op_return_data_opt)) {
+                if (is_some(&result)) {
+                    // this case should not happen as standard bitcoin node propagation rules
+                    // disallow multiple op return outputs in a single transaction. However, miner could
+                    // include multiple op return outputs in a single transaction. In such case, we should
+                    // ignore the tx.
+                    return none()
+                } else {
+                    result = some(BBNOpReturnOutput{
+                        vout: (index as u32),
+                        op_return_data: option::destroy_some(op_return_data_opt)
+                    });
+                }
+            };
             index = index + 1;
-            i = i + 1;
         };
-        if (vector::length(&bbn_op_return_data.tag) == 0) {
-            return (false, 0, bbn_op_return_data)
-        };
-        let option_tx_height = get_tx_height(tx_id(&transaction));
-        if (is_none(&option_tx_height)) {
-            return (false, 0, bbn_op_return_data)
-        };
-        let tx_height = option::destroy_some(option_tx_height);
-        let bbn_params = object::borrow(borrow_bbn_params());
-        let i = 0;
-        while (i < length(&bbn_params.bbn_global_param)) {
-            let param = borrow(&bbn_params.bbn_global_param, i);
-            i = i + 1;
-            if (bbn_op_return_data.version != param.version
-                || bbn_op_return_data.tag != param.tag
-                || tx_height < param.activation_height
-                || param.covenant_quorum > (length(&param.covenant_pks) as u32)) {
-                continue
-            };
-            if (param.cap_height != 0
-                && tx_height > (param.activation_height + param.cap_height)) {
-                continue
-            };
-            if (bbn_op_return_data.staking_time < param.min_staking_time
-                || bbn_op_return_data.staking_time > param.max_staking_time) {
-                continue
-            };
-            if (!vector::contains(
-                &param.covenant_pks, &bbn_op_return_data.finality_provider_pub_key
-            )) {
-                continue
-            };
-            return (true, index, bbn_op_return_data)
-        };
-        return (false, 0, bbn_op_return_data)
+        result
     }
 
-    fun try_get_bbn_op_return_data_from_tx_bytes(bytes: vector<u8>): (bool, u64, BBNOpReturnData) {
-        let transaction = bcs::from_bytes<Transaction>(&bytes).expect("should be a valid transaction");
-        try_get_bbn_op_return_data(transaction)
+    fun try_get_bbn_op_return_output_from_tx_bytes(bytes: vector<u8>): Option<BBNOpReturnOutput> {
+        let transaction = bcs::from_bytes<Transaction>(bytes);
+        try_get_bbn_op_return_output(transaction)
     }
 
     public fun is_bbn_tx(txid: address): bool {
+        let block_height_opt = bitcoin::get_tx_height(txid);
+        if (is_none(&block_height_opt)) {
+            return false
+        };
+        let block_height = option::destroy_some(block_height_opt);
+        let param_opt = get_bbn_param(block_height);
+        if (is_none(&param_opt)) {
+            return false
+        };
+        let param = option::destroy_some(param_opt);
         let tx_opt = bitcoin::get_tx(txid);
         if (is_none(&tx_opt)) {
             return false
         };
         let transaction = option::destroy_some(tx_opt);
-        let (is_true, _, _) = try_get_bbn_op_return_data(transaction);
-        is_true
+        let output_opt = try_get_bbn_op_return_output(transaction);
+        if (is_none(&output_opt)) {
+            return false
+        };
+        let output = option::destroy_some(output_opt);
+        validate_bbn_op_return_data(&param, &transaction, &output.op_return_data)
     }
 
     public entry fun process_bbn_tx_entry(txid: address){
         process_bbn_tx(txid)
     }
 
+    fun validate_bbn_op_return_data(param: &BBNGlobalParam, tx: &Transaction, op_return_data: &BBNOpReturnData): bool {
+        if (op_return_data.tag != param.tag) {
+            return false
+        };
+        if (op_return_data.staking_time < param.min_staking_time
+            || op_return_data.staking_time > param.max_staking_time) {
+            return false
+        };
+        if (!vector::contains(&param.covenant_pks, &op_return_data.finality_provider_pub_key)) {
+            return false
+        };
+        if (tx_lock_time(tx) < (op_return_data.staking_time as u32)) {
+            return false
+        };
+        true
+    }
+
     fun process_bbn_tx(txid: address) {
         let block_height_opt = bitcoin::get_tx_height(txid);
         assert!(is_some(&block_height_opt), ErrorTransactionNotFound);
         let block_height = option::destroy_some(block_height_opt);
+
+        let param_opt = get_bbn_param(block_height);
+        assert!(is_some(&param_opt), ErrorNotBabylonTx);
+        let param = option::destroy_some(param_opt);
+
         let tx_opt = bitcoin::get_tx(txid);
         assert!(is_some(&tx_opt), ErrorTransactionNotFound);
+        
         let transaction = option::destroy_some(tx_opt);
 
-        let (is_true, op_return_index, op_return_data) =
-            try_get_bbn_op_return_data(transaction);
+        let op_return_output_opt = try_get_bbn_op_return_output(transaction);
+        assert!(is_some(&op_return_output_opt), ErrorNoBabylonOpReturn);
+        let op_return_output = option::destroy_some(op_return_output_opt);
         
-        assert!(is_true, ErrorNotBabylonOpReturn);
+        let BBNOpReturnOutput{vout: op_return_vout, op_return_data} = op_return_output;
+
+        let valid = validate_bbn_op_return_data(&param, &transaction, &op_return_data);
         
-        assert!(tx_lock_time(&transaction) >= (op_return_data.staking_time as u32), ErrorTransactionLockTime);
+        assert!(valid, ErrorInvalidBabylonOpReturn);
 
         let seal_protocol = type_info::type_name<BBNStakeSeal>();
         let tx_outputs = tx_output(&transaction);
@@ -266,10 +305,12 @@ module bitcoin_move::bbn {
         //bbn should not multiple staking outputs yet, we support it for in case
         while (index < length(tx_outputs)) {
             let tx_output = borrow(tx_outputs, index);
-            if (index == op_return_index) {
+            let vout = (index as u32);
+            index = index + 1;
+            if (vout == op_return_vout) {
                 continue
             };
-            let vout = (index as u32);
+            //TODO skip the change output
             let txout_value = txout_value(tx_output);
             let out_point = types::new_outpoint(txid, vout);
             let utxo_obj = utxo::borrow_mut_utxo(out_point);
@@ -278,7 +319,7 @@ module bitcoin_move::bbn {
                 continue
             };
             let bbn_stake_seal_obj = new_bbn_stake_seal(
-                block_height, txid, vout, op_return_data.tag, op_return_data.version,
+                block_height, txid, vout, op_return_data.tag, 
                 op_return_data.staker_pub_key, op_return_data.finality_provider_pub_key,
                 op_return_data.staking_time, txout_value
             );
@@ -289,28 +330,36 @@ module bitcoin_move::bbn {
             let seal = utxo::new_utxo_seal(seal_protocol, seal_object_id);
             utxo::add_seal_internal(utxo, seal);
             has_stake_seal = true;
-            index = index + 1;
         };
-        assert!(has_stake_seal, ErrorNotBabylonUTXO);
+        assert!(has_stake_seal, ErrorNoBabylonUTXO);
     }
 
     fun pubkey_to_rooch_address(pubkey: &vector<u8>): address {
         to_rooch_address(&derive_bitcoin_taproot_address_from_pubkey(pubkey))
     }
 
-    fun unpack_bbn_stake_data(script_buf: &ScriptBuf): (vector<u8>, u64, vector<u8>, vector<u8>, u16){
-        let script_bytes = script_buf::bytes(script_buf);
+    fun parse_bbn_op_return_data(script_buf: &ScriptBuf): Option<BBNOpReturnData>{
         // 1. OP_RETURN opcode - which signalizes that data is provably unspendable
 	    // 2. OP_DATA_71 opcode - which pushes 71 bytes of data to the stack
-        if (vector::length(script_bytes) != 73 || *vector::borrow(script_bytes, 0) != opcode::op_return() || *vector::borrow(script_bytes, 1) != opcode::op_pushbytes_71()){
-            return (vector[], 0, vector[], vector[], 0)
+        let script_bytes = script_buf::bytes(script_buf);
+        let script_len = vector::length(script_bytes);
+        if (script_len != 73 || *vector::borrow(script_bytes, 0) != opcode::op_return() || *vector::borrow(script_bytes, 1) != opcode::op_pushbytes_71()){
+            return none() 
         };
         let tag = vector::slice(script_bytes, 2, 6);
-        let version = bytes_to_u64(vector::slice(script_bytes, 6, 7));
+        let version = *vector::borrow(script_bytes, 6);
+        if (version != 0u8){
+            return none()
+        };
         let staker_pub_key = vector::slice(script_bytes, 7, 39);
         let finality_provider_pub_key = vector::slice(script_bytes, 39, 71);
         let staking_time = bytes_to_u16(vector::slice(script_bytes, 71, 73));
-        return (tag, version, staker_pub_key, finality_provider_pub_key, staking_time)
+        some(BBNOpReturnData{
+            tag,
+            staker_pub_key: staker_pub_key,
+            finality_provider_pub_key: finality_provider_pub_key,
+            staking_time: staking_time
+        })
     }
 
     //TODO migrate to `std::u16`
@@ -319,17 +368,6 @@ module bitcoin_move::bbn {
         let high_byte = vector::borrow(&bytes, 0);
         let low_byte = vector::borrow(&bytes, 1);
         ((*high_byte as u16) << 8) | (*low_byte as u16)
-    }
-
-    //TODO migrate to `std::u64`
-    fun bytes_to_u64(bytes: vector<u8>): u64 {
-        let value = 0u64;
-        let i = 0u64;
-        while (i < 8) {
-            value = value | ((*vector::borrow(&bytes, i) as u64) << ((8 * (7 - i)) as u8));
-            i = i + 1;
-        };
-        return value
     }
 
     // ==== Temporary Area ===
@@ -394,10 +432,6 @@ module bitcoin_move::bbn {
         &stake.tag
     }
 
-    public fun version(stake: &BBNStakeSeal): u64 {
-        stake.version
-    }   
-
     public fun staker_pub_key(stake: &BBNStakeSeal): &vector<u8> {
         &stake.staker_pub_key
     }
@@ -422,6 +456,22 @@ module bitcoin_move::bbn {
         let latest_block = option::destroy_some(latest_block_opt);
         let (current_block_height, _hash) = types::unpack_block_height_hash(latest_block);
         current_block_height > (stake.block_height + (stake.staking_time as u64))
+    }
+
+
+    #[test]
+    fun test_parse_bbn_op_return_data(){
+        //https://mempool.space/tx/7d90210b21aad480cd88fd8399aa6d47e6b3f2ecea2f9f9cfdd79598430e3003
+        let script_buf = script_buf::new(x"6a4762626e31000b93d2d388a2b89c2ba2ef28e99c0cfc20735b693cb8b2350fe8aceca2d0f393db9160428e401753dc1a9952ffd4fa3386c7609cf8411d2b6d79c42323ca9923fa00");
+        let bbn_opreturn_data_opt = parse_bbn_op_return_data(&script_buf);
+        assert!(is_some(&bbn_opreturn_data_opt), 1000);
+        let bbn_opreturn_data = option::destroy_some(bbn_opreturn_data_opt);
+        let BBNOpReturnData{tag, staker_pub_key, finality_provider_pub_key, staking_time} = bbn_opreturn_data;
+        assert!(tag == x"62626e31", 1001);
+        assert!(tag == b"bbn1", 1002);
+        assert!(vector::length(&staker_pub_key) == 32, 1003);
+        assert!(vector::length(&finality_provider_pub_key) == 32, 1004);
+        assert!(staking_time == 64000, 1005);
     }
 
 }
