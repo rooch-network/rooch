@@ -366,4 +366,57 @@ module bitcoin_move::bbn {
         let temp_state = object::borrow_mut_field(stake, TEMPORARY_AREA);
         temp_state::remove_state(temp_state)
     }
+
+    // ============== BBNStakeSeal ==============
+
+    public fun block_height(stake: &BBNStakeSeal): u64 {
+        stake.block_height
+    }
+
+    public fun txid(stake: &BBNStakeSeal): address {
+        stake.txid
+    }
+
+    public fun vout(stake: &BBNStakeSeal): u32 {
+        stake.vout
+    }
+
+    public fun outpoint(stake: &BBNStakeSeal): types::OutPoint {
+        types::new_outpoint(stake.txid, stake.vout)
+    }
+
+    public fun tag(stake: &BBNStakeSeal): &vector<u8> {
+        &stake.tag
+    }
+
+    public fun version(stake: &BBNStakeSeal): u64 {
+        stake.version
+    }   
+
+    public fun staker_pub_key(stake: &BBNStakeSeal): &vector<u8> {
+        &stake.staker_pub_key
+    }
+
+    public fun finality_provider_pub_key(stake: &BBNStakeSeal): &vector<u8> {
+        &stake.finality_provider_pub_key
+    }
+
+    public fun staking_time(stake: &BBNStakeSeal): u16 {
+        stake.staking_time
+    }
+
+    public fun staking_amount(stake: &BBNStakeSeal): u64 {
+        stake.staking_amount
+    }
+
+    public fun is_expired(stake: &BBNStakeSeal): bool {
+        let latest_block_opt = bitcoin::get_latest_block();
+        if (is_none(&latest_block_opt)) {
+            return false
+        };
+        let latest_block = option::destroy_some(latest_block_opt);
+        let (current_block_height, _hash) = types::unpack_block_height_hash(latest_block);
+        current_block_height > (stake.block_height + (stake.staking_time as u64))
+    }
+
 }

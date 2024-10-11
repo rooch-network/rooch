@@ -19,6 +19,17 @@
 -  [Function `borrow_temp_state`](#0x4_bbn_borrow_temp_state)
 -  [Function `borrow_mut_temp_state`](#0x4_bbn_borrow_mut_temp_state)
 -  [Function `remove_temp_state`](#0x4_bbn_remove_temp_state)
+-  [Function `block_height`](#0x4_bbn_block_height)
+-  [Function `txid`](#0x4_bbn_txid)
+-  [Function `vout`](#0x4_bbn_vout)
+-  [Function `outpoint`](#0x4_bbn_outpoint)
+-  [Function `tag`](#0x4_bbn_tag)
+-  [Function `version`](#0x4_bbn_version)
+-  [Function `staker_pub_key`](#0x4_bbn_staker_pub_key)
+-  [Function `finality_provider_pub_key`](#0x4_bbn_finality_provider_pub_key)
+-  [Function `staking_time`](#0x4_bbn_staking_time)
+-  [Function `staking_amount`](#0x4_bbn_staking_amount)
+-  [Function `is_expired`](#0x4_bbn_is_expired)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
@@ -256,4 +267,125 @@
 
 <pre><code>#[private_generics(#[S])]
 <b>public</b> <b>fun</b> <a href="bbn.md#0x4_bbn_remove_temp_state">remove_temp_state</a>&lt;S: drop, store&gt;(stake: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="bbn.md#0x4_bbn_BBNStakeSeal">bbn::BBNStakeSeal</a>&gt;): S
+</code></pre>
+
+
+
+<a name="0x4_bbn_block_height"></a>
+
+## Function `block_height`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bbn.md#0x4_bbn_block_height">block_height</a>(stake: &<a href="bbn.md#0x4_bbn_BBNStakeSeal">bbn::BBNStakeSeal</a>): u64
+</code></pre>
+
+
+
+<a name="0x4_bbn_txid"></a>
+
+## Function `txid`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bbn.md#0x4_bbn_txid">txid</a>(stake: &<a href="bbn.md#0x4_bbn_BBNStakeSeal">bbn::BBNStakeSeal</a>): <b>address</b>
+</code></pre>
+
+
+
+<a name="0x4_bbn_vout"></a>
+
+## Function `vout`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bbn.md#0x4_bbn_vout">vout</a>(stake: &<a href="bbn.md#0x4_bbn_BBNStakeSeal">bbn::BBNStakeSeal</a>): u32
+</code></pre>
+
+
+
+<a name="0x4_bbn_outpoint"></a>
+
+## Function `outpoint`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bbn.md#0x4_bbn_outpoint">outpoint</a>(stake: &<a href="bbn.md#0x4_bbn_BBNStakeSeal">bbn::BBNStakeSeal</a>): <a href="types.md#0x4_types_OutPoint">types::OutPoint</a>
+</code></pre>
+
+
+
+<a name="0x4_bbn_tag"></a>
+
+## Function `tag`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bbn.md#0x4_bbn_tag">tag</a>(stake: &<a href="bbn.md#0x4_bbn_BBNStakeSeal">bbn::BBNStakeSeal</a>): &<a href="">vector</a>&lt;u8&gt;
+</code></pre>
+
+
+
+<a name="0x4_bbn_version"></a>
+
+## Function `version`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bbn.md#0x4_bbn_version">version</a>(stake: &<a href="bbn.md#0x4_bbn_BBNStakeSeal">bbn::BBNStakeSeal</a>): u64
+</code></pre>
+
+
+
+<a name="0x4_bbn_staker_pub_key"></a>
+
+## Function `staker_pub_key`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bbn.md#0x4_bbn_staker_pub_key">staker_pub_key</a>(stake: &<a href="bbn.md#0x4_bbn_BBNStakeSeal">bbn::BBNStakeSeal</a>): &<a href="">vector</a>&lt;u8&gt;
+</code></pre>
+
+
+
+<a name="0x4_bbn_finality_provider_pub_key"></a>
+
+## Function `finality_provider_pub_key`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bbn.md#0x4_bbn_finality_provider_pub_key">finality_provider_pub_key</a>(stake: &<a href="bbn.md#0x4_bbn_BBNStakeSeal">bbn::BBNStakeSeal</a>): &<a href="">vector</a>&lt;u8&gt;
+</code></pre>
+
+
+
+<a name="0x4_bbn_staking_time"></a>
+
+## Function `staking_time`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bbn.md#0x4_bbn_staking_time">staking_time</a>(stake: &<a href="bbn.md#0x4_bbn_BBNStakeSeal">bbn::BBNStakeSeal</a>): u16
+</code></pre>
+
+
+
+<a name="0x4_bbn_staking_amount"></a>
+
+## Function `staking_amount`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bbn.md#0x4_bbn_staking_amount">staking_amount</a>(stake: &<a href="bbn.md#0x4_bbn_BBNStakeSeal">bbn::BBNStakeSeal</a>): u64
+</code></pre>
+
+
+
+<a name="0x4_bbn_is_expired"></a>
+
+## Function `is_expired`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bbn.md#0x4_bbn_is_expired">is_expired</a>(stake: &<a href="bbn.md#0x4_bbn_BBNStakeSeal">bbn::BBNStakeSeal</a>): bool
 </code></pre>
