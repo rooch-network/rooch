@@ -2,6 +2,8 @@ import { paths } from 'src/routes/paths';
 
 import { Iconify } from 'src/components/iconify';
 
+import { isMainNetwork } from '../utils/env'
+
 export const navData = [
   /**
    * My Account
@@ -23,6 +25,12 @@ export const navData = [
         title: 'Transactions',
         path: paths.dashboard.transactions,
         icon: <Iconify icon="solar:clipboard-list-bold-duotone" />,
+      },
+      {
+        title: 'Purchase Gas',
+        path: paths.dashboard['gas-swap'],
+        icon: <Iconify icon="solar:gas-station-bold-duotone" />,
+        noAddressRequired: true,
       },
       {
         title: 'Settings',
@@ -65,6 +73,12 @@ export const navData = [
         icon: <Iconify icon="solar:widget-5-bold-duotone" />,
         noAddressRequired: true,
       },
+      {
+        title: isMainNetwork() ? "Testnet" : "MainNet",
+        path: isMainNetwork() ? "https://test.portal.rooch.network" : "https://portal.rooch.network",
+        icon: <Iconify icon="solar:widget-5-bold-duotone" />,
+        noAddressRequired: true,
+      },
     ],
   },
-];
+].filter((item) => !(isMainNetwork() && item.subheader === 'Tokens'));

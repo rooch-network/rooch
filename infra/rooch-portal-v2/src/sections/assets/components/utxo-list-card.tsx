@@ -5,6 +5,7 @@ import { useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit';
 
 import { Box, Card, Skeleton, CardHeader, CardContent } from '@mui/material';
 
+import { shortAddress } from 'src/utils/address';
 import { fNumber } from 'src/utils/format-number';
 
 import { EmptyContent } from 'src/components/empty-content';
@@ -54,14 +55,20 @@ export default function UTXOList({ address }: { address: string }) {
         }
       >
         {isUTXOPending ? (
-          Array.from({ length: 4 }).map((i,index) => <Skeleton key={index} height={124} />)
+          Array.from({ length: 4 }).map((i, index) => <Skeleton key={index} height={124} />)
         ) : utxoList?.data.length === 0 ? (
           <EmptyContent title="No BTC UTXOs Found" sx={{ py: 3 }} />
         ) : (
           utxoList?.data.map((i) => (
             <Card key={i.id} elevation={0} className="!bg-gray-100 !shadow-none">
-              <CardHeader title={`UTXO #${i.tx_order}`} />
-              <CardContent>Sats {fNumber(i.value?.value)}</CardContent>
+              <CardHeader
+                title={
+                  <span>
+                    UTXO <span className="text-sm">{shortAddress(i.id, 6, 4)}</span>
+                  </span>
+                }
+              />
+              <CardContent>{fNumber(i.value?.value)} Sats</CardContent>
             </Card>
           ))
         )}

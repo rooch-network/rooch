@@ -1,12 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+
+import { NextResponse } from 'next/server';
+import { getRoochNodeUrl } from '@roochnetwork/rooch-sdk';
 
 const iconDomains = [
   'https://api.unisvg.com',
   'https://api.iconify.design',
   'https://api.simplesvg.com',
 ];
-const apiDomains = ['https://dev-seed.rooch.network', 'https://test-seed.rooch.network'];
-
+const apiDomains = [getRoochNodeUrl('mainnet'), getRoochNodeUrl('testnet')];
 const isProduction = process.env.NODE_ENV === 'production';
 
 export function middleware(request: NextRequest) {
@@ -24,7 +26,7 @@ export function middleware(request: NextRequest) {
       name: 'style-src',
       values: ["'self'", "'unsafe-inline'"],
     },
-    { name: 'img-src', values: ["'self'", 'data:', 'blob:'] },
+    { name: 'img-src', values: ["'self'", 'data:', 'blob:', 'https:'] },
     { name: 'font-src', values: ["'self'", 'data:'] },
     { name: 'object-src', values: ["'none'"] },
     { name: 'base-uri', values: ["'self'"] },

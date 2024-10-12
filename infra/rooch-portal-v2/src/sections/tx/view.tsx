@@ -69,7 +69,6 @@ export function TxView({ hash }: { hash: string }) {
       tx_hashes: [hash],
     },
   });
-  console.log('🚀 ~ file: view.tsx:22 ~ TxView ~ transactionDetail:', transactionDetail?.data[0]);
 
   const txDetail = useMemo(() => transactionDetail?.data[0], [transactionDetail]);
 

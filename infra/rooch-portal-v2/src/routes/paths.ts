@@ -12,6 +12,6 @@ export const paths = {
     apps: `${ROOTS.DASHBOARD}/apps`,
     settings: `${ROOTS.DASHBOARD}/settings`,
     search: `${ROOTS.DASHBOARD}/search`,
-    redEnvelope: `${ROOTS.DASHBOARD}/red-envelope/detail`,
+    'gas-swap': `${ROOTS.DASHBOARD}/gas-swap`,
   },
 };
