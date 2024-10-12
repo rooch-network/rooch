@@ -1,6 +1,7 @@
 import { paths } from 'src/routes/paths';
 
 import { Iconify } from 'src/components/iconify';
+
 import { isMainNetwork } from '../utils/env'
 
 export const navData = [

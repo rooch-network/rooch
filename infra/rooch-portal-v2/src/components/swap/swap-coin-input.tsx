@@ -7,8 +7,6 @@ import { toDust, fromDust, formatCoin, toBigNumber } from 'src/utils/number';
 
 import { grey } from 'src/theme/core';
 
-import { toast } from 'src/components/snackbar';
-
 import Label from './typography/label';
 import SwapCoinSelectButton from './swap-coin-select-button';
 

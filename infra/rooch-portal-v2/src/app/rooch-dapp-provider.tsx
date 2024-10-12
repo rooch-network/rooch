@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RoochProvider, WalletProvider } from '@roochnetwork/rooch-sdk-kit';
 
 import { networkConfig } from 'src/hooks/use-networks';
+
 import { isMainNetwork } from '../utils/env'
 
 const queryClient = new QueryClient();
