@@ -30,9 +30,11 @@ module bitcoin_move::bbn {
 
     friend bitcoin_move::genesis;
 
+    //https://github.com/babylonlabs-io/networks/blob/28651b301bb2efa0542b2268793948bcda472a56/parameters/parser/ParamsParser.go#L117
     struct BBNGlobalParam has copy, drop, store {
         version: u64,
         activation_height: u64,
+        staking_cap: u64,
         cap_height: u64,
         tag: vector<u8>,
         covenant_pks: vector<vector<u8>>,
@@ -122,6 +124,7 @@ module bitcoin_move::bbn {
         let bbn_global_params_1 = BBNGlobalParam {
             version: 1,
             activation_height: 864790,
+            staking_cap: 0,
             cap_height: 864799,
             //bbn1
             tag: x"62626e31",
