@@ -12,6 +12,7 @@ import { Stack } from '@mui/material';
 
 import Swap from 'src/components/swap/swap';
 import { toast } from 'src/components/snackbar';
+import { useNetworkVariable } from '../../hooks/use-networks'
 
 const swapCoins = [
   {
@@ -33,6 +34,7 @@ const swapCoins = [
 ];
 
 export default function GasSwapOverview() {
+  const btcGasAddress = useNetworkVariable("btcGasAddress")
   const [loading, setLoading] = useState<boolean>(false);
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [btcBalance, setBtcBalance] = useState(0n);
@@ -136,7 +138,7 @@ export default function GasSwapOverview() {
             try {
               setSubmitting(true);
               const txHash = await wallet.wallet?.sendBtc({
-                toAddress: 'tb1prcajaj9n7e29u4dfp33x3hcf52yqeegspdpcd79pqu4fpr6llx4stqqxgy',
+                toAddress: btcGasAddress,
                 satoshis: Number(fromSwapAmount.toString()),
               });
               setTxHash(txHash);

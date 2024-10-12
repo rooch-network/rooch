@@ -1,14 +1,14 @@
 import type { NextRequest } from 'next/server';
 
 import { NextResponse } from 'next/server';
+import { getRoochNodeUrl } from '@roochnetwork/rooch-sdk';
 
 const iconDomains = [
   'https://api.unisvg.com',
   'https://api.iconify.design',
   'https://api.simplesvg.com',
 ];
-const apiDomains = ['https://dev-seed.rooch.network', 'https://test-seed.rooch.network'];
-
+const apiDomains = [getRoochNodeUrl('mainnet'), getRoochNodeUrl('testnet')];
 const isProduction = process.env.NODE_ENV === 'production';
 
 export function middleware(request: NextRequest) {

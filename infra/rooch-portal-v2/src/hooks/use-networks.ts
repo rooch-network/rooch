@@ -13,11 +13,20 @@ console.log(
 );
 
 const { networkConfig, useNetworkVariable, useNetworkVariables } = createNetworkConfig({
+  mainnet: {
+    url: getRoochNodeUrl('mainnet'),
+    variables: {
+      roochOperatingAddress: ROOCH_NFT_OPERATING_ADDRESS,
+      mintAddress: ROOCH_MINT_OPERATING_ADDRESS,
+      btcGasAddress: 'bc1prcajaj9n7e29u4dfp33x3hcf52yqeegspdpcd79pqu4fpr6llx4sugkfjt'
+    },
+  },
   testnet: {
     url: getRoochNodeUrl('testnet'),
     variables: {
       roochOperatingAddress: ROOCH_NFT_OPERATING_ADDRESS,
       mintAddress: ROOCH_MINT_OPERATING_ADDRESS,
+      btcGasAddress: 'tb1prcajaj9n7e29u4dfp33x3hcf52yqeegspdpcd79pqu4fpr6llx4stqqxgy'
     },
   },
   localnet: {
@@ -25,6 +34,7 @@ const { networkConfig, useNetworkVariable, useNetworkVariables } = createNetwork
     variables: {
       roochOperatingAddress: ROOCH_NFT_OPERATING_ADDRESS,
       mintAddress: ROOCH_MINT_OPERATING_ADDRESS,
+      btcGasAddress: 'tb1prcajaj9n7e29u4dfp33x3hcf52yqeegspdpcd79pqu4fpr6llx4stqqxgy'
     },
   },
 });

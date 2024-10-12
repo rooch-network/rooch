@@ -51,7 +51,8 @@ export default function SwapCoinInput({
           const amount = toDust(temp, coin.decimals);
           setDebouncedValue(amount);
         } catch (e) {
-          toast.error(String(e));
+//          toast.error(String(e));
+            console.log(e)
         }
       }
     },
