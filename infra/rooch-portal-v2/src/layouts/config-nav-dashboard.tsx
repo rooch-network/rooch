@@ -81,7 +81,7 @@ export const navData = [
       },
       {
         title: isMainNetwork() ? "Testnet" : "MainNet",
-        path: isMainNetwork() ? "https://test.portal.rooch.network" : "https://portal.rooch.network",
+        path: isMainNetwork() ? "https://test-portal.rooch.network" : "https://portal.rooch.network",
         icon: <Iconify icon="solar:infinity-line-duotone" />,
         noAddressRequired: true,
       },
