@@ -13,7 +13,6 @@ const queryClient = new QueryClient();
 
 export default function RoochDappProvider({ children }: { children: ReactNode }) {
   const network = isMainNetwork() ? 'mainnet' : 'testnet'
-  console.log(network)
   return (
     <QueryClientProvider client={queryClient}>
       <RoochProvider networks={networkConfig} defaultNetwork={network}>
