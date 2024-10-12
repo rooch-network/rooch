@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server';
 
 import { NextResponse } from 'next/server';
 import { getRoochNodeUrl } from '@roochnetwork/rooch-sdk';
+
 import { FAUCET_MAINNET, FAUCET_TESTNET } from 'src/config/constant'
 
 const iconDomains = [

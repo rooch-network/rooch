@@ -5,6 +5,7 @@ import { getRoochNodeUrl } from '@roochnetwork/rooch-sdk';
 import { createNetworkConfig } from '@roochnetwork/rooch-sdk-kit';
 
 import { FAUCET_MAINNET, FAUCET_TESTNET, ROOCH_NFT_OPERATING_ADDRESS, ROOCH_MINT_OPERATING_ADDRESS } from 'src/config/constant';
+
 console.log(
   '🚀 ~ file: use-networks.ts:8 ~ ROOCH_NFT_OPERATING_ADDRESS, ROOCH_MINT_OPERATING_ADDRESS:',
   ROOCH_NFT_OPERATING_ADDRESS,

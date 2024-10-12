@@ -102,7 +102,7 @@ export default function GasSwapOverview() {
       }
     }
     fetchRate();
-  }, [client, fromSwapAmount]);
+  }, [client, fromSwapAmount, gasMarketAddress]);
 
   return (
     <Stack className="w-full justify-center items-center">
