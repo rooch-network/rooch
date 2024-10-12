@@ -7,3 +7,6 @@ export const ROOCH_NFT_OPERATING_ADDRESS =
 export const ROOCH_MINT_OPERATING_ADDRESS = [
   '0x4938919590105e18ca080eeaf39441400a4687aba0fe44ef00e136027cc54eb7',
 ];
+
+export const FAUCET_TESTNET = 'https://test-faucet.rooch.network/faucet';
+export const FAUCET_MAINNET = 'https://main-faucet.rooch.network/faucet';

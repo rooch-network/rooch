@@ -2,12 +2,17 @@ import type { NextRequest } from 'next/server';
 
 import { NextResponse } from 'next/server';
 import { getRoochNodeUrl } from '@roochnetwork/rooch-sdk';
+import { FAUCET_MAINNET, FAUCET_TESTNET } from 'src/config/constant'
 
 const iconDomains = [
   'https://api.unisvg.com',
   'https://api.iconify.design',
   'https://api.simplesvg.com',
 ];
+const faucetDomains = [
+  FAUCET_MAINNET,
+  FAUCET_TESTNET,
+]
 const apiDomains = [getRoochNodeUrl('mainnet'), getRoochNodeUrl('testnet')];
 const isProduction = process.env.NODE_ENV === 'production';
 
@@ -34,7 +39,7 @@ export function middleware(request: NextRequest) {
     { name: 'frame-ancestors', values: ["'none'"] },
     {
       name: 'connect-src',
-      values: ["'self'", ...apiDomains, ...iconDomains],
+      values: ["'self'", ...apiDomains, ...iconDomains, ...faucetDomains],
     },
     { name: 'upgrade-insecure-requests', values: [] },
   ];

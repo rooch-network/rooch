@@ -36,6 +36,7 @@ const swapCoins = [
 
 export default function GasSwapOverview() {
   const btcGasAddress = useNetworkVariable("btcGasAddress")
+  const gasMarketAddress = useNetworkVariable("gasMarketAddress")
   const [loading, setLoading] = useState<boolean>(false);
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [btcBalance, setBtcBalance] = useState(0n);
@@ -83,7 +84,7 @@ export default function GasSwapOverview() {
       try {
         setLoading(true);
         const res = await client.executeViewFunction({
-          address: '0x872502737008ac71c4c008bb3846a688bfd9fa54c6724089ea51b72f813dc71e',
+          address: gasMarketAddress,
           module: 'gas_market',
           function: 'btc_to_rgas',
           args: [Args.u64(fromSwapAmount)],
