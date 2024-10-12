@@ -33,6 +33,12 @@ export const navData = [
         noAddressRequired: true,
       },
       {
+        title: 'Faucet',
+        path: paths.dashboard.faucet,
+        icon: <Iconify icon="solar:gift-bold-duotone" />,
+        noAddressRequired: true,
+      },
+      {
         title: 'Settings',
         path: paths.dashboard.settings,
         icon: <Iconify icon="solar:settings-bold-duotone" />,
@@ -76,7 +82,7 @@ export const navData = [
       {
         title: isMainNetwork() ? "Testnet" : "MainNet",
         path: isMainNetwork() ? "https://test.portal.rooch.network" : "https://portal.rooch.network",
-        icon: <Iconify icon="solar:widget-5-bold-duotone" />,
+        icon: <Iconify icon="solar:infinity-line-duotone" />,
         noAddressRequired: true,
       },
     ],
