@@ -1,3 +1,3 @@
 export function isMainNetwork() {
-  return window.location.hostname === 'https://portal.rooch.network';
+  return window.location.hostname === 'portal.rooch.network' || window.location.hostname === 'main-portal.rooch.network';
 }
