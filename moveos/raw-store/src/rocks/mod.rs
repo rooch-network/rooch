@@ -474,4 +474,19 @@ impl DBStore for RocksDB {
         }
         Ok(res)
     }
+
+    fn write_batch_sync_across_cfs(&self, cf_names: Vec<&str>, batch: WriteBatch) -> Result<()> {
+        assert_eq!(cf_names.len(), batch.rows.len());
+        let mut db_batch = DBWriteBatch::default();
+        for (idx, (key, write_op)) in batch.rows.iter().enumerate() {
+            let cf_name = *cf_names.get(idx).unwrap();
+            let cf_handle = self.get_cf_handle(cf_name);
+            match write_op {
+                WriteOp::Value(value) => db_batch.put_cf(&cf_handle, key, value),
+                WriteOp::Deletion => db_batch.delete_cf(&cf_handle, key),
+            };
+        }
+        self.db.write_opt(db_batch, &Self::sync_write_options())?;
+        Ok(())
+    }
 }

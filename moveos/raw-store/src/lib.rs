@@ -442,6 +442,30 @@ impl DBStore for StoreInstance {
         }
     }
 
+    fn write_batch_sync_across_cfs(&self, cf_names: Vec<&str>, batch: WriteBatch) -> Result<()> {
+        match self {
+            StoreInstance::DB {
+                db,
+                db_metrics,
+                metrics_task_cancel_handle: _,
+            } => {
+                let _timer = db_metrics
+                    .raw_store_metrics
+                    .raw_store_write_batch_sync_latency_seconds
+                    .with_label_values(&["across_cfs"])
+                    .start_timer();
+                let write_batch_bytes = batch.size_in_bytes();
+                db.write_batch_sync_across_cfs(cf_names, batch)?;
+                db_metrics
+                    .raw_store_metrics
+                    .raw_store_write_batch_sync_bytes
+                    .with_label_values(&["across_cfs"])
+                    .observe(write_batch_bytes as f64);
+                Ok(())
+            }
+        }
+    }
+
     fn multi_get(&self, cf_name: &str, keys: Vec<Vec<u8>>) -> Result<Vec<Option<Vec<u8>>>> {
         match self {
             StoreInstance::DB {

@@ -28,5 +28,6 @@ pub trait DBStore: Send + Sync {
     fn keys(&self) -> Result<Vec<Vec<u8>>>;
     fn put_sync(&self, cf_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()>;
     fn write_batch_sync(&self, cf_name: &str, batch: WriteBatch) -> Result<()>;
+    fn write_batch_sync_across_cfs(&self, cf_names: Vec<&str>, batch: WriteBatch) -> Result<()>;
     fn multi_get(&self, cf_name: &str, keys: Vec<Vec<u8>>) -> Result<Vec<Option<Vec<u8>>>>;
 }
