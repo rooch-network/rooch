@@ -7,10 +7,15 @@
 
 -  [Struct `BitcoinAddress`](#0x3_bitcoin_address_BitcoinAddress)
 -  [Constants](#@Constants_0)
+-  [Function `pay_load_type_pubkey_hash`](#0x3_bitcoin_address_pay_load_type_pubkey_hash)
+-  [Function `pay_load_type_script_hash`](#0x3_bitcoin_address_pay_load_type_script_hash)
+-  [Function `pay_load_type_witness_program`](#0x3_bitcoin_address_pay_load_type_witness_program)
 -  [Function `p2pkh`](#0x3_bitcoin_address_p2pkh)
 -  [Function `p2sh`](#0x3_bitcoin_address_p2sh)
 -  [Function `p2tr`](#0x3_bitcoin_address_p2tr)
 -  [Function `new`](#0x3_bitcoin_address_new)
+-  [Function `pay_load_type`](#0x3_bitcoin_address_pay_load_type)
+-  [Function `pay_load`](#0x3_bitcoin_address_pay_load)
 -  [Function `is_p2pkh`](#0x3_bitcoin_address_is_p2pkh)
 -  [Function `is_p2sh`](#0x3_bitcoin_address_is_p2sh)
 -  [Function `is_witness_program`](#0x3_bitcoin_address_is_witness_program)
@@ -205,6 +210,39 @@ We just keep the raw bytes of the address and do care about the network.
 
 
 
+<a name="0x3_bitcoin_address_pay_load_type_pubkey_hash"></a>
+
+## Function `pay_load_type_pubkey_hash`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_pay_load_type_pubkey_hash">pay_load_type_pubkey_hash</a>(): u8
+</code></pre>
+
+
+
+<a name="0x3_bitcoin_address_pay_load_type_script_hash"></a>
+
+## Function `pay_load_type_script_hash`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_pay_load_type_script_hash">pay_load_type_script_hash</a>(): u8
+</code></pre>
+
+
+
+<a name="0x3_bitcoin_address_pay_load_type_witness_program"></a>
+
+## Function `pay_load_type_witness_program`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_pay_load_type_witness_program">pay_load_type_witness_program</a>(): u8
+</code></pre>
+
+
+
 <a name="0x3_bitcoin_address_p2pkh"></a>
 
 ## Function `p2pkh`
@@ -247,6 +285,28 @@ The internal public key is a secp256k1 public key or x-only public key.
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_new">new</a>(bytes: <a href="">vector</a>&lt;u8&gt;): <a href="bitcoin_address.md#0x3_bitcoin_address_BitcoinAddress">bitcoin_address::BitcoinAddress</a>
+</code></pre>
+
+
+
+<a name="0x3_bitcoin_address_pay_load_type"></a>
+
+## Function `pay_load_type`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_pay_load_type">pay_load_type</a>(addr: &<a href="bitcoin_address.md#0x3_bitcoin_address_BitcoinAddress">bitcoin_address::BitcoinAddress</a>): u8
+</code></pre>
+
+
+
+<a name="0x3_bitcoin_address_pay_load"></a>
+
+## Function `pay_load`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_pay_load">pay_load</a>(addr: &<a href="bitcoin_address.md#0x3_bitcoin_address_BitcoinAddress">bitcoin_address::BitcoinAddress</a>): <a href="">vector</a>&lt;u8&gt;
 </code></pre>
 
 
