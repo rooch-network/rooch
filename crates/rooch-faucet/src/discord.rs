@@ -68,7 +68,7 @@ impl App {
                                     "Failed make faucet request for {parsed_address:?}: {}",
                                     err
                                 );
-                                format!("Internal Error: Failed to send funds to {origin_address:?}, error: {}", err)
+                                format!("Failed to send funds to {origin_address:?}, {}", err)
                             }
                         }
                     }
