@@ -162,9 +162,9 @@ impl FromStr for Path {
                     .ok_or_else(|| anyhow::anyhow!("Invalid access path"))?;
                 let account = AccountAddress::from_hex_literal(account)?;
                 let resource_types = match iter.next() {
-                    Some(v) => v
-                        .split(',')
-                        .map(StructTag::from_str)
+                    Some(v) => split_respecting_generics(v)
+                        .into_iter()
+                        .map(|s| StructTag::from_str(&s))
                         .collect::<Result<Vec<_>, _>>()?,
                     None => vec![],
                 };
@@ -403,6 +403,34 @@ impl<'de> Deserialize<'de> for AccessPath {
     }
 }
 
+fn split_respecting_generics(s: &str) -> Vec<String> {
+    let mut result = Vec::new();
+    let mut current = String::new();
+    let mut depth = 0;
+
+    for c in s.chars() {
+        match c {
+            '<' => depth += 1,
+            '>' => depth -= 1,
+            ',' if depth == 0 => {
+                if !current.is_empty() {
+                    result.push(current.trim().to_string());
+                    current = String::new();
+                }
+                continue;
+            }
+            _ => {}
+        }
+        current.push(c);
+    }
+
+    if !current.is_empty() {
+        result.push(current.trim().to_string());
+    }
+
+    result
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -430,7 +458,16 @@ mod tests {
         test_path_roundtrip("/object/0x1,");
         test_path_roundtrip("/object/0x1,0x2");
         test_path_roundtrip("/resource/0x1/0x2::m::S");
+        test_path_roundtrip("/resource/0x1/0x2::m::S<0x2::m1::S1,0x2::m1::S1>");
+        test_path_roundtrip(
+            "/resource/0x1/0x2::m::S<0x2::m1::S1,0x2::m1::S1>,0x2::m1::S1<0x1::m1::S1,0x1::m1::S1>",
+        );
+        test_path_roundtrip("/resource/0x1/0x2::m::S<0x2::m1::S1<0x1::m1::S1,0x1::m1::S1>>");
+        test_path_roundtrip("/resource/0x1/0x2::m::S<0x2::m1::S1<0x1::m1::S1,0x1::m1::S1>>,0x2::m::S<0x2::m1::S1<0x1::m1::S1,0x1::m1::S1>>");
         test_path_roundtrip("/resource/0x1/0x2::m1::S1,0x3::m2::S2");
+        test_path_roundtrip(
+            "/resource/0x1/0x2::m::S<0x2::m1::S1,0x2::m1::S1<0x1::m1::S1,0x1::m1::S1>>,0x2::m1::S1<0x1::m1::S1,0x1::m1::S1>,0x2::m1::S1<0x1::m1::S1,0x1::m1::S1<0x1::m1::S1,0x1::m1::S1>>",
+        );
         test_path_roundtrip("/module/0x2/m1");
         test_path_roundtrip("/module/0x2/m1,m2");
         test_path_roundtrip("/fields/0x1/key1");
