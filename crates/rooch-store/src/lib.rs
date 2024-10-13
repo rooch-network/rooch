@@ -3,11 +3,12 @@
 
 use crate::accumulator_store::{AccumulatorStore, TransactionAccumulatorStore};
 use crate::da_store::{DAMetaDBStore, DAMetaStore};
-use crate::meta_store::{MetaDBStore, MetaStore};
+use crate::meta_store::{MetaDBStore, MetaStore, SEQUENCER_INFO_KEY};
 use crate::state_store::{StateDBStore, StateStore};
 use crate::transaction_store::{TransactionDBStore, TransactionStore};
 use accumulator::AccumulatorTreeStore;
 use anyhow::Result;
+use moveos_common::utils::to_bytes;
 use moveos_config::store_config::RocksdbConfig;
 use moveos_config::DataDirPath;
 use moveos_types::h256::H256;
@@ -15,7 +16,9 @@ use moveos_types::state::StateChangeSetExt;
 use once_cell::sync::Lazy;
 use prometheus::Registry;
 use raw_store::metrics::DBMetrics;
+use raw_store::rocks::batch::WriteBatch;
 use raw_store::rocks::RocksDB;
+use raw_store::traits::DBStore;
 use raw_store::{ColumnFamilyName, StoreInstance};
 use rooch_types::da::batch::BlockRange;
 use rooch_types::sequencer::SequencerInfo;
@@ -70,6 +73,7 @@ impl StoreMeta {
 
 #[derive(Clone)]
 pub struct RoochStore {
+    store_instance: StoreInstance,
     pub transaction_store: TransactionDBStore,
     pub meta_store: MetaDBStore,
     pub transaction_accumulator_store: AccumulatorStore<TransactionAccumulatorStore>,
@@ -94,6 +98,7 @@ impl RoochStore {
     pub fn new_with_instance(instance: StoreInstance, _registry: &Registry) -> Result<Self> {
         let da_meta_store = DAMetaDBStore::new(instance.clone())?;
         let store = Self {
+            store_instance: instance.clone(),
             transaction_store: TransactionDBStore::new(instance.clone()),
             meta_store: MetaDBStore::new(instance.clone()),
             transaction_accumulator_store: AccumulatorStore::new_transaction_accumulator_store(
@@ -131,6 +136,43 @@ impl RoochStore {
 
     pub fn get_da_meta_store(&self) -> &DAMetaDBStore {
         &self.da_meta_store
+    }
+
+    pub fn save_last_transaction_with_sequence_info(
+        &self,
+        mut tx: LedgerTransaction,
+        sequencer_info: SequencerInfo,
+    ) -> Result<()> {
+        // TODO use txn GetForUpdate to guard against Read-Write Conflicts
+        let pre_sequencer_info = self.get_sequencer_info()?;
+        if let Some(pre_sequencer_info) = pre_sequencer_info {
+            if sequencer_info.last_order != pre_sequencer_info.last_order + 1 {
+                return Err(anyhow::anyhow!("Sequencer order is not continuous"));
+            }
+        }
+
+        let inner_store = &self.store_instance;
+
+        let tx_hash = tx.tx_hash();
+        let tx_order = tx.sequence_info.tx_order;
+
+        let mut write_batch = WriteBatch::new();
+        write_batch.put(to_bytes(&tx_hash).unwrap(), to_bytes(&tx).unwrap())?;
+        write_batch.put(to_bytes(&tx_order).unwrap(), to_bytes(&tx_hash).unwrap())?;
+        write_batch.put(
+            to_bytes(SEQUENCER_INFO_KEY).unwrap(),
+            to_bytes(&sequencer_info).unwrap(),
+        )?;
+
+        inner_store.write_batch_sync_across_cfs(
+            vec![
+                TRANSACTION_COLUMN_FAMILY_NAME,
+                TX_SEQUENCE_INFO_MAPPING_COLUMN_FAMILY_NAME,
+                META_SEQUENCER_INFO_COLUMN_FAMILY_NAME,
+            ],
+            write_batch,
+        )?;
+        Ok(())
     }
 }
 

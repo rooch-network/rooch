@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{DA_BLOCK_CURSOR_COLUMN_FAMILY_NAME, DA_BLOCK_SUBMIT_STATE_COLUMN_FAMILY_NAME};
+use moveos_common::utils::to_bytes;
+use raw_store::rocks::batch::WriteBatch;
+use raw_store::traits::DBStore;
 use raw_store::{derive_store, CodecKVStore, CodecWriteBatch};
 use rooch_types::da::batch::{BlockRange, BlockSubmitState};
 use std::cmp::min;
@@ -88,22 +91,6 @@ impl DAMetaDBStore {
     pub(crate) fn set_last_block_number(&self, block_number: u128) -> anyhow::Result<()> {
         self.block_cursor_store
             .put_sync(LAST_BLOCK_NUMBER_KEY.to_string(), block_number)
-    }
-
-    #[allow(dead_code)]
-    fn add_submitting_block(
-        &self,
-        block_number: u128,
-        tx_order_start: u64,
-        tx_order_end: u64,
-    ) -> anyhow::Result<()> {
-        self.block_submit_state_store.put_sync(
-            block_number,
-            BlockSubmitState::new(block_number, tx_order_start, tx_order_end),
-        )?;
-
-        self.set_last_block_number(block_number)?;
-        Ok(())
     }
 
     fn add_submitting_blocks(&self, ranges: Vec<BlockRange>) -> anyhow::Result<()> {
@@ -224,24 +211,34 @@ impl DAMetaStore for DAMetaDBStore {
         Ok(blocks)
     }
 
-    // TODO use rocksdb txn directly(Atomic writes across Column Families are supported), replacing of derive_store
     fn append_submitting_block(
         &self,
         last_block_number: Option<u128>,
         tx_order_start: u64,
         tx_order_end: u64,
     ) -> anyhow::Result<u128> {
+        let inner_store = self.block_submit_state_store.store.store();
+
         let block_number = match last_block_number {
             Some(last_block_number) => last_block_number + 1,
             None => 0,
         };
+        let submit_state = BlockSubmitState::new(block_number, tx_order_start, tx_order_end);
+        let block_number_bytes = to_bytes(&block_number)?;
+        let submit_state_bytes = to_bytes(&submit_state)?;
+        let last_block_number_key_bytes = to_bytes(LAST_BLOCK_NUMBER_KEY)?;
+        let mut write_batch = WriteBatch::new();
+        write_batch.put(block_number_bytes.clone(), submit_state_bytes)?;
+        write_batch.put(last_block_number_key_bytes, block_number_bytes.clone())?;
 
-        self.block_submit_state_store.put_sync(
-            block_number,
-            BlockSubmitState::new(block_number, tx_order_start, tx_order_end),
+        inner_store.write_batch_sync_across_cfs(
+            vec![
+                DA_BLOCK_SUBMIT_STATE_COLUMN_FAMILY_NAME,
+                DA_BLOCK_CURSOR_COLUMN_FAMILY_NAME,
+            ],
+            write_batch,
         )?;
 
-        self.set_last_block_number(block_number)?;
         Ok(block_number)
     }
 

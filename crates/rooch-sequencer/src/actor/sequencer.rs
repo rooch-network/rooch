@@ -20,7 +20,6 @@ use moveos_types::h256::{self, H256};
 use prometheus::Registry;
 use rooch_event::actor::{EventActor, EventActorSubscribeMessage};
 use rooch_event::event::ServiceStatusEvent;
-use rooch_store::meta_store::MetaStore;
 use rooch_store::transaction_store::TransactionStore;
 use rooch_store::RoochStore;
 use rooch_types::crypto::{RoochKeyPair, Signature};
@@ -155,10 +154,8 @@ impl SequencerActor {
         );
 
         let sequencer_info = SequencerInfo::new(tx.sequence_info.tx_order, tx_accumulator_info);
-        // TODO sequencer_info & tx should be saved in a transaction
         self.rooch_store
-            .save_sequencer_info(sequencer_info.clone())?;
-        self.rooch_store.save_transaction(tx.clone())?;
+            .save_last_transaction_with_sequence_info(tx.clone(), sequencer_info.clone())?;
         info!("sequencer tx: {} order: {:?}", hash, tx_order);
         self.last_sequencer_info = sequencer_info;
 
