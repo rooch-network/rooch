@@ -461,7 +461,9 @@ mod tests {
         test_path_roundtrip("/resource/0x1/0x2::m::S<0x2::m1::S1,0x2::m1::S1>");
         test_path_roundtrip("/resource/0x1/0x2::m::S<0x2::m1::S1<0x1::m1::S1,0x1::m1::S1>>");
         test_path_roundtrip("/resource/0x1/0x2::m1::S1,0x3::m2::S2");
-        test_path_roundtrip("/resource/0x1/0x2::m::S<0x2::m1::S1,0x2::m1::S1<0x1::m1::S1,0x1::m1::S1>>,0x3::m2::S2");
+        test_path_roundtrip(
+            "/resource/0x1/0x2::m::S<0x2::m1::S1,0x2::m1::S1<0x1::m1::S1,0x1::m1::S1>>,0x3::m2::S2",
+        );
         test_path_roundtrip("/module/0x2/m1");
         test_path_roundtrip("/module/0x2/m1,m2");
         test_path_roundtrip("/fields/0x1/key1");
