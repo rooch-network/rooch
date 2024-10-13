@@ -5,7 +5,8 @@ use crate::{
     binding_test, bitcoin_block_tester::BitcoinBlockTester,
     tests::bitcoin_data::bitcoin_tx_from_hex,
 };
-use moveos_types::module_binding::MoveFunctionCaller;
+use moveos_types::{module_binding::MoveFunctionCaller, state_resolver::StateResolver};
+use rooch_types::bitcoin::bbn::{BBNGlobalParams, BBNStakingInfo};
 use tracing::{debug, warn};
 
 // Test Babylon v3 transaction
@@ -37,9 +38,36 @@ async fn test_bbn_tx() {
     );
     let binding_test = binding_test::RustBindingTest::new().unwrap();
     let bbn_module = binding_test.as_module_binding::<rooch_types::bitcoin::bbn::BBNModule>();
-    let op_return_output_opt = bbn_module.try_get_bbn_op_return_output_from_tx(tx).unwrap();
+    let op_return_output_opt = bbn_module.try_get_bbn_op_return_ouput(tx.clone()).unwrap();
     assert!(op_return_output_opt.is_some());
     let op_return_output = op_return_output_opt.unwrap();
     debug!("op_return_output: {:?}", op_return_output);
-    assert_eq!(op_return_output.vout, 1);
+    assert_eq!(op_return_output.op_return_output_idx, 1);
+    let bbn_global_params = binding_test
+        .get_object(&BBNGlobalParams::object_id())
+        .unwrap()
+        .unwrap()
+        .value_as::<BBNGlobalParams>()
+        .unwrap();
+    let bbn_global_param = bbn_global_params.get_global_param(1).unwrap();
+    let staking_info = BBNStakingInfo::build_staking_info(
+        &op_return_output.op_return_data.staker_pub_key().unwrap(),
+        &[op_return_output
+            .op_return_data
+            .finality_provider_pub_key()
+            .unwrap()],
+        &bbn_global_param.get_covenant_pks(),
+        bbn_global_param.covenant_quorum,
+        op_return_output.op_return_data.staking_time,
+        0,
+    )
+    .unwrap();
+    let staking_output_pk_script = staking_info.staking_output.script_pubkey;
+    let staking_output_opt = bbn_module
+        .try_get_bbn_staking_output(tx, &staking_output_pk_script)
+        .unwrap();
+    assert!(staking_output_opt.is_some());
+    let staking_output = staking_output_opt.unwrap();
+    debug!("staking_output: {:?}", staking_output);
+    assert_eq!(staking_output, 0);
 }

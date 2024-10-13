@@ -38,6 +38,9 @@ pub mod pending_block;
 pub mod types;
 pub mod utxo;
 
+#[cfg(test)]
+mod tests;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BitcoinBlockStore {
     pub latest_block_height: MoveOption<u64>,

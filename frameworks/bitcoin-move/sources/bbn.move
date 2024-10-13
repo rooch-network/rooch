@@ -10,6 +10,8 @@ module bitcoin_move::bbn {
     use moveos_std::object::{Self, Object};
     use moveos_std::type_info;
     use moveos_std::bcs;
+    use moveos_std::result;
+    use moveos_std::sort;
     use bitcoin_move::bitcoin;
     use bitcoin_move::types;
     use bitcoin_move::utxo;
@@ -17,18 +19,38 @@ module bitcoin_move::bbn {
     use bitcoin_move::script_buf::{Self, ScriptBuf};
     use bitcoin_move::types::{
         Transaction,
-        tx_output,
         txout_value,
         tx_lock_time,
-        txout_script_pubkey
+        txout_script_pubkey,
+        TxOut
     };
     use bitcoin_move::temp_state;
+    use bitcoin_move::taproot_builder::{Self, TaprootBuilder};
     use rooch_framework::bitcoin_address::{
+        Self,
         derive_bitcoin_taproot_address_from_pubkey,
         to_rooch_address
     };
 
     friend bitcoin_move::genesis;
+
+    const UNSPENDABLEKEYPATHKEY: vector<u8> = x"50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0";
+    const TEMPORARY_AREA: vector<u8> = b"temporary_area";
+
+    const ErrorAlreadyInit: u64 = 1;
+    const ErrorNoBabylonUTXO: u64 = 2;
+    const ErrorTransactionNotFound: u64 = 3;
+    const ErrorNoBabylonOpReturn: u64 = 4;
+    const ErrorInvalidBabylonOpReturn: u64 = 5;
+    const ErrorTransactionLockTime: u64 = 6;
+    const ErrorInvalidBytesLen: u64 = 7;
+    const ErrorNotBabylonTx: u64 = 8;
+    const ErrorNoKeysProvided: u64 = 9;
+    const ErrorInvalidKeysLen: u64 = 10;
+    const ErrorInvalidThreshold: u64 = 11;
+    const ErrorFailedToFinalizeTaproot: u64 = 12;
+    const ErrorUTXOAlreadySealed: u64 = 13;
+    const ErrorNoBabylonStakingOutput: u64 = 14;
 
     //https://github.com/babylonlabs-io/networks/blob/28651b301bb2efa0542b2268793948bcda472a56/parameters/parser/ParamsParser.go#L117
     struct BBNGlobalParam has copy, drop, store {
@@ -53,12 +75,13 @@ module bitcoin_move::bbn {
     }
 
     struct BBNOpReturnOutput has copy, store, drop {
-        vout: u32,
-        op_return_data: BBNOpReturnData
-    }
+        op_return_output_idx: u32,
+        op_return_data: BBNV0OpReturnData
+    } 
 
-    struct BBNOpReturnData has copy, store, drop {
+    struct BBNV0OpReturnData has copy, store, drop {
         tag: vector<u8>,
+        version: u8,
         staker_pub_key: vector<u8>,
         finality_provider_pub_key: vector<u8>,
         staking_time: u16
@@ -80,18 +103,11 @@ module bitcoin_move::bbn {
         staking_amount: u64,
     }
 
-    const UNSPENDABLEKEYPATHKEY: vector<u8> = b"0250929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0";
-    const TEMPORARY_AREA: vector<u8> = b"temporary_area";
-
-    const ErrorAlreadyInit: u64 = 1;
-    const ErrorNoBabylonUTXO: u64 = 2;
-    const ErrorTransactionNotFound: u64 = 3;
-    const ErrorNoBabylonOpReturn: u64 = 4;
-    const ErrorInvalidBabylonOpReturn: u64 = 5;
-    const ErrorTransactionLockTime: u64 = 6;
-    const ErrorInvalidBytesLen: u64 = 7;
-    const ErrorNotBabylonTx: u64 = 8;
-    
+    struct BBNScriptPaths has store, copy, drop {
+        time_lock_path_script: ScriptBuf,
+        unbonding_path_script: ScriptBuf,
+        slashing_path_script: ScriptBuf,
+    }
 
     //https://github.com/babylonlabs-io/networks/blob/main/bbn-1/parameters/global-params.json
     // {
@@ -128,16 +144,17 @@ module bitcoin_move::bbn {
             cap_height: 864799,
             //bbn1
             tag: x"62626e31",
+            //we keep the x-only pubkey in the vector
             covenant_pks: vector[
-                b"03d45c70d28f169e1f0c7f4a78e2bc73497afe585b70aa897955989068f3350aaa",
-                b"034b15848e495a3a62283daaadb3f458a00859fe48e321f0121ebabbdd6698f9fa",
-                b"0223b29f89b45f4af41588dcaf0ca572ada32872a88224f311373917f1b37d08d1",
-                b"02d3c79b99ac4d265c2f97ac11e3232c07a598b020cf56c6f055472c893c0967ae",
-                b"038242640732773249312c47ca7bdb50ca79f15f2ecc32b9c83ceebba44fb74df7",
-                b"03e36200aaa8dce9453567bba108bdc51f7f1174b97a65e4dc4402fc5de779d41c",
-                b"03cbdd028cfe32c1c1f2d84bfec71e19f92df509bba7b8ad31ca6c1a134fe09204",
-                b"03f178fcce82f95c524b53b077e6180bd2d779a9057fdff4255a0af95af918cee0",
-                b"03de13fc96ea6899acbdc5db3afaa683f62fe35b60ff6eb723dad28a11d2b12f8c"
+                x"d45c70d28f169e1f0c7f4a78e2bc73497afe585b70aa897955989068f3350aaa",
+                x"4b15848e495a3a62283daaadb3f458a00859fe48e321f0121ebabbdd6698f9fa",
+                x"23b29f89b45f4af41588dcaf0ca572ada32872a88224f311373917f1b37d08d1",
+                x"d3c79b99ac4d265c2f97ac11e3232c07a598b020cf56c6f055472c893c0967ae",
+                x"8242640732773249312c47ca7bdb50ca79f15f2ecc32b9c83ceebba44fb74df7",
+                x"e36200aaa8dce9453567bba108bdc51f7f1174b97a65e4dc4402fc5de779d41c",
+                x"cbdd028cfe32c1c1f2d84bfec71e19f92df509bba7b8ad31ca6c1a134fe09204",
+                x"f178fcce82f95c524b53b077e6180bd2d779a9057fdff4255a0af95af918cee0",
+                x"de13fc96ea6899acbdc5db3afaa683f62fe35b60ff6eb723dad28a11d2b12f8c"
             ],
             covenant_quorum: 6,
             unbonding_time: 1008,
@@ -196,8 +213,7 @@ module bitcoin_move::bbn {
         none()
     }
 
-    fun try_get_bbn_op_return_output(transaction: Transaction): Option<BBNOpReturnOutput> {
-        let tx_output = tx_output(&transaction);
+    fun try_get_bbn_op_return_ouput(tx_output: &vector<TxOut>): Option<BBNOpReturnOutput> {
         if (vector::length(tx_output) < 2) {
             return none()
         };
@@ -217,7 +233,7 @@ module bitcoin_move::bbn {
                     return none()
                 } else {
                     result = some(BBNOpReturnOutput{
-                        vout: (index as u32),
+                        op_return_output_idx: (index as u32),
                         op_return_data: option::destroy_some(op_return_data_opt)
                     });
                 }
@@ -227,12 +243,37 @@ module bitcoin_move::bbn {
         result
     }
 
-    fun try_get_bbn_op_return_output_from_tx_bytes(bytes: vector<u8>): Option<BBNOpReturnOutput> {
-        let transaction = bcs::from_bytes<Transaction>(bytes);
-        try_get_bbn_op_return_output(transaction)
+    fun try_get_bbn_op_return_ouput_from_tx_bytes(bytes: vector<u8>): Option<BBNOpReturnOutput> {
+        let tx = bcs::from_bytes<Transaction>(bytes);
+        try_get_bbn_op_return_ouput(types::tx_output(&tx))
     }
 
-    public fun is_bbn_tx(txid: address): bool {
+    fun try_get_bbn_staking_output(tx_output: &vector<TxOut>, staking_output_pk_script: &ScriptBuf): Option<u32> {
+        let result: Option<u32> = none();
+        let index = 0;
+        let output_len = length(tx_output);
+        while (index < output_len) {
+            let output = borrow(tx_output, index);
+            let script_pubkey = txout_script_pubkey(output);
+            if (script_pubkey == staking_output_pk_script) {
+                if (is_some(&result)) {
+                    // bbn only allow for one staking output per transaction
+                    return none()
+                } else {
+                    result = some((index as u32))
+                }
+            };
+            index = index + 1;
+        };
+        result
+    }
+
+    fun try_get_bbn_staking_output_from_tx_bytes(bytes: vector<u8>, staking_output_pk_script: vector<u8>): Option<u32> {
+        let tx = bcs::from_bytes<Transaction>(bytes);
+        try_get_bbn_staking_output(types::tx_output(&tx), &script_buf::new(staking_output_pk_script))
+    }
+
+    public fun is_possible_bbn_tx(txid: address): bool {
         let block_height_opt = bitcoin::get_tx_height(txid);
         if (is_none(&block_height_opt)) {
             return false
@@ -247,20 +288,21 @@ module bitcoin_move::bbn {
         if (is_none(&tx_opt)) {
             return false
         };
-        let transaction = option::destroy_some(tx_opt);
-        let output_opt = try_get_bbn_op_return_output(transaction);
+        let tx = option::destroy_some(tx_opt);
+        
+        let output_opt = try_get_bbn_op_return_ouput(types::tx_output(&tx));
         if (is_none(&output_opt)) {
             return false
         };
         let output = option::destroy_some(output_opt);
-        validate_bbn_op_return_data(&param, &transaction, &output.op_return_data)
+        validate_bbn_op_return_data(&param, &tx, &output.op_return_data)
     }
 
     public entry fun process_bbn_tx_entry(txid: address){
         process_bbn_tx(txid)
     }
 
-    fun validate_bbn_op_return_data(param: &BBNGlobalParam, tx: &Transaction, op_return_data: &BBNOpReturnData): bool {
+    fun validate_bbn_op_return_data(param: &BBNGlobalParam, tx: &Transaction, op_return_data: &BBNV0OpReturnData): bool {
         if (op_return_data.tag != param.tag) {
             return false
         };
@@ -289,59 +331,55 @@ module bitcoin_move::bbn {
         let tx_opt = bitcoin::get_tx(txid);
         assert!(is_some(&tx_opt), ErrorTransactionNotFound);
         
-        let transaction = option::destroy_some(tx_opt);
+        let tx = option::destroy_some(tx_opt);
+        let tx_output = types::tx_output(&tx);
 
-        let op_return_output_opt = try_get_bbn_op_return_output(transaction);
+        let op_return_output_opt = try_get_bbn_op_return_ouput(tx_output);
         assert!(is_some(&op_return_output_opt), ErrorNoBabylonOpReturn);
         let op_return_output = option::destroy_some(op_return_output_opt);
         
-        let BBNOpReturnOutput{vout: op_return_vout, op_return_data} = op_return_output;
+        let BBNOpReturnOutput{op_return_output_idx: _, op_return_data} = op_return_output;
 
-        let valid = validate_bbn_op_return_data(&param, &transaction, &op_return_data);
+        let valid = validate_bbn_op_return_data(&param, &tx, &op_return_data);
         
         assert!(valid, ErrorInvalidBabylonOpReturn);
 
+        let staking_output_pk_script = build_staking_tx_output_script_pubkey(
+            op_return_data.staker_pub_key, vector::singleton(op_return_data.finality_provider_pub_key), param.covenant_pks, param.covenant_quorum, op_return_data.staking_time
+        );
+
+        let staking_output_opt = try_get_bbn_staking_output(tx_output, &staking_output_pk_script);
+        assert!(is_some(&staking_output_opt), ErrorNoBabylonStakingOutput);
+        let staking_output_idx = option::destroy_some(staking_output_opt);
+        let staking_output = borrow(tx_output, (staking_output_idx as u64));
+
         let seal_protocol = type_info::type_name<BBNStakeSeal>();
-        let tx_outputs = tx_output(&transaction);
-        let index = 0;
-        let has_stake_seal = false;
-        //bbn should not multiple staking outputs yet, we support it for in case
-        while (index < length(tx_outputs)) {
-            let tx_output = borrow(tx_outputs, index);
-            let vout = (index as u32);
-            index = index + 1;
-            if (vout == op_return_vout) {
-                continue
-            };
-            //TODO skip the change output
-            let txout_value = txout_value(tx_output);
-            let out_point = types::new_outpoint(txid, vout);
-            let utxo_obj = utxo::borrow_mut_utxo(out_point);
-            let utxo = object::borrow_mut(utxo_obj);
-            if (utxo::has_seal_internal(utxo, &seal_protocol)){
-                continue
-            };
-            let bbn_stake_seal_obj = new_bbn_stake_seal(
-                block_height, txid, vout, op_return_data.tag, 
-                op_return_data.staker_pub_key, op_return_data.finality_provider_pub_key,
-                op_return_data.staking_time, txout_value
-            );
-            let seal_object_id = object::id(&bbn_stake_seal_obj);
-            let staker_address = pubkey_to_rooch_address(&op_return_data.staker_pub_key);
-            object::transfer_extend(bbn_stake_seal_obj, staker_address);
-            
-            let seal = utxo::new_utxo_seal(seal_protocol, seal_object_id);
-            utxo::add_seal_internal(utxo, seal);
-            has_stake_seal = true;
-        };
-        assert!(has_stake_seal, ErrorNoBabylonUTXO);
+
+        let txout_value = txout_value(staking_output);
+        let out_point = types::new_outpoint(txid, staking_output_idx);
+        let utxo_obj = utxo::borrow_mut_utxo(out_point);
+        let utxo = object::borrow_mut(utxo_obj);
+        
+        assert!(!utxo::has_seal_internal(utxo, &seal_protocol), ErrorUTXOAlreadySealed);
+
+        let bbn_stake_seal_obj = new_bbn_stake_seal(
+            block_height, txid, staking_output_idx, op_return_data.tag, 
+            op_return_data.staker_pub_key, op_return_data.finality_provider_pub_key,
+            op_return_data.staking_time, txout_value
+        );
+        let seal_object_id = object::id(&bbn_stake_seal_obj);
+        let staker_address = pubkey_to_rooch_address(&op_return_data.staker_pub_key);
+        object::transfer_extend(bbn_stake_seal_obj, staker_address);
+        
+        let seal = utxo::new_utxo_seal(seal_protocol, seal_object_id);
+        utxo::add_seal_internal(utxo, seal);
     }
 
     fun pubkey_to_rooch_address(pubkey: &vector<u8>): address {
         to_rooch_address(&derive_bitcoin_taproot_address_from_pubkey(pubkey))
     }
 
-    fun parse_bbn_op_return_data(script_buf: &ScriptBuf): Option<BBNOpReturnData>{
+    fun parse_bbn_op_return_data(script_buf: &ScriptBuf): Option<BBNV0OpReturnData>{
         // 1. OP_RETURN opcode - which signalizes that data is provably unspendable
 	    // 2. OP_DATA_71 opcode - which pushes 71 bytes of data to the stack
         let script_bytes = script_buf::bytes(script_buf);
@@ -351,14 +389,13 @@ module bitcoin_move::bbn {
         };
         let tag = vector::slice(script_bytes, 2, 6);
         let version = *vector::borrow(script_bytes, 6);
-        if (version != 0u8){
-            return none()
-        };
+        
         let staker_pub_key = vector::slice(script_bytes, 7, 39);
         let finality_provider_pub_key = vector::slice(script_bytes, 39, 71);
         let staking_time = bytes_to_u16(vector::slice(script_bytes, 71, 73));
-        some(BBNOpReturnData{
+        some(BBNV0OpReturnData{
             tag,
+            version,
             staker_pub_key: staker_pub_key,
             finality_provider_pub_key: finality_provider_pub_key,
             staking_time: staking_time
@@ -461,6 +498,131 @@ module bitcoin_move::bbn {
         current_block_height > (stake.block_height + (stake.staking_time as u64))
     }
 
+    // ============== BBNScriptPaths ==============
+
+    fun build_staking_tx_output_script_pubkey(
+        staker_key: vector<u8>,
+        fp_keys: vector<vector<u8>>,
+        covenant_keys: vector<vector<u8>>,
+        covenant_quorum: u32,
+        staking_time: u16,
+    ): ScriptBuf {
+        let script_paths = build_bbn_script_paths(staker_key, fp_keys, covenant_keys, covenant_quorum, staking_time);
+        let tb = assemble_taproot_script_tree(script_paths.time_lock_path_script, script_paths.unbonding_path_script, script_paths.slashing_path_script);
+        let taproot_root_result = taproot_builder::finalize(tb);
+        let taproot_root = result::assert_ok(taproot_root_result, ErrorFailedToFinalizeTaproot);
+        let addr = bitcoin_address::p2tr(&UNSPENDABLEKEYPATHKEY, option::some(taproot_root));
+        script_buf::script_pubkey(&addr)
+    }
+
+    fun build_bbn_script_paths(
+        staker_key: vector<u8>, 
+        fp_keys: vector<vector<u8>>, 
+        covenant_keys: vector<vector<u8>>, 
+        covenant_quorum: u32, lock_time: u16): BBNScriptPaths {
+
+        let time_lock_path_script = build_time_lock_script(staker_key, lock_time);
+
+        let covenant_multisig_script = build_multi_sig_script(covenant_keys, covenant_quorum, false);
+
+        let staker_sig_script = build_single_key_sig_script(staker_key, true);
+
+        let fp_multisig_script = build_multi_sig_script(fp_keys, 1, true);
+
+        let unbonding_path_script = aggregate_scripts(vector[
+            staker_sig_script,
+            covenant_multisig_script
+        ]);
+
+        let slashing_path_script = aggregate_scripts(vector[
+            staker_sig_script,
+            fp_multisig_script,
+            covenant_multisig_script
+        ]);
+
+        BBNScriptPaths {
+            time_lock_path_script,
+            unbonding_path_script,
+            slashing_path_script,
+        }
+    }
+
+    fun build_time_lock_script(pub_key: vector<u8>, lock_time: u16): ScriptBuf {
+        let builder = script_buf::empty();
+        script_buf::push_x_only_key(&mut builder, pub_key);
+        script_buf::push_opcode(&mut builder, opcode::op_checksigverify());
+        script_buf::push_int(&mut builder, (lock_time as u64));
+        script_buf::push_opcode(&mut builder, opcode::op_csv());
+        builder
+    }
+
+    fun build_single_key_sig_script(pub_key: vector<u8>, with_verify: bool): ScriptBuf {
+        let builder = script_buf::empty();
+        script_buf::push_x_only_key(&mut builder, pub_key);
+        if (with_verify){
+            script_buf::push_opcode(&mut builder, opcode::op_checksigverify());
+        }else{
+            script_buf::push_opcode(&mut builder, opcode::op_checksig());
+        };
+        builder
+    }
+
+    fun build_multi_sig_script(
+        keys: vector<vector<u8>>,
+        threshold: u32,
+        with_verify: bool
+    ): ScriptBuf {
+        let sb = script_buf::empty();
+        let keys_len = vector::length(&keys);
+        let threshold = (threshold as u64);
+        assert!(keys_len > 0, ErrorNoKeysProvided);
+        assert!(threshold <= keys_len, ErrorInvalidThreshold);
+        if (keys_len == 1) {
+            return build_single_key_sig_script(*vector::borrow(&keys, 0), with_verify)
+        };
+
+        sort::sort(&mut keys);
+        
+        let i = 0;
+        while (i < keys_len) {
+            script_buf::push_data(&mut sb, *vector::borrow(&keys, i));
+            if (i == 0) {
+                script_buf::push_opcode(&mut sb, opcode::op_checksig());
+            } else {
+                script_buf::push_opcode(&mut sb, opcode::op_checksigadd());
+            };
+            i = i + 1;
+        };
+        
+        script_buf::push_int(&mut sb, threshold);
+        if (with_verify) {
+            script_buf::push_opcode(&mut sb, opcode::op_numequalverify());
+        } else {
+            script_buf::push_opcode(&mut sb, opcode::op_numequal());
+        };
+        
+        sb
+    }
+
+    fun aggregate_scripts(scripts: vector<ScriptBuf>): ScriptBuf {
+        let final_script = vector::empty();
+        vector::for_each(scripts, |sb| {
+            vector::append(&mut final_script, script_buf::into_bytes(sb));
+        });
+        script_buf::new(final_script)
+    }
+
+    fun assemble_taproot_script_tree(
+        time_lock_script: ScriptBuf,
+        unbonding_path_script: ScriptBuf,
+        slashing_path_script: ScriptBuf,
+    ): TaprootBuilder {
+        let builder = taproot_builder::new();
+        taproot_builder::add_leaf(&mut builder, 2, time_lock_script);
+        taproot_builder::add_leaf(&mut builder, 2, unbonding_path_script);
+        taproot_builder::add_leaf(&mut builder, 1, slashing_path_script);
+        builder
+    }
 
     #[test]
     fun test_parse_bbn_op_return_data(){
@@ -469,12 +631,62 @@ module bitcoin_move::bbn {
         let bbn_opreturn_data_opt = parse_bbn_op_return_data(&script_buf);
         assert!(is_some(&bbn_opreturn_data_opt), 1000);
         let bbn_opreturn_data = option::destroy_some(bbn_opreturn_data_opt);
-        let BBNOpReturnData{tag, staker_pub_key, finality_provider_pub_key, staking_time} = bbn_opreturn_data;
+        let BBNV0OpReturnData{tag, version, staker_pub_key, finality_provider_pub_key, staking_time} = bbn_opreturn_data;
         assert!(tag == x"62626e31", 1001);
-        assert!(tag == b"bbn1", 1002);
+        assert!(version == 0u8, 1002);
         assert!(vector::length(&staker_pub_key) == 32, 1003);
         assert!(vector::length(&finality_provider_pub_key) == 32, 1004);
         assert!(staking_time == 64000, 1005);
     }
 
+    #[test]
+    fun test_build_time_lock_script() {
+        let staker_pk = x"0b93d2d388a2b89c2ba2ef28e99c0cfc20735b693cb8b2350fe8aceca2d0f393";
+        let sb = build_time_lock_script(staker_pk, 64000);
+        let expected_script = x"200b93d2d388a2b89c2ba2ef28e99c0cfc20735b693cb8b2350fe8aceca2d0f393ad0300fa00b2";
+        assert!(script_buf::into_bytes(sb) == expected_script, 1006);
+    }
+
+    #[test]
+    fun test_covenant_multisig_script() {
+        let keys = vector[
+            x"d45c70d28f169e1f0c7f4a78e2bc73497afe585b70aa897955989068f3350aaa",
+            x"4b15848e495a3a62283daaadb3f458a00859fe48e321f0121ebabbdd6698f9fa",
+            x"23b29f89b45f4af41588dcaf0ca572ada32872a88224f311373917f1b37d08d1",
+            x"d3c79b99ac4d265c2f97ac11e3232c07a598b020cf56c6f055472c893c0967ae",
+            x"8242640732773249312c47ca7bdb50ca79f15f2ecc32b9c83ceebba44fb74df7",
+            x"e36200aaa8dce9453567bba108bdc51f7f1174b97a65e4dc4402fc5de779d41c",
+            x"cbdd028cfe32c1c1f2d84bfec71e19f92df509bba7b8ad31ca6c1a134fe09204",
+            x"f178fcce82f95c524b53b077e6180bd2d779a9057fdff4255a0af95af918cee0",
+            x"de13fc96ea6899acbdc5db3afaa683f62fe35b60ff6eb723dad28a11d2b12f8c"
+        ];
+        let covenant_quorum = 6;
+        let sb = build_multi_sig_script(keys, covenant_quorum, false);
+        let expected_sb = x"2023b29f89b45f4af41588dcaf0ca572ada32872a88224f311373917f1b37d08d1ac204b15848e495a3a62283daaadb3f458a00859fe48e321f0121ebabbdd6698f9faba208242640732773249312c47ca7bdb50ca79f15f2ecc32b9c83ceebba44fb74df7ba20cbdd028cfe32c1c1f2d84bfec71e19f92df509bba7b8ad31ca6c1a134fe09204ba20d3c79b99ac4d265c2f97ac11e3232c07a598b020cf56c6f055472c893c0967aeba20d45c70d28f169e1f0c7f4a78e2bc73497afe585b70aa897955989068f3350aaaba20de13fc96ea6899acbdc5db3afaa683f62fe35b60ff6eb723dad28a11d2b12f8cba20e36200aaa8dce9453567bba108bdc51f7f1174b97a65e4dc4402fc5de779d41cba20f178fcce82f95c524b53b077e6180bd2d779a9057fdff4255a0af95af918cee0ba569c";
+        assert!(script_buf::into_bytes(sb) == expected_sb, 1007);
+    }
+
+    #[test]
+    fun test_build_staking_tx_output_script_pubkey(){
+        genesis_init();
+        //https://mempool.space/tx/7d90210b21aad480cd88fd8399aa6d47e6b3f2ecea2f9f9cfdd79598430e3003
+        let script_buf = script_buf::new(x"6a4762626e31000b93d2d388a2b89c2ba2ef28e99c0cfc20735b693cb8b2350fe8aceca2d0f393db9160428e401753dc1a9952ffd4fa3386c7609cf8411d2b6d79c42323ca9923fa00");
+        let bbn_opreturn_data_opt = parse_bbn_op_return_data(&script_buf);
+        let bbn_opreturn_data = option::destroy_some(bbn_opreturn_data_opt);
+        let BBNV0OpReturnData{tag:_, version:_, staker_pub_key, finality_provider_pub_key, staking_time} = bbn_opreturn_data;
+        let params_opt = get_bbn_param(864790);
+        assert!(is_some(&params_opt), 1000);
+        let params = option::destroy_some(params_opt);
+        let sb = build_staking_tx_output_script_pubkey(
+            staker_pub_key,
+            vector::singleton(finality_provider_pub_key),
+            params.covenant_pks,
+            params.covenant_quorum,
+            staking_time
+        );
+        let result = script_buf::into_bytes(sb);
+        std::debug::print(&result);
+        let expected_sb = x"512082f93ece9366a9e680d152dbc0c487e181accbba145b5b72d00c820545064d44";
+        assert!(result == expected_sb, 1008);
+    }
 }

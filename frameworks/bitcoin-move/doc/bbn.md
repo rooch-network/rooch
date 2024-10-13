@@ -8,12 +8,13 @@
 -  [Struct `BBNGlobalParam`](#0x4_bbn_BBNGlobalParam)
 -  [Resource `BBNGlobalParams`](#0x4_bbn_BBNGlobalParams)
 -  [Struct `BBNOpReturnOutput`](#0x4_bbn_BBNOpReturnOutput)
--  [Struct `BBNOpReturnData`](#0x4_bbn_BBNOpReturnData)
+-  [Struct `BBNV0OpReturnData`](#0x4_bbn_BBNV0OpReturnData)
 -  [Resource `BBNStakeSeal`](#0x4_bbn_BBNStakeSeal)
+-  [Struct `BBNScriptPaths`](#0x4_bbn_BBNScriptPaths)
 -  [Constants](#@Constants_0)
 -  [Function `genesis_init`](#0x4_bbn_genesis_init)
 -  [Function `init_for_upgrade`](#0x4_bbn_init_for_upgrade)
--  [Function `is_bbn_tx`](#0x4_bbn_is_bbn_tx)
+-  [Function `is_possible_bbn_tx`](#0x4_bbn_is_possible_bbn_tx)
 -  [Function `process_bbn_tx_entry`](#0x4_bbn_process_bbn_tx_entry)
 -  [Function `add_temp_state`](#0x4_bbn_add_temp_state)
 -  [Function `contains_temp_state`](#0x4_bbn_contains_temp_state)
@@ -37,11 +38,14 @@
 <b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="">0x2::bcs</a>;
 <b>use</b> <a href="">0x2::object</a>;
+<b>use</b> <a href="">0x2::result</a>;
+<b>use</b> <a href="">0x2::sort</a>;
 <b>use</b> <a href="">0x2::type_info</a>;
 <b>use</b> <a href="">0x3::bitcoin_address</a>;
 <b>use</b> <a href="bitcoin.md#0x4_bitcoin">0x4::bitcoin</a>;
 <b>use</b> <a href="opcode.md#0x4_opcode">0x4::opcode</a>;
 <b>use</b> <a href="script_buf.md#0x4_script_buf">0x4::script_buf</a>;
+<b>use</b> <a href="taproot_builder.md#0x4_taproot_builder">0x4::taproot_builder</a>;
 <b>use</b> <a href="temp_state.md#0x4_temp_state">0x4::temp_state</a>;
 <b>use</b> <a href="types.md#0x4_types">0x4::types</a>;
 <b>use</b> <a href="utxo.md#0x4_utxo">0x4::utxo</a>;
@@ -82,13 +86,13 @@
 
 
 
-<a name="0x4_bbn_BBNOpReturnData"></a>
+<a name="0x4_bbn_BBNV0OpReturnData"></a>
 
-## Struct `BBNOpReturnData`
+## Struct `BBNV0OpReturnData`
 
 
 
-<pre><code><b>struct</b> <a href="bbn.md#0x4_bbn_BBNOpReturnData">BBNOpReturnData</a> <b>has</b> <b>copy</b>, drop, store
+<pre><code><b>struct</b> <a href="bbn.md#0x4_bbn_BBNV0OpReturnData">BBNV0OpReturnData</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -104,9 +108,29 @@
 
 
 
+<a name="0x4_bbn_BBNScriptPaths"></a>
+
+## Struct `BBNScriptPaths`
+
+
+
+<pre><code><b>struct</b> <a href="bbn.md#0x4_bbn_BBNScriptPaths">BBNScriptPaths</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
 <a name="@Constants_0"></a>
 
 ## Constants
+
+
+<a name="0x4_bbn_ErrorInvalidThreshold"></a>
+
+
+
+<pre><code><b>const</b> <a href="bbn.md#0x4_bbn_ErrorInvalidThreshold">ErrorInvalidThreshold</a>: u64 = 11;
+</code></pre>
+
 
 
 <a name="0x4_bbn_TEMPORARY_AREA"></a>
@@ -123,6 +147,15 @@
 
 
 <pre><code><b>const</b> <a href="bbn.md#0x4_bbn_ErrorAlreadyInit">ErrorAlreadyInit</a>: u64 = 1;
+</code></pre>
+
+
+
+<a name="0x4_bbn_ErrorFailedToFinalizeTaproot"></a>
+
+
+
+<pre><code><b>const</b> <a href="bbn.md#0x4_bbn_ErrorFailedToFinalizeTaproot">ErrorFailedToFinalizeTaproot</a>: u64 = 12;
 </code></pre>
 
 
@@ -145,6 +178,15 @@
 
 
 
+<a name="0x4_bbn_ErrorInvalidKeysLen"></a>
+
+
+
+<pre><code><b>const</b> <a href="bbn.md#0x4_bbn_ErrorInvalidKeysLen">ErrorInvalidKeysLen</a>: u64 = 10;
+</code></pre>
+
+
+
 <a name="0x4_bbn_ErrorNoBabylonOpReturn"></a>
 
 
@@ -154,11 +196,29 @@
 
 
 
+<a name="0x4_bbn_ErrorNoBabylonStakingOutput"></a>
+
+
+
+<pre><code><b>const</b> <a href="bbn.md#0x4_bbn_ErrorNoBabylonStakingOutput">ErrorNoBabylonStakingOutput</a>: u64 = 14;
+</code></pre>
+
+
+
 <a name="0x4_bbn_ErrorNoBabylonUTXO"></a>
 
 
 
 <pre><code><b>const</b> <a href="bbn.md#0x4_bbn_ErrorNoBabylonUTXO">ErrorNoBabylonUTXO</a>: u64 = 2;
+</code></pre>
+
+
+
+<a name="0x4_bbn_ErrorNoKeysProvided"></a>
+
+
+
+<pre><code><b>const</b> <a href="bbn.md#0x4_bbn_ErrorNoKeysProvided">ErrorNoKeysProvided</a>: u64 = 9;
 </code></pre>
 
 
@@ -190,11 +250,20 @@
 
 
 
+<a name="0x4_bbn_ErrorUTXOAlreadySealed"></a>
+
+
+
+<pre><code><b>const</b> <a href="bbn.md#0x4_bbn_ErrorUTXOAlreadySealed">ErrorUTXOAlreadySealed</a>: u64 = 13;
+</code></pre>
+
+
+
 <a name="0x4_bbn_UNSPENDABLEKEYPATHKEY"></a>
 
 
 
-<pre><code><b>const</b> <a href="bbn.md#0x4_bbn_UNSPENDABLEKEYPATHKEY">UNSPENDABLEKEYPATHKEY</a>: <a href="">vector</a>&lt;u8&gt; = [48, 50, 53, 48, 57, 50, 57, 98, 55, 52, 99, 49, 97, 48, 52, 57, 53, 52, 98, 55, 56, 98, 52, 98, 54, 48, 51, 53, 101, 57, 55, 97, 53, 101, 48, 55, 56, 97, 53, 97, 48, 102, 50, 56, 101, 99, 57, 54, 100, 53, 52, 55, 98, 102, 101, 101, 57, 97, 99, 101, 56, 48, 51, 97, 99, 48];
+<pre><code><b>const</b> <a href="bbn.md#0x4_bbn_UNSPENDABLEKEYPATHKEY">UNSPENDABLEKEYPATHKEY</a>: <a href="">vector</a>&lt;u8&gt; = [80, 146, 155, 116, 193, 160, 73, 84, 183, 139, 75, 96, 53, 233, 122, 94, 7, 138, 90, 15, 40, 236, 150, 213, 71, 191, 238, 154, 206, 128, 58, 192];
 </code></pre>
 
 
@@ -221,13 +290,13 @@
 
 
 
-<a name="0x4_bbn_is_bbn_tx"></a>
+<a name="0x4_bbn_is_possible_bbn_tx"></a>
 
-## Function `is_bbn_tx`
+## Function `is_possible_bbn_tx`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bbn.md#0x4_bbn_is_bbn_tx">is_bbn_tx</a>(txid: <b>address</b>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="bbn.md#0x4_bbn_is_possible_bbn_tx">is_possible_bbn_tx</a>(txid: <b>address</b>): bool
 </code></pre>
 
 
