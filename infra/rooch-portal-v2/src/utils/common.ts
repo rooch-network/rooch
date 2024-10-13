@@ -3,6 +3,10 @@ export const isSessionExpired = (lastActiveTime: number, maxInactiveInterval: nu
   return Date.now() > expirationTime;
 };
 
+export function sleep(time: number) {
+  return new Promise((resolve) => setTimeout(resolve, time));
+}
+
 export const hexToString = (hex: string): string => {
   if (hex.startsWith('0x')) {
     hex = hex.substring(2);

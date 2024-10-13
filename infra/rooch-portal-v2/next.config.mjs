@@ -6,7 +6,7 @@ const isStaticExport = 'false';
 
 const nextConfig = {
   compiler: {
-    removeConsole: true,
+    removeConsole: false,
   },
   trailingSlash: false,
   basePath: process.env.NEXT_PUBLIC_BASE_PATH,

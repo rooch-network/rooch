@@ -1,11 +1,12 @@
 import type { ReactNode } from 'react';
 import type { IndexerStateIDView } from '@roochnetwork/rooch-sdk';
 
+import DOMPurify from 'dompurify';
 import { useRef, useMemo, useState } from 'react';
 import { useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit';
 
 import { Box, Card, Chip, Skeleton, CardHeader, Typography, CardContent } from '@mui/material';
-import DOMPurify from 'dompurify';
+
 import { hexToString } from 'src/utils/common';
 
 import { EmptyContent } from 'src/components/empty-content/empty-content';

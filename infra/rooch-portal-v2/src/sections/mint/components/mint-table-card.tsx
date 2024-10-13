@@ -113,7 +113,6 @@ export default function MintTableCard({
   const [isLoading, setIsLoading] = useState(!isStaticData);
 
   useEffect(() => {
-    console.log('🚀 ~ file: mint-table-card.tsx:117 ~ useEffect ~ isStaticData:', isStaticData);
     if (isStaticData || tokenList.length !== 0) {
       return;
     }

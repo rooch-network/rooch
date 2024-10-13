@@ -45,7 +45,6 @@ export default function RedEnvelopeDetail({ redEnvelopeId }: { redEnvelopeId: st
     },
     { refetchInterval: 5000 }
   );
-  console.log('🚀 ~ file: view.tsx:21 ~ RedEnvelopeDetail ~ data:', redEnvelopeObject);
 
   const redEnvelopeInfo = useMemo(() => {
     const info = redEnvelopeObject?.data?.[0]?.decoded_value?.value as unknown as
@@ -150,8 +149,6 @@ export default function RedEnvelopeDetail({ redEnvelopeId }: { redEnvelopeId: st
                       }),
                     ],
                   });
-                  // const res = await signAndExecuteTransaction({ transaction: txn });
-                  // console.log('🚀 ~ file: view.tsx:160 ~ onClick={ ~ res:', res);
                   const reward = await roochClient.getEvents({
                     eventHandleType:
                       '0x1d6f6657fc996008a1e43b8c13805e969a091560d4cea57b1db9f3ce4450d977::red_envelope_v3::ClaimCoinEvent',
@@ -159,7 +156,6 @@ export default function RedEnvelopeDetail({ redEnvelopeId }: { redEnvelopeId: st
                       decode: true,
                     },
                   });
-                  console.log('🚀 ~ file: view.tsx:167 ~ onClick={ ~ reward:', reward);
                 }}
               >
                 Claim
