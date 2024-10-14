@@ -7,11 +7,13 @@ module bitcoin_move::bbn {
     use std::option::{Option, is_none, is_some, none, some};
     use std::vector;
     use std::vector::{length, borrow};
-    use moveos_std::object::{Self, Object};
+    use std::string::String;
+    use moveos_std::object::{Self, Object, ObjectID};
     use moveos_std::type_info;
     use moveos_std::bcs;
-    use moveos_std::result;
+    use moveos_std::result::{Self, Result, err_str, ok, is_err, as_err};
     use moveos_std::sort;
+    use moveos_std::event;
     use bitcoin_move::bitcoin;
     use bitcoin_move::types;
     use bitcoin_move::utxo;
@@ -93,20 +95,33 @@ module bitcoin_move::bbn {
         /// The stake transaction hash
         txid: address,
         /// The stake utxo output index
-        vout: u32,
+        staking_output_index: u32,
         tag: vector<u8>,
         staker_pub_key: vector<u8>,
         finality_provider_pub_key: vector<u8>,
         /// The stake time in block count
         staking_time: u16,
         /// The stake amount in satoshi
-        staking_amount: u64,
+        staking_value: u64,
     }
 
     struct BBNScriptPaths has store, copy, drop {
         time_lock_path_script: ScriptBuf,
         unbonding_path_script: ScriptBuf,
         slashing_path_script: ScriptBuf,
+    }
+
+    struct BBNStakingEvent has store, copy, drop{
+        block_height: u64,
+        txid: address,
+        /// BBNStakeSeal object id
+        stake_object_id: ObjectID,
+    }
+
+    struct BBNStakingFailedEvent has store, copy, drop{
+        block_height: u64,
+        txid: address,
+        error: String,
     }
 
     //https://github.com/babylonlabs-io/networks/blob/main/bbn-1/parameters/global-params.json
@@ -179,18 +194,18 @@ module bitcoin_move::bbn {
     }
 
     fun new_bbn_stake_seal(
-        block_height: u64, txid: address, vout: u32, tag: vector<u8>, staker_pub_key: vector<u8>,
-        finality_provider_pub_key: vector<u8>, staking_time: u16, staking_amount: u64
+        block_height: u64, txid: address, staking_output_index: u32, tag: vector<u8>, staker_pub_key: vector<u8>,
+        finality_provider_pub_key: vector<u8>, staking_time: u16, staking_value: u64
     ): Object<BBNStakeSeal> {
         object::new(BBNStakeSeal {
-            block_height: block_height,
-            txid: txid,
-            vout: vout,
-            tag: tag,
-            staker_pub_key: staker_pub_key,
-            finality_provider_pub_key: finality_provider_pub_key,
-            staking_time: staking_time,
-            staking_amount: staking_amount
+            block_height,
+            txid,
+            staking_output_index,
+            tag,
+            staker_pub_key,
+            finality_provider_pub_key,
+            staking_time,
+            staking_value
         })
     }
 
@@ -273,6 +288,8 @@ module bitcoin_move::bbn {
         try_get_bbn_staking_output(types::tx_output(&tx), &script_buf::new(staking_output_pk_script))
     }
 
+    /// Check if the transaction is a possible Babylon transaction
+    /// If the transaction contains an OP_RETURN output with the correct tag, it is considered a possible Babylon transaction
     public fun is_possible_bbn_tx(txid: address): bool {
         let block_height_opt = bitcoin::get_tx_height(txid);
         if (is_none(&block_height_opt)) {
@@ -283,7 +300,6 @@ module bitcoin_move::bbn {
         if (is_none(&param_opt)) {
             return false
         };
-        let param = option::destroy_some(param_opt);
         let tx_opt = bitcoin::get_tx(txid);
         if (is_none(&tx_opt)) {
             return false
@@ -294,29 +310,28 @@ module bitcoin_move::bbn {
         if (is_none(&output_opt)) {
             return false
         };
-        let output = option::destroy_some(output_opt);
-        validate_bbn_op_return_data(&param, &tx, &output.op_return_data)
+        true 
     }
 
     public entry fun process_bbn_tx_entry(txid: address){
         process_bbn_tx(txid)
     }
 
-    fun validate_bbn_op_return_data(param: &BBNGlobalParam, tx: &Transaction, op_return_data: &BBNV0OpReturnData): bool {
+    fun validate_bbn_op_return_data(param: &BBNGlobalParam, _tx: &Transaction, op_return_data: &BBNV0OpReturnData): Result<bool,String> {
+        if (op_return_data.version != 0) {
+            return err_str(b"Invalid version")
+        };
         if (op_return_data.tag != param.tag) {
-            return false
+            return err_str(b"Invalid tag")
         };
         if (op_return_data.staking_time < param.min_staking_time
             || op_return_data.staking_time > param.max_staking_time) {
-            return false
+            return err_str(b"Invalid staking time")
         };
-        if (!vector::contains(&param.covenant_pks, &op_return_data.finality_provider_pub_key)) {
-            return false
-        };
-        if (tx_lock_time(tx) < (op_return_data.staking_time as u32)) {
-            return false
-        };
-        true
+        // if (tx_lock_time(tx) < (op_return_data.staking_time as u32)) {
+        //     return err_str(b"Invalid transaction lock time")
+        // };
+        ok(true)
     }
 
     fun process_bbn_tx(txid: address) {
@@ -335,21 +350,48 @@ module bitcoin_move::bbn {
         let tx_output = types::tx_output(&tx);
 
         let op_return_output_opt = try_get_bbn_op_return_ouput(tx_output);
-        assert!(is_some(&op_return_output_opt), ErrorNoBabylonOpReturn);
+        assert!(is_some(&op_return_output_opt), ErrorNotBabylonTx);
         let op_return_output = option::destroy_some(op_return_output_opt);
         
-        let BBNOpReturnOutput{op_return_output_idx: _, op_return_data} = op_return_output;
+        let process_result = process_parsed_bbn_tx(param, txid, block_height, &tx, op_return_output);
+        if (is_err(&process_result)) {
+            let error = result::unwrap_err(process_result);
+            let event = BBNStakingFailedEvent {
+                block_height,
+                txid,
+                error
+            };
+            event::emit(event);
+        }else{
+            let stake_object_id = result::unwrap(process_result);
+            let event = BBNStakingEvent {
+                block_height,
+                txid,
+                stake_object_id
+            };
+            event::emit(event);
+        }
+    }
 
-        let valid = validate_bbn_op_return_data(&param, &tx, &op_return_data);
+    fun process_parsed_bbn_tx(param: BBNGlobalParam, txid: address, block_height: u64, tx: &Transaction, op_return_output: BBNOpReturnOutput): Result<ObjectID, String> {
         
-        assert!(valid, ErrorInvalidBabylonOpReturn);
+        let BBNOpReturnOutput{op_return_output_idx: _, op_return_data} = op_return_output;
+        let valid_result = validate_bbn_op_return_data(&param, tx, &op_return_data);
+        
+        if (is_err(&valid_result)) {
+            return as_err(valid_result)
+        };
 
         let staking_output_pk_script = build_staking_tx_output_script_pubkey(
             op_return_data.staker_pub_key, vector::singleton(op_return_data.finality_provider_pub_key), param.covenant_pks, param.covenant_quorum, op_return_data.staking_time
         );
 
+        let tx_output = types::tx_output(tx);
         let staking_output_opt = try_get_bbn_staking_output(tx_output, &staking_output_pk_script);
-        assert!(is_some(&staking_output_opt), ErrorNoBabylonStakingOutput);
+        if (is_none(&staking_output_opt)) {
+            return err_str(b"Staking output not found")
+        };
+    
         let staking_output_idx = option::destroy_some(staking_output_opt);
         let staking_output = borrow(tx_output, (staking_output_idx as u64));
 
@@ -373,6 +415,8 @@ module bitcoin_move::bbn {
         
         let seal = utxo::new_utxo_seal(seal_protocol, seal_object_id);
         utxo::add_seal_internal(utxo, seal);
+
+        return ok(seal_object_id)
     }
 
     fun pubkey_to_rooch_address(pubkey: &vector<u8>): address {
@@ -460,12 +504,12 @@ module bitcoin_move::bbn {
         stake.txid
     }
 
-    public fun vout(stake: &BBNStakeSeal): u32 {
-        stake.vout
+    public fun staking_output_index(stake: &BBNStakeSeal): u32 {
+        stake.staking_output_index
     }
 
     public fun outpoint(stake: &BBNStakeSeal): types::OutPoint {
-        types::new_outpoint(stake.txid, stake.vout)
+        types::new_outpoint(stake.txid, stake.staking_output_index)
     }
 
     public fun tag(stake: &BBNStakeSeal): &vector<u8> {
@@ -484,8 +528,8 @@ module bitcoin_move::bbn {
         stake.staking_time
     }
 
-    public fun staking_amount(stake: &BBNStakeSeal): u64 {
-        stake.staking_amount
+    public fun staking_value(stake: &BBNStakeSeal): u64 {
+        stake.staking_value
     }
 
     public fun is_expired(stake: &BBNStakeSeal): bool {
