@@ -4,6 +4,7 @@
 use anyhow::{bail, Result};
 use metrics::RegistryService;
 use move_core_types::account_address::AccountAddress;
+use move_core_types::u256::U256;
 use move_core_types::vm_status::KeptVMStatus;
 use moveos_config::DataDirPath;
 use moveos_store::MoveOSStore;
@@ -11,13 +12,14 @@ use moveos_types::function_return_value::FunctionResult;
 use moveos_types::h256::H256;
 use moveos_types::module_binding::MoveFunctionCaller;
 use moveos_types::moveos_std::event::Event;
+use moveos_types::moveos_std::gas_schedule::GasScheduleConfig;
 use moveos_types::moveos_std::object::ObjectMeta;
 use moveos_types::moveos_std::tx_context::TxContext;
-use moveos_types::state::{FieldKey, ObjectChange, ObjectState, StateChangeSet};
+use moveos_types::state::{FieldKey, MoveStructType, ObjectChange, ObjectState, StateChangeSet};
 use moveos_types::state_resolver::{
     RootObjectResolver, StateKV, StateReaderExt, StateResolver, StatelessResolver,
 };
-use moveos_types::transaction::{FunctionCall, VerifiedMoveOSTransaction};
+use moveos_types::transaction::{FunctionCall, MoveAction, VerifiedMoveOSTransaction};
 use rooch_config::RoochOpt;
 use rooch_db::RoochDB;
 use rooch_executor::actor::reader_executor::ReaderExecutorActor;
@@ -25,8 +27,13 @@ use rooch_executor::actor::{executor::ExecutorActor, messages::ExecuteTransactio
 use rooch_genesis::RoochGenesis;
 use rooch_types::address::BitcoinAddress;
 use rooch_types::crypto::RoochKeyPair;
+use rooch_types::framework::gas_coin::RGas;
+use rooch_types::framework::transfer::TransferModule;
 use rooch_types::rooch_network::{BuiltinChainID, RoochNetwork};
-use rooch_types::transaction::{L1BlockWithBody, L1Transaction, RoochTransaction};
+use rooch_types::transaction::authenticator::BitcoinAuthenticator;
+use rooch_types::transaction::{
+    Authenticator, L1BlockWithBody, L1Transaction, RoochTransaction, RoochTransactionData,
+};
 use std::collections::VecDeque;
 use std::path::Path;
 use std::sync::Arc;
@@ -47,6 +54,7 @@ pub fn get_data_dir() -> DataDirPath {
 }
 
 pub struct RustBindingTest {
+    network: RoochNetwork,
     //we keep the opt to ensure the temp dir is not be deleted before the test end
     opt: RoochOpt,
     pub sequencer: AccountAddress,
@@ -102,6 +110,7 @@ impl RustBindingTest {
             None,
         )?;
         Ok(Self {
+            network,
             opt,
             root,
             sequencer: sequencer.to_rooch_address().into(),
@@ -139,6 +148,33 @@ impl RustBindingTest {
         &self.rooch_db
     }
 
+    pub fn get_rgas(&mut self, addr: AccountAddress, amount: U256) -> Result<()> {
+        // transfer RGas from rooch dao account to addr
+        let function_call =
+            TransferModule::create_transfer_coin_action(RGas::struct_tag(), addr, amount);
+        let sender = self
+            .network
+            .genesis_config
+            .rooch_dao
+            .multisign_bitcoin_address
+            .to_rooch_address();
+        let sequence_number = self.get_account_sequence_number(sender.into())?;
+        let tx_data = RoochTransactionData::new(
+            sender,
+            sequence_number,
+            self.network.chain_id.id,
+            GasScheduleConfig::CLI_DEFAULT_MAX_GAS_AMOUNT,
+            function_call,
+        );
+        //RoochDao is a multisign account, so we need to sign the tx with the multisign account
+        //In test env, it is a 1-of-1 multisign account, so we can sign with the only key
+        let first_signature = BitcoinAuthenticator::sign(&self.kp, &tx_data);
+        let authenticator = Authenticator::bitcoin_multisign(vec![first_signature])?;
+        let tx = RoochTransaction::new(tx_data, authenticator);
+        self.execute(tx)?;
+        Ok(())
+    }
+
     //TODO let the module bundle to execute the function
     pub fn execute(&mut self, tx: RoochTransaction) -> Result<ExecuteTransactionResult> {
         let execute_result = self.execute_as_result(tx)?;
@@ -149,6 +185,24 @@ impl RustBindingTest {
             );
         }
         Ok(execute_result)
+    }
+
+    pub fn execute_function_call_via_sequencer(
+        &mut self,
+        function_call: FunctionCall,
+    ) -> Result<ExecuteTransactionResult> {
+        let action = MoveAction::Function(function_call);
+        let sequence_number = self.get_account_sequence_number(self.sequencer)?;
+        let tx_data = RoochTransactionData::new(
+            self.sequencer.into(),
+            sequence_number,
+            self.network.chain_id.id,
+            GasScheduleConfig::CLI_DEFAULT_MAX_GAS_AMOUNT,
+            action,
+        );
+        let tx = tx_data.sign(&self.kp);
+        let result = self.execute_as_result(tx)?;
+        Ok(result)
     }
 
     pub fn execute_l1_block_and_tx(

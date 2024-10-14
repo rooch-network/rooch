@@ -10,6 +10,7 @@ use rooch_types::bitcoin::bbn::{BBNGlobalParams, BBNStakingInfo};
 use tracing::{debug, warn};
 
 // Test Babylon v3 transaction
+//cargo run -p rooch-framework-tests --  --btc-rpc-url http://localhost:8332 --btc-rpc-username your_username --btc-rpc-password your_pwd --blocks 864790 --bbn-staking-tx-csv /path/to/bbn_staking_tx.csv
 #[tokio::test]
 async fn test_block_864790() {
     let _ = tracing_subscriber::fmt::try_init();
@@ -21,8 +22,10 @@ async fn test_block_864790() {
 
     let mut tester = BitcoinBlockTester::new(864790).unwrap();
     tester.execute().unwrap();
+    tester.execute_bbn_process().unwrap();
+
     tester.verify_utxo().unwrap();
-    //TODO verify bbn tx
+    tester.verify_bbn_stake().unwrap();
 }
 
 #[tokio::test]

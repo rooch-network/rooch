@@ -19,7 +19,7 @@ async fn test_block_100000() {
 // Some testcase in the issue
 // https://github.com/rooch-network/rooch/issues/1985
 
-// cargo run -p rooch-framework-tests --  --btc-rpc-url http://localhost:9332 --btc-rpc-username your_username --btc-rpc-password your_pwd --blocks 790964 --blocks 855396
+// cargo run -p rooch-framework-tests --  --btc-rpc-url http://localhost:8332 --btc-rpc-username your_username --btc-rpc-password your_pwd --blocks 790964 --blocks 855396
 // This test contains two block: 790964 and 855396
 // The inscription 8706753 inscribed in block 790964 and spend as fee in block 855396
 // https://ordiscan.com/inscription/8706753

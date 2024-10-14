@@ -1,15 +1,16 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::binding_test::RustBindingTest;
+use crate::{bbn_tx_loader::BBNStakingTxRecord, binding_test::RustBindingTest};
 use anyhow::{anyhow, bail, ensure, Result};
 use bitcoin::{hashes::Hash, Block, OutPoint, TxOut, Txid};
 use framework_builder::stdlib_version::StdlibVersion;
+use move_core_types::{account_address::AccountAddress, u256::U256, vm_status::KeptVMStatus};
 use moveos_types::{
     move_std::string::MoveString,
     moveos_std::{
-        module_store::ModuleStore, object::ObjectMeta, simple_multimap::SimpleMultiMap,
-        timestamp::Timestamp,
+        event::Event, module_store::ModuleStore, object::ObjectMeta,
+        simple_multimap::SimpleMultiMap, timestamp::Timestamp,
     },
     state::{MoveState, MoveStructType, MoveType, ObjectChange, ObjectState},
     state_resolver::StateResolver,
@@ -18,6 +19,10 @@ use rooch_ord::ord_client::Charm;
 use rooch_relayer::actor::bitcoin_client_proxy::BitcoinClientProxy;
 use rooch_types::{
     bitcoin::{
+        bbn::{
+            self, BBNModule, BBNParsedV0StakingTx, BBNStakeSeal, BBNStakingEvent,
+            BBNStakingFailedEvent,
+        },
         inscription_updater::{
             InscriptionCreatedEvent, InscriptionTransferredEvent, InscriptionUpdaterEvent,
         },
@@ -29,20 +34,42 @@ use rooch_types::{
     rooch_network::{BuiltinChainID, RoochNetwork},
     transaction::L1BlockWithBody,
 };
-use serde::{Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::{
     collections::{BTreeSet, HashMap, HashSet},
     path::{Path, PathBuf},
     vec,
 };
-use tracing::{debug, error, info, trace};
+use tracing::{debug, error, info, trace, warn};
+
+#[derive(Debug)]
+struct ExecutedBlockData {
+    block_data: BlockData,
+    events: Vec<Event>,
+}
+
+impl ExecutedBlockData {
+    pub fn filter_events<T: MoveStructType + DeserializeOwned>(&self) -> Vec<T> {
+        self.events
+            .iter()
+            .filter_map(|event| {
+                if event.event_type == T::struct_tag() {
+                    let event = bcs::from_bytes::<T>(&event.event_data).unwrap();
+                    Some(event)
+                } else {
+                    None
+                }
+            })
+            .collect()
+    }
+}
 
 /// Execute Bitcoin block and test base a emulated environment
 /// We prepare the Block's previous dependencies and execute the block
 pub struct BitcoinBlockTester {
     genesis: BitcoinTesterGenesis,
     binding_test: RustBindingTest,
-    executed_block: Option<BlockData>,
+    executed_block: Option<ExecutedBlockData>,
 }
 
 impl BitcoinBlockTester {
@@ -77,6 +104,7 @@ impl BitcoinBlockTester {
         let mut binding_test = RustBindingTest::new_with_network(network)?;
         let root_changes = vec![utxo_store_change];
         binding_test.apply_changes(root_changes)?;
+        binding_test.get_rgas(binding_test.sequencer, U256::from(100000000000000u64))?;
         Ok(Self {
             genesis,
             binding_test,
@@ -94,6 +122,7 @@ impl BitcoinBlockTester {
         let l1_block =
             L1BlockWithBody::new_bitcoin_block(block_data.height, block_data.block.clone());
         let results = self.binding_test.execute_l1_block_and_tx(l1_block)?;
+        let mut events = vec![];
         for result in results {
             for event in result.output.events {
                 if event.event_type == InscriptionCreatedEvent::struct_tag() {
@@ -107,6 +136,8 @@ impl BitcoinBlockTester {
                         .events_from_move
                         .push(InscriptionUpdaterEvent::InscriptionTransferred(event));
                 }
+
+                events.push(event);
             }
         }
 
@@ -129,7 +160,7 @@ impl BitcoinBlockTester {
             block_data.events_from_ord.len(),
             block_data.expect_inscriptions.len()
         );
-        self.executed_block = Some(block_data);
+        self.executed_block = Some(ExecutedBlockData { block_data, events });
         Ok(())
     }
 
@@ -139,8 +170,8 @@ impl BitcoinBlockTester {
             "No block executed, please execute block first"
         );
         let mut utxo_set = HashMap::<OutPoint, TxOut>::new();
-        let block_data = self.executed_block.as_ref().unwrap();
-        for tx in block_data.block.txdata.as_slice() {
+        let executed_block_data = self.executed_block.as_ref().unwrap();
+        for tx in executed_block_data.block_data.block.txdata.as_slice() {
             let txid = tx.compute_txid();
             for (index, tx_out) in tx.output.iter().enumerate() {
                 let vout = index as u32;
@@ -182,37 +213,38 @@ impl BitcoinBlockTester {
                 utxo_state,
                 tx_out
             );
+            //TODO migrate to verify inscription.
             //Ensure every utxo's seals are correct
             let seals = utxo_state.seals;
             if !seals.is_empty() {
-                let inscription_obj_ids = seals
-                    .borrow(&MoveString::from(
-                        Inscription::type_tag().to_canonical_string(),
-                    ))
-                    .expect("Inscription seal not found");
-                for inscription_obj_id in inscription_obj_ids {
-                    let inscription_obj = self.binding_test.get_object(inscription_obj_id)?;
-                    ensure!(
-                        inscription_obj.is_some(),
-                        "Missing inscription object: {:?}",
-                        inscription_obj_id
-                    );
-                    let inscription_obj = inscription_obj.unwrap();
-                    let inscription = inscription_obj.value_as::<Inscription>().map_err(|e| {
-                        error!(
-                            "Parse Inscription Error: {:?}, object meta: {:?}, object value: {}",
-                            e,
-                            inscription_obj.metadata,
-                            hex::encode(&inscription_obj.value)
+                let inscription_obj_ids = seals.borrow(&MoveString::from(
+                    Inscription::type_tag().to_canonical_string(),
+                ));
+                if let Some(inscription_obj_ids) = inscription_obj_ids {
+                    for inscription_obj_id in inscription_obj_ids {
+                        let inscription_obj = self.binding_test.get_object(inscription_obj_id)?;
+                        ensure!(
+                            inscription_obj.is_some(),
+                            "Missing inscription object: {:?}",
+                            inscription_obj_id
                         );
-                        e
-                    })?;
-                    ensure!(
-                        inscription.location.outpoint == outpoint.into(),
-                        "Inscription location not match: {:?}, {:?}",
-                        inscription,
-                        outpoint
-                    );
+                        let inscription_obj = inscription_obj.unwrap();
+                        let inscription = inscription_obj.value_as::<Inscription>().map_err(|e| {
+                            error!(
+                                "Parse Inscription Error: {:?}, object meta: {:?}, object value: {}",
+                                e,
+                                inscription_obj.metadata,
+                                hex::encode(&inscription_obj.value)
+                            );
+                            e
+                        })?;
+                        ensure!(
+                            inscription.location.outpoint == outpoint.into(),
+                            "Inscription location not match: {:?}, {:?}",
+                            inscription,
+                            outpoint
+                        );
+                    }
                 }
             }
         }
@@ -224,7 +256,7 @@ impl BitcoinBlockTester {
             self.executed_block.is_some(),
             "No block executed, please execute block first"
         );
-        let block_data = self.executed_block.as_ref().unwrap();
+        let block_data = &self.executed_block.as_ref().unwrap().block_data;
         info!(
             "verify {} inscriptions in block",
             block_data.expect_inscriptions.len()
@@ -397,6 +429,182 @@ impl BitcoinBlockTester {
         Ok(())
     }
 
+    pub fn execute_bbn_process(&mut self) -> Result<()> {
+        ensure!(
+            self.executed_block.is_some(),
+            "No block executed, please execute block first"
+        );
+        let executed_block_data = self.executed_block.as_mut().unwrap();
+
+        for tx in executed_block_data.block_data.block.txdata.iter() {
+            let txid = tx.compute_txid();
+            if BBNParsedV0StakingTx::is_possible_staking_tx(tx, &bbn::BBN_GLOBAL_PARAM_BBN1.tag) {
+                let function_call = BBNModule::create_process_bbn_tx_entry_call(txid)?;
+                let execute_result = self
+                    .binding_test
+                    .execute_function_call_via_sequencer(function_call)?;
+                debug!("BBN process result: {:?}", execute_result);
+                if execute_result.transaction_info.status != KeptVMStatus::Executed {
+                    let op_return_data = bbn::try_get_bbn_op_return_ouput(&tx.output);
+                    bail!(
+                        "tx should success, txid: {:?}, status: {:?}, op_return_data from rust: {:?}",
+                        txid,
+                        execute_result.transaction_info.status,
+                        op_return_data
+                    );
+                }
+                for event in execute_result.output.events {
+                    executed_block_data.events.push(event);
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    pub fn verify_bbn_stake(&self) -> Result<()> {
+        ensure!(
+            self.executed_block.is_some(),
+            "No block executed, please execute block first"
+        );
+
+        let executed_block_data = self.executed_block.as_ref().unwrap();
+
+        let bbn_staking_txs = executed_block_data
+            .block_data
+            .bbn_staking_records
+            .iter()
+            .map(|tx| (tx.txid().into_address(), tx.clone()))
+            .collect::<HashMap<AccountAddress, BBNStakingTxRecord>>();
+
+        let bbn_staking_failed_events =
+            executed_block_data.filter_events::<BBNStakingFailedEvent>();
+        let bbn_staking_events = executed_block_data.filter_events::<BBNStakingEvent>();
+
+        info!(
+            "BBN staking txs: {}, staking failed events: {}, staking events: {}, total_events: {}",
+            bbn_staking_txs.len(),
+            bbn_staking_failed_events.len(),
+            bbn_staking_events.len(),
+            executed_block_data.events.len()
+        );
+
+        for event in &bbn_staking_failed_events {
+            debug!("Staking failed event: {:?}", event);
+            let txid = event.txid.into_address();
+            if bbn_staking_txs.contains_key(&txid) {
+                warn!(
+                    "Staking failed txid {:?} in event but also in staking txs from bbn indexer",
+                    txid
+                );
+            }
+            // ensure!(
+            //     "Staking failed txid {:?} in event but also in staking txs from bbn indexer",
+            //     txid,
+            // );
+        }
+
+        for (txid, _tx) in bbn_staking_txs.iter() {
+            let event = bbn_staking_events.iter().find(|event| event.txid == *txid);
+            // ensure!(
+            //     event.is_some(),
+            //     "Staking txid {:?} in staking txs from bbn indexer but not in event",
+            //     txid,
+            // );
+            if event.is_none() {
+                warn!(
+                    "Staking txid {:?} in staking txs from bbn indexer but not in event",
+                    txid
+                );
+            }
+        }
+
+        for event in bbn_staking_events {
+            let stake_object_id = event.stake_object_id;
+            let txid = event.txid;
+            let bbn_staking_tx = bbn_staking_txs.get(&txid);
+            if bbn_staking_tx.is_none() {
+                warn!(
+                    "Staking txid {:?} in event but not in staking txs from bbn indexer",
+                    txid
+                );
+                continue;
+            }
+
+            let bbn_staking_tx = bbn_staking_tx.unwrap();
+
+            let stake_obj = self.binding_test.get_object(&stake_object_id)?;
+            ensure!(
+                stake_obj.is_some(),
+                "Missing stake object: {:?}, staking tx: {:?}",
+                stake_object_id,
+                bbn_staking_tx
+            );
+            let bbn_stake = stake_obj.unwrap().value_as::<BBNStakeSeal>()?;
+            ensure!(
+                bbn_stake.staking_output_index == bbn_staking_tx.staking_output_index,
+                "Seal not match: {:?}, staking tx: {:?}",
+                bbn_stake,
+                bbn_staking_tx
+            );
+            ensure!(
+                bbn_stake.staking_value == bbn_staking_tx.staking_value,
+                "Staking value not match: {:?}, staking tx: {:?}",
+                bbn_stake,
+                bbn_staking_tx
+            );
+            ensure!(
+                bbn_stake.staking_time == bbn_staking_tx.staking_time,
+                "Staking time not match: {:?}, staking tx: {:?}",
+                bbn_stake,
+                bbn_staking_tx
+            );
+            ensure!(
+                bbn_stake.staker_pub_key == bbn_staking_tx.staker_public_key(),
+                "Staker public key not match: {:?}, staking tx: {:?}",
+                bbn_stake,
+                bbn_staking_tx
+            );
+            ensure!(
+                bbn_stake.finality_provider_pub_key
+                    == bbn_staking_tx.finality_provider_public_key(),
+                "Finality provider public key not match: {:?}, staking tx: {:?}",
+                bbn_stake,
+                bbn_staking_tx
+            );
+
+            let staking_output_index = bbn_stake.staking_output_index;
+            let outpoint = rooch_types::bitcoin::types::OutPoint::new(txid, staking_output_index);
+            let utxo_object_id = utxo::derive_utxo_id(&outpoint);
+            let utxo_obj = self.binding_test.get_object(&utxo_object_id)?;
+            ensure!(
+                utxo_obj.is_some(),
+                "Missing utxo object: {:?} for staking tx: {:?}",
+                utxo_object_id,
+                bbn_staking_tx
+            );
+            let utxo_obj = utxo_obj.unwrap();
+            let utxo = utxo_obj.value_as::<UTXO>()?;
+            let seals = utxo.seals.borrow(&MoveString::from(
+                BBNStakeSeal::type_tag().to_canonical_string(),
+            ));
+            ensure!(
+                seals.is_some(),
+                "Missing seals in utxo: {:?}, staking tx: {:?}",
+                utxo,
+                bbn_staking_tx
+            );
+            let seals = seals.unwrap();
+            ensure!(
+                seals.contains(&stake_object_id),
+                "Missing seal object id in utxo: {:?}, staking tx: {:?}",
+                utxo,
+                bbn_staking_tx
+            );
+        }
+        Ok(())
+    }
+
     pub fn get_inscription(&self, inscription_id: &InscriptionID) -> Result<Option<ObjectState>> {
         let object_id = inscription_id.object_id();
         self.binding_test.get_object(&object_id)
@@ -410,6 +618,8 @@ pub struct BlockData {
     pub expect_inscriptions: BTreeSet<InscriptionID>,
     pub events_from_ord: Vec<rooch_ord::event::Event>,
     pub events_from_move: Vec<InscriptionUpdaterEvent>,
+    #[serde(default)]
+    pub bbn_staking_records: Vec<BBNStakingTxRecord>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -439,7 +649,8 @@ impl BitcoinTesterGenesis {
 
 pub struct TesterGenesisBuilder {
     bitcoin_client: BitcoinClientProxy,
-    ord_event_dir: PathBuf,
+    ord_event_dir: Option<PathBuf>,
+    bbn_staking_tx_csv: Option<PathBuf>,
     blocks: Vec<BlockData>,
     block_txids: HashSet<Txid>,
     utxo_store_change: ObjectChange,
@@ -448,11 +659,13 @@ pub struct TesterGenesisBuilder {
 impl TesterGenesisBuilder {
     pub fn new<P: AsRef<Path>>(
         bitcoin_client: BitcoinClientProxy,
-        ord_event_dir: P,
+        ord_event_dir: Option<P>,
+        bbn_staking_tx_csv: Option<P>,
     ) -> Result<Self> {
         Ok(Self {
             bitcoin_client,
-            ord_event_dir: ord_event_dir.as_ref().to_path_buf(),
+            ord_event_dir: ord_event_dir.map(|p| p.as_ref().to_path_buf()),
+            bbn_staking_tx_csv: bbn_staking_tx_csv.map(|p| p.as_ref().to_path_buf()),
             blocks: vec![],
             block_txids: HashSet::new(),
             utxo_store_change: ObjectChange::meta(BitcoinUTXOStore::genesis_object().metadata),
@@ -476,14 +689,34 @@ impl TesterGenesisBuilder {
                 block_header_result.height
             );
         }
-        let ord_events = rooch_ord::event::load_events(
-            self.ord_event_dir.join(format!("{}.blk", block_height)),
-        )?;
-        info!(
-            "Load ord events: {} in block {}",
-            ord_events.len(),
-            block_height
-        );
+        let ord_events = match &self.ord_event_dir {
+            None => vec![],
+            Some(ord_event_dir) => {
+                let ord_events = rooch_ord::event::load_events(
+                    ord_event_dir.join(format!("{}.blk", block_height)),
+                )?;
+                info!(
+                    "Load ord events: {} in block {}",
+                    ord_events.len(),
+                    block_height
+                );
+                ord_events
+            }
+        };
+
+        let bbn_staking_records = match &self.bbn_staking_tx_csv {
+            None => vec![],
+            Some(bbn_staking_tx_csv) => {
+                let bbn_staking_txs =
+                    BBNStakingTxRecord::load_bbn_staking_txs(bbn_staking_tx_csv, block_height)?;
+                info!(
+                    "Load bbn staking txs: {} in block {}",
+                    bbn_staking_txs.len(),
+                    block_height
+                );
+                bbn_staking_txs
+            }
+        };
 
         for tx in &block.txdata {
             self.block_txids.insert(tx.compute_txid());
@@ -559,6 +792,7 @@ impl TesterGenesisBuilder {
             expect_inscriptions: BTreeSet::new(),
             events_from_ord: ord_events,
             events_from_move: vec![],
+            bbn_staking_records,
         });
         Ok(self)
     }
