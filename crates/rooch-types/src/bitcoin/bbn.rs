@@ -70,7 +70,7 @@ pub static BBN_GLOBAL_PARAM_BBN1: Lazy<BBNGlobalParam> = Lazy::new(|| BBNGlobalP
     activation_height: 864790,
     staking_cap: 0,
     cap_height: 864799,
-    tag: "62626e31".as_bytes().to_vec(),
+    tag: hex::decode("62626e31").unwrap(),
     covenant_pks: vec![
         hex::decode("d45c70d28f169e1f0c7f4a78e2bc73497afe585b70aa897955989068f3350aaa").unwrap(),
         hex::decode("4b15848e495a3a62283daaadb3f458a00859fe48e321f0121ebabbdd6698f9fa").unwrap(),
