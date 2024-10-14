@@ -95,7 +95,7 @@ impl DAServerActor {
                         .start_background_submit(last_block_number)
                         .await
                     {
-                        log::error!("{:?}, fail to start background da submit.", e);
+                        log::error!("da: background submitting failed: {:?}", e);
                     }
                 });
             }
@@ -238,17 +238,23 @@ impl DAServerActor {
             let tx_order_end = block.tx_order_end;
             // collect tx from start to end for rooch_store
             let tx_orders: Vec<u64> = (tx_order_start..=tx_order_end).collect();
-            let tx_hashes = self.rooch_store.get_tx_hashes(tx_orders)?;
+            let tx_hashes = self.rooch_store.get_tx_hashes(tx_orders.clone())?;
             let tx_hashes: Vec<H256> = tx_hashes
                 .into_iter()
                 .map(|tx_hash| tx_hash.unwrap())
                 .collect();
             let mut tx_list: Vec<LedgerTransaction> = Vec::new();
-            for tx_hash in tx_hashes {
+            for (tx_order, tx_hash) in tx_orders.into_iter().zip(tx_hashes) {
                 let tx = self
                     .rooch_store
                     .get_transaction_by_hash(tx_hash)?
-                    .unwrap_or_else(|| panic!("tx not found for hash: {:?}", tx_hash));
+                    .ok_or_else(|| {
+                        anyhow!(
+                            "fail to get transaction by hash: {:?} in order: {}",
+                            tx_hash,
+                            tx_order
+                        )
+                    })?; // should not happen
                 tx_list.push(tx);
             }
             self.submit_batch_raw(block, tx_list).await?;
@@ -257,11 +263,18 @@ impl DAServerActor {
                 // it's okay to set cursor a bit behind: submit_batch_raw set submitting block done, so it won't be submitted again after restart
                 self.rooch_store
                     .set_background_submit_block_cursor(block_number)?;
-                log::info!("da: submitted {} blocks in background", submit_count);
+                log::info!(
+                    "da: background submitting: {} blocks submitted",
+                    submit_count
+                );
             }
         }
         self.rooch_store
             .set_background_submit_block_cursor(last_block_number)?;
+        log::info!(
+            "da: background submitting done: {} blocks submitted",
+            submit_count
+        );
         Ok(())
     }
 }
