@@ -9580,6 +9580,7 @@ dependencies = [
  "anyhow",
  "cosmwasm-std",
  "cosmwasm-vm",
+ "hex",
  "move-binary-format",
  "move-core-types",
  "move-resource-viewer",
