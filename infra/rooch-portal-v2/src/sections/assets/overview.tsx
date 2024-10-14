@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCurrentAddress } from '@roochnetwork/rooch-sdk-kit';
 
-export default function AccountOverviewView() {
+export default function AssetsOverviewView() {
   const address = useCurrentAddress();
   const router = useRouter();
   useEffect(() => {
