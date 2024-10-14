@@ -23,6 +23,7 @@ import {
 import { formatCoin } from 'src/utils/format-number';
 
 import { toast } from 'src/components/snackbar';
+import SessionKeyGuardButton from 'src/components/auth/session-key-guard-button';
 
 export default function CoinTransferModal({
   open,
@@ -165,37 +166,39 @@ export default function CoinTransferModal({
           Cancel
         </Button>
 
-        <LoadingButton
-          fullWidth
-          loading={transferring}
-          disabled={false}
-          variant="contained"
-          onClick={async () => {
-            try {
-              setTransferring(true);
-              const amountNumber = new BigNumber(transferValue)
-                .multipliedBy(new BigNumber(10).pow(selectedRow.decimals))
-                .integerValue(BigNumber.ROUND_FLOOR)
-                .toNumber();
-              await transferCoin({
-                recipient,
-                amount: amountNumber,
-                coinType: {
-                  target: selectedRow.coin_type,
-                },
-              });
-              onClose();
-              refetch();
-              toast.success('Transfer success');
-            } catch (error) {
-              toast.error(String(error));
-            } finally {
-              setTransferring(false);
-            }
-          }}
-        >
-          Confirm
-        </LoadingButton>
+        <SessionKeyGuardButton>
+          <LoadingButton
+            fullWidth
+            loading={transferring}
+            disabled={false}
+            variant="contained"
+            onClick={async () => {
+              try {
+                setTransferring(true);
+                const amountNumber = new BigNumber(transferValue)
+                  .multipliedBy(new BigNumber(10).pow(selectedRow.decimals))
+                  .integerValue(BigNumber.ROUND_FLOOR)
+                  .toNumber();
+                await transferCoin({
+                  recipient,
+                  amount: amountNumber,
+                  coinType: {
+                    target: selectedRow.coin_type,
+                  },
+                });
+                onClose();
+                refetch();
+                toast.success('Transfer success');
+              } catch (error) {
+                toast.error(String(error));
+              } finally {
+                setTransferring(false);
+              }
+            }}
+          >
+            Confirm
+          </LoadingButton>
+        </SessionKeyGuardButton>
       </DialogActions>
     </Dialog>
   );
