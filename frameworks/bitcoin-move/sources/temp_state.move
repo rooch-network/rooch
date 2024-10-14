@@ -11,6 +11,7 @@ module bitcoin_move::temp_state {
 
     friend bitcoin_move::utxo;
     friend bitcoin_move::ord;
+    friend bitcoin_move::bbn;
 
     const MAX_TEMP_STATES: u64 = 20;
 

@@ -160,10 +160,19 @@ module bitcoin_move::utxo{
         object::borrow_object(object_id)
     }
 
+    public(friend) fun borrow_mut_utxo(outpoint: OutPoint): &mut Object<UTXO>{
+        let object_id = derive_utxo_id(outpoint);
+        object::borrow_mut_object_extend(object_id)
+    }
+
     public fun has_seal<T>(utxo: &UTXO) : bool {
         let protocol = type_info::type_name<T>();
-        simple_multimap::contains_key(&utxo.seals, &protocol)
+        has_seal_internal(utxo, &protocol)
     }
+
+    public(friend) fun has_seal_internal(utxo: &UTXO, protocol: &String) : bool {
+        simple_multimap::contains_key(&utxo.seals, protocol)
+    }        
 
     public fun get_seals<T>(utxo: &UTXO) : vector<ObjectID> {
         let protocol = type_info::type_name<T>();
@@ -224,7 +233,7 @@ module bitcoin_move::utxo{
                 });
             }
         };
-    }
+    } 
 
     public(friend) fun take(object_id: ObjectID): Object<UTXO>{
         object::take_object_extend<UTXO>(object_id)

@@ -719,6 +719,14 @@ impl BitcoinAddress {
         Ok(addr)
     }
 
+    pub fn pay_load_type(&self) -> BitcoinAddressPayloadType {
+        BitcoinAddressPayloadType::try_from(self.bytes[0]).unwrap()
+    }
+
+    pub fn pay_load(&self) -> &[u8] {
+        &self.bytes[1..]
+    }
+
     pub fn script_pubkey(&self) -> Result<bitcoin::ScriptBuf> {
         let bitcoin_address = self.to_bitcoin_address(network::Network::Bitcoin)?;
         Ok(bitcoin_address.script_pubkey())
@@ -1401,5 +1409,13 @@ mod test {
         assert!(script.is_p2pk());
         let bitcoin_address = BitcoinAddress::from(script);
         assert_eq!(BitcoinAddress::default(), bitcoin_address);
+    }
+
+    #[test]
+    fn test_p2pkh() {
+        let addr = BitcoinAddress::from_str("1QJVDzdqb1VpbDK7uDeyVXy9mR27CJiyhY").unwrap();
+        assert_eq!(addr.pay_load_type(), BitcoinAddressPayloadType::PubkeyHash);
+        let payload = addr.pay_load();
+        println!("test_p2pkh payload len: {}", payload.len());
     }
 }

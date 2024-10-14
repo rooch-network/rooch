@@ -30,8 +30,17 @@ module rooch_framework::bitcoin_address {
     const P2SH_ADDR_DECIMAL_PREFIX_TEST: u8 = 196; // 0xc4
 
     const PAY_LOAD_TYPE_PUBKEY_HASH: u8 = 0;
+    public fun pay_load_type_pubkey_hash(): u8 {
+        PAY_LOAD_TYPE_PUBKEY_HASH
+    }
     const PAY_LOAD_TYPE_SCRIPT_HASH: u8 = 1;
+    public fun pay_load_type_script_hash(): u8 {
+        PAY_LOAD_TYPE_SCRIPT_HASH
+    }
     const PAY_LOAD_TYPE_WITNESS_PROGRAM: u8 = 2;
+    public fun pay_load_type_witness_program(): u8 {
+        PAY_LOAD_TYPE_WITNESS_PROGRAM
+    }
    
     #[data_struct]
     /// BitcoinAddress is a struct that represents a Bitcoin address.
@@ -69,6 +78,14 @@ module rooch_framework::bitcoin_address {
         BitcoinAddress {
             bytes: bytes,
         }
+    }
+
+    public fun pay_load_type(addr: &BitcoinAddress): u8 {
+        *vector::borrow(&addr.bytes, 0)
+    }
+
+    public fun pay_load(addr: &BitcoinAddress): vector<u8> {
+        vector::slice(&addr.bytes, 1, vector::length(&addr.bytes))
     }
 
     public fun is_p2pkh(addr: &BitcoinAddress): bool {

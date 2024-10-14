@@ -10,6 +10,10 @@
 -  [Function `empty`](#0x4_script_buf_empty)
 -  [Function `new`](#0x4_script_buf_new)
 -  [Function `single`](#0x4_script_buf_single)
+-  [Function `new_p2pkh`](#0x4_script_buf_new_p2pkh)
+-  [Function `new_p2sh`](#0x4_script_buf_new_p2sh)
+-  [Function `script_pubkey`](#0x4_script_buf_script_pubkey)
+-  [Function `match_script_pubkey`](#0x4_script_buf_match_script_pubkey)
 -  [Function `is_empty`](#0x4_script_buf_is_empty)
 -  [Function `bytes`](#0x4_script_buf_bytes)
 -  [Function `into_bytes`](#0x4_script_buf_into_bytes)
@@ -20,7 +24,6 @@
 -  [Function `is_witness_program`](#0x4_script_buf_is_witness_program)
 -  [Function `witness_program`](#0x4_script_buf_witness_program)
 -  [Function `is_op_return`](#0x4_script_buf_is_op_return)
--  [Function `unpack_bbn_stake_data`](#0x4_script_buf_unpack_bbn_stake_data)
 -  [Function `push_opcode`](#0x4_script_buf_push_opcode)
 -  [Function `push_data`](#0x4_script_buf_push_data)
 -  [Function `push_int`](#0x4_script_buf_push_int)
@@ -29,6 +32,7 @@
 
 
 <pre><code><b>use</b> <a href="">0x1::vector</a>;
+<b>use</b> <a href="">0x3::bitcoin_address</a>;
 <b>use</b> <a href="opcode.md#0x4_opcode">0x4::opcode</a>;
 </code></pre>
 
@@ -51,11 +55,29 @@
 ## Constants
 
 
+<a name="0x4_script_buf_BITCOIN_PUBKEY_HASH_SIZE"></a>
+
+
+
+<pre><code><b>const</b> <a href="script_buf.md#0x4_script_buf_BITCOIN_PUBKEY_HASH_SIZE">BITCOIN_PUBKEY_HASH_SIZE</a>: u64 = 20;
+</code></pre>
+
+
+
 <a name="0x4_script_buf_BITCOIN_PUBKEY_SIZE"></a>
 
 
 
 <pre><code><b>const</b> <a href="script_buf.md#0x4_script_buf_BITCOIN_PUBKEY_SIZE">BITCOIN_PUBKEY_SIZE</a>: u64 = 33;
+</code></pre>
+
+
+
+<a name="0x4_script_buf_BITCOIN_SCRIPT_HASH_SIZE"></a>
+
+
+
+<pre><code><b>const</b> <a href="script_buf.md#0x4_script_buf_BITCOIN_SCRIPT_HASH_SIZE">BITCOIN_SCRIPT_HASH_SIZE</a>: u64 = 20;
 </code></pre>
 
 
@@ -69,20 +91,47 @@
 
 
 
-<a name="0x4_script_buf_ErrorInvalidBytesLen"></a>
-
-
-
-<pre><code><b>const</b> <a href="script_buf.md#0x4_script_buf_ErrorInvalidBytesLen">ErrorInvalidBytesLen</a>: u64 = 2;
-</code></pre>
-
-
-
 <a name="0x4_script_buf_ErrorInvalidKeySize"></a>
 
 
 
 <pre><code><b>const</b> <a href="script_buf.md#0x4_script_buf_ErrorInvalidKeySize">ErrorInvalidKeySize</a>: u64 = 1;
+</code></pre>
+
+
+
+<a name="0x4_script_buf_ErrorInvalidPubkeyHash"></a>
+
+
+
+<pre><code><b>const</b> <a href="script_buf.md#0x4_script_buf_ErrorInvalidPubkeyHash">ErrorInvalidPubkeyHash</a>: u64 = 3;
+</code></pre>
+
+
+
+<a name="0x4_script_buf_ErrorInvalidScriptHash"></a>
+
+
+
+<pre><code><b>const</b> <a href="script_buf.md#0x4_script_buf_ErrorInvalidScriptHash">ErrorInvalidScriptHash</a>: u64 = 4;
+</code></pre>
+
+
+
+<a name="0x4_script_buf_ErrorNumberOverflow"></a>
+
+
+
+<pre><code><b>const</b> <a href="script_buf.md#0x4_script_buf_ErrorNumberOverflow">ErrorNumberOverflow</a>: u64 = 2;
+</code></pre>
+
+
+
+<a name="0x4_script_buf_I64_MAX"></a>
+
+
+
+<pre><code><b>const</b> <a href="script_buf.md#0x4_script_buf_I64_MAX">I64_MAX</a>: u64 = 9223372036854775807;
 </code></pre>
 
 
@@ -116,6 +165,52 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="script_buf.md#0x4_script_buf_single">single</a>(<a href="opcode.md#0x4_opcode">opcode</a>: u8): <a href="script_buf.md#0x4_script_buf_ScriptBuf">script_buf::ScriptBuf</a>
+</code></pre>
+
+
+
+<a name="0x4_script_buf_new_p2pkh"></a>
+
+## Function `new_p2pkh`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="script_buf.md#0x4_script_buf_new_p2pkh">new_p2pkh</a>(pubkey_hash: <a href="">vector</a>&lt;u8&gt;): <a href="script_buf.md#0x4_script_buf_ScriptBuf">script_buf::ScriptBuf</a>
+</code></pre>
+
+
+
+<a name="0x4_script_buf_new_p2sh"></a>
+
+## Function `new_p2sh`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="script_buf.md#0x4_script_buf_new_p2sh">new_p2sh</a>(script_hash: <a href="">vector</a>&lt;u8&gt;): <a href="script_buf.md#0x4_script_buf_ScriptBuf">script_buf::ScriptBuf</a>
+</code></pre>
+
+
+
+<a name="0x4_script_buf_script_pubkey"></a>
+
+## Function `script_pubkey`
+
+Generates a script pubkey spending to this address.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="script_buf.md#0x4_script_buf_script_pubkey">script_pubkey</a>(addr: &<a href="_BitcoinAddress">bitcoin_address::BitcoinAddress</a>): <a href="script_buf.md#0x4_script_buf_ScriptBuf">script_buf::ScriptBuf</a>
+</code></pre>
+
+
+
+<a name="0x4_script_buf_match_script_pubkey"></a>
+
+## Function `match_script_pubkey`
+
+Returns true if the address creates a particular script
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="script_buf.md#0x4_script_buf_match_script_pubkey">match_script_pubkey</a>(addr: &<a href="_BitcoinAddress">bitcoin_address::BitcoinAddress</a>, sb: &<a href="script_buf.md#0x4_script_buf_ScriptBuf">script_buf::ScriptBuf</a>): bool
 </code></pre>
 
 
@@ -238,17 +333,6 @@ Checks if the given script is an OP_RETURN script.
 
 
 
-<a name="0x4_script_buf_unpack_bbn_stake_data"></a>
-
-## Function `unpack_bbn_stake_data`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="script_buf.md#0x4_script_buf_unpack_bbn_stake_data">unpack_bbn_stake_data</a>(self: &<a href="script_buf.md#0x4_script_buf_ScriptBuf">script_buf::ScriptBuf</a>): (<a href="">vector</a>&lt;u8&gt;, u64, <a href="">vector</a>&lt;u8&gt;, <a href="">vector</a>&lt;u8&gt;, u16)
-</code></pre>
-
-
-
 <a name="0x4_script_buf_push_opcode"></a>
 
 ## Function `push_opcode`
@@ -275,6 +359,12 @@ Checks if the given script is an OP_RETURN script.
 
 ## Function `push_int`
 
+Adds instructions to push an integer onto the stack.
+
+Integers are encoded as little-endian signed-magnitude numbers, but there are dedicated
+opcodes to push some small integers.
+Because there no i64 type in Move, we use u64 to represent the integer.
+The value over the I64_MAX will abort, we can support negative value in the future.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="script_buf.md#0x4_script_buf_push_int">push_int</a>(self: &<b>mut</b> <a href="script_buf.md#0x4_script_buf_ScriptBuf">script_buf::ScriptBuf</a>, n: u64)
