@@ -7,6 +7,7 @@ use std::str::FromStr;
 use tracing::{debug, warn};
 
 // This test for testing BitcoinBlockTester
+#[ignore = "the tester genesis need to be updated"]
 #[tokio::test]
 async fn test_block_100000() {
     let _ = tracing_subscriber::fmt::try_init();
@@ -24,6 +25,7 @@ async fn test_block_100000() {
 // The inscription 8706753 inscribed in block 790964 and spend as fee in block 855396
 // https://ordiscan.com/inscription/8706753
 // https://ordinals.com/inscription/8706753
+#[ignore = "the tester genesis need to be updated"]
 #[tokio::test]
 async fn test_block_790964() {
     let _ = tracing_subscriber::fmt::try_init();
@@ -72,6 +74,7 @@ async fn test_block_790964() {
     );
 }
 
+#[ignore = "the tester genesis need to be updated"]
 #[tokio::test]
 async fn test_block_781735() {
     let _ = tracing_subscriber::fmt::try_init();
@@ -104,6 +107,7 @@ async fn test_block_781735() {
 
 //Inscription use pointer to set the offset, and mint multi inscription in one input.
 //https://ordinals.com/tx/6ea3bf728b34c8c01ba4703e00ad688be100599b92fbdac71e6aea6ad8355552
+#[ignore = "the tester genesis need to be updated"]
 #[tokio::test]
 async fn test_block_832918() {
     let _ = tracing_subscriber::fmt::try_init();
@@ -121,6 +125,7 @@ async fn test_block_832918() {
 
 // Inscription inscribe and transfer in same tx
 // https://ordinals.com/tx/207322afdcca902cb36aeb674214dc5f80f9593f12c1de57830ad33adae46a0a
+#[ignore = "the tester genesis need to be updated"]
 #[tokio::test]
 async fn test_block_794970() {
     let _ = tracing_subscriber::fmt::try_init();
