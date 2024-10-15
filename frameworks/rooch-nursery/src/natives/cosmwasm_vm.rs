@@ -13,9 +13,10 @@ use cosmwasm_vm::{
     VmResult,
 };
 use once_cell::sync::Lazy;
-use rooch_cosmwasm_vm::backend::{
-    build_mock_backend, MockStorage, MoveBackendApi, MoveBackendQuerier,
+use rooch_cosmwasm_vm::{
+    build_move_proxy_backend, ProxyStorage, MoveStorage, MoveBackendApi, MoveBackendQuerier,
 };
+
 use smallvec::smallvec;
 
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
@@ -38,7 +39,7 @@ use crate::natives::helper::{pop_object_id, CommonGasParametersOption};
 
 const DEFAULT_GAS_LIMIT: u64 = 10000000;
 
-static WASM_CACHE: Lazy<Arc<Cache<MoveBackendApi, MockStorage, MoveBackendQuerier>>> =
+static WASM_CACHE: Lazy<Arc<Cache<MoveBackendApi, ProxyStorage, MoveBackendQuerier>>> =
     Lazy::new(|| {
         let options = CacheOptions::new(
             std::env::temp_dir(),
@@ -101,9 +102,9 @@ pub fn native_create_instance(
         context,
         store_obj_id,
         wasm_code,
-        move |_layout_loader,
-              _resolver,
-              _rt_obj,
+        move |layout_loader,
+              resolver,
+              rt_obj,
               wasm_bytes|
               -> PartialVMResult<(Value, Option<Option<NumBytes>>)> {
             // wat2 wasm bytes
@@ -119,7 +120,10 @@ pub fn native_create_instance(
             })?;
 
             //TODO Create real Backend
-            let backend = build_mock_backend();
+            let mut backend = build_move_proxy_backend();
+
+            let move_storage = MoveStorage::new(rt_obj, layout_loader, resolver);
+            backend.storage.register(rt_obj.id().clone(), Box::new(move_storage));
 
             // Create WASM instance
             let instance_options = InstanceOptions {
@@ -248,7 +252,7 @@ fn native_contract_call<F>(
 ) -> PartialVMResult<NativeResult>
 where
     F: FnOnce(
-        &mut Instance<MoveBackendApi, MockStorage, MoveBackendQuerier>,
+        &mut Instance<MoveBackendApi, ProxyStorage, MoveBackendQuerier>,
         &[u8],
         Option<&[u8]>,
         &[u8],
@@ -295,7 +299,7 @@ where
     let checksum = Checksum::try_from(code_checksum.as_slice()).map_err(vm_error)?;
     let (module, store) = WASM_CACHE.get_module(&checksum).map_err(vm_error)?;
 
-    let backend = build_mock_backend();
+    let backend = build_move_proxy_backend();
     let instance_options = InstanceOptions {
         gas_limit: DEFAULT_GAS_LIMIT,
     };
@@ -358,7 +362,7 @@ fn native_call_instantiate_raw(
         arguments,
         5, // code_checksum, store_obj_id, env, info, msg
         "call_instantiate_raw",
-        move |instance: &mut Instance<MoveBackendApi, MockStorage, MoveBackendQuerier>,
+        move |instance: &mut Instance<MoveBackendApi, ProxyStorage, MoveBackendQuerier>,
               env: &[u8],
               info: Option<&[u8]>,
               msg: &[u8]|
@@ -386,7 +390,7 @@ fn native_call_execute_raw(
         arguments,
         5, // code_checksum, store_obj_id, env, info, msg
         "call_execute_raw",
-        move |instance: &mut Instance<MoveBackendApi, MockStorage, MoveBackendQuerier>,
+        move |instance: &mut Instance<MoveBackendApi, ProxyStorage, MoveBackendQuerier>,
               env: &[u8],
               info: Option<&[u8]>,
               msg: &[u8]|
@@ -412,7 +416,7 @@ fn native_call_query_raw(
         arguments,
         4, // code_checksum, store_obj_id, env, msg
         "call_query_raw",
-        move |instance: &mut Instance<MoveBackendApi, MockStorage, MoveBackendQuerier>,
+        move |instance: &mut Instance<MoveBackendApi, ProxyStorage, MoveBackendQuerier>,
               env: &[u8],
               _info: Option<&[u8]>,
               msg: &[u8]|
@@ -438,7 +442,7 @@ fn native_call_migrate_raw(
         arguments,
         4, // code_checksum, store_obj_id, env, msg
         "call_migrate_raw",
-        move |instance: &mut Instance<MoveBackendApi, MockStorage, MoveBackendQuerier>,
+        move |instance: &mut Instance<MoveBackendApi, ProxyStorage, MoveBackendQuerier>,
               env: &[u8],
               _info: Option<&[u8]>,
               msg: &[u8]|
@@ -464,7 +468,7 @@ fn native_call_reply_raw(
         arguments,
         4, // code_checksum, store_obj_id, env, msg
         "call_reply_raw",
-        move |instance: &mut Instance<MoveBackendApi, MockStorage, MoveBackendQuerier>,
+        move |instance: &mut Instance<MoveBackendApi, ProxyStorage, MoveBackendQuerier>,
               env: &[u8],
               _info: Option<&[u8]>,
               msg: &[u8]|
@@ -490,7 +494,7 @@ fn native_call_sudo_raw(
         arguments,
         4, // code_checksum, store_obj_id, env, msg
         "call_sudo_raw",
-        move |instance: &mut Instance<MoveBackendApi, MockStorage, MoveBackendQuerier>,
+        move |instance: &mut Instance<MoveBackendApi, ProxyStorage, MoveBackendQuerier>,
               env: &[u8],
               _info: Option<&[u8]>,
               msg: &[u8]|

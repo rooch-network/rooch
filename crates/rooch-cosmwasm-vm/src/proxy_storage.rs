@@ -1,11 +1,12 @@
 use std::collections::HashMap;
-use hex;
+use std::cell::RefCell;
+
 use cosmwasm_std::{Order, Record};
 use cosmwasm_vm::{BackendError, BackendResult, GasInfo, Storage};
 use moveos_types::moveos_std::object::ObjectID;
 
 pub struct ProxyStorage {
-    storages: HashMap<ObjectID, Box<dyn Storage>>,
+    storages: HashMap<ObjectID, RefCell<Box<dyn Storage>>>,
 }
 
 impl ProxyStorage {
@@ -16,32 +17,36 @@ impl ProxyStorage {
     }
 
     pub fn register(&mut self, prefix: ObjectID, storage: Box<dyn Storage>) {
-        self.storages.insert(prefix, storage);
+        self.storages.insert(prefix, RefCell::new(storage));
     }
 
     pub fn unregister(&mut self, prefix: &ObjectID) -> Option<Box<dyn Storage>> {
-        self.storages.remove(prefix)
+        self.storages.remove(prefix).map(|cell| cell.into_inner())
     }
 
-    fn get_storage(&self, key: &[u8]) -> Result<&dyn Storage, BackendError> {
-        let object_id = ObjectID::from_hex_literal(hex::encode(key))
-            .map_err(|e| BackendError::Unknown { msg: e.to_string() })?;
+    fn get_storage(&self, key: &[u8]) -> Result<&RefCell<Box<dyn Storage>>, BackendError> {
+        let key_str = std::str::from_utf8(key)
+            .map_err(|e| BackendError::Unknown { msg: format!("Invalid UTF-8 sequence: {}", e) })?;
         
-        let prefix = object_id.parent()
-            .unwrap_or_else(|| ObjectID::root());
+        let parts: Vec<&str> = key_str.split('/').collect();
+        if parts.len() < 2 {
+            return Err(BackendError::Unknown { msg: "Invalid key format".to_string() });
+        }
 
-        self.storages.get(&prefix)
+        let object_id = ObjectID::from_hex_literal(parts[1])
+            .map_err(|e| BackendError::Unknown { msg: e.to_string() })?;
+
+        self.storages.get(&object_id)
             .ok_or_else(|| BackendError::Unknown {
-                msg: format!("No storage found for prefix: {:?}", prefix),
+                msg: format!("No storage found for object ID: {:?}", object_id),
             })
-            .map(|boxed_storage| boxed_storage.as_ref())
     }
 }
 
 impl Storage for ProxyStorage {
     fn get(&self, key: &[u8]) -> BackendResult<Option<Vec<u8>>> {
         match self.get_storage(key) {
-            Ok(storage) => storage.get(key),
+            Ok(storage) => storage.borrow().get(key),
             Err(e) => (Err(e), GasInfo::new(0, 0)),
         }
     }
@@ -49,9 +54,7 @@ impl Storage for ProxyStorage {
     fn set(&mut self, key: &[u8], value: &[u8]) -> BackendResult<()> {
         match self.get_storage(key) {
             Ok(storage) => {
-                // We need to use as_mut() here because we're mutating the storage
-                let storage = unsafe { &mut *(storage as *const dyn Storage as *mut dyn Storage) };
-                storage.set(key, value)
+                storage.borrow_mut().set(key, value)
             },
             Err(e) => (Err(e), GasInfo::new(0, 0)),
         }
@@ -60,30 +63,33 @@ impl Storage for ProxyStorage {
     fn remove(&mut self, key: &[u8]) -> BackendResult<()> {
         match self.get_storage(key) {
             Ok(storage) => {
-                // We need to use as_mut() here because we're mutating the storage
-                let storage = unsafe { &mut *(storage as *const dyn Storage as *mut dyn Storage) };
-                storage.remove(key)
+                storage.borrow_mut().remove(key)
             },
             Err(e) => (Err(e), GasInfo::new(0, 0)),
         }
     }
 
     fn scan(&mut self, start: Option<&[u8]>, end: Option<&[u8]>, order: Order) -> BackendResult<u32> {
-        let start = start.ok_or_else(|| BackendError::Unknown {
-            msg: "Scan without start key is not supported".to_string(),
-        })?;
-
+        let start = match start {
+            Some(s) => s,
+            None => return (
+                Err(BackendError::Unknown {
+                    msg: "Scan without start key is not supported".to_string(),
+                }),
+                GasInfo::new(0, 0)
+            ),
+        };
+    
         match self.get_storage(start) {
             Ok(storage) => {
-                // We need to use as_mut() here because we're mutating the storage
-                let storage = unsafe { &mut *(storage as *const dyn Storage as *mut dyn Storage) };
-                storage.scan(Some(start), end, order)
+                // 使用 RefCell 的 borrow_mut 方法来获取可变引用
+                storage.borrow_mut().scan(Some(start), end, order)
             },
             Err(e) => (Err(e), GasInfo::new(0, 0)),
         }
     }
-
-    fn next(&mut self, iterator_id: u32) -> BackendResult<Option<Record>> {
+  
+    fn next(&mut self, _iterator_id: u32) -> BackendResult<Option<Record>> {
         (Err(BackendError::Unknown {
             msg: "ProxyStorage does not support iterators directly".to_string(),
         }), GasInfo::new(0, 0))
@@ -94,7 +100,7 @@ impl Storage for ProxyStorage {
 mod tests {
     use super::*;
     use std::collections::HashMap;
-
+    
     struct MockStorage {
         data: HashMap<Vec<u8>, Vec<u8>>,
     }
@@ -122,7 +128,7 @@ mod tests {
             (Ok(()), GasInfo::new(1, 0))
         }
 
-        fn scan(&mut self, start: Option<&[u8]>, end: Option<&[u8]>, order: Order) -> BackendResult<u32> {
+        fn scan(&mut self, _start: Option<&[u8]>, _end: Option<&[u8]>, _order: Order) -> BackendResult<u32> {
             (Ok(0), GasInfo::new(1, 0))
         }
 
@@ -135,13 +141,13 @@ mod tests {
     fn test_register_and_get() {
         let mut proxy = ProxyStorage::new();
         let obj_id = ObjectID::random();
-        let key = obj_id.to_hex();
+        let key = format!("/{}/key", obj_id.to_hex());
         let value = b"test_value".to_vec();
 
         let mut storage = Box::new(MockStorage::new());
         storage.set(key.as_bytes(), &value).0.unwrap();
 
-        proxy.register(obj_id.parent().unwrap_or_else(|| ObjectID::root()), storage);
+        proxy.register(obj_id, storage);
 
         let (result, _) = proxy.get(key.as_bytes());
         assert_eq!(result.unwrap(), Some(value));
@@ -161,10 +167,10 @@ mod tests {
     fn test_set_and_remove() {
         let mut proxy = ProxyStorage::new();
         let obj_id = ObjectID::random();
-        let key = obj_id.to_hex();
+        let key = format!("/{}/key", obj_id.to_hex());
         let value = b"test_value".to_vec();
 
-        proxy.register(obj_id.parent().unwrap_or_else(|| ObjectID::root()), Box::new(MockStorage::new()));
+        proxy.register(obj_id, Box::new(MockStorage::new()));
 
         proxy.set(key.as_bytes(), &value).0.unwrap();
         let (get_result, _) = proxy.get(key.as_bytes());
@@ -198,14 +204,15 @@ mod tests {
     fn test_scan() {
         let mut proxy = ProxyStorage::new();
         let obj_id = ObjectID::random();
-        let start_key = obj_id.child_id(FieldKey::new([0; 32])).to_hex();
-        let end_key = obj_id.child_id(FieldKey::new([255; 32])).to_hex();
+        let start_key = format!("/{}/start", obj_id.to_hex());
+        let end_key = format!("/{}/end", obj_id.to_hex());
 
         proxy.register(obj_id, Box::new(MockStorage::new()));
 
         let (result, _) = proxy.scan(Some(start_key.as_bytes()), Some(end_key.as_bytes()), Order::Ascending);
         assert!(result.is_ok());
     }
+
 
     #[test]
     fn test_next() {
