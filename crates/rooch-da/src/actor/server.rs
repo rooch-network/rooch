@@ -243,8 +243,8 @@ impl DAServerActor {
                 .into_iter()
                 .zip(tx_hashes)
                 .map(|(tx_order, tx_hash)| {
-                    let tx_hash =
-                        tx_hash.expect(&format!("fail to get tx hash by tx_order: {}", tx_order));
+                    let tx_hash = tx_hash
+                        .unwrap_or_else(|| panic!("fail to get tx hash by tx_order: {}", tx_order));
                     (tx_order, tx_hash)
                 })
                 .collect();
