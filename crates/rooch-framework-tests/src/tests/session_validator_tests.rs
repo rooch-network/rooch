@@ -65,6 +65,8 @@ async fn test_session_key_rooch() {
     let tx = keystore
         .sign_transaction_via_session_key(&sender, tx_data, &session_auth_key, None)
         .unwrap();
+    println!("tx hash: {:?}", hex::encode(tx.clone().tx_hash().0));
+    println!("authenticator payload: {:?}", hex::encode(tx.clone().authenticator.payload));
 
     binding_test.execute(tx).unwrap();
 
