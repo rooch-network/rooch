@@ -239,18 +239,23 @@ impl DAServerActor {
             // collect tx from start to end for rooch_store
             let tx_orders: Vec<u64> = (tx_order_start..=tx_order_end).collect();
             let tx_hashes = self.rooch_store.get_tx_hashes(tx_orders.clone())?;
-            let tx_hashes: Vec<H256> = tx_hashes
+            let tx_order_hash_pairs: Vec<(u64, H256)> = tx_orders
                 .into_iter()
-                .map(|tx_hash| tx_hash.unwrap())
+                .zip(tx_hashes)
+                .map(|(tx_order, tx_hash)| {
+                    let tx_hash =
+                        tx_hash.expect(&format!("fail to get tx hash by tx_order: {}", tx_order));
+                    (tx_order, tx_hash)
+                })
                 .collect();
             let mut tx_list: Vec<LedgerTransaction> = Vec::new();
-            for (tx_order, tx_hash) in tx_orders.into_iter().zip(tx_hashes) {
+            for (tx_order, tx_hash) in tx_order_hash_pairs {
                 let tx = self
                     .rooch_store
                     .get_transaction_by_hash(tx_hash)?
                     .ok_or_else(|| {
                         anyhow!(
-                            "fail to get transaction by hash: {:?} in order: {}",
+                            "fail to get transaction by tx_hash: {:?}, tx_order: {}",
                             tx_hash,
                             tx_order
                         )
