@@ -22,7 +22,6 @@ module bitcoin_move::bbn {
     use bitcoin_move::types::{
         Transaction,
         txout_value,
-        tx_lock_time,
         txout_script_pubkey,
         TxOut
     };
@@ -398,6 +397,11 @@ module bitcoin_move::bbn {
         let seal_protocol = type_info::type_name<BBNStakeSeal>();
 
         let txout_value = txout_value(staking_output);
+
+        if(txout_value < param.min_staking_amount || txout_value > param.max_staking_amount){
+            return err_str(b"Invalid staking amount")
+        };
+
         let out_point = types::new_outpoint(txid, staking_output_idx);
         let utxo_obj = utxo::borrow_mut_utxo(out_point);
         let utxo = object::borrow_mut(utxo_obj);

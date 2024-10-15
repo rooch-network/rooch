@@ -40,7 +40,7 @@ use std::{
     path::{Path, PathBuf},
     vec,
 };
-use tracing::{debug, error, info, trace, warn};
+use tracing::{debug, error, info, trace};
 
 #[derive(Debug)]
 struct ExecutedBlockData {
@@ -492,44 +492,31 @@ impl BitcoinBlockTester {
         for event in &bbn_staking_failed_events {
             debug!("Staking failed event: {:?}", event);
             let txid = event.txid.into_address();
-            if bbn_staking_txs.contains_key(&txid) {
-                warn!(
-                    "Staking failed txid {:?} in event but also in staking txs from bbn indexer",
-                    txid
-                );
-            }
-            // ensure!(
-            //     "Staking failed txid {:?} in event but also in staking txs from bbn indexer",
-            //     txid,
-            // );
+            ensure!(
+                !bbn_staking_txs.contains_key(&txid),
+                "Staking failed txid {:?} in event but also in staking txs from bbn indexer",
+                txid,
+            );
         }
 
         for (txid, _tx) in bbn_staking_txs.iter() {
             let event = bbn_staking_events.iter().find(|event| event.txid == *txid);
-            // ensure!(
-            //     event.is_some(),
-            //     "Staking txid {:?} in staking txs from bbn indexer but not in event",
-            //     txid,
-            // );
-            if event.is_none() {
-                warn!(
-                    "Staking txid {:?} in staking txs from bbn indexer but not in event",
-                    txid
-                );
-            }
+            ensure!(
+                event.is_some(),
+                "Staking txid {:?} in staking txs from bbn indexer but not in event",
+                txid,
+            );
         }
 
         for event in bbn_staking_events {
             let stake_object_id = event.stake_object_id;
             let txid = event.txid;
             let bbn_staking_tx = bbn_staking_txs.get(&txid);
-            if bbn_staking_tx.is_none() {
-                warn!(
-                    "Staking txid {:?} in event but not in staking txs from bbn indexer",
-                    txid
-                );
-                continue;
-            }
+            ensure!(
+                bbn_staking_tx.is_some(),
+                "Missing staking tx: {:?} in staking txs from bbn indexer",
+                txid
+            );
 
             let bbn_staking_tx = bbn_staking_tx.unwrap();
 
