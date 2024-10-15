@@ -45,11 +45,10 @@ impl RevertCommand {
             .rooch_store
             .transaction_store
             .get_tx_hashes(vec![tx_order])?;
-
         // check tx hash exist via tx_order
         if tx_hashes.is_empty() || tx_hashes[0].is_none() {
             return Err(RoochError::from(Error::msg(format!(
-                "revert tx failed: tx_hash not found for tx_order {:?}. database is inconsistent",
+                "revert tx failed: tx_hash not found for tx_order {:?}",
                 tx_order
             ))));
         }
