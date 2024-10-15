@@ -239,15 +239,8 @@ impl DAServerActor {
             // collect tx from start to end for rooch_store
             let tx_orders: Vec<u64> = (tx_order_start..=tx_order_end).collect();
             let tx_hashes = self.rooch_store.get_tx_hashes(tx_orders.clone())?;
-            let tx_order_hash_pairs: Vec<(u64, H256)> = tx_orders
-                .into_iter()
-                .zip(tx_hashes)
-                .map(|(tx_order, tx_hash)| {
-                    let tx_hash = tx_hash
-                        .unwrap_or_else(|| panic!("fail to get tx hash by tx_order: {}", tx_order));
-                    (tx_order, tx_hash)
-                })
-                .collect();
+            let tx_order_hash_pairs = pair_tx_order_hash(tx_orders, tx_hashes)?;
+
             let mut tx_list: Vec<LedgerTransaction> = Vec::new();
             for (tx_order, tx_hash) in tx_order_hash_pairs {
                 let tx = self
@@ -284,6 +277,24 @@ impl DAServerActor {
     }
 }
 
+fn pair_tx_order_hash(
+    tx_orders: Vec<u64>,
+    tx_hashes: Vec<Option<H256>>,
+) -> anyhow::Result<Vec<(u64, H256)>> {
+    if tx_orders.len() != tx_hashes.len() {
+        return Err(anyhow!("tx_orders and tx_hashes must have the same length"));
+    }
+    tx_orders
+        .into_iter()
+        .zip(tx_hashes)
+        .map(|(tx_order, tx_hash)| {
+            let tx_hash =
+                tx_hash.ok_or_else(|| anyhow!("fail to get tx hash by tx_order: {}", tx_order))?;
+            Ok((tx_order, tx_hash))
+        })
+        .collect::<anyhow::Result<Vec<(u64, H256)>>>()
+}
+
 #[async_trait]
 impl Handler<PutDABatchMessage> for DAServerActor {
     async fn handle(
@@ -292,5 +303,33 @@ impl Handler<PutDABatchMessage> for DAServerActor {
         _ctx: &mut ActorContext,
     ) -> anyhow::Result<SignedDABatchMeta> {
         self.submit_batch(msg).await
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::actor::server::pair_tx_order_hash;
+    use moveos_types::h256::H256;
+
+    #[test]
+    fn pair_tx_order_hash_failed() {
+        let tx_orders = vec![1, 2, 3];
+        let tx_hashes = vec![Some(H256::from([1; 32])), None, Some(H256::from([3; 32]))];
+        let ret = pair_tx_order_hash(tx_orders.clone(), tx_hashes);
+        assert!(ret.is_err());
+
+        let tx_hashes = vec![Some(H256::from([1; 32])), Some(H256::from([3; 32]))];
+        let ret = pair_tx_order_hash(tx_orders.clone(), tx_hashes);
+        assert!(ret.is_err());
+
+        let tx_hashes = vec![
+            Some(H256::from([1; 32])),
+            Some(H256::from([2; 32])),
+            Some(H256::from([3; 32])),
+        ];
+        let ret = pair_tx_order_hash(tx_orders.clone(), tx_hashes);
+        assert!(ret.is_ok());
+        let tx_order_hash_pairs = ret.unwrap();
+        assert_eq!(tx_order_hash_pairs.len(), 3);
     }
 }
