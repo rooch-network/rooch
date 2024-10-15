@@ -1,11 +1,11 @@
 ## Rooch DB tool
 
-A tool to repair DB data.
+Toolkits for RoochDB.
 
 ### Usage
 
-1. Revert tx when only write TransactionSequenceInfo succ:
+1. Revert tx by tx_order(> 0):
 
 ```shell
-rooch db revert-tx  --tx-order {tx_order}   -d {data_dir} -n {network}
+rooch db revert-tx --tx-order {tx_order} -d {data_dir} -n {network}
 ```

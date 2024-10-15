@@ -29,9 +29,7 @@ use rooch_framework::natives::gas_parameter::gas_member::{
 };
 use rooch_framework::ROOCH_FRAMEWORK_ADDRESS;
 use rooch_indexer::store::traits::IndexerStoreTrait;
-use rooch_store::meta_store::MetaStore;
 use rooch_store::state_store::StateStore;
-use rooch_store::transaction_store::TransactionStore;
 use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
 use rooch_types::error::GenesisError;
 use rooch_types::framework::chain_id::ChainID;
@@ -436,8 +434,9 @@ impl RoochGenesis {
             genesis_tx_accmulator_info.clone(),
         );
         let sequencer_info = SequencerInfo::new(genesis_tx_order, genesis_tx_accmulator_info);
-        rooch_db.rooch_store.save_sequencer_info(sequencer_info)?;
-        rooch_db.rooch_store.save_transaction(ledger_tx.clone())?;
+        rooch_db
+            .rooch_store
+            .save_last_transaction_with_sequence_info(ledger_tx.clone(), sequencer_info)?;
 
         // Save genesis tx state change set
         let state_change_set_ext = StateChangeSetExt::new(

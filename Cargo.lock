@@ -9619,7 +9619,10 @@ dependencies = [
 name = "rooch-db"
 version = "0.7.4"
 dependencies = [
+ "accumulator",
  "anyhow",
+ "log",
+ "moveos-common",
  "moveos-store",
  "moveos-types",
  "prometheus",

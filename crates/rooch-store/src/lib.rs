@@ -73,7 +73,7 @@ impl StoreMeta {
 
 #[derive(Clone)]
 pub struct RoochStore {
-    store_instance: StoreInstance,
+    pub store_instance: StoreInstance,
     pub transaction_store: TransactionDBStore,
     pub meta_store: MetaDBStore,
     pub transaction_accumulator_store: AccumulatorStore<TransactionAccumulatorStore>,
@@ -188,10 +188,6 @@ impl Debug for RoochStore {
 }
 
 impl TransactionStore for RoochStore {
-    fn save_transaction(&self, tx: LedgerTransaction) -> Result<()> {
-        self.transaction_store.save_transaction(tx)
-    }
-
     fn remove_transaction(&self, tx_hash: H256, tx_order: u64) -> Result<()> {
         self.transaction_store.remove_transaction(tx_hash, tx_order)
     }

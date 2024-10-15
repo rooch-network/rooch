@@ -34,17 +34,21 @@ pub struct RevertCommand {
 impl RevertCommand {
     pub async fn execute(self) -> RoochResult<()> {
         let tx_order = self.tx_order;
+        if tx_order == 0 {
+            return Err(RoochError::from(Error::msg(
+                "tx order should be greater than 0",
+            )));
+        }
         let (_root, rooch_db, _start_time) = init(self.base_data_dir, self.chain_id);
 
         let tx_hashes = rooch_db
             .rooch_store
             .transaction_store
             .get_tx_hashes(vec![tx_order])?;
-
         // check tx hash exist via tx_order
         if tx_hashes.is_empty() || tx_hashes[0].is_none() {
             return Err(RoochError::from(Error::msg(format!(
-                "tx hash not exist via tx order {}",
+                "revert tx failed: tx_hash not found for tx_order {:?}",
                 tx_order
             ))));
         }
