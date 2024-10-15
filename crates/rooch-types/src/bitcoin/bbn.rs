@@ -94,7 +94,7 @@ pub static BBN_GLOBAL_PARAM_BBN1: Lazy<BBNGlobalParamV1> = Lazy::new(|| BBNGloba
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BBNGlobalParams {
-    pub bbn_global_param: Vec<BBNGlobalParamV1>,
+    pub max_version: u64,
 }
 
 impl MoveStructType for BBNGlobalParams {
@@ -105,19 +105,11 @@ impl MoveStructType for BBNGlobalParams {
 
 impl MoveStructState for BBNGlobalParams {
     fn struct_layout() -> MoveStructLayout {
-        MoveStructLayout::new(vec![MoveTypeLayout::Vector(Box::new(
-            BBNGlobalParamV1::type_layout(),
-        ))])
+        MoveStructLayout::new(vec![MoveTypeLayout::U64])
     }
 }
 
 impl BBNGlobalParams {
-    pub fn get_global_param(&self, version: u64) -> Option<&BBNGlobalParamV1> {
-        self.bbn_global_param
-            .iter()
-            .find(|param| param.version == version)
-    }
-
     pub fn object_id() -> ObjectID {
         object::named_object_id(&Self::struct_tag())
     }
