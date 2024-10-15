@@ -73,7 +73,7 @@ impl StoreMeta {
 
 #[derive(Clone)]
 pub struct RoochStore {
-    store_instance: StoreInstance,
+    pub store_instance: StoreInstance,
     pub transaction_store: TransactionDBStore,
     pub meta_store: MetaDBStore,
     pub transaction_accumulator_store: AccumulatorStore<TransactionAccumulatorStore>,

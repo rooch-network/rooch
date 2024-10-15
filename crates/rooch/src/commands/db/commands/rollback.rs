@@ -101,19 +101,19 @@ impl RollbackCommand {
 
         let execution_info = execution_info.unwrap();
         let start_order = tx_order + 1;
-        for order in (start_order..=last_order).rev() {
+        for tx_order_i in (start_order..=last_order).rev() {
             let tx_hashes = rooch_db
                 .rooch_store
                 .transaction_store
-                .get_tx_hashes(vec![order])?;
+                .get_tx_hashes(vec![tx_order_i])?;
             if tx_hashes.is_empty() || tx_hashes[0].is_none() {
                 return Err(RoochError::from(Error::msg(format!(
                     "tx hash not exist via tx order {}",
-                    order
+                    tx_order_i
                 ))));
             }
             let tx_hash = tx_hashes[0].unwrap();
-            rooch_db.do_revert_tx_ignore_check(tx_hash)?;
+            rooch_db.revert_tx_unsafe(tx_order_i, tx_hash)?;
         }
 
         let rollback_sequencer_info = SequencerInfo {
@@ -123,7 +123,7 @@ impl RollbackCommand {
         rooch_db
             .rooch_store
             .meta_store
-            .save_sequencer_info_ignore_check(rollback_sequencer_info)?;
+            .save_sequencer_info_unsafe(rollback_sequencer_info)?;
         let startup_info =
             startup_info::StartupInfo::new(execution_info.state_root, execution_info.size);
 
