@@ -29,7 +29,12 @@ struct TestBuilderOpts {
     pub btc_rpc_password: String,
 
     #[clap(long, id = "ord-events-dir")]
-    pub ord_events_dir: PathBuf,
+    pub ord_events_dir: Option<PathBuf>,
+
+    /// The csv file of bbn staking tx
+    /// Export the csv file via https://github.com/babylonlabs-io/staking-indexer
+    #[clap(long, id = "bbn-staking-tx-csv")]
+    pub bbn_staking_tx_csv: Option<PathBuf>,
 
     /// Block heights to execute
     #[clap(long, id = "blocks")]
@@ -50,7 +55,11 @@ async fn main() -> Result<()> {
         .into_actor(Some("bitcoin_client_for_rpc_service"), &actor_system)
         .await?;
     let bitcoin_client_proxy = BitcoinClientProxy::new(bitcoin_client_actor_ref.into());
-    let mut builder = TesterGenesisBuilder::new(bitcoin_client_proxy, opts.ord_events_dir)?;
+    let mut builder = TesterGenesisBuilder::new(
+        bitcoin_client_proxy,
+        opts.ord_events_dir,
+        opts.bbn_staking_tx_csv,
+    )?;
     let mut blocks = opts.blocks;
     blocks.sort();
     for block in blocks {

@@ -30,6 +30,7 @@ use moveos_types::{
 };
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
+use std::fmt;
 use std::str::FromStr;
 
 pub const MODULE_NAME: &IdentStr = ident_str!("bbn");
@@ -65,10 +66,9 @@ pub const V0_OP_RETURN_DATA_SIZE: usize = 71;
 //     "min_staking_time": 64000,
 //     "confirmation_depth": 10
 // }
-pub static BBN_GLOBAL_PARAM_BBN1: Lazy<BBNGlobalParam> = Lazy::new(|| BBNGlobalParam {
+pub static BBN_GLOBAL_PARAM_BBN1: Lazy<BBNGlobalParamV1> = Lazy::new(|| BBNGlobalParamV1 {
     version: 1,
     activation_height: 864790,
-    staking_cap: 0,
     cap_height: 864799,
     tag: hex::decode("62626e31").unwrap(),
     covenant_pks: vec![
@@ -94,7 +94,7 @@ pub static BBN_GLOBAL_PARAM_BBN1: Lazy<BBNGlobalParam> = Lazy::new(|| BBNGlobalP
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BBNGlobalParams {
-    pub bbn_global_param: Vec<BBNGlobalParam>,
+    pub max_version: u64,
 }
 
 impl MoveStructType for BBNGlobalParams {
@@ -105,29 +105,20 @@ impl MoveStructType for BBNGlobalParams {
 
 impl MoveStructState for BBNGlobalParams {
     fn struct_layout() -> MoveStructLayout {
-        MoveStructLayout::new(vec![MoveTypeLayout::Vector(Box::new(
-            BBNGlobalParam::type_layout(),
-        ))])
+        MoveStructLayout::new(vec![MoveTypeLayout::U64])
     }
 }
 
 impl BBNGlobalParams {
-    pub fn get_global_param(&self, version: u64) -> Option<&BBNGlobalParam> {
-        self.bbn_global_param
-            .iter()
-            .find(|param| param.version == version)
-    }
-
     pub fn object_id() -> ObjectID {
         object::named_object_id(&Self::struct_tag())
     }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct BBNGlobalParam {
+pub struct BBNGlobalParamV1 {
     pub version: u64,
     pub activation_height: u64,
-    pub staking_cap: u64,
     pub cap_height: u64,
     pub tag: Vec<u8>,
     pub covenant_pks: Vec<Vec<u8>>,
@@ -141,13 +132,13 @@ pub struct BBNGlobalParam {
     pub confirmation_depth: u16,
 }
 
-impl MoveStructType for BBNGlobalParam {
+impl MoveStructType for BBNGlobalParamV1 {
     const MODULE_NAME: &'static IdentStr = MODULE_NAME;
-    const STRUCT_NAME: &'static IdentStr = ident_str!("BBNGlobalParam");
+    const STRUCT_NAME: &'static IdentStr = ident_str!("BBNGlobalParamV1");
     const ADDRESS: AccountAddress = BITCOIN_MOVE_ADDRESS;
 }
 
-impl MoveStructState for BBNGlobalParam {
+impl MoveStructState for BBNGlobalParamV1 {
     fn struct_layout() -> MoveStructLayout {
         MoveStructLayout::new(vec![
             MoveTypeLayout::U64,
@@ -170,7 +161,7 @@ impl MoveStructState for BBNGlobalParam {
     }
 }
 
-impl BBNGlobalParam {
+impl BBNGlobalParamV1 {
     pub fn get_covenant_pks(&self) -> Vec<XOnlyPublicKey> {
         self.covenant_pks
             .iter()
@@ -186,14 +177,14 @@ pub struct BBNStakeSeal {
     /// The stake transaction hash
     pub txid: AccountAddress,
     /// The stake utxo output index
-    pub vout: u32,
+    pub staking_output_index: u32,
     pub tag: Vec<u8>,
     pub staker_pub_key: Vec<u8>,
     pub finality_provider_pub_key: Vec<u8>,
     /// The stake time in block count
     pub staking_time: u16,
-    /// The stake amount in satoshi
-    pub staking_amount: u64,
+    /// The stake value amount in satoshi
+    pub staking_value: u64,
 }
 
 impl MoveStructType for BBNStakeSeal {
@@ -217,13 +208,28 @@ impl MoveStructState for BBNStakeSeal {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct BBNV0OpReturnData {
     pub tag: Vec<u8>,
     pub version: u8,
     pub staker_pub_key: Vec<u8>,
     pub finality_provider_pub_key: Vec<u8>,
     pub staking_time: u16,
+}
+
+impl fmt::Debug for BBNV0OpReturnData {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("BBNV0OpReturnData")
+            .field("tag", &hex::encode(&self.tag))
+            .field("version", &self.version)
+            .field("staker_pub_key", &hex::encode(&self.staker_pub_key))
+            .field(
+                "finality_provider_pub_key",
+                &hex::encode(&self.finality_provider_pub_key),
+            )
+            .field("staking_time", &self.staking_time)
+            .finish()
+    }
 }
 
 impl MoveStructType for BBNV0OpReturnData {
@@ -273,6 +279,53 @@ impl MoveStructType for BBNV0OpReturnOutput {
 impl MoveStructState for BBNV0OpReturnOutput {
     fn struct_layout() -> MoveStructLayout {
         MoveStructLayout::new(vec![MoveTypeLayout::U32, BBNV0OpReturnData::type_layout()])
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BBNStakingEvent {
+    pub block_height: u64,
+    pub txid: AccountAddress,
+    /// BBNStakeSeal object id
+    pub stake_object_id: ObjectID,
+}
+
+impl MoveStructType for BBNStakingEvent {
+    const MODULE_NAME: &'static IdentStr = MODULE_NAME;
+    const STRUCT_NAME: &'static IdentStr = ident_str!("BBNStakingEvent");
+    const ADDRESS: AccountAddress = BITCOIN_MOVE_ADDRESS;
+}
+
+impl MoveStructState for BBNStakingEvent {
+    fn struct_layout() -> MoveStructLayout {
+        MoveStructLayout::new(vec![
+            MoveTypeLayout::U64,
+            MoveTypeLayout::Address,
+            ObjectID::type_layout(),
+        ])
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BBNStakingFailedEvent {
+    pub block_height: u64,
+    pub txid: AccountAddress,
+    pub error: String,
+}
+
+impl MoveStructType for BBNStakingFailedEvent {
+    const MODULE_NAME: &'static IdentStr = MODULE_NAME;
+    const STRUCT_NAME: &'static IdentStr = ident_str!("BBNStakingFailedEvent");
+    const ADDRESS: AccountAddress = BITCOIN_MOVE_ADDRESS;
+}
+
+impl MoveStructState for BBNStakingFailedEvent {
+    fn struct_layout() -> MoveStructLayout {
+        MoveStructLayout::new(vec![
+            MoveTypeLayout::U64,
+            MoveTypeLayout::Address,
+            MoveTypeLayout::Vector(Box::new(MoveTypeLayout::U8)),
+        ])
     }
 }
 
@@ -362,7 +415,7 @@ impl<'a> BBNModule<'a> {
         Ok(is_bbn_tx)
     }
 
-    pub fn create_process_bbn_tx_entry_call(&self, txid: Txid) -> Result<FunctionCall> {
+    pub fn create_process_bbn_tx_entry_call(txid: Txid) -> Result<FunctionCall> {
         Ok(Self::create_function_call(
             Self::PROCESS_BBN_TX_ENTRY_FUNCTION_NAME,
             vec![],
@@ -395,6 +448,7 @@ const UNSPENDABLE_KEY_PATH: &str =
 static UNSPENDABLE_KEY_PATH_KEY: Lazy<XOnlyPublicKey> =
     Lazy::new(|| XOnlyPublicKey::from(PublicKey::from_str(UNSPENDABLE_KEY_PATH).unwrap()));
 
+#[derive(Debug, Clone)]
 pub struct BBNParsedV0StakingTx {
     pub staking_output: TxOut,
     pub staking_output_idx: u32,
@@ -773,7 +827,7 @@ fn parse_bbn_op_return_data(script: &Script) -> Result<BBNV0OpReturnData> {
     })
 }
 
-fn try_get_bbn_op_return_ouput(outputs: &[TxOut]) -> Option<BBNV0OpReturnOutput> {
+pub fn try_get_bbn_op_return_ouput(outputs: &[TxOut]) -> Option<BBNV0OpReturnOutput> {
     let mut result: Option<BBNV0OpReturnOutput> = None;
     for (vout, output) in outputs.iter().enumerate() {
         if output.script_pubkey.is_op_return() {
@@ -996,5 +1050,21 @@ mod tests {
             parsed_staking_tx.staking_output.value,
             Amount::from_sat(30000400000)
         );
+    }
+
+    //https://github.com/babylonlabs-io/staking-indexer/issues/26
+    #[test]
+    fn test_parse_tx2() {
+        //https://mempool.space/tx/2aeeddb97b138ea622d9194818fa2fa3d8432125032ac1aec32461ae91d80b78
+        let tx: Transaction = deserialize(&hex::decode("02000000000101a9f4558e50f0dcac3a624e806f38822bb5b83b02de946c2c2d5dac9b07843b99000000000046ffffff0284344c0000000000225120db09240cf52111e39179e50f5cf6c910a5478659ef94c29d668ebb9f469475450000000000000000496a4762626e3100d3d09d91bab234a9d21bf3c98092e82aec525caf67566edace08918408819689b3a838cbf2e61f2ecadf9f5924710e66dcf8212545884853073fe62c5ff5b949fa00014061a5eada8df8f5f3ce00f4389682530d268917f71631ad412a3d7c651342739033a868d4be039bb4dd0bc7c7ef5dada8c6a47171b07532a416fe2478be34303100000000").unwrap()).unwrap();
+        let params = BBN_GLOBAL_PARAM_BBN1.clone();
+        let expected_tag = &params.tag;
+        let covenant_keys = params.get_covenant_pks();
+        let covenant_quorum = params.covenant_quorum;
+        let _parsed_staking_tx =
+            BBNParsedV0StakingTx::parse_from_tx(&tx, expected_tag, &covenant_keys, covenant_quorum)
+                .unwrap();
+        // println!("tx lock time: {}", tx.lock_time);
+        // println!("parsed_staking_tx: {:?}", parsed_staking_tx);
     }
 }

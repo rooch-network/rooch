@@ -5,12 +5,15 @@
 
 
 
--  [Struct `BBNGlobalParam`](#0x4_bbn_BBNGlobalParam)
+-  [Struct `BBNGlobalParamV0`](#0x4_bbn_BBNGlobalParamV0)
+-  [Struct `BBNGlobalParamV1`](#0x4_bbn_BBNGlobalParamV1)
 -  [Resource `BBNGlobalParams`](#0x4_bbn_BBNGlobalParams)
 -  [Struct `BBNOpReturnOutput`](#0x4_bbn_BBNOpReturnOutput)
 -  [Struct `BBNV0OpReturnData`](#0x4_bbn_BBNV0OpReturnData)
 -  [Resource `BBNStakeSeal`](#0x4_bbn_BBNStakeSeal)
 -  [Struct `BBNScriptPaths`](#0x4_bbn_BBNScriptPaths)
+-  [Struct `BBNStakingEvent`](#0x4_bbn_BBNStakingEvent)
+-  [Struct `BBNStakingFailedEvent`](#0x4_bbn_BBNStakingFailedEvent)
 -  [Constants](#@Constants_0)
 -  [Function `genesis_init`](#0x4_bbn_genesis_init)
 -  [Function `init_for_upgrade`](#0x4_bbn_init_for_upgrade)
@@ -23,13 +26,13 @@
 -  [Function `remove_temp_state`](#0x4_bbn_remove_temp_state)
 -  [Function `block_height`](#0x4_bbn_block_height)
 -  [Function `txid`](#0x4_bbn_txid)
--  [Function `vout`](#0x4_bbn_vout)
+-  [Function `staking_output_index`](#0x4_bbn_staking_output_index)
 -  [Function `outpoint`](#0x4_bbn_outpoint)
 -  [Function `tag`](#0x4_bbn_tag)
 -  [Function `staker_pub_key`](#0x4_bbn_staker_pub_key)
 -  [Function `finality_provider_pub_key`](#0x4_bbn_finality_provider_pub_key)
 -  [Function `staking_time`](#0x4_bbn_staking_time)
--  [Function `staking_amount`](#0x4_bbn_staking_amount)
+-  [Function `staking_value`](#0x4_bbn_staking_value)
 -  [Function `is_expired`](#0x4_bbn_is_expired)
 
 
@@ -37,6 +40,7 @@
 <b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="">0x2::bcs</a>;
+<b>use</b> <a href="">0x2::event</a>;
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::result</a>;
 <b>use</b> <a href="">0x2::sort</a>;
@@ -53,13 +57,24 @@
 
 
 
-<a name="0x4_bbn_BBNGlobalParam"></a>
+<a name="0x4_bbn_BBNGlobalParamV0"></a>
 
-## Struct `BBNGlobalParam`
+## Struct `BBNGlobalParamV0`
 
 
 
-<pre><code><b>struct</b> <a href="bbn.md#0x4_bbn_BBNGlobalParam">BBNGlobalParam</a> <b>has</b> <b>copy</b>, drop, store
+<pre><code><b>struct</b> <a href="bbn.md#0x4_bbn_BBNGlobalParamV0">BBNGlobalParamV0</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
+<a name="0x4_bbn_BBNGlobalParamV1"></a>
+
+## Struct `BBNGlobalParamV1`
+
+
+
+<pre><code><b>struct</b> <a href="bbn.md#0x4_bbn_BBNGlobalParamV1">BBNGlobalParamV1</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -115,6 +130,28 @@
 
 
 <pre><code><b>struct</b> <a href="bbn.md#0x4_bbn_BBNScriptPaths">BBNScriptPaths</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
+<a name="0x4_bbn_BBNStakingEvent"></a>
+
+## Struct `BBNStakingEvent`
+
+
+
+<pre><code><b>struct</b> <a href="bbn.md#0x4_bbn_BBNStakingEvent">BBNStakingEvent</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
+<a name="0x4_bbn_BBNStakingFailedEvent"></a>
+
+## Struct `BBNStakingFailedEvent`
+
+
+
+<pre><code><b>struct</b> <a href="bbn.md#0x4_bbn_BBNStakingFailedEvent">BBNStakingFailedEvent</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -232,6 +269,15 @@
 
 
 
+<a name="0x4_bbn_ErrorOutBlockRange"></a>
+
+
+
+<pre><code><b>const</b> <a href="bbn.md#0x4_bbn_ErrorOutBlockRange">ErrorOutBlockRange</a>: u64 = 15;
+</code></pre>
+
+
+
 <a name="0x4_bbn_ErrorTransactionLockTime"></a>
 
 
@@ -294,6 +340,8 @@
 
 ## Function `is_possible_bbn_tx`
 
+Check if the transaction is a possible Babylon transaction
+If the transaction contains an OP_RETURN output with the correct tag, it is considered a possible Babylon transaction
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="bbn.md#0x4_bbn_is_possible_bbn_tx">is_possible_bbn_tx</a>(txid: <b>address</b>): bool
@@ -392,13 +440,13 @@
 
 
 
-<a name="0x4_bbn_vout"></a>
+<a name="0x4_bbn_staking_output_index"></a>
 
-## Function `vout`
+## Function `staking_output_index`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bbn.md#0x4_bbn_vout">vout</a>(stake: &<a href="bbn.md#0x4_bbn_BBNStakeSeal">bbn::BBNStakeSeal</a>): u32
+<pre><code><b>public</b> <b>fun</b> <a href="bbn.md#0x4_bbn_staking_output_index">staking_output_index</a>(stake: &<a href="bbn.md#0x4_bbn_BBNStakeSeal">bbn::BBNStakeSeal</a>): u32
 </code></pre>
 
 
@@ -458,13 +506,13 @@
 
 
 
-<a name="0x4_bbn_staking_amount"></a>
+<a name="0x4_bbn_staking_value"></a>
 
-## Function `staking_amount`
+## Function `staking_value`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bbn.md#0x4_bbn_staking_amount">staking_amount</a>(stake: &<a href="bbn.md#0x4_bbn_BBNStakeSeal">bbn::BBNStakeSeal</a>): u64
+<pre><code><b>public</b> <b>fun</b> <a href="bbn.md#0x4_bbn_staking_value">staking_value</a>(stake: &<a href="bbn.md#0x4_bbn_BBNStakeSeal">bbn::BBNStakeSeal</a>): u64
 </code></pre>
 
 
