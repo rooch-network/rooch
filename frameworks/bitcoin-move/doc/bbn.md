@@ -5,7 +5,8 @@
 
 
 
--  [Struct `BBNGlobalParam`](#0x4_bbn_BBNGlobalParam)
+-  [Struct `BBNGlobalParamV0`](#0x4_bbn_BBNGlobalParamV0)
+-  [Struct `BBNGlobalParamV1`](#0x4_bbn_BBNGlobalParamV1)
 -  [Resource `BBNGlobalParams`](#0x4_bbn_BBNGlobalParams)
 -  [Struct `BBNOpReturnOutput`](#0x4_bbn_BBNOpReturnOutput)
 -  [Struct `BBNV0OpReturnData`](#0x4_bbn_BBNV0OpReturnData)
@@ -56,13 +57,24 @@
 
 
 
-<a name="0x4_bbn_BBNGlobalParam"></a>
+<a name="0x4_bbn_BBNGlobalParamV0"></a>
 
-## Struct `BBNGlobalParam`
+## Struct `BBNGlobalParamV0`
 
 
 
-<pre><code><b>struct</b> <a href="bbn.md#0x4_bbn_BBNGlobalParam">BBNGlobalParam</a> <b>has</b> <b>copy</b>, drop, store
+<pre><code><b>struct</b> <a href="bbn.md#0x4_bbn_BBNGlobalParamV0">BBNGlobalParamV0</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
+<a name="0x4_bbn_BBNGlobalParamV1"></a>
+
+## Struct `BBNGlobalParamV1`
+
+
+
+<pre><code><b>struct</b> <a href="bbn.md#0x4_bbn_BBNGlobalParamV1">BBNGlobalParamV1</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -253,6 +265,15 @@
 
 
 <pre><code><b>const</b> <a href="bbn.md#0x4_bbn_ErrorNotBabylonTx">ErrorNotBabylonTx</a>: u64 = 8;
+</code></pre>
+
+
+
+<a name="0x4_bbn_ErrorOutBlockRange"></a>
+
+
+
+<pre><code><b>const</b> <a href="bbn.md#0x4_bbn_ErrorOutBlockRange">ErrorOutBlockRange</a>: u64 = 15;
 </code></pre>
 
 

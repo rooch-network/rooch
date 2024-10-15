@@ -66,10 +66,9 @@ pub const V0_OP_RETURN_DATA_SIZE: usize = 71;
 //     "min_staking_time": 64000,
 //     "confirmation_depth": 10
 // }
-pub static BBN_GLOBAL_PARAM_BBN1: Lazy<BBNGlobalParam> = Lazy::new(|| BBNGlobalParam {
+pub static BBN_GLOBAL_PARAM_BBN1: Lazy<BBNGlobalParamV1> = Lazy::new(|| BBNGlobalParamV1 {
     version: 1,
     activation_height: 864790,
-    staking_cap: 0,
     cap_height: 864799,
     tag: hex::decode("62626e31").unwrap(),
     covenant_pks: vec![
@@ -95,7 +94,7 @@ pub static BBN_GLOBAL_PARAM_BBN1: Lazy<BBNGlobalParam> = Lazy::new(|| BBNGlobalP
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BBNGlobalParams {
-    pub bbn_global_param: Vec<BBNGlobalParam>,
+    pub bbn_global_param: Vec<BBNGlobalParamV1>,
 }
 
 impl MoveStructType for BBNGlobalParams {
@@ -107,13 +106,13 @@ impl MoveStructType for BBNGlobalParams {
 impl MoveStructState for BBNGlobalParams {
     fn struct_layout() -> MoveStructLayout {
         MoveStructLayout::new(vec![MoveTypeLayout::Vector(Box::new(
-            BBNGlobalParam::type_layout(),
+            BBNGlobalParamV1::type_layout(),
         ))])
     }
 }
 
 impl BBNGlobalParams {
-    pub fn get_global_param(&self, version: u64) -> Option<&BBNGlobalParam> {
+    pub fn get_global_param(&self, version: u64) -> Option<&BBNGlobalParamV1> {
         self.bbn_global_param
             .iter()
             .find(|param| param.version == version)
@@ -125,10 +124,9 @@ impl BBNGlobalParams {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct BBNGlobalParam {
+pub struct BBNGlobalParamV1 {
     pub version: u64,
     pub activation_height: u64,
-    pub staking_cap: u64,
     pub cap_height: u64,
     pub tag: Vec<u8>,
     pub covenant_pks: Vec<Vec<u8>>,
@@ -142,13 +140,13 @@ pub struct BBNGlobalParam {
     pub confirmation_depth: u16,
 }
 
-impl MoveStructType for BBNGlobalParam {
+impl MoveStructType for BBNGlobalParamV1 {
     const MODULE_NAME: &'static IdentStr = MODULE_NAME;
-    const STRUCT_NAME: &'static IdentStr = ident_str!("BBNGlobalParam");
+    const STRUCT_NAME: &'static IdentStr = ident_str!("BBNGlobalParamV1");
     const ADDRESS: AccountAddress = BITCOIN_MOVE_ADDRESS;
 }
 
-impl MoveStructState for BBNGlobalParam {
+impl MoveStructState for BBNGlobalParamV1 {
     fn struct_layout() -> MoveStructLayout {
         MoveStructLayout::new(vec![
             MoveTypeLayout::U64,
@@ -171,7 +169,7 @@ impl MoveStructState for BBNGlobalParam {
     }
 }
 
-impl BBNGlobalParam {
+impl BBNGlobalParamV1 {
     pub fn get_covenant_pks(&self) -> Vec<XOnlyPublicKey> {
         self.covenant_pks
             .iter()

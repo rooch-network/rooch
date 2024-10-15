@@ -52,12 +52,28 @@ module bitcoin_move::bbn {
     const ErrorFailedToFinalizeTaproot: u64 = 12;
     const ErrorUTXOAlreadySealed: u64 = 13;
     const ErrorNoBabylonStakingOutput: u64 = 14;
+    const ErrorOutBlockRange: u64 = 15;
 
     //https://github.com/babylonlabs-io/networks/blob/28651b301bb2efa0542b2268793948bcda472a56/parameters/parser/ParamsParser.go#L117
-    struct BBNGlobalParam has copy, drop, store {
+    struct BBNGlobalParamV0 has copy, drop, store {
         version: u64,
         activation_height: u64,
         staking_cap: u64,
+        tag: vector<u8>,
+        covenant_pks: vector<vector<u8>>,
+        covenant_quorum: u32,
+        unbonding_time: u16,
+        unbonding_fee: u64,
+        max_staking_amount: u64,
+        min_staking_amount: u64,
+        min_staking_time: u16,
+        max_staking_time: u16,
+        confirmation_depth: u16
+    }
+
+    struct BBNGlobalParamV1 has copy, drop, store {
+        version: u64,
+        activation_height: u64,
         cap_height: u64,
         tag: vector<u8>,
         covenant_pks: vector<vector<u8>>,
@@ -72,7 +88,7 @@ module bitcoin_move::bbn {
     }
 
     struct BBNGlobalParams has key {
-        bbn_global_param: vector<BBNGlobalParam>
+        max_version: u64,
     }
 
     struct BBNOpReturnOutput has copy, store, drop {
@@ -125,36 +141,92 @@ module bitcoin_move::bbn {
 
     //https://github.com/babylonlabs-io/networks/blob/main/bbn-1/parameters/global-params.json
     // {
-    //     "version": 1,
-    //     "activation_height": 864790,
-    //     "cap_height": 864799,
-    //     "tag": "62626e31",
-    //     "covenant_pks": [
-    //         "03d45c70d28f169e1f0c7f4a78e2bc73497afe585b70aa897955989068f3350aaa",
-    //         "034b15848e495a3a62283daaadb3f458a00859fe48e321f0121ebabbdd6698f9fa",
-    //         "0223b29f89b45f4af41588dcaf0ca572ada32872a88224f311373917f1b37d08d1",
-    //         "02d3c79b99ac4d265c2f97ac11e3232c07a598b020cf56c6f055472c893c0967ae",
-    //         "038242640732773249312c47ca7bdb50ca79f15f2ecc32b9c83ceebba44fb74df7",
-    //         "03e36200aaa8dce9453567bba108bdc51f7f1174b97a65e4dc4402fc5de779d41c",
-    //         "03cbdd028cfe32c1c1f2d84bfec71e19f92df509bba7b8ad31ca6c1a134fe09204",
-    //         "03f178fcce82f95c524b53b077e6180bd2d779a9057fdff4255a0af95af918cee0",
-    //         "03de13fc96ea6899acbdc5db3afaa683f62fe35b60ff6eb723dad28a11d2b12f8c"
-    //     ],
-    //     "covenant_quorum": 6,
-    //     "unbonding_time": 1008,
-    //     "unbonding_fee": 32000,
-    //     "max_staking_amount": 50000000000,
-    //     "min_staking_amount": 500000,
-    //     "max_staking_time": 64000,
-    //     "min_staking_time": 64000,
-    //     "confirmation_depth": 10
+    //     "versions": [
+    //         {
+    //             "version": 0,
+    //             "activation_height": 857910,
+    //             "staking_cap": 100000000000,
+    //             "tag": "62626e31",
+    //             "covenant_pks": [
+    //                 "03d45c70d28f169e1f0c7f4a78e2bc73497afe585b70aa897955989068f3350aaa",
+    //                 "034b15848e495a3a62283daaadb3f458a00859fe48e321f0121ebabbdd6698f9fa",
+    //                 "0223b29f89b45f4af41588dcaf0ca572ada32872a88224f311373917f1b37d08d1",
+    //                 "02d3c79b99ac4d265c2f97ac11e3232c07a598b020cf56c6f055472c893c0967ae",
+    //                 "038242640732773249312c47ca7bdb50ca79f15f2ecc32b9c83ceebba44fb74df7",
+    //                 "03e36200aaa8dce9453567bba108bdc51f7f1174b97a65e4dc4402fc5de779d41c",
+    //                 "03cbdd028cfe32c1c1f2d84bfec71e19f92df509bba7b8ad31ca6c1a134fe09204",
+    //                 "03f178fcce82f95c524b53b077e6180bd2d779a9057fdff4255a0af95af918cee0",
+    //                 "03de13fc96ea6899acbdc5db3afaa683f62fe35b60ff6eb723dad28a11d2b12f8c"
+    //             ],
+    //             "covenant_quorum": 6,
+    //             "unbonding_time": 1008,
+    //             "unbonding_fee": 64000,
+    //             "max_staking_amount": 5000000,
+    //             "min_staking_amount": 500000,
+    //             "max_staking_time": 64000,
+    //             "min_staking_time": 64000,
+    //             "confirmation_depth": 10
+    //         },
+    //         {
+    //             "version": 1,
+    //             "activation_height": 864790,
+    //             "cap_height": 864799,
+    //             "tag": "62626e31",
+    //             "covenant_pks": [
+    //                 "03d45c70d28f169e1f0c7f4a78e2bc73497afe585b70aa897955989068f3350aaa",
+    //                 "034b15848e495a3a62283daaadb3f458a00859fe48e321f0121ebabbdd6698f9fa",
+    //                 "0223b29f89b45f4af41588dcaf0ca572ada32872a88224f311373917f1b37d08d1",
+    //                 "02d3c79b99ac4d265c2f97ac11e3232c07a598b020cf56c6f055472c893c0967ae",
+    //                 "038242640732773249312c47ca7bdb50ca79f15f2ecc32b9c83ceebba44fb74df7",
+    //                 "03e36200aaa8dce9453567bba108bdc51f7f1174b97a65e4dc4402fc5de779d41c",
+    //                 "03cbdd028cfe32c1c1f2d84bfec71e19f92df509bba7b8ad31ca6c1a134fe09204",
+    //                 "03f178fcce82f95c524b53b077e6180bd2d779a9057fdff4255a0af95af918cee0",
+    //                 "03de13fc96ea6899acbdc5db3afaa683f62fe35b60ff6eb723dad28a11d2b12f8c"
+    //             ],
+    //             "covenant_quorum": 6,
+    //             "unbonding_time": 1008,
+    //             "unbonding_fee": 32000,
+    //             "max_staking_amount": 50000000000,
+    //             "min_staking_amount": 500000,
+    //             "max_staking_time": 64000,
+    //             "min_staking_time": 64000,
+    //             "confirmation_depth": 10
+    //         }
+    //     ]
     // }
     public(friend) fun genesis_init() {
+        //bbn-1 version 0
+        let bbn_global_param_0 = BBNGlobalParamV0 {
+            version: 0,
+            activation_height: 857910,
+            staking_cap: 100000000000,
+            //bbn1
+            tag: x"62626e31",
+            //we keep the x-only pubkey in the vector
+            covenant_pks: vector[
+                x"03d45c70d28f169e1f0c7f4a78e2bc73497afe585b70aa897955989068f3350aaa",
+                x"034b15848e495a3a62283daaadb3f458a00859fe48e321f0121ebabbdd6698f9fa",
+                x"0223b29f89b45f4af41588dcaf0ca572ada32872a88224f311373917f1b37d08d1",
+                x"02d3c79b99ac4d265c2f97ac11e3232c07a598b020cf56c6f055472c893c0967ae",
+                x"038242640732773249312c47ca7bdb50ca79f15f2ecc32b9c83ceebba44fb74df7",
+                x"03e36200aaa8dce9453567bba108bdc51f7f1174b97a65e4dc4402fc5de779d41c",
+                x"03cbdd028cfe32c1c1f2d84bfec71e19f92df509bba7b8ad31ca6c1a134fe09204",
+                x"03f178fcce82f95c524b53b077e6180bd2d779a9057fdff4255a0af95af918cee0",
+                x"03de13fc96ea6899acbdc5db3afaa683f62fe35b60ff6eb723dad28a11d2b12f8c"
+            ],
+            covenant_quorum: 6,
+            unbonding_time: 1008,
+            unbonding_fee: 64000,
+            max_staking_amount: 5000000,
+            min_staking_amount: 500000,
+            min_staking_time: 64000,
+            max_staking_time: 64000,
+            confirmation_depth: 10
+        };
         // bbn-1 version 1
-        let bbn_global_params_1 = BBNGlobalParam {
+        let bbn_global_params_1 = BBNGlobalParamV1 {
             version: 1,
             activation_height: 864790,
-            staking_cap: 0,
             cap_height: 864799,
             //bbn1
             tag: x"62626e31",
@@ -180,9 +252,11 @@ module bitcoin_move::bbn {
             confirmation_depth: 10
         };
         let obj =
-            object::new_named_object(
-                BBNGlobalParams { bbn_global_param: vector[bbn_global_params_1] }
-            );
+            object::new_named_object(BBNGlobalParams {
+                max_version: 1,
+        });
+        object::add_field(&mut obj, 0, bbn_global_param_0);
+        object::add_field(&mut obj, 1, bbn_global_params_1);
         object::to_shared(obj);
     }
 
@@ -208,23 +282,10 @@ module bitcoin_move::bbn {
         })
     }
 
-    fun get_bbn_param(block_height: u64): Option<BBNGlobalParam> {
+    fun get_bbn_param_v1(): &BBNGlobalParamV1 {
         let object_id = object::named_object_id<BBNGlobalParams>();
-        let params = object::borrow(object::borrow_object<BBNGlobalParams>(object_id));
-        let i = 0;
-        let len = length(&params.bbn_global_param);
-        while (i < len) {
-            let param = borrow(&params.bbn_global_param, i);
-            i = i + 1;
-            if (param.cap_height !=0 && block_height > param.cap_height) {
-                continue
-            };
-            if (block_height < param.activation_height) {
-                continue
-            };
-            return some(*param)
-        };
-        none()
+        let param_obj = object::borrow_object<BBNGlobalParams>(object_id);
+        object::borrow_field(param_obj, 1)
     }
 
     fun try_get_bbn_op_return_ouput(tx_output: &vector<TxOut>): Option<BBNOpReturnOutput> {
@@ -295,8 +356,11 @@ module bitcoin_move::bbn {
             return false
         };
         let block_height = option::destroy_some(block_height_opt);
-        let param_opt = get_bbn_param(block_height);
-        if (is_none(&param_opt)) {
+        let param = get_bbn_param_v1();
+        if (block_height < param.activation_height) {
+            return false
+        };
+        if (block_height > param.cap_height) {
             return false
         };
         let tx_opt = bitcoin::get_tx(txid);
@@ -309,6 +373,10 @@ module bitcoin_move::bbn {
         if (is_none(&output_opt)) {
             return false
         };
+        let output = option::destroy_some(output_opt);
+        if (output.op_return_data.tag != param.tag) {
+            return false
+        };
         true 
     }
 
@@ -316,7 +384,7 @@ module bitcoin_move::bbn {
         process_bbn_tx(txid)
     }
 
-    fun validate_bbn_op_return_data(param: &BBNGlobalParam, _tx: &Transaction, op_return_data: &BBNV0OpReturnData): Result<bool,String> {
+    fun validate_bbn_op_return_data(param: &BBNGlobalParamV1, op_return_data: &BBNV0OpReturnData): Result<bool,String> {
         if (op_return_data.version != 0) {
             return err_str(b"Invalid version")
         };
@@ -327,9 +395,6 @@ module bitcoin_move::bbn {
             || op_return_data.staking_time > param.max_staking_time) {
             return err_str(b"Invalid staking time")
         };
-        // if (tx_lock_time(tx) < (op_return_data.staking_time as u32)) {
-        //     return err_str(b"Invalid transaction lock time")
-        // };
         ok(true)
     }
 
@@ -338,9 +403,8 @@ module bitcoin_move::bbn {
         assert!(is_some(&block_height_opt), ErrorTransactionNotFound);
         let block_height = option::destroy_some(block_height_opt);
 
-        let param_opt = get_bbn_param(block_height);
-        assert!(is_some(&param_opt), ErrorNotBabylonTx);
-        let param = option::destroy_some(param_opt);
+        let param = get_bbn_param_v1();
+        assert!(block_height >= param.activation_height && block_height <= param.cap_height, ErrorOutBlockRange);
 
         let tx_opt = bitcoin::get_tx(txid);
         assert!(is_some(&tx_opt), ErrorTransactionNotFound);
@@ -372,10 +436,10 @@ module bitcoin_move::bbn {
         }
     }
 
-    fun process_parsed_bbn_tx(param: BBNGlobalParam, txid: address, block_height: u64, tx: &Transaction, op_return_output: BBNOpReturnOutput): Result<ObjectID, String> {
+    fun process_parsed_bbn_tx(param: &BBNGlobalParamV1, txid: address, block_height: u64, tx: &Transaction, op_return_output: BBNOpReturnOutput): Result<ObjectID, String> {
         
         let BBNOpReturnOutput{op_return_output_idx: _, op_return_data} = op_return_output;
-        let valid_result = validate_bbn_op_return_data(&param, tx, &op_return_data);
+        let valid_result = validate_bbn_op_return_data(param, &op_return_data);
         
         if (is_err(&valid_result)) {
             return as_err(valid_result)
@@ -722,14 +786,12 @@ module bitcoin_move::bbn {
         let bbn_opreturn_data_opt = parse_bbn_op_return_data(&script_buf);
         let bbn_opreturn_data = option::destroy_some(bbn_opreturn_data_opt);
         let BBNV0OpReturnData{tag:_, version:_, staker_pub_key, finality_provider_pub_key, staking_time} = bbn_opreturn_data;
-        let params_opt = get_bbn_param(864790);
-        assert!(is_some(&params_opt), 1000);
-        let params = option::destroy_some(params_opt);
+        let param = get_bbn_param_v1();
         let sb = build_staking_tx_output_script_pubkey(
             staker_pub_key,
             vector::singleton(finality_provider_pub_key),
-            params.covenant_pks,
-            params.covenant_quorum,
+            param.covenant_pks,
+            param.covenant_quorum,
             staking_time
         );
         let result = script_buf::into_bytes(sb);
