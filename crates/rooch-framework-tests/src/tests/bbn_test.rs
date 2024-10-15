@@ -5,11 +5,15 @@ use crate::{
     binding_test, bitcoin_block_tester::BitcoinBlockTester,
     tests::bitcoin_data::bitcoin_tx_from_hex,
 };
-use moveos_types::{module_binding::MoveFunctionCaller, state_resolver::StateResolver};
-use rooch_types::bitcoin::bbn::{BBNGlobalParams, BBNStakingInfo};
+use moveos_types::{
+    module_binding::MoveFunctionCaller, moveos_std::object::DynamicField, state::FieldKey,
+    state_resolver::StateResolver,
+};
+use rooch_types::bitcoin::bbn::{BBNGlobalParamV1, BBNGlobalParams, BBNStakingInfo};
 use tracing::{debug, warn};
 
 // Test Babylon v3 transaction
+//cargo run -p rooch-framework-tests --  --btc-rpc-url http://localhost:8332 --btc-rpc-username your_username --btc-rpc-password your_pwd --blocks 864790 --bbn-staking-tx-csv /path/to/bbn_staking_tx.csv
 #[tokio::test]
 async fn test_block_864790() {
     let _ = tracing_subscriber::fmt::try_init();
@@ -21,8 +25,10 @@ async fn test_block_864790() {
 
     let mut tester = BitcoinBlockTester::new(864790).unwrap();
     tester.execute().unwrap();
+    tester.execute_bbn_process().unwrap();
+
     tester.verify_utxo().unwrap();
-    //TODO verify bbn tx
+    tester.verify_bbn_stake().unwrap();
 }
 
 #[tokio::test]
@@ -43,13 +49,19 @@ async fn test_bbn_tx() {
     let op_return_output = op_return_output_opt.unwrap();
     debug!("op_return_output: {:?}", op_return_output);
     assert_eq!(op_return_output.op_return_output_idx, 1);
-    let bbn_global_params = binding_test
-        .get_object(&BBNGlobalParams::object_id())
-        .unwrap()
-        .unwrap()
-        .value_as::<BBNGlobalParams>()
+
+    let field_opt = binding_test
+        .get_field(
+            &BBNGlobalParams::object_id(),
+            &FieldKey::derive(&1u64).unwrap(),
+        )
         .unwrap();
-    let bbn_global_param = bbn_global_params.get_global_param(1).unwrap();
+    assert!(field_opt.is_some());
+    let bbn_global_param = field_opt
+        .unwrap()
+        .value_as::<DynamicField<u64, BBNGlobalParamV1>>()
+        .unwrap()
+        .value;
     let staking_info = BBNStakingInfo::build_staking_info(
         &op_return_output.op_return_data.staker_pub_key().unwrap(),
         &[op_return_output

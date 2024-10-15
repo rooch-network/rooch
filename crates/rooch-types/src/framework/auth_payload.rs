@@ -224,7 +224,7 @@ pub struct MultisignAuthPayload {
 
 impl MultisignAuthPayload {
     pub fn build_multisig_payload(mut payloads: Vec<AuthPayload>) -> Result<Self> {
-        ensure!(payloads.len() > 1, "At least two signatures are required");
+        ensure!(!payloads.is_empty(), "At least one signatures are required");
         let first_payload = payloads.remove(0);
         let message_prefix = first_payload.message_prefix.clone();
         let message_info = first_payload.message_info.clone();
