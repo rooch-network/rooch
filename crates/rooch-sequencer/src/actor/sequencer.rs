@@ -143,7 +143,6 @@ impl SequencerActor {
         // Calc transaction accumulator
         let _tx_accumulator_root = self.tx_accumulator.append(vec![tx_hash].as_slice())?;
         let tx_accumulator_unsaved_nodes = self.tx_accumulator.pop_unsaved_nodes();
-        self.tx_accumulator.flush()?;
 
         let tx_accumulator_info = self.tx_accumulator.get_info();
         let tx = LedgerTransaction::build_ledger_transaction(
@@ -154,7 +153,7 @@ impl SequencerActor {
             tx_accumulator_info.clone(),
         );
 
-        let sequencer_info = SequencerInfo::new(tx.sequence_info.tx_order, tx_accumulator_info);
+        let sequencer_info = SequencerInfo::new(tx_order, tx_accumulator_info);
         self.rooch_store.save_sequenced_tx(
             tx_hash,
             tx.clone(),
