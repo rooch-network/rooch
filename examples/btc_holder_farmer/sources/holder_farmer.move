@@ -2,13 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module btc_holder_farmer::hold_farmer {
-    
+
     use std::string;
     use std::option;
-    use std::option::is_none;
     use std::u64;
+    use bitcoin_move::bbn;
+    use bitcoin_move::bbn::BBNStakeSeal;
     use bitcoin_move::types;
-    use bitcoin_move::types::tx_lock_time;
     use bitcoin_move::bitcoin;
 
     use moveos_std::event::emit;
@@ -28,11 +28,13 @@ module btc_holder_farmer::hold_farmer {
     use rooch_framework::coin::{CoinInfo, Coin};
     
     use bitcoin_move::utxo::{Self, UTXO, value, TempStateDropEvent};
-    
+    #[test_only]
+    use bitcoin_move::bitcoin::add_latest_block;
+
 
     const DEPLOYER: address = @btc_holder_farmer;
 
-    const MaxLockDay: u64 = 180;
+    const MaxLockDay: u64 = 1000;
     // 1 Day seconds
     const PerDaySeconds: u32 = 86400;
     // 1 Day blocks
@@ -255,17 +257,31 @@ module btc_holder_farmer::hold_farmer {
         signer: &signer,
         asset: &mut Object<UTXO>,
     ) {
-        do_stake(signer, asset);
+        assert!(!utxo::contains_temp_state<StakeInfo>(asset), ErrorAlreadyStaked);
+        utxo::add_temp_state(asset, StakeInfo {});
+        let asset_weight = value( object::borrow(asset)) * calculate_time_lock_weight(0);
+        do_stake(signer, object::id(asset), asset_weight);
     }
 
-    public fun do_stake(
+    public entry fun stake_bbn(
         signer: &signer,
-        asset: &mut Object<UTXO>,
+        asset: &mut Object<BBNStakeSeal>,
+    ) {
+        assert!(!bbn::contains_temp_state<StakeInfo>(asset), ErrorAlreadyStaked);
+        bbn::add_temp_state(asset, StakeInfo {});
+        let bbn_stake_seal = object::borrow(asset);
+        let asset_weight = bbn::staking_value(bbn_stake_seal) * calculate_time_lock_weight(
+            (((bbn::staking_time(bbn_stake_seal) as u64) + bbn::block_height(bbn_stake_seal)) as u32)
+        );
+        do_stake(signer, object::id(asset), asset_weight);
+    }
+
+    fun do_stake(
+        signer: &signer,
+        asset_id: ObjectID,
+        asset_weight: u64
     ) {
         process_expired_state();
-        assert!(!utxo::contains_temp_state<StakeInfo>(asset), ErrorAlreadyStaked);
-        let utxo = object::borrow(asset);
-        let asset_weight = value(utxo) * calculate_utxo_time_lock_weight(utxo::txid(utxo));
         let account = signer::address_of(signer);
 
         let farming_asset = account::borrow_mut_resource<FarmingAsset>(DEPLOYER);
@@ -274,7 +290,7 @@ module btc_holder_farmer::hold_farmer {
         // Check locking time
         let now_seconds = timestamp::now_seconds();
         emit(StakeEvent{
-            asset_id: object::id(asset),
+            asset_id,
             asset_weight,
             account,
             timestamp: now_seconds
@@ -283,7 +299,6 @@ module btc_holder_farmer::hold_farmer {
         assert!(farming_asset.end_time > now_seconds, ErrorWrongFarmTime);
 
         let time_period = now_seconds - farming_asset.last_update_timestamp;
-        utxo::add_temp_state(asset, StakeInfo {});
 
         if (farming_asset.asset_total_weight <= 0) {
             // Stake as first user
@@ -294,7 +309,7 @@ module btc_holder_farmer::hold_farmer {
                 });
             };
             let stake_table = account::borrow_mut_resource<UserStake>(account);
-            table::add(&mut stake_table.stake, object::id(asset), Stake {
+            table::add(&mut stake_table.stake, asset_id, Stake {
                 asset_weight,
                 last_harvest_index: 0,
                 gain,
@@ -309,7 +324,7 @@ module btc_holder_farmer::hold_farmer {
                 });
             };
             let stake_table = account::borrow_mut_resource<UserStake>(account);
-            table::add(&mut stake_table.stake, object::id(asset), Stake {
+            table::add(&mut stake_table.stake, asset_id, Stake {
                 asset_weight,
                 last_harvest_index: new_harvest_index,
                 gain: 0,
@@ -318,24 +333,31 @@ module btc_holder_farmer::hold_farmer {
             farming_asset.harvest_index = new_harvest_index;
         };
         farming_asset.last_update_timestamp = now_seconds;
-        table::add(&mut farming_asset.stake_table, object::id(asset), account);
+        table::add(&mut farming_asset.stake_table, asset_id, account);
     }
 
     /// Unstake asset from farming pool
     public entry fun unstake(signer: &signer, asset: &mut Object<UTXO>) {
-        let coin = do_unstake(signer, asset);
+        let coin = do_unstake(signer, object::id(asset));
+        utxo::remove_temp_state<StakeInfo>(asset);
         account_coin_store::deposit(sender(), coin);
     }
 
-    public fun do_unstake(signer: &signer, asset: &mut Object<UTXO>): Coin<GROW> {
+    public entry fun unstake_bbn(signer: &signer, asset: &mut Object<BBNStakeSeal>) {
+        // TODO check bbn stake seal is expired
+        let coin = do_unstake(signer, object::id(asset));
+        bbn::remove_temp_state<StakeInfo>(asset);
+        account_coin_store::deposit(sender(), coin);
+    }
+
+    fun do_unstake(signer: &signer, asset_id: ObjectID): Coin<GROW> {
         process_expired_state();
-        utxo::remove_temp_state<StakeInfo>(asset);
         let account = signer::address_of(signer);
         let farming_asset = account::borrow_mut_resource<FarmingAsset>(DEPLOYER);
         let user_stake = account::borrow_mut_resource<UserStake>(account);
-        table::remove(&mut farming_asset.stake_table, object::id(asset));
+        table::remove(&mut farming_asset.stake_table, asset_id);
         let Stake { last_harvest_index, asset_weight, gain } =
-            table::remove(&mut user_stake.stake, object::id(asset));
+            table::remove(&mut user_stake.stake, asset_id);
         let now_seconds = if (timestamp::now_seconds() < farming_asset.end_time) {
             timestamp::now_seconds()
         } else {
@@ -347,7 +369,7 @@ module btc_holder_farmer::hold_farmer {
         let total_gain = gain + period_gain;
         let withdraw_token = coin::mint_extend(&mut farming_asset.coin_info, (total_gain as u256));
         emit(UnStakeEvent{
-            asset_id: object::id(asset),
+            asset_id,
             asset_weight,
             gain: total_gain,
             account,
@@ -367,16 +389,22 @@ module btc_holder_farmer::hold_farmer {
 
     /// Harvest yield farming token from stake
     public entry fun harvest(signer:&signer, asset: &mut Object<UTXO>) {
-        let coin = do_harvest(signer, asset);
+        let coin = do_harvest(signer, object::id(asset));
         account_coin_store::deposit(sender(), coin);
     }
 
-    public fun do_harvest(signer:&signer, asset: &mut Object<UTXO>): Coin<GROW> {
+    public entry fun harvest_bbn(signer:&signer, asset: &mut Object<BBNStakeSeal>) {
+        // TODO check bbn stake seal is expired
+        let coin = do_harvest(signer, object::id(asset));
+        account_coin_store::deposit(sender(), coin);
+    }
+
+    fun do_harvest(signer:&signer, asset_id: ObjectID): Coin<GROW> {
         process_expired_state();
         let farming_asset = account::borrow_mut_resource<FarmingAsset>(DEPLOYER);
         let account = signer::address_of(signer);
         let stake_table = account::borrow_mut_resource<UserStake>(account);
-        let stake = table::borrow_mut(&mut stake_table.stake, object::id(asset));
+        let stake = table::borrow_mut(&mut stake_table.stake, asset_id);
         let now_seconds = if (timestamp::now_seconds() < farming_asset.end_time) {
             timestamp::now_seconds()
         } else {
@@ -394,7 +422,7 @@ module btc_holder_farmer::hold_farmer {
         assert!(total_gain > 0, ErrorGainIsZero);
         // let withdraw_amount = total_gain;
         emit(HarvestEvent{
-            asset_id: object::id(asset),
+            asset_id,
             harvest_index: new_harvest_index,
             gain: total_gain,
             account,
@@ -565,13 +593,9 @@ module btc_holder_farmer::hold_farmer {
         }
     }
 
-    public fun calculate_utxo_time_lock_weight(txid: address): u64{
-        let option_tx = bitcoin::get_tx(txid);
-        if (is_none(&option_tx)){
-            return 1
-        };
-        let transaction = option::destroy_some(option_tx);
-        let tx_lock_time = tx_lock_time(&transaction);
+    // y = x^(1/2)  x is lock day
+    // x not exceeding 1000, so y never over 31 and bbn stake weight is 22
+    public fun calculate_time_lock_weight(tx_lock_time: u32): u64{
         if (tx_lock_time < LOCK_TIME_THRESHOLD) {
             // lock_time is a block heigh
             // We assume that each block takes 10 minutes, 1day ~ 144 block
@@ -579,18 +603,17 @@ module btc_holder_farmer::hold_farmer {
             if (btc_block >= (tx_lock_time as u64)){
                 return 1
             };
-            let tx_lock_day = (btc_block - (tx_lock_time as u64))/PerDayBlocks;
-            return 1 + u64::min(tx_lock_day, MaxLockDay)
+            let tx_lock_day = ((tx_lock_time as u64) - btc_block)/PerDayBlocks;
+            return 1 + u64::sqrt(u64::min(tx_lock_day, MaxLockDay))
         };
         // lock_time is a bitcoin time
-        // TODO here should be btc time or rooch time?
         let btc_time = bitcoin::get_bitcoin_time();
         if (btc_time >= tx_lock_time){
             return 1
         };
-        let tx_lock_day = (btc_time - tx_lock_time)/PerDaySeconds;
+        let tx_lock_day = (tx_lock_time - btc_time)/PerDaySeconds;
 
-        1 + u64::min((tx_lock_day as u64), MaxLockDay)
+        1 + u64::sqrt(u64::min((tx_lock_day as u64), MaxLockDay))
 
     }
 
@@ -604,7 +627,7 @@ module btc_holder_farmer::hold_farmer {
     public entry fun remove_expired_stake(asset_id: ObjectID) {
         let (is_staked, _) = check_asset_is_staked(asset_id);
         assert!(is_staked, ErrorNotStaked);
-        assert!(!object::exists_object_with_type<UTXO>(asset_id), ErrorAssetExist);
+        assert!((!object::exists_object_with_type<UTXO>(asset_id) && !object::exists_object_with_type<BBNStakeSeal>(asset_id)), ErrorAssetExist);
         let farming_asset = account::borrow_mut_resource<FarmingAsset>(DEPLOYER);
         let account = table::remove(&mut farming_asset.stake_table, asset_id);
         let user_stake = account::borrow_mut_resource<UserStake>(account);
@@ -622,6 +645,7 @@ module btc_holder_farmer::hold_farmer {
     #[test(sender=@0x42)]
     fun test_stake(sender: signer) {
         bitcoin_move::genesis::init_for_test();
+        add_latest_block(100, @0x77dfc2fe598419b00641c296181a96cf16943697f573480b023b77cce82ada21);
         init();
         let admin_cap_id = object::named_object_id<AdminCap>();
         let btc_holder_farmer_signer = signer::module_signer<AdminCap>();
@@ -634,24 +658,35 @@ module btc_holder_farmer::hold_farmer {
         let utxo2 = utxo::new_for_testing(tx_id, 1u32, sat_value);
         let utxo_id = object::id(&utxo);
         let utxo_id2 = object::id(&utxo2);
-        do_stake(&sender, &mut utxo);
+        stake(&sender, &mut utxo);
         timestamp::fast_forward_seconds_for_test(seconds);
-        do_stake(&sender, &mut utxo2);
+        stake(&sender, &mut utxo2);
         timestamp::fast_forward_seconds_for_test(seconds);
         let amount = query_gov_token_amount(utxo_id);
         let amount2 = query_gov_token_amount(utxo_id2);
         assert!(amount == 150, 1);
         assert!(amount2 == 50, 2);
-        let coin = do_unstake(&sender, &mut utxo);
+        let coin = do_unstake(&sender, object::id(&utxo));
         assert!(coin::value(&coin) == 150, 3);
         let amount = query_gov_token_amount(utxo_id);
         assert!(amount == 0, 4);
-        let coin2 = do_harvest(&sender, &mut utxo2);
+        let coin2 = do_harvest(&sender, object::id(&utxo2));
         assert!(coin::value(&coin2) == 50, 4);
         coin::destroy_for_testing(coin2);
         utxo::drop_for_testing(utxo2);
         // remove_expired_stake(utxo_id2);
         utxo::drop_for_testing(utxo);
         coin::destroy_for_testing(coin);
+    }
+
+    #[test]
+    fun test_calculate_time_lock_weight() {
+        bitcoin_move::genesis::init_for_test();
+        add_latest_block(100, @0x77dfc2fe598419b00641c296181a96cf16943697f573480b023b77cce82ada21);
+        let weight= calculate_time_lock_weight(64000+100);
+        add_latest_block(40000, @0x77dfc2fe598419b00641c296181a96cf16943697f573480b023b77cce82ada21);
+        let weight2= calculate_time_lock_weight(64000+100);
+        assert!(weight == 22, 0);
+        assert!(weight2 == 13, 0)
     }
 }

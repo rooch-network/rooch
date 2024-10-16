@@ -412,4 +412,12 @@ module bitcoin_move::bitcoin{
         execute_l1_tx(block_hash, types::tx_id(&coinbase_tx));
     }
 
+
+    #[test_only]
+    public fun add_latest_block(block_height: u64, block_hash: address){
+        let btc_block_store_obj = borrow_block_store_mut();
+        let btc_block_store = object::borrow_mut(btc_block_store_obj);
+        btc_block_store.latest_block = option::some(types::new_block_height_hash(block_height, block_hash))
+    }
+
 }
