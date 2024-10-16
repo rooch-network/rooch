@@ -21,6 +21,9 @@ use moveos_types::state_resolver::StatelessResolver;
 type IteratorItem = (FieldKey, Vec<u8>);
 type IteratorState = (Vec<IteratorItem>, usize);
 
+type DynTypeLayoutLoader = dyn TypeLayoutLoader + Send + Sync;
+type DynStatelessResolver = dyn StatelessResolver + Send + Sync;
+
 pub struct MoveStorage<'a> {
     object: &'a mut RuntimeObject,
     layout_loader: &'a dyn TypeLayoutLoader,
