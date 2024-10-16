@@ -43,6 +43,7 @@ export default function Swap({
   simulationStatus,
   simulationError,
   proposing,
+  isValid,
   onSlippageChange,
   onCurveTypeChange,
   onVersionChange,
@@ -203,7 +204,7 @@ export default function Swap({
           color="primary"
           variant="contained"
           loading={proposing}
-          disabled={proposeButtonContent.disabled}
+          disabled={proposeButtonContent.disabled || !isValid}
           sx={{
             background: secondary.light,
             height: '52px',
@@ -213,7 +214,7 @@ export default function Swap({
             onPreview();
           }}
         >
-          {proposeButtonContent.text}
+          {isValid ? proposeButtonContent.text: 'network invalid'}
         </LoadingButton>
         {txHash && (
           <Stack>

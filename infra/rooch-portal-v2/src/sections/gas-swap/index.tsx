@@ -48,6 +48,7 @@ export default function GasSwapOverview() {
   const [convertRate, setConvertRate] = useState<number>();
   const [platformFeePercent] = useState<number>(0.003);
   const [version, setVersion] = useState<PoolVersion>(0);
+  const [networkValid, setNetworkValid] = useState<boolean>(true);
 
   const [fromSwapAmount, setFromSwapAmount] = useState(0n);
   const [toSwapAmount, setToSwapAmount] = useState(0n);
@@ -79,6 +80,7 @@ export default function GasSwapOverview() {
     getBTCBalance();
     getRGasBalance();
   }, [wallet, address, client]);
+  console.log(btcBalance)
 
   useEffect(() => {
     async function fetchRate() {
@@ -105,11 +107,13 @@ export default function GasSwapOverview() {
     fetchRate();
   }, [client, fromSwapAmount, gasMarketAddress]);
 
+  console.log(networkValid)
   return (
     <Stack className="w-full justify-center items-center">
       <Stack className="w-3/4 max-w-[600px]">
-        <WalletSwitchNetworkModal />
+        <WalletSwitchNetworkModal onChecked={(isValid) => setNetworkValid(isValid)}/>
         <Swap
+          isValid={networkValid}
           hiddenValue
           fixedSwap
           loading={loading}

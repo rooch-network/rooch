@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useConnectWallet } from '@roochnetwork/rooch-sdk-kit';
 
 import { Stack, Button, CircularProgress } from '@mui/material';
+import { toast } from 'sonner'
 
 export default function WalletButton({
   wallet,
@@ -31,7 +32,13 @@ export default function WalletButton({
     <Button
       disabled={walletInstalled === false || checkingInstall}
       onClick={async () => {
-        await connectWallet({ wallet });
+        try {
+          await connectWallet({ wallet });
+        } catch (e) {
+          if (wallet.getName() === 'OneKey' && e.message.includes('Invalid address')) {
+            toast.error('Please disconnect and re-authorize the taproot address')
+          }
+        }
         onSelect();
       }}
     >
