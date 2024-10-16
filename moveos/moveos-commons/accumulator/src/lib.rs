@@ -48,6 +48,8 @@ pub trait Accumulator {
     fn get_proof(&self, leaf_index: u64) -> Result<Option<AccumulatorProof>>;
     /// Flush node to storage.
     fn flush(&self) -> Result<()>;
+    /// Pop unsaved nodes for atomic updates with other operations .
+    fn pop_unsaved_nodes(&self) -> Option<Vec<AccumulatorNode>>;
     /// Get current accumulator tree root hash.
     fn root_hash(&self) -> H256;
     /// Get current accumulator tree number of leaves.
@@ -191,6 +193,10 @@ impl Accumulator for MerkleAccumulator {
 
     fn flush(&self) -> Result<()> {
         self.tree.lock().flush()
+    }
+
+    fn pop_unsaved_nodes(&self) -> Option<Vec<AccumulatorNode>> {
+        self.tree.lock().pop_unsaved_nodes()
     }
 
     fn root_hash(&self) -> H256 {
