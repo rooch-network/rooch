@@ -31,6 +31,15 @@ impl NodeDBStore {
     }
 }
 
+pub fn nodes_to_write_batch(nodes: BTreeMap<H256, Vec<u8>>) -> WriteBatch {
+    WriteBatch::new_with_rows(
+        nodes
+            .into_iter()
+            .map(|(k, v)| (k.0.to_vec(), WriteOp::Value(v)))
+            .collect(),
+    )
+}
+
 impl NodeReader for NodeDBStore {
     fn get(&self, hash: &H256) -> Result<Option<Vec<u8>>> {
         self.get_raw(hash.as_bytes())
