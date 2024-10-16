@@ -1,12 +1,12 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import type { ReactNode} from 'react';
 import type { CurveType, PoolVersion, InteractiveMode } from 'src/components/swap/types';
 
 import BigNumber from 'bignumber.js';
 import { useState, useEffect } from 'react';
 import { Args } from '@roochnetwork/rooch-sdk';
-import { useRoochClient, useCurrentWallet, useCurrentAddress } from '@roochnetwork/rooch-sdk-kit';
+import { useRoochClient, useCurrentWallet, useCurrentAddress } from '@roochnetwork/rooch-sdk-kit'
 
 import { Stack } from '@mui/material';
 
@@ -14,6 +14,7 @@ import Swap from 'src/components/swap/swap';
 import { toast } from 'src/components/snackbar';
 
 import { useNetworkVariable } from '../../hooks/use-networks'
+import WalletSwitchNetworkModal from '../../layouts/components/wallet-switch-network-modal'
 
 const swapCoins = [
   {
@@ -107,6 +108,7 @@ export default function GasSwapOverview() {
   return (
     <Stack className="w-full justify-center items-center">
       <Stack className="w-3/4 max-w-[600px]">
+        <WalletSwitchNetworkModal />
         <Swap
           hiddenValue
           fixedSwap

@@ -12,6 +12,7 @@ import SwapCoinInput from './swap-coin-input';
 // import SwapPreviewModal from './swap-preview-modal';
 import SwapSwitchIcon from './swap-switch-icon';
 import CurveTypeSelect from './curve-type-select';
+import { useNetworkVariable } from '../../hooks/use-networks'
 
 import type { SwapProps } from './types';
 
@@ -54,6 +55,7 @@ export default function Swap({
     () => [fromCoin?.coinType || '', toCoin?.coinType || ''],
     [fromCoin?.coinType, toCoin?.coinType]
   );
+  const memPool = useNetworkVariable('BTCMemPool')
 
   const showDetails = useMemo(
     () =>
@@ -232,7 +234,7 @@ export default function Swap({
             >
               check in the{' '}
               <a
-                href={`https://mempool.space/testnet/tx/${txHash}`}
+                href={memPool+txHash}
                 target="_blank"
                 rel="noreferrer"
               >

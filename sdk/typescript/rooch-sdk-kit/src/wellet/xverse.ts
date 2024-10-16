@@ -3,6 +3,7 @@
 
 import { BitcoinAddress, Bytes, ThirdPartyAddress, str, bytes } from '@roochnetwork/rooch-sdk'
 import { BitcoinWallet } from '../wellet/index.js'
+import { WalletNetworkType } from './types.js'
 
 export class XVerseWallet extends BitcoinWallet {
   // private callback : Map<string, () => void>
@@ -53,13 +54,13 @@ export class XVerseWallet extends BitcoinWallet {
     // this.getTarget().switchNetwork()
   }
 
-  getNetwork(): string {
-    return 'Mainnet'
+  getNetwork(): WalletNetworkType {
+    return 'livenet'
     // return this.getTarget().getNetwork()
   }
 
-  getSupportNetworks(): string[] {
-    return ['Mainnet', 'Testnet', 'Signet']
+  getSupportNetworks(): WalletNetworkType[] {
+    return ['livenet', 'testnet']
   }
 
   onAccountsChanged(callback: (account: string[]) => void): void {
