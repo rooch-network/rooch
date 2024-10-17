@@ -3,8 +3,6 @@
 
 use super::moveos_vm::MoveOSSession;
 use move_binary_format::errors::{Location, PartialVMError, PartialVMResult, VMResult};
-use move_core_types::value::MoveStructLayout::Runtime;
-use move_core_types::value::{MoveTypeLayout, MoveValue};
 use move_core_types::{language_storage::TypeTag, vm_status::StatusCode};
 use move_vm_runtime::data_cache::TransactionCache;
 use move_vm_runtime::session::{LoadedFunctionInstantiation, Session};
@@ -12,6 +10,7 @@ use move_vm_types::loaded_data::runtime_types::{StructType, Type};
 use moveos_common::types::{ClassifiedGasMeter, SwitchableGasMeter};
 use moveos_object_runtime::resolved_arg::{ObjectArg, ResolvedArg};
 use moveos_object_runtime::TypeLayoutLoader;
+use moveos_types::state::ObjectState;
 use moveos_types::{
     move_std::{ascii::MoveAsciiString, string::MoveString},
     moveos_std::object::{is_object_struct, ObjectID},
@@ -85,6 +84,44 @@ where
             .collect())
     }
 
+    fn load_object_and_check_type(
+        &self,
+        object_id: &ObjectID,
+        object_type: TypeTag,
+        location: Location,
+    ) -> VMResult<ObjectState> {
+        let object = self
+            .remote
+            .get_object(object_id)
+            .map_err(|e| {
+                PartialVMError::new(StatusCode::STORAGE_ERROR)
+                    .with_message(format!("Failed to resolve object state: {:?}", e))
+                    .finish(location.clone())
+            })?
+            .ok_or_else(|| {
+                PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT)
+                    .with_message(format!("Object not found: {:?}", object_id))
+                    .finish(location.clone())
+            })?;
+
+        if !object.match_type(&object_type) {
+            return Err(PartialVMError::new(StatusCode::TYPE_MISMATCH)
+                .with_message(format!(
+                    "Invalid object type, object type in argument:{:?}, object type in store:{:?}",
+                    object_type,
+                    object.object_type()
+                ))
+                .finish(location.clone()));
+        }
+        if object.is_dynamic_field() {
+            return Err(PartialVMError::new(StatusCode::TYPE_MISMATCH)
+                .with_message("Dynamic field object can not as argument".to_string())
+                .finish(location.clone()));
+        }
+
+        Ok(object)
+    }
+
     fn resolve_arg(
         &self,
         parameter: &Type,
@@ -106,28 +143,8 @@ where
                             .finish(location.clone())
                     })?;
 
-                    let inner_type = MoveTypeLayout::Struct(Runtime(vec![MoveTypeLayout::Vector(
-                        Box::new(MoveTypeLayout::Address),
-                    )]));
-                    let move_value_type = MoveTypeLayout::Vector(Box::new(inner_type));
-                    let move_value =
-                        MoveValue::simple_deserialize(vector_arg.as_slice(), &move_value_type)
-                            .expect("MoveValue::simple_deserialize failed");
-
-                    let mut object_id_list = vec![];
-
-                    // extract objects from arg bytes
-                    if let MoveValue::Vector(ref vector_value) = move_value {
-                        for address in vector_value.iter() {
-                            let object_id = ObjectID::from_bytes(
-                                address
-                                    .simple_serialize()
-                                    .expect("Failed to serialize address"),
-                            )
-                            .expect("ObjectID::from_bytes failed");
-                            object_id_list.push(object_id.clone());
-                        }
-                    }
+                    let object_id_list = bcs::from_bytes::<Vec<ObjectID>>(&vector_arg)
+                        .expect("MoveValue::simple_deserialize failed");
 
                     let object_type_tag = self.get_type_tag_option(type_).ok_or_else(|| {
                         PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT)
@@ -144,22 +161,11 @@ where
 
                     // read all the object from DB
                     for object_id in object_id_list.iter() {
-                        let object = self
-                            .remote
-                            .get_object(object_id)
-                            .map_err(|e| {
-                                PartialVMError::new(StatusCode::STORAGE_ERROR)
-                                    .with_message(format!(
-                                        "Failed to resolve object state: {:?}",
-                                        e
-                                    ))
-                                    .finish(location.clone())
-                            })?
-                            .ok_or_else(|| {
-                                PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT)
-                                    .with_message(format!("Object not found: {:?}", object_id))
-                                    .finish(location.clone())
-                            })?;
+                        let object = self.load_object_and_check_type(
+                            object_id,
+                            object_type.clone(),
+                            location.clone(),
+                        )?;
 
                         let sender = self.tx_context().sender();
                         if !object.is_shared() && object.owner() != sender {
@@ -169,23 +175,6 @@ where
                                     object.owner(),
                                     sender
                                 ))
-                                .finish(location.clone()));
-                        }
-
-                        if !object.match_type(&object_type) {
-                            return Err(PartialVMError::new(
-                                StatusCode::TYPE_MISMATCH,
-                            )
-                                .with_message(format!(
-                                    "Invalid object type, object type in argument:{:?}, object type in store:{:?}",
-                                    object_type, object.object_type()
-                                )).finish(location.clone()));
-                        }
-                        if object.is_dynamic_field() {
-                            return Err(PartialVMError::new(StatusCode::TYPE_MISMATCH)
-                                .with_message(
-                                    "Dynamic field object can not as argument".to_string(),
-                                )
                                 .finish(location.clone()));
                         }
 
@@ -225,33 +214,11 @@ where
                         .finish(location.clone())
                 })?;
                 //TODO we can directly resolve args via ObjectRuntime, and remove the load_arguments functions.
-                let object = self
-                    .remote
-                    .get_object(&object_id)
-                    .map_err(|e| {
-                        PartialVMError::new(StatusCode::STORAGE_ERROR)
-                            .with_message(format!("Failed to resolve object state: {:?}", e))
-                            .finish(location.clone())
-                    })?
-                    .ok_or_else(|| {
-                        PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT)
-                            .with_message(format!("Object not found: {:?}", object_id))
-                            .finish(location.clone())
-                    })?;
-                if !object.match_type(&object_type) {
-                    return Err(PartialVMError::new(
-                        StatusCode::TYPE_MISMATCH,
-                    )
-                        .with_message(format!(
-                            "Invalid object type, object type in argument:{:?}, object type in store:{:?}",
-                            object_type, object.object_type()
-                        )).finish(location.clone()));
-                }
-                if object.is_dynamic_field() {
-                    return Err(PartialVMError::new(StatusCode::TYPE_MISMATCH)
-                        .with_message("Dynamic field object can not as argument".to_string())
-                        .finish(location.clone()));
-                }
+                let object = self.load_object_and_check_type(
+                    &object_id,
+                    object_type.clone(),
+                    location.clone(),
+                )?;
                 match parameter {
                     Type::Reference(_r) => {
                         // Any one can pass any &Object<T>

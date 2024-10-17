@@ -6955,6 +6955,7 @@ version = "0.7.3"
 dependencies = [
  "anyhow",
  "backtrace",
+ "bcs",
  "clap 4.5.17",
  "codespan",
  "codespan-reporting",
