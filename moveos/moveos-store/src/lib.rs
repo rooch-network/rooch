@@ -192,19 +192,17 @@ impl MoveOSStore {
         // atomic save updates
         let inner_store = &self.node_store.get_store().store();
         let mut write_batch = nodes_to_write_batch(changed_nodes);
+        let mut cf_names = vec![STATE_NODE_COLUMN_FAMILY_NAME; write_batch.rows.len()];
         write_batch.put(
             to_bytes(&STARTUP_INFO_KEY).unwrap(),
             to_bytes(&new_startup_info).unwrap(),
         )?;
+        cf_names.push(CONFIG_STARTUP_INFO_COLUMN_FAMILY_NAME);
         write_batch.put(
             to_bytes(&tx_hash).unwrap(),
             to_bytes(&transaction_info).unwrap(),
         )?;
-        let cf_names = vec![
-            STATE_NODE_COLUMN_FAMILY_NAME,
-            CONFIG_STARTUP_INFO_COLUMN_FAMILY_NAME,
-            TRANSACTION_EXECUTION_INFO_COLUMN_FAMILY_NAME,
-        ];
+        cf_names.push(TRANSACTION_EXECUTION_INFO_COLUMN_FAMILY_NAME);
         // TODO: could use non-sync write here, because we could replay tx from rooch store(which has sync write after sequenced) at startup.
         inner_store.write_batch_sync_across_cfs(cf_names, write_batch)?;
 
