@@ -11,7 +11,7 @@ module gas_market::trusted_oracle {
     use rooch_framework::oracle_meta;
     use rooch_framework::oracle::{SimpleOracle};
 
-    use gas_market::admin::{AdminCap};
+    use app_admin::admin::{AdminCap};
  
 
     const ErrorTrustedOracleNotExists: u64 = 1;

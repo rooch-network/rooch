@@ -18,7 +18,13 @@ Feature: Rooch Portal contract tests
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
     
       # publish gas_market via default address
-      Then cmd: "move publish -p ../../infra/rooch-portal-v2/contract/gas_market  --named-addresses gas_market=default --json"
+      Then cmd: "move publish -p ../../apps/app_admin  --named-addresses app_admin=default --json"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+      Then cmd: "move publish -p ../../apps/gas_market --named-addresses app_admin=default,gas_market=default --json"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+      Then cmd: "move publish -p ../../apps/gas_faucet --named-addresses app_admin=default,gas_faucet=default --json"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+      Then cmd: "move publish -p ../../apps/grow_bitcoin --named-addresses app_admin=default,grow_bitcoin=default --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       Then cmd: "object -t default::gas_market::RGasMarket"

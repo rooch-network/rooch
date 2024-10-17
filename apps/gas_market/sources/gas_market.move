@@ -20,7 +20,7 @@ module gas_market::gas_market {
     use bitcoin_move::utxo::{ReceiveUTXOEvent, unpack_receive_utxo_event};
 
     use gas_market::trusted_oracle::trusted_price;
-    use gas_market::admin::AdminCap;
+    use app_admin::admin::AdminCap;
 
     #[test_only]
     use moveos_std::decimal_value; 

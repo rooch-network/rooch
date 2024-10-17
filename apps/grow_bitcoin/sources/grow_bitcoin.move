@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-module btc_holder_farmer::hold_farmer {
+module grow_bitcoin::grow_bitcoin {
 
     use std::string;
     use std::option;
@@ -17,7 +17,7 @@ module btc_holder_farmer::hold_farmer {
     use moveos_std::table::Table;
     use moveos_std::object;
     use moveos_std::signer;
-    use moveos_std::object::{Object, ObjectID, transfer};
+    use moveos_std::object::{Object, ObjectID};
     use moveos_std::timestamp;
     use moveos_std::account;
     use moveos_std::event_queue::{Self, Subscriber};
@@ -31,8 +31,10 @@ module btc_holder_farmer::hold_farmer {
     #[test_only]
     use bitcoin_move::bitcoin::add_latest_block;
 
+    use app_admin::admin::AdminCap;
 
-    const DEPLOYER: address = @btc_holder_farmer;
+
+    const DEPLOYER: address = @grow_bitcoin;
 
     const MaxLockDay: u64 = 1000;
     // 1 Day seconds
@@ -146,8 +148,6 @@ module btc_holder_farmer::hold_farmer {
     /// If the UTXO is spent, the stake info will be removed
     struct StakeInfo has store, drop {}
 
-    /// Capability to modify parameter such as period and release amount
-    struct AdminCap has key, store, drop {}
 
     struct StakeEvent has copy, drop {
         asset_id: ObjectID,
@@ -182,12 +182,10 @@ module btc_holder_farmer::hold_farmer {
     }
 
     fun init() {
-        let admin_cap = object::new_named_object(AdminCap {});
-        transfer(admin_cap, @btc_holder_farmer);
         let state_info_name = type_info::type_name<StakeInfo>();
         let subscriber = event_queue::subscribe<TempStateDropEvent>(state_info_name);
-        let btc_holder_farmer_signer = signer::module_signer<StakeInfo>();
-        account::move_resource_to(&btc_holder_farmer_signer, SubscriberInfo {
+        let grow_bitcoin_signer = signer::module_signer<StakeInfo>();
+        account::move_resource_to(&grow_bitcoin_signer, SubscriberInfo {
             subscriber
         });
     }
@@ -584,7 +582,7 @@ module btc_holder_farmer::hold_farmer {
     }
 
     public fun process_expired_state(){
-        let subscriber_info = account::borrow_mut_resource<SubscriberInfo>(@btc_holder_farmer);
+        let subscriber_info = account::borrow_mut_resource<SubscriberInfo>(@grow_bitcoin);
         let event = event_queue::consume(&mut subscriber_info.subscriber);
         if (option::is_some(&event)){
             let event = option::destroy_some(event);
@@ -648,8 +646,8 @@ module btc_holder_farmer::hold_farmer {
         add_latest_block(100, @0x77dfc2fe598419b00641c296181a96cf16943697f573480b023b77cce82ada21);
         init();
         let admin_cap_id = object::named_object_id<AdminCap>();
-        let btc_holder_farmer_signer = signer::module_signer<AdminCap>();
-        let admin_cap = object::borrow_mut_object<AdminCap>(&btc_holder_farmer_signer, admin_cap_id);
+        let grow_bitcoin_signer = signer::module_signer<AdminCap>();
+        let admin_cap = object::borrow_mut_object<AdminCap>(&grow_bitcoin_signer, admin_cap_id);
         deploy(&sender, 1, 0, 200, b"BTC Holder Coin", b"HDC", 6, admin_cap);
         let seconds = 100;
         let tx_id = @0x77dfc2fe598419b00641c296181a96cf16943697f573480b023b77cce82ada21;
