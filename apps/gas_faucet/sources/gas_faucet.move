@@ -1,4 +1,4 @@
-module gas_market::gas_faucet {
+module gas_faucet::gas_faucet {
 
     use std::vector;
 
@@ -15,7 +15,7 @@ module gas_market::gas_faucet {
 
     use bitcoin_move::utxo::{Self, UTXO};
 
-    use gas_market::admin::AdminCap;
+    use app_admin::admin::AdminCap;
 
     const INIT_GAS_AMOUNT: u256 = 5000000_00000000;
     const ONE_RGAS: u256 = 1_00000000;

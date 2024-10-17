@@ -140,7 +140,12 @@ pub enum RoochError {
 
 impl From<anyhow::Error> for RoochError {
     fn from(e: anyhow::Error) -> Self {
-        RoochError::UnexpectedError(e.to_string())
+        let message = e
+            .chain()
+            .map(|e| e.to_string())
+            .collect::<Vec<String>>()
+            .join("\n");
+        RoochError::UnexpectedError(message)
     }
 }
 

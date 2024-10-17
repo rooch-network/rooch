@@ -1,4 +1,4 @@
-module gas_market::admin {
+module app_admin::admin {
 
     use moveos_std::object::{Self,transfer};
 
@@ -6,7 +6,7 @@ module gas_market::admin {
 
     fun init() {
         let admin_cap = object::new_named_object(AdminCap {});
-        transfer(admin_cap, @gas_market)
+        transfer(admin_cap, @app_admin)
     }
 
     #[deprecated]

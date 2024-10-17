@@ -1,6 +1,6 @@
 [package]
-name = "btc_holder_farmer"
-version = "0.0.1"
+name = "app_admin"
+version = "1.0.0"
 
 [dependencies]
 MoveStdlib = { local = "../../frameworks/move-stdlib" }
@@ -9,10 +9,13 @@ RoochFramework = { local = "../../frameworks/rooch-framework" }
 BitcoinMove = { local = "../../frameworks/bitcoin-move" }
 
 [addresses]
-btc_holder_farmer =  "_"
-moveos_std =  "0x2"
-rooch_framework =  "0x3"
-bitcoin_move =  "0x4"
+#bc1prcajaj9n7e29u4dfp33x3hcf52yqeegspdpcd79pqu4fpr6llx4sugkfjt
+#0x701c21bf1c8cd5af8c42983890d8ca55e7a820171b8e744c13f2d9998bf76cc3
+app_admin = "_"
+std = "0x1"
+moveos_std = "0x2"
+rooch_framework = "0x3"
+bitcoin_move = "0x4"
 
 [dev-addresses]
-btc_holder_farmer = "0x42"
+app_admin = "0x42"
