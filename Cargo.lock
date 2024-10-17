@@ -7059,6 +7059,7 @@ dependencies = [
 name = "moveos-object-runtime"
 version = "0.7.3"
 dependencies = [
+ "bcs",
  "better_any",
  "hex",
  "log",
