@@ -36,7 +36,7 @@ export default function WalletSwitchNetworkModal({ onChecked }: { onChecked: (va
   }, [onChecked, roochNetwork, wallet.wallet])
   return (
     showWalletSelectNetworkModal ? <Dialog
-      open
+      open={showWalletSelectNetworkModal}
       onClose={() => setShowWalletSelectNetworkModal(false)}
     >
       <DialogTitle sx={{ pb: 2 }}>Switch Network</DialogTitle>

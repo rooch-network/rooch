@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import { useConnectWallet } from '@roochnetwork/rooch-sdk-kit';
 
 import { Stack, Button, CircularProgress } from '@mui/material';
-import { toast } from 'sonner'
+
+import { toast } from 'src/components/snackbar'
 
 export default function WalletButton({
   wallet,
