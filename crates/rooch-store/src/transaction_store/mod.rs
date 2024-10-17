@@ -70,12 +70,13 @@ impl TransactionDBStore {
         write_batch.delete(to_bytes(&tx_hash).unwrap())?;
         write_batch.delete(to_bytes(&tx_order).unwrap())?;
 
-        inner_store.write_batch_sync_across_cfs(
+        inner_store.write_batch_across_cfs(
             vec![
                 TRANSACTION_COLUMN_FAMILY_NAME,
                 TX_SEQUENCE_INFO_MAPPING_COLUMN_FAMILY_NAME,
             ],
             write_batch,
+            true,
         )?;
         Ok(())
     }

@@ -281,7 +281,7 @@ impl RoochDB {
             cf_names.push(CONFIG_STARTUP_INFO_COLUMN_FAMILY_NAME);
         }
 
-        inner_store.write_batch_sync_across_cfs(cf_names, write_batch)?;
+        inner_store.write_batch_across_cfs(cf_names, write_batch, true)?;
 
         // revert the indexer
         self.revert_indexer(tx_order, state_change_set_ext_opt)

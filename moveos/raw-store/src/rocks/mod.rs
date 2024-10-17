@@ -23,7 +23,7 @@ use moveos_common::utils::{check_open_fds_limit, from_bytes};
 use moveos_config::store_config::RocksdbConfig;
 
 use crate::errors::RawStoreError;
-use crate::rocks::batch::WriteBatch;
+use crate::rocks::batch::{WriteBatch, WriteBatchCF};
 use crate::traits::DBStore;
 use crate::{ColumnFamilyName, WriteOp};
 
@@ -296,6 +296,20 @@ impl RocksDB {
         opts
     }
 
+    fn non_sync_write_options() -> WriteOptions {
+        let mut opts = WriteOptions::new();
+        opts.set_sync(false);
+        opts
+    }
+
+    fn write_options(sync: bool) -> WriteOptions {
+        if sync {
+            Self::sync_write_options()
+        } else {
+            Self::non_sync_write_options()
+        }
+    }
+
     pub fn property_int_value_cf(
         &self,
         cf: &impl AsColumnFamilyRef,
@@ -475,7 +489,12 @@ impl DBStore for RocksDB {
         Ok(res)
     }
 
-    fn write_batch_sync_across_cfs(&self, cf_names: Vec<&str>, batch: WriteBatch) -> Result<()> {
+    fn write_batch_across_cfs(
+        &self,
+        cf_names: Vec<&str>,
+        batch: WriteBatch,
+        sync: bool,
+    ) -> Result<()> {
         assert_eq!(cf_names.len(), batch.rows.len());
         let mut db_batch = DBWriteBatch::default();
         for (idx, (key, write_op)) in batch.rows.iter().enumerate() {
@@ -486,7 +505,24 @@ impl DBStore for RocksDB {
                 WriteOp::Deletion => db_batch.delete_cf(&cf_handle, key),
             };
         }
-        self.db.write_opt(db_batch, &Self::sync_write_options())?;
+
+        self.db.write_opt(db_batch, &Self::write_options(sync))?;
+        Ok(())
+    }
+
+    fn write_cf_batch(&self, cf_batches: Vec<WriteBatchCF>, sync: bool) -> Result<()> {
+        let mut db_batch = DBWriteBatch::default();
+        for batch_cf in cf_batches {
+            let cf_handle = self.get_cf_handle(batch_cf.cf_name.as_str());
+            for (key, write_op) in batch_cf.batch.rows {
+                match write_op {
+                    WriteOp::Value(value) => db_batch.put_cf(&cf_handle, key, value),
+                    WriteOp::Deletion => db_batch.delete_cf(&cf_handle, key),
+                };
+            }
+        }
+
+        self.db.write_opt(db_batch, &Self::write_options(sync))?;
         Ok(())
     }
 }

@@ -28,9 +28,10 @@ use moveos_types::transaction::{
 use once_cell::sync::Lazy;
 use prometheus::Registry;
 use raw_store::metrics::DBMetrics;
+use raw_store::rocks::batch::{WriteBatch, WriteBatchCF};
 use raw_store::rocks::RocksDB;
 use raw_store::traits::DBStore;
-use raw_store::{ColumnFamilyName, SchemaStore, StoreInstance};
+use raw_store::{ColumnFamilyName, SchemaStore, StoreInstance, WriteOp};
 use smt::NodeReader;
 use std::fmt::{Debug, Display, Formatter};
 use std::path::Path;
@@ -191,20 +192,28 @@ impl MoveOSStore {
 
         // atomic save updates
         let inner_store = &self.node_store.get_store().store();
-        let mut write_batch = nodes_to_write_batch(changed_nodes);
-        let mut cf_names = vec![STATE_NODE_COLUMN_FAMILY_NAME; write_batch.rows.len()];
-        write_batch.put(
-            to_bytes(&STARTUP_INFO_KEY).unwrap(),
-            to_bytes(&new_startup_info).unwrap(),
-        )?;
-        cf_names.push(CONFIG_STARTUP_INFO_COLUMN_FAMILY_NAME);
-        write_batch.put(
-            to_bytes(&tx_hash).unwrap(),
-            to_bytes(&transaction_info).unwrap(),
-        )?;
-        cf_names.push(TRANSACTION_EXECUTION_INFO_COLUMN_FAMILY_NAME);
+        let mut cf_batches: Vec<WriteBatchCF> = Vec::new();
+        let write_batch = nodes_to_write_batch(changed_nodes);
+        cf_batches.push(WriteBatchCF {
+            batch: write_batch,
+            cf_name: STATE_NODE_COLUMN_FAMILY_NAME.to_string(),
+        });
+        cf_batches.push(WriteBatchCF {
+            batch: WriteBatch::new_with_rows(vec![(
+                to_bytes(STARTUP_INFO_KEY).unwrap(),
+                WriteOp::Value(to_bytes(&new_startup_info).unwrap()),
+            )]),
+            cf_name: CONFIG_STARTUP_INFO_COLUMN_FAMILY_NAME.to_string(),
+        });
+        cf_batches.push(WriteBatchCF {
+            batch: WriteBatch::new_with_rows(vec![(
+                to_bytes(&tx_hash).unwrap(),
+                WriteOp::Value(to_bytes(&transaction_info).unwrap()),
+            )]),
+            cf_name: TRANSACTION_EXECUTION_INFO_COLUMN_FAMILY_NAME.to_string(),
+        });
         // TODO: could use non-sync write here, because we could replay tx from rooch store(which has sync write after sequenced) at startup.
-        inner_store.write_batch_sync_across_cfs(cf_names, write_batch)?;
+        inner_store.write_cf_batch(cf_batches, true)?;
 
         let out = TransactionOutput::new(status, changeset, events, gas_used, is_upgrade);
 
