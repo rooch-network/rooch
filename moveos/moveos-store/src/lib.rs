@@ -4,13 +4,14 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::config_store::{ConfigDBStore, ConfigStore};
+use crate::config_store::{ConfigDBStore, ConfigStore, STARTUP_INFO_KEY};
 use crate::event_store::{EventDBStore, EventStore};
 use crate::state_store::statedb::StateDBStore;
-use crate::state_store::NodeDBStore;
+use crate::state_store::{nodes_to_write_batch, NodeDBStore};
 use crate::transaction_store::{TransactionDBStore, TransactionStore};
 use accumulator::inmemory::InMemoryAccumulator;
 use anyhow::{Error, Result};
+use bcs::to_bytes;
 use move_core_types::language_storage::StructTag;
 use moveos_config::store_config::RocksdbConfig;
 use moveos_config::DataDirPath;
@@ -28,7 +29,8 @@ use once_cell::sync::Lazy;
 use prometheus::Registry;
 use raw_store::metrics::DBMetrics;
 use raw_store::rocks::RocksDB;
-use raw_store::{ColumnFamilyName, StoreInstance};
+use raw_store::traits::DBStore;
+use raw_store::{ColumnFamilyName, SchemaStore, StoreInstance};
 use smt::NodeReader;
 use std::fmt::{Debug, Display, Formatter};
 use std::path::Path;
@@ -151,7 +153,11 @@ impl MoveOSStore {
             is_gas_upgrade: _,
         } = output;
 
-        self.state_store.apply_change_set(&mut changeset)?;
+        // node_store updates
+        let changed_nodes = self.state_store.change_set_to_nodes(&mut changeset)?;
+        // transaction_store updates
+        let new_state_root = changeset.state_root;
+        let size = changeset.global_size;
         let event_ids = self.event_store.save_events(tx_events.clone())?;
         let events = tx_events
             .clone()
@@ -159,26 +165,8 @@ impl MoveOSStore {
             .zip(event_ids)
             .map(|(event, event_id)| Event::new_with_event_id(event_id, event))
             .collect::<Vec<_>>();
-
-        let new_state_root = changeset.state_root;
-        let size = changeset.global_size;
-
-        self.config_store
-            .save_startup_info(StartupInfo::new(new_state_root, size))?;
-
-        if log::log_enabled!(log::Level::Debug) {
-            log::debug!(
-                "tx_hash: {}, state_root: {}, size: {}, gas_used: {}, status: {:?}",
-                tx_hash,
-                new_state_root,
-                size,
-                gas_used,
-                status
-            );
-        }
         let event_hashes: Vec<_> = events.iter().map(|e| e.hash()).collect();
         let event_root = InMemoryAccumulator::from_leaves(event_hashes.as_slice()).root_hash();
-
         let transaction_info = TransactionExecutionInfo::new(
             tx_hash,
             new_state_root,
@@ -187,17 +175,39 @@ impl MoveOSStore {
             gas_used,
             status.clone(),
         );
-        self.transaction_store
-            .save_tx_execution_info(transaction_info.clone())
-            .map_err(|e| {
-                anyhow::anyhow!(
-                    "ExecuteTransactionMessage handler save tx info failed: {:?} {}",
-                    transaction_info,
-                    e
-                )
-            })?;
+        // config_store updates
+        let new_startup_info = StartupInfo::new(new_state_root, size);
+
+        if log::log_enabled!(log::Level::Debug) {
+            log::debug!(
+                "handle_tx_output: tx_hash: {}, state_root: {}, size: {}, gas_used: {}, status: {:?}",
+                tx_hash,
+                new_state_root,
+                size,
+                gas_used,
+                status
+            );
+        }
+
+        // atomic save updates
+        let inner_store = &self.node_store.get_store().store();
+        let mut write_batch = nodes_to_write_batch(changed_nodes);
+        let mut cf_names = vec![STATE_NODE_COLUMN_FAMILY_NAME; write_batch.rows.len()];
+        write_batch.put(
+            to_bytes(&STARTUP_INFO_KEY).unwrap(),
+            to_bytes(&new_startup_info).unwrap(),
+        )?;
+        cf_names.push(CONFIG_STARTUP_INFO_COLUMN_FAMILY_NAME);
+        write_batch.put(
+            to_bytes(&tx_hash).unwrap(),
+            to_bytes(&transaction_info).unwrap(),
+        )?;
+        cf_names.push(TRANSACTION_EXECUTION_INFO_COLUMN_FAMILY_NAME);
+        // TODO: could use non-sync write here, because we could replay tx from rooch store(which has sync write after sequenced) at startup.
+        inner_store.write_batch_sync_across_cfs(cf_names, write_batch)?;
 
         let out = TransactionOutput::new(status, changeset, events, gas_used, is_upgrade);
+
         Ok((out, transaction_info))
     }
 }

@@ -224,6 +224,21 @@ impl AccumulatorTree {
         Ok(())
     }
 
+    /// Pop unsaved nodes for atomic updates with other operations .
+    pub fn pop_unsaved_nodes(&mut self) -> Option<Vec<AccumulatorNode>> {
+        let nodes = &mut self.update_nodes;
+        if !nodes.is_empty() {
+            let nodes_vec = nodes
+                .iter()
+                .map(|(_, node)| node.clone())
+                .collect::<Vec<AccumulatorNode>>();
+            nodes.clear();
+            return Some(nodes_vec);
+        }
+
+        None
+    }
+
     fn scan_frozen_subtree_roots(&mut self) -> Result<Vec<H256>> {
         FrozenSubTreeIterator::new(self.num_leaves)
             .map(|p| {

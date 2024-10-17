@@ -132,8 +132,8 @@ impl SequencerActor {
 
         let tx_order = self.last_sequencer_info.last_order + 1;
 
-        let hash = tx_data.tx_hash();
-        let mut witness_data = hash.as_ref().to_vec();
+        let tx_hash = tx_data.tx_hash();
+        let mut witness_data = tx_hash.as_ref().to_vec();
         witness_data.extend(tx_order.to_le_bytes().iter());
         let witness_hash = h256::sha3_256_of(&witness_data);
         let tx_order_signature = Signature::sign(&witness_hash.0, &self.sequencer_key)
@@ -141,8 +141,8 @@ impl SequencerActor {
             .to_vec();
 
         // Calc transaction accumulator
-        let _tx_accumulator_root = self.tx_accumulator.append(vec![hash].as_slice())?;
-        self.tx_accumulator.flush()?;
+        let _tx_accumulator_root = self.tx_accumulator.append(vec![tx_hash].as_slice())?;
+        let tx_accumulator_unsaved_nodes = self.tx_accumulator.pop_unsaved_nodes();
 
         let tx_accumulator_info = self.tx_accumulator.get_info();
         let tx = LedgerTransaction::build_ledger_transaction(
@@ -153,10 +153,17 @@ impl SequencerActor {
             tx_accumulator_info.clone(),
         );
 
-        let sequencer_info = SequencerInfo::new(tx.sequence_info.tx_order, tx_accumulator_info);
-        self.rooch_store
-            .save_last_transaction_with_sequence_info(tx.clone(), sequencer_info.clone())?;
-        info!("sequencer tx: {} order: {:?}", hash, tx_order);
+        let sequencer_info = SequencerInfo::new(tx_order, tx_accumulator_info);
+        self.rooch_store.save_sequenced_tx(
+            tx_hash,
+            tx.clone(),
+            sequencer_info.clone(),
+            tx_accumulator_unsaved_nodes,
+        )?;
+        info!(
+            "sequencer sequenced tx_hash: {} tx_order: {:?}",
+            tx_hash, tx_order
+        );
         self.last_sequencer_info = sequencer_info;
 
         Ok(tx)

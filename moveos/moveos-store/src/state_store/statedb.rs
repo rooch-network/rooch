@@ -132,11 +132,14 @@ impl StateDBStore {
     }
 
     #[named]
-    pub fn apply_change_set(&self, state_change_set: &mut StateChangeSet) -> Result<()> {
+    pub fn change_set_to_nodes(
+        &self,
+        state_change_set: &mut StateChangeSet,
+    ) -> Result<BTreeMap<H256, Vec<u8>>> {
         let fn_name = function_name!();
         let _timer = self
             .metrics
-            .state_apply_change_set_latency_seconds
+            .state_change_set_to_nodes_latency_seconds
             .with_label_values(&[fn_name])
             .start_timer();
 
@@ -178,13 +181,18 @@ impl StateDBStore {
                 global_size
             );
         }
-        self.node_store.write_nodes(nodes)?;
         state_change_set.update_state_root(new_state_root);
 
         self.metrics
-            .state_apply_change_set_bytes
+            .state_change_set_to_nodes_bytes
             .with_label_values(&[fn_name])
             .observe(size as f64);
+        Ok(nodes)
+    }
+
+    pub fn apply_change_set(&self, state_change_set: &mut StateChangeSet) -> Result<()> {
+        let nodes = self.change_set_to_nodes(state_change_set)?;
+        self.node_store.write_nodes(nodes)?;
         Ok(())
     }
 

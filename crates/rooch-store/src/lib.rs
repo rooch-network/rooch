@@ -6,7 +6,7 @@ use crate::da_store::{DAMetaDBStore, DAMetaStore};
 use crate::meta_store::{MetaDBStore, MetaStore, SEQUENCER_INFO_KEY};
 use crate::state_store::{StateDBStore, StateStore};
 use crate::transaction_store::{TransactionDBStore, TransactionStore};
-use accumulator::AccumulatorTreeStore;
+use accumulator::{AccumulatorNode, AccumulatorTreeStore};
 use anyhow::Result;
 use moveos_common::utils::to_bytes;
 use moveos_config::store_config::RocksdbConfig;
@@ -138,12 +138,15 @@ impl RoochStore {
         &self.da_meta_store
     }
 
-    pub fn save_last_transaction_with_sequence_info(
+    /// atomic save updates made by Sequencer.sequence(tx) to the store
+    pub fn save_sequenced_tx(
         &self,
-        mut tx: LedgerTransaction,
+        tx_hash: H256,
+        tx: LedgerTransaction,
         sequencer_info: SequencerInfo,
+        accumulator_nodes: Option<Vec<AccumulatorNode>>,
     ) -> Result<()> {
-        // TODO use txn GetForUpdate to guard against Read-Write Conflicts
+        // TODO use txn GetForUpdate to guard against Read-Write Conflicts (need open rocksdb with TransactionDB)
         let pre_sequencer_info = self.get_sequencer_info()?;
         if let Some(pre_sequencer_info) = pre_sequencer_info {
             if sequencer_info.last_order != pre_sequencer_info.last_order + 1 {
@@ -152,26 +155,26 @@ impl RoochStore {
         }
 
         let inner_store = &self.store_instance;
-
-        let tx_hash = tx.tx_hash();
         let tx_order = tx.sequence_info.tx_order;
-
         let mut write_batch = WriteBatch::new();
+        let mut cf_names = vec![
+            TRANSACTION_COLUMN_FAMILY_NAME,
+            TX_SEQUENCE_INFO_MAPPING_COLUMN_FAMILY_NAME,
+            META_SEQUENCER_INFO_COLUMN_FAMILY_NAME,
+        ];
         write_batch.put(to_bytes(&tx_hash).unwrap(), to_bytes(&tx).unwrap())?;
         write_batch.put(to_bytes(&tx_order).unwrap(), to_bytes(&tx_hash).unwrap())?;
         write_batch.put(
             to_bytes(SEQUENCER_INFO_KEY).unwrap(),
             to_bytes(&sequencer_info).unwrap(),
         )?;
-
-        inner_store.write_batch_sync_across_cfs(
-            vec![
-                TRANSACTION_COLUMN_FAMILY_NAME,
-                TX_SEQUENCE_INFO_MAPPING_COLUMN_FAMILY_NAME,
-                META_SEQUENCER_INFO_COLUMN_FAMILY_NAME,
-            ],
-            write_batch,
-        )?;
+        if let Some(accumulator_nodes) = accumulator_nodes {
+            for node in accumulator_nodes {
+                write_batch.put(to_bytes(&node.hash()).unwrap(), to_bytes(&node).unwrap())?;
+                cf_names.push(TX_ACCUMULATOR_NODE_COLUMN_FAMILY_NAME);
+            }
+        }
+        inner_store.write_batch_sync_across_cfs(cf_names, write_batch)?;
         Ok(())
     }
 }

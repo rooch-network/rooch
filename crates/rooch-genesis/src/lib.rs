@@ -414,16 +414,15 @@ impl RoochGenesis {
             .ctx
             .get::<moveos_types::moveos_std::genesis::GenesisContext>()?
             .expect("Moveos Genesis context should exist");
-        let tx_ledger_data = LedgerTxData::L2Tx(self.genesis_tx());
-
+        let mut tx_ledger_data = LedgerTxData::L2Tx(self.genesis_tx());
+        let tx_hash = tx_ledger_data.tx_hash();
         // Init tx accumulator
         let genesis_tx_accumulator = MerkleAccumulator::new_with_info(
             AccumulatorInfo::default(),
             rooch_db.rooch_store.get_transaction_accumulator_store(),
         );
-        let _genesis_accumulator_root =
-            genesis_tx_accumulator.append(vec![tx_ledger_data.clone().tx_hash()].as_slice())?;
-        genesis_tx_accumulator.flush()?;
+        let _genesis_accumulator_root = genesis_tx_accumulator.append(vec![tx_hash].as_slice())?;
+        let genesis_accumulator_unsaved_nodes = genesis_tx_accumulator.pop_unsaved_nodes();
 
         let genesis_tx_accmulator_info = genesis_tx_accumulator.get_info();
         let ledger_tx = LedgerTransaction::build_ledger_transaction(
@@ -434,9 +433,12 @@ impl RoochGenesis {
             genesis_tx_accmulator_info.clone(),
         );
         let sequencer_info = SequencerInfo::new(genesis_tx_order, genesis_tx_accmulator_info);
-        rooch_db
-            .rooch_store
-            .save_last_transaction_with_sequence_info(ledger_tx.clone(), sequencer_info)?;
+        rooch_db.rooch_store.save_sequenced_tx(
+            tx_hash,
+            ledger_tx.clone(),
+            sequencer_info,
+            genesis_accumulator_unsaved_nodes,
+        )?;
 
         // Save genesis tx state change set
         let state_change_set_ext = StateChangeSetExt::new(
