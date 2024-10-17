@@ -169,9 +169,9 @@ impl RoochStore {
             to_bytes(&sequencer_info).unwrap(),
         )?;
         if let Some(accumulator_nodes) = accumulator_nodes {
-            cf_names.push(TX_ACCUMULATOR_NODE_COLUMN_FAMILY_NAME);
             for node in accumulator_nodes {
                 write_batch.put(to_bytes(&node.hash()).unwrap(), to_bytes(&node).unwrap())?;
+                cf_names.push(TX_ACCUMULATOR_NODE_COLUMN_FAMILY_NAME);
             }
         }
         inner_store.write_batch_sync_across_cfs(cf_names, write_batch)?;
