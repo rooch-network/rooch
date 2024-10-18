@@ -1,0 +1,71 @@
+---
+title: 'Rooch Portal 使用指南'
+description: ""
+author: geometryolife
+category: Developer
+date: 2024/10/20
+---
+
+import PostHeader from "/components/blog/postHeader";
+
+<PostHeader />
+
+## 简介
+
+Rooch Portal 作为 Rooch 生态应用的门户，提供了资产管理、资产兑换、应用交互等一站式服务。
+
+- 访问链接：https://portal.rooch.network
+
+## 组件介绍
+
+### Account
+
+![](/blog/portal-intro/portal-account.png)
+
+这是 Portal 默认的页面，如果没有连接钱包，回提示连接钱包，并访问你的账户信息，这里以 UniSat 钱包为例，点击右上角 `Connect Wallet` 按钮：
+
+![](/blog/portal-intro/portal-account-info.png)
+
+这个页面展示了 Bitcoin 账户以及与其绑定的 Rooch 账户地址，当前账户拥有的 Coin，以及交易信息。
+
+### Assets
+
+![](/blog/portal-intro/portal-assets.png)
+
+这个页面主要是用于管理不同类型资产，提供转账功能。
+
+- `Coin` 展示的是 Rooch 上的同质化资产。
+- `NFT` 展示的是 Rooch 上的非同质化资产。
+- `Bitcoin Assets` 主要展示账户拥有的 Bitcoin 资产。
+
+### Transactions
+
+![](/blog/portal-intro/portal-transaction.png)
+
+这里展示当前账户的详细交易信息，比如交易哈希、时间、执行状态、类型、消耗的 Gas 等。
+
+如果想要查看某笔交易更详尽的内容，请点击 `View` 按钮！
+
+### Purchase gas
+
+![](/blog/portal-intro/portal-purchase-gas.png)
+
+### Faucet
+
+![](/blog/portal-intro/portal-faucet.png)
+
+### Settings
+
+![](/blog/portal-intro/portal-settings.png)
+
+### Search
+
+![](/blog/portal-intro/portal-search.png)
+
+### Apps
+
+![](/blog/portal-intro/portal-apps.png)
+
+### Testnet
+
+这个一个跳转按钮，点击会将 Portal 的网络切换到 `test` 网络。

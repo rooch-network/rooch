@@ -1,0 +1,93 @@
+---
+title: 'Rooch Portal 使用指南'
+description: ""
+author: geometryolife
+category: Developer
+date: 2024/10/20
+---
+
+import PostHeader from "/components/blog/postHeader";
+
+<PostHeader />
+
+## 简介
+
+Rooch Portal 作为 Rooch 生态应用的门户，提供了资产管理、资产兑换、应用交互等一站式服务。
+
+- 访问链接：https://portal.rooch.network
+
+## 创建会话密钥
+
+会话密钥（Session Key）是 Rooch 提供的一个特性，为区块链应用的交互提供便捷的体验。使用 Portal 也需要生成一个 Session Key。
+
+请点击左下角的 `Create Session Key` 按钮，钱包签名之后，就会生成一个具有时限的 Session Key 了，需要确保账户有 `RGAS`。
+
+## 组件介绍
+
+### Account
+
+![](/blog/portal-intro/portal-account.png)
+
+这是 Portal 默认的页面，如果没有连接钱包，回提示连接钱包，并访问你的账户信息，这里以 UniSat 钱包为例，点击右上角 `Connect Wallet` 按钮：
+
+![](/blog/portal-intro/portal-account-info.png)
+
+这个页面展示了 Bitcoin 账户以及与其绑定的 Rooch 账户地址，当前账户拥有的 Coin，以及交易信息。
+
+### Assets
+
+![](/blog/portal-intro/portal-assets.png)
+
+这个页面主要是用于管理不同类型资产，提供转账功能。
+
+- `Coin` 展示的是 Rooch 上的同质化资产。
+- `NFT` 展示的是 Rooch 上的非同质化资产。
+- `Bitcoin Assets` 主要展示账户拥有的 Bitcoin 资产。
+
+> 注意：转账前，请确认是否已生成有 Session Key，如果没有，必须手动生成一个。
+
+### Transactions
+
+![](/blog/portal-intro/portal-transactions.png)
+
+这里展示当前账户的详细交易信息，比如交易哈希、时间、执行状态、类型、消耗的 Gas 等。
+
+如果想要查看某笔交易更详尽的内容，请点击 `View` 按钮！
+
+### Purchase gas
+
+![](/blog/portal-intro/portal-purchase-gas.png)
+
+这里提供了 `BTC` 兑换 `RGAS` 的功能。
+
+### Faucet
+
+![](/blog/portal-intro/portal-faucet.png)
+
+对于想要使用 Rooch 平台构建应用时，可以先向 Rooch 索要一次 `RGAS`，请确保绑定的 Bitcoin 账户有 `UTXO`。
+
+### Settings
+
+![](/blog/portal-intro/portal-settings.png)
+
+这个页面提供了显示和管理 Session Key 的功能。比如，可以查看 Session Key 的作用范围，以及生成 Session Key 的历史记录。
+
+### Search
+
+![](/blog/portal-intro/portal-search.png)
+
+在这个搜索框输入一个 Bitcoin 地址后，它将查询相应地址的资产，查询结果页面复用的是 `Account` 页面。
+
+![](/blog/portal-intro/portal-another-account.png)
+
+查询了 `bc1ph25pk4xm36y3mt6uwclm0fgj8dgdnf5u7xf987qvyv58x987cldswp09hc` 账户账户信息。
+
+### Apps
+
+![](/blog/portal-intro/portal-apps.png)
+
+这里提供了 Rooch 生态应用的一个访问入口，跟门户网站一样，能够让用户一站式跳转到相应的应用首页。
+
+### Testnet
+
+这个一个跳转按钮，点击会将 Portal 的网络切换到 `test` 网络。
