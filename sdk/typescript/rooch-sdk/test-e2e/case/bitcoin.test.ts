@@ -3,7 +3,6 @@
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { TestBox } from '../setup.js'
-import { BitcoinNetowkType } from '../../src'
 
 describe('Bitcoin Assets API', () => {
   let testBox: TestBox

@@ -3,9 +3,11 @@ import { useWallets } from '@roochnetwork/rooch-sdk-kit';
 import { Stack, Dialog, DialogTitle, DialogContent } from '@mui/material';
 
 import WalletButton from './wallet-button';
+import { isMainNetwork } from '../../utils/env'
 
 export default function WalletSelectModal({ onSelect }: { onSelect: () => void }) {
-  const wallets = useWallets();
+  const isMain = isMainNetwork()
+  const wallets = useWallets().filter((item) => isMain || !isMain && item.getName() === 'UniSat');
 
   return (
     <Dialog

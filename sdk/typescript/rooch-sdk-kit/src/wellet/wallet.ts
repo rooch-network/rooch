@@ -4,6 +4,7 @@
 import { ThirdPartyAddress, Bytes, Signer } from '@roochnetwork/rooch-sdk'
 
 import { SupportChain } from '../feature/index.js'
+import { WalletNetworkType } from './types.js'
 
 export abstract class Wallet extends Signer {
   protected address: ThirdPartyAddress[] | undefined
@@ -44,7 +45,7 @@ export abstract class Wallet extends Signer {
   /**
    * Switches the network.
    */
-  abstract switchNetwork(network: string): void
+  abstract switchNetwork(network: WalletNetworkType): void
 
   /**
    * Switches the account.
@@ -56,13 +57,13 @@ export abstract class Wallet extends Signer {
    * Retrieves the current network of the wallet.
    * @returns The current network as a string.
    */
-  abstract getNetwork(): string
+  abstract getNetwork(): WalletNetworkType
 
   /**
    * Retrieves the supported networks of the wallet.
    * @returns An array of supported network strings.
    */
-  abstract getSupportNetworks(): string[]
+  abstract getSupportNetworks(): WalletNetworkType[]
 
   /**
    * Registers a callback function to be invoked when accounts are changed.

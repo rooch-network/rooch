@@ -3,6 +3,7 @@
 
 import { BitcoinAddress, Bytes, ThirdPartyAddress, str, bytes } from '@roochnetwork/rooch-sdk'
 import { BitcoinWallet } from '../wellet/index.js'
+import { WalletNetworkType } from './types.js'
 
 export class OkxWallet extends BitcoinWallet {
   getName(): string {
@@ -46,15 +47,15 @@ export class OkxWallet extends BitcoinWallet {
     return this.address
   }
 
-  switchNetwork(): void {
-    this.getTarget().switchNetwork()
+  switchNetwork(_: WalletNetworkType): void {
+    throw Error('okx not support switch network!')
   }
 
-  getNetwork(): string {
+  getNetwork(): WalletNetworkType {
     return this.getTarget().getNetwork()
   }
 
-  getSupportNetworks(): string[] {
+  getSupportNetworks(): WalletNetworkType[] {
     return ['livenet']
   }
 

@@ -135,6 +135,7 @@ export interface SwapProps {
    */
   validationError?: string;
 
+  isValid?: boolean
   /**
    * Gas info
    */

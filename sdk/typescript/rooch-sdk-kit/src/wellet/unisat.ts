@@ -4,8 +4,7 @@
 import { BitcoinAddress, Bytes, ThirdPartyAddress, str, bytes } from '@roochnetwork/rooch-sdk'
 
 import { BitcoinWallet } from '../wellet/index.js'
-
-const UNISAT_SUPPORT_NETWORKS = ['livenet', 'testnet']
+import { All_NETWORK, WalletNetworkType } from './types.js'
 
 export class UniSatWallet extends BitcoinWallet {
   getName(): string {
@@ -45,15 +44,15 @@ export class UniSatWallet extends BitcoinWallet {
     return this.address
   }
 
-  switchNetwork(network: string): void {
+  switchNetwork(network: WalletNetworkType): void {
     this.getTarget().switchNetwork(network)
   }
-  getNetwork(): string {
+  getNetwork(): WalletNetworkType {
     return this.getTarget().getNetwork()
   }
 
-  getSupportNetworks(): string[] {
-    return UNISAT_SUPPORT_NETWORKS
+  getSupportNetworks(): WalletNetworkType[] {
+    return All_NETWORK
   }
 
   onAccountsChanged(callback: (account: string[]) => void): void {

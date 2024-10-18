@@ -14,5 +14,6 @@ export {
 } from './httpTransport.js'
 
 export { getRoochNodeUrl } from './networks.js'
+export type { NetWorkType } from './networks.js'
 
 export * from './error.js'

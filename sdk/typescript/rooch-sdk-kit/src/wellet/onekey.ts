@@ -3,6 +3,7 @@
 
 import { BitcoinAddress, Bytes, ThirdPartyAddress, str, bytes } from '@roochnetwork/rooch-sdk'
 import { BitcoinWallet } from '../wellet/index.js'
+import { All_NETWORK, WalletNetworkType } from './types.js'
 
 export class OnekeyWallet extends BitcoinWallet {
   getName(): string {
@@ -52,16 +53,17 @@ export class OnekeyWallet extends BitcoinWallet {
     return this.address
   }
 
-  switchNetwork(): void {
-    this.getTarget().switchNetwork()
+  // TODO: onekey provider switch api, But it doesn't work.
+  switchNetwork(_: WalletNetworkType): void {
+    throw Error('onekey not support switch network!')
   }
 
-  getNetwork(): string {
+  getNetwork(): WalletNetworkType {
     return this.getTarget().getNetwork()
   }
 
-  getSupportNetworks(): string[] {
-    return ['livenet']
+  getSupportNetworks(): WalletNetworkType[] {
+    return All_NETWORK
   }
 
   onAccountsChanged(callback: (account: string[]) => void): void {
