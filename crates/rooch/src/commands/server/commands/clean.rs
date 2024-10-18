@@ -30,7 +30,7 @@ impl CleanCommand {
             let mut input = String::new();
             std::io::stdout().write_all(prompt.as_bytes())?;
             std::io::stdin().read_line(&mut input)?;
-            if input.trim().to_lowercase() != "y" {
+            if !input.trim().is_empty() && input.trim().to_lowercase() != "y" {
                 return Ok(());
             }
         }
