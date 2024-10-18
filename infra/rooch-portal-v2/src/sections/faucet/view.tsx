@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { isValidBitcoinAddress } from '@roochnetwork/rooch-sdk';
-import { useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit';
+import { Args, isValidBitcoinAddress } from '@roochnetwork/rooch-sdk'
+import { useRoochClient, useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit'
 
 import { LoadingButton } from '@mui/lab';
 import { Box, Card, Chip, Stack, CardHeader, CardContent } from '@mui/material';
@@ -18,13 +18,24 @@ import { DashboardContent } from 'src/layouts/dashboard';
 
 import { toast } from 'src/components/snackbar';
 
+const ERROR_MSG: Record<string, string> =  {
+  1: 'Faucet Not Open',
+  2: 'Invalid UTXO',
+  3: 'Faucet Not Enough RGas',
+  4: 'Already Claimed',
+  5: 'UTXO Value Is Zero',
+}
+
 export function FaucetView({ address }: { address: string }) {
   const [viewAddress, setViewAddress] = useState<string>();
   const [viewRoochAddress, setViewRoochAddress] = useState<string>();
   const [faucetStatus, setFaucetStatus] = useState<boolean>(false);
   const faucetUrl = useNetworkVariable('faucetUrl');
   const [errorMsg, setErrorMsg] = useState<string>();
-
+  const client = useRoochClient()
+  const faucetAddress = useNetworkVariable('faucetAddress')
+  const faucetObject = useNetworkVariable('faucetObject')
+  const [claimGas, setClaimGas] = useState(0)
   const router = useRouter();
 
   useEffect(() => {
@@ -51,8 +62,40 @@ export function FaucetView({ address }: { address: string }) {
     { refetchInterval: 5000 }
   );
 
-  const fetchFaucet = async () => {
-    setFaucetStatus(true);
+  useEffect(() => {
+    if (!viewRoochAddress) {
+      return
+    }
+    setFaucetStatus(true)
+    client.queryUTXO({
+      filter: {
+        owner: address
+      }
+    }).then(async (result) => {
+      const utxoIds = result.data.map((item) => item.id)
+      if (utxoIds) {
+        const result = await client.executeViewFunction({
+          target: `${faucetAddress}::gas_faucet::check_claim`,
+          args: [Args.objectId(faucetObject), Args.address(viewRoochAddress), Args.vec('objectId', utxoIds)]
+        })
+
+        if (result.vm_status === 'Executed') {
+          const gas = Number(formatCoin(Number(result.return_values![0].decoded_value), 8, 2))
+          setClaimGas(gas)
+        } else if ('MoveAbort' in result.vm_status) {
+          setErrorMsg(ERROR_MSG[Number(result.vm_status.MoveAbort.abort_code)])
+        }
+      } else {
+        setErrorMsg('Not found utxo')
+      }
+    }).finally(() => {
+      setFaucetStatus(false)
+    })
+
+  }, [address, client, faucetAddress, faucetObject, viewRoochAddress])
+
+  const fetchFaucet = async ()=> {
+    setFaucetStatus(true)
     try {
       const payload = JSON.stringify({
         claimer: viewAddress,
@@ -80,8 +123,8 @@ export function FaucetView({ address }: { address: string }) {
       }
 
       const d = await response.json();
-      await refetch();
-      toast.success(`Faucet Success! RGas: ${d.gas}`);
+      await refetch()
+      toast.success(`Faucet Success! RGas: ${formatCoin(Number(d.gas || 0), data?.decimals || 0, 2)}`);
     } catch (error) {
       console.error('Error:', error);
       toast.error(`faucet error: ${error}`);
@@ -114,6 +157,9 @@ export function FaucetView({ address }: { address: string }) {
                 {formatCoin(Number(data?.balance || 0), data?.decimals || 0, 2)}
               </Box>
             </Stack>
+            {
+              errorMsg ? 'You cannot claim gas, Please make sure the current address has a valid utxo and try again': ''
+            }
             <LoadingButton
               variant="soft"
               color="primary"
@@ -121,7 +167,7 @@ export function FaucetView({ address }: { address: string }) {
               loading={isPending || faucetStatus}
               onClick={fetchFaucet}
             >
-              {errorMsg || 'Claim'}
+              {errorMsg || `Claim: ${claimGas} RGas`}
             </LoadingButton>
           </Stack>
         </CardContent>
