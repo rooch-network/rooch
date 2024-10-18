@@ -195,7 +195,7 @@ module grow_bitcoin::grow_bitcoin {
         });
 
         let start_time = timestamp::now_seconds();
-        let duration_seconds = 365u64 * (PerDaySeconds as u64) *180u64;
+        let duration_seconds = (PerDaySeconds as u64) *180u64;
         let end_time = start_time + duration_seconds;
         let release_per_second = TOTAL_GROW_SUPPLY / (duration_seconds as u128);
         do_deploy(release_per_second, start_time, end_time);
@@ -688,10 +688,10 @@ module grow_bitcoin::grow_bitcoin {
         timestamp::fast_forward_seconds_for_test(seconds);
         let amount = query_gov_token_amount(utxo_id);
         let amount2 = query_gov_token_amount(utxo_id2);
-        // std::debug::print(&amount);
-        // std::debug::print(&amount2);
-        assert!(amount == 5400, 1);
-        assert!(amount2 == 1800, 2);
+        std::debug::print(&amount);
+        std::debug::print(&amount2);
+        assert!(amount == 2025450, 1);
+        assert!(amount2 == 675150, 2);
         let coin = do_unstake(&sender, object::id(&utxo));
         assert!(coin::value(&coin) == (amount as u256), 3);
         let amount = query_gov_token_amount(utxo_id);
