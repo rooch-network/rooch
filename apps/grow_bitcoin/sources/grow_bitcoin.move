@@ -113,6 +113,7 @@ module grow_bitcoin::grow_bitcoin {
     struct GROW has key, store {}
 
     struct FarmingAsset has key {
+        asset_total_value: u64,
         asset_total_weight: u64,
         harvest_index: u128,
         last_update_timestamp: u64,
@@ -192,23 +193,14 @@ module grow_bitcoin::grow_bitcoin {
         account::move_resource_to(&grow_bitcoin_signer, SubscriberInfo {
             subscriber
         });
-        //TODO deploy in module init.
-        // let start_time = timestamp::now_seconds();
-        // let duration_seconds = 365u64 * (PerDaySeconds as u64) *180u64;
-        // let end_time = start_time + duration_seconds;
-        // let release_per_second = TOTAL_GROW_SUPPLY / (duration_seconds as u128);
-        // do_deploy(release_per_second, start_time, end_time);
-    }
 
-
-    public entry fun deploy(
-        release_per_second: u128,
-        start_time: u64,
-        end_time: u64,
-        _cap: &mut Object<AdminCap>
-    ) {
+        let start_time = timestamp::now_seconds();
+        let duration_seconds = 365u64 * (PerDaySeconds as u64) *180u64;
+        let end_time = start_time + duration_seconds;
+        let release_per_second = TOTAL_GROW_SUPPLY / (duration_seconds as u128);
         do_deploy(release_per_second, start_time, end_time);
     }
+
 
     fun do_deploy(
         release_per_second: u128,
@@ -229,6 +221,7 @@ module grow_bitcoin::grow_bitcoin {
         );
         let grow_bitcoin_signer = signer::module_signer<GROW>();
         account::move_resource_to(&grow_bitcoin_signer, FarmingAsset {
+            asset_total_value: 0,
             asset_total_weight: 0,
             harvest_index: 0,
             last_update_timestamp: now_seconds,
@@ -274,8 +267,9 @@ module grow_bitcoin::grow_bitcoin {
     ) {
         assert!(!utxo::contains_temp_state<StakeInfo>(asset), ErrorAlreadyStaked);
         utxo::add_temp_state(asset, StakeInfo {});
-        let asset_weight = value( object::borrow(asset)) * calculate_time_lock_weight(0);
-        do_stake(signer, asset, asset_weight);
+        let utxo_value = value( object::borrow(asset));
+        let asset_weight = utxo_value * calculate_time_lock_weight(0);
+        do_stake(signer, asset, utxo_value, asset_weight);
     }
 
     public entry fun stake_bbn(
@@ -285,15 +279,17 @@ module grow_bitcoin::grow_bitcoin {
         assert!(!bbn::contains_temp_state<StakeInfo>(asset), ErrorAlreadyStaked);
         bbn::add_temp_state(asset, StakeInfo {});
         let bbn_stake_seal = object::borrow(asset);
-        let asset_weight = bbn::staking_value(bbn_stake_seal) * calculate_time_lock_weight(
+        let stake_value = bbn::staking_value(bbn_stake_seal);
+        let asset_weight = stake_value * calculate_time_lock_weight(
             (((bbn::staking_time(bbn_stake_seal) as u64) + bbn::block_height(bbn_stake_seal)) as u32)
         );
-        do_stake(signer, asset, asset_weight);
+        do_stake(signer, asset, stake_value, asset_weight);
     }
 
     fun do_stake<T: key>(
         signer: &signer,
         asset: &mut Object<T>,
+        asset_value: u64,
         asset_weight: u64
     ) {
         let asset_id = object::id(asset);
@@ -335,6 +331,7 @@ module grow_bitcoin::grow_bitcoin {
                 gain,
             });
             farming_asset.harvest_index = 0;
+            farming_asset.asset_total_value = asset_value;
             farming_asset.asset_total_weight = asset_weight;
         } else {
             let new_harvest_index = calculate_harvest_index_with_asset(farming_asset, now_seconds);
@@ -350,6 +347,7 @@ module grow_bitcoin::grow_bitcoin {
                 last_harvest_index: new_harvest_index,
                 gain: 0,
             });
+            farming_asset.asset_total_value = farming_asset.asset_total_value + asset_value;
             farming_asset.asset_total_weight = farming_asset.asset_total_weight + asset_weight;
             farming_asset.harvest_index = new_harvest_index;
         };
@@ -494,10 +492,10 @@ module grow_bitcoin::grow_bitcoin {
         stake.gain + new_gain
     }
 
-    /// Query total stake count from yield farming resource
-    public fun query_total_stake(): u64 {
+    /// Query total stake value(in satoshis) and weight from yield farming resource
+    public fun query_total_stake(): (u64, u64) {
         let farming_asset = account::borrow_resource<FarmingAsset>(DEPLOYER);
-        farming_asset.asset_total_weight
+        (farming_asset.asset_total_value, farming_asset.asset_total_weight)
     }
 
     /// Query stake weight from user staking objects.
@@ -672,8 +670,8 @@ module grow_bitcoin::grow_bitcoin {
         bitcoin_move::genesis::init_for_test();
         add_latest_block(100, @0x77dfc2fe598419b00641c296181a96cf16943697f573480b023b77cce82ada21);
         init();
-        let admin_cap = app_admin::admin::init_for_test();
-        deploy(1, 0, 200, admin_cap);
+        let _admin_cap = app_admin::admin::init_for_test();
+        //deploy(1, 0, 200, admin_cap);
         let seconds = 100;
         let tx_id = @0x77dfc2fe598419b00641c296181a96cf16943697f573480b023b77cce82ada21;
         let sat_value = 100000000;
@@ -684,17 +682,22 @@ module grow_bitcoin::grow_bitcoin {
         stake(&sender, &mut utxo);
         timestamp::fast_forward_seconds_for_test(seconds);
         stake(&sender, &mut utxo2);
+        let (total_value, total_weight) = query_total_stake();
+        assert!(total_value == 2 * sat_value, 1);
+        assert!(total_weight == 2 * sat_value * calculate_time_lock_weight(0), 2);
         timestamp::fast_forward_seconds_for_test(seconds);
         let amount = query_gov_token_amount(utxo_id);
         let amount2 = query_gov_token_amount(utxo_id2);
-        assert!(amount == 150, 1);
-        assert!(amount2 == 50, 2);
+        // std::debug::print(&amount);
+        // std::debug::print(&amount2);
+        assert!(amount == 5400, 1);
+        assert!(amount2 == 1800, 2);
         let coin = do_unstake(&sender, object::id(&utxo));
-        assert!(coin::value(&coin) == 150, 3);
+        assert!(coin::value(&coin) == (amount as u256), 3);
         let amount = query_gov_token_amount(utxo_id);
         assert!(amount == 0, 4);
         let coin2 = do_harvest(&sender, object::id(&utxo2));
-        assert!(coin::value(&coin2) == 50, 4);
+        assert!(coin::value(&coin2) == (amount2 as u256), 5);
         coin::destroy_for_testing(coin2);
         utxo::drop_for_testing(utxo2);
         // remove_expired_stake(utxo_id2);
