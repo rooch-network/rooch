@@ -47,6 +47,10 @@ module grow_bitcoin::grow_bitcoin {
 
     const TOTAL_GROW_SUPPLY: u128 = 2100_0000_0000;
 
+    const GROW_NAME:vector<u8> = b"Grow Bitcoin";
+    const GROW_SYMBOL:vector<u8> = b"GROW";
+    const GROW_ICON_URL: vector<u8> = b"<svg xmlns=\"http://www.w3.org/2000/svg\" id=\"uuid-22caa40a-9fd8-491f-8f74-64b2050f5896\" data-name=\"图层 1\" viewBox=\"0 0 317 317\"><defs><style>.uuid-28301967-1909-4b30-9889-78c9dbdaacd3{stroke:#fff;stroke-miterlimit:10}</style></defs><circle cx=\"158.5\" cy=\"158.5\" r=\"158.5\" class=\"uuid-28301967-1909-4b30-9889-78c9dbdaacd3\"/><circle cx=\"158.5\" cy=\"158.5\" r=\"141.25\" class=\"uuid-28301967-1909-4b30-9889-78c9dbdaacd3\"/><path d=\"M79.06 153.89c12.61-50.21 53.37-78.37 93.71-78.37 24.37 0 38.45 10.93 47.06 21.64l-23.95 21.43c-5.67-6.93-12.61-10.92-24.16-10.92-24.58 0-47.48 19.75-55.47 52.11-7.35 29.2 1.05 45.59 28.57 45.59 7.14 0 13.87-2.52 17.86-5.04l7.14-24.16h-24.79l7.78-30.68h57.99l-17.44 74.38c-13.45 10.5-34.25 17.86-54.63 17.86-44.96 0-73.12-29-59.67-83.83Z\" style=\"stroke-miterlimit:10;fill:#fff;stroke-width:.5px;stroke:#ff9908\"/><path d=\"M221.86 209.96v-4.23c0-3.97-.07-5.43-.22-8.31l-4.42-.65v-2.84l14.24-4.8 1.24.77.66 8.87v11.19c0 4.48.07 11.91.21 15.16h-11.94c.14-3.25.22-10.69.22-15.16Zm-4.06 11.8 6.9-1.45h7.59l6.9 1.45v3.36H217.8zm10.23-21.34h5.42l-.97 1.96c1.27-8.85 6.3-13.26 10.61-13.26 3.13 0 5.67 1.74 6.27 5.32-.16 3.76-2.24 5.89-5.13 5.89-2.18 0-3.86-1.07-5.58-3.35l-2.11-2.75 2.92 1.05c-2.6 1.89-5.2 5.71-6.13 10.02l-5.3-.52v-4.37Z\" style=\"stroke-miterlimit:10;stroke:#ff9908;fill:#ff9908\"/></svg>";
+
     const ErrorWrongDeployer: u64 = 1;
     const ErrorAlreadyDeployed: u64 = 2;
     const ErrorWrongFarmTime: u64 = 3;
@@ -214,9 +218,9 @@ module grow_bitcoin::grow_bitcoin {
         assert!(start_time >= now_seconds, ErrorWrongTimeRange);
 
         let coin_info = coin::register_extend<GROW>(
-            string::utf8(b"Grow Bitcoin"),
-            string::utf8(b"GROW"),
-            option::none(),
+            string::utf8(GROW_NAME),
+            string::utf8(GROW_SYMBOL),
+            option::some(string::utf8(GROW_ICON_URL)),
             0u8,
         );
         let grow_bitcoin_signer = signer::module_signer<GROW>();
