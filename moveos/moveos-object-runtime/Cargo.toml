@@ -19,6 +19,7 @@ log = { workspace = true }
 tracing = { workspace = true }
 hex = { workspace = true }
 parking_lot = { workspace = true }
+bcs = { workspace = true }
 
 move-binary-format = { workspace = true }
 move-core-types = { workspace = true }

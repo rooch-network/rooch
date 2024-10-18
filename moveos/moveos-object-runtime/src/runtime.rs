@@ -401,6 +401,13 @@ impl<'r> ObjectRuntime<'r> {
                     }
                 }
             }
+            if let ResolvedArg::ObjectVector(object_vector) = resolved_arg {
+                let mut resolved_args = vec![];
+                for object_arg in object_vector.iter() {
+                    resolved_args.push(ResolvedArg::Object(object_arg.clone()));
+                }
+                self.load_arguments(layout_loader, resolved_args.as_slice())?;
+            }
         }
         Ok(())
     }

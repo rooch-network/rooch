@@ -31,6 +31,7 @@ impl ObjectArg {
 pub enum ResolvedArg {
     Signer { address: AccountAddress },
     Object(ObjectArg),
+    ObjectVector(Vec<ObjectArg>),
     Pure { value: Vec<u8> },
 }
 
@@ -64,6 +65,16 @@ impl ResolvedArg {
             ResolvedArg::Object(ObjectArg::Ref(object)) => object.id().to_bytes(),
             ResolvedArg::Object(ObjectArg::Value(object)) => object.id().to_bytes(),
             ResolvedArg::Pure { value } => value,
+            ResolvedArg::ObjectVector(value_vector) => {
+                let mut vector_object = vec![];
+                for object in value_vector.iter() {
+                    if let ObjectArg::Value(object) = object {
+                        vector_object.push(object.id());
+                    }
+                }
+
+                bcs::to_bytes(&vector_object).expect("Serialize the ObjectVector should success")
+            }
         }
     }
 }
