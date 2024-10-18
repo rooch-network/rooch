@@ -1,8 +1,8 @@
-Feature: Rooch Portal contract tests
+Feature: RoochDAO Apps contract tests
 
    
     @serial
-    Scenario: gas_market
+    Scenario: gas_market & gas_faucet
       Given a bitcoind server for gas_market
       Given a server for gas_market
 
@@ -23,8 +23,6 @@ Feature: Rooch Portal contract tests
       Then cmd: "move publish -p ../../apps/gas_market --named-addresses app_admin=default,gas_market=default --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       Then cmd: "move publish -p ../../apps/gas_faucet --named-addresses app_admin=default,gas_faucet=default --json"
-      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-      Then cmd: "move publish -p ../../apps/grow_bitcoin --named-addresses app_admin=default,grow_bitcoin=default --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       Then cmd: "object -t default::gas_market::RGasMarket"
@@ -112,4 +110,45 @@ Feature: Rooch Portal contract tests
       Then assert: "{{$.move[-1].execution_info.status.type}} != executed"
 
 
+  @serial
+    Scenario: grow_bitcoin
+      Given a bitcoind server for grow_bitcoin
+      Given a server for grow_bitcoin
+
+      Then cmd: "account list --json" 
       
+      # mint utxos
+      Then cmd bitcoin-cli: "generatetoaddress 101 {{$.account[0].default.bitcoin_address}}"
+      Then sleep: "10"
+
+      Then cmd: "move run --function rooch_framework::gas_coin::faucet_entry --args u256:1000000000000000 --json"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+    
+      # publish grow_bitcoin via default address
+      Then cmd: "move publish -p ../../apps/app_admin  --named-addresses app_admin=default --json"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+      Then cmd: "move publish -p ../../apps/grow_bitcoin --named-addresses app_admin=default,grow_bitcoin=default --json"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+
+      Then cmd: "object -t default::admin::AdminCap"
+
+      Then cmd: "object -o {{$.account[0].default.bitcoin_address}} -t 0x4::utxo::UTXO"
+      
+      Then cmd: "move run --function default::grow_bitcoin::stake --args object:{{$.object[-1].data[0].id}} --json"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+
+      Then cmd bitcoin-cli: "generatetoaddress 1 {{$.account[0].default.bitcoin_address}}"
+      Then sleep: "5"
+
+      Then cmd: "move run --function default::grow_bitcoin::harvest --args object:{{$.object[-1].data[0].id}} --json"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+
+      Then cmd bitcoin-cli: "generatetoaddress 1 {{$.account[0].default.bitcoin_address}}"
+      Then sleep: "5"
+
+      Then cmd: "move run --function default::grow_bitcoin::unstake --args object:{{$.object[-1].data[0].id}} --json"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+
+      # check the GRow balance of default
+      Then cmd: "account balance -a {{$.account[0].default.address}} --coin-type default::grow_bitcoin::GROW --json"
+      Then assert: "{{$.account[-1].GROW.balance}} != 0"
