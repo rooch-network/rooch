@@ -271,10 +271,10 @@ pub struct DABackendOpenDAConfig {
 }
 
 /// Derive a namespace from genesis config for DA backend (as default namespace open-da backend)
-/// first 7 chars of sha256 of genesis in hex is used as namespace
+/// first 8 chars of sha256 of genesis in hex is used as namespace
 pub fn derive_genesis_namespace(genesis: &[u8]) -> String {
     let raw = encode(sha2_256_of(genesis).0);
-    raw.chars().take(7).collect()
+    raw.chars().take(8).collect()
 }
 
 #[cfg(test)]
