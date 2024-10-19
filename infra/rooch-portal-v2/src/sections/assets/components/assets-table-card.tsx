@@ -34,6 +34,7 @@ export default function AssetsTableCard({ address, dense }: { address: string; d
     },
     { refetchInterval: 5000 }
   );
+  console.log('🚀 ~ file: assets-table-card.tsx:31 ~ AssetsTableCard ~ assetsList:', assetsList);
 
   const isWalletOwner = useMemo(
     () => Boolean(currentAddress) && currentAddress?.toStr() === address,
