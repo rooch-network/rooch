@@ -303,7 +303,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
             da_config,
             sequencer_keypair.copy(),
             rooch_store,
-            Some(last_tx_order),
+            last_tx_order,
             genesis_namespace,
         )
         .await?

@@ -174,7 +174,7 @@ impl RoochStore {
                 cf_names.push(TX_ACCUMULATOR_NODE_COLUMN_FAMILY_NAME);
             }
         }
-        inner_store.write_batch_sync_across_cfs(cf_names, write_batch)?;
+        inner_store.write_batch_across_cfs(cf_names, write_batch, true)?;
         Ok(())
     }
 }
@@ -256,13 +256,8 @@ impl StateStore for RoochStore {
 }
 
 impl DAMetaStore for RoochStore {
-    fn get_submitting_blocks(
-        &self,
-        start_block: u128,
-        exp_count: Option<usize>,
-    ) -> Result<Vec<BlockRange>> {
-        self.get_da_meta_store()
-            .get_submitting_blocks(start_block, exp_count)
+    fn try_repair(&self, last_order: u64) -> Result<()> {
+        self.get_da_meta_store().try_repair(last_order)
     }
 
     fn append_submitting_block(
@@ -278,16 +273,27 @@ impl DAMetaStore for RoochStore {
         )
     }
 
+    fn get_submitting_blocks(
+        &self,
+        start_block: u128,
+        exp_count: Option<usize>,
+    ) -> Result<Vec<BlockRange>> {
+        self.get_da_meta_store()
+            .get_submitting_blocks(start_block, exp_count)
+    }
+
     fn set_submitting_block_done(
         &self,
         block_number: u128,
         tx_order_start: u64,
         tx_order_end: u64,
+        bash_hash: H256,
     ) -> Result<()> {
         self.get_da_meta_store().set_submitting_block_done(
             block_number,
             tx_order_start,
             tx_order_end,
+            bash_hash,
         )
     }
 
@@ -303,10 +309,5 @@ impl DAMetaStore for RoochStore {
 
     fn get_last_block_number(&self) -> Result<Option<u128>> {
         self.get_da_meta_store().get_last_block_number()
-    }
-
-    fn catchup_submitting_blocks(&self, last_order: Option<u64>) -> Result<()> {
-        self.get_da_meta_store()
-            .catchup_submitting_blocks(last_order)
     }
 }

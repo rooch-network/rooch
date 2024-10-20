@@ -37,7 +37,7 @@ impl DAServerActor {
         da_config: DAConfig,
         sequencer_key: RoochKeyPair,
         rooch_store: RoochStore,
-        last_tx_order: Option<u64>,
+        last_tx_order: u64,
         genesis_namespace: String,
     ) -> anyhow::Result<Self> {
         let mut backends: Vec<Arc<dyn DABackend>> = Vec::new();
@@ -76,7 +76,7 @@ impl DAServerActor {
             ));
         }
 
-        rooch_store.catchup_submitting_blocks(last_tx_order)?;
+        rooch_store.try_repair(last_tx_order)?;
         let last_block_number = rooch_store.get_last_block_number()?;
 
         if let Some(last_block_number) = last_block_number {
@@ -158,6 +158,7 @@ impl DAServerActor {
         );
         let batch_meta = batch.meta.clone();
         let meta_signature = batch.meta_signature.clone();
+        let batch_hash = batch.get_hash();
 
         // submit batch
         self.submit_batch_to_backends(batch).await?;
@@ -169,6 +170,7 @@ impl DAServerActor {
                 block_number,
                 tx_order_start,
                 tx_order_end,
+                batch_hash,
             ) {
                 Ok(_) => {}
                 Err(e) => {

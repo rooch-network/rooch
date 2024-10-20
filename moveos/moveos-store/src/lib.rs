@@ -191,7 +191,7 @@ impl MoveOSStore {
         }
 
         // atomic save updates
-        let inner_store = &self.node_store.get_store().store();
+        let inner_store = self.node_store.get_store().store();
         let mut cf_batches: Vec<WriteBatchCF> = Vec::new();
         let write_batch = nodes_to_write_batch(changed_nodes);
         cf_batches.push(WriteBatchCF {

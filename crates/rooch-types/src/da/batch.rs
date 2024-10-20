@@ -22,6 +22,8 @@ pub struct BlockRange {
 pub struct BlockSubmitState {
     /// tx order range of the block
     pub block_range: BlockRange,
+    /// DABatch::get_hash()
+    pub batch_hash: H256,
     /// submitted or not
     pub done: bool,
 }
@@ -35,16 +37,23 @@ impl BlockSubmitState {
                 tx_order_start,
                 tx_order_end,
             },
+            batch_hash: H256::zero(),
             done: false,
         }
     }
-    pub fn new_done(block_number: u128, tx_order_start: u64, tx_order_end: u64) -> Self {
+    pub fn new_done(
+        block_number: u128,
+        tx_order_start: u64,
+        tx_order_end: u64,
+        batch_hash: H256,
+    ) -> Self {
         Self {
             block_range: BlockRange {
                 block_number,
                 tx_order_start,
                 tx_order_end,
             },
+            batch_hash,
             done: true,
         }
     }
