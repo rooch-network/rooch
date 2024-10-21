@@ -1,12 +1,12 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::da_store::{DAMetaStore, MAX_TXS_PER_BLOCK_IN_FIX};
+use crate::da_store::{DAMetaDBStore, DAMetaStore, MAX_TXS_PER_BLOCK_IN_FIX};
 use crate::RoochStore;
 use rooch_types::da::batch::BlockRange;
 
 #[tokio::test]
-async fn test_append_submitting_blocks() {
+async fn get_submitting_blocks() {
     let (rooch_store, _) = RoochStore::mock_rooch_store().unwrap();
     let da_meta_store = rooch_store.get_da_meta_store();
 
@@ -51,58 +51,80 @@ async fn test_append_submitting_blocks() {
 }
 
 #[tokio::test]
-async fn test_try_fix_last_block_number() {
+async fn rollback_to_last_tx_order() {
     let (rooch_store, _) = RoochStore::mock_rooch_store().unwrap();
     let da_meta_store = rooch_store.get_da_meta_store();
 
-    let tx_order_start = 7;
-    let tx_order_end = 7;
-    let last_block_number = da_meta_store
-        .append_submitting_block(None, tx_order_start, tx_order_end)
+    da_meta_store.append_submitting_block(None, 1, 6).unwrap();
+    da_meta_store
+        .append_submitting_block(Some(0), 7, 7)
         .unwrap();
     da_meta_store
-        .append_submitting_block(Some(last_block_number), tx_order_start, tx_order_end)
+        .append_submitting_block(Some(1), 8, 1024)
         .unwrap();
-    da_meta_store.set_last_block_number(0).unwrap();
-    assert_eq!(da_meta_store.get_last_block_number().unwrap().unwrap(), 0);
-    let submitting_blocks = da_meta_store.get_submitting_blocks(0, None).unwrap();
-    assert_eq!(submitting_blocks.len(), 2);
-    assert_eq!(submitting_blocks[1].block_number, 1);
-    assert_eq!(submitting_blocks[1].tx_order_start, 7);
-    assert_eq!(submitting_blocks[1].tx_order_end, 7);
-    da_meta_store.try_fix_last_block_number().unwrap();
-    assert_eq!(da_meta_store.get_last_block_number().unwrap().unwrap(), 1);
+
+    fn check_remove_blocks(
+        case: u64,
+        store: &DAMetaDBStore,
+        last_block_opt: Option<u128>,
+        last_order: u64,
+        expected_len: usize,
+        expected_val: Option<Vec<u128>>,
+    ) {
+        let mut remove_blocks = store
+            .generate_remove_blocks(last_block_opt, last_order)
+            .unwrap();
+        remove_blocks.sort();
+        assert_eq!(remove_blocks.len(), expected_len, "test case {}", case);
+        if let Some(expected) = expected_val {
+            assert_eq!(remove_blocks, expected, "test case {}", case);
+        }
+    }
+
+    check_remove_blocks(0, da_meta_store, None, 0, 0, None);
+    check_remove_blocks(1, da_meta_store, Some(0), 1, 1, Some(vec![0]));
+    check_remove_blocks(3, da_meta_store, Some(0), 6, 0, None);
+    check_remove_blocks(4, da_meta_store, Some(1), 6, 1, Some(vec![1]));
+    check_remove_blocks(5, da_meta_store, Some(1), 7, 0, None);
+    check_remove_blocks(6, da_meta_store, Some(2), 0, 3, Some(vec![0, 1, 2]));
+    check_remove_blocks(7, da_meta_store, Some(2), 1, 3, Some(vec![0, 1, 2]));
+    check_remove_blocks(8, da_meta_store, Some(2), 2, 3, Some(vec![0, 1, 2]));
+    check_remove_blocks(9, da_meta_store, Some(2), 6, 2, Some(vec![1, 2]));
+    check_remove_blocks(10, da_meta_store, Some(2), 7, 1, Some(vec![2]));
+    check_remove_blocks(11, da_meta_store, Some(2), 8, 1, Some(vec![2]));
+    check_remove_blocks(12, da_meta_store, Some(2), 1023, 1, Some(vec![2]));
+    check_remove_blocks(13, da_meta_store, Some(2), 1024, 0, None);
 }
 
 #[tokio::test]
-async fn test_calc_needed_block_for_fix_submitting() {
+async fn catch_up_last_tx_order() {
     let (rooch_store, _) = RoochStore::mock_rooch_store().unwrap();
 
-    test_calc_need_submitting_case(0, None, 0, rooch_store.clone(), None);
-    test_calc_need_submitting_case(1, None, 1, rooch_store.clone(), Some(0));
-    test_calc_need_submitting_case(2, None, 10, rooch_store.clone(), Some(0));
-    test_calc_need_submitting_case(
+    run_catch_up_last_tx_order_case(0, None, 0, rooch_store.clone(), None);
+    run_catch_up_last_tx_order_case(1, None, 1, rooch_store.clone(), Some(0));
+    run_catch_up_last_tx_order_case(2, None, 10, rooch_store.clone(), Some(0));
+    run_catch_up_last_tx_order_case(
         3,
         None,
         MAX_TXS_PER_BLOCK_IN_FIX as u64,
         rooch_store.clone(),
         Some(0),
     );
-    test_calc_need_submitting_case(
+    run_catch_up_last_tx_order_case(
         4,
         None,
         MAX_TXS_PER_BLOCK_IN_FIX as u64 + 1,
         rooch_store.clone(),
         Some(0),
     );
-    test_calc_need_submitting_case(
+    run_catch_up_last_tx_order_case(
         5,
         None,
         MAX_TXS_PER_BLOCK_IN_FIX as u64 + 2,
         rooch_store.clone(),
         Some(0),
     );
-    test_calc_need_submitting_case(
+    run_catch_up_last_tx_order_case(
         6,
         None,
         9 + 2 * MAX_TXS_PER_BLOCK_IN_FIX as u64,
@@ -115,16 +137,10 @@ async fn test_calc_needed_block_for_fix_submitting() {
     let last_block_number = rooch_store
         .append_submitting_block(Some(last_block_number), 4, tx_order_end)
         .unwrap();
-    test_calc_need_submitting_case(
-        7,
-        Some(last_block_number),
-        tx_order_end,
-        rooch_store.clone(),
-        None,
-    );
+
     for i in 1..2 * MAX_TXS_PER_BLOCK_IN_FIX + 2 {
-        test_calc_need_submitting_case(
-            (7 + i) as u64,
+        run_catch_up_last_tx_order_case(
+            (6 + i) as u64,
             Some(last_block_number),
             tx_order_end + i as u64,
             rooch_store.clone(),
@@ -133,8 +149,8 @@ async fn test_calc_needed_block_for_fix_submitting() {
     }
 }
 
-fn test_calc_need_submitting_case(
-    test_case: u64,
+fn run_catch_up_last_tx_order_case(
+    case: u64,
     last_block_number: Option<u128>,
     last_order: u64,
     rooch_store: RoochStore,
@@ -143,20 +159,18 @@ fn test_calc_need_submitting_case(
     let da_meta_store = rooch_store.get_da_meta_store();
 
     let block_ranges = da_meta_store
-        .calc_needed_block_for_fix_submitting(last_block_number, last_order)
+        .generate_append_blocks(last_block_number, last_order)
         .unwrap();
 
     let origin_tx_order_end = if let Some(last_block_number) = last_block_number {
-        let submitting_blocks = da_meta_store
-            .get_submitting_blocks(last_block_number, None)
-            .unwrap();
-        Some(submitting_blocks.first().unwrap().tx_order_end)
+        let state = da_meta_store.get_block_state(last_block_number).unwrap();
+        Some(state.block_range.tx_order_end)
     } else {
         None
     };
 
     check_block_ranges(
-        test_case,
+        case,
         block_ranges,
         exp_first_block_number,
         last_order,

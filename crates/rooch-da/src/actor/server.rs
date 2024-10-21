@@ -19,6 +19,9 @@ use rooch_types::crypto::RoochKeyPair;
 use rooch_types::da::batch::{BlockRange, DABatch, SignedDABatchMeta};
 use rooch_types::transaction::LedgerTransaction;
 use std::sync::Arc;
+use std::time::Duration;
+
+const DEFAULT_BACKGROUND_SUBMIT_INTERVAL: u64 = 10 * 60; // 10 minutes
 
 pub struct DAServerActor {
     sequencer_key: RoochKeyPair,
@@ -37,13 +40,13 @@ impl DAServerActor {
         da_config: DAConfig,
         sequencer_key: RoochKeyPair,
         rooch_store: RoochStore,
-        last_tx_order: Option<u64>,
+        last_tx_order: u64,
         genesis_namespace: String,
     ) -> anyhow::Result<Self> {
         let mut backends: Vec<Arc<dyn DABackend>> = Vec::new();
         let mut submit_threshold = 1;
         let mut act_backends = 0;
-
+        let mut background_submit_interval = DEFAULT_BACKGROUND_SUBMIT_INTERVAL;
         let mut nop_backend = false;
         // backend config has higher priority than submit threshold
         if let Some(mut backend_config) = da_config.da_backend {
@@ -62,6 +65,12 @@ impl DAServerActor {
                     act_backends += 1;
                 }
             }
+            background_submit_interval =
+                if let Some(interval) = backend_config.background_submit_interval {
+                    interval
+                } else {
+                    DEFAULT_BACKGROUND_SUBMIT_INTERVAL
+                };
         } else {
             nop_backend = true;
             backends.push(Arc::new(crate::backend::DABackendNopProxy {}));
@@ -76,39 +85,56 @@ impl DAServerActor {
             ));
         }
 
-        rooch_store.catchup_submitting_blocks(last_tx_order)?;
+        rooch_store.try_repair(last_tx_order)?;
         let last_block_number = rooch_store.get_last_block_number()?;
+        let server = DAServerActor {
+            sequencer_key: sequencer_key.copy(),
+            rooch_store: rooch_store.clone(),
+            last_block_number,
+            nop_backend,
+            backends: backends.clone(),
+            submit_threshold,
+        };
 
-        if let Some(last_block_number) = last_block_number {
-            if !nop_backend {
+        if !nop_backend {
+            tokio::spawn(async move {
+                let mut interval =
+                    tokio::time::interval(Duration::from_secs(background_submit_interval)); // 10 minutes
+
+                let rooch_store = rooch_store.clone();
                 let background_da_server = DAServerActor {
                     sequencer_key: sequencer_key.copy(),
                     rooch_store: rooch_store.clone(),
-                    last_block_number: Some(last_block_number),
+                    last_block_number,
                     nop_backend,
                     backends: backends.clone(),
                     submit_threshold,
                 };
 
-                tokio::spawn(async move {
-                    if let Err(e) = background_da_server
-                        .start_background_submit(last_block_number)
-                        .await
-                    {
-                        log::error!("da: background submitting failed: {:?}", e);
+                loop {
+                    interval.tick().await;
+
+                    let last_block_number = rooch_store.get_last_block_number();
+                    match last_block_number {
+                        Ok(last_block_number) => {
+                            if let Some(last_block_number) = last_block_number {
+                                if let Err(e) = background_da_server
+                                    .start_background_submitter(last_block_number)
+                                    .await
+                                {
+                                    log::error!("da: start background submitter failed: {:?}", e);
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            log::error!("da: get last block number failed: {:?}", e);
+                        }
                     }
-                });
-            }
+                }
+            });
         }
 
-        Ok(DAServerActor {
-            sequencer_key,
-            rooch_store,
-            last_block_number,
-            nop_backend,
-            backends,
-            submit_threshold,
-        })
+        Ok(server)
     }
 
     pub async fn submit_batch(
@@ -158,6 +184,7 @@ impl DAServerActor {
         );
         let batch_meta = batch.meta.clone();
         let meta_signature = batch.meta_signature.clone();
+        let batch_hash = batch.get_hash();
 
         // submit batch
         self.submit_batch_to_backends(batch).await?;
@@ -169,6 +196,7 @@ impl DAServerActor {
                 block_number,
                 tx_order_start,
                 tx_order_end,
+                batch_hash,
             ) {
                 Ok(_) => {}
                 Err(e) => {
@@ -212,8 +240,7 @@ impl DAServerActor {
         Ok(())
     }
 
-    // TODO: continue to submit blocks in the background even after all blocks <= init last_block_number have been submitted
-    async fn start_background_submit(&self, last_block_number: u128) -> anyhow::Result<()> {
+    async fn start_background_submitter(&self, last_block_number: u128) -> anyhow::Result<()> {
         let cursor = self.rooch_store.get_background_submit_block_cursor()?;
         let exp_count = if let Some(cursor) = cursor {
             last_block_number - cursor
@@ -226,6 +253,13 @@ impl DAServerActor {
 
         if unsubmitted_blocks.is_empty() {
             return Ok(()); // nothing to do
+        }
+
+        // if unsubmitted_blocks only contains the last block, return ok
+        // this is to avoid submitting the last block twice
+        if unsubmitted_blocks.len() == 1 && unsubmitted_blocks[0].block_number == last_block_number
+        {
+            return Ok(());
         }
 
         let mut submit_count: u128 = 0;

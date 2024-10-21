@@ -150,7 +150,7 @@ impl RollbackCommand {
             to_bytes(&rollback_startup_info).unwrap(),
         )?;
 
-        inner_store.write_batch_sync_across_cfs(cf_names, write_batch)?;
+        inner_store.write_batch_across_cfs(cf_names, write_batch, true)?;
 
         println!(
             "rollback tx succeed, tx_hash: {:?}, tx_order {}, state_root: {:?}",

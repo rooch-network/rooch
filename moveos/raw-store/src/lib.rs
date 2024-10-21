@@ -11,7 +11,7 @@ pub mod store_macros;
 pub mod traits;
 
 use crate::metrics::DBMetrics;
-use crate::rocks::batch::WriteBatch;
+use crate::rocks::batch::{WriteBatch, WriteBatchCF};
 use crate::rocks::{RocksDB, SchemaIterator};
 use crate::traits::{DBStore, KVStore};
 use anyhow::{bail, format_err, Result};
@@ -442,25 +442,89 @@ impl DBStore for StoreInstance {
         }
     }
 
-    fn write_batch_sync_across_cfs(&self, cf_names: Vec<&str>, batch: WriteBatch) -> Result<()> {
+    fn write_batch_across_cfs(
+        &self,
+        cf_names: Vec<&str>,
+        batch: WriteBatch,
+        sync: bool,
+    ) -> Result<()> {
         match self {
             StoreInstance::DB {
                 db,
                 db_metrics,
                 metrics_task_cancel_handle: _,
             } => {
-                let _timer = db_metrics
-                    .raw_store_metrics
-                    .raw_store_write_batch_sync_latency_seconds
-                    .with_label_values(&["across_cfs"])
-                    .start_timer();
+                let _timer = if sync {
+                    db_metrics
+                        .raw_store_metrics
+                        .raw_store_write_batch_sync_latency_seconds
+                        .with_label_values(&["across_cfs"])
+                        .start_timer()
+                } else {
+                    db_metrics
+                        .raw_store_metrics
+                        .raw_store_write_batch_latency_seconds
+                        .with_label_values(&["across_cfs"])
+                        .start_timer()
+                };
                 let write_batch_bytes = batch.size_in_bytes();
-                db.write_batch_sync_across_cfs(cf_names, batch)?;
-                db_metrics
-                    .raw_store_metrics
-                    .raw_store_write_batch_sync_bytes
-                    .with_label_values(&["across_cfs"])
-                    .observe(write_batch_bytes as f64);
+                db.write_batch_across_cfs(cf_names, batch, sync)?;
+                if sync {
+                    db_metrics
+                        .raw_store_metrics
+                        .raw_store_write_batch_sync_bytes
+                        .with_label_values(&["across_cfs"])
+                        .observe(write_batch_bytes as f64);
+                } else {
+                    db_metrics
+                        .raw_store_metrics
+                        .raw_store_write_batch_bytes
+                        .with_label_values(&["across_cfs"])
+                        .observe(write_batch_bytes as f64);
+                }
+                Ok(())
+            }
+        }
+    }
+
+    fn write_cf_batch(&self, cf_batches: Vec<WriteBatchCF>, sync: bool) -> Result<()> {
+        match self {
+            StoreInstance::DB {
+                db,
+                db_metrics,
+                metrics_task_cancel_handle: _,
+            } => {
+                let _timer = if sync {
+                    db_metrics
+                        .raw_store_metrics
+                        .raw_store_write_batch_sync_latency_seconds
+                        .with_label_values(&["across_cfs"])
+                        .start_timer()
+                } else {
+                    db_metrics
+                        .raw_store_metrics
+                        .raw_store_write_batch_latency_seconds
+                        .with_label_values(&["across_cfs"])
+                        .start_timer()
+                };
+                let write_batch_bytes = cf_batches
+                    .iter()
+                    .map(|cf_batch| cf_batch.batch.size_in_bytes())
+                    .sum::<usize>();
+                db.write_cf_batch(cf_batches, sync)?;
+                if sync {
+                    db_metrics
+                        .raw_store_metrics
+                        .raw_store_write_batch_sync_bytes
+                        .with_label_values(&["across_cfs"])
+                        .observe(write_batch_bytes as f64);
+                } else {
+                    db_metrics
+                        .raw_store_metrics
+                        .raw_store_write_batch_bytes
+                        .with_label_values(&["across_cfs"])
+                        .observe(write_batch_bytes as f64);
+                }
                 Ok(())
             }
         }

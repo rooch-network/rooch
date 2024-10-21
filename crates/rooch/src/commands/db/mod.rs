@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_types::CommandAction;
+use crate::commands::db::commands::drop::DropCommand;
 use crate::commands::db::commands::revert::RevertCommand;
 use async_trait::async_trait;
 use clap::Parser;
@@ -27,6 +28,9 @@ impl CommandAction<String> for DB {
             DBCommand::Rollback(rollback) => rollback.execute().await.map(|resp| {
                 serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
             }),
+            DBCommand::Drop(drop) => drop.execute().await.map(|resp| {
+                serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
+            }),
         }
     }
 }
@@ -36,4 +40,5 @@ impl CommandAction<String> for DB {
 pub enum DBCommand {
     Revert(RevertCommand),
     Rollback(RollbackCommand),
+    Drop(DropCommand),
 }

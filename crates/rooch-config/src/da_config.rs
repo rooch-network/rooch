@@ -195,6 +195,8 @@ pub struct DABackendConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub submit_strategy: Option<DAServerSubmitStrategy>, // specifies the submission strategy of DA. 'all' with all backends, 'quorum' with quorum backends, 'n' with n backends, etc.
     pub backends: Vec<DABackendConfigType>, // specifies the type of DA backends to be used. 'celestia' with corresponding Celestia backend configuration, 'foo' with corresponding foo backend configuration, etc.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub background_submit_interval: Option<u64>, // specifies the interval of background submit in seconds. If not set, the default value is 600s.
 }
 
 impl DABackendConfig {
@@ -271,10 +273,10 @@ pub struct DABackendOpenDAConfig {
 }
 
 /// Derive a namespace from genesis config for DA backend (as default namespace open-da backend)
-/// first 7 chars of sha256 of genesis in hex is used as namespace
+/// first 8 chars of sha256 of genesis in hex is used as namespace
 pub fn derive_genesis_namespace(genesis: &[u8]) -> String {
     let raw = encode(sha2_256_of(genesis).0);
-    raw.chars().take(7).collect()
+    raw.chars().take(8).collect()
 }
 
 #[cfg(test)]
@@ -311,10 +313,10 @@ mod tests {
                     DABackendConfigType::Celestia(exp_celestia_config.clone()),
                     DABackendConfigType::OpenDa(exp_openda_config.clone()),
                 ],
+                background_submit_interval: None,
             }),
             base: None,
         };
-        println!("exp_da_config: {}", exp_da_config);
         match DAConfig::from_str(da_config_str) {
             Ok(da_config) => {
                 assert_eq!(da_config, exp_da_config);
