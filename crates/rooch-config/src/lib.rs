@@ -35,6 +35,7 @@ pub static R_DEFAULT_BASE_DATA_DIR: Lazy<PathBuf> = Lazy::new(|| {
         .join(".rooch")
 });
 
+#[derive(Debug, Clone, PartialEq)]
 pub enum MapConfigValueSource {
     MapConfig,   // Value came from the presence of a key in the map configuration
     Environment, // Value came from the environment
@@ -410,4 +411,72 @@ pub fn retrieve_map_config_value(
         return MapConfigValueSource::Default;
     }
     MapConfigValueSource::None
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::env;
+
+    mod retrieve_map_config_value_tests {
+        use super::*;
+        use std::time;
+
+        #[test]
+        fn returns_map_config_when_key_exists() {
+            let mut map_config = HashMap::new();
+            map_config.insert("key1".to_string(), "value1".to_string());
+
+            assert_eq!(
+                retrieve_map_config_value(&mut map_config, "key1", None, Some("default")),
+                MapConfigValueSource::MapConfig
+            );
+        }
+
+        #[test]
+        fn returns_default_when_key_does_not_exist_and_no_env_var() {
+            let mut map_config = HashMap::new();
+
+            assert_eq!(
+                retrieve_map_config_value(&mut map_config, "key2", None, Some("default")),
+                MapConfigValueSource::Default
+            );
+            assert_eq!(map_config.get("key2").unwrap(), "default");
+        }
+
+        #[test]
+        fn returns_environment_when_env_var_exists() {
+            let mut map_config = HashMap::new();
+
+            // make a random env key
+            let env_key = format!(
+                "TEST_ENV_VAR_{}",
+                time::SystemTime::now().elapsed().unwrap().as_secs()
+            );
+
+            env::set_var(env_key.clone(), "env_value");
+
+            assert_eq!(
+                retrieve_map_config_value(
+                    &mut map_config,
+                    "key2",
+                    Some(&env_key.clone()),
+                    Some("default")
+                ),
+                MapConfigValueSource::Environment
+            );
+            assert_eq!(map_config.get("key2").unwrap(), "env_value");
+
+            env::remove_var(env_key);
+        }
+
+        #[test]
+        fn returns_none_when_neither_key_nor_env_var_nor_default_exists() {
+            let mut map_config = HashMap::new();
+            assert_eq!(
+                retrieve_map_config_value(&mut map_config, "key3", None, None),
+                MapConfigValueSource::None
+            );
+        }
+    }
 }
