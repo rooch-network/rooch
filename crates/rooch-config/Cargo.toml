@@ -24,6 +24,7 @@ clap = { workspace = true }
 dirs-next = { workspace = true }
 celestia-types = { workspace = true }
 hex = { workspace = true }
+opendal = { workspace = true }
 
 rooch-types = { workspace = true }
 moveos-config = { workspace = true }

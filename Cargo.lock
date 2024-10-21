@@ -9568,6 +9568,7 @@ dependencies = [
  "moveos-config",
  "moveos-types",
  "once_cell",
+ "opendal",
  "rooch-types",
  "serde 1.0.210",
  "serde_json",

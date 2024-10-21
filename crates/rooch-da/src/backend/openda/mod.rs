@@ -12,7 +12,6 @@ use rooch_types::da::batch::DABatch;
 use rooch_types::da::chunk::{Chunk, ChunkV0};
 use rooch_types::da::segment::SegmentID;
 use std::collections::HashMap;
-use std::path::Path;
 
 pub const DEFAULT_MAX_SEGMENT_SIZE: u64 = 4 * 1024 * 1024;
 pub const DEFAULT_MAX_RETRY_TIMES: usize = 4;
@@ -31,88 +30,78 @@ pub struct OpenDABackend {
     operator: Operator,
 }
 
+fn check_backend_config(
+    scheme: OpenDAScheme,
+    map_config: &mut HashMap<String, String>,
+) -> anyhow::Result<()> {
+    match scheme {
+        OpenDAScheme::Fs => {
+            // root must be existed
+            check_config_exist(OpenDAScheme::Fs, map_config, "root")
+        }
+        OpenDAScheme::Gcs => {
+            retrieve_map_config_value(map_config, "bucket", Some("OPENDA_GCS_BUCKET"), None);
+
+            retrieve_map_config_value(
+                map_config,
+                "credential",
+                Some("OPENDA_GCS_CREDENTIAL"),
+                None,
+            );
+            retrieve_map_config_value(
+                map_config,
+                "credential_path",
+                Some("OPENDA_GCS_CREDENTIAL_PATH"),
+                None,
+            );
+
+            retrieve_map_config_value(
+                map_config,
+                "default_storage_class",
+                Some("OPENDA_GCS_DEFAULT_STORAGE_CLASS"),
+                Some("STANDARD"),
+            );
+
+            check_config_exist(OpenDAScheme::Gcs, map_config, "bucket")?;
+            match (
+                check_config_exist(OpenDAScheme::Gcs, map_config, "credential"),
+                check_config_exist(OpenDAScheme::Gcs, map_config, "credential_path"),
+            ) {
+                (Ok(_), Ok(_)) => Ok(()),
+                // credential existed
+                (Ok(_), Err(_)) => Ok(()),
+                // credential_path existed
+                (Err(_), Ok(_)) => Ok(()),
+
+                (Err(_), Err(_)) => Err(anyhow!(
+                    "credential no found in config for scheme {:?}",
+                    OpenDAScheme::Gcs
+                )),
+            }
+        }
+        OpenDAScheme::S3 => {
+            todo!("s3 backend is not implemented yet");
+        }
+    }
+}
+
 impl OpenDABackend {
     pub async fn new(
         cfg: &DABackendOpenDAConfig,
         genesis_namespace: String,
     ) -> anyhow::Result<OpenDABackend> {
-        let mut config = cfg.clone();
+        let backend_config = cfg.clone();
+        let prefix = backend_config.namespace.unwrap_or(genesis_namespace);
+        let scheme = backend_config.scheme;
+        let mut map_config = backend_config.config;
+        check_backend_config(scheme.clone(), &mut map_config)?;
 
-        let op: Operator = match config.scheme {
-            OpenDAScheme::Fs => {
-                // root must be existed
-                check_config_exist(OpenDAScheme::Fs, &config.config, "root")?;
-                new_retry_operator(Scheme::Fs, config.config, None).await?
-            }
-            OpenDAScheme::Gcs => {
-                retrieve_map_config_value(
-                    &mut config.config,
-                    "bucket",
-                    Some("OPENDA_GCS_BUCKET"),
-                    Some("rooch-openda-dev"),
-                );
-                if !config.config.contains_key("credential") {
-                    if let Ok(credential) = std::env::var("OPENDA_GCS_CREDENTIAL") {
-                        config.config.insert("credential".to_string(), credential);
-                    }
-                }
-                if config.config.contains_key("credential") {
-                    let credential = {
-                        let credential_path = Path::new(config.config.get("credential").unwrap());
-
-                        if credential_path.exists() {
-                            Some(config.config.get("credential").unwrap().to_string())
-                        } else {
-                            None
-                        }
-                    };
-
-                    // it's a path, using credential_path instead
-                    if let Some(credential) = credential {
-                        config.config.remove("credential");
-                        config
-                            .config
-                            .insert("credential_path".to_string(), credential);
-                    }
-                }
-                retrieve_map_config_value(
-                    &mut config.config,
-                    "default_storage_class",
-                    Some("OPENDA_GCS_DEFAULT_STORAGE_CLASS"),
-                    Some("STANDARD"),
-                );
-
-                check_config_exist(OpenDAScheme::Gcs, &config.config, "bucket")?;
-                match (
-                    check_config_exist(OpenDAScheme::Gcs, &config.config, "credential"),
-                    check_config_exist(OpenDAScheme::Gcs, &config.config, "credential_path"),
-                ) {
-                    (Ok(_), Ok(_)) => (),
-
-                    // credential existed
-                    (Ok(_), Err(_)) => (),
-                    // credential_path existed
-                    (Err(_), Ok(_)) => (),
-
-                    (Err(_), Err(_)) => {
-                        return Err(anyhow!(
-                            "credential no found in config for scheme {:?}",
-                            OpenDAScheme::Gcs
-                        ));
-                    }
-                }
-
-                // After setting defaults, proceed with creating Operator
-                new_retry_operator(Scheme::Gcs, config.config, None).await?
-            }
-            OpenDAScheme::S3 => {
-                todo!("s3 backend is not implemented yet");
-            }
-        };
+        let op: Operator =
+            new_retry_operator(Scheme::from(scheme.clone()), map_config, None).await?;
 
         Ok(Self {
-            prefix: config.namespace.unwrap_or(genesis_namespace),
-            scheme: config.scheme,
+            prefix,
+            scheme,
             max_segment_size: cfg.max_segment_size.unwrap_or(DEFAULT_MAX_SEGMENT_SIZE) as usize,
             operator: op,
         })
@@ -198,4 +187,65 @@ async fn new_retry_operator(
         .layer(LoggingLayer::default());
     op.check().await?;
     Ok(op)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::collections::HashMap;
+
+    #[test]
+    fn test_check_backend_config_fs() {
+        let scheme = OpenDAScheme::Fs;
+        let mut map_config = HashMap::new();
+        let result = check_backend_config(scheme.clone(), &mut map_config);
+        assert!(
+            result.is_err(),
+            "FS scheme should return Err if 'root' is missing"
+        );
+
+        map_config.insert("root".to_string(), "/some/path".to_string());
+        let result = check_backend_config(scheme, &mut map_config);
+        assert!(
+            result.is_ok(),
+            "FS scheme should return Ok if 'root' is provided"
+        );
+    }
+
+    #[test]
+    fn test_check_backend_config_gcs() {
+        let scheme = OpenDAScheme::Gcs;
+        let mut map_config = HashMap::new();
+        map_config.insert("credential".to_string(), "test_credential".to_string());
+        let result = check_backend_config(scheme.clone(), &mut map_config);
+        assert!(
+            result.is_err(),
+            "GCS scheme should return Err if 'bucket' is missing"
+        );
+
+        map_config.insert("bucket".to_string(), "test_bucket".to_string());
+        let result = check_backend_config(scheme.clone(), &mut map_config);
+        assert!(
+            result.is_ok(),
+            "GCS scheme should return Ok if 'bucket' and 'credential' are provided"
+        );
+
+        map_config.remove("credential");
+        map_config.insert(
+            "credential_path".to_string(),
+            "test_credential_path".to_string(),
+        );
+        let result2 = check_backend_config(scheme.clone(), &mut map_config);
+        assert!(
+            result2.is_ok(),
+            "GCS scheme should return Ok if 'bucket' and 'credential_path' are provided"
+        );
+
+        map_config.remove("credential_path");
+
+        let result3 = check_backend_config(scheme, &mut map_config);
+        assert!(result3.is_err(), "GCS scheme should return Err if neither 'credential' nor 'credential_path' are provided");
+
+        assert_eq!(map_config.get("default_storage_class").unwrap(), "STANDARD");
+    }
 }

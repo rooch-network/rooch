@@ -97,6 +97,17 @@ impl FromStr for OpenDAScheme {
     }
 }
 
+// OpenDAScheme to OpenDALScheme
+impl From<OpenDAScheme> for opendal::Scheme {
+    fn from(scheme: OpenDAScheme) -> Self {
+        match scheme {
+            OpenDAScheme::Fs => opendal::Scheme::Fs,
+            OpenDAScheme::Gcs => opendal::Scheme::Gcs,
+            OpenDAScheme::S3 => opendal::Scheme::S3,
+        }
+    }
+}
+
 #[derive(Clone, Default, Debug, PartialEq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "kebab-case")]
