@@ -5,6 +5,8 @@
 REF="$1"
 BTC_MAIN_RPC_URL="$2"
 BTC_MAIN_RPC_PWD="$3"
+OPENDA_GCP_MAINNET_BUCKET="$4"
+OPENDA_GCP_MAINNET_CREDENTIAL="$5"
 
 sleep 30
 docker image prune -a -f
