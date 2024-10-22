@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tbtc-discord-bot
+  namespace: testnet
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tbtc-discord-bot
+  template:
+    metadata:
+      labels:
+        app: tbtc-discord-bot
+    spec:
+      containers:
+      - name: tbtc-discord-bot
+        image: ghcr.io/yourmoonlight/tbtc-discord-bot:latest
+        volumeMounts:
+        - name: data
+          mountPath: /app/data
+        env:
+        - name: DISCORD_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: tbtc-discord-bot-secrets
+              key: discord-token
+        - name: RPC_USER
+          valueFrom:
+            secretKeyRef:
+              name: tbtc-discord-bot-secrets
+              key: rpc-user
+        - name: RPC_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: tbtc-discord-bot-secrets
+              key: rpc-password
+        - name: RPC_PORT
+          valueFrom:
+            secretKeyRef:
+              name: tbtc-discord-bot-secrets
+              key: rpc-port
+        - name: WALLET_NAME
+          valueFrom:
+            secretKeyRef:
+              name: tbtc-discord-bot-secrets
+              key: wallet-name
+        - name: RPC_HOST
+          valueFrom:
+            secretKeyRef:
+              name: tbtc-discord-bot-secrets
+              key: rpc-host
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: tbtc-discord-bot-pvc
