@@ -7,10 +7,10 @@ import { Wallet, UniSatWallet, OkxWallet, OnekeyWallet } from '../wellet/index.j
 const unisatWallet = new UniSatWallet()
 const okxWallet = new OkxWallet()
 const onekeyWallet = new OnekeyWallet()
-const allWallets = [unisatWallet, okxWallet, onekeyWallet]
+const supportedWallets = [unisatWallet, okxWallet, onekeyWallet]
 
 export async function checkWallets(filter?: SupportChain) {
-  const wallets: Wallet[] = allWallets.filter(
+  const wallets: Wallet[] = supportedWallets.filter(
     (wallet) => wallet.getChain() === filter || !filter,
   )
 
