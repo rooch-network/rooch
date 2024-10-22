@@ -1,0 +1,93 @@
+---
+title: 'Rooch Portal using guide'
+description: ""
+author: geometryolife
+category: Developer
+date: 2024/10/20
+---
+
+import PostHeader from "/components/blog/postHeader";
+
+<PostHeader />
+
+## Introduction
+
+Rooch Portal, as the portal of Rooch ecological applications, provides one-stop services such as asset management, asset exchange, and application interaction.
+
+- Visit link：https://portal.rooch.network
+
+## Create session key
+
+Session Key is a feature provided by Rooch, which provides a convenient experience for the interaction of blockchain applications. Using Portal also requires generating a Session Key.
+
+Please click the `Create Session Key` button in the lower left corner. After the wallet is signed, a time-limited Session Key will be generated. You need to ensure that the account has `RGAS`.
+
+## Component introduction
+
+### Account
+
+![](/blog/portal-intro/portal-account.png)
+
+This is the default page of the Portal. If the wallet is not connected, you will be prompted to connect the wallet and access your account information. Here we take the UniSat wallet as an example. Click the `Connect Wallet` button in the upper right corner:
+
+![](/blog/portal-intro/portal-account-info.png)
+
+This page displays the Bitcoin account and the Rooch account address bound to it, the coins currently owned by the account, and transaction information.
+
+### Assets
+
+![](/blog/portal-intro/portal-assets.png)
+
+This page is mainly used to manage different types of assets and provide transfer functions.
+
+- `Coin` display the homogeneous assets on Rooch.
+- `NFT` displays non-fungible assets on Rooch.
+- `Bitcoin Assets` mainly displays the Bitcoin assets owned by the account.
+
+> Note: Before transferring money, please confirm whether a Session Key has been generated. If not, you must generate one manually.
+
+### Transactions
+
+![](/blog/portal-intro/portal-transactions.png)
+
+The detailed transaction information of the current account is displayed here, such as transaction hash, time, execution status, type, consumed Gas, etc.
+
+If you want to see more detailed content of a transaction, please click the `View` button!
+
+### Purchase gas
+
+![](/blog/portal-intro/portal-purchase-gas.png)
+
+The function of exchanging `BTC` for `RGAS` is provided here.
+
+### Faucet
+
+![](/blog/portal-intro/portal-faucet.png)
+
+If you want to use the Rooch platform to build an application, you can first request `RGAS` from Rooch. Please make sure that the bound Bitcoin account has `UTXO`.
+
+### Settings
+
+![](/blog/portal-intro/portal-settings.png)
+
+This page provides the function of displaying and managing Session Key. For example, you can view the scope of Session Key and the history of generating Session Key.
+
+### Search
+
+![](/blog/portal-intro/portal-search.png)
+
+After entering a Bitcoin address in this search box, it will query the assets of the corresponding address, and the query result page reuses the `Account` page.
+
+![](/blog/portal-intro/portal-another-account.png)
+
+Queryed the account information of `bc1ph25pk4xm36y3mt6uwclm0fgj8dgdnf5u7xf987qvyv58x987cldswp09hc`.
+
+### Apps
+
+![](/blog/portal-intro/portal-apps.png)
+
+This provides an access entrance to Rooch ecological applications. Like the portal website, it allows users to jump to the corresponding application homepage in one stop.
+
+### Testnet
+
+This is a jump button. Clicking it will switch the Portal's network to the `test` network.
