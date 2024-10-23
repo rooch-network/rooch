@@ -316,7 +316,7 @@ impl DAServerActor {
                 );
             }
         }
-        if max_block_number_submitted > 0 {
+        if submit_count > 0 {
             self.rooch_store
                 .set_background_submit_block_cursor(max_block_number_submitted)?;
             tracing::info!(
