@@ -52,4 +52,4 @@ moveos-object-runtime = { workspace = true }
 moveos-eventbus = { workspace = true }
 moveos-gas-profiling = { workspace = true }
 moveos-common = { workspace = true }
-thiserror = "1.0.64"
+thiserror = "1.0.65"
