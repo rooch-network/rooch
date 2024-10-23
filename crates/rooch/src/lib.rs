@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::commands::da::DA;
 use crate::commands::db::DB;
 use crate::commands::event::EventCommand;
 use crate::commands::indexer::Indexer;
@@ -74,6 +75,7 @@ pub enum Command {
     Util(Util),
     Faucet(Faucet),
     Oracle(Oracle),
+    DA(DA),
 }
 
 pub async fn run_cli(opt: RoochCli) -> RoochResult<String> {
@@ -104,5 +106,6 @@ pub async fn run_cli(opt: RoochCli) -> RoochResult<String> {
         Command::Util(util) => util.execute().await,
         Command::Faucet(faucet) => faucet.execute().await,
         Command::Oracle(oracle) => oracle.execute().await,
+        Command::DA(da) => da.execute().await,
     }
 }

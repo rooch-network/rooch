@@ -33,7 +33,6 @@ impl From<ChunkVersion> for u8 {
 }
 
 pub trait Chunk {
-    fn to_bytes(&self) -> Vec<u8>;
     fn get_version(&self) -> ChunkVersion;
     fn to_segments(&self, max_segment_size: usize) -> Vec<Box<dyn Segment>>;
     fn get_batches(&self) -> Vec<DABatch>;
@@ -58,7 +57,7 @@ impl From<DABatch> for ChunkV0 {
     }
 }
 
-impl Chunk for ChunkV0 {
+impl ChunkV0 {
     fn to_bytes(&self) -> Vec<u8> {
         let mut compressed_bytes = Vec::new();
 
@@ -71,7 +70,9 @@ impl Chunk for ChunkV0 {
 
         compressed_bytes
     }
+}
 
+impl Chunk for ChunkV0 {
     fn get_version(&self) -> ChunkVersion {
         ChunkVersion::V0
     }
