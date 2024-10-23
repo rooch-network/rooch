@@ -1,15 +1,16 @@
 [package]
-name = "tweet_store"
+name = "twitter_binding"
 version = "0.0.1"
 
 [dependencies]
 MoveStdlib = { local = "../../frameworks/move-stdlib" }
 MoveosStdlib = { local = "../../frameworks/moveos-stdlib" }
 RoochFramework = { local = "../../frameworks/rooch-framework" }
+BitcoinMove = { local = "../../frameworks/bitcoin-move" }
 verity-move-oracles = { git = "https://github.com/usherlabs/verity-move-oracles", subdir = "rooch", rev = "main"}
 
 [addresses]
-tweet_store = "_"
+twitter_binding = "_"
 verity = "0x9ce8eaf2166e9a6d4e8f1d27626297a0cf5ba1eaeb31137e08cc8f7773fb83f8"
 verity_test_foreign_module = "0x9ce8eaf2166e9a6d4e8f1d27626297a0cf5ba1eaeb31137e08cc8f7773fb83f8"
 std = "0x1"
@@ -17,4 +18,4 @@ moveos_std = "0x2"
 rooch_framework = "0x3"
 
 [dev-addresses]
-tweet_store = "0x42"
+twitter_binding = "0x42"
