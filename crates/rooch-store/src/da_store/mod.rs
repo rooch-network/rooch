@@ -52,6 +52,7 @@ pub trait DAMetaStore {
         tx_order_end: u64,
     ) -> anyhow::Result<u128>;
     // get submitting blocks(block is not submitted) from start_block(inclusive) with expected count until the end of submitting blocks
+    // Result<Vec<BlockRange>>: Vec<BlockRange> is sorted by block_number
     fn get_submitting_blocks(
         &self,
         start_block: u128,

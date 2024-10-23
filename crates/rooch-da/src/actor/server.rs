@@ -113,21 +113,17 @@ impl DAServerActor {
 
                 loop {
                     interval.tick().await;
-
-                    let last_block_number = rooch_store.get_last_block_number();
-                    match last_block_number {
-                        Ok(last_block_number) => {
-                            if let Some(last_block_number) = last_block_number {
-                                if let Err(e) = background_da_server
-                                    .start_background_submitter(last_block_number)
-                                    .await
-                                {
-                                    tracing::error!(
-                                        "da: start background submitter failed: {:?}",
-                                        e
-                                    );
-                                }
+                    match rooch_store.get_last_block_number() {
+                        Ok(Some(last_block_number)) => {
+                            if let Err(e) = background_da_server
+                                .start_background_submitter(last_block_number)
+                                .await
+                            {
+                                tracing::error!("da: background submitter failed: {:?}", e);
                             }
+                        }
+                        Ok(None) => {
+                            tracing::info!("da: last block number is None");
                         }
                         Err(e) => {
                             tracing::error!("da: get last block number failed: {:?}", e);
@@ -245,17 +241,28 @@ impl DAServerActor {
 
     async fn start_background_submitter(&self, last_block_number: u128) -> anyhow::Result<()> {
         let cursor_opt = self.rooch_store.get_background_submit_block_cursor()?;
-        let exp_count = if let Some(cursor) = cursor_opt {
+        let max_block = if let Some(cursor) = cursor_opt {
             last_block_number - cursor
         } else {
             last_block_number + 1
         };
         let unsubmitted_blocks = self
             .rooch_store
-            .get_submitting_blocks(cursor_opt.unwrap_or(0), Some(exp_count as usize))?;
+            .get_submitting_blocks(cursor_opt.unwrap_or(0), Some(max_block as usize))?;
 
         if unsubmitted_blocks.is_empty() {
-            return Ok(()); // nothing to do
+            // there is no unsubmitted block: [0, last_block_number]
+            self.rooch_store
+                .set_background_submit_block_cursor(last_block_number)?;
+            return Ok(());
+        }
+
+        // set cursor to the first unsubmitted block - 1
+        let first_unsubmitted_block = unsubmitted_blocks.first().unwrap().block_number;
+        if first_unsubmitted_block > 0 {
+            let new_cursor = first_unsubmitted_block - 1;
+            self.rooch_store
+                .set_background_submit_block_cursor(new_cursor)?;
         }
 
         // if unsubmitted_blocks only contains the last block, return ok
@@ -265,20 +272,17 @@ impl DAServerActor {
             return Ok(());
         }
 
-        let first_unsubmitted_block = unsubmitted_blocks.first().unwrap().block_number;
-        if first_unsubmitted_block > 0 {
-            self.rooch_store
-                .set_background_submit_block_cursor(first_unsubmitted_block - 1)?;
-        }
-
         let mut submit_count: u128 = 0;
-        for block in unsubmitted_blocks {
-            let block_number = block.block_number;
-            if block_number > last_block_number {
+        let mut max_block_number_submitted: u128 = 0;
+        for unsubmitted_block_range in unsubmitted_blocks {
+            let block_number = unsubmitted_block_range.block_number;
+            // last_block_number may be updated, unsubmitted_block_range may contain the last_block_number passed,
+            // so we need to check it again
+            if block_number >= last_block_number {
                 break;
             }
-            let tx_order_start = block.tx_order_start;
-            let tx_order_end = block.tx_order_end;
+            let tx_order_start = unsubmitted_block_range.tx_order_start;
+            let tx_order_end = unsubmitted_block_range.tx_order_end;
             // collect tx from start to end for rooch_store
             let tx_orders: Vec<u64> = (tx_order_start..=tx_order_end).collect();
             let tx_hashes = self.rooch_store.get_tx_hashes(tx_orders.clone())?;
@@ -298,8 +302,10 @@ impl DAServerActor {
                     })?; // should not happen
                 tx_list.push(tx);
             }
-            self.submit_batch_raw(block, tx_list).await?;
+            self.submit_batch_raw(unsubmitted_block_range, tx_list)
+                .await?;
             submit_count += 1;
+            max_block_number_submitted = block_number;
             if submit_count % 1024 == 0 {
                 // it's okay to set cursor a bit behind: submit_batch_raw set submitting block done, so it won't be submitted again after restart
                 self.rooch_store
@@ -310,12 +316,15 @@ impl DAServerActor {
                 );
             }
         }
-        self.rooch_store
-            .set_background_submit_block_cursor(last_block_number)?;
-        tracing::info!(
-            "da: background submitting done: {} blocks submitted",
-            submit_count
-        );
+        if max_block_number_submitted > 0 {
+            self.rooch_store
+                .set_background_submit_block_cursor(max_block_number_submitted)?;
+            tracing::info!(
+                "da: background submitting done: {} blocks submitted",
+                submit_count
+            );
+        }
+
         Ok(())
     }
 }
