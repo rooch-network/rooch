@@ -5,6 +5,7 @@ pub mod abi;
 pub mod account;
 pub mod bitcoin;
 pub mod bitseed;
+pub mod da;
 pub mod db;
 pub mod dynamic_field;
 pub mod env;

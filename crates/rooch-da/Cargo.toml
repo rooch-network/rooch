@@ -21,7 +21,7 @@ moveos-types = { workspace = true }
 anyhow = { workspace = true }
 serde = { workspace = true }
 bcs = { workspace = true }
-log = { workspace = true }
+tracing = { workspace = true }
 coerce = { workspace = true }
 async-trait = { workspace = true }
 opendal = { workspace = true }

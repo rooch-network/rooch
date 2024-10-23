@@ -122,12 +122,15 @@ impl DAServerActor {
                                     .start_background_submitter(last_block_number)
                                     .await
                                 {
-                                    log::error!("da: start background submitter failed: {:?}", e);
+                                    tracing::error!(
+                                        "da: start background submitter failed: {:?}",
+                                        e
+                                    );
                                 }
                             }
                         }
                         Err(e) => {
-                            log::error!("da: get last block number failed: {:?}", e);
+                            tracing::error!("da: get last block number failed: {:?}", e);
                         }
                     }
                 }
@@ -200,7 +203,7 @@ impl DAServerActor {
             ) {
                 Ok(_) => {}
                 Err(e) => {
-                    log::warn!("{:?}, fail to set submitting block done.", e);
+                    tracing::warn!("{:?}, fail to set submitting block done.", e);
                 }
             };
         };
@@ -225,7 +228,7 @@ impl DAServerActor {
                     }
                 }
                 Err(e) => {
-                    log::warn!("{:?}, fail to submit batch to backend.", e);
+                    tracing::warn!("{:?}, fail to submit batch to backend.", e);
                 }
             }
         }
@@ -241,15 +244,15 @@ impl DAServerActor {
     }
 
     async fn start_background_submitter(&self, last_block_number: u128) -> anyhow::Result<()> {
-        let cursor = self.rooch_store.get_background_submit_block_cursor()?;
-        let exp_count = if let Some(cursor) = cursor {
+        let cursor_opt = self.rooch_store.get_background_submit_block_cursor()?;
+        let exp_count = if let Some(cursor) = cursor_opt {
             last_block_number - cursor
         } else {
             last_block_number + 1
         };
         let unsubmitted_blocks = self
             .rooch_store
-            .get_submitting_blocks(cursor.unwrap_or(0), Some(exp_count as usize))?;
+            .get_submitting_blocks(cursor_opt.unwrap_or(0), Some(exp_count as usize))?;
 
         if unsubmitted_blocks.is_empty() {
             return Ok(()); // nothing to do
@@ -260,6 +263,12 @@ impl DAServerActor {
         if unsubmitted_blocks.len() == 1 && unsubmitted_blocks[0].block_number == last_block_number
         {
             return Ok(());
+        }
+
+        let first_unsubmitted_block = unsubmitted_blocks.first().unwrap().block_number;
+        if first_unsubmitted_block > 0 {
+            self.rooch_store
+                .set_background_submit_block_cursor(first_unsubmitted_block - 1)?;
         }
 
         let mut submit_count: u128 = 0;
@@ -295,7 +304,7 @@ impl DAServerActor {
                 // it's okay to set cursor a bit behind: submit_batch_raw set submitting block done, so it won't be submitted again after restart
                 self.rooch_store
                     .set_background_submit_block_cursor(block_number)?;
-                log::info!(
+                tracing::info!(
                     "da: background submitting: {} blocks submitted",
                     submit_count
                 );
@@ -303,7 +312,7 @@ impl DAServerActor {
         }
         self.rooch_store
             .set_background_submit_block_cursor(last_block_number)?;
-        log::info!(
+        tracing::info!(
             "da: background submitting done: {} blocks submitted",
             submit_count
         );

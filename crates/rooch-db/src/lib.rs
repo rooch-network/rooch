@@ -123,7 +123,7 @@ impl RoochDB {
             Some(previous_execution_info),
             true,
         )?;
-        log::info!(
+        tracing::info!(
             "revert tx succeed: tx_hash: {:?}, tx_order {}, previous_tx_hash: {:?}",
             tx_hash,
             tx_order,
@@ -138,7 +138,7 @@ impl RoochDB {
     /// warning: this method is not safe, it will not check revert preconditions or save previous tx as startup
     pub fn revert_tx_unsafe(&self, tx_order: u64, tx_hash: H256) -> Result<()> {
         self.inner_revert(tx_order, tx_hash, None, None, false)?;
-        log::info!(
+        tracing::info!(
             "revert tx unsafe succeed: tx_hash: {:?}, tx_order {}",
             tx_hash,
             tx_order,

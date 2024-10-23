@@ -121,14 +121,14 @@ impl OpenDABackend {
                 .await
             {
                 Ok(_) => {
-                    log::info!(
+                    tracing::info!(
                         "submitted segment to open-da scheme: {:?}, segment_id: {:?}",
                         self.scheme,
                         segment.get_id(),
                     );
                 }
                 Err(e) => {
-                    log::warn!(
+                    tracing::warn!(
                         "failed to submit segment to open-da scheme: {:?}, segment_id: {:?}, error:{:?}",
                         self.scheme,
                         segment.get_id(),

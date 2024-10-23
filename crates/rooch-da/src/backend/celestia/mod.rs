@@ -28,7 +28,7 @@ impl DABackend for CelestiaBackend {
         let segments = chunk.to_segments(self.max_segment_size);
         for segment in segments {
             let result = self.client.submit(segment).await?;
-            log::info!(
+            tracing::info!(
                 "submitted segment to celestia node, segment_id: {:?}, namespace: {:?}, commitment: {:?}, height: {}",
                 result.segment_id,
                 result.namespace,
@@ -100,7 +100,7 @@ impl CelestiaClient {
                 commitment: blob.commitment,
             }),
             Err(e) => {
-                log::warn!(
+                tracing::warn!(
                     "failed to submit segment to celestia node, segment_id: {:?}, commitment: {:?}, error:{:?}",
                     segment_id,
                     blob.commitment,

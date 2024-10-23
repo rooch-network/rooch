@@ -9607,7 +9607,6 @@ dependencies = [
  "celestia-rpc",
  "celestia-types",
  "coerce",
- "log",
  "moveos-types",
  "opendal",
  "rooch-config",
@@ -9616,6 +9615,7 @@ dependencies = [
  "serde 1.0.213",
  "serde_yaml 0.9.34+deprecated",
  "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -9624,7 +9624,6 @@ version = "0.7.5"
 dependencies = [
  "accumulator",
  "anyhow",
- "log",
  "moveos-common",
  "moveos-store",
  "moveos-types",
@@ -9634,6 +9633,7 @@ dependencies = [
  "rooch-indexer",
  "rooch-store",
  "rooch-types",
+ "tracing",
 ]
 
 [[package]]
