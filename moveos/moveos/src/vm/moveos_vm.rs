@@ -218,7 +218,7 @@ where
                 moveos_verifier::verifier::verify_entry_function(&loaded_function, &self.session)
                     .map_err(|e| e.finish(location.clone()))?;
                 let _resolved_args =
-                    self.resolve_argument(&loaded_function, call.args.clone(), location)?;
+                    self.resolve_argument(&loaded_function, call.args.clone(), location, false)?;
 
                 let compiled_script_opt = CompiledScript::deserialize(call.code.as_slice());
                 let compiled_script = match compiled_script_opt {
@@ -244,8 +244,8 @@ where
                 let location = Location::Module(call.function_id.module_id.clone());
                 moveos_verifier::verifier::verify_entry_function(&loaded_function, &self.session)
                     .map_err(|e| e.finish(location.clone()))?;
-                let _resolved_args =
-                    self.resolve_argument(&loaded_function, call.args.clone(), location)?;
+                let (_resolved_args, _) =
+                    self.resolve_argument(&loaded_function, call.args.clone(), location, false)?;
                 Ok(VerifiedMoveAction::Function {
                     call,
                     bypass_visibility: false,
@@ -310,8 +310,9 @@ where
                     .session
                     .load_script(call.code.as_slice(), call.ty_args.clone())?;
                 let location: Location = Location::Script;
-                let resolved_args = self.resolve_argument(&loaded_function, call.args, location)?;
-                let serialized_args = self.load_arguments(resolved_args)?;
+                let (_resolved_args, serialized_args) =
+                    self.resolve_argument(&loaded_function, call.args, location, true)?;
+                //let serialized_args = self.load_arguments(resolved_args)?;
                 self.session
                     .execute_script(
                         call.code,
@@ -336,8 +337,9 @@ where
                     call.ty_args.as_slice(),
                 )?;
                 let location = Location::Module(call.function_id.module_id.clone());
-                let resolved_args = self.resolve_argument(&loaded_function, call.args, location)?;
-                let serialized_args = self.load_arguments(resolved_args)?;
+                let (_resolved_args, serialized_args) =
+                    self.resolve_argument(&loaded_function, call.args, location, true)?;
+                //let serialized_args = self.load_arguments(resolved_args)?;
                 if bypass_visibility {
                     // bypass visibility call is system call, such as execute L1 block transaction
                     self.session
@@ -508,8 +510,9 @@ where
             call.ty_args.as_slice(),
         )?;
         let location = Location::Module(call.function_id.module_id.clone());
-        let resolved_args = self.resolve_argument(&loaded_function, call.args, location)?;
-        let serialized_args = self.load_arguments(resolved_args)?;
+        let (_resolved_args, serialized_args) =
+            self.resolve_argument(&loaded_function, call.args, location, true)?;
+        //let serialized_args = self.load_arguments(resolved_args)?;
         let return_values = self.session.execute_function_bypass_visibility(
             &call.function_id.module_id,
             &call.function_id.function_name,
