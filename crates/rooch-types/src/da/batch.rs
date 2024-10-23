@@ -1,8 +1,10 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::crypto::{RoochKeyPair, Signature};
+use crate::crypto::{RoochKeyPair, RoochSignature, Signature};
 use crate::transaction::LedgerTransaction;
+use fastcrypto::traits::ToFromBytes;
+use moveos_types::h256;
 use moveos_types::h256::{sha2_256_of, H256};
 use serde::{Deserialize, Serialize};
 
@@ -130,5 +132,49 @@ impl DABatch {
     pub fn get_hash(&self) -> H256 {
         let meta_bytes = bcs::to_bytes(&self.meta).expect("encode batch_meta should success");
         sha2_256_of(&meta_bytes)
+    }
+
+    pub fn verify(&self, verify_order: bool) -> anyhow::Result<()> {
+        // verify tx_list_hash
+        let tx_list_bytes = &self.tx_list_bytes;
+        let tx_list_hash = sha2_256_of(tx_list_bytes);
+        if tx_list_hash != self.meta.tx_list_hash {
+            return Err(anyhow::anyhow!("tx_list_hash mismatch"));
+        }
+
+        let batch_hash = self.get_hash();
+        let meta_signature = Signature::from_bytes(&self.meta_signature)?;
+        meta_signature.verify(batch_hash.as_bytes())?;
+
+        if verify_order {
+            self.verify_tx_order()?;
+        }
+
+        Ok(())
+    }
+
+    pub fn verify_tx_order(&self) -> anyhow::Result<()> {
+        let tx_list: Vec<LedgerTransaction> = self.get_tx_list();
+        let mut last_order = self.meta.block_range.tx_order_start;
+        for mut tx in tx_list {
+            let tx_order = tx.sequence_info.tx_order;
+            if tx_order != last_order {
+                return Err(anyhow::anyhow!("tx order mismatch"));
+            }
+
+            let tx_hash = tx.data.tx_hash();
+            let mut witness_data = tx_hash.as_ref().to_vec();
+            witness_data.extend(tx_order.to_le_bytes().iter());
+            let witness_hash = h256::sha3_256_of(&witness_data);
+            let tx_order_signature = Signature::from_bytes(&tx.sequence_info.tx_order_signature)?;
+            tx_order_signature.verify(witness_hash.as_bytes())?;
+
+            last_order += 1;
+        }
+        Ok(())
+    }
+
+    pub fn get_tx_list(&self) -> Vec<LedgerTransaction> {
+        bcs::from_bytes(&self.tx_list_bytes).expect("decode tx_list should success")
     }
 }

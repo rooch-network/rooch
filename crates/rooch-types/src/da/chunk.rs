@@ -199,5 +199,7 @@ mod tests {
         let act_tx_list: Vec<LedgerTransaction> =
             bcs::from_bytes(&act_batch.tx_list_bytes).expect("decode tx_list should success");
         assert_eq!(tx_list, act_tx_list);
+
+        assert!(act_batch.verify(false).is_ok())
     }
 }
