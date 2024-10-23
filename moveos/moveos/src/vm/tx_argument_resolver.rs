@@ -334,7 +334,7 @@ where
                                 .finish(location.clone()));
                         }
                         let sender = self.tx_context().sender();
-                        if !object.is_shared() && object.owner() != sender {
+                        if object.owner() != sender {
                             return Err(PartialVMError::new(StatusCode::NO_ACCOUNT_ROLE)
                                 .with_message(format!(
                                     "Object owner mismatch, object owner:{:?}, sender:{:?}",
@@ -360,7 +360,32 @@ where
                 }
                 Ok(())
             } else if self.read_only || is_allowed_argument_struct(&struct_arg_type) {
-                read_n_bytes(initial_cursor_len, cursor, arg).expect("read_n_bytes 1 failed");
+                if is_string_or_ascii_string(&struct_arg_type) {
+                    let len = get_len(cursor).map_err(|_| {
+                        PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT)
+                            .with_message("get length from vector data failed".to_string())
+                            .finish(location.clone())
+                    })?;
+
+                    serialize_uleb128(len, arg);
+                    read_n_bytes(len, cursor, arg)?;
+                } else if is_object_id(&struct_arg_type) {
+                    let mut len = get_len(cursor).map_err(|_| {
+                        PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT)
+                            .with_message("get length from vector data failed".to_string())
+                            .finish(location.clone())
+                    })?;
+
+                    let mut object_arg_bytes = vec![];
+                    serialize_uleb128(len, &mut object_arg_bytes);
+                    while len > 0 {
+                        read_n_bytes(32, cursor, &mut object_arg_bytes)?;
+                        len -= 1;
+                    }
+                    arg.append(&mut object_arg_bytes);
+                } else {
+                    read_n_bytes(initial_cursor_len, cursor, arg)?;
+                }
                 Ok(())
             } else {
                 return Err(PartialVMError::new(StatusCode::TYPE_MISMATCH)
@@ -444,6 +469,21 @@ pub fn get_object_type(type_tag: &TypeTag) -> Option<TypeTag> {
         }
         _ => None,
     }
+}
+
+fn is_string_or_ascii_string(t: &StructType) -> bool {
+    (t.module.address() == &MoveString::ADDRESS
+        && t.module.name() == MoveString::module_identifier().as_ident_str()
+        && t.name == MoveString::struct_identifier())
+        || (t.module.address() == &MoveAsciiString::ADDRESS
+            && t.module.name() == MoveAsciiString::module_identifier().as_ident_str()
+            && t.name == MoveAsciiString::struct_identifier())
+}
+
+fn is_object_id(t: &StructType) -> bool {
+    t.module.address() == &ObjectID::ADDRESS
+        && t.module.name() == ObjectID::module_identifier().as_ident_str()
+        && t.name == ObjectID::struct_identifier()
 }
 
 // Keep consistent with verifier is_allowed_input_struct

@@ -79,6 +79,10 @@ module vector_object::vector_object {
         debug::print(&string_argument);
     }
 
+    entry public fun vector_object_id_argument(_account: &signer, string_argument: vector<ObjectID>) {
+        debug::print(&string_argument);
+    }
+
     entry public fun string_argument(_account: &signer, string_argument: String) {
         debug::print(&string_argument);
     }
