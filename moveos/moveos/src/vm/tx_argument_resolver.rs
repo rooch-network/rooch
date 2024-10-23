@@ -73,11 +73,6 @@ where
         }
 
         if func.parameters.len() != serialized_args.len() {
-            println!(
-                "************************** func.parameters.len() {:?} serialized_args.len() {:?}",
-                func.parameters.len(),
-                serialized_args.len()
-            );
             return Err(
                 PartialVMError::new(StatusCode::NUMBER_OF_ARGUMENTS_MISMATCH)
                     .with_message(format!(
@@ -189,9 +184,13 @@ where
                 Ok(new_arg)
             }
             Bool | U8 | U16 | U32 | U64 | U128 | U256 | Address => Ok(arg),
-            Signer => Ok(MoveValue::Signer(self.tx_context().sender)
+            Signer => MoveValue::Signer(self.tx_context().sender)
                 .simple_serialize()
-                .expect(" serialization tx_context().sender failed")),
+                .ok_or_else(|| {
+                    PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT)
+                        .with_message("failed to deserialize signer argument".to_string())
+                        .finish(Location::Undefined)
+                }),
             Reference(..) | MutableReference(..) => {
                 let initial_cursor_len = arg.len();
                 let mut cursor = Cursor::new(&arg[..]);
@@ -207,7 +206,7 @@ where
                 Ok(new_arg)
             }
             TyParam(_) => Err(PartialVMError::new(StatusCode::INVALID_SIGNATURE)
-                .with_message("construct_arg invalid signature".to_string())
+                .with_message("invalid type argument".to_string())
                 .finish(Location::Undefined)),
         }
     }
@@ -224,11 +223,17 @@ where
         use Type::*;
 
         if is_signer(ty) {
-            let mut v = MoveValue::Signer(self.tx_context().sender)
-                .simple_serialize()
-                .expect("serialize tx_context().sender failed");
-            arg.append(&mut v);
-            return Ok(());
+            return match MoveValue::Signer(self.tx_context().sender).simple_serialize() {
+                Some(mut val) => {
+                    arg.append(&mut val);
+                    Ok(())
+                }
+                None => Err(
+                    PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT)
+                        .with_message("failed to deserialize signer argument".to_string())
+                        .finish(Location::Undefined),
+                ),
+            };
         }
 
         if let Vector(v) = ty {
@@ -236,7 +241,7 @@ where
 
             let mut len = get_len(cursor).map_err(|_| {
                 PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT)
-                    .with_message("get_len failed".to_string())
+                    .with_message("get length from vector data failed".to_string())
                     .finish(location.clone())
             })?;
 
@@ -257,7 +262,7 @@ where
             if is_object(&struct_arg_type) {
                 let mut len = get_len(cursor).map_err(|_| {
                     PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT)
-                        .with_message("get_len failed".to_string())
+                        .with_message("get length from vector data failed".to_string())
                         .finish(location.clone())
                 })?;
 
@@ -355,7 +360,7 @@ where
                     let mut object_runtime = self.object_runtime.write();
                     object_runtime
                         .load_object_argument(object.id(), ty, self)
-                        .expect("load_arguments_new failed");
+                        .expect("load object argument from runtime failed");
                 }
                 Ok(())
             } else if self.read_only || is_allowed_argument_struct(&struct_arg_type) {
