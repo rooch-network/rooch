@@ -244,15 +244,15 @@ impl DAServerActor {
     }
 
     async fn start_background_submitter(&self, last_block_number: u128) -> anyhow::Result<()> {
-        let cursor = self.rooch_store.get_background_submit_block_cursor()?;
-        let exp_count = if let Some(cursor) = cursor {
+        let cursor_opt = self.rooch_store.get_background_submit_block_cursor()?;
+        let exp_count = if let Some(cursor) = cursor_opt {
             last_block_number - cursor
         } else {
             last_block_number + 1
         };
         let unsubmitted_blocks = self
             .rooch_store
-            .get_submitting_blocks(cursor.unwrap_or(0), Some(exp_count as usize))?;
+            .get_submitting_blocks(cursor_opt.unwrap_or(0), Some(exp_count as usize))?;
 
         if unsubmitted_blocks.is_empty() {
             return Ok(()); // nothing to do
@@ -263,6 +263,12 @@ impl DAServerActor {
         if unsubmitted_blocks.len() == 1 && unsubmitted_blocks[0].block_number == last_block_number
         {
             return Ok(());
+        }
+
+        let first_unsubmitted_block = unsubmitted_blocks.first().unwrap().block_number;
+        if first_unsubmitted_block > 0 {
+            self.rooch_store
+                .set_background_submit_block_cursor(first_unsubmitted_block - 1)?;
         }
 
         let mut submit_count: u128 = 0;
