@@ -40,9 +40,7 @@ where
         mut args: Vec<Vec<u8>>,
         location: Location,
         load_object: bool,
-    ) -> VMResult<(Vec<ResolvedArg>, Vec<Vec<u8>>)> {
-        let resolved_args = Vec::with_capacity(args.len());
-
+    ) -> VMResult<Vec<Vec<u8>>> {
         let parameters = func.parameters.clone();
 
         //fill the type arguments to parameter type
@@ -62,7 +60,7 @@ where
         let mut args = args.into_iter();
 
         let serialized_args =
-            self.new_resolve_args(parameters.clone(), &mut args, load_object, location.clone())?;
+            self.resolve_args(parameters.clone(), &mut args, load_object, location.clone())?;
 
         if args.next().is_some() {
             return Err(
@@ -78,13 +76,13 @@ where
                     .with_message(format!(
                         "Invalid argument length, expect:{}, got:{}",
                         func.parameters.len(),
-                        resolved_args.len()
+                        serialized_args.len()
                     ))
                     .finish(location.clone()),
             );
         }
 
-        Ok((resolved_args, serialized_args))
+        Ok(serialized_args)
     }
 
     pub fn load_arguments(&mut self, resolved_args: Vec<ResolvedArg>) -> VMResult<Vec<Vec<u8>>> {
@@ -144,7 +142,7 @@ where
         }
     }
 
-    fn new_resolve_args(
+    fn resolve_args(
         &self,
         parameters: Vec<Type>,
         args: &mut IntoIter<Vec<u8>>,
@@ -358,9 +356,7 @@ where
 
                 if load_object {
                     let mut object_runtime = self.object_runtime.write();
-                    object_runtime
-                        .load_object_argument(object.id(), ty, self)
-                        .expect("load object argument from runtime failed");
+                    object_runtime.load_object_argument(object.id(), ty, self)?;
                 }
                 Ok(())
             } else if self.read_only || is_allowed_argument_struct(&struct_arg_type) {
