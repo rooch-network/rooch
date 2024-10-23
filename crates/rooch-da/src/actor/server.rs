@@ -122,12 +122,15 @@ impl DAServerActor {
                                     .start_background_submitter(last_block_number)
                                     .await
                                 {
-                                    log::error!("da: start background submitter failed: {:?}", e);
+                                    tracing::error!(
+                                        "da: start background submitter failed: {:?}",
+                                        e
+                                    );
                                 }
                             }
                         }
                         Err(e) => {
-                            log::error!("da: get last block number failed: {:?}", e);
+                            tracing::error!("da: get last block number failed: {:?}", e);
                         }
                     }
                 }
@@ -200,7 +203,7 @@ impl DAServerActor {
             ) {
                 Ok(_) => {}
                 Err(e) => {
-                    log::warn!("{:?}, fail to set submitting block done.", e);
+                    tracing::warn!("{:?}, fail to set submitting block done.", e);
                 }
             };
         };
@@ -225,7 +228,7 @@ impl DAServerActor {
                     }
                 }
                 Err(e) => {
-                    log::warn!("{:?}, fail to submit batch to backend.", e);
+                    tracing::warn!("{:?}, fail to submit batch to backend.", e);
                 }
             }
         }
@@ -295,7 +298,7 @@ impl DAServerActor {
                 // it's okay to set cursor a bit behind: submit_batch_raw set submitting block done, so it won't be submitted again after restart
                 self.rooch_store
                     .set_background_submit_block_cursor(block_number)?;
-                log::info!(
+                tracing::info!(
                     "da: background submitting: {} blocks submitted",
                     submit_count
                 );
@@ -303,7 +306,7 @@ impl DAServerActor {
         }
         self.rooch_store
             .set_background_submit_block_cursor(last_block_number)?;
-        log::info!(
+        tracing::info!(
             "da: background submitting done: {} blocks submitted",
             submit_count
         );
