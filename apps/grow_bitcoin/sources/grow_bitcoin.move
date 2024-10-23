@@ -3,7 +3,7 @@
 
 module grow_bitcoin::grow_bitcoin {
 
-    use std::string;
+    use std::string::{Self, String};
     use std::option;
     use std::u64;
     use bitcoin_move::bbn;
@@ -45,6 +45,12 @@ module grow_bitcoin::grow_bitcoin {
     // values above (or equal to) the threshold are interpreted as block times (UNIX timestamp, seconds since epoch).
     const LOCK_TIME_THRESHOLD: u32 = 500_000_000;
 
+    const TOTAL_GROW_SUPPLY: u128 = 2100_0000_0000;
+
+    const GROW_NAME:vector<u8> = b"Grow Bitcoin";
+    const GROW_SYMBOL:vector<u8> = b"GROW";
+    const GROW_ICON_URL: vector<u8> = b"<svg xmlns=\"http://www.w3.org/2000/svg\" id=\"uuid-22caa40a-9fd8-491f-8f74-64b2050f5896\" data-name=\"layer1\" viewBox=\"0 0 317 317\"><defs><style>.uuid-28301967-1909-4b30-9889-78c9dbdaacd3{stroke:#fff;stroke-miterlimit:10}</style></defs><circle cx=\"158.5\" cy=\"158.5\" r=\"158.5\" class=\"uuid-28301967-1909-4b30-9889-78c9dbdaacd3\"/><circle cx=\"158.5\" cy=\"158.5\" r=\"141.25\" class=\"uuid-28301967-1909-4b30-9889-78c9dbdaacd3\"/><path d=\"M79.06 153.89c12.61-50.21 53.37-78.37 93.71-78.37 24.37 0 38.45 10.93 47.06 21.64l-23.95 21.43c-5.67-6.93-12.61-10.92-24.16-10.92-24.58 0-47.48 19.75-55.47 52.11-7.35 29.2 1.05 45.59 28.57 45.59 7.14 0 13.87-2.52 17.86-5.04l7.14-24.16h-24.79l7.78-30.68h57.99l-17.44 74.38c-13.45 10.5-34.25 17.86-54.63 17.86-44.96 0-73.12-29-59.67-83.83Z\" style=\"stroke-miterlimit:10;fill:#fff;stroke-width:.5px;stroke:#ff9908\"/><path d=\"M221.86 209.96v-4.23c0-3.97-.07-5.43-.22-8.31l-4.42-.65v-2.84l14.24-4.8 1.24.77.66 8.87v11.19c0 4.48.07 11.91.21 15.16h-11.94c.14-3.25.22-10.69.22-15.16Zm-4.06 11.8 6.9-1.45h7.59l6.9 1.45v3.36H217.8zm10.23-21.34h5.42l-.97 1.96c1.27-8.85 6.3-13.26 10.61-13.26 3.13 0 5.67 1.74 6.27 5.32-.16 3.76-2.24 5.89-5.13 5.89-2.18 0-3.86-1.07-5.58-3.35l-2.11-2.75 2.92 1.05c-2.6 1.89-5.2 5.71-6.13 10.02l-5.3-.52v-4.37Z\" style=\"stroke-miterlimit:10;stroke:#ff9908;fill:#ff9908\"/></svg>";
+
     const ErrorWrongDeployer: u64 = 1;
     const ErrorAlreadyDeployed: u64 = 2;
     const ErrorWrongFarmTime: u64 = 3;
@@ -59,10 +65,7 @@ module grow_bitcoin::grow_bitcoin {
     const ErrorNotStaked: u64 = 12;
     const ErrorAssetExist: u64 = 13;
     const ErrorBitcoinClientError: u64 = 14;
-
-    spec module {
-        pragma verify = false;
-    }
+    const ErrorWrongTimeRange: u64 = 15;
 
 
     const EXP_SCALE: u128 = 1000000000000000000;// e18
@@ -114,6 +117,7 @@ module grow_bitcoin::grow_bitcoin {
     struct GROW has key, store {}
 
     struct FarmingAsset has key {
+        asset_total_value: u64,
         asset_total_weight: u64,
         harvest_index: u128,
         last_update_timestamp: u64,
@@ -138,6 +142,7 @@ module grow_bitcoin::grow_bitcoin {
 
     /// To store user's asset token
     struct Stake has key, store {
+        asset_type: String,
         asset_weight: u64,
         last_harvest_index: u128,
         gain: u128,
@@ -151,6 +156,7 @@ module grow_bitcoin::grow_bitcoin {
 
     struct StakeEvent has copy, drop {
         asset_id: ObjectID,
+        asset_type: String,
         asset_weight: u64,
         account: address,
         timestamp: u64
@@ -158,6 +164,7 @@ module grow_bitcoin::grow_bitcoin {
 
     struct UnStakeEvent has copy, drop {
         asset_id: ObjectID,
+        asset_type: String,
         asset_weight: u64,
         gain: u128,
         account: address,
@@ -166,6 +173,7 @@ module grow_bitcoin::grow_bitcoin {
 
     struct HarvestEvent has copy, drop {
         asset_id: ObjectID,
+        asset_type: String,
         harvest_index: u128,
         gain: u128,
         account: address,
@@ -174,6 +182,7 @@ module grow_bitcoin::grow_bitcoin {
 
     struct RemoveExpiredEvent has copy, drop {
         asset_id: ObjectID,
+        asset_type: String,
         account: address,
     }
 
@@ -188,30 +197,35 @@ module grow_bitcoin::grow_bitcoin {
         account::move_resource_to(&grow_bitcoin_signer, SubscriberInfo {
             subscriber
         });
+
+        let start_time = timestamp::now_seconds();
+        let duration_seconds = (PerDaySeconds as u64) *180u64;
+        let end_time = start_time + duration_seconds;
+        let release_per_second = TOTAL_GROW_SUPPLY / (duration_seconds as u128);
+        do_deploy(release_per_second, start_time, end_time);
     }
 
 
-    public entry fun deploy(
-        signer: &signer,
+    fun do_deploy(
         release_per_second: u128,
         start_time: u64,
         end_time: u64,
-        name: vector<u8>,
-        symbol: vector<u8>,
-        decimals: u8,
-        _cap: &mut Object<AdminCap>
     ) {
-        assert!(signer::address_of(signer) == DEPLOYER, ErrorWrongDeployer);
         assert!(!account::exists_resource<FarmingAsset>(DEPLOYER), ErrorAlreadyDeployed);
+        assert!(start_time < end_time, ErrorWrongTimeRange);
 
         let now_seconds = timestamp::now_seconds();
+        assert!(start_time >= now_seconds, ErrorWrongTimeRange);
+
         let coin_info = coin::register_extend<GROW>(
-            string::utf8(name),
-            string::utf8(symbol),
-            option::none(),
-            decimals,
+            string::utf8(GROW_NAME),
+            string::utf8(GROW_SYMBOL),
+            option::some(string::utf8(GROW_ICON_URL)),
+            0u8,
         );
-        account::move_resource_to(signer, FarmingAsset {
+        let grow_bitcoin_signer = signer::module_signer<GROW>();
+        account::move_resource_to(&grow_bitcoin_signer, FarmingAsset {
+            asset_total_value: 0,
             asset_total_weight: 0,
             harvest_index: 0,
             last_update_timestamp: now_seconds,
@@ -224,10 +238,15 @@ module grow_bitcoin::grow_bitcoin {
         });
     }
 
+    public entry fun update_coin_icon(){
+        let farming_asset = account::borrow_mut_resource<FarmingAsset>(DEPLOYER);
+        coin::upsert_icon_url(&mut farming_asset.coin_info, string::utf8(GROW_ICON_URL));
+    }
+
     public fun modify_parameter(
-        _cap: &mut Object<AdminCap>,
         release_per_second: u128,
-        alive: bool
+        alive: bool,
+        _cap: &mut Object<AdminCap>,
     ) {
         // Not support to shuttingdown alive state.
         assert!(alive, ErrorNotAlive);
@@ -257,8 +276,9 @@ module grow_bitcoin::grow_bitcoin {
     ) {
         assert!(!utxo::contains_temp_state<StakeInfo>(asset), ErrorAlreadyStaked);
         utxo::add_temp_state(asset, StakeInfo {});
-        let asset_weight = value( object::borrow(asset)) * calculate_time_lock_weight(0);
-        do_stake(signer, object::id(asset), asset_weight);
+        let utxo_value = value( object::borrow(asset));
+        let asset_weight = utxo_value * calculate_time_lock_weight(0);
+        do_stake(signer, asset, utxo_value, asset_weight);
     }
 
     public entry fun stake_bbn(
@@ -268,17 +288,22 @@ module grow_bitcoin::grow_bitcoin {
         assert!(!bbn::contains_temp_state<StakeInfo>(asset), ErrorAlreadyStaked);
         bbn::add_temp_state(asset, StakeInfo {});
         let bbn_stake_seal = object::borrow(asset);
-        let asset_weight = bbn::staking_value(bbn_stake_seal) * calculate_time_lock_weight(
+        let stake_value = bbn::staking_value(bbn_stake_seal);
+        let asset_weight = stake_value * calculate_time_lock_weight(
             (((bbn::staking_time(bbn_stake_seal) as u64) + bbn::block_height(bbn_stake_seal)) as u32)
         );
-        do_stake(signer, object::id(asset), asset_weight);
+        do_stake(signer, asset, stake_value, asset_weight);
     }
 
-    fun do_stake(
+    fun do_stake<T: key>(
         signer: &signer,
-        asset_id: ObjectID,
+        asset: &mut Object<T>,
+        asset_value: u64,
         asset_weight: u64
     ) {
+        let asset_id = object::id(asset);
+        let asset_type = type_info::type_name<T>();
+
         process_expired_state();
         let account = signer::address_of(signer);
 
@@ -289,6 +314,7 @@ module grow_bitcoin::grow_bitcoin {
         let now_seconds = timestamp::now_seconds();
         emit(StakeEvent{
             asset_id,
+            asset_type,
             asset_weight,
             account,
             timestamp: now_seconds
@@ -308,11 +334,13 @@ module grow_bitcoin::grow_bitcoin {
             };
             let stake_table = account::borrow_mut_resource<UserStake>(account);
             table::add(&mut stake_table.stake, asset_id, Stake {
+                asset_type,
                 asset_weight,
                 last_harvest_index: 0,
                 gain,
             });
             farming_asset.harvest_index = 0;
+            farming_asset.asset_total_value = asset_value;
             farming_asset.asset_total_weight = asset_weight;
         } else {
             let new_harvest_index = calculate_harvest_index_with_asset(farming_asset, now_seconds);
@@ -323,10 +351,12 @@ module grow_bitcoin::grow_bitcoin {
             };
             let stake_table = account::borrow_mut_resource<UserStake>(account);
             table::add(&mut stake_table.stake, asset_id, Stake {
+                asset_type,
                 asset_weight,
                 last_harvest_index: new_harvest_index,
                 gain: 0,
             });
+            farming_asset.asset_total_value = farming_asset.asset_total_value + asset_value;
             farming_asset.asset_total_weight = farming_asset.asset_total_weight + asset_weight;
             farming_asset.harvest_index = new_harvest_index;
         };
@@ -354,7 +384,7 @@ module grow_bitcoin::grow_bitcoin {
         let farming_asset = account::borrow_mut_resource<FarmingAsset>(DEPLOYER);
         let user_stake = account::borrow_mut_resource<UserStake>(account);
         table::remove(&mut farming_asset.stake_table, asset_id);
-        let Stake { last_harvest_index, asset_weight, gain } =
+        let Stake { asset_type, last_harvest_index, asset_weight, gain } =
             table::remove(&mut user_stake.stake, asset_id);
         let now_seconds = if (timestamp::now_seconds() < farming_asset.end_time) {
             timestamp::now_seconds()
@@ -368,6 +398,7 @@ module grow_bitcoin::grow_bitcoin {
         let withdraw_token = coin::mint_extend(&mut farming_asset.coin_info, (total_gain as u256));
         emit(UnStakeEvent{
             asset_id,
+            asset_type,
             asset_weight,
             gain: total_gain,
             account,
@@ -421,6 +452,7 @@ module grow_bitcoin::grow_bitcoin {
         // let withdraw_amount = total_gain;
         emit(HarvestEvent{
             asset_id,
+            asset_type: stake.asset_type,
             harvest_index: new_harvest_index,
             gain: total_gain,
             account,
@@ -469,10 +501,10 @@ module grow_bitcoin::grow_bitcoin {
         stake.gain + new_gain
     }
 
-    /// Query total stake count from yield farming resource
-    public fun query_total_stake(): u64 {
+    /// Query total stake value(in satoshis) and weight from yield farming resource
+    public fun query_total_stake(): (u64, u64) {
         let farming_asset = account::borrow_resource<FarmingAsset>(DEPLOYER);
-        farming_asset.asset_total_weight
+        (farming_asset.asset_total_value, farming_asset.asset_total_weight)
     }
 
     /// Query stake weight from user staking objects.
@@ -630,12 +662,14 @@ module grow_bitcoin::grow_bitcoin {
         let account = table::remove(&mut farming_asset.stake_table, asset_id);
         let user_stake = account::borrow_mut_resource<UserStake>(account);
         let Stake {
+            asset_type,
             asset_weight,
             last_harvest_index: _,
             gain: _ } = table::remove(&mut user_stake.stake, asset_id);
         emit(RemoveExpiredEvent{
             asset_id,
-            account
+            asset_type,
+            account,
         });
         farming_asset.asset_total_weight = farming_asset.asset_total_weight - asset_weight;
     }
@@ -645,10 +679,8 @@ module grow_bitcoin::grow_bitcoin {
         bitcoin_move::genesis::init_for_test();
         add_latest_block(100, @0x77dfc2fe598419b00641c296181a96cf16943697f573480b023b77cce82ada21);
         init();
-        let admin_cap_id = object::named_object_id<AdminCap>();
-        let grow_bitcoin_signer = signer::module_signer<AdminCap>();
-        let admin_cap = object::borrow_mut_object<AdminCap>(&grow_bitcoin_signer, admin_cap_id);
-        deploy(&sender, 1, 0, 200, b"BTC Holder Coin", b"HDC", 6, admin_cap);
+        let _admin_cap = app_admin::admin::init_for_test();
+        //deploy(1, 0, 200, admin_cap);
         let seconds = 100;
         let tx_id = @0x77dfc2fe598419b00641c296181a96cf16943697f573480b023b77cce82ada21;
         let sat_value = 100000000;
@@ -659,17 +691,22 @@ module grow_bitcoin::grow_bitcoin {
         stake(&sender, &mut utxo);
         timestamp::fast_forward_seconds_for_test(seconds);
         stake(&sender, &mut utxo2);
+        let (total_value, total_weight) = query_total_stake();
+        assert!(total_value == 2 * sat_value, 1);
+        assert!(total_weight == 2 * sat_value * calculate_time_lock_weight(0), 2);
         timestamp::fast_forward_seconds_for_test(seconds);
         let amount = query_gov_token_amount(utxo_id);
         let amount2 = query_gov_token_amount(utxo_id2);
-        assert!(amount == 150, 1);
-        assert!(amount2 == 50, 2);
+        // std::debug::print(&amount);
+        // std::debug::print(&amount2);
+        assert!(amount == 2025450, 1);
+        assert!(amount2 == 675150, 2);
         let coin = do_unstake(&sender, object::id(&utxo));
-        assert!(coin::value(&coin) == 150, 3);
+        assert!(coin::value(&coin) == (amount as u256), 3);
         let amount = query_gov_token_amount(utxo_id);
         assert!(amount == 0, 4);
         let coin2 = do_harvest(&sender, object::id(&utxo2));
-        assert!(coin::value(&coin2) == 50, 4);
+        assert!(coin::value(&coin2) == (amount2 as u256), 5);
         coin::destroy_for_testing(coin2);
         utxo::drop_for_testing(utxo2);
         // remove_expired_stake(utxo_id2);
