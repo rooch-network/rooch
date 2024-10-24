@@ -15,7 +15,7 @@ module orderbook::market {
     use rooch_framework::coin_store;
     use moveos_std::tx_context::sender;
     use moveos_std::type_info::type_name;
-    use moveos_std::object::{Object, ObjectID, to_shared, new_named_object, transfer, new};
+    use moveos_std::object::{Object, ObjectID, to_shared, new_named_object};
     use rooch_framework::coin_store::{CoinStore, create_coin_store};
     use moveos_std::timestamp::now_milliseconds;
     use orderbook::critbit::{CritbitTree, find_leaf, borrow_leaf_by_index, borrow_mut_leaf_by_index,
@@ -24,6 +24,7 @@ module orderbook::market {
     use orderbook::critbit;
     use moveos_std::table;
     use moveos_std::table::Table;
+    use app_admin::admin::AdminCap;
 
     const DEPLOYER: address = @orderbook;
 
@@ -105,18 +106,26 @@ module orderbook::market {
         txs: u64
     }
 
-    struct AdminCap has key, store {}
+    // struct AdminCap has key, store {}
 
     struct MarketplaceHouse has key {
         market_info: LinkedTable<String, ObjectID>,
     }
 
+    fun init() {
+        let market_house = MarketplaceHouse {
+            market_info: linked_table::new(),
+        };
 
+        //TODO market create event
+        // transfer(new_named_object(AdminCap{}), sender());
+        to_shared(new_named_object(market_house))
+    }
 
     public entry fun create_market<BaseAsset: key + store, QuoteAsset: key + store>(
         market_house_obj: &mut Object<MarketplaceHouse>,
     ) {
-        let market_obj = new(Marketplace {
+        let market_obj = new_named_object(Marketplace {
             is_paused: false,
             version: VERSION,
             bids: critbit::new(),
@@ -147,16 +156,6 @@ module orderbook::market {
         to_shared(market_obj);
     }
 
-    fun init() {
-        let market_house = MarketplaceHouse {
-            market_info: linked_table::new(),
-        };
-
-        //TODO market create event
-        transfer(new_named_object(AdminCap{}), sender());
-        to_shared(new_named_object(market_house))
-    }
-
     ///Listing NFT in the collection
     public entry fun list<BaseAsset: key + store, QuoteAsset: key + store>(
         signer: &signer,
@@ -164,7 +163,7 @@ module orderbook::market {
         quantity: u256,
         unit_price: u64,
     ) {
-        let coin= account_coin_store::withdraw<BaseAsset>(signer, quantity);
+        let coin= account_coin_store::withdraw<QuoteAsset>(signer, quantity);
         let market = object::borrow_mut(market_obj);
         assert!(market.version == VERSION, ErrorWrongVersion);
         assert!(market.is_paused == false, ErrorWrongPaused);
@@ -180,17 +179,17 @@ module orderbook::market {
             owner: sender(),
             is_bid: false,
         };
-        coin_store::deposit(&mut market.base_asset, coin);
+        coin_store::deposit(&mut market.quote_asset, coin);
         let (find_price, index) = critbit::find_leaf(&market.asks, unit_price);
-        if (find_price) {
-            critbit::insert_leaf(&mut market.asks, unit_price, TickLevel{
+        if (!find_price) {
+            index = critbit::insert_leaf(&mut market.asks, unit_price, TickLevel{
                 price: unit_price,
                 open_orders: linked_table::new()
             });
         };
         let tick_level = critbit::borrow_mut_leaf_by_index(&mut market.asks, index);
         linked_table::push_back(&mut tick_level.open_orders, order_id, asks);
-
+        //
         if (!table::contains(&market.user_order_info, sender())) {
             table::add(&mut market.user_order_info, sender(), linked_table::new());
         };
@@ -211,7 +210,7 @@ module orderbook::market {
         assert!(unit_price > 0, ErrorWrongCreateBid);
         // TODO here maybe wrap to u512?
         let price = (unit_price as u256) * quantity;
-        let paid = account_coin_store::withdraw<QuoteAsset>(signer, price);
+        let paid = account_coin_store::withdraw<BaseAsset>(signer, price);
         let order_id = market.next_bid_order_id;
         market.next_bid_order_id = market.next_bid_order_id + 1;
         let bid = Order {
@@ -221,17 +220,21 @@ module orderbook::market {
             owner: sender(),
             is_bid: true,
         };
-        coin_store::deposit(&mut market.quote_asset, paid);
+        coin_store::deposit(&mut market.base_asset, paid);
 
         let (find_price, index) = critbit::find_leaf(&market.bids, unit_price);
         if (!find_price) {
-            critbit::insert_leaf(&mut market.bids, unit_price, TickLevel {
+            index = critbit::insert_leaf(&mut market.bids, unit_price, TickLevel {
                 price: unit_price,
                 open_orders: linked_table::new()
             });
         };
         let tick_level = critbit::borrow_mut_leaf_by_index(&mut market.bids, index);
         linked_table::push_back(&mut tick_level.open_orders, order_id, bid);
+        if (!table::contains(&market.user_order_info, sender())) {
+            table::add(&mut market.user_order_info, sender(), linked_table::new());
+        };
+        linked_table::push_back(table::borrow_mut(&mut market.user_order_info, sender()), order_id, unit_price);
     }
 
     ///Cancel the listing of inscription
@@ -258,9 +261,9 @@ module orderbook::market {
         if (is_bid) {
             // TODO here maybe wrap to u512?
             let total_balance = (order.unit_price as u256) * order.quantity;
-            account_coin_store::deposit(sender(), coin_store::withdraw(&mut market.quote_asset, total_balance))
+            account_coin_store::deposit(sender(), coin_store::withdraw(&mut market.base_asset, total_balance))
         }else {
-            account_coin_store::deposit(sender(), coin_store::withdraw(&mut market.base_asset, order.quantity))
+            account_coin_store::deposit(sender(), coin_store::withdraw(&mut market.quote_asset, order.quantity))
         }
     }
 
@@ -271,7 +274,7 @@ module orderbook::market {
         assert_order_exist: bool,
         receiver: address
     ){
-        let option_coin = do_buy(signer, market_obj, order_id, assert_order_exist);
+        let option_coin = do_buy<BaseAsset, QuoteAsset>(signer, market_obj, order_id, assert_order_exist);
         if (is_some(&option_coin)) {
             account_coin_store::deposit(receiver, option::extract(&mut option_coin))
         };
@@ -316,19 +319,19 @@ module orderbook::market {
         // Here is trade fee is BaseAsset
         let trade_fee = total_price * market.fee / TRADE_FEE_BASE_RATIO;
         coin_store::deposit(&mut market.base_asset_trading_fees, coin::extract(&mut trade_coin, trade_fee));
-        coin_store::deposit(&mut market.base_asset, trade_coin);
+        account_coin_store::deposit(order.owner, trade_coin);
         option::some(coin_store::withdraw(&mut market.quote_asset, order.quantity))
     }
 
 
-    public fun accept_bid<BaseAsset: key + store, QuoteAsset: key + store>(
+    public entry fun accept_bid<BaseAsset: key + store, QuoteAsset: key + store>(
         signer: &signer,
         market_obj: &mut Object<Marketplace<BaseAsset, QuoteAsset>>,
         order_id: u64,
         assert_order_exist: bool,
         receiver: address
     ){
-        let option_coin = do_accept_bid(signer, market_obj, order_id, assert_order_exist);
+        let option_coin = do_accept_bid<BaseAsset, QuoteAsset>(signer, market_obj, order_id, assert_order_exist);
         if (is_some(&option_coin)) {
             account_coin_store::deposit(receiver, option::extract(&mut option_coin))
         };
@@ -359,7 +362,6 @@ module orderbook::market {
         let trade_coin = account_coin_store::withdraw<QuoteAsset>(signer, order.quantity);
         // assert!(coin::value(paid) >=  order.quantity, ErrorInputCoin);
         // let trade_coin = coin::extract(paid, order.quantity);
-
         // TODO here maybe wrap to u512?
         let total_price = (order.unit_price as u256) * order.quantity;
         let trade_info = &mut market.trade_info;
@@ -376,8 +378,7 @@ module orderbook::market {
         // Here trade fee is QuoteAsset
         let trade_fee = order.quantity * market.fee / TRADE_FEE_BASE_RATIO;
         coin_store::deposit(&mut market.quote_asset_trading_fees, coin::extract(&mut trade_coin, trade_fee));
-        coin_store::deposit(&mut market.quote_asset_trading_fees, trade_coin);
-
+        account_coin_store::deposit(order.owner, trade_coin);
         option::some(coin_store::withdraw(&mut market.base_asset, total_price))
     }
 
@@ -455,8 +456,9 @@ module orderbook::market {
     public fun query_order<BaseAsset: key + store, QuoteAsset: key + store>(
         market_obj: &Object<Marketplace<BaseAsset, QuoteAsset>>,
         query_bid: bool,
-        from_order: Option<u64>,
-        start: u64
+        from_price: u64,
+        from_price_is_none: bool,
+        start_order_id: u64
     ): vector<u64> {
         let market = object::borrow(market_obj);
         let order_ids = vector<u64>[];
@@ -467,26 +469,40 @@ module orderbook::market {
 
         if (query_bid) {
             let i = 0;
-            let from = if (option::is_none(&from_order)) {
+            let from = if (from_price_is_none) {
                 let (key, _) = critbit::max_leaf(&market.bids);
                 key
             }else {
-                *option::borrow(&from_order)
+                from_price
             };
-            let count = start;
             while (i < 50) {
                 let tick_level = critbit::borrow_leaf_by_key(&market.bids, from);
                 let order_count = linked_table::length(&tick_level.open_orders);
-
-                while (order_count > count) {
-                    let order = linked_table::borrow(&tick_level.open_orders, count);
+                if (order_count == 0) {
+                    event::emit(
+                        QueryOrderEvent{
+                            order_ids,
+                            unit_prices,
+                            quantitys,
+                            owners,
+                            is_bids
+                        }
+                    );
+                    return order_ids
+                };
+                let option_order_id = if (!linked_table::contains(&tick_level.open_orders, start_order_id)){
+                    linked_table::front(&tick_level.open_orders)
+                }else {
+                    &option::some(start_order_id)
+                };
+                while (option::is_some(option_order_id)) {
+                    let order_id = option::destroy_some(*option_order_id);
+                    let order = linked_table::borrow(&tick_level.open_orders, order_id);
                     vector::push_back(&mut order_ids, order.order_id);
                     vector::push_back(&mut unit_prices, order.unit_price);
                     vector::push_back(&mut quantitys, order.quantity);
                     vector::push_back(&mut owners, order.owner);
                     vector::push_back(&mut is_bids, order.is_bid);
-
-                    count = count + 1;
                     i = i + 1;
                     if (i >= 50) {
                         event::emit(
@@ -499,9 +515,9 @@ module orderbook::market {
                             }
                         );
                         return order_ids
-                    }
+                    };
+                    option_order_id = linked_table::next(&tick_level.open_orders, order_id)
                 };
-                count = 0;
                 let (key, index) = critbit::previous_leaf(&market.bids, from);
                 if (index != 0x8000000000000000) {
                     from = key;
@@ -520,26 +536,41 @@ module orderbook::market {
             };
         }else {
             let i = 0;
-            let from = if (option::is_none(&from_order)) {
+            let from = if (from_price_is_none) {
                 let (key, _) = critbit::min_leaf(&market.asks);
                 key
             }else {
-                *option::borrow(&from_order)
+                from_price
             };
-            let count = start;
+
             while (i < 50) {
                 let tick_level = critbit::borrow_leaf_by_key(&market.asks, from);
                 let order_count = linked_table::length(&tick_level.open_orders);
-
-                while (order_count > count) {
-                    let order = linked_table::borrow(&tick_level.open_orders, count);
+                if (order_count == 0) {
+                    event::emit(
+                        QueryOrderEvent{
+                            order_ids,
+                            unit_prices,
+                            quantitys,
+                            owners,
+                            is_bids
+                        }
+                    );
+                    return order_ids
+                };
+                let option_order_id = if (!linked_table::contains(&tick_level.open_orders, start_order_id)){
+                    linked_table::front(&tick_level.open_orders)
+                }else {
+                    &option::some(start_order_id)
+                };
+                while (option::is_some(option_order_id)) {
+                    let order_id = option::destroy_some(*option_order_id);
+                    let order = linked_table::borrow(&tick_level.open_orders, order_id);
                     vector::push_back(&mut order_ids, order.order_id);
                     vector::push_back(&mut unit_prices, order.unit_price);
                     vector::push_back(&mut quantitys, order.quantity);
                     vector::push_back(&mut owners, order.owner);
                     vector::push_back(&mut is_bids, order.is_bid);
-
-                    count = count + 1;
                     i = i + 1;
                     if (i >= 50) {
                         event::emit(
@@ -552,9 +583,9 @@ module orderbook::market {
                             }
                         );
                         return order_ids
-                    }
+                    };
+                    option_order_id = linked_table::next(&tick_level.open_orders, order_id)
                 };
-                count = 0;
                 let (key, index) = critbit::next_leaf(&market.asks, from);
                 if (index != 0x8000000000000000) {
                     from = key;
@@ -587,22 +618,25 @@ module orderbook::market {
     public fun query_user_order<BaseAsset: key + store, QuoteAsset: key + store>(
         market_obj: &Object<Marketplace<BaseAsset, QuoteAsset>>,
         user: address,
-        from_order: Option<u64>,
+        from_order: u64,
+        from_order_is_none: bool,
         count: u64
     ): vector<u64>{
         let market = object::borrow(market_obj);
+        if (!table::contains(&market.user_order_info, user)) {
+            return vector[]
+        };
         let user_table = table::borrow(&market.user_order_info, user);
         let order_ids = vector<u64>[];
         let unit_prices = vector<u64>[];
         let quantitys = vector<u256>[];
         let owners = vector<address>[];
         let is_bids = vector<bool>[];
-        let from = if (option::is_none(&from_order)) {
+        let from = if (from_order_is_none) {
             *option::borrow(linked_table::front(user_table))
         }else {
-            *option::borrow(&from_order)
+            from_order
         };
-
         let i = 0;
         while (i < count) {
             let tick_price = *linked_table::borrow(user_table, from);
