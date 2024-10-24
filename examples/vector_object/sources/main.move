@@ -5,9 +5,6 @@ module vector_object::vector_object {
     use std::signer;
     use std::debug;
     use std::string::String;
-    use rooch_framework::coin;
-    use rooch_framework::gas_coin::RGas;
-    use rooch_framework::coin::Coin;
 
     struct MockObject has key,store,drop,copy {value: u64}
 
