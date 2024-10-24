@@ -43,6 +43,7 @@ use rooch_rpc_api::api::RoochRpcModule;
 use rooch_rpc_api::RpcError;
 use rooch_sequencer::actor::sequencer::SequencerActor;
 use rooch_sequencer::proxy::SequencerProxy;
+use rooch_store::da_store::DAMetaStore;
 use rooch_types::address::RoochAddress;
 use rooch_types::error::{GenesisError, RoochError};
 use rooch_types::rooch_network::BuiltinChainID;
@@ -297,13 +298,13 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     let genesis_bytes = RoochGenesis::build(network.clone())?.encode();
     let genesis_namespace = derive_genesis_namespace(&genesis_bytes);
     let last_tx_order = sequencer_proxy.get_sequencer_order().await?;
+    rooch_store.try_repair_da_meta(last_tx_order)?;
     let da_config = opt.da_config().clone();
     let da_proxy = DAServerProxy::new(
         DAServerActor::new(
             da_config,
             sequencer_keypair.copy(),
             rooch_store,
-            last_tx_order,
             genesis_namespace,
         )
         .await?
