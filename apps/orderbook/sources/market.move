@@ -15,7 +15,7 @@ module orderbook::market {
     use rooch_framework::coin_store;
     use moveos_std::tx_context::sender;
     use moveos_std::type_info::type_name;
-    use moveos_std::object::{Object, ObjectID, to_shared, new_named_object, transfer};
+    use moveos_std::object::{Object, ObjectID, to_shared, new_named_object};
     use rooch_framework::coin_store::{CoinStore, create_coin_store};
     use moveos_std::timestamp::now_milliseconds;
     use orderbook::critbit::{CritbitTree, find_leaf, borrow_leaf_by_index, borrow_mut_leaf_by_index,
@@ -24,6 +24,7 @@ module orderbook::market {
     use orderbook::critbit;
     use moveos_std::table;
     use moveos_std::table::Table;
+    use app_admin::admin::AdminCap;
 
     const DEPLOYER: address = @orderbook;
 
@@ -105,7 +106,7 @@ module orderbook::market {
         txs: u64
     }
 
-    struct AdminCap has key, store {}
+    // struct AdminCap has key, store {}
 
     struct MarketplaceHouse has key {
         market_info: LinkedTable<String, ObjectID>,
@@ -117,7 +118,7 @@ module orderbook::market {
         };
 
         //TODO market create event
-        transfer(new_named_object(AdminCap{}), sender());
+        // transfer(new_named_object(AdminCap{}), sender());
         to_shared(new_named_object(market_house))
     }
 
