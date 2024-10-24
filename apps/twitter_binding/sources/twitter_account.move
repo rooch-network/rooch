@@ -9,10 +9,15 @@ module twitter_binding::twitter_account {
     use moveos_std::table::{Self, Table};
     use moveos_std::result::{Self, Result};
     use moveos_std::event;
+    use moveos_std::tx_context::{sender};
 
     use rooch_framework::bitcoin_address::{Self, BitcoinAddress};
+    use rooch_framework::coin_store::{Self, CoinStore};
+    use rooch_framework::account_coin_store;
+    use rooch_framework::gas_coin::{RGas};
 
     use twitter_binding::tweet::{Self, Tweet};
+    use app_admin::admin::{AdminCap};
 
     const TWITTER_ACCOUNT_BINDING_MESSAGE_PREFIX: vector<u8> = b"BTC:";
     const TWITTER_ACCOUNT_BINDING_HASH_TAG: vector<u8> = b"RoochNetwork";
@@ -24,6 +29,10 @@ module twitter_binding::twitter_account {
     const ErrorInvalidTweetBindingMessage: u64 = 2;
     const ErrorAccountAlreadyBound: u64 = 3;
     const ErrorAuthorAddressNotFound: u64 = 4;
+
+    const INIT_GAS_AMOUNT: u256 = 1000000_00000000;
+
+    const REWARD_RGAS_AMOUNT: u256 = 3_00000000;
 
     struct TwitterBindingErrorEvent has store, drop, copy {
         tweet_id: String,
@@ -45,7 +54,33 @@ module twitter_binding::twitter_account {
         address_to_account: Table<address, String>,
     }
 
-    fun init(){
+    struct TwitterRGasFaucet has key {
+        /// First binding reward gas store
+        rgas_store: Object<CoinStore<RGas>>,
+        /// First binding reward gas claim records
+        /// Twitter user id -> gas amount
+        claim_records: Table<String, u256>,
+        /// Is the faucet open
+        is_open: bool,
+    }
+
+    fun init(sender: &signer){
+        let sender_addr = signer::address_of(sender);
+        let rgas_store = coin_store::create_coin_store<RGas>();
+        let rgas_balance = account_coin_store::balance<RGas>(sender_addr);
+        let faucet_gas_amount = if(rgas_balance > INIT_GAS_AMOUNT) {
+            INIT_GAS_AMOUNT
+        } else {
+            rgas_balance/3
+        };
+        Self::deposit_to_rgas_store(sender, &mut rgas_store, faucet_gas_amount);
+        let twitter_rgas_faucet = TwitterRGasFaucet{
+            rgas_store,
+            claim_records: table::new(),
+            is_open: true,
+        };
+        let twitter_rgas_faucet_obj = object::new_named_object(twitter_rgas_faucet);
+        object::transfer_extend(twitter_rgas_faucet_obj, @twitter_binding);
         let twitter_account_mapping = TwitterAccountMapping{
             account_to_address: table::new(),
             address_to_account: table::new(),
@@ -120,6 +155,24 @@ module twitter_binding::twitter_account {
 
         table::add(&mut mapping.account_to_address, author_id, user_rooch_address);
         table::add(&mut mapping.address_to_account, user_rooch_address, author_id); 
+        reward_rgas_to_user(author_id, user_rooch_address);
+    }
+
+    fun reward_rgas_to_user(author_id: String, user_rooch_address: address){
+        let faucet = borrow_mut_twitter_rgas_faucet();
+        if (!faucet.is_open){
+            return
+        };
+        //One twitter user can only claim once, if the user unbinding and binding again, we will not reward again
+        if (table::contains(&faucet.claim_records, author_id)){
+            return
+        };
+        let balance = coin_store::balance(&faucet.rgas_store);
+        if (balance >= REWARD_RGAS_AMOUNT){
+            let rgas_coin = coin_store::withdraw(&mut faucet.rgas_store, REWARD_RGAS_AMOUNT);
+            account_coin_store::deposit<RGas>(user_rooch_address, rgas_coin);
+            table::add(&mut faucet.claim_records, author_id, REWARD_RGAS_AMOUNT);
+        };
     }
 
     public entry fun unbinding_twitter_account(owner: &signer){
@@ -151,6 +204,37 @@ module twitter_binding::twitter_account {
         assert!(option::is_some(&author_address_opt), ErrorAuthorAddressNotFound);
         let owner_address = option::destroy_some(author_address_opt);
         tweet::transfer_tweet_object_internal(tweet_obj, owner_address);
+    }
+
+    public entry fun deposit_rgas_coin(
+        account: &signer,
+        amount: u256
+    ){
+        let faucet = borrow_mut_twitter_rgas_faucet();
+        deposit_to_rgas_store(account, &mut faucet.rgas_store, amount);
+    }
+
+    public entry fun withdraw_rgas_coin( 
+        amount: u256,
+        _admin: &mut Object<AdminCap>,
+    ){
+        let faucet = borrow_mut_twitter_rgas_faucet();
+        let rgas_coin = coin_store::withdraw(&mut faucet.rgas_store, amount);
+        account_coin_store::deposit<RGas>(sender(), rgas_coin);
+    }
+
+    public entry fun close_faucet(
+        _admin: &mut Object<AdminCap>,
+    ){
+        let faucet = borrow_mut_twitter_rgas_faucet();
+        faucet.is_open = false;
+    }
+
+    public entry fun open_faucet(
+        _admin: &mut Object<AdminCap>,
+    ) {
+        let faucet = borrow_mut_twitter_rgas_faucet();
+        faucet.is_open = true;
     }
 
     fun verify_binding_tweet(tweet: &Tweet): Result<BitcoinAddress, String>{
@@ -242,6 +326,18 @@ module twitter_binding::twitter_account {
         true
     }
 
+    fun borrow_twitter_rgas_faucet() : &TwitterRGasFaucet{
+        let twitter_rgas_faucet_obj_id = object::named_object_id<TwitterRGasFaucet>();
+        let twitter_rgas_faucet_obj = object::borrow_object<TwitterRGasFaucet>(twitter_rgas_faucet_obj_id);
+        object::borrow(twitter_rgas_faucet_obj)
+    }
+
+    fun borrow_mut_twitter_rgas_faucet() : &mut TwitterRGasFaucet{
+        let twitter_rgas_faucet_obj_id = object::named_object_id<TwitterRGasFaucet>();
+        let twitter_rgas_faucet_obj = object::borrow_mut_object_extend<TwitterRGasFaucet>(twitter_rgas_faucet_obj_id);
+        object::borrow_mut(twitter_rgas_faucet_obj)
+    }
+
     fun borrow_twitter_account_mapping() : &TwitterAccountMapping{
         let mapping_obj_id = object::named_object_id<TwitterAccountMapping>();
         let mapping_obj = object::borrow_object<TwitterAccountMapping>(mapping_obj_id);
@@ -252,6 +348,15 @@ module twitter_binding::twitter_account {
         let mapping_obj_id = object::named_object_id<TwitterAccountMapping>();
         let mapping_obj = object::borrow_mut_object_extend<TwitterAccountMapping>(mapping_obj_id);
         object::borrow_mut(mapping_obj)
+    }
+
+    fun deposit_to_rgas_store(
+        account: &signer,
+        rgas_store: &mut Object<CoinStore<RGas>>,
+        amount: u256
+    ){
+        let rgas_coin = account_coin_store::withdraw<RGas>(account, amount);
+        coin_store::deposit(rgas_store, rgas_coin);
     }
 
     // ============================ Test functions ============================
@@ -272,7 +377,9 @@ module twitter_binding::twitter_account {
     #[test]
     fun test_verify_and_binding_twitter_account(){
         bitcoin_move::genesis::init_for_test();
-        init();
+        let sender = moveos_std::signer::module_signer<TwitterAccountMapping>();
+        rooch_framework::gas_coin::faucet_for_test(signer::address_of(&sender), INIT_GAS_AMOUNT*2);
+        init(&sender);
         let btc_address_str = b"bc1p72fvqwm9w4wcsd205maky9qejf6dwa6qeku5f5vnu4phpp3vvpws0p2f4g";
         let expect_btc_address = bitcoin_address::from_string(&string::utf8(btc_address_str));
         let expect_owner_address = bitcoin_address::to_rooch_address(&expect_btc_address);
