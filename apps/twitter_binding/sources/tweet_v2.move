@@ -90,18 +90,13 @@ module twitter_binding::tweet_v2 {
         let NoteTweet{text: note_text, entities: note_entities} = if(option::is_some(&note_tweet)) {
             option::destroy_some(note_tweet)
         } else {
-            NoteTweet{text, entities: default_entities()}
+            let entities = option::destroy_with_default(entities_opt, default_entities());
+            NoteTweet{text, entities}
         };
         //The text in NoteTweet include the text
+        //If the NoteTweet is some, we use the entities in NoteTweet
         //We merge the entities in NoteTweet and entities in TweetData
-        let entities = if(option::is_some(&entities_opt)) {
-            let entities = option::destroy_some(entities_opt);
-            merge_entities(&mut entities, note_entities);
-            entities
-        } else {
-            note_entities
-        };
-        let tweet = Tweet{id, text: note_text, entities, author_id, created_at, referenced_tweets, edit_history_tweet_ids};
+        let tweet = Tweet{id, text: note_text, entities: note_entities, author_id, created_at, referenced_tweets, edit_history_tweet_ids};
         object::new_with_id(id, tweet)
     }
 
