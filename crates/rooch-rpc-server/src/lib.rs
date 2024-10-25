@@ -317,7 +317,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     let proposer_keypair = server_opt.proposer_keypair.unwrap();
     let proposer_account: RoochAddress = proposer_keypair.public().rooch_address()?;
     info!("RPC Server proposer address: {:?}", proposer_account);
-    let proposer = ProposerActor::new(proposer_keypair, da_proxy, &prometheus_registry)
+    let proposer = ProposerActor::new(proposer_keypair, da_proxy.clone(), &prometheus_registry)
         .into_actor(Some("Proposer"), &actor_system)
         .await?;
     let proposer_proxy = ProposerProxy::new(proposer.clone().into());
@@ -409,6 +409,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         indexer_proxy,
         processor_proxy,
         bitcoin_client_proxy,
+        da_proxy,
     );
     let aggregate_service = AggregateService::new(rpc_service.clone());
 
