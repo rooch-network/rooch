@@ -72,8 +72,8 @@ module twitter_binding::tweet {
 
     // =========================== Tweet object functions ===========================
 
-    public fun tweet_object_id(_id: String): ObjectID {
-        abort ErrorDeprecated
+    public fun tweet_object_id(id: String): ObjectID {
+        object::custom_object_id<String, Tweet>(id)
     }
 
     public fun borrow_tweet_object(id: String): &Object<Tweet>{
@@ -235,8 +235,8 @@ module twitter_binding::tweet {
         tag.end
     }
 
-    public fun tweet_tag_tag(_tag: &Tag): &String {
-        abort ErrorDeprecated
+    public fun tweet_tag_tag(tag: &Tag): &String {
+        &tag.tag
     }
 
 }
