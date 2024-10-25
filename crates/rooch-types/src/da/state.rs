@@ -1,8 +1,12 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 /// DA server basic status
-pub struct ServerStatus {
+pub struct DAServerStatus {
     /// The last block number
     pub last_block_number: Option<u128>,
     /// The last tx order in the last block

@@ -17,7 +17,7 @@ use rooch_store::transaction_store::TransactionStore;
 use rooch_store::RoochStore;
 use rooch_types::crypto::RoochKeyPair;
 use rooch_types::da::batch::{BlockRange, DABatch, SignedDABatchMeta};
-use rooch_types::da::state::ServerStatus;
+use rooch_types::da::state::DAServerStatus;
 use rooch_types::transaction::LedgerTransaction;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
@@ -166,7 +166,7 @@ impl DAServerActor {
         Ok(server)
     }
 
-    pub fn get_status(&self) -> anyhow::Result<ServerStatus> {
+    pub fn get_status(&self) -> anyhow::Result<DAServerStatus> {
         let last_tx_order = if let Some(last_block_number) = self.last_block_number {
             let last_block_state = self.rooch_store.get_block_state(last_block_number)?;
             Some(last_block_state.block_range.tx_order_end)
@@ -195,7 +195,7 @@ impl DAServerActor {
             None
         };
 
-        Ok(ServerStatus {
+        Ok(DAServerStatus {
             last_block_number: self.last_block_number,
             last_tx_order,
             last_block_update_time,
@@ -242,7 +242,7 @@ impl Handler<GetServerStatusMessage> for DAServerActor {
         &mut self,
         _msg: GetServerStatusMessage,
         _ctx: &mut ActorContext,
-    ) -> anyhow::Result<ServerStatus> {
+    ) -> anyhow::Result<DAServerStatus> {
         self.get_status()
     }
 }

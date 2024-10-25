@@ -16,6 +16,7 @@ use moveos_types::moveos_std::object::{ObjectID, MAX_OBJECT_IDS_PER_QUERY};
 use moveos_types::state::{AnnotatedState, FieldKey, ObjectState, StateChangeSet};
 use moveos_types::state_resolver::{AnnotatedStateKV, StateKV};
 use moveos_types::transaction::{FunctionCall, TransactionExecutionInfo};
+use rooch_da::proxy::DAServerProxy;
 use rooch_executor::actor::messages::DryRunTransactionResult;
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_indexer::proxy::IndexerProxy;
@@ -56,6 +57,7 @@ pub struct RpcService {
     pub(crate) indexer: IndexerProxy,
     pub(crate) pipeline_processor: PipelineProcessorProxy,
     pub(crate) bitcoin_client: Option<BitcoinClientProxy>,
+    pub(crate) da_server: DAServerProxy,
 }
 
 impl RpcService {
@@ -67,6 +69,7 @@ impl RpcService {
         indexer: IndexerProxy,
         pipeline_processor: PipelineProcessorProxy,
         bitcoin_client: Option<BitcoinClientProxy>,
+        da_server: DAServerProxy,
     ) -> Self {
         Self {
             chain_id,
@@ -76,6 +79,7 @@ impl RpcService {
             indexer,
             pipeline_processor,
             bitcoin_client,
+            da_server,
         }
     }
 }
@@ -809,10 +813,13 @@ impl RpcService {
             pending_block: pending_block.map(Into::into),
         };
 
+        let da_server_status = self.da_server.get_status().await?;
+
         Ok(Status {
             service_status,
             rooch_status,
             bitcoin_status,
+            da_server_status,
         })
     }
 }

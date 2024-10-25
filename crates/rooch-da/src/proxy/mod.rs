@@ -4,8 +4,8 @@
 use crate::actor::messages::{GetServerStatusMessage, PutDABatchMessage};
 use crate::actor::server::DAServerActor;
 use coerce::actor::ActorRef;
-use rooch_types::da;
 use rooch_types::da::batch::SignedDABatchMeta;
+use rooch_types::da::state::DAServerStatus;
 
 #[derive(Clone)]
 pub struct DAServerProxy {
@@ -17,7 +17,7 @@ impl DAServerProxy {
         Self { actor }
     }
 
-    pub async fn get_status(&self) -> anyhow::Result<da::state::ServerStatus> {
+    pub async fn get_status(&self) -> anyhow::Result<DAServerStatus> {
         self.actor.send(GetServerStatusMessage {}).await?
     }
 
