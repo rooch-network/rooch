@@ -8,12 +8,12 @@ module twitter_binding::tweet_fetcher {
     use moveos_std::event;
     
     use twitter_binding::twitter_account;
-    use twitter_binding::tweet::{Self, Tweet};
+    use twitter_binding::tweet_v2::{Self, Tweet};
 
     use verity::oracles;
     
     const TWEET_URL: vector<u8> = b"https://api.twitter.com/2/tweets/";
-    const TWEET_URL_PARAM: vector<u8> = b"?tweet.fields=id,created_at,author_id,text,entities,attachments,note_tweet";
+    const TWEET_URL_PARAM: vector<u8> = b"?tweet.fields=id,created_at,author_id,text,entities,note_tweet,referenced_tweets";
     const TWEET_METHOD: vector<u8> = b"GET";
     const TWEET_HEADERS: vector<u8> = b"{}";
     const TWEET_BODY: vector<u8> = b"{}";
@@ -78,7 +78,7 @@ module twitter_binding::tweet_fetcher {
     }
 
     public fun fetch_tweet(tweet_id: String): FetchResult {
-        let tweet_object_id = tweet::tweet_object_id(tweet_id);
+        let tweet_object_id = tweet_v2::tweet_object_id(tweet_id);
         let fetch_queue_obj = borrow_mut_fetch_queue_obj();
         assert!(vector::length(&object::borrow(fetch_queue_obj).request_queue) < 100, ErrorTooManyPendingRequests);
         if (object::contains_field(fetch_queue_obj, tweet_id)){
@@ -133,7 +133,7 @@ module twitter_binding::tweet_fetcher {
     fun process_request_internal(request_id: ObjectID, fetch_queue_obj: &mut Object<FetchQueue>): u8{
         assert!(object::contains_field(fetch_queue_obj, request_id), ErrorInvalidRequestID);
         let tweet_id: String = *object::borrow_field(fetch_queue_obj, request_id);
-        let tweet_object_id = tweet::tweet_object_id(tweet_id);
+        let tweet_object_id = tweet_v2::tweet_object_id(tweet_id);
         // The tweet object already exists, the request should be finished and successful
         if (object::exists_object_with_type<Tweet>(tweet_object_id)){
             return TWEET_STATUS_PROCESSED
@@ -150,16 +150,16 @@ module twitter_binding::tweet_fetcher {
             let response = option::destroy_some(response_opt);
             // The response is a JSON string including the tweet json data
             let json_str = json::from_json<String>(string::into_bytes(response));
-            let tweet_data_opt = tweet::parse_tweet_data(string::into_bytes(json_str));
+            let tweet_data_opt = tweet_v2::parse_tweet_data(string::into_bytes(json_str));
             if (option::is_some(&tweet_data_opt)){
                 let tweet_data = option::destroy_some(tweet_data_opt);
-                let author_id = *tweet::tweet_data_author_id(&tweet_data);
-                let tweet_obj = tweet::new_tweet_object(tweet_data);
+                let author_id = *tweet_v2::tweet_data_author_id(&tweet_data);
+                let tweet_obj = tweet_v2::new_tweet_object(tweet_data);
                 let author_address_opt = twitter_account::resolve_address_by_author_id(author_id);
                 // If the author address is not found, the tweet owner is the twitter binding address
                 // The author can claim the tweet by himself after binding his twitter account
                 let owner_address = option::destroy_with_default(author_address_opt, @twitter_binding);
-                tweet::transfer_tweet_object_internal(tweet_obj, owner_address);
+                tweet_v2::transfer_tweet_object_internal(tweet_obj, owner_address);
                 TWEET_STATUS_PROCESSED
             }else{
                 TWEET_STATUS_PROCESS_FAILED

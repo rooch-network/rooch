@@ -6,7 +6,6 @@ module twitter_binding::twitter_account {
 
     use moveos_std::object::{Self, ObjectID, Object};
     use moveos_std::table::{Self, Table};
-    use moveos_std::result::{Self, Result};
     use moveos_std::event;
     use moveos_std::tx_context::{sender};
     use moveos_std::signer;
@@ -16,7 +15,7 @@ module twitter_binding::twitter_account {
     use rooch_framework::account_coin_store;
     use rooch_framework::gas_coin::{RGas};
 
-    use twitter_binding::tweet::{Self, Tweet};
+    use twitter_binding::tweet_v2::{Self, Tweet};
     use app_admin::admin::{AdminCap};
 
     const TWITTER_ACCOUNT_BINDING_MESSAGE_PREFIX: vector<u8> = b"BTC:";
@@ -26,18 +25,28 @@ module twitter_binding::twitter_account {
     const BITCOIN_TAPROOT_ADDRESS_PREFIX_MAINNET: vector<u8> = b"bc1";
 
     const ErrorTweetNotFound: u64 = 1;
-    const ErrorInvalidTweetBindingMessage: u64 = 2;
-    const ErrorAccountAlreadyBound: u64 = 3;
-    const ErrorAuthorAddressNotFound: u64 = 4;
+    const ErrorAccountAlreadyBound: u64 = 2;
+    const ErrorAuthorAddressNotFound: u64 = 3;
+    const ErrorTweetBindingMessageInvalidPrefix: u64 = 4;
+    const ErrorTweetBindingMessageMissingHashtag: u64 = 5;
+    const ErrorTweetBindingMessageInvalidAddress: u64 = 6;
 
     const INIT_GAS_AMOUNT: u256 = 1000000_00000000;
 
     const REWARD_RGAS_AMOUNT: u256 = 3_00000000;
 
+    //Deprecated
     struct TwitterBindingErrorEvent has store, drop, copy {
         tweet_id: String,
         author_id: String,
         error: String,
+    }
+
+    struct TwitterBindingEvent has store, drop, copy {
+        tweet_obj_id: ObjectID,
+        author_id: String,
+        bitcoin_address: BitcoinAddress,
+        account_address: address,
     }
 
     /// The twitter account object
@@ -106,34 +115,21 @@ module twitter_binding::twitter_account {
     }
 
     public entry fun verify_and_binding_twitter_account(tweet_id: String){
-        let tweet_obj_id = tweet::tweet_object_id(tweet_id);
-        assert!(tweet::exists_tweet_object(tweet_id), ErrorTweetNotFound);
+        let tweet_obj_id = tweet_v2::tweet_object_id(tweet_id);
+        assert!(tweet_v2::exists_tweet_object(tweet_id), ErrorTweetNotFound);
 
-        let tweet_obj = tweet::take_tweet_object_internal(tweet_obj_id);
+        let tweet_obj = tweet_v2::take_tweet_object_internal(tweet_obj_id);
         let tweet = object::borrow(&tweet_obj);
-        let author_id = *tweet::tweet_author_id(tweet);
-        let result = verify_binding_tweet(tweet);
-        if (result::is_err(&result)){
-            let error = result::unwrap_err(result);
-            std::debug::print(&error);
-            event::emit(TwitterBindingErrorEvent{
-                tweet_id: tweet_id,
-                author_id: author_id,
-                error,
-            });
-            abort ErrorInvalidTweetBindingMessage
-        };
-        let bitcoin_address = result::unwrap(result);
+        let author_id = *tweet_v2::tweet_author_id(tweet);
+        let bitcoin_address = verify_binding_tweet(tweet);
         binding_twitter_account(tweet_obj, author_id, bitcoin_address);
     }
 
     public fun check_binding_tweet(tweet_id: String): BitcoinAddress {
-        let tweet_obj = tweet::borrow_tweet_object(tweet_id);
+        let tweet_obj = tweet_v2::borrow_tweet_object(tweet_id);
         let tweet = object::borrow(tweet_obj);
-        let author_id = *tweet::tweet_author_id(tweet);
-        let result = verify_binding_tweet(tweet);
-        assert!(result::is_ok(&result), ErrorInvalidTweetBindingMessage);
-        let btc_address = result::unwrap(result);
+        let author_id = *tweet_v2::tweet_author_id(tweet);
+        let btc_address = verify_binding_tweet(tweet);
         let mapping = borrow_twitter_account_mapping();
         assert!(!table::contains(&mapping.account_to_address, author_id), ErrorAccountAlreadyBound);
         btc_address
@@ -145,7 +141,7 @@ module twitter_binding::twitter_account {
         assert!(!table::contains(&mapping.account_to_address, author_id), ErrorAccountAlreadyBound);
         let tweet_obj_id = object::id(&tweet_obj);
         //Transfer the binding tweet object to the user
-        tweet::transfer_tweet_object_internal(tweet_obj, user_rooch_address);
+        tweet_v2::transfer_tweet_object_internal(tweet_obj, user_rooch_address);
 
         let twitter_account = TwitterAccount{
             id: author_id,
@@ -158,6 +154,12 @@ module twitter_binding::twitter_account {
         table::add(&mut mapping.account_to_address, author_id, user_rooch_address);
         table::add(&mut mapping.address_to_account, user_rooch_address, author_id); 
         reward_rgas_to_user(author_id, user_rooch_address);
+        event::emit(TwitterBindingEvent{
+            tweet_obj_id: tweet_obj_id,
+            author_id,
+            bitcoin_address,
+            account_address: user_rooch_address,
+        });
     }
 
     fun reward_rgas_to_user(author_id: String, user_rooch_address: address){
@@ -193,19 +195,19 @@ module twitter_binding::twitter_account {
             id:_,
             binding_tweet_obj_id
         } = twitter_account;
-        tweet::remove_tweet_object_internal(binding_tweet_obj_id);
+        tweet_v2::remove_tweet_object_internal(binding_tweet_obj_id);
     }
 
     public entry fun claim_tweet(tweet_id: String){
-        let tweet_obj_id = tweet::tweet_object_id(tweet_id);
-        assert!(tweet::exists_tweet_object(tweet_id), ErrorTweetNotFound);
-        let tweet_obj = tweet::take_tweet_object_internal(tweet_obj_id);
+        let tweet_obj_id = tweet_v2::tweet_object_id(tweet_id);
+        assert!(tweet_v2::exists_tweet_object(tweet_id), ErrorTweetNotFound);
+        let tweet_obj = tweet_v2::take_tweet_object_internal(tweet_obj_id);
         let tweet = object::borrow(&tweet_obj);
-        let author_id = *tweet::tweet_author_id(tweet);
+        let author_id = *tweet_v2::tweet_author_id(tweet);
         let author_address_opt = resolve_address_by_author_id(author_id);
         assert!(option::is_some(&author_address_opt), ErrorAuthorAddressNotFound);
         let owner_address = option::destroy_some(author_address_opt);
-        tweet::transfer_tweet_object_internal(tweet_obj, owner_address);
+        tweet_v2::transfer_tweet_object_internal(tweet_obj, owner_address);
     }
 
     public entry fun deposit_rgas_coin(
@@ -239,43 +241,29 @@ module twitter_binding::twitter_account {
         faucet.is_open = true;
     }
 
-    fun verify_binding_tweet(tweet: &Tweet): Result<BitcoinAddress, String>{
-        let text = tweet::tweet_text(tweet);
+    fun verify_binding_tweet(tweet: &Tweet): BitcoinAddress{
+        let text = tweet_v2::tweet_text(tweet);
         let text_bytes = string::bytes(text);
-        if (!starts_with(text_bytes, &TWITTER_ACCOUNT_BINDING_MESSAGE_PREFIX)){
-            return result::err_str(b"Invalid tweet binding message prefix")
-        };
-        let note_tweet_option = tweet::tweet_note_tweet(tweet);
-        if (option::is_none(note_tweet_option)){
-            return result::err_str(b"Invalid tweet binding message, missing hashtag")
-        };
-        let note_tweet = option::borrow(note_tweet_option);
-        let entities = tweet::tweet_note_tweet_entities(note_tweet);
-        let hashtags = tweet::tweet_entities_hashtags(entities);
-        if (vector::is_empty(hashtags)){
-            return result::err_str(b"Invalid tweet binding message, missing hashtag")
-        };
+        assert!(starts_with(text_bytes, &TWITTER_ACCOUNT_BINDING_MESSAGE_PREFIX), ErrorTweetBindingMessageInvalidPrefix);
+        let entities = tweet_v2::tweet_entities(tweet);
+        let hashtags = tweet_v2::tweet_entities_hashtags(entities);
+        assert!(!vector::is_empty(hashtags), ErrorTweetBindingMessageMissingHashtag);
         let hashtags_len = vector::length(hashtags);
         let i = 0;
         let found = false;
         while (i < hashtags_len){
             let hashtag = vector::borrow(hashtags, i);
-            let tag = tweet::tweet_tag_tag(hashtag);
+            let tag = tweet_v2::tweet_tag_tag(hashtag);
             if (string::bytes(tag) == &TWITTER_ACCOUNT_BINDING_HASH_TAG){
                 found = true;
                 break
             };
             i = i + 1;
         };
-        if (!found){
-            return result::err_str(b"Invalid tweet binding message, missing hashtag")
-        };
+        assert!(found, ErrorTweetBindingMessageMissingHashtag);
         let bitcoin_address_str = get_bitcoin_address_from_tweet_text(text_bytes);
-        if (!is_valid_bitcoin_address_str(&bitcoin_address_str)){
-            return result::err_str(b"Invalid bitcoin address")
-        };
-        let bitcoin_address = bitcoin_address::from_string(&string::utf8(bitcoin_address_str));
-        result::ok(bitcoin_address)
+        assert!(is_valid_bitcoin_address_str(&bitcoin_address_str), ErrorTweetBindingMessageInvalidAddress);
+        bitcoin_address::from_string(&string::utf8(bitcoin_address_str))
     }
 
     fun is_valid_bitcoin_address_str(bitcoin_address_str: &vector<u8>): bool{
@@ -367,13 +355,11 @@ module twitter_binding::twitter_account {
     fun test_verify_binding_tweet(){
         bitcoin_move::genesis::init_for_test();
         let btc_address_str = b"bc1p72fvqwm9w4wcsd205maky9qejf6dwa6qeku5f5vnu4phpp3vvpws0p2f4g";
-        let tweet_obj = tweet::new_tweet_object_for_test(b"{\"note_tweet\": {\"text\": \"BTC:bc1p72fvqwm9w4wcsd205maky9qejf6dwa6qeku5f5vnu4phpp3vvpws0p2f4g #RoochNetwork\",\"entities\": {\"hashtags\": [{\"start\": 0,\"end\": 33,\"tag\": \"RoochNetwork\"}]}},\"author_id\": \"987654321\",\"id\": \"1234567890123456789\",\"text\": \"BTC:bc1p72fvqwm9w4wcsd205maky9qejf6dwa6qeku5f5vnu4phpp3vvpws0p2f4g #RoochNetwork\",\"created_at\": \"2024-01-01T00:00:00.000\"}");
+        let tweet_obj = tweet_v2::new_tweet_object_for_test(b"{\"note_tweet\": {\"text\": \"BTC:bc1p72fvqwm9w4wcsd205maky9qejf6dwa6qeku5f5vnu4phpp3vvpws0p2f4g #RoochNetwork\",\"entities\": {\"hashtags\": [{\"start\": 0,\"end\": 33,\"tag\": \"RoochNetwork\"}]}},\"author_id\": \"987654321\",\"id\": \"1234567890123456789\",\"text\": \"BTC:bc1p72fvqwm9w4wcsd205maky9qejf6dwa6qeku5f5vnu4phpp3vvpws0p2f4g #RoochNetwork\",\"created_at\": \"2024-01-01T00:00:00.000\"}");
         let tweet = object::borrow(&tweet_obj);
-        let result = verify_binding_tweet(tweet);
-        assert!(result::is_ok(&result), 1);
-        let bitcoin_address = result::unwrap(result);
+        let bitcoin_address = verify_binding_tweet(tweet);
         assert!(bitcoin_address == bitcoin_address::from_string(&string::utf8(btc_address_str)), 2);
-        tweet::transfer_tweet_object_internal(tweet_obj, @twitter_binding);
+        tweet_v2::transfer_tweet_object_internal(tweet_obj, @twitter_binding);
     }
 
     #[test]
@@ -386,14 +372,14 @@ module twitter_binding::twitter_account {
         let expect_owner_address = bitcoin_address::to_rooch_address(&expect_btc_address);
         let tweet_id = string::utf8(b"1234567890123456789");
         let author_id = string::utf8(b"987654321");
-        let tweet_obj = tweet::new_tweet_object_for_test(b"{\"note_tweet\": {\"text\": \"BTC:bc1p72fvqwm9w4wcsd205maky9qejf6dwa6qeku5f5vnu4phpp3vvpws0p2f4g #RoochNetwork\",\"entities\": {\"hashtags\": [{\"start\": 0,\"end\": 33,\"tag\": \"RoochNetwork\"}]}},\"author_id\": \"987654321\",\"id\": \"1234567890123456789\",\"text\": \"BTC:bc1p72fvqwm9w4wcsd205maky9qejf6dwa6qeku5f5vnu4phpp3vvpws0p2f4g #RoochNetwork\",\"created_at\": \"2024-01-01T00:00:00.000\"}");
-        tweet::transfer_tweet_object_internal(tweet_obj, @twitter_binding);
+        let tweet_obj = tweet_v2::new_tweet_object_for_test(b"{\"note_tweet\": {\"text\": \"BTC:bc1p72fvqwm9w4wcsd205maky9qejf6dwa6qeku5f5vnu4phpp3vvpws0p2f4g #RoochNetwork\",\"entities\": {\"hashtags\": [{\"start\": 0,\"end\": 33,\"tag\": \"RoochNetwork\"}]}},\"author_id\": \"987654321\",\"id\": \"1234567890123456789\",\"text\": \"BTC:bc1p72fvqwm9w4wcsd205maky9qejf6dwa6qeku5f5vnu4phpp3vvpws0p2f4g #RoochNetwork\",\"created_at\": \"2024-01-01T00:00:00.000\"}");
+        tweet_v2::transfer_tweet_object_internal(tweet_obj, @twitter_binding);
         verify_and_binding_twitter_account(tweet_id);
         let author_address_opt = resolve_address_by_author_id(author_id);
         assert!(option::is_some(&author_address_opt), 3);
         let author_address = option::destroy_some(author_address_opt);
         assert!(author_address == expect_owner_address, 4);
-        let tweet_obj = tweet::borrow_tweet_object(tweet_id);
+        let tweet_obj = tweet_v2::borrow_tweet_object(tweet_id);
         assert!(object::owner(tweet_obj) == expect_owner_address, 5);
 
         unbinding_twitter_account_internal(expect_owner_address);
