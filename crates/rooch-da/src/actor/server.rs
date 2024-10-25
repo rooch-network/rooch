@@ -24,7 +24,14 @@ use std::sync::Arc;
 use std::time;
 use std::time::{Duration, SystemTime};
 
-const DEFAULT_BACKGROUND_SUBMIT_INTERVAL: u64 = 5 * 60; // 5 minutes
+// default background submit interval: 5 seconds
+// smaller interval helps to reduce the delay of blocks making and submitting, get more accurate block number by status query
+// the major duty of background submitter is to submit unsubmitted blocks made before server start,
+// in most cases, backends work well enough to submit new blocks in time, which means after submitting old blocks,
+// background submitter will have nothing to do.
+// Only few database operations are needed to catch up with the latest block numbers,
+// so it's okay to have a small interval.
+const DEFAULT_BACKGROUND_SUBMIT_INTERVAL: u64 = 5;
 
 pub struct DAServerActor {
     rooch_store: RoochStore,
@@ -109,9 +116,6 @@ impl DAServerActor {
 
         if !nop_backend {
             tokio::spawn(async move {
-                let mut interval =
-                    tokio::time::interval(Duration::from_secs(background_submit_interval)); // 10 minutes
-
                 let background_submitter = BackgroundSubmitter {
                     rooch_store: rooch_store.clone(),
                     submitter: Submitter {
@@ -123,18 +127,33 @@ impl DAServerActor {
                     },
                     last_block_update_time: background_last_block_update_time.clone(),
                 };
+                let mut interval =
+                    tokio::time::interval(Duration::from_secs(background_submit_interval));
 
+                let mut block_number_for_last_job = None;
                 loop {
                     interval.tick().await;
                     match rooch_store.get_last_block_number() {
                         Ok(Some(last_block_number)) => {
+                            if let Some(block_number_for_last_job) = block_number_for_last_job {
+                                if block_number_for_last_job > last_block_number {
+                                    tracing::error!("da: last block number is smaller than last background job block number: {} < {}, database is inconsistent",
+                                        last_block_number, block_number_for_last_job);
+                                    break;
+                                }
+                            }
+                            block_number_for_last_job = Some(last_block_number);
                             if let Err(e) = background_submitter.start_job(last_block_number).await
                             {
                                 tracing::error!("da: background submitter failed: {:?}", e);
                             }
                         }
                         Ok(None) => {
-                            tracing::info!("da: last block number is None");
+                            if let Some(block_number_for_last_job) = block_number_for_last_job {
+                                tracing::error!("da: last block number is None, last background job block number: {}, database is inconsistent",
+                                        block_number_for_last_job);
+                                break;
+                            }
                         }
                         Err(e) => {
                             tracing::error!("da: get last block number failed: {:?}", e);
@@ -193,10 +212,9 @@ impl DAServerActor {
     ) -> anyhow::Result<SignedDABatchMeta> {
         let tx_order_start = msg.tx_order_start;
         let tx_order_end = msg.tx_order_end;
-        let last_block_number = self.last_block_number;
         let (block_number, signed_meta) = self
             .submitter
-            .submit_new_block(last_block_number, tx_order_start, tx_order_end, msg.tx_list)
+            .submit_new_block(tx_order_start, tx_order_end, msg.tx_list)
             .await?;
         self.last_block_number = Some(block_number);
         self.last_block_update_time = SystemTime::now()
@@ -241,16 +259,13 @@ pub(crate) struct Submitter {
 impl Submitter {
     async fn submit_new_block(
         &self,
-        last_block_number: Option<u128>,
         tx_order_start: u64,
         tx_order_end: u64,
         tx_list: Vec<LedgerTransaction>,
     ) -> anyhow::Result<(u128, SignedDABatchMeta)> {
-        let block_number = self.rooch_store.append_submitting_block(
-            last_block_number,
-            tx_order_start,
-            tx_order_end,
-        )?;
+        let block_number = self
+            .rooch_store
+            .append_submitting_block(tx_order_start, tx_order_end)?;
 
         let signed_meta = self
             .submit_batch_raw(
@@ -365,6 +380,13 @@ impl BackgroundSubmitter {
         // try to get unsubmitted blocks from [cursor, last_block_number]
         let cursor_opt = self.rooch_store.get_background_submit_block_cursor()?;
         let exp_count = if let Some(cursor) = cursor_opt {
+            if cursor > last_block_number {
+                return Err(anyhow!(
+                    "background submitter cursor should not be larger than last_block_number: {} > {}, database is inconsistent",
+                    cursor,
+                    last_block_number
+                ));
+            }
             last_block_number - cursor // (cursor, last_block_number]
         } else {
             last_block_number + 1 // [0, last_block_number]
