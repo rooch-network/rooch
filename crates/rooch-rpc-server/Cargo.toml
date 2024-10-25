@@ -57,4 +57,5 @@ rooch-db = { workspace = true }
 rooch-open-rpc = { workspace = true }
 rooch-open-rpc-spec-builder = { workspace = true }
 rooch-event = { workspace = true }
+rooch-store = { workspace = true }
 futures = "0.3.31"
