@@ -3,13 +3,13 @@ module twitter_binding::twitter_account {
     use std::string::{Self, String};
     use std::vector;
     use std::option::{Self, Option};
-    use std::signer;
 
     use moveos_std::object::{Self, ObjectID, Object};
     use moveos_std::table::{Self, Table};
     use moveos_std::result::{Self, Result};
     use moveos_std::event;
     use moveos_std::tx_context::{sender};
+    use moveos_std::signer;
 
     use rooch_framework::bitcoin_address::{Self, BitcoinAddress};
     use rooch_framework::coin_store::{Self, CoinStore};
@@ -64,16 +64,16 @@ module twitter_binding::twitter_account {
         is_open: bool,
     }
 
-    fun init(sender: &signer){
-        let sender_addr = signer::address_of(sender);
+    fun init(){
+        let module_signer = signer::module_signer<TwitterAccountMapping>();
         let rgas_store = coin_store::create_coin_store<RGas>();
-        let rgas_balance = account_coin_store::balance<RGas>(sender_addr);
+        let rgas_balance = account_coin_store::balance<RGas>(@twitter_binding);
         let faucet_gas_amount = if(rgas_balance > INIT_GAS_AMOUNT) {
             INIT_GAS_AMOUNT
         } else {
             rgas_balance/3
         };
-        Self::deposit_to_rgas_store(sender, &mut rgas_store, faucet_gas_amount);
+        Self::deposit_to_rgas_store(&module_signer, &mut rgas_store, faucet_gas_amount);
         let twitter_rgas_faucet = TwitterRGasFaucet{
             rgas_store,
             claim_records: table::new(),
@@ -114,10 +114,12 @@ module twitter_binding::twitter_account {
         let author_id = *tweet::tweet_author_id(tweet);
         let result = verify_binding_tweet(tweet);
         if (result::is_err(&result)){
+            let error = result::unwrap_err(result);
+            std::debug::print(&error);
             event::emit(TwitterBindingErrorEvent{
                 tweet_id: tweet_id,
                 author_id: author_id,
-                error: result::unwrap_err(result),
+                error,
             });
             abort ErrorInvalidTweetBindingMessage
         };
@@ -377,9 +379,8 @@ module twitter_binding::twitter_account {
     #[test]
     fun test_verify_and_binding_twitter_account(){
         bitcoin_move::genesis::init_for_test();
-        let sender = moveos_std::signer::module_signer<TwitterAccountMapping>();
-        rooch_framework::gas_coin::faucet_for_test(signer::address_of(&sender), INIT_GAS_AMOUNT*2);
-        init(&sender);
+        rooch_framework::gas_coin::faucet_for_test(@twitter_binding, INIT_GAS_AMOUNT*2);
+        init();
         let btc_address_str = b"bc1p72fvqwm9w4wcsd205maky9qejf6dwa6qeku5f5vnu4phpp3vvpws0p2f4g";
         let expect_btc_address = bitcoin_address::from_string(&string::utf8(btc_address_str));
         let expect_owner_address = bitcoin_address::to_rooch_address(&expect_btc_address);

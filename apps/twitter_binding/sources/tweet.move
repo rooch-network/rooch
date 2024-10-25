@@ -1,6 +1,6 @@
 module twitter_binding::tweet {
 
-    use std::option::{Self, Option};
+    use std::option::{Option};
     use std::string::{String};
 
     use moveos_std::json;
@@ -248,6 +248,8 @@ module twitter_binding::tweet {
     }
 
     // =========================== Test functions ===========================
+    #[test_only]
+    use std::option;
 
     #[test_only]
     public fun new_tweet_object_for_test(json_str: vector<u8>): Object<Tweet>{

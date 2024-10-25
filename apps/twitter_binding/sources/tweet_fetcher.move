@@ -101,7 +101,7 @@ module twitter_binding::tweet_fetcher {
         //The jq query to parse the tweet
         let pick = string::utf8(PICK);
         let http_request = oracles::build_request(url, method, headers, body);
-        let request_id = oracles::new_request(http_request, pick, ORACLE_ADDRESS, oracles::with_notify(@twitter_binding, b"tweet::check_request_queue"));
+        let request_id = oracles::new_request(http_request, pick, ORACLE_ADDRESS, oracles::with_notify(@twitter_binding, b"tweet_fetcher::check_request_queue"));
         let fetch_result = FetchResult{
             tweet_id,
             tweet_object_id,
