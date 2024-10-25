@@ -246,7 +246,7 @@ proc-macro2 = "1.0.89"
 derive-syn-parse = "0.1.5"
 unescape = "0.1.0"
 tempfile = "3.13.0"
-regex = "1.11.0"
+regex = "1.11.1"
 walkdir = "2.3.3"
 prometheus = "0.13.3"
 prometheus-http-query = { version = "0.6.6", default_features = false, features = [
