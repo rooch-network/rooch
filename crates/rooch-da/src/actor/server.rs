@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::actor::messages::PutDABatchMessage;
+use crate::actor::messages::{GetServerStatusMessage, PutDABatchMessage};
 use crate::backend::celestia::CelestiaBackend;
 use crate::backend::openda::OpenDABackend;
 use crate::backend::DABackend;
@@ -17,20 +17,22 @@ use rooch_store::transaction_store::TransactionStore;
 use rooch_store::RoochStore;
 use rooch_types::crypto::RoochKeyPair;
 use rooch_types::da::batch::{BlockRange, DABatch, SignedDABatchMeta};
+use rooch_types::da::state::ServerStatus;
 use rooch_types::transaction::LedgerTransaction;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
-use std::time::Duration;
+use std::time;
+use std::time::{Duration, SystemTime};
 
-const DEFAULT_BACKGROUND_SUBMIT_INTERVAL: u64 = 10 * 60; // 10 minutes
+const DEFAULT_BACKGROUND_SUBMIT_INTERVAL: u64 = 5 * 60; // 5 minutes
 
 pub struct DAServerActor {
-    sequencer_key: RoochKeyPair,
     rooch_store: RoochStore,
+    backend_names: Vec<String>,
+    submitter: Submitter,
     last_block_number: Option<u128>,
-
-    nop_backend: bool,
-    backends: Vec<Arc<dyn DABackend>>,
-    submit_threshold: usize,
+    last_block_update_time: u64,
+    background_last_block_update_time: Arc<AtomicU64>,
 }
 
 impl Actor for DAServerActor {}
@@ -40,10 +42,10 @@ impl DAServerActor {
         da_config: DAConfig,
         sequencer_key: RoochKeyPair,
         rooch_store: RoochStore,
-        last_tx_order: u64,
         genesis_namespace: String,
     ) -> anyhow::Result<Self> {
         let mut backends: Vec<Arc<dyn DABackend>> = Vec::new();
+        let mut backend_names: Vec<String> = Vec::new();
         let mut submit_threshold = 1;
         let mut act_backends = 0;
         let mut background_submit_interval = DEFAULT_BACKGROUND_SUBMIT_INTERVAL;
@@ -56,12 +58,14 @@ impl DAServerActor {
                 if let DABackendConfigType::Celestia(celestia_config) = backend_type {
                     let backend = CelestiaBackend::new(celestia_config).await?;
                     backends.push(Arc::new(backend));
+                    backend_names.push("celestia".to_string());
                     act_backends += 1;
                 }
                 if let DABackendConfigType::OpenDa(openda_config) = backend_type {
                     let backend =
                         OpenDABackend::new(openda_config, genesis_namespace.clone()).await?;
                     backends.push(Arc::new(backend));
+                    backend_names.push(format!("openda-{}", openda_config.scheme));
                     act_backends += 1;
                 }
             }
@@ -74,6 +78,7 @@ impl DAServerActor {
         } else {
             nop_backend = true;
             backends.push(Arc::new(crate::backend::DABackendNopProxy {}));
+            backend_names.push("nop".to_string());
             act_backends += 1;
         }
 
@@ -85,15 +90,21 @@ impl DAServerActor {
             ));
         }
 
-        rooch_store.try_repair(last_tx_order)?;
         let last_block_number = rooch_store.get_last_block_number()?;
+        let background_last_block_update_time = Arc::new(AtomicU64::new(0));
         let server = DAServerActor {
-            sequencer_key: sequencer_key.copy(),
             rooch_store: rooch_store.clone(),
+            backend_names,
+            submitter: Submitter {
+                sequencer_key: sequencer_key.copy(),
+                rooch_store: rooch_store.clone(),
+                nop_backend,
+                backends: backends.clone(),
+                submit_threshold,
+            },
             last_block_number,
-            nop_backend,
-            backends: backends.clone(),
-            submit_threshold,
+            last_block_update_time: 0,
+            background_last_block_update_time: background_last_block_update_time.clone(),
         };
 
         if !nop_backend {
@@ -101,23 +112,23 @@ impl DAServerActor {
                 let mut interval =
                     tokio::time::interval(Duration::from_secs(background_submit_interval)); // 10 minutes
 
-                let rooch_store = rooch_store.clone();
-                let background_da_server = DAServerActor {
-                    sequencer_key: sequencer_key.copy(),
+                let background_submitter = BackgroundSubmitter {
                     rooch_store: rooch_store.clone(),
-                    last_block_number,
-                    nop_backend,
-                    backends: backends.clone(),
-                    submit_threshold,
+                    submitter: Submitter {
+                        sequencer_key: sequencer_key.copy(),
+                        rooch_store: rooch_store.clone(),
+                        nop_backend,
+                        backends: backends.clone(),
+                        submit_threshold,
+                    },
+                    last_block_update_time: background_last_block_update_time.clone(),
                 };
 
                 loop {
                     interval.tick().await;
                     match rooch_store.get_last_block_number() {
                         Ok(Some(last_block_number)) => {
-                            if let Err(e) = background_da_server
-                                .start_background_submitter(last_block_number)
-                                .await
+                            if let Err(e) = background_submitter.start_job(last_block_number).await
                             {
                                 tracing::error!("da: background submitter failed: {:?}", e);
                             }
@@ -136,17 +147,110 @@ impl DAServerActor {
         Ok(server)
     }
 
+    pub fn get_status(&self) -> anyhow::Result<ServerStatus> {
+        let last_tx_order = if let Some(last_block_number) = self.last_block_number {
+            let last_block_state = self.rooch_store.get_block_state(last_block_number)?;
+            Some(last_block_state.block_range.tx_order_end)
+        } else {
+            None
+        };
+        let last_block_update_time = if self.last_block_update_time > 0 {
+            Some(self.last_block_update_time)
+        } else {
+            None
+        };
+
+        let last_avail_block_number = self.rooch_store.get_background_submit_block_cursor()?;
+        let last_avail_tx_order = if let Some(last_avail_block_number) = last_avail_block_number {
+            let last_block_state = self.rooch_store.get_block_state(last_avail_block_number)?;
+            Some(last_block_state.block_range.tx_order_end)
+        } else {
+            None
+        };
+        let background_last_block_update_time = self
+            .background_last_block_update_time
+            .load(Ordering::Relaxed);
+        let last_avail_block_update_time = if background_last_block_update_time > 0 {
+            Some(background_last_block_update_time)
+        } else {
+            None
+        };
+
+        Ok(ServerStatus {
+            last_block_number: self.last_block_number,
+            last_tx_order,
+            last_block_update_time,
+            last_avail_block_number,
+            last_avail_tx_order,
+            last_avail_block_update_time,
+            avail_backends: self.backend_names.clone(),
+        })
+    }
+
     pub async fn submit_batch(
         &mut self,
         msg: PutDABatchMessage,
     ) -> anyhow::Result<SignedDABatchMeta> {
         let tx_order_start = msg.tx_order_start;
         let tx_order_end = msg.tx_order_end;
-        let block_number = self
-            .rooch_store
-            .append_submitting_block(self.last_block_number, tx_order_start, tx_order_end)
-            .unwrap_or_else(|_| panic!("fail to append submitting block: last_block_number: {:?}; new block: tx_order_start: {:?}, tx_order_end: {:?}",
-                   self.last_block_number, tx_order_start, tx_order_end));
+        let last_block_number = self.last_block_number;
+        let (block_number, signed_meta) = self
+            .submitter
+            .submit_new_block(last_block_number, tx_order_start, tx_order_end, msg.tx_list)
+            .await?;
+        self.last_block_number = Some(block_number);
+        self.last_block_update_time = SystemTime::now()
+            .duration_since(time::UNIX_EPOCH)?
+            .as_secs();
+
+        Ok(signed_meta)
+    }
+}
+
+#[async_trait]
+impl Handler<PutDABatchMessage> for DAServerActor {
+    async fn handle(
+        &mut self,
+        msg: PutDABatchMessage,
+        _ctx: &mut ActorContext,
+    ) -> anyhow::Result<SignedDABatchMeta> {
+        self.submit_batch(msg).await
+    }
+}
+
+#[async_trait]
+impl Handler<GetServerStatusMessage> for DAServerActor {
+    async fn handle(
+        &mut self,
+        _msg: GetServerStatusMessage,
+        _ctx: &mut ActorContext,
+    ) -> anyhow::Result<ServerStatus> {
+        self.get_status()
+    }
+}
+
+pub(crate) struct Submitter {
+    sequencer_key: RoochKeyPair,
+    rooch_store: RoochStore,
+
+    nop_backend: bool,
+    backends: Vec<Arc<dyn DABackend>>,
+    submit_threshold: usize,
+}
+
+impl Submitter {
+    async fn submit_new_block(
+        &self,
+        last_block_number: Option<u128>,
+        tx_order_start: u64,
+        tx_order_end: u64,
+        tx_list: Vec<LedgerTransaction>,
+    ) -> anyhow::Result<(u128, SignedDABatchMeta)> {
+        let block_number = self.rooch_store.append_submitting_block(
+            last_block_number,
+            tx_order_start,
+            tx_order_end,
+        )?;
 
         let signed_meta = self
             .submit_batch_raw(
@@ -155,12 +259,10 @@ impl DAServerActor {
                     tx_order_start,
                     tx_order_end,
                 },
-                msg.tx_list,
+                tx_list,
             )
             .await?;
-        self.last_block_number = Some(block_number);
-
-        Ok(signed_meta)
+        Ok((block_number, signed_meta))
     }
 
     // should be idempotent
@@ -238,46 +340,56 @@ impl DAServerActor {
         };
         Ok(())
     }
+}
 
-    async fn start_background_submitter(&self, last_block_number: u128) -> anyhow::Result<()> {
+struct BackgroundSubmitter {
+    rooch_store: RoochStore,
+    submitter: Submitter,
+    last_block_update_time: Arc<AtomicU64>,
+}
+
+impl BackgroundSubmitter {
+    fn update_cursor(&self, cursor: u128) -> anyhow::Result<()> {
+        self.rooch_store
+            .set_background_submit_block_cursor(cursor)?;
+        self.last_block_update_time.store(
+            SystemTime::now()
+                .duration_since(time::UNIX_EPOCH)?
+                .as_secs(),
+            Ordering::Relaxed,
+        );
+        Ok(())
+    }
+
+    async fn start_job(&self, last_block_number: u128) -> anyhow::Result<()> {
+        // try to get unsubmitted blocks from [cursor, last_block_number]
         let cursor_opt = self.rooch_store.get_background_submit_block_cursor()?;
-        let max_block = if let Some(cursor) = cursor_opt {
-            last_block_number - cursor
+        let exp_count = if let Some(cursor) = cursor_opt {
+            last_block_number - cursor // (cursor, last_block_number]
         } else {
-            last_block_number + 1
+            last_block_number + 1 // [0, last_block_number]
         };
         let unsubmitted_blocks = self
             .rooch_store
-            .get_submitting_blocks(cursor_opt.unwrap_or(0), Some(max_block as usize))?;
+            .get_submitting_blocks(cursor_opt.unwrap_or(0), Some(exp_count as usize))?;
 
+        // there is no unsubmitted block: [0, last_block_number]
         if unsubmitted_blocks.is_empty() {
-            // there is no unsubmitted block: [0, last_block_number]
-            self.rooch_store
-                .set_background_submit_block_cursor(last_block_number)?;
+            self.update_cursor(last_block_number)?;
             return Ok(());
         }
-
-        // set cursor to the first unsubmitted block - 1
+        // submitted: [0, first_unsubmitted_block - 1]
         let first_unsubmitted_block = unsubmitted_blocks.first().unwrap().block_number;
         if first_unsubmitted_block > 0 {
             let new_cursor = first_unsubmitted_block - 1;
-            self.rooch_store
-                .set_background_submit_block_cursor(new_cursor)?;
+            self.update_cursor(new_cursor)?;
         }
 
-        // if unsubmitted_blocks only contains the last block, return ok
-        // this is to avoid submitting the last block twice
-        if unsubmitted_blocks.len() == 1 && unsubmitted_blocks[0].block_number == last_block_number
-        {
-            return Ok(());
-        }
-
-        let mut submit_count: u128 = 0;
+        let mut done_count: u128 = 0;
         let mut max_block_number_submitted: u128 = 0;
         for unsubmitted_block_range in unsubmitted_blocks {
             let block_number = unsubmitted_block_range.block_number;
-            // last_block_number may be updated, unsubmitted_block_range may contain the last_block_number passed,
-            // so we need to check it again
+            // leave last block to be submitted by submit_new_block, avoid duplicated submission
             if block_number >= last_block_number {
                 break;
             }
@@ -302,27 +414,24 @@ impl DAServerActor {
                     })?; // should not happen
                 tx_list.push(tx);
             }
-            self.submit_batch_raw(unsubmitted_block_range, tx_list)
+            self.submitter
+                .submit_batch_raw(unsubmitted_block_range, tx_list)
                 .await?;
-            submit_count += 1;
+            done_count += 1;
             max_block_number_submitted = block_number;
-            if submit_count % 1024 == 0 {
+            if done_count % 16 == 0 {
                 // it's okay to set cursor a bit behind: submit_batch_raw set submitting block done, so it won't be submitted again after restart
-                self.rooch_store
-                    .set_background_submit_block_cursor(block_number)?;
-                tracing::info!(
-                    "da: background submitting: {} blocks submitted",
-                    submit_count
-                );
+                self.update_cursor(block_number)?;
             }
         }
-        if submit_count > 0 {
-            self.rooch_store
-                .set_background_submit_block_cursor(max_block_number_submitted)?;
+        if done_count > 0 {
+            self.update_cursor(max_block_number_submitted)?;
             tracing::info!(
-                "da: background submitting done: {} blocks submitted",
-                submit_count
+                "da: background submitting job done: {} blocks submitted",
+                done_count
             );
+        } else {
+            tracing::info!("da: background submitting job done: no blocks needed to submit");
         }
 
         Ok(())
@@ -345,17 +454,6 @@ fn pair_tx_order_hash(
             Ok((tx_order, tx_hash))
         })
         .collect::<anyhow::Result<Vec<(u64, H256)>>>()
-}
-
-#[async_trait]
-impl Handler<PutDABatchMessage> for DAServerActor {
-    async fn handle(
-        &mut self,
-        msg: PutDABatchMessage,
-        _ctx: &mut ActorContext,
-    ) -> anyhow::Result<SignedDABatchMeta> {
-        self.submit_batch(msg).await
-    }
 }
 
 #[cfg(test)]

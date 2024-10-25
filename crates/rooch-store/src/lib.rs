@@ -20,7 +20,7 @@ use raw_store::rocks::batch::WriteBatch;
 use raw_store::rocks::RocksDB;
 use raw_store::traits::DBStore;
 use raw_store::{ColumnFamilyName, StoreInstance};
-use rooch_types::da::batch::BlockRange;
+use rooch_types::da::batch::{BlockRange, BlockSubmitState};
 use rooch_types::sequencer::SequencerInfo;
 use rooch_types::transaction::LedgerTransaction;
 use std::fmt::{Debug, Display, Formatter};
@@ -256,8 +256,8 @@ impl StateStore for RoochStore {
 }
 
 impl DAMetaStore for RoochStore {
-    fn try_repair(&self, last_order: u64) -> Result<()> {
-        self.get_da_meta_store().try_repair(last_order)
+    fn try_repair_da_meta(&self, last_order: u64) -> Result<()> {
+        self.get_da_meta_store().try_repair_da_meta(last_order)
     }
 
     fn append_submitting_block(
@@ -297,17 +297,21 @@ impl DAMetaStore for RoochStore {
         )
     }
 
-    fn get_background_submit_block_cursor(&self) -> Result<Option<u128>> {
-        self.get_da_meta_store()
-            .get_background_submit_block_cursor()
-    }
-
     fn set_background_submit_block_cursor(&self, cursor: u128) -> Result<()> {
         self.get_da_meta_store()
             .set_background_submit_block_cursor(cursor)
     }
 
+    fn get_background_submit_block_cursor(&self) -> Result<Option<u128>> {
+        self.get_da_meta_store()
+            .get_background_submit_block_cursor()
+    }
+
     fn get_last_block_number(&self) -> Result<Option<u128>> {
         self.get_da_meta_store().get_last_block_number()
+    }
+
+    fn get_block_state(&self, block_number: u128) -> Result<BlockSubmitState> {
+        self.get_da_meta_store().get_block_state(block_number)
     }
 }

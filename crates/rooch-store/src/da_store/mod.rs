@@ -41,7 +41,7 @@ pub trait DAMetaStore {
     //   b. update last_block_number to the block which tx_order_end is behind of last_order
     //   c. remove background_submit_block_cursor directly, since we could catch up with the last order by background submitter
     // after repair with condition2, we may need to repair with condition1 for the last block(it will be done automatically)
-    fn try_repair(&self, last_order: u64) -> anyhow::Result<()>;
+    fn try_repair_da_meta(&self, last_order: u64) -> anyhow::Result<()>;
 
     // append new submitting block with tx_order_start and tx_order_end
     // warning: not thread safe
@@ -71,6 +71,7 @@ pub trait DAMetaStore {
     fn get_background_submit_block_cursor(&self) -> anyhow::Result<Option<u128>>;
 
     fn get_last_block_number(&self) -> anyhow::Result<Option<u128>>;
+    fn get_block_state(&self, block_number: u128) -> anyhow::Result<BlockSubmitState>;
 }
 
 #[derive(Clone)]
@@ -271,18 +272,10 @@ impl DAMetaDBStore {
         inner_store.write_cf_batch(cf_batches, true)?;
         Ok(())
     }
-
-    pub(crate) fn get_block_state(&self, block_number: u128) -> anyhow::Result<BlockSubmitState> {
-        self.block_submit_state_store
-            .kv_get(block_number)?
-            .ok_or_else(|| {
-                anyhow::anyhow!("block submit state not found for block: {}", block_number)
-            })
-    }
 }
 
 impl DAMetaStore for DAMetaDBStore {
-    fn try_repair(&self, last_order: u64) -> anyhow::Result<()> {
+    fn try_repair_da_meta(&self, last_order: u64) -> anyhow::Result<()> {
         let last_block_number = self.get_last_block_number()?;
         match last_block_number {
             Some(last_block_number) => {
@@ -295,7 +288,7 @@ impl DAMetaStore for DAMetaDBStore {
                     }
                     Ordering::Less => {
                         self.inner_rollback(Some(last_block_number), last_order)?;
-                        self.try_repair(last_order)
+                        self.try_repair_da_meta(last_order)
                     }
                     Ordering::Equal => Ok(()),
                 }
@@ -399,5 +392,13 @@ impl DAMetaStore for DAMetaDBStore {
     fn get_last_block_number(&self) -> anyhow::Result<Option<u128>> {
         self.block_cursor_store
             .kv_get(LAST_BLOCK_NUMBER_KEY.to_string())
+    }
+
+    fn get_block_state(&self, block_number: u128) -> anyhow::Result<BlockSubmitState> {
+        self.block_submit_state_store
+            .kv_get(block_number)?
+            .ok_or_else(|| {
+                anyhow::anyhow!("block submit state not found for block: {}", block_number)
+            })
     }
 }

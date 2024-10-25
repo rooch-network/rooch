@@ -3,6 +3,7 @@
 
 use coerce::actor::message::Message;
 use rooch_types::da::batch::SignedDABatchMeta;
+use rooch_types::da::state::ServerStatus;
 use rooch_types::transaction::LedgerTransaction;
 use serde::{Deserialize, Serialize};
 
@@ -25,4 +26,11 @@ impl PutDABatchMessage {
             tx_list,
         }
     }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GetServerStatusMessage {}
+
+impl Message for GetServerStatusMessage {
+    type Result = anyhow::Result<ServerStatus>;
 }
