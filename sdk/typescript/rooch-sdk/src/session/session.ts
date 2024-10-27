@@ -20,6 +20,10 @@ type InnerCreateSessionArgs = {
   signer: Signer
 } & CreateSessionArgs
 
+type InnerBuildSessionArgs = {
+  addr: BitcoinAddress
+} & CreateSessionArgs
+
 export class Session extends Signer {
   protected readonly appName: string
   protected readonly appUrl: string
@@ -56,6 +60,16 @@ export class Session extends Signer {
   protected readonly localCreateSessionTime: number
 
   public static async CREATE(input: InnerCreateSessionArgs): Promise<Session> {
+    return this.formatArgs(input, input.signer.getBitcoinAddress()).build(
+      input.client,
+      input.signer,
+    )
+  }
+
+  public static Build(input: InnerBuildSessionArgs): string {
+    return this.formatArgs(input, input.addr).toJSON()
+  }
+  static formatArgs(input: CreateSessionArgs, addr: BitcoinAddress): Session {
     const parsedScopes = input.scopes.map((scope) => {
       if (typeof scope !== 'string') {
         return `${scope.address}::${scope.module}::${scope.function}`
@@ -69,15 +83,16 @@ export class Session extends Signer {
     if (!parsedScopes.find((item) => item === allOx3 || item === REQUIRED_SCOPE)) {
       parsedScopes.push(REQUIRED_SCOPE)
     }
+
     return new Session(
       input.appName,
       input.appUrl,
       parsedScopes,
-      input.signer.getRoochAddress(),
-      input.signer.getBitcoinAddress(),
+      addr.genRoochAddress(),
+      addr,
       input.keypair,
       input.maxInactiveInterval,
-    ).build(input.client, input.signer)
+    )
   }
 
   static fromJson(jsonObj: any) {
