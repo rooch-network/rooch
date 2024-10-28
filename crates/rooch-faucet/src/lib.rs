@@ -29,4 +29,8 @@ pub use metrics_layer::*;
 
 mod faucet_module;
 mod faucet_proxy;
+mod tweet_fetcher_module;
+mod tweet_v2_module;
+mod twitter_account_module;
+
 pub mod server;
