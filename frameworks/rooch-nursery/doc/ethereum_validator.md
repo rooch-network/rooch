@@ -46,7 +46,7 @@ This module implements Ethereum validator with the ECDSA recoverable signature o
 there defines auth validator id for each blockchain
 
 
-<pre><code><b>const</b> <a href="ethereum_validator.md#0xa_ethereum_validator_ETHEREUM_AUTH_VALIDATOR_ID">ETHEREUM_AUTH_VALIDATOR_ID</a>: u64 = 1;
+<pre><code><b>const</b> <a href="ethereum_validator.md#0xa_ethereum_validator_ETHEREUM_AUTH_VALIDATOR_ID">ETHEREUM_AUTH_VALIDATOR_ID</a>: u64 = 4;
 </code></pre>
 
 

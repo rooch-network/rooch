@@ -1212,6 +1212,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "bitstream-io"
+version = "2.5.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b81e1519b0d82120d2fd469d5bfb2919a9361c48b02d82d04befc1cdd2002452"
+
+[[package]]
 name = "bitvec"
 version = "0.20.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2322,6 +2328,21 @@ name = "cranelift-isle"
 version = "0.91.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "393bc73c451830ff8dbb3a07f61843d6cb41a084f9996319917c0b291ed785bb"
+
+[[package]]
+name = "crc"
+version = "3.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "69e6e4d7b33a94f0991c26729976b10ebde1d34c3ee82408fb536164fa10d636"
+dependencies = [
+ "crc-catalog",
+]
+
+[[package]]
+name = "crc-catalog"
+version = "2.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "19d374276b40fb8bbdee95aef7c7fa6b5316ec764510eb64b8dd0e2ed0d7e7f5"
 
 [[package]]
 name = "crc32fast"
@@ -7243,6 +7264,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "defc4c55412d89136f966bbb339008b474350e5e6e78d2714439c386b3137a03"
 
 [[package]]
+name = "nacl"
+version = "0.5.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "30aefc44d813c51b5e7952950e87c17f2e0e1a3274d63c8281a701e05323d548"
+
+[[package]]
 name = "named-lock"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7414,6 +7441,7 @@ dependencies = [
  "num-integer",
  "num-traits 0.2.19",
  "rand 0.8.5",
+ "serde 1.0.214",
 ]
 
 [[package]]
@@ -7949,6 +7977,8 @@ checksum = "f8ed6a7761f76e3b9f92dfb0a60a6a6477c61024b775147ff0973a02653abaf2"
 dependencies = [
  "digest 0.10.7",
  "hmac",
+ "password-hash 0.5.0",
+ "sha2 0.10.8",
 ]
 
 [[package]]
@@ -10287,6 +10317,7 @@ dependencies = [
  "strum",
  "strum_macros",
  "thiserror",
+ "tonlib-core",
  "tracing",
  "xxhash-rust",
 ]
@@ -12463,6 +12494,28 @@ dependencies = [
  "tower-service",
  "tracing",
  "tracing-futures",
+]
+
+[[package]]
+name = "tonlib-core"
+version = "0.20.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9728b9aa2d57302b2b028672af98caaa25c77b32a04f936f9b5e2bbce8f8593a"
+dependencies = [
+ "base64 0.22.1",
+ "bitstream-io",
+ "crc",
+ "hex",
+ "hmac",
+ "lazy_static 1.5.0",
+ "nacl",
+ "num-bigint 0.4.5",
+ "num-traits 0.2.19",
+ "pbkdf2 0.12.2",
+ "serde 1.0.214",
+ "serde_json",
+ "sha2 0.10.8",
+ "thiserror",
 ]
 
 [[package]]

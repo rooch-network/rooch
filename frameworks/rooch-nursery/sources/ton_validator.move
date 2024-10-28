@@ -1,8 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-/// This module implements Ethereum validator with the ECDSA recoverable signature over Secp256k1.
-module rooch_nursery::ethereum_validator {
+/// This module implements Ton blockchain auth validator.
+module rooch_nursery::ton_validator {
 
     use std::vector;
     use std::string;
@@ -16,12 +16,12 @@ module rooch_nursery::ethereum_validator {
     use rooch_framework::auth_payload;
 
     /// there defines auth validator id for each blockchain
-    const ETHEREUM_AUTH_VALIDATOR_ID: u64 = 4;
+    const TON_AUTH_VALIDATOR_ID: u64 = 3;
 
-    struct EthereumValidator has store, drop {}
+    struct TonValidator has store, drop {}
 
     public fun auth_validator_id(): u64 {
-        ETHEREUM_AUTH_VALIDATOR_ID
+        TON_AUTH_VALIDATOR_ID
     }
 
     /// Only validate the authenticator's signature.
