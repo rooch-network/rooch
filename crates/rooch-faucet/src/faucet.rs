@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::faucet_module;
+use crate::{faucet_module, tweet_fetcher_module, tweet_v2_module, twitter_account_module};
 use crate::{metrics::FaucetMetrics, FaucetError};
 use anyhow::{bail, Result};
 use async_trait::async_trait;
@@ -13,13 +13,14 @@ use move_core_types::account_address::AccountAddress;
 use move_core_types::u256::U256;
 use move_core_types::vm_status::AbortLocation;
 use moveos_types::moveos_std::object::ObjectID;
-use moveos_types::transaction::MoveAction;
+use moveos_types::transaction::{FunctionCall, MoveAction};
 use prometheus::Registry;
 use rooch_rpc_api::jsonrpc_types::btc::utxo::UTXOFilterView;
 use rooch_rpc_api::jsonrpc_types::{KeptVMStatusView, UnitedAddressView, VMStatusView};
 use rooch_rpc_client::wallet_context::WalletContext;
 use rooch_rpc_client::Client;
-use rooch_types::address::{ParsedAddress, RoochAddress};
+use rooch_types::address::{BitcoinAddress, ParsedAddress, RoochAddress};
+use serde::de::DeserializeOwned;
 use tokio::sync::mpsc::Sender;
 
 #[derive(Parser, Debug, Clone)]
@@ -76,6 +77,44 @@ impl Handler<ClaimMessage> for Faucet {
 impl Handler<BalanceMessage> for Faucet {
     async fn handle(&mut self, _msg: BalanceMessage, _ctx: &mut ActorContext) -> Result<U256> {
         self.balance().await
+    }
+}
+
+pub struct FetchTweetMessage {
+    pub tweet_id: String,
+}
+
+impl Message for FetchTweetMessage {
+    type Result = Result<ObjectID>;
+}
+
+#[async_trait]
+impl Handler<FetchTweetMessage> for Faucet {
+    async fn handle(
+        &mut self,
+        msg: FetchTweetMessage,
+        _ctx: &mut ActorContext,
+    ) -> Result<ObjectID> {
+        self.fetch_tweet(msg.tweet_id).await
+    }
+}
+
+pub struct VerifyAndBindingTwitterAccountMessage {
+    pub tweet_id: String,
+}
+
+impl Message for VerifyAndBindingTwitterAccountMessage {
+    type Result = Result<BitcoinAddress>;
+}
+
+#[async_trait]
+impl Handler<VerifyAndBindingTwitterAccountMessage> for Faucet {
+    async fn handle(
+        &mut self,
+        msg: VerifyAndBindingTwitterAccountMessage,
+        _ctx: &mut ActorContext,
+    ) -> Result<BitcoinAddress> {
+        self.verify_and_binding_twitter_account(msg.tweet_id).await
     }
 }
 
@@ -178,40 +217,7 @@ impl Faucet {
             claimer,
             utxo_ids,
         );
-        let response = client.rooch.execute_view_function(function_call).await?;
-        match response.vm_status {
-            VMStatusView::Executed => {
-                let first_return = response
-                    .return_values
-                    .and_then(|mut values| values.pop())
-                    .ok_or_else(|| anyhow::anyhow!("Check claim failed, No return values"))?;
-                let claim_amount: U256 = bcs::from_bytes(&first_return.value.value.0)?;
-                Ok(claim_amount)
-            }
-            VMStatusView::MoveAbort {
-                location,
-                abort_code,
-            } => match location.0 {
-                AbortLocation::Module(module_id) => {
-                    if module_id.name() == faucet_module::MODULE_NAME {
-                        let reason = faucet_module::error_code_to_reason(abort_code.0);
-                        bail!("Check claim failed, Module abort: {}", reason)
-                    } else {
-                        bail!(
-                            "Check claim failed, Module abort in {}, abort_code: {}",
-                            module_id,
-                            abort_code
-                        )
-                    }
-                }
-                _ => {
-                    bail!("Check claim failed, Unknown abort location")
-                }
-            },
-            status => {
-                bail!("Check claim failed, Unexpected VM status: {:?}", status)
-            }
-        }
+        execute_view_function(client, function_call).await
     }
 
     async fn get_utxos(client: &Client, address: UnitedAddressView) -> Result<Vec<ObjectID>> {
@@ -224,5 +230,126 @@ impl Faucet {
             .into_iter()
             .map(|utxo| utxo.metadata.id)
             .collect())
+    }
+
+    async fn fetch_tweet(&self, tweet_id: String) -> Result<ObjectID> {
+        self.check_tweet(&tweet_id)?;
+        let client = self.context.get_client().await?;
+        let function_call = tweet_fetcher_module::fetch_tweet_function_call(
+            self.faucet_module_address,
+            tweet_id.clone(),
+        );
+        let tx_data = self
+            .context
+            .build_tx_data(
+                self.faucet_sender,
+                MoveAction::Function(function_call),
+                None,
+            )
+            .await?;
+        let tx = self.context.sign_transaction(self.faucet_sender, tx_data)?;
+        let response = client.rooch.execute_tx(tx, None).await?;
+        match response.execution_info.status {
+            KeptVMStatusView::Executed => {
+                let tweet_obj_id =
+                    tweet_v2_module::tweet_object_id(self.faucet_module_address, tweet_id);
+                Ok(tweet_obj_id)
+            }
+            status => bail!("Fetch tweet failed, Unexpected VM status: {:?}", status),
+        }
+    }
+
+    async fn check_binding_tweet(&self, tweet_id: String) -> Result<BitcoinAddress> {
+        self.check_tweet(tweet_id.as_str())?;
+        let function_call = twitter_account_module::check_binding_tweet_function_call(
+            self.faucet_module_address,
+            tweet_id,
+        );
+        let client = self.context.get_client().await?;
+        execute_view_function(&client, function_call).await
+    }
+
+    async fn verify_and_binding_twitter_account(&self, tweet_id: String) -> Result<BitcoinAddress> {
+        self.check_tweet(tweet_id.as_str())?;
+        let client = self.context.get_client().await?;
+        let bitcoin_address = self.check_binding_tweet(tweet_id.clone()).await?;
+        let function_call =
+            twitter_account_module::verify_and_binding_twitter_account_function_call(
+                self.faucet_module_address,
+                tweet_id,
+            );
+
+        let tx_data = self
+            .context
+            .build_tx_data(
+                self.faucet_sender,
+                MoveAction::Function(function_call),
+                None,
+            )
+            .await?;
+        let tx = self.context.sign_transaction(self.faucet_sender, tx_data)?;
+        let response = client.rooch.execute_tx(tx, None).await?;
+        match response.execution_info.status {
+            KeptVMStatusView::Executed => Ok(bitcoin_address),
+            status => bail!(
+                "Verify and binding twitter account failed, Unexpected VM status: {:?}",
+                status
+            ),
+        }
+    }
+
+    fn check_tweet(&self, tweet_id: &str) -> Result<()> {
+        if tweet_id.len() != 19 {
+            bail!("Invalid tweet id length: {}", tweet_id.len());
+        }
+        //TODO call twitter API to check tweet
+        Ok(())
+    }
+}
+
+async fn execute_view_function<T: DeserializeOwned>(
+    client: &Client,
+    function_call: FunctionCall,
+) -> Result<T> {
+    let response = client.rooch.execute_view_function(function_call).await?;
+    match response.vm_status {
+        VMStatusView::Executed => {
+            let first_return = response
+                .return_values
+                .and_then(|mut values| values.pop())
+                .ok_or_else(|| anyhow::anyhow!("No return values"))?;
+            let result: T = bcs::from_bytes(&first_return.value.value.0)?;
+            Ok(result)
+        }
+        VMStatusView::MoveAbort {
+            location,
+            abort_code,
+        } => match location.0 {
+            AbortLocation::Module(module_id) => {
+                let reason = if faucet_module::MODULE_NAME == module_id.name() {
+                    faucet_module::error_code_to_reason(abort_code.0)
+                } else if twitter_account_module::MODULE_NAME == module_id.name() {
+                    twitter_account_module::error_code_to_reason(abort_code.0)
+                } else if tweet_fetcher_module::MODULE_NAME == module_id.name() {
+                    tweet_fetcher_module::error_code_to_reason(abort_code.0)
+                } else if tweet_v2_module::MODULE_NAME == module_id.name() {
+                    tweet_v2_module::error_code_to_reason(abort_code.0)
+                } else {
+                    "Unknown".to_string()
+                };
+                bail!(
+                    "Error in module: {}, code: {}, reason: {}",
+                    module_id.name(),
+                    abort_code.0,
+                    reason
+                )
+            }
+            _ => {
+                bail!("Unknown abort location")
+            }
+        },
+        status => {
+            bail!("Unexpected VM status: {:?}", status)
+        }
     }
 }

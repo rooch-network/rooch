@@ -1,7 +1,10 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{App, FaucetRequest, FaucetResponse, InfoResponse};
+use crate::{
+    App, FaucetRequest, FaucetResponse, FetchTweetRequest, InfoResponse, ResultResponse,
+    VerifyAndBindingTwitterAccountRequest,
+};
 use axum::{
     error_handling::HandleErrorLayer,
     http::Method,
@@ -56,7 +59,6 @@ pub async fn serve(app: App, web_config: WebConfig) -> Result<(), anyhow::Error>
         _ => CONCURRENCY_LIMIT,
     };
 
-    // TODO:: 分开跑
     // let prom_binding = PROM_PORT_ADDR.parse().unwrap();
     // info!("Starting Prometheus HTTP endpoint at {}", prom_binding);
 
@@ -70,6 +72,11 @@ pub async fn serve(app: App, web_config: WebConfig) -> Result<(), anyhow::Error>
         .route(METRICS_ROUTE, get(metrics))
         .route("/info", get(request_info))
         .route("/faucet", post(request_faucet))
+        .route("/fetch-tweet", post(fetch_tweet))
+        .route(
+            "/verify-and-binding-twitter-account",
+            post(verify_and_binding_twitter_account),
+        )
         .layer(
             ServiceBuilder::new()
                 .layer(HandleErrorLayer::new(handle_error))
@@ -135,7 +142,7 @@ async fn request_faucet(
     }
 }
 
-pub async fn request_info(Extension(app): Extension<App>) -> impl IntoResponse {
+async fn request_info(Extension(app): Extension<App>) -> impl IntoResponse {
     let result = app.check_gas_balance().await;
 
     match result {
@@ -145,6 +152,26 @@ pub async fn request_info(Extension(app): Extension<App>) -> impl IntoResponse {
             Json(InfoResponse::from(e)),
         ),
     }
+}
+
+async fn fetch_tweet(
+    Extension(app): Extension<App>,
+    Json(payload): Json<FetchTweetRequest>,
+) -> impl IntoResponse {
+    let tweet_id = payload.tweet_id;
+
+    tracing::info!("fetch tweet payload: {:?}", tweet_id);
+    ResultResponse::<String>::from(app.fetch_tweet(tweet_id).await)
+}
+
+async fn verify_and_binding_twitter_account(
+    Extension(app): Extension<App>,
+    Json(payload): Json<VerifyAndBindingTwitterAccountRequest>,
+) -> impl IntoResponse {
+    let tweet_id = payload.tweet_id;
+
+    tracing::info!("verify and binding twitter account payload: {:?}", tweet_id);
+    ResultResponse::<String>::from(app.verify_and_binding_twitter_account(tweet_id).await)
 }
 
 async fn handle_error(error: BoxError) -> impl IntoResponse {
