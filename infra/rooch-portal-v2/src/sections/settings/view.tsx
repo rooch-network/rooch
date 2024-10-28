@@ -156,7 +156,14 @@ export function SettingsView() {
                 />
               </Stack>
               <LoadingButton
-                disabled={!tweetId || !tweetId.startsWith('https://x.com')}
+                disabled={!tweetId || (() => {
+                  try {
+                    const url = new URL(tweetId);
+                    return url.hostname !== 'x.com';
+                  } catch {
+                    return true;
+                  }
+                })()}
                 color="inherit"
                 loading={verifying}
                 className="mt-2 w-fit"
