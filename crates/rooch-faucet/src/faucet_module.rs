@@ -80,11 +80,11 @@ pub fn balance_call(module_address: AccountAddress, faucet_object_id: ObjectID) 
 
 pub fn error_code_to_reason(error_code: u64) -> String {
     match error_code {
-        1 => "Faucet is not open".to_string(),
-        2 => "Invalid UTXO".to_string(),
-        3 => "Faucet does not have enough RGas".to_string(),
-        4 => "Already claimed".to_string(),
-        5 => "UTXO value is zero".to_string(),
+        1 => "The faucet is currently closed. Please try again later".to_string(),
+        2 => "Invalid UTXO. Please check your input".to_string(),
+        3 => "The faucet has insufficient RGas balance. Please wait for replenishment".to_string(),
+        4 => "You have already claimed. Each address can only claim once".to_string(),
+        5 => "The BTC amount is zero. Only the address which has the BTC can claim".to_string(),
         _ => "Unknown error".to_string(),
     }
 }
