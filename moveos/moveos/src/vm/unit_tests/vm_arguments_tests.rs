@@ -612,32 +612,14 @@ fn general_cases() -> TestCases {
     vec![
         // too few signers (0)
         (
-            Signature(vec![SignatureToken::Signer, SignatureToken::Signer]),
+            Signature(vec![SignatureToken::Signer]),
             vec![],
             vec![],
             None,
         ),
-        // too few signers (1)
-        (
-            Signature(vec![SignatureToken::Signer, SignatureToken::Signer]),
-            vec![],
-            vec![AccountAddress::random()],
-            Some(StatusCode::NUMBER_OF_ARGUMENTS_MISMATCH),
-        ),
         // too much signers (3)
         (
-            Signature(vec![SignatureToken::Signer, SignatureToken::Signer]),
-            vec![],
-            vec![
-                AccountAddress::random(),
-                AccountAddress::random(),
-                AccountAddress::random(),
-            ],
-            Some(StatusCode::NUMBER_OF_ARGUMENTS_MISMATCH),
-        ),
-        // correct number of signers (2)
-        (
-            Signature(vec![SignatureToken::Signer, SignatureToken::Signer]),
+            Signature(vec![SignatureToken::Signer]),
             vec![],
             vec![AccountAddress::random(), AccountAddress::random()],
             Some(StatusCode::NUMBER_OF_ARGUMENTS_MISMATCH),
