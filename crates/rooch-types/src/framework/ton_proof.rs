@@ -3,18 +3,26 @@
 
 use anyhow::{anyhow, bail, Result};
 use base64::prelude::*;
+use fastcrypto::{
+    ed25519::{Ed25519PublicKey, Ed25519Signature},
+    hash::{HashFunction, Sha256},
+    traits::{ToFromBytes, VerifyingKey},
+};
+use once_cell::sync::Lazy;
+use serde::Deserialize;
+use std::{
+    collections::HashMap,
+    time::{SystemTime, UNIX_EPOCH},
+};
 use tonlib_core::{
-    address::TonAddress,
     cell::BagOfCells,
-    client::TonClient,
-    contract::{TonContractFactory, TonContractInterface},
     wallet::{WalletDataHighloadV2R2, WalletDataV1V2, WalletDataV3, WalletDataV4, WalletVersion},
+    TonAddress,
 };
 
-const PAYLOAD_TTL: u64 = 3600; // 1 hour
 const PROOF_TTL: u64 = 3600; // 1 hour
 
-const KNOWN_HASHES: Lazy<HashMap<[u8; 32], WalletVersion>> = Lazy::new(|| {
+static KNOWN_HASHES: Lazy<HashMap<[u8; 32], WalletVersion>> = Lazy::new(|| {
     let mut known_hashes = HashMap::new();
     let all_versions = [
         WalletVersion::V1R1,
@@ -33,24 +41,11 @@ const KNOWN_HASHES: Lazy<HashMap<[u8; 32], WalletVersion>> = Lazy::new(|| {
         WalletVersion::HighloadV2R2,
     ];
     all_versions.into_iter().for_each(|v| {
-        let hash: [u8; 32] = v
-            .code()
-            .unwrap()
-            .cell_hash()
-            .unwrap()
-            .try_into()
-            .expect("all hashes [u8; 32], right?");
+        let hash: [u8; 32] = v.code().unwrap().cell_hash();
         known_hashes.insert(hash, v);
     });
     known_hashes
 });
-
-
-#[derive(Deserialize)]
-pub struct CheckProofPayload {
-    pub address: TonAddress,
-    pub proof: TonProof,
-}
 
 #[derive(Deserialize)]
 pub struct TonProof {
@@ -68,31 +63,30 @@ pub struct TonDomain {
     pub value: String,
 }
 
-pub fn check_ton_proof(body: CheckProofPayload) -> Result<()> {
-
+pub fn check_ton_proof(address: TonAddress, proof: TonProof) -> Result<()> {
     let now = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
 
     // check ton proof expiration
-    if now > body.proof.timestamp + PROOF_TTL {
+    if now > proof.timestamp + PROOF_TTL {
         bail!("ton proof has been expired");
     }
 
-    if body.proof.domain.length_bytes != body.proof.domain.value.len() as u64 {
+    if proof.domain.length_bytes != proof.domain.value.len() as u64 {
         bail!(
             "domain length mismatched against provided length bytes of {}",
-            body.proof.domain.length_bytes
+            proof.domain.length_bytes
         );
     }
 
     let ton_proof_prefix = "ton-proof-item-v2/";
     let mut msg: Vec<u8> = Vec::new();
     msg.extend_from_slice(ton_proof_prefix.as_bytes());
-    msg.extend_from_slice(&body.address.workchain.to_be_bytes());
-    msg.extend_from_slice(&body.address.hash_part);
-    msg.extend_from_slice(&(body.proof.domain.length_bytes as u32).to_le_bytes());
-    msg.extend_from_slice(body.proof.domain.value.as_bytes());
-    msg.extend_from_slice(&body.proof.timestamp.to_le_bytes());
-    msg.extend_from_slice(body.proof.payload.as_bytes());
+    msg.extend_from_slice(&address.workchain.to_be_bytes());
+    msg.extend_from_slice(&address.hash_part);
+    msg.extend_from_slice(&(proof.domain.length_bytes as u32).to_le_bytes());
+    msg.extend_from_slice(proof.domain.value.as_bytes());
+    msg.extend_from_slice(&proof.timestamp.to_le_bytes());
+    msg.extend_from_slice(proof.payload.as_bytes());
 
     let mut hasher = Sha256::new();
     hasher.update(msg);
@@ -101,36 +95,33 @@ pub fn check_ton_proof(body: CheckProofPayload) -> Result<()> {
     let mut full_msg: Vec<u8> = vec![0xff, 0xff];
     let ton_connect_prefix = "ton-connect";
     full_msg.extend_from_slice(ton_connect_prefix.as_bytes());
-    full_msg.extend_from_slice(&msg_hash);
+    full_msg.extend_from_slice(msg_hash.as_ref());
 
     let mut hasher = Sha256::new();
     hasher.update(full_msg);
     let full_msg_hash = hasher.finalize();
 
     let pubkey_bytes = {
-        let bytes = BASE64_STANDARD.decode(&body.proof.state_init)?;
+        let bytes = BASE64_STANDARD.decode(&proof.state_init)?;
         let boc = BagOfCells::parse(&bytes)?;
-        let hash: [u8; 32] = boc
-            .single_root()?
-            .cell_hash()?
-            .try_into()
-            .map_err(|_| anyhow!("invalid state_init length"))?;
+        let hash: [u8; 32] = boc.single_root()?.cell_hash();
 
-        if hash != body.address.hash_part {
+        if hash != address.hash_part {
             return Err(anyhow!("wrong address in state_init"));
         }
 
         let root = boc.single_root().expect("checked above");
-        let code = root.reference(0)??;
+        let code = root.reference(0)?;
         let data = root.reference(1)?.as_ref().clone();
 
-        let code_hash: [u8; 32] = code.cell_hash()?.try_into()?;
-        let version = KNOWN_HASHES
+        let code_hash: [u8; 32] = code.cell_hash();
+        let known_hashes = &*KNOWN_HASHES;
+        let version = known_hashes
             .get(&code_hash)
             .ok_or(anyhow!("not known wallet version"))?
             .clone();
 
-        let pubkey_b = match version {
+        match version {
             WalletVersion::V1R1
             | WalletVersion::V1R2
             | WalletVersion::V1R3
@@ -152,26 +143,26 @@ pub fn check_ton_proof(body: CheckProofPayload) -> Result<()> {
                 data.public_key
             }
             _ => {
-                bail!("can't process given wallet version {}", version);
+                //TODO wait WalletVersion derive Debug
+                //bail!("can't process given wallet version {:?}", version);
+                bail!("can't process given wallet version");
             }
-        };
-        pubkey_b
+        }
     };
-    let pubkey = VerifyingKey::from_bytes(&pubkey_bytes)?;
+    let pubkey = Ed25519PublicKey::from_bytes(&pubkey_bytes)?;
     let signature_bytes: [u8; 64] = BASE64_STANDARD
-        .decode(&body.proof.signature)?
+        .decode(&proof.signature)?
         .try_into()
         .map_err(|_| anyhow!("expected 64 bit long signature"))?;
-    let signature = Signature::from_bytes(&signature_bytes);
-    pubkey.verify(&full_msg_hash, &signature)?;
+    let signature = Ed25519Signature::from_bytes(&signature_bytes)?;
+    pubkey.verify(full_msg_hash.as_ref(), &signature)?;
 
     Ok(())
 }
 
 #[cfg(test)]
-mod tests{
+mod tests {
 
     #[test]
-    fn test_check_ton_proof(){
-    }
+    fn test_check_ton_proof() {}
 }

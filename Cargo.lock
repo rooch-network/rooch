@@ -10282,6 +10282,7 @@ dependencies = [
  "accumulator",
  "anyhow",
  "argon2",
+ "base64 0.22.1",
  "bcs",
  "bech32 0.11.0",
  "bitcoin 0.32.3",
