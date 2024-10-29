@@ -387,13 +387,6 @@ pub fn start_prometheus_server(addr: SocketAddr) -> RegistryService {
 
     let registry_service = RegistryService::new(registry);
 
-    if cfg!(msim) {
-        // prometheus uses difficult-to-support features such as TcpSocket::from_raw_fd(), so we
-        // can't yet run it in the simulator.
-        warn!("not starting prometheus server in simulator");
-        return registry_service;
-    }
-
     let app = Router::new()
         .route(METRICS_ROUTE, get(metrics))
         .layer(Extension(registry_service.clone()));

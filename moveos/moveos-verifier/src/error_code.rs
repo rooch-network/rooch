@@ -34,7 +34,6 @@ macro_rules! derive_code_try_from_repr {
             }
         }
 
-        #[cfg(any(test, feature = "fuzzing"))]
         pub const ERROR_CODE_VALUES: &'static [$repr_ty] = &[
             $($value),*
         ];

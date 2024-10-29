@@ -95,11 +95,8 @@ impl CommandAction<Option<FileOutput>> for UpgradeGasConfigCommand {
                 }
 
                 for (gas_key, _) in onchain_gas_schedule_map.iter() {
-                    match local_gas_schedule_map.get(gas_key) {
-                        None => {
-                            return Err(RoochError::LocalIncorrectGasSchedule);
-                        }
-                        Some(_) => {}
+                    if !local_gas_schedule_map.contains_key(gas_key) {
+                        return Err(RoochError::LocalIncorrectGasSchedule);
                     }
                 }
 

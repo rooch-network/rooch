@@ -135,6 +135,7 @@ impl RoochDB {
     /// revert tx unsafe with these operations:
     /// 1. remove the tx (atomic)
     /// 2. revert indexer
+    ///
     /// warning: this method is not safe, it will not check revert preconditions or save previous tx as startup
     pub fn revert_tx_unsafe(&self, tx_order: u64, tx_hash: H256) -> Result<()> {
         self.inner_revert(tx_order, tx_hash, None, None, false)?;

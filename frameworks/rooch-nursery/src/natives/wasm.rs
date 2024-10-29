@@ -762,9 +762,8 @@ fn native_release_wasm_instance(
                 ))
             }
         };
-        match pool_object.get_mut(&instance_id) {
-            None => return Ok(NativeResult::err(gas_params.base, E_INSTANCE_NO_EXISTS)),
-            Some(_) => {}
+        if pool_object.get_mut(&instance_id).is_none() {
+            return Ok(NativeResult::err(gas_params.base, E_INSTANCE_NO_EXISTS));
         };
     }
 

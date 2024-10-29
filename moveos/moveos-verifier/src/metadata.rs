@@ -1118,11 +1118,7 @@ fn check_data_struct_fields_type(
                 let data = GLOBAL_DATA_STRUCT.read().unwrap();
                 data.get(full_struct_name.as_str()).map(|_| true)
             };
-            return if let Some(is_allowed) = is_allowed_opt {
-                is_allowed
-            } else {
-                false
-            };
+            return is_allowed_opt.unwrap_or(false);
         }
         _ => false,
     };

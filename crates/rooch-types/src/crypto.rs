@@ -566,7 +566,7 @@ impl Signature {
         T: Serialize,
     {
         let mut hasher = DefaultHash::default();
-        hasher.update(&bcs::to_bytes(&value).expect("Message serialization should not fail"));
+        hasher.update(bcs::to_bytes(&value).expect("Message serialization should not fail"));
         Signer::sign(secret, &hasher.finalize().digest)
     }
 
@@ -660,7 +660,7 @@ pub trait RoochSignature: Sized + ToFromBytes {
         T: Serialize,
     {
         let mut hasher = DefaultHash::default();
-        hasher.update(&bcs::to_bytes(&value).expect("Message serialization should not fail"));
+        hasher.update(bcs::to_bytes(&value).expect("Message serialization should not fail"));
         let digest = hasher.finalize().digest;
         self.verify(digest.as_ref())
     }

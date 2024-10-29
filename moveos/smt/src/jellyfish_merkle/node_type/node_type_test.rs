@@ -658,13 +658,14 @@ impl SMTHash for BinaryTreeNode {
 ///
 /// For example, in the below graph, node A has (begin:0, width:4), while node B has
 /// (begin:2, width: 2):
-///            ...
-///         /
-///       [A]    ...
-///     /    \
-///    * [B]   ...
-///   / \    / \
-///  0   1  2   3    ... 15
+///
+///                ...
+///             /
+///           [A]    ...
+///         /    \
+///        * [B]   ...
+///       / \    / \
+///      0   1  2   3    ... 15
 struct BinaryTreeInternalNode {
     begin: u8,
     width: u8,
