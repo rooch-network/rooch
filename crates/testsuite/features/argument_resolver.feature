@@ -43,7 +43,6 @@ Feature: Rooch CLI argument resolver integration tests
 
         Then cmd: "move run --function default::argument_resolver::create_shared_object --args u64:123 --json"
         Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-        Then sleep: "3"
         Then cmd: "move run --function default::argument_resolver::shared_object --args object:default::argument_resolver::MockObject --args u64:123"
 
     @serial
