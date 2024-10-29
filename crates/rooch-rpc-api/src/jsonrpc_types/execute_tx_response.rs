@@ -14,7 +14,6 @@ use rooch_types::transaction::{authenticator::Authenticator, TransactionSequence
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
-use std::u64;
 
 pub type AbortLocationView = StrView<AbortLocation>;
 

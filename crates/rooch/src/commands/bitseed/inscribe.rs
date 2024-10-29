@@ -592,7 +592,7 @@ impl Inscriber {
                         .to_vec(),
                 );
                 txin.witness.push(reveal_script);
-                txin.witness.push(&control_block.serialize());
+                txin.witness.push(control_block.serialize());
             } else {
                 // For inputs related to inscription destruction
                 txin.witness.push(
@@ -962,7 +962,7 @@ impl Inscriber {
             );
 
             witness.push(reveal_script);
-            witness.push(&control_block.serialize());
+            witness.push(control_block.serialize());
         }
 
         debug!("Reveal tx after reveal part sign: {:?}", signed_reveal_tx);

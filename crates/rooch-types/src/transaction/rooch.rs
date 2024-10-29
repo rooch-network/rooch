@@ -189,7 +189,7 @@ impl RoochTransaction {
         action: MoveAction,
     ) -> Self {
         Self {
-            data: RoochTransactionData::new(genesis_address, 0, chain_id, u64::max_value(), action),
+            data: RoochTransactionData::new(genesis_address, 0, chain_id, u64::MAX, action),
             authenticator: Authenticator::genesis(),
             data_hash: None,
         }

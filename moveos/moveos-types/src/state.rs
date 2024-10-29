@@ -929,8 +929,8 @@ impl ObjectChange {
             field_change.metadata.id,
             self.metadata.id
         );
-        match &field_change.value {
-            Some(op) => match op {
+        if let Some(op) = &field_change.value {
+            match op {
                 Op::New(_) => {
                     self.metadata.size += 1;
                 }
@@ -938,8 +938,7 @@ impl ObjectChange {
                     self.metadata.size -= 1;
                 }
                 Op::Modify(_) => {}
-            },
-            None => {}
+            }
         }
         let key = field_change.metadata.id.field_key();
         self.fields.insert(key, field_change);
@@ -996,13 +995,12 @@ impl StateChangeSet {
         let parent = id.parent().expect("No root ObjectChange have parent");
         if parent.is_root() {
             let key = id.field_key();
-            match &change.value {
-                Some(op) => match op {
+            if let Some(op) = &change.value {
+                match op {
                     Op::New(_) => self.global_size += 1,
                     Op::Delete => self.global_size -= 1,
                     Op::Modify(_) => {}
-                },
-                None => {}
+                }
             }
             self.changes.insert(key, change);
         } else {
