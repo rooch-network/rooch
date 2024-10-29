@@ -39,6 +39,10 @@ pub struct RunFunction {
 
     /// Arguments combined with their type separated by spaces.
     ///
+    /// If there are multiple parameters, multiple `--args` modifications are required.
+    ///
+    /// Example: rooch move run --function 0x3::MODULE::FUNCTION --args u64:15 --args @0x42
+    ///
     /// Supported types [u8, u16, u32, u64, u128, u256, bool, object_id, string, address, vector<inner_type>]
     ///
     /// Example: `address:0x1 bool:true u8:0 u256:1234 'vector<u32>:a,b,c,d'`
