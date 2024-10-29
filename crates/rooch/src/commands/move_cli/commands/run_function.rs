@@ -37,8 +37,6 @@ pub struct RunFunction {
     )]
     pub type_args: Vec<ParsedStructType>,
 
-    /// Arguments combined with their type separated by spaces.
-    ///
     /// If there are multiple parameters, multiple `--args` modifications are required.
     ///
     /// Example: rooch move run --function 0x3::MODULE::FUNCTION --args u64:15 --args @0x42
