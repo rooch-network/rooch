@@ -161,9 +161,42 @@ pub fn verify_entry_function_at_publish(module: &CompiledModule) -> VMResult<boo
                 );
             }
         }
+
+        let mut signer_argument_length = 0;
+        for parameter_type in func_parameters_types.iter() {
+            if is_signer(parameter_type) {
+                signer_argument_length += 1;
+                if signer_argument_length > 1 {
+                    return generate_vm_error(
+                        ErrorCode::INVALID_PARAM_SINGER_COUNT,
+                        "Multiple signer arguments detected.".to_string(),
+                        Some(fdef.function),
+                        module,
+                    );
+                }
+            }
+        }
+
+        if signer_argument_length == 1 {
+            if let Some(argument_type) = func_parameters_types.first() {
+                if !is_signer(argument_type) {
+                    return generate_vm_error(
+                        ErrorCode::INVALID_FIRST_ARGUMENT_IS_NOT_SIGNER,
+                        "The first argument is not a signer argument.".to_string(),
+                        Some(fdef.function),
+                        module,
+                    );
+                }
+            }
+        }
     }
 
     Ok(true)
+}
+
+fn is_signer(t: &SignatureToken) -> bool {
+    matches!(t, SignatureToken::Signer)
+        || matches!(t, SignatureToken::Reference(r) if matches!(**r, SignatureToken::Signer))
 }
 
 pub fn verify_entry_function<S>(

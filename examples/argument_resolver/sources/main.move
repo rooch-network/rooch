@@ -15,6 +15,25 @@ module argument_resolver::argument_resolver {
         object::transfer(user_object, signer::address_of(account));
     }
 
+    entry public fun create_shared_object(arg: u64) {
+        let user_object = object::new_named_object(MockObject{value: arg});
+        object::to_shared(user_object);
+    }
+
+    entry public fun create_frozen_object(arg: u64) {
+        let user_object = object::new(MockObject{value: arg});
+        let object_id = object::id(&user_object);
+        debug::print(&object_id);
+        object::to_frozen(user_object);
+    }
+
+    entry public fun create_object_to_user(_account: &signer, user_address: address) {
+        let user_object = object::new(MockObject{value: 123});
+        let object_id = object::id(&user_object);
+        debug::print(&object_id);
+        object::transfer(user_object, user_address);
+    }
+
     entry public fun object(_account:&signer, object: Object<MockObject>, arg: u64) {
         assert!(object::borrow(&object).value == arg, 1);
         object::remove(object);
@@ -34,6 +53,19 @@ module argument_resolver::argument_resolver {
 
     public fun vector_object_id_argument(_account: &signer, object_id_vector_argument: vector<ObjectID>): ObjectID {
         vector::pop_back(&mut object_id_vector_argument)
+    }
+
+    entry public fun shared_object(shared_object: &mut Object<MockObject>, arg: u64) {
+        let shared_object = object::borrow_mut(shared_object);
+        assert!(shared_object.value == arg, 1);
+    }
+
+    entry public fun frozen_object(frozen_object: &mut Object<MockObject>) {
+        debug::print(frozen_object);
+    }
+
+    entry public fun no_permission_object(object: &mut Object<MockObject>) {
+        debug::print(object);
     }
 
     public fun string_argument(_account: &signer, string_argument: String): String {
