@@ -328,7 +328,7 @@ where
                         let inner_struct_type =
                             self.get_struct_type(*cached_struct_idx).ok_or_else(|| {
                                 PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT)
-                                    .with_message(format!("Object not found: {:?}", object_id))
+                                    .with_message("Get struct type failed".to_string())
                                     .finish(location.clone())
                             })?;
 
