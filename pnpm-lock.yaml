@@ -633,6 +633,9 @@ importers:
       '@roochnetwork/rooch-sdk':
         specifier: workspace:*
         version: link:../rooch-sdk
+      '@tonconnect/sdk':
+        specifier: 3.0.5
+        version: 3.0.5
       '@vanilla-extract/css':
         specifier: ^1.15.5
         version: 1.15.5(babel-plugin-macros@3.1.0)

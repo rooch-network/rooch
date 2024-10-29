@@ -2,13 +2,15 @@
 
 import { Box, Card, CardContent, CardHeader, Chip, Stack } from '@mui/material'
 import { LoadingButton } from '@mui/lab'
-import { fromB64, Session } from '@roochnetwork/rooch-sdk'
+import { Ed25519Keypair, fromB64, Session } from '@roochnetwork/rooch-sdk';
 import { DashboardContent } from '../../../layouts/dashboard'
+import { useCreateSessionKey } from '@roochnetwork/rooch-sdk-kit';
 
 export default function Page({ params }: { params: { info: string } }) {
   console.log(params.info)
   const decoder = new TextDecoder('utf-8');
   const jsonInfo = decoder.decode(fromB64(params.info));
+  const { mutateAsync: createSessionKey } = useCreateSessionKey();
 
   const {
     appName,
@@ -21,6 +23,20 @@ export default function Page({ params }: { params: { info: string } }) {
     localCreateSessionTime,
     lastActiveTime,
   } = JSON.parse(jsonInfo)
+
+  const handleCreateSession = async () => {
+
+    const s = await createSessionKey({
+      appName,
+      appUrl,
+      scopes,
+      maxInactiveInterval,
+      keypair: Ed25519Keypair.fromSecretKey(secretKey)
+    })
+
+    console.log(s?.getAuthKey())
+    console.log('-----------create session is ok?', s)
+  }
   return (
     <DashboardContent maxWidth="xl">
       <Card>
@@ -52,6 +68,7 @@ export default function Page({ params }: { params: { info: string } }) {
               variant="soft"
               color="primary"
               onClick={() => {
+                handleCreateSession()
                 console.log(params)
               }}
             >

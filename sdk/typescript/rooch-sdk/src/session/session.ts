@@ -66,8 +66,8 @@ export class Session extends Signer {
     )
   }
 
-  public static Build(input: InnerBuildSessionArgs): string {
-    return this.formatArgs(input, input.addr).toJSON()
+  public static Build(input: InnerBuildSessionArgs): Session {
+    return this.formatArgs(input, input.addr)
   }
   static formatArgs(input: CreateSessionArgs, addr: BitcoinAddress): Session {
     const parsedScopes = input.scopes.map((scope) => {
