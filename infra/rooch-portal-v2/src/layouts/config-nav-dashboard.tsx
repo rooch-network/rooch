@@ -2,7 +2,7 @@ import { paths } from 'src/routes/paths';
 
 import { Iconify } from 'src/components/iconify';
 
-import { isMainNetwork } from '../utils/env'
+import { isMainNetwork } from '../utils/env';
 
 export const navData = [
   /**
@@ -36,7 +36,7 @@ export const navData = [
         title: 'Faucet',
         path: paths.dashboard.faucet,
         icon: <Iconify icon="solar:gift-bold-duotone" />,
-        noAddressRequired: true,
+        // noAddressRequired: true,
       },
       {
         title: 'Settings',
@@ -80,11 +80,13 @@ export const navData = [
         noAddressRequired: true,
       },
       {
-        title: isMainNetwork() ? "Testnet" : "MainNet",
-        path: isMainNetwork() ? "https://test-portal.rooch.network" : "https://portal.rooch.network",
+        title: isMainNetwork() ? 'Testnet' : 'MainNet',
+        path: isMainNetwork()
+          ? 'https://test-portal.rooch.network'
+          : 'https://portal.rooch.network',
         icon: <Iconify icon="solar:infinity-line-duotone" />,
         noAddressRequired: true,
       },
     ].filter((item) => !(isMainNetwork() && item.title === 'Apps')),
   },
-].filter((item) => !(isMainNetwork() && item.subheader === 'Tokens'))
+].filter((item) => !(isMainNetwork() && item.subheader === 'Tokens'));

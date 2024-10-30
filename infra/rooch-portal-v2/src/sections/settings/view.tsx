@@ -1,18 +1,19 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import axios from 'axios';
+import { Args } from '@roochnetwork/rooch-sdk';
 import { useState, useEffect, useCallback } from 'react';
 import { CopyToClipboard } from 'react-copy-to-clipboard';
-import { Args, Transaction } from '@roochnetwork/rooch-sdk';
 import {
   useRoochClient,
   useCurrentAddress,
   useRoochClientQuery,
-  UseSignAndExecuteTransaction,
 } from '@roochnetwork/rooch-sdk-kit';
 
 import { LoadingButton } from '@mui/lab';
 import { Card, Chip, Stack, TextField, CardHeader, Typography, CardContent } from '@mui/material';
+
+import { useRouter } from 'src/routes/hooks';
 
 import { sleep } from 'src/utils/common';
 
@@ -31,8 +32,6 @@ export function SettingsView() {
   const client = useRoochClient();
 
   const [isAddressLoaded, setIsAddressLoaded] = useState(false);
-
-  const { mutateAsync: signAndExecuteTransaction } = UseSignAndExecuteTransaction();
 
   const {
     data: sessionKeys,
@@ -156,14 +155,17 @@ export function SettingsView() {
                 />
               </Stack>
               <LoadingButton
-                disabled={!tweetId || (() => {
-                  try {
-                    const url = new URL(tweetId);
-                    return url.hostname !== 'x.com';
-                  } catch {
-                    return true;
-                  }
-                })()}
+                disabled={
+                  !tweetId ||
+                  (() => {
+                    try {
+                      const url = new URL(tweetId);
+                      return url.hostname !== 'x.com';
+                    } catch {
+                      return true;
+                    }
+                  })()
+                }
                 color="inherit"
                 loading={verifying}
                 className="mt-2 w-fit"
@@ -171,32 +173,32 @@ export function SettingsView() {
                 onClick={async () => {
                   try {
                     setVerifying(true);
-                    const fetchTweetTxn = new Transaction();
                     const match = tweetId.match(/status\/(\d+)/);
                     if (match) {
                       const pureTweetId = match[1];
-                      fetchTweetTxn.callFunction({
-                        address: TWITTER_ORACLE_PACKAGE_ID,
-                        module: 'tweet_fetcher',
-                        function: 'fetch_tweet_entry',
-                        args: [Args.string(pureTweetId)],
-                      });
-                      await signAndExecuteTransaction({ transaction: fetchTweetTxn });
-                      await sleep(3000);
-                      const verifyTxn = new Transaction();
-                      verifyTxn.callFunction({
-                        address: TWITTER_ORACLE_PACKAGE_ID,
-                        module: 'twitter_account',
-                        function: 'verify_and_binding_twitter_account',
-                        args: [Args.string(pureTweetId)],
-                      });
-                      const res = await signAndExecuteTransaction({ transaction: verifyTxn });
-                      if (res.execution_info.status.type !== 'executed') {
-                        toast.error(
-                          res.error_info?.vm_error_info.error_message ||
-                            (res.output?.status.type === 'moveabort' &&
-                              `Binding failed, abort code: ${res.output.status.abort_code}`) ||
-                            'Binding failed'
+                      const res = await axios.post(
+                        'http://test-faucet.rooch.network/fetch-tweet',
+                        {
+                          tweet_id: pureTweetId,
+                        },
+                        {
+                          headers: {
+                            'Content-Type': 'application/json',
+                          },
+                        }
+                      );
+                      console.log('🚀 ~ file: view.tsx:190 ~ onClick={ ~ res:', res);
+                      if (res?.data?.ok) {
+                        await axios.post(
+                          'http://test-faucet.rooch.network/verify-and-binding-twitter-account',
+                          {
+                            tweet_id: pureTweetId,
+                          },
+                          {
+                            headers: {
+                              'Content-Type': 'application/json',
+                            },
+                          }
                         );
                       }
                       await sleep(3000);
@@ -206,7 +208,8 @@ export function SettingsView() {
                       }
                     }
                   } catch (error) {
-                    toast.error(String(error));
+                    console.log('🚀 ~ file: view.tsx:211 ~ onClick={ ~ error:', error);
+                    toast.error(error.response.data.error);
                   } finally {
                     setVerifying(false);
                   }
