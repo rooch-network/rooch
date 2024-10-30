@@ -80,7 +80,7 @@ export const navData = [
         noAddressRequired: true,
       },
       {
-        title: isMainNetwork() ? 'Testnet' : 'MainNet',
+        title: isMainNetwork() ? 'TestNet' : 'MainNet',
         path: isMainNetwork()
           ? 'https://test-portal.rooch.network'
           : 'https://portal.rooch.network',
