@@ -4,7 +4,6 @@ import type { ReactNode } from 'react';
 
 import dayjs from 'dayjs';
 import { useMemo } from 'react';
-import { useRouter } from 'next/navigation';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -24,6 +23,7 @@ import {
   CardContent,
 } from '@mui/material';
 
+import { useRouter } from 'src/routes/hooks';
 import { RouterLink } from 'src/routes/components';
 
 import { useTabs } from 'src/hooks/use-tabs';

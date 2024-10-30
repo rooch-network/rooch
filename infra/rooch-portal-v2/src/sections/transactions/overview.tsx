@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { useCurrentAddress } from '@roochnetwork/rooch-sdk-kit';
+
+import { useRouter } from 'src/routes/hooks';
 
 export default function TransactionOverviewView() {
   const address = useCurrentAddress();

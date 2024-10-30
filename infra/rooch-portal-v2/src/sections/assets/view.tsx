@@ -3,6 +3,8 @@
 import { Tab, Tabs, Stack } from '@mui/material';
 import Typography from '@mui/material/Typography';
 
+import useAddressChanged from 'src/routes/hooks/useAddressChanged';
+
 import { useTabs } from 'src/hooks/use-tabs';
 
 import { DashboardContent } from 'src/layouts/dashboard';
@@ -22,6 +24,8 @@ const ASSETS_VIEW_TABS = [
 
 export function AssetsView({ address }: { address: string }) {
   const tabs = useTabs('coin');
+
+  useAddressChanged({ address, path: 'assets' });
 
   const renderTabs = (
     <Tabs value={tabs.value} onChange={tabs.onChange} sx={{ mb: { xs: 1, md: 1 } }}>

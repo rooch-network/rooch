@@ -8,6 +8,7 @@ import { Box, Card, Chip, Stack, CardHeader, CardContent } from '@mui/material';
 
 import { useRouter } from 'src/routes/hooks';
 import { RouterLink } from 'src/routes/components';
+import useAddressChanged from 'src/routes/hooks/useAddressChanged';
 
 import { BitcoinAddressToRoochAddress } from 'src/utils/address';
 
@@ -21,8 +22,8 @@ import TransactionsTableCard from '../transactions/components/transactions-table
 export function AccountView({ address }: { address: string }) {
   const [viewAddress, setViewAddress] = useState<string>();
   const [viewRoochAddress, setViewRoochAddress] = useState<string>();
-
   const router = useRouter();
+  useAddressChanged({ address, path: 'account' });
 
   useEffect(() => {
     if (isValidBitcoinAddress(address)) {
@@ -61,7 +62,6 @@ export function AccountView({ address }: { address: string }) {
         <CardContent className="!pt-0">
           <Stack spacing={2}>
             <Stack direction="row" alignItems="center">
-              {/* <Box>Bitcoin Address</Box> */}
               <Chip
                 className="w-fit !cursor-pointer"
                 label={viewAddress}

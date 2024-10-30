@@ -3,6 +3,8 @@
 import { useRef, useMemo, useState, useEffect } from 'react';
 import { useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit';
 
+import useAddressChanged from 'src/routes/hooks/useAddressChanged';
+
 import { BitcoinAddressToRoochAddress } from 'src/utils/address';
 
 import { DashboardContent } from 'src/layouts/dashboard';
@@ -12,6 +14,8 @@ import TransactionsTableCard from './components/transactions-table-card';
 export function TransactionsView({ address }: { address: string }) {
   const [paginationModel, setPaginationModel] = useState({ index: 1, limit: 10 });
   const mapPageToNextCursor = useRef<{ [page: number]: string | null }>({});
+
+  useAddressChanged({ address, path: 'transactions' });
 
   const queryOptions = useMemo(
     () => ({
