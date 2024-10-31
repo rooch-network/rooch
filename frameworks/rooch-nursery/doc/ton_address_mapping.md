@@ -9,6 +9,7 @@
 -  [Constants](#@Constants_0)
 -  [Function `resolve_to_ton_address`](#0xa_ton_address_mapping_resolve_to_ton_address)
 -  [Function `binding_ton_address`](#0xa_ton_address_mapping_binding_ton_address)
+-  [Function `binding_ton_address_entry`](#0xa_ton_address_mapping_binding_ton_address_entry)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
@@ -75,5 +76,16 @@ The mapping record is the object field, key is the rooch address, value is the t
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ton_address_mapping.md#0xa_ton_address_mapping_binding_ton_address">binding_ton_address</a>(proof: <a href="ton_proof.md#0xa_ton_proof_TonProof">ton_proof::TonProof</a>, <a href="ton_address.md#0xa_ton_address">ton_address</a>: <a href="ton_address.md#0xa_ton_address_TonAddress">ton_address::TonAddress</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="ton_address_mapping.md#0xa_ton_address_mapping_binding_ton_address">binding_ton_address</a>(proof_data: <a href="ton_proof.md#0xa_ton_proof_TonProofData">ton_proof::TonProofData</a>, <a href="ton_address.md#0xa_ton_address">ton_address</a>: <a href="ton_address.md#0xa_ton_address_TonAddress">ton_address::TonAddress</a>)
+</code></pre>
+
+
+
+<a name="0xa_ton_address_mapping_binding_ton_address_entry"></a>
+
+## Function `binding_ton_address_entry`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ton_address_mapping.md#0xa_ton_address_mapping_binding_ton_address_entry">binding_ton_address_entry</a>(proof_data_bytes: <a href="">vector</a>&lt;u8&gt;, ton_address_str: <a href="_String">string::String</a>)
 </code></pre>

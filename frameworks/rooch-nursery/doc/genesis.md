@@ -10,8 +10,10 @@
 
 
 <pre><code><b>use</b> <a href="ethereum.md#0xa_ethereum">0xa::ethereum</a>;
+<b>use</b> <a href="ethereum_validator.md#0xa_ethereum_validator">0xa::ethereum_validator</a>;
 <b>use</b> <a href="inscribe_factory.md#0xa_inscribe_factory">0xa::inscribe_factory</a>;
 <b>use</b> <a href="tick_info.md#0xa_tick_info">0xa::tick_info</a>;
+<b>use</b> <a href="ton_validator.md#0xa_ton_validator">0xa::ton_validator</a>;
 </code></pre>
 
 

@@ -7,12 +7,17 @@
 
 -  [Struct `TonDomain`](#0xa_ton_proof_TonDomain)
 -  [Struct `TonProof`](#0xa_ton_proof_TonProof)
--  [Function `decode_proof`](#0xa_ton_proof_decode_proof)
+-  [Struct `TonProofData`](#0xa_ton_proof_TonProofData)
+-  [Struct `RawCell`](#0xa_ton_proof_RawCell)
+-  [Struct `RawBagOfCells`](#0xa_ton_proof_RawBagOfCells)
+-  [Function `decode_proof_data`](#0xa_ton_proof_decode_proof_data)
 -  [Function `verify_proof`](#0xa_ton_proof_verify_proof)
+-  [Function `name`](#0xa_ton_proof_name)
+-  [Function `proof`](#0xa_ton_proof_proof)
+-  [Function `state_init`](#0xa_ton_proof_state_init)
 -  [Function `domain`](#0xa_ton_proof_domain)
 -  [Function `payload`](#0xa_ton_proof_payload)
 -  [Function `signature`](#0xa_ton_proof_signature)
--  [Function `state_init`](#0xa_ton_proof_state_init)
 -  [Function `timestamp`](#0xa_ton_proof_timestamp)
 -  [Function `domain_length_bytes`](#0xa_ton_proof_domain_length_bytes)
 -  [Function `domain_value`](#0xa_ton_proof_domain_value)
@@ -49,13 +54,49 @@
 
 
 
-<a name="0xa_ton_proof_decode_proof"></a>
+<a name="0xa_ton_proof_TonProofData"></a>
 
-## Function `decode_proof`
+## Struct `TonProofData`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ton_proof.md#0xa_ton_proof_decode_proof">decode_proof</a>(ton_proof_bytes: <a href="">vector</a>&lt;u8&gt;): <a href="ton_proof.md#0xa_ton_proof_TonProof">ton_proof::TonProof</a>
+<pre><code>#[data_struct]
+<b>struct</b> <a href="ton_proof.md#0xa_ton_proof_TonProofData">TonProofData</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
+<a name="0xa_ton_proof_RawCell"></a>
+
+## Struct `RawCell`
+
+
+
+<pre><code>#[data_struct]
+<b>struct</b> <a href="ton_proof.md#0xa_ton_proof_RawCell">RawCell</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
+<a name="0xa_ton_proof_RawBagOfCells"></a>
+
+## Struct `RawBagOfCells`
+
+
+
+<pre><code>#[data_struct]
+<b>struct</b> <a href="ton_proof.md#0xa_ton_proof_RawBagOfCells">RawBagOfCells</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
+<a name="0xa_ton_proof_decode_proof_data"></a>
+
+## Function `decode_proof_data`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ton_proof.md#0xa_ton_proof_decode_proof_data">decode_proof_data</a>(proof_data_bytes: <a href="">vector</a>&lt;u8&gt;): <a href="ton_proof.md#0xa_ton_proof_TonProofData">ton_proof::TonProofData</a>
 </code></pre>
 
 
@@ -67,7 +108,40 @@
 verify the proof
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ton_proof.md#0xa_ton_proof_verify_proof">verify_proof</a>(_ton_addr: &<a href="ton_address.md#0xa_ton_address_TonAddress">ton_address::TonAddress</a>, _ton_proof: &<a href="ton_proof.md#0xa_ton_proof_TonProof">ton_proof::TonProof</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="ton_proof.md#0xa_ton_proof_verify_proof">verify_proof</a>(_ton_addr: &<a href="ton_address.md#0xa_ton_address_TonAddress">ton_address::TonAddress</a>, _ton_proof_data: &<a href="ton_proof.md#0xa_ton_proof_TonProofData">ton_proof::TonProofData</a>): bool
+</code></pre>
+
+
+
+<a name="0xa_ton_proof_name"></a>
+
+## Function `name`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ton_proof.md#0xa_ton_proof_name">name</a>(ton_proof_data: &<a href="ton_proof.md#0xa_ton_proof_TonProofData">ton_proof::TonProofData</a>): &<a href="_String">string::String</a>
+</code></pre>
+
+
+
+<a name="0xa_ton_proof_proof"></a>
+
+## Function `proof`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ton_proof.md#0xa_ton_proof_proof">proof</a>(ton_proof_data: &<a href="ton_proof.md#0xa_ton_proof_TonProofData">ton_proof::TonProofData</a>): &<a href="ton_proof.md#0xa_ton_proof_TonProof">ton_proof::TonProof</a>
+</code></pre>
+
+
+
+<a name="0xa_ton_proof_state_init"></a>
+
+## Function `state_init`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ton_proof.md#0xa_ton_proof_state_init">state_init</a>(ton_proof_data: &<a href="ton_proof.md#0xa_ton_proof_TonProofData">ton_proof::TonProofData</a>): &<a href="_String">string::String</a>
 </code></pre>
 
 
@@ -101,17 +175,6 @@ verify the proof
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ton_proof.md#0xa_ton_proof_signature">signature</a>(<a href="ton_proof.md#0xa_ton_proof">ton_proof</a>: &<a href="ton_proof.md#0xa_ton_proof_TonProof">ton_proof::TonProof</a>): &<a href="_String">string::String</a>
-</code></pre>
-
-
-
-<a name="0xa_ton_proof_state_init"></a>
-
-## Function `state_init`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="ton_proof.md#0xa_ton_proof_state_init">state_init</a>(<a href="ton_proof.md#0xa_ton_proof">ton_proof</a>: &<a href="ton_proof.md#0xa_ton_proof_TonProof">ton_proof::TonProof</a>): &<a href="_String">string::String</a>
 </code></pre>
 
 

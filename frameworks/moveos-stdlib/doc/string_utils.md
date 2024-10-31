@@ -8,6 +8,9 @@
 -  [Constants](#@Constants_0)
 -  [Function `parse_u8_option`](#0x2_string_utils_parse_u8_option)
 -  [Function `parse_u8`](#0x2_string_utils_parse_u8)
+-  [Function `parse_u32_from_bytes`](#0x2_string_utils_parse_u32_from_bytes)
+-  [Function `parse_u32_option`](#0x2_string_utils_parse_u32_option)
+-  [Function `parse_u32`](#0x2_string_utils_parse_u32)
 -  [Function `parse_u64_option`](#0x2_string_utils_parse_u64_option)
 -  [Function `parse_u64`](#0x2_string_utils_parse_u64)
 -  [Function `parse_u128_option`](#0x2_string_utils_parse_u128_option)
@@ -63,6 +66,39 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="string_utils.md#0x2_string_utils_parse_u8">parse_u8</a>(s: &<a href="_String">string::String</a>): u8
+</code></pre>
+
+
+
+<a name="0x2_string_utils_parse_u32_from_bytes"></a>
+
+## Function `parse_u32_from_bytes`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="string_utils.md#0x2_string_utils_parse_u32_from_bytes">parse_u32_from_bytes</a>(bytes: &<a href="">vector</a>&lt;u8&gt;): <a href="_Option">option::Option</a>&lt;u32&gt;
+</code></pre>
+
+
+
+<a name="0x2_string_utils_parse_u32_option"></a>
+
+## Function `parse_u32_option`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="string_utils.md#0x2_string_utils_parse_u32_option">parse_u32_option</a>(s: &<a href="_String">string::String</a>): <a href="_Option">option::Option</a>&lt;u32&gt;
+</code></pre>
+
+
+
+<a name="0x2_string_utils_parse_u32"></a>
+
+## Function `parse_u32`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="string_utils.md#0x2_string_utils_parse_u32">parse_u32</a>(s: &<a href="_String">string::String</a>): u32
 </code></pre>
 
 
