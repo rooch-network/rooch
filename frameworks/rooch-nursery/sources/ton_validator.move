@@ -7,19 +7,24 @@ module rooch_nursery::ton_validator {
     use std::string;
     use std::option;
     
+    use moveos_std::signer;
     use moveos_std::hex;
     use moveos_std::tx_context;
     
     use rooch_framework::auth_validator;
+    use rooch_framework::auth_validator_registry;
     
     use rooch_nursery::ton_proof::{Self, TonProofData};
     use rooch_nursery::ton_address::{TonAddress};
     use rooch_nursery::ton_address_mapping;
 
-    /// there defines auth validator id for each blockchain
-    const TON_AUTH_VALIDATOR_ID: u64 = 3;
+    friend rooch_nursery::genesis;
 
-    const ErrorAddressMappingRecordNotFound: u64 = 1;
+    /// there defines auth validator id for each blockchain
+    const TON_AUTH_VALIDATOR_ID: u64 = 4;
+
+    const ErrorGenesisInitError: u64 = 1;
+    const ErrorAddressMappingRecordNotFound: u64 = 2;
 
     struct TonValidator has store, drop {}
 
@@ -27,6 +32,11 @@ module rooch_nursery::ton_validator {
         TON_AUTH_VALIDATOR_ID
     }
 
+    public(friend) fun genesis_init(){
+        let system = signer::module_signer<TonValidator>();
+        let id = auth_validator_registry::register_by_system<TonValidator>(&system);
+        assert!(id == TON_AUTH_VALIDATOR_ID, ErrorGenesisInitError);
+    }
 
     public fun validate_signature(ton_address: &TonAddress, proof_data: &TonProofData, tx_hash: vector<u8>) {
         assert!(ton_proof::verify_proof(ton_address, proof_data), auth_validator::error_validate_invalid_authenticator());

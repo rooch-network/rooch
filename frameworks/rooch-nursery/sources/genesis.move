@@ -5,6 +5,8 @@ module rooch_nursery::genesis {
     use rooch_nursery::ethereum;
     use rooch_nursery::tick_info;
     use rooch_nursery::inscribe_factory;
+    use rooch_nursery::ethereum_validator;
+    use rooch_nursery::ton_validator;
 
     const ErrorInvalidChainId: u64 = 1;
 
@@ -15,6 +17,8 @@ module rooch_nursery::genesis {
         ethereum::genesis_init(genesis_account);
         tick_info::genesis_init();
         inscribe_factory::genesis_init();
+        ethereum_validator::genesis_init();
+        ton_validator::genesis_init();
     }
 
     #[test_only]

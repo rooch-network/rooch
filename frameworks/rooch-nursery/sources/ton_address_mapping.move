@@ -5,12 +5,13 @@
 module rooch_nursery::ton_address_mapping {
 
     use std::option::{Self, Option};
+    use std::string::String;
 
     use moveos_std::object::{Self, Object};
     use moveos_std::tx_context;
 
     use rooch_framework::bitcoin_address;
-    use rooch_nursery::ton_address::{TonAddress};
+    use rooch_nursery::ton_address::{Self, TonAddress};
     use rooch_nursery::ton_proof::{Self, TonProofData};
 
     const ErrorInvalidBindingProof: u64 = 1;
@@ -65,4 +66,9 @@ module rooch_nursery::ton_address_mapping {
         object::add_field(rooch_to_ton_mapping, sender, ton_address);
     }
 
+    public fun binding_ton_address_entry(proof_data_bytes: vector<u8>, ton_address_str: String){
+        let ton_address = ton_address::from_string(&ton_address_str);
+        let proof_data = ton_proof::decode_proof_data(proof_data_bytes);
+        binding_ton_address(proof_data, ton_address);
+    }
 }

@@ -6,22 +6,36 @@ module rooch_nursery::ethereum_validator {
 
     use std::vector;
     use std::string;
-    use rooch_framework::multichain_address::{Self, MultiChainAddress};
+    
     use moveos_std::tx_context;
     use moveos_std::features;
+    use moveos_std::signer;
+
     use rooch_framework::auth_payload::{AuthPayload};
     use rooch_framework::ecdsa_k1;
     use rooch_framework::auth_validator;
     use rooch_framework::ethereum_address::{Self, ETHAddress};
     use rooch_framework::auth_payload;
+    use rooch_framework::multichain_address;
+    use rooch_framework::auth_validator_registry;
+
+    friend rooch_nursery::genesis;
 
     /// there defines auth validator id for each blockchain
-    const ETHEREUM_AUTH_VALIDATOR_ID: u64 = 4;
+    const ETHEREUM_AUTH_VALIDATOR_ID: u64 = 3;
+
+    const ErrorGenesisInitError: u64 = 1;
 
     struct EthereumValidator has store, drop {}
 
     public fun auth_validator_id(): u64 {
         ETHEREUM_AUTH_VALIDATOR_ID
+    }
+
+    public(friend) fun genesis_init(){
+        let system = signer::module_signer<EthereumValidator>();
+        let id = auth_validator_registry::register_by_system<EthereumValidator>(&system);
+        assert!(id == ETHEREUM_AUTH_VALIDATOR_ID, ErrorGenesisInitError);
     }
 
     /// Only validate the authenticator's signature.
@@ -44,14 +58,14 @@ module rooch_nursery::ethereum_validator {
         address
     }
 
-    public fun validate(authenticator_payload: vector<u8>): MultiChainAddress {
+    public fun validate(authenticator_payload: vector<u8>) {
         features::ensure_testnet_enabled();
         
         //let sender = tx_context::sender();
         let tx_hash = tx_context::tx_hash();
         let payload = auth_payload::from_bytes(authenticator_payload);
         let eth_addr = validate_signature(&payload, tx_hash);
-        let multi_chain_addr = multichain_address::from_eth(eth_addr);
+        let _multi_chain_addr = multichain_address::from_eth(eth_addr);
         
         //TODO check if the sender is related to the eth address
 
@@ -61,6 +75,5 @@ module rooch_nursery::ethereum_validator {
         //     auth_validator::error_validate_invalid_authenticator()
         // );
 
-        multi_chain_addr
     }
 }
