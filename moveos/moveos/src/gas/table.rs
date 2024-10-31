@@ -39,6 +39,7 @@ pub const VEC_SIZE: AbstractMemorySize = AbstractMemorySize::new(8);
 pub const INSTRUCTION_TIER_DEFAULT: u64 = 1;
 pub const STACK_HEIGHT_TIER_DEFAULT: u64 = 1;
 pub const STACK_SIZE_TIER_DEFAULT: u64 = 1;
+pub const IO_WRITE_SIZE_TIER_DEFAULT: u64 = 1;
 
 pub static ZERO_COST_SCHEDULE: Lazy<CostTable> = Lazy::new(zero_cost_schedule);
 
@@ -356,6 +357,7 @@ pub struct CostTable {
     pub instruction_tiers: BTreeMap<u64, u64>,
     pub stack_height_tiers: BTreeMap<u64, u64>,
     pub stack_size_tiers: BTreeMap<u64, u64>,
+    pub io_write_tiers: BTreeMap<u64, u64>,
     pub storage_gas_parameter: StorageGasParameter,
     pub instruction_gas_parameter: InstructionParameter,
     pub abstract_value_parameter: AbstractValueSizeGasParameter,
@@ -399,6 +401,14 @@ impl CostTable {
             &self.stack_size_tiers,
             stack_size,
             STACK_SIZE_TIER_DEFAULT,
+        )
+    }
+
+    pub fn io_write_tier(&self, io_write_size: u64) -> (u64, Option<u64>) {
+        Self::get_current_and_future_tier(
+            &self.io_write_tiers,
+            io_write_size,
+            IO_WRITE_SIZE_TIER_DEFAULT,
         )
     }
 }
@@ -457,6 +467,17 @@ pub fn initial_cost_schedule(gas_entries: Option<BTreeMap<String, u64>>) -> Cost
     .into_iter()
     .collect();
 
+    let io_write_tiers: BTreeMap<u64, u64> = vec![
+        (0, 1),
+        (200, 2),
+        (400, 4),
+        (800, 16),
+        (1600, 32),
+        (3000, 64),
+    ]
+    .into_iter()
+    .collect();
+
     let (storage_gas_parameter, instruction_gas_parameter, abstract_value_gas_parameter) =
         if let Some(entries) = gas_entries {
             (
@@ -479,6 +500,7 @@ pub fn initial_cost_schedule(gas_entries: Option<BTreeMap<String, u64>>) -> Cost
         instruction_tiers,
         stack_size_tiers,
         stack_height_tiers,
+        io_write_tiers,
         storage_gas_parameter,
         instruction_gas_parameter,
         abstract_value_parameter: abstract_value_gas_parameter,
@@ -491,7 +513,8 @@ pub fn zero_cost_schedule() -> CostTable {
     CostTable {
         instruction_tiers: zero_tier.clone(),
         stack_size_tiers: zero_tier.clone(),
-        stack_height_tiers: zero_tier,
+        stack_height_tiers: zero_tier.clone(),
+        io_write_tiers: zero_tier,
         storage_gas_parameter: StorageGasParameter::zeros(),
         instruction_gas_parameter: InstructionParameter::zeros(),
         abstract_value_parameter: AbstractValueSizeGasParameter::zeros(),
@@ -738,7 +761,17 @@ impl ClassifiedGasMeter for MoveOSGasMeter {
             .storage_fee_per_transaction_byte
             .into();
 
-        match tx_size.checked_mul(tx_gas_parameter) {
+        let (factor, _) = self.cost_table.io_write_tier(tx_size);
+
+        let factor_gas = match tx_gas_parameter.checked_mul(factor) {
+            None => {
+                self.gas_left = InternalGas::from(0);
+                return Err(PartialVMError::new(StatusCode::OUT_OF_GAS));
+            }
+            Some(final_gas) => final_gas,
+        };
+
+        match tx_size.checked_mul(factor_gas) {
             None => {
                 self.gas_left = InternalGas::from(0);
                 Err(PartialVMError::new(StatusCode::OUT_OF_GAS))

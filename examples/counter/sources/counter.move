@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module rooch_examples::counter {
-   
+
+   use moveos_std::object;
    use moveos_std::account;
 
    struct Counter has key {
