@@ -23,6 +23,8 @@ This is the reference documentation of the Rooch Nursery Framework.
 -  [`0xa::mint_get_factory`](mint_get_factory.md#0xa_mint_get_factory)
 -  [`0xa::multisign_wallet`](multisign_wallet.md#0xa_multisign_wallet)
 -  [`0xa::tick_info`](tick_info.md#0xa_tick_info)
+-  [`0xa::ton_address`](ton_address.md#0xa_ton_address)
+-  [`0xa::ton_address_mapping`](ton_address_mapping.md#0xa_ton_address_mapping)
 -  [`0xa::ton_proof`](ton_proof.md#0xa_ton_proof)
 -  [`0xa::ton_validator`](ton_validator.md#0xa_ton_validator)
 -  [`0xa::wasm`](wasm.md#0xa_wasm)

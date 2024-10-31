@@ -13,14 +13,14 @@ This module implements Ton blockchain auth validator.
 -  [Function `validate`](#0xa_ton_validator_validate)
 
 
-<pre><code><b>use</b> <a href="">0x1::string</a>;
-<b>use</b> <a href="">0x2::features</a>;
+<pre><code><b>use</b> <a href="">0x1::option</a>;
+<b>use</b> <a href="">0x1::string</a>;
+<b>use</b> <a href="">0x2::hex</a>;
 <b>use</b> <a href="">0x2::tx_context</a>;
-<b>use</b> <a href="">0x3::auth_payload</a>;
 <b>use</b> <a href="">0x3::auth_validator</a>;
-<b>use</b> <a href="">0x3::ecdsa_k1</a>;
-<b>use</b> <a href="">0x3::ethereum_address</a>;
-<b>use</b> <a href="">0x3::multichain_address</a>;
+<b>use</b> <a href="ton_address.md#0xa_ton_address">0xa::ton_address</a>;
+<b>use</b> <a href="ton_address_mapping.md#0xa_ton_address_mapping">0xa::ton_address_mapping</a>;
+<b>use</b> <a href="ton_proof.md#0xa_ton_proof">0xa::ton_proof</a>;
 </code></pre>
 
 
@@ -39,6 +39,15 @@ This module implements Ton blockchain auth validator.
 <a name="@Constants_0"></a>
 
 ## Constants
+
+
+<a name="0xa_ton_validator_ErrorAddressMappingRecordNotFound"></a>
+
+
+
+<pre><code><b>const</b> <a href="ton_validator.md#0xa_ton_validator_ErrorAddressMappingRecordNotFound">ErrorAddressMappingRecordNotFound</a>: u64 = 1;
+</code></pre>
+
 
 
 <a name="0xa_ton_validator_TON_AUTH_VALIDATOR_ID"></a>
@@ -66,10 +75,9 @@ there defines auth validator id for each blockchain
 
 ## Function `validate_signature`
 
-Only validate the authenticator's signature.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ton_validator.md#0xa_ton_validator_validate_signature">validate_signature</a>(payload: &<a href="_AuthPayload">auth_payload::AuthPayload</a>, tx_hash: <a href="">vector</a>&lt;u8&gt;): <a href="_ETHAddress">ethereum_address::ETHAddress</a>
+<pre><code><b>public</b> <b>fun</b> <a href="ton_validator.md#0xa_ton_validator_validate_signature">validate_signature</a>(<a href="ton_address.md#0xa_ton_address">ton_address</a>: &<a href="ton_address.md#0xa_ton_address_TonAddress">ton_address::TonAddress</a>, proof: &<a href="ton_proof.md#0xa_ton_proof_TonProof">ton_proof::TonProof</a>, tx_hash: <a href="">vector</a>&lt;u8&gt;)
 </code></pre>
 
 
@@ -80,5 +88,5 @@ Only validate the authenticator's signature.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ton_validator.md#0xa_ton_validator_validate">validate</a>(authenticator_payload: <a href="">vector</a>&lt;u8&gt;): <a href="_MultiChainAddress">multichain_address::MultiChainAddress</a>
+<pre><code><b>public</b> <b>fun</b> <a href="ton_validator.md#0xa_ton_validator_validate">validate</a>(authenticator_payload: <a href="">vector</a>&lt;u8&gt;)
 </code></pre>

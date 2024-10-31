@@ -48,32 +48,46 @@ static KNOWN_HASHES: Lazy<HashMap<[u8; 32], WalletVersion>> = Lazy::new(|| {
 });
 
 #[derive(Deserialize)]
-pub struct TonProof {
-    pub domain: TonDomain,
-    pub payload: String,
-    pub signature: String,
+pub struct TonProofData {
+    pub name: String,
+    pub proof: TonProof,
     pub state_init: String,
+}
+
+#[derive(Deserialize)]
+pub struct TonProof {
     pub timestamp: u64,
+    pub domain: TonDomain,
+    pub signature: String,
+    pub payload: String,
 }
 
 #[derive(Deserialize)]
 pub struct TonDomain {
-    #[serde(rename = "lengthBytes")]
     pub length_bytes: u64,
     pub value: String,
 }
 
-pub fn check_ton_proof(address: TonAddress, proof: TonProof) -> Result<()> {
-    let now = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
+pub fn verify_proof(
+    address: TonAddress,
+    data: TonProofData,
+    verify_timestamp: bool,
+) -> Result<()> {
+    let proof = data.proof;
+    let state_init = data.state_init;
 
     // check ton proof expiration
-    if now > proof.timestamp + PROOF_TTL {
-        bail!("ton proof has been expired");
+    if verify_timestamp {
+        let now = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
+        if now > proof.timestamp + PROOF_TTL {
+            bail!("ton proof has been expired");
+        }
     }
 
     if proof.domain.length_bytes != proof.domain.value.len() as u64 {
         bail!(
-            "domain length mismatched against provided length bytes of {}",
+            "domain length {} mismatched against provided length bytes of {}",
+            proof.domain.value.len(),
             proof.domain.length_bytes
         );
     }
@@ -102,12 +116,15 @@ pub fn check_ton_proof(address: TonAddress, proof: TonProof) -> Result<()> {
     let full_msg_hash = hasher.finalize();
 
     let pubkey_bytes = {
-        let bytes = BASE64_STANDARD.decode(&proof.state_init)?;
+        let bytes = BASE64_STANDARD.decode(&state_init)?;
         let boc = BagOfCells::parse(&bytes)?;
         let hash: [u8; 32] = boc.single_root()?.cell_hash();
 
         if hash != address.hash_part {
-            return Err(anyhow!("wrong address in state_init"));
+            return Err(anyhow!(
+                "wrong address in state_init: {}",
+                hex::encode(hash)
+            ));
         }
 
         let root = boc.single_root().expect("checked above");
@@ -162,7 +179,29 @@ pub fn check_ton_proof(address: TonAddress, proof: TonProof) -> Result<()> {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+    use tonlib_core::TonAddress;
 
     #[test]
-    fn test_check_ton_proof() {}
+    fn test_check_ton_proof() {
+        let ton_address = TonAddress::from_hex_str(
+            "0:b1481ee8620ebf33b7882fa749654176ef00c7e4cac95ed39f371d5775920814",
+        )
+        .unwrap();
+        let verify_proof_json = r#"{
+            "name": "ton_proof",
+            "proof": {
+                "timestamp": 1730363765,
+                "domain": {
+                    "length_bytes": 21,
+                    "value": "ton-connect.github.io"
+                },
+                "signature": "BvysFrBS8KgTa3bww9f5paEu6/jZr5jB1JmO6T8nqsLzJqB3hWHiqOG9OezPsiJX3kD9nifMbRhr1xkv37ICCw==",
+                "payload": "bc1q04uaa0mveqtt4y0sltuxtauhlyl8ctstr5x3hu"
+            },
+            "state_init": "te6cckECFgEAAwQAAgE0ARUBFP8A9KQT9LzyyAsCAgEgAxACAUgEBwLm0AHQ0wMhcbCSXwTgItdJwSCSXwTgAtMfIYIQcGx1Z70ighBkc3RyvbCSXwXgA/pAMCD6RAHIygfL/8nQ7UTQgQFA1yH0BDBcgQEI9ApvoTGzkl8H4AXTP8glghBwbHVnupI4MOMNA4IQZHN0crqSXwbjDQUGAHgB+gD0BDD4J28iMFAKoSG+8uBQghBwbHVngx6xcIAYUATLBSbPFlj6Ahn0AMtpF8sfUmDLPyDJgED7AAYAilAEgQEI9Fkw7UTQgQFA1yDIAc8W9ADJ7VQBcrCOI4IQZHN0coMesXCAGFAFywVQA88WI/oCE8tqyx/LP8mAQPsAkl8D4gIBIAgPAgEgCQ4CAVgKCwA9sp37UTQgQFA1yH0BDACyMoHy//J0AGBAQj0Cm+hMYAIBIAwNABmtznaiaEAga5Drhf/AABmvHfaiaEAQa5DrhY/AABG4yX7UTQ1wsfgAWb0kK29qJoQICga5D6AhhHDUCAhHpJN9KZEM5pA+n/mDeBKAG3gQFImHFZ8xhAT48oMI1xgg0x/TH9MfAvgju/Jk7UTQ0x/TH9P/9ATRUUO68qFRUbryogX5AVQQZPkQ8qP4ACSkyMsfUkDLH1Iwy/9SEPQAye1U+A8B0wchwACfbFGTINdKltMH1AL7AOgw4CHAAeMAIcAC4wABwAORMOMNA6TIyx8Syx/L/xESExQAbtIH+gDU1CL5AAXIygcVy//J0Hd0gBjIywXLAiLPFlAF+gIUy2sSzMzJc/sAyEAUgQEI9FHypwIAcIEBCNcY+gDTP8hUIEeBAQj0UfKnghBub3RlcHSAGMjLBcsCUAbPFlAE+gIUy2oSyx/LP8lz+wACAGyBAQjXGPoA0z8wUiSBAQj0WfKnghBkc3RycHSAGMjLBcsCUAXPFlAD+gITy2rLHxLLP8lz+wAACvQAye1UAFEAAAAAKamjF1M4HQpWKrIhrdY9Ou9RtUmildvf4qB7qOpqgADYbRTiQD9nbsU="
+        }"#;
+        let verify_proof_data: TonProofData = serde_json::from_str(verify_proof_json).unwrap();
+        super::verify_proof(ton_address, verify_proof_data, false).unwrap();
+    }
 }

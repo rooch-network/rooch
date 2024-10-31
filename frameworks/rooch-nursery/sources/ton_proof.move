@@ -17,21 +17,56 @@ module rooch_nursery::ton_proof {
 
     #[data_struct]
     struct TonProof has copy, drop, store{
-        domain: TonDomain,
-        payload: String,
-        signature: String,
-        state_init: String,
         timestamp: u64,
+        domain: TonDomain,
+        signature: String,
+        payload: String,
     }
 
-    public fun decode_proof(ton_proof_bytes: vector<u8>): TonProof {
-        bcs::from_bytes(ton_proof_bytes)
+    #[data_struct]
+    struct TonProofData has copy, drop, store {
+        name: String,
+        proof: TonProof,
+        state_init: String,
+    }
+
+    #[data_struct]
+    struct RawCell has copy, drop, store {
+        data: vector<u8>,
+        bit_len: u64,
+        references: vector<u64>,
+        is_exotic: bool,
+        level_mask: u32,
+    }
+
+    #[data_struct]
+    struct RawBagOfCells has copy, drop, store {
+        cells: vector<RawCell>,
+        roots: vector<u64>,
+    }
+
+    public fun decode_proof_data(proof_data_bytes: vector<u8>): TonProofData {
+        bcs::from_bytes(proof_data_bytes)
     }
     
     /// verify the proof
-    public fun verify_proof(_ton_addr: &TonAddress, _ton_proof: &TonProof) : bool {
+    public fun verify_proof(_ton_addr: &TonAddress, _ton_proof_data: &TonProofData) : bool {
         //TODO
         true
+    }
+
+    // ======================== TonProofData functions ========================
+
+    public fun name(ton_proof_data: &TonProofData): &String {
+        &ton_proof_data.name
+    }
+
+    public fun proof(ton_proof_data: &TonProofData): &TonProof {
+        &ton_proof_data.proof
+    }
+
+    public fun state_init(ton_proof_data: &TonProofData): &String {
+        &ton_proof_data.state_init
     }
 
     // ======================== TonProof functions ========================
@@ -46,10 +81,6 @@ module rooch_nursery::ton_proof {
 
     public fun signature(ton_proof: &TonProof): &String {
         &ton_proof.signature
-    }
-
-    public fun state_init(ton_proof: &TonProof): &String {
-        &ton_proof.state_init
     }
 
     public fun timestamp(ton_proof: &TonProof): u64 {

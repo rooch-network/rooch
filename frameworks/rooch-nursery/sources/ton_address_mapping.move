@@ -11,7 +11,7 @@ module rooch_nursery::ton_address_mapping {
 
     use rooch_framework::bitcoin_address;
     use rooch_nursery::ton_address::{TonAddress};
-    use rooch_nursery::ton_proof::{Self, TonProof};
+    use rooch_nursery::ton_proof::{Self, TonProofData};
 
     const ErrorInvalidBindingProof: u64 = 1;
     const ErrorInvalidBindingAddress: u64 = 2;
@@ -51,10 +51,11 @@ module rooch_nursery::ton_address_mapping {
         }
     }
 
-    public fun binding_ton_address(proof: TonProof, ton_address: TonAddress){
+    public fun binding_ton_address(proof_data: TonProofData, ton_address: TonAddress){
         let rooch_to_ton_mapping = borrow_rooch_to_ton_mut();
-        assert!(ton_proof::verify_proof(&ton_address, &proof), ErrorInvalidBindingProof);
-        let payload = ton_proof::payload(&proof);
+        assert!(ton_proof::verify_proof(&ton_address, &proof_data), ErrorInvalidBindingProof);
+        let proof = ton_proof::proof(&proof_data);
+        let payload = ton_proof::payload(proof);
         //The ton proof payload should be a Bitcoin address, the user wants to bing.
         let btc_addr = bitcoin_address::from_string(payload);
         let rooch_addr = bitcoin_address::to_rooch_address(&btc_addr);
