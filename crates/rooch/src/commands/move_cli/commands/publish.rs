@@ -146,6 +146,9 @@ pub struct Publish {
     /// Run the DryRun for this transaction
     #[clap(long, default_value = "false")]
     dry_run: bool,
+
+    #[clap(long)]
+    pub package_file: Option<String>,
 }
 
 #[async_trait]
@@ -153,6 +156,37 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
     async fn execute(self) -> RoochResult<ExecuteTransactionResponseView> {
         // Build context and handle errors
         let context = self.context_options.build_require_password()?;
+        let max_gas_amount: Option<u64> = self.tx_options.max_gas_amount;
+        let sender = context.resolve_address(self.tx_options.sender)?.into();
+        
+        if let Some(package_file) = self.package_file {
+            //从文件读取 PackageData
+            let file = std::fs::File::open(package_file)?;
+            let pkg_data: PackageData = bcs::from_reader(file)?;
+            
+            //序列化参数
+            let pkg_bytes = bcs::to_bytes(&pkg_data).unwrap();
+            let args = bcs::to_bytes(&pkg_bytes).unwrap();
+            
+            //创建 MoveAction
+            let action = MoveAction::new_function_call(
+                FunctionId::new(
+                    ModuleId::new(
+                        MOVEOS_STD_ADDRESS,
+                        Identifier::new("module_store".to_owned()).unwrap(),
+                    ),
+                    Identifier::new("publish_package_entry".to_owned()).unwrap(),
+                ),
+                vec![],
+                vec![args],
+            );
+    
+            //执行交易
+            let tx_data = context
+                .build_tx_data(sender, action, max_gas_amount)
+                .await?;
+            return context.sign_and_execute(sender, tx_data).await;
+        }
 
         // Clone variables for later use
         let package_path = self
@@ -218,9 +252,6 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
         // Create a sender RoochAddress
         eprintln!("Publish modules to address: {:?}", pkg_address);
 
-        let max_gas_amount: Option<u64> = self.tx_options.max_gas_amount;
-
-        let sender = context.resolve_address(self.tx_options.sender)?.into();
         // Prepare and execute the transaction based on the action type
         let tx_result = if !self.by_move_action {
             let pkg_data = PackageData::new(
