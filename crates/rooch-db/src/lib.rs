@@ -244,10 +244,10 @@ impl RoochDB {
         let inner_store = &self.rooch_store.store_instance;
         let mut write_batch = WriteBatch::new();
         // remove
-        write_batch.delete(to_bytes(&tx_hash).unwrap())?; // tx_hash:tx
-        write_batch.delete(to_bytes(&tx_order).unwrap())?; // tx_order:tx_hash
-        write_batch.delete(to_bytes(&tx_hash).unwrap())?; // tx_hash:tx_execution_info
-        write_batch.delete(to_bytes(&tx_order).unwrap())?; // tx_order:tx_state_change_set
+        write_batch.delete(to_bytes(&tx_hash)?)?; // tx_hash:tx
+        write_batch.delete(to_bytes(&tx_order)?)?; // tx_order:tx_hash
+        write_batch.delete(to_bytes(&tx_hash)?)?; // tx_hash:tx_execution_info
+        write_batch.delete(to_bytes(&tx_order)?)?; // tx_order:tx_state_change_set
         let mut cf_names = vec![
             TRANSACTION_COLUMN_FAMILY_NAME,
             TX_SEQUENCE_INFO_MAPPING_COLUMN_FAMILY_NAME,
@@ -270,13 +270,10 @@ impl RoochDB {
                 previous_execution_info.size,
             );
             write_batch.put(
-                to_bytes(SEQUENCER_INFO_KEY).unwrap(),
-                to_bytes(&previous_sequencer_info).unwrap(),
+                to_bytes(SEQUENCER_INFO_KEY)?,
+                to_bytes(&previous_sequencer_info)?,
             )?;
-            write_batch.put(
-                to_bytes(STARTUP_INFO_KEY).unwrap(),
-                to_bytes(&startup_info).unwrap(),
-            )?;
+            write_batch.put(to_bytes(STARTUP_INFO_KEY)?, to_bytes(&startup_info)?)?;
             cf_names.push(META_SEQUENCER_INFO_COLUMN_FAMILY_NAME);
             cf_names.push(CONFIG_STARTUP_INFO_COLUMN_FAMILY_NAME);
         }
