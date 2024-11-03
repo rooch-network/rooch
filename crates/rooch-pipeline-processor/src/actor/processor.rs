@@ -100,7 +100,8 @@ impl PipelineProcessorActor {
             txs
         );
 
-        for tx_hash in txs.into_iter() {
+        for tx_hash in txs.into_iter().rev() {
+            // reverse the txs to keep the order
             let ledger_tx = self
                 .sequencer
                 .get_transaction_by_hash(tx_hash)
