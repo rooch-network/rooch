@@ -3,6 +3,7 @@
 
 use crate::cli_types::CommandAction;
 use crate::commands::db::commands::drop::DropCommand;
+use crate::commands::db::commands::repair::RepairCommand;
 use crate::commands::db::commands::revert::RevertCommand;
 use async_trait::async_trait;
 use clap::Parser;
@@ -31,6 +32,9 @@ impl CommandAction<String> for DB {
             DBCommand::Drop(drop) => drop.execute().await.map(|resp| {
                 serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
             }),
+            DBCommand::Repair(repair) => repair.execute().await.map(|resp| {
+                serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
+            }),
         }
     }
 }
@@ -41,4 +45,5 @@ pub enum DBCommand {
     Revert(RevertCommand),
     Rollback(RollbackCommand),
     Drop(DropCommand),
+    Repair(RepairCommand),
 }

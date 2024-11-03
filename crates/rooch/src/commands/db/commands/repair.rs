@@ -4,6 +4,7 @@
 use crate::commands::db::commands::init;
 use clap::Parser;
 use rooch_config::R_OPT_NET_HELP;
+use rooch_types::error::RoochResult;
 use rooch_types::rooch_network::RoochChainID;
 use std::path::PathBuf;
 
@@ -33,7 +34,7 @@ pub struct RepairCommand {
 }
 
 impl RepairCommand {
-    pub async fn execute(self) -> anyhow::Result<()> {
+    pub async fn execute(self) -> RoochResult<()> {
         let (_root, rooch_db, _start_time) = init(self.base_data_dir, self.chain_id);
 
         let (issues, fixed) = rooch_db.repair(self.thorough, self.exec)?;
