@@ -8,6 +8,7 @@ module orderbook::market {
     use moveos_std::object;
     use rooch_framework::coin::{Self, Coin};
     use std::vector;
+    use std::vector::for_each;
     use moveos_std::event;
     use rooch_framework::account_coin_store;
     use moveos_std::linked_table;
@@ -267,6 +268,18 @@ module orderbook::market {
         }
     }
 
+    public entry fun batch_buy<BaseAsset: key + store, QuoteAsset: key + store>(
+        signer: &signer,
+        market_obj: &mut Object<Marketplace<BaseAsset, QuoteAsset>>,
+        order_ids: vector<u64>,
+        assert_order_exist: bool,
+        receiver: address
+    ){
+        for_each(order_ids, |order_id|{
+            buy(signer, market_obj, order_id, assert_order_exist, receiver)
+        })
+    }
+
     public entry fun buy<BaseAsset: key + store, QuoteAsset: key + store>(
         signer: &signer,
         market_obj: &mut Object<Marketplace<BaseAsset, QuoteAsset>>,
@@ -321,6 +334,19 @@ module orderbook::market {
         coin_store::deposit(&mut market.base_asset_trading_fees, coin::extract(&mut trade_coin, trade_fee));
         account_coin_store::deposit(order.owner, trade_coin);
         option::some(coin_store::withdraw(&mut market.quote_asset, order.quantity))
+    }
+
+
+    public entry fun batch_accept_bid<BaseAsset: key + store, QuoteAsset: key + store>(
+        signer: &signer,
+        market_obj: &mut Object<Marketplace<BaseAsset, QuoteAsset>>,
+        order_ids: vector<u64>,
+        assert_order_exist: bool,
+        receiver: address
+    ){
+        for_each(order_ids, |order_id|{
+            accept_bid(signer, market_obj, order_id, assert_order_exist, receiver)
+        })
     }
 
 
@@ -407,6 +433,16 @@ module orderbook::market {
         assert!(market.version == VERSION, ErrorWrongVersion);
         assert!(fee < TRADE_FEE_BASE_RATIO, ErrorFeeTooHigh);
         market.fee = fee
+    }
+
+    public entry fun update_market_status<BaseAsset: key + store, QuoteAsset: key + store>(
+        _admin: &mut Object<AdminCap>,
+        market_obj: &mut Object<Marketplace<BaseAsset, QuoteAsset>>,
+        status: bool,
+    ) {
+        let market = object::borrow_mut(market_obj);
+        assert!(market.version == VERSION, ErrorWrongVersion);
+        market.is_paused = status
     }
 
     public entry fun migrate_marketplace<BaseAsset: key + store, QuoteAsset: key + store>(
