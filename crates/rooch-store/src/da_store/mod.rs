@@ -399,6 +399,7 @@ impl DAMetaDBStore {
     // append won't be invoked frequently, so the extra cost of checking is acceptable
     fn check_append(
         &self,
+        last_block_number: Option<u128>,
         tx_order_start: u64,
         tx_order_end: u64,
     ) -> anyhow::Result<()> {
