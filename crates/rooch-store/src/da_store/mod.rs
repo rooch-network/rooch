@@ -52,7 +52,6 @@ pub trait DAMetaStore {
     // warning: not thread safe
     fn append_submitting_block(
         &self,
-        last_block_number: Option<u128>,
         tx_order_start: u64,
         tx_order_end: u64,
     ) -> anyhow::Result<u128>;
@@ -101,7 +100,7 @@ impl DAMetaDBStore {
     ) -> anyhow::Result<usize> {
         let block_ranges = self.generate_append_blocks(last_block_number, last_order)?;
         let append_count = block_ranges.len();
-        self.append_submitting_block(block_ranges)?;
+        self.append_submitting_blocks(block_ranges)?;
         Ok(append_count)
     }
 
@@ -242,7 +241,7 @@ impl DAMetaDBStore {
         Ok(blocks)
     }
 
-    fn append_submitting_block(&self, mut ranges: Vec<BlockRange>) -> anyhow::Result<()> {
+    fn append_submitting_blocks(&self, mut ranges: Vec<BlockRange>) -> anyhow::Result<()> {
         if ranges.is_empty() {
             return Ok(());
         }
@@ -411,22 +410,14 @@ impl DAMetaDBStore {
                 tx_order_start
             ));
         }
-        let last_in_db = self.get_last_block_number()?;
-        if last_block_number != last_in_db {
-            return Err(anyhow::anyhow!(
-                "last_block_number mismatch: expect {:?}, got {:?}",
-                last_block_number,
-                last_in_db
-            ));
-        };
-        match last_in_db {
+        match last_block_number {
             None => Ok(()),
-            Some(last_in_db) => {
-                let last_block_state_in_db = self.get_block_state(last_in_db)?;
-                if last_block_state_in_db.block_range.tx_order_end + 1 != tx_order_start {
+            Some(block_number) => {
+                let last_block_state = self.get_block_state(block_number)?;
+                if last_block_state.block_range.tx_order_end + 1 != tx_order_start {
                     return Err(anyhow::anyhow!(
                         "tx_order_start must be last_block_number's tx_order_end + 1, last_tx_order_end {}, tx_order_start {}",
-                        last_block_state_in_db.block_range.tx_order_end,
+                        last_block_state.block_range.tx_order_end,
                         tx_order_start
                     ));
                 }
@@ -456,10 +447,11 @@ impl DAMetaStore for DAMetaDBStore {
 
     fn append_submitting_block(
         &self,
-        last_block_number: Option<u128>,
         tx_order_start: u64,
         tx_order_end: u64,
     ) -> anyhow::Result<u128> {
+        let last_block_number = self.get_last_block_number()?;
+
         self.check_append(last_block_number, tx_order_start, tx_order_end)?;
 
         let inner_store = self.block_submit_state_store.store.store();

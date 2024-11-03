@@ -332,17 +332,9 @@ impl DAMetaStore for RoochStore {
             .try_repair_da_meta(last_order, thorough)
     }
 
-    fn append_submitting_block(
-        &self,
-        last_block_number: Option<u128>,
-        tx_order_start: u64,
-        tx_order_end: u64,
-    ) -> Result<u128> {
-        self.get_da_meta_store().append_submitting_block(
-            last_block_number,
-            tx_order_start,
-            tx_order_end,
-        )
+    fn append_submitting_block(&self, tx_order_start: u64, tx_order_end: u64) -> Result<u128> {
+        self.get_da_meta_store()
+            .append_submitting_block(tx_order_start, tx_order_end)
     }
 
     fn get_submitting_blocks(
