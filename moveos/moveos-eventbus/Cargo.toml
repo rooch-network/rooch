@@ -17,4 +17,4 @@ once_cell = { workspace = true }
 crossbeam-channel = { workspace = true }
 coerce = { workspace = true }
 tokio = "1.41.0"
-thiserror = "1.0.65"
+thiserror = "1.0.67"
