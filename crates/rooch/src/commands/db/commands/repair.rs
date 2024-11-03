@@ -7,9 +7,15 @@ use rooch_config::R_OPT_NET_HELP;
 use rooch_types::rooch_network::RoochChainID;
 use std::path::PathBuf;
 
-/// drop column family by column family name
+/// Repair the database offline.
+/// Help to reach consistency of the database.
 #[derive(Debug, Parser)]
 pub struct RepairCommand {
+    #[clap(
+        long,
+        help = "perform a thorough and detailed check, which may take more time"
+    )]
+    pub thorough: bool,
     #[clap(
         long = "exec",
         help = "execute repair, otherwise only report issues. default is false"
@@ -30,16 +36,9 @@ impl RepairCommand {
     pub async fn execute(self) -> anyhow::Result<()> {
         let (_root, rooch_db, _start_time) = init(self.base_data_dir, self.chain_id);
 
-        let issues = rooch_db.repair(self.exec)?;
+        let (issues, fixed) = rooch_db.repair(self.thorough, self.exec)?;
 
-        if issues.is_empty() {
-            println!("No issues found");
-        } else {
-            println!("Issues found:");
-            for issue in issues {
-                println!("{}", issue);
-            }
-        }
+        println!("issues found: {}, fixed: {}", issues, fixed);
 
         Ok(())
     }

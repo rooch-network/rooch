@@ -168,7 +168,7 @@ impl MoveOSStore {
             .collect::<Vec<_>>();
         let event_hashes: Vec<_> = events.iter().map(|e| e.hash()).collect();
         let event_root = InMemoryAccumulator::from_leaves(event_hashes.as_slice()).root_hash();
-        let transaction_info = TransactionExecutionInfo::new(
+        let execution_info = TransactionExecutionInfo::new(
             tx_hash,
             new_state_root,
             size,
@@ -208,7 +208,7 @@ impl MoveOSStore {
         cf_batches.push(WriteBatchCF {
             batch: WriteBatch::new_with_rows(vec![(
                 to_bytes(&tx_hash).unwrap(),
-                WriteOp::Value(to_bytes(&transaction_info).unwrap()),
+                WriteOp::Value(to_bytes(&execution_info).unwrap()),
             )]),
             cf_name: TRANSACTION_EXECUTION_INFO_COLUMN_FAMILY_NAME.to_string(),
         });
@@ -217,7 +217,7 @@ impl MoveOSStore {
 
         let out = TransactionOutput::new(status, changeset, events, gas_used, is_upgrade);
 
-        Ok((out, transaction_info))
+        Ok((out, execution_info))
     }
 }
 

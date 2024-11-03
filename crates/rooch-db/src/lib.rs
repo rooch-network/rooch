@@ -26,7 +26,7 @@ use raw_store::{rocks::RocksDB, StoreInstance};
 use rooch_config::store_config::StoreConfig;
 use rooch_indexer::store::traits::IndexerStoreTrait;
 use rooch_indexer::{indexer_reader::IndexerReader, IndexerStore};
-use rooch_store::meta_store::SEQUENCER_INFO_KEY;
+use rooch_store::meta_store::{MetaStore, SEQUENCER_INFO_KEY};
 use rooch_store::state_store::StateStore;
 use rooch_store::{
     RoochStore, META_SEQUENCER_INFO_COLUMN_FAMILY_NAME, STATE_CHANGE_SET_COLUMN_FAMILY_NAME,
@@ -37,6 +37,7 @@ use rooch_types::indexer::state::{
     IndexerObjectStatesIndexGenerator,
 };
 use rooch_types::sequencer::SequencerInfo;
+use tracing::{debug, info};
 
 #[derive(Clone)]
 pub struct RoochDB {
@@ -342,5 +343,24 @@ impl RoochDB {
                 .map_err(|e| anyhow!(format!("Revert indexer states error: {:?}", e)))?;
         };
         Ok(())
+    }
+
+    fn check_moveos_store_thorough(&self) -> anyhow::Result<()> {
+        Ok(())
+    }
+
+    /// repair the rooch store, return the (issues count, fixed count)
+    /// if exec is false, only report issues, otherwise repair the issues
+    pub fn repair(&self, thorough: bool, exec: bool) -> anyhow::Result<(usize, usize)> {
+        let mut issues = 0;
+        let mut fixed = 0;
+        // repair the rooch store
+        let (rooch_store_issues, rooch_store_fixed) = self.rooch_store.repair(thorough, exec)?;
+        issues += rooch_store_issues;
+        fixed += rooch_store_fixed;
+        // check moveos store
+        self.check_moveos_store_thorough()?;
+        // TODO repair the changeset sync and indexer store
+        Ok((issues, fixed))
     }
 }

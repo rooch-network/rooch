@@ -19,6 +19,12 @@ pub struct BlockRange {
     pub tx_order_end: u64,
 }
 
+impl BlockRange {
+    pub fn is_legal(&self, last_order: u64) -> bool {
+        self.tx_order_start <= self.tx_order_end && self.tx_order_end <= last_order
+    }
+}
+
 #[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]
 /// The state of the block submission.
 pub struct BlockSubmitState {

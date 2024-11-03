@@ -298,7 +298,8 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     let genesis_bytes = RoochGenesis::build(network.clone())?.encode();
     let genesis_namespace = derive_genesis_namespace(&genesis_bytes);
     let last_tx_order = sequencer_proxy.get_sequencer_order().await?;
-    rooch_store.try_repair_da_meta(last_tx_order)?;
+    let (da_issues, da_fixed) = rooch_store.try_repair_da_meta(last_tx_order, false)?;
+    info!("DA meta issues: {:?}, fixed: {:?}", da_issues, da_fixed);
     let da_config = opt.da_config().clone();
     let da_proxy = DAServerProxy::new(
         DAServerActor::new(
