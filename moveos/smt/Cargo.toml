@@ -31,10 +31,22 @@ num-traits = { workspace = true }
 once_cell = { workspace = true }
 primitive-types = { workspace = true }
 prometheus = { workspace = true }
-proptest = { workspace = true }
-proptest-derive = { workspace = true }
 parking_lot = { workspace = true }
 rand = { workspace = true }
 serde = { workspace = true, features = ["derive", "rc"] }
 serde_bytes = { workspace = true }
 thiserror = { workspace = true }
+
+proptest = { optional = true, workspace = true }
+proptest-derive = { optional = true, workspace = true }
+
+[dev-dependencies]
+proptest = { workspace = true }
+proptest-derive = { workspace = true }
+
+[features]
+default = []
+fuzzing = [
+    "proptest",
+    "proptest-derive",
+]

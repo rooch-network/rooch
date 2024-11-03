@@ -10,13 +10,12 @@ async fn get_submitting_blocks() {
     let (rooch_store, _) = RoochStore::mock_rooch_store().unwrap();
     let da_meta_store = rooch_store.get_da_meta_store();
 
-    da_meta_store.append_submitting_block(None, 1, 6).unwrap();
+    da_meta_store.append_submitting_block(1, 6).unwrap();
 
-    let last_block_number = 0;
     let tx_order_start = 7;
     let tx_order_end = 7;
     da_meta_store
-        .append_submitting_block(Some(last_block_number), tx_order_start, tx_order_end)
+        .append_submitting_block(tx_order_start, tx_order_end)
         .unwrap();
 
     let submitting_blocks = da_meta_store.get_submitting_blocks(0, None).unwrap();
@@ -55,13 +54,9 @@ async fn rollback_to_last_tx_order() {
     let (rooch_store, _) = RoochStore::mock_rooch_store().unwrap();
     let da_meta_store = rooch_store.get_da_meta_store();
 
-    da_meta_store.append_submitting_block(None, 1, 6).unwrap();
-    da_meta_store
-        .append_submitting_block(Some(0), 7, 7)
-        .unwrap();
-    da_meta_store
-        .append_submitting_block(Some(1), 8, 1024)
-        .unwrap();
+    da_meta_store.append_submitting_block(1, 6).unwrap();
+    da_meta_store.append_submitting_block(7, 7).unwrap();
+    da_meta_store.append_submitting_block(8, 1024).unwrap();
 
     fn check_remove_blocks(
         case: u64,
@@ -133,10 +128,12 @@ async fn catch_up_last_tx_order() {
     );
 
     let tx_order_end = 3 * MAX_TXS_PER_BLOCK_IN_FIX as u64 + 1;
-    let last_block_number = rooch_store.append_submitting_block(None, 1, 3).unwrap();
+    let last_block_number = rooch_store.append_submitting_block(1, 3).unwrap();
+    assert_eq!(last_block_number, 0);
     let last_block_number = rooch_store
-        .append_submitting_block(Some(last_block_number), 4, tx_order_end)
+        .append_submitting_block(4, tx_order_end)
         .unwrap();
+    assert_eq!(last_block_number, 1);
 
     for i in 1..2 * MAX_TXS_PER_BLOCK_IN_FIX + 2 {
         run_catch_up_last_tx_order_case(

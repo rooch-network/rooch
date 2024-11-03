@@ -3,18 +3,20 @@ import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { getRoochNodeUrl } from '@roochnetwork/rooch-sdk';
 
-import { FAUCET_MAINNET, FAUCET_TESTNET } from 'src/config/constant'
+import { FAUCET_MAINNET, FAUCET_TESTNET } from 'src/config/constant';
 
 const iconDomains = [
   'https://api.unisvg.com',
   'https://api.iconify.design',
   'https://api.simplesvg.com',
 ];
-const faucetDomains = [
-  FAUCET_MAINNET,
-  FAUCET_TESTNET,
-]
-const apiDomains = [getRoochNodeUrl('mainnet'), getRoochNodeUrl('testnet')];
+const faucetDomains = [FAUCET_MAINNET, FAUCET_TESTNET];
+const apiDomains = [
+  getRoochNodeUrl('mainnet'),
+  getRoochNodeUrl('testnet'),
+  'https://test-faucet.rooch.network',
+  'https://main-faucet.rooch.network',
+];
 const isProduction = process.env.NODE_ENV === 'production';
 
 export function middleware(request: NextRequest) {

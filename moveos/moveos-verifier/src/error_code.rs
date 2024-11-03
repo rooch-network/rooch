@@ -34,7 +34,6 @@ macro_rules! derive_code_try_from_repr {
             }
         }
 
-        #[cfg(any(test, feature = "fuzzing"))]
         pub const ERROR_CODE_VALUES: &'static [$repr_ty] = &[
             $($value),*
         ];
@@ -70,6 +69,8 @@ pub enum ErrorCode {
 
     INVALID_ENTRY_FUNC_SIGNATURE = 11000,
     INVALID_PARAM_TYPE_ENTRY_FUNCTION = 11001,
+    INVALID_PARAM_SINGER_COUNT = 11002,
+    INVALID_FIRST_ARGUMENT_IS_NOT_SIGNER = 11003,
 
     INVALID_PUBLIC_INIT_FUNC = 12000,
     INVALID_INIT_FUNC_WITH_ENTRY = 12001,

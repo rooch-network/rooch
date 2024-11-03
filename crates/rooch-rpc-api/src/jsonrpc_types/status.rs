@@ -6,6 +6,7 @@ use accumulator::accumulator_info::AccumulatorInfo;
 use bitcoin::BlockHash;
 use moveos_types::h256::H256;
 use moveos_types::{startup_info::StartupInfo, state::ObjectState};
+use rooch_types::da::state::DAServerStatus;
 use rooch_types::into_address::FromAddress;
 use rooch_types::{
     bitcoin::types::BlockHeightHash, sequencer::SequencerInfo, service_status::ServiceStatus,
@@ -110,4 +111,6 @@ pub struct Status {
     pub rooch_status: RoochStatus,
     /// The status of the Bitcoin chain
     pub bitcoin_status: BitcoinStatus,
+    /// The status of the DA service
+    pub da_server_status: DAServerStatus,
 }

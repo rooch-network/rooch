@@ -13,7 +13,7 @@ use crate::{
 use anyhow::{anyhow, bail};
 use bech32::{encode, Bech32, EncodeError};
 use bitcoin::secp256k1::SecretKey;
-use derive_more::{AsMut, AsRef, From};
+use derive_more::{AsRef, From};
 pub use enum_dispatch::enum_dispatch;
 use eyre::eyre;
 pub use fastcrypto::traits::KeyPair as KeypairTraits;
@@ -566,7 +566,7 @@ impl Signature {
         T: Serialize,
     {
         let mut hasher = DefaultHash::default();
-        hasher.update(&bcs::to_bytes(&value).expect("Message serialization should not fail"));
+        hasher.update(bcs::to_bytes(&value).expect("Message serialization should not fail"));
         Signer::sign(secret, &hasher.finalize().digest)
     }
 
@@ -611,14 +611,6 @@ impl AsRef<[u8]> for Signature {
         match self {
             Signature::Ed25519RoochSignature(sig) => sig.as_ref(),
             Signature::Secp256k1RoochSignature(sig) => sig.as_ref(),
-        }
-    }
-}
-impl AsMut<[u8]> for Signature {
-    fn as_mut(&mut self) -> &mut [u8] {
-        match self {
-            Signature::Ed25519RoochSignature(sig) => sig.as_mut(),
-            Signature::Secp256k1RoochSignature(sig) => sig.as_mut(),
         }
     }
 }
@@ -668,7 +660,7 @@ pub trait RoochSignature: Sized + ToFromBytes {
         T: Serialize,
     {
         let mut hasher = DefaultHash::default();
-        hasher.update(&bcs::to_bytes(&value).expect("Message serialization should not fail"));
+        hasher.update(bcs::to_bytes(&value).expect("Message serialization should not fail"));
         let digest = hasher.finalize().digest;
         self.verify(digest.as_ref())
     }
@@ -704,9 +696,8 @@ impl<S: RoochSignatureInner + Sized> RoochSignature for S {
 // Ed25519 Rooch Signature port
 //
 #[serde_as]
-#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema, PartialEq, Eq, Hash, AsRef, AsMut)]
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema, PartialEq, Eq, Hash, AsRef)]
 #[as_ref(forward)]
-#[as_mut(forward)]
 pub struct Ed25519RoochSignature(
     #[schemars(with = "Base64")]
     #[serde_as(as = "Readable<Base64, Bytes>")]
@@ -748,9 +739,8 @@ impl RoochSignatureInner for Ed25519RoochSignature {
 // Secp256k1 Signature port
 //
 #[serde_as]
-#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema, PartialEq, Eq, Hash, AsRef, AsMut)]
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema, PartialEq, Eq, Hash, AsRef)]
 #[as_ref(forward)]
-#[as_mut(forward)]
 pub struct Secp256k1RoochSignature(
     #[schemars(with = "Base64")]
     #[serde_as(as = "Readable<Base64, Bytes>")]

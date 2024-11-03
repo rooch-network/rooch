@@ -20,11 +20,20 @@ const AppList: AppItemProps[] = [
   {
     id: 1,
     name: 'Rooch Clicker',
-    description: "Join our Click Challenge! You're in for 1,000 RCC!",
+    description: "Join our Click Challenge!",
     logoUrl: `${CONFIG.site.basePath}/logo/logo-single.svg`,
-    profileUrl: `${CONFIG.site.basePath}/assets/apps/clicker-app.jpg`,
+    profileUrl: `${CONFIG.site.basePath}/assets/apps/clicker-app.png`,
     type: 'Demo',
     url: 'https://clicker.rooch.io',
+  },
+  {
+    id: 2,
+    name: 'Grow Bitcoin',
+    description: "Backing Ideas with Bitcoin Staking!",
+    logoUrl: `${CONFIG.site.basePath}/logo/logo-single.svg`,
+    profileUrl: `${CONFIG.site.basePath}/assets/apps/grow-app.png`,
+    type: 'Demo',
+    url: 'https://test-grow.rooch.network',
   },
 ];
 

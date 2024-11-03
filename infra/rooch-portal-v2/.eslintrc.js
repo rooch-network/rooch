@@ -4,7 +4,7 @@
 module.exports = {
   root: true,
   env: { browser: true, es2020: true },
-  plugins: ['perfectionist', 'unused-imports', '@typescript-eslint', 'prettier'],
+  plugins: ['perfectionist', 'unused-imports', '@typescript-eslint', 'prettier', 'react-refresh'],
   extends: ['airbnb', 'airbnb-typescript', 'airbnb/hooks', 'prettier'],
   parserOptions: {
     sourceType: 'module',
@@ -56,6 +56,7 @@ module.exports = {
     'react/jsx-no-useless-fragment': [1, { allowExpressions: true }],
     'react/no-unstable-nested-components': [1, { allowAsProps: true }],
     'react/jsx-no-duplicate-props': [1, { ignoreCase: false }],
+    'react-refresh/only-export-components': 'warn',
     // jsx-a11y
     'jsx-a11y/anchor-is-valid': 0,
     'jsx-a11y/control-has-associated-label': 0,

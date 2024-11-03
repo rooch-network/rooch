@@ -47,7 +47,7 @@ pub trait DAMetaStore {
     fn try_repair_da_meta(&self, last_order: u64, thorough: bool)
         -> anyhow::Result<(usize, usize)>;
 
-    // append new submitting block with tx_order_start and tx_order_end
+    // append new submitting block with tx_order_start and tx_order_end, return the block_number
     // LAST_BLOCK_NUMBER & block state must be updated atomically, they must be consistent (version >= v0.7.6)
     // warning: not thread safe
     fn append_submitting_block(
@@ -399,7 +399,6 @@ impl DAMetaDBStore {
     // append won't be invoked frequently, so the extra cost of checking is acceptable
     fn check_append(
         &self,
-        last_block_number: Option<u128>,
         tx_order_start: u64,
         tx_order_end: u64,
     ) -> anyhow::Result<()> {
@@ -455,6 +454,7 @@ impl DAMetaStore for DAMetaDBStore {
         self.check_append(last_block_number, tx_order_start, tx_order_end)?;
 
         let inner_store = self.block_submit_state_store.store.store();
+
         let block_number = match last_block_number {
             Some(last_block_number) => last_block_number + 1,
             None => 0,

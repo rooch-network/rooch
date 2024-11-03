@@ -33,7 +33,7 @@ impl App {
             .faucet_proxy
             .claim(request.claimer)
             .await
-            .map_err(FaucetError::internal)?;
+            .map_err(FaucetError::custom)?;
         Ok(amount)
     }
 
@@ -42,7 +42,28 @@ impl App {
             .faucet_proxy
             .balance()
             .await
-            .map_err(FaucetError::internal)?;
+            .map_err(FaucetError::custom)?;
         Ok(balance)
+    }
+
+    pub async fn fetch_tweet(&self, tweet_id: String) -> Result<String, FaucetError> {
+        let tweet = self
+            .faucet_proxy
+            .fetch_tweet(tweet_id)
+            .await
+            .map_err(FaucetError::custom)?;
+        Ok(tweet.to_string())
+    }
+
+    pub async fn verify_and_binding_twitter_account(
+        &self,
+        tweet_id: String,
+    ) -> Result<String, FaucetError> {
+        let address = self
+            .faucet_proxy
+            .verify_and_binding_twitter_account(tweet_id)
+            .await
+            .map_err(FaucetError::custom)?;
+        Ok(address.to_rooch_address().to_string())
     }
 }
