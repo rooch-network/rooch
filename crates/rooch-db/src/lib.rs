@@ -28,6 +28,7 @@ use rooch_indexer::store::traits::IndexerStoreTrait;
 use rooch_indexer::{indexer_reader::IndexerReader, IndexerStore};
 use rooch_store::meta_store::{MetaStore, SEQUENCER_INFO_KEY};
 use rooch_store::state_store::StateStore;
+use rooch_store::transaction_store::TransactionStore;
 use rooch_store::{
     RoochStore, META_SEQUENCER_INFO_COLUMN_FAMILY_NAME, STATE_CHANGE_SET_COLUMN_FAMILY_NAME,
     TRANSACTION_COLUMN_FAMILY_NAME, TX_SEQUENCE_INFO_MAPPING_COLUMN_FAMILY_NAME,
@@ -37,7 +38,7 @@ use rooch_types::indexer::state::{
     IndexerObjectStatesIndexGenerator,
 };
 use rooch_types::sequencer::SequencerInfo;
-use tracing::{debug, info};
+use tracing::error;
 
 #[derive(Clone)]
 pub struct RoochDB {
@@ -345,7 +346,43 @@ impl RoochDB {
         Ok(())
     }
 
+    // check the moveos store:
+    // last execution info match state root
     fn check_moveos_store_thorough(&self) -> anyhow::Result<()> {
+        let mut last_order = self
+            .rooch_store
+            .get_sequencer_info()?
+            .ok_or_else(|| anyhow::anyhow!("Sequencer info not found"))?
+            .last_order;
+        if last_order == 0 {
+            return Ok(()); // Only genesis
+        }
+        let mut state_root = H256::default();
+        for order in (1..=last_order).rev() {
+            let tx_hash = self.rooch_store.get_tx_hashes(vec![order])?.pop().flatten();
+            if let Some(tx_hash) = tx_hash {
+                let execution_info = self.moveos_store.get_tx_execution_info(tx_hash)?;
+                if let Some(execution_info) = execution_info {
+                    state_root = execution_info.state_root;
+                    last_order = order;
+                    break; // found the last execution info
+                }
+            }
+        }
+        let startup_info = self.moveos_store.config_store.get_startup_info()?;
+        let startup_state_root = startup_info
+            .map(|s| s.state_root)
+            .ok_or_else(|| anyhow::anyhow!("Startup info not found"))?;
+
+        if state_root != startup_state_root {
+            return Err(anyhow!(
+                "State root mismatch: last execution info state root {:?} for order: {}, startup state root {:?}",
+                state_root,
+                last_order,
+                startup_state_root
+            ));
+        }
+
         Ok(())
     }
 
@@ -359,7 +396,15 @@ impl RoochDB {
         issues += rooch_store_issues;
         fixed += rooch_store_fixed;
         // check moveos store
-        self.check_moveos_store_thorough()?;
+        if thorough {
+            match self.check_moveos_store_thorough() {
+                Ok(_) => {}
+                Err(e) => {
+                    issues += 1;
+                    error!("MoveOS store check failed: {:?}", e);
+                }
+            }
+        }
         // TODO repair the changeset sync and indexer store
         Ok((issues, fixed))
     }

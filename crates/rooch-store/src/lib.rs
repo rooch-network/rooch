@@ -26,7 +26,7 @@ use rooch_types::transaction::LedgerTransaction;
 use std::fmt::{Debug, Display, Formatter};
 use std::path::Path;
 use std::sync::Arc;
-use tracing::error;
+use tracing::{error, info};
 
 pub mod accumulator_store;
 pub mod da_store;
@@ -193,12 +193,14 @@ impl RoochStore {
 
         if thorough {
             issues += self.check_thorough(exp_last_order)?;
+            info!("Thorough check done, issues: {}", issues);
         }
 
         // exec or not, DA will exec repair automatically because there won't be external dependencies for repair DA meta
         let (da_issues, da_fixed) = self
             .da_meta_store
             .try_repair_da_meta(exp_last_order, thorough)?;
+        info!("DA repair done, issues: {}, fixed: {}", da_issues, da_fixed);
         issues += da_issues;
         fixed += da_fixed;
 
