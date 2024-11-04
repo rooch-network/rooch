@@ -298,7 +298,7 @@ impl DAMetaDBStore {
         }
 
         let mut last_block_tx_order_end = block_0_range.tx_order_end;
-        let mut first_broken: Option<u128> = None;
+        let mut first_illegal: Option<u128> = None;
 
         for i in 1..=last_block_number {
             let block_state = self.get_block_state(i)?;
@@ -308,17 +308,17 @@ impl DAMetaDBStore {
                 tx_order_end: block_state.block_range.tx_order_end,
             };
             if !block_range.is_legal(last_order) {
-                first_broken = Some(i);
+                first_illegal = Some(i);
                 break;
             }
             if block_range.tx_order_start != last_block_tx_order_end + 1 {
-                first_broken = Some(i);
+                first_illegal = Some(i);
                 break;
             } else {
                 last_block_tx_order_end = block_range.tx_order_end;
             }
         }
-        Ok(first_broken)
+        Ok(first_illegal)
     }
 
     // find first illegal block(n), then rollback to n-1
