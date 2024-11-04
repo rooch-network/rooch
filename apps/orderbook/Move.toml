@@ -15,3 +15,4 @@ rooch_framework = "0x3"
 
 [dev-addresses]
 orderbook = "0x42"
+app_admin = "0x43"
