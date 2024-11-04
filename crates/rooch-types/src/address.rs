@@ -93,6 +93,10 @@ impl MultiChainAddress {
                 let pk = NostrPublicKey::from_str(str)?;
                 Ok(pk.into())
             }
+            RoochMultiChainID::Ton => {
+                let ton_address = TonAddress::from_str(str)?;
+                Ok(ton_address.into())
+            }
         }
     }
 
@@ -121,6 +125,10 @@ impl MultiChainAddress {
             RoochMultiChainID::Nostr => {
                 let pk = NostrPublicKey::try_from(self.clone()).unwrap();
                 pk.to_string()
+            }
+            RoochMultiChainID::Ton => {
+                let ton_address = TonAddress::try_from(self.clone()).unwrap();
+                ton_address.to_string()
             }
         }
     }
@@ -986,6 +994,9 @@ impl fmt::Display for NostrPublicKey {
         write!(f, "{}", self.0.to_bech32().map_err(|_| fmt::Error)?)
     }
 }
+
+mod ton_address;
+pub use ton_address::TonAddress;
 
 // Parsed Address, either a name or a numerical address, or Bitcoin Address
 #[derive(Eq, PartialEq, Debug, Clone)]
