@@ -68,11 +68,7 @@ pub struct TonDomain {
     pub value: String,
 }
 
-pub fn verify_proof(
-    address: TonAddress,
-    data: TonProofData,
-    verify_timestamp: bool,
-) -> Result<()> {
+pub fn verify_proof(address: TonAddress, data: TonProofData, verify_timestamp: bool) -> Result<()> {
     let proof = data.proof;
     let state_init = data.state_init;
 

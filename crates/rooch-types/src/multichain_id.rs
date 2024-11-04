@@ -18,7 +18,7 @@ pub const ETHER: u64 = 60;
 pub const SUI: u64 = 784;
 pub const NOSTR: u64 = 1237;
 pub const ROOCH: u64 = 20230101; // place holder for slip-0044 needs to replace later
-
+pub const TON: u64 = 607;
 #[derive(
     Clone,
     Copy,
@@ -103,6 +103,7 @@ pub enum RoochMultiChainID {
     Ether = ETHER,
     Nostr = NOSTR,
     Rooch = ROOCH,
+    Ton = TON,
 }
 
 impl Display for RoochMultiChainID {
@@ -112,6 +113,7 @@ impl Display for RoochMultiChainID {
             RoochMultiChainID::Ether => write!(f, "ether"),
             RoochMultiChainID::Nostr => write!(f, "nostr"),
             RoochMultiChainID::Rooch => write!(f, "rooch"),
+            RoochMultiChainID::Ton => write!(f, "ton"),
         }
     }
 }
@@ -131,6 +133,7 @@ impl TryFrom<u64> for RoochMultiChainID {
             ETHER => Ok(RoochMultiChainID::Ether),
             NOSTR => Ok(RoochMultiChainID::Nostr),
             ROOCH => Ok(RoochMultiChainID::Rooch),
+            TON => Ok(RoochMultiChainID::Ton),
             _ => Err(anyhow::anyhow!("multichain id {} is invalid", value)),
         }
     }
@@ -145,6 +148,7 @@ impl FromStr for RoochMultiChainID {
             "ether" => Ok(RoochMultiChainID::Ether),
             "nostr" => Ok(RoochMultiChainID::Nostr),
             "rooch" => Ok(RoochMultiChainID::Rooch),
+            "ton" => Ok(RoochMultiChainID::Ton),
             s => Err(format_err!("Unknown multichain: {}", s)),
         }
     }
@@ -158,6 +162,7 @@ impl TryFrom<MultiChainID> for RoochMultiChainID {
             ETHER => Self::Ether,
             NOSTR => Self::Nostr,
             ROOCH => Self::Rooch,
+            TON => Self::Ton,
             id => bail!("{} is not a builtin multichain id", id),
         })
     }
@@ -214,6 +219,7 @@ impl RoochMultiChainID {
             RoochMultiChainID::Ether,
             RoochMultiChainID::Nostr,
             RoochMultiChainID::Rooch,
+            RoochMultiChainID::Ton,
         ]
     }
 }
