@@ -42,6 +42,10 @@ export class Transaction {
     this.getData().sequenceNumber = input
   }
 
+  isSigned()  {
+    return this.auth !== undefined
+  }
+
   hashData(): Bytes {
     return this.getData().hash()
   }

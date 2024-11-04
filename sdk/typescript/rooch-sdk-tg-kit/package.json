@@ -1,0 +1,94 @@
+{
+  "name": "@roochnetwork/rooch-sdk-tg-kit",
+  "author": "Rooch.network <opensource@rooch.network>",
+  "version": "0.0.1",
+  "description": "Rooch telegram SDK Kit",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "packageManager": "pnpm@9.10.0",
+  "scripts": {
+    "build": "build-package",
+    "build:clean": "rimraf dist",
+    "test": "pnpm vitest --run",
+    "prepublishOnly": "pnpm build",
+    "size": "size-limit",
+    "analyze": "size-limit --why",
+    "prettier:check": "prettier -c --ignore-unknown .",
+    "prettier:fix": "prettier -w --ignore-unknown .",
+    "eslint:check": "eslint --max-warnings=0 .",
+    "eslint:fix": "pnpm run eslint:check --fix",
+    "lint": "pnpm run eslint:check && pnpm run prettier:check",
+    "lint:fix": "pnpm run eslint:fix && pnpm run prettier:fix"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rooch-network/rooch.git"
+  },
+  "homepage": "https://github.com/rooch-network/rooch",
+  "bugs": {
+    "url": "https://github.com/rooch-network/rooch/issues"
+  },
+  "size-limit": [
+    {
+      "path": "dist/esm/index.js",
+      "limit": "100 KB"
+    },
+    {
+      "path": "dist/cjs/index.js",
+      "limit": "100 KB"
+    }
+  ],
+  "files": [
+    "dist",
+    "src"
+  ],
+  "type": "module",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/cjs/index.d.ts",
+  "keywords": [
+    "Rooch",
+    "Rooch Network",
+    "Move"
+  ],
+  "devDependencies": {
+    "@roochnetwork/build-scripts": "workspace:*",
+    "@size-limit/preset-small-lib": "^11.1.5",
+    "@tanstack/react-query": "^5.56.2",
+    "@testing-library/dom": "^10.4.0",
+    "@testing-library/jest-dom": "^6.5.0",
+    "@testing-library/react": "^16.0.1",
+    "@testing-library/user-event": "^14.5.2",
+    "@types/react": "^18.3.5",
+    "@vanilla-extract/esbuild-plugin": "^2.3.10",
+    "@vanilla-extract/vite-plugin": "^4.0.15",
+    "happy-dom": "^15.7.4",
+    "jsdom": "^25.0.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "size-limit": "^11.1.5",
+    "typescript": "^5.6.2",
+    "vite": "^5.4.4",
+    "vitest": "^2.1.0"
+  },
+  "dependencies": {
+    "@tonconnect/sdk": "3.0.5",
+    "@roochnetwork/rooch-sdk": "workspace:*",
+    "@vanilla-extract/css": "^1.15.5",
+    "@vanilla-extract/dynamic": "^2.1.2",
+    "@vanilla-extract/recipes": "^0.5.5",
+    "clsx": "^2.1.1",
+    "zustand": "^4.5.5",
+    "@tonconnect/ui-react": "^2.0.5"
+  },
+  "peerDependencies": {
+    "@tanstack/react-query": "^5.0.0",
+    "react": "*"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
+}

@@ -1,5 +1,5 @@
 import { openLink } from '@telegram-apps/sdk-react';
-import { TonConnectButton, useTonWallet } from '@tonconnect/ui-react';
+import {useTonConnectUI, TonConnectButton, useTonWallet, TonProofItem} from '@tonconnect/ui-react';
 import {
   Avatar,
   Cell,
@@ -19,7 +19,7 @@ import './TONConnectPage.css';
 
 export const TONConnectPage: FC = () => {
   const wallet = useTonWallet();
-
+    const [tonConnectUI] = useTonConnectUI();
   if (!wallet) {
     return (
       <Page>
@@ -74,6 +74,18 @@ export const TONConnectPage: FC = () => {
             <TonConnectButton className="ton-connect-page__button-connected"/>
           </>
         )}
+          <Cell
+              after={<Navigation>About wallet</Navigation>}
+              subtitle='rooch auth'
+              onClick={(e) => {
+                  console.log(e)
+                  // tonConnectUI.setConnectRequestParameters({
+                  //     state: 'ready',
+                  //     value: '',
+                  // })
+              }}
+          >
+          </Cell>
         <DisplayData
           header="Account"
           rows={[

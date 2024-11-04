@@ -131,6 +131,31 @@ export class RoochClient {
     })
   }
 
+  async executeTransaction({
+    transaction,
+    option = { withOutput: true },
+  }: {
+    transaction: Transaction | Bytes
+    option?: {
+      withOutput: boolean
+    }
+  }): Promise<ExecuteTransactionResponseView> {
+    let transactionHex: string
+    if (transaction instanceof Uint8Array) {
+      transactionHex = str('hex', transaction)
+    } else {
+      if (!transaction.isSigned()) {
+        throw Error('The transaction was not signed')
+      }
+      transactionHex = `0x${transaction.encode().toHex()}`
+    }
+
+    return await this.transport.request({
+      method: 'rooch_executeRawTransaction',
+      params: [transactionHex, option],
+    })
+  }
+
   async signAndExecuteTransaction({
     transaction,
     signer,
@@ -189,6 +214,7 @@ export class RoochClient {
       params: [params.moduleAddr, params.moduleName],
     })
   }
+
   async getEvents(input: GetEventsByEventHandleParams): Promise<PaginatedEventViews> {
     return await this.transport.request({
       method: 'rooch_getEventsByEventHandle',

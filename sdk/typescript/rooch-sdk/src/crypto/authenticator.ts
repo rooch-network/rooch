@@ -7,6 +7,7 @@ import { bytes, sha256, toHEX, concatBytes, varintByteNum } from '../utils/index
 
 import { Signer } from './signer.js'
 import { SIGNATURE_SCHEME_TO_FLAG } from './signatureScheme.js'
+import {Proof} from "./proof";
 
 const BitcoinMessagePrefix = '\u0018Bitcoin Signed Message:\n'
 const MessageInfoPrefix = 'Rooch Transaction:\n'
@@ -67,7 +68,7 @@ export class BitcoinSignMessage {
 export enum BuiltinAuthValidator {
   ROOCH = 0x00,
   BITCOIN = 0x01,
-  // ETHEREUM= 0x02
+  TON= 0x02
 }
 
 export class Authenticator {
@@ -84,6 +85,12 @@ export class Authenticator {
       authValidatorId: this.authValidatorId,
       payload: this.payload,
     }).toBytes()
+  }
+
+  static async ton(proof: Proof) {
+    return new Authenticator(BuiltinAuthValidator.TON, bcs.Proof.serialize({
+      ...proof
+    }).toBytes())
   }
 
   static async rooch(input: Bytes, signer: Signer) {

@@ -10,7 +10,7 @@ const queryClient = new QueryClient();
 export default function RoochDappProvider({ children }: { children: ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
-      <RoochProvider networks={networkConfig} defaultNetwork={'testnet'}>
+      <RoochProvider networks={networkConfig} defaultNetwork={'localnet'}>
         <WalletProvider chain="bitcoin" autoConnect>
           {children}
         </WalletProvider>

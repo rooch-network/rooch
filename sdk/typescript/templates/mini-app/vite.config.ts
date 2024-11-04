@@ -25,8 +25,8 @@ export default defineConfig({
     // Exposes your dev server and makes it accessible for the devices in the same network.
     host: true,
       https: {
-        key: fs.readFileSync(path.resolve(__dirname, 'localhost-key.pem')),
-        cert: fs.readFileSync(path.resolve(__dirname, 'localhost.pem')),
+        key: fs.readFileSync(path.resolve(__dirname, '192.168.2.16+1-key.pem')),
+        cert: fs.readFileSync(path.resolve(__dirname, '192.168.2.16+1.pem')),
     }
   },
 });

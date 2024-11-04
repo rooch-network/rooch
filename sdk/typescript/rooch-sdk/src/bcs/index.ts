@@ -12,7 +12,7 @@ import {
   ModuleId,
   MoveAction,
   MultiChainAddress,
-  ObjectId,
+  ObjectId, Proof,
   raw,
   RoochTransaction,
   RoochTransactionData,
@@ -46,6 +46,7 @@ export const RoochBcs = {
   RoochTransactionData,
   Authenticator,
   RoochTransaction,
+  Proof,
   ...bcs,
 }
 

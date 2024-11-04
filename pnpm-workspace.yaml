@@ -5,6 +5,7 @@ packages:
   - 'sdk/typescript/build-scripts'
   - 'sdk/typescript/rooch-sdk'
   - 'sdk/typescript/rooch-sdk-kit'
+  - 'sdk/typescript/rooch-sdk-tg-kit'
   - 'sdk/typescript/templates/**'
   - 'sdk/typescript/rooch-create'
   - 'sdk/typescript/bitseed-sdk'

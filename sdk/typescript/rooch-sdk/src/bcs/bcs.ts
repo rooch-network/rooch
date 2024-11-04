@@ -200,3 +200,17 @@ export const RoochTransaction = bcs.struct('RoochTransaction', {
   data: raw(bcs.u8()),
   auth: raw(bcs.u8()),
 })
+
+export const Proof = bcs.struct('Proof', {
+  name: bcs.string(),
+  proof: bcs.struct('ProofInner', {
+    timestamp: bcs.u64(),
+    domain: bcs.struct('ProofDomain', {
+      lengthBytes: bcs.u64(),
+      value: bcs.string()
+    }),
+    signature: bcs.string(),
+    payload: bcs.string()
+  }),
+  stateInit: bcs.string()
+})

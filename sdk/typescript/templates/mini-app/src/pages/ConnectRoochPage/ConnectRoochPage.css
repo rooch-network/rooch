@@ -1,0 +1,16 @@
+.input-text {
+    width: 310px; /* 确保输入框占满父容器的宽度 */
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    font-size: 16px;
+    transition: border-color 0.3s;
+}
+
+.input-text:focus {
+    border-color: #007BFF;
+    outline: none;
+}
+
