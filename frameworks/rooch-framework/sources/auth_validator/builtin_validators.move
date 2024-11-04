@@ -3,6 +3,7 @@
 
 module rooch_framework::builtin_validators{
 
+    use std::option;
     use rooch_framework::auth_validator_registry;
     use rooch_framework::session_validator;
     use rooch_framework::bitcoin_validator;
@@ -18,11 +19,11 @@ module rooch_framework::builtin_validators{
 
     public(friend) fun genesis_init(_genesis_account: &signer) {
         // NATIVE_AUTH_VALIDATOR_ID: u64 = 0;
-        let id = auth_validator_registry::register_internal<session_validator::SessionValidator>();
+        let id = auth_validator_registry::register_internal<session_validator::SessionValidator>(option::some(SESSION_VALIDATOR_ID));
         assert!(id == session_validator::auth_validator_id(), ErrorGenesisInit);
 
         // BITCOIN_AUTH_VALIDATOR_ID: u64 = 1;
-        let id = auth_validator_registry::register_internal<bitcoin_validator::BitcoinValidator>();
+        let id = auth_validator_registry::register_internal<bitcoin_validator::BitcoinValidator>(option::some(BITCOIN_VALIDATOR_ID));
         assert!(id == bitcoin_validator::auth_validator_id(), ErrorGenesisInit);
     }
 

@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-module rooch_nursery::ton_address {
+module rooch_framework::ton_address {
 
     use std::vector;
     use std::option;
@@ -14,6 +14,7 @@ module rooch_nursery::ton_address {
     const ErrorInvalidAddress: u64 = 1;
     const ErrorInvalidWorkchain: u64 = 2;
 
+    #[data_struct]
     struct TonAddress has store, copy, drop{
         is_nagative: bool,
         //The workchain in TonAddress is i32, but No i32 in Move
@@ -59,6 +60,14 @@ module rooch_nursery::ton_address {
         from_hex_str(addr_str)
     }
 
+    public fun from_bytes(bytes: vector<u8>): TonAddress {
+        bcs::from_bytes<TonAddress>(bytes)
+    }
+
+    public fun into_bytes(addr: TonAddress): vector<u8> {
+        bcs::to_bytes(&addr)
+    }
+
     #[test]
     fun test_from_hex(){
         let addr_str = string::utf8(b"0:e4d954ef9f4e1250a26b5bbad76a1cdd17cfd08babad6f4c23e372270aef6f76");
@@ -77,4 +86,14 @@ module rooch_nursery::ton_address {
         assert!(addr.hash_part == @0xe4d954ef9f4e1250a26b5bbad76a1cdd17cfd08babad6f4c23e372270aef6f76, 3);
     }
 
+    #[test]
+    fun test_into_bytes(){
+        let addr_str = string::utf8(b"0:e4d954ef9f4e1250a26b5bbad76a1cdd17cfd08babad6f4c23e372270aef6f76");
+        let addr = from_hex_str(&addr_str);
+        let bytes = into_bytes(addr);
+        let addr2 = from_bytes(bytes);
+        assert!(addr2.is_nagative == addr.is_nagative, 1);
+        assert!(addr2.workchain == addr.workchain, 2);
+        assert!(addr2.hash_part == addr.hash_part, 3);
+    }
 }

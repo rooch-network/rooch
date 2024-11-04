@@ -1,14 +1,14 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-module rooch_nursery::ton_proof {
+module rooch_framework::ton_proof {
 
     use std::vector;
     use std::string::{Self, String};
     
     use moveos_std::bcs;
 
-    use rooch_nursery::ton_address::{TonAddress};
+    use rooch_framework::ton_address::{TonAddress};
 
     #[data_struct]
     struct TonDomain has copy, drop, store{
