@@ -3,7 +3,8 @@
 
 module rooch_nursery::ton_proof {
 
-    use std::string::{String};
+    use std::vector;
+    use std::string::{Self, String};
     
     use moveos_std::bcs;
 
@@ -15,12 +16,17 @@ module rooch_nursery::ton_proof {
         value: String,
     }
 
+    const PAYLOAD_MESSAGE_IDX: u64 = 0;
+    const PAYLOAD_BITCOIN_ADDRESS_IDX: u64 = 1;
+    const PAYLOAD_TX_HASH_IDX: u64 = 2;
+
     #[data_struct]
     struct TonProof has copy, drop, store{
         timestamp: u64,
         domain: TonDomain,
         signature: String,
-        payload: String,
+        //We use a vector to store payload for future extension
+        payload: vector<String>,
     }
 
     #[data_struct]
@@ -75,8 +81,35 @@ module rooch_nursery::ton_proof {
         &ton_proof.domain
     }
 
-    public fun payload(ton_proof: &TonProof): &String {
+    public fun payload(ton_proof: &TonProof): &vector<String> {
         &ton_proof.payload
+    }
+
+    /// Get the message from the payload, if the payload is not long enough, return an empty string
+    public fun payload_message(ton_proof: &TonProof): String {
+        if (vector::length(&ton_proof.payload) > PAYLOAD_MESSAGE_IDX) {
+            *vector::borrow(&ton_proof.payload, PAYLOAD_MESSAGE_IDX)
+        } else {
+            string::utf8(b"")
+        }
+    }
+
+    /// Get the bitcoin address from the payload, if the payload is not long enough, return an empty string
+    public fun payload_bitcoin_address(ton_proof: &TonProof): String {
+        if (vector::length(&ton_proof.payload) > PAYLOAD_BITCOIN_ADDRESS_IDX) {
+            *vector::borrow(&ton_proof.payload, PAYLOAD_BITCOIN_ADDRESS_IDX)
+        } else {
+            string::utf8(b"")
+        }
+    }
+
+    /// Get the tx hash from the payload, if the payload is not long enough, return an empty string
+    public fun payload_tx_hash(ton_proof: &TonProof): String {
+        if (vector::length(&ton_proof.payload) > PAYLOAD_TX_HASH_IDX) {
+            *vector::borrow(&ton_proof.payload, PAYLOAD_TX_HASH_IDX)
+        } else {
+            string::utf8(b"")
+        }
     }
 
     public fun signature(ton_proof: &TonProof): &String {

@@ -5,7 +5,7 @@
 module rooch_nursery::ton_address_mapping {
 
     use std::option::{Self, Option};
-    use std::string::String;
+    use std::string::{Self, String};
 
     use moveos_std::object::{Self, Object};
     use moveos_std::tx_context;
@@ -56,9 +56,10 @@ module rooch_nursery::ton_address_mapping {
         let rooch_to_ton_mapping = borrow_rooch_to_ton_mut();
         assert!(ton_proof::verify_proof(&ton_address, &proof_data), ErrorInvalidBindingProof);
         let proof = ton_proof::proof(&proof_data);
-        let payload = ton_proof::payload(proof);
+        let btc_addr_str = ton_proof::payload_bitcoin_address(proof);
+        assert!(string::length(&btc_addr_str) > 0, ErrorInvalidBindingProof);
         //The ton proof payload should be a Bitcoin address, the user wants to bing.
-        let btc_addr = bitcoin_address::from_string(payload);
+        let btc_addr = bitcoin_address::from_string(&btc_addr_str);
         let rooch_addr = bitcoin_address::to_rooch_address(&btc_addr);
         let sender = tx_context::sender();
         //The sender must be the owner of the Bitcoin address

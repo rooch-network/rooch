@@ -41,11 +41,11 @@ module rooch_nursery::ton_validator {
     public fun validate_signature(ton_address: &TonAddress, proof_data: &TonProofData, tx_hash: vector<u8>) {
         assert!(ton_proof::verify_proof(ton_address, proof_data), auth_validator::error_validate_invalid_authenticator());
         let proof = ton_proof::proof(proof_data);
-        let payload = ton_proof::payload(proof);
+        let tx_hash_from_payload = ton_proof::payload_tx_hash(proof);
 
         //make sure the tx_hash is included in the payload, maybe we need to add more info in the payload?
         let tx_hex = hex::encode(tx_hash);
-        assert!(&tx_hex == string::bytes(payload), auth_validator::error_validate_invalid_authenticator());
+        assert!(&tx_hex == string::bytes(&tx_hash_from_payload), auth_validator::error_validate_invalid_authenticator());
     }
 
     public fun validate(authenticator_payload: vector<u8>) {
