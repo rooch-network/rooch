@@ -7,20 +7,32 @@
 
 -  [Resource `MultiChainAddressMapping`](#0x3_address_mapping_MultiChainAddressMapping)
 -  [Resource `RoochToBitcoinAddressMapping`](#0x3_address_mapping_RoochToBitcoinAddressMapping)
+-  [Resource `RoochToTonAddressMapping`](#0x3_address_mapping_RoochToTonAddressMapping)
 -  [Constants](#@Constants_0)
 -  [Function `genesis_init`](#0x3_address_mapping_genesis_init)
+-  [Function `init_ton_mapping`](#0x3_address_mapping_init_ton_mapping)
 -  [Function `resolve`](#0x3_address_mapping_resolve)
 -  [Function `resolve_bitcoin`](#0x3_address_mapping_resolve_bitcoin)
 -  [Function `exists_mapping`](#0x3_address_mapping_exists_mapping)
--  [Function `bind_bitcoin_address`](#0x3_address_mapping_bind_bitcoin_address)
+-  [Function `bind_bitcoin_address_internal`](#0x3_address_mapping_bind_bitcoin_address_internal)
 -  [Function `bind_bitcoin_address_by_system`](#0x3_address_mapping_bind_bitcoin_address_by_system)
+-  [Function `bind_bitcoin_address`](#0x3_address_mapping_bind_bitcoin_address)
+-  [Function `resolve_to_ton_address`](#0x3_address_mapping_resolve_to_ton_address)
+-  [Function `resolve_via_ton_address`](#0x3_address_mapping_resolve_via_ton_address)
+-  [Function `resolve_via_ton_address_str`](#0x3_address_mapping_resolve_via_ton_address_str)
+-  [Function `bind_ton_address`](#0x3_address_mapping_bind_ton_address)
+-  [Function `bind_ton_address_entry`](#0x3_address_mapping_bind_ton_address_entry)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
+<b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x2::core_addresses</a>;
 <b>use</b> <a href="">0x2::object</a>;
+<b>use</b> <a href="">0x2::tx_context</a>;
 <b>use</b> <a href="bitcoin_address.md#0x3_bitcoin_address">0x3::bitcoin_address</a>;
 <b>use</b> <a href="multichain_address.md#0x3_multichain_address">0x3::multichain_address</a>;
+<b>use</b> <a href="ton_address.md#0x3_ton_address">0x3::ton_address</a>;
+<b>use</b> <a href="ton_proof.md#0x3_ton_proof">0x3::ton_proof</a>;
 </code></pre>
 
 
@@ -52,9 +64,40 @@ The mapping record is the object field, key is the rooch address, value is the B
 
 
 
+<a name="0x3_address_mapping_RoochToTonAddressMapping"></a>
+
+## Resource `RoochToTonAddressMapping`
+
+Mapping from rooch address to ton address
+The mapping record is the object field, key is the rooch address, value is the ton address
+
+
+<pre><code><b>struct</b> <a href="address_mapping.md#0x3_address_mapping_RoochToTonAddressMapping">RoochToTonAddressMapping</a> <b>has</b> key
+</code></pre>
+
+
+
 <a name="@Constants_0"></a>
 
 ## Constants
+
+
+<a name="0x3_address_mapping_ErrorInvalidBindingAddress"></a>
+
+
+
+<pre><code><b>const</b> <a href="address_mapping.md#0x3_address_mapping_ErrorInvalidBindingAddress">ErrorInvalidBindingAddress</a>: u64 = 4;
+</code></pre>
+
+
+
+<a name="0x3_address_mapping_ErrorInvalidBindingProof"></a>
+
+
+
+<pre><code><b>const</b> <a href="address_mapping.md#0x3_address_mapping_ErrorInvalidBindingProof">ErrorInvalidBindingProof</a>: u64 = 3;
+</code></pre>
+
 
 
 <a name="0x3_address_mapping_ErrorMultiChainAddressInvalid"></a>
@@ -99,7 +142,18 @@ The mapping record is the object field, key is the rooch address, value is the B
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_genesis_init">genesis_init</a>(_genesis_account: &<a href="">signer</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_genesis_init">genesis_init</a>()
+</code></pre>
+
+
+
+<a name="0x3_address_mapping_init_ton_mapping"></a>
+
+## Function `init_ton_mapping`
+
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_init_ton_mapping">init_ton_mapping</a>()
 </code></pre>
 
 
@@ -140,13 +194,13 @@ Check if a multi-chain address is bound to a rooch address
 
 
 
-<a name="0x3_address_mapping_bind_bitcoin_address"></a>
+<a name="0x3_address_mapping_bind_bitcoin_address_internal"></a>
 
-## Function `bind_bitcoin_address`
+## Function `bind_bitcoin_address_internal`
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_bind_bitcoin_address">bind_bitcoin_address</a>(rooch_address: <b>address</b>, baddress: <a href="bitcoin_address.md#0x3_bitcoin_address_BitcoinAddress">bitcoin_address::BitcoinAddress</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_bind_bitcoin_address_internal">bind_bitcoin_address_internal</a>(rooch_address: <b>address</b>, btc_address: <a href="bitcoin_address.md#0x3_bitcoin_address_BitcoinAddress">bitcoin_address::BitcoinAddress</a>)
 </code></pre>
 
 
@@ -157,5 +211,76 @@ Check if a multi-chain address is bound to a rooch address
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_bind_bitcoin_address_by_system">bind_bitcoin_address_by_system</a>(system: &<a href="">signer</a>, rooch_address: <b>address</b>, baddress: <a href="bitcoin_address.md#0x3_bitcoin_address_BitcoinAddress">bitcoin_address::BitcoinAddress</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_bind_bitcoin_address_by_system">bind_bitcoin_address_by_system</a>(system: &<a href="">signer</a>, rooch_address: <b>address</b>, btc_address: <a href="bitcoin_address.md#0x3_bitcoin_address_BitcoinAddress">bitcoin_address::BitcoinAddress</a>)
+</code></pre>
+
+
+
+<a name="0x3_address_mapping_bind_bitcoin_address"></a>
+
+## Function `bind_bitcoin_address`
+
+Bind a bitcoin address to a rooch address
+We can calculate the rooch address from bitcoin address
+So we call this function for record rooch address to bitcoin address mapping
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_bind_bitcoin_address">bind_bitcoin_address</a>(btc_address: <a href="bitcoin_address.md#0x3_bitcoin_address_BitcoinAddress">bitcoin_address::BitcoinAddress</a>)
+</code></pre>
+
+
+
+<a name="0x3_address_mapping_resolve_to_ton_address"></a>
+
+## Function `resolve_to_ton_address`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_resolve_to_ton_address">resolve_to_ton_address</a>(sender: <b>address</b>): <a href="_Option">option::Option</a>&lt;<a href="ton_address.md#0x3_ton_address_TonAddress">ton_address::TonAddress</a>&gt;
+</code></pre>
+
+
+
+<a name="0x3_address_mapping_resolve_via_ton_address"></a>
+
+## Function `resolve_via_ton_address`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_resolve_via_ton_address">resolve_via_ton_address</a>(<a href="ton_address.md#0x3_ton_address">ton_address</a>: <a href="ton_address.md#0x3_ton_address_TonAddress">ton_address::TonAddress</a>): <a href="_Option">option::Option</a>&lt;<b>address</b>&gt;
+</code></pre>
+
+
+
+<a name="0x3_address_mapping_resolve_via_ton_address_str"></a>
+
+## Function `resolve_via_ton_address_str`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_resolve_via_ton_address_str">resolve_via_ton_address_str</a>(ton_address_str: <a href="_String">string::String</a>): <a href="_Option">option::Option</a>&lt;<b>address</b>&gt;
+</code></pre>
+
+
+
+<a name="0x3_address_mapping_bind_ton_address"></a>
+
+## Function `bind_ton_address`
+
+Bind a ton address to a rooch address
+The user needs to provide a valid ton proof and the ton address he wants to bind
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_bind_ton_address">bind_ton_address</a>(proof_data: <a href="ton_proof.md#0x3_ton_proof_TonProofData">ton_proof::TonProofData</a>, <a href="ton_address.md#0x3_ton_address">ton_address</a>: <a href="ton_address.md#0x3_ton_address_TonAddress">ton_address::TonAddress</a>)
+</code></pre>
+
+
+
+<a name="0x3_address_mapping_bind_ton_address_entry"></a>
+
+## Function `bind_ton_address_entry`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_bind_ton_address_entry">bind_ton_address_entry</a>(proof_data_bytes: <a href="">vector</a>&lt;u8&gt;, ton_address_str: <a href="_String">string::String</a>)
 </code></pre>

@@ -11,26 +11,30 @@
 -  [Function `multichain_id_ether`](#0x3_multichain_address_multichain_id_ether)
 -  [Function `multichain_id_nostr`](#0x3_multichain_address_multichain_id_nostr)
 -  [Function `multichain_id_rooch`](#0x3_multichain_address_multichain_id_rooch)
+-  [Function `multichain_id_ton`](#0x3_multichain_address_multichain_id_ton)
 -  [Function `get_length`](#0x3_multichain_address_get_length)
 -  [Function `new`](#0x3_multichain_address_new)
 -  [Function `from_bytes`](#0x3_multichain_address_from_bytes)
 -  [Function `from_eth`](#0x3_multichain_address_from_eth)
 -  [Function `from_bitcoin`](#0x3_multichain_address_from_bitcoin)
+-  [Function `from_ton`](#0x3_multichain_address_from_ton)
 -  [Function `multichain_id`](#0x3_multichain_address_multichain_id)
 -  [Function `raw_address`](#0x3_multichain_address_raw_address)
 -  [Function `is_rooch_address`](#0x3_multichain_address_is_rooch_address)
 -  [Function `is_eth_address`](#0x3_multichain_address_is_eth_address)
 -  [Function `is_bitcoin_address`](#0x3_multichain_address_is_bitcoin_address)
+-  [Function `is_ton_address`](#0x3_multichain_address_is_ton_address)
 -  [Function `into_rooch_address`](#0x3_multichain_address_into_rooch_address)
 -  [Function `into_eth_address`](#0x3_multichain_address_into_eth_address)
 -  [Function `into_bitcoin_address`](#0x3_multichain_address_into_bitcoin_address)
+-  [Function `into_ton_address`](#0x3_multichain_address_into_ton_address)
 -  [Function `mapping_to_rooch_address`](#0x3_multichain_address_mapping_to_rooch_address)
 
 
 <pre><code><b>use</b> <a href="">0x2::bcs</a>;
-<b>use</b> <a href="">0x2::hash</a>;
 <b>use</b> <a href="bitcoin_address.md#0x3_bitcoin_address">0x3::bitcoin_address</a>;
 <b>use</b> <a href="ethereum_address.md#0x3_ethereum_address">0x3::ethereum_address</a>;
+<b>use</b> <a href="ton_address.md#0x3_ton_address">0x3::ton_address</a>;
 </code></pre>
 
 
@@ -57,6 +61,15 @@
 
 
 <pre><code><b>const</b> <a href="multichain_address.md#0x3_multichain_address_LENGTH">LENGTH</a>: u64 = 31;
+</code></pre>
+
+
+
+<a name="0x3_multichain_address_ErrorDeprecated"></a>
+
+
+
+<pre><code><b>const</b> <a href="multichain_address.md#0x3_multichain_address_ErrorDeprecated">ErrorDeprecated</a>: u64 = 2;
 </code></pre>
 
 
@@ -106,6 +119,15 @@
 
 
 
+<a name="0x3_multichain_address_MULTICHAIN_ID_TON"></a>
+
+
+
+<pre><code><b>const</b> <a href="multichain_address.md#0x3_multichain_address_MULTICHAIN_ID_TON">MULTICHAIN_ID_TON</a>: u64 = 607;
+</code></pre>
+
+
+
 <a name="0x3_multichain_address_multichain_id_bitcoin"></a>
 
 ## Function `multichain_id_bitcoin`
@@ -146,6 +168,17 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="multichain_address.md#0x3_multichain_address_multichain_id_rooch">multichain_id_rooch</a>(): u64
+</code></pre>
+
+
+
+<a name="0x3_multichain_address_multichain_id_ton"></a>
+
+## Function `multichain_id_ton`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="multichain_address.md#0x3_multichain_address_multichain_id_ton">multichain_id_ton</a>(): u64
 </code></pre>
 
 
@@ -205,6 +238,17 @@
 
 
 
+<a name="0x3_multichain_address_from_ton"></a>
+
+## Function `from_ton`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="multichain_address.md#0x3_multichain_address_from_ton">from_ton</a>(<a href="ton_address.md#0x3_ton_address">ton_address</a>: <a href="ton_address.md#0x3_ton_address_TonAddress">ton_address::TonAddress</a>): <a href="multichain_address.md#0x3_multichain_address_MultiChainAddress">multichain_address::MultiChainAddress</a>
+</code></pre>
+
+
+
 <a name="0x3_multichain_address_multichain_id"></a>
 
 ## Function `multichain_id`
@@ -260,6 +304,17 @@
 
 
 
+<a name="0x3_multichain_address_is_ton_address"></a>
+
+## Function `is_ton_address`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="multichain_address.md#0x3_multichain_address_is_ton_address">is_ton_address</a>(maddress: &<a href="multichain_address.md#0x3_multichain_address_MultiChainAddress">multichain_address::MultiChainAddress</a>): bool
+</code></pre>
+
+
+
 <a name="0x3_multichain_address_into_rooch_address"></a>
 
 ## Function `into_rooch_address`
@@ -293,13 +348,25 @@
 
 
 
+<a name="0x3_multichain_address_into_ton_address"></a>
+
+## Function `into_ton_address`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="multichain_address.md#0x3_multichain_address_into_ton_address">into_ton_address</a>(maddress: <a href="multichain_address.md#0x3_multichain_address_MultiChainAddress">multichain_address::MultiChainAddress</a>): <a href="ton_address.md#0x3_ton_address_TonAddress">ton_address::TonAddress</a>
+</code></pre>
+
+
+
 <a name="0x3_multichain_address_mapping_to_rooch_address"></a>
 
 ## Function `mapping_to_rooch_address`
 
-Mapping from MultiChainAddress to rooch address
-If the MultiChainAddress is not rooch address, it will generate a new rooch address based on the MultiChainAddress
+Deprecated, will be removed in the future
+Now, we only support Bitcoin address generate rooch address
+Other address types need to resolve via address_mapping module: <code><a href="bitcoin_address.md#0x3_bitcoin_address_to_rooch_address">bitcoin_address::to_rooch_address</a></code>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="multichain_address.md#0x3_multichain_address_mapping_to_rooch_address">mapping_to_rooch_address</a>(maddress: <a href="multichain_address.md#0x3_multichain_address_MultiChainAddress">multichain_address::MultiChainAddress</a>): <b>address</b>
+<pre><code><b>public</b> <b>fun</b> <a href="multichain_address.md#0x3_multichain_address_mapping_to_rooch_address">mapping_to_rooch_address</a>(_maddress: <a href="multichain_address.md#0x3_multichain_address_MultiChainAddress">multichain_address::MultiChainAddress</a>): <b>address</b>
 </code></pre>
