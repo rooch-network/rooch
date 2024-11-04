@@ -10229,6 +10229,7 @@ dependencies = [
  "raw-store",
  "rooch-types",
  "tokio",
+ "tracing",
 ]
 
 [[package]]

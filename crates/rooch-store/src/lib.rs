@@ -26,6 +26,7 @@ use rooch_types::transaction::LedgerTransaction;
 use std::fmt::{Debug, Display, Formatter};
 use std::path::Path;
 use std::sync::Arc;
+use tracing::{error, info};
 
 pub mod accumulator_store;
 pub mod da_store;
@@ -177,6 +178,76 @@ impl RoochStore {
         inner_store.write_batch_across_cfs(cf_names, write_batch, true)?;
         Ok(())
     }
+
+    pub fn repair(&self, thorough: bool, _exec: bool) -> Result<(usize, usize)> {
+        let sequence_info = self
+            .get_sequencer_info()?
+            .ok_or_else(|| anyhow::anyhow!("Sequencer info not found"))?;
+        let exp_last_order = sequence_info.last_order;
+        if exp_last_order == 0 {
+            return Ok((0, 0));
+        }
+
+        let mut issues = 0;
+        let mut fixed = 0;
+
+        if thorough {
+            issues += self.check_thorough(exp_last_order)?;
+            info!("Thorough check done, issues: {}", issues);
+        }
+
+        // exec or not, DA will exec repair automatically because there won't be external dependencies for repair DA meta
+        let (da_issues, da_fixed) = self
+            .da_meta_store
+            .try_repair_da_meta(exp_last_order, thorough)?;
+        info!("DA repair done, issues: {}, fixed: {}", da_issues, da_fixed);
+        issues += da_issues;
+        fixed += da_fixed;
+
+        Ok((issues, fixed))
+    }
+
+    // check sequenced tx updates are atomic or not
+    // after 0.7.6 released and fixed historical data, this check can be removed
+    fn check_thorough(&self, exp_last_order: u64) -> Result<usize> {
+        let mut issues = 0;
+        let mut lost_tx_hashes = vec![];
+        let mut lost_tx = vec![];
+
+        for tx_order in 0..=exp_last_order {
+            let tx_hash_opt = self
+                .transaction_store
+                .get_tx_hashes(vec![tx_order])?
+                .pop()
+                .flatten();
+            match tx_hash_opt {
+                Some(tx_hash) => {
+                    let tx = self.transaction_store.get_transaction_by_hash(tx_hash)?;
+                    if tx.is_none() {
+                        lost_tx.push(tx_hash);
+                        issues += 1;
+                    }
+                }
+                None => {
+                    lost_tx_hashes.push(tx_order);
+                    issues += 1;
+                }
+            }
+        }
+
+        if !lost_tx_hashes.is_empty() {
+            error!(
+                "Lost tx hashes({}): {:?}",
+                lost_tx_hashes.len(),
+                lost_tx_hashes
+            );
+        }
+        if !lost_tx.is_empty() {
+            error!("Lost txs({}): {:?}", lost_tx.len(), lost_tx);
+        }
+
+        Ok(issues)
+    }
 }
 
 impl Display for RoochStore {
@@ -256,8 +327,9 @@ impl StateStore for RoochStore {
 }
 
 impl DAMetaStore for RoochStore {
-    fn try_repair_da_meta(&self, last_order: u64) -> Result<()> {
-        self.get_da_meta_store().try_repair_da_meta(last_order)
+    fn try_repair_da_meta(&self, last_order: u64, thorough: bool) -> Result<(usize, usize)> {
+        self.get_da_meta_store()
+            .try_repair_da_meta(last_order, thorough)
     }
 
     fn append_submitting_block(&self, tx_order_start: u64, tx_order_end: u64) -> Result<u128> {

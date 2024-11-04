@@ -67,7 +67,7 @@ async fn rollback_to_last_tx_order() {
         expected_val: Option<Vec<u128>>,
     ) {
         let mut remove_blocks = store
-            .generate_remove_blocks(last_block_opt, last_order)
+            .generate_remove_blocks_after_order(last_block_opt, last_order)
             .unwrap();
         remove_blocks.sort();
         assert_eq!(remove_blocks.len(), expected_len, "test case {}", case);
