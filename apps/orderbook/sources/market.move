@@ -1,6 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
-module orderbook::market {
+module orderbook::market_v2 {
     use std::option;
     use std::option::{Option, is_some, destroy_none};
     use std::string;
@@ -8,8 +8,8 @@ module orderbook::market {
     use moveos_std::object;
     use rooch_framework::coin::{Self, Coin};
     use std::vector;
-    use std::vector::for_each;
-    use moveos_std::event;
+    use std::vector::{length, zip};
+    // use moveos_std::event;
     use rooch_framework::account_coin_store;
     use moveos_std::linked_table;
     use moveos_std::linked_table::LinkedTable;
@@ -48,6 +48,7 @@ module orderbook::market {
     const ErrorFeeTooHigh: u64 = 6;
     const ErrorInvalidOrderId: u64 = 7;
     const ErrorUnauthorizedCancel: u64 = 8;
+    const ErrorOrderLength: u64 = 9;
 
 
     /// listing info in the market
@@ -272,11 +273,13 @@ module orderbook::market {
         signer: &signer,
         market_obj: &mut Object<Marketplace<BaseAsset, QuoteAsset>>,
         order_ids: vector<u64>,
+        order_owners: vector<address>,
         assert_order_exist: bool,
         receiver: address
     ){
-        for_each(order_ids, |order_id|{
-            buy(signer, market_obj, order_id, assert_order_exist, receiver)
+        assert!(length(&order_ids) == length(&order_owners), ErrorOrderLength);
+        zip(order_ids, order_owners, |order_id, order_owner|{
+            buy(signer, market_obj, order_id, order_owner, assert_order_exist, receiver)
         })
     }
 
@@ -284,10 +287,11 @@ module orderbook::market {
         signer: &signer,
         market_obj: &mut Object<Marketplace<BaseAsset, QuoteAsset>>,
         order_id: u64,
+        order_owner: address,
         assert_order_exist: bool,
         receiver: address
     ){
-        let option_coin = do_buy<BaseAsset, QuoteAsset>(signer, market_obj, order_id, assert_order_exist);
+        let option_coin = do_buy<BaseAsset, QuoteAsset>(signer, market_obj, order_id, order_owner, assert_order_exist);
         if (is_some(&option_coin)) {
             account_coin_store::deposit(receiver, option::extract(&mut option_coin))
         };
@@ -299,13 +303,13 @@ module orderbook::market {
         signer: &signer,
         market_obj: &mut Object<Marketplace<BaseAsset, QuoteAsset>>,
         order_id: u64,
+        order_owner: address,
         assert_order_exist: bool,
-        // paid: &mut Coin<BaseAsset>,
     ): Option<Coin<QuoteAsset>> {
         let market = object::borrow_mut(market_obj);
         assert!(market.is_paused == false, ErrorWrongPaused);
         assert!(market.version == VERSION, ErrorWrongVersion);
-        let usr_open_orders = table::borrow_mut(&mut market.user_order_info, sender());
+        let usr_open_orders = table::borrow_mut(&mut market.user_order_info, order_owner);
         let tick_price = *linked_table::borrow(usr_open_orders, order_id);
         let (tick_exists, tick_index) = find_leaf(&market.asks, tick_price);
         // Return non-existent orders to none instead of panic during bulk buying
@@ -313,7 +317,7 @@ module orderbook::market {
             return option::none()
         };
         assert!(tick_exists, ErrorInvalidOrderId);
-        let order = remove_order(&mut market.asks, usr_open_orders, tick_index, order_id, sender());
+        let order = remove_order(&mut market.asks, usr_open_orders, tick_index, order_id, order_owner);
         // TODO here maybe wrap to u512?
         let total_price = order.quantity * (order.unit_price as u256);
         let trade_coin = account_coin_store::withdraw<BaseAsset>(signer, total_price);
@@ -341,11 +345,12 @@ module orderbook::market {
         signer: &signer,
         market_obj: &mut Object<Marketplace<BaseAsset, QuoteAsset>>,
         order_ids: vector<u64>,
+        order_owners: vector<address>,
         assert_order_exist: bool,
         receiver: address
     ){
-        for_each(order_ids, |order_id|{
-            accept_bid(signer, market_obj, order_id, assert_order_exist, receiver)
+        zip(order_ids, order_owners,|order_id, order_owner|{
+            accept_bid(signer, market_obj, order_id, order_owner, assert_order_exist, receiver)
         })
     }
 
@@ -354,10 +359,11 @@ module orderbook::market {
         signer: &signer,
         market_obj: &mut Object<Marketplace<BaseAsset, QuoteAsset>>,
         order_id: u64,
+        order_owner: address,
         assert_order_exist: bool,
         receiver: address
     ){
-        let option_coin = do_accept_bid<BaseAsset, QuoteAsset>(signer, market_obj, order_id, assert_order_exist);
+        let option_coin = do_accept_bid<BaseAsset, QuoteAsset>(signer, market_obj, order_id, order_owner, assert_order_exist);
         if (is_some(&option_coin)) {
             account_coin_store::deposit(receiver, option::extract(&mut option_coin))
         };
@@ -368,6 +374,7 @@ module orderbook::market {
         signer: &signer,
         market_obj: &mut Object<Marketplace<BaseAsset, QuoteAsset>>,
         order_id: u64,
+        order_owner: address,
         assert_order_exist: bool,
         // paid: &mut Coin<QuoteAsset>
     ): Option<Coin<BaseAsset>>
@@ -375,7 +382,7 @@ module orderbook::market {
         let market = object::borrow_mut(market_obj);
         assert!(market.is_paused == false, ErrorWrongPaused);
         assert!(market.version == VERSION, ErrorWrongVersion);
-        let usr_open_orders = table::borrow_mut(&mut market.user_order_info, sender());
+        let usr_open_orders = table::borrow_mut(&mut market.user_order_info, order_owner);
         let tick_price = *linked_table::borrow(usr_open_orders, order_id);
         let (tick_exists, tick_index) = find_leaf(&market.bids, tick_price);
         // Return non-existent orders to none instead of panic during bulk buying
@@ -481,13 +488,13 @@ module orderbook::market {
         linked_table::destroy_empty(orders);
     }
 
-    struct QueryOrderEvent has copy, drop {
-        order_ids: vector<u64>,
-        unit_prices: vector<u64>,
-        quantitys: vector<u256>,
-        owners: vector<address>,
-        is_bids: vector<bool>
-    }
+    // struct QueryOrderEvent has copy, drop {
+    //     order_ids: vector<u64>,
+    //     unit_prices: vector<u64>,
+    //     quantitys: vector<u256>,
+    //     owners: vector<address>,
+    //     is_bids: vector<bool>
+    // }
 
     public fun query_order<BaseAsset: key + store, QuoteAsset: key + store>(
         market_obj: &Object<Marketplace<BaseAsset, QuoteAsset>>,
@@ -495,7 +502,7 @@ module orderbook::market {
         from_price: u64,
         from_price_is_none: bool,
         start_order_id: u64
-    ): vector<u64> {
+    ): (vector<u64>, vector<u64>, vector<u256>, vector<address>, vector<bool>) {
         let market = object::borrow(market_obj);
         let order_ids = vector<u64>[];
         let unit_prices = vector<u64>[];
@@ -515,16 +522,7 @@ module orderbook::market {
                 let tick_level = critbit::borrow_leaf_by_key(&market.bids, from);
                 let order_count = linked_table::length(&tick_level.open_orders);
                 if (order_count == 0) {
-                    event::emit(
-                        QueryOrderEvent{
-                            order_ids,
-                            unit_prices,
-                            quantitys,
-                            owners,
-                            is_bids
-                        }
-                    );
-                    return order_ids
+                    return (order_ids, unit_prices, quantitys, owners, is_bids)
                 };
                 let option_order_id = if (!linked_table::contains(&tick_level.open_orders, start_order_id)){
                     linked_table::front(&tick_level.open_orders)
@@ -541,16 +539,7 @@ module orderbook::market {
                     vector::push_back(&mut is_bids, order.is_bid);
                     i = i + 1;
                     if (i >= 50) {
-                        event::emit(
-                            QueryOrderEvent{
-                                order_ids,
-                                unit_prices,
-                                quantitys,
-                                owners,
-                                is_bids
-                            }
-                        );
-                        return order_ids
+                        return (order_ids, unit_prices, quantitys, owners, is_bids)
                     };
                     option_order_id = linked_table::next(&tick_level.open_orders, order_id)
                 };
@@ -558,16 +547,7 @@ module orderbook::market {
                 if (index != 0x8000000000000000) {
                     from = key;
                 }else {
-                    event::emit(
-                        QueryOrderEvent{
-                            order_ids,
-                            unit_prices,
-                            quantitys,
-                            owners,
-                            is_bids
-                        }
-                    );
-                    return order_ids
+                    return (order_ids, unit_prices, quantitys, owners, is_bids)
                 }
             };
         }else {
@@ -583,16 +563,7 @@ module orderbook::market {
                 let tick_level = critbit::borrow_leaf_by_key(&market.asks, from);
                 let order_count = linked_table::length(&tick_level.open_orders);
                 if (order_count == 0) {
-                    event::emit(
-                        QueryOrderEvent{
-                            order_ids,
-                            unit_prices,
-                            quantitys,
-                            owners,
-                            is_bids
-                        }
-                    );
-                    return order_ids
+                    return (order_ids, unit_prices, quantitys, owners, is_bids)
                 };
                 let option_order_id = if (!linked_table::contains(&tick_level.open_orders, start_order_id)){
                     linked_table::front(&tick_level.open_orders)
@@ -609,16 +580,7 @@ module orderbook::market {
                     vector::push_back(&mut is_bids, order.is_bid);
                     i = i + 1;
                     if (i >= 50) {
-                        event::emit(
-                            QueryOrderEvent{
-                                order_ids,
-                                unit_prices,
-                                quantitys,
-                                owners,
-                                is_bids
-                            }
-                        );
-                        return order_ids
+                        return (order_ids, unit_prices, quantitys, owners, is_bids)
                     };
                     option_order_id = linked_table::next(&tick_level.open_orders, order_id)
                 };
@@ -626,29 +588,12 @@ module orderbook::market {
                 if (index != 0x8000000000000000) {
                     from = key;
                 }else {
-                    event::emit(
-                        QueryOrderEvent{
-                            order_ids,
-                            unit_prices,
-                            quantitys,
-                            owners,
-                            is_bids
-                        }
-                    );
-                    return order_ids
+                    return (order_ids, unit_prices, quantitys, owners, is_bids)
                 }
             };
         };
-        event::emit(
-            QueryOrderEvent{
-                order_ids,
-                unit_prices,
-                quantitys,
-                owners,
-                is_bids
-            }
-        );
-        return order_ids
+
+        return (order_ids, unit_prices, quantitys, owners, is_bids)
     }
 
     public fun query_user_order<BaseAsset: key + store, QuoteAsset: key + store>(
@@ -657,10 +602,10 @@ module orderbook::market {
         from_order: u64,
         from_order_is_none: bool,
         count: u64
-    ): vector<u64>{
+    ): (vector<u64>, vector<u64>, vector<u256>, vector<address>, vector<bool>) {
         let market = object::borrow(market_obj);
         if (!table::contains(&market.user_order_info, user)) {
-            return vector[]
+            return (vector[], vector[], vector[], vector[], vector[])
         };
         let user_table = table::borrow(&market.user_order_info, user);
         let order_ids = vector<u64>[];
@@ -698,16 +643,7 @@ module orderbook::market {
                 break
             }
         };
-        event::emit(
-            QueryOrderEvent{
-                order_ids,
-                unit_prices,
-                quantitys,
-                owners,
-                is_bids
-            }
-        );
-        return order_ids
+        return (order_ids, unit_prices, quantitys, owners, is_bids)
     }
 
 
