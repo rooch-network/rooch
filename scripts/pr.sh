@@ -31,11 +31,11 @@ Usage:
     check_pr <flags>
 Flags:
     -h   Print this help
-    -c   Check the core prover crates using cargo xfmt/xclippy.
+    -c   Check the core prover crates using cargo fmt/clippy.
          This is the default if no flags are provided.
     -x   Like -c, but adds more crates (specifically all which depend
          on move-model)
-    -t   In addition to xfmt/xclippy, run cargo test
+    -t   In addition to fmt/clippy, run cargo test
     -d   Run documentation generation, abi generation, etc. for move-stdlib
          and other tested frameworks.
     -g   Run the Move git checks script (whitespace check). This works
