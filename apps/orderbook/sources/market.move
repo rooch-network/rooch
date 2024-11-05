@@ -488,14 +488,6 @@ module orderbook::market_v2 {
         linked_table::destroy_empty(orders);
     }
 
-    // struct QueryOrderEvent has copy, drop {
-    //     order_ids: vector<u64>,
-    //     unit_prices: vector<u64>,
-    //     quantitys: vector<u256>,
-    //     owners: vector<address>,
-    //     is_bids: vector<bool>
-    // }
-
     public fun query_order<BaseAsset: key + store, QuoteAsset: key + store>(
         market_obj: &Object<Marketplace<BaseAsset, QuoteAsset>>,
         query_bid: bool,
