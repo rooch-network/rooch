@@ -656,11 +656,11 @@ module grow_bitcoin::grow_bitcoin {
     
     public entry fun remove_expired_stake(asset_id: ObjectID) {
         let (is_staked, _) = check_asset_is_staked(asset_id);
-        if (!is_staked){
+        if (!is_staked || object::exists_object_with_type<UTXO>(asset_id) || object::exists_object_with_type<BBNStakeSeal>(asset_id))){
             return
         };
         // assert!(is_staked, ErrorNotStaked);
-        assert!((!object::exists_object_with_type<UTXO>(asset_id) && !object::exists_object_with_type<BBNStakeSeal>(asset_id)), ErrorAssetExist);
+        // assert!((!object::exists_object_with_type<UTXO>(asset_id) && !object::exists_object_with_type<BBNStakeSeal>(asset_id)), ErrorAssetExist);
         let farming_asset = account::borrow_mut_resource<FarmingAsset>(DEPLOYER);
         let account = table::remove(&mut farming_asset.stake_table, asset_id);
         let user_stake = account::borrow_mut_resource<UserStake>(account);
