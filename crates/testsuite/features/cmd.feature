@@ -282,6 +282,29 @@ Feature: Rooch CLI integration tests
       Then stop the server
 
   @serial
+  Scenario: publish rpd file directly
+      Given a server for publish_rpd_direct
+
+      # First build the counter example
+      Then cmd: "move build -p ../../examples/counter --named-addresses rooch_examples=default --json"
+      Then assert: "{{$.move[-1].Result}} == Success"
+
+      # Test direct publish rpd command
+      Then cmd: "move publish ../../examples/counter/build/counter/package.rpd --json"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+
+      # Verify the counter functionality works
+      Then cmd: "move view --function default::counter::value"
+      Then assert: "{{$.move[-1].return_values[0].decoded_value}} == 0"
+      Then cmd: "move run --function default::counter::increase --json"
+      Then cmd: "move view --function default::counter::value"
+      Then assert: "{{$.move[-1].return_values[0].decoded_value}} == 1"
+      Then cmd: "resource --address default --resource default::counter::Counter"
+      Then assert: "{{$.resource[-1].decoded_value.value.value.value.value}} == 1"
+
+      Then stop the server
+
+  @serial
   Scenario: coins example
       Given a server for coins
       Then cmd: "account create --json"
