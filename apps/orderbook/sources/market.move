@@ -5,26 +5,28 @@ module orderbook::market_v2 {
     use std::option::{Option, is_some, destroy_none};
     use std::string;
     use std::string::String;
-    use moveos_std::object;
-    use rooch_framework::coin::{Self, Coin};
     use std::vector;
     use std::vector::{length, zip};
-    // use moveos_std::event;
-    use rooch_framework::account_coin_store;
+    
     use moveos_std::linked_table;
     use moveos_std::linked_table::LinkedTable;
-    use rooch_framework::coin_store;
+    use moveos_std::object;
     use moveos_std::tx_context::sender;
     use moveos_std::type_info::type_name;
     use moveos_std::object::{Object, ObjectID, to_shared, new_named_object};
-    use rooch_framework::coin_store::{CoinStore, create_coin_store};
     use moveos_std::timestamp::now_milliseconds;
+    use moveos_std::table;
+    use moveos_std::table::Table;
+
+    use rooch_framework::coin_store::{CoinStore, create_coin_store};
+    use rooch_framework::coin::{Self, Coin};
+    use rooch_framework::coin_store;
+    use rooch_framework::account_coin_store;
+
     use orderbook::critbit::{CritbitTree, find_leaf, borrow_leaf_by_index, borrow_mut_leaf_by_index,
         remove_leaf_by_index
     };
     use orderbook::critbit;
-    use moveos_std::table;
-    use moveos_std::table::Table;
     use app_admin::admin::AdminCap;
 
     const DEPLOYER: address = @orderbook;
@@ -49,6 +51,7 @@ module orderbook::market_v2 {
     const ErrorInvalidOrderId: u64 = 7;
     const ErrorUnauthorizedCancel: u64 = 8;
     const ErrorOrderLength: u64 = 9;
+    const ErrorDeprecated: u64 = 10;
 
 
     /// listing info in the market
@@ -65,13 +68,21 @@ module orderbook::market_v2 {
         is_bid: bool,
     }
 
+    /// Same as Order, but with `copy`
+    /// Use this struct as query result
+    struct OrderInfo has store, copy, drop{
+        order_id: u64,
+        unit_price: u64,
+        quantity: u256,
+        owner: address,
+        is_bid: bool,
+    }
+
     struct TickLevel has store {
         price: u64,
         // The key is order order id.
         open_orders: LinkedTable<u64, Order>,
-        // other price level info
     }
-
 
     ///Record some important information of the market
     struct Marketplace<phantom BaseAsset: key + store, phantom QuoteAsset: key + store> has key {
@@ -488,20 +499,16 @@ module orderbook::market_v2 {
         linked_table::destroy_empty(orders);
     }
 
-    public fun query_order<BaseAsset: key + store, QuoteAsset: key + store>(
+    public fun query_order_info<BaseAsset: key + store, QuoteAsset: key + store>(
         market_obj: &Object<Marketplace<BaseAsset, QuoteAsset>>,
         query_bid: bool,
         from_price: u64,
         from_price_is_none: bool,
         start_order_id: u64
-    ): (vector<u64>, vector<u64>, vector<u256>, vector<address>, vector<bool>) {
-        let market = object::borrow(market_obj);
-        let order_ids = vector<u64>[];
-        let unit_prices = vector<u64>[];
-        let quantitys = vector<u256>[];
-        let owners = vector<address>[];
-        let is_bids = vector<bool>[];
+    ): vector<OrderInfo> {
 
+        let market = object::borrow(market_obj);
+        let order_infos = vector::empty<OrderInfo>();
         if (query_bid) {
             let i = 0;
             let from = if (from_price_is_none) {
@@ -514,7 +521,7 @@ module orderbook::market_v2 {
                 let tick_level = critbit::borrow_leaf_by_key(&market.bids, from);
                 let order_count = linked_table::length(&tick_level.open_orders);
                 if (order_count == 0) {
-                    return (order_ids, unit_prices, quantitys, owners, is_bids)
+                    return order_infos
                 };
                 let option_order_id = if (!linked_table::contains(&tick_level.open_orders, start_order_id)){
                     linked_table::front(&tick_level.open_orders)
@@ -524,14 +531,16 @@ module orderbook::market_v2 {
                 while (option::is_some(option_order_id)) {
                     let order_id = option::destroy_some(*option_order_id);
                     let order = linked_table::borrow(&tick_level.open_orders, order_id);
-                    vector::push_back(&mut order_ids, order.order_id);
-                    vector::push_back(&mut unit_prices, order.unit_price);
-                    vector::push_back(&mut quantitys, order.quantity);
-                    vector::push_back(&mut owners, order.owner);
-                    vector::push_back(&mut is_bids, order.is_bid);
+                    vector::push_back(&mut order_infos, OrderInfo {
+                        order_id: order.order_id,
+                        unit_price: order.unit_price,
+                        quantity: order.quantity,
+                        owner: order.owner,
+                        is_bid: order.is_bid
+                    });
                     i = i + 1;
                     if (i >= 50) {
-                        return (order_ids, unit_prices, quantitys, owners, is_bids)
+                        return order_infos
                     };
                     option_order_id = linked_table::next(&tick_level.open_orders, order_id)
                 };
@@ -539,7 +548,7 @@ module orderbook::market_v2 {
                 if (index != 0x8000000000000000) {
                     from = key;
                 }else {
-                    return (order_ids, unit_prices, quantitys, owners, is_bids)
+                    return order_infos
                 }
             };
         }else {
@@ -555,7 +564,7 @@ module orderbook::market_v2 {
                 let tick_level = critbit::borrow_leaf_by_key(&market.asks, from);
                 let order_count = linked_table::length(&tick_level.open_orders);
                 if (order_count == 0) {
-                    return (order_ids, unit_prices, quantitys, owners, is_bids)
+                    return order_infos
                 };
                 let option_order_id = if (!linked_table::contains(&tick_level.open_orders, start_order_id)){
                     linked_table::front(&tick_level.open_orders)
@@ -565,14 +574,16 @@ module orderbook::market_v2 {
                 while (option::is_some(option_order_id)) {
                     let order_id = option::destroy_some(*option_order_id);
                     let order = linked_table::borrow(&tick_level.open_orders, order_id);
-                    vector::push_back(&mut order_ids, order.order_id);
-                    vector::push_back(&mut unit_prices, order.unit_price);
-                    vector::push_back(&mut quantitys, order.quantity);
-                    vector::push_back(&mut owners, order.owner);
-                    vector::push_back(&mut is_bids, order.is_bid);
+                    vector::push_back(&mut order_infos, OrderInfo {
+                        order_id: order.order_id,
+                        unit_price: order.unit_price,
+                        quantity: order.quantity,
+                        owner: order.owner,
+                        is_bid: order.is_bid
+                    });
                     i = i + 1;
                     if (i >= 50) {
-                        return (order_ids, unit_prices, quantitys, owners, is_bids)
+                        return order_infos
                     };
                     option_order_id = linked_table::next(&tick_level.open_orders, order_id)
                 };
@@ -580,31 +591,36 @@ module orderbook::market_v2 {
                 if (index != 0x8000000000000000) {
                     from = key;
                 }else {
-                    return (order_ids, unit_prices, quantitys, owners, is_bids)
+                    return order_infos
                 }
             };
         };
-
-        return (order_ids, unit_prices, quantitys, owners, is_bids)
+        order_infos
     }
 
-    public fun query_user_order<BaseAsset: key + store, QuoteAsset: key + store>(
+    public fun query_order<BaseAsset: key + store, QuoteAsset: key + store>(
+        _market_obj: &Object<Marketplace<BaseAsset, QuoteAsset>>,
+        _query_bid: bool,
+        _from_price: u64,
+        _from_price_is_none: bool,
+        _start_order_id: u64
+    ): (vector<u64>, vector<u64>, vector<u256>, vector<address>, vector<bool>) {
+        abort ErrorDeprecated
+    }
+
+    public fun query_user_order_info<BaseAsset: key + store, QuoteAsset: key + store>(
         market_obj: &Object<Marketplace<BaseAsset, QuoteAsset>>,
         user: address,
         from_order: u64,
         from_order_is_none: bool,
         count: u64
-    ): (vector<u64>, vector<u64>, vector<u256>, vector<address>, vector<bool>) {
+    ): vector<OrderInfo> {
         let market = object::borrow(market_obj);
+        let order_infos = vector::empty<OrderInfo>();
         if (!table::contains(&market.user_order_info, user)) {
-            return (vector[], vector[], vector[], vector[], vector[])
+            return order_infos
         };
         let user_table = table::borrow(&market.user_order_info, user);
-        let order_ids = vector<u64>[];
-        let unit_prices = vector<u64>[];
-        let quantitys = vector<u256>[];
-        let owners = vector<address>[];
-        let is_bids = vector<bool>[];
         let from = if (from_order_is_none) {
             *option::borrow(linked_table::front(user_table))
         }else {
@@ -620,11 +636,13 @@ module orderbook::market_v2 {
             if (tick_exists) {
                 let tick_level = borrow_leaf_by_index(open_orders, tick_index);
                 let order = linked_table::borrow(&tick_level.open_orders, from);
-                vector::push_back(&mut order_ids, order.order_id);
-                vector::push_back(&mut unit_prices, order.unit_price);
-                vector::push_back(&mut quantitys, order.quantity);
-                vector::push_back(&mut owners, order.owner);
-                vector::push_back(&mut is_bids, order.is_bid);
+                vector::push_back(&mut order_infos, OrderInfo {
+                    order_id: order.order_id,
+                    unit_price: order.unit_price,
+                    quantity: order.quantity,
+                    owner: order.owner,
+                    is_bid: order.is_bid
+                });
                 i = i + 1;
             }else {
                 break
@@ -635,7 +653,17 @@ module orderbook::market_v2 {
                 break
             }
         };
-        return (order_ids, unit_prices, quantitys, owners, is_bids)
+        order_infos
+    }
+
+    public fun query_user_order<BaseAsset: key + store, QuoteAsset: key + store>(
+        _market_obj: &Object<Marketplace<BaseAsset, QuoteAsset>>,
+        _user: address,
+        _from_order: u64,
+        _from_order_is_none: bool,
+        _count: u64
+    ): (vector<u64>, vector<u64>, vector<u256>, vector<address>, vector<bool>) {
+        abort ErrorDeprecated
     }
 
 
