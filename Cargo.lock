@@ -12137,11 +12137,10 @@ dependencies = [
 
 [[package]]
 name = "tiny-bip39"
-version = "1.0.1"
+version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4a6e875ccbd782b2d91350816d4ab27da3c9424c381f9ba07ed3e2e1ae680d90"
+checksum = "a30fd743a02bf35236f6faf99adb03089bb77e91c998dac2c2ad76bb424f668c"
 dependencies = [
- "anyhow",
  "once_cell",
  "pbkdf2 0.12.2",
  "rand 0.8.5",
