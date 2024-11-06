@@ -201,7 +201,7 @@ module moveos_std::string_utils {
         to_string_u256((n as u256))
     }
 
-     public fun to_string_u32(n: u32): String {
+    public fun to_string_u32(n: u32): String {
         to_string_u256((n as u256))
     }
     

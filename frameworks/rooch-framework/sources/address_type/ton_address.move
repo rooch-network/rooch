@@ -11,7 +11,8 @@ module rooch_framework::ton_address {
     use moveos_std::hex;
     use moveos_std::bcs;
     use moveos_std::i32::{Self, I32};
-
+    use moveos_std::i8;
+    use moveos_std::base64;
     const ErrorInvalidAddress: u64 = 1;
     const ErrorInvalidWorkchain: u64 = 2;
 
@@ -58,141 +59,114 @@ module rooch_framework::ton_address {
         }
     }
 
-    // /// Parses url-safe base64 representation of an address
-    // ///
-    // /// # Returns
-    // /// the address, non-bounceable flag, non-production flag.
-    // pub fn from_base64_url_flags(
-    //     s: &str,
-    // ) -> Result<(TonAddress, bool, bool), TonAddressParseError> {
-    //     if s.len() != 48 {
-    //         return Err(TonAddressParseError::new(
-    //             s,
-    //             "Invalid base64url address: Wrong length",
-    //         ));
-    //     }
-    //     let maybe_bytes = URL_SAFE_NO_PAD.decode(s);
-    //     let bytes = match maybe_bytes {
-    //         Ok(bytes) => bytes,
-    //         Err(_) => {
-    //             return Err(TonAddressParseError::new(
-    //                 s,
-    //                 "Invalid base64url address: Base64 decode error",
-    //             ))
-    //         }
-    //     };
-    //     let maybe_slice = bytes.as_slice().try_into();
-    //     let slice = match maybe_slice {
-    //         Ok(slice) => slice,
-    //         Err(_) => {
-    //             return Err(TonAddressParseError::new(
-    //                 s,
-    //                 "Invalid base64url address: Unexpected error",
-    //             ))
-    //         }
-    //     };
+    public fun from_base64_url(s: &String): TonAddress {
+        let (addr, _, _) = from_base64_url_flags(s);
+        addr
+    }
 
-    //     Self::from_base64_src(slice, s)
-    // }
+    public fun from_base64_url_flags(s: &String): (TonAddress, bool, bool) {
+        //Because the base64::decode do not support url-safe, we need to convert it to std first.
+        let url_safe_str = to_base64_std(s);
+        let bytes = string::bytes(&url_safe_str);
+        let len = vector::length(bytes);
+        assert!(len == 48, ErrorInvalidAddress);
+        let decoded_bytes = base64::decode(bytes);
+        let (addr, non_bounceable, non_production) = from_base64_src(&decoded_bytes);
+        (addr, non_bounceable, non_production)
+    }
 
-    // pub fn from_base64_std(s: &str) -> Result<TonAddress, TonAddressParseError> {
-    //     Ok(Self::from_base64_std_flags(s)?.0)
-    // }
+    public fun from_base64_std(s: &String): TonAddress {
+        let (addr, _, _) = from_base64_std_flags(s);
+        addr
+    }
 
-    // /// Parses standard base64 representation of an address
-    // ///
-    // /// # Returns
-    // /// the address, non-bounceable flag, non-production flag.
-    // pub fn from_base64_std_flags(
-    //     s: &str,
-    // ) -> Result<(TonAddress, bool, bool), TonAddressParseError> {
-    //     if s.len() != 48 {
-    //         return Err(TonAddressParseError::new(
-    //             s,
-    //             "Invalid base64std address: Invalid length",
-    //         ));
-    //     }
+    public fun from_base64_std_flags(s: &String): (TonAddress, bool, bool) {
+        let bytes = string::bytes(s);
+        let addr_len = vector::length(bytes);
+        assert!(addr_len == 48, ErrorInvalidAddress);
+        let decoded_bytes = base64::decode(bytes);
+        let (addr, non_bounceable, non_production) = from_base64_src(&decoded_bytes);
+        (addr, non_bounceable, non_production)
+    }
 
-    //     let maybe_vec = STANDARD_NO_PAD.decode(s);
-    //     let vec = match maybe_vec {
-    //         Ok(bytes) => bytes,
-    //         Err(_) => {
-    //             return Err(TonAddressParseError::new(
-    //                 s,
-    //                 "Invalid base64std address: Base64 decode error",
-    //             ))
-    //         }
-    //     };
-    //     let maybe_bytes = vec.as_slice().try_into();
-    //     let bytes = match maybe_bytes {
-    //         Ok(b) => b,
-    //         Err(_) => {
-    //             return Err(TonAddressParseError::new(
-    //                 s,
-    //                 "Invalid base64std: Unexpected error",
-    //             ))
-    //         }
-    //     };
-
-    //     Self::from_base64_src(bytes, s)
-    // }
-
-    // /// Parses decoded base64 representation of an address
-    // ///
-    // /// # Returns
-    // /// the address, non-bounceable flag, non-production flag.
-    // fn from_base64_src(
-    //     bytes: &[u8; 36],
-    //     src: &str,
-    // ) -> Result<(TonAddress, bool, bool), TonAddressParseError> {
-    //     let (non_production, non_bounceable) = match bytes[0] {
-    //         0x11 => (false, false),
-    //         0x51 => (false, true),
-    //         0x91 => (true, false),
-    //         0xD1 => (true, true),
-    //         _ => {
-    //             return Err(TonAddressParseError::new(
-    //                 src,
-    //                 "Invalid base64src address: Wrong tag byte",
-    //             ))
-    //         }
-    //     };
-    //     let workchain = bytes[1] as i8 as i32;
-    //     let calc_crc = CRC_16_XMODEM.checksum(&bytes[0..34]);
-    //     let addr_crc = ((bytes[34] as u16) << 8) | bytes[35] as u16;
-    //     if calc_crc != addr_crc {
-    //         return Err(TonAddressParseError::new(
-    //             src,
-    //             "Invalid base64src address: CRC mismatch",
-    //         ));
-    //     }
-    //     let mut hash_part = [0_u8; 32];
-    //     hash_part.clone_from_slice(&bytes[2..34]);
-    //     let addr = TonAddress {
-    //         workchain,
-    //         hash_part,
-    //     };
-    //     Ok((addr, non_bounceable, non_production))
-    // }
-
-    fun from_base64_src(bytes: &vector<u8>) -> (TonAddress, bool, bool) {
+    fun from_base64_src(bytes: &vector<u8>) : (TonAddress, bool, bool) {
         let addr_len = vector::length(bytes);
         assert!(addr_len == 36, ErrorInvalidAddress);
-        let (non_production, non_bounceable) = match bytes[0] {
-            0x11 => (false, false),
-            0x51 => (false, true),
-            0x91 => (true, false),
-            0xD1 => (true, true),
-            _ => {
-                assert!(false, ErrorInvalidAddress);
-            }
+        let first_byte = *vector::borrow(bytes, 0);
+        let (non_production, non_bounceable) = 
+        if(first_byte == 0x11u8){
+            (false, false)
+        }else if(first_byte == 0x51u8){
+            (false, true)
+        }else if(first_byte == 0x91u8){
+            (true, false)
+        }else if(first_byte == 0xD1u8){
+            (true, true)
+        }else{
+            abort ErrorInvalidAddress
         };
-        let workchain = bytes[1] as i8 as i32;
+        let workchain = i32::from_i8(i8::from_u8(*vector::borrow(bytes, 1)));
+        //TODO verify the checksum
+        //let addr_crc = ((*vector::borrow(bytes, 34) as u16) << 8) | (*vector::borrow(bytes, 35) as u16);
+        
+        let hash_part_bytes = vector::slice(bytes, 2, 34);
+        let hash_part = bcs::from_bytes<address>(hash_part_bytes);
+        (TonAddress{
+            workchain,
+            hash_part,
+        }, non_bounceable, non_production)
+    }
+
+    const BASE64_URL_CHAR_MINUS: u8 = 45u8; // '-'
+    const BASE64_URL_CHAR_UNDERSCORE: u8 = 95u8; // '_'
+    const BASE64_STD_CHAR_PLUS: u8 = 43u8; // '+'
+    const BASE64_STD_CHAR_SLASH: u8 = 47u8; // '/'
+    const BASE64_STD_CHAR_EQUAL: u8 = 61u8; // '='
+
+    fun is_url_safe(s: &String): bool {
+        let bytes = string::bytes(s);
+        let len = vector::length(bytes);
+        let i = 0;
+        while(i < len){
+            let c = *vector::borrow(bytes, i);
+            if(c == BASE64_STD_CHAR_PLUS || c == BASE64_STD_CHAR_SLASH || c == BASE64_STD_CHAR_EQUAL){
+                return false
+            };
+            i = i + 1;
+        };
+        true
+    }
+
+    fun to_base64_std(s: &String): String {
+        let bytes = string::bytes(s);
+        let len = vector::length(bytes);
+        let new_bytes = vector::empty<u8>();
+        let i = 0;
+        while(i < len){
+            let c = *vector::borrow(bytes, i);
+            if(c == BASE64_URL_CHAR_MINUS){
+                vector::push_back(&mut new_bytes, BASE64_STD_CHAR_PLUS);
+            }else if(c == BASE64_URL_CHAR_UNDERSCORE){
+                vector::push_back(&mut new_bytes, BASE64_STD_CHAR_SLASH);
+            }else{
+                vector::push_back(&mut new_bytes, c);
+            };
+            i = i + 1;
+        };
+        string::utf8(new_bytes)
     }
 
     public fun from_string(addr_str: &String): TonAddress{
-        //TODO support base64 address string
-        from_hex_str(addr_str)
+        let len = string::length(addr_str);
+        if(len == 48){
+            if(is_url_safe(addr_str)){
+                from_base64_url(addr_str)
+            }else{
+                from_base64_std(addr_str)
+            }
+        }else{
+            from_hex_str(addr_str)
+        }
     }
 
     public fun from_bytes(bytes: vector<u8>): TonAddress {
@@ -204,11 +178,23 @@ module rooch_framework::ton_address {
     }
 
     #[test]
-    fun test_from_hex(){
+    fun test_from_string(){
         let addr_str = string::utf8(b"0:e4d954ef9f4e1250a26b5bbad76a1cdd17cfd08babad6f4c23e372270aef6f76");
         let addr = from_hex_str(&addr_str);
         assert!(addr.workchain == i32::from(0), 2);
         assert!(addr.hash_part == @0xe4d954ef9f4e1250a26b5bbad76a1cdd17cfd08babad6f4c23e372270aef6f76, 3);
+        assert!(addr == from_string(&addr_str), 4);
+
+        let addr_str_base64_std = string::utf8(b"EQDk2VTvn04SUKJrW7rXahzdF8/Qi6utb0wj43InCu9vdjrR");
+        let addr2 = from_base64_std(&addr_str_base64_std);
+        assert!(addr2 == addr, 2);
+        assert!(addr2 == from_string(&addr_str_base64_std), 5);
+
+        let addr_str_base64_url = string::utf8(b"EQDk2VTvn04SUKJrW7rXahzdF8_Qi6utb0wj43InCu9vdjrR");
+        let addr3 = from_base64_url(&addr_str_base64_url);
+        assert!(addr3 == addr, 2);
+        assert!(addr3 == from_string(&addr_str_base64_url), 5);
+
     }
 
     #[test]
@@ -228,4 +214,5 @@ module rooch_framework::ton_address {
         assert!(addr2.workchain == addr.workchain, 2);
         assert!(addr2.hash_part == addr.hash_part, 3);
     }
+
 }
