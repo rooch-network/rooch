@@ -26,6 +26,20 @@ module moveos_std::i128 {
         }
     }
 
+    public fun from_u128(v: u128): I128 {
+        I128 {
+            bits: v
+        }
+    }
+
+    public fun from_i64(v: i64::I64): I128 {
+        if (i64::is_neg(v)) {
+            neg_from((i64::abs_u64(v) as u128))
+        } else {
+            from((i64::abs_u64(v) as u128))
+        }
+    }
+
     public fun from(v: u128): I128 {
         assert!(v <= MAX_AS_U128, ErrorOverflow);
         I128 {
@@ -525,5 +539,14 @@ module moveos_std::i128 {
     #[test]
     fun test_castdown() {
         assert!((1u128 as u8) == 1u8, 0);
+    }
+
+    #[test]
+    fun test_from_i64() {
+        let i = from_i64(i64::neg_from(1));
+        assert!(cmp(i, neg_from(1)) == EQ, 0);
+
+        let i = from_i64(i64::from(1));
+        assert!(cmp(i, from(1)) == EQ, 0);
     }
 }

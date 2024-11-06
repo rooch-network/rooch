@@ -3,6 +3,8 @@
 
 /// original code from https://github.com/CetusProtocol/integer-mate/blob/9bac6499eada4c514e61eb2f4bee735beb469fb5/sui/sources/i32.move
 module moveos_std::i32 {
+    use moveos_std::i8;
+    
     const ErrorOverflow: u64 = 0;
 
     const MIN_AS_U32: u32 = 1 << 31;
@@ -23,9 +25,18 @@ module moveos_std::i32 {
         }
     }
 
+    /// Directly use the u32 value as I32 bits
     public fun from_u32(v: u32): I32 {
         I32 {
             bits: v
+        }
+    }
+
+    public fun from_i8(v: i8::I8): I32 {
+        if (i8::is_neg(v)) {
+            neg_from((i8::abs_u8(v) as u32))
+        } else {
+            from((i8::abs_u8(v) as u32))
         }
     }
 
@@ -481,5 +492,14 @@ module moveos_std::i32 {
 
         i = mod(from(2), neg_from(5));
         assert!(cmp(i, from(2)) == EQ, 0);
+    }
+
+    #[test]
+    fun test_from_i8() {
+        let i = from_i8(i8::neg_from(1));
+        assert!(cmp(i, neg_from(1)) == EQ, 0);
+
+        let i = from_i8(i8::from(1));
+        assert!(cmp(i, from(1)) == EQ, 0);
     }
 }

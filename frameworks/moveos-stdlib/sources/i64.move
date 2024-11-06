@@ -3,6 +3,8 @@
 
 /// original code from https://github.com/CetusProtocol/integer-mate/blob/9bac6499eada4c514e61eb2f4bee735beb469fb5/sui/sources/i64.move
 module moveos_std::i64 {
+    use moveos_std::i32;
+
     const ErrorOverflow: u64 = 0;
 
     const MIN_AS_U64: u64 = 1 << 63;
@@ -26,6 +28,14 @@ module moveos_std::i64 {
     public fun from_u64(v: u64): I64 {
         I64 {
             bits: v
+        }
+    }
+
+    public fun from_i32(v: i32::I32): I64 {
+        if (i32::is_neg(v)) {
+            neg_from((i32::abs_u32(v) as u64))
+        } else {
+            from((i32::abs_u32(v) as u64))
         }
     }
 
@@ -490,5 +500,14 @@ module moveos_std::i64 {
 
         i = mod(from(2), neg_from(5));
         assert!(cmp(i, from(2)) == EQ, 0);
+    }
+
+    #[test]
+    fun test_from_i32() {
+        let i = from_i32(i32::neg_from(1));
+        assert!(cmp(i, neg_from(1)) == EQ, 0);
+
+        let i = from_i32(i32::from(1));
+        assert!(cmp(i, from(1)) == EQ, 0);
     }
 }
