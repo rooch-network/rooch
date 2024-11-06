@@ -93,9 +93,9 @@ MOVE_TEST_CRATES="\
 "
 
 if [ ! -z "$CHECK" ]; then
+  cargo machete
   cargo fmt -- --check
   cargo clippy --workspace --all-targets --all-features --tests --benches -- -D warnings
-  cargo machete
 fi
 
 if [ ! -z "$ALSO_TEST" ]; then
