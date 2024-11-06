@@ -3,6 +3,7 @@
 
 module rooch_framework::auth_validator_registry {
 
+    use std::option::{Self, Option};
     use moveos_std::account;
     use moveos_std::type_info;
     use moveos_std::table::{Self, Table};
@@ -14,9 +15,17 @@ module rooch_framework::auth_validator_registry {
     friend rooch_framework::genesis;
     friend rooch_framework::builtin_validators;
 
+    /// From 0 to 99 are reserved for system validators.
+    const SYSTEM_RESERVED_VALIDATOR_ID: u64 = 100;    
+    public fun system_reserved_validator_id(): u64{
+        SYSTEM_RESERVED_VALIDATOR_ID
+    }
+
     const ErrorValidatorUnregistered: u64 = 1;
     const ErrorValidatorAlreadyRegistered: u64 = 2;
-
+    const ErrorDeprecated: u64 = 3;
+    const ErrorInvalidValidatorId: u64 = 4;
+    
     struct AuthValidatorWithType<phantom ValidatorType: store> has key,store {
         id: u64,
     }
@@ -42,22 +51,40 @@ module rooch_framework::auth_validator_registry {
     /// Register a new validator. This feature not enabled in the mainnet.
     public fun register<ValidatorType: store>() : u64{
         features::ensure_testnet_enabled();
-        register_internal<ValidatorType>()
+        register_internal<ValidatorType>(option::none())
     }
 
-    /// Register a new validator by system. This function is only called by system.
-    public fun register_by_system<ValidatorType: store>(system: &signer) : u64{
+    /// Deprecated.
+    public fun register_by_system<ValidatorType: store>(_system: &signer) : u64{
+        abort ErrorDeprecated
+    }
+
+    /// Register a new validator by system with a specific id. This function is only called by system.
+    public fun register_by_system_with_id<ValidatorType: store>(system: &signer, id: u64) : u64{
         core_addresses::assert_system_reserved(system);
-        register_internal<ValidatorType>()
+        register_internal<ValidatorType>(option::some(id))
     }
 
-    public(friend) fun register_internal<ValidatorType: store>() : u64{
+    public(friend) fun register_internal<ValidatorType: store>(id: Option<u64>) : u64{
         let type_info = type_info::type_of<ValidatorType>();
         let module_address = type_info::account_address(&type_info);
         let module_name = type_info::module_name(&type_info);
 
         let registry = account::borrow_mut_resource<ValidatorRegistry>(@rooch_framework);
-        let id = registry.validator_num;
+        let id = if(option::is_some(&id)){
+            let id = option::destroy_some(id);
+            assert!(id < SYSTEM_RESERVED_VALIDATOR_ID, ErrorInvalidValidatorId);
+            id
+        } else {
+            let id = registry.validator_num;
+            // The genesis init validator_num is 0
+            // so we need to set it to SYSTEM_RESERVED_VALIDATOR_ID
+            if (id < SYSTEM_RESERVED_VALIDATOR_ID){
+                id = SYSTEM_RESERVED_VALIDATOR_ID;
+            };
+            registry.validator_num = id + 1;
+            id
+        };
 
         assert!(!type_table::contains<AuthValidatorWithType<ValidatorType>>(&registry.validators_with_type), ErrorValidatorAlreadyRegistered);
         
@@ -72,8 +99,6 @@ module rooch_framework::auth_validator_registry {
             module_name,
         );
         table::add(&mut registry.validators, id, validator);
-        
-        registry.validator_num = registry.validator_num + 1;
         id
     }
 

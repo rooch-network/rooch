@@ -10,7 +10,8 @@
 -  [Function `is_builtin_auth_validator`](#0x3_builtin_validators_is_builtin_auth_validator)
 
 
-<pre><code><b>use</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry">0x3::auth_validator_registry</a>;
+<pre><code><b>use</b> <a href="">0x1::option</a>;
+<b>use</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry">0x3::auth_validator_registry</a>;
 <b>use</b> <a href="bitcoin_validator.md#0x3_bitcoin_validator">0x3::bitcoin_validator</a>;
 <b>use</b> <a href="session_validator.md#0x3_session_validator">0x3::session_validator</a>;
 </code></pre>

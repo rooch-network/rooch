@@ -27,6 +27,7 @@ pub mod oracle;
 pub mod session_key;
 pub mod session_validator;
 pub mod timestamp;
+pub mod ton_proof;
 pub mod transaction_validator;
 pub mod transfer;
 

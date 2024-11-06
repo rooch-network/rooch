@@ -5,10 +5,13 @@ module rooch_framework::multichain_address {
 
     use rooch_framework::ethereum_address::{Self, ETHAddress};
     use rooch_framework::bitcoin_address::{Self, BitcoinAddress};
+    use rooch_framework::ton_address::{Self, TonAddress};
+
     use moveos_std::hash::{blake2b256};
     use moveos_std::bcs;
 
     const ErrorMultiChainIDMismatch: u64 = 1;
+    const ErrorDeprecated: u64 = 2;
 
     const LENGTH: u64 = 31;
 
@@ -16,8 +19,9 @@ module rooch_framework::multichain_address {
     //Please keep consistent with rust Symbol
     const MULTICHAIN_ID_BITCOIN: u64 = 0;
     const MULTICHAIN_ID_ETHER: u64 = 60;
+    const MULTICHAIN_ID_TON: u64 = 607;
     const MULTICHAIN_ID_NOSTR: u64 = 1237;
-    const MULTICHAIN_ID_ROOCH: u64 = 20230101; // placeholder for MULTICHAIN_ID_ROOCH pending for actual id from slip-0044
+    const MULTICHAIN_ID_ROOCH: u64 = 20230101;
 
     public fun multichain_id_bitcoin(): u64 { MULTICHAIN_ID_BITCOIN }
 
@@ -26,6 +30,8 @@ module rooch_framework::multichain_address {
     public fun multichain_id_nostr(): u64 { MULTICHAIN_ID_NOSTR }
 
     public fun multichain_id_rooch(): u64 { MULTICHAIN_ID_ROOCH }
+
+    public fun multichain_id_ton(): u64 { MULTICHAIN_ID_TON }
 
     #[data_struct]
     struct MultiChainAddress has copy, store, drop {
@@ -62,6 +68,13 @@ module rooch_framework::multichain_address {
         }
     }
 
+    public fun from_ton(ton_address: TonAddress): MultiChainAddress {
+        MultiChainAddress {
+            multichain_id: MULTICHAIN_ID_TON,
+            raw_address: ton_address::into_bytes(ton_address),
+        }
+    }
+
     public fun multichain_id(self: &MultiChainAddress): u64 {
         self.multichain_id
     }
@@ -82,6 +95,10 @@ module rooch_framework::multichain_address {
         maddress.multichain_id == MULTICHAIN_ID_BITCOIN
     }
 
+    public fun is_ton_address(maddress: &MultiChainAddress) : bool{
+        maddress.multichain_id == MULTICHAIN_ID_TON
+    }
+
     public fun into_rooch_address(maddress: MultiChainAddress) : address {
         assert!(maddress.multichain_id == MULTICHAIN_ID_ROOCH, ErrorMultiChainIDMismatch);
         moveos_std::bcs::to_address(maddress.raw_address)
@@ -97,15 +114,16 @@ module rooch_framework::multichain_address {
         bitcoin_address::new(maddress.raw_address)
     }
 
-    /// Mapping from MultiChainAddress to rooch address
-    /// If the MultiChainAddress is not rooch address, it will generate a new rooch address based on the MultiChainAddress
-    public fun mapping_to_rooch_address(maddress: MultiChainAddress): address {
-        if(is_rooch_address(&maddress)) {
-            into_rooch_address(maddress)
-        }else{
-            let hash = blake2b256(&maddress.raw_address);
-            moveos_std::bcs::to_address(hash)
-        }
+    public fun into_ton_address(maddress: MultiChainAddress) : TonAddress {
+        assert!(maddress.multichain_id == MULTICHAIN_ID_TON, ErrorMultiChainIDMismatch);
+        ton_address::from_bytes(maddress.raw_address)
+    }
+
+    /// Deprecated, will be removed in the future
+    /// Now, we only support Bitcoin address generate rooch address
+    /// Other address types need to resolve via address_mapping module: `bitcoin_address::to_rooch_address`
+    public fun mapping_to_rooch_address(_maddress: MultiChainAddress): address {
+        abort ErrorDeprecated
     }
 
     #[test]

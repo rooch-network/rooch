@@ -20,6 +20,8 @@ module rooch_framework::genesis {
     use rooch_framework::address_mapping;
     use rooch_framework::onchain_config;
     use rooch_framework::bitcoin_address::{Self, BitcoinAddress};
+    use rooch_framework::ethereum_validator;
+    use rooch_framework::ton_validator;
 
     const ErrorGenesisInit: u64 = 1;
 
@@ -52,13 +54,13 @@ module rooch_framework::genesis {
         account_coin_store::genesis_init(genesis_account);
         gas_coin::genesis_init(genesis_account);
         transaction_fee::genesis_init(genesis_account);
-        address_mapping::genesis_init(genesis_account);
+        address_mapping::genesis_init();
         let sequencer_addr = bitcoin_address::to_rooch_address(&genesis_context.sequencer);
         
         // Some test cases use framework account as sequencer, it may already exist
         if(!moveos_std::account::exists_at(sequencer_addr)){
             account::create_account(sequencer_addr);
-            address_mapping::bind_bitcoin_address(sequencer_addr, genesis_context.sequencer);
+            address_mapping::bind_bitcoin_address_internal(sequencer_addr, genesis_context.sequencer);
         };
         let rooch_dao_address = bitcoin_address::to_rooch_address(&genesis_context.rooch_dao);
 
@@ -76,7 +78,18 @@ module rooch_framework::genesis {
         // give initial gas to the sequencer if it's local or dev
         if(chain_id::is_local_or_dev()){
             gas_coin::faucet(sequencer_addr, GENESIS_INIT_GAS_AMOUNT);
-        }
+        };
+
+        // after framework v14
+        ethereum_validator::genesis_init();
+        ton_validator::genesis_init();
+    }
+
+    /// Because the init function only can be called once when the first deploy,
+    /// we need to add a new function to init the new validators for v15.
+    public entry fun init_for_v15(){
+        ethereum_validator::genesis_init();
+        ton_validator::genesis_init();
     }
 
 

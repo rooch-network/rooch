@@ -128,7 +128,7 @@ module rooch_framework::transaction_validator {
             };
         };
         let bitcoin_addr = auth_validator::get_bitcoin_address_from_ctx();
-        address_mapping::bind_bitcoin_address(sender, bitcoin_addr); 
+        address_mapping::bind_bitcoin_address_internal(sender, bitcoin_addr); 
         let tx_sequence_info = tx_context::get_attribute<TransactionSequenceInfo>();
         if (option::is_some(&tx_sequence_info)) {
             let tx_sequence_info = option::extract(&mut tx_sequence_info);

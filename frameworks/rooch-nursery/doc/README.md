@@ -17,7 +17,6 @@ This is the reference documentation of the Rooch Nursery Framework.
 -  [`0xa::cosmwasm_std`](cosmwasm_std.md#0xa_cosmwasm_std)
 -  [`0xa::cosmwasm_vm`](cosmwasm_vm.md#0xa_cosmwasm_vm)
 -  [`0xa::ethereum`](ethereum.md#0xa_ethereum)
--  [`0xa::ethereum_validator`](ethereum_validator.md#0xa_ethereum_validator)
 -  [`0xa::genesis`](genesis.md#0xa_genesis)
 -  [`0xa::inscribe_factory`](inscribe_factory.md#0xa_inscribe_factory)
 -  [`0xa::mint_get_factory`](mint_get_factory.md#0xa_mint_get_factory)

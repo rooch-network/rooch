@@ -31,6 +31,32 @@ module moveos_std::string_utils {
         option::destroy_some(result)
     }
 
+    public fun parse_u32_from_bytes(bytes: &vector<u8>): Option<u32> {
+        let i = 0;
+        let result = 0u32;
+        while (i < vector::length(bytes)) {
+            let c = *vector::borrow(bytes, i);
+            if (c >= 48 && c <= 57) {
+                result = result * 10 + ((c - 48) as u32);
+            } else {
+                return option::none()
+            };
+            i = i + 1;
+        };
+        option::some(result)
+    }
+
+    public fun parse_u32_option(s: &String):Option<u32>{
+        let bytes:&vector<u8> = string::bytes(s);
+        parse_u32_from_bytes(bytes)
+    }
+
+    public fun parse_u32(s: &String): u32 {
+        let result = parse_u32_option(s);
+        assert!(option::is_some(&result), ErrorInvalidStringNumber);
+        option::destroy_some(result)
+    }
+
     public fun parse_u64_option(s: &String):Option<u64>{
         let bytes:&vector<u8> = string::bytes(s);
         let i = 0;
@@ -175,7 +201,7 @@ module moveos_std::string_utils {
         to_string_u256((n as u256))
     }
 
-     public fun to_string_u32(n: u32): String {
+    public fun to_string_u32(n: u32): String {
         to_string_u256((n as u256))
     }
     
