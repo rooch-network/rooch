@@ -607,28 +607,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "async-stream"
-version = "0.3.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cd56dd203fef61ac097dd65721a419ddccb106b2d2b70ba60a6b529f03961a51"
-dependencies = [
- "async-stream-impl",
- "futures-core",
- "pin-project-lite",
-]
-
-[[package]]
-name = "async-stream-impl"
-version = "0.3.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "16e62a023e7c117e27523144c5d2459f4397fcc3cab0085af8e2224f643a0193"
-dependencies = [
- "proc-macro2 1.0.89",
- "quote 1.0.37",
- "syn 2.0.87",
-]
-
-[[package]]
 name = "async-trait"
 version = "0.1.81"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -702,40 +680,12 @@ checksum = "0c4b4d0bd25bd0b74681c0ad21497610ce1b7c91b1022cd21c80c6fbdd9476b0"
 
 [[package]]
 name = "axum"
-version = "0.6.20"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3b829e4e32b91e643de6eafe82b1d90675f5874230191a4ffbc1b336dec4d6bf"
-dependencies = [
- "async-trait",
- "axum-core 0.3.4",
- "bitflags 1.3.2",
- "bytes",
- "futures-util",
- "http 0.2.12",
- "http-body 0.4.6",
- "hyper 0.14.28",
- "itoa",
- "matchit",
- "memchr",
- "mime",
- "percent-encoding",
- "pin-project-lite",
- "rustversion",
- "serde 1.0.214",
- "sync_wrapper 0.1.2",
- "tower 0.4.13",
- "tower-layer",
- "tower-service",
-]
-
-[[package]]
-name = "axum"
 version = "0.7.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "504e3947307ac8326a5437504c517c4b56716c9d98fac0028c2acc7ca47d70ae"
 dependencies = [
  "async-trait",
- "axum-core 0.4.5",
+ "axum-core",
  "base64 0.22.1",
  "bytes",
  "futures-util",
@@ -763,23 +713,6 @@ dependencies = [
  "tower-layer",
  "tower-service",
  "tracing",
-]
-
-[[package]]
-name = "axum-core"
-version = "0.3.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "759fa577a247914fd3f7f76d62972792636412fbfd634cd452f6a385a74d2d2c"
-dependencies = [
- "async-trait",
- "bytes",
- "futures-util",
- "http 0.2.12",
- "http-body 0.4.6",
- "mime",
- "rustversion",
- "tower-layer",
- "tower-service",
 ]
 
 [[package]]
@@ -1103,13 +1036,12 @@ name = "bitcoin-move"
 version = "0.7.6"
 dependencies = [
  "anyhow",
- "axum 0.7.7",
+ "axum",
  "bitcoin 0.32.3",
  "brotli 3.5.0",
  "hex",
  "move-binary-format",
  "move-core-types",
- "move-stdlib",
  "move-vm-runtime",
  "move-vm-types",
  "moveos-stdlib",
@@ -1604,7 +1536,7 @@ version = "0.1.0"
 source = "git+https://github.com/eigerco/celestia-node-rs.git?rev=129272e8d926b4c7badf27a26dea915323dd6489#129272e8d926b4c7badf27a26dea915323dd6489"
 dependencies = [
  "anyhow",
- "prost 0.12.6",
+ "prost",
  "prost-build",
  "prost-types",
  "serde 1.0.214",
@@ -4984,18 +4916,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "hyper-timeout"
-version = "0.4.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bbb958482e8c7be4bc3cf272a766a2b0bf1a6755e7a6ae777f017a31d11b13b1"
-dependencies = [
- "hyper 0.14.28",
- "pin-project-lite",
- "tokio",
- "tokio-io-timeout",
-]
-
-[[package]]
 name = "hyper-tls"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6162,7 +6082,7 @@ version = "0.7.6"
 dependencies = [
  "anyhow",
  "async-trait",
- "axum 0.7.7",
+ "axum",
  "axum-server",
  "dashmap 6.0.1",
  "futures",
@@ -6954,8 +6874,6 @@ name = "moveos"
 version = "0.7.6"
 dependencies = [
  "anyhow",
- "backtrace",
- "bcs",
  "clap 4.5.17",
  "codespan",
  "codespan-reporting",
@@ -6975,8 +6893,6 @@ dependencies = [
  "move-vm-runtime",
  "move-vm-types",
  "moveos-common",
- "moveos-eventbus",
- "moveos-gas-profiling",
  "moveos-object-runtime",
  "moveos-stdlib",
  "moveos-store",
@@ -7032,11 +6948,8 @@ dependencies = [
  "anyhow",
  "coerce",
  "crossbeam-channel",
- "futures",
  "log",
- "once_cell",
  "thiserror",
- "tokio",
 ]
 
 [[package]]
@@ -7086,7 +6999,6 @@ dependencies = [
  "fastcrypto 0.1.8 (git+https://github.com/MystenLabs/fastcrypto?rev=56f6223b84ada922b6cb2c672c69db2ea3dc6a13)",
  "fastcrypto-zkp",
  "itertools 0.13.0",
- "libc",
  "log",
  "move-binary-format",
  "move-core-types",
@@ -7097,7 +7009,6 @@ dependencies = [
  "moveos-object-runtime",
  "moveos-types",
  "moveos-verifier",
- "moveos-wasm",
  "primitive-types 0.12.2",
  "revm-precompile",
  "revm-primitives",
@@ -7105,7 +7016,6 @@ dependencies = [
  "rlp",
  "serde_json",
  "smallvec",
- "wasmer",
 ]
 
 [[package]]
@@ -7176,7 +7086,6 @@ dependencies = [
  "move-symbol-pool",
  "move-vm-runtime",
  "move-vm-types",
- "moveos-types",
  "once_cell",
  "serde 1.0.214",
  "termcolor",
@@ -8549,22 +8458,12 @@ dependencies = [
 
 [[package]]
 name = "prost"
-version = "0.11.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0b82eaa1d779e9a4bc1c3217db8ffbeabaae1dca241bf70183242128d48681cd"
-dependencies = [
- "bytes",
- "prost-derive 0.11.9",
-]
-
-[[package]]
-name = "prost"
 version = "0.12.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "deb1435c188b76130da55f17a466d252ff7b1418b2ad3e037d127b94e3411f29"
 dependencies = [
  "bytes",
- "prost-derive 0.12.6",
+ "prost-derive",
 ]
 
 [[package]]
@@ -8581,24 +8480,11 @@ dependencies = [
  "once_cell",
  "petgraph 0.6.5",
  "prettyplease",
- "prost 0.12.6",
+ "prost",
  "prost-types",
  "regex",
  "syn 2.0.87",
  "tempfile",
-]
-
-[[package]]
-name = "prost-derive"
-version = "0.11.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e5d2d8d10f3c6ded6da8b05b5fb3b8a5082514344d56c9f871412d29b4e075b4"
-dependencies = [
- "anyhow",
- "itertools 0.10.5",
- "proc-macro2 1.0.89",
- "quote 1.0.37",
- "syn 1.0.109",
 ]
 
 [[package]]
@@ -8620,7 +8506,7 @@ version = "0.12.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9091c90b0a32608e984ff2fa4091273cbdd755d54935c51d520887f4a1dbd5b0"
 dependencies = [
- "prost 0.12.6",
+ "prost",
 ]
 
 [[package]]
@@ -9404,7 +9290,6 @@ dependencies = [
  "bitcoin 0.32.3",
  "bitcoin-move",
  "bitcoincore-rpc",
- "chrono",
  "ciborium",
  "clap 4.5.17",
  "codespan-reporting",
@@ -9505,7 +9390,6 @@ dependencies = [
  "clap 4.5.17",
  "criterion",
  "ethers",
- "hex",
  "jemallocator",
  "lazy_static 1.5.0",
  "log",
@@ -9579,22 +9463,12 @@ dependencies = [
 name = "rooch-cosmwasm-vm"
 version = "0.7.6"
 dependencies = [
- "accumulator",
- "anyhow",
  "cosmwasm-std",
  "cosmwasm-vm",
- "move-binary-format",
  "move-core-types",
- "move-resource-viewer",
  "move-vm-types",
- "moveos-config",
  "moveos-object-runtime",
  "moveos-types",
- "once_cell",
- "prometheus",
- "raw-store",
- "rooch-types",
- "tokio",
 ]
 
 [[package]]
@@ -9603,7 +9477,6 @@ version = "0.7.6"
 dependencies = [
  "anyhow",
  "async-trait",
- "bcs",
  "celestia-rpc",
  "celestia-types",
  "coerce",
@@ -9613,7 +9486,6 @@ dependencies = [
  "rooch-store",
  "rooch-types",
  "serde 1.0.214",
- "serde_yaml 0.9.34+deprecated",
  "tokio",
  "tracing",
 ]
@@ -9680,7 +9552,7 @@ version = "0.7.6"
 dependencies = [
  "anyhow",
  "async-trait",
- "axum 0.7.7",
+ "axum",
  "axum-server",
  "bcs",
  "clap 4.5.17",
@@ -9689,7 +9561,6 @@ dependencies = [
  "move-core-types",
  "moveos-types",
  "prometheus",
- "rooch-key",
  "rooch-rpc-api",
  "rooch-rpc-client",
  "rooch-types",
@@ -9700,14 +9571,12 @@ dependencies = [
  "tower 0.5.1",
  "tower-http",
  "tracing",
- "tracing-subscriber",
 ]
 
 [[package]]
 name = "rooch-framework"
 version = "0.7.6"
 dependencies = [
- "bcs",
  "bitcoin 0.32.3",
  "fastcrypto 0.1.8 (git+https://github.com/MystenLabs/fastcrypto?rev=56f6223b84ada922b6cb2c672c69db2ea3dc6a13)",
  "hex",
@@ -9731,7 +9600,6 @@ dependencies = [
  "anyhow",
  "bcs",
  "bitcoin 0.32.3",
- "bitcoin-move",
  "clap 4.5.17",
  "coerce",
  "csv",
@@ -9743,13 +9611,11 @@ dependencies = [
  "metrics",
  "move-core-types",
  "moveos-config",
- "moveos-eventbus",
  "moveos-store",
  "moveos-types",
  "rand 0.8.5",
  "rooch-config",
  "rooch-db",
- "rooch-event",
  "rooch-executor",
  "rooch-genesis",
  "rooch-integration-test-runner",
@@ -9807,12 +9673,10 @@ dependencies = [
  "diesel",
  "diesel_migrations",
  "function_name",
- "futures",
  "log",
  "metrics",
  "move-core-types",
  "moveos-config",
- "moveos-store",
  "moveos-types",
  "once_cell",
  "prometheus",
@@ -9882,21 +9746,15 @@ dependencies = [
 name = "rooch-nursery"
 version = "0.7.6"
 dependencies = [
- "bcs",
- "bitcoin 0.32.3",
  "ciborium",
  "cosmwasm-std",
  "cosmwasm-vm",
- "fastcrypto 0.1.8 (git+https://github.com/MystenLabs/fastcrypto?rev=56f6223b84ada922b6cb2c672c69db2ea3dc6a13)",
- "hex",
  "libc",
  "log",
  "move-binary-format",
  "move-core-types",
- "move-stdlib",
  "move-vm-runtime",
  "move-vm-types",
- "moveos",
  "moveos-object-runtime",
  "moveos-stdlib",
  "moveos-types",
@@ -9907,7 +9765,6 @@ dependencies = [
  "rooch-types",
  "serde_json",
  "smallvec",
- "tracing",
  "wasmer",
 ]
 
@@ -9945,7 +9802,6 @@ dependencies = [
  "clap 4.5.17",
  "pretty_assertions",
  "rooch-open-rpc-spec-builder",
- "rooch-rpc-api",
  "serde_json",
  "tokio",
 ]
@@ -9969,11 +9825,9 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",
- "bcs",
  "clap 4.5.17",
  "futures",
  "futures-util",
- "log",
  "move-core-types",
  "moveos-types",
  "pin-project",
@@ -9988,7 +9842,6 @@ dependencies = [
  "tokio-tungstenite 0.24.0",
  "tracing",
  "tracing-subscriber",
- "tungstenite 0.24.0",
 ]
 
 [[package]]
@@ -9996,24 +9849,12 @@ name = "rooch-ord"
 version = "0.7.6"
 dependencies = [
  "anyhow",
- "async-trait",
- "bitcoin 0.32.3",
- "bitcoincore-rpc",
- "chrono",
- "coerce",
- "ethers",
- "hex",
- "metrics",
- "move-core-types",
- "moveos-types",
  "ordinals",
- "prometheus",
  "reqwest 0.12.7",
  "rooch-types",
  "serde 1.0.214",
  "serde_json",
  "tokio",
- "tonic",
  "tracing",
 ]
 
@@ -10029,10 +9870,7 @@ dependencies = [
  "hex",
  "log",
  "metrics",
- "move-binary-format",
- "move-core-types",
  "moveos",
- "moveos-stdlib",
  "moveos-types",
  "prometheus",
  "rooch-db",
@@ -10058,7 +9896,6 @@ dependencies = [
  "prometheus",
  "rooch-da",
  "rooch-types",
- "serde_yaml 0.9.34+deprecated",
 ]
 
 [[package]]
@@ -10086,7 +9923,6 @@ dependencies = [
  "serde 1.0.214",
  "serde_json",
  "tokio",
- "tonic",
  "tracing",
 ]
 
@@ -10111,7 +9947,6 @@ dependencies = [
  "schemars",
  "serde 1.0.214",
  "serde_json",
- "serde_yaml 0.9.34+deprecated",
  "thiserror",
 ]
 
@@ -10124,7 +9959,6 @@ dependencies = [
  "bitcoin 0.32.3",
  "bitcoincore-rpc",
  "futures",
- "hex",
  "jsonrpsee 0.23.2",
  "log",
  "move-core-types",
@@ -10144,12 +9978,11 @@ name = "rooch-rpc-server"
 version = "0.7.6"
 dependencies = [
  "anyhow",
- "axum 0.7.7",
+ "axum",
  "bcs",
  "bitcoincore-rpc",
  "coerce",
  "dashmap 6.0.1",
- "futures",
  "hex",
  "http 1.1.0",
  "hyper 1.3.1",
@@ -10158,7 +9991,6 @@ dependencies = [
  "metrics",
  "move-core-types",
  "move-resource-viewer",
- "moveos",
  "moveos-eventbus",
  "moveos-types",
  "pin-project",
@@ -10182,7 +10014,6 @@ dependencies = [
  "rooch-types",
  "serde_json",
  "tokio",
- "tokio-util",
  "tower 0.5.1",
  "tower-http",
  "tower_governor",
@@ -11487,7 +11318,6 @@ dependencies = [
  "proptest-derive",
  "rand 0.8.5",
  "serde 1.0.214",
- "serde_bytes",
  "thiserror",
 ]
 
@@ -11901,7 +11731,7 @@ dependencies = [
  "futures",
  "num-traits 0.2.19",
  "once_cell",
- "prost 0.12.6",
+ "prost",
  "prost-types",
  "serde 1.0.214",
  "serde_bytes",
@@ -11925,7 +11755,7 @@ dependencies = [
  "flex-error",
  "num-derive",
  "num-traits 0.2.19",
- "prost 0.12.6",
+ "prost",
  "prost-types",
  "serde 1.0.214",
  "serde_bytes",
@@ -12205,16 +12035,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tokio-io-timeout"
-version = "1.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "30b74022ada614a1b4834de765f9bb43877f910cc8ce4be40e89042c9223a8bf"
-dependencies = [
- "pin-project-lite",
- "tokio",
-]
-
-[[package]]
 name = "tokio-macros"
 version = "2.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -12433,39 +12253,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tonic"
-version = "0.8.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8f219fad3b929bef19b1f86fbc0358d35daed8f2cac972037ac0dc10bbb8d5fb"
-dependencies = [
- "async-stream",
- "async-trait",
- "axum 0.6.20",
- "base64 0.13.1",
- "bytes",
- "flate2",
- "futures-core",
- "futures-util",
- "h2 0.3.26",
- "http 0.2.12",
- "http-body 0.4.6",
- "hyper 0.14.28",
- "hyper-timeout",
- "percent-encoding",
- "pin-project",
- "prost 0.11.9",
- "prost-derive 0.11.9",
- "tokio",
- "tokio-stream",
- "tokio-util",
- "tower 0.4.13",
- "tower-layer",
- "tower-service",
- "tracing",
- "tracing-futures",
-]
-
-[[package]]
 name = "tower"
 version = "0.4.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -12473,13 +12260,9 @@ checksum = "b8fa9be0de6cf49e536ce1851f987bd21a43b771b09473c3549a6c853db37c1c"
 dependencies = [
  "futures-core",
  "futures-util",
- "indexmap 1.9.3",
  "pin-project",
  "pin-project-lite",
- "rand 0.8.5",
- "slab",
  "tokio",
- "tokio-util",
  "tower-layer",
  "tower-service",
  "tracing",
@@ -12554,7 +12337,7 @@ version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "aea939ea6cfa7c4880f3e7422616624f97a567c16df67b53b11f0d03917a8e46"
 dependencies = [
- "axum 0.7.7",
+ "axum",
  "forwarded-header-value",
  "governor",
  "http 1.1.0",

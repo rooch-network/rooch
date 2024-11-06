@@ -16,7 +16,6 @@ clap = { workspace = true, features = ["derive"] }
 tokio = { workspace = true, features = ["full"] }
 serde_json = { workspace = true }
 pretty_assertions = { workspace = true }
-rooch-rpc-api = { workspace = true }
 rooch-open-rpc-spec-builder = { workspace = true }
 
 [build-dependencies]

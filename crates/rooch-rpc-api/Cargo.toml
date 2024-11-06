@@ -18,7 +18,6 @@ ethers = { workspace = true }
 hex = { workspace = true }
 jsonrpsee = { workspace = true }
 serde = { workspace = true }
-serde_yaml = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
 schemars = { workspace = true }
@@ -34,3 +33,6 @@ accumulator = { workspace = true }
 rooch-types = { workspace = true }
 rooch-open-rpc = { workspace = true }
 rooch-open-rpc-macros = { workspace = true }
+
+[package.metadata.cargo-machete]
+ignored = ["rooch-open-rpc"]

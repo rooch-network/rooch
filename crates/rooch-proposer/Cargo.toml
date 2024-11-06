@@ -16,7 +16,6 @@ anyhow = { workspace = true }
 async-trait = { workspace = true }
 coerce = { workspace = true }
 log = { workspace = true }
-serde_yaml = { workspace = true }
 prometheus = { workspace = true }
 
 
