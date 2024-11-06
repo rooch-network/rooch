@@ -58,6 +58,138 @@ module rooch_framework::ton_address {
         }
     }
 
+    // /// Parses url-safe base64 representation of an address
+    // ///
+    // /// # Returns
+    // /// the address, non-bounceable flag, non-production flag.
+    // pub fn from_base64_url_flags(
+    //     s: &str,
+    // ) -> Result<(TonAddress, bool, bool), TonAddressParseError> {
+    //     if s.len() != 48 {
+    //         return Err(TonAddressParseError::new(
+    //             s,
+    //             "Invalid base64url address: Wrong length",
+    //         ));
+    //     }
+    //     let maybe_bytes = URL_SAFE_NO_PAD.decode(s);
+    //     let bytes = match maybe_bytes {
+    //         Ok(bytes) => bytes,
+    //         Err(_) => {
+    //             return Err(TonAddressParseError::new(
+    //                 s,
+    //                 "Invalid base64url address: Base64 decode error",
+    //             ))
+    //         }
+    //     };
+    //     let maybe_slice = bytes.as_slice().try_into();
+    //     let slice = match maybe_slice {
+    //         Ok(slice) => slice,
+    //         Err(_) => {
+    //             return Err(TonAddressParseError::new(
+    //                 s,
+    //                 "Invalid base64url address: Unexpected error",
+    //             ))
+    //         }
+    //     };
+
+    //     Self::from_base64_src(slice, s)
+    // }
+
+    // pub fn from_base64_std(s: &str) -> Result<TonAddress, TonAddressParseError> {
+    //     Ok(Self::from_base64_std_flags(s)?.0)
+    // }
+
+    // /// Parses standard base64 representation of an address
+    // ///
+    // /// # Returns
+    // /// the address, non-bounceable flag, non-production flag.
+    // pub fn from_base64_std_flags(
+    //     s: &str,
+    // ) -> Result<(TonAddress, bool, bool), TonAddressParseError> {
+    //     if s.len() != 48 {
+    //         return Err(TonAddressParseError::new(
+    //             s,
+    //             "Invalid base64std address: Invalid length",
+    //         ));
+    //     }
+
+    //     let maybe_vec = STANDARD_NO_PAD.decode(s);
+    //     let vec = match maybe_vec {
+    //         Ok(bytes) => bytes,
+    //         Err(_) => {
+    //             return Err(TonAddressParseError::new(
+    //                 s,
+    //                 "Invalid base64std address: Base64 decode error",
+    //             ))
+    //         }
+    //     };
+    //     let maybe_bytes = vec.as_slice().try_into();
+    //     let bytes = match maybe_bytes {
+    //         Ok(b) => b,
+    //         Err(_) => {
+    //             return Err(TonAddressParseError::new(
+    //                 s,
+    //                 "Invalid base64std: Unexpected error",
+    //             ))
+    //         }
+    //     };
+
+    //     Self::from_base64_src(bytes, s)
+    // }
+
+    // /// Parses decoded base64 representation of an address
+    // ///
+    // /// # Returns
+    // /// the address, non-bounceable flag, non-production flag.
+    // fn from_base64_src(
+    //     bytes: &[u8; 36],
+    //     src: &str,
+    // ) -> Result<(TonAddress, bool, bool), TonAddressParseError> {
+    //     let (non_production, non_bounceable) = match bytes[0] {
+    //         0x11 => (false, false),
+    //         0x51 => (false, true),
+    //         0x91 => (true, false),
+    //         0xD1 => (true, true),
+    //         _ => {
+    //             return Err(TonAddressParseError::new(
+    //                 src,
+    //                 "Invalid base64src address: Wrong tag byte",
+    //             ))
+    //         }
+    //     };
+    //     let workchain = bytes[1] as i8 as i32;
+    //     let calc_crc = CRC_16_XMODEM.checksum(&bytes[0..34]);
+    //     let addr_crc = ((bytes[34] as u16) << 8) | bytes[35] as u16;
+    //     if calc_crc != addr_crc {
+    //         return Err(TonAddressParseError::new(
+    //             src,
+    //             "Invalid base64src address: CRC mismatch",
+    //         ));
+    //     }
+    //     let mut hash_part = [0_u8; 32];
+    //     hash_part.clone_from_slice(&bytes[2..34]);
+    //     let addr = TonAddress {
+    //         workchain,
+    //         hash_part,
+    //     };
+    //     Ok((addr, non_bounceable, non_production))
+    // }
+
+    fun from_base64_src(bytes: &vector<u8>) -> (TonAddress, bool, bool) {
+        let addr_len = vector::length(bytes);
+        assert!(addr_len == 36, ErrorInvalidAddress);
+        let (non_production, non_bounceable) = match bytes[0] {
+            0x11 => (false, false),
+            0x51 => (false, true),
+            0x91 => (true, false),
+            0xD1 => (true, true),
+            _ => {
+                assert!(false, ErrorInvalidAddress);
+            }
+        };
+        let workchain = bytes[1] as i8 as i32;
+    }
+
     public fun from_string(addr_str: &String): TonAddress{
         //TODO support base64 address string
         from_hex_str(addr_str)
