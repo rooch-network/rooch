@@ -154,7 +154,7 @@ rooch-nursery = { path = "frameworks/rooch-nursery" }
 # External crate dependencies.
 # Please do not add any test features here: they should be declared by the individual crate.
 again = "0.1.2"
-anyhow = "1.0.92"
+anyhow = "1.0.93"
 async-trait = "0"
 backtrace = "0.3"
 bcs = "0.1.3"
