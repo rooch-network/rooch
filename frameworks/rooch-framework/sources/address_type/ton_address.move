@@ -10,16 +10,15 @@ module rooch_framework::ton_address {
     use moveos_std::string_utils;
     use moveos_std::hex;
     use moveos_std::bcs;
+    use moveos_std::i32::{Self, I32};
 
     const ErrorInvalidAddress: u64 = 1;
     const ErrorInvalidWorkchain: u64 = 2;
 
     #[data_struct]
     struct TonAddress has store, copy, drop{
-        is_nagative: bool,
-        //The workchain in TonAddress is i32, but No i32 in Move
-        //So we use u32 instead, and use `is_nagative` to represent the sign
-        workchain: u32,
+        //The workchain in TonAddress is i32
+        workchain: I32,
         hash_part: address,
     }
 
@@ -46,11 +45,15 @@ module rooch_framework::ton_address {
         let wc_num_opt = string_utils::parse_u32_from_bytes(&wc_num_part);
         assert!(option::is_some(&wc_num_opt), ErrorInvalidWorkchain);
         let wc_num = option::destroy_some(wc_num_opt);
+        let workchain = if (is_nagative) {
+            i32::neg_from(wc_num)
+       } else {
+            i32::from(wc_num)
+        };
         let hash_part_bytes = hex::decode(&hash_part);
         let hash_part = bcs::from_bytes<address>(hash_part_bytes);
         TonAddress{
-            is_nagative,
-            workchain: wc_num,
+            workchain,
             hash_part,
         }
     }
@@ -72,8 +75,7 @@ module rooch_framework::ton_address {
     fun test_from_hex(){
         let addr_str = string::utf8(b"0:e4d954ef9f4e1250a26b5bbad76a1cdd17cfd08babad6f4c23e372270aef6f76");
         let addr = from_hex_str(&addr_str);
-        assert!(addr.is_nagative == false, 1);
-        assert!(addr.workchain == 0u32, 2);
+        assert!(addr.workchain == i32::from(0), 2);
         assert!(addr.hash_part == @0xe4d954ef9f4e1250a26b5bbad76a1cdd17cfd08babad6f4c23e372270aef6f76, 3);
     }
 
@@ -81,8 +83,7 @@ module rooch_framework::ton_address {
     fun test_from_hex_nagitave(){
         let addr_str = string::utf8(b"-1:e4d954ef9f4e1250a26b5bbad76a1cdd17cfd08babad6f4c23e372270aef6f76");
         let addr = from_hex_str(&addr_str);
-        assert!(addr.is_nagative == true, 1);
-        assert!(addr.workchain == 1u32, 2);
+        assert!(addr.workchain == i32::neg_from(1), 2);
         assert!(addr.hash_part == @0xe4d954ef9f4e1250a26b5bbad76a1cdd17cfd08babad6f4c23e372270aef6f76, 3);
     }
 
@@ -92,7 +93,6 @@ module rooch_framework::ton_address {
         let addr = from_hex_str(&addr_str);
         let bytes = into_bytes(addr);
         let addr2 = from_bytes(bytes);
-        assert!(addr2.is_nagative == addr.is_nagative, 1);
         assert!(addr2.workchain == addr.workchain, 2);
         assert!(addr2.hash_part == addr.hash_part, 3);
     }

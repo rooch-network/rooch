@@ -12,6 +12,7 @@ module moveos_std::i32 {
     const EQ: u8 = 1;
     const GT: u8 = 2;
 
+    #[data_struct]
     struct I32 has copy, drop, store {
         bits: u32
     }

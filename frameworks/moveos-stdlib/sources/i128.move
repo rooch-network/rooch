@@ -15,6 +15,7 @@ module moveos_std::i128 {
     const EQ: u8 = 1;
     const GT: u8 = 2;
 
+    #[data_struct]
     struct I128 has copy, drop, store {
         bits: u128
     }
