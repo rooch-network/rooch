@@ -446,7 +446,7 @@ Feature: Rooch CLI integration tests
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       # run cosmwasm execute example
-      Then cmd: "move run --function default::cosmwasm_vm_execution::run_cosmwasm_example --sender default --args 'file:./data/cosmwasm_vm_execution_opt.wasm' --json"
+      Then cmd: "move run --function default::cosmwasm_vm_execution::run_cosmwasm_example --sender default --args 'file:./data/cosmwasm_vm_execution_opt.wasm' --json --max-gas-amount=1000000000"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       # release servers

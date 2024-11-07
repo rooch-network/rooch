@@ -469,11 +469,11 @@ pub fn initial_cost_schedule(gas_entries: Option<BTreeMap<String, u64>>) -> Cost
 
     let io_write_tiers: BTreeMap<u64, u64> = vec![
         (0, 1),
-        (200, 2),
-        (400, 4),
-        (800, 16),
-        (1600, 32),
-        (3000, 64),
+        (2000, 2),
+        (4000, 4),
+        (8000, 16),
+        (160000, 23),
+        (300000, 46),
     ]
     .into_iter()
     .collect();
