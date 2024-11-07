@@ -42,4 +42,5 @@ moveos-types = { workspace = true }
 moveos-verifier = { workspace = true }
 moveos-object-runtime = { workspace = true }
 moveos-compiler = { workspace = true }
+once_cell = { workspace = true }
 
