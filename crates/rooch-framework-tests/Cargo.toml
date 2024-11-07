@@ -35,7 +35,6 @@ move-core-types = { workspace = true }
 moveos-types = { workspace = true }
 moveos-store = { workspace = true }
 moveos-config = { workspace = true }
-moveos-eventbus = { workspace = true }
 metrics = { workspace = true }
 
 rooch-genesis = { workspace = true }
@@ -44,11 +43,9 @@ rooch-key = { workspace = true }
 rooch-executor = { workspace = true }
 rooch-config = { workspace = true }
 rooch-db = { workspace = true }
-rooch-event = { workspace = true }
 rooch-relayer = { workspace = true }
 rooch-ord = { workspace = true }
 
-bitcoin-move = { workspace = true }
 framework-builder = { workspace = true }
 
 [dev-dependencies]

@@ -28,7 +28,6 @@ log = { workspace = true }
 prometheus = { workspace = true }
 bitcoincore-rpc = { workspace = true }
 tokio = { workspace = true }
-tokio-util = { workspace = true }
 hyper = { workspace = true }
 tower_governor = { workspace = true }
 http = { workspace = true }
@@ -36,7 +35,6 @@ move-core-types = { workspace = true }
 move-resource-viewer = { workspace = true }
 pin-project = { workspace = true }
 
-moveos = { workspace = true }
 moveos-types = { workspace = true }
 moveos-eventbus = { workspace = true }
 raw-store = { workspace = true }
@@ -58,4 +56,3 @@ rooch-open-rpc = { workspace = true }
 rooch-open-rpc-spec-builder = { workspace = true }
 rooch-event = { workspace = true }
 rooch-store = { workspace = true }
-futures = "0.3.31"

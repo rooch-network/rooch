@@ -4,21 +4,23 @@
 
 # A script to check whether a local commit related to Move repo is ready for a PR.
 
-BASE=$(git rev-parse --show-toplevel)
-
 set -e
 CARGO_HOME=${CARGO_HOME:-~/.cargo}
 
-echo $CARGO_HOME/cargo-nextest
-
-if [ ! -f ${CARGO_HOME}/bin/cargo-nextest ];then
-  echo "install nextest"
-  if [[ "$(uname)" == "Linux" ]]; then
-    curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
-  elif [[ "$(uname)" == "Darwin" ]]; then
-    curl -LsSf https://get.nexte.st/latest/mac | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
+function install_cargo_machete {
+  if ! command -v cargo-machete &>/dev/null; then
+    cargo install cargo-machete --locked --version 0.7.0
   fi
-fi
+}
+
+function install_cargo_nextest {
+  if ! command -v cargo-nextest &>/dev/null; then
+    cargo install cargo-nextest --locked
+  fi
+}
+
+install_cargo_machete
+install_cargo_nextest
 
 # Run only tests which would also be run on CI
 export ENV_TEST_ON_CI=1
@@ -91,6 +93,7 @@ MOVE_TEST_CRATES="\
 "
 
 if [ ! -z "$CHECK" ]; then
+  cargo machete
   cargo fmt -- --check
   cargo clippy --workspace --all-targets --all-features --tests --benches -- -D warnings
 fi

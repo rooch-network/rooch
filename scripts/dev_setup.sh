@@ -376,6 +376,12 @@ function install_cargo_nextest {
   fi
 }
 
+function install_cargo_machete {
+  if ! command -v cargo-machete &> /dev/null; then
+    cargo install cargo-machete --locked
+  fi
+}
+
 function install_grcov {
   if ! command -v grcov &> /dev/null; then
     cargo install grcov --version="${GRCOV_VERSION}" --locked
@@ -860,6 +866,7 @@ if [[ "$INSTALL_BUILD_TOOLS" == "true" ]]; then
 
   install_cargo_sort
   install_cargo_nextest
+  install_cargo_machete
   install_grcov
   install_postgres
   install_sqlite3 "$PACKAGE_MANAGER"

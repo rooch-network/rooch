@@ -11,10 +11,7 @@ version.workspace = true
 
 [dependencies]
 anyhow = { workspace = true }
-futures = { workspace = true }
 log = { workspace = true }
-once_cell = { workspace = true }
 crossbeam-channel = { workspace = true }
 coerce = { workspace = true }
-tokio = { workspace = true }
 thiserror = { workspace = true }

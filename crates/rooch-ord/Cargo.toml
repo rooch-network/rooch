@@ -13,25 +13,11 @@ rust-version = { workspace = true }
 
 [dependencies]
 anyhow = { workspace = true }
-async-trait = { workspace = true }
-chrono = { workspace = true }
-coerce = { workspace = true }
-ethers = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 tokio = { features = ["full"], workspace = true }
-tonic = { workspace = true }
 tracing = { workspace = true }
-bitcoin = { workspace = true }
-bitcoincore-rpc = { workspace = true }
-hex = { workspace = true }
-prometheus = { workspace = true }
 reqwest = { workspace = true }
 ordinals = { workspace = true }
-
-move-core-types = { workspace = true }
-
-moveos-types = { workspace = true }
-metrics = { workspace = true }
 
 rooch-types = { workspace = true }

@@ -20,11 +20,8 @@ tracing = { workspace = true }
 prometheus = { workspace = true }
 function_name = { workspace = true }
 
-move-binary-format = { workspace = true }
-move-core-types = { workspace = true }
 
 moveos-types = { workspace = true }
-moveos-stdlib = { workspace = true }
 moveos = { workspace = true }
 metrics = { workspace = true }
 
