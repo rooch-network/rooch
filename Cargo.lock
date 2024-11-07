@@ -7009,7 +7009,6 @@ dependencies = [
  "moveos-object-runtime",
  "moveos-types",
  "moveos-verifier",
- "moveos-wasm",
  "once_cell",
  "primitive-types 0.12.2",
  "revm-precompile",
