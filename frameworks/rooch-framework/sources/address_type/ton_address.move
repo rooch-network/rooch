@@ -207,9 +207,10 @@ module rooch_framework::ton_address {
 
     #[test]
     fun test_into_bytes(){
-        let addr_str = string::utf8(b"0:e4d954ef9f4e1250a26b5bbad76a1cdd17cfd08babad6f4c23e372270aef6f76");
+        let addr_str = string::utf8(b"-1:e4d954ef9f4e1250a26b5bbad76a1cdd17cfd08babad6f4c23e372270aef6f76");
         let addr = from_hex_str(&addr_str);
         let bytes = into_bytes(addr);
+        std::debug::print(&bytes);
         let addr2 = from_bytes(bytes);
         assert!(addr2.workchain == addr.workchain, 2);
         assert!(addr2.hash_part == addr.hash_part, 3);

@@ -1,32 +1,30 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use framework_types::addresses::ROOCH_FRAMEWORK_ADDRESS;
 use move_core_types::account_address::AccountAddress;
+use move_core_types::identifier::IdentStr;
+use move_core_types::language_storage::TypeTag;
+use move_core_types::value::{MoveStructLayout, MoveTypeLayout};
+use moveos_types::state::{MoveStructState, MoveStructType};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::str::FromStr;
-
 use crate::multichain_id::RoochMultiChainID;
-
 use super::MultiChainAddress;
+
+pub const MODULE_NAME: &IdentStr = IdentStr::new("ton_address").unwrap();
 
 /// The Ton address type
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct TonAddress {
-    is_nagative: bool,
-    //The workchain in TonAddress is i32, but No i32 in Move
-    //So we use u32 instead, and use `is_nagative` to represent the sign
-    workchain: u32,
+    workchain: i32,
     hash_part: AccountAddress,
 }
 
 impl TonAddress {
     pub fn workchain(&self) -> i32 {
-        if self.is_nagative {
-            -(self.workchain as i32)
-        } else {
-            self.workchain as i32
-        }
+        self.workchain
     }
 
     pub fn hash_part(&self) -> [u8; 32] {
@@ -39,6 +37,21 @@ impl TonAddress {
 
     pub fn to_bytes(&self) -> Result<Vec<u8>, anyhow::Error> {
         bcs::to_bytes(self).map_err(|e| anyhow::anyhow!("TonAddress serialize error: {}", e))
+    }
+}
+
+impl MoveStructType for TonAddress {
+    const ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
+    const MODULE_NAME: &'static IdentStr = MODULE_NAME;
+    const STRUCT_NAME: &'static IdentStr = IdentStr::new("TonAddress").unwrap();
+}
+
+impl MoveStructState for TonAddress {
+    fn struct_layout() -> MoveStructLayout {
+        MoveStructLayout::new(vec![
+            MoveTypeLayout::U32,
+            MoveTypeLayout::Address,
+        ])
     }
 }
 
@@ -61,8 +74,7 @@ impl FromStr for TonAddress {
 impl From<tonlib_core::TonAddress> for TonAddress {
     fn from(address: tonlib_core::TonAddress) -> Self {
         Self {
-            is_nagative: address.workchain < 0,
-            workchain: address.workchain.unsigned_abs(),
+            workchain: address.workchain,
             hash_part: address.hash_part.into(),
         }
     }
@@ -71,11 +83,7 @@ impl From<tonlib_core::TonAddress> for TonAddress {
 impl From<TonAddress> for tonlib_core::TonAddress {
     fn from(address: TonAddress) -> Self {
         tonlib_core::TonAddress {
-            workchain: if address.is_nagative {
-                -(address.workchain as i32)
-            } else {
-                address.workchain as i32
-            },
+            workchain: address.workchain,
             hash_part: address.hash_part.into(),
         }
     }
@@ -103,5 +111,18 @@ impl From<TonAddress> for MultiChainAddress {
                 .to_bytes()
                 .expect("TonAddress to_bytes should not fail"),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_ton_address() {
+        let addr = TonAddress::from_str("-1:e4d954ef9f4e1250a26b5bbad76a1cdd17cfd08babad6f4c23e372270aef6f76").unwrap();
+        //println!("addr: {}", addr);
+        let bytes = addr.to_bytes().unwrap();
+        println!("bytes: {:?}", hex::encode(bytes));
     }
 }
