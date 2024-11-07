@@ -24,7 +24,9 @@ use moveos_verifier::build::run_verifier;
 use rooch_rpc_api::jsonrpc_types::{
     ExecuteTransactionResponseView, HumanReadableDisplay, KeptVMStatusView,
 };
+use rooch_rpc_client::wallet_context::WalletContext;
 use rooch_rpc_client::Client;
+use rooch_types::address::RoochAddress;
 use rooch_types::error::{RoochError, RoochResult};
 use rooch_types::transaction::rooch::RoochTransaction;
 use std::collections::BTreeMap;
@@ -113,6 +115,10 @@ impl ModuleResolver for MemoryModuleResolver {
 
 #[derive(Parser)]
 pub struct Publish {
+    /// Path to the package data file to publish
+    #[clap(value_name = "PACKAGE_FILE")]
+    pub package_file: Option<String>,
+
     #[clap(flatten)]
     context_options: WalletContextOptions,
 
@@ -153,18 +159,32 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
     async fn execute(self) -> RoochResult<ExecuteTransactionResponseView> {
         // Build context and handle errors
         let context = self.context_options.build_require_password()?;
+        let max_gas_amount: Option<u64> = self.tx_options.max_gas_amount;
+        let sender = context
+            .resolve_address(self.tx_options.sender.clone())?
+            .into();
+
+        if let Some(ref package_file) = self.package_file {
+            let file = std::fs::File::open(package_file)?;
+            let pkg_data: PackageData = bcs::from_reader(file)?;
+            eprintln!("Publish modules to address: {:?}", pkg_data.package_id);
+            return self
+                .publish_package(&context, sender, pkg_data, max_gas_amount)
+                .await;
+        }
 
         // Clone variables for later use
         let package_path = self
             .move_args
             .package_path
+            .clone()
             .unwrap_or_else(|| std::env::current_dir().unwrap());
         let config = self.move_args.build_config.clone();
         let mut config = config.clone();
 
         // Parse named addresses from context and update config
         config.additional_named_addresses =
-            context.parse_and_resolve_addresses(self.named_addresses)?;
+            context.parse_and_resolve_addresses(self.named_addresses.clone())?;
         let config_cloned = config.clone();
 
         // Compile the package and run the verifier
@@ -218,9 +238,6 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
         // Create a sender RoochAddress
         eprintln!("Publish modules to address: {:?}", pkg_address);
 
-        let max_gas_amount: Option<u64> = self.tx_options.max_gas_amount;
-
-        let sender = context.resolve_address(self.tx_options.sender)?.into();
         // Prepare and execute the transaction based on the action type
         let tx_result = if !self.by_move_action {
             let pkg_data = PackageData::new(
@@ -228,45 +245,8 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
                 pkg_address,
                 bundles,
             );
-            let pkg_bytes = bcs::to_bytes(&pkg_data).unwrap();
-            let args = bcs::to_bytes(&pkg_bytes).unwrap();
-            let action = MoveAction::new_function_call(
-                FunctionId::new(
-                    ModuleId::new(
-                        MOVEOS_STD_ADDRESS,
-                        Identifier::new("module_store".to_owned()).unwrap(),
-                    ),
-                    Identifier::new("publish_package_entry".to_owned()).unwrap(),
-                ),
-                vec![],
-                vec![args],
-            );
-
-            if self.dry_run {
-                let rooch_tx_data = context
-                    .build_tx_data(sender, action.clone(), max_gas_amount)
-                    .await?;
-                let dry_run_result_opt =
-                    dry_run_tx_locally(context.get_client().await?, rooch_tx_data).await?;
-
-                if let Some(dry_run_result) = dry_run_result_opt {
-                    if dry_run_result.raw_output.status != KeptVMStatusView::Executed {
-                        return Ok(dry_run_result.into());
-                    }
-                }
-            }
-
-            let tx_data = context
-                .build_tx_data(sender, action, max_gas_amount)
-                .await?;
-            // Handle transaction with or without authenticator
-            match self.tx_options.authenticator {
-                Some(authenticator) => {
-                    let tx = RoochTransaction::new(tx_data, authenticator.into());
-                    context.execute(tx).await?
-                }
-                None => context.sign_and_execute(sender, tx_data).await?,
-            }
+            self.publish_package(&context, sender, pkg_data, max_gas_amount)
+                .await?
         } else {
             // Handle MoveAction.ModuleBundle case
             let action = MoveAction::ModuleBundle(bundles);
@@ -391,5 +371,54 @@ impl Publish {
         }
 
         Ok(output)
+    }
+
+    async fn publish_package(
+        &self,
+        context: &WalletContext,
+        sender: RoochAddress,
+        pkg_data: PackageData,
+        max_gas_amount: Option<u64>,
+    ) -> RoochResult<ExecuteTransactionResponseView> {
+        let pkg_bytes = bcs::to_bytes(&pkg_data).unwrap();
+        let args = bcs::to_bytes(&pkg_bytes).unwrap();
+        let action = MoveAction::new_function_call(
+            FunctionId::new(
+                ModuleId::new(
+                    MOVEOS_STD_ADDRESS,
+                    Identifier::new("module_store".to_owned()).unwrap(),
+                ),
+                Identifier::new("publish_package_entry".to_owned()).unwrap(),
+            ),
+            vec![],
+            vec![args],
+        );
+
+        if self.dry_run {
+            let rooch_tx_data = context
+                .build_tx_data(sender, action.clone(), max_gas_amount)
+                .await?;
+            let dry_run_result_opt =
+                dry_run_tx_locally(context.get_client().await?, rooch_tx_data).await?;
+
+            if let Some(dry_run_result) = dry_run_result_opt {
+                if dry_run_result.raw_output.status != KeptVMStatusView::Executed {
+                    return Ok(dry_run_result.into());
+                }
+            }
+        }
+
+        let tx_data = context
+            .build_tx_data(sender, action, max_gas_amount)
+            .await?;
+
+        // Handle transaction with or without authenticator
+        match &self.tx_options.authenticator {
+            Some(authenticator) => {
+                let tx = RoochTransaction::new(tx_data, authenticator.clone().into());
+                context.execute(tx).await
+            }
+            None => context.sign_and_execute(sender, tx_data).await,
+        }
     }
 }
