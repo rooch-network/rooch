@@ -410,7 +410,7 @@ Feature: Rooch CLI integration tests
       Given a server for wasm_test
 
       # publish wasm execution
-      Then cmd: "move publish -p ../../examples/wasm_execution  --named-addresses rooch_examples=default --json"
+      Then cmd: "move publish -p ../../examples/wasm_execution  --named-addresses rooch_examples=default --json --max-gas-amount=1000000000"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       # test wasm trap
