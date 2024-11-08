@@ -13,7 +13,10 @@ use rooch_types::{
 use rpassword::prompt_password;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use tabled::{builder::Builder, settings::{Style, Modify, Width, object::Columns}};
+use tabled::{
+    builder::Builder,
+    settings::{object::Columns, Modify, Style, Width},
+};
 
 /// List all keys by its Rooch address, Base64 encoded public key
 #[derive(Debug, Parser)]
@@ -83,7 +86,7 @@ impl CommandAction<Option<AccountsView>> for ListCommand {
             .get_active_env()
             .map(|env| env.guess_network())
             .unwrap_or(RoochNetwork::from(BuiltinChainID::Local));
-        
+
         let account_views: Vec<AccountView> = accounts
             .into_iter()
             .map(|account: LocalAccount| {
@@ -111,13 +114,15 @@ impl CommandAction<Option<AccountsView>> for ListCommand {
             }
             Ok(Some(accounts_view))
         } else {
-            
             let mut builder = Builder::default();
             builder.push_record(["Field", "Value", "Active"]);
 
             for account in account_views {
                 let fields = [
-                    "Address", "Hex Address", "Bitcoin Address", "Nostr Public Key",
+                    "Address",
+                    "Hex Address",
+                    "Bitcoin Address",
+                    "Nostr Public Key",
                 ];
                 let values = [
                     &account.local_account.address,
@@ -137,20 +142,19 @@ impl CommandAction<Option<AccountsView>> for ListCommand {
                         builder.push_record([*field, &**value, ""]);
                     }
                 }
-                
+
                 builder.push_record([
-                    "─────────────────────────────────", 
-                    "─────────────────────────────────────────────────────────────────────────", 
-                    "──────────"
+                    "─────────────────────────────────",
+                    "─────────────────────────────────────────────────────────────────────────",
+                    "──────────",
                 ]);
             }
 
             let mut table = builder.build();
-            table.with(Style::rounded())
-                
+            table
+                .with(Style::rounded())
                 .with(Modify::new(Columns::single(0)).with(Width::truncate(16)));
 
-            
             println!("{}", table);
 
             Ok(None)

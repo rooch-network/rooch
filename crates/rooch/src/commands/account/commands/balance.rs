@@ -18,7 +18,10 @@ use rooch_types::error::RoochResult;
 use schemars::JsonSchema;
 use serde::Serialize;
 use std::collections::HashMap;
-use tabled::{builder::Builder, settings::{Style, Width}};
+use tabled::{
+    builder::Builder,
+    settings::{Style, Width},
+};
 
 /// Show account balance, only the accounts managed by the current node are supported
 #[derive(Debug, Parser)]
@@ -93,18 +96,27 @@ impl CommandAction<Option<BalancesView>> for BalanceCommand {
         balances.push(BalanceInfoViewUnion::Bitcoin(btc_balance));
 
         let other_balances = match coin_type {
-            Some(coin_type) => vec![client
-                .rooch
-                .get_balance(address_addr.into(), coin_type.into())
-                .await?],
-            None => client
-                .rooch
-                .get_balances(address_addr.into(), None, Some(MAX_RESULT_LIMIT))
-                .await?
-                .data,
+            Some(coin_type) => vec![
+                client
+                    .rooch
+                    .get_balance(address_addr.into(), coin_type.into())
+                    .await?,
+            ],
+            None => {
+                client
+                    .rooch
+                    .get_balances(address_addr.into(), None, Some(MAX_RESULT_LIMIT))
+                    .await?
+                    .data
+            }
         };
 
-        balances.extend(other_balances.iter().cloned().map(BalanceInfoViewUnion::Other));
+        balances.extend(
+            other_balances
+                .iter()
+                .cloned()
+                .map(BalanceInfoViewUnion::Other),
+        );
 
         if self.json {
             let mut balances_view: BalancesView = HashMap::new();
@@ -122,7 +134,8 @@ impl CommandAction<Option<BalancesView>> for BalanceCommand {
                         } else {
                             other_balance.coin_info.symbol.to_string()
                         };
-                        balances_view.insert(key, BalanceInfoViewUnion::Other(other_balance.clone()));
+                        balances_view
+                            .insert(key, BalanceInfoViewUnion::Other(other_balance.clone()));
                     }
                 }
             }
@@ -214,9 +227,7 @@ fn print_balance_info_table(balances: Vec<(String, String, u8, String)>) {
     }
 
     let mut table = builder.build();
-    table
-        .with(Style::rounded())
-        .with(Width::increase(20));
+    table.with(Style::rounded()).with(Width::increase(20));
 
     println!("{}", table);
 }

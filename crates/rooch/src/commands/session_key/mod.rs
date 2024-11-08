@@ -1,14 +1,14 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use serde_json::Value;
-use tabled::{builder::Builder, settings::Style};
 use crate::cli_types::CommandAction;
 use async_trait::async_trait;
 use clap::Parser;
 use commands::create::CreateCommand;
 use commands::list::ListCommand;
 use rooch_types::error::RoochResult;
+use serde_json::Value;
+use tabled::{builder::Builder, settings::Style};
 
 pub mod commands;
 
@@ -26,13 +26,14 @@ impl CommandAction<String> for SessionKey {
                 serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
             }),
             SessionKeyCommand::List(list) => {
-                let display_as_table = list.table; 
+                let display_as_table = list.table;
                 let json_output = list.execute_serialized().await?;
-                let json_value: Value = serde_json::from_str(&json_output).expect("Failed to parse JSON");
-                
+                let json_value: Value =
+                    serde_json::from_str(&json_output).expect("Failed to parse JSON");
+
                 if display_as_table {
                     display_json_as_table(&json_value);
-                    Ok(String::new()) 
+                    Ok(String::new())
                 } else {
                     Ok(json_output)
                 }
@@ -60,7 +61,11 @@ fn display_json_as_table(data: &Value) {
             if let Some(abilities) = item.get("value").and_then(|v| v.get("abilities")) {
                 main_table.push_record(["Abilities", &abilities.to_string()]);
             }
-            if let Some(type_str) = item.get("value").and_then(|v| v.get("type")).and_then(|v| v.as_str()) {
+            if let Some(type_str) = item
+                .get("value")
+                .and_then(|v| v.get("type"))
+                .and_then(|v| v.as_str())
+            {
                 main_table.push_record(["Type", type_str]);
             }
 
@@ -87,26 +92,56 @@ fn display_json_as_table(data: &Value) {
                 }
             }
 
-            main_table.push_record(["Details", &format!("{}", details_table.build().with(Style::rounded()))]);
+            main_table.push_record([
+                "Details",
+                &format!("{}", details_table.build().with(Style::rounded())),
+            ]);
 
-            if let Some(scopes) = item.get("value").and_then(|v| v.get("value")).and_then(|v| v.get("scopes")).and_then(|v| v.as_array()) {
+            if let Some(scopes) = item
+                .get("value")
+                .and_then(|v| v.get("value"))
+                .and_then(|v| v.get("scopes"))
+                .and_then(|v| v.as_array())
+            {
                 let mut scopes_table = Builder::default();
-                scopes_table.push_record(["Abilities", "Type", "Function Name", "Module Address", "Module Name"]);
-                
+                scopes_table.push_record([
+                    "Abilities",
+                    "Type",
+                    "Function Name",
+                    "Module Address",
+                    "Module Name",
+                ]);
+
                 for scope in scopes {
                     scopes_table.push_record([
-                        &scope.get("abilities").map_or(String::new(), |v| v.to_string()),
+                        &scope
+                            .get("abilities")
+                            .map_or(String::new(), |v| v.to_string()),
                         scope.get("type").and_then(|v| v.as_str()).unwrap_or(""),
-                        scope.get("value").and_then(|v| v.get("function_name")).and_then(|v| v.as_str()).unwrap_or(""),
-                        scope.get("value").and_then(|v| v.get("module_address")).and_then(|v| v.as_str()).unwrap_or(""),
-                        scope.get("value").and_then(|v| v.get("module_name")).and_then(|v| v.as_str()).unwrap_or(""),
+                        scope
+                            .get("value")
+                            .and_then(|v| v.get("function_name"))
+                            .and_then(|v| v.as_str())
+                            .unwrap_or(""),
+                        scope
+                            .get("value")
+                            .and_then(|v| v.get("module_address"))
+                            .and_then(|v| v.as_str())
+                            .unwrap_or(""),
+                        scope
+                            .get("value")
+                            .and_then(|v| v.get("module_name"))
+                            .and_then(|v| v.as_str())
+                            .unwrap_or(""),
                     ]);
                 }
 
-                main_table.push_record(["Scopes", &format!("{}", scopes_table.build().with(Style::rounded()))]);
+                main_table.push_record([
+                    "Scopes",
+                    &format!("{}", scopes_table.build().with(Style::rounded())),
+                ]);
             }
 
-        
             println!("{}", main_table.build().with(Style::rounded()));
         }
     }
