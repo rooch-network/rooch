@@ -45,6 +45,13 @@ Feature: Rooch CLI argument resolver integration tests
         Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
         Then cmd: "move run --function default::argument_resolver::shared_object --args object:default::argument_resolver::MockObject --args u64:123"
 
+        Then cmd: "move run --function default::argument_resolver::create_object_without_key_ability --json"
+        Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+        Then sleep: "3"
+        Then cmd: "object -o default -t {{$.account[-1].default.hex_address}}::argument_resolver::MockObject1"
+        Then cmd: "move run --function default::argument_resolver::object_without_key_ability --args object:{{$.object[-1].data[0].id}}"
+        Then assert: "'{{$.move[-1]}}' contains TYPE_MISMATCH"
+
     @serial
     Scenario: argument_resolver_test_frozen_object
     Given a server for argument_resolver_test_frozen_object
