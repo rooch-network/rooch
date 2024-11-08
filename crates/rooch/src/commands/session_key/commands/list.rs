@@ -1,5 +1,4 @@
-// Copyright (c) RoochNetwork
-// SPDX-License-Identifier: Apache-2.0
+// src/commands/session_key/commands/list.rs
 
 use crate::cli_types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
@@ -21,6 +20,10 @@ pub struct ListCommand {
 
     #[clap(flatten)]
     pub context_options: WalletContextOptions,
+
+    /// Display output as a table instead of JSON
+    #[clap(long)]
+    pub table: bool,
 }
 
 #[async_trait]
