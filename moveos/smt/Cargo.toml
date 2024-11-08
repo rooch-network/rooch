@@ -34,7 +34,6 @@ prometheus = { workspace = true }
 parking_lot = { workspace = true }
 rand = { workspace = true }
 serde = { workspace = true, features = ["derive", "rc"] }
-serde_bytes = { workspace = true }
 thiserror = { workspace = true }
 
 proptest = { optional = true, workspace = true }

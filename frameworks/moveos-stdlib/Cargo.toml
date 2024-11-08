@@ -14,7 +14,6 @@ rust-version = { workspace = true }
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-libc = "0.2"
 anyhow = { workspace = true }
 better_any = { workspace = true }
 fastcrypto = { workspace = true }
@@ -41,8 +40,7 @@ move-vm-types = { workspace = true }
 
 moveos-types = { workspace = true }
 moveos-verifier = { workspace = true }
-moveos-wasm = { workspace = true }
-wasmer = { workspace = true }
 moveos-object-runtime = { workspace = true }
 moveos-compiler = { workspace = true }
+once_cell = { workspace = true }
 

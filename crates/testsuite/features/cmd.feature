@@ -282,6 +282,29 @@ Feature: Rooch CLI integration tests
       Then stop the server
 
   @serial
+  Scenario: publish rpd file directly
+      Given a server for publish_rpd_direct
+
+      # First build the counter example
+      Then cmd: "move build -p ../../examples/counter --named-addresses rooch_examples=default --json"
+      Then assert: "{{$.move[-1].Result}} == Success"
+
+      # Test direct publish rpd command
+      Then cmd: "move publish ../../examples/counter/build/counter/package.rpd --json"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+
+      # Verify the counter functionality works
+      Then cmd: "move view --function default::counter::value"
+      Then assert: "{{$.move[-1].return_values[0].decoded_value}} == 0"
+      Then cmd: "move run --function default::counter::increase --json"
+      Then cmd: "move view --function default::counter::value"
+      Then assert: "{{$.move[-1].return_values[0].decoded_value}} == 1"
+      Then cmd: "resource --address default --resource default::counter::Counter"
+      Then assert: "{{$.resource[-1].decoded_value.value.value.value.value}} == 1"
+
+      Then stop the server
+
+  @serial
   Scenario: coins example
       Given a server for coins
       Then cmd: "account create --json"
@@ -410,7 +433,7 @@ Feature: Rooch CLI integration tests
       Given a server for wasm_test
 
       # publish wasm execution
-      Then cmd: "move publish -p ../../examples/wasm_execution  --named-addresses rooch_examples=default --json"
+      Then cmd: "move publish -p ../../examples/wasm_execution  --named-addresses rooch_examples=default --json --max-gas-amount=1000000000"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       # test wasm trap
@@ -442,11 +465,11 @@ Feature: Rooch CLI integration tests
       Given a server for wasm_test
 
       # publish wasm execution
-      Then cmd: "move publish -p ../../examples/cosmwasm_vm_execution  --named-addresses rooch_examples=default --json"
+      Then cmd: "move publish -p ../../examples/cosmwasm_vm_execution  --named-addresses rooch_examples=default --json --max-gas-amount=1000000000"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       # run cosmwasm execute example
-      Then cmd: "move run --function default::cosmwasm_vm_execution::run_cosmwasm_example --sender default --args 'file:./data/cosmwasm_vm_execution_opt.wasm' --json"
+      Then cmd: "move run --function default::cosmwasm_vm_execution::run_cosmwasm_example --sender default --args 'file:./data/cosmwasm_vm_execution_opt.wasm' --json --max-gas-amount=1000000000"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       # release servers

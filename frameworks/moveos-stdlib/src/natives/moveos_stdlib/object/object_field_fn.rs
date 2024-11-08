@@ -1,9 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use std::collections::VecDeque;
-
 use move_binary_format::errors::PartialVMResult;
+use move_core_types::gas_algebra::{GasQuantity, InternalGasUnit};
 use move_core_types::{
     account_address::AccountAddress,
     gas_algebra::{InternalGas, InternalGasPerByte, NumBytes},
@@ -13,17 +12,18 @@ use move_vm_types::{
     loaded_data::runtime_types::Type, natives::function::NativeResult, pop_arg, values::Value,
 };
 use smallvec::smallvec;
+use std::collections::VecDeque;
 
+use super::{error_to_abort_code, CommonGasParameters};
+use crate::natives::moveos_stdlib::object::{pop_object_id, GasParameters};
+use crate::natives::{get_current_and_future_tier, OBJECT_ADD_FIELD_GAS_TIERS};
 use moveos_object_runtime::{
     runtime::ObjectRuntimeContext, runtime_object::RuntimeObject, TypeLayoutLoader,
 };
+use moveos_types::moveos_std::onchain_features::VALUE_SIZE_GAS_FEATURE;
 use moveos_types::{
     moveos_std::object::ObjectID, state::FieldKey, state_resolver::StatelessResolver,
 };
-
-use crate::natives::moveos_stdlib::object::{pop_object_id, GasParameters};
-
-use super::{error_to_abort_code, CommonGasParameters};
 
 /***************************************************************************************************
  * native fun native_add_field<V>(obj_id: ObjectID, key: address, val: V): Object<V>;
@@ -54,12 +54,37 @@ pub(crate) fn native_add_field(
     let field_key: FieldKey = pop_arg!(args, AccountAddress).into();
     let obj_id = pop_object_id(&mut args)?;
 
+    let object_runtime_ctx = context.extensions().get::<ObjectRuntimeContext>();
+    let feature_store_opt = object_runtime_ctx.feature_store();
+    let value_size_gas_feature = if let Some(feature_store) = feature_store_opt {
+        feature_store.contains_feature(VALUE_SIZE_GAS_FEATURE)
+    } else {
+        false
+    };
+
+    let value_size_gas_fee = if value_size_gas_feature {
+        let value_size = value.size();
+        let (factor, _) =
+            get_current_and_future_tier(&OBJECT_ADD_FIELD_GAS_TIERS, value_size as u64, 1);
+        let applied_factor = match factor.checked_mul(value_size as u64) {
+            None => {
+                return Ok(NativeResult::err(common_gas_parameter.load_base, 1));
+            }
+            Some(v) => v,
+        };
+
+        Some(NumBytes::new(applied_factor) * common_gas_parameter.load_per_byte)
+    } else {
+        None
+    };
+
     object_field_fn_dispatch(
         &common_gas_parameter,
         add_field_gas_parameter.base,
         add_field_gas_parameter.per_byte_serialized,
         context,
         obj_id,
+        value_size_gas_fee,
         move |layout_loader, resolver, rt_obj| {
             rt_obj.add_field(layout_loader, resolver, field_key, &ty_args[0], value)
         },
@@ -98,6 +123,7 @@ pub(crate) fn native_borrow_field(
         borrow_field_gas_parameter.per_byte_serialized,
         context,
         obj_id,
+        None,
         |layout_loader, resolver, rt_obj| {
             rt_obj.borrow_field(layout_loader, resolver, field_key, &ty_args[0])
         },
@@ -135,6 +161,7 @@ pub(crate) fn native_contains_field(
         contains_field_gas_parameter.per_byte_serialized,
         context,
         obj_id,
+        None,
         |layout_loader, resolver, rt_obj| {
             let (rt_field, loaded_gas) = rt_obj.load_field(layout_loader, resolver, field_key)?;
             Ok((Value::bool(rt_field.exists()?), loaded_gas))
@@ -167,6 +194,7 @@ pub(crate) fn native_contains_field_with_value_type(
         contains_field_gas_parameter.per_byte_serialized,
         context,
         obj_id,
+        None,
         |layout_loader, resolver, rt_obj| {
             let (rt_field, loaded_gas) = rt_obj.load_field(layout_loader, resolver, field_key)?;
             let value_type = layout_loader.type_to_type_tag(&ty_args[0])?;
@@ -209,6 +237,7 @@ pub(crate) fn native_remove_field(
         remove_field_gas_parameter.per_byte_serialized,
         context,
         obj_id,
+        None,
         |layout_loader, resolver, rt_obj| {
             rt_obj.remove_field(layout_loader, resolver, field_key, &ty_args[0])
         },
@@ -221,6 +250,7 @@ fn object_field_fn_dispatch(
     per_byte_serialized: InternalGasPerByte,
     context: &mut NativeContext,
     obj_id: ObjectID,
+    additional_gas_fee: Option<GasQuantity<InternalGasUnit>>,
     f: impl FnOnce(
         &dyn TypeLayoutLoader,
         &dyn StatelessResolver,
@@ -237,10 +267,12 @@ fn object_field_fn_dispatch(
         + per_byte_serialized * NumBytes::new(field_key_bytes)
         + common_gas_params.calculate_load_cost(object_load_gas);
 
+    let additional_gas = additional_gas_fee.unwrap_or_else(GasQuantity::zero);
+
     let result = f(context, resolver, rt_obj);
     match result {
         Ok((value, field_load_gas)) => Ok(NativeResult::ok(
-            gas_cost + common_gas_params.calculate_load_cost(field_load_gas),
+            gas_cost + common_gas_params.calculate_load_cost(field_load_gas) + additional_gas,
             smallvec![value],
         )),
         Err(err) => {

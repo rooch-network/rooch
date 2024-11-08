@@ -1,0 +1,277 @@
+import { useState } from 'react';
+import BigNumber from 'bignumber.js';
+import PuffLoader from 'react-spinners/PuffLoader';
+import { Args, Transaction } from '@roochnetwork/rooch-sdk';
+import { useCurrentAddress, UseSignAndExecuteTransaction } from '@roochnetwork/rooch-sdk-kit';
+
+import { LoadingButton } from '@mui/lab';
+import { grey } from '@mui/material/colors';
+import {
+  Card,
+  Stack,
+  Button,
+  Dialog,
+  TextField,
+  Typography,
+  DialogTitle,
+  DialogActions,
+  DialogContent,
+} from '@mui/material';
+
+import { toDust } from 'src/utils/number';
+
+import { warning, secondary } from 'src/theme/core';
+import { TESTNET_ORDERBOOK_PACKAGE } from 'src/config/constant';
+import { NETWORK, SUI_DECIMALS, NETWORK_PACKAGE } from 'src/config/trade';
+
+import { toast } from '../snackbar';
+import InscriptionShopCard from './inscription-shop-card';
+
+export type CreateBidDialogProps = {
+  open: boolean;
+  tick: string;
+  floorPrice: number;
+  refreshBidList: () => Promise<void>;
+  close: () => void;
+};
+
+export default function CreateBidDialog({
+  open,
+  tick,
+  floorPrice,
+  refreshBidList,
+  close,
+}: CreateBidDialogProps) {
+  const [bidAmount, setBidAmount] = useState('');
+  const [bidUnitPrice, setBidUnitPrice] = useState('');
+
+  const account = useCurrentAddress();
+  const { mutate: signAndExecuteTransaction, isPending } = UseSignAndExecuteTransaction();
+
+  return (
+    <Dialog
+      open={open}
+      onClose={close}
+      sx={{
+        '& .MuiDialog-paper': {
+          minWidth: {
+            xs: '360px',
+            sm: '360px',
+            md: '600px',
+            lg: '600px',
+          },
+        },
+      }}
+    >
+      <DialogTitle>Create Bid</DialogTitle>
+
+      <DialogContent>
+        <Card
+          variant="outlined"
+          sx={{
+            p: 2,
+          }}
+        >
+          <InscriptionShopCard
+            objectId="#"
+            tick={tick}
+            isVerified={tick.toLowerCase() === 'move'}
+            amount={bidAmount}
+            price={new BigNumber(bidAmount)
+              .times(bidUnitPrice)
+              .times(new BigNumber(10).pow(SUI_DECIMALS))
+              .toString()}
+            unitPrice={new BigNumber(bidUnitPrice)
+              .times(new BigNumber(10).pow(SUI_DECIMALS))
+              .toString()}
+            acc="0"
+            selectMode={false}
+            type="bid"
+          />
+        </Card>
+
+        <Typography sx={{ mt: 3, mb: 0.5 }}>Bid Amount</Typography>
+
+        <TextField
+          autoFocus
+          fullWidth
+          type="number"
+          InputProps={
+            {
+              // endAdornment: (
+              //   <InputAdornment position="end">
+              //     SUI / {listItem?.data.content.fields.tick}
+              //   </InputAdornment>
+              // ),
+            }
+          }
+          margin="dense"
+          value={bidAmount}
+          onChange={(e) => {
+            setBidAmount(e.target.value);
+          }}
+        />
+
+        <Typography sx={{ mt: 3, mb: 0.5 }}>Bid Unit Price</Typography>
+        <TextField
+          autoFocus
+          fullWidth
+          type="number"
+          InputProps={
+            {
+              // endAdornment: (
+              //   <InputAdornment position="end">
+              //     SUI / {listItem?.data.content.fields.tick}
+              //   </InputAdornment>
+              // ),
+            }
+          }
+          margin="dense"
+          value={bidUnitPrice}
+          onChange={(e) => {
+            setBidUnitPrice(e.target.value);
+          }}
+        />
+        <Stack
+          sx={{
+            mt: 0.5,
+            cursor: 'pointer',
+          }}
+          direction="row"
+          alignItems="center"
+          onClick={() => {
+            setBidUnitPrice(floorPrice.toString());
+          }}
+          spacing={0.5}
+        >
+          <PuffLoader speedMultiplier={0.875} color={warning.light} loading size={16} />
+          <Typography
+            sx={{
+              color: grey[500],
+              fontSize: '0.875rem',
+            }}
+          >
+            Latest Floor Price:{' '}
+            <span
+              style={{
+                color: secondary.light,
+              }}
+            >
+              {floorPrice}
+            </span>{' '}
+            SUI/{tick.toUpperCase()}
+          </Typography>
+        </Stack>
+        <Stack direction="row" alignItems="center" justifyContent="space-between">
+          <Typography
+            sx={{
+              mt: 1,
+            }}
+          >
+            Total Price:{' '}
+            <span
+              style={{
+                fontWeight: 600,
+                fontSize: '1.25rem',
+                color: secondary.light,
+              }}
+            >
+              {new BigNumber(bidAmount).times(bidUnitPrice).isNaN()
+                ? '-'
+                : new BigNumber(bidAmount).times(bidUnitPrice).toFixed(4)}
+            </span>{' '}
+            SUI
+          </Typography>
+          {/* <Typography
+            sx={{
+              color: grey[500],
+              fontSize: '0.875rem',
+              display: 'flex',
+              alignItems: 'center',
+            }}
+          >
+            Fee: 2%{' '}
+            <Tooltip
+              title={
+                <Stack
+                  sx={{
+                    fontSize: '0.75rem',
+                  }}
+                >
+                  <Box>50% Market Fee</Box>
+                  <Box>25% Community Fee</Box>
+                  <Box>12.5% Burn Fee (Easter egg)</Box>
+                  <Box>12.5% Locked in Inscription</Box>
+                </Stack>
+              }
+            >
+              <Iconify
+                icon="solar:question-circle-bold"
+                width={16}
+                sx={{
+                  ml: 1,
+                }}
+              />
+            </Tooltip>
+          </Typography> */}
+        </Stack>
+      </DialogContent>
+
+      <DialogActions>
+        <Button onClick={close} variant="outlined" color="inherit">
+          Cancel
+        </Button>
+        <LoadingButton
+          loading={isPending}
+          disabled={
+            new BigNumber(bidAmount).isNaN() ||
+            new BigNumber(bidUnitPrice).isNaN() ||
+            new BigNumber(bidAmount).isZero() ||
+            new BigNumber(bidUnitPrice).isZero()
+          }
+          onClick={() => {
+            if (!account) {
+              return;
+            }
+            const tx = new Transaction();
+
+            const unitPriceInMist = toDust(bidUnitPrice, SUI_DECIMALS);
+
+            tx.callFunction({
+              target: `${TESTNET_ORDERBOOK_PACKAGE}::market::create_bid`,
+              args: [
+                Args.objectId(NETWORK_PACKAGE[NETWORK].tickInfo[tick].MARKET_OBJECT_ID),
+                Args.u64(unitPriceInMist),
+                Args.u256(BigInt(bidAmount)),
+              ],
+              typeArgs: [
+                '0x3::gas_coin::RGas',
+                '0x1d6f6657fc996008a1e43b8c13805e969a091560d4cea57b1db9f3ce4450d977::fixed_supply_coin::FSC',
+              ],
+            });
+
+            signAndExecuteTransaction(
+              {
+                transaction: tx,
+              },
+              {
+                async onSuccess(data) {
+                  // await refetchAddressOwnedInscription();
+                  toast.success('Create Bid Success');
+                  close();
+                  refreshBidList();
+                },
+                onError(error) {
+                  toast.error(String(error));
+                },
+              }
+            );
+          }}
+          variant="contained"
+        >
+          Submit
+        </LoadingButton>
+      </DialogActions>
+    </Dialog>
+  );
+}

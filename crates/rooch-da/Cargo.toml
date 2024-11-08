@@ -20,12 +20,10 @@ celestia-types = { workspace = true }
 moveos-types = { workspace = true }
 anyhow = { workspace = true }
 serde = { workspace = true }
-bcs = { workspace = true }
 tracing = { workspace = true }
 coerce = { workspace = true }
 async-trait = { workspace = true }
 opendal = { workspace = true }
-serde_yaml = { workspace = true }
 tokio = { workspace = true }
 
 rooch-config = { workspace = true }

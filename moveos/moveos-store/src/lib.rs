@@ -19,9 +19,10 @@ use moveos_types::genesis_info::GenesisInfo;
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::event::{Event, EventID, TransactionEvent};
 use moveos_types::moveos_std::object::ObjectID;
+use moveos_types::moveos_std::onchain_features::FeatureStore;
 use moveos_types::startup_info::StartupInfo;
 use moveos_types::state::{FieldKey, ObjectState};
-use moveos_types::state_resolver::{StateKV, StatelessResolver};
+use moveos_types::state_resolver::{StateKV, StateResolver, StatelessResolver};
 use moveos_types::transaction::{
     RawTransactionOutput, TransactionExecutionInfo, TransactionOutput,
 };
@@ -372,5 +373,24 @@ impl StatelessResolver for MoveOSStore {
     ) -> Result<Vec<StateKV>, Error> {
         self.get_state_store()
             .list_fields_at(state_root, cursor, limit)
+    }
+}
+
+pub fn load_feature_store_object<Resolver: StateResolver>(
+    state_resolver: &Resolver,
+) -> Option<FeatureStore> {
+    let feature_store_object = state_resolver
+        .get_object(&FeatureStore::feature_store_object_id())
+        .unwrap_or(None);
+
+    match feature_store_object {
+        None => None,
+        Some(future_store_state) => {
+            let future_store_result = future_store_state.into_object::<FeatureStore>();
+            match future_store_result {
+                Ok(future_store) => Some(future_store.value),
+                Err(_) => None,
+            }
+        }
     }
 }

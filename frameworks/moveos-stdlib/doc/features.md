@@ -41,6 +41,9 @@ feature flag is disabled, those functions can constantly return true.
 -  [Function `get_wasm_feature`](#0x2_features_get_wasm_feature)
 -  [Function `wasm_enabled`](#0x2_features_wasm_enabled)
 -  [Function `ensure_wasm_enabled`](#0x2_features_ensure_wasm_enabled)
+-  [Function `get_value_size_gas_feature`](#0x2_features_get_value_size_gas_feature)
+-  [Function `value_size_gas_enabled`](#0x2_features_value_size_gas_enabled)
+-  [Function `ensure_value_size_gas_enabled`](#0x2_features_ensure_value_size_gas_enabled)
 -  [Function `get_all_features`](#0x2_features_get_all_features)
 
 
@@ -134,6 +137,16 @@ This feature will only be enabled on testnet, devnet or localnet.
 
 
 <pre><code><b>const</b> <a href="features.md#0x2_features_TESTNET">TESTNET</a>: u64 = 3;
+</code></pre>
+
+
+
+<a name="0x2_features_VALUE_SIZE_GAS"></a>
+
+Whether to enable size-based gas fee for adding field values
+
+
+<pre><code><b>const</b> <a href="features.md#0x2_features_VALUE_SIZE_GAS">VALUE_SIZE_GAS</a>: u64 = 7;
 </code></pre>
 
 
@@ -378,6 +391,39 @@ All features are enabled for system reserved accounts.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="features.md#0x2_features_ensure_wasm_enabled">ensure_wasm_enabled</a>()
+</code></pre>
+
+
+
+<a name="0x2_features_get_value_size_gas_feature"></a>
+
+## Function `get_value_size_gas_feature`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x2_features_get_value_size_gas_feature">get_value_size_gas_feature</a>(): u64
+</code></pre>
+
+
+
+<a name="0x2_features_value_size_gas_enabled"></a>
+
+## Function `value_size_gas_enabled`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x2_features_value_size_gas_enabled">value_size_gas_enabled</a>(): bool
+</code></pre>
+
+
+
+<a name="0x2_features_ensure_value_size_gas_enabled"></a>
+
+## Function `ensure_value_size_gas_enabled`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x2_features_ensure_value_size_gas_enabled">ensure_value_size_gas_enabled</a>()
 </code></pre>
 
 
