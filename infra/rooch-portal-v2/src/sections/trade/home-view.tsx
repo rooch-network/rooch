@@ -1,10 +1,32 @@
 'use client';
 
+import Link from 'next/link';
+import BigNumber from 'bignumber.js';
+
 import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
-import { Table, TableBody, TableContainer } from '@mui/material';
+import {
+  Table,
+  Button,
+  Skeleton,
+  TableRow,
+  TableBody,
+  TableCell,
+  TableContainer,
+} from '@mui/material';
+
+// import { useBatchMarketTradeData } from 'src/hooks/trade/use-market-trade-data';
+
+import { useBatchMarketTradeData } from 'src/hooks/trade/use-market-trade-data';
+
+import { fromDust } from 'src/utils/number';
+import { fNumber } from 'src/utils/format-number';
+
+import { secondary } from 'src/theme/core';
+import { SUI_DECIMALS } from 'src/config/trade';
 
 import { Scrollbar } from 'src/components/scrollbar';
+import { Iconify } from 'src/components/iconify/iconify';
 import { useSettingsContext } from 'src/components/settings';
 import { TableHeadCustom } from 'src/components/table/table-head-custom';
 
@@ -45,18 +67,18 @@ const TABLE_HEAD = [
 export default function MarketplaceHomeView() {
   const settings = useSettingsContext();
   // const { tickList: ticks, isFetching } = useMRCTicks();
-  // const { tickTradeInfos, isLoadingTickTradeInfos } = useBatchMarketTradeData([
-  //   'moveer',
-  //   'creator',
-  //   'game',
-  //   'ikun',
-  //   'lords',
-  //   'suis',
-  //   'suiz',
-  //   'myworld',
-  //   'platon',
-  //   'kriswu',
-  // ]);
+  const { tickTradeInfos, isLoadingTickTradeInfos } = useBatchMarketTradeData([
+    'moveer',
+    'creator',
+    'game',
+    'ikun',
+    'lords',
+    'suis',
+    'suiz',
+    'myworld',
+    'platon',
+    'kriswu',
+  ]);
 
   return (
     <Container maxWidth="xl">
@@ -81,7 +103,7 @@ export default function MarketplaceHomeView() {
             />
 
             <TableBody>
-              {/* {false ? (
+              {isLoadingTickTradeInfos ? (
                 <TableRow>
                   <TableCell>
                     <Skeleton />
@@ -170,7 +192,7 @@ export default function MarketplaceHomeView() {
                       </TableRow>
                     );
                   })
-              )} */}
+              )}
             </TableBody>
           </Table>
         </Scrollbar>

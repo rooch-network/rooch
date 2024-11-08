@@ -4,7 +4,7 @@ import { useState } from 'react';
 import BigNumber from 'bignumber.js';
 import PuffLoader from 'react-spinners/PuffLoader';
 import { Args, Transaction } from '@roochnetwork/rooch-sdk';
-import { useSignAndExecuteTransaction } from '@roochnetwork/rooch-sdk-kit';
+import { UseSignAndExecuteTransaction } from '@roochnetwork/rooch-sdk-kit';
 
 import { LoadingButton } from '@mui/lab';
 import { grey } from '@mui/material/colors';
@@ -23,7 +23,7 @@ import {
   InputAdornment,
 } from '@mui/material';
 
-import { toDust, fromDust, formatNumber } from 'src/utils/number';
+import { toDust } from 'src/utils/number';
 
 import { warning, secondary } from 'src/theme/core';
 import { TESTNET_ORDERBOOK_PACKAGE } from 'src/config/constant';
@@ -39,18 +39,14 @@ export default function ListDialog({
   tick,
   fromCoinBalanceInfo,
   toCoinBalanceInfo,
-  refreshList,
-  close,
 }: {
   listDialogOpen: boolean;
   floorPrice: string;
   tick: string;
   fromCoinBalanceInfo: BalanceInfoView;
   toCoinBalanceInfo: BalanceInfoView;
-  refreshList: () => Promise<void>;
-  close: () => void;
 }) {
-  const { mutate: signAndExecuteTransaction, isPending } = useSignAndExecuteTransaction();
+  const { mutate: signAndExecuteTransaction, isPending } = UseSignAndExecuteTransaction();
 
   const [listPrice, setListPrice] = useState('');
   const [listAmount, setListAmount] = useState('');
@@ -58,7 +54,7 @@ export default function ListDialog({
   return (
     <Dialog
       open={listDialogOpen}
-      onClose={close}
+      // onClose={closeList}
       sx={{
         '& .MuiDialog-paper': {
           minWidth: {
@@ -83,9 +79,7 @@ export default function ListDialog({
             <InscriptionCard
               isVerified
               tick={toCoinBalanceInfo.symbol.toUpperCase()}
-              tokenBalance={formatNumber(
-                fromDust(toCoinBalanceInfo.balance, toCoinBalanceInfo.decimals).toNumber()
-              )}
+              tokenBalance={toCoinBalanceInfo.balance}
             />
           </Card>
         )}
@@ -211,7 +205,11 @@ export default function ListDialog({
       </DialogContent>
 
       <DialogActions>
-        <Button onClick={close} variant="outlined" color="inherit">
+        <Button
+          // onClick={closeList}
+          variant="outlined"
+          color="inherit"
+        >
           Cancel
         </Button>
         <LoadingButton
@@ -259,8 +257,8 @@ export default function ListDialog({
               {
                 async onSuccess(data) {
                   toast.success('List success');
-                  close();
-                  refreshList();
+                  // close();
+                  // refreshBidList();
                 },
                 onError(error) {
                   toast.error(String(error));

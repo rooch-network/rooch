@@ -1,10 +1,10 @@
-import type { BalanceInfoView } from '@roochnetwork/rooch-sdk';
-import type { BidItem } from 'src/hooks/trade/use-market-data';
+import type { BidItemObject } from 'src/hooks/trade/use-market-data';
+import type { InscriptionObject } from 'src/hooks/trade/use-address-owned-inscription';
 
-import { useMemo } from 'react';
 import BigNumber from 'bignumber.js';
+import { useMemo, useState } from 'react';
 import { Args, Transaction } from '@roochnetwork/rooch-sdk';
-import { useCurrentAddress, useSignAndExecuteTransaction } from '@roochnetwork/rooch-sdk-kit';
+import { useCurrentAddress, UseSignAndExecuteTransaction } from '@roochnetwork/rooch-sdk-kit';
 
 import { LoadingButton } from '@mui/lab';
 import { yellow } from '@mui/material/colors';
@@ -14,6 +14,7 @@ import {
   Stack,
   Dialog,
   Button,
+  TextField,
   Typography,
   DialogTitle,
   DialogContent,
@@ -21,10 +22,10 @@ import {
 } from '@mui/material';
 
 import { fNumber } from 'src/utils/format-number';
-import { fromDust, formatNumber } from 'src/utils/number';
 
 import { secondary } from 'src/theme/core';
 import { TESTNET_ORDERBOOK_PACKAGE } from 'src/config/constant';
+import { NETWORK, SUI_DECIMALS, NETWORK_PACKAGE } from 'src/config/trade';
 
 import { toast } from 'src/components/snackbar';
 import { Iconify } from 'src/components/iconify';
@@ -33,11 +34,9 @@ import InscriptionShopCard from './inscription-shop-card';
 
 export type AcceptBidDialogProps = {
   open: boolean;
-  acceptBidItem: BidItem;
-  tokenBalance: string;
+  acceptBidItem: BidItemObject;
+  userOwnedTickInscription: InscriptionObject[];
   tick: string;
-  fromCoinBalanceInfo: BalanceInfoView;
-  toCoinBalanceInfo: BalanceInfoView;
   refreshBidList: () => Promise<void>;
   close: () => void;
 };
@@ -110,21 +109,24 @@ export type AcceptBidDialogProps = {
 export default function AcceptBidDialog({
   open,
   acceptBidItem,
+  userOwnedTickInscription,
   tick,
-  fromCoinBalanceInfo,
-  toCoinBalanceInfo,
-  tokenBalance,
   refreshBidList,
   close,
 }: AcceptBidDialogProps) {
-  const { mutate: signAndExecuteTransaction, isPending } = useSignAndExecuteTransaction();
-
-  const price = useMemo(
-    () => new BigNumber(acceptBidItem.unit_price).times(acceptBidItem.quantity).toString(),
-    [acceptBidItem.quantity, acceptBidItem.unit_price]
-  );
+  const { mutate: signAndExecuteTransaction, isPending } = UseSignAndExecuteTransaction();
 
   const account = useCurrentAddress();
+
+  const [acceptAmount, setAcceptAmount] = useState('');
+
+  const inscriptionBalance = useMemo(() => {
+    let total = new BigNumber(0);
+    userOwnedTickInscription.forEach((i) => {
+      total = total.plus(i.data.content.fields.amount);
+    });
+    return total;
+  }, [userOwnedTickInscription, userOwnedTickInscription?.length]);
 
   return (
     <Dialog
@@ -135,8 +137,8 @@ export default function AcceptBidDialog({
           minWidth: {
             xs: '360px',
             sm: '360px',
-            md: '480px',
-            lg: '480px',
+            md: '600px',
+            lg: '600px',
           },
         },
       }}
@@ -148,22 +150,22 @@ export default function AcceptBidDialog({
           variant="outlined"
           sx={{
             p: 2,
+            cursor: 'pointer',
+          }}
+          onClick={() => {
+            setAcceptAmount(acceptBidItem.amt);
           }}
         >
           <InscriptionShopCard
-            objectId={acceptBidItem.order_id}
+            objectId={acceptBidItem.bidId}
             tick={tick}
-            // isVerified={tick.toLowerCase() === 'move'}
             isVerified
-            amount={acceptBidItem.quantity}
-            price={price}
-            unitPrice={acceptBidItem.unit_price}
-            // acc={item.acc}
-            fromCoinBalanceInfo={fromCoinBalanceInfo}
-            toCoinBalanceInfo={toCoinBalanceInfo}
-            seller={acceptBidItem.owner}
+            amount={acceptBidItem.amt}
+            price={acceptBidItem.price}
+            unitPrice={new BigNumber(acceptBidItem.price).div(acceptBidItem.amt).toString()}
+            acc="0"
             selectMode={false}
-            type="list"
+            type="bid"
           />
         </Card>
 
@@ -173,6 +175,7 @@ export default function AcceptBidDialog({
           justifyContent="space-between"
           sx={{ mt: 3, mb: 0.25 }}
         >
+          <Typography>Accept Amount</Typography>
           <Chip
             label={
               <Stack direction="row" alignItems="center">
@@ -190,8 +193,7 @@ export default function AcceptBidDialog({
                     fontSize: '0.875rem',
                   }}
                 >
-                  {tick.toUpperCase()} Balance:{' '}
-                  {fNumber(fromDust(tokenBalance, toCoinBalanceInfo.decimals).toNumber())}
+                  ${tick.toUpperCase()}: {fNumber(inscriptionBalance.toNumber())}
                 </Typography>
               </Stack>
             }
@@ -200,6 +202,25 @@ export default function AcceptBidDialog({
             color="secondary"
           />
         </Stack>
+        <TextField
+          autoFocus
+          fullWidth
+          type="number"
+          InputProps={
+            {
+              // endAdornment: (
+              //   <InputAdornment position="end">
+              //     SUI / {listItem?.data.content.fields.tick}
+              //   </InputAdornment>
+              // ),
+            }
+          }
+          margin="dense"
+          value={acceptAmount}
+          onChange={(e) => {
+            setAcceptAmount(e.target.value);
+          }}
+        />
 
         <Typography sx={{ mt: 3, mb: 0.5 }}>
           You will receive:{' '}
@@ -210,12 +231,68 @@ export default function AcceptBidDialog({
               color: secondary.light,
             }}
           >
-            {new BigNumber(price).isNaN()
+            {new BigNumber(acceptAmount).isNaN()
               ? '--'
-              : formatNumber(fromDust(price, fromCoinBalanceInfo.decimals).toNumber())}
+              : new BigNumber(acceptAmount)
+                  .times(acceptBidItem.unitPrice)
+                  .div(new BigNumber(10).pow(SUI_DECIMALS))
+                  .toFixed(4)}
           </span>{' '}
-          {fromCoinBalanceInfo.symbol}
+          SUI
         </Typography>
+
+        {/* {floorPrice !== undefined && (
+          <Stack
+            sx={{
+              mt: 0.5,
+              cursor: 'pointer',
+            }}
+            direction="row"
+            alignItems="center"
+            onClick={() => {
+              setBatchListPrice(floorPrice.toString());
+            }}
+            spacing={0.5}
+          >
+            <PuffLoader speedMultiplier={0.875} color={warning.light} loading size={16} />
+            <Typography
+              sx={{
+                color: grey[500],
+                fontSize: '0.875rem',
+              }}
+            >
+              Latest Floor Price:{' '}
+              <span
+                style={{
+                  color: secondary.light,
+                }}
+              >
+                {floorPrice}
+              </span>{' '}
+              SUI/{currentTab.toUpperCase()}
+            </Typography>
+          </Stack>
+        )} */}
+
+        {/* <Typography
+          sx={{
+            mt: 1,
+          }}
+        >
+          Total Price:{' '}
+          <span
+            style={{
+              fontWeight: 600,
+              fontSize: '1.25rem',
+              color: secondary.light,
+            }}
+          >
+            {new BigNumber(batchListPrice).times(batchAmount).isNaN()
+              ? '-'
+              : new BigNumber(batchListPrice).times(batchAmount).toFixed(4)}
+          </span>{' '}
+          SUI
+        </Typography> */}
       </DialogContent>
 
       <DialogActions>
@@ -230,22 +307,30 @@ export default function AcceptBidDialog({
         </Button>
         <LoadingButton
           loading={isPending}
-          disabled={!account || new BigNumber(acceptBidItem.quantity).isGreaterThan(tokenBalance)}
+          disabled={
+            !account ||
+            new BigNumber(acceptAmount).isNaN() ||
+            new BigNumber(acceptAmount).isZero() ||
+            new BigNumber(acceptAmount).isGreaterThan(inscriptionBalance)
+          }
           onClick={() => {
-            if (!account || new BigNumber(acceptBidItem.quantity).isGreaterThan(tokenBalance)) {
+            if (
+              !account ||
+              new BigNumber(acceptAmount).isNaN() ||
+              new BigNumber(acceptAmount).isZero() ||
+              new BigNumber(acceptAmount).isGreaterThan(inscriptionBalance)
+            ) {
               return;
             }
-            console.log('🚀 ~ file: accept-bid-dialog.tsx:237 ~ acceptBidItem:', acceptBidItem);
 
             const tx = new Transaction();
             tx.callFunction({
-              target: `${TESTNET_ORDERBOOK_PACKAGE}::market_v2::accept_bid`,
+              target: `${TESTNET_ORDERBOOK_PACKAGE}::market::create_bid`,
               args: [
-                Args.objectId('0x156d9a5bfa4329f999115b5febde94eed4a37cde10637ad8eed1ba91e89e0bb7'),
-                Args.u64(BigInt(acceptBidItem.order_id)),
-                Args.address(acceptBidItem.owner),
+                Args.objectId(NETWORK_PACKAGE[NETWORK].tickInfo[tick].MARKET_OBJECT_ID),
+                Args.u64(BigInt(acceptBidItem.bidId)),
                 Args.bool(true),
-                Args.address(account.genRoochAddress().toStr()),
+                Args.address(TESTNET_ORDERBOOK_PACKAGE),
               ],
               typeArgs: [
                 '0x3::gas_coin::RGas',

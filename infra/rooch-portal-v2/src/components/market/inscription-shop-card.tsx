@@ -7,8 +7,8 @@ import { useCurrentAddress } from '@roochnetwork/rooch-sdk-kit';
 import { grey, yellow } from '@mui/material/colors';
 import { Chip, Stack, Typography } from '@mui/material';
 
+import { fromDust } from 'src/utils/number';
 import { fNumber } from 'src/utils/format-number';
-import { fromDust, formatNumber } from 'src/utils/number';
 
 import { secondary } from 'src/theme/core';
 
@@ -21,11 +21,11 @@ export interface InscriptionCardProps {
   amount: string;
   price: string;
   unitPrice: string;
+  acc: string;
   type: 'list' | 'bid';
   fromCoinBalanceInfo: BalanceInfoView;
   toCoinBalanceInfo: BalanceInfoView;
   seller?: string;
-  bidder?: string;
   selectMode?: boolean;
 }
 
@@ -36,11 +36,11 @@ export default function InscriptionShopCard({
   amount,
   price,
   unitPrice,
+  acc,
   type = 'list',
   fromCoinBalanceInfo,
   toCoinBalanceInfo,
   seller,
-  bidder,
   selectMode,
 }: InscriptionCardProps) {
   const account = useCurrentAddress();
@@ -118,12 +118,12 @@ export default function InscriptionShopCard({
             <Chip
               size="small"
               label={
-                seller === account?.toStr()
+                seller === account?.genRoochAddress().toStr()
                   ? '#Your Order'
                   : `#${objectId.slice(objectId.length - 7, objectId.length)}`
               }
               variant="soft"
-              color={seller === account?.toStr() ? 'success' : 'info'}
+              color={seller === account?.genRoochAddress().toStr() ? 'success' : 'info'}
               sx={{
                 '& .MuiChip-label': {
                   fontSize: {
@@ -163,7 +163,7 @@ export default function InscriptionShopCard({
         >
           {new BigNumber(unitPrice).isNaN()
             ? '--'
-            : formatNumber(fromDust(unitPrice, fromCoinBalanceInfo.decimals).toNumber())}
+            : fromDust(unitPrice, fromCoinBalanceInfo.decimals).toPrecision(1)}
         </Typography>
         {fromCoinBalanceInfo.symbol.toUpperCase()}/{toCoinBalanceInfo.symbol.toUpperCase()}
       </Typography>
@@ -178,7 +178,7 @@ export default function InscriptionShopCard({
       >
         {new BigNumber(price).isNaN()
           ? '--'
-          : formatNumber(fromDust(price, fromCoinBalanceInfo.decimals).toNumber())}{' '}
+          : fromDust(price, fromCoinBalanceInfo.decimals).toPrecision(2)}{' '}
         {fromCoinBalanceInfo.symbol}
       </Typography>
       {/* <Typography
