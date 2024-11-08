@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 use clap::Parser;
 use rooch_types::error::RoochResult;
 use tabled::{builder::Builder, settings::Style};

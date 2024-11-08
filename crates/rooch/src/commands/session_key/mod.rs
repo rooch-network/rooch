@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 use serde_json::Value;
 use tabled::{builder::Builder, settings::Style};
 use crate::cli_types::CommandAction;
