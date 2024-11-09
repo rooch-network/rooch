@@ -34,11 +34,12 @@ In Verifier's perspective (verifier verifies tx), the data flow is as follows:
 
 1. user submits tx to sequencer
 2. sequencer buffers transactions to a batch for lower average latency & gas cost
-3. sequencer puts batch to DA server
+3. sequencer puts batch to DA server with signature
 4. verifier get batch from DA server by:
     1. pull DA stream from DA server (after booking)
     2. get batch from DA server by batch hash/block number
     3. get segments from DA backend (after being submitted to DA backend)
+5. verifier verifies batch
 
 ## Roles
 
@@ -61,6 +62,17 @@ Each DA server could connect to multiple DA backends.
 The purpose of DA backend is to mitigate the single point of risk associated with DA server. DA server,
 not the backend, remains the principal party responsible for data publication. Therefore, the DA server may elect to
 submit data to DA backend asynchronously.
+
+### OpenDA (Using)
+
+High throughput, and low latency DA backend based on public cloud storage(or local filesystem in development). We could
+connect various cloud storage services at the same time, such as AWS S3, Google Cloud Storage, Azure Blob Storage, etc.
+
+### Celestia (Developing)
+
+Celestia is a decentralized storage network that provides a secure and reliable way to store data.
+
+### Avail (TODO)
 
 ## DA Server APIs
 
