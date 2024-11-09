@@ -35,7 +35,7 @@ module argument_resolver::argument_resolver {
         object::transfer(user_object, user_address);
     }
 
-    entry public fun create_object_without_key_ability(account: &signer) {
+    entry public fun create_object_without_store_ability(account: &signer) {
         let user_object = object::new(MockObject1{value: 123});
         let object_id = object::id(&user_object);
         debug::print(&object_id);
@@ -76,7 +76,7 @@ module argument_resolver::argument_resolver {
         debug::print(object);
     }
 
-    entry public fun object_without_key_ability(object: Object<MockObject1>) {
+    entry public fun object_without_store_ability(object: Object<MockObject1>) {
         debug::print(&object);
         object::remove(object);
     }
