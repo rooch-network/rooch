@@ -72,8 +72,6 @@ connect various cloud storage services at the same time, such as AWS S3, Google 
 
 Celestia is a decentralized storage network that provides a secure and reliable way to store data.
 
-### Avail (TODO)
-
 ## DA Server APIs
 
 ### Put
