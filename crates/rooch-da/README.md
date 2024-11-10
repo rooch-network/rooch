@@ -65,8 +65,11 @@ submit data to DA backend asynchronously.
 
 ### OpenDA (Using)
 
-High throughput, and low latency DA backend based on public cloud storage(or local filesystem in development). We could
+Mostly are High throughput, and low latency DA backend based on public cloud storage(or local filesystem in
+development). We could
 connect various cloud storage services at the same time, such as AWS S3, Google Cloud Storage, Azure Blob Storage, etc.
+
+We could use decentralized storage network as OpenDA too. The easiest way is to connect light client.
 
 ### Celestia (Developing)
 
