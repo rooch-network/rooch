@@ -1,50 +1,51 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import type { ReactNode } from 'react'
+import { ReactNode, useEffect, useState } from 'react'
 import { createContext, useRef } from 'react'
 
-import { NetworkConfigs, RoochClientProvider } from './clientProvider.js'
-import { createSessionStore, SessionStore } from './sessionStore.js'
+import { SessionStore } from './sessionStore.js'
 import { getDefaultStorage, StorageType } from '../utils/index.js'
+import { useSession } from '../hooks'
+import { createTelegramStore } from './telegramStore'
+import { useRoochClient } from '@roochnetwork/rooch-sdk-kit'
 
 const DEFAULT_SESSION_STORAGE_KEY = function (_?: string) {
   return 'rooch-sdk-kit:rooch-session-info'
 }
 
-export const RoochContext = createContext<SessionStore | null>(null)
+export const TelegramContext = createContext<SessionStore | null>(null)
 
-export type RoochTelegramProvider = {
-  btcAddr?: NetworkConfigs
-  onNetworkChange?: (network: keyof T & string) => void
-
+export type TelegramProviderProps = {
   children: ReactNode
-} & (
-  | {
-      defaultNetwork?: keyof T & string
-      network?: never
-    }
-  | {
-      defaultNetwork?: never
-      network?: keyof T & string
-    }
-)
+  waitEnvCheck: ReactNode
+}
 
-export function RoochProvider<T extends NetworkConfigs>(props: RoochProviderProps<T>) {
-  // ** Props **
-  const { children, networks, defaultNetwork } = props
-
-  const storeRef = useRef(
-    createSessionStore({
-      storage: getDefaultStorage(StorageType.Local),
-      storageKey: DEFAULT_SESSION_STORAGE_KEY(),
-    }),
-  )
+export function TelegramProvider(props: TelegramProviderProps) {
   return (
-    <RoochContext.Provider value={storeRef.current}>
-      <RoochClientProvider networks={networks} defaultNetwork={defaultNetwork}>
-        {children}
-      </RoochClientProvider>
-    </RoochContext.Provider>
+    <TelegramContext.Provider value={storeRef.current}>
+      <TelegramManager children={children} waitEnvCheck={waitEnvCheck} />
+    </TelegramContext.Provider>
   )
+}
+
+type WalletConnectionManagerProps = Required<
+  Pick<TelegramProviderProps, 'children' | 'waitEnvCheck'>
+>
+
+function TelegramManager({ children, waitEnvCheck }: WalletConnectionManagerProps) {
+  const [checking, setChecking] = useState(true)
+  const curSession = useSession()
+  const client = useRoochClient()
+
+  useEffect(() => {
+    if (curSession) {
+      setChecking(false)
+      return
+    }
+
+    client.executeViewFunction('0x3::')
+  }, [curSession])
+
+  return checking ? waitEnvCheck : children
 }
