@@ -54,12 +54,16 @@ pub struct TonProofData {
     pub state_init: String,
 }
 
+const PAYLOAD_MESSAGE_IDX: u64 = 0;
+const PAYLOAD_BITCOIN_ADDRESS_IDX: u64 = 1;
+const PAYLOAD_TX_HASH_IDX: u64 = 2;
+
 #[derive(Deserialize)]
 pub struct TonProof {
     pub timestamp: u64,
     pub domain: TonDomain,
     pub signature: String,
-    pub payload: String,
+    pub payload: Vec<String>,
 }
 
 #[derive(Deserialize)]
@@ -193,7 +197,7 @@ mod tests {
                     "value": "ton-connect.github.io"
                 },
                 "signature": "BvysFrBS8KgTa3bww9f5paEu6/jZr5jB1JmO6T8nqsLzJqB3hWHiqOG9OezPsiJX3kD9nifMbRhr1xkv37ICCw==",
-                "payload": "bc1q04uaa0mveqtt4y0sltuxtauhlyl8ctstr5x3hu"
+                "payload": ["","bc1q04uaa0mveqtt4y0sltuxtauhlyl8ctstr5x3hu",""]
             },
             "state_init": "te6cckECFgEAAwQAAgE0ARUBFP8A9KQT9LzyyAsCAgEgAxACAUgEBwLm0AHQ0wMhcbCSXwTgItdJwSCSXwTgAtMfIYIQcGx1Z70ighBkc3RyvbCSXwXgA/pAMCD6RAHIygfL/8nQ7UTQgQFA1yH0BDBcgQEI9ApvoTGzkl8H4AXTP8glghBwbHVnupI4MOMNA4IQZHN0crqSXwbjDQUGAHgB+gD0BDD4J28iMFAKoSG+8uBQghBwbHVngx6xcIAYUATLBSbPFlj6Ahn0AMtpF8sfUmDLPyDJgED7AAYAilAEgQEI9Fkw7UTQgQFA1yDIAc8W9ADJ7VQBcrCOI4IQZHN0coMesXCAGFAFywVQA88WI/oCE8tqyx/LP8mAQPsAkl8D4gIBIAgPAgEgCQ4CAVgKCwA9sp37UTQgQFA1yH0BDACyMoHy//J0AGBAQj0Cm+hMYAIBIAwNABmtznaiaEAga5Drhf/AABmvHfaiaEAQa5DrhY/AABG4yX7UTQ1wsfgAWb0kK29qJoQICga5D6AhhHDUCAhHpJN9KZEM5pA+n/mDeBKAG3gQFImHFZ8xhAT48oMI1xgg0x/TH9MfAvgju/Jk7UTQ0x/TH9P/9ATRUUO68qFRUbryogX5AVQQZPkQ8qP4ACSkyMsfUkDLH1Iwy/9SEPQAye1U+A8B0wchwACfbFGTINdKltMH1AL7AOgw4CHAAeMAIcAC4wABwAORMOMNA6TIyx8Syx/L/xESExQAbtIH+gDU1CL5AAXIygcVy//J0Hd0gBjIywXLAiLPFlAF+gIUy2sSzMzJc/sAyEAUgQEI9FHypwIAcIEBCNcY+gDTP8hUIEeBAQj0UfKnghBub3RlcHSAGMjLBcsCUAbPFlAE+gIUy2oSyx/LP8lz+wACAGyBAQjXGPoA0z8wUiSBAQj0WfKnghBkc3RycHSAGMjLBcsCUAXPFlAD+gITy2rLHxLLP8lz+wAACvQAye1UAFEAAAAAKamjF1M4HQpWKrIhrdY9Ou9RtUmildvf4qB7qOpqgADYbRTiQD9nbsU="
         }"#;
