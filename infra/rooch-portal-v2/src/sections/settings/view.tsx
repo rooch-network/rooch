@@ -128,13 +128,13 @@ export function SettingsView() {
                 </Stack>
                 {address && (
                   <CopyToClipboard
-                    text={`BTC:${address.toStr()}.
+                    text={`BTC:${address.toStr()} 
 
 Rooch Testnet Campaign #006 is live! Bind your Twitter to earn extra RGas, test Rooch’s lucky draw and red packet features, and unlock the Testnet OG role.
 
 #RoochNetwork #testnet`}
                     onCopy={() => {
-                      const text = `BTC:${address.toStr()}.
+                      const text = `BTC:${address.toStr()} 
 
 Rooch Testnet Campaign #006 is live! Bind your Twitter to earn extra RGas, test Rooch’s lucky draw and red packet features, and unlock the Testnet OG role.
 
@@ -146,7 +146,7 @@ Rooch Testnet Campaign #006 is live! Bind your Twitter to earn extra RGas, test 
                     }}
                   >
                     <Stack className="font-medium cursor-pointer text-wrap bg-gray-200 p-3 rounded-md whitespace-pre-line">
-                      {`BTC:${address.toStr()}.
+                      {`BTC:${address.toStr()} 
 
 Rooch Testnet Campaign #006 is live! Bind your Twitter to earn extra RGas, test Rooch’s lucky draw and red packet features, and unlock the Testnet OG role.
 
