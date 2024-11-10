@@ -44,6 +44,7 @@ tempfile = { workspace = true }
 jemallocator = { version = "0.5.4", features = ["unprefixed_malloc_on_supported_platforms", "profiling"] }
 rustc-hash = { workspace = true }
 rand = { workspace = true }
+tabled = { workspace = true }
 xorf = { workspace = true }
 xxhash-rust = { workspace = true, features = ["xxh3"] }
 vergen-pretty = { workspace = true }

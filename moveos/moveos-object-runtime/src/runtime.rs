@@ -17,6 +17,7 @@ use move_core_types::{
 };
 use move_vm_types::loaded_data::runtime_types::Type;
 use move_vm_types::values::{StructRef, Value};
+use moveos_types::moveos_std::onchain_features::FeatureStore;
 use moveos_types::{
     move_std::string::MoveString,
     moveos_std::timestamp::Timestamp,
@@ -63,17 +64,28 @@ pub const ERROR_OBJECT_ALREADY_TAKEN_OUT_OR_EMBEDED: u64 = 15;
 #[derive(Tid)]
 pub struct ObjectRuntimeContext<'r> {
     object_runtime: Rc<RwLock<ObjectRuntime<'r>>>,
+    feature_store: Option<FeatureStore>,
 }
 
 impl<'r> ObjectRuntimeContext<'r> {
     /// Create a new instance of a object runtime context. This must be passed in via an
     /// extension into VM session functions.
-    pub fn new(object_runtime: Rc<RwLock<ObjectRuntime<'r>>>) -> Self {
-        Self { object_runtime }
+    pub fn new(
+        object_runtime: Rc<RwLock<ObjectRuntime<'r>>>,
+        feature_store: Option<FeatureStore>,
+    ) -> Self {
+        Self {
+            object_runtime,
+            feature_store,
+        }
     }
 
     pub fn object_runtime(&self) -> Rc<RwLock<ObjectRuntime<'r>>> {
         self.object_runtime.clone()
+    }
+
+    pub fn feature_store(&self) -> Option<FeatureStore> {
+        self.feature_store.clone()
     }
 }
 

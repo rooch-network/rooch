@@ -34,6 +34,7 @@ use moveos_object_runtime::runtime::{ObjectRuntime, ObjectRuntimeContext};
 use moveos_stdlib::natives::moveos_stdlib::{
     event::NativeEventContext, move_module::NativeModuleContext,
 };
+use moveos_store::load_feature_store_object;
 use moveos_types::state::ObjectState;
 use moveos_types::{addresses, transaction::RawTransactionOutput};
 use moveos_types::{
@@ -187,7 +188,11 @@ where
     ) -> Session<'r, 'l, MoveosDataCache<'r, 'l, S>> {
         let mut extensions = NativeContextExtensions::default();
 
-        extensions.add(ObjectRuntimeContext::new(object_runtime.clone()));
+        let feature_store = load_feature_store_object(remote);
+        extensions.add(ObjectRuntimeContext::new(
+            object_runtime.clone(),
+            feature_store,
+        ));
         extensions.add(NativeModuleContext::new(remote));
         extensions.add(NativeEventContext::default());
 
