@@ -1,19 +1,16 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::backend::openda::avail::AvailClient;
+use crate::backend::openda::avail::DEFAULT_AVAIL_MAX_SEGMENT_SIZE;
 use anyhow::anyhow;
 use async_trait::async_trait;
-use opendal::layers::{LoggingLayer, RetryLayer};
-use opendal::Scheme;
 use rooch_config::da_config::{DABackendOpenDAConfig, OpenDAScheme};
 use rooch_config::retrieve_map_config_value;
 use rooch_types::da::segment::SegmentID;
 use std::collections::HashMap;
 
 const DEFAULT_MAX_SEGMENT_SIZE: u64 = 4 * 1024 * 1024;
-const DEFAULT_AVAIL_MAX_SEGMENT_SIZE: u64 = 512 * 1024;
-const DEFAULT_MAX_RETRY_TIMES: usize = 4;
+pub(crate) const DEFAULT_MAX_RETRY_TIMES: usize = 4;
 
 #[async_trait]
 pub(crate) trait Operator: Sync + Send {
@@ -23,45 +20,6 @@ pub(crate) trait Operator: Sync + Send {
         segment_bytes: Vec<u8>,
         prefix: Option<String>,
     ) -> anyhow::Result<()>;
-}
-
-#[async_trait]
-impl Operator for opendal::Operator {
-    async fn submit_segment(
-        &self,
-        segment_id: SegmentID,
-        segment_bytes: Vec<u8>,
-        prefix: Option<String>,
-    ) -> anyhow::Result<()> {
-        let path = match prefix {
-            Some(prefix) => format!("{}/{}", prefix, segment_id),
-            None => segment_id.to_string(),
-        };
-        let mut w = self.writer(&path).await?;
-        w.write(segment_bytes).await?;
-        w.close().await?;
-        Ok(())
-    }
-}
-
-pub(crate) async fn new_operator(
-    scheme: OpenDAScheme,
-    config: HashMap<String, String>,
-    max_retry_times: Option<usize>,
-) -> anyhow::Result<Box<dyn Operator>> {
-    let operator: Box<dyn Operator> = match scheme {
-        OpenDAScheme::Avail => Box::new(AvailClient::new(&config["endpoint"])?),
-        _ => {
-            let mut op = opendal::Operator::via_map(Scheme::from(scheme), config)?;
-            let max_times = max_retry_times.unwrap_or(DEFAULT_MAX_RETRY_TIMES);
-            op = op
-                .layer(RetryLayer::new().with_max_times(max_times))
-                .layer(LoggingLayer::default());
-            op.check().await?;
-            Box::new(op)
-        }
-    };
-    Ok(operator)
 }
 
 pub(crate) struct OperatorConfig {

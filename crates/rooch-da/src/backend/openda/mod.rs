@@ -2,14 +2,19 @@
 // SPDX-License-Identifier: Apache-2.0
 
 mod avail;
+mod fs;
 mod operator;
 
-use crate::backend::openda::operator::{new_operator, Operator, OperatorConfig};
+use crate::backend::openda::avail::AvailClient;
+use crate::backend::openda::operator::{Operator, OperatorConfig, DEFAULT_MAX_RETRY_TIMES};
 use crate::backend::DABackend;
 use async_trait::async_trait;
-use rooch_config::da_config::DABackendOpenDAConfig;
+use opendal::layers::{LoggingLayer, RetryLayer};
+use opendal::Scheme;
+use rooch_config::da_config::{DABackendOpenDAConfig, OpenDAScheme};
 use rooch_types::da::batch::DABatch;
 use rooch_types::da::chunk::{Chunk, ChunkV0};
+use std::collections::HashMap;
 
 #[async_trait]
 impl DABackend for OpenDABackend {
@@ -76,4 +81,25 @@ impl OpenDABackend {
 
         Ok(())
     }
+}
+
+async fn new_operator(
+    scheme: OpenDAScheme,
+    config: HashMap<String, String>,
+    max_retry_times: Option<usize>,
+) -> anyhow::Result<Box<dyn Operator>> {
+    let max_retries = max_retry_times.unwrap_or(DEFAULT_MAX_RETRY_TIMES);
+
+    let operator: Box<dyn Operator> = match scheme {
+        OpenDAScheme::Avail => Box::new(AvailClient::new(&config["endpoint"], max_retries)?),
+        _ => {
+            let mut op = opendal::Operator::via_map(Scheme::from(scheme), config)?;
+            op = op
+                .layer(RetryLayer::new().with_max_times(max_retries))
+                .layer(LoggingLayer::default());
+            op.check().await?;
+            Box::new(op)
+        }
+    };
+    Ok(operator)
 }
