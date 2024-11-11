@@ -329,8 +329,8 @@ cosmwasm-vm = { git = "https://github.com/rooch-network/cosmwasm", rev = "597d3e
 cosmwasm-std = { git = "https://github.com/rooch-network/cosmwasm", rev = "597d3e8437d8c4d1afce07e5a676c29c751a8a81" }
 ciborium = "0.2.1"
 pprof = { version = "0.13.0", features = ["flamegraph", "criterion", "cpp", "frame-pointer", "protobuf-codec"] }
-celestia-rpc = { git = "https://github.com/eigerco/celestia-node-rs.git", rev = "129272e8d926b4c7badf27a26dea915323dd6489" }
-celestia-types = { git = "https://github.com/eigerco/celestia-node-rs.git", rev = "129272e8d926b4c7badf27a26dea915323dd6489" }
+celestia-rpc = { version = "0.7.0" }
+celestia-types = { version = "0.7.0" }
 opendal = { version = "0.47.3", features = ["services-fs", "services-gcs"] }
 toml = "0.8.19"
 tabled = "0.16.0"
