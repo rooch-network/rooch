@@ -31,7 +31,9 @@ Feature: Rooch CLI bitseed tests
       # Check mint generator validity
       Then cmd: "move view --function 0x4::ord::view_validity --args string:{{$.bitseed[-1].inscriptions[0].Id}} "
       Then assert: "{{$.move[-1].vm_status}} == Executed"
-      Then assert: "{{$.move[-1].return_values[0].decoded_value.value.vec[0].value.is_valid}} == true"
+      # For `.vec.value[0][1]`, the first index `0` means the first element of vec;
+      # the second index `1` means the second field of `0x4::ord::MetaprotocolValidity`, that is `is_valid`.
+      Then assert: "{{$.move[-1].return_values[0].decoded_value.value.vec.value[0][1]}} == true"
 
       # deploy
       Then cmd: "bitseed deploy --fee-rate 6000 --generator {{$.bitseed[-1].inscriptions[0].Id}} --tick bits --amount 210000000000 --deploy-args '{"height":{"type":"range","data":{"min":1,"max":1000}}}'"
@@ -48,7 +50,9 @@ Feature: Rooch CLI bitseed tests
       # Check deploy validity
       Then cmd: "move view --function 0x4::ord::view_validity --args string:{{$.bitseed[-1].inscriptions[0].Id}} "
       Then assert: "{{$.move[-1].vm_status}} == Executed"
-      Then assert: "{{$.move[-1].return_values[0].decoded_value.value.vec[0].value.is_valid}} == true"
+      # For `.vec.value[0][1]`, the first index `0` means the first element of vec;
+      # the second index `1` means the second field of `0x4::ord::MetaprotocolValidity`, that is `is_valid`.
+      Then assert: "{{$.move[-1].return_values[0].decoded_value.value.vec.value[0][1]}} == true"
 
       # mint 1
       Then cmd: "bitseed mint --fee-rate 6000 --deploy-inscription-id {{$.bitseed[-1].inscriptions[0].Id}} --user-input test" 
@@ -72,11 +76,15 @@ Feature: Rooch CLI bitseed tests
       # Check mint bits validity
       Then cmd: "move view --function 0x4::ord::view_validity --args string:{{$.bitseed[-1].inscriptions[0].Id}} "
       Then assert: "{{$.move[-1].vm_status}} == Executed"
-      Then assert: "{{$.move[-1].return_values[0].decoded_value.value.vec[0].value.is_valid}} == true"
+      # For `.vec.value[0][1]`, the first index `0` means the first element of vec;
+      # the second index `1` means the second field of `0x4::ord::MetaprotocolValidity`, that is `is_valid`.
+      Then assert: "{{$.move[-1].return_values[0].decoded_value.value.vec.value[0][1]}} == true"
 
       Then cmd: "move view --function 0x4::ord::view_validity --args string:{{$.bitseed[-2].inscriptions[0].Id}} "
       Then assert: "{{$.move[-1].vm_status}} == Executed"
-      Then assert: "{{$.move[-1].return_values[0].decoded_value.value.vec[0].value.is_valid}} == true"
+      # For `.vec.value[0][1]`, the first index `0` means the first element of vec;
+      # the second index `1` means the second field of `0x4::ord::MetaprotocolValidity`, that is `is_valid`.
+      Then assert: "{{$.move[-1].return_values[0].decoded_value.value.vec.value[0][1]}} == true"
 
       Then cmd: "bitseed merge --fee-rate 6000 --sft-inscription-ids {{$.bitseed[-1].inscriptions[0].Id}} --sft-inscription-ids {{$.bitseed[-2].inscriptions[0].Id}}" 
       Then assert: "'{{$.bitseed[-1]}}' not_contains error" 
@@ -90,8 +98,10 @@ Feature: Rooch CLI bitseed tests
 
       Then cmd: "move view --function 0x4::ord::view_validity --args string:{{$.bitseed[-1].inscriptions[0].Id}} "
       Then assert: "{{$.move[-1].vm_status}} == Executed"
-      Then assert: "{{$.move[-1].return_values[0].decoded_value.value.vec[0].value.is_valid}} == true"
-      
+      # For `.vec.value[0][1]`, the first index `0` means the first element of vec;
+      # the second index `1` means the second field of `0x4::ord::MetaprotocolValidity`, that is `is_valid`.
+      Then assert: "{{$.move[-1].return_values[0].decoded_value.value.vec.value[0][1]}} == true"
+
       # release servers
       Then stop the server
       Then stop the bitcoind server
@@ -130,7 +140,9 @@ Feature: Rooch CLI bitseed tests
       # Check deploy validity
       Then cmd: "move view --function 0x4::ord::view_validity --args string:{{$.bitseed[-1].inscriptions[0].Id}} "
       Then assert: "{{$.move[-1].vm_status}} == Executed"
-      Then assert: "{{$.move[-1].return_values[0].decoded_value.value.vec[0].value.is_valid}} == true"
+      # For `.vec.value[0][1]`, the first index `0` means the first element of vec;
+      # the second index `1` means the second field of `0x4::ord::MetaprotocolValidity`, that is `is_valid`.
+      Then assert: "{{$.move[-1].return_values[0].decoded_value.value.vec.value[0][1]}} == true"
 
       # mint on rooch
       Then cmd: "move run --function 0xa::mint_get_factory::mint --args string:bitseed --args string:test --json" 

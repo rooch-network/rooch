@@ -45,7 +45,9 @@ Feature: Rooch Bitcoin ord tests
       # Check inscription burned
       Then cmd: "move view --function 0x4::ord::view_inscription_charm --args string:{{$.wallet[-3][0].inscription}} "
       Then assert: "{{$.move[-1].vm_status}} == Executed"
-      Then assert: "{{$.move[-1].return_values[0].decoded_value.value.vec[0].value.burned}} == true"
+      # For `.vec.value[0][1]`, the first index `0` means the first element of vec;
+      # the second index `12` means the 13th field of `0x4::ord::InscriptionCharm`, that is `burned`.
+      Then assert: "{{$.move[-1].return_values[0].decoded_value.value.vec.value[0][12]}} == true"
 
       # release servers
       Then stop the server
