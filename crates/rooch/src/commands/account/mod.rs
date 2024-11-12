@@ -9,6 +9,8 @@ use commands::{
     sign::SignCommand, switch::SwitchCommand, transfer::TransferCommand, verify::VerifyCommand,
 };
 use rooch_types::error::RoochResult;
+use rooch_rpc_api::jsonrpc_types::json_to_table_display::json_to_table;
+use serde_json::Value;
 use std::path::PathBuf;
 
 pub mod commands;
@@ -34,7 +36,18 @@ impl CommandAction<String> for Account {
             AccountCommand::Switch(switch) => switch.execute_serialized().await,
             AccountCommand::Nullify(nullify) => nullify.execute_serialized().await,
             AccountCommand::Balance(balance) => balance.execute_serialized().await,
-            AccountCommand::Transfer(transfer) => transfer.execute_serialized().await,
+            AccountCommand::Transfer(transfer) => {
+                let output_as_json = transfer.json;
+                let output = transfer.execute_serialized().await?;
+                if output_as_json {
+                    Ok(output)
+                } else if let Ok(json_value) = serde_json::from_str::<Value>(&output) {
+                    json_to_table(json_value);
+                    Ok(String::new())
+                } else {
+                    Ok(output)
+                }
+            }
             AccountCommand::Export(export) => export.execute_serialized().await,
             AccountCommand::Import(import) => import.execute_serialized().await,
             AccountCommand::Sign(sign) => sign.execute_serialized().await,

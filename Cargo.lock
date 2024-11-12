@@ -9975,6 +9975,7 @@ dependencies = [
  "schemars",
  "serde 1.0.214",
  "serde_json",
+ "tabled",
  "thiserror",
 ]
 
