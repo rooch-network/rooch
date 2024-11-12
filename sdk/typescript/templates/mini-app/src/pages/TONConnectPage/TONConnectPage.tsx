@@ -1,5 +1,5 @@
-import { openLink } from '@telegram-apps/sdk-react';
-import {useTonConnectUI, TonConnectButton, useTonWallet, TonProofItem} from '@tonconnect/ui-react';
+import { openLink } from '@telegram-apps/sdk-react'
+import { TonConnectButton, useTonWallet } from '@tonconnect/ui-react'
 import {
   Avatar,
   Cell,
@@ -9,17 +9,17 @@ import {
   Section,
   Text,
   Title,
-} from '@telegram-apps/telegram-ui';
-import type { FC } from 'react';
+} from '@telegram-apps/telegram-ui'
+import type { FC } from 'react'
 
-import { DisplayData } from '@/components/DisplayData/DisplayData.tsx';
-import { Page } from '@/components/Page.tsx';
+import { DisplayData } from '@/components/DisplayData/DisplayData.tsx'
+import { Page } from '@/components/Page.tsx'
 
-import './TONConnectPage.css';
+import './TONConnectPage.css'
 
 export const TONConnectPage: FC = () => {
-  const wallet = useTonWallet();
-    const [tonConnectUI] = useTonConnectUI();
+  const wallet = useTonWallet()
+  // const [tonConnectUI] = useTonConnectUI();
   if (!wallet) {
     return (
       <Page>
@@ -32,24 +32,18 @@ export const TONConnectPage: FC = () => {
                 To display the data related to the TON Connect, it is required to connect your
                 wallet
               </Text>
-              <TonConnectButton className="ton-connect-page__button"/>
+              <TonConnectButton className="ton-connect-page__button" />
             </>
           }
         />
       </Page>
-    );
+    )
   }
 
   const {
     account: { chain, publicKey, address },
-    device: {
-      appName,
-      appVersion,
-      maxProtocolVersion,
-      platform,
-      features,
-    },
-  } = wallet;
+    device: { appName, appVersion, maxProtocolVersion, platform, features },
+  } = wallet
 
   return (
     <Page>
@@ -58,34 +52,31 @@ export const TONConnectPage: FC = () => {
           <>
             <Section>
               <Cell
-                before={
-                  <Avatar src={wallet.imageUrl} alt="Provider logo" width={60} height={60}/>
-                }
+                before={<Avatar src={wallet.imageUrl} alt="Provider logo" width={60} height={60} />}
                 after={<Navigation>About wallet</Navigation>}
                 subtitle={wallet.appName}
                 onClick={(e) => {
-                  e.preventDefault();
-                  openLink(wallet.aboutUrl);
+                  e.preventDefault()
+                  openLink(wallet.aboutUrl)
                 }}
               >
                 <Title level="3">{wallet.name}</Title>
               </Cell>
             </Section>
-            <TonConnectButton className="ton-connect-page__button-connected"/>
+            <TonConnectButton className="ton-connect-page__button-connected" />
           </>
         )}
-          <Cell
-              after={<Navigation>About wallet</Navigation>}
-              subtitle='rooch auth'
-              onClick={(e) => {
-                  console.log(e)
-                  // tonConnectUI.setConnectRequestParameters({
-                  //     state: 'ready',
-                  //     value: '',
-                  // })
-              }}
-          >
-          </Cell>
+        <Cell
+          after={<Navigation>About wallet</Navigation>}
+          subtitle="rooch auth"
+          onClick={(e) => {
+            console.log(e)
+            // tonConnectUI.setConnectRequestParameters({
+            //     state: 'ready',
+            //     value: '',
+            // })
+          }}
+        ></Cell>
         <DisplayData
           header="Account"
           rows={[
@@ -104,13 +95,13 @@ export const TONConnectPage: FC = () => {
             {
               title: 'Features',
               value: features
-                .map(f => typeof f === 'object' ? f.name : undefined)
-                .filter(v => v)
+                .map((f) => (typeof f === 'object' ? f.name : undefined))
+                .filter((v) => v)
                 .join(', '),
             },
           ]}
         />
       </List>
     </Page>
-  );
-};
+  )
+}

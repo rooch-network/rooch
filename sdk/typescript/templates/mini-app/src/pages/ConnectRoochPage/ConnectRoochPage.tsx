@@ -1,38 +1,40 @@
 import { FC, useEffect, useState } from 'react'
 import { Button, Cell, Section } from '@telegram-apps/telegram-ui'
 import './ConnectRoochPage.css'
-import {Args, BitcoinAddress, fromHEX, Session, toB64, Transaction} from '@roochnetwork/rooch-sdk'
+// import {Args, BitcoinAddress, fromHEX, Session, toB64, Transaction} from '@roochnetwork/rooch-sdk'
 import { useTonConnectUI } from '@tonconnect/ui-react'
-import { TonProofItemReplySuccess } from '@tonconnect/ui-react'
-import { openLink } from '@telegram-apps/sdk-react'
-import { useNetworkVariable } from '@/use-networks.ts'
-import {useRoochClient, useRoochClientQuery} from "@roochnetwork/rooch-sdk-kit";
+// import { TonProofItemReplySuccess } from '@tonconnect/ui-react'
+// import { openLink } from '@telegram-apps/sdk-react'
+// import { useNetworkVariable } from '@/use-networks.ts'
+// import {useRoochClient, useRoochClientQuery} from "@roochnetwork/rooch-sdk-kit";
 interface ConnectRoochPageProps {
-  onConnectSuccess?: () => void;
+  onConnectSuccess?: () => void
 }
 
-export const ConnectRoochPage: FC<ConnectRoochPageProps> = ({onConnectSuccess}) => {
+export const ConnectRoochPage: FC<ConnectRoochPageProps> = ({ onConnectSuccess }) => {
   const [first, setFirst] = useState(true)
   const [btcAddr, setBtcAddr] = useState<string>('bc1q04uaa0mveqtt4y0sltuxtauhlyl8ctstr5x3hu')
   const [error, setError] = useState<string | undefined>()
   const [tonUI] = useTonConnectUI()
-  const [proof, setProof] = useState<TonProofItemReplySuccess | undefined>()
-  const counterContract = useNetworkVariable('counterContract')
-  const [session, setSession] = useState<Session | undefined>()
-  const portal = useNetworkVariable('portal')
-  const client = useRoochClient()
-  const [tx, setTx] = useState<Transaction | undefined>()
+  // const [proof, setProof] = useState<TonProofItemReplySuccess | undefined>()
+  // const counterContract = useNetworkVariable('counterContract')
+  // const [session, setSession] = useState<Session | undefined>()
+  // const portal = useNetworkVariable('portal')
+  // const client = useRoochClient()
+  // const [tx, setTx] = useState<Transaction | undefined>()
+
+  console.log(onConnectSuccess)
 
   const onBtcAddrChanged = (event: React.ChangeEvent<HTMLInputElement>) => {
     setBtcAddr(event.target.value)
     setError(undefined)
   }
 
-  const create2Proof = ()=> {
+  const create2Proof = () => {
     const payload = { tonProof: btcAddr }
     tonUI.setConnectRequestParameters({ state: 'ready', value: payload })
     const payload1 = { tonProof: 'test-proof' }
-    tonUI.setConnectRequestParameters({state: 'ready', value: payload1})
+    tonUI.setConnectRequestParameters({ state: 'ready', value: payload1 })
   }
 
   useEffect(() => {

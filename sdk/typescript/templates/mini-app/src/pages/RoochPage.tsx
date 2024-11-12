@@ -64,12 +64,10 @@ export const RoochPage: FC = () => {
                   try_instant_view: false
               });
 
-              window.TelegramWebviewProxy.postEvent('web_app_open_link', data)
+              window.TelegramWebviewProxy?.postEvent('web_app_open_link', data)
             } catch (e) {
               console.log(e)
             }
-          // window.TelegramWebviewProxy.web_app_open_link('j')
-          // navigator.clipboard.writeText(authUrl);
         }}
           subtitle="auth url"
         >
