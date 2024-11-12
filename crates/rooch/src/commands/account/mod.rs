@@ -8,8 +8,8 @@ use commands::{
     export::ExportCommand, import::ImportCommand, list::ListCommand, nullify::NullifyCommand,
     sign::SignCommand, switch::SwitchCommand, transfer::TransferCommand, verify::VerifyCommand,
 };
-use rooch_types::error::RoochResult;
 use rooch_rpc_api::jsonrpc_types::json_to_table_display::json_to_table;
+use rooch_types::error::RoochResult;
 use serde_json::Value;
 use std::path::PathBuf;
 
