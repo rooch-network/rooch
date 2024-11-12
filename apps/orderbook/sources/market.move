@@ -402,7 +402,7 @@ module orderbook::market_v2 {
         };
         assert!(tick_exists, ErrorInvalidOrderId);
 
-        let order = remove_order(&mut market.bids, usr_open_orders, tick_index, order_id, sender());
+        let order = remove_order(&mut market.bids, usr_open_orders, tick_index, order_id, order_owner);
         let trade_coin = account_coin_store::withdraw<QuoteAsset>(signer, order.quantity);
         // assert!(coin::value(paid) >=  order.quantity, ErrorInputCoin);
         // let trade_coin = coin::extract(paid, order.quantity);
