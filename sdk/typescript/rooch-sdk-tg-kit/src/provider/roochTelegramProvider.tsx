@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import type { ReactNode } from 'react'
+import {ReactNode, useEffect, useState} from 'react'
 import { createContext, useRef } from 'react'
 
 import { NetworkConfigs, RoochClientProvider } from './clientProvider.js'
@@ -15,24 +15,18 @@ const DEFAULT_SESSION_STORAGE_KEY = function (_?: string) {
 export const RoochContext = createContext<SessionStore | null>(null)
 
 export type RoochTelegramProvider = {
-  btcAddr?: NetworkConfigs
-  onNetworkChange?: (network: keyof T & string) => void
+    children: ReactNode,
+    waitEnvCheck?: ReactNode,
+}
 
-  children: ReactNode
-} & (
-  | {
-      defaultNetwork?: keyof T & string
-      network?: never
-    }
-  | {
-      defaultNetwork?: never
-      network?: keyof T & string
-    }
-)
-
-export function RoochProvider<T extends NetworkConfigs>(props: RoochProviderProps<T>) {
+export function RoochProvider(props: RoochTelegramProvider) {
   // ** Props **
-  const { children, networks, defaultNetwork } = props
+  const { children, waitEnvCheck } = props
+  const [loading, setLoading] = useState(true)
+
+    useEffect(() => {
+        
+    })
 
   const storeRef = useRef(
     createSessionStore({
@@ -41,10 +35,6 @@ export function RoochProvider<T extends NetworkConfigs>(props: RoochProviderProp
     }),
   )
   return (
-    <RoochContext.Provider value={storeRef.current}>
-      <RoochClientProvider networks={networks} defaultNetwork={defaultNetwork}>
-        {children}
-      </RoochClientProvider>
-    </RoochContext.Provider>
+      loading? waitEnvCheck: <>{children}</>
   )
 }

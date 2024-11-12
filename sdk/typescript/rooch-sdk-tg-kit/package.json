@@ -76,6 +76,7 @@
   "dependencies": {
     "@tonconnect/sdk": "3.0.5",
     "@roochnetwork/rooch-sdk": "workspace:*",
+    "@roochnetwork/rooch-sdk-kit": "workspace:*",
     "@vanilla-extract/css": "^1.15.5",
     "@vanilla-extract/dynamic": "^2.1.2",
     "@vanilla-extract/recipes": "^0.5.5",

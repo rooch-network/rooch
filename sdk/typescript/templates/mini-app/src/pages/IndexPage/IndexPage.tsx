@@ -22,7 +22,7 @@ export const IndexPage: FC = () => {
       }
       console.log(wallet, localSessionKey)
       if (wallet === null || localSessionKey === null) {
-          setShowAuth(true)
+          setShowAuth(false)
       }
   }, [localSessionKey])
 
@@ -60,6 +60,9 @@ export const IndexPage: FC = () => {
             <Link to="/rooch">
               <Cell subtitle="Test">Rooch</Cell>
             </Link>
+              <Link to="/okx">
+                  <Cell subtitle="Test">OKX Rooch</Cell>
+              </Link>
             <Link to="/theme-params">
               <Cell subtitle="Telegram application palette information">Theme Parameters</Cell>
             </Link>

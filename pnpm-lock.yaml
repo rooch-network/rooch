@@ -712,6 +712,9 @@ importers:
       '@roochnetwork/rooch-sdk':
         specifier: workspace:*
         version: link:../rooch-sdk
+      '@roochnetwork/rooch-sdk-kit':
+        specifier: workspace:*
+        version: link:../rooch-sdk-kit
       '@tonconnect/sdk':
         specifier: 3.0.5
         version: 3.0.5
@@ -791,6 +794,12 @@ importers:
 
   sdk/typescript/templates/mini-app:
     dependencies:
+      '@okxconnect/ui':
+        specifier: ^1.4.7
+        version: 1.4.7
+      '@okxconnect/universal-provider':
+        specifier: 1.4.4
+        version: 1.4.4(@okxconnect/core@1.4.7)
       '@roochnetwork/rooch-sdk':
         specifier: workspace:*
         version: link:../../rooch-sdk
@@ -3160,6 +3169,27 @@ packages:
   '@octokit/types@13.6.1':
     resolution: {integrity: sha512-PHZE9Z+kWXb23Ndik8MKPirBPziOc0D2/3KH1P+6jK5nGWe96kadZuE4jev2/Jq7FvIfTlT2Ltg8Fv2x1v0a5g==}
 
+  '@okxconnect/core@1.4.7':
+    resolution: {integrity: sha512-f43ZMAcnvvORuoAKMuqNAWiHP2fuEc8Ge6rtg/PTqzPYatcfhFvsSV66NjOX+eSJFpk3tQ+YDULsUh+qftgWdA==}
+
+  '@okxconnect/tonsdk@1.4.7':
+    resolution: {integrity: sha512-9oqULhFEd7by6LjESl6Z/9Rlp2qMd3faXb0WwTUHQyl8EAlfF7nAEKlRkPTchVL44PVrxrpn/eDVM0wcUvyUNw==}
+    peerDependencies:
+      '@okxconnect/core': '*'
+
+  '@okxconnect/ui@1.4.7':
+    resolution: {integrity: sha512-9TeMxrLoEV2HWudrofnLTAs8zZsmzvvBEcPV9RVJGuRRo/vaZN0Oo3QYXibxaaiiEVCFDRLLlGDWMzTBIMJH9Q==}
+
+  '@okxconnect/universal-provider@1.4.4':
+    resolution: {integrity: sha512-uAI3CoOHfnekBf0tycWsSlpdl8rREqIdQa1c5aYsCmW0hDMv+QFnzZOV7YvtWAbbb6X3NHBQYpSj+JawLA0tUQ==}
+    peerDependencies:
+      '@okxconnect/core': '*'
+
+  '@okxconnect/universal-provider@1.4.7':
+    resolution: {integrity: sha512-kBogW8UQGOqHglV7jj/jVkldlGjOp1qtngEmAdyfFac6Zdd75qaPI4kIOcMxSeIi1vJwjIabML9A7Q/YdNOc4Q==}
+    peerDependencies:
+      '@okxconnect/core': '*'
+
   '@pkgjs/parseargs@0.11.0':
     resolution: {integrity: sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==}
     engines: {node: '>=14'}
@@ -4270,6 +4300,30 @@ packages:
     resolution: {integrity: sha512-++IMlbAQpCFQp8UN9XHrcZ3SHY+u/ZzxSUA8zIHXDjZJdkb9WIW12CJXwJADj8tMRgWHWC4ixbi1DdnHYJ3ZpA==}
     peerDependencies:
       size-limit: 11.1.5
+
+  '@stablelib/binary@1.0.1':
+    resolution: {integrity: sha512-ClJWvmL6UBM/wjkvv/7m5VP3GMr9t0osr4yVgLZsLCOz4hGN9gIAFEqnJ0TsSMAN+n840nf2cHZnA5/KFqHC7Q==}
+
+  '@stablelib/ed25519@1.0.3':
+    resolution: {integrity: sha512-puIMWaX9QlRsbhxfDc5i+mNPMY+0TmQEskunY1rZEBPi1acBCVQAhnsk/1Hk50DGPtVsZtAWQg4NHGlVaO9Hqg==}
+
+  '@stablelib/hash@1.0.1':
+    resolution: {integrity: sha512-eTPJc/stDkdtOcrNMZ6mcMK1e6yBbqRBaNW55XA1jU8w/7QdnCF0CmMmOD1m7VSkBR44PWrMHU2l6r8YEQHMgg==}
+
+  '@stablelib/int@1.0.1':
+    resolution: {integrity: sha512-byr69X/sDtDiIjIV6m4roLVWnNNlRGzsvxw+agj8CIEazqWGOQp2dTYgQhtyVXV9wpO6WyXRQUzLV/JRNumT2w==}
+
+  '@stablelib/random@1.0.2':
+    resolution: {integrity: sha512-rIsE83Xpb7clHPVRlBj8qNe5L8ISQOzjghYQm/dZ7VaM2KHYwMW5adjQjrzTZCchFnNCNhkwtnOBa9HTMJCI8w==}
+
+  '@stablelib/sha256@1.0.1':
+    resolution: {integrity: sha512-GIIH3e6KH+91FqGV42Kcj71Uefd/QEe7Dy42sBTeqppXV95ggCcxLTk39bEr+lZfJmp+ghsR07J++ORkRELsBQ==}
+
+  '@stablelib/sha512@1.0.1':
+    resolution: {integrity: sha512-13gl/iawHV9zvDKciLo1fQ8Bgn2Pvf7OV6amaRVKiq3pjQ3UmEpXxWiAfV8tYjUpeZroBxtyrwtdooQT/i3hzw==}
+
+  '@stablelib/wipe@1.0.1':
+    resolution: {integrity: sha512-WfqfX/eXGiAd3RJe4VU2snh/ZPwtSjLG4ynQ/vYzvghTh7dHFcI1wl+nrkWG6lGhukOxOsUHfv8dUXr58D0ayg==}
 
   '@suchipi/femver@1.0.0':
     resolution: {integrity: sha512-bprE8+K5V+DPX7q2e2K57ImqNBdfGHDIWaGI5xHxZoxbKOuQZn4wzPiUxOAHnsUr3w3xHrWXwN7gnG/iIuEMIg==}
@@ -5918,6 +5972,10 @@ packages:
   core-js-compat@3.38.1:
     resolution: {integrity: sha512-JRH6gfXxGmrzF3tZ57lFx97YARxCXPaMzPo6jELZhv88pBH5VXpQ+y0znKGlFnzuaihqhLbefxSJxWJMPtfDzw==}
 
+  core-js@2.6.12:
+    resolution: {integrity: sha512-Kb2wC0fvsWfQrgk8HU5lW6U/Lcs8+9aaYcy4ZFc6DDlo4nZ7n70dEgE5rtR0oG6ufKDUnrwfWL1mXR5ljDatrQ==}
+    deprecated: core-js@<3.23.3 is no longer maintained and not recommended for usage due to the number of issues. Because of the V8 engine whims, feature detection in old core-js versions could cause a slowdown up to 100x even if nothing is polyfilled. Some versions have web compatibility issues. Please, upgrade your dependencies to the actual version of core-js.
+
   core-util-is@1.0.3:
     resolution: {integrity: sha512-ZQBvi1DcpJ4GDqanjucZ2Hj3wEO5pZDS89BWbkcrvdxksJorwUDDZamX9ldFkp9aw2lmBDLgkObEA4DWNJ9FYQ==}
 
@@ -5992,6 +6050,9 @@ packages:
 
   crypto-browserify@3.12.0:
     resolution: {integrity: sha512-fz4spIh+znjO2VjL+IdhEpRJ3YN6sMzITSBijk6FK2UvTqruSQW+/cCZTSNsMiZNvUeq0CqurF+dAbyiGOY6Wg==}
+
+  crypto-js@4.2.0:
+    resolution: {integrity: sha512-KALDyEYgpY+Rlob/iriUtjV6d5Eq+Y191A5g4UqLAi8CyGP9N1+FdVbkc1SxKc2r4YAYqG8JzO2KGL+AizD70Q==}
 
   css-in-js-utils@3.1.0:
     resolution: {integrity: sha512-fJAcud6B3rRu+KHYk+Bwf+WFL2MDCJJ1XG9x137tJQ0xYxor7XziQtuGFbWNdqrvF4Tk26O3H73nfVqXt/fW1A==}
@@ -6901,6 +6962,9 @@ packages:
   event-target-shim@5.0.1:
     resolution: {integrity: sha512-i/2XbnSz/uxRCU6+NdVJgKWDTM427+MqYbkQzD321DuCQJUqOuJKIA0IM2+W2xtYHdKOmZ4dR6fExsd4SXL+WQ==}
     engines: {node: '>=6'}
+
+  eventemitter3@5.0.1:
+    resolution: {integrity: sha512-GWkBvjiSZK87ELrYOSESUYeVIc9mvLLf/nXalMOS5dYrgZq9o5OVkbZAVM06CVxYsCwH9BDZFPlQTlPA1j4ahA==}
 
   events@3.3.0:
     resolution: {integrity: sha512-mQw+2fkQbALzQ7V0MY0IqdnXNOeTtP4r0lN9z7AAawCXgqea7bDii20AYrIBrFd/Hx0M2Ocz6S111CaFkUcb0Q==}
@@ -7827,6 +7891,10 @@ packages:
     resolution: {integrity: sha512-BewmUXImeuRk2YY0PVbxgKAysvhRPUQE0h5QRM++nVWyubKGV0l8qQ5op8+B2DOmwSe63Jivj0BjkPQVf8fP5g==}
     engines: {node: '>=8'}
 
+  isutf8@4.0.1:
+    resolution: {integrity: sha512-1pk2/2pE+G48eETnp4uOLxQ9WUCxD7oVauYwhFEAGREJPDxEO7iX9qstylrCcx3lNWa1RCS2DxGTxrHdWqS7/w==}
+    engines: {node: '>= 12'}
+
   iterator.prototype@1.1.2:
     resolution: {integrity: sha512-DR33HMMr8EzwuRL8Y9D3u2BMj8+RqSE850jfGu59kS7tbmPLzGkZmVSfyCFSDxuZiEY6Rzt3T2NA/qU+NwVj1w==}
 
@@ -8631,6 +8699,9 @@ packages:
 
   ms@2.1.3:
     resolution: {integrity: sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==}
+
+  multiformats@9.4.2:
+    resolution: {integrity: sha512-GXsulAzqA+EI/iObKWsg9n4PKNVpUTsWdA+Ijn3hJMaVHQ/+dJaClSZ55g8sVKniBjQkouGaVCKCu9c/wwMXQQ==}
 
   mz@2.7.0:
     resolution: {integrity: sha512-z81GNO7nnYMEhrGh9LeymoE4+Yr0Wn5McHIZMK5cfQCl+NDX08sCZgUc9/6MHni9IWuFLm1Z3HTCXu2z9fN62Q==}
@@ -10616,6 +10687,9 @@ packages:
 
   ufo@1.5.4:
     resolution: {integrity: sha512-UsUk3byDzKd04EyoZ7U4DOlxQaD14JUKQl6/P7wiX4FNvUfm3XL246n9W5AmqwW5RSFJ27NAuM0iLscAOYUiGQ==}
+
+  uint8arrays@3.1.0:
+    resolution: {integrity: sha512-ei5rfKtoRO8OyOIor2Rz5fhzjThwIHJZ3uyDPnDHTXbP0aMQ1RN/6AI5B5d9dBxJOU+BvOAk7ZQ1xphsX8Lrog==}
 
   unbox-primitive@1.0.2:
     resolution: {integrity: sha512-61pPlCD9h51VoreyJ0BReideM3MDKMKnh6+V9L08331ipq6Q8OFXZYiqP6n/tbHx4s5I9uRhcye6BrbkizkBDw==}
@@ -13568,6 +13642,55 @@ snapshots:
     dependencies:
       '@octokit/openapi-types': 22.2.0
 
+  '@okxconnect/core@1.4.7':
+    dependencies:
+      '@stablelib/ed25519': 1.0.3
+      '@stablelib/random': 1.0.2
+      '@stablelib/sha256': 1.0.1
+      core-js: 2.6.12
+      crypto-js: 4.2.0
+      eventemitter3: 5.0.1
+      isutf8: 4.0.1
+      multiformats: 9.4.2
+      process: 0.11.10
+      tweetnacl: 1.0.3
+      tweetnacl-util: 0.15.1
+      ua-parser-js: 1.0.39
+      uint8arrays: 3.1.0
+
+  '@okxconnect/tonsdk@1.4.7(@okxconnect/core@1.4.7)':
+    dependencies:
+      '@okxconnect/core': 1.4.7
+
+  '@okxconnect/ui@1.4.7':
+    dependencies:
+      '@okxconnect/core': 1.4.7
+      '@okxconnect/tonsdk': 1.4.7(@okxconnect/core@1.4.7)
+      '@okxconnect/universal-provider': 1.4.7(@okxconnect/core@1.4.7)
+      classnames: 2.3.2
+      deepmerge: 4.3.1
+      ua-parser-js: 1.0.39
+    transitivePeerDependencies:
+      - encoding
+
+  '@okxconnect/universal-provider@1.4.4(@okxconnect/core@1.4.7)':
+    dependencies:
+      '@okxconnect/core': 1.4.7
+      '@types/lodash': 4.17.7
+      cross-fetch: 3.1.8
+      eventemitter3: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
+  '@okxconnect/universal-provider@1.4.7(@okxconnect/core@1.4.7)':
+    dependencies:
+      '@okxconnect/core': 1.4.7
+      '@types/lodash': 4.17.7
+      cross-fetch: 3.1.8
+      eventemitter3: 5.0.1
+    transitivePeerDependencies:
+      - encoding
+
   '@pkgjs/parseargs@0.11.0':
     optional: true
 
@@ -14955,6 +15078,39 @@ snapshots:
       '@size-limit/esbuild': 11.1.5(size-limit@11.1.5)
       '@size-limit/file': 11.1.5(size-limit@11.1.5)
       size-limit: 11.1.5
+
+  '@stablelib/binary@1.0.1':
+    dependencies:
+      '@stablelib/int': 1.0.1
+
+  '@stablelib/ed25519@1.0.3':
+    dependencies:
+      '@stablelib/random': 1.0.2
+      '@stablelib/sha512': 1.0.1
+      '@stablelib/wipe': 1.0.1
+
+  '@stablelib/hash@1.0.1': {}
+
+  '@stablelib/int@1.0.1': {}
+
+  '@stablelib/random@1.0.2':
+    dependencies:
+      '@stablelib/binary': 1.0.1
+      '@stablelib/wipe': 1.0.1
+
+  '@stablelib/sha256@1.0.1':
+    dependencies:
+      '@stablelib/binary': 1.0.1
+      '@stablelib/hash': 1.0.1
+      '@stablelib/wipe': 1.0.1
+
+  '@stablelib/sha512@1.0.1':
+    dependencies:
+      '@stablelib/binary': 1.0.1
+      '@stablelib/hash': 1.0.1
+      '@stablelib/wipe': 1.0.1
+
+  '@stablelib/wipe@1.0.1': {}
 
   '@suchipi/femver@1.0.0': {}
 
@@ -17069,6 +17225,8 @@ snapshots:
     dependencies:
       browserslist: 4.23.3
 
+  core-js@2.6.12: {}
+
   core-util-is@1.0.3: {}
 
   cose-base@1.0.3:
@@ -17191,6 +17349,8 @@ snapshots:
       public-encrypt: 4.0.3
       randombytes: 2.1.0
       randomfill: 1.0.4
+
+  crypto-js@4.2.0: {}
 
   css-in-js-utils@3.1.0:
     dependencies:
@@ -18486,6 +18646,8 @@ snapshots:
 
   event-target-shim@5.0.1: {}
 
+  eventemitter3@5.0.1: {}
+
   events@3.3.0: {}
 
   eventsource@2.0.2: {}
@@ -19485,6 +19647,8 @@ snapshots:
     dependencies:
       html-escaper: 2.0.2
       istanbul-lib-report: 3.0.1
+
+  isutf8@4.0.1: {}
 
   iterator.prototype@1.1.2:
     dependencies:
@@ -20925,6 +21089,8 @@ snapshots:
   ms@2.0.0: {}
 
   ms@2.1.3: {}
+
+  multiformats@9.4.2: {}
 
   mz@2.7.0:
     dependencies:
@@ -23171,6 +23337,10 @@ snapshots:
   ua-parser-js@1.0.39: {}
 
   ufo@1.5.4: {}
+
+  uint8arrays@3.1.0:
+    dependencies:
+      multiformats: 9.4.2
 
   unbox-primitive@1.0.2:
     dependencies:

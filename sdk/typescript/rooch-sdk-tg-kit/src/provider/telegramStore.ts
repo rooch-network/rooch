@@ -74,7 +74,7 @@ export function createWalletStore({
 
           if (currentChain === chain) {
             return
-          }             wseeeeeeeee
+          }
           set(() => ({
             currentChain: chain,
             accounts: [],
