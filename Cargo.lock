@@ -5305,26 +5305,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "49f1f14873335454500d59611f1cf4a4b0f786f9ac11f4312a78e4cf2566695b"
 
 [[package]]
-name = "jemalloc-sys"
-version = "0.5.4+5.3.0-patched"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ac6c1946e1cea1788cbfde01c993b52a10e2da07f4bac608228d1bed20bfebf2"
-dependencies = [
- "cc",
- "libc",
-]
-
-[[package]]
-name = "jemallocator"
-version = "0.5.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a0de374a9f8e63150e6f5e8a60cc14c668226d7a347d8aee1a45766e3c4dd3bc"
-dependencies = [
- "jemalloc-sys",
- "libc",
-]
-
-[[package]]
 name = "jni"
 version = "0.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9335,7 +9315,6 @@ dependencies = [
  "futures",
  "hex",
  "itertools 0.13.0",
- "jemallocator",
  "lazy_static 1.5.0",
  "log",
  "metrics",
@@ -9401,6 +9380,7 @@ dependencies = [
  "tabled",
  "tempfile",
  "termcolor",
+ "tikv-jemallocator",
  "tiny-keccak",
  "tokio",
  "tracing",
@@ -9426,7 +9406,6 @@ dependencies = [
  "clap 4.5.17",
  "criterion",
  "ethers",
- "jemallocator",
  "lazy_static 1.5.0",
  "log",
  "metrics",
@@ -9463,6 +9442,7 @@ dependencies = [
  "rooch-types",
  "serde 1.0.215",
  "smt",
+ "tikv-jemallocator",
  "tokio",
  "toml 0.8.19",
  "tracing",
@@ -11975,6 +11955,26 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d050e60b33d41c19108b32cea32164033a9013fe3b46cbd4457559bfbf77afaa"
 dependencies = [
  "num_cpus",
+]
+
+[[package]]
+name = "tikv-jemalloc-sys"
+version = "0.6.0+5.3.0-1-ge13ca993e8ccb9ba9847cc330696e02839f328f7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cd3c60906412afa9c2b5b5a48ca6a5abe5736aec9eb48ad05037a677e52e4e2d"
+dependencies = [
+ "cc",
+ "libc",
+]
+
+[[package]]
+name = "tikv-jemallocator"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4cec5ff18518d81584f477e9bfdf957f5bb0979b0bac3af4ca30b5b3ae2d2865"
+dependencies = [
+ "libc",
+ "tikv-jemalloc-sys",
 ]
 
 [[package]]
