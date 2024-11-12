@@ -87,7 +87,6 @@ rust-version = "1.82.0"
 version = "0.7.6"
 
 [workspace.dependencies]
-tikv-jemallocator = { version = "0.6.0", features = ["profiling", "unprefixed_malloc_on_supported_platforms"] }
 # Internal crate dependencies.
 # Please do not add any test features here: they should be declared by the individual crate.
 # crates for MoveOS
