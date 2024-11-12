@@ -57,7 +57,7 @@ fn display_json(value: &Value, title: &str) {
 
     let main_table = Table::new(&rows)
         .with(Style::rounded())
-        .with(Panel::header(title.to_string()))
+        .with(Panel::header(title))
         .with(Disable::row(Rows::single(1)))
         .to_string();
 
@@ -132,12 +132,7 @@ fn display_events(events: &Value) {
                     continue;
                 }
 
-                if key == "decoded_event_data" && value.is_object() {
-                    event_rows.push(TableRow {
-                        line: format!("[{}]", key),
-                    });
-                    event_rows.extend(format_nested_json(value));
-                } else if value.is_object() {
+                if value.is_object() {
                     event_rows.push(TableRow {
                         line: format!("[{}]", key),
                     });
