@@ -6,7 +6,7 @@ use rooch::RoochCli;
 use std::process::exit;
 
 #[cfg(not(target_env = "msvc"))]
-use jemallocator::Jemalloc;
+use tikv_jemallocator::Jemalloc;
 
 #[cfg(not(target_env = "msvc"))]
 #[global_allocator]
