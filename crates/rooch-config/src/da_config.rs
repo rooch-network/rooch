@@ -260,8 +260,9 @@ pub struct DABackendCelestiaConfig {
     pub namespace: Namespace,
     /// celestia node connection
     pub conn: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     /// celestia node auth token
-    pub auth_token: String,
+    pub auth_token: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// max segment size, striking a balance between throughput and the constraints on blob size in celestia network.
     /// Set at crates/rooch-da/src/backend/celestia if None.
@@ -309,7 +310,7 @@ mod tests {
         let exp_celestia_config = DABackendCelestiaConfig {
             namespace: Namespace::PARITY_SHARE,
             conn: "test-conn".to_string(),
-            auth_token: "test-token".to_string(),
+            auth_token: Some("test-token".to_string()),
             max_segment_size: Some(2048),
         };
         let exp_openda_config = DABackendOpenDAConfig {

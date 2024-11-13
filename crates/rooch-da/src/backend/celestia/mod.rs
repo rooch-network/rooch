@@ -44,7 +44,8 @@ impl DABackend for CelestiaBackend {
 impl CelestiaBackend {
     pub async fn new(cfg: &DABackendCelestiaConfig) -> anyhow::Result<Self> {
         let max_segment_size = cfg.max_segment_size.unwrap_or(DEFAULT_MAX_SEGMENT_SIZE);
-        let client = CelestiaClient::new(cfg.namespace, &cfg.conn, &cfg.auth_token).await?;
+        let client =
+            CelestiaClient::new(cfg.namespace, &cfg.conn, cfg.auth_token.as_deref()).await?;
 
         Ok(CelestiaBackend {
             max_segment_size,
@@ -69,9 +70,9 @@ impl CelestiaClient {
     pub async fn new(
         namespace: Namespace,
         conn_str: &str,
-        auth_token: &str,
+        auth_token: Option<&str>,
     ) -> anyhow::Result<Self> {
-        let celestia_client = Client::new(conn_str, Option::from(auth_token)).await?;
+        let celestia_client = Client::new(conn_str, auth_token).await?;
         Ok(CelestiaClient {
             namespace,
             client: celestia_client,
