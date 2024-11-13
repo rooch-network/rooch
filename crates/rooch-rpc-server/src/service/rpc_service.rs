@@ -761,34 +761,39 @@ impl RpcService {
             .filter(|(x, _y)| x.is_some())
             .map(|(x, y)| StateChangeSetWithTxOrder::new(y, x.unwrap().state_change_set))
             .collect::<Vec<_>>();
-
+    
         let result = match filter {
             SyncStateFilter::ObjectID(object_id) => {
                 states
                     .into_iter()
-                    .map(|s| {
+                    .filter_map(|s| {
                         let filter_changes = s
                             .state_change_set
                             .changes
                             .into_iter()
-                            // Only includes Global Object, not include Child Object
                             .filter(|(_, value)| value.metadata.id == object_id)
                             .collect();
+                        
                         let filter_state_change_set = StateChangeSet::new_with_changes(
                             s.state_change_set.state_root,
                             s.state_change_set.global_size,
                             filter_changes,
                         );
-                        StateChangeSetWithTxOrder::new(s.tx_order, filter_state_change_set)
+                        
+                        if !filter_state_change_set.changes.is_empty() {
+                            Some(StateChangeSetWithTxOrder::new(s.tx_order, filter_state_change_set))
+                        } else {
+                            None
+                        }
                     })
                     .collect()
             }
             SyncStateFilter::All => states,
         };
-
+    
         Ok(result)
     }
-
+    
     pub async fn status(&self) -> Result<Status> {
         let service_status = self.pipeline_processor.get_service_status().await?;
         let sequencer_info = self.sequencer.get_sequencer_info().await?;
