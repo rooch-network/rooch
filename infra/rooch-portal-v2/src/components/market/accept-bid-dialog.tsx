@@ -161,7 +161,6 @@ export default function AcceptBidDialog({
             // acc={item.acc}
             fromCoinBalanceInfo={fromCoinBalanceInfo}
             toCoinBalanceInfo={toCoinBalanceInfo}
-            acc="0"
             seller={acceptBidItem.owner}
             selectMode={false}
             type="list"
