@@ -1,11 +1,7 @@
 import type { ReactNode } from 'react';
 
 import { useState, useEffect } from 'react';
-import {
-  useRemoveSession,
-  useCurrentSession,
-  useCreateSessionKey,
-} from '@roochnetwork/rooch-sdk-kit';
+import { useCurrentSession, useCreateSessionKey } from '@roochnetwork/rooch-sdk-kit';
 
 import { LoadingButton } from '@mui/lab';
 
@@ -16,7 +12,6 @@ import { toast } from 'src/components/snackbar';
 export default function SessionKeyGuardButton({ children }: { children: ReactNode }) {
   const sessionKey = useCurrentSession();
   const { mutateAsync: createSessionKey } = useCreateSessionKey();
-  const { mutateAsync: removeSessionKey } = useRemoveSession();
   const [sessionKeyLoading, setSessionKeyLoading] = useState(false);
 
   const [isCurrentSessionExpired, setIsCurrentSessionExpired] = useState(false);
