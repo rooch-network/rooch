@@ -5,7 +5,6 @@ import type { BalanceInfoView, AnnotatedMoveStructView } from '@roochnetwork/roo
 
 import BigNumber from 'bignumber.js';
 import { useCountDown } from 'ahooks';
-import PuffLoader from 'react-spinners/PuffLoader';
 import { usePagination } from 'react-use-pagination';
 import { useQueryClient } from '@tanstack/react-query';
 import { Args, Serializer } from '@roochnetwork/rooch-sdk';
@@ -23,13 +22,10 @@ import {
   Alert,
   Stack,
   Button,
-  Switch,
   Tooltip,
   Skeleton,
   useTheme,
   Pagination,
-  CircularProgress,
-  FormControlLabel,
 } from '@mui/material';
 
 import { fromDust } from 'src/utils/number';
@@ -37,7 +33,7 @@ import { fNumber } from 'src/utils/format-number';
 import { sleep, shortCoinType } from 'src/utils/common';
 
 import { SUI_DECIMALS } from 'src/config/trade';
-import { grey, warning, secondary } from 'src/theme/core';
+import { grey, secondary } from 'src/theme/core';
 import { TESTNET_ORDERBOOK_PACKAGE } from 'src/config/constant';
 
 import { Iconify } from 'src/components/iconify';
@@ -69,6 +65,10 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
   const [mergeSelected, setMergeSelected] = useState<string[]>([]);
 
   const [fromCoinBalanceInfo, setFromCoinBalanceInfo] = useState<BalanceInfoView>();
+  console.log(
+    '🚀 ~ file: view.tsx:72 ~ MarketplaceView ~ fromCoinBalanceInfo:',
+    fromCoinBalanceInfo
+  );
 
   const [toCoinBalanceInfo, setToCoinBalanceInfo] = useState<BalanceInfoView>();
 
@@ -98,7 +98,8 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
   });
 
   const [marketList, setMarketList] = useState<MarketItem[]>([]);
-  const [bidList, setBidList] = useState<MarketItem[]>([]);
+  console.log('🚀 ~ file: view.tsx:101 ~ MarketplaceView ~ marketList:', marketList);
+  const [bidList, setBidList] = useState<BidItem[]>([]);
 
   const [loadingList, setLoadingList] = useState(false);
 
@@ -125,6 +126,8 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
   const [acceptBidItem, setAcceptBidItem] = useState<BidItem>();
   const [acceptBidDialogOpen, setAcceptBidDialogOpen] = useState(false);
 
+  const [listDialogOpen, setListDialogOpen] = useState(false);
+
   const openAcceptBidDialog = (item: BidItem) => {
     setAcceptBidItem(item);
     setAcceptBidDialogOpen(true);
@@ -139,42 +142,21 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
 
   const [loadingOrder, setLoadingOrder] = useState(false);
 
-  useEffect(() => {
-    async function getMarketTradeInfo() {
-      if (!account) {
-        return;
-      }
-      const res = await client.queryObjectStates({
-        filter: {
-          object_id: '0x4386917e0942a6fb30048405e3326be618bd0661b2fe240a112d6b59afb94cbb',
-        },
-      });
-      console.log(
-        '🚀 ~ file: view.tsx:153 ~ getMarketTradeInfo ~ res:',
-        res.data[0].object_type,
-        Serializer.typeTagParseFromStr(res.data[0].object_type, true)
-      );
-      const typeTag = Serializer.typeTagParseFromStr(res.data[0].object_type, true) as any;
-      const fromCoin = typeTag.struct.typeParams[0].struct;
-      const toCoin = typeTag.struct.typeParams[1].struct;
-      const [fromCoinBalanceInfo, toCoinBalanceInfo] = await Promise.all([
-        client.getBalance({
-          owner: account.genRoochAddress().toStr(),
-          coinType: `${fromCoin.address}::${fromCoin.module}::${fromCoin.name}`,
-        }),
-        client.getBalance({
-          owner: account.genRoochAddress().toStr(),
-          coinType: `${toCoin.address}::${toCoin.module}::${toCoin.name}`,
-        }),
-      ]);
-      setFromCoinBalanceInfo(fromCoinBalanceInfo);
-      setToCoinBalanceInfo(toCoinBalanceInfo);
-    }
-    getMarketTradeInfo();
-  }, [account, client]);
+  const [fromCoinStruct, setFromCoinStruct] = useState<{
+    address: string;
+    module: string;
+    name: string;
+  }>();
 
-  useEffect(() => {
-    async function getListData() {
+  const [toCoinStruct, setToCoinStruct] = useState<{
+    address: string;
+    module: string;
+    name: string;
+  }>();
+
+  const getListData = useCallback(async () => {
+    setLoadingList(true);
+    try {
       const fromPrice = 0;
       const start = 0;
       const res = await client.executeViewFunction({
@@ -194,9 +176,16 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
       const decodedValue = res.return_values?.[0]?.decoded_value as AnnotatedMoveStructView[];
       const marketItemList = decodedValue.map((i) => i.value) as unknown as MarketItem[];
       setMarketList(marketItemList);
-      console.log('🚀 ~ file: view.tsx:342 ~ getData ~ res:', res);
+    } catch (error) {
+      console.log('🚀 ~ file: view.tsx:231 ~ getListData ~ error:', error);
+    } finally {
+      setLoadingList(false);
     }
-    async function getBidData() {
+  }, [client]);
+
+  const getBidData = useCallback(async () => {
+    setLoadingList(true);
+    try {
       const fromPrice = 0;
       const start = 0;
       const res = await client.executeViewFunction({
@@ -214,13 +203,96 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
         ],
       });
       const decodedValue = res.return_values?.[0]?.decoded_value as AnnotatedMoveStructView[];
-      const marketItemList = decodedValue.map((i) => i.value) as unknown as MarketItem[];
+      const marketItemList = decodedValue.map((i) => i.value) as unknown as BidItem[];
       setBidList(marketItemList);
-      console.log('🚀 ~ file: view.tsx:342 ~ getData ~ res:', res);
+    } catch (error) {
+      console.log('🚀 ~ file: view.tsx:260 ~ getBidData ~ error:', error);
+    } finally {
+      setLoadingList(false);
     }
-    getListData();
-    getBidData();
   }, [client]);
+
+  const getMarketTradeInfo = useCallback(async () => {
+    const res = await client.queryObjectStates({
+      filter: {
+        object_id: '0x4386917e0942a6fb30048405e3326be618bd0661b2fe240a112d6b59afb94cbb',
+      },
+    });
+    const typeTag = Serializer.typeTagParseFromStr(res.data[0].object_type, true) as any;
+    const fromCoin = typeTag.struct.typeParams[0].struct;
+    const toCoin = typeTag.struct.typeParams[1].struct;
+    setFromCoinStruct({
+      address: fromCoin.address,
+      module: fromCoin.module,
+      name: fromCoin.name,
+    });
+    setToCoinStruct({
+      address: toCoin.address,
+      module: toCoin.module,
+      name: toCoin.name,
+    });
+    const [fromCoinBalanceInfo, toCoinBalanceInfo] = await Promise.all([
+      client.queryObjectStates({
+        filter: {
+          object_type: `0x3::coin::CoinInfo<${fromCoin.address}::${fromCoin.module}::${fromCoin.name}>`,
+        },
+        queryOption: {
+          decode: true,
+        },
+      }),
+      client.queryObjectStates({
+        filter: {
+          object_type: `0x3::coin::CoinInfo<${toCoin.address}::${toCoin.module}::${toCoin.name}>`,
+        },
+        queryOption: {
+          decode: true,
+        },
+      }),
+    ]);
+    const tempFromCoinBalanceInfo = {
+      ...fromCoinBalanceInfo.data[0].decoded_value?.value,
+      balance: '0',
+    };
+    const tempToCoinBalanceInfo = {
+      ...toCoinBalanceInfo.data[0].decoded_value?.value,
+      balance: '0',
+    };
+    if (account) {
+      const [fromBalanceInfo, toBalanceInfo] = await Promise.all([
+        client.getBalance({
+          owner: account.genRoochAddress().toStr(),
+          coinType: `${fromCoin.address}::${fromCoin.module}::${fromCoin.name}`,
+        }),
+        client.getBalance({
+          owner: account.genRoochAddress().toStr(),
+          coinType: `${toCoin.address}::${toCoin.module}::${toCoin.name}`,
+        }),
+      ]);
+      tempFromCoinBalanceInfo.balance = fromBalanceInfo.balance;
+      tempToCoinBalanceInfo.balance = toBalanceInfo.balance;
+    }
+
+    setFromCoinBalanceInfo(tempFromCoinBalanceInfo as BalanceInfoView);
+    setToCoinBalanceInfo(tempToCoinBalanceInfo as BalanceInfoView);
+  }, [account, client]);
+
+  useEffect(() => {
+    getBidData();
+  }, [getBidData]);
+
+  useEffect(() => {
+    getListData();
+  }, [getListData]);
+
+  useEffect(() => {
+    getMarketTradeInfo();
+  }, [getMarketTradeInfo]);
+
+  // useEffect(() => {
+  //   getListData();
+  //   getBidData();
+  //   getMarketTradeInfo();
+  // }, [getListData, getBidData, getUserBalance, getMarketTradeInfo]);
 
   const [createBidDialogOpen, setCreateBidDialogOpen] = useState(false);
 
@@ -253,26 +325,14 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
     return totalPrice.toNumber();
   }, [mergeSelected, sellList]);
 
-  const refetchMarketData = useCallback(async () => {
-    await queryClient.invalidateQueries({
-      queryKey: [`market-list`],
-    });
-    setLoadingList(true);
-    setMarketList([]);
-    setFloorPrice(undefined);
-    setListPageParams({
-      fromPrice: 0,
-      start: 0,
-      hasNextPage: true,
-    });
-    // fetchMarketList();
-  }, [queryClient]);
+  const isWalletConnect = useMemo(() => Boolean(account?.genRoochAddress().toStr()), [account]);
 
   return (
     <Container
       maxWidth="xl"
       sx={{
         position: 'relative',
+        mb: 4,
       }}
     >
       {showLimitTips && account?.genRoochAddress().toStr() && (
@@ -301,7 +361,7 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
           {`Fetching the user's listing records may take some time. Please be patient and wait.`}
         </Alert>
       )}
-      <Alert
+      {/* <Alert
         severity="success"
         variant="outlined"
         sx={{
@@ -309,19 +369,32 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
         }}
       >
         Bid is now live. Welcome to give it a try!
-      </Alert>
+      </Alert> */}
       <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap">
         <Stack direction="row" alignItems="center" spacing={4} flexWrap="wrap">
           <Typography variant="h4"> Marketplace | {tickUpperCase} </Typography>
-          <Button
-            variant="contained"
-            color="secondary"
-            onClick={() => {
-              setCreateBidDialogOpen(true);
-            }}
-          >
-            Make a Bid
-          </Button>
+          {isWalletConnect && (
+            <>
+              <Button
+                variant="contained"
+                color="secondary"
+                onClick={() => {
+                  setListDialogOpen(true);
+                }}
+              >
+                List
+              </Button>
+              <Button
+                variant="contained"
+                color="secondary"
+                onClick={() => {
+                  setCreateBidDialogOpen(true);
+                }}
+              >
+                Bid
+              </Button>
+            </>
+          )}
           {/* {account?.genRoochAddress().toStr() && (
             <FormControlLabel
               control={
@@ -353,43 +426,45 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
         </Stack>
 
         <Stack direction="row" alignItems="center">
-          <FormControlLabel
-            control={
-              <Switch
-                size="medium"
-                color="secondary"
-                checked={showMyOrder}
-                disabled={loadingOrder}
-                onChange={(e, value) => {
-                  if (value) {
-                    setTargetDate(undefined);
-                  } else {
-                    setTargetDate(Date.now() + 10 * 1000);
-                  }
-                  setShowMyOrder(value);
-                }}
-              />
-            }
-            label={
-              <Typography
-                sx={{
-                  fontWeight: 600,
-                  display: 'flex',
-                  alignItems: 'center',
-                }}
-              >
-                Show My Order{' '}
-                {loadingOrder && (
-                  <CircularProgress
-                    size={18}
-                    sx={{
-                      ml: 1,
-                    }}
-                  />
-                )}
-              </Typography>
-            }
-          />
+          {/* {isWalletConnect && (
+            <FormControlLabel
+              control={
+                <Switch
+                  size="medium"
+                  color="secondary"
+                  checked={showMyOrder}
+                  disabled={loadingOrder}
+                  onChange={(e, value) => {
+                    if (value) {
+                      setTargetDate(undefined);
+                    } else {
+                      setTargetDate(Date.now() + 10 * 1000);
+                    }
+                    setShowMyOrder(value);
+                  }}
+                />
+              }
+              label={
+                <Typography
+                  sx={{
+                    fontWeight: 600,
+                    display: 'flex',
+                    alignItems: 'center',
+                  }}
+                >
+                  Show My Order{' '}
+                  {loadingOrder && (
+                    <CircularProgress
+                      size={18}
+                      sx={{
+                        ml: 1,
+                      }}
+                    />
+                  )}
+                </Typography>
+              }
+            />
+          )} */}
           <LoadingButton
             loading={loadingList}
             variant="outlined"
@@ -397,7 +472,7 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
             onClick={async () => {
               setShowMyOrder(false);
               setLoadingOrder(false);
-              await Promise.all([refetchMarketData(), refetchBidList()]);
+              await Promise.all([getListData(), getBidData(), getMarketTradeInfo()]);
               setTargetDate(Date.now() + 10 * 1000);
             }}
             sx={{
@@ -424,13 +499,14 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
           // divider={<Divider orientation="vertical" sx={{ borderStyle: 'dashed' }} />}
           justifyContent="start"
           gap={2}
-          display="grid"
-          gridTemplateColumns={{
-            xs: 'repeat(1, 1fr)',
-            sm: 'repeat(1, 1fr)',
-            md: 'repeat(3, 1fr)',
-            lg: 'repeat(5, 1fr)',
-          }}
+          display="flex"
+          className="justify-between"
+          // gridTemplateColumns={{
+          //   xs: 'repeat(1, 1fr)',
+          //   sm: 'repeat(1, 1fr)',
+          //   md: 'repeat(3, 1fr)',
+          //   lg: 'repeat(5, 1fr)',
+          // }}
           sx={{ py: 2, pl: 2, pr: 2 }}
         >
           <TradeInfoItem
@@ -647,7 +723,7 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
         </Stack>
       )}
 
-      {targetDate && (
+      {/* {targetDate && (
         <Stack direction="row" alignItems="center" spacing={1}>
           <PuffLoader speedMultiplier={0.875} color={warning.light} loading size={24} />
           <Typography
@@ -663,7 +739,7 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
             )}
           </Typography>
         </Stack>
-      )}
+      )} */}
 
       <Tabs
         value={currentTab}
@@ -675,23 +751,21 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
         <Tab value="bid" label="Bid" />
       </Tabs>
 
-      {!loadingList &&
-        !false &&
-        (currentTab === 'list' ? sellList.length === 0 : bidList.length === 0) && (
-          <Box
+      {!loadingList && (currentTab === 'list' ? sellList.length === 0 : bidList.length === 0) && (
+        <Box
+          sx={{
+            mt: 4,
+            height: '20vh',
+          }}
+        >
+          <EmptyContent
+            title="No Record"
             sx={{
-              mt: 4,
-              height: '20vh',
+              py: 4,
             }}
-          >
-            <EmptyContent
-              title="No Record"
-              sx={{
-                py: 4,
-              }}
-            />
-          </Box>
-        )}
+          />
+        </Box>
+      )}
 
       <Box
         gap={3}
@@ -706,7 +780,9 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
           mt: 2,
         }}
       >
-        {(loadingList && (!sellList || sellList.length === 0)) ||
+        {loadingList ||
+        !sellList ||
+        sellList.length === 0 ||
         !fromCoinBalanceInfo ||
         !toCoinBalanceInfo ? (
           renderSkeleton
@@ -727,7 +803,9 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
                         selectMode={mergeMode}
                         selected={mergeSelected.includes(item.order_id)}
                         onSelectItem={onSelectMergeItem}
-                        onRefetchMarketData={refetchMarketData}
+                        onRefetchMarketData={async () => {
+                          await Promise.all([getListData(), getBidData(), getMarketTradeInfo()]);
+                        }}
                       />
                     )
                 )}
@@ -742,7 +820,7 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
                     tick={tickLowerCase}
                     onRefetchMarketData={async () => {
                       setCurrentTab('bid');
-                      await Promise.all([refetchBidList(), refetchAddressOwnedInscription()]);
+                      await Promise.all([]);
                     }}
                     onAcceptBid={(item) => {
                       openAcceptBidDialog(item);
@@ -804,38 +882,51 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
           </LoadingButton>
         </Box>
       )}
-      {acceptBidItem && (
+      {acceptBidItem && fromCoinBalanceInfo && toCoinBalanceInfo && (
         <AcceptBidDialog
           open={acceptBidDialogOpen}
           acceptBidItem={acceptBidItem}
           tick={tickLowerCase}
-          userOwnedTickInscription={[]}
+          fromCoinBalanceInfo={fromCoinBalanceInfo}
+          toCoinBalanceInfo={toCoinBalanceInfo}
+          tokenBalance={toCoinBalanceInfo.balance}
           refreshBidList={async () => {
             setCurrentTab('bid');
-            await Promise.all([refetchBidList(), refetchAddressOwnedInscription()]);
+            await Promise.all([getListData(), getBidData(), getMarketTradeInfo()]);
+            // await Promise.all([refetchBidList(), refetchAddressOwnedInscription()]);
           }}
           close={closeAcceptBidDialog}
         />
       )}
-      <CreateBidDialog
-        tick={tickLowerCase}
-        floorPrice={floorPrice ?? 0}
-        open={createBidDialogOpen}
-        refreshBidList={async () => {
-          setCurrentTab('bid');
-          await Promise.all([refetchBidList(), refetchAddressOwnedInscription()]);
-        }}
-        close={() => {
-          setCreateBidDialogOpen(false);
-        }}
-      />
-      {fromCoinBalanceInfo && toCoinBalanceInfo && (
+      {fromCoinBalanceInfo && toCoinBalanceInfo && createBidDialogOpen && (
+        <CreateBidDialog
+          tick={tickLowerCase}
+          floorPrice={floorPrice ?? 0}
+          open={createBidDialogOpen}
+          fromCoinBalanceInfo={fromCoinBalanceInfo}
+          toCoinBalanceInfo={toCoinBalanceInfo}
+          refreshBidList={async () => {
+            setCurrentTab('bid');
+            await getBidData();
+          }}
+          close={() => {
+            setCreateBidDialogOpen(false);
+          }}
+        />
+      )}
+      {fromCoinBalanceInfo && toCoinBalanceInfo && listDialogOpen && (
         <ListDialog
-          listDialogOpen
+          listDialogOpen={listDialogOpen}
+          close={() => {
+            setListDialogOpen(false);
+          }}
           floorPrice="1"
           tick={tickLowerCase}
           fromCoinBalanceInfo={fromCoinBalanceInfo}
           toCoinBalanceInfo={toCoinBalanceInfo}
+          refreshList={async () => {
+            await getListData();
+          }}
         />
       )}
     </Container>

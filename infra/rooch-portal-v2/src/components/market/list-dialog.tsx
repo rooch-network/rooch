@@ -23,7 +23,7 @@ import {
   InputAdornment,
 } from '@mui/material';
 
-import { toDust } from 'src/utils/number';
+import { toDust, fromDust, formatNumber } from 'src/utils/number';
 
 import { warning, secondary } from 'src/theme/core';
 import { TESTNET_ORDERBOOK_PACKAGE } from 'src/config/constant';
@@ -39,12 +39,16 @@ export default function ListDialog({
   tick,
   fromCoinBalanceInfo,
   toCoinBalanceInfo,
+  refreshList,
+  close,
 }: {
   listDialogOpen: boolean;
   floorPrice: string;
   tick: string;
   fromCoinBalanceInfo: BalanceInfoView;
   toCoinBalanceInfo: BalanceInfoView;
+  refreshList: () => Promise<void>;
+  close: () => void;
 }) {
   const { mutate: signAndExecuteTransaction, isPending } = UseSignAndExecuteTransaction();
 
@@ -54,7 +58,7 @@ export default function ListDialog({
   return (
     <Dialog
       open={listDialogOpen}
-      // onClose={closeList}
+      onClose={close}
       sx={{
         '& .MuiDialog-paper': {
           minWidth: {
@@ -79,7 +83,9 @@ export default function ListDialog({
             <InscriptionCard
               isVerified
               tick={toCoinBalanceInfo.symbol.toUpperCase()}
-              tokenBalance={toCoinBalanceInfo.balance}
+              tokenBalance={formatNumber(
+                fromDust(toCoinBalanceInfo.balance, toCoinBalanceInfo.decimals).toNumber()
+              )}
             />
           </Card>
         )}
@@ -205,11 +211,7 @@ export default function ListDialog({
       </DialogContent>
 
       <DialogActions>
-        <Button
-          // onClick={closeList}
-          variant="outlined"
-          color="inherit"
-        >
+        <Button onClick={close} variant="outlined" color="inherit">
           Cancel
         </Button>
         <LoadingButton
@@ -257,8 +259,8 @@ export default function ListDialog({
               {
                 async onSuccess(data) {
                   toast.success('List success');
-                  // close();
-                  // refreshBidList();
+                  close();
+                  refreshList();
                 },
                 onError(error) {
                   toast.error(String(error));

@@ -9,7 +9,7 @@ export const paths = {
     assets: `${ROOTS.DASHBOARD}/assets`,
     mint: `${ROOTS.DASHBOARD}/mint`,
     transactions: `${ROOTS.DASHBOARD}/transactions`,
-    trade: `${ROOTS.DASHBOARD}/trade`,
+    trade: `${ROOTS.DASHBOARD}/trade/fsc`,
     apps: `${ROOTS.DASHBOARD}/apps`,
     settings: `${ROOTS.DASHBOARD}/settings`,
     search: `${ROOTS.DASHBOARD}/search`,

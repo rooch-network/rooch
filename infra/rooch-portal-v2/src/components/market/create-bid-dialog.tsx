@@ -1,11 +1,11 @@
+import type { BalanceInfoView } from '@roochnetwork/rooch-sdk';
+
 import { useState } from 'react';
 import BigNumber from 'bignumber.js';
-import PuffLoader from 'react-spinners/PuffLoader';
 import { Args, Transaction } from '@roochnetwork/rooch-sdk';
 import { useCurrentAddress, UseSignAndExecuteTransaction } from '@roochnetwork/rooch-sdk-kit';
 
 import { LoadingButton } from '@mui/lab';
-import { grey } from '@mui/material/colors';
 import {
   Card,
   Stack,
@@ -16,13 +16,14 @@ import {
   DialogTitle,
   DialogActions,
   DialogContent,
+  InputAdornment,
 } from '@mui/material';
 
 import { toDust } from 'src/utils/number';
 
-import { warning, secondary } from 'src/theme/core';
+import { secondary } from 'src/theme/core';
+import { SUI_DECIMALS } from 'src/config/trade';
 import { TESTNET_ORDERBOOK_PACKAGE } from 'src/config/constant';
-import { NETWORK, SUI_DECIMALS, NETWORK_PACKAGE } from 'src/config/trade';
 
 import { toast } from '../snackbar';
 import InscriptionShopCard from './inscription-shop-card';
@@ -31,6 +32,8 @@ export type CreateBidDialogProps = {
   open: boolean;
   tick: string;
   floorPrice: number;
+  fromCoinBalanceInfo: BalanceInfoView;
+  toCoinBalanceInfo: BalanceInfoView;
   refreshBidList: () => Promise<void>;
   close: () => void;
 };
@@ -39,6 +42,8 @@ export default function CreateBidDialog({
   open,
   tick,
   floorPrice,
+  fromCoinBalanceInfo,
+  toCoinBalanceInfo,
   refreshBidList,
   close,
 }: CreateBidDialogProps) {
@@ -76,17 +81,18 @@ export default function CreateBidDialog({
             objectId="#"
             tick={tick}
             isVerified={tick.toLowerCase() === 'move'}
-            amount={bidAmount}
+            amount={toDust(bidAmount, toCoinBalanceInfo.decimals).toString()}
             price={new BigNumber(bidAmount)
               .times(bidUnitPrice)
-              .times(new BigNumber(10).pow(SUI_DECIMALS))
+              .times(new BigNumber(10).pow(fromCoinBalanceInfo.decimals))
               .toString()}
             unitPrice={new BigNumber(bidUnitPrice)
-              .times(new BigNumber(10).pow(SUI_DECIMALS))
+              .times(new BigNumber(10).pow(fromCoinBalanceInfo.decimals))
               .toString()}
-            acc="0"
             selectMode={false}
             type="bid"
+            fromCoinBalanceInfo={fromCoinBalanceInfo}
+            toCoinBalanceInfo={toCoinBalanceInfo}
           />
         </Card>
 
@@ -96,19 +102,20 @@ export default function CreateBidDialog({
           autoFocus
           fullWidth
           type="number"
-          InputProps={
-            {
-              // endAdornment: (
-              //   <InputAdornment position="end">
-              //     SUI / {listItem?.data.content.fields.tick}
-              //   </InputAdornment>
-              // ),
-            }
-          }
+          InputProps={{
+            endAdornment: (
+              <InputAdornment position="end">{toCoinBalanceInfo.symbol}</InputAdornment>
+            ),
+          }}
           margin="dense"
           value={bidAmount}
           onChange={(e) => {
-            setBidAmount(e.target.value);
+            const { value } = e.target;
+            const parts = value.split('.');
+            if (parts.length === 2 && parts[1].length > toCoinBalanceInfo.decimals) {
+              return;
+            }
+            setBidAmount(value);
           }}
         />
 
@@ -117,22 +124,25 @@ export default function CreateBidDialog({
           autoFocus
           fullWidth
           type="number"
-          InputProps={
-            {
-              // endAdornment: (
-              //   <InputAdornment position="end">
-              //     SUI / {listItem?.data.content.fields.tick}
-              //   </InputAdornment>
-              // ),
-            }
-          }
+          InputProps={{
+            endAdornment: (
+              <InputAdornment position="end">
+                {fromCoinBalanceInfo.symbol} / {toCoinBalanceInfo.symbol}
+              </InputAdornment>
+            ),
+          }}
           margin="dense"
           value={bidUnitPrice}
           onChange={(e) => {
-            setBidUnitPrice(e.target.value);
+            const { value } = e.target;
+            const parts = value.split('.');
+            if (parts.length === 2 && parts[1].length > fromCoinBalanceInfo.decimals) {
+              return;
+            }
+            setBidUnitPrice(value);
           }}
         />
-        <Stack
+        {/* <Stack
           sx={{
             mt: 0.5,
             cursor: 'pointer',
@@ -161,7 +171,7 @@ export default function CreateBidDialog({
             </span>{' '}
             SUI/{tick.toUpperCase()}
           </Typography>
-        </Stack>
+        </Stack> */}
         <Stack direction="row" alignItems="center" justifyContent="space-between">
           <Typography
             sx={{
@@ -180,7 +190,7 @@ export default function CreateBidDialog({
                 ? '-'
                 : new BigNumber(bidAmount).times(bidUnitPrice).toFixed(4)}
             </span>{' '}
-            SUI
+            {fromCoinBalanceInfo.symbol}
           </Typography>
           {/* <Typography
             sx={{
@@ -238,11 +248,11 @@ export default function CreateBidDialog({
             const unitPriceInMist = toDust(bidUnitPrice, SUI_DECIMALS);
 
             tx.callFunction({
-              target: `${TESTNET_ORDERBOOK_PACKAGE}::market::create_bid`,
+              target: `${TESTNET_ORDERBOOK_PACKAGE}::market_v2::create_bid`,
               args: [
-                Args.objectId(NETWORK_PACKAGE[NETWORK].tickInfo[tick].MARKET_OBJECT_ID),
+                Args.objectId('0x156d9a5bfa4329f999115b5febde94eed4a37cde10637ad8eed1ba91e89e0bb7'),
                 Args.u64(unitPriceInMist),
-                Args.u256(BigInt(bidAmount)),
+                Args.u256(BigInt(toDust(bidAmount, toCoinBalanceInfo.decimals))),
               ],
               typeArgs: [
                 '0x3::gas_coin::RGas',
