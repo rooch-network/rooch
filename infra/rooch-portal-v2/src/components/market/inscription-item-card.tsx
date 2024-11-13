@@ -10,6 +10,8 @@ import { LoadingButton } from '@mui/lab';
 import { grey } from '@mui/material/colors';
 import { Card, Chip, Stack, Checkbox, CardActions } from '@mui/material';
 
+import { fromDust } from 'src/utils/number';
+
 import { NETWORK, NETWORK_PACKAGE } from 'src/config/trade';
 import { TESTNET_ORDERBOOK_PACKAGE } from 'src/config/constant';
 
@@ -45,8 +47,11 @@ export default function InscriptionItemCard({
   const { mutate: signAndExecuteTransaction, isPending } = UseSignAndExecuteTransaction();
 
   const price = useMemo(
-    () => new BigNumber(item.unit_price).times(item.quantity).toString(),
-    [item.quantity, item.unit_price]
+    () =>
+      new BigNumber(item.unit_price)
+        .times(fromDust(item.quantity, toCoinBalanceInfo.decimals))
+        .toString(),
+    [toCoinBalanceInfo.decimals, item.quantity, item.unit_price]
   );
 
   return (
@@ -87,7 +92,6 @@ export default function InscriptionItemCard({
       <InscriptionShopCard
         objectId={item.order_id}
         tick={tick}
-        // isVerified={tick.toLowerCase() === 'move'}
         isVerified
         amount={item.quantity}
         price={price}
@@ -95,7 +99,6 @@ export default function InscriptionItemCard({
         // acc={item.acc}
         fromCoinBalanceInfo={fromCoinBalanceInfo}
         toCoinBalanceInfo={toCoinBalanceInfo}
-        acc="0"
         seller={item.owner}
         selectMode={selectMode}
         type="list"

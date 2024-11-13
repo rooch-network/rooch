@@ -79,6 +79,9 @@ function toDustBigNumber(val: BigNumber | number | string, decimal: number | big
 
 export function bigNumberToBigInt(val: BigNumber | number | string): bigint {
   const str = toBigNumber(val).toString();
+  if (str === 'NaN') {
+    return BigInt(0);
+  }
   return BigInt(str);
 }
 
@@ -162,3 +165,41 @@ export function currencyNumberFormatter(val: string | number | bigint) {
   }
   return numeral(bn.toNumber()).format(formatString);
 }
+
+export const formatNumber = (num: number, precision: number = 4) => {
+  if (num >= 100) {
+    const fixed = Number(num).toFixed(2);
+    return fixed.replace(/\.?0+$/, '');
+  }
+
+  let numStr = num.toString();
+
+  if (numStr.includes('e')) {
+    const [base, exponent] = numStr.split('e');
+    const exp = parseInt(exponent, 10);
+
+    if (exp < 0) {
+      const abs = Math.abs(exp);
+      numStr = `0.${'0'.repeat(abs - 1)}${base.replace('.', '')}`;
+    } else {
+      const baseWithoutDot = base.replace('.', '');
+      numStr = baseWithoutDot + '0'.repeat(exp - (baseWithoutDot.length - 1));
+    }
+  }
+
+  const result = Number(numStr).toPrecision(precision);
+
+  if (result.includes('e')) {
+    const [base, exponent] = result.split('e');
+    const exp = parseInt(exponent, 10);
+
+    if (exp < 0) {
+      const abs = Math.abs(exp);
+      return `0.${'0'.repeat(abs - 1)}${base.replace('.', '')}`.replace(/\.?0+$/, '');
+    }
+    const baseWithoutDot = base.replace('.', '');
+    return (baseWithoutDot + '0'.repeat(exp - (baseWithoutDot.length - 1))).replace(/\.?0+$/, '');
+  }
+
+  return result.replace(/\.?0+$/, '');
+};

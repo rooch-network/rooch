@@ -1,5 +1,5 @@
 import type { BalanceInfoView } from '@roochnetwork/rooch-sdk';
-import type { BidItem, MarketItem } from 'src/hooks/trade/use-market-data';
+import type { BidItem } from 'src/hooks/trade/use-market-data';
 
 import { useMemo } from 'react';
 import BigNumber from 'bignumber.js';
@@ -9,13 +9,15 @@ import { useCurrentAddress, UseSignAndExecuteTransaction } from '@roochnetwork/r
 import { LoadingButton } from '@mui/lab';
 import { Card, Stack, Button, CardActions } from '@mui/material';
 
+import { fromDust } from 'src/utils/number';
+
 import { NETWORK, NETWORK_PACKAGE } from 'src/config/trade';
 
 import { toast } from '../snackbar';
 import InscriptionShopCard from './inscription-shop-card';
 
 export type InscriptionItemCardProps = {
-  item: MarketItem;
+  item: BidItem;
   tick: string;
   fromCoinBalanceInfo: BalanceInfoView;
   toCoinBalanceInfo: BalanceInfoView;
@@ -35,8 +37,11 @@ export default function InscriptionItemBidCard({
   const { mutate: signAndExecuteTransaction, isPending } = UseSignAndExecuteTransaction();
 
   const price = useMemo(
-    () => new BigNumber(item.unit_price).times(item.quantity).toString(),
-    [item.quantity, item.unit_price]
+    () =>
+      new BigNumber(item.unit_price)
+        .times(fromDust(item.quantity, toCoinBalanceInfo.decimals))
+        .toString(),
+    [toCoinBalanceInfo.decimals, item.quantity, item.unit_price]
   );
 
   return (
@@ -57,9 +62,9 @@ export default function InscriptionItemBidCard({
         tick={tick}
         isVerified
         amount={item.quantity}
+        seller={item.owner}
         price={price}
         unitPrice={item.unit_price}
-        acc="0"
         selectMode={false}
         type="bid"
       />
@@ -115,11 +120,19 @@ export default function InscriptionItemBidCard({
               color="error"
               fullWidth
               size="small"
+              disabled={
+                Boolean(!account?.genRoochAddress().toStr()) ||
+                new BigNumber(toCoinBalanceInfo.balance || 0).isLessThan(item.quantity)
+              }
               onClick={() => {
                 onAcceptBid(item);
               }}
             >
-              Accept Bid
+              {!account?.genRoochAddress().toStr()
+                ? 'Please connect wallet'
+                : new BigNumber(toCoinBalanceInfo.balance || 0).isLessThan(item.quantity)
+                  ? 'Insufficient Balance'
+                  : 'Accept Bid'}
             </Button>
           )}
         </Stack>
