@@ -1,0 +1,50 @@
+---
+title: 'Rooch Network 首期漏洞赏金活动结果公示：共建安全稳健的 Bitcoin 生态'
+author: omnihand
+category: News
+date: 2024/11/13
+description: ''
+image: '/blog/bug-bounty/bounty-result-zh.png'
+---
+
+import PostHeader from '/components/blog/postHeader'
+
+<PostHeader />
+
+![](/blog/bug-bounty/bounty-result-zh.png)
+
+Rooch Network 第一期为时一个月的 Bug Bounty 活动圆满结束啦，感谢所有参与本次活动的开发者和安全专家们的支持与贡献！安全性和稳健性一直是 Rooch Network 的核心支柱，我们致力于为 Bitcoin 生态构建一个安全、可靠的基础。本次活动得到了众多开发者和 CertiK Skyfall 团队的参与及支持，以下为本次漏洞赏金活动的具体结果。
+
+### 漏洞详情
+
+本期共发现高危漏洞 2 件，低危漏洞 5 件，具体如下：
+
+- 高危漏洞：
+    1. [**合约方法`vector<Object<MockObject>>`传入一个不存在的 object 或者其他用户的 object 可以绕过检测。**](https://github.com/rooch-network/rooch/security/advisories/GHSA-2mh8-rvf9-mq47)
+    2. [Object 状态查询接口对于参数 ObjectID 的数量未限制导致大量内存占用进程退出。](https://github.com/rooch-network/rooch/security/advisories/GHSA-q7jw-699g-rrxf)
+- 低危漏洞：
+    1. [Rooch RPC Server 使用不规范的方式使用 **assert_eq!** 宏可能导致进程异常**。](https://github.com/rooch-network/rooch/security/advisories/GHSA-6m8m-m9g8-rj43)** 
+    2. [解析 BitCoin 地址时未处理的异常可能导致进程停止服务。](https://github.com/rooch-network/rooch/security/advisories/GHSA-r68j-jvr6-cxwv)
+    3. [处理交易回滚时异常中断可能导致状态数据不一致。](https://github.com/rooch-network/rooch/security/advisories/GHSA-x8fq-xcrv-qc8r)
+    4. [解析 BitCoin 地址时未检测空地址导致进程异常。](https://github.com/rooch-network/rooch/issues/2247)
+    5. [解析 struct_tag 不正确而逻辑导致进程异常。](https://github.com/rooch-network/rooch/issues/2394)
+
+更多细节（报告 ID 及 Github ID 等）均已在 [Rooch Github](https://github.com/rooch-network/rooch/issues/2850) 公布。
+
+### 奖励发放
+
+根据 [Rooch 官方博客](https://rooch.network/blog/bug-bounty)说明，奖励将在 TGE 时发放。奖励标准如下：
+
+- **高危漏洞**：每件奖励 10,000 U 等值的 Rooch 代币
+- **低危漏洞**：每件奖励 1,000 U 等值的 Rooch 代币
+
+获奖人统计金额如下： 
+
+| Github ID                         | Item                                                | Rewards              |
+|-----------------------------------|-----------------------------------------------------|----------------------|
+| https://github.com/m4sterchain    | Critical Vulnerabilities *1                         | 10,000 U Rooch token |
+| https://github.com/qShirley       | Critical Vulnerabilities *1 +Low Vulnerabilities *1 | 11,000 U Rooch token |
+| https://github.com/nathanogaga118 | Low Vulnerabilities *3                              | 3,000 U Rooch token  |
+| https://github.com/pause125       | Low Vulnerabilities *1                              | 1,000 U Rooch token  |
+
+通过本次活动，Rooch Network 进一步提升了安全性，并展示了与社区共同发展的承诺。特别感谢所有贡献者、CertiK Skyfall 团队以及支持 Rooch Network 的伙伴们。我们将继续优化网络的安全性与性能，并将开放新的漏洞赏金活动，与社区共同打造更加安全的 Bitcoin 生态系统。
