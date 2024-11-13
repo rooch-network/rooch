@@ -14,7 +14,7 @@ use rooch_types::da::segment::{Segment, SegmentID};
 
 // In present, celestia supports for up to 8 MB blocks, starting with 2MB at genesis and upgradeable through onchain governance.
 // The max segment size is set to 1MB for now.
-const DEFAULT_CELESTIA_MAX_SEGMENT_SIZE: usize = 1024 * 1024;
+const DEFAULT_MAX_SEGMENT_SIZE: usize = 1024 * 1024;
 
 pub struct CelestiaBackend {
     max_segment_size: usize,
@@ -43,9 +43,7 @@ impl DABackend for CelestiaBackend {
 
 impl CelestiaBackend {
     pub async fn new(cfg: &DABackendCelestiaConfig) -> anyhow::Result<Self> {
-        let max_segment_size = cfg
-            .max_segment_size
-            .unwrap_or(DEFAULT_CELESTIA_MAX_SEGMENT_SIZE);
+        let max_segment_size = cfg.max_segment_size.unwrap_or(DEFAULT_MAX_SEGMENT_SIZE);
         let client = CelestiaClient::new(cfg.namespace, &cfg.conn, &cfg.auth_token).await?;
 
         Ok(CelestiaBackend {

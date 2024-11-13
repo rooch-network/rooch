@@ -124,19 +124,34 @@ export function SettingsView() {
               <Stack spacing={1.5}>
                 <Stack className="font-medium" direction="row" spacing={0.5}>
                   1. Post the following text to you twitter account
-                  <span className="font-normal text-sm text-gray-400">(Click it to copy)</span>
+                  <span className="font-normal text-sm text-gray-400">(Click it to twitter)</span>
                 </Stack>
                 {address && (
                   <CopyToClipboard
-                    text={`BTC:${address.toStr()} #RoochNetwork`}
-                    onCopy={() => toast.success('Copy success')}
+                    text={`BTC:${address.toStr()} 
+
+Rooch Testnet Campaign #006 is live! Bind your Twitter to earn extra RGas, test Rooch’s lucky draw and red packet features, and unlock the Testnet OG role.
+
+#RoochNetwork #testnet`}
+                    onCopy={() => {
+                      const text = `BTC:${address.toStr()} 
+
+Rooch Testnet Campaign #006 is live! Bind your Twitter to earn extra RGas, test Rooch’s lucky draw and red packet features, and unlock the Testnet OG role.
+
+#RoochNetwork #testnet`;
+                      window.open(
+                        `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`,
+                        '_blank'
+                      );
+                    }}
                   >
-                    <Chip
-                      variant="soft"
-                      color="default"
-                      className="w-fit font-semibold cursor-pointer"
-                      label={`BTC:${address.toStr()} #RoochNetwork`}
-                    />
+                    <Stack className="font-medium cursor-pointer text-wrap bg-gray-200 p-3 rounded-md whitespace-pre-line">
+                      {`BTC:${address.toStr()} 
+
+Rooch Testnet Campaign #006 is live! Bind your Twitter to earn extra RGas, test Rooch’s lucky draw and red packet features, and unlock the Testnet OG role.
+
+#RoochNetwork #testnet`}
+                    </Stack>
                   </CopyToClipboard>
                 )}
               </Stack>

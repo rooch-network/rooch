@@ -72,6 +72,9 @@ pub enum OpenDAScheme {
     // access_key_id
     // secret_access_key
     S3,
+    // Avail App Light Client, main config:
+    // endpoint
+    Avail,
 }
 
 impl Display for OpenDAScheme {
@@ -80,6 +83,7 @@ impl Display for OpenDAScheme {
             OpenDAScheme::Fs => write!(f, "fs"),
             OpenDAScheme::Gcs => write!(f, "gcs"),
             OpenDAScheme::S3 => write!(f, "s3"),
+            OpenDAScheme::Avail => write!(f, "avail"),
         }
     }
 }
@@ -92,6 +96,7 @@ impl FromStr for OpenDAScheme {
             "gcs" => Ok(OpenDAScheme::Gcs),
             "s3" => Ok(OpenDAScheme::S3),
             "fs" => Ok(OpenDAScheme::Fs),
+            "avail" => Ok(OpenDAScheme::Avail),
             _ => Err("open-da scheme no match"),
         }
     }
@@ -104,6 +109,7 @@ impl From<OpenDAScheme> for opendal::Scheme {
             OpenDAScheme::Fs => opendal::Scheme::Fs,
             OpenDAScheme::Gcs => opendal::Scheme::Gcs,
             OpenDAScheme::S3 => opendal::Scheme::S3,
+            OpenDAScheme::Avail => opendal::Scheme::Custom("avail"),
         }
     }
 }

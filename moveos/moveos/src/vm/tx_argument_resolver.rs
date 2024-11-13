@@ -324,22 +324,23 @@ where
                         let mut v = object.id().to_bytes();
                         arg.append(&mut v);
                     }
-                    StructInstantiation(cached_struct_idx, _) => {
-                        let inner_struct_type =
-                            self.get_struct_type(*cached_struct_idx).ok_or_else(|| {
-                                PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT)
-                                    .with_message("Get struct type failed".to_string())
-                                    .finish(location.clone())
-                            })?;
-
-                        let struct_abilities = inner_struct_type.abilities;
-                        if !(struct_abilities.has_key() && struct_abilities.has_store()) {
-                            return Err(PartialVMError::new(StatusCode::TYPE_MISMATCH)
-                                .with_message(
-                                    "The type parameter T in Object<T> lacks either store or key ability."
-                                        .to_string(),
-                                )
-                                .finish(location.clone()));
+                    StructInstantiation(_, instantiation_types) => {
+                        if let Some(Struct(struct_idx)) = instantiation_types.first() {
+                            let first_struct_type =
+                                self.get_struct_type(*struct_idx).ok_or_else(|| {
+                                    PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT)
+                                        .with_message("Get struct type failed".to_string())
+                                        .finish(location.clone())
+                                })?;
+                            let struct_abilities = first_struct_type.abilities;
+                            if !(struct_abilities.has_key() && struct_abilities.has_store()) {
+                                return Err(PartialVMError::new(StatusCode::TYPE_MISMATCH)
+                                        .with_message(
+                                            "The type parameter T in Object<T> lacks either store or key ability."
+                                                .to_string(),
+                                        )
+                                        .finish(location.clone()));
+                            }
                         }
 
                         if object.is_frozen() {

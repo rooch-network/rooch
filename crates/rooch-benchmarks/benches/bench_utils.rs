@@ -55,8 +55,23 @@ pub fn bcs_serialized_size_benchmark(c: &mut Criterion) {
     group.finish();
 }
 
+pub fn anyhow_error_benchmark(c: &mut Criterion) {
+    let mut group = c.benchmark_group("anyhow_error_bench");
+    group.bench_function("anyhow_v1.0.93", |b| {
+        b.iter(|| {
+            let _ = anyhow_new::anyhow!("anyhow error");
+        })
+    });
+    group.bench_function("anyhow_v1.0.76", |b| {
+        b.iter(|| {
+            let _ = anyhow_old::anyhow!("anyhow error");
+        })
+    });
+    group.finish();
+}
+
 criterion_group! {
-    benchs, bcs_serialized_size_benchmark
+    benchs, bcs_serialized_size_benchmark, anyhow_error_benchmark
 }
 
 criterion_main!(benchs);
