@@ -1,0 +1,11 @@
+sets:
+// 创建session
+// bind
+
+ref:
+// 1 oatuh
+// 2 session key 全局kv， addr & id  (session)
+// 3 bot bind addr
+
+// bind addr
+// 跳转浏览器 程序 授权，
