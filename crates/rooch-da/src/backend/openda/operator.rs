@@ -52,7 +52,7 @@ pub(crate) async fn new_operator(
     let operator: Box<dyn Operator> = match scheme {
         OpenDAScheme::Avail => Box::new(AvailClient::new(&config["endpoint"])?),
         _ => {
-            let mut op = opendal::Operator::via_map(Scheme::from(scheme), config)?;
+            let mut op = opendal::Operator::via_iter(Scheme::from(scheme), config)?;
             let max_times = max_retry_times.unwrap_or(DEFAULT_MAX_RETRY_TIMES);
             op = op
                 .layer(RetryLayer::new().with_max_times(max_times))
