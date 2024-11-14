@@ -296,7 +296,7 @@ mod tests {
     fn da_config_from_str() {
         let da_config_str = r#"{"da-backend": {"submit-strategy": "all",
         "backends": [{"open-da": {"scheme": "gcs", "config": {"bucket": "test-bucket", "credential": "test-credential"}}},
-        {"open-da": {"scheme": "celestia", "config": {"endpoint": "test-conn", "auth_token": "test-auth"}, "namespace": "000000000000000000000000000000000000000102030405060708090a"}}]}}"#;
+        {"open-da": {"scheme": "celestia", "config": {"endpoint": "test-conn", "auth_token": "test-auth"}, "namespace": "000000000000000000000000000000000000000102030405060708090a"}},
         {"open-da": {"scheme": "fs", "config": {}}}]}}"#;
 
         let exp_gcs_config = DABackendOpenDAConfig {
@@ -321,6 +321,8 @@ mod tests {
             namespace: Some(
                 "000000000000000000000000000000000000000102030405060708090a".to_string(),
             ),
+            max_segment_size: None,
+        };
         let exp_fs_config = DABackendOpenDAConfig {
             scheme: OpenDAScheme::Fs,
             config: HashMap::new(),
@@ -331,8 +333,8 @@ mod tests {
             da_backend: Some(DABackendConfig {
                 submit_strategy: Some(DAServerSubmitStrategy::All),
                 backends: vec![
-                    DABackendConfigType::Celestia(exp_celestia_config.clone()),
-                    DABackendConfigType::OpenDa(exp_openda_config.clone()),
+                    DABackendConfigType::OpenDa(exp_gcs_config.clone()),
+                    DABackendConfigType::OpenDa(exp_celestia_config.clone()),
                     DABackendConfigType::OpenDa(exp_fs_config.clone()),
                 ],
                 background_submit_interval: None,
