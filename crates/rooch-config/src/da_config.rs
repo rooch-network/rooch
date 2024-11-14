@@ -297,6 +297,7 @@ mod tests {
         let da_config_str = r#"{"da-backend": {"submit-strategy": "all",
         "backends": [{"open-da": {"scheme": "gcs", "config": {"bucket": "test-bucket", "credential": "test-credential"}}},
         {"open-da": {"scheme": "celestia", "config": {"endpoint": "test-conn", "auth_token": "test-auth"}, "namespace": "000000000000000000000000000000000000000102030405060708090a"}}]}}"#;
+        {"open-da": {"scheme": "fs", "config": {}}}]}}"#;
 
         let exp_gcs_config = DABackendOpenDAConfig {
             scheme: OpenDAScheme::Gcs,
@@ -320,14 +321,19 @@ mod tests {
             namespace: Some(
                 "000000000000000000000000000000000000000102030405060708090a".to_string(),
             ),
+        let exp_fs_config = DABackendOpenDAConfig {
+            scheme: OpenDAScheme::Fs,
+            config: HashMap::new(),
+            namespace: None,
             max_segment_size: None,
         };
         let exp_da_config = DAConfig {
             da_backend: Some(DABackendConfig {
                 submit_strategy: Some(DAServerSubmitStrategy::All),
                 backends: vec![
-                    DABackendConfigType::OpenDa(exp_gcs_config.clone()),
-                    DABackendConfigType::OpenDa(exp_celestia_config.clone()),
+                    DABackendConfigType::Celestia(exp_celestia_config.clone()),
+                    DABackendConfigType::OpenDa(exp_openda_config.clone()),
+                    DABackendConfigType::OpenDa(exp_fs_config.clone()),
                 ],
                 background_submit_interval: None,
             }),
@@ -342,6 +348,24 @@ mod tests {
                     "expected: {:?}",
                     serde_json::to_string(&exp_da_config).unwrap()
                 );
+                panic!("Error parsing DA Config: {}", e)
+            }
+        }
+
+        let da_config_str = "{\"da-backend\": {\"backends\": [{\"open-da\": {\"scheme\": \"fs\", \"config\": {}}}]}}";
+        let exp_da_config = DAConfig {
+            da_backend: Some(DABackendConfig {
+                submit_strategy: None,
+                backends: vec![DABackendConfigType::OpenDa(exp_fs_config.clone())],
+                background_submit_interval: None,
+            }),
+            base: None,
+        };
+        match DAConfig::from_str(da_config_str) {
+            Ok(da_config) => {
+                assert_eq!(da_config, exp_da_config);
+            }
+            Err(e) => {
                 panic!("Error parsing DA Config: {}", e)
             }
         }
