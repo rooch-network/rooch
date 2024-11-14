@@ -24,7 +24,7 @@ pub struct ListCommand {
 
     /// Display output as a table instead of JSON
     #[clap(long)]
-    pub table: bool,
+    pub json: bool,
 }
 
 #[async_trait]
