@@ -51,6 +51,20 @@ export const navData = [
    * Tokens
    */
   {
+    subheader: 'Trade',
+    items: [
+      {
+        title: 'Marketplace',
+        path: paths.dashboard.trade,
+        icon: <Iconify icon="solar:star-fall-bold-duotone" />,
+        noAddressRequired: true,
+      },
+    ],
+  },
+  /**
+   * Tokens
+   */
+  {
     subheader: 'Tokens',
     items: [
       {

@@ -208,7 +208,7 @@ rand = "0.8.5"
 rand_core = { version = "0.6.3", default-features = false }
 reqwest = { version = "0.12", features = ["json", "stream"] }
 schemars = { version = "0.8.21", features = ["either"] }
-serde = { version = "1.0.214", features = ["derive", "rc"] }
+serde = { version = "1.0.215", features = ["derive", "rc"] }
 serde_bytes = "0.11.15"
 serde_json = { version = "1.0.132", features = ["preserve_order"] }
 serde_yaml = "0.9"
@@ -303,7 +303,7 @@ axum-extra = "0.9.3"
 axum-server = { version = "0.6.0", default-features = false, features = [
     "tls-rustls",
 ] }
-serenity = { version = "0.12.2", default-features = false, features = [
+serenity = { version = "0.12.3", default-features = false, features = [
     "client",
     "gateway",
     "cache",
@@ -331,7 +331,7 @@ ciborium = "0.2.1"
 pprof = { version = "0.13.0", features = ["flamegraph", "criterion", "cpp", "frame-pointer", "protobuf-codec"] }
 celestia-rpc = { git = "https://github.com/eigerco/celestia-node-rs.git", rev = "129272e8d926b4c7badf27a26dea915323dd6489" }
 celestia-types = { git = "https://github.com/eigerco/celestia-node-rs.git", rev = "129272e8d926b4c7badf27a26dea915323dd6489" }
-opendal = { version = "0.47.3", features = ["services-fs", "services-gcs"] }
+opendal = { version = "0.50.2", features = ["services-fs", "services-gcs"] }
 toml = "0.8.19"
 tabled = "0.16.0"
 csv = "1.3.1"

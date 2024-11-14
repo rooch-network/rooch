@@ -7,6 +7,9 @@ export const ROOCH_NFT_OPERATING_ADDRESS =
 export const ROOCH_MINT_OPERATING_ADDRESS = [
   '0x4938919590105e18ca080eeaf39441400a4687aba0fe44ef00e136027cc54eb7',
 ];
+export const TESTNET_ORDERBOOK_PACKAGE =
+  // '0x1d6f6657fc996008a1e43b8c13805e969a091560d4cea57b1db9f3ce4450d977';
+  '0x701c21bf1c8cd5af8c42983890d8ca55e7a820171b8e744c13f2d9998bf76cc3';
 
 export const FAUCET_TESTNET = 'https://test-faucet.rooch.network/faucet';
 export const FAUCET_MAINNET = 'https://main-faucet.rooch.network/faucet';

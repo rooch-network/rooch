@@ -1,0 +1,50 @@
+---
+title: "Announcing Rooch Network's First Bug Bounty Results: Building a Secure and Robust Bitcoin Ecosystem Together"
+author: omnihand
+category: News
+date: 2024/11/13
+description: ''
+image: '/blog/bug-bounty/bounty-result-en.png'
+---
+
+import PostHeader from '/components/blog/postHeader'
+
+<PostHeader />
+
+![](/blog/bug-bounty/bounty-result-en.png)
+
+Rooch Network’s first one-month Bug Bounty program has successfully concluded. We extend our heartfelt thanks to all the developers and security experts who participated and contributed to this event! Security and robustness have always been core pillars of Rooch Network, and we are dedicated to building a secure and reliable foundation for the Bitcoin ecosystem. This event saw participation and support from numerous developers and the CertiK Skyfall team. Below are the detailed results of the Bug Bounty program.
+
+### Vulnerability Details
+
+A total of 2 high-severity vulnerabilities and 5 low-severity vulnerabilities were discovered, as follows:
+
+- **High-severity vulnerabilities**:
+    1. [**Contract method `vector<Object<MockObject>>` can bypass detection if a non-existent object or an object from another user is passed.**](https://github.com/rooch-network/rooch/security/advisories/GHSA-2mh8-rvf9-mq47)
+    2. [Object state query interface does not limit the number of ObjectID parameters, causing excessive memory usage and process termination.](https://github.com/rooch-network/rooch/security/advisories/GHSA-q7jw-699g-rrxf)
+- **Low-severity vulnerabilities**:
+    1. [Rooch RPC Server improperly uses the **assert_eq!** macro, which may cause process abnormality.](https://github.com/rooch-network/rooch/security/advisories/GHSA-6m8m-m9g8-rj43)
+    2. [Unhandled exceptions during Bitcoin address parsing may cause the service to stop.](https://github.com/rooch-network/rooch/security/advisories/GHSA-r68j-jvr6-cxwv)
+    3. [Exception interruption during transaction rollback may cause inconsistent state data.](https://github.com/rooch-network/rooch/security/advisories/GHSA-x8fq-xcrv-qc8r)
+    4. [Unverified empty Bitcoin address parsing may cause process abnormalities.](https://github.com/rooch-network/rooch/issues/2247)
+    5. [Incorrect parsing of struct_tag logic may cause process abnormality.](https://github.com/rooch-network/rooch/issues/2394)
+
+More details (report IDs, Github IDs, etc.) are available on the [Rooch GitHub](https://github.com/rooch-network/rooch/issues/2850).
+
+### Rewards Distribution
+
+As per the [Rooch official blog](https://rooch.network/blog/bug-bounty), rewards will be distributed during the TGE. The reward criteria are as follows:
+
+- **High-severity vulnerabilities**: 10,000 U equivalent in Rooch tokens for each
+- **Low-severity vulnerabilities**: 1,000 U equivalent in Rooch tokens for each
+
+The reward distribution is as follows:
+
+| Github ID                         | Item                                                 | Rewards              |
+|-----------------------------------|------------------------------------------------------|----------------------|
+| https://github.com/m4sterchain    | Critical Vulnerabilities *1                          | 10,000 U Rooch token |
+| https://github.com/qShirley       | Critical Vulnerabilities *1 + Low Vulnerabilities *1 | 11,000 U Rooch token |
+| https://github.com/nathanogaga118 | Low Vulnerabilities *3                               | 3,000 U Rooch token  |
+| https://github.com/pause125       | Low Vulnerabilities *1                               | 1,000 U Rooch token  |
+
+Through this event, Rooch Network has further enhanced its security and demonstrated its commitment to developing together with the community. Special thanks to all contributors, the CertiK Skyfall team, and partners supporting Rooch Network. We will continue to optimize the network’s security and performance and will open new bug bounty programs to work with the community in building a more secure Bitcoin ecosystem！
