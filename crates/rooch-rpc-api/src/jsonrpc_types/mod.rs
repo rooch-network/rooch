@@ -20,6 +20,7 @@ mod transaction_argument_view;
 pub mod account_view;
 pub mod event_view;
 pub mod export_view;
+pub mod json_to_table_display;
 pub mod transaction_view;
 
 pub mod address;

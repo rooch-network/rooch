@@ -36,6 +36,9 @@ pub struct TransferCommand {
 
     #[clap(flatten)]
     context: WalletContextOptions,
+
+    #[clap(long)]
+    pub json: bool,
 }
 
 #[async_trait]

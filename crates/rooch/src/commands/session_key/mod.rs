@@ -26,16 +26,16 @@ impl CommandAction<String> for SessionKey {
                 serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
             }),
             SessionKeyCommand::List(list) => {
-                let display_as_table = list.table;
+                let display_as_json = list.json;
                 let json_output = list.execute_serialized().await?;
                 let json_value: Value =
                     serde_json::from_str(&json_output).expect("Failed to parse JSON");
 
-                if display_as_table {
+                if display_as_json {
+                    Ok(json_output)
+                } else {
                     display_json_as_table(&json_value);
                     Ok(String::new())
-                } else {
-                    Ok(json_output)
                 }
             }
         }
