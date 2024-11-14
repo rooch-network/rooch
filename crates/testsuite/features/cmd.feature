@@ -188,6 +188,34 @@ Feature: Rooch CLI integration tests
     Then stop the server
 
   @serial
+  Scenario: sync_states_filter
+      Given a server for sync_states_filter
+      # First publish and create the object counter
+      Then cmd: "move publish -p ../../examples/quick_start_object_counter --named-addresses quick_start_object_counter=default --json"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+      
+      # Get the Counter object ID from event
+      Then cmd: "event get-events-by-event-handle -t default::quick_start_object_counter::UserCounterCreatedEvent"
+      Then assert: "{{$.event[-1].data[0].event_id.event_seq}} == 0"
+      
+      # Increase counter to generate state change
+      Then cmd: "move run --function default::quick_start_object_counter::increase --args object:{{$.event[-1].data[0].decoded_event_data.value.id}} --json"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+      
+      # because the indexer is async update, so sleep 2 seconds to wait indexer update.
+      Then sleep: "2"
+      
+      # Test sync_states with object_id filter - should get changes for the counter object
+      Then cmd: "rpc request --method rooch_syncStates --params '[{\"object_i_d\":\"{{$.event[-1].data[0].decoded_event_data.value.id}}\"}, null, \"10\", {\"descending\":false}]' --json"
+      Then assert: "'{{$.rpc[-1].data[0].state_change_set.changes[0].metadata.id}}' == '{{$.event[-1].data[0].decoded_event_data.value.id}}'"
+      
+      # Test with a non-existent object ID - should return empty result
+      Then cmd: "rpc request --method rooch_syncStates --params '[{\"object_i_d\":\"0x1234567890123456789012345678901234567890123456789012345678901234\"}, null, \"10\", {\"descending\":false}]' --json"
+      Then assert: "'{{$.rpc[-1].data}}' == '[]'"
+
+      Then stop the server
+
+  @serial
     Scenario: kv_store example
       Given a server for kv_store
       Then cmd: "move publish -p ../../examples/kv_store  --named-addresses rooch_examples=default --json"
