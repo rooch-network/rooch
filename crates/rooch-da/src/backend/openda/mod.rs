@@ -105,7 +105,7 @@ async fn new_operator(
             )
         }
         _ => {
-            let mut op = opendal::Operator::via_map(Scheme::from(scheme), config)?;
+            let mut op = opendal::Operator::via_iter(Scheme::from(scheme), config)?;
             op = op
                 .layer(RetryLayer::new().with_max_times(max_retries))
                 .layer(LoggingLayer::default());
