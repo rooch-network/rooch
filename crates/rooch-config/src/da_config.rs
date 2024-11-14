@@ -3,7 +3,6 @@
 
 use crate::config::Config;
 use crate::{retrieve_map_config_value, BaseConfig, MapConfigValueSource};
-use celestia_types::nmt::Namespace;
 use hex::encode;
 use moveos_types::h256::sha2_256_of;
 use once_cell::sync::Lazy;
@@ -75,6 +74,10 @@ pub enum OpenDAScheme {
     // Avail App Light Client, main config:
     // endpoint
     Avail,
+    // Celestia, main config:
+    // endpoint
+    // Option<auth_token>
+    Celestia,
 }
 
 impl Display for OpenDAScheme {
@@ -84,6 +87,7 @@ impl Display for OpenDAScheme {
             OpenDAScheme::Gcs => write!(f, "gcs"),
             OpenDAScheme::S3 => write!(f, "s3"),
             OpenDAScheme::Avail => write!(f, "avail"),
+            OpenDAScheme::Celestia => write!(f, "celestia"),
         }
     }
 }
@@ -97,6 +101,7 @@ impl FromStr for OpenDAScheme {
             "s3" => Ok(OpenDAScheme::S3),
             "fs" => Ok(OpenDAScheme::Fs),
             "avail" => Ok(OpenDAScheme::Avail),
+            "celestia" => Ok(OpenDAScheme::Celestia),
             _ => Err("open-da scheme no match"),
         }
     }
@@ -110,6 +115,7 @@ impl From<OpenDAScheme> for opendal::Scheme {
             OpenDAScheme::Gcs => opendal::Scheme::Gcs,
             OpenDAScheme::S3 => opendal::Scheme::S3,
             OpenDAScheme::Avail => opendal::Scheme::Custom("avail"),
+            OpenDAScheme::Celestia => opendal::Scheme::Custom("celestia"),
         }
     }
 }
@@ -157,6 +163,7 @@ impl DAConfig {
             let backends = &mut backend_config.backends;
 
             for backend in backends {
+                #[allow(irrefutable_let_patterns)]
                 if let DABackendConfigType::OpenDa(open_da_config) = backend {
                     if matches!(open_da_config.scheme, OpenDAScheme::Fs) {
                         if let Some(fs_str) = default_fs_root.to_str() {
@@ -247,26 +254,7 @@ impl DABackendConfig {
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum DABackendConfigType {
-    Celestia(DABackendCelestiaConfig),
     OpenDa(DABackendOpenDAConfig),
-}
-
-#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
-#[serde(rename_all = "kebab-case")]
-#[serde(deny_unknown_fields)]
-/// Celestia provides ability to access Celestia node
-pub struct DABackendCelestiaConfig {
-    /// celestia namespace
-    pub namespace: Namespace,
-    /// celestia node connection
-    pub conn: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    /// celestia node auth token
-    pub auth_token: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    /// max segment size, striking a balance between throughput and the constraints on blob size in celestia network.
-    /// Set at crates/rooch-da/src/backend/celestia if None.
-    pub max_segment_size: Option<usize>,
 }
 
 #[derive(Clone, Default, Debug, PartialEq, Deserialize, Serialize)]
@@ -280,9 +268,12 @@ pub struct DABackendOpenDAConfig {
     /// specifies the configuration of the storage service. 'gcs' with corresponding GCS server configuration, 's3' with corresponding S3 server configuration, etc.
     pub config: HashMap<String, String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    /// for fs backend:
     /// <namespace>/<segment_id> is the path to store the segment.
     /// If not set, the <derive_genesis_namespace>/<segment_id> is the full path
     /// If root is set in config, the <root>/<namespace>/<segment_id> is the full path
+    /// for celestia:
+    /// must be existed, it's Namespace in hex
     pub namespace: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// max segment size.
@@ -300,20 +291,14 @@ pub fn derive_genesis_namespace(genesis: &[u8]) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use celestia_types::nmt::Namespace;
 
     #[test]
     fn da_config_from_str() {
         let da_config_str = r#"{"da-backend": {"submit-strategy": "all",
-        "backends": [{"celestia": {"namespace": "//////////////////////////////////////8=", "conn": "test-conn", "auth-token": "test-token", "max-segment-size": 2048}},
-        {"open-da": {"scheme": "gcs", "config": {"bucket": "test-bucket", "credential": "test-credential"}}}]}}"#;
-        let exp_celestia_config = DABackendCelestiaConfig {
-            namespace: Namespace::PARITY_SHARE,
-            conn: "test-conn".to_string(),
-            auth_token: Some("test-token".to_string()),
-            max_segment_size: Some(2048),
-        };
-        let exp_openda_config = DABackendOpenDAConfig {
+        "backends": [{"open-da": {"scheme": "gcs", "config": {"bucket": "test-bucket", "credential": "test-credential"}}},
+        {"open-da": {"scheme": "celestia", "config": {"endpoint": "test-conn", "auth_token": "test-auth"}, "namespace": "000000000000000000000000000000000000000102030405060708090a"}}]}}"#;
+
+        let exp_gcs_config = DABackendOpenDAConfig {
             scheme: OpenDAScheme::Gcs,
             config: vec![
                 ("bucket".to_string(), "test-bucket".to_string()),
@@ -324,12 +309,25 @@ mod tests {
             namespace: None,
             max_segment_size: None,
         };
+        let exp_celestia_config = DABackendOpenDAConfig {
+            scheme: OpenDAScheme::Celestia,
+            config: vec![
+                ("endpoint".to_string(), "test-conn".to_string()),
+                ("auth_token".to_string(), "test-auth".to_string()),
+            ]
+            .into_iter()
+            .collect(),
+            namespace: Some(
+                "000000000000000000000000000000000000000102030405060708090a".to_string(),
+            ),
+            max_segment_size: None,
+        };
         let exp_da_config = DAConfig {
             da_backend: Some(DABackendConfig {
                 submit_strategy: Some(DAServerSubmitStrategy::All),
                 backends: vec![
-                    DABackendConfigType::Celestia(exp_celestia_config.clone()),
-                    DABackendConfigType::OpenDa(exp_openda_config.clone()),
+                    DABackendConfigType::OpenDa(exp_gcs_config.clone()),
+                    DABackendConfigType::OpenDa(exp_celestia_config.clone()),
                 ],
                 background_submit_interval: None,
             }),
@@ -340,6 +338,10 @@ mod tests {
                 assert_eq!(da_config, exp_da_config);
             }
             Err(e) => {
+                println!(
+                    "expected: {:?}",
+                    serde_json::to_string(&exp_da_config).unwrap()
+                );
                 panic!("Error parsing DA Config: {}", e)
             }
         }

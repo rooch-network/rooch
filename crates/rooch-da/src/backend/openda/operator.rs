@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::backend::openda::avail::DEFAULT_AVAIL_MAX_SEGMENT_SIZE;
+use crate::backend::openda::celestia::DEFAULT_CELESTIA_MAX_SEGMENT_SIZE;
 use anyhow::anyhow;
 use async_trait::async_trait;
 use rooch_config::da_config::{DABackendOpenDAConfig, OpenDAScheme};
@@ -22,10 +23,12 @@ pub(crate) trait Operator: Sync + Send {
     ) -> anyhow::Result<()>;
 }
 
+#[derive(Clone)]
 pub(crate) struct OperatorConfig {
-    pub(crate) prefix: String,
+    pub(crate) namespace: String,
     pub(crate) scheme: OpenDAScheme,
     pub(crate) max_segment_size: usize,
+    pub(crate) max_retries: usize,
 }
 
 impl OperatorConfig {
@@ -34,13 +37,20 @@ impl OperatorConfig {
         genesis_namespace: String,
     ) -> anyhow::Result<(Self, HashMap<String, String>)> {
         let backend_config = cfg.clone();
-        let prefix = backend_config.namespace.unwrap_or(genesis_namespace);
         let scheme = backend_config.scheme;
+        if scheme == OpenDAScheme::Celestia && backend_config.namespace.is_none() {
+            return Err(anyhow!(
+                "namespace must be provided for scheme {:?}",
+                scheme
+            ));
+        }
+        let namespace = backend_config.namespace.unwrap_or(genesis_namespace);
         let mut map_config = backend_config.config;
         check_map_config(scheme.clone(), &mut map_config)?;
 
         let default_max_segment_size = match scheme {
             OpenDAScheme::Avail => DEFAULT_AVAIL_MAX_SEGMENT_SIZE,
+            OpenDAScheme::Celestia => DEFAULT_CELESTIA_MAX_SEGMENT_SIZE,
             _ => DEFAULT_MAX_SEGMENT_SIZE,
         };
 
@@ -48,9 +58,11 @@ impl OperatorConfig {
 
         Ok((
             OperatorConfig {
-                prefix,
+                namespace,
                 scheme,
                 max_segment_size,
+                // TODO add max_retries to config
+                max_retries: DEFAULT_MAX_RETRY_TIMES,
             },
             map_config,
         ))
@@ -107,6 +119,9 @@ fn check_map_config(
             }
         }
         OpenDAScheme::Avail => check_config_exist(OpenDAScheme::Avail, map_config, "endpoint"),
+        OpenDAScheme::Celestia => {
+            check_config_exist(OpenDAScheme::Celestia, map_config, "endpoint")
+        }
         OpenDAScheme::S3 => {
             todo!("s3 backend is not implemented yet");
         }

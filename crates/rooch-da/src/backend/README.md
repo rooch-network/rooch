@@ -12,6 +12,6 @@ Implementations of DA backend.
 
 For new added backend:
 
-If it could satisfy open-da spec, it should be added to `open-da` folder as a module. If not, it should be added to
+If it could satisfy open-da config, it should be added to `open-da` folder as a module. If not, it should be added to
 `backend` folder directly.
 

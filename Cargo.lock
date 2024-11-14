@@ -9469,7 +9469,6 @@ name = "rooch-config"
 version = "0.7.6"
 dependencies = [
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
- "celestia-types",
  "clap 4.5.17",
  "dirs",
  "dirs-next",
@@ -9506,6 +9505,7 @@ dependencies = [
  "celestia-rpc",
  "celestia-types",
  "coerce",
+ "hex",
  "moveos-types",
  "opendal",
  "reqwest 0.12.7",

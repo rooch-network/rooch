@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::actor::messages::{GetServerStatusMessage, PutDABatchMessage};
-use crate::backend::celestia::CelestiaBackend;
 use crate::backend::openda::OpenDABackend;
 use crate::backend::DABackend;
 use anyhow::anyhow;
@@ -62,12 +61,7 @@ impl DAServerActor {
             submit_threshold = backend_config.calculate_submit_threshold();
 
             for backend_type in &backend_config.backends {
-                if let DABackendConfigType::Celestia(celestia_config) = backend_type {
-                    let backend = CelestiaBackend::new(celestia_config).await?;
-                    backends.push(Arc::new(backend));
-                    backend_names.push("celestia".to_string());
-                    act_backends += 1;
-                }
+                #[allow(irrefutable_let_patterns)]
                 if let DABackendConfigType::OpenDa(openda_config) = backend_type {
                     let backend =
                         OpenDABackend::new(openda_config, genesis_namespace.clone()).await?;

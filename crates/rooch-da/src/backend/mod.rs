@@ -4,7 +4,6 @@
 use async_trait::async_trait;
 use rooch_types::da::batch::DABatch;
 
-pub mod celestia;
 pub mod openda;
 
 #[async_trait]
