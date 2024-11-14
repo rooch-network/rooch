@@ -24,6 +24,15 @@ export interface AnnotatedFunctionReturnValueView {
   decoded_value: AnnotatedMoveValueView
   value: FunctionReturnValueView
 }
+export interface AnnotatedMoveStructVectorView {
+  /** alilities of each element */
+  abilities: number
+  /** field of each element */
+  field: string[]
+  /** type of each element */
+  type: string
+  value: AnnotatedMoveValueView[][]
+}
 export interface AnnotatedMoveStructView {
   abilities: number
   type: string
@@ -38,6 +47,7 @@ export type AnnotatedMoveValueView =
   | boolean
   | string
   | AnnotatedMoveValueView[]
+  | AnnotatedMoveStructVectorView
   | string
   | AnnotatedMoveStructView
   | SpecificStructView
@@ -60,6 +70,35 @@ export interface BitcoinStatus {
 export interface BlockHeightHashView {
   block_hash: string
   block_height: string
+}
+/** DA server basic status */
+export interface DAServerStatus {
+  /** The available backends names */
+  avail_backends: string[]
+  /**
+   * The last available block number, may little behind the last block number. [0,
+   * last_avail_block_number] blocks were confirmed by DA backend. If meet error in background submitter job,
+   * it may be far behind the last block number.
+   */
+  last_avail_block_number?: number | null
+  /**
+   * The last available block number updated time(Unix timestamp) If both of last_avail_block_number and
+   * last_avail_tx_order are not updated for a long time, it may indicate that the background submitter
+   * job is not working: 1. DA backends collapse 2. RoochStore is not consistent (cannot get tx from DB
+   * by tx order)
+   */
+  last_avail_block_update_time?: string | null
+  /** The last available tx order */
+  last_avail_tx_order?: string | null
+  /** The last block number */
+  last_block_number?: number | null
+  /**
+   * The last block number updated time(Unix timestamp in seconds) Should be closed to request time if
+   * there were new blocks. None if no blocks were received after server start.
+   */
+  last_block_update_time?: string | null
+  /** The last tx order in the last block */
+  last_tx_order?: string | null
 }
 export interface DisplayFieldsView {
   fields: {
@@ -545,6 +584,8 @@ export interface StateOptions {
 export interface Status {
   /** The status of the Bitcoin chain */
   bitcoin_status: BitcoinStatus
+  /** The status of the DA service */
+  da_server_status: DAServerStatus
   /** The status of the Rooch chain */
   rooch_status: RoochStatus
   /** The status of the rpc service */
