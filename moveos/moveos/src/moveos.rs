@@ -275,7 +275,7 @@ impl MoveOS {
 
         let feature_resolver = RootObjectResolver::new(root.clone(), &self.db);
         let feature_store_opt = load_feature_store_object(&feature_resolver);
-        let mut has_io_tired_write_feature = match feature_store_opt {
+        let has_io_tired_write_feature = match feature_store_opt {
             None => false,
             Some(feature_store) => feature_store.has_value_size_gas_feature(),
         };
@@ -394,11 +394,9 @@ impl MoveOS {
             }
         };
 
-        let is_system_call = tx_context.is_system_call();
-
         let feature_resolver = RootObjectResolver::new(root.clone(), &self.db);
         let feature_store_opt = load_feature_store_object(&feature_resolver);
-        let mut has_io_tired_write_feature = match feature_store_opt {
+        let has_io_tired_write_feature = match feature_store_opt {
             None => false,
             Some(feature_store) => feature_store.has_value_size_gas_feature(),
         };
