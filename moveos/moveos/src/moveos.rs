@@ -27,7 +27,7 @@ use moveos_store::config_store::ConfigDBStore;
 use moveos_store::event_store::EventDBStore;
 use moveos_store::state_store::statedb::StateDBStore;
 use moveos_store::transaction_store::TransactionDBStore;
-use moveos_store::MoveOSStore;
+use moveos_store::{load_feature_store_object, MoveOSStore};
 use moveos_types::addresses::MOVEOS_STD_ADDRESS;
 use moveos_types::function_return_value::FunctionResult;
 use moveos_types::moveos_std::gas_schedule::{GasScheduleConfig, GasScheduleUpdated};
@@ -235,7 +235,7 @@ impl MoveOS {
     pub fn verify(&self, tx: MoveOSTransaction) -> VMResult<VerifiedMoveOSTransaction> {
         let MoveOSTransaction { root, ctx, action } = tx;
         let cost_table = self.load_cost_table(&root)?;
-        let mut gas_meter = MoveOSGasMeter::new(cost_table, ctx.max_gas_amount);
+        let mut gas_meter = MoveOSGasMeter::new(cost_table, ctx.max_gas_amount, false);
         gas_meter.set_metering(false);
 
         let resolver = RootObjectResolver::new(root.clone(), &self.db);
@@ -273,8 +273,20 @@ impl MoveOS {
         // So we keep a backup here, and then insert to the TxContext kv store when session respawed.
         let system_env = ctx.map.clone();
 
+        let feature_resolver = RootObjectResolver::new(root.clone(), &self.db);
+        let feature_store_opt = load_feature_store_object(&feature_resolver);
+        let mut has_io_tired_write_feature = match feature_store_opt {
+            None => false,
+            Some(feature_store) => feature_store.has_value_size_gas_feature(),
+        };
+
+        if is_system_call {
+            has_io_tired_write_feature = false;
+        }
+
         let cost_table = self.load_cost_table(&root)?;
-        let mut gas_meter = MoveOSGasMeter::new(cost_table, ctx.max_gas_amount);
+        let mut gas_meter =
+            MoveOSGasMeter::new(cost_table, ctx.max_gas_amount, has_io_tired_write_feature);
         gas_meter.charge_io_write(ctx.tx_size)?;
 
         let resolver = RootObjectResolver::new(root, &self.db);
@@ -385,7 +397,25 @@ impl MoveOS {
                 return FunctionResult::err(e);
             }
         };
-        let mut gas_meter = MoveOSGasMeter::new(cost_table, tx_context.max_gas_amount);
+
+        let is_system_call = tx_context.is_system_call();
+
+        let feature_resolver = RootObjectResolver::new(root.clone(), &self.db);
+        let feature_store_opt = load_feature_store_object(&feature_resolver);
+        let mut has_io_tired_write_feature = match feature_store_opt {
+            None => false,
+            Some(feature_store) => feature_store.has_value_size_gas_feature(),
+        };
+
+        if is_system_call {
+            has_io_tired_write_feature = false;
+        }
+
+        let mut gas_meter = MoveOSGasMeter::new(
+            cost_table,
+            tx_context.max_gas_amount,
+            has_io_tired_write_feature,
+        );
         gas_meter.set_metering(true);
         let resolver = RootObjectResolver::new(root, &self.db);
         let mut session = self

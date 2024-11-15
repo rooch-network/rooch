@@ -346,7 +346,7 @@ fn call_script_with_args_ty_args_signers(
     let remote_view = RemoteStore::new();
     let ctx = TxContext::random_for_testing_only();
     let cost_table = initial_cost_schedule(None);
-    let mut gas_meter = MoveOSGasMeter::new(cost_table, ctx.max_gas_amount);
+    let mut gas_meter = MoveOSGasMeter::new(cost_table, ctx.max_gas_amount, false);
     gas_meter.set_metering(false);
     let mut session = moveos_vm.new_session(&remote_view, ctx, gas_meter);
 
@@ -376,7 +376,7 @@ fn call_script_function_with_args_ty_args_signers(
     remote_view.add_module(module);
     let ctx = TxContext::random_for_testing_only();
     let cost_table = initial_cost_schedule(None);
-    let mut gas_meter = MoveOSGasMeter::new(cost_table, ctx.max_gas_amount);
+    let mut gas_meter = MoveOSGasMeter::new(cost_table, ctx.max_gas_amount, false);
     gas_meter.set_metering(false);
     let mut session: crate::vm::moveos_vm::MoveOSSession<'_, '_, RemoteStore, MoveOSGasMeter> =
         moveos_vm.new_session(&remote_view, ctx, gas_meter);
@@ -856,7 +856,7 @@ fn call_missing_item() {
     let mut remote_view = RemoteStore::new();
     let ctx = TxContext::random_for_testing_only();
     let cost_table = initial_cost_schedule(None);
-    let mut gas_meter = MoveOSGasMeter::new(cost_table, ctx.max_gas_amount);
+    let mut gas_meter = MoveOSGasMeter::new(cost_table, ctx.max_gas_amount, false);
     gas_meter.set_metering(false);
     let mut session = moveos_vm.new_session(&remote_view, ctx.clone(), gas_meter);
     let func_call = FunctionCall::new(
@@ -875,7 +875,7 @@ fn call_missing_item() {
     // missing function
     remote_view.add_module(module);
     let cost_table = initial_cost_schedule(None);
-    let mut gas_meter = MoveOSGasMeter::new(cost_table, ctx.max_gas_amount);
+    let mut gas_meter = MoveOSGasMeter::new(cost_table, ctx.max_gas_amount, false);
     gas_meter.set_metering(false);
     let mut session = moveos_vm.new_session(&remote_view, ctx, gas_meter);
     let error = session
