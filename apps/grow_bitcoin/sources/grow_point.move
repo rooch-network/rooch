@@ -1,4 +1,4 @@
-module grow_bitcoin::grow_point_v2 {
+module grow_bitcoin::grow_point_v3 {
 
     use std::option;
     use std::string;
@@ -13,7 +13,7 @@ module grow_bitcoin::grow_point_v2 {
     use moveos_std::account;
     use rooch_framework::coin;
 
-    friend grow_bitcoin::grow_information_v2;
+    friend grow_bitcoin::grow_information_v3;
 
     /// The `Rooch Grow Point`
     struct RGP has key {}

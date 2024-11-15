@@ -1,4 +1,4 @@
-module grow_bitcoin::grow_information_v2 {
+module grow_bitcoin::grow_information_v3 {
 
     use std::string::String;
     use std::vector::length;
@@ -6,7 +6,7 @@ module grow_bitcoin::grow_information_v2 {
     use moveos_std::timestamp::now_milliseconds;
     use moveos_std::event::emit;
     use moveos_std::tx_context::sender;
-    use grow_bitcoin::grow_point_v2::mint_point_box;
+    use grow_bitcoin::grow_point_v3::mint_point_box;
     use rooch_framework::coin;
     use rooch_framework::coin::Coin;
     use rooch_framework::coin_store;
@@ -15,7 +15,7 @@ module grow_bitcoin::grow_information_v2 {
     use moveos_std::object;
     use moveos_std::table::Table;
     use grow_bitcoin::grow_bitcoin::GROW;
-    use moveos_std::object::{Object, ObjectID, to_shared};
+    use moveos_std::object::Object;
     use rooch_framework::coin_store::CoinStore;
 
 
@@ -26,6 +26,7 @@ module grow_bitcoin::grow_information_v2 {
     struct GrowProject has key, store {
         id: String,
         vote_store: Object<CoinStore<GROW>>,
+        vote_value: u256,
         vote_detail: Table<address, u256>,
         metadata: GrowMeta
     }
@@ -36,7 +37,7 @@ module grow_bitcoin::grow_information_v2 {
     }
 
     struct GrowProjectList has key, store {
-        project_list: Table<String, ObjectID>,
+        project_list: Table<String, GrowProject>,
         is_open: bool
     }
 
@@ -54,26 +55,24 @@ module grow_bitcoin::grow_information_v2 {
         object::to_shared(grow_project_list_obj)
     }
 
-    public entry fun new_project(_admin: &mut Object<AdminCap>, grow_project_list_obj: &mut Object<GrowProjectList>, id: String) {
+    public entry fun new_project(grow_project_list_obj: &mut Object<GrowProjectList>, id: String, _admin: &mut Object<AdminCap>) {
         let grow_project_list = object::borrow_mut(grow_project_list_obj);
         assert!(!table::contains(&grow_project_list.project_list, id), ErrorProjectAleardyExist);
-        let new_grow_project = object::new_with_id(id, GrowProject{
+        table::add(&mut grow_project_list.project_list, id, GrowProject{
             id,
             vote_store: coin_store::create_coin_store(),
+            vote_value: 0,
             vote_detail: table::new(),
             metadata: GrowMeta{
                 key: vector[],
                 value: vector[]
             }
         });
-        let grow_project_id = object::id(&new_grow_project);
-        table::add(&mut grow_project_list.project_list, id, grow_project_id);
-        to_shared(new_grow_project)
     }
 
-    public entry fun update_project_meta(_admin: &mut Object<AdminCap>, grow_project_obj: &mut Object<GrowProject>, key: vector<String>, value: vector<String>){
+    public entry fun update_project_meta(grow_project_list_obj: &mut Object<GrowProjectList>, id: String, key: vector<String>, value: vector<String>, _admin: &mut Object<AdminCap>){
         assert!(length(&key) == length(&value), ErrorGrowMetaLength);
-        let grow_project = object::borrow_mut(grow_project_obj);
+        let grow_project = borrow_mut_grow_project(grow_project_list_obj, id);
         grow_project.metadata = GrowMeta {
             key,
             value
@@ -82,24 +81,25 @@ module grow_bitcoin::grow_information_v2 {
 
     public entry fun vote_entry(
         account: &signer,
-        grow_project_obj: &mut Object<GrowProject>,
-        grow_project_list_obj: &Object<GrowProjectList>,
+        grow_project_list_obj: &mut Object<GrowProjectList>,
+        id: String,
         grow_value: u256
     ){
         let coin = account_coin_store::withdraw<GROW>(account, grow_value);
-        vote(grow_project_obj, grow_project_list_obj, coin)
+        vote(grow_project_list_obj, id, coin)
     }
 
-    public fun vote(grow_project_obj: &mut Object<GrowProject>, grow_project_list_obj: &Object<GrowProjectList>, coin: Coin<GROW>) {
+    public fun vote(grow_project_list_obj: &mut Object<GrowProjectList>, id: String, coin: Coin<GROW>) {
         let coin_value = coin::value(&coin);
-        let grow_project = object::borrow_mut(grow_project_obj);
         assert!(object::borrow(grow_project_list_obj).is_open, ErrorVoteNotOpen);
+        let grow_project = borrow_mut_grow_project(grow_project_list_obj, id);
         coin_store::deposit(&mut grow_project.vote_store, coin);
         if (!table::contains(&grow_project.vote_detail, sender())){
             table::add(&mut grow_project.vote_detail, sender(), coin_value)
         }else {
             *table::borrow_mut(&mut grow_project.vote_detail, sender()) + coin_value;
         };
+        grow_project.vote_value = coin_store::balance(&grow_project.vote_store);
         emit(VoteEvent{
             id: grow_project.id,
             value: coin_value,
@@ -118,9 +118,13 @@ module grow_bitcoin::grow_information_v2 {
         object::borrow_mut(grow_project_list_obj).is_open = false
     }
 
-    public fun borrow_grow_project(id: String): &GrowProject {
-        let object_id = object::custom_object_id<String, GrowProject>(id);
-        let proj_obj = object::borrow_object(object_id);
-        object::borrow(proj_obj)
+    public fun borrow_grow_project(grow_project_list_obj: &Object<GrowProjectList>, id: String): &GrowProject {
+        let grow_project_list = object::borrow(grow_project_list_obj);
+        table::borrow(&grow_project_list.project_list, id)
+    }
+
+    fun borrow_mut_grow_project(grow_project_list_obj: &mut Object<GrowProjectList>, id: String): &mut GrowProject {
+        let grow_project_list = object::borrow_mut(grow_project_list_obj);
+        table::borrow_mut(&mut grow_project_list.project_list, id)
     }
 }
