@@ -1,4 +1,4 @@
-module grow_bitcoin::grow_information {
+module grow_bitcoin::grow_information_v2 {
 
     use std::string::String;
     use std::vector::length;
@@ -6,7 +6,7 @@ module grow_bitcoin::grow_information {
     use moveos_std::timestamp::now_milliseconds;
     use moveos_std::event::emit;
     use moveos_std::tx_context::sender;
-    use grow_bitcoin::grow_point::mint_point_box;
+    use grow_bitcoin::grow_point_v2::mint_point_box;
     use rooch_framework::coin;
     use rooch_framework::coin::Coin;
     use rooch_framework::coin_store;
@@ -24,7 +24,7 @@ module grow_bitcoin::grow_information {
     const ErrorVoteNotOpen:u64 = 3;
 
     struct GrowProject has key, store {
-        id: u64,
+        id: String,
         vote_store: Object<CoinStore<GROW>>,
         vote_detail: Table<address, u256>,
         metadata: GrowMeta
@@ -36,12 +36,12 @@ module grow_bitcoin::grow_information {
     }
 
     struct GrowProjectList has key, store {
-        project_list: Table<u64, ObjectID>,
+        project_list: Table<String, ObjectID>,
         is_open: bool
     }
 
     struct VoteEvent has copy, store, drop {
-        id: u64,
+        id: String,
         value: u256,
         timestamp: u64
     }
@@ -54,7 +54,7 @@ module grow_bitcoin::grow_information {
         object::to_shared(grow_project_list_obj)
     }
 
-    public entry fun new_project(_admin: &mut Object<AdminCap>, grow_project_list_obj: &mut Object<GrowProjectList>, id: u64) {
+    public entry fun new_project(_admin: &mut Object<AdminCap>, grow_project_list_obj: &mut Object<GrowProjectList>, id: String) {
         let grow_project_list = object::borrow_mut(grow_project_list_obj);
         assert!(!table::contains(&grow_project_list.project_list, id), ErrorProjectAleardyExist);
         let new_grow_project = object::new(GrowProject{
@@ -118,7 +118,7 @@ module grow_bitcoin::grow_information {
         object::borrow_mut(grow_project_list_obj).is_open = false
     }
 
-    public fun borrow_grow_project(grow_project_list_obj: &Object<GrowProjectList>, id: u64): &Object<GrowProject> {
+    public fun borrow_grow_project(grow_project_list_obj: &Object<GrowProjectList>, id: String): &Object<GrowProject> {
         let grow_project_list = object::borrow(grow_project_list_obj);
         let object_id = table::borrow(&grow_project_list.project_list, id);
         object::borrow_object(*object_id)
