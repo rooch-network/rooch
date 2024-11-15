@@ -280,10 +280,6 @@ impl MoveOS {
             Some(feature_store) => feature_store.has_value_size_gas_feature(),
         };
 
-        if is_system_call {
-            has_io_tired_write_feature = false;
-        }
-
         let cost_table = self.load_cost_table(&root)?;
         let mut gas_meter =
             MoveOSGasMeter::new(cost_table, ctx.max_gas_amount, has_io_tired_write_feature);
@@ -406,10 +402,6 @@ impl MoveOS {
             None => false,
             Some(feature_store) => feature_store.has_value_size_gas_feature(),
         };
-
-        if is_system_call {
-            has_io_tired_write_feature = false;
-        }
 
         let mut gas_meter = MoveOSGasMeter::new(
             cost_table,
