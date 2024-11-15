@@ -404,7 +404,7 @@ impl RpcService {
             } else {
                 BTreeMap::new()
             };
-            let mut object_states = annotated_states
+            let mut object_states: Vec<IndexerObjectStateView> = annotated_states
                 .into_iter()
                 .zip(indexer_ids)
                 .filter_map(|(state_opt, (object_id, indexer_state_id))| {
@@ -423,7 +423,7 @@ impl RpcService {
                         }
                     }
                 })
-                .collect::<Vec<_>>();
+                .collect();
             if !displays.is_empty() {
                 object_states.iter_mut().for_each(|object_state| {
                     object_state.display_fields =

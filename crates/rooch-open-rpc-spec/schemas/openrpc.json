@@ -861,6 +861,47 @@
           }
         }
       },
+      "AnnotatedMoveStructVectorView": {
+        "type": "object",
+        "required": [
+          "abilities",
+          "field",
+          "type",
+          "value"
+        ],
+        "properties": {
+          "abilities": {
+            "description": "alilities of each element",
+            "type": "integer",
+            "format": "uint8",
+            "minimum": 0.0
+          },
+          "field": {
+            "description": "field of each element",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/move_core_types::identifier::Identifier"
+            }
+          },
+          "type": {
+            "description": "type of each element",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/move_core_types::language_storage::StructTag"
+              }
+            ]
+          },
+          "value": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/AnnotatedMoveValueView"
+              }
+            }
+          }
+        }
+      },
       "AnnotatedMoveStructView": {
         "type": "object",
         "required": [
@@ -914,6 +955,9 @@
             "items": {
               "$ref": "#/components/schemas/AnnotatedMoveValueView"
             }
+          },
+          {
+            "$ref": "#/components/schemas/AnnotatedMoveStructVectorView"
           },
           {
             "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
