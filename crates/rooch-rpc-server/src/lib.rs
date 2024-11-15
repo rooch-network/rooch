@@ -178,7 +178,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     // tracing_subscriber can only be inited once.
     let _ = tracing_subscriber::fmt::try_init();
 
-    //Exit the process when some thread panic
+    // Exit the process when some thread panic
     // take_hook() returns the default hook in case when a custom one is not set
     let orig_hook = panic::take_hook();
     panic::set_hook(Box::new(move |panic_info| {
@@ -196,7 +196,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     // Initialize metrics before creating any stores
     init_metrics(&prometheus_registry);
 
-    //Init store
+    // Init store
     let store_config = opt.store_config();
 
     let rooch_db = RoochDB::init(store_config, &prometheus_registry)?;
@@ -323,7 +323,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         .await?;
     let proposer_proxy = ProposerProxy::new(proposer.clone().into());
     //TODO load from config
-    let block_propose_duration_in_seconds: u64 = 5;
+    let block_propose_duration_in_seconds: u64 = 600;
     let mut timers = vec![];
     let proposer_timer = Timer::start(
         proposer,
