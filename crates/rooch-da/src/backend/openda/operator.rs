@@ -1,19 +1,17 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::backend::openda::avail::AvailClient;
+use crate::backend::openda::avail::DEFAULT_AVAIL_MAX_SEGMENT_SIZE;
+use crate::backend::openda::celestia::DEFAULT_CELESTIA_MAX_SEGMENT_SIZE;
 use anyhow::anyhow;
 use async_trait::async_trait;
-use opendal::layers::{LoggingLayer, RetryLayer};
-use opendal::Scheme;
 use rooch_config::da_config::{DABackendOpenDAConfig, OpenDAScheme};
 use rooch_config::retrieve_map_config_value;
 use rooch_types::da::segment::SegmentID;
 use std::collections::HashMap;
 
 const DEFAULT_MAX_SEGMENT_SIZE: u64 = 4 * 1024 * 1024;
-const DEFAULT_AVAIL_MAX_SEGMENT_SIZE: u64 = 512 * 1024;
-const DEFAULT_MAX_RETRY_TIMES: usize = 4;
+pub(crate) const DEFAULT_MAX_RETRY_TIMES: usize = 4;
 
 #[async_trait]
 pub(crate) trait Operator: Sync + Send {
@@ -25,49 +23,12 @@ pub(crate) trait Operator: Sync + Send {
     ) -> anyhow::Result<()>;
 }
 
-#[async_trait]
-impl Operator for opendal::Operator {
-    async fn submit_segment(
-        &self,
-        segment_id: SegmentID,
-        segment_bytes: Vec<u8>,
-        prefix: Option<String>,
-    ) -> anyhow::Result<()> {
-        let path = match prefix {
-            Some(prefix) => format!("{}/{}", prefix, segment_id),
-            None => segment_id.to_string(),
-        };
-        let mut w = self.writer(&path).await?;
-        w.write(segment_bytes).await?;
-        w.close().await?;
-        Ok(())
-    }
-}
-
-pub(crate) async fn new_operator(
-    scheme: OpenDAScheme,
-    config: HashMap<String, String>,
-    max_retry_times: Option<usize>,
-) -> anyhow::Result<Box<dyn Operator>> {
-    let operator: Box<dyn Operator> = match scheme {
-        OpenDAScheme::Avail => Box::new(AvailClient::new(&config["endpoint"])?),
-        _ => {
-            let mut op = opendal::Operator::via_iter(Scheme::from(scheme), config)?;
-            let max_times = max_retry_times.unwrap_or(DEFAULT_MAX_RETRY_TIMES);
-            op = op
-                .layer(RetryLayer::new().with_max_times(max_times))
-                .layer(LoggingLayer::default());
-            op.check().await?;
-            Box::new(op)
-        }
-    };
-    Ok(operator)
-}
-
+#[derive(Clone)]
 pub(crate) struct OperatorConfig {
-    pub(crate) prefix: String,
+    pub(crate) namespace: String,
     pub(crate) scheme: OpenDAScheme,
     pub(crate) max_segment_size: usize,
+    pub(crate) max_retries: usize,
 }
 
 impl OperatorConfig {
@@ -76,13 +37,20 @@ impl OperatorConfig {
         genesis_namespace: String,
     ) -> anyhow::Result<(Self, HashMap<String, String>)> {
         let backend_config = cfg.clone();
-        let prefix = backend_config.namespace.unwrap_or(genesis_namespace);
         let scheme = backend_config.scheme;
+        if scheme == OpenDAScheme::Celestia && backend_config.namespace.is_none() {
+            return Err(anyhow!(
+                "namespace must be provided for scheme {:?}",
+                scheme
+            ));
+        }
+        let namespace = backend_config.namespace.unwrap_or(genesis_namespace);
         let mut map_config = backend_config.config;
         check_map_config(scheme.clone(), &mut map_config)?;
 
         let default_max_segment_size = match scheme {
             OpenDAScheme::Avail => DEFAULT_AVAIL_MAX_SEGMENT_SIZE,
+            OpenDAScheme::Celestia => DEFAULT_CELESTIA_MAX_SEGMENT_SIZE,
             _ => DEFAULT_MAX_SEGMENT_SIZE,
         };
 
@@ -90,9 +58,11 @@ impl OperatorConfig {
 
         Ok((
             OperatorConfig {
-                prefix,
+                namespace,
                 scheme,
                 max_segment_size,
+                // TODO add max_retries to config
+                max_retries: DEFAULT_MAX_RETRY_TIMES,
             },
             map_config,
         ))
@@ -149,6 +119,9 @@ fn check_map_config(
             }
         }
         OpenDAScheme::Avail => check_config_exist(OpenDAScheme::Avail, map_config, "endpoint"),
+        OpenDAScheme::Celestia => {
+            check_config_exist(OpenDAScheme::Celestia, map_config, "endpoint")
+        }
         OpenDAScheme::S3 => {
             todo!("s3 backend is not implemented yet");
         }

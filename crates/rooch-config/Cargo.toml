@@ -22,7 +22,6 @@ dirs = { workspace = true }
 once_cell = { workspace = true }
 clap = { workspace = true }
 dirs-next = { workspace = true }
-celestia-types = { workspace = true }
 hex = { workspace = true }
 opendal = { workspace = true }
 
