@@ -57,7 +57,7 @@ module grow_bitcoin::grow_information_v2 {
     public entry fun new_project(_admin: &mut Object<AdminCap>, grow_project_list_obj: &mut Object<GrowProjectList>, id: String) {
         let grow_project_list = object::borrow_mut(grow_project_list_obj);
         assert!(!table::contains(&grow_project_list.project_list, id), ErrorProjectAleardyExist);
-        let new_grow_project = object::new(GrowProject{
+        let new_grow_project = object::new_with_id(id, GrowProject{
             id,
             vote_store: coin_store::create_coin_store(),
             vote_detail: table::new(),
@@ -110,17 +110,17 @@ module grow_bitcoin::grow_information_v2 {
     }
 
 
-    public entry fun open_vote(_admin: &mut Object<AdminCap>, grow_project_list_obj: &mut Object<GrowProjectList>){
+    public entry fun open_vote(grow_project_list_obj: &mut Object<GrowProjectList>, _admin: &mut Object<AdminCap>){
         object::borrow_mut(grow_project_list_obj).is_open = true
     }
 
-    public entry fun close_vote(_admin: &mut Object<AdminCap>, grow_project_list_obj: &mut Object<GrowProjectList>){
+    public entry fun close_vote(grow_project_list_obj: &mut Object<GrowProjectList>, _admin: &mut Object<AdminCap>){
         object::borrow_mut(grow_project_list_obj).is_open = false
     }
 
-    public fun borrow_grow_project(grow_project_list_obj: &Object<GrowProjectList>, id: String): &Object<GrowProject> {
-        let grow_project_list = object::borrow(grow_project_list_obj);
-        let object_id = table::borrow(&grow_project_list.project_list, id);
-        object::borrow_object(*object_id)
+    public fun borrow_grow_project(id: String): &GrowProject {
+        let object_id = object::custom_object_id<String, GrowProject>(id);
+        let proj_obj = object::borrow_object(object_id);
+        object::borrow(proj_obj)
     }
 }
