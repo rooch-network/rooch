@@ -37,6 +37,9 @@ impl OperatorConfig {
         genesis_namespace: String,
     ) -> anyhow::Result<(Self, HashMap<String, String>)> {
         let backend_config = cfg.clone();
+        let max_retries = backend_config
+            .max_retires
+            .unwrap_or(DEFAULT_MAX_RETRY_TIMES);
         let scheme = backend_config.scheme;
         if scheme == OpenDAScheme::Celestia && backend_config.namespace.is_none() {
             return Err(anyhow!(
@@ -61,8 +64,7 @@ impl OperatorConfig {
                 namespace,
                 scheme,
                 max_segment_size,
-                // TODO add max_retries to config
-                max_retries: DEFAULT_MAX_RETRY_TIMES,
+                max_retries,
             },
             map_config,
         ))

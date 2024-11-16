@@ -279,6 +279,9 @@ pub struct DABackendOpenDAConfig {
     /// max segment size.
     /// Set at crates/rooch-da/src/backend/openda if None.
     pub max_segment_size: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    /// maximum number of attempts to retransmit a failed segment submission.
+    pub max_retires: Option<usize>,
 }
 
 /// Derive a namespace from genesis config for DA backend (as default namespace open-da backend)
@@ -309,6 +312,7 @@ mod tests {
             .collect(),
             namespace: None,
             max_segment_size: None,
+            max_retires: None,
         };
         let exp_celestia_config = DABackendOpenDAConfig {
             scheme: OpenDAScheme::Celestia,
@@ -322,12 +326,14 @@ mod tests {
                 "000000000000000000000000000000000000000102030405060708090a".to_string(),
             ),
             max_segment_size: None,
+            max_retires: None,
         };
         let exp_fs_config = DABackendOpenDAConfig {
             scheme: OpenDAScheme::Fs,
             config: HashMap::new(),
             namespace: None,
             max_segment_size: None,
+            max_retires: None,
         };
         let exp_da_config = DAConfig {
             da_backend: Some(DABackendConfig {
