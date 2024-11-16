@@ -3,6 +3,7 @@
 
 use crate::backend::openda::avail::AvailClient;
 use crate::backend::openda::celestia::{CelestiaClient, WrappedNamespace};
+use crate::backend::openda::fs::BACK_OFF_MIN_DELAY;
 use crate::backend::openda::operator::{Operator, OperatorConfig};
 use crate::backend::DABackend;
 use async_trait::async_trait;
@@ -12,7 +13,6 @@ use rooch_config::da_config::{DABackendOpenDAConfig, OpenDAScheme};
 use rooch_types::da::batch::DABatch;
 use rooch_types::da::chunk::{Chunk, ChunkV0};
 use std::collections::HashMap;
-use std::time::Duration;
 
 #[async_trait]
 impl DABackend for OpenDABackend {
@@ -106,7 +106,7 @@ async fn new_operator(
                 .layer(
                     RetryLayer::new()
                         .with_max_times(max_retries)
-                        .with_min_delay(Duration::from_millis(300)),
+                        .with_min_delay(BACK_OFF_MIN_DELAY),
                 )
                 .layer(LoggingLayer::default());
             op.check().await?;
