@@ -1,7 +1,9 @@
 module grow_bitcoin::grow_information_v3 {
 
+    use std::signer::address_of;
     use std::string::String;
     use std::vector::length;
+    use moveos_std::account;
     use rooch_framework::account_coin_store;
     use moveos_std::timestamp::now_milliseconds;
     use moveos_std::event::emit;
@@ -39,6 +41,10 @@ module grow_bitcoin::grow_information_v3 {
     struct GrowProjectList has key, store {
         project_list: Table<String, GrowProject>,
         is_open: bool
+    }
+
+    struct UserVoteInfo has key {
+        vote_info: Table<String, u256>
     }
 
     struct VoteEvent has copy, store, drop {
@@ -86,10 +92,15 @@ module grow_bitcoin::grow_information_v3 {
         grow_value: u256
     ){
         let coin = account_coin_store::withdraw<GROW>(account, grow_value);
-        vote(grow_project_list_obj, id, coin)
+        vote(account, grow_project_list_obj, id, coin)
     }
 
-    public fun vote(grow_project_list_obj: &mut Object<GrowProjectList>, id: String, coin: Coin<GROW>) {
+    public fun vote(
+        account: &signer,
+        grow_project_list_obj: &mut Object<GrowProjectList>,
+        id: String,
+        coin: Coin<GROW>
+    ) {
         let coin_value = coin::value(&coin);
         assert!(object::borrow(grow_project_list_obj).is_open, ErrorVoteNotOpen);
         let grow_project = borrow_mut_grow_project(grow_project_list_obj, id);
@@ -100,6 +111,17 @@ module grow_bitcoin::grow_information_v3 {
             *table::borrow_mut(&mut grow_project.vote_detail, sender()) + coin_value;
         };
         grow_project.vote_value = coin_store::balance(&grow_project.vote_store);
+        if (!account::exists_resource<UserVoteInfo>(address_of(account))) {
+            account::move_resource_to(account, UserVoteInfo{
+                vote_info: table::new()
+            })
+        };
+        let user_vote_info = account::borrow_mut_resource<UserVoteInfo>(address_of(account));
+        if (!table::contains(&user_vote_info.vote_info, id)) {
+            table::add(&mut user_vote_info.vote_info, id, coin_value)
+        }else {
+            *table::borrow_mut(&mut user_vote_info.vote_info, id) + coin_value;
+        };
         emit(VoteEvent{
             id: grow_project.id,
             value: coin_value,

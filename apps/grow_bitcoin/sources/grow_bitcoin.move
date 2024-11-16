@@ -601,7 +601,11 @@ module grow_bitcoin::grow_bitcoin {
 
     /// Check stake at address exists.
     public fun exists_stake_at_address(account: address): bool {
-        account::exists_resource<UserStake>(account)
+        if (account::exists_resource<UserStake>(account)) {
+            let stake = account::borrow_resource<UserStake>(account);
+            return !table::is_empty(&stake.stake)
+        };
+        return false
     }
 
     public fun check_asset_is_staked(asset_id: ObjectID): (bool, u128) {
