@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::actor::messages::{GetServerStatusMessage, PutDABatchMessage};
-use crate::backend::openda::backend::OpenDABackend;
+use crate::backend::openda::OpenDABackend;
 use crate::backend::DABackend;
 use anyhow::anyhow;
 use async_trait::async_trait;
