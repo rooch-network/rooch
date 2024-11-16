@@ -4,6 +4,9 @@
 use crate::backend::openda::operator::Operator;
 use async_trait::async_trait;
 use rooch_types::da::segment::SegmentID;
+use std::time::Duration;
+
+pub(crate) const BACK_OFF_MIN_DELAY: Duration = Duration::from_millis(300);
 
 #[async_trait]
 impl Operator for opendal::Operator {
