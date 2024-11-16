@@ -96,6 +96,7 @@ async fn new_operator(
                     namespace.into_inner(),
                     &config["endpoint"],
                     config.get("auth_token").map(|s| s.as_str()),
+                    max_retries,
                 )
                 .await?,
             )

@@ -11,11 +11,11 @@ use rooch_types::da::segment::SegmentID;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use tokio::time::{sleep, Duration};
-use tracing::{info, warn};
 
 // small blob size for transaction to get included in a block quickly
 pub(crate) const DEFAULT_AVAIL_MAX_SEGMENT_SIZE: u64 = 256 * 1024;
-const SUBMIT_PATH: &str = "v2/submit";
+const BACK_OFF_MIN_DELAY: Duration = Duration::from_millis(2000);
+const SUBMIT_API_PATH: &str = "v2/submit";
 
 pub(crate) struct AvailClient {
     endpoint: String,
@@ -51,11 +51,11 @@ impl Operator for AvailClient {
         segment_bytes: Vec<u8>,
         _prefix: Option<String>,
     ) -> anyhow::Result<()> {
-        let submit_url = format!("{}/{}", self.endpoint, SUBMIT_PATH);
+        let submit_url = format!("{}/{}", self.endpoint, SUBMIT_API_PATH);
         let data = general_purpose::STANDARD.encode(&segment_bytes);
         let max_retries = self.max_retries;
         let mut retries = 0;
-        let mut retry_delay = Duration::from_millis(1000);
+        let mut retry_delay = BACK_OFF_MIN_DELAY;
 
         loop {
             let response = self
@@ -69,7 +69,7 @@ impl Operator for AvailClient {
             match response.status() {
                 StatusCode::OK => {
                     let submit_response: AvailSubmitResponse = response.json().await?;
-                    info!(
+                    tracing::info!(
                         "Submitted segment: {} to Avail, block_number: {}, block_hash: {}, hash: {}, index: {}",
                         segment_id,
                         submit_response.block_number,
@@ -81,7 +81,7 @@ impl Operator for AvailClient {
                 }
                 StatusCode::NOT_FOUND => {
                     return Err(anyhow!(
-                        "App mode not active or signing key not configured."
+                        "App mode not active or signing key not configured for Avail."
                     ))
                 }
                 _ => {
@@ -89,14 +89,16 @@ impl Operator for AvailClient {
                         retries += 1;
                         sleep(retry_delay).await;
                         retry_delay *= 2; // Exponential backoff
-                        warn!(
-                            "Failed to submit data, retrying after {}ms, attempt: {}",
+                        tracing::warn!(
+                            "Failed to submit segment: {:?} to Avail, retrying after {}ms, attempt: {}",
+                            segment_id,
                             retry_delay.as_millis(),
                             retries
                         );
                     } else {
                         return Err(anyhow!(
-                            "Failed to submit data after {} attempts: {}",
+                            "Failed to submit segment: {:?} to Avail after {} attempts: {}",
+                            segment_id,
                             retries,
                             response.status()
                         ));

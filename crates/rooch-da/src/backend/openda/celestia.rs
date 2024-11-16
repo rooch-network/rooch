@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::backend::openda::operator::Operator;
+use anyhow::anyhow;
 use async_trait::async_trait;
 use celestia_rpc::{BlobClient, Client};
 use celestia_types::blob::SubmitOptions;
@@ -9,13 +10,17 @@ use celestia_types::nmt::Namespace;
 use celestia_types::Blob;
 use rooch_types::da::segment::SegmentID;
 use std::fmt::Display;
+use std::time::Duration;
+use tokio::time::sleep;
 
 // small blob size for transaction to get included in a block quickly
 pub(crate) const DEFAULT_CELESTIA_MAX_SEGMENT_SIZE: u64 = 256 * 1024;
+const BACK_OFF_MIN_DELAY: Duration = Duration::from_millis(2000);
 
 pub(crate) struct CelestiaClient {
     namespace: Namespace,
     client: Client,
+    max_retries: usize,
 }
 
 impl CelestiaClient {
@@ -23,11 +28,13 @@ impl CelestiaClient {
         namespace: Namespace,
         endpoint: &str,
         auth_token: Option<&str>,
+        max_retries: usize,
     ) -> anyhow::Result<Self> {
         let celestia_client = Client::new(endpoint, auth_token).await?;
         Ok(CelestiaClient {
             namespace,
             client: celestia_client,
+            max_retries,
         })
     }
 }
@@ -41,29 +48,45 @@ impl Operator for CelestiaClient {
         _prefix: Option<String>,
     ) -> anyhow::Result<()> {
         let blob = Blob::new(self.namespace, segment_bytes)?;
-        // TODO backoff retry
-        match self
-            .client
-            .blob_submit(&[blob.clone()], SubmitOptions::default())
-            .await
-        {
-            Ok(height) => {
-                tracing::info!(
-                    "submitted segment to celestia node, segment_id: {:?}, commitment: {:?}, height: {:?}",
-                    segment_id,
-                    blob.commitment,
-                    height,
-                );
-                Ok(())
-            }
-            Err(e) => {
-                tracing::warn!(
-                "failed to submit segment to celestia node, segment_id: {:?}, commitment: {:?}, error:{:?}",
-                segment_id,
-                blob.commitment,
-                e,
-            );
-                Err(e.into())
+        let max_retries = self.max_retries;
+        let mut retries = 0;
+        let mut retry_delay = BACK_OFF_MIN_DELAY;
+
+        loop {
+            match self
+                .client
+                .blob_submit(&[blob.clone()], SubmitOptions::default())
+                .await
+            {
+                Ok(height) => {
+                    tracing::info!(
+                        "submitted segment to Celestia node, segment_id: {:?}, commitment: {:?}, height: {:?}",
+                        segment_id,
+                        blob.commitment,
+                        height,
+                    );
+                    return Ok(());
+                }
+                Err(e) => {
+                    if retries < max_retries {
+                        retries += 1;
+                        sleep(retry_delay).await;
+                        retry_delay *= 2;
+                        tracing::warn!(
+                            "Failed to submit segment: {:?} to Celestia, retrying after {}ms, attempt: {}",
+                            segment_id,
+                            retry_delay.as_millis(),
+                            retries
+                        );
+                    } else {
+                        return Err(anyhow!(
+                            "Failed to submit segment: {:?} to Celestia after {} attempts: {:?}",
+                            segment_id,
+                            retries,
+                            e
+                        ));
+                    }
+                }
             }
         }
     }
