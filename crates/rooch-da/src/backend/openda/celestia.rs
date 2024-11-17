@@ -15,7 +15,11 @@ use tokio::time::sleep;
 
 // small blob size for transaction to get included in a block quickly
 pub(crate) const DEFAULT_CELESTIA_MAX_SEGMENT_SIZE: u64 = 256 * 1024;
-const BACK_OFF_MIN_DELAY: Duration = Duration::from_millis(2000);
+// default retry duration(seconds): 3, 9, 27, 81
+// 81s > 60s(5 blocks) for:
+// By default, nodes will drop a transaction if it does not get included in 5 blocks (roughly 1 minute).
+// At this point, the user must resubmit their transaction if they want it to eventually be included.
+const BACK_OFF_MIN_DELAY: Duration = Duration::from_millis(3000);
 
 pub(crate) struct CelestiaClient {
     namespace: Namespace,
@@ -71,7 +75,7 @@ impl Operator for CelestiaClient {
                     if retries < max_retries {
                         retries += 1;
                         sleep(retry_delay).await;
-                        retry_delay *= 2;
+                        retry_delay *= 3;
                         tracing::warn!(
                             "Failed to submit segment: {:?} to Celestia, retrying after {}ms, attempt: {}",
                             segment_id,

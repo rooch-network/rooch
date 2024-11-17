@@ -10,7 +10,7 @@ use rooch_config::retrieve_map_config_value;
 use rooch_types::da::segment::SegmentID;
 use std::collections::HashMap;
 
-const DEFAULT_MAX_SEGMENT_SIZE: u64 = 4 * 1024 * 1024;
+const DEFAULT_MAX_SEGMENT_SIZE: u64 = 8 * 1024 * 1024;
 pub(crate) const DEFAULT_MAX_RETRY_TIMES: usize = 4;
 
 #[async_trait]

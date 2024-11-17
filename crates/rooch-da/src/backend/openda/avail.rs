@@ -14,7 +14,7 @@ use tokio::time::{sleep, Duration};
 
 // small blob size for transaction to get included in a block quickly
 pub(crate) const DEFAULT_AVAIL_MAX_SEGMENT_SIZE: u64 = 256 * 1024;
-const BACK_OFF_MIN_DELAY: Duration = Duration::from_millis(2000);
+const BACK_OFF_MIN_DELAY: Duration = Duration::from_millis(3000);
 const SUBMIT_API_PATH: &str = "v2/submit";
 
 pub(crate) struct AvailClient {
@@ -88,7 +88,7 @@ impl Operator for AvailClient {
                     if retries < max_retries {
                         retries += 1;
                         sleep(retry_delay).await;
-                        retry_delay *= 2; // Exponential backoff
+                        retry_delay *= 3; // Exponential backoff
                         tracing::warn!(
                             "Failed to submit segment: {:?} to Avail, retrying after {}ms, attempt: {}",
                             segment_id,
