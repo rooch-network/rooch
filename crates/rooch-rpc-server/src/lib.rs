@@ -57,6 +57,7 @@ use std::{env, panic, process};
 use tokio::signal;
 use tokio::sync::broadcast;
 use tokio::sync::broadcast::Sender;
+use tower_governor::key_extractor::SmartIpKeyExtractor;
 use tower_governor::{governor::GovernorConfigBuilder, GovernorLayer};
 use tower_http::cors::{AllowOrigin, CorsLayer};
 use tower_http::trace::TraceLayer;
@@ -455,6 +456,8 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     // and thus we need a static reference to it
     let governor_conf = Arc::new(
         GovernorConfigBuilder::default()
+            .key_extractor(SmartIpKeyExtractor)
+            .use_headers()
             .per_second(traffic_per_second)
             .burst_size(traffic_burst_size)
             .use_headers()
@@ -467,16 +470,17 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     let interval = Duration::from_secs(60);
 
     // a separate background task to clean up
-    std::thread::spawn(move || loop {
-        if governor_rx.try_recv().is_ok() {
-            info!("Background thread received cancel signal, stopping.");
-            break;
+    tokio::spawn(async move {
+        let mut tick = tokio::time::interval(interval);
+        loop {
+            if governor_rx.try_recv().is_ok() {
+                info!("Background thread received cancel signal, stopping.");
+                break;
+            }
+            tick.tick().await;
+            tracing::info!("rate limiting storage size: {}", governor_limiter.len());
+            governor_limiter.retain_recent();
         }
-
-        std::thread::sleep(interval);
-
-        tracing::info!("rate limiting storage size: {}", governor_limiter.len());
-        governor_limiter.retain_recent();
     });
 
     let blocklist_config = Arc::new(BlocklistConfig::default());
