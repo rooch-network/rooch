@@ -16,7 +16,7 @@ module grow_bitcoin::grow_point_v3 {
     friend grow_bitcoin::grow_information_v3;
 
     /// The `Rooch Grow Point`
-    struct RGP has key {}
+    struct BITXP has key {}
 
     const DECIMALS: u8 = 1u8;
 
@@ -25,7 +25,7 @@ module grow_bitcoin::grow_point_v3 {
     const ErrorLeaderboardNotOpen: u64 = 3;
 
     struct Leaderboard has key, store {
-        coin_info: Object<CoinInfo<RGP>>,
+        coin_info: Object<CoinInfo<BITXP>>,
     }
 
     struct PointBox has key, store {
@@ -37,9 +37,9 @@ module grow_bitcoin::grow_point_v3 {
 
 
     fun init() {
-        let coin_info_obj = coin::register_extend<RGP>(
-            string::utf8(b"Rooch Grow Point"),
-            string::utf8(b"RGP"),
+        let coin_info_obj = coin::register_extend<BITXP>(
+            string::utf8(b"Grow Bitcoin Point"),
+            string::utf8(b"BITXP"),
             option::none(),
             DECIMALS,
         );

@@ -12,7 +12,7 @@ module grow_bitcoin::grow_information_v3 {
     use rooch_framework::coin;
     use rooch_framework::coin::Coin;
     use rooch_framework::coin_store;
-    use app_admin::admin::AdminCap;
+    // use app_admin::admin::AdminCap;
     use moveos_std::table;
     use moveos_std::object;
     use moveos_std::table::Table;
@@ -53,12 +53,15 @@ module grow_bitcoin::grow_information_v3 {
         timestamp: u64
     }
 
+    struct AdminCap has store, key {}
+
     fun init(){
         let grow_project_list_obj= object::new_named_object(GrowProjectList{
             project_list: table::new(),
             is_open: true
         });
-        object::to_shared(grow_project_list_obj)
+        object::to_shared(grow_project_list_obj);
+        object::transfer(object::new_named_object(AdminCap), sender())
     }
 
     public entry fun new_project(grow_project_list_obj: &mut Object<GrowProjectList>, id: String, _admin: &mut Object<AdminCap>) {
