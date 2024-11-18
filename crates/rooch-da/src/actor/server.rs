@@ -56,6 +56,7 @@ impl DAServerActor {
         let mut act_backends = 0;
         let mut background_submit_interval = DEFAULT_BACKGROUND_SUBMIT_INTERVAL;
         let mut nop_backend = false;
+        let init_block_offset = da_config.da_init_offset;
         // backend config has higher priority than submit threshold
         if let Some(mut backend_config) = da_config.da_backend {
             submit_threshold = backend_config.calculate_submit_threshold();
@@ -137,7 +138,9 @@ impl DAServerActor {
                                 }
                             }
                             block_number_for_last_job = Some(last_block_number);
-                            if let Err(e) = background_submitter.start_job(last_block_number).await
+                            if let Err(e) = background_submitter
+                                .start_job(last_block_number, init_block_offset)
+                                .await
                             {
                                 tracing::error!("da: background submitter failed: {:?}", e);
                             }
@@ -370,9 +373,28 @@ impl BackgroundSubmitter {
         Ok(())
     }
 
-    async fn start_job(&self, last_block_number: u128) -> anyhow::Result<()> {
+    // adjust cursor to be the max of cursor_opt and init_block_offset
+    fn adjust_cursor(origin_cursor: Option<u128>, init_block_offset: Option<u128>) -> Option<u128> {
+        if let Some(init_block_offset) = init_block_offset {
+            if let Some(cursor) = origin_cursor {
+                if cursor < init_block_offset {
+                    return Some(init_block_offset);
+                }
+            } else {
+                return Some(init_block_offset);
+            }
+        }
+        origin_cursor
+    }
+
+    async fn start_job(
+        &self,
+        last_block_number: u128,
+        init_block_offset: Option<u128>,
+    ) -> anyhow::Result<()> {
         // try to get unsubmitted blocks from [cursor, last_block_number]
-        let cursor_opt = self.rooch_store.get_background_submit_block_cursor()?;
+        let origin_background_cursor = self.rooch_store.get_background_submit_block_cursor()?;
+        let cursor_opt = Self::adjust_cursor(origin_background_cursor, init_block_offset);
         let exp_count = if let Some(cursor) = cursor_opt {
             if cursor > last_block_number {
                 return Err(anyhow!(
