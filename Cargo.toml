@@ -261,9 +261,9 @@ serde-reflection = "0.3.6"
 serde-generate = "0.25.1"
 bcs-ext = { path = "moveos/moveos-commons/bcs_ext" }
 http = "1.0.0"
-tower = { version = "0.5.1", features = ["full", "util", "timeout", "load-shed", "limit"] }
+tower = { version = "0.5.1", features = ["full", "log", "util", "timeout", "load-shed", "limit"] }
 tower-http = { version = "0.5.2", features = ["cors", "full", "trace", "set-header", "propagate-header"] }
-tower_governor = "0.4.3"
+tower_governor = { version = "0.4.3", features = ["tracing"]}
 pin-project = "1.1.7"
 mirai-annotations = "1.12.0"
 lru = "0.11.0"
