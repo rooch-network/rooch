@@ -12,12 +12,12 @@ module grow_bitcoin::grow_information_v3 {
     use rooch_framework::coin;
     use rooch_framework::coin::Coin;
     use rooch_framework::coin_store;
-    // use app_admin::admin::AdminCap;
+    use app_admin::admin;
     use moveos_std::table;
     use moveos_std::object;
     use moveos_std::table::Table;
     use grow_bitcoin::grow_bitcoin::GROW;
-    use moveos_std::object::Object;
+    use moveos_std::object::{Object, transfer, ObjectID};
     use rooch_framework::coin_store::CoinStore;
 
 
@@ -61,7 +61,17 @@ module grow_bitcoin::grow_information_v3 {
             is_open: true
         });
         object::to_shared(grow_project_list_obj);
-        object::transfer(object::new_named_object(AdminCap), sender())
+        object::transfer(object::new_named_object(AdminCap{}), sender())
+    }
+
+    public entry fun create_admin(_admin: &mut Object<admin::AdminCap>, receiver: address){
+        let new_admin = object::new(AdminCap{});
+        transfer(new_admin, receiver)
+    }
+
+    public entry fun delete_admin(_admin: &mut Object<admin::AdminCap>, admin_id: ObjectID){
+        let admin_obj = object::take_object_extend<AdminCap>(admin_id);
+        let AdminCap{} = object::remove(admin_obj);
     }
 
     public entry fun new_project(grow_project_list_obj: &mut Object<GrowProjectList>, id: String, _admin: &mut Object<AdminCap>) {
@@ -97,7 +107,6 @@ module grow_bitcoin::grow_information_v3 {
         let coin = account_coin_store::withdraw<GROW>(account, grow_value);
         vote(account, grow_project_list_obj, id, coin)
     }
-
     public fun vote(
         account: &signer,
         grow_project_list_obj: &mut Object<GrowProjectList>,
