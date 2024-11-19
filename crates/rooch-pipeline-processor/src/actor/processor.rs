@@ -13,11 +13,12 @@ use moveos::moveos::VMPanicError;
 use moveos_types::state::StateChangeSetExt;
 use moveos_types::transaction::VerifiedMoveOSTransaction;
 use prometheus::Registry;
+use rooch_da::actor::messages::AppendTransactionMessage;
+use rooch_da::proxy::DAServerProxy;
 use rooch_db::RoochDB;
 use rooch_event::actor::{EventActor, UpdateServiceStatusMessage};
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_indexer::proxy::IndexerProxy;
-use rooch_proposer::proxy::ProposerProxy;
 use rooch_sequencer::proxy::SequencerProxy;
 use rooch_types::{
     service_status::ServiceStatus,
@@ -33,7 +34,7 @@ use tracing::{debug, info};
 pub struct PipelineProcessorActor {
     pub(crate) executor: ExecutorProxy,
     pub(crate) sequencer: SequencerProxy,
-    pub(crate) proposer: ProposerProxy,
+    pub(crate) da_server: DAServerProxy,
     pub(crate) indexer: IndexerProxy,
     pub(crate) service_status: ServiceStatus,
     pub(crate) metrics: Arc<PipelineProcessorMetrics>,
@@ -45,7 +46,7 @@ impl PipelineProcessorActor {
     pub fn new(
         executor: ExecutorProxy,
         sequencer: SequencerProxy,
-        proposer: ProposerProxy,
+        da_server: DAServerProxy,
         indexer: IndexerProxy,
         service_status: ServiceStatus,
         registry: &Registry,
@@ -55,7 +56,7 @@ impl PipelineProcessorActor {
         Self {
             executor,
             sequencer,
-            proposer,
+            da_server,
             indexer,
             service_status,
             metrics: Arc::new(PipelineProcessorMetrics::new(registry)),
@@ -289,8 +290,11 @@ impl PipelineProcessorActor {
         // Then execute
         let size = moveos_tx.ctx.tx_size;
         let (output, execution_info) = self.executor.execute_transaction(moveos_tx.clone()).await?;
-        self.proposer
-            .propose_transaction(tx.clone(), execution_info.clone())
+        self.da_server
+            .append_tx(AppendTransactionMessage {
+                tx_order: tx.sequence_info.tx_order,
+                tx_timestamp: tx.sequence_info.tx_timestamp,
+            })
             .await?;
         let root = execution_info.root_metadata();
         // Sync latest state root from writer executor to reader executor

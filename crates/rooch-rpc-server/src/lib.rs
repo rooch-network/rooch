@@ -34,7 +34,6 @@ use rooch_pipeline_processor::actor::processor::PipelineProcessorActor;
 use rooch_pipeline_processor::proxy::PipelineProcessorProxy;
 use rooch_proposer::actor::messages::ProposeBlock;
 use rooch_proposer::actor::proposer::ProposerActor;
-use rooch_proposer::proxy::ProposerProxy;
 use rooch_relayer::actor::bitcoin_client::BitcoinClientActor;
 use rooch_relayer::actor::bitcoin_client_proxy::BitcoinClientProxy;
 use rooch_relayer::actor::messages::RelayTick;
@@ -321,7 +320,6 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     let proposer = ProposerActor::new(proposer_keypair, da_proxy.clone(), &prometheus_registry)
         .into_actor(Some("Proposer"), &actor_system)
         .await?;
-    let proposer_proxy = ProposerProxy::new(proposer.clone().into());
     //TODO load from config
     let block_propose_duration_in_seconds: u64 = 600;
     let mut timers = vec![];
@@ -344,7 +342,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     let mut processor = PipelineProcessorActor::new(
         executor_proxy.clone(),
         sequencer_proxy.clone(),
-        proposer_proxy.clone(),
+        da_proxy.clone(),
         indexer_proxy.clone(),
         service_status,
         &prometheus_registry,
