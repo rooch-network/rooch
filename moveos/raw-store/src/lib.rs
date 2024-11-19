@@ -867,3 +867,16 @@ where
         KVStore::multiple_get(self.get_store(), encoded_keys)
     }
 }
+
+
+#[cfg(test)]
+mod tests {
+    use moveos_config::store_config::RocksdbConfig;
+    use super::*;
+
+    #[test]
+    fn test_new_db() {
+        let tmpdir = moveos_config::temp_dir();
+        let _db = RocksDB::new(tmpdir.path(), vec![], RocksdbConfig::default()).unwrap();
+    }
+}
