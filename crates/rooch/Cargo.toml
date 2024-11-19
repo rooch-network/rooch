@@ -42,6 +42,8 @@ csv = { workspace = true }
 tempfile = { workspace = true }
 [target.'cfg(not(target_env = "msvc"))'.dependencies]
 jemallocator = { version = "0.5.4", features = ["unprefixed_malloc_on_supported_platforms", "profiling"] }
+[target.'cfg(target_env = "msvc")'.dependencies]
+mimalloc = { version = "0.1.39" } 
 rustc-hash = { workspace = true }
 rand = { workspace = true }
 tabled = { workspace = true }

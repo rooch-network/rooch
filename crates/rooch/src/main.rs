@@ -12,6 +12,14 @@ use jemallocator::Jemalloc;
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
 
+
+#[cfg(target_env = "msvc")]
+use mimalloc::MiMalloc;
+
+#[cfg(target_env = "msvc")]
+#[global_allocator]
+static GLOBAL: MiMalloc = MiMalloc;
+
 /// rooch is a command line tools for Rooch Network
 #[tokio::main]
 async fn main() {
