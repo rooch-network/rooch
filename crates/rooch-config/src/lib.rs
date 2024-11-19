@@ -21,6 +21,7 @@ use std::{fmt::Debug, path::Path, path::PathBuf};
 
 pub mod config;
 pub mod da_config;
+pub mod proposer_config;
 pub mod server_config;
 pub mod settings;
 pub mod store_config;
