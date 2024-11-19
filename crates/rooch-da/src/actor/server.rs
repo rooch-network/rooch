@@ -1,9 +1,10 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::actor::messages::{GetServerStatusMessage, PutDABatchMessage};
+use crate::actor::messages::{AppendTransactionMessage, GetServerStatusMessage, PutDABatchMessage};
 use crate::backend::openda::OpenDABackend;
 use crate::backend::DABackend;
+use crate::batcher::BatchMaker;
 use anyhow::anyhow;
 use async_trait::async_trait;
 use coerce::actor::context::ActorContext;
@@ -39,6 +40,7 @@ pub struct DAServerActor {
     last_block_number: Option<u128>,
     last_block_update_time: u64,
     background_last_block_update_time: Arc<AtomicU64>,
+    batch_maker: BatchMaker,
 }
 
 impl Actor for DAServerActor {}
@@ -107,6 +109,7 @@ impl DAServerActor {
             last_block_number,
             last_block_update_time: 0,
             background_last_block_update_time: background_last_block_update_time.clone(),
+            batch_maker: BatchMaker::new(),
         };
 
         if !nop_backend {
@@ -203,6 +206,25 @@ impl DAServerActor {
         })
     }
 
+    pub async fn append_transaction(
+        &mut self,
+        msg: AppendTransactionMessage,
+    ) -> anyhow::Result<()> {
+        let tx_order = msg.tx_order;
+        let tx_timestamp = msg.tx_timestamp;
+        let batch = self.batch_maker.append_transaction(tx_order, tx_timestamp);
+        if let Some((tx_order_start, tx_order_end)) = batch {
+            let block_number = self
+                .rooch_store
+                .append_submitting_block(tx_order_start, tx_order_end)?;
+            self.last_block_number = Some(block_number);
+            self.last_block_update_time = SystemTime::now()
+                .duration_since(time::UNIX_EPOCH)?
+                .as_secs();
+        };
+        Ok(())
+    }
+
     pub async fn submit_batch(
         &mut self,
         msg: PutDABatchMessage,
@@ -241,6 +263,17 @@ impl Handler<GetServerStatusMessage> for DAServerActor {
         _ctx: &mut ActorContext,
     ) -> anyhow::Result<DAServerStatus> {
         self.get_status()
+    }
+}
+
+#[async_trait]
+impl Handler<AppendTransactionMessage> for DAServerActor {
+    async fn handle(
+        &mut self,
+        msg: AppendTransactionMessage,
+        _ctx: &mut ActorContext,
+    ) -> anyhow::Result<()> {
+        self.append_transaction(msg).await
     }
 }
 

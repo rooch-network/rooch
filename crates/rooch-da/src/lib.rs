@@ -3,4 +3,5 @@
 
 pub mod actor;
 pub mod backend;
+mod batcher;
 pub mod proxy;
