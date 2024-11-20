@@ -9,16 +9,26 @@ use std::process::exit;
 mod allocator {
     use jemallocator::Jemalloc;
 
-    #[global_allocator]
-    static GLOBAL: Jemalloc = Jemalloc;
+    pub type Allocator = Jemalloc;
+
+    pub const fn allocator() -> Allocator {
+        Jemalloc
+    }
 }
+
 #[cfg(target_env = "msvc")]
 mod allocator {
     use mimalloc::MiMalloc;
 
-    #[global_allocator]
-    static GLOBAL: MiMalloc = MiMalloc;
+    pub type Allocator = MiMalloc;
+
+    pub const fn allocator() -> Allocator {
+        MiMalloc
+    }
 }
+
+#[global_allocator]
+static GLOBAL: allocator::Allocator = allocator::allocator();
 
 /// rooch is a command line tools for Rooch Network
 #[tokio::main]
