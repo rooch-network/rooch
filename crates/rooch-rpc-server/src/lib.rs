@@ -439,14 +439,14 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         broadcast::channel(16);
 
     let traffic_burst_size: u32;
-    let traffic_per_second: u64;
+    let traffic_per_second: f64;
 
     if network.chain_id != BuiltinChainID::Local.chain_id() {
-        traffic_burst_size = opt.traffic_burst_size.unwrap_or(100);
-        traffic_per_second = opt.traffic_per_second.unwrap_or(1);
+        traffic_burst_size = opt.traffic_burst_size.unwrap_or(200);
+        traffic_per_second = opt.traffic_per_second.unwrap_or(0.1f64);
     } else {
         traffic_burst_size = opt.traffic_burst_size.unwrap_or(5000);
-        traffic_per_second = opt.traffic_per_second.unwrap_or(1);
+        traffic_per_second = opt.traffic_per_second.unwrap_or(0.0001f64);
     };
 
     // init limit
@@ -458,7 +458,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         GovernorConfigBuilder::default()
             .key_extractor(SmartIpKeyExtractor)
             .use_headers()
-            .per_second(traffic_per_second)
+            .per_millisecond((traffic_per_second * 1000f64).abs() as u64)
             .burst_size(traffic_burst_size)
             .use_headers()
             .error_handler(move |error1| ErrorHandler::default().0(error1))
