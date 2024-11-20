@@ -117,11 +117,9 @@ module grow_bitcoin::grow_information_v3 {
         assert!(object::borrow(grow_project_list_obj).is_open, ErrorVoteNotOpen);
         let grow_project = borrow_mut_grow_project(grow_project_list_obj, id);
         coin_store::deposit(&mut grow_project.vote_store, coin);
-        if (!table::contains(&grow_project.vote_detail, sender())){
-            table::add(&mut grow_project.vote_detail, sender(), coin_value)
-        }else {
-            *table::borrow_mut(&mut grow_project.vote_detail, sender()) + coin_value;
-        };
+        let vote_detail = table::borrow_mut_with_default(&mut grow_project.vote_detail, sender(), 0);
+        *vote_detail = *vote_detail + coin_value;
+
         grow_project.vote_value = coin_store::balance(&grow_project.vote_store);
         if (!account::exists_resource<UserVoteInfo>(address_of(account))) {
             account::move_resource_to(account, UserVoteInfo{
@@ -129,11 +127,8 @@ module grow_bitcoin::grow_information_v3 {
             })
         };
         let user_vote_info = account::borrow_mut_resource<UserVoteInfo>(address_of(account));
-        if (!table::contains(&user_vote_info.vote_info, id)) {
-            table::add(&mut user_vote_info.vote_info, id, coin_value)
-        }else {
-            *table::borrow_mut(&mut user_vote_info.vote_info, id) + coin_value;
-        };
+        let vote_info =  table::borrow_mut_with_default(&mut user_vote_info.vote_info, id, 0);
+        *vote_info = *vote_info + coin_value;
         emit(VoteEvent{
             id: grow_project.id,
             value: coin_value,
@@ -144,11 +139,11 @@ module grow_bitcoin::grow_information_v3 {
     }
 
 
-    public entry fun open_vote(grow_project_list_obj: &mut Object<GrowProjectList>, _admin: &mut Object<AdminCap>){
+    public entry fun open_vote(grow_project_list_obj: &mut Object<GrowProjectList>, _admin: &mut Object<ProjectCap>){
         object::borrow_mut(grow_project_list_obj).is_open = true
     }
 
-    public entry fun close_vote(grow_project_list_obj: &mut Object<GrowProjectList>, _admin: &mut Object<AdminCap>){
+    public entry fun close_vote(grow_project_list_obj: &mut Object<GrowProjectList>, _admin: &mut Object<ProjectCap>){
         object::borrow_mut(grow_project_list_obj).is_open = false
     }
 
