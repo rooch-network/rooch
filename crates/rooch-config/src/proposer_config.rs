@@ -13,7 +13,7 @@ pub struct ProposerConfig {
     #[clap(
         name = "proposer-init-offset",
         long,
-        help = "The initial block number offset of the proposer"
+        help = "The initial block number offset of the propose, start propose from this block number"
     )]
     pub init_offset: Option<u128>,
 }
