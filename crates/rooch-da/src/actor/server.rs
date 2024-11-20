@@ -471,19 +471,21 @@ impl BackgroundSubmitter {
             done_count += 1;
             max_block_number_submitted = block_number;
             if done_count % 16 == 0 {
-                // it's okay to set cursor a bit behind: submit_batch_raw set submitting block done, so it won't be submitted again after restart
+                // it's okay to set cursor a bit behind: submit_batch_raw has set submitting block done, so it won't be submitted again after restart
                 self.update_cursor(block_number)?;
             }
         }
-        if done_count > 0 {
-            self.update_cursor(max_block_number_submitted)?;
-            tracing::info!(
-                "da: background submitting job done: {} blocks submitted",
-                done_count
-            );
-        } else {
-            tracing::info!("da: background submitting job done: no blocks needed to submit");
-        }
+
+        if max_block_number_submitted == 0 {
+            return Err(anyhow!("da: background submitting job failed: no blocks submitted after checking, should not happen"));
+        };
+
+        self.update_cursor(max_block_number_submitted)?;
+        tracing::info!(
+            "da: background submitting job done: {} blocks submitted, new avail block number: {}",
+            done_count,
+            max_block_number_submitted
+        );
 
         Ok(())
     }
