@@ -5893,6 +5893,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4ec2a862134d2a7d32d7983ddcdd1c4923530833c9f2ea1a44fc5fa473989058"
 
 [[package]]
+name = "libmimalloc-sys"
+version = "0.1.39"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "23aa6811d3bd4deb8a84dde645f943476d13b248d818edcf8ce0b2f37f036b44"
+dependencies = [
+ "cc",
+ "libc",
+]
+
+[[package]]
 name = "libp2p-identity"
 version = "0.2.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6137,6 +6147,15 @@ dependencies = [
  "migrations_internals",
  "proc-macro2 1.0.89",
  "quote 1.0.37",
+]
+
+[[package]]
+name = "mimalloc"
+version = "0.1.43"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "68914350ae34959d83f732418d51e2427a794055d0b9529f48259ac07af65633"
+dependencies = [
+ "libmimalloc-sys",
 ]
 
 [[package]]
@@ -9316,40 +9335,31 @@ dependencies = [
 name = "rooch"
 version = "0.7.7"
 dependencies = [
- "accumulator",
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
  "async-trait",
  "bcs",
  "bitcoin 0.32.3",
- "bitcoin-move",
- "bitcoincore-rpc",
  "ciborium",
  "clap 4.5.17",
  "codespan-reporting",
  "csv",
  "datatest-stable 0.1.1",
  "fastcrypto 0.1.8 (git+https://github.com/MystenLabs/fastcrypto?rev=56f6223b84ada922b6cb2c672c69db2ea3dc6a13)",
- "framework-builder",
  "framework-release",
  "framework-types",
- "futures",
  "hex",
  "itertools 0.13.0",
  "jemallocator",
  "lazy_static 1.5.0",
  "log",
  "metrics",
+ "mimalloc",
  "move-binary-format",
- "move-bytecode-utils",
- "move-bytecode-verifier",
  "move-cli",
  "move-command-line-common",
  "move-compiler",
  "move-core-types",
- "move-coverage",
- "move-disassembler",
  "move-errmapgen",
- "move-model",
  "move-package",
  "move-stdlib",
  "move-unit-test",
@@ -9368,7 +9378,6 @@ dependencies = [
  "moveos-verifier",
  "once_cell",
  "parking_lot 0.12.3",
- "prometheus",
  "rand 0.8.5",
  "raw-store",
  "regex",
@@ -9385,7 +9394,6 @@ dependencies = [
  "rooch-rpc-api",
  "rooch-rpc-client",
  "rooch-rpc-server",
- "rooch-sequencer",
  "rooch-store",
  "rooch-types",
  "rpassword",
@@ -9396,7 +9404,6 @@ dependencies = [
  "serde_json",
  "serde_with 2.3.3",
  "serde_yaml 0.9.34+deprecated",
- "serenity",
  "smt",
  "tabled",
  "tempfile",
@@ -9788,7 +9795,6 @@ dependencies = [
  "ciborium",
  "cosmwasm-std",
  "cosmwasm-vm",
- "libc",
  "log",
  "move-binary-format",
  "move-core-types",
