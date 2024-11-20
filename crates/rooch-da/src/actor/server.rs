@@ -38,7 +38,6 @@ pub struct DAServerActor {
     backend_names: Vec<String>,
     last_block_number: Option<u128>,
     last_block_update_time: u64,
-    min_block_to_submit: Option<u128>,
     background_last_block_update_time: Arc<AtomicU64>,
     batch_maker: BatchMaker,
 }
@@ -145,7 +144,6 @@ impl DAServerActor {
             backend_names,
             last_block_number,
             last_block_update_time: 0,
-            min_block_to_submit,
             background_last_block_update_time: background_last_block_update_time.clone(),
             batch_maker: BatchMaker::new(),
         };
@@ -198,7 +196,6 @@ impl DAServerActor {
             last_block_number: self.last_block_number,
             last_tx_order,
             last_block_update_time,
-            min_avail_block_number: self.min_block_to_submit,
             last_avail_block_number,
             last_avail_tx_order,
             last_avail_block_update_time,
