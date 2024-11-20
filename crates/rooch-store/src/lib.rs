@@ -391,15 +391,15 @@ impl DAMetaStore for RoochStore {
 }
 
 impl ProposerStore for RoochStore {
-    fn get_last_block(&self) -> Result<Option<u128>> {
-        self.get_proposer_store().get_last_block()
+    fn get_last_proposed(&self) -> Result<Option<u128>> {
+        self.get_proposer_store().get_last_proposed()
     }
 
-    fn set_last_block(&self, block_number: u128) -> Result<()> {
-        self.get_proposer_store().set_last_block(block_number)
+    fn set_last_proposed(&self, block_number: u128) -> Result<()> {
+        self.get_proposer_store().set_last_proposed(block_number)
     }
 
-    fn clear_last_block(&self) -> Result<()> {
-        self.get_proposer_store().clear_last_block()
+    fn clear_last_proposed(&self) -> Result<()> {
+        self.get_proposer_store().clear_last_proposed()
     }
 }

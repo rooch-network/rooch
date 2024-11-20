@@ -14,9 +14,9 @@ derive_store!(
 );
 
 pub trait ProposerStore {
-    fn get_last_block(&self) -> anyhow::Result<Option<u128>>;
-    fn set_last_block(&self, block_number: u128) -> anyhow::Result<()>;
-    fn clear_last_block(&self) -> anyhow::Result<()>;
+    fn get_last_proposed(&self) -> anyhow::Result<Option<u128>>;
+    fn set_last_proposed(&self, block_number: u128) -> anyhow::Result<()>;
+    fn clear_last_proposed(&self) -> anyhow::Result<()>;
 }
 
 #[derive(Clone)]
@@ -33,17 +33,17 @@ impl ProposerDBStore {
 }
 
 impl ProposerStore for ProposerDBStore {
-    fn get_last_block(&self) -> anyhow::Result<Option<u128>> {
+    fn get_last_proposed(&self) -> anyhow::Result<Option<u128>> {
         self.last_block_store
             .kv_get(PROPOSER_LAST_BLOCK_KEY.to_string())
     }
 
-    fn set_last_block(&self, block_number: u128) -> anyhow::Result<()> {
+    fn set_last_proposed(&self, block_number: u128) -> anyhow::Result<()> {
         self.last_block_store
             .put_sync(PROPOSER_LAST_BLOCK_KEY.to_string(), block_number)
     }
 
-    fn clear_last_block(&self) -> anyhow::Result<()> {
+    fn clear_last_proposed(&self) -> anyhow::Result<()> {
         self.last_block_store
             .remove(PROPOSER_LAST_BLOCK_KEY.to_string())
     }
