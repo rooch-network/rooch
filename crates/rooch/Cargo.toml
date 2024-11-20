@@ -46,38 +46,23 @@ tabled = { workspace = true }
 xorf = { workspace = true }
 xxhash-rust = { workspace = true, features = ["xxh3"] }
 vergen-pretty = { workspace = true }
-prometheus = { workspace = true }
 lazy_static = { workspace = true }
 schemars = { workspace = true }
 bitcoin = { workspace = true }
-bitcoincore-rpc = { workspace = true }
 ciborium = { workspace = true }
 wasmer = { workspace = true }
 tiny-keccak = { workspace = true }
-serenity = { features = [
-    "client",
-    "gateway",
-    "rustls_backend",
-    "cache",
-    "model",
-], workspace = true }
-futures = { workspace = true }
 
-move-bytecode-utils = { workspace = true }
 move-binary-format = { workspace = true }
-move-bytecode-verifier = { workspace = true }
 move-cli = { workspace = true }
 move-command-line-common = { workspace = true }
 move-compiler = { workspace = true }
 move-core-types = { workspace = true }
-move-coverage = { workspace = true }
-move-disassembler = { workspace = true }
 move-errmapgen = { workspace = true }
 move-package = { workspace = true }
 move-unit-test = { workspace = true }
 move-vm-runtime = { workspace = true, features = ["stacktrace", "debugging", "testing"] }
 move-vm-test-utils = { workspace = true }
-move-model = { workspace = true }
 move-stdlib = { workspace = true }
 move-vm-types = { workspace = true }
 
@@ -90,15 +75,12 @@ moveos-verifier = { workspace = true }
 moveos-object-runtime = { workspace = true }
 moveos-compiler = { workspace = true }
 moveos-config = { workspace = true }
-accumulator = { workspace = true }
 metrics = { workspace = true }
 moveos-gas-profiling = { workspace = true }
 
-framework-builder = { workspace = true }
 framework-types = { workspace = true }
 raw-store = { workspace = true }
 smt = { workspace = true }
-bitcoin-move = { workspace = true }
 
 rooch-key = { workspace = true }
 rooch-types = { workspace = true }
@@ -113,7 +95,6 @@ rooch-indexer = { workspace = true }
 rooch-db = { workspace = true }
 rooch-common = { workspace = true }
 rooch-store = { workspace = true }
-rooch-sequencer = { workspace = true }
 rooch-faucet = { workspace = true }
 rooch-oracle = { workspace = true }
 
