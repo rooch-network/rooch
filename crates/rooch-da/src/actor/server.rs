@@ -247,19 +247,19 @@ impl DAServerActor {
                 last_block_update_time: background_last_block_update_time.clone(),
             };
 
-            let mut block_number_for_last_job = None;
+            let mut old_last_block_number = None;
 
             loop {
                 match rooch_store.get_last_block_number() {
                     Ok(Some(last_block_number)) => {
-                        if let Some(block_number_for_last_job) = block_number_for_last_job {
+                        if let Some(block_number_for_last_job) = old_last_block_number {
                             if block_number_for_last_job > last_block_number {
                                 tracing::error!("da: last block number is smaller than last background job block number: {} < {}, database is inconsistent",
                                     last_block_number, block_number_for_last_job);
                                 break;
                             }
                         }
-                        block_number_for_last_job = Some(last_block_number);
+                        old_last_block_number = Some(last_block_number);
 
                         if let Err(e) = background_submitter
                             .start_job(last_block_number, min_block_to_submit_opt)
@@ -269,7 +269,7 @@ impl DAServerActor {
                         }
                     }
                     Ok(None) => {
-                        if let Some(block_number_for_last_job) = block_number_for_last_job {
+                        if let Some(block_number_for_last_job) = old_last_block_number {
                             tracing::error!("da: last block number is None, last background job block number: {}, database is inconsistent",
                                 block_number_for_last_job);
                             break;
