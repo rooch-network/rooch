@@ -402,35 +402,6 @@ struct BackgroundSubmitter {
 }
 
 impl BackgroundSubmitter {
-    fn update_cursor(&self, cursor: u128) -> anyhow::Result<()> {
-        self.rooch_store
-            .set_background_submit_block_cursor(cursor)?;
-        self.last_block_update_time.store(
-            SystemTime::now()
-                .duration_since(time::UNIX_EPOCH)?
-                .as_secs(),
-            Ordering::Relaxed,
-        );
-        Ok(())
-    }
-
-    // adjust cursor(N) = max(cursor_opt, min_block_to_submit_opt), submit state checking start from N
-    fn adjust_cursor(
-        origin_cursor: Option<u128>,
-        min_block_to_submit_opt: Option<u128>,
-    ) -> Option<u128> {
-        if let Some(min_block_to_submit) = min_block_to_submit_opt {
-            if let Some(cursor) = origin_cursor {
-                if cursor < min_block_to_submit {
-                    return Some(min_block_to_submit);
-                }
-            } else {
-                return Some(min_block_to_submit);
-            }
-        }
-        origin_cursor
-    }
-
     // start a job to submit unsubmitted blocks in this duration
     async fn start_job(
         &self,
@@ -448,23 +419,24 @@ impl BackgroundSubmitter {
                     last_block_number
                 ));
             }
-            last_block_number - cursor // (cursor, last_block_number]
+            last_block_number - cursor
         } else {
-            last_block_number + 1 // [0, last_block_number]
+            last_block_number + 1
         };
         let unsubmitted_blocks = self
             .rooch_store
             .get_submitting_blocks(cursor_opt.unwrap_or(0), Some(exp_count as usize))?;
 
-        // there is no unsubmitted block: [0, last_block_number]
+        // there is no unsubmitted block
         if unsubmitted_blocks.is_empty() {
             self.update_cursor(last_block_number)?;
             return Ok(());
         }
-        // submitted: [0, first_unsubmitted_block - 1]
         let first_unsubmitted_block = unsubmitted_blocks.first().unwrap().block_number;
         if first_unsubmitted_block > 0 {
+            // submitted: [cursor, first_unsubmitted_block - 1]
             let new_cursor = first_unsubmitted_block - 1;
+            // update cursor to new_cursor, because cursor maybe behind than set_submitting_block_done
             self.update_cursor(new_cursor)?;
         }
 
@@ -472,10 +444,6 @@ impl BackgroundSubmitter {
         let mut max_block_number_submitted: u128 = 0;
         for unsubmitted_block_range in unsubmitted_blocks {
             let block_number = unsubmitted_block_range.block_number;
-            // leave last block to be submitted by submit_new_block, avoid duplicated submission
-            if block_number >= last_block_number {
-                break;
-            }
             let tx_order_start = unsubmitted_block_range.tx_order_start;
             let tx_order_end = unsubmitted_block_range.tx_order_end;
             // collect tx from start to end for rooch_store
@@ -518,6 +486,36 @@ impl BackgroundSubmitter {
         }
 
         Ok(())
+    }
+
+    // update to last_submitted_block_number, next submit state checking start from last_submitted_block_number
+    fn update_cursor(&self, last_submitted_block_number: u128) -> anyhow::Result<()> {
+        self.rooch_store
+            .set_background_submit_block_cursor(last_submitted_block_number)?;
+        self.last_block_update_time.store(
+            SystemTime::now()
+                .duration_since(time::UNIX_EPOCH)?
+                .as_secs(),
+            Ordering::Relaxed,
+        );
+        Ok(())
+    }
+
+    // adjust cursor(N) = max(cursor_opt, min_block_to_submit_opt), submit state checking start from N
+    fn adjust_cursor(
+        origin_cursor: Option<u128>,
+        min_block_to_submit_opt: Option<u128>,
+    ) -> Option<u128> {
+        if let Some(min_block_to_submit) = min_block_to_submit_opt {
+            if let Some(cursor) = origin_cursor {
+                if cursor < min_block_to_submit {
+                    return Some(min_block_to_submit);
+                }
+            } else {
+                return Some(min_block_to_submit);
+            }
+        }
+        origin_cursor
     }
 }
 
