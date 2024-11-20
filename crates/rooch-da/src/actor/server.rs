@@ -38,6 +38,7 @@ pub struct DAServerActor {
     backend_names: Vec<String>,
     last_block_number: Option<u128>,
     last_block_update_time: u64,
+    min_block_to_submit: Option<u128>,
     background_last_block_update_time: Arc<AtomicU64>,
     batch_maker: BatchMaker,
 }
@@ -128,7 +129,7 @@ impl DAServerActor {
         rooch_store: RoochStore,
         genesis_namespace: String,
     ) -> anyhow::Result<Self> {
-        let start_block_opt = da_config.da_start_block;
+        let min_block_to_submit = da_config.da_min_block_to_submit;
         let ServerBackends {
             backends,
             backend_names,
@@ -144,6 +145,7 @@ impl DAServerActor {
             backend_names,
             last_block_number,
             last_block_update_time: 0,
+            min_block_to_submit,
             background_last_block_update_time: background_last_block_update_time.clone(),
             batch_maker: BatchMaker::new(),
         };
@@ -155,7 +157,7 @@ impl DAServerActor {
                 backends,
                 submit_threshold,
                 background_last_block_update_time,
-                start_block_opt,
+                min_block_to_submit,
                 background_submit_interval,
             );
         }
@@ -196,6 +198,7 @@ impl DAServerActor {
             last_block_number: self.last_block_number,
             last_tx_order,
             last_block_update_time,
+            min_avail_block_number: self.min_block_to_submit,
             last_avail_block_number,
             last_avail_tx_order,
             last_avail_block_update_time,
@@ -228,7 +231,7 @@ impl DAServerActor {
         backends: Vec<Arc<dyn DABackend>>,
         submit_threshold: usize,
         background_last_block_update_time: Arc<AtomicU64>,
-        start_block_opt: Option<u128>,
+        min_block_to_submit_opt: Option<u128>,
         background_submit_interval: u64,
     ) {
         tokio::spawn(async move {
@@ -259,7 +262,7 @@ impl DAServerActor {
                         block_number_for_last_job = Some(last_block_number);
 
                         if let Err(e) = background_submitter
-                            .start_job(last_block_number, start_block_opt)
+                            .start_job(last_block_number, min_block_to_submit_opt)
                             .await
                         {
                             tracing::error!("da: background submitter failed: {:?}", e);
@@ -411,15 +414,18 @@ impl BackgroundSubmitter {
         Ok(())
     }
 
-    // adjust cursor(N) = max(cursor_opt, start_block), submit state checking start from N
-    fn adjust_cursor(origin_cursor: Option<u128>, start_block_opt: Option<u128>) -> Option<u128> {
-        if let Some(start_block) = start_block_opt {
+    // adjust cursor(N) = max(cursor_opt, min_block_to_submit_opt), submit state checking start from N
+    fn adjust_cursor(
+        origin_cursor: Option<u128>,
+        min_block_to_submit_opt: Option<u128>,
+    ) -> Option<u128> {
+        if let Some(min_block_to_submit) = min_block_to_submit_opt {
             if let Some(cursor) = origin_cursor {
-                if cursor < start_block {
-                    return Some(start_block);
+                if cursor < min_block_to_submit {
+                    return Some(min_block_to_submit);
                 }
             } else {
-                return Some(start_block);
+                return Some(min_block_to_submit);
             }
         }
         origin_cursor
@@ -429,11 +435,11 @@ impl BackgroundSubmitter {
     async fn start_job(
         &self,
         last_block_number: u128,
-        start_block_opt: Option<u128>,
+        min_block_to_submit_opt: Option<u128>,
     ) -> anyhow::Result<()> {
         // try to get unsubmitted blocks from [cursor, last_block_number]
         let origin_background_cursor = self.rooch_store.get_background_submit_block_cursor()?;
-        let cursor_opt = Self::adjust_cursor(origin_background_cursor, start_block_opt);
+        let cursor_opt = Self::adjust_cursor(origin_background_cursor, min_block_to_submit_opt);
         let exp_count = if let Some(cursor) = cursor_opt {
             if cursor > last_block_number {
                 return Err(anyhow!(
@@ -541,28 +547,28 @@ mod tests {
     #[test]
     fn test_background_submitter_adjust_cursor() {
         let cursor = Some(10);
-        let start_block = Some(5);
-        let ret = BackgroundSubmitter::adjust_cursor(cursor, start_block);
+        let min_block_to_submit = Some(5);
+        let ret = BackgroundSubmitter::adjust_cursor(cursor, min_block_to_submit);
         assert_eq!(ret, Some(10));
 
         let cursor = Some(10);
-        let start_block = Some(15);
-        let ret = BackgroundSubmitter::adjust_cursor(cursor, start_block);
+        let min_block_to_submit = Some(15);
+        let ret = BackgroundSubmitter::adjust_cursor(cursor, min_block_to_submit);
         assert_eq!(ret, Some(15));
 
         let cursor = Some(10);
-        let start_block = None;
-        let ret = BackgroundSubmitter::adjust_cursor(cursor, start_block);
+        let min_block_to_submit = None;
+        let ret = BackgroundSubmitter::adjust_cursor(cursor, min_block_to_submit);
         assert_eq!(ret, Some(10));
 
         let cursor = None;
-        let start_block = Some(5);
-        let ret = BackgroundSubmitter::adjust_cursor(cursor, start_block);
+        let min_block_to_submit = Some(5);
+        let ret = BackgroundSubmitter::adjust_cursor(cursor, min_block_to_submit);
         assert_eq!(ret, Some(5));
 
         let cursor = None;
-        let start_block = None;
-        let ret = BackgroundSubmitter::adjust_cursor(cursor, start_block);
+        let min_block_to_submit = None;
+        let ret = BackgroundSubmitter::adjust_cursor(cursor, min_block_to_submit);
         assert_eq!(ret, None);
     }
 

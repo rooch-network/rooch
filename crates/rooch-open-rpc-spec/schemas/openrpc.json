@@ -1077,7 +1077,7 @@
             }
           },
           "last_avail_block_number": {
-            "description": "The last available block number, may little behind the last block number. [0, last_avail_block_number] blocks were confirmed by DA backend. If meet error in background submitter job, it may be far behind the last block number.",
+            "description": "The last available block number, may little behind the last block number. [min_avail_block_number, last_avail_block_number] blocks were confirmed by DA backend. If meet error in background submitter job, it may be far behind the last block number.",
             "type": [
               "integer",
               "null"
@@ -1128,6 +1128,15 @@
               "null"
             ],
             "format": "uint64",
+            "minimum": 0.0
+          },
+          "min_avail_block_number": {
+            "description": "Min available block number. if not set, all blocks will be submitted to DA.",
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "uint128",
             "minimum": 0.0
           }
         }

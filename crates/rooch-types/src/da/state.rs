@@ -15,8 +15,10 @@ pub struct DAServerStatus {
     /// Should be closed to request time if there were new blocks.
     /// None if no blocks were received after server start.
     pub last_block_update_time: Option<u64>,
+    /// Min available block number. if not set, all blocks will be submitted to DA.
+    pub min_avail_block_number: Option<u128>,
     /// The last available block number, may little behind the last block number.
-    /// [0, last_avail_block_number] blocks were confirmed by DA backend.
+    /// [min_avail_block_number, last_avail_block_number] blocks were confirmed by DA backend.
     /// If meet error in background submitter job, it may be far behind the last block number.
     pub last_avail_block_number: Option<u128>,
     /// The last available tx order
