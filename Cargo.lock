@@ -9929,12 +9929,14 @@ dependencies = [
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
  "async-trait",
  "coerce",
- "log",
  "metrics",
+ "moveos-store",
  "moveos-types",
  "prometheus",
- "rooch-da",
+ "rooch-config",
+ "rooch-store",
  "rooch-types",
+ "tracing",
 ]
 
 [[package]]

@@ -35,7 +35,7 @@ pub mod meta_store;
 pub mod state_store;
 pub mod transaction_store;
 
-mod proposer_store;
+pub mod proposer_store;
 #[cfg(test)]
 mod tests;
 

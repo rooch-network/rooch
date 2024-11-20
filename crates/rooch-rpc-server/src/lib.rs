@@ -18,6 +18,7 @@ use moveos_eventbus::bus::EventBus;
 use raw_store::errors::RawStoreError;
 use rooch_config::da_config::derive_genesis_namespace;
 use rooch_config::server_config::ServerConfig;
+use rooch_config::settings::PROPOSER_CHECK_INTERVAL;
 use rooch_config::{RoochOpt, ServerOpt};
 use rooch_da::actor::server::DAServerActor;
 use rooch_da::proxy::DAServerProxy;
@@ -304,7 +305,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         DAServerActor::new(
             da_config,
             sequencer_keypair.copy(),
-            rooch_store,
+            rooch_store.clone(),
             genesis_namespace,
         )
         .await?
@@ -317,11 +318,17 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     let proposer_keypair = server_opt.proposer_keypair.unwrap();
     let proposer_account: RoochAddress = proposer_keypair.public().rooch_address()?;
     info!("RPC Server proposer address: {:?}", proposer_account);
-    let proposer = ProposerActor::new(proposer_keypair, da_proxy.clone(), &prometheus_registry)
-        .into_actor(Some("Proposer"), &actor_system)
-        .await?;
-    //TODO load from config
-    let block_propose_duration_in_seconds: u64 = 600;
+    let proposer = ProposerActor::new(
+        proposer_keypair,
+        moveos_store,
+        rooch_store,
+        &prometheus_registry,
+        opt.proposer.clone(),
+    )?
+    .into_actor(Some("Proposer"), &actor_system)
+    .await?;
+    let block_propose_duration_in_seconds: u64 =
+        opt.proposer.interval.unwrap_or(PROPOSER_CHECK_INTERVAL);
     let mut timers = vec![];
     let proposer_timer = Timer::start(
         proposer,
