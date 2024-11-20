@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::da_config::DAConfig;
+use crate::proposer_config::ProposerConfig;
 use crate::store_config::StoreConfig;
 use anyhow::Result;
 use clap::Parser;
@@ -21,7 +22,9 @@ use std::{fmt::Debug, path::Path, path::PathBuf};
 
 pub mod config;
 pub mod da_config;
+pub mod proposer_config;
 pub mod server_config;
+pub mod settings;
 pub mod store_config;
 
 pub const ROOCH_DIR: &str = ".rooch";
@@ -141,6 +144,9 @@ pub struct RoochOpt {
     #[clap(long, default_value_t)]
     pub da: DAConfig,
 
+    #[clap(flatten)]
+    pub proposer: ProposerConfig,
+
     #[clap(long, default_value_t, value_enum)]
     pub service_status: ServiceStatus,
 
@@ -193,6 +199,7 @@ impl RoochOpt {
             sequencer_account: None,
             proposer_account: None,
             da: DAConfig::default(),
+            proposer: ProposerConfig::default(),
             service_status: ServiceStatus::default(),
             traffic_per_second: None,
             traffic_burst_size: None,

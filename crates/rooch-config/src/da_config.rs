@@ -18,10 +18,11 @@ static R_DEFAULT_OPENDA_FS_DIR: Lazy<PathBuf> = Lazy::new(|| PathBuf::from("open
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum DAServerSubmitStrategy {
+    // = n
     All,
     // >= n/2+1
     Quorum,
-    // >= number
+    // >= number, at least 1
     Number(usize),
 }
 
@@ -127,9 +128,9 @@ pub struct DAConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub da_backend: Option<DABackendConfig>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    /// The offset of the first block to be submitted.
-    /// If not set, the default value is 0.
-    pub da_init_offset: Option<u128>,
+    /// The first block to be submitted.
+    /// If not set, all blocks will be submitted.
+    pub da_min_block_to_submit: Option<u128>,
     #[serde(skip)]
     base: Option<Arc<BaseConfig>>,
 }
@@ -162,13 +163,11 @@ impl DAConfig {
 
         let default_fs_root = self.get_openda_fs_dir();
 
-        if let Some(backend_config) = &mut self.da_backend {
-            backend_config.adjust_submit_strategy();
-            let backends = &mut backend_config.backends;
-
-            for backend in backends {
+        if let Some(da_backend_cfg) = &mut self.da_backend {
+            let backends_configs = &mut da_backend_cfg.backends;
+            for backend_config in backends_configs {
                 #[allow(irrefutable_let_patterns)]
-                if let DABackendConfigType::OpenDa(open_da_config) = backend {
+                if let DABackendConfigType::OpenDa(open_da_config) = backend_config {
                     if matches!(open_da_config.scheme, OpenDAScheme::Fs) {
                         if let Some(fs_str) = default_fs_root.to_str() {
                             let var_source = retrieve_map_config_value(
@@ -231,26 +230,26 @@ impl DABackendConfig {
     pub fn calculate_submit_threshold(&mut self) -> usize {
         self.adjust_submit_strategy(); // Make sure submit_strategy is adjusted before calling this function.
 
-        let servers_count = self.backends.len();
+        let backends_count = self.backends.len();
         match self.submit_strategy {
-            Some(DAServerSubmitStrategy::All) => servers_count,
-            Some(DAServerSubmitStrategy::Quorum) => servers_count / 2 + 1,
+            Some(DAServerSubmitStrategy::All) => backends_count,
+            Some(DAServerSubmitStrategy::Quorum) => backends_count / 2 + 1,
             Some(DAServerSubmitStrategy::Number(number)) => number,
-            None => servers_count, // Default to 'All' if submit_strategy is None
+            None => backends_count, // Default to 'All' if submit_strategy is None
         }
     }
 
     fn adjust_submit_strategy(&mut self) {
-        let servers_count = self.backends.len();
-
         // Set default strategy to All if it's None.
         let strategy = self
             .submit_strategy
             .get_or_insert(DAServerSubmitStrategy::All);
 
-        // If it's a Number, adjust the value to be within [1, n].
+        let backends_count = self.backends.len();
+
+        // If it's Number, adjust the value to be within [1, n].
         if let DAServerSubmitStrategy::Number(ref mut num) = strategy {
-            *num = std::cmp::max(1, std::cmp::min(*num, servers_count));
+            *num = std::cmp::max(1, std::cmp::min(*num, backends_count));
         }
     }
 }
@@ -300,11 +299,48 @@ mod tests {
     use super::*;
 
     #[test]
+    fn calculate_submit_threshold() {
+        let mut da_backend_config = DABackendConfig {
+            submit_strategy: Some(DAServerSubmitStrategy::All),
+            backends: vec![
+                DABackendConfigType::OpenDa(DABackendOpenDAConfig {
+                    scheme: OpenDAScheme::Fs,
+                    config: HashMap::new(),
+                    namespace: None,
+                    max_segment_size: None,
+                    max_retires: None,
+                }),
+                DABackendConfigType::OpenDa(DABackendOpenDAConfig {
+                    scheme: OpenDAScheme::Fs,
+                    config: HashMap::new(),
+                    namespace: None,
+                    max_segment_size: None,
+                    max_retires: None,
+                }),
+            ],
+            background_submit_interval: None,
+        };
+        assert_eq!(da_backend_config.calculate_submit_threshold(), 2);
+
+        da_backend_config.submit_strategy = Some(DAServerSubmitStrategy::Quorum);
+        assert_eq!(da_backend_config.calculate_submit_threshold(), 2);
+
+        da_backend_config.submit_strategy = Some(DAServerSubmitStrategy::Number(1));
+        assert_eq!(da_backend_config.calculate_submit_threshold(), 1);
+
+        da_backend_config.submit_strategy = Some(DAServerSubmitStrategy::Number(3));
+        assert_eq!(da_backend_config.calculate_submit_threshold(), 2);
+
+        da_backend_config.submit_strategy = None;
+        assert_eq!(da_backend_config.calculate_submit_threshold(), 2);
+    }
+
+    #[test]
     fn da_config_from_str() {
         let da_config_str = r#"{"da-backend": {"submit-strategy": "all",
         "backends": [{"open-da": {"scheme": "gcs", "config": {"bucket": "test-bucket", "credential": "test-credential"}}},
         {"open-da": {"scheme": "celestia", "config": {"endpoint": "test-conn", "auth_token": "test-auth"}, "namespace": "000000000000000000000000000000000000000102030405060708090a"}},
-        {"open-da": {"scheme": "fs", "config": {}}}]}, "da-init-offset": 340282366920938463463374607431768211455}"#;
+        {"open-da": {"scheme": "fs", "config": {}}}]}, "da-min-block-to-submit": 340282366920938463463374607431768211455}"#;
 
         let exp_gcs_config = DABackendOpenDAConfig {
             scheme: OpenDAScheme::Gcs,
@@ -349,7 +385,7 @@ mod tests {
                 ],
                 background_submit_interval: None,
             }),
-            da_init_offset: Some(340282366920938463463374607431768211455),
+            da_min_block_to_submit: Some(340282366920938463463374607431768211455),
             base: None,
         };
         match DAConfig::from_str(da_config_str) {
@@ -372,7 +408,7 @@ mod tests {
                 backends: vec![DABackendConfigType::OpenDa(exp_fs_config.clone())],
                 background_submit_interval: None,
             }),
-            da_init_offset: None,
+            da_min_block_to_submit: None,
             base: None,
         };
         match DAConfig::from_str(da_config_str) {

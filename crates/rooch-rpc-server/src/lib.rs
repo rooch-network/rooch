@@ -18,6 +18,7 @@ use moveos_eventbus::bus::EventBus;
 use raw_store::errors::RawStoreError;
 use rooch_config::da_config::derive_genesis_namespace;
 use rooch_config::server_config::ServerConfig;
+use rooch_config::settings::PROPOSER_CHECK_INTERVAL;
 use rooch_config::{RoochOpt, ServerOpt};
 use rooch_da::actor::server::DAServerActor;
 use rooch_da::proxy::DAServerProxy;
@@ -34,7 +35,6 @@ use rooch_pipeline_processor::actor::processor::PipelineProcessorActor;
 use rooch_pipeline_processor::proxy::PipelineProcessorProxy;
 use rooch_proposer::actor::messages::ProposeBlock;
 use rooch_proposer::actor::proposer::ProposerActor;
-use rooch_proposer::proxy::ProposerProxy;
 use rooch_relayer::actor::bitcoin_client::BitcoinClientActor;
 use rooch_relayer::actor::bitcoin_client_proxy::BitcoinClientProxy;
 use rooch_relayer::actor::messages::RelayTick;
@@ -306,7 +306,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         DAServerActor::new(
             da_config,
             sequencer_keypair.copy(),
-            rooch_store,
+            rooch_store.clone(),
             genesis_namespace,
         )
         .await?
@@ -319,12 +319,17 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     let proposer_keypair = server_opt.proposer_keypair.unwrap();
     let proposer_account: RoochAddress = proposer_keypair.public().rooch_address()?;
     info!("RPC Server proposer address: {:?}", proposer_account);
-    let proposer = ProposerActor::new(proposer_keypair, da_proxy.clone(), &prometheus_registry)
-        .into_actor(Some("Proposer"), &actor_system)
-        .await?;
-    let proposer_proxy = ProposerProxy::new(proposer.clone().into());
-    //TODO load from config
-    let block_propose_duration_in_seconds: u64 = 600;
+    let proposer = ProposerActor::new(
+        proposer_keypair,
+        moveos_store,
+        rooch_store,
+        &prometheus_registry,
+        opt.proposer.clone(),
+    )?
+    .into_actor(Some("Proposer"), &actor_system)
+    .await?;
+    let block_propose_duration_in_seconds: u64 =
+        opt.proposer.interval.unwrap_or(PROPOSER_CHECK_INTERVAL);
     let mut timers = vec![];
     let proposer_timer = Timer::start(
         proposer,
@@ -345,7 +350,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     let mut processor = PipelineProcessorActor::new(
         executor_proxy.clone(),
         sequencer_proxy.clone(),
-        proposer_proxy.clone(),
+        da_proxy.clone(),
         indexer_proxy.clone(),
         service_status,
         &prometheus_registry,

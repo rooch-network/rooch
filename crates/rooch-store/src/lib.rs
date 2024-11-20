@@ -4,6 +4,7 @@
 use crate::accumulator_store::{AccumulatorStore, TransactionAccumulatorStore};
 use crate::da_store::{DAMetaDBStore, DAMetaStore};
 use crate::meta_store::{MetaDBStore, MetaStore, SEQUENCER_INFO_KEY};
+use crate::proposer_store::{ProposerDBStore, ProposerStore};
 use crate::state_store::{StateDBStore, StateStore};
 use crate::transaction_store::{TransactionDBStore, TransactionStore};
 use accumulator::{AccumulatorNode, AccumulatorTreeStore};
@@ -34,6 +35,7 @@ pub mod meta_store;
 pub mod state_store;
 pub mod transaction_store;
 
+pub mod proposer_store;
 #[cfg(test)]
 mod tests;
 
@@ -49,6 +51,8 @@ pub const STATE_CHANGE_SET_COLUMN_FAMILY_NAME: ColumnFamilyName = "state_change_
 pub const DA_BLOCK_SUBMIT_STATE_COLUMN_FAMILY_NAME: ColumnFamilyName = "da_block_submit_state";
 pub const DA_BLOCK_CURSOR_COLUMN_FAMILY_NAME: ColumnFamilyName = "da_last_block_number";
 
+pub const PROPOSER_LAST_BLOCK_COLUMN_FAMILY_NAME: ColumnFamilyName = "proposer_last_block";
+
 ///db store use cf_name vec to init
 /// Please note that adding a column family needs to be added in vec simultaneously, remember！！
 static VEC_COLUMN_FAMILY_NAME: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
@@ -60,6 +64,7 @@ static VEC_COLUMN_FAMILY_NAME: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
         STATE_CHANGE_SET_COLUMN_FAMILY_NAME,
         DA_BLOCK_SUBMIT_STATE_COLUMN_FAMILY_NAME,
         DA_BLOCK_CURSOR_COLUMN_FAMILY_NAME,
+        PROPOSER_LAST_BLOCK_COLUMN_FAMILY_NAME,
     ]
 });
 
@@ -80,6 +85,7 @@ pub struct RoochStore {
     pub transaction_accumulator_store: AccumulatorStore<TransactionAccumulatorStore>,
     pub state_store: StateDBStore,
     pub da_meta_store: DAMetaDBStore,
+    pub proposer_store: ProposerDBStore,
 }
 
 impl RoochStore {
@@ -107,6 +113,7 @@ impl RoochStore {
             ),
             state_store: StateDBStore::new(instance.clone()),
             da_meta_store,
+            proposer_store: ProposerDBStore::new(instance.clone()),
         };
         Ok(store)
     }
@@ -137,6 +144,10 @@ impl RoochStore {
 
     pub fn get_da_meta_store(&self) -> &DAMetaDBStore {
         &self.da_meta_store
+    }
+
+    pub fn get_proposer_store(&self) -> &ProposerDBStore {
+        &self.proposer_store
     }
 
     /// atomic save updates made by Sequencer.sequence(tx) to the store
@@ -377,5 +388,19 @@ impl DAMetaStore for RoochStore {
 
     fn get_block_state(&self, block_number: u128) -> Result<BlockSubmitState> {
         self.get_da_meta_store().get_block_state(block_number)
+    }
+}
+
+impl ProposerStore for RoochStore {
+    fn get_last_proposed(&self) -> Result<Option<u128>> {
+        self.get_proposer_store().get_last_proposed()
+    }
+
+    fn set_last_proposed(&self, block_number: u128) -> Result<()> {
+        self.get_proposer_store().set_last_proposed(block_number)
+    }
+
+    fn clear_last_proposed(&self) -> Result<()> {
+        self.get_proposer_store().clear_last_proposed()
     }
 }

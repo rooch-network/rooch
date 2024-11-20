@@ -196,6 +196,7 @@ impl RocksDB {
 
     pub fn drop_cf(&mut self, name: &str) -> Result<(), Error> {
         self.db.drop_cf(name)?;
+        self.db.flush()?;
         Ok(())
     }
 
