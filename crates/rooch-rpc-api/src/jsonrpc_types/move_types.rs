@@ -256,6 +256,26 @@ pub enum AnnotatedMoveValueView {
     U256(StrView<u256::U256>),
 }
 
+impl AnnotatedMoveValueView {
+    /// Calculate the total number of Move structs recursively
+    pub fn size_of_struct_recursively(origin: &AnnotatedMoveValue) -> usize {
+        match origin {
+            AnnotatedMoveValue::Vector(_, data) => match data.first() {
+                Some(first) => Self::size_of_struct_recursively(first) * data.len(),
+                None => 0,
+            },
+            AnnotatedMoveValue::Struct(data) => {
+                let mut size = 1;
+                for (_, v) in &data.value {
+                    size += Self::size_of_struct_recursively(v);
+                }
+                size
+            }
+            _ => 0,
+        }
+    }
+}
+
 impl From<AnnotatedMoveValue> for AnnotatedMoveValueView {
     fn from(origin: AnnotatedMoveValue) -> Self {
         match origin {
