@@ -128,7 +128,7 @@ impl DAServerActor {
         rooch_store: RoochStore,
         genesis_namespace: String,
     ) -> anyhow::Result<Self> {
-        let init_block_offset = da_config.da_init_offset;
+        let start_block_opt = da_config.da_start_block;
         let ServerBackends {
             backends,
             backend_names,
@@ -155,7 +155,7 @@ impl DAServerActor {
                 backends,
                 submit_threshold,
                 background_last_block_update_time,
-                init_block_offset,
+                start_block_opt,
                 background_submit_interval,
             );
         }
@@ -228,7 +228,7 @@ impl DAServerActor {
         backends: Vec<Arc<dyn DABackend>>,
         submit_threshold: usize,
         background_last_block_update_time: Arc<AtomicU64>,
-        init_block_offset: Option<u128>,
+        start_block_opt: Option<u128>,
         background_submit_interval: u64,
     ) {
         tokio::spawn(async move {
@@ -259,7 +259,7 @@ impl DAServerActor {
                         block_number_for_last_job = Some(last_block_number);
 
                         if let Err(e) = background_submitter
-                            .start_job(last_block_number, init_block_offset)
+                            .start_job(last_block_number, start_block_opt)
                             .await
                         {
                             tracing::error!("da: background submitter failed: {:?}", e);
@@ -314,7 +314,8 @@ pub(crate) struct Submitter {
 }
 
 impl Submitter {
-    // should be idempotent
+    // TODO check all backends are idempotent or not, if not, we need to add a check to avoid duplicated submission
+    // assume it's idempotent for now
     async fn submit_batch_raw(
         &self,
         block_range: BlockRange,
@@ -410,28 +411,29 @@ impl BackgroundSubmitter {
         Ok(())
     }
 
-    // adjust cursor to be the max of cursor_opt and init_block_offset
-    fn adjust_cursor(origin_cursor: Option<u128>, init_block_offset: Option<u128>) -> Option<u128> {
-        if let Some(init_block_offset) = init_block_offset {
+    // adjust cursor(N) = max(cursor_opt, start_block), submit state checking start from N
+    fn adjust_cursor(origin_cursor: Option<u128>, start_block_opt: Option<u128>) -> Option<u128> {
+        if let Some(start_block) = start_block_opt {
             if let Some(cursor) = origin_cursor {
-                if cursor < init_block_offset {
-                    return Some(init_block_offset);
+                if cursor < start_block {
+                    return Some(start_block);
                 }
             } else {
-                return Some(init_block_offset);
+                return Some(start_block);
             }
         }
         origin_cursor
     }
 
+    // start a job to submit unsubmitted blocks in this duration
     async fn start_job(
         &self,
         last_block_number: u128,
-        init_block_offset: Option<u128>,
+        start_block_opt: Option<u128>,
     ) -> anyhow::Result<()> {
         // try to get unsubmitted blocks from [cursor, last_block_number]
         let origin_background_cursor = self.rooch_store.get_background_submit_block_cursor()?;
-        let cursor_opt = Self::adjust_cursor(origin_background_cursor, init_block_offset);
+        let cursor_opt = Self::adjust_cursor(origin_background_cursor, start_block_opt);
         let exp_count = if let Some(cursor) = cursor_opt {
             if cursor > last_block_number {
                 return Err(anyhow!(
@@ -533,8 +535,36 @@ fn pair_tx_order_hash(
 
 #[cfg(test)]
 mod tests {
-    use crate::actor::server::pair_tx_order_hash;
+    use crate::actor::server::{pair_tx_order_hash, BackgroundSubmitter};
     use moveos_types::h256::H256;
+
+    #[test]
+    fn test_background_submitter_adjust_cursor() {
+        let cursor = Some(10);
+        let start_block = Some(5);
+        let ret = BackgroundSubmitter::adjust_cursor(cursor, start_block);
+        assert_eq!(ret, Some(10));
+
+        let cursor = Some(10);
+        let start_block = Some(15);
+        let ret = BackgroundSubmitter::adjust_cursor(cursor, start_block);
+        assert_eq!(ret, Some(15));
+
+        let cursor = Some(10);
+        let start_block = None;
+        let ret = BackgroundSubmitter::adjust_cursor(cursor, start_block);
+        assert_eq!(ret, Some(10));
+
+        let cursor = None;
+        let start_block = Some(5);
+        let ret = BackgroundSubmitter::adjust_cursor(cursor, start_block);
+        assert_eq!(ret, Some(5));
+
+        let cursor = None;
+        let start_block = None;
+        let ret = BackgroundSubmitter::adjust_cursor(cursor, start_block);
+        assert_eq!(ret, None);
+    }
 
     #[test]
     fn pair_tx_order_hash_failed() {

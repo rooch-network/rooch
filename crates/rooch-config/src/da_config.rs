@@ -128,9 +128,9 @@ pub struct DAConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub da_backend: Option<DABackendConfig>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    /// The offset of the first block to be submitted.
-    /// If not set, the default value is 0.
-    pub da_init_offset: Option<u128>,
+    /// The first block to be submitted.
+    /// If not set, all blocks will be submitted.
+    pub da_start_block: Option<u128>,
     #[serde(skip)]
     base: Option<Arc<BaseConfig>>,
 }
@@ -340,7 +340,7 @@ mod tests {
         let da_config_str = r#"{"da-backend": {"submit-strategy": "all",
         "backends": [{"open-da": {"scheme": "gcs", "config": {"bucket": "test-bucket", "credential": "test-credential"}}},
         {"open-da": {"scheme": "celestia", "config": {"endpoint": "test-conn", "auth_token": "test-auth"}, "namespace": "000000000000000000000000000000000000000102030405060708090a"}},
-        {"open-da": {"scheme": "fs", "config": {}}}]}, "da-init-offset": 340282366920938463463374607431768211455}"#;
+        {"open-da": {"scheme": "fs", "config": {}}}]}, "da-start-block": 340282366920938463463374607431768211455}"#;
 
         let exp_gcs_config = DABackendOpenDAConfig {
             scheme: OpenDAScheme::Gcs,
@@ -385,7 +385,7 @@ mod tests {
                 ],
                 background_submit_interval: None,
             }),
-            da_init_offset: Some(340282366920938463463374607431768211455),
+            da_start_block: Some(340282366920938463463374607431768211455),
             base: None,
         };
         match DAConfig::from_str(da_config_str) {
@@ -408,7 +408,7 @@ mod tests {
                 backends: vec![DABackendConfigType::OpenDa(exp_fs_config.clone())],
                 background_submit_interval: None,
             }),
-            da_init_offset: None,
+            da_start_block: None,
             base: None,
         };
         match DAConfig::from_str(da_config_str) {
