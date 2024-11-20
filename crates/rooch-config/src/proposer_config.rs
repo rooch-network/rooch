@@ -16,6 +16,13 @@ pub struct ProposerConfig {
         help = "The initial block number offset of the propose, start propose from this block number"
     )]
     pub init_offset: Option<u128>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[clap(
+        name = "proposer-interval",
+        long,
+        help = "The proposer check avail block to propose interval"
+    )]
+    pub interval: Option<u64>,
 }
 
 impl Config for ProposerConfig {}
