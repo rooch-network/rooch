@@ -460,21 +460,21 @@ fn execute_wasm_function_inner(
 
                     // TODO: check the length of arguments for the function calling
 
-                    let trap_handler: Box<
-                        dyn Fn(libc::c_int, *const libc::siginfo_t, *const libc::c_void) -> bool
-                            + Send
-                            + Sync
-                            + 'static,
-                    > = Box::new(|signum, siginfo, ctx| {
-                        warn!(
-                            "Trap handler called, signum:{:?}, siginfo:{:?}, context:{:?}",
-                            signum, siginfo, ctx
-                        );
-                        false
-                    });
+                    // let trap_handler: Box<
+                    //     dyn Fn(libc::c_int, *const libc::siginfo_t, *const libc::c_void) -> bool
+                    //         + Send
+                    //         + Sync
+                    //         + 'static,
+                    // > = Box::new(|signum, siginfo, ctx| {
+                    //     warn!(
+                    //         "Trap handler called, signum:{:?}, siginfo:{:?}, context:{:?}",
+                    //         signum, siginfo, ctx
+                    //     );
+                    //     false
+                    // });
 
                     // Set trap handler
-                    instance.store.set_trap_handler(Some(trap_handler));
+                    // instance.store.set_trap_handler(Some(trap_handler));
 
                     match calling_function.call(&mut instance.store, wasm_func_args.as_slice()) {
                         Ok(ret) => {

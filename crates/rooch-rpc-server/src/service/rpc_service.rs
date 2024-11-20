@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::{format_err, Ok, Result};
+use anyhow::{format_err, Result};
 use bitcoincore_rpc::bitcoin::Txid;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::{ModuleId, StructTag};
@@ -404,12 +404,12 @@ impl RpcService {
             } else {
                 BTreeMap::new()
             };
-            let mut object_states: Vec<IndexerObjectStateView> = annotated_states
+            let mut object_states = annotated_states
                 .into_iter()
                 .zip(indexer_ids)
                 .filter_map(|(state_opt, (object_id, indexer_state_id))| {
                     match state_opt {
-                        Some(state) => Some(IndexerObjectStateView::new_from_annotated_state(
+                        Some(state) => Some(IndexerObjectStateView::try_new_from_annotated_state(
                             state,
                             indexer_state_id,
                         )),
@@ -423,7 +423,7 @@ impl RpcService {
                         }
                     }
                 })
-                .collect();
+                .collect::<Result<Vec<_>>>()?;
             if !displays.is_empty() {
                 object_states.iter_mut().for_each(|object_state| {
                     object_state.display_fields =
