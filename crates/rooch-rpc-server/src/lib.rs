@@ -458,7 +458,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         GovernorConfigBuilder::default()
             .key_extractor(SmartIpKeyExtractor)
             .use_headers()
-            .per_millisecond((traffic_per_second * 1000f64).abs() as u64)
+            .per_millisecond((traffic_per_second * 1000f64) as u64)
             .burst_size(traffic_burst_size)
             .use_headers()
             .error_handler(move |error1| ErrorHandler::default().0(error1))
