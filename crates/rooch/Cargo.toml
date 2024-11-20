@@ -40,10 +40,6 @@ fastcrypto = { workspace = true }
 log = { workspace = true }
 csv = { workspace = true }
 tempfile = { workspace = true }
-[target.'cfg(not(target_env = "msvc"))'.dependencies]
-jemallocator = { version = "0.5.4", features = ["unprefixed_malloc_on_supported_platforms", "profiling"] }
-[target.'cfg(target_env = "msvc")'.dependencies]
-mimalloc = { version = "0.1.39" } 
 rustc-hash = { workspace = true }
 rand = { workspace = true }
 tabled = { workspace = true }
@@ -122,6 +118,12 @@ rooch-faucet = { workspace = true }
 rooch-oracle = { workspace = true }
 
 framework-release = { workspace = true }
+
+#We should keep the allocator in the last of the dependencies
+[target.'cfg(not(target_env = "msvc"))'.dependencies]
+jemallocator = { version = "0.5.4", features = ["unprefixed_malloc_on_supported_platforms", "profiling"] }
+[target.'cfg(target_env = "msvc")'.dependencies]
+mimalloc = { version = "0.1.39" }
 
 [build-dependencies]
 anyhow = { workspace = true }
