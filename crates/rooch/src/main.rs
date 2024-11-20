@@ -12,7 +12,6 @@ use jemallocator::Jemalloc;
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
 
-
 #[cfg(target_env = "msvc")]
 use mimalloc::MiMalloc;
 

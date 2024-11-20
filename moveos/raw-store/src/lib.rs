@@ -868,11 +868,10 @@ where
     }
 }
 
-
 #[cfg(test)]
 mod tests {
-    use moveos_config::store_config::RocksdbConfig;
     use super::*;
+    use moveos_config::store_config::RocksdbConfig;
 
     #[test]
     fn test_new_db() {
