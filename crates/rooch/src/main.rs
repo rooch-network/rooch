@@ -6,18 +6,19 @@ use rooch::RoochCli;
 use std::process::exit;
 
 #[cfg(not(target_env = "msvc"))]
-use jemallocator::Jemalloc;
+mod allocator {
+    use jemallocator::Jemalloc;
 
-#[cfg(not(target_env = "msvc"))]
-#[global_allocator]
-static GLOBAL: Jemalloc = Jemalloc;
-
+    #[global_allocator]
+    static GLOBAL: Jemalloc = Jemalloc;
+}
 #[cfg(target_env = "msvc")]
-use mimalloc::MiMalloc;
+mod allocator {
+    use mimalloc::MiMalloc;
 
-#[cfg(target_env = "msvc")]
-#[global_allocator]
-static GLOBAL: MiMalloc = MiMalloc;
+    #[global_allocator]
+    static GLOBAL: MiMalloc = MiMalloc;
+}
 
 /// rooch is a command line tools for Rooch Network
 #[tokio::main]

@@ -9808,7 +9808,6 @@ dependencies = [
  "ciborium",
  "cosmwasm-std",
  "cosmwasm-vm",
- "libc",
  "log",
  "move-binary-format",
  "move-core-types",
