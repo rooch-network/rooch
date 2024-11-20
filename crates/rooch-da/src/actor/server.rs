@@ -44,6 +44,83 @@ pub struct DAServerActor {
 
 impl Actor for DAServerActor {}
 
+struct ServerBackends {
+    backends: Vec<Arc<dyn DABackend>>,
+    backend_names: Vec<String>,
+    submit_threshold: usize,
+    is_nop_backend: bool,
+    background_submit_interval: u64,
+}
+
+impl ServerBackends {
+    const DEFAULT_SUBMIT_THRESHOLD: usize = 1;
+    const DEFAULT_IS_NOP_BACKEND: bool = false;
+    const DEFAULT_BACKGROUND_INTERVAL: u64 = DEFAULT_BACKGROUND_SUBMIT_INTERVAL;
+
+    async fn process_backend_configs(
+        backend_configs: &[DABackendConfigType],
+        genesis_namespace: String,
+        backends: &mut Vec<Arc<dyn DABackend>>,
+        backend_names: &mut Vec<String>,
+    ) -> anyhow::Result<usize> {
+        let mut available_backends = 0;
+        for backend_type in backend_configs {
+            #[allow(irrefutable_let_patterns)]
+            if let DABackendConfigType::OpenDa(openda_config) = backend_type {
+                let backend = OpenDABackend::new(openda_config, genesis_namespace.clone()).await?;
+                backends.push(Arc::new(backend));
+                backend_names.push(format!("openda-{}", openda_config.scheme));
+                available_backends += 1;
+            }
+        }
+        Ok(available_backends)
+    }
+
+    async fn build(da_config: DAConfig, genesis_namespace: String) -> anyhow::Result<Self> {
+        let mut backends: Vec<Arc<dyn DABackend>> = Vec::new();
+        let mut backend_names: Vec<String> = Vec::new();
+        let mut submit_threshold = Self::DEFAULT_SUBMIT_THRESHOLD;
+        let mut is_nop_backend = Self::DEFAULT_IS_NOP_BACKEND;
+        let background_submit_interval = da_config
+            .da_backend
+            .as_ref()
+            .and_then(|backend_config| backend_config.background_submit_interval)
+            .unwrap_or(Self::DEFAULT_BACKGROUND_INTERVAL);
+
+        let mut available_backends_count = 1; // Nop is always available
+        if let Some(mut backend_config) = da_config.da_backend {
+            submit_threshold = backend_config.calculate_submit_threshold();
+            available_backends_count = Self::process_backend_configs(
+                &backend_config.backends,
+                genesis_namespace,
+                &mut backends,
+                &mut backend_names,
+            )
+            .await?;
+        } else {
+            is_nop_backend = true;
+            backends.push(Arc::new(crate::backend::DABackendNopProxy {}));
+            backend_names.push("nop".to_string());
+        }
+
+        if available_backends_count < submit_threshold {
+            return Err(anyhow!(
+                "failed to start da: not enough backends for future submissions. exp>= {} act: {}",
+                submit_threshold,
+                available_backends_count
+            ));
+        }
+
+        Ok(Self {
+            backends,
+            backend_names,
+            submit_threshold,
+            is_nop_backend,
+            background_submit_interval,
+        })
+    }
+}
+
 impl DAServerActor {
     pub async fn new(
         da_config: DAConfig,
@@ -51,47 +128,14 @@ impl DAServerActor {
         rooch_store: RoochStore,
         genesis_namespace: String,
     ) -> anyhow::Result<Self> {
-        let mut backends: Vec<Arc<dyn DABackend>> = Vec::new();
-        let mut backend_names: Vec<String> = Vec::new();
-        let mut submit_threshold = 1;
-        let mut act_backends = 0;
-        let mut background_submit_interval = DEFAULT_BACKGROUND_SUBMIT_INTERVAL;
-        let mut nop_backend = false;
         let init_block_offset = da_config.da_init_offset;
-        // backend config has higher priority than submit threshold
-        if let Some(mut backend_config) = da_config.da_backend {
-            submit_threshold = backend_config.calculate_submit_threshold();
-
-            for backend_type in &backend_config.backends {
-                #[allow(irrefutable_let_patterns)]
-                if let DABackendConfigType::OpenDa(openda_config) = backend_type {
-                    let backend =
-                        OpenDABackend::new(openda_config, genesis_namespace.clone()).await?;
-                    backends.push(Arc::new(backend));
-                    backend_names.push(format!("openda-{}", openda_config.scheme));
-                    act_backends += 1;
-                }
-            }
-            background_submit_interval =
-                if let Some(interval) = backend_config.background_submit_interval {
-                    interval
-                } else {
-                    DEFAULT_BACKGROUND_SUBMIT_INTERVAL
-                };
-        } else {
-            nop_backend = true;
-            backends.push(Arc::new(crate::backend::DABackendNopProxy {}));
-            backend_names.push("nop".to_string());
-            act_backends += 1;
-        }
-
-        if act_backends < submit_threshold {
-            return Err(anyhow!(
-                "failed to start da: not enough backends for future submissions. exp>= {} act: {}",
-                submit_threshold,
-                act_backends
-            ));
-        }
+        let ServerBackends {
+            backends,
+            backend_names,
+            submit_threshold,
+            is_nop_backend,
+            background_submit_interval,
+        } = ServerBackends::build(da_config, genesis_namespace).await?;
 
         let last_block_number = rooch_store.get_last_block_number()?;
         let background_last_block_update_time = Arc::new(AtomicU64::new(0));
@@ -104,55 +148,16 @@ impl DAServerActor {
             batch_maker: BatchMaker::new(),
         };
 
-        if !nop_backend {
-            tokio::spawn(async move {
-                let background_submitter = BackgroundSubmitter {
-                    rooch_store: rooch_store.clone(),
-                    submitter: Submitter {
-                        sequencer_key: sequencer_key.copy(),
-                        rooch_store: rooch_store.clone(),
-                        nop_backend,
-                        backends: backends.clone(),
-                        submit_threshold,
-                    },
-                    last_block_update_time: background_last_block_update_time.clone(),
-                };
-                let mut interval =
-                    tokio::time::interval(Duration::from_secs(background_submit_interval));
-
-                let mut block_number_for_last_job = None;
-                loop {
-                    interval.tick().await;
-                    match rooch_store.get_last_block_number() {
-                        Ok(Some(last_block_number)) => {
-                            if let Some(block_number_for_last_job) = block_number_for_last_job {
-                                if block_number_for_last_job > last_block_number {
-                                    tracing::error!("da: last block number is smaller than last background job block number: {} < {}, database is inconsistent",
-                                        last_block_number, block_number_for_last_job);
-                                    break;
-                                }
-                            }
-                            block_number_for_last_job = Some(last_block_number);
-                            if let Err(e) = background_submitter
-                                .start_job(last_block_number, init_block_offset)
-                                .await
-                            {
-                                tracing::error!("da: background submitter failed: {:?}", e);
-                            }
-                        }
-                        Ok(None) => {
-                            if let Some(block_number_for_last_job) = block_number_for_last_job {
-                                tracing::error!("da: last block number is None, last background job block number: {}, database is inconsistent",
-                                        block_number_for_last_job);
-                                break;
-                            }
-                        }
-                        Err(e) => {
-                            tracing::error!("da: get last block number failed: {:?}", e);
-                        }
-                    }
-                }
-            });
+        if !is_nop_backend {
+            Self::create_background_submitter(
+                rooch_store,
+                sequencer_key,
+                backends,
+                submit_threshold,
+                background_last_block_update_time,
+                init_block_offset,
+                background_submit_interval,
+            );
         }
 
         Ok(server)
@@ -215,6 +220,65 @@ impl DAServerActor {
                 .as_secs();
         };
         Ok(())
+    }
+
+    fn create_background_submitter(
+        rooch_store: RoochStore,
+        sequencer_key: RoochKeyPair,
+        backends: Vec<Arc<dyn DABackend>>,
+        submit_threshold: usize,
+        background_last_block_update_time: Arc<AtomicU64>,
+        init_block_offset: Option<u128>,
+        background_submit_interval: u64,
+    ) {
+        tokio::spawn(async move {
+            let background_submitter = BackgroundSubmitter {
+                rooch_store: rooch_store.clone(),
+                submitter: Submitter {
+                    sequencer_key: sequencer_key.copy(),
+                    rooch_store: rooch_store.clone(),
+                    nop_backend: false, // background submitter should not be nop-backend
+                    backends: backends.clone(),
+                    submit_threshold,
+                },
+                last_block_update_time: background_last_block_update_time.clone(),
+            };
+
+            let mut block_number_for_last_job = None;
+
+            loop {
+                match rooch_store.get_last_block_number() {
+                    Ok(Some(last_block_number)) => {
+                        if let Some(block_number_for_last_job) = block_number_for_last_job {
+                            if block_number_for_last_job > last_block_number {
+                                tracing::error!("da: last block number is smaller than last background job block number: {} < {}, database is inconsistent",
+                                    last_block_number, block_number_for_last_job);
+                                break;
+                            }
+                        }
+                        block_number_for_last_job = Some(last_block_number);
+
+                        if let Err(e) = background_submitter
+                            .start_job(last_block_number, init_block_offset)
+                            .await
+                        {
+                            tracing::error!("da: background submitter failed: {:?}", e);
+                        }
+                    }
+                    Ok(None) => {
+                        if let Some(block_number_for_last_job) = block_number_for_last_job {
+                            tracing::error!("da: last block number is None, last background job block number: {}, database is inconsistent",
+                                block_number_for_last_job);
+                            break;
+                        }
+                    }
+                    Err(e) => {
+                        tracing::error!("da: get last block number failed: {:?}", e);
+                    }
+                }
+                tokio::time::sleep(Duration::from_secs(background_submit_interval)).await;
+            }
+        });
     }
 }
 
