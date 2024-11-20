@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::da_config::DAConfig;
+use crate::proposer_config::ProposerConfig;
 use crate::store_config::StoreConfig;
 use anyhow::Result;
 use clap::Parser;
@@ -143,6 +144,9 @@ pub struct RoochOpt {
     #[clap(long, default_value_t)]
     pub da: DAConfig,
 
+    #[clap(flatten)]
+    pub proposer: ProposerConfig,
+
     #[clap(long, default_value_t, value_enum)]
     pub service_status: ServiceStatus,
 
@@ -195,6 +199,7 @@ impl RoochOpt {
             sequencer_account: None,
             proposer_account: None,
             da: DAConfig::default(),
+            proposer: ProposerConfig::default(),
             service_status: ServiceStatus::default(),
             traffic_per_second: None,
             traffic_burst_size: None,
