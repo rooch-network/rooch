@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::actor::messages::{AppendTransactionMessage, GetServerStatusMessage, PutDABatchMessage};
+use crate::actor::messages::{AppendTransactionMessage, GetServerStatusMessage};
 use crate::backend::openda::OpenDABackend;
 use crate::backend::DABackend;
 use crate::batcher::BatchMaker;
@@ -36,7 +36,6 @@ const DEFAULT_BACKGROUND_SUBMIT_INTERVAL: u64 = 5;
 pub struct DAServerActor {
     rooch_store: RoochStore,
     backend_names: Vec<String>,
-    submitter: Submitter,
     last_block_number: Option<u128>,
     last_block_update_time: u64,
     background_last_block_update_time: Arc<AtomicU64>,
@@ -99,13 +98,6 @@ impl DAServerActor {
         let server = DAServerActor {
             rooch_store: rooch_store.clone(),
             backend_names,
-            submitter: Submitter {
-                sequencer_key: sequencer_key.copy(),
-                rooch_store: rooch_store.clone(),
-                nop_backend,
-                backends: backends.clone(),
-                submit_threshold,
-            },
             last_block_number,
             last_block_update_time: 0,
             background_last_block_update_time: background_last_block_update_time.clone(),
@@ -224,35 +216,6 @@ impl DAServerActor {
         };
         Ok(())
     }
-
-    pub async fn submit_batch(
-        &mut self,
-        msg: PutDABatchMessage,
-    ) -> anyhow::Result<SignedDABatchMeta> {
-        let tx_order_start = msg.tx_order_start;
-        let tx_order_end = msg.tx_order_end;
-        let (block_number, signed_meta) = self
-            .submitter
-            .submit_new_block(tx_order_start, tx_order_end, msg.tx_list)
-            .await?;
-        self.last_block_number = Some(block_number);
-        self.last_block_update_time = SystemTime::now()
-            .duration_since(time::UNIX_EPOCH)?
-            .as_secs();
-
-        Ok(signed_meta)
-    }
-}
-
-#[async_trait]
-impl Handler<PutDABatchMessage> for DAServerActor {
-    async fn handle(
-        &mut self,
-        msg: PutDABatchMessage,
-        _ctx: &mut ActorContext,
-    ) -> anyhow::Result<SignedDABatchMeta> {
-        self.submit_batch(msg).await
-    }
 }
 
 #[async_trait]
@@ -287,29 +250,6 @@ pub(crate) struct Submitter {
 }
 
 impl Submitter {
-    async fn submit_new_block(
-        &self,
-        tx_order_start: u64,
-        tx_order_end: u64,
-        tx_list: Vec<LedgerTransaction>,
-    ) -> anyhow::Result<(u128, SignedDABatchMeta)> {
-        let block_number = self
-            .rooch_store
-            .append_submitting_block(tx_order_start, tx_order_end)?;
-
-        let signed_meta = self
-            .submit_batch_raw(
-                BlockRange {
-                    block_number,
-                    tx_order_start,
-                    tx_order_end,
-                },
-                tx_list,
-            )
-            .await?;
-        Ok((block_number, signed_meta))
-    }
-
     // should be idempotent
     async fn submit_batch_raw(
         &self,
