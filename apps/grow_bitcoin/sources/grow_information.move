@@ -53,7 +53,7 @@ module grow_bitcoin::grow_information_v3 {
         timestamp: u64
     }
 
-    struct AdminCap has store, key {}
+    struct ProjectCap has store, key {}
 
     fun init(){
         let grow_project_list_obj= object::new_named_object(GrowProjectList{
@@ -61,20 +61,20 @@ module grow_bitcoin::grow_information_v3 {
             is_open: true
         });
         object::to_shared(grow_project_list_obj);
-        object::transfer(object::new_named_object(AdminCap{}), sender())
+        object::transfer(object::new_named_object(ProjectCap{}), sender())
     }
 
     public entry fun create_admin(_admin: &mut Object<admin::AdminCap>, receiver: address){
-        let new_admin = object::new(AdminCap{});
+        let new_admin = object::new(ProjectCap{});
         transfer(new_admin, receiver)
     }
 
     public entry fun delete_admin(_admin: &mut Object<admin::AdminCap>, admin_id: ObjectID){
-        let admin_obj = object::take_object_extend<AdminCap>(admin_id);
-        let AdminCap{} = object::remove(admin_obj);
+        let admin_obj = object::take_object_extend<ProjectCap>(admin_id);
+        let ProjectCap{} = object::remove(admin_obj);
     }
 
-    public entry fun new_project(grow_project_list_obj: &mut Object<GrowProjectList>, id: String, _admin: &mut Object<AdminCap>) {
+    public entry fun new_project(grow_project_list_obj: &mut Object<GrowProjectList>, id: String, _admin: &mut Object<ProjectCap>) {
         let grow_project_list = object::borrow_mut(grow_project_list_obj);
         assert!(!table::contains(&grow_project_list.project_list, id), ErrorProjectAleardyExist);
         table::add(&mut grow_project_list.project_list, id, GrowProject{
@@ -89,7 +89,7 @@ module grow_bitcoin::grow_information_v3 {
         });
     }
 
-    public entry fun update_project_meta(grow_project_list_obj: &mut Object<GrowProjectList>, id: String, key: vector<String>, value: vector<String>, _admin: &mut Object<AdminCap>){
+    public entry fun update_project_meta(grow_project_list_obj: &mut Object<GrowProjectList>, id: String, key: vector<String>, value: vector<String>, _admin: &mut Object<ProjectCap>){
         assert!(length(&key) == length(&value), ErrorGrowMetaLength);
         let grow_project = borrow_mut_grow_project(grow_project_list_obj, id);
         grow_project.metadata = GrowMeta {
