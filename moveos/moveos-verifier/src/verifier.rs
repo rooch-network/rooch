@@ -51,6 +51,20 @@ where
         verify_data_struct(module, &db, &mut verified_modules)?;
     }
 
+    for module in modules {
+        let mut module_bytes = vec![];
+        match module.serialize(&mut module_bytes) {
+            Ok(_) => {}
+            Err(_) => {
+                return Err(PartialVMError::new(StatusCode::VALUE_SERIALIZATION_ERROR)
+                    .finish(Location::Undefined))
+            }
+        }
+        let budget = 2048 + module_bytes.len() as u64 * 5;
+        crate::check_complexity::check_module_complexity(module, budget)
+            .map_err(|err| err.finish(Location::Undefined))?;
+    }
+
     Ok(true)
 }
 
