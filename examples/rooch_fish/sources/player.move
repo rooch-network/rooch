@@ -10,9 +10,9 @@ module rooch_fish::player {
     friend rooch_fish::pond;
 
     /// Error codes
-    const E_OVERFLOW: u64 = 1001;
-    const E_INVALID_PLAYER: u64 = 1002;
-    const E_FISH_NOT_FOUND: u64 = 1003;
+    const ErrorOverflow: u64 = 1001;
+    const ErrorInvalidPlayer: u64 = 1002;
+    const ErrorFishNotFound: u64 = 1003;
 
     /// Maximum value for u64
     const U64_MAX: u64 = 18446744073709551615;
@@ -49,7 +49,7 @@ module rooch_fish::player {
     /// Aborts if the addition would cause an overflow
     public(friend) fun add_fish(player_list: &mut PlayerList, owner: address, fish_id: u64) {
         let player_state = get_or_create_player_state(player_list, owner);
-        assert!(player_state.fish_count < U64_MAX, E_OVERFLOW);
+        assert!(player_state.fish_count < U64_MAX, ErrorOverflow);
         player_state.fish_count = player_state.fish_count + 1;
         vector::push_back(&mut player_state.fish_ids, fish_id);
     }
@@ -58,19 +58,19 @@ module rooch_fish::player {
     /// Aborts if the player or fish doesn't exist
     public(friend) fun remove_fish(player_list: &mut PlayerList, owner: address, fish_id: u64) {
         let player_state = get_or_create_player_state(player_list, owner);
-        assert!(player_state.fish_count > 0, E_INVALID_PLAYER);
+        assert!(player_state.fish_count > 0, ErrorInvalidPlayer);
         player_state.fish_count = player_state.fish_count - 1;
         let (found, index) = vector::index_of(&player_state.fish_ids, &fish_id);
-        assert!(found, E_FISH_NOT_FOUND);
+        assert!(found, ErrorFishNotFound);
         vector::remove(&mut player_state.fish_ids, index);
     }
 
     /// Adds feed for a player
     /// Aborts if the addition would cause an overflow
     public(friend) fun add_feed(player_list: &mut PlayerList, owner: address, amount: u256) {
-        assert!(player_list.total_feed <= U256_MAX - amount, E_OVERFLOW);
+        assert!(player_list.total_feed <= U256_MAX - amount, ErrorOverflow);
         let player_state = get_or_create_player_state(player_list, owner);
-        assert!(player_state.feed_amount <= U256_MAX - amount, E_OVERFLOW);
+        assert!(player_state.feed_amount <= U256_MAX - amount, ErrorOverflow);
         player_state.feed_amount = player_state.feed_amount + amount;
         player_list.total_feed = player_list.total_feed + amount;
     }
@@ -79,14 +79,14 @@ module rooch_fish::player {
     /// Aborts if the addition would cause an overflow
     public(friend) fun add_reward(player_list: &mut PlayerList, owner: address, amount: u256) {
         let player_state = get_or_create_player_state(player_list, owner);
-        assert!(player_state.reward <= U256_MAX - amount, E_OVERFLOW);
+        assert!(player_state.reward <= U256_MAX - amount, ErrorOverflow);
         player_state.reward = player_state.reward + amount;
     }
 
     /// Gets the state of a player
     /// Aborts if the player does not exist
     public fun get_state(player_list: &PlayerList, owner: address): PlayerState {
-        assert!(player_exists(player_list, owner), E_INVALID_PLAYER);
+        assert!(player_exists(player_list, owner), ErrorInvalidPlayer);
         *table::borrow(&player_list.players, owner)
     }
 
@@ -102,25 +102,25 @@ module rooch_fish::player {
 
     /// Gets the feed amount of a player
     public fun get_player_feed_amount(player_list: &PlayerList, owner: address): u256 {
-        assert!(player_exists(player_list, owner), E_INVALID_PLAYER);
+        assert!(player_exists(player_list, owner), ErrorInvalidPlayer);
         table::borrow(&player_list.players, owner).feed_amount
     }
 
     /// Gets the reward of a player
     public fun get_player_reward(player_list: &PlayerList, owner: address): u256 {
-        assert!(player_exists(player_list, owner), E_INVALID_PLAYER);
+        assert!(player_exists(player_list, owner), ErrorInvalidPlayer);
         table::borrow(&player_list.players, owner).reward
     }
 
     /// Gets the fish count of a player
     public fun get_player_fish_count(player_list: &PlayerList, owner: address): u64 {
-        assert!(player_exists(player_list, owner), E_INVALID_PLAYER);
+        assert!(player_exists(player_list, owner), ErrorInvalidPlayer);
         table::borrow(&player_list.players, owner).fish_count
     }
 
     /// Gets the fish IDs of a player
     public fun get_player_fish_ids(player_list: &PlayerList, owner: address): vector<u64> {
-        assert!(player_exists(player_list, owner), E_INVALID_PLAYER);
+        assert!(player_exists(player_list, owner), ErrorInvalidPlayer);
         *&table::borrow(&player_list.players, owner).fish_ids
     }
 
@@ -261,7 +261,7 @@ module rooch_fish::player {
     }
 
     #[test]
-    #[expected_failure(abort_code = E_INVALID_PLAYER)]
+    #[expected_failure(abort_code = ErrorInvalidPlayer)]
     fun test_get_state_non_existent_player() {
         let player_list = create_player_list();
         let non_existent_owner = @0x3;
@@ -305,7 +305,7 @@ module rooch_fish::player {
     }
 
     #[test]
-    #[expected_failure(abort_code = E_OVERFLOW)]
+    #[expected_failure(abort_code = ErrorOverflow)]
     fun test_add_feed_overflow() {
         let player_list = create_player_list();
         let owner = @0x1;
@@ -317,7 +317,7 @@ module rooch_fish::player {
     }
 
     #[test]
-    #[expected_failure(abort_code = E_OVERFLOW)]
+    #[expected_failure(abort_code = ErrorOverflow)]
     fun test_add_reward_overflow() {
         let player_list = create_player_list();
         let owner = @0x1;
@@ -358,7 +358,7 @@ module rooch_fish::player {
     }
 
     #[test]
-    #[expected_failure(abort_code = E_FISH_NOT_FOUND)]
+    #[expected_failure(abort_code = ErrorFishNotFound)]
     fun test_remove_non_existent_fish() {
         let player_list = create_player_list();
         let owner = @0x1;
@@ -392,7 +392,7 @@ module rooch_fish::player {
     }
 
     #[test]
-    #[expected_failure(abort_code = E_INVALID_PLAYER)]
+    #[expected_failure(abort_code = ErrorInvalidPlayer)]
     fun test_player_getters_invalid_player() {
         let player_list = create_player_list();
         let non_existent_owner = @0x2;
