@@ -159,10 +159,10 @@ pub struct RoochOpt {
     pub traffic_burst_size: Option<u32>,
 
     /// Set the interval after which one element of the quota is replenished in seconds.
-    ///
+    /// It is floating point number, for example, 0.5 means 2 requests per second.
     /// **The interval must not be zero.**
     #[clap(long)]
-    pub traffic_per_second: Option<u64>,
+    pub traffic_per_second: Option<f64>,
 
     #[clap(long, default_value_t, value_enum)]
     pub service_type: ServiceType,

@@ -19,6 +19,6 @@ docker run -d --name rooch-testnet --restart unless-stopped -v /data:/root -p 67
     --btc-rpc-url "$BTC_TEST_RPC_URL" \
     --btc-rpc-username rooch-test \
     --btc-rpc-password "$BTC_TEST_RPC_PWD" \
-    --traffic-burst-size 100 \
-    --traffic-per-second 2 \
+    --traffic-burst-size 200 \
+    --traffic-per-second 0.1 \
     --da "{\"da-backend\": {\"backends\": [{\"open-da\": {\"scheme\": \"gcs\", \"config\": {\"bucket\": \"$OPENDA_GCP_TESTNET_BUCKET\", \"credential\": \"$OPENDA_GCP_TESTNET_CREDENTIAL\"}}}]}, \"da-min-block-to-submit\": 2508}"
