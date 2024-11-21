@@ -16,6 +16,7 @@
 <b>use</b> <a href="">0x2::signer</a>;
 <b>use</b> <a href="">0x2::timestamp</a>;
 <b>use</b> <a href="">0x2::tx_context</a>;
+<b>use</b> <a href="">0x2::tx_meta</a>;
 <b>use</b> <a href="">0x2::tx_result</a>;
 <b>use</b> <a href="account.md#0x3_account">0x3::account</a>;
 <b>use</b> <a href="account_authentication.md#0x3_account_authentication">0x3::account_authentication</a>;
@@ -29,6 +30,7 @@
 <b>use</b> <a href="chain_id.md#0x3_chain_id">0x3::chain_id</a>;
 <b>use</b> <a href="coin.md#0x3_coin">0x3::coin</a>;
 <b>use</b> <a href="gas_coin.md#0x3_gas_coin">0x3::gas_coin</a>;
+<b>use</b> <a href="onchain_config.md#0x3_onchain_config">0x3::onchain_config</a>;
 <b>use</b> <a href="session_key.md#0x3_session_key">0x3::session_key</a>;
 <b>use</b> <a href="session_validator.md#0x3_session_validator">0x3::session_validator</a>;
 <b>use</b> <a href="transaction.md#0x3_transaction">0x3::transaction</a>;
