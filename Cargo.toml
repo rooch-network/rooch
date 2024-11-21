@@ -279,7 +279,7 @@ uint = "0.9.5"
 rlp = "0.5.2"
 const-hex = "1.13.1"
 cached = "0.43.0"
-diesel = { version = "2.2.4", features = [
+diesel = { version = "2.2.5", features = [
     "chrono",
     "sqlite",
     "r2d2",
