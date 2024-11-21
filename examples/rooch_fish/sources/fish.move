@@ -10,9 +10,9 @@ module rooch_fish::fish {
     friend rooch_fish::rooch_fish;
     friend rooch_fish::pond;
 
-    const E_NOT_OWNER: u64 = 1;
-    const E_INVALID_DIRECTION: u64 = 2;
-    const E_UNAUTHORIZED_CREATION: u64 = 3;
+    const ErrorNotOwner: u64 = 1;
+    const ErrorInvalidDirection: u64 = 2;
+    const ErrorUnauthorizedCreation: u64 = 3;
 
     struct Fish has key, store {
         id: u64,
@@ -39,8 +39,8 @@ module rooch_fish::fish {
     }
 
     public(friend) fun move_fish(account: &signer, fish: &mut Fish, direction: u8) {
-        assert!(signer::address_of(account) == fish.owner, E_NOT_OWNER);
-        assert!(direction <= 3, E_INVALID_DIRECTION);
+        assert!(signer::address_of(account) == fish.owner, ErrorNotOwner);
+        assert!(direction <= 3, ErrorInvalidDirection);
 
         if (direction == 0) {
             fish.y = fish.y + 1;
@@ -246,7 +246,7 @@ module rooch_fish::fish {
     }
 
     #[test(owner = @0x42, non_owner = @0x43)]
-    #[expected_failure(abort_code = E_NOT_OWNER)]
+    #[expected_failure(abort_code = ErrorNotOwner)]
     fun test_move_fish_non_owner(owner: signer, non_owner: signer) {
         let owner_addr = signer::address_of(&owner);
         let fish = create_fish(owner_addr, 1, 10, 5, 5);
@@ -255,7 +255,7 @@ module rooch_fish::fish {
     }
 
     #[test(owner = @0x42)]
-    #[expected_failure(abort_code = E_INVALID_DIRECTION)]
+    #[expected_failure(abort_code = ErrorInvalidDirection)]
     fun test_move_fish_invalid_direction(owner: signer) {
         let owner_addr = signer::address_of(&owner);
         let fish = create_fish(owner_addr, 1, 10, 5, 5);

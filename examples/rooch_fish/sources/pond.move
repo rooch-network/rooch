@@ -23,16 +23,16 @@ module rooch_fish::pond {
 
     friend rooch_fish::rooch_fish;
 
-    const ERR_INSUFFICIENT_BALANCE: u64 = 1;
-    const ERR_FISH_NOT_FOUND: u64 = 2;
-    const ERR_FOOD_NOT_FOUND: u64 = 3;
-    const ERR_MAX_FISH_COUNT_REACHED: u64 = 4;
-    const ERR_MAX_FOOD_COUNT_REACHED: u64 = 5;
-    const ERR_UNAUTHORIZED: u64 = 6;
-    const ERR_FISH_NOT_IN_EXIT_ZONE: u64 = 7;
-    const ERR_INVALID_POSITION: u64 = 8;
-    const ERR_FISH_OUT_OF_BOUNDS: u64 = 9;
-    const ERR_INSUFFICIENT_TREASURY_BALANCE: u64 = 10;
+    const ErrorInsufficientBalance: u64 = 1;
+    const ErrorFishNotFound: u64 = 2;
+    const ErrorFoodNotFound : u64 = 3;
+    const ErrorMaxFishCountReached : u64 = 4;
+    const ErrorMaxFoodCountReached: u64 = 5;
+    const ErrorUnauthorized: u64 = 6;
+    const ErrorFishNotInExitZone: u64 = 7;
+    const ErrorInvalidPosition: u64 = 8;
+    const ErrorFishOutOfBounds: u64 = 9;
+    const ErrorInsufficientTreasuryBalance: u64 = 10;
 
     const OBJECT_TYPE_FISH: u8 = 1;
     const OBJECT_TYPE_FOOD: u8 = 2;
@@ -133,7 +133,7 @@ module rooch_fish::pond {
 
     public(friend) fun purchase_fish(pond_state: &mut PondState, account: &signer): u64 {
         let account_addr = signer::address_of(account);
-        assert!(gas_coin::balance(account_addr) >= pond_state.purchase_amount, ERR_INSUFFICIENT_BALANCE);
+        assert!(gas_coin::balance(account_addr) >= pond_state.purchase_amount, ErrorInsufficientBalance);
         
         let coin = account_coin_store::withdraw(account, pond_state.purchase_amount);
         coin_store::deposit(&mut pond_state.treasury.coin_store, coin);
@@ -154,13 +154,13 @@ module rooch_fish::pond {
     public(friend) fun move_fish(pond_state: &mut PondState, account: &signer, fish_id: u64, direction: u8): (u64, u64) {
         let account_addr = signer::address_of(account);
         let fish = get_fish_mut(pond_state, fish_id);
-        assert!(fish::get_owner(fish) == account_addr, ERR_UNAUTHORIZED);
+        assert!(fish::get_owner(fish) == account_addr, ErrorUnauthorized);
 
         let (old_x, old_y) = fish::get_position(fish);
         fish::move_fish(account, fish, direction);
 
         let (new_x, new_y) = fish::get_position(fish);
-        assert!(new_x < pond_state.width && new_y < pond_state.height, ERR_FISH_OUT_OF_BOUNDS);
+        assert!(new_x < pond_state.width && new_y < pond_state.height, ErrorFishOutOfBounds);
 
         // Update position in quad tree
         quad_tree::update_object_position(
@@ -190,14 +190,14 @@ module rooch_fish::pond {
         
         // Ensure food count does not exceed limits
         let actual_count = u64::min(count, MAX_FOOD_PER_FEED);
-        assert!(pond_state.food_count + actual_count <= pond_state.max_food_count, ERR_MAX_FOOD_COUNT_REACHED);
+        assert!(pond_state.food_count + actual_count <= pond_state.max_food_count, ErrorMaxFoodCountReached);
         
         // Calculate actual cost
         let food_value = pond_state.purchase_amount / (FOOD_VALUE_RATIO as u256);
         let total_cost = (actual_count as u256) * food_value;
         
         // Verify and transfer payment
-        assert!(gas_coin::balance(account_addr) >= total_cost, ERR_INSUFFICIENT_BALANCE);
+        assert!(gas_coin::balance(account_addr) >= total_cost, ErrorInsufficientBalance);
         let coin = account_coin_store::withdraw(account, total_cost);
         coin_store::deposit(&mut pond_state.treasury.coin_store, coin);
 
@@ -225,8 +225,8 @@ module rooch_fish::pond {
     public(friend) fun destroy_fish(pond_state: &mut PondState, account: &signer, fish_id: u64): u256 {
         let account_addr = signer::address_of(account);
         let fish = get_fish(pond_state, fish_id);
-        assert!(fish::get_owner(fish) == account_addr, ERR_UNAUTHORIZED);
-        assert!(is_fish_in_exit_zone(pond_state, fish), ERR_FISH_NOT_IN_EXIT_ZONE);
+        assert!(fish::get_owner(fish) == account_addr, ErrorUnauthorized);
+        assert!(is_fish_in_exit_zone(pond_state, fish), ErrorFishNotInExitZone);
 
         let removed_fish = remove_fish(pond_state, fish_id);
         player::remove_fish(&mut pond_state.player_list, account_addr, fish_id);
@@ -277,7 +277,7 @@ module rooch_fish::pond {
     }
 
     fun add_fish(pond_state: &mut PondState, fish: Fish) {
-        assert!(pond_state.fish_count < pond_state.max_fish_count, ERR_MAX_FISH_COUNT_REACHED);
+        assert!(pond_state.fish_count < pond_state.max_fish_count, ErrorMaxFishCountReached );
 
         let id = fish::get_id(&fish);
         let (_, _, _, x, y) = fish::get_fish_info(&fish);
@@ -305,7 +305,7 @@ module rooch_fish::pond {
     }
 
     fun add_food(pond_state: &mut PondState, food: Food) {
-        assert!(pond_state.food_count < pond_state.max_food_count, ERR_MAX_FOOD_COUNT_REACHED);
+        assert!(pond_state.food_count < pond_state.max_food_count, ErrorMaxFoodCountReached);
 
         let id = food::get_id(&food);
         let (x, y) = food::get_position(&food);
@@ -853,7 +853,7 @@ module rooch_fish::pond {
     }
 
     #[test(account = @0x42)]
-    #[expected_failure(abort_code = ERR_MAX_FISH_COUNT_REACHED)]
+    #[expected_failure(abort_code = ErrorMaxFishCountReached )]
     fun test_max_fish_limit(account: signer) {
         genesis::init_for_test();
 
@@ -1086,7 +1086,7 @@ module rooch_fish::pond {
     }
 
     #[test(account = @0x1)]
-    #[expected_failure(abort_code = ERR_MAX_FISH_COUNT_REACHED)]
+    #[expected_failure(abort_code = ErrorMaxFishCountReached )]
     fun test_max_fish_count(account: signer) {
         genesis::init_for_test();
 
@@ -1106,7 +1106,7 @@ module rooch_fish::pond {
     }
 
     #[test(account = @0x1)]
-    #[expected_failure(abort_code = ERR_MAX_FOOD_COUNT_REACHED)]
+    #[expected_failure(abort_code = ErrorMaxFoodCountReached)]
     fun test_max_food_count(account: signer) {
         genesis::init_for_test();
 

@@ -11,8 +11,8 @@ module rooch_fish::rooch_fish {
     use rooch_fish::pond::{Self, PondState};
     use rooch_fish::player::{Self, PlayerList};
 
-    const ERR_INVALID_POND_ID: u64 = 1;
-    const ERR_ALREADY_INITIALIZED: u64 = 2;
+    const ErrorInvalidPondID: u64 = 1;
+    const ErrorAlreadyInitialized: u64 = 2;
 
     struct PondConfig has copy, drop {
         id: u64,
@@ -174,7 +174,7 @@ module rooch_fish::rooch_fish {
 
     public fun get_pond_info(game_state_obj: &Object<GameState>, pond_id: u64): (u64, u64, u64, u256, u64, u64) {
         let game_state = object::borrow(game_state_obj);
-        assert!(table::contains(&game_state.ponds, pond_id), ERR_INVALID_POND_ID);
+        assert!(table::contains(&game_state.ponds, pond_id), ErrorInvalidPondID);
         let pond_obj = table::borrow(&game_state.ponds, pond_id);
         let pond_state = object::borrow(pond_obj);
         (
