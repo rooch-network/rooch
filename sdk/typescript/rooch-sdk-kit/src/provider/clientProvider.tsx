@@ -9,7 +9,7 @@ import {
   getRoochNodeUrl,
   RoochClient,
   RoochClientOptions,
-  NetWorkType,
+  NetworkType,
 } from '@roochnetwork/rooch-sdk'
 
 import { NetworkConfig } from '../hooks/index.js'
@@ -21,7 +21,7 @@ export type NetworkConfigs<T extends NetworkConfig | RoochClient = NetworkConfig
 export interface ClientProviderContext {
   client: RoochClient
   networks: NetworkConfigs
-  network: NetWorkType
+  network: NetworkType
   config: NetworkConfig | null
   selectNetwork: (network: string) => void
 }
@@ -60,7 +60,7 @@ export function RoochClientProvider<T extends NetworkConfigs>(props: RoochClient
   const ctx = useMemo((): ClientProviderContext => {
     return {
       client,
-      network: currentNetwork as NetWorkType,
+      network: currentNetwork as NetworkType,
       networks,
       config:
         networks[currentNetwork] instanceof RoochClient
