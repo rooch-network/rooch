@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 module rooch_fish::quad_tree {
     use std::vector;
     use moveos_std::table::{Self, Table};

@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 import { Buffer } from 'buffer';
 import { useEffect, useState, useRef } from 'react';
 import { Box, Button, Typography, AppBar, Toolbar } from '@mui/material';

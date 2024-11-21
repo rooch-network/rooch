@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 import { Container, Graphics, Stage } from '@pixi/react';
 import { useMemo, useState } from 'react';
 import { BlurFilter, ColorMatrixFilter } from 'pixi.js';

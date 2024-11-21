@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 import { Buffer } from 'buffer';
 import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";

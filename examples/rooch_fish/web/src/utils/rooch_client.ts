@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 import { TransactionWithInfoView, RoochClient, Transaction, Bytes, Signer, ExecuteTransactionResponseView, str } from "@roochnetwork/rooch-sdk";
  
 export const listFieldStates = async (client: RoochClient, object_id: string, stateRoot?: string | null) => {

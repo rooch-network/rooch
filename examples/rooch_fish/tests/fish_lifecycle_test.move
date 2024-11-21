@@ -1,4 +1,6 @@
-// tests/fish_lifecycle_test.move
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 module rooch_fish::fish_lifecycle_test {
     use std::signer;
     use std::vector;

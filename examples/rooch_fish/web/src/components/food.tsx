@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 import { Container, Graphics } from '@pixi/react';
 import { useCallback } from 'react';
 import * as PIXI from 'pixi.js';

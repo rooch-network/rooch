@@ -1,4 +1,6 @@
-// tests/init_test.move
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 module rooch_fish::init_test {
     use std::vector;
     use moveos_std::object::{Self, ObjectID};

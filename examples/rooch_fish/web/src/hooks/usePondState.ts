@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 import { config, PondID } from "../config/index";
 import { transformObject } from "../utils/rooch_object";
 import { bcs } from "@roochnetwork/rooch-sdk";

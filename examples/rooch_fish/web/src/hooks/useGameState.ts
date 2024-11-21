@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 import { config } from "../config/index";
 import { useRoochClientQuery } from "@roochnetwork/rooch-sdk-kit";
 import { useQuery } from "@tanstack/react-query";

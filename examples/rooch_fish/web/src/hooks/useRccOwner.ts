@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 import { useRoochClient } from "@roochnetwork/rooch-sdk-kit";
 import { rccCoinStoreType } from "../App";
 import { IndexerObjectStateView, RoochClient } from "@roochnetwork/rooch-sdk";

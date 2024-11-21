@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 // Basic types for coordinates and dimensions
 export type Point = {
   x: number;

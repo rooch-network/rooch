@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 import { config } from "../config/index";
 import { useState, useEffect, useRef } from 'react';
 import { Args, Transaction } from "@roochnetwork/rooch-sdk";
