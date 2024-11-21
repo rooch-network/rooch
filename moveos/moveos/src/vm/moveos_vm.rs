@@ -267,6 +267,13 @@ where
                 };
                 let compiled_modules = deserialize_modules(&module_bundle)?;
 
+                let result =
+                    moveos_verifier::verifier::verify_modules(&compiled_modules, self.remote);
+                match result {
+                    Ok(_) => {}
+                    Err(err) => return Err(err),
+                }
+
                 self.vm
                     .runtime
                     .loader()
@@ -276,13 +283,6 @@ where
                     )?;
 
                 let mut init_function_modules = vec![];
-
-                let result =
-                    moveos_verifier::verifier::verify_modules(&compiled_modules, self.remote);
-                match result {
-                    Ok(_) => {}
-                    Err(err) => return Err(err),
-                }
 
                 for module in &compiled_modules {
                     let result = moveos_verifier::verifier::verify_init_function(module);
