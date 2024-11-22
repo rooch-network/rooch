@@ -1,115 +1,111 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::actor::messages::TransactionProposeMessage;
+use moveos_store::transaction_store::TransactionStore;
+use moveos_store::MoveOSStore;
 use moveos_types::h256::H256;
-use rooch_da::actor::messages::PutDABatchMessage;
-use rooch_da::proxy::DAServerProxy;
+use rooch_store::da_store::DAMetaStore;
+use rooch_store::proposer_store::ProposerStore;
+use rooch_store::RoochStore;
 use rooch_types::block::Block;
+use rooch_types::da::batch::BlockSubmitState;
 use rooch_types::transaction::LedgerTransaction;
 
 /// State Commitment Chain(SCC) is a chain of transaction state root
 /// This SCC is a mirror of the on-chain SCC
 pub struct StateCommitmentChain {
-    //TODO save to the storage
-    last_block: Option<Block>,
-    buffer: Vec<TransactionProposeMessage>,
-    da: DAServerProxy,
+    last_proposed_block_number: Option<u128>,
+    last_proposed_block_accumulator_root: H256,
+    rooch_store: RoochStore,
+    moveos_store: MoveOSStore,
 }
 
 impl StateCommitmentChain {
     /// Create a new SCC
-    pub fn new(da_proxy: DAServerProxy) -> Self {
-        Self {
-            last_block: None,
-            buffer: Vec::new(),
-            da: da_proxy,
-        }
+    pub fn new(rooch_store: RoochStore, moveos_store: MoveOSStore) -> anyhow::Result<Self> {
+        let last_proposed_block_number = rooch_store.get_last_proposed()?;
+
+        let last_proposed_block_accumulator_root: H256 = match last_proposed_block_number {
+            Some(last_proposed) => {
+                let last_proposed_block_state = rooch_store.get_block_state(last_proposed)?;
+                let ledger_tx = get_ledger_tx(
+                    rooch_store.clone(),
+                    last_proposed_block_state.block_range.tx_order_end,
+                )?;
+                ledger_tx.sequence_info.tx_accumulator_root
+            }
+            None => H256::zero(),
+        };
+
+        Ok(Self {
+            last_proposed_block_number,
+            last_proposed_block_accumulator_root,
+            rooch_store,
+            moveos_store,
+        })
     }
 
-    pub fn append_transaction(&mut self, tx: TransactionProposeMessage) {
-        self.buffer.push(tx);
-    }
-
-    /// Update last block of the SCC
-    fn update_last_block(&mut self, block: Block) {
-        self.last_block = Some(block);
-    }
-
-    /// Get the last block of the SCC
-    pub fn last_block(&self) -> Option<&Block> {
-        self.last_block.as_ref()
-    }
-
-    /// Get the last block number of the SCC
-    pub fn last_block_number(&self) -> Option<u128> {
-        self.last_block.as_ref().map(|block| block.block_number)
+    fn append_new_block(
+        &mut self,
+        block_da_submit_state: BlockSubmitState,
+    ) -> anyhow::Result<Block> {
+        let block_number = block_da_submit_state.block_range.block_number;
+        let latest_tx_order = block_da_submit_state.block_range.tx_order_end;
+        let batch_size = latest_tx_order - block_da_submit_state.block_range.tx_order_start + 1;
+        let mut latest_transaction = get_ledger_tx(self.rooch_store.clone(), latest_tx_order)?;
+        let latest_tx_hash = latest_transaction.data.tx_hash();
+        let tx_accumulator_root = latest_transaction.sequence_info.tx_accumulator_root;
+        let tx_execution_info_opt = self.moveos_store.get_tx_execution_info(latest_tx_hash)?;
+        if tx_execution_info_opt.is_none() {
+            return Err(anyhow::anyhow!(
+                "TransactionExecutionInfo not found for tx_hash: {}",
+                latest_tx_hash
+            ));
+        };
+        let tx_state_root = tx_execution_info_opt.unwrap().state_root;
+        let prev_tx_accumulator_root = self.last_proposed_block_accumulator_root;
+        let block = Block::new(
+            block_number,
+            batch_size,
+            block_da_submit_state.batch_hash,
+            prev_tx_accumulator_root,
+            tx_accumulator_root,
+            tx_state_root,
+        );
+        self.last_proposed_block_number = Some(block_number);
+        self.last_proposed_block_accumulator_root = tx_accumulator_root;
+        Ok(block)
     }
 
     /// Trigger the proposer to propose a new block
-    pub async fn propose_block(&mut self) -> Option<&Block> {
-        if self.buffer.is_empty() {
-            return None;
-        }
-        // construct a new block from buffer
-        let latest_transaction = self.buffer.last().expect("buffer must not empty");
-        let tx_accumulator_root = latest_transaction.tx.sequence_info.tx_accumulator_root;
-        let state_roots = self
-            .buffer
-            .iter()
-            .map(|tx| tx.tx_execution_info.state_root)
-            .collect();
-
-        let batch_size = self.buffer.len() as u64;
-        let last_block = self.last_block();
-        let (block_number, prev_tx_accumulator_root) = match last_block {
-            Some(block) => {
-                let block_number = block.block_number + 1;
-                let prev_tx_accumulator_root = block.tx_accumulator_root;
-                (block_number, prev_tx_accumulator_root)
-            }
-            None => {
-                let block_number = 0;
-                let prev_tx_accumulator_root = H256::zero();
-                (block_number, prev_tx_accumulator_root)
-            }
+    pub async fn propose_block(&mut self) -> anyhow::Result<Option<Block>> {
+        let last_proposed = self.rooch_store.get_last_proposed()?;
+        let next_propose_block_number = match last_proposed {
+            Some(last_proposed) => last_proposed + 1,
+            None => 0,
         };
-
-        // submit batch to DA server
-        // TODO move batch submit out of proposer
-        let tx_list: Vec<LedgerTransaction> = self.buffer.iter().map(|tx| tx.tx.clone()).collect();
-        let batch_meta = self
-            .da
-            .pub_batch(PutDABatchMessage {
-                tx_order_start: tx_list
-                    .first()
-                    .expect("tx list must not empty")
-                    .sequence_info
-                    .tx_order,
-                tx_order_end: latest_transaction.tx.sequence_info.tx_order,
-                tx_list,
-            })
-            .await;
-        match batch_meta {
-            Ok(batch_meta) => {
-                log::info!("submit batch to DA success: {:?}", batch_meta);
-            }
-            Err(e) => {
-                log::error!("submit batch to DA failed: {:?}", e);
-            }
+        let next_block_da_state = self
+            .rooch_store
+            .get_block_state(next_propose_block_number)?; // DB error/block hasn't been created
+        if !next_block_da_state.done {
+            // There is no block to propose
+            return Ok(None);
         }
-        // even if the batch submission failed, new block must have been created(otherwise panic)
 
-        // TODO update block struct and add propose logic
-        let new_block = Block::new(
-            block_number,
-            batch_size,
-            prev_tx_accumulator_root,
-            tx_accumulator_root,
-            state_roots,
-        );
-        self.update_last_block(new_block);
-        self.buffer.clear();
-        self.last_block()
+        let block = self.append_new_block(next_block_da_state)?;
+        Ok(Some(block))
     }
+}
+
+fn get_ledger_tx(rooch_store: RoochStore, tx_order: u64) -> anyhow::Result<LedgerTransaction> {
+    let tx_opt = rooch_store
+        .get_transaction_store()
+        .get_tx_by_order(tx_order)?;
+    if tx_opt.is_none() {
+        return Err(anyhow::anyhow!(
+            "LedgerTransaction not found for order: {}",
+            tx_order
+        ));
+    }
+    Ok(tx_opt.unwrap())
 }

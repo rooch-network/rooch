@@ -30,6 +30,10 @@ impl FeatureStore {
         let value = self.entries[byte_index as usize];
         byte_index < self.entries.len() as u64 && (value & bit_mask) != 0
     }
+
+    pub fn has_value_size_gas_feature(&self) -> bool {
+        self.contains_feature(VALUE_SIZE_GAS_FEATURE)
+    }
 }
 
 impl MoveStructType for FeatureStore {

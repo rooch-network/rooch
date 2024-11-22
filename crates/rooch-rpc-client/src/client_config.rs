@@ -128,7 +128,7 @@ impl Default for Env {
     fn default() -> Self {
         Env {
             alias: BuiltinChainID::Local.chain_name(),
-            rpc: ServerConfig::default().url(false),
+            rpc: format!("http://127.0.0.1:{}", ServerConfig::default().port),
             ws: None,
         }
     }

@@ -555,6 +555,7 @@ pub struct MoveOSGasMeter {
     gas_left: InternalGas,
     //TODO we do not need to use gas_price in gas meter.
     charge: bool,
+    charge_tired_io_write: bool,
 
     execution_gas_used: Rc<RefCell<InternalGas>>,
     storage_gas_used: Rc<RefCell<InternalGas>>,
@@ -582,7 +583,7 @@ impl MoveOSGasMeter {
     ///
     /// Charge for every operation and fail when there is no more gas to pay for operations.
     /// This is the instantiation that must be used when executing a user function.
-    pub fn new(cost_table: CostTable, budget: u64) -> Self {
+    pub fn new(cost_table: CostTable, budget: u64, charge_tired_io_write: bool) -> Self {
         //assert!(gas_price > 0, "gas price cannot be 0");
         //let budget_in_unit = budget / gas_price;
         // let gas_left = Self::to_internal_units(budget_in_unit);
@@ -596,6 +597,7 @@ impl MoveOSGasMeter {
             gas_left: InternalGas::from(budget),
             cost_table,
             charge: true,
+            charge_tired_io_write,
             execution_gas_used: Rc::new(RefCell::new(InternalGas::from(0))),
             storage_gas_used: Rc::new(RefCell::new(InternalGas::from(0))),
             stack_height_high_water_mark: 0,
@@ -621,6 +623,7 @@ impl MoveOSGasMeter {
             cost_table: ZERO_COST_SCHEDULE.clone(),
             gas_left: InternalGas::from(0),
             charge: false,
+            charge_tired_io_write: false,
             execution_gas_used: Rc::new(RefCell::new(InternalGas::from(0))),
             storage_gas_used: Rc::new(RefCell::new(InternalGas::from(0))),
             stack_height_high_water_mark: 0,
@@ -761,7 +764,11 @@ impl ClassifiedGasMeter for MoveOSGasMeter {
             .storage_fee_per_transaction_byte
             .into();
 
-        let (factor, _) = self.cost_table.io_write_tier(tx_size);
+        let (factor, _) = if self.charge_tired_io_write {
+            self.cost_table.io_write_tier(tx_size)
+        } else {
+            (1_u64, None)
+        };
 
         let factor_gas = match tx_gas_parameter.checked_mul(factor) {
             None => {

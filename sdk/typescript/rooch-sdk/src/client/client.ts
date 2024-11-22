@@ -337,7 +337,7 @@ export class RoochClient {
     if (result.vm_status === 'Executed' && result.return_values) {
       const value = (result.return_values?.[0]?.decoded_value as AnnotatedMoveStructView).value
 
-      const address = (((value as any).vec[0] as AnnotatedMoveStructView).value as any).bytes
+      const address = (((value as any).vec as AnnotatedMoveStructView).value[0] as Array<string>)[0]
 
       return new BitcoinAddress(address, input.network)
     }
@@ -411,7 +411,14 @@ export class RoochClient {
         hasNextPage: false,
       }
     }
-
+    const sss = (
+      (
+        (states?.[0]?.decoded_value as AnnotatedMoveStructView).value[
+          'value'
+          ] as AnnotatedMoveStructView
+      ).value['keys'] as AnnotatedMoveStructView
+    ).value['handle'] as AnnotatedMoveStructView
+    console.log(sss)
     // Maybe we should define the type?
     const tableId = (
       (
@@ -439,8 +446,8 @@ export class RoochClient {
       const result = new Array<string>()
 
       for (const scope of data) {
-        const value = scope.value
-        result.push(`${value.module_address}::${value.module_name}::${value.function_name}`)
+        const [pkg, mod, fn] = [scope[0], scope[1], scope[2]]
+        result.push(`${pkg}::${mod}::${fn}`)
       }
 
       return result
@@ -459,7 +466,7 @@ export class RoochClient {
             appName: val.app_name,
             appUrl: val.app_url,
             authenticationKey: val.authentication_key,
-            scopes: parseScopes(val.scopes),
+            scopes: parseScopes(val.scopes.value),
             createTime: parseInt(val.create_time),
             lastActiveTime: parseInt(val.last_active_time),
             maxInactiveInterval: parseInt(val.max_inactive_interval),

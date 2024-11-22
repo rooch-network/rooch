@@ -6,7 +6,6 @@ import { TestBox } from '../setup.js'
 
 describe('Bitcoin Assets API', () => {
   let testBox: TestBox
-
   beforeAll(async () => {
     testBox = TestBox.setup()
     await testBox.loadBitcoinEnv()

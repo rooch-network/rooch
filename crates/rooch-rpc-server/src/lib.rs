@@ -18,6 +18,7 @@ use moveos_eventbus::bus::EventBus;
 use raw_store::errors::RawStoreError;
 use rooch_config::da_config::derive_genesis_namespace;
 use rooch_config::server_config::ServerConfig;
+use rooch_config::settings::PROPOSER_CHECK_INTERVAL;
 use rooch_config::{RoochOpt, ServerOpt};
 use rooch_da::actor::server::DAServerActor;
 use rooch_da::proxy::DAServerProxy;
@@ -34,7 +35,6 @@ use rooch_pipeline_processor::actor::processor::PipelineProcessorActor;
 use rooch_pipeline_processor::proxy::PipelineProcessorProxy;
 use rooch_proposer::actor::messages::ProposeBlock;
 use rooch_proposer::actor::proposer::ProposerActor;
-use rooch_proposer::proxy::ProposerProxy;
 use rooch_relayer::actor::bitcoin_client::BitcoinClientActor;
 use rooch_relayer::actor::bitcoin_client_proxy::BitcoinClientProxy;
 use rooch_relayer::actor::messages::RelayTick;
@@ -57,6 +57,7 @@ use std::{env, panic, process};
 use tokio::signal;
 use tokio::sync::broadcast;
 use tokio::sync::broadcast::Sender;
+use tower_governor::key_extractor::SmartIpKeyExtractor;
 use tower_governor::{governor::GovernorConfigBuilder, GovernorLayer};
 use tower_http::cors::{AllowOrigin, CorsLayer};
 use tower_http::trace::TraceLayer;
@@ -178,7 +179,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     // tracing_subscriber can only be inited once.
     let _ = tracing_subscriber::fmt::try_init();
 
-    //Exit the process when some thread panic
+    // Exit the process when some thread panic
     // take_hook() returns the default hook in case when a custom one is not set
     let orig_hook = panic::take_hook();
     panic::set_hook(Box::new(move |panic_info| {
@@ -196,7 +197,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     // Initialize metrics before creating any stores
     init_metrics(&prometheus_registry);
 
-    //Init store
+    // Init store
     let store_config = opt.store_config();
 
     let rooch_db = RoochDB::init(store_config, &prometheus_registry)?;
@@ -305,7 +306,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         DAServerActor::new(
             da_config,
             sequencer_keypair.copy(),
-            rooch_store,
+            rooch_store.clone(),
             genesis_namespace,
         )
         .await?
@@ -318,12 +319,17 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     let proposer_keypair = server_opt.proposer_keypair.unwrap();
     let proposer_account: RoochAddress = proposer_keypair.public().rooch_address()?;
     info!("RPC Server proposer address: {:?}", proposer_account);
-    let proposer = ProposerActor::new(proposer_keypair, da_proxy.clone(), &prometheus_registry)
-        .into_actor(Some("Proposer"), &actor_system)
-        .await?;
-    let proposer_proxy = ProposerProxy::new(proposer.clone().into());
-    //TODO load from config
-    let block_propose_duration_in_seconds: u64 = 5;
+    let proposer = ProposerActor::new(
+        proposer_keypair,
+        moveos_store,
+        rooch_store,
+        &prometheus_registry,
+        opt.proposer.clone(),
+    )?
+    .into_actor(Some("Proposer"), &actor_system)
+    .await?;
+    let block_propose_duration_in_seconds: u64 =
+        opt.proposer.interval.unwrap_or(PROPOSER_CHECK_INTERVAL);
     let mut timers = vec![];
     let proposer_timer = Timer::start(
         proposer,
@@ -344,7 +350,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     let mut processor = PipelineProcessorActor::new(
         executor_proxy.clone(),
         sequencer_proxy.clone(),
-        proposer_proxy.clone(),
+        da_proxy.clone(),
         indexer_proxy.clone(),
         service_status,
         &prometheus_registry,
@@ -438,14 +444,14 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         broadcast::channel(16);
 
     let traffic_burst_size: u32;
-    let traffic_per_second: u64;
+    let traffic_per_second: f64;
 
     if network.chain_id != BuiltinChainID::Local.chain_id() {
-        traffic_burst_size = opt.traffic_burst_size.unwrap_or(100);
-        traffic_per_second = opt.traffic_per_second.unwrap_or(1);
+        traffic_burst_size = opt.traffic_burst_size.unwrap_or(200);
+        traffic_per_second = opt.traffic_per_second.unwrap_or(0.1f64);
     } else {
         traffic_burst_size = opt.traffic_burst_size.unwrap_or(5000);
-        traffic_per_second = opt.traffic_per_second.unwrap_or(1);
+        traffic_per_second = opt.traffic_per_second.unwrap_or(0.0001f64);
     };
 
     // init limit
@@ -455,7 +461,9 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     // and thus we need a static reference to it
     let governor_conf = Arc::new(
         GovernorConfigBuilder::default()
-            .per_second(traffic_per_second)
+            .key_extractor(SmartIpKeyExtractor)
+            .use_headers()
+            .per_millisecond((traffic_per_second * 1000f64) as u64)
             .burst_size(traffic_burst_size)
             .use_headers()
             .error_handler(move |error1| ErrorHandler::default().0(error1))
@@ -467,16 +475,17 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     let interval = Duration::from_secs(60);
 
     // a separate background task to clean up
-    std::thread::spawn(move || loop {
-        if governor_rx.try_recv().is_ok() {
-            info!("Background thread received cancel signal, stopping.");
-            break;
+    tokio::spawn(async move {
+        let mut tick = tokio::time::interval(interval);
+        loop {
+            if governor_rx.try_recv().is_ok() {
+                info!("Background thread received cancel signal, stopping.");
+                break;
+            }
+            tick.tick().await;
+            tracing::info!("rate limiting storage size: {}", governor_limiter.len());
+            governor_limiter.retain_recent();
         }
-
-        std::thread::sleep(interval);
-
-        tracing::info!("rate limiting storage size: {}", governor_limiter.len());
-        governor_limiter.retain_recent();
     });
 
     let blocklist_config = Arc::new(BlocklistConfig::default());

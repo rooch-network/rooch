@@ -92,4 +92,12 @@ impl TransactionDBStore {
     pub fn get_tx_hashes(&self, tx_orders: Vec<u64>) -> Result<Vec<Option<H256>>> {
         self.tx_sequence_info_mapping_store.multiple_get(tx_orders)
     }
+
+    pub fn get_tx_by_order(&self, tx_order: u64) -> Result<Option<LedgerTransaction>> {
+        let tx_hash = self.tx_sequence_info_mapping_store.kv_get(tx_order)?;
+        match tx_hash {
+            Some(tx_hash) => self.tx_store.kv_get(tx_hash),
+            None => Ok(None),
+        }
+    }
 }

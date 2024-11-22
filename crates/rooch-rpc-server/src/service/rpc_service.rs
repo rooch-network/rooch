@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::{format_err, Ok, Result};
+use anyhow::{format_err, Result};
 use bitcoincore_rpc::bitcoin::Txid;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::{ModuleId, StructTag};
@@ -409,7 +409,7 @@ impl RpcService {
                 .zip(indexer_ids)
                 .filter_map(|(state_opt, (object_id, indexer_state_id))| {
                     match state_opt {
-                        Some(state) => Some(IndexerObjectStateView::new_from_annotated_state(
+                        Some(state) => Some(IndexerObjectStateView::try_new_from_annotated_state(
                             state,
                             indexer_state_id,
                         )),
@@ -423,7 +423,7 @@ impl RpcService {
                         }
                     }
                 })
-                .collect::<Vec<_>>();
+                .collect::<Result<Vec<_>>>()?;
             if !displays.is_empty() {
                 object_states.iter_mut().for_each(|object_state| {
                     object_state.display_fields =
@@ -763,26 +763,32 @@ impl RpcService {
             .collect::<Vec<_>>();
 
         let result = match filter {
-            SyncStateFilter::ObjectID(object_id) => {
-                states
-                    .into_iter()
-                    .map(|s| {
-                        let filter_changes = s
-                            .state_change_set
-                            .changes
-                            .into_iter()
-                            // Only includes Global Object, not include Child Object
-                            .filter(|(_, value)| value.metadata.id == object_id)
-                            .collect();
-                        let filter_state_change_set = StateChangeSet::new_with_changes(
-                            s.state_change_set.state_root,
-                            s.state_change_set.global_size,
-                            filter_changes,
-                        );
-                        StateChangeSetWithTxOrder::new(s.tx_order, filter_state_change_set)
-                    })
-                    .collect()
-            }
+            SyncStateFilter::ObjectID(object_id) => states
+                .into_iter()
+                .filter_map(|s| {
+                    let filter_changes = s
+                        .state_change_set
+                        .changes
+                        .into_iter()
+                        .filter(|(_, value)| value.metadata.id == object_id)
+                        .collect();
+
+                    let filter_state_change_set = StateChangeSet::new_with_changes(
+                        s.state_change_set.state_root,
+                        s.state_change_set.global_size,
+                        filter_changes,
+                    );
+
+                    if !filter_state_change_set.changes.is_empty() {
+                        Some(StateChangeSetWithTxOrder::new(
+                            s.tx_order,
+                            filter_state_change_set,
+                        ))
+                    } else {
+                        None
+                    }
+                })
+                .collect(),
             SyncStateFilter::All => states,
         };
 

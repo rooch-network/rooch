@@ -14,19 +14,21 @@ rust-version = { workspace = true }
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-celestia-rpc = { workspace = true }
+anyhow = { workspace = true }
+async-trait = { workspace = true }
 base64 = { workspace = true }
 celestia-types = { workspace = true }
-moveos-types = { workspace = true }
-anyhow = { workspace = true }
-serde = { workspace = true }
-tracing = { workspace = true }
+celestia-rpc = { workspace = true }
 coerce = { workspace = true }
-async-trait = { workspace = true }
+hex = { workspace = true }
+tracing = { workspace = true }
 opendal = { workspace = true }
 tokio = { workspace = true }
 reqwest = { workspace = true }
+serde = { workspace = true }
 serde_json = { workspace = true }
+
+moveos-types = { workspace = true }
 
 rooch-config = { workspace = true }
 rooch-types = { workspace = true }

@@ -12,7 +12,7 @@
       "name": "Apache-2.0",
       "url": "https://raw.githubusercontent.com/rooch-network/rooch/main/LICENSE"
     },
-    "version": "0.7.6"
+    "version": "0.8.0"
   },
   "methods": [
     {
@@ -861,6 +861,47 @@
           }
         }
       },
+      "AnnotatedMoveStructVectorView": {
+        "type": "object",
+        "required": [
+          "abilities",
+          "field",
+          "type",
+          "value"
+        ],
+        "properties": {
+          "abilities": {
+            "description": "alilities of each element",
+            "type": "integer",
+            "format": "uint8",
+            "minimum": 0.0
+          },
+          "field": {
+            "description": "field of each element",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/move_core_types::identifier::Identifier"
+            }
+          },
+          "type": {
+            "description": "type of each element",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/move_core_types::language_storage::StructTag"
+              }
+            ]
+          },
+          "value": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/AnnotatedMoveValueView"
+              }
+            }
+          }
+        }
+      },
       "AnnotatedMoveStructView": {
         "type": "object",
         "required": [
@@ -914,6 +955,9 @@
             "items": {
               "$ref": "#/components/schemas/AnnotatedMoveValueView"
             }
+          },
+          {
+            "$ref": "#/components/schemas/AnnotatedMoveStructVectorView"
           },
           {
             "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
@@ -1033,7 +1077,7 @@
             }
           },
           "last_avail_block_number": {
-            "description": "The last available block number, may little behind the last block number. [0, last_avail_block_number] blocks were confirmed by DA backend. If meet error in background submitter job, it may be far behind the last block number.",
+            "description": "The last available block number, may little behind the last block number. [min_avail_block_number, last_avail_block_number] blocks were confirmed by DA backend. min_avail_block_number is opt to avoid submitting blocks [0, min_avail_block_number) to DA backend, more about min_avail_block_number, see rooch-config/src/da_config.rs If meet error in background submitter job, it may be far behind the last block number.",
             "type": [
               "integer",
               "null"

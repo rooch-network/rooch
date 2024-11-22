@@ -1,20 +1,19 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use super::messages::ProposeBlock;
 use crate::metrics::ProposerMetrics;
-use anyhow::Result;
+use crate::scc::StateCommitmentChain;
 use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
+use moveos_store::MoveOSStore;
 use prometheus::Registry;
-use rooch_da::proxy::DAServerProxy;
+use rooch_config::proposer_config::ProposerConfig;
+use rooch_store::proposer_store::ProposerStore;
+use rooch_store::RoochStore;
 use rooch_types::crypto::RoochKeyPair;
 use std::sync::Arc;
 
-use crate::scc::StateCommitmentChain;
-
-use super::messages::{ProposeBlock, TransactionProposeMessage, TransactionProposeResult};
-
-const TRANSACTION_PROPOSE_FN_NAME: &str = "transaction_propose";
 const PROPOSE_BLOCK_FN_NAME: &str = "propose_block";
 
 pub struct ProposerActor {
@@ -24,34 +23,36 @@ pub struct ProposerActor {
 }
 
 impl ProposerActor {
-    pub fn new(proposer_key: RoochKeyPair, da_proxy: DAServerProxy, registry: &Registry) -> Self {
-        Self {
+    pub fn new(
+        proposer_key: RoochKeyPair,
+        moveos_store: MoveOSStore,
+        rooch_store: RoochStore,
+        registry: &Registry,
+        config: ProposerConfig,
+    ) -> anyhow::Result<Self> {
+        let init_offset = config.init_offset;
+        let last_proposed = rooch_store.get_last_proposed()?;
+        // if init_offset is not None && init_offset - 1 > last_proposed, set last_proposed to init_offset - 1
+        if let Some(init_offset) = init_offset {
+            if let Some(last_proposed) = last_proposed {
+                if init_offset - 1 > last_proposed {
+                    rooch_store.set_last_proposed(init_offset - 1)?;
+                }
+            } else {
+                rooch_store.set_last_proposed(init_offset - 1)?;
+            }
+        };
+        let scc = StateCommitmentChain::new(rooch_store, moveos_store)?;
+
+        Ok(Self {
             proposer_key,
-            scc: StateCommitmentChain::new(da_proxy),
+            scc,
             metrics: Arc::new(ProposerMetrics::new(registry)),
-        }
+        })
     }
 }
 
 impl Actor for ProposerActor {}
-
-#[async_trait]
-impl Handler<TransactionProposeMessage> for ProposerActor {
-    async fn handle(
-        &mut self,
-        msg: TransactionProposeMessage,
-        _ctx: &mut ActorContext,
-    ) -> Result<TransactionProposeResult> {
-        let fn_name = TRANSACTION_PROPOSE_FN_NAME;
-        let _timer = self
-            .metrics
-            .proposer_transaction_propose_latency_seconds
-            .with_label_values(&[fn_name])
-            .start_timer();
-        self.scc.append_transaction(msg);
-        Ok(TransactionProposeResult {})
-    }
-}
 
 #[async_trait]
 impl Handler<ProposeBlock> for ProposerActor {
@@ -64,22 +65,28 @@ impl Handler<ProposeBlock> for ProposerActor {
             .start_timer();
         let block = self.scc.propose_block().await;
         match block {
-            Some(block) => {
-                log::info!(
-                    "[ProposeBlock] block_number: {}, batch_size: {:?}",
-                    block.block_number,
-                    block.batch_size
-                );
+            Ok(block) => {
+                match block {
+                    Some(block) => {
+                        // TODO submit to the on-chain SCC contract use the proposer key
+                        let _proposer_key = &self.proposer_key;
+                        self.metrics
+                            .proposer_propose_block_batch_size
+                            .set(block.batch_size as i64);
+                        tracing::info!(
+                            "[ProposeBlock] done. block_number: {}, batch_size: {:?}",
+                            block.block_number,
+                            block.batch_size
+                        );
+                    }
+                    None => {
+                        tracing::debug!("[ProposeBlock] no transaction to propose block");
+                    }
+                };
             }
-            None => {
-                log::debug!("[ProposeBlock] no transaction to propose block");
+            Err(e) => {
+                tracing::error!("[ProposeBlock] error: {:?}", e);
             }
-        };
-        // TODO submit to the on-chain SCC contract use the proposer key
-        let _proposer_key = &self.proposer_key;
-        let batch_size = block.map(|v| v.batch_size).unwrap_or(0u64);
-        self.metrics
-            .proposer_propose_block_batch_size
-            .set(batch_size as i64);
+        }
     }
 }

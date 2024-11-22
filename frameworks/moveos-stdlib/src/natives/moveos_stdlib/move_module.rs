@@ -162,6 +162,22 @@ fn native_sort_and_verify_modules_inner(
         })
         .collect();
 
+    // moveos verifier
+    let module_context = context.extensions_mut().get_mut::<NativeModuleContext>();
+    let mut module_names = vec![];
+    let mut init_identifier = vec![];
+
+    let verify_result =
+        moveos_verifier::verifier::verify_modules(&compiled_modules, module_context.resolver);
+    match verify_result {
+        Ok(_) => {}
+        Err(e) => {
+            log::info!("modules verification error: {:?}", e);
+            let error_code = e.sub_status().unwrap_or(E_MODULE_VERIFICATION_ERROR);
+            return Ok(NativeResult::err(cost, error_code));
+        }
+    }
+
     // move verifier
     let verify_result = context
         .verify_module_bundle_for_publication(&compiled_modules)
@@ -177,21 +193,6 @@ fn native_sort_and_verify_modules_inner(
         Err(e) => {
             log::info!("modules verification error: {:?}", e);
             return Ok(NativeResult::err(cost, E_MODULE_VERIFICATION_ERROR));
-        }
-    }
-    // moveos verifier
-    let module_context = context.extensions_mut().get_mut::<NativeModuleContext>();
-    let mut module_names = vec![];
-    let mut init_identifier = vec![];
-
-    let verify_result =
-        moveos_verifier::verifier::verify_modules(&compiled_modules, module_context.resolver);
-    match verify_result {
-        Ok(_) => {}
-        Err(e) => {
-            log::info!("modules verification error: {:?}", e);
-            let error_code = e.sub_status().unwrap_or(E_MODULE_VERIFICATION_ERROR);
-            return Ok(NativeResult::err(cost, error_code));
         }
     }
 

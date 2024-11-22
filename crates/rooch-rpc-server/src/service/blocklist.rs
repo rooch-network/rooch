@@ -14,7 +14,7 @@ use std::sync::Arc;
 use std::task::{ready, Context, Poll};
 use std::time::{Duration, SystemTime};
 use tower::{Layer, Service};
-use tower_governor::key_extractor::{KeyExtractor, PeerIpKeyExtractor, SmartIpKeyExtractor};
+use tower_governor::key_extractor::{KeyExtractor, SmartIpKeyExtractor};
 use tower_governor::GovernorError;
 
 type Blocklist = Arc<DashMap<IpAddr, SystemTime>>;
@@ -24,11 +24,8 @@ type RejectionMap = Arc<DashMap<IpAddr, Rejection>>;
 pub struct BlocklistConfig {
     pub client_rejection_counts: usize,
     pub client_rejection_expiration: Duration,
-    pub proxied_rejection_counts: usize,
-    pub proxied_rejection_expiration: Duration,
     pub error_handler: ErrorHandler,
     pub clients: Blocklist,
-    pub proxied_clients: Blocklist,
     pub rejection_map: RejectionMap,
 }
 
@@ -36,12 +33,9 @@ impl Default for BlocklistConfig {
     fn default() -> Self {
         Self {
             client_rejection_counts: 20,
-            client_rejection_expiration: Duration::from_secs(60 * 60 * 24),
-            proxied_rejection_counts: 60,
-            proxied_rejection_expiration: Duration::from_secs(60 * 60 * 6),
+            client_rejection_expiration: Duration::from_secs(60),
             error_handler: Default::default(),
             clients: Arc::new(DashMap::new()),
-            proxied_clients: Arc::new(DashMap::new()),
             rejection_map: Arc::new(DashMap::new()),
         }
     }
@@ -56,7 +50,7 @@ pub struct Rejection {
 // TODO: clear cache
 #[derive(Clone)]
 pub struct Blocklists<S> {
-    pub key_extractor: PeerIpKeyExtractor,
+    pub key_extractor: SmartIpKeyExtractor,
     pub inner: S,
     pub config: BlocklistConfig,
 }
@@ -66,7 +60,7 @@ impl<S> Blocklists<S> {
         Blocklists {
             inner,
             config: config.clone(),
-            key_extractor: PeerIpKeyExtractor,
+            key_extractor: SmartIpKeyExtractor,
         }
     }
 
@@ -75,20 +69,11 @@ impl<S> Blocklists<S> {
     }
 
     /// Returns true if the connection is allowed, false if it is blocked
-    pub fn check_impl(&self, client: &Option<IpAddr>, proxied_client: &Option<IpAddr>) -> bool {
-        let client_check = self.check_and_clear_blocklist(client, self.config.clients.clone());
-
-        let proxied_client_check =
-            self.check_and_clear_blocklist(proxied_client, self.config.proxied_clients.clone());
-
-        client_check && proxied_client_check
+    pub fn check_impl(&self, client: &IpAddr) -> bool {
+        self.check_and_clear_blocklist(client, self.config.clients.clone())
     }
 
-    fn check_and_clear_blocklist(&self, client: &Option<IpAddr>, blocklist: Blocklist) -> bool {
-        let client = match client {
-            Some(client) => client,
-            None => return true,
-        };
+    fn check_and_clear_blocklist(&self, client: &IpAddr, blocklist: Blocklist) -> bool {
         let now = SystemTime::now();
         // the below two blocks cannot be nested, otherwise we will deadlock
         // due to aquiring the lock on get, then holding across the remove
@@ -134,35 +119,20 @@ where
     }
 
     fn call(&mut self, req: Request<ReqBody>) -> Self::Future {
-        let mut client: Option<IpAddr> = None;
-        let mut proxied_client: Option<IpAddr> = None;
-        let ex = SmartIpKeyExtractor;
-
         // Use the provided key extractor to extract the key from the request.
-        match self.key_extractor.extract(&req) {
-            Ok(key) => {
-                client = Some(key);
+        let client = match self.key_extractor.extract(&req) {
+            Ok(key) => key,
+            Err(e) => {
+                let error_response = self.error_handler()(e);
+                return ResponseFuture {
+                    inner: Kind::Error {
+                        error_response: Some(error_response),
+                    },
+                };
             }
-            Err(_) => match ex.extract(&req) {
-                Ok(key) => {
-                    proxied_client = Some(key);
-                }
-                Err(e) => {
-                    let error_response = self.error_handler()(e);
-                    return ResponseFuture {
-                        inner: Kind::Error {
-                            error_response: Some(error_response),
-                        },
-                    };
-                }
-            },
         };
 
-        tracing::debug!("requset headers: {:?}", &req.headers());
-        tracing::debug!("client ip: {:?}", &client);
-        tracing::debug!("proxied client ip: {:?}", &proxied_client);
-
-        let s = self.check_impl(&client, &proxied_client);
+        let s = self.check_impl(&client);
 
         // Extraction worked, let's check blocklist needed.
         if !s {
@@ -178,30 +148,15 @@ where
             }
         } else {
             let future = self.inner.call(req);
-            let args = match client {
-                None => (
-                    Arc::clone(&self.config.proxied_clients),
-                    proxied_client.unwrap(),
-                    self.config.proxied_rejection_counts,
-                    self.config.proxied_rejection_expiration,
-                ),
-
-                Some(ip) => (
-                    Arc::clone(&self.config.clients),
-                    ip,
-                    self.config.client_rejection_counts,
-                    self.config.client_rejection_expiration,
-                ),
-            };
 
             ResponseFuture {
                 inner: Kind::Passthrough {
                     future,
-                    blocklist: args.0,
-                    client: args.1,
+                    blocklist: Arc::clone(&self.config.clients),
+                    client,
                     rejection_map: Arc::clone(&self.config.rejection_map),
-                    rejection_count: args.2,
-                    rejection_expiration: args.3,
+                    rejection_count: self.config.client_rejection_counts,
+                    rejection_expiration: self.config.client_rejection_expiration,
                 },
             }
         }
@@ -264,7 +219,13 @@ where
                         should_remove = rejection_entry.value().count > *rejection_count;
 
                         if should_remove {
-                            blocklist.insert(*client, SystemTime::now() + *rejection_expiration);
+                            let rejection_expired = SystemTime::now() + *rejection_expiration;
+                            tracing::info!(
+                                "Add client ip: {:?} to blocklist, expired at: {:?}",
+                                client,
+                                rejection_expired
+                            );
+                            blocklist.insert(*client, rejection_expired);
                         }
                     }
 

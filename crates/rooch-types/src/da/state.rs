@@ -16,7 +16,9 @@ pub struct DAServerStatus {
     /// None if no blocks were received after server start.
     pub last_block_update_time: Option<u64>,
     /// The last available block number, may little behind the last block number.
-    /// [0, last_avail_block_number] blocks were confirmed by DA backend.
+    /// [min_avail_block_number, last_avail_block_number] blocks were confirmed by DA backend.
+    /// min_avail_block_number is opt to avoid submitting blocks [0, min_avail_block_number) to DA backend,
+    /// more about min_avail_block_number, see rooch-config/src/da_config.rs
     /// If meet error in background submitter job, it may be far behind the last block number.
     pub last_avail_block_number: Option<u128>,
     /// The last available tx order

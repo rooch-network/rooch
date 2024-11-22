@@ -51,7 +51,11 @@ impl DropCommand {
             op = "clear";
             rocks.clear_cfs(vec![&cf_name])?;
         } else {
-            rocks.drop_cf(&cf_name)?;
+            println!(
+                "{} column family {} not supported yet. Follow Monotonic Addition in present",
+                op, cf_name
+            );
+            // rocks.drop_cf(&cf_name)?;
         }
         println!("{} column family {} success", op, cf_name);
 

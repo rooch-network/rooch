@@ -19,7 +19,3 @@ Chunk Builder is a component to build chunks from batches, avoiding burst I/O to
 3. pull by stream
 
 add FEC for SDC protection (wrong response attacks)
-
-### Stat API
-
-Valid DA block range is [0, background_block_number_cursor]
