@@ -75,7 +75,10 @@ pub trait DAMetaStore {
     fn get_background_submit_block_cursor(&self) -> anyhow::Result<Option<u128>>;
 
     fn get_last_block_number(&self) -> anyhow::Result<Option<u128>>;
+    // get block state by block_number, must exist for the block_number, otherwise return error
     fn get_block_state(&self, block_number: u128) -> anyhow::Result<BlockSubmitState>;
+    // get block state by block_number, return None if not exist
+    fn try_get_block_state(&self, block_number: u128) -> anyhow::Result<Option<BlockSubmitState>>;
 }
 
 #[derive(Clone)]
@@ -542,5 +545,9 @@ impl DAMetaStore for DAMetaDBStore {
         self.get_block_state_opt(block_number)?.ok_or_else(|| {
             anyhow::anyhow!("block submit state not found for block: {}", block_number)
         })
+    }
+
+    fn try_get_block_state(&self, block_number: u128) -> anyhow::Result<Option<BlockSubmitState>> {
+        self.get_block_state_opt(block_number)
     }
 }
