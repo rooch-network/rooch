@@ -43,7 +43,7 @@ pub trait DAMetaStore {
     //   c. remove background_submit_block_cursor directly, since we could catch up with the last order by background submitter
     // after repair with condition2, we may need to repair with condition1 for the last block(it will be done automatically)
     //
-    // If thorough is true, will try to repair the tx orders first, then repair blocks
+    // If thorough is true, will try to repair the tx orders first, then repair blocks. It's design for deep repair.
     fn try_repair_da_meta(&self, last_order: u64, thorough: bool)
         -> anyhow::Result<(usize, usize)>;
 
@@ -328,8 +328,7 @@ impl DAMetaDBStore {
     // if n == 0, then remove all blocks
     //
     // tx orders issues may be caused by:
-    // 1. break changes causes inconsistent tx orders (after v0.7.6 is stable)
-    // 2. wrong execution order on startup (fixed: https://github.com/rooch-network/rooch/pull/2843)
+    // break changes causes inconsistent tx orders (after v0.7.6 is stable)
     pub(crate) fn try_repair_orders(&self, last_order: u64) -> anyhow::Result<(usize, usize)> {
         let last_block_number = self.get_last_block_number()?;
         let mut issues = 0;
@@ -476,6 +475,11 @@ impl DAMetaStore for DAMetaDBStore {
                 DA_BLOCK_CURSOR_COLUMN_FAMILY_NAME,
             ],
             write_batch,
+            // sync write for:
+            // db may collapse after:
+            // 1. the block has been submitted
+            // 2. proposer has added the block
+            // after recovery, the range of block may change, scc & DA will be inconsistent
             true,
         )?;
 
@@ -513,6 +517,7 @@ impl DAMetaStore for DAMetaDBStore {
         Ok(blocks)
     }
 
+    // TODO combine set_submitting_block_done and set_background_submit_block_cursor: no more user-facing submit block
     fn set_submitting_block_done(
         &self,
         block_number: u128,
