@@ -473,7 +473,7 @@ impl BackgroundSubmitter {
             }
         }
 
-        if max_block_number_submitted == 0 {
+        if done_count == 0 {
             return Err(anyhow!("da: background submitting job failed: no blocks submitted after checking, should not happen"));
         };
 

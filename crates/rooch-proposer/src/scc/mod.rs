@@ -77,6 +77,10 @@ impl StateCommitmentChain {
         Ok(block)
     }
 
+    pub fn set_last_proposed(&self, block_number: u128) -> anyhow::Result<()> {
+        self.rooch_store.set_last_proposed(block_number)
+    }
+
     /// Trigger the proposer to propose a new block
     pub async fn propose_block(&mut self) -> anyhow::Result<Option<Block>> {
         let last_proposed = self.rooch_store.get_last_proposed()?;
@@ -84,16 +88,23 @@ impl StateCommitmentChain {
             Some(last_proposed) => last_proposed + 1,
             None => 0,
         };
-        let next_block_da_state = self
+        let next_block_da_state_opt = self
             .rooch_store
-            .get_block_state(next_propose_block_number)?; // DB error/block hasn't been created
-        if !next_block_da_state.done {
-            // There is no block to propose
-            return Ok(None);
+            .try_get_block_state(next_propose_block_number)?; // DB error
+        match next_block_da_state_opt {
+            Some(next_block_da_state) => {
+                if !next_block_da_state.done {
+                    Ok(None)
+                } else {
+                    let block = self.append_new_block(next_block_da_state)?;
+                    Ok(Some(block))
+                }
+            }
+            None => {
+                // init state, no block state
+                Ok(None)
+            }
         }
-
-        let block = self.append_new_block(next_block_da_state)?;
-        Ok(Some(block))
     }
 }
 
