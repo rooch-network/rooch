@@ -451,7 +451,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         traffic_per_second = opt.traffic_per_second.unwrap_or(0.1f64);
     } else {
         traffic_burst_size = opt.traffic_burst_size.unwrap_or(5000);
-        traffic_per_second = opt.traffic_per_second.unwrap_or(0.0001f64);
+        traffic_per_second = opt.traffic_per_second.unwrap_or(0.001f64);
     };
 
     // init limit
