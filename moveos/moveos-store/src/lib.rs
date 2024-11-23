@@ -13,7 +13,7 @@ use accumulator::inmemory::InMemoryAccumulator;
 use anyhow::{Error, Result};
 use bcs::to_bytes;
 use move_core_types::language_storage::StructTag;
-use moveos_config::store_config::RocksdbConfig;
+use moveos_config::store_config::{MoveOSStoreConfig, RocksdbConfig};
 use moveos_config::DataDirPath;
 use moveos_types::genesis_info::GenesisInfo;
 use moveos_types::h256::H256;
@@ -100,8 +100,10 @@ impl MoveOSStore {
     }
 
     pub fn new_with_instance(instance: StoreInstance, registry: &Registry) -> Result<Self> {
+        let store_config = MoveOSStoreConfig::default();
         let node_store = NodeDBStore::new(instance.clone());
-        let state_store = StateDBStore::new(node_store.clone(), registry);
+        let state_store =
+            StateDBStore::new(node_store.clone(), registry, store_config.state_cache_size);
 
         let store = Self {
             node_store,
