@@ -1,86 +1,95 @@
-'use client';
+'use client'
 
-import axios from 'axios';
-import { Args } from '@roochnetwork/rooch-sdk';
-import { useState, useEffect, useCallback } from 'react';
-import { CopyToClipboard } from 'react-copy-to-clipboard';
+import axios from 'axios'
+import { Args } from '@roochnetwork/rooch-sdk'
+import { useState, useEffect, useCallback } from 'react'
+import { CopyToClipboard } from 'react-copy-to-clipboard'
 import {
   useRoochClient,
   useCurrentAddress,
-  useRoochClientQuery,
-} from '@roochnetwork/rooch-sdk-kit';
+  useCurrentNetwork, useRoochClientQuery,
+} from '@roochnetwork/rooch-sdk-kit'
 
-import { LoadingButton } from '@mui/lab';
-import { Card, Chip, Stack, TextField, CardHeader, Typography, CardContent } from '@mui/material';
+import { LoadingButton } from '@mui/lab'
+import { Card, Chip, Stack, TextField, CardHeader, Typography, CardContent } from '@mui/material'
 
-import { useRouter } from 'src/routes/hooks';
+import { useRouter } from 'src/routes/hooks'
 
-import { sleep } from 'src/utils/common';
+import { sleep } from 'src/utils/common'
 
-import { DashboardContent } from 'src/layouts/dashboard';
+import { DashboardContent } from 'src/layouts/dashboard'
 
-import { toast } from 'src/components/snackbar';
-import { Iconify } from 'src/components/iconify';
+import { toast } from 'src/components/snackbar'
+import { Iconify } from 'src/components/iconify'
 
-import { TWITTER_ORACLE_PACKAGE_ID } from './constant';
-import SessionKeysTableCard from './components/session-keys-table-card';
+import { useNetworkVariable } from '../../hooks/use-networks'
+import SessionKeysTableCard from './components/session-keys-table-card'
 
 export function SettingsView() {
-  const address = useCurrentAddress();
-  const router = useRouter();
+  const address = useCurrentAddress()
+  const router = useRouter()
 
-  const client = useRoochClient();
-
-  const [isAddressLoaded, setIsAddressLoaded] = useState(false);
+  const client = useRoochClient()
+  const faucetUrl = useNetworkVariable('faucetUrl')
+  const [isAddressLoaded, setIsAddressLoaded] = useState(false)
+  const network = useCurrentNetwork()
+  const twitterOracleAddress = useNetworkVariable('twitterOracleAddress')
 
   const {
     data: sessionKeys,
     isPending: isLoadingSessionKeys,
     refetch: refetchSessionKeys,
-  } = useRoochClientQuery(
-    'getSessionKeys',
-    {
-      address: address!,
-    },
-    { enabled: !!address }
-  );
+  } = useRoochClientQuery('getSessionKeys', {
+    address: address || ''
+    }
+  )
 
   useEffect(() => {
     if (address !== undefined) {
-      setIsAddressLoaded(true);
+      setIsAddressLoaded(true)
     }
-  }, [address]);
+  }, [address])
 
   useEffect(() => {
     if (isAddressLoaded && !address) {
-      router.push('/account');
+      router.push('/account')
     }
-  }, [address, isAddressLoaded, router]);
+  }, [address, isAddressLoaded, router])
 
-  const [twitterId, setTwitterId] = useState('');
+  const [twitterId, setTwitterId] = useState('')
 
-  const [verifying, setVerifying] = useState(false);
+  const [verifying, setVerifying] = useState(false)
 
   const getBindingTwitterId = useCallback(async () => {
     if (!address) {
-      return;
+      return
     }
     const res = await client.executeViewFunction({
-      address: TWITTER_ORACLE_PACKAGE_ID,
+      address: twitterOracleAddress,
       module: 'twitter_account',
       function: 'resolve_author_id_by_address',
       args: [Args.address(address.toStr())],
-    });
-    setTwitterId((res.return_values?.[0].decoded_value as any).value.vec[0]);
+    })
+    setTwitterId((res.return_values?.[0].decoded_value as any).value.vec[0])
     // eslint-disable-next-line consistent-return
-    return (res.return_values?.[0].decoded_value as any)?.value.vec[0];
-  }, [address, client]);
+    return (res.return_values?.[0].decoded_value as any)?.value.vec[0]
+  }, [address, client, twitterOracleAddress])
 
   useEffect(() => {
-    getBindingTwitterId();
-  }, [getBindingTwitterId]);
+    getBindingTwitterId()
+  }, [getBindingTwitterId])
 
-  const [tweetId, setTweetId] = useState('');
+  const [tweetId, setTweetId] = useState('')
+
+  const networkText = network === 'mainnet' ? 'MainNet' : 'Testnet'
+  const XText = `BTC:${address?.toStr()} 
+
+Rooch ${networkText} Campaign #006 is live! Bind your Twitter to earn extra RGas, test Rooch’s lucky draw and red packet features, and unlock the ${networkText} OG role.
+
+Join Rooch:
+https://portal.rooch.network/inviter/${address?.genRoochAddress().toBech32Address()}
+
+#RoochNetwork #${networkText}`
 
   return (
     <DashboardContent maxWidth="xl">
@@ -128,29 +137,17 @@ export function SettingsView() {
                 </Stack>
                 {address && (
                   <CopyToClipboard
-                    text={`BTC:${address.toStr()} 
-
-Rooch Testnet Campaign #006 is live! Bind your Twitter to earn extra RGas, test Rooch’s lucky draw and red packet features, and unlock the Testnet OG role.
-
-#RoochNetwork #testnet`}
+                    text={XText}
                     onCopy={() => {
-                      const text = `BTC:${address.toStr()} 
-
-Rooch Testnet Campaign #006 is live! Bind your Twitter to earn extra RGas, test Rooch’s lucky draw and red packet features, and unlock the Testnet OG role.
-
-#RoochNetwork #testnet`;
                       window.open(
-                        `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`,
-                        '_blank'
-                      );
+                        `https://twitter.com/intent/tweet?text=${encodeURIComponent(XText)}`,
+                        '_blank',
+                      )
                     }}
                   >
-                    <Stack className="font-medium cursor-pointer text-wrap bg-gray-200 p-3 rounded-md whitespace-pre-line">
-                      {`BTC:${address.toStr()} 
-
-Rooch Testnet Campaign #006 is live! Bind your Twitter to earn extra RGas, test Rooch’s lucky draw and red packet features, and unlock the Testnet OG role.
-
-#RoochNetwork #testnet`}
+                    <Stack
+                      className="font-medium cursor-pointer text-wrap bg-gray-200 p-3 rounded-md whitespace-pre-line">
+                      {XText}
                     </Stack>
                   </CopyToClipboard>
                 )}
@@ -165,7 +162,7 @@ Rooch Testnet Campaign #006 is live! Bind your Twitter to earn extra RGas, test 
                   value={tweetId}
                   placeholder="https://x.com/RoochNetwork/status/180000000000000000"
                   onChange={(e) => {
-                    setTweetId(e.target.value);
+                    setTweetId(e.target.value)
                   }}
                 />
               </Stack>
@@ -174,10 +171,10 @@ Rooch Testnet Campaign #006 is live! Bind your Twitter to earn extra RGas, test 
                   !tweetId ||
                   (() => {
                     try {
-                      const url = new URL(tweetId);
-                      return url.hostname !== 'x.com';
+                      const url = new URL(tweetId)
+                      return url.hostname !== 'x.com'
                     } catch {
-                      return true;
+                      return true
                     }
                   })()
                 }
@@ -187,12 +184,12 @@ Rooch Testnet Campaign #006 is live! Bind your Twitter to earn extra RGas, test 
                 variant="contained"
                 onClick={async () => {
                   try {
-                    setVerifying(true);
-                    const match = tweetId.match(/status\/(\d+)/);
+                    setVerifying(true)
+                    const match = tweetId.match(/status\/(\d+)/)
                     if (match) {
-                      const pureTweetId = match[1];
+                      const pureTweetId = match[1]
                       const res = await axios.post(
-                        'http://test-faucet.rooch.network/fetch-tweet',
+                        `${faucetUrl}/fetch-tweet`,
                         {
                           tweet_id: pureTweetId,
                         },
@@ -200,12 +197,12 @@ Rooch Testnet Campaign #006 is live! Bind your Twitter to earn extra RGas, test 
                           headers: {
                             'Content-Type': 'application/json',
                           },
-                        }
-                      );
-                      console.log('🚀 ~ file: view.tsx:190 ~ onClick={ ~ res:', res);
+                        },
+                      )
+                      console.log('🚀 ~ file: view.tsx:190 ~ onClick={ ~ res:', res)
                       if (res?.data?.ok) {
                         await axios.post(
-                          'http://test-faucet.rooch.network/verify-and-binding-twitter-account',
+                          `${faucetUrl}/verify-and-binding-twitter-account`,
                           {
                             tweet_id: pureTweetId,
                           },
@@ -213,20 +210,20 @@ Rooch Testnet Campaign #006 is live! Bind your Twitter to earn extra RGas, test 
                             headers: {
                               'Content-Type': 'application/json',
                             },
-                          }
-                        );
+                          },
+                        )
                       }
-                      await sleep(3000);
-                      const checkRes = await getBindingTwitterId();
+                      await sleep(3000)
+                      const checkRes = await getBindingTwitterId()
                       if (checkRes) {
-                        toast.success('Binding success');
+                        toast.success('Binding success')
                       }
                     }
                   } catch (error) {
-                    console.log('🚀 ~ file: view.tsx:211 ~ onClick={ ~ error:', error);
-                    toast.error(error.response.data.error);
+                    console.log('🚀 ~ file: view.tsx:211 ~ onClick={ ~ error:', error)
+                    toast.error(error.response.data.error)
                   } finally {
-                    setVerifying(false);
+                    setVerifying(false)
                   }
                 }}
               >
@@ -243,5 +240,5 @@ Rooch Testnet Campaign #006 is live! Bind your Twitter to earn extra RGas, test 
         address={address?.toStr() || ''}
       />
     </DashboardContent>
-  );
+  )
 }

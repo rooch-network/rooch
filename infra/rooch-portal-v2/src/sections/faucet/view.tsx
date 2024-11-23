@@ -109,7 +109,7 @@ export function FaucetView({ address }: { address: string }) {
       const payload = JSON.stringify({
         claimer: viewAddress,
       });
-      const response = await fetch(faucetUrl, {
+      const response = await fetch(`${faucetUrl}/faucet`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
