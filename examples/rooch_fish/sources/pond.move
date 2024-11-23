@@ -9,7 +9,6 @@ module rooch_fish::pond {
     use moveos_std::signer;
     use moveos_std::table::{Self, Table};         
     use moveos_std::event;
-    use moveos_std::timestamp;
 
     use rooch_framework::account_coin_store;
     use rooch_framework::coin_store::{Self, CoinStore};
@@ -694,6 +693,9 @@ module rooch_fish::pond {
 
     #[test_only]
     use rooch_framework::genesis;
+
+    #[test_only]
+    use moveos_std::timestamp;
 
     #[test]
     fun test_create_pond() {

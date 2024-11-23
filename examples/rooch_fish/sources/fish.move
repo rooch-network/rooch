@@ -5,7 +5,6 @@ module rooch_fish::fish {
     use moveos_std::signer;
     use moveos_std::timestamp;
     use moveos_std::simple_map::{Self, SimpleMap};
-    use std::vector;
 
     friend rooch_fish::rooch_fish;
     friend rooch_fish::pond;
@@ -146,6 +145,9 @@ module rooch_fish::fish {
     public fun get_position(fish: &Fish): (u64, u64) {
         (fish.x, fish.y)
     }
+
+    #[test_only]
+    use std::vector;
 
     #[test]
     fun test_create_fish() {
