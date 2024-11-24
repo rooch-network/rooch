@@ -3,7 +3,7 @@
 
 module rooch_fish::init_test {
     use std::vector;
-    use moveos_std::object::{Self, ObjectID};
+    use moveos_std::object;
     use rooch_framework::genesis;
     use rooch_fish::rooch_fish::{Self, GameState};
 
