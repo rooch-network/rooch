@@ -19,7 +19,6 @@ dependencies = [
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
  "bcs-ext",
  "itertools 0.13.0",
- "log",
  "lru",
  "mirai-annotations",
  "moveos-types",
@@ -30,6 +29,7 @@ dependencies = [
  "rand 0.8.5",
  "rand_core 0.6.4",
  "serde 1.0.215",
+ "tracing",
 ]
 
 [[package]]
@@ -6918,7 +6918,6 @@ dependencies = [
  "codespan",
  "codespan-reporting",
  "itertools 0.13.0",
- "log",
  "move-binary-format",
  "move-bytecode-source-map",
  "move-command-line-common",
@@ -6945,6 +6944,7 @@ dependencies = [
  "serde 1.0.215",
  "tempfile",
  "thiserror",
+ "tracing",
  "tracing-subscriber",
 ]
 
@@ -6956,11 +6956,11 @@ dependencies = [
  "bcs",
  "itertools 0.13.0",
  "libc",
- "log",
  "move-binary-format",
  "move-core-types",
  "move-vm-types",
  "serde 1.0.215",
+ "tracing",
 ]
 
 [[package]]
@@ -6988,8 +6988,8 @@ dependencies = [
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
  "coerce",
  "crossbeam-channel",
- "log",
  "thiserror",
+ "tracing",
 ]
 
 [[package]]
@@ -7016,7 +7016,6 @@ dependencies = [
  "bcs",
  "better_any",
  "hex",
- "log",
  "move-binary-format",
  "move-core-types",
  "move-vm-runtime",
@@ -7039,7 +7038,6 @@ dependencies = [
  "fastcrypto 0.1.8 (git+https://github.com/MystenLabs/fastcrypto?rev=56f6223b84ada922b6cb2c672c69db2ea3dc6a13)",
  "fastcrypto-zkp",
  "itertools 0.13.0",
- "log",
  "move-binary-format",
  "move-core-types",
  "move-stdlib",
@@ -7057,6 +7055,7 @@ dependencies = [
  "rlp",
  "serde_json",
  "smallvec",
+ "tracing",
 ]
 
 [[package]]
@@ -7068,7 +7067,6 @@ dependencies = [
  "bcs",
  "chrono",
  "function_name",
- "log",
  "metrics",
  "move-core-types",
  "moveos-config",
@@ -7079,6 +7077,7 @@ dependencies = [
  "raw-store",
  "smt",
  "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -7116,7 +7115,6 @@ dependencies = [
  "bcs",
  "codespan-reporting",
  "itertools 0.13.0",
- "log",
  "move-binary-format",
  "move-command-line-common",
  "move-compiler",
@@ -7131,6 +7129,7 @@ dependencies = [
  "serde 1.0.215",
  "termcolor",
  "thiserror",
+ "tracing",
 ]
 
 [[package]]
@@ -9561,9 +9560,9 @@ dependencies = [
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
  "async-trait",
  "coerce",
- "log",
  "moveos-eventbus",
  "rooch-types",
+ "tracing",
 ]
 
 [[package]]
@@ -9574,7 +9573,6 @@ dependencies = [
  "async-trait",
  "coerce",
  "function_name",
- "log",
  "metrics",
  "move-core-types",
  "move-resource-viewer",
@@ -9719,7 +9717,6 @@ dependencies = [
  "diesel",
  "diesel_migrations",
  "function_name",
- "log",
  "metrics",
  "move-core-types",
  "moveos-config",
@@ -9795,7 +9792,6 @@ dependencies = [
  "ciborium",
  "cosmwasm-std",
  "cosmwasm-vm",
- "log",
  "move-binary-format",
  "move-core-types",
  "move-vm-runtime",
@@ -9810,6 +9806,7 @@ dependencies = [
  "rooch-types",
  "serde_json",
  "smallvec",
+ "tracing",
  "wasmer",
 ]
 
@@ -9913,7 +9910,6 @@ dependencies = [
  "coerce",
  "function_name",
  "hex",
- "log",
  "metrics",
  "moveos",
  "moveos-types",
@@ -10008,7 +10004,6 @@ dependencies = [
  "bitcoincore-rpc",
  "futures",
  "jsonrpsee 0.23.2",
- "log",
  "move-core-types",
  "moveos-types",
  "rooch-config",
@@ -10035,7 +10030,6 @@ dependencies = [
  "http 1.1.0",
  "hyper 1.3.1",
  "jsonrpsee 0.23.2",
- "log",
  "metrics",
  "move-core-types",
  "move-resource-viewer",
@@ -11353,7 +11347,6 @@ dependencies = [
  "bytes",
  "function_name",
  "hex",
- "log",
  "metrics",
  "more-asserts 0.3.1",
  "num-derive",
@@ -11367,6 +11360,7 @@ dependencies = [
  "rand 0.8.5",
  "serde 1.0.215",
  "thiserror",
+ "tracing",
 ]
 
 [[package]]

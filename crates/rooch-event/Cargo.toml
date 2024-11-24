@@ -11,9 +11,10 @@ version.workspace = true
 
 [dependencies]
 anyhow = { workspace = true }
-coerce = { workspace = true }
 async-trait = { workspace = true }
+coerce = { workspace = true }
+tracing = { workspace = true }
+
 moveos-eventbus = { workspace = true }
-log = { workspace = true }
 
 rooch-types = { workspace = true }

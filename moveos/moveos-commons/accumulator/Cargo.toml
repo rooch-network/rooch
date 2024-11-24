@@ -14,7 +14,7 @@ rust-version = { workspace = true }
 [dependencies]
 anyhow = { workspace = true }
 itertools = { workspace = true }
-log = { workspace = true }
+tracing = { workspace = true }
 lru = { workspace = true }
 once_cell = { workspace = true }
 parking_lot = { workspace = true }

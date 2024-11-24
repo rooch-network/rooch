@@ -148,7 +148,7 @@ pub async fn start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Server
         Ok(server_handle) => Ok(server_handle),
         Err(e) => match e.downcast::<GenesisError>() {
             Ok(e) => {
-                log::error!(
+                tracing::error!(
                     "{:?}, please clean your data dir. `rooch server clean -n {}` ",
                     e,
                     chain_name
@@ -157,7 +157,7 @@ pub async fn start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Server
             }
             Err(e) => match e.downcast::<RawStoreError>() {
                 Ok(e) => {
-                    log::error!(
+                    tracing::error!(
                         "{:?}, please clean your data dir. `rooch server clean -n {}` ",
                         e,
                         chain_name
@@ -165,7 +165,7 @@ pub async fn start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Server
                     std::process::exit(R_EXIT_CODE_NEED_HELP);
                 }
                 Err(e) => {
-                    log::error!("{:?}, server start fail. ", e);
+                    tracing::error!("{:?}, server start fail. ", e);
                     std::process::exit(R_EXIT_CODE_NEED_HELP);
                 }
             },

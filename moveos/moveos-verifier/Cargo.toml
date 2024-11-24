@@ -19,8 +19,8 @@ codespan-reporting = { workspace = true }
 termcolor = { workspace = true }
 bcs = { workspace = true }
 thiserror = { workspace = true }
-log = { workspace = true }
 itertools = { workspace = true }
+tracing = { workspace = true }
 
 move-core-types = { workspace = true }
 move-model = { workspace = true }

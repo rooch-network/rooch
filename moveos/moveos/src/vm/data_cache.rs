@@ -109,8 +109,8 @@ impl<'r, 'l, S: MoveOSResolver> TransactionCache for MoveosDataCache<'r, 'l, S> 
             .get_loaded_module(module_id)
             .and_then(|module| match module {
                 Some(move_module) => {
-                    if log::log_enabled!(log::Level::Trace) {
-                        log::trace!("Loaded module {:?} from ObjectRuntime", module_id);
+                    if tracing::enabled!(tracing::Level::TRACE) {
+                        tracing::trace!("Loaded module {:?} from ObjectRuntime", module_id);
                     }
                     Ok(Some(move_module.byte_codes))
                 }
@@ -133,8 +133,8 @@ impl<'r, 'l, S: MoveOSResolver> TransactionCache for MoveosDataCache<'r, 'l, S> 
                     .finish(Location::Undefined))
             }
             Err(err) => {
-                if log::log_enabled!(log::Level::Debug) {
-                    log::warn!("Error loading module {:?}: {:?}", module_id, err);
+                if tracing::enabled!(tracing::Level::DEBUG) {
+                    tracing::warn!("Error loading module {:?}: {:?}", module_id, err);
                 }
                 Err(err.finish(Location::Undefined))
             }
