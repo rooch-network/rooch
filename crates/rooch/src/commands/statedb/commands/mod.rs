@@ -69,9 +69,9 @@ fn init_job(
         .latest_root()
         .unwrap()
         .expect("statedb is empty, genesis must be initialed.");
-    log::info!("original root object: {:?}", root);
+    tracing::info!("original root object: {:?}", root);
 
-    log::info!("job progress started");
+    tracing::info!("job progress started");
 
     (root, rooch_db.moveos_store, start_time)
 }
@@ -337,7 +337,7 @@ impl OutpointInscriptionsMap {
         let start_time = Instant::now();
         let map_existed = path.exists();
         if map_existed {
-            log::info!("load outpoint_inscriptions_map...");
+            tracing::info!("load outpoint_inscriptions_map...");
             let outpoint_inscriptions_map = OutpointInscriptionsMap::load(path.clone());
             let (outpoint_count, inscription_count) = outpoint_inscriptions_map.stats();
             println!(
@@ -348,7 +348,7 @@ impl OutpointInscriptionsMap {
             );
             outpoint_inscriptions_map
         } else {
-            log::info!("indexing and dumping outpoint_inscriptions_map...");
+            tracing::info!("indexing and dumping outpoint_inscriptions_map...");
             let (outpoint_inscriptions_map, mapped_outpoint, mapped_inscription, unbound_count) =
                 OutpointInscriptionsMap::index_and_dump(
                     inscriptions_path.clone().expect("if outpoint_inscriptions_map not existed, inscriptions_path must be provided"),

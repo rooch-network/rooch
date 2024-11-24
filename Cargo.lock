@@ -9350,7 +9350,6 @@ dependencies = [
  "itertools 0.13.0",
  "jemallocator",
  "lazy_static 1.5.0",
- "log",
  "metrics",
  "mimalloc",
  "move-binary-format",
