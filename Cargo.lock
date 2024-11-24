@@ -9433,7 +9433,6 @@ dependencies = [
  "ethers",
  "jemallocator",
  "lazy_static 1.5.0",
- "log",
  "metrics",
  "move-binary-format",
  "move-bytecode-utils",
