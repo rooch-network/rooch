@@ -551,7 +551,7 @@ const Index = ({
               <div className="w-full h-[376px] -mt-[2px]">
                 <img
                   src="/home/blog-1.png"
-                  className="w-full h-full object-cover rounded-t-[15px]"
+                  className="inline-block w-full h-full object-cover rounded-t-[15px]"
                   alt="blog-1"
                 />
               </div>
@@ -564,7 +564,7 @@ const Index = ({
             </div>
             <div className="w-[45%] flex flex-col gap-y-2 ml-12">
               <div className="w-full h-[190px] border-2 border-[#036840] rounded-[15px] flex p-6">
-                <div className="w-[40%] h-full flex flex-col items-center">
+                <div className="w-[40%] max-w-[240px] h-full flex flex-col items-center">
                   <img src="/home/blog-2.svg" alt="blog-2" className="w-full object-cover" />
                   <div className="text-base font-normal mt-4">9th Sep, 2024</div>
                 </div>
@@ -576,7 +576,7 @@ const Index = ({
                 </div>
               </div>
               <div className="w-full h-[190px] border-2 border-[#036840] rounded-[15px] flex p-6">
-                <div className="w-[40%] h-full flex flex-col items-center">
+                <div className="w-[40%] max-w-[240px] h-full flex flex-col items-center">
                   <img src="/home/blog-2.svg" alt="blog-2" className="w-full object-cover" />
                   <div className="text-base font-normal mt-4">9th Sep, 2024</div>
                 </div>
@@ -588,7 +588,7 @@ const Index = ({
                 </div>
               </div>
               <div className="w-full h-[190px] border-2 border-[#036840] rounded-[15px] flex p-6">
-                <div className="w-[40%] h-full flex flex-col items-center">
+                <div className="w-[40%] max-w-[240px] h-full flex flex-col items-center">
                   <img src="/home/blog-2.svg" alt="blog-2" className="w-full object-cover" />
                   <div className="text-base font-normal mt-4">9th Sep, 2024</div>
                 </div>
