@@ -15,8 +15,8 @@ use moveos_types::{
     state::{MoveState, MoveStructType, MoveType, ObjectChange, ObjectState},
     state_resolver::StateResolver,
 };
+use rooch_common::bitcoin_client::proxy::BitcoinClientProxy;
 use rooch_ord::ord_client::Charm;
-use rooch_relayer::actor::bitcoin_client_proxy::BitcoinClientProxy;
 use rooch_types::{
     bitcoin::{
         bbn::{

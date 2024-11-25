@@ -1,18 +1,17 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::actor::bitcoin_client::BitcoinClientActor;
-use crate::actor::messages::{
+use super::messages::{
     BroadcastTransactionMessage, GetBestBlockHashMessage, GetBlockHashMessage,
-    GetBlockHeaderInfoMessage, GetBlockMessage,
+    GetBlockHeaderInfoMessage, GetBlockMessage, GetChainTipsMessage, GetRawTransactionMessage,
+    GetTxOutMessage,
 };
+use crate::bitcoin_client::actor::BitcoinClientActor;
 use anyhow::Result;
 use bitcoin::Transaction;
 use bitcoincore_rpc::bitcoin::Txid;
 use bitcoincore_rpc::json;
 use coerce::actor::ActorRef;
-
-use super::messages::{GetChainTipsMessage, GetRawTransactionMessage, GetTxOutMessage};
 
 #[derive(Clone)]
 pub struct BitcoinClientProxy {

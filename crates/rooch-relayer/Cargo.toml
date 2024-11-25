@@ -17,9 +17,6 @@ async-trait = { workspace = true }
 chrono = { workspace = true }
 coerce = { workspace = true }
 ethers = { workspace = true }
-serde = { workspace = true }
-serde_json = { workspace = true }
-tokio = { features = ["full"], workspace = true }
 tracing = { workspace = true }
 bitcoin = { workspace = true }
 bitcoincore-rpc = { workspace = true }
@@ -33,6 +30,7 @@ moveos-eventbus = { workspace = true }
 metrics = { workspace = true }
 
 rooch-types = { workspace = true }
+rooch-common = { workspace = true }
 rooch-config = { workspace = true }
 rooch-executor = { workspace = true }
 rooch-pipeline-processor = { workspace = true }

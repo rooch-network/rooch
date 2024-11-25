@@ -6,10 +6,9 @@ use std::path::PathBuf;
 use anyhow::Result;
 use clap::Parser;
 use coerce::actor::{system::ActorSystem, IntoActor};
+use rooch_common::bitcoin_client::actor::BitcoinClientActor;
+use rooch_common::bitcoin_client::proxy::BitcoinClientProxy;
 use rooch_framework_tests::bitcoin_block_tester::TesterGenesisBuilder;
-use rooch_relayer::actor::{
-    bitcoin_client::BitcoinClientActor, bitcoin_client_proxy::BitcoinClientProxy,
-};
 
 #[derive(Parser)]
 #[clap(name = "test_builder", author = "The Rooch Core Contributors")]

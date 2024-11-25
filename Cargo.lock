@@ -9476,7 +9476,16 @@ dependencies = [
 name = "rooch-common"
 version = "0.8.0"
 dependencies = [
+ "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "async-trait",
+ "bitcoin 0.32.3",
+ "bitcoincore-rpc",
+ "coerce",
  "libc",
+ "serde 1.0.215",
+ "serde_json",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -9656,6 +9665,7 @@ dependencies = [
  "moveos-store",
  "moveos-types",
  "rand 0.8.5",
+ "rooch-common",
  "rooch-config",
  "rooch-db",
  "rooch-executor",
@@ -9663,7 +9673,6 @@ dependencies = [
  "rooch-integration-test-runner",
  "rooch-key",
  "rooch-ord",
- "rooch-relayer",
  "rooch-types",
  "serde 1.0.215",
  "serde_json",
@@ -9905,6 +9914,7 @@ dependencies = [
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
  "async-trait",
  "bcs",
+ "bitcoin 0.32.3",
  "coerce",
  "function_name",
  "hex",
@@ -9912,6 +9922,7 @@ dependencies = [
  "moveos",
  "moveos-types",
  "prometheus",
+ "rooch-common",
  "rooch-da",
  "rooch-db",
  "rooch-event",
@@ -9956,14 +9967,12 @@ dependencies = [
  "moveos-eventbus",
  "moveos-types",
  "prometheus",
+ "rooch-common",
  "rooch-config",
  "rooch-event",
  "rooch-executor",
  "rooch-pipeline-processor",
  "rooch-types",
- "serde 1.0.215",
- "serde_json",
- "tokio",
  "tracing",
 ]
 
@@ -10036,6 +10045,7 @@ dependencies = [
  "pin-project",
  "prometheus",
  "raw-store",
+ "rooch-common",
  "rooch-config",
  "rooch-da",
  "rooch-db",

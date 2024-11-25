@@ -3,9 +3,6 @@
 
 use super::bitcoin_relayer::BitcoinRelayer;
 use super::ethereum_relayer::EthereumRelayer;
-use super::messages::RelayTick;
-use crate::actor::bitcoin_client::BitcoinClientActor;
-use crate::actor::bitcoin_client_proxy::BitcoinClientProxy;
 use crate::actor::relayer_proxy::RelayerProxy;
 use anyhow::Result;
 use async_trait::async_trait;
@@ -13,6 +10,9 @@ use coerce::actor::{context::ActorContext, message::Handler, Actor, LocalActorRe
 use move_core_types::vm_status::KeptVMStatus;
 use moveos_eventbus::bus::EventData;
 use moveos_types::module_binding::MoveFunctionCaller;
+use rooch_common::bitcoin_client::actor::BitcoinClientActor;
+use rooch_common::bitcoin_client::messages::RelayTick;
+use rooch_common::bitcoin_client::proxy::BitcoinClientProxy;
 use rooch_config::{BitcoinRelayerConfig, EthereumRelayerConfig};
 use rooch_event::actor::{EventActor, EventActorSubscribeMessage};
 use rooch_event::event::ServiceStatusEvent;

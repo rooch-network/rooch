@@ -37,13 +37,13 @@ moveos-store = { workspace = true }
 moveos-config = { workspace = true }
 metrics = { workspace = true }
 
+rooch-common = { workspace = true }
 rooch-genesis = { workspace = true }
 rooch-types = { workspace = true }
 rooch-key = { workspace = true }
 rooch-executor = { workspace = true }
 rooch-config = { workspace = true }
 rooch-db = { workspace = true }
-rooch-relayer = { workspace = true }
 rooch-ord = { workspace = true }
 
 framework-builder = { workspace = true }

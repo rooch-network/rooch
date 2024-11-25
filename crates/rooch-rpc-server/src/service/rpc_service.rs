@@ -16,12 +16,12 @@ use moveos_types::moveos_std::object::{ObjectID, MAX_OBJECT_IDS_PER_QUERY};
 use moveos_types::state::{AnnotatedState, FieldKey, ObjectState, StateChangeSet};
 use moveos_types::state_resolver::{AnnotatedStateKV, StateKV};
 use moveos_types::transaction::{FunctionCall, TransactionExecutionInfo};
+use rooch_common::bitcoin_client::proxy::BitcoinClientProxy;
 use rooch_da::proxy::DAServerProxy;
 use rooch_executor::actor::messages::DryRunTransactionResult;
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_indexer::proxy::IndexerProxy;
 use rooch_pipeline_processor::proxy::PipelineProcessorProxy;
-use rooch_relayer::actor::bitcoin_client_proxy::BitcoinClientProxy;
 use rooch_rpc_api::jsonrpc_types::{
     BitcoinStatus, DisplayFieldsView, IndexerObjectStateView, ObjectMetaView, RoochStatus, Status,
 };
