@@ -16,48 +16,37 @@ Grow Bitcoin 是一个生态系统加速平台，专注于将比特币用户和�
 
 ## FAQ
 
-### 详细使用流程
+### 主网常见问题
+
+#### 详细使用流程
 
 请参考 [Grow Bitcion 测试网使用指南](https://rooch.network/zh-CN/blog/grow-bitcoin-test)。
 
 > 提示：主网与测试网使用流程一致，注意访问网址的 URL！
 
-### 如何获取 UTXO 和 RGas
+#### 如何获取 UTXO 和 RGas
 
-主网只需要确保 UniSat 钱包有 UTXO，并在这里 [Claim RGas](https://portal.rooch.network/faucet) 即可质押。
+只需要确保 UniSat 钱包有 UTXO，并在这里 [Claim RGas](https://portal.rooch.network/faucet) 即可质押。
 
-测试网请使用下面的方式获取 UTXO 和 RGas：
-
-- [获取 tBTC](https://rooch.network/zh-CN/build/getting-started/get-test-btc)
-- [获取 Rooch Gas Coin](https://rooch.network/zh-CN/build/getting-started/get-gas-coin)
-
-### 测试网领取过 BTC 但是没有 UTXO
-
-出现这个问题，请给自己的账户转账一次。
-
-### Discord 找不到 Faucet 频道
-
-请在 `contributor-role` 频道获取 `seed` 角色。
-
-### Grow 怎么挖矿
+#### Grow 怎么挖矿
 
 只需要自己的钱包持有 BTC 即可质押挖矿，获取 `GROW`。Grow Bitcoin 采取的是 `Hold Mining` 的质押模式来获取 `GROW`。
 
 注意：如果自己钱包的 UTXO 花费出去后，在 Grow Bitcoin 质押的 UTXO 就失效了，需要手动质押新的 UTXO 继续挖矿。
 
-### 循环出现创建 Seesion
+#### 循环出现创建 Seesion
 
 如果循环弹出 `Create Session` 的提示窗，请检查是否有 RGas。
 
-### 质押是否影响 ARC20
+#### 质押是否影响 ARC20
 
 不影响。质押不需要发送 L1 交易。
 
-### 需要多少 BTC 可以质押
+#### 需要多少 BTC 可以质押
 
 无准入门槛。
 
-### Grow 总量
+#### Grow 总量
 
 GROW 总量为 `210,000,000,000`，`180` 天挖完。
 
@@ -65,23 +54,19 @@ GROW 总量为 `210,000,000,000`，`180` 天挖完。
 
 > 源码：https://github.com/rooch-network/rooch/blob/main/apps/grow_bitcoin/sources/grow_bitcoin.move
 
-### 有质押限制吗
+#### 有质押限制吗
 
 没有。
 
-### 账户有 BTC 了但是没有 UTXO
-
-Rooch 比 Bitcoin 慢了三个区块，需要等待同步。
-
-### RGas 没有了
+#### RGas 没有了
 
 如果没有 RGas 了，可以在[这里](https://portal.rooch.network/gas-swap)购买。
 
-### UTXO 改变了，GROW 奖励还有吗
+#### UTXO 改变了，GROW 奖励还有吗
 
 因为是持有挖矿模式，如果 UTXO 被花费了，没有领取的 `GROW` 就无法 Claim 了，建议花费 BTC 之前先领取质押奖励。
 
-### Babylon Stake
+#### Babylon Stake
 
 同一个 UTXO 不能 Self Staking 然后再到 Babylon 上 Stake。
 
@@ -89,32 +74,57 @@ Rooch 比 Bitcoin 慢了三个区块，需要等待同步。
 
 Babylon 的质押带有时间锁，它的质押具有时间权重。
 
-### Rooch 有价格预言机了吗
+#### Rooch 有价格预言机了吗
 
 目前有 Bitcoin 的预言机。
 
 > 源码：https://github.com/rooch-network/rooch/blob/main/apps/gas_market/sources/trusted_oracle.move
 
-### Self Staking 风险
+#### Self Staking 风险
 
 Self Staking 对 Bitcoin 来说只有 `Read` 权限，没有 `Transfer`，保证了 BTC 的所有权。在 Rooch 层具有 `Write` 权限，提供了扩展性。
 
 因此 Grwo Bitcoin 中的 Self Staking 是零风险的质押挖矿。
 
-### Grow Bitcion 使用的是哪个版本的 Bitcoin 测试网
-
-Grow Bitcion 测试网使用的是 Bitcoin `test3` 的测试网。
-
-### GROW 有什么作用
+#### GROW 有什么作用
 
 可以使用 `GROW` 给项目投票，获取 `BitXP` 积分。`BitXP` 用于获取空投。
 
-### GROW 投票后会消失吗
+#### GROW 投票后会消失吗
 
 投票后 GROW 会被烧掉，减少供应量。
 
-### GROW 与 BitXP 比率
+#### GROW 与 BitXP 比率
 
 `GROW` 与 `BitXP` 为 `1:1` 映射，投票消耗的 `GROW` 将获得等量的 `BitXP`。
 
 `GROW` 是完全公平发射的，供应量固定，`BitXP` 没有上限，`BitXP` 只能通过使用 `GROW` 给项目投票获取。
+
+#### 新的 Bitcoin 地址可以领 RGas 吗
+
+新的 Bitcoin 地址可以 `Claim` 一次 RGas。
+
+### 测试网常见问题
+
+#### 如何获取 UTXO 和 RGas
+
+测试网请使用下面的方式获取 UTXO 和 RGas：
+
+- [获取 tBTC](https://rooch.network/zh-CN/build/getting-started/get-test-btc)
+- [获取 Rooch Gas Coin](https://rooch.network/zh-CN/build/getting-started/get-gas-coin)
+
+#### 测试网领取过 BTC 但是没有 UTXO
+
+出现这个问题，请给自己的账户转账一次。
+
+#### Discord 找不到 Faucet 频道
+
+请在 `contributor-role` 频道获取 `seed` 角色。
+
+#### 账户有 BTC 了但是没有 UTXO
+
+BTC 转账交易，需要等待三个区块确认后，`UTXO` 才可以在 Rooch 中使用。
+
+#### Grow Bitcion 使用的是哪个版本的 Bitcoin 测试网
+
+Grow Bitcion 测试网使用的是 Bitcoin `test3` 的测试网。
