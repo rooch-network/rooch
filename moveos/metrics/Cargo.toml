@@ -15,7 +15,6 @@ rust-version = { workspace = true }
 [dependencies]
 axum = { workspace = true }
 axum-server = { workspace = true }
-tracing = { workspace = true }
 scopeguard = { workspace = true }
 prometheus = { workspace = true }
 once_cell = { workspace = true }
@@ -28,3 +27,4 @@ futures = { workspace = true }
 async-trait = { workspace = true }
 anyhow = { workspace = true }
 protobuf = { workspace = true }
+tracing = { workspace = true }

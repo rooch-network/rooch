@@ -111,7 +111,7 @@ impl ReGenesisCommand {
         }
         writer.flush().unwrap();
 
-        log::info!("Export {} success", outputed.join(", "));
+        tracing::info!("Export {} success", outputed.join(", "));
     }
 
     fn remove(&self) {
@@ -133,7 +133,7 @@ impl ReGenesisCommand {
             .join(chain_network_name)
             .join("roochdb/indexer");
         std::fs::remove_dir_all(indexer_dir).unwrap();
-        log::info!("Remove genesis info, startup info and sequencer info success");
+        tracing::info!("Remove genesis info, startup info and sequencer info success");
     }
 
     fn restore(&self) {
@@ -161,6 +161,6 @@ impl ReGenesisCommand {
             .save_sequencer_info(sequencer_info)
             .unwrap();
 
-        log::info!("Restore genesis info, startup info and sequencer info success");
+        tracing::info!("Restore genesis info, startup info and sequencer info success");
     }
 }

@@ -37,7 +37,6 @@ regex = { workspace = true }
 parking_lot = { workspace = true }
 rpassword = { workspace = true }
 fastcrypto = { workspace = true }
-log = { workspace = true }
 csv = { workspace = true }
 tempfile = { workspace = true }
 rustc-hash = { workspace = true }

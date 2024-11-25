@@ -18,7 +18,6 @@ bcs = { workspace = true }
 coerce = { workspace = true }
 function_name = { workspace = true }
 hex = { workspace = true }
-log = { workspace = true }
 tracing = { workspace = true }
 prometheus = { workspace = true }
 

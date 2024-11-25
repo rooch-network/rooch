@@ -54,8 +54,8 @@ impl StateDBStore {
             .with_label_values(&[fn_name])
             .start_timer();
         let change_set = self.smt.puts(pre_state_root, update_set)?;
-        if log::log_enabled!(log::Level::Trace) {
-            log::trace!(
+        if tracing::enabled!(tracing::Level::TRACE) {
+            tracing::trace!(
                 "update_fields pre_state_root: {}, new_state_root: {}",
                 pre_state_root,
                 change_set.state_root,
@@ -173,8 +173,8 @@ impl StateDBStore {
         let mut tree_change_set = self.update_fields(pre_state_root, update_set)?;
         let new_state_root = tree_change_set.state_root;
         nodes.append(&mut tree_change_set.nodes);
-        if log::log_enabled!(log::Level::Debug) {
-            log::debug!(
+        if tracing::enabled!(tracing::Level::DEBUG) {
+            tracing::debug!(
                 "apply_change_set new_state_root: {:?}, smt nodes: {}, new_global_size: {}",
                 new_state_root,
                 nodes.len(),
@@ -226,12 +226,12 @@ impl StatelessResolver for StateDBStore {
             return Ok(None);
         }
         let result = self.smt.get(state_root, *key)?;
-        if log::log_enabled!(log::Level::Trace) {
+        if tracing::enabled!(tracing::Level::TRACE) {
             let result_info = match &result {
                 Some(state) => format!("Some({})", state.metadata.object_type),
                 None => "None".to_string(),
             };
-            log::trace!(
+            tracing::trace!(
                 "get_field_at state_root: {} key: {}, result: {:?}",
                 state_root,
                 key,

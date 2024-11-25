@@ -151,7 +151,7 @@ impl PipelineProcessorActor {
             Ok(v) => v,
             Err(err) => {
                 if is_vm_panic_error(&err) {
-                    log::error!(
+                    tracing::error!(
                         "Execute L1 Block failed while VM panic occurred then \
                         set service to Maintenance mode and pause the relayer. error: {:?}, block {}, tx order {}",
                         err, block_height, tx_order
@@ -195,7 +195,7 @@ impl PipelineProcessorActor {
             Ok(v) => v,
             Err(err) => {
                 if is_vm_panic_error(&err) {
-                    log::error!(
+                    tracing::error!(
                         "Execute L1 Tx failed while VM panic occurred then \
                         set service to Maintenance mode and pause the relayer. error: {:?}, tx order {}",
                         err, tx_order
@@ -249,7 +249,7 @@ impl PipelineProcessorActor {
             Err(err) => {
                 if is_vm_panic_error(&err) {
                     let l2_tx_bcs_bytes = bcs::to_bytes(&tx)?;
-                    log::error!(
+                    tracing::error!(
                         "Execute L2 Tx failed while VM panic occurred and revert tx. error: {:?} tx info {}",
                         err, hex::encode(l2_tx_bcs_bytes)
                     );
@@ -327,7 +327,7 @@ impl PipelineProcessorActor {
                 .await;
             match result {
                 Ok(_) => {}
-                Err(error) => log::error!("Update indexer error: {}", error),
+                Err(error) => tracing::error!("Update indexer error: {}", error),
             };
         };
 

@@ -185,7 +185,7 @@ pub(crate) fn apply_inscription_updates(
             apply_nodes_cost,
         );
 
-        log::debug!(
+        tracing::debug!(
             "last inscription_store_state_root: {:?}, new inscription_store_state_root: {:?}",
             last_inscription_store_state_root,
             inscription_store_state_root,

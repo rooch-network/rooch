@@ -213,7 +213,7 @@ impl WalletContext {
                 .await
                 .map_err(RoochError::from)?,
         );
-        log::debug!("use sequence_number: {}", sequence_number);
+        tracing::debug!("use sequence_number: {}", sequence_number);
         //TODO max gas amount from cli option or dry run estimate
         let tx_data = RoochTransactionData::new(
             sender,

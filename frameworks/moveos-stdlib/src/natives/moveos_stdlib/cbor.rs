@@ -6,7 +6,6 @@ use anyhow::Result;
 use ciborium::de::from_reader;
 use ciborium::ser::into_writer;
 use ciborium::value::Value as CborValue;
-use log::debug;
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_core_types::account_address::AccountAddress;
 use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte, NumBytes};
@@ -23,6 +22,7 @@ use move_vm_types::{
     pop_arg,
     values::{values_impl::Reference, Struct, Value as MoveValue, Vector},
 };
+use tracing::debug;
 
 use move_core_types::u256::{self, U256_NUM_BYTES};
 use moveos_types::addresses::MOVE_STD_ADDRESS;

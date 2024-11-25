@@ -192,7 +192,7 @@ impl RuntimeObjectMeta {
         match meta.size.checked_add(1) {
             Some(size) => {
                 meta.size = size;
-                if log::log_enabled!(log::Level::Trace) {
+                if tracing::enabled!(tracing::Level::TRACE) {
                     tracing::trace!(
                         object_id = tracing::field::display(&meta.id),
                         op = "increase_size",
@@ -216,7 +216,7 @@ impl RuntimeObjectMeta {
         match meta.size.checked_sub(1) {
             Some(size) => {
                 meta.size = size;
-                if log::log_enabled!(log::Level::Trace) {
+                if tracing::enabled!(tracing::Level::TRACE) {
                     tracing::trace!(
                         object_id = tracing::field::display(&meta.id),
                         op = "decrease_size",

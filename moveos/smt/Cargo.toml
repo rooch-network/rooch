@@ -23,7 +23,6 @@ byteorder = { workspace = true }
 bitcoin_hashes = { workspace = true }
 function_name = { workspace = true }
 hex = { workspace = true }
-log = { workspace = true }
 metrics = { workspace = true }
 more-asserts = { workspace = true }
 num-derive = { workspace = true }
@@ -35,6 +34,7 @@ parking_lot = { workspace = true }
 rand = { workspace = true }
 serde = { workspace = true, features = ["derive", "rc"] }
 thiserror = { workspace = true }
+tracing = { workspace = true }
 
 proptest = { optional = true, workspace = true }
 proptest-derive = { optional = true, workspace = true }

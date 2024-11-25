@@ -6,7 +6,6 @@ use async_trait::async_trait;
 use coerce::actor::context::ActorContext;
 use coerce::actor::message::{Handler, Message};
 use coerce::actor::Actor;
-use log;
 use moveos_eventbus::bus::{EventBus, EventNotifier};
 use rooch_types::service_status::ServiceStatus;
 
@@ -37,7 +36,7 @@ impl Handler<GasUpgradeMessage> for EventActor {
         message: GasUpgradeMessage,
         _ctx: &mut ActorContext,
     ) -> anyhow::Result<()> {
-        log::debug!("EventActor receive message {:?}", message);
+        tracing::debug!("EventActor receive message {:?}", message);
         self.event_bus
             .notify::<GasUpgradeEvent>(GasUpgradeEvent {})?;
         Ok(())
@@ -60,7 +59,7 @@ impl Handler<UpdateServiceStatusMessage> for EventActor {
         message: UpdateServiceStatusMessage,
         _ctx: &mut ActorContext,
     ) -> anyhow::Result<()> {
-        log::debug!("EventActor receive message {:?}", message);
+        tracing::debug!("EventActor receive message {:?}", message);
         self.event_bus
             .notify::<ServiceStatusEvent>(ServiceStatusEvent {
                 status: message.status,

@@ -550,8 +550,8 @@ where
         for module_id in init_function_modules {
             let function_id = FunctionId::new(module_id.clone(), INIT_FN_NAME_IDENTIFIER.clone());
             let call = FunctionCall::new(function_id, vec![], vec![]);
-            if log::log_enabled!(log::Level::Trace) {
-                log::trace!(
+            if tracing::enabled!(tracing::Level::TRACE) {
+                tracing::trace!(
                     "Execute init function for module: {:?}",
                     module_id.to_string()
                 );

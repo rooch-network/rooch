@@ -46,8 +46,8 @@ impl CommonGasParametersOption {
 pub(crate) fn pop_object_id(args: &mut VecDeque<Value>) -> PartialVMResult<ObjectID> {
     let handle = args.pop_back().unwrap();
     ObjectID::from_runtime_value(handle).map_err(|e| {
-        if log::log_enabled!(log::Level::Debug) {
-            log::warn!("[ObjectRuntime] get_object_id: {:?}", e);
+        if tracing::enabled!(tracing::Level::DEBUG) {
+            tracing::warn!("[ObjectRuntime] get_object_id: {:?}", e);
         }
         PartialVMError::new(StatusCode::TYPE_RESOLUTION_FAILURE).with_message(e.to_string())
     })
