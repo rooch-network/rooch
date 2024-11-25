@@ -4,117 +4,117 @@
 
 ![](/docs/grow-bitcoin/grow-bitcoin-home.png)
 
-Grow Bitcoin 是一个生态系统加速平台，专注于将比特币用户和利益相关者与项目连接起来。Grow Bitcoin 由 Rooch Network 团队运营。
+Grow Bitcoin is an ecosystem acceleration platform that focuses on connecting the Bitcoin users and stakers to the projects. Grow Bitcoin is operated by the Rooch Network team.
 
-作为比特币质押者或用户，您可以通过为您喜欢的项目投票来赚取 BitXP 和项目 XP，以您的比特币作为质押，但根本无需移动您的比特币。
+As a Bitcoin staker or user, you get to earn BitXP as well as the project XP by voting for the projects you like, with your Bitcoin as the stake but without having to move your Bitcoin at all.
 
-作为比特币项目建设者，您可以自由地在 Grow Bitcoin 平台上列出您的项目，并获得潜在比特币用户的关注；用户将用他们的选票支持您的项目，并且选票越多，您也可以获得 BitXP！
+As a Bitcoin project builder, you are free to list your project on the Grow Bitcoin platform and get attentions from potential Bitcoin users; users will endorse your project with their votes and with more votes you get to earn BitXP as well!
 
-- Grow Bitcoin 网址：https://grow.rooch.network/
+- Grow Bitcoin website：https://grow.rooch.network/
 
-> 测试网：https://test-grow.rooch.network
+> Test network：https://test-grow.rooch.network
 
 ## FAQ
 
-### 详细使用流程
+### Detailed usage process
 
-请参考 [Grow Bitcion 测试网使用指南](https://rooch.network/zh-CN/blog/grow-bitcoin-test)。
+Please refer to the [Grow Bitcion Testnet User Guide](https://rooch.network/blog/grow-bitcoin-test)
 
-> 提示：主网与测试网使用流程一致，注意访问网址的 URL！
+> Tip: The mainnet and testnet usage procedures are the same, pay attention to the URL of the accessed website!
 
-### 如何获取 UTXO 和 RGas
+### How to get UTXO and RGas
 
-主网只需要确保 UniSat 钱包有 UTXO，并在这里 [Claim RGas](https://portal.rooch.network/faucet) 即可质押。
+The main network only needs to ensure that the UniSat wallet has UTXO and [Claim RGas](https://portal.rooch.network/faucet) here to stake.
 
-测试网请使用下面的方式获取 UTXO 和 RGas：
+For testnet, please use the following method to obtain UTXO and RGas:
 
-- [获取 tBTC](https://rooch.network/zh-CN/build/getting-started/get-test-btc)
-- [获取 Rooch Gas Coin](https://rooch.network/zh-CN/build/getting-started/get-gas-coin)
+- [Get tBTC](https://rooch.network/build/getting-started/get-test-btc)
+- [Get Rooch Gas Coin](https://rooch.network/build/getting-started/get-gas-coin)
 
-### 测试网领取过 BTC 但是没有 UTXO
+### The test network has received BTC but no UTXO
 
-出现这个问题，请给自己的账户转账一次。
+If this problem occurs, please transfer BTC to your account once.
 
-### Discord 找不到 Faucet 频道
+### Discord can't find Faucet channel
 
-请在 `contributor-role` 频道获取 `seed` 角色。
+Please get the `seed` role in the `contributor-role` channel.
 
-### Grow 怎么挖矿
+### How to mine Grow
 
-只需要自己的钱包持有 BTC 即可质押挖矿，获取 `GROW`。Grow Bitcoin 采取的是 `Hold Mining` 的质押模式来获取 `GROW`。
+You only need to hold BTC in your own wallet to stake for mining and obtain `GROW`. Grow Bitcoin adopts `Hold Mining`’s staking model to obtain `GROW`.
 
-注意：如果自己钱包的 UTXO 花费出去后，在 Grow Bitcoin 质押的 UTXO 就失效了，需要手动质押新的 UTXO 继续挖矿。
+Note: If the UTXO in your wallet is spent, the UTXO pledged in Grow Bitcoin will become invalid, and you need to manually pledge new UTXO to continue mining.
 
-### 循环出现创建 Seesion
+### Loop appears to create Seesion
 
-如果循环弹出 `Create Session` 的提示窗，请检查是否有 RGas。
+If the `Create Session` prompt window pops up in a loop, please check whether there is RGas.
 
-### 质押是否影响 ARC20
+### Does staking affect ARC20?
 
-不影响。质押不需要发送 L1 交易。
+No impact. Staking does not require sending an L1 transaction.
 
-### 需要多少 BTC 可以质押
+### How much BTC is needed to stake
 
-无准入门槛。
+No barriers to entry.
 
-### Grow 总量
+### Grow total amount
 
-GROW 总量为 `210000000000`，`180` 天挖完。
+The total amount of `GROW` is `210,000,000,000`, which will be mined in `180` days.
 
-每天挖矿数量固定，按质押的 BTC 分成。
+The daily mining quantity is fixed and divided according to the pledged BTC.
 
-> 源码：https://github.com/rooch-network/rooch/blob/main/apps/grow_bitcoin/sources/grow_bitcoin.move
+> Source code: https://github.com/rooch-network/rooch/blob/main/apps/grow_bitcoin/sources/grow_bitcoin.move
 
-### 有质押限制吗
+### Are there any staking restrictions?
 
-没有。
+No.
 
-### 账户有 BTC 了但是么有 UTXO
+### The account has BTC but no UTXO
 
-Rooch 比 Bitcoin 慢了三个区块，需要等待同步。
+Rooch is three blocks slower than Bitcoin and needs to wait for synchronization.
 
-### RGas 没有了
+### RGas no more
 
-如果没有 RGas 了，可以在[这里](https://portal.rooch.network/gas-swap)购买。
+If you don't have RGas anymore, you can buy them [here](https://portal.rooch.network/gas-swap).
 
-### UTXO 改变了，GROW 奖励还有吗
+### UTXO has changed, are there still GROW rewards?
 
-因为是持有挖矿模式，如果 UTXO 被花费了，没有领取的 `GROW` 就无法 Claim 了，建议花费 BTC 之前先领取质押奖励。
+Because it is a holding mining mode, if the UTXO is spent, the unclaimed `GROW` cannot be claimed. It is recommended to claim the staking reward before spending BTC.
 
-### Babylon Stake
+### Babylon Stakes
 
-同一个 UTXO 不能 Self Staking 然后再到 Babylon 上 Stake。
+The same UTXO cannot be Self-Staking and then staked on Babylon.
 
-需要先在 Babylon stake，然后通过 Babylon Stake Seal 来 Stake。
+You need to stake in Babylon first, and then stake via Babylon Stake Seal.
 
-Babylon 的质押带有时间锁，它的质押具有时间权重。
+Babylon's staking has a time lock, and its staking has time weight.
 
-### Rooch 有价格预言机了吗
+### Does Rooch have a price oracle?
 
-目前有 Bitcoin 的预言机。
+There are currently oracles for Bitcoin.
 
-> 源码：https://github.com/rooch-network/rooch/blob/main/apps/gas_market/sources/trusted_oracle.move
+> Source code: https://github.com/rooch-network/rooch/blob/main/apps/gas_market/sources/trusted_oracle.move
 
-### Self Staking 风险
+### Self Staking Risk
 
-Self Staking 对 Bitcoin 来说只有 `Read` 权限，没有 `Transfer`，保证了 BTC 的所有权。在 Rooch 层具有 `Write` 权限，提供了扩展性。
+Self Staking only has `Read` permissions for Bitcoin, without `Transfer`, ensuring the ownership of BTC. Having `Write` permission at the Rooch layer provides scalability.
 
-因此 Grwo Bitcoin 中的 Self Staking 是零风险的质押挖矿。
+Therefore, Self Staking in Grwo Bitcoin is risk-free staking mining.
 
-### Grow Bitcion 使用的是哪个版本的 Bitcoin 测试网
+### Which version of Bitcoin testnet is Grow Bitcion using?
 
-Grow Bitcion 测试网使用的是 Bitcoin `test3` 的测试网。
+The Grow Bitcion testnet uses the Bitcoin `test3` testnet.
 
-### GROW 有什么作用
+### What does GROW do?
 
-可以使用 `GROW` 给项目投票，获取 `BitXP` 积分。`BitXP` 用于获取空投。
+You can use `GROW` to vote for projects and earn `BitXP` points. `BitXP` is used to obtain airdrops.
 
-### GROW 投票后会消失吗
+### Will GROW disappear after voting?
 
-投票后 GROW 会被烧掉，减少供应。
+GROW will be burned after voting, reducing the supply.
 
-### GROW 与 BitXP 比率
+### GROW to BitXP Ratio
 
-`GROW` 与 `BitXP` 为 `1:1` 映射，投票消耗的 `GROW` 将获得等量的 `BitXP`。
+`GROW` and `BitXP` are mapped `1:1`, and the `GROW` consumed by voting will receive the same amount of `BitXP`.
 
-`GROW` 是完全公平发射的，供应量固定，`BitXP` 没有上限，`BitXP` 只能通过使用 `GROW` 给项目投票获取。
+`GROW` is launched completely fairly, with a fixed supply and no upper limit for `BitXP`. `BitXP` can only be obtained by voting for the project using `GROW`.
