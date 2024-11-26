@@ -26,7 +26,8 @@ module rooch_framework::transaction_fee {
     friend rooch_framework::transaction_validator;
 
     const SystemFeeAddress: address = @rooch_framework;
-
+    
+    ///Error code for invalid gas used in transaction
     const ErrorInvalidGasUsed: u64 = 1;
 
     struct TransactionFeePool has key {
@@ -103,7 +104,7 @@ module rooch_framework::transaction_fee {
         total_paid_gas_coin
     }
 
-    /// Withdraw the all gas revenue for the sender
+    /// Withdraw all the gas revenue for the sender
     /// The contract address can use `moveos_std::signer::module_signer` to get the signer
     public fun withdraw_gas_revenue(sender: &signer, amount: u256): Coin<RGas> {
         let addr = signer::address_of(sender);

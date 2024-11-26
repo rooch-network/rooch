@@ -55,6 +55,7 @@ Distribution of Transaction Gas Fees:
 
 <a name="0x3_transaction_fee_ErrorInvalidGasUsed"></a>
 
+Error code for invalid gas used in transaction
 
 
 <pre><code><b>const</b> <a href="transaction_fee.md#0x3_transaction_fee_ErrorInvalidGasUsed">ErrorInvalidGasUsed</a>: u64 = 1;
@@ -142,7 +143,7 @@ Returns the gas factor of gas.
 
 ## Function `withdraw_gas_revenue`
 
-Withdraw the all gas revenue for the sender
+Withdraw all the gas revenue for the sender
 The contract address can use <code>moveos_std::signer::module_signer</code> to get the signer
 
 
