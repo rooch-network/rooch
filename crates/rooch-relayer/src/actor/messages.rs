@@ -2,7 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use coerce::actor::message::Message;
+use coerce::actor::scheduler::timer::TimerTick;
 use rooch_types::transaction::{L1BlockWithBody, L1Transaction};
+
+#[derive(Clone)]
+pub struct RelayTick {}
+
+impl Message for RelayTick {
+    type Result = ();
+}
+
+impl TimerTick for RelayTick {}
 
 #[derive(Clone)]
 pub struct SyncTick {}

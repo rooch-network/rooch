@@ -5,17 +5,8 @@ use anyhow::Result;
 use bitcoin::Transaction;
 use bitcoincore_rpc::bitcoin::Txid;
 use bitcoincore_rpc::json;
-use coerce::actor::{message::Message, scheduler::timer::TimerTick};
+use coerce::actor::message::Message;
 use serde::{Deserialize, Serialize};
-
-#[derive(Clone)]
-pub struct RelayTick {}
-
-impl Message for RelayTick {
-    type Result = ();
-}
-
-impl TimerTick for RelayTick {}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct GetBlockMessage {

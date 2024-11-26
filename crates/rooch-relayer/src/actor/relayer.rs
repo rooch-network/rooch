@@ -3,11 +3,11 @@
 
 use super::bitcoin_relayer::BitcoinRelayer;
 use super::ethereum_relayer::EthereumRelayer;
+use crate::actor::messages::RelayTick;
 use crate::actor::relayer_proxy::RelayerProxy;
 use anyhow::Result;
 use async_trait::async_trait;
 use bitcoin_client::actor::client::BitcoinClientActor;
-use bitcoin_client::actor::messages::RelayTick;
 use bitcoin_client::proxy::BitcoinClientProxy;
 use coerce::actor::{context::ActorContext, message::Handler, Actor, LocalActorRef};
 use move_core_types::vm_status::KeptVMStatus;
