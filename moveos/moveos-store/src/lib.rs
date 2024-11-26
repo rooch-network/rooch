@@ -213,8 +213,10 @@ impl MoveOSStore {
             )]),
             cf_name: TRANSACTION_EXECUTION_INFO_COLUMN_FAMILY_NAME.to_string(),
         });
-        // TODO: could use non-sync write here, because we could replay tx from rooch store(which has sync write after sequenced) at startup.
-        inner_store.write_cf_batch(cf_batches, true)?;
+        // use non-sync write here:
+        // 1. we could replay tx from rooch store(which has sync write after sequenced) at startup.
+        // 2. output write sequentially
+        inner_store.write_cf_batch(cf_batches, false)?;
 
         let out = TransactionOutput::new(status, changeset, events, gas_used, is_upgrade);
 
