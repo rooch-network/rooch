@@ -71,8 +71,7 @@ module rooch_framework::transaction_validator {
         let max_gas_amount = tx_context::max_gas_amount();
         let gas = transaction_fee::calculate_gas(max_gas_amount);
 
-        let gas_schedule = gas_schedule::gas_schedule();
-        let max_gas_amount_config = gas_schedule::gas_schedule_max_gas_amount(gas_schedule);
+        let max_gas_amount_config = gas_schedule::max_gas_amount();
         assert!(
             max_gas_amount <= max_gas_amount_config,
             auth_validator::error_validate_max_gas_amount_exceeded(),
