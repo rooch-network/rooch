@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::bitcoin_client::messages::{
+use crate::actor::messages::{
     BroadcastTransactionMessage, GetBestBlockHashMessage, GetBlockHashMessage,
     GetBlockHeaderInfoMessage, GetBlockMessage, GetChainTipsMessage, GetRawTransactionMessage,
     GetTxOutMessage,

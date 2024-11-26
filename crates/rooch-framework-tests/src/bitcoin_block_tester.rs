@@ -4,6 +4,7 @@
 use crate::{bbn_tx_loader::BBNStakingTxRecord, binding_test::RustBindingTest};
 use anyhow::{anyhow, bail, ensure, Result};
 use bitcoin::{hashes::Hash, Block, OutPoint, TxOut, Txid};
+use bitcoin_client::proxy::BitcoinClientProxy;
 use framework_builder::stdlib_version::StdlibVersion;
 use move_core_types::{account_address::AccountAddress, u256::U256, vm_status::KeptVMStatus};
 use moveos_types::{
@@ -15,7 +16,6 @@ use moveos_types::{
     state::{MoveState, MoveStructType, MoveType, ObjectChange, ObjectState},
     state_resolver::StateResolver,
 };
-use rooch_common::bitcoin_client::proxy::BitcoinClientProxy;
 use rooch_ord::ord_client::Charm;
 use rooch_types::{
     bitcoin::{

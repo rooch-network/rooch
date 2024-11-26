@@ -5,10 +5,10 @@ use crate::actor::messages::{GetReadyL1BlockMessage, GetReadyL1TxsMessage, SyncT
 use anyhow::Result;
 use async_trait::async_trait;
 use bitcoin::{Block, BlockHash};
+use bitcoin_client::proxy::BitcoinClientProxy;
 use bitcoincore_rpc::bitcoincore_rpc_json::GetBlockHeaderResult;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
 use moveos_types::module_binding::MoveFunctionCaller;
-use rooch_common::bitcoin_client::proxy::BitcoinClientProxy;
 use rooch_config::BitcoinRelayerConfig;
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_types::bitcoin::types::BlockHeightHash;

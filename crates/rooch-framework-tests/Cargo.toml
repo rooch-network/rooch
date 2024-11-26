@@ -37,7 +37,7 @@ moveos-store = { workspace = true }
 moveos-config = { workspace = true }
 metrics = { workspace = true }
 
-rooch-common = { workspace = true }
+bitcoin-client = { workspace = true }
 rooch-genesis = { workspace = true }
 rooch-types = { workspace = true }
 rooch-key = { workspace = true }

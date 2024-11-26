@@ -1026,6 +1026,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "bitcoin-client"
+version = "0.8.0"
+dependencies = [
+ "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "async-trait",
+ "bitcoin 0.32.3",
+ "bitcoincore-rpc",
+ "coerce",
+ "serde 1.0.215",
+ "serde_json",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "bitcoin-internals"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9476,16 +9491,7 @@ dependencies = [
 name = "rooch-common"
 version = "0.8.0"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
- "async-trait",
- "bitcoin 0.32.3",
- "bitcoincore-rpc",
- "coerce",
  "libc",
- "serde 1.0.215",
- "serde_json",
- "tokio",
- "tracing",
 ]
 
 [[package]]
@@ -9651,6 +9657,7 @@ dependencies = [
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
  "bcs",
  "bitcoin 0.32.3",
+ "bitcoin-client",
  "clap 4.5.17",
  "coerce",
  "csv",
@@ -9665,7 +9672,6 @@ dependencies = [
  "moveos-store",
  "moveos-types",
  "rand 0.8.5",
- "rooch-common",
  "rooch-config",
  "rooch-db",
  "rooch-executor",
@@ -9915,6 +9921,7 @@ dependencies = [
  "async-trait",
  "bcs",
  "bitcoin 0.32.3",
+ "bitcoin-client",
  "coerce",
  "function_name",
  "hex",
@@ -9922,7 +9929,6 @@ dependencies = [
  "moveos",
  "moveos-types",
  "prometheus",
- "rooch-common",
  "rooch-da",
  "rooch-db",
  "rooch-event",
@@ -9957,6 +9963,7 @@ dependencies = [
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
  "async-trait",
  "bitcoin 0.32.3",
+ "bitcoin-client",
  "bitcoincore-rpc",
  "chrono",
  "coerce",
@@ -9967,7 +9974,6 @@ dependencies = [
  "moveos-eventbus",
  "moveos-types",
  "prometheus",
- "rooch-common",
  "rooch-config",
  "rooch-event",
  "rooch-executor",
@@ -10030,6 +10036,7 @@ dependencies = [
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
  "axum",
  "bcs",
+ "bitcoin-client",
  "bitcoincore-rpc",
  "coerce",
  "dashmap 6.0.1",
@@ -10045,7 +10052,6 @@ dependencies = [
  "pin-project",
  "prometheus",
  "raw-store",
- "rooch-common",
  "rooch-config",
  "rooch-da",
  "rooch-db",

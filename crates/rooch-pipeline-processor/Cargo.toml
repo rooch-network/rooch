@@ -26,7 +26,7 @@ moveos = { workspace = true }
 metrics = { workspace = true }
 moveos-types = { workspace = true }
 
-rooch-common = { workspace = true }
+bitcoin-client = { workspace = true }
 rooch-da = { workspace = true }
 rooch-db = { workspace = true }
 rooch-executor = { workspace = true }

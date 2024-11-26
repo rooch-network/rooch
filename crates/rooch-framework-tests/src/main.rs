@@ -4,10 +4,10 @@
 use std::path::PathBuf;
 
 use anyhow::Result;
+use bitcoin_client::actor::client::BitcoinClientActor;
+use bitcoin_client::proxy::BitcoinClientProxy;
 use clap::Parser;
 use coerce::actor::{system::ActorSystem, IntoActor};
-use rooch_common::bitcoin_client::actor::BitcoinClientActor;
-use rooch_common::bitcoin_client::proxy::BitcoinClientProxy;
 use rooch_framework_tests::bitcoin_block_tester::TesterGenesisBuilder;
 
 #[derive(Parser)]

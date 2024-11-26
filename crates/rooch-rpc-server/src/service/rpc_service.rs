@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{format_err, Result};
+use bitcoin_client::proxy::BitcoinClientProxy;
 use bitcoincore_rpc::bitcoin::Txid;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::{ModuleId, StructTag};
@@ -16,7 +17,6 @@ use moveos_types::moveos_std::object::{ObjectID, MAX_OBJECT_IDS_PER_QUERY};
 use moveos_types::state::{AnnotatedState, FieldKey, ObjectState, StateChangeSet};
 use moveos_types::state_resolver::{AnnotatedStateKV, StateKV};
 use moveos_types::transaction::{FunctionCall, TransactionExecutionInfo};
-use rooch_common::bitcoin_client::proxy::BitcoinClientProxy;
 use rooch_da::proxy::DAServerProxy;
 use rooch_executor::actor::messages::DryRunTransactionResult;
 use rooch_executor::proxy::ExecutorProxy;
