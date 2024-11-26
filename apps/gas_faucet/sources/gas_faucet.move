@@ -17,6 +17,13 @@ module gas_faucet::gas_faucet {
 
     use app_admin::admin::AdminCap;
 
+    #[test_only]
+    use std::signer::address_of;
+    #[test_only]
+    use moveos_std::account::create_account_for_testing;
+    #[test_only]
+    use rooch_framework::gas_coin::faucet_for_test;
+
     const INIT_GAS_AMOUNT: u256 = 5000000_00000000;
     const ONE_RGAS: u256 = 1_00000000;
 
@@ -42,6 +49,18 @@ module gas_faucet::gas_faucet {
         require_utxo: bool,
     }
 
+    struct UserInvitationRecords has key, store {
+        invitation_records: Table<address, u256>,
+        total_invitations: u64,
+        total_claim_amount: u256,
+    }
+
+    struct InvitationConf has key {
+        invitation_records: Table<address, UserInvitationRecords>,
+        is_open: bool,
+        unit_invitation_amount: u256,
+    }
+
 
     fun init(sender: &signer) {
       let sender_addr = signer::address_of(sender);
@@ -65,14 +84,48 @@ module gas_faucet::gas_faucet {
       to_shared(faucet_obj)
     }
 
+    public entry fun init_invitation(unit_invitation_amount: u256, _admin_cap: &mut Object<AdminCap>) {
+        let invitation_obj = object::new_named_object(InvitationConf{
+            invitation_records: table::new(),
+            is_open: true,
+            unit_invitation_amount
+        });
+        to_shared(invitation_obj)
+    }
+
     /// Anyone can call this function to help the claimer claim the faucet
-    public entry fun claim(faucet_obj: &mut Object<RGasFaucet>, claimer: address, utxo_ids: vector<ObjectID>){      
+    public entry fun claim(faucet_obj: &mut Object<RGasFaucet>, claimer: address, utxo_ids: vector<ObjectID>){
       let claim_rgas_amount = Self::check_claim(faucet_obj, claimer, utxo_ids);
       let faucet = object::borrow_mut(faucet_obj);
       let rgas_coin = coin_store::withdraw(&mut faucet.rgas_store, claim_rgas_amount);
       account_coin_store::deposit<RGas>(claimer, rgas_coin);
       let total_claim_amount = table::borrow_mut_with_default(&mut faucet.claim_records, claimer, 0u256);
       *total_claim_amount = *total_claim_amount + claim_rgas_amount;
+    }
+
+
+    /// Anyone can call this function to help the claimer claim the faucet
+    public entry fun claim_with_invitation(faucet_obj: &mut Object<RGasFaucet>, invitation_obj: &mut Object<InvitationConf>, claimer: address, utxo_ids: vector<ObjectID>, inviter: address){
+        let claim_rgas_amount = Self::check_claim(faucet_obj, claimer, utxo_ids);
+        let invitation_conf = object::borrow_mut(invitation_obj);
+        assert!(invitation_conf.is_open, ErrorFaucetNotOpen);
+        if (!table::contains(&invitation_conf.invitation_records, inviter)) {
+            table::add(&mut invitation_conf.invitation_records, inviter, UserInvitationRecords{
+                invitation_records: table::new(),
+                total_invitations: 0u64,
+                total_claim_amount: 0u256,
+            })
+        };
+        let user_invitation_records = table::borrow_mut(&mut invitation_conf.invitation_records, inviter);
+        let invitation_amount = table::borrow_mut_with_default(&mut user_invitation_records.invitation_records, claimer, 0u256);
+        *invitation_amount = *invitation_amount + claim_rgas_amount;
+        user_invitation_records.total_invitations = user_invitation_records.total_invitations + 1u64;
+        user_invitation_records.total_claim_amount = user_invitation_records.total_claim_amount + claim_rgas_amount;
+        let faucet = object::borrow_mut(faucet_obj);
+        let rgas_coin = coin_store::withdraw(&mut faucet.rgas_store, invitation_conf.unit_invitation_amount);
+        account_coin_store::deposit<RGas>(inviter, rgas_coin);
+
+        claim(faucet_obj, claimer, utxo_ids);
     }
 
     public entry fun deposit_rgas_coin(
@@ -150,6 +203,31 @@ module gas_faucet::gas_faucet {
         faucet.is_open = true;
     }
 
+    public entry fun close_invitation(
+        invitation_obj: &mut Object<InvitationConf>,
+        _admin: &mut Object<AdminCap>,
+    ){
+        let invitation = object::borrow_mut(invitation_obj);
+        invitation.is_open = false;
+    }
+
+    public entry fun open_invitation(
+        invitation_obj: &mut Object<InvitationConf>,
+        _admin: &mut Object<AdminCap>,
+    ) {
+        let invitation = object::borrow_mut(invitation_obj);
+        invitation.is_open = true;
+    }
+
+    public entry fun set_invitation_unit_amount(
+        invitation_obj: &mut Object<InvitationConf>,
+        unit_invitation_amount: u256,
+        _admin: &mut Object<AdminCap>,
+    ) {
+        let invitation = object::borrow_mut(invitation_obj);
+        invitation.unit_invitation_amount = unit_invitation_amount;
+    }
+
     public entry fun set_allow_repeat(
         faucet_obj: &mut Object<RGasFaucet>,
         allow_repeat: bool,
@@ -188,6 +266,36 @@ module gas_faucet::gas_faucet {
         total_sat_amount = total_sat_amount + utxo::value(object::borrow(utxo_obj));
       });
       total_sat_amount
+    }
+
+    #[test(sender=@0x42)]
+    fun test_claim_with_invitation(sender: &signer){
+        bitcoin_move::genesis::init_for_test();
+        create_account_for_testing(@0x42);
+        create_account_for_testing(@0x43);
+        let invitation_obj = object::new_named_object(InvitationConf{
+            invitation_records: table::new(),
+            is_open: true,
+            unit_invitation_amount: 1,
+        });
+        faucet_for_test(address_of(sender), INIT_GAS_AMOUNT);
+        init(sender);
+        object::to_shared(invitation_obj);
+        let faucet_obj = object::borrow_mut_object_shared<RGasFaucet>(object::named_object_id<RGasFaucet>());
+        let invitation_obj = object::borrow_mut_object_shared<InvitationConf>(object::named_object_id<InvitationConf>());
+        let tx_id = @0x77dfc2fe598419b00641c296181a96cf16943697f573480b023b77cce82ada21;
+        let sat_value = 100000000;
+        let test_utxo = utxo::new_for_testing(tx_id, 0u32, sat_value);
+        let test_utxo_id = object::id(&test_utxo);
+        utxo::transfer_for_testing(test_utxo, @0x43);
+        claim_with_invitation(faucet_obj, invitation_obj, @0x43, vector[test_utxo_id], @0x42);
+        let invitation_obj = object::borrow_mut_object_shared<InvitationConf>(object::named_object_id<InvitationConf>());
+       let invitation = object::borrow(invitation_obj);
+        let records = table::borrow(&invitation.invitation_records, @0x42);
+        let invitation_user_record = table::borrow(&records.invitation_records, @0x43);
+        assert!(invitation_user_record == &300000000, 1);
+        assert!(records.total_claim_amount == 300000000, 2);
+        assert!(records.total_invitations == 1, 3);
     }
 
 }
