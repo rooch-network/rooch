@@ -54,6 +54,7 @@ members = [
     "crates/rooch-cosmwasm-vm",
     "crates/testsuite",
     "crates/rooch-ord",
+    "crates/rooch-finality",
     "frameworks/bitcoin-move",
     "frameworks/framework-builder",
     "frameworks/framework-release",
@@ -144,6 +145,7 @@ rooch-event = { path = "crates/rooch-event" }
 rooch-ord = { path = "crates/rooch-ord" }
 rooch-cosmwasm-vm = { path = "crates/rooch-cosmwasm-vm" }
 rooch-oracle = { path = "crates/rooch-oracle" }
+rooch-finality = { path = "crates/rooch-finality" }
 
 # frameworks
 framework-types = { path = "frameworks/framework-types" }
@@ -231,8 +233,8 @@ tokio = { version = "1.41.1", features = ["full"] }
 tokio-util = "0.7.12"
 tokio-tungstenite = { version = "0.24.0", features = ["native-tls"] }
 tokio-stream = "0.1.16"
-tonic = { version = "0.8", features = ["gzip"] }
 tracing = "0.1.41"
+tonic = { version = "0.10", features = ["gzip"] }
 tracing-appender = "0.2.2"
 tracing-subscriber = { version = "0.3.19" }
 tungstenite = "0.24.0"
@@ -344,7 +346,8 @@ ord = "0.18.5"
 sled = { version = "0.34.7" }
 scopeguard = "1.1"
 uuid = { version = "1.11.0", features = ["v4", "fast-rng"] }
-protobuf = { version = "2.28", features = ["with-bytes"] }
+#protobuf = { version = "2.28", features = ["with-bytes"] }
+protobuf = { version = "3.7.1", features = ["with-bytes"] }
 redb = { version = "2.1.1" }
 rocksdb = { git = "https://github.com/rooch-network/rust-rocksdb.git", rev = "41d102327ba3cf9a2335d1192e8312c92bc3d6f9", features = ["lz4", "mt_static"] }
 lz4 = { version = "1.28.0" }

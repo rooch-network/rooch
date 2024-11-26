@@ -1,0 +1,85 @@
+syntax = "proto3";
+
+package proto;
+
+option go_package = "github.com/babylonlabs-io/finality-gadget/proto";
+
+service FinalityGadget {
+  // QueryIsBlockBabylonFinalized returns the finality status of a block by
+  // querying Babylon chain
+  rpc QueryIsBlockBabylonFinalized(QueryIsBlockBabylonFinalizedRequest)
+      returns (QueryIsBlockFinalizedResponse);
+
+  // QueryBlockRangeBabylonFinalized returns the last finalized block height
+  // within a block range by querying Babylon chain
+  rpc QueryBlockRangeBabylonFinalized(QueryBlockRangeBabylonFinalizedRequest)
+      returns (QueryBlockRangeBabylonFinalizedResponse);
+
+  // QueryBtcStakingActivatedTimestamp returns the timestamp when BTC staking
+  // was activated
+  rpc QueryBtcStakingActivatedTimestamp(
+      QueryBtcStakingActivatedTimestampRequest)
+      returns (QueryBtcStakingActivatedTimestampResponse);
+
+  // QueryIsBlockFinalizedByHeight returns the finality status of a block at
+  // given height by querying the local db
+  rpc QueryIsBlockFinalizedByHeight(QueryIsBlockFinalizedByHeightRequest)
+      returns (QueryIsBlockFinalizedResponse);
+
+  // QueryIsBlockFinalizedByHash returns the finality status of a block with
+  // given hash by querying the local db
+  rpc QueryIsBlockFinalizedByHash(QueryIsBlockFinalizedByHashRequest)
+      returns (QueryIsBlockFinalizedResponse);
+
+  // QueryLatestFinalizedBlock returns the latest consecutively finalized block
+  // by querying the local db
+  rpc QueryLatestFinalizedBlock(QueryLatestFinalizedBlockRequest)
+      returns (QueryBlockResponse);
+}
+
+message BlockInfo {
+  // block_hash is the hash of the block
+  string block_hash = 1;
+  // block_height is the height of the block
+  uint64 block_height = 2;
+  // block_timestamp is the unix timestamp of the block
+  uint64 block_timestamp = 3;
+}
+
+message QueryIsBlockBabylonFinalizedRequest { BlockInfo block = 1; }
+
+message QueryBlockRangeBabylonFinalizedRequest {
+  // blocks is a list of blocks to query
+  repeated BlockInfo blocks = 1;
+}
+
+message QueryBlockRangeBabylonFinalizedResponse {
+  // last_finalized_block_height is the height of the last finalized block
+  uint64 last_finalized_block_height = 1;
+}
+
+message QueryBtcStakingActivatedTimestampRequest {}
+
+message QueryBtcStakingActivatedTimestampResponse {
+  // timestamp is the unix timestamp when BTC staking was activated
+  uint64 activated_timestamp = 1;
+}
+
+message QueryIsBlockFinalizedByHeightRequest {
+  // block_height is the height of the block
+  uint64 block_height = 1;
+}
+
+message QueryIsBlockFinalizedByHashRequest {
+  // block_hash is the hash of the block
+  string block_hash = 1;
+}
+
+message QueryIsBlockFinalizedResponse {
+  // is_finalized is true if the block is finalized
+  bool is_finalized = 1;
+}
+
+message QueryLatestFinalizedBlockRequest {}
+
+message QueryBlockResponse { BlockInfo block = 1; }

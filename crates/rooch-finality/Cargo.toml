@@ -1,0 +1,37 @@
+[package]
+name = "rooch-finality"
+
+# Workspace inherited keys
+version = { workspace = true }
+authors = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+publish = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+
+[dependencies]
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+coerce = { workspace = true }
+serde = { workspace = true }
+tokio = { features = ["full"], workspace = true }
+tracing = { workspace = true }
+prometheus = { workspace = true }
+function_name = { workspace = true }
+tonic = { workspace = true }
+protobuf = { workspace = true }
+
+moveos-types = { workspace = true }
+moveos-eventbus = { workspace = true }
+accumulator = { workspace = true }
+metrics = { workspace = true }
+raw-store = { workspace = true }
+
+rooch-types = { workspace = true }
+rooch-store = { workspace = true }
+rooch-config = { workspace = true }
+rooch-db = { workspace = true }
+rooch-genesis = { workspace = true }
+rooch-event = { workspace = true }
