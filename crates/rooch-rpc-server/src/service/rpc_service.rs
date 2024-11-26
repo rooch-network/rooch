@@ -799,10 +799,12 @@ impl RpcService {
         let service_status = self.pipeline_processor.get_service_status().await?;
         let sequencer_info = self.sequencer.get_sequencer_info().await?;
         let root_state = self.executor.get_root().await?;
+        let da_server_status = self.da_server.get_status().await?;
 
         let rooch_status = RoochStatus {
             sequencer_info: sequencer_info.into(),
             root_state: root_state.into(),
+            da_info: da_server_status.into(),
         };
 
         let pending_block = {
@@ -819,13 +821,10 @@ impl RpcService {
             pending_block: pending_block.map(Into::into),
         };
 
-        let da_server_status = self.da_server.get_status().await?;
-
         Ok(Status {
             service_status,
             rooch_status,
             bitcoin_status,
-            da_server_status,
         })
     }
 }

@@ -182,8 +182,8 @@ impl MoveOSStore {
         // config_store updates
         let new_startup_info = StartupInfo::new(new_state_root, size);
 
-        if log::log_enabled!(log::Level::Debug) {
-            log::debug!(
+        if tracing::enabled!(tracing::Level::DEBUG) {
+            tracing::debug!(
                 "handle_tx_output: tx_hash: {}, state_root: {}, size: {}, gas_used: {}, status: {:?}",
                 tx_hash,
                 new_state_root,

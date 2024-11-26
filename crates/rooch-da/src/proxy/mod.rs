@@ -4,7 +4,7 @@
 use crate::actor::messages::{AppendTransactionMessage, GetServerStatusMessage};
 use crate::actor::server::DAServerActor;
 use coerce::actor::ActorRef;
-use rooch_types::da::state::DAServerStatus;
+use rooch_types::da::status::DAServerStatus;
 
 #[derive(Clone)]
 pub struct DAServerProxy {

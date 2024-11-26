@@ -346,7 +346,7 @@ impl RuntimeObject {
                     //We need to change the Object owner to system
                     if !matches!(&value_change, Some(Op::Delete)) {
                         rt_meta.to_system_owner()?;
-                        if log::log_enabled!(log::Level::Trace) {
+                        if tracing::enabled!(tracing::Level::TRACE) {
                             tracing::trace!(
                                 object_id = tracing::field::display(&object_id),
                                 op = "embeded",
@@ -536,7 +536,7 @@ impl RuntimeObject {
         tv.move_to(value, value_type.clone(), value_layout)?;
         let object_pointer = tv.take_object(Some(&value_type))?;
         self.rt_meta.increase_size()?;
-        if log::log_enabled!(log::Level::Trace) {
+        if tracing::enabled!(tracing::Level::TRACE) {
             tracing::trace!(
                 object_id = tracing::field::display(&self.rt_meta.id()),
                 op = "add_field",
@@ -559,7 +559,7 @@ impl RuntimeObject {
         let (tv, field_load_gas) = self.load_field(layout_loader, resolver, field_key)?;
         let value = tv.move_from(Some(&expect_value_type))?;
         self.rt_meta.decrease_size()?;
-        if log::log_enabled!(log::Level::Trace) {
+        if tracing::enabled!(tracing::Level::TRACE) {
             tracing::trace!(
                 object_id = tracing::field::display(self.rt_meta.id()),
                 op = "remove_field",

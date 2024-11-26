@@ -75,7 +75,7 @@ pub fn check_open_fds_limit(max_files: u64) -> Result<(), Error> {
             fd_limit.rlim_max = max_files;
         }
         err = libc::setrlimit(libc::RLIMIT_NOFILE, &fd_limit);
-        log::info!("set max open fds {}", max_files);
+        tracing::info!("set max open fds {}", max_files);
         if err == 0 {
             return Ok(());
         }
