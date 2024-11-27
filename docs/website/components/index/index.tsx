@@ -136,7 +136,20 @@ const Index = ({
     window.open(href)
   }
 
-  const [isHovered1, setIsHovered1] = useState(false)
+  const [signboardStates, setSignboardStates] = useState({
+    board1: false,
+    board2: false,
+    boardM: false,
+    board3: false,
+    board4: false,
+  })
+
+  const handleSignboardClick = (boardId: keyof typeof signboardStates) => {
+    setSignboardStates((prev) => ({
+      ...prev,
+      [boardId]: true,
+    }))
+  }
 
   const [isMoveVmHovered, setIsMoveVmHovered] = useState(false)
 
@@ -148,12 +161,16 @@ const Index = ({
   const [btcStart, setBtcStart] = useState(1)
   const [moveStart, setMoveStart] = useState(1)
 
-  const getImages = (start: number) => {
+  const INFRA_IMAGE_COUNT = 10
+  const BTC_IMAGE_COUNT = 7
+  const MOVE_IMAGE_COUNT = 6
+
+  const getImages = (start: number, total: number) => {
     const result = []
     let current = start
     for (let i = 0; i < 8; i++) {
       result.push(current)
-      current = current === 5 ? 1 : current + 1
+      current = current === total ? 1 : current + 1
     }
     return result
   }
@@ -192,16 +209,82 @@ const Index = ({
     return () => intervals.forEach(clearInterval)
   }, [translateX, btcTranslateX, moveTranslateX])
 
+  const [carVisibility, setCarVisibility] = useState({
+    left: false,
+    middle: false,
+    right: false,
+  })
+
+  const [carMoving, setCarMoving] = useState({
+    left: false,
+    middle: false,
+    right: false,
+  })
+  const [isAnimating, setIsAnimating] = useState(false)
+
+  const handleCarAnimation = (position: 'left' | 'middle' | 'right') => {
+    if (isAnimating) return
+
+    setIsAnimating(true)
+
+    setCarVisibility((prev) => ({
+      ...prev,
+      [position]: true,
+    }))
+
+    setTimeout(() => {
+      setCarMoving((prev) => ({
+        ...prev,
+        [position]: true,
+      }))
+
+      setTimeout(() => {
+        setCarVisibility((prev) => ({
+          ...prev,
+          [position]: false,
+        }))
+        setCarMoving((prev) => ({
+          ...prev,
+          [position]: false,
+        }))
+        setIsAnimating(false)
+      }, 2000)
+    }, 100)
+  }
+
   return (
     <>
       <div className="antialiased overflow-x-hidden">
         {/* HERO */}
-        <div className="mt-36 md:mt-36 flex flex-col items-center justify-center md:justify-center h-full md:h-[90vh] px-4 sm:px-6 md:px-8 lg:px-20 dark:border-b dark:border-b-zinc-800">
-          <div className="flex flex-col items-center justify-center w-full font-['kanit']">
+        <div className="mt-36 md:mt-36 flex flex-col items-center justify-center md:justify-center h-full px-4 sm:px-6 md:px-8 lg:px-20 dark:border-b dark:border-b-zinc-800 overflow-x-hidden">
+          <div
+            style={{
+              overflowX: 'hidden',
+              backgroundImage: 'url(./home/background.svg)',
+              backgroundSize: 'cover',
+              opacity: '0.3',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
+              width: '100%',
+              height: '100vh',
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              zIndex: -1,
+            }}
+          ></div>
+          <div className="flex flex-col items-center justify-center w-full font-[Han] z-10">
             <div className="mt-14 text-5xl md:text-5xl font-bold text-center text-black dark:text-[#EEEBEB]">
               Build with Move
               <br />
-              Build on Bitcoin
+              <div className="mt-4 flex items-center">
+                Build on{' '}
+                <div className="ml-5 flex items-center">
+                  Bitc
+                  <img src="./home/coin.svg" alt="" />
+                  in
+                </div>
+              </div>
             </div>
             <div className="mt-6 text-2xl text-center text-black dark:text-[#EAEAEA] max-w-3xl">
               Rooch is a Bitcoin application layer solution that <br /> features MoveVM and Bitcoin
@@ -213,9 +296,8 @@ const Index = ({
             <div className="mt-5 text-center mx-auto flex items-end justify-around relative w-full">
               <div className="flex items-end justify-around w-full relative">
                 <div
-                  className="relative w-[25%] flex-shrink-0 z-10"
-                  onMouseEnter={() => setIsHovered1(true)}
-                  onMouseLeave={() => setIsHovered1(false)}
+                  className="relative w-[25%] flex-shrink-0 z-10 cursor-pointer"
+                  onClick={() => handleSignboardClick('board1')}
                 >
                   <Image
                     src="/home/signboard-1-0.svg"
@@ -228,7 +310,7 @@ const Index = ({
                   <Image
                     src="/home/signboard-1-1.svg"
                     className={`absolute top-0 left-0 w-[100%] transition-opacity duration-300 ${
-                      isHovered1 ? 'opacity-100' : 'opacity-0'
+                      signboardStates.board1 ? 'opacity-100' : 'opacity-0'
                     }`}
                     alt="signboard-1-hover"
                     width={420.06}
@@ -237,9 +319,8 @@ const Index = ({
                   />
                 </div>
                 <div
-                  className="relative w-[15%] -left-[3%] flex-shrink-0"
-                  onMouseEnter={() => setIsHovered1(true)}
-                  onMouseLeave={() => setIsHovered1(false)}
+                  className="relative w-[15%] -left-[3%] flex-shrink-0 cursor-pointer"
+                  onClick={() => handleSignboardClick('board2')}
                 >
                   <Image
                     src="/home/signboard-2-0.svg"
@@ -252,7 +333,7 @@ const Index = ({
                   <Image
                     src="/home/signboard-2-1.svg"
                     className={`absolute top-0 left-0 w-[100%] transition-opacity duration-300 ${
-                      isHovered1 ? 'opacity-100' : 'opacity-0'
+                      signboardStates.board2 ? 'opacity-100' : 'opacity-0'
                     }`}
                     alt="signboard-2-hover"
                     width={206.56}
@@ -260,9 +341,12 @@ const Index = ({
                     style={{ objectFit: 'contain' }}
                   />
                 </div>
-                <div className="relative w-[26%] flex-shrink-0">
+                <div
+                  className="relative w-[26%] flex-shrink-0 cursor-pointer"
+                  onClick={() => handleSignboardClick('boardM')}
+                >
                   <Image
-                    src="/home/signboard-m-1.svg"
+                    src="/home/signboard-m-0.svg"
                     className="relative w-[100%]"
                     alt="signboard-m"
                     width={386}
@@ -270,9 +354,9 @@ const Index = ({
                     style={{ objectFit: 'contain' }}
                   />
                   <Image
-                    src="/home/signboard-m-0.svg"
+                    src="/home/signboard-m-1.svg"
                     className={`absolute top-0 left-0 z-10 w-[100%] transition-opacity duration-300 ${
-                      isHovered1 ? 'opacity-100' : 'opacity-0'
+                      signboardStates.boardM ? 'opacity-100' : 'opacity-0'
                     }`}
                     alt="signboard-m-hover"
                     width={386}
@@ -281,9 +365,8 @@ const Index = ({
                   />
                 </div>
                 <div
-                  className="relative w-[20%] left-[1%] flex-shrink-0 z-10"
-                  onMouseEnter={() => setIsHovered1(true)}
-                  onMouseLeave={() => setIsHovered1(false)}
+                  className="relative w-[20%] left-[1%] flex-shrink-0 z-10 cursor-pointer"
+                  onClick={() => handleSignboardClick('board3')}
                 >
                   <Image
                     src="/home/signboard-3-0.svg"
@@ -296,7 +379,7 @@ const Index = ({
                   <Image
                     src="/home/signboard-3-1.svg"
                     className={`absolute top-0 left-0 z-10 w-[100%] transition-opacity duration-300 ${
-                      isHovered1 ? 'opacity-100' : 'opacity-0'
+                      signboardStates.board3 ? 'opacity-100' : 'opacity-0'
                     }`}
                     alt="signboard-3-hover"
                     width={336.2}
@@ -305,9 +388,8 @@ const Index = ({
                   />
                 </div>
                 <div
-                  className="relative w-[20%] -left-[5%] flex-shrink-0"
-                  onMouseEnter={() => setIsHovered1(true)}
-                  onMouseLeave={() => setIsHovered1(false)}
+                  className="relative w-[20%] -left-[5%] flex-shrink-0 cursor-pointer"
+                  onClick={() => handleSignboardClick('board4')}
                 >
                   <Image
                     src="/home/signboard-4-0.svg"
@@ -320,7 +402,7 @@ const Index = ({
                   <Image
                     src="/home/signboard-4-1.svg"
                     className={`absolute top-0 left-0 z-10 w-[100%] transition-opacity duration-300 ${
-                      isHovered1 ? 'opacity-100' : 'opacity-0'
+                      signboardStates.board4 ? 'opacity-100' : 'opacity-0'
                     }`}
                     alt="signboard-4-hover"
                     width={332.28}
@@ -357,52 +439,8 @@ const Index = ({
         </div>
 
         {/* FEATURES */}
-        <div className="py-12 px-8 lg:px-20 bg-[#FFFFFF] dark:bg-inherit flex flex-col items-center justify-between gap-12 md:gap-8 dark:border-b dark:border-b-zinc-800">
-          <div className="flex flex-col items-center justify-center w-full font-['kanit']">
-            <div className="mt-14 text-5xl md:text-5xl font-bold text-center text-black dark:text-[#EEEBEB]">
-              BTC Staking
-            </div>
-            <div className="mt-6 text-2xl text-center text-black dark:text-[#EAEAEA] max-w-3xl">
-              Generate yield for users in a non-custodial manner,
-              <br />
-              compatible with Babylon protocol
-            </div>
-          </div>
-          <div className="flex flex-wrap justify-center items-center w-full md:w-auto relative cursor-pointer -mt-[7vw]">
-            <div className="relative w-screen">
-              <img src="/home/road-sign.svg" alt="road-sign" className="w-screen h-auto" />
-            </div>
-            <div className="relative w-screen mt-[120px]">
-              <img src="/home/ground.svg" alt="road-sign" className="w-screen h-auto" />
-            </div>
-          </div>
-          <div className="relative -mt-[3vw]">
-            <style jsx>{`
-              @keyframes scrollRight {
-                from {
-                  background-position: 0 0;
-                }
-                to {
-                  background-position: 100% 0;
-                }
-              }
-            `}</style>
-            <div
-              className="relative z-10"
-              style={{
-                background: 'url(./home/cation.svg)',
-                animation: 'scrollRight 20s linear infinite',
-                width: '100vw',
-                height: '64px',
-                backgroundRepeat: 'repeat-x',
-              }}
-            ></div>
-          </div>
-        </div>
-
-        {/* FEATURES */}
         <div className="py-16 md:py-10 md:pt-0 px-4 sm:px-6 md:px-8 lg:px-20 bg-[#FFFFFF] dark:bg-inherit flex flex-col md:flex-col items-center justify-between gap-12 md:gap-8 dark:border-b dark:border-b-zinc-800">
-          <div className="flex flex-col items-center justify-center w-full font-['kanit']">
+          <div className="flex flex-col items-center justify-center w-full font-['Han']">
             <div className="mt-14 text-5xl md:text-5xl font-bold text-center text-black dark:text-[#EEEBEB]">
               MoveVM
             </div>
@@ -455,10 +493,90 @@ const Index = ({
           </div>
         </div>
 
+        {/* FEATURES */}
+        <div className="py-12 px-8 lg:px-20 bg-[#FFFFFF] dark:bg-inherit flex flex-col items-center justify-between gap-12 md:gap-8 dark:border-b dark:border-b-zinc-800">
+          <div className="flex flex-col items-center justify-center w-full font-['Han']">
+            <div className="mt-14 text-5xl md:text-5xl font-bold text-center text-black dark:text-[#EEEBEB]">
+              BTC Staking
+            </div>
+            <div className="mt-6 text-2xl text-center text-black dark:text-[#EAEAEA] max-w-3xl">
+              Generate yield for users in a non-custodial manner,
+              <br />
+              compatible with Babylon protocol
+            </div>
+          </div>
+          <div className="flex flex-wrap justify-center items-center w-full md:w-auto relative cursor-pointer -mt-[7vw]">
+            <div className="relative w-screen">
+              <img src="/home/road-sign.svg" alt="road-sign" className="w-screen h-auto" />
+            </div>
+            <div className="relative w-screen mt-[120px]">
+              {/* left car */}
+              <img
+                src="/home/car-l.svg"
+                className={`absolute bottom-0 left-[10%] w-[25%] transform -translate-x-1/2 pointer-events-none transition-all duration-2000 ease-in-out
+                  ${carMoving.left ? 'scale-[0.05] translate-y-[-15vw] translate-x-[6vw] opacity-0' : ''}`}
+                style={{ display: carVisibility.left ? 'block' : 'none' }}
+              />
+              {/* mid card */}
+              <img
+                src="/home/car-m.svg"
+                className={`absolute bottom-0 left-1/2 w-[25%] transform -translate-x-1/2 pointer-events-none transition-all duration-2000 ease-in-out
+                  ${carMoving.middle ? 'scale-[0.05] translate-y-[-15vw] opacity-0' : ''}`}
+                style={{ display: carVisibility.middle ? 'block' : 'none' }}
+              />
+              {/* right car */}
+              <img
+                src="/home/car-r.svg"
+                className={`absolute bottom-0 left-[90%] w-[25%] transform -translate-x-1/2 pointer-events-none transition-all duration-2000 ease-in-out
+                  ${carMoving.right ? 'scale-[0.05] translate-y-[-15vw] translate-x-[-34vw] opacity-0' : ''}`}
+                style={{ display: carVisibility.right ? 'block' : 'none' }}
+              />
+              <img src="/home/ground.svg" alt="road-sign" className="w-screen h-auto" />
+              <button
+                className="absolute inset-0 w-1/3 bottom-0 left-[18%] transform -translate-x-1/2 h-full bg-transparent cursor-pointer"
+                onClick={() => handleCarAnimation('left')}
+                disabled={isAnimating}
+              />
+              <button
+                className="absolute inset-0 w-1/3 bottom-0 left-1/2 transform -translate-x-1/2 h-full bg-transparent cursor-pointer"
+                onClick={() => handleCarAnimation('middle')}
+                disabled={isAnimating}
+              />
+              <button
+                className="absolute inset-0 w-1/3 bottom-0 left-[82%] transform -translate-x-1/2 h-full bg-transparent cursor-pointer"
+                onClick={() => handleCarAnimation('right')}
+                disabled={isAnimating}
+              />
+            </div>
+          </div>
+          <div className="relative -mt-[3vw]">
+            <style jsx>{`
+              @keyframes scrollRight {
+                from {
+                  background-position: 0 0;
+                }
+                to {
+                  background-position: 100% 0;
+                }
+              }
+            `}</style>
+            <div
+              className="relative z-10"
+              style={{
+                background: 'url(./home/cation.svg)',
+                animation: 'scrollRight 20s linear infinite',
+                width: '100vw',
+                height: '64px',
+                backgroundRepeat: 'repeat-x',
+              }}
+            ></div>
+          </div>
+        </div>
+
         {/* EXPLORE */}
         <div className="py-10 px-4 sm:px-6 md:px-8 lg:px-20 bg-white dark:bg-inherit flex flex-col md:flex-row items-center justify-center gap-6 md:gap-8 dark:border-b dark:border-b-zinc-800">
           <div className="w-full h-full flex items-center justify-center">
-            <div className="flex flex-col gap-y-12 font-['kanit'] text-center">
+            <div className="flex flex-col gap-y-12 font-['Han'] text-center">
               <div className="text-3xl w-[318px] h-[150px] font-medium rounded-[28px] border-[#81B39F] border-[3px] flex items-center justify-center">
                 Infra
               </div>
@@ -470,11 +588,12 @@ const Index = ({
               </div>
             </div>
             <div className="flex flex-col overflow-hidden w-[892px] ml-12">
+              {/* Infra */}
               <div
                 className="flex gap-8 items-center transition-transform duration-500 ease-in-out"
                 style={{ transform: `translateX(${translateX}px)` }}
               >
-                {getImages(currentStart).map((num, index) => (
+                {getImages(currentStart, INFRA_IMAGE_COUNT).map((num, index) => (
                   <img
                     key={`${num}-${index}`}
                     src={`/home/infra/${num}.svg`}
@@ -482,12 +601,14 @@ const Index = ({
                   />
                 ))}
               </div>
+
+              {/* BTC */}
               <div className="flex items-center overflow-hidden relative -left-8">
                 <div
                   className="flex flex-row-reverse gap-8 items-center transition-transform duration-500 ease-in-out"
                   style={{ transform: `translateX(${-btcTranslateX}px)` }}
                 >
-                  {getImages(btcStart).map((num, index) => (
+                  {getImages(btcStart, BTC_IMAGE_COUNT).map((num, index) => (
                     <img
                       key={`btc-${num}-${index}`}
                       src={`/home/btc/${num}.svg`}
@@ -497,12 +618,13 @@ const Index = ({
                 </div>
               </div>
 
+              {/* Move */}
               <div className="flex items-center overflow-hidden">
                 <div
                   className="flex gap-8 items-center transition-transform duration-500 ease-in-out"
                   style={{ transform: `translateX(${moveTranslateX}px)` }}
                 >
-                  {getImages(moveStart).map((num, index) => (
+                  {getImages(moveStart, MOVE_IMAGE_COUNT).map((num, index) => (
                     <img
                       key={`move-${num}-${index}`}
                       src={`/home/move/${num}.svg`}
@@ -540,7 +662,7 @@ const Index = ({
         {/* BLOG */}
         <div className="py-16 md:py-20 px-4 sm:px-6 md:px-8 lg:px-20 bg-white dark:bg-inherit flex flex-col items-center justify-center gap-6 md:gap-8">
           <div className="px-4 w-full h-full">
-            <div className="flex flex-col items-center justify-center w-full font-['kanit']">
+            <div className="flex flex-col items-center justify-center w-full font-['Han']">
               <div className="mt-14 text-5xl md:text-5xl font-bold text-center text-black dark:text-[#EEEBEB]">
                 Blog & News
               </div>
