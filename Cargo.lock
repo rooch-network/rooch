@@ -1026,6 +1026,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "bitcoin-client"
+version = "0.8.0"
+dependencies = [
+ "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "async-trait",
+ "bitcoin 0.32.3",
+ "bitcoincore-rpc",
+ "coerce",
+ "serde 1.0.215",
+ "serde_json",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "bitcoin-internals"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9642,6 +9657,7 @@ dependencies = [
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
  "bcs",
  "bitcoin 0.32.3",
+ "bitcoin-client",
  "clap 4.5.17",
  "coerce",
  "csv",
@@ -9663,7 +9679,6 @@ dependencies = [
  "rooch-integration-test-runner",
  "rooch-key",
  "rooch-ord",
- "rooch-relayer",
  "rooch-types",
  "serde 1.0.215",
  "serde_json",
@@ -9905,6 +9920,8 @@ dependencies = [
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
  "async-trait",
  "bcs",
+ "bitcoin 0.32.3",
+ "bitcoin-client",
  "coerce",
  "function_name",
  "hex",
@@ -9946,6 +9963,7 @@ dependencies = [
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
  "async-trait",
  "bitcoin 0.32.3",
+ "bitcoin-client",
  "bitcoincore-rpc",
  "chrono",
  "coerce",
@@ -9961,9 +9979,6 @@ dependencies = [
  "rooch-executor",
  "rooch-pipeline-processor",
  "rooch-types",
- "serde 1.0.215",
- "serde_json",
- "tokio",
  "tracing",
 ]
 
@@ -10021,6 +10036,7 @@ dependencies = [
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
  "axum",
  "bcs",
+ "bitcoin-client",
  "bitcoincore-rpc",
  "coerce",
  "dashmap 6.0.1",

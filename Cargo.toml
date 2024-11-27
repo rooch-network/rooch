@@ -20,6 +20,7 @@ members = [
     "moveos/smt",
     "moveos/moveos-eventbus",
     "moveos/moveos-gas-profiling",
+    "crates/bitcoin-client",
     "crates/data_verify",
     "crates/rooch",
     "crates/rooch-benchmarks",
@@ -59,7 +60,7 @@ members = [
     "frameworks/framework-types",
     "frameworks/moveos-stdlib",
     "frameworks/rooch-framework",
-    "frameworks/rooch-nursery",
+    "frameworks/rooch-nursery", "crates/bitcoin-client",
 ]
 
 default-members = [
@@ -108,6 +109,8 @@ accumulator = { path = "moveos/moveos-commons/accumulator" }
 moveos-gas-profiling = { path = "moveos/moveos-gas-profiling" }
 
 # crates for Rooch
+bitcoin-client = { path = "crates/bitcoin-client" }
+data-verify = { path = "crates/data_verify" }
 rooch = { path = "crates/rooch" }
 rooch-common = { path = "crates/rooch-common" }
 rooch-key = { path = "crates/rooch-key" }
@@ -135,7 +138,6 @@ rooch-da = { path = "crates/rooch-da" }
 rooch-benchmarks = { path = "crates/rooch-benchmarks" }
 rooch-faucet = { path = "crates/rooch-faucet" }
 rooch-test-transaction-builder = { path = "crates/rooch-test-transaction-builder" }
-data-verify = { path = "crates/data_verify" }
 rooch-db = { path = "crates/rooch-db" }
 rooch-event = { path = "crates/rooch-event" }
 rooch-ord = { path = "crates/rooch-ord" }

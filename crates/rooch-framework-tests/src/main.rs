@@ -4,12 +4,11 @@
 use std::path::PathBuf;
 
 use anyhow::Result;
+use bitcoin_client::actor::client::BitcoinClientActor;
+use bitcoin_client::proxy::BitcoinClientProxy;
 use clap::Parser;
 use coerce::actor::{system::ActorSystem, IntoActor};
 use rooch_framework_tests::bitcoin_block_tester::TesterGenesisBuilder;
-use rooch_relayer::actor::{
-    bitcoin_client::BitcoinClientActor, bitcoin_client_proxy::BitcoinClientProxy,
-};
 
 #[derive(Parser)]
 #[clap(name = "test_builder", author = "The Rooch Core Contributors")]

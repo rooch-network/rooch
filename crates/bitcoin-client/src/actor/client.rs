@@ -1,10 +1,10 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use super::messages::{GetChainTipsMessage, GetRawTransactionMessage, GetTxOutMessage};
 use crate::actor::messages::{
     BroadcastTransactionMessage, GetBestBlockHashMessage, GetBlockHashMessage,
-    GetBlockHeaderInfoMessage, GetBlockMessage,
+    GetBlockHeaderInfoMessage, GetBlockMessage, GetChainTipsMessage, GetRawTransactionMessage,
+    GetTxOutMessage,
 };
 use anyhow::Result;
 use async_trait::async_trait;
@@ -18,6 +18,22 @@ pub struct BitcoinClientActor {
     rpc_client: Client,
     max_retries: u32,
     retry_delay: Duration,
+}
+
+pub struct BitcoinClientConfig {
+    pub btc_rpc_url: String,
+    pub btc_rpc_user_name: String,
+    pub btc_rpc_password: String,
+}
+
+impl BitcoinClientConfig {
+    pub fn build(&self) -> Result<BitcoinClientActor> {
+        BitcoinClientActor::new(
+            &self.btc_rpc_url,
+            &self.btc_rpc_user_name,
+            &self.btc_rpc_password,
+        )
+    }
 }
 
 impl BitcoinClientActor {
