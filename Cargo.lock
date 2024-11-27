@@ -14,7 +14,7 @@ dependencies = [
 
 [[package]]
 name = "accumulator"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
  "bcs-ext",
@@ -1026,6 +1026,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "bitcoin-client"
+version = "0.8.0"
+dependencies = [
+ "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "async-trait",
+ "bitcoin 0.32.3",
+ "bitcoincore-rpc",
+ "coerce",
+ "serde 1.0.215",
+ "serde_json",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "bitcoin-internals"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1042,7 +1057,7 @@ checksum = "340e09e8399c7bd8912f495af6aa58bea0c9214773417ffaa8f6460f93aaee56"
 
 [[package]]
 name = "bitcoin-move"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
  "axum",
@@ -2587,12 +2602,12 @@ dependencies = [
 
 [[package]]
 name = "darling"
-version = "0.20.9"
+version = "0.20.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "83b2eb4d90d12bdda5ed17de686c2acb4c57914f8f921b8da7e112b5a36f3fe1"
+checksum = "6f63b86c8a8826a49b8c21f08a2d07338eec8d900540f8630dc76284be802989"
 dependencies = [
- "darling_core 0.20.9",
- "darling_macro 0.20.9",
+ "darling_core 0.20.10",
+ "darling_macro 0.20.10",
 ]
 
 [[package]]
@@ -2625,9 +2640,9 @@ dependencies = [
 
 [[package]]
 name = "darling_core"
-version = "0.20.9"
+version = "0.20.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "622687fe0bac72a04e5599029151f5796111b90f1baaa9b544d807a5e31cd120"
+checksum = "95133861a8032aaea082871032f5815eb9e98cef03fa916ab4500513994df9e5"
 dependencies = [
  "fnv",
  "ident_case",
@@ -2661,11 +2676,11 @@ dependencies = [
 
 [[package]]
 name = "darling_macro"
-version = "0.20.9"
+version = "0.20.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "733cabb43482b1a1b53eee8583c2b9e8684d592215ea83efd305dd31bc2f0178"
+checksum = "d336a2a514f6ccccaa3e09b02d41d35330c07ddf03a62165fcec10bb561c7806"
 dependencies = [
- "darling_core 0.20.9",
+ "darling_core 0.20.10",
  "quote 1.0.37",
  "syn 2.0.87",
 ]
@@ -2726,7 +2741,7 @@ dependencies = [
 
 [[package]]
 name = "data-verify"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
  "rooch-rpc-api",
@@ -2841,11 +2856,11 @@ dependencies = [
 
 [[package]]
 name = "derive_builder"
-version = "0.20.1"
+version = "0.20.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cd33f37ee6a119146a1781d3356a7c26028f83d779b2e04ecd45fdc75c76877b"
+checksum = "507dfb09ea8b7fa618fcf76e953f4f5e192547945816d5358edffe39f6f94947"
 dependencies = [
- "derive_builder_macro 0.20.1",
+ "derive_builder_macro 0.20.2",
 ]
 
 [[package]]
@@ -2862,11 +2877,11 @@ dependencies = [
 
 [[package]]
 name = "derive_builder_core"
-version = "0.20.1"
+version = "0.20.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7431fa049613920234f22c47fdc33e6cf3ee83067091ea4277a3f8c4587aae38"
+checksum = "2d5bcf7b024d6835cfb3d473887cd966994907effbe9227e8c8219824d06c4e8"
 dependencies = [
- "darling 0.20.9",
+ "darling 0.20.10",
  "proc-macro2 1.0.92",
  "quote 1.0.37",
  "syn 2.0.87",
@@ -2884,11 +2899,11 @@ dependencies = [
 
 [[package]]
 name = "derive_builder_macro"
-version = "0.20.1"
+version = "0.20.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4abae7035bf79b9877b779505d8cf3749285b80c43941eda66604841889451dc"
+checksum = "ab63b0e2bf4d5928aff72e83a7dace85d7bba5fe12dcc3c5a572d78caffd3f3c"
 dependencies = [
- "derive_builder_core 0.20.1",
+ "derive_builder_core 0.20.2",
  "syn 2.0.87",
 ]
 
@@ -3107,7 +3122,7 @@ version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0892a17df262a24294c382f0d5997571006e7a4348b4327557c4ff1cd4a8bccc"
 dependencies = [
- "darling 0.20.9",
+ "darling 0.20.10",
  "either",
  "heck 0.5.0",
  "proc-macro2 1.0.92",
@@ -3370,7 +3385,7 @@ version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e08b6c6ab82d70f08844964ba10c7babb716de2ecaeab9be5717918a5177d3af"
 dependencies = [
- "darling 0.20.9",
+ "darling 0.20.10",
  "proc-macro2 1.0.92",
  "quote 1.0.37",
  "syn 2.0.87",
@@ -4119,7 +4134,7 @@ dependencies = [
 
 [[package]]
 name = "framework-builder"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
  "bcs",
@@ -4143,7 +4158,7 @@ dependencies = [
 
 [[package]]
 name = "framework-release"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
  "bcs",
@@ -4159,7 +4174,7 @@ dependencies = [
 
 [[package]]
 name = "framework-types"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "move-core-types",
  "moveos-stdlib",
@@ -6109,7 +6124,7 @@ dependencies = [
 
 [[package]]
 name = "metrics"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
  "async-trait",
@@ -6911,7 +6926,7 @@ dependencies = [
 
 [[package]]
 name = "moveos"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
  "clap 4.5.17",
@@ -6950,7 +6965,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-common"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
  "bcs",
@@ -6965,7 +6980,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-compiler"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
  "move-binary-format",
@@ -6974,7 +6989,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-config"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "clap 4.5.17",
  "serde 1.0.215",
@@ -6983,7 +6998,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-eventbus"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
  "coerce",
@@ -6994,7 +7009,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-gas-profiling"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
  "handlebars",
@@ -7011,7 +7026,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-object-runtime"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "bcs",
  "better_any",
@@ -7027,7 +7042,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-stdlib"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
  "base64 0.22.1",
@@ -7060,7 +7075,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-store"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "accumulator",
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -7073,6 +7088,7 @@ dependencies = [
  "moveos-types",
  "once_cell",
  "prometheus",
+ "quick_cache",
  "rand 0.8.5",
  "raw-store",
  "smt",
@@ -7082,7 +7098,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-types"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
  "bcs",
@@ -7109,7 +7125,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-verifier"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
  "bcs",
@@ -7134,7 +7150,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-wasm"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
  "once_cell",
@@ -8674,6 +8690,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "quick_cache"
+version = "0.6.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7d7c94f8935a9df96bb6380e8592c70edf497a643f94bd23b2f76b399385dbf4"
+dependencies = [
+ "ahash 0.8.11",
+ "equivalent",
+ "hashbrown 0.14.5",
+ "parking_lot 0.12.3",
+]
+
+[[package]]
 name = "quinn"
 version = "0.11.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8862,7 +8890,7 @@ dependencies = [
 
 [[package]]
 name = "raw-store"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
  "metrics",
@@ -9332,7 +9360,7 @@ dependencies = [
 
 [[package]]
 name = "rooch"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
  "async-trait",
@@ -9419,7 +9447,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-benchmarks"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "anyhow 1.0.76",
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -9474,14 +9502,14 @@ dependencies = [
 
 [[package]]
 name = "rooch-common"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "libc",
 ]
 
 [[package]]
 name = "rooch-config"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
  "clap 4.5.17",
@@ -9500,7 +9528,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-cosmwasm-vm"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "cosmwasm-std",
  "cosmwasm-vm",
@@ -9512,7 +9540,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-da"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
  "async-trait",
@@ -9535,7 +9563,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-db"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "accumulator",
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -9553,7 +9581,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-event"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
  "async-trait",
@@ -9565,7 +9593,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-executor"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
  "async-trait",
@@ -9590,7 +9618,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-faucet"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
  "async-trait",
@@ -9617,7 +9645,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-framework"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "bitcoin 0.32.3",
  "fastcrypto 0.1.8 (git+https://github.com/MystenLabs/fastcrypto?rev=56f6223b84ada922b6cb2c672c69db2ea3dc6a13)",
@@ -9637,11 +9665,12 @@ dependencies = [
 
 [[package]]
 name = "rooch-framework-tests"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
  "bcs",
  "bitcoin 0.32.3",
+ "bitcoin-client",
  "clap 4.5.17",
  "coerce",
  "csv",
@@ -9663,7 +9692,6 @@ dependencies = [
  "rooch-integration-test-runner",
  "rooch-key",
  "rooch-ord",
- "rooch-relayer",
  "rooch-types",
  "serde 1.0.215",
  "serde_json",
@@ -9675,7 +9703,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-genesis"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "accumulator",
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -9706,7 +9734,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-indexer"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
  "async-trait",
@@ -9733,7 +9761,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-integration-test-runner"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
  "bcs",
@@ -9766,7 +9794,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-key"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
  "argon2",
@@ -9785,7 +9813,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-nursery"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "ciborium",
  "cosmwasm-std",
@@ -9810,7 +9838,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-open-rpc"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
  "clap 4.5.17",
@@ -9825,7 +9853,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-open-rpc-macros"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "derive-syn-parse",
  "itertools 0.13.0",
@@ -9837,7 +9865,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-open-rpc-spec"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "clap 4.5.17",
  "pretty_assertions",
@@ -9848,7 +9876,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-open-rpc-spec-builder"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
  "clap 4.5.17",
@@ -9886,7 +9914,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-ord"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
  "ordinals",
@@ -9900,11 +9928,13 @@ dependencies = [
 
 [[package]]
 name = "rooch-pipeline-processor"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
  "async-trait",
  "bcs",
+ "bitcoin 0.32.3",
+ "bitcoin-client",
  "coerce",
  "function_name",
  "hex",
@@ -9924,7 +9954,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-proposer"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
  "async-trait",
@@ -9941,11 +9971,12 @@ dependencies = [
 
 [[package]]
 name = "rooch-relayer"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
  "async-trait",
  "bitcoin 0.32.3",
+ "bitcoin-client",
  "bitcoincore-rpc",
  "chrono",
  "coerce",
@@ -9961,15 +9992,12 @@ dependencies = [
  "rooch-executor",
  "rooch-pipeline-processor",
  "rooch-types",
- "serde 1.0.215",
- "serde_json",
- "tokio",
  "tracing",
 ]
 
 [[package]]
 name = "rooch-rpc-api"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "accumulator",
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -9994,7 +10022,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-rpc-client"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
  "bcs",
@@ -10016,11 +10044,12 @@ dependencies = [
 
 [[package]]
 name = "rooch-rpc-server"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
  "axum",
  "bcs",
+ "bitcoin-client",
  "bitcoincore-rpc",
  "coerce",
  "dashmap 6.0.1",
@@ -10063,7 +10092,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-sequencer"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "accumulator",
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -10088,7 +10117,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-store"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "accumulator",
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -10105,7 +10134,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-test-transaction-builder"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
  "bcs",
@@ -10119,7 +10148,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-types"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "accumulator",
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -10464,9 +10493,9 @@ dependencies = [
 
 [[package]]
 name = "rustversion"
-version = "1.0.17"
+version = "1.0.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "955d28af4278de8121b7ebeb796b6a45735dc01436d898801014aced2773a3d6"
+checksum = "0e819f2bc632f285be6d7cd36e25940d45b2391dd6d9b939e79de557f7014248"
 
 [[package]]
 name = "rusty-fork"
@@ -11011,7 +11040,7 @@ version = "2.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "881b6f881b17d13214e5d494c939ebab463d01264ce1811e9d4ac3a882e7695f"
 dependencies = [
- "darling 0.20.9",
+ "darling 0.20.10",
  "proc-macro2 1.0.92",
  "quote 1.0.37",
  "syn 2.0.87",
@@ -11023,7 +11052,7 @@ version = "3.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a8fee4991ef4f274617a51ad4af30519438dacb2f56ac773b08a1922ff743350"
 dependencies = [
- "darling 0.20.9",
+ "darling 0.20.10",
  "proc-macro2 1.0.92",
  "quote 1.0.37",
  "syn 2.0.87",
@@ -11335,7 +11364,7 @@ checksum = "b7c388c1b5e93756d0c740965c41e8822f866621d41acbdf6336a6a168f8840c"
 
 [[package]]
 name = "smt"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
  "backtrace",
@@ -11902,7 +11931,7 @@ dependencies = [
 
 [[package]]
 name = "testsuite"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
  "assert_cmd",
@@ -12013,7 +12042,7 @@ dependencies = [
 
 [[package]]
 name = "timeout-join-handler"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
  "thiserror",
@@ -12899,7 +12928,7 @@ checksum = "c32e7318e93a9ac53693b6caccfb05ff22e04a44c7cf8a279051f24c09da286f"
 dependencies = [
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
  "cargo_metadata",
- "derive_builder 0.20.1",
+ "derive_builder 0.20.2",
  "getset",
  "regex",
  "rustc_version 0.4.0",
@@ -12915,7 +12944,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a62c52cd2b2b8b7ec75fc20111b3022ac3ff83e4fc14b9497cfcfd39c54f9c67"
 dependencies = [
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
- "derive_builder 0.20.1",
+ "derive_builder 0.20.2",
  "git2",
  "rustversion",
  "time",
@@ -12930,20 +12959,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e06bee42361e43b60f363bad49d63798d0f42fb1768091812270eca00c784720"
 dependencies = [
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
- "derive_builder 0.20.1",
+ "derive_builder 0.20.2",
  "getset",
  "rustversion",
 ]
 
 [[package]]
 name = "vergen-pretty"
-version = "0.3.5"
+version = "0.3.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9579e7d75e528471646aa8c9bf11392154f3f8e0b02d94211bc5d57701d010f0"
+checksum = "69f0cedcb598e15120e748b19e97426e376be2ec27987570e11bbd350d0bdb09"
 dependencies = [
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
  "convert_case 0.6.0",
- "derive_builder 0.20.1",
+ "derive_builder 0.20.2",
  "rustversion",
 ]
 

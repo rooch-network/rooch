@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use super::messages::{GetReadyL1BlockMessage, GetReadyL1TxsMessage, SyncTick};
 use anyhow::Result;
 use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
@@ -13,8 +14,6 @@ use rooch_types::{
 };
 use std::collections::HashSet;
 use tracing::info;
-
-use super::messages::{GetReadyL1BlockMessage, GetReadyL1TxsMessage, SyncTick};
 
 pub struct EthereumRelayer {
     rpc_client: Provider<Http>,

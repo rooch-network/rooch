@@ -7,6 +7,8 @@ use super::messages::{
 use crate::metrics::PipelineProcessorMetrics;
 use anyhow::{Error, Result};
 use async_trait::async_trait;
+use bitcoin::hashes::Hash;
+use bitcoin_client::proxy::BitcoinClientProxy;
 use coerce::actor::{context::ActorContext, message::Handler, Actor, LocalActorRef};
 use function_name::named;
 use moveos::moveos::VMPanicError;
@@ -20,6 +22,7 @@ use rooch_event::actor::{EventActor, UpdateServiceStatusMessage};
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_indexer::proxy::IndexerProxy;
 use rooch_sequencer::proxy::SequencerProxy;
+use rooch_types::bitcoin::types::Block as BitcoinBlock;
 use rooch_types::{
     service_status::ServiceStatus,
     transaction::{
@@ -40,6 +43,7 @@ pub struct PipelineProcessorActor {
     pub(crate) metrics: Arc<PipelineProcessorMetrics>,
     event_actor: Option<LocalActorRef<EventActor>>,
     rooch_db: RoochDB,
+    bitcoin_client_proxy: Option<BitcoinClientProxy>,
 }
 
 impl PipelineProcessorActor {
@@ -52,6 +56,7 @@ impl PipelineProcessorActor {
         registry: &Registry,
         event_actor: Option<LocalActorRef<EventActor>>,
         rooch_db: RoochDB,
+        bitcoin_client_proxy: Option<BitcoinClientProxy>,
     ) -> Self {
         Self {
             executor,
@@ -62,6 +67,7 @@ impl PipelineProcessorActor {
             metrics: Arc::new(PipelineProcessorMetrics::new(registry)),
             event_actor,
             rooch_db,
+            bitcoin_client_proxy,
         }
     }
 
@@ -109,9 +115,30 @@ impl PipelineProcessorActor {
                 .await?
                 .ok_or_else(|| anyhow::anyhow!("The tx with hash {} should exists", tx_hash))?;
             match &ledger_tx.data {
-                LedgerTxData::L1Block(_block) => {
-                    //TODO how to get the L1BlockWithBody
-                    unimplemented!("L1Block tx not support")
+                LedgerTxData::L1Block(block) => {
+                    debug!("process_sequenced_tx_on_startup l1_block_tx: {:?}", block);
+                    match &self.bitcoin_client_proxy {
+                        Some(bitcoin_client_proxy) => {
+                            let block_hash_vec = block.block_hash.clone();
+                            let block_hash =
+                                bitcoin::block::BlockHash::from_slice(&block_hash_vec)?;
+                            let btc_block = bitcoin_client_proxy.get_block(block_hash).await?;
+                            let block_body = BitcoinBlock::from(btc_block);
+                            let moveos_tx = self
+                                .executor
+                                .validate_l1_block(L1BlockWithBody::new(
+                                    block.clone(),
+                                    block_body.encode(),
+                                ))
+                                .await?;
+                            self.execute_tx(ledger_tx.clone(), moveos_tx).await?;
+                        }
+                        None => {
+                            return Err(anyhow::anyhow!(
+                                "The bitcoin client proxy should be initialized before processing the sequenced l1_block_tx(block: {:?} on startup", block
+                            ));
+                        }
+                    }
                 }
                 LedgerTxData::L1Tx(l1_tx) => {
                     debug!("process_sequenced_tx_on_startup l1_tx: {:?}", l1_tx);

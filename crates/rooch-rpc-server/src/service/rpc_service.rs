@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{format_err, Result};
+use bitcoin_client::proxy::BitcoinClientProxy;
 use bitcoincore_rpc::bitcoin::Txid;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::{ModuleId, StructTag};
@@ -21,7 +22,6 @@ use rooch_executor::actor::messages::DryRunTransactionResult;
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_indexer::proxy::IndexerProxy;
 use rooch_pipeline_processor::proxy::PipelineProcessorProxy;
-use rooch_relayer::actor::bitcoin_client_proxy::BitcoinClientProxy;
 use rooch_rpc_api::jsonrpc_types::{
     BitcoinStatus, DisplayFieldsView, IndexerObjectStateView, ObjectMetaView, RoochStatus, Status,
 };

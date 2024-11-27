@@ -20,6 +20,7 @@ members = [
     "moveos/smt",
     "moveos/moveos-eventbus",
     "moveos/moveos-gas-profiling",
+    "crates/bitcoin-client",
     "crates/data_verify",
     "crates/rooch",
     "crates/rooch-benchmarks",
@@ -59,7 +60,7 @@ members = [
     "frameworks/framework-types",
     "frameworks/moveos-stdlib",
     "frameworks/rooch-framework",
-    "frameworks/rooch-nursery",
+    "frameworks/rooch-nursery", "crates/bitcoin-client",
 ]
 
 default-members = [
@@ -84,7 +85,7 @@ license = "Apache-2.0"
 publish = false
 repository = "https://github.com/rooch-network/rooch"
 rust-version = "1.82.0"
-version = "0.8.0"
+version = "0.8.1"
 
 [workspace.dependencies]
 # Internal crate dependencies.
@@ -108,6 +109,8 @@ accumulator = { path = "moveos/moveos-commons/accumulator" }
 moveos-gas-profiling = { path = "moveos/moveos-gas-profiling" }
 
 # crates for Rooch
+bitcoin-client = { path = "crates/bitcoin-client" }
+data-verify = { path = "crates/data_verify" }
 rooch = { path = "crates/rooch" }
 rooch-common = { path = "crates/rooch-common" }
 rooch-key = { path = "crates/rooch-key" }
@@ -135,7 +138,6 @@ rooch-da = { path = "crates/rooch-da" }
 rooch-benchmarks = { path = "crates/rooch-benchmarks" }
 rooch-faucet = { path = "crates/rooch-faucet" }
 rooch-test-transaction-builder = { path = "crates/rooch-test-transaction-builder" }
-data-verify = { path = "crates/data_verify" }
 rooch-db = { path = "crates/rooch-db" }
 rooch-event = { path = "crates/rooch-event" }
 rooch-ord = { path = "crates/rooch-ord" }
@@ -266,6 +268,7 @@ tower_governor = { version = "0.4.3", features = ["tracing"] }
 pin-project = "1.1.7"
 mirai-annotations = "1.12.0"
 lru = "0.11.0"
+quick_cache = "0.6.9"
 bs58 = "0.5.1"
 dirs-next = "2.0.0"
 anstream = { version = "0.3" }
@@ -350,7 +353,7 @@ function_name = { version = "0.3.0" }
 rustc-hash = { version = "2.0.0" }
 xorf = { version = "0.11.0" }
 vergen-git2 = { version = "1.0.0", features = ["build", "cargo", "rustc"] }
-vergen-pretty = "0.3.5"
+vergen-pretty = "0.3.6"
 crossbeam-channel = "0.5.13"
 inferno = "0.11.21"
 handlebars = "4.2.2"
