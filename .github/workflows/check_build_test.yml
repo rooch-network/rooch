@@ -55,6 +55,12 @@ jobs:
           docker pull bitseed/ord:0.18.0-burn
           docker pull bitseed/bitseed:0.1.8
 
+      - uses: CatChen/check-git-status-action@v1
+        with:
+          fail-if-not-clean: true # optional
+          push-if-not-clean: false # optional
+          targets: '.' #optional
+
       - name: Check code format
         run: cargo fmt -- --check
       - name: Lint rust sources
@@ -112,8 +118,4 @@ jobs:
         continue-on-error: true
         timeout-minutes: 15
 
-      - uses: CatChen/check-git-status-action@v1
-        with:
-          fail-if-not-clean: true # optional
-          push-if-not-clean: false # optional
-          targets: '.' #optional
+
