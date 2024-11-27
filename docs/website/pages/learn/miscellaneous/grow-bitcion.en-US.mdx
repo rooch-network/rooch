@@ -18,6 +18,20 @@ As a Bitcoin project builder, you are free to list your project on the Grow Bitc
 
 ### Mainnet Frequently Asked Questions
 
+#### Self Staking Risk
+
+Self Staking only has `Read` permissions for Bitcoin, without `Transfer`, ensuring the ownership of BTC. Having `Write` permission at the Rooch layer provides scalability.
+
+Therefore, Self Staking in Grwo Bitcoin is risk-free staking mining.
+
+For example, I want to go shopping in a newly opened supermarket and I want to apply for a membership card. The membership card will only read my identity information and cannot do any more operations. Grow Bitcoin's stake mining is this model. It can only read the UTXO of the Bitcoin wallet and has no authority to operate your Bitcoin assets.
+
+#### Why Create Session Key
+
+Rooch's Session Key provides secure and simplified DApp transaction processes for application interactions.
+
+For a detailed description of Session Key, please refer to this document https://rooch.network/zh-CN/learn/core-concepts/accounts/session-key
+
 #### Detailed usage process
 
 Please refer to the [Grow Bitcion Testnet User Guide](https://rooch.network/blog/grow-bitcoin-test)
@@ -32,7 +46,7 @@ Only needs to ensure that the UniSat wallet has UTXO and [Claim RGas](https://po
 
 You only need to hold BTC in your own wallet to stake for mining and obtain `GROW`. Grow Bitcoin adopts `Hold Mining`’s staking model to obtain `GROW`.
 
-Note: If the UTXO in your wallet is spent, the UTXO pledged in Grow Bitcoin will become invalid, and you need to manually pledge new UTXO to continue mining.
+Note: If the UTXO in your wallet is spent, the UTXO staked in Grow Bitcoin will become invalid, and you need to manually stake new UTXO to continue mining.
 
 #### Loop appears to create Seesion
 
@@ -50,7 +64,7 @@ No barriers to entry.
 
 The total amount of `GROW` is `210,000,000,000`, which will be mined in `180` days.
 
-The daily mining quantity is fixed and divided according to the pledged BTC.
+The daily mining quantity is fixed and divided according to the staked BTC.
 
 > Source code: https://github.com/rooch-network/rooch/blob/main/apps/grow_bitcoin/sources/grow_bitcoin.move
 
@@ -79,12 +93,6 @@ Babylon's staking has a time lock, and its staking has time weight.
 There are currently oracles for Bitcoin.
 
 > Source code: https://github.com/rooch-network/rooch/blob/main/apps/gas_market/sources/trusted_oracle.move
-
-#### Self Staking Risk
-
-Self Staking only has `Read` permissions for Bitcoin, without `Transfer`, ensuring the ownership of BTC. Having `Write` permission at the Rooch layer provides scalability.
-
-Therefore, Self Staking in Grwo Bitcoin is risk-free staking mining.
 
 #### What does GROW do?
 
