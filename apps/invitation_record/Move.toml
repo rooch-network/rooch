@@ -11,10 +11,10 @@ gas_faucet = {local = "../../apps/gas_faucet"}
 twitter_binding = {local = "../../apps/twitter_binding"}
 
 [addresses]
-invitation_record = "0x1d6f6657fc996008a1e43b8c13805e969a091560d4cea57b1db9f3ce4450d977"
-gas_faucet = "0x1d6f6657fc996008a1e43b8c13805e969a091560d4cea57b1db9f3ce4450d977"
-app_admin = "0x1d6f6657fc996008a1e43b8c13805e969a091560d4cea57b1db9f3ce4450d977"
-twitter_binding = "0x1d6f6657fc996008a1e43b8c13805e969a091560d4cea57b1db9f3ce4450d977"
+invitation_record = "_"
+gas_faucet = "_"
+app_admin = "_"
+twitter_binding = "_"
 std = "0x1"
 moveos_std = "0x2"
 rooch_framework = "0x3"
