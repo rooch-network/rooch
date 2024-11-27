@@ -18,6 +18,7 @@ use moveos_types::state_resolver::StateKV;
 use moveos_types::state_resolver::StateResolver;
 use moveos_types::state_resolver::StatelessResolver;
 use prometheus::Registry;
+use quick_cache::sync::Cache;
 use smt::{SMTIterator, TreeChangeSet};
 use smt::{SMTree, UpdateSet};
 use std::collections::BTreeMap;
@@ -31,14 +32,16 @@ pub struct StateDBStore {
     pub node_store: NodeDBStore,
     smt: SMTree<FieldKey, ObjectState, NodeDBStore>,
     metrics: Arc<StateDBMetrics>,
+    cache: Arc<Cache<(H256, FieldKey), Option<ObjectState>>>,
 }
 
 impl StateDBStore {
-    pub fn new(node_store: NodeDBStore, registry: &Registry) -> Self {
+    pub fn new(node_store: NodeDBStore, registry: &Registry, cache_size: usize) -> Self {
         Self {
             node_store: node_store.clone(),
             smt: SMTree::new(node_store, registry),
             metrics: Arc::new(StateDBMetrics::new(registry)),
+            cache: Arc::new(Cache::new(cache_size)),
         }
     }
 
@@ -97,6 +100,8 @@ impl StateDBStore {
                 Op::Delete => {
                     //TODO clean up the removed object fields
                     update_set.remove(field_key);
+                    let pre_state_root = obj_change.metadata.state_root();
+                    self.cache.remove(&(pre_state_root, field_key));
                     return Ok(());
                 }
             },
@@ -126,7 +131,8 @@ impl StateDBStore {
         let new_state_root = tree_change_set.state_root;
         obj.update_state_root(new_state_root);
         obj_change.update_state_root(new_state_root);
-        update_set.put(field_key, obj);
+        update_set.put(field_key, obj.clone());
+        self.cache.insert((new_state_root, field_key), Some(obj));
 
         Ok(())
     }
@@ -225,7 +231,14 @@ impl StatelessResolver for StateDBStore {
         if state_root == *GENESIS_STATE_ROOT {
             return Ok(None);
         }
-        let result = self.smt.get(state_root, *key)?;
+
+        let result = if let Some(state) = self.cache.get(&(state_root, *key)) {
+            state
+        } else {
+            let state = self.smt.get(state_root, *key)?;
+            self.cache.insert((state_root, *key), state.clone());
+            state
+        };
         if tracing::enabled!(tracing::Level::TRACE) {
             let result_info = match &result {
                 Some(state) => format!("Some({})", state.metadata.object_type),
@@ -261,6 +274,9 @@ impl StatelessResolver for StateDBStore {
             .with_label_values(&[fn_name])
             .start_timer();
         let result = self.smt.list(state_root, cursor, limit)?;
+        for (key, state) in &result {
+            self.cache.insert((state_root, *key), Some(state.clone()));
+        }
 
         // Only statistics object value bytes to avoid performance loss caused by serialization
         let size = result
