@@ -38,7 +38,7 @@ func read_file(path string) error {
       break
     }
     // rooch account transfer --to rooch1z6jp5k2vj2hs75zdqe5rhgdaj4w3hjnm693ks6xaxxdr78vvxreqwrrvpt --coin-type 0x3::gas_coin::RGas --amount 1
-    send := exec.Command("rooch", "account", "transfer", "--coin-type", "0x3::gas_coin::RGas", "--amount", "1", "--to", string(line))
+    send := exec.Command("rooch", "account", "transfer", "--coin-type", "0x3::gas_coin::RGas", "--amount", "10000000000", "--to", string(line))
     _, err = send.CombinedOutput()
     if err != nil {
       // fmt.Printf("combined out:\n%s\n", string(out))
