@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	change_env := exec.Command("rooch", "env", "switch", "--alias", "test")
+	change_env := exec.Command("rooch", "env", "switch", "--alias", "main")
 	out, err := change_env.CombinedOutput()
 	if err != nil {
 		fmt.Printf("combined out:\n%s\n", string(out))
@@ -46,6 +46,7 @@ func read_file(path string) error {
       // log.Fatal("send.Run() failed with %s\n", err)
       log.Fatal("send failed\n")
     }
+      fmt.Println(string(line), "=> ok")
     // fmt.Printf("combined out\n%s\n", string(out))
 
 
