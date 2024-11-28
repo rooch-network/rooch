@@ -26,7 +26,7 @@ const { networkConfig, useNetworkVariable, useNetworkVariables } = createNetwork
       faucetAddress: '0x701c21bf1c8cd5af8c42983890d8ca55e7a820171b8e744c13f2d9998bf76cc3',
       faucetObject: '0xd5723eda84f691ae2623da79312c7909b1737c5b3866ecc5dbd6aa21718ff15d',
       BTCMemPool: 'https://mempool.space/tx/',
-      twitterOracleAddress: '',
+      twitterOracleAddress: '0x701c21bf1c8cd5af8c42983890d8ca55e7a820171b8e744c13f2d9998bf76cc3',
     },
   },
   testnet: {
