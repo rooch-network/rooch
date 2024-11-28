@@ -148,7 +148,7 @@ module invitation_record::invitation {
 
     }
 
-    public entry fun lottery(invitation_obj: &mut Object<InvitationConf>, amount: u64){
+    entry fun lottery(invitation_obj: &mut Object<InvitationConf>, amount: u64){
         let invitation_conf = object::borrow_mut(invitation_obj);
         let user_invitation_records = table::borrow_mut(&mut invitation_conf.invitation_records, sender());
         assert!(user_invitation_records.remaining_luckey_ticket >= amount, ErrorNoRemainingLuckeyTicket);
