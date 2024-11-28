@@ -1,7 +1,15 @@
 module invitation_record::invitation {
 
+    use std::option;
     use std::string::String;
-    use rooch_framework::simple_rng::rand_u64_range;
+    use std::vector;
+    use moveos_std::hash;
+    use rooch_framework::transaction;
+    use rooch_framework::transaction::TransactionSequenceInfo;
+    use moveos_std::timestamp;
+    use moveos_std::bcs;
+    use moveos_std::tx_context;
+    use rooch_framework::simple_rng::{rand_u64_range, bytes_to_u64};
     use moveos_std::timestamp::now_seconds;
     use moveos_std::table_vec;
     use moveos_std::table_vec::TableVec;
@@ -35,13 +43,15 @@ module invitation_record::invitation {
     const ErrorNoRemainingLuckeyTicket: u64 = 3;
 
     const ONE_RGAS: u256 = 1_00000000;
+    const ErrorInvalidArg: u64 = 0;
 
     struct UserInvitationRecords has key, store {
         invitation_records: Table<address, u256>,
         lottery_records: TableVec<LotteryInfo>,
         total_invitations: u64,
         remaining_luckey_ticket: u64,
-        total_claim_amount: u256,
+        invitation_reward_amount: u256,
+        lottery_reward_amount: u256,
     }
 
     struct LotteryInfo has store {
@@ -95,14 +105,15 @@ module invitation_record::invitation {
                 lottery_records: table_vec::new(),
                 total_invitations: 0u64,
                 remaining_luckey_ticket: 0u64,
-                total_claim_amount: 0u256,
+                invitation_reward_amount: 0u256,
+                lottery_reward_amount: 0u256,
             })
         };
         let user_invitation_records = table::borrow_mut(&mut invitation_conf.invitation_records, inviter);
         let invitation_amount = table::borrow_mut_with_default(&mut user_invitation_records.invitation_records, claimer, 0u256);
         *invitation_amount = *invitation_amount + invitation_conf.unit_invitation_amount;
         user_invitation_records.total_invitations = user_invitation_records.total_invitations + 1u64;
-        user_invitation_records.total_claim_amount = user_invitation_records.total_claim_amount + invitation_conf.unit_invitation_amount;
+        user_invitation_records.invitation_reward_amount = user_invitation_records.invitation_reward_amount + invitation_conf.unit_invitation_amount;
         user_invitation_records.remaining_luckey_ticket = user_invitation_records.remaining_luckey_ticket + 1u64;
         let rgas_coin = coin_store::withdraw(&mut invitation_conf.rgas_store, invitation_conf.unit_invitation_amount);
         account_coin_store::deposit<RGas>(inviter, rgas_coin);
@@ -121,14 +132,15 @@ module invitation_record::invitation {
                 lottery_records: table_vec::new(),
                 total_invitations: 0u64,
                 remaining_luckey_ticket: 0u64,
-                total_claim_amount: 0u256,
+                invitation_reward_amount: 0u256,
+                lottery_reward_amount: 0u256,
             })
         };
         let user_invitation_records = table::borrow_mut(&mut invitation_conf.invitation_records, inviter);
         let invitation_amount = table::borrow_mut_with_default(&mut user_invitation_records.invitation_records, claimer, 0u256);
         *invitation_amount = *invitation_amount + invitation_conf.unit_invitation_amount;
         user_invitation_records.total_invitations = user_invitation_records.total_invitations + 1u64;
-        user_invitation_records.total_claim_amount = user_invitation_records.total_claim_amount + invitation_conf.unit_invitation_amount;
+        user_invitation_records.invitation_reward_amount = user_invitation_records.invitation_reward_amount + invitation_conf.unit_invitation_amount;
         user_invitation_records.remaining_luckey_ticket = user_invitation_records.remaining_luckey_ticket + 1u64;
         let rgas_coin = coin_store::withdraw(&mut invitation_conf.rgas_store, invitation_conf.unit_invitation_amount);
         account_coin_store::deposit<RGas>(inviter, rgas_coin);
@@ -141,7 +153,7 @@ module invitation_record::invitation {
         let user_invitation_records = table::borrow_mut(&mut invitation_conf.invitation_records, sender());
         assert!(user_invitation_records.remaining_luckey_ticket >= amount, ErrorNoRemainingLuckeyTicket);
         while (amount > 0) {
-            let reward_amount = rand_u64_range(0, 1_0000000);
+            let reward_amount = rand_u64_range(10_000_000, 100_000_000, amount);
             if (reward_amount % 150 == 0) {
                 reward_amount = reward_amount * 1000
             };
@@ -152,6 +164,7 @@ module invitation_record::invitation {
                 reward_amount: (reward_amount as u256),
             });
             user_invitation_records.remaining_luckey_ticket = user_invitation_records.remaining_luckey_ticket - 1u64;
+            user_invitation_records.lottery_reward_amount = user_invitation_records.lottery_reward_amount + (reward_amount as u256);
             amount = amount - 1u64;
         }
     }
@@ -190,6 +203,58 @@ module invitation_record::invitation {
         coin_store::deposit(rgas_store, rgas_coin);
     }
 
+    fun seed(index: u64): vector<u8> {
+        // get sequence number
+        let sequence_number = tx_context::sequence_number();
+        let sequence_number_bytes = bcs::to_bytes(&sequence_number);
+
+        // get sender address
+        let sender_addr = tx_context::sender();
+        let sender_addr_bytes = bcs::to_bytes(&sender_addr);
+
+        // get now milliseconds timestamp
+        let timestamp_ms = timestamp::now_milliseconds();
+        let timestamp_ms_bytes = bcs::to_bytes(&timestamp_ms);
+
+        let index_bytes = bcs::to_bytes(&index);
+        // construct a seed
+        let seed_bytes = vector::empty<u8>();
+
+        // get the tx accumulator root if exists
+        let tx_sequence_info_opt = tx_context::get_attribute<TransactionSequenceInfo>();
+        if (option::is_some(&tx_sequence_info_opt)) {
+            let tx_sequence_info = option::extract(&mut tx_sequence_info_opt);
+            let tx_accumulator_root = transaction::tx_accumulator_root(&tx_sequence_info);
+            let tx_accumulator_root_bytes = bcs::to_bytes(&tx_accumulator_root);
+            vector::append(&mut seed_bytes, tx_accumulator_root_bytes);
+        } else {
+            // if it doesn't exist, get the tx hash
+            let tx_hash = tx_context::tx_hash();
+            let tx_hash_bytes = bcs::to_bytes(&tx_hash);
+            vector::append(&mut seed_bytes, tx_hash_bytes);
+        };
+
+        vector::append(&mut seed_bytes, timestamp_ms_bytes);
+        vector::append(&mut seed_bytes, sender_addr_bytes);
+        vector::append(&mut seed_bytes, sequence_number_bytes);
+        vector::append(&mut seed_bytes, index_bytes);
+        // hash seed bytes and return a seed
+        let seed = hash::sha3_256(seed_bytes);
+        seed
+    }
+
+    fun rand_u64_range(low: u64, high: u64, index: u64): u64 {
+        assert!(high > low, ErrorInvalidArg);
+        let value = rand_u64(index);
+        (value % (high - low)) + low
+    }
+
+    fun rand_u64(index: u64): u64 {
+        let seed_bytes = seed(index);
+        bytes_to_u64(seed_bytes)
+    }
+
+
         #[test(sender=@0x42)]
     fun test_claim_with_invitation(sender: &signer){
         bitcoin_move::genesis::init_for_test();
@@ -218,7 +283,7 @@ module invitation_record::invitation {
         let records = table::borrow(&invitation.invitation_records, @0x42);
         let invitation_user_record = table::borrow(&records.invitation_records, @0x43);
         assert!(invitation_user_record == &500000000, 1);
-        assert!(records.total_claim_amount == 500000000, 2);
+        assert!(records.invitation_reward_amount == 500000000, 2);
         assert!(records.total_invitations == 1, 3);
     }
 }
