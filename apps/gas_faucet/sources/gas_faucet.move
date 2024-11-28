@@ -65,8 +65,9 @@ module gas_faucet::gas_faucet {
       to_shared(faucet_obj)
     }
 
+
     /// Anyone can call this function to help the claimer claim the faucet
-    public entry fun claim(faucet_obj: &mut Object<RGasFaucet>, claimer: address, utxo_ids: vector<ObjectID>){      
+    public entry fun claim(faucet_obj: &mut Object<RGasFaucet>, claimer: address, utxo_ids: vector<ObjectID>){
       let claim_rgas_amount = Self::check_claim(faucet_obj, claimer, utxo_ids);
       let faucet = object::borrow_mut(faucet_obj);
       let rgas_coin = coin_store::withdraw(&mut faucet.rgas_store, claim_rgas_amount);
@@ -74,6 +75,9 @@ module gas_faucet::gas_faucet {
       let total_claim_amount = table::borrow_mut_with_default(&mut faucet.claim_records, claimer, 0u256);
       *total_claim_amount = *total_claim_amount + claim_rgas_amount;
     }
+
+
+
 
     public entry fun deposit_rgas_coin(
         account: &signer,
@@ -150,6 +154,8 @@ module gas_faucet::gas_faucet {
         faucet.is_open = true;
     }
 
+
+
     public entry fun set_allow_repeat(
         faucet_obj: &mut Object<RGasFaucet>,
         allow_repeat: bool,
@@ -188,6 +194,12 @@ module gas_faucet::gas_faucet {
         total_sat_amount = total_sat_amount + utxo::value(object::borrow(utxo_obj));
       });
       total_sat_amount
+    }
+
+    #[test_only]
+    /// init the genesis context for test
+    public fun init_for_test(sender: &signer){
+        init(sender)
     }
 
 }
