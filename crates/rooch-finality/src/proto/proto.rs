@@ -64,5 +64,5 @@ pub struct QueryBlockResponse {
     #[prost(message, optional, tag="1")]
     pub block: ::core::option::Option<BlockInfo>,
 }
-include!("proto.tonic.rs");
-// @@protoc_insertion_point(module)
+// include!("finaltitygadget_grpc.rs");
+// // @@protoc_insertion_point(module)

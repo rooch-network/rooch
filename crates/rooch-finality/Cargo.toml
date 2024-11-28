@@ -21,6 +21,8 @@ tracing = { workspace = true }
 prometheus = { workspace = true }
 function_name = { workspace = true }
 tonic = { workspace = true }
+tonic-build = { workspace = true }
+prost = { workspace = true }
 protobuf = { workspace = true }
 
 moveos-types = { workspace = true }
@@ -35,3 +37,6 @@ rooch-config = { workspace = true }
 rooch-db = { workspace = true }
 rooch-genesis = { workspace = true }
 rooch-event = { workspace = true }
+
+[build-dependencies]
+#tonic-build = { workspace = true }

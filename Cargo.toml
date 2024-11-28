@@ -346,8 +346,8 @@ ord = "0.18.5"
 sled = { version = "0.34.7" }
 scopeguard = "1.1"
 uuid = { version = "1.11.0", features = ["v4", "fast-rng"] }
-#protobuf = { version = "2.28", features = ["with-bytes"] }
-protobuf = { version = "3.7.1", features = ["with-bytes"] }
+protobuf = { version = "2.28", features = ["with-bytes"] }
+#protobuf = { version = "3.7.1", features = ["with-bytes"] }
 redb = { version = "2.1.1" }
 rocksdb = { git = "https://github.com/rooch-network/rust-rocksdb.git", rev = "41d102327ba3cf9a2335d1192e8312c92bc3d6f9", features = ["lz4", "mt_static"] }
 lz4 = { version = "1.28.0" }
@@ -361,6 +361,7 @@ vergen-pretty = "0.3.6"
 crossbeam-channel = "0.5.13"
 inferno = "0.11.21"
 handlebars = "4.2.2"
+tonic-build = { version = "0.12", features = ["prost", "transport"] }
 
 # Note: the BEGIN and END comments below are required for external tooling. Do not remove.
 # BEGIN MOVE DEPENDENCIES
