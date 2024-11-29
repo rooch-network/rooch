@@ -252,11 +252,39 @@ const Index = ({
     }, 100)
   }
 
+  const [isDarkMode, setIsDarkMode] = useState(false)
+
+  useEffect(() => {
+    const isDark = document.documentElement.classList.contains('dark')
+    setIsDarkMode(isDark)
+
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.attributeName === 'class') {
+          const isDark = document.documentElement.classList.contains('dark')
+          setIsDarkMode(isDark)
+        }
+      })
+    })
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class'],
+    })
+
+    return () => observer.disconnect()
+  }, [])
+
+  const getImagePath = (category: string, num: number) => {
+    const darkSuffix = isDarkMode ? '-dark' : ''
+    return `/home/${category}${darkSuffix}/${num}.svg`
+  }
+
   return (
     <>
       <div className="antialiased overflow-x-hidden">
         {/* HERO */}
-        <div className="mt-36 md:mt-36 flex flex-col items-center justify-center md:justify-center h-full px-4 sm:px-6 md:px-8 lg:px-20 dark:border-b dark:border-b-zinc-800 overflow-x-hidden">
+        <div className="mt-20 flex flex-col items-center justify-center md:justify-center h-full px-4 sm:px-6 md:px-8 lg:px-20 dark:border-b dark:border-b-zinc-800 overflow-x-hidden">
           <div
             style={{
               overflowX: 'hidden',
@@ -267,28 +295,28 @@ const Index = ({
               backgroundRepeat: 'no-repeat',
               width: '100%',
               height: '100vh',
-              position: 'absolute',
+              position: 'fixed',
               top: 0,
               left: 0,
               zIndex: -1,
             }}
           ></div>
           <div className="flex flex-col items-center justify-center w-full font-[Han] z-10">
-            <div className="mt-14 text-5xl md:text-5xl font-bold text-center text-black dark:text-[#EEEBEB]">
+            <div className="mt-8 text-5xl md:text-5xl font-bold text-center text-black dark:text-[#EEEBEB]">
               Build with Move
               <br />
               <div className="mt-4 flex items-center">
                 Build on{' '}
                 <div className="ml-5 flex items-center">
                   Bitc
-                  <img src="./home/coin.svg" alt="" />
+                  <img className="w-[30px] h-[30px] ml-1 mr-1" src="./home/coin.svg" alt="" />
                   in
                 </div>
               </div>
             </div>
-            <div className="mt-6 text-2xl text-center text-black dark:text-[#EAEAEA] max-w-3xl">
+            <div className="mt-6 text-2xl text-center text-black dark:text-[#EAEAEA] max-w-3xl font-[Kanit]">
               Rooch is a Bitcoin application layer solution that <br /> features MoveVM and Bitcoin
-              staking.
+              staking
             </div>
           </div>
           <div className="flex flex-col items-center justify-center w-full">
@@ -439,12 +467,12 @@ const Index = ({
         </div>
 
         {/* FEATURES */}
-        <div className="py-16 md:py-10 md:pt-0 px-4 sm:px-6 md:px-8 lg:px-20 bg-[#FFFFFF] dark:bg-inherit flex flex-col md:flex-col items-center justify-between gap-12 md:gap-8 dark:border-b dark:border-b-zinc-800">
+        <div className="py-16 md:py-10 md:pt-0 px-4 sm:px-6 md:px-8 lg:px-20 dark:bg-inherit flex flex-col md:flex-col items-center justify-between gap-12 md:gap-8 dark:border-b dark:border-b-zinc-800">
           <div className="flex flex-col items-center justify-center w-full font-['Han']">
             <div className="mt-14 text-5xl md:text-5xl font-bold text-center text-black dark:text-[#EEEBEB]">
               MoveVM
             </div>
-            <div className="mt-6 text-2xl text-center text-black dark:text-[#EAEAEA] max-w-3xl">
+            <div className="mt-6 text-2xl text-center text-black dark:text-[#EAEAEA] max-w-3xl font-[Kanit]">
               The best choice of VM for Bitcoin DApps
             </div>
           </div>
@@ -494,12 +522,12 @@ const Index = ({
         </div>
 
         {/* FEATURES */}
-        <div className="py-12 px-8 lg:px-20 bg-[#FFFFFF] dark:bg-inherit flex flex-col items-center justify-between gap-12 md:gap-8 dark:border-b dark:border-b-zinc-800">
+        <div className="py-12 px-8 lg:px-20 dark:bg-inherit flex flex-col items-center justify-between gap-12 md:gap-8 dark:border-b dark:border-b-zinc-800">
           <div className="flex flex-col items-center justify-center w-full font-['Han']">
             <div className="mt-14 text-5xl md:text-5xl font-bold text-center text-black dark:text-[#EEEBEB]">
               BTC Staking
             </div>
-            <div className="mt-6 text-2xl text-center text-black dark:text-[#EAEAEA] max-w-3xl">
+            <div className="mt-6 text-2xl text-center text-black dark:text-[#EAEAEA] max-w-3xl font-[Kanit]">
               Generate yield for users in a non-custodial manner,
               <br />
               compatible with Babylon protocol
@@ -574,7 +602,7 @@ const Index = ({
         </div>
 
         {/* EXPLORE */}
-        <div className="py-10 px-4 sm:px-6 md:px-8 lg:px-20 bg-white dark:bg-inherit flex flex-col md:flex-row items-center justify-center gap-6 md:gap-8 dark:border-b dark:border-b-zinc-800">
+        <div className="py-10 px-4 sm:px-6 md:px-8 lg:px-20 dark:bg-inherit flex flex-col md:flex-row items-center justify-center gap-6 md:gap-8 dark:border-b dark:border-b-zinc-800">
           <div className="w-full h-full flex items-center justify-center">
             <div className="flex flex-col gap-y-12 font-['Han'] text-center">
               <div className="text-3xl w-[318px] h-[150px] font-medium rounded-[28px] border-[#81B39F] border-[3px] flex items-center justify-center">
@@ -596,7 +624,7 @@ const Index = ({
                 {getImages(currentStart, INFRA_IMAGE_COUNT).map((num, index) => (
                   <img
                     key={`${num}-${index}`}
-                    src={`/home/infra/${num}.svg`}
+                    src={getImagePath('infra', num)}
                     className="w-[191px] flex-shrink-0"
                   />
                 ))}
@@ -611,7 +639,7 @@ const Index = ({
                   {getImages(btcStart, BTC_IMAGE_COUNT).map((num, index) => (
                     <img
                       key={`btc-${num}-${index}`}
-                      src={`/home/btc/${num}.svg`}
+                      src={getImagePath('btc', num)}
                       className="w-[191px] flex-shrink-0"
                     />
                   ))}
@@ -627,7 +655,7 @@ const Index = ({
                   {getImages(moveStart, MOVE_IMAGE_COUNT).map((num, index) => (
                     <img
                       key={`move-${num}-${index}`}
-                      src={`/home/move/${num}.svg`}
+                      src={getImagePath('move', num)}
                       className="w-[191px] flex-shrink-0"
                     />
                   ))}
