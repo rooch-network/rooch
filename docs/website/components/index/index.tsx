@@ -711,7 +711,7 @@ const Index = ({
                 />
               </div>
               <div className="flex flex-col items-start p-6">
-                <div className="text-base font-normal font-[Kanit]">9th Sep,2024</div>
+                <div className="text-base font-normal font-[Kanit]">9th Sep, 2024</div>
                 <div className="w-[80%] text-4xl mt-6 font-normal font-[Kanit]">
                   Unveiling Rooch Pre-Mainnet: A New Era for Bitcoin Applications
                 </div>
@@ -733,7 +733,7 @@ const Index = ({
                     alt="blog-1"
                     className="w-full rounded-xl object-cover"
                   />
-                  <div className="text-base font-normal mt-2 font-[Kanit]">9th Sep, 2024</div>
+                  <div className="text-base font-normal mt-2 font-[Kanit]">24th Apr, 2024</div>
                 </div>
                 <div className="w-[60%] h-full flex flex-col justify-between ml-4">
                   <div className="text-2xl font-normal font-[Kanit]">
@@ -756,7 +756,7 @@ const Index = ({
                     alt="blog-2"
                     className="w-full rounded-xl object-cover"
                   />
-                  <div className="text-base font-normal mt-2">9th Sep, 2024</div>
+                  <div className="text-base font-normal mt-2">13th Jun, 2024</div>
                 </div>
                 <div className="w-[60%] h-full flex flex-col justify-between ml-4">
                   <div className="text-2xl font-normal">The Sprouting of Rooch</div>
@@ -777,7 +777,7 @@ const Index = ({
                     alt="blog-3"
                     className="w-full rounded-xl object-cover"
                   />
-                  <div className="text-base font-normal mt-2">9th Sep, 2024</div>
+                  <div className="text-base font-normal mt-2">14th Nov, 2024</div>
                 </div>
                 <div className="w-[60%] h-full flex flex-col justify-between ml-4">
                   <div className="text-2xl font-normal">
