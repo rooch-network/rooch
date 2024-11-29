@@ -22,7 +22,7 @@ export abstract class ThirdPartyAddress implements Address {
     return this.rawAddress
   }
 
-  toSortStrAddress(address: string | null | undefined, start = 6, end = 4): string {
+  toSortStr(address: string | null | undefined, start = 6, end = 4): string {
     try {
       if (!address) {
         return ''
