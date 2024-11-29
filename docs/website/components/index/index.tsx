@@ -698,7 +698,7 @@ const Index = ({
           </div>
           <div className="w-full flex items-center justify-center font-[Kanit]">
             <div
-              className="w-[45%] h-[586px] border-2 border-[#036840] rounded-[15px] cursor-pointer bg-white"
+              className="w-[45%] h-[586px] border-2 border-[#036840] rounded-[15px] cursor-pointer bg-white dark:bg-inherit"
               onClick={() => {
                 window.open('https://rooch.network/blog/unveiling-rooch-pre-mainnet', '_blank')
               }}
@@ -719,7 +719,7 @@ const Index = ({
             </div>
             <div className="w-[45%] flex flex-col gap-y-2 ml-12">
               <div
-                className="w-full h-[190px] border-2 border-[#036840] rounded-[15px] flex p-6 cursor-pointer bg-white"
+                className="w-full h-[190px] border-2 border-[#036840] rounded-[15px] flex p-6 cursor-pointer bg-white dark:bg-inherit"
                 onClick={() => {
                   window.open(
                     'https://rooch.network/blog/the-application-layer-of-bitcoin',
@@ -745,7 +745,7 @@ const Index = ({
                 </div>
               </div>
               <div
-                className="w-full h-[190px] border-2 border-[#036840] rounded-[15px] flex p-6 cursor-pointer bg-white"
+                className="w-full h-[190px] border-2 border-[#036840] rounded-[15px] flex p-6 cursor-pointer bg-white dark:bg-inherit"
                 onClick={() => {
                   window.open('https://rooch.network/blog/sprouting-of-rooch', '_blank')
                 }}
@@ -766,7 +766,7 @@ const Index = ({
                 </div>
               </div>
               <div
-                className="w-full h-[190px] border-2 border-[#036840] rounded-[15px] flex p-6 cursor-pointer bg-white"
+                className="w-full h-[190px] border-2 border-[#036840] rounded-[15px] flex p-6 cursor-pointer bg-white dark:bg-inherit"
                 onClick={() => {
                   window.open('https://rooch.network/blog/bug-bounty2', '_blank')
                 }}
