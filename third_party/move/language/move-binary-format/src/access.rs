@@ -66,6 +66,19 @@ pub trait ModuleAccess: Sync {
         handle
     }
 
+    fn variant_field_handle_at(&self, idx: VariantFieldHandleIndex) -> &VariantFieldHandle {
+        let handle = &self.as_module().variant_field_handles[idx.into_index()];
+        debug_assert!(handle.struct_index.into_index() < self.as_module().struct_defs.len()); // invariant
+
+        handle
+    }
+
+    fn struct_variant_handle_at(&self, idx: StructVariantHandleIndex) -> &StructVariantHandle {
+        let handle = &self.as_module().struct_variant_handles[idx.into_index()];
+        debug_assert!(handle.struct_index.into_index() < self.as_module().struct_defs.len()); // invariant
+        handle
+    }
+
     fn struct_instantiation_at(&self, idx: StructDefInstantiationIndex) -> &StructDefInstantiation {
         &self.as_module().struct_def_instantiations[idx.into_index()]
     }
@@ -76,6 +89,20 @@ pub trait ModuleAccess: Sync {
 
     fn field_instantiation_at(&self, idx: FieldInstantiationIndex) -> &FieldInstantiation {
         &self.as_module().field_instantiations[idx.into_index()]
+    }
+
+    fn variant_field_instantiation_at(
+        &self,
+        idx: VariantFieldInstantiationIndex,
+    ) -> &VariantFieldInstantiation {
+        &self.as_module().variant_field_instantiations[idx.into_index()]
+    }
+
+    fn struct_variant_instantiation_at(
+        &self,
+        idx: StructVariantInstantiationIndex,
+    ) -> &StructVariantInstantiation {
+        &self.as_module().struct_variant_instantiations[idx.into_index()]
     }
 
     fn signature_at(&self, idx: SignatureIndex) -> &Signature {
