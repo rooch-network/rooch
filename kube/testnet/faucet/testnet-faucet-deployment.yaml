@@ -15,7 +15,7 @@ spec:
     spec:
       initContainers:
       - name: init-rooch
-        image: ghcr.io/rooch-network/rooch:main
+        image: ghcr.io/rooch-network/rooch:v0.8.0
         command: ["/bin/sh", "-c"]
         args:
         - |
@@ -39,7 +39,7 @@ spec:
           mountPath: /root
       containers:
       - name: rooch-faucet
-        image: ghcr.io/rooch-network/rooch:main
+        image: ghcr.io/rooch-network/rooch:v0.8.0
         command: ["/rooch/rooch"]
         args: 
         - "faucet"

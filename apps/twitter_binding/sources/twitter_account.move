@@ -20,7 +20,7 @@ module twitter_binding::twitter_account {
 
     const TWITTER_ACCOUNT_BINDING_MESSAGE_PREFIX: vector<u8> = b"BTC:";
     const TWITTER_ACCOUNT_BINDING_HASH_TAG: vector<u8> = b"RoochNetwork";
-    const ADDRESS_SPLIT_CHARS: vector<u8> = b" #,.";
+    const ADDRESS_SPLIT_CHARS: vector<u8> = b" #,.\n\r";
 
     const BITCOIN_TAPROOT_ADDRESS_PREFIX_MAINNET: vector<u8> = b"bc1";
 
@@ -385,5 +385,20 @@ module twitter_binding::twitter_account {
         unbinding_twitter_account_internal(expect_owner_address);
         let author_address_opt = resolve_address_by_author_id(author_id);
         assert!(option::is_none(&author_address_opt), 6);
+    }
+
+    #[test]
+    fun test_get_bitcoin_address_from_tweet_text(){
+        let text = b"BTC:bc1p72fvqwm9w4wcsd205maky9qejf6dwa6qeku5f5vnu4phpp3vvpws0p2f4g hello";
+        let bitcoin_address_str = get_bitcoin_address_from_tweet_text(&text);
+        assert!(bitcoin_address_str == b"bc1p72fvqwm9w4wcsd205maky9qejf6dwa6qeku5f5vnu4phpp3vvpws0p2f4g", 1);
+
+        let text = b"BTC:bc1p72fvqwm9w4wcsd205maky9qejf6dwa6qeku5f5vnu4phpp3vvpws0p2f4g\nabcd";
+        let bitcoin_address_str = get_bitcoin_address_from_tweet_text(&text);
+        assert!(bitcoin_address_str == b"bc1p72fvqwm9w4wcsd205maky9qejf6dwa6qeku5f5vnu4phpp3vvpws0p2f4g", 2);
+
+        let text = b"BTC:bc1p72fvqwm9w4wcsd205maky9qejf6dwa6qeku5f5vnu4phpp3vvpws0p2f4g.";
+        let bitcoin_address_str = get_bitcoin_address_from_tweet_text(&text);
+        assert!(bitcoin_address_str == b"bc1p72fvqwm9w4wcsd205maky9qejf6dwa6qeku5f5vnu4phpp3vvpws0p2f4g", 3);
     }
 }

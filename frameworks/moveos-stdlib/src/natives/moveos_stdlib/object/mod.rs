@@ -52,8 +52,8 @@ impl CommonGasParameters {
 pub(crate) fn pop_object_id(args: &mut VecDeque<Value>) -> PartialVMResult<ObjectID> {
     let handle = args.pop_back().unwrap();
     ObjectID::from_runtime_value(handle).map_err(|e| {
-        if log::log_enabled!(log::Level::Debug) {
-            log::warn!("[ObjectRuntime] get_object_id: {:?}", e);
+        if tracing::enabled!(tracing::Level::DEBUG) {
+            tracing::warn!("[ObjectRuntime] get_object_id: {:?}", e);
         }
         PartialVMError::new(StatusCode::TYPE_RESOLUTION_FAILURE).with_message(e.to_string())
     })
@@ -67,7 +67,7 @@ pub(crate) fn read_object_id(value: &Value) -> PartialVMResult<ObjectID> {
 }
 
 pub(crate) fn partial_extension_error(msg: impl ToString) -> PartialVMError {
-    log::debug!("PartialVMError: {}", msg.to_string());
+    tracing::debug!("PartialVMError: {}", msg.to_string());
     PartialVMError::new(StatusCode::VM_EXTENSION_ERROR).with_message(msg.to_string())
 }
 
@@ -82,8 +82,8 @@ pub(crate) fn error_to_abort_code(err: PartialVMError) -> u64 {
         StatusCode::ABORTED => err.sub_status().unwrap_or(ERROR_OBJECT_RUNTIME_ERROR),
         _ => ERROR_OBJECT_RUNTIME_ERROR,
     };
-    if log::log_enabled!(log::Level::Debug) {
-        log::warn!(
+    if tracing::enabled!(tracing::Level::DEBUG) {
+        tracing::warn!(
             "[ObjectRuntime] error err: {:?}, abort: {}",
             err,
             abort_code

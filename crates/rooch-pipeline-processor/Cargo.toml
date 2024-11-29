@@ -14,23 +14,23 @@ rust-version = { workspace = true }
 [dependencies]
 anyhow = { workspace = true }
 async-trait = { workspace = true }
+bcs = { workspace = true }
+bitcoin = { workspace = true }
 coerce = { workspace = true }
-log = { workspace = true }
+function_name = { workspace = true }
+hex = { workspace = true }
 tracing = { workspace = true }
 prometheus = { workspace = true }
-function_name = { workspace = true }
 
-
-moveos-types = { workspace = true }
 moveos = { workspace = true }
 metrics = { workspace = true }
+moveos-types = { workspace = true }
 
-rooch-types = { workspace = true }
-rooch-sequencer = { workspace = true }
-rooch-executor = { workspace = true }
-rooch-proposer = { workspace = true }
-rooch-indexer = { workspace = true }
-rooch-event = { workspace = true }
+bitcoin-client = { workspace = true }
+rooch-da = { workspace = true }
 rooch-db = { workspace = true }
-hex = { workspace = true }
-bcs = { workspace = true }
+rooch-executor = { workspace = true }
+rooch-event = { workspace = true }
+rooch-indexer = { workspace = true }
+rooch-sequencer = { workspace = true }
+rooch-types = { workspace = true }

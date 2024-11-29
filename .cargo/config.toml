@@ -14,7 +14,19 @@ rustflags = [
     "-C",
     "force-unwind-tables=yes",
     "-C",
-    "link-arg=/STACK:8000000" # Set stack to 8 MB
+    "link-arg=/STACK:8000000", # Set stack to 8 MB
+    # force static linking for the rocksdb and bitcoinconsensus crates
+    "-Ctarget-feature=+crt-static",
+    "-Clink-args=/DEFAULTLIB:libcmt.lib",
+    "-Clink-args=/DEFAULTLIB:libvcruntime.lib",
+    "-Clink-args=/DEFAULTLIB:libucrt.lib",
+    "-Clink-args=/DEFAULTLIB:oldnames.lib",
+    "-Clink-args=/DEFAULTLIB:legacy_stdio_definitions.lib",
+    "-Clink-args=/NODEFAULTLIB:msvcrt.lib",
+    "-Clink-args=/NODEFAULTLIB:msvcrtd.lib",
+    "-Clink-args=/NODEFAULTLIB:libcmtd.lib",
+    "-Clink-args=/NODEFAULTLIB:vcruntime.lib",
+    "-Clink-args=/NODEFAULTLIB:vcruntimed.lib"
 ]
 
 [alias]

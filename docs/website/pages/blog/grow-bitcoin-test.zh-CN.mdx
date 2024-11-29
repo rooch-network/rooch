@@ -1,0 +1,80 @@
+---
+title: 'Grow Bitcoin 测试网使用指南'
+description: ""
+author: geometryolife
+category: Developer
+date: 2024/11/21
+---
+
+import PostHeader from "/components/blog/postHeader";
+
+<PostHeader />
+
+## 简介
+
+Grow Bitcoin 是一个生态系统加速平台，专注于将比特币用户和利益相关者与项目连接起来。 Grow Bitcoin 由 Rooch Network 团队运营。
+
+作为比特币质押者或用户，您可以通过为您喜欢的项目投票来赚取 BitXP 和项目 XP，以您的比特币作为质押，但根本无需移动您的比特币。
+
+作为比特币项目建设者，您可以自由地在Grow Bitcoin平台上列出您的项目，并获得潜在比特币用户的关注；用户将用他们的选票支持您的项目，并且选票越多，您也可以获得 BitXP！
+
+- 访问链接：https://test-grow.rooch.network
+
+## 连接钱包
+
+![](/blog/grow-bitcoin/grow-connect-wallet.png)
+
+点击 `Connect Wallet` 按钮来连接 UniSat 钱包，进行后续交互。
+
+![](/blog/grow-bitcoin/choose-unisat.png)
+
+点击 `Connect` 按钮，授权。
+
+![](/blog/grow-bitcoin/authorization.png)
+
+## 交互
+
+首先获取，Rooch 的 Gas 和 BTC 测试币。
+
+- `Rooch Gas Coin` ，参考 https://rooch.network/zh-CN/build/getting-started/get-gas-coin
+- `tBTC`，参考 https://rooch.network/zh-CN/build/getting-started/get-test-btc
+
+### 质押 BTC 资产
+
+这里介绍如何质押自己钱包中的 `BTC` 资产，并获取 `GROW` 资产的方式。
+
+点击 Self Staking 中的 `Stake` 按钮，就能进入质押页面。
+
+![](/blog/grow-bitcoin/self-staking.png)
+
+在质押页面里选择要质押的 `UTXO`，并点击 `Stake` 按钮，就可以质押 `BTC` 了。
+
+![](/blog/grow-bitcoin/self-staking-choose.png)
+
+如果没有创建过 Session Key，则会提示你先创建 Session Key，此时你需要签名：
+
+![](/blog/grow-bitcoin/create-session-key.png)
+
+点击 `Sign` 按钮授权：
+
+![](/blog/grow-bitcoin/session-key-sign.png)
+
+等待一段时间，就可以就可以收取获得质押奖励了。
+
+![](/blog/grow-bitcoin/claim.png)
+
+索取 `GROW` 奖励之后，可以点击 `unStake` 按钮来解除 `BTC` 质押。
+
+![](/blog/grow-bitcoin/unstake.png)
+
+### 查看资产
+
+我们可以在 `My Portfolio` 页面查看 `GROW` 资产以及其他资产信息。
+
+![](/blog/grow-bitcoin/my-portfolio.png)
+
+`$GROW Balance` 展示的是我所获得的 `GROW` 资产值，`$RGAS Balance` 展示的是 `UTXO` 的数量。
+
+## 即将上线的质押模式
+
+`Babylon Staking` 和 `LST/LRT Staking` 即将推出，敬请期待！

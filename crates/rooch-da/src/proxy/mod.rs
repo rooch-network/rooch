@@ -1,11 +1,10 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::actor::messages::{GetServerStatusMessage, PutDABatchMessage};
+use crate::actor::messages::{AppendTransactionMessage, GetServerStatusMessage};
 use crate::actor::server::DAServerActor;
 use coerce::actor::ActorRef;
-use rooch_types::da::batch::SignedDABatchMeta;
-use rooch_types::da::state::DAServerStatus;
+use rooch_types::da::status::DAServerStatus;
 
 #[derive(Clone)]
 pub struct DAServerProxy {
@@ -21,7 +20,7 @@ impl DAServerProxy {
         self.actor.send(GetServerStatusMessage {}).await?
     }
 
-    pub async fn pub_batch(&self, msg: PutDABatchMessage) -> anyhow::Result<SignedDABatchMeta> {
+    pub async fn append_tx(&self, msg: AppendTransactionMessage) -> anyhow::Result<()> {
         self.actor.send(msg).await?
     }
 }

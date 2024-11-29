@@ -9,6 +9,7 @@ import { useTabs } from 'src/hooks/use-tabs';
 
 import { DashboardContent } from 'src/layouts/dashboard';
 
+import { useCurrentNetwork } from '@roochnetwork/rooch-sdk-kit'
 import NFTList from './components/nft-list-card';
 import UTXOList from './components/utxo-list-card';
 import OrdinalList from './components/ordinal-list-card';
@@ -24,12 +25,13 @@ const ASSETS_VIEW_TABS = [
 
 export function AssetsView({ address }: { address: string }) {
   const tabs = useTabs('coin');
+  const network = useCurrentNetwork()
 
   useAddressChanged({ address, path: 'assets' });
 
   const renderTabs = (
     <Tabs value={tabs.value} onChange={tabs.onChange} sx={{ mb: { xs: 1, md: 1 } }}>
-      {ASSETS_VIEW_TABS.map((tab) => (
+      {ASSETS_VIEW_TABS.filter((item) => !(network === 'mainnet' && item.label === 'NFT')).map((tab) => (
         <Tab key={tab.value} value={tab.value} label={tab.label} />
       ))}
     </Tabs>

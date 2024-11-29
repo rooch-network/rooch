@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::natives::helpers;
-use log::info;
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_core_types::account_address::AccountAddress;
 use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte, NumBytes};
@@ -21,6 +20,7 @@ use primitive_types::U256 as PrimitiveU256;
 use rlp::{self, Rlp, RlpStream};
 use smallvec::smallvec;
 use std::{collections::VecDeque, sync::Arc};
+use tracing::info;
 
 use crate::natives::helpers::make_module_natives;
 

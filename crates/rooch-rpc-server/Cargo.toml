@@ -24,7 +24,6 @@ tower-http = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 axum = { workspace = true }
-log = { workspace = true }
 prometheus = { workspace = true }
 bitcoincore-rpc = { workspace = true }
 tokio = { workspace = true }
@@ -40,6 +39,7 @@ moveos-eventbus = { workspace = true }
 raw-store = { workspace = true }
 metrics = { workspace = true }
 
+bitcoin-client = { workspace = true }
 rooch-config = { workspace = true }
 rooch-types = { workspace = true }
 rooch-executor = { workspace = true }

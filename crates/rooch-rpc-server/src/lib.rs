@@ -11,6 +11,8 @@ use crate::service::metrics::ServiceMetrics;
 use crate::service::rpc_service::RpcService;
 use anyhow::{ensure, Error, Result};
 use axum::http::{HeaderValue, Method};
+use bitcoin_client::actor::client::BitcoinClientConfig;
+use bitcoin_client::proxy::BitcoinClientProxy;
 use coerce::actor::scheduler::timer::Timer;
 use coerce::actor::{system::ActorSystem, IntoActor};
 use jsonrpsee::RpcModule;
@@ -18,6 +20,7 @@ use moveos_eventbus::bus::EventBus;
 use raw_store::errors::RawStoreError;
 use rooch_config::da_config::derive_genesis_namespace;
 use rooch_config::server_config::ServerConfig;
+use rooch_config::settings::PROPOSER_CHECK_INTERVAL;
 use rooch_config::{RoochOpt, ServerOpt};
 use rooch_da::actor::server::DAServerActor;
 use rooch_da::proxy::DAServerProxy;
@@ -34,9 +37,6 @@ use rooch_pipeline_processor::actor::processor::PipelineProcessorActor;
 use rooch_pipeline_processor::proxy::PipelineProcessorProxy;
 use rooch_proposer::actor::messages::ProposeBlock;
 use rooch_proposer::actor::proposer::ProposerActor;
-use rooch_proposer::proxy::ProposerProxy;
-use rooch_relayer::actor::bitcoin_client::BitcoinClientActor;
-use rooch_relayer::actor::bitcoin_client_proxy::BitcoinClientProxy;
 use rooch_relayer::actor::messages::RelayTick;
 use rooch_relayer::actor::relayer::RelayerActor;
 use rooch_rpc_api::api::RoochRpcModule;
@@ -148,7 +148,7 @@ pub async fn start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Server
         Ok(server_handle) => Ok(server_handle),
         Err(e) => match e.downcast::<GenesisError>() {
             Ok(e) => {
-                log::error!(
+                tracing::error!(
                     "{:?}, please clean your data dir. `rooch server clean -n {}` ",
                     e,
                     chain_name
@@ -157,7 +157,7 @@ pub async fn start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Server
             }
             Err(e) => match e.downcast::<RawStoreError>() {
                 Ok(e) => {
-                    log::error!(
+                    tracing::error!(
                         "{:?}, please clean your data dir. `rooch server clean -n {}` ",
                         e,
                         chain_name
@@ -165,7 +165,7 @@ pub async fn start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Server
                     std::process::exit(R_EXIT_CODE_NEED_HELP);
                 }
                 Err(e) => {
-                    log::error!("{:?}, server start fail. ", e);
+                    tracing::error!("{:?}, server start fail. ", e);
                     std::process::exit(R_EXIT_CODE_NEED_HELP);
                 }
             },
@@ -306,7 +306,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         DAServerActor::new(
             da_config,
             sequencer_keypair.copy(),
-            rooch_store,
+            rooch_store.clone(),
             genesis_namespace,
         )
         .await?
@@ -319,12 +319,17 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     let proposer_keypair = server_opt.proposer_keypair.unwrap();
     let proposer_account: RoochAddress = proposer_keypair.public().rooch_address()?;
     info!("RPC Server proposer address: {:?}", proposer_account);
-    let proposer = ProposerActor::new(proposer_keypair, da_proxy.clone(), &prometheus_registry)
-        .into_actor(Some("Proposer"), &actor_system)
-        .await?;
-    let proposer_proxy = ProposerProxy::new(proposer.clone().into());
-    //TODO load from config
-    let block_propose_duration_in_seconds: u64 = 600;
+    let proposer = ProposerActor::new(
+        proposer_keypair,
+        moveos_store,
+        rooch_store,
+        &prometheus_registry,
+        opt.proposer.clone(),
+    )?
+    .into_actor(Some("Proposer"), &actor_system)
+    .await?;
+    let block_propose_duration_in_seconds: u64 =
+        opt.proposer.interval.unwrap_or(PROPOSER_CHECK_INTERVAL);
     let mut timers = vec![];
     let proposer_timer = Timer::start(
         proposer,
@@ -341,16 +346,35 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         .into_actor(Some("IndexerReader"), &actor_system)
         .await?;
     let indexer_proxy = IndexerProxy::new(indexer_executor.into(), indexer_reader_executor.into());
+    let bitcoin_relayer_config = opt.bitcoin_relayer_config();
+    let bitcoin_client_config = bitcoin_relayer_config
+        .as_ref()
+        .map(|config| BitcoinClientConfig {
+            btc_rpc_url: config.btc_rpc_url.clone(),
+            btc_rpc_user_name: config.btc_rpc_user_name.clone(),
+            btc_rpc_password: config.btc_rpc_password.clone(),
+        });
+    let bitcoin_client_proxy = if service_status.is_active() && bitcoin_client_config.is_some() {
+        let bitcoin_client = bitcoin_client_config.unwrap().build()?;
+        let bitcoin_client_actor_ref = bitcoin_client
+            .into_actor(Some("bitcoin_client_for_rpc_service"), &actor_system)
+            .await?;
+        let bitcoin_client_proxy = BitcoinClientProxy::new(bitcoin_client_actor_ref.into());
+        Some(bitcoin_client_proxy)
+    } else {
+        None
+    };
 
     let mut processor = PipelineProcessorActor::new(
         executor_proxy.clone(),
         sequencer_proxy.clone(),
-        proposer_proxy.clone(),
+        da_proxy.clone(),
         indexer_proxy.clone(),
         service_status,
         &prometheus_registry,
         Some(event_actor_ref.clone()),
         rooch_db,
+        bitcoin_client_proxy.clone(),
     );
 
     // Only process sequenced tx on startup when service is active
@@ -363,7 +387,6 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     let processor_proxy = PipelineProcessorProxy::new(processor_actor.into());
 
     let ethereum_relayer_config = opt.ethereum_relayer_config();
-    let bitcoin_relayer_config = opt.bitcoin_relayer_config();
 
     if service_status.is_active()
         && (ethereum_relayer_config.is_some() || bitcoin_relayer_config.is_some())
@@ -386,22 +409,6 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         );
         timers.push(relayer_timer);
     }
-
-    let bitcoin_client_proxy = if service_status.is_active() && bitcoin_relayer_config.is_some() {
-        let bitcoin_config = bitcoin_relayer_config.unwrap();
-        let bitcoin_client = BitcoinClientActor::new(
-            &bitcoin_config.btc_rpc_url,
-            &bitcoin_config.btc_rpc_user_name,
-            &bitcoin_config.btc_rpc_password,
-        )?;
-        let bitcoin_client_actor_ref = bitcoin_client
-            .into_actor(Some("bitcoin_client_for_rpc_service"), &actor_system)
-            .await?;
-        let bitcoin_client_proxy = BitcoinClientProxy::new(bitcoin_client_actor_ref.into());
-        Some(bitcoin_client_proxy)
-    } else {
-        None
-    };
 
     let rpc_service = RpcService::new(
         network.chain_id.id,
@@ -439,14 +446,14 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         broadcast::channel(16);
 
     let traffic_burst_size: u32;
-    let traffic_per_second: u64;
+    let traffic_per_second: f64;
 
     if network.chain_id != BuiltinChainID::Local.chain_id() {
-        traffic_burst_size = opt.traffic_burst_size.unwrap_or(100);
-        traffic_per_second = opt.traffic_per_second.unwrap_or(1);
+        traffic_burst_size = opt.traffic_burst_size.unwrap_or(200);
+        traffic_per_second = opt.traffic_per_second.unwrap_or(0.1f64);
     } else {
         traffic_burst_size = opt.traffic_burst_size.unwrap_or(5000);
-        traffic_per_second = opt.traffic_per_second.unwrap_or(1);
+        traffic_per_second = opt.traffic_per_second.unwrap_or(0.001f64);
     };
 
     // init limit
@@ -458,7 +465,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         GovernorConfigBuilder::default()
             .key_extractor(SmartIpKeyExtractor)
             .use_headers()
-            .per_second(traffic_per_second)
+            .per_millisecond((traffic_per_second * 1000f64) as u64)
             .burst_size(traffic_burst_size)
             .use_headers()
             .error_handler(move |error1| ErrorHandler::default().0(error1))

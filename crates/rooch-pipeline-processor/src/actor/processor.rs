@@ -7,18 +7,22 @@ use super::messages::{
 use crate::metrics::PipelineProcessorMetrics;
 use anyhow::{Error, Result};
 use async_trait::async_trait;
+use bitcoin::hashes::Hash;
+use bitcoin_client::proxy::BitcoinClientProxy;
 use coerce::actor::{context::ActorContext, message::Handler, Actor, LocalActorRef};
 use function_name::named;
 use moveos::moveos::VMPanicError;
 use moveos_types::state::StateChangeSetExt;
 use moveos_types::transaction::VerifiedMoveOSTransaction;
 use prometheus::Registry;
+use rooch_da::actor::messages::AppendTransactionMessage;
+use rooch_da::proxy::DAServerProxy;
 use rooch_db::RoochDB;
 use rooch_event::actor::{EventActor, UpdateServiceStatusMessage};
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_indexer::proxy::IndexerProxy;
-use rooch_proposer::proxy::ProposerProxy;
 use rooch_sequencer::proxy::SequencerProxy;
+use rooch_types::bitcoin::types::Block as BitcoinBlock;
 use rooch_types::{
     service_status::ServiceStatus,
     transaction::{
@@ -33,34 +37,37 @@ use tracing::{debug, info};
 pub struct PipelineProcessorActor {
     pub(crate) executor: ExecutorProxy,
     pub(crate) sequencer: SequencerProxy,
-    pub(crate) proposer: ProposerProxy,
+    pub(crate) da_server: DAServerProxy,
     pub(crate) indexer: IndexerProxy,
     pub(crate) service_status: ServiceStatus,
     pub(crate) metrics: Arc<PipelineProcessorMetrics>,
     event_actor: Option<LocalActorRef<EventActor>>,
     rooch_db: RoochDB,
+    bitcoin_client_proxy: Option<BitcoinClientProxy>,
 }
 
 impl PipelineProcessorActor {
     pub fn new(
         executor: ExecutorProxy,
         sequencer: SequencerProxy,
-        proposer: ProposerProxy,
+        da_server: DAServerProxy,
         indexer: IndexerProxy,
         service_status: ServiceStatus,
         registry: &Registry,
         event_actor: Option<LocalActorRef<EventActor>>,
         rooch_db: RoochDB,
+        bitcoin_client_proxy: Option<BitcoinClientProxy>,
     ) -> Self {
         Self {
             executor,
             sequencer,
-            proposer,
+            da_server,
             indexer,
             service_status,
             metrics: Arc::new(PipelineProcessorMetrics::new(registry)),
             event_actor,
             rooch_db,
+            bitcoin_client_proxy,
         }
     }
 
@@ -108,9 +115,30 @@ impl PipelineProcessorActor {
                 .await?
                 .ok_or_else(|| anyhow::anyhow!("The tx with hash {} should exists", tx_hash))?;
             match &ledger_tx.data {
-                LedgerTxData::L1Block(_block) => {
-                    //TODO how to get the L1BlockWithBody
-                    unimplemented!("L1Block tx not support")
+                LedgerTxData::L1Block(block) => {
+                    debug!("process_sequenced_tx_on_startup l1_block_tx: {:?}", block);
+                    match &self.bitcoin_client_proxy {
+                        Some(bitcoin_client_proxy) => {
+                            let block_hash_vec = block.block_hash.clone();
+                            let block_hash =
+                                bitcoin::block::BlockHash::from_slice(&block_hash_vec)?;
+                            let btc_block = bitcoin_client_proxy.get_block(block_hash).await?;
+                            let block_body = BitcoinBlock::from(btc_block);
+                            let moveos_tx = self
+                                .executor
+                                .validate_l1_block(L1BlockWithBody::new(
+                                    block.clone(),
+                                    block_body.encode(),
+                                ))
+                                .await?;
+                            self.execute_tx(ledger_tx.clone(), moveos_tx).await?;
+                        }
+                        None => {
+                            return Err(anyhow::anyhow!(
+                                "The bitcoin client proxy should be initialized before processing the sequenced l1_block_tx(block: {:?} on startup", block
+                            ));
+                        }
+                    }
                 }
                 LedgerTxData::L1Tx(l1_tx) => {
                     debug!("process_sequenced_tx_on_startup l1_tx: {:?}", l1_tx);
@@ -150,7 +178,7 @@ impl PipelineProcessorActor {
             Ok(v) => v,
             Err(err) => {
                 if is_vm_panic_error(&err) {
-                    log::error!(
+                    tracing::error!(
                         "Execute L1 Block failed while VM panic occurred then \
                         set service to Maintenance mode and pause the relayer. error: {:?}, block {}, tx order {}",
                         err, block_height, tx_order
@@ -194,7 +222,7 @@ impl PipelineProcessorActor {
             Ok(v) => v,
             Err(err) => {
                 if is_vm_panic_error(&err) {
-                    log::error!(
+                    tracing::error!(
                         "Execute L1 Tx failed while VM panic occurred then \
                         set service to Maintenance mode and pause the relayer. error: {:?}, tx order {}",
                         err, tx_order
@@ -248,7 +276,7 @@ impl PipelineProcessorActor {
             Err(err) => {
                 if is_vm_panic_error(&err) {
                     let l2_tx_bcs_bytes = bcs::to_bytes(&tx)?;
-                    log::error!(
+                    tracing::error!(
                         "Execute L2 Tx failed while VM panic occurred and revert tx. error: {:?} tx info {}",
                         err, hex::encode(l2_tx_bcs_bytes)
                     );
@@ -289,8 +317,11 @@ impl PipelineProcessorActor {
         // Then execute
         let size = moveos_tx.ctx.tx_size;
         let (output, execution_info) = self.executor.execute_transaction(moveos_tx.clone()).await?;
-        self.proposer
-            .propose_transaction(tx.clone(), execution_info.clone())
+        self.da_server
+            .append_tx(AppendTransactionMessage {
+                tx_order: tx.sequence_info.tx_order,
+                tx_timestamp: tx.sequence_info.tx_timestamp,
+            })
             .await?;
         let root = execution_info.root_metadata();
         // Sync latest state root from writer executor to reader executor
@@ -323,7 +354,7 @@ impl PipelineProcessorActor {
                 .await;
             match result {
                 Ok(_) => {}
-                Err(error) => log::error!("Update indexer error: {}", error),
+                Err(error) => tracing::error!("Update indexer error: {}", error),
             };
         };
 

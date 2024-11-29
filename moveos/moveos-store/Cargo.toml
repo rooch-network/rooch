@@ -20,10 +20,10 @@ smt = { workspace = true }
 once_cell = { workspace = true }
 chrono = { workspace = true }
 rand = { workspace = true }
-log = { workspace = true }
 prometheus = { workspace = true }
 tokio = { workspace = true }
 function_name = { workspace = true }
+tracing = { workspace = true }
 
 move-core-types = { workspace = true }
 
@@ -32,3 +32,4 @@ raw-store = { workspace = true }
 moveos-config = { workspace = true }
 accumulator = { workspace = true }
 metrics = { workspace = true }
+quick_cache = { workspace = true }
