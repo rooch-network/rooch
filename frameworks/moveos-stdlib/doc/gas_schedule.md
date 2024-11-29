@@ -11,6 +11,7 @@
 -  [Struct `GasScheduleConfig`](#0x2_gas_schedule_GasScheduleConfig)
 -  [Constants](#@Constants_0)
 -  [Function `initial_max_gas_amount`](#0x2_gas_schedule_initial_max_gas_amount)
+-  [Function `max_gas_amount`](#0x2_gas_schedule_max_gas_amount)
 -  [Function `genesis_init`](#0x2_gas_schedule_genesis_init)
 -  [Function `new_gas_schedule_config`](#0x2_gas_schedule_new_gas_schedule_config)
 -  [Function `new_gas_entry`](#0x2_gas_schedule_new_gas_entry)
@@ -93,9 +94,22 @@
 
 <a name="0x2_gas_schedule_InitialMaxGasAmount"></a>
 
+The initial max gas amount from genesis.
 
 
 <pre><code><b>const</b> <a href="gas_schedule.md#0x2_gas_schedule_InitialMaxGasAmount">InitialMaxGasAmount</a>: u64 = 1000000000;
+</code></pre>
+
+
+
+<a name="0x2_gas_schedule_MaxGasAmount"></a>
+
+The max gas amount of the transaction.
+This const can be changed via framework upgrade.
+We use const other than the GasScheduleConfig for the performance.
+
+
+<pre><code><b>const</b> <a href="gas_schedule.md#0x2_gas_schedule_MaxGasAmount">MaxGasAmount</a>: u64 = 1000000000;
 </code></pre>
 
 
@@ -107,6 +121,17 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="gas_schedule.md#0x2_gas_schedule_initial_max_gas_amount">initial_max_gas_amount</a>(): u64
+</code></pre>
+
+
+
+<a name="0x2_gas_schedule_max_gas_amount"></a>
+
+## Function `max_gas_amount`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="gas_schedule.md#0x2_gas_schedule_max_gas_amount">max_gas_amount</a>(): u64
 </code></pre>
 
 
@@ -170,6 +195,7 @@
 
 ## Function `gas_schedule_max_gas_amount`
 
+This function will deprecated in the future, please use <code><a href="gas_schedule.md#0x2_gas_schedule_max_gas_amount">max_gas_amount</a>()</code> instead.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="gas_schedule.md#0x2_gas_schedule_gas_schedule_max_gas_amount">gas_schedule_max_gas_amount</a>(schedule: &<a href="gas_schedule.md#0x2_gas_schedule_GasSchedule">gas_schedule::GasSchedule</a>): u64
