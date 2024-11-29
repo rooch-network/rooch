@@ -5,11 +5,10 @@ import { Args } from '../bcs/index.js'
 import { Signer } from '../crypto/index.js'
 import { CreateSessionArgs, Session } from '../session/index.js'
 import {
-  isValidRoochAddress,
   decodeToRoochAddressStr,
-  Address,
   BitcoinAddress,
   BitcoinNetowkType,
+  RoochAddress,
 } from '../address/index.js'
 import { address, Bytes, u64 } from '../types/index.js'
 import { fromHEX, str } from '../utils/index.js'
@@ -52,6 +51,7 @@ import {
   GetModuleABIParams,
   BroadcastTXParams,
 } from './types/index.js'
+import { fixedBalance } from '../utils/balance.js'
 
 /**
  * Configuration options for the RoochClient
@@ -166,51 +166,77 @@ export class RoochClient {
   }
 
   // Get the states by access_path
-  async getStates(params: GetStatesParams): Promise<ObjectStateView[]> {
+  async getStates(input: GetStatesParams): Promise<ObjectStateView[]> {
+    const opt = input.stateOption || {
+      decode: true,
+      showDisplay: true,
+    }
     const result = await this.transport.request({
       method: 'rooch_getStates',
-      params: [params.accessPath, params.stateOption],
+      params: [input.accessPath, opt],
     })
 
     const typedResult = result as unknown as ObjectStateView[]
     return typedResult[0] === null ? [] : typedResult
   }
 
-  async listStates(params: ListStatesParams): Promise<PaginatedStateKVViews> {
+  async listStates(input: ListStatesParams): Promise<PaginatedStateKVViews> {
+    const opt = input.stateOption || {
+      decode: true,
+      showDisplay: true,
+    }
     return await this.transport.request({
       method: 'rooch_listStates',
-      params: [params.accessPath, params.cursor, params.limit, params.stateOption],
+      params: [input.accessPath, input.cursor, input.limit, opt],
     })
   }
 
-  async getModuleAbi(params: GetModuleABIParams): Promise<ModuleABIView> {
+  async getModuleAbi(input: GetModuleABIParams): Promise<ModuleABIView> {
     return await this.transport.request({
       method: 'rooch_getModuleABI',
-      params: [params.moduleAddr, params.moduleName],
+      params: [input.moduleAddr, input.moduleName],
     })
   }
   async getEvents(input: GetEventsByEventHandleParams): Promise<PaginatedEventViews> {
+    const opt = input.eventHandleType || {
+      decode: true,
+    }
     return await this.transport.request({
       method: 'rooch_getEventsByEventHandle',
-      params: [
-        input.eventHandleType,
-        input.cursor,
-        input.limit,
-        input.descendingOrder,
-        input.eventOptions,
-      ],
+      params: [input.eventHandleType, input.cursor, input.limit, input.descendingOrder, opt],
     })
   }
 
   async queryEvents(input: QueryEventsParams): Promise<PaginatedIndexerEventViews> {
+    if ('sender' in input.filter) {
+      if (input.filter.sender === '') {
+        throw Error('Invalid Address')
+      }
+    }
+
+    if ('event_type_with_sender' in input.filter) {
+      if (input.filter.event_type_with_sender.sender === '') {
+        throw Error('Invalid Address')
+      }
+    }
+
+    const opt = input.queryOption || {
+      decode: true,
+      showDisplay: true,
+    }
     return await this.transport.request({
       method: 'rooch_queryEvents',
-      params: [input.filter, input.cursor, input.limit, input.queryOption],
+      params: [input.filter, input.cursor, input.limit, opt],
     })
   }
 
   // Query the Inscription via global index by Inscription filter
   async queryInscriptions(input: QueryInscriptionsParams): Promise<PaginatedInscriptionStateViews> {
+    if (typeof input.filter !== 'string' && 'owner' in input.filter) {
+      if (input.filter.owner === '') {
+        throw Error('Invalid Address')
+      }
+    }
     return await this.transport.request({
       method: 'btc_queryInscriptions',
       params: [input.filter, input.cursor, input.limit, input.descendingOrder],
@@ -218,6 +244,11 @@ export class RoochClient {
   }
 
   async queryUTXO(input: QueryUTXOsParams): Promise<PaginatedUTXOStateViews> {
+    if (typeof input.filter !== 'string' && 'owner' in input.filter) {
+      if (input.filter.owner === '') {
+        throw Error('Invalid Address')
+      }
+    }
     return this.transport.request({
       method: 'btc_queryUTXOs',
       params: [input.filter, input.cursor, input.limit, input.descendingOrder],
@@ -234,18 +265,43 @@ export class RoochClient {
   async queryObjectStates(
     input: QueryObjectStatesParams,
   ): Promise<PaginatedIndexerObjectStateViews> {
+    if ('owner' in input.filter) {
+      if (input.filter.owner === '') {
+        throw Error('Invalid Address')
+      }
+    }
+
+    if ('object_type_with_owner' in input.filter) {
+      if (input.filter.object_type_with_owner.owner === '') {
+        throw Error('Invalid Address')
+      }
+    }
+
+    const opt = input.queryOption || {
+      decode: true,
+      showDisplay: true,
+    }
     return this.transport.request({
       method: 'rooch_queryObjectStates',
-      params: [input.filter, input.cursor, input.limit, input.queryOption],
+      params: [input.filter, input.cursor, input.limit, opt],
     })
   }
 
   async queryTransactions(
     input: QueryTransactionsParams,
   ): Promise<PaginatedTransactionWithInfoViews> {
+    if ('sender' in input.filter) {
+      if (input.filter.sender === '') {
+        throw Error('Invalid Address')
+      }
+    }
+    const opt = input.queryOption || {
+      decode: true,
+      showDisplay: true,
+    }
     return this.transport.request({
       method: 'rooch_queryTransactions',
-      params: [input.filter, input.cursor, input.limit, input.queryOption],
+      params: [input.filter, input.cursor, input.limit, opt],
     })
   }
 
@@ -268,23 +324,32 @@ export class RoochClient {
    * Get the total coin balance for one coin type, owned by the address owner.
    */
   async getBalance(input: GetBalanceParams): Promise<BalanceInfoView> {
-    if (!input.owner || !isValidRoochAddress(input.owner)) {
-      throw new Error('Invalid rooch address')
-    }
-    return await this.transport.request({
+    const owner = decodeToRoochAddressStr(input.owner)
+
+    let balanceInfoView: BalanceInfoView = await this.transport.request({
       method: 'rooch_getBalance',
-      params: [input.owner, input.coinType],
+      params: [owner, input.coinType],
     })
+
+    balanceInfoView.fixedBalance = fixedBalance(balanceInfoView.balance, balanceInfoView.decimals)
+
+    return balanceInfoView
   }
 
   async getBalances(input: GetBalancesParams): Promise<PaginatedBalanceInfoViews> {
-    if (!input.owner || !isValidRoochAddress(input.owner)) {
-      throw new Error('Invalid rooch address')
-    }
-    return await this.transport.request({
+    const owner = decodeToRoochAddressStr(input.owner)
+
+    // balanceInfoView.fixedBalance = fixedBalance(balanceInfoView.balance, balanceInfoView.decimals)
+    const result: PaginatedBalanceInfoViews = await this.transport.request({
       method: 'rooch_getBalances',
-      params: [input.owner, input.cursor, input.limit],
+      params: [owner, input.cursor, input.limit],
     })
+
+    result.data.forEach((item) => {
+      item.fixedBalance = fixedBalance(item.balance, item.decimals)
+    })
+
+    return result
   }
 
   async transfer(input: {
@@ -293,10 +358,11 @@ export class RoochClient {
     amount: number | bigint
     coinType: TypeArgs
   }) {
+    const recipient = decodeToRoochAddressStr(input.recipient)
     const tx = new Transaction()
     tx.callFunction({
       target: '0x3::transfer::transfer_coin',
-      args: [Args.address(input.recipient), Args.u256(BigInt(input.amount))],
+      args: [Args.address(recipient), Args.u256(BigInt(input.amount))],
       typeArgs: [normalizeTypeArgsToStr(input.coinType)],
     })
 
@@ -312,10 +378,11 @@ export class RoochClient {
     objectId: string
     objectType: TypeArgs
   }) {
+    const recipient = decodeToRoochAddressStr(input.recipient)
     const tx = new Transaction()
     tx.callFunction({
       target: '0x3::transfer::transfer_object',
-      args: [Args.address(input.recipient), Args.objectId(input.objectId)],
+      args: [Args.address(recipient), Args.objectId(input.objectId)],
       typeArgs: [normalizeTypeArgsToStr(input.objectType)],
     })
 
@@ -326,12 +393,13 @@ export class RoochClient {
   }
 
   async resolveBTCAddress(input: {
-    roochAddress: string | Address
+    roochAddress: string | RoochAddress
     network: BitcoinNetowkType
   }): Promise<BitcoinAddress | undefined> {
+    const address = decodeToRoochAddressStr(input.roochAddress)
     const result = await this.executeViewFunction({
       target: '0x3::address_mapping::resolve_bitcoin',
-      args: [Args.address(input.roochAddress)],
+      args: [Args.address(address)],
     })
 
     if (result.vm_status === 'Executed' && result.return_values) {
@@ -377,9 +445,10 @@ export class RoochClient {
     address: address
     authKey: string
   }): Promise<boolean> {
+    const _address = decodeToRoochAddressStr(address)
     const result = await this.executeViewFunction({
       target: '0x3::session_key::is_expired_session_key',
-      args: [Args.address(address), Args.vec('u8', Array.from(fromHEX(authKey)))],
+      args: [Args.address(_address), Args.vec('u8', Array.from(fromHEX(authKey)))],
     })
 
     if (result.vm_status !== 'Executed') {
@@ -396,7 +465,8 @@ export class RoochClient {
   }: {
     address: address
   } & PaginationArguments<string>): Promise<PaginationResult<string, SessionInfoView>> {
-    const accessPath = `/resource/${decodeToRoochAddressStr(address)}/0x3::session_key::SessionKeys`
+    const _address = decodeToRoochAddressStr(address)
+    const accessPath = `/resource/${_address}/0x3::session_key::SessionKeys`
     const states = await this.getStates({
       accessPath,
       stateOption: {

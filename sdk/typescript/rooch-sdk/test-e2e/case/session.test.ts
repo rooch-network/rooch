@@ -101,11 +101,21 @@ describe('Checkpoints Session API', () => {
 
     expect(session).toBeDefined()
 
-    const sessions = await testBox.getClient().getSessionKeys({
-      address: testBox.address().toHexAddress(),
-      limit: 10,
-    })
+    const allAddress = [
+      testBox.keypair.getBitcoinAddress(),
+      testBox.keypair.getBitcoinAddress().toStr(),
+      testBox.keypair.getRoochAddress(),
+      testBox.keypair.getRoochAddress().toBech32Address(),
+      testBox.keypair.getRoochAddress().toHexAddress(),
+    ]
 
-    expect(sessions).toBeDefined()
+    for (let item of allAddress) {
+      const sessions = await testBox.getClient().getSessionKeys({
+        address: item,
+        limit: 10,
+      })
+
+      expect(sessions).toBeDefined()
+    }
   })
 })

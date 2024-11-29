@@ -3,10 +3,11 @@ import ReactDOM from 'react-dom/client';
 import '@radix-ui/themes/styles.css';
 
 import { RoochProvider, WalletProvider } from '@roochnetwork/rooch-sdk-kit'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import {Theme} from '@radix-ui/themes';
 import { networkConfig } from "./networks";
 import App from './App';
+import { ErrorGuard } from "./ErrorGuard.tsx";
 
 const queryClient = new QueryClient();
 
@@ -14,8 +15,9 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <Theme appearance="dark">
       <QueryClientProvider client={queryClient}>
-            <RoochProvider networks={networkConfig} defaultNetwork='testnet'>
+            <RoochProvider networks={networkConfig} defaultNetwork='mainnet'>
               <WalletProvider preferredWallets={['UniSat']} chain={'bitcoin'} autoConnect>
+                <ErrorGuard/>
                 <App/>
               </WalletProvider>
             </RoochProvider>
