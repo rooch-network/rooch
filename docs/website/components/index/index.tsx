@@ -688,7 +688,7 @@ const Index = ({
         </div>
 
         {/* BLOG */}
-        <div className="py-16 md:py-20 px-4 sm:px-6 md:px-8 lg:px-20 bg-white dark:bg-inherit flex flex-col items-center justify-center gap-6 md:gap-8">
+        <div className="py-16 md:py-20 px-4 sm:px-6 md:px-8 lg:px-20 dark:bg-inherit flex flex-col items-center justify-center gap-6 md:gap-8">
           <div className="px-4 w-full h-full">
             <div className="flex flex-col items-center justify-center w-full font-['Han']">
               <div className="mt-14 text-5xl md:text-5xl font-bold text-center text-black dark:text-[#EEEBEB]">
@@ -696,54 +696,93 @@ const Index = ({
               </div>
             </div>
           </div>
-          <div className="w-full flex items-center justify-center">
-            <div className="w-[45%] h-full border-2 border-[#036840] rounded-[15px]">
+          <div className="w-full flex items-center justify-center font-[Kanit]">
+            <div
+              className="w-[45%] h-[586px] border-2 border-[#036840] rounded-[15px] cursor-pointer bg-white"
+              onClick={() => {
+                window.open('https://rooch.network/blog/unveiling-rooch-pre-mainnet', '_blank')
+              }}
+            >
               <div className="w-full h-[376px] -mt-[2px]">
                 <img
-                  src="/home/blog-1.png"
-                  className="inline-block w-full h-full object-cover rounded-t-[15px]"
+                  src="/home/blog/blog-0.png"
+                  className="inline-block w-full h-full object-cover rounded-t-[15px] mt-1"
                   alt="blog-1"
                 />
               </div>
               <div className="flex flex-col items-start p-6">
-                <div className="text-base font-normal">9th Sep,2024</div>
-                <div className="w-[80%] text-4xl mt-6 font-normal">
-                  Defining Bitcoin Layer 2 and an Inclusive Perspective on L2
+                <div className="text-base font-normal font-[Kanit]">9th Sep,2024</div>
+                <div className="w-[80%] text-4xl mt-6 font-normal font-[Kanit]">
+                  Unveiling Rooch Pre-Mainnet: A New Era for Bitcoin Applications
                 </div>
               </div>
             </div>
             <div className="w-[45%] flex flex-col gap-y-2 ml-12">
-              <div className="w-full h-[190px] border-2 border-[#036840] rounded-[15px] flex p-6">
-                <div className="w-[40%] max-w-[240px] h-full flex flex-col items-center">
-                  <img src="/home/blog-2.svg" alt="blog-2" className="w-full object-cover" />
-                  <div className="text-base font-normal mt-4">9th Sep, 2024</div>
+              <div
+                className="w-full h-[190px] border-2 border-[#036840] rounded-[15px] flex p-6 cursor-pointer bg-white"
+                onClick={() => {
+                  window.open(
+                    'https://rooch.network/blog/the-application-layer-of-bitcoin',
+                    '_blank',
+                  )
+                }}
+              >
+                <div className="w-[40%] max-w-[220px] h-full flex flex-col items-center">
+                  <img
+                    src="/home/blog/blog-1.jpg"
+                    alt="blog-1"
+                    className="w-full rounded-xl object-cover"
+                  />
+                  <div className="text-base font-normal mt-2 font-[Kanit]">9th Sep, 2024</div>
                 </div>
                 <div className="w-[60%] h-full flex flex-col justify-between ml-4">
-                  <div className="text-2xl font-normal">Stackable L2 — A New Scaling Solution</div>
+                  <div className="text-2xl font-normal font-[Kanit]">
+                    Rooch Network - The Application Layer of Bitcoin
+                  </div>
                   <div className="ml-auto">
                     <img src="/home/blog-enter.svg" className="h-8" alt="blog-enter" />
                   </div>
                 </div>
               </div>
-              <div className="w-full h-[190px] border-2 border-[#036840] rounded-[15px] flex p-6">
-                <div className="w-[40%] max-w-[240px] h-full flex flex-col items-center">
-                  <img src="/home/blog-2.svg" alt="blog-2" className="w-full object-cover" />
-                  <div className="text-base font-normal mt-4">9th Sep, 2024</div>
+              <div
+                className="w-full h-[190px] border-2 border-[#036840] rounded-[15px] flex p-6 cursor-pointer bg-white"
+                onClick={() => {
+                  window.open('https://rooch.network/blog/sprouting-of-rooch', '_blank')
+                }}
+              >
+                <div className="w-[40%] max-w-[220px] h-full flex flex-col items-center">
+                  <img
+                    src="/home/blog/blog-2.jpg"
+                    alt="blog-2"
+                    className="w-full rounded-xl object-cover"
+                  />
+                  <div className="text-base font-normal mt-2">9th Sep, 2024</div>
                 </div>
                 <div className="w-[60%] h-full flex flex-col justify-between ml-4">
-                  <div className="text-2xl font-normal">Stackable L2 — A New Scaling Solution</div>
+                  <div className="text-2xl font-normal">The Sprouting of Rooch</div>
                   <div className="ml-auto">
                     <img src="/home/blog-enter.svg" className="h-8" alt="blog-enter" />
                   </div>
                 </div>
               </div>
-              <div className="w-full h-[190px] border-2 border-[#036840] rounded-[15px] flex p-6">
-                <div className="w-[40%] max-w-[240px] h-full flex flex-col items-center">
-                  <img src="/home/blog-2.svg" alt="blog-2" className="w-full object-cover" />
-                  <div className="text-base font-normal mt-4">9th Sep, 2024</div>
+              <div
+                className="w-full h-[190px] border-2 border-[#036840] rounded-[15px] flex p-6 cursor-pointer bg-white"
+                onClick={() => {
+                  window.open('https://rooch.network/blog/bug-bounty2', '_blank')
+                }}
+              >
+                <div className="w-[40%] max-w-[220px] h-full flex flex-col items-center">
+                  <img
+                    src="/home/blog/blog-3.jpg"
+                    alt="blog-3"
+                    className="w-full rounded-xl object-cover"
+                  />
+                  <div className="text-base font-normal mt-2">9th Sep, 2024</div>
                 </div>
                 <div className="w-[60%] h-full flex flex-col justify-between ml-4">
-                  <div className="text-2xl font-normal">Stackable L2 — A New Scaling Solution</div>
+                  <div className="text-2xl font-normal">
+                    Rooch Network Bug Bounty Program Phase II{' '}
+                  </div>
                   <div className="ml-auto">
                     <img src="/home/blog-enter.svg" className="h-8" alt="blog-enter" />
                   </div>
