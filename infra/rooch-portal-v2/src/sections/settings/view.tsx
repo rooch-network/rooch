@@ -40,7 +40,7 @@ export function SettingsView() {
     isPending: isLoadingSessionKeys,
     refetch: refetchSessionKeys,
   } = useRoochClientQuery('getSessionKeys', {
-    address: address || ''
+    address: address?.genRoochAddress().toHexAddress() || ''
     }
   )
 
@@ -81,13 +81,13 @@ export function SettingsView() {
 
   const [tweetId, setTweetId] = useState('')
 
-  const networkText = network === 'mainnet' ? 'MainNet' : 'Testnet'
+  const networkText = network === 'mainnet' ? 'Pre-mainnet' : 'Testnet'
   const XText = `BTC:${address?.toStr()} 
 
-Rooch ${networkText} Campaign #006 is live! Bind your Twitter to earn extra RGas, test Rooch’s lucky draw and red packet features, and unlock the ${networkText} OG role.
+Rooch ${networkText} is live! Bind your Twitter to earn  RGas, and visit https://${network === 'mainnet' ? '':'test-'}grow.rooch.network to earn rewards with your BTC. 
 
 Join Rooch:
-https://portal.rooch.network/inviter/${address?.genRoochAddress().toBech32Address()}
+https://${network === 'mainnet' ? '':'test-'}portal.rooch.network/inviter/${address?.genRoochAddress().toBech32Address()}
 
 #RoochNetwork #${networkText}`
 

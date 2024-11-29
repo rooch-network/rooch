@@ -415,7 +415,7 @@ export class RoochClient {
       (
         (states?.[0]?.decoded_value as AnnotatedMoveStructView).value[
           'value'
-          ] as AnnotatedMoveStructView
+        ] as AnnotatedMoveStructView
       ).value['keys'] as AnnotatedMoveStructView
     ).value['handle'] as AnnotatedMoveStructView
     console.log(sss)
