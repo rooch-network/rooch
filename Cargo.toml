@@ -280,7 +280,7 @@ rpassword = "7.2.0"
 fixed-hash = "0.8.0"
 uint = "0.9.5"
 rlp = "0.5.2"
-const-hex = "1.13.1"
+const-hex = "1.14.0"
 cached = "0.43.0"
 diesel = { version = "2.2.5", features = [
     "chrono",
