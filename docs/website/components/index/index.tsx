@@ -301,7 +301,7 @@ const Index = ({
               zIndex: -1,
             }}
           ></div>
-          <div className="flex flex-col items-center justify-center w-full font-[Han] z-10">
+          <div className="flex flex-col mt-8 items-center justify-center w-full font-[Han] z-10">
             <div className="mt-8 text-5xl md:text-5xl font-bold text-center text-black dark:text-[#EEEBEB]">
               Build with Move
               <br />
