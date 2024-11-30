@@ -14,7 +14,6 @@ module bitcoin_move::bbn {
     use moveos_std::result::{Self, Result, err_str, ok, is_err, as_err};
     use moveos_std::sort;
     use moveos_std::event;
-    use bitcoin_move::bitcoin;
     use bitcoin_move::types;
     use bitcoin_move::utxo;
     use bitcoin_move::opcode;
@@ -34,6 +33,8 @@ module bitcoin_move::bbn {
     };
 
     friend bitcoin_move::genesis;
+    friend bitcoin_move::bitcoin;
+    friend bitcoin_move::bbn_updater;
 
     const UNSPENDABLEKEYPATHKEY: vector<u8> = x"50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0";
     const TEMPORARY_AREA: vector<u8> = b"temporary_area";
@@ -53,6 +54,7 @@ module bitcoin_move::bbn {
     const ErrorUTXOAlreadySealed: u64 = 13;
     const ErrorNoBabylonStakingOutput: u64 = 14;
     const ErrorOutBlockRange: u64 = 15;
+    const DeprecatedFunction: u64 = 16;
 
     //https://github.com/babylonlabs-io/networks/blob/28651b301bb2efa0542b2268793948bcda472a56/parameters/parser/ParamsParser.go#L117
     struct BBNGlobalParamV0 has copy, drop, store {
@@ -348,14 +350,15 @@ module bitcoin_move::bbn {
         try_get_bbn_staking_output(types::tx_output(&tx), &script_buf::new(staking_output_pk_script))
     }
 
+    /// Deprecated function
+    /// Use `bbn_updater::is_possible_bbn_tx` instead
+    public fun is_possible_bbn_tx(_txid: address): bool {
+        abort DeprecatedFunction
+    }
+
     /// Check if the transaction is a possible Babylon transaction
     /// If the transaction contains an OP_RETURN output with the correct tag, it is considered a possible Babylon transaction
-    public fun is_possible_bbn_tx(txid: address): bool {
-        let block_height_opt = bitcoin::get_tx_height(txid);
-        if (is_none(&block_height_opt)) {
-            return false
-        };
-        let block_height = option::destroy_some(block_height_opt);
+    public fun is_possible_bbn_transaction(block_height: u64, tx: &Transaction): bool {
         let param = get_bbn_param_v1();
         if (block_height < param.activation_height) {
             return false
@@ -363,13 +366,7 @@ module bitcoin_move::bbn {
         if (block_height > param.cap_height) {
             return false
         };
-        let tx_opt = bitcoin::get_tx(txid);
-        if (is_none(&tx_opt)) {
-            return false
-        };
-        let tx = option::destroy_some(tx_opt);
-        
-        let output_opt = try_get_bbn_op_return_ouput(types::tx_output(&tx));
+        let output_opt = try_get_bbn_op_return_ouput(types::tx_output(tx));
         if (is_none(&output_opt)) {
             return false
         };
@@ -380,8 +377,10 @@ module bitcoin_move::bbn {
         true 
     }
 
-    public entry fun process_bbn_tx_entry(txid: address){
-        process_bbn_tx(txid)
+    /// Deprecated function
+    /// Use `bbn_updater::process_bbn_tx_entry` instead
+    public entry fun process_bbn_tx_entry(_txid: address){
+        abort DeprecatedFunction
     }
 
     fun validate_bbn_op_return_data(param: &BBNGlobalParamV1, op_return_data: &BBNV0OpReturnData): Result<bool,String> {
@@ -398,25 +397,16 @@ module bitcoin_move::bbn {
         ok(true)
     }
 
-    fun process_bbn_tx(txid: address) {
-        let block_height_opt = bitcoin::get_tx_height(txid);
-        assert!(is_some(&block_height_opt), ErrorTransactionNotFound);
-        let block_height = option::destroy_some(block_height_opt);
-
+    public(friend) fun process_bbn_transaction(block_height: u64, tx: &Transaction) {
         let param = get_bbn_param_v1();
         assert!(block_height >= param.activation_height && block_height <= param.cap_height, ErrorOutBlockRange);
-
-        let tx_opt = bitcoin::get_tx(txid);
-        assert!(is_some(&tx_opt), ErrorTransactionNotFound);
-        
-        let tx = option::destroy_some(tx_opt);
-        let tx_output = types::tx_output(&tx);
+        let tx_output = types::tx_output(tx);
 
         let op_return_output_opt = try_get_bbn_op_return_ouput(tx_output);
         assert!(is_some(&op_return_output_opt), ErrorNotBabylonTx);
         let op_return_output = option::destroy_some(op_return_output_opt);
-        
-        let process_result = process_parsed_bbn_tx(param, txid, block_height, &tx, op_return_output);
+        let txid = types::tx_id(tx);
+        let process_result = process_parsed_bbn_tx(param, txid, block_height, tx, op_return_output);
         if (is_err(&process_result)) {
             let error = result::unwrap_err(process_result);
             let event = BBNStakingFailedEvent {
@@ -600,13 +590,13 @@ module bitcoin_move::bbn {
         stake.staking_value
     }
 
-    public fun is_expired(stake: &BBNStakeSeal): bool {
-        let latest_block_opt = bitcoin::get_latest_block();
-        if (is_none(&latest_block_opt)) {
-            return false
-        };
-        let latest_block = option::destroy_some(latest_block_opt);
-        let (current_block_height, _hash) = types::unpack_block_height_hash(latest_block);
+    /// Deprecated function
+    /// Use `bbn_updater::is_expired` instead
+    public fun is_expired(_stake: &BBNStakeSeal): bool {
+        abort DeprecatedFunction
+    }
+
+    public fun is_expired_at(stake: &BBNStakeSeal, current_block_height: u64): bool {
         current_block_height > (stake.block_height + (stake.staking_time as u64))
     }
 
