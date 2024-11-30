@@ -17,13 +17,15 @@ async-trait = { workspace = true }
 coerce = { workspace = true }
 serde = { workspace = true }
 tokio = { features = ["full"], workspace = true }
+thiserror = { workspace = true }
 tracing = { workspace = true }
 prometheus = { workspace = true }
 function_name = { workspace = true }
-tonic = { workspace = true }
-tonic-build = { workspace = true }
+tonic = { workspace = true, features = ["codegen", "prost"] }
+#tonic = { version = "0.12.3", features = ["codegen", "prost"]}
 prost = { workspace = true }
-protobuf = { workspace = true }
+prost-types = { workspace = true }
+#protobuf = { workspace = true }
 
 moveos-types = { workspace = true }
 moveos-eventbus = { workspace = true }
@@ -39,4 +41,15 @@ rooch-genesis = { workspace = true }
 rooch-event = { workspace = true }
 
 [build-dependencies]
-#tonic-build = { workspace = true }
+prost-build = { workspace = true }
+prost-types = { workspace = true }
+protox = "0.7.1"
+#tonic-build = { version = "0.12.3", features = [ "prost" ]}
+tonic-build = { workspace = true, features = [ "prost" ]}
+
+#[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+#tonic = { workspace = true, features = [ "transport" ] }
+#tonic-build = { workspace = true, features = [ "transport" ] }
+
+#[features]
+#tonic = ["dep:tonic", "dep:tonic-build"]

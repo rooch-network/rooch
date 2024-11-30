@@ -3,6 +3,8 @@ syntax = "proto3";
 package proto;
 
 option go_package = "github.com/babylonlabs-io/finality-gadget/proto";
+// Add rust specific options
+// option rust_package = "rooch-finality/src/proto";
 
 service FinalityGadget {
   // QueryIsBlockBabylonFinalized returns the finality status of a block by
