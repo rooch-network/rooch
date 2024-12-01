@@ -423,7 +423,8 @@ module grow_bitcoin::grow_bitcoin {
         let i = 0;
         while (i < len) {
             let asset_id = *vector::borrow(&assets, i);
-            let coin = do_harvest(signer, asset_id);
+            let utxo_obj = object::borrow_mut_object<UTXO>(signer, asset_id);
+            let coin = do_harvest(signer, object::id(utxo_obj));
             account_coin_store::deposit(sender(), coin);
             i = i + 1;
         }
