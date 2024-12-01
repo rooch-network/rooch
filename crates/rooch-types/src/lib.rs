@@ -29,4 +29,5 @@ pub mod test_utils;
 pub mod to_bech32;
 pub mod transaction;
 
+pub mod finality_block;
 pub mod service_type;

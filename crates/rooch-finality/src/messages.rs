@@ -3,62 +3,15 @@
 
 use anyhow::Result;
 use coerce::actor::message::Message;
-use moveos_types::h256::H256;
-use rooch_types::{
-    sequencer::SequencerInfo,
-    transaction::{LedgerTransaction, LedgerTxData},
-};
+use rooch_types::finality_block::Block;
 use serde::{Deserialize, Serialize};
 
-/// Transaction Sequence Message
+/// Finality Message
 #[derive(Debug, Serialize, Deserialize)]
-pub struct TransactionSequenceMessage {
-    pub tx: LedgerTxData,
+pub struct FinalityMessage {
+    pub block: Block,
 }
 
-impl Message for TransactionSequenceMessage {
-    type Result = Result<LedgerTransaction>;
-}
-
-/// Get Transaction By Hash Message
-#[derive(Debug, Serialize, Deserialize)]
-pub struct GetTransactionByHashMessage {
-    pub hash: H256,
-}
-
-impl Message for GetTransactionByHashMessage {
-    type Result = Result<Option<LedgerTransaction>>;
-}
-
-/// Get Transactions By Hash Message
-#[derive(Debug, Serialize, Deserialize)]
-pub struct GetTransactionsByHashMessage {
-    pub tx_hashes: Vec<H256>,
-}
-
-impl Message for GetTransactionsByHashMessage {
-    type Result = Result<Vec<Option<LedgerTransaction>>>;
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct GetTxHashsMessage {
-    pub tx_orders: Vec<u64>,
-}
-
-impl Message for GetTxHashsMessage {
-    type Result = Result<Vec<Option<H256>>>;
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct GetSequencerOrderMessage {}
-
-impl Message for GetSequencerOrderMessage {
-    type Result = Result<u64>;
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct GetSequencerInfoMessage {}
-
-impl Message for GetSequencerInfoMessage {
-    type Result = Result<SequencerInfo>;
+impl Message for FinalityMessage {
+    type Result = Result<()>;
 }

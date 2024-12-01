@@ -1,10 +1,9 @@
-//! A build script generating rust types from protobuf definitions.
-
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+//! A build script generating rust types from protobuf definitions.
+
 use prost_types::FileDescriptorSet;
-use std::collections::HashSet;
 
 static OUT_DIR: &str = "src/proto";
 const PROTO_FILES: &[&str] = &[
@@ -25,6 +24,7 @@ fn protox_compile() -> FileDescriptorSet {
     protox::compile(PROTO_FILES, INCLUDES).expect("protox failed to build")
 }
 
+#[allow(dead_code)]
 // #[cfg(not(feature = "tonic"))]
 fn prost_build(fds: FileDescriptorSet) {
     let mut config = prost_build::Config::new();
@@ -43,7 +43,7 @@ fn tonic_build(fds: FileDescriptorSet) {
     let mut prost_config = prost_build::Config::new();
     prost_config.enable_type_names();
 
-    let mut tonic_config = tonic_build::configure()
+    let tonic_config = tonic_build::configure()
         // .include_file("mod.rs")
         .build_client(true)
         .build_server(false)

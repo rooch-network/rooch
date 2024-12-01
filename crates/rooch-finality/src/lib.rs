@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 pub mod actor;
+pub mod finality;
 pub mod messages;
 pub mod metrics;
 pub mod proto;

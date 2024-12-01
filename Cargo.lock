@@ -10526,7 +10526,6 @@ dependencies = [
 name = "rooch-finality"
 version = "0.8.2"
 dependencies = [
- "accumulator",
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
  "async-trait",
  "coerce",
@@ -10539,11 +10538,9 @@ dependencies = [
  "prost-build 0.13.3",
  "prost-types 0.13.3",
  "protox",
- "raw-store",
  "rooch-config",
  "rooch-db",
  "rooch-event",
- "rooch-genesis",
  "rooch-store",
  "rooch-types",
  "serde 1.0.215",

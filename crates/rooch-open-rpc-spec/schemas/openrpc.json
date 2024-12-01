@@ -3014,6 +3014,13 @@
             "enum": [
               "date-import-mode"
             ]
+          },
+          {
+            "description": "The service is in finality mode.",
+            "type": "string",
+            "enum": [
+              "finality-mode"
+            ]
           }
         ]
       },

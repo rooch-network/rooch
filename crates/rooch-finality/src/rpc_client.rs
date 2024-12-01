@@ -10,8 +10,8 @@ use crate::proto::proto::{
     QueryIsBlockBabylonFinalizedRequest, QueryIsBlockFinalizedByHashRequest,
     QueryIsBlockFinalizedByHeightRequest, QueryLatestFinalizedBlockRequest,
 };
-use crate::types::block::Block;
-use prost::Message;
+use anyhow::Result;
+use rooch_types::finality_block::Block;
 
 pub struct FinalityGadgetGrpcClient {
     client: FinalityGadgetClient<Channel>,
@@ -19,16 +19,17 @@ pub struct FinalityGadgetGrpcClient {
 
 impl FinalityGadgetGrpcClient {
     pub async fn new(remote_addr: String) -> Result<Self, Box<dyn Error>> {
-        let channel = Channel::from_shared(remote_addr)?
-            .connect()
-            .await?;
+        let channel = Channel::from_shared(remote_addr)?.connect().await?;
 
         let client = FinalityGadgetClient::new(channel);
 
         Ok(Self { client })
     }
 
-    pub async fn query_is_block_babylon_finalized(&mut self, block: &Block) -> Result<bool, Box<dyn Error>> {
+    pub async fn query_is_block_babylon_finalized(
+        &mut self,
+        block: &Block,
+    ) -> Result<bool, Box<dyn Error>> {
         let req = Request::new(QueryIsBlockBabylonFinalizedRequest {
             block: Some(BlockInfo {
                 block_hash: block.block_hash.clone(),
@@ -71,11 +72,17 @@ impl FinalityGadgetGrpcClient {
     pub async fn query_btc_staking_activated_timestamp(&mut self) -> Result<u64, Box<dyn Error>> {
         let req = Request::new(QueryBtcStakingActivatedTimestampRequest {});
 
-        let response = self.client.query_btc_staking_activated_timestamp(req).await?;
+        let response = self
+            .client
+            .query_btc_staking_activated_timestamp(req)
+            .await?;
         Ok(response.into_inner().activated_timestamp)
     }
 
-    pub async fn query_is_block_finalized_by_height(&mut self, height: u64) -> Result<bool, Box<dyn Error>> {
+    pub async fn query_is_block_finalized_by_height(
+        &mut self,
+        height: u64,
+    ) -> Result<bool, Box<dyn Error>> {
         let req = Request::new(QueryIsBlockFinalizedByHeightRequest {
             block_height: height,
         });
@@ -84,10 +91,11 @@ impl FinalityGadgetGrpcClient {
         Ok(response.into_inner().is_finalized)
     }
 
-    pub async fn query_is_block_finalized_by_hash(&mut self, hash: String) -> Result<bool, Box<dyn Error>> {
-        let req = Request::new(QueryIsBlockFinalizedByHashRequest {
-            block_hash: hash,
-        });
+    pub async fn query_is_block_finalized_by_hash(
+        &mut self,
+        hash: String,
+    ) -> Result<bool, Box<dyn Error>> {
+        let req = Request::new(QueryIsBlockFinalizedByHashRequest { block_hash: hash });
 
         let response = self.client.query_is_block_finalized_by_hash(req).await?;
         Ok(response.into_inner().is_finalized)

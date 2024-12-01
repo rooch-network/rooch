@@ -5,25 +5,25 @@ use metrics::metrics_util::LATENCY_SEC_BUCKETS;
 use prometheus::{register_histogram_vec_with_registry, HistogramVec, Registry};
 
 #[derive(Debug)]
-pub struct SequencerMetrics {
-    pub sequencer_sequence_latency_seconds: HistogramVec,
-    pub sequencer_sequence_bytes: HistogramVec,
+pub struct FinalityMetrics {
+    pub finality_latency_seconds: HistogramVec,
+    pub finality_bytes: HistogramVec,
 }
 
-impl SequencerMetrics {
+impl FinalityMetrics {
     pub(crate) fn new(registry: &Registry) -> Self {
-        SequencerMetrics {
-            sequencer_sequence_latency_seconds: register_histogram_vec_with_registry!(
-                "sequencer_sequence_latency_seconds",
-                "Sequencer sequence latency in seconds",
+        FinalityMetrics {
+            finality_latency_seconds: register_histogram_vec_with_registry!(
+                "finality_latency_seconds",
+                "Finality sequence latency in seconds",
                 &["fn_name"],
                 LATENCY_SEC_BUCKETS.to_vec(),
                 registry,
             )
             .unwrap(),
-            sequencer_sequence_bytes: register_histogram_vec_with_registry!(
-                "sequencer_sequence_bytes",
-                "Sequencer sequence size in bytes",
+            finality_bytes: register_histogram_vec_with_registry!(
+                "finality_bytes",
+                "Finality sequence size in bytes",
                 &["fn_name"],
                 prometheus::exponential_buckets(1.0, 4.0, 15)
                     .unwrap()
