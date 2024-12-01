@@ -70,6 +70,11 @@ module twitter_binding::tweet_v2 {
         referenced_tweets: vector<Referenced_tweet>,
         edit_history_tweet_ids: vector<String>,
     }
+
+    #[data_struct]
+    struct BatchTweetData has store, copy, drop{
+        data: vector<TweetData>,
+    }
     
     /// The tweet object
     /// No `store` ability, so the user can not transfer the tweet object to other address
@@ -146,6 +151,14 @@ module twitter_binding::tweet_v2 {
 
     public fun parse_tweet_data(tweet_data_json: vector<u8>): Option<TweetData> { 
         json::from_json_option<TweetData>(tweet_data_json)
+    }
+
+    public fun parse_batch_tweet_data(batch_tweet_data_json: vector<u8>): Option<BatchTweetData> {
+        json::from_json_option<BatchTweetData>(batch_tweet_data_json)
+    }
+
+    public fun unwrap_batch_tweet_data(batch_tweet_data: BatchTweetData): vector<TweetData> {
+        batch_tweet_data.data
     }
     
     public fun tweet_data_id(tweet_data: &TweetData): &String {
@@ -341,6 +354,17 @@ module twitter_binding::tweet_v2 {
         assert!(option::is_some(&tweet_option), 1);
         let _tweet = option::destroy_some(tweet_option);
         //std::debug::print(&tweet);
+    }
+
+    #[test]
+    fun test_batch_tweet_data(){
+        let test_batch_tweet_json: vector<u8> = b"{\"data\": [{\"id\": \"1844391830802341950\",\"created_at\": \"2024-10-10T14:57:34.000Z\",\"edit_history_tweet_ids\": [\"1844391830802341950\"],\"author_id\": \"1045398019351425026\",\"text\": \"test\"}]}";
+        let batch_tweet_option = json::from_json_option<BatchTweetData>(test_batch_tweet_json);
+        assert!(option::is_some(&batch_tweet_option), 1);
+        let batch_tweet = option::destroy_some(batch_tweet_option);
+        let data = unwrap_batch_tweet_data(batch_tweet);
+        assert!(vector::length(&data) == 1, 1);
+        //std::debug::print(&batch_tweet);
     }
 
 }
