@@ -12,6 +12,8 @@ module bitcoin_move::utxo{
     use moveos_std::address::to_string;
     use bitcoin_move::types::{Self, OutPoint};
     use bitcoin_move::temp_state;
+    #[test_only]
+    use std::option::none;
 
     friend bitcoin_move::genesis;
     friend bitcoin_move::ord;
@@ -368,6 +370,11 @@ module bitcoin_move::utxo{
     public fun drop_for_testing(utxo_obj: Object<UTXO>){
         let utxo = remove(utxo_obj);
         drop(utxo);
+    }
+
+    #[test_only]
+    public fun transfer_for_testing(utxo_obj: Object<UTXO>, receiver: address){
+        transfer(utxo_obj, none(), receiver)
     }
 
     #[test]

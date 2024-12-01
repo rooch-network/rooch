@@ -138,6 +138,11 @@ module grow_bitcoin::grow_information_v3 {
         object::transfer(point_box, sender());
     }
 
+    public fun get_vote(grow_project_list_obj: &Object<GrowProjectList>, user: address, id: String): u256 {
+        let grow_project = borrow_grow_project(grow_project_list_obj, id);
+        *table::borrow(&grow_project.vote_detail, user)
+    }
+
 
     public entry fun open_vote(grow_project_list_obj: &mut Object<GrowProjectList>, _admin: &mut Object<ProjectCap>){
         object::borrow_mut(grow_project_list_obj).is_open = true

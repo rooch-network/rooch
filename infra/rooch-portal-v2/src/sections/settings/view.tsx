@@ -40,7 +40,7 @@ export function SettingsView() {
     isPending: isLoadingSessionKeys,
     refetch: refetchSessionKeys,
   } = useRoochClientQuery('getSessionKeys', {
-    address: address || ''
+    address: address?.genRoochAddress().toHexAddress() || ''
     }
   )
 
@@ -74,20 +74,20 @@ export function SettingsView() {
     // eslint-disable-next-line consistent-return
     return (res.return_values?.[0].decoded_value as any)?.value.vec[0]
   }, [address, client, twitterOracleAddress])
-
+  
   useEffect(() => {
     getBindingTwitterId()
   }, [getBindingTwitterId])
 
   const [tweetId, setTweetId] = useState('')
 
-  const networkText = network === 'mainnet' ? 'MainNet' : 'Testnet'
+  const networkText = network === 'mainnet' ? 'Pre-mainnet' : 'Testnet'
   const XText = `BTC:${address?.toStr()} 
 
-Rooch ${networkText} Campaign #006 is live! Bind your Twitter to earn extra RGas, test Rooch’s lucky draw and red packet features, and unlock the ${networkText} OG role.
+Rooch ${networkText} is live! Bind your Twitter to earn  RGas, and visit https://${network === 'mainnet' ? '':'test-'}grow.rooch.network to earn rewards with your BTC. 
 
 Join Rooch:
-https://portal.rooch.network/inviter/${address?.genRoochAddress().toBech32Address()}
+https://${network === 'mainnet' ? '':'test-'}portal.rooch.network/inviter/${address?.genRoochAddress().toBech32Address()}
 
 #RoochNetwork #${networkText}`
 
@@ -100,7 +100,9 @@ https://portal.rooch.network/inviter/${address?.genRoochAddress().toBech32Addres
         />
         <CardContent className="!pt-2">
           <Stack>
-            <Chip className="justify-start w-fit" label={address?.genRoochAddress().toStr()} />
+            <CopyToClipboard text={address?.genRoochAddress().toStr() || ''}>
+              <Chip className="justify-start w-fit" label={address?.genRoochAddress().toStr()} />
+            </CopyToClipboard>
             <Typography className="!mt-2 text-gray-400 !text-sm">
               This is your Rooch Address mapping from the wallet address
             </Typography>
