@@ -141,10 +141,10 @@ pub static G_DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
     stdlib_version: StdlibVersion::Latest,
 });
 
-//curl -sSL "https://mempool.space/testnet/api/block/$(curl -sSL https://mempool.space/testnet/api/block-height/2902859)/header"
+// curl -sSL "https://mempool.space/testnet/api/block/$(curl -sSL https://mempool.space/testnet/api/block-height/3516999)/header"
 static TESTNET_GENESIS_HEIGHT_HEADER: Lazy<(u64, Header)> = Lazy::new(|| {
-    (2902859, bitcoin::consensus::deserialize(
-        &hex::decode("000000207a518c54d035787e573beab94dcaa241116629f2d1b578fc6e4bcbbc000000001cb54b96888834d31e7418652c0e6ddeeee956b4b261766d92d5ff59d030ea52fdc2d766c0ff3f19b8051295")
+    (3516999, bitcoin::consensus::deserialize(
+        &hex::decode("0040f820bdd09b73d27b8896ad05d8f85f585f74d055eb1e180661a21300000000000000bf4496f10066f75f9b9ee1f37abeb730101cabca6745567bafabc1023e45c039f8474c67005c401920f0be85")
             .expect("Should be valid"),
     ).expect("Should be valid"))
 });
