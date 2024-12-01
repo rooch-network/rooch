@@ -27,6 +27,7 @@ const { networkConfig, useNetworkVariable, useNetworkVariables } = createNetwork
       faucetObject: '0xd5723eda84f691ae2623da79312c7909b1737c5b3866ecc5dbd6aa21718ff15d',
       BTCMemPool: 'https://mempool.space/tx/',
       twitterOracleAddress: '0x701c21bf1c8cd5af8c42983890d8ca55e7a820171b8e744c13f2d9998bf76cc3',
+      inviterCA: ['0x701c21bf1c8cd5af8c42983890d8ca55e7a820171b8e744c13f2d9998bf76cc3', 'invitation', 'InvitationConf'],
     },
   },
   testnet: {
@@ -41,6 +42,7 @@ const { networkConfig, useNetworkVariable, useNetworkVariables } = createNetwork
       faucetObject: '0xd5723eda84f691ae2623da79312c7909b1737c5b3866ecc5dbd6aa21718ff15d',
       BTCMemPool: 'https://mempool.space/testnet/tx/',
       twitterOracleAddress: '0x701c21bf1c8cd5af8c42983890d8ca55e7a820171b8e744c13f2d9998bf76cc3',
+      inviterCA: ['0x1d6f6657fc996008a1e43b8c13805e969a091560d4cea57b1db9f3ce4450d977', 'invitation', 'InvitationConf'],
     },
   },
   localnet: {
@@ -55,6 +57,7 @@ const { networkConfig, useNetworkVariable, useNetworkVariables } = createNetwork
       faucetObject: '0xd5723eda84f691ae2623da79312c7909b1737c5b3866ecc5dbd6aa21718ff15d',
       BTCMemPool: 'https://mempool.space/testnet/tx/',
       twitterOracleAddress: '0x701c21bf1c8cd5af8c42983890d8ca55e7a820171b8e744c13f2d9998bf76cc3',
+      inviterCA: ['0x1d6f6657fc996008a1e43b8c13805e969a091560d4cea57b1db9f3ce4450d977', 'invitation', 'InvitationConf'],
     },
   },
 });

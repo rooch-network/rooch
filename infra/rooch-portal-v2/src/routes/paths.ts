@@ -14,6 +14,7 @@ export const paths = {
     settings: `${ROOTS.DASHBOARD}/settings`,
     search: `${ROOTS.DASHBOARD}/search`,
     faucet: `${ROOTS.DASHBOARD}/faucet`,
+    inviter: `${ROOTS.DASHBOARD}/inviter`,
     'gas-swap': `${ROOTS.DASHBOARD}/gas-swap`,
   },
 };
