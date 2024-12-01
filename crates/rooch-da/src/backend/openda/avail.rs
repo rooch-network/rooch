@@ -85,7 +85,7 @@ impl Operator for AvailClient {
                     ))
                 }
                 _ => {
-                    if retries < max_retries {
+                    if retries <= max_retries {
                         retries += 1;
                         sleep(retry_delay).await;
                         retry_delay *= 3; // Exponential backoff
