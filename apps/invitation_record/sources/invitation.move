@@ -9,7 +9,7 @@ module invitation_record::invitation {
     use moveos_std::timestamp;
     use moveos_std::bcs;
     use moveos_std::tx_context;
-    use rooch_framework::simple_rng::{rand_u64_range, bytes_to_u64};
+    use rooch_framework::simple_rng::bytes_to_u64;
     use moveos_std::timestamp::now_seconds;
     use moveos_std::table_vec;
     use moveos_std::table_vec::TableVec;
