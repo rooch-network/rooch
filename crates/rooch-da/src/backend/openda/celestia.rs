@@ -72,7 +72,7 @@ impl Operator for CelestiaClient {
                     return Ok(());
                 }
                 Err(e) => {
-                    if retries < max_retries {
+                    if retries <= max_retries {
                         retries += 1;
                         sleep(retry_delay).await;
                         retry_delay *= 3;
