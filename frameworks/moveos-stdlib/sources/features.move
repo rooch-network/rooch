@@ -154,7 +154,8 @@ module moveos_std::features {
             TESTNET,
             MODULE_TEMPLATE,
             MODULE_PUBLISHING_ALLOWLIST,
-            WASM
+            WASM,
+            VALUE_SIZE_GAS,
         ]
     }
     // --------------------------------------------------------------------------------------------
