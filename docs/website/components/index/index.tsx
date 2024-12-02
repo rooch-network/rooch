@@ -1,6 +1,10 @@
 import Link from 'next/link'
 import Image from 'next/image'
-
+import { useEffect, useState } from 'react'
+import '@fontsource/kanit/400.css'
+import '@fontsource/kanit/500.css'
+import '@fontsource/kanit/700.css'
+import '@fontsource/kanit/900.css'
 interface Card {
   title: string
   description: string
@@ -132,249 +136,682 @@ const Index = ({
     window.open(href)
   }
 
+  const [signboardStates, setSignboardStates] = useState({
+    board1: false,
+    board2: false,
+    boardM: false,
+    board3: false,
+    board4: false,
+  })
+
+  const handleSignboardClick = (boardId: keyof typeof signboardStates) => {
+    setSignboardStates((prev) => ({
+      ...prev,
+      [boardId]: true,
+    }))
+  }
+
+  const [isMoveVmHovered, setIsMoveVmHovered] = useState(false)
+
+  const [currentStart, setCurrentStart] = useState(1)
+  const [translateX, setTranslateX] = useState(0)
+
+  const [btcTranslateX, setBtcTranslateX] = useState(0)
+  const [moveTranslateX, setMoveTranslateX] = useState(0)
+  const [btcStart, setBtcStart] = useState(1)
+  const [moveStart, setMoveStart] = useState(1)
+
+  const INFRA_IMAGE_COUNT = 10
+  const BTC_IMAGE_COUNT = 7
+  const MOVE_IMAGE_COUNT = 6
+
+  const getImages = (start: number, total: number) => {
+    const result = []
+    let current = start
+    for (let i = 0; i < 8; i++) {
+      result.push(current)
+      current = current === total ? 1 : current + 1
+    }
+    return result
+  }
+
+  const ITEM_WIDTH = 191
+  const GAP_WIDTH = 32
+  const SLIDE_WIDTH = ITEM_WIDTH + GAP_WIDTH
+
+  useEffect(() => {
+    const intervals = [
+      setInterval(() => {
+        setTranslateX((prev) => prev - SLIDE_WIDTH)
+        if (translateX <= -SLIDE_WIDTH * 3) {
+          setCurrentStart((prev) => (prev === 5 ? 1 : prev + 1))
+          setTranslateX(0)
+        }
+      }, 3000),
+
+      setInterval(() => {
+        setBtcTranslateX((prev) => prev - SLIDE_WIDTH)
+        if (btcTranslateX <= -SLIDE_WIDTH * 3) {
+          setBtcStart((prev) => (prev === 5 ? 1 : prev + 1))
+          setBtcTranslateX(0)
+        }
+      }, 3000),
+
+      setInterval(() => {
+        setMoveTranslateX((prev) => prev - SLIDE_WIDTH)
+        if (translateX <= -SLIDE_WIDTH * 3) {
+          setMoveStart((prev) => (prev === 5 ? 1 : prev + 1))
+          setMoveTranslateX(0)
+        }
+      }, 3000),
+    ]
+
+    return () => intervals.forEach(clearInterval)
+  }, [translateX, btcTranslateX, moveTranslateX])
+
+  const [carVisibility, setCarVisibility] = useState({
+    left: false,
+    middle: false,
+    right: false,
+  })
+
+  const [carMoving, setCarMoving] = useState({
+    left: false,
+    middle: false,
+    right: false,
+  })
+  const [isAnimating, setIsAnimating] = useState(false)
+
+  const handleCarAnimation = (position: 'left' | 'middle' | 'right') => {
+    if (isAnimating) return
+
+    setIsAnimating(true)
+
+    setCarVisibility((prev) => ({
+      ...prev,
+      [position]: true,
+    }))
+
+    setTimeout(() => {
+      setCarMoving((prev) => ({
+        ...prev,
+        [position]: true,
+      }))
+
+      setTimeout(() => {
+        setCarVisibility((prev) => ({
+          ...prev,
+          [position]: false,
+        }))
+        setCarMoving((prev) => ({
+          ...prev,
+          [position]: false,
+        }))
+        setIsAnimating(false)
+      }, 2000)
+    }, 100)
+  }
+
+  const [isDarkMode, setIsDarkMode] = useState(false)
+
+  useEffect(() => {
+    const isDark = document.documentElement.classList.contains('dark')
+    setIsDarkMode(isDark)
+
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.attributeName === 'class') {
+          const isDark = document.documentElement.classList.contains('dark')
+          setIsDarkMode(isDark)
+        }
+      })
+    })
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class'],
+    })
+
+    return () => observer.disconnect()
+  }, [])
+
+  const getImagePath = (category: string, num: number) => {
+    const darkSuffix = isDarkMode ? '-dark' : ''
+    return `/home/${category}${darkSuffix}/${num}.svg`
+  }
+
   return (
     <>
-      <div className="antialiased">
+      <div className="antialiased overflow-x-hidden">
         {/* HERO */}
-        <div className="mt-28 md:mt-0 flex flex-col md:flex-row items-center justify-center md:justify-between h-full md:h-[90vh] px-4 sm:px-6 md:px-8 lg:px-20 dark:border-b dark:border-b-zinc-800">
-          <div className="flex flex-col items-center justify-center">
-            <div className="mt-5 max-w-3xl text-center mx-auto">
-              <p className="block font-bold text-gray-800 text-4xl md:text-5xl lg:text-6xl dark:text-gray-200">
-                {heroTitle}
-              </p>
-              {heroSlogan ? (
-                <p className="block pt-2 font-bold text-gray-800 text-2xl md:text-3xl lg:text-4xl dark:text-gray-200">
-                  {heroSlogan}
-                </p>
-              ) : null}
+        <div className="flex flex-col items-center justify-center md:justify-center h-full px-4 sm:px-6 md:px-8 lg:px-20 dark:border-b dark:border-b-zinc-800 overflow-x-hidden">
+          <div
+            style={{
+              overflowX: 'hidden',
+              backgroundImage: 'url(./home/background.svg)',
+              backgroundSize: 'cover',
+              opacity: '0.3',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
+              width: '100%',
+              height: '100vh',
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              zIndex: -1,
+            }}
+          ></div>
+          <div className="flex flex-col items-center justify-center w-full font-[Han] z-10 relative top-[3rem]">
+            <div className="text-5xl md:text-5xl font-bold text-center text-black dark:text-[#EEEBEB]">
+              Build with Move
+              <br />
+              <div className="mt-4 flex items-center">
+                Build on{' '}
+                <div className="ml-5 flex items-center">
+                  Bitc
+                  <img className="w-[30px] h-[30px] ml-1 mr-1" src="./home/coin.svg" alt="" />
+                  in
+                </div>
+              </div>
             </div>
-            <div className="mt-5 max-w-xl text-center mx-auto">
-              <p className="text-lg text-gray-600 dark:text-gray-400">{heroDescription}</p>
-            </div>
-            <div className="mt-8 grid gap-3 w-full sm:inline-flex sm:justify-center cta-container">
-              <Link
-                className="inline-flex justify-center items-center gap-x-3 text-center bg-gradient-to-tl border border-transparent text-sm font-medium rounded-md py-3 px-6 cta"
-                href={heroButtonHref}
-              >
-                {heroButton}
-                <svg className="w-3 h-3" width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <path
-                    d="M5.27921 2L10.9257 7.64645C11.1209 7.84171 11.1209 8.15829 10.9257 8.35355L5.27921 14"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
-                </svg>
-              </Link>
+            <div className="mt-6 text-2xl text-center text-black dark:text-[#EAEAEA] max-w-3xl font-[Kanit]">
+              Rooch is a Bitcoin application layer solution that <br /> features MoveVM and Bitcoin
+              staking
             </div>
           </div>
-          <div className="md:w-1/2 w-full my-12 md:my-0">
-            <img src="/logo/hero/hero.svg" alt="hero" />
+          <div className="flex flex-col items-center justify-center w-full relative top-[-2.2rem]">
+            {/* signboard list */}
+            <div className="text-center mx-auto flex items-end justify-center relative w-full">
+              <div className="flex items-end justify-center w-full relative">
+                <div
+                  className="relative w-[28%] left-[2%] flex-shrink-0 z-10 cursor-pointer"
+                  onClick={() => handleSignboardClick('board1')}
+                >
+                  <Image
+                    src="/home/signboard-1-0.svg"
+                    className={`relative w-[100%]`}
+                    alt="signboard-1"
+                    width={420.06}
+                    height={616}
+                    style={{ objectFit: 'contain' }}
+                  />
+                  <Image
+                    src="/home/signboard-1-1.svg"
+                    className={`absolute top-0 left-0 w-[100%] transition-opacity duration-300 ${
+                      signboardStates.board1 ? 'opacity-100' : 'opacity-0'
+                    }`}
+                    alt="signboard-1-hover"
+                    width={420.06}
+                    height={616}
+                    style={{ objectFit: 'contain' }}
+                  />
+                </div>
+                <div
+                  className="relative w-[15%] -left-[3%] flex-shrink-0 cursor-pointer"
+                  onClick={() => handleSignboardClick('board2')}
+                >
+                  <Image
+                    src="/home/signboard-2-0.svg"
+                    className="relative w-[100%]"
+                    alt="signboard-2"
+                    width={206.56}
+                    height={335.5}
+                    style={{ objectFit: 'contain' }}
+                  />
+                  <Image
+                    src="/home/signboard-2-1.svg"
+                    className={`absolute top-0 left-0 w-[100%] transition-opacity duration-300 ${
+                      signboardStates.board2 ? 'opacity-100' : 'opacity-0'
+                    }`}
+                    alt="signboard-2-hover"
+                    width={206.56}
+                    height={335.5}
+                    style={{ objectFit: 'contain' }}
+                  />
+                </div>
+                <div
+                  className="relative w-[26%] flex-shrink-0 cursor-pointer"
+                  onClick={() => handleSignboardClick('boardM')}
+                >
+                  <Image
+                    src="/home/signboard-m-0.svg"
+                    className="relative w-[100%]"
+                    alt="signboard-m"
+                    width={386}
+                    height={393}
+                    style={{ objectFit: 'contain' }}
+                  />
+                  <Image
+                    src="/home/signboard-m-1.svg"
+                    className={`absolute top-0 left-0 z-10 w-[100%] transition-opacity duration-300 ${
+                      signboardStates.boardM ? 'opacity-100' : 'opacity-0'
+                    }`}
+                    alt="signboard-m-hover"
+                    width={386}
+                    height={393}
+                    style={{ objectFit: 'contain' }}
+                  />
+                </div>
+                <div
+                  className="relative w-[20%] left-[1%] flex-shrink-0 z-10 cursor-pointer"
+                  onClick={() => handleSignboardClick('board3')}
+                >
+                  <Image
+                    src="/home/signboard-3-0.svg"
+                    className="relative w-[100%]"
+                    alt="signboard-3"
+                    width={336.2}
+                    height={376.5}
+                    style={{ objectFit: 'contain' }}
+                  />
+                  <Image
+                    src="/home/signboard-3-1.svg"
+                    className={`absolute left-0 top-0 z-10 w-[100%] transition-opacity duration-300 ${
+                      signboardStates.board3 ? 'opacity-100' : 'opacity-0'
+                    }`}
+                    alt="signboard-3-hover"
+                    width={336.2}
+                    height={376.5}
+                    style={{ objectFit: 'contain' }}
+                  />
+                </div>
+                <div
+                  className="relative w-[21%] flex-shrink-0 cursor-pointer -left-[5rem]"
+                  onClick={() => handleSignboardClick('board4')}
+                >
+                  <Image
+                    src="/home/signboard-4-0.svg"
+                    className="relative w-[100%]"
+                    alt="signboard-4"
+                    width={332.28}
+                    height={617}
+                    style={{ objectFit: 'contain' }}
+                  />
+                  <Image
+                    src="/home/signboard-4-1.svg"
+                    className={`absolute top-0 left-0 z-10 w-[100%] transition-opacity duration-300 ${
+                      signboardStates.board4 ? 'opacity-100' : 'opacity-0'
+                    }`}
+                    alt="signboard-4-hover"
+                    width={332.28}
+                    height={617}
+                    style={{ objectFit: 'contain' }}
+                  />
+                </div>
+              </div>
+            </div>
+            <div>
+              <style jsx>{`
+                @keyframes scrollRight {
+                  from {
+                    background-position: 0 0;
+                  }
+                  to {
+                    background-position: 100% 0;
+                  }
+                }
+              `}</style>
+              <div
+                className="relative z-10"
+                style={{
+                  top: '-12px',
+                  background: 'url(./home/cation.svg)',
+                  animation: 'scrollRight 20s linear infinite',
+                  width: '100vw',
+                  height: '64px',
+                  backgroundRepeat: 'repeat-x',
+                }}
+              ></div>
+            </div>
           </div>
         </div>
 
         {/* FEATURES */}
-        <div className="py-16 md:py-20 px-4 sm:px-6 md:px-8 lg:px-20 bg-[#F5F5F5] dark:bg-inherit flex flex-col md:flex-row items-center justify-between gap-12 md:gap-8 dark:border-b dark:border-b-zinc-800">
-          <div className="px-4 max-w-[900px] w-full h-full">
-            <h2 className="text-4xl md:text-6xl font-semibold text-center md:text-start text-[#2E2929] dark:text-[#EEEBEB]">
-              {highlightTitle(
-                featuresTitle,
-                phrasesToHighlightForFeaturesChinese,
-                phrasesToHighlightForFeaturesEnglish,
-                highlightColor,
-              )}
-            </h2>
-            <div className="mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {features?.map((feature) => (
-                <div
-                  key={feature.title}
-                  className="flex flex-col items-center md:items-start justify-center md:justify-start space-y-3 bg-white dark:bg-[#333] p-6 rounded-2xl shadow-md overflow-hidden h-full hover:cursor-default"
-                >
-                  <div className="w-12 h-12 md:w-16 md:h-16 mb-4">
-                    <Image
-                      src={feature.logo}
-                      alt="features logo"
-                      width={50}
-                      height={50}
-                      className="dark:filter dark:invert dark:brightness-150"
-                    />
-                  </div>
-                  <h3 className="md:text-2xl text-[#FF914B] text-center md:text-start mb-2 font-bold text-2xl leading-7">
-                    {feature.title}
-                  </h3>
-                  <div className="text-gray-600 text-center md:text-start dark:text-[#EAEAEA]">
-                    <p>{feature.description}</p>
-                  </div>
-                  <div className="flex items-end justify-end h-full w-full">
-                    <div
-                      className="font-semibold text-[#2E2929] dark:text-[#EEEBEB] hover:cursor-pointer flex items-center justify-center space-x-2 hover:underline transition-all"
-                      onClick={() => handleButtonOnClick(feature.buttonHref)}
-                    >
-                      <span>{feature.buttonDesc}</span>
-                      <svg
-                        className="w-3 h-3"
-                        width="16"
-                        height="16"
-                        viewBox="0 0 16 16"
-                        fill="none"
-                      >
-                        <path
-                          d="M5.27921 2L10.9257 7.64645C11.1209 7.84171 11.1209 8.15829 10.9257 8.35355L5.27921 14"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                        />
-                      </svg>
-                    </div>
-                  </div>
-                </div>
-              ))}
+        <div className="py-16 md:py-10 md:pt-0 px-4 sm:px-6 md:px-8 lg:px-20 dark:bg-inherit flex flex-col md:flex-col items-center justify-between gap-12 md:gap-8 dark:border-b dark:border-b-zinc-800">
+          <div className="flex flex-col items-center justify-center w-full font-['Han']">
+            <div className="mt-14 text-5xl md:text-5xl font-bold text-center text-black dark:text-[#EEEBEB]">
+              MoveVM
+            </div>
+            <div className="mt-6 text-2xl text-center text-black dark:text-[#EAEAEA] max-w-3xl font-[Kanit]">
+              The best choice of VM for Bitcoin DApps
             </div>
           </div>
-          <div className="flex flex-wrap justify-center items-center w-full md:w-auto">
-            <img
-              src="/logo/features/features_logo.svg"
-              alt="features logo"
-              className="w-full h-auto object-cover"
-            />
+          <div
+            className="flex flex-wrap justify-center items-center w-full md:w-auto relative cursor-pointer"
+            onMouseEnter={() => setIsMoveVmHovered(true)}
+            onMouseLeave={() => setIsMoveVmHovered(false)}
+          >
+            <div className="relative w-full">
+              <img
+                src="/home/move-vm-light.svg"
+                alt="features logo"
+                className="w-full h-auto object-cover transition-opacity duration-300"
+                style={{ opacity: isMoveVmHovered ? 0 : 1 }}
+              />
+              <img
+                src="/home/move-vm-dark.svg"
+                alt="features logo"
+                className="w-full h-auto object-cover absolute inset-0 transition-opacity duration-300"
+                style={{ opacity: isMoveVmHovered ? 1 : 0 }}
+              />
+            </div>
+          </div>
+          <div className="mt-6">
+            <style jsx>{`
+              @keyframes scrollRight {
+                from {
+                  background-position: 0 0;
+                }
+                to {
+                  background-position: 100% 0;
+                }
+              }
+            `}</style>
+            <div
+              className="relative z-10"
+              style={{
+                top: '-12px',
+                background: 'url(./home/cation.svg)',
+                animation: 'scrollRight 20s linear infinite',
+                width: '100vw',
+                height: '64px',
+                backgroundRepeat: 'repeat-x',
+              }}
+            ></div>
+          </div>
+        </div>
+
+        {/* FEATURES */}
+        <div className="py-12 px-8 lg:px-20 dark:bg-inherit flex flex-col items-center justify-between gap-12 md:gap-8 dark:border-b dark:border-b-zinc-800">
+          <div className="flex flex-col items-center justify-center w-full font-['Han']">
+            <div className="mt-14 text-5xl md:text-5xl font-bold text-center text-black dark:text-[#EEEBEB]">
+              BTC Staking
+            </div>
+            <div className="mt-6 text-2xl text-center text-black dark:text-[#EAEAEA] max-w-3xl font-[Kanit]">
+              Generate yield for users in a non-custodial manner,
+              <br />
+              compatible with Babylon protocol
+            </div>
+          </div>
+          <div className="flex flex-wrap justify-center items-center w-full md:w-auto relative cursor-pointer -mt-[7vw]">
+            <div className="relative w-screen">
+              <img src="/home/road-sign.svg" alt="road-sign" className="w-screen h-auto" />
+            </div>
+            <div className="relative w-screen mt-[120px]">
+              {/* left car */}
+              <img
+                src="/home/car-l.svg"
+                className={`absolute bottom-0 left-[10%] w-[25%] transform -translate-x-1/2 pointer-events-none transition-all duration-2000 ease-in-out
+                  ${carMoving.left ? 'scale-[0.05] translate-y-[-15vw] translate-x-[6vw] opacity-0' : ''}`}
+                style={{ display: carVisibility.left ? 'block' : 'none' }}
+              />
+              {/* mid card */}
+              <img
+                src="/home/car-m.svg"
+                className={`absolute bottom-0 left-1/2 w-[25%] transform -translate-x-1/2 pointer-events-none transition-all duration-2000 ease-in-out
+                  ${carMoving.middle ? 'scale-[0.05] translate-y-[-15vw] opacity-0' : ''}`}
+                style={{ display: carVisibility.middle ? 'block' : 'none' }}
+              />
+              {/* right car */}
+              <img
+                src="/home/car-r.svg"
+                className={`absolute bottom-0 left-[90%] w-[25%] transform -translate-x-1/2 pointer-events-none transition-all duration-2000 ease-in-out
+                  ${carMoving.right ? 'scale-[0.05] translate-y-[-15vw] translate-x-[-34vw] opacity-0' : ''}`}
+                style={{ display: carVisibility.right ? 'block' : 'none' }}
+              />
+              <img src="/home/ground.svg" alt="road-sign" className="w-screen h-auto" />
+              <button
+                className="absolute inset-0 w-1/3 bottom-0 left-[18%] transform -translate-x-1/2 h-full bg-transparent cursor-pointer"
+                onClick={() => handleCarAnimation('left')}
+                disabled={isAnimating}
+              />
+              <button
+                className="absolute inset-0 w-1/3 bottom-0 left-1/2 transform -translate-x-1/2 h-full bg-transparent cursor-pointer"
+                onClick={() => handleCarAnimation('middle')}
+                disabled={isAnimating}
+              />
+              <button
+                className="absolute inset-0 w-1/3 bottom-0 left-[82%] transform -translate-x-1/2 h-full bg-transparent cursor-pointer"
+                onClick={() => handleCarAnimation('right')}
+                disabled={isAnimating}
+              />
+            </div>
+          </div>
+          <div className="relative -mt-[3vw]">
+            <style jsx>{`
+              @keyframes scrollRight {
+                from {
+                  background-position: 0 0;
+                }
+                to {
+                  background-position: 100% 0;
+                }
+              }
+            `}</style>
+            <div
+              className="relative z-10"
+              style={{
+                background: 'url(./home/cation.svg)',
+                animation: 'scrollRight 20s linear infinite',
+                width: '100vw',
+                height: '64px',
+                backgroundRepeat: 'repeat-x',
+              }}
+            ></div>
           </div>
         </div>
 
         {/* EXPLORE */}
-        <div className="py-20 px-4 sm:px-6 md:px-8 lg:px-20 bg-white dark:bg-inherit flex flex-col md:flex-row items-center justify-center gap-6 md:gap-8 dark:border-b dark:border-b-zinc-800">
-          <div className="px-4 max-w-[854px] w-full h-full">
-            <h2 className="text-4xl md:text-6xl font-semibold text-center text-[#2E2929] dark:text-[#E4E4E4]">
-              {highlightTitle(
-                exploreTitle,
-                phrasesToHighlightForExploreChinese,
-                phrasesToHighlightForExploreEnglish,
-                highlightColorForExplore,
-              )}
-            </h2>
-            <div className="flex flex-col items-center justify-center md:justify-start gap-6 mt-8">
-              <h3 className="text-[#737B7D] dark:text-[#81888A] text-base font-normal max-w-2xl text-center">
-                {exploreContent}
-              </h3>
-              <img
-                src="/logo/explore/explore_logo.svg"
-                alt="explore logo"
-                className="w-full md:w-9/12 h-full dark:hidden block"
-              />
-              <img
-                src="/logo/explore/explore_logo_dark.svg"
-                alt="explore logo"
-                className="w-full md:w-9/12 h-full hidden dark:block"
-              />
-              <div className="mt-8 h-12">
-                <button
-                  className="px-8 py-4 bg-[#FF914B] font-bold text-lg text-center rounded-full border border-1 border-b-[6px] border-black active:border-b-4 active:transform active:translate-y-0.5 hover:shadow-custom1 dark:border-white dark:shadow-custom1 transition-all"
-                  onClick={() => handleButtonOnClick(exploreButtonHref)}
-                >
-                  {featuresButton}
-                </button>
+        <div className="py-10 px-4 sm:px-6 md:px-8 lg:px-20 dark:bg-inherit flex flex-col md:flex-row items-center justify-center gap-6 md:gap-8 dark:border-b dark:border-b-zinc-800">
+          <div className="w-full h-full flex items-center justify-center">
+            <div className="flex flex-col gap-y-12 font-['Han'] text-center">
+              <div className="text-3xl w-[318px] h-[150px] font-medium rounded-[28px] border-[#81B39F] border-[3px] flex items-center justify-center">
+                Infra
+              </div>
+              <div className="text-3xl w-[318px] h-[150px] font-medium rounded-[28px] border-[#81B39F] border-[3px] flex items-center justify-center">
+                BTC <br /> Liquidity
+              </div>
+              <div className="text-3xl w-[318px] h-[150px] font-medium rounded-[28px] border-[#81B39F] border-[3px] flex items-center justify-center">
+                Move <br /> Ecosystem
               </div>
             </div>
-          </div>
-
-          {/* EXPLORE CARDS */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8 md:mt-0 w-full">
-            {explores.map((explore) => (
+            <div className="flex flex-col overflow-hidden w-[892px] ml-12">
+              {/* Infra */}
               <div
-                key={explore.title}
-                className="bg-[#BFC9C6] rounded-2xl border border-black p-6 flex flex-col items-start justify-center gap-4 hover:cursor-default hover:shadow-lg transition-shadow duration-300 h-full"
+                className="flex gap-8 items-center transition-transform duration-500 ease-in-out"
+                style={{ transform: `translateX(${translateX}px)` }}
               >
-                <div className="flex items-center justify-end w-full mb-4">
-                  <Image src={explore.logo} alt={explore.title} width={100} height={100} />
-                </div>
-                <h4 className="text-[#413434] font-bold text-2xl leading-7">{explore.title}</h4>
-                <p className="text-[#413434]">{explore.description}</p>
+                {getImages(currentStart, INFRA_IMAGE_COUNT).map((num, index) => (
+                  <img
+                    key={`${num}-${index}`}
+                    src={getImagePath('infra', num)}
+                    className="w-[191px] flex-shrink-0"
+                  />
+                ))}
               </div>
-            ))}
+
+              {/* BTC */}
+              <div className="flex items-center overflow-hidden relative -left-8">
+                <div
+                  className="flex flex-row-reverse gap-8 items-center transition-transform duration-500 ease-in-out"
+                  style={{ transform: `translateX(${-btcTranslateX}px)` }}
+                >
+                  {getImages(btcStart, BTC_IMAGE_COUNT).map((num, index) => (
+                    <img
+                      key={`btc-${num}-${index}`}
+                      src={getImagePath('btc', num)}
+                      className="w-[191px] flex-shrink-0"
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Move */}
+              <div className="flex items-center overflow-hidden">
+                <div
+                  className="flex gap-8 items-center transition-transform duration-500 ease-in-out"
+                  style={{ transform: `translateX(${moveTranslateX}px)` }}
+                >
+                  {getImages(moveStart, MOVE_IMAGE_COUNT).map((num, index) => (
+                    <img
+                      key={`move-${num}-${index}`}
+                      src={getImagePath('move', num)}
+                      className="w-[191px] flex-shrink-0"
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-
-        {/* ECOSYSTEM */}
-        <div className="py-20 px-4 sm:px-6 md:px-8 lg:px-20 flex flex-col items-center justify-center gap-6 md:gap-0 bg-[#F5F5F5] dark:bg-inherit w-full dark:border-b dark:border-b-zinc-800">
-          <div className="flex flex-col items-center justify-center h-full gap-2">
-            <h2 className="text-4xl md:text-6xl font-semibold text-center md:text-start text-[#2E2929] dark:text-[#E6E6E6]">
-              {highlightTitle(
-                ecosystemTitle,
-                phrasesToHighlightForEcosystemChinese,
-                phrasesToHighlightForEcosystemEnglish,
-                highlightColor,
-              )}
-            </h2>
-            <p className="mt-4 text-[#737B7D] dark:text-[#81888A] text-center md:text-start">
-              {/*{ecosystemContent}*/}
-            </p>
-          </div>
-          <div className="flex items-center justify-center w-full mt-2">
-            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 justify-items-center">
-              {ecosystemBrand.map((brand) => (
-                <button
-                  className="relative bg-white dark:bg-inherit rounded-full md:rounded-lg p-4 flex flex-row md:flex-col items-center md:justify-center justify-start border border-1 border-b-[6px] border-black dark:border-white active:border-b-4 active:transform active:translate-y-0.5 transition-all shadow-sm w-full h-14 md:w-52 md:h-32 gap-2 hover:cursor-pointer hover:shadow-md"
-                  onClick={() => handleButtonOnClick(brand.brandUrl)}
-                >
-                  <Image
-                    src={brand.brandLogo}
-                    alt={brand.brandTitle}
-                    width={60}
-                    height={60}
-                    className="w-[25px] h-[25px] md:w-[60px] md:h-[60px]"
-                  />
-                  <p className="text-center text-base font-semibold dark:text-zinc-200">
-                    {brand.brandTitle}
-                  </p>
-                </button>
-              ))}
-            </div>
-          </div>
+        <div className="relative">
+          <style jsx>{`
+            @keyframes scrollRight {
+              from {
+                background-position: 0 0;
+              }
+              to {
+                background-position: 100% 0;
+              }
+            }
+          `}</style>
+          <div
+            className="relative z-10"
+            style={{
+              background: 'url(./home/cation.svg)',
+              animation: 'scrollRight 20s linear infinite',
+              width: '100vw',
+              height: '64px',
+              backgroundRepeat: 'repeat-x',
+            }}
+          ></div>
         </div>
 
         {/* BLOG */}
-        <div className="py-16 md:py-20 px-4 sm:px-6 md:px-8 lg:px-20 bg-white dark:bg-inherit flex flex-col md:flex-row items-center justify-center gap-6 md:gap-8">
+        <div className="py-16 md:py-20 px-4 sm:px-6 md:px-8 lg:px-20 dark:bg-inherit flex flex-col items-center justify-center gap-6 md:gap-8">
           <div className="px-4 w-full h-full">
-            <h2 className="text-4xl md:text-6xl font-semibold text-center md:text-start text-[#2E2929] dark:text-[#E9E9E9]">
-              {highlightTitle(
-                blogsTitle,
-                phrasesToHighlightForBlogsChinese,
-                phrasesToHighlightForBlogsEnglish,
-                highlightColor,
-              )}
-            </h2>
-            <div className="mt-8 flex flex-col gap-8">
-              {blogs?.map((blog) => (
-                <Link key={blog.title} href={blog.link} className="block">
-                  <div className="bg-inherit md:bg-white dark:bg-[#333] shadow-md hover:shadow-lg dark:hover:border-[#555] rounded-lg md:border border-gray-200 dark:border-[#333] transition-all duration-300 flex flex-col md:flex-row overflow-hidden">
-                    <div className="md:w-1/3 w-full h-auto">
-                      <img
-                        src={blog.image}
-                        alt={blog.title}
-                        className="h-full w-full object-cover rounded-lg"
-                      />
-                    </div>
-                    <div className="flex flex-col p-6 md:p-8 w-full justify-between">
-                      <div>
-                        <h3 className="text-2xl md:text-3xl font-semibold text-gray-800 dark:text-zinc-200">
-                          {blog.title}
-                        </h3>
-                        <p className="text-gray-600 mt-2 text-sm dark:text-zinc-400">{blog.date}</p>
-                      </div>
-                      <button className="mt-4 self-end text-blue-500 hover:text-blue-700 transition-colors">
-                        <Image
-                          src="/logo/blogs/chevron_right.svg"
-                          alt="Chevron right"
-                          width={24}
-                          height={24}
-                          className="dark:filter dark:invert"
-                        />
-                      </button>
-                    </div>
-                  </div>
-                </Link>
-              ))}
+            <div className="flex flex-col items-center justify-center w-full font-['Han']">
+              <div className="mt-14 text-5xl md:text-5xl font-bold text-center text-black dark:text-[#EEEBEB]">
+                Blog & News
+              </div>
             </div>
           </div>
+          <div className="w-full flex items-center justify-center font-[Kanit]">
+            <div
+              className="w-[45%] h-[586px] border-2 border-[#036840] rounded-[15px] cursor-pointer bg-white dark:bg-inherit"
+              onClick={() => {
+                window.open('https://rooch.network/blog/unveiling-rooch-pre-mainnet', '_blank')
+              }}
+            >
+              <div className="w-full h-[376px] -mt-[2px]">
+                <img
+                  src="/home/blog/blog-0.png"
+                  className="inline-block w-full h-full object-cover rounded-t-[15px] mt-1"
+                  alt="blog-1"
+                />
+              </div>
+              <div className="flex flex-col items-start p-6">
+                <div className="text-base font-normal font-[Kanit]">9th Sep, 2024</div>
+                <div className="w-[80%] text-4xl mt-6 font-normal font-[Kanit]">
+                  Unveiling Rooch Pre-Mainnet: A New Era for Bitcoin Applications
+                </div>
+              </div>
+            </div>
+            <div className="w-[45%] flex flex-col gap-y-2 ml-12">
+              <div
+                className="w-full h-[190px] border-2 border-[#036840] rounded-[15px] flex p-6 cursor-pointer bg-white dark:bg-inherit"
+                onClick={() => {
+                  window.open(
+                    'https://rooch.network/blog/the-application-layer-of-bitcoin',
+                    '_blank',
+                  )
+                }}
+              >
+                <div className="w-[40%] max-w-[220px] h-full flex flex-col items-center">
+                  <img
+                    src="/home/blog/blog-1.jpg"
+                    alt="blog-1"
+                    className="w-full rounded-xl object-cover"
+                  />
+                  <div className="text-base font-normal mt-2 font-[Kanit]">24th Apr, 2024</div>
+                </div>
+                <div className="w-[60%] h-full flex flex-col justify-between ml-4">
+                  <div className="text-2xl font-normal font-[Kanit]">
+                    Rooch Network - The Application Layer of Bitcoin
+                  </div>
+                  <div className="ml-auto">
+                    <img src="/home/blog-enter.svg" className="h-8" alt="blog-enter" />
+                  </div>
+                </div>
+              </div>
+              <div
+                className="w-full h-[190px] border-2 border-[#036840] rounded-[15px] flex p-6 cursor-pointer bg-white dark:bg-inherit"
+                onClick={() => {
+                  window.open('https://rooch.network/blog/sprouting-of-rooch', '_blank')
+                }}
+              >
+                <div className="w-[40%] max-w-[220px] h-full flex flex-col items-center">
+                  <img
+                    src="/home/blog/blog-2.jpg"
+                    alt="blog-2"
+                    className="w-full rounded-xl object-cover"
+                  />
+                  <div className="text-base font-normal mt-2">13th Jun, 2024</div>
+                </div>
+                <div className="w-[60%] h-full flex flex-col justify-between ml-4">
+                  <div className="text-2xl font-normal">The Sprouting of Rooch</div>
+                  <div className="ml-auto">
+                    <img src="/home/blog-enter.svg" className="h-8" alt="blog-enter" />
+                  </div>
+                </div>
+              </div>
+              <div
+                className="w-full h-[190px] border-2 border-[#036840] rounded-[15px] flex p-6 cursor-pointer bg-white dark:bg-inherit"
+                onClick={() => {
+                  window.open('https://rooch.network/blog/bug-bounty2', '_blank')
+                }}
+              >
+                <div className="w-[40%] max-w-[220px] h-full flex flex-col items-center">
+                  <img
+                    src="/home/blog/blog-3.jpg"
+                    alt="blog-3"
+                    className="w-full rounded-xl object-cover"
+                  />
+                  <div className="text-base font-normal mt-2">14th Nov, 2024</div>
+                </div>
+                <div className="w-[60%] h-full flex flex-col justify-between ml-4">
+                  <div className="text-2xl font-normal">
+                    Rooch Network Bug Bounty Program Phase II{' '}
+                  </div>
+                  <div className="ml-auto">
+                    <img src="/home/blog-enter.svg" className="h-8" alt="blog-enter" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="relative">
+          <style jsx>{`
+            @keyframes scrollRight {
+              from {
+                background-position: 0 0;
+              }
+              to {
+                background-position: 100% 0;
+              }
+            }
+          `}</style>
+          <div
+            className="relative z-10"
+            style={{
+              background: 'url(./home/cation.svg)',
+              animation: 'scrollRight 20s linear infinite',
+              width: '100vw',
+              height: '64px',
+              backgroundRepeat: 'repeat-x',
+            }}
+          ></div>
         </div>
       </div>
     </>
