@@ -815,4 +815,42 @@ module grow_bitcoin::grow_bitcoin {
         assert!(weight == 22, 0);
         assert!(weight2 == 13, 0)
     }
+
+    #[test(sender=@0x42)]
+    fun test_batch_stake(sender: signer) {
+        let owner_addr = signer::address_of(&sender);
+        bitcoin_move::genesis::init_for_test();
+        add_latest_block(100, @0x77dfc2fe598419b00641c296181a96cf16943697f573480b023b77cce82ada21);
+        init();
+        let _admin_cap = app_admin::admin::init_for_test();
+        //deploy(1, 0, 200, admin_cap);
+        let seconds = 100;
+        let tx_id = @0x77dfc2fe598419b00641c296181a96cf16943697f573480b023b77cce82ada21;
+        let sat_value = 100000000;
+        let utxo = utxo::new_for_testing(tx_id, 0u32, sat_value);
+        let utxo2 = utxo::new_for_testing(tx_id, 1u32, sat_value);
+        let utxo_id = object::id(&utxo);
+        let utxo_id2 = object::id(&utxo2);
+
+        utxo::transfer_for_testing(utxo, owner_addr);
+        utxo::transfer_for_testing(utxo2, owner_addr);
+
+        timestamp::fast_forward_seconds_for_test(seconds);
+        batch_stake(&sender, vector[utxo_id, utxo_id2]);
+
+        let (total_value, total_weight) = query_total_stake();
+        assert!(total_value == 2 * sat_value, 1);
+        assert!(total_weight == 2 * sat_value * calculate_time_lock_weight(0), 2);
+        timestamp::fast_forward_seconds_for_test(seconds);
+        let amount = query_gov_token_amount(utxo_id);
+        let amount2 = query_gov_token_amount(utxo_id2);
+        assert!(amount == 2025450, 1);
+        assert!(amount2 == 675150, 2);
+
+        batch_unstake(&sender, vector[utxo_id, utxo_id2]);
+        let amount = query_gov_token_amount(utxo_id);
+        assert!(amount == 0, 3);
+        let amount2 = query_gov_token_amount(utxo_id2);
+        assert!(amount2 == 0, 4);
+    }
 }
