@@ -6,6 +6,7 @@ module grow_bitcoin::grow_bitcoin {
     use std::string::{Self, String};
     use std::option;
     use std::u64;
+    use std::vector;
     use bitcoin_move::bbn;
     use bitcoin_move::bbn::BBNStakeSeal;
     use bitcoin_move::types;
@@ -414,6 +415,19 @@ module grow_bitcoin::grow_bitcoin {
             farming_asset.harvest_index = new_harvest_index;
         };
         withdraw_token
+    }
+
+    /// Harvest yield farming token from stake
+    public entry fun batch_harvest(signer:&signer, assets: vector<ObjectID>) {
+        let len = vector::length(&assets);
+        let i = 0;
+        while (i < len) {
+            let asset_id = *vector::borrow(&assets, i);
+            let utxo_obj = object::borrow_mut_object<UTXO>(signer, asset_id);
+            let coin = do_harvest(signer, object::id(utxo_obj));
+            account_coin_store::deposit(sender(), coin);
+            i = i + 1;
+        }
     }
 
     /// Harvest yield farming token from stake
