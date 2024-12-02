@@ -126,6 +126,7 @@ module rooch_framework::onchain_config {
             vector::push_back(&mut enables, features::get_value_size_gas_feature());
         } else if (chain_id::is_test()) {
             vector::push_back(&mut enables, features::get_testnet_feature());
+            vector::push_back(&mut enables, features::get_value_size_gas_feature());
         };
         if (chain_id::is_main()) {
             vector::push_back(&mut enables, features::get_module_publishing_allowlist_feature());
