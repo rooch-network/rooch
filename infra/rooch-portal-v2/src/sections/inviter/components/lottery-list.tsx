@@ -28,25 +28,23 @@ const data = [{
 
 
 export function InviterLotteryList() {
-  console.log('hahahh')
   return (
     <Card className="mt-4">
-        <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ p: 2 }}>
-          <Typography variant="h6">Activity History</Typography>
-          <Box display="flex" alignItems="center">
-            <Button variant="outlined" size="small" sx={{ mx: 0.5 }}>1</Button>
-            <Button variant="outlined" size="small" sx={{ mx: 0.5 }}>5</Button>
-            <Button variant="outlined" size="small" sx={{ mx: 0.5 }}>10</Button>
-            <Button variant="outlined" size="small" sx={{ mx: 0.5 }}>All</Button>
-            <LoadingButton variant="contained" sx={{ ml: 1 }}>Open Ticket</LoadingButton>
-          </Box>
+      <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ p: 2 }}>
+        <Typography variant="h6">Activity History</Typography>
+        <Box display="flex" alignItems="center">
+          <Button variant="outlined" size="small" sx={{ mx: 0.5 }}>1</Button>
+          <Button variant="outlined" size="small" sx={{ mx: 0.5 }}>5</Button>
+          <Button variant="outlined" size="small" sx={{ mx: 0.5 }}>10</Button>
+          <Button variant="outlined" size="small" sx={{ mx: 0.5 }}>All</Button>
+          <LoadingButton variant="contained" sx={{ ml: 1 }}>Open Ticket</LoadingButton>
+        </Box>
       </Box>
       <Scrollbar sx={{ minHeight: 462 }}>
         <Table sx={{ minWidth: 720 }} size='medium'>
           <TableHeadCustom
             headLabel={[
               { id: 'address', label: 'Address' },
-              { id: 'coin', label: 'RGAS' },
               {
                 id: 'timestamp',
                 label: (
@@ -55,6 +53,7 @@ export function InviterLotteryList() {
                   </Box>
                 ),
               },
+              { id: 'coin', label: 'RGAS' },
             ]}
           />
           <TableBody>

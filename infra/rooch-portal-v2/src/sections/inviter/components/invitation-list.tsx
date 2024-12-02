@@ -32,7 +32,9 @@ const data = [
 export function InvitationList() {
   return (
     <Card className="mt-4">
-      <CardHeader title="Activity History"  />
+      <Box sx={{minHeight: 30, p:2}} >
+        <Typography variant="h6" >Activity History</Typography>
+      </Box>
       <Scrollbar sx={{ minHeight: 462 }}>
         <Table sx={{ minWidth: 720 }} size="medium">
           <TableHeadCustom
