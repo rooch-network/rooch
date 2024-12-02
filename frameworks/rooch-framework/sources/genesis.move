@@ -73,8 +73,8 @@ module rooch_framework::genesis {
         // give initial gas to the rooch dao
         gas_coin::faucet(rooch_dao_address, GENESIS_INIT_GAS_AMOUNT);
 
-        // give initial gas to the sequencer if it's local or dev
-        if(chain_id::is_local_or_dev()){
+        // give initial gas to the sequencer if it's not mainnet
+        if(!chain_id::is_main()){
             gas_coin::faucet(sequencer_addr, GENESIS_INIT_GAS_AMOUNT);
         }
     }
