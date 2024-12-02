@@ -280,11 +280,7 @@ module grow_bitcoin::grow_bitcoin {
         while (i < len) {
             let asset_id = *vector::borrow(&assets, i);
             let asset = object::borrow_mut_object<UTXO>(signer, asset_id);
-            assert!(!utxo::contains_temp_state<StakeInfo>(asset), ErrorAlreadyStaked);
-            utxo::add_temp_state(asset, StakeInfo {});
-            let utxo_value = value(object::borrow(asset));
-            let asset_weight = utxo_value * calculate_time_lock_weight(0);
-            do_stake(signer, asset, utxo_value, asset_weight);
+            stake(signer, asset);
             i = i + 1;
         }
     }
@@ -311,14 +307,7 @@ module grow_bitcoin::grow_bitcoin {
         while (i < len) {
             let asset_id = *vector::borrow(&assets, i);
             let asset = object::borrow_mut_object<BBNStakeSeal>(signer, asset_id);
-            assert!(!bbn::contains_temp_state<StakeInfo>(asset), ErrorAlreadyStaked);
-            bbn::add_temp_state(asset, StakeInfo {});
-            let bbn_stake_seal = object::borrow(asset);
-            let stake_value = bbn::staking_value(bbn_stake_seal);
-            let asset_weight = stake_value * calculate_time_lock_weight(
-                (((bbn::staking_time(bbn_stake_seal) as u64) + bbn::block_height(bbn_stake_seal)) as u32)
-            );
-            do_stake(signer, asset, stake_value, asset_weight);
+            stake_bbn(signer, asset);
             i = i + 1;
         }
     }
@@ -416,9 +405,7 @@ module grow_bitcoin::grow_bitcoin {
         while (i < len) {
             let asset_id = *vector::borrow(&assets, i);
             let asset = object::borrow_mut_object<UTXO>(signer, asset_id);
-            let coin = do_unstake(signer, object::id(asset));
-            utxo::remove_temp_state<StakeInfo>(asset);
-            account_coin_store::deposit(sender(), coin);
+            unstake(signer, asset);
             i = i + 1;
         }
     }
@@ -437,9 +424,7 @@ module grow_bitcoin::grow_bitcoin {
         while (i < len) {
             let asset_id = *vector::borrow(&assets, i);
             let asset = object::borrow_mut_object<BBNStakeSeal>(signer, asset_id);
-            let coin = do_unstake(signer, object::id(asset));
-            bbn::remove_temp_state<StakeInfo>(asset);
-            account_coin_store::deposit(sender(), coin);
+            unstake_bbn(signer, asset);
             i = i + 1;
         }
     }
@@ -496,8 +481,7 @@ module grow_bitcoin::grow_bitcoin {
         while (i < len) {
             let asset_id = *vector::borrow(&assets, i);
             let utxo_obj = object::borrow_mut_object<UTXO>(signer, asset_id);
-            let coin = do_harvest(signer, object::id(utxo_obj));
-            account_coin_store::deposit(sender(), coin);
+            harvest(signer, utxo_obj);
             i = i + 1;
         }
     }
