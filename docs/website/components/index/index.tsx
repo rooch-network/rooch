@@ -406,7 +406,7 @@ const Index = ({
                   />
                   <Image
                     src="/home/signboard-3-1.svg"
-                    className={`absolute top-0 left-0 z-10 w-[100%] transition-opacity duration-300 ${
+                    className={`absolute left-0 top-0 z-10 w-[100%] transition-opacity duration-300 ${
                       signboardStates.board3 ? 'opacity-100' : 'opacity-0'
                     }`}
                     alt="signboard-3-hover"
