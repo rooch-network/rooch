@@ -301,8 +301,8 @@ const Index = ({
               zIndex: -1,
             }}
           ></div>
-          <div className="flex flex-col mt-8 items-center justify-center w-full font-[Han] z-10 relative top-[6rem]">
-            <div className="mt-8 text-5xl md:text-5xl font-bold text-center text-black dark:text-[#EEEBEB]">
+          <div className="flex flex-col items-center justify-center w-full font-[Han] z-10 relative top-[3rem]">
+            <div className="text-5xl md:text-5xl font-bold text-center text-black dark:text-[#EEEBEB]">
               Build with Move
               <br />
               <div className="mt-4 flex items-center">
@@ -319,9 +319,9 @@ const Index = ({
               staking
             </div>
           </div>
-          <div className="flex flex-col items-center justify-center w-full">
+          <div className="flex flex-col items-center justify-center w-full relative top-[-2.2rem]">
             {/* signboard list */}
-            <div className="mt-5 text-center mx-auto flex items-end justify-center relative w-full">
+            <div className="text-center mx-auto flex items-end justify-center relative w-full">
               <div className="flex items-end justify-center w-full relative">
                 <div
                   className="relative w-[28%] left-[2%] flex-shrink-0 z-10 cursor-pointer"
