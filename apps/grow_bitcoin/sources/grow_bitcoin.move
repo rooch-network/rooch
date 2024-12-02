@@ -402,12 +402,16 @@ module grow_bitcoin::grow_bitcoin {
     ) {
         let len = vector::length(&assets);
         let i = 0;
+        let total_coin = coin::zero<GROW>();
         while (i < len) {
             let asset_id = *vector::borrow(&assets, i);
             let asset = object::borrow_mut_object<UTXO>(signer, asset_id);
-            unstake(signer, asset);
+            let coin = do_unstake(signer, object::id(asset));
+            utxo::remove_temp_state<StakeInfo>(asset);
+            coin::merge(&mut total_coin, coin);
             i = i + 1;
-        }
+        };
+        account_coin_store::deposit(sender(), total_coin);
     }
 
     /// Unstake asset from farming pool
@@ -421,12 +425,16 @@ module grow_bitcoin::grow_bitcoin {
     public entry fun batch_unstake_bbn(signer: &signer, assets: vector<ObjectID>) {
         let len = vector::length(&assets);
         let i = 0;
+        let total_coin = coin::zero<GROW>();
         while (i < len) {
             let asset_id = *vector::borrow(&assets, i);
             let asset = object::borrow_mut_object<BBNStakeSeal>(signer, asset_id);
-            unstake_bbn(signer, asset);
+            let coin = do_unstake(signer, object::id(asset));
+            bbn::remove_temp_state<StakeInfo>(asset);
+            coin::merge(&mut total_coin, coin);
             i = i + 1;
-        }
+        };
+        account_coin_store::deposit(sender(), total_coin);
     }
 
     public entry fun unstake_bbn(signer: &signer, asset: &mut Object<BBNStakeSeal>) {
@@ -478,12 +486,16 @@ module grow_bitcoin::grow_bitcoin {
     public entry fun batch_harvest(signer:&signer, assets: vector<ObjectID>) {
         let len = vector::length(&assets);
         let i = 0;
+        let total_coin = coin::zero<GROW>();
         while (i < len) {
             let asset_id = *vector::borrow(&assets, i);
             let utxo_obj = object::borrow_mut_object<UTXO>(signer, asset_id);
-            harvest(signer, utxo_obj);
+            let coin = do_harvest(signer, object::id(utxo_obj));
+            utxo::remove_temp_state<StakeInfo>(utxo_obj);
+            coin::merge(&mut total_coin, coin);
             i = i + 1;
-        }
+        };
+        account_coin_store::deposit(sender(), total_coin);
     }
 
     /// Harvest yield farming token from stake
