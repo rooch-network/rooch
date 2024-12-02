@@ -282,7 +282,7 @@ module grow_bitcoin::grow_bitcoin {
             let asset = object::borrow_mut_object<UTXO>(signer, asset_id);
             assert!(!utxo::contains_temp_state<StakeInfo>(asset), ErrorAlreadyStaked);
             utxo::add_temp_state(asset, StakeInfo {});
-            let utxo_value = value( object::borrow(asset));
+            let utxo_value = value(object::borrow(asset));
             let asset_weight = utxo_value * calculate_time_lock_weight(0);
             do_stake(signer, asset, utxo_value, asset_weight);
             i = i + 1;
@@ -296,7 +296,7 @@ module grow_bitcoin::grow_bitcoin {
     ) {
         assert!(!utxo::contains_temp_state<StakeInfo>(asset), ErrorAlreadyStaked);
         utxo::add_temp_state(asset, StakeInfo {});
-        let utxo_value = value( object::borrow(asset));
+        let utxo_value = value(object::borrow(asset));
         let asset_weight = utxo_value * calculate_time_lock_weight(0);
         do_stake(signer, asset, utxo_value, asset_weight);
     }
