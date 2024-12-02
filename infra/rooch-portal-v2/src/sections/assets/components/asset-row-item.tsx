@@ -24,7 +24,6 @@ export default function AssetRowItem({ row, isWalletOwner, onOpenTransferModal }
     <TableRow>
       <TableCell width="300px">
         <Box sx={{ gap: 1, display: 'flex', alignItems: 'center' }}>
-          {/* {row.icon_url && <Image src={row.icon_url} alt={row.symbol} width={48} height={48} />} */}
           {row.icon_url ? (
             <Box
               component="span"

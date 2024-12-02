@@ -1,8 +1,6 @@
 import {
   Box,
   Card,
-  CardHeader,
-  CardContent,
   Table,
   TableBody,
   TableRow,
@@ -12,7 +10,6 @@ import {
 } from '@mui/material';
 
 import dayjs from 'dayjs';
-import { AnimateCountUp } from '../../../components/animate';
 import { shortAddress } from '../../../utils/address';
 import { Scrollbar } from '../../../components/scrollbar';
 import { TableHeadCustom, TableNoData } from '../../../components/table';
@@ -32,7 +29,7 @@ const data = [
 export function InvitationList() {
   return (
     <Card className="mt-4">
-      <Box sx={{minHeight: 30, p:2}} >
+      <Box sx={{height: 60, p:2}} >
         <Typography variant="h6" >Activity History</Typography>
       </Box>
       <Scrollbar sx={{ minHeight: 462 }}>
@@ -40,7 +37,6 @@ export function InvitationList() {
           <TableHeadCustom
             headLabel={[
               { id: 'address', label: 'Address' },
-              { id: 'coin', label: 'RGAS' },
               {
                 id: 'timestamp',
                 label: (
@@ -49,6 +45,7 @@ export function InvitationList() {
                   </Box>
                 ),
               },
+              { id: 'coin', label: 'RGAS' },
             ]}
           />
           <TableBody>

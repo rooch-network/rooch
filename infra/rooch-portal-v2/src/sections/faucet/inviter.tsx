@@ -64,7 +64,7 @@ export function InviterFaucetView({ inviterAddress }: { inviterAddress: string }
   const { data, isPending, refetch } = useRoochClientQuery(
     'getBalance',
     {
-      owner: viewAddress?.genRoochAddress()!,
+      owner: viewAddress?.genRoochAddress().toStr()!,
       coinType: '0x3::gas_coin::RGas',
     },
     { refetchInterval: 5000 }

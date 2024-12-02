@@ -41,7 +41,7 @@ export const navData = [
       {
         title: 'Invitation',
         path: paths.dashboard.inviter,
-        icon: <Iconify icon="solar:gift-bold-duotone" />,
+        icon: <Iconify icon="solar:letter-broken" />,
         // noAddressRequired: true,
       },
       {
