@@ -284,7 +284,7 @@ const Index = ({
     <>
       <div className="antialiased overflow-x-hidden">
         {/* HERO */}
-        <div className="mt-20 flex flex-col items-center justify-center md:justify-center h-full px-4 sm:px-6 md:px-8 lg:px-20 dark:border-b dark:border-b-zinc-800 overflow-x-hidden">
+        <div className="flex flex-col items-center justify-center md:justify-center h-full px-4 sm:px-6 md:px-8 lg:px-20 dark:border-b dark:border-b-zinc-800 overflow-x-hidden">
           <div
             style={{
               overflowX: 'hidden',
@@ -301,7 +301,7 @@ const Index = ({
               zIndex: -1,
             }}
           ></div>
-          <div className="flex flex-col mt-8 items-center justify-center w-full font-[Han] z-10">
+          <div className="flex flex-col mt-8 items-center justify-center w-full font-[Han] z-10 relative top-[6rem]">
             <div className="mt-8 text-5xl md:text-5xl font-bold text-center text-black dark:text-[#EEEBEB]">
               Build with Move
               <br />
@@ -321,10 +321,10 @@ const Index = ({
           </div>
           <div className="flex flex-col items-center justify-center w-full">
             {/* signboard list */}
-            <div className="mt-5 text-center mx-auto flex items-end justify-around relative w-full">
-              <div className="flex items-end justify-around w-full relative">
+            <div className="mt-5 text-center mx-auto flex items-end justify-center relative w-full">
+              <div className="flex items-end justify-center w-full relative">
                 <div
-                  className="relative w-[25%] flex-shrink-0 z-10 cursor-pointer"
+                  className="relative w-[28%] left-[2%] flex-shrink-0 z-10 cursor-pointer"
                   onClick={() => handleSignboardClick('board1')}
                 >
                   <Image
@@ -416,7 +416,7 @@ const Index = ({
                   />
                 </div>
                 <div
-                  className="relative w-[20%] -left-[5%] flex-shrink-0 cursor-pointer"
+                  className="relative w-[21%] flex-shrink-0 cursor-pointer -left-[5rem]"
                   onClick={() => handleSignboardClick('board4')}
                 >
                   <Image
