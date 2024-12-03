@@ -90,16 +90,16 @@ impl Operator for AvailClient {
                         sleep(retry_delay).await;
                         retry_delay *= 3; // Exponential backoff
                         tracing::warn!(
-                            "Failed to submit segment: {:?} to Avail, retrying after {}ms, attempt: {}",
+                            "Failed to submit segment: {:?} to Avail, attempts: {}，retrying after {}ms",
                             segment_id,
+                            retries,
                             retry_delay.as_millis(),
-                            retries
                         );
                     } else {
                         return Err(anyhow!(
-                            "Failed to submit segment: {:?} to Avail after {} attempts: {}",
+                            "Failed to submit segment: {:?} to Avail after {} attempts, status: {}",
                             segment_id,
-                            retries,
+                            retries - 1,
                             response.status()
                         ));
                     }

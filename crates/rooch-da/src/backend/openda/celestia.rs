@@ -77,16 +77,17 @@ impl Operator for CelestiaClient {
                         sleep(retry_delay).await;
                         retry_delay *= 3;
                         tracing::warn!(
-                            "Failed to submit segment: {:?} to Celestia, retrying after {}ms, attempt: {}",
+                            "Failed to submit segment: {:?} to Celestia, attempts: {}, retrying after {}ms, error: {:?}",
                             segment_id,
+                            retries,
                             retry_delay.as_millis(),
-                            retries
+                            e,
                         );
                     } else {
                         return Err(anyhow!(
-                            "Failed to submit segment: {:?} to Celestia after {} attempts: {:?}",
+                            "Failed to submit segment: {:?} to Celestia after {} attempts, error: {:?}",
                             segment_id,
-                            retries,
+                            retries-1,
                             e
                         ));
                     }
