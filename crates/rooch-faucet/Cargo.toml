@@ -43,4 +43,6 @@ moveos-types = { workspace = true }
 rooch-types = { workspace = true }
 rooch-rpc-client = { workspace = true }
 rooch-rpc-api = { workspace = true }
+fastcrypto.workspace = true
+bitcoin.workspace = true
 

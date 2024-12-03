@@ -1,10 +1,12 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{faucet_module, tweet_fetcher_module, tweet_v2_module, twitter_account_module};
+use crate::{faucet_module, invitation_module, tweet_fetcher_module, tweet_v2_module, twitter_account_module};
 use crate::{metrics::FaucetMetrics, FaucetError};
 use anyhow::{bail, Result};
 use async_trait::async_trait;
+use bitcoin::{Address, AddressType, KnownHrp, PublicKey, XOnlyPublicKey};
+use bitcoin::key::Secp256k1;
 use clap::Parser;
 use coerce::actor::context::ActorContext;
 use coerce::actor::message::{Handler, Message};
@@ -22,6 +24,12 @@ use rooch_rpc_client::Client;
 use rooch_types::address::{BitcoinAddress, ParsedAddress, RoochAddress};
 use serde::de::DeserializeOwned;
 use tokio::sync::mpsc::Sender;
+use fastcrypto::{
+    hash::Sha256,
+    secp256k1::{Secp256k1PublicKey, Secp256k1Signature},
+    traits::ToFromBytes,
+};
+use fastcrypto::hash::HashFunction;
 
 #[derive(Parser, Debug, Clone)]
 pub struct FaucetConfig {
@@ -32,7 +40,13 @@ pub struct FaucetConfig {
     pub faucet_module_address: ParsedAddress,
 
     #[clap(long)]
+    pub invitation_module_address: ParsedAddress,
+
+    #[clap(long)]
     pub faucet_object_id: ObjectID,
+
+    #[clap(long)]
+    pub invitation_object_id: ObjectID,
 
     /// The address to send the faucet claim transaction
     /// Default is the active address in the wallet
@@ -43,7 +57,9 @@ pub struct FaucetConfig {
 pub struct Faucet {
     faucet_sender: RoochAddress,
     faucet_module_address: AccountAddress,
+    invitation_module_address: AccountAddress,
     faucet_object_id: ObjectID,
+    invitation_object_id: ObjectID,
     context: WalletContext,
     faucet_error_sender: Sender<FaucetError>,
     // metrics: FaucetMetrics,
@@ -54,6 +70,18 @@ pub struct ClaimMessage {
 }
 
 impl Message for ClaimMessage {
+    type Result = Result<U256>;
+}
+
+pub struct ClaimWithInviterMessage {
+    pub claimer: UnitedAddressView,
+    pub inviter: UnitedAddressView,
+    pub claimer_sign: String,
+    pub public_key: String
+
+}
+
+impl Message for ClaimWithInviterMessage {
     type Result = Result<U256>;
 }
 
@@ -70,6 +98,18 @@ impl Actor for Faucet {}
 impl Handler<ClaimMessage> for Faucet {
     async fn handle(&mut self, msg: ClaimMessage, _ctx: &mut ActorContext) -> Result<U256> {
         self.claim(msg.claimer).await
+    }
+}
+
+#[async_trait]
+impl Handler<ClaimWithInviterMessage> for Faucet {
+    async fn handle(
+        &mut self,
+        msg: ClaimWithInviterMessage,
+        _ctx: &mut ActorContext,
+    ) -> Result<U256> {
+        self.claim_with_inviter(msg.claimer, msg.inviter, msg.claimer_sign, msg.public_key)
+            .await
     }
 }
 
@@ -118,6 +158,28 @@ impl Handler<VerifyAndBindingTwitterAccountMessage> for Faucet {
     }
 }
 
+pub struct BindingTwitterAccountMessageWithInviter {
+    pub tweet_id: String,
+    pub inviter: UnitedAddressView,
+    pub claimer_sign: String,
+    pub public_key: String
+}
+
+impl Message for BindingTwitterAccountMessageWithInviter {
+    type Result = Result<BitcoinAddress>;
+}
+
+#[async_trait]
+impl Handler<BindingTwitterAccountMessageWithInviter> for Faucet {
+    async fn handle(
+        &mut self,
+        msg: BindingTwitterAccountMessageWithInviter,
+        _ctx: &mut ActorContext,
+    ) -> Result<BitcoinAddress> {
+        self.binding_twitter_account_with_inviter(msg.tweet_id, msg.inviter, msg.claimer_sign, msg.public_key).await
+    }
+}
+
 impl Faucet {
     pub fn new(
         prometheus_registry: &Registry,
@@ -127,11 +189,15 @@ impl Faucet {
     ) -> Result<Self> {
         let _metrics = FaucetMetrics::new(prometheus_registry);
         let faucet_module_address = wallet_context.resolve_address(config.faucet_module_address)?;
+        let invitation_module_address =
+            wallet_context.resolve_address(config.invitation_module_address)?;
         let faucet_sender = wallet_context.resolve_address(config.faucet_sender)?;
         Ok(Self {
             faucet_sender: faucet_sender.into(),
             faucet_module_address,
+            invitation_module_address,
             faucet_object_id: config.faucet_object_id,
+            invitation_object_id: config.invitation_object_id,
             context: wallet_context,
             faucet_error_sender,
         })
@@ -150,13 +216,67 @@ impl Faucet {
             claimer_addr,
             utxo_ids.clone(),
         )
-        .await?;
+            .await?;
 
         let function_call = faucet_module::claim_function_call(
             self.faucet_module_address,
             self.faucet_object_id.clone(),
             claimer_addr,
             utxo_ids,
+        );
+        let action = MoveAction::Function(function_call);
+        let tx_data = self
+            .context
+            .build_tx_data(self.faucet_sender, action, None)
+            .await?;
+        let response = self
+            .context
+            .sign_and_execute(self.faucet_sender, tx_data)
+            .await?;
+        match response.execution_info.status {
+            KeptVMStatusView::Executed => {
+                tracing::info!("Claim success for {}", claimer);
+                Ok(claim_amount)
+            }
+            status => {
+                let err = FaucetError::Transfer(format!("{:?}", status));
+                if let Err(e) = self.faucet_error_sender.try_send(err) {
+                    tracing::warn!("Failed to send error to faucet_error_sender: {:?}", e);
+                }
+                bail!("Claim failed, Unexpected VM status: {:?}", status)
+            }
+        }
+    }
+
+    async fn claim_with_inviter(
+        &mut self,
+        claimer: UnitedAddressView,
+        inviter: UnitedAddressView,
+        claimer_sign: String,
+        public_key: String,
+    ) -> Result<U256> {
+        tracing::debug!("claim address: {}, inviter address: {}", claimer, inviter);
+        self.check_signature(claimer.0.bitcoin_address.clone().unwrap(), claimer_sign, public_key)?;
+        let claimer_addr: AccountAddress = claimer.clone().into();
+        let inviter_addr: AccountAddress = inviter.clone().into();
+        let client = self.context.get_client().await?;
+        let utxo_ids = Self::get_utxos(&client, claimer.clone()).await?;
+        let claim_amount = Self::check_claim(
+            &client,
+            self.faucet_module_address,
+            self.faucet_object_id.clone(),
+            claimer_addr,
+            utxo_ids.clone(),
+        )
+            .await?;
+
+        let function_call = invitation_module::claim_from_faucet_function_call(
+            self.invitation_module_address,
+            self.faucet_object_id.clone(),
+            self.invitation_object_id.clone(),
+            claimer_addr,
+            utxo_ids,
+            inviter_addr,
         );
         let action = MoveAction::Function(function_call);
         let tx_data = self
@@ -298,12 +418,81 @@ impl Faucet {
         }
     }
 
+    async fn binding_twitter_account_with_inviter(&self, tweet_id: String, inviter: UnitedAddressView, claimer_sign: String, public_key: String) -> Result<BitcoinAddress> {
+        let inviter_addr: AccountAddress = inviter.clone().into();
+        self.check_tweet(tweet_id.as_str())?;
+        let client = self.context.get_client().await?;
+        let bitcoin_address = self.check_binding_tweet(tweet_id.clone()).await?;
+
+        self.check_signature(bitcoin_address.clone(), claimer_sign, public_key)?;
+        let function_call =
+            invitation_module::claim_from_twitter_function_call(
+                self.invitation_module_address,
+                tweet_id,
+                inviter_addr,
+            );
+
+        let tx_data = self
+            .context
+            .build_tx_data(
+                self.faucet_sender,
+                MoveAction::Function(function_call),
+                None,
+            )
+            .await?;
+        let tx = self.context.sign_transaction(self.faucet_sender, tx_data)?;
+        let response = client.rooch.execute_tx(tx, None).await?;
+        match response.execution_info.status {
+            KeptVMStatusView::Executed => Ok(bitcoin_address),
+            status => bail!(
+                "Verify and binding twitter account failed, Unexpected VM status: {:?}",
+                status
+            ),
+        }
+    }
+
     fn check_tweet(&self, tweet_id: &str) -> Result<()> {
         if tweet_id.len() != 19 {
             bail!("Invalid tweet id length: {}", tweet_id.len());
         }
         //TODO call twitter API to check tweet
         Ok(())
+    }
+
+    fn check_signature(&self, claimer: BitcoinAddress, claimer_sign: String, pk: String) -> Result<()> {
+        let sig = Secp256k1Signature::from_bytes(&claimer_sign.into_bytes())
+            .map_err(|_| anyhow::anyhow!("Invalid signature"))?;
+
+        let public_key = Secp256k1PublicKey::from_bytes(pk.as_ref())
+            .map_err(|_| anyhow::anyhow!("Invalid public_key"))?;
+
+        let msg = format!("Bitcoin Signed Message:\n: {}", claimer);
+        let hashed_message = Sha256::digest(msg);
+
+        public_key.verify_with_hash::<Sha256>(hashed_message.as_ref(), &sig)?;
+        let btc_pk = PublicKey::from_slice(pk.as_ref())?;
+        let addr = Address::try_from(claimer)?;
+        if !self.is_address_related_to_public_key(&addr, &btc_pk)? {
+            bail!("Invalid signature");
+        }
+
+        Ok(())
+    }
+
+    fn is_address_related_to_public_key(
+        &self,
+        addr: &Address,
+        pk: &PublicKey,
+    ) -> Result<bool> {
+        match addr.address_type() {
+            Some(AddressType::P2tr) => {
+                let xonly_pubkey = XOnlyPublicKey::from(pk.inner);
+                let secp = Secp256k1::verification_only();
+                let trust_addr = Address::p2tr(&secp, xonly_pubkey, None, KnownHrp::Mainnet);
+                Ok(addr.is_related_to_pubkey(pk) || trust_addr.to_string() == addr.to_string())
+            }
+            _ => Ok(addr.is_related_to_pubkey(pk)),
+        }
     }
 }
 

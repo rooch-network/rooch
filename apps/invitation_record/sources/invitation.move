@@ -169,6 +169,12 @@ module invitation_record::invitation {
         }
     }
 
+    public fun invitation_user_record(invitation_obj: &Object<InvitationConf>): &UserInvitationRecords{
+        let invitation_conf = object::borrow(invitation_obj);
+        table::borrow(&invitation_conf.invitation_records, sender())
+    }
+
+
     public entry fun close_invitation(
         invitation_obj: &mut Object<InvitationConf>,
         _admin: &mut Object<AdminCap>,
