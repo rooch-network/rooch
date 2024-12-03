@@ -1,16 +1,24 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{faucet_module, invitation_module, tweet_fetcher_module, tweet_v2_module, twitter_account_module};
+use crate::{
+    faucet_module, invitation_module, tweet_fetcher_module, tweet_v2_module, twitter_account_module,
+};
 use crate::{metrics::FaucetMetrics, FaucetError};
 use anyhow::{bail, Result};
 use async_trait::async_trait;
-use bitcoin::{Address, AddressType, KnownHrp, PublicKey, XOnlyPublicKey};
 use bitcoin::key::Secp256k1;
+use bitcoin::{Address, AddressType, KnownHrp, PublicKey, XOnlyPublicKey};
 use clap::Parser;
 use coerce::actor::context::ActorContext;
 use coerce::actor::message::{Handler, Message};
 use coerce::actor::Actor;
+use fastcrypto::hash::HashFunction;
+use fastcrypto::{
+    hash::Sha256,
+    secp256k1::{Secp256k1PublicKey, Secp256k1Signature},
+    traits::ToFromBytes,
+};
 use move_core_types::account_address::AccountAddress;
 use move_core_types::u256::U256;
 use move_core_types::vm_status::AbortLocation;
@@ -24,12 +32,6 @@ use rooch_rpc_client::Client;
 use rooch_types::address::{BitcoinAddress, ParsedAddress, RoochAddress};
 use serde::de::DeserializeOwned;
 use tokio::sync::mpsc::Sender;
-use fastcrypto::{
-    hash::Sha256,
-    secp256k1::{Secp256k1PublicKey, Secp256k1Signature},
-    traits::ToFromBytes,
-};
-use fastcrypto::hash::HashFunction;
 
 #[derive(Parser, Debug, Clone)]
 pub struct FaucetConfig {
@@ -77,8 +79,7 @@ pub struct ClaimWithInviterMessage {
     pub claimer: UnitedAddressView,
     pub inviter: UnitedAddressView,
     pub claimer_sign: String,
-    pub public_key: String
-
+    pub public_key: String,
 }
 
 impl Message for ClaimWithInviterMessage {
@@ -162,7 +163,7 @@ pub struct BindingTwitterAccountMessageWithInviter {
     pub tweet_id: String,
     pub inviter: UnitedAddressView,
     pub claimer_sign: String,
-    pub public_key: String
+    pub public_key: String,
 }
 
 impl Message for BindingTwitterAccountMessageWithInviter {
@@ -176,7 +177,13 @@ impl Handler<BindingTwitterAccountMessageWithInviter> for Faucet {
         msg: BindingTwitterAccountMessageWithInviter,
         _ctx: &mut ActorContext,
     ) -> Result<BitcoinAddress> {
-        self.binding_twitter_account_with_inviter(msg.tweet_id, msg.inviter, msg.claimer_sign, msg.public_key).await
+        self.binding_twitter_account_with_inviter(
+            msg.tweet_id,
+            msg.inviter,
+            msg.claimer_sign,
+            msg.public_key,
+        )
+        .await
     }
 }
 
@@ -216,7 +223,7 @@ impl Faucet {
             claimer_addr,
             utxo_ids.clone(),
         )
-            .await?;
+        .await?;
 
         let function_call = faucet_module::claim_function_call(
             self.faucet_module_address,
@@ -256,7 +263,11 @@ impl Faucet {
         public_key: String,
     ) -> Result<U256> {
         tracing::debug!("claim address: {}, inviter address: {}", claimer, inviter);
-        self.check_signature(claimer.0.bitcoin_address.clone().unwrap(), claimer_sign, public_key)?;
+        self.check_signature(
+            claimer.0.bitcoin_address.clone().unwrap(),
+            claimer_sign,
+            public_key,
+        )?;
         let claimer_addr: AccountAddress = claimer.clone().into();
         let inviter_addr: AccountAddress = inviter.clone().into();
         let client = self.context.get_client().await?;
@@ -268,7 +279,7 @@ impl Faucet {
             claimer_addr,
             utxo_ids.clone(),
         )
-            .await?;
+        .await?;
 
         let function_call = invitation_module::claim_from_faucet_function_call(
             self.invitation_module_address,
@@ -418,19 +429,24 @@ impl Faucet {
         }
     }
 
-    async fn binding_twitter_account_with_inviter(&self, tweet_id: String, inviter: UnitedAddressView, claimer_sign: String, public_key: String) -> Result<BitcoinAddress> {
+    async fn binding_twitter_account_with_inviter(
+        &self,
+        tweet_id: String,
+        inviter: UnitedAddressView,
+        claimer_sign: String,
+        public_key: String,
+    ) -> Result<BitcoinAddress> {
         let inviter_addr: AccountAddress = inviter.clone().into();
         self.check_tweet(tweet_id.as_str())?;
         let client = self.context.get_client().await?;
         let bitcoin_address = self.check_binding_tweet(tweet_id.clone()).await?;
 
         self.check_signature(bitcoin_address.clone(), claimer_sign, public_key)?;
-        let function_call =
-            invitation_module::claim_from_twitter_function_call(
-                self.invitation_module_address,
-                tweet_id,
-                inviter_addr,
-            );
+        let function_call = invitation_module::claim_from_twitter_function_call(
+            self.invitation_module_address,
+            tweet_id,
+            inviter_addr,
+        );
 
         let tx_data = self
             .context
@@ -459,7 +475,12 @@ impl Faucet {
         Ok(())
     }
 
-    fn check_signature(&self, claimer: BitcoinAddress, claimer_sign: String, pk: String) -> Result<()> {
+    fn check_signature(
+        &self,
+        claimer: BitcoinAddress,
+        claimer_sign: String,
+        pk: String,
+    ) -> Result<()> {
         let sig = Secp256k1Signature::from_bytes(&claimer_sign.into_bytes())
             .map_err(|_| anyhow::anyhow!("Invalid signature"))?;
 
@@ -479,11 +500,7 @@ impl Faucet {
         Ok(())
     }
 
-    fn is_address_related_to_public_key(
-        &self,
-        addr: &Address,
-        pk: &PublicKey,
-    ) -> Result<bool> {
+    fn is_address_related_to_public_key(&self, addr: &Address, pk: &PublicKey) -> Result<bool> {
         match addr.address_type() {
             Some(AddressType::P2tr) => {
                 let xonly_pubkey = XOnlyPublicKey::from(pk.inner);

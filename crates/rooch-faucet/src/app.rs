@@ -46,7 +46,12 @@ impl App {
     ) -> Result<U256, FaucetError> {
         let amount = self
             .faucet_proxy
-            .claim_with_inviter(request.claimer, request.inviter, request.claimer_sign, request.public_key)
+            .claim_with_inviter(
+                request.claimer,
+                request.inviter,
+                request.claimer_sign,
+                request.public_key,
+            )
             .await
             .map_err(FaucetError::custom)?;
         Ok(amount)
@@ -86,7 +91,7 @@ impl App {
         tweet_id: String,
         inviter: UnitedAddressView,
         claimer_sign: String,
-        public_key: String
+        public_key: String,
     ) -> Result<String, FaucetError> {
         let address = self
             .faucet_proxy

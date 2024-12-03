@@ -222,7 +222,15 @@ async fn binding_twitter_account_with_inviter(
         tweet_id,
         inviter
     );
-    ResultResponse::<String>::from(app.binding_twitter_account_with_inviter(tweet_id, payload.inviter, claimer_sign, public_key).await)
+    ResultResponse::<String>::from(
+        app.binding_twitter_account_with_inviter(
+            tweet_id,
+            payload.inviter,
+            claimer_sign,
+            public_key,
+        )
+        .await,
+    )
 }
 
 async fn handle_error(error: BoxError) -> impl IntoResponse {
