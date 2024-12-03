@@ -9,6 +9,7 @@ import { Chip, Stack, Button, TableRow, Collapse, TableCell } from '@mui/materia
 import { isSessionExpired } from 'src/utils/common';
 
 import { toast } from 'src/components/snackbar';
+import { useCurrentSession } from "@roochnetwork/rooch-sdk-kit";
 
 export default function SessionKeyRowItem({
   item,
@@ -19,6 +20,7 @@ export default function SessionKeyRowItem({
 }) {
   const [openCollapse, setOpenCollapse] = useState(false);
   const [removing, setRemoving] = useState(false);
+  const curSession = useCurrentSession()
 
   const expired = useMemo(
     () => isSessionExpired(Number(item.lastActiveTime), item.maxInactiveInterval),
@@ -49,6 +51,7 @@ export default function SessionKeyRowItem({
         <TableCell align="center">
           <LoadingButton
             loading={removing}
+            disabled={curSession === undefined}
             onClick={async () => {
               setRemoving(true);
               try {
