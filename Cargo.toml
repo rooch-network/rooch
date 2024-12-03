@@ -234,7 +234,7 @@ tokio-stream = "0.1.16"
 tonic = { version = "0.8", features = ["gzip"] }
 tracing = "0.1.41"
 tracing-appender = "0.2.2"
-tracing-subscriber = { version = "0.3.15" }
+tracing-subscriber = { version = "0.3.19" }
 tungstenite = "0.24.0"
 codespan-reporting = "0.11.1"
 codespan = "0.11.1"
