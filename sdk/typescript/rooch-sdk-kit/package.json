@@ -1,7 +1,7 @@
 {
   "name": "@roochnetwork/rooch-sdk-kit",
   "author": "Rooch.network <opensource@rooch.network>",
-  "version": "0.2.8",
+  "version": "0.2.9",
   "description": "Rooch SDK Kit",
   "license": "Apache-2.0",
   "engines": {
@@ -47,7 +47,6 @@
   "type": "module",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
-  "types": "./dist/cjs/index.d.ts",
   "keywords": [
     "Rooch",
     "Rooch Network",

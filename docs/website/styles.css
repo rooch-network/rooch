@@ -20,18 +20,19 @@ html {
   filter: invert(1) brightness(1.8);
 }
 
-body {
-  background:
-    linear-gradient(to bottom, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 1) 300px),
-    fixed 0 0 / 20px 20px radial-gradient(#d1d1d1 1px, transparent 0),
-    fixed 10px 10px / 20px 20px radial-gradient(#d1d1d1 1px, transparent 0);
+@font-face {
+  font-family: 'Han';
+  src: url('./public/fonts/wt040.ttf') format('woff');
+  font-weight: normal;
+  font-style: normal;
 }
+
 
 .dark body {
   background:
-    linear-gradient(to bottom, rgba(0, 0, 0, 0) 0%, #111 300px),
+    /* linear-gradient(to bottom, rgba(0, 0, 0, 0) 0%, #111 300px),
     fixed 0 0 / 20px 20px radial-gradient(#313131 1px, transparent 0),
-    fixed 10px 10px / 20px 20px radial-gradient(#313131 1px, transparent 0);
+    fixed 10px 10px / 20px 20px radial-gradient(#313131 1px, transparent 0); */
 }
 
 .cta {
@@ -144,4 +145,8 @@ body {
     transform 250ms cubic-bezier(0.4, 0, 0.2, 1) 0s,
     box-shadow 250ms cubic-bezier(0.4, 0, 0.2, 1) 0s,
     padding 250ms cubic-bezier(0.4, 0, 0.2, 1) 0s;
+}
+
+.duration-2000 {
+  transition-duration: 2000ms;
 }

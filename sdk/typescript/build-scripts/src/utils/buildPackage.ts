@@ -199,7 +199,7 @@ async function addPackageFiles(paths: string[]) {
 }
 
 async function addIgnoredWorkspaces(paths: string[]) {
-  const file = await fs.readFile(path.join(process.cwd(), '../../pnpm-workspace.yaml'), 'utf-8')
+  const file = await fs.readFile(path.join(process.cwd(), '../../../pnpm-workspace.yaml'), 'utf-8')
   const lines = file.split('\n').filter(Boolean)
   let changed = false
 
