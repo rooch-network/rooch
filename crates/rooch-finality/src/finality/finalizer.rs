@@ -1,15 +1,15 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::rpc_client::FinalityGadgetGrpcClient;
 use anyhow::{anyhow, Result};
-use std::sync::{Arc, Mutex};
-use std::time::Duration;
-use std::collections::HashMap;
-use tracing::{debug, error};
 use async_trait::async_trait;
 use rooch_db::RoochDB;
 use rooch_types::finality_block::{Block, BlockID, L1BlockRef, L2BlockRef};
-use crate::rpc_client::FinalityGadgetGrpcClient;
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
+use std::time::Duration;
+use tracing::{debug, error};
 
 // defaultFinalityLookback defines the amount of L1<>L2 relations to track for finalization purposes, one per L1 block.
 //
@@ -119,7 +119,8 @@ pub trait FinalizerEngine: Send + Sync {
 
 #[async_trait]
 pub trait FinalizerL1Interface: Send + Sync {
-    async fn l1_block_ref_by_number(&self, number: u64) -> Result<L1BlockRef, Box<dyn std::error::Error + Send + Sync>>;
+    // async fn l1_block_ref_by_number(&self, number: u64) -> Result<L1BlockRef, Box<dyn std::error::Error + Send + Sync>>;
+    async fn l1_block_ref_by_number(&self, number: u64) -> Result<L1BlockRef>;
 }
 #[async_trait]
 pub trait EventEmitter: Send + Sync {
@@ -141,32 +142,26 @@ pub struct Finalizer {
 }
 
 impl Finalizer {
-    // calcFinalityLookback calculates the default finality lookback based on DA challenge window if altDA
-    // mode is activated or L1 finality lookback.
-    fn calc_finality_lookback(cfg: &Config) -> u64 {
-        // // in alt-da mode the longest finality lookback is a commitment is challenged on the last block of
-        // // the challenge window in which case it will be both challenge + resolve window.
-        // if cfg.alt_da_enabled {
-        //     let lkb = cfg.alt_da_config.da_challenge_window +
-        //              cfg.alt_da_config.da_resolve_window + 1;
-        //     // in the case only if the altDA windows are longer than the default finality lookback
-        //     if lkb > DEFAULT_FINALITY_LOOKBACK {
-        //         return lkb;
-        //     }
-        // }
+    fn calc_finality_lookback(_cfg: &Config) -> u64 {
         DEFAULT_FINALITY_LOOKBACK
     }
 
-    pub fn new(
+    pub async fn new(
         cfg: &Config,
         l1_fetcher: Arc<dyn FinalizerL1Interface>,
         l2_fetcher: RoochDB,
     ) -> Result<Self, anyhow::Error> {
         let lookback = Self::calc_finality_lookback(cfg);
-        
-        debug!("creating Babylon Finality client, rpc_addr {:?}", cfg.babylon_finality_gadget_rpc);
-            
-        let babylon_finality_gadget_client = FinalityGadgetGrpcClient::new(cfg.babylon_finality_gadget_rpc.clone()).await.map_err(|e| anyhow!(format!("New finalizer error: {:?}", e)))?;
+
+        debug!(
+            "creating Babylon Finality client, rpc_addr {:?}",
+            cfg.babylon_finality_gadget_rpc
+        );
+
+        let babylon_finality_gadget_client =
+            FinalityGadgetGrpcClient::new(cfg.babylon_finality_gadget_rpc.clone())
+                .await
+                .map_err(|e| anyhow!(format!("New finalizer error: {:?}", e)))?;
 
         Ok(Finalizer {
             ctx: Arc::new(tokio::sync::Mutex::new(())),
@@ -190,33 +185,33 @@ impl Finalizer {
         self.finalized_l1.lock().unwrap().clone()
     }
 
-    pub async fn on_event(&mut self, event: Event) -> bool {
+    pub async fn on_event(&mut self, event: Event) -> Result<bool> {
         match event {
             Event::FinalizeL1(ev) => {
                 self.on_l1_finalized(ev.finalized_l1).await;
-                true
+                Ok(true)
             }
             Event::SafeDerived(ev) => {
                 self.on_derived_safe_block(ev.safe, ev.derived_from).await;
-                true
+                Ok(true)
             }
             Event::DeriverIdle(ev) => {
                 self.on_derivation_idle(ev.origin).await;
-                true
+                Ok(true)
             }
             Event::Reset(_) => {
                 self.on_reset().await;
-                true
+                Ok(true)
             }
             Event::TryFinalize => {
-                self.try_finalize().await;
-                true
+                self.try_finalize().await?;
+                Ok(true)
             }
             Event::ForkchoiceUpdate(ev) => {
                 *self.last_finalized_l2.lock().unwrap() = ev.finalized_l2_head;
-                true
+                Ok(true)
             }
-            _ => false,
+            _ => Ok(false),
         }
     }
 
@@ -256,39 +251,56 @@ impl Finalizer {
         self.emitter.emit(Event::TryFinalize).await;
     }
 
-   pub async fn try_finalize(&mut self) -> Result<()>{
-        let gadget_activated_timestamp = match self.babylon_finality_client
+    pub async fn try_finalize(&mut self) -> Result<()> {
+        // Clone or copy values that need to be used across await points
+        let finalized_l1 = {
+            let guard = self.finalized_l1.lock().unwrap();
+            guard.clone()
+        };
+        let gadget_activated_timestamp = match self
+            .babylon_finality_client
             .query_btc_staking_activated_timestamp()
-            .await {
-                Ok(timestamp) => timestamp,
-                Err(e) if e.to_string().contains("BtcStakingNotActivated") => 0,
-                Err(e) => {
-                    self.emitter.emit(Event::CriticalError(CriticalErrorEvent {
-                        err: format!("failed to query BTC staking activated timestamp: {}", e.to_string())
-                    })).await;
-                    return Ok(());
-                }
-            };
+            .await
+        {
+            Ok(timestamp) => timestamp,
+            Err(e) if e.to_string().contains("BtcStakingNotActivated") => 0,
+            Err(e) => {
+                self.emitter
+                    .emit(Event::CriticalError(CriticalErrorEvent {
+                        err: format!(
+                            "failed to query BTC staking activated timestamp: {}",
+                            e.to_string()
+                        ),
+                    }))
+                    .await;
+                return Ok(());
+            }
+        };
 
-        let mut finalized_l2 = self.last_finalized_l2.lock().unwrap().clone();
+        // let mut finalized_l2 = self.last_finalized_l2.lock().unwrap().clone();
+        let mut finalized_l2 = {
+            let guard = self.last_finalized_l2.lock().unwrap();
+            guard.clone()
+        };
         let mut finalized_derived_from = None;
 
         let finality_data = self.finality_data.lock().unwrap().clone();
         for fd in finality_data.iter() {
-            if fd.l2_block.number > finalized_l2.number && 
-               fd.l1_block.number <= self.finalized_l1.lock().unwrap().number {
-                
-                if let Some(last_finalized_block) = self.find_last_btc_finalized_l2_block(
-                    fd.l2_block.number,
-                    finalized_l2.number,
-                    gadget_activated_timestamp
-                ).await? {
+            if fd.l2_block.number > finalized_l2.number && fd.l1_block.number <= finalized_l1.number
+            {
+                if let Some(last_finalized_block) = self
+                    .find_last_btc_finalized_l2_block(
+                        fd.l2_block.number,
+                        finalized_l2.number,
+                        gadget_activated_timestamp,
+                    )
+                    .await?
+                {
                     finalized_l2 = last_finalized_block;
                     finalized_derived_from = Some(fd.l1_block.clone());
                 }
 
-                if finalized_derived_from.is_none() || 
-                   finalized_l2.number != fd.l2_block.number {
+                if finalized_derived_from.is_none() || finalized_l2.number != fd.l2_block.number {
                     break;
                 }
             }
@@ -296,54 +308,65 @@ impl Finalizer {
 
         if let Some(derived_from) = finalized_derived_from {
             let ctx = tokio::time::timeout(Duration::from_secs(10), async {
-                let signal_ref = self.l1_fetcher
-                    .l1_block_ref_by_number(self.finalized_l1.lock().unwrap().number)
-                    .await?;
-                
-                if signal_ref.hash != self.finalized_l1.lock().unwrap().hash {
-                    self.emitter.emit(Event::Reset(ResetEvent {
-                        err: format!(
-                            "need to reset, we assumed {:?} is finalized, but canonical chain is {:?}",
-                            self.finalized_l1.lock().unwrap(),
-                            signal_ref
-                        )
-                    })).await;
-                    return Err("Chain reset needed".into());
+                let signal_ref = self
+                    .l1_fetcher
+                    .l1_block_ref_by_number(finalized_l1.number)
+                    .await
+                    .map_err(|e| {
+                        anyhow!(format!("l1_block_ref_by_number error: {:?}", e.to_string()))
+                    })?;
+
+                if signal_ref.hash != finalized_l1.hash {
+                    let err_msg = format!(
+                        "need to reset, we assumed {:?} is finalized, but canonical chain is {:?}",
+                        finalized_l1, signal_ref
+                    );
+                    self.emitter
+                        .emit(Event::Reset(ResetEvent { err: err_msg }))
+                        .await;
+                    return Err(anyhow::anyhow!("Chain reset needed"));
                 }
 
-                let derived_ref = self.l1_fetcher
+                let derived_ref = self
+                    .l1_fetcher
                     .l1_block_ref_by_number(derived_from.number)
                     .await?;
 
                 if derived_ref.hash != derived_from.hash {
-                    // self.emitter.emit(Event::Reset(ResetEvent {
-                    //     err: format!(
-                    //         "need to reset, we are on {:?}, not on the finalizing L1 chain {:?}",
-                    //         derived_from,
-                    //         derived_ref
-                    //     )
-                    // })).await;
-                    return Err("Chain reset needed".into());
+                    let err_msg = format!(
+                        "need to reset, we are on {:?}, not on the finalizing L1 chain {:?}",
+                        derived_from, derived_ref
+                    );
+                    self.emitter
+                        .emit(Event::Reset(ResetEvent { err: err_msg }))
+                        .await;
+                    return Err(anyhow::anyhow!("Chain reset needed"));
                 }
+                Ok(())
+                // Ok::<(), Box<dyn std::error::Error + Send + Sync>>(())
+            })
+            .await;
 
-                Ok::<(), Box<dyn std::error::Error + Send + Sync>>(())
-            }).await;
-
-            // match ctx {
-            //     Ok(Ok(())) => {
-            //         self.emitter.emit(Event::ForkchoiceUpdate(ForkchoiceUpdateEvent {
-            //             finalized_l2_head: finalized_l2
-            //         })).await;
-            //     }
-            //     Ok(Err(e)) => {
-            //         error!("Error during finalization, error {:?}", e.to_string());
-            //     }
-            //     Err(_) => {
-            //         error!("Timeout during finalization");
-            //     }
-            // }
+            match ctx {
+                Ok(Ok(())) => {
+                    self.emitter
+                        .emit(Event::ForkchoiceUpdate(ForkchoiceUpdateEvent {
+                            finalized_l2_head: finalized_l2,
+                        }))
+                        .await;
+                }
+                Ok(Err(e)) => {
+                    return Err(anyhow::anyhow!(
+                        "Error during finalization, error {:?}",
+                        e.to_string()
+                    ));
+                }
+                Err(_) => {
+                    return Err(anyhow::anyhow!("Timeout during finalization"));
+                }
+            }
         }
-       return Ok(())
+        return Ok(());
     }
 
     async fn find_last_btc_finalized_l2_block(
@@ -393,7 +416,8 @@ impl Finalizer {
             return Ok(largest_non_activated_block);
         }
 
-        match self.babylon_finality_client
+        match self
+            .babylon_finality_client
             .query_block_range_babylon_finalized(query_blocks.as_slice())
             .await
         {
@@ -403,14 +427,16 @@ impl Finalizer {
                 }
             }
             Err(e) => {
-                self.emitter.emit(Event::CriticalError(CriticalErrorEvent {
-                    err: format!(
-                        "failed to check if block {} to {} is finalized on Babylon: {}",
-                        finalized_l2_number + 1,
-                        fd_l2_block_number,
-                        e
-                    )
-                })).await;
+                self.emitter
+                    .emit(Event::CriticalError(CriticalErrorEvent {
+                        err: format!(
+                            "failed to check if block {} to {} is finalized on Babylon: {}",
+                            finalized_l2_number + 1,
+                            fd_l2_block_number,
+                            e
+                        ),
+                    }))
+                    .await;
             }
         }
 
@@ -425,10 +451,10 @@ impl Finalizer {
 
     async fn on_derived_safe_block(&self, l2_safe: L2BlockRef, derived_from: L1BlockRef) {
         let mut finality_data = self.finality_data.lock().unwrap();
-        
-        if finality_data.is_empty() || 
-           finality_data.last().unwrap().l1_block.number < derived_from.number {
-            
+
+        if finality_data.is_empty()
+            || finality_data.last().unwrap().l1_block.number < derived_from.number
+        {
             if finality_data.len() as u64 >= self.finality_lookback {
                 finality_data.drain(0..1);
             }
@@ -441,12 +467,19 @@ impl Finalizer {
                 },
             });
 
-            debug!("extended finality-data last_l1 {:?}, last_l2 {:?}", finality_data.last().unwrap().l1_block, finality_data.last().unwrap().l2_block);
+            debug!(
+                "extended finality-data last_l1 {:?}, last_l2 {:?}",
+                finality_data.last().unwrap().l1_block,
+                finality_data.last().unwrap().l2_block
+            );
         } else {
             let last = finality_data.last_mut().unwrap();
             if last.l2_block != l2_safe {
                 last.l2_block = l2_safe;
-                debug!("updated finality-data last_l1 {:?}, last_l2 {:?}", last.l1_block, last.l2_block);
+                debug!(
+                    "updated finality-data last_l1 {:?}, last_l2 {:?}",
+                    last.l1_block, last.l2_block
+                );
             }
         }
     }
@@ -467,16 +500,15 @@ impl EventEmitter for NoopEmitter {
 // }
 
 #[derive(Clone, Debug, Default)]
-pub struct FinalizerL1Mock {
-}
+pub struct FinalizerL1Mock {}
 
 #[async_trait]
 impl FinalizerL1Interface for FinalizerL1Mock {
-    async fn l1_block_ref_by_number(&self, number: u64) -> Result<L1BlockRef, Box<dyn std::error::Error + Send + Sync>> {
+    // async fn l1_block_ref_by_number(&self, number: u64) -> Result<L1BlockRef, Box<dyn std::error::Error + Send + Sync>> {
+    async fn l1_block_ref_by_number(&self, _number: u64) -> Result<L1BlockRef> {
         // Implement your gRPC client initialization here
         let mock = L1BlockRef::default();
 
         Ok(mock)
     }
 }
-

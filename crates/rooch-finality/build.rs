@@ -6,9 +6,7 @@
 use prost_types::FileDescriptorSet;
 
 static OUT_DIR: &str = "src/proto";
-const PROTO_FILES: &[&str] = &[
-    "src/proto/finalitygadget.proto",
-];
+const PROTO_FILES: &[&str] = &["src/proto/finalitygadget.proto"];
 
 const INCLUDES: &[&str] = &["src/proto"];
 
@@ -52,11 +50,8 @@ fn tonic_build(fds: FileDescriptorSet) {
         // .use_arc_self(true)
         .compile_well_known_types(true)
         .skip_protoc_run();
-        // .bytes([".tendermint_celestia_mods.abci"]);
 
     tonic_config
         .compile_fds_with_config(prost_config, fds)
         .expect("should be able to compile protobuf using tonic");
 }
-
-

@@ -27,4 +27,4 @@ pub enum FinalityStatus {
     BitcoinFinalized,
     Safe,
     Finalized,
-} 
+}

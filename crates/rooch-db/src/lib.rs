@@ -412,7 +412,7 @@ impl RoochDB {
     }
 
     //TODO implements this after proposer generate blocks
-    pub fn l2_block_ref_by_number(&self, block_number: u64) -> Result<L2BlockRef> {
-        return Ok(L2BlockRef::default());
+    pub fn l2_block_ref_by_number(&self, _block_number: u64) -> Result<L2BlockRef> {
+        Ok(L2BlockRef::default())
     }
 }

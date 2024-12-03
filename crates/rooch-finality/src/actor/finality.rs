@@ -1,7 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use std::ops::Deref;
 use std::sync::Arc;
 use std::time::SystemTime;
 
@@ -31,7 +30,7 @@ pub struct FinalityActor {
 }
 
 impl FinalityActor {
-    pub fn new(
+    pub async fn new(
         rooch_db: RoochDB,
         service_status: ServiceStatus,
         registry: &Registry,
@@ -44,6 +43,7 @@ impl FinalityActor {
         //TODO implements finalize L1 service
         let finalizer_L1_Mock = Arc::new(FinalizerL1Mock::default());
         let finalizer = Finalizer::new(&config, finalizer_L1_Mock, rooch_db.clone())
+            .await
             .map_err(|e| anyhow!(format!("New finality actor error: {:?}", e)))?;
 
         Ok(Self {
@@ -136,7 +136,7 @@ impl Handler<FinalityMessage> for FinalityActor {
 impl Handler<EventData> for FinalityActor {
     async fn handle(&mut self, msg: EventData, _ctx: &mut ActorContext) -> Result<()> {
         if let Ok(service_status_event) = msg.data.downcast::<ServiceStatusEvent>() {
-            let service_status = service_status_event.deref().status;
+            let service_status = service_status_event.status;
             tracing::warn!("FinalityActor set self status to {:?}", service_status);
             self.service_status = service_status;
         }
