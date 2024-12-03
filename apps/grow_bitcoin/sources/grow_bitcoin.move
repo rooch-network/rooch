@@ -13,7 +13,6 @@ module grow_bitcoin::grow_bitcoin {
     use bitcoin_move::bitcoin;
 
     use moveos_std::event::emit;
-    use moveos_std::tx_context::sender;
     use moveos_std::table;
     use moveos_std::table::Table;
     use moveos_std::object;
@@ -411,14 +410,14 @@ module grow_bitcoin::grow_bitcoin {
             coin::merge(&mut total_coin, coin);
             i = i + 1;
         };
-        account_coin_store::deposit(sender(), total_coin);
+        account_coin_store::deposit(signer::address_of(signer), total_coin);
     }
 
     /// Unstake asset from farming pool
     public entry fun unstake(signer: &signer, asset: &mut Object<UTXO>) {
         let coin = do_unstake(signer, object::id(asset));
         utxo::remove_temp_state<StakeInfo>(asset);
-        account_coin_store::deposit(sender(), coin);
+        account_coin_store::deposit(signer::address_of(signer), coin);
     }
 
     /// Supports batch invocation by stake users, allowing multiple assets to be unstaked to receive yield farming tokens
@@ -434,14 +433,14 @@ module grow_bitcoin::grow_bitcoin {
             coin::merge(&mut total_coin, coin);
             i = i + 1;
         };
-        account_coin_store::deposit(sender(), total_coin);
+        account_coin_store::deposit(signer::address_of(signer), total_coin);
     }
 
     public entry fun unstake_bbn(signer: &signer, asset: &mut Object<BBNStakeSeal>) {
         // TODO check bbn stake seal is expired
         let coin = do_unstake(signer, object::id(asset));
         bbn::remove_temp_state<StakeInfo>(asset);
-        account_coin_store::deposit(sender(), coin);
+        account_coin_store::deposit(signer::address_of(signer), coin);
     }
 
     fun do_unstake(signer: &signer, asset_id: ObjectID): Coin<GROW> {
@@ -495,19 +494,19 @@ module grow_bitcoin::grow_bitcoin {
             coin::merge(&mut total_coin, coin);
             i = i + 1;
         };
-        account_coin_store::deposit(sender(), total_coin);
+        account_coin_store::deposit(signer::address_of(signer), total_coin);
     }
 
     /// Harvest yield farming token from stake
     public entry fun harvest(signer:&signer, asset: &mut Object<UTXO>) {
         let coin = do_harvest(signer, object::id(asset));
-        account_coin_store::deposit(sender(), coin);
+        account_coin_store::deposit(signer::address_of(signer), coin);
     }
 
     public entry fun harvest_bbn(signer:&signer, asset: &mut Object<BBNStakeSeal>) {
         // TODO check bbn stake seal is expired
         let coin = do_harvest(signer, object::id(asset));
-        account_coin_store::deposit(sender(), coin);
+        account_coin_store::deposit(signer::address_of(signer), coin);
     }
 
     fun do_harvest(signer:&signer, asset_id: ObjectID): Coin<GROW> {
