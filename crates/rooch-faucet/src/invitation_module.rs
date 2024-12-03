@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 use move_core_types::account_address::AccountAddress;
 use move_core_types::ident_str;
 use move_core_types::identifier::IdentStr;
