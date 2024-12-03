@@ -40,9 +40,12 @@ export function SettingsView() {
     isPending: isLoadingSessionKeys,
     refetch: refetchSessionKeys,
   } = useRoochClientQuery('getSessionKeys', {
-    address: address?.genRoochAddress().toHexAddress() || ''
+    address: address!.genRoochAddress().toHexAddress()
     }
   )
+
+  console.log(isLoadingSessionKeys)
+  console.log(sessionKeys)
 
   useEffect(() => {
     if (address !== undefined) {
