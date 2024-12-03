@@ -171,6 +171,11 @@ module twitter_binding::tweet_fetcher {
         let _batch_fetch_result = batch_fetch_tweets(tweet_ids);
     }
 
+    public fun has_buffered_tweets(): bool{
+        let buffer_queue = borrow_buffer_queue();
+        vector::length(&buffer_queue.buffer_queue) > 0
+    }
+
     fun batch_fetch_tweets(tweet_ids: vector<String>): BatchFetchResult{
         let id_str = join_tweet_ids(tweet_ids);
         let url = string::utf8(TWEET_URL);

@@ -1,17 +1,17 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: mainnet-gas-market-schedule
-  namespace: mainnet
+  name: testnet-gas-market-schedule
+  namespace: testnet
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: mainnet-gas-market-schedule
+      app: testnet-gas-market-schedule
   template:
     metadata:
       labels:
-        app: mainnet-gas-market-schedule
+        app: testnet-gas-market-schedule
     spec:
       initContainers:
       - name: init-rooch
@@ -21,7 +21,8 @@ spec:
         - |
           if [ ! -f /root/.rooch/initialized ]; then
             /rooch/rooch init -m "${INIT_SECRET}" --skip-password
-            /rooch/rooch env switch --alias main
+            /rooch/rooch env switch --alias test
+            /rooch/rooch account create
             /rooch/rooch account create
             /rooch/rooch account create
             /rooch/rooch account create
@@ -33,7 +34,7 @@ spec:
         - name: INIT_SECRET
           valueFrom:
             secretKeyRef:
-              name: rooch-mainnet-secrets
+              name: rooch-testnet-secrets
               key: init-phrase
         volumeMounts:
         - name: rooch-data
@@ -46,22 +47,18 @@ spec:
         - "task"
         - "schedule"
         - "--sender"
-        # the fifth account
-        - "rooch1h3sv3a79v7ae76tfhchjh87cqtlpvd9v6s8jmzyazqar6eqcua3qs45djk"
+        # the sixth account
+        - "rooch1nf590t0ynzcd6xgkwka4pjt044sdc8f398qgra64vu4w4f20v2gq0v7t8w"
         - "--checker-function"
-        - "0x701c21bf1c8cd5af8c42983890d8ca55e7a820171b8e744c13f2d9998bf76cc3::gas_market::exists_new_events"
-        - "--checker-args"
-        - "object:0xdd83de197cc2f4829fc5004ce2a0cb1905601eac24a3f11a1e9c99a926c3dab2"
+        - "0x701c21bf1c8cd5af8c42983890d8ca55e7a820171b8e744c13f2d9998bf76cc3::tweet_fetcher::has_buffered_tweets"
         - "--runner-function"
-        - "0x701c21bf1c8cd5af8c42983890d8ca55e7a820171b8e744c13f2d9998bf76cc3::gas_market::consume_event"
-        - "--runner-args"
-        - "object:0xdd83de197cc2f4829fc5004ce2a0cb1905601eac24a3f11a1e9c99a926c3dab2"
+        - "0x701c21bf1c8cd5af8c42983890d8ca55e7a820171b8e744c13f2d9998bf76cc3::tweet_fetcher::process_buffer_queue"
         - "--checker-interval"
-        - "5"
+        - "60"
         volumeMounts:
         - name: rooch-data
           mountPath: /root
       volumes:
       - name: rooch-data
         persistentVolumeClaim:
-          claimName: mainnet-gas-market-schedule-data
+          claimName: testnet-tweet-fetch-schedule-data
