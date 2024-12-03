@@ -198,7 +198,7 @@ export class RoochClient {
     })
   }
   async getEvents(input: GetEventsByEventHandleParams): Promise<PaginatedEventViews> {
-    const opt = input.eventHandleType || {
+    const opt = input.eventOptions || {
       decode: true,
     }
     return await this.transport.request({
@@ -206,7 +206,7 @@ export class RoochClient {
       params: [input.eventHandleType, input.cursor, input.limit, input.descendingOrder, opt],
     })
   }
-
+  // curl -H "Content-Type: application/json" -X POST --data '{"jsonrpc":"2.0","method":"rooch_getEventsByEventHandle","params":["0x488e11bd0086861e110586909fd72c8142506f6fc636982051271a694bf5b0ed::event_test::WithdrawEvent", null, "1", null, {"decode":true}],"id":1}' http://127.0.0.1:6767 | jq
   async queryEvents(input: QueryEventsParams): Promise<PaginatedIndexerEventViews> {
     if ('sender' in input.filter) {
       if (input.filter.sender === '') {
@@ -481,14 +481,6 @@ export class RoochClient {
         hasNextPage: false,
       }
     }
-    const sss = (
-      (
-        (states?.[0]?.decoded_value as AnnotatedMoveStructView).value[
-          'value'
-        ] as AnnotatedMoveStructView
-      ).value['keys'] as AnnotatedMoveStructView
-    ).value['handle'] as AnnotatedMoveStructView
-    console.log(sss)
     // Maybe we should define the type?
     const tableId = (
       (

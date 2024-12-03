@@ -4,13 +4,9 @@
 import { useQuery } from '@tanstack/react-query'
 import { useLayoutEffect, useState } from 'react'
 
-import {
-  useWalletStore,
-  useConnectWallet,
-  useWallets,
-  useCurrentWallet,
-  useCurrentAddress,
-} from './index.js'
+import { useConnectWallet, useWallets, useCurrentWallet, useCurrentAddress } from './index.js'
+
+import { useWalletStore } from './useWalletStore'
 
 export function useAutoConnectWallet(): 'disabled' | 'idle' | 'attempted' {
   const { mutateAsync: connectWallet } = useConnectWallet()
