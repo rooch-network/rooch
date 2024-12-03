@@ -267,7 +267,7 @@ impl ExportCommand {
         }
 
         writer.flush()?;
-        log::info!("Done in {:?}.", start_time.elapsed(),);
+        tracing::info!("Done in {:?}.", start_time.elapsed(),);
         Ok(())
     }
 

@@ -73,7 +73,7 @@ impl RebuildCommand {
         let start_time = Instant::now();
         let (indexer_store, indexer_reader) =
             init_indexer(self.base_data_dir.clone(), self.chain_id.clone()).unwrap();
-        log::info!("indexer rebuild started");
+        tracing::info!("indexer rebuild started");
         (indexer_store, indexer_reader, start_time)
     }
 }

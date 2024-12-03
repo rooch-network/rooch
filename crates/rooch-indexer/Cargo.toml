@@ -26,7 +26,6 @@ diesel = { workspace = true }
 diesel_migrations = { workspace = true }
 coerce = { workspace = true }
 rand = { workspace = true }
-log = { workspace = true }
 tap = { workspace = true }
 prometheus = { workspace = true }
 function_name = { workspace = true }

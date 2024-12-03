@@ -6,7 +6,7 @@ use accumulator::accumulator_info::AccumulatorInfo;
 use bitcoin::BlockHash;
 use moveos_types::h256::H256;
 use moveos_types::{startup_info::StartupInfo, state::ObjectState};
-use rooch_types::da::state::DAServerStatus;
+use rooch_types::da::status::DAServerStatus;
 use rooch_types::into_address::FromAddress;
 use rooch_types::{
     bitcoin::types::BlockHeightHash, sequencer::SequencerInfo, service_status::ServiceStatus,
@@ -74,6 +74,29 @@ impl From<SequencerInfo> for SequencerInfoView {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct DAInfoView {
+    pub last_block_number: Option<StrView<u128>>,
+    pub last_tx_order: Option<StrView<u64>>,
+    pub last_block_update_time: Option<StrView<u64>>,
+    pub last_avail_block_number: Option<StrView<u128>>,
+    pub last_avail_tx_order: Option<StrView<u64>>,
+    pub last_avail_block_update_time: Option<StrView<u64>>,
+}
+
+impl From<DAServerStatus> for DAInfoView {
+    fn from(info: DAServerStatus) -> Self {
+        DAInfoView {
+            last_block_number: info.last_block_number.map(Into::into),
+            last_tx_order: info.last_tx_order.map(Into::into),
+            last_block_update_time: info.last_block_update_time.map(Into::into),
+            last_avail_block_number: info.last_avail_block_number.map(Into::into),
+            last_avail_tx_order: info.last_avail_tx_order.map(Into::into),
+            last_avail_block_update_time: info.last_avail_block_update_time.map(Into::into),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct RootStateView {
     pub state_root: StrView<H256>,
     pub size: StrView<u64>,
@@ -100,6 +123,7 @@ impl From<ObjectState> for RootStateView {
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct RoochStatus {
     pub sequencer_info: SequencerInfoView,
+    pub da_info: DAInfoView,
     pub root_state: RootStateView,
 }
 
@@ -111,6 +135,4 @@ pub struct Status {
     pub rooch_status: RoochStatus,
     /// The status of the Bitcoin chain
     pub bitcoin_status: BitcoinStatus,
-    /// The status of the DA service
-    pub da_server_status: DAServerStatus,
 }

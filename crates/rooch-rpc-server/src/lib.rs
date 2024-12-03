@@ -11,6 +11,8 @@ use crate::service::metrics::ServiceMetrics;
 use crate::service::rpc_service::RpcService;
 use anyhow::{ensure, Error, Result};
 use axum::http::{HeaderValue, Method};
+use bitcoin_client::actor::client::BitcoinClientConfig;
+use bitcoin_client::proxy::BitcoinClientProxy;
 use coerce::actor::scheduler::timer::Timer;
 use coerce::actor::{system::ActorSystem, IntoActor};
 use jsonrpsee::RpcModule;
@@ -35,8 +37,6 @@ use rooch_pipeline_processor::actor::processor::PipelineProcessorActor;
 use rooch_pipeline_processor::proxy::PipelineProcessorProxy;
 use rooch_proposer::actor::messages::ProposeBlock;
 use rooch_proposer::actor::proposer::ProposerActor;
-use rooch_relayer::actor::bitcoin_client::BitcoinClientActor;
-use rooch_relayer::actor::bitcoin_client_proxy::BitcoinClientProxy;
 use rooch_relayer::actor::messages::RelayTick;
 use rooch_relayer::actor::relayer::RelayerActor;
 use rooch_rpc_api::api::RoochRpcModule;
@@ -148,7 +148,7 @@ pub async fn start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Server
         Ok(server_handle) => Ok(server_handle),
         Err(e) => match e.downcast::<GenesisError>() {
             Ok(e) => {
-                log::error!(
+                tracing::error!(
                     "{:?}, please clean your data dir. `rooch server clean -n {}` ",
                     e,
                     chain_name
@@ -157,7 +157,7 @@ pub async fn start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Server
             }
             Err(e) => match e.downcast::<RawStoreError>() {
                 Ok(e) => {
-                    log::error!(
+                    tracing::error!(
                         "{:?}, please clean your data dir. `rooch server clean -n {}` ",
                         e,
                         chain_name
@@ -165,7 +165,7 @@ pub async fn start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Server
                     std::process::exit(R_EXIT_CODE_NEED_HELP);
                 }
                 Err(e) => {
-                    log::error!("{:?}, server start fail. ", e);
+                    tracing::error!("{:?}, server start fail. ", e);
                     std::process::exit(R_EXIT_CODE_NEED_HELP);
                 }
             },
@@ -346,6 +346,24 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         .into_actor(Some("IndexerReader"), &actor_system)
         .await?;
     let indexer_proxy = IndexerProxy::new(indexer_executor.into(), indexer_reader_executor.into());
+    let bitcoin_relayer_config = opt.bitcoin_relayer_config();
+    let bitcoin_client_config = bitcoin_relayer_config
+        .as_ref()
+        .map(|config| BitcoinClientConfig {
+            btc_rpc_url: config.btc_rpc_url.clone(),
+            btc_rpc_user_name: config.btc_rpc_user_name.clone(),
+            btc_rpc_password: config.btc_rpc_password.clone(),
+        });
+    let bitcoin_client_proxy = if service_status.is_active() && bitcoin_client_config.is_some() {
+        let bitcoin_client = bitcoin_client_config.unwrap().build()?;
+        let bitcoin_client_actor_ref = bitcoin_client
+            .into_actor(Some("bitcoin_client_for_rpc_service"), &actor_system)
+            .await?;
+        let bitcoin_client_proxy = BitcoinClientProxy::new(bitcoin_client_actor_ref.into());
+        Some(bitcoin_client_proxy)
+    } else {
+        None
+    };
 
     let mut processor = PipelineProcessorActor::new(
         executor_proxy.clone(),
@@ -356,6 +374,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         &prometheus_registry,
         Some(event_actor_ref.clone()),
         rooch_db,
+        bitcoin_client_proxy.clone(),
     );
 
     // Only process sequenced tx on startup when service is active
@@ -368,7 +387,6 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     let processor_proxy = PipelineProcessorProxy::new(processor_actor.into());
 
     let ethereum_relayer_config = opt.ethereum_relayer_config();
-    let bitcoin_relayer_config = opt.bitcoin_relayer_config();
 
     if service_status.is_active()
         && (ethereum_relayer_config.is_some() || bitcoin_relayer_config.is_some())
@@ -391,22 +409,6 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         );
         timers.push(relayer_timer);
     }
-
-    let bitcoin_client_proxy = if service_status.is_active() && bitcoin_relayer_config.is_some() {
-        let bitcoin_config = bitcoin_relayer_config.unwrap();
-        let bitcoin_client = BitcoinClientActor::new(
-            &bitcoin_config.btc_rpc_url,
-            &bitcoin_config.btc_rpc_user_name,
-            &bitcoin_config.btc_rpc_password,
-        )?;
-        let bitcoin_client_actor_ref = bitcoin_client
-            .into_actor(Some("bitcoin_client_for_rpc_service"), &actor_system)
-            .await?;
-        let bitcoin_client_proxy = BitcoinClientProxy::new(bitcoin_client_actor_ref.into());
-        Some(bitcoin_client_proxy)
-    } else {
-        None
-    };
 
     let rpc_service = RpcService::new(
         network.chain_id.id,

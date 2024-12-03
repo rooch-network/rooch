@@ -1,7 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use log::{debug, warn};
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte, NumBytes};
 use move_core_types::vm_status::StatusCode;
@@ -16,6 +15,7 @@ use std::collections::VecDeque;
 use std::ffi::CString;
 use std::ops::Deref;
 use std::vec;
+use tracing::{debug, warn};
 
 use moveos_wasm::wasm::{
     create_wasm_instance, get_instance_pool, insert_wasm_instance, put_data_on_stack,
@@ -164,7 +164,7 @@ fn native_create_cbor_values(
     }
 
     let mint_args_array = JSONValue::Array(mint_args_json);
-    log::debug!(
+    tracing::debug!(
         "native_create_cbor_values -> mint_args_array {:?}",
         mint_args_array
     );
@@ -180,7 +180,7 @@ fn native_create_cbor_values(
         Ok(v) => v,
         Err(_) => return build_err(gas_params.base, E_CBOR_UNMARSHAL_FAILED),
     };
-    log::debug!(
+    tracing::debug!(
         "native_create_cbor_values -> mint_args_array {:?}",
         cbor_value
     );
@@ -516,7 +516,7 @@ fn execute_wasm_function_inner(
                                 "execute_wasm_function_inner->calling_function_error:{}",
                                 err.message()
                             );
-                            if log::log_enabled!(log::Level::Debug) {
+                            if tracing::enabled!(tracing::Level::DEBUG) {
                                 debug!("trace:{:?}", err.trace());
                             }
                             Ok(NativeResult::err(

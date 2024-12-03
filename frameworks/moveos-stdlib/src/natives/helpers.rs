@@ -38,7 +38,7 @@ where
             if cfg!(debug_assertions) {
                 match &result {
                     Err(err) => {
-                        log::debug!("Error in native function: {:?}", err);
+                        tracing::debug!("Error in native function: {:?}", err);
                     }
                     Ok(res) => match res {
                         NativeResult::Success {
@@ -46,14 +46,14 @@ where
                             ret_vals: _,
                         } => {}
                         NativeResult::Abort { cost, abort_code } => {
-                            log::debug!(
+                            tracing::debug!(
                                 "Abort in native function: cost: {:?}, abort_code: {:?}",
                                 cost,
                                 abort_code
                             );
                         }
                         NativeResult::OutOfGas { partial_cost } => {
-                            log::debug!(
+                            tracing::debug!(
                                 "OutOfGas in native function: partial_cost: {:?}",
                                 partial_cost
                             );
@@ -68,7 +68,7 @@ where
                 match vm_status.keep_or_discard() {
                     Ok(_) => result,
                     Err(_) => {
-                        log::error!("{}", error_message);
+                        tracing::error!("{}", error_message);
                         Err(PartialVMError::new(StatusCode::ABORTED)
                             .with_sub_status(E_NATIVE_FUNCTION_PANIC)
                             .with_message(error_message))

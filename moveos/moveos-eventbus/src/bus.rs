@@ -94,7 +94,7 @@ impl EventBus {
             if let Some(event_senders) = senders.get(&event_type_id) {
                 for (subscriber, sender) in event_senders {
                     if sender.send(Box::new(event_data.clone())).is_err() {
-                        log::error!(
+                        tracing::error!(
                             "Failed to send event '{:?}' to subscriber '{}'",
                             event_type_id,
                             subscriber
@@ -114,7 +114,7 @@ impl EventBus {
         };
         if let Some(event_callbacks) = callbacks.get(&event_type_id) {
             for (subscriber, callback) in event_callbacks {
-                log::debug!(
+                tracing::debug!(
                     "Executing callback for subscriber: '{}' on event: '{:?}'",
                     subscriber,
                     event_type_id
@@ -122,7 +122,7 @@ impl EventBus {
                 callback(Box::new(event_data.clone()));
             }
         } else {
-            log::debug!("No subscribers found for event: '{:?}'", event_type_id);
+            tracing::debug!("No subscribers found for event: '{:?}'", event_type_id);
         }
 
         let actors = match self.actors.read() {
@@ -135,7 +135,7 @@ impl EventBus {
         };
         if let Some(actors_map) = actors.get(&event_type_id) {
             for (subscriber, actor) in actors_map {
-                log::debug!(
+                tracing::debug!(
                     "Executing actor for subscriber: '{}' on event: '{:?}'",
                     subscriber,
                     event_type_id
@@ -171,21 +171,21 @@ impl EventBus {
                     if let Ok(event_data) = boxed_event.downcast::<T>() {
                         return Ok(Some(*event_data));
                     } else {
-                        log::error!(
+                        tracing::error!(
                             "Failed to downcast event data for subscriber: '{}'",
                             subscriber
                         );
                     }
                 }
             } else {
-                log::debug!(
+                tracing::debug!(
                     "Subscriber: '{}' is not registered for event: '{:?}'",
                     subscriber,
                     event_type_id
                 );
             }
         } else {
-            log::debug!("No event '{:?}' found in the system", event_type_id);
+            tracing::debug!("No event '{:?}' found in the system", event_type_id);
         }
         Ok(None)
     }
@@ -224,7 +224,7 @@ impl EventBus {
             event_receivers.insert(subscriber.to_string(), receiver);
         }
 
-        log::debug!(
+        tracing::debug!(
             "Registered subscriber: '{}' for event: '{:?}'",
             subscriber,
             event_type_id
@@ -253,7 +253,7 @@ impl EventBus {
         let event_callbacks = callbacks.entry(event_type_id).or_default();
         event_callbacks.insert(subscriber.to_string(), Box::new(callback));
 
-        log::debug!(
+        tracing::debug!(
             "Subscriber '{}' registered callback for event '{:?}'",
             subscriber,
             event_type_id
@@ -294,13 +294,13 @@ impl EventBus {
         };
 
         for (event_type_id, subscribers) in senders.iter() {
-            log::debug!(
+            tracing::debug!(
                 "Event: '{:?}', Subscribers: {}",
                 event_type_id,
                 subscribers.len()
             );
             for subscriber in subscribers.keys() {
-                log::debug!("  - Subscriber: '{}'", subscriber);
+                tracing::debug!("  - Subscriber: '{}'", subscriber);
             }
         }
         Ok(())
@@ -321,7 +321,7 @@ impl EventBus {
 
             if let Some(event_senders) = senders.get_mut(&event_type_id) {
                 event_senders.remove(subscriber);
-                log::debug!(
+                tracing::debug!(
                     "Removed sender for subscriber: '{}' from event: '{:?}'",
                     subscriber,
                     event_type_id
@@ -341,7 +341,7 @@ impl EventBus {
 
             if let Some(event_receivers) = receivers.get_mut(&event_type_id) {
                 event_receivers.remove(subscriber);
-                log::debug!(
+                tracing::debug!(
                     "Removed receiver for subscriber: '{}' from event: '{:?}'",
                     subscriber,
                     event_type_id
@@ -361,7 +361,7 @@ impl EventBus {
 
             if let Some(event_callbacks) = callbacks.get_mut(&event_type_id) {
                 event_callbacks.remove(subscriber);
-                log::debug!(
+                tracing::debug!(
                     "Removed callback for subscriber: '{}' from event: '{:?}'",
                     subscriber,
                     event_type_id
@@ -404,7 +404,7 @@ impl EventBus {
         senders.clear();
         receivers.clear();
         callbacks.clear();
-        log::debug!("Cleared all events and subscribers.");
+        tracing::debug!("Cleared all events and subscribers.");
 
         Ok(())
     }

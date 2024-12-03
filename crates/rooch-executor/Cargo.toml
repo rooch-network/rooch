@@ -18,7 +18,6 @@ coerce = { workspace = true }
 serde = { workspace = true }
 tokio = { features = ["full"], workspace = true }
 tracing = { workspace = true }
-log = { workspace = true }
 prometheus = { workspace = true }
 function_name = { workspace = true }
 

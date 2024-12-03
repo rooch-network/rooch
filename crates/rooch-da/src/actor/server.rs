@@ -17,7 +17,7 @@ use rooch_store::transaction_store::TransactionStore;
 use rooch_store::RoochStore;
 use rooch_types::crypto::RoochKeyPair;
 use rooch_types::da::batch::{BlockRange, DABatch, SignedDABatchMeta};
-use rooch_types::da::state::DAServerStatus;
+use rooch_types::da::status::DAServerStatus;
 use rooch_types::transaction::LedgerTransaction;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;

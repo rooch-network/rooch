@@ -7,12 +7,12 @@ use super::{
 };
 use anyhow::{anyhow, bail, Result};
 use ciborium::Value;
-use log::debug;
 use rooch_types::bitcoin::ord::{Inscription, InscriptionRecord};
 use serde::{Deserialize, Serialize};
 use serde_json;
 use serde_json::Value as JSONValue;
 use std::io::Cursor;
+use tracing::debug;
 
 pub trait AsSFT {
     fn as_sft(&self) -> SFT;

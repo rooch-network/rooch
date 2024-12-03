@@ -80,3 +80,22 @@ impl Default for RocksdbConfig {
         }
     }
 }
+
+#[derive(Copy, Clone, Debug, Deserialize, PartialEq, Eq, Serialize, Parser)]
+#[serde(default, deny_unknown_fields)]
+pub struct MoveOSStoreConfig {
+    #[clap(
+        name = "moveos-store-state-cache-size",
+        long,
+        help = "MoveOS store state cache size"
+    )]
+    pub state_cache_size: usize,
+}
+
+impl Default for MoveOSStoreConfig {
+    fn default() -> Self {
+        Self {
+            state_cache_size: 10_000,
+        }
+    }
+}

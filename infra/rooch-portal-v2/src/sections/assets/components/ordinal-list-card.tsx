@@ -1,17 +1,13 @@
-import type { ReactNode } from 'react';
 import type { IndexerStateIDView } from '@roochnetwork/rooch-sdk';
 
-import DOMPurify from 'dompurify';
 import { useRef, useMemo, useState } from 'react';
 import { useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit';
 
-import { Box, Card, Chip, Skeleton, CardHeader, Typography, CardContent } from '@mui/material';
-
-import { hexToString } from 'src/utils/common';
+import { Box, Card, Skeleton, CardHeader, Typography, CardContent } from '@mui/material';
 
 import { EmptyContent } from 'src/components/empty-content/empty-content';
 
-export default function OrdinalList({ address }: { address: string }) {
+export default function BBLlList({ address }: { address: string }) {
   const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 10 });
   const mapPageToNextCursor = useRef<{ [page: number]: IndexerStateIDView | null }>({});
 
@@ -32,27 +28,27 @@ export default function OrdinalList({ address }: { address: string }) {
     [paginationModel]
   );
 
-  const { data: ordinalList, isPending: isOrdinalListPending } = useRoochClientQuery(
-    'queryInscriptions',
-    {
-      filter: {
+  const { data: bbns, isPending: isQueryBBNsPending } = useRoochClientQuery("queryObjectStates", {
+    filter: {
+      object_type_with_owner: {
         owner: address,
+        object_type: "0x4::bbn::BBNStakeSeal",
       },
-      cursor: queryOptions.cursor as IndexerStateIDView | null,
-      limit: queryOptions.pageSize,
-    }
-  );
+    },
+    cursor: queryOptions.cursor as IndexerStateIDView | null,
+    limit: queryOptions.pageSize
+  });
 
   return (
     <Card>
-      <CardHeader title="Ordinals" sx={{ mb: 1 }} />
+      <CardHeader title="Babylon Staking" sx={{ mb: 1 }} />
       <CardContent
         className="!pt-2"
         component={Box}
         gap={3}
         display="grid"
         gridTemplateColumns={
-          ordinalList?.data.length === 0
+          bbns?.data.length === 0
             ? undefined
             : {
                 xs: 'repeat(1, 1fr)',
@@ -62,30 +58,14 @@ export default function OrdinalList({ address }: { address: string }) {
               }
         }
       >
-        {isOrdinalListPending ? (
+        {isQueryBBNsPending ? (
           Array.from({ length: 4 }).map((i, index) => <Skeleton key={index} height={256} />)
-        ) : ordinalList?.data.length === 0 ? (
-          <EmptyContent title="No Ordinals Found" sx={{ py: 3 }} />
+        ) : bbns?.data.length === 0 ? (
+          <EmptyContent title="No Babylon Staking Found" sx={{ py: 3 }} />
         ) : (
-          ordinalList?.data.map((i) => {
-            let parsePlainText: string | null | undefined | ReactNode = '';
-            try {
-              parsePlainText =
-                i.value.content_type === 'text/plain;charset=utf-8'
-                  ? DOMPurify.sanitize(JSON.stringify(
-                      JSON.parse(hexToString(i.value.body as unknown as string)),
-                      null,
-                      2
-                    ))
-                  : i.value.content_type;
-            } catch (error) {
-              parsePlainText = (
-                <Chip label="Parse Error" size="small" variant="soft" color="error" />
-              );
-            }
-            return (
+          bbns?.data.map((i) => (
               <Card key={i.id} elevation={0} className="!bg-gray-100 !shadow-none">
-                <CardHeader title={i.value.inscription_number} subheader="Inscriptions #" />
+                <CardHeader title={i.id} subheader="Inscriptions #" />
                 <CardContent>
                   <Typography
                     noWrap
@@ -95,12 +75,11 @@ export default function OrdinalList({ address }: { address: string }) {
                       overflowWrap: 'break-word',
                     }}
                   >
-                    {parsePlainText}
+                    {i.decoded_value?.value.staking_value as string}
                   </Typography>
                 </CardContent>
               </Card>
-            );
-          })
+            ))
         )}
       </CardContent>
     </Card>

@@ -1,0 +1,13 @@
+[package]
+name = "x-lint"
+version = "0.1.0"
+authors = ["Diem Association <opensource@diem.com>"]
+description = "Lint engine for x"
+edition = "2021"
+publish = false
+license = "Apache-2.0"
+
+[dependencies]
+camino = "1.0.3"
+guppy = "0.12.3"
+x-core = { path = "../x-core" }

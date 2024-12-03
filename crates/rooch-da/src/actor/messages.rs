@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use coerce::actor::message::Message;
-use rooch_types::da::state::DAServerStatus;
+use rooch_types::da::status::DAServerStatus;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]

@@ -52,7 +52,7 @@ impl BenchCommand {
         let start_time = Instant::now();
         let (indexer_store, indexer_reader) =
             init_indexer(self.base_data_dir.clone(), self.chain_id.clone()).unwrap();
-        log::info!("indexer bench started");
+        tracing::info!("indexer bench started");
         (indexer_store, indexer_reader, start_time)
     }
 
@@ -88,7 +88,7 @@ impl BenchCommand {
         )?;
         let tx_order = query_object_states[0].1.tx_order;
         let mut state_index = query_object_states[0].1.state_index;
-        log::info!(
+        tracing::info!(
             "bench start for tx_order: {}, state_index: {}. init query cost: {:?}",
             tx_order,
             state_index,
