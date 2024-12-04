@@ -1,4 +1,4 @@
-module example::big_vector {
+module large_objects::big_vector {
   use moveos_std::object;
 
   struct VecU8 has key, store {
@@ -13,7 +13,7 @@ module example::big_vector {
         b = b-1
     };
     let obj = object::new_named_object( VecU8 { values });
-    object::transfer(obj, @example);
+    object::transfer(obj, @large_objects);
   }
 
   entry fun transfer(to: address) {
