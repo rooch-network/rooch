@@ -17,7 +17,7 @@ import {
   useConnectWallet,
   useCreateSessionKey,
   useCurrentSession,
-  useSessions,
+  useSession,
 } from '../../src/index.js'
 
 describe('useDefaultClient', () => {
@@ -38,7 +38,7 @@ describe('useDefaultClient', () => {
     function useTestHook() {
       const { mutateAsync: connectWallet } = useConnectWallet()
       const { mutateAsync: createSessionKey } = useCreateSessionKey()
-      const sessions = useSessions()
+      const sessions = useSession()
       const currentSession = useCurrentSession()
       const networks = { test: { url: 'http://localhost:6767' } }
       const defaultClient = useDefaultClient({ currentNetwork: 'test', networks })
