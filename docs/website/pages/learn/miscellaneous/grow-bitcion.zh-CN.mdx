@@ -22,7 +22,7 @@ Grow Bitcoin 是一个生态系统加速平台，专注于将比特币用户和�
 
 Self Staking 对 Bitcoin 来说只有 `Read` 权限，没有 `Transfer`，保证了 BTC 的所有权。在 Rooch 层具有 `Write` 权限，提供了扩展性。
 
-因此 Grwo Bitcoin 中的 Self Staking 是零风险的质押挖矿。
+因此 Grow Bitcoin 中的 Self Staking 是零风险的质押挖矿。
 
 举个例子，我要去一个新开的超市买东西，我想办一张会员卡，会员卡只会读取我的身份信息，无法再做更多的操作。Grow Bitcoin 的质押挖矿就是这种模式，只能读取 Bitcoin 钱包的 UTXO，没有权限去操作您的 Bitcoin 资产。
 
@@ -41,6 +41,12 @@ Session Key 的详细描述请参考这篇文档 https://rooch.network/zh-CN/lea
 #### 如何获取 UTXO 和 RGas
 
 只需要确保 UniSat 钱包有 UTXO，并在这里 [Claim RGas](https://portal.rooch.network/faucet) 即可质押。
+
+RGas 是 Rooch 网络上的原生 gas 代币，用于支付交易和运营成本。
+
+#### 账户有 BTC 了但是没有 UTXO
+
+BTC 转账交易，需要等待三个区块确认后，`UTXO` 才可以在 Rooch 中使用。
 
 #### Grow 怎么挖矿
 
@@ -76,9 +82,19 @@ GROW 总量为 `210,000,000,000`，`180` 天挖完。
 
 如果没有 RGas 了，可以在[这里](https://portal.rooch.network/gas-swap)购买。
 
+> 提示：目前只提供了 BTC -> RGas，暂时无法 RGas -> BTC，后续将提供 USTD 购买 RGas 功能。
+
 #### UTXO 改变了，GROW 奖励还有吗
 
 因为是持有挖矿模式，如果 UTXO 被花费了，没有领取的 `GROW` 就无法 Claim 了，建议花费 BTC 之前先领取质押奖励。
+
+#### 质押获得的 GROW 可以每天可以 Claim 多少次
+
+没有次数限制，只要有质押收益就可以 Claim。
+
+#### 每次 Claim 消耗多少 RGas
+
+大约 0.02 ~ 0.03 RGas。
 
 #### Babylon Stake
 
@@ -93,6 +109,10 @@ Babylon 的质押带有时间锁，它的质押具有时间权重。
 目前有 Bitcoin 的预言机。
 
 > 源码：https://github.com/rooch-network/rooch/blob/main/apps/gas_market/sources/trusted_oracle.move
+
+#### Grow 是 Rooch 的主网代币吗
+
+不是。
 
 #### GROW 有什么作用
 
@@ -111,6 +131,14 @@ Babylon 的质押带有时间锁，它的质押具有时间权重。
 #### 新的 Bitcoin 地址可以领 RGas 吗
 
 新的 Bitcoin 地址可以 `Claim` 一次 RGas。
+
+#### 使用哪种类型的 Bitcoin 地址
+
+Taproot。
+
+#### GROW 在哪里交易
+
+后续将推出 GROW 的交易市场。
 
 ### 测试网常见问题
 
