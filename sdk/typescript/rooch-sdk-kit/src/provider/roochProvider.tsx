@@ -7,6 +7,7 @@ import { createContext, useRef } from 'react'
 import { NetworkConfigs, RoochClientProvider } from './clientProvider.js'
 import { createSessionStore, SessionStore } from './sessionStore.js'
 import { getDefaultStorage, StorageType } from '../utils/index.js'
+import { ErrorProvider } from './errorProvider.js'
 
 const DEFAULT_SESSION_STORAGE_KEY = function (_?: string) {
   return 'rooch-sdk-kit:rooch-session-info'
@@ -17,7 +18,7 @@ export const RoochContext = createContext<SessionStore | null>(null)
 export type RoochProviderProps<T extends NetworkConfigs> = {
   networks?: NetworkConfigs
   onNetworkChange?: (network: keyof T & string) => void
-
+  requestErrorCallback?: (code: number) => void
   children: ReactNode
 } & (
   | {
@@ -42,9 +43,11 @@ export function RoochProvider<T extends NetworkConfigs>(props: RoochProviderProp
   )
   return (
     <RoochContext.Provider value={storeRef.current}>
-      <RoochClientProvider networks={networks} defaultNetwork={defaultNetwork}>
-        {children}
-      </RoochClientProvider>
+      <ErrorProvider>
+        <RoochClientProvider networks={networks} defaultNetwork={defaultNetwork}>
+          {children}
+        </RoochClientProvider>
+      </ErrorProvider>
     </RoochContext.Provider>
   )
 }
