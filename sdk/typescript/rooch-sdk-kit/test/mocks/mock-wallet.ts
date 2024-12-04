@@ -18,6 +18,7 @@ import {
 import { SupportChain } from '../../src/feature/index.js'
 import { Wallet } from '../../src/wellet/wallet.js'
 import { Mock, vi } from 'vitest'
+import { WalletNetworkType } from '../../src/index.js'
 
 export class MockBitcoinWallet extends Wallet {
   private kp: Keypair
@@ -55,7 +56,7 @@ export class MockBitcoinWallet extends Wallet {
     return 'mock'
   }
 
-  getNetwork(): string {
+  getNetwork(): WalletNetworkType {
     return 'testnet'
   }
 
@@ -67,7 +68,7 @@ export class MockBitcoinWallet extends Wallet {
     return this.kp.getRoochAddress()
   }
 
-  getSupportNetworks(): string[] {
+  getSupportNetworks(): WalletNetworkType[] {
     return ['testnet', 'livenet']
   }
 
@@ -110,5 +111,17 @@ export class MockBitcoinWallet extends Wallet {
 
   getInstallUrl(): string {
     return ''
+  }
+
+  getBalance(): Promise<{ confirmed: number; unconfirmed: number; total: string }> {
+    return Promise.resolve({ confirmed: 0, total: '', unconfirmed: 0 })
+  }
+
+  sendBtc(_: {
+    toAddress: string
+    satoshis: number
+    options?: { feeRate: number }
+  }): Promise<string> {
+    return Promise.resolve('')
   }
 }
