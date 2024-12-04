@@ -217,6 +217,7 @@ async fn binding_twitter_account_with_inviter(
     let inviter = payload.inviter.to_string();
     let claimer_sign = payload.claimer_sign;
     let public_key = payload.public_key;
+    let message = payload.message;
     tracing::info!(
         "verify and binding twitter account payload: {:?} inviter:{:?}",
         tweet_id,
@@ -228,6 +229,7 @@ async fn binding_twitter_account_with_inviter(
             payload.inviter,
             claimer_sign,
             public_key,
+            message,
         )
         .await,
     )

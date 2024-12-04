@@ -7,18 +7,10 @@ use crate::{
 use crate::{metrics::FaucetMetrics, FaucetError};
 use anyhow::{bail, Result};
 use async_trait::async_trait;
-use bitcoin::key::Secp256k1;
-use bitcoin::{Address, AddressType, KnownHrp, PublicKey, XOnlyPublicKey};
 use clap::Parser;
 use coerce::actor::context::ActorContext;
 use coerce::actor::message::{Handler, Message};
 use coerce::actor::Actor;
-use fastcrypto::hash::HashFunction;
-use fastcrypto::{
-    hash::Sha256,
-    secp256k1::{Secp256k1PublicKey, Secp256k1Signature},
-    traits::ToFromBytes,
-};
 use move_core_types::account_address::AccountAddress;
 use move_core_types::u256::U256;
 use move_core_types::vm_status::AbortLocation;
@@ -80,6 +72,7 @@ pub struct ClaimWithInviterMessage {
     pub inviter: UnitedAddressView,
     pub claimer_sign: String,
     pub public_key: String,
+    pub message: String,
 }
 
 impl Message for ClaimWithInviterMessage {
@@ -109,8 +102,14 @@ impl Handler<ClaimWithInviterMessage> for Faucet {
         msg: ClaimWithInviterMessage,
         _ctx: &mut ActorContext,
     ) -> Result<U256> {
-        self.claim_with_inviter(msg.claimer, msg.inviter, msg.claimer_sign, msg.public_key)
-            .await
+        self.claim_with_inviter(
+            msg.claimer,
+            msg.inviter,
+            msg.claimer_sign,
+            msg.public_key,
+            msg.message,
+        )
+        .await
     }
 }
 
@@ -164,6 +163,7 @@ pub struct BindingTwitterAccountMessageWithInviter {
     pub inviter: UnitedAddressView,
     pub claimer_sign: String,
     pub public_key: String,
+    pub message: String,
 }
 
 impl Message for BindingTwitterAccountMessageWithInviter {
@@ -182,6 +182,7 @@ impl Handler<BindingTwitterAccountMessageWithInviter> for Faucet {
             msg.inviter,
             msg.claimer_sign,
             msg.public_key,
+            msg.message,
         )
         .await
     }
@@ -261,13 +262,9 @@ impl Faucet {
         inviter: UnitedAddressView,
         claimer_sign: String,
         public_key: String,
+        message: String,
     ) -> Result<U256> {
         tracing::debug!("claim address: {}, inviter address: {}", claimer, inviter);
-        self.check_signature(
-            claimer.0.bitcoin_address.clone().unwrap(),
-            claimer_sign,
-            public_key,
-        )?;
         let claimer_addr: AccountAddress = claimer.clone().into();
         let inviter_addr: AccountAddress = inviter.clone().into();
         let client = self.context.get_client().await?;
@@ -285,9 +282,12 @@ impl Faucet {
             self.invitation_module_address,
             self.faucet_object_id.clone(),
             self.invitation_object_id.clone(),
-            claimer_addr,
+            claimer_addr.to_string(),
             utxo_ids,
             inviter_addr,
+            claimer_sign,
+            public_key,
+            message,
         );
         let action = MoveAction::Function(function_call);
         let tx_data = self
@@ -435,17 +435,20 @@ impl Faucet {
         inviter: UnitedAddressView,
         claimer_sign: String,
         public_key: String,
+        message: String,
     ) -> Result<BitcoinAddress> {
         let inviter_addr: AccountAddress = inviter.clone().into();
         self.check_tweet(tweet_id.as_str())?;
         let client = self.context.get_client().await?;
         let bitcoin_address = self.check_binding_tweet(tweet_id.clone()).await?;
 
-        self.check_signature(bitcoin_address.clone(), claimer_sign, public_key)?;
         let function_call = invitation_module::claim_from_twitter_function_call(
             self.invitation_module_address,
             tweet_id,
             inviter_addr,
+            claimer_sign,
+            public_key,
+            message,
         );
 
         let tx_data = self
@@ -473,43 +476,6 @@ impl Faucet {
         }
         //TODO call twitter API to check tweet
         Ok(())
-    }
-
-    fn check_signature(
-        &self,
-        claimer: BitcoinAddress,
-        claimer_sign: String,
-        pk: String,
-    ) -> Result<()> {
-        let sig = Secp256k1Signature::from_bytes(&claimer_sign.into_bytes())
-            .map_err(|_| anyhow::anyhow!("Invalid signature"))?;
-
-        let public_key = Secp256k1PublicKey::from_bytes(pk.as_ref())
-            .map_err(|_| anyhow::anyhow!("Invalid public_key"))?;
-
-        let msg = format!("Bitcoin Signed Message:\n: {}", claimer);
-        let hashed_message = Sha256::digest(msg);
-
-        public_key.verify_with_hash::<Sha256>(hashed_message.as_ref(), &sig)?;
-        let btc_pk = PublicKey::from_slice(pk.as_ref())?;
-        let addr = Address::try_from(claimer)?;
-        if !self.is_address_related_to_public_key(&addr, &btc_pk)? {
-            bail!("Invalid signature");
-        }
-
-        Ok(())
-    }
-
-    fn is_address_related_to_public_key(&self, addr: &Address, pk: &PublicKey) -> Result<bool> {
-        match addr.address_type() {
-            Some(AddressType::P2tr) => {
-                let xonly_pubkey = XOnlyPublicKey::from(pk.inner);
-                let secp = Secp256k1::verification_only();
-                let trust_addr = Address::p2tr(&secp, xonly_pubkey, None, KnownHrp::Mainnet);
-                Ok(addr.is_related_to_pubkey(pk) || trust_addr.to_string() == addr.to_string())
-            }
-            _ => Ok(addr.is_related_to_pubkey(pk)),
-        }
     }
 }
 

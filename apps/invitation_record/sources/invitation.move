@@ -3,6 +3,9 @@ module invitation_record::invitation {
     use std::option;
     use std::string::String;
     use std::vector;
+    use twitter_binding::tweet_v2;
+    use rooch_framework::bitcoin_address::BitcoinAddress;
+    use rooch_framework::ecdsa_k1;
     use moveos_std::hash;
     use rooch_framework::transaction;
     use rooch_framework::transaction::TransactionSequenceInfo;
@@ -14,7 +17,7 @@ module invitation_record::invitation {
     use moveos_std::table_vec;
     use moveos_std::table_vec::TableVec;
     use rooch_framework::bitcoin_address;
-    use twitter_binding::twitter_account::{verify_and_binding_twitter_account, check_binding_tweet};
+    use twitter_binding::twitter_account::{verify_and_binding_twitter_account, check_binding_tweet, check_user_claimed};
     use moveos_std::tx_context::sender;
     use rooch_framework::account_coin_store;
     use rooch_framework::gas_coin::RGas;
@@ -27,6 +30,8 @@ module invitation_record::invitation {
     use moveos_std::object::{Object, to_shared, ObjectID};
     use moveos_std::table::Table;
     #[test_only]
+    use std::debug::print;
+    #[test_only]
     use bitcoin_move::utxo;
     #[test_only]
     use gas_faucet::gas_faucet;
@@ -35,15 +40,25 @@ module invitation_record::invitation {
     #[test_only]
     use rooch_framework::account::create_account_for_testing;
     #[test_only]
+    use rooch_framework::auth_payload;
+    #[test_only]
+    use rooch_framework::auth_payload::{signature, encode_full_message, public_key, from_address};
+    #[test_only]
     use rooch_framework::gas_coin::faucet_for_test;
 
 
     const ErrorFaucetNotOpen: u64 = 1;
     const ErrorFaucetNotEnoughRGas: u64 = 2;
     const ErrorNoRemainingLuckeyTicket: u64 = 3;
+    const ErrorNoInvitationSignature: u64 = 4;
+    const ErrorNoInvitationBitcoinSignature: u64 = 4;
+    const ErrorNotClaimerAddress: u64 = 4;
 
     const ONE_RGAS: u256 = 1_00000000;
     const ErrorInvalidArg: u64 = 0;
+
+    const Message : vector<u8> = b"Bitcoin Signed Message:\n Claim RGas ";
+
 
     struct UserInvitationRecords has key, store {
         invitation_records: Table<address, u256>,
@@ -96,9 +111,25 @@ module invitation_record::invitation {
     }
 
         /// Anyone can call this function to help the claimer claim the faucet
-    public entry fun claim_from_faucet(faucet_obj: &mut Object<RGasFaucet>, invitation_obj: &mut Object<InvitationConf>, claimer: address, utxo_ids: vector<ObjectID>, inviter: address){
+    public entry fun claim_from_faucet(
+        faucet_obj: &mut Object<RGasFaucet>,
+        invitation_obj: &mut Object<InvitationConf>,
+        claimer_bitcoin_address: String,
+        utxo_ids: vector<ObjectID>,
+        inviter: address,
+        public_key: vector<u8>,
+        signature: vector<u8>,
+        message: vector<u8>,
+    ){
+        let bitcoin_address = bitcoin_address::from_string(&claimer_bitcoin_address);
+        verify_btc_signature(bitcoin_address, public_key, signature, message);
+        let claimer = bitcoin_address::to_rooch_address(&bitcoin_address);
         let invitation_conf = object::borrow_mut(invitation_obj);
         assert!(invitation_conf.is_open, ErrorFaucetNotOpen);
+        if (inviter == @rooch_framework){
+            claim(faucet_obj, claimer, utxo_ids);
+            return
+        };
         if (!table::contains(&invitation_conf.invitation_records, inviter)) {
             table::add(&mut invitation_conf.invitation_records, inviter, UserInvitationRecords{
                 invitation_records: table::new(),
@@ -121,11 +152,26 @@ module invitation_record::invitation {
         claim(faucet_obj, claimer, utxo_ids);
     }
 
-    public entry fun claim_from_twitter(tweet_id: String,  invitation_obj: &mut Object<InvitationConf>, inviter: address){
+    public entry fun claim_from_twitter(
+        tweet_id: String,
+        invitation_obj: &mut Object<InvitationConf>,
+        inviter: address,
+        public_key: vector<u8>,
+        signature: vector<u8>,
+        message: vector<u8>,
+    ){
         let bitcoin_address = check_binding_tweet(tweet_id);
         let claimer = bitcoin_address::to_rooch_address(&bitcoin_address);
+        verify_btc_signature(bitcoin_address, public_key, signature, message);
         let invitation_conf = object::borrow_mut(invitation_obj);
         assert!(invitation_conf.is_open, ErrorFaucetNotOpen);
+        let tweet_obj = tweet_v2::borrow_tweet_object(tweet_id);
+        let tweet = object::borrow(tweet_obj);
+        let author_id = *tweet_v2::tweet_author_id(tweet);
+        if (inviter == @rooch_framework || !check_user_claimed(author_id)){
+            verify_and_binding_twitter_account(tweet_id);
+            return
+        };
         if (!table::contains(&invitation_conf.invitation_records, inviter)) {
             table::add(&mut invitation_conf.invitation_records, inviter, UserInvitationRecords{
                 invitation_records: table::new(),
@@ -209,6 +255,23 @@ module invitation_record::invitation {
         coin_store::deposit(rgas_store, rgas_coin);
     }
 
+    public fun verify_btc_signature(bitcoin_address: BitcoinAddress, public_key: vector<u8>, signature: vector<u8>, message: vector<u8>) {
+        let message_hash = hash::sha2_256(message);
+        assert!(
+            ecdsa_k1::verify(
+                &signature,
+                &public_key,
+                &message_hash,
+                ecdsa_k1::sha256()
+            ),
+            ErrorNoInvitationSignature
+        );
+        assert!(
+            bitcoin_address::verify_bitcoin_address_with_public_key(&bitcoin_address, &public_key),
+            ErrorNoInvitationBitcoinSignature
+        );
+    }
+
     fun seed(index: u64): vector<u8> {
         // get sequence number
         let sequence_number = tx_context::sequence_number();
@@ -261,10 +324,10 @@ module invitation_record::invitation {
     }
 
 
-        #[test(sender=@0x42)]
+        #[test(sender=@0xb1f6856b52189858e58661371508f19dc6cecacc97b6c5fa501262420fd1559a)]
     fun test_claim_with_invitation(sender: &signer){
         bitcoin_move::genesis::init_for_test();
-        create_account_for_testing(@0x42);
+        create_account_for_testing(@0xb1f6856b52189858e58661371508f19dc6cecacc97b6c5fa501262420fd1559a);
         create_account_for_testing(@0x43);
         let invitation_obj = object::new_named_object(InvitationConf{
             invitation_records: table::new(),
@@ -282,12 +345,19 @@ module invitation_record::invitation {
         let sat_value = 100000000;
         let test_utxo = utxo::new_for_testing(tx_id, 0u32, sat_value);
         let test_utxo_id = object::id(&test_utxo);
-        utxo::transfer_for_testing(test_utxo, @0x43);
-        claim_from_faucet(faucet_obj, invitation_obj, @0x43, vector[test_utxo_id], @0x42);
+        let auth_payload_bytes = x"407e5b0c1da7d2bed7c2497b7c7c46b1a485883029a3bb1479493688ad347bcafa2bd82c6fd9bb2515f9e0c697f621ac0a28fb9f8c0e565d5b6d4e20bf18ce86621a18426974636f696e205369676e6564204d6573736167653a0ae2a201526f6f6368205472616e73616374696f6e3a0a57656c636f6d6520746f20726f6f63685f746573740a596f752077696c6c20617574686f72697a652073657373696f6e3a0a53636f70653a0a3078663962313065366337363066316361646365393563363634623361336561643363393835626265396436336264353161396266313736303738356432366131623a3a2a3a3a2a0a54696d654f75743a313030300a21031a446b6ac064acb14687764871dad6c08186a788248d585b3cce69231b48d1382a62633171333234356e706d3430346874667a76756c783676347736356d61717a7536617474716c336677";
+        let payload = auth_payload::from_bytes(auth_payload_bytes);
+        let signature = signature(&payload);
+        let tx_hash = x"5415b18de0b880bb2af5dfe1ee27fd19ae8a0c99b5328e8b4b44f4c86cc7176a";
+        let message = encode_full_message(&payload, tx_hash);
+        let pk = public_key(&payload);
+        let claimer_address= from_address(&payload);
+        utxo::transfer_for_testing(test_utxo, bitcoin_address::to_rooch_address(&bitcoin_address::from_string(&claimer_address)));
+        claim_from_faucet(faucet_obj, invitation_obj, claimer_address, vector[test_utxo_id], @0x43, pk, signature, message);
         let invitation_obj = object::borrow_mut_object_shared<InvitationConf>(object::named_object_id<InvitationConf>());
-       let invitation = object::borrow(invitation_obj);
-        let records = table::borrow(&invitation.invitation_records, @0x42);
-        let invitation_user_record = table::borrow(&records.invitation_records, @0x43);
+        let invitation = object::borrow(invitation_obj);
+        let records = table::borrow(&invitation.invitation_records, @0x43);
+        let invitation_user_record = table::borrow(&records.invitation_records, @0xb1f6856b52189858e58661371508f19dc6cecacc97b6c5fa501262420fd1559a);
         assert!(invitation_user_record == &500000000, 1);
         assert!(records.invitation_reward_amount == 500000000, 2);
         assert!(records.total_invitations == 1, 3);

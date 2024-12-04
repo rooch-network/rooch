@@ -29,6 +29,7 @@ impl FaucetProxy {
         inviter: UnitedAddressView,
         claimer_sign: String,
         public_key: String,
+        message: String,
     ) -> Result<U256> {
         self.actor
             .send(ClaimWithInviterMessage {
@@ -36,6 +37,7 @@ impl FaucetProxy {
                 inviter,
                 claimer_sign,
                 public_key,
+                message,
             })
             .await?
     }
@@ -65,6 +67,7 @@ impl FaucetProxy {
         inviter: UnitedAddressView,
         claimer_sign: String,
         public_key: String,
+        message: String,
     ) -> Result<BitcoinAddress> {
         self.actor
             .send(crate::BindingTwitterAccountMessageWithInviter {
@@ -72,6 +75,7 @@ impl FaucetProxy {
                 inviter,
                 claimer_sign,
                 public_key,
+                message,
             })
             .await?
     }

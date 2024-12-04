@@ -51,6 +51,7 @@ impl App {
                 request.inviter,
                 request.claimer_sign,
                 request.public_key,
+                request.message,
             )
             .await
             .map_err(FaucetError::custom)?;
@@ -92,10 +93,11 @@ impl App {
         inviter: UnitedAddressView,
         claimer_sign: String,
         public_key: String,
+        message: String,
     ) -> Result<String, FaucetError> {
         let address = self
             .faucet_proxy
-            .binding_twitter_account_with_inviter(tweet_id, inviter, claimer_sign, public_key)
+            .binding_twitter_account_with_inviter(tweet_id, inviter, claimer_sign, public_key, message)
             .await
             .map_err(FaucetError::custom)?;
         Ok(address.to_rooch_address().to_string())

@@ -15,6 +15,7 @@ pub struct FaucetRequestWithInviter {
     pub inviter: UnitedAddressView,
     pub claimer_sign: String,
     pub public_key: String,
+    pub message: String,
 }
 
 impl FaucetRequest {
@@ -48,4 +49,5 @@ pub struct VerifyAndBindingTwitterAccountWithInviter {
     pub inviter: UnitedAddressView,
     pub claimer_sign: String,
     pub public_key: String,
+    pub message: String,
 }

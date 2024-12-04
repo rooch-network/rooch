@@ -21,9 +21,12 @@ pub fn claim_from_faucet_function_call(
     module_address: AccountAddress,
     faucet_object_id: ObjectID,
     invitation_object_id: ObjectID,
-    claimer: AccountAddress,
+    claimer: String,
     utxo_ids: Vec<ObjectID>,
     inviter: AccountAddress,
+    public_key: String,
+    signature: String,
+    message: String,
 ) -> FunctionCall {
     FunctionCall {
         function_id: FunctionId::new(
@@ -37,11 +40,26 @@ pub fn claim_from_faucet_function_call(
                 .to_move_value()
                 .simple_serialize()
                 .unwrap(),
-            MoveValue::Address(claimer).simple_serialize().unwrap(),
+            MoveString::from(claimer)
+                .to_move_value()
+                .simple_serialize()
+                .unwrap(),
             MoveValue::Vector(utxo_ids.iter().map(|id| id.to_move_value()).collect())
                 .simple_serialize()
                 .unwrap(),
             MoveValue::Address(inviter).simple_serialize().unwrap(),
+            MoveString::from(public_key)
+                .to_move_value()
+                .simple_serialize()
+                .unwrap(),
+            MoveString::from(signature)
+                .to_move_value()
+                .simple_serialize()
+                .unwrap(),
+            MoveString::from(message)
+                .to_move_value()
+                .simple_serialize()
+                .unwrap(),
         ],
     }
 }
@@ -50,6 +68,9 @@ pub fn claim_from_twitter_function_call(
     module_address: AccountAddress,
     tweet_id: String,
     inviter: AccountAddress,
+    public_key: String,
+    signature: String,
+    message: String,
 ) -> FunctionCall {
     FunctionCall {
         function_id: FunctionId::new(
@@ -63,6 +84,18 @@ pub fn claim_from_twitter_function_call(
                 .simple_serialize()
                 .unwrap(),
             MoveValue::Address(inviter).simple_serialize().unwrap(),
+            MoveString::from(public_key)
+                .to_move_value()
+                .simple_serialize()
+                .unwrap(),
+            MoveString::from(signature)
+                .to_move_value()
+                .simple_serialize()
+                .unwrap(),
+            MoveString::from(message)
+                .to_move_value()
+                .simple_serialize()
+                .unwrap(),
         ],
     }
 }
