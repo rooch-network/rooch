@@ -94,7 +94,7 @@ pub fn tx_exec_benchmark(c: &mut Criterion) {
                 test_transaction_builder.update_sequence_number(seq_num);
                 seq_num += 1;
                 let publish_action = test_transaction_builder
-                    .new_publish_examples("large_objects", Some("example".to_owned()))
+                    .new_publish_examples("large_objects", Some("rooch_examples".to_owned()))
                     .unwrap();
                 let tx = test_transaction_builder
                     .build_and_sign(publish_action)
