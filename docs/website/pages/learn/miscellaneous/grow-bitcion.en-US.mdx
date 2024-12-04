@@ -22,7 +22,7 @@ As a Bitcoin project builder, you are free to list your project on the Grow Bitc
 
 Self Staking only has `Read` permissions for Bitcoin, without `Transfer`, ensuring the ownership of BTC. Having `Write` permission at the Rooch layer provides scalability.
 
-Therefore, Self Staking in Grwo Bitcoin is risk-free staking mining.
+Therefore, Self Staking in Grow Bitcoin is risk-free staking mining.
 
 For example, I want to go shopping in a newly opened supermarket and I want to apply for a membership card. The membership card will only read my identity information and cannot do any more operations. Grow Bitcoin's stake mining is this model. It can only read the UTXO of the Bitcoin wallet and has no authority to operate your Bitcoin assets.
 
@@ -41,6 +41,12 @@ Please refer to the [Grow Bitcion Testnet User Guide](https://rooch.network/blog
 #### How to get UTXO and RGas
 
 Only needs to ensure that the UniSat wallet has UTXO and [Claim RGas](https://portal.rooch.network/faucet) here to stake.
+
+RGas is the native gas token on the Rooch Network and is used to cover transaction and operating costs.
+
+#### The account has BTC but no UTXO
+
+BTC transfer transactions need to wait for three blocks to be confirmed before UTXO can be used in Rooch.
 
 #### How to mine Grow
 
@@ -76,9 +82,19 @@ No.
 
 If you don't have RGas anymore, you can buy them [here](https://portal.rooch.network/gas-swap).
 
+> Tip: Currently, only BTC -> RGas is provided. RGas -> BTC is temporarily unavailable. The function of purchasing RGas with USTD will be provided in the future.
+
 #### UTXO has changed, are there still GROW rewards?
 
 Because it is a holding mining mode, if the UTXO is spent, the unclaimed `GROW` cannot be claimed. It is recommended to claim the staking reward before spending BTC.
+
+#### How many times can the GROW obtained through staking be claimed per day?
+
+There is no limit on the number of times, you can claim as long as you have staking income.
+
+#### How many RGas are consumed for each Claim?
+
+About 0.02 ~ 0.03 RGas.
 
 #### Babylon Stakes
 
@@ -93,6 +109,10 @@ Babylon's staking has a time lock, and its staking has time weight.
 There are currently oracles for Bitcoin.
 
 > Source code: https://github.com/rooch-network/rooch/blob/main/apps/gas_market/sources/trusted_oracle.move
+
+#### Is Grow the mainnet token of Rooch?
+
+no.
 
 #### What does GROW do?
 
@@ -109,8 +129,16 @@ GROW will be burned after voting, reducing the supply.
 `GROW` is launched completely fairly, with a fixed supply and no upper limit for `BitXP`. `BitXP` can only be obtained by voting for the project using `GROW`.
 
 #### Can I receive RGas with a new Bitcoin address?
-#
+
 A new Bitcoin address can `Claim` RGas once.
+
+#### What type of Bitcoin address to use?
+
+Taproot.
+
+#### Where GROW trades
+
+GROW’s trading market will be launched in the future.
 
 ### Testnet Frequently Asked Questions
 
