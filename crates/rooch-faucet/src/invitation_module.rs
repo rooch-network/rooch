@@ -48,13 +48,13 @@ pub fn claim_from_faucet_function_call(
                 .simple_serialize()
                 .unwrap(),
             MoveValue::Address(inviter).simple_serialize().unwrap(),
-            public_key
-                .into_bytes()
+            hex::decode(public_key)
+                .unwrap()
                 .to_move_value()
                 .simple_serialize()
                 .unwrap(),
-            signature
-                .into_bytes()
+            hex::decode(signature)
+                .unwrap()
                 .to_move_value()
                 .simple_serialize()
                 .unwrap(),
@@ -87,13 +87,13 @@ pub fn claim_from_twitter_function_call(
                 .simple_serialize()
                 .unwrap(),
             MoveValue::Address(inviter).simple_serialize().unwrap(),
-            public_key
-                .into_bytes()
+            hex::decode(public_key)
+                .unwrap()
                 .to_move_value()
                 .simple_serialize()
                 .unwrap(),
-            signature
-                .into_bytes()
+            hex::decode(signature)
+                .unwrap()
                 .to_move_value()
                 .simple_serialize()
                 .unwrap(),

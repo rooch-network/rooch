@@ -3,7 +3,7 @@ module invitation_record::invitation {
     use std::option;
     use std::string::String;
     use std::vector;
-    use moveos_std::hex;
+    use moveos_std::signer;
     use moveos_std::consensus_codec;
     use twitter_binding::tweet_v2;
     use rooch_framework::bitcoin_address::BitcoinAddress;
@@ -37,9 +37,9 @@ module invitation_record::invitation {
     #[test_only]
     use gas_faucet::gas_faucet;
     #[test_only]
-    use moveos_std::signer::address_of;
+    use moveos_std::hex;
     #[test_only]
-    use moveos_std::tx_context::set_ctx_tx_hash_for_testing;
+    use moveos_std::signer::address_of;
     #[test_only]
     use rooch_framework::account::create_account_for_testing;
     #[test_only]
@@ -60,6 +60,7 @@ module invitation_record::invitation {
     const ErrorInvalidSignature: u64 = 8;
 
     const ONE_RGAS: u256 = 1_00000000;
+    const INIT_GAS_AMOUNT: u256 = 1000000_00000000;
     const ErrorInvalidArg: u64 = 0;
 
     const MessagePrefix : vector<u8> = b"Bitcoin Signed Message:\n";
@@ -87,9 +88,18 @@ module invitation_record::invitation {
         unit_invitation_amount: u256,
     }
 
-    fun init() {
+    fun init(sender: &signer) {
+        let sender_addr = signer::address_of(sender);
+        let rgas_store = coin_store::create_coin_store<RGas>();
+        let rgas_balance = account_coin_store::balance<RGas>(sender_addr);
+        let market_gas_amount = if (rgas_balance > INIT_GAS_AMOUNT) {
+            INIT_GAS_AMOUNT
+        } else {
+            rgas_balance / 3
+        };
+        deposit_to_rgas_store(sender, &mut rgas_store, market_gas_amount);
         let invitation_obj = object::new_named_object(InvitationConf{
-            rgas_store: coin_store::create_coin_store<RGas>(),
+            rgas_store,
             invitation_records: table::new(),
             is_open: true,
             unit_invitation_amount: ONE_RGAS * 5
@@ -298,21 +308,16 @@ module invitation_record::invitation {
     }
 
     fun encode_full_message_legacy(message_prefix: vector<u8>, message_info: vector<u8>): vector<u8> {
-        let tx_hash = tx_context::tx_hash();
-        let tx_hex = hex::encode(tx_hash);
 
         let full_message = vector<u8>[];
         vector::append(&mut full_message, message_prefix);
 
         vector::append(&mut full_message, message_info);
-        vector::append(&mut full_message, tx_hex);
 
         full_message
     }
     fun encode_full_message_consensus(message_prefix: vector<u8>, message_info: vector<u8>): vector<u8> {
-        let tx_hash = tx_context::tx_hash();
-        let tx_hex = hex::encode(tx_hash);
-        vector::append(&mut message_info, tx_hex);
+
         let encoder = consensus_codec::encoder();
         consensus_codec::emit_var_slice(&mut encoder, message_prefix);
         consensus_codec::emit_var_slice(&mut encoder, message_info);
@@ -413,8 +418,9 @@ module invitation_record::invitation {
         let payload = auth_payload::from_bytes(auth_payload_bytes);
         let signature = signature(&payload);
         let tx_hash = x"5415b18de0b880bb2af5dfe1ee27fd19ae8a0c99b5328e8b4b44f4c86cc7176a";
-        set_ctx_tx_hash_for_testing(tx_hash);
+        let tx_hex = hex::encode(tx_hash);
         let message = x"526f6f6368205472616e73616374696f6e3a0a57656c636f6d6520746f20726f6f63685f746573740a596f752077696c6c20617574686f72697a652073657373696f6e3a0a53636f70653a0a3078663962313065366337363066316361646365393563363634623361336561643363393835626265396436336264353161396266313736303738356432366131623a3a2a3a3a2a0a54696d654f75743a313030300a";
+        vector::append(&mut message, tx_hex);
         let pk = public_key(&payload);
         let claimer_address= from_address(&payload);
         utxo::transfer_for_testing(test_utxo, bitcoin_address::to_rooch_address(&bitcoin_address::from_string(&claimer_address)));
