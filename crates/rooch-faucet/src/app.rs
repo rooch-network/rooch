@@ -97,7 +97,13 @@ impl App {
     ) -> Result<String, FaucetError> {
         let address = self
             .faucet_proxy
-            .binding_twitter_account_with_inviter(tweet_id, inviter, claimer_sign, public_key, message)
+            .binding_twitter_account_with_inviter(
+                tweet_id,
+                inviter,
+                claimer_sign,
+                public_key,
+                message,
+            )
             .await
             .map_err(FaucetError::custom)?;
         Ok(address.to_rooch_address().to_string())
