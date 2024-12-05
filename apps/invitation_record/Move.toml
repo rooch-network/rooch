@@ -18,3 +18,9 @@ twitter_binding = "_"
 std = "0x1"
 moveos_std = "0x2"
 rooch_framework = "0x3"
+
+[dev-addresses]
+invitation_record = "0x41"
+app_admin = "0x42"
+gas_faucet = "0x43"
+twitter_binding = "0x44"

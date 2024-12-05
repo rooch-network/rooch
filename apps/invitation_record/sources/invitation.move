@@ -271,15 +271,7 @@ module invitation_record::invitation {
     }
 
     fun encode_full_message(message_prefix: vector<u8>, message_info: vector<u8>): vector<u8> {
-        let full_message = if (message_prefix != MessagePrefix) {
-            // For compatibility with the old version
-            // The old version contains length information, so it needs to be removed in the future
-            // After the js sdk is update, we can remove this branch
-            encode_full_message_legacy(message_prefix, message_info)
-        }else{
-            encode_full_message_consensus(message_prefix, message_info)
-        };
-        full_message
+        encode_full_message_consensus(message_prefix, message_info)
     }
 
     fun starts_with(haystack: &vector<u8>, needle: &vector<u8>): bool {
@@ -301,15 +293,6 @@ module invitation_record::invitation {
         true
     }
 
-    fun encode_full_message_legacy(message_prefix: vector<u8>, message_info: vector<u8>): vector<u8> {
-
-        let full_message = vector<u8>[];
-        vector::append(&mut full_message, message_prefix);
-
-        vector::append(&mut full_message, message_info);
-
-        full_message
-    }
     fun encode_full_message_consensus(message_prefix: vector<u8>, message_info: vector<u8>): vector<u8> {
 
         let encoder = consensus_codec::encoder();
@@ -387,7 +370,7 @@ module invitation_record::invitation {
     }
 
 
-        #[test(sender=@0xf0919849a42aa204673b15e586614963649a634851589dfbfde326816bed4161)]
+    #[test(sender=@0xf0919849a42aa204673b15e586614963649a634851589dfbfde326816bed4161)]
     fun test_claim_with_invitation(sender: &signer){
         bitcoin_move::genesis::init_for_test();
         create_account_for_testing(@0xf0919849a42aa204673b15e586614963649a634851589dfbfde326816bed4161);
