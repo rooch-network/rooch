@@ -19,12 +19,20 @@ import { DashboardContent } from 'src/layouts/dashboard';
 
 import { toast } from 'src/components/snackbar';
 
+import { paths } from '../../routes/paths'
+
+const FAUCET_NOT_OPEN= 'Faucet Not Open'
+const INVALID_UTXO = 'Invalid UTXO'
+const FAUCET_NOT_ENOUGH_RGAS = 'Faucet Not enough RGas'
+const ALREADY_CLAIMED = 'Already Claimed'
+const UTXO_VALUE_IS_ZERO = 'UTXO Value Is Zero'
+
 const ERROR_MSG: Record<string, string> = {
-  1: 'Faucet Not Open',
-  2: 'Invalid UTXO',
-  3: 'Faucet Not Enough RGas',
-  4: 'Already Claimed',
-  5: 'UTXO Value Is Zero',
+  1: FAUCET_NOT_OPEN,
+  2: INVALID_UTXO,
+  3: FAUCET_NOT_ENOUGH_RGAS,
+  4: ALREADY_CLAIMED,
+  5: UTXO_VALUE_IS_ZERO,
 };
 
 export function FaucetView({ address }: { address: string }) {
@@ -104,12 +112,18 @@ export function FaucetView({ address }: { address: string }) {
   }, [address, client, faucetAddress, faucetObject, viewRoochAddress]);
 
   const fetchFaucet = async () => {
+
+    if (errorMsg === ALREADY_CLAIMED) {
+      router.push(paths.dashboard['gas-swap'])
+      return
+    }
+
     setFaucetStatus(true);
     try {
       const payload = JSON.stringify({
         claimer: viewAddress,
       });
-      const response = await fetch(faucetUrl, {
+      const response = await fetch(`${faucetUrl}/faucet`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -169,16 +183,16 @@ export function FaucetView({ address }: { address: string }) {
               </Box>
             </Stack>
             {errorMsg
-              ? 'You cannot claim gas, Please make sure the current address has a valid utxo and try again'
-              : ''}
+              ? errorMsg === ALREADY_CLAIMED ? 'You Already Claimed RGAS'
+              : 'You cannot claim gas, Please make sure the current address has a valid utxo and try again' : ''}
             <LoadingButton
               variant="soft"
               color="primary"
-              disabled={errorMsg !== undefined}
+              disabled={errorMsg !== undefined && errorMsg !== ALREADY_CLAIMED}
               loading={isPending || faucetStatus}
               onClick={fetchFaucet}
             >
-              {errorMsg || `Claim: ${claimGas} RGas`}
+              {errorMsg === ALREADY_CLAIMED ? 'Purchase RGas' : errorMsg || `Claim: ${claimGas} RGas`}
             </LoadingButton>
           </Stack>
         </CardContent>

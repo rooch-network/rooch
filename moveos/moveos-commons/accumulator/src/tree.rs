@@ -384,7 +384,7 @@ impl AccumulatorTree {
         let cache = &mut self.index_cache;
         for node in nodes {
             if let Some(old) = cache.put(node.index(), node.hash()) {
-                log::trace!("cache exist node hash: {}-{:?}-{:?}", id, node.index(), old);
+                tracing::trace!("cache exist node hash: {}-{:?}-{:?}", id, node.index(), old);
             }
         }
     }

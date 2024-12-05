@@ -10,7 +10,6 @@ use rooch_types::indexer::event::IndexerEvent;
 use rooch_types::indexer::state::IndexerObjectState;
 use rooch_types::indexer::transaction::IndexerTransaction;
 use std::sync::Arc;
-use tracing::log;
 
 use crate::models::events::StoredEvent;
 use crate::models::inscriptions::StoredInscription;
@@ -108,7 +107,7 @@ impl SqliteIndexerStore {
         diesel::sql_query(query.clone())
             .execute(&mut connection)
             .map_err(|e| {
-                log::error!("Upsert object states Executing Query error: {}", query);
+                tracing::error!("Upsert object states Executing Query error: {}", query);
                 IndexerError::SQLiteWriteError(e.to_string())
             })
             .context("Failed to write or update object states to SQLiteDB")?;
@@ -168,7 +167,7 @@ impl SqliteIndexerStore {
         diesel::sql_query(query.clone())
             .execute(&mut connection)
             .map_err(|e| {
-                log::error!("Upsert object state utxos Executing Query error: {}", query);
+                tracing::error!("Upsert object state utxos Executing Query error: {}", query);
                 IndexerError::SQLiteWriteError(e.to_string())
             })
             .context("Failed to write or update object state utxos to SQLiteDB")?;
@@ -231,7 +230,7 @@ impl SqliteIndexerStore {
         diesel::sql_query(query.clone())
             .execute(&mut connection)
             .map_err(|e| {
-                log::error!(
+                tracing::error!(
                     "Upsert object state inscriptions Executing Query error: {}",
                     query
                 );

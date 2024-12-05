@@ -4,4 +4,4 @@
 pub mod batch;
 pub mod chunk;
 pub mod segment;
-pub mod state;
+pub mod status;

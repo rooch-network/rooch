@@ -348,20 +348,20 @@ pub fn inject_runtime_metadata<P: AsRef<Path>>(
             CompiledUnit::Module(named_module) => {
                 if let Some(module_metadata) = metadata.get(&named_module.module.self_id()) {
                     if !module_metadata.is_empty() {
-                        log::trace!(
+                        tracing::trace!(
                             "\n\nstart dump data structs map {:?}",
                             named_module.module.self_id().to_string()
                         );
                         for (k, v) in module_metadata.data_struct_map.iter() {
-                            log::trace!("{:?} -> {:?}", k, v);
+                            tracing::trace!("{:?} -> {:?}", k, v);
                         }
-                        log::trace!(
+                        tracing::trace!(
                             "start dump data structs map func {:?}\n\n",
                             named_module.module.self_id().to_string()
                         );
-                        log::trace!("\n");
+                        tracing::trace!("\n");
                         for (k, v) in module_metadata.data_struct_func_map.iter() {
-                            log::trace!("{:?} -> {:?}", k, v);
+                            tracing::trace!("{:?} -> {:?}", k, v);
                         }
 
                         let serialized_metadata =

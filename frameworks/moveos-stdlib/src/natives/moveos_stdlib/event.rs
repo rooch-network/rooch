@@ -76,8 +76,8 @@ pub fn native_emit(
             ty
         ))
     })?;
-    if log::log_enabled!(log::Level::Trace) {
-        log::trace!("Emitting event {}, {:?}", struct_tag, msg);
+    if tracing::enabled!(tracing::Level::TRACE) {
+        tracing::trace!("Emitting event {}, {:?}", struct_tag, msg);
     }
     let event_data = msg
         .simple_serialize(&layout)

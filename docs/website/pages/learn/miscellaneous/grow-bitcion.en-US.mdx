@@ -1,0 +1,166 @@
+# Grow Bitcoin
+
+## 简介
+
+![](/docs/grow-bitcoin/grow-bitcoin-home.png)
+
+Grow Bitcoin is an ecosystem acceleration platform that focuses on connecting the Bitcoin users and stakers to the projects. Grow Bitcoin is operated by the Rooch Network team.
+
+As a Bitcoin staker or user, you get to earn BitXP as well as the project XP by voting for the projects you like, with your Bitcoin as the stake but without having to move your Bitcoin at all.
+
+As a Bitcoin project builder, you are free to list your project on the Grow Bitcoin platform and get attentions from potential Bitcoin users; users will endorse your project with their votes and with more votes you get to earn BitXP as well!
+
+- Grow Bitcoin website：https://grow.rooch.network/
+
+> Test network：https://test-grow.rooch.network
+
+## FAQ
+
+### Mainnet Frequently Asked Questions
+
+#### Self Staking Risk
+
+Self Staking only has `Read` permissions for Bitcoin, without `Transfer`, ensuring the ownership of BTC. Having `Write` permission at the Rooch layer provides scalability.
+
+Therefore, Self Staking in Grow Bitcoin is risk-free staking mining.
+
+For example, I want to go shopping in a newly opened supermarket and I want to apply for a membership card. The membership card will only read my identity information and cannot do any more operations. Grow Bitcoin's stake mining is this model. It can only read the UTXO of the Bitcoin wallet and has no authority to operate your Bitcoin assets.
+
+#### Why Create Session Key
+
+Rooch's Session Key provides secure and simplified DApp transaction processes for application interactions.
+
+For a detailed description of Session Key, please refer to this document https://rooch.networklearn/core-concepts/accounts/session-key
+
+#### Detailed usage process
+
+Please refer to the [Grow Bitcion Testnet User Guide](https://rooch.network/blog/grow-bitcoin-test)
+
+> Tip: The mainnet and testnet usage procedures are the same, pay attention to the URL of the accessed website!
+
+#### How to get UTXO and RGas
+
+Only needs to ensure that the UniSat wallet has UTXO and [Claim RGas](https://portal.rooch.network/faucet) here to stake.
+
+RGas is the native gas token on the Rooch Network and is used to cover transaction and operating costs.
+
+#### The account has BTC but no UTXO
+
+BTC transfer transactions need to wait for three blocks to be confirmed before UTXO can be used in Rooch.
+
+#### How to mine Grow
+
+You only need to hold BTC in your own wallet to stake for mining and obtain `GROW`. Grow Bitcoin adopts `Hold Mining`’s staking model to obtain `GROW`.
+
+Note: If the UTXO in your wallet is spent, the UTXO staked in Grow Bitcoin will become invalid, and you need to manually stake new UTXO to continue mining.
+
+#### Loop appears to create Seesion
+
+If the `Create Session` prompt window pops up in a loop, please check whether there is RGas.
+
+#### Does staking affect ARC20?
+
+No impact. Staking does not require sending an L1 transaction.
+
+#### How much BTC is needed to stake
+
+No barriers to entry.
+
+#### Grow total amount
+
+The total amount of `GROW` is `210,000,000,000`, which will be mined in `180` days.
+
+The daily mining quantity is fixed and divided according to the staked BTC.
+
+> Source code: https://github.com/rooch-network/rooch/blob/main/apps/grow_bitcoin/sources/grow_bitcoin.move
+
+#### Are there any staking restrictions?
+
+No.
+
+#### RGas no more
+
+If you don't have RGas anymore, you can buy them [here](https://portal.rooch.network/gas-swap).
+
+> Tip: Currently, only BTC -> RGas is provided. RGas -> BTC is temporarily unavailable. The function of purchasing RGas with USTD will be provided in the future.
+
+#### UTXO has changed, are there still GROW rewards?
+
+Because it is a holding mining mode, if the UTXO is spent, the unclaimed `GROW` cannot be claimed. It is recommended to claim the staking reward before spending BTC.
+
+#### How many times can the GROW obtained through staking be claimed per day?
+
+There is no limit on the number of times, you can claim as long as you have staking income.
+
+#### How many RGas are consumed for each Claim?
+
+About 0.02 ~ 0.03 RGas.
+
+#### Babylon Stakes
+
+The same UTXO cannot be Self-Staking and then staked on Babylon.
+
+You need to stake in Babylon first, and then stake via Babylon Stake Seal.
+
+Babylon's staking has a time lock, and its staking has time weight.
+
+#### Does Rooch have a price oracle?
+
+There are currently oracles for Bitcoin.
+
+> Source code: https://github.com/rooch-network/rooch/blob/main/apps/gas_market/sources/trusted_oracle.move
+
+#### Is Grow the mainnet token of Rooch?
+
+no.
+
+#### What does GROW do?
+
+You can use `GROW` to vote for projects and earn `BitXP` points. `BitXP` is used to obtain airdrops.
+
+#### Will GROW disappear after voting?
+
+GROW will be burned after voting, reducing the supply.
+
+#### GROW to BitXP Ratio
+
+`GROW` and `BitXP` are mapped `1:1`, and the `GROW` consumed by voting will receive the same amount of `BitXP`.
+
+`GROW` is launched completely fairly, with a fixed supply and no upper limit for `BitXP`. `BitXP` can only be obtained by voting for the project using `GROW`.
+
+#### Can I receive RGas with a new Bitcoin address?
+
+A new Bitcoin address can `Claim` RGas once.
+
+#### What type of Bitcoin address to use?
+
+Taproot.
+
+#### Where GROW trades
+
+GROW’s trading market will be launched in the future.
+
+### Testnet Frequently Asked Questions
+
+#### How to get UTXO and RGas
+
+For testnet, please use the following method to obtain UTXO and RGas:
+
+- [Get tBTC](https://rooch.network/build/getting-started/get-test-btc)
+- [Get Rooch Gas Coin](https://rooch.network/build/getting-started/get-gas-coin)
+
+#### The test network has received BTC but no UTXO
+
+If this problem occurs, please transfer BTC to your account once.
+
+#### Discord can't find Faucet channel
+
+Please get the `seed` role in the `contributor-role` channel.
+
+#### The account has BTC but no UTXO
+
+BTC transfer transactions need to wait for three blocks to be confirmed before UTXO can be used in Rooch.
+
+#### Which version of Bitcoin testnet is Grow Bitcion using?
+
+The Grow Bitcion testnet uses the Bitcoin `test3` testnet.

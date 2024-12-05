@@ -52,11 +52,12 @@ impl Operator for CelestiaClient {
         _prefix: Option<String>,
     ) -> anyhow::Result<()> {
         let blob = Blob::new(self.namespace, segment_bytes)?;
-        let max_retries = self.max_retries;
-        let mut retries = 0;
+        let max_attempts = self.max_retries + 1; // max_attempts = max_retries + first attempt
+        let mut attempts = 0;
         let mut retry_delay = BACK_OFF_MIN_DELAY;
 
         loop {
+            attempts += 1;
             match self
                 .client
                 .blob_submit(&[blob.clone()], SubmitOptions::default())
@@ -72,22 +73,22 @@ impl Operator for CelestiaClient {
                     return Ok(());
                 }
                 Err(e) => {
-                    if retries < max_retries {
-                        retries += 1;
+                    if attempts < max_attempts {
+                        tracing::warn!(
+                            "Failed to submit segment: {:?} to Celestia: {:?}, attempts: {}, retrying after {}ms",
+                            segment_id,
+                            e,
+                            attempts,
+                            retry_delay.as_millis(),
+                        );
                         sleep(retry_delay).await;
                         retry_delay *= 3;
-                        tracing::warn!(
-                            "Failed to submit segment: {:?} to Celestia, retrying after {}ms, attempt: {}",
-                            segment_id,
-                            retry_delay.as_millis(),
-                            retries
-                        );
                     } else {
                         return Err(anyhow!(
-                            "Failed to submit segment: {:?} to Celestia after {} attempts: {:?}",
+                            "Failed to submit segment: {:?} to Celestia: {:?} after {} attempts",
                             segment_id,
-                            retries,
-                            e
+                            e,
+                            attempts,
                         ));
                     }
                 }

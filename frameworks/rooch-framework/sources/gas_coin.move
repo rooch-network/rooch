@@ -14,6 +14,7 @@ module rooch_framework::gas_coin {
 
     friend rooch_framework::genesis;
     friend rooch_framework::transaction_validator;
+    friend rooch_framework::transaction_fee;
 
     /// RGas is the symbol of Rooch Gas Coin
     //If not, we can remove `store` ability from RGas.

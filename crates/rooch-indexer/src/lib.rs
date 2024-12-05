@@ -354,7 +354,7 @@ impl diesel::r2d2::CustomizeConnection<SqliteConnection, diesel::r2d2::Error>
             .write()
             .map_err(|e| diesel::r2d2::Error::ConnectionError(BadConnection(e.to_string())))?;
         *locker_cnt += 1;
-        log::trace!(
+        tracing::trace!(
             "Sqlite CustomizeConnection on_acquire connection [rw:{}]",
             *locker_cnt
         );
@@ -387,7 +387,7 @@ impl diesel::r2d2::CustomizeConnection<SqliteConnection, diesel::r2d2::Error>
     }
 
     fn on_release(&self, _conn: SqliteConnection) {
-        log::trace!("Sqlite CustomizeConnection on_release connection");
+        tracing::trace!("Sqlite CustomizeConnection on_release connection");
     }
 }
 

@@ -15,7 +15,6 @@ rust-version = { workspace = true }
 
 [dependencies]
 better_any = { workspace = true }
-log = { workspace = true }
 tracing = { workspace = true }
 hex = { workspace = true }
 parking_lot = { workspace = true }

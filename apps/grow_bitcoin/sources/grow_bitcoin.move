@@ -6,13 +6,13 @@ module grow_bitcoin::grow_bitcoin {
     use std::string::{Self, String};
     use std::option;
     use std::u64;
+    use std::vector;
     use bitcoin_move::bbn;
     use bitcoin_move::bbn::BBNStakeSeal;
     use bitcoin_move::types;
     use bitcoin_move::bitcoin;
 
     use moveos_std::event::emit;
-    use moveos_std::tx_context::sender;
     use moveos_std::table;
     use moveos_std::table::Table;
     use moveos_std::object;
@@ -269,6 +269,21 @@ module grow_bitcoin::grow_bitcoin {
         farming_asset.alive = alive;
     }
 
+    /// Supports batch invocation by stake users, allowing multiple assets to be staked to receive yield farming tokens
+    public entry fun batch_stake(
+        signer: &signer,
+        assets: vector<ObjectID>,
+    ) {
+        let len = vector::length(&assets);
+        let i = 0;
+        while (i < len) {
+            let asset_id = *vector::borrow(&assets, i);
+            let asset = object::borrow_mut_object<UTXO>(signer, asset_id);
+            stake(signer, asset);
+            i = i + 1;
+        }
+    }
+
     /// Call by stake user, staking amount of asset in order to get yield farming token
     public entry fun stake(
         signer: &signer,
@@ -276,9 +291,24 @@ module grow_bitcoin::grow_bitcoin {
     ) {
         assert!(!utxo::contains_temp_state<StakeInfo>(asset), ErrorAlreadyStaked);
         utxo::add_temp_state(asset, StakeInfo {});
-        let utxo_value = value( object::borrow(asset));
+        let utxo_value = value(object::borrow(asset));
         let asset_weight = utxo_value * calculate_time_lock_weight(0);
         do_stake(signer, asset, utxo_value, asset_weight);
+    }
+
+    /// Supports batch invocation by stake users, allowing multiple assets to be staked to receive yield farming tokens
+    public entry fun batch_stake_bbn(
+        signer: &signer,
+        assets: vector<ObjectID>,
+    ) {
+        let len = vector::length(&assets);
+        let i = 0;
+        while (i < len) {
+            let asset_id = *vector::borrow(&assets, i);
+            let asset = object::borrow_mut_object<BBNStakeSeal>(signer, asset_id);
+            stake_bbn(signer, asset);
+            i = i + 1;
+        }
     }
 
     public entry fun stake_bbn(
@@ -364,18 +394,53 @@ module grow_bitcoin::grow_bitcoin {
         table::add(&mut farming_asset.stake_table, asset_id, account);
     }
 
+    /// Supports batch invocation by stake users, allowing multiple assets to be unstaked to receive yield farming tokens
+    public entry fun batch_unstake(
+        signer: &signer,
+        assets: vector<ObjectID>,
+    ) {
+        let len = vector::length(&assets);
+        let i = 0;
+        let total_coin = coin::zero<GROW>();
+        while (i < len) {
+            let asset_id = *vector::borrow(&assets, i);
+            let asset = object::borrow_mut_object<UTXO>(signer, asset_id);
+            let coin = do_unstake(signer, object::id(asset));
+            utxo::remove_temp_state<StakeInfo>(asset);
+            coin::merge(&mut total_coin, coin);
+            i = i + 1;
+        };
+        account_coin_store::deposit(signer::address_of(signer), total_coin);
+    }
+
     /// Unstake asset from farming pool
     public entry fun unstake(signer: &signer, asset: &mut Object<UTXO>) {
         let coin = do_unstake(signer, object::id(asset));
         utxo::remove_temp_state<StakeInfo>(asset);
-        account_coin_store::deposit(sender(), coin);
+        account_coin_store::deposit(signer::address_of(signer), coin);
+    }
+
+    /// Supports batch invocation by stake users, allowing multiple assets to be unstaked to receive yield farming tokens
+    public entry fun batch_unstake_bbn(signer: &signer, assets: vector<ObjectID>) {
+        let len = vector::length(&assets);
+        let i = 0;
+        let total_coin = coin::zero<GROW>();
+        while (i < len) {
+            let asset_id = *vector::borrow(&assets, i);
+            let asset = object::borrow_mut_object<BBNStakeSeal>(signer, asset_id);
+            let coin = do_unstake(signer, object::id(asset));
+            bbn::remove_temp_state<StakeInfo>(asset);
+            coin::merge(&mut total_coin, coin);
+            i = i + 1;
+        };
+        account_coin_store::deposit(signer::address_of(signer), total_coin);
     }
 
     public entry fun unstake_bbn(signer: &signer, asset: &mut Object<BBNStakeSeal>) {
         // TODO check bbn stake seal is expired
         let coin = do_unstake(signer, object::id(asset));
         bbn::remove_temp_state<StakeInfo>(asset);
-        account_coin_store::deposit(sender(), coin);
+        account_coin_store::deposit(signer::address_of(signer), coin);
     }
 
     fun do_unstake(signer: &signer, asset_id: ObjectID): Coin<GROW> {
@@ -417,15 +482,31 @@ module grow_bitcoin::grow_bitcoin {
     }
 
     /// Harvest yield farming token from stake
+    public entry fun batch_harvest(signer:&signer, assets: vector<ObjectID>) {
+        let len = vector::length(&assets);
+        let i = 0;
+        let total_coin = coin::zero<GROW>();
+        while (i < len) {
+            let asset_id = *vector::borrow(&assets, i);
+            let utxo_obj = object::borrow_mut_object<UTXO>(signer, asset_id);
+            let coin = do_harvest(signer, object::id(utxo_obj));
+            utxo::remove_temp_state<StakeInfo>(utxo_obj);
+            coin::merge(&mut total_coin, coin);
+            i = i + 1;
+        };
+        account_coin_store::deposit(signer::address_of(signer), total_coin);
+    }
+
+    /// Harvest yield farming token from stake
     public entry fun harvest(signer:&signer, asset: &mut Object<UTXO>) {
         let coin = do_harvest(signer, object::id(asset));
-        account_coin_store::deposit(sender(), coin);
+        account_coin_store::deposit(signer::address_of(signer), coin);
     }
 
     public entry fun harvest_bbn(signer:&signer, asset: &mut Object<BBNStakeSeal>) {
         // TODO check bbn stake seal is expired
         let coin = do_harvest(signer, object::id(asset));
-        account_coin_store::deposit(sender(), coin);
+        account_coin_store::deposit(signer::address_of(signer), coin);
     }
 
     fun do_harvest(signer:&signer, asset_id: ObjectID): Coin<GROW> {
@@ -728,5 +809,43 @@ module grow_bitcoin::grow_bitcoin {
         let weight2= calculate_time_lock_weight(64000+100);
         assert!(weight == 22, 0);
         assert!(weight2 == 13, 0)
+    }
+
+    #[test(sender=@0x42)]
+    fun test_batch_stake(sender: signer) {
+        let owner_addr = signer::address_of(&sender);
+        bitcoin_move::genesis::init_for_test();
+        add_latest_block(100, @0x77dfc2fe598419b00641c296181a96cf16943697f573480b023b77cce82ada21);
+        init();
+        let _admin_cap = app_admin::admin::init_for_test();
+        //deploy(1, 0, 200, admin_cap);
+        let seconds = 100;
+        let tx_id = @0x77dfc2fe598419b00641c296181a96cf16943697f573480b023b77cce82ada21;
+        let sat_value = 100000000;
+        let utxo = utxo::new_for_testing(tx_id, 0u32, sat_value);
+        let utxo2 = utxo::new_for_testing(tx_id, 1u32, sat_value);
+        let utxo_id = object::id(&utxo);
+        let utxo_id2 = object::id(&utxo2);
+
+        utxo::transfer_for_testing(utxo, owner_addr);
+        utxo::transfer_for_testing(utxo2, owner_addr);
+
+        timestamp::fast_forward_seconds_for_test(seconds);
+        batch_stake(&sender, vector[utxo_id, utxo_id2]);
+
+        let (total_value, total_weight) = query_total_stake();
+        assert!(total_value == 2 * sat_value, 1);
+        assert!(total_weight == 2 * sat_value * calculate_time_lock_weight(0), 2);
+        timestamp::fast_forward_seconds_for_test(seconds);
+        let amount = query_gov_token_amount(utxo_id);
+        let amount2 = query_gov_token_amount(utxo_id2);
+        assert!(amount == 2025450, 1);
+        assert!(amount2 == 675150, 2);
+
+        batch_unstake(&sender, vector[utxo_id, utxo_id2]);
+        let amount = query_gov_token_amount(utxo_id);
+        assert!(amount == 0, 3);
+        let amount2 = query_gov_token_amount(utxo_id2);
+        assert!(amount2 == 0, 4);
     }
 }

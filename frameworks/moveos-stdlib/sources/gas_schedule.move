@@ -10,9 +10,17 @@ module moveos_std::gas_schedule {
     
     const ErrorInvalidGasScheduleEntries: u64 = 1;
 
+    /// The initial max gas amount from genesis.
     const InitialMaxGasAmount: u64 = 1_000_000_000u64;
     public fun initial_max_gas_amount(): u64 {
         InitialMaxGasAmount
+    }
+    /// The max gas amount of the transaction.
+    /// This const can be changed via framework upgrade.
+    /// We use const other than the GasScheduleConfig for the performance.
+    const MaxGasAmount: u64 = 1_000_000_000u64;
+    public fun max_gas_amount(): u64 {
+        MaxGasAmount
     }
 
     struct GasScheduleUpdated has store, copy, drop {
@@ -85,6 +93,7 @@ module moveos_std::gas_schedule {
         object::borrow(obj)
     }
 
+    ///This function will deprecated in the future, please use `max_gas_amount()` instead.
     public fun gas_schedule_max_gas_amount(schedule: &GasSchedule): u64 {
         schedule.max_gas_amount
     }

@@ -201,7 +201,7 @@ impl UTXOFilter {
         outpoint_inscriptions_map: Option<Arc<OutpointInscriptionsMap>>,
     ) -> UTXOFilter {
         let start_time = Instant::now();
-        log::info!("start building utxo & address filter");
+        tracing::info!("start building utxo & address filter");
 
         let mut reader = BufReader::with_capacity(8 * 1024 * 1024, File::open(input).unwrap());
         let mut is_title_line = true;

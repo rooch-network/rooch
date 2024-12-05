@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{format_err, Result};
+use bitcoin_client::proxy::BitcoinClientProxy;
 use bitcoincore_rpc::bitcoin::Txid;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::{ModuleId, StructTag};
@@ -21,7 +22,6 @@ use rooch_executor::actor::messages::DryRunTransactionResult;
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_indexer::proxy::IndexerProxy;
 use rooch_pipeline_processor::proxy::PipelineProcessorProxy;
-use rooch_relayer::actor::bitcoin_client_proxy::BitcoinClientProxy;
 use rooch_rpc_api::jsonrpc_types::{
     BitcoinStatus, DisplayFieldsView, IndexerObjectStateView, ObjectMetaView, RoochStatus, Status,
 };
@@ -799,10 +799,12 @@ impl RpcService {
         let service_status = self.pipeline_processor.get_service_status().await?;
         let sequencer_info = self.sequencer.get_sequencer_info().await?;
         let root_state = self.executor.get_root().await?;
+        let da_server_status = self.da_server.get_status().await?;
 
         let rooch_status = RoochStatus {
             sequencer_info: sequencer_info.into(),
             root_state: root_state.into(),
+            da_info: da_server_status.into(),
         };
 
         let pending_block = {
@@ -819,13 +821,10 @@ impl RpcService {
             pending_block: pending_block.map(Into::into),
         };
 
-        let da_server_status = self.da_server.get_status().await?;
-
         Ok(Status {
             service_status,
             rooch_status,
             bitcoin_status,
-            da_server_status,
         })
     }
 }

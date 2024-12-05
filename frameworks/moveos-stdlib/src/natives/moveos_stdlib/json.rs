@@ -5,12 +5,12 @@ use std::collections::VecDeque;
 use std::str::FromStr;
 
 use anyhow::Result;
-use log::debug;
 use primitive_types::U128 as PrimitiveU128;
 use primitive_types::U256 as PrimitiveU256;
 use serde_json;
 use serde_json::Value as JsonValue;
 use smallvec::smallvec;
+use tracing::debug;
 
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_core_types::account_address::AccountAddress;

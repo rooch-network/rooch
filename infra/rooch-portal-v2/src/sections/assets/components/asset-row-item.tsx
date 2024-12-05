@@ -14,6 +14,11 @@ type RowItemProps = {
   onOpenTransferModal: (row: BalanceInfoView) => void;
 };
 
+/// TODO: Temporary exclusion
+const symbols = [
+  'BITXP'
+]
+
 export default function AssetRowItem({ row, isWalletOwner, onOpenTransferModal }: RowItemProps) {
   return (
     <TableRow>
@@ -57,6 +62,7 @@ export default function AssetRowItem({ row, isWalletOwner, onOpenTransferModal }
           <Button
             variant="outlined"
             size="small"
+            disabled={symbols.includes(row.symbol)}
             onClick={() => {
               onOpenTransferModal(row);
             }}

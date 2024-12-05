@@ -70,14 +70,23 @@ impl Handler<ProposeBlock> for ProposerActor {
                     Some(block) => {
                         // TODO submit to the on-chain SCC contract use the proposer key
                         let _proposer_key = &self.proposer_key;
+                        let ret = self.scc.set_last_proposed(block.block_number);
+                        match ret {
+                            Ok(_) => {
+                                tracing::info!(
+                                    "[ProposeBlock] done. block_number: {}",
+                                    block.block_number,
+                                );
+                            }
+                            Err(e) => {
+                                tracing::error!("[ProposeBlock] set last proposed error: {:?}", e);
+                            }
+                        }
+
+                        // TODO make new metric for matching real data submit to the chain
                         self.metrics
                             .proposer_propose_block_batch_size
                             .set(block.batch_size as i64);
-                        tracing::info!(
-                            "[ProposeBlock] done. block_number: {}, batch_size: {:?}",
-                            block.block_number,
-                            block.batch_size
-                        );
                     }
                     None => {
                         tracing::debug!("[ProposeBlock] no transaction to propose block");

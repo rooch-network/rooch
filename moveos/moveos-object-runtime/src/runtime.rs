@@ -127,7 +127,7 @@ impl<'r> ObjectRuntime<'r> {
         root: ObjectMeta,
         resolver: &'r dyn StatelessResolver,
     ) -> Self {
-        if log::log_enabled!(log::Level::Trace) {
+        if tracing::enabled!(tracing::Level::TRACE) {
             tracing::trace!(
                 "Init ObjectRuntime with tx_hash: {:?}, state_root: {}",
                 tx_context.tx_hash(),
@@ -515,7 +515,7 @@ impl<'r> ObjectRuntime<'r> {
 }
 
 pub(crate) fn partial_extension_error(msg: impl ToString) -> PartialVMError {
-    log::debug!("PartialVMError: {}", msg.to_string());
+    tracing::debug!("PartialVMError: {}", msg.to_string());
     PartialVMError::new(StatusCode::VM_EXTENSION_ERROR).with_message(msg.to_string())
 }
 

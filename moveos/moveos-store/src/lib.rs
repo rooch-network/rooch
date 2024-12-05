@@ -13,7 +13,7 @@ use accumulator::inmemory::InMemoryAccumulator;
 use anyhow::{Error, Result};
 use bcs::to_bytes;
 use move_core_types::language_storage::StructTag;
-use moveos_config::store_config::RocksdbConfig;
+use moveos_config::store_config::{MoveOSStoreConfig, RocksdbConfig};
 use moveos_config::DataDirPath;
 use moveos_types::genesis_info::GenesisInfo;
 use moveos_types::h256::H256;
@@ -100,8 +100,10 @@ impl MoveOSStore {
     }
 
     pub fn new_with_instance(instance: StoreInstance, registry: &Registry) -> Result<Self> {
+        let store_config = MoveOSStoreConfig::default();
         let node_store = NodeDBStore::new(instance.clone());
-        let state_store = StateDBStore::new(node_store.clone(), registry);
+        let state_store =
+            StateDBStore::new(node_store.clone(), registry, store_config.state_cache_size);
 
         let store = Self {
             node_store,
@@ -180,8 +182,8 @@ impl MoveOSStore {
         // config_store updates
         let new_startup_info = StartupInfo::new(new_state_root, size);
 
-        if log::log_enabled!(log::Level::Debug) {
-            log::debug!(
+        if tracing::enabled!(tracing::Level::DEBUG) {
+            tracing::debug!(
                 "handle_tx_output: tx_hash: {}, state_root: {}, size: {}, gas_used: {}, status: {:?}",
                 tx_hash,
                 new_state_root,
@@ -213,8 +215,10 @@ impl MoveOSStore {
             )]),
             cf_name: TRANSACTION_EXECUTION_INFO_COLUMN_FAMILY_NAME.to_string(),
         });
-        // TODO: could use non-sync write here, because we could replay tx from rooch store(which has sync write after sequenced) at startup.
-        inner_store.write_cf_batch(cf_batches, true)?;
+        // use non-sync write here:
+        // 1. we could replay tx from rooch store(which has sync write after sequenced) at startup.
+        // 2. output write sequentially
+        inner_store.write_cf_batch(cf_batches, false)?;
 
         let out = TransactionOutput::new(status, changeset, events, gas_used, is_upgrade);
 

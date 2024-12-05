@@ -135,11 +135,11 @@ impl BenchTxConfig {
             Ok(config_data) => match toml::from_str::<BenchTxConfig>(&config_data) {
                 Ok(parsed_config) => config.merge(parsed_config),
                 Err(e) => {
-                    log::error!("Failed to parse config file: {}", e);
+                    tracing::error!("Failed to parse config file: {}", e);
                 }
             },
             Err(e) => {
-                log::error!("Failed to read config file: {}", e);
+                tracing::error!("Failed to read config file: {}", e);
             }
         };
         // Override config with env variables

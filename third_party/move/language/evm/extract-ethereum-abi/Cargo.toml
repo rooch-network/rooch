@@ -1,0 +1,19 @@
+[package]
+name = "extract-ethereum-abi"
+version = "0.1.0"
+authors = ["Diem Association <opensource@diem.com>"]
+description = "Extract Etherem ABI"
+publish = false
+edition = "2021"
+license = "Apache-2.0"
+
+[dependencies]
+# move dependencies
+move-to-yul = { path = "../move-to-yul" }
+
+# external dependencies
+anyhow = "1.0.38"
+atty = "0.2.14"
+clap = { version = "4.3.5", features = ["derive", "env"] }
+codespan-reporting = "0.11.1"
+serde_json = "1.0.64"

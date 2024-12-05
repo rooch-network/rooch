@@ -389,6 +389,10 @@ impl DAMetaStore for RoochStore {
     fn get_block_state(&self, block_number: u128) -> Result<BlockSubmitState> {
         self.get_da_meta_store().get_block_state(block_number)
     }
+
+    fn try_get_block_state(&self, block_number: u128) -> Result<Option<BlockSubmitState>> {
+        self.get_da_meta_store().try_get_block_state(block_number)
+    }
 }
 
 impl ProposerStore for RoochStore {

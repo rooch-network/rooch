@@ -1,10 +1,10 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use log::error;
 use std::collections::VecDeque;
 use std::sync::Arc;
 use std::vec;
+use tracing::error;
 
 use cosmwasm_std::Checksum;
 use cosmwasm_vm::{
