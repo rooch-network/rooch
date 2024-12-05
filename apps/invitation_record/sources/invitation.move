@@ -31,21 +31,17 @@ module invitation_record::invitation {
     use app_admin::admin::AdminCap;
     use moveos_std::object::{Object, to_shared, ObjectID};
     use moveos_std::table::Table;
+    #[test_only]
+    use std::string;
 
     #[test_only]
     use bitcoin_move::utxo;
     #[test_only]
     use gas_faucet::gas_faucet;
     #[test_only]
-    use moveos_std::hex;
-    #[test_only]
     use moveos_std::signer::address_of;
     #[test_only]
     use rooch_framework::account::create_account_for_testing;
-    #[test_only]
-    use rooch_framework::auth_payload;
-    #[test_only]
-    use rooch_framework::auth_payload::{signature, public_key, from_address};
     #[test_only]
     use rooch_framework::gas_coin::faucet_for_test;
 
@@ -64,7 +60,6 @@ module invitation_record::invitation {
     const ErrorInvalidArg: u64 = 0;
 
     const MessagePrefix : vector<u8> = b"Bitcoin Signed Message:\n";
-    const MessageInfoPrefix: vector<u8> = b"Rooch Transaction:\n";
 
 
     struct UserInvitationRecords has key, store {
@@ -276,7 +271,6 @@ module invitation_record::invitation {
     }
 
     fun encode_full_message(message_prefix: vector<u8>, message_info: vector<u8>): vector<u8> {
-        assert!(starts_with(&message_info, &MessageInfoPrefix), ErrorInvalidSignature);
         let full_message = if (message_prefix != MessagePrefix) {
             // For compatibility with the old version
             // The old version contains length information, so it needs to be removed in the future
@@ -393,11 +387,11 @@ module invitation_record::invitation {
     }
 
 
-        #[test(sender=@0xb1f6856b52189858e58661371508f19dc6cecacc97b6c5fa501262420fd1559a)]
+        #[test(sender=@0xf0919849a42aa204673b15e586614963649a634851589dfbfde326816bed4161)]
     fun test_claim_with_invitation(sender: &signer){
         bitcoin_move::genesis::init_for_test();
-        create_account_for_testing(@0xb1f6856b52189858e58661371508f19dc6cecacc97b6c5fa501262420fd1559a);
-        create_account_for_testing(@0x43);
+        create_account_for_testing(@0xf0919849a42aa204673b15e586614963649a634851589dfbfde326816bed4161);
+        create_account_for_testing(@0x7efa53965d5cdd8c3a6f69e4001a6920a53d427a8b4b99de1d1ceb8bd2e0dc5d);
         let invitation_obj = object::new_named_object(InvitationConf{
             invitation_records: table::new(),
             is_open: true,
@@ -414,21 +408,16 @@ module invitation_record::invitation {
         let sat_value = 100000000;
         let test_utxo = utxo::new_for_testing(tx_id, 0u32, sat_value);
         let test_utxo_id = object::id(&test_utxo);
-        let auth_payload_bytes = x"407e5b0c1da7d2bed7c2497b7c7c46b1a485883029a3bb1479493688ad347bcafa2bd82c6fd9bb2515f9e0c697f621ac0a28fb9f8c0e565d5b6d4e20bf18ce86621a18426974636f696e205369676e6564204d6573736167653a0ae2a201526f6f6368205472616e73616374696f6e3a0a57656c636f6d6520746f20726f6f63685f746573740a596f752077696c6c20617574686f72697a652073657373696f6e3a0a53636f70653a0a3078663962313065366337363066316361646365393563363634623361336561643363393835626265396436336264353161396266313736303738356432366131623a3a2a3a3a2a0a54696d654f75743a313030300a21031a446b6ac064acb14687764871dad6c08186a788248d585b3cce69231b48d1382a62633171333234356e706d3430346874667a76756c783676347736356d61717a7536617474716c336677";
-        let payload = auth_payload::from_bytes(auth_payload_bytes);
-        let signature = signature(&payload);
-        let tx_hash = x"5415b18de0b880bb2af5dfe1ee27fd19ae8a0c99b5328e8b4b44f4c86cc7176a";
-        let tx_hex = hex::encode(tx_hash);
-        let message = x"526f6f6368205472616e73616374696f6e3a0a57656c636f6d6520746f20726f6f63685f746573740a596f752077696c6c20617574686f72697a652073657373696f6e3a0a53636f70653a0a3078663962313065366337363066316361646365393563363634623361336561643363393835626265396436336264353161396266313736303738356432366131623a3a2a3a3a2a0a54696d654f75743a313030300a";
-        vector::append(&mut message, tx_hex);
-        let pk = public_key(&payload);
-        let claimer_address= from_address(&payload);
+        let signature = x"5a1a4923742b43c73db01430fb0bea005eb54e9d764dbada3f00155981827ab076355636bbd89920ae12b50d91acfd8d5b31e078785afd3fd23928def8b53e41";
+        let message = b"hello, rooch";
+        let pk = x"02645681b3197f99f8763bccb34fab611778bf61806c2bd2fd8f335e87ed8c23fd";
+        let claimer_address= string::utf8(b"bc1pewcwnlshuxedpfywzk9vztnvpj54zmd0a29ydseygtuu7kfjcm9qjngxn0");
         utxo::transfer_for_testing(test_utxo, bitcoin_address::to_rooch_address(&bitcoin_address::from_string(&claimer_address)));
-        claim_from_faucet(faucet_obj, invitation_obj, claimer_address, vector[test_utxo_id], @0x43, pk, signature, message);
+        claim_from_faucet(faucet_obj, invitation_obj, claimer_address, vector[test_utxo_id], @0x7efa53965d5cdd8c3a6f69e4001a6920a53d427a8b4b99de1d1ceb8bd2e0dc5d, pk, signature, message);
         let invitation_obj = object::borrow_mut_object_shared<InvitationConf>(object::named_object_id<InvitationConf>());
         let invitation = object::borrow(invitation_obj);
-        let records = table::borrow(&invitation.invitation_records, @0x43);
-        let invitation_user_record = table::borrow(&records.invitation_records, @0xb1f6856b52189858e58661371508f19dc6cecacc97b6c5fa501262420fd1559a);
+        let records = table::borrow(&invitation.invitation_records, @0x7efa53965d5cdd8c3a6f69e4001a6920a53d427a8b4b99de1d1ceb8bd2e0dc5d);
+        let invitation_user_record = table::borrow(&records.invitation_records, @0xf0919849a42aa204673b15e586614963649a634851589dfbfde326816bed4161);
         assert!(invitation_user_record == &500000000, 1);
         assert!(records.invitation_reward_amount == 500000000, 2);
         assert!(records.total_invitations == 1, 3);
