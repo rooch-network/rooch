@@ -17,6 +17,7 @@ pub(crate) const DEFAULT_AVAIL_MAX_SEGMENT_SIZE: u64 = 256 * 1024;
 const BACK_OFF_MIN_DELAY: Duration = Duration::from_millis(3000);
 const SUBMIT_API_PATH: &str = "v2/submit";
 
+#[derive(Clone)]
 pub(crate) struct AvailClient {
     endpoint: String,
     client: Client,
@@ -53,11 +54,12 @@ impl Operator for AvailClient {
     ) -> anyhow::Result<()> {
         let submit_url = format!("{}/{}", self.endpoint, SUBMIT_API_PATH);
         let data = general_purpose::STANDARD.encode(&segment_bytes);
-        let max_retries = self.max_retries;
-        let mut retries = 0;
+        let max_attempts = self.max_retries + 1; // max_attempts = max_retries + first attempt
+        let mut attempts = 0;
         let mut retry_delay = BACK_OFF_MIN_DELAY;
 
         loop {
+            attempts += 1;
             let response = self
                 .client
                 .post(&submit_url)
@@ -65,7 +67,6 @@ impl Operator for AvailClient {
                 .body(json!({ "data": data }).to_string())
                 .send()
                 .await?;
-
             match response.status() {
                 StatusCode::OK => {
                     let submit_response: AvailSubmitResponse = response.json().await?;
@@ -85,22 +86,22 @@ impl Operator for AvailClient {
                     ))
                 }
                 _ => {
-                    if retries <= max_retries {
-                        retries += 1;
-                        sleep(retry_delay).await;
-                        retry_delay *= 3; // Exponential backoff
+                    if attempts < max_attempts {
                         tracing::warn!(
-                            "Failed to submit segment: {:?} to Avail, attempts: {}，retrying after {}ms",
+                            "Failed to submit segment: {:?} to Avail: {}, attempts: {}，retrying after {}ms",
                             segment_id,
-                            retries,
+                            response.status(),
+                            attempts,
                             retry_delay.as_millis(),
                         );
+                        sleep(retry_delay).await;
+                        retry_delay *= 3; // Exponential backoff
                     } else {
                         return Err(anyhow!(
-                            "Failed to submit segment: {:?} to Avail after {} attempts, status: {}",
+                            "Failed to submit segment: {:?} to Avail: {} after {} attempts",
                             segment_id,
-                            retries - 1,
-                            response.status()
+                            response.status(),
+                            attempts,
                         ));
                     }
                 }
