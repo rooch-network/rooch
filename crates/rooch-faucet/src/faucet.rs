@@ -282,7 +282,7 @@ impl Faucet {
             self.invitation_module_address,
             self.faucet_object_id.clone(),
             self.invitation_object_id.clone(),
-            claimer_addr.to_string(),
+            claimer.to_string(),
             utxo_ids,
             inviter_addr,
             claimer_sign,
