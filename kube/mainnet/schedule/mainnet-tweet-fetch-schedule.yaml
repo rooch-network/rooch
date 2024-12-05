@@ -1,17 +1,17 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: testnet-tweet-fetch-schedule
-  namespace: testnet
+  name: mainnet-tweet-fetch-schedule
+  namespace: mainnet
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: testnet-tweet-fetch-schedule
+      app: mainnet-tweet-fetch-schedule
   template:
     metadata:
       labels:
-        app: testnet-tweet-fetch-schedule
+        app: mainnet-tweet-fetch-schedule
     spec:
       initContainers:
       - name: init-rooch
@@ -21,7 +21,7 @@ spec:
         - |
           if [ ! -f /root/.rooch/initialized ]; then
             /rooch/rooch init -m "${INIT_SECRET}" --skip-password
-            /rooch/rooch env switch --alias test
+            /rooch/rooch env switch --alias main
             /rooch/rooch account create
             /rooch/rooch account create
             /rooch/rooch account create
@@ -34,7 +34,7 @@ spec:
         - name: INIT_SECRET
           valueFrom:
             secretKeyRef:
-              name: rooch-testnet-secrets
+              name: rooch-mainnet-secrets
               key: init-phrase
         volumeMounts:
         - name: rooch-data
@@ -48,7 +48,7 @@ spec:
         - "schedule"
         - "--sender"
         # the sixth account
-        - "rooch1nf590t0ynzcd6xgkwka4pjt044sdc8f398qgra64vu4w4f20v2gq0v7t8w"
+        - "rooch1unltrnl5j8s5avmlmn0vuxk3r9y243vd5560uw54kjplg0ecuyxq96yjjq"
         - "--checker-function"
         - "0x701c21bf1c8cd5af8c42983890d8ca55e7a820171b8e744c13f2d9998bf76cc3::tweet_fetcher::has_buffered_tweets"
         - "--runner-function"
@@ -61,4 +61,4 @@ spec:
       volumes:
       - name: rooch-data
         persistentVolumeClaim:
-          claimName: testnet-tweet-fetch-schedule-data
+          claimName: mainnet-tweet-fetch-schedule-data
