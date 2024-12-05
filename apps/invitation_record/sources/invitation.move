@@ -178,7 +178,7 @@ module invitation_record::invitation {
         let tweet_obj = tweet_v2::borrow_tweet_object(tweet_id);
         let tweet = object::borrow(tweet_obj);
         let author_id = *tweet_v2::tweet_author_id(tweet);
-        if (inviter == @rooch_framework || !check_user_claimed(author_id)){
+        if (inviter == @rooch_framework || check_user_claimed(author_id)){
             verify_and_binding_twitter_account(tweet_id);
             return
         };
