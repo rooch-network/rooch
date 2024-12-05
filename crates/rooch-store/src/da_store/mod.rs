@@ -79,6 +79,10 @@ pub trait DAMetaStore {
     fn get_block_state(&self, block_number: u128) -> anyhow::Result<BlockSubmitState>;
     // get block state by block_number, return None if not exist
     fn try_get_block_state(&self, block_number: u128) -> anyhow::Result<Option<BlockSubmitState>>;
+    fn try_get_block_states(
+        &self,
+        block_numbers: Vec<u128>,
+    ) -> anyhow::Result<Vec<Option<BlockSubmitState>>>;
 }
 
 #[derive(Clone)]
@@ -554,5 +558,12 @@ impl DAMetaStore for DAMetaDBStore {
 
     fn try_get_block_state(&self, block_number: u128) -> anyhow::Result<Option<BlockSubmitState>> {
         self.get_block_state_opt(block_number)
+    }
+
+    fn try_get_block_states(
+        &self,
+        block_numbers: Vec<u128>,
+    ) -> anyhow::Result<Vec<Option<BlockSubmitState>>> {
+        self.block_submit_state_store.multiple_get(block_numbers)
     }
 }

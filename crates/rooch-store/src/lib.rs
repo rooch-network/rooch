@@ -393,6 +393,13 @@ impl DAMetaStore for RoochStore {
     fn try_get_block_state(&self, block_number: u128) -> Result<Option<BlockSubmitState>> {
         self.get_da_meta_store().try_get_block_state(block_number)
     }
+
+    fn try_get_block_states(
+        &self,
+        block_numbers: Vec<u128>,
+    ) -> Result<Vec<Option<BlockSubmitState>>> {
+        self.get_da_meta_store().try_get_block_states(block_numbers)
+    }
 }
 
 impl ProposerStore for RoochStore {

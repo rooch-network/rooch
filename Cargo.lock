@@ -10871,6 +10871,7 @@ dependencies = [
  "rooch-config",
  "rooch-store",
  "rooch-types",
+ "serde 1.0.215",
  "tracing",
 ]
 

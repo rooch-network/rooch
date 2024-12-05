@@ -15,12 +15,13 @@ use moveos_types::{
     moveos_std::{move_module::MoveModule, object::ObjectID},
     state::{AnnotatedState, FieldKey},
 };
+use rooch_rpc_api::jsonrpc_types::block_view::BlockView;
 use rooch_rpc_api::jsonrpc_types::{
     account_view::BalanceInfoView,
     event_view::{EventFilterView, EventView, IndexerEventIDView, IndexerEventView},
     transaction_view::{TransactionFilterView, TransactionWithInfoView},
-    AccessPathView, BalanceInfoPageView, DryRunTransactionResponseView, EventOptions,
-    EventPageView, ExecuteTransactionResponseView, FunctionCallView, H256View,
+    AccessPathView, BalanceInfoPageView, BlockPageView, DryRunTransactionResponseView,
+    EventOptions, EventPageView, ExecuteTransactionResponseView, FunctionCallView, H256View,
     IndexerEventPageView, IndexerObjectStatePageView, IndexerStateIDView, ModuleABIView,
     ObjectIDVecView, ObjectStateFilterView, ObjectStateView, QueryOptions,
     RawTransactionOutputView, RoochAddressView, StateChangeSetPageView,
@@ -857,6 +858,65 @@ impl RoochAPIServer for RoochServer {
     async fn status(&self) -> RpcResult<Status> {
         let status = self.rpc_service.status().await?;
         Ok(status)
+    }
+
+    async fn get_blocks_by_number(
+        &self,
+        cursor: Option<StrView<u128>>,
+        limit: Option<StrView<u64>>,
+        descending_order: Option<bool>,
+    ) -> RpcResult<BlockPageView> {
+        let latest_block_number = self.rpc_service.latest_block_number().await?;
+
+        let limit_of = min(
+            limit
+                .map(Into::into)
+                .unwrap_or(DEFAULT_RESULT_LIMIT_USIZE as u64),
+            MAX_RESULT_LIMIT_USIZE as u64,
+        );
+
+        let descending_order = descending_order.unwrap_or(true);
+        let cursor = cursor.map(|v| v.0);
+
+        let block_numbers = if descending_order {
+            let start = cursor.unwrap_or(latest_block_number + 1);
+            let end = if start >= (limit_of as u128) {
+                start - (limit_of as u128)
+            } else {
+                0
+            };
+
+            (end..start).rev().collect::<Vec<_>>()
+        } else {
+            let start = cursor.unwrap_or(0);
+            let start_plus =
+                start
+                    .checked_add((limit_of + 1) as u128)
+                    .ok_or(RpcError::UnexpectedError(
+                        "cursor value is overflow".to_string(),
+                    ))?;
+            let end = min(start_plus, latest_block_number + 1);
+
+            (start..end).collect::<Vec<_>>()
+        };
+
+        let blocks = self.rpc_service.get_blocks(block_numbers.clone()).await?;
+
+        let mut data = blocks
+            .into_iter()
+            .map(|v| v.map(BlockView::from))
+            .flatten()
+            .collect::<Vec<_>>();
+
+        let has_next_page = (data.len() as u64) > limit_of;
+        data.truncate(limit_of as usize);
+
+        let next_cursor = data.last().map_or(cursor, |v| Some(v.block_number.0));
+        Ok(BlockPageView {
+            data,
+            next_cursor: next_cursor.map(StrView),
+            has_next_page,
+        })
     }
 }
 

@@ -35,8 +35,9 @@ use rooch_indexer::actor::reader_indexer::IndexerReaderActor;
 use rooch_indexer::proxy::IndexerProxy;
 use rooch_pipeline_processor::actor::processor::PipelineProcessorActor;
 use rooch_pipeline_processor::proxy::PipelineProcessorProxy;
-use rooch_proposer::actor::messages::ProposeBlock;
 use rooch_proposer::actor::proposer::ProposerActor;
+use rooch_proposer::messages::ProposeBlock;
+use rooch_proposer::proxy::ProposerProxy;
 use rooch_relayer::actor::messages::RelayTick;
 use rooch_relayer::actor::relayer::RelayerActor;
 use rooch_rpc_api::api::RoochRpcModule;
@@ -328,6 +329,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     )?
     .into_actor(Some("Proposer"), &actor_system)
     .await?;
+    let proposer_proxy = ProposerProxy::new(proposer.clone().into());
     let block_propose_duration_in_seconds: u64 =
         opt.proposer.interval.unwrap_or(PROPOSER_CHECK_INTERVAL);
     let mut timers = vec![];
@@ -415,6 +417,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         network.genesis_config.bitcoin_network,
         executor_proxy,
         sequencer_proxy,
+        proposer_proxy,
         indexer_proxy,
         processor_proxy,
         bitcoin_client_proxy,

@@ -76,10 +76,44 @@ impl StateCommitmentChain {
                     prev_tx_accumulator_root,
                     tx_accumulator_root,
                     tx_state_root,
+                    0,
                 ))
             }
             None => Err(anyhow::anyhow!("No block has been proposed")),
         }
+    }
+
+    // TODO fill Block fields when necessary
+    // Skip check when multi get blocks, distinguish with get block by signle
+    pub fn get_blocks(&self, block_number: Vec<u128>) -> anyhow::Result<Vec<Option<Block>>> {
+        let block_da_submit_states = self.rooch_store.try_get_block_states(block_number)?;
+        block_da_submit_states
+            .into_iter()
+            .map(
+                |block_da_submit_state_opt| match block_da_submit_state_opt {
+                    Some(block_da_submit_state) => {
+                        if !block_da_submit_state.done {
+                            return Err(anyhow::anyhow!(
+                                "block: {} is not done but proposed. database is inconsistent",
+                                block_da_submit_state.block_range.block_number,
+                            ));
+                        }
+                        let block_range = block_da_submit_state.block_range;
+                        let batch_size = block_range.tx_order_end - block_range.tx_order_start + 1;
+                        Ok(Some(Block::new(
+                            block_range.block_number,
+                            batch_size,
+                            block_da_submit_state.batch_hash,
+                            H256::zero(),
+                            H256::zero(),
+                            H256::zero(),
+                            0,
+                        )))
+                    }
+                    None => Ok(None),
+                },
+            )
+            .collect::<Result<Vec<_>, _>>()
     }
 
     // get_roots returns the tx accumulator root & state root of the transaction with the given tx_order
@@ -138,6 +172,8 @@ impl StateCommitmentChain {
             prev_tx_accumulator_root,
             tx_accumulator_root,
             tx_state_root,
+            // TODO generate block timestamp
+            0,
         );
         self.last_proposed_block_number = Some(block_number);
         self.last_proposed_block_accumulator_root = tx_accumulator_root;
@@ -172,6 +208,10 @@ impl StateCommitmentChain {
                 Ok(None)
             }
         }
+    }
+
+    pub fn lastest_proposed_block_number(&self) -> u128 {
+        self.last_proposed_block_number.unwrap_or(0)
     }
 }
 

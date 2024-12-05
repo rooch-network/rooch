@@ -24,6 +24,7 @@ pub mod json_to_table_display;
 pub mod transaction_view;
 
 pub mod address;
+pub mod block_view;
 pub mod btc;
 pub mod repair_view;
 
