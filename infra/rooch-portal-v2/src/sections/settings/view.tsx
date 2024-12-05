@@ -1,19 +1,19 @@
 'use client'
 
 import axios from 'axios'
-import { Args } from '@roochnetwork/rooch-sdk'
 import { useState, useEffect, useCallback } from 'react'
 import { CopyToClipboard } from 'react-copy-to-clipboard'
+import { Args, Transaction, stringToBytes } from '@roochnetwork/rooch-sdk'
 import {
   useRoochClient,
   useCurrentAddress,
-  useCurrentNetwork, useRoochClientQuery,
+  useCurrentNetwork,
+  useCurrentSession,
+  useRoochClientQuery
 } from '@roochnetwork/rooch-sdk-kit'
 
 import { LoadingButton } from '@mui/lab'
 import { Card, Chip, Stack, TextField, CardHeader, Typography, CardContent } from '@mui/material'
-
-import { useRouter } from 'src/routes/hooks'
 
 import { sleep } from 'src/utils/common'
 
@@ -24,16 +24,19 @@ import { Iconify } from 'src/components/iconify'
 
 import { useNetworkVariable } from '../../hooks/use-networks'
 import SessionKeysTableCard from './components/session-keys-table-card'
+import SessionKeyGuardButtonV1 from '../../components/auth/session-key-guard-button-v1'
 
 export function SettingsView() {
   const address = useCurrentAddress()
-  const router = useRouter()
 
+  const session = useCurrentSession()
   const client = useRoochClient()
-  const faucetUrl = useNetworkVariable('faucetUrl')
-  const [isAddressLoaded, setIsAddressLoaded] = useState(false)
   const network = useCurrentNetwork()
+  const faucetUrl = useNetworkVariable('faucetUrl')
   const twitterOracleAddress = useNetworkVariable('twitterOracleAddress')
+  const [tweetStatus, setTweetStatus] = useState('')
+  const [twitterId, setTwitterId] = useState<string>()
+  const [verifying, setVerifying] = useState(false)
 
   const {
     data: sessionKeys,
@@ -44,26 +47,7 @@ export function SettingsView() {
     }
   )
 
-  console.log(isLoadingSessionKeys)
-  console.log(sessionKeys)
-
-  useEffect(() => {
-    if (address !== undefined) {
-      setIsAddressLoaded(true)
-    }
-  }, [address])
-
-  useEffect(() => {
-    if (isAddressLoaded && !address) {
-      router.push('/account')
-    }
-  }, [address, isAddressLoaded, router])
-
-  const [twitterId, setTwitterId] = useState('')
-
-  const [verifying, setVerifying] = useState(false)
-
-  const getBindingTwitterId = useCallback(async () => {
+  const fetchTwitterId = useCallback(async () => {
     if (!address) {
       return
     }
@@ -73,16 +57,52 @@ export function SettingsView() {
       function: 'resolve_author_id_by_address',
       args: [Args.address(address.toStr())],
     })
-    setTwitterId((res.return_values?.[0].decoded_value as any).value.vec[0])
-    // eslint-disable-next-line consistent-return
-    return (res.return_values?.[0].decoded_value as any)?.value.vec[0]
-  }, [address, client, twitterOracleAddress])
-  
-  useEffect(() => {
-    getBindingTwitterId()
-  }, [getBindingTwitterId])
+    let _twitterId: string | undefined
+    if (res.vm_status === 'Executed') {
+      if (res.return_values?.[0].value.value !== '0x00') {
+        _twitterId = (res.return_values?.[0].decoded_value as any).value.vec
+          .value[0][0] as string;
+        _twitterId = new TextDecoder('utf-8').decode(
+          stringToBytes('hex', _twitterId.replace('0x', ''))
+        );
 
-  const [tweetId, setTweetId] = useState('')
+        setTwitterId(_twitterId);
+      }
+    }
+    // eslint-disable-next-line consistent-return
+    return _twitterId
+  }, [address, client, twitterOracleAddress])
+
+  useEffect(() => {
+    fetchTwitterId()
+  }, [fetchTwitterId])
+
+  const disconnectTwitter = async () => {
+    if (!session) {
+      return
+    }
+    try {
+      const tx = new Transaction()
+      tx.callFunction({
+        target: `${twitterOracleAddress}::twitter_account::unbinding_twitter_account`
+      })
+
+      const result = await client.signAndExecuteTransaction({
+        transaction: tx,
+        signer: session
+      })
+
+      if (result.execution_info.status.type === 'executed') {
+        setTwitterId(undefined)
+        await fetchTwitterId()
+        toast.success('Disconnect twitter success')
+      } else {
+        toast.error('Disconnect twitter aborted')
+      }
+    } catch (e) {
+      toast.error(e.message)
+    }
+  }
 
   const networkText = network === 'mainnet' ? 'Pre-mainnet' : 'Testnet'
   const XText = `BTC:${address?.toStr()} 
@@ -123,6 +143,7 @@ https://${network === 'mainnet' ? '':'test-'}portal.rooch.network/inviter/${addr
         />
         <CardContent className="!pt-2">
           {twitterId ? (
+            <Stack className="mt-2" spacing={1.5} alignItems="flex-start">
             <Chip
               className="justify-start w-fit"
               color="success"
@@ -133,6 +154,9 @@ https://${network === 'mainnet' ? '':'test-'}portal.rooch.network/inviter/${addr
                 </Stack>
               }
             />
+
+            <SessionKeyGuardButtonV1 desc="Disconnect Twitter" callback={disconnectTwitter}/>
+            </Stack>
           ) : (
             <Stack className="mt-2" spacing={1.5}>
               <Stack spacing={1.5}>
@@ -164,19 +188,24 @@ https://${network === 'mainnet' ? '':'test-'}portal.rooch.network/inviter/${addr
                 <TextField
                   size="small"
                   className="w-full"
-                  value={tweetId}
+                  value={tweetStatus}
                   placeholder="https://x.com/RoochNetwork/status/180000000000000000"
                   onChange={(e) => {
-                    setTweetId(e.target.value)
+                    setTweetStatus(e.target.value)
                   }}
                 />
               </Stack>
+              <Stack spacing={1.5}>
+                <Stack className="font-medium">
+                  🔔Tips: If you just posted a twitter message, Wait for on-chain synchronization (2-3 minutes)
+                </Stack>
+              </Stack>
               <LoadingButton
                 disabled={
-                  !tweetId ||
+                  !tweetStatus ||
                   (() => {
                     try {
-                      const url = new URL(tweetId)
+                      const url = new URL(tweetStatus)
                       return url.hostname !== 'x.com'
                     } catch {
                       return true
@@ -190,7 +219,7 @@ https://${network === 'mainnet' ? '':'test-'}portal.rooch.network/inviter/${addr
                 onClick={async () => {
                   try {
                     setVerifying(true)
-                    const match = tweetId.match(/status\/(\d+)/)
+                    const match = tweetStatus.match(/status\/(\d+)/)
                     if (match) {
                       const pureTweetId = match[1]
                       const res = await axios.post(
@@ -219,7 +248,7 @@ https://${network === 'mainnet' ? '':'test-'}portal.rooch.network/inviter/${addr
                         )
                       }
                       await sleep(3000)
-                      const checkRes = await getBindingTwitterId()
+                      const checkRes = await fetchTwitterId()
                       if (checkRes) {
                         toast.success('Binding success')
                       }
