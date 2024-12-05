@@ -111,7 +111,22 @@ module twitter_binding::tweet_fetcher {
             };
             let buffer_queue_obj = object::new_named_object(buffer_queue);
             object::transfer_extend(buffer_queue_obj, @twitter_binding);
+        }else{
+            //clear request queue
+            //because new version use batch API to fetch tweets, the response will be different
+            //so we need to clear the request queue
+            clear_old_request_queue();
         };
+    }
+
+    fun clear_old_request_queue(){
+        let fetch_queue_obj = borrow_mut_fetch_queue_obj();
+        let request_ids = object::borrow(fetch_queue_obj).request_queue;
+        vector::for_each(request_ids, |request_id|{
+            //The old version use request id => tweet id
+            let tweet_id: String = object::remove_field(fetch_queue_obj, request_id);
+            let _request_id: ObjectID = object::remove_field(fetch_queue_obj, tweet_id);
+        });
     }
 
     public entry fun fetch_tweet_entry(id: String){
@@ -169,6 +184,11 @@ module twitter_binding::tweet_fetcher {
         };
         let tweet_ids = vector::trim_reverse(&mut buffer_queue.buffer_queue, 0);
         let _batch_fetch_result = batch_fetch_tweets(tweet_ids);
+    }
+
+    public fun has_buffered_tweets(): bool{
+        let buffer_queue = borrow_buffer_queue();
+        vector::length(&buffer_queue.buffer_queue) > 0
     }
 
     fun batch_fetch_tweets(tweet_ids: vector<String>): BatchFetchResult{
