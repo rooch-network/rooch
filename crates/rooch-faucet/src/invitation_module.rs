@@ -48,15 +48,18 @@ pub fn claim_from_faucet_function_call(
                 .simple_serialize()
                 .unwrap(),
             MoveValue::Address(inviter).simple_serialize().unwrap(),
-            MoveString::from(public_key)
+            public_key
+                .into_bytes()
                 .to_move_value()
                 .simple_serialize()
                 .unwrap(),
-            MoveString::from(signature)
+            signature
+                .into_bytes()
                 .to_move_value()
                 .simple_serialize()
                 .unwrap(),
-            MoveString::from(message)
+            message
+                .into_bytes()
                 .to_move_value()
                 .simple_serialize()
                 .unwrap(),
@@ -84,15 +87,18 @@ pub fn claim_from_twitter_function_call(
                 .simple_serialize()
                 .unwrap(),
             MoveValue::Address(inviter).simple_serialize().unwrap(),
-            MoveString::from(public_key)
+            public_key
+                .into_bytes()
                 .to_move_value()
                 .simple_serialize()
                 .unwrap(),
-            MoveString::from(signature)
+            signature
+                .into_bytes()
                 .to_move_value()
                 .simple_serialize()
                 .unwrap(),
-            MoveString::from(message)
+            message
+                .into_bytes()
                 .to_move_value()
                 .simple_serialize()
                 .unwrap(),
