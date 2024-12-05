@@ -230,9 +230,9 @@ module invitation_record::invitation {
         }
     }
 
-    public fun invitation_user_record(invitation_obj: &Object<InvitationConf>): &UserInvitationRecords{
+    public fun invitation_user_record(invitation_obj: &Object<InvitationConf>, account: address): &UserInvitationRecords{
         let invitation_conf = object::borrow(invitation_obj);
-        table::borrow(&invitation_conf.invitation_records, sender())
+        table::borrow(&invitation_conf.invitation_records, account)
     }
 
 
