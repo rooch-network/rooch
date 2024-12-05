@@ -3,7 +3,7 @@
 
 use crate::backend::openda::avail::AvailClient;
 use crate::backend::openda::celestia::{CelestiaClient, WrappedNamespace};
-use crate::backend::openda::fs::BACK_OFF_MIN_DELAY;
+use crate::backend::openda::opendal::BACK_OFF_MIN_DELAY;
 use crate::backend::openda::operator::{Operator, OperatorConfig};
 use crate::backend::DABackend;
 use async_trait::async_trait;

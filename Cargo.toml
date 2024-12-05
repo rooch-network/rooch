@@ -227,8 +227,8 @@ smallvec = "1.6.1"
 thiserror = "1.0.69"
 tiny-keccak = { version = "2", features = ["keccak", "sha3"] }
 tiny-bip39 = "2.0.0"
-tokio = { version = "1.41.1", features = ["full"] }
-tokio-util = "0.7.12"
+tokio = { version = "1.42.0", features = ["full"] }
+tokio-util = "0.7.13"
 tokio-tungstenite = { version = "0.24.0", features = ["native-tls"] }
 tokio-stream = "0.1.16"
 tonic = { version = "0.8", features = ["gzip"] }
@@ -282,7 +282,7 @@ uint = "0.9.5"
 rlp = "0.5.2"
 const-hex = "1.14.0"
 cached = "0.43.0"
-diesel = { version = "2.2.5", features = [
+diesel = { version = "2.2.6", features = [
     "chrono",
     "sqlite",
     "r2d2",
