@@ -285,8 +285,8 @@ impl Faucet {
             claimer.to_string(),
             utxo_ids,
             inviter_addr,
-            claimer_sign,
             public_key,
+            claimer_sign,
             message,
         );
         let action = MoveAction::Function(function_call);
@@ -446,8 +446,8 @@ impl Faucet {
             self.invitation_module_address,
             tweet_id,
             inviter_addr,
-            claimer_sign,
             public_key,
+            claimer_sign,
             message,
         );
 
