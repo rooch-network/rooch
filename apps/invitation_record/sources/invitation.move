@@ -63,12 +63,18 @@ module invitation_record::invitation {
 
 
     struct UserInvitationRecords has key, store {
-        invitation_records: Table<address, u256>,
+        invitation_records: TableVec<InvitationRecordInfo>,
         lottery_records: TableVec<LotteryInfo>,
         total_invitations: u64,
         remaining_luckey_ticket: u64,
         invitation_reward_amount: u256,
         lottery_reward_amount: u256,
+    }
+
+    struct InvitationRecordInfo has store {
+        timestamp: u64,
+        address: address,
+        reward_amount: u256,
     }
 
     struct LotteryInfo has store {
@@ -145,7 +151,7 @@ module invitation_record::invitation {
         };
         if (!table::contains(&invitation_conf.invitation_records, inviter)) {
             table::add(&mut invitation_conf.invitation_records, inviter, UserInvitationRecords{
-                invitation_records: table::new(),
+                invitation_records: table_vec::new(),
                 lottery_records: table_vec::new(),
                 total_invitations: 0u64,
                 remaining_luckey_ticket: 0u64,
@@ -154,8 +160,11 @@ module invitation_record::invitation {
             })
         };
         let user_invitation_records = table::borrow_mut(&mut invitation_conf.invitation_records, inviter);
-        let invitation_amount = table::borrow_mut_with_default(&mut user_invitation_records.invitation_records, claimer, 0u256);
-        *invitation_amount = *invitation_amount + invitation_conf.unit_invitation_amount;
+        table_vec::push_back(&mut user_invitation_records.invitation_records, InvitationRecordInfo{
+            reward_amount: invitation_conf.unit_invitation_amount,
+            address: claimer,
+            timestamp: now_seconds()
+        });
         user_invitation_records.total_invitations = user_invitation_records.total_invitations + 1u64;
         user_invitation_records.invitation_reward_amount = user_invitation_records.invitation_reward_amount + invitation_conf.unit_invitation_amount;
         user_invitation_records.remaining_luckey_ticket = user_invitation_records.remaining_luckey_ticket + 1u64;
@@ -189,7 +198,7 @@ module invitation_record::invitation {
         };
         if (!table::contains(&invitation_conf.invitation_records, inviter)) {
             table::add(&mut invitation_conf.invitation_records, inviter, UserInvitationRecords{
-                invitation_records: table::new(),
+                invitation_records: table_vec::new(),
                 lottery_records: table_vec::new(),
                 total_invitations: 0u64,
                 remaining_luckey_ticket: 0u64,
@@ -198,8 +207,11 @@ module invitation_record::invitation {
             })
         };
         let user_invitation_records = table::borrow_mut(&mut invitation_conf.invitation_records, inviter);
-        let invitation_amount = table::borrow_mut_with_default(&mut user_invitation_records.invitation_records, claimer, 0u256);
-        *invitation_amount = *invitation_amount + invitation_conf.unit_invitation_amount;
+        table_vec::push_back(&mut user_invitation_records.invitation_records, InvitationRecordInfo{
+            reward_amount: invitation_conf.unit_invitation_amount,
+            address: claimer,
+            timestamp: now_seconds()
+        });
         user_invitation_records.total_invitations = user_invitation_records.total_invitations + 1u64;
         user_invitation_records.invitation_reward_amount = user_invitation_records.invitation_reward_amount + invitation_conf.unit_invitation_amount;
         user_invitation_records.remaining_luckey_ticket = user_invitation_records.remaining_luckey_ticket + 1u64;
@@ -400,8 +412,8 @@ module invitation_record::invitation {
         let invitation_obj = object::borrow_mut_object_shared<InvitationConf>(object::named_object_id<InvitationConf>());
         let invitation = object::borrow(invitation_obj);
         let records = table::borrow(&invitation.invitation_records, @0x7efa53965d5cdd8c3a6f69e4001a6920a53d427a8b4b99de1d1ceb8bd2e0dc5d);
-        let invitation_user_record = table::borrow(&records.invitation_records, @0xf0919849a42aa204673b15e586614963649a634851589dfbfde326816bed4161);
-        assert!(invitation_user_record == &500000000, 1);
+        let invitation_user_record = table_vec::borrow(&records.invitation_records, 0);
+        assert!(invitation_user_record.reward_amount == 500000000, 1);
         assert!(records.invitation_reward_amount == 500000000, 2);
         assert!(records.total_invitations == 1, 3);
     }

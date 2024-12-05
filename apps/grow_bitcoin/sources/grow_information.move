@@ -117,7 +117,7 @@ module grow_bitcoin::grow_information_v3 {
         assert!(object::borrow(grow_project_list_obj).is_open, ErrorVoteNotOpen);
         let grow_project = borrow_mut_grow_project(grow_project_list_obj, id);
         coin_store::deposit(&mut grow_project.vote_store, coin);
-        let vote_detail = table::borrow_mut_with_default(&mut grow_project.vote_detail, sender(), 0);
+        let vote_detail = table::borrow_mut_with_default(&mut grow_project.vote_detail, address_of(account), 0);
         *vote_detail = *vote_detail + coin_value;
 
         grow_project.vote_value = coin_store::balance(&grow_project.vote_store);
@@ -134,8 +134,8 @@ module grow_bitcoin::grow_information_v3 {
             value: coin_value,
             timestamp: now_milliseconds()
         });
-        let point_box = mint_point_box(grow_project.id, coin_value, sender());
-        object::transfer(point_box, sender());
+        let point_box = mint_point_box(grow_project.id, coin_value, address_of(account));
+        object::transfer(point_box, address_of(account));
     }
 
     public fun get_vote(grow_project_list_obj: &Object<GrowProjectList>, user: address, id: String): u256 {
