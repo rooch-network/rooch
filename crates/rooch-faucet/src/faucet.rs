@@ -445,6 +445,7 @@ impl Faucet {
         let function_call = invitation_module::claim_from_twitter_function_call(
             self.invitation_module_address,
             tweet_id,
+            self.faucet_object_id.clone(),
             inviter_addr,
             public_key,
             claimer_sign,
