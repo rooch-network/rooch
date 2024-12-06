@@ -20,6 +20,7 @@ import { DashboardContent } from 'src/layouts/dashboard';
 import { toast } from 'src/components/snackbar';
 
 import { paths } from '../../routes/paths'
+import { INVITER_ADDRESS_KEY } from "../../utils/inviter";
 
 const FAUCET_NOT_OPEN= 'Faucet Not Open'
 const INVALID_UTXO = 'Invalid UTXO'
@@ -50,6 +51,10 @@ export function FaucetView({ address }: { address: string }) {
   useAddressChanged({ address, path: 'faucet' });
 
   useEffect(() => {
+    const inviterAddress = window.localStorage.getItem(INVITER_ADDRESS_KEY)
+    if (inviterAddress && inviterAddress.length > 0) {
+      router.push(`/faucet/inviter/${inviterAddress}`)
+    }
     if (isValidBitcoinAddress(address)) {
       setViewAddress(address);
       try {

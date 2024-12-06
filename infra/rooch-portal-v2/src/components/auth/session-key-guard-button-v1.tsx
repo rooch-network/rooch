@@ -9,7 +9,15 @@ import { isSessionExpired } from 'src/utils/common';
 
 import { toast } from 'src/components/snackbar';
 
-export default function SessionKeyGuardButtonV1({ children, desc, callback }: { children?: ReactNode, desc?: string, callback?: () => Promise<void> }) {
+export default function SessionKeyGuardButtonV1({
+  children,
+  desc,
+  callback,
+}: {
+  children?: ReactNode;
+  desc?: string;
+  callback?: () => Promise<void>;
+}) {
   const sessionKey = useCurrentSession();
   const { mutateAsync: createSessionKey } = useCreateSessionKey();
   const [loading, setLoading] = useState(false);
@@ -27,13 +35,14 @@ export default function SessionKeyGuardButtonV1({ children, desc, callback }: { 
   }, [sessionKey]);
 
   const handle = async () => {
-    setLoading(true)
-    if (sessionKey && !isCurrentSessionExpired) {
-      if (callback) {
-        await callback()
-      }
-    } else {
-      try {
+    setLoading(true);
+
+    try {
+      if (sessionKey && !isCurrentSessionExpired) {
+        if (callback) {
+          await callback();
+        }
+      } else {
         await createSessionKey({
           appName: 'rooch-portal',
           appUrl: 'portal.rooch.network',
@@ -46,19 +55,19 @@ export default function SessionKeyGuardButtonV1({ children, desc, callback }: { 
           maxInactiveInterval: 60 * 60 * 8,
         });
         if (callback) {
-          await callback()
+          await callback();
         }
-      } catch (error) {
-        if (error.message) {
-          toast.error(error.message);
-          return;
-        }
-        toast.error(String(error));
       }
+    } catch (error) {
+      if (error.message) {
+        toast.error(error.message);
+        return;
+      }
+      toast.error(String(error));
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false)
-  }
+  };
 
   return sessionKey && !isCurrentSessionExpired && children ? (
     children
@@ -70,9 +79,7 @@ export default function SessionKeyGuardButtonV1({ children, desc, callback }: { 
       loading={loading}
       onClick={handle}
     >
-      {
-        desc || 'Create Session Key'
-      }
+      {desc || 'Create Session Key'}
     </LoadingButton>
   );
 }

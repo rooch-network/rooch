@@ -3,13 +3,14 @@
 import axios from 'axios'
 import { useState, useEffect, useCallback } from 'react'
 import { CopyToClipboard } from 'react-copy-to-clipboard'
-import { Args, Transaction, stringToBytes } from '@roochnetwork/rooch-sdk'
+import { Args, Transaction, stringToBytes, toHEX } from '@roochnetwork/rooch-sdk'
 import {
   useRoochClient,
   useCurrentAddress,
   useCurrentNetwork,
   useCurrentSession,
-  useRoochClientQuery
+  useRoochClientQuery,
+  useCurrentWallet
 } from '@roochnetwork/rooch-sdk-kit'
 
 import { LoadingButton } from '@mui/lab'
@@ -25,6 +26,7 @@ import { Iconify } from 'src/components/iconify'
 import { useNetworkVariable } from '../../hooks/use-networks'
 import SessionKeysTableCard from './components/session-keys-table-card'
 import SessionKeyGuardButtonV1 from '../../components/auth/session-key-guard-button-v1'
+import { INVITER_ADDRESS_KEY } from "../../utils/inviter";
 
 export function SettingsView() {
   const address = useCurrentAddress()
@@ -34,6 +36,8 @@ export function SettingsView() {
   const network = useCurrentNetwork()
   const faucetUrl = useNetworkVariable('faucetUrl')
   const twitterOracleAddress = useNetworkVariable('twitterOracleAddress')
+  const [inviterCA, inviterModule, inviterConf] = useNetworkVariable('inviterCA');
+  const wallet = useCurrentWallet()
   const [tweetStatus, setTweetStatus] = useState('')
   const [twitterId, setTwitterId] = useState<string>()
   const [verifying, setVerifying] = useState(false)
@@ -101,6 +105,116 @@ export function SettingsView() {
       }
     } catch (e) {
       toast.error(e.message)
+    }
+  }
+
+  const bindTwitter = async (pureTweetId: string) => {
+    await axios.post(
+      `${faucetUrl}/verify-and-binding-twitter-account`,
+      {
+        tweet_id: pureTweetId,
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      },
+    )
+  }
+
+  const bindWithInviter = async (inviterAddr: string, pureTweetId: string) => {
+    const signMsg = 'Welcome to use Rooch! Connect with Twitter and claim your Rgas.'
+    const sign = await wallet.wallet?.sign(stringToBytes('utf8', signMsg))
+    const pk = wallet.wallet!.getPublicKey().toBytes()
+
+    const payload = JSON.stringify({
+      inviter: inviterAddr,
+      tweet_id: pureTweetId,
+      claimer_sign: toHEX(sign!),
+      public_key: toHEX(pk),
+      message: signMsg,
+    });
+    await axios.post(
+      `${faucetUrl}/binding-twitter-with-inviter`,
+      payload,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      },
+    )
+
+    window.localStorage.setItem(INVITER_ADDRESS_KEY, '')
+  }
+
+  const handleBindTwitter = async () => {
+
+    // setp 1, check twitter
+    const match = tweetStatus.match(/status\/(\d+)/)
+
+    if (!match) {
+      toast.error('twitter invald')
+      return
+    }
+    setVerifying(true)
+    const pureTweetId = match[1]
+
+    try {
+      const pureTweetId = match[1]
+      const res = await axios.post(
+        `${faucetUrl}/fetch-tweet`,
+        {
+          tweet_id: pureTweetId,
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        },
+      )
+
+      if (!res.data.ok) {
+        toast.error('fetch twitter failed')
+        return 
+      }
+
+      // step 2, check inviter
+      const inviterAddr = window.localStorage.getItem(INVITER_ADDRESS_KEY)
+      if (inviterAddr && inviterAddr !== '') {
+        // check invite is open
+        const result = await client.queryObjectStates({
+          filter: {
+            object_type: `${inviterCA}::${inviterModule}::${inviterConf}`,
+          },
+          queryOption: {
+            decode: true,
+          },
+        });
+
+       if (result && result.data.length > 0 && result.data[0].decoded_value?.value.is_open === true) {
+          await bindWithInviter(inviterAddr, pureTweetId)
+        } else {
+          await bindTwitter(pureTweetId)
+        }
+
+        await sleep(3000)
+        const checkRes = await fetchTwitterId()
+        if (checkRes) {
+          toast.success('Binding success')
+        }
+      }
+    } catch(error) {
+      if ('response' in error) {
+        if ('error' in error.response.data) {
+          toast.error(error.response.data.error)
+        } else {
+          toast.error(error.response.data)
+        }
+      } else {
+        toast.error(error.message)
+      }
+    } finally {
+      setVerifying(false)
     }
   }
 
@@ -216,50 +330,7 @@ https://${network === 'mainnet' ? '':'test-'}portal.rooch.network/inviter/${addr
                 loading={verifying}
                 className="mt-2 w-fit"
                 variant="contained"
-                onClick={async () => {
-                  try {
-                    setVerifying(true)
-                    const match = tweetStatus.match(/status\/(\d+)/)
-                    if (match) {
-                      const pureTweetId = match[1]
-                      const res = await axios.post(
-                        `${faucetUrl}/fetch-tweet`,
-                        {
-                          tweet_id: pureTweetId,
-                        },
-                        {
-                          headers: {
-                            'Content-Type': 'application/json',
-                          },
-                        },
-                      )
-                      console.log('🚀 ~ file: view.tsx:190 ~ onClick={ ~ res:', res)
-                      if (res?.data?.ok) {
-                        await axios.post(
-                          `${faucetUrl}/verify-and-binding-twitter-account`,
-                          {
-                            tweet_id: pureTweetId,
-                          },
-                          {
-                            headers: {
-                              'Content-Type': 'application/json',
-                            },
-                          },
-                        )
-                      }
-                      await sleep(3000)
-                      const checkRes = await fetchTwitterId()
-                      if (checkRes) {
-                        toast.success('Binding success')
-                      }
-                    }
-                  } catch (error) {
-                    console.log('🚀 ~ file: view.tsx:211 ~ onClick={ ~ error:', error)
-                    toast.error(error.response.data.error)
-                  } finally {
-                    setVerifying(false)
-                  }
-                }}
+                onClick={handleBindTwitter}
               >
                 Verify and bind Twitter account
               </LoadingButton>

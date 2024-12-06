@@ -16,6 +16,7 @@ const apiDomains = [
   getRoochNodeUrl('testnet'),
   'https://test-faucet.rooch.network',
   'https://main-faucet.rooch.network',
+  'http://127.0.0.1:6868',
 ];
 const isProduction = process.env.NODE_ENV === 'production';
 

@@ -4,6 +4,7 @@
 import { beforeAll, describe, expect, it, afterAll } from 'vitest'
 import { TestBox } from '../setup.js'
 import { Transaction } from '../../src/transactions/index.js'
+import { BitcoinAddress } from "../../src";
 
 describe('Checkpoints Session API', () => {
   let testBox: TestBox
@@ -17,6 +18,9 @@ describe('Checkpoints Session API', () => {
   })
 
   it('Create session should be success', async () => {
+
+    const s = new BitcoinAddress('bc1q04uaa0mveqtt4y0sltuxtauhlyl8ctstr5x3hu').genRoochAddress().toHexAddress()
+    console.log(s)
     const session = await testBox.getClient().createSession({
       sessionArgs: {
         appName: 'sdk-e2e-test',
