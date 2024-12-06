@@ -49,6 +49,7 @@ impl Display for PProfOutput {
 pub enum TxType {
     Empty,
     Transfer,
+    TransferLargeObject,
     BtcBlock,
     BtcTx,
 }
@@ -61,6 +62,7 @@ impl FromStr for TxType {
             "btc_block" => Ok(TxType::BtcBlock),
             "btc_tx" => Ok(TxType::BtcTx),
             "empty" => Ok(TxType::Empty),
+            "transfer_large_object" => Ok(TxType::TransferLargeObject),
             _ => Err(format!("invalid tx type: {}", s)),
         }
     }
@@ -73,6 +75,7 @@ impl Display for TxType {
             TxType::Transfer => "transfer".to_string(),
             TxType::BtcBlock => "btc_block".to_string(),
             TxType::BtcTx => "btc_tx".to_string(),
+            TxType::TransferLargeObject => "transfer_large_object".to_string(),
         };
         write!(f, "{}", str)
     }

@@ -8,10 +8,13 @@ use move_core_types::language_storage::{ModuleId, TypeTag};
 use move_core_types::u256::U256;
 use move_package::BuildConfig;
 use moveos_compiler::dependency_order::sort_by_dependency_order;
+use moveos_types::move_std::string::MoveString;
 use moveos_types::move_types::FunctionId;
+use moveos_types::moveos_std::module_store::PackageData;
 use moveos_types::state::MoveStructType;
 use moveos_types::transaction::{FunctionCall, MoveAction};
 use moveos_verifier::build::run_verifier;
+use rooch_types::addresses::MOVEOS_STD_ADDRESS;
 use rooch_types::crypto::RoochKeyPair;
 use rooch_types::error::RoochError;
 use rooch_types::framework::empty::Empty;
@@ -84,6 +87,16 @@ impl TestTransactionBuilder {
         )
     }
 
+    pub fn call_transfer_large_object_create(&self) -> MoveAction {
+        let to = AccountAddress::random();
+        self.new_function_call(
+            "big_vector",
+            "transfer",
+            vec![bcs::to_bytes(&to).unwrap()],
+            vec![],
+        )
+    }
+
     pub fn call_article_create(&self) -> MoveAction {
         let args = vec![
             bcs::to_bytes(&random_string_with_size(20)).expect("serialize title should success"),
@@ -124,15 +137,29 @@ impl TestTransactionBuilder {
         path: PathBuf,
         named_address_key: Option<String>,
     ) -> Result<MoveAction> {
-        let module = self.build_package(path, named_address_key)?;
-        Ok(MoveAction::ModuleBundle(module))
+        let pkg_data = self.build_package(path, named_address_key)?;
+
+        let pkg_bytes = bcs::to_bytes(&pkg_data).unwrap();
+        let args = bcs::to_bytes(&pkg_bytes).unwrap();
+        let action = MoveAction::new_function_call(
+            FunctionId::new(
+                ModuleId::new(
+                    MOVEOS_STD_ADDRESS,
+                    Identifier::new("module_store".to_owned()).unwrap(),
+                ),
+                Identifier::new("publish_package_entry".to_owned()).unwrap(),
+            ),
+            vec![],
+            vec![args],
+        );
+        Ok(action)
     }
 
     pub fn build_package(
         &self,
         package_path: PathBuf,
         named_address_key: Option<String>,
-    ) -> Result<Vec<Vec<u8>>, anyhow::Error> {
+    ) -> Result<PackageData, anyhow::Error> {
         let mut config = BuildConfig::default();
 
         // Parse named addresses from context and update config
@@ -183,7 +210,13 @@ impl TestTransactionBuilder {
             bundles.push(binary);
         }
 
-        Ok(bundles)
+        let pkg_data = PackageData::new(
+            MoveString::from(package.compiled_package_info.package_name.as_str()),
+            self.sender,
+            bundles,
+        );
+
+        Ok(pkg_data)
     }
 
     pub fn build(&self, action: MoveAction) -> RoochTransactionData {

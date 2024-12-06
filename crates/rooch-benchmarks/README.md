@@ -80,7 +80,7 @@ for PPROF_OUT output location:
 
 `<tx_type>`:
 
-1. `l2_tx_<transfer/empty>`
+1. `l2_tx_<transfer/empty/transfer_large_object>`
 2. `btc_block`
 3. `btc_tx`
 
