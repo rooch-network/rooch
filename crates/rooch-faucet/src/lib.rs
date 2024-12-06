@@ -33,4 +33,5 @@ mod tweet_fetcher_module;
 mod tweet_v2_module;
 mod twitter_account_module;
 
+mod invitation_module;
 pub mod server;
