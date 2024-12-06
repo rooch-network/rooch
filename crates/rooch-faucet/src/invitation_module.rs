@@ -70,6 +70,7 @@ pub fn claim_from_faucet_function_call(
 pub fn claim_from_twitter_function_call(
     module_address: AccountAddress,
     tweet_id: String,
+    invitation_object_id: ObjectID,
     inviter: AccountAddress,
     public_key: String,
     signature: String,
@@ -83,6 +84,10 @@ pub fn claim_from_twitter_function_call(
         ty_args: vec![],
         args: vec![
             MoveString::from(tweet_id)
+                .to_move_value()
+                .simple_serialize()
+                .unwrap(),
+            invitation_object_id
                 .to_move_value()
                 .simple_serialize()
                 .unwrap(),
