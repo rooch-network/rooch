@@ -39,6 +39,12 @@ export const navData = [
         // noAddressRequired: true,
       },
       {
+        title: 'Invitation',
+        path: paths.dashboard.invitation,
+        icon: <Iconify icon="solar:letter-broken" />,
+        // noAddressRequired: true,
+      },
+      {
         title: 'Settings',
         path: paths.dashboard.settings,
         icon: <Iconify icon="solar:settings-bold-duotone" />,
