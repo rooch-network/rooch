@@ -22,6 +22,7 @@ import { useNetworkVariable } from '../../../hooks/use-networks';
 import { ROOCH_GAS_COIN_DECIMALS } from '../../../config/constant';
 import TableSkeleton from '../../../components/skeleton/table-skeleton';
 import { TableNoData, TableHeadCustom } from '../../../components/table';
+import SessionKeyGuardButtonV1 from "../../../components/auth/session-key-guard-button-v1";
 
 const options = [1, 5, 10, 0];
 
@@ -49,7 +50,6 @@ export function InvitationLotteryList({ table, ticket = 0, openCallback }: { tab
           },
         })
         .then((result) => {
-          console.log(result);
           setData(
             result.data.map((item) => {
               console.log(result)
@@ -126,14 +126,7 @@ export function InvitationLotteryList({ table, ticket = 0, openCallback }: { tab
                 {item === 0 ? 'All' : item}
               </Button>
             ))}
-            <LoadingButton
-              variant="outlined"
-              loading={opening}
-              sx={{ ml: 1, size: 'small', ms: 0.5 }}
-              onClick={openTicket}
-            >
-              Open Ticket
-            </LoadingButton>
+            <SessionKeyGuardButtonV1 desc="Open Ticket" callback={openTicket}/>
           </Box>
         )}
       </Box>
