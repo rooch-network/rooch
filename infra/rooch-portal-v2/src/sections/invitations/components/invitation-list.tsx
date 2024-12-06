@@ -1,32 +1,62 @@
+import dayjs from 'dayjs';
+import { useState, useEffect } from "react";
+import { useRoochClient } from "@roochnetwork/rooch-sdk-kit";
+
 import {
   Box,
   Card,
   Table,
-  TableBody,
+  Tooltip,
   TableRow,
+  TableBody,
   TableCell,
   Typography,
-  Tooltip,
 } from '@mui/material';
 
-import dayjs from 'dayjs';
 import { shortAddress } from '../../../utils/address';
 import { Scrollbar } from '../../../components/scrollbar';
-import { TableHeadCustom, TableNoData } from '../../../components/table';
 import { getUTCOffset } from '../../../utils/format-time';
-import TableSkeleton from '../../../components/skeleton/table-skeleton';
 import { formatCoin } from '../../../utils/format-number';
 import { ROOCH_GAS_COIN_DECIMALS } from '../../../config/constant';
+import TableSkeleton from '../../../components/skeleton/table-skeleton';
+import { TableNoData, TableHeadCustom } from '../../../components/table';
 
-const data = [
-  {
-    address: 'tb1q04uaa0mveqtt4y0sltuxtauhlyl8ctstfjazv0',
-    rgas: 111,
-    timestamp: 1733064513,
-  },
-];
+type ListType = {
+  address: string
+  reward: number
+  timestamp: number
+}
 
-export function InvitationList() {
+export function InvitationList({ table }: { table?: string }) {
+  const client = useRoochClient()
+  const [loading, setLoading] = useState(false)
+  const [data, setData] = useState<Array<ListType>>()
+
+  useEffect(() => {
+    if (!table) {
+      return
+    }
+
+    setLoading(true)
+    client.listStates({
+      accessPath: `/table/${table}`,
+      stateOption: {
+        decode: true
+      }
+    }).then((result) => {
+      setData(result.data.map((item) => {
+        const view = ((item.state.decoded_value!.value) as any).value.value
+        return {
+          address: view.address,
+          reward: view.reward_amount,
+          timestamp: view.timestamp,
+        }
+      }))
+    }).catch((e) => {
+      console.log(e)
+    }).finally(() => setLoading(false))
+  }, [table, client]);
+
   return (
     <Card className="mt-4">
       <Box sx={{height: 60, p:2}} >
@@ -49,11 +79,11 @@ export function InvitationList() {
             ]}
           />
           <TableBody>
-            {false ? (
-              <TableSkeleton col={6} row={10} rowHeight="69px" />
+            {loading ? (
+              <TableSkeleton col={3} row={10} rowHeight="69px" />
             ) : (
               <>
-                {data.map((item) => (
+                {data?.map((item) => (
                   <TableRow key={item.address}>
                     <TableCell width="256px">
                       <Typography className="!font-mono !font-medium">
@@ -63,16 +93,16 @@ export function InvitationList() {
                       </Typography>
                     </TableCell>
                     <TableCell>
-                      {dayjs(Number(item.timestamp)).format('MMMM DD, YYYY HH:mm:ss')}
+                      {dayjs(Number(item.timestamp * 1000)).format('MMMM DD, YYYY HH:mm:ss')}
                     </TableCell>
-                    {item.rgas && (
+                    {item.reward && (
                       <TableCell className="!text-xs">
-                        {formatCoin(Number(item.rgas), ROOCH_GAS_COIN_DECIMALS, 6)}
+                        {formatCoin(Number(item.reward), ROOCH_GAS_COIN_DECIMALS, 6)}
                       </TableCell>
                     )}
                   </TableRow>
                 ))}
-                <TableNoData title="No Transaction Found" notFound={data.length === 0} />
+                <TableNoData title="No Transaction Found" notFound={data === undefined} />
               </>
             )}
           </TableBody>

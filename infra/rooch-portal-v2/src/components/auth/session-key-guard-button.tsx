@@ -45,6 +45,7 @@ export default function SessionKeyGuardButton({ children }: { children: ReactNod
               '0x3::*::*',
               '0x176214bed3764a1c6a43dc1add387be5578ff8dbc263369f5bdc33a885a501ae::*::*',
               '0x701c21bf1c8cd5af8c42983890d8ca55e7a820171b8e744c13f2d9998bf76cc3::*::*',
+              '0x1d6f6657fc996008a1e43b8c13805e969a091560d4cea57b1db9f3ce4450d977::*::*', // remove
             ],
             maxInactiveInterval: 60 * 60 * 8,
           });

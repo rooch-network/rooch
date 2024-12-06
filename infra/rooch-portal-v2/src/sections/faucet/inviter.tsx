@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Args, Transaction } from '@roochnetwork/rooch-sdk';
+import { Args, stringToBytes, toHEX, Bytes } from '@roochnetwork/rooch-sdk';
 import {
-  useCurrentAddress, useCurrentSession,
+  useCurrentAddress,
   useRoochClient,
   useRoochClientQuery,
-} from "@roochnetwork/rooch-sdk-kit";
+  useCurrentWallet,
+} from '@roochnetwork/rooch-sdk-kit';
 
 import { LoadingButton } from '@mui/lab';
 import { Box, Card, Chip, Stack, CardHeader, CardContent } from '@mui/material';
@@ -22,8 +23,6 @@ import { DashboardContent } from 'src/layouts/dashboard';
 import { toast } from 'src/components/snackbar';
 
 import { paths } from '../../routes/paths';
-import { INVITER_ADDRESS_KEY } from '../../utils/inviter';
-import SessionKeyGuardButton from "../../components/auth/session-key-guard-button";
 
 const FAUCET_NOT_OPEN = 'Faucet Not Open';
 const INVALID_UTXO = 'Invalid UTXO';
@@ -45,9 +44,10 @@ export function InviterFaucetView({ inviterAddress }: { inviterAddress: string }
   const client = useRoochClient();
   const faucetAddress = useNetworkVariable('faucetAddress');
   const faucetObject = useNetworkVariable('faucetObject');
-  const inviterCA = '0x1d6f6657fc996008a1e43b8c13805e969a091560d4cea57b1db9f3ce4450d977';
-  const inviterConf = `${inviterCA}::invitation::InvitationConf`;
-  const session = useCurrentSession()
+  const [inviterCA, inviterName] = useNetworkVariable('inviterCA')
+  const inviterConf = `${inviterCA}::${inviterName}::InvitationConf`;
+  const faucetUrl = useNetworkVariable('faucetUrl');
+  const wallet = useCurrentWallet();
 
   const viewAddress = useCurrentAddress();
   const [faucetStatus, setFaucetStatus] = useState<boolean>(false);
@@ -58,6 +58,9 @@ export function InviterFaucetView({ inviterAddress }: { inviterAddress: string }
   const { data: inviter } = useRoochClientQuery('queryObjectStates', {
     filter: {
       object_type: inviterConf,
+    },
+    queryOption: {
+      decode: true,
     },
   });
 
@@ -123,38 +126,56 @@ export function InviterFaucetView({ inviterAddress }: { inviterAddress: string }
       inviter.data.length > 0 &&
       inviter.data[0].decoded_value?.value.is_open === true
     ) {
+      let sign: Bytes | undefined
+      const pk = wallet.wallet!.getPublicKey().toBytes()
       try {
-        const tx = new Transaction();
-        tx.callFunction({
-          target: `${inviterCA}::invitation::claim_from_faucet`,
-          args: [
-            Args.object({
-              address: '0x3',
-              module: 'gas_coin',
-              name: 'RGas',
-            }),
-            Args.object({
-              address: inviterCA,
-              module: 'invitation',
-              name: 'InvitationConf',
-            }),
-            Args.address(viewAddress?.genRoochAddress()!),
-            Args.vec('objectId', UTXOs!),
-            Args.address(inviterAddress),
-          ],
+        sign = await wallet.wallet?.sign(stringToBytes('utf8', 'hello, rooch'))
+      } catch (e) {
+        toast.error(e.message)
+      }
+
+      if (!sign) {
+        return;
+      }
+
+      try {
+        const payload = JSON.stringify({
+          claimer: viewAddress!.toStr(),
+          inviter: inviterAddress,
+          claimer_sign: toHEX(sign),
+          public_key: toHEX(pk),
+          message: 'hello, rooch',
+        });
+        const response = await fetch(`${faucetUrl}/faucet-inviter`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: payload,
         });
 
-        const result = await client.signAndExecuteTransaction({
-          transaction: tx,
-          signer: session!
-        })
-        if (result.execution_info.status.type === 'executed') {
-          refetch()
-          toast.success('claim success')
-          window.localStorage.setItem(INVITER_ADDRESS_KEY, '')
+        if (!response.ok) {
+          const data = await response.json();
+          console.log(data);
+          if (response.status === 500 && data.error.includes('UTXO value is zero')) {
+            const msg = 'Claim failed, Not found UTXO';
+            setErrorMsg(msg);
+            toast.error(msg);
+            return;
+          }
+
+          toast.error('Network response was not ok');
+          return;
         }
-      } catch (e) {
-        console.log(e);
+
+        const d = await response.json();
+        await refetch();
+        toast.success(
+          `Faucet Success! RGas: ${formatCoin(Number(d.gas || 0), data?.decimals || 0, 2)}`
+        );
+      } catch (error) {
+        console.error('Error:', error);
+        toast.error(`faucet error: ${error}`);
       } finally {
         setFaucetStatus(false);
       }
@@ -188,7 +209,6 @@ export function InviterFaucetView({ inviterAddress }: { inviterAddress: string }
                 ? 'You Already Claimed RGAS'
                 : 'You cannot claim gas, Please make sure the current address has a valid utxo and try again'
               : ''}
-            <SessionKeyGuardButton>
               <LoadingButton
                 variant="soft"
                 color="primary"
@@ -200,7 +220,6 @@ export function InviterFaucetView({ inviterAddress }: { inviterAddress: string }
                   ? 'Purchase RGas'
                   : errorMsg || `Claim: ${claimGas} RGas`}
               </LoadingButton>
-            </SessionKeyGuardButton>
           </Stack>
         </CardContent>
       </Card>

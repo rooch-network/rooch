@@ -40,7 +40,7 @@ export const navData = [
       },
       {
         title: 'Invitation',
-        path: paths.dashboard.inviter,
+        path: paths.dashboard.invitation,
         icon: <Iconify icon="solar:letter-broken" />,
         // noAddressRequired: true,
       },
