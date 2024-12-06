@@ -23,6 +23,7 @@ import { DashboardContent } from 'src/layouts/dashboard';
 import { toast } from 'src/components/snackbar';
 
 import { paths } from '../../routes/paths';
+import { INVITER_ADDRESS_KEY } from 'src/utils/inviter';
 
 const FAUCET_NOT_OPEN = 'Faucet Not Open';
 const INVALID_UTXO = 'Invalid UTXO';
@@ -63,6 +64,15 @@ export function InviterFaucetView({ inviterAddress }: { inviterAddress: string }
       decode: true,
     },
   });
+
+  useEffect(() => {
+
+    // invite close
+    if (inviter && inviter.data.length > 0 && inviter.data[0].decoded_value?.value.is_open === false) {
+      router.push(paths.dashboard.faucet);
+    }
+
+  }, [inviter])
 
   const { data, isPending, refetch } = useRoochClientQuery(
     'getBalance',
@@ -128,8 +138,9 @@ export function InviterFaucetView({ inviterAddress }: { inviterAddress: string }
     ) {
       let sign: Bytes | undefined
       const pk = wallet.wallet!.getPublicKey().toBytes()
+      const signMsg = 'Welcome to use Rooch! Hold BTC Claim your Rgas.'
       try {
-        sign = await wallet.wallet?.sign(stringToBytes('utf8', 'hello, rooch'))
+        sign = await wallet.wallet?.sign(stringToBytes('utf8', signMsg))
       } catch (e) {
         toast.error(e.message)
       }
@@ -144,7 +155,7 @@ export function InviterFaucetView({ inviterAddress }: { inviterAddress: string }
           inviter: inviterAddress,
           claimer_sign: toHEX(sign),
           public_key: toHEX(pk),
-          message: 'hello, rooch',
+          message: signMsg,
         });
         const response = await fetch(`${faucetUrl}/faucet-inviter`, {
           method: 'POST',
@@ -169,6 +180,7 @@ export function InviterFaucetView({ inviterAddress }: { inviterAddress: string }
         }
 
         const d = await response.json();
+        window.localStorage.setItem(INVITER_ADDRESS_KEY, '')
         await refetch();
         toast.success(
           `Faucet Success! RGas: ${formatCoin(Number(d.gas || 0), data?.decimals || 0, 2)}`

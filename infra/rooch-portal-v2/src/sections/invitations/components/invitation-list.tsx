@@ -102,7 +102,7 @@ export function InvitationList({ table }: { table?: string }) {
                     )}
                   </TableRow>
                 ))}
-                <TableNoData title="No Transaction Found" notFound={data === undefined} />
+                <TableNoData title="No Invitions Found" notFound={data === undefined} />
               </>
             )}
           </TableBody>
