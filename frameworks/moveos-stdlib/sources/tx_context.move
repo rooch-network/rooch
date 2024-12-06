@@ -224,6 +224,13 @@ module moveos_std::tx_context {
     }
 
     #[test_only]
+    /// set the TxContext tx_hash for unit test
+    public fun set_ctx_tx_hash_for_testing(tx_hash: vector<u8>){
+        let ctx = borrow_mut();
+        ctx.tx_hash = tx_hash;
+    }
+
+    #[test_only]
     public fun fresh_address_for_testing(): address {
         fresh_address()
     }

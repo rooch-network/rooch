@@ -179,6 +179,11 @@ module twitter_binding::twitter_account {
         };
     }
 
+    public fun check_user_claimed(author_id: String): bool{
+        let faucet = borrow_twitter_rgas_faucet();
+        return table::contains(&faucet.claim_records, author_id)
+    }
+
     public entry fun unbinding_twitter_account(owner: &signer){
         let user_rooch_address = signer::address_of(owner);
         unbinding_twitter_account_internal(user_rooch_address);

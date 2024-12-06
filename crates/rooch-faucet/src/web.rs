@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    App, FaucetRequest, FaucetResponse, FetchTweetRequest, InfoResponse, ResultResponse,
-    VerifyAndBindingTwitterAccountRequest,
+    App, FaucetRequest, FaucetRequestWithInviter, FaucetResponse, FetchTweetRequest, InfoResponse,
+    ResultResponse, VerifyAndBindingTwitterAccountRequest,
+    VerifyAndBindingTwitterAccountWithInviter,
 };
 use axum::{
     error_handling::HandleErrorLayer,
@@ -72,10 +73,15 @@ pub async fn serve(app: App, web_config: WebConfig) -> Result<(), anyhow::Error>
         .route(METRICS_ROUTE, get(metrics))
         .route("/info", get(request_info))
         .route("/faucet", post(request_faucet))
+        .route("/faucet-inviter", post(request_faucet_with_inviter))
         .route("/fetch-tweet", post(fetch_tweet))
         .route(
             "/verify-and-binding-twitter-account",
             post(verify_and_binding_twitter_account),
+        )
+        .route(
+            "/binding-twitter-with-inviter",
+            post(binding_twitter_account_with_inviter),
         )
         .layer(
             ServiceBuilder::new()
@@ -142,6 +148,35 @@ async fn request_faucet(
     }
 }
 
+async fn request_faucet_with_inviter(
+    Extension(app): Extension<App>,
+    Json(payload): Json<FaucetRequestWithInviter>,
+) -> impl IntoResponse {
+    let recipient = payload.recipient().to_string();
+    let inviter = payload.inviter().to_string();
+    tracing::info!(
+        "request gas payload: {:?} inviter: {:?}",
+        recipient,
+        inviter
+    );
+
+    let result = app.request_with_inviter(payload).await;
+
+    match result {
+        Ok(amount) => {
+            tracing::info!("request gas success add queue: {}", recipient);
+            (StatusCode::CREATED, Json(FaucetResponse::from(amount)))
+        }
+        Err(e) => {
+            tracing::info!("request gas error: {}, {:?}", recipient, e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(FaucetResponse::from(e)),
+            )
+        }
+    }
+}
+
 async fn request_info(Extension(app): Extension<App>) -> impl IntoResponse {
     let result = app.check_gas_balance().await;
 
@@ -172,6 +207,32 @@ async fn verify_and_binding_twitter_account(
 
     tracing::info!("verify and binding twitter account payload: {:?}", tweet_id);
     ResultResponse::<String>::from(app.verify_and_binding_twitter_account(tweet_id).await)
+}
+
+async fn binding_twitter_account_with_inviter(
+    Extension(app): Extension<App>,
+    Json(payload): Json<VerifyAndBindingTwitterAccountWithInviter>,
+) -> impl IntoResponse {
+    let tweet_id = payload.tweet_id;
+    let inviter = payload.inviter.to_string();
+    let claimer_sign = payload.claimer_sign;
+    let public_key = payload.public_key;
+    let message = payload.message;
+    tracing::info!(
+        "verify and binding twitter account payload: {:?} inviter:{:?}",
+        tweet_id,
+        inviter
+    );
+    ResultResponse::<String>::from(
+        app.binding_twitter_account_with_inviter(
+            tweet_id,
+            payload.inviter,
+            claimer_sign,
+            public_key,
+            message,
+        )
+        .await,
+    )
 }
 
 async fn handle_error(error: BoxError) -> impl IntoResponse {

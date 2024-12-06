@@ -1,8 +1,11 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{faucet_proxy::FaucetProxy, DiscordConfig, FaucetError, FaucetRequest};
+use crate::{
+    faucet_proxy::FaucetProxy, DiscordConfig, FaucetError, FaucetRequest, FaucetRequestWithInviter,
+};
 use move_core_types::u256::U256;
+use rooch_rpc_api::jsonrpc_types::UnitedAddressView;
 use std::sync::{atomic::AtomicBool, Arc};
 use tokio::sync::{mpsc::Receiver, RwLock};
 
@@ -37,6 +40,24 @@ impl App {
         Ok(amount)
     }
 
+    pub async fn request_with_inviter(
+        &self,
+        request: FaucetRequestWithInviter,
+    ) -> Result<U256, FaucetError> {
+        let amount = self
+            .faucet_proxy
+            .claim_with_inviter(
+                request.claimer,
+                request.inviter,
+                request.claimer_sign,
+                request.public_key,
+                request.message,
+            )
+            .await
+            .map_err(FaucetError::custom)?;
+        Ok(amount)
+    }
+
     pub async fn check_gas_balance(&self) -> Result<U256, FaucetError> {
         let balance = self
             .faucet_proxy
@@ -62,6 +83,27 @@ impl App {
         let address = self
             .faucet_proxy
             .verify_and_binding_twitter_account(tweet_id)
+            .await
+            .map_err(FaucetError::custom)?;
+        Ok(address.to_rooch_address().to_string())
+    }
+    pub async fn binding_twitter_account_with_inviter(
+        &self,
+        tweet_id: String,
+        inviter: UnitedAddressView,
+        claimer_sign: String,
+        public_key: String,
+        message: String,
+    ) -> Result<String, FaucetError> {
+        let address = self
+            .faucet_proxy
+            .binding_twitter_account_with_inviter(
+                tweet_id,
+                inviter,
+                claimer_sign,
+                public_key,
+                message,
+            )
             .await
             .map_err(FaucetError::custom)?;
         Ok(address.to_rooch_address().to_string())
