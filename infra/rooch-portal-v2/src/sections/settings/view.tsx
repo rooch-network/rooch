@@ -26,7 +26,7 @@ import { Iconify } from 'src/components/iconify'
 import { useNetworkVariable } from '../../hooks/use-networks'
 import SessionKeysTableCard from './components/session-keys-table-card'
 import SessionKeyGuardButtonV1 from '../../components/auth/session-key-guard-button-v1'
-import { INVITER_ADDRESS_KEY } from 'src/utils/inviter'
+import { INVITER_ADDRESS_KEY } from "../../utils/inviter";
 
 export function SettingsView() {
   const address = useCurrentAddress()

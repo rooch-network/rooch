@@ -37,7 +37,7 @@ const { networkConfig, useNetworkVariable, useNetworkVariables } = createNetwork
       mintAddress: ROOCH_MINT_OPERATING_ADDRESS,
       btcGasAddress: '0x701c21bf1c8cd5af8c42983890d8ca55e7a820171b8e744c13f2d9998bf76cc3',
       gasMarketAddress: '0x701c21bf1c8cd5af8c42983890d8ca55e7a820171b8e 744c13f2d9998bf76cc3',
-      faucetUrl: 'http://192.168.31.134',
+      faucetUrl: FAUCET_TESTNET,
       faucetAddress: '0x701c21bf1c8cd5af8c42983890d8ca55e7a820171b8e744c13f2d9998bf76cc3',
       faucetObject: '0xd5723eda84f691ae2623da79312c7909b1737c5b3866ecc5dbd6aa21718ff15d',
       BTCMemPool: 'https://mempool.space/testnet/tx/',

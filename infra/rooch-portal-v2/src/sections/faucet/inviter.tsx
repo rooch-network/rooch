@@ -22,8 +22,8 @@ import { DashboardContent } from 'src/layouts/dashboard';
 
 import { toast } from 'src/components/snackbar';
 
-import { paths } from '../../routes/paths';
 import { INVITER_ADDRESS_KEY } from 'src/utils/inviter';
+import { paths } from '../../routes/paths';
 
 const FAUCET_NOT_OPEN = 'Faucet Not Open';
 const INVALID_UTXO = 'Invalid UTXO';
@@ -72,7 +72,7 @@ export function InviterFaucetView({ inviterAddress }: { inviterAddress: string }
       router.push(paths.dashboard.faucet);
     }
 
-  }, [inviter])
+  }, [inviter, router])
 
   const { data, isPending, refetch } = useRoochClientQuery(
     'getBalance',
