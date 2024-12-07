@@ -14,8 +14,9 @@ module bitcoin_move::bbn {
     use moveos_std::result::{Self, Result, err_str, ok, is_err, as_err};
     use moveos_std::sort;
     use moveos_std::event;
+    use moveos_std::event_queue;
     use bitcoin_move::types;
-    use bitcoin_move::utxo;
+    use bitcoin_move::utxo::{Self, UTXO};
     use bitcoin_move::opcode;
     use bitcoin_move::script_buf::{Self, ScriptBuf};
     use bitcoin_move::types::{
@@ -140,6 +141,24 @@ module bitcoin_move::bbn {
         txid: address,
         error: String,
     }
+
+    struct BBNStakingUnbondingEvent has store, copy, drop{
+        block_height: u64,
+        txid: address,
+        staking_output_index: u32,
+        staking_time: u16,
+        staking_value: u64,
+        stake_object_id: ObjectID,
+    }
+
+    /// Event emitted when the temporary state of a BBNStakeSeal is dropped
+    /// The temporary state is dropped when the UTXO is spent
+    /// The event is onchain event, and the event_queue name is type_name of the temporary state
+    struct TempStateDropEvent has drop, store, copy {
+        stake_object_id: ObjectID,
+        staking_time: u16,
+        staking_value: u64,
+    } 
 
     const BBN_V1_ACTIVATION_HEIGHT: u64 = 864790;
     const BBN_V1_CAP_HEIGHT: u64 = 864799;
@@ -355,6 +374,28 @@ module bitcoin_move::bbn {
         })
     }
 
+    fun drop_bbn_stake_seal(stake_object_id: ObjectID, seal: BBNStakeSeal) {
+        let BBNStakeSeal {
+            block_height,
+            txid,
+            staking_output_index,
+            tag:_,
+            staker_pub_key:_,
+            finality_provider_pub_key:_,
+            staking_time,
+            staking_value
+        } = seal;
+        event::emit(BBNStakingUnbondingEvent {
+            block_height,
+            txid,
+            staking_output_index,
+            staking_time,
+            staking_value,
+            stake_object_id
+        });
+    }
+
+
     fun get_bbn_param_version(height: u64): Option<u64> {
         if(height < BBN_V1_ACTIVATION_HEIGHT){
             none()
@@ -563,6 +604,43 @@ module bitcoin_move::bbn {
 
         return ok(seal_object_id)
     }
+
+    public(friend) fun on_utxo_spend(utxo: &mut UTXO){
+        let seal_obj_ids = utxo::remove_seals_internal<BBNStakeSeal>(utxo);
+        vector::for_each(seal_obj_ids, |seal_obj_id|{
+            remove_bbn_seal(seal_obj_id);
+        });
+    }
+
+    public(friend) fun remove_bbn_seal(seal_obj_id: ObjectID){
+        let stake_seal_obj = object::take_object_extend<BBNStakeSeal>(seal_obj_id);
+        drop_temp_area(&mut stake_seal_obj);
+        let seal = object::remove(stake_seal_obj);
+        drop_bbn_stake_seal(seal_obj_id, seal);
+    }
+
+    fun drop_temp_area(seal_obj: &mut Object<BBNStakeSeal>){
+        if(object::contains_field(seal_obj, TEMPORARY_AREA)){
+            let seal_obj_id = object::id(seal_obj);
+            let seal = object::borrow(seal_obj);
+            let staking_time = seal.staking_time;
+            let staking_value = seal.staking_value;
+            let temp_state = object::remove_field(seal_obj, TEMPORARY_AREA);
+            let state_type_names = temp_state::remove(temp_state);
+            let idx = 0;
+            let len = vector::length(&state_type_names);
+            while(idx < len){
+                let state_type_name = vector::pop_back(&mut state_type_names);
+                event_queue::emit(state_type_name, TempStateDropEvent{
+                    stake_object_id: seal_obj_id,
+                    staking_time,
+                    staking_value,
+                });
+                idx = idx + 1;
+            };
+        }
+    }
+
 
     fun pubkey_to_rooch_address(pubkey: &vector<u8>): address {
         to_rooch_address(&derive_bitcoin_taproot_address_from_pubkey(pubkey))

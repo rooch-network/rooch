@@ -5,9 +5,12 @@ module bitcoin_move::bbn_updater {
 
     use std::option::{Self, is_none, is_some};
 
+    use moveos_std::object::{Self, ObjectID};
+
     use bitcoin_move::types;
     use bitcoin_move::bbn::{Self, BBNStakeSeal};
     use bitcoin_move::bitcoin;
+    use bitcoin_move::utxo;
 
     const ErrorTransactionNotFound: u64 = 1;
 
@@ -51,5 +54,14 @@ module bitcoin_move::bbn_updater {
         let latest_block = option::destroy_some(latest_block_opt);
         let (current_block_height, _hash) = types::unpack_block_height_hash(latest_block);
         bbn::is_expired_at(stake, current_block_height)
+    }
+
+    public entry fun clear_unbonded_stakes(seal_obj_id: ObjectID){
+        let seal_obj = object::borrow_object<BBNStakeSeal>(seal_obj_id);
+        let seal = object::borrow(seal_obj);
+        let outpoint = bbn::outpoint(seal);
+        if(!utxo::exists_utxo(outpoint))(
+            bbn::remove_bbn_seal(seal_obj_id)
+        )
     }
 }

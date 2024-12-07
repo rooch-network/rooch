@@ -192,6 +192,7 @@ module bitcoin_move::bitcoin{
         let _ = output_seals;
 
         vector::for_each(input_utxos, |utxo| {
+            bbn::on_utxo_spend(&mut utxo);
             utxo::drop(utxo);
         });
         repeat_txid
