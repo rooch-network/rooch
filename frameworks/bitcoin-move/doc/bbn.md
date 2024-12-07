@@ -14,6 +14,8 @@
 -  [Struct `BBNScriptPaths`](#0x4_bbn_BBNScriptPaths)
 -  [Struct `BBNStakingEvent`](#0x4_bbn_BBNStakingEvent)
 -  [Struct `BBNStakingFailedEvent`](#0x4_bbn_BBNStakingFailedEvent)
+-  [Struct `BBNStakingUnbondingEvent`](#0x4_bbn_BBNStakingUnbondingEvent)
+-  [Struct `TempStateDropEvent`](#0x4_bbn_TempStateDropEvent)
 -  [Constants](#@Constants_0)
 -  [Function `genesis_init`](#0x4_bbn_genesis_init)
 -  [Function `init_for_upgrade`](#0x4_bbn_init_for_upgrade)
@@ -22,6 +24,8 @@
 -  [Function `is_possible_bbn_transaction`](#0x4_bbn_is_possible_bbn_transaction)
 -  [Function `process_bbn_tx_entry`](#0x4_bbn_process_bbn_tx_entry)
 -  [Function `process_bbn_transaction`](#0x4_bbn_process_bbn_transaction)
+-  [Function `on_utxo_spend`](#0x4_bbn_on_utxo_spend)
+-  [Function `remove_bbn_seal`](#0x4_bbn_remove_bbn_seal)
 -  [Function `add_temp_state`](#0x4_bbn_add_temp_state)
 -  [Function `contains_temp_state`](#0x4_bbn_contains_temp_state)
 -  [Function `borrow_temp_state`](#0x4_bbn_borrow_temp_state)
@@ -45,6 +49,7 @@
 <b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="">0x2::bcs</a>;
 <b>use</b> <a href="">0x2::event</a>;
+<b>use</b> <a href="">0x2::event_queue</a>;
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::result</a>;
 <b>use</b> <a href="">0x2::sort</a>;
@@ -155,6 +160,31 @@
 
 
 <pre><code><b>struct</b> <a href="bbn.md#0x4_bbn_BBNStakingFailedEvent">BBNStakingFailedEvent</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
+<a name="0x4_bbn_BBNStakingUnbondingEvent"></a>
+
+## Struct `BBNStakingUnbondingEvent`
+
+
+
+<pre><code><b>struct</b> <a href="bbn.md#0x4_bbn_BBNStakingUnbondingEvent">BBNStakingUnbondingEvent</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
+<a name="0x4_bbn_TempStateDropEvent"></a>
+
+## Struct `TempStateDropEvent`
+
+Event emitted when the temporary state of a BBNStakeSeal is dropped
+The temporary state is dropped when the UTXO is spent
+The event is onchain event, and the event_queue name is type_name of the temporary state
+
+
+<pre><code><b>struct</b> <a href="bbn.md#0x4_bbn_TempStateDropEvent">TempStateDropEvent</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -442,6 +472,28 @@ Use <code><a href="bbn_updater.md#0x4_bbn_updater_process_bbn_tx_entry">bbn_upda
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="bbn.md#0x4_bbn_process_bbn_transaction">process_bbn_transaction</a>(block_height: u64, tx: &<a href="types.md#0x4_types_Transaction">types::Transaction</a>)
+</code></pre>
+
+
+
+<a name="0x4_bbn_on_utxo_spend"></a>
+
+## Function `on_utxo_spend`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="bbn.md#0x4_bbn_on_utxo_spend">on_utxo_spend</a>(<a href="utxo.md#0x4_utxo">utxo</a>: &<b>mut</b> <a href="utxo.md#0x4_utxo_UTXO">utxo::UTXO</a>)
+</code></pre>
+
+
+
+<a name="0x4_bbn_remove_bbn_seal"></a>
+
+## Function `remove_bbn_seal`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="bbn.md#0x4_bbn_remove_bbn_seal">remove_bbn_seal</a>(seal_obj_id: <a href="_ObjectID">object::ObjectID</a>)
 </code></pre>
 
 
