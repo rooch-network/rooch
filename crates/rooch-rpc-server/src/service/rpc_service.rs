@@ -22,6 +22,7 @@ use rooch_executor::actor::messages::DryRunTransactionResult;
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_indexer::proxy::IndexerProxy;
 use rooch_pipeline_processor::proxy::PipelineProcessorProxy;
+use rooch_proposer::proxy::ProposerProxy;
 use rooch_rpc_api::jsonrpc_types::{
     BitcoinStatus, DisplayFieldsView, IndexerObjectStateView, ObjectMetaView, RoochStatus, Status,
 };
@@ -29,6 +30,7 @@ use rooch_sequencer::proxy::SequencerProxy;
 use rooch_types::address::{BitcoinAddress, RoochAddress};
 use rooch_types::bitcoin::pending_block::PendingBlockModule;
 use rooch_types::bitcoin::BitcoinModule;
+use rooch_types::block::Block;
 use rooch_types::framework::address_mapping::RoochToBitcoinAddressMapping;
 use rooch_types::indexer::event::{
     AnnotatedIndexerEvent, EventFilter, IndexerEvent, IndexerEventID,
@@ -54,6 +56,7 @@ pub struct RpcService {
     bitcoin_network: u8,
     pub(crate) executor: ExecutorProxy,
     pub(crate) sequencer: SequencerProxy,
+    pub(crate) proposer: ProposerProxy,
     pub(crate) indexer: IndexerProxy,
     pub(crate) pipeline_processor: PipelineProcessorProxy,
     pub(crate) bitcoin_client: Option<BitcoinClientProxy>,
@@ -66,6 +69,7 @@ impl RpcService {
         bitcoin_network: u8,
         executor: ExecutorProxy,
         sequencer: SequencerProxy,
+        proposer: ProposerProxy,
         indexer: IndexerProxy,
         pipeline_processor: PipelineProcessorProxy,
         bitcoin_client: Option<BitcoinClientProxy>,
@@ -76,6 +80,7 @@ impl RpcService {
             bitcoin_network,
             executor,
             sequencer,
+            proposer,
             indexer,
             pipeline_processor,
             bitcoin_client,
@@ -826,5 +831,15 @@ impl RpcService {
             rooch_status,
             bitcoin_status,
         })
+    }
+
+    pub async fn get_blocks(&self, block_numbers: Vec<u128>) -> Result<Vec<Option<Block>>> {
+        let resp = self.proposer.get_blocks(block_numbers).await?;
+        Ok(resp)
+    }
+
+    pub async fn latest_block_number(&self) -> Result<u128> {
+        let resp = self.proposer.latest_block_number().await?;
+        Ok(resp)
     }
 }

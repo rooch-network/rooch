@@ -33,6 +33,7 @@ use rooch_store::{
     RoochStore, META_SEQUENCER_INFO_COLUMN_FAMILY_NAME, STATE_CHANGE_SET_COLUMN_FAMILY_NAME,
     TRANSACTION_COLUMN_FAMILY_NAME, TX_SEQUENCE_INFO_MAPPING_COLUMN_FAMILY_NAME,
 };
+use rooch_types::finality_block::L2BlockRef;
 use rooch_types::indexer::state::{
     collect_revert_object_change_ids, handle_revert_object_change, IndexerObjectStateChangeSet,
     IndexerObjectStatesIndexGenerator,
@@ -408,5 +409,10 @@ impl RoochDB {
         }
         // TODO repair the changeset sync and indexer store
         Ok((issues, fixed))
+    }
+
+    //TODO implements this after proposer generate blocks
+    pub fn l2_block_ref_by_number(&self, _block_number: u64) -> Result<L2BlockRef> {
+        Ok(L2BlockRef::default())
     }
 }

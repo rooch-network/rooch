@@ -1,9 +1,10 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use super::messages::ProposeBlock;
+use crate::messages::{GetBlocksMessage, GetLastestBlockNumberMessage, ProposeBlock};
 use crate::metrics::ProposerMetrics;
 use crate::scc::StateCommitmentChain;
+use anyhow::Result;
 use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
 use moveos_store::MoveOSStore;
@@ -11,6 +12,7 @@ use prometheus::Registry;
 use rooch_config::proposer_config::ProposerConfig;
 use rooch_store::proposer_store::ProposerStore;
 use rooch_store::RoochStore;
+use rooch_types::block::Block;
 use rooch_types::crypto::RoochKeyPair;
 use std::sync::Arc;
 
@@ -97,5 +99,28 @@ impl Handler<ProposeBlock> for ProposerActor {
                 tracing::error!("[ProposeBlock] error: {:?}", e);
             }
         }
+    }
+}
+
+#[async_trait]
+impl Handler<GetBlocksMessage> for ProposerActor {
+    async fn handle(
+        &mut self,
+        msg: GetBlocksMessage,
+        _ctx: &mut ActorContext,
+    ) -> Result<Vec<Option<Block>>> {
+        let GetBlocksMessage { block_numbers } = msg;
+        self.scc.get_blocks(block_numbers)
+    }
+}
+
+#[async_trait]
+impl Handler<GetLastestBlockNumberMessage> for ProposerActor {
+    async fn handle(
+        &mut self,
+        _msg: GetLastestBlockNumberMessage,
+        _ctx: &mut ActorContext,
+    ) -> Result<u128> {
+        Ok(self.scc.lastest_proposed_block_number())
     }
 }

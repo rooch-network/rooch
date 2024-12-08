@@ -7,9 +7,9 @@ use crate::jsonrpc_types::event_view::{EventFilterView, IndexerEventIDView};
 use crate::jsonrpc_types::repair_view::{RepairIndexerParamsView, RepairIndexerTypeView};
 use crate::jsonrpc_types::transaction_view::{TransactionFilterView, TransactionWithInfoView};
 use crate::jsonrpc_types::{
-    AccessPathView, AnnotatedFunctionResultView, BalanceInfoPageView, BytesView, EventOptions,
-    EventPageView, ExecuteTransactionResponseView, FieldKeyView, FunctionCallView, H256View,
-    IndexerEventPageView, IndexerObjectStatePageView, IndexerStateIDView, ModuleABIView,
+    AccessPathView, AnnotatedFunctionResultView, BalanceInfoPageView, BlockPageView, BytesView,
+    EventOptions, EventPageView, ExecuteTransactionResponseView, FieldKeyView, FunctionCallView,
+    H256View, IndexerEventPageView, IndexerObjectStatePageView, IndexerStateIDView, ModuleABIView,
     ObjectIDVecView, ObjectIDView, ObjectStateFilterView, ObjectStateView, QueryOptions,
     RoochAddressView, StateChangeSetPageView, StateOptions, StatePageView, StrView, StructTagView,
     SyncStateFilterView, TransactionWithInfoPageView, TxOptions,
@@ -214,4 +214,12 @@ pub trait RoochAPI {
     /// Get the chain and service status
     #[method(name = "status")]
     async fn status(&self) -> RpcResult<Status>;
+
+    #[method(name = "getBlocksByNumber")]
+    async fn get_blocks_by_number(
+        &self,
+        cursor: Option<StrView<u128>>,
+        limit: Option<StrView<u64>>,
+        descending_order: Option<bool>,
+    ) -> RpcResult<BlockPageView>;
 }

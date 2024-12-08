@@ -4,6 +4,7 @@
 use super::event_view::IndexerEventIDView;
 use super::{HumanReadableDisplay, IndexerStateIDView, StateChangeSetWithTxOrderView};
 use crate::jsonrpc_types::account_view::BalanceInfoView;
+use crate::jsonrpc_types::block_view::BlockView;
 use crate::jsonrpc_types::btc::ord::InscriptionStateView;
 use crate::jsonrpc_types::btc::utxo::UTXOStateView;
 use crate::jsonrpc_types::event_view::{EventView, IndexerEventView};
@@ -30,6 +31,8 @@ pub type IndexerObjectStatePageView = PageView<IndexerObjectStateView, IndexerSt
 pub type UTXOPageView = PageView<UTXOStateView, IndexerStateIDView>;
 pub type InscriptionPageView = PageView<InscriptionStateView, IndexerStateIDView>;
 pub type StateChangeSetPageView = PageView<StateChangeSetWithTxOrderView, StrView<u64>>;
+
+pub type BlockPageView = PageView<BlockView, StrView<u128>>;
 
 /// `next_cursor` points to the last item in the page;
 /// Reading with `next_cursor` will start from the next item after `next_cursor` if

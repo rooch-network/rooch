@@ -1,0 +1,47 @@
+[package]
+name = "rooch-finality"
+
+# Workspace inherited keys
+version = { workspace = true }
+authors = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+publish = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+
+[dependencies]
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+coerce = { workspace = true }
+serde = { workspace = true }
+tokio = { features = ["full"], workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+prometheus = { workspace = true }
+function_name = { workspace = true }
+tonic = { workspace = true, features = ["codegen", "prost"] }
+prost = { workspace = true }
+#prost-types = { workspace = true }
+#protobuf = { workspace = true }
+
+moveos-eventbus = { workspace = true }
+metrics = { workspace = true }
+
+rooch-types = { workspace = true }
+rooch-db = { workspace = true }
+rooch-event = { workspace = true }
+
+[build-dependencies]
+prost-build = { workspace = true }
+prost-types = { workspace = true }
+protox = "0.7.1"
+tonic-build = { workspace = true, features = [ "prost" ]}
+
+#[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+#tonic = { workspace = true, features = [ "transport" ] }
+#tonic-build = { workspace = true, features = [ "transport" ] }
+
+#[features]
+#tonic = ["dep:tonic", "dep:tonic-build"]
