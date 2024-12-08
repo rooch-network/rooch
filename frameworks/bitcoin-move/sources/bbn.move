@@ -527,11 +527,12 @@ module bitcoin_move::bbn {
         };
         let version = option::destroy_some(version_opt);
         let param = get_bbn_param(version);
-        assert!(block_height >= param.activation_height && block_height <= param.cap_height, ErrorOutBlockRange);
         let tx_output = types::tx_output(tx);
 
         let op_return_output_opt = try_get_bbn_op_return_ouput(tx_output);
-        assert!(is_some(&op_return_output_opt), ErrorNotBabylonTx);
+        if(is_none(&op_return_output_opt)) {
+            return
+        };
         let op_return_output = option::destroy_some(op_return_output_opt);
         let txid = types::tx_id(tx);
         let process_result = process_parsed_bbn_tx(param, txid, block_height, tx, op_return_output);
