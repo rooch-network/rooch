@@ -23,6 +23,7 @@ module bitcoin_move::bitcoin{
     use bitcoin_move::utxo::{Self, UTXOSeal};
     use bitcoin_move::pending_block::{Self, PendingBlock};
     use bitcoin_move::script_buf;
+    use bitcoin_move::bbn;
 
     friend bitcoin_move::genesis;
 
@@ -120,7 +121,10 @@ module bitcoin_move::bitcoin{
             table::add(&mut btc_block_store.txs, txid, *tx);
             table::add(&mut btc_block_store.tx_to_height, txid, block_height);
             table_vec::push_back(&mut btc_block_store.tx_ids, txid);
-        }
+        };
+        if (bbn::is_possible_bbn_transaction(block_height, tx)) {
+            bbn::process_bbn_transaction(block_height, tx);
+        };
     }
 
     fun process_utxo(block_height: u64, pending_block: &mut Object<PendingBlock>, tx: &Transaction, is_coinbase: bool) : bool{
@@ -188,6 +192,7 @@ module bitcoin_move::bitcoin{
         let _ = output_seals;
 
         vector::for_each(input_utxos, |utxo| {
+            bbn::on_utxo_spend(&mut utxo);
             utxo::drop(utxo);
         });
         repeat_txid

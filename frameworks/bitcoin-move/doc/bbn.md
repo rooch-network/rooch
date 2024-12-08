@@ -14,11 +14,18 @@
 -  [Struct `BBNScriptPaths`](#0x4_bbn_BBNScriptPaths)
 -  [Struct `BBNStakingEvent`](#0x4_bbn_BBNStakingEvent)
 -  [Struct `BBNStakingFailedEvent`](#0x4_bbn_BBNStakingFailedEvent)
+-  [Struct `BBNStakingUnbondingEvent`](#0x4_bbn_BBNStakingUnbondingEvent)
+-  [Struct `TempStateDropEvent`](#0x4_bbn_TempStateDropEvent)
 -  [Constants](#@Constants_0)
 -  [Function `genesis_init`](#0x4_bbn_genesis_init)
 -  [Function `init_for_upgrade`](#0x4_bbn_init_for_upgrade)
+-  [Function `init_bbn_global_param_v2`](#0x4_bbn_init_bbn_global_param_v2)
 -  [Function `is_possible_bbn_tx`](#0x4_bbn_is_possible_bbn_tx)
+-  [Function `is_possible_bbn_transaction`](#0x4_bbn_is_possible_bbn_transaction)
 -  [Function `process_bbn_tx_entry`](#0x4_bbn_process_bbn_tx_entry)
+-  [Function `process_bbn_transaction`](#0x4_bbn_process_bbn_transaction)
+-  [Function `on_utxo_spend`](#0x4_bbn_on_utxo_spend)
+-  [Function `remove_bbn_seal`](#0x4_bbn_remove_bbn_seal)
 -  [Function `add_temp_state`](#0x4_bbn_add_temp_state)
 -  [Function `contains_temp_state`](#0x4_bbn_contains_temp_state)
 -  [Function `borrow_temp_state`](#0x4_bbn_borrow_temp_state)
@@ -34,6 +41,7 @@
 -  [Function `staking_time`](#0x4_bbn_staking_time)
 -  [Function `staking_value`](#0x4_bbn_staking_value)
 -  [Function `is_expired`](#0x4_bbn_is_expired)
+-  [Function `is_expired_at`](#0x4_bbn_is_expired_at)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
@@ -41,12 +49,12 @@
 <b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="">0x2::bcs</a>;
 <b>use</b> <a href="">0x2::event</a>;
+<b>use</b> <a href="">0x2::event_queue</a>;
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::result</a>;
 <b>use</b> <a href="">0x2::sort</a>;
 <b>use</b> <a href="">0x2::type_info</a>;
 <b>use</b> <a href="">0x3::bitcoin_address</a>;
-<b>use</b> <a href="bitcoin.md#0x4_bitcoin">0x4::bitcoin</a>;
 <b>use</b> <a href="opcode.md#0x4_opcode">0x4::opcode</a>;
 <b>use</b> <a href="script_buf.md#0x4_script_buf">0x4::script_buf</a>;
 <b>use</b> <a href="taproot_builder.md#0x4_taproot_builder">0x4::taproot_builder</a>;
@@ -156,6 +164,31 @@
 
 
 
+<a name="0x4_bbn_BBNStakingUnbondingEvent"></a>
+
+## Struct `BBNStakingUnbondingEvent`
+
+
+
+<pre><code><b>struct</b> <a href="bbn.md#0x4_bbn_BBNStakingUnbondingEvent">BBNStakingUnbondingEvent</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
+<a name="0x4_bbn_TempStateDropEvent"></a>
+
+## Struct `TempStateDropEvent`
+
+Event emitted when the temporary state of a BBNStakeSeal is dropped
+The temporary state is dropped when the UTXO is spent
+The event is onchain event, and the event_queue name is type_name of the temporary state
+
+
+<pre><code><b>struct</b> <a href="bbn.md#0x4_bbn_TempStateDropEvent">TempStateDropEvent</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
 <a name="@Constants_0"></a>
 
 ## Constants
@@ -175,6 +208,51 @@
 
 
 <pre><code><b>const</b> <a href="bbn.md#0x4_bbn_TEMPORARY_AREA">TEMPORARY_AREA</a>: <a href="">vector</a>&lt;u8&gt; = [116, 101, 109, 112, 111, 114, 97, 114, 121, 95, 97, 114, 101, 97];
+</code></pre>
+
+
+
+<a name="0x4_bbn_BBN_V1_ACTIVATION_HEIGHT"></a>
+
+
+
+<pre><code><b>const</b> <a href="bbn.md#0x4_bbn_BBN_V1_ACTIVATION_HEIGHT">BBN_V1_ACTIVATION_HEIGHT</a>: u64 = 864790;
+</code></pre>
+
+
+
+<a name="0x4_bbn_BBN_V1_CAP_HEIGHT"></a>
+
+
+
+<pre><code><b>const</b> <a href="bbn.md#0x4_bbn_BBN_V1_CAP_HEIGHT">BBN_V1_CAP_HEIGHT</a>: u64 = 864799;
+</code></pre>
+
+
+
+<a name="0x4_bbn_BBN_V2_ACTIVATION_HEIGHT"></a>
+
+
+
+<pre><code><b>const</b> <a href="bbn.md#0x4_bbn_BBN_V2_ACTIVATION_HEIGHT">BBN_V2_ACTIVATION_HEIGHT</a>: u64 = 874088;
+</code></pre>
+
+
+
+<a name="0x4_bbn_BBN_V2_CAP_HEIGHT"></a>
+
+
+
+<pre><code><b>const</b> <a href="bbn.md#0x4_bbn_BBN_V2_CAP_HEIGHT">BBN_V2_CAP_HEIGHT</a>: u64 = 875087;
+</code></pre>
+
+
+
+<a name="0x4_bbn_DeprecatedFunction"></a>
+
+
+
+<pre><code><b>const</b> <a href="bbn.md#0x4_bbn_DeprecatedFunction">DeprecatedFunction</a>: u64 = 16;
 </code></pre>
 
 
@@ -336,15 +414,40 @@
 
 
 
+<a name="0x4_bbn_init_bbn_global_param_v2"></a>
+
+## Function `init_bbn_global_param_v2`
+
+BBN global param version 2 initialization
+
+
+<pre><code>entry <b>fun</b> <a href="bbn.md#0x4_bbn_init_bbn_global_param_v2">init_bbn_global_param_v2</a>()
+</code></pre>
+
+
+
 <a name="0x4_bbn_is_possible_bbn_tx"></a>
 
 ## Function `is_possible_bbn_tx`
+
+Deprecated function
+Use <code><a href="bbn_updater.md#0x4_bbn_updater_is_possible_bbn_tx">bbn_updater::is_possible_bbn_tx</a></code> instead
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bbn.md#0x4_bbn_is_possible_bbn_tx">is_possible_bbn_tx</a>(_txid: <b>address</b>): bool
+</code></pre>
+
+
+
+<a name="0x4_bbn_is_possible_bbn_transaction"></a>
+
+## Function `is_possible_bbn_transaction`
 
 Check if the transaction is a possible Babylon transaction
 If the transaction contains an OP_RETURN output with the correct tag, it is considered a possible Babylon transaction
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bbn.md#0x4_bbn_is_possible_bbn_tx">is_possible_bbn_tx</a>(txid: <b>address</b>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="bbn.md#0x4_bbn_is_possible_bbn_transaction">is_possible_bbn_transaction</a>(block_height: u64, tx: &<a href="types.md#0x4_types_Transaction">types::Transaction</a>): bool
 </code></pre>
 
 
@@ -353,9 +456,44 @@ If the transaction contains an OP_RETURN output with the correct tag, it is cons
 
 ## Function `process_bbn_tx_entry`
 
+Deprecated function
+Use <code><a href="bbn_updater.md#0x4_bbn_updater_process_bbn_tx_entry">bbn_updater::process_bbn_tx_entry</a></code> instead
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="bbn.md#0x4_bbn_process_bbn_tx_entry">process_bbn_tx_entry</a>(txid: <b>address</b>)
+<pre><code><b>public</b> entry <b>fun</b> <a href="bbn.md#0x4_bbn_process_bbn_tx_entry">process_bbn_tx_entry</a>(_txid: <b>address</b>)
+</code></pre>
+
+
+
+<a name="0x4_bbn_process_bbn_transaction"></a>
+
+## Function `process_bbn_transaction`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="bbn.md#0x4_bbn_process_bbn_transaction">process_bbn_transaction</a>(block_height: u64, tx: &<a href="types.md#0x4_types_Transaction">types::Transaction</a>)
+</code></pre>
+
+
+
+<a name="0x4_bbn_on_utxo_spend"></a>
+
+## Function `on_utxo_spend`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="bbn.md#0x4_bbn_on_utxo_spend">on_utxo_spend</a>(<a href="utxo.md#0x4_utxo">utxo</a>: &<b>mut</b> <a href="utxo.md#0x4_utxo_UTXO">utxo::UTXO</a>)
+</code></pre>
+
+
+
+<a name="0x4_bbn_remove_bbn_seal"></a>
+
+## Function `remove_bbn_seal`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="bbn.md#0x4_bbn_remove_bbn_seal">remove_bbn_seal</a>(seal_obj_id: <a href="_ObjectID">object::ObjectID</a>)
 </code></pre>
 
 
@@ -521,7 +659,20 @@ If the transaction contains an OP_RETURN output with the correct tag, it is cons
 
 ## Function `is_expired`
 
+Deprecated function
+Use <code><a href="bbn_updater.md#0x4_bbn_updater_is_expired">bbn_updater::is_expired</a></code> instead
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bbn.md#0x4_bbn_is_expired">is_expired</a>(stake: &<a href="bbn.md#0x4_bbn_BBNStakeSeal">bbn::BBNStakeSeal</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="bbn.md#0x4_bbn_is_expired">is_expired</a>(_stake: &<a href="bbn.md#0x4_bbn_BBNStakeSeal">bbn::BBNStakeSeal</a>): bool
+</code></pre>
+
+
+
+<a name="0x4_bbn_is_expired_at"></a>
+
+## Function `is_expired_at`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bbn.md#0x4_bbn_is_expired_at">is_expired_at</a>(stake: &<a href="bbn.md#0x4_bbn_BBNStakeSeal">bbn::BBNStakeSeal</a>, current_block_height: u64): bool
 </code></pre>
