@@ -39,7 +39,7 @@ spec:
           mountPath: /root
       containers:
       - name: rooch-faucet
-        image: ghcr.io/rooch-network/rooch:v0.8.0
+        image: ghcr.io/rooch-network/rooch@sha256:792bdd21402cda88b7c8df09f384e89bb34ee6589de0c444a228abb1c2c5a753
         command: ["/rooch/rooch"]
         args: 
         - "faucet"
@@ -51,6 +51,10 @@ spec:
         - "0x701c21bf1c8cd5af8c42983890d8ca55e7a820171b8e744c13f2d9998bf76cc3"
         - "--faucet-object-id"
         - "0xd5723eda84f691ae2623da79312c7909b1737c5b3866ecc5dbd6aa21718ff15d"
+        - "--invitation-module-address"
+        - "0x701c21bf1c8cd5af8c42983890d8ca55e7a820171b8e744c13f2d9998bf76cc3"
+        - "--invitation-object-id"
+        - "0x8eea1b91f649d5d8dec6353b0cd1188e5964f05a7a04ff5f8c0e0af77b1cb095"
         - "--discord-token"
         - "$(DISCORD_TOKEN)"
         env:
