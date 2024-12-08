@@ -1,0 +1,71 @@
+---
+title: '使用 OneKey 钱包的注意事项'
+description: ""
+author: geometryolife
+category: Developer
+date: 2024/12/06
+---
+
+import PostHeader from "/components/blog/postHeader";
+
+<PostHeader />
+
+## 简介
+
+目前 Rooch Portal 支持 OneKey 钱包了，但是使用上需要注意几个点，接下来将演示 OneKey 钱包的使用流程。
+
+## 安装
+
+以谷歌浏览器为例，安装 OneKey 浏览器插件：https://chromewebstore.google.com/detail/onekey/jnmbobjmhlngoefaiojfljckilhhlhcj?hl=en-US
+
+安装完成后，可以选择创建或导入钱包：
+
+![](/blog/onekey/welcome-onekey.png)
+
+以创建钱包为例，首先要求你设置一个在本机解锁钱包的密码：
+
+![](/blog/onekey/set-password.png)
+
+点击 `Show recovery phrase`，并记录新钱包的助记词：
+
+![](/blog/onekey/show-phrase.png)
+
+之后就会进入 OneKey 多链钱包的主界面了：
+
+![](/blog/onekey/onekey-home.png)
+
+## 在 Rooch Portal 中使用的注意事项
+
+在 [Rooch Portal](portal.rooch.network) 中点击 `Connect Wallet` 来连接 OneKey 钱包：
+
+![](/blog/onekey/choose-onekey.png)
+
+OneKey 默认使用 Nested SegWit 类型的 Bitcoin 地址，而 Rooch 使用的是 Taproot 类型的地址，因此必须选择正确的地址才能与 Rooch 网络交互。
+
+点击地址的下拉栏，进入切换地址类型的界面：
+
+![](/blog/onekey/change-address-type.png)
+
+进入后，点击右上角的图标，选择 `Taproot` 类型：
+
+![](/blog/onekey/choose-type.png)
+
+选择后，点击左上角返回：
+
+![](/blog/onekey/return.png)
+
+点击 `Approve` 按钮，即可连接成功：
+
+![](/blog/onekey/approve.png)
+
+连接成功后，就能在 Rooch Portal 正常显示了！
+
+![](/blog/onekey/portal-home.png)
+
+如果选错了地址类型，此时点开 OneKey 钱包，然后点击断开按钮，重新使用上述步骤操作即可。
+
+![](/blog/onekey/disconnect.png)
+
+## 总结
+
+至此，你已经了解了 OneKey 钱包的安装使用流程和在 Rooch 上使用应该注意的问题了。
