@@ -21,6 +21,7 @@ module rooch_framework::transaction_fee {
     use rooch_framework::coin_store::{Self, CoinStore};
     use rooch_framework::coin::{Self,Coin};
     use rooch_framework::gas_coin::{RGas};
+    use rooch_framework::account_coin_store;
 
     friend rooch_framework::genesis;
     friend rooch_framework::transaction_validator;
@@ -104,12 +105,18 @@ module rooch_framework::transaction_fee {
         total_paid_gas_coin
     }
 
-    /// Withdraw all the gas revenue for the sender
+    /// Withdraw the gas revenue for the sender
     /// The contract address can use `moveos_std::signer::module_signer` to get the signer
     public fun withdraw_gas_revenue(sender: &signer, amount: u256): Coin<RGas> {
         let addr = signer::address_of(sender);
         let gas_revenue_store = borrow_mut_or_init_gas_revenue_store(addr);
         coin_store::withdraw(gas_revenue_store, amount)
+    }
+
+    /// The entry function to withdraw the gas revenue for the sender
+    public entry fun withdraw_gas_revenue_entry(sender: &signer, amount: u256){
+        let coin = withdraw_gas_revenue(sender, amount);
+        account_coin_store::deposit(signer::address_of(sender), coin);
     }
 
     /// Get the gas revenue balance for the given address

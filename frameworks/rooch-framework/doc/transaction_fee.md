@@ -24,12 +24,14 @@ Distribution of Transaction Gas Fees:
 -  [Function `deposit_fee`](#0x3_transaction_fee_deposit_fee)
 -  [Function `distribute_fee`](#0x3_transaction_fee_distribute_fee)
 -  [Function `withdraw_gas_revenue`](#0x3_transaction_fee_withdraw_gas_revenue)
+-  [Function `withdraw_gas_revenue_entry`](#0x3_transaction_fee_withdraw_gas_revenue_entry)
 -  [Function `gas_revenue_balance`](#0x3_transaction_fee_gas_revenue_balance)
 
 
 <pre><code><b>use</b> <a href="">0x2::core_addresses</a>;
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::signer</a>;
+<b>use</b> <a href="account_coin_store.md#0x3_account_coin_store">0x3::account_coin_store</a>;
 <b>use</b> <a href="coin.md#0x3_coin">0x3::coin</a>;
 <b>use</b> <a href="coin_store.md#0x3_coin_store">0x3::coin_store</a>;
 <b>use</b> <a href="gas_coin.md#0x3_gas_coin">0x3::gas_coin</a>;
@@ -143,11 +145,23 @@ Returns the gas factor of gas.
 
 ## Function `withdraw_gas_revenue`
 
-Withdraw all the gas revenue for the sender
+Withdraw the gas revenue for the sender
 The contract address can use <code>moveos_std::signer::module_signer</code> to get the signer
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="transaction_fee.md#0x3_transaction_fee_withdraw_gas_revenue">withdraw_gas_revenue</a>(sender: &<a href="">signer</a>, amount: <a href="">u256</a>): <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;<a href="gas_coin.md#0x3_gas_coin_RGas">gas_coin::RGas</a>&gt;
+</code></pre>
+
+
+
+<a name="0x3_transaction_fee_withdraw_gas_revenue_entry"></a>
+
+## Function `withdraw_gas_revenue_entry`
+
+The entry function to withdraw the gas revenue for the sender
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="transaction_fee.md#0x3_transaction_fee_withdraw_gas_revenue_entry">withdraw_gas_revenue_entry</a>(sender: &<a href="">signer</a>, amount: <a href="">u256</a>)
 </code></pre>
 
 
