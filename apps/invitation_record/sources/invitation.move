@@ -313,7 +313,7 @@ module invitation_record::invitation {
         consensus_codec::unpack_encoder(encoder)
     }
 
-    public fun verify_btc_signature(bitcoin_address: BitcoinAddress, public_key: vector<u8>, signature: vector<u8>, message: vector<u8>) {
+    fun verify_btc_signature(bitcoin_address: BitcoinAddress, public_key: vector<u8>, signature: vector<u8>, message: vector<u8>) {
         let message_hash = hash::sha2_256(message);
         assert!(
             ecdsa_k1::verify(
