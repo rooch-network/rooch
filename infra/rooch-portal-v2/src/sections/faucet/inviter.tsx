@@ -167,7 +167,6 @@ export function InviterFaucetView({ inviterAddress }: { inviterAddress: string }
 
         if (!response.ok) {
           const data = await response.json();
-          console.log(data);
           if (response.status === 500 && data.error.includes('UTXO value is zero')) {
             const msg = 'Claim failed, Not found UTXO';
             setErrorMsg(msg);

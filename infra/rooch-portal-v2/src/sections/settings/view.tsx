@@ -27,20 +27,22 @@ import { useNetworkVariable } from '../../hooks/use-networks'
 import SessionKeysTableCard from './components/session-keys-table-card'
 import SessionKeyGuardButtonV1 from '../../components/auth/session-key-guard-button-v1'
 import { INVITER_ADDRESS_KEY } from "../../utils/inviter";
+import TableSkeleton from 'src/components/skeleton/table-skeleton'
 
 export function SettingsView() {
   const address = useCurrentAddress()
 
   const session = useCurrentSession()
   const client = useRoochClient()
+  const wallet = useCurrentWallet()
   const network = useCurrentNetwork()
   const faucetUrl = useNetworkVariable('faucetUrl')
   const twitterOracleAddress = useNetworkVariable('twitterOracleAddress')
   const [inviterCA, inviterModule, inviterConf] = useNetworkVariable('inviterCA');
-  const wallet = useCurrentWallet()
   const [tweetStatus, setTweetStatus] = useState('')
   const [twitterId, setTwitterId] = useState<string>()
   const [verifying, setVerifying] = useState(false)
+  const [fetchTwitterIdStatus, setFetchTwitterIdStatus] = useState(true)
 
   const {
     data: sessionKeys,
@@ -78,8 +80,18 @@ export function SettingsView() {
   }, [address, client, twitterOracleAddress])
 
   useEffect(() => {
-    fetchTwitterId()
+    fetchTwitterId().finally(() => setFetchTwitterIdStatus(false))
   }, [fetchTwitterId])
+
+  const loopFetchTwitterId = async (count = 1) => {
+    const id = await fetchTwitterId()
+
+    if (id || count === 3) {
+      return id
+    }
+
+    loopFetchTwitterId(count ++)
+  }
 
   const disconnectTwitter = async () => {
     if (!session) {
@@ -198,7 +210,7 @@ export function SettingsView() {
         }
 
         await sleep(3000)
-        const checkRes = await fetchTwitterId()
+        const checkRes = await loopFetchTwitterId()
         if (checkRes) {
           toast.success('Binding success')
         }
@@ -218,7 +230,7 @@ export function SettingsView() {
     }
   }
 
-  const networkText = network === 'mainnet' ? 'Pre-mainnet' : 'Testnet'
+  const networkText = network === 'mainnet' ? 'PreMainnet' : 'Testnet'
   const XText = `BTC:${address?.toStr()} 
 
 Rooch ${networkText} is live! Bind your Twitter to earn  RGas, and visit https://${network === 'mainnet' ? '':'test-'}grow.rooch.network to earn rewards with your BTC. 
@@ -256,7 +268,7 @@ https://${network === 'mainnet' ? '':'test-'}portal.rooch.network/inviter/${addr
           subheader="Bind a Twitter account to a Bitcoin address via publishing a tweet"
         />
         <CardContent className="!pt-2">
-          {twitterId ? (
+          {fetchTwitterIdStatus ? <></>: twitterId ? (
             <Stack className="mt-2" spacing={1.5} alignItems="flex-start">
             <Chip
               className="justify-start w-fit"

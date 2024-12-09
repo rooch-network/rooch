@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { Args, isValidBitcoinAddress } from '@roochnetwork/rooch-sdk';
-import { useRoochClient, useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit';
+import { useCurrentNetwork, useRoochClient, useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit';
 
 import { LoadingButton } from '@mui/lab';
-import { Box, Card, Chip, Stack, CardHeader, CardContent } from '@mui/material';
+import { Box, Card, Chip, Stack, CardHeader, CardContent, Button } from '@mui/material';
 
 import { useRouter } from 'src/routes/hooks';
 import useAddressChanged from 'src/routes/hooks/useAddressChanged';
@@ -21,6 +21,7 @@ import { toast } from 'src/components/snackbar';
 
 import { paths } from '../../routes/paths'
 import { INVITER_ADDRESS_KEY } from "../../utils/inviter";
+import CopyToClipboard from 'react-copy-to-clipboard';
 
 const FAUCET_NOT_OPEN= 'Faucet Not Open'
 const INVALID_UTXO = 'Invalid UTXO'
@@ -47,6 +48,7 @@ export function FaucetView({ address }: { address: string }) {
   const faucetObject = useNetworkVariable('faucetObject');
   const [claimGas, setClaimGas] = useState(0);
   const router = useRouter();
+  const network = useCurrentNetwork()
 
   useAddressChanged({ address, path: 'faucet' });
 
@@ -170,7 +172,16 @@ export function FaucetView({ address }: { address: string }) {
   return (
     <DashboardContent maxWidth="xl">
       <Card>
-        <CardHeader title="Gas Faucet" sx={{ mb: 1 }} />
+      <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={0.5} sx={{ width: '100%' }}>
+      <CardHeader title="Gas Faucet" sx={{ mb: 1, flex: 1 }} />
+      <Box sx={{mr:1.5}}>
+        <CopyToClipboard onCopy={() => {
+          toast.success('Copy to you clipboard')
+        }} text={`https://${network === 'mainnet' ? '':'test-'}portal.rooch.network/inviter/${viewAddress}`}>
+              <Chip className="justify-start w-fit" label={`Share`} />
+            </CopyToClipboard>
+      </Box>
+    </Stack>
         <CardContent className="!pt-0">
           <Stack spacing={2}>
             <Stack direction="row" alignItems="center" spacing={0.5}>
