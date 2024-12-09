@@ -275,7 +275,7 @@ impl IndexerReader {
             .map_err(|e| {
                 IndexerError::SQLiteReadError(format!("Cast indexer transactions failed: {:?}", e))
             })?;
-        tracing::info!("Query transactions time elapsed: {:?}", start.elapsed());
+        tracing::debug!("Query transactions time elapsed: {:?}", start.elapsed());
 
         Ok(result)
     }
@@ -392,7 +392,7 @@ impl IndexerReader {
             .map_err(|e| {
                 IndexerError::SQLiteReadError(format!("Cast indexer events failed: {:?}", e))
             })?;
-        tracing::info!("Query events time elapsed: {:?}", start.elapsed());
+        tracing::debug!("Query events time elapsed: {:?}", start.elapsed());
 
         Ok(result)
     }
@@ -511,7 +511,7 @@ impl IndexerReader {
                 diesel::sql_query(query).load::<StoredObjectStateInfo>(conn)
             })?;
 
-        tracing::info!("Query object states time elapsed: {:?}", start.elapsed());
+        tracing::debug!("Query object states time elapsed: {:?}", start.elapsed());
         Ok(stored_object_state_infos)
     }
 

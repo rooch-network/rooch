@@ -50,7 +50,7 @@ pub fn subscribe_websocket(
             while let Some(message) = read.next().await {
                 match message {
                     Ok(Message::Text(text)) => {
-                        info!("Received message: {}", text);
+                        debug!("Received message: {}", text);
                         if let Err(e) =
                             tx.try_send(serde_json::from_str(&text).map_err(|e| anyhow::anyhow!(e)))
                         {
