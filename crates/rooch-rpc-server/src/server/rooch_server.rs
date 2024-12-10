@@ -15,7 +15,7 @@ use moveos_types::{
     moveos_std::{move_module::MoveModule, object::ObjectID},
     state::{AnnotatedState, FieldKey},
 };
-use rooch_rpc_api::jsonrpc_types::block_view::BlockView;
+use rooch_rpc_api::jsonrpc_types::block_view::{BlockTypeView, BlockView};
 use rooch_rpc_api::jsonrpc_types::{
     account_view::BalanceInfoView,
     event_view::{EventFilterView, EventView, IndexerEventIDView, IndexerEventView},
@@ -862,10 +862,12 @@ impl RoochAPIServer for RoochServer {
 
     async fn get_blocks_by_number(
         &self,
+        block_type: Option<BlockTypeView>,
         cursor: Option<StrView<u128>>,
         limit: Option<StrView<u64>>,
         descending_order: Option<bool>,
     ) -> RpcResult<BlockPageView> {
+        // TODO filter by blcok type
         let latest_block_number = self.rpc_service.latest_block_number().await?;
 
         let limit_of = min(

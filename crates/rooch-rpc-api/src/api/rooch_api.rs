@@ -3,6 +3,7 @@
 
 use crate::jsonrpc_types::account_view::BalanceInfoView;
 use crate::jsonrpc_types::address::UnitedAddressView;
+use crate::jsonrpc_types::block_view::BlockTypeView;
 use crate::jsonrpc_types::event_view::{EventFilterView, IndexerEventIDView};
 use crate::jsonrpc_types::repair_view::{RepairIndexerParamsView, RepairIndexerTypeView};
 use crate::jsonrpc_types::transaction_view::{TransactionFilterView, TransactionWithInfoView};
@@ -218,6 +219,7 @@ pub trait RoochAPI {
     #[method(name = "getBlocksByNumber")]
     async fn get_blocks_by_number(
         &self,
+        block_type: Option<BlockTypeView>,
         cursor: Option<StrView<u128>>,
         limit: Option<StrView<u64>>,
         descending_order: Option<bool>,

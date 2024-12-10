@@ -2,9 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::jsonrpc_types::{H256View, StrView};
-use rooch_types::block::Block;
+use rooch_types::block::{Block, BlockType};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use std::str::FromStr;
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct BlockView {
@@ -31,5 +32,20 @@ impl From<Block> for BlockView {
             block_hash: block.block_hash.into(),
             time: block.time.into(),
         }
+    }
+}
+
+pub type BlockTypeView = StrView<BlockType>;
+
+impl std::fmt::Display for BlockTypeView {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl FromStr for BlockTypeView {
+    type Err = anyhow::Error;
+    fn from_str(s: &str) -> anyhow::Result<Self, Self::Err> {
+        Ok(StrView(BlockType::from_str(s)?))
     }
 }

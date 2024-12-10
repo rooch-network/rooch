@@ -250,6 +250,36 @@
       }
     },
     {
+      "name": "rooch_getBlocksByNumber",
+      "params": [
+        {
+          "name": "cursor",
+          "schema": {
+            "$ref": "#/components/schemas/u128"
+          }
+        },
+        {
+          "name": "limit",
+          "schema": {
+            "$ref": "#/components/schemas/u64"
+          }
+        },
+        {
+          "name": "descending_order",
+          "schema": {
+            "type": "boolean"
+          }
+        }
+      ],
+      "result": {
+        "name": "BlockPageView",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/PageView_for_BlockView_and_u128"
+        }
+      }
+    },
+    {
       "name": "rooch_getChainID",
       "params": [],
       "result": {
@@ -1059,6 +1089,40 @@
           },
           "block_height": {
             "$ref": "#/components/schemas/u64"
+          }
+        }
+      },
+      "BlockView": {
+        "type": "object",
+        "required": [
+          "block_hash",
+          "block_number",
+          "time"
+        ],
+        "properties": {
+          "block_hash": {
+            "description": "How many transactions in the block The hash of the block, made by DA",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/primitive_types::H256"
+              }
+            ]
+          },
+          "block_number": {
+            "description": "The index if the block",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/u128"
+              }
+            ]
+          },
+          "time": {
+            "description": "The previous tx accumulator root of the block The tx accumulator root after the last transaction append to the accumulator The last transaction's state root the block generate timestamp",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/u64"
+              }
+            ]
           }
         }
       },
@@ -2586,6 +2650,35 @@
             "anyOf": [
               {
                 "$ref": "#/components/schemas/IndexerStateIDView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "PageView_for_BlockView_and_u128": {
+        "description": "`next_cursor` points to the last item in the page; Reading with `next_cursor` will start from the next item after `next_cursor` if `next_cursor` is `Some`, otherwise it will start from the first item.",
+        "type": "object",
+        "required": [
+          "data",
+          "has_next_page"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BlockView"
+            }
+          },
+          "has_next_page": {
+            "type": "boolean"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/u128"
               },
               {
                 "type": "null"
