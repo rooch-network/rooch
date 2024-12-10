@@ -36,13 +36,11 @@ export const navData = [
         title: 'Faucet',
         path: paths.dashboard.faucet,
         icon: <Iconify icon="solar:gift-bold-duotone" />,
-        // noAddressRequired: true,
       },
       {
         title: 'Invitation',
         path: paths.dashboard.invitation,
         icon: <Iconify icon="solar:letter-broken" />,
-        // noAddressRequired: true,
       },
       {
         title: 'Settings',

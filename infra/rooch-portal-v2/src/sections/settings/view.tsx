@@ -33,14 +33,15 @@ export function SettingsView() {
 
   const session = useCurrentSession()
   const client = useRoochClient()
+  const wallet = useCurrentWallet()
   const network = useCurrentNetwork()
   const faucetUrl = useNetworkVariable('faucetUrl')
   const twitterOracleAddress = useNetworkVariable('twitterOracleAddress')
   const [inviterCA, inviterModule, inviterConf] = useNetworkVariable('inviterCA');
-  const wallet = useCurrentWallet()
   const [tweetStatus, setTweetStatus] = useState('')
   const [twitterId, setTwitterId] = useState<string>()
   const [verifying, setVerifying] = useState(false)
+  const [fetchTwitterIdStatus, setFetchTwitterIdStatus] = useState(true)
 
   const {
     data: sessionKeys,
@@ -78,8 +79,55 @@ export function SettingsView() {
   }, [address, client, twitterOracleAddress])
 
   useEffect(() => {
-    fetchTwitterId()
+    fetchTwitterId().finally(() => setFetchTwitterIdStatus(false))
   }, [fetchTwitterId])
+
+  const loopFetchTwitterId = async (count = 0) => {
+    const id = await fetchTwitterId()
+
+    if (id || count === 3) {
+      return id
+    }
+
+    return loopFetchTwitterId(count +1)
+  }
+
+  const checkTwitterObj = async (id: string) => {
+    const result = await client.queryObjectStates({
+      filter: {
+        object_id: id
+      }
+    })
+
+    if (result.data.length === 0) {
+      await sleep(10000)
+      return checkTwitterObj(id)
+    }
+
+    // TODO: twitter post btc address !== current wallet address.
+    // if (result.data[0].owner_bitcoin_address !== address?.toStr()) {
+    //   throw (new Error('The twitter post btc address does not match the wallet address'))
+    // }
+
+    return ''
+  }
+  const fetchTwitterPost = async (pureTweetId: string) => {
+    const res = await axios.post(
+      `${faucetUrl}/fetch-tweet`,
+      {
+        tweet_id: pureTweetId,
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      },
+    )
+
+    if (res.data.ok) {
+      await checkTwitterObj(res.data.ok)
+    }
+  }
 
   const disconnectTwitter = async () => {
     if (!session) {
@@ -157,26 +205,10 @@ export function SettingsView() {
       return
     }
     setVerifying(true)
-    const pureTweetId = match[1]
 
     try {
       const pureTweetId = match[1]
-      const res = await axios.post(
-        `${faucetUrl}/fetch-tweet`,
-        {
-          tweet_id: pureTweetId,
-        },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        },
-      )
-
-      if (!res.data.ok) {
-        toast.error('fetch twitter failed')
-        return 
-      }
+      await fetchTwitterPost(pureTweetId)
 
       // step 2, check inviter
       const inviterAddr = window.localStorage.getItem(INVITER_ADDRESS_KEY)
@@ -196,12 +228,14 @@ export function SettingsView() {
         } else {
           await bindTwitter(pureTweetId)
         }
+      } else {
+        await bindTwitter(pureTweetId)
+      }
 
-        await sleep(3000)
-        const checkRes = await fetchTwitterId()
-        if (checkRes) {
-          toast.success('Binding success')
-        }
+      await sleep(3000)
+      const checkRes = await loopFetchTwitterId()
+      if (checkRes) {
+        toast.success('Binding success')
       }
     } catch(error) {
       if ('response' in error) {
@@ -218,7 +252,7 @@ export function SettingsView() {
     }
   }
 
-  const networkText = network === 'mainnet' ? 'Pre-mainnet' : 'Testnet'
+  const networkText = network === 'mainnet' ? 'PreMainnet' : 'Testnet'
   const XText = `BTC:${address?.toStr()} 
 
 Rooch ${networkText} is live! Bind your Twitter to earn  RGas, and visit https://${network === 'mainnet' ? '':'test-'}grow.rooch.network to earn rewards with your BTC. 
@@ -256,7 +290,7 @@ https://${network === 'mainnet' ? '':'test-'}portal.rooch.network/inviter/${addr
           subheader="Bind a Twitter account to a Bitcoin address via publishing a tweet"
         />
         <CardContent className="!pt-2">
-          {twitterId ? (
+          {fetchTwitterIdStatus ? <></>: twitterId ? (
             <Stack className="mt-2" spacing={1.5} alignItems="flex-start">
             <Chip
               className="justify-start w-fit"
