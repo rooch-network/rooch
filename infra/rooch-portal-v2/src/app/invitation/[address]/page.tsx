@@ -1,6 +1,6 @@
-import { InvitationsView } from 'src/sections/invitations/index';
+import { InvitationsView } from 'src/sections/invitations/view';
 
-export const metadata = { title: `Invitation` };
+export const metadata = { title: `Search Invitation` };
 
 export default function Page({ params }: { params: { address: string } }) {
   return <InvitationsView />;

@@ -1,12 +1,14 @@
 'use client';
 
+import type { Bytes} from '@roochnetwork/rooch-sdk';
+
 import { useState, useEffect } from 'react';
-import { Args, stringToBytes, toHEX, Bytes } from '@roochnetwork/rooch-sdk';
+import { Args, toHEX, stringToBytes } from '@roochnetwork/rooch-sdk';
 import {
-  useCurrentAddress,
   useRoochClient,
-  useRoochClientQuery,
   useCurrentWallet,
+  useCurrentAddress,
+  useRoochClientQuery,
 } from '@roochnetwork/rooch-sdk-kit';
 
 import { LoadingButton } from '@mui/lab';
@@ -17,12 +19,12 @@ import { useRouter } from 'src/routes/hooks';
 import { useNetworkVariable } from 'src/hooks/use-networks';
 
 import { formatCoin } from 'src/utils/format-number';
+import { INVITER_ADDRESS_KEY } from 'src/utils/inviter';
 
 import { DashboardContent } from 'src/layouts/dashboard';
 
 import { toast } from 'src/components/snackbar';
 
-import { INVITER_ADDRESS_KEY } from 'src/utils/inviter';
 import { paths } from '../../routes/paths';
 
 const FAUCET_NOT_OPEN = 'Faucet Not Open';
@@ -167,7 +169,6 @@ export function InviterFaucetView({ inviterAddress }: { inviterAddress: string }
 
         if (!response.ok) {
           const data = await response.json();
-          console.log(data);
           if (response.status === 500 && data.error.includes('UTXO value is zero')) {
             const msg = 'Claim failed, Not found UTXO';
             setErrorMsg(msg);
