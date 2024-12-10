@@ -27,7 +27,6 @@ import { useNetworkVariable } from '../../hooks/use-networks'
 import SessionKeysTableCard from './components/session-keys-table-card'
 import SessionKeyGuardButtonV1 from '../../components/auth/session-key-guard-button-v1'
 import { INVITER_ADDRESS_KEY } from "../../utils/inviter";
-import TableSkeleton from 'src/components/skeleton/table-skeleton'
 
 export function SettingsView() {
   const address = useCurrentAddress()
@@ -83,14 +82,14 @@ export function SettingsView() {
     fetchTwitterId().finally(() => setFetchTwitterIdStatus(false))
   }, [fetchTwitterId])
 
-  const loopFetchTwitterId = async (count = 1) => {
+  const loopFetchTwitterId = async (count = 0) => {
     const id = await fetchTwitterId()
 
     if (id || count === 3) {
       return id
     }
 
-    loopFetchTwitterId(count ++)
+    return loopFetchTwitterId(count +1)
   }
 
   const disconnectTwitter = async () => {

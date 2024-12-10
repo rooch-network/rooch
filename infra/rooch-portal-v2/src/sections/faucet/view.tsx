@@ -5,7 +5,7 @@ import { Args, isValidBitcoinAddress } from '@roochnetwork/rooch-sdk';
 import { useCurrentNetwork, useRoochClient, useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit';
 
 import { LoadingButton } from '@mui/lab';
-import { Box, Card, Chip, Stack, CardHeader, CardContent, Button } from '@mui/material';
+import { Box, Card, Chip, Stack, CardHeader, CardContent } from '@mui/material';
 
 import { useRouter } from 'src/routes/hooks';
 import useAddressChanged from 'src/routes/hooks/useAddressChanged';
@@ -19,9 +19,9 @@ import { DashboardContent } from 'src/layouts/dashboard';
 
 import { toast } from 'src/components/snackbar';
 
+import { CopyToClipboard } from 'react-copy-to-clipboard'
 import { paths } from '../../routes/paths'
-import { INVITER_ADDRESS_KEY } from "../../utils/inviter";
-import CopyToClipboard from 'react-copy-to-clipboard';
+import { INVITER_ADDRESS_KEY } from "../../utils/inviter"
 
 const FAUCET_NOT_OPEN= 'Faucet Not Open'
 const INVALID_UTXO = 'Invalid UTXO'
@@ -178,7 +178,7 @@ export function FaucetView({ address }: { address: string }) {
         <CopyToClipboard onCopy={() => {
           toast.success('Copy to you clipboard')
         }} text={`https://${network === 'mainnet' ? '':'test-'}portal.rooch.network/inviter/${viewAddress}`}>
-              <Chip className="justify-start w-fit" label={`Share`} />
+              <Chip className="justify-start w-fit" label="Share" />
             </CopyToClipboard>
       </Box>
     </Stack>
