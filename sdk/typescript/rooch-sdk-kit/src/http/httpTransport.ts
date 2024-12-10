@@ -5,21 +5,17 @@ import {
   RoochHTTPTransport,
   RoochTransportRequestOptions,
   RoochHTTPTransportOptions,
-  ErrorValidateInvalidAccountAuthKey,
-  ErrorValidateSessionIsExpired,
 } from '@roochnetwork/rooch-sdk'
 
-type SessionExpiredCallbackType = () => void
-
 export class HTTPTransport extends RoochHTTPTransport {
-  private readonly sessionExpiredCallback: SessionExpiredCallbackType
+  private readonly requestErrorCallback: (code: number, msg: string) => void
 
   constructor(
     options: RoochHTTPTransportOptions,
-    sessionExpiredCallback: SessionExpiredCallbackType,
+    requestErrorCallback: (code: number, msg: string) => void,
   ) {
     super(options)
-    this.sessionExpiredCallback = sessionExpiredCallback
+    this.requestErrorCallback = requestErrorCallback
   }
 
   async request<T>(input: RoochTransportRequestOptions): Promise<T> {
@@ -28,11 +24,8 @@ export class HTTPTransport extends RoochHTTPTransport {
       result = await super.request(input)
       return result
     } catch (e: any) {
-      if (
-        'code' in e &&
-        (e.code === ErrorValidateInvalidAccountAuthKey || e.code === ErrorValidateSessionIsExpired)
-      ) {
-        this.sessionExpiredCallback()
+      if ('code' in e) {
+        this.requestErrorCallback(e.code, e.message)
       }
       throw e
     }
