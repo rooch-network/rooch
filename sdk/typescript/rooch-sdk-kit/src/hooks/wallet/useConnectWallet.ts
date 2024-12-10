@@ -9,7 +9,7 @@ import { useWalletStore } from './useWalletStore.js'
 import { walletMutationKeys } from '../../constants/index.js'
 import { Wallet } from '../../wellet/index.js'
 import { useSessionStore } from '../useSessionsStore.js'
-import { useSession } from '../useSessions.js'
+import { useSessions } from '../useSessions.js'
 
 type ConnectWalletArgs = {
   wallet: Wallet
@@ -34,7 +34,7 @@ export function useConnectWallet({
   ConnectWalletArgs,
   unknown
 > {
-  const sessions = useSession()
+  const sessions = useSessions()
   const setCurrentSession = useSessionStore((state) => state.setCurrentSession)
   const setWalletConnected = useWalletStore((state) => state.setWalletConnected)
   const setWalletDisconnected = useWalletStore((state) => state.setWalletDisconnected)

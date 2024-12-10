@@ -10,10 +10,18 @@ import { Bytes } from '../types/bytes.js'
 
 import { BitcoinAddress } from './bitcoin.js'
 import { ROOCH_ADDRESS_LENGTH, ROOCH_BECH32_PREFIX } from './address.js'
+import { RoochAddress } from './rooch.js'
 
 export function decodeToRoochAddressStr(input: address): string {
   if (typeof input === 'string') {
+    // Improper use of DApps will result in invalid requests
+    if (input === '') {
+      throw Error('Invalid Address')
+    }
     if (isValidRoochAddress(input)) {
+      if (input.startsWith('rooch')) {
+        return new RoochAddress(input).toHexAddress()
+      }
       return input
     }
 
