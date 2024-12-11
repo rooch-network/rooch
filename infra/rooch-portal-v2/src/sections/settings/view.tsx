@@ -27,6 +27,7 @@ import { useNetworkVariable } from '../../hooks/use-networks'
 import SessionKeysTableCard from './components/session-keys-table-card'
 import SessionKeyGuardButtonV1 from '../../components/auth/session-key-guard-button-v1'
 import { INVITER_ADDRESS_KEY } from "../../utils/inviter";
+import { ShareTwitter } from "../../components/twitter/share";
 
 export function SettingsView() {
   const address = useCurrentAddress()
@@ -34,7 +35,6 @@ export function SettingsView() {
   const session = useCurrentSession()
   const client = useRoochClient()
   const wallet = useCurrentWallet()
-  const network = useCurrentNetwork()
   const faucetUrl = useNetworkVariable('faucetUrl')
   const twitterOracleAddress = useNetworkVariable('twitterOracleAddress')
   const [inviterCA, inviterModule, inviterConf] = useNetworkVariable('inviterCA');
@@ -252,16 +252,6 @@ export function SettingsView() {
     }
   }
 
-  const networkText = network === 'mainnet' ? 'PreMainnet' : 'Testnet'
-  const XText = `BTC:${address?.toStr()} 
-
-Rooch ${networkText} is live! Bind your Twitter to earn  RGas, and visit https://${network === 'mainnet' ? '':'test-'}grow.rooch.network to earn rewards with your BTC. 
-
-Join Rooch:
-https://${network === 'mainnet' ? '':'test-'}portal.rooch.network/inviter/${address?.genRoochAddress().toBech32Address()}
-
-#RoochNetwork #${networkText}`
-
   return (
     <DashboardContent maxWidth="xl">
       <Card className="mt-4">
@@ -284,7 +274,7 @@ https://${network === 'mainnet' ? '':'test-'}portal.rooch.network/inviter/${addr
         <CardHeader
           title={
             <Stack direction="row" spacing={1.5} alignItems="center">
-              Twitter Binding <Iconify icon="logos:twitter" />
+              Twitter Binding & Invite partners <Iconify icon="logos:twitter" />
             </Stack>
           }
           subheader="Bind a Twitter account to a Bitcoin address via publishing a tweet"
@@ -313,20 +303,7 @@ https://${network === 'mainnet' ? '':'test-'}portal.rooch.network/inviter/${addr
                   <span className="font-normal text-sm text-gray-400">(Click it to twitter)</span>
                 </Stack>
                 {address && (
-                  <CopyToClipboard
-                    text={XText}
-                    onCopy={() => {
-                      window.open(
-                        `https://twitter.com/intent/tweet?text=${encodeURIComponent(XText)}`,
-                        '_blank',
-                      )
-                    }}
-                  >
-                    <Stack
-                      className="font-medium cursor-pointer text-wrap bg-gray-200 p-3 rounded-md whitespace-pre-line">
-                      {XText}
-                    </Stack>
-                  </CopyToClipboard>
+                  <ShareTwitter/>
                 )}
               </Stack>
               <Stack spacing={1.5}>
