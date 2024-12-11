@@ -503,6 +503,22 @@ module grow_bitcoin::grow_bitcoin {
         account_coin_store::deposit(signer::address_of(signer), coin);
     }
 
+    /// Harvest yield farming token from bbn stake
+    public entry fun batch_harvest_bbn(signer:&signer, assets: vector<ObjectID>) {
+        let len = vector::length(&assets);
+        let i = 0;
+        let total_coin = coin::zero<GROW>();
+        while (i < len) {
+            let asset_id = *vector::borrow(&assets, i);
+            let bbn_obj = object::borrow_mut_object<BBNStakeSeal>(signer, asset_id);
+            let coin = do_harvest(signer, object::id(bbn_obj));
+            bbn::remove_temp_state<StakeInfo>(bbn_obj);
+            coin::merge(&mut total_coin, coin);
+            i = i + 1;
+        };
+        account_coin_store::deposit(signer::address_of(signer), total_coin);
+    }
+
     public entry fun harvest_bbn(signer:&signer, asset: &mut Object<BBNStakeSeal>) {
         // TODO check bbn stake seal is expired
         let coin = do_harvest(signer, object::id(asset));
