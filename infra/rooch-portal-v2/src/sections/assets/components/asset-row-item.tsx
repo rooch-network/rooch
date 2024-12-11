@@ -45,7 +45,7 @@ export default function AssetRowItem({ row, isWalletOwner, onOpenTransferModal }
 
       <TableCell>
         <ListItemText
-          primary={formatCoin(Number(row.balance), row.decimals, row.decimals)}
+          primary={Intl.NumberFormat('en-us').format(Number(formatCoin(Number(row.balance), row.decimals, row.decimals)))}
           primaryTypographyProps={{
             typography: 'body2',
             sx: {
