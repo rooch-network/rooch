@@ -26,7 +26,7 @@ type UsesignAndExecuteTransactionOptions = Omit<
   'mutationFn'
 >
 
-export function UseSignAndExecuteTransaction({
+export function useSignAndExecuteTransaction({
   mutationKey,
   ...mutationOptions
 }: UsesignAndExecuteTransactionOptions = {}): UseMutationResult<

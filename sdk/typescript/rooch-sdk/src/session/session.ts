@@ -142,6 +142,10 @@ export class Session extends Signer {
     return this.keypair.getRoochAddress().toHexAddress()
   }
 
+  public getScopes() {
+    return this.scopes
+  }
+
   protected async build(client: RoochClient, signer: Signer) {
     const [addrs, mods, fns] = this.scopes
       .map((scope) => {

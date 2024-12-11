@@ -2,16 +2,22 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { useCallback, useMemo } from 'react'
-import { isRoochClient, RoochClient } from '@roochnetwork/rooch-sdk'
+import {
+  ErrorValidateInvalidAccountAuthKey,
+  ErrorValidateSessionIsExpired,
+  isRoochClient,
+  RoochClient,
+} from '@roochnetwork/rooch-sdk'
 import { useSessionStore } from '../hooks/useSessionsStore.js'
 import { NetworkConfig } from '../hooks/index.js'
 import { NetworkConfigs } from './clientProvider.js'
 import { HTTPTransport } from '../http/httpTransport.js'
+import { useSetError } from './errorProvider.js'
 
 const DEFAULT_CREATE_CLIENT = (
   _name: string,
   config: NetworkConfig | RoochClient,
-  setCurrentSession: any,
+  requestErrorCallback: (code: number, msg: string) => void,
 ) => {
   if (isRoochClient(config)) {
     return config
@@ -21,7 +27,7 @@ const DEFAULT_CREATE_CLIENT = (
     {
       url: config.url!.toString(),
     },
-    setCurrentSession,
+    requestErrorCallback,
   )
 
   return new RoochClient(config)
@@ -37,19 +43,27 @@ export function useDefaultClient(params: UseRoochClientParams) {
 
   const currentSession = useSessionStore((state) => state.currentSession)
   const removeSession = useSessionStore((state) => state.removeSession)
-  const clearSession = useCallback(() => {
-    try {
-      if (currentSession) {
-        removeSession(currentSession)
+  const setError = useSetError()
+  const _requestErrorCallback = useCallback(
+    (code: number, msg: string) => {
+      try {
+        if (code === ErrorValidateInvalidAccountAuthKey || code === ErrorValidateSessionIsExpired) {
+          if (currentSession) {
+            removeSession(currentSession)
+          }
+        }
+      } catch (e) {
+        console.error(e)
       }
-    } catch (e) {
-      console.error(e)
-    }
-  }, [removeSession, currentSession])
+      setError({
+        code: code,
+        msg: msg,
+      })
+    },
+    [removeSession, currentSession, setError],
+  )
 
-  const client = useMemo(() => {
-    return DEFAULT_CREATE_CLIENT(currentNetwork, networks[currentNetwork], clearSession)
-  }, [currentNetwork, networks, clearSession])
-
-  return client
+  return useMemo(() => {
+    return DEFAULT_CREATE_CLIENT(currentNetwork, networks[currentNetwork], _requestErrorCallback)
+  }, [currentNetwork, networks, _requestErrorCallback])
 }

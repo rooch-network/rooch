@@ -11,7 +11,7 @@ import {useState} from "react";
 import { Transaction } from '@roochnetwork/rooch-sdk'
 
 // Your publish counter contract address
-const devCounterAddress = "0xf9b10e6c760f1cadce95c664b3a3ead3c985bbe9d63bd51a9bf1760785d26a1b"
+const devCounterAddress = ""
 const devCounterModule = `${devCounterAddress}::counter`
 
 function App() {
