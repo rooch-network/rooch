@@ -201,7 +201,7 @@ export function SettingsView() {
     const match = tweetStatus.match(/status\/(\d+)/)
 
     if (!match) {
-      toast.error('twitter invald')
+      toast.error('twitter invalid')
       return
     }
     setVerifying(true)
