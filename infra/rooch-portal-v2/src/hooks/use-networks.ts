@@ -20,7 +20,7 @@ const { networkConfig, useNetworkVariable, useNetworkVariables } = createNetwork
     variables: {
       roochOperatingAddress: ROOCH_NFT_OPERATING_ADDRESS,
       mintAddress: ROOCH_MINT_OPERATING_ADDRESS,
-      btcGasAddress: '0x701c21bf1c8cd5af8c42983890d8ca55e7a820171b8e744c13f2d9998bf76cc3',
+      btcGasAddress: 'bc1prcajaj9n7e29u4dfp33x3hcf52yqeegspdpcd79pqu4fpr6llx4sugkfjt',
       gasMarketAddress: '0x701c21bf1c8cd5af8c42983890d8ca55e7a820171b8e744c13f2d9998bf76cc3',
       faucetUrl: FAUCET_MAINNET,
       faucetAddress: '0x701c21bf1c8cd5af8c42983890d8ca55e7a820171b8e744c13f2d9998bf76cc3',
@@ -35,8 +35,8 @@ const { networkConfig, useNetworkVariable, useNetworkVariables } = createNetwork
     variables: {
       roochOperatingAddress: ROOCH_NFT_OPERATING_ADDRESS,
       mintAddress: ROOCH_MINT_OPERATING_ADDRESS,
-      btcGasAddress: '0x701c21bf1c8cd5af8c42983890d8ca55e7a820171b8e744c13f2d9998bf76cc3',
-      gasMarketAddress: '0x701c21bf1c8cd5af8c42983890d8ca55e7a820171b8e 744c13f2d9998bf76cc3',
+      btcGasAddress: 'tb1prcajaj9n7e29u4dfp33x3hcf52yqeegspdpcd79pqu4fpr6llx4stqqxgy',
+      gasMarketAddress: '0x701c21bf1c8cd5af8c42983890d8ca55e7a820171b8e744c13f2d9998bf76cc3',
       faucetUrl: FAUCET_TESTNET,
       faucetAddress: '0x701c21bf1c8cd5af8c42983890d8ca55e7a820171b8e744c13f2d9998bf76cc3',
       faucetObject: '0xd5723eda84f691ae2623da79312c7909b1737c5b3866ecc5dbd6aa21718ff15d',
@@ -50,7 +50,7 @@ const { networkConfig, useNetworkVariable, useNetworkVariables } = createNetwork
     variables: {
       roochOperatingAddress: ROOCH_NFT_OPERATING_ADDRESS,
       mintAddress: ROOCH_MINT_OPERATING_ADDRESS,
-      btcGasAddress: '0x701c21bf1c8cd5af8c42983890d8ca55e7a820171b8e744c13f2d9998bf76cc3',
+      btcGasAddress: 'tb1prcajaj9n7e29u4dfp33x3hcf52yqeegspdpcd79pqu4fpr6llx4stqqxgy',
       gasMarketAddress: '0x701c21bf1c8cd5af8c42983890d8ca55e7a820171b8e744c13f2d9998bf76cc3',
       faucetUrl: FAUCET_TESTNET,
       faucetAddress: '0x701c21bf1c8cd5af8c42983890d8ca55e7a820171b8e744c13f2d9998bf76cc3',

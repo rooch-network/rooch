@@ -2,10 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Args } from '@roochnetwork/rooch-sdk';
-import {
-  useCurrentAddress,
-  useRoochClientQuery,
-} from '@roochnetwork/rooch-sdk-kit';
+import { useCurrentAddress, useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit';
 
 import Typography from '@mui/material/Typography';
 import { Tab, Box, Tabs, Card, Stack, CardHeader, CardContent } from '@mui/material';
@@ -19,8 +16,8 @@ import { InvitationList } from './components/invitation-list';
 import { InvitationLotteryList } from './components/lottery-list';
 
 const TABS = [
-  { label: 'Lottery Tickets', value: 'lottery_tickets' },
   { label: 'Invitation List', value: 'invitation_records' },
+  { label: 'Lottery Tickets', value: 'lottery_tickets' },
 ];
 
 type inviterDataType = {
@@ -35,7 +32,7 @@ type inviterDataType = {
 export function InvitationsView() {
   const [inviterCA, inviterModule, inviterObj] = useNetworkVariable('inviterCA');
   const currentAddress = useCurrentAddress();
-  const tabs = useTabs('lottery_tickets');
+  const tabs = useTabs('invitation_records');
   const [inviterData, setInviterData] = useState<inviterDataType>();
 
   const { data, refetch } = useRoochClientQuery('executeViewFunction', {
@@ -91,30 +88,30 @@ export function InvitationsView() {
         <Card sx={{ flex: 1 }}>
           <CardHeader title="🔗 Invites Sent" sx={{ mb: 1 }} />
           <CardContent className="!pt-0">
-            {inviterData && (
-              <AnimateCountUp to={inviterData.invitationCount} sx={{ fontSize: '100px' }} />
-            )}
+            <AnimateCountUp to={inviterData?.invitationCount || 0} sx={{ fontSize: '100px' }} />
           </CardContent>
         </Card>
         <Card sx={{ flex: 1 }}>
           <CardHeader title="💰 Your Earnings" sx={{ mb: 1 }} />
           <CardContent className="!pt-0">
-            {inviterData && (
-              <AnimateCountUp
-                to={Number(
-                  fromDustToPrecision(inviterData.invitationReward + inviterData.lotteryReward, 8)
-                )}
-                sx={{ fontSize: '100px' }}
-              />
-            )}
+            <AnimateCountUp
+              to={Number(
+                fromDustToPrecision(
+                  inviterData ? inviterData.invitationReward + inviterData.lotteryReward : 0,
+                  8
+                )
+              )}
+              sx={{ fontSize: '100px' }}
+            />
           </CardContent>
         </Card>
         <Card sx={{ flex: 1 }}>
           <CardHeader title="🎟️ Remaining Lottery Tickets" sx={{ mb: 1 }} />
           <CardContent className="!pt-0">
-            {inviterData && (
-              <AnimateCountUp to={inviterData.remainingLotteryTicket} sx={{ fontSize: '100px' }} />
-            )}
+            <AnimateCountUp
+              to={inviterData?.remainingLotteryTicket || 0}
+              sx={{ fontSize: '100px' }}
+            />
           </CardContent>
         </Card>
       </Box>
