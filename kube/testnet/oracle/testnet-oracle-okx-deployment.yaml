@@ -15,7 +15,7 @@ spec:
     spec:
       initContainers:
       - name: init-rooch
-        image: ghcr.io/rooch-network/rooch:v0.8.0
+        image: ghcr.io/rooch-network/rooch:v0.8.4
         command: ["/bin/sh", "-c"]
         args:
         - |
@@ -39,7 +39,7 @@ spec:
           mountPath: /root
       containers:
       - name: rooch-oracle
-        image: ghcr.io/rooch-network/rooch:v0.8.0
+        image: ghcr.io/rooch-network/rooch:v0.8.4
         command: ["/rooch/rooch"]
         args: 
         - "oracle"
@@ -48,9 +48,9 @@ spec:
         #the second account
         - "rooch1nt0yvc6dzhcqpl98htp0ygfpr8vz83zns3hs6hzwgsqndt9q7ewqlrhhz8"
         - "--oracle-id"
-        - "0x107ea9cde1caae6bcb97f2939fff45eff81838bfa1fbdca810f37e51f0d26930"
+        - "0xe493635f50e2a2a20a22794047815b3d3957fa52429a8f4ce22eb2d307b33020"
         - "--oracle-admin-id"
-        - "0x39d4d3a82f8bda01c2c3b00ab03892dd5ba44eb062d828bae5322b07daf326d1"
+        - "0x60a8c5000cdc795b5dd9530bee7ded0f1dd85a684898478d948f358a11191aac"
         - "--data-source"
         - "okx"
         - "--ticker"

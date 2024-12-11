@@ -4,7 +4,7 @@
 mod avail;
 mod backend;
 mod celestia;
-mod fs;
+mod opendal;
 mod operator;
 
 pub use self::backend::OpenDABackend;

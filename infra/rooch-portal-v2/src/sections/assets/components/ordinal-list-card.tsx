@@ -6,6 +6,8 @@ import { useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit';
 import { Box, Card, Skeleton, CardHeader, Typography, CardContent } from '@mui/material';
 
 import { EmptyContent } from 'src/components/empty-content/empty-content';
+import { shortAddress } from "../../../utils/address";
+import { fNumber } from "../../../utils/format-number";
 
 export default function BBLlList({ address }: { address: string }) {
   const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 10 });
@@ -34,6 +36,10 @@ export default function BBLlList({ address }: { address: string }) {
         owner: address,
         object_type: "0x4::bbn::BBNStakeSeal",
       },
+    },
+    queryOption: {
+      decode: true,
+      showDisplay: true
     },
     cursor: queryOptions.cursor as IndexerStateIDView | null,
     limit: queryOptions.pageSize
@@ -65,7 +71,9 @@ export default function BBLlList({ address }: { address: string }) {
         ) : (
           bbns?.data.map((i) => (
               <Card key={i.id} elevation={0} className="!bg-gray-100 !shadow-none">
-                <CardHeader title={i.id} subheader="Inscriptions #" />
+                <CardHeader title={<span>
+                    Stake ID <span className="text-sm">{shortAddress(i.id, 6, 4)}</span>
+                  </span>} />
                 <CardContent>
                   <Typography
                     noWrap
@@ -75,7 +83,7 @@ export default function BBLlList({ address }: { address: string }) {
                       overflowWrap: 'break-word',
                     }}
                   >
-                    {i.decoded_value?.value.staking_value as string}
+                    {i.decoded_value?.value.staking_value as string} Sats
                   </Typography>
                 </CardContent>
               </Card>
