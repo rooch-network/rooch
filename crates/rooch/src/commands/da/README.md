@@ -7,5 +7,5 @@ Toolkits for RoochDA.
 1. Unpack tx list to human-readable format:
 
 ```shell
-rooch da unpack --segment-dir {segment-dir} -batch-dir {batch-dir}
+rooch da unpack --segment-dir {segment-dir} --batch-dir {batch-dir}
 ```

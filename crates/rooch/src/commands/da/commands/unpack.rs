@@ -7,7 +7,7 @@ use rooch_types::da::segment::{segment_from_bytes, SegmentID};
 use rooch_types::error::RoochResult;
 use std::collections::{HashMap, HashSet};
 use std::fs;
-use std::io::{BufWriter, Write};
+use std::io::{BufRead, BufWriter, Write};
 use std::path::PathBuf;
 
 /// Unpack batches to human-readable LedgerTransaction List from segments directory.
@@ -17,6 +17,11 @@ pub struct UnpackCommand {
     pub segment_dir: PathBuf,
     #[clap(long = "batch-dir")]
     pub batch_dir: PathBuf,
+    #[clap(
+        long = "verify-order",
+        help = "Verify the order of transactions for all batches"
+    )]
+    pub verify_order: bool,
 }
 
 impl UnpackCommand {
@@ -28,6 +33,10 @@ impl UnpackCommand {
             batch_dir: self.batch_dir,
         };
         unpacker.unpack()?;
+        if self.verify_order {
+            unpacker.verify_order()?;
+        }
+
         Ok(())
     }
 }
@@ -40,6 +49,45 @@ struct UnpackInner {
 }
 
 impl UnpackInner {
+    fn verify_order(&self) -> anyhow::Result<()> {
+        let mut max_block_number = 0;
+        let mut last_tx_order = 0;
+        // start from block_number 0,
+        // read from batch_dir/<block_number> and verify the order of transactions, until no file found.
+        loop {
+            let batch_file_path = self.batch_dir.join(max_block_number.to_string());
+            if !batch_file_path.exists() {
+                break;
+            }
+
+            let file = fs::File::open(batch_file_path)?;
+            let reader = std::io::BufReader::new(file);
+            for line in reader.lines() {
+                let line = line?;
+                let tx: rooch_types::transaction::LedgerTransaction = serde_json::from_str(&line)?;
+                let tx_order = tx.sequence_info.tx_order;
+                if tx_order != last_tx_order + 1 {
+                    return Err(anyhow::anyhow!(
+                        "Transaction order is not strictly incremental for block {}: last_tx_order: {}, tx_order: {}",
+                        max_block_number, last_tx_order, tx_order
+                    ));
+                }
+                last_tx_order = tx_order;
+            }
+
+            if max_block_number % 1000 == 0 && max_block_number > 0 {
+                println!("Verified block: {}", max_block_number);
+            }
+
+            max_block_number += 1;
+        }
+        println!(
+            "All transactions are strictly incremental for blocks: [0, {}). last_tx_order: {}",
+            max_block_number, last_tx_order
+        );
+        Ok(())
+    }
+
     // batch_dir is a directory that stores all the unpacked batches.
     // each batch is stored in a file named by the block number (each batch maps to a block).
     // we collect all the block numbers to avoid unpacking the same batch multiple times.
