@@ -15,9 +15,7 @@ type RowItemProps = {
 };
 
 /// TODO: Temporary exclusion
-const symbols = [
-  'BITXP'
-]
+const symbols = ['BITXP'];
 
 export default function AssetRowItem({ row, isWalletOwner, onOpenTransferModal }: RowItemProps) {
   return (
@@ -45,7 +43,11 @@ export default function AssetRowItem({ row, isWalletOwner, onOpenTransferModal }
 
       <TableCell>
         <ListItemText
-          primary={Intl.NumberFormat('en-us').format(Number(formatCoin(Number(row.balance), row.decimals, row.decimals)))}
+          primary={
+            symbols.includes(row.symbol)
+              ? row.balance
+              : formatCoin(Number(row.balance), row.decimals, row.decimals)
+          }
           primaryTypographyProps={{
             typography: 'body2',
             sx: {
