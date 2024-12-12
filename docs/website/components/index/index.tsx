@@ -302,34 +302,38 @@ const Index = ({
             }}
           ></div>
           <div className="flex flex-col items-center justify-center w-full font-[Han] z-10 relative top-[3rem]">
-            <div className="text-5xl md:text-5xl font-bold text-center text-black dark:text-[#EEEBEB]">
+            <div className="text-3xl md:text-5xl font-bold text-center text-black dark:text-[#EEEBEB]">
               Build with Move
               <br />
-              <div className="mt-4 flex items-center">
+              <div className="mt-1 md:mt-4 flex items-center">
                 Build on{' '}
                 <div className="ml-5 flex items-center">
                   Bitc
-                  <img className="w-[30px] h-[30px] ml-1 mr-1" src="./home/coin.svg" alt="" />
+                  <img
+                    className="w-[20px] h-[20px] md:w-[30px] md:h-[30px] ml-1 mr-1"
+                    src="./home/coin.svg"
+                    alt=""
+                  />
                   in
                 </div>
               </div>
             </div>
-            <div className="mt-6 text-2xl text-center text-black dark:text-[#EAEAEA] max-w-3xl font-[Kanit]">
+            <div className="mt-6 max-w-60 text-base md:text-2xl text-center text-black dark:text-[#EAEAEA] md:max-w-3xl font-[Kanit]">
               Rooch is a Bitcoin application layer solution that <br /> features MoveVM and Bitcoin
               staking
             </div>
           </div>
-          <div className="flex flex-col items-center justify-center w-full relative top-[-2.2rem]">
+          <div className="flex flex-col items-center justify-center w-full relative mt-24 md:mt-0 md:top-[-2.2rem]">
             {/* signboard list */}
-            <div className="text-center mx-auto flex items-end justify-center relative w-full">
-              <div className="flex items-end justify-center w-full relative">
+            <div className="text-center mx-auto flex items-center md:items-end justify-center relative w-full">
+              <div className="flex items-center md:items-end justify-center w-full relative">
                 <div
-                  className="relative w-[28%] left-[2%] flex-shrink-0 z-10 cursor-pointer"
+                  className="hidden md:block relative w-[28%] left-[2%] flex-shrink-0 z-10 cursor-pointer"
                   onClick={() => handleSignboardClick('board1')}
                 >
                   <Image
                     src="/home/signboard-1-0.svg"
-                    className={`relative w-[100%]`}
+                    className={`relative w-[100%] hidden md:block`}
                     alt="signboard-1"
                     width={420.06}
                     height={616}
@@ -337,7 +341,7 @@ const Index = ({
                   />
                   <Image
                     src="/home/signboard-1-1.svg"
-                    className={`absolute top-0 left-0 w-[100%] transition-opacity duration-300 ${
+                    className={`hidden md:block absolute top-0 left-0 w-[100%] transition-opacity duration-300 ${
                       signboardStates.board1 ? 'opacity-100' : 'opacity-0'
                     }`}
                     alt="signboard-1-hover"
@@ -347,12 +351,12 @@ const Index = ({
                   />
                 </div>
                 <div
-                  className="relative w-[15%] -left-[3%] flex-shrink-0 cursor-pointer"
+                  className="hidden md:block relative w-[15%] -left-[3%] flex-shrink-0 cursor-pointer"
                   onClick={() => handleSignboardClick('board2')}
                 >
                   <Image
                     src="/home/signboard-2-0.svg"
-                    className="relative w-[100%]"
+                    className="hidden md:block relative w-[100%]"
                     alt="signboard-2"
                     width={206.56}
                     height={335.5}
@@ -360,7 +364,7 @@ const Index = ({
                   />
                   <Image
                     src="/home/signboard-2-1.svg"
-                    className={`absolute top-0 left-0 w-[100%] transition-opacity duration-300 ${
+                    className={`hidden md:block absolute top-0 left-0 w-[100%] transition-opacity duration-300 ${
                       signboardStates.board2 ? 'opacity-100' : 'opacity-0'
                     }`}
                     alt="signboard-2-hover"
@@ -370,7 +374,7 @@ const Index = ({
                   />
                 </div>
                 <div
-                  className="relative w-[26%] flex-shrink-0 cursor-pointer"
+                  className="relative w-[80%] md:w-[26%] flex-shrink-0 cursor-pointer"
                   onClick={() => handleSignboardClick('boardM')}
                 >
                   <Image
@@ -393,12 +397,12 @@ const Index = ({
                   />
                 </div>
                 <div
-                  className="relative w-[20%] left-[1%] flex-shrink-0 z-10 cursor-pointer"
+                  className="hidden md:block relative w-[20%] left-[1%] flex-shrink-0 z-10 cursor-pointer"
                   onClick={() => handleSignboardClick('board3')}
                 >
                   <Image
                     src="/home/signboard-3-0.svg"
-                    className="relative w-[100%]"
+                    className="hidden md:block relative w-[100%]"
                     alt="signboard-3"
                     width={336.2}
                     height={376.5}
@@ -416,7 +420,7 @@ const Index = ({
                   />
                 </div>
                 <div
-                  className="relative w-[21%] flex-shrink-0 cursor-pointer -left-[5rem]"
+                  className="hidden md:block relative w-[21%] flex-shrink-0 cursor-pointer -left-[5rem]"
                   onClick={() => handleSignboardClick('board4')}
                 >
                   <Image
@@ -452,13 +456,12 @@ const Index = ({
                 }
               `}</style>
               <div
-                className="relative z-10"
+                className="relative z-10 h-16"
                 style={{
                   top: '-12px',
                   background: 'url(./home/cation.svg)',
                   animation: 'scrollRight 20s linear infinite',
                   width: '100vw',
-                  height: '64px',
                   backgroundRepeat: 'repeat-x',
                 }}
               ></div>
@@ -467,12 +470,12 @@ const Index = ({
         </div>
 
         {/* FEATURES */}
-        <div className="py-16 md:py-10 md:pt-0 px-4 sm:px-6 md:px-8 lg:px-20 dark:bg-inherit flex flex-col md:flex-col items-center justify-between gap-12 md:gap-8 dark:border-b dark:border-b-zinc-800">
+        <div className="py-8 md:py-10 md:pt-0 px-4 sm:px-6 md:px-8 lg:px-20 dark:bg-inherit flex flex-col md:flex-col items-center justify-between gap-12 md:gap-8 dark:border-b dark:border-b-zinc-800">
           <div className="flex flex-col items-center justify-center w-full font-['Han']">
-            <div className="mt-14 text-5xl md:text-5xl font-bold text-center text-black dark:text-[#EEEBEB]">
+            <div className="mt-14 text-3xl md:text-5xl font-bold text-center text-black dark:text-[#EEEBEB]">
               MoveVM
             </div>
-            <div className="mt-6 text-2xl text-center text-black dark:text-[#EAEAEA] max-w-3xl font-[Kanit]">
+            <div className="mt-6 max-w-80 text-2xl text-center text-black dark:text-[#EAEAEA] md:max-w-3xl font-[Kanit]">
               The best choice of VM for Bitcoin DApps
             </div>
           </div>
@@ -522,12 +525,12 @@ const Index = ({
         </div>
 
         {/* FEATURES */}
-        <div className="py-12 px-8 lg:px-20 dark:bg-inherit flex flex-col items-center justify-between gap-12 md:gap-8 dark:border-b dark:border-b-zinc-800">
+        <div className="py-6 md:py-12 px-0 md:px-8 lg:px-20 dark:bg-inherit flex flex-col items-center justify-between gap-12 md:gap-8 dark:border-b dark:border-b-zinc-800">
           <div className="flex flex-col items-center justify-center w-full font-['Han']">
-            <div className="mt-14 text-5xl md:text-5xl font-bold text-center text-black dark:text-[#EEEBEB]">
+            <div className="mt-2 md:mt-14 text-4xl md:text-5xl font-bold text-center text-black dark:text-[#EEEBEB]">
               BTC Staking
             </div>
-            <div className="mt-6 text-2xl text-center text-black dark:text-[#EAEAEA] max-w-3xl font-[Kanit]">
+            <div className="mt-6 text-base max-w-80 md:text-2xl text-center text-black dark:text-[#EAEAEA] md:max-w-3xl font-[Kanit]">
               Generate yield for users in a non-custodial manner,
               <br />
               compatible with Babylon protocol
@@ -577,7 +580,7 @@ const Index = ({
               />
             </div>
           </div>
-          <div className="relative -mt-[3vw]">
+          <div className="relative -mt-[13vw] md:-mt-[3vw]">
             <style jsx>{`
               @keyframes scrollRight {
                 from {
@@ -601,8 +604,8 @@ const Index = ({
           </div>
         </div>
 
-        {/* EXPLORE */}
-        <div className="py-10 px-4 sm:px-6 md:px-8 lg:px-20 dark:bg-inherit flex flex-col md:flex-row items-center justify-center gap-6 md:gap-8 dark:border-b dark:border-b-zinc-800">
+        {/* PARTNER */}
+        <div className="hidden md:flex py-10 px-4 sm:px-6 md:px-8 lg:px-20 dark:bg-inherit flex-col md:flex-row items-center justify-center gap-6 md:gap-8 dark:border-b dark:border-b-zinc-800">
           <div className="w-full h-full flex items-center justify-center">
             <div className="flex flex-col gap-y-12 font-['Han'] text-center">
               <div className="text-3xl w-[318px] h-[150px] font-medium rounded-[28px] border-[#81B39F] border-[3px] flex items-center justify-center">
@@ -664,7 +667,7 @@ const Index = ({
             </div>
           </div>
         </div>
-        <div className="relative">
+        <div className="hidden md:block relative">
           <style jsx>{`
             @keyframes scrollRight {
               from {
@@ -687,8 +690,93 @@ const Index = ({
           ></div>
         </div>
 
+        {/* PARTNER MOBILE */}
+        <div className="flex md:hidden py-10 px-4 sm:px-6 md:px-8 lg:px-20 dark:bg-inherit flex-col md:flex-row items-center justify-center gap-6 md:gap-8 dark:border-b dark:border-b-zinc-800">
+          <div className="w-full h-full flex flex-col items-center justify-center">
+            <div className="mb-6 md:mt-14 text-4xl md:text-5xl font-semibold text-center text-black dark:text-[#EEEBEB] font-['Han']">
+              Ecosystem Partnerships
+            </div>
+            <div className="flex flex-col items-center gap-y-12 font-['Han'] text-center">
+              <div className="text-sm w-[151px] h-[35px] font-medium rounded-[28px] border-[#81B39F] border-[3px] flex items-center justify-center">
+                Infra
+              </div>
+              {/* Infra */}
+              <div
+                className="flex gap-8 items-center transition-transform duration-500 ease-in-out -mt-[20%] w-full overflow-visible"
+                style={{ transform: `translateX(${translateX}px) scale(0.5)` }}
+              >
+                {getImages(currentStart, INFRA_IMAGE_COUNT).map((num, index) => (
+                  <img
+                    key={`${num}-${index}`}
+                    src={getImagePath('infra', num)}
+                    className="w-[191px] flex-shrink-0"
+                  />
+                ))}
+              </div>
+              <div className="text-sm w-[151px] h-[35px] font-medium rounded-[28px] border-[#81B39F] border-[3px] flex items-center justify-center -mt-[20%]">
+                BTC Liquidity
+              </div>
+              {/* BTC */}
+              <div className="flex items-center overflow-hidden relative -mt-[20%]">
+                <div
+                  className="flex flex-row-reverse gap-8 items-center transition-transform duration-500 ease-in-out"
+                  style={{ transform: `translateX(${-btcTranslateX}px) scale(0.5)` }}
+                >
+                  {getImages(btcStart, BTC_IMAGE_COUNT).map((num, index) => (
+                    <img
+                      key={`btc-${num}-${index}`}
+                      src={getImagePath('btc', num)}
+                      className="w-[191px] flex-shrink-0"
+                    />
+                  ))}
+                </div>
+              </div>
+              <div className="text-sm w-[151px] h-[35px] font-medium rounded-[28px] border-[#81B39F] border-[3px] flex items-center justify-center -mt-[20%]">
+                Move Ecosystem
+              </div>
+              {/* Move */}
+              <div className="flex items-center overflow-hidden -mt-[20%]">
+                <div
+                  className="flex gap-8 items-center transition-transform duration-500 ease-in-out"
+                  style={{ transform: `translateX(${moveTranslateX}px) scale(0.5)` }}
+                >
+                  {getImages(moveStart, MOVE_IMAGE_COUNT).map((num, index) => (
+                    <img
+                      key={`move-${num}-${index}`}
+                      src={getImagePath('move', num)}
+                      className="w-[191px] flex-shrink-0"
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="flex md:hidden relative">
+          <style jsx>{`
+            @keyframes scrollRight {
+              from {
+                background-position: 0 0;
+              }
+              to {
+                background-position: 100% 0;
+              }
+            }
+          `}</style>
+          <div
+            className="flex md:hidden relative z-10"
+            style={{
+              background: 'url(./home/cation.svg)',
+              animation: 'scrollRight 20s linear infinite',
+              width: '100vw',
+              height: '64px',
+              backgroundRepeat: 'repeat-x',
+            }}
+          ></div>
+        </div>
+
         {/* BLOG */}
-        <div className="py-16 md:py-20 px-4 sm:px-6 md:px-8 lg:px-20 dark:bg-inherit flex flex-col items-center justify-center gap-6 md:gap-8">
+        <div className="hidden md:flex py-16 md:py-20 px-4 sm:px-6 md:px-8 lg:px-20 dark:bg-inherit flex-col items-center justify-center gap-6 md:gap-8">
           <div className="px-4 w-full h-full">
             <div className="flex flex-col items-center justify-center w-full font-['Han']">
               <div className="mt-14 text-5xl md:text-5xl font-bold text-center text-black dark:text-[#EEEBEB]">
@@ -791,7 +879,111 @@ const Index = ({
             </div>
           </div>
         </div>
-        <div className="relative">
+        <div className="hidden md:block relative">
+          <style jsx>{`
+            @keyframes scrollRight {
+              from {
+                background-position: 0 0;
+              }
+              to {
+                background-position: 100% 0;
+              }
+            }
+          `}</style>
+          <div
+            className="relative z-10"
+            style={{
+              background: 'url(./home/cation.svg)',
+              animation: 'scrollRight 20s linear infinite',
+              width: '100vw',
+              height: '64px',
+              backgroundRepeat: 'repeat-x',
+            }}
+          ></div>
+        </div>
+
+        {/* BLOG MOBILE MOBILE */}
+        <div className="flex md:hidden py-16 md:py-20 px-4 sm:px-6 md:px-8 lg:px-20 dark:bg-inherit flex-col items-center justify-center gap-6 md:gap-8">
+          <div className="px-4 w-full h-full">
+            <div className="flex flex-col items-center justify-center w-full font-['Han']">
+              <div className="mt-2 text-4xl md:text-5xl font-semibold text-center text-black dark:text-[#EEEBEB]">
+                Blog & News
+              </div>
+            </div>
+          </div>
+          <div className="w-full flex items-center justify-center font-[Kanit]">
+            <div className="w-[100%] flex flex-col gap-y-2">
+              <div
+                className="w-full h-[100px] border-2 border-[#036840] rounded-[15px] flex p-4 cursor-pointer bg-white dark:bg-inherit"
+                onClick={() => {
+                  window.open(
+                    'https://rooch.network/blog/the-application-layer-of-bitcoin',
+                    '_blank',
+                  )
+                }}
+              >
+                <div className="w-[40%] max-w-[220px] h-full flex flex-col items-center">
+                  <img
+                    src="/home/blog/blog-1.jpg"
+                    alt="blog-1"
+                    className="w-full rounded-xl object-cover"
+                  />
+                </div>
+                <div className="w-[60%] h-full flex flex-col justify-between ml-4">
+                  <div className="text-sm font-normal font-[Kanit]">
+                    Rooch Network - The Application Layer of Bitcoin
+                  </div>
+                  <div className="ml-auto">
+                    <img src="/home/blog-enter.svg" className="h-4" alt="blog-enter" />
+                  </div>
+                </div>
+              </div>
+              <div
+                className="w-full h-[100px] border-2 border-[#036840] rounded-[15px] flex p-4 cursor-pointer bg-white dark:bg-inherit"
+                onClick={() => {
+                  window.open('https://rooch.network/blog/sprouting-of-rooch', '_blank')
+                }}
+              >
+                <div className="w-[40%] max-w-[220px] h-full flex flex-col items-center">
+                  <img
+                    src="/home/blog/blog-2.jpg"
+                    alt="blog-2"
+                    className="w-full rounded-xl object-cover"
+                  />
+                </div>
+                <div className="w-[60%] h-full flex flex-col justify-between ml-4">
+                  <div className="text-sm font-normal">The Sprouting of Rooch</div>
+                  <div className="ml-auto">
+                    <img src="/home/blog-enter.svg" className="h-4" alt="blog-enter" />
+                  </div>
+                </div>
+              </div>
+              <div
+                className="w-full h-[100px] border-2 border-[#036840] rounded-[15px] flex p-4 cursor-pointer bg-white dark:bg-inherit"
+                onClick={() => {
+                  window.open('https://rooch.network/blog/bug-bounty2', '_blank')
+                }}
+              >
+                <div className="w-[40%] max-w-[220px] h-full flex flex-col items-center">
+                  <img
+                    src="/home/blog/blog-3.jpg"
+                    alt="blog-3"
+                    className="w-full rounded-xl object-cover"
+                  />
+                </div>
+                <div className="w-[60%] h-full flex flex-col justify-between ml-4">
+                  <div className="text-sm font-normal">
+                    Rooch Network Bug Bounty Program Phase II{' '}
+                  </div>
+                  <div className="ml-auto">
+                    <img src="/home/blog-enter.svg" className="h-4" alt="blog-enter" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="flex md:hidden relative">
           <style jsx>{`
             @keyframes scrollRight {
               from {
