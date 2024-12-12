@@ -21,13 +21,14 @@ type InnerCreateSessionArgs = {
 } & CreateSessionArgs
 
 export class Session extends Signer {
-  protected readonly appName: string
-  protected readonly appUrl: string
-  protected readonly scopes: string[]
-  protected readonly keypair: Ed25519Keypair
-  protected readonly maxInactiveInterval: number
-  protected readonly bitcoinAddress: BitcoinAddress
-  protected readonly roochAddress: RoochAddress
+  public readonly appName: string
+  public readonly appUrl: string
+  public readonly scopes: string[]
+  public readonly keypair: Ed25519Keypair
+  public readonly maxInactiveInterval: number
+  public readonly bitcoinAddress: BitcoinAddress
+  public readonly roochAddress: RoochAddress
+  public readonly localCreateSessionTime: number
   protected lastActiveTime: number
 
   protected constructor(
@@ -52,8 +53,6 @@ export class Session extends Signer {
     this.localCreateSessionTime = localCreateSessionTime ?? Date.now()
     this.lastActiveTime = lastActiveTime || this.localCreateSessionTime
   }
-
-  protected readonly localCreateSessionTime: number
 
   public static async CREATE(input: InnerCreateSessionArgs): Promise<Session> {
     const parsedScopes = input.scopes.map((scope) => {
@@ -104,6 +103,15 @@ export class Session extends Signer {
       localCreateSessionTime,
       lastActiveTime,
     )
+  }
+
+  getLastActiveTime() {
+    return this.lastActiveTime
+  }
+
+  isSessionExpired() {
+    const expirationTime = (this.lastActiveTime + this.maxInactiveInterval) * 1000
+    return Date.now() > expirationTime
   }
 
   sign(input: Bytes): Promise<Bytes> {

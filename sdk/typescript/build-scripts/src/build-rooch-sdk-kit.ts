@@ -16,11 +16,11 @@ buildPackage({
         const result = await postcss([
           autoprefixer,
           prefixSelector({
-            prefix: '[data-dapp-kit]',
+            prefix: '[data-sdk-kit]',
             transform: (prefix, selector, prefixedSelector) => {
               // Our prefix is applied to all top-level elements rendered to the DOM, so we want
               // our transform to apply to the top-level element itself and all of its children
-              // Example: [data-dapp-kit].ConnectModal, [data-dapp-kit] .ConnectModal
+              // Example: [data-sdk-kit].ConnectModal, [data-sdk-kit] .ConnectModal
               return `${prefix}${selector}, ${prefixedSelector}`
             },
           }),

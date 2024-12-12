@@ -38,8 +38,13 @@ export class OkxWallet extends BitcoinWallet {
     return (window as any).okxwallet?.bitcoin
   }
 
+  // BUG: If the wallet is locked, no reply will be received
+  // TODO: Use timeout fix ?
   async connect(): Promise<ThirdPartyAddress[]> {
-    const obj = await this.getTarget().connect()
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Connection timed out')), 10000),
+    )
+    const obj = await Promise.race([this.getTarget().connect(), timeoutPromise])
     this.currentAddress = new BitcoinAddress(obj.address)
     this.publicKey = obj.compressedPublicKey !== '' ? obj.compressedPublicKey : obj.publicKey
     this.address = [this.currentAddress]

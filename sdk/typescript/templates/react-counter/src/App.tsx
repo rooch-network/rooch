@@ -1,86 +1,84 @@
-import {Box, Button, Container, Flex, Heading, Text} from "@radix-ui/themes";
+import { Box, Button, Container, Flex, Heading, Text } from "@radix-ui/themes";
 import {
   useCurrentSession,
-  useWallets,
-  useRoochClientQuery, useConnectWallet, useCreateSessionKey,
+  useRoochClientQuery,
+  useCreateSessionKey,
   useRoochClient,
-  useCurrentWallet
+  useCurrentWallet,
+  ConnectButton,
+  SessionKeyGuardButton,
 } from "@roochnetwork/rooch-sdk-kit";
 
-import {useState} from "react";
-import { Transaction } from '@roochnetwork/rooch-sdk'
+import { useState } from "react";
+import { Transaction } from "@roochnetwork/rooch-sdk";
 
 // Your publish counter contract address
-const devCounterAddress = ""
-const devCounterModule = `${devCounterAddress}::counter`
+const devCounterAddress = "";
+const devCounterModule = `${devCounterAddress}::counter`;
 
 function App() {
   const sessionKey = useCurrentSession();
-  const currentWallet = useCurrentWallet();
-  const client = useRoochClient()
-  const wallets = useWallets()
-  const [loading, setLoading] = useState(false)
-  const [sessionLoading, setSessionLoading] = useState(false)
-  const {mutateAsync: connectWallet} = useConnectWallet()
-  const {mutateAsync: createSessionKey} = useCreateSessionKey()
+  const client = useRoochClient();
+  const [loading, setLoading] = useState(false);
+  const [sessionLoading, setSessionLoading] = useState(false);
+  const { mutateAsync: createSessionKey } = useCreateSessionKey();
+  const { wallet } = useCurrentWallet();
 
-  const {isConnected, status, wallet} = currentWallet
-
-  let {data, error, isPending, refetch} = useRoochClientQuery("executeViewFunction", {
-    target: `${devCounterModule}::value`,
-  })
+  let { data, error, isPending, refetch } = useRoochClientQuery(
+    "executeViewFunction",
+    {
+      target: `${devCounterModule}::value`,
+    },
+  );
 
   const handlerCreateSessionKey = () => {
     if (sessionLoading) {
-      return
+      return;
     }
-    setSessionLoading(true)
+    setSessionLoading(true);
 
-    const defaultScopes = [
-      `${devCounterAddress}::*::*`,
-    ]
+    const defaultScopes = [`${devCounterAddress}::*::*`];
     createSessionKey(
       {
         appName: "rooch_test",
         appUrl: "https://test.com",
-        scopes: defaultScopes
+        scopes: defaultScopes,
       },
       {
         onSuccess: (result) => {
           console.log("session key", result);
         },
         onError: (why) => {
-          console.log(why)
-        }
+          console.log(why);
+        },
       },
-    ).finally(() => setSessionLoading(false))
-  }
+    ).finally(() => setSessionLoading(false));
+  };
 
   const handlerIncrease = async () => {
     if (loading) {
-      return
+      return;
     }
 
-    setLoading(true)
+    setLoading(true);
 
-    const tx = new Transaction()
+    const tx = new Transaction();
     tx.callFunction({
-      target: `${devCounterModule}::increase`
-    })
+      target: `${devCounterModule}::increase`,
+    });
 
     const result = await client.signAndExecuteTransaction({
       transaction: tx,
-      signer: sessionKey!
-    })
+      signer: sessionKey!,
+    });
 
-    if (result.execution_info.status.type !== 'executed') {
-      console.log('increase failed')
+    if (result.execution_info.status.type !== "executed") {
+      console.log("increase failed");
     }
 
-    refetch()
-    setLoading(false)
-  }
-
+    refetch();
+    setLoading(false);
+  };
 
   return (
     <>
@@ -96,27 +94,7 @@ function App() {
         <Box>
           <Heading>dApp Counter Template</Heading>
         </Box>
-        {wallets.length === 0 ? (
-          "Please install the wallet and try again"
-        ) : isConnected ? (
-          status
-        ) : (
-          <Box>
-            <Button
-              onClick={async () => {
-                try {
-                  await connectWallet({
-                    wallet: wallets[0],
-                  });
-                } catch (e) {
-                  console.log(e)
-                }
-              }}
-            >
-              Connect Wallet
-            </Button>
-          </Box>
-        )}
+        <ConnectButton />
       </Flex>
 
       <Container
@@ -149,19 +127,23 @@ function App() {
         <Heading size="3" mt="6">
           {sessionKey ? "Counter" : "Create session key"}
         </Heading>
+        <SessionKeyGuardButton onClick={() => {
 
-        <Button onClick={async () => {
-          if (wallet) {
-            const b = await wallet.getBalance()
-            console.log(b)
-          }
+        }}><Button>hello</Button></SessionKeyGuardButton>
+        <Button
+          onClick={async () => {
+            if (wallet) {
+              const b = await wallet.getBalance();
+              console.log(b);
+            }
 
-          wallet?.sendBtc({ // pr tb1qxvrzdqlnmpzxr6zsg7g2c62gu6l33qxzz6z5l2
-            toAddress: 'tb1qxvrzdqlnmpzxr6zsg7g2c62gu6l33qxzz6z5l2',
-            satoshis: 10000000
-          })
-        }
-        }>
+            wallet?.sendBtc({
+              // pr tb1qxvrzdqlnmpzxr6zsg7g2c62gu6l33qxzz6z5l2
+              toAddress: "tb1qxvrzdqlnmpzxr6zsg7g2c62gu6l33qxzz6z5l2",
+              satoshis: 10000000,
+            });
+          }}
+        >
           trn
         </Button>
 

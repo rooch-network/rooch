@@ -6,7 +6,7 @@ import { useLayoutEffect, useState } from 'react'
 
 import { useConnectWallet, useWallets, useCurrentWallet, useCurrentAddress } from './index.js'
 
-import { useWalletStore } from './useWalletStore'
+import { useWalletStore } from './useWalletStore.js'
 
 export function useAutoConnectWallet(): 'disabled' | 'idle' | 'attempted' {
   const { mutateAsync: connectWallet } = useConnectWallet()
