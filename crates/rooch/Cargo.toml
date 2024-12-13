@@ -17,6 +17,7 @@ rust-version = { workspace = true }
 [dependencies]
 anyhow = { workspace = true }
 bcs = { workspace = true }
+bitcoin = { workspace = true }
 clap = { features = ["derive"], workspace = true }
 datatest-stable = { git = "https://github.com/rooch-network/diem-devtools", branch = "feature/pub-test-opts" }
 tokio = { features = ["full"], workspace = true }
@@ -47,7 +48,6 @@ xxhash-rust = { workspace = true, features = ["xxh3"] }
 vergen-pretty = { workspace = true }
 lazy_static = { workspace = true }
 schemars = { workspace = true }
-bitcoin = { workspace = true }
 ciborium = { workspace = true }
 wasmer = { workspace = true }
 tiny-keccak = { workspace = true }
@@ -81,6 +81,8 @@ framework-types = { workspace = true }
 raw-store = { workspace = true }
 smt = { workspace = true }
 
+bitcoin-client = { workspace = true }
+rooch-executor = { workspace = true }
 rooch-key = { workspace = true }
 rooch-types = { workspace = true }
 rooch-config = { workspace = true }
