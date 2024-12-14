@@ -27,7 +27,7 @@ pub(crate) fn collect_chunks(segment_dir: PathBuf) -> anyhow::Result<HashMap<u12
             {
                 let chunk_id = segment_id.chunk_id;
                 let segment_number = segment_id.segment_number;
-                let segments = chunks.entry(chunk_id).or_default();
+                let segments: &mut Vec<u64> = chunks.entry(chunk_id).or_default();
                 segments.push(segment_number);
             }
         }

@@ -8,15 +8,14 @@ use clap::Parser;
 
 use moveos_types::h256::H256;
 use moveos_types::transaction::VerifiedMoveOSTransaction;
+use rooch_executor::proxy::ExecutorProxy;
+use rooch_types::bitcoin::types::Block as BitcoinBlock;
+use rooch_types::transaction::{L1BlockWithBody, LedgerTransaction, LedgerTxData};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Read};
 use std::path::PathBuf;
 use std::str::FromStr;
-
-use rooch_executor::proxy::ExecutorProxy;
-use rooch_types::bitcoin::types::Block as BitcoinBlock;
-use rooch_types::transaction::{L1BlockWithBody, LedgerTransaction, LedgerTxData};
 
 /// exec LedgerTransaction List for verification.
 #[derive(Debug, Parser)]
@@ -31,12 +30,6 @@ pub struct ExecCommand {
 }
 
 impl ExecCommand {
-    pub fn execute(self) -> anyhow::Result<()> {
-        let executor = self.build_exec_inner();
-        executor.execute()?;
-        Ok(())
-    }
-
     fn build_exec_inner(&self) -> ExecInner {
         let (order_state_pair, tx_order_end) = self.load_order_state_pair();
         let chunks = collect_chunks(self.segment_dir.clone()).unwrap();
@@ -46,7 +39,7 @@ impl ExecCommand {
             order_state_pair,
             tx_order_end,
             bitcoin_client_proxy: None,
-            executor: ExecutorProxy {},
+            executor: None,
         }
     }
 
@@ -77,13 +70,15 @@ struct ExecInner {
     tx_order_end: u64,
 
     bitcoin_client_proxy: Option<BitcoinClientProxy>,
-    pub(crate) executor: ExecutorProxy,
+    pub(crate) executor: Option<ExecutorProxy>,
 }
 
 impl ExecInner {
+    fn seek_max_executed_tx_order(&self) -> anyhow::Result<u64> {}
+
     async fn execute_verify(&self) -> anyhow::Result<()> {
         let mut block_number = 0;
-        let mut max_verified_tx_order = 0;
+        let mut verified_tx_order = 0;
         // TODO two thread: one produce tx, one consume tx
         loop {
             let tx_list = self.load_ledger_tx_list(block_number)?;
@@ -91,19 +86,26 @@ impl ExecInner {
                 break;
             }
             let tx_list = tx_list.unwrap();
-            for ledger_tx in tx_list {
+            for mut ledger_tx in tx_list {
                 let tx_order = ledger_tx.sequence_info.tx_order;
                 if tx_order > self.tx_order_end {
                     break;
                 }
-                self.execute_verify_tx(ledger_tx)?;
-                max_verified_tx_order = tx_order;
+                let execution_info = self
+                    .executor
+                    .unwrap()
+                    .get_transaction_execution_infos_by_hash(vec![ledger_tx.data.tx_hash()])
+                    .await?;
+                if execution_info.is_empty() {
+                    self.execute_verify_tx(ledger_tx).await?;
+                }
+                verified_tx_order = tx_order;
             }
             block_number += 1;
         }
         println!(
             "All transactions execution state root are strictly equal to RoochNetwork: [0, {}]",
-            max_verified_tx_order
+            verified_tx_order
         );
         Ok(())
     }
@@ -130,6 +132,8 @@ impl ExecInner {
             return Ok(());
         }
 
+        let executor = self.executor.as_ref().unwrap();
+
         match &ledger_tx.data {
             LedgerTxData::L1Block(block) => match &self.bitcoin_client_proxy {
                 Some(bitcoin_client_proxy) => {
@@ -137,8 +141,7 @@ impl ExecInner {
                     let block_hash = bitcoin::block::BlockHash::from_slice(&block_hash_vec)?;
                     let btc_block = bitcoin_client_proxy.get_block(block_hash).await?;
                     let block_body = BitcoinBlock::from(btc_block);
-                    let moveos_tx = self
-                        .executor
+                    let moveos_tx = executor
                         .validate_l1_block(L1BlockWithBody::new(block.clone(), block_body.encode()))
                         .await?;
                     self.execute_tx(ledger_tx.clone(), moveos_tx).await?;
@@ -151,11 +154,11 @@ impl ExecInner {
                 }
             },
             LedgerTxData::L1Tx(l1_tx) => {
-                let moveos_tx = self.executor.validate_l1_tx(l1_tx.clone()).await?;
+                let moveos_tx = executor.validate_l1_tx(l1_tx.clone()).await?;
                 self.execute_tx(ledger_tx.clone(), moveos_tx).await?;
             }
             LedgerTxData::L2Tx(l2_tx) => {
-                let moveos_tx = self.executor.validate_l2_tx(l2_tx.clone()).await?;
+                let moveos_tx = executor.validate_l2_tx(l2_tx.clone()).await?;
                 self.execute_tx(ledger_tx.clone(), moveos_tx).await?;
             }
         }
@@ -168,9 +171,9 @@ impl ExecInner {
         mut moveos_tx: VerifiedMoveOSTransaction,
     ) -> anyhow::Result<()> {
         let tx_order = tx.sequence_info.tx_order;
+        let executor = self.executor.as_ref().unwrap();
         moveos_tx.ctx.add(tx.sequence_info.clone())?;
-        let (_output, execution_info) =
-            self.executor.execute_transaction(moveos_tx.clone()).await?;
+        let (_output, execution_info) = executor.execute_transaction(moveos_tx.clone()).await?;
 
         let root = execution_info.root_metadata();
         let expected_root_opt = self.order_state_pair.get(&tx_order);
