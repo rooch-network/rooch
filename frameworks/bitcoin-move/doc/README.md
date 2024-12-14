@@ -13,6 +13,7 @@ This is the reference documentation of the Bitcoin Move Framework.
 
 
 -  [`0x4::bbn`](bbn.md#0x4_bbn)
+-  [`0x4::bbn_updater`](bbn_updater.md#0x4_bbn_updater)
 -  [`0x4::bitcoin`](bitcoin.md#0x4_bitcoin)
 -  [`0x4::bitcoin_hash`](bitcoin_hash.md#0x4_bitcoin_hash)
 -  [`0x4::bitcoin_multisign_validator`](bitcoin_multisign_validator.md#0x4_bitcoin_multisign_validator)

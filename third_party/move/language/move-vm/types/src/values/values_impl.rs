@@ -3213,7 +3213,8 @@ impl<'d> serde::de::DeserializeSeed<'d> for SeedWrapper<&MoveTypeLayout> {
             L::Vector(layout) => {
                 let container = match &**layout {
                     L::U8 => {
-                        Container::VecU8(Rc::new(RefCell::new(Vec::deserialize(deserializer)?)))
+                        let v = deserializer.deserialize_byte_buf(BytesVisitor {})?;
+                        Container::VecU8(Rc::new(RefCell::new(v)))
                     }
                     L::U16 => {
                         Container::VecU16(Rc::new(RefCell::new(Vec::deserialize(deserializer)?)))
@@ -3259,6 +3260,23 @@ impl<'d> serde::de::DeserializeSeed<'d> for SeedWrapper<&MoveStructLayout> {
         let fields = deserializer
             .deserialize_tuple(field_layouts.len(), StructFieldVisitor(field_layouts))?;
         Ok(Struct::pack(fields))
+    }
+}
+
+struct BytesVisitor;
+
+impl<'d> serde::de::Visitor<'d> for BytesVisitor {
+    type Value = Vec<u8>;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter.write_str("Bytes")
+    }
+
+    fn visit_bytes<E>(self, v: &[u8]) -> Result<Self::Value, E>
+    where
+        E: DeError,
+    {
+        Ok(v.to_vec())
     }
 }
 

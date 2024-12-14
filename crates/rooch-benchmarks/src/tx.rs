@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::config::TxType;
-use crate::tx::TxType::{Empty, Transfer};
+use crate::tx::TxType::{Empty, Transfer, TransferLargeObject};
 use anyhow::Result;
 use bitcoin::consensus::deserialize;
 use bitcoin::hashes::Hash;
@@ -60,6 +60,7 @@ pub fn create_l2_tx(
     let action = match tx_type {
         Empty => test_transaction_builder.call_empty_create(),
         Transfer => test_transaction_builder.call_transfer_create(),
+        TransferLargeObject => test_transaction_builder.call_transfer_large_object_create(),
         _ => panic!("Unsupported tx type"),
     };
 

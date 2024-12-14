@@ -1,0 +1,71 @@
+---
+title: 'Things to note when using OneKey wallet'
+description: ""
+author: geometryolife
+category: Developer
+date: 2024/12/06
+---
+
+import PostHeader from "/components/blog/postHeader";
+
+<PostHeader />
+
+## Introduction
+
+Currently, Rooch Portal supports OneKey wallet, but there are a few points that need to be paid attention to when using it. Next, the usage process of OneKey wallet will be demonstrated.
+
+## Install
+
+Take Google Chrome as an example, install the OneKey browser plug-in: https://chromewebstore.google.com/detail/onekey/jnmbobjmhlngoefaiojfljckilhhlhcj?hl=en-US
+
+Once the installation is complete, you can choose to create or import a wallet:
+
+![](/blog/onekey/welcome-onekey.png)
+
+Taking creating a wallet as an example, you are first required to set a password to unlock the wallet locally:
+
+![](/blog/onekey/set-password.png)
+
+Click `Show recovery phrase` and record the new wallet’s mnemonic phrase:
+
+![](/blog/onekey/show-phrase.png)
+
+You will then enter the main interface of the OneKey multi-chain wallet:
+
+![](/blog/onekey/onekey-home.png)
+
+## Things to note when using Rooch Portal
+
+Click `Connect Wallet` in [Rooch Portal](portal.rooch.network) to connect the OneKey wallet:
+
+![](/blog/onekey/choose-onekey.png)
+
+OneKey uses Nested SegWit type Bitcoin addresses by default, while Rooch uses Taproot type addresses, so the correct address must be chosen to interact with the Rooch network.
+
+Click the drop-down bar of the address to enter the interface for switching address types:
+
+![](/blog/onekey/change-address-type.png)
+
+After entering, click the icon in the upper right corner and select the `Taproot` type:
+
+![](/blog/onekey/choose-type.png)
+
+After selecting, click on the upper left corner to return:
+
+![](/blog/onekey/return.png)
+
+Click the `Approve` button to connect successfully:
+
+![](/blog/onekey/approve.png)
+
+After the connection is successful, it will be displayed normally on Rooch Portal!
+
+![](/blog/onekey/portal-home.png)
+
+If you select the wrong address type, click on the OneKey wallet, then click on the disconnect button and re-use the above steps.
+
+![](/blog/onekey/disconnect.png)
+
+## Summary
+
+At this point, you already understand the installation and usage process of OneKey wallet and the issues you should pay attention to when using Rooch.
