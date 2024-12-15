@@ -253,6 +253,12 @@
       "name": "rooch_getBlocksByNumber",
       "params": [
         {
+          "name": "block_type",
+          "schema": {
+            "$ref": "#/components/schemas/rooch_types::block::BlockType"
+          }
+        },
+        {
           "name": "cursor",
           "schema": {
             "$ref": "#/components/schemas/u128"
@@ -3829,6 +3835,9 @@
         "type": "string"
       },
       "rooch_types::bitcoin::ord::InscriptionID": {
+        "type": "string"
+      },
+      "rooch_types::block::BlockType": {
         "type": "string"
       },
       "rooch_types::repair::RepairIndexerType": {
