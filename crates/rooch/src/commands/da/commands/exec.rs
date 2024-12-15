@@ -9,6 +9,8 @@ use clap::Parser;
 use coerce::actor::system::ActorSystem;
 use coerce::actor::IntoActor;
 use metrics::RegistryService;
+use moveos_store::transaction_store::{TransactionDBStore, TransactionStore};
+use moveos_store::MoveOSStore;
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::object::ObjectMeta;
 use moveos_types::transaction::VerifiedMoveOSTransaction;
@@ -88,11 +90,11 @@ fn build_rooch_db(
     (root, rooch_db)
 }
 
-async fn build_executor_proxy(
+async fn build_executor_and_store(
     base_data_dir: Option<PathBuf>,
     chain_id: Option<RoochChainID>,
     actor_system: &ActorSystem,
-) -> anyhow::Result<ExecutorProxy> {
+) -> anyhow::Result<(ExecutorProxy, MoveOSStore)> {
     let registry_service = RegistryService::default();
 
     let (root, rooch_db) = build_rooch_db(base_data_dir.clone(), chain_id.clone());
@@ -121,9 +123,12 @@ async fn build_executor_proxy(
         .into_actor(Some("ReadExecutor"), actor_system)
         .await?;
 
-    Ok(ExecutorProxy::new(
-        executor_actor_ref.clone().into(),
-        read_executor_ref.clone().into(),
+    Ok((
+        ExecutorProxy::new(
+            executor_actor_ref.clone().into(),
+            read_executor_ref.clone().into(),
+        ),
+        moveos_store,
     ))
 }
 
@@ -143,7 +148,7 @@ impl ExecCommand {
             &actor_system,
         )
         .await?;
-        let executor = build_executor_proxy(
+        let (executor, moveos_store) = build_executor_and_store(
             self.base_data_dir.clone(),
             self.chain_id.clone(),
             &actor_system,
@@ -159,6 +164,7 @@ impl ExecCommand {
             tx_order_end,
             bitcoin_client_proxy,
             executor,
+            transaction_store: moveos_store.transaction_store,
         })
     }
 
@@ -189,7 +195,14 @@ struct ExecInner {
     tx_order_end: u64,
 
     bitcoin_client_proxy: BitcoinClientProxy,
-    pub(crate) executor: ExecutorProxy,
+    executor: ExecutorProxy,
+
+    transaction_store: TransactionDBStore,
+}
+
+struct ExecMsg {
+    tx_order: u64,
+    moveos_tx: VerifiedMoveOSTransaction,
 }
 
 impl ExecInner {
@@ -205,7 +218,8 @@ impl ExecInner {
         Ok(())
     }
 
-    async fn produce_tx(&self, tx: Sender<LedgerTransaction>) -> anyhow::Result<()> {
+    async fn produce_tx(&self, tx: Sender<ExecMsg>) -> anyhow::Result<()> {
+        tracing::info!("Start to produce transactions");
         let mut block_number = 0;
         let mut produced_tx_order = 0;
         let mut executed = true;
@@ -223,17 +237,24 @@ impl ExecInner {
                 }
                 if executed {
                     let execution_info = self
-                        .executor
-                        .get_transaction_execution_infos_by_hash(vec![ledger_tx.data.tx_hash()])
-                        .await?;
-                    if !execution_info.is_empty() {
+                        .transaction_store
+                        .get_tx_execution_info(ledger_tx.data.tx_hash())?;
+                    if execution_info.is_some() {
                         continue;
                     }
+                    tracing::info!("tx_order: {} is not executed, begin at here", tx_order);
                     executed = false;
                 }
 
-                tx.send(ledger_tx).await?;
+                let moveos_tx = self.ledger_to_movoes_tx(ledger_tx.clone()).await?;
+
+                tx.send(ExecMsg {
+                    tx_order,
+                    moveos_tx,
+                })
+                .await?;
                 produced_tx_order = tx_order;
+                println!("produce tx order: {}", tx_order);
             }
             block_number += 1;
         }
@@ -245,30 +266,37 @@ impl ExecInner {
         Ok(())
     }
 
-    async fn consume_tx(&self, mut rx: Receiver<LedgerTransaction>) -> anyhow::Result<()> {
+    async fn consume_tx(&self, mut rx: Receiver<ExecMsg>) -> anyhow::Result<()> {
+        tracing::info!("Start to consume transactions");
         let mut verified_tx_order = 0;
-        let mut last_record_tx_order = 0;
         let mut last_record_time = std::time::Instant::now();
+        let mut done = 0;
         loop {
-            let ledger_tx = rx.recv().await;
-            if ledger_tx.is_none() {
+            let exec_msg_opt = rx.recv().await;
+            if exec_msg_opt.is_none() {
                 break;
             }
-            let ledger_tx = ledger_tx.unwrap();
-            let tx_order = ledger_tx.sequence_info.tx_order;
-            self.execute_ledger_tx(tx_order, ledger_tx).await?;
-            verified_tx_order = tx_order;
+            let exec_msg = exec_msg_opt.unwrap();
+            let tx_order = exec_msg.tx_order;
 
-            if tx_order - last_record_tx_order >= 10000 {
+            self.execute_moveos_tx(tx_order, exec_msg.moveos_tx).await?;
+
+            verified_tx_order = tx_order;
+            done += 1;
+
+            if done < 100 {
+                println!("execute tx order: {}, done: {}", tx_order, done);
+            }
+
+            if done % 10000 == 0 {
                 let elapsed = last_record_time.elapsed();
                 println!(
                     "execute tx range: [{}, {}], cost: {:?}, avg: {:?} ms/tx",
-                    last_record_tx_order,
+                    tx_order + 1 - 10000, // add first, avoid overflow
                     tx_order,
                     elapsed,
                     elapsed.as_millis() / 10000
                 );
-                last_record_tx_order = tx_order;
                 last_record_time = std::time::Instant::now();
             }
         }
@@ -295,31 +323,24 @@ impl ExecInner {
         Ok(Some(tx_list))
     }
 
-    async fn execute_ledger_tx(
+    async fn ledger_to_movoes_tx(
         &self,
-        tx_order: u64,
         ledger_tx: LedgerTransaction,
-    ) -> anyhow::Result<()> {
-        let executor = self.executor.clone();
-        let bitcoin_client_proxy = self.bitcoin_client_proxy.clone();
-
-        let mut moveos_tx = match &ledger_tx.data {
+    ) -> anyhow::Result<VerifiedMoveOSTransaction> {
+        let moveos_tx = match &ledger_tx.data {
             LedgerTxData::L1Block(block) => {
                 let block_hash_vec = block.block_hash.clone();
                 let block_hash = bitcoin::block::BlockHash::from_slice(&block_hash_vec)?;
-                let btc_block = bitcoin_client_proxy.get_block(block_hash).await?;
+                let btc_block = self.bitcoin_client_proxy.get_block(block_hash).await?;
                 let block_body = BitcoinBlock::from(btc_block);
-                executor
+                self.executor
                     .validate_l1_block(L1BlockWithBody::new(block.clone(), block_body.encode()))
                     .await?
             }
-            LedgerTxData::L1Tx(l1_tx) => executor.validate_l1_tx(l1_tx.clone()).await?,
-            LedgerTxData::L2Tx(l2_tx) => executor.validate_l2_tx(l2_tx.clone()).await?,
+            LedgerTxData::L1Tx(l1_tx) => self.executor.validate_l1_tx(l1_tx.clone()).await?,
+            LedgerTxData::L2Tx(l2_tx) => self.executor.validate_l2_tx(l2_tx.clone()).await?,
         };
-        moveos_tx.ctx.add(ledger_tx.sequence_info.clone())?;
-        self.execute_moveos_tx(tx_order, moveos_tx).await?;
-
-        Ok(())
+        Ok(moveos_tx)
     }
 
     async fn execute_moveos_tx(
