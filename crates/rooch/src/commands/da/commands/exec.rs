@@ -247,6 +247,8 @@ impl ExecInner {
 
     async fn consume_tx(&self, mut rx: Receiver<LedgerTransaction>) -> anyhow::Result<()> {
         let mut verified_tx_order = 0;
+        let mut last_record_tx_order = 0;
+        let mut last_record_time = std::time::Instant::now();
         loop {
             let ledger_tx = rx.recv().await;
             if ledger_tx.is_none() {
@@ -256,6 +258,19 @@ impl ExecInner {
             let tx_order = ledger_tx.sequence_info.tx_order;
             self.execute_ledger_tx(tx_order, ledger_tx).await?;
             verified_tx_order = tx_order;
+
+            if tx_order - last_record_tx_order >= 10000 {
+                let elapsed = last_record_time.elapsed();
+                println!(
+                    "execute tx range: [{}, {}], cost: {:?}, avg: {:?} ms/tx",
+                    last_record_tx_order,
+                    tx_order,
+                    elapsed,
+                    elapsed.as_millis() / 10000
+                );
+                last_record_tx_order = tx_order;
+                last_record_time = std::time::Instant::now();
+            }
         }
         println!(
             "All transactions execution state root are strictly equal to RoochNetwork: [0, {}]",
