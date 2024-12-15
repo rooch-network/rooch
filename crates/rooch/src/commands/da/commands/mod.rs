@@ -8,7 +8,7 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
 
-mod exec;
+pub mod exec;
 pub mod namespace;
 pub mod unpack;
 

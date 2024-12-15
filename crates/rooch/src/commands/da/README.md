@@ -28,8 +28,14 @@ rooch da unpack --segment-dir {segment-dir} --batch-dir {batch-dir} --verify-ord
 
 ### exec
 
-Execute tx list with state root verification(compare with Rooch Network).
+Execute tx list with state root verification(compare with Rooch Network Mainnet/Testnet).
 It's a tool built for verification at development stage, not a full feature tool for sync states in production.
+
+Features includes:
+
+1. Execute tx list from segment dir and saving changes locally
+2. Compare state root with Rooch Network Mainnet/Testnet by tx_order:state_root list file
+3. We could collect performance data in execution process by tuning tools like `perf` if needed
 
 #### Prepare tx_order:state_root list file
 
@@ -54,8 +60,11 @@ clean dirty genesis states:
 rooch statedb re-genesis -d {data_dir} -n {network} --mode remove
 ```
 
-genesis init(add correct genesis back into db):
+genesis init(add builtin genesis back into db):
 
 ```shell
 rooch genesis init -d {data_dir} -n {network}
 ```
+
+we assume it's builtin genesis, because the target we want to verify is Rooch Network Mainnet/Testnet, all the two
+Network are using builtin genesis.

@@ -3,7 +3,6 @@
 
 use crate::commands::statedb::commands::init_rooch_db;
 use clap::Parser;
-use move_core_types::effects::Op;
 use rooch_config::R_OPT_NET_HELP;
 use rooch_store::meta_store::MetaStore;
 use rooch_types::error::RoochResult;
