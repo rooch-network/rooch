@@ -3,6 +3,7 @@
 
 use crate::commands::statedb::commands::init_rooch_db;
 use clap::Parser;
+use move_core_types::effects::Op;
 use rooch_config::R_OPT_NET_HELP;
 use rooch_store::meta_store::MetaStore;
 use rooch_types::error::RoochResult;
@@ -35,7 +36,7 @@ impl Display for ReGenesisMode {
 impl FromStr for ReGenesisMode {
     type Err = &'static str;
 
-    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
             "export" => Ok(ReGenesisMode::Export),
             "remove" => Ok(ReGenesisMode::Remove),
@@ -58,7 +59,7 @@ pub struct ReGenesisCommand {
     pub chain_id: Option<RoochChainID>,
 
     #[clap(long)]
-    pub export_path: PathBuf,
+    pub export_path: Option<PathBuf>,
     #[clap(long)]
     pub mode: Option<ReGenesisMode>,
 }
@@ -77,8 +78,9 @@ impl ReGenesisCommand {
 
     fn export(&self) {
         let rooch_db = init_rooch_db(self.base_data_dir.clone(), self.chain_id.clone());
+        let export_path = self.export_path.clone().unwrap();
 
-        let writer = std::fs::File::create(self.export_path.clone()).unwrap();
+        let writer = std::fs::File::create(export_path).unwrap();
         let mut writer = std::io::BufWriter::new(writer);
 
         let mut outputs = Vec::new();
@@ -137,7 +139,8 @@ impl ReGenesisCommand {
     }
 
     fn restore(&self) {
-        let reader = std::fs::File::open(self.export_path.clone()).unwrap();
+        let export_path = self.export_path.clone().unwrap();
+        let reader = std::fs::File::open(export_path).unwrap();
         let reader = std::io::BufReader::new(reader);
         let mut lines = reader.lines();
         let genesis_info = serde_json::from_str(&lines.next().unwrap().unwrap()).unwrap();
