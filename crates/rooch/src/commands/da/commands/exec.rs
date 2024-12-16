@@ -29,6 +29,9 @@ use std::fs::File;
 use std::io::{BufRead, BufReader, Read};
 use std::path::PathBuf;
 use std::str::FromStr;
+use std::sync::atomic::AtomicU64;
+use std::sync::Arc;
+use std::time::Duration;
 use tokio::sync::mpsc::Receiver;
 use tokio::sync::mpsc::Sender;
 
@@ -165,6 +168,8 @@ impl ExecCommand {
             bitcoin_client_proxy,
             executor,
             transaction_store: moveos_store.transaction_store,
+            done: Arc::new(AtomicU64::new(0)),
+            verified_tx_order: Arc::new(AtomicU64::new(0)),
         })
     }
 
@@ -173,7 +178,7 @@ impl ExecCommand {
         let mut tx_order_end = 0;
 
         let mut reader = BufReader::new(File::open(self.order_state_path.clone()).unwrap());
-        // collect all tx_order:state_root pairs
+        // collect all `tx_order:state_root` pairs
         for line in reader.by_ref().lines() {
             let line = line.unwrap();
             let parts: Vec<&str> = line.split(':').collect();
@@ -198,15 +203,32 @@ struct ExecInner {
     executor: ExecutorProxy,
 
     transaction_store: TransactionDBStore,
+
+    // stats
+    done: Arc<AtomicU64>,
+    verified_tx_order: Arc<AtomicU64>,
 }
 
 struct ExecMsg {
     tx_order: u64,
-    moveos_tx: VerifiedMoveOSTransaction,
+    ledger_tx: LedgerTransaction,
+    l1_block_with_body: Option<L1BlockWithBody>,
 }
 
 impl ExecInner {
     async fn run(&self) -> anyhow::Result<()> {
+        let done_clone = self.done.clone();
+        let verified_tx_order_clone = self.verified_tx_order.clone();
+        tokio::spawn(async move {
+            loop {
+                tokio::time::sleep(Duration::from_secs(60)).await;
+                let done = done_clone.load(std::sync::atomic::Ordering::Relaxed);
+                let verified_tx_order =
+                    verified_tx_order_clone.load(std::sync::atomic::Ordering::Relaxed);
+                tracing::info!("done: {}, verified_tx_order: {}", done, verified_tx_order);
+            }
+        });
+
         let (tx, rx) = tokio::sync::mpsc::channel(2);
         let producer = self.produce_tx(tx);
         let consumer = self.consume_tx(rx);
@@ -251,20 +273,31 @@ impl ExecInner {
                     executed = false;
                 }
 
-                let moveos_tx = self.ledger_to_movoes_tx(ledger_tx.clone()).await?;
+                let l1_block_with_body = match &ledger_tx.data {
+                    LedgerTxData::L1Block(block) => {
+                        let block_hash_vec = block.block_hash.clone();
+                        let block_hash = bitcoin::block::BlockHash::from_slice(&block_hash_vec)?;
+                        let btc_block = self.bitcoin_client_proxy.get_block(block_hash).await?;
+                        let block_body = BitcoinBlock::from(btc_block);
+                        Some(L1BlockWithBody::new(block.clone(), block_body.encode()))
+                    }
+                    _ => None,
+                };
 
                 tx.send(ExecMsg {
                     tx_order,
-                    moveos_tx,
+                    ledger_tx,
+                    l1_block_with_body,
                 })
                 .await?;
                 produced_tx_order = tx_order;
             }
             block_number += 1;
         }
-        println!(
+        tracing::info!(
             "All transactions are produced, max_block_number: {}, max_tx_order: {}",
-            block_number, produced_tx_order
+            block_number,
+            produced_tx_order
         );
         Ok(())
     }
@@ -273,7 +306,6 @@ impl ExecInner {
         tracing::info!("Start to consume transactions");
         let mut verified_tx_order = 0;
         let mut last_record_time = std::time::Instant::now();
-        let mut done = 0;
         loop {
             let exec_msg_opt = rx.recv().await;
             if exec_msg_opt.is_none() {
@@ -282,14 +314,20 @@ impl ExecInner {
             let exec_msg = exec_msg_opt.unwrap();
             let tx_order = exec_msg.tx_order;
 
-            self.execute_moveos_tx(tx_order, exec_msg.moveos_tx).await?;
+            self.execute(exec_msg).await?;
 
             verified_tx_order = tx_order;
-            done += 1;
+            self.verified_tx_order
+                .store(verified_tx_order, std::sync::atomic::Ordering::Relaxed);
+            let done = self.done.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+
+            if done < 100 {
+                tracing::info!("tx_order: {}, done: {}", tx_order, done);
+            }
 
             if done % 10000 == 0 {
                 let elapsed = last_record_time.elapsed();
-                println!(
+                tracing::info!(
                     "execute tx range: [{}, {}], cost: {:?}, avg: {:?} ms/tx",
                     tx_order + 1 - 10000, // add first, avoid overflow
                     tx_order,
@@ -299,7 +337,7 @@ impl ExecInner {
                 last_record_time = std::time::Instant::now();
             }
         }
-        println!(
+        tracing::info!(
             "All transactions execution state root are strictly equal to RoochNetwork: [0, {}]",
             verified_tx_order
         );
@@ -322,18 +360,27 @@ impl ExecInner {
         Ok(Some(tx_list))
     }
 
-    async fn ledger_to_movoes_tx(
+    async fn execute(&self, msg: ExecMsg) -> anyhow::Result<()> {
+        let ExecMsg {
+            tx_order,
+            ledger_tx,
+            l1_block_with_body,
+        } = msg;
+        let moveos_tx = self
+            .validate_ledger_transaction(ledger_tx, l1_block_with_body)
+            .await?;
+        self.execute_moveos_tx(tx_order, moveos_tx).await
+    }
+
+    async fn validate_ledger_transaction(
         &self,
         ledger_tx: LedgerTransaction,
+        l1block_with_body: Option<L1BlockWithBody>,
     ) -> anyhow::Result<VerifiedMoveOSTransaction> {
         let moveos_tx = match &ledger_tx.data {
-            LedgerTxData::L1Block(block) => {
-                let block_hash_vec = block.block_hash.clone();
-                let block_hash = bitcoin::block::BlockHash::from_slice(&block_hash_vec)?;
-                let btc_block = self.bitcoin_client_proxy.get_block(block_hash).await?;
-                let block_body = BitcoinBlock::from(btc_block);
+            LedgerTxData::L1Block(_block) => {
                 self.executor
-                    .validate_l1_block(L1BlockWithBody::new(block.clone(), block_body.encode()))
+                    .validate_l1_block(l1block_with_body.unwrap())
                     .await?
             }
             LedgerTxData::L1Tx(l1_tx) => self.executor.validate_l1_tx(l1_tx.clone()).await?,
