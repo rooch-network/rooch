@@ -168,6 +168,7 @@ impl ExecCommand {
             bitcoin_client_proxy,
             executor,
             transaction_store: moveos_store.transaction_store,
+            produced: Arc::new(AtomicU64::new(0)),
             done: Arc::new(AtomicU64::new(0)),
             verified_tx_order: Arc::new(AtomicU64::new(0)),
         })
@@ -205,6 +206,7 @@ struct ExecInner {
     transaction_store: TransactionDBStore,
 
     // stats
+    produced: Arc<AtomicU64>,
     done: Arc<AtomicU64>,
     verified_tx_order: Arc<AtomicU64>,
 }
@@ -219,17 +221,24 @@ impl ExecInner {
     async fn run(&self) -> anyhow::Result<()> {
         let done_clone = self.done.clone();
         let verified_tx_order_clone = self.verified_tx_order.clone();
+        let produced_clone = self.produced.clone();
         tokio::spawn(async move {
             loop {
                 tokio::time::sleep(Duration::from_secs(60)).await;
                 let done = done_clone.load(std::sync::atomic::Ordering::Relaxed);
                 let verified_tx_order =
                     verified_tx_order_clone.load(std::sync::atomic::Ordering::Relaxed);
-                tracing::info!("done: {}, verified_tx_order: {}", done, verified_tx_order);
+                let produced = produced_clone.load(std::sync::atomic::Ordering::Relaxed);
+                tracing::info!(
+                    "produced: {}, done: {}, verified_tx_order: {}",
+                    produced,
+                    done,
+                    verified_tx_order
+                );
             }
         });
 
-        let (tx, rx) = tokio::sync::mpsc::channel(2);
+        let (tx, rx) = tokio::sync::mpsc::channel(16);
         let producer = self.produce_tx(tx);
         let consumer = self.consume_tx(rx);
 
@@ -291,6 +300,8 @@ impl ExecInner {
                 })
                 .await?;
                 produced_tx_order = tx_order;
+                self.produced
+                    .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
             }
             block_number += 1;
         }

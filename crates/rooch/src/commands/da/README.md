@@ -14,7 +14,18 @@ rooch da namespace --genesis-file-path {genesis-file}
 
 ### unpack
 
-Unpack tx list to human-readable format:
+#### download segments
+
+the easiest way to download segments is using `getda` tool from [here](https://github.com/popcnt1/roh) for downloading
+segments from cloud storage.
+
+```shell
+getda --output={segment-dir} --url={da-cloud-storage-path} --last_chunk={max-chunk-id-expected} --max_goroutines={max-goroutines}
+```
+
+#### unpack segments
+
+Unpack tx list from segments to human-readable format:
 
 ```shell
 rooch da unpack --segment-dir {segment-dir} --batch-dir {batch-dir}
