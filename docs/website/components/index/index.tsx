@@ -319,8 +319,11 @@ const Index = ({
               </div>
             </div>
             <div className="mt-6 max-w-60 text-base md:text-2xl text-center text-black dark:text-[#EAEAEA] md:max-w-3xl font-[Kanit]">
-              Rooch is a Bitcoin application layer solution that <br /> features MoveVM and Bitcoin
-              staking
+              Rooch is a Bitcoin application layer solution that{' '}
+              <span className="hidden md:inline">
+                <br />
+              </span>{' '}
+              features MoveVM and Bitcoin staking
             </div>
           </div>
           <div className="flex flex-col items-center justify-center w-full relative mt-24 md:mt-0 md:top-[-2.2rem]">
@@ -531,9 +534,19 @@ const Index = ({
               BTC Staking
             </div>
             <div className="mt-6 text-base max-w-80 md:text-2xl text-center text-black dark:text-[#EAEAEA] md:max-w-3xl font-[Kanit]">
-              Generate yield for users in a non-custodial manner,
-              <br />
-              compatible with Babylon protocol
+              Generate yield for users in a{' '}
+              <span className="inline md:hidden">
+                <br />
+              </span>{' '}
+              non-custodial manner,
+              <span className="hidden md:inline">
+                <br />
+              </span>
+              compatible{' '}
+              <span className="inline md:hidden">
+                <br />
+              </span>{' '}
+              with Babylon protocol
             </div>
           </div>
           <div className="flex flex-wrap justify-center items-center w-full md:w-auto relative cursor-pointer -mt-[7vw]">
