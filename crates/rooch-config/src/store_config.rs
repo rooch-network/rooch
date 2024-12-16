@@ -85,6 +85,13 @@ pub struct StoreConfig {
     )]
     pub max_write_buffer_number: Option<u64>,
 
+    #[clap(
+        name = "rocksdb-enable-statistics",
+        long,
+        help = "rocksdb enable statistics"
+    )]
+    pub enable_statistics: bool,
+
     #[serde(skip)]
     #[clap(skip)]
     base: Option<Arc<BaseConfig>>,
@@ -147,6 +154,7 @@ impl StoreConfig {
                 .unwrap_or(default.max_write_buffer_numer),
             block_cache_size: self.block_cache_size.unwrap_or(block_cache_size),
             block_size: self.block_size.unwrap_or(default.block_size),
+            enable_statistics: self.enable_statistics,
         }
     }
 
