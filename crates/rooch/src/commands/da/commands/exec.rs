@@ -207,15 +207,20 @@ struct ExecMsg {
 
 impl ExecInner {
     async fn run(&self) -> anyhow::Result<()> {
-        let (tx, rx) = tokio::sync::mpsc::channel(1024);
+        let (tx, rx) = tokio::sync::mpsc::channel(2);
         let producer = self.produce_tx(tx);
         let consumer = self.consume_tx(rx);
 
         let (producer_result, consumer_result) = tokio::join!(producer, consumer);
-        producer_result?;
-        consumer_result?;
-
-        Ok(())
+        match (producer_result, consumer_result) {
+            (Ok(()), Ok(())) => Ok(()), // Both succeeded
+            (Err(producer_err), Ok(())) => Err(producer_err.context("Error in producer")),
+            (Ok(()), Err(consumer_err)) => Err(consumer_err.context("Error in consumer")),
+            (Err(producer_err), Err(consumer_err)) => {
+                let combined_error = producer_err.context("Error in producer");
+                Err(combined_error.context(format!("Error in consumer: {:?}", consumer_err)))
+            }
+        }
     }
 
     async fn produce_tx(&self, tx: Sender<ExecMsg>) -> anyhow::Result<()> {
@@ -254,11 +259,9 @@ impl ExecInner {
                 })
                 .await?;
                 produced_tx_order = tx_order;
-                println!("produce tx order: {}", tx_order);
             }
             block_number += 1;
         }
-        drop(tx);
         println!(
             "All transactions are produced, max_block_number: {}, max_tx_order: {}",
             block_number, produced_tx_order
@@ -283,10 +286,6 @@ impl ExecInner {
 
             verified_tx_order = tx_order;
             done += 1;
-
-            if done < 100 {
-                println!("execute tx order: {}, done: {}", tx_order, done);
-            }
 
             if done % 10000 == 0 {
                 let elapsed = last_record_time.elapsed();
@@ -349,6 +348,7 @@ impl ExecInner {
         moveos_tx: VerifiedMoveOSTransaction,
     ) -> anyhow::Result<()> {
         let executor = self.executor.clone();
+
         let (_output, execution_info) = executor.execute_transaction(moveos_tx.clone()).await?;
 
         let root = execution_info.root_metadata();
@@ -359,7 +359,7 @@ impl ExecInner {
                     return Err(anyhow::anyhow!(
                         "Execution state root is not equal to RoochNetwork: tx_order: {}, exp: {:?}, act: {:?}",
                         tx_order,
-                        *expected_root, root
+                        *expected_root, root.state_root.unwrap()
                     ));
                 }
                 Ok(())
