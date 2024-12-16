@@ -4,6 +4,7 @@
 pub mod commands;
 
 use crate::cli_types::CommandAction;
+use crate::commands::da::commands::exec::ExecCommand;
 use crate::commands::da::commands::namespace::NamespaceCommand;
 use crate::commands::da::commands::unpack::UnpackCommand;
 use async_trait::async_trait;
@@ -21,10 +22,9 @@ pub struct DA {
 impl CommandAction<String> for DA {
     async fn execute(self) -> RoochResult<String> {
         match self.cmd {
-            DACommand::Unpack(unpack) => unpack.execute().map(|resp| {
-                serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
-            }),
+            DACommand::Unpack(unpack) => unpack.execute().map(|_| "".to_owned()),
             DACommand::Namespace(namespace) => namespace.execute().map(|_| "".to_owned()),
+            DACommand::Exec(exec) => exec.execute().await.map(|_| "".to_owned()),
         }
     }
 }
@@ -34,4 +34,5 @@ impl CommandAction<String> for DA {
 pub enum DACommand {
     Unpack(UnpackCommand),
     Namespace(NamespaceCommand),
+    Exec(ExecCommand),
 }
