@@ -159,10 +159,11 @@ impl ExecCommand {
         .await?;
 
         let (order_state_pair, tx_order_end) = self.load_order_state_pair();
-        let chunks = collect_chunks(self.segment_dir.clone())?;
+        let (chunks, max_chunk_id) = collect_chunks(self.segment_dir.clone())?;
         Ok(ExecInner {
             segment_dir: self.segment_dir.clone(),
             chunks,
+            max_chunk_id,
             order_state_pair,
             tx_order_end,
             bitcoin_client_proxy,
@@ -197,6 +198,7 @@ impl ExecCommand {
 struct ExecInner {
     segment_dir: PathBuf,
     chunks: HashMap<u128, Vec<u64>>,
+    max_chunk_id: u128,
     order_state_pair: HashMap<u64, H256>,
     tx_order_end: u64,
 
@@ -254,9 +256,47 @@ impl ExecInner {
         }
     }
 
+    fn find_begin_chunk(&self) -> anyhow::Result<u128> {
+        // binary-search from chunk [0, max_chunk_id], find max chunk_id that is finished.
+        let mut left = 0;
+        let mut right = self.max_chunk_id;
+        while left < right {
+            let mid = left + (right - left) / 2;
+            if self.is_chunk_finished(mid)? {
+                left = mid + 1;
+            } else {
+                right = mid;
+            }
+        }
+        Ok(left)
+    }
+
+    fn is_chunk_finished(&self, chunk_id: u128) -> anyhow::Result<bool> {
+        let segments = self.chunks.get(&chunk_id);
+        if segments.is_none() {
+            return Err(anyhow::anyhow!("chunk: {} not found", chunk_id));
+        }
+        let mut tx_list = get_tx_list_from_chunk(
+            self.segment_dir.clone(),
+            chunk_id,
+            segments.unwrap().clone(),
+        )?;
+        let last_tx_in_chunk = tx_list
+            .last_mut()
+            .unwrap_or_else(|| panic!("chunk: {} tx_list is empty", chunk_id));
+        let last_tx_hash = last_tx_in_chunk.tx_hash();
+        self.is_tx_executed(last_tx_hash)
+    }
+
+    fn is_tx_executed(&self, tx_hash: H256) -> anyhow::Result<bool> {
+        let execution_info = self.transaction_store.get_tx_execution_info(tx_hash)?;
+        Ok(execution_info.is_some())
+    }
+
     async fn produce_tx(&self, tx: Sender<ExecMsg>) -> anyhow::Result<()> {
-        tracing::info!("Start to produce transactions");
-        let mut block_number = 0;
+        let mut block_number = self.find_begin_chunk()?;
+
+        tracing::info!("Start to produce transactions from block: {}", block_number);
         let mut produced_tx_order = 0;
         let mut executed = true;
         loop {
@@ -416,6 +456,10 @@ impl ExecInner {
                         *expected_root, root.state_root.unwrap()
                     ));
                 }
+                tracing::info!(
+                    "Execution state root is equal to RoochNetwork: tx_order: {}",
+                    tx_order
+                );
                 Ok(())
             }
             None => Ok(()),

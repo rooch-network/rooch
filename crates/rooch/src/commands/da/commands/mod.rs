@@ -16,8 +16,11 @@ pub mod unpack;
 // each segment is stored in a file named by the segment_id.
 // each chunk may contain multiple segments.
 // we collect all the chunks and their segment numbers to unpack them later.
-pub(crate) fn collect_chunks(segment_dir: PathBuf) -> anyhow::Result<HashMap<u128, Vec<u64>>> {
+pub(crate) fn collect_chunks(
+    segment_dir: PathBuf,
+) -> anyhow::Result<(HashMap<u128, Vec<u64>>, u128)> {
     let mut chunks = HashMap::new();
+    let mut max_chunk_id = 0;
     for entry in fs::read_dir(segment_dir)?.flatten() {
         let path = entry.path();
         if path.is_file() {
@@ -29,10 +32,13 @@ pub(crate) fn collect_chunks(segment_dir: PathBuf) -> anyhow::Result<HashMap<u12
                 let segment_number = segment_id.segment_number;
                 let segments: &mut Vec<u64> = chunks.entry(chunk_id).or_default();
                 segments.push(segment_number);
+                if chunk_id > max_chunk_id {
+                    max_chunk_id = chunk_id;
+                }
             }
         }
     }
-    Ok(chunks)
+    Ok((chunks, max_chunk_id))
 }
 
 pub(crate) fn get_tx_list_from_chunk(
