@@ -489,16 +489,20 @@ const Index = ({
           >
             <div className="relative w-full">
               <img
-                src="/home/move-vm-light.svg"
+                src="/home/move-vm-light.png"
                 alt="features logo"
                 className="w-full h-auto object-cover transition-opacity duration-300"
-                style={{ opacity: isMoveVmHovered ? 0 : 1 }}
+                style={{
+                  opacity: isMoveVmHovered ? 0 : 1,
+                }}
               />
               <img
-                src="/home/move-vm-dark.svg"
+                src="/home/move-vm-dark.png"
                 alt="features logo"
                 className="w-full h-auto object-cover absolute inset-0 transition-opacity duration-300"
-                style={{ opacity: isMoveVmHovered ? 1 : 0 }}
+                style={{
+                  opacity: isMoveVmHovered ? 1 : 0,
+                }}
               />
             </div>
           </div>
@@ -551,7 +555,7 @@ const Index = ({
           </div>
           <div className="flex flex-wrap justify-center items-center w-full md:w-auto relative cursor-pointer -mt-[7vw]">
             <div className="relative w-screen">
-              <img src="/home/road-sign.svg" alt="road-sign" className="w-screen h-auto" />
+              <img src="/home/road-sign.png" alt="road-sign" className="w-screen h-auto" />
             </div>
             <div className="relative w-screen mt-[120px]">
               {/* left car */}
@@ -575,7 +579,7 @@ const Index = ({
                   ${carMoving.right ? 'scale-[0.05] translate-y-[-15vw] translate-x-[-34vw] opacity-0' : ''}`}
                 style={{ display: carVisibility.right ? 'block' : 'none' }}
               />
-              <img src="/home/ground.svg" alt="road-sign" className="w-screen h-auto" />
+              <img src="/home/ground.svg" alt="ground" className="w-screen h-auto" />
               <button
                 className="absolute inset-0 w-1/3 bottom-0 left-[18%] transform -translate-x-1/2 h-full bg-transparent cursor-pointer"
                 onClick={() => handleCarAnimation('left')}
