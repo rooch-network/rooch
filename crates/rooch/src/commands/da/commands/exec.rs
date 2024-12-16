@@ -330,11 +330,7 @@ impl ExecInner {
             verified_tx_order = tx_order;
             self.verified_tx_order
                 .store(verified_tx_order, std::sync::atomic::Ordering::Relaxed);
-            let done = self.done.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-
-            if done < 100 {
-                tracing::info!("tx_order: {}, done: {}", tx_order, done);
-            }
+            let done = self.done.fetch_add(1, std::sync::atomic::Ordering::Relaxed) + 1;
 
             if done % 10000 == 0 {
                 let elapsed = last_record_time.elapsed();
