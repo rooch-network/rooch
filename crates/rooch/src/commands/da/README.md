@@ -79,3 +79,15 @@ rooch genesis init -d {data_dir} -n {network}
 
 we assume it's builtin genesis, because the target we want to verify is Rooch Network Mainnet/Testnet, all the two
 Network are using builtin genesis.
+
+#### Execute tx list
+
+```shell
+rooch da exec --segment-dir {segment-dir} --order-state-path {order-state-path} -d {data-dir} -n {network} --btc-rpc-url {btc-rpc-url} --btc-rpc-user-name {btc-rpc-user-name} --btc-rpc-password {btc-rpc-password}
+```
+
+If everything is ok, you will see this log in the end:
+
+```shell
+2024-12-16T05:48:26.924094Z  INFO rooch::commands::da::commands::exec: All transactions execution state root are strictly equal to RoochNetwork: [0, {end_order}]
+```
