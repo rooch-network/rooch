@@ -335,11 +335,11 @@ impl ExecInner {
             if done % 10000 == 0 {
                 let elapsed = last_record_time.elapsed();
                 tracing::info!(
-                    "execute tx range: [{}, {}], cost: {:?}, avg: {:?} ms/tx",
+                    "execute tx range: [{}, {}], cost: {:?}, avg: {:.3} ms/tx",
                     tx_order + 1 - 10000, // add first, avoid overflow
                     tx_order,
                     elapsed,
-                    elapsed.as_millis() / 10000
+                    elapsed.as_millis() as f64 / 10000f64
                 );
                 last_record_time = std::time::Instant::now();
             }
