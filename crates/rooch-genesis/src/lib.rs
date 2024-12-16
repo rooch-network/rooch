@@ -402,11 +402,6 @@ impl RoochGenesis {
             "Genesis output mismatch"
         );
 
-        let tx_hash = self.genesis_tx().tx_hash();
-        let (output, genesis_execution_info) = rooch_db
-            .moveos_store
-            .handle_tx_output(tx_hash, genesis_raw_output.clone())?;
-
         // Save the genesis txs to sequencer
         let genesis_tx_order: u64 = 0;
         let moveos_genesis_context = self
@@ -439,6 +434,11 @@ impl RoochGenesis {
             sequencer_info,
             genesis_accumulator_unsaved_nodes,
         )?;
+
+        let tx_hash = self.genesis_tx().tx_hash();
+        let (output, genesis_execution_info) = rooch_db
+            .moveos_store
+            .handle_tx_output(tx_hash, genesis_raw_output.clone())?;
 
         // Save genesis tx state change set
         let state_change_set_ext = StateChangeSetExt::new(
