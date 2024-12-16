@@ -135,7 +135,7 @@ impl PipelineProcessorActor {
                         }
                         None => {
                             return Err(anyhow::anyhow!(
-                                "The bitcoin client proxy should be initialized before processing the sequenced l1_block_tx(block: {:?} on startup", block
+                                "The bitcoin client proxy should be initialized before processing the sequenced l1_block_tx(block: {:?}) on startup", block
                             ));
                         }
                     }
