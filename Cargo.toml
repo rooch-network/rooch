@@ -210,7 +210,7 @@ rand = "0.8.5"
 rand_core = { version = "0.6.3", default-features = false }
 reqwest = { version = "0.12", features = ["json", "stream"] }
 schemars = { version = "0.8.21", features = ["either"] }
-serde = { version = "1.0.215", features = ["derive", "rc"] }
+serde = { version = "1.0.216", features = ["derive", "rc"] }
 serde_bytes = "0.11.15"
 serde_json = { version = "1.0.133", features = ["preserve_order"] }
 serde_yaml = "0.9"
@@ -263,7 +263,7 @@ serde-reflection = "0.3.6"
 serde-generate = "0.25.1"
 bcs-ext = { path = "moveos/moveos-commons/bcs_ext" }
 http = "1.0.0"
-tower = { version = "0.5.1", features = ["full", "log", "util", "timeout", "load-shed", "limit"] }
+tower = { version = "0.5.2", features = ["full", "log", "util", "timeout", "load-shed", "limit"] }
 tower-http = { version = "0.5.2", features = ["cors", "full", "trace", "set-header", "propagate-header"] }
 tower_governor = { version = "0.4.3", features = ["tracing"] }
 pin-project = "1.1.7"
