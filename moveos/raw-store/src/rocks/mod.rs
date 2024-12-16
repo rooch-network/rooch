@@ -258,8 +258,10 @@ impl RocksDB {
         db_opts.set_row_cache(&cache);
         db_opts.set_enable_pipelined_write(true);
         db_opts.set_wal_recovery_mode(DBRecoveryMode::PointInTime); // for memtable crash recovery
-        db_opts.enable_statistics();
-        db_opts.set_statistics_level(statistics::StatsLevel::ExceptTimeForMutex);
+        if config.enable_statistics {
+            db_opts.enable_statistics();
+            db_opts.set_statistics_level(statistics::StatsLevel::ExceptTimeForMutex);
+        }
         db_opts
     }
     fn iter_with_direction<K, V>(
