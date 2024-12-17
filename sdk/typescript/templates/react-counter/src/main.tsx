@@ -24,7 +24,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
                 scopes: [`${DEVNET_COUNTER_PACKAGE_ID}::*::*`],
                 maxInactiveInterval: 1200
               }
-            } defaultNetwork='localnet'>
+            } defaultNetwork='testnet'>
               <WalletProvider preferredWallets={['UniSat']} chain={'bitcoin'} autoConnect>
                 <ErrorGuard/>
                 <App/>

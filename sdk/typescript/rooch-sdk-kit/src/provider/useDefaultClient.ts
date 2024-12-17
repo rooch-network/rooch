@@ -58,9 +58,8 @@ export function useDefaultClient(params: UseRoochClientParams) {
             }
           }
           triggerError(error!)
-        } else {
-          triggerRequest(state)
         }
+        triggerRequest(state)
       } catch (e) {
         console.error(e)
       }

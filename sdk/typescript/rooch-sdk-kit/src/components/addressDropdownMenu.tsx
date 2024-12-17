@@ -1,29 +1,32 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
-
-import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import clsx from 'clsx'
+import { useCallback, useEffect, useState } from 'react'
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 
 import * as styles from './addressDropdownMenu.css.js'
+
+import { Text } from './ui/Text.js'
+import { Button } from './ui/Button.js'
 import { ChevronIcon } from './icons/ChevronIcon.js'
 import { StyleMarker } from './styling/StyleMarker.js'
-import { Button } from './ui/Button.js'
-import { Text } from './ui/Text.js'
-import { useCurrentAddress, useRoochClient } from '../hooks/index.js'
 import { SessionModal } from './session-modal/SessionModal.js'
-import { useCallback, useEffect, useState } from 'react'
-import { useSubscribeOnRequest } from '../provider/globalProvider.js'
 import { FaucetModal } from './fauct-modal/FaucetModal.js'
+import { SwapGasModal } from './swap-gas-modal/SwapGasModal.js'
+
+import { useCurrentAddress, useRoochClient } from '../hooks/index.js'
+import { useSubscribeOnRequest } from '../provider/globalProvider.js'
 
 export function AddressDropdownMenu() {
   const address = useCurrentAddress()
   const [sessionOpen, setSessionOpen] = useState(false)
   const [faucetOpen, setFaucetOpen] = useState(false)
+  const [swapGasOpen, setSwapGasOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [progress, setProgress] = useState(0)
   const subscribeOnRequestSuccess = useSubscribeOnRequest()
   const client = useRoochClient()
-  const [rgasBalance, setRgasBalance] = useState(0)
+  const [rGasBalance, setRGasBalance] = useState(0)
 
   const getBalance = useCallback(() => {
     if (!address) {
@@ -35,7 +38,7 @@ export function AddressDropdownMenu() {
         coinType: '0x3::gas_coin::RGas',
       })
       .then((result) => {
-        setRgasBalance(result.fixedBalance)
+        setRGasBalance(result.fixedBalance)
       })
   }, [address, client])
 
@@ -45,12 +48,17 @@ export function AddressDropdownMenu() {
 
   useEffect(() => {
     const unsubscribe = subscribeOnRequestSuccess((status) => {
-      console.log(status)
-      if (status === 'requesting') {
-        startProgress()
-      } else {
-        getBalance()
-        setIsLoading(false)
+      switch (status) {
+        case 'requesting':
+          startProgress()
+          break
+        case 'error':
+          setIsLoading(false)
+          break
+        case 'success':
+          getBalance()
+          setIsLoading(false)
+          break
       }
     })
 
@@ -76,6 +84,7 @@ export function AddressDropdownMenu() {
     <>
       <SessionModal trigger={<></>} open={sessionOpen} onOpenChange={(v) => setSessionOpen(v)} />
       <FaucetModal trigger={<></>} open={faucetOpen} onOpenChange={(v) => setFaucetOpen(v)} />
+      <SwapGasModal trigger={<></>} open={swapGasOpen} onOpenChange={(v) => setSwapGasOpen(v)} />
       <DropdownMenu.Root modal={false}>
         <StyleMarker>
           <DropdownMenu.Trigger asChild>
@@ -83,7 +92,7 @@ export function AddressDropdownMenu() {
               <Button variant={'outline'} className={styles.connectedAddress}>
                 <div className={styles.addressContainer}>
                   <Text mono>{address?.toShortStr() || ''}</Text>
-                  <Text className={styles.rgasBalance}>{`RGAS: ${rgasBalance.toFixed(4)}`}</Text>
+                  <Text className={styles.rgasBalance}>{`RGAS: ${rGasBalance.toFixed(4)}`}</Text>
                 </div>
                 <ChevronIcon />
                 {isLoading && (
@@ -99,18 +108,26 @@ export function AddressDropdownMenu() {
               <DropdownMenu.Item
                 className={clsx(styles.menuItem, styles.switchMenuItem)}
                 onSelect={() => {
-                  setSessionOpen(true)
-                }}
-              >
-                <Text mono>Sessions Manager</Text>
-              </DropdownMenu.Item>
-              <DropdownMenu.Item
-                className={clsx(styles.menuItem, styles.switchMenuItem)}
-                onSelect={() => {
                   setFaucetOpen(true)
                 }}
               >
                 <Text mono>Faucet</Text>
+              </DropdownMenu.Item>
+              <DropdownMenu.Item
+                className={clsx(styles.menuItem, styles.switchMenuItem)}
+                onSelect={() => {
+                  setSwapGasOpen(true)
+                }}
+              >
+                <Text mono>Swap RGas</Text>
+              </DropdownMenu.Item>
+              <DropdownMenu.Item
+                className={clsx(styles.menuItem, styles.switchMenuItem)}
+                onSelect={() => {
+                  setSessionOpen(true)
+                }}
+              >
+                <Text mono>Sessions Manager</Text>
               </DropdownMenu.Item>
             </DropdownMenu.Content>
           </StyleMarker>

@@ -7,7 +7,7 @@ export type ErrorType = {
   message: string
 }
 
-export type RequestStatusType = 'requesting' | 'success'
+export type RequestStatusType = 'requesting' | 'success' | 'error'
 type RequestCallback = (status: RequestStatusType) => void
 
 class RequestEventManager {
