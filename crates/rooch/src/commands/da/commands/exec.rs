@@ -61,6 +61,9 @@ pub struct ExecCommand {
     pub btc_rpc_user_name: String,
     #[clap(long = "btc-rpc-password")]
     pub btc_rpc_password: String,
+
+    #[clap(long = "enable-rocks-stats", help = "rocksdb-enable-statistics")]
+    pub enable_rocks_stats: bool,
 }
 
 async fn build_btc_client_proxy(
@@ -85,8 +88,10 @@ async fn build_btc_client_proxy(
 fn build_rooch_db(
     base_data_dir: Option<PathBuf>,
     chain_id: Option<RoochChainID>,
+    enable_rocks_stats: bool,
 ) -> (ObjectMeta, RoochDB) {
-    let opt = RoochOpt::new_with_default(base_data_dir, chain_id, None).unwrap();
+    let mut opt = RoochOpt::new_with_default(base_data_dir, chain_id, None).unwrap();
+    opt.store.enable_statistics = enable_rocks_stats;
     let registry_service = RegistryService::default();
     let rooch_db = RoochDB::init(opt.store_config(), &registry_service.default_registry()).unwrap();
     let root = rooch_db.latest_root().unwrap().unwrap();
@@ -97,10 +102,12 @@ async fn build_executor_and_store(
     base_data_dir: Option<PathBuf>,
     chain_id: Option<RoochChainID>,
     actor_system: &ActorSystem,
+    enable_rocks_stats: bool,
 ) -> anyhow::Result<(ExecutorProxy, MoveOSStore)> {
     let registry_service = RegistryService::default();
 
-    let (root, rooch_db) = build_rooch_db(base_data_dir.clone(), chain_id.clone());
+    let (root, rooch_db) =
+        build_rooch_db(base_data_dir.clone(), chain_id.clone(), enable_rocks_stats);
     let (rooch_store, moveos_store) = (rooch_db.rooch_store.clone(), rooch_db.moveos_store.clone());
 
     let executor_actor = ExecutorActor::new(
@@ -155,6 +162,7 @@ impl ExecCommand {
             self.base_data_dir.clone(),
             self.chain_id.clone(),
             &actor_system,
+            self.enable_rocks_stats,
         )
         .await?;
 
