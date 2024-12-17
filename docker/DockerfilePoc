@@ -1,8 +1,5 @@
 #FROM ubuntu:jammy AS builder
-FROM ubuntu:latest AS builder
-
-#FROM debian:bookworm-slim
-#FROM debian:bullseye-slim
+FROM ubuntu:jammy AS builder
 
 RUN set -eux; \
     apt-get update; \
@@ -66,21 +63,21 @@ RUN set -eux; \
     cargo --version; \
     rustc --version;
 
-#WORKDIR /rooch
-#COPY ./ .
-#RUN cargo build --release
+WORKDIR /rooch
+COPY ./ .
+RUN #cargo build --release
+RUN cargo build
 
-#FROM ubuntu:jammy
-##FROM debian:bookworm-slim
-#RUN set -eux; \
-#    apt-get update; \
-#    apt-get install -y --no-install-recommends \
-#        ca-certificates \
-#        wget \
-#        libssl-dev \
-#        build-essential \
-#        libreadline-dev; \
-#    rm -rf /var/lib/apt/lists/*
+FROM ubuntu:jammy
+RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
+        ca-certificates \
+        wget \
+        libssl-dev \
+        build-essential \
+        libreadline-dev; \
+    rm -rf /var/lib/apt/lists/*
 
 # Install SQLite 3.46.1 with multi-threading enabled
 RUN set -eux; \
@@ -98,20 +95,9 @@ RUN set -eux; \
     wget "http://nz2.archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2.23_amd64.deb"; \
     DEBIAN_FRONTEND=noninteractive dpkg -i libssl1.1_1.1.1f-1ubuntu2.23_amd64.deb;
 
-
-#FROM ubuntu:jammy AS builder
-
-WORKDIR /rooch
-COPY ./ .
-RUN cargo build --release
-
-
-#FROM ubuntu:jammy
-FROM ubuntu:latest
-
-ENV RELEASE_PATH="/rooch/target/release"
+#ENV RELEASE_PATH="/rooch/target/release"
+ENV RELEASE_PATH="/rooch/target/debug"
 COPY --from=builder $RELEASE_PATH/rooch \
-#COPY $RELEASE_PATH/rooch \
      /rooch/
 
 

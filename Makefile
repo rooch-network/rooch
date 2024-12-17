@@ -15,7 +15,7 @@ build:
 	cargo build
 
 build-docker:
-	$(DOCKER) build --tag baichuan3/rooch  -f ./docker/DockerfileDeb \
+	$(DOCKER) build --tag baichuan3/rooch  -f ./docker/DockerfilePoc \
 		$(shell git rev-parse --show-toplevel)
 
 .PHONY: build build-docker
