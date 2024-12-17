@@ -13,6 +13,7 @@ use move_core_types::{account_address::AccountAddress, identifier::Identifier};
 use move_vm_runtime::native_functions::NativeFunction;
 use moveos::gas::table::VMGasParameters;
 use moveos::moveos::{MoveOS, MoveOSConfig};
+use moveos_stdlib::natives::moveos_stdlib::base64::EncodeDecodeGasParametersOption;
 use moveos_store::MoveOSStore;
 use moveos_types::genesis_info::GenesisInfo;
 use moveos_types::h256::H256;
@@ -96,7 +97,7 @@ impl FrameworksGasParameters {
         }
     }
 
-    pub fn latest() -> Self {
+    pub fn v1() -> Self {
         let mut gas_parameter = Self {
             max_gas_amount: GasScheduleConfig::INITIAL_MAX_GAS_AMOUNT,
             vm_gas_params: VMGasParameters::initial(),
@@ -105,38 +106,64 @@ impl FrameworksGasParameters {
             rooch_nursery_gas_params: Some(rooch_nursery::natives::GasParameters::initial()),
         };
 
-        if LATEST_GAS_SCHEDULE_VERSION >= GAS_SCHEDULE_RELEASE_V1 {
-            gas_parameter
-                .vm_gas_params
-                .instruction_gas_parameter
-                .call_base = InternalGas::new(167);
-            gas_parameter
-                .vm_gas_params
-                .instruction_gas_parameter
-                .call_per_arg = InternalGasPerArg::new(15);
-            gas_parameter
-                .vm_gas_params
-                .instruction_gas_parameter
-                .call_per_local = InternalGasPerArg::new(15);
-            gas_parameter
-                .vm_gas_params
-                .instruction_gas_parameter
-                .call_generic_base = InternalGas::new(167);
-            gas_parameter
-                .vm_gas_params
-                .instruction_gas_parameter
-                .call_generic_per_arg = InternalGasPerArg::new(15);
-            gas_parameter
-                .vm_gas_params
-                .instruction_gas_parameter
-                .call_generic_per_local = InternalGasPerArg::new(15);
-            gas_parameter
-                .vm_gas_params
-                .instruction_gas_parameter
-                .call_generic_per_ty_arg = InternalGasPerArg::new(15);
-        }
+        gas_parameter
+            .rooch_framework_gas_params
+            .moveos_stdlib
+            .base64
+            .encode = EncodeDecodeGasParametersOption {
+            base: Some(1000.into()),
+            per_byte: Some(30.into()),
+        };
 
         gas_parameter
+            .rooch_framework_gas_params
+            .moveos_stdlib
+            .base64
+            .decode = EncodeDecodeGasParametersOption {
+            base: Some(1000.into()),
+            per_byte: Some(30.into()),
+        };
+
+        gas_parameter
+    }
+
+    pub fn v2() -> Self {
+        let mut v1_gas_parameter = FrameworksGasParameters::v1();
+
+        v1_gas_parameter
+            .vm_gas_params
+            .instruction_gas_parameter
+            .call_base = InternalGas::new(167);
+        v1_gas_parameter
+            .vm_gas_params
+            .instruction_gas_parameter
+            .call_per_arg = InternalGasPerArg::new(15);
+        v1_gas_parameter
+            .vm_gas_params
+            .instruction_gas_parameter
+            .call_per_local = InternalGasPerArg::new(15);
+        v1_gas_parameter
+            .vm_gas_params
+            .instruction_gas_parameter
+            .call_generic_base = InternalGas::new(167);
+        v1_gas_parameter
+            .vm_gas_params
+            .instruction_gas_parameter
+            .call_generic_per_arg = InternalGasPerArg::new(15);
+        v1_gas_parameter
+            .vm_gas_params
+            .instruction_gas_parameter
+            .call_generic_per_local = InternalGasPerArg::new(15);
+        v1_gas_parameter
+            .vm_gas_params
+            .instruction_gas_parameter
+            .call_generic_per_ty_arg = InternalGasPerArg::new(15);
+
+        v1_gas_parameter
+    }
+
+    pub fn latest() -> Self {
+        FrameworksGasParameters::v2()
     }
 
     pub fn to_gas_schedule_config(&self, chain_id: ChainID) -> GasScheduleConfig {

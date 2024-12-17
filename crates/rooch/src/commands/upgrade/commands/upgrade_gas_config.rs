@@ -16,6 +16,8 @@ use rooch_genesis::{FrameworksGasParameters, LATEST_GAS_SCHEDULE_VERSION};
 use rooch_types::error::{RoochError, RoochResult};
 use rooch_types::rooch_network::BuiltinChainID;
 use std::collections::BTreeMap;
+use std::io;
+use std::io::Write;
 
 /// Upgrade the onchain gas config
 #[derive(Debug, clap::Parser)]
@@ -91,6 +93,21 @@ impl CommandAction<Option<FileOutput>> for UpgradeGasConfigCommand {
                     local_gas_entries.into_iter().collect();
 
                 if local_gas_schedule_map.len() < onchain_gas_schedule_map.len() {
+                    println!(
+                        "local gas entries {:?} != onchain gas entries {:?}",
+                        local_gas_schedule_map.len(),
+                        onchain_gas_schedule_map.len()
+                    );
+
+                    for (gas_key, _) in onchain_gas_schedule_map.iter() {
+                        match local_gas_schedule_map.get(gas_key) {
+                            None => {
+                                println!("gas entry {:?} is onchain, but not in local.", gas_key);
+                            }
+                            Some(_) => {}
+                        }
+                    }
+
                     return Err(RoochError::LessLocalGasScheduleLength);
                 }
 
@@ -130,8 +147,21 @@ impl CommandAction<Option<FileOutput>> for UpgradeGasConfigCommand {
                         modified_gas_entries.len()
                     );
                     for (gas_key, gas_value) in modified_gas_entries.iter() {
-                        println!("modified gas: {:}, value: {:}", gas_key, gas_value);
+                        let old_value = onchain_gas_schedule_map.get(gas_key).unwrap();
+                        println!(
+                            "modified gas: {:}, old value: {}, new value: {:}",
+                            gas_key, old_value, gas_value
+                        );
                     }
+                }
+
+                if modified_gas_entries.is_empty() && added_gas_entries.is_empty() {
+                    println!("No local gas entries to be upgraded.");
+                    std::process::exit(1);
+                }
+
+                if !get_confirmation() {
+                    std::process::exit(1);
                 }
 
                 (onchain_gas_schedule_version, onchain_gas_schedule_map)
@@ -176,6 +206,28 @@ impl CommandAction<Option<FileOutput>> for UpgradeGasConfigCommand {
                 output.path
             );
             Ok(None)
+        }
+    }
+}
+
+fn get_confirmation() -> bool {
+    loop {
+        print!("Continue? (Yes/No): ");
+        if io::stdout().flush().is_err() {
+            return false;
+        }
+
+        let mut input = String::new();
+        match io::stdin().read_line(&mut input) {
+            Ok(_) => match input.trim() {
+                "Yes" => return true,
+                "No" => return false,
+                _ => println!("Please enter 'Yes' or 'No'"),
+            },
+            Err(e) => {
+                eprintln!("Error reading input: {}", e);
+                return false;
+            }
         }
     }
 }
