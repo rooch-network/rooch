@@ -16,7 +16,7 @@ import { WhatIsASessionView } from './views/WhatIsASessionView.js'
 import { SessionList } from './session-list/SessionList.js'
 import { Session } from '@roochnetwork/rooch-sdk'
 import { SessionView } from './views/SessionView.js'
-import { useCurrentSession, useRemoveSession, useSessions } from '../../hooks/index.js'
+import { useCurrentSession, useSessions } from '../../hooks/index.js'
 import { ProgressProvider } from '../ProgressProvider.js'
 
 type SessionModalView = 'what-is-a-session' | 'session-status'
@@ -48,10 +48,10 @@ type ConnectModalProps = {
 export function SessionModal({ trigger, open, defaultOpen, onOpenChange }: ConnectModalProps) {
   const sessions = useSessions()
   const currentSession = useCurrentSession()
-  const { mutateAsync: removeSessionMutate } = useRemoveSession()
   const [isModalOpen, setModalOpen] = useState(open ?? defaultOpen)
   const [currentView, setCurrentView] = useState<SessionModalView>('what-is-a-session')
   const [selectedSession, setSelectedSession] = useState<Session>()
+  const [sessionTitle, setSessionTitle] = useState<string>()
 
   const resetSelection = () => {
     setSelectedSession(undefined)
@@ -75,35 +75,37 @@ export function SessionModal({ trigger, open, defaultOpen, onOpenChange }: Conne
       setCurrentView('what-is-a-session')
     }
   }, [currentSession])
-  // {/*: currentView === 'create-session'*/}
-  // {/*? 'Create session'*/}
-  // {/*: 'What is a session'*/}
-  const removeSession = async (session: Session) => {
-    await removeSessionMutate({
-      authKey: session.getAuthKey(),
-    })
-    if (sessions.length > 1) {
-      sessions.forEach((v, i) => {
-        if (v.getAuthKey() === session.getAuthKey()) {
-          if (i - 1 < 0) {
-            return
-          }
-          setSelectedSession(sessions[i - 1])
-          setCurrentView('session-status')
-        }
-      })
-    }
-  }
 
   let modalContent: ReactNode | undefined
   switch (currentView) {
     case 'session-status':
       modalContent = (
-        <SessionView selectedSession={selectedSession!} removeSession={removeSession} />
+        <SessionView
+          selectedSession={selectedSession!}
+          removedCallback={(session) => {
+            if (sessions.length > 1) {
+              sessions.forEach((v, i) => {
+                if (v.getAuthKey() === session.getAuthKey()) {
+                  if (i - 1 < 0) {
+                    return
+                  }
+                  setSelectedSession(sessions[i - 1])
+                  setCurrentView('session-status')
+                }
+              })
+            }
+          }}
+        />
       )
       break
     default:
-      modalContent = <WhatIsASessionView />
+      modalContent = (
+        <WhatIsASessionView
+          getTitle={(title) => {
+            setSessionTitle(title)
+          }}
+        />
+      )
   }
 
   useEffect(() => {
@@ -129,7 +131,7 @@ export function SessionModal({ trigger, open, defaultOpen, onOpenChange }: Conne
                     <Heading as="h2">Session Manager</Heading>
                   </Dialog.Title>
                   <SessionList
-                    selectedSessionAuthKey={selectedSession?.getAuthKey()}
+                    selectedSessionAuthKey={selectedSession?.getAuthKey() || sessionTitle}
                     onSelect={(session) => {
                       if (!session) {
                         setSelectedSession(undefined)

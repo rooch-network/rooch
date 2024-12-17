@@ -4,13 +4,13 @@
 import { style } from '@vanilla-extract/css'
 import { themeVars } from '../../../themes/themeContract.js'
 
-export const container = style({
+export const whatContainer = style({
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
 })
 
-export const content = style({
+export const whatContent = style({
   display: 'flex',
   flexDirection: 'column',
   justifyContent: 'center',
@@ -21,24 +21,27 @@ export const content = style({
   padding: 20,
 })
 
-export const createButtonContainer = style({
-  position: 'absolute',
-  bottom: 20,
-  right: 20,
-})
-
-export const moreContent = style({
+export const whatMoreContent = style({
   display: 'flex',
   width: '100%',
   alignItems: 'center',
   flexDirection: 'column',
 })
 
-export const moreInfo = style({
-  color: themeVars.colors.bodyDanger,
+export const createSessionContainer = style({
+  display: 'flex',
+  width: '100%',
+  alignItems: 'center',
+  flexDirection: 'column',
 })
 
-export const scopeContent = style({
+export const createSessionContent = style({
+  display: 'flex',
+  marginTop: 20,
+  flexDirection: 'column',
+})
+
+export const createSessionScopeContent = style({
   display: 'flex',
   flexDirection: 'column',
   flexGrow: 1,
@@ -55,8 +58,20 @@ export const createSessionStatus = style({
   marginTop: 4,
 })
 
-export const retryButtonContainer = style({
+export const actionButtonContainer = style({
   position: 'absolute',
   bottom: 20,
   right: 20,
+})
+
+export const moreInfo = style({
+  color: themeVars.colors.bodyDanger,
+})
+
+export const sessionItemContent = style({
+  display: 'flex',
+  flexDirection: 'row',
+  flexGrow: 1,
+  marginTop: 2,
+  padding: 2,
 })

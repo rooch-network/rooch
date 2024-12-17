@@ -2,22 +2,26 @@
 // SPDX-License-Identifier: Apache-2.0
 import { useEffect, useMemo, useState } from 'react'
 
+import { Session, toShortStr } from '@roochnetwork/rooch-sdk'
+
+import { Text } from '../../ui/Text.js'
 import { Button } from '../../ui/Button.js'
 import { Heading } from '../../ui/Heading.js'
 import * as styles from './SessionView.css.js'
-import { Session, toShortStr } from '@roochnetwork/rooch-sdk'
-import { Text } from '../../ui/Text.js'
 import { SessionKeyGuard } from '../../SessionKeyGuard.js'
 import { getUTCOffset, second2Countdown, unix2str } from '../../../utils/time.js'
+import { useRemoveSession } from '../../../hooks/index.js'
+import { useProgress } from '../../ProgressProvider.js'
 
 type ConnectionStatusProps = {
   selectedSession: Session
-  removeSession: (session: Session) => Promise<void>
+  removedCallback: (session: Session) => void
 }
 
-export function SessionView({ selectedSession, removeSession }: ConnectionStatusProps) {
+export function SessionView({ selectedSession, removedCallback }: ConnectionStatusProps) {
+  const { loading, start, finish } = useProgress()
+  const { mutateAsync, isError } = useRemoveSession()
   const [timeRemaining, setTimeRemaining] = useState(-1)
-  const [removing, setRemoving] = useState(false)
 
   useEffect(() => {
     if (selectedSession.isSessionExpired()) {
@@ -33,6 +37,15 @@ export function SessionView({ selectedSession, removeSession }: ConnectionStatus
 
     return () => clearInterval(interval)
   }, [selectedSession])
+
+  const removeSession = (session: Session) => {
+    start()
+    mutateAsync({
+      authKey: session.getAuthKey(),
+    })
+      .then(() => removedCallback(session))
+      .finally(finish)
+  }
 
   const scopes = useMemo(() => {
     return selectedSession.scopes
@@ -83,17 +96,11 @@ export function SessionView({ selectedSession, removeSession }: ConnectionStatus
         <div className={styles.removeButtonContainer}>
           <SessionKeyGuard
             onClick={() => {
-              setRemoving(true)
-              removeSession(selectedSession).finally(() => setRemoving(false))
+              removeSession(selectedSession)
             }}
           >
-            <Button
-              className={styles.removeBtn}
-              disabled={removing}
-              type="button"
-              variant="outline"
-            >
-              Remove
+            <Button className={styles.removeBtn} disabled={loading} type="button" variant="outline">
+              {isError ? 'Retry Remove' : 'Remove'}
             </Button>
           </SessionKeyGuard>
         </div>
