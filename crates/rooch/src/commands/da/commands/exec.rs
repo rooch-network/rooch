@@ -159,10 +159,11 @@ impl ExecCommand {
         .await?;
 
         let (order_state_pair, tx_order_end) = self.load_order_state_pair();
-        let chunks = collect_chunks(self.segment_dir.clone())?;
+        let (chunks, max_chunk_id) = collect_chunks(self.segment_dir.clone())?;
         Ok(ExecInner {
             segment_dir: self.segment_dir.clone(),
             chunks,
+            max_chunk_id,
             order_state_pair,
             tx_order_end,
             bitcoin_client_proxy,
@@ -170,7 +171,7 @@ impl ExecCommand {
             transaction_store: moveos_store.transaction_store,
             produced: Arc::new(AtomicU64::new(0)),
             done: Arc::new(AtomicU64::new(0)),
-            verified_tx_order: Arc::new(AtomicU64::new(0)),
+            executed_tx_order: Arc::new(AtomicU64::new(0)),
         })
     }
 
@@ -197,6 +198,7 @@ impl ExecCommand {
 struct ExecInner {
     segment_dir: PathBuf,
     chunks: HashMap<u128, Vec<u64>>,
+    max_chunk_id: u128,
     order_state_pair: HashMap<u64, H256>,
     tx_order_end: u64,
 
@@ -208,7 +210,7 @@ struct ExecInner {
     // stats
     produced: Arc<AtomicU64>,
     done: Arc<AtomicU64>,
-    verified_tx_order: Arc<AtomicU64>,
+    executed_tx_order: Arc<AtomicU64>,
 }
 
 struct ExecMsg {
@@ -220,25 +222,28 @@ struct ExecMsg {
 impl ExecInner {
     async fn run(&self) -> anyhow::Result<()> {
         let done_clone = self.done.clone();
-        let verified_tx_order_clone = self.verified_tx_order.clone();
+        let executed_tx_order_clone = self.executed_tx_order.clone();
         let produced_clone = self.produced.clone();
         tokio::spawn(async move {
             loop {
                 tokio::time::sleep(Duration::from_secs(60)).await;
                 let done = done_clone.load(std::sync::atomic::Ordering::Relaxed);
-                let verified_tx_order =
-                    verified_tx_order_clone.load(std::sync::atomic::Ordering::Relaxed);
+                let executed_tx_order =
+                    executed_tx_order_clone.load(std::sync::atomic::Ordering::Relaxed);
                 let produced = produced_clone.load(std::sync::atomic::Ordering::Relaxed);
                 tracing::info!(
-                    "produced: {}, done: {}, verified_tx_order: {}",
+                    "produced: {}, done: {}, max executed_tx_order: {}",
                     produced,
                     done,
-                    verified_tx_order
+                    executed_tx_order
                 );
             }
         });
 
-        let (tx, rx) = tokio::sync::mpsc::channel(16);
+        // larger buffer size to avoid rx starving caused by consumer has to access disks and request btc block.
+        // after consumer load data(ledger_tx) from disk/btc client, burst to executor, need large buffer to avoid blocking.
+        // 16384 is a magic number, it's a trade-off between memory usage and performance. (usually tx count inside a block is under 8192, MAX_TXS_PER_BLOCK_IN_FIX)
+        let (tx, rx) = tokio::sync::mpsc::channel(16384);
         let producer = self.produce_tx(tx);
         let consumer = self.consume_tx(rx);
 
@@ -254,9 +259,47 @@ impl ExecInner {
         }
     }
 
+    fn find_begin_chunk(&self) -> anyhow::Result<u128> {
+        // binary-search from chunk [0, max_chunk_id], find max chunk_id that is finished.
+        let mut left = 0;
+        let mut right = self.max_chunk_id;
+        while left < right {
+            let mid = left + (right - left) / 2;
+            if self.is_chunk_finished(mid)? {
+                left = mid + 1;
+            } else {
+                right = mid;
+            }
+        }
+        Ok(left)
+    }
+
+    fn is_chunk_finished(&self, chunk_id: u128) -> anyhow::Result<bool> {
+        let segments = self.chunks.get(&chunk_id);
+        if segments.is_none() {
+            return Err(anyhow::anyhow!("chunk: {} not found", chunk_id));
+        }
+        let mut tx_list = get_tx_list_from_chunk(
+            self.segment_dir.clone(),
+            chunk_id,
+            segments.unwrap().clone(),
+        )?;
+        let last_tx_in_chunk = tx_list
+            .last_mut()
+            .unwrap_or_else(|| panic!("chunk: {} tx_list is empty", chunk_id));
+        let last_tx_hash = last_tx_in_chunk.tx_hash();
+        self.is_tx_executed(last_tx_hash)
+    }
+
+    fn is_tx_executed(&self, tx_hash: H256) -> anyhow::Result<bool> {
+        let execution_info = self.transaction_store.get_tx_execution_info(tx_hash)?;
+        Ok(execution_info.is_some())
+    }
+
     async fn produce_tx(&self, tx: Sender<ExecMsg>) -> anyhow::Result<()> {
-        tracing::info!("Start to produce transactions");
-        let mut block_number = 0;
+        let mut block_number = self.find_begin_chunk()?;
+
+        tracing::info!("Start to produce transactions from block: {}", block_number);
         let mut produced_tx_order = 0;
         let mut executed = true;
         loop {
@@ -315,7 +358,7 @@ impl ExecInner {
 
     async fn consume_tx(&self, mut rx: Receiver<ExecMsg>) -> anyhow::Result<()> {
         tracing::info!("Start to consume transactions");
-        let mut verified_tx_order = 0;
+        let mut executed_tx_order = 0;
         let mut last_record_time = std::time::Instant::now();
         loop {
             let exec_msg_opt = rx.recv().await;
@@ -327,9 +370,9 @@ impl ExecInner {
 
             self.execute(exec_msg).await?;
 
-            verified_tx_order = tx_order;
-            self.verified_tx_order
-                .store(verified_tx_order, std::sync::atomic::Ordering::Relaxed);
+            executed_tx_order = tx_order;
+            self.executed_tx_order
+                .store(executed_tx_order, std::sync::atomic::Ordering::Relaxed);
             let done = self.done.fetch_add(1, std::sync::atomic::Ordering::Relaxed) + 1;
 
             if done % 10000 == 0 {
@@ -346,7 +389,7 @@ impl ExecInner {
         }
         tracing::info!(
             "All transactions execution state root are strictly equal to RoochNetwork: [0, {}]",
-            verified_tx_order
+            executed_tx_order
         );
         Ok(())
     }
@@ -416,6 +459,10 @@ impl ExecInner {
                         *expected_root, root.state_root.unwrap()
                     ));
                 }
+                tracing::info!(
+                    "Execution state root is equal to RoochNetwork: tx_order: {}",
+                    tx_order
+                );
                 Ok(())
             }
             None => Ok(()),
