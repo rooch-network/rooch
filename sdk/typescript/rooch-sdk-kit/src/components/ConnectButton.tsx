@@ -7,6 +7,7 @@ import { ConnectModal } from './connect-modal/ConnectModal.js'
 import { StyleMarker } from './styling/StyleMarker.js'
 import { Button } from './ui/Button.js'
 import { useCurrentAddress } from '../hooks/index.js'
+import { AddressDropdownMenu } from './addressDropdownMenu.js'
 
 type ConnectButtonProps = {
   connectText?: ReactNode
@@ -19,19 +20,15 @@ export function ConnectButton({
   const address = useCurrentAddress()
   return address ? (
     <StyleMarker>
-      <Button
-        onClick={() => {
-          navigator.clipboard.writeText(address.toStr())
-        }}
-      >
-        {address.toShortStr()}
-      </Button>
+      <AddressDropdownMenu />
     </StyleMarker>
   ) : (
     <ConnectModal
       trigger={
         <StyleMarker>
-          <Button {...buttonProps}>{connectText}</Button>
+          <Button variant={'outline'} {...buttonProps}>
+            {connectText}
+          </Button>
         </StyleMarker>
       }
     />

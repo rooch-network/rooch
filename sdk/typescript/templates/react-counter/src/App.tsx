@@ -6,15 +6,13 @@ import {
   useRoochClient,
   useCurrentWallet,
   ConnectButton,
-  SessionKeyGuardButton,
+  SessionKeyGuard,
+  FaucetModal, WalletKeyGuard
 } from "@roochnetwork/rooch-sdk-kit";
 
 import { useState } from "react";
 import { Transaction } from "@roochnetwork/rooch-sdk";
-
-// Your publish counter contract address
-const devCounterAddress = "";
-const devCounterModule = `${devCounterAddress}::counter`;
+import { useNetworkVariable } from "./networks.ts";
 
 function App() {
   const sessionKey = useCurrentSession();
@@ -23,7 +21,8 @@ function App() {
   const [sessionLoading, setSessionLoading] = useState(false);
   const { mutateAsync: createSessionKey } = useCreateSessionKey();
   const { wallet } = useCurrentWallet();
-
+  const devCounterAddress = useNetworkVariable("counterPackageId");
+  const devCounterModule = `${devCounterAddress}::counter`;
   let { data, error, isPending, refetch } = useRoochClientQuery(
     "executeViewFunction",
     {
@@ -127,9 +126,21 @@ function App() {
         <Heading size="3" mt="6">
           {sessionKey ? "Counter" : "Create session key"}
         </Heading>
-        <SessionKeyGuardButton onClick={() => {
+        <SessionKeyGuard
+          onClick={() => {
+            console.log("用户逻辑");
+          }}
+        >
+          <Button>hello</Button>
+        </SessionKeyGuard>
 
-        }}><Button>hello</Button></SessionKeyGuardButton>
+        <FaucetModal
+          trigger={
+            <WalletKeyGuard onClick={() => {}}>
+              <Button>hello</Button>
+            </WalletKeyGuard>
+          }
+        />
         <Button
           onClick={async () => {
             if (wallet) {

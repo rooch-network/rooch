@@ -9,7 +9,7 @@ export const container = style({
   display: 'flex',
 })
 
-export const walletItem = style({
+export const sessionItem = style({
   display: 'flex',
   alignItems: 'center',
   flexGrow: 1,
@@ -19,17 +19,12 @@ export const walletItem = style({
   ':hover': {
     backgroundColor: themeVars.backgroundColors.walletItemHover,
   },
+  ':focus': {
+    outline: 'none',
+  },
 })
 
-export const selectedWalletItem = style({
+export const selectedSessionItem = style({
   backgroundColor: themeVars.backgroundColors.walletItemSelected,
   boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.05)',
-})
-
-export const walletIcon = style({
-  width: 28,
-  height: 28,
-  flexShrink: 0,
-  objectFit: 'cover',
-  borderRadius: themeVars.radii.small,
 })

@@ -11,13 +11,13 @@ import {
 import { useSessionStore } from '../hooks/useSessionsStore.js'
 import { NetworkConfig } from '../hooks/index.js'
 import { NetworkConfigs } from './clientProvider.js'
-import { HTTPTransport } from '../http/httpTransport.js'
-import { useSetError } from './errorProvider.js'
+import { HTTPTransport, requestCallbackType } from '../http/httpTransport.js'
+import { useTriggerError, useTriggerRequest } from './globalProvider.js'
 
 const DEFAULT_CREATE_CLIENT = (
   _name: string,
   config: NetworkConfig | RoochClient,
-  requestErrorCallback: (code: number, msg: string) => void,
+  requestErrorCallback: requestCallbackType,
 ) => {
   if (isRoochClient(config)) {
     return config
@@ -43,24 +43,29 @@ export function useDefaultClient(params: UseRoochClientParams) {
 
   const currentSession = useSessionStore((state) => state.currentSession)
   const removeSession = useSessionStore((state) => state.removeSession)
-  const setError = useSetError()
-  const _requestErrorCallback = useCallback(
-    (code: number, msg: string) => {
+  const triggerError = useTriggerError()
+  const triggerRequest = useTriggerRequest()
+  const _requestErrorCallback = useCallback<requestCallbackType>(
+    (state, error) => {
       try {
-        if (code === ErrorValidateInvalidAccountAuthKey || code === ErrorValidateSessionIsExpired) {
-          if (currentSession) {
-            removeSession(currentSession)
+        if (state === 'error') {
+          if (
+            error!.code === ErrorValidateInvalidAccountAuthKey ||
+            error!.code === ErrorValidateSessionIsExpired
+          ) {
+            if (currentSession) {
+              removeSession(currentSession)
+            }
           }
+          triggerError(error!)
+        } else {
+          triggerRequest(state)
         }
       } catch (e) {
         console.error(e)
       }
-      setError({
-        code: code,
-        msg: msg,
-      })
     },
-    [removeSession, currentSession, setError],
+    [triggerError, currentSession, removeSession, triggerRequest],
   )
 
   return useMemo(() => {

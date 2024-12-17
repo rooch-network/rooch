@@ -49,9 +49,16 @@ type UncontrolledModalProps = {
 type ConnectModalProps = {
   /** The trigger button that opens the dialog. */
   trigger: NonNullable<ReactNode>
+  onSuccess?: () => void
 } & (ControlledModalProps | UncontrolledModalProps)
 
-export function ConnectModal({ trigger, open, defaultOpen, onOpenChange }: ConnectModalProps) {
+export function ConnectModal({
+  trigger,
+  open,
+  defaultOpen,
+  onOpenChange,
+  onSuccess,
+}: ConnectModalProps) {
   const [isModalOpen, setModalOpen] = useState(open ?? defaultOpen)
   const [currentView, setCurrentView] = useState<ConnectModalView>()
   const [selectedWallet, setSelectedWallet] = useState<Wallet>()
@@ -87,7 +94,13 @@ export function ConnectModal({ trigger, open, defaultOpen, onOpenChange }: Conne
     mutate(
       { wallet },
       {
-        onSuccess: () => handleOpenChange(false),
+        onSuccess: () => {
+          // TODO: Not activated
+          if (onSuccess) {
+            onSuccess()
+          }
+          handleOpenChange(false)
+        },
       },
     )
   }

@@ -1,8 +1,18 @@
-import { useError } from "@roochnetwork/rooch-sdk-kit";
-import { Button } from "@radix-ui/themes";
+import { useSubscribeOnError } from '@roochnetwork/rooch-sdk-kit'
+import { useEffect } from "react";
 
 export function ErrorGuard() {
-  const { error, resolve } = useError();
-  console.log(error);
-  return error ? <Button onClick={resolve}>resolve</Button> : <></>;
+  const subscribeToError = useSubscribeOnError();
+
+  useEffect(() => {
+    const unsubscribe = subscribeToError((error) => {
+      console.error('Error occurred:', error);
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [subscribeToError]);
+
+  return <></>;
 }

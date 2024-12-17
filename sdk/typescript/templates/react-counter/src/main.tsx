@@ -9,6 +9,7 @@ import {Theme} from '@radix-ui/themes';
 import { networkConfig } from "./networks";
 import App from './App';
 import { ErrorGuard } from "./ErrorGuard.tsx";
+import { DEVNET_COUNTER_PACKAGE_ID } from './constants.ts'
 
 const queryClient = new QueryClient();
 
@@ -16,7 +17,14 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <Theme appearance="light">
       <QueryClientProvider client={queryClient}>
-            <RoochProvider networks={networkConfig} defaultNetwork='testnet'>
+            <RoochProvider networks={networkConfig} sessionConf={
+              {
+                appName: "rooch_test",
+                appUrl: "https://test.com",
+                scopes: [`${DEVNET_COUNTER_PACKAGE_ID}::*::*`],
+                maxInactiveInterval: 1200
+              }
+            } defaultNetwork='localnet'>
               <WalletProvider preferredWallets={['UniSat']} chain={'bitcoin'} autoConnect>
                 <ErrorGuard/>
                 <App/>

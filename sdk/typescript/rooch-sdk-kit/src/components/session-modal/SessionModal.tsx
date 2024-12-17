@@ -3,7 +3,7 @@
 
 import * as Dialog from '@radix-ui/react-dialog'
 import clsx from 'clsx'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 
 import { BackIcon } from '../icons/BackIcon.js'
@@ -12,14 +12,14 @@ import { StyleMarker } from '../styling/StyleMarker.js'
 import { Heading } from '../ui/Heading.js'
 import { IconButton } from '../ui/IconButton.js'
 import * as styles from './SessionModal.css.js'
-// import { ConnectionStatus } from './views/ConnectionStatus.js'
-import { WhatIsAWallet } from './views/WhatIsAWallet.js'
+import { WhatIsASessionView } from './views/WhatIsASessionView.js'
 import { SessionList } from './session-list/SessionList.js'
-// import { useCreateSessionKey } from '../../hooks/index.js'
 import { Session } from '@roochnetwork/rooch-sdk'
-import { SessionStatus } from './views/SessionStatus.js'
+import { SessionView } from './views/SessionView.js'
+import { useCurrentSession, useRemoveSession, useSessions } from '../../hooks/index.js'
+import { ProgressProvider } from '../ProgressProvider.js'
 
-type SessionModalView = 'what-is-a-session' | 'session-status' | 'create-status'
+type SessionModalView = 'what-is-a-session' | 'session-status'
 
 type ControlledModalProps = {
   /** The controlled open state of the dialog. */
@@ -46,14 +46,16 @@ type ConnectModalProps = {
 } & (ControlledModalProps | UncontrolledModalProps)
 
 export function SessionModal({ trigger, open, defaultOpen, onOpenChange }: ConnectModalProps) {
+  const sessions = useSessions()
+  const currentSession = useCurrentSession()
+  const { mutateAsync: removeSessionMutate } = useRemoveSession()
   const [isModalOpen, setModalOpen] = useState(open ?? defaultOpen)
-  const [currentView, setCurrentView] = useState<SessionModalView>()
+  const [currentView, setCurrentView] = useState<SessionModalView>('what-is-a-session')
   const [selectedSession, setSelectedSession] = useState<Session>()
-  // const { mutate, isError } = useCreateSessionKey()
 
   const resetSelection = () => {
     setSelectedSession(undefined)
-    setCurrentView(undefined)
+    setCurrentView('what-is-a-session')
   }
 
   const handleOpenChange = (open: boolean) => {
@@ -64,37 +66,51 @@ export function SessionModal({ trigger, open, defaultOpen, onOpenChange }: Conne
     onOpenChange?.(open)
   }
 
-  // const createSession = () => {
-  //   setCurrentView('create-status')
-  //   // mutate(
-  //   //   { wallet },
-  //   //   {
-  //   //     onSuccess: () => handleOpenChange(false),
-  //   //   },
-  //   // )
-  // }
+  useEffect(() => {
+    if (currentSession) {
+      setSelectedSession(currentSession)
+      setCurrentView('session-status')
+    } else {
+      setSelectedSession(undefined)
+      setCurrentView('what-is-a-session')
+    }
+  }, [currentSession])
+  // {/*: currentView === 'create-session'*/}
+  // {/*? 'Create session'*/}
+  // {/*: 'What is a session'*/}
+  const removeSession = async (session: Session) => {
+    await removeSessionMutate({
+      authKey: session.getAuthKey(),
+    })
+    if (sessions.length > 1) {
+      sessions.forEach((v, i) => {
+        if (v.getAuthKey() === session.getAuthKey()) {
+          if (i - 1 < 0) {
+            return
+          }
+          setSelectedSession(sessions[i - 1])
+          setCurrentView('session-status')
+        }
+      })
+    }
+  }
 
   let modalContent: ReactNode | undefined
   switch (currentView) {
-    case 'what-is-a-session':
-      modalContent = <WhatIsAWallet />
-      break
     case 'session-status':
-      modalContent = <SessionStatus selectedSession={selectedSession!} />
-      break
-    case 'create-status':
       modalContent = (
-        // <ConnectionStatus
-        //   selectedWallet={selectedSession!}
-        //   hadConnectionError={isError}
-        //   onRetryConnection={connectWallet}
-        // />
-        <></>
+        <SessionView selectedSession={selectedSession!} removeSession={removeSession} />
       )
       break
     default:
-      modalContent = <WhatIsAWallet />
+      modalContent = <WhatIsASessionView />
   }
+
+  useEffect(() => {
+    if (sessions.length === 0) {
+      setCurrentView('what-is-a-session')
+    }
+  }, [sessions])
 
   return (
     <Dialog.Root open={open ?? isModalOpen} onOpenChange={handleOpenChange}>
@@ -115,8 +131,13 @@ export function SessionModal({ trigger, open, defaultOpen, onOpenChange }: Conne
                   <SessionList
                     selectedSessionAuthKey={selectedSession?.getAuthKey()}
                     onSelect={(session) => {
-                      setSelectedSession(session)
-                      setCurrentView('session-status')
+                      if (!session) {
+                        setSelectedSession(undefined)
+                        setCurrentView('what-is-a-session')
+                      } else {
+                        setSelectedSession(session)
+                        setCurrentView('session-status')
+                      }
                     }}
                   />
                 </div>
@@ -125,7 +146,7 @@ export function SessionModal({ trigger, open, defaultOpen, onOpenChange }: Conne
                   onClick={() => setCurrentView('what-is-a-session')}
                   type="button"
                 >
-                  What is a Session?
+                  What is a session?
                 </button>
               </div>
               <div
@@ -138,7 +159,7 @@ export function SessionModal({ trigger, open, defaultOpen, onOpenChange }: Conne
                     <BackIcon />
                   </IconButton>
                 </div>
-                {modalContent}
+                <ProgressProvider>{modalContent}</ProgressProvider>
               </div>
               <Dialog.Close className={styles.closeButtonContainer} asChild>
                 <IconButton type="button" aria-label="Close">

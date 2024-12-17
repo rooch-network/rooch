@@ -7,25 +7,41 @@ import {
   RoochHTTPTransportOptions,
 } from '@roochnetwork/rooch-sdk'
 
+export type requestCallbackType = (
+  state: 'requesting' | 'error' | 'success',
+  error?: {
+    code: number
+    message: string
+  },
+) => void
 export class HTTPTransport extends RoochHTTPTransport {
-  private readonly requestErrorCallback: (code: number, msg: string) => void
+  private readonly requestCallback: requestCallbackType
 
-  constructor(
-    options: RoochHTTPTransportOptions,
-    requestErrorCallback: (code: number, msg: string) => void,
-  ) {
+  constructor(options: RoochHTTPTransportOptions, requestErrorCallback: requestCallbackType) {
     super(options)
-    this.requestErrorCallback = requestErrorCallback
+    this.requestCallback = requestErrorCallback
   }
 
   async request<T>(input: RoochTransportRequestOptions): Promise<T> {
     let result: T
     try {
+      if (input.method === 'rooch_executeRawTransaction') {
+        this.requestCallback('requesting')
+      }
+
       result = await super.request(input)
+
+      if (input.method === 'rooch_executeRawTransaction') {
+        this.requestCallback('success')
+      }
+
       return result
     } catch (e: any) {
       if ('code' in e) {
-        this.requestErrorCallback(e.code, e.message)
+        this.requestCallback('error', {
+          code: e.code,
+          message: e.message,
+        })
       }
       throw e
     }

@@ -8,14 +8,23 @@ import { Session } from '@roochnetwork/rooch-sdk'
 
 type WalletListProps = {
   selectedSessionAuthKey?: string
-  onSelect: (wallet: Session) => void
+  onSelect: (wallet?: Session) => void
 }
 
 export function SessionList({ selectedSessionAuthKey, onSelect }: WalletListProps) {
   const sessions = useSessions()
-
   return (
     <ul className={styles.container}>
+      <SessionListItem
+        key={'new'}
+        authKey={
+          selectedSessionAuthKey?.startsWith('0x')
+            ? 'What is a session'
+            : selectedSessionAuthKey || ''
+        }
+        isSelected={!selectedSessionAuthKey?.startsWith('0x')}
+        onClick={() => onSelect()}
+      />
       {sessions.map((session) => (
         <SessionListItem
           key={session.getAuthKey()}

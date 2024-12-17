@@ -17,7 +17,7 @@ export function SessionListItem({ authKey, onClick, isSelected = false }: Sessio
   return (
     <li className={styles.container}>
       <button
-        className={clsx(styles.walletItem, { [styles.selectedWalletItem]: isSelected })}
+        className={clsx(styles.sessionItem, { [styles.selectedSessionItem]: isSelected })}
         type="button"
         onClick={onClick}
       >

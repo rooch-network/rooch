@@ -57,7 +57,15 @@ export function useRemoveSession({
           if (cacheSession) {
             removeSession(cacheSession)
             if (cacheSession.getAuthKey() === currentSession?.getAuthKey()) {
-              setCurrentSession(undefined)
+              const substitute = sessionsKeys
+                .filter((item) => item.getAuthKey() !== cacheSession.getAuthKey())
+                .sort((a, b) => b.getCreateTime() - a.getCreateTime())
+                .filter((item) => !item.isSessionExpired())
+              if (substitute.length > 0) {
+                setCurrentSession(substitute[0])
+              } else {
+                setCurrentSession(undefined)
+              }
             }
           }
         }

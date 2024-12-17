@@ -110,7 +110,7 @@ export class Session extends Signer {
   }
 
   isSessionExpired() {
-    const expirationTime = (this.lastActiveTime + this.maxInactiveInterval) * 1000
+    const expirationTime = this.lastActiveTime + this.maxInactiveInterval * 1000
     return Date.now() > expirationTime
   }
 

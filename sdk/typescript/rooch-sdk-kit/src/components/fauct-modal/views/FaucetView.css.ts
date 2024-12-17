@@ -2,38 +2,38 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { style } from '@vanilla-extract/css'
-
 import { themeVars } from '../../../themes/themeContract.js'
 
 export const container = style({
   display: 'flex',
   flexDirection: 'column',
-  justifyContent: 'center',
   alignItems: 'center',
   width: '100%',
+  marginTop: 16,
 })
 
-export const walletIcon = style({
-  objectFit: 'cover',
-  width: 72,
-  height: 72,
-  borderRadius: themeVars.radii.large,
-})
-
-export const title = style({
-  marginTop: 12,
-})
-
-export const connectionStatus = style({
+export const content = style({
   display: 'flex',
   flexDirection: 'column',
   justifyContent: 'center',
   alignItems: 'center',
-  height: '100%',
+  flexGrow: 1,
+  gap: 20,
+  padding: 40,
 })
 
-export const retryButtonContainer = style({
+export const createButtonContainer = style({
   position: 'absolute',
   bottom: 20,
   right: 20,
+})
+
+export const progressBar = style({
+  position: 'absolute',
+  bottom: 0,
+  left: 10,
+  height: '1px',
+  backgroundColor: themeVars.colors.primaryButton,
+  transition: 'width 0.2s ease',
+  borderRadius: '8px',
 })

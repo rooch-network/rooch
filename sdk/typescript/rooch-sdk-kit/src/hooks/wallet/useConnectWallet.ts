@@ -10,6 +10,7 @@ import { walletMutationKeys } from '../../constants/index.js'
 import { Wallet } from '../../wellet/index.js'
 import { useSessionStore } from '../useSessionsStore.js'
 import { useSessions } from '../useSessions.js'
+import { useTriggerError } from '../../provider/globalProvider.js'
 
 type ConnectWalletArgs = {
   wallet: Wallet
@@ -39,7 +40,7 @@ export function useConnectWallet({
   const setWalletConnected = useWalletStore((state) => state.setWalletConnected)
   const setWalletDisconnected = useWalletStore((state) => state.setWalletDisconnected)
   const setConnectionStatus = useWalletStore((state) => state.setConnectionStatus)
-
+  const triggerError = useTriggerError()
   return useMutation({
     mutationKey: walletMutationKeys.connectWallet(mutationKey),
     mutationFn: async ({ wallet }) => {
@@ -59,9 +60,12 @@ export function useConnectWallet({
         setCurrentSession(cur)
 
         return connectAddress
-      } catch (error) {
+      } catch (error: any) {
         // TODO: one key, A retry will be performed after the rejection
         setWalletDisconnected()
+        if ('code' in error && 'message' in error) {
+          triggerError(error)
+        }
         throw error
       }
     },
