@@ -259,8 +259,9 @@ impl ExecInner {
         }
     }
 
+    // binary-search from chunk [0, max_chunk_id], find max chunk_id that is finished.
+    // begin from max_finished_chunk_id + 1, produce transactions.
     fn find_begin_chunk(&self) -> anyhow::Result<u128> {
-        // binary-search from chunk [0, max_chunk_id], find max chunk_id that is finished.
         let mut left = 0;
         let mut right = self.max_chunk_id;
         while left < right {

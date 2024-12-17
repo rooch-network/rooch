@@ -16,6 +16,7 @@ use tokio::time::{sleep, Duration};
 pub(crate) const DEFAULT_AVAIL_MAX_SEGMENT_SIZE: u64 = 256 * 1024;
 const BACK_OFF_MIN_DELAY: Duration = Duration::from_millis(3000);
 const SUBMIT_API_PATH: &str = "v2/submit";
+const TURBO_SUBMIT_API_PATH: &str = "user/submit_data";
 
 #[derive(Clone)]
 pub(crate) struct AvailClient {
@@ -29,6 +30,25 @@ impl AvailClient {
         let client = Client::new();
 
         Ok(AvailClient {
+            endpoint: endpoint.to_string(),
+            client,
+            max_retries,
+        })
+    }
+}
+
+#[derive(Clone)]
+pub(crate) struct AvailTurboClient {
+    endpoint: String,
+    client: Client,
+    max_retries: usize,
+}
+
+impl AvailTurboClient {
+    pub(crate) fn new(endpoint: &str, max_retries: usize) -> anyhow::Result<Self> {
+        let client = Client::new();
+
+        Ok(AvailTurboClient {
             endpoint: endpoint.to_string(),
             client,
             max_retries,
