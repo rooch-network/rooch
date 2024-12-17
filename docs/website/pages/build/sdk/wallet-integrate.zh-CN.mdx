@@ -1,0 +1,39 @@
+# 钱包集成
+
+这篇文档将介绍如何将钱包集成到 Rooch SDK 中，显示 Rooch 区块链上的资产，以及提供给第三方钱包厂商集成 Rooch 区块链的资产显示思路。
+
+## 将钱包功能集成到 Rooch SDK 中
+
+Rooch 目前提供了一套 TypeScript 的 SDK，为 Rooch 开发者或应用开发者提供了便捷的开发体验。
+
+### 介绍
+
+`rooch-sdk` 提供了一些基础的封装，`rooch-sdk-kit` 则为应用开发提供了更实用的开发工具。而钱包集成就用到了这些工具，相关代码存放在 `rooch` 仓库中，详细路径为：
+
+```
+rooch/sdk/typescript/rooch-sdk-kit/src/wellet
+```
+
+### 如何集成钱包到 Rooch 中
+
+目前 Rooch 已经集成了 `UniSat`、`OneKey` 和 `OKX`，如果钱包厂商需要集成钱包到 Rooch 中，则需要实用 SDK 做一些相应的开发，并将实现钱包集成的代码，提交到上述目录中。
+
+在 Rooch 上创建的资产只需要通过调用一个 `getBalance` 接口即可。
+
+以 UniSat 为例，除去一些操作连接相关的代码开发外，最终要显示资产，最关键的是这段代码：
+
+```ts
+getBalance(): Promise<{ confirmed: number; unconfirmed: number; total: string }> {
+return this.getTarget().getBalance()
+}
+```
+
+### 详细介绍 UniSat 的集成方案
+
+TODO
+
+## 钱包开发者将 Rooch 集成到钱包中
+
+目前 Rooch 的资产只能通过 Rooch Portal 进行显示，暂时无法在钱包中显示。如果钱包厂商或开发者想要将 Rooch 资产展示在钱包中，需要向钱包应用提交相关代码。
+
+这些代码开发过程也类似于将钱包集成到 Rooch SDK 中，开发者需要将获取 Rooch 资产的功能包装好，并提交到某个钱包的代码仓库中，具体开发方法，请参考相关钱包的开发文档。
