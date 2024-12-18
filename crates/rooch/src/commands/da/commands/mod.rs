@@ -230,22 +230,32 @@ impl TxOrderHashBlockGetter {
     }
 
     pub fn find_last_executed(&self) -> anyhow::Result<Option<TxOrderHashBlock>> {
-        // binary search
+        // Check for an empty list
+        if self.tx_order_hash_blocks.is_empty() {
+            return Ok(None);
+        }
+
+        // Binary search
         let mut left = 0;
         let mut right = self.tx_order_hash_blocks.len() - 1;
         while left < right {
             let mid = (left + right) / 2;
             let tx_order_hash_block = &self.tx_order_hash_blocks[mid];
-            let tx_hash = tx_order_hash_block.tx_hash;
-            let executed = self.has_executed(tx_hash)?;
+            let executed = self.has_executed(tx_order_hash_block.tx_hash)?;
             if executed {
                 left = mid + 1;
             } else {
                 right = mid;
             }
         }
-        if self.has_executed(self.tx_order_hash_blocks[left].tx_hash)? {
-            Ok(None)
+
+        // Determine result
+        let last_executed = self.has_executed(self.tx_order_hash_blocks[left].tx_hash)?;
+        if left == 0 && !last_executed {
+            return Ok(None);
+        }
+        if !last_executed {
+            Ok(Some(self.tx_order_hash_blocks[left - 1].clone()))
         } else {
             Ok(Some(self.tx_order_hash_blocks[left].clone()))
         }

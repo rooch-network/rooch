@@ -233,7 +233,7 @@ impl ExecInner {
         // larger buffer size to avoid rx starving caused by consumer has to access disks and request btc block.
         // after consumer load data(ledger_tx) from disk/btc client, burst to executor, need large buffer to avoid blocking.
         // 16384 is a magic number, it's a trade-off between memory usage and performance. (usually tx count inside a block is under 8192, MAX_TXS_PER_BLOCK_IN_FIX)
-        let (tx, rx) = tokio::sync::mpsc::channel(2);
+        let (tx, rx) = tokio::sync::mpsc::channel(16384);
         let producer = self.produce_tx(tx);
         let consumer = self.consume_tx(rx);
 
