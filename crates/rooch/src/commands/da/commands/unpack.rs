@@ -1,9 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::commands::da::commands::{collect_chunks, get_tx_list_from_chunk};
 use clap::Parser;
-use rooch_types::da::chunk::chunk_from_segments;
-use rooch_types::da::segment::{segment_from_bytes, SegmentID};
 use rooch_types::error::RoochResult;
 use std::collections::{HashMap, HashSet};
 use std::fs;
@@ -118,25 +117,9 @@ impl UnpackInner {
         Ok(())
     }
 
-    // collect all the chunks from segment_dir.
-    // each segment is stored in a file named by the segment_id.
-    // each chunk may contain multiple segments.
-    // we collect all the chunks and their segment numbers to unpack them later.
     fn collect_chunks(&mut self) -> anyhow::Result<()> {
-        for entry in fs::read_dir(&self.segment_dir)?.flatten() {
-            let path = entry.path();
-            if path.is_file() {
-                if let Some(segment_id) = path
-                    .file_name()
-                    .and_then(|s| s.to_str()?.parse::<SegmentID>().ok())
-                {
-                    let chunk_id = segment_id.chunk_id;
-                    let segment_number = segment_id.segment_number;
-                    let segments = self.chunks.entry(chunk_id).or_default();
-                    segments.push(segment_number);
-                }
-            }
-        }
+        let (chunks, _max_chunk_id) = collect_chunks(self.segment_dir.clone())?;
+        self.chunks = chunks;
         Ok(())
     }
 
@@ -154,20 +137,11 @@ impl UnpackInner {
                 continue;
             }
 
-            let mut segments = Vec::new();
-            for segment_number in segment_numbers {
-                let segment_id = SegmentID {
-                    chunk_id: *chunk_id,
-                    segment_number: *segment_number,
-                };
-                let segment_path = self.segment_dir.join(segment_id.to_string());
-                let segment_bytes = fs::read(segment_path)?;
-                let segment = segment_from_bytes(&segment_bytes)?;
-                segments.push(segment);
-            }
-            let chunk = chunk_from_segments(segments)?;
-            let batch = chunk.get_batches().into_iter().next().unwrap();
-            batch.verify(true)?;
+            let tx_list = get_tx_list_from_chunk(
+                self.segment_dir.clone(),
+                *chunk_id,
+                segment_numbers.clone(),
+            )?;
 
             // write LedgerTx in batch to file, each line is a tx in json
             let batch_file_path = self.batch_dir.join(chunk_id.to_string());
@@ -178,7 +152,6 @@ impl UnpackInner {
                 .open(batch_file_path)?;
             let mut writer = BufWriter::with_capacity(8 * 1024 * 1024, file.try_clone().unwrap());
 
-            let tx_list = batch.get_tx_list();
             for tx in tx_list {
                 let tx_json = serde_json::to_string(&tx)?;
                 writeln!(writer, "{}", tx_json).expect("Unable to write line");
