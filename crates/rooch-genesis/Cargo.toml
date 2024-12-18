@@ -30,6 +30,7 @@ move-vm-runtime = { workspace = true, features = ["stacktrace", "debugging", "te
 moveos-types = { workspace = true }
 moveos = { workspace = true }
 moveos-store = { workspace = true }
+moveos-stdlib = { workspace = true }
 accumulator = { workspace = true }
 
 rooch-framework = { workspace = true }

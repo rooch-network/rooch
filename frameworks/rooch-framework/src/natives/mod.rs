@@ -25,10 +25,10 @@ pub mod rooch_framework;
 
 #[derive(Debug, Clone)]
 pub struct NativeGasParameters {
-    moveos_stdlib: MoveOSStdlibGasParameters,
-    ed25519: rooch_framework::crypto::ed25519::GasParameters,
-    ecdsa_k1: rooch_framework::crypto::ecdsa_k1::GasParameters,
-    bitcoin_address: rooch_framework::bitcoin_address::GasParameters,
+    pub moveos_stdlib: MoveOSStdlibGasParameters,
+    pub ed25519: rooch_framework::crypto::ed25519::GasParameters,
+    pub ecdsa_k1: rooch_framework::crypto::ecdsa_k1::GasParameters,
+    pub bitcoin_address: rooch_framework::bitcoin_address::GasParameters,
 }
 
 impl FromOnChainGasSchedule for NativeGasParameters {
