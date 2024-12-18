@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: mainnet-faucet-data
+  name: roochbot-data
   namespace: mainnet
 spec:
   accessModes:

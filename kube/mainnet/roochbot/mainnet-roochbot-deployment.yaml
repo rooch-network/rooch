@@ -14,11 +14,12 @@ spec:
         app: roochbot
     spec:
       containers:
-      - name: rooch-faucet
+      - name: roochbot
         image: jolestar/eliza-tee:latest
         command: ["pnpm"]
         args: 
         - "start"
+        - "--non-interactive"
         - "--characters"
         - "/app/characters/roochbot.character.json"
         envFrom:
@@ -30,7 +31,7 @@ spec:
         - containerPort: 3000
         volumeMounts:
         - name: roochbot-data
-          mountPath: /app/data
+          mountPath: /app/agent/data
         - name: character-config
           mountPath: /app/characters
       volumes:
