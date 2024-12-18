@@ -54,8 +54,8 @@ export class XVerseWallet extends BitcoinWallet {
     return this.getTarget().switchNetwork()
   }
 
-  getNetwork(): WalletNetworkType {
-    return 'livenet'
+  getNetwork(): Promise<WalletNetworkType> {
+    return Promise.resolve('livenet')
     // return this.getTarget().getNetwork()
   }
 

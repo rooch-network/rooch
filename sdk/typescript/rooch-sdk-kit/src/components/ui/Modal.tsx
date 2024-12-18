@@ -11,7 +11,7 @@ import { ProgressProvider } from '../ProgressProvider.js'
 import { IconButton } from './IconButton.js'
 import { CloseIcon } from '../icons/CloseIcon.js'
 
-export type ControlledModalAProps = {
+export type ControlledModalProps = {
   /** The controlled open state of the dialog. */
   open?: boolean
 
@@ -25,7 +25,7 @@ export type ModalProps = {
   /** The trigger button that opens the dialog. */
   trigger: NonNullable<ReactNode>
   children: ReactNode
-} & ControlledModalAProps
+} & ControlledModalProps
 
 export function Modal({ trigger, children, open, defaultOpen, onOpenChange }: ModalProps) {
   const [isModalOpen, setModalOpen] = useState(open ?? defaultOpen)

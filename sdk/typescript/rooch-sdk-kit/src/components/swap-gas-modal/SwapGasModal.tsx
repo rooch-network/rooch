@@ -3,12 +3,12 @@
 
 import { ReactNode } from 'react'
 import { SwapGasView } from './views/SwapGasView.js'
-import { ControlledModalAProps, Modal } from '../ui/Modal.js'
+import { ControlledModalProps, Modal } from '../ui/Modal.js'
 
 export type SwapGasModalProps = {
   /** The trigger button that opens the dialog. */
   trigger: NonNullable<ReactNode>
-} & ControlledModalAProps
+} & ControlledModalProps
 
 export function SwapGasModal({ trigger, open, defaultOpen, onOpenChange }: SwapGasModalProps) {
   return (

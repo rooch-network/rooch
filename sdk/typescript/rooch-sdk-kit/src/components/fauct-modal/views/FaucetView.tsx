@@ -34,9 +34,10 @@ const ERROR_MSG: Record<string, string> = {
 
 type FaucetViewProps = {
   inviter?: string
+  swapRGas: () => void
 }
 
-export function FaucetView({ inviter }: FaucetViewProps) {
+export function FaucetView({ inviter, swapRGas }: FaucetViewProps) {
   const client = useRoochClient()
   const { wallet } = useCurrentWallet()
   const currentNetwork = useCurrentNetwork()
@@ -120,6 +121,7 @@ export function FaucetView({ inviter }: FaucetViewProps) {
 
   const handleClaim = async () => {
     if (errorMessage) {
+      swapRGas()
       return
     }
 
@@ -214,12 +216,12 @@ export function FaucetView({ inviter }: FaucetViewProps) {
       </div>
       <div className={styles.createButtonContainer}>
         <Button
-          disabled={loading !== undefined || errorMessage !== undefined}
+          disabled={loading !== undefined}
           type="button"
           variant="outline"
           onClick={handleClaim}
         >
-          Claim
+          {errorMessage ? 'Swap RGas' : 'Claim'}
         </Button>
       </div>
     </div>

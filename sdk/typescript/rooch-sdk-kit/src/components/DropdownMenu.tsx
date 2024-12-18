@@ -13,9 +13,11 @@ import { StyleMarker } from './styling/StyleMarker.js'
 import { SessionModal } from './session-modal/SessionModal.js'
 import { FaucetModal } from './fauct-modal/FaucetModal.js'
 import { SwapGasModal } from './swap-gas-modal/SwapGasModal.js'
+import { SwitchNetworkModal } from './switch-network-modal/SwitchNetworkModal.js'
 
 import { useCurrentAddress, useRoochClient } from '../hooks/index.js'
-import { useSubscribeOnRequest } from '../provider/globalProvider.js'
+import { useSubscribeOnError, useSubscribeOnRequest } from '../provider/globalProvider.js'
+import { ErrorValidateCantPayGasDeposit } from '@roochnetwork/rooch-sdk'
 
 export function ActionDropdownMenu() {
   const address = useCurrentAddress()
@@ -24,7 +26,8 @@ export function ActionDropdownMenu() {
   const [swapGasOpen, setSwapGasOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [progress, setProgress] = useState(0)
-  const subscribeOnRequestSuccess = useSubscribeOnRequest()
+  const subscribeOnRequest = useSubscribeOnRequest()
+  const subscribeOnError = useSubscribeOnError()
   const client = useRoochClient()
   const [rGasBalance, setRGasBalance] = useState(0)
 
@@ -47,7 +50,7 @@ export function ActionDropdownMenu() {
   }, [getBalance])
 
   useEffect(() => {
-    const unsubscribe = subscribeOnRequestSuccess((status) => {
+    const unsubscribe = subscribeOnRequest((status) => {
       switch (status) {
         case 'requesting':
           startProgress()
@@ -62,10 +65,17 @@ export function ActionDropdownMenu() {
       }
     })
 
+    const UnsubscribeOnError = subscribeOnError((error) => {
+      if (error.code === ErrorValidateCantPayGasDeposit) {
+        setFaucetOpen(true)
+      }
+    })
+
     return () => {
       unsubscribe()
+      UnsubscribeOnError()
     }
-  }, [subscribeOnRequestSuccess, address, getBalance])
+  }, [subscribeOnRequest, subscribeOnError, address, getBalance])
 
   const startProgress = () => {
     setIsLoading(true)
@@ -82,8 +92,17 @@ export function ActionDropdownMenu() {
   }
   return (
     <>
+      <SwitchNetworkModal />
       <SessionModal trigger={<></>} open={sessionOpen} onOpenChange={(v) => setSessionOpen(v)} />
-      <FaucetModal trigger={<></>} open={faucetOpen} onOpenChange={(v) => setFaucetOpen(v)} />
+      <FaucetModal
+        trigger={<></>}
+        open={faucetOpen}
+        onOpenChange={(v) => setFaucetOpen(v)}
+        swapRGas={() => {
+          setFaucetOpen(false)
+          setSwapGasOpen(true)
+        }}
+      />
       <SwapGasModal trigger={<></>} open={swapGasOpen} onOpenChange={(v) => setSwapGasOpen(v)} />
       <DropdownMenu.Root modal={false}>
         <StyleMarker>

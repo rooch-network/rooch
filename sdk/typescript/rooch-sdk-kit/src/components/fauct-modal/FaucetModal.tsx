@@ -35,11 +35,13 @@ type FaucetModalProps = {
   /** The trigger button that opens the dialog. */
   trigger: NonNullable<ReactNode>
   inviter?: string
+  swapRGas: () => void
 } & (ControlledModalProps | UncontrolledModalProps)
 
 export function FaucetModal({
   trigger,
   inviter,
+  swapRGas,
   open,
   defaultOpen,
   onOpenChange,
@@ -59,7 +61,7 @@ export function FaucetModal({
           <Dialog.Overlay className={styles.overlay}>
             <Dialog.Content className={styles.content} aria-describedby={undefined}>
               <ProgressProvider>
-                <FaucetView inviter={inviter} />
+                <FaucetView inviter={inviter} swapRGas={swapRGas} />
               </ProgressProvider>
               <Dialog.Close className={styles.closeButtonContainer} asChild>
                 <IconButton type="button" aria-label="Close">

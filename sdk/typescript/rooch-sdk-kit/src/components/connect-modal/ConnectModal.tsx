@@ -7,58 +7,31 @@ import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 
 import { BackIcon } from '../icons/BackIcon.js'
-import { CloseIcon } from '../icons/CloseIcon.js'
-import { StyleMarker } from '../styling/StyleMarker.js'
 import { Heading } from '../ui/Heading.js'
 import { IconButton } from '../ui/IconButton.js'
 import * as styles from './ConnectModal.css.js'
 import { ConnectionStatus } from './views/ConnectionStatus.js'
-import { GettingStarted } from './views/GettingStarted.js'
 import { WhatIsAWallet } from './views/WhatIsAWallet.js'
 import { InstallStatus } from './views/InstallStatus.js'
 import { WalletList } from './wallet-list/WalletList.js'
 import { Wallet, WalletNetworkType } from '../../wellet/index.js'
 import { useConnectWallet } from '../../hooks/wallet/useConnectWallet.js'
 import { useCurrentNetwork, useWallets } from '../../hooks/index.js'
-import { NetworkType } from '@roochnetwork/rooch-sdk'
-
-const NETWORK_MAP: Record<NetworkType, WalletNetworkType | undefined> = {
-  mainnet: 'livenet',
-  testnet: 'testnet',
-  devnet: undefined,
-  localnet: undefined,
-}
+import { ControlledModalProps, Modal } from '../ui/Modal.js'
+import { SwitchNetworkView } from '../switch-network-modal/views/SwitchNetworkView.js'
+import { checkWalletNetwork } from '../util/wallet.js'
 
 type ConnectModalView =
-  | 'getting-started'
   | 'what-is-a-wallet'
+  | 'switch-network'
   | 'connection-status'
   | 'install-status'
-
-type ControlledModalProps = {
-  /** The controlled open state of the dialog. */
-  open: boolean
-
-  /** Event handler called when the open state of the dialog changes. */
-  onOpenChange: (open: boolean) => void
-
-  defaultOpen?: never
-}
-
-type UncontrolledModalProps = {
-  open?: never
-
-  onOpenChange?: never
-
-  /** The open state of the dialog when it is initially rendered. Use when you do not need to control its open state. */
-  defaultOpen?: boolean
-}
 
 type ConnectModalProps = {
   /** The trigger button that opens the dialog. */
   trigger: NonNullable<ReactNode>
   onSuccess?: () => void
-} & (ControlledModalProps | UncontrolledModalProps)
+} & ControlledModalProps
 
 export function ConnectModal({
   trigger,
@@ -67,13 +40,14 @@ export function ConnectModal({
   onOpenChange,
   onSuccess,
 }: ConnectModalProps) {
+  const wallets = useWallets()
+  const { mutateAsync, isError } = useConnectWallet()
+  const roochNetwork = useCurrentNetwork()
   const [isModalOpen, setModalOpen] = useState(open ?? defaultOpen)
   const [currentView, setCurrentView] = useState<ConnectModalView>()
+  const [targetNetwork, setTargetNetwork] = useState<WalletNetworkType>()
   const [selectedWallet, setSelectedWallet] = useState<Wallet>()
-  const { mutateAsync, isError } = useConnectWallet()
-  const wallets = useWallets()
   const [walletStatus, setWalletStatus] = useState<Map<string, boolean>>(new Map())
-  const roochNetwork = useCurrentNetwork()
 
   useEffect(() => {
     wallets.forEach(async (item) => {
@@ -98,26 +72,30 @@ export function ConnectModal({
     onOpenChange?.(open)
   }
 
-  const checkWalletNetwork = async (wallet: Wallet) => {
-    const walletNetwork = wallet.getNetwork()
-    const target = NETWORK_MAP[roochNetwork]
-    if (target && walletNetwork !== target) {
-      await wallet.switchNetwork(target)
+  const switchNetwork = async (wallet: Wallet, target: WalletNetworkType) => {
+    wallet.switchNetwork(target).then(() => {
+      connectWallet(wallet)
+    })
+  }
+
+  const handleSelectedWallet = async (wallet: Wallet) => {
+    const target = await checkWalletNetwork(wallet, roochNetwork)
+    if (target) {
+      setTargetNetwork(target)
+      setCurrentView('switch-network')
+    } else {
+      connectWallet(wallet)
     }
   }
-  const connectWallet = async (wallet: Wallet) => {
+
+  const connectWallet = (wallet: Wallet) => {
     setCurrentView('connection-status')
-    try {
-      await checkWalletNetwork(wallet)
-      mutateAsync({ wallet }).then(() => {
-        if (onSuccess) {
-          onSuccess()
-        }
-        handleOpenChange(false)
-      })
-    } catch (e) {
-      console.log(e)
-    }
+    mutateAsync({ wallet }).then(() => {
+      if (onSuccess) {
+        onSuccess()
+      }
+      handleOpenChange(false)
+    })
   }
 
   let modalContent: ReactNode | undefined
@@ -125,8 +103,14 @@ export function ConnectModal({
     case 'what-is-a-wallet':
       modalContent = <WhatIsAWallet />
       break
-    case 'getting-started':
-      modalContent = <GettingStarted />
+    case 'switch-network':
+      modalContent = (
+        <SwitchNetworkView
+          wallet={selectedWallet!}
+          targetNetWork={targetNetwork!}
+          switchNetwork={switchNetwork}
+        />
+      )
       break
     case 'connection-status':
       modalContent = (
@@ -153,64 +137,55 @@ export function ConnectModal({
   }
 
   return (
-    <Dialog.Root open={open ?? isModalOpen} onOpenChange={handleOpenChange}>
-      <Dialog.Trigger asChild>{trigger}</Dialog.Trigger>
-      <Dialog.Portal>
-        <StyleMarker>
-          <Dialog.Overlay className={styles.overlay}>
-            <Dialog.Content className={styles.content} aria-describedby={undefined}>
-              <div
-                className={clsx(styles.walletListContainer, {
-                  [styles.walletListContainerWithViewSelected]: !!currentView,
-                })}
-              >
-                <div className={styles.walletListContent}>
-                  <Dialog.Title className={styles.title} asChild>
-                    <Heading as="h2">Connect a Wallet</Heading>
-                  </Dialog.Title>
-                  <WalletList
-                    selectedWalletName={selectedWallet?.getName()}
-                    onSelect={(wallet) => {
-                      if (selectedWallet?.getName() !== wallet.getName()) {
-                        setSelectedWallet(wallet)
-                        if (walletStatus.get(wallet.getName())) {
-                          connectWallet(wallet)
-                        } else {
-                          setCurrentView('install-status')
-                        }
-                      }
-                    }}
-                  />
-                </div>
-                <button
-                  className={styles.whatIsAWalletButton}
-                  onClick={() => setCurrentView('what-is-a-wallet')}
-                  type="button"
-                >
-                  What is a Wallet?
-                </button>
-              </div>
-              <div
-                className={clsx(styles.viewContainer, {
-                  [styles.selectedViewContainer]: !!currentView,
-                })}
-              >
-                <div className={styles.backButtonContainer}>
-                  <IconButton type="button" aria-label="Back" onClick={() => resetSelection()}>
-                    <BackIcon />
-                  </IconButton>
-                </div>
-                {modalContent}
-              </div>
-              <Dialog.Close className={styles.closeButtonContainer} asChild>
-                <IconButton type="button" aria-label="Close">
-                  <CloseIcon />
-                </IconButton>
-              </Dialog.Close>
-            </Dialog.Content>
-          </Dialog.Overlay>
-        </StyleMarker>
-      </Dialog.Portal>
-    </Dialog.Root>
+    <Modal
+      trigger={trigger}
+      open={isModalOpen}
+      defaultOpen={defaultOpen}
+      onOpenChange={onOpenChange}
+    >
+      <div
+        className={clsx(styles.walletListContainer, {
+          [styles.walletListContainerWithViewSelected]: !!currentView,
+        })}
+      >
+        <div className={styles.walletListContent}>
+          <Dialog.Title className={styles.title} asChild>
+            <Heading as="h2">Connect a Wallet</Heading>
+          </Dialog.Title>
+          <WalletList
+            selectedWalletName={selectedWallet?.getName()}
+            onSelect={(wallet) => {
+              if (selectedWallet?.getName() !== wallet.getName()) {
+                setSelectedWallet(wallet)
+                if (walletStatus.get(wallet.getName())) {
+                  handleSelectedWallet(wallet)
+                } else {
+                  setCurrentView('install-status')
+                }
+              }
+            }}
+          />
+        </div>
+        <button
+          className={styles.whatIsAWalletButton}
+          onClick={() => setCurrentView('what-is-a-wallet')}
+          type="button"
+        >
+          What is a Wallet?
+        </button>
+      </div>
+      <div
+        className={clsx(styles.viewContainer, {
+          [styles.selectedViewContainer]: !!currentView,
+        })}
+      >
+        <div className={styles.backButtonContainer}>
+          <IconButton type="button" aria-label="Back" onClick={() => resetSelection()}>
+            <BackIcon />
+          </IconButton>
+        </div>
+        {modalContent}
+      </div>
+    </Modal>
   )
 }

@@ -58,7 +58,7 @@ export class OnekeyWallet extends BitcoinWallet {
     throw Error('onekey not support switch network!')
   }
 
-  getNetwork(): WalletNetworkType {
+  getNetwork(): Promise<WalletNetworkType> {
     return this.getTarget().getNetwork()
   }
 

@@ -51,7 +51,7 @@ export abstract class Wallet extends Signer {
    * Retrieves the current network of the wallet.
    * @returns The current network as a string.
    */
-  abstract getNetwork(): WalletNetworkType
+  abstract getNetwork(): Promise<WalletNetworkType>
 
   /**
    * Retrieves the supported networks of the wallet.
