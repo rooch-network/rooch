@@ -5,7 +5,7 @@ export function ErrorGuard() {
   const subscribeToError = useSubscribeOnError();
 
   useEffect(() => {
-    const unsubscribe = subscribeToError((error) => {
+    const unsubscribe = subscribeToError((error) => { // session,
       console.error('Error occurred:', error);
     });
 

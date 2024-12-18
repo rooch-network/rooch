@@ -63,7 +63,7 @@
 		"Move"
 	],
 	"devDependencies": {
-		"@roochnetwork/build-scripts": "workspace:*",
+		"@roochnetwork/rooch-sdk-kit": "file:/Users/sven/Documents/workspace/rooch-lab/rooch-sdk/sdk/typescript/build-scripts",
 		"@size-limit/preset-small-lib": "^11.1.5",
 		"@tanstack/react-query": "^5.56.2",
 		"@testing-library/dom": "^10.4.0",
@@ -79,12 +79,10 @@
 		"react-dom": "^18.3.1",
 		"size-limit": "^11.1.5",
 		"typescript": "^5.6.2",
-		"vite": "^5.4.4",
-		"vitest": "^2.1.0",
-		"decimal.js": "10.4.3"
+		"vite": "^5.4.4"
 	},
 	"dependencies": {
-		"@roochnetwork/rooch-sdk": "workspace:*",
+		"@roochnetwork/rooch-sdk-kit": "file:/Users/sven/Documents/workspace/rooch-lab/rooch-sdk/sdk/typescript/rooch-sdk",
 		"@radix-ui/react-dialog": "^1.1.1",
 		"@radix-ui/react-dropdown-menu": "^2.1.1",
 		"@radix-ui/react-slot": "^1.1.0",
@@ -93,7 +91,8 @@
 		"@vanilla-extract/recipes": "^0.5.3",
 		"clsx": "^2.1.1",
 		"zustand": "^4.5.5",
-		"dayjs": "^1.11.11"
+		"dayjs": "^1.11.11",
+		"decimal.js": "10.4.3"
 	},
 	"peerDependencies": {
 		"@tanstack/react-query": "^5.0.0",

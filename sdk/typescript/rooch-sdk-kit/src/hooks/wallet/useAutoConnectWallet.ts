@@ -4,7 +4,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useLayoutEffect, useState } from 'react'
 
-import { useConnectWallet, useWallets, useCurrentWallet, useCurrentAddress } from './index.js'
+import { useConnectWallet, useWallets, useCurrentWallet } from './index.js'
 
 import { useWalletStore } from './useWalletStore.js'
 
@@ -16,7 +16,6 @@ export function useAutoConnectWallet(): 'disabled' | 'idle' | 'attempted' {
   const { isConnected } = useCurrentWallet()
   const wallets = useWallets()
   const [clientOnly, setClientOnly] = useState(false)
-  const currentAddress = useCurrentAddress()
 
   useLayoutEffect(() => {
     setClientOnly(true)
@@ -46,9 +45,9 @@ export function useAutoConnectWallet(): 'disabled' | 'idle' | 'attempted' {
 
       if (wallet) {
         await connectWallet({ wallet })
-        if (wallet.getChain() !== 'bitcoin' && currentAddress?.toStr() !== lastConnectedAddress) {
-          wallet.switchAccount(lastConnectedAddress)
-        }
+        // if (wallet.getChain() !== 'bitcoin' && currentAddress?.toStr() !== lastConnectedAddress) {
+        //   wallet.switchAccount(lastConnectedAddress)
+        // }
       }
 
       return 'attempted'

@@ -139,7 +139,7 @@ export function FaucetView({ inviter }: FaucetViewProps) {
       }
 
       const d: any = await response.json()
-      const awardRGAS = fixedBalance(d.gas || 0, d.decimals || 0)
+      const awardRGAS = fixedBalance(d.gas || 0, 8)
       setClaimedMessage(`Awesome! You've got ${awardRGAS} RGas in your pocket! 🚀🎉`)
       triggerRequest('success')
     } catch (e: any) {

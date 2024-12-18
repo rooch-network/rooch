@@ -4,7 +4,7 @@ import clsx from 'clsx'
 import { useCallback, useEffect, useState } from 'react'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 
-import * as styles from './addressDropdownMenu.css.js'
+import * as styles from './DropdownMenu.css.js'
 
 import { Text } from './ui/Text.js'
 import { Button } from './ui/Button.js'
@@ -17,7 +17,7 @@ import { SwapGasModal } from './swap-gas-modal/SwapGasModal.js'
 import { useCurrentAddress, useRoochClient } from '../hooks/index.js'
 import { useSubscribeOnRequest } from '../provider/globalProvider.js'
 
-export function AddressDropdownMenu() {
+export function ActionDropdownMenu() {
   const address = useCurrentAddress()
   const [sessionOpen, setSessionOpen] = useState(false)
   const [faucetOpen, setFaucetOpen] = useState(false)
@@ -128,6 +128,15 @@ export function AddressDropdownMenu() {
                 }}
               >
                 <Text mono>Sessions Manager</Text>
+              </DropdownMenu.Item>
+              <DropdownMenu.Item
+                className={clsx(styles.menuItem, styles.switchMenuItem)}
+                onSelect={() => {
+                  window.localStorage.clear()
+                  window.location.reload()
+                }}
+              >
+                <Text mono>Disconnect</Text>
               </DropdownMenu.Item>
             </DropdownMenu.Content>
           </StyleMarker>

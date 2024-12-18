@@ -15,11 +15,19 @@ import * as styles from './ConnectModal.css.js'
 import { ConnectionStatus } from './views/ConnectionStatus.js'
 import { GettingStarted } from './views/GettingStarted.js'
 import { WhatIsAWallet } from './views/WhatIsAWallet.js'
-import { WalletList } from './wallet-list/WalletList.js'
-import { Wallet } from '../../wellet/index.js'
-import { useConnectWallet } from '../../hooks/wallet/useConnectWallet.js'
 import { InstallStatus } from './views/InstallStatus.js'
-import { useWallets } from '../../hooks/index.js'
+import { WalletList } from './wallet-list/WalletList.js'
+import { Wallet, WalletNetworkType } from '../../wellet/index.js'
+import { useConnectWallet } from '../../hooks/wallet/useConnectWallet.js'
+import { useCurrentNetwork, useWallets } from '../../hooks/index.js'
+import { NetworkType } from '@roochnetwork/rooch-sdk'
+
+const NETWORK_MAP: Record<NetworkType, WalletNetworkType | undefined> = {
+  mainnet: 'livenet',
+  testnet: 'testnet',
+  devnet: undefined,
+  localnet: undefined,
+}
 
 type ConnectModalView =
   | 'getting-started'
@@ -62,9 +70,10 @@ export function ConnectModal({
   const [isModalOpen, setModalOpen] = useState(open ?? defaultOpen)
   const [currentView, setCurrentView] = useState<ConnectModalView>()
   const [selectedWallet, setSelectedWallet] = useState<Wallet>()
-  const { mutate, isError } = useConnectWallet()
+  const { mutateAsync, isError } = useConnectWallet()
   const wallets = useWallets()
   const [walletStatus, setWalletStatus] = useState<Map<string, boolean>>(new Map())
+  const roochNetwork = useCurrentNetwork()
 
   useEffect(() => {
     wallets.forEach(async (item) => {
@@ -89,20 +98,26 @@ export function ConnectModal({
     onOpenChange?.(open)
   }
 
-  const connectWallet = (wallet: Wallet) => {
+  const checkWalletNetwork = async (wallet: Wallet) => {
+    const walletNetwork = wallet.getNetwork()
+    const target = NETWORK_MAP[roochNetwork]
+    if (target && walletNetwork !== target) {
+      await wallet.switchNetwork(target)
+    }
+  }
+  const connectWallet = async (wallet: Wallet) => {
     setCurrentView('connection-status')
-    mutate(
-      { wallet },
-      {
-        onSuccess: () => {
-          // TODO: Not activated
-          if (onSuccess) {
-            onSuccess()
-          }
-          handleOpenChange(false)
-        },
-      },
-    )
+    try {
+      await checkWalletNetwork(wallet)
+      mutateAsync({ wallet }).then(() => {
+        if (onSuccess) {
+          onSuccess()
+        }
+        handleOpenChange(false)
+      })
+    } catch (e) {
+      console.log(e)
+    }
   }
 
   let modalContent: ReactNode | undefined

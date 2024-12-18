@@ -2,12 +2,8 @@ import { Box, Button, Container, Flex, Heading, Text } from "@radix-ui/themes";
 import {
   useCurrentSession,
   useRoochClientQuery,
-  useCreateSessionKey,
   useRoochClient,
-  useCurrentWallet,
-  ConnectButton,
-  SessionKeyGuard,
-  FaucetModal, WalletKeyGuard
+  ConnectButton, SessionKeyGuard
 } from "@roochnetwork/rooch-sdk-kit";
 
 import { useState } from "react";
@@ -18,41 +14,16 @@ function App() {
   const sessionKey = useCurrentSession();
   const client = useRoochClient();
   const [loading, setLoading] = useState(false);
-  const [sessionLoading, setSessionLoading] = useState(false);
-  const { mutateAsync: createSessionKey } = useCreateSessionKey();
-  const { wallet } = useCurrentWallet();
   const devCounterAddress = useNetworkVariable("counterPackageId");
   const devCounterModule = `${devCounterAddress}::counter`;
   let { data, error, isPending, refetch } = useRoochClientQuery(
     "executeViewFunction",
     {
-      target: `${devCounterModule}::value`,
-    },
+      target: `${devCounterModule}::value`
+    }
   );
 
-  const handlerCreateSessionKey = () => {
-    if (sessionLoading) {
-      return;
-    }
-    setSessionLoading(true);
-
-    const defaultScopes = [`${devCounterAddress}::*::*`];
-    createSessionKey(
-      {
-        appName: "rooch_test",
-        appUrl: "https://test.com",
-        scopes: defaultScopes,
-      },
-      {
-        onSuccess: (result) => {
-          console.log("session key", result);
-        },
-        onError: (why) => {
-          console.log(why);
-        },
-      },
-    ).finally(() => setSessionLoading(false));
-  };
+  console.log(data, error, isPending);
 
   const handlerIncrease = async () => {
     if (loading) {
@@ -63,12 +34,12 @@ function App() {
 
     const tx = new Transaction();
     tx.callFunction({
-      target: `${devCounterModule}::increase`,
+      target: `${devCounterModule}::increase`
     });
 
     const result = await client.signAndExecuteTransaction({
       transaction: tx,
-      signer: sessionKey!,
+      signer: sessionKey!
     });
 
     if (result.execution_info.status.type !== "executed") {
@@ -87,7 +58,7 @@ function App() {
         py="2"
         justify="between"
         style={{
-          borderBottom: "1px solid var(--gray-a2)",
+          borderBottom: "1px solid var(--gray-a2)"
         }}
       >
         <Box>
@@ -100,102 +71,26 @@ function App() {
         mt="5"
         pt="2"
         px="4"
-        style={{ background: "var(--gray-a2)", minHeight: 500 }}
+        style={{ width: "100%", background: "var(--gray-a2)", minHeight: 500 }}
       >
-        <Box mt="2">
-          <Text style={{ fontWeight: "bold" }}>Address: </Text>
-          <Text style={{ wordWrap: "break-word" }}>
-            {wallet?.getBitcoinAddress().toStr()}
-          </Text>
-        </Box>
-
-        <Box mt="4">
-          <Text style={{ fontWeight: "bold" }}>PublicKey: </Text>
-          <Text style={{ wordWrap: "break-word" }}>
-            {wallet?.getPublicKey().toString()}
-          </Text>
-        </Box>
-
-        <Box mt="4">
-          <Text style={{ fontWeight: "bold" }}>Session Address: </Text>
-          <Text style={{ wordWrap: "break-word" }}>
-            {sessionKey?.getRoochAddress()?.toStr()}
-          </Text>
-        </Box>
-
-        <Heading size="3" mt="6">
-          {sessionKey ? "Counter" : "Create session key"}
-        </Heading>
-        <SessionKeyGuard
-          onClick={() => {
-            console.log("用户逻辑");
-          }}
+        <Flex
+          style={{ flexDirection: "column", alignItems: "center", gap: 10 }}
         >
-          <Button>hello</Button>
-        </SessionKeyGuard>
-
-        <FaucetModal
-          trigger={
-            <WalletKeyGuard onClick={() => {}}>
-              <Button>hello</Button>
-            </WalletKeyGuard>
-          }
-        />
-        <Button
-          onClick={async () => {
-            if (wallet) {
-              const b = await wallet.getBalance();
-              console.log(b);
-            }
-
-            wallet?.sendBtc({
-              // pr tb1qxvrzdqlnmpzxr6zsg7g2c62gu6l33qxzz6z5l2
-              toAddress: "tb1qxvrzdqlnmpzxr6zsg7g2c62gu6l33qxzz6z5l2",
-              satoshis: 10000000,
-            });
-          }}
-        >
-          trn
-        </Button>
-
-        {devCounterAddress.length !== 0 ? (
-          <Flex direction="column" gap="2">
-            {sessionKey ? (
-              <Text>
-                {isPending
-                  ? "loading..."
-                  : error
-                    ? "counter module not published"
-                    : `${data?.return_values?.[0]?.decoded_value}`}
-              </Text>
-            ) : null}
-            <Flex direction="row" gap="2" mt="2">
-              {
-                <Button
-                  disabled={loading || sessionLoading}
-                  onClick={
-                    sessionKey ? handlerIncrease : handlerCreateSessionKey
-                  }
-                >
-                  {sessionKey ? "Increment" : "Create"}
-                </Button>
-              }
-            </Flex>
-          </Flex>
-        ) : (
-          <>
-            <Box>
-              <Text>
-                Please refer to the contract published by readme before trying
-                again.
-              </Text>
-            </Box>
-            <Text>
-              If you have published a contract, enter the contract address
-              correctly into devCounterAddress.
-            </Text>
-          </>
-        )}
+          <Text style={{ fontSize: 100 }}>{data?.return_values ? data.return_values[0].decoded_value as string : 0}</Text>
+          <SessionKeyGuard onClick={handlerIncrease}>
+            <Button disabled={loading}>
+              Increment
+            </Button>
+          </SessionKeyGuard>
+          <Text>
+            Please refer to the contract published by readme before trying
+            again.
+          </Text>
+          <Text>
+            If you have published a contract, enter the contract address
+            correctly into devCounterAddress.
+          </Text>
+        </Flex>
       </Container>
     </>
   );

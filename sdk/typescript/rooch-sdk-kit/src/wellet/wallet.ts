@@ -45,13 +45,7 @@ export abstract class Wallet extends Signer {
   /**
    * Switches the network.
    */
-  abstract switchNetwork(network: WalletNetworkType): void
-
-  /**
-   * Switches the account.
-   * Note: Wallets with Bitcoin chain are not currently supported.
-   */
-  abstract switchAccount(address: string): void
+  abstract switchNetwork(network: WalletNetworkType): Promise<void>
 
   /**
    * Retrieves the current network of the wallet.

@@ -83,7 +83,7 @@ export function SessionView({ selectedSession, removedCallback }: ConnectionStat
             Scope
           </Heading>
           {scopes.map((scope) => (
-            <Text>${scope}</Text>
+            <Text key={scope}>{scope}</Text>
           ))}
         </div>
         <div className={styles.moreContent}>

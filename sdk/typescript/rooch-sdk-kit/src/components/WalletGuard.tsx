@@ -11,7 +11,7 @@ type ConnectButtonProps = {
   children: ReactNode
 } & ButtonHTMLAttributes<HTMLButtonElement>
 
-export function WalletKeyGuard({ children, onClick }: ConnectButtonProps) {
+export function WalletGuard({ children, onClick }: ConnectButtonProps) {
   const { wallet } = useCurrentWallet()
   return (
     <>

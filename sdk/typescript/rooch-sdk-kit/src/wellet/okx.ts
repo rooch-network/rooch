@@ -52,7 +52,7 @@ export class OkxWallet extends BitcoinWallet {
     return this.address
   }
 
-  switchNetwork(_: WalletNetworkType): void {
+  switchNetwork(_: WalletNetworkType): Promise<void> {
     throw Error('okx not support switch network!')
   }
 

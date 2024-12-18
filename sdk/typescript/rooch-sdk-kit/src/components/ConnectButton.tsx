@@ -7,7 +7,7 @@ import { ConnectModal } from './connect-modal/ConnectModal.js'
 import { StyleMarker } from './styling/StyleMarker.js'
 import { Button } from './ui/Button.js'
 import { useCurrentAddress } from '../hooks/index.js'
-import { AddressDropdownMenu } from './addressDropdownMenu.js'
+import { ActionDropdownMenu } from './DropdownMenu.js'
 
 type ConnectButtonProps = {
   connectText?: ReactNode
@@ -20,7 +20,7 @@ export function ConnectButton({
   const address = useCurrentAddress()
   return address ? (
     <StyleMarker>
-      <AddressDropdownMenu />
+      <ActionDropdownMenu />
     </StyleMarker>
   ) : (
     <ConnectModal

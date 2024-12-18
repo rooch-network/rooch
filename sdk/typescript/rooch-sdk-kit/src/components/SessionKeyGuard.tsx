@@ -3,10 +3,11 @@
 
 import { ButtonHTMLAttributes, ReactNode } from 'react'
 
-import { useCreateSessionKey, useCurrentAddress, useCurrentSession } from '../hooks/index.js'
+import { CreateSessionArgs } from '@roochnetwork/rooch-sdk'
 import { ConnectModal } from './connect-modal/ConnectModal.js'
 import { useSessionStore } from '../hooks/useSessionsStore.js'
-import { CreateSessionArgs } from '@roochnetwork/rooch-sdk'
+import { useCreateSessionKey, useCurrentAddress, useCurrentSession } from '../hooks/index.js'
+import { Button } from './ui/Button.js'
 
 type ConnectButtonProps = {
   onClick: () => void
@@ -21,33 +22,29 @@ export function SessionKeyGuard({ children, sessionConf, onClick }: ConnectButto
   const _sessionConf = useSessionStore((state) => state.sessionConf)
   const { mutate } = useCreateSessionKey()
   const handleCreateSession = () => {
-    if (curSession) {
+    if (curSession && !curSession.isSessionExpired()) {
       onClick()
       return
     }
     const _conf = _sessionConf || sessionConf
     if (_conf) {
-      mutate(_conf, {
-        onSuccess: () => {
-          onClick()
-        },
-      })
+      mutate({ ..._conf })
+      // TODO: Continue to call
+    } else {
+      onClick()
     }
   }
   return (
     <>
       {curAddress ? (
-        <button
-          style={{
-            all: 'unset',
-            cursor: 'pointer',
-          }}
+        <Button
+          asChild
           onClick={() => {
             handleCreateSession()
           }}
         >
           {children}
-        </button>
+        </Button>
       ) : (
         <ConnectModal
           trigger={children!}
