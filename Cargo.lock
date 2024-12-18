@@ -10416,6 +10416,7 @@ dependencies = [
  "move-core-types",
  "move-vm-runtime",
  "moveos",
+ "moveos-stdlib",
  "moveos-store",
  "moveos-types",
  "once_cell",
