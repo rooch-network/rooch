@@ -100,11 +100,8 @@ impl CommandAction<Option<FileOutput>> for UpgradeGasConfigCommand {
                     );
 
                     for (gas_key, _) in onchain_gas_schedule_map.iter() {
-                        match local_gas_schedule_map.get(gas_key) {
-                            None => {
-                                println!("gas entry {:?} is onchain, but not in local.", gas_key);
-                            }
-                            Some(_) => {}
+                        if !local_gas_schedule_map.contains_key(gas_key) {
+                            println!("gas entry {:?} is onchain, but not in local.", gas_key);
                         }
                     }
 
