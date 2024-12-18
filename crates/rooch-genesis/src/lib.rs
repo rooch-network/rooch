@@ -295,17 +295,14 @@ impl RoochGenesis {
             .clone()
             .into_moveos_transaction(ObjectMeta::genesis_root());
 
-        let gas_parameter = {
-            if network.chain_id == BuiltinChainID::Dev.chain_id()
-                || network.chain_id == BuiltinChainID::Local.chain_id()
-            {
-                FrameworksGasParameters::latest()
-            } else if network.chain_id == BuiltinChainID::Main.chain_id() {
-                FrameworksGasParameters::initial()
-            } else {
-                FrameworksGasParameters::v1()
-            }
+        let gas_parameter = if network.chain_id == BuiltinChainID::Main.chain_id() {
+            FrameworksGasParameters::initial()
+        } else if network.chain_id == BuiltinChainID::Test.chain_id() {
+            FrameworksGasParameters::v1()
+        } else {
+            FrameworksGasParameters::latest()
         };
+
         let gas_config = gas_parameter.to_gas_schedule_config(network.chain_id);
         genesis_moveos_tx.ctx.add(genesis_ctx.clone())?;
         genesis_moveos_tx.ctx.add(moveos_genesis_ctx.clone())?;
