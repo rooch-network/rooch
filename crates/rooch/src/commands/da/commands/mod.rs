@@ -218,7 +218,7 @@ impl TxOrderHashBlockGetter {
     ) -> anyhow::Result<Vec<TxOrderHashBlock>> {
         let r = self
             .tx_order_hash_blocks
-            .binary_search_by(|x| x.tx_order.cmp(&(start_tx_order as u64)));
+            .binary_search_by(|x| x.tx_order.cmp(&start_tx_order));
         let start_idx = match r {
             Ok(i) => i,
             Err(_) => {

@@ -36,19 +36,17 @@ impl DumpTxOrderHashCommand {
                 let tx_hash = ledger_tx.tx_hash();
                 if expected_tx_order == 0 {
                     expected_tx_order = tx_order;
-                } else {
-                    if tx_order != expected_tx_order {
-                        return Err(RoochError::from(anyhow::anyhow!(
-                            "tx_order mismatch: expected {}, got {}",
-                            expected_tx_order,
-                            tx_order
-                        )));
-                    }
+                } else if tx_order != expected_tx_order {
+                    return Err(RoochError::from(anyhow::anyhow!(
+                        "tx_order mismatch: expected {}, got {}",
+                        expected_tx_order,
+                        tx_order
+                    )));
                 }
                 writeln!(
                     writer,
                     "{}",
-                    TxOrderHashBlock::new(tx_order, tx_hash, block_number).to_string()
+                    TxOrderHashBlock::new(tx_order, tx_hash, block_number)
                 )?;
                 expected_tx_order += 1;
             }
