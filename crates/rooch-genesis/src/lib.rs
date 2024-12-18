@@ -300,8 +300,10 @@ impl RoochGenesis {
                 || network.chain_id == BuiltinChainID::Local.chain_id()
             {
                 FrameworksGasParameters::latest()
-            } else {
+            } else if network.chain_id == BuiltinChainID::Main.chain_id() {
                 FrameworksGasParameters::initial()
+            } else {
+                FrameworksGasParameters::v1()
             }
         };
         let gas_config = gas_parameter.to_gas_schedule_config(network.chain_id);
