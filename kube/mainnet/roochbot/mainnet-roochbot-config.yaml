@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: roochbot-config
+data:
+  TWITTER_DRY_RUN: "true"
+  GITHUB_OWNER: "rooch-network"
+  GITHUB_REPO: "roochbot_knowledge"
+  GITHUB_BRANCH: "main"
+  GITHUB_PATH: "/"
+  ELEVENLABS_MODEL_ID: "eleven_multilingual_v2"
+  ELEVENLABS_VOICE_ID: "21m00Tcm4TlvDq8ikWAM"
+  ELEVENLABS_VOICE_STABILITY: "0.5"
+  ELEVENLABS_VOICE_SIMILARITY_BOOST: "0.9"
+  ELEVENLABS_VOICE_STYLE: "0.66"
+  ELEVENLABS_VOICE_USE_SPEAKER_BOOST: "false"
+  ELEVENLABS_OPTIMIZE_STREAMING_LATENCY: "4"
+  ELEVENLABS_OUTPUT_FORMAT: "pcm_16000"
+  SERVER_PORT: "3000"
