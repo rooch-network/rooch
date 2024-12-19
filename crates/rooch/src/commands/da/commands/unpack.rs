@@ -118,7 +118,7 @@ impl UnpackInner {
     }
 
     fn collect_chunks(&mut self) -> anyhow::Result<()> {
-        let (chunks, _max_chunk_id) = collect_chunks(self.segment_dir.clone())?;
+        let (chunks, _min_chunk_id, _max_chunk_id) = collect_chunks(self.segment_dir.clone())?;
         self.chunks = chunks;
         Ok(())
     }

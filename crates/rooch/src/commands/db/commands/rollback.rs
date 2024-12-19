@@ -118,9 +118,9 @@ impl RollbackCommand {
                 );
                 // tx_hash lost:
                 // 1. rollback incomplete cause last_order not updated
-                // 2. database inconsistent (use other method to check/repair)
+                // 2. the database is inconsistent (use another method to check/repair)
                 //
-                // it's okay to continue rollback, after revert all txs, the last_order will be updated later
+                // it's okay to continue rollback, after reverting all txs; the last_order will be updated later
                 continue;
             }
             let tx_hash = tx_hashes[0].unwrap();
