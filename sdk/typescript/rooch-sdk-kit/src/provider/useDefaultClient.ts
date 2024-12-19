@@ -2,16 +2,22 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { useCallback, useMemo } from 'react'
-import { isRoochClient, RoochClient } from '@roochnetwork/rooch-sdk'
+import {
+  ErrorValidateInvalidAccountAuthKey,
+  ErrorValidateSessionIsExpired,
+  isRoochClient,
+  RoochClient,
+} from '@roochnetwork/rooch-sdk'
 import { useSessionStore } from '../hooks/useSessionsStore.js'
 import { NetworkConfig } from '../hooks/index.js'
 import { NetworkConfigs } from './clientProvider.js'
-import { HTTPTransport } from '../http/httpTransport.js'
+import { HTTPTransport, requestCallbackType } from '../http/httpTransport.js'
+import { useTriggerError, useTriggerRequest } from './globalProvider.js'
 
 const DEFAULT_CREATE_CLIENT = (
   _name: string,
   config: NetworkConfig | RoochClient,
-  setCurrentSession: any,
+  requestErrorCallback: requestCallbackType,
 ) => {
   if (isRoochClient(config)) {
     return config
@@ -21,7 +27,7 @@ const DEFAULT_CREATE_CLIENT = (
     {
       url: config.url!.toString(),
     },
-    setCurrentSession,
+    requestErrorCallback,
   )
 
   return new RoochClient(config)
@@ -37,19 +43,31 @@ export function useDefaultClient(params: UseRoochClientParams) {
 
   const currentSession = useSessionStore((state) => state.currentSession)
   const removeSession = useSessionStore((state) => state.removeSession)
-  const clearSession = useCallback(() => {
-    try {
-      if (currentSession) {
-        removeSession(currentSession)
+  const triggerError = useTriggerError()
+  const triggerRequest = useTriggerRequest()
+  const _requestErrorCallback = useCallback<requestCallbackType>(
+    (state, error) => {
+      try {
+        if (state === 'error') {
+          if (
+            error!.code === ErrorValidateInvalidAccountAuthKey ||
+            error!.code === ErrorValidateSessionIsExpired
+          ) {
+            if (currentSession) {
+              removeSession(currentSession)
+            }
+          }
+          triggerError(error!)
+        }
+        triggerRequest(state)
+      } catch (e) {
+        console.error(e)
       }
-    } catch (e) {
-      console.error(e)
-    }
-  }, [removeSession, currentSession])
+    },
+    [triggerError, currentSession, removeSession, triggerRequest],
+  )
 
-  const client = useMemo(() => {
-    return DEFAULT_CREATE_CLIENT(currentNetwork, networks[currentNetwork], clearSession)
-  }, [currentNetwork, networks, clearSession])
-
-  return client
+  return useMemo(() => {
+    return DEFAULT_CREATE_CLIENT(currentNetwork, networks[currentNetwork], _requestErrorCallback)
+  }, [currentNetwork, networks, _requestErrorCallback])
 }

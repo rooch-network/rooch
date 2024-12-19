@@ -50,12 +50,12 @@ export class XVerseWallet extends BitcoinWallet {
     return this.address
   }
 
-  switchNetwork(): void {
-    // this.getTarget().switchNetwork()
+  switchNetwork(): Promise<void> {
+    return this.getTarget().switchNetwork()
   }
 
-  getNetwork(): WalletNetworkType {
-    return 'livenet'
+  getNetwork(): Promise<WalletNetworkType> {
+    return Promise.resolve('livenet')
     // return this.getTarget().getNetwork()
   }
 

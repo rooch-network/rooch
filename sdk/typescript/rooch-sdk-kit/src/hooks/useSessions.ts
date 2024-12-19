@@ -6,7 +6,7 @@ import { useSessionStore } from './useSessionsStore.js'
 /**
  * Retrieves the all session account
  */
-export function useSession() {
+export function useSessions() {
   return useSessionStore((state) =>
     state.sessions.sort((a, b) => b.getCreateTime() - a.getCreateTime()),
   )

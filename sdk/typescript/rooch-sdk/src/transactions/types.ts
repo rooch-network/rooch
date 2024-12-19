@@ -21,6 +21,7 @@ type FunctionArgs =
 
 export type CallFunctionArgs = {
   args?: Args[]
+  maxGas?: number
   typeArgs?: TypeTag[]
 } & FunctionArgs
 

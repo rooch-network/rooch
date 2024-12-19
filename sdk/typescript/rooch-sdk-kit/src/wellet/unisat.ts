@@ -44,10 +44,10 @@ export class UniSatWallet extends BitcoinWallet {
     return this.address
   }
 
-  switchNetwork(network: WalletNetworkType): void {
-    this.getTarget().switchNetwork(network)
+  async switchNetwork(network: WalletNetworkType): Promise<void> {
+    return this.getTarget().switchNetwork(network)
   }
-  getNetwork(): WalletNetworkType {
+  getNetwork(): Promise<WalletNetworkType> {
     return this.getTarget().getNetwork()
   }
 
