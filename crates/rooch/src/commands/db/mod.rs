@@ -3,6 +3,7 @@
 
 use crate::cli_types::CommandAction;
 use crate::commands::db::commands::drop::DropCommand;
+use crate::commands::db::commands::dump_tx_root::DumpTxRootCommand;
 use crate::commands::db::commands::get_changeset_by_order::GetChangesetByOrderCommand;
 use crate::commands::db::commands::repair::RepairCommand;
 use crate::commands::db::commands::revert::RevertCommand;
@@ -41,6 +42,9 @@ impl CommandAction<String> for DB {
                     serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
                 })
             }
+            DBCommand::DumpTxRoot(dump_tx_root) => dump_tx_root.execute().await.map(|resp| {
+                serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
+            }),
         }
     }
 }
@@ -53,4 +57,5 @@ pub enum DBCommand {
     Drop(DropCommand),
     Repair(RepairCommand),
     GetChangesetByOrder(GetChangesetByOrderCommand),
+    DumpTxRoot(DumpTxRootCommand),
 }

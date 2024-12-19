@@ -6,6 +6,7 @@ use moveos_store::transaction_store::{TransactionDBStore, TransactionStore};
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::object::ObjectMeta;
 use moveos_types::transaction::TransactionExecutionInfo;
+use rooch_common::utils::vec::find_last_true;
 use rooch_config::RoochOpt;
 use rooch_db::RoochDB;
 use rooch_types::da::chunk::chunk_from_segments;
@@ -18,8 +19,8 @@ use std::fs::File;
 use std::io::{BufRead, BufReader, Read};
 use std::path::PathBuf;
 
-pub mod dump_tx_order_hash;
 pub mod exec;
+pub mod index_tx;
 pub mod namespace;
 pub mod unpack;
 
@@ -143,15 +144,15 @@ impl LedgerTxGetter {
 }
 
 #[derive(Debug, Clone)]
-pub struct TxOrderHashBlock {
+pub struct TxDAIndex {
     pub tx_order: u64,
     pub tx_hash: H256,
     pub block_number: u128,
 }
 
-impl TxOrderHashBlock {
+impl TxDAIndex {
     pub fn new(tx_order: u64, tx_hash: H256, block_number: u128) -> Self {
-        TxOrderHashBlock {
+        TxDAIndex {
             tx_order,
             tx_hash,
             block_number,
@@ -159,7 +160,7 @@ impl TxOrderHashBlock {
     }
 }
 
-impl std::fmt::Display for TxOrderHashBlock {
+impl std::fmt::Display for TxDAIndex {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
@@ -169,7 +170,7 @@ impl std::fmt::Display for TxOrderHashBlock {
     }
 }
 
-impl std::str::FromStr for TxOrderHashBlock {
+impl std::str::FromStr for TxDAIndex {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -180,7 +181,7 @@ impl std::str::FromStr for TxOrderHashBlock {
         let tx_order = parts[0].parse::<u64>()?;
         let tx_hash = H256::from_str(parts[1])?;
         let block_number = parts[2].parse::<u128>()?;
-        Ok(TxOrderHashBlock {
+        Ok(TxDAIndex {
             tx_order,
             tx_hash,
             block_number,
@@ -191,12 +192,12 @@ impl std::str::FromStr for TxOrderHashBlock {
 /// TxOrderHashBlockGetter is used to get TxOrderHashBlock from a file
 /// all tx_order_hash_blocks(start from tx_order 1) are stored in a file,
 /// each line is a TxOrderHashBlock
-pub struct TxOrderHashBlockGetter {
-    tx_order_hash_blocks: Vec<TxOrderHashBlock>,
+pub struct TxDAIndexer {
+    tx_order_hash_blocks: Vec<TxDAIndex>,
     transaction_store: TransactionDBStore,
 }
 
-impl TxOrderHashBlockGetter {
+impl TxDAIndexer {
     pub fn load_from_file(
         file_path: PathBuf,
         transaction_store: TransactionDBStore,
@@ -205,20 +206,30 @@ impl TxOrderHashBlockGetter {
         let mut reader = BufReader::new(File::open(file_path)?);
         for line in reader.by_ref().lines() {
             let line = line?;
-            let item = line.parse::<TxOrderHashBlock>()?;
+            let item = line.parse::<TxDAIndex>()?;
             tx_order_hashes.push(item);
         }
-        Ok(TxOrderHashBlockGetter {
+        tx_order_hashes.sort_by(|a, b| a.tx_order.cmp(&b.tx_order)); // avoiding wrong order
+        Ok(TxDAIndexer {
             tx_order_hash_blocks: tx_order_hashes,
             transaction_store,
         })
     }
 
-    pub fn slice(
-        &self,
-        start_tx_order: u64,
-        end_tx_order: u64,
-    ) -> anyhow::Result<Vec<TxOrderHashBlock>> {
+    pub fn get_tx_hash(&self, tx_order: u64) -> Option<H256> {
+        let r = self
+            .tx_order_hash_blocks
+            .binary_search_by(|x| x.tx_order.cmp(&tx_order));
+        let idx = match r {
+            Ok(i) => i,
+            Err(_) => {
+                return None;
+            }
+        };
+        Some(self.tx_order_hash_blocks[idx].tx_hash)
+    }
+
+    pub fn slice(&self, start_tx_order: u64, end_tx_order: u64) -> anyhow::Result<Vec<TxDAIndex>> {
         let r = self
             .tx_order_hash_blocks
             .binary_search_by(|x| x.tx_order.cmp(&start_tx_order));
@@ -232,14 +243,14 @@ impl TxOrderHashBlockGetter {
         Ok(self.tx_order_hash_blocks[start_idx..end_idx + 1].to_vec())
     }
 
-    pub fn find_last_executed(&self) -> anyhow::Result<Option<TxOrderHashBlock>> {
+    pub fn find_last_executed(&self) -> anyhow::Result<Option<TxDAIndex>> {
         let r = find_last_true(&self.tx_order_hash_blocks, |item| {
             self.has_executed(item.tx_hash)
         });
         Ok(r.cloned())
     }
 
-    pub fn has_executed(&self, tx_hash: H256) -> bool {
+    fn has_executed(&self, tx_hash: H256) -> bool {
         let execution_info = self
             .transaction_store
             .get_tx_execution_info(tx_hash)
@@ -254,194 +265,18 @@ impl TxOrderHashBlockGetter {
         let execution_info = self.transaction_store.get_tx_execution_info(tx_hash)?;
         Ok(execution_info)
     }
-}
 
-// find the last true element in the array:
-// the array is sorted by the predicate, and the predicate is true for the first n elements and false for the rest.
-fn find_last_true<T>(arr: &[T], predicate: impl Fn(&T) -> bool) -> Option<&T> {
-    if arr.is_empty() {
-        return None;
-    }
-    if !predicate(&arr[0]) {
-        return None;
-    }
-    if predicate(&arr[arr.len() - 1]) {
-        return Some(&arr[arr.len() - 1]);
-    }
+    pub fn get_execution_info_by_order(
+        &self,
+        tx_order: u64,
+    ) -> anyhow::Result<Option<TransactionExecutionInfo>> {
+        let tx_hash_option = self.get_tx_hash(tx_order);
 
-    // binary search
-    let mut left = 0;
-    let mut right = arr.len() - 1;
-
-    while left + 1 < right {
-        let mid = left + (right - left) / 2;
-        if predicate(&arr[mid]) {
-            left = mid; // mid is true, the final answer is mid or on the right
+        if let Some(tx_hash) = tx_hash_option {
+            let execution_info = self.transaction_store.get_tx_execution_info(tx_hash)?;
+            Ok(execution_info)
         } else {
-            right = mid; // mid is false, the final answer is on the left
-        }
-    }
-
-    // left is the last true position
-    Some(&arr[left])
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    mod find_last_true {
-        use super::*;
-
-        #[derive(Debug, PartialEq)]
-        struct TestItem {
-            id: usize,
-            value: bool,
-        }
-
-        impl TestItem {
-            fn new(id: usize, value: bool) -> Self {
-                Self { id, value }
-            }
-        }
-
-        #[test]
-        fn test_empty_array() {
-            let items: Vec<TestItem> = vec![];
-            let result = find_last_true(&items, |item| item.value);
-            assert!(result.is_none());
-        }
-
-        #[test]
-        fn test_single_element_true() {
-            let items = vec![TestItem::new(0, true)];
-            let result = find_last_true(&items, |item| item.value).map(|item| item.id);
-            assert_eq!(result, Some(0));
-        }
-
-        #[test]
-        fn test_single_element_false() {
-            let items = vec![TestItem::new(0, false)];
-            let result = find_last_true(&items, |item| item.value);
-            assert_eq!(result, None);
-        }
-
-        #[test]
-        fn test_all_true() {
-            let items = vec![
-                TestItem::new(1, true),
-                TestItem::new(2, true),
-                TestItem::new(3, true),
-            ];
-            let result = find_last_true(&items, |item| item.value).map(|item| item.id);
-            assert_eq!(result, Some(3));
-        }
-
-        #[test]
-        fn test_all_false() {
-            let items = vec![
-                TestItem::new(1, false),
-                TestItem::new(2, false),
-                TestItem::new(3, false),
-            ];
-            let result = find_last_true(&items, |item| item.value);
-            assert_eq!(result, None);
-        }
-
-        #[test]
-        fn test_odd_length_middle_transition() {
-            let items = vec![
-                TestItem::new(1, true),
-                TestItem::new(2, true),
-                TestItem::new(3, true),
-                TestItem::new(4, false),
-                TestItem::new(5, false),
-            ];
-            let result = find_last_true(&items, |item| item.value).map(|item| item.id);
-            assert_eq!(result, Some(3));
-        }
-
-        #[test]
-        fn test_even_length_middle_transition() {
-            let items = vec![
-                TestItem::new(1, true),
-                TestItem::new(2, true),
-                TestItem::new(3, false),
-                TestItem::new(4, false),
-            ];
-            let result = find_last_true(&items, |item| item.value).map(|item| item.id);
-            assert_eq!(result, Some(2));
-        }
-
-        #[test]
-        fn test_only_first_true() {
-            let items = vec![
-                TestItem::new(1, true),
-                TestItem::new(2, false),
-                TestItem::new(3, false),
-                TestItem::new(4, false),
-            ];
-            let result = find_last_true(&items, |item| item.value).map(|item| item.id);
-            assert_eq!(result, Some(1));
-        }
-
-        #[test]
-        fn test_only_last_true() {
-            let items = vec![
-                TestItem::new(1, false),
-                TestItem::new(2, false),
-                TestItem::new(3, false),
-                TestItem::new(4, true),
-            ];
-            let result = find_last_true(&items, |item| item.value);
-            assert_eq!(result, None); // no sorted array, so no result
-        }
-
-        #[test]
-        fn test_large_array() {
-            let mut items = Vec::new();
-            for i in 1..1000 {
-                items.push(TestItem::new(i, i <= 500));
-            }
-            let result = find_last_true(&items, |item| item.value).map(|item| item.id);
-            assert_eq!(result, Some(500));
-
-            let mut items = Vec::new();
-            for i in 1..1001 {
-                items.push(TestItem::new(i, i <= 500));
-            }
-            let result = find_last_true(&items, |item| item.value).map(|item| item.id);
-            assert_eq!(result, Some(500));
-
-            let mut items = Vec::new();
-            for i in 1..1001 {
-                items.push(TestItem::new(i, i <= 501));
-            }
-            let result = find_last_true(&items, |item| item.value).map(|item| item.id);
-            assert_eq!(result, Some(501));
-        }
-
-        #[test]
-        fn test_various_transition_points() {
-            // Test cases with different transition points
-            let test_cases = [
-                (vec![true], 0),
-                (vec![true, false], 0),
-                (vec![true, true, false], 1),
-                (vec![true, true, true, false], 2),
-                (vec![true, true, true, true, false], 3),
-            ];
-
-            for (i, (values, expected)) in test_cases.iter().enumerate() {
-                let items: Vec<TestItem> = values
-                    .iter()
-                    .enumerate()
-                    .map(|(id, &v)| TestItem::new(id, v))
-                    .collect();
-
-                let result = find_last_true(&items, |item| item.value).map(|item| item.id);
-                assert_eq!(result, Some(*expected), "Failed at test case {}", i);
-            }
+            Ok(None)
         }
     }
 }
