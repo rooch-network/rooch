@@ -1,23 +1,23 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::commands::da::commands::{LedgerTxGetter, TxOrderHashBlock};
+use crate::commands::da::commands::{LedgerTxGetter, TxDAIndex};
 use rooch_types::error::{RoochError, RoochResult};
 use std::fs::File;
 use std::io::BufWriter;
 use std::io::Write;
 use std::path::PathBuf;
 
-/// Dump tx_order:tx_hash:block_number to a file from segments
+/// Index tx_order:tx_hash:block_number to a file from segments
 #[derive(Debug, clap::Parser)]
-pub struct DumpTxOrderHashCommand {
+pub struct IndexTxCommand {
     #[clap(long = "segment-dir")]
     pub segment_dir: PathBuf,
     #[clap(long = "output")]
     pub output: PathBuf,
 }
 
-impl DumpTxOrderHashCommand {
+impl IndexTxCommand {
     pub fn execute(self) -> RoochResult<()> {
         let ledger_tx_loader = LedgerTxGetter::new(self.segment_dir)?;
         let mut block_number = ledger_tx_loader.get_min_chunk_id();
@@ -46,7 +46,7 @@ impl DumpTxOrderHashCommand {
                 writeln!(
                     writer,
                     "{}",
-                    TxOrderHashBlock::new(tx_order, tx_hash, block_number)
+                    TxDAIndex::new(tx_order, tx_hash, block_number)
                 )?;
                 expected_tx_order += 1;
             }
