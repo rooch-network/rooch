@@ -5,8 +5,8 @@ metadata:
   namespace: mainnet
 data:
   TWITTER_DRY_RUN: "false"
-  TWITTER_TARGET_USERS: "RoochNetwork"
-  MAX_TWEET_LENGTH: "270"
+  TWITTER_TARGET_USERS: "RoochNetwork,jolestar"
+  MAX_TWEET_LENGTH: "240"
   GITHUB_OWNER: "rooch-network"
   GITHUB_REPO: "roochbot_knowledge"
   GITHUB_BRANCH: "main"
