@@ -3,6 +3,7 @@ module invitation_record::invitation {
     use std::option;
     use std::string::String;
     use std::vector;
+    use moveos_std::signer::module_signer;
     use moveos_std::signer;
     use moveos_std::consensus_codec;
     use twitter_binding::tweet_v2;
@@ -115,6 +116,16 @@ module invitation_record::invitation {
     ){
         let faucet = object::borrow_mut(faucet_obj);
         deposit_to_rgas_store(account, &mut faucet.rgas_store, amount);
+    }
+
+    public entry fun deposit_rgas_coin_from_module_address(
+        faucet_obj: &mut Object<InvitationConf>,
+        amount: u256,
+        _admin: &mut Object<AdminCap>,
+    ){
+        let account = module_signer<InvitationConf>();
+        let faucet = object::borrow_mut(faucet_obj);
+        deposit_to_rgas_store(&account, &mut faucet.rgas_store, amount);
     }
 
     public entry fun withdraw_rgas_coin(
