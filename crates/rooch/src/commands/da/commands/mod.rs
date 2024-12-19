@@ -424,7 +424,7 @@ mod tests {
         #[test]
         fn test_various_transition_points() {
             // Test cases with different transition points
-            let test_cases = vec![
+            let test_cases = [
                 (vec![true], 0),
                 (vec![true, false], 0),
                 (vec![true, true, false], 1),
