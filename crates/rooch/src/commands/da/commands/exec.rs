@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::commands::da::commands::{build_rooch_db, LedgerTxGetter, TxOrderHashBlockGetter};
+use crate::commands::da::commands::{build_rooch_db, LedgerTxGetter, TxDAIndexer};
 use anyhow::Context;
 use bitcoin::hashes::Hash;
 use bitcoin_client::actor::client::BitcoinClientConfig;
@@ -108,13 +108,13 @@ impl ExecCommand {
 
         let (order_state_pair, tx_order_end) = self.load_order_state_pair();
         let ledger_tx_loader = LedgerTxGetter::new(self.segment_dir.clone())?;
-        let tx_order_hash_block_list = TxOrderHashBlockGetter::load_from_file(
+        let tx_da_indexer = TxDAIndexer::load_from_file(
             self.order_hash_path.clone(),
             moveos_store.transaction_store,
         )?;
         Ok(ExecInner {
             ledger_tx_getter: ledger_tx_loader,
-            tx_order_hash_block_getter: tx_order_hash_block_list,
+            tx_da_indexer,
             order_state_pair,
             tx_order_end,
             bitcoin_client_proxy,
@@ -149,7 +149,7 @@ impl ExecCommand {
 
 struct ExecInner {
     ledger_tx_getter: LedgerTxGetter,
-    tx_order_hash_block_getter: TxOrderHashBlockGetter,
+    tx_da_indexer: TxDAIndexer,
     order_state_pair: HashMap<u64, H256>,
     tx_order_end: u64,
 
@@ -264,7 +264,7 @@ impl ExecInner {
     }
 
     async fn produce_tx(&self, tx: Sender<ExecMsg>) -> anyhow::Result<()> {
-        let last_executed_opt = self.tx_order_hash_block_getter.find_last_executed()?;
+        let last_executed_opt = self.tx_da_indexer.find_last_executed()?;
         let mut next_tx_order = last_executed_opt
             .clone()
             .map(|v| v.tx_order + 1)
@@ -283,9 +283,8 @@ impl ExecInner {
         if let (Some(rollback), Some(last_executed)) = (self.rollback, last_executed_opt.clone()) {
             let last_executed_tx_order = last_executed.tx_order;
             if rollback < last_executed_tx_order {
-                let new_last_and_rollback = self
-                    .tx_order_hash_block_getter
-                    .slice(rollback, last_executed_tx_order)?;
+                let new_last_and_rollback =
+                    self.tx_da_indexer.slice(rollback, last_executed_tx_order)?;
                 // split into two parts, the first get execution info for new startup, all others rollback
                 let (new_last, rollback_part) = new_last_and_rollback.split_first().unwrap();
                 tracing::info!(
@@ -304,9 +303,8 @@ impl ExecInner {
                             )
                         })?;
                 }
-                let rollback_execution_info = self
-                    .tx_order_hash_block_getter
-                    .get_execution_info(new_last.tx_hash)?;
+                let rollback_execution_info =
+                    self.tx_da_indexer.get_execution_info(new_last.tx_hash)?;
                 self.update_startup_info_after_rollback(rollback_execution_info.unwrap())?;
                 next_block_number = new_last.block_number;
                 next_tx_order = rollback + 1;
