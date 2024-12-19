@@ -233,40 +233,18 @@ impl TxOrderHashBlockGetter {
     }
 
     pub fn find_last_executed(&self) -> anyhow::Result<Option<TxOrderHashBlock>> {
-        // Check for an empty list
-        if self.tx_order_hash_blocks.is_empty() {
-            return Ok(None);
-        }
-
-        // Binary search
-        let mut left = 0;
-        let mut right = self.tx_order_hash_blocks.len() - 1;
-        while left < right {
-            let mid = (left + right) / 2;
-            let tx_order_hash_block = &self.tx_order_hash_blocks[mid];
-            let executed = self.has_executed(tx_order_hash_block.tx_hash)?;
-            if executed {
-                left = mid + 1;
-            } else {
-                right = mid;
-            }
-        }
-
-        // Determine result
-        let last_executed = self.has_executed(self.tx_order_hash_blocks[left].tx_hash)?;
-        if left == 0 && !last_executed {
-            return Ok(None);
-        }
-        if !last_executed {
-            Ok(Some(self.tx_order_hash_blocks[left - 1].clone()))
-        } else {
-            Ok(Some(self.tx_order_hash_blocks[left].clone()))
-        }
+        let r = find_last_true(&self.tx_order_hash_blocks, |item| {
+            self.has_executed(item.tx_hash)
+        });
+        Ok(r.cloned())
     }
 
-    pub fn has_executed(&self, tx_hash: H256) -> anyhow::Result<bool> {
-        let execution_info = self.transaction_store.get_tx_execution_info(tx_hash)?;
-        Ok(execution_info.is_some())
+    pub fn has_executed(&self, tx_hash: H256) -> bool {
+        let execution_info = self
+            .transaction_store
+            .get_tx_execution_info(tx_hash)
+            .unwrap();
+        execution_info.is_some()
     }
 
     pub fn get_execution_info(
@@ -312,140 +290,158 @@ fn find_last_true<T>(arr: &[T], predicate: impl Fn(&T) -> bool) -> Option<&T> {
 mod tests {
     use super::*;
 
-    #[derive(Debug, PartialEq)]
-    struct TestItem {
-        id: usize,
-        value: bool,
-    }
+    mod find_last_true {
+        use super::*;
 
-    impl TestItem {
-        fn new(id: usize, value: bool) -> Self {
-            Self { id, value }
+        #[derive(Debug, PartialEq)]
+        struct TestItem {
+            id: usize,
+            value: bool,
         }
-    }
 
-    #[test]
-    fn test_find_last_true_empty_array() {
-        let items: Vec<TestItem> = vec![];
-        let result = find_last_true(&items, |item| item.value);
-        assert!(result.is_none());
-    }
-
-    #[test]
-    fn test_find_last_true_single_element_true() {
-        let items = vec![TestItem::new(0, true)];
-        let result = find_last_true(&items, |item| item.value).map(|item| item.id);
-        assert_eq!(result, Some(0));
-    }
-
-    #[test]
-    fn test_find_last_true_single_element_false() {
-        let items = vec![TestItem::new(0, false)];
-        let result = find_last_true(&items, |item| item.value);
-        assert_eq!(result, None);
-    }
-
-    #[test]
-    fn test_find_last_true_all_true() {
-        let items = vec![
-            TestItem::new(0, true),
-            TestItem::new(1, true),
-            TestItem::new(2, true),
-        ];
-        let result = find_last_true(&items, |item| item.value).map(|item| item.id);
-        assert_eq!(result, Some(2));
-    }
-
-    #[test]
-    fn test_find_last_true_all_false() {
-        let items = vec![
-            TestItem::new(0, false),
-            TestItem::new(1, false),
-            TestItem::new(2, false),
-        ];
-        let result = find_last_true(&items, |item| item.value);
-        assert_eq!(result, None);
-    }
-
-    #[test]
-    fn test_find_last_true_odd_length_middle_transition() {
-        let items = vec![
-            TestItem::new(0, true),
-            TestItem::new(1, true),
-            TestItem::new(2, true),
-            TestItem::new(3, false),
-            TestItem::new(4, false),
-        ];
-        let result = find_last_true(&items, |item| item.value).map(|item| item.id);
-        assert_eq!(result, Some(2));
-    }
-
-    #[test]
-    fn test_find_last_true_even_length_middle_transition() {
-        let items = vec![
-            TestItem::new(0, true),
-            TestItem::new(1, true),
-            TestItem::new(2, false),
-            TestItem::new(3, false),
-        ];
-        let result = find_last_true(&items, |item| item.value).map(|item| item.id);
-        assert_eq!(result, Some(1));
-    }
-
-    #[test]
-    fn test_find_last_true_only_first_true() {
-        let items = vec![
-            TestItem::new(0, true),
-            TestItem::new(1, false),
-            TestItem::new(2, false),
-            TestItem::new(3, false),
-        ];
-        let result = find_last_true(&items, |item| item.value).map(|item| item.id);
-        assert_eq!(result, Some(0));
-    }
-
-    #[test]
-    fn test_find_last_true_only_last_true() {
-        let items = vec![
-            TestItem::new(0, false),
-            TestItem::new(1, false),
-            TestItem::new(2, false),
-            TestItem::new(3, true),
-        ];
-        let result = find_last_true(&items, |item| item.value);
-        assert_eq!(result, None); // 因为违反了有序性假设
-    }
-
-    #[test]
-    fn test_find_last_true_large_array() {
-        let mut items = Vec::new();
-        for i in 0..1000 {
-            items.push(TestItem::new(i, i <= 500));
+        impl TestItem {
+            fn new(id: usize, value: bool) -> Self {
+                Self { id, value }
+            }
         }
-        let result = find_last_true(&items, |item| item.value).map(|item| item.id);
-        assert_eq!(result, Some(500));
-    }
 
-    #[test]
-    fn test_find_last_true_various_transition_points() {
-        // Test cases with different transition points
-        let test_find_last_true_cases = vec![
-            (vec![true], 0),
-            (vec![true, false], 0),
-            (vec![true, true, false], 1),
-            (vec![true, true, true, false], 2),
-            (vec![true, true, true, true, false], 3),
-        ];
+        #[test]
+        fn test_empty_array() {
+            let items: Vec<TestItem> = vec![];
+            let result = find_last_true(&items, |item| item.value);
+            assert!(result.is_none());
+        }
 
-        for (i, (values, expected)) in test_find_last_true_cases.iter().enumerate() {
-            let items: Vec<TestItem> = values
-                .iter()
-                .enumerate()
-                .map(|(id, &v)| TestItem::new(id, v))
-                .collect();
-
+        #[test]
+        fn test_single_element_true() {
+            let items = vec![TestItem::new(0, true)];
             let result = find_last_true(&items, |item| item.value).map(|item| item.id);
-            assert_eq!(result, Some(*expected), "Failed at test case {}", i);
+            assert_eq!(result, Some(0));
+        }
+
+        #[test]
+        fn test_single_element_false() {
+            let items = vec![TestItem::new(0, false)];
+            let result = find_last_true(&items, |item| item.value);
+            assert_eq!(result, None);
+        }
+
+        #[test]
+        fn test_all_true() {
+            let items = vec![
+                TestItem::new(1, true),
+                TestItem::new(2, true),
+                TestItem::new(3, true),
+            ];
+            let result = find_last_true(&items, |item| item.value).map(|item| item.id);
+            assert_eq!(result, Some(3));
+        }
+
+        #[test]
+        fn test_all_false() {
+            let items = vec![
+                TestItem::new(1, false),
+                TestItem::new(2, false),
+                TestItem::new(3, false),
+            ];
+            let result = find_last_true(&items, |item| item.value);
+            assert_eq!(result, None);
+        }
+
+        #[test]
+        fn test_odd_length_middle_transition() {
+            let items = vec![
+                TestItem::new(1, true),
+                TestItem::new(2, true),
+                TestItem::new(3, true),
+                TestItem::new(4, false),
+                TestItem::new(5, false),
+            ];
+            let result = find_last_true(&items, |item| item.value).map(|item| item.id);
+            assert_eq!(result, Some(3));
+        }
+
+        #[test]
+        fn test_even_length_middle_transition() {
+            let items = vec![
+                TestItem::new(1, true),
+                TestItem::new(2, true),
+                TestItem::new(3, false),
+                TestItem::new(4, false),
+            ];
+            let result = find_last_true(&items, |item| item.value).map(|item| item.id);
+            assert_eq!(result, Some(2));
+        }
+
+        #[test]
+        fn test_only_first_true() {
+            let items = vec![
+                TestItem::new(1, true),
+                TestItem::new(2, false),
+                TestItem::new(3, false),
+                TestItem::new(4, false),
+            ];
+            let result = find_last_true(&items, |item| item.value).map(|item| item.id);
+            assert_eq!(result, Some(1));
+        }
+
+        #[test]
+        fn test_only_last_true() {
+            let items = vec![
+                TestItem::new(1, false),
+                TestItem::new(2, false),
+                TestItem::new(3, false),
+                TestItem::new(4, true),
+            ];
+            let result = find_last_true(&items, |item| item.value);
+            assert_eq!(result, None); // no sorted array, so no result
+        }
+
+        #[test]
+        fn test_large_array() {
+            let mut items = Vec::new();
+            for i in 1..1000 {
+                items.push(TestItem::new(i, i <= 500));
+            }
+            let result = find_last_true(&items, |item| item.value).map(|item| item.id);
+            assert_eq!(result, Some(500));
+
+            let mut items = Vec::new();
+            for i in 1..1001 {
+                items.push(TestItem::new(i, i <= 500));
+            }
+            let result = find_last_true(&items, |item| item.value).map(|item| item.id);
+            assert_eq!(result, Some(500));
+
+            let mut items = Vec::new();
+            for i in 1..1001 {
+                items.push(TestItem::new(i, i <= 501));
+            }
+            let result = find_last_true(&items, |item| item.value).map(|item| item.id);
+            assert_eq!(result, Some(501));
+        }
+
+        #[test]
+        fn test_various_transition_points() {
+            // Test cases with different transition points
+            let test_cases = vec![
+                (vec![true], 0),
+                (vec![true, false], 0),
+                (vec![true, true, false], 1),
+                (vec![true, true, true, false], 2),
+                (vec![true, true, true, true, false], 3),
+            ];
+
+            for (i, (values, expected)) in test_cases.iter().enumerate() {
+                let items: Vec<TestItem> = values
+                    .iter()
+                    .enumerate()
+                    .map(|(id, &v)| TestItem::new(id, v))
+                    .collect();
+
+                let result = find_last_true(&items, |item| item.value).map(|item| item.id);
+                assert_eq!(result, Some(*expected), "Failed at test case {}", i);
+            }
         }
     }
 }
