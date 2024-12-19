@@ -12,56 +12,51 @@ describe('Checkpoints Coin API', () => {
 
   beforeAll(async () => {
     testBox = TestBox.setup()
+    const result = await testBox.cmdPublishPackage('../../../examples/coins', {
+      namedAddresses: 'coins=default',
+    })
+
+    expect(result).toBeTruthy()
   })
 
   afterAll(async () => {
     testBox.cleanEnv()
   })
 
-  // it('Cmd publish package should be success', async () => {
-  //   const result = await testBox.cmdPublishPackage('../../../examples/coins', {
-  //     namedAddresses: 'coins=default',
-  //   })
-  //
-  //   console.log(result)
-  //
-  //   expect(result).toBeTruthy()
-  // })
+  it('Check balances should be success', async () => {
+    const tx = new Transaction()
+    tx.callFunction({
+      target: `${await testBox.defaultCmdAddress()}::fixed_supply_coin::faucet`,
+      args: [
+        Args.object({
+          address: await testBox.defaultCmdAddress(),
+          module: 'fixed_supply_coin',
+          name: 'Treasury',
+        }),
+      ],
+    })
 
-  // it('Check balances should be success', async () => {
-  //   const tx = new Transaction()
-  //   tx.callFunction({
-  //     target: `${await testBox.defaultCmdAddress()}::fixed_supply_coin::faucet`,
-  //     args: [
-  //       Args.object({
-  //         address: await testBox.defaultCmdAddress(),
-  //         module: 'fixed_supply_coin',
-  //         name: 'Treasury',
-  //       }),
-  //     ],
-  //   })
-  //
-  //   let result = await testBox.signAndExecuteTransaction(tx)
-  //   expect(result).toBeTruthy()
-  //
-  //   await testBox.delay(10)
-  //
-  //   let result1 = await testBox.getClient().getBalances({
-  //     owner: testBox.address().toHexAddress(),
-  //     limit: '1',
-  //   })
-  //
-  //   expect(result1.has_next_page).toBeTruthy()
-  //
-  //   let result2 = await testBox.getClient().getBalances({
-  //     owner: testBox.address().toHexAddress(),
-  //     limit: '1',
-  //     cursor: result1.next_cursor,
-  //   })
-  //
-  //   expect(result2.has_next_page).toBeFalsy()
-  //   expect(result2.data.length === 1).toBeTruthy()
-  // })
+    let result = await testBox.signAndExecuteTransaction(tx)
+    expect(result).toBeTruthy()
+
+    await testBox.delay(10)
+
+    let result1 = await testBox.getClient().getBalances({
+      owner: testBox.address().toHexAddress(),
+      limit: '1',
+    })
+
+    expect(result1.has_next_page).toBeTruthy()
+
+    let result2 = await testBox.getClient().getBalances({
+      owner: testBox.address().toHexAddress(),
+      limit: '1',
+      cursor: result1.next_cursor,
+    })
+
+    expect(result2.has_next_page).toBeFalsy()
+    expect(result2.data.length === 1).toBeTruthy()
+  })
 
   it('Transfer gas coin should be success', async () => {
     const amount = BigInt(10000000)

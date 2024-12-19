@@ -7,15 +7,19 @@ import { NoStrAddress } from './nostr.js'
 import { RoochAddress } from './rooch.js'
 import { Bytes } from '../types/index.js'
 
-export class AddressView implements Address {
+export class AddressView extends Address {
   public readonly bitcoinAddress: BitcoinAddress
   public readonly noStrAddress: NoStrAddress
   public readonly roochAddress: RoochAddress
 
   constructor(publicKey: Bytes, network: BitcoinNetowkType = BitcoinNetowkType.Regtest) {
-    this.bitcoinAddress = BitcoinAddress.fromPublicKey(publicKey, network)
-    this.noStrAddress = new NoStrAddress(publicKey)
-    this.roochAddress = this.bitcoinAddress.genRoochAddress()
+    const bitcoinAddress = BitcoinAddress.fromPublicKey(publicKey, network)
+    const noStrAddress = new NoStrAddress(publicKey)
+    const roochAddress = bitcoinAddress.genRoochAddress()
+    super(bitcoinAddress.toStr())
+    this.bitcoinAddress = bitcoinAddress
+    this.noStrAddress = noStrAddress
+    this.roochAddress = roochAddress
   }
 
   toBytes(): Uint8Array {

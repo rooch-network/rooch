@@ -75,7 +75,7 @@ export class Args {
     return new Args(Address.serialize(input).toBytes())
   }
 
-  static object(input: StructTag) {
+  static object(input: StructTag | string) {
     return this.objectId(Serializer.structTagToObjectID(input))
   }
 
@@ -139,7 +139,7 @@ export class Args {
           .toBytes()
         break
       case 'object':
-        const tmp = (input as StructTag[]).map(Serializer.structTagToObjectID)
+        const tmp = (input as any).map(Serializer.structTagToObjectID)
         _value = bcs.vector(ObjectId).serialize(tmp).toBytes()
         break
       case 'objectId':
