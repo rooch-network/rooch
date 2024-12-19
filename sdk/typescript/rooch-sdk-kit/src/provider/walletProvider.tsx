@@ -9,9 +9,8 @@ import { createWalletStore, WalletStore } from './walletStore.js'
 import {
   useAutoConnectWallet,
   useCurrentSession,
-  useSession,
-  useWalletStore,
   useCurrentNetwork,
+  useSessions,
 } from '../hooks/index.js'
 import { useSessionStore } from '../hooks/useSessionsStore.js'
 import { getDefaultStorage, StorageType, checkWallets } from '../utils/index.js'
@@ -19,6 +18,7 @@ import { SupportChain, SupportWallet } from '../feature/index.js'
 import { getRegisteredWallets } from '../wellet/util.js'
 import { getWallets } from '../wellet/wallets.js'
 import { useWalletChanged } from '../hooks/index.js'
+import { useWalletStore } from '../hooks/wallet/useWalletStore.js'
 
 type WalletProviderProps = {
   preferredWallets?: SupportWallet[]
@@ -94,7 +94,7 @@ function WalletConnectionManager({ children, preferredWallets }: WalletConnectio
   const setConnectionStatus = useWalletStore((state) => state.setConnectionStatus)
   const setAddressSwitched = useWalletStore((store) => store.setAddressSwitched)
   const currentAddress = useWalletStore((state) => state.currentAddress)
-  const sessions = useSession()
+  const sessions = useSessions()
   const curSession = useCurrentSession()
   const setCurrentSession = useSessionStore((state) => state.setCurrentSession)
 
