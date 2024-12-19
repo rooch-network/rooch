@@ -79,6 +79,13 @@ export function ConnectModal({
   }
 
   const handleSelectedWallet = async (wallet: Wallet) => {
+    // OneKey is a special, not work
+    // User DYOR
+    if (wallet.getName() === 'OneKey') {
+      connectWallet(wallet)
+      return
+    }
+
     const target = await checkWalletNetwork(wallet, roochNetwork)
     if (target) {
       setTargetNetwork(target)
@@ -109,6 +116,7 @@ export function ConnectModal({
           wallet={selectedWallet!}
           targetNetWork={targetNetwork!}
           switchNetwork={switchNetwork}
+          onSuccess={() => connectWallet(selectedWallet!)}
         />
       )
       break

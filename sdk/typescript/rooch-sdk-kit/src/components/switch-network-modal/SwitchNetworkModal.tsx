@@ -33,6 +33,7 @@ export function SwitchNetworkModal() {
       <Modal trigger={<></>} open={open} defaultOpen={false} onOpenChange={(v) => setOpen(v)}>
         <SwitchNetworkView
           wallet={wallet!}
+          onSuccess={() => {}}
           targetNetWork={targetNetwork!}
           switchNetwork={switchNetwork}
         />

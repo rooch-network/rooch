@@ -1,8 +1,10 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
+
 import clsx from 'clsx'
 import { useCallback, useEffect, useState } from 'react'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
+import { ErrorValidateCantPayGasDeposit } from '@roochnetwork/rooch-sdk'
 
 import * as styles from './DropdownMenu.css.js'
 
@@ -14,10 +16,8 @@ import { SessionModal } from './session-modal/SessionModal.js'
 import { FaucetModal } from './fauct-modal/FaucetModal.js'
 import { SwapGasModal } from './swap-gas-modal/SwapGasModal.js'
 import { SwitchNetworkModal } from './switch-network-modal/SwitchNetworkModal.js'
-
 import { useCurrentAddress, useRoochClient } from '../hooks/index.js'
 import { useSubscribeOnError, useSubscribeOnRequest } from '../provider/globalProvider.js'
-import { ErrorValidateCantPayGasDeposit } from '@roochnetwork/rooch-sdk'
 
 export function ActionDropdownMenu() {
   const address = useCurrentAddress()

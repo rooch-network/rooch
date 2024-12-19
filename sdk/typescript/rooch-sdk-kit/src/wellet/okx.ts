@@ -42,7 +42,7 @@ export class OkxWallet extends BitcoinWallet {
   // TODO: Use timeout fix ?
   async connect(): Promise<ThirdPartyAddress[]> {
     const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Connection timed out')), 10000),
+      setTimeout(() => reject(new Error('Connection timed out')), 20000),
     )
     const obj = await Promise.race([this.getTarget().connect(), timeoutPromise])
     this.currentAddress = new BitcoinAddress(obj.address)

@@ -29,6 +29,9 @@ export class Transaction {
     return this.info
   }
 
+  setMaxGas(input: number) {
+    this.getData().maxGas = BigInt(input)
+  }
   setSender(input: address) {
     this.getData().sender = input
   }
