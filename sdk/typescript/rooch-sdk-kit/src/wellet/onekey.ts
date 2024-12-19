@@ -54,11 +54,11 @@ export class OnekeyWallet extends BitcoinWallet {
   }
 
   // TODO: onekey provider switch api, But it doesn't work.
-  switchNetwork(_: WalletNetworkType): void {
+  switchNetwork(_: WalletNetworkType): Promise<void> {
     throw Error('onekey not support switch network!')
   }
 
-  getNetwork(): WalletNetworkType {
+  getNetwork(): Promise<WalletNetworkType> {
     return this.getTarget().getNetwork()
   }
 

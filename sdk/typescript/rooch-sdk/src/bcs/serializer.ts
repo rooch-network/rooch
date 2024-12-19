@@ -12,8 +12,8 @@ const VECTOR_REGEX = /^vector<(.+)>$/
 const STRUCT_REGEX = /^([^:]+)::([^:]+)::([^<]+)(<(.+)>)?/
 
 export class Serializer {
-  static structTagToObjectID(input: StructTag): string {
-    return `0x${toHEX(sha3_256(Serializer.structTagToCanonicalString(input)))}`
+  static structTagToObjectID(input: StructTag | string): string {
+    return `0x${toHEX(sha3_256(typeof input === 'string' ? input : Serializer.structTagToCanonicalString(input)))}`
   }
 
   static structTagToCanonicalString(input: StructTag): string {
