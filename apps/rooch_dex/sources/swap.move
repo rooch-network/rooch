@@ -92,16 +92,16 @@ module rooch_dex::swap {
         amount_y_out: u64
     }
 
-    struct RoochDexCap has store, key {}
+    struct RoochDexCap has key {}
 
     fun init() {
-        object::transfer(object::new_named_object(RoochDexCap{}), sender())
+        object::transfer_extend(object::new_named_object(RoochDexCap{}), sender())
     }
 
 
     public entry fun create_admin(_admin: &mut Object<admin::AdminCap>, receiver: address){
         let new_admin = object::new(RoochDexCap{});
-        object::transfer(new_admin, receiver)
+        object::transfer_extend(new_admin, receiver)
     }
 
     public entry fun delete_admin(_admin: &mut Object<admin::AdminCap>, admin_id: ObjectID){
