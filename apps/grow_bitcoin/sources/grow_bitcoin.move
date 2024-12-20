@@ -896,12 +896,18 @@ module grow_bitcoin::grow_bitcoin {
         assert!(amount == 2025450, 1);
         assert!(amount2 == 675150, 2);
 
+        let amount = account_coin_store::balance<GROW>(owner_addr);
+        assert!(amount == 0, 3);
+
+        timestamp::fast_forward_seconds_for_test(seconds);
         batch_harvest(&sender, vector[utxo_id, utxo_id2]);
+        let amount = account_coin_store::balance<GROW>(owner_addr);
+        assert!(amount == 4050900, 4);
 
         batch_unstake(&sender, vector[utxo_id, utxo_id2]);
         let amount = query_gov_token_amount(utxo_id);
-        assert!(amount == 0, 3);
+        assert!(amount == 0, 5);
         let amount2 = query_gov_token_amount(utxo_id2);
-        assert!(amount2 == 0, 4);
+        assert!(amount2 == 0, 6);
     }
 }
