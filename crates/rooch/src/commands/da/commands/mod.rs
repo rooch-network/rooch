@@ -210,6 +210,10 @@ impl TxDAIndexer {
             tx_order_hashes.push(item);
         }
         tx_order_hashes.sort_by(|a, b| a.tx_order.cmp(&b.tx_order)); // avoiding wrong order
+        tracing::info!(
+            "tx_order:tx_hash:block indexer loaded, tx cnt: {}",
+            tx_order_hashes.len()
+        );
         Ok(TxDAIndexer {
             tx_order_hash_blocks: tx_order_hashes,
             transaction_store,
