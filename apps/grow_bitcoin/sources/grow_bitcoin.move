@@ -511,15 +511,21 @@ module grow_bitcoin::grow_bitcoin {
 
     /// Harvest yield farming token from stake
     public entry fun batch_harvest(signer:&signer, assets: vector<ObjectID>) {
+        process_expired_state();
+        let account = signer::address_of(signer);
+        let stake_table = account::borrow_resource<UserStake>(account);
+
         let len = vector::length(&assets);
         let i = 0;
         let total_coin = coin::zero<GROW>();
         while (i < len) {
             let asset_id = *vector::borrow(&assets, i);
-            let utxo_obj = object::borrow_mut_object<UTXO>(signer, asset_id);
-            let coin = do_harvest(signer, object::id(utxo_obj));
-            utxo::remove_temp_state<StakeInfo>(utxo_obj);
-            coin::merge(&mut total_coin, coin);
+            if (!table::contains(&stake_table.stake, asset_id)) {
+                let utxo_obj = object::borrow_mut_object<UTXO>(signer, asset_id);
+                let coin = do_harvest(signer, object::id(utxo_obj));
+                utxo::remove_temp_state<StakeInfo>(utxo_obj);
+                coin::merge(&mut total_coin, coin);
+            };
             i = i + 1;
         };
         account_coin_store::deposit(signer::address_of(signer), total_coin);
@@ -533,15 +539,21 @@ module grow_bitcoin::grow_bitcoin {
 
     /// Harvest yield farming token from bbn stake
     public entry fun batch_harvest_bbn(signer:&signer, assets: vector<ObjectID>) {
+        process_expired_state();
+        let account = signer::address_of(signer);
+        let stake_table = account::borrow_resource<UserStake>(account);
+
         let len = vector::length(&assets);
         let i = 0;
         let total_coin = coin::zero<GROW>();
         while (i < len) {
             let asset_id = *vector::borrow(&assets, i);
-            let bbn_obj = object::borrow_mut_object<BBNStakeSeal>(signer, asset_id);
-            let coin = do_harvest(signer, object::id(bbn_obj));
-            bbn::remove_temp_state<StakeInfo>(bbn_obj);
-            coin::merge(&mut total_coin, coin);
+            if (!table::contains(&stake_table.stake, asset_id)) {
+                let bbn_obj = object::borrow_mut_object<BBNStakeSeal>(signer, asset_id);
+                let coin = do_harvest(signer, object::id(bbn_obj));
+                bbn::remove_temp_state<StakeInfo>(bbn_obj);
+                coin::merge(&mut total_coin, coin);
+            };
             i = i + 1;
         };
         account_coin_store::deposit(signer::address_of(signer), total_coin);
@@ -885,6 +897,8 @@ module grow_bitcoin::grow_bitcoin {
         let amount2 = query_gov_token_amount(utxo_id2);
         assert!(amount == 2025450, 1);
         assert!(amount2 == 675150, 2);
+
+        batch_harvest(&sender, vector[utxo_id, utxo_id2]);
 
         batch_unstake(&sender, vector[utxo_id, utxo_id2]);
         let amount = query_gov_token_amount(utxo_id);
