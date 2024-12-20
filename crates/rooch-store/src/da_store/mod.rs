@@ -123,6 +123,7 @@ impl DAMetaDBStore {
         } else {
             Some(min_block_number_wait_rm - 1)
         };
+        let last_block_number_wait_rm = *remove_blocks.last().unwrap();
 
         let inner_store = self.block_submit_state_store.get_store().store();
         let mut cf_batches: Vec<WriteBatchCF> = Vec::new();
@@ -170,7 +171,14 @@ impl DAMetaDBStore {
             cf_name: DA_BLOCK_CURSOR_COLUMN_FAMILY_NAME.to_string(),
         });
 
-        inner_store.write_cf_batch(cf_batches, true)
+        inner_store.write_cf_batch(cf_batches, true)?;
+        tracing::info!(
+            "rollback to block {:?} successfully, removed blocks: [{},{}]",
+            min_block_number_wait_rm,
+            remove_blocks,
+            last_block_number_wait_rm
+        );
+        Ok(())
     }
 
     // generate the blocks need to be removed by tx_order_end > last_order
