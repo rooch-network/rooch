@@ -16,6 +16,7 @@ use tokio::time::{sleep, Duration};
 // small blob size for transaction to get included in a block quickly
 pub(crate) const DEFAULT_AVAIL_MAX_SEGMENT_SIZE: u64 = 256 * 1024;
 const BACK_OFF_MIN_DELAY: Duration = Duration::from_millis(3000);
+const TURBO_BACK_OFF_MIN_DELAY: Duration = Duration::from_millis(3000);
 const SUBMIT_API_PATH: &str = "v2/submit";
 const TURBO_SUBMIT_API_PATH: &str = "user/submit_data";
 
@@ -85,30 +86,16 @@ impl AvailFusionClientConfig {
 }
 
 #[derive(Clone)]
-pub struct AvailLightClient {
-    endpoint: String,
-    http_client: Client,
-    max_retries: usize,
-}
-
-impl AvailLightClient {
-    pub fn new(endpoint: &str, max_retries: usize) -> anyhow::Result<Self> {
-        let client = Client::new();
-
-        Ok(AvailLightClient {
-            endpoint: endpoint.to_string(),
-            http_client: client,
-            max_retries,
-        })
-    }
-}
-
-#[derive(Clone)]
 pub(crate) struct AvailTurboClient {
     endpoint: String,
     http_client: Client,
     max_retries: usize,
     auth_token: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AvailTurboClientSubmitResponse {
+    submission_id: String,
 }
 
 impl AvailTurboClient {
@@ -183,6 +170,25 @@ impl Operator for AvailTurboClient {
                 }
             }
         }
+    }
+}
+
+#[derive(Clone)]
+pub struct AvailLightClient {
+    endpoint: String,
+    http_client: Client,
+    max_retries: usize,
+}
+
+impl AvailLightClient {
+    pub fn new(endpoint: &str, max_retries: usize) -> anyhow::Result<Self> {
+        let client = Client::new();
+
+        Ok(AvailLightClient {
+            endpoint: endpoint.to_string(),
+            http_client: client,
+            max_retries,
+        })
     }
 }
 
