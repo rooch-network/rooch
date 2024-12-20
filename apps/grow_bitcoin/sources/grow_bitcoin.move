@@ -520,7 +520,7 @@ module grow_bitcoin::grow_bitcoin {
         let total_coin = coin::zero<GROW>();
         while (i < len) {
             let asset_id = *vector::borrow(&assets, i);
-            if (!table::contains(&stake_table.stake, asset_id)) {
+            if (table::contains(&stake_table.stake, asset_id)) {
                 let utxo_obj = object::borrow_mut_object<UTXO>(signer, asset_id);
                 let coin = do_harvest(signer, object::id(utxo_obj));
                 coin::merge(&mut total_coin, coin);
@@ -547,7 +547,7 @@ module grow_bitcoin::grow_bitcoin {
         let total_coin = coin::zero<GROW>();
         while (i < len) {
             let asset_id = *vector::borrow(&assets, i);
-            if (!table::contains(&stake_table.stake, asset_id)) {
+            if (table::contains(&stake_table.stake, asset_id)) {
                 let bbn_obj = object::borrow_mut_object<BBNStakeSeal>(signer, asset_id);
                 let coin = do_harvest(signer, object::id(bbn_obj));
                 coin::merge(&mut total_coin, coin);
