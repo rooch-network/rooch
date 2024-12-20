@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: roochbot
+  namespace: mainnet
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: roochbot
+  template:
+    metadata:
+      labels:
+        app: roochbot
+    spec:
+      containers:
+      - name: roochbot
+        image: jolestar/eliza-tee:0.1.6-alpha.4-20241219.2
+        command: ["pnpm"]
+        args: 
+        - "start"
+        - "--non-interactive"
+        - "--characters"
+        - "/app/characters/roochbot.character.json"
+        envFrom:
+        - configMapRef:
+            name: roochbot-config
+        - secretRef:
+            name: roochbot-secrets
+        ports:
+        - containerPort: 3000
+        volumeMounts:
+        - name: roochbot-data
+          mountPath: /app/agent/data
+        - name: character-config
+          mountPath: /app/characters
+      volumes:
+      - name: roochbot-data
+        persistentVolumeClaim:
+          claimName: roochbot-data
+      - name: character-config
+        configMap:
+          name: roochbot-character-config
+          items:
+          - key: roochbot.character.json
+            path: roochbot.character.json
