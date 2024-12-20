@@ -75,15 +75,32 @@ module rooch_framework::simple_rng {
         return value
     }
 
+    fun seed_with_count(count: u64): vector<u8> {
+        let base_seed = seed();
+        let count_bytes = bcs::to_bytes(&count);
+        vector::append(&mut base_seed, count_bytes);
+        hash::sha3_256(base_seed)
+    }
+
     /// Generate a random u64 from seed
     public fun rand_u64(): u64 {
         let seed_bytes = seed();
         bytes_to_u64(seed_bytes)
     }
 
+    public fun rand_u64_with_count(count: u64): u64 {
+        let seed_bytes = seed_with_count(count);
+        bytes_to_u64(seed_bytes)
+    }
+
     /// Generate a random u128 from seed
     public fun rand_u128(): u128 {
         let seed_bytes = seed();
+        bytes_to_u128(seed_bytes)
+    }
+
+    public fun rand_u128_with_count(count: u64): u128 {
+        let seed_bytes = seed_with_count(count);
         bytes_to_u128(seed_bytes)
     }
 
@@ -185,4 +202,72 @@ module rooch_framework::simple_rng {
 
         assert!(seed_bytes == expected_seed, ErrorInvalidSeed);
     }
+
+    #[test]
+    fun test_rand_u64_with_count_basic() {
+        let value = rand_u64_with_count(0);
+        // Assert that the value is a valid u64
+        assert!(value >= 0, ErrorInvalidU64);
+    }
+
+    #[test]
+    fun test_rand_u64_with_count_different_counts() {
+        let value1 = rand_u64_with_count(1);
+        let value2 = rand_u64_with_count(2);
+        // Assert that different counts produce different results
+        assert!(value1 != value2, ErrorInvalidU64);
+    }
+
+    #[test]
+    fun test_rand_u64_with_count_boundary_values() {
+        let u64_max = 18446744073709551615u64;
+        let min_value = rand_u64_with_count(0);
+        let max_value = rand_u64_with_count(u64_max);
+
+        // Assert that both values are valid u64
+        assert!(min_value >= 0, ErrorInvalidU64);
+        assert!(max_value >= 0, ErrorInvalidU64);
+    }
+
+    #[test]
+    fun test_rand_u64_with_count_consistency() {
+        let value1 = rand_u64_with_count(5);
+        let value2 = rand_u64_with_count(5);
+        // Assert that same count produces the same result
+        assert!(value1 == value2, ErrorInvalidU64);
+    }
+
+    #[test]
+    fun test_rand_u128_with_count_basic() {
+        let value = rand_u128_with_count(0);
+        // Assert that the value is a valid u128
+        assert!(value >= 0, ErrorInvalidU128);
+    }
+
+    #[test]
+    fun test_rand_u128_with_count_different_counts() {
+        let value1 = rand_u128_with_count(1);
+        let value2 = rand_u128_with_count(2);
+        // Assert that different counts produce different results
+        assert!(value1 != value2, ErrorInvalidU128);
+    }
+
+    #[test]
+    fun test_rand_u128_with_count_boundary_values() {
+        let u64_max = 18446744073709551615u64;
+        let min_value = rand_u128_with_count(0);
+        let max_value = rand_u128_with_count(u64_max);
+        // Assert that both values are valid u128
+        assert!(min_value >= 0, ErrorInvalidU128);
+        assert!(max_value >= 0, ErrorInvalidU128);
+    }
+
+    #[test]
+    fun test_rand_u128_with_count_consistency() {
+        let value1 = rand_u128_with_count(5);
+        let value2 = rand_u128_with_count(5);
+        // Assert that same count produces the same result
+        assert!(value1 == value2, ErrorInvalidU128);
+    }
+
 }

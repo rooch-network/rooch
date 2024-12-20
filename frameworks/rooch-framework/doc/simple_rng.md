@@ -10,7 +10,9 @@ A simple random number generator in Move language.
 -  [Function `bytes_to_u64`](#0x3_simple_rng_bytes_to_u64)
 -  [Function `bytes_to_u128`](#0x3_simple_rng_bytes_to_u128)
 -  [Function `rand_u64`](#0x3_simple_rng_rand_u64)
+-  [Function `rand_u64_with_count`](#0x3_simple_rng_rand_u64_with_count)
 -  [Function `rand_u128`](#0x3_simple_rng_rand_u128)
+-  [Function `rand_u128_with_count`](#0x3_simple_rng_rand_u128_with_count)
 -  [Function `rand_u64_range`](#0x3_simple_rng_rand_u64_range)
 -  [Function `rand_u128_range`](#0x3_simple_rng_rand_u128_range)
 
@@ -101,6 +103,17 @@ Generate a random u64 from seed
 
 
 
+<a name="0x3_simple_rng_rand_u64_with_count"></a>
+
+## Function `rand_u64_with_count`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="simple_rng.md#0x3_simple_rng_rand_u64_with_count">rand_u64_with_count</a>(count: u64): u64
+</code></pre>
+
+
+
 <a name="0x3_simple_rng_rand_u128"></a>
 
 ## Function `rand_u128`
@@ -109,6 +122,17 @@ Generate a random u128 from seed
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="simple_rng.md#0x3_simple_rng_rand_u128">rand_u128</a>(): u128
+</code></pre>
+
+
+
+<a name="0x3_simple_rng_rand_u128_with_count"></a>
+
+## Function `rand_u128_with_count`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="simple_rng.md#0x3_simple_rng_rand_u128_with_count">rand_u128_with_count</a>(count: u64): u128
 </code></pre>
 
 
