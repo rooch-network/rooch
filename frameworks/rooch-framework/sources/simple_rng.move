@@ -78,8 +78,13 @@ module rooch_framework::simple_rng {
     fun seed_with_count(count: u64): vector<u8> {
         let base_seed = seed();
         let count_bytes = bcs::to_bytes(&count);
-        vector::append(&mut base_seed, count_bytes);
-        hash::sha3_256(base_seed)
+        let i = 0;
+        while (i < 8) {
+            let value = (*vector::borrow(&base_seed, i)) ^ (*vector::borrow(&count_bytes, i));
+            vector::insert(&mut base_seed, i, value);
+            i = i + 1;
+        };
+        base_seed
     }
 
     /// Generate a random u64 from seed
@@ -88,6 +93,7 @@ module rooch_framework::simple_rng {
         bytes_to_u64(seed_bytes)
     }
 
+    /// Generate a random u64 value with a count parameter to ensure unique randomness within a transaction.
     public fun rand_u64_with_count(count: u64): u64 {
         let seed_bytes = seed_with_count(count);
         bytes_to_u64(seed_bytes)
@@ -99,6 +105,7 @@ module rooch_framework::simple_rng {
         bytes_to_u128(seed_bytes)
     }
 
+    /// Generate a random u128 value with a count parameter to ensure unique randomness within a transaction.
     public fun rand_u128_with_count(count: u64): u128 {
         let seed_bytes = seed_with_count(count);
         bytes_to_u128(seed_bytes)
@@ -111,10 +118,24 @@ module rooch_framework::simple_rng {
         (value % (high - low)) + low
     }
 
+    /// Generate a random integer range in [low, high) for u64 with count.
+    public fun rand_u64_range_with_count(low: u64, high: u64, count: u64): u64 {
+        assert!(high > low, ErrorInvalidArg);
+        let value = rand_u64_with_count(count);
+        (value % (high - low)) + low
+    }
+
     /// Generate a random integer range in [low, high) for u128.
     public fun rand_u128_range(low: u128, high: u128): u128 {
         assert!(high > low, ErrorInvalidArg);
         let value = rand_u128();
+        (value % (high - low)) + low
+    }
+
+    /// Generate a random integer range in [low, high) for u128 with count.
+    public fun rand_u128_range_with_count(low: u128, high: u128, count: u64): u128 {
+        assert!(high > low, ErrorInvalidArg);
+        let value = rand_u128_with_count(count);
         (value % (high - low)) + low
     }
 
@@ -268,6 +289,22 @@ module rooch_framework::simple_rng {
         let value2 = rand_u128_with_count(5);
         // Assert that same count produces the same result
         assert!(value1 == value2, ErrorInvalidU128);
+    }
+
+    #[test]
+    fun test_rand_u64_range_with_count_within_range() {
+        let low = 10;
+        let high = 100;
+        let value = rand_u64_range_with_count(low, high, 0);
+        assert!(value >= low && value < high, ErrorInvalidU64);
+    }
+
+    #[test]
+    fun test_rand_u128_range_with_count_within_range() {
+        let low = 1000;
+        let high = 10000;
+        let value = rand_u128_range_with_count(low, high, 0);
+        assert!(value >= low && value < high, ErrorInvalidU128);
     }
 
 }
