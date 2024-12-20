@@ -26,7 +26,7 @@ module grow_bitcoin::grow_bitcoin {
     use rooch_framework::account_coin_store;
     use rooch_framework::coin;
     use rooch_framework::coin::{CoinInfo, Coin};
-    
+
     use bitcoin_move::utxo::{Self, UTXO, value, TempStateDropEvent};
     #[test_only]
     use bitcoin_move::bitcoin::add_latest_block;
@@ -274,14 +274,29 @@ module grow_bitcoin::grow_bitcoin {
         signer: &signer,
         assets: vector<ObjectID>,
     ) {
+        let stake_table = obain_stake_table(signer);
         let len = vector::length(&assets);
         let i = 0;
         while (i < len) {
             let asset_id = *vector::borrow(&assets, i);
-            let asset = object::borrow_mut_object<UTXO>(signer, asset_id);
-            stake(signer, asset);
+            if (!table::contains(&stake_table.stake, asset_id)) {
+                let asset = object::borrow_mut_object<UTXO>(signer, asset_id);
+                stake(signer, asset);
+            };
             i = i + 1;
         }
+    }
+
+    fun obain_stake_table(signer: &signer): &UserStake {
+        process_expired_state();
+        let account = signer::address_of(signer);
+        // Initialize the stake table if it doesn't exist
+        if (!account::exists_resource<UserStake>(account)) {
+            account::move_resource_to(signer, UserStake {
+                stake: table::new()
+            });
+        };
+        account::borrow_resource<UserStake>(account)
     }
 
     /// Call by stake user, staking amount of asset in order to get yield farming token
@@ -301,12 +316,15 @@ module grow_bitcoin::grow_bitcoin {
         signer: &signer,
         assets: vector<ObjectID>,
     ) {
+        let stake_table = obain_stake_table(signer);
         let len = vector::length(&assets);
         let i = 0;
         while (i < len) {
             let asset_id = *vector::borrow(&assets, i);
-            let asset = object::borrow_mut_object<BBNStakeSeal>(signer, asset_id);
-            stake_bbn(signer, asset);
+            if (!table::contains(&stake_table.stake, asset_id)) {
+                let asset = object::borrow_mut_object<BBNStakeSeal>(signer, asset_id);
+                stake_bbn(signer, asset);
+            };
             i = i + 1;
         }
     }
@@ -399,15 +417,20 @@ module grow_bitcoin::grow_bitcoin {
         signer: &signer,
         assets: vector<ObjectID>,
     ) {
+        process_expired_state();
+        let farming_asset = account::borrow_resource<FarmingAsset>(DEPLOYER);
+
         let len = vector::length(&assets);
         let i = 0;
         let total_coin = coin::zero<GROW>();
         while (i < len) {
             let asset_id = *vector::borrow(&assets, i);
-            let asset = object::borrow_mut_object<UTXO>(signer, asset_id);
-            let coin = do_unstake(signer, object::id(asset));
-            utxo::remove_temp_state<StakeInfo>(asset);
-            coin::merge(&mut total_coin, coin);
+            if (table::contains(&farming_asset.stake_table, asset_id)) {
+                let asset = object::borrow_mut_object<UTXO>(signer, asset_id);
+                let coin = do_unstake(signer, object::id(asset));
+                utxo::remove_temp_state<StakeInfo>(asset);
+                coin::merge(&mut total_coin, coin);
+            };
             i = i + 1;
         };
         account_coin_store::deposit(signer::address_of(signer), total_coin);
@@ -422,15 +445,20 @@ module grow_bitcoin::grow_bitcoin {
 
     /// Supports batch invocation by stake users, allowing multiple assets to be unstaked to receive yield farming tokens
     public entry fun batch_unstake_bbn(signer: &signer, assets: vector<ObjectID>) {
+        process_expired_state();
+        let farming_asset = account::borrow_resource<FarmingAsset>(DEPLOYER);
+
         let len = vector::length(&assets);
         let i = 0;
         let total_coin = coin::zero<GROW>();
         while (i < len) {
             let asset_id = *vector::borrow(&assets, i);
-            let asset = object::borrow_mut_object<BBNStakeSeal>(signer, asset_id);
-            let coin = do_unstake(signer, object::id(asset));
-            bbn::remove_temp_state<StakeInfo>(asset);
-            coin::merge(&mut total_coin, coin);
+            if (table::contains(&farming_asset.stake_table, asset_id)) {
+                let asset = object::borrow_mut_object<BBNStakeSeal>(signer, asset_id);
+                let coin = do_unstake(signer, object::id(asset));
+                bbn::remove_temp_state<StakeInfo>(asset);
+                coin::merge(&mut total_coin, coin);
+            };
             i = i + 1;
         };
         account_coin_store::deposit(signer::address_of(signer), total_coin);
@@ -754,7 +782,7 @@ module grow_bitcoin::grow_bitcoin {
         let (height,_hash) = types::unpack_block_height_hash(option::destroy_some(height_hash));
         height
     }
-    
+
     public entry fun remove_expired_stake(asset_id: ObjectID) {
         let (is_staked, _) = check_asset_is_staked(asset_id);
         if (!is_staked || object::exists_object_with_type<UTXO>(asset_id) || object::exists_object_with_type<BBNStakeSeal>(asset_id)){
