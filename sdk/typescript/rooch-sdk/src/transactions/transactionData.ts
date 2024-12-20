@@ -74,10 +74,10 @@ export class TransactionData {
 
   constructor(
     action: MoveAction,
+    maxGas?: bigint,
     sender?: string,
     sequenceNumber?: bigint,
     chainId?: bigint,
-    maxGas?: bigint,
   ) {
     this.sender = sender
     this.sequenceNumber = sequenceNumber

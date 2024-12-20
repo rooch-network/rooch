@@ -4,7 +4,8 @@
 import { execSync } from 'child_process'
 import { existsSync, promises as fs } from 'fs'
 import * as path from 'path'
-import { build, BuildOptions } from 'esbuild'
+import type { BuildOptions } from 'esbuild'
+import { build } from 'esbuild'
 
 interface PackageJSON {
   name?: string
@@ -59,6 +60,7 @@ async function buildCJS(
     entryPoints,
     outdir: 'dist/cjs',
     sourcemap: true,
+    outbase: 'src',
     ...buildOptions,
   })
   await buildTypes('tsconfig.json')
@@ -89,6 +91,7 @@ async function buildESM(
     target: 'es2020',
     entryPoints,
     outdir: 'dist/esm',
+    outbase: 'src',
     sourcemap: true,
 
     ...buildOptions,
@@ -126,7 +129,7 @@ async function buildImportDirectories({ exports, sideEffects }: PackageJSON) {
   const ignoredWorkspaces = []
 
   for (const [exportName, exportMap] of Object.entries(exports)) {
-    if (typeof exportMap !== 'object' || !exportName.match(/^\.\/[\w\-_/]+$/)) {
+    if (typeof exportMap !== 'object' || !exportName.match(/^\.\/[\w\-_/]+/)) {
       continue
     }
 
@@ -134,7 +137,7 @@ async function buildImportDirectories({ exports, sideEffects }: PackageJSON) {
     const parts = exportName.split('/')
     exportDirs.add(parts[1])
 
-    if (parts.length === 2) {
+    if (parts.length >= 2 && !exportDir.endsWith('.css')) {
       ignoredWorkspaces.push(path.relative(path.resolve(process.cwd(), '../..'), exportDir))
     }
 

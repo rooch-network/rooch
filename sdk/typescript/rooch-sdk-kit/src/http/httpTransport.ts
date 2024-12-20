@@ -5,34 +5,43 @@ import {
   RoochHTTPTransport,
   RoochTransportRequestOptions,
   RoochHTTPTransportOptions,
-  ErrorValidateInvalidAccountAuthKey,
-  ErrorValidateSessionIsExpired,
 } from '@roochnetwork/rooch-sdk'
 
-type SessionExpiredCallbackType = () => void
-
+export type requestCallbackType = (
+  state: 'requesting' | 'error' | 'success',
+  error?: {
+    code: number
+    message: string
+  },
+) => void
 export class HTTPTransport extends RoochHTTPTransport {
-  private readonly sessionExpiredCallback: SessionExpiredCallbackType
+  private readonly requestCallback: requestCallbackType
 
-  constructor(
-    options: RoochHTTPTransportOptions,
-    sessionExpiredCallback: SessionExpiredCallbackType,
-  ) {
+  constructor(options: RoochHTTPTransportOptions, requestErrorCallback: requestCallbackType) {
     super(options)
-    this.sessionExpiredCallback = sessionExpiredCallback
+    this.requestCallback = requestErrorCallback
   }
 
   async request<T>(input: RoochTransportRequestOptions): Promise<T> {
     let result: T
     try {
+      if (input.method === 'rooch_executeRawTransaction') {
+        this.requestCallback('requesting')
+      }
+
       result = await super.request(input)
+
+      if (input.method === 'rooch_executeRawTransaction') {
+        this.requestCallback('success')
+      }
+
       return result
     } catch (e: any) {
-      if (
-        'code' in e &&
-        (e.code === ErrorValidateInvalidAccountAuthKey || e.code === ErrorValidateSessionIsExpired)
-      ) {
-        this.sessionExpiredCallback()
+      if ('code' in e) {
+        this.requestCallback('error', {
+          code: e.code,
+          message: e.message,
+        })
       }
       throw e
     }
