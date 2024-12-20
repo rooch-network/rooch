@@ -9,6 +9,10 @@ import '@fontsource-variable/red-hat-mono';
 
 import InitColorSchemeScript from '@mui/material/InitColorSchemeScript';
 
+import { Theme } from '@radix-ui/themes';
+import '@roochnetwork/rooch-sdk-kit/dist/index.css';
+import '@radix-ui/themes/styles.css';
+
 import { primary } from 'src/theme/core/palette';
 import { DashboardLayout } from 'src/layouts/dashboard';
 import { ThemeProvider } from 'src/theme/theme-provider';
@@ -20,6 +24,7 @@ import { MotionLazy } from 'src/components/animate/motion-lazy';
 import { SettingsDrawer, defaultSettings, SettingsProvider } from 'src/components/settings';
 
 import RoochDappProvider from './rooch-dapp-provider';
+import { ErrorGuard } from 'src/components/guard/ErrorGuard';
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -40,19 +45,22 @@ export default async function RootLayout({ children }: Props) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body>
-        <InitColorSchemeScript {...schemeConfig} nonce={nonce} />
-        <RoochDappProvider>
-          <SettingsProvider settings={settings} caches="localStorage">
-            <ThemeProvider nonce={nonce}>
-              <MotionLazy>
-                <Snackbar />
-                <ProgressBar />
-                <SettingsDrawer />
-                <DashboardLayout>{children}</DashboardLayout>
-              </MotionLazy>
-            </ThemeProvider>
-          </SettingsProvider>
-        </RoochDappProvider>
+        <Theme>
+          <InitColorSchemeScript {...schemeConfig} nonce={nonce} />
+          <RoochDappProvider>
+            <SettingsProvider settings={settings} caches="localStorage">
+              <ThemeProvider nonce={nonce}>
+                <MotionLazy>
+                  <ErrorGuard />
+                  <Snackbar />
+                  <ProgressBar />
+                  <SettingsDrawer />
+                  <DashboardLayout>{children}</DashboardLayout>
+                </MotionLazy>
+              </ThemeProvider>
+            </SettingsProvider>
+          </RoochDappProvider>
+        </Theme>
       </body>
     </html>
   );
