@@ -523,7 +523,6 @@ module grow_bitcoin::grow_bitcoin {
             if (!table::contains(&stake_table.stake, asset_id)) {
                 let utxo_obj = object::borrow_mut_object<UTXO>(signer, asset_id);
                 let coin = do_harvest(signer, object::id(utxo_obj));
-                utxo::remove_temp_state<StakeInfo>(utxo_obj);
                 coin::merge(&mut total_coin, coin);
             };
             i = i + 1;
@@ -551,7 +550,6 @@ module grow_bitcoin::grow_bitcoin {
             if (!table::contains(&stake_table.stake, asset_id)) {
                 let bbn_obj = object::borrow_mut_object<BBNStakeSeal>(signer, asset_id);
                 let coin = do_harvest(signer, object::id(bbn_obj));
-                bbn::remove_temp_state<StakeInfo>(bbn_obj);
                 coin::merge(&mut total_coin, coin);
             };
             i = i + 1;
