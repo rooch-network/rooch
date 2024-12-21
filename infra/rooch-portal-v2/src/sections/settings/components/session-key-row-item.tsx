@@ -2,6 +2,7 @@ import type { SessionInfoView } from '@roochnetwork/rooch-sdk';
 
 import dayjs from 'dayjs';
 import { useMemo, Fragment, useState } from 'react';
+import { useCurrentSession } from "@roochnetwork/rooch-sdk-kit";
 
 import { LoadingButton } from '@mui/lab';
 import { Chip, Stack, Button, TableRow, Collapse, TableCell } from '@mui/material';
@@ -9,7 +10,6 @@ import { Chip, Stack, Button, TableRow, Collapse, TableCell } from '@mui/materia
 import { isSessionExpired } from 'src/utils/common';
 
 import { toast } from 'src/components/snackbar';
-import { useCurrentSession } from "@roochnetwork/rooch-sdk-kit";
 
 export default function SessionKeyRowItem({
   item,

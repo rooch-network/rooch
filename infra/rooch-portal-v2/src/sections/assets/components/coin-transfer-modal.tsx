@@ -1,9 +1,13 @@
 import type { RefetchOptions, QueryObserverResult } from '@tanstack/react-query';
-import type { BalanceInfoView, PaginatedBalanceInfoViews } from '@roochnetwork/rooch-sdk';
 
 import { useState } from 'react';
 import BigNumber from 'bignumber.js';
-import { useTransferCoin } from '@roochnetwork/rooch-sdk-kit';
+import { SessionKeyGuard, useTransferCoin } from '@roochnetwork/rooch-sdk-kit';
+import {
+  isValidAddress,
+  type BalanceInfoView,
+  type PaginatedBalanceInfoViews,
+} from '@roochnetwork/rooch-sdk';
 
 import { LoadingButton } from '@mui/lab';
 import {
@@ -23,7 +27,6 @@ import {
 import { formatCoin } from 'src/utils/format-number';
 
 import { toast } from 'src/components/snackbar';
-import SessionKeyGuardButton from 'src/components/auth/session-key-guard-button';
 
 export default function CoinTransferModal({
   open,
@@ -38,11 +41,44 @@ export default function CoinTransferModal({
     options?: RefetchOptions
   ) => Promise<QueryObserverResult<PaginatedBalanceInfoViews, Error>>;
 }) {
-  const { mutateAsync: transferCoin } = useTransferCoin();
+  const { mutateAsync: transferCoin, isError } = useTransferCoin();
   const [transferValue, setTransferValue] = useState('');
   const [recipient, setRecipient] = useState('');
 
   const [transferring, setTransferring] = useState(false);
+
+  const recipientIsValid = () => {
+    if (recipient === '') {
+      return false;
+    }
+    return isValidAddress(recipient);
+  };
+
+  const handleTransfer = () => {
+    const s = recipientIsValid();
+    console.log(s);
+    setTransferring(true);
+    const amountNumber = new BigNumber(transferValue)
+      .multipliedBy(new BigNumber(10).pow(selectedRow.decimals))
+      .integerValue(BigNumber.ROUND_FLOOR)
+      .toNumber();
+    transferCoin({
+      recipient,
+      amount: amountNumber,
+      coinType: {
+        target: selectedRow.coin_type,
+      },
+    })
+      .then((result) => {
+        console.log(isError);
+        onClose();
+        refetch();
+        toast.success('Transfer success');
+      })
+      .finally(() => {
+        setTransferring(false);
+      });
+  };
 
   return (
     <Dialog open={open}>
@@ -166,39 +202,16 @@ export default function CoinTransferModal({
           Cancel
         </Button>
 
-        <SessionKeyGuardButton>
+        <SessionKeyGuard onClick={handleTransfer}>
           <LoadingButton
             fullWidth
             loading={transferring}
-            disabled={false}
+            disabled={transferValue === '' || !recipientIsValid()}
             variant="contained"
-            onClick={async () => {
-              try {
-                setTransferring(true);
-                const amountNumber = new BigNumber(transferValue)
-                  .multipliedBy(new BigNumber(10).pow(selectedRow.decimals))
-                  .integerValue(BigNumber.ROUND_FLOOR)
-                  .toNumber();
-                await transferCoin({
-                  recipient,
-                  amount: amountNumber,
-                  coinType: {
-                    target: selectedRow.coin_type,
-                  },
-                });
-                onClose();
-                refetch();
-                toast.success('Transfer success');
-              } catch (error) {
-                toast.error(String(error));
-              } finally {
-                setTransferring(false);
-              }
-            }}
           >
             Confirm
           </LoadingButton>
-        </SessionKeyGuardButton>
+        </SessionKeyGuard>
       </DialogActions>
     </Dialog>
   );

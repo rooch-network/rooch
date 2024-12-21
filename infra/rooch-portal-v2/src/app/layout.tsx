@@ -1,10 +1,13 @@
 import 'src/global.css';
+import '@radix-ui/themes/styles.css';
 import '@fontsource-variable/raleway/wght.css';
+import '@roochnetwork/rooch-sdk-kit/dist/index.css';
 import '@fontsource-variable/plus-jakarta-sans/wght.css';
 
 import type { Viewport } from 'next';
 
 import { headers } from 'next/headers';
+import { Theme } from '@radix-ui/themes';
 import '@fontsource-variable/red-hat-mono';
 
 import InitColorSchemeScript from '@mui/material/InitColorSchemeScript';
@@ -16,6 +19,7 @@ import { schemeConfig } from 'src/theme/color-scheme-script';
 
 import { Snackbar } from 'src/components/snackbar';
 import { ProgressBar } from 'src/components/progress-bar';
+import { ErrorGuard } from 'src/components/guard/ErrorGuard';
 import { MotionLazy } from 'src/components/animate/motion-lazy';
 import { SettingsDrawer, defaultSettings, SettingsProvider } from 'src/components/settings';
 
@@ -40,19 +44,22 @@ export default async function RootLayout({ children }: Props) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body>
-        <InitColorSchemeScript {...schemeConfig} nonce={nonce} />
-        <RoochDappProvider>
-          <SettingsProvider settings={settings} caches="localStorage">
-            <ThemeProvider nonce={nonce}>
-              <MotionLazy>
-                <Snackbar />
-                <ProgressBar />
-                <SettingsDrawer />
-                <DashboardLayout>{children}</DashboardLayout>
-              </MotionLazy>
-            </ThemeProvider>
-          </SettingsProvider>
-        </RoochDappProvider>
+        <Theme>
+          <InitColorSchemeScript {...schemeConfig} nonce={nonce} />
+          <RoochDappProvider>
+            <SettingsProvider settings={settings} caches="localStorage">
+              <ThemeProvider nonce={nonce}>
+                <MotionLazy>
+                  <ErrorGuard />
+                  <Snackbar />
+                  <ProgressBar />
+                  <SettingsDrawer />
+                  <DashboardLayout>{children}</DashboardLayout>
+                </MotionLazy>
+              </ThemeProvider>
+            </SettingsProvider>
+          </RoochDappProvider>
+        </Theme>
       </body>
     </html>
   );

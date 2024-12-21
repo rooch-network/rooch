@@ -4,7 +4,7 @@ import type { BidItem } from 'src/hooks/trade/use-market-data';
 import { useMemo } from 'react';
 import BigNumber from 'bignumber.js';
 import { Args, Transaction } from '@roochnetwork/rooch-sdk';
-import { useCurrentAddress, UseSignAndExecuteTransaction } from '@roochnetwork/rooch-sdk-kit';
+import { useCurrentAddress, useSignAndExecuteTransaction } from '@roochnetwork/rooch-sdk-kit';
 
 import { LoadingButton } from '@mui/lab';
 import { yellow } from '@mui/material/colors';
@@ -117,7 +117,7 @@ export default function AcceptBidDialog({
   refreshBidList,
   close,
 }: AcceptBidDialogProps) {
-  const { mutate: signAndExecuteTransaction, isPending } = UseSignAndExecuteTransaction();
+  const { mutate: signAndExecuteTransaction, isPending } = useSignAndExecuteTransaction();
 
   const price = useMemo(
     () => new BigNumber(acceptBidItem.unit_price).times(acceptBidItem.quantity).toString(),

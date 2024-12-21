@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { CopyToClipboard } from 'react-copy-to-clipboard';
 import { isValidBitcoinAddress } from '@roochnetwork/rooch-sdk';
 import { useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit';
 
@@ -15,7 +16,6 @@ import { BitcoinAddressToRoochAddress } from 'src/utils/address';
 import { DashboardContent } from 'src/layouts/dashboard';
 
 import { toast } from 'src/components/snackbar';
-import { CopyToClipboard } from 'react-copy-to-clipboard';
 
 import AssetsTableCard from '../assets/components/assets-table-card';
 import TransactionsTableCard from '../transactions/components/transactions-table-card';
