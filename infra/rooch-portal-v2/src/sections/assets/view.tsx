@@ -1,5 +1,7 @@
 'use client';
 
+import { useCurrentNetwork } from '@roochnetwork/rooch-sdk-kit'
+
 import { Tab, Tabs, Stack } from '@mui/material';
 import Typography from '@mui/material/Typography';
 
@@ -9,7 +11,6 @@ import { useTabs } from 'src/hooks/use-tabs';
 
 import { DashboardContent } from 'src/layouts/dashboard';
 
-import { useCurrentNetwork } from '@roochnetwork/rooch-sdk-kit'
 import NFTList from './components/nft-list-card';
 import UTXOList from './components/utxo-list-card';
 import OrdinalList from './components/ordinal-list-card';
