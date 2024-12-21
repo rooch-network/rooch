@@ -1,17 +1,16 @@
 import 'src/global.css';
+import '@radix-ui/themes/styles.css';
 import '@fontsource-variable/raleway/wght.css';
+import '@roochnetwork/rooch-sdk-kit/dist/index.css';
 import '@fontsource-variable/plus-jakarta-sans/wght.css';
 
 import type { Viewport } from 'next';
 
 import { headers } from 'next/headers';
+import { Theme } from '@radix-ui/themes';
 import '@fontsource-variable/red-hat-mono';
 
 import InitColorSchemeScript from '@mui/material/InitColorSchemeScript';
-
-import { Theme } from '@radix-ui/themes';
-import '@roochnetwork/rooch-sdk-kit/dist/index.css';
-import '@radix-ui/themes/styles.css';
 
 import { primary } from 'src/theme/core/palette';
 import { DashboardLayout } from 'src/layouts/dashboard';
@@ -20,11 +19,11 @@ import { schemeConfig } from 'src/theme/color-scheme-script';
 
 import { Snackbar } from 'src/components/snackbar';
 import { ProgressBar } from 'src/components/progress-bar';
+import { ErrorGuard } from 'src/components/guard/ErrorGuard';
 import { MotionLazy } from 'src/components/animate/motion-lazy';
 import { SettingsDrawer, defaultSettings, SettingsProvider } from 'src/components/settings';
 
 import RoochDappProvider from './rooch-dapp-provider';
-import { ErrorGuard } from 'src/components/guard/ErrorGuard';
 
 export const viewport: Viewport = {
   width: 'device-width',

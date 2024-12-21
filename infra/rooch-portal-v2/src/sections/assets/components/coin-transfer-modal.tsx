@@ -1,9 +1,13 @@
 import type { RefetchOptions, QueryObserverResult } from '@tanstack/react-query';
-import type { BalanceInfoView, PaginatedBalanceInfoViews } from '@roochnetwork/rooch-sdk';
 
 import { useState } from 'react';
 import BigNumber from 'bignumber.js';
 import { SessionKeyGuard, useTransferCoin } from '@roochnetwork/rooch-sdk-kit';
+import {
+  isValidAddress,
+  type BalanceInfoView,
+  type PaginatedBalanceInfoViews,
+} from '@roochnetwork/rooch-sdk';
 
 import { LoadingButton } from '@mui/lab';
 import {
@@ -43,7 +47,16 @@ export default function CoinTransferModal({
 
   const [transferring, setTransferring] = useState(false);
 
+  const recipientIsValid = () => {
+    if (recipient === '') {
+      return false;
+    }
+    return isValidAddress(recipient);
+  };
+
   const handleTransfer = () => {
+    const s = recipientIsValid();
+    console.log(s);
     setTransferring(true);
     const amountNumber = new BigNumber(transferValue)
       .multipliedBy(new BigNumber(10).pow(selectedRow.decimals))
@@ -57,6 +70,7 @@ export default function CoinTransferModal({
       },
     })
       .then((result) => {
+        console.log(isError);
         onClose();
         refetch();
         toast.success('Transfer success');
@@ -188,35 +202,12 @@ export default function CoinTransferModal({
           Cancel
         </Button>
 
-        <SessionKeyGuard>
+        <SessionKeyGuard onClick={handleTransfer}>
           <LoadingButton
             fullWidth
             loading={transferring}
-            disabled={false}
+            disabled={transferValue === '' || !recipientIsValid()}
             variant="contained"
-            onClick={async () => {
-              try {
-                setTransferring(true);
-                const amountNumber = new BigNumber(transferValue)
-                  .multipliedBy(new BigNumber(10).pow(selectedRow.decimals))
-                  .integerValue(BigNumber.ROUND_FLOOR)
-                  .toNumber();
-                await transferCoin({
-                  recipient,
-                  amount: amountNumber,
-                  coinType: {
-                    target: selectedRow.coin_type,
-                  },
-                });
-                onClose();
-                refetch();
-                toast.success('Transfer success');
-              } catch (error) {
-                toast.error(String(error));
-              } finally {
-                setTransferring(false);
-              }
-            }}
           >
             Confirm
           </LoadingButton>

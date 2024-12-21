@@ -2,9 +2,9 @@ import type { StackProps } from '@mui/material/Stack';
 
 import { useState } from 'react';
 import {
+  SessionKeyGuard,
   useRemoveSession,
   useCurrentSession,
-  SessionKeyGuard,
 } from '@roochnetwork/rooch-sdk-kit';
 
 import Box from '@mui/material/Box';

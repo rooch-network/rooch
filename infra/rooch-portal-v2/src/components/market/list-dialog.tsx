@@ -4,7 +4,7 @@ import { useState } from 'react';
 import BigNumber from 'bignumber.js';
 import PuffLoader from 'react-spinners/PuffLoader';
 import { Args, Transaction } from '@roochnetwork/rooch-sdk';
-import { UseSignAndExecuteTransaction } from '@roochnetwork/rooch-sdk-kit';
+import { useSignAndExecuteTransaction } from '@roochnetwork/rooch-sdk-kit';
 
 import { LoadingButton } from '@mui/lab';
 import { grey } from '@mui/material/colors';
@@ -50,7 +50,7 @@ export default function ListDialog({
   refreshList: () => Promise<void>;
   close: () => void;
 }) {
-  const { mutate: signAndExecuteTransaction, isPending } = UseSignAndExecuteTransaction();
+  const { mutate: signAndExecuteTransaction, isPending } = useSignAndExecuteTransaction();
 
   const [listPrice, setListPrice] = useState('');
   const [listAmount, setListAmount] = useState('');

@@ -1,5 +1,7 @@
 import type { NavSectionProps } from 'src/components/nav-section';
 
+import { ConnectButton } from '@roochnetwork/rooch-sdk-kit';
+
 import Box from '@mui/material/Box';
 import { styled, useTheme } from '@mui/material/styles';
 
@@ -9,7 +11,6 @@ import { HeaderSection } from './header-section';
 import { MenuButton } from '../components/menu-button';
 
 import type { HeaderSectionProps } from './header-section';
-import { ConnectButton } from '@roochnetwork/rooch-sdk-kit';
 
 const StyledDivider = styled('span')(({ theme }) => ({
   width: 1,
