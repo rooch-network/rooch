@@ -516,7 +516,7 @@ impl MoveFunctionCaller for ExecutorActor {
 impl Handler<EventData> for ExecutorActor {
     async fn handle(&mut self, message: EventData, _ctx: &mut ActorContext) -> Result<()> {
         if let Ok(_gas_upgrade_msg) = message.data.downcast::<GasUpgradeEvent>() {
-            tracing::debug!("ExecutorActor: Reload the MoveOS instance...");
+            tracing::info!("ExecutorActor: Reload the MoveOS instance...");
 
             let resolver = RootObjectResolver::new(self.root.clone(), &self.moveos_store);
             let gas_parameters = FrameworksGasParameters::load_from_chain(&resolver)?;
