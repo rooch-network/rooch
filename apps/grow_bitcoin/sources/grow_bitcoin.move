@@ -428,7 +428,9 @@ module grow_bitcoin::grow_bitcoin {
             if (table::contains(&farming_asset.stake_table, asset_id)) {
                 let asset = object::borrow_mut_object<UTXO>(signer, asset_id);
                 let coin = do_unstake(signer, object::id(asset));
-                utxo::remove_temp_state<StakeInfo>(asset);
+                if(utxo::contains_temp_state<StakeInfo>(asset)){
+                    utxo::remove_temp_state<StakeInfo>(asset);
+                };
                 coin::merge(&mut total_coin, coin);
             };
             i = i + 1;
@@ -439,7 +441,10 @@ module grow_bitcoin::grow_bitcoin {
     /// Unstake asset from farming pool
     public entry fun unstake(signer: &signer, asset: &mut Object<UTXO>) {
         let coin = do_unstake(signer, object::id(asset));
-        utxo::remove_temp_state<StakeInfo>(asset);
+        // There some bug cause the temp state removed when harvest
+        if(utxo::contains_temp_state<StakeInfo>(asset)){
+            utxo::remove_temp_state<StakeInfo>(asset);
+        };
         account_coin_store::deposit(signer::address_of(signer), coin);
     }
 
@@ -583,7 +588,9 @@ module grow_bitcoin::grow_bitcoin {
         );
 
         let total_gain = stake.gain + period_gain;
-        assert!(total_gain > 0, ErrorGainIsZero);
+        if(total_gain == 0){
+            return coin::zero<GROW>()
+        };
         // let withdraw_amount = total_gain;
         emit(HarvestEvent{
             asset_id,
