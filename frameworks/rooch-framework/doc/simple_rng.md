@@ -10,9 +10,13 @@ A simple random number generator in Move language.
 -  [Function `bytes_to_u64`](#0x3_simple_rng_bytes_to_u64)
 -  [Function `bytes_to_u128`](#0x3_simple_rng_bytes_to_u128)
 -  [Function `rand_u64`](#0x3_simple_rng_rand_u64)
+-  [Function `rand_u64_with_count`](#0x3_simple_rng_rand_u64_with_count)
 -  [Function `rand_u128`](#0x3_simple_rng_rand_u128)
+-  [Function `rand_u128_with_count`](#0x3_simple_rng_rand_u128_with_count)
 -  [Function `rand_u64_range`](#0x3_simple_rng_rand_u64_range)
+-  [Function `rand_u64_range_with_count`](#0x3_simple_rng_rand_u64_range_with_count)
 -  [Function `rand_u128_range`](#0x3_simple_rng_rand_u128_range)
+-  [Function `rand_u128_range_with_count`](#0x3_simple_rng_rand_u128_range_with_count)
 
 
 <pre><code><b>use</b> <a href="">0x1::hash</a>;
@@ -101,6 +105,18 @@ Generate a random u64 from seed
 
 
 
+<a name="0x3_simple_rng_rand_u64_with_count"></a>
+
+## Function `rand_u64_with_count`
+
+Generate a random u64 value with a count parameter to ensure unique randomness within a transaction.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="simple_rng.md#0x3_simple_rng_rand_u64_with_count">rand_u64_with_count</a>(count: u64): u64
+</code></pre>
+
+
+
 <a name="0x3_simple_rng_rand_u128"></a>
 
 ## Function `rand_u128`
@@ -109,6 +125,18 @@ Generate a random u128 from seed
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="simple_rng.md#0x3_simple_rng_rand_u128">rand_u128</a>(): u128
+</code></pre>
+
+
+
+<a name="0x3_simple_rng_rand_u128_with_count"></a>
+
+## Function `rand_u128_with_count`
+
+Generate a random u128 value with a count parameter to ensure unique randomness within a transaction.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="simple_rng.md#0x3_simple_rng_rand_u128_with_count">rand_u128_with_count</a>(count: u64): u128
 </code></pre>
 
 
@@ -125,6 +153,18 @@ Generate a random integer range in [low, high) for u64.
 
 
 
+<a name="0x3_simple_rng_rand_u64_range_with_count"></a>
+
+## Function `rand_u64_range_with_count`
+
+Generate a random integer range in [low, high) for u64 with count.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="simple_rng.md#0x3_simple_rng_rand_u64_range_with_count">rand_u64_range_with_count</a>(low: u64, high: u64, count: u64): u64
+</code></pre>
+
+
+
 <a name="0x3_simple_rng_rand_u128_range"></a>
 
 ## Function `rand_u128_range`
@@ -133,4 +173,16 @@ Generate a random integer range in [low, high) for u128.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="simple_rng.md#0x3_simple_rng_rand_u128_range">rand_u128_range</a>(low: u128, high: u128): u128
+</code></pre>
+
+
+
+<a name="0x3_simple_rng_rand_u128_range_with_count"></a>
+
+## Function `rand_u128_range_with_count`
+
+Generate a random integer range in [low, high) for u128 with count.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="simple_rng.md#0x3_simple_rng_rand_u128_range_with_count">rand_u128_range_with_count</a>(low: u128, high: u128, count: u64): u128
 </code></pre>

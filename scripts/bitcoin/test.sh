@@ -53,7 +53,7 @@ export RUST_LOG=debug
 export RUST_BACKTRACE=1
 
 if [ ! -z "$UNIT_TEST" ]; then
-  cargo run --bin rooch move test -p frameworks/moveos-stdlib json 
+  cargo run --bin rooch move test -p frameworks/rooch-framework simple_rng 
 fi
 
 if [ ! -z "$WASM_INT_TEST" ]; then
