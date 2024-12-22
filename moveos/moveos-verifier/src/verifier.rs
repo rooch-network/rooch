@@ -7,19 +7,20 @@ use std::ops::Deref;
 
 use move_binary_format::binary_views::BinaryIndexedView;
 use move_binary_format::errors::{Location, PartialVMError, PartialVMResult, VMError, VMResult};
+use move_binary_format::file_format::Bytecode;
 use move_binary_format::file_format::{
-    Bytecode, FunctionDefinition, FunctionDefinitionIndex, FunctionHandleIndex,
-    FunctionInstantiation, FunctionInstantiationIndex, Signature, SignatureToken, StructDefinition,
+    FunctionDefinition, FunctionDefinitionIndex, FunctionHandleIndex, FunctionInstantiation,
+    FunctionInstantiationIndex, Signature, SignatureToken, StructDefinition,
     StructFieldInformation, StructHandleIndex, Visibility,
 };
 use move_binary_format::{access::ModuleAccess, CompiledModule};
 use move_core_types::identifier::Identifier;
 use move_core_types::language_storage::ModuleId;
-use move_core_types::resolver::ModuleResolver;
 use move_core_types::vm_status::StatusCode;
 use move_vm_runtime::data_cache::TransactionCache;
-use move_vm_runtime::session::{LoadedFunctionInstantiation, Session};
+use move_vm_runtime::session::{LoadedFunction, Session};
 use move_vm_types::loaded_data::runtime_types::Type;
+use move_vm_types::resolver::ModuleResolver;
 use once_cell::sync::Lazy;
 
 use crate::error_code::ErrorCode;
@@ -213,10 +214,7 @@ fn is_signer(t: &SignatureToken) -> bool {
         || matches!(t, SignatureToken::Reference(r) if matches!(**r, SignatureToken::Signer))
 }
 
-pub fn verify_entry_function<S>(
-    func: &LoadedFunctionInstantiation,
-    session: &Session<S>,
-) -> PartialVMResult<()>
+pub fn verify_entry_function<S>(func: &LoadedFunction, session: &Session<S>) -> PartialVMResult<()>
 where
     S: TransactionCache,
 {

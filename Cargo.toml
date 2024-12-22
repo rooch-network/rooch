@@ -61,7 +61,7 @@ members = [
     "frameworks/moveos-stdlib",
     "frameworks/rooch-framework",
     "frameworks/rooch-nursery", "crates/bitcoin-client",
-    "third_party/move/language/move-compiler-v2"
+    #"third_party/move/language/move-compiler-v2"
 ]
 
 default-members = [
@@ -331,35 +331,35 @@ mimalloc = { version = "0.1.39" }
 
 # Note: the BEGIN and END comments below are required for external tooling. Do not remove.
 # BEGIN MOVE DEPENDENCIES
-move-abigen = { path = "third_party/move/language/move-prover/move-abigen" }
-move-binary-format = { path = "third_party/move/language/move-binary-format" }
-move-bytecode-verifier = { path = "third_party/move/language/move-bytecode-verifier" }
-move-bytecode-utils = { path = "third_party/move/language/tools/move-bytecode-utils" }
-move-cli = { path = "third_party/move/language/tools/move-cli" }
-move-command-line-common = { path = "third_party/move/language/move-command-line-common" }
-move-compiler = { path = "third_party/move/language/move-compiler" }
-move-core-types = { path = "third_party/move/language/move-core/types" }
-move-coverage = { path = "third_party/move/language/tools/move-coverage" }
-move-disassembler = { path = "third_party/move/language/tools/move-disassembler" }
-move-docgen = { path = "third_party/move/language/move-prover/move-docgen" }
-move-errmapgen = { path = "third_party/move/language/move-prover/move-errmapgen" }
-move-ir-compiler = { path = "third_party/move/language/move-ir-compiler" }
-move-model = { path = "third_party/move/language/move-model" }
-move-package = { path = "third_party/move/language/tools/move-package" }
-move-prover = { path = "third_party/move/language/move-prover" }
-move-prover-boogie-backend = { path = "third_party/move/language/move-prover/boogie-backend" }
-move-stackless-bytecode = { path = "third_party/move/language/move-prover/bytecode" }
-move-prover-test-utils = { path = "third_party/move/language/move-prover/test-utils" }
-move-resource-viewer = { path = "third_party/move/language/tools/move-resource-viewer" }
-move-stdlib = { path = "third_party/move/language/move-stdlib", features = ["testing"] }
-move-symbol-pool = { path = "third_party/move/language/move-symbol-pool" }
-move-transactional-test-runner = { path = "third_party/move/language/testing-infra/transactional-test-runner" }
-move-unit-test = { path = "third_party/move/language/tools/move-unit-test", features = ["table-extension"] }
-move-vm-runtime = { path = "third_party/move/language/move-vm/runtime", features = ["stacktrace", "debugging", "testing"] }
-move-vm-test-utils = { path = "third_party/move/language/move-vm/test-utils", features = ["table-extension"] }
-move-vm-types = { path = "third_party/move/language/move-vm/types" }
-move-bytecode-source-map = { path = "third_party/move/language/move-ir-compiler/move-bytecode-source-map" }
-move-ir-types = { path = "third_party/move/language/move-ir/types" }# END MOVE DEPENDENCIES
+# keep this for convenient debug Move in local repo
+# [patch.'https://github.com/rooch-network/move']
+move-abigen = { path = "/home/roy/move-language/move/language/move-prover/move-abigen" }
+move-prover = { path = "/home/roy/move-language/move/language/move-prover" }
+move-package = { path = "/home/roy/move-language/move/language/tools/move-package" }
+move-stdlib = { path = "/home/roy/move-language/move/language/move-stdlib", features = ["testing"] }
+move-unit-test = { path = "/home/roy/move-language/move/language/tools/move-unit-test", features = ["table-extension"] }
+move-cli = { path = "/home/roy/move-language/move/language/tools/move-cli" }
+move-command-line-common = { path = "/home/roy/move-language/move/language/move-command-line-common" }
+move-ir-types = { path = "/home/roy/move-language/move/language/move-ir/types" }
+move-binary-format = { path = "/home/roy/move-language/move/language/move-binary-format" }
+move-core-types = { path = "/home/roy/move-language/move/language/move-core/types" }
+move-bytecode-verifier = { path = "/home/roy/move-language/move/language/move-bytecode-verifier" }
+move-ir-compiler = { path = "/home/roy/move-language/move/language/move-ir-compiler" }
+move-ir-to-bytecode = { path = "/home/roy/move-language/move/language/move-ir-compiler/move-ir-to-bytecode" }
+move-bytecode-source-map = { path = "/home/roy/move-language/move/language/move-ir-compiler/move-bytecode-source-map" }
+move-compiler = { path = "/home/roy/move-language/move/language/move-compiler" }
+move-vm-runtime = { path = "/home/roy/move-language/move/language/move-vm/runtime" }
+move-vm-types = { path = "/home/roy/move-language/move/language/move-vm/types" }
+move-model = { path = "/home/roy/move-language/move/language/move-model" }
+move-vm-test-utils = { path = "/home/roy/move-language/move/language/move-vm/test-utils", features = ["table-extension"] }
+move-transactional-test-runner = { path = "/home/roy/move-language/move/language/testing-infra/transactional-test-runner" }
+move-bytecode-utils = { path = "/home/roy/move-language/move/language/tools/move-bytecode-utils" }
+move-resource-viewer = { path = "/home/roy/move-language/move/language/tools/move-resource-viewer" }
+move-disassembler = { path = "/home/roy/move-language/move/language/tools/move-disassembler" }
+move-symbol-pool = { path = "/home/roy/move-language/move/language/move-symbol-pool" }
+move-coverage = { path = "/home/roy/move-language/move/language/tools/move-coverage" }
+move-errmapgen = { path = "/home/roy/move-language/move/language/move-prover/move-errmapgen" }
+move-docgen = { path = "/home/roy/move-language/move/language/move-prover/move-docgen" }
 
 # keep this for convenient debug Move in local repo
 # [patch.'https://github.com/rooch-network/move']

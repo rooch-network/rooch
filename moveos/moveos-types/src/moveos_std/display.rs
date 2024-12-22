@@ -27,7 +27,7 @@ pub fn get_display_id_from_object_struct_tag(struct_tag: StructTag) -> ObjectID 
         address: MOVEOS_STD_ADDRESS,
         name: ident_str!("Display").to_owned(),
         module: MODULE_NAME.to_owned(),
-        type_params: vec![object_type_tag],
+        type_args: vec![object_type_tag],
     };
     object::named_object_id(&display_struct_tag)
 }
@@ -37,7 +37,7 @@ pub fn get_object_display_id(value_type: TypeTag) -> ObjectID {
         address: MOVEOS_STD_ADDRESS,
         name: ident_str!("Display").to_owned(),
         module: MODULE_NAME.to_owned(),
-        type_params: vec![value_type],
+        type_args: vec![value_type],
     };
     object::named_object_id(&struct_tag)
 }
@@ -66,18 +66,18 @@ fn get_string_from_valid_move_struct(move_struct: &AnnotatedMoveStruct) -> Resul
         address: MOVE_STD_ADDRESS,
         module: ident_str!("string").to_owned(),
         name: ident_str!("String").to_owned(),
-        type_params: vec![],
+        type_args: vec![],
     };
     let moveos_std_object_id = StructTag {
         address: MOVEOS_STD_ADDRESS,
         module: ident_str!("object").to_owned(),
         name: ident_str!("ObjectID").to_owned(),
-        type_params: vec![],
+        type_args: vec![],
     };
 
-    if move_struct.type_ == move_std_string {
+    if move_struct.ty_tag == move_std_string {
         display_move_string(move_struct)
-    } else if move_struct.type_ == moveos_std_object_id {
+    } else if move_struct.ty_tag == moveos_std_object_id {
         Ok(ObjectID::try_from_annotated_move_struct_ref(move_struct)?.to_hex())
     } else {
         anyhow::bail!("Invalid move type to display");
