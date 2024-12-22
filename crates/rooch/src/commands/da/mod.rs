@@ -5,6 +5,7 @@ pub mod commands;
 
 use crate::cli_types::CommandAction;
 use crate::commands::da::commands::exec::ExecCommand;
+use crate::commands::da::commands::index_tx::IndexTxCommand;
 use crate::commands::da::commands::namespace::NamespaceCommand;
 use crate::commands::da::commands::unpack::UnpackCommand;
 use async_trait::async_trait;
@@ -25,6 +26,7 @@ impl CommandAction<String> for DA {
             DACommand::Unpack(unpack) => unpack.execute().map(|_| "".to_owned()),
             DACommand::Namespace(namespace) => namespace.execute().map(|_| "".to_owned()),
             DACommand::Exec(exec) => exec.execute().await.map(|_| "".to_owned()),
+            DACommand::IndexTx(index_tx) => index_tx.execute().map(|_| "".to_owned()),
         }
     }
 }
@@ -35,4 +37,5 @@ pub enum DACommand {
     Unpack(UnpackCommand),
     Namespace(NamespaceCommand),
     Exec(ExecCommand),
+    IndexTx(IndexTxCommand),
 }
