@@ -212,7 +212,7 @@ reqwest = { version = "0.12", features = ["json", "stream"] }
 schemars = { version = "0.8.21", features = ["either"] }
 serde = { version = "1.0.216", features = ["derive", "rc"] }
 serde_bytes = "0.11.15"
-serde_json = { version = "1.0.133", features = ["preserve_order"] }
+serde_json = { version = "1.0.134", features = ["preserve_order"] }
 serde_yaml = "0.9"
 serde_repr = "0.1"
 serde-name = "0.2"
