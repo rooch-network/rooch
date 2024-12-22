@@ -5,7 +5,6 @@ use crate::config::Config;
 use crate::{retrieve_map_config_value, BaseConfig, MapConfigValueSource};
 use hex::encode;
 use moveos_types::h256::sha2_256_of;
-use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::Display;
@@ -13,7 +12,7 @@ use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::sync::Arc;
 
-static R_DEFAULT_OPENDA_FS_DIR: Lazy<PathBuf> = Lazy::new(|| PathBuf::from("openda-fs"));
+const DEFAULT_OPENDA_FS_DIR: &str = "openda-fs";
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(rename_all = "lowercase")]
@@ -211,7 +210,7 @@ impl DAConfig {
     }
 
     pub fn get_openda_fs_dir(&self) -> PathBuf {
-        self.data_dir().join(R_DEFAULT_OPENDA_FS_DIR.as_path())
+        self.data_dir().join(DEFAULT_OPENDA_FS_DIR)
     }
 }
 
