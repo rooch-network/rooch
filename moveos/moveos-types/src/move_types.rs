@@ -133,16 +133,16 @@ pub fn struct_tag_match(filter: &StructTag, target: &StructTag) -> bool {
         return false;
     }
 
-    if filter.type_params.is_empty() {
+    if filter.type_args.is_empty() {
         return true;
     }
 
-    if filter.type_params.len() != target.type_params.len() {
+    if filter.type_args.len() != target.type_args.len() {
         return false;
     }
 
     for (filter_type_tag, target_type_tag) in
-        std::iter::zip(filter.type_params.clone(), target.type_params.clone())
+        std::iter::zip(filter.type_args.clone(), target.type_args.clone())
     {
         if !type_tag_match(&filter_type_tag, &target_type_tag) {
             return false;
@@ -196,7 +196,7 @@ pub fn type_tag_prop_strategy() -> impl Strategy<Value = TypeTag> {
                             address,
                             module,
                             name,
-                            type_params,
+                            type_args,
                         }))
                     }),
             ]
@@ -226,7 +226,7 @@ pub fn random_struct_tag() -> StructTag {
         address: AccountAddress::random(),
         module: random_identity(),
         name: random_identity(),
-        type_params: vec![],
+        type_args: vec![],
     }
 }
 
@@ -235,7 +235,7 @@ pub fn random_type_tag() -> TypeTag {
 }
 
 pub fn get_first_ty_as_struct_tag(struct_tag: StructTag) -> Result<StructTag> {
-    if let Some(first_ty) = struct_tag.type_params.first() {
+    if let Some(first_ty) = struct_tag.type_args.first() {
         let first_ty_as_struct_tag = match first_ty {
             TypeTag::Struct(first_struct_tag) => *first_struct_tag.clone(),
             _ => bail!("Invalid struct tag: {:?}", struct_tag),
@@ -308,7 +308,7 @@ mod tests {
             assert_eq!(s.address, AccountAddress::from_hex_literal("0x1").unwrap());
             assert_eq!(s.module.as_str(), "string");
             assert_eq!(s.name.as_str(), "String");
-            assert!(s.type_params.is_empty());
+            assert!(s.type_args.is_empty());
         } else {
             panic!("Expected Struct TypeTag");
         }
@@ -319,7 +319,7 @@ mod tests {
             assert_eq!(s.address, AccountAddress::from_hex_literal("0x1").unwrap());
             assert_eq!(s.module.as_str(), "table");
             assert_eq!(s.name.as_str(), "Table");
-            assert_eq!(s.type_params.len(), 2);
+            assert_eq!(s.type_args.len(), 2);
         } else {
             panic!("Expected Struct TypeTag");
         }
@@ -350,7 +350,7 @@ mod tests {
         );
         assert_eq!(basic_struct.module.as_str(), "module");
         assert_eq!(basic_struct.name.as_str(), "Name");
-        assert!(basic_struct.type_params.is_empty());
+        assert!(basic_struct.type_args.is_empty());
 
         // one type param
         let single_generic = parse_struct_tag(
@@ -363,8 +363,8 @@ mod tests {
         );
         assert_eq!(single_generic.module.as_str(), "vector");
         assert_eq!(single_generic.name.as_str(), "Vector");
-        assert_eq!(single_generic.type_params.len(), 1);
-        assert_eq!(single_generic.type_params[0], TypeTag::U8);
+        assert_eq!(single_generic.type_args.len(), 1);
+        assert_eq!(single_generic.type_args[0], TypeTag::U8);
 
         // multiple type params
         let multi_generic = parse_struct_tag("0x0000000000000000000000000000000000000000000000000000000000000001::table::Table<0x0000000000000000000000000000000000000000000000000000000000000001::string::String,u64>").unwrap();
@@ -374,7 +374,7 @@ mod tests {
         );
         assert_eq!(multi_generic.module.as_str(), "table");
         assert_eq!(multi_generic.name.as_str(), "Table");
-        assert_eq!(multi_generic.type_params.len(), 2);
+        assert_eq!(multi_generic.type_args.len(), 2);
 
         // nested generic
         let nested_generic = parse_struct_tag("0x0000000000000000000000000000000000000000000000000000000000000001::complex::Type<vector<0x0000000000000000000000000000000000000000000000000000000000000001::coin::Coin<0x0000000000000000000000000000000000000000000000000000000000000001::gas_coin::RGas>>>").unwrap();
@@ -384,14 +384,14 @@ mod tests {
         );
         assert_eq!(nested_generic.module.as_str(), "complex");
         assert_eq!(nested_generic.name.as_str(), "Type");
-        assert_eq!(nested_generic.type_params.len(), 1);
+        assert_eq!(nested_generic.type_args.len(), 1);
 
-        if let TypeTag::Vector(inner) = &nested_generic.type_params[0] {
+        if let TypeTag::Vector(inner) = &nested_generic.type_args[0] {
             if let TypeTag::Struct(coin_struct) = inner.as_ref() {
                 assert_eq!(coin_struct.module.as_str(), "coin");
                 assert_eq!(coin_struct.name.as_str(), "Coin");
-                assert_eq!(coin_struct.type_params.len(), 1);
-                if let TypeTag::Struct(gas_coin_struct) = &coin_struct.type_params[0] {
+                assert_eq!(coin_struct.type_args.len(), 1);
+                if let TypeTag::Struct(gas_coin_struct) = &coin_struct.type_args[0] {
                     assert_eq!(gas_coin_struct.module.as_str(), "gas_coin");
                     assert_eq!(gas_coin_struct.name.as_str(), "RGas");
                 } else {

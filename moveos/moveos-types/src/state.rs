@@ -18,11 +18,12 @@ use move_core_types::{
     ident_str,
     identifier::{IdentStr, Identifier},
     language_storage::{StructTag, TypeTag},
-    resolver::MoveResolver,
     u256::U256,
     value::{MoveStructLayout, MoveTypeLayout, MoveValue},
 };
 use move_resource_viewer::{AnnotatedMoveStruct, MoveValueAnnotator};
+use move_vm_types::resolver::ModuleResolver;
+use move_vm_types::resolver::MoveResolver;
 use move_vm_types::values::{Struct, Value};
 use primitive_types::H256;
 use serde::{
@@ -285,7 +286,7 @@ pub trait MoveStructType: MoveType {
             address: Self::ADDRESS,
             name: Self::struct_identifier(),
             module: Self::module_identifier(),
-            type_params: Self::type_params(),
+            type_args: Self::type_params(),
         }
     }
 
@@ -321,13 +322,13 @@ fn type_layout_match(first_layout: &MoveTypeLayout, second_layout: &MoveTypeLayo
             MoveTypeLayout::Struct(first_struct_layout),
             MoveTypeLayout::Struct(second_struct_layout),
         ) => {
-            if first_struct_layout.fields().len() != second_struct_layout.fields().len() {
+            if first_struct_layout.fields(None).len() != second_struct_layout.fields(None).len() {
                 false
             } else {
                 first_struct_layout
-                    .fields()
+                    .fields(None)
                     .iter()
-                    .zip(second_struct_layout.fields().iter())
+                    .zip(second_struct_layout.fields(None).iter())
                     .all(|(first_field, second_field)| type_layout_match(first_field, second_field))
             }
         }
@@ -826,7 +827,7 @@ impl ObjectState {
         (self.metadata, self.value)
     }
 
-    pub fn into_annotated_state<T: MoveResolver + ?Sized>(
+    pub fn into_annotated_state<T: MoveResolver + Sized>(
         self,
         annotator: &MoveValueAnnotator<T>,
     ) -> Result<AnnotatedState> {

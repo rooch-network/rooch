@@ -11,13 +11,17 @@ use crate::{
     access_path::AccessPath, h256::H256, moveos_std::object::AnnotatedObject, state::AnnotatedState,
 };
 use anyhow::{ensure, Error, Result};
+use bytes::Bytes;
+use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_core_types::metadata::Metadata;
+use move_core_types::value::MoveTypeLayout;
+use move_core_types::vm_status::StatusCode;
 use move_core_types::{
     account_address::AccountAddress,
     language_storage::{ModuleId, StructTag, TypeTag},
-    resolver::{ModuleResolver, MoveResolver, ResourceResolver},
 };
 use move_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue, MoveValueAnnotator};
+use move_vm_types::resolver::{ModuleResolver, MoveResolver, ResourceResolver};
 
 pub type StateKV = (FieldKey, ObjectState);
 pub type AnnotatedStateKV = (FieldKey, AnnotatedState);
@@ -117,12 +121,13 @@ impl StateResolver for GenesisResolver {
 }
 
 impl ResourceResolver for GenesisResolver {
-    fn get_resource_with_metadata(
+    fn get_resource_bytes_with_metadata_and_layout(
         &self,
         _address: &AccountAddress,
         _resource_tag: &StructTag,
         _metadata: &[Metadata],
-    ) -> Result<(Option<Vec<u8>>, usize), Error> {
+        _layout: Option<&MoveTypeLayout>,
+    ) -> PartialVMResult<(Option<Bytes>, usize)> {
         Ok((None, 0))
     }
 }
@@ -132,7 +137,7 @@ impl ModuleResolver for GenesisResolver {
         vec![]
     }
 
-    fn get_module(&self, _module_id: &ModuleId) -> Result<Option<Vec<u8>>, Error> {
+    fn get_module(&self, _module_id: &ModuleId) -> PartialVMResult<Option<Bytes>> {
         Ok(None)
     }
 }
@@ -203,39 +208,48 @@ impl<R> ResourceResolver for RootObjectResolver<'_, R>
 where
     R: StatelessResolver,
 {
-    fn get_resource_with_metadata(
+    fn get_resource_bytes_with_metadata_and_layout(
         &self,
         address: &AccountAddress,
         resource_tag: &StructTag,
         _metadata: &[Metadata],
-    ) -> Result<(Option<Vec<u8>>, usize), Error> {
+        _layout: Option<&MoveTypeLayout>,
+    ) -> PartialVMResult<(Option<Bytes>, usize)> {
         let account_object_id = Account::account_object_id(*address);
 
         let key = FieldKey::derive_resource_key(resource_tag);
-        let result = self
-            .get_field(&account_object_id, &key)?
-            .map(|s| {
-                //Resource dynamic field should be `DynamicField<MoveString, T>`
-                ensure!(
-                    s.match_dynamic_field_type(MoveString::type_tag(), resource_tag.clone().into()),
-                    "Resource type mismatch, expected field value type: {:?}, actual: {:?}",
-                    resource_tag,
-                    s.object_type()
-                );
-                let field = RawField::parse_resource_field(&s.value, resource_tag.clone().into())?;
-                Ok(field.value)
-            })
-            .transpose();
+        let result = match self.get_field(&account_object_id, &key) {
+            Ok(state_opt) => state_opt
+                .map(|obj_state| {
+                    ensure!(
+                        obj_state.match_dynamic_field_type(
+                            MoveString::type_tag(),
+                            resource_tag.clone().into()
+                        ),
+                        "Resource type mismatch, expected field value type: {:?}, actual: {:?}",
+                        resource_tag,
+                        obj_state.object_type()
+                    );
+
+                    let field = RawField::parse_resource_field(
+                        &obj_state.value,
+                        resource_tag.clone().into(),
+                    )?;
+                    Ok(field.value)
+                })
+                .transpose(),
+            Err(e) => Err(anyhow::format_err!("{:?}", e)),
+        };
 
         match result {
             Ok(opt) => {
                 if let Some(data) = opt {
-                    Ok((Some(data), 0))
+                    Ok((Some(Bytes::copy_from_slice(data.as_slice())), 0))
                 } else {
                     Ok((None, 0))
                 }
             }
-            Err(err) => Err(err),
+            Err(err) => Err(PartialVMError::new(StatusCode::ABORTED)),
         }
     }
 }
@@ -248,14 +262,24 @@ where
         vec![]
     }
 
-    fn get_module(&self, module_id: &ModuleId) -> Result<Option<Vec<u8>>, Error> {
+    fn get_module(&self, module_id: &ModuleId) -> PartialVMResult<Option<Bytes>> {
         let package_obj_id = Package::package_id(module_id.address());
         let key = FieldKey::derive_module_key(module_id.name());
         //We wrap the modules byte codes to `MoveModule` type when store the module.
         //So we need unwrap the MoveModule type.
-        self.get_field(&package_obj_id, &key)?
-            .map(|s| Ok(s.value_as::<MoveModuleDynamicField>()?.value.byte_codes))
-            .transpose()
+        match self.get_field(&package_obj_id, &key) {
+            Ok(state_opt) => state_opt
+                .map(|s| {
+                    Ok(Bytes::copy_from_slice(
+                        s.value_as::<MoveModuleDynamicField>()?
+                            .value
+                            .byte_codes
+                            .as_slice(),
+                    ))
+                })
+                .transpose(),
+            Err(e) => Err(PartialVMError::new(StatusCode::ABORTED)),
+        }
     }
 }
 
