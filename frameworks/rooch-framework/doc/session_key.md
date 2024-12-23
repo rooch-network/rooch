@@ -79,6 +79,16 @@ The session's scope
 ## Constants
 
 
+<a name="0x3_session_key_ErrorInvalidMaxInactiveInterval"></a>
+
+The max inactive interval is invalid
+
+
+<pre><code><b>const</b> <a href="session_key.md#0x3_session_key_ErrorInvalidMaxInactiveInterval">ErrorInvalidMaxInactiveInterval</a>: u64 = 5;
+</code></pre>
+
+
+
 <a name="0x3_session_key_ErrorSessionKeyAlreadyExists"></a>
 
 The session key already exists
@@ -115,6 +125,15 @@ The lengths of the parts of the session's scope do not match.
 
 
 <pre><code><b>const</b> <a href="session_key.md#0x3_session_key_ErrorSessionScopePartLengthNotMatch">ErrorSessionScopePartLengthNotMatch</a>: u64 = 4;
+</code></pre>
+
+
+
+<a name="0x3_session_key_MAX_INACTIVE_INTERVAL"></a>
+
+
+
+<pre><code><b>const</b> <a href="session_key.md#0x3_session_key_MAX_INACTIVE_INTERVAL">MAX_INACTIVE_INTERVAL</a>: u64 = 2592000;
 </code></pre>
 
 
