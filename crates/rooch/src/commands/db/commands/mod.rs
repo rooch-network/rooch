@@ -12,7 +12,9 @@ use std::path::PathBuf;
 use std::time::SystemTime;
 
 pub mod drop;
+pub mod dump_tx_root;
 pub mod get_changeset_by_order;
+pub mod get_execution_info_by_order;
 pub mod repair;
 pub mod revert;
 pub mod rollback;

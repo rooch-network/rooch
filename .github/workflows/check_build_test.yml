@@ -71,6 +71,10 @@ jobs:
         run: ./scripts/pr.sh -t
       - name: Build and test example projects
         run: ./scripts/pr.sh -e
+      - name: Generate Genesis File for Mainnet
+        run: cargo run -p rooch-genesis -- -n main
+      - name: Generate Genesis File for Testnet
+        run: cargo run -p rooch-genesis -- -n test
 
       # web & sdk & dashboard
       - name: Use Node.js

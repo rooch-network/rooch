@@ -2,19 +2,18 @@
 
 import type { ReactNode } from 'react';
 
-import { useWalletStore } from '@roochnetwork/rooch-sdk-kit';
+import { WalletGuard, useCurrentWallet } from '@roochnetwork/rooch-sdk-kit';
 
-import { Box, Card, Stack, CardHeader, CardContent } from '@mui/material';
+import { Box, Card, Stack, Button, CardHeader, CardContent } from '@mui/material';
 
 import { DashboardContent } from 'src/layouts/dashboard';
-import { AccountDrawer } from 'src/layouts/components/account-drawer';
 
 import { Iconify } from '../iconify';
 
-export default function WalletGuard({ children }: { children: ReactNode }) {
-  const connectionStatus = useWalletStore((state) => state.connectionStatus);
+export default function CustomWalletGuard({ children }: { children: ReactNode }) {
+  const { status } = useCurrentWallet();
 
-  if (connectionStatus === 'connected') {
+  if (status === 'connected') {
     return children;
   }
 
@@ -48,7 +47,9 @@ export default function WalletGuard({ children }: { children: ReactNode }) {
             spacing={2}
           >
             <Iconify icon="solar:wallet-money-bold-duotone" width="64px" />
-            <AccountDrawer />
+            <WalletGuard onClick={() => {}}>
+              <Button variant="outlined">Connect</Button>
+            </WalletGuard>
           </Stack>
         </CardContent>
       </Card>

@@ -203,7 +203,7 @@ petgraph = "0.6.5"
 primitive-types = { version = "0.12.1", features = ["serde", "arbitrary"] }
 prost = "0.12"
 prost-types = "0.11"
-proptest = "1.5.0"
+proptest = "1.6.0"
 proptest-derive = "0.3.0"
 rayon = "1.5.2"
 rand = "0.8.5"
@@ -212,7 +212,7 @@ reqwest = { version = "0.12", features = ["json", "stream"] }
 schemars = { version = "0.8.21", features = ["either"] }
 serde = { version = "1.0.216", features = ["derive", "rc"] }
 serde_bytes = "0.11.15"
-serde_json = { version = "1.0.133", features = ["preserve_order"] }
+serde_json = { version = "1.0.134", features = ["preserve_order"] }
 serde_yaml = "0.9"
 serde_repr = "0.1"
 serde-name = "0.2"
@@ -355,7 +355,7 @@ rustc-hash = { version = "2.1.0" }
 xorf = { version = "0.11.0" }
 vergen-git2 = { version = "1.0.0", features = ["build", "cargo", "rustc"] }
 vergen-pretty = "0.3.6"
-crossbeam-channel = "0.5.13"
+crossbeam-channel = "0.5.14"
 inferno = "0.11.21"
 handlebars = "4.2.2"
 
