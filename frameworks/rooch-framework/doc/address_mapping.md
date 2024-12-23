@@ -11,12 +11,15 @@
 -  [Function `genesis_init`](#0x3_address_mapping_genesis_init)
 -  [Function `resolve`](#0x3_address_mapping_resolve)
 -  [Function `resolve_bitcoin`](#0x3_address_mapping_resolve_bitcoin)
+-  [Function `resolve_bitcoin_batch`](#0x3_address_mapping_resolve_bitcoin_batch)
 -  [Function `exists_mapping`](#0x3_address_mapping_exists_mapping)
--  [Function `bind_bitcoin_address`](#0x3_address_mapping_bind_bitcoin_address)
+-  [Function `bind_bitcoin_address_internal`](#0x3_address_mapping_bind_bitcoin_address_internal)
 -  [Function `bind_bitcoin_address_by_system`](#0x3_address_mapping_bind_bitcoin_address_by_system)
+-  [Function `bind_bitcoin_address`](#0x3_address_mapping_bind_bitcoin_address)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
+<b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="">0x2::core_addresses</a>;
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="bitcoin_address.md#0x3_bitcoin_address">0x3::bitcoin_address</a>;
@@ -128,6 +131,18 @@ Resolve a rooch address to a bitcoin address
 
 
 
+<a name="0x3_address_mapping_resolve_bitcoin_batch"></a>
+
+## Function `resolve_bitcoin_batch`
+
+Resolve a batch rooch addresses to bitcoin addresses
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_resolve_bitcoin_batch">resolve_bitcoin_batch</a>(rooch_addresses: <a href="">vector</a>&lt;<b>address</b>&gt;): <a href="">vector</a>&lt;<a href="bitcoin_address.md#0x3_bitcoin_address_BitcoinAddress">bitcoin_address::BitcoinAddress</a>&gt;
+</code></pre>
+
+
+
 <a name="0x3_address_mapping_exists_mapping"></a>
 
 ## Function `exists_mapping`
@@ -140,13 +155,13 @@ Check if a multi-chain address is bound to a rooch address
 
 
 
-<a name="0x3_address_mapping_bind_bitcoin_address"></a>
+<a name="0x3_address_mapping_bind_bitcoin_address_internal"></a>
 
-## Function `bind_bitcoin_address`
+## Function `bind_bitcoin_address_internal`
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_bind_bitcoin_address">bind_bitcoin_address</a>(rooch_address: <b>address</b>, baddress: <a href="bitcoin_address.md#0x3_bitcoin_address_BitcoinAddress">bitcoin_address::BitcoinAddress</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_bind_bitcoin_address_internal">bind_bitcoin_address_internal</a>(rooch_address: <b>address</b>, btc_address: <a href="bitcoin_address.md#0x3_bitcoin_address_BitcoinAddress">bitcoin_address::BitcoinAddress</a>)
 </code></pre>
 
 
@@ -157,5 +172,19 @@ Check if a multi-chain address is bound to a rooch address
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_bind_bitcoin_address_by_system">bind_bitcoin_address_by_system</a>(system: &<a href="">signer</a>, rooch_address: <b>address</b>, baddress: <a href="bitcoin_address.md#0x3_bitcoin_address_BitcoinAddress">bitcoin_address::BitcoinAddress</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_bind_bitcoin_address_by_system">bind_bitcoin_address_by_system</a>(system: &<a href="">signer</a>, rooch_address: <b>address</b>, btc_address: <a href="bitcoin_address.md#0x3_bitcoin_address_BitcoinAddress">bitcoin_address::BitcoinAddress</a>)
+</code></pre>
+
+
+
+<a name="0x3_address_mapping_bind_bitcoin_address"></a>
+
+## Function `bind_bitcoin_address`
+
+Bind a bitcoin address to a rooch address
+We can calculate the rooch address from bitcoin address
+So we call this function for record rooch address to bitcoin address mapping
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_bind_bitcoin_address">bind_bitcoin_address</a>(btc_address: <a href="bitcoin_address.md#0x3_bitcoin_address_BitcoinAddress">bitcoin_address::BitcoinAddress</a>)
 </code></pre>

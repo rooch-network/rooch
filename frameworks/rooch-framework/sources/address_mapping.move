@@ -4,6 +4,7 @@
 module rooch_framework::address_mapping{
     
     use std::option::{Self, Option};
+    use std::vector;
     use moveos_std::core_addresses;
     use moveos_std::object::{Self, Object};
     use rooch_framework::multichain_address::{Self, MultiChainAddress};
@@ -112,6 +113,19 @@ module rooch_framework::address_mapping{
     public fun resolve_bitcoin(rooch_address: address): Option<BitcoinAddress> {
         let am = Self::borrow_rooch_to_bitcoin();
         Self::resolve_bitcoin_address(am, rooch_address)
+    }
+
+    /// Resolve a batch rooch addresses to bitcoin addresses
+    public fun resolve_bitcoin_batch(rooch_addresses: vector<address>): vector<BitcoinAddress> {
+        let am = Self::borrow_rooch_to_bitcoin();
+        vector::map(rooch_addresses, |rooch_address| {
+            let addr_opt = Self::resolve_bitcoin_address(am, rooch_address);
+            if(option::is_none(&addr_opt)){
+                bitcoin_address::empty()
+            }else{
+                option::destroy_some(addr_opt)
+            }
+        })
     } 
 
     /// Check if a multi-chain address is bound to a rooch address
@@ -120,17 +134,55 @@ module rooch_framework::address_mapping{
         Self::exists_mapping_address(obj, maddress)
     }
 
-    public(friend) fun bind_bitcoin_address(rooch_address: address, baddress: BitcoinAddress) {
+    public(friend) fun bind_bitcoin_address_internal(rooch_address: address, btc_address: BitcoinAddress) {
         // bitcoin address to rooch address do not need to record, we just record rooch address to bitcoin address
         let obj = Self::borrow_rooch_to_bitcoin_mut();
         if(!object::contains_field(obj, rooch_address)){
-            object::add_field(obj, rooch_address, baddress);
+            object::add_field(obj, rooch_address, btc_address);
         }
     }
 
-    public fun bind_bitcoin_address_by_system(system: &signer, rooch_address: address, baddress: BitcoinAddress) {
+    public fun bind_bitcoin_address_by_system(system: &signer, rooch_address: address, btc_address: BitcoinAddress) {
         core_addresses::assert_system_reserved(system);
-        Self::bind_bitcoin_address(rooch_address, baddress);
+        Self::bind_bitcoin_address_internal(rooch_address, btc_address);
     }
+
+
+    /// Bind a bitcoin address to a rooch address
+    /// We can calculate the rooch address from bitcoin address
+    /// So we call this function for record rooch address to bitcoin address mapping
+    public fun bind_bitcoin_address(btc_address: BitcoinAddress){
+        let rooch_addr = bitcoin_address::to_rooch_address(&btc_address);
+        Self::bind_bitcoin_address_internal(rooch_addr, btc_address);
+    }
+
+    #[test_only]
+    use std::string;
+
+    #[test]
+    fun test_address_mapping_for_bitcoin(){
+        let genesis_account = moveos_std::signer::module_signer<RoochToBitcoinAddressMapping>();
+        genesis_init(&genesis_account);
+        let btc_addr = bitcoin_address::from_string(&string::utf8(b"bc1p8xpjpkc9uzj2dexcxjg9sw8lxje85xa4070zpcys589e3rf6k20qm6gjrt"));
+        bind_bitcoin_address(btc_addr);
+        let rooch_addr = bitcoin_address::to_rooch_address(&btc_addr);
+        let resolved_addr = resolve_bitcoin(rooch_addr);
+        assert!(resolved_addr == option::some(btc_addr), 1);
+    }
+
+    #[test]
+    fun test_address_mapping_for_bitcoin_batch(){
+        let genesis_account = moveos_std::signer::module_signer<RoochToBitcoinAddressMapping>();
+        genesis_init(&genesis_account);
+        let btc_addr = bitcoin_address::from_string(&string::utf8(b"bc1p8xpjpkc9uzj2dexcxjg9sw8lxje85xa4070zpcys589e3rf6k20qm6gjrt"));
+        bind_bitcoin_address(btc_addr);
+        let rooch_addr = bitcoin_address::to_rooch_address(&btc_addr);
+        let addresses = vector[rooch_addr, @0x42];
+        let resolved_addrs = resolve_bitcoin_batch(addresses);
+        assert!(vector::length(&resolved_addrs) == 2, 1);
+        assert!(*vector::borrow(&resolved_addrs, 0) == btc_addr, 1);
+        assert!(bitcoin_address::is_empty(vector::borrow(&resolved_addrs, 1)), 1);
+    }
+
 
 }
