@@ -16,7 +16,7 @@ module rooch_framework::simple_rng {
     const ErrorInvalidU128: u64 = 2;
     const ErrorInvalidSeed: u64 = 3;
 
-    fun seed(): vector<u8> {
+    fun seed_with_count(count: u64): vector<u8> {
         // get sequence number
         let sequence_number = tx_context::sequence_number();
         let sequence_number_bytes = bcs::to_bytes(&sequence_number);
@@ -28,6 +28,9 @@ module rooch_framework::simple_rng {
         // get now milliseconds timestamp
         let timestamp_ms = timestamp::now_milliseconds();
         let timestamp_ms_bytes = bcs::to_bytes(&timestamp_ms);
+
+        // get count bytes
+        let count_bytes = bcs::to_bytes(&count);
 
         // construct a seed
         let seed_bytes = vector::empty<u8>();
@@ -49,6 +52,7 @@ module rooch_framework::simple_rng {
         vector::append(&mut seed_bytes, timestamp_ms_bytes);
         vector::append(&mut seed_bytes, sender_addr_bytes);
         vector::append(&mut seed_bytes, sequence_number_bytes);
+        vector::append(&mut seed_bytes, count_bytes);
 
         // hash seed bytes and return a seed
         let seed = hash::sha3_256(seed_bytes);
@@ -75,21 +79,9 @@ module rooch_framework::simple_rng {
         return value
     }
 
-    fun seed_with_count(count: u64): vector<u8> {
-        let base_seed = seed();
-        let count_bytes = bcs::to_bytes(&count);
-        let i = 0;
-        while (i < 8) {
-            let value = (*vector::borrow(&base_seed, i)) ^ (*vector::borrow(&count_bytes, i));
-            vector::insert(&mut base_seed, i, value);
-            i = i + 1;
-        };
-        base_seed
-    }
-
     /// Generate a random u64 from seed
     public fun rand_u64(): u64 {
-        let seed_bytes = seed();
+        let seed_bytes = seed_with_count(0);
         bytes_to_u64(seed_bytes)
     }
 
@@ -101,7 +93,7 @@ module rooch_framework::simple_rng {
 
     /// Generate a random u128 from seed
     public fun rand_u128(): u128 {
-        let seed_bytes = seed();
+        let seed_bytes = seed_with_count(0);
         bytes_to_u128(seed_bytes)
     }
 
@@ -208,18 +200,23 @@ module rooch_framework::simple_rng {
         let tx_hash = tx_context::tx_hash();
         let tx_hash_bytes = bcs::to_bytes(&tx_hash);
 
+        // Mock count
+        let count = 0;
+        let count_bytes = bcs::to_bytes(&count);
+
         // Constructing the expected seed bytes
         let expected_seed_bytes = vector::empty<u8>();
         vector::append(&mut expected_seed_bytes, tx_hash_bytes);
         vector::append(&mut expected_seed_bytes, timestamp_ms_bytes);
         vector::append(&mut expected_seed_bytes, sender_addr_bytes);
         vector::append(&mut expected_seed_bytes, sequence_number_bytes);
+        vector::append(&mut expected_seed_bytes, count_bytes);
 
         // Hashing the expected seed bytes to get the expected seed
         let expected_seed = hash::sha3_256(expected_seed_bytes);
 
         // Call the seed function and check the result
-        let seed_bytes = seed();
+        let seed_bytes = seed_with_count(0);
 
         assert!(seed_bytes == expected_seed, ErrorInvalidSeed);
     }
