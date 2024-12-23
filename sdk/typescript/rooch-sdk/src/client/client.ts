@@ -51,6 +51,7 @@ import {
   ModuleABIView,
   GetModuleABIParams,
   BroadcastTXParams,
+  ListFieldStatesParams,
 } from './types/index.js'
 
 /**
@@ -174,6 +175,18 @@ export class RoochClient {
 
     const typedResult = result as unknown as ObjectStateView[]
     return typedResult[0] === null ? [] : typedResult
+  }
+
+  async getAllModuleName(params: ListFieldStatesParams): Promise<ObjectStateView> {
+    return await this.transport.request({
+      method: 'rooch_listFieldStates',
+      params: [
+        params.objectId,
+        params.cursor,
+        params.limit,
+        params.stateOption,
+      ],
+    });
   }
 
   async listStates(params: ListStatesParams): Promise<PaginatedStateKVViews> {
