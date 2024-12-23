@@ -3,7 +3,7 @@ import type { BalanceInfoView } from '@roochnetwork/rooch-sdk';
 import { useState } from 'react';
 import BigNumber from 'bignumber.js';
 import { Args, Transaction } from '@roochnetwork/rooch-sdk';
-import { useCurrentAddress, UseSignAndExecuteTransaction } from '@roochnetwork/rooch-sdk-kit';
+import { useCurrentAddress, useSignAndExecuteTransaction } from '@roochnetwork/rooch-sdk-kit';
 
 import { LoadingButton } from '@mui/lab';
 import {
@@ -51,7 +51,7 @@ export default function CreateBidDialog({
   const [bidUnitPrice, setBidUnitPrice] = useState('');
 
   const account = useCurrentAddress();
-  const { mutate: signAndExecuteTransaction, isPending } = UseSignAndExecuteTransaction();
+  const { mutate: signAndExecuteTransaction, isPending } = useSignAndExecuteTransaction();
 
   return (
     <Dialog
