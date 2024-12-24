@@ -46,6 +46,7 @@ use rooch_types::transaction::{
 };
 use std::str::FromStr;
 use std::sync::Arc;
+use move_vm_runtime::RuntimeEnvironment;
 
 pub struct ExecutorActor {
     root: ObjectMeta,
@@ -69,10 +70,11 @@ impl ExecutorActor {
         let resolver = RootObjectResolver::new(root.clone(), &moveos_store);
         let gas_parameters = FrameworksGasParameters::load_from_chain(&resolver)?;
 
+        let runtime_environment = RuntimeEnvironment::new(gas_parameters.all_natives());
+
         let moveos = MoveOS::new(
+            &runtime_environment,
             moveos_store.clone(),
-            gas_parameters.all_natives(),
-            MoveOSConfig::default(),
             system_pre_execute_functions(),
             system_post_execute_functions(),
         )?;
@@ -521,10 +523,11 @@ impl Handler<EventData> for ExecutorActor {
             let resolver = RootObjectResolver::new(self.root.clone(), &self.moveos_store);
             let gas_parameters = FrameworksGasParameters::load_from_chain(&resolver)?;
 
+            let runtime_environment = RuntimeEnvironment::new(gas_parameters.all_natives());
+
             self.moveos = MoveOS::new(
+                &runtime_environment,
                 self.moveos_store.clone(),
-                gas_parameters.all_natives(),
-                MoveOSConfig::default(),
                 system_pre_execute_functions(),
                 system_post_execute_functions(),
             )?;

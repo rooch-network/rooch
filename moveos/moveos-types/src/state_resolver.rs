@@ -12,7 +12,12 @@ use crate::{
 };
 use anyhow::{ensure, Error, Result};
 use bytes::Bytes;
-use move_binary_format::errors::{PartialVMError, PartialVMResult};
+use move_binary_format::errors::{
+    BinaryLoaderResult, Location, PartialVMError, PartialVMResult, VMResult,
+};
+use move_binary_format::file_format::CompiledScript;
+use move_binary_format::CompiledModule;
+use move_core_types::identifier::{IdentStr, Identifier};
 use move_core_types::metadata::Metadata;
 use move_core_types::value::MoveTypeLayout;
 use move_core_types::vm_status::StatusCode;
@@ -21,7 +26,13 @@ use move_core_types::{
     language_storage::{ModuleId, StructTag, TypeTag},
 };
 use move_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue, MoveValueAnnotator};
+use move_vm_runtime::{
+    CodeStorage, Module, ModuleStorage, RuntimeEnvironment, Script, WithRuntimeEnvironment,
+};
+use move_vm_types::code::Code;
 use move_vm_types::resolver::{ModuleResolver, MoveResolver, ResourceResolver};
+use std::env::temp_dir;
+use std::sync::Arc;
 
 pub type StateKV = (FieldKey, ObjectState);
 pub type AnnotatedStateKV = (FieldKey, AnnotatedState);
