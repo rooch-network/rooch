@@ -238,6 +238,7 @@ impl RoochOpt {
             let arc_base = Arc::new(base);
             self.store.init(Arc::clone(&arc_base))?;
             self.da.init(Arc::clone(&arc_base))?;
+            self.init_btc_reorg_aware_block_store_dir()?;
             self.base = Some(arc_base);
         }
         Ok(())
@@ -249,6 +250,21 @@ impl RoochOpt {
             .map(|eth_rpc_url| EthereumRelayerConfig {
                 eth_rpc_url: eth_rpc_url.clone(),
             })
+    }
+
+    pub fn init_btc_reorg_aware_block_store_dir(&mut self) -> Result<()> {
+        if self.btc_reorg_aware_block_store_dir.is_none() {
+            self.btc_reorg_aware_block_store_dir = Some(
+                self.base()
+                    .data_dir()
+                    .join(DEFAULT_BTC_REORG_AWARE_BLOCK_STORE_DIR),
+            );
+        }
+        let store_dir = self.btc_reorg_aware_block_store_dir.as_ref().unwrap();
+        if !store_dir.exists() {
+            create_dir_all(store_dir.clone())?;
+        }
+        Ok(())
     }
 
     pub fn bitcoin_relayer_config(&self) -> Option<BitcoinRelayerConfig> {
