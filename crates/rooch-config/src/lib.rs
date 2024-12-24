@@ -32,6 +32,9 @@ pub const ROOCH_CONFIR_DIR: &str = "rooch_config";
 pub const ROOCH_CLIENT_CONFIG: &str = "rooch.yaml";
 pub const ROOCH_KEYSTORE_FILENAME: &str = "rooch.keystore";
 
+const DEFAULT_BTC_REORG_AWARE_BLOCK_STORE_DIR: &str = "btc-reorg-aware-block-store";
+const DEFAULT_BTC_REORG_AWARE_HEIGHT: usize = 16; // much larger than bitcoin_reorg_block_count, no need to be too large
+
 pub static R_DEFAULT_BASE_DATA_DIR: Lazy<PathBuf> = Lazy::new(|| {
     dirs_next::home_dir()
         .expect("read home dir should ok")
@@ -115,24 +118,26 @@ pub struct RoochOpt {
         requires = "btc-rpc-password"
     )]
     pub btc_rpc_url: Option<String>,
-
     #[serde(skip_serializing_if = "Option::is_none")]
     #[clap(long, id = "btc-rpc-username", env = "BTC_RPC_USERNAME")]
     pub btc_rpc_username: Option<String>,
-
     #[serde(skip_serializing_if = "Option::is_none")]
     #[clap(long, id = "btc-rpc-password", env = "BTC_RPC_PASSWORD")]
     pub btc_rpc_password: Option<String>,
-
     #[serde(skip_serializing_if = "Option::is_none")]
     #[clap(long, env = "BTC_END_BLOCK_HEIGHT")]
     /// The end block height of the Bitcoin chain to stop relaying from, default is none.
     pub btc_end_block_height: Option<u64>,
-
     #[serde(skip_serializing_if = "Option::is_none")]
     #[clap(long, env = "BTC_SYNC_BLOCK_INTERVAL")]
     /// The interval of sync BTC block, default is none.
     pub btc_sync_block_interval: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[clap(long)]
+    pub btc_reorg_aware_block_store_dir: Option<PathBuf>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[clap(long)]
+    pub btc_reorg_aware_height: Option<usize>,
 
     /// The address of the sequencer account
     #[clap(long)]
@@ -196,6 +201,8 @@ impl RoochOpt {
             btc_rpc_password: None,
             btc_end_block_height: None,
             btc_sync_block_interval: None,
+            btc_reorg_aware_block_store_dir: None,
+            btc_reorg_aware_height: None,
             sequencer_account: None,
             proposer_account: None,
             da: DAConfig::default(),
@@ -252,6 +259,17 @@ impl RoochOpt {
             btc_rpc_password: self.btc_rpc_password.clone().unwrap(),
             btc_end_block_height: self.btc_end_block_height,
             btc_sync_block_interval: self.btc_sync_block_interval,
+            btc_reorg_aware_block_store_dir: self
+                .btc_reorg_aware_block_store_dir
+                .clone()
+                .unwrap_or_else(|| {
+                    self.base()
+                        .data_dir()
+                        .join(DEFAULT_BTC_REORG_AWARE_BLOCK_STORE_DIR)
+                }),
+            btc_reorg_aware_height: self
+                .btc_reorg_aware_height
+                .unwrap_or(DEFAULT_BTC_REORG_AWARE_HEIGHT),
         })
     }
 
@@ -315,6 +333,8 @@ pub struct BitcoinRelayerConfig {
     pub btc_rpc_password: String,
     pub btc_end_block_height: Option<u64>,
     pub btc_sync_block_interval: Option<u64>,
+    pub btc_reorg_aware_block_store_dir: PathBuf,
+    pub btc_reorg_aware_height: usize,
 }
 
 #[derive(Clone, Debug, PartialEq)]

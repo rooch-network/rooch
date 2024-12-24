@@ -8,6 +8,7 @@ use bitcoin::{Block, BlockHash};
 use bitcoin_client::proxy::BitcoinClientProxy;
 use bitcoincore_rpc::bitcoincore_rpc_json::GetBlockHeaderResult;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
+use indexmap::IndexMap;
 use moveos_types::module_binding::MoveFunctionCaller;
 use rooch_config::BitcoinRelayerConfig;
 use rooch_executor::proxy::ExecutorProxy;
@@ -18,6 +19,8 @@ use rooch_types::{
     multichain_id::RoochMultiChainID,
     transaction::{L1BlockWithBody, L1Transaction},
 };
+use std::io::Write;
+use std::path::PathBuf;
 use tracing::{debug, error, info};
 
 pub struct BitcoinRelayer {
@@ -31,6 +34,7 @@ pub struct BitcoinRelayer {
     latest_sync_timestamp: u64,
     sync_to_latest: bool,
     batch_size: usize,
+    reorg_aware_store: BitcoinReorgAwareStore,
 }
 
 #[derive(Debug, Clone)]
@@ -52,13 +56,18 @@ impl BitcoinRelayer {
         Ok(Self {
             genesis_block,
             end_block_height: config.btc_end_block_height,
-            rpc_client,
+            rpc_client: rpc_client.clone(),
             move_caller: executor,
             buffer: vec![],
             sync_block_interval,
             latest_sync_timestamp: 0u64,
             sync_to_latest: false,
             batch_size: 5,
+            reorg_aware_store: BitcoinReorgAwareStore::new(
+                config.btc_reorg_aware_block_store_dir,
+                config.btc_reorg_aware_height,
+                rpc_client,
+            ),
         })
     }
 
@@ -147,6 +156,13 @@ impl BitcoinRelayer {
                 "BitcoinRelayer buffer block, height: {}, hash: {}",
                 next_block_height, header_info.hash
             );
+
+            // store potential reorg block before consuming by VM(push to buffer),
+            // avoiding inconsistency caused by collapse
+            self.reorg_aware_store
+                .insert_or_replace(next_block_height, header_info.hash)
+                .await?;
+
             self.buffer.push(BlockResult { header_info, block });
             if batch_count > self.batch_size {
                 break;
@@ -242,5 +258,54 @@ impl Handler<GetReadyL1TxsMessage> for BitcoinRelayer {
         _ctx: &mut ActorContext,
     ) -> Result<Vec<L1Transaction>> {
         self.get_ready_l1_txs()
+    }
+}
+
+pub struct BitcoinReorgAwareStore {
+    block_store_dir: PathBuf,
+    recent_blocks_map: IndexMap<u64, BlockHash>,
+    aware_height: usize,
+    rpc_client: BitcoinClientProxy,
+}
+
+impl BitcoinReorgAwareStore {
+    pub fn new(
+        block_store_dir: PathBuf,
+        aware_height: usize,
+        rpc_client: BitcoinClientProxy,
+    ) -> Self {
+        Self {
+            block_store_dir,
+            recent_blocks_map: IndexMap::with_capacity(aware_height),
+            aware_height,
+            rpc_client,
+        }
+    }
+
+    pub async fn insert_or_replace(
+        &mut self,
+        block_height: u64,
+        block_hash: BlockHash,
+    ) -> Result<()> {
+        // same block height, replace
+        if self.recent_blocks_map.contains_key(&block_height) {
+            let origin_hash = self
+                .recent_blocks_map
+                .insert(block_height, block_hash)
+                .unwrap();
+            let origin_block = self.rpc_client.get_block(origin_hash).await?;
+            let origin_block_output_path = self.block_store_dir.join(origin_hash.to_string());
+            let mut origin_block_file = std::fs::File::create(origin_block_output_path)?;
+            let origin_block_hex: String = bitcoin::consensus::encode::serialize_hex(&origin_block);
+            origin_block_file.write_all(origin_block_hex.as_bytes())?;
+            origin_block_file.sync_data()?; // ok to block here, low frequency operation
+        } else {
+            // remove the smallest height block if reach aware_height
+            if self.recent_blocks_map.len() == self.aware_height {
+                self.recent_blocks_map.shift_remove_index(0);
+            }
+            self.recent_blocks_map.insert(block_height, block_hash);
+        }
+        Ok(())
     }
 }
