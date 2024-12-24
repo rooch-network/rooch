@@ -302,7 +302,6 @@ axum = { version = "0.7.9", default-features = false, features = [
     "query",
     "ws",
 ] }
-axum-extra = "0.9.3"
 axum-server = { version = "0.6.0", default-features = false, features = [
     "tls-rustls",
 ] }
