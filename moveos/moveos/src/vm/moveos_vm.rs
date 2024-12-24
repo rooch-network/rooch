@@ -20,13 +20,7 @@ use move_core_types::{
 };
 use move_model::script_into_module;
 use move_vm_runtime::data_cache::TransactionCache;
-use move_vm_runtime::{
-    config::VMConfig,
-    move_vm::MoveVM,
-    native_extensions::NativeContextExtensions,
-    native_functions::NativeFunction,
-    session::{LoadedFunctionInstantiation, Session},
-};
+use move_vm_runtime::{config::VMConfig, move_vm::MoveVM, native_extensions::NativeContextExtensions, native_functions::NativeFunction, session::{LoadedFunctionInstantiation, Session}, CodeStorage, ModuleStorage, RuntimeEnvironment, Script};
 use move_vm_types::gas::UnmeteredGasMeter;
 use move_vm_types::loaded_data::runtime_types::{CachedStructIndex, StructType, Type};
 use moveos_common::types::{ClassifiedGasMeter, SwitchableGasMeter};
@@ -53,6 +47,7 @@ use parking_lot::RwLock;
 use std::collections::BTreeSet;
 use std::rc::Rc;
 use std::{borrow::Borrow, sync::Arc};
+use move_vm_types::code::UnsyncScriptCache;
 
 /// MoveOSVM is a wrapper of MoveVM with MoveOS specific features.
 pub struct MoveOSVM {
@@ -61,11 +56,10 @@ pub struct MoveOSVM {
 
 impl MoveOSVM {
     pub fn new(
-        natives: impl IntoIterator<Item = (AccountAddress, Identifier, Identifier, NativeFunction)>,
-        vm_config: VMConfig,
+        runtime_environment: &RuntimeEnvironment,
     ) -> VMResult<Self> {
         Ok(Self {
-            inner: MoveVM::new_with_config(natives, vm_config)?,
+            inner: MoveVM::new_with_runtime_environment(runtime_environment),
         })
     }
 
@@ -135,7 +129,7 @@ impl MoveOSVM {
 /// MoveOSSession is a wrapper of MoveVM session with MoveOS specific features.
 /// It is used to execute a transaction, every transaction should be executed in a new session.
 /// Every session has a TxContext, if the transaction have multiple actions, the TxContext is shared.
-pub struct MoveOSSession<'r, 'l, S, G> {
+pub struct MoveOSSession<'r, 'l, S: CodeStorage + ModuleStorage, G> {
     pub(crate) vm: &'l MoveVM,
     pub(crate) remote: &'r S,
     pub(crate) session: Session<'r, 'l, MoveosDataCache<'r, 'l, S>>,
@@ -213,12 +207,12 @@ where
     /// Verify a move action.
     /// The caller should call this function when validate a transaction.
     /// If the result is error, the transaction should be rejected.
-    pub fn verify_move_action(&self, action: MoveAction) -> VMResult<VerifiedMoveAction> {
+    pub fn verify_move_action(&mut self, action: MoveAction) -> VMResult<VerifiedMoveAction> {
         match action {
             MoveAction::Script(call) => {
                 let loaded_function = self
                     .session
-                    .load_script(call.code.as_slice(), call.ty_args.clone())?;
+                    .load_script(self.remote, call.code.as_slice(), call.ty_args.clone())?;
                 let location = Location::Script;
                 moveos_verifier::verifier::verify_entry_function(&loaded_function, &self.session)
                     .map_err(|e| e.finish(location.clone()))?;
@@ -242,6 +236,7 @@ where
             }
             MoveAction::Function(call) => {
                 let loaded_function = self.session.load_function(
+                    self.remote,
                     &call.function_id.module_id,
                     &call.function_id.function_name,
                     call.ty_args.as_slice(),

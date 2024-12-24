@@ -10,7 +10,7 @@ use anyhow::{bail, format_err, Error, Result};
 use move_binary_format::binary_views::BinaryIndexedView;
 use move_binary_format::errors::VMError;
 use move_binary_format::errors::{vm_status_of_result, Location, PartialVMError, VMResult};
-use move_binary_format::file_format::FunctionDefinitionIndex;
+use move_binary_format::file_format::{CompiledScript, FunctionDefinitionIndex};
 use move_binary_format::CompiledModule;
 use move_core_types::identifier::IdentStr;
 use move_core_types::language_storage::ModuleId;
@@ -19,7 +19,7 @@ use move_core_types::vm_status::{KeptVMStatus, VMStatus};
 use move_core_types::{
     account_address::AccountAddress, ident_str, identifier::Identifier, vm_status::StatusCode,
 };
-use move_vm_runtime::config::VMConfig;
+use move_vm_runtime::config::{VMConfig, DEFAULT_MAX_VALUE_NEST_DEPTH};
 use move_vm_runtime::data_cache::TransactionCache;
 use move_vm_runtime::native_functions::NativeFunction;
 use moveos_common::types::ClassifiedGasMeter;
@@ -43,6 +43,12 @@ use moveos_types::transaction::{
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
+use ambassador::delegate_to_methods;
+use move_binary_format::deserializer::DeserializerConfig;
+use move_bytecode_verifier::VerifierConfig;
+use move_vm_runtime::{RuntimeEnvironment, Script};
+use move_vm_types::code::{ScriptCache, UnsyncScriptCache};
+use move_vm_types::loaded_data::runtime_types::TypeBuilder;
 
 #[derive(thiserror::Error, Debug)]
 pub enum VMPanicError {
@@ -82,10 +88,6 @@ impl std::fmt::Debug for MoveOSConfig {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("MoveOSConfig")
             .field(
-                "vm_config.max_binary_format_version",
-                &self.vm_config.max_binary_format_version,
-            )
-            .field(
                 "vm_config.paranoid_type_checks",
                 &self.vm_config.paranoid_type_checks,
             )
@@ -98,12 +100,19 @@ impl Clone for MoveOSConfig {
     fn clone(&self) -> Self {
         Self {
             vm_config: VMConfig {
-                verifier: self.vm_config.verifier.clone(),
-                max_binary_format_version: self.vm_config.max_binary_format_version,
-                paranoid_type_checks: self.vm_config.paranoid_type_checks,
-                enable_invariant_violation_check_in_swap_loc: false,
-                type_size_limit: false,
-                max_value_nest_depth: None,
+                verifier_config: VerifierConfig::default(),
+                deserializer_config: DeserializerConfig::default(),
+                paranoid_type_checks: false,
+                check_invariant_in_swap_loc: true,
+                max_value_nest_depth: Some(DEFAULT_MAX_VALUE_NEST_DEPTH),
+                type_max_cost: 0,
+                type_base_cost: 0,
+                type_byte_cost: 0,
+                delayed_field_optimization_enabled: false,
+                ty_builder: TypeBuilder::with_limits(128, 20),
+                disallow_dispatch_for_native: true,
+                use_compatibility_checker_v2: true,
+                use_loader_v2: true,
             },
         }
     }
@@ -122,15 +131,14 @@ pub struct MoveOS {
 
 impl MoveOS {
     pub fn new(
+        runtime_environment: &RuntimeEnvironment,
         db: MoveOSStore,
-        natives: impl IntoIterator<Item = (AccountAddress, Identifier, Identifier, NativeFunction)>,
-        config: MoveOSConfig,
         system_pre_execute_functions: Vec<FunctionCall>,
         system_post_execute_functions: Vec<FunctionCall>,
     ) -> Result<Self> {
         //TODO load the gas table from argument, and remove the cost_table lock.
 
-        let vm = MoveOSVM::new(natives, config.vm_config)?;
+        let vm = MoveOSVM::new(runtime_environment)?;
         Ok(Self {
             vm,
             db,
@@ -246,7 +254,7 @@ impl MoveOS {
         }
 
         let resolver = RootObjectResolver::new(root.clone(), &self.db);
-        let session = self
+        let mut session = self
             .vm
             .new_readonly_session(&resolver, ctx.clone(), gas_meter);
 

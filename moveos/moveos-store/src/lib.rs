@@ -12,7 +12,7 @@ use crate::transaction_store::{TransactionDBStore, TransactionStore};
 use accumulator::inmemory::InMemoryAccumulator;
 use anyhow::{Error, Result};
 use bcs::to_bytes;
-use move_core_types::language_storage::StructTag;
+use move_core_types::language_storage::{ModuleId, StructTag};
 use moveos_config::store_config::{MoveOSStoreConfig, RocksdbConfig};
 use moveos_config::DataDirPath;
 use moveos_types::genesis_info::GenesisInfo;
@@ -37,6 +37,13 @@ use smt::NodeReader;
 use std::fmt::{Debug, Display, Formatter};
 use std::path::Path;
 use std::sync::Arc;
+use ambassador::delegate_to_methods;
+use bytes::Bytes;
+use move_binary_format::CompiledModule;
+use move_binary_format::file_format::CompiledScript;
+use move_vm_runtime::{Module, Script};
+use move_vm_types::code::{ModuleCache, ScriptCache, UnsyncModuleCache, UnsyncScriptCache, WithBytes, WithHash};
+use move_vm_types::sha3_256;
 
 pub mod config_store;
 pub mod event_store;
@@ -67,6 +74,8 @@ static VEC_COLUMN_FAMILY_NAME: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
     ]
 });
 
+pub type TxnIndex = u32;
+
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub struct StoreMeta {}
 
@@ -83,6 +92,28 @@ pub struct MoveOSStore {
     pub transaction_store: TransactionDBStore,
     pub config_store: ConfigDBStore,
     pub state_store: StateDBStore,
+    pub script_cache: UnsyncScriptCache<[u8; 32], CompiledScript, Script>,
+    pub module_cache: UnsyncModuleCache<ModuleId, CompiledModule, Module, RoochModuleExtension, Option<TxnIndex>>,
+}
+
+#[delegate_to_methods]
+#[delegate(ScriptCache, target_ref = "as_script_cache")]
+impl MoveOSStore {
+    pub fn as_script_cache(&self) -> &dyn ScriptCache<Key = [u8; 32], Deserialized = CompiledScript, Verified = Script> {
+        &self.script_cache
+    }
+
+    fn as_module_cache(
+        &self,
+    ) -> &dyn ModuleCache<
+        Key = ModuleId,
+        Deserialized = CompiledModule,
+        Verified = Module,
+        Extension = RoochModuleExtension,
+        Version = Option<TxnIndex>,
+    > {
+        &self.module_cache
+    }
 }
 
 impl MoveOSStore {
@@ -111,6 +142,8 @@ impl MoveOSStore {
             transaction_store: TransactionDBStore::new(instance.clone()),
             config_store: ConfigDBStore::new(instance),
             state_store,
+            script_cache: UnsyncScriptCache::empty(),
+            module_cache: UnsyncModuleCache::empty(),
         };
         Ok(store)
     }
@@ -397,4 +430,169 @@ pub fn load_feature_store_object<Resolver: StateResolver>(
             }
         }
     }
+}
+
+/// Additional data stored alongside deserialized or verified modules.
+pub struct RoochModuleExtension {
+    /// Serialized representation of the module.
+    bytes: Bytes,
+    /// Module's hash.
+    hash: [u8; 32],
+    /// The state value metadata associated with the module, when read from or
+    /// written to storage.
+    state_value_metadata: StateValueMetadata,
+}
+
+impl RoochModuleExtension {
+    /*
+    /// Creates new extension based on [StateValue].
+    pub fn new(state_value: StateValue) -> Self {
+        let (state_value_metadata, bytes) = state_value.unpack();
+        let hash = sha3_256(&bytes);
+        Self {
+            bytes,
+            hash,
+            state_value_metadata,
+        }
+    }
+     */
+
+    /// Returns the state value metadata stored in extension.
+    pub fn state_value_metadata(&self) -> &StateValueMetadata {
+        &self.state_value_metadata
+    }
+}
+
+impl WithBytes for RoochModuleExtension {
+    fn bytes(&self) -> &Bytes {
+        &self.bytes
+    }
+}
+
+impl WithHash for RoochModuleExtension {
+    fn hash(&self) -> &[u8; 32] {
+        &self.hash
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
+struct StateValueMetadataInner {
+    slot_deposit: u64,
+    bytes_deposit: u64,
+    creation_time_usecs: u64,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub struct StateValueMetadata {
+    inner: Option<StateValueMetadataInner>,
+}
+
+impl StateValueMetadata {
+    /*
+    pub fn into_persistable(self) -> Option<PersistedStateValueMetadata> {
+        self.inner.map(|inner| {
+            let StateValueMetadataInner {
+                slot_deposit,
+                bytes_deposit,
+                creation_time_usecs,
+            } = inner;
+            if bytes_deposit == 0 {
+                PersistedStateValueMetadata::V0 {
+                    deposit: slot_deposit,
+                    creation_time_usecs,
+                }
+            } else {
+                PersistedStateValueMetadata::V1 {
+                    slot_deposit,
+                    bytes_deposit,
+                    creation_time_usecs,
+                }
+            }
+        })
+    }
+     */
+
+    pub fn new(
+        slot_deposit: u64,
+        bytes_deposit: u64,
+        creation_time_usecs: &CurrentTimeMicroseconds,
+    ) -> Self {
+        Self::new_impl(
+            slot_deposit,
+            bytes_deposit,
+            creation_time_usecs.microseconds,
+        )
+    }
+
+    pub fn legacy(slot_deposit: u64, creation_time_usecs: &CurrentTimeMicroseconds) -> Self {
+        Self::new(slot_deposit, 0, creation_time_usecs)
+    }
+
+    pub fn placeholder(creation_time_usecs: &CurrentTimeMicroseconds) -> Self {
+        Self::legacy(0, creation_time_usecs)
+    }
+
+    pub fn none() -> Self {
+        Self { inner: None }
+    }
+
+    fn new_impl(slot_deposit: u64, bytes_deposit: u64, creation_time_usecs: u64) -> Self {
+        Self {
+            inner: Some(StateValueMetadataInner {
+                slot_deposit,
+                bytes_deposit,
+                creation_time_usecs,
+            }),
+        }
+    }
+
+    pub fn is_none(&self) -> bool {
+        self.inner.is_none()
+    }
+
+    fn inner(&self) -> Option<&StateValueMetadataInner> {
+        self.inner.as_ref()
+    }
+
+    pub fn creation_time_usecs(&self) -> u64 {
+        self.inner().map_or(0, |v1| v1.creation_time_usecs)
+    }
+
+    pub fn slot_deposit(&self) -> u64 {
+        self.inner().map_or(0, |v1| v1.slot_deposit)
+    }
+
+    pub fn bytes_deposit(&self) -> u64 {
+        self.inner().map_or(0, |v1| v1.bytes_deposit)
+    }
+
+    pub fn total_deposit(&self) -> u64 {
+        self.slot_deposit() + self.bytes_deposit()
+    }
+
+    pub fn maybe_upgrade(&mut self) -> &mut Self {
+        *self = Self::new_impl(
+            self.slot_deposit(),
+            self.bytes_deposit(),
+            self.creation_time_usecs(),
+        );
+        self
+    }
+
+    fn expect_upgraded(&mut self) -> &mut StateValueMetadataInner {
+        self.inner.as_mut().expect("State metadata is None.")
+    }
+
+    pub fn set_slot_deposit(&mut self, amount: u64) {
+        self.expect_upgraded().slot_deposit = amount;
+    }
+
+    pub fn set_bytes_deposit(&mut self, amount: u64) {
+        self.expect_upgraded().bytes_deposit = amount;
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct CurrentTimeMicroseconds {
+    pub microseconds: u64,
 }

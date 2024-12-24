@@ -39,6 +39,7 @@ use rooch_types::transaction::authenticator::AUTH_PAYLOAD_SIZE;
 use rooch_types::transaction::RoochTransactionData;
 use std::rc::Rc;
 use std::str::FromStr;
+use move_vm_runtime::RuntimeEnvironment;
 
 pub fn execute_tx_locally(
     state_root_bytes: Vec<u8>,
@@ -221,9 +222,10 @@ pub fn prepare_execute_env(
         client_resolver,
     )));
 
+    let runtime_environment = RuntimeEnvironment::new(gas_parameters.all_natives());
+
     let vm = MoveOSVM::new(
-        gas_parameters.all_natives(),
-        MoveOSConfig::default().vm_config,
+        &runtime_environment,
     )
     .expect("create MoveVM failed");
 

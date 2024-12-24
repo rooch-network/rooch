@@ -45,6 +45,7 @@ use rooch_types::framework::auth_validator::TxValidateResult;
 use rooch_types::function_arg::FunctionArg;
 use std::path::PathBuf;
 use std::{collections::BTreeMap, path::Path};
+use move_vm_runtime::RuntimeEnvironment;
 use tracing::debug;
 
 pub struct MoveOSTestRunner<'a> {
@@ -117,10 +118,10 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
         let moveos_store = MoveOSStore::new(temp_dir.path(), &registry).unwrap();
         let genesis_gas_parameter = FrameworksGasParameters::initial();
         let genesis: &RoochGenesis = &rooch_genesis::ROOCH_LOCAL_GENESIS;
+        let runtime_environment = RuntimeEnvironment::new(genesis_gas_parameter.all_natives());
         let moveos = MoveOS::new(
+            &runtime_environment,
             moveos_store.clone(),
-            genesis_gas_parameter.all_natives(),
-            MoveOSConfig::default(),
             rooch_types::framework::system_pre_execute_functions(),
             rooch_types::framework::system_post_execute_functions(),
         )

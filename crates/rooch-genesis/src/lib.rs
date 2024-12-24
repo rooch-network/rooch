@@ -50,6 +50,7 @@ use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::{fs::File, io::Write, path::Path};
+use move_vm_runtime::RuntimeEnvironment;
 
 pub static ROOCH_LOCAL_GENESIS: Lazy<RoochGenesis> = Lazy::new(|| {
     let network: RoochNetwork = BuiltinChainID::Local.into();
@@ -324,10 +325,10 @@ impl RoochGenesis {
 
         let vm_config = MoveOSConfig::default();
         let (moveos_store, _temp_dir) = MoveOSStore::mock_moveos_store()?;
+        let runtime_environment = RuntimeEnvironment::new(gas_parameter.all_natives());
         let moveos = MoveOS::new(
+            &runtime_environment,
             moveos_store,
-            gas_parameter.all_natives(),
-            vm_config,
             vec![],
             vec![],
         )?;
@@ -425,10 +426,10 @@ impl RoochGenesis {
             self.initial_gas_config.max_gas_amount,
             self.initial_gas_config.entries.clone(),
         )?;
+        let runtime_environment = RuntimeEnvironment::new(genesis_gas_parameter.all_natives());
         let moveos = MoveOS::new(
+            &runtime_environment,
             rooch_db.moveos_store.clone(),
-            genesis_gas_parameter.all_natives(),
-            MoveOSConfig::default(),
             vec![],
             vec![],
         )?;

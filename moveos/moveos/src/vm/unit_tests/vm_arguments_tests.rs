@@ -38,6 +38,7 @@ use moveos_types::{
     state_resolver::StateResolver, transaction::MoveAction,
 };
 use std::collections::HashMap;
+use move_vm_runtime::RuntimeEnvironment;
 
 // make a script with a given signature for main.
 fn make_script(parameters: Signature) -> Vec<u8> {
@@ -342,7 +343,8 @@ fn call_script_with_args_ty_args_signers(
     ty_args: Vec<TypeTag>,
     signers: Vec<AccountAddress>,
 ) -> VMResult<()> {
-    let moveos_vm = MoveOSVM::new(vec![], VMConfig::default()).unwrap();
+    let runtime_environment = RuntimeEnvironment::new(vec![]);
+    let moveos_vm = MoveOSVM::new(&runtime_environment).unwrap();
     let remote_view = RemoteStore::new();
     let ctx = TxContext::random_for_testing_only();
     let cost_table = initial_cost_schedule(None);
@@ -370,7 +372,8 @@ fn call_script_function_with_args_ty_args_signers(
     ty_args: Vec<TypeTag>,
     signers: Vec<AccountAddress>,
 ) -> VMResult<()> {
-    let moveos_vm = MoveOSVM::new(vec![], VMConfig::default()).unwrap();
+    let runtime_environment = RuntimeEnvironment::new(vec![]);
+    let moveos_vm = MoveOSVM::new(&runtime_environment).unwrap();
     let mut remote_view = RemoteStore::new();
     let id = module.self_id();
     remote_view.add_module(module);
@@ -852,7 +855,8 @@ fn call_missing_item() {
     let id = &module.self_id();
     let function_name = IdentStr::new("foo").unwrap();
     // missing module
-    let moveos_vm = MoveOSVM::new(vec![], VMConfig::default()).unwrap();
+    let runtime_environment = RuntimeEnvironment::new(vec![]);
+    let moveos_vm = MoveOSVM::new(&runtime_environment).unwrap();
     let mut remote_view = RemoteStore::new();
     let ctx = TxContext::random_for_testing_only();
     let cost_table = initial_cost_schedule(None);
