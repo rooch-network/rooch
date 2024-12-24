@@ -50,6 +50,7 @@ import {
   ModuleABIView,
   GetModuleABIParams,
   BroadcastTXParams,
+  ListFieldStatesParams,
 } from './types/index.js'
 import { fixedBalance } from '../utils/balance.js'
 
@@ -456,6 +457,47 @@ export class RoochClient {
     }
 
     return result.return_values![0]?.decoded_value as boolean
+  }
+
+  async getAllModules({
+    objectId,
+    limit,
+    cursor,
+  }: ListFieldStatesParams): Promise<Map<string, string>> {
+    const packageId = `0x14481947570f6c2f50d190f9a13bf549ab2f0c9debc41296cd4d506002379659${objectId}`;
+    const result = await this.transport.request({
+      method: 'rooch_listFieldStates',
+      params: [
+        packageId,
+        cursor,
+        limit,
+        { decode: true },
+      ],
+    });
+
+    const moduleInfo = result as unknown as ObjectStateView[]
+    const moduleMap = new Map<string, string>();
+
+    if (moduleInfo && typeof moduleInfo === 'object' && 'data' in moduleInfo) {
+      const { data } = moduleInfo;
+      if (Array.isArray(data)) {
+        for (const item of data) {
+          const { state } = item;
+          const decodedValue = state?.decoded_value;
+
+          if (decodedValue) {
+            const { value } = decodedValue;
+            const name = value?.name;
+            const byte_codes = value?.value?.value?.byte_codes;
+            if (name && byte_codes) {
+              moduleMap.set(name, byte_codes);
+            }
+          }
+        }
+      }
+    }
+
+    return moduleMap;
   }
 
   async getSessionKeys({
