@@ -16,7 +16,7 @@ module rooch_framework::simple_rng {
     const ErrorInvalidU128: u64 = 2;
     const ErrorInvalidSeed: u64 = 3;
 
-    fun seed(): vector<u8> {
+    fun seed_with_count(count: u64): vector<u8> {
         // get sequence number
         let sequence_number = tx_context::sequence_number();
         let sequence_number_bytes = bcs::to_bytes(&sequence_number);
@@ -28,6 +28,9 @@ module rooch_framework::simple_rng {
         // get now milliseconds timestamp
         let timestamp_ms = timestamp::now_milliseconds();
         let timestamp_ms_bytes = bcs::to_bytes(&timestamp_ms);
+
+        // get count bytes
+        let count_bytes = bcs::to_bytes(&count);
 
         // construct a seed
         let seed_bytes = vector::empty<u8>();
@@ -49,6 +52,7 @@ module rooch_framework::simple_rng {
         vector::append(&mut seed_bytes, timestamp_ms_bytes);
         vector::append(&mut seed_bytes, sender_addr_bytes);
         vector::append(&mut seed_bytes, sequence_number_bytes);
+        vector::append(&mut seed_bytes, count_bytes);
 
         // hash seed bytes and return a seed
         let seed = hash::sha3_256(seed_bytes);
@@ -77,13 +81,25 @@ module rooch_framework::simple_rng {
 
     /// Generate a random u64 from seed
     public fun rand_u64(): u64 {
-        let seed_bytes = seed();
+        let seed_bytes = seed_with_count(0);
+        bytes_to_u64(seed_bytes)
+    }
+
+    /// Generate a random u64 value with a count parameter to ensure unique randomness within a transaction.
+    public fun rand_u64_with_count(count: u64): u64 {
+        let seed_bytes = seed_with_count(count);
         bytes_to_u64(seed_bytes)
     }
 
     /// Generate a random u128 from seed
     public fun rand_u128(): u128 {
-        let seed_bytes = seed();
+        let seed_bytes = seed_with_count(0);
+        bytes_to_u128(seed_bytes)
+    }
+
+    /// Generate a random u128 value with a count parameter to ensure unique randomness within a transaction.
+    public fun rand_u128_with_count(count: u64): u128 {
+        let seed_bytes = seed_with_count(count);
         bytes_to_u128(seed_bytes)
     }
 
@@ -94,10 +110,24 @@ module rooch_framework::simple_rng {
         (value % (high - low)) + low
     }
 
+    /// Generate a random integer range in [low, high) for u64 with count.
+    public fun rand_u64_range_with_count(low: u64, high: u64, count: u64): u64 {
+        assert!(high > low, ErrorInvalidArg);
+        let value = rand_u64_with_count(count);
+        (value % (high - low)) + low
+    }
+
     /// Generate a random integer range in [low, high) for u128.
     public fun rand_u128_range(low: u128, high: u128): u128 {
         assert!(high > low, ErrorInvalidArg);
         let value = rand_u128();
+        (value % (high - low)) + low
+    }
+
+    /// Generate a random integer range in [low, high) for u128 with count.
+    public fun rand_u128_range_with_count(low: u128, high: u128, count: u64): u128 {
+        assert!(high > low, ErrorInvalidArg);
+        let value = rand_u128_with_count(count);
         (value % (high - low)) + low
     }
 
@@ -170,19 +200,108 @@ module rooch_framework::simple_rng {
         let tx_hash = tx_context::tx_hash();
         let tx_hash_bytes = bcs::to_bytes(&tx_hash);
 
+        // Mock count
+        let count = 0;
+        let count_bytes = bcs::to_bytes(&count);
+
         // Constructing the expected seed bytes
         let expected_seed_bytes = vector::empty<u8>();
         vector::append(&mut expected_seed_bytes, tx_hash_bytes);
         vector::append(&mut expected_seed_bytes, timestamp_ms_bytes);
         vector::append(&mut expected_seed_bytes, sender_addr_bytes);
         vector::append(&mut expected_seed_bytes, sequence_number_bytes);
+        vector::append(&mut expected_seed_bytes, count_bytes);
 
         // Hashing the expected seed bytes to get the expected seed
         let expected_seed = hash::sha3_256(expected_seed_bytes);
 
         // Call the seed function and check the result
-        let seed_bytes = seed();
+        let seed_bytes = seed_with_count(0);
 
         assert!(seed_bytes == expected_seed, ErrorInvalidSeed);
     }
+
+    #[test]
+    fun test_rand_u64_with_count_basic() {
+        let value = rand_u64_with_count(0);
+        // Assert that the value is a valid u64
+        assert!(value >= 0, ErrorInvalidU64);
+    }
+
+    #[test]
+    fun test_rand_u64_with_count_different_counts() {
+        let value1 = rand_u64_with_count(1);
+        let value2 = rand_u64_with_count(2);
+        // Assert that different counts produce different results
+        assert!(value1 != value2, ErrorInvalidU64);
+    }
+
+    #[test]
+    fun test_rand_u64_with_count_boundary_values() {
+        let u64_max = 18446744073709551615u64;
+        let min_value = rand_u64_with_count(0);
+        let max_value = rand_u64_with_count(u64_max);
+
+        // Assert that both values are valid u64
+        assert!(min_value >= 0, ErrorInvalidU64);
+        assert!(max_value >= 0, ErrorInvalidU64);
+    }
+
+    #[test]
+    fun test_rand_u64_with_count_consistency() {
+        let value1 = rand_u64_with_count(5);
+        let value2 = rand_u64_with_count(5);
+        // Assert that same count produces the same result
+        assert!(value1 == value2, ErrorInvalidU64);
+    }
+
+    #[test]
+    fun test_rand_u128_with_count_basic() {
+        let value = rand_u128_with_count(0);
+        // Assert that the value is a valid u128
+        assert!(value >= 0, ErrorInvalidU128);
+    }
+
+    #[test]
+    fun test_rand_u128_with_count_different_counts() {
+        let value1 = rand_u128_with_count(1);
+        let value2 = rand_u128_with_count(2);
+        // Assert that different counts produce different results
+        assert!(value1 != value2, ErrorInvalidU128);
+    }
+
+    #[test]
+    fun test_rand_u128_with_count_boundary_values() {
+        let u64_max = 18446744073709551615u64;
+        let min_value = rand_u128_with_count(0);
+        let max_value = rand_u128_with_count(u64_max);
+        // Assert that both values are valid u128
+        assert!(min_value >= 0, ErrorInvalidU128);
+        assert!(max_value >= 0, ErrorInvalidU128);
+    }
+
+    #[test]
+    fun test_rand_u128_with_count_consistency() {
+        let value1 = rand_u128_with_count(5);
+        let value2 = rand_u128_with_count(5);
+        // Assert that same count produces the same result
+        assert!(value1 == value2, ErrorInvalidU128);
+    }
+
+    #[test]
+    fun test_rand_u64_range_with_count_within_range() {
+        let low = 10;
+        let high = 100;
+        let value = rand_u64_range_with_count(low, high, 0);
+        assert!(value >= low && value < high, ErrorInvalidU64);
+    }
+
+    #[test]
+    fun test_rand_u128_range_with_count_within_range() {
+        let low = 1000;
+        let high = 10000;
+        let value = rand_u128_range_with_count(low, high, 0);
+        assert!(value >= low && value < high, ErrorInvalidU128);
+    }
+
 }

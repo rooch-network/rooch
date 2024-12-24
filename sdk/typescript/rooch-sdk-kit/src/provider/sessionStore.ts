@@ -3,7 +3,7 @@
 
 import { createStore } from 'zustand'
 import { createJSONStorage, persist, StateStorage } from 'zustand/middleware'
-import { Session } from '@roochnetwork/rooch-sdk'
+import { CreateSessionArgs, Session } from '@roochnetwork/rooch-sdk'
 
 export type SessionActions = {
   addSession: (session: Session) => void
@@ -14,21 +14,24 @@ export type SessionActions = {
 export type SessionStoreState = {
   sessions: Session[]
   currentSession: Session | null
+  sessionConf: CreateSessionArgs | undefined
 } & SessionActions
 
 export type SessionStore = ReturnType<typeof createSessionStore>
 
-type ClientConfiguration = {
+type SessionConfiguration = {
   storage: StateStorage
   storageKey: string
+  sessionConf?: CreateSessionArgs
 }
 
-export function createSessionStore({ storage, storageKey }: ClientConfiguration) {
+export function createSessionStore({ storage, storageKey, sessionConf }: SessionConfiguration) {
   return createStore<SessionStoreState>()(
     persist(
       (set, get) => ({
         sessions: [],
         currentSession: null,
+        sessionConf: sessionConf,
         addSession(session) {
           const cache = get().sessions
           cache.push(session)

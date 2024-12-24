@@ -6,8 +6,8 @@ import { useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit';
 import { Box, Card, Skeleton, CardHeader, Typography, CardContent } from '@mui/material';
 
 import { EmptyContent } from 'src/components/empty-content/empty-content';
+
 import { shortAddress } from "../../../utils/address";
-import { fNumber } from "../../../utils/format-number";
 
 export default function BBLlList({ address }: { address: string }) {
   const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 10 });
