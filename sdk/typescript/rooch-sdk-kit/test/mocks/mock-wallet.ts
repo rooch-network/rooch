@@ -18,6 +18,7 @@ import {
 import { SupportChain } from '../../src/feature/index.js'
 import { Wallet } from '../../src/wellet/wallet.js'
 import { Mock, vi } from 'vitest'
+import { WalletNetworkType } from '../../src/index.js'
 
 export class MockBitcoinWallet extends Wallet {
   private kp: Keypair
@@ -55,8 +56,8 @@ export class MockBitcoinWallet extends Wallet {
     return 'mock'
   }
 
-  getNetwork(): string {
-    return 'testnet'
+  getNetwork(): Promise<WalletNetworkType> {
+    return Promise.resolve('testnet')
   }
 
   getPublicKey(): PublicKey<Address> {
@@ -67,7 +68,7 @@ export class MockBitcoinWallet extends Wallet {
     return this.kp.getRoochAddress()
   }
 
-  getSupportNetworks(): string[] {
+  getSupportNetworks(): WalletNetworkType[] {
     return ['testnet', 'livenet']
   }
 
@@ -98,7 +99,9 @@ export class MockBitcoinWallet extends Wallet {
 
   switchAccount(_: string): void {}
 
-  switchNetwork(_: string): void {}
+  switchNetwork(_: string): Promise<void> {
+    return Promise.resolve()
+  }
 
   getDescription(): string {
     return ''
@@ -110,5 +113,17 @@ export class MockBitcoinWallet extends Wallet {
 
   getInstallUrl(): string {
     return ''
+  }
+
+  sendBtc(input: {
+    toAddress: string
+    satoshis: number
+    options?: { feeRate: number }
+  }): Promise<string> {
+    throw new Error('Method not implemented.')
+  }
+
+  getBalance(): Promise<{ confirmed: number; unconfirmed: number; total: string }> {
+    throw new Error('Method not implemented.')
   }
 }

@@ -84,6 +84,7 @@ const client = new RoochClient({
 const tx = new Transaction()
 tx.callFunction({
   target: '0x3::empty::empty_with_signer',
+  maxGas: 100000000 // 1RGas, DEFAULT_GAS 50000000 = 0.5RGas
 })
 
 const result = await client.signAndExecuteTransaction({

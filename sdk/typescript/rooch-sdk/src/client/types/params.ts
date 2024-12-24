@@ -11,6 +11,7 @@
  */
 
 import type * as RpcTypes from './generated.js'
+import type { address } from '../../types/index.js'
 /** Broadcast a Bitcoin transaction */
 export interface BroadcastTXParams {
   hex: string
@@ -48,12 +49,12 @@ export interface ExecuteViewFunctionParams {
 }
 /** get account balance by RoochAddress and CoinType */
 export interface GetBalanceParams {
-  owner: string
+  owner: address
   coinType: string
 }
 /** get account balances by RoochAddress */
 export interface GetBalancesParams {
-  owner: string
+  owner: address
   cursor?: RpcTypes.IndexerStateIDView | null | undefined
   limit?: string | null | undefined
 }
