@@ -6,7 +6,7 @@ use moveos_store::transaction_store::{TransactionDBStore, TransactionStore};
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::object::ObjectMeta;
 use moveos_types::transaction::TransactionExecutionInfo;
-use rooch_common::utils::vec::find_last_true;
+use rooch_common::vec::find_last_true;
 use rooch_config::RoochOpt;
 use rooch_db::RoochDB;
 use rooch_types::da::chunk::chunk_from_segments;
