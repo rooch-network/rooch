@@ -21,6 +21,7 @@ tracing = { workspace = true }
 bitcoin = { workspace = true }
 bitcoincore-rpc = { workspace = true }
 hex = { workspace = true }
+indexmap = { workspace = true }
 prometheus = { workspace = true }
 
 move-core-types = { workspace = true }

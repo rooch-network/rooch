@@ -82,6 +82,7 @@ impl RelayerActor {
                 &bitcoin_config.btc_rpc_url,
                 &bitcoin_config.btc_rpc_user_name,
                 &bitcoin_config.btc_rpc_password,
+                None, // for relayer, only store, no need to get from local
             )?;
             let bitcoin_client_actor_ref =
                 ctx.spawn("bitcoin_client".into(), bitcoin_client).await?;

@@ -1,4 +1,5 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-pub mod file_cache;
+mod file_cache;
+pub use file_cache::*;

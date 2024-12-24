@@ -14,7 +14,7 @@ use moveos_types::move_std::string::MoveString;
 use moveos_types::moveos_std::object::{ObjectID, ObjectMeta};
 use moveos_types::moveos_std::simple_multimap::{Element, SimpleMultiMap};
 use moveos_types::state::{FieldKey, MoveType, ObjectState};
-use rooch_common::fs::file_cache::FileCacheManager;
+use rooch_common::fs::FileCacheManager;
 use rooch_config::RoochOpt;
 use rooch_db::RoochDB;
 use rooch_types::bitcoin::ord::{Inscription, InscriptionID};

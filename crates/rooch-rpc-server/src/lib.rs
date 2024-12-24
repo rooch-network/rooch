@@ -353,6 +353,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
             btc_rpc_url: config.btc_rpc_url.clone(),
             btc_rpc_user_name: config.btc_rpc_user_name.clone(),
             btc_rpc_password: config.btc_rpc_password.clone(),
+            local_block_store_dir: Some(config.btc_reorg_aware_block_store_dir.clone()), // this client will be used for startup processing, may need reorg blocks
         });
     let bitcoin_client_proxy = if service_status.is_active() && bitcoin_client_config.is_some() {
         let bitcoin_client = bitcoin_client_config.unwrap().build()?;

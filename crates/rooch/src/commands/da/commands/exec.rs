@@ -68,6 +68,8 @@ pub struct ExecCommand {
     pub btc_rpc_user_name: String,
     #[clap(long = "btc-rpc-password")]
     pub btc_rpc_password: String,
+    #[clap(long = "btc-local-block-store-dir")]
+    pub btc_local_block_store_dir: Option<PathBuf>,
 
     #[clap(long = "enable-rocks-stats", help = "rocksdb-enable-statistics")]
     pub enable_rocks_stats: bool,
@@ -97,6 +99,7 @@ impl ExecCommand {
             self.btc_rpc_url.clone(),
             self.btc_rpc_user_name.clone(),
             self.btc_rpc_password.clone(),
+            self.btc_local_block_store_dir.clone(),
             &actor_system,
         )
         .await?;
@@ -483,12 +486,14 @@ async fn build_btc_client_proxy(
     btc_rpc_url: String,
     btc_rpc_user_name: String,
     btc_rpc_password: String,
+    btc_local_block_store_dir: Option<PathBuf>,
     actor_system: &ActorSystem,
 ) -> anyhow::Result<BitcoinClientProxy> {
     let bitcoin_client_config = BitcoinClientConfig {
         btc_rpc_url,
         btc_rpc_user_name,
         btc_rpc_password,
+        local_block_store_dir: btc_local_block_store_dir,
     };
 
     let bitcoin_client = bitcoin_client_config.build()?;
