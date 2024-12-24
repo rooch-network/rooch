@@ -16,6 +16,8 @@ module rooch_framework::session_key {
     friend rooch_framework::transaction_validator;
     friend rooch_framework::session_validator;
 
+    const MAX_INACTIVE_INTERVAL: u64 = 3600 * 24 * 30; // 30 days
+
     /// Create session key in this context is not allowed
     const ErrorSessionKeyCreatePermissionDenied: u64 = 1;
     /// The session key already exists
@@ -24,6 +26,8 @@ module rooch_framework::session_key {
     const ErrorSessionKeyIsInvalid: u64 = 3;
     /// The lengths of the parts of the session's scope do not match.
     const ErrorSessionScopePartLengthNotMatch: u64 = 4;
+    /// The max inactive interval is invalid
+    const ErrorInvalidMaxInactiveInterval: u64 = 5;
 
     /// The session's scope
     struct SessionScope has store,copy,drop {
@@ -115,6 +119,8 @@ module rooch_framework::session_key {
 
         //Can not create new session key by the other session key
         assert!(!auth_validator::is_validate_via_session_key(), ErrorSessionKeyCreatePermissionDenied);
+        assert!(max_inactive_interval <= MAX_INACTIVE_INTERVAL, ErrorInvalidMaxInactiveInterval);
+
         let sender_addr = signer::address_of(sender);
         assert!(!exists_session_key(sender_addr, authentication_key), ErrorSessionKeyAlreadyExists);
         let now_seconds = timestamp::now_seconds();

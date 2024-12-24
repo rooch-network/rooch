@@ -80,6 +80,12 @@ module rooch_framework::bitcoin_address {
         }
     }
 
+    public fun empty() : BitcoinAddress {
+        BitcoinAddress {
+            bytes: vector::empty()
+        }
+    }
+
     public fun pay_load_type(addr: &BitcoinAddress): u8 {
         *vector::borrow(&addr.bytes, 0)
     }

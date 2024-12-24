@@ -58,7 +58,7 @@ module rooch_framework::genesis {
         // Some test cases use framework account as sequencer, it may already exist
         if(!moveos_std::account::exists_at(sequencer_addr)){
             account::create_account(sequencer_addr);
-            address_mapping::bind_bitcoin_address(sequencer_addr, genesis_context.sequencer);
+            address_mapping::bind_bitcoin_address_internal(sequencer_addr, genesis_context.sequencer);
         };
         let rooch_dao_address = bitcoin_address::to_rooch_address(&genesis_context.rooch_dao);
 
