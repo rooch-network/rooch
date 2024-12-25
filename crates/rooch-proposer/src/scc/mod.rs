@@ -23,6 +23,8 @@ pub struct StateCommitmentChain {
 impl StateCommitmentChain {
     /// Create a new SCC
     pub fn new(rooch_store: RoochStore, moveos_store: MoveOSStore) -> anyhow::Result<Self> {
+        Self::repair_last_proposed(rooch_store.clone())?;
+
         let last_proposed_block_number = rooch_store.get_last_proposed()?;
 
         let last_proposed_block_accumulator_root: H256 = match last_proposed_block_number {
@@ -43,6 +45,30 @@ impl StateCommitmentChain {
             rooch_store,
             moveos_store,
         })
+    }
+
+    // last_proposed may beyond the DA submitted caused by manual rollback/revert
+    // we need to repair the last proposed block number
+    // invoke it when new scc is created
+    fn repair_last_proposed(rooch_store: RoochStore) -> anyhow::Result<()> {
+        let last_proposed_block_number = rooch_store.get_last_proposed()?;
+        if last_proposed_block_number.is_none() {
+            return Ok(());
+        }
+        let last_proposed = last_proposed_block_number.unwrap();
+
+        let background_submit_block_cursor = rooch_store.get_background_submit_block_cursor()?;
+        match background_submit_block_cursor {
+            Some(background_submit_block_cursor) => {
+                if background_submit_block_cursor < last_proposed {
+                    rooch_store.set_last_proposed(background_submit_block_cursor)?;
+                }
+            }
+            None => {
+                rooch_store.clear_last_proposed()?;
+            }
+        }
+        Ok(())
     }
 
     #[allow(dead_code)]

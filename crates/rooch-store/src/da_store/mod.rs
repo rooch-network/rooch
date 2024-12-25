@@ -111,7 +111,7 @@ impl DAMetaDBStore {
     // 1. submit_state: remove blocks from min_removed_block to last_block_number
     // 2. block_cursor: update last_block_number to min_removed_block - 1
     // 3. background_submit_block_cursor: remove directly
-    fn inner_rollback(&self, mut remove_blocks: Vec<u128>) -> anyhow::Result<()> {
+    pub fn inner_rollback(&self, mut remove_blocks: Vec<u128>) -> anyhow::Result<()> {
         if remove_blocks.is_empty() {
             return Ok(());
         }
@@ -149,6 +149,20 @@ impl DAMetaDBStore {
                     cf_name: DA_BLOCK_CURSOR_COLUMN_FAMILY_NAME.to_string(),
                 };
                 cf_batches.push(last_block_batch);
+
+                // update background_submit_block_cursor
+                let background_submit_block_cursor = self.get_background_submit_block_cursor()?;
+                if let Some(background_submit_block_cursor) = background_submit_block_cursor {
+                    if background_submit_block_cursor > new_last_block_number {
+                        cf_batches.push(WriteBatchCF {
+                            batch: WriteBatch::new_with_rows(vec![(
+                                to_bytes(BACKGROUND_SUBMIT_BLOCK_CURSOR_KEY).unwrap(),
+                                WriteOp::Value(to_bytes(&new_last_block_number).unwrap()),
+                            )]),
+                            cf_name: DA_BLOCK_CURSOR_COLUMN_FAMILY_NAME.to_string(),
+                        });
+                    }
+                }
             }
             None => {
                 let last_block_batch = WriteBatchCF {
@@ -159,29 +173,29 @@ impl DAMetaDBStore {
                     cf_name: DA_BLOCK_CURSOR_COLUMN_FAMILY_NAME.to_string(),
                 };
                 cf_batches.push(last_block_batch);
+
+                // If no block left, remove background_submit_block_cursor directly
+                cf_batches.push(WriteBatchCF {
+                    batch: WriteBatch::new_with_rows(vec![(
+                        to_bytes(BACKGROUND_SUBMIT_BLOCK_CURSOR_KEY).unwrap(),
+                        WriteOp::Deletion,
+                    )]),
+                    cf_name: DA_BLOCK_CURSOR_COLUMN_FAMILY_NAME.to_string(),
+                });
             }
         }
-        // remove background_submit_block_cursor directly, since we could catch up with the last order by background submitter
-        //  will just ignore the blocks that have been submitted
-        cf_batches.push(WriteBatchCF {
-            batch: WriteBatch::new_with_rows(vec![(
-                to_bytes(BACKGROUND_SUBMIT_BLOCK_CURSOR_KEY).unwrap(),
-                WriteOp::Deletion,
-            )]),
-            cf_name: DA_BLOCK_CURSOR_COLUMN_FAMILY_NAME.to_string(),
-        });
 
         inner_store.write_cf_batch(cf_batches, true)?;
         tracing::info!(
             "rollback to block {:?} successfully, removed blocks: [{},{}]",
-            min_block_number_wait_rm,
             remove_blocks,
+            min_block_number_wait_rm,
             last_block_number_wait_rm
         );
         Ok(())
     }
 
-    // generate the blocks need to be removed by tx_order_end > last_order
+    // generate the block need to be removed by tx_order_end > last_order
     pub(crate) fn generate_remove_blocks_after_order(
         &self,
         last_block_number: Option<u128>,
@@ -385,9 +399,10 @@ impl DAMetaDBStore {
                             Some(last_block_number),
                             last_order,
                         )?;
-                        issues += remove_blocks.len();
-                        fixed += remove_blocks.len();
+                        let remove_blocks_len = remove_blocks.len();
+                        issues += remove_blocks_len;
                         self.inner_rollback(remove_blocks)?;
+                        fixed += remove_blocks_len;
                         self.try_repair_blocks(last_order, issues, fixed)
                     }
                     Ordering::Equal => Ok((issues, fixed)),
