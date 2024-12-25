@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 module orderbook::market_v2 {
     use std::option;
-    use std::option::{Option, is_some, destroy_none};
+    use std::option::{Option, is_some, destroy_none, none, some};
     use std::string;
     use std::string::String;
     use std::vector;
@@ -52,6 +52,7 @@ module orderbook::market_v2 {
     const ErrorUnauthorizedCancel: u64 = 8;
     const ErrorOrderLength: u64 = 9;
     const ErrorDeprecated: u64 = 10;
+    const ErrorInvalidAmount: u64 = 11;
 
 
     /// listing info in the market
@@ -352,6 +353,97 @@ module orderbook::market_v2 {
     }
 
 
+    public entry fun buy_with_amount<BaseAsset: key + store, QuoteAsset: key + store>(
+        signer: &signer,
+        market_obj: &mut Object<Marketplace<BaseAsset, QuoteAsset>>,
+        order_id: u64,
+        amount: u256,
+        order_owner: address,
+        assert_order_exist: bool,
+        receiver: address
+    ){
+        let option_coin = do_buy_internal<BaseAsset, QuoteAsset>(signer, market_obj, order_id, amount, order_owner, assert_order_exist, none());
+        if (is_some(&option_coin)) {
+            account_coin_store::deposit(receiver, option::extract(&mut option_coin))
+        };
+        destroy_none(option_coin)
+    }
+
+    public entry fun buy_from_distributor<BaseAsset: key + store, QuoteAsset: key + store>(
+        signer: &signer,
+        market_obj: &mut Object<Marketplace<BaseAsset, QuoteAsset>>,
+        order_id: u64,
+        amount: u256,
+        order_owner: address,
+        assert_order_exist: bool,
+        receiver: address,
+        distributor: address
+    ){
+        let option_coin = do_buy_internal<BaseAsset, QuoteAsset>(signer, market_obj, order_id, amount, order_owner, assert_order_exist, some(distributor));
+        if (is_some(&option_coin)) {
+            account_coin_store::deposit(receiver, option::extract(&mut option_coin))
+        };
+        destroy_none(option_coin)
+    }
+
+
+    public fun do_buy_internal<BaseAsset: key + store, QuoteAsset: key + store>(
+        signer: &signer,
+        market_obj: &mut Object<Marketplace<BaseAsset, QuoteAsset>>,
+        order_id: u64,
+        amount: u256,
+        order_owner: address,
+        assert_order_exist: bool,
+        distributor: Option<address>
+    ): Option<Coin<QuoteAsset>> {
+        let market = object::borrow_mut(market_obj);
+        assert!(market.is_paused == false, ErrorWrongPaused);
+        assert!(market.version == VERSION, ErrorWrongVersion);
+        let usr_open_orders = table::borrow_mut(&mut market.user_order_info, order_owner);
+        let tick_price = *linked_table::borrow(usr_open_orders, order_id);
+        let (tick_exists, tick_index) = find_leaf(&market.asks, tick_price);
+        // Return non-existent orders to none instead of panic during bulk buying
+        if (!assert_order_exist && !tick_exists) {
+            return option::none()
+        };
+        assert!(tick_exists, ErrorInvalidOrderId);
+        let order = borrow_mut_order(&mut market.asks, usr_open_orders, tick_index, order_id, order_owner);
+        assert!(amount <= order.quantity, ErrorInvalidAmount);
+        // TODO here maybe wrap to u512?
+        let total_price = amount * (order.unit_price as u256);
+        let trade_coin = account_coin_store::withdraw<BaseAsset>(signer, total_price);
+        let trade_info = &mut market.trade_info;
+        trade_info.total_volume = trade_info.total_volume + total_price;
+        trade_info.txs = trade_info.txs + 1;
+        if (now_milliseconds() - trade_info.timestamp > 86400000) {
+            trade_info.yesterday_volume = trade_info.today_volume;
+            trade_info.today_volume = total_price;
+            trade_info.timestamp = now_milliseconds();
+        }else {
+            trade_info.today_volume = trade_info.today_volume + total_price;
+        };
+
+        // TODO here maybe wrap to u512?
+        // Here is trade fee is BaseAsset
+        let trade_fee = total_price * market.fee / TRADE_FEE_BASE_RATIO;
+        if (option::is_some(&distributor)){
+            let distributor_address = option::extract(&mut distributor);
+            let trade_fee_coin = coin::extract(&mut trade_coin, trade_fee);
+            let distributor_fee = trade_fee / 2;
+            account_coin_store::deposit(distributor_address, coin::extract(&mut trade_fee_coin, distributor_fee));
+            coin_store::deposit(&mut market.base_asset_trading_fees, trade_fee_coin);
+        }else{
+            coin_store::deposit(&mut market.base_asset_trading_fees, coin::extract(&mut trade_coin, trade_fee));
+        };
+        account_coin_store::deposit(order.owner, trade_coin);
+        order.quantity = order.quantity - amount;
+        if (order.quantity == 0 ) {
+            let _ = remove_order(&mut market.asks, usr_open_orders, tick_index, order_id, order_owner);
+        };
+        option::some(coin_store::withdraw(&mut market.quote_asset, amount))
+    }
+
+
     public entry fun batch_accept_bid<BaseAsset: key + store, QuoteAsset: key + store>(
         signer: &signer,
         market_obj: &mut Object<Marketplace<BaseAsset, QuoteAsset>>,
@@ -427,6 +519,97 @@ module orderbook::market_v2 {
     }
 
 
+    public entry fun accept_bid_with_amount<BaseAsset: key + store, QuoteAsset: key + store>(
+        signer: &signer,
+        market_obj: &mut Object<Marketplace<BaseAsset, QuoteAsset>>,
+        order_id: u64,
+        amount: u256,
+        order_owner: address,
+        assert_order_exist: bool,
+        receiver: address
+    ){
+        let option_coin = do_accept_bid_internal<BaseAsset, QuoteAsset>(signer, market_obj, order_id, amount, order_owner, assert_order_exist, none());
+        if (is_some(&option_coin)) {
+            account_coin_store::deposit(receiver, option::extract(&mut option_coin))
+        };
+        destroy_none(option_coin)
+    }
+
+    public entry fun accept_bid_from_distributor<BaseAsset: key + store, QuoteAsset: key + store>(
+        signer: &signer,
+        market_obj: &mut Object<Marketplace<BaseAsset, QuoteAsset>>,
+        order_id: u64,
+        amount: u256,
+        order_owner: address,
+        assert_order_exist: bool,
+        receiver: address,
+        distributor: address
+    ){
+        let option_coin = do_accept_bid_internal<BaseAsset, QuoteAsset>(signer, market_obj, order_id, amount, order_owner, assert_order_exist, some(distributor));
+        if (is_some(&option_coin)) {
+            account_coin_store::deposit(receiver, option::extract(&mut option_coin))
+        };
+        destroy_none(option_coin)
+    }
+
+    public fun do_accept_bid_internal<BaseAsset: key + store, QuoteAsset: key + store>(
+        signer: &signer,
+        market_obj: &mut Object<Marketplace<BaseAsset, QuoteAsset>>,
+        order_id: u64,
+        amount: u256,
+        order_owner: address,
+        assert_order_exist: bool,
+        distributor: Option<address>
+    ): Option<Coin<BaseAsset>>
+    {
+        let market = object::borrow_mut(market_obj);
+        assert!(market.is_paused == false, ErrorWrongPaused);
+        assert!(market.version == VERSION, ErrorWrongVersion);
+        let usr_open_orders = table::borrow_mut(&mut market.user_order_info, order_owner);
+        let tick_price = *linked_table::borrow(usr_open_orders, order_id);
+        let (tick_exists, tick_index) = find_leaf(&market.bids, tick_price);
+        // Return non-existent orders to none instead of panic during bulk buying
+        if (!assert_order_exist && !tick_exists) {
+            return option::none()
+        };
+        assert!(tick_exists, ErrorInvalidOrderId);
+
+        let order = borrow_mut_order(&mut market.bids, usr_open_orders, tick_index, order_id, order_owner);
+        assert!(order.quantity >= amount, ErrorInvalidAmount);
+        let trade_coin = account_coin_store::withdraw<QuoteAsset>(signer, amount);
+        // TODO here maybe wrap to u512?
+        let total_price = (order.unit_price as u256) * amount;
+        let trade_info = &mut market.trade_info;
+
+        trade_info.total_volume = trade_info.total_volume + total_price;
+        if (now_milliseconds() - trade_info.timestamp > 86400000) {
+            trade_info.yesterday_volume = trade_info.today_volume;
+            trade_info.today_volume = total_price;
+            trade_info.timestamp = now_milliseconds();
+        }else {
+            trade_info.today_volume = trade_info.today_volume + total_price;
+        };
+
+        // Here trade fee is QuoteAsset
+        let trade_fee = amount * market.fee / TRADE_FEE_BASE_RATIO;
+        if (option::is_some(&distributor)){
+            let distributor_address = option::extract(&mut distributor);
+            let trade_fee_coin = coin::extract(&mut trade_coin, trade_fee);
+            let distributor_fee = trade_fee / 2;
+            account_coin_store::deposit(distributor_address, coin::extract(&mut trade_fee_coin, distributor_fee));
+            coin_store::deposit(&mut market.quote_asset_trading_fees, trade_fee_coin);
+        }else{
+            coin_store::deposit(&mut market.quote_asset_trading_fees, coin::extract(&mut trade_coin, trade_fee));
+        };
+        account_coin_store::deposit(order.owner, trade_coin);
+        order.quantity = order.quantity - amount;
+        if (order.quantity == 0) {
+            let _ = remove_order(&mut market.bids, usr_open_orders, tick_index, order_id, order_owner);
+        };
+        option::some(coin_store::withdraw(&mut market.base_asset, total_price))
+    }
+
+
 
     public entry fun withdraw_profits<BaseAsset: key + store, QuoteAsset: key + store>(
         _admin: &mut Object<AdminCap>,
@@ -487,6 +670,26 @@ module orderbook::market_v2 {
         if (linked_table::is_empty(&mut_tick_level.open_orders)) {
             destroy_empty_level(remove_leaf_by_index(open_orders, tick_index));
         };
+        order
+    }
+
+
+    fun borrow_mut_order(
+        open_orders: &mut CritbitTree<TickLevel>,
+        user_order_info: &mut LinkedTable<u64, u64>,
+        tick_index: u64,
+        order_id: u64,
+        user: address,
+    ): &mut Order {
+        linked_table::remove(user_order_info, order_id);
+        let tick_level = borrow_leaf_by_index(open_orders, tick_index);
+        assert!(linked_table::contains(&tick_level.open_orders, order_id), ErrorInvalidOrderId);
+        let mut_tick_level = borrow_mut_leaf_by_index(open_orders, tick_index);
+        let order = linked_table::borrow_mut(&mut mut_tick_level.open_orders, order_id);
+        assert!(order.owner == user, ErrorUnauthorizedCancel);
+        // if (linked_table::is_empty(&mut_tick_level.open_orders)) {
+        //     destroy_empty_level(remove_leaf_by_index(open_orders, tick_index));
+        // };
         order
     }
 
