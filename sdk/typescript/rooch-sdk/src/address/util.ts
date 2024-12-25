@@ -49,7 +49,7 @@ export function decodeToPackageAddressStr(input: address): string {
     return packageAddressStr.slice(2);
   }
 
-  return decodeToPackageAddressStr(input)
+  throw Error('Invalid Address')
 }
 
 export function convertToRoochAddressBytes(input: address): Bytes {
