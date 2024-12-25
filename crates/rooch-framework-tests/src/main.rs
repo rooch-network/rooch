@@ -49,6 +49,7 @@ async fn main() -> Result<()> {
         &opts.btc_rpc_url,
         &opts.btc_rpc_username,
         &opts.btc_rpc_password,
+        None,
     )?;
     let bitcoin_client_actor_ref = bitcoin_client
         .into_actor(Some("bitcoin_client_for_rpc_service"), &actor_system)

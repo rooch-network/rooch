@@ -11,6 +11,8 @@ use async_trait::async_trait;
 use bitcoin::Transaction;
 use bitcoincore_rpc::{bitcoin::Txid, json, Auth, Client, RpcApi};
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
+use std::fs;
+use std::path::PathBuf;
 use tokio::time::{sleep, Duration};
 use tracing::warn;
 
@@ -18,12 +20,14 @@ pub struct BitcoinClientActor {
     rpc_client: Client,
     max_retries: u32,
     retry_delay: Duration,
+    reorg_block_store_dir: Option<PathBuf>,
 }
 
 pub struct BitcoinClientConfig {
     pub btc_rpc_url: String,
     pub btc_rpc_user_name: String,
     pub btc_rpc_password: String,
+    pub local_block_store_dir: Option<PathBuf>,
 }
 
 impl BitcoinClientConfig {
@@ -32,12 +36,18 @@ impl BitcoinClientConfig {
             &self.btc_rpc_url,
             &self.btc_rpc_user_name,
             &self.btc_rpc_password,
+            self.local_block_store_dir.clone(),
         )
     }
 }
 
 impl BitcoinClientActor {
-    pub fn new(btc_rpc_url: &str, btc_rpc_user_name: &str, btc_rpc_password: &str) -> Result<Self> {
+    pub fn new(
+        btc_rpc_url: &str,
+        btc_rpc_user_name: &str,
+        btc_rpc_password: &str,
+        local_block_store_dir: Option<PathBuf>,
+    ) -> Result<Self> {
         let rpc_client = Client::new(
             btc_rpc_url,
             Auth::UserPass(btc_rpc_user_name.to_owned(), btc_rpc_password.to_owned()),
@@ -46,6 +56,7 @@ impl BitcoinClientActor {
             rpc_client,
             max_retries: 3,
             retry_delay: Duration::from_secs(1),
+            reorg_block_store_dir: local_block_store_dir,
         })
     }
 
@@ -88,7 +99,39 @@ impl Handler<GetBlockMessage> for BitcoinClientActor {
         _ctx: &mut ActorContext,
     ) -> Result<bitcoin::Block> {
         let GetBlockMessage { hash } = msg;
-        Ok(self.retry(|| self.rpc_client.get_block(&hash)).await?)
+
+        let rpc_ret = self.retry(|| self.rpc_client.get_block(&hash)).await;
+        if let Ok(block) = rpc_ret {
+            return Ok(block);
+        }
+
+        let rpc_err = rpc_ret.err().unwrap(); // Safe unwrap because we are in the Err branch
+        warn!("Failed to fetch block via RPC ({hash:?}): {rpc_err}");
+
+        if let Some(store_dir) = self.reorg_block_store_dir.clone() {
+            let block_file_path = store_dir.join(hash.to_string());
+            return match fs::read_to_string(&block_file_path) {
+                Ok(block_data) => match bitcoin::consensus::encode::deserialize_hex(&block_data) {
+                    Ok(block) => Ok(block),
+                    Err(err) => {
+                        warn!("Failed to deserialize block from local file ({block_file_path:?}): {err}");
+                        Err(anyhow::anyhow!(
+                                "Failed to fetch block: RPC failed with {rpc_err}, local file deserialization failed with {err}"
+                            ))
+                    }
+                },
+                Err(err) => {
+                    warn!("Failed to read block from local file ({block_file_path:?}): {err}");
+                    Err(anyhow::anyhow!(
+                        "Failed to fetch block: RPC failed with {rpc_err}, local file read failed with {err}"
+                    ))
+                }
+            };
+        }
+
+        Err(anyhow::anyhow!(
+            "Failed to fetch block: RPC failed with {rpc_err}, and no local store directory is configured"
+        ))
     }
 }
 
