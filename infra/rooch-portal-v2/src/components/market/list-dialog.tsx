@@ -25,6 +25,7 @@ import {
 
 import { toDust, fromDust, formatNumber } from 'src/utils/number';
 
+import { NETWORK_PACKAGE } from 'src/config/trade';
 import { warning, secondary } from 'src/theme/core';
 import { TESTNET_ORDERBOOK_PACKAGE } from 'src/config/constant';
 
@@ -226,12 +227,17 @@ export default function ListDialog({
             if (!fromCoinBalanceInfo || !toCoinBalanceInfo) {
               return;
             }
+            console.log(
+              '🚀 ~ file: list-dialog.tsx:228 ~ toCoinBalanceInfo:',
+              toCoinBalanceInfo,
+              tick
+            );
             const tx = new Transaction();
 
             tx.callFunction({
               target: `${TESTNET_ORDERBOOK_PACKAGE}::market_v2::list`,
               args: [
-                Args.objectId('0x156d9a5bfa4329f999115b5febde94eed4a37cde10637ad8eed1ba91e89e0bb7'),
+                Args.objectId(NETWORK_PACKAGE.testnet.tickInfo[tick].MARKET_OBJECT_ID),
                 Args.u256(
                   BigInt(
                     new BigNumber(
@@ -247,10 +253,7 @@ export default function ListDialog({
                   )
                 ),
               ],
-              typeArgs: [
-                '0x3::gas_coin::RGas',
-                '0x1d6f6657fc996008a1e43b8c13805e969a091560d4cea57b1db9f3ce4450d977::fixed_supply_coin::FSC',
-              ],
+              typeArgs: ['0x3::gas_coin::RGas', toCoinBalanceInfo.coin_type],
             });
             signAndExecuteTransaction(
               {
