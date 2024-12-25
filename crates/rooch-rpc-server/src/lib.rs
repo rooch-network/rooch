@@ -18,7 +18,7 @@ use coerce::actor::{system::ActorSystem, IntoActor};
 use jsonrpsee::RpcModule;
 use moveos_eventbus::bus::EventBus;
 use raw_store::errors::RawStoreError;
-use rooch_config::da_config::derive_genesis_namespace;
+use rooch_config::da_config::derive_namespace_from_genesis;
 use rooch_config::server_config::ServerConfig;
 use rooch_config::settings::PROPOSER_CHECK_INTERVAL;
 use rooch_config::{RoochOpt, ServerOpt};
@@ -296,8 +296,8 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     let sequencer_proxy = SequencerProxy::new(sequencer.into());
 
     // Init DA
-    let genesis_bytes = genesis.encode();
-    let genesis_namespace = derive_genesis_namespace(&genesis_bytes);
+    let genesis_hash = genesis.genesis_hash();
+    let genesis_namespace = derive_namespace_from_genesis(genesis_hash);
     let last_tx_order = sequencer_proxy.get_sequencer_order().await?;
     let (da_issues, da_fixed) = rooch_store.try_repair_da_meta(last_tx_order, false)?;
     info!("DA meta issues: {:?}, fixed: {:?}", da_issues, da_fixed);
