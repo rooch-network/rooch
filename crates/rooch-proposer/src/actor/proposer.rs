@@ -42,6 +42,7 @@ impl ProposerActor {
                 rooch_store.set_last_proposed(init_offset - 1)?;
             }
         };
+
         let scc = StateCommitmentChain::new(rooch_store, moveos_store)?;
 
         Ok(Self {
