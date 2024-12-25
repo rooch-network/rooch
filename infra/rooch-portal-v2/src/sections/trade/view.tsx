@@ -32,9 +32,9 @@ import { fromDust } from 'src/utils/number';
 import { fNumber } from 'src/utils/format-number';
 import { sleep, shortCoinType } from 'src/utils/common';
 
-import { SUI_DECIMALS } from 'src/config/trade';
 import { grey, secondary } from 'src/theme/core';
 import { TESTNET_ORDERBOOK_PACKAGE } from 'src/config/constant';
+import { SUI_DECIMALS, NETWORK_PACKAGE } from 'src/config/trade';
 
 import { Iconify } from 'src/components/iconify';
 import ListDialog from 'src/components/market/list-dialog';
@@ -51,6 +51,7 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
   const { tick: marketplaceTick }: { tick: string } = params;
 
   const tickLowerCase = useMemo(() => marketplaceTick.toLowerCase(), [marketplaceTick]);
+  console.log('🚀 ~ file: view.tsx:54 ~ MarketplaceView ~ tickLowerCase:', tickLowerCase);
 
   const tickUpperCase = useMemo(() => marketplaceTick.toUpperCase(), [marketplaceTick]);
 
@@ -155,6 +156,7 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
   }>();
 
   const getListData = useCallback(async () => {
+    if (!toCoinBalanceInfo) return;
     setLoadingList(true);
     try {
       const fromPrice = 0;
@@ -162,28 +164,53 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
       const res = await client.executeViewFunction({
         target: `${TESTNET_ORDERBOOK_PACKAGE}::market_v2::query_order_info`,
         args: [
-          Args.objectId('0x156d9a5bfa4329f999115b5febde94eed4a37cde10637ad8eed1ba91e89e0bb7'),
+          Args.objectId(NETWORK_PACKAGE.testnet.tickInfo[marketplaceTick].MARKET_OBJECT_ID),
           Args.bool(false),
           Args.u64(fromPrice < 0 ? 0n : BigInt(fromPrice)),
           Args.bool(true),
           Args.u64(start < 0 ? 0n : BigInt(start)),
         ],
-        typeArgs: [
-          '0x3::gas_coin::RGas',
-          '0x1d6f6657fc996008a1e43b8c13805e969a091560d4cea57b1db9f3ce4450d977::fixed_supply_coin::FSC',
-        ],
+        typeArgs: ['0x3::gas_coin::RGas', toCoinBalanceInfo.coin_type],
       });
-      const decodedValue = res.return_values?.[0]?.decoded_value as AnnotatedMoveStructView[];
-      const marketItemList = decodedValue.map((i) => i.value) as unknown as MarketItem[];
+      const decodedValue = res.return_values?.[0]?.decoded_value as AnnotatedMoveStructView;
+      console.log('🚀 ~ file: view.tsx:185 ~ getListData ~ decodedValue:', decodedValue);
+      //   {
+      //     "abilities": 7,
+      //     "type": "0x701c21bf1c8cd5af8c42983890d8ca55e7a820171b8e744c13f2d9998bf76cc3::market_v2::OrderInfo",
+      //     "field": [
+      //         "order_id",
+      //         "unit_price",
+      //         "quantity",
+      //         "owner",
+      //         "is_bid"
+      //     ],
+      //     "value": [
+      //         [
+      //             "9223372036854775808",
+      //             "1000",
+      //             "1022000000",
+      //             "0xcf81bf481d9a396fc7c0854b8b33d2ababe11394c0d486957b177e7280b0e340",
+      //             false
+      //         ]
+      //     ]
+      // }
+      const marketItemList = (decodedValue.value as unknown as any[]).map((i) => ({
+        order_id: i[0],
+        unit_price: i[1],
+        quantity: i[2],
+        owner: i[3],
+        is_bid: i[4],
+      })) as unknown as MarketItem[];
       setMarketList(marketItemList);
     } catch (error) {
       console.log('🚀 ~ file: view.tsx:231 ~ getListData ~ error:', error);
     } finally {
       setLoadingList(false);
     }
-  }, [client]);
+  }, [client, marketplaceTick, toCoinBalanceInfo]);
 
   const getBidData = useCallback(async () => {
+    if (!toCoinBalanceInfo) return;
     setLoadingList(true);
     try {
       const fromPrice = 0;
@@ -191,31 +218,63 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
       const res = await client.executeViewFunction({
         target: `${TESTNET_ORDERBOOK_PACKAGE}::market_v2::query_order_info`,
         args: [
-          Args.objectId('0x156d9a5bfa4329f999115b5febde94eed4a37cde10637ad8eed1ba91e89e0bb7'),
+          Args.objectId(NETWORK_PACKAGE.testnet.tickInfo[marketplaceTick].MARKET_OBJECT_ID),
           Args.bool(true),
           Args.u64(fromPrice < 0 ? 0n : BigInt(fromPrice)),
           Args.bool(true),
           Args.u64(start < 0 ? 0n : BigInt(start)),
         ],
-        typeArgs: [
-          '0x3::gas_coin::RGas',
-          '0x1d6f6657fc996008a1e43b8c13805e969a091560d4cea57b1db9f3ce4450d977::fixed_supply_coin::FSC',
-        ],
+        typeArgs: ['0x3::gas_coin::RGas', toCoinBalanceInfo.coin_type],
       });
-      const decodedValue = res.return_values?.[0]?.decoded_value as AnnotatedMoveStructView[];
-      const marketItemList = decodedValue.map((i) => i.value) as unknown as BidItem[];
+      console.log('🚀 ~ file: view.tsx:180 ~ getBidData ~ marketItemList:', res);
+      const decodedValue = res.return_values?.[0]?.decoded_value as AnnotatedMoveStructView;
+      //   {
+      //     "abilities": 7,
+      //     "type": "0x701c21bf1c8cd5af8c42983890d8ca55e7a820171b8e744c13f2d9998bf76cc3::market_v2::OrderInfo",
+      //     "field": [
+      //         "order_id",
+      //         "unit_price",
+      //         "quantity",
+      //         "owner",
+      //         "is_bid"
+      //     ],
+      //     "value": [
+      //         [
+      //             "2",
+      //             "1000",
+      //             "222",
+      //             "0xcf81bf481d9a396fc7c0854b8b33d2ababe11394c0d486957b177e7280b0e340",
+      //             true
+      //         ],
+      //         [
+      //             "1",
+      //             "100",
+      //             "122",
+      //             "0xcf81bf481d9a396fc7c0854b8b33d2ababe11394c0d486957b177e7280b0e340",
+      //             true
+      //         ]
+      //     ]
+      // }
+      const marketItemList = (decodedValue.value as unknown as any[]).map((i) => ({
+        order_id: i[0],
+        unit_price: i[1],
+        quantity: i[2],
+        owner: i[3],
+        is_bid: i[4],
+      })) as unknown as BidItem[];
+      console.log('🚀 ~ file: view.tsx:203 ~ getBidData ~ marketItemList:', marketItemList);
       setBidList(marketItemList);
     } catch (error) {
       console.log('🚀 ~ file: view.tsx:260 ~ getBidData ~ error:', error);
     } finally {
       setLoadingList(false);
     }
-  }, [client]);
+  }, [client, marketplaceTick, toCoinBalanceInfo]);
 
   const getMarketTradeInfo = useCallback(async () => {
     const res = await client.queryObjectStates({
       filter: {
-        object_id: '0x4386917e0942a6fb30048405e3326be618bd0661b2fe240a112d6b59afb94cbb',
+        object_id: NETWORK_PACKAGE.testnet.tickInfo[marketplaceTick].MARKET_OBJECT_ID,
       },
     });
     const typeTag = Serializer.typeTagParseFromStr(res.data[0].object_type, true) as any;
@@ -274,7 +333,7 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
 
     setFromCoinBalanceInfo(tempFromCoinBalanceInfo as BalanceInfoView);
     setToCoinBalanceInfo(tempToCoinBalanceInfo as BalanceInfoView);
-  }, [account, client]);
+  }, [account, client, marketplaceTick]);
 
   useEffect(() => {
     getBidData();
@@ -780,11 +839,7 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
           mt: 2,
         }}
       >
-        {loadingList ||
-        !sellList ||
-        sellList.length === 0 ||
-        !fromCoinBalanceInfo ||
-        !toCoinBalanceInfo ? (
+        {loadingList || !sellList || !fromCoinBalanceInfo || !toCoinBalanceInfo ? (
           renderSkeleton
         ) : (
           <>

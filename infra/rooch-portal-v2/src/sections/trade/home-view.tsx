@@ -46,16 +46,8 @@ export default function MarketplaceHomeView() {
   const settings = useSettingsContext();
   // const { tickList: ticks, isFetching } = useMRCTicks();
   // const { tickTradeInfos, isLoadingTickTradeInfos } = useBatchMarketTradeData([
-  //   'moveer',
-  //   'creator',
-  //   'game',
-  //   'ikun',
-  //   'lords',
-  //   'suis',
-  //   'suiz',
-  //   'myworld',
-  //   'platon',
-  //   'kriswu',
+  //   'grow',
+  //   'gold',
   // ]);
 
   return (

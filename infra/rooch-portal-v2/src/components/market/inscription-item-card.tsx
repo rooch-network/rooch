@@ -133,18 +133,13 @@ export default function InscriptionItemCard({
                   tx.callFunction({
                     target: `${TESTNET_ORDERBOOK_PACKAGE}::market_v2::buy`,
                     args: [
-                      Args.objectId(
-                        '0x156d9a5bfa4329f999115b5febde94eed4a37cde10637ad8eed1ba91e89e0bb7'
-                      ),
+                      Args.objectId(NETWORK_PACKAGE.testnet.tickInfo[tick].MARKET_OBJECT_ID),
                       Args.u64(BigInt(item.order_id)),
                       Args.address(item.owner),
                       Args.bool(true),
                       Args.address(account.genRoochAddress().toStr()),
                     ],
-                    typeArgs: [
-                      '0x3::gas_coin::RGas',
-                      '0x1d6f6657fc996008a1e43b8c13805e969a091560d4cea57b1db9f3ce4450d977::fixed_supply_coin::FSC',
-                    ],
+                    typeArgs: ['0x3::gas_coin::RGas', toCoinBalanceInfo.coin_type],
                   });
                   signAndExecuteTransaction(
                     {
@@ -183,10 +178,7 @@ export default function InscriptionItemCard({
                       Args.objectId(NETWORK_PACKAGE[NETWORK].tickInfo[tick].MARKET_OBJECT_ID),
                       Args.u64(BigInt(item.order_id)),
                     ],
-                    typeArgs: [
-                      '0x3::gas_coin::RGas',
-                      '0x1d6f6657fc996008a1e43b8c13805e969a091560d4cea57b1db9f3ce4450d977::fixed_supply_coin::FSC',
-                    ],
+                    typeArgs: ['0x3::gas_coin::RGas', toCoinBalanceInfo.coin_type],
                   });
                   signAndExecuteTransaction(
                     {
