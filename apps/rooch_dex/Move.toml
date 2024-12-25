@@ -1,0 +1,16 @@
+[package]
+name = "rooch_dex"
+version = "0.0.1"
+
+[dependencies]
+MoveStdlib = { local = "../../frameworks/move-stdlib" }
+MoveosStdlib = { local = "../../frameworks/moveos-stdlib" }
+RoochFramework = { local = "../../frameworks/rooch-framework" }
+app_admin = { local = "../app_admin" }
+
+[addresses]
+rooch_dex = "_"
+app_admin = "_"
+std = "0x1"
+moveos_std = "0x2"
+rooch_framework = "0x3"

@@ -13,9 +13,30 @@ spec:
       labels:
         app: roochbot
     spec:
+      initContainers:
+      - name: download-model
+        image: curlimages/curl
+        command: ['sh', '-c']
+        args:
+          - |
+            if [ ! -f /app/agent/node_modules/@ai16z/eliza/cache/fast-multilingual-e5-large.tar.gz ]; then
+              echo "File not found, downloading..."
+              mkdir -p /app/agent/node_modules/@ai16z/eliza/cache
+              chmod -R 777 /app/agent/node_modules/@ai16z/eliza/cache
+              curl -L https://storage.googleapis.com/qdrant-fastembed/fast-multilingual-e5-large.tar.gz -o /app/agent/node_modules/@ai16z/eliza/cache/fast-multilingual-e5-large.tar.gz
+            else
+              echo "File already exists, skipping download"
+            fi
+        volumeMounts:
+        - name: roochbot-data
+          mountPath: /app/agent/node_modules/@ai16z/eliza/cache
+        securityContext:
+          runAsUser: 0
+          runAsGroup: 0
+          allowPrivilegeEscalation: true
       containers:
       - name: roochbot
-        image: jolestar/eliza-tee:0.1.6-alpha.4-20241219.2
+        image: jolestar/eliza-tee:0.1.6-alpha.4-20241225
         command: ["pnpm"]
         args: 
         - "start"
@@ -32,6 +53,8 @@ spec:
         volumeMounts:
         - name: roochbot-data
           mountPath: /app/agent/data
+        - name: roochbot-data
+          mountPath: /app/agent/node_modules/@ai16z/eliza/cache
         - name: character-config
           mountPath: /app/characters
       volumes:

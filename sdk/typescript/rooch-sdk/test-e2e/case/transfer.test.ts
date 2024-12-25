@@ -46,12 +46,21 @@ describe('Checkpoints Transfer API', () => {
 
     await testBox.delay(3)
 
+    const allAddressType = [
+      recipient.getBitcoinAddress(),
+      recipient.getBitcoinAddress().toStr(),
+      recipient.getRoochAddress(),
+      recipient.getRoochAddress().toBech32Address(),
+      recipient.getRoochAddress().toHexAddress(),
+    ]
     // check balance
-    const recipientBalance = await testBox.getClient().getBalance({
-      owner: recipient.getRoochAddress().toHexAddress(),
-      coinType,
-    })
+    for (const address of allAddressType) {
+      const recipientBalance = await testBox.getClient().getBalance({
+        owner: address,
+        coinType,
+      })
 
-    expect(BigInt(recipientBalance.balance)).eq(amount)
+      expect(BigInt(recipientBalance.balance)).eq(amount)
+    }
   })
 })

@@ -14,6 +14,7 @@
 -  [Function `p2sh`](#0x3_bitcoin_address_p2sh)
 -  [Function `p2tr`](#0x3_bitcoin_address_p2tr)
 -  [Function `new`](#0x3_bitcoin_address_new)
+-  [Function `empty`](#0x3_bitcoin_address_empty)
 -  [Function `pay_load_type`](#0x3_bitcoin_address_pay_load_type)
 -  [Function `pay_load`](#0x3_bitcoin_address_pay_load)
 -  [Function `is_p2pkh`](#0x3_bitcoin_address_is_p2pkh)
@@ -285,6 +286,17 @@ The internal public key is a secp256k1 public key or x-only public key.
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_new">new</a>(bytes: <a href="">vector</a>&lt;u8&gt;): <a href="bitcoin_address.md#0x3_bitcoin_address_BitcoinAddress">bitcoin_address::BitcoinAddress</a>
+</code></pre>
+
+
+
+<a name="0x3_bitcoin_address_empty"></a>
+
+## Function `empty`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="empty.md#0x3_empty">empty</a>(): <a href="bitcoin_address.md#0x3_bitcoin_address_BitcoinAddress">bitcoin_address::BitcoinAddress</a>
 </code></pre>
 
 

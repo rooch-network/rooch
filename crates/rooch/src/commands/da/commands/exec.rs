@@ -11,6 +11,7 @@ use coerce::actor::system::ActorSystem;
 use coerce::actor::IntoActor;
 use metrics::RegistryService;
 use moveos_common::utils::to_bytes;
+use moveos_eventbus::bus::EventBus;
 use moveos_store::config_store::STARTUP_INFO_KEY;
 use moveos_store::{MoveOSStore, CONFIG_STARTUP_INFO_COLUMN_FAMILY_NAME};
 use moveos_types::h256::H256;
@@ -20,6 +21,7 @@ use raw_store::rocks::batch::WriteBatch;
 use raw_store::traits::DBStore;
 use rooch_config::R_OPT_NET_HELP;
 use rooch_db::RoochDB;
+use rooch_event::actor::EventActor;
 use rooch_executor::actor::executor::ExecutorActor;
 use rooch_executor::actor::reader_executor::ReaderExecutorActor;
 use rooch_executor::proxy::ExecutorProxy;
@@ -66,6 +68,8 @@ pub struct ExecCommand {
     pub btc_rpc_user_name: String,
     #[clap(long = "btc-rpc-password")]
     pub btc_rpc_password: String,
+    #[clap(long = "btc-local-block-store-dir")]
+    pub btc_local_block_store_dir: Option<PathBuf>,
 
     #[clap(long = "enable-rocks-stats", help = "rocksdb-enable-statistics")]
     pub enable_rocks_stats: bool,
@@ -95,6 +99,7 @@ impl ExecCommand {
             self.btc_rpc_url.clone(),
             self.btc_rpc_user_name.clone(),
             self.btc_rpc_password.clone(),
+            self.btc_local_block_store_dir.clone(),
             &actor_system,
         )
         .await?;
@@ -265,13 +270,13 @@ impl ExecInner {
 
     async fn produce_tx(&self, tx: Sender<ExecMsg>) -> anyhow::Result<()> {
         let last_executed_opt = self.tx_da_indexer.find_last_executed()?;
-        let mut next_tx_order = last_executed_opt
+        let next_tx_order = last_executed_opt
             .clone()
             .map(|v| v.tx_order + 1)
             .unwrap_or(1);
         let mut next_block_number = last_executed_opt
             .clone()
-            .map(|v| v.block_number + 1)
+            .map(|v| v.block_number) // next_tx_order and last executed tx may be in the same block
             .unwrap_or(0);
         tracing::info!(
             "next_tx_order: {:?}. need rollback soon: {:?}",
@@ -306,9 +311,10 @@ impl ExecInner {
                 let rollback_execution_info =
                     self.tx_da_indexer.get_execution_info(new_last.tx_hash)?;
                 self.update_startup_info_after_rollback(rollback_execution_info.unwrap())?;
-                next_block_number = new_last.block_number;
-                next_tx_order = rollback + 1;
-                tracing::info!("Rollback transactions done",);
+                tracing::info!(
+                    "Rollback transactions done. Please RESTART process without rollback."
+                );
+                return Ok(()); // rollback done, need to restart to get new state_root for startup rooch store
             }
         };
 
@@ -432,7 +438,7 @@ impl ExecInner {
         ledger_tx: LedgerTransaction,
         l1block_with_body: Option<L1BlockWithBody>,
     ) -> anyhow::Result<VerifiedMoveOSTransaction> {
-        let moveos_tx = match &ledger_tx.data {
+        let mut moveos_tx = match &ledger_tx.data {
             LedgerTxData::L1Block(_block) => {
                 self.executor
                     .validate_l1_block(l1block_with_body.unwrap())
@@ -441,6 +447,7 @@ impl ExecInner {
             LedgerTxData::L1Tx(l1_tx) => self.executor.validate_l1_tx(l1_tx.clone()).await?,
             LedgerTxData::L2Tx(l2_tx) => self.executor.validate_l2_tx(l2_tx.clone()).await?,
         };
+        moveos_tx.ctx.add(ledger_tx.sequence_info.clone())?;
         Ok(moveos_tx)
     }
 
@@ -451,7 +458,7 @@ impl ExecInner {
     ) -> anyhow::Result<()> {
         let executor = self.executor.clone();
 
-        let (output, execution_info) = executor.execute_transaction(moveos_tx.clone()).await?;
+        let (_output, execution_info) = executor.execute_transaction(moveos_tx.clone()).await?;
 
         let root = execution_info.root_metadata();
         let expected_root_opt = self.order_state_pair.get(&tx_order);
@@ -459,9 +466,9 @@ impl ExecInner {
             Some(expected_root) => {
                 if root.state_root.unwrap() != *expected_root {
                     return Err(anyhow::anyhow!(
-                        "Execution state root is not equal to RoochNetwork: tx_order: {}, exp: {:?}, act: {:?}; act_changeset: {:?}",
+                        "Execution state root is not equal to RoochNetwork: tx_order: {}, exp: {:?}, act: {:?}; act_execution_info: {:?}",
                         tx_order,
-                        *expected_root, root.state_root.unwrap(), output.changeset
+                        *expected_root, root.state_root.unwrap(), execution_info
                     ));
                 }
                 tracing::info!(
@@ -479,12 +486,14 @@ async fn build_btc_client_proxy(
     btc_rpc_url: String,
     btc_rpc_user_name: String,
     btc_rpc_password: String,
+    btc_local_block_store_dir: Option<PathBuf>,
     actor_system: &ActorSystem,
 ) -> anyhow::Result<BitcoinClientProxy> {
     let bitcoin_client_config = BitcoinClientConfig {
         btc_rpc_url,
         btc_rpc_user_name,
         btc_rpc_password,
+        local_block_store_dir: btc_local_block_store_dir,
     };
 
     let bitcoin_client = bitcoin_client_config.build()?;
@@ -506,12 +515,18 @@ async fn build_executor_and_store(
         build_rooch_db(base_data_dir.clone(), chain_id.clone(), enable_rocks_stats);
     let (rooch_store, moveos_store) = (rooch_db.rooch_store.clone(), rooch_db.moveos_store.clone());
 
+    let event_bus = EventBus::new();
+    let event_actor = EventActor::new(event_bus.clone());
+    let event_actor_ref = event_actor
+        .into_actor(Some("EventActor"), actor_system)
+        .await?;
+
     let executor_actor = ExecutorActor::new(
         root.clone(),
         moveos_store.clone(),
         rooch_store.clone(),
         &registry_service.default_registry(),
-        None,
+        Some(event_actor_ref.clone()),
     )?;
 
     let executor_actor_ref = executor_actor
