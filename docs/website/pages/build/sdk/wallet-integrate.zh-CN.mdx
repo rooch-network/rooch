@@ -1,20 +1,75 @@
 # 钱包集成
 
-这篇文档将介绍如何将 Rooch 的钱包功能（查询、转账）集成到钱包、资产浏览器、聚合器等应用中，将向钱包开发者介绍 Rooch 提供的 RPC 接口。
+这篇文档将介绍如何将 Rooch 的钱包功能（查询、转账）集成到钱包、资产浏览器、聚合器等应用中，将向钱包开发者介绍 Rooch 提供的 TS SDK 方法。
 
-## 网络选择
+## 网络切换
+
+对于网络切换可以使用 `useSwitchNetwork` 方法，传递以下参数：
 
 ```ts
-import { useCurrentNetwork } from '@roochnetwork/rooch-sdk-kit'
-const network = useCurrentNetwork()
+type UseSwitchNetworkArgs = string;
 ```
 
-<++>
+如果已连接网路，可以使用 `useCurrentNetwork` 方法。
+
+## 获取上下文
+
+`useRoochContext` 方法用于获取上下文，上下文信息如下所示：
+
+```ts
+export interface ClientProviderContext {
+    client: RoochClient;
+    networks: NetworkConfigs;
+    network: NetworkType;
+    config: NetworkConfig | null;
+    selectNetwork: (network: string) => void;
+}
+```
+
+## 客户端操作
+
+`useRoochClientQuery` 和 `useRoochClient` 方法提供了客户端查询和调用。
+
+## 发送交易
+
+`UseSignAndExecuteTransaction` 方法，执行签名交易，需要传递以下参数：
+
+```ts
+type UseSignAndExecuteTransactionArgs = {
+    transaction: Transaction;
+    signer?: Signer;
+};
+```
 
 ## 查询
 
+TODO
+
 ## 转账
 
+对于转账交易可以使用 `useTransferCoin` 方法，传递以下参数：
+
+```ts
+type UseTransferCoinArgs = {
+    signer?: Signer;
+    recipient: address;
+    amount: number | bigint;
+    coinType: TypeArgs;
+};
+```
+
+对于对象的转移可以使用 `useTransferObject` 方法，传递以下参数：
+
+```ts
+type UseTransferObjectArgs = {
+    signer: Signer;
+    recipient: string;
+    objectId: string;
+    objectType: TypeArgs;
+};
+```
+
+<++>
 
 ## 将钱包功能集成到 Rooch SDK 中
 
