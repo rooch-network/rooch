@@ -9,6 +9,7 @@ module twitter_binding::tweet_fetcher {
     
     use twitter_binding::twitter_account;
     use twitter_binding::tweet_v2;
+    use app_admin::admin::{AdminCap};
 
     use verity::oracles;
     
@@ -111,21 +112,39 @@ module twitter_binding::tweet_fetcher {
             };
             let buffer_queue_obj = object::new_named_object(buffer_queue);
             object::transfer_extend(buffer_queue_obj, @twitter_binding);
-        }else{
-            //clear request queue
-            //because new version use batch API to fetch tweets, the response will be different
-            //so we need to clear the request queue
-            clear_old_request_queue();
         };
     }
 
-    fun clear_old_request_queue(){
+    entry fun clear_request_queue_entry(_admin: &mut Object<AdminCap>){
+        clear_request_queue(0);
+    }
+
+    entry fun clear_request_queue_entry_with_count(_admin: &mut Object<AdminCap>, count: u64){
+        clear_request_queue(count);
+    }
+
+    fun clear_request_queue(count: u64){
         let fetch_queue_obj = borrow_mut_fetch_queue_obj();
-        let request_ids = object::borrow(fetch_queue_obj).request_queue;
+        let all_ids = object::borrow(fetch_queue_obj).request_queue;
+        let all_ids_len = vector::length(&all_ids);
+        let request_ids = if(count == 0 || count >= all_ids_len){
+            object::borrow(fetch_queue_obj).request_queue
+        }else{
+            vector::trim_reverse(&mut all_ids, all_ids_len - count)
+        };
+        
         vector::for_each(request_ids, |request_id|{
-            //The old version use request id => tweet id
-            let tweet_id: String = object::remove_field(fetch_queue_obj, request_id);
-            let _request_id: ObjectID = object::remove_field(fetch_queue_obj, tweet_id);
+            if (object::contains_field_with_type<FetchQueue, ObjectID, vector<String>>(fetch_queue_obj, request_id)){
+                let tweet_ids: vector<String> = object::remove_field(fetch_queue_obj, request_id);
+                vector::for_each(tweet_ids, |tweet_id|{
+                    let _request_id: ObjectID = object::remove_field(fetch_queue_obj, tweet_id);
+                });
+            }else if(object::contains_field_with_type<FetchQueue, ObjectID, String>(fetch_queue_obj, request_id)){
+                let tweet_id: String = object::remove_field(fetch_queue_obj, request_id);
+                let _request_id: ObjectID = object::remove_field(fetch_queue_obj, tweet_id);
+            };
+            let fetch_queue = object::borrow_mut(fetch_queue_obj);
+            vector::remove_value(&mut fetch_queue.request_queue, &request_id);
         });
     }
 
