@@ -6,6 +6,7 @@ import { Signer } from '../crypto/index.js'
 import { CreateSessionArgs, Session } from '../session/index.js'
 import {
   decodeToRoochAddressStr,
+  decodeToPackageAddressStr,
   BitcoinAddress,
   BitcoinNetowkType,
   RoochAddress,
@@ -456,6 +457,47 @@ export class RoochClient {
     }
 
     return result.return_values![0]?.decoded_value as boolean
+  }
+
+  async getAllModules({
+    package_address,
+    limit,
+    cursor,
+  }:{
+    package_address: address
+  } & PaginationArguments<string>): Promise<Map<string, string>> {
+    const packageObjectID = `0x14481947570f6c2f50d190f9a13bf549ab2f0c9debc41296cd4d506002379659${decodeToPackageAddressStr(package_address)}`;
+    const result = await this.transport.request({
+      method: 'rooch_listFieldStates',
+      params: [
+        packageObjectID,
+        cursor,
+        limit,
+        { decode: true },
+      ],
+    });
+
+    const moduleInfo = result as unknown as ObjectStateView[]
+    const moduleMap = new Map<string, string>();
+
+    if (moduleInfo && typeof moduleInfo === 'object' && 'data' in moduleInfo) {
+      const { data } = moduleInfo;
+      if (Array.isArray(data)) {
+        for (const item of data) {
+          const decodedValue = item?.state?.decoded_value;
+
+          if (decodedValue) {
+            const name = decodedValue?.value?.name;
+            const byte_codes = decodedValue?.value?.value?.value?.byte_codes;
+            if (name && byte_codes) {
+              moduleMap.set(name, byte_codes);
+            }
+          }
+        }
+      }
+    }
+
+    return moduleMap;
   }
 
   async getSessionKeys({
