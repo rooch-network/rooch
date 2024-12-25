@@ -50,22 +50,6 @@ async fn get_submitting_blocks() {
 }
 
 #[tokio::test]
-async fn try_repair() {
-    let (rooch_store, _) = RoochStore::mock_rooch_store().unwrap();
-    let da_meta_store = rooch_store.get_da_meta_store();
-    da_meta_store.append_submitting_block(1, 6).unwrap();
-    da_meta_store.append_submitting_block(7, 7).unwrap();
-    da_meta_store.append_submitting_block(8, 1024).unwrap();
-
-    let (issues, fixed) = da_meta_store.try_repair_blocks(6, 0, 0).unwrap();
-    println!("issues: {}", issues);
-    println!("fixed: {}", fixed);
-
-    let last_block_number = da_meta_store.get_last_block_number().unwrap();
-    println!("last_block_number: {:?}", last_block_number);
-}
-
-#[tokio::test]
 async fn generate_remove_blocks() {
     let (rooch_store, _) = RoochStore::mock_rooch_store().unwrap();
     let da_meta_store = rooch_store.get_da_meta_store();
