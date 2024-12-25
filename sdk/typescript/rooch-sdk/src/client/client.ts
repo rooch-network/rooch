@@ -6,6 +6,7 @@ import { Signer } from '../crypto/index.js'
 import { CreateSessionArgs, Session } from '../session/index.js'
 import {
   decodeToRoochAddressStr,
+  decodeToPackageAddressStr,
   BitcoinAddress,
   BitcoinNetowkType,
   RoochAddress,
@@ -460,15 +461,17 @@ export class RoochClient {
   }
 
   async getAllModules({
-    objectId,
+    package_address,
     limit,
     cursor,
-  }: ListFieldStatesParams): Promise<Map<string, string>> {
-    const packageId = `0x14481947570f6c2f50d190f9a13bf549ab2f0c9debc41296cd4d506002379659${objectId}`;
+  }:{
+    package_address: address
+  } & PaginationArguments<string>): Promise<Map<string, string>> {
+    const packageObjectID = `0x14481947570f6c2f50d190f9a13bf549ab2f0c9debc41296cd4d506002379659${decodeToPackageAddressStr(package_address)}`;
     const result = await this.transport.request({
       method: 'rooch_listFieldStates',
       params: [
-        packageId,
+        packageObjectID,
         cursor,
         limit,
         { decode: true },
@@ -482,13 +485,11 @@ export class RoochClient {
       const { data } = moduleInfo;
       if (Array.isArray(data)) {
         for (const item of data) {
-          const { state } = item;
-          const decodedValue = state?.decoded_value;
+          const decodedValue = item?.state?.decoded_value;
 
           if (decodedValue) {
-            const { value } = decodedValue;
-            const name = value?.name;
-            const byte_codes = value?.value?.value?.byte_codes;
+            const name = decodedValue?.value?.name;
+            const byte_codes = decodedValue?.value?.value?.value?.byte_codes;
             if (name && byte_codes) {
               moduleMap.set(name, byte_codes);
             }

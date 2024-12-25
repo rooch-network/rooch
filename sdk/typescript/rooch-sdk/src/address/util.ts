@@ -39,6 +39,19 @@ export function decodeToRoochAddressStr(input: address): string {
   return decodeToRoochAddressStr(input.toStr())
 }
 
+export function decodeToPackageAddressStr(input: address): string {
+  const packageAddressStr = decodeToRoochAddressStr(input);
+  if (packageAddressStr.length === ROOCH_ADDRESS_LENGTH * 2){
+    return packageAddressStr;
+  }
+
+  if (packageAddressStr.length === ROOCH_ADDRESS_LENGTH * 2 + 2 && packageAddressStr.startsWith('0x')){
+    return packageAddressStr.slice(2);
+  }
+
+  return decodeToPackageAddressStr(input)
+}
+
 export function convertToRoochAddressBytes(input: address): Bytes {
   if (typeof input === 'string') {
     const normalizeAddress = normalizeRoochAddress(input)
