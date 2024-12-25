@@ -10121,6 +10121,7 @@ dependencies = [
  "rand 0.8.5",
  "raw-store",
  "regex",
+ "reqwest 0.12.7",
  "rooch-common",
  "rooch-config",
  "rooch-db",
