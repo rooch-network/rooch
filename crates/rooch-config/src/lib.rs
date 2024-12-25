@@ -238,8 +238,8 @@ impl RoochOpt {
             let arc_base = Arc::new(base);
             self.store.init(Arc::clone(&arc_base))?;
             self.da.init(Arc::clone(&arc_base))?;
-            self.init_btc_reorg_aware_block_store_dir()?;
             self.base = Some(arc_base);
+            self.init_btc_reorg_aware_block_store_dir()?;
         }
         Ok(())
     }
