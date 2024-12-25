@@ -324,8 +324,8 @@ where
                         let mut v = object.id().to_bytes();
                         arg.append(&mut v);
                     }
-                    StructInstantiation(_, instantiation_types) => {
-                        if let Some(Struct(struct_idx)) = instantiation_types.first() {
+                    StructInstantiation(_, instantiation_types, _) => {
+                        if let Some(Struct(struct_idx, _)) = instantiation_types.first() {
                             let first_struct_type =
                                 self.get_struct_type(*struct_idx).ok_or_else(|| {
                                     PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT)
@@ -433,16 +433,16 @@ where
     G: SwitchableGasMeter + ClassifiedGasMeter,
 {
     fn get_type_layout(
-        &self,
+        &mut self,
         type_tag: &TypeTag,
     ) -> move_binary_format::errors::PartialVMResult<move_core_types::value::MoveTypeLayout> {
         self.session
-            .get_type_layout(type_tag)
+            .get_type_layout(type_tag, self.remote)
             .map_err(|e| e.to_partial())
     }
 
     fn type_to_type_layout(
-        &self,
+        &mut self,
         ty: &Type,
     ) -> move_binary_format::errors::PartialVMResult<move_core_types::value::MoveTypeLayout> {
         let type_tag = self.type_to_type_tag(ty)?;
@@ -450,7 +450,7 @@ where
     }
 
     fn type_to_type_tag(&self, ty: &Type) -> move_binary_format::errors::PartialVMResult<TypeTag> {
-        self.session.get_type_tag(ty).map_err(|e| e.to_partial())
+        self.session.get_type_tag(ty, self.remote).map_err(|e| e.to_partial())
     }
 }
 
@@ -463,7 +463,7 @@ where
     T: TransactionCache,
 {
     match t {
-        Type::Struct(s) | Type::StructInstantiation(s, _) => session.get_struct_type(*s),
+        Type::Struct(s, _) | Type::StructInstantiation(s, _, _) => session.fetch_struct_ty_by_idx(*s, session.module_store),
         Type::Reference(r) => as_struct_no_panic(session, r),
         Type::MutableReference(r) => as_struct_no_panic(session, r),
         _ => None,
@@ -480,7 +480,7 @@ pub fn get_object_type(type_tag: &TypeTag) -> Option<TypeTag> {
     match type_tag {
         TypeTag::Struct(s) => {
             if is_object_struct(s) {
-                s.type_params.first().cloned()
+                s.type_args.first().cloned()
             } else {
                 None
             }

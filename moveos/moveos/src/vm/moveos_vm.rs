@@ -11,6 +11,7 @@ use move_binary_format::{
     file_format::AbilitySet,
     CompiledModule, IndexKind,
 };
+use move_core_types::identifier::IdentStr;
 use move_core_types::{
     account_address::AccountAddress,
     identifier::Identifier,
@@ -20,9 +21,18 @@ use move_core_types::{
 };
 use move_model::script_into_module;
 use move_vm_runtime::data_cache::TransactionCache;
-use move_vm_runtime::{config::VMConfig, move_vm::MoveVM, native_extensions::NativeContextExtensions, native_functions::NativeFunction, session::{LoadedFunctionInstantiation, Session}, CodeStorage, ModuleStorage, RuntimeEnvironment, Script};
+use move_vm_runtime::module_traversal::{TraversalContext, TraversalStorage};
+use move_vm_runtime::{
+    config::VMConfig,
+    move_vm::MoveVM,
+    native_extensions::NativeContextExtensions,
+    native_functions::NativeFunction,
+    session::{LoadedFunction, Session},
+    CodeStorage, LoadedFunction, ModuleStorage, RuntimeEnvironment, Script,
+};
+use move_vm_types::code::UnsyncScriptCache;
 use move_vm_types::gas::UnmeteredGasMeter;
-use move_vm_types::loaded_data::runtime_types::{CachedStructIndex, StructType, Type};
+use move_vm_types::loaded_data::runtime_types::{StructNameIndex, StructType, Type};
 use moveos_common::types::{ClassifiedGasMeter, SwitchableGasMeter};
 use moveos_object_runtime::runtime::{ObjectRuntime, ObjectRuntimeContext};
 use moveos_stdlib::natives::moveos_stdlib::{
@@ -47,7 +57,6 @@ use parking_lot::RwLock;
 use std::collections::BTreeSet;
 use std::rc::Rc;
 use std::{borrow::Borrow, sync::Arc};
-use move_vm_types::code::UnsyncScriptCache;
 
 /// MoveOSVM is a wrapper of MoveVM with MoveOS specific features.
 pub struct MoveOSVM {
@@ -55,9 +64,7 @@ pub struct MoveOSVM {
 }
 
 impl MoveOSVM {
-    pub fn new(
-        runtime_environment: &RuntimeEnvironment,
-    ) -> VMResult<Self> {
+    pub fn new(runtime_environment: &RuntimeEnvironment) -> VMResult<Self> {
         Ok(Self {
             inner: MoveVM::new_with_runtime_environment(runtime_environment),
         })
@@ -210,9 +217,11 @@ where
     pub fn verify_move_action(&mut self, action: MoveAction) -> VMResult<VerifiedMoveAction> {
         match action {
             MoveAction::Script(call) => {
-                let loaded_function = self
-                    .session
-                    .load_script(self.remote, call.code.as_slice(), call.ty_args.clone())?;
+                let loaded_function = self.session.load_script(
+                    self.remote,
+                    call.code.as_slice(),
+                    call.ty_args.as_slice(),
+                )?;
                 let location = Location::Script;
                 moveos_verifier::verifier::verify_entry_function(&loaded_function, &self.session)
                     .map_err(|e| e.finish(location.clone()))?;
@@ -224,7 +233,7 @@ where
                     Ok(v) => v,
                     Err(err) => return Err(err.finish(Location::Undefined)),
                 };
-                let script_module = script_into_module(compiled_script);
+                let script_module = script_into_module(compiled_script, "");
                 let modules = vec![script_module];
                 let result = moveos_verifier::verifier::verify_modules(&modules, self.remote);
                 match result {
@@ -304,33 +313,35 @@ where
     /// Once we start executing transactions, we must ensure that the transaction execution has a result, regardless of success or failure,
     /// and we need to save the result and deduct gas
     pub fn execute_move_action(&mut self, action: VerifiedMoveAction) -> VMResult<()> {
+        let traversal_storage = TraversalStorage::new();
+        let mut traversal_context = TraversalContext::new(&traversal_storage);
+
         let action_result = match action {
             VerifiedMoveAction::Script { call } => {
-                let loaded_function = self
-                    .session
-                    .load_script(call.code.as_slice(), call.ty_args.clone())?;
+                let loaded_function = self.session.load_script(
+                    self.remote,
+                    call.code.as_slice(),
+                    call.ty_args.as_slice(),
+                )?;
                 let location: Location = Location::Script;
                 let serialized_args =
                     self.resolve_argument(&loaded_function, call.args, location, true)?;
-                self.session
-                    .execute_script(
-                        call.code,
-                        call.ty_args,
-                        serialized_args,
-                        &mut self.gas_meter,
-                    )
-                    .map(|ret| {
-                        debug_assert!(
-                            ret.return_values.is_empty(),
-                            "Script function should not return values"
-                        );
-                    })
+
+                self.session.execute_script(
+                    call.code,
+                    call.ty_args,
+                    serialized_args,
+                    &mut self.gas_meter,
+                    &mut traversal_context,
+                    self.remote,
+                )
             }
             VerifiedMoveAction::Function {
                 call,
                 bypass_visibility,
             } => {
                 let loaded_function = self.session.load_function(
+                    self.remote,
                     &call.function_id.module_id,
                     &call.function_id.function_name,
                     call.ty_args.as_slice(),
@@ -347,6 +358,8 @@ where
                             call.ty_args.clone(),
                             serialized_args,
                             &mut self.gas_meter,
+                            &mut traversal_context,
+                            self.remote,
                         )
                         .map(|ret| {
                             debug_assert!(
@@ -355,20 +368,19 @@ where
                             );
                         })
                 } else {
-                    self.session
-                        .execute_entry_function(
-                            &call.function_id.module_id,
-                            &call.function_id.function_name,
-                            call.ty_args.clone(),
-                            serialized_args,
-                            &mut self.gas_meter,
-                        )
-                        .map(|ret| {
-                            debug_assert!(
-                                ret.return_values.is_empty(),
-                                "Entry function should not return values"
-                            );
-                        })
+                    let loaded_function = self.session.load_function(
+                        self.remote,
+                        &call.function_id.module_id,
+                        &call.function_id.function_name,
+                        call.ty_args.as_slice(),
+                    )?;
+                    self.session.execute_entry_function(
+                        loaded_function,
+                        call.ty_args.clone(),
+                        &mut self.gas_meter,
+                        &mut traversal_context,
+                        &self.remote,
+                    )
                 }
             }
             VerifiedMoveAction::ModuleBundle {
@@ -502,8 +514,11 @@ where
         &mut self,
         call: FunctionCall,
     ) -> VMResult<Vec<FunctionReturnValue>> {
+        let traversal_storage = TraversalStorage::new();
+        let mut traversal_context = TraversalContext::new(&traversal_storage);
+
         let loaded_function = self.session.load_function(
-            &call.function_id.module_id,
+            self.remote & call.function_id.module_id,
             &call.function_id.function_name,
             call.ty_args.as_slice(),
         )?;
@@ -511,15 +526,17 @@ where
         let serialized_args = self.resolve_argument(&loaded_function, call.args, location, true)?;
         let return_values = self.session.execute_function_bypass_visibility(
             &call.function_id.module_id,
-            &call.function_id.function_name,
+            &call.function_id.function_name.as_ident_str(),
             call.ty_args,
             serialized_args,
             &mut self.gas_meter,
+            &mut traversal_context,
+            self.remote,
         )?;
         return_values
             .return_values
             .into_iter()
-            .zip(loaded_function.return_.iter())
+            .zip(loaded_function.return_tys().iter())
             .map(|((v, _layout), ty)| {
                 // We can not use
                 // let type_tag :TypeTag = TryInto::try_into(&layout)?
@@ -528,9 +545,9 @@ where
 
                 let type_tag = match ty {
                     Type::Reference(ty) | Type::MutableReference(ty) => {
-                        self.session.get_type_tag(ty)?
+                        self.session.get_type_tag(ty, self.remote)?
                     }
-                    _ => self.session.get_type_tag(ty)?,
+                    _ => self.session.get_type_tag(ty, self.remote)?,
                 };
 
                 Ok(FunctionReturnValue::new(type_tag, v))
@@ -574,13 +591,13 @@ where
             gas_meter: _,
             read_only,
         } = self;
-        let (changeset, raw_events, mut extensions) = session.finish_with_extensions()?;
+        let (changeset, mut extensions) = session.finish_with_extensions(self.remote)?;
         //We do not use the event API from data_cache. Instead, we use the NativeEventContext
-        debug_assert!(raw_events.is_empty());
+        //debug_assert!(raw_events.is_empty());
         //We do not use the account, resource, and module API from data_cache. Instead, we use the ObjectRuntimeContext
         debug_assert!(changeset.accounts().is_empty());
         drop(changeset);
-        drop(raw_events);
+        //drop(raw_events);
 
         let event_context = extensions.remove::<NativeEventContext>();
         let raw_events = event_context.into_events();
@@ -715,20 +732,22 @@ where
 
     /// Load a script and all of its types into cache
     pub fn load_script(
-        &self,
+        &mut self,
         script: impl Borrow<[u8]>,
         ty_args: Vec<TypeTag>,
-    ) -> VMResult<LoadedFunctionInstantiation> {
-        self.session.load_script(script, ty_args)
+    ) -> VMResult<LoadedFunction> {
+        self.session
+            .load_script(self.remote, script, ty_args.as_slice())
     }
 
     /// Load a module, a function, and all of its types into cache
     pub fn load_function(
-        &self,
+        &mut self,
         function_id: &FunctionId,
         type_arguments: &[TypeTag],
-    ) -> VMResult<LoadedFunctionInstantiation> {
+    ) -> VMResult<LoadedFunction> {
         self.session.load_function(
+            self.remote,
             &function_id.module_id,
             &function_id.function_name,
             type_arguments,
@@ -739,7 +758,9 @@ where
     /// This function also support struct reference and mutable reference
     pub fn get_type_tag_option(&self, t: &Type) -> Option<TypeTag> {
         match t {
-            Type::Struct(_) | Type::StructInstantiation(_, _) => self.session.get_type_tag(t).ok(),
+            Type::Struct(_, _) | Type::StructInstantiation(_, _, _) => {
+                self.session.get_type_tag(t, self.remote).ok()
+            }
             Type::Reference(r) => self.get_type_tag_option(r),
             Type::MutableReference(r) => self.get_type_tag_option(r),
             _ => None,
@@ -747,19 +768,23 @@ where
     }
 
     pub fn get_type_tag(&self, ty: &Type) -> VMResult<TypeTag> {
-        self.session.get_type_tag(ty)
+        self.session.get_type_tag(ty, self.remote)
     }
 
-    pub fn load_type(&self, type_tag: &TypeTag) -> VMResult<Type> {
-        self.session.load_type(type_tag)
+    pub fn load_type(&mut self, type_tag: &TypeTag) -> VMResult<Type> {
+        self.session.load_type(type_tag, self.remote)
     }
 
-    pub fn get_fully_annotated_type_layout(&self, type_tag: &TypeTag) -> VMResult<MoveTypeLayout> {
-        self.session.get_fully_annotated_type_layout(type_tag)
+    pub fn get_fully_annotated_type_layout(
+        &mut self,
+        type_tag: &TypeTag,
+    ) -> VMResult<MoveTypeLayout> {
+        self.session
+            .get_fully_annotated_type_layout(type_tag, self.remote)
     }
 
-    pub fn get_struct_type(&self, index: CachedStructIndex) -> Option<Arc<StructType>> {
-        self.session.get_struct_type(index)
+    pub fn get_struct_type(&self, index: StructNameIndex) -> Option<Arc<StructType>> {
+        self.session.fetch_struct_ty_by_idx(index, self.remote)
     }
 
     pub fn get_type_abilities(&self, ty: &Type) -> VMResult<AbilitySet> {

@@ -33,6 +33,7 @@ use move_vm_types::code::Code;
 use move_vm_types::resolver::{ModuleResolver, MoveResolver, ResourceResolver};
 use std::env::temp_dir;
 use std::sync::Arc;
+use move_bytecode_utils::compiled_module_viewer::CompiledModuleView;
 
 pub type StateKV = (FieldKey, ObjectState);
 pub type AnnotatedStateKV = (FieldKey, AnnotatedState);
@@ -323,7 +324,7 @@ pub trait StateReader: StateResolver {
 
 impl<R> StateReader for R where R: StateResolver {}
 
-pub trait AnnotatedStateReader: StateReader + MoveResolver {
+pub trait AnnotatedStateReader: StateReader + MoveResolver + CompiledModuleView  {
     fn get_annotated_states(&self, path: AccessPath) -> Result<Vec<Option<AnnotatedState>>> {
         let annotator = MoveValueAnnotator::new(self);
         self.get_states(path)?
@@ -373,7 +374,7 @@ pub trait AnnotatedStateReader: StateReader + MoveResolver {
     }
 }
 
-impl<T> AnnotatedStateReader for T where T: StateReader + MoveResolver {}
+impl<T> AnnotatedStateReader for T where T: StateReader + MoveResolver + CompiledModuleView {}
 
 pub trait StateReaderExt: StateReader {
     fn get_account(&self, address: AccountAddress) -> Result<Option<ObjectEntity<Account>>> {
