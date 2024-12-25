@@ -51,7 +51,6 @@ import {
   ModuleABIView,
   GetModuleABIParams,
   BroadcastTXParams,
-  ListFieldStatesParams,
 } from './types/index.js'
 import { fixedBalance } from '../utils/balance.js'
 
