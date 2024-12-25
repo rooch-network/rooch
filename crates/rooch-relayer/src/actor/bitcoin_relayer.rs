@@ -152,17 +152,21 @@ impl BitcoinRelayer {
                 );
                 break;
             }
-            info!(
-                "BitcoinRelayer buffer block, height: {}, hash: {}",
-                next_block_height, header_info.hash
-            );
 
             // store potential reorg block before consuming by VM(push to buffer),
             // avoiding inconsistency caused by collapse
             self.reorg_aware_store
-                .insert_or_replace(next_block_height, header_info.hash)
+                .insert_or_replace(
+                    next_block_height,
+                    header_info.hash,
+                    header_info.previous_block_hash,
+                )
                 .await?;
 
+            info!(
+                "BitcoinRelayer buffer block, height: {}, hash: {}",
+                next_block_height, header_info.hash
+            );
             self.buffer.push(BlockResult { header_info, block });
             if batch_count > self.batch_size {
                 break;
@@ -286,26 +290,63 @@ impl BitcoinReorgAwareStore {
         &mut self,
         block_height: u64,
         block_hash: BlockHash,
+        previous_block_hash_opt: Option<BlockHash>,
     ) -> Result<()> {
-        // same block height, replace
-        if self.recent_blocks_map.contains_key(&block_height) {
-            let origin_hash = self
-                .recent_blocks_map
-                .insert(block_height, block_hash)
-                .unwrap();
-            let origin_block = self.rpc_client.get_block(origin_hash).await?;
-            let origin_block_output_path = self.block_store_dir.join(origin_hash.to_string());
-            let mut origin_block_file = std::fs::File::create(origin_block_output_path)?;
-            let origin_block_hex: String = bitcoin::consensus::encode::serialize_hex(&origin_block);
-            origin_block_file.write_all(origin_block_hex.as_bytes())?;
-            origin_block_file.sync_data()?; // ok to block here, low frequency operation
-        } else {
-            // remove the smallest height block if reach aware_height
-            if self.recent_blocks_map.len() == self.aware_height {
-                self.recent_blocks_map.shift_remove_index(0);
+        if self.recent_blocks_map.is_empty() && previous_block_hash_opt.is_some() {
+            self.fill_recent_blocks_with_previous(block_height, previous_block_hash_opt)
+                .await?;
+        }
+
+        // Handle replacement if block height already exists in the map
+        if let Some(original_hash) = self.recent_blocks_map.insert(block_height, block_hash) {
+            let original_block = self.rpc_client.get_block(original_hash).await?;
+            self.write_block_to_store(original_hash, &original_block)
+                .await?;
+        }
+
+        // Handle removing the smallest-height block when reaching aware_height
+        if self.recent_blocks_map.len() > self.aware_height {
+            self.recent_blocks_map.shift_remove_index(0);
+        }
+
+        Ok(())
+    }
+
+    async fn write_block_to_store(&self, block_hash: BlockHash, block: &Block) -> Result<()> {
+        let block_output_path = self.block_store_dir.join(block_hash.to_string());
+        let mut block_file = std::fs::File::create(block_output_path)?;
+        let block_hex: String = bitcoin::consensus::encode::serialize_hex(block);
+        block_file.write_all(block_hex.as_bytes())?;
+        block_file.sync_data()?; // ok to block here, low frequency operation
+        Ok(())
+    }
+
+    async fn fill_recent_blocks_with_previous(
+        &mut self,
+        mut block_height: u64,
+        mut previous_block_hash_opt: Option<BlockHash>,
+    ) -> Result<()> {
+        let mut init_recent_blocks = Vec::with_capacity(self.aware_height - 1);
+
+        for _ in 1..self.aware_height {
+            if let Some(previous_block_hash) = previous_block_hash_opt {
+                init_recent_blocks.push((block_height - 1, previous_block_hash));
+                previous_block_hash_opt = self.get_previous_block_hash(previous_block_hash).await?;
+                block_height -= 1;
+            } else {
+                break;
             }
-            self.recent_blocks_map.insert(block_height, block_hash);
+        }
+
+        init_recent_blocks.reverse();
+        for (height, hash) in init_recent_blocks {
+            self.recent_blocks_map.insert(height, hash);
         }
         Ok(())
+    }
+
+    async fn get_previous_block_hash(&self, block_hash: BlockHash) -> Result<Option<BlockHash>> {
+        let header_info = self.rpc_client.get_block_header_info(block_hash).await?;
+        Ok(header_info.previous_block_hash)
     }
 }
