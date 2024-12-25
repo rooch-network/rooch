@@ -111,7 +111,7 @@ impl DAMetaDBStore {
     // 1. submit_state: remove blocks from min_removed_block to last_block_number
     // 2. block_cursor: update last_block_number to min_removed_block - 1
     // 3. background_submit_block_cursor: remove directly
-    pub fn inner_rollback(&self, mut remove_blocks: Vec<u128>) -> anyhow::Result<()> {
+    fn inner_rollback(&self, mut remove_blocks: Vec<u128>) -> anyhow::Result<()> {
         if remove_blocks.is_empty() {
             return Ok(());
         }
