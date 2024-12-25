@@ -52,6 +52,7 @@ schemars = { workspace = true }
 ciborium = { workspace = true }
 wasmer = { workspace = true }
 tiny-keccak = { workspace = true }
+reqwest = { workspace = true }
 
 move-binary-format = { workspace = true }
 move-cli = { workspace = true }
