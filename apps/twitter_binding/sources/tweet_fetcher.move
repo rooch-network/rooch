@@ -282,7 +282,16 @@ module twitter_binding::tweet_fetcher {
         }else{
             TWEET_STATUS_FETCH_FAILED
         };
-        let tweet_ids: vector<String> = object::remove_field(fetch_queue_obj, request_id);
+        let tweet_ids: vector<String> = if (object::contains_field_with_type<FetchQueue, ObjectID,vector<String>>(fetch_queue_obj, request_id)){
+            object::remove_field(fetch_queue_obj, request_id)
+        }else if(object::contains_field_with_type<FetchQueue, ObjectID, String>(fetch_queue_obj, request_id)){
+            // The old version use request id => tweet id, so we need to convert it to vector<String>
+            let tweet_id: String = object::remove_field(fetch_queue_obj, request_id);
+            vector::singleton(tweet_id)
+        }else{
+            //This should not happen
+            vector::empty()
+        };
         let event = TweetBatchProcessEvent{
             tweet_ids,
             request_id,
