@@ -37,6 +37,7 @@ move-vm-types = { workspace = true }
 move-resource-viewer = { workspace = true }
 move-binary-format = { workspace = true }
 move-vm-runtime = { workspace = true }
+move-bytecode-utils = { workspace = true }
 
 smt = { workspace = true }
 
