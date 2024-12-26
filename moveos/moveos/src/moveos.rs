@@ -6,12 +6,15 @@ use crate::gas::table::{
 };
 use crate::vm::data_cache::MoveosDataCache;
 use crate::vm::moveos_vm::{MoveOSSession, MoveOSVM};
+use ambassador::delegate_to_methods;
 use anyhow::{bail, format_err, Error, Result};
 use move_binary_format::binary_views::BinaryIndexedView;
+use move_binary_format::deserializer::DeserializerConfig;
 use move_binary_format::errors::VMError;
 use move_binary_format::errors::{vm_status_of_result, Location, PartialVMError, VMResult};
 use move_binary_format::file_format::{CompiledScript, FunctionDefinitionIndex};
 use move_binary_format::CompiledModule;
+use move_bytecode_verifier::VerifierConfig;
 use move_core_types::identifier::IdentStr;
 use move_core_types::language_storage::ModuleId;
 use move_core_types::value::MoveTypeLayout;
@@ -22,6 +25,9 @@ use move_core_types::{
 use move_vm_runtime::config::{VMConfig, DEFAULT_MAX_VALUE_NEST_DEPTH};
 use move_vm_runtime::data_cache::TransactionCache;
 use move_vm_runtime::native_functions::NativeFunction;
+use move_vm_runtime::{RuntimeEnvironment, Script};
+use move_vm_types::code::{ScriptCache, UnsyncScriptCache};
+use move_vm_types::loaded_data::runtime_types::TypeBuilder;
 use moveos_common::types::ClassifiedGasMeter;
 use moveos_store::config_store::ConfigDBStore;
 use moveos_store::event_store::EventDBStore;
@@ -43,12 +49,6 @@ use moveos_types::transaction::{
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-use ambassador::delegate_to_methods;
-use move_binary_format::deserializer::DeserializerConfig;
-use move_bytecode_verifier::VerifierConfig;
-use move_vm_runtime::{RuntimeEnvironment, Script};
-use move_vm_types::code::{ScriptCache, UnsyncScriptCache};
-use move_vm_types::loaded_data::runtime_types::TypeBuilder;
 
 #[derive(thiserror::Error, Debug)]
 pub enum VMPanicError {

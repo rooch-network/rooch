@@ -8,6 +8,7 @@ use move_binary_format::CompiledModule;
 use move_core_types::language_storage::ModuleId;
 use move_core_types::vm_status::KeptVMStatus::Executed;
 use move_vm_runtime::data_cache::TransactionCache;
+use move_vm_runtime::RuntimeEnvironment;
 use moveos::gas::table::{
     get_gas_schedule_entries, initial_cost_schedule, CostTable, MoveOSGasMeter,
 };
@@ -39,7 +40,6 @@ use rooch_types::transaction::authenticator::AUTH_PAYLOAD_SIZE;
 use rooch_types::transaction::RoochTransactionData;
 use std::rc::Rc;
 use std::str::FromStr;
-use move_vm_runtime::RuntimeEnvironment;
 
 pub fn execute_tx_locally(
     state_root_bytes: Vec<u8>,
@@ -224,10 +224,7 @@ pub fn prepare_execute_env(
 
     let runtime_environment = RuntimeEnvironment::new(gas_parameters.all_natives());
 
-    let vm = MoveOSVM::new(
-        &runtime_environment,
-    )
-    .expect("create MoveVM failed");
+    let vm = MoveOSVM::new(&runtime_environment).expect("create MoveVM failed");
 
     (vm, object_runtime, client_resolver, action, cost_table)
 }

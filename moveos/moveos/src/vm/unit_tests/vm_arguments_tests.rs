@@ -29,6 +29,7 @@ use move_core_types::{
     vm_status::StatusCode,
 };
 use move_vm_runtime::config::VMConfig;
+use move_vm_runtime::RuntimeEnvironment;
 use moveos_types::moveos_std::object::ObjectMeta;
 use moveos_types::state::{FieldKey, ObjectState};
 use moveos_types::state_resolver::{StateKV, StatelessResolver};
@@ -38,7 +39,6 @@ use moveos_types::{
     state_resolver::StateResolver, transaction::MoveAction,
 };
 use std::collections::HashMap;
-use move_vm_runtime::RuntimeEnvironment;
 
 // make a script with a given signature for main.
 fn make_script(parameters: Signature) -> Vec<u8> {

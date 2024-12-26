@@ -12,6 +12,7 @@ use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor, LocalActorRef};
 use function_name::named;
 use move_core_types::vm_status::VMStatus;
+use move_vm_runtime::RuntimeEnvironment;
 use moveos::moveos::{MoveOS, MoveOSConfig};
 use moveos::vm::vm_status_explainer::explain_vm_status;
 use moveos_eventbus::bus::EventData;
@@ -49,7 +50,6 @@ use rooch_types::transaction::{
 };
 use std::str::FromStr;
 use std::sync::Arc;
-use move_vm_runtime::RuntimeEnvironment;
 
 pub struct ExecutorActor {
     root: ObjectMeta,

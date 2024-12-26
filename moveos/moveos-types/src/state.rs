@@ -12,6 +12,7 @@ use crate::moveos_std::timestamp::Timestamp;
 use anyhow::{bail, ensure, Result};
 use core::str;
 use hex::FromHex;
+use move_bytecode_utils::compiled_module_viewer::CompiledModuleView;
 use move_core_types::{
     account_address::AccountAddress,
     effects::Op,
@@ -33,6 +34,7 @@ use std::collections::BTreeMap;
 use std::fmt;
 use std::fmt::Debug;
 use std::str::FromStr;
+
 /// `ObjectState` is represent state in MoveOS statedb
 /// It can be DynamicField  or user defined Move Struct
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
@@ -827,7 +829,7 @@ impl ObjectState {
         (self.metadata, self.value)
     }
 
-    pub fn into_annotated_state<T: MoveResolver + Sized>(
+    pub fn into_annotated_state<T: Sized + CompiledModuleView>(
         self,
         annotator: &MoveValueAnnotator<T>,
     ) -> Result<AnnotatedState> {

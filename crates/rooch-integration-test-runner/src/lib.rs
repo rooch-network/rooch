@@ -20,6 +20,7 @@ use move_transactional_test_runner::{
     vm_test_harness::view_resource_in_move_storage,
 };
 use move_vm_runtime::session::SerializedReturnValues;
+use move_vm_runtime::RuntimeEnvironment;
 use moveos::moveos::{MoveOS, MoveOSConfig};
 use moveos::moveos_test_runner::{CompiledState, MoveOSTestAdapter, TaskInput};
 use moveos_config::DataDirPath;
@@ -45,7 +46,6 @@ use rooch_types::framework::auth_validator::TxValidateResult;
 use rooch_types::function_arg::FunctionArg;
 use std::path::PathBuf;
 use std::{collections::BTreeMap, path::Path};
-use move_vm_runtime::RuntimeEnvironment;
 use tracing::debug;
 
 pub struct MoveOSTestRunner<'a> {

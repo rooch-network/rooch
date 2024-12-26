@@ -11,6 +11,7 @@ use move_core_types::gas_algebra::{InternalGas, InternalGasPerArg};
 use move_core_types::value::MoveTypeLayout;
 use move_core_types::{account_address::AccountAddress, identifier::Identifier};
 use move_vm_runtime::native_functions::NativeFunction;
+use move_vm_runtime::RuntimeEnvironment;
 use moveos::gas::table::VMGasParameters;
 use moveos::moveos::{MoveOS, MoveOSConfig};
 use moveos_stdlib::natives::moveos_stdlib::base64::EncodeDecodeGasParametersOption;
@@ -50,7 +51,6 @@ use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::{fs::File, io::Write, path::Path};
-use move_vm_runtime::RuntimeEnvironment;
 
 pub static ROOCH_LOCAL_GENESIS: Lazy<RoochGenesis> = Lazy::new(|| {
     let network: RoochNetwork = BuiltinChainID::Local.into();
@@ -326,12 +326,7 @@ impl RoochGenesis {
         let vm_config = MoveOSConfig::default();
         let (moveos_store, _temp_dir) = MoveOSStore::mock_moveos_store()?;
         let runtime_environment = RuntimeEnvironment::new(gas_parameter.all_natives());
-        let moveos = MoveOS::new(
-            &runtime_environment,
-            moveos_store,
-            vec![],
-            vec![],
-        )?;
+        let moveos = MoveOS::new(&runtime_environment, moveos_store, vec![], vec![])?;
         let output = moveos.init_genesis(
             genesis_moveos_tx.clone(),
             genesis_config.genesis_objects.clone(),

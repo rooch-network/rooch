@@ -450,7 +450,9 @@ where
     }
 
     fn type_to_type_tag(&self, ty: &Type) -> move_binary_format::errors::PartialVMResult<TypeTag> {
-        self.session.get_type_tag(ty, self.remote).map_err(|e| e.to_partial())
+        self.session
+            .get_type_tag(ty, self.remote)
+            .map_err(|e| e.to_partial())
     }
 }
 
@@ -463,7 +465,9 @@ where
     T: TransactionCache,
 {
     match t {
-        Type::Struct(s, _) | Type::StructInstantiation(s, _, _) => session.fetch_struct_ty_by_idx(*s, session.module_store),
+        Type::Struct(s, _) | Type::StructInstantiation(s, _, _) => {
+            session.fetch_struct_ty_by_idx(*s, session.module_store)
+        }
         Type::Reference(r) => as_struct_no_panic(session, r),
         Type::MutableReference(r) => as_struct_no_panic(session, r),
         _ => None,
