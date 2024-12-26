@@ -20,6 +20,7 @@ import {
   DialogActions,
 } from '@mui/material';
 
+import { isMainNetwork } from 'src/utils/env';
 import { fNumber } from 'src/utils/format-number';
 import { fromDust, formatNumber } from 'src/utils/number';
 
@@ -119,6 +120,8 @@ export default function AcceptBidDialog({
   close,
 }: AcceptBidDialogProps) {
   const { mutate: signAndExecuteTransaction, isPending } = UseSignAndExecuteTransaction();
+
+  const network = isMainNetwork() ? 'mainnet' : 'testnet';
 
   const price = useMemo(
     () => new BigNumber(acceptBidItem.unit_price).times(acceptBidItem.quantity).toString(),
@@ -242,7 +245,7 @@ export default function AcceptBidDialog({
             tx.callFunction({
               target: `${TESTNET_ORDERBOOK_PACKAGE}::market_v2::accept_bid`,
               args: [
-                Args.objectId(NETWORK_PACKAGE.testnet.tickInfo[tick].MARKET_OBJECT_ID),
+                Args.objectId(NETWORK_PACKAGE[network].tickInfo[tick].MARKET_OBJECT_ID),
                 Args.u64(BigInt(acceptBidItem.order_id)),
                 Args.address(acceptBidItem.owner),
                 Args.bool(true),
@@ -257,9 +260,13 @@ export default function AcceptBidDialog({
               },
               {
                 async onSuccess(data) {
-                  toast.success('Accept bid success');
-                  close();
-                  refreshBidList();
+                  if (data.execution_info.status.type === 'executed') {
+                    toast.success('Accept bid success');
+                    close();
+                    refreshBidList();
+                  } else {
+                    toast.error('Accept bid Failed');
+                  }
                 },
                 onError(error) {
                   toast.error(String(error));

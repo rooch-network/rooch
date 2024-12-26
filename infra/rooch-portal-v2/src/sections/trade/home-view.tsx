@@ -1,12 +1,13 @@
 'use client';
 
+import { Box } from '@mui/material';
 import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
-import { Table, TableBody, TableContainer } from '@mui/material';
 
-import { Scrollbar } from 'src/components/scrollbar';
+import { useRouter } from 'src/routes/hooks';
+
 import { useSettingsContext } from 'src/components/settings';
-import { TableHeadCustom } from 'src/components/table/table-head-custom';
+import MarketplaceItemCard from 'src/components/market/markerplace-item-card';
 
 export interface Tick {
   current_epoch: string;
@@ -44,6 +45,7 @@ const TABLE_HEAD = [
 
 export default function MarketplaceHomeView() {
   const settings = useSettingsContext();
+  const router = useRouter();
   // const { tickList: ticks, isFetching } = useMRCTicks();
   // const { tickTradeInfos, isLoadingTickTradeInfos } = useBatchMarketTradeData([
   //   'grow',
@@ -52,121 +54,34 @@ export default function MarketplaceHomeView() {
 
   return (
     <Container maxWidth="xl">
-      <Typography variant="h4"> Marketplace </Typography>
+      <Typography variant="h4"> Marketplace List</Typography>
 
-      <TableContainer
+      <Box
+        gap={3}
+        display="grid"
+        gridTemplateColumns={{
+          xs: 'repeat(2, 1fr)',
+          sm: 'repeat(3, 1fr)',
+          md: 'repeat(3, 1fr)',
+          lg: 'repeat(3, 1fr)',
+        }}
         sx={{
-          mt: 3,
-          overflow: 'unset',
-          '& .simplebar-content-wrapper': {
-            borderRadius: '8px !important',
-          },
+          mt: 2,
         }}
       >
-        <Scrollbar>
-          <Table sx={{ minWidth: 800 }}>
-            <TableHeadCustom
-              headLabel={TABLE_HEAD}
-              sx={{
-                borderRadius: 8,
-              }}
-            />
-
-            <TableBody>
-              {/* {false ? (
-                <TableRow>
-                  <TableCell>
-                    <Skeleton />
-                  </TableCell>
-                  <TableCell align="center">
-                    <Skeleton />
-                  </TableCell>
-                  <TableCell align="right">
-                    <Skeleton />
-                  </TableCell>
-                  <TableCell align="right">
-                    <Skeleton />
-                  </TableCell>
-                  <TableCell align="right">
-                    <Skeleton />
-                  </TableCell>
-                  <TableCell align="center">
-                    <Skeleton />
-                  </TableCell>
-                </TableRow>
-              ) : (
-                tickTradeInfos
-                  .sort((a, b) => Number(b.today_volume) - Number(a.today_volume))
-                  .map((row) => {
-                    const todayVolume = new BigNumber(row.today_volume);
-                    const totalVolume = new BigNumber(row.total_volume);
-                    const totalSupply =
-                      ticks?.find((i) => i.tick.toLowerCase() === row.tick.toLowerCase())?.stat
-                        .fields.current_supply || 0;
-                    const isVerified = row.tick?.toLowerCase() === 'move';
-                    return (
-                      <TableRow key={row.tick}>
-                        <TableCell>
-                          <Typography
-                            sx={{
-                              fontWeight: 600,
-                              fontSize: '1rem',
-                              display: 'flex',
-                              alignItems: 'center',
-                            }}
-                          >
-                            {row.tick}
-                            {isVerified && (
-                              <Iconify
-                                icon="solar:verified-check-bold"
-                                color={secondary.main}
-                                width={20}
-                                sx={{
-                                  ml: 1,
-                                }}
-                              />
-                            )}
-                          </Typography>
-                        </TableCell>
-                        <TableCell
-                          align="center"
-                          sx={{
-                            fontWeight: 600,
-                          }}
-                        >
-                          {fNumber(fromDust(todayVolume.toNumber(), SUI_DECIMALS).toNumber())}
-                        </TableCell>
-                        <TableCell
-                          align="right"
-                          sx={{
-                            fontWeight: 600,
-                          }}
-                        >
-                          {fNumber(fromDust(totalVolume.toNumber(), SUI_DECIMALS).toNumber())}
-                        </TableCell>
-                        <TableCell
-                          align="right"
-                          sx={{
-                            fontWeight: 600,
-                          }}
-                        >
-                          {totalSupply === 0 ? '--' : fNumber(totalSupply)}
-                        </TableCell>
-                        <TableCell align="center">
-                          <Link href={`/marketplace/${row.tick?.toLowerCase()}`}>
-                            <Button variant="outlined" color="success">
-                              Trade
-                            </Button>
-                          </Link>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
-              )} */}
-            </TableBody>
-          </Table>
-        </Scrollbar>
-      </TableContainer>
+        <MarketplaceItemCard
+          tick="grow"
+          onClick={() => {
+            router.push(`/trade/grow`);
+          }}
+        />
+        <MarketplaceItemCard
+          tick="gold"
+          onClick={() => {
+            router.push(`/trade/gold`);
+          }}
+        />
+      </Box>
     </Container>
   );
 }

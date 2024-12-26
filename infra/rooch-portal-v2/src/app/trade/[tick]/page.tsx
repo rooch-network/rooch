@@ -5,10 +5,5 @@ export const metadata = {
 };
 
 export default function Page({ params }: { params: { tick: string } }) {
-  console.log('🚀 ~ file: page.tsx:8 ~ Page ~ params:', params);
-  // if (!Object.keys(NETWORK_PACKAGE[NETWORK].tickInfo).includes(tick)) {
-  //   return <NotMarketplaceFoundView />;
-  // }
-
   return <MarketplaceView params={params} />;
 }

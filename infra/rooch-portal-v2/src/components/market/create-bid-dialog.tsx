@@ -20,6 +20,7 @@ import {
 } from '@mui/material';
 
 import { toDust } from 'src/utils/number';
+import { isMainNetwork } from 'src/utils/env';
 
 import { secondary } from 'src/theme/core';
 import { NETWORK_PACKAGE } from 'src/config/trade';
@@ -47,6 +48,7 @@ export default function CreateBidDialog({
   refreshBidList,
   close,
 }: CreateBidDialogProps) {
+  const network = isMainNetwork() ? 'mainnet' : 'testnet';
   const [bidAmount, setBidAmount] = useState('');
   const [bidUnitPrice, setBidUnitPrice] = useState('');
 
@@ -101,6 +103,7 @@ export default function CreateBidDialog({
         <TextField
           autoFocus
           fullWidth
+          autoComplete="off"
           type="number"
           InputProps={{
             endAdornment: (
@@ -123,6 +126,7 @@ export default function CreateBidDialog({
         <TextField
           autoFocus
           fullWidth
+          autoComplete="off"
           type="number"
           InputProps={{
             endAdornment: (
@@ -250,7 +254,7 @@ export default function CreateBidDialog({
             tx.callFunction({
               target: `${TESTNET_ORDERBOOK_PACKAGE}::market_v2::create_bid`,
               args: [
-                Args.objectId(NETWORK_PACKAGE.testnet.tickInfo[tick].MARKET_OBJECT_ID),
+                Args.objectId(NETWORK_PACKAGE[network].tickInfo[tick].MARKET_OBJECT_ID),
                 Args.u64(unitPriceInMist),
                 Args.u256(BigInt(toDust(bidAmount, toCoinBalanceInfo.decimals))),
               ],

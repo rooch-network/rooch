@@ -11,6 +11,7 @@ import { grey } from '@mui/material/colors';
 import { Card, Chip, Stack, Checkbox, CardActions } from '@mui/material';
 
 import { fromDust } from 'src/utils/number';
+import { isMainNetwork } from 'src/utils/env';
 
 import { NETWORK, NETWORK_PACKAGE } from 'src/config/trade';
 import { TESTNET_ORDERBOOK_PACKAGE } from 'src/config/constant';
@@ -46,6 +47,8 @@ export default function InscriptionItemCard({
   const account = useCurrentAddress();
   const { mutate: signAndExecuteTransaction, isPending } = UseSignAndExecuteTransaction();
 
+  const network = isMainNetwork() ? 'mainnet' : 'testnet';
+
   const price = useMemo(
     () =>
       new BigNumber(item.unit_price)
@@ -67,7 +70,11 @@ export default function InscriptionItemCard({
         // color: secondary['main'],
       }}
       onClick={() => {
-        if (!selectMode || !item.order_id || item.owner === account?.genRoochAddress().toStr()) {
+        if (
+          !selectMode ||
+          !item.order_id ||
+          item.owner === account?.genRoochAddress().toHexAddress()
+        ) {
           return;
         }
         onSelectItem(item.order_id);
@@ -79,12 +86,12 @@ export default function InscriptionItemCard({
             size="medium"
             checked={selected}
             color="secondary"
-            disabled={!item.order_id || item.owner === account?.genRoochAddress().toStr()}
+            disabled={!item.order_id || item.owner === account?.genRoochAddress().toHexAddress()}
             icon={<Iconify icon="eva:radio-button-off-fill" />}
             checkedIcon={<Iconify icon="eva:checkmark-circle-2-fill" />}
             sx={{ p: 0.75 }}
           />
-          {item.owner === account?.genRoochAddress().toStr() && (
+          {item.owner === account?.genRoochAddress().toHexAddress() && (
             <Chip size="small" disabled label="Owned" />
           )}
         </Stack>
@@ -114,11 +121,11 @@ export default function InscriptionItemCard({
             spacing={2}
           >
             {/* Buy */}
-            {account?.genRoochAddress().toStr() !== item.owner ? (
+            {account?.genRoochAddress().toHexAddress() !== item.owner ? (
               <LoadingButton
                 loading={isPending}
                 disabled={
-                  Boolean(!account?.genRoochAddress().toStr()) ||
+                  Boolean(!account?.genRoochAddress().toHexAddress()) ||
                   new BigNumber(accountBalance || 0).isLessThan(price)
                 }
                 variant="outlined"
@@ -126,18 +133,25 @@ export default function InscriptionItemCard({
                 color="primary"
                 fullWidth
                 onClick={() => {
-                  if (!account?.genRoochAddress().toStr()) {
+                  if (!account?.genRoochAddress().toHexAddress()) {
                     return;
                   }
+                  console.log(
+                    '🚀 ~ file: inscription-item-card.tsx:203 ~ item:',
+                    item,
+                    item.order_id,
+                    BigInt(item.order_id),
+                    Args.u64(BigInt(item.order_id))
+                  );
                   const tx = new Transaction();
                   tx.callFunction({
                     target: `${TESTNET_ORDERBOOK_PACKAGE}::market_v2::buy`,
                     args: [
-                      Args.objectId(NETWORK_PACKAGE.testnet.tickInfo[tick].MARKET_OBJECT_ID),
+                      Args.objectId(NETWORK_PACKAGE[network].tickInfo[tick].MARKET_OBJECT_ID),
                       Args.u64(BigInt(item.order_id)),
-                      Args.address(item.owner),
-                      Args.bool(true),
                       Args.address(account.genRoochAddress().toStr()),
+                      Args.bool(true),
+                      Args.address(item.owner),
                     ],
                     typeArgs: ['0x3::gas_coin::RGas', toCoinBalanceInfo.coin_type],
                   });
@@ -147,8 +161,12 @@ export default function InscriptionItemCard({
                     },
                     {
                       async onSuccess(data) {
-                        toast.success('Buy Success');
-                        await onRefetchMarketData();
+                        if (data.execution_info.status.type === 'executed') {
+                          toast.success('Buy Success');
+                          await onRefetchMarketData();
+                        } else {
+                          toast.error('Buy Failed');
+                        }
                       },
                       onError(error) {
                         toast.error(String(error));
@@ -157,7 +175,7 @@ export default function InscriptionItemCard({
                   );
                 }}
               >
-                {!account?.genRoochAddress().toStr()
+                {!account?.genRoochAddress().toHexAddress()
                   ? 'Please connect wallet'
                   : new BigNumber(accountBalance || 0).isLessThan(price)
                     ? 'Insufficient Balance'
@@ -173,7 +191,7 @@ export default function InscriptionItemCard({
                 onClick={() => {
                   const tx = new Transaction();
                   tx.callFunction({
-                    target: `${TESTNET_ORDERBOOK_PACKAGE}::market::cancel_order`,
+                    target: `${TESTNET_ORDERBOOK_PACKAGE}::market_v2::cancel_order`,
                     args: [
                       Args.objectId(NETWORK_PACKAGE[NETWORK].tickInfo[tick].MARKET_OBJECT_ID),
                       Args.u64(BigInt(item.order_id)),
@@ -186,8 +204,12 @@ export default function InscriptionItemCard({
                     },
                     {
                       async onSuccess(data) {
-                        toast.success('Delist Success');
-                        await onRefetchMarketData();
+                        if (data.execution_info.status.type === 'executed') {
+                          toast.success('Delist Success');
+                          await onRefetchMarketData();
+                        } else {
+                          toast.error('Delist Failed');
+                        }
                       },
                       onError(error) {
                         toast.error(String(error));
