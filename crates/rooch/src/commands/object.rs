@@ -12,7 +12,9 @@ use rooch_rpc_api::jsonrpc_types::btc::ord::InscriptionFilterView;
 use rooch_rpc_api::jsonrpc_types::btc::utxo::UTXOFilterView;
 use rooch_rpc_api::jsonrpc_types::{ObjectStateFilterView, QueryOptions, RoochAddressView};
 use rooch_types::address::ParsedAddress;
-use rooch_types::indexer::state::{ObjectStateType, INSCRIPTION_TYPE_TAG, UTXO_TYPE_TAG};
+use rooch_types::indexer::state::{
+    IndexerStateID, ObjectStateType, INSCRIPTION_TYPE_TAG, UTXO_TYPE_TAG,
+};
 use rooch_types::{error::RoochResult, function_arg::ParsedObjectID};
 
 pub const QUERY_OBJECT_STATES_METHOD: &str = "rooch_queryObjectStates";
@@ -31,6 +33,10 @@ pub struct ObjectCommand {
     /// The address of the object's owner.
     #[clap(short = 'o', long, value_parser=ParsedAddress::parse)]
     owner: Option<ParsedAddress>,
+
+    /// Provide the cursor in the format 'tx_order,state_index' (e.g., '12345,67890')
+    #[clap(long, value_parser = clap::value_parser!(IndexerStateID))]
+    cursor: Option<IndexerStateID>,
 
     /// Max number of items returned per page
     #[clap(long)]
@@ -135,7 +141,7 @@ impl CommandAction<String> for ObjectCommand {
                     .rooch
                     .query_utxos(
                         utxo_fitler,
-                        None,
+                        self.cursor.clone(),
                         self.limit,
                         Some(query_options.descending),
                     )
@@ -156,14 +162,24 @@ impl CommandAction<String> for ObjectCommand {
                 };
                 let result = client
                     .rooch
-                    .query_inscriptions(inscription_fitler, None, self.limit, Some(query_options))
+                    .query_inscriptions(
+                        inscription_fitler,
+                        self.cursor.clone(),
+                        self.limit,
+                        Some(query_options),
+                    )
                     .await?;
                 serde_json::to_string_pretty(&result).unwrap()
             }
             ObjectStateType::ObjectState => {
                 let result = client
                     .rooch
-                    .query_object_states(filter.unwrap(), None, self.limit, Some(query_options))
+                    .query_object_states(
+                        filter.unwrap(),
+                        self.cursor.clone(),
+                        self.limit,
+                        Some(query_options),
+                    )
                     .await?;
                 serde_json::to_string_pretty(&result).unwrap()
             }
