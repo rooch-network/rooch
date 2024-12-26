@@ -12,8 +12,7 @@ use rooch_rpc_api::jsonrpc_types::btc::ord::InscriptionFilterView;
 use rooch_rpc_api::jsonrpc_types::btc::utxo::UTXOFilterView;
 use rooch_rpc_api::jsonrpc_types::{ObjectStateFilterView, QueryOptions, RoochAddressView};
 use rooch_types::address::ParsedAddress;
-use rooch_types::indexer::state::IndexerStateID;
-use rooch_types::indexer::state::{ObjectStateType, INSCRIPTION_TYPE_TAG, UTXO_TYPE_TAG};
+use rooch_types::indexer::state::{ObjectStateType, INSCRIPTION_TYPE_TAG, UTXO_TYPE_TAG, IndexerStateID};
 use rooch_types::{error::RoochResult, function_arg::ParsedObjectID};
 
 pub const QUERY_OBJECT_STATES_METHOD: &str = "rooch_queryObjectStates";
