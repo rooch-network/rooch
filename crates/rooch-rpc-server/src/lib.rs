@@ -197,6 +197,9 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     // Initialize metrics before creating any stores
     init_metrics(&prometheus_registry);
 
+    let (shutdown_tx, mut governor_rx): (broadcast::Sender<()>, broadcast::Receiver<()>) =
+        broadcast::channel(16);
+
     // Init store
     let store_config = opt.store_config();
 
@@ -308,6 +311,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
             sequencer_keypair.copy(),
             rooch_store.clone(),
             genesis_namespace,
+            shutdown_tx.subscribe(),
         )
         .await?
         .into_actor(Some("DAServer"), &actor_system)
@@ -442,9 +446,6 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         // Allow requests from any origin
         .allow_origin(acl)
         .allow_headers([axum::http::header::CONTENT_TYPE]);
-
-    let (shutdown_tx, mut governor_rx): (broadcast::Sender<()>, broadcast::Receiver<()>) =
-        broadcast::channel(16);
 
     let traffic_burst_size: u32;
     let traffic_per_second: f64;
