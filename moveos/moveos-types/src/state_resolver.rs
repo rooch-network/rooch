@@ -12,11 +12,14 @@ use crate::{
 };
 use anyhow::{ensure, Error, Result};
 use bytes::Bytes;
+use move_binary_format::deserializer::DeserializerConfig;
 use move_binary_format::errors::{
     BinaryLoaderResult, Location, PartialVMError, PartialVMResult, VMResult,
 };
 use move_binary_format::file_format::CompiledScript;
+use move_binary_format::file_format_common::{IDENTIFIER_SIZE_MAX, VERSION_MAX};
 use move_binary_format::CompiledModule;
+use move_bytecode_utils::compiled_module_viewer::CompiledModuleView;
 use move_core_types::identifier::{IdentStr, Identifier};
 use move_core_types::metadata::Metadata;
 use move_core_types::value::MoveTypeLayout;
@@ -33,7 +36,6 @@ use move_vm_types::code::Code;
 use move_vm_types::resolver::{ModuleResolver, MoveResolver, ResourceResolver};
 use std::env::temp_dir;
 use std::sync::Arc;
-use move_bytecode_utils::compiled_module_viewer::CompiledModuleView;
 
 pub type StateKV = (FieldKey, ObjectState);
 pub type AnnotatedStateKV = (FieldKey, AnnotatedState);
@@ -281,17 +283,38 @@ where
         //So we need unwrap the MoveModule type.
         match self.get_field(&package_obj_id, &key) {
             Ok(state_opt) => state_opt
-                .map(|s| {
-                    Ok(Bytes::copy_from_slice(
-                        s.value_as::<MoveModuleDynamicField>()?
-                            .value
-                            .byte_codes
-                            .as_slice(),
-                    ))
+                .map(|s| match s.value_as::<MoveModuleDynamicField>() {
+                    Ok(v) => {
+                        let ret = v.clone();
+                        let x = ret.value.byte_codes.to_vec();
+                        Ok(Bytes::copy_from_slice(x.as_slice()))
+                    }
+                    Err(e) => {
+                        return Err(
+                            PartialVMError::new(StatusCode::ABORTED).with_message(format!("{}", e))
+                        )
+                    }
                 })
                 .transpose(),
-            Err(e) => Err(PartialVMError::new(StatusCode::ABORTED)),
+            Err(e) => Err(PartialVMError::new(StatusCode::ABORTED).with_message(format!("{}", e))),
         }
+    }
+}
+
+impl<R> CompiledModuleView for &RootObjectResolver<'_, R>
+where
+    R: StatelessResolver,
+{
+    type Item = CompiledModule;
+
+    fn view_compiled_module(&self, id: &ModuleId) -> Result<Option<Self::Item>> {
+        Ok(match self.get_module(id)? {
+            Some(bytes) => {
+                let config = DeserializerConfig::new(VERSION_MAX, IDENTIFIER_SIZE_MAX);
+                Some(CompiledModule::deserialize_with_config(&bytes, &config)?)
+            }
+            None => None,
+        })
     }
 }
 
@@ -324,7 +347,7 @@ pub trait StateReader: StateResolver {
 
 impl<R> StateReader for R where R: StateResolver {}
 
-pub trait AnnotatedStateReader: StateReader + MoveResolver + CompiledModuleView  {
+pub trait AnnotatedStateReader: StateReader + MoveResolver where &Self: CompiledModuleView {
     fn get_annotated_states(&self, path: AccessPath) -> Result<Vec<Option<AnnotatedState>>> {
         let annotator = MoveValueAnnotator::new(self);
         self.get_states(path)?
@@ -374,7 +397,7 @@ pub trait AnnotatedStateReader: StateReader + MoveResolver + CompiledModuleView 
     }
 }
 
-impl<T> AnnotatedStateReader for T where T: StateReader + MoveResolver + CompiledModuleView {}
+impl<T> AnnotatedStateReader for T where T: StateReader + MoveResolver {}
 
 pub trait StateReaderExt: StateReader {
     fn get_account(&self, address: AccountAddress) -> Result<Option<ObjectEntity<Account>>> {

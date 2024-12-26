@@ -10,9 +10,18 @@ use crate::state_store::statedb::StateDBStore;
 use crate::state_store::{nodes_to_write_batch, NodeDBStore};
 use crate::transaction_store::{TransactionDBStore, TransactionStore};
 use accumulator::inmemory::InMemoryAccumulator;
+use ambassador::delegate_to_methods;
 use anyhow::{Error, Result};
 use bcs::to_bytes;
+use bytes::Bytes;
+use move_binary_format::file_format::CompiledScript;
+use move_binary_format::CompiledModule;
 use move_core_types::language_storage::{ModuleId, StructTag};
+use move_vm_runtime::{Module, Script};
+use move_vm_types::code::{
+    ModuleCache, ScriptCache, UnsyncModuleCache, UnsyncScriptCache, WithBytes, WithHash,
+};
+use move_vm_types::sha3_256;
 use moveos_config::store_config::{MoveOSStoreConfig, RocksdbConfig};
 use moveos_config::DataDirPath;
 use moveos_types::genesis_info::GenesisInfo;
@@ -37,13 +46,6 @@ use smt::NodeReader;
 use std::fmt::{Debug, Display, Formatter};
 use std::path::Path;
 use std::sync::Arc;
-use ambassador::delegate_to_methods;
-use bytes::Bytes;
-use move_binary_format::CompiledModule;
-use move_binary_format::file_format::CompiledScript;
-use move_vm_runtime::{Module, Script};
-use move_vm_types::code::{ModuleCache, ScriptCache, UnsyncModuleCache, UnsyncScriptCache, WithBytes, WithHash};
-use move_vm_types::sha3_256;
 
 pub mod config_store;
 pub mod event_store;
@@ -93,13 +95,16 @@ pub struct MoveOSStore {
     pub config_store: ConfigDBStore,
     pub state_store: StateDBStore,
     pub script_cache: UnsyncScriptCache<[u8; 32], CompiledScript, Script>,
-    pub module_cache: UnsyncModuleCache<ModuleId, CompiledModule, Module, RoochModuleExtension, Option<TxnIndex>>,
+    pub module_cache:
+        UnsyncModuleCache<ModuleId, CompiledModule, Module, RoochModuleExtension, Option<TxnIndex>>,
 }
 
 #[delegate_to_methods]
 #[delegate(ScriptCache, target_ref = "as_script_cache")]
 impl MoveOSStore {
-    pub fn as_script_cache(&self) -> &dyn ScriptCache<Key = [u8; 32], Deserialized = CompiledScript, Verified = Script> {
+    pub fn as_script_cache(
+        &self,
+    ) -> &dyn ScriptCache<Key = [u8; 32], Deserialized = CompiledScript, Verified = Script> {
         &self.script_cache
     }
 
