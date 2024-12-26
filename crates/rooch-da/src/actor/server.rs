@@ -23,6 +23,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time;
 use std::time::{Duration, SystemTime};
+use tokio::sync::broadcast;
 
 // default background submit interval: 5 seconds
 // smaller interval helps to reduce the delay of blocks making and submitting, get more accurate block number by status query
@@ -127,6 +128,7 @@ impl DAServerActor {
         sequencer_key: RoochKeyPair,
         rooch_store: RoochStore,
         genesis_namespace: String,
+        shutdown_rx: broadcast::Receiver<()>,
     ) -> anyhow::Result<Self> {
         let min_block_to_submit = da_config.da_min_block_to_submit;
         let ServerBackends {
@@ -157,6 +159,7 @@ impl DAServerActor {
                 background_last_block_update_time,
                 min_block_to_submit,
                 background_submit_interval,
+                shutdown_rx,
             );
         }
 
@@ -222,6 +225,8 @@ impl DAServerActor {
         Ok(())
     }
 
+    // Spawns a background submitter to handle unsubmitted blocks off the main thread.
+    // This prevents blocking other actor handlers and maintains the actor's responsiveness.
     fn create_background_submitter(
         rooch_store: RoochStore,
         sequencer_key: RoochKeyPair,
@@ -230,6 +235,7 @@ impl DAServerActor {
         background_last_block_update_time: Arc<AtomicU64>,
         min_block_to_submit_opt: Option<u128>,
         background_submit_interval: u64,
+        mut shutdown_rx: broadcast::Receiver<()>,
     ) {
         tokio::spawn(async move {
             let background_submitter = BackgroundSubmitter {
@@ -245,38 +251,46 @@ impl DAServerActor {
             };
 
             let mut old_last_block_number = None;
+            let mut ticker = tokio::time::interval(Duration::from_secs(background_submit_interval));
 
             loop {
-                match rooch_store.get_last_block_number() {
-                    Ok(Some(last_block_number)) => {
-                        if let Some(block_number_for_last_job) = old_last_block_number {
-                            if block_number_for_last_job > last_block_number {
-                                tracing::error!("da: last block number is smaller than last background job block number: {} < {}, database is inconsistent",
-                                    last_block_number, block_number_for_last_job);
-                                break;
-                            }
-                        }
-                        old_last_block_number = Some(last_block_number);
+                tokio::select! {
+                 _ = shutdown_rx.recv() => {
+                     tracing::info!("DA Background Submitter thread received shutdown signal, exiting...");
+                     break;
+                 }
+                 _ = ticker.tick() => {
+                     match rooch_store.get_last_block_number() {
+                         Ok(Some(last_block_number)) => {
+                             if let Some(block_number_for_last_job) = old_last_block_number {
+                                 if block_number_for_last_job > last_block_number {
+                                          tracing::error!("da: last block number is smaller than last background job block number: {} < {}, database is inconsistent",
+                                              last_block_number, block_number_for_last_job);
+                                          break;
+                                      }
+                                  }
+                                  old_last_block_number = Some(last_block_number);
 
-                        if let Err(e) = background_submitter
-                            .start_job(last_block_number, min_block_to_submit_opt)
-                            .await
-                        {
-                            tracing::error!("da: background submitter failed: {:?}", e);
-                        }
-                    }
-                    Ok(None) => {
-                        if let Some(block_number_for_last_job) = old_last_block_number {
-                            tracing::error!("da: last block number is None, last background job block number: {}, database is inconsistent",
-                                block_number_for_last_job);
-                            break;
-                        }
-                    }
-                    Err(e) => {
-                        tracing::error!("da: get last block number failed: {:?}", e);
+                                  if let Err(e) = background_submitter
+                                      .start_job(last_block_number, min_block_to_submit_opt)
+                                      .await
+                                  {
+                                      tracing::error!("da: background submitter failed: {:?}", e);
+                                  }
+                         }
+                          Ok(None) => {
+                                 if let Some(block_number_for_last_job) = old_last_block_number {
+                                      tracing::error!("da: last block number is None, last background job block number: {}, database is inconsistent",
+                                          block_number_for_last_job);
+                                      break;
+                                  }
+                              }
+                              Err(e) => {
+                                  tracing::error!("da: get last block number failed: {:?}", e);
+                              }
+                          }
                     }
                 }
-                tokio::time::sleep(Duration::from_secs(background_submit_interval)).await;
             }
         });
     }
