@@ -36,7 +36,7 @@ spec:
           allowPrivilegeEscalation: true
       containers:
       - name: roochbot
-        image: jolestar/eliza-tee:0.1.6-alpha.4-20241224
+        image: jolestar/eliza-tee:0.1.6-alpha.4-20241225
         command: ["pnpm"]
         args: 
         - "start"
