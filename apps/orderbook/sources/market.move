@@ -179,7 +179,7 @@ module orderbook::market_v2 {
     ) {
         let coin= account_coin_store::withdraw<QuoteAsset>(signer, quantity);
         let market = object::borrow_mut(market_obj);
-        assert!(market.version == VERSION, ErrorWrongVersion);
+        // assert!(market.version == VERSION, ErrorWrongVersion);
         assert!(market.is_paused == false, ErrorWrongPaused);
         let order_id = market.next_ask_order_id;
         market.next_ask_order_id = market.next_ask_order_id + 1;
@@ -218,7 +218,7 @@ module orderbook::market_v2 {
         quantity: u256,
     ) {
         let market = object::borrow_mut(market_obj);
-        assert!(market.version == VERSION, ErrorWrongVersion);
+        // assert!(market.version == VERSION, ErrorWrongVersion);
         assert!(market.is_paused == false, ErrorWrongPaused);
         assert!(quantity > 0, ErrorWrongCreateBid);
         assert!(unit_price > 0, ErrorWrongCreateBid);
@@ -258,7 +258,7 @@ module orderbook::market_v2 {
     ) {
         //Get the list from the collection
         let market = object::borrow_mut(market_obj);
-        assert!(market.version == VERSION, ErrorWrongVersion);
+        // assert!(market.version == VERSION, ErrorWrongVersion);
 
         let usr_open_orders = table::borrow_mut(&mut market.user_order_info, sender());
         let tick_price = *linked_table::borrow(usr_open_orders, order_id);
@@ -320,7 +320,7 @@ module orderbook::market_v2 {
     ): Option<Coin<QuoteAsset>> {
         let market = object::borrow_mut(market_obj);
         assert!(market.is_paused == false, ErrorWrongPaused);
-        assert!(market.version == VERSION, ErrorWrongVersion);
+        // assert!(market.version == VERSION, ErrorWrongVersion);
         let usr_open_orders = table::borrow_mut(&mut market.user_order_info, order_owner);
         let tick_price = *linked_table::borrow(usr_open_orders, order_id);
         let (tick_exists, tick_index) = find_leaf(&market.asks, tick_price);
@@ -353,7 +353,7 @@ module orderbook::market_v2 {
     }
 
 
-    public entry fun buy_with_amount<BaseAsset: key + store, QuoteAsset: key + store>(
+    public entry fun buy_from_origin<BaseAsset: key + store, QuoteAsset: key + store>(
         signer: &signer,
         market_obj: &mut Object<Marketplace<BaseAsset, QuoteAsset>>,
         order_id: u64,
@@ -362,7 +362,7 @@ module orderbook::market_v2 {
         assert_order_exist: bool,
         receiver: address
     ){
-        let option_coin = do_buy_internal<BaseAsset, QuoteAsset>(signer, market_obj, order_id, amount, order_owner, assert_order_exist, none());
+        let option_coin = do_buy_external<BaseAsset, QuoteAsset>(signer, market_obj, order_id, amount, order_owner, assert_order_exist, none());
         if (is_some(&option_coin)) {
             account_coin_store::deposit(receiver, option::extract(&mut option_coin))
         };
@@ -379,7 +379,7 @@ module orderbook::market_v2 {
         receiver: address,
         distributor: address
     ){
-        let option_coin = do_buy_internal<BaseAsset, QuoteAsset>(signer, market_obj, order_id, amount, order_owner, assert_order_exist, some(distributor));
+        let option_coin = do_buy_external<BaseAsset, QuoteAsset>(signer, market_obj, order_id, amount, order_owner, assert_order_exist, some(distributor));
         if (is_some(&option_coin)) {
             account_coin_store::deposit(receiver, option::extract(&mut option_coin))
         };
@@ -387,7 +387,7 @@ module orderbook::market_v2 {
     }
 
 
-    public fun do_buy_internal<BaseAsset: key + store, QuoteAsset: key + store>(
+    public fun do_buy_external<BaseAsset: key + store, QuoteAsset: key + store>(
         signer: &signer,
         market_obj: &mut Object<Marketplace<BaseAsset, QuoteAsset>>,
         order_id: u64,
@@ -398,7 +398,7 @@ module orderbook::market_v2 {
     ): Option<Coin<QuoteAsset>> {
         let market = object::borrow_mut(market_obj);
         assert!(market.is_paused == false, ErrorWrongPaused);
-        assert!(market.version == VERSION, ErrorWrongVersion);
+        // assert!(market.version == VERSION, ErrorWrongVersion);
         let usr_open_orders = table::borrow_mut(&mut market.user_order_info, order_owner);
         let tick_price = *linked_table::borrow(usr_open_orders, order_id);
         let (tick_exists, tick_index) = find_leaf(&market.asks, tick_price);
@@ -484,7 +484,7 @@ module orderbook::market_v2 {
     {
         let market = object::borrow_mut(market_obj);
         assert!(market.is_paused == false, ErrorWrongPaused);
-        assert!(market.version == VERSION, ErrorWrongVersion);
+        // assert!(market.version == VERSION, ErrorWrongVersion);
         let usr_open_orders = table::borrow_mut(&mut market.user_order_info, order_owner);
         let tick_price = *linked_table::borrow(usr_open_orders, order_id);
         let (tick_exists, tick_index) = find_leaf(&market.bids, tick_price);
@@ -519,7 +519,7 @@ module orderbook::market_v2 {
     }
 
 
-    public entry fun accept_bid_with_amount<BaseAsset: key + store, QuoteAsset: key + store>(
+    public entry fun accept_bid_from_origin<BaseAsset: key + store, QuoteAsset: key + store>(
         signer: &signer,
         market_obj: &mut Object<Marketplace<BaseAsset, QuoteAsset>>,
         order_id: u64,
@@ -528,7 +528,7 @@ module orderbook::market_v2 {
         assert_order_exist: bool,
         receiver: address
     ){
-        let option_coin = do_accept_bid_internal<BaseAsset, QuoteAsset>(signer, market_obj, order_id, amount, order_owner, assert_order_exist, none());
+        let option_coin = do_accept_bid_external<BaseAsset, QuoteAsset>(signer, market_obj, order_id, amount, order_owner, assert_order_exist, none());
         if (is_some(&option_coin)) {
             account_coin_store::deposit(receiver, option::extract(&mut option_coin))
         };
@@ -545,14 +545,14 @@ module orderbook::market_v2 {
         receiver: address,
         distributor: address
     ){
-        let option_coin = do_accept_bid_internal<BaseAsset, QuoteAsset>(signer, market_obj, order_id, amount, order_owner, assert_order_exist, some(distributor));
+        let option_coin = do_accept_bid_external<BaseAsset, QuoteAsset>(signer, market_obj, order_id, amount, order_owner, assert_order_exist, some(distributor));
         if (is_some(&option_coin)) {
             account_coin_store::deposit(receiver, option::extract(&mut option_coin))
         };
         destroy_none(option_coin)
     }
 
-    public fun do_accept_bid_internal<BaseAsset: key + store, QuoteAsset: key + store>(
+    public fun do_accept_bid_external<BaseAsset: key + store, QuoteAsset: key + store>(
         signer: &signer,
         market_obj: &mut Object<Marketplace<BaseAsset, QuoteAsset>>,
         order_id: u64,
@@ -564,7 +564,7 @@ module orderbook::market_v2 {
     {
         let market = object::borrow_mut(market_obj);
         assert!(market.is_paused == false, ErrorWrongPaused);
-        assert!(market.version == VERSION, ErrorWrongVersion);
+        // assert!(market.version == VERSION, ErrorWrongVersion);
         let usr_open_orders = table::borrow_mut(&mut market.user_order_info, order_owner);
         let tick_price = *linked_table::borrow(usr_open_orders, order_id);
         let (tick_exists, tick_index) = find_leaf(&market.bids, tick_price);
@@ -617,7 +617,7 @@ module orderbook::market_v2 {
         receiver: address,
     ) {
         let market = object::borrow_mut(market_obj);
-        assert!(market.version == VERSION, ErrorWrongVersion);
+        // assert!(market.version == VERSION, ErrorWrongVersion);
         let quote_amount = coin_store::balance(&market.quote_asset_trading_fees);
         account_coin_store::deposit(receiver, coin_store::withdraw(&mut market.quote_asset_trading_fees, quote_amount));
         let base_amount = coin_store::balance(&market.base_asset_trading_fees);
@@ -631,7 +631,7 @@ module orderbook::market_v2 {
         fee: u256,
     ) {
         let market = object::borrow_mut(market_obj);
-        assert!(market.version == VERSION, ErrorWrongVersion);
+        // assert!(market.version == VERSION, ErrorWrongVersion);
         assert!(fee < TRADE_FEE_BASE_RATIO, ErrorFeeTooHigh);
         market.fee = fee
     }
@@ -642,7 +642,7 @@ module orderbook::market_v2 {
         status: bool,
     ) {
         let market = object::borrow_mut(market_obj);
-        assert!(market.version == VERSION, ErrorWrongVersion);
+        // assert!(market.version == VERSION, ErrorWrongVersion);
         market.is_paused = status
     }
 
