@@ -77,7 +77,7 @@ export default function InscriptionItemBidCard({
           justifyContent="space-around"
           spacing={2}
         >
-          {account?.genRoochAddress().toStr() === item.owner ? (
+          {account?.genRoochAddress().toHexAddress() === item.owner ? (
             <LoadingButton
               loading={isPending}
               variant="outlined"
@@ -101,9 +101,12 @@ export default function InscriptionItemBidCard({
                   },
                   {
                     async onSuccess(data) {
-                      // await refetchAddressOwnedInscription();
-                      toast.success('Cancel Bid Success');
-                      onRefetchMarketData();
+                      if (data.execution_info.status.type === 'executed') {
+                        toast.success('Cancel Bid Success');
+                        onRefetchMarketData();
+                      } else {
+                        toast.error('Cancel Bid Failed');
+                      }
                     },
                     onError(error) {
                       toast.error(String(error));
@@ -121,14 +124,14 @@ export default function InscriptionItemBidCard({
               fullWidth
               size="small"
               disabled={
-                Boolean(!account?.genRoochAddress().toStr()) ||
+                Boolean(!account?.genRoochAddress().toHexAddress()) ||
                 new BigNumber(toCoinBalanceInfo.balance || 0).isLessThan(item.quantity)
               }
               onClick={() => {
                 onAcceptBid(item);
               }}
             >
-              {!account?.genRoochAddress().toStr()
+              {!account?.genRoochAddress().toHexAddress()
                 ? 'Please connect wallet'
                 : new BigNumber(toCoinBalanceInfo.balance || 0).isLessThan(item.quantity)
                   ? 'Insufficient Balance'

@@ -9,12 +9,10 @@ import { UseSignAndExecuteTransaction } from '@roochnetwork/rooch-sdk-kit';
 import { LoadingButton } from '@mui/lab';
 import { grey } from '@mui/material/colors';
 import {
-  Box,
   Card,
   Stack,
   Dialog,
   Button,
-  Tooltip,
   TextField,
   Typography,
   DialogTitle,
@@ -23,6 +21,7 @@ import {
   InputAdornment,
 } from '@mui/material';
 
+import { isMainNetwork } from 'src/utils/env';
 import { toDust, fromDust, formatNumber } from 'src/utils/number';
 
 import { NETWORK_PACKAGE } from 'src/config/trade';
@@ -31,7 +30,6 @@ import { TESTNET_ORDERBOOK_PACKAGE } from 'src/config/constant';
 
 import { toast } from 'src/components/snackbar';
 
-import { Iconify } from '../iconify';
 import InscriptionCard from './inscription-card';
 
 export default function ListDialog({
@@ -51,6 +49,7 @@ export default function ListDialog({
   refreshList: () => Promise<void>;
   close: () => void;
 }) {
+  const network = isMainNetwork() ? 'mainnet' : 'testnet';
   const { mutate: signAndExecuteTransaction, isPending } = UseSignAndExecuteTransaction();
 
   const [listPrice, setListPrice] = useState('');
@@ -97,6 +96,7 @@ export default function ListDialog({
           autoFocus
           fullWidth
           type="number"
+          autoComplete="off"
           InputProps={{
             endAdornment: (
               <InputAdornment position="end">
@@ -116,6 +116,7 @@ export default function ListDialog({
           autoFocus
           fullWidth
           type="number"
+          autoComplete="off"
           margin="dense"
           value={listAmount}
           onChange={(e) => {
@@ -175,7 +176,7 @@ export default function ListDialog({
               </span>{' '}
               {fromCoinBalanceInfo.symbol}
             </Typography>
-            <Typography
+            {/* <Typography
               sx={{
                 color: grey[500],
                 fontSize: '0.875rem',
@@ -206,7 +207,7 @@ export default function ListDialog({
                   }}
                 />
               </Tooltip>
-            </Typography>
+            </Typography> */}
           </Stack>
         )}
       </DialogContent>
@@ -237,7 +238,7 @@ export default function ListDialog({
             tx.callFunction({
               target: `${TESTNET_ORDERBOOK_PACKAGE}::market_v2::list`,
               args: [
-                Args.objectId(NETWORK_PACKAGE.testnet.tickInfo[tick].MARKET_OBJECT_ID),
+                Args.objectId(NETWORK_PACKAGE[network].tickInfo[tick].MARKET_OBJECT_ID),
                 Args.u256(
                   BigInt(
                     new BigNumber(
@@ -261,9 +262,13 @@ export default function ListDialog({
               },
               {
                 async onSuccess(data) {
-                  toast.success('List success');
-                  close();
-                  refreshList();
+                  if (data.execution_info.status.type === 'executed') {
+                    toast.success('List success');
+                    close();
+                    refreshList();
+                  } else {
+                    toast.error('List Failed');
+                  }
                 },
                 onError(error) {
                   toast.error(String(error));

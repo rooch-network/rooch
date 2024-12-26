@@ -29,6 +29,7 @@ import {
 } from '@mui/material';
 
 import { fromDust } from 'src/utils/number';
+import { isMainNetwork } from 'src/utils/env';
 import { fNumber } from 'src/utils/format-number';
 import { sleep, shortCoinType } from 'src/utils/common';
 
@@ -48,6 +49,8 @@ import { ProductItemSkeleton } from 'src/components/skeleton/product-item-skelet
 import InscriptionItemBidCard from 'src/components/market/inscription-item-bid-card';
 
 export default function MarketplaceView({ params }: { params: { tick: string } }) {
+  const network = isMainNetwork() ? 'mainnet' : 'testnet';
+
   const { tick: marketplaceTick }: { tick: string } = params;
 
   const tickLowerCase = useMemo(() => marketplaceTick.toLowerCase(), [marketplaceTick]);
@@ -164,7 +167,7 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
       const res = await client.executeViewFunction({
         target: `${TESTNET_ORDERBOOK_PACKAGE}::market_v2::query_order_info`,
         args: [
-          Args.objectId(NETWORK_PACKAGE.testnet.tickInfo[marketplaceTick].MARKET_OBJECT_ID),
+          Args.objectId(NETWORK_PACKAGE[network].tickInfo[marketplaceTick].MARKET_OBJECT_ID),
           Args.bool(false),
           Args.u64(fromPrice < 0 ? 0n : BigInt(fromPrice)),
           Args.bool(true),
@@ -207,7 +210,7 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
     } finally {
       setLoadingList(false);
     }
-  }, [client, marketplaceTick, toCoinBalanceInfo]);
+  }, [client, marketplaceTick, network, toCoinBalanceInfo]);
 
   const getBidData = useCallback(async () => {
     if (!toCoinBalanceInfo) return;
@@ -218,7 +221,7 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
       const res = await client.executeViewFunction({
         target: `${TESTNET_ORDERBOOK_PACKAGE}::market_v2::query_order_info`,
         args: [
-          Args.objectId(NETWORK_PACKAGE.testnet.tickInfo[marketplaceTick].MARKET_OBJECT_ID),
+          Args.objectId(NETWORK_PACKAGE[network].tickInfo[marketplaceTick].MARKET_OBJECT_ID),
           Args.bool(true),
           Args.u64(fromPrice < 0 ? 0n : BigInt(fromPrice)),
           Args.bool(true),
@@ -269,12 +272,12 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
     } finally {
       setLoadingList(false);
     }
-  }, [client, marketplaceTick, toCoinBalanceInfo]);
+  }, [client, marketplaceTick, network, toCoinBalanceInfo]);
 
   const getMarketTradeInfo = useCallback(async () => {
     const res = await client.queryObjectStates({
       filter: {
-        object_id: NETWORK_PACKAGE.testnet.tickInfo[marketplaceTick].MARKET_OBJECT_ID,
+        object_id: NETWORK_PACKAGE[network].tickInfo[marketplaceTick].MARKET_OBJECT_ID,
       },
     });
     const typeTag = Serializer.typeTagParseFromStr(res.data[0].object_type, true) as any;
@@ -333,7 +336,7 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
 
     setFromCoinBalanceInfo(tempFromCoinBalanceInfo as BalanceInfoView);
     setToCoinBalanceInfo(tempToCoinBalanceInfo as BalanceInfoView);
-  }, [account, client, marketplaceTick]);
+  }, [account, client, marketplaceTick, network]);
 
   useEffect(() => {
     getBidData();
@@ -384,7 +387,10 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
     return totalPrice.toNumber();
   }, [mergeSelected, sellList]);
 
-  const isWalletConnect = useMemo(() => Boolean(account?.genRoochAddress().toStr()), [account]);
+  const isWalletConnect = useMemo(
+    () => Boolean(account?.genRoochAddress().toHexAddress()),
+    [account]
+  );
 
   return (
     <Container
@@ -394,7 +400,7 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
         mb: 4,
       }}
     >
-      {showLimitTips && account?.genRoochAddress().toStr() && (
+      {showLimitTips && account?.genRoochAddress().toHexAddress() && (
         <Alert
           severity="success"
           variant="outlined"
@@ -454,76 +460,9 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
               </Button>
             </>
           )}
-          {/* {account?.genRoochAddress().toStr() && (
-            <FormControlLabel
-              control={
-                <Switch
-                  size="medium"
-                  color="secondary"
-                  checked={mergeMode}
-                  onChange={(e, value) => {
-                    setMergeMode(value);
-                    if (value) {
-                      setTargetDate(undefined);
-                    } else {
-                      setTargetDate(Date.now() + 10 * 1000);
-                    }
-                  }}
-                />
-              }
-              label={
-                <Typography
-                  sx={{
-                    fontWeight: 600,
-                  }}
-                >
-                  Batch Mode
-                </Typography>
-              }
-            />
-          )} */}
         </Stack>
 
         <Stack direction="row" alignItems="center">
-          {/* {isWalletConnect && (
-            <FormControlLabel
-              control={
-                <Switch
-                  size="medium"
-                  color="secondary"
-                  checked={showMyOrder}
-                  disabled={loadingOrder}
-                  onChange={(e, value) => {
-                    if (value) {
-                      setTargetDate(undefined);
-                    } else {
-                      setTargetDate(Date.now() + 10 * 1000);
-                    }
-                    setShowMyOrder(value);
-                  }}
-                />
-              }
-              label={
-                <Typography
-                  sx={{
-                    fontWeight: 600,
-                    display: 'flex',
-                    alignItems: 'center',
-                  }}
-                >
-                  Show My Order{' '}
-                  {loadingOrder && (
-                    <CircularProgress
-                      size={18}
-                      sx={{
-                        ml: 1,
-                      }}
-                    />
-                  )}
-                </Typography>
-              }
-            />
-          )} */}
           <LoadingButton
             loading={loadingList}
             variant="outlined"
@@ -620,7 +559,7 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
         </Stack>
       </Card>
 
-      {!account?.genRoochAddress().toStr() && (
+      {!account?.genRoochAddress().toHexAddress() && (
         <Alert
           variant="outlined"
           severity="info"
@@ -660,7 +599,7 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
               } else {
                 setMergeSelected(
                   sellList
-                    .filter((item) => item.owner !== account?.genRoochAddress().toStr())
+                    .filter((item) => item.owner !== account?.genRoochAddress().toHexAddress())
                     .map((item) => item.order_id)
                 );
               }
@@ -668,48 +607,6 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
           >
             Select All (Current Page)
           </Button>
-          {/* <LoadingButton
-            loading={isPending}
-            variant="contained"
-            color="success"
-            disabled={
-              mergeSelected.length <= 1 ||
-              new BigNumber(accountBalance?.totalBalance || 0).isLessThan(selectedTotalPrice)
-            }
-            onClick={() => {
-              if (!account?.genRoochAddress().toStr()) {
-                return;
-              }
-              const txb = makeBatchBuyTxb(mergeSelected, account.address, sellList, tickLowerCase);
-
-              txb.setSender(account.address);
-
-              signAndExecuteTransactionBlock(
-                {
-                  transactionBlock: txb,
-                  options: {
-                    showObjectChanges: true,
-                  },
-                },
-                {
-                  async onSuccess(data) {
-                    setMergeSelected([]);
-                    toast.success('Buy Success');
-                    await refetchMarketData();
-                  },
-                  onError(error) {
-                    toast.error(String(error));
-                  },
-                }
-              );
-            }}
-          >
-            {new BigNumber(accountBalance?.totalBalance || 0).isLessThan(selectedTotalPrice) ? (
-              'Insufficient Balance'
-            ) : (
-              <>Buy {mergeSelected.length > 1 ? mergeSelected.length : null} Inscription</>
-            )}
-          </LoadingButton> */}
           <Stack
             sx={{
               ml: {
@@ -839,54 +736,59 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
           mt: 2,
         }}
       >
-        {loadingList || !sellList || !fromCoinBalanceInfo || !toCoinBalanceInfo ? (
-          renderSkeleton
-        ) : (
-          <>
-            {currentTab === 'list' ? (
+        {loadingList && (sellList.length === 0 || !fromCoinBalanceInfo || !toCoinBalanceInfo)
+          ? renderSkeleton
+          : fromCoinBalanceInfo &&
+            toCoinBalanceInfo && (
               <>
-                {sellList.map(
-                  (item) =>
-                    item.order_id && (
-                      <InscriptionItemCard
+                {currentTab === 'list' ? (
+                  <>
+                    {sellList.map(
+                      (item) =>
+                        item.order_id && (
+                          <InscriptionItemCard
+                            fromCoinBalanceInfo={fromCoinBalanceInfo}
+                            toCoinBalanceInfo={toCoinBalanceInfo}
+                            key={item.order_id}
+                            item={item}
+                            tick={tickLowerCase}
+                            accountBalance={fromCoinBalanceInfo.balance}
+                            selectMode={mergeMode}
+                            selected={mergeSelected.includes(item.order_id)}
+                            onSelectItem={onSelectMergeItem}
+                            onRefetchMarketData={async () => {
+                              await Promise.all([
+                                getListData(),
+                                getBidData(),
+                                getMarketTradeInfo(),
+                              ]);
+                            }}
+                          />
+                        )
+                    )}
+                  </>
+                ) : (
+                  <>
+                    {bidList?.map((item) => (
+                      <InscriptionItemBidCard
                         fromCoinBalanceInfo={fromCoinBalanceInfo}
                         toCoinBalanceInfo={toCoinBalanceInfo}
-                        key={item.order_id}
                         item={item}
                         tick={tickLowerCase}
-                        accountBalance={fromCoinBalanceInfo.balance}
-                        selectMode={mergeMode}
-                        selected={mergeSelected.includes(item.order_id)}
-                        onSelectItem={onSelectMergeItem}
                         onRefetchMarketData={async () => {
-                          await Promise.all([getListData(), getBidData(), getMarketTradeInfo()]);
+                          setCurrentTab('bid');
+                          await Promise.all([]);
+                        }}
+                        onAcceptBid={(item) => {
+                          openAcceptBidDialog(item);
                         }}
                       />
-                    )
+                    ))}
+                  </>
                 )}
-              </>
-            ) : (
-              <>
-                {bidList?.map((item) => (
-                  <InscriptionItemBidCard
-                    fromCoinBalanceInfo={fromCoinBalanceInfo}
-                    toCoinBalanceInfo={toCoinBalanceInfo}
-                    item={item}
-                    tick={tickLowerCase}
-                    onRefetchMarketData={async () => {
-                      setCurrentTab('bid');
-                      await Promise.all([]);
-                    }}
-                    onAcceptBid={(item) => {
-                      openAcceptBidDialog(item);
-                    }}
-                  />
-                ))}
+                {loadingOrder && <ProductItemSkeleton />}
               </>
             )}
-            {loadingOrder && <ProductItemSkeleton />}
-          </>
-        )}
       </Box>
 
       {currentTab === 'list' && !showMyOrder && sellList.length === 50 && (

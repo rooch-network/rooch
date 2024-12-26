@@ -3,6 +3,8 @@ import Link from 'next/link';
 import { yellow } from '@mui/material/colors';
 import { Chip, Stack, Typography } from '@mui/material';
 
+import { fNumber } from 'src/utils/format-number';
+
 import { Iconify } from 'src/components/iconify';
 
 export interface InscriptionCardProps {
@@ -84,7 +86,7 @@ export default function InscriptionCard({
           fontWeight: 600,
         }}
       >
-        {tokenBalance}
+        {fNumber(tokenBalance)}
       </Typography>
     </Stack>
   );
