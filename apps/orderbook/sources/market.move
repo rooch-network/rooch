@@ -5,6 +5,7 @@ module orderbook::market_v2 {
     use std::option::{Option, is_some, destroy_none, none, some};
     use std::string;
     use std::string::String;
+    use std::u64;
     use std::vector;
     use std::vector::{length, zip};
     
@@ -19,7 +20,7 @@ module orderbook::market_v2 {
     use moveos_std::table::Table;
 
     use rooch_framework::coin_store::{CoinStore, create_coin_store};
-    use rooch_framework::coin::{Self, Coin};
+    use rooch_framework::coin::{Self, Coin, coin_info, decimals};
     use rooch_framework::coin_store;
     use rooch_framework::account_coin_store;
 
@@ -223,7 +224,7 @@ module orderbook::market_v2 {
         assert!(quantity > 0, ErrorWrongCreateBid);
         assert!(unit_price > 0, ErrorWrongCreateBid);
         // TODO here maybe wrap to u512?
-        let price = (unit_price as u256) * quantity;
+        let price = (unit_price as u256) * quantity / (u64::pow(10,decimals(coin_info<QuoteAsset>())) as u256);
         let paid = account_coin_store::withdraw<BaseAsset>(signer, price);
         let order_id = market.next_bid_order_id;
         market.next_bid_order_id = market.next_bid_order_id + 1;
@@ -331,7 +332,8 @@ module orderbook::market_v2 {
         assert!(tick_exists, ErrorInvalidOrderId);
         let order = remove_order(&mut market.asks, usr_open_orders, tick_index, order_id, order_owner);
         // TODO here maybe wrap to u512?
-        let total_price = order.quantity * (order.unit_price as u256);
+        let order_price = order.unit_price * u64::pow(10, decimals(coin_info<QuoteAsset>()));
+        let total_price = order.quantity * (order_price as u256);
         let trade_coin = account_coin_store::withdraw<BaseAsset>(signer, total_price);
         let trade_info = &mut market.trade_info;
         trade_info.total_volume = trade_info.total_volume + total_price;
@@ -410,7 +412,8 @@ module orderbook::market_v2 {
         let order = borrow_mut_order(&mut market.asks, usr_open_orders, tick_index, order_id, order_owner);
         assert!(amount <= order.quantity, ErrorInvalidAmount);
         // TODO here maybe wrap to u512?
-        let total_price = amount * (order.unit_price as u256);
+        let order_price = order.unit_price * u64::pow(10, decimals(coin_info<QuoteAsset>()));
+        let total_price = amount * (order_price as u256);
         let trade_coin = account_coin_store::withdraw<BaseAsset>(signer, total_price);
         let trade_info = &mut market.trade_info;
         trade_info.total_volume = trade_info.total_volume + total_price;
@@ -499,7 +502,8 @@ module orderbook::market_v2 {
         // assert!(coin::value(paid) >=  order.quantity, ErrorInputCoin);
         // let trade_coin = coin::extract(paid, order.quantity);
         // TODO here maybe wrap to u512?
-        let total_price = (order.unit_price as u256) * order.quantity;
+        let total_price = (order.unit_price as u256) * order.quantity / (u64::pow(10,decimals(coin_info<QuoteAsset>())) as u256);
+        // let total_price = (order.unit_price as u256) * order.quantity;
         let trade_info = &mut market.trade_info;
 
         trade_info.total_volume = trade_info.total_volume + total_price;
@@ -578,7 +582,8 @@ module orderbook::market_v2 {
         assert!(order.quantity >= amount, ErrorInvalidAmount);
         let trade_coin = account_coin_store::withdraw<QuoteAsset>(signer, amount);
         // TODO here maybe wrap to u512?
-        let total_price = (order.unit_price as u256) * amount;
+        let total_price = (order.unit_price as u256) * amount / (u64::pow(10,decimals(coin_info<QuoteAsset>())) as u256);
+        // let total_price = (order.unit_price as u256) * amount;
         let trade_info = &mut market.trade_info;
 
         trade_info.total_volume = trade_info.total_volume + total_price;
