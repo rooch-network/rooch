@@ -332,8 +332,7 @@ module orderbook::market_v2 {
         assert!(tick_exists, ErrorInvalidOrderId);
         let order = remove_order(&mut market.asks, usr_open_orders, tick_index, order_id, order_owner);
         // TODO here maybe wrap to u512?
-        let order_price = order.unit_price * u64::pow(10, decimals(coin_info<QuoteAsset>()));
-        let total_price = order.quantity * (order_price as u256);
+        let total_price = order.quantity * (order.unit_price as u256) / (u64::pow(10, decimals(coin_info<QuoteAsset>())) as u256);
         let trade_coin = account_coin_store::withdraw<BaseAsset>(signer, total_price);
         let trade_info = &mut market.trade_info;
         trade_info.total_volume = trade_info.total_volume + total_price;
@@ -412,8 +411,7 @@ module orderbook::market_v2 {
         let order = borrow_mut_order(&mut market.asks, usr_open_orders, tick_index, order_id, order_owner);
         assert!(amount <= order.quantity, ErrorInvalidAmount);
         // TODO here maybe wrap to u512?
-        let order_price = order.unit_price * u64::pow(10, decimals(coin_info<QuoteAsset>()));
-        let total_price = amount * (order_price as u256);
+        let total_price = amount * (order.unit_price as u256) / (u64::pow(10, decimals(coin_info<QuoteAsset>())) as u256);
         let trade_coin = account_coin_store::withdraw<BaseAsset>(signer, total_price);
         let trade_info = &mut market.trade_info;
         trade_info.total_volume = trade_info.total_volume + total_price;
