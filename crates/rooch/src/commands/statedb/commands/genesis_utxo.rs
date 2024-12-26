@@ -18,7 +18,7 @@ use moveos_store::MoveOSStore;
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::object::GENESIS_STATE_ROOT;
 use moveos_types::state::{FieldKey, ObjectState};
-use rooch_common::fs::file_cache::FileCacheManager;
+use rooch_common::fs::FileCacheManager;
 use rooch_config::R_OPT_NET_HELP;
 use rooch_types::error::RoochResult;
 use rooch_types::rooch_network::RoochChainID;

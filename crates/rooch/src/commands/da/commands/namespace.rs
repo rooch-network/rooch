@@ -2,26 +2,27 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use clap::Parser;
-use hex::encode;
-use moveos_types::h256::sha2_256_of;
-use rooch_config::da_config::derive_genesis_namespace;
+use rooch_config::da_config::derive_namespace_from_genesis;
+use rooch_genesis::RoochGenesis;
 use rooch_types::error::RoochResult;
-use std::path::PathBuf;
+use rooch_types::rooch_network::{BuiltinChainID, RoochNetwork};
 
 /// Derive DA namespace from genesis file.
 #[derive(Debug, Parser)]
 pub struct NamespaceCommand {
-    #[clap(long = "genesis-file-path")]
-    pub genesis_file_path: PathBuf,
+    #[clap(long, short = 'n', default_value = "test")]
+    chain_id: BuiltinChainID,
 }
 
 impl NamespaceCommand {
     pub fn execute(self) -> RoochResult<()> {
-        let genesis_bytes = std::fs::read(&self.genesis_file_path)?;
-        let full_hash = encode(sha2_256_of(&genesis_bytes).0);
-        let namespace = derive_genesis_namespace(&genesis_bytes);
-        println!("DA genesis namespace: {}", namespace);
-        println!("DA genesis full hash: {}", full_hash);
+        let network: RoochNetwork = RoochNetwork::builtin(self.chain_id);
+        let genesis = RoochGenesis::load_or_build(network)?;
+        let genesis_hash = genesis.genesis_hash();
+        let namespace = derive_namespace_from_genesis(genesis_hash);
+        println!("namespace: {}", namespace);
+        let encoded_hash = hex::encode(genesis_hash.0);
+        println!("genesis hash: {}", encoded_hash);
         Ok(())
     }
 }

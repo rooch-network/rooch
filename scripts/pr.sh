@@ -93,9 +93,16 @@ MOVE_TEST_CRATES="\
 "
 
 if [ ! -z "$CHECK" ]; then
-  cargo machete
-  cargo fmt -- --check
-  cargo clippy --workspace --all-targets --all-features --tests --benches -- -D warnings
+    echo "Running cargo machete..."
+    cargo machete
+
+    echo -e "\nRunning cargo fmt check..."
+    cargo fmt -- --check
+
+    echo -e "\nRunning cargo clippy..."
+    cargo clippy --workspace --all-targets --all-features --tests --benches -- -D warnings
+
+    echo "All checks passed successfully!"
 fi
 
 if [ ! -z "$ALSO_TEST" ]; then
