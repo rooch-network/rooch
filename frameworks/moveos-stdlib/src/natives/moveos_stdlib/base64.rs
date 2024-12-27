@@ -67,22 +67,23 @@ pub fn native_decode(
         Err(_) => return Ok(NativeResult::err(cost, E_DECODE_FAILED)),
     };
 
-    let decoded = if encoded_str.contains('+') || encoded_str.contains('/') || encoded_str.contains('=') {
-        match general_purpose::STANDARD.decode(encoded_str) {
-            Ok(bytes) => bytes,
-            Err(_) => return Ok(NativeResult::err(cost, E_DECODE_FAILED)),
-        }
-    } else {
-        let padding_needed = (4 - (encoded_str.len() % 4)) % 4;
-        let mut padded_bytes = Vec::with_capacity(encoded_str.len() + padding_needed);
-        padded_bytes.extend_from_slice(encoded_str.as_bytes());
-        padded_bytes.extend(std::iter::repeat(b'=').take(padding_needed));
+    let decoded =
+        if encoded_str.contains('+') || encoded_str.contains('/') || encoded_str.contains('=') {
+            match general_purpose::STANDARD.decode(encoded_str) {
+                Ok(bytes) => bytes,
+                Err(_) => return Ok(NativeResult::err(cost, E_DECODE_FAILED)),
+            }
+        } else {
+            let padding_needed = (4 - (encoded_str.len() % 4)) % 4;
+            let mut padded_bytes = Vec::with_capacity(encoded_str.len() + padding_needed);
+            padded_bytes.extend_from_slice(encoded_str.as_bytes());
+            padded_bytes.extend(std::iter::repeat(b'=').take(padding_needed));
 
-        match general_purpose::URL_SAFE.decode(&padded_bytes) {
-            Ok(bytes) => bytes,
-            Err(_) => return Ok(NativeResult::err(cost, E_DECODE_FAILED)),
-        }
-    };
+            match general_purpose::URL_SAFE.decode(&padded_bytes) {
+                Ok(bytes) => bytes,
+                Err(_) => return Ok(NativeResult::err(cost, E_DECODE_FAILED)),
+            }
+        };
     Ok(NativeResult::ok(cost, smallvec![Value::vector_u8(decoded)]))
 }
 
