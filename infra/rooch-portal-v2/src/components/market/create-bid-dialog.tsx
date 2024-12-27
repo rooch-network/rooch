@@ -267,7 +267,7 @@ export default function CreateBidDialog({
                 Args.u64(BigInt(unitPrice)),
                 Args.u256(BigInt(toDust(bidAmount, toCoinBalanceInfo.decimals))),
               ],
-              typeArgs: ['0x3::gas_coin::RGas', toCoinBalanceInfo.coin_type],
+              typeArgs: [fromCoinBalanceInfo.coin_type, toCoinBalanceInfo.coin_type],
             });
 
             signAndExecuteTransaction(

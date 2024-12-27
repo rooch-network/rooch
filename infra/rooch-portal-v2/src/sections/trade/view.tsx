@@ -159,7 +159,7 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
   }>();
 
   const getListData = useCallback(async () => {
-    if (!toCoinBalanceInfo) return;
+    if (!toCoinBalanceInfo || !fromCoinBalanceInfo) return;
     setLoadingList(true);
     try {
       const fromPrice = 0;
@@ -173,7 +173,7 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
           Args.bool(true),
           Args.u64(start < 0 ? 0n : BigInt(start)),
         ],
-        typeArgs: ['0x3::gas_coin::RGas', toCoinBalanceInfo.coin_type],
+        typeArgs: [fromCoinBalanceInfo.coin_type, toCoinBalanceInfo.coin_type],
       });
       const decodedValue = res.return_values?.[0]?.decoded_value as AnnotatedMoveStructView;
       console.log('🚀 ~ file: view.tsx:185 ~ getListData ~ decodedValue:', decodedValue);
@@ -210,10 +210,10 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
     } finally {
       setLoadingList(false);
     }
-  }, [client, marketplaceTick, network, toCoinBalanceInfo]);
+  }, [client, fromCoinBalanceInfo, marketplaceTick, network, toCoinBalanceInfo]);
 
   const getBidData = useCallback(async () => {
-    if (!toCoinBalanceInfo) return;
+    if (!toCoinBalanceInfo || !fromCoinBalanceInfo) return;
     setLoadingList(true);
     try {
       const fromPrice = 0;
@@ -227,7 +227,7 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
           Args.bool(true),
           Args.u64(start < 0 ? 0n : BigInt(start)),
         ],
-        typeArgs: ['0x3::gas_coin::RGas', toCoinBalanceInfo.coin_type],
+        typeArgs: [fromCoinBalanceInfo.coin_type, toCoinBalanceInfo.coin_type],
       });
       console.log('🚀 ~ file: view.tsx:180 ~ getBidData ~ marketItemList:', res);
       const decodedValue = res.return_values?.[0]?.decoded_value as AnnotatedMoveStructView;
@@ -272,7 +272,7 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
     } finally {
       setLoadingList(false);
     }
-  }, [client, marketplaceTick, network, toCoinBalanceInfo]);
+  }, [client, fromCoinBalanceInfo, marketplaceTick, network, toCoinBalanceInfo]);
 
   const getMarketTradeInfo = useCallback(async () => {
     const res = await client.queryObjectStates({
@@ -777,7 +777,7 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
                         tick={tickLowerCase}
                         onRefetchMarketData={async () => {
                           setCurrentTab('bid');
-                          await Promise.all([]);
+                          await Promise.all([getBidData()]);
                         }}
                         onAcceptBid={(item) => {
                           openAcceptBidDialog(item);

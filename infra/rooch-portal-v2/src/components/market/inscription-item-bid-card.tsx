@@ -13,6 +13,7 @@ import { fromDust } from 'src/utils/number';
 import { formatUnitPrice } from 'src/utils/marketplace';
 
 import { NETWORK, NETWORK_PACKAGE } from 'src/config/trade';
+import { TESTNET_ORDERBOOK_PACKAGE } from 'src/config/constant';
 
 import { toast } from '../snackbar';
 import InscriptionShopCard from './inscription-shop-card';
@@ -86,15 +87,21 @@ export default function InscriptionItemBidCard({
               fullWidth
               size="small"
               onClick={() => {
+                // Cancel Bid
+                console.log(
+                  '🚀 ~ file: inscription-item-card.tsx:226 ~ fromCoinBalanceInfo:',
+                  fromCoinBalanceInfo
+                );
                 const tx = new Transaction();
                 tx.callFunction({
-                  target: `${NETWORK_PACKAGE[NETWORK].MARKET_PACKAGE_ID}::market::cancel_bid`,
+                  target: `${TESTNET_ORDERBOOK_PACKAGE}::market_v2::cancel_order`,
                   args: [
                     Args.objectId(
                       NETWORK_PACKAGE[NETWORK].tickInfo[tick.toLowerCase()].MARKET_OBJECT_ID
                     ),
-                    Args.objectId(item.order_id),
+                    Args.u64(BigInt(item.order_id)),
                   ],
+                  typeArgs: [fromCoinBalanceInfo.coin_type, toCoinBalanceInfo.coin_type],
                 });
                 signAndExecuteTransaction(
                   {
