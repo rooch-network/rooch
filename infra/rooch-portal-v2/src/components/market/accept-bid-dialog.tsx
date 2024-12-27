@@ -22,6 +22,7 @@ import {
 
 import { isMainNetwork } from 'src/utils/env';
 import { fNumber } from 'src/utils/format-number';
+import { formatUnitPrice } from 'src/utils/marketplace';
 import { fromDust, formatNumber } from 'src/utils/number';
 
 import { secondary } from 'src/theme/core';
@@ -124,8 +125,11 @@ export default function AcceptBidDialog({
   const network = isMainNetwork() ? 'mainnet' : 'testnet';
 
   const price = useMemo(
-    () => new BigNumber(acceptBidItem.unit_price).times(acceptBidItem.quantity).toString(),
-    [acceptBidItem.quantity, acceptBidItem.unit_price]
+    () =>
+      new BigNumber(formatUnitPrice(acceptBidItem.unit_price, toCoinBalanceInfo.decimals))
+        .times(acceptBidItem.quantity)
+        .toString(),
+    [acceptBidItem.quantity, acceptBidItem.unit_price, toCoinBalanceInfo.decimals]
   );
 
   const account = useCurrentAddress();
@@ -161,7 +165,7 @@ export default function AcceptBidDialog({
             isVerified
             amount={acceptBidItem.quantity}
             price={price}
-            unitPrice={acceptBidItem.unit_price}
+            unitPrice={formatUnitPrice(acceptBidItem.unit_price, toCoinBalanceInfo.decimals)}
             // acc={item.acc}
             fromCoinBalanceInfo={fromCoinBalanceInfo}
             toCoinBalanceInfo={toCoinBalanceInfo}

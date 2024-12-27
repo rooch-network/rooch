@@ -248,9 +248,10 @@ export default function ListDialog({
                 ),
                 Args.u64(
                   BigInt(
-                    new BigNumber(
-                      toDust(listPrice, fromCoinBalanceInfo.decimals).toString()
-                    ).toFixed()
+                    new BigNumber(toDust(listPrice, fromCoinBalanceInfo.decimals).toString())
+                      .times(new BigNumber(10).pow(5))
+                      .div(new BigNumber(10).pow(toCoinBalanceInfo.decimals).toNumber())
+                      .toFixed()
                   )
                 ),
               ],

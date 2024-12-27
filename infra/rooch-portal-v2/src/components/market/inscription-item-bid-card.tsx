@@ -10,6 +10,7 @@ import { LoadingButton } from '@mui/lab';
 import { Card, Stack, Button, CardActions } from '@mui/material';
 
 import { fromDust } from 'src/utils/number';
+import { formatUnitPrice } from 'src/utils/marketplace';
 
 import { NETWORK, NETWORK_PACKAGE } from 'src/config/trade';
 
@@ -38,7 +39,7 @@ export default function InscriptionItemBidCard({
 
   const price = useMemo(
     () =>
-      new BigNumber(item.unit_price)
+      new BigNumber(formatUnitPrice(item.unit_price, toCoinBalanceInfo.decimals))
         .times(fromDust(item.quantity, toCoinBalanceInfo.decimals))
         .toString(),
     [toCoinBalanceInfo.decimals, item.quantity, item.unit_price]
@@ -64,7 +65,7 @@ export default function InscriptionItemBidCard({
         amount={item.quantity}
         seller={item.owner}
         price={price}
-        unitPrice={item.unit_price}
+        unitPrice={formatUnitPrice(item.unit_price, toCoinBalanceInfo.decimals)}
         selectMode={false}
         type="bid"
       />
