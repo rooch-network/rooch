@@ -248,14 +248,23 @@ export default function CreateBidDialog({
               return;
             }
             const tx = new Transaction();
-
-            const unitPriceInMist = toDust(bidUnitPrice, fromCoinBalanceInfo.decimals);
+            console.log(
+              '🚀 ~ file: create-bid-dialog.tsx:297 ~ toCoinBalanceInfo:',
+              fromCoinBalanceInfo,
+              toCoinBalanceInfo
+            );
+            const unitPrice = new BigNumber(
+              toDust(bidUnitPrice, fromCoinBalanceInfo.decimals).toString()
+            )
+              .times(new BigNumber(10).pow(5))
+              .div(new BigNumber(10).pow(toCoinBalanceInfo.decimals).toNumber())
+              .toNumber();
 
             tx.callFunction({
               target: `${TESTNET_ORDERBOOK_PACKAGE}::market_v2::create_bid`,
               args: [
                 Args.objectId(NETWORK_PACKAGE[network].tickInfo[tick].MARKET_OBJECT_ID),
-                Args.u64(unitPriceInMist),
+                Args.u64(BigInt(unitPrice)),
                 Args.u256(BigInt(toDust(bidAmount, toCoinBalanceInfo.decimals))),
               ],
               typeArgs: ['0x3::gas_coin::RGas', toCoinBalanceInfo.coin_type],
@@ -267,10 +276,13 @@ export default function CreateBidDialog({
               },
               {
                 async onSuccess(data) {
-                  // await refetchAddressOwnedInscription();
-                  toast.success('Create Bid Success');
-                  close();
-                  refreshBidList();
+                  if (data.execution_info.status.type === 'executed') {
+                    toast.success('Create Bid Success');
+                    close();
+                    refreshBidList();
+                  } else {
+                    toast.error('Create Bid Failed');
+                  }
                 },
                 onError(error) {
                   toast.error(String(error));
