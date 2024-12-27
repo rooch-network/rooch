@@ -30,8 +30,7 @@ module orderbook::market_v2 {
     };
     use orderbook::critbit;
     use app_admin::admin::AdminCap;
-    #[test_only]
-    use std::debug::print;
+    use moveos_std::event::emit;
 
     #[test_only]
     use rooch_framework::account::create_account_for_testing;
@@ -135,6 +134,19 @@ module orderbook::market_v2 {
         market_info: LinkedTable<String, ObjectID>,
     }
 
+
+    struct OrderEvent<phantom BaseAsset: key + store, phantom QuoteAsset: key + store> has copy, drop {
+        order_id: u64,
+        unit_price: u64,
+        quantity: u256,
+        owner: address,
+        timestamp: u64,
+        // 0 is list, 1 is create bid, 2 is cancel bid, 3 is cancel list, 4 is buy, 5 is accept bid
+        order_type: u8
+    }
+
+
+
     fun init() {
         let market_house = MarketplaceHouse {
             market_info: linked_table::new(),
@@ -217,7 +229,14 @@ module orderbook::market_v2 {
             table::add(&mut market.user_order_info, address_of(signer), linked_table::new());
         };
         linked_table::push_back(table::borrow_mut(&mut market.user_order_info, address_of(signer)), order_id, unit_price);
-
+        emit(OrderEvent<BaseAsset, QuoteAsset> {
+            order_id,
+            unit_price,
+            quantity,
+            owner: address_of(signer),
+            timestamp: now_milliseconds(),
+            order_type: 0
+        })
     }
 
     public entry fun create_bid<BaseAsset: key + store, QuoteAsset: key + store>(
@@ -258,6 +277,14 @@ module orderbook::market_v2 {
             table::add(&mut market.user_order_info, address_of(signer), linked_table::new());
         };
         linked_table::push_back(table::borrow_mut(&mut market.user_order_info, address_of(signer)), order_id, unit_price);
+        emit(OrderEvent<BaseAsset, QuoteAsset> {
+            order_id,
+            unit_price,
+            quantity,
+            owner: address_of(signer),
+            timestamp: now_milliseconds(),
+            order_type: 1
+        })
     }
 
     ///Cancel the listing of inscription
@@ -284,9 +311,25 @@ module orderbook::market_v2 {
         if (is_bid) {
             // TODO here maybe wrap to u512?
             let total_balance = (order.unit_price as u256) * order.quantity / UNIT_PRICE_SCALE;
-            account_coin_store::deposit(sender(), coin_store::withdraw(&mut market.base_asset, total_balance))
+            account_coin_store::deposit(sender(), coin_store::withdraw(&mut market.base_asset, total_balance));
+            emit(OrderEvent<BaseAsset, QuoteAsset> {
+                order_id,
+                unit_price: order.unit_price,
+                quantity: order.quantity,
+                owner: sender(),
+                timestamp: now_milliseconds(),
+                order_type: 2
+            })
         }else {
-            account_coin_store::deposit(sender(), coin_store::withdraw(&mut market.quote_asset, order.quantity))
+            account_coin_store::deposit(sender(), coin_store::withdraw(&mut market.quote_asset, order.quantity));
+            emit(OrderEvent<BaseAsset, QuoteAsset> {
+                order_id,
+                unit_price: order.unit_price,
+                quantity: order.quantity,
+                owner: sender(),
+                timestamp: now_milliseconds(),
+                order_type: 3
+            })
         }
     }
 
@@ -358,7 +401,16 @@ module orderbook::market_v2 {
         let trade_fee = total_price * market.fee / TRADE_FEE_BASE_RATIO;
         coin_store::deposit(&mut market.base_asset_trading_fees, coin::extract(&mut trade_coin, trade_fee));
         account_coin_store::deposit(order.owner, trade_coin);
+        emit(OrderEvent<BaseAsset, QuoteAsset> {
+            order_id,
+            unit_price: order.unit_price,
+            quantity: order.quantity,
+            owner: sender(),
+            timestamp: now_milliseconds(),
+            order_type: 4
+        });
         option::some(coin_store::withdraw(&mut market.quote_asset, order.quantity))
+
     }
 
 
@@ -445,6 +497,14 @@ module orderbook::market_v2 {
             coin_store::deposit(&mut market.base_asset_trading_fees, coin::extract(&mut trade_coin, trade_fee));
         };
         account_coin_store::deposit(order.owner, trade_coin);
+        emit(OrderEvent<BaseAsset, QuoteAsset> {
+            order_id,
+            unit_price: order.unit_price,
+            quantity: order.quantity,
+            owner: sender(),
+            timestamp: now_milliseconds(),
+            order_type: 4
+        });
         order.quantity = order.quantity - amount;
         if (order.quantity == 0 ) {
             let _ = remove_order(&mut market.asks, usr_open_orders, tick_index, order_id, order_owner);
@@ -526,6 +586,14 @@ module orderbook::market_v2 {
         let trade_fee = order.quantity * market.fee / TRADE_FEE_BASE_RATIO;
         coin_store::deposit(&mut market.quote_asset_trading_fees, coin::extract(&mut trade_coin, trade_fee));
         account_coin_store::deposit(order.owner, trade_coin);
+        emit(OrderEvent<BaseAsset, QuoteAsset> {
+            order_id,
+            unit_price: order.unit_price,
+            quantity: order.quantity,
+            owner: sender(),
+            timestamp: now_milliseconds(),
+            order_type: 5
+        });
         option::some(coin_store::withdraw(&mut market.base_asset, total_price))
     }
 
@@ -615,10 +683,19 @@ module orderbook::market_v2 {
             coin_store::deposit(&mut market.quote_asset_trading_fees, coin::extract(&mut trade_coin, trade_fee));
         };
         account_coin_store::deposit(order.owner, trade_coin);
+        emit(OrderEvent<BaseAsset, QuoteAsset> {
+            order_id,
+            unit_price: order.unit_price,
+            quantity: order.quantity,
+            owner: sender(),
+            timestamp: now_milliseconds(),
+            order_type: 5
+        });
         order.quantity = order.quantity - amount;
         if (order.quantity == 0) {
             let _ = remove_order(&mut market.bids, usr_open_orders, tick_index, order_id, order_owner);
         };
+
         option::some(coin_store::withdraw(&mut market.base_asset, total_price))
     }
 
