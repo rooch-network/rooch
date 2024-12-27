@@ -149,11 +149,11 @@ export default function InscriptionItemCard({
                     args: [
                       Args.objectId(NETWORK_PACKAGE[network].tickInfo[tick].MARKET_OBJECT_ID),
                       Args.u64(BigInt(item.order_id)),
-                      Args.address(account.genRoochAddress().toStr()),
-                      Args.bool(true),
                       Args.address(item.owner),
+                      Args.bool(true),
+                      Args.address(account.genRoochAddress().toStr()),
                     ],
-                    typeArgs: ['0x3::gas_coin::RGas', toCoinBalanceInfo.coin_type],
+                    typeArgs: [fromCoinBalanceInfo.coin_type, toCoinBalanceInfo.coin_type],
                   });
                   signAndExecuteTransaction(
                     {
@@ -189,6 +189,11 @@ export default function InscriptionItemCard({
                 fullWidth
                 size="small"
                 onClick={() => {
+                  // Cancel Order
+                  console.log(
+                    '🚀 ~ file: inscription-item-card.tsx:226 ~ fromCoinBalanceInfo:',
+                    fromCoinBalanceInfo
+                  );
                   const tx = new Transaction();
                   tx.callFunction({
                     target: `${TESTNET_ORDERBOOK_PACKAGE}::market_v2::cancel_order`,
@@ -196,7 +201,7 @@ export default function InscriptionItemCard({
                       Args.objectId(NETWORK_PACKAGE[NETWORK].tickInfo[tick].MARKET_OBJECT_ID),
                       Args.u64(BigInt(item.order_id)),
                     ],
-                    typeArgs: ['0x3::gas_coin::RGas', toCoinBalanceInfo.coin_type],
+                    typeArgs: [fromCoinBalanceInfo.coin_type, toCoinBalanceInfo.coin_type],
                   });
                   signAndExecuteTransaction(
                     {

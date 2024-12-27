@@ -45,71 +45,6 @@ export type AcceptBidDialogProps = {
   close: () => void;
 };
 
-// function makeAcceptBidTxb(
-//   targetAmount: number,
-//   userOwnedTickInscription: InscriptionObject[],
-//   selectedBid: BidItemObject,
-//   address: string,
-//   tick: string
-// ) {
-//   const tx = new Transaction();
-//   const sortedData = userOwnedTickInscription.sort(
-//     (a, b) => Number(b.data.content.fields.amount) - Number(a.data.content.fields.amount)
-//   );
-//   const firstItem = sortedData[0];
-//   const opSortedData = sortedData.length === 1 ? [sortedData[0]] : sortedData.slice(1);
-//   let currentTotal = new BigNumber(firstItem.data.content.fields.amount);
-//   let inputInscription:
-//     | {
-//         index: number;
-//         resultIndex: number;
-//         kind: 'NestedResult';
-//       }
-//     | undefined;
-//   // eslint-disable-next-line no-restricted-syntax
-//   for (const inscription of opSortedData) {
-//     const inscriptionData = inscription.data.content.fields;
-//     if (new BigNumber(currentTotal).isLessThanOrEqualTo(targetAmount)) {
-//       tx.callFunction({
-//         target: `${NETWORK_PACKAGE[NETWORK].MOVESCRIPTIONS_PACKAGE_ID}::movescription::merge`,
-//         args: [Args.objectId(firstItem.data.objectId), Args.objectId(inscription.data.objectId)],
-//       });
-//       currentTotal = currentTotal.plus(inscriptionData.amount);
-
-//       if (currentTotal.isEqualTo(targetAmount)) {
-//         break;
-//       }
-//     } else {
-//       const remainingAmt = new BigNumber(targetAmount).minus(currentTotal);
-//       if (remainingAmt.isLessThan(0)) {
-//         const [final] = tx.callFunction({
-//           target: `${NETWORK_PACKAGE[NETWORK].MOVESCRIPTIONS_PACKAGE_ID}::movescription::do_split`,
-//           arguments: [Args.objectId(firstItem.data.objectId), Args.u64(BigInt(targetAmount))],
-//         });
-//         inputInscription = final;
-//         break;
-//       }
-//     }
-//   }
-
-//   txb.moveCall({
-//     target: `${NETWORK_PACKAGE[NETWORK].MARKET_PACKAGE_ID}::market::accept_bid`,
-//     arguments: [
-//       txb.object(NETWORK_PACKAGE[NETWORK].tickInfo[tick].MARKET_OBJECT_ID),
-//       txb.object(inputInscription || firstItem.data.objectId),
-//       txb.pure(selectedBid.bidder),
-//       txb.pure(selectedBid.bidId),
-//       txb.object('0x6'),
-//     ],
-//   });
-
-//   if (inputInscription) {
-//     txb.transferObjects([firstItem.data.objectId], address);
-//   }
-
-//   return txb;
-// }
-
 export default function AcceptBidDialog({
   open,
   acceptBidItem,
@@ -127,7 +62,7 @@ export default function AcceptBidDialog({
   const price = useMemo(
     () =>
       new BigNumber(formatUnitPrice(acceptBidItem.unit_price, toCoinBalanceInfo.decimals))
-        .times(acceptBidItem.quantity)
+        .times(fromDust(acceptBidItem.quantity, toCoinBalanceInfo.decimals))
         .toString(),
     [acceptBidItem.quantity, acceptBidItem.unit_price, toCoinBalanceInfo.decimals]
   );
@@ -255,7 +190,7 @@ export default function AcceptBidDialog({
                 Args.bool(true),
                 Args.address(account.genRoochAddress().toStr()),
               ],
-              typeArgs: ['0x3::gas_coin::RGas', toCoinBalanceInfo.coin_type],
+              typeArgs: [fromCoinBalanceInfo.coin_type, toCoinBalanceInfo.coin_type],
             });
 
             signAndExecuteTransaction(
