@@ -30,6 +30,8 @@ module orderbook::market_v2 {
     };
     use orderbook::critbit;
     use app_admin::admin::AdminCap;
+    #[test_only]
+    use std::debug::print;
 
     #[test_only]
     use rooch_framework::account::create_account_for_testing;
@@ -151,7 +153,7 @@ module orderbook::market_v2 {
             version: VERSION,
             bids: critbit::new(),
             asks: critbit::new(),
-            // Order id of the next bid order, starting from 0.
+            // Order id of the next bid order, starting from 1.
             next_bid_order_id: MIN_BID_ORDER_ID,
             // Order id of the next ask order, starting from 1<<63.
             next_ask_order_id: MIN_ASK_ORDER_ID,
@@ -1042,7 +1044,7 @@ module orderbook::market_v2 {
         assert!(account_coin_store::balance<TestBaseCoin>(address_buy) == 900_00000000, 3);
     }
 
-        #[test]
+    #[test]
     public fun test_buy_5() {
         rooch_framework::genesis::init_for_test();
         let base_decimal = 8;
@@ -1062,7 +1064,7 @@ module orderbook::market_v2 {
         assert!(account_coin_store::balance<TestBaseCoin>(address_list) == 50_00000000, 0);
         // buy account will recieve 5.0000000000 quote coin
         assert!(account_coin_store::balance<TestQuoteCoin>(address_buy) == 5_0000000000, 1);
-        // list account will pay 5.0000000000 quote coin
+        // list account will pay 10.0000000000 quote coin
         assert!(account_coin_store::balance<TestQuoteCoin>(address_list) == 990_0000000000, 2);
         // buy account will pay 10 * 5 = 50.00000000 base coin
         assert!(account_coin_store::balance<TestBaseCoin>(address_buy) == 950_00000000, 3);
@@ -1070,4 +1072,34 @@ module orderbook::market_v2 {
             (5 * u64::pow(10, quote_decimal) as u256), address_list, true, address_buy);
         to_shared(market_obj);
     }
+
+    #[test]
+    public fun test_accept_bid() {
+        rooch_framework::genesis::init_for_test();
+        let base_decimal = 8;
+        let quote_decimal = 10;
+        let account_create_bid = create_account_for_testing(@0x43);
+        let address_create_bid = address_of(&account_create_bid);
+        let account_accept_bid = create_account_for_testing(@0x44);
+        let address_accept_bid = address_of(&account_accept_bid);
+        let (market_obj, base_coin, quote_coin )= init_for_test(base_decimal, quote_decimal);
+        account_coin_store::deposit(address_accept_bid, quote_coin);
+        account_coin_store::deposit(address_create_bid, base_coin);
+        // Here we list it at price 10 base/quote, and list 10.000 quote coin
+        create_bid(&account_create_bid, &mut market_obj,((UNIT_PRICE_SCALE as u64) * 10 * u64::pow(10, base_decimal) / u64::pow(10, quote_decimal) ), (10 * u64::pow(10, quote_decimal) as u256), );
+        accept_bid_from_origin(&account_accept_bid, &mut market_obj, MIN_BID_ORDER_ID,
+            (5 * u64::pow(10, quote_decimal) as u256), address_create_bid, true, address_accept_bid);
+        // accept bid account will recieve 10 * 5 = 50.00000000 base coin
+        assert!(account_coin_store::balance<TestBaseCoin>(address_accept_bid) == 50_00000000, 0);
+        // create bid account will recieve 5.0000000000 quote coin
+        assert!(account_coin_store::balance<TestQuoteCoin>(address_create_bid) == 5_0000000000, 1);
+        // accept bid account will pay 5.0000000000 quote coin
+        assert!(account_coin_store::balance<TestQuoteCoin>(address_accept_bid) == 995_0000000000, 2);
+        // create bid account will pay 10 * 10 = 100.00000000 base coin
+        assert!(account_coin_store::balance<TestBaseCoin>(address_create_bid) == 900_00000000, 3);
+        accept_bid_from_origin(&account_accept_bid, &mut market_obj, MIN_BID_ORDER_ID,
+            (5 * u64::pow(10, quote_decimal) as u256), address_create_bid, true, address_accept_bid);
+        to_shared(market_obj);
+    }
 }
+
