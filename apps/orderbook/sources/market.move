@@ -3,6 +3,7 @@
 module orderbook::market_v2 {
     use std::option;
     use std::option::{Option, is_some, destroy_none, none, some};
+    use std::signer::address_of;
     use std::string;
     use std::string::String;
     use std::u64;
@@ -20,7 +21,7 @@ module orderbook::market_v2 {
     use moveos_std::table::Table;
 
     use rooch_framework::coin_store::{CoinStore, create_coin_store};
-    use rooch_framework::coin::{Self, Coin, coin_info, decimals};
+    use rooch_framework::coin::{Self, Coin};
     use rooch_framework::coin_store;
     use rooch_framework::account_coin_store;
 
@@ -29,6 +30,9 @@ module orderbook::market_v2 {
     };
     use orderbook::critbit;
     use app_admin::admin::AdminCap;
+
+    #[test_only]
+    use rooch_framework::account::create_account_for_testing;
 
     const DEPLOYER: address = @orderbook;
 
@@ -41,8 +45,8 @@ module orderbook::market_v2 {
 
     const MIN_BID_ORDER_ID: u64 = 1;
     const MIN_ASK_ORDER_ID: u64 = 1 << 63;
-    // 1e18
-    const UNIT_PRICE_SCALE: u256 = 1000000000000000000;
+
+    const UNIT_PRICE_SCALE: u256 = 100000;
 
     const ErrorWrongVersion: u64 = 0;
     const ErrorWrongPaused: u64 = 1;
@@ -193,7 +197,7 @@ module orderbook::market_v2 {
             order_id,
             unit_price,
             quantity,
-            owner: sender(),
+            owner: address_of(signer),
             is_bid: false,
         };
         coin_store::deposit(&mut market.quote_asset, coin);
@@ -207,10 +211,10 @@ module orderbook::market_v2 {
         let tick_level = critbit::borrow_mut_leaf_by_index(&mut market.asks, index);
         linked_table::push_back(&mut tick_level.open_orders, order_id, asks);
         //
-        if (!table::contains(&market.user_order_info, sender())) {
-            table::add(&mut market.user_order_info, sender(), linked_table::new());
+        if (!table::contains(&market.user_order_info, address_of(signer))) {
+            table::add(&mut market.user_order_info, address_of(signer), linked_table::new());
         };
-        linked_table::push_back(table::borrow_mut(&mut market.user_order_info, sender()), order_id, unit_price);
+        linked_table::push_back(table::borrow_mut(&mut market.user_order_info, address_of(signer)), order_id, unit_price);
 
     }
 
@@ -234,7 +238,7 @@ module orderbook::market_v2 {
             order_id,
             unit_price,
             quantity,
-            owner: sender(),
+            owner: address_of(signer),
             is_bid: true,
         };
         coin_store::deposit(&mut market.base_asset, paid);
@@ -248,10 +252,10 @@ module orderbook::market_v2 {
         };
         let tick_level = critbit::borrow_mut_leaf_by_index(&mut market.bids, index);
         linked_table::push_back(&mut tick_level.open_orders, order_id, bid);
-        if (!table::contains(&market.user_order_info, sender())) {
-            table::add(&mut market.user_order_info, sender(), linked_table::new());
+        if (!table::contains(&market.user_order_info, address_of(signer))) {
+            table::add(&mut market.user_order_info, address_of(signer), linked_table::new());
         };
-        linked_table::push_back(table::borrow_mut(&mut market.user_order_info, sender()), order_id, unit_price);
+        linked_table::push_back(table::borrow_mut(&mut market.user_order_info, address_of(signer)), order_id, unit_price);
     }
 
     ///Cancel the listing of inscription
@@ -877,5 +881,162 @@ module orderbook::market_v2 {
 
     fun order_is_bid(order_id: u64): bool {
         return order_id < MIN_ASK_ORDER_ID
+    }
+
+    #[test_only]
+    struct TestBaseCoin has key, store{}
+    #[test_only]
+    struct TestQuoteCoin has key, store{}
+
+    #[test_only]
+    fun init_for_test(base_decimal: u8, quote_decimal: u8):(Object<Marketplace<TestBaseCoin, TestQuoteCoin>>, Coin<TestBaseCoin>, Coin<TestQuoteCoin>) {
+        let base_coin_info = coin::register_extend<TestBaseCoin>(
+        string::utf8(b"Test Base Coin"),
+            string::utf8(b"TBC"),
+            option::none(),
+            base_decimal,
+        );
+        let quote_coin_info = coin::register_extend<TestQuoteCoin>(
+        string::utf8(b"Test Quote Coin"),
+            string::utf8(b"TQC"),
+            option::none(),
+            quote_decimal,
+        );
+        let base_coin = coin::mint_extend<TestBaseCoin>(&mut base_coin_info, (1000 * u64::pow(10, base_decimal) as u256));
+        let quote_coin = coin::mint_extend<TestQuoteCoin>(&mut quote_coin_info, (1000 * u64::pow(10, quote_decimal) as u256));
+        to_shared(base_coin_info);
+        to_shared(quote_coin_info);
+        let market_obj = new_named_object(Marketplace {
+            is_paused: false,
+            version: VERSION,
+            bids: critbit::new(),
+            asks: critbit::new(),
+            // Order id of the next bid order, starting from 0.
+            next_bid_order_id: MIN_BID_ORDER_ID,
+            // Order id of the next ask order, starting from 1<<63.
+            next_ask_order_id: MIN_ASK_ORDER_ID,
+            fee: 0,
+            user_order_info: table::new(),
+            base_asset: create_coin_store<TestBaseCoin>(),
+            quote_asset: create_coin_store<TestQuoteCoin>(),
+            base_asset_trading_fees: create_coin_store<TestBaseCoin>(),
+            quote_asset_trading_fees: create_coin_store<TestQuoteCoin>(),
+            trade_info: TradeInfo{
+                timestamp: now_milliseconds(),
+                yesterday_volume: 0,
+                today_volume: 0,
+                total_volume: 0,
+                txs: 0
+            }
+        });
+        (market_obj, base_coin, quote_coin)
+    }
+
+    #[test]
+    public fun test_buy_1() {
+        rooch_framework::genesis::init_for_test();
+        let base_decimal = 0;
+        let quote_decimal = 0;
+        let account_list = create_account_for_testing(@0x43);
+        let address_list = address_of(&account_list);
+        let account_buy = create_account_for_testing(@0x44);
+        let address_buy = address_of(&account_buy);
+        let (market_obj, base_coin, quote_coin )= init_for_test(base_decimal, quote_decimal);
+        account_coin_store::deposit(address_list, quote_coin);
+        account_coin_store::deposit(address_buy, base_coin);
+        // Here we list it at price 10 base/quote, and list 10 quote coin
+        list(&account_list, &mut market_obj, (10 * u64::pow(10, quote_decimal) as u256), (10 * UNIT_PRICE_SCALE as u64) / u64::pow(10, quote_decimal));
+        buy(&account_buy, &mut market_obj, MIN_ASK_ORDER_ID, address_list, true, address_buy);
+        to_shared(market_obj);
+        // list account will recieve 10 * 10 = 100 base coin
+        assert!(account_coin_store::balance<TestBaseCoin>(address_list) == 100, 0);
+        // buy account will recieve 10 quote coin
+        assert!(account_coin_store::balance<TestQuoteCoin>(address_buy) == 10, 1);
+        // list account will pay 10 quote coin
+        assert!(account_coin_store::balance<TestQuoteCoin>(address_list) == 990, 2);
+        // buy account will pay 10 * 10 = 100 base coin
+        assert!(account_coin_store::balance<TestBaseCoin>(address_buy) == 900, 3);
+    }
+
+    #[test]
+    public fun test_buy_2() {
+        rooch_framework::genesis::init_for_test();
+        let base_decimal = 8;
+        let quote_decimal = 0;
+        let account_list = create_account_for_testing(@0x43);
+        let address_list = address_of(&account_list);
+        let account_buy = create_account_for_testing(@0x44);
+        let address_buy = address_of(&account_buy);
+        let (market_obj, base_coin, quote_coin )= init_for_test(base_decimal, quote_decimal);
+        account_coin_store::deposit(address_list, quote_coin);
+        account_coin_store::deposit(address_buy, base_coin);
+        // Here we list it at price 10 base/quote, and list 10.0 quote coin
+        list(&account_list, &mut market_obj, (10 * u64::pow(10, quote_decimal) as u256), ((UNIT_PRICE_SCALE as u64) / u64::pow(10, quote_decimal)) * (10 * u64::pow(10, base_decimal)));
+        buy(&account_buy, &mut market_obj, MIN_ASK_ORDER_ID, address_list, true, address_buy);
+        to_shared(market_obj);
+        // list account will recieve 10 * 10 = 100.0000000000 base coin
+        assert!(account_coin_store::balance<TestBaseCoin>(address_list) == 100_00000000, 0);
+        // buy account will recieve 10 quote coin
+        assert!(account_coin_store::balance<TestQuoteCoin>(address_buy) == 10, 1);
+        // list account will pay 10 quote coin
+        assert!(account_coin_store::balance<TestQuoteCoin>(address_list) == 990, 2);
+        // buy account will pay 10 * 10 = 100.0000000000 base coin
+        assert!(account_coin_store::balance<TestBaseCoin>(address_buy) == 900_00000000, 3);
+    }
+
+
+    #[test]
+    public fun test_buy_3() {
+        rooch_framework::genesis::init_for_test();
+        let base_decimal = 10;
+        let quote_decimal = 3;
+        let account_list = create_account_for_testing(@0x43);
+        let address_list = address_of(&account_list);
+        let account_buy = create_account_for_testing(@0x44);
+        let address_buy = address_of(&account_buy);
+        let (market_obj, base_coin, quote_coin )= init_for_test(base_decimal, quote_decimal);
+        account_coin_store::deposit(address_list, quote_coin);
+        account_coin_store::deposit(address_buy, base_coin);
+        // Here we list it at price 10 base/quote, and list 10.000 quote coin
+        list(&account_list, &mut market_obj, (10 * u64::pow(10, quote_decimal) as u256), ((UNIT_PRICE_SCALE as u64) / u64::pow(10, quote_decimal) * 10 * u64::pow(10, base_decimal)));
+        buy(&account_buy, &mut market_obj, MIN_ASK_ORDER_ID, address_list, true, address_buy);
+        to_shared(market_obj);
+        // list account will recieve 10 * 10 = 100.0000000000 base coin
+        assert!(account_coin_store::balance<TestBaseCoin>(address_list) == 100_0000000000, 0);
+        // buy account will recieve 10.000 quote coin
+        assert!(account_coin_store::balance<TestQuoteCoin>(address_buy) == 10000, 1);
+        // list account will pay 10.000 quote coin
+        assert!(account_coin_store::balance<TestQuoteCoin>(address_list) == 990_000, 2);
+        // buy account will pay 10 * 10 = 100.0000000000 base coin
+        assert!(account_coin_store::balance<TestBaseCoin>(address_buy) == 900_0000000000, 3);
+    }
+
+
+    // u64 max >= 1 * base_decimal * price * UNIT_PRICE_SCALE >  quote_decimal
+
+    #[test]
+    public fun test_buy_4() {
+        rooch_framework::genesis::init_for_test();
+        let base_decimal = 8;
+        let quote_decimal = 10;
+        let account_list = create_account_for_testing(@0x43);
+        let address_list = address_of(&account_list);
+        let account_buy = create_account_for_testing(@0x44);
+        let address_buy = address_of(&account_buy);
+        let (market_obj, base_coin, quote_coin )= init_for_test(base_decimal, quote_decimal);
+        account_coin_store::deposit(address_list, quote_coin);
+        account_coin_store::deposit(address_buy, base_coin);
+        // Here we list it at price 10 base/quote, and list 10.000 quote coin
+        list(&account_list, &mut market_obj, (10 * u64::pow(10, quote_decimal) as u256), ((UNIT_PRICE_SCALE as u64) * 10 * u64::pow(10, base_decimal) / u64::pow(10, quote_decimal) ));
+        buy(&account_buy, &mut market_obj, MIN_ASK_ORDER_ID, address_list, true, address_buy);
+        to_shared(market_obj);
+        // list account will recieve 10 * 10 = 100.00000000 base coin
+        assert!(account_coin_store::balance<TestBaseCoin>(address_list) == 100_00000000, 0);
+        // buy account will recieve 10.0000000000 quote coin
+        assert!(account_coin_store::balance<TestQuoteCoin>(address_buy) == 10_0000000000, 1);
+        // list account will pay 10.0000000000 quote coin
+        assert!(account_coin_store::balance<TestQuoteCoin>(address_list) == 990_0000000000, 2);
+        // buy account will pay 10 * 10 = 100.00000000 base coin
+        assert!(account_coin_store::balance<TestBaseCoin>(address_buy) == 900_00000000, 3);
     }
 }
