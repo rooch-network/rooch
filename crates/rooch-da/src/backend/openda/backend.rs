@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::backend::openda::avail::AvailLightClient;
+use crate::backend::openda::avail::AvailFusionClientConfig;
 use crate::backend::openda::celestia::{CelestiaClient, WrappedNamespace};
 use crate::backend::openda::opendal::BACK_OFF_MIN_DELAY;
 use crate::backend::openda::operator::{Operator, OperatorConfig};
@@ -88,10 +88,12 @@ async fn new_operator(
     let scheme = operator_config.scheme.clone();
 
     let operator: Box<dyn Operator> = match scheme {
-        OpenDAScheme::Avail => Box::new(AvailLightClient::new(
-            &scheme_config["endpoint"],
-            max_retries,
-        )?),
+        OpenDAScheme::Avail => {
+            let avail_fusion_config =
+                AvailFusionClientConfig::from_scheme_config(scheme_config, max_retries)?;
+            let avail_fusion_client = avail_fusion_config.build_client()?;
+            Box::new(avail_fusion_client)
+        }
         OpenDAScheme::Celestia => {
             let namespace = WrappedNamespace::from_string(&operator_config.namespace.clone())?;
             Box::new(

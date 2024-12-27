@@ -72,8 +72,10 @@ pub enum OpenDAScheme {
     // access_key_id
     // secret_access_key
     S3,
-    // Avail App Light Client, main config:
-    // endpoint
+    // Avail Fusion(TurboDA & Light Client),
+    // turbo_endpoint
+    // turbo_auth_token
+    // light_endpoint
     Avail,
     // Celestia, main config:
     // endpoint
