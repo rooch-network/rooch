@@ -511,6 +511,7 @@ module orderbook::market_v2 {
         let trade_info = &mut market.trade_info;
 
         trade_info.total_volume = trade_info.total_volume + total_price;
+        trade_info.txs = trade_info.txs + 1;
         if (now_milliseconds() - trade_info.timestamp > 86400000) {
             trade_info.yesterday_volume = trade_info.today_volume;
             trade_info.today_volume = total_price;
@@ -591,6 +592,7 @@ module orderbook::market_v2 {
         let trade_info = &mut market.trade_info;
 
         trade_info.total_volume = trade_info.total_volume + total_price;
+        trade_info.txs = trade_info.txs + 1;
         if (now_milliseconds() - trade_info.timestamp > 86400000) {
             trade_info.yesterday_volume = trade_info.today_volume;
             trade_info.today_volume = total_price;
@@ -685,12 +687,12 @@ module orderbook::market_v2 {
 
     fun borrow_mut_order(
         open_orders: &mut CritbitTree<TickLevel>,
-        user_order_info: &mut LinkedTable<u64, u64>,
+        _user_order_info: &mut LinkedTable<u64, u64>,
         tick_index: u64,
         order_id: u64,
         user: address,
     ): &mut Order {
-        linked_table::remove(user_order_info, order_id);
+        // linked_table::remove(user_order_info, order_id);
         let tick_level = borrow_leaf_by_index(open_orders, tick_index);
         assert!(linked_table::contains(&tick_level.open_orders, order_id), ErrorInvalidOrderId);
         let mut_tick_level = borrow_mut_leaf_by_index(open_orders, tick_index);
@@ -1038,5 +1040,34 @@ module orderbook::market_v2 {
         assert!(account_coin_store::balance<TestQuoteCoin>(address_list) == 990_0000000000, 2);
         // buy account will pay 10 * 10 = 100.00000000 base coin
         assert!(account_coin_store::balance<TestBaseCoin>(address_buy) == 900_00000000, 3);
+    }
+
+        #[test]
+    public fun test_buy_5() {
+        rooch_framework::genesis::init_for_test();
+        let base_decimal = 8;
+        let quote_decimal = 10;
+        let account_list = create_account_for_testing(@0x43);
+        let address_list = address_of(&account_list);
+        let account_buy = create_account_for_testing(@0x44);
+        let address_buy = address_of(&account_buy);
+        let (market_obj, base_coin, quote_coin )= init_for_test(base_decimal, quote_decimal);
+        account_coin_store::deposit(address_list, quote_coin);
+        account_coin_store::deposit(address_buy, base_coin);
+        // Here we list it at price 10 base/quote, and list 10.000 quote coin
+        list(&account_list, &mut market_obj, (10 * u64::pow(10, quote_decimal) as u256), ((UNIT_PRICE_SCALE as u64) * 10 * u64::pow(10, base_decimal) / u64::pow(10, quote_decimal) ));
+        buy_from_origin(&account_buy, &mut market_obj, MIN_ASK_ORDER_ID,
+            (5 * u64::pow(10, quote_decimal) as u256), address_list, true, address_buy);
+        // list account will recieve 10 * 5 = 50.00000000 base coin
+        assert!(account_coin_store::balance<TestBaseCoin>(address_list) == 50_00000000, 0);
+        // buy account will recieve 5.0000000000 quote coin
+        assert!(account_coin_store::balance<TestQuoteCoin>(address_buy) == 5_0000000000, 1);
+        // list account will pay 5.0000000000 quote coin
+        assert!(account_coin_store::balance<TestQuoteCoin>(address_list) == 990_0000000000, 2);
+        // buy account will pay 10 * 5 = 50.00000000 base coin
+        assert!(account_coin_store::balance<TestBaseCoin>(address_buy) == 950_00000000, 3);
+        buy_from_origin(&account_buy, &mut market_obj, MIN_ASK_ORDER_ID,
+            (5 * u64::pow(10, quote_decimal) as u256), address_list, true, address_buy);
+        to_shared(market_obj);
     }
 }
