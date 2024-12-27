@@ -102,7 +102,6 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
   });
 
   const [marketList, setMarketList] = useState<MarketItem[]>([]);
-  console.log('🚀 ~ file: view.tsx:101 ~ MarketplaceView ~ marketList:', marketList);
   const [bidList, setBidList] = useState<BidItem[]>([]);
 
   const [loadingList, setLoadingList] = useState(false);
@@ -161,6 +160,11 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
   const getListData = useCallback(async () => {
     if (!toCoinBalanceInfo || !fromCoinBalanceInfo) return;
     setLoadingList(true);
+    console.log(
+      '🚀 ~ file: view.tsx:194 ~ getListData ~ fromCoinBalanceInfo.coin_type, toCoinBalanceInfo.coin_type:',
+      fromCoinBalanceInfo.coin_type,
+      toCoinBalanceInfo.coin_type
+    );
     try {
       const fromPrice = 0;
       const start = 0;
@@ -177,26 +181,10 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
       });
       const decodedValue = res.return_values?.[0]?.decoded_value as AnnotatedMoveStructView;
       console.log('🚀 ~ file: view.tsx:185 ~ getListData ~ decodedValue:', decodedValue);
-      //   {
-      //     "abilities": 7,
-      //     "type": "0x701c21bf1c8cd5af8c42983890d8ca55e7a820171b8e744c13f2d9998bf76cc3::market_v2::OrderInfo",
-      //     "field": [
-      //         "order_id",
-      //         "unit_price",
-      //         "quantity",
-      //         "owner",
-      //         "is_bid"
-      //     ],
-      //     "value": [
-      //         [
-      //             "9223372036854775808",
-      //             "1000",
-      //             "1022000000",
-      //             "0xcf81bf481d9a396fc7c0854b8b33d2ababe11394c0d486957b177e7280b0e340",
-      //             false
-      //         ]
-      //     ]
-      // }
+      if ((decodedValue as any).length === 0) {
+        setMarketList([]);
+        return;
+      }
       const marketItemList = (decodedValue.value as unknown as any[]).map((i) => ({
         order_id: i[0],
         unit_price: i[1],
@@ -229,35 +217,11 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
         ],
         typeArgs: [fromCoinBalanceInfo.coin_type, toCoinBalanceInfo.coin_type],
       });
-      console.log('🚀 ~ file: view.tsx:180 ~ getBidData ~ marketItemList:', res);
       const decodedValue = res.return_values?.[0]?.decoded_value as AnnotatedMoveStructView;
-      //   {
-      //     "abilities": 7,
-      //     "type": "0x701c21bf1c8cd5af8c42983890d8ca55e7a820171b8e744c13f2d9998bf76cc3::market_v2::OrderInfo",
-      //     "field": [
-      //         "order_id",
-      //         "unit_price",
-      //         "quantity",
-      //         "owner",
-      //         "is_bid"
-      //     ],
-      //     "value": [
-      //         [
-      //             "2",
-      //             "1000",
-      //             "222",
-      //             "0xcf81bf481d9a396fc7c0854b8b33d2ababe11394c0d486957b177e7280b0e340",
-      //             true
-      //         ],
-      //         [
-      //             "1",
-      //             "100",
-      //             "122",
-      //             "0xcf81bf481d9a396fc7c0854b8b33d2ababe11394c0d486957b177e7280b0e340",
-      //             true
-      //         ]
-      //     ]
-      // }
+      if ((decodedValue as any).length === 0) {
+        setBidList([]);
+        return;
+      }
       const marketItemList = (decodedValue.value as unknown as any[]).map((i) => ({
         order_id: i[0],
         unit_price: i[1],
@@ -265,7 +229,6 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
         owner: i[3],
         is_bid: i[4],
       })) as unknown as BidItem[];
-      console.log('🚀 ~ file: view.tsx:203 ~ getBidData ~ marketItemList:', marketItemList);
       setBidList(marketItemList);
     } catch (error) {
       console.log('🚀 ~ file: view.tsx:260 ~ getBidData ~ error:', error);
