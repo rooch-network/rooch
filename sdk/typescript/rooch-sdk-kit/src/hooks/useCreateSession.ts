@@ -4,16 +4,18 @@
 import type { UseMutationOptions, UseMutationResult } from '@tanstack/react-query'
 import { useMutation } from '@tanstack/react-query'
 import { Session } from '@roochnetwork/rooch-sdk'
-import type { CreateSessionArgs } from '@roochnetwork/rooch-sdk'
+import type { CreateSessionArgs, Signer } from '@roochnetwork/rooch-sdk'
 
-import { useRoochClient } from '../client/index.js'
-import { useCurrentWallet } from './useCurrentWallet.js'
-import { walletMutationKeys } from '../../constants/index.js'
-import { WalletNotConnectedError } from '../../error/walletErrors.js'
-import { useSessionStore } from '../useSessionsStore.js'
-import { useTriggerError } from '../../provider/globalProvider.js'
+import { useRoochClient } from './client/index.js'
+import { useCurrentWallet } from './wallet/useCurrentWallet.js'
+import { walletMutationKeys } from '../constants/index.js'
+import { WalletNotConnectedError } from '../error/walletErrors.js'
+import { useSessionStore } from './useSessionsStore.js'
+import { useTriggerError } from '../provider/globalProvider.js'
 
-type UseCreateSessionKeyArgs = CreateSessionArgs
+type UseCreateSessionKeyArgs = {
+  signer?: Signer
+} & CreateSessionArgs
 
 type UseCreateSessionKeyError = WalletNotConnectedError | Error
 
@@ -39,18 +41,19 @@ export function useCreateSessionKey({
   unknown
 > {
   const client = useRoochClient()
-  const currentWallet = useCurrentWallet()
+  const { wallet } = useCurrentWallet()
   const setCurrentSession = useSessionStore((state) => state.setCurrentSession)
   const triggerError = useTriggerError()
   return useMutation({
     mutationKey: walletMutationKeys.createSessionKey(mutationKey),
     mutationFn: async (args) => {
-      if (!currentWallet.isConnected) {
+      const signer = args.signer || wallet
+      if (!signer) {
         throw new WalletNotConnectedError('No wallet is connected.')
       }
       try {
         const sessionAccount = await client.createSession({
-          signer: currentWallet.wallet!,
+          signer: signer,
           sessionArgs: args,
         })
 

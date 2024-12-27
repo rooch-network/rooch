@@ -1,9 +1,9 @@
-import { defineConfig } from 'vite';
-import tsconfigPaths from 'vite-tsconfig-paths';
-import react from '@vitejs/plugin-react-swc';
+import { defineConfig } from 'vite'
+import tsconfigPaths from 'vite-tsconfig-paths'
+import react from '@vitejs/plugin-react-swc'
 // import mkcert from 'vite-plugin-mkcert';
-import fs from 'fs';
-import path from 'path';
+import fs from 'fs'
+import path from 'path'
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -24,11 +24,11 @@ export default defineConfig({
   server: {
     // Exposes your dev server and makes it accessible for the devices in the same network.
     host: true,
-      https: {
-        key: fs.readFileSync(path.resolve(__dirname, '192.168.2.16+1-key.pem')),
-        cert: fs.readFileSync(path.resolve(__dirname, '192.168.2.16+1.pem')),
-    }
+    https: {
+      key: fs.readFileSync(path.resolve(__dirname, 'localhost-key.pem')),
+      cert: fs.readFileSync(path.resolve(__dirname, 'localhost.pem')),
+    },
   },
-});
+})
 
 //8131432894:AAG6uOFnnj7wpDbKx9mPVKaBqJkwwZzaFYg

@@ -22,8 +22,10 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.23.0",
-    "@okxconnect/universal-provider": "1.4.4",
-    "@okxconnect/ui": "^1.4.7"
+    "@okxconnect/universal-provider": "1.6.2",
+    "@okxconnect/ui": "1.6.2",
+    "@roochnetwork/rooch-sdk": "workspace:*",
+    "@roochnetwork/rooch-sdk-kit": "workspace:*"
   },
   "devDependencies": {
     "@eslint/js": "^9.2.0",

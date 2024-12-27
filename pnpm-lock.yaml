@@ -755,11 +755,17 @@ importers:
   sdk/typescript/templates/mini-app:
     dependencies:
       '@okxconnect/ui':
-        specifier: ^1.4.7
-        version: 1.4.7
+        specifier: 1.6.2
+        version: 1.6.2
       '@okxconnect/universal-provider':
-        specifier: 1.4.4
-        version: 1.4.4(@okxconnect/core@1.4.7)
+        specifier: 1.6.2
+        version: 1.6.2
+      '@roochnetwork/rooch-sdk':
+        specifier: workspace:*
+        version: link:../../rooch-sdk
+      '@roochnetwork/rooch-sdk-kit':
+        specifier: workspace:*
+        version: link:../../rooch-sdk-kit
       '@tanstack/react-query':
         specifier: ^5.51.11
         version: 5.56.2(react@18.3.1)
@@ -3126,26 +3132,17 @@ packages:
   '@octokit/types@13.6.1':
     resolution: {integrity: sha512-PHZE9Z+kWXb23Ndik8MKPirBPziOc0D2/3KH1P+6jK5nGWe96kadZuE4jev2/Jq7FvIfTlT2Ltg8Fv2x1v0a5g==}
 
-  '@okxconnect/core@1.4.7':
-    resolution: {integrity: sha512-f43ZMAcnvvORuoAKMuqNAWiHP2fuEc8Ge6rtg/PTqzPYatcfhFvsSV66NjOX+eSJFpk3tQ+YDULsUh+qftgWdA==}
+  '@okxconnect/core@1.6.2':
+    resolution: {integrity: sha512-80hwp/uxlncJztzdjIP1gYuwj48CPQYUhG01Qy5L1M8fZUIBqCrR3xxdzb6JBcUVVJIX7gE6KrVl18HB4qjVJQ==}
 
-  '@okxconnect/tonsdk@1.4.7':
-    resolution: {integrity: sha512-9oqULhFEd7by6LjESl6Z/9Rlp2qMd3faXb0WwTUHQyl8EAlfF7nAEKlRkPTchVL44PVrxrpn/eDVM0wcUvyUNw==}
-    peerDependencies:
-      '@okxconnect/core': '*'
+  '@okxconnect/tonsdk@1.6.2':
+    resolution: {integrity: sha512-4fydMzu2WVgaQkFTdqwVgPAe+YibkjzzlsaDyMh6sgv7j/x693BR9d+lzW6KLvj+bizKgWS1btBQtbRmO9SfgA==}
 
-  '@okxconnect/ui@1.4.7':
-    resolution: {integrity: sha512-9TeMxrLoEV2HWudrofnLTAs8zZsmzvvBEcPV9RVJGuRRo/vaZN0Oo3QYXibxaaiiEVCFDRLLlGDWMzTBIMJH9Q==}
+  '@okxconnect/ui@1.6.2':
+    resolution: {integrity: sha512-vxKAE/4yKM7iWwhjGK7DBotJiNNe3+1r+L1Eg1EUGfgTngpZTUPkBPFZoAh2Y3J2e7ngzfS+AsOO29gFkuLCnA==}
 
-  '@okxconnect/universal-provider@1.4.4':
-    resolution: {integrity: sha512-uAI3CoOHfnekBf0tycWsSlpdl8rREqIdQa1c5aYsCmW0hDMv+QFnzZOV7YvtWAbbb6X3NHBQYpSj+JawLA0tUQ==}
-    peerDependencies:
-      '@okxconnect/core': '*'
-
-  '@okxconnect/universal-provider@1.4.7':
-    resolution: {integrity: sha512-kBogW8UQGOqHglV7jj/jVkldlGjOp1qtngEmAdyfFac6Zdd75qaPI4kIOcMxSeIi1vJwjIabML9A7Q/YdNOc4Q==}
-    peerDependencies:
-      '@okxconnect/core': '*'
+  '@okxconnect/universal-provider@1.6.2':
+    resolution: {integrity: sha512-muIapakIkSyqV+wv3DpXTNi0ZNtKd3q17EI/vJtXEOvsU5xkdHRtjvfX/HmdCKvKfArxxPQ1CLAvjohiwBXS2w==}
 
   '@pkgjs/parseargs@0.11.0':
     resolution: {integrity: sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==}
@@ -6010,6 +6007,9 @@ packages:
   cross-fetch@3.1.8:
     resolution: {integrity: sha512-cvA+JwZoU0Xq+h6WkMvAUqPEYy92Obet6UdKLfW60qn99ftItKjB5T+BkyWOFWe2pUyfQ+IJHmpOTznqk1M6Kg==}
 
+  cross-fetch@4.1.0:
+    resolution: {integrity: sha512-uKm5PU+MHTootlWEY+mZ4vvXoCn4fLQxT9dSc1sXVMSFkINTJVN8cAQROpwcKm8bJ/c7rgZVIBWzH5T78sNZZw==}
+
   cross-spawn@5.1.0:
     resolution: {integrity: sha512-pTgQJ5KC0d2hcY8eyL1IzlBPYjTkyH72XRZPnLyKus2mBfNjQs3klqbJU2VILqZryAZUt9JOb3h/mWMy23/f5A==}
 
@@ -8166,6 +8166,9 @@ packages:
     resolution: {integrity: sha512-+bT2uH4E5LGE7h/n3evcS/sQlJXCpIp6ym8OWJ5eV6+67Dsql/LaaT7qJBAt2rzfoa/5QBGBhxDix1dMt2kQKQ==}
     engines: {node: '>= 0.8.0'}
 
+  lie@3.1.1:
+    resolution: {integrity: sha512-RiNhHysUjhrDQntfYSfY4MU24coXXdEOgw9WGcKHNeEwffDYbF//u87M1EWaMGzuFoSbqW0C9C6lEEhDOAswfw==}
+
   lie@3.3.0:
     resolution: {integrity: sha512-UaiMJzeWRlEujzAuw5LokY1L5ecNQYZKfmyZ9L7wDHb/p5etKaxXhohBcrw0EYby+G/NA52vRSN4N39dxHAIwQ==}
 
@@ -8186,6 +8189,9 @@ packages:
   local-pkg@0.5.0:
     resolution: {integrity: sha512-ok6z3qlYyCDS4ZEU27HaU6x/xZa9Whf8jD4ptH5UZTQYZVYeb9bnZ3ojVhiJNLiXK1Hfc0GNbLXcmZ5plLDDBg==}
     engines: {node: '>=14'}
+
+  localforage@1.10.0:
+    resolution: {integrity: sha512-14/H1aX7hzBBmmh7sGPd+AOMkkIrHM3Z1PAyGgZigA1H1p5O5ANnMyWzvpAETtG68/dC4pC0ncy3+PPGzXZHPg==}
 
   locate-path@3.0.0:
     resolution: {integrity: sha512-7AO748wWnIhNqAuaty2ZWHkQHRSNfPVIsPIfwEOWO22AmaoVrWavlOcMR5nzTLNYvp36X220/maaRsrec1G65A==}
@@ -10685,6 +10691,10 @@ packages:
 
   ufo@1.5.4:
     resolution: {integrity: sha512-UsUk3byDzKd04EyoZ7U4DOlxQaD14JUKQl6/P7wiX4FNvUfm3XL246n9W5AmqwW5RSFJ27NAuM0iLscAOYUiGQ==}
+
+  uint8array-extras@1.4.0:
+    resolution: {integrity: sha512-ZPtzy0hu4cZjv3z5NW9gfKnNLjoz4y6uv4HlelAjDK7sY/xOkKZv9xK/WQpcsBB3jEybChz9DPC2U/+cusjJVQ==}
+    engines: {node: '>=18'}
 
   uint8arrays@3.1.0:
     resolution: {integrity: sha512-ei5rfKtoRO8OyOIor2Rz5fhzjThwIHJZ3uyDPnDHTXbP0aMQ1RN/6AI5B5d9dBxJOU+BvOAk7ZQ1xphsX8Lrog==}
@@ -13642,52 +13652,51 @@ snapshots:
     dependencies:
       '@octokit/openapi-types': 22.2.0
 
-  '@okxconnect/core@1.4.7':
+  '@okxconnect/core@1.6.2':
     dependencies:
       '@stablelib/ed25519': 1.0.3
       '@stablelib/random': 1.0.2
       '@stablelib/sha256': 1.0.1
       core-js: 2.6.12
+      cross-fetch: 4.1.0
       crypto-js: 4.2.0
       eventemitter3: 5.0.1
       isutf8: 4.0.1
+      localforage: 1.10.0
       multiformats: 9.4.2
       process: 0.11.10
       tweetnacl: 1.0.3
       tweetnacl-util: 0.15.1
       ua-parser-js: 1.0.39
       uint8arrays: 3.1.0
+    transitivePeerDependencies:
+      - encoding
 
-  '@okxconnect/tonsdk@1.4.7(@okxconnect/core@1.4.7)':
+  '@okxconnect/tonsdk@1.6.2':
     dependencies:
-      '@okxconnect/core': 1.4.7
+      '@okxconnect/core': 1.6.2
+    transitivePeerDependencies:
+      - encoding
 
-  '@okxconnect/ui@1.4.7':
+  '@okxconnect/ui@1.6.2':
     dependencies:
-      '@okxconnect/core': 1.4.7
-      '@okxconnect/tonsdk': 1.4.7(@okxconnect/core@1.4.7)
-      '@okxconnect/universal-provider': 1.4.7(@okxconnect/core@1.4.7)
+      '@okxconnect/core': 1.6.2
+      '@okxconnect/tonsdk': 1.6.2
+      '@okxconnect/universal-provider': 1.6.2
       classnames: 2.3.2
       deepmerge: 4.3.1
       ua-parser-js: 1.0.39
     transitivePeerDependencies:
       - encoding
 
-  '@okxconnect/universal-provider@1.4.4(@okxconnect/core@1.4.7)':
+  '@okxconnect/universal-provider@1.6.2':
     dependencies:
-      '@okxconnect/core': 1.4.7
+      '@okxconnect/core': 1.6.2
       '@types/lodash': 4.17.7
+      bs58: 5.0.0
       cross-fetch: 3.1.8
       eventemitter3: 5.0.1
-    transitivePeerDependencies:
-      - encoding
-
-  '@okxconnect/universal-provider@1.4.7(@okxconnect/core@1.4.7)':
-    dependencies:
-      '@okxconnect/core': 1.4.7
-      '@types/lodash': 4.17.7
-      cross-fetch: 3.1.8
-      eventemitter3: 5.0.1
+      uint8array-extras: 1.4.0
     transitivePeerDependencies:
       - encoding
 
@@ -17350,6 +17359,12 @@ snapshots:
     transitivePeerDependencies:
       - encoding
 
+  cross-fetch@4.1.0:
+    dependencies:
+      node-fetch: 2.7.0
+    transitivePeerDependencies:
+      - encoding
+
   cross-spawn@5.1.0:
     dependencies:
       lru-cache: 4.1.5
@@ -20219,6 +20234,10 @@ snapshots:
       prelude-ls: 1.2.1
       type-check: 0.4.0
 
+  lie@3.1.1:
+    dependencies:
+      immediate: 3.0.6
+
   lie@3.3.0:
     dependencies:
       immediate: 3.0.6
@@ -20240,6 +20259,10 @@ snapshots:
     dependencies:
       mlly: 1.7.1
       pkg-types: 1.2.0
+
+  localforage@1.10.0:
+    dependencies:
+      lie: 3.1.1
 
   locate-path@3.0.0:
     dependencies:
@@ -23387,6 +23410,8 @@ snapshots:
   ua-parser-js@1.0.39: {}
 
   ufo@1.5.4: {}
+
+  uint8array-extras@1.4.0: {}
 
   uint8arrays@3.1.0:
     dependencies:
