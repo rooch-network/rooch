@@ -802,7 +802,11 @@ module orderbook::market_v2 {
 
         let market = object::borrow(market_obj);
         let order_infos = vector::empty<OrderInfo>();
+
         if (query_bid) {
+            if (critbit::is_empty(&market.bids)) {
+                return order_infos
+            };
             let i = 0;
             let from = if (from_price_is_none) {
                 let (key, _) = critbit::max_leaf(&market.bids);
@@ -845,6 +849,9 @@ module orderbook::market_v2 {
                 }
             };
         }else {
+            if (critbit::is_empty(&market.asks)) {
+                return order_infos
+            };
             let i = 0;
             let from = if (from_price_is_none) {
                 let (key, _) = critbit::min_leaf(&market.asks);
