@@ -36,6 +36,6 @@ impl CommandAction<String> for DA {
 pub enum DACommand {
     Unpack(UnpackCommand),
     Namespace(NamespaceCommand),
-    Exec(ExecCommand),
+    Exec(Box<ExecCommand>),
     IndexTx(IndexTxCommand),
 }
