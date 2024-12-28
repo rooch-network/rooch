@@ -40,7 +40,7 @@ impl BestRollbackCommand {
             get_block_hash_from_da_rpc(&self.da_url, self.last_l2_block_number, depth as u128)
                 .await?;
         da_hashes.sort_by(|a, b| a.block_height.cmp(&b.block_height)); // order by block_height
-        if da_hashes.len() == 0 {
+        if da_hashes.is_empty() {
             println!("no btc block found in DA, please increase search depth");
             return Ok(());
         }
