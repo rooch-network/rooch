@@ -2,4 +2,5 @@
 // SPDX-License-Identifier: Apache-2.0
 
 pub mod fs;
-pub mod utils;
+mod utils;
+pub use utils::*;

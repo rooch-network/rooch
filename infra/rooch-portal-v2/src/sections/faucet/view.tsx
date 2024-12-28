@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { CopyToClipboard } from 'react-copy-to-clipboard'
 import { Args, isValidBitcoinAddress } from '@roochnetwork/rooch-sdk';
-import { useCurrentNetwork, useRoochClient, useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit';
+import { useRoochClient, useCurrentNetwork, useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit';
 
 import { LoadingButton } from '@mui/lab';
 import { Box, Card, Chip, Stack, CardHeader, CardContent } from '@mui/material';
@@ -19,7 +20,6 @@ import { DashboardContent } from 'src/layouts/dashboard';
 
 import { toast } from 'src/components/snackbar';
 
-import { CopyToClipboard } from 'react-copy-to-clipboard'
 import { paths } from '../../routes/paths'
 import { INVITER_ADDRESS_KEY } from "../../utils/inviter"
 

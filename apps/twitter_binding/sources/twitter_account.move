@@ -98,6 +98,7 @@ module twitter_binding::twitter_account {
         object::transfer_extend(mapping_obj, @twitter_binding);
     }
 
+    /// Resolve address by author id
     public fun resolve_address_by_author_id(author_id: String): Option<address> {
         let mapping = borrow_twitter_account_mapping();
         if (table::contains(&mapping.account_to_address, author_id)){
@@ -106,12 +107,51 @@ module twitter_binding::twitter_account {
         option::none()
     }
 
+    /// Resolve address by author id batch, if the address not found, the address will be 0x0
+    public fun resolve_address_by_author_id_batch(author_ids: vector<String>): vector<address> {
+        let mapping = borrow_twitter_account_mapping();
+        let len = vector::length(&author_ids);
+        let results = vector::empty<address>();
+        let i = 0;
+        while (i < len){
+            let author_id = *vector::borrow(&author_ids, i);
+            let addr = if (table::contains(&mapping.account_to_address, author_id)){
+                *table::borrow(&mapping.account_to_address, author_id)
+            }else{
+                @0x0
+            };
+            vector::push_back(&mut results, addr);
+            i = i + 1;
+        };
+        results
+    }
+
+    /// Resolve author id by address
     public fun resolve_author_id_by_address(address: address): Option<String> {
         let mapping = borrow_twitter_account_mapping();
         if (table::contains(&mapping.address_to_account, address)){
             return option::some(*table::borrow(&mapping.address_to_account, address))
         };
         option::none()
+    }
+
+    /// Resolve author id by address batch, if the address not found, the author id will be empty string
+    public fun resolve_author_id_by_address_batch(addresses: vector<address>): vector<String> {
+        let mapping = borrow_twitter_account_mapping();
+        let len = vector::length(&addresses);
+        let results = vector::empty<String>();
+        let i = 0;
+        while (i < len){
+            let addr = *vector::borrow(&addresses, i);
+            let author_id = if (table::contains(&mapping.address_to_account, addr)){
+                *table::borrow(&mapping.address_to_account, addr)
+            }else{
+                string::utf8(b"")
+            };
+            vector::push_back(&mut results, author_id);
+            i = i + 1;
+        };
+        results
     }
 
     public entry fun verify_and_binding_twitter_account(tweet_id: String){

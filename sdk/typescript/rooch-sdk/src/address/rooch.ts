@@ -9,34 +9,33 @@ import { fromHEX, isHex, toHEX } from '../utils/index.js'
 import { normalizeRoochAddress } from './util.js'
 import { Address, ROOCH_BECH32_PREFIX } from './address.js'
 
-export class RoochAddress implements Address {
-  private readonly address: Bytes
+export class RoochAddress extends Address {
+  private readonly bytes: Bytes
 
-  constructor(address: Bytes | string) {
-    if (typeof address === 'string') {
-      if (isHex(address)) {
-        this.address = fromHEX(address)
+  constructor(input: Bytes | string) {
+    let bytes: Bytes
+    if (typeof input === 'string') {
+      if (isHex(input)) {
+        bytes = fromHEX(input)
       } else {
-        this.address = bech32m.decodeToBytes(address).bytes
+        bytes = bech32m.decodeToBytes(input).bytes
       }
     } else {
-      this.address = address
+      bytes = input
     }
-  }
-
-  toStr(): string {
-    return this.toBech32Address()
+    super(bech32m.encode(ROOCH_BECH32_PREFIX, bech32m.toWords(bytes), false))
+    this.bytes = bytes
   }
 
   toBytes(): Bytes {
-    return this.address
+    return this.bytes
   }
 
   toHexAddress(): string {
-    return normalizeRoochAddress(toHEX(this.address))
+    return normalizeRoochAddress(toHEX(this.bytes))
   }
 
   toBech32Address(): string {
-    return bech32m.encode(ROOCH_BECH32_PREFIX, bech32m.toWords(this.address), false)
+    return this.rawAddress
   }
 }

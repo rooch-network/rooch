@@ -1,72 +1,69 @@
-'use client'
+'use client';
 
-import axios from 'axios'
-import { useState, useEffect, useCallback } from 'react'
-import { CopyToClipboard } from 'react-copy-to-clipboard'
-import { Args, Transaction, stringToBytes, toHEX } from '@roochnetwork/rooch-sdk'
+import axios from 'axios';
+import { useState, useEffect, useCallback } from 'react';
+import { CopyToClipboard } from 'react-copy-to-clipboard';
+import { Args, toHEX, Transaction, stringToBytes } from '@roochnetwork/rooch-sdk';
 import {
   useRoochClient,
+  SessionKeyGuard,
+  useCurrentWallet,
   useCurrentAddress,
-  useCurrentNetwork,
   useCurrentSession,
   useRoochClientQuery,
-  useCurrentWallet
-} from '@roochnetwork/rooch-sdk-kit'
+} from '@roochnetwork/rooch-sdk-kit';
 
-import { LoadingButton } from '@mui/lab'
-import { Card, Chip, Stack, TextField, CardHeader, Typography, CardContent } from '@mui/material'
+import { LoadingButton } from '@mui/lab';
+import { Card , Chip, Stack, Button, TextField, CardHeader, Typography, CardContent } from '@mui/material';
 
-import { sleep } from 'src/utils/common'
+import { sleep } from 'src/utils/common';
 
-import { DashboardContent } from 'src/layouts/dashboard'
+import { DashboardContent } from 'src/layouts/dashboard';
 
-import { toast } from 'src/components/snackbar'
-import { Iconify } from 'src/components/iconify'
+import { toast } from 'src/components/snackbar';
+import { Iconify } from 'src/components/iconify';
 
-import { useNetworkVariable } from '../../hooks/use-networks'
-import SessionKeysTableCard from './components/session-keys-table-card'
-import SessionKeyGuardButtonV1 from '../../components/auth/session-key-guard-button-v1'
-import { INVITER_ADDRESS_KEY } from "../../utils/inviter";
-import { ShareTwitter } from "../../components/twitter/share";
+import { INVITER_ADDRESS_KEY } from '../../utils/inviter';
+import { useNetworkVariable } from '../../hooks/use-networks';
+import { ShareTwitter } from '../../components/twitter/share';
+import SessionKeysTableCard from './components/session-keys-table-card';
 
 export function SettingsView() {
-  const address = useCurrentAddress()
+  const address = useCurrentAddress();
 
-  const session = useCurrentSession()
-  const client = useRoochClient()
-  const wallet = useCurrentWallet()
-  const faucetUrl = useNetworkVariable('faucetUrl')
-  const twitterOracleAddress = useNetworkVariable('twitterOracleAddress')
+  const session = useCurrentSession();
+  const client = useRoochClient();
+  const wallet = useCurrentWallet();
+  const faucetUrl = useNetworkVariable('faucetUrl');
+  const twitterOracleAddress = useNetworkVariable('twitterOracleAddress');
   const [inviterCA, inviterModule, inviterConf] = useNetworkVariable('inviterCA');
-  const [tweetStatus, setTweetStatus] = useState('')
-  const [twitterId, setTwitterId] = useState<string>()
-  const [verifying, setVerifying] = useState(false)
-  const [fetchTwitterIdStatus, setFetchTwitterIdStatus] = useState(true)
+  const [tweetStatus, setTweetStatus] = useState('');
+  const [twitterId, setTwitterId] = useState<string>();
+  const [verifying, setVerifying] = useState(false);
+  const [fetchTwitterIdStatus, setFetchTwitterIdStatus] = useState(true);
 
   const {
     data: sessionKeys,
     isPending: isLoadingSessionKeys,
     refetch: refetchSessionKeys,
   } = useRoochClientQuery('getSessionKeys', {
-    address: address!.genRoochAddress().toHexAddress()
-    }
-  )
+    address: address!.genRoochAddress().toHexAddress(),
+  });
 
   const fetchTwitterId = useCallback(async () => {
     if (!address) {
-      return
+      return;
     }
     const res = await client.executeViewFunction({
       address: twitterOracleAddress,
       module: 'twitter_account',
       function: 'resolve_author_id_by_address',
       args: [Args.address(address.toStr())],
-    })
-    let _twitterId: string | undefined
+    });
+    let _twitterId: string | undefined;
     if (res.vm_status === 'Executed') {
       if (res.return_values?.[0].value.value !== '0x00') {
-        _twitterId = (res.return_values?.[0].decoded_value as any).value.vec
-          .value[0][0] as string;
+        _twitterId = (res.return_values?.[0].decoded_value as any).value.vec.value[0][0] as string;
         _twitterId = new TextDecoder('utf-8').decode(
           stringToBytes('hex', _twitterId.replace('0x', ''))
         );
@@ -75,33 +72,33 @@ export function SettingsView() {
       }
     }
     // eslint-disable-next-line consistent-return
-    return _twitterId
-  }, [address, client, twitterOracleAddress])
+    return _twitterId;
+  }, [address, client, twitterOracleAddress]);
 
   useEffect(() => {
-    fetchTwitterId().finally(() => setFetchTwitterIdStatus(false))
-  }, [fetchTwitterId])
+    fetchTwitterId().finally(() => setFetchTwitterIdStatus(false));
+  }, [fetchTwitterId]);
 
   const loopFetchTwitterId = async (count = 0) => {
-    const id = await fetchTwitterId()
+    const id = await fetchTwitterId();
 
     if (id || count === 3) {
-      return id
+      return id;
     }
 
-    return loopFetchTwitterId(count +1)
-  }
+    return loopFetchTwitterId(count + 1);
+  };
 
   const checkTwitterObj = async (id: string) => {
     const result = await client.queryObjectStates({
       filter: {
-        object_id: id
-      }
-    })
+        object_id: id,
+      },
+    });
 
     if (result.data.length === 0) {
-      await sleep(10000)
-      return checkTwitterObj(id)
+      await sleep(10000);
+      return checkTwitterObj(id);
     }
 
     // TODO: twitter post btc address !== current wallet address.
@@ -109,8 +106,8 @@ export function SettingsView() {
     //   throw (new Error('The twitter post btc address does not match the wallet address'))
     // }
 
-    return ''
-  }
+    return '';
+  };
   const fetchTwitterPost = async (pureTweetId: string) => {
     const res = await axios.post(
       `${faucetUrl}/fetch-tweet`,
@@ -121,40 +118,40 @@ export function SettingsView() {
         headers: {
           'Content-Type': 'application/json',
         },
-      },
-    )
+      }
+    );
 
     if (res.data.ok) {
-      await checkTwitterObj(res.data.ok)
+      await checkTwitterObj(res.data.ok);
     }
-  }
+  };
 
   const disconnectTwitter = async () => {
     if (!session) {
-      return
+      return;
     }
     try {
-      const tx = new Transaction()
+      const tx = new Transaction();
       tx.callFunction({
-        target: `${twitterOracleAddress}::twitter_account::unbinding_twitter_account`
-      })
+        target: `${twitterOracleAddress}::twitter_account::unbinding_twitter_account`,
+      });
 
       const result = await client.signAndExecuteTransaction({
         transaction: tx,
-        signer: session
-      })
+        signer: session,
+      });
 
       if (result.execution_info.status.type === 'executed') {
-        setTwitterId(undefined)
-        await fetchTwitterId()
-        toast.success('Disconnect twitter success')
+        setTwitterId(undefined);
+        await fetchTwitterId();
+        toast.success('Disconnect twitter success');
       } else {
-        toast.error('Disconnect twitter aborted')
+        toast.error('Disconnect twitter aborted');
       }
     } catch (e) {
-      toast.error(e.message)
+      toast.error(e.message);
     }
-  }
+  };
 
   const bindTwitter = async (pureTweetId: string) => {
     await axios.post(
@@ -166,14 +163,14 @@ export function SettingsView() {
         headers: {
           'Content-Type': 'application/json',
         },
-      },
-    )
-  }
+      }
+    );
+  };
 
   const bindWithInviter = async (inviterAddr: string, pureTweetId: string) => {
-    const signMsg = 'Welcome to use Rooch! Connect with Twitter and claim your Rgas.'
-    const sign = await wallet.wallet?.sign(stringToBytes('utf8', signMsg))
-    const pk = wallet.wallet!.getPublicKey().toBytes()
+    const signMsg = 'Welcome to use Rooch! Connect with Twitter and claim your Rgas.';
+    const sign = await wallet.wallet?.sign(stringToBytes('utf8', signMsg));
+    const pk = wallet.wallet!.getPublicKey().toBytes();
 
     const payload = JSON.stringify({
       inviter: inviterAddr,
@@ -182,36 +179,31 @@ export function SettingsView() {
       public_key: toHEX(pk),
       message: signMsg,
     });
-    await axios.post(
-      `${faucetUrl}/binding-twitter-with-inviter`,
-      payload,
-      {
-        headers: {
-          'Content-Type': 'application/json',
-        },
+    await axios.post(`${faucetUrl}/binding-twitter-with-inviter`, payload, {
+      headers: {
+        'Content-Type': 'application/json',
       },
-    )
+    });
 
-    window.localStorage.setItem(INVITER_ADDRESS_KEY, '')
-  }
+    window.localStorage.setItem(INVITER_ADDRESS_KEY, '');
+  };
 
   const handleBindTwitter = async () => {
-
     // setp 1, check twitter
-    const match = tweetStatus.match(/status\/(\d+)/)
+    const match = tweetStatus.match(/status\/(\d+)/);
 
     if (!match) {
-      toast.error('twitter invalid')
-      return
+      toast.error('twitter invalid');
+      return;
     }
-    setVerifying(true)
+    setVerifying(true);
 
     try {
-      const pureTweetId = match[1]
-      await fetchTwitterPost(pureTweetId)
+      const pureTweetId = match[1];
+      await fetchTwitterPost(pureTweetId);
 
       // step 2, check inviter
-      const inviterAddr = window.localStorage.getItem(INVITER_ADDRESS_KEY)
+      const inviterAddr = window.localStorage.getItem(INVITER_ADDRESS_KEY);
       if (inviterAddr && inviterAddr !== '') {
         // check invite is open
         const result = await client.queryObjectStates({
@@ -223,34 +215,38 @@ export function SettingsView() {
           },
         });
 
-       if (result && result.data.length > 0 && result.data[0].decoded_value?.value.is_open === true) {
-          await bindWithInviter(inviterAddr, pureTweetId)
+        if (
+          result &&
+          result.data.length > 0 &&
+          result.data[0].decoded_value?.value.is_open === true
+        ) {
+          await bindWithInviter(inviterAddr, pureTweetId);
         } else {
-          await bindTwitter(pureTweetId)
+          await bindTwitter(pureTweetId);
         }
       } else {
-        await bindTwitter(pureTweetId)
+        await bindTwitter(pureTweetId);
       }
 
-      await sleep(3000)
-      const checkRes = await loopFetchTwitterId()
+      await sleep(3000);
+      const checkRes = await loopFetchTwitterId();
       if (checkRes) {
-        toast.success('Binding success')
+        toast.success('Binding success');
       }
-    } catch(error) {
+    } catch (error) {
       if ('response' in error) {
         if ('error' in error.response.data) {
-          toast.error(error.response.data.error)
+          toast.error(error.response.data.error);
         } else {
-          toast.error(error.response.data)
+          toast.error(error.response.data);
         }
       } else {
-        toast.error(error.message)
+        toast.error(error.message);
       }
     } finally {
-      setVerifying(false)
+      setVerifying(false);
     }
-  }
+  };
 
   return (
     <DashboardContent maxWidth="xl">
@@ -280,20 +276,24 @@ export function SettingsView() {
           subheader="Bind a Twitter account to a Bitcoin address via publishing a tweet"
         />
         <CardContent className="!pt-2">
-          {fetchTwitterIdStatus ? <></>: twitterId ? (
+          {fetchTwitterIdStatus ? (
+            <></>
+          ) : twitterId ? (
             <Stack className="mt-2" spacing={1.5} alignItems="flex-start">
-            <Chip
-              className="justify-start w-fit"
-              color="success"
-              label={
-                <Stack direction="row" spacing={1.5} alignItems="center">
-                  <Iconify icon="solar:check-circle-bold" />
-                  Twitter Id: {twitterId}
-                </Stack>
-              }
-            />
+              <Chip
+                className="justify-start w-fit"
+                color="success"
+                label={
+                  <Stack direction="row" spacing={1.5} alignItems="center">
+                    <Iconify icon="solar:check-circle-bold" />
+                    Twitter Id: {twitterId}
+                  </Stack>
+                }
+              />
 
-            <SessionKeyGuardButtonV1 desc="Disconnect Twitter" callback={disconnectTwitter}/>
+              <SessionKeyGuard onClick={disconnectTwitter}>
+                <Button variant="outlined">Disconnect Twitter</Button>
+              </SessionKeyGuard>
             </Stack>
           ) : (
             <Stack className="mt-2" spacing={1.5}>
@@ -302,9 +302,7 @@ export function SettingsView() {
                   1. Post the following text to you twitter account
                   <span className="font-normal text-sm text-gray-400">(Click it to twitter)</span>
                 </Stack>
-                {address && (
-                  <ShareTwitter/>
-                )}
+                {address && <ShareTwitter />}
               </Stack>
               <Stack spacing={1.5}>
                 <Stack className="font-medium">
@@ -316,13 +314,14 @@ export function SettingsView() {
                   value={tweetStatus}
                   placeholder="https://x.com/RoochNetwork/status/180000000000000000"
                   onChange={(e) => {
-                    setTweetStatus(e.target.value)
+                    setTweetStatus(e.target.value);
                   }}
                 />
               </Stack>
               <Stack spacing={1.5}>
                 <Stack className="font-medium">
-                  🔔Tips: If you just posted a twitter message, Wait for on-chain synchronization (2-3 minutes)
+                  🔔Tips: If you just posted a twitter message, Wait for on-chain synchronization
+                  (2-3 minutes)
                 </Stack>
               </Stack>
               <LoadingButton
@@ -330,10 +329,10 @@ export function SettingsView() {
                   !tweetStatus ||
                   (() => {
                     try {
-                      const url = new URL(tweetStatus)
-                      return url.hostname !== 'x.com'
+                      const url = new URL(tweetStatus);
+                      return url.hostname !== 'x.com';
                     } catch {
-                      return true
+                      return true;
                     }
                   })()
                 }
@@ -356,5 +355,5 @@ export function SettingsView() {
         address={address?.toStr() || ''}
       />
     </DashboardContent>
-  )
+  );
 }

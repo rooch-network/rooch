@@ -52,6 +52,7 @@ schemars = { workspace = true }
 ciborium = { workspace = true }
 wasmer = { workspace = true }
 tiny-keccak = { workspace = true }
+reqwest = { workspace = true }
 
 move-binary-format = { workspace = true }
 move-cli = { workspace = true }
@@ -69,6 +70,7 @@ move-vm-types = { workspace = true }
 moveos-stdlib = { workspace = true }
 moveos-types = { workspace = true }
 moveos-store = { workspace = true }
+moveos-eventbus = { workspace = true }
 moveos-common = { workspace = true }
 moveos = { workspace = true }
 moveos-verifier = { workspace = true }
@@ -94,6 +96,7 @@ rooch-rpc-server = { workspace = true }
 rooch-rpc-client = { workspace = true }
 rooch-integration-test-runner = { workspace = true }
 rooch-indexer = { workspace = true }
+rooch-event = { workspace = true }
 rooch-db = { workspace = true }
 rooch-common = { workspace = true }
 rooch-store = { workspace = true }
