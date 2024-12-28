@@ -405,3 +405,8 @@ codegen-units = 1 # Help to achieve a better result with lto
 [profile.bench]
 inherits = "release"
 #debug = true
+
+[profile.optdev]
+inherits = "release"
+lto = "off"
+codegen-units = 16
