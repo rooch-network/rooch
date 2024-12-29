@@ -26,7 +26,7 @@ use tokio::sync::broadcast;
 
 pub struct DAServerActor {
     rooch_store: RoochStore,
-    backend_names: Vec<String>,
+    backend_identifiers: Vec<String>,
     last_block_number: Option<u128>,
     last_block_update_time: u64,
     background_last_block_update_time: Arc<AtomicU64>,
@@ -47,18 +47,19 @@ impl DAServerActor {
         let background_submit_interval = da_config
             .background_submit_interval
             .unwrap_or(DEFAULT_DA_BACKGROUND_SUBMIT_INTERVAL);
+
         let DABackends {
             backends,
-            backend_names,
+            backend_identifiers,
             submit_threshold,
             is_nop_backend,
-        } = DABackends::build(da_config.da_backend, genesis_namespace).await?;
+        } = DABackends::initialize(da_config.da_backend, genesis_namespace).await?;
 
         let last_block_number = rooch_store.get_last_block_number()?;
         let background_last_block_update_time = Arc::new(AtomicU64::new(0));
         let server = DAServerActor {
             rooch_store: rooch_store.clone(),
-            backend_names,
+            backend_identifiers,
             last_block_number,
             last_block_update_time: 0,
             background_last_block_update_time: background_last_block_update_time.clone(),
@@ -117,7 +118,7 @@ impl DAServerActor {
             last_avail_block_number,
             last_avail_tx_order,
             last_avail_block_update_time,
-            avail_backends: self.backend_names.clone(),
+            avail_backends: self.backend_identifiers.clone(),
         })
     }
 

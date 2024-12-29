@@ -27,7 +27,7 @@ impl DABackend for DABackendNopProxy {
 
 pub struct DABackends {
     pub backends: Vec<Arc<dyn DABackend>>,
-    pub backend_names: Vec<String>,
+    pub backend_identifiers: Vec<String>,
     pub submit_threshold: usize,
     pub is_nop_backend: bool,
 }
@@ -36,7 +36,7 @@ impl DABackends {
     const DEFAULT_SUBMIT_THRESHOLD: usize = 1;
     const DEFAULT_IS_NOP_BACKEND: bool = false;
 
-    pub async fn build(
+    pub async fn initialize(
         config: Option<DABackendConfig>,
         genesis_namespace: String,
     ) -> anyhow::Result<Self> {
@@ -45,10 +45,10 @@ impl DABackends {
         let mut submit_threshold = Self::DEFAULT_SUBMIT_THRESHOLD;
         let mut is_nop_backend = Self::DEFAULT_IS_NOP_BACKEND;
 
-        let mut available_backends_count = 1; // Nop is always available
+        let mut active_backends_count = 1; // Nop is always active
         if let Some(mut backend_config) = config {
             submit_threshold = backend_config.calculate_submit_threshold();
-            available_backends_count = Self::process_backend_configs(
+            active_backends_count = Self::load_backends_from_configs(
                 &backend_config.backends,
                 genesis_namespace,
                 &mut backends,
@@ -61,23 +61,23 @@ impl DABackends {
             backend_names.push("nop".to_string());
         }
 
-        if available_backends_count < submit_threshold {
+        if active_backends_count < submit_threshold {
             return Err(anyhow!(
-                "failed to start da: not enough backends for future submissions. exp>= {} act: {}",
+                "failed to start DA: not enough backends for future submissions. exp>= {} act: {}",
                 submit_threshold,
-                available_backends_count
+                active_backends_count
             ));
         }
 
         Ok(Self {
             backends,
-            backend_names,
+            backend_identifiers: backend_names,
             submit_threshold,
             is_nop_backend,
         })
     }
 
-    async fn process_backend_configs(
+    async fn load_backends_from_configs(
         backend_configs: &[DABackendConfigType],
         genesis_namespace: String,
         backends: &mut Vec<Arc<dyn DABackend>>,
