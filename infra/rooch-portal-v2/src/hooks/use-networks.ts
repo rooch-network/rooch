@@ -4,7 +4,12 @@
 import { getRoochNodeUrl } from '@roochnetwork/rooch-sdk';
 import { createNetworkConfig } from '@roochnetwork/rooch-sdk-kit';
 
-import { FAUCET_TESTNET, FAUCET_MAINNET, ROOCH_MULTI_SIG_ADDRESS } from 'src/config/constant';
+import {
+  FAUCET_TESTNET,
+  FAUCET_MAINNET,
+  ROOCH_MULTI_SIG_ADDRESS,
+  ROOCH_MINT_OPERATING_ADDRESS, ROOCH_NFT_OPERATING_ADDRESS,
+} from 'src/config/constant';
 
 
 
@@ -44,6 +49,12 @@ const { networkConfig, useNetworkVariable, useNetworkVariables } = createNetwork
     url: getRoochNodeUrl('mainnet'),
     variables: {
       roochMultiSigAddr: ROOCH_MULTI_SIG_ADDRESS,
+      nft: {
+        address: ROOCH_NFT_OPERATING_ADDRESS,
+      },
+      mint: {
+        address:ROOCH_MINT_OPERATING_ADDRESS,
+      },
       redEnvelope: {
         address: '0x1d6f6657fc996008a1e43b8c13805e969a091560d4cea57b1db9f3ce4450d977',
       },
@@ -61,6 +72,12 @@ const { networkConfig, useNetworkVariable, useNetworkVariables } = createNetwork
     url: getRoochNodeUrl('testnet'),
     variables: {
       roochMultiSigAddr: ROOCH_MULTI_SIG_ADDRESS,
+      nft: {
+        address: ROOCH_NFT_OPERATING_ADDRESS,
+      },
+      mint: {
+        address:ROOCH_MINT_OPERATING_ADDRESS,
+      },
       redEnvelope: {
         address: '0x1d6f6657fc996008a1e43b8c13805e969a091560d4cea57b1db9f3ce4450d977',
       },
@@ -78,6 +95,12 @@ const { networkConfig, useNetworkVariable, useNetworkVariables } = createNetwork
     url: getRoochNodeUrl('localnet'),
     variables: {
       roochMultiSigAddr: ROOCH_MULTI_SIG_ADDRESS,
+      nft: {
+        address: ROOCH_NFT_OPERATING_ADDRESS,
+      },
+      mint: {
+        address:ROOCH_MINT_OPERATING_ADDRESS,
+      },
       redEnvelope: {
         address: '0x1d6f6657fc996008a1e43b8c13805e969a091560d4cea57b1db9f3ce4450d977',
       },
