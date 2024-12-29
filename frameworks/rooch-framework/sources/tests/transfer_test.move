@@ -13,12 +13,33 @@ module rooch_framework::transfer_test{
     use rooch_framework::multichain_address::{Self, MultiChainAddress};
     use rooch_framework::bitcoin_address;
     use rooch_framework::address_mapping;
-    use rooch_framework::coin::{Self, CoinInfo};
+    use rooch_framework::coin::{Self, TreasuryCap};
     use rooch_framework::account_coin_store;
     use rooch_framework::account as account_entry;
 
     struct TestStruct has key, store{
         value: u64,
+    }
+
+    #[test_only]
+    struct FakeCoin has key, store {}
+
+    #[test_only]
+    fun register_fake_coin(
+        decimals: u8,
+    ) : Object<TreasuryCap<FakeCoin>> {
+        coin::register_extend_v2<FakeCoin>(
+            string::utf8(b"Fake coin"),
+            string::utf8(b"FCD"),
+            option::none(),
+            decimals,
+        )
+    }
+
+    #[test_only]
+    fun mint_and_deposit(treasury_cap: &mut Object<TreasuryCap<FakeCoin>>, to_address: address, amount: u256) {
+        let coins_minted = coin::mint_extend_by_cap<FakeCoin>(treasury_cap, amount);
+        account_coin_store::deposit(to_address, coins_minted);
     }
 
     #[test_only]
@@ -88,43 +109,20 @@ module rooch_framework::transfer_test{
         assert!(addr == btc_address, 1005);
     }
 
-    #[test_only]
-    struct FakeCoin has key, store {}
-
-    #[test_only]
-    fun register_fake_coin(
-        
-        decimals: u8,
-    ) : Object<CoinInfo<FakeCoin>> {
-        coin::register_extend<FakeCoin>(
-            string::utf8(b"Fake coin"),
-            string::utf8(b"FCD"),
-            option::none(),
-            decimals,
-        )
-    }
-
-    #[test_only]
-    fun mint_and_deposit(coin_info_obj: &mut Object<CoinInfo<FakeCoin>>, to_address: address, amount: u256) {
-        let coins_minted = coin::mint_extend<FakeCoin>(coin_info_obj, amount);
-        account_coin_store::deposit(to_address, coins_minted);
-    }
-
     #[test(from_addr= @0x33, to_addr= @0x66)]
     fun test_transfer_fake_coin(from_addr: address, to_addr: address) {
         rooch_framework::genesis::init_for_test();
-        let coin_info_obj = register_fake_coin(9);
+        let treasury_cap = register_fake_coin(9);
 
         let from = account_entry::create_account_for_testing(from_addr);
         let _ = account_entry::create_account_for_testing(to_addr);
 
         let amount = 100u256;
-        mint_and_deposit(&mut coin_info_obj, from_addr, amount);
+        mint_and_deposit(&mut treasury_cap, from_addr, amount);
         transfer::transfer_coin<FakeCoin>(&from, to_addr, 50u256);
 
         assert!(account_coin_store::balance<FakeCoin>(to_addr) == 50u256, 1001);
-        object::transfer(coin_info_obj, @rooch_framework);
-        
+        object::transfer(treasury_cap, @rooch_framework);
     }
 
     #[test(from_addr= @0x33, to_addr= @0x66)]
@@ -142,7 +140,5 @@ module rooch_framework::transfer_test{
         
         let obj = object::borrow_object<TestStruct>(object_id);
         assert!(object::owner(obj)== to_addr, 1001);
-        
-        
     }
 }

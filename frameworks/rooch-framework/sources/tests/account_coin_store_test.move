@@ -9,9 +9,7 @@ module rooch_framework::account_coin_store_test{
     use std::string;
     
     use moveos_std::object::{Self, Object};
-    use rooch_framework::coin::{Self, CoinInfo,
-        supply, value, mint_extend, burn_extend
-    };
+    use rooch_framework::coin::{Self, TreasuryCap};
     use rooch_framework::account as account_entry;
     use rooch_framework::account_coin_store::{Self, transfer, withdraw, withdraw_extend,
         is_accept_coin, do_accept_coin, set_auto_accept_coin, balance, deposit};
@@ -21,10 +19,9 @@ module rooch_framework::account_coin_store_test{
 
     #[test_only]
     fun register_fake_coin(
-        
         decimals: u8,
-    ) : Object<CoinInfo<FakeCoin>> {
-        coin::register_extend<FakeCoin>(
+    ) : Object<TreasuryCap<FakeCoin>> {
+        coin::register_extend_v2<FakeCoin>(
             string::utf8(b"Fake coin"),
             string::utf8(b"FCD"),
             option::none(),
@@ -33,8 +30,8 @@ module rooch_framework::account_coin_store_test{
     }
 
     #[test_only]
-    fun mint_and_deposit(coin_info_obj: &mut Object<CoinInfo<FakeCoin>>, to_address: address, amount: u256) {
-        let coins_minted = coin::mint_extend<FakeCoin>(coin_info_obj, amount);
+    fun mint_and_deposit(treasury_cap: &mut Object<TreasuryCap<FakeCoin>>, to_address: address, amount: u256) {
+        let coins_minted = coin::mint_extend_by_cap<FakeCoin>(treasury_cap, amount);
         account_coin_store::deposit(to_address, coins_minted);
     }
 
@@ -47,28 +44,23 @@ module rooch_framework::account_coin_store_test{
         let source_addr = signer::address_of(&source);
         let destination_addr = signer::address_of(&destination);
         
+        let treasury_cap = register_fake_coin(9);
+        account_entry::create_account_for_testing(destination_addr);
 
-        let coin_info_obj = register_fake_coin(9);
-
-        account_entry::create_account_for_testing(signer::address_of(&destination));
-
-        let coins_minted = mint_extend<FakeCoin>(&mut coin_info_obj, 100);
+        let coins_minted = coin::mint_extend_by_cap<FakeCoin>(&mut treasury_cap, 100);
         deposit(source_addr, coins_minted);
 
         let coin = withdraw<FakeCoin>(&source, 10);
-        assert!(value(&coin) == 10, 7);
+        assert!(coin::value(&coin) == 10, 7);
         deposit(destination_addr, coin);
 
         transfer<FakeCoin>(&source, destination_addr, 50);
 
         assert!(balance<FakeCoin>(source_addr) == 40, 4);
         assert!(balance<FakeCoin>(destination_addr) == 60, 5);
-        object::transfer(coin_info_obj, @rooch_framework);
-        
-        
+        object::transfer(treasury_cap, @rooch_framework);
     }
 
-    
     #[test(source = @rooch_framework)]
     fun test_withdraw_from(
         source: signer,
@@ -76,33 +68,30 @@ module rooch_framework::account_coin_store_test{
         rooch_framework::genesis::init_for_test();
         let source_addr = signer::address_of(&source);
 
-        let coin_info_obj = register_fake_coin(9);
+        let treasury_cap = register_fake_coin(9);
 
-        let coins_minted = mint_extend<FakeCoin>(&mut coin_info_obj, 100);
+        let coins_minted = coin::mint_extend_by_cap<FakeCoin>(&mut treasury_cap, 100);
         deposit(source_addr, coins_minted);
         assert!(balance<FakeCoin>(source_addr) == 100, 0);
-        assert!(supply<FakeCoin>(object::borrow(&coin_info_obj)) == 100, 1);
+        assert!(coin::supply_by_type<FakeCoin>() == 100, 1);
 
         let coin = withdraw_extend<FakeCoin>(source_addr, 10);
-        burn_extend<FakeCoin>(&mut coin_info_obj, coin);
+        coin::burn_extend_by_cap(&mut treasury_cap, coin);
         assert!(balance<FakeCoin>(source_addr) == 90, 2);
-        assert!(supply<FakeCoin>(object::borrow(&coin_info_obj)) == 90, 3);
-        object::transfer(coin_info_obj, @rooch_framework);
-        
+        assert!(coin::supply_by_type<FakeCoin>() == 90, 3);
+        object::transfer(treasury_cap, @rooch_framework);
     }
-
 
     #[test(framework = @rooch_framework)]
     fun test_accept_twice_should_not_fail(framework: signer) {
         rooch_framework::genesis::init_for_test();
-        let coin_info_obj = register_fake_coin(9);
+        let treasury_cap = register_fake_coin(9);
 
         // Registering twice should not fail.
         do_accept_coin<FakeCoin>(&framework);
         do_accept_coin<FakeCoin>(&framework);
         assert!(is_accept_coin<FakeCoin>(@rooch_framework), 1);
-        object::transfer(coin_info_obj, @rooch_framework);
-        
+        object::transfer(treasury_cap, @rooch_framework);
     }
 
     #[test(source1 = @0x33, source2 = @0x66)]
@@ -113,11 +102,10 @@ module rooch_framework::account_coin_store_test{
         let source1_addr = signer::address_of(&source1);
         let source2_addr = signer::address_of(&source2);
         
-        
-        let coin_info_obj = register_fake_coin(9);
+        let treasury_cap = register_fake_coin(9);
 
-        let mint_coins1 = mint_extend<FakeCoin>(&mut coin_info_obj, 10);
-        let mint_coins2 = mint_extend<FakeCoin>(&mut coin_info_obj, 20);
+        let mint_coins1 = coin::mint_extend_by_cap<FakeCoin>(&mut treasury_cap, 10);
+        let mint_coins2 = coin::mint_extend_by_cap<FakeCoin>(&mut treasury_cap, 20);
 
         account_entry::create_account_for_testing(source1_addr);
         account_entry::create_account_for_testing(source2_addr);
@@ -128,8 +116,7 @@ module rooch_framework::account_coin_store_test{
         // source2 turnoff auto accept coin flag, deposit should fail
         set_auto_accept_coin(&source2, false);
         deposit(source2_addr, mint_coins2);
-        object::transfer(coin_info_obj, @rooch_framework);
-        
+        object::transfer(treasury_cap, @rooch_framework);
     }
 
     #[test(source1 = @0x33, source2 = @0x66)]
@@ -139,11 +126,10 @@ module rooch_framework::account_coin_store_test{
         let source1_addr = signer::address_of(&source1);
         let source2_addr = signer::address_of(&source2);
         
-        
-        let coin_info_obj = register_fake_coin(9);
+        let treasury_cap = register_fake_coin(9);
 
-        let mint_coins1 = mint_extend<FakeCoin>(&mut coin_info_obj, 10);
-        let mint_coins2 = mint_extend<FakeCoin>(&mut coin_info_obj, 20);
+        let mint_coins1 = coin::mint_extend_by_cap<FakeCoin>(&mut treasury_cap, 10);
+        let mint_coins2 = coin::mint_extend_by_cap<FakeCoin>(&mut treasury_cap, 20);
 
         account_entry::create_account_for_testing(source1_addr);
         account_entry::create_account_for_testing(source2_addr);
@@ -158,8 +144,7 @@ module rooch_framework::account_coin_store_test{
         do_accept_coin<FakeCoin>(&source2);
         deposit(source2_addr, mint_coins2);
 
-        object::transfer(coin_info_obj, @rooch_framework);
-        
+        object::transfer(treasury_cap, @rooch_framework);
     }
 
     #[test(source = @rooch_framework, destination = @0x55)]
@@ -171,16 +156,13 @@ module rooch_framework::account_coin_store_test{
         let source_addr = signer::address_of(&source);
         let destination_addr = signer::address_of(&destination);
         
+        let treasury_cap = register_fake_coin(9);
+        assert!(coin::supply_by_type<FakeCoin>() == 0, 0);
 
-        let coin_info_obj = register_fake_coin(9);
-        assert!(supply<FakeCoin>(object::borrow(&coin_info_obj)) == 0, 0);
-
-        let coins_minted = mint_extend<FakeCoin>(&mut coin_info_obj, 100);
+        let coins_minted = coin::mint_extend_by_cap<FakeCoin>(&mut treasury_cap, 100);
         deposit(source_addr, coins_minted);
         transfer<FakeCoin>(&source, destination_addr, 50);
 
-        object::transfer(coin_info_obj, @rooch_framework);
-        
-        
+        object::transfer(treasury_cap, @rooch_framework);
     }
 }

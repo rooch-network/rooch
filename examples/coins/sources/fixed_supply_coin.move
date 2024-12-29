@@ -25,16 +25,16 @@ module coins::fixed_supply_coin {
     }
 
     fun init() {
-        let coin_info_obj = coin::register_extend<FSC>(
+        let treasury_cap = coin::register_extend_v2<FSC>(
             string::utf8(b"Fixed Supply Coin"),
             string::utf8(b"FSC"),
             option::none(),
             DECIMALS,
         );
         // Mint the total supply of coins, and store it to the treasury
-        let coin = coin::mint_extend<FSC>(&mut coin_info_obj, TOTAL_SUPPLY);
-        // Frozen the CoinInfo object, so that no more coins can be minted
-        object::to_frozen(coin_info_obj);
+        let coin = coin::mint_extend_by_cap<FSC>(&mut treasury_cap, TOTAL_SUPPLY);
+        // Frozen the TreasuryCap object, so that no more coins can be minted
+        object::to_frozen(treasury_cap);
         let coin_store_obj = coin_store::create_coin_store<FSC>();
         coin_store::deposit(&mut coin_store_obj, coin);
         let treasury_obj = object::new_named_object(Treasury { coin_store: coin_store_obj });

@@ -4,25 +4,19 @@
 #[test_only]
 /// This test module is used to test the coin logic in coin and account module.
 module rooch_framework::coin_test{
-    use std::option;
     use std::string;
-    
+    use std::option;
     use moveos_std::object::{Self, Object};
-    use rooch_framework::coin;
-    use rooch_framework::coin::{register_extend,
-        supply, name, symbol, decimals, value, mint_extend, burn_extend, zero, destroy_zero, is_registered, extract
-    };
- 
+    use rooch_framework::coin::{Self, TreasuryCap};
 
     #[test_only]
     struct FakeCoin has key, store {}
 
     #[test_only]
     fun register_fake_coin(
-        
         decimals: u8,
-    ) : Object<coin::CoinInfo<FakeCoin>> {
-        coin::register_extend<FakeCoin>(
+    ) : Object<TreasuryCap<FakeCoin>> {
+        coin::register_extend_v2<FakeCoin>(
             string::utf8(b"Fake coin"),
             string::utf8(b"FCD"),
             option::none(),
@@ -31,47 +25,45 @@ module rooch_framework::coin_test{
     }
 
     #[test]
-    fun test_end_to_end(
-    ) {
+    fun test_end_to_end() {
         rooch_framework::genesis::init_for_test();
 
         let name = string::utf8(b"Fake coin");
         let symbol = string::utf8(b"FCD");
         let decimals = 9u8;
 
-        let coin_info_obj = register_extend<FakeCoin>(
+        let treasury_cap = coin::register_extend_v2<FakeCoin>(
             name,
             symbol,
             option::none(),
             decimals,
         );
         {
-            let coin_info = object::borrow(&coin_info_obj);
-            assert!(supply<FakeCoin>(coin_info) == 0, 0);
-            assert!(name<FakeCoin>(coin_info) == name, 1);
-            assert!(symbol<FakeCoin>(coin_info) == symbol, 2);
-            assert!(decimals<FakeCoin>(coin_info) == decimals, 3);
+            let coin_info = coin::coin_info<FakeCoin>();
+            assert!(coin::supply<FakeCoin>(coin_info) == 0, 0);
+            assert!(coin::name<FakeCoin>(coin_info) == name, 1);
+            assert!(coin::symbol<FakeCoin>(coin_info) == symbol, 2);
+            assert!(coin::decimals<FakeCoin>(coin_info) == decimals, 3);
         };
 
-        let coins_minted = mint_extend<FakeCoin>(&mut coin_info_obj, 100);
+        let coins_minted = coin::mint_extend_by_cap<FakeCoin>(&mut treasury_cap, 100);
         
-        assert!(supply<FakeCoin>(object::borrow(&coin_info_obj)) == 100, 4);
+        assert!(coin::supply_by_type<FakeCoin>() == 100, 4);
 
-        let coins_minted2 = mint_extend<FakeCoin>(&mut coin_info_obj, 100);
+        let coins_minted2 = coin::mint_extend_by_cap<FakeCoin>(&mut treasury_cap, 100);
 
-        assert!(supply<FakeCoin>(object::borrow(&coin_info_obj)) == 200, 5);
+        assert!(coin::supply_by_type<FakeCoin>() == 200, 5);
         
-        let coin = extract(&mut coins_minted, 50);
+        let coin = coin::extract(&mut coins_minted, 50);
 
-        burn_extend(&mut coin_info_obj, coin);
-        assert!(supply<FakeCoin>(object::borrow(&coin_info_obj)) == 150, 6);
+        coin::burn_extend_by_cap(&mut treasury_cap, coin);
+        assert!(coin::supply_by_type<FakeCoin>() == 150, 6);
 
-        burn_extend(&mut coin_info_obj, coins_minted); 
-        burn_extend(&mut coin_info_obj, coins_minted2); 
+        coin::burn_extend_by_cap(&mut treasury_cap, coins_minted); 
+        coin::burn_extend_by_cap(&mut treasury_cap, coins_minted2); 
 
-        assert!(supply<FakeCoin>(object::borrow(&coin_info_obj)) == 0, 7);
-        object::transfer(coin_info_obj, @rooch_framework);
-        
+        assert!(coin::supply_by_type<FakeCoin>() == 0, 7);
+        object::transfer(treasury_cap, @rooch_framework);
     }
 
     #[test]
@@ -79,71 +71,63 @@ module rooch_framework::coin_test{
     public fun fail_register() {
         rooch_framework::genesis::init_for_test();
 
-        let coin_info_obj = register_extend<FakeCoin>(
+        let treasury_cap = coin::register_extend_v2<FakeCoin>(
             string::utf8(b"Fake coin"),
             string::utf8(b"FCD"),
             option::none(),
             9,
         );
-        object::transfer(coin_info_obj, @rooch_framework);
+        object::transfer(treasury_cap, @rooch_framework);
 
-        let coin_info_obj = register_extend<FakeCoin>(
+        let treasury_cap = coin::register_extend_v2<FakeCoin>(
             string::utf8(b"Fake coin"),
             string::utf8(b"FCD"),
             option::none(),
             9,
         );
-        object::transfer(coin_info_obj, @rooch_framework);
-        
+        object::transfer(treasury_cap, @rooch_framework);
     }
 
     #[test]
     #[expected_failure(abort_code = 4, location = rooch_framework::coin)]
-    public fun test_destroy_non_zero(
-    ) {
+    public fun test_destroy_non_zero() {
         rooch_framework::genesis::init_for_test();
 
-        let coin_info_obj = register_fake_coin(9);
-        let coins_minted = mint_extend<FakeCoin>(&mut coin_info_obj, 100);
-        destroy_zero(coins_minted);
-        object::transfer(coin_info_obj, @rooch_framework);
-        
+        let treasury_cap = register_fake_coin(9);
+        let coins_minted = coin::mint_extend_by_cap<FakeCoin>(&mut treasury_cap, 100);
+        coin::destroy_zero(coins_minted);
+        object::transfer(treasury_cap, @rooch_framework);
     }
-
 
     #[test]
-    fun test_test_extract() {
+    fun test_extract() {
         rooch_framework::genesis::init_for_test();
-        let coin_info_obj = register_fake_coin(9);
-        let coins_minted = mint_extend<FakeCoin>(&mut coin_info_obj, 100);
+        let treasury_cap = register_fake_coin(9);
+        let coins_minted = coin::mint_extend_by_cap<FakeCoin>(&mut treasury_cap, 100);
 
-        let extracted = extract(&mut coins_minted, 25);
-        assert!(value(&coins_minted) == 75, 0);
-        assert!(value(&extracted) == 25, 1);
+        let extracted = coin::extract(&mut coins_minted, 25);
+        assert!(coin::value(&coins_minted) == 75, 0);
+        assert!(coin::value(&extracted) == 25, 1);
 
-        burn_extend(&mut coin_info_obj, coins_minted);
-        burn_extend(&mut coin_info_obj, extracted);
-        object::transfer(coin_info_obj, @rooch_framework);
-        
+        coin::burn_extend_by_cap(&mut treasury_cap, coins_minted);
+        coin::burn_extend_by_cap(&mut treasury_cap, extracted);
+        object::transfer(treasury_cap, @rooch_framework);
     }
-
 
     #[test]
     public fun test_is_registered() {
         rooch_framework::genesis::init_for_test();
-        assert!(!is_registered<FakeCoin>(), 0);
+        assert!(!coin::is_registered<FakeCoin>(), 0);
 
-        let coin_info_obj = register_fake_coin(9);
-        object::transfer(coin_info_obj, @rooch_framework);
-        assert!(is_registered<FakeCoin>(), 1);
-        
+        let treasury_cap = register_fake_coin(9);
+        object::transfer(treasury_cap, @rooch_framework);
+        assert!(coin::is_registered<FakeCoin>(), 1);
     }
 
     #[test]
     fun test_zero() {
-        let zero = zero<FakeCoin>();
-        assert!(value(&zero) == 0, 1);
-        destroy_zero(zero);
+        let zero = coin::zero<FakeCoin>();
+        assert!(coin::value(&zero) == 0, 1);
+        coin::destroy_zero(zero);
     }
-    
 }

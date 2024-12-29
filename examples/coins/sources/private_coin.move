@@ -7,7 +7,7 @@ module coins::private_coin {
     use std::string;
     use moveos_std::signer;
     use moveos_std::object::{Self, Object};
-    use rooch_framework::coin::{Self, Coin, CoinInfo};
+    use rooch_framework::coin::{Self, Coin, TreasuryCap};
     use rooch_framework::coin_store::{Self, CoinStore};
     use rooch_framework::account_coin_store;
 
@@ -22,13 +22,13 @@ module coins::private_coin {
     }
 
     fun init() {
-        let coin_info_obj = coin::register_extend<PRC>(
+        let treasury_cap = coin::register_extend_v2<PRC>(
             string::utf8(b"Private Coin"),
             string::utf8(b"PRC"),
             option::none(),
             1,
         );
-        object::transfer(coin_info_obj, @coins);
+        object::transfer(treasury_cap, @coins);
         let coin_store = coin_store::create_coin_store_extend<PRC>();
         let treasury_obj = object::new_named_object(Treasury { coin_store });
         object::transfer_extend(treasury_obj, @coins);
@@ -39,8 +39,8 @@ module coins::private_coin {
     public entry fun faucet(account: &signer) {
         let account_addr = signer::address_of(account);
         let coin_signer = signer::module_signer<Treasury>();
-        let coin_info_obj = object::borrow_mut_object<CoinInfo<PRC>>(&coin_signer, coin::coin_info_id<PRC>());
-        let coin = coin::mint_extend<PRC>(coin_info_obj, 10000);
+        let treasury_cap = object::borrow_mut_object<TreasuryCap<PRC>>(&coin_signer, coin::treasury_cap_id<PRC>());
+        let coin = coin::mint_extend_by_cap(treasury_cap, 10000);
         account_coin_store::deposit_extend(account_addr, coin);
     }
 
