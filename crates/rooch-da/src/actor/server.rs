@@ -52,7 +52,7 @@ impl DAServerActor {
             backend_names,
             submit_threshold,
             is_nop_backend,
-        } = DABackends::build(da_config, genesis_namespace).await?;
+        } = DABackends::build(da_config.da_backend, genesis_namespace).await?;
 
         let last_block_number = rooch_store.get_last_block_number()?;
         let background_last_block_update_time = Arc::new(AtomicU64::new(0));
@@ -66,7 +66,7 @@ impl DAServerActor {
         };
 
         if !is_nop_backend {
-            Self::create_background_submitter(
+            Self::run_background_submitter(
                 rooch_store,
                 sequencer_key,
                 backends,
@@ -142,7 +142,7 @@ impl DAServerActor {
 
     // Spawns a background submitter to handle unsubmitted blocks off the main thread.
     // This prevents blocking other actor handlers and maintains the actor's responsiveness.
-    fn create_background_submitter(
+    fn run_background_submitter(
         rooch_store: RoochStore,
         sequencer_key: RoochKeyPair,
         backends: Vec<Arc<dyn DABackend>>,

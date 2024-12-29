@@ -4,7 +4,7 @@
 use crate::backend::openda::OpenDABackend;
 use anyhow::anyhow;
 use async_trait::async_trait;
-use rooch_config::da_config::{DABackendConfigType, DAConfig};
+use rooch_config::da_config::{DABackendConfig, DABackendConfigType};
 use rooch_types::da::batch::DABatch;
 use std::sync::Arc;
 
@@ -36,14 +36,17 @@ impl DABackends {
     const DEFAULT_SUBMIT_THRESHOLD: usize = 1;
     const DEFAULT_IS_NOP_BACKEND: bool = false;
 
-    pub async fn build(da_config: DAConfig, genesis_namespace: String) -> anyhow::Result<Self> {
+    pub async fn build(
+        config: Option<DABackendConfig>,
+        genesis_namespace: String,
+    ) -> anyhow::Result<Self> {
         let mut backends: Vec<Arc<dyn DABackend>> = Vec::new();
         let mut backend_names: Vec<String> = Vec::new();
         let mut submit_threshold = Self::DEFAULT_SUBMIT_THRESHOLD;
         let mut is_nop_backend = Self::DEFAULT_IS_NOP_BACKEND;
 
         let mut available_backends_count = 1; // Nop is always available
-        if let Some(mut backend_config) = da_config.da_backend {
+        if let Some(mut backend_config) = config {
             submit_threshold = backend_config.calculate_submit_threshold();
             available_backends_count = Self::process_backend_configs(
                 &backend_config.backends,
