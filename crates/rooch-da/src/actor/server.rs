@@ -11,7 +11,9 @@ use coerce::actor::context::ActorContext;
 use coerce::actor::message::Handler;
 use coerce::actor::Actor;
 use moveos_types::h256::H256;
-use rooch_config::da_config::{DABackendConfigType, DAConfig};
+use rooch_config::da_config::{
+    DABackendConfigType, DAConfig, DEFAULT_DA_BACKGROUND_SUBMIT_INTERVAL,
+};
 use rooch_store::da_store::DAMetaStore;
 use rooch_store::transaction_store::TransactionStore;
 use rooch_store::RoochStore;
@@ -24,15 +26,6 @@ use std::sync::Arc;
 use std::time;
 use std::time::{Duration, SystemTime};
 use tokio::sync::broadcast;
-
-// default background submit interval: 5 seconds
-// smaller interval helps to reduce the delay of blocks making and submitting, get more accurate block number by status query
-// the major duty of background submitter is to submit unsubmitted blocks made before server start,
-// in most cases, backends work well enough to submit new blocks in time, which means after submitting old blocks,
-// background submitter will have nothing to do.
-// Only few database operations are needed to catch up with the latest block numbers,
-// so it's okay to have a small interval.
-const DEFAULT_BACKGROUND_SUBMIT_INTERVAL: u64 = 5;
 
 pub struct DAServerActor {
     rooch_store: RoochStore,
@@ -56,7 +49,7 @@ struct ServerBackends {
 impl ServerBackends {
     const DEFAULT_SUBMIT_THRESHOLD: usize = 1;
     const DEFAULT_IS_NOP_BACKEND: bool = false;
-    const DEFAULT_BACKGROUND_INTERVAL: u64 = DEFAULT_BACKGROUND_SUBMIT_INTERVAL;
+    const DEFAULT_BACKGROUND_INTERVAL: u64 = DEFAULT_DA_BACKGROUND_SUBMIT_INTERVAL;
 
     async fn process_backend_configs(
         backend_configs: &[DABackendConfigType],
@@ -83,9 +76,7 @@ impl ServerBackends {
         let mut submit_threshold = Self::DEFAULT_SUBMIT_THRESHOLD;
         let mut is_nop_backend = Self::DEFAULT_IS_NOP_BACKEND;
         let background_submit_interval = da_config
-            .da_backend
-            .as_ref()
-            .and_then(|backend_config| backend_config.background_submit_interval)
+            .background_submit_interval
             .unwrap_or(Self::DEFAULT_BACKGROUND_INTERVAL);
 
         let mut available_backends_count = 1; // Nop is always available
