@@ -50,9 +50,8 @@ impl DAServerActor {
 
         let DABackends {
             backends,
-            backend_identifiers,
+            identifiers: backend_identifiers,
             submit_threshold,
-            is_nop_backend,
         } = DABackends::initialize(da_config.da_backend, genesis_namespace).await?;
 
         let last_block_number = rooch_store.get_last_block_number()?;
@@ -66,7 +65,7 @@ impl DAServerActor {
             batch_maker: BatchMaker::new(),
         };
 
-        if !is_nop_backend {
+        if submit_threshold != 0 {
             Self::run_background_submitter(
                 rooch_store,
                 sequencer_key,
@@ -111,6 +110,12 @@ impl DAServerActor {
             None
         };
 
+        let avail_backends = if self.backend_identifiers.is_empty() {
+            vec!["nop".to_string()]
+        } else {
+            self.backend_identifiers.clone()
+        };
+
         Ok(DAServerStatus {
             last_block_number: self.last_block_number,
             last_tx_order,
@@ -118,7 +123,7 @@ impl DAServerActor {
             last_avail_block_number,
             last_avail_tx_order,
             last_avail_block_update_time,
-            avail_backends: self.backend_identifiers.clone(),
+            avail_backends,
         })
     }
 
@@ -159,7 +164,6 @@ impl DAServerActor {
                 submitter: Submitter {
                     sequencer_key: sequencer_key.copy(),
                     rooch_store: rooch_store.clone(),
-                    nop_backend: false, // background submitter should not be nop-backend
                     backends: backends.clone(),
                     submit_threshold,
                 },
@@ -238,14 +242,11 @@ pub(crate) struct Submitter {
     sequencer_key: RoochKeyPair,
     rooch_store: RoochStore,
 
-    nop_backend: bool,
     backends: Vec<Arc<dyn DABackend>>,
     submit_threshold: usize,
 }
 
 impl Submitter {
-    // TODO check all backends are idempotent or not, if not, we need to add a check to avoid duplicated submission
-    // assume it's idempotent for now
     async fn submit_batch_raw(
         &self,
         block_range: BlockRange,
@@ -270,21 +271,18 @@ impl Submitter {
         // submit batch
         self.submit_batch_to_backends(batch).await?;
 
-        // update block submitting state if it's not nop-backend
-        // if it's nop-backend, we don't need to update submitting state, we may need to submit batch to other backends later by fetch unsubmitted blocks
-        if !self.nop_backend {
-            match self.rooch_store.set_submitting_block_done(
-                block_number,
-                tx_order_start,
-                tx_order_end,
-                batch_hash,
-            ) {
-                Ok(_) => {}
-                Err(e) => {
-                    tracing::warn!("{:?}, fail to set submitting block done.", e);
-                }
-            };
+        match self.rooch_store.set_submitting_block_done(
+            block_number,
+            tx_order_start,
+            tx_order_end,
+            batch_hash,
+        ) {
+            Ok(_) => {}
+            Err(e) => {
+                tracing::warn!("{:?}, fail to set submitting block done.", e);
+            }
         };
+
         Ok(SignedDABatchMeta {
             meta: batch_meta,
             signature: meta_signature,

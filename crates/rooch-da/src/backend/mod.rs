@@ -15,65 +15,51 @@ pub trait DABackend: Sync + Send {
     async fn submit_batch(&self, batch: DABatch) -> anyhow::Result<()>;
 }
 
-// DABackendNopProxy is a no-op implementation of DABackendProxy
-pub struct DABackendNopProxy;
-
-#[async_trait]
-impl DABackend for DABackendNopProxy {
-    async fn submit_batch(&self, _batch: DABatch) -> anyhow::Result<()> {
-        Ok(())
-    }
-}
-
 pub struct DABackends {
     pub backends: Vec<Arc<dyn DABackend>>,
-    pub backend_identifiers: Vec<String>,
+    pub identifiers: Vec<String>,
     pub submit_threshold: usize,
-    pub is_nop_backend: bool,
 }
 
 impl DABackends {
-    const DEFAULT_SUBMIT_THRESHOLD: usize = 1;
-    const DEFAULT_IS_NOP_BACKEND: bool = false;
-
+    /// Initializes the DA backends based on the given configuration and genesis namespace.
     pub async fn initialize(
         config: Option<DABackendConfig>,
         genesis_namespace: String,
     ) -> anyhow::Result<Self> {
-        let mut backends: Vec<Arc<dyn DABackend>> = Vec::new();
-        let mut backend_names: Vec<String> = Vec::new();
-        let mut submit_threshold = Self::DEFAULT_SUBMIT_THRESHOLD;
-        let mut is_nop_backend = Self::DEFAULT_IS_NOP_BACKEND;
+        let mut backends = Vec::new();
+        let mut identifiers = Vec::new();
 
-        let mut active_backends_count = 1; // Nop is always active
-        if let Some(mut backend_config) = config {
-            submit_threshold = backend_config.calculate_submit_threshold();
-            active_backends_count = Self::load_backends_from_configs(
+        let submit_threshold = if let Some(mut backend_config) = config {
+            let submit_threshold = backend_config.calculate_submit_threshold();
+
+            // Load backends from the provided configuration
+            let active_backends_count = Self::load_backends_from_configs(
                 &backend_config.backends,
                 genesis_namespace,
                 &mut backends,
-                &mut backend_names,
+                &mut identifiers,
             )
             .await?;
-        } else {
-            is_nop_backend = true;
-            backends.push(Arc::new(DABackendNopProxy {}));
-            backend_names.push("nop".to_string());
-        }
 
-        if active_backends_count < submit_threshold {
-            return Err(anyhow!(
-                "failed to start DA: not enough backends for future submissions. exp>= {} act: {}",
-                submit_threshold,
-                active_backends_count
-            ));
-        }
+            // Ensure enough backends are available for submission
+            if active_backends_count < submit_threshold {
+                return Err(anyhow!(
+                    "failed to start DA: not enough backends for future submissions. exp >= {} act: {}",
+                    submit_threshold,
+                    active_backends_count
+                ));
+            }
+
+            submit_threshold
+        } else {
+            0 // No configuration provided, default threshold is 0
+        };
 
         Ok(Self {
             backends,
-            backend_identifiers: backend_names,
+            identifiers,
             submit_threshold,
-            is_nop_backend,
         })
     }
 
