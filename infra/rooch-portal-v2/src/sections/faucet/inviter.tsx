@@ -1,6 +1,6 @@
 'use client';
 
-import type { Bytes} from '@roochnetwork/rooch-sdk';
+import type { Bytes } from '@roochnetwork/rooch-sdk';
 
 import { useState, useEffect } from 'react';
 import { Args, toHEX, stringToBytes } from '@roochnetwork/rooch-sdk';
@@ -45,22 +45,19 @@ export function InviterFaucetView({ inviterAddress }: { inviterAddress: string }
   const router = useRouter();
 
   const client = useRoochClient();
-  const faucetAddress = useNetworkVariable('faucetAddress');
-  const faucetObject = useNetworkVariable('faucetObject');
-  const [inviterCA, inviterName] = useNetworkVariable('inviterCA')
-  const inviterConf = `${inviterCA}::${inviterName}::InvitationConf`;
-  const faucetUrl = useNetworkVariable('faucetUrl');
   const wallet = useCurrentWallet();
-
   const viewAddress = useCurrentAddress();
-  const [faucetStatus, setFaucetStatus] = useState<boolean>(false);
-  const [errorMsg, setErrorMsg] = useState<string>();
+  const faucetCfg = useNetworkVariable('faucet');
+  const inviterCfg = useNetworkVariable('inviter');
+
   const [claimGas, setClaimGas] = useState(0);
+  const [errorMsg, setErrorMsg] = useState<string>();
+  const [faucetStatus, setFaucetStatus] = useState<boolean>(false);
   const [UTXOs, setUTXOs] = useState<Array<string> | null>(null);
 
   const { data: inviter } = useRoochClientQuery('queryObjectStates', {
     filter: {
-      object_type: inviterConf,
+      object_type: inviterCfg.obj(inviterCfg),
     },
     queryOption: {
       decode: true,
@@ -68,13 +65,15 @@ export function InviterFaucetView({ inviterAddress }: { inviterAddress: string }
   });
 
   useEffect(() => {
-
     // invite close
-    if (inviter && inviter.data.length > 0 && inviter.data[0].decoded_value?.value.is_open === false) {
+    if (
+      inviter &&
+      inviter.data.length > 0 &&
+      inviter.data[0].decoded_value?.value.is_open === false
+    ) {
       router.push(paths.dashboard.faucet);
     }
-
-  }, [inviter, router])
+  }, [inviter, router]);
 
   const { data, isPending, refetch } = useRoochClientQuery(
     'getBalance',
@@ -101,9 +100,9 @@ export function InviterFaucetView({ inviterAddress }: { inviterAddress: string }
         if (utxoIds) {
           setUTXOs(utxoIds);
           const result = await client.executeViewFunction({
-            target: `${faucetAddress}::gas_faucet::check_claim`,
+            target: `${faucetCfg.address}::gas_faucet::check_claim`,
             args: [
-              Args.objectId(faucetObject),
+              Args.objectId(faucetCfg.obj),
               Args.address(viewAddress.genRoochAddress()!),
               Args.vec('objectId', utxoIds),
             ],
@@ -122,7 +121,7 @@ export function InviterFaucetView({ inviterAddress }: { inviterAddress: string }
       .finally(() => {
         setFaucetStatus(false);
       });
-  }, [client, faucetAddress, faucetObject, viewAddress]);
+  }, [client, faucetCfg, viewAddress]);
 
   const fetchFaucet = async () => {
     if (errorMsg === ALREADY_CLAIMED) {
@@ -138,13 +137,13 @@ export function InviterFaucetView({ inviterAddress }: { inviterAddress: string }
       inviter.data.length > 0 &&
       inviter.data[0].decoded_value?.value.is_open === true
     ) {
-      let sign: Bytes | undefined
-      const pk = wallet.wallet!.getPublicKey().toBytes()
-      const signMsg = 'Welcome to use Rooch! Hold BTC Claim your Rgas.'
+      let sign: Bytes | undefined;
+      const pk = wallet.wallet!.getPublicKey().toBytes();
+      const signMsg = 'Welcome to use Rooch! Hold BTC Claim your Rgas.';
       try {
-        sign = await wallet.wallet?.sign(stringToBytes('utf8', signMsg))
+        sign = await wallet.wallet?.sign(stringToBytes('utf8', signMsg));
       } catch (e) {
-        toast.error(e.message)
+        toast.error(e.message);
       }
 
       if (!sign) {
@@ -159,7 +158,7 @@ export function InviterFaucetView({ inviterAddress }: { inviterAddress: string }
           public_key: toHEX(pk),
           message: signMsg,
         });
-        const response = await fetch(`${faucetUrl}/faucet-inviter`, {
+        const response = await fetch(`${faucetCfg.url}/faucet-inviter`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -181,7 +180,7 @@ export function InviterFaucetView({ inviterAddress }: { inviterAddress: string }
         }
 
         const d = await response.json();
-        window.localStorage.setItem(INVITER_ADDRESS_KEY, '')
+        window.localStorage.setItem(INVITER_ADDRESS_KEY, '');
         await refetch();
         toast.success(
           `Faucet Success! RGas: ${formatCoin(Number(d.gas || 0), data?.decimals || 0, 2)}`
@@ -222,17 +221,17 @@ export function InviterFaucetView({ inviterAddress }: { inviterAddress: string }
                 ? 'You Already Claimed RGAS'
                 : 'You cannot claim gas, Please make sure the current address has a valid utxo and try again'
               : ''}
-              <LoadingButton
-                variant="soft"
-                color="primary"
-                disabled={errorMsg !== undefined && errorMsg !== ALREADY_CLAIMED}
-                loading={isPending || faucetStatus}
-                onClick={fetchFaucet}
-              >
-                {errorMsg === ALREADY_CLAIMED
-                  ? 'Purchase RGas'
-                  : errorMsg || `Claim: ${claimGas} RGas`}
-              </LoadingButton>
+            <LoadingButton
+              variant="soft"
+              color="primary"
+              disabled={errorMsg !== undefined && errorMsg !== ALREADY_CLAIMED}
+              loading={isPending || faucetStatus}
+              onClick={fetchFaucet}
+            >
+              {errorMsg === ALREADY_CLAIMED
+                ? 'Purchase RGas'
+                : errorMsg || `Claim: ${claimGas} RGas`}
+            </LoadingButton>
           </Stack>
         </CardContent>
       </Card>

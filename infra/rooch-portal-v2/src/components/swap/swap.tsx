@@ -56,7 +56,7 @@ export default function Swap({
     () => [fromCoin?.coinType || '', toCoin?.coinType || ''],
     [fromCoin?.coinType, toCoin?.coinType]
   );
-  const memPool = useNetworkVariable('BTCMemPool')
+  const memPool = useNetworkVariable('gasMarket').memPool
 
   const showDetails = useMemo(
     () =>

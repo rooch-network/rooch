@@ -21,15 +21,16 @@ import {
 } from '@mui/material';
 
 import { fNumber } from 'src/utils/format-number';
+import { formatUnitPrice } from 'src/utils/marketplace';
 import { fromDust, formatNumber } from 'src/utils/number';
 
 import { secondary } from 'src/theme/core';
-import { TESTNET_ORDERBOOK_PACKAGE } from 'src/config/constant';
 
 import { toast } from 'src/components/snackbar';
 import { Iconify } from 'src/components/iconify';
 
 import InscriptionShopCard from './inscription-shop-card';
+import { useNetworkVariable } from '../../hooks/use-networks';
 
 export type AcceptBidDialogProps = {
   open: boolean;
@@ -42,71 +43,6 @@ export type AcceptBidDialogProps = {
   close: () => void;
 };
 
-// function makeAcceptBidTxb(
-//   targetAmount: number,
-//   userOwnedTickInscription: InscriptionObject[],
-//   selectedBid: BidItemObject,
-//   address: string,
-//   tick: string
-// ) {
-//   const tx = new Transaction();
-//   const sortedData = userOwnedTickInscription.sort(
-//     (a, b) => Number(b.data.content.fields.amount) - Number(a.data.content.fields.amount)
-//   );
-//   const firstItem = sortedData[0];
-//   const opSortedData = sortedData.length === 1 ? [sortedData[0]] : sortedData.slice(1);
-//   let currentTotal = new BigNumber(firstItem.data.content.fields.amount);
-//   let inputInscription:
-//     | {
-//         index: number;
-//         resultIndex: number;
-//         kind: 'NestedResult';
-//       }
-//     | undefined;
-//   // eslint-disable-next-line no-restricted-syntax
-//   for (const inscription of opSortedData) {
-//     const inscriptionData = inscription.data.content.fields;
-//     if (new BigNumber(currentTotal).isLessThanOrEqualTo(targetAmount)) {
-//       tx.callFunction({
-//         target: `${NETWORK_PACKAGE[NETWORK].MOVESCRIPTIONS_PACKAGE_ID}::movescription::merge`,
-//         args: [Args.objectId(firstItem.data.objectId), Args.objectId(inscription.data.objectId)],
-//       });
-//       currentTotal = currentTotal.plus(inscriptionData.amount);
-
-//       if (currentTotal.isEqualTo(targetAmount)) {
-//         break;
-//       }
-//     } else {
-//       const remainingAmt = new BigNumber(targetAmount).minus(currentTotal);
-//       if (remainingAmt.isLessThan(0)) {
-//         const [final] = tx.callFunction({
-//           target: `${NETWORK_PACKAGE[NETWORK].MOVESCRIPTIONS_PACKAGE_ID}::movescription::do_split`,
-//           arguments: [Args.objectId(firstItem.data.objectId), Args.u64(BigInt(targetAmount))],
-//         });
-//         inputInscription = final;
-//         break;
-//       }
-//     }
-//   }
-
-//   txb.moveCall({
-//     target: `${NETWORK_PACKAGE[NETWORK].MARKET_PACKAGE_ID}::market::accept_bid`,
-//     arguments: [
-//       txb.object(NETWORK_PACKAGE[NETWORK].tickInfo[tick].MARKET_OBJECT_ID),
-//       txb.object(inputInscription || firstItem.data.objectId),
-//       txb.pure(selectedBid.bidder),
-//       txb.pure(selectedBid.bidId),
-//       txb.object('0x6'),
-//     ],
-//   });
-
-//   if (inputInscription) {
-//     txb.transferObjects([firstItem.data.objectId], address);
-//   }
-
-//   return txb;
-// }
-
 export default function AcceptBidDialog({
   open,
   acceptBidItem,
@@ -117,14 +53,17 @@ export default function AcceptBidDialog({
   refreshBidList,
   close,
 }: AcceptBidDialogProps) {
+  const market = useNetworkVariable('market')
+  const account = useCurrentAddress();
   const { mutate: signAndExecuteTransaction, isPending } = useSignAndExecuteTransaction();
 
   const price = useMemo(
-    () => new BigNumber(acceptBidItem.unit_price).times(acceptBidItem.quantity).toString(),
-    [acceptBidItem.quantity, acceptBidItem.unit_price]
+    () =>
+      new BigNumber(formatUnitPrice(acceptBidItem.unit_price, toCoinBalanceInfo.decimals))
+        .times(fromDust(acceptBidItem.quantity, toCoinBalanceInfo.decimals))
+        .toString(),
+    [acceptBidItem.quantity, acceptBidItem.unit_price, toCoinBalanceInfo.decimals]
   );
-
-  const account = useCurrentAddress();
 
   return (
     <Dialog
@@ -157,14 +96,14 @@ export default function AcceptBidDialog({
             isVerified
             amount={acceptBidItem.quantity}
             price={price}
-            unitPrice={acceptBidItem.unit_price}
+            unitPrice={formatUnitPrice(acceptBidItem.unit_price, toCoinBalanceInfo.decimals)}
             // acc={item.acc}
             fromCoinBalanceInfo={fromCoinBalanceInfo}
             toCoinBalanceInfo={toCoinBalanceInfo}
             seller={acceptBidItem.owner}
             selectMode={false}
             type="list"
-          />
+           />
         </Card>
 
         <Stack
@@ -239,18 +178,15 @@ export default function AcceptBidDialog({
 
             const tx = new Transaction();
             tx.callFunction({
-              target: `${TESTNET_ORDERBOOK_PACKAGE}::market_v2::accept_bid`,
+              target: `${market.orderBookAddress}::market_v2::accept_bid`,
               args: [
-                Args.objectId('0x156d9a5bfa4329f999115b5febde94eed4a37cde10637ad8eed1ba91e89e0bb7'),
+                Args.objectId(market.tickInfo[tick].obj),
                 Args.u64(BigInt(acceptBidItem.order_id)),
                 Args.address(acceptBidItem.owner),
                 Args.bool(true),
                 Args.address(account.genRoochAddress().toStr()),
               ],
-              typeArgs: [
-                '0x3::gas_coin::RGas',
-                '0x1d6f6657fc996008a1e43b8c13805e969a091560d4cea57b1db9f3ce4450d977::fixed_supply_coin::FSC',
-              ],
+              typeArgs: [fromCoinBalanceInfo.coin_type, toCoinBalanceInfo.coin_type],
             });
 
             signAndExecuteTransaction(
@@ -259,9 +195,13 @@ export default function AcceptBidDialog({
               },
               {
                 async onSuccess(data) {
-                  toast.success('Accept bid success');
-                  close();
-                  refreshBidList();
+                  if (data.execution_info.status.type === 'executed') {
+                    toast.success('Accept bid success');
+                    close();
+                    refreshBidList();
+                  } else {
+                    toast.error('Accept bid Failed');
+                  }
                 },
                 onError(error) {
                   toast.error(String(error));

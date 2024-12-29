@@ -114,7 +114,6 @@ export default function InscriptionShopCard({
             }}
           />
         ) : (
-          <Link href={`https://suivision.xyz/object/${objectId}`} target="_blank">
             <Chip
               size="small"
               label={
@@ -133,7 +132,6 @@ export default function InscriptionShopCard({
                 },
               }}
             />
-          </Link>
         )}
       </Stack>
       <Typography
