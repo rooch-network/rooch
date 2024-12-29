@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::backend::openda::avail::AvailClient;
+use crate::backend::openda::avail::AvailFusionClientConfig;
 use crate::backend::openda::celestia::{CelestiaClient, WrappedNamespace};
 use crate::backend::openda::opendal::BACK_OFF_MIN_DELAY;
 use crate::backend::openda::operator::{Operator, OperatorConfig};
@@ -31,9 +31,9 @@ impl OpenDABackend {
         cfg: &DABackendOpenDAConfig,
         genesis_namespace: String,
     ) -> anyhow::Result<OpenDABackend> {
-        let (operator_config, map_config) =
+        let (operator_config, scheme_config) =
             OperatorConfig::from_backend_config(cfg.clone(), genesis_namespace)?;
-        let operator = new_operator(operator_config.clone(), map_config).await?;
+        let operator = new_operator(operator_config.clone(), scheme_config).await?;
 
         Ok(Self {
             operator_config,
@@ -82,27 +82,32 @@ impl OpenDABackend {
 
 async fn new_operator(
     operator_config: OperatorConfig,
-    config: HashMap<String, String>,
+    scheme_config: HashMap<String, String>,
 ) -> anyhow::Result<Box<dyn Operator>> {
     let max_retries = operator_config.max_retries;
     let scheme = operator_config.scheme.clone();
 
     let operator: Box<dyn Operator> = match scheme {
-        OpenDAScheme::Avail => Box::new(AvailClient::new(&config["endpoint"], max_retries)?),
+        OpenDAScheme::Avail => {
+            let avail_fusion_config =
+                AvailFusionClientConfig::from_scheme_config(scheme_config, max_retries)?;
+            let avail_fusion_client = avail_fusion_config.build_client()?;
+            Box::new(avail_fusion_client)
+        }
         OpenDAScheme::Celestia => {
             let namespace = WrappedNamespace::from_string(&operator_config.namespace.clone())?;
             Box::new(
                 CelestiaClient::new(
                     namespace.into_inner(),
-                    &config["endpoint"],
-                    config.get("auth_token").map(|s| s.as_str()),
+                    &scheme_config["endpoint"],
+                    scheme_config.get("auth_token").map(|s| s.as_str()),
                     max_retries,
                 )
                 .await?,
             )
         }
         _ => {
-            let mut op = opendal::Operator::via_iter(Scheme::from(scheme), config)?;
+            let mut op = opendal::Operator::via_iter(Scheme::from(scheme), scheme_config)?;
             op = op
                 .layer(
                     RetryLayer::new()

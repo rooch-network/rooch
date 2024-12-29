@@ -71,6 +71,15 @@ pub struct ExecCommand {
     #[clap(long = "btc-local-block-store-dir")]
     pub btc_local_block_store_dir: Option<PathBuf>,
 
+    #[clap(name = "rocksdb-row-cache-size", long, help = "rocksdb row cache size")]
+    pub row_cache_size: Option<u64>,
+
+    #[clap(
+        name = "rocksdb-block-cache-size",
+        long,
+        help = "rocksdb block cache size"
+    )]
+    pub block_cache_size: Option<u64>,
     #[clap(long = "enable-rocks-stats", help = "rocksdb-enable-statistics")]
     pub enable_rocks_stats: bool,
 
@@ -108,6 +117,8 @@ impl ExecCommand {
             self.chain_id.clone(),
             &actor_system,
             self.enable_rocks_stats,
+            self.row_cache_size,
+            self.block_cache_size,
         )
         .await?;
 
@@ -508,11 +519,18 @@ async fn build_executor_and_store(
     chain_id: Option<RoochChainID>,
     actor_system: &ActorSystem,
     enable_rocks_stats: bool,
+    row_cache_size: Option<u64>,
+    block_cache_size: Option<u64>,
 ) -> anyhow::Result<(ExecutorProxy, MoveOSStore, RoochDB)> {
     let registry_service = RegistryService::default();
 
-    let (root, rooch_db) =
-        build_rooch_db(base_data_dir.clone(), chain_id.clone(), enable_rocks_stats);
+    let (root, rooch_db) = build_rooch_db(
+        base_data_dir.clone(),
+        chain_id.clone(),
+        enable_rocks_stats,
+        row_cache_size,
+        block_cache_size,
+    );
     let (rooch_store, moveos_store) = (rooch_db.rooch_store.clone(), rooch_db.moveos_store.clone());
 
     let event_bus = EventBus::new();
