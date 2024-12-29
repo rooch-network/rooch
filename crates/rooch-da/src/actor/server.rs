@@ -292,6 +292,9 @@ impl Submitter {
     async fn submit_batch_to_backends(&self, batch: DABatch) -> anyhow::Result<()> {
         let backends = self.backends.clone();
         let submit_threshold = self.submit_threshold;
+
+        let batch = Arc::new(batch);
+
         // submit to backend in order until meet submit_threshold
         let mut success_count = 0;
         for backend in &backends {

@@ -12,7 +12,7 @@ pub mod openda;
 
 #[async_trait]
 pub trait DABackend: Sync + Send {
-    async fn submit_batch(&self, batch: DABatch) -> anyhow::Result<()>;
+    async fn submit_batch(&self, batch: Arc<DABatch>) -> anyhow::Result<()>;
 }
 
 pub struct DABackends {

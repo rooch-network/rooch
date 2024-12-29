@@ -13,10 +13,11 @@ use rooch_config::da_config::{DABackendOpenDAConfig, OpenDAScheme};
 use rooch_types::da::batch::DABatch;
 use rooch_types::da::chunk::{Chunk, ChunkV0};
 use std::collections::HashMap;
+use std::sync::Arc;
 
 #[async_trait]
 impl DABackend for OpenDABackend {
-    async fn submit_batch(&self, batch: DABatch) -> anyhow::Result<()> {
+    async fn submit_batch(&self, batch: Arc<DABatch>) -> anyhow::Result<()> {
         self.pub_batch(batch).await
     }
 }
@@ -41,8 +42,8 @@ impl OpenDABackend {
         })
     }
 
-    pub async fn pub_batch(&self, batch: DABatch) -> anyhow::Result<()> {
-        let chunk: ChunkV0 = batch.into();
+    pub async fn pub_batch(&self, batch: Arc<DABatch>) -> anyhow::Result<()> {
+        let chunk: ChunkV0 = (*batch).clone().into();
 
         let scheme = self.operator_config.scheme.clone();
         let prefix = self.operator_config.namespace.clone();
