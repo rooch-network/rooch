@@ -1,4 +1,4 @@
-import { useCurrentAddress, UseSignAndExecuteTransaction } from '@roochnetwork/rooch-sdk-kit';
+import { useCurrentAddress, useSignAndExecuteTransaction } from '@roochnetwork/rooch-sdk-kit';
 
 import { LoadingButton } from '@mui/lab';
 import { grey, yellow } from '@mui/material/colors';
@@ -15,7 +15,7 @@ export type MarketplaceItemCardProps = {
 
 export default function MarketplaceItemCard({ tick, onClick }: MarketplaceItemCardProps) {
   const account = useCurrentAddress();
-  const { mutate: signAndExecuteTransaction, isPending } = UseSignAndExecuteTransaction();
+  const { mutate: signAndExecuteTransaction, isPending } = useSignAndExecuteTransaction();
 
   const isVerified = true;
 

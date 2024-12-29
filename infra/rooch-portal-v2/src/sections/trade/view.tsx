@@ -4,9 +4,7 @@ import type { BidItem, MarketItem } from 'src/hooks/trade/use-market-data';
 import type { BalanceInfoView, AnnotatedMoveStructView } from '@roochnetwork/rooch-sdk';
 
 import BigNumber from 'bignumber.js';
-import { useCountDown } from 'ahooks';
 import { usePagination } from 'react-use-pagination';
-import { useQueryClient } from '@tanstack/react-query';
 import { Args, Serializer } from '@roochnetwork/rooch-sdk';
 import { useMemo, useState, useEffect, useCallback } from 'react';
 import { useRoochClient, useCurrentAddress } from '@roochnetwork/rooch-sdk-kit';
@@ -29,13 +27,10 @@ import {
 } from '@mui/material';
 
 import { fromDust } from 'src/utils/number';
-import { isMainNetwork } from 'src/utils/env';
 import { fNumber } from 'src/utils/format-number';
 import { sleep, shortCoinType } from 'src/utils/common';
 
 import { grey, secondary } from 'src/theme/core';
-import { TESTNET_ORDERBOOK_PACKAGE } from 'src/config/constant';
-import { SUI_DECIMALS, NETWORK_PACKAGE } from 'src/config/trade';
 
 import { Iconify } from 'src/components/iconify';
 import ListDialog from 'src/components/market/list-dialog';
@@ -48,33 +43,35 @@ import { renderSkeleton } from 'src/components/skeleton/product-item-skeleton-li
 import { ProductItemSkeleton } from 'src/components/skeleton/product-item-skeleton';
 import InscriptionItemBidCard from 'src/components/market/inscription-item-bid-card';
 
+import { GAS_COIN_DECIMALS } from '../../config/constant';
+import { useNetworkVariable } from '../../hooks/use-networks';
+import { formatUnitPrice } from '../../utils/marketplace';
+
 export default function MarketplaceView({ params }: { params: { tick: string } }) {
-  const network = isMainNetwork() ? 'mainnet' : 'testnet';
-
   const { tick: marketplaceTick }: { tick: string } = params;
-
-  const tickLowerCase = useMemo(() => marketplaceTick.toLowerCase(), [marketplaceTick]);
-  console.log('🚀 ~ file: view.tsx:54 ~ MarketplaceView ~ tickLowerCase:', tickLowerCase);
-
-  const tickUpperCase = useMemo(() => marketplaceTick.toUpperCase(), [marketplaceTick]);
 
   const theme = useTheme();
 
-  const [currentTab, setCurrentTab] = useState<'list' | 'bid'>('list');
-
+  const market = useNetworkVariable('market')
+  const client = useRoochClient();
   const account = useCurrentAddress();
 
-  const client = useRoochClient();
-
+  const [mergeMode] = useState(false);
+  const [bidList, setBidList] = useState<BidItem[]>([]);
+  const [loadingList, setLoadingList] = useState(false);
+  const [listDialogOpen, setListDialogOpen] = useState(false);
+  const [acceptBidItem, setAcceptBidItem] = useState<BidItem>();
+  const [marketList, setMarketList] = useState<MarketItem[]>([]);
   const [mergeSelected, setMergeSelected] = useState<string[]>([]);
-
-  const [fromCoinBalanceInfo, setFromCoinBalanceInfo] = useState<BalanceInfoView>();
-  console.log(
-    '🚀 ~ file: view.tsx:72 ~ MarketplaceView ~ fromCoinBalanceInfo:',
-    fromCoinBalanceInfo
-  );
-
+  const [currentTab, setCurrentTab] = useState<'list' | 'bid'>('list');
+  const [acceptBidDialogOpen, setAcceptBidDialogOpen] = useState(false);
+  const [floorPrice, setFloorPrice] = useState<string | undefined>();
   const [toCoinBalanceInfo, setToCoinBalanceInfo] = useState<BalanceInfoView>();
+  const [fromCoinBalanceInfo, setFromCoinBalanceInfo] = useState<BalanceInfoView>();
+
+  const renderList = useMemo(() => marketList, [marketList]);
+  const tickLowerCase = useMemo(() => marketplaceTick.toLowerCase(), [marketplaceTick]);
+  const tickUpperCase = useMemo(() => marketplaceTick.toUpperCase(), [marketplaceTick]);
 
   const onSelectMergeItem = useCallback(
     (inputValue: string) => {
@@ -87,49 +84,11 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
     [mergeSelected]
   );
 
-  const [mergeMode, setMergeMode] = useState(false);
-
-  const queryClient = useQueryClient();
-
-  const [listPageParams, setListPageParams] = useState<{
-    fromPrice: number;
-    start: number;
-    hasNextPage: boolean;
-  }>({
-    fromPrice: 0,
-    start: 0,
-    hasNextPage: true,
-  });
-
-  const [marketList, setMarketList] = useState<MarketItem[]>([]);
-  const [bidList, setBidList] = useState<BidItem[]>([]);
-
-  const [loadingList, setLoadingList] = useState(false);
-
-  const [floorPrice, setFloorPrice] = useState<number | undefined>();
-
-  const renderList = useMemo(() => marketList, [marketList]);
-
   const { currentPage, totalPages, setPage, setNextPage, startIndex, endIndex } = usePagination({
     totalItems: renderList?.length || 0,
     initialPage: 0,
     initialPageSize: 50,
   });
-
-  const [targetDate, setTargetDate] = useState<number | undefined>(Date.now() + 10 * 1000);
-
-  const [countdown] = useCountDown({
-    targetDate,
-    onEnd: async () => {
-      // await fetchMarketList(true);
-      setTargetDate(Date.now() + 10 * 1000);
-    },
-  });
-
-  const [acceptBidItem, setAcceptBidItem] = useState<BidItem>();
-  const [acceptBidDialogOpen, setAcceptBidDialogOpen] = useState(false);
-
-  const [listDialogOpen, setListDialogOpen] = useState(false);
 
   const openAcceptBidDialog = (item: BidItem) => {
     setAcceptBidItem(item);
@@ -145,33 +104,16 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
 
   const [loadingOrder, setLoadingOrder] = useState(false);
 
-  const [fromCoinStruct, setFromCoinStruct] = useState<{
-    address: string;
-    module: string;
-    name: string;
-  }>();
-
-  const [toCoinStruct, setToCoinStruct] = useState<{
-    address: string;
-    module: string;
-    name: string;
-  }>();
-
   const getListData = useCallback(async () => {
     if (!toCoinBalanceInfo || !fromCoinBalanceInfo) return;
     setLoadingList(true);
-    console.log(
-      '🚀 ~ file: view.tsx:194 ~ getListData ~ fromCoinBalanceInfo.coin_type, toCoinBalanceInfo.coin_type:',
-      fromCoinBalanceInfo.coin_type,
-      toCoinBalanceInfo.coin_type
-    );
     try {
       const fromPrice = 0;
       const start = 0;
       const res = await client.executeViewFunction({
-        target: `${TESTNET_ORDERBOOK_PACKAGE}::market_v2::query_order_info`,
+        target: `${market.orderBookAddress}::market_v2::query_order_info`,
         args: [
-          Args.objectId(NETWORK_PACKAGE[network].tickInfo[marketplaceTick].MARKET_OBJECT_ID),
+          Args.objectId(market.tickInfo[marketplaceTick].obj),
           Args.bool(false),
           Args.u64(fromPrice < 0 ? 0n : BigInt(fromPrice)),
           Args.bool(true),
@@ -179,8 +121,8 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
         ],
         typeArgs: [fromCoinBalanceInfo.coin_type, toCoinBalanceInfo.coin_type],
       });
+      console.log(res)
       const decodedValue = res.return_values?.[0]?.decoded_value as AnnotatedMoveStructView;
-      console.log('🚀 ~ file: view.tsx:185 ~ getListData ~ decodedValue:', decodedValue);
       if ((decodedValue as any).length === 0) {
         setMarketList([]);
         return;
@@ -192,13 +134,14 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
         owner: i[3],
         is_bid: i[4],
       })) as unknown as MarketItem[];
+      setFloorPrice(marketItemList[0].unit_price)
       setMarketList(marketItemList);
     } catch (error) {
       console.log('🚀 ~ file: view.tsx:231 ~ getListData ~ error:', error);
     } finally {
       setLoadingList(false);
     }
-  }, [client, fromCoinBalanceInfo, marketplaceTick, network, toCoinBalanceInfo]);
+  }, [client, fromCoinBalanceInfo, marketplaceTick, market, toCoinBalanceInfo]);
 
   const getBidData = useCallback(async () => {
     if (!toCoinBalanceInfo || !fromCoinBalanceInfo) return;
@@ -207,9 +150,9 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
       const fromPrice = 0;
       const start = 0;
       const res = await client.executeViewFunction({
-        target: `${TESTNET_ORDERBOOK_PACKAGE}::market_v2::query_order_info`,
+        target: `${market.orderBookAddress}::market_v2::query_order_info`,
         args: [
-          Args.objectId(NETWORK_PACKAGE[network].tickInfo[marketplaceTick].MARKET_OBJECT_ID),
+          Args.objectId(market.tickInfo[marketplaceTick].obj),
           Args.bool(true),
           Args.u64(fromPrice < 0 ? 0n : BigInt(fromPrice)),
           Args.bool(true),
@@ -235,27 +178,17 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
     } finally {
       setLoadingList(false);
     }
-  }, [client, fromCoinBalanceInfo, marketplaceTick, network, toCoinBalanceInfo]);
+  }, [client, fromCoinBalanceInfo, marketplaceTick, market, toCoinBalanceInfo]);
 
   const getMarketTradeInfo = useCallback(async () => {
     const res = await client.queryObjectStates({
       filter: {
-        object_id: NETWORK_PACKAGE[network].tickInfo[marketplaceTick].MARKET_OBJECT_ID,
+        object_id: market.tickInfo[marketplaceTick].obj,
       },
     });
     const typeTag = Serializer.typeTagParseFromStr(res.data[0].object_type, true) as any;
     const fromCoin = typeTag.struct.typeParams[0].struct;
     const toCoin = typeTag.struct.typeParams[1].struct;
-    setFromCoinStruct({
-      address: fromCoin.address,
-      module: fromCoin.module,
-      name: fromCoin.name,
-    });
-    setToCoinStruct({
-      address: toCoin.address,
-      module: toCoin.module,
-      name: toCoin.name,
-    });
     const [fromCoinBalanceInfo, toCoinBalanceInfo] = await Promise.all([
       client.queryObjectStates({
         filter: {
@@ -299,7 +232,7 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
 
     setFromCoinBalanceInfo(tempFromCoinBalanceInfo as BalanceInfoView);
     setToCoinBalanceInfo(tempToCoinBalanceInfo as BalanceInfoView);
-  }, [account, client, marketplaceTick, network]);
+  }, [account, client, marketplaceTick, market]);
 
   useEffect(() => {
     getBidData();
@@ -312,12 +245,6 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
   useEffect(() => {
     getMarketTradeInfo();
   }, [getMarketTradeInfo]);
-
-  // useEffect(() => {
-  //   getListData();
-  //   getBidData();
-  //   getMarketTradeInfo();
-  // }, [getListData, getBidData, getUserBalance, getMarketTradeInfo]);
 
   const [createBidDialogOpen, setCreateBidDialogOpen] = useState(false);
 
@@ -434,7 +361,6 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
               setShowMyOrder(false);
               setLoadingOrder(false);
               await Promise.all([getListData(), getBidData(), getMarketTradeInfo()]);
-              setTargetDate(Date.now() + 10 * 1000);
             }}
             sx={{
               ml: 2,
@@ -589,7 +515,7 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
                   color: secondary.light,
                 }}
               >
-                {fromDust(selectedTotalPrice, SUI_DECIMALS).toFixed(5)} SUI
+                {fromDust(selectedTotalPrice, GAS_COIN_DECIMALS).toFixed(5)} SUI
               </span>
             </Stack>
             <Stack
@@ -632,7 +558,7 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
               >
                 {selectedTotalAmount === 0
                   ? '--'
-                  : new BigNumber(fromDust(selectedTotalPrice, SUI_DECIMALS))
+                  : new BigNumber(fromDust(selectedTotalPrice, GAS_COIN_DECIMALS))
                       .div(selectedTotalAmount)
                       .toFixed(6)}
               </span>
@@ -777,7 +703,6 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
             siblingCount={2}
             hideNextButton
             onChange={(e, value) => {
-              setTargetDate(undefined);
               setPage(value - 1);
             }}
             variant="text"
@@ -789,7 +714,6 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
             onClick={async () => {
               // await fetchMarketList();
               await sleep(10);
-              setTargetDate(undefined);
               setNextPage();
             }}
             sx={{
@@ -821,7 +745,7 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
       {fromCoinBalanceInfo && toCoinBalanceInfo && createBidDialogOpen && (
         <CreateBidDialog
           tick={tickLowerCase}
-          floorPrice={floorPrice ?? 0}
+          floorPrice={floorPrice ? formatUnitPrice(floorPrice, toCoinBalanceInfo.decimals) : ''}
           open={createBidDialogOpen}
           fromCoinBalanceInfo={fromCoinBalanceInfo}
           toCoinBalanceInfo={toCoinBalanceInfo}
@@ -840,7 +764,7 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
           close={() => {
             setListDialogOpen(false);
           }}
-          floorPrice="1"
+          floorPrice={floorPrice ? formatUnitPrice(floorPrice, toCoinBalanceInfo.decimals) : ''}
           tick={tickLowerCase}
           fromCoinBalanceInfo={fromCoinBalanceInfo}
           toCoinBalanceInfo={toCoinBalanceInfo}

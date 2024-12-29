@@ -13,7 +13,5 @@ export function useTabs(defaultValue: string): UseTabsReturn {
     setValue(newValue);
   }, []);
 
-  const memoizedValue = useMemo(() => ({ value, setValue, onChange }), [onChange, value]);
-
-  return memoizedValue;
+  return useMemo(() => ({ value, setValue, onChange }), [onChange, value]);
 }

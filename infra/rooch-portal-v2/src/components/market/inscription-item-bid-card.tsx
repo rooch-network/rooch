@@ -4,7 +4,7 @@ import type { BidItem } from 'src/hooks/trade/use-market-data';
 import { useMemo } from 'react';
 import BigNumber from 'bignumber.js';
 import { Args, Transaction } from '@roochnetwork/rooch-sdk';
-import { useCurrentAddress, UseSignAndExecuteTransaction } from '@roochnetwork/rooch-sdk-kit';
+import { useCurrentAddress, useSignAndExecuteTransaction } from '@roochnetwork/rooch-sdk-kit';
 
 import { LoadingButton } from '@mui/lab';
 import { Card, Stack, Button, CardActions } from '@mui/material';
@@ -12,11 +12,10 @@ import { Card, Stack, Button, CardActions } from '@mui/material';
 import { fromDust } from 'src/utils/number';
 import { formatUnitPrice } from 'src/utils/marketplace';
 
-import { NETWORK, NETWORK_PACKAGE } from 'src/config/trade';
-import { TESTNET_ORDERBOOK_PACKAGE } from 'src/config/constant';
+import { toast } from 'src/components/snackbar';
 
-import { toast } from '../snackbar';
 import InscriptionShopCard from './inscription-shop-card';
+import { useNetworkVariable } from '../../hooks/use-networks';
 
 export type InscriptionItemCardProps = {
   item: BidItem;
@@ -35,8 +34,9 @@ export default function InscriptionItemBidCard({
   onAcceptBid,
   onRefetchMarketData,
 }: InscriptionItemCardProps) {
+  const market = useNetworkVariable('market')
   const account = useCurrentAddress();
-  const { mutate: signAndExecuteTransaction, isPending } = UseSignAndExecuteTransaction();
+  const { mutate: signAndExecuteTransaction, isPending } = useSignAndExecuteTransaction();
 
   const price = useMemo(
     () =>
@@ -94,10 +94,10 @@ export default function InscriptionItemBidCard({
                 );
                 const tx = new Transaction();
                 tx.callFunction({
-                  target: `${TESTNET_ORDERBOOK_PACKAGE}::market_v2::cancel_order`,
+                  target: `${market.orderBookAddress}::market_v2::cancel_order`,
                   args: [
                     Args.objectId(
-                      NETWORK_PACKAGE[NETWORK].tickInfo[tick.toLowerCase()].MARKET_OBJECT_ID
+                      market.tickInfo[tick.toLowerCase()].obj
                     ),
                     Args.u64(BigInt(item.order_id)),
                   ],

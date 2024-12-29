@@ -41,16 +41,12 @@ export function FaucetView({ address }: { address: string }) {
   const [viewAddress, setViewAddress] = useState<string>();
   const [viewRoochAddress, setViewRoochAddress] = useState<string>();
   const [faucetStatus, setFaucetStatus] = useState<boolean>(false);
-  const faucetUrl = useNetworkVariable('faucetUrl');
+  const faucet = useNetworkVariable('faucet');
   const [errorMsg, setErrorMsg] = useState<string>();
   const client = useRoochClient();
-  const faucetAddress = useNetworkVariable('faucetAddress');
-  const faucetObject = useNetworkVariable('faucetObject');
   const [claimGas, setClaimGas] = useState(0);
   const router = useRouter();
   const network = useCurrentNetwork()
-
-  useAddressChanged({ address, path: 'faucet' });
 
   useEffect(() => {
     const inviterAddress = window.localStorage.getItem(INVITER_ADDRESS_KEY)
@@ -95,9 +91,9 @@ export function FaucetView({ address }: { address: string }) {
         const utxoIds = result.data.map((item) => item.id);
         if (utxoIds) {
           const result = await client.executeViewFunction({
-            target: `${faucetAddress}::gas_faucet::check_claim`,
+            target: `${faucet.address}::gas_faucet::check_claim`,
             args: [
-              Args.objectId(faucetObject),
+              Args.objectId(faucet.obj),
               Args.address(viewRoochAddress),
               Args.vec('objectId', utxoIds),
             ],
@@ -116,7 +112,7 @@ export function FaucetView({ address }: { address: string }) {
       .finally(() => {
         setFaucetStatus(false);
       });
-  }, [address, client, faucetAddress, faucetObject, viewRoochAddress]);
+  }, [address, client, faucet, viewRoochAddress]);
 
   const fetchFaucet = async () => {
 
@@ -130,7 +126,7 @@ export function FaucetView({ address }: { address: string }) {
       const payload = JSON.stringify({
         claimer: viewAddress,
       });
-      const response = await fetch(`${faucetUrl}/faucet`, {
+      const response = await fetch(`${faucet}/faucet`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -30,7 +30,7 @@ export function useSetState<T>(initialState: T): UseSetStateReturn<T> {
     set(initialState);
   }, [initialState]);
 
-  const memoizedValue = useMemo(
+  return useMemo(
     () => ({
       state,
       setState,
@@ -40,6 +40,4 @@ export function useSetState<T>(initialState: T): UseSetStateReturn<T> {
     }),
     [canReset, onResetState, setField, setState, state]
   );
-
-  return memoizedValue;
 }

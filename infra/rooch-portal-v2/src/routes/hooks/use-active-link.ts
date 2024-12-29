@@ -2,9 +2,6 @@ import { usePathname } from './use-pathname';
 import { hasParams, removeParams, isExternalLink, removeLastSlash } from '../utils';
 
 export function useActiveLink(itemPath: string, deep: boolean = true): boolean {
-  if (itemPath.includes('trade')) {
-    console.log('🚀 ~ file: use-active-link.ts:5 ~ useActiveLink ~ itemPath:', itemPath);
-  }
   const pathname = removeLastSlash(usePathname());
 
   const pathHasParams = hasParams(itemPath);

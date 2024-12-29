@@ -6,51 +6,10 @@ import Typography from '@mui/material/Typography';
 
 import { useRouter } from 'src/routes/hooks';
 
-import { useSettingsContext } from 'src/components/settings';
 import MarketplaceItemCard from 'src/components/market/markerplace-item-card';
 
-export interface Tick {
-  current_epoch: string;
-  current_supply: string;
-  epoch_count: string;
-  epoch_records: {
-    type: string;
-    fields: {
-      id: {
-        id: string;
-      };
-      size: string;
-    };
-  };
-  id: {
-    id: string;
-  };
-  mint_fee: string;
-  remain: string;
-  start_time_ms: string;
-  tick: string;
-  total_supply: string;
-  total_transactions: string;
-  version: string;
-}
-
-// ----------------------------------------------------------------------
-const TABLE_HEAD = [
-  { id: 'name', label: 'Name' },
-  { id: 'todayVolume	', label: 'Today Volume (SUI)', align: 'center' },
-  { id: 'totalVolume', label: 'Total Volume (SUI)', align: 'right' },
-  { id: 'totalSupply', label: 'Total Supply', align: 'right' },
-  { id: 'action', label: 'Action', align: 'center' },
-];
-
 export default function MarketplaceHomeView() {
-  const settings = useSettingsContext();
   const router = useRouter();
-  // const { tickList: ticks, isFetching } = useMRCTicks();
-  // const { tickTradeInfos, isLoadingTickTradeInfos } = useBatchMarketTradeData([
-  //   'grow',
-  //   'gold',
-  // ]);
 
   return (
     <Container maxWidth="xl">

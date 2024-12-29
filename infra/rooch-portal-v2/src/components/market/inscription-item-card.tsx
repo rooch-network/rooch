@@ -4,23 +4,20 @@ import type { MarketItem } from 'src/hooks/trade/use-market-data';
 import { useMemo } from 'react';
 import BigNumber from 'bignumber.js';
 import { Args, Transaction } from '@roochnetwork/rooch-sdk';
-import { useCurrentAddress, UseSignAndExecuteTransaction } from '@roochnetwork/rooch-sdk-kit';
+import { useCurrentAddress, useSignAndExecuteTransaction } from '@roochnetwork/rooch-sdk-kit';
 
 import { LoadingButton } from '@mui/lab';
 import { grey } from '@mui/material/colors';
 import { Card, Chip, Stack, Checkbox, CardActions } from '@mui/material';
 
 import { fromDust } from 'src/utils/number';
-import { isMainNetwork } from 'src/utils/env';
 import { formatUnitPrice } from 'src/utils/marketplace';
 
-import { NETWORK, NETWORK_PACKAGE } from 'src/config/trade';
-import { TESTNET_ORDERBOOK_PACKAGE } from 'src/config/constant';
-
+import { toast } from 'src/components/snackbar';
 import { Iconify } from 'src/components/iconify';
 
-import { toast } from '../snackbar';
 import InscriptionShopCard from './inscription-shop-card';
+import { useNetworkVariable } from '../../hooks/use-networks';
 
 export type InscriptionItemCardProps = {
   item: MarketItem;
@@ -46,9 +43,8 @@ export default function InscriptionItemCard({
   onRefetchMarketData,
 }: InscriptionItemCardProps) {
   const account = useCurrentAddress();
-  const { mutate: signAndExecuteTransaction, isPending } = UseSignAndExecuteTransaction();
-
-  const network = isMainNetwork() ? 'mainnet' : 'testnet';
+  const market = useNetworkVariable('market');
+  const { mutate: signAndExecuteTransaction, isPending } = useSignAndExecuteTransaction();
 
   const price = useMemo(
     () =>
@@ -145,9 +141,9 @@ export default function InscriptionItemCard({
                   );
                   const tx = new Transaction();
                   tx.callFunction({
-                    target: `${TESTNET_ORDERBOOK_PACKAGE}::market_v2::buy`,
+                    target: `${market.orderBookAddress}::market_v2::buy`,
                     args: [
-                      Args.objectId(NETWORK_PACKAGE[network].tickInfo[tick].MARKET_OBJECT_ID),
+                      Args.objectId(market.tickInfo[tick].obj),
                       Args.u64(BigInt(item.order_id)),
                       Args.address(item.owner),
                       Args.bool(true),
@@ -196,9 +192,9 @@ export default function InscriptionItemCard({
                   );
                   const tx = new Transaction();
                   tx.callFunction({
-                    target: `${TESTNET_ORDERBOOK_PACKAGE}::market_v2::cancel_order`,
+                    target: `${market.orderBookAddress}::market_v2::cancel_order`,
                     args: [
-                      Args.objectId(NETWORK_PACKAGE[NETWORK].tickInfo[tick].MARKET_OBJECT_ID),
+                      Args.objectId(market.tickInfo[tick].obj),
                       Args.u64(BigInt(item.order_id)),
                     ],
                     typeArgs: [fromCoinBalanceInfo.coin_type, toCoinBalanceInfo.coin_type],

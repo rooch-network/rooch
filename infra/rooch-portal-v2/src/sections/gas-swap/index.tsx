@@ -1,20 +1,22 @@
 'use client';
 
-import type { ReactNode} from 'react';
+import type { ReactNode } from 'react';
 import type { CurveType, PoolVersion, InteractiveMode } from 'src/components/swap/types';
 
 import BigNumber from 'bignumber.js';
 import { useState, useEffect } from 'react';
 import { Args } from '@roochnetwork/rooch-sdk';
-import { useRoochClient, useCurrentWallet, useCurrentAddress } from '@roochnetwork/rooch-sdk-kit'
+import { useRoochClient, useCurrentWallet, useCurrentAddress } from '@roochnetwork/rooch-sdk-kit';
 
 import { Stack } from '@mui/material';
+
+import { GAS_COIN_TYPE } from 'src/config/constant';
 
 import Swap from 'src/components/swap/swap';
 import { toast } from 'src/components/snackbar';
 
-import { useNetworkVariable } from '../../hooks/use-networks'
-import WalletSwitchNetworkModal from '../../layouts/components/wallet-switch-network-modal'
+import { useNetworkVariable } from '../../hooks/use-networks';
+import WalletSwitchNetworkModal from '../../layouts/components/wallet-switch-network-modal';
 
 const swapCoins = [
   {
@@ -36,8 +38,8 @@ const swapCoins = [
 ];
 
 export default function GasSwapOverview() {
-  const btcGasAddress = useNetworkVariable("btcGasAddress")
-  const gasMarketAddress = useNetworkVariable("gasMarketAddress")
+  const gasMarketCfg = useNetworkVariable('gasMarket');
+
   const [loading, setLoading] = useState<boolean>(false);
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [btcBalance, setBtcBalance] = useState(0n);
@@ -71,7 +73,7 @@ export default function GasSwapOverview() {
       }
       const res = await client.getBalance({
         owner: address?.genRoochAddress().toStr(),
-        coinType: '0x3::gas_coin::RGas',
+        coinType: GAS_COIN_TYPE,
       });
       if (res) {
         setRGasBalance(BigInt(res.balance));
@@ -80,14 +82,13 @@ export default function GasSwapOverview() {
     getBTCBalance();
     getRGasBalance();
   }, [wallet, address, client]);
-  console.log(btcBalance)
 
   useEffect(() => {
     async function fetchRate() {
       try {
         setLoading(true);
         const res = await client.executeViewFunction({
-          address: gasMarketAddress,
+          address: gasMarketCfg.address,
           module: 'gas_market',
           function: 'btc_to_rgas',
           args: [Args.u64(fromSwapAmount)],
@@ -105,13 +106,12 @@ export default function GasSwapOverview() {
       }
     }
     fetchRate();
-  }, [client, fromSwapAmount, gasMarketAddress]);
+  }, [client, fromSwapAmount, gasMarketCfg]);
 
-  console.log(networkValid)
   return (
     <Stack className="w-full justify-center items-center">
       <Stack className="w-3/4 max-w-[600px]">
-        <WalletSwitchNetworkModal onChecked={(isValid) => setNetworkValid(isValid)}/>
+        <WalletSwitchNetworkModal onChecked={(isValid) => setNetworkValid(isValid)} />
         <Swap
           isValid={networkValid}
           hiddenValue
@@ -146,7 +146,7 @@ export default function GasSwapOverview() {
             try {
               setSubmitting(true);
               const txHash = await wallet.wallet?.sendBtc({
-                toAddress: btcGasAddress,
+                toAddress: gasMarketCfg.recipientBTCAddress,
                 satoshis: Number(fromSwapAmount.toString()),
               });
               setTxHash(txHash);

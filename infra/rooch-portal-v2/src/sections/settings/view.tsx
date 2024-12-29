@@ -34,9 +34,9 @@ export function SettingsView() {
   const session = useCurrentSession();
   const client = useRoochClient();
   const wallet = useCurrentWallet();
-  const faucetUrl = useNetworkVariable('faucetUrl');
-  const twitterOracleAddress = useNetworkVariable('twitterOracleAddress');
-  const [inviterCA, inviterModule, inviterConf] = useNetworkVariable('inviterCA');
+  const faucetUrl = useNetworkVariable('faucet').url;
+  const twitterOracleAddress = useNetworkVariable('roochMultiSigAddr');
+  const inviter = useNetworkVariable('inviter')
   const [tweetStatus, setTweetStatus] = useState('');
   const [twitterId, setTwitterId] = useState<string>();
   const [verifying, setVerifying] = useState(false);
@@ -208,7 +208,7 @@ export function SettingsView() {
         // check invite is open
         const result = await client.queryObjectStates({
           filter: {
-            object_type: `${inviterCA}::${inviterModule}::${inviterConf}`,
+            object_type: inviter.obj(inviter),
           },
           queryOption: {
             decode: true,

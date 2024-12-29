@@ -4,7 +4,7 @@ import type { BidItem } from 'src/hooks/trade/use-market-data';
 import { useMemo } from 'react';
 import BigNumber from 'bignumber.js';
 import { Args, Transaction } from '@roochnetwork/rooch-sdk';
-import { useCurrentAddress, UseSignAndExecuteTransaction } from '@roochnetwork/rooch-sdk-kit';
+import { useCurrentAddress, useSignAndExecuteTransaction } from '@roochnetwork/rooch-sdk-kit';
 
 import { LoadingButton } from '@mui/lab';
 import { yellow } from '@mui/material/colors';
@@ -20,19 +20,17 @@ import {
   DialogActions,
 } from '@mui/material';
 
-import { isMainNetwork } from 'src/utils/env';
 import { fNumber } from 'src/utils/format-number';
 import { formatUnitPrice } from 'src/utils/marketplace';
 import { fromDust, formatNumber } from 'src/utils/number';
 
 import { secondary } from 'src/theme/core';
-import { NETWORK_PACKAGE } from 'src/config/trade';
-import { TESTNET_ORDERBOOK_PACKAGE } from 'src/config/constant';
 
 import { toast } from 'src/components/snackbar';
 import { Iconify } from 'src/components/iconify';
 
 import InscriptionShopCard from './inscription-shop-card';
+import { useNetworkVariable } from '../../hooks/use-networks';
 
 export type AcceptBidDialogProps = {
   open: boolean;
@@ -55,9 +53,9 @@ export default function AcceptBidDialog({
   refreshBidList,
   close,
 }: AcceptBidDialogProps) {
-  const { mutate: signAndExecuteTransaction, isPending } = UseSignAndExecuteTransaction();
-
-  const network = isMainNetwork() ? 'mainnet' : 'testnet';
+  const market = useNetworkVariable('market')
+  const account = useCurrentAddress();
+  const { mutate: signAndExecuteTransaction, isPending } = useSignAndExecuteTransaction();
 
   const price = useMemo(
     () =>
@@ -66,8 +64,6 @@ export default function AcceptBidDialog({
         .toString(),
     [acceptBidItem.quantity, acceptBidItem.unit_price, toCoinBalanceInfo.decimals]
   );
-
-  const account = useCurrentAddress();
 
   return (
     <Dialog
@@ -107,7 +103,7 @@ export default function AcceptBidDialog({
             seller={acceptBidItem.owner}
             selectMode={false}
             type="list"
-          />
+           />
         </Card>
 
         <Stack
@@ -182,9 +178,9 @@ export default function AcceptBidDialog({
 
             const tx = new Transaction();
             tx.callFunction({
-              target: `${TESTNET_ORDERBOOK_PACKAGE}::market_v2::accept_bid`,
+              target: `${market.orderBookAddress}::market_v2::accept_bid`,
               args: [
-                Args.objectId(NETWORK_PACKAGE[network].tickInfo[tick].MARKET_OBJECT_ID),
+                Args.objectId(market.tickInfo[tick].obj),
                 Args.u64(BigInt(acceptBidItem.order_id)),
                 Args.address(acceptBidItem.owner),
                 Args.bool(true),

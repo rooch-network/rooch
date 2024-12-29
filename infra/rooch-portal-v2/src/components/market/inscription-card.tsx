@@ -64,9 +64,7 @@ export default function InscriptionCard({
             {selectMode ? (
               <Chip size="small" label={`#${objectId.slice(2, 8)}`} variant="soft" color="info" />
             ) : (
-              <Link href={`https://suivision.xyz/object/${objectId}`} target="_blank">
                 <Chip size="small" label={`#${objectId.slice(2, 8)}`} variant="soft" color="info" />
-              </Link>
             )}
           </>
         )}

@@ -3,7 +3,7 @@ import type { BalanceInfoView } from '@roochnetwork/rooch-sdk';
 import { useState } from 'react';
 import BigNumber from 'bignumber.js';
 import { Args, Transaction } from '@roochnetwork/rooch-sdk';
-import { useCurrentAddress, UseSignAndExecuteTransaction } from '@roochnetwork/rooch-sdk-kit';
+import { useCurrentAddress, useSignAndExecuteTransaction } from '@roochnetwork/rooch-sdk-kit';
 
 import { LoadingButton } from '@mui/lab';
 import {
@@ -20,19 +20,18 @@ import {
 } from '@mui/material';
 
 import { toDust } from 'src/utils/number';
-import { isMainNetwork } from 'src/utils/env';
 
 import { secondary } from 'src/theme/core';
-import { NETWORK_PACKAGE } from 'src/config/trade';
-import { TESTNET_ORDERBOOK_PACKAGE } from 'src/config/constant';
 
-import { toast } from '../snackbar';
+import { toast } from 'src/components/snackbar';
+
 import InscriptionShopCard from './inscription-shop-card';
+import { useNetworkVariable } from '../../hooks/use-networks';
 
 export type CreateBidDialogProps = {
   open: boolean;
   tick: string;
-  floorPrice: number;
+  floorPrice?: string;
   fromCoinBalanceInfo: BalanceInfoView;
   toCoinBalanceInfo: BalanceInfoView;
   refreshBidList: () => Promise<void>;
@@ -48,12 +47,12 @@ export default function CreateBidDialog({
   refreshBidList,
   close,
 }: CreateBidDialogProps) {
-  const network = isMainNetwork() ? 'mainnet' : 'testnet';
+  const market = useNetworkVariable('market')
+  const account = useCurrentAddress();
+  const { mutate: signAndExecuteTransaction, isPending } = useSignAndExecuteTransaction();
+
   const [bidAmount, setBidAmount] = useState('');
   const [bidUnitPrice, setBidUnitPrice] = useState('');
-
-  const account = useCurrentAddress();
-  const { mutate: signAndExecuteTransaction, isPending } = UseSignAndExecuteTransaction();
 
   return (
     <Dialog
@@ -261,9 +260,9 @@ export default function CreateBidDialog({
               .toNumber();
 
             tx.callFunction({
-              target: `${TESTNET_ORDERBOOK_PACKAGE}::market_v2::create_bid`,
+              target: `${market.orderBookAddress}::market_v2::create_bid`,
               args: [
-                Args.objectId(NETWORK_PACKAGE[network].tickInfo[tick].MARKET_OBJECT_ID),
+                Args.objectId(market.tickInfo[tick].obj),
                 Args.u64(BigInt(unitPrice)),
                 Args.u256(BigInt(toDust(bidAmount, toCoinBalanceInfo.decimals))),
               ],
