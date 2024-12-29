@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::actor::messages::{AppendTransactionMessage, GetServerStatusMessage};
-use crate::backend::openda::OpenDABackend;
-use crate::backend::DABackend;
+use crate::backend::{DABackend, DABackends};
 use crate::batcher::BatchMaker;
 use anyhow::anyhow;
 use async_trait::async_trait;
@@ -11,9 +10,7 @@ use coerce::actor::context::ActorContext;
 use coerce::actor::message::Handler;
 use coerce::actor::Actor;
 use moveos_types::h256::H256;
-use rooch_config::da_config::{
-    DABackendConfigType, DAConfig, DEFAULT_DA_BACKGROUND_SUBMIT_INTERVAL,
-};
+use rooch_config::da_config::{DAConfig, DEFAULT_DA_BACKGROUND_SUBMIT_INTERVAL};
 use rooch_store::da_store::DAMetaStore;
 use rooch_store::transaction_store::TransactionStore;
 use rooch_store::RoochStore;
@@ -38,75 +35,6 @@ pub struct DAServerActor {
 
 impl Actor for DAServerActor {}
 
-struct ServerBackends {
-    backends: Vec<Arc<dyn DABackend>>,
-    backend_names: Vec<String>,
-    submit_threshold: usize,
-    is_nop_backend: bool,
-}
-
-impl ServerBackends {
-    const DEFAULT_SUBMIT_THRESHOLD: usize = 1;
-    const DEFAULT_IS_NOP_BACKEND: bool = false;
-
-    async fn process_backend_configs(
-        backend_configs: &[DABackendConfigType],
-        genesis_namespace: String,
-        backends: &mut Vec<Arc<dyn DABackend>>,
-        backend_names: &mut Vec<String>,
-    ) -> anyhow::Result<usize> {
-        let mut available_backends = 0;
-        for backend_type in backend_configs {
-            #[allow(irrefutable_let_patterns)]
-            if let DABackendConfigType::OpenDa(openda_config) = backend_type {
-                let backend = OpenDABackend::new(openda_config, genesis_namespace.clone()).await?;
-                backends.push(Arc::new(backend));
-                backend_names.push(format!("openda-{}", openda_config.scheme));
-                available_backends += 1;
-            }
-        }
-        Ok(available_backends)
-    }
-
-    async fn build(da_config: DAConfig, genesis_namespace: String) -> anyhow::Result<Self> {
-        let mut backends: Vec<Arc<dyn DABackend>> = Vec::new();
-        let mut backend_names: Vec<String> = Vec::new();
-        let mut submit_threshold = Self::DEFAULT_SUBMIT_THRESHOLD;
-        let mut is_nop_backend = Self::DEFAULT_IS_NOP_BACKEND;
-
-        let mut available_backends_count = 1; // Nop is always available
-        if let Some(mut backend_config) = da_config.da_backend {
-            submit_threshold = backend_config.calculate_submit_threshold();
-            available_backends_count = Self::process_backend_configs(
-                &backend_config.backends,
-                genesis_namespace,
-                &mut backends,
-                &mut backend_names,
-            )
-            .await?;
-        } else {
-            is_nop_backend = true;
-            backends.push(Arc::new(crate::backend::DABackendNopProxy {}));
-            backend_names.push("nop".to_string());
-        }
-
-        if available_backends_count < submit_threshold {
-            return Err(anyhow!(
-                "failed to start da: not enough backends for future submissions. exp>= {} act: {}",
-                submit_threshold,
-                available_backends_count
-            ));
-        }
-
-        Ok(Self {
-            backends,
-            backend_names,
-            submit_threshold,
-            is_nop_backend,
-        })
-    }
-}
-
 impl DAServerActor {
     pub async fn new(
         da_config: DAConfig,
@@ -119,12 +47,12 @@ impl DAServerActor {
         let background_submit_interval = da_config
             .background_submit_interval
             .unwrap_or(DEFAULT_DA_BACKGROUND_SUBMIT_INTERVAL);
-        let ServerBackends {
+        let DABackends {
             backends,
             backend_names,
             submit_threshold,
             is_nop_backend,
-        } = ServerBackends::build(da_config, genesis_namespace).await?;
+        } = DABackends::build(da_config, genesis_namespace).await?;
 
         let last_block_number = rooch_store.get_last_block_number()?;
         let background_last_block_update_time = Arc::new(AtomicU64::new(0));
