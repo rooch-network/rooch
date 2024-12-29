@@ -43,13 +43,11 @@ struct ServerBackends {
     backend_names: Vec<String>,
     submit_threshold: usize,
     is_nop_backend: bool,
-    background_submit_interval: u64,
 }
 
 impl ServerBackends {
     const DEFAULT_SUBMIT_THRESHOLD: usize = 1;
     const DEFAULT_IS_NOP_BACKEND: bool = false;
-    const DEFAULT_BACKGROUND_INTERVAL: u64 = DEFAULT_DA_BACKGROUND_SUBMIT_INTERVAL;
 
     async fn process_backend_configs(
         backend_configs: &[DABackendConfigType],
@@ -75,9 +73,6 @@ impl ServerBackends {
         let mut backend_names: Vec<String> = Vec::new();
         let mut submit_threshold = Self::DEFAULT_SUBMIT_THRESHOLD;
         let mut is_nop_backend = Self::DEFAULT_IS_NOP_BACKEND;
-        let background_submit_interval = da_config
-            .background_submit_interval
-            .unwrap_or(Self::DEFAULT_BACKGROUND_INTERVAL);
 
         let mut available_backends_count = 1; // Nop is always available
         if let Some(mut backend_config) = da_config.da_backend {
@@ -108,7 +103,6 @@ impl ServerBackends {
             backend_names,
             submit_threshold,
             is_nop_backend,
-            background_submit_interval,
         })
     }
 }
@@ -122,12 +116,14 @@ impl DAServerActor {
         shutdown_rx: broadcast::Receiver<()>,
     ) -> anyhow::Result<Self> {
         let min_block_to_submit = da_config.da_min_block_to_submit;
+        let background_submit_interval = da_config
+            .background_submit_interval
+            .unwrap_or(DEFAULT_DA_BACKGROUND_SUBMIT_INTERVAL);
         let ServerBackends {
             backends,
             backend_names,
             submit_threshold,
             is_nop_backend,
-            background_submit_interval,
         } = ServerBackends::build(da_config, genesis_namespace).await?;
 
         let last_block_number = rooch_store.get_last_block_number()?;
