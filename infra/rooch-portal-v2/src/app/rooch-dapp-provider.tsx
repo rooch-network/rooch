@@ -12,7 +12,7 @@ import { isMainNetwork } from '../utils/env'
 const queryClient = new QueryClient();
 
 export default function RoochDappProvider({ children }: { children: ReactNode }) {
-  const network = isMainNetwork() ? 'mainnet' : 'mainnet'
+  const network = isMainNetwork() ? 'mainnet' : 'testnet'
   return (
     <QueryClientProvider client={queryClient}>
       <RoochProvider networks={networkConfig} defaultNetwork={network} sessionConf={
