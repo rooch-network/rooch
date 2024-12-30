@@ -44,8 +44,8 @@ import { ProductItemSkeleton } from 'src/components/skeleton/product-item-skelet
 import InscriptionItemBidCard from 'src/components/market/inscription-item-bid-card';
 
 import { GAS_COIN_DECIMALS } from '../../config/constant';
-import { useNetworkVariable } from '../../hooks/use-networks';
 import { formatUnitPrice } from '../../utils/marketplace';
+import { useNetworkVariable } from '../../hooks/use-networks';
 
 export default function MarketplaceView({ params }: { params: { tick: string } }) {
   const { tick: marketplaceTick }: { tick: string } = params;
@@ -437,7 +437,7 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
             title="Total Supply"
             value={
               toCoinBalanceInfo ? (
-                fNumber(toCoinBalanceInfo?.supply)
+                fNumber(fromDust(Number(toCoinBalanceInfo?.supply || 0), toCoinBalanceInfo?.decimals || 0).toNumber())
               ) : (
                 <Skeleton variant="rounded" />
               )
