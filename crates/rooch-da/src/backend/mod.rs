@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::backend::openda::OpenDABackend;
+use crate::backend::openda::OpenDABackendManager;
 use anyhow::anyhow;
 use async_trait::async_trait;
 use rooch_config::da_config::{DABackendConfig, DABackendConfigType};
@@ -10,14 +10,23 @@ use std::sync::Arc;
 
 pub mod openda;
 
+// manually set backend priority
+pub const BACKENDS_PRIORITY: [&str; 5] = [
+    "openda-fs",
+    "openda-gcs",
+    "openda-s3",
+    "openda-avail",
+    "openda-celestia",
+];
+
 #[async_trait]
 pub trait DABackend: Sync + Send {
     async fn submit_batch(&self, batch: Arc<DABatch>) -> anyhow::Result<()>;
+    fn get_identifier(&self) -> String;
 }
 
 pub struct DABackends {
     pub backends: Vec<Arc<dyn DABackend>>,
-    pub identifiers: Vec<String>,
     pub submit_threshold: usize,
 }
 
@@ -28,7 +37,6 @@ impl DABackends {
         genesis_namespace: String,
     ) -> anyhow::Result<Self> {
         let mut backends = Vec::new();
-        let mut identifiers = Vec::new();
 
         let submit_threshold = if let Some(mut backend_config) = config {
             let submit_threshold = backend_config.calculate_submit_threshold();
@@ -38,7 +46,6 @@ impl DABackends {
                 &backend_config.backends,
                 genesis_namespace,
                 &mut backends,
-                &mut identifiers,
             )
             .await?;
 
@@ -56,26 +63,43 @@ impl DABackends {
             0 // No configuration provided, default threshold is 0
         };
 
-        Ok(Self {
+        let mut this = Self {
             backends,
-            identifiers,
             submit_threshold,
-        })
+        };
+        this.sort_backends();
+
+        Ok(this)
+    }
+
+    // sort backends by their priority
+    fn sort_backends(&mut self) {
+        self.backends.sort_by(|a, b| {
+            let a = BACKENDS_PRIORITY
+                .iter()
+                .position(|x| *x == a.get_identifier());
+            let b = BACKENDS_PRIORITY
+                .iter()
+                .position(|x| *x == b.get_identifier());
+            a.cmp(&b)
+        });
     }
 
     async fn load_backends_from_configs(
         backend_configs: &[DABackendConfigType],
         genesis_namespace: String,
         backends: &mut Vec<Arc<dyn DABackend>>,
-        backend_names: &mut Vec<String>,
     ) -> anyhow::Result<usize> {
         let mut available_backends = 0;
         for backend_type in backend_configs {
             #[allow(irrefutable_let_patterns)]
-            if let DABackendConfigType::OpenDa(openda_config) = backend_type {
-                let backend = OpenDABackend::new(openda_config, genesis_namespace.clone()).await?;
+            if let DABackendConfigType::OpenDa(open_da_config) = backend_type {
+                let mut open_da_config = open_da_config.clone();
+                if open_da_config.namespace.is_none() {
+                    open_da_config.namespace = Some(genesis_namespace.clone());
+                }
+                let backend = OpenDABackendManager::new(&open_da_config).await?;
                 backends.push(Arc::new(backend));
-                backend_names.push(format!("openda-{}", openda_config.scheme));
                 available_backends += 1;
             }
         }

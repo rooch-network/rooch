@@ -50,9 +50,13 @@ impl DAServerActor {
 
         let DABackends {
             backends,
-            identifiers: backend_identifiers,
             submit_threshold,
         } = DABackends::initialize(da_config.da_backend, genesis_namespace).await?;
+
+        let backend_identifiers: Vec<String> = backends
+            .iter()
+            .map(|backend| backend.get_identifier())
+            .collect();
 
         let last_block_number = rooch_store.get_last_block_number()?;
         let background_last_block_update_time = Arc::new(AtomicU64::new(0));
@@ -302,9 +306,10 @@ impl Submitter {
             match submit_fut.await {
                 Ok(_) => {
                     success_count += 1;
-                    if success_count >= submit_threshold {
-                        break;
-                    }
+                    // TODO parallel submit
+                    // if success_count >= submit_threshold {
+                    //     break;
+                    // }
                 }
                 Err(e) => {
                     tracing::warn!("{:?}, fail to submit batch to backend.", e);
