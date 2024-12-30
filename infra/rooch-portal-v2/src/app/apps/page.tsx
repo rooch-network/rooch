@@ -37,6 +37,5 @@ export default async function Page() {
     }
     return a;
   }, []);
-  console.log(projectsResponse)
   return <AppsView projects={projects}/>;
 }
