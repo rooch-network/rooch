@@ -40,33 +40,32 @@ impl Operator for AvailFusionClient {
         &self,
         segment_id: SegmentID,
         segment_bytes: Vec<u8>,
-        prefix: Option<String>,
+        _prefix: Option<String>,
     ) -> anyhow::Result<()> {
-        // Fallback to light_client if turbo_client is not available
-        if let Some(turbo_client) = &self.turbo_client {
-            let turbo_result = turbo_client
-                .submit_segment(segment_id, segment_bytes.clone(), prefix.clone())
-                .await;
-
-            if let Err(error) = turbo_result {
-                tracing::warn!(
-                    "Failed to submit segment to Avail Turbo: {}, trying light_client if available",
-                    error
-                );
-
-                if let Some(light_client) = &self.light_client {
-                    return light_client
-                        .submit_segment(segment_id, segment_bytes, prefix)
-                        .await;
-                } else {
-                    return Err(anyhow!("Light client is not available"));
+        match &self.turbo_client {
+            Some(turbo_client) => {
+                match turbo_client
+                    .submit_segment(segment_id, &segment_bytes, None)
+                    .await
+                {
+                    Ok(result) => return Ok(result), // No fallback needed
+                    Err(error) => {
+                        tracing::warn!(
+                            "Failed to submit segment to Avail Turbo: {}, trying light_client if available",
+                            error
+                        );
+                    }
                 }
             }
+            None => {
+                // No turbo_client, drop directly to light_client
+            }
+        }
 
-            turbo_result
-        } else if let Some(light_client) = &self.light_client {
+        // If it reaches here, try light_client if available
+        if let Some(light_client) = &self.light_client {
             light_client
-                .submit_segment(segment_id, segment_bytes, prefix)
+                .submit_segment(segment_id, segment_bytes, None) // Takes ownership here
                 .await
         } else {
             Err(anyhow!("Both turbo and light clients are not available"))

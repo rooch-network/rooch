@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 mod avail;
-mod backend;
 mod celestia;
+mod openda_backend;
 mod opendal;
 mod operator;
 
-pub use self::backend::OpenDABackend;
+pub use self::openda_backend::OpenDABackend;

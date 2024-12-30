@@ -1,10 +1,15 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::backend::openda::avail::DEFAULT_AVAIL_MAX_SEGMENT_SIZE;
-use crate::backend::openda::celestia::DEFAULT_CELESTIA_MAX_SEGMENT_SIZE;
+use crate::backend::openda::avail::{AvailFusionClientConfig, DEFAULT_AVAIL_MAX_SEGMENT_SIZE};
+use crate::backend::openda::celestia::{
+    CelestiaClient, WrappedNamespace, DEFAULT_CELESTIA_MAX_SEGMENT_SIZE,
+};
+use crate::backend::openda::opendal::BACK_OFF_MIN_DELAY;
 use anyhow::anyhow;
 use async_trait::async_trait;
+use opendal::layers::{LoggingLayer, RetryLayer};
+use opendal::Scheme;
 use rooch_config::da_config::{DABackendOpenDAConfig, OpenDAScheme};
 use rooch_config::retrieve_map_config_value;
 use rooch_types::da::segment::SegmentID;
@@ -21,6 +26,48 @@ pub(crate) trait Operator: Sync + Send {
         segment_bytes: Vec<u8>,
         prefix: Option<String>,
     ) -> anyhow::Result<()>;
+}
+
+pub(crate) async fn new_operator(
+    operator_config: OperatorConfig,
+    scheme_config: HashMap<String, String>,
+) -> anyhow::Result<Box<dyn Operator>> {
+    let max_retries = operator_config.max_retries;
+    let scheme = operator_config.scheme.clone();
+
+    let operator: Box<dyn Operator> = match scheme {
+        OpenDAScheme::Avail => {
+            let avail_fusion_config =
+                AvailFusionClientConfig::from_scheme_config(scheme_config, max_retries)?;
+            let avail_fusion_client = avail_fusion_config.build_client()?;
+            Box::new(avail_fusion_client)
+        }
+        OpenDAScheme::Celestia => {
+            let namespace = WrappedNamespace::from_string(&operator_config.namespace.clone())?;
+            Box::new(
+                CelestiaClient::new(
+                    namespace.into_inner(),
+                    &scheme_config["endpoint"],
+                    scheme_config.get("auth_token").map(|s| s.as_str()),
+                    max_retries,
+                )
+                .await?,
+            )
+        }
+        _ => {
+            let mut op = opendal::Operator::via_iter(Scheme::from(scheme), scheme_config)?;
+            op = op
+                .layer(
+                    RetryLayer::new()
+                        .with_max_times(max_retries)
+                        .with_min_delay(BACK_OFF_MIN_DELAY),
+                )
+                .layer(LoggingLayer::default());
+            op.check().await?;
+            Box::new(op)
+        }
+    };
+    Ok(operator)
 }
 
 #[derive(Clone)]
