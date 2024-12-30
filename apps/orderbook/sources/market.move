@@ -30,6 +30,8 @@ module orderbook::market_v2 {
     use orderbook::critbit;
     use app_admin::admin::AdminCap;
     use moveos_std::event::emit;
+    #[test_only]
+    use std::u64;
 
     #[test_only]
     use rooch_framework::account::create_account_for_testing;
@@ -60,6 +62,7 @@ module orderbook::market_v2 {
     const ErrorOrderLength: u64 = 9;
     const ErrorDeprecated: u64 = 10;
     const ErrorInvalidAmount: u64 = 11;
+    const ErrorQuantityTooLow: u64 = 12;
 
 
     /// listing info in the market
@@ -206,6 +209,7 @@ module orderbook::market_v2 {
         // TODO here maybe wrap to u512?
         // let price = (unit_price as u256) * quantity;
         assert!(unit_price > 0, ErrorPriceTooLow);
+        assert!(quantity > 0, ErrorQuantityTooLow);
         let asks = Order {
             order_id,
             unit_price,
@@ -247,7 +251,7 @@ module orderbook::market_v2 {
         let market = object::borrow_mut(market_obj);
         // assert!(market.version == VERSION, ErrorWrongVersion);
         assert!(market.is_paused == false, ErrorWrongPaused);
-        assert!(quantity > 0, ErrorWrongCreateBid);
+        assert!(quantity > 0, ErrorQuantityTooLow);
         assert!(unit_price > 0, ErrorWrongCreateBid);
         // TODO here maybe wrap to u512?
         let price = (unit_price as u256) * quantity / UNIT_PRICE_SCALE;
@@ -467,6 +471,7 @@ module orderbook::market_v2 {
             return option::none()
         };
         assert!(tick_exists, ErrorInvalidOrderId);
+        assert!(amount > 0, ErrorQuantityTooLow);
         let order = borrow_mut_order(&mut market.asks, usr_open_orders, tick_index, order_id, order_owner);
         assert!(amount <= order.quantity, ErrorInvalidAmount);
         // TODO here maybe wrap to u512?
@@ -651,7 +656,7 @@ module orderbook::market_v2 {
             return option::none()
         };
         assert!(tick_exists, ErrorInvalidOrderId);
-
+        assert!(amount > 0, ErrorQuantityTooLow);
         let order = borrow_mut_order(&mut market.bids, usr_open_orders, tick_index, order_id, order_owner);
         assert!(order.quantity >= amount, ErrorInvalidAmount);
         let trade_coin = account_coin_store::withdraw<QuoteAsset>(signer, amount);
