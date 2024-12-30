@@ -1,16 +1,16 @@
 import type { BalanceInfoView } from '@roochnetwork/rooch-sdk';
 import type { MarketItem } from 'src/hooks/trade/use-market-data';
 
-import { useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import BigNumber from 'bignumber.js';
 import { Args, Transaction } from '@roochnetwork/rooch-sdk';
 import { useCurrentAddress, useSignAndExecuteTransaction } from '@roochnetwork/rooch-sdk-kit';
 
 import { LoadingButton } from '@mui/lab';
 import { grey } from '@mui/material/colors';
-import { Card, Chip, Stack, Checkbox, CardActions } from '@mui/material';
+import { Dialog, DialogActions, DialogContent, Button, Card, Chip, Stack, Checkbox, CardActions } from '@mui/material';
 
-import { fromDust } from 'src/utils/number';
+import { formatNumber, fromDust } from 'src/utils/number';
 import { formatUnitPrice } from 'src/utils/marketplace';
 
 import { toast } from 'src/components/snackbar';
@@ -45,6 +45,11 @@ export default function InscriptionItemCard({
   const account = useCurrentAddress();
   const market = useNetworkVariable('market');
   const { mutate: signAndExecuteTransaction, isPending } = useSignAndExecuteTransaction();
+  const [openDialog, setOpenDialog] = useState(false);
+  const [confirmData, setConfirmData] = useState({
+    price: '0',
+    quantity: 0,
+  });
 
   const price = useMemo(
     () =>
@@ -53,6 +58,62 @@ export default function InscriptionItemCard({
         .toString(),
     [toCoinBalanceInfo.decimals, item.quantity, item.unit_price]
   );
+
+  const handleBuyClick = () => {
+    if (!account?.genRoochAddress().toHexAddress()) {
+      return;
+    }
+
+    setConfirmData({
+      price,
+      quantity: Number(item.quantity),
+    });
+    setOpenDialog(true);
+  };
+
+  const handleConfirm = async () => {
+    if (!account?.genRoochAddress().toHexAddress()) {
+      return;
+    }
+    setOpenDialog(false);
+
+    const tx = new Transaction();
+    tx.callFunction({
+      target: `${market.orderBookAddress}::market_v2::buy`,
+      args: [
+        Args.objectId(market.tickInfo[tick].obj),
+        Args.u64(BigInt(item.order_id)),
+        Args.address(item.owner),
+        Args.bool(true),
+        Args.address(account.genRoochAddress().toStr()),
+      ],
+      typeArgs: [fromCoinBalanceInfo.coin_type, toCoinBalanceInfo.coin_type],
+    });
+
+    signAndExecuteTransaction(
+      {
+        transaction: tx,
+      },
+      {
+        async onSuccess(data) {
+          if (data.execution_info.status.type === 'executed') {
+            toast.success('Buy Success');
+            await onRefetchMarketData();
+          } else {
+            toast.error('Buy Failed');
+          }
+        },
+        onError(error) {
+          toast.error(String(error));
+        },
+      }
+    );
+  };
+
+  const handleCancel = () => {
+    setOpenDialog(false);
+  };
+
 
   return (
     <Card
@@ -64,7 +125,6 @@ export default function InscriptionItemCard({
         p: 1,
         cursor: selectMode ? 'pointer' : undefined,
         background: selectMode && selected ? grey[400] : undefined,
-        // color: secondary['main'],
       }}
       onClick={() => {
         if (
@@ -128,48 +188,7 @@ export default function InscriptionItemCard({
                 size="small"
                 color="primary"
                 fullWidth
-                onClick={() => {
-                  if (!account?.genRoochAddress().toHexAddress()) {
-                    return;
-                  }
-                  console.log(
-                    '🚀 ~ file: inscription-item-card.tsx:203 ~ item:',
-                    item,
-                    item.order_id,
-                    BigInt(item.order_id),
-                    Args.u64(BigInt(item.order_id))
-                  );
-                  const tx = new Transaction();
-                  tx.callFunction({
-                    target: `${market.orderBookAddress}::market_v2::buy`,
-                    args: [
-                      Args.objectId(market.tickInfo[tick].obj),
-                      Args.u64(BigInt(item.order_id)),
-                      Args.address(item.owner),
-                      Args.bool(true),
-                      Args.address(account.genRoochAddress().toStr()),
-                    ],
-                    typeArgs: [fromCoinBalanceInfo.coin_type, toCoinBalanceInfo.coin_type],
-                  });
-                  signAndExecuteTransaction(
-                    {
-                      transaction: tx,
-                    },
-                    {
-                      async onSuccess(data) {
-                        if (data.execution_info.status.type === 'executed') {
-                          toast.success('Buy Success');
-                          await onRefetchMarketData();
-                        } else {
-                          toast.error('Buy Failed');
-                        }
-                      },
-                      onError(error) {
-                        toast.error(String(error));
-                      },
-                    }
-                  );
-                }}
+                onClick={handleBuyClick}
               >
                 {!account?.genRoochAddress().toHexAddress()
                   ? 'Please connect wallet'
@@ -186,10 +205,6 @@ export default function InscriptionItemCard({
                 size="small"
                 onClick={() => {
                   // Cancel Order
-                  console.log(
-                    '🚀 ~ file: inscription-item-card.tsx:226 ~ fromCoinBalanceInfo:',
-                    fromCoinBalanceInfo
-                  );
                   const tx = new Transaction();
                   tx.callFunction({
                     target: `${market.orderBookAddress}::market_v2::cancel_order`,
@@ -225,6 +240,32 @@ export default function InscriptionItemCard({
           </Stack>
         </CardActions>
       )}
+
+      {/* Confirm Purchase */}
+      <Dialog open={openDialog} onClose={handleCancel}>
+        <DialogContent>
+          <p>
+            <strong>Balance Changes</strong>
+          </p>
+          <p style={{ color: 'green', margin: 0, textAlign: 'right' }}>
+            + {confirmData.quantity} {tick.toUpperCase()}
+          </p>
+          <p style={{ color: 'red', margin: 0, textAlign: 'right' }}>
+            - {new BigNumber(price).isNaN()
+            ? '--'
+            : formatNumber(fromDust(price, fromCoinBalanceInfo.decimals).toNumber())}{' '}
+            {fromCoinBalanceInfo.symbol}
+          </p>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCancel} color="primary" variant="outlined">
+            Cancel
+          </Button>
+          <Button onClick={handleConfirm} color="primary" variant="contained">
+            Confirm
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Card>
   );
 }
