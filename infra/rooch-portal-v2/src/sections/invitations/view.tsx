@@ -30,19 +30,16 @@ type inviterDataType = {
 };
 
 export function InvitationsView() {
-  const [inviterCA, inviterModule, inviterObj] = useNetworkVariable('inviterCA');
+  // const [inviterCA, inviterModule, inviterObj] = useNetworkVariable('inviterCA');
+  const inviter = useNetworkVariable('inviter');
   const currentAddress = useCurrentAddress();
   const tabs = useTabs('invitation_records');
   const [inviterData, setInviterData] = useState<inviterDataType>();
 
   const { data, refetch } = useRoochClientQuery('executeViewFunction', {
-    target: `${inviterCA}::${inviterModule}::invitation_user_record`,
+    target: `${inviter.address}::${inviter.module}::invitation_user_record`,
     args: [
-      Args.object({
-        address: inviterCA,
-        module: inviterModule,
-        name: inviterObj,
-      }),
+      Args.object(inviter.obj(inviter)),
       Args.address(currentAddress?.genRoochAddress().toHexAddress() || ''),
     ],
   });

@@ -22,16 +22,16 @@ import {
 import { toDust } from 'src/utils/number';
 
 import { secondary } from 'src/theme/core';
-import { SUI_DECIMALS } from 'src/config/trade';
-import { TESTNET_ORDERBOOK_PACKAGE } from 'src/config/constant';
 
-import { toast } from '../snackbar';
+import { toast } from 'src/components/snackbar';
+
 import InscriptionShopCard from './inscription-shop-card';
+import { useNetworkVariable } from '../../hooks/use-networks';
 
 export type CreateBidDialogProps = {
   open: boolean;
   tick: string;
-  floorPrice: number;
+  floorPrice?: string;
   fromCoinBalanceInfo: BalanceInfoView;
   toCoinBalanceInfo: BalanceInfoView;
   refreshBidList: () => Promise<void>;
@@ -47,11 +47,12 @@ export default function CreateBidDialog({
   refreshBidList,
   close,
 }: CreateBidDialogProps) {
-  const [bidAmount, setBidAmount] = useState('');
-  const [bidUnitPrice, setBidUnitPrice] = useState('');
-
+  const market = useNetworkVariable('market')
   const account = useCurrentAddress();
   const { mutate: signAndExecuteTransaction, isPending } = useSignAndExecuteTransaction();
+
+  const [bidAmount, setBidAmount] = useState('');
+  const [bidUnitPrice, setBidUnitPrice] = useState('');
 
   return (
     <Dialog
@@ -101,6 +102,7 @@ export default function CreateBidDialog({
         <TextField
           autoFocus
           fullWidth
+          autoComplete="off"
           type="number"
           InputProps={{
             endAdornment: (
@@ -123,6 +125,7 @@ export default function CreateBidDialog({
         <TextField
           autoFocus
           fullWidth
+          autoComplete="off"
           type="number"
           InputProps={{
             endAdornment: (
@@ -244,20 +247,26 @@ export default function CreateBidDialog({
               return;
             }
             const tx = new Transaction();
-
-            const unitPriceInMist = toDust(bidUnitPrice, SUI_DECIMALS);
+            console.log(
+              '🚀 ~ file: create-bid-dialog.tsx:297 ~ toCoinBalanceInfo:',
+              fromCoinBalanceInfo,
+              toCoinBalanceInfo
+            );
+            const unitPrice = new BigNumber(
+              toDust(bidUnitPrice, fromCoinBalanceInfo.decimals).toString()
+            )
+              .times(new BigNumber(10).pow(5))
+              .div(new BigNumber(10).pow(toCoinBalanceInfo.decimals).toNumber())
+              .toNumber();
 
             tx.callFunction({
-              target: `${TESTNET_ORDERBOOK_PACKAGE}::market_v2::create_bid`,
+              target: `${market.orderBookAddress}::market_v2::create_bid`,
               args: [
-                Args.objectId('0x156d9a5bfa4329f999115b5febde94eed4a37cde10637ad8eed1ba91e89e0bb7'),
-                Args.u64(unitPriceInMist),
+                Args.objectId(market.tickInfo[tick].obj),
+                Args.u64(BigInt(unitPrice)),
                 Args.u256(BigInt(toDust(bidAmount, toCoinBalanceInfo.decimals))),
               ],
-              typeArgs: [
-                '0x3::gas_coin::RGas',
-                '0x1d6f6657fc996008a1e43b8c13805e969a091560d4cea57b1db9f3ce4450d977::fixed_supply_coin::FSC',
-              ],
+              typeArgs: [fromCoinBalanceInfo.coin_type, toCoinBalanceInfo.coin_type],
             });
 
             signAndExecuteTransaction(
@@ -266,10 +275,13 @@ export default function CreateBidDialog({
               },
               {
                 async onSuccess(data) {
-                  // await refetchAddressOwnedInscription();
-                  toast.success('Create Bid Success');
-                  close();
-                  refreshBidList();
+                  if (data.execution_info.status.type === 'executed') {
+                    toast.success('Create Bid Success');
+                    close();
+                    refreshBidList();
+                  } else {
+                    toast.error('Create Bid Failed');
+                  }
                 },
                 onError(error) {
                   toast.error(String(error));

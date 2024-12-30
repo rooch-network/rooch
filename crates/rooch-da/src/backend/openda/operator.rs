@@ -48,8 +48,8 @@ impl OperatorConfig {
             ));
         }
         let namespace = backend_config.namespace.unwrap_or(genesis_namespace);
-        let mut map_config = backend_config.config;
-        check_map_config(scheme.clone(), &mut map_config)?;
+        let mut scheme_config = backend_config.config;
+        check_map_config(scheme.clone(), &mut scheme_config)?;
 
         let default_max_segment_size = match scheme {
             OpenDAScheme::Avail => DEFAULT_AVAIL_MAX_SEGMENT_SIZE,
@@ -66,7 +66,7 @@ impl OperatorConfig {
                 max_segment_size,
                 max_retries,
             },
-            map_config,
+            scheme_config,
         ))
     }
 }

@@ -61,11 +61,29 @@ pub fn native_decode(
         + (gas_params.per_byte.unwrap_or_else(InternalGasPerByte::zero)
             * NumBytes::new(encoded_input.as_bytes_ref().len() as u64));
 
-    let decoded = match general_purpose::STANDARD.decode(encoded_input.as_bytes_ref().to_vec()) {
-        Ok(bytes) => bytes,
+    let bytes_ref = encoded_input.as_bytes_ref();
+    let encoded_str = match std::str::from_utf8(&bytes_ref) {
+        Ok(s) => s,
         Err(_) => return Ok(NativeResult::err(cost, E_DECODE_FAILED)),
     };
 
+    let decoded =
+        if encoded_str.contains('+') || encoded_str.contains('/') || encoded_str.contains('=') {
+            match general_purpose::STANDARD.decode(encoded_str) {
+                Ok(bytes) => bytes,
+                Err(_) => return Ok(NativeResult::err(cost, E_DECODE_FAILED)),
+            }
+        } else {
+            let padding_needed = (4 - (encoded_str.len() % 4)) % 4;
+            let mut padded_bytes = Vec::with_capacity(encoded_str.len() + padding_needed);
+            padded_bytes.extend_from_slice(encoded_str.as_bytes());
+            padded_bytes.extend(std::iter::repeat(b'=').take(padding_needed));
+
+            match general_purpose::URL_SAFE.decode(&padded_bytes) {
+                Ok(bytes) => bytes,
+                Err(_) => return Ok(NativeResult::err(cost, E_DECODE_FAILED)),
+            }
+        };
     Ok(NativeResult::ok(cost, smallvec![Value::vector_u8(decoded)]))
 }
 

@@ -71,8 +71,10 @@ pub enum OpenDAScheme {
     // access_key_id
     // secret_access_key
     S3,
-    // Avail App Light Client, main config:
-    // endpoint
+    // Avail Fusion(TurboDA & Light Client),
+    // turbo_endpoint
+    // turbo_auth_token
+    // light_endpoint
     Avail,
     // Celestia, main config:
     // endpoint
@@ -262,12 +264,12 @@ pub enum DABackendConfigType {
 #[derive(Clone, Default, Debug, PartialEq, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
 #[serde(deny_unknown_fields)]
-/// Open DA provides ability to access various storage services
+/// Open DA provides ability to access various backends
 pub struct DABackendOpenDAConfig {
-    /// specifies the type of storage service to be used. 'gcs' with corresponding GCS server configuration, 's3' with corresponding S3 server configuration, etc
+    /// specifies the type of backend to be used. 'gcs' with corresponding GCS server configuration, 's3' with corresponding S3 server configuration, etc
     #[serde(default)]
     pub scheme: OpenDAScheme,
-    /// specifies the configuration of the storage service. 'gcs' with corresponding GCS server configuration, 's3' with corresponding S3 server configuration, etc.
+    /// specifies the configuration of the backend. 'gcs' with corresponding GCS server configuration, 's3' with corresponding S3 server configuration, etc.
     pub config: HashMap<String, String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// for fs backend:

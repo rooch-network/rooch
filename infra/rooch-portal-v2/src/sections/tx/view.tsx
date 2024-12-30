@@ -32,7 +32,7 @@ import { formatCoin } from 'src/utils/format-number';
 
 import { varAlpha } from 'src/theme/styles';
 import { DashboardContent } from 'src/layouts/dashboard';
-import { ROOCH_GAS_COIN_DECIMALS } from 'src/config/constant';
+import { GAS_COIN_DECIMALS } from 'src/config/constant';
 
 import { Iconify } from 'src/components/iconify';
 
@@ -260,7 +260,7 @@ export function TxView({ hash }: { hash: string }) {
                       <Box className="text-sm font-semibold">
                         {formatCoin(
                           Number(txDetail.execution_info.gas_used),
-                          ROOCH_GAS_COIN_DECIMALS,
+                          GAS_COIN_DECIMALS,
                           8
                         )}{' '}
                         RGAS

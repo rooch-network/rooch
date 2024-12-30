@@ -29,9 +29,7 @@ export function useResponsive(query: Query, start?: Value, end?: Value): UseResp
     }
   }, [theme, query, start, end]);
 
-  const mediaQueryResult = useMediaQuery(getQuery);
-
-  return mediaQueryResult;
+  return useMediaQuery(getQuery);
 }
 
 type UseWidthReturn = Breakpoint;

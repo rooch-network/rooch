@@ -20,6 +20,9 @@ export function createTheme(settings: SettingsState): Theme {
       ...typography,
       fontFamily: setFont(settings.fontFamily),
     },
+    textField: {
+      autoComplete: 'off',
+    },
     cssVarPrefix: '',
     shouldSkipGeneratingVar,
   };
