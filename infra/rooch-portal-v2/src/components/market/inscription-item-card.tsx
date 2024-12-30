@@ -75,6 +75,13 @@ export default function InscriptionItemCard({
     if (!account?.genRoochAddress().toHexAddress()) {
       return;
     }
+    console.log(
+      '🚀 ~ file: inscription-item-card.tsx:203 ~ item:',
+      item,
+      item.order_id,
+      BigInt(item.order_id),
+      Args.u64(BigInt(item.order_id))
+    );
     setOpenDialog(false);
 
     const tx = new Transaction();
@@ -205,6 +212,10 @@ export default function InscriptionItemCard({
                 size="small"
                 onClick={() => {
                   // Cancel Order
+                  console.log(
+                    '🚀 ~ file: inscription-item-card.tsx:226 ~ fromCoinBalanceInfo:',
+                    fromCoinBalanceInfo
+                  );
                   const tx = new Transaction();
                   tx.callFunction({
                     target: `${market.orderBookAddress}::market_v2::cancel_order`,
