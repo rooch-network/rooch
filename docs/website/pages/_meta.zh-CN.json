@@ -31,6 +31,12 @@
     "href": "https://portal.rooch.network/",
     "newWindow": true
   },
+  "apps": {
+    "title": "Apps",
+    "type": "page",
+    "href": "https://portal.rooch.network/apps",
+    "newWindow": true
+  },
   "404": {
     "type": "page",
     "theme": {
@@ -64,6 +70,6 @@
       "timestamp": false,
       "typesetting": "article"
     },
-    "title":"Archives"
+    "title": "Archives"
   }
 }

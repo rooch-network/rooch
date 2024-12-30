@@ -106,7 +106,7 @@ export default function MintTableCard({
   isStaticData?: boolean;
 }) {
   const client = useRoochClient();
-  const addresses = useNetworkVariable('mintAddress');
+  const addresses = useNetworkVariable('mint').address;
 
   const [tokenList, setTokenList] = useState<MintType[]>(isStaticData ? COMING_SOON_TOKENS : []);
 

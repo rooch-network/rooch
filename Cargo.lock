@@ -10140,6 +10140,7 @@ dependencies = [
  "rooch-integration-test-runner",
  "rooch-key",
  "rooch-oracle",
+ "rooch-pipeline-processor",
  "rooch-rpc-api",
  "rooch-rpc-client",
  "rooch-rpc-server",

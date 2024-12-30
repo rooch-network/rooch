@@ -18,7 +18,7 @@ import { Scrollbar } from '../../../components/scrollbar';
 import { getUTCOffset } from '../../../utils/format-time';
 import { formatCoin } from '../../../utils/format-number';
 import { useNetworkVariable } from '../../../hooks/use-networks';
-import { ROOCH_GAS_COIN_DECIMALS } from '../../../config/constant';
+import { GAS_COIN_DECIMALS } from '../../../config/constant';
 import TableSkeleton from '../../../components/skeleton/table-skeleton';
 import { TableNoData, TableHeadCustom } from '../../../components/table';
 
@@ -44,7 +44,8 @@ export function InvitationLotteryList({
   const [opening, setOpening] = useState(false);
   const [ticketOption, setTicketOption] = useState(1);
   const session = useCurrentSession();
-  const [inviterCA, inviterModule, inviterObj] = useNetworkVariable('inviterCA');
+  // const [inviterCA, inviterModule, inviterObj] = useNetworkVariable('inviterCA');
+  const inviterCfg = useNetworkVariable('inviter');
 
   const fetch = useCallback(() => {
     setLoading(true);
@@ -86,13 +87,9 @@ export function InvitationLotteryList({
     setOpening(true);
     const tx = new Transaction();
     tx.callFunction({
-      target: `${inviterCA}::${inviterModule}::lottery`,
+      target: `${inviterCfg.address}::${inviterCfg.module}::lottery`,
       args: [
-        Args.object({
-          address: inviterCA,
-          module: inviterModule,
-          name: inviterObj,
-        }),
+        Args.object(inviterCfg.obj(inviterCfg)),
         Args.u64(BigInt(ticketOption === 0 ? ticket : ticketOption)),
       ],
     });
@@ -167,7 +164,7 @@ export function InvitationLotteryList({
                     </TableCell>
                     {item.reward && (
                       <TableCell className="!text-xs">
-                        {formatCoin(Number(item.reward), ROOCH_GAS_COIN_DECIMALS, 6)}
+                        {formatCoin(Number(item.reward), GAS_COIN_DECIMALS, 6)}
                       </TableCell>
                     )}
                   </TableRow>

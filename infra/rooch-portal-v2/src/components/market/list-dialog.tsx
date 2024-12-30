@@ -4,17 +4,15 @@ import { useState } from 'react';
 import BigNumber from 'bignumber.js';
 import PuffLoader from 'react-spinners/PuffLoader';
 import { Args, Transaction } from '@roochnetwork/rooch-sdk';
-import { useSignAndExecuteTransaction } from '@roochnetwork/rooch-sdk-kit';
+import { SessionKeyGuard, useSignAndExecuteTransaction } from '@roochnetwork/rooch-sdk-kit';
 
 import { LoadingButton } from '@mui/lab';
 import { grey } from '@mui/material/colors';
 import {
-  Box,
   Card,
   Stack,
   Dialog,
   Button,
-  Tooltip,
   TextField,
   Typography,
   DialogTitle,
@@ -23,15 +21,16 @@ import {
   InputAdornment,
 } from '@mui/material';
 
-import { toDust, fromDust, formatNumber } from 'src/utils/number';
+import { toDust, fromDust, formatNumber, formatCoin } from 'src/utils/number';
 
 import { warning, secondary } from 'src/theme/core';
-import { TESTNET_ORDERBOOK_PACKAGE } from 'src/config/constant';
 
 import { toast } from 'src/components/snackbar';
 
-import { Iconify } from '../iconify';
 import InscriptionCard from './inscription-card';
+import { useNetworkVariable } from '../../hooks/use-networks';
+import { formatUnitPrice } from '../../utils/marketplace';
+import { GAS_COIN_DECIMALS } from '../../config/constant';
 
 export default function ListDialog({
   listDialogOpen,
@@ -43,17 +42,67 @@ export default function ListDialog({
   close,
 }: {
   listDialogOpen: boolean;
-  floorPrice: string;
+  floorPrice?: string;
   tick: string;
   fromCoinBalanceInfo: BalanceInfoView;
   toCoinBalanceInfo: BalanceInfoView;
   refreshList: () => Promise<void>;
   close: () => void;
 }) {
+  const market = useNetworkVariable('market')
   const { mutate: signAndExecuteTransaction, isPending } = useSignAndExecuteTransaction();
 
   const [listPrice, setListPrice] = useState('');
   const [listAmount, setListAmount] = useState('');
+
+  const handleList = () => {
+    if (!fromCoinBalanceInfo || !toCoinBalanceInfo) {
+      return;
+    }
+    const tx = new Transaction();
+
+    tx.callFunction({
+      target: `${market.orderBookAddress}::market_v2::list`,
+      args: [
+        Args.objectId(market.tickInfo[tick].obj),
+        Args.u256(
+          BigInt(
+            new BigNumber(
+              toDust(listAmount, toCoinBalanceInfo.decimals).toString()
+            ).toNumber()
+          )
+        ),
+        Args.u64(
+          BigInt(
+            new BigNumber(toDust(listPrice, fromCoinBalanceInfo.decimals).toString())
+              .times(new BigNumber(10).pow(5))
+              .div(new BigNumber(10).pow(toCoinBalanceInfo.decimals).toNumber())
+              .toFixed()
+          )
+        ),
+      ],
+      typeArgs: [fromCoinBalanceInfo.coin_type, toCoinBalanceInfo.coin_type],
+    });
+    signAndExecuteTransaction(
+      {
+        transaction: tx,
+      },
+      {
+        async onSuccess(data) {
+          if (data.execution_info.status.type === 'executed') {
+            toast.success('List success');
+            close();
+            refreshList();
+          } else {
+            toast.error('List Failed');
+          }
+        },
+        onError(error) {
+          toast.error(String(error));
+        },
+      }
+    )
+  }
 
   return (
     <Dialog
@@ -86,7 +135,7 @@ export default function ListDialog({
               tokenBalance={formatNumber(
                 fromDust(toCoinBalanceInfo.balance, toCoinBalanceInfo.decimals).toNumber()
               )}
-            />
+             />
           </Card>
         )}
 
@@ -96,6 +145,7 @@ export default function ListDialog({
           autoFocus
           fullWidth
           type="number"
+          autoComplete="off"
           InputProps={{
             endAdornment: (
               <InputAdornment position="end">
@@ -115,6 +165,7 @@ export default function ListDialog({
           autoFocus
           fullWidth
           type="number"
+          autoComplete="off"
           margin="dense"
           value={listAmount}
           onChange={(e) => {
@@ -147,7 +198,9 @@ export default function ListDialog({
                   color: secondary.light,
                 }}
               >
-                {floorPrice}
+                {new BigNumber(floorPrice).isNaN()
+                  ? '--'
+                  : formatNumber(fromDust(floorPrice, fromCoinBalanceInfo.decimals).toNumber())}
               </span>{' '}
               {fromCoinBalanceInfo.symbol}/{toCoinBalanceInfo.symbol}
             </Typography>
@@ -174,38 +227,6 @@ export default function ListDialog({
               </span>{' '}
               {fromCoinBalanceInfo.symbol}
             </Typography>
-            <Typography
-              sx={{
-                color: grey[500],
-                fontSize: '0.875rem',
-                display: 'flex',
-                alignItems: 'center',
-              }}
-            >
-              Fee: 2%{' '}
-              <Tooltip
-                title={
-                  <Stack
-                    sx={{
-                      fontSize: '0.75rem',
-                    }}
-                  >
-                    <Box>50% Market Fee</Box>
-                    <Box>25% Community Fee</Box>
-                    <Box>12.5% Burn Fee (Easter egg)</Box>
-                    <Box>12.5% Locked in Inscription</Box>
-                  </Stack>
-                }
-              >
-                <Iconify
-                  icon="solar:question-circle-bold"
-                  width={16}
-                  sx={{
-                    ml: 1,
-                  }}
-                />
-              </Tooltip>
-            </Typography>
           </Stack>
         )}
       </DialogContent>
@@ -214,64 +235,19 @@ export default function ListDialog({
         <Button onClick={close} variant="outlined" color="inherit">
           Cancel
         </Button>
-        <LoadingButton
-          // loading={isPending || isLoadingUserInscription}
-          disabled={
-            new BigNumber(listPrice).times(listAmount || 0).isNaN() ||
-            new BigNumber(listPrice).isNaN() ||
-            new BigNumber(listPrice).isZero()
-            // (listItem && Number(listItem.data.content.fields.amount) < 10000)
-          }
-          onClick={() => {
-            if (!fromCoinBalanceInfo || !toCoinBalanceInfo) {
-              return;
+        <SessionKeyGuard onClick={handleList}>
+          <LoadingButton
+            loading={isPending}
+            disabled={
+              new BigNumber(listPrice).times(listAmount || 0).isNaN() ||
+              new BigNumber(listPrice).isNaN() ||
+              new BigNumber(listPrice).isZero()
             }
-            const tx = new Transaction();
-
-            tx.callFunction({
-              target: `${TESTNET_ORDERBOOK_PACKAGE}::market_v2::list`,
-              args: [
-                Args.objectId('0x156d9a5bfa4329f999115b5febde94eed4a37cde10637ad8eed1ba91e89e0bb7'),
-                Args.u256(
-                  BigInt(
-                    new BigNumber(
-                      toDust(listAmount, toCoinBalanceInfo.decimals).toString()
-                    ).toNumber()
-                  )
-                ),
-                Args.u64(
-                  BigInt(
-                    new BigNumber(
-                      toDust(listPrice, fromCoinBalanceInfo.decimals).toString()
-                    ).toFixed()
-                  )
-                ),
-              ],
-              typeArgs: [
-                '0x3::gas_coin::RGas',
-                '0x1d6f6657fc996008a1e43b8c13805e969a091560d4cea57b1db9f3ce4450d977::fixed_supply_coin::FSC',
-              ],
-            });
-            signAndExecuteTransaction(
-              {
-                transaction: tx,
-              },
-              {
-                async onSuccess(data) {
-                  toast.success('List success');
-                  close();
-                  refreshList();
-                },
-                onError(error) {
-                  toast.error(String(error));
-                },
-              }
-            );
-          }}
-          variant="contained"
-        >
-          Submit
-        </LoadingButton>
+            variant="contained"
+          >
+            Submit
+          </LoadingButton>
+        </SessionKeyGuard>
       </DialogActions>
     </Dialog>
   );
