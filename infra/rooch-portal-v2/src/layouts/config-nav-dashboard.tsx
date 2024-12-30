@@ -107,5 +107,5 @@ export const navData = [
       },
     ].filter((item) => !(isMainNetwork() && item.title === 'Apps')),
   },
-]
+].filter((item) => !(isMainNetwork() && item.subheader === 'Tokens'));
 // .filter((item) => !(isMainNetwork() && (item.subheader === 'Tokens' || item.subheader === 'Trade')));
