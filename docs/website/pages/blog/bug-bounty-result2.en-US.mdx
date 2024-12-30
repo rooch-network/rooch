@@ -1,0 +1,63 @@
+---
+title: "Rooch Network Bug Bounty Phase II Results Announcement"
+author: omnihand
+category: News
+date: 2024/12/30
+description: ''
+image: '/blog/bug-bounty/bounty-result-en-2.png'
+---
+
+import PostHeader from '/components/blog/postHeader'
+
+<PostHeader />
+
+![](/blog/bug-bounty/bounty-result-en-2.png)
+
+## Rooch Network Bug Bounty Phase II Results Announcement
+
+The second phase of Rooch Network’s one-month Bug Bounty program has successfully concluded! We sincerely thank all the developers and security experts who participated in this event. Your support and contributions have made Rooch Network’s pre-mainnet operations safer and more robust. Below are the detailed results of this round of the Bug Bounty program:
+
+## Vulnerabilities Details
+
+A total of **4 valid vulnerabilities** were identified in this round, including **2 high-severity issues** and **2 medium-severity issues**, as detailed below:
+
+### High Severity Vulnerabilities:
+
+1. [Querying multiple identical objects simultaneously leading to rapid memory exhaustion](https://github.com/rooch-network/rooch/security/advisories/GHSA-4382-rfr8-9698)
+    
+    Reported by: [m4sterchain](https://github.com/m4sterchain)
+    
+2. [Excessive objects in bytecode causing process memory exhaustion](https://github.com/rooch-network/rooch/security/advisories/GHSA-xfmq-crqf-429m)
+    
+    Reported by: [m4sterchain](https://github.com/m4sterchain)
+
+### Medium Severity Vulnerabilities:
+
+1. [Incorrect value updates causing inconsistent states in grow_information.move](https://github.com/rooch-network/rooch/security/advisories/GHSA-f737-542f-mjvg)
+    
+    Reported by: [nathanogaga118](https://github.com/nathanogaga118)
+    
+2. [Passing an oversized maxInactiveInterval causing integer overflow](https://github.com/rooch-network/rooch/security/advisories/GHSA-v477-4gc2-j6v4)
+    
+    Reported by: [baicaiyihao](https://github.com/baicaiyihao)
+    
+
+Details of the reports, including IDs and Github profiles, are available here:
+
+👉 [Bug Bounty Phase 2 Details](https://github.com/rooch-network/rooch/issues/3113)
+
+## Rewards Distribution
+
+According to the [Bug Bounty Phase 2 Rules](https://rooch.network/blog/bug-bounty2), rewards will be distributed during the TGE (Token Generation Event). The total reward pool is **12,000 U** worth of Rooch Tokens, distributed as follows:
+
+| Reporter                                            | Vulnerability Type  | Rewards               |
+|-----------------------------------------------------|---------------------|-----------------------|
+| [m4sterchain](https://github.com/m4sterchain)       | High Severity * 2   | 10,000 U Rooch Tokens |
+| [nathanogaga118](https://github.com/nathanogaga118) | Medium Severity * 1 | 1,000 U Rooch Tokens  |
+| [baicaiyihao](https://github.com/baicaiyihao)       | Medium Severity * 1 | 1,000 U Rooch Tokens  |
+
+## Concluding Words
+
+This Bug Bounty round has significantly enhanced the security of Rooch Network and reaffirmed our commitment to developing alongside the community. Moving forward, we will continue to improve network performance and launch more Bug Bounty programs, working together with developers to create a stronger Bitcoin ecosystem.
+
+We extend our heartfelt thanks to all contributors and supporters for your efforts and trust! Let’s continue building a more secure and efficient Rooch Network together.
