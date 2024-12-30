@@ -39,3 +39,4 @@ sdk/typescript/src/generated/
 
 # pnpm store
 .pnpm-store/
+pnpm-lock.yaml
