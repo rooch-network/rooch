@@ -6,7 +6,6 @@ module orderbook::market_v2 {
     use std::signer::address_of;
     use std::string;
     use std::string::String;
-    use std::u64;
     use std::vector;
     use std::vector::{length, zip};
     
