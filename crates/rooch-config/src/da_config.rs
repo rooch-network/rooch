@@ -300,6 +300,8 @@ pub struct DABackendConfig {
 }
 
 impl DABackendConfig {
+    const DEFAULT_SUBMIT_STRATEGY: DASubmitStrategy = DASubmitStrategy::Number(1);
+
     pub fn calculate_submit_threshold(&mut self) -> usize {
         self.adjust_submit_strategy(); // Make sure submit_strategy is adjusted before calling this function.
 
@@ -308,13 +310,14 @@ impl DABackendConfig {
             Some(DASubmitStrategy::All) => backends_count,
             Some(DASubmitStrategy::Quorum) => backends_count / 2 + 1,
             Some(DASubmitStrategy::Number(number)) => number,
-            None => backends_count, // Default to 'All' if submit_strategy is None
+            None => 1, // Default to 1
         }
     }
 
     fn adjust_submit_strategy(&mut self) {
-        // Set the default strategy to All if it's None.
-        let strategy = self.submit_strategy.get_or_insert(DASubmitStrategy::All);
+        let strategy = self
+            .submit_strategy
+            .get_or_insert(Self::DEFAULT_SUBMIT_STRATEGY);
 
         let backends_count = self.backends.len();
 
