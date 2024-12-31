@@ -19,7 +19,10 @@ module gas_faucet::gas_faucet {
 
     const INIT_GAS_AMOUNT: u256 = 5000000_00000000;
     const ONE_RGAS: u256 = 1_00000000;
+    const FAUCET_RGAS_PER_USER: u256 = 50_00000000; 
 
+    //0.0001 BTC
+    const SAT_LEVEL_ZERO: u64 = 1000;
     //0.01 BTC
     const SAT_LEVEL_ONE: u64 = 1000000;
     //0.1 BTC
@@ -114,7 +117,8 @@ module gas_faucet::gas_faucet {
       let faucet = object::borrow(faucet_obj);
       assert!(faucet.is_open, ErrorFaucetNotOpen);
 
-      if (!faucet.allow_repeat && table::contains(&faucet.claim_records, claimer)) {
+      let claimed_rgas_amount = *table::borrow_with_default(&faucet.claim_records, claimer, &0u256);
+      if (!faucet.allow_repeat && claimed_rgas_amount >= FAUCET_RGAS_PER_USER) {
         abort ErrorAlreadyClaimed
       };
       
@@ -125,6 +129,9 @@ module gas_faucet::gas_faucet {
       let claim_rgas_amount = Self::sat_amount_to_rgas(total_sat_amount);
       if (claim_rgas_amount == 0) {
         claim_rgas_amount = ONE_RGAS;
+      };
+      if (claim_rgas_amount > claimed_rgas_amount) {
+        claim_rgas_amount = claim_rgas_amount - claimed_rgas_amount;
       };
       let remaining_rgas_amount = coin_store::balance(&faucet.rgas_store);
       if (claim_rgas_amount > remaining_rgas_amount) {
@@ -177,12 +184,10 @@ module gas_faucet::gas_faucet {
     fun sat_amount_to_rgas(sat_amount: u64): u256{
       if (sat_amount == 0) {
         0
-      }else if(sat_amount <= SAT_LEVEL_ONE){
+      }else if(sat_amount <= SAT_LEVEL_ZERO){
         ONE_RGAS
-      }else if(sat_amount <= SAT_LEVEL_TWO){
-        2 * ONE_RGAS
       }else{
-        3 * ONE_RGAS
+        FAUCET_RGAS_PER_USER
       }
     }
 
