@@ -51,7 +51,7 @@ impl OpenDAAdapterConfig {
         let mut scheme_config = open_da_config.config.clone();
         check_scheme_config(scheme.clone(), &mut scheme_config, namespace.clone())?;
 
-        let (default_max_segment_size, default_max_retires) = match scheme {
+        let (default_max_segment_size, default_max_retries) = match scheme {
             OpenDAScheme::Avail => (DEFAULT_AVAIL_MAX_SEGMENT_SIZE, DEFAULT_AVAIL_MAX_RETRIES),
             OpenDAScheme::Celestia => (
                 DEFAULT_CELESTIA_MAX_SEGMENT_SIZE,
@@ -59,7 +59,7 @@ impl OpenDAAdapterConfig {
             ),
             _ => (DEFAULT_MAX_SEGMENT_SIZE, DEFAULT_MAX_RETRY_TIMES),
         };
-        let max_retries = open_da_config.max_retires.unwrap_or(default_max_retires);
+        let max_retries = open_da_config.max_retries.unwrap_or(default_max_retries);
         let max_segment_size = open_da_config
             .max_segment_size
             .unwrap_or(default_max_segment_size) as usize;

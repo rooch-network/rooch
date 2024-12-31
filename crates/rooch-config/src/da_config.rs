@@ -48,7 +48,7 @@ impl FromStr for DASubmitStrategy {
                 if let Ok(n) = s.parse::<usize>() {
                     Ok(DASubmitStrategy::Number(n))
                 } else {
-                    Err(format!("invalid da server submit strategy: {}", s))
+                    Err(format!("invalid da submit strategy: {}", s))
                 }
             }
         }
@@ -381,7 +381,7 @@ pub struct DABackendOpenDAConfig {
     /// - If not set, the backend implementation will determine the default number of retries.
     /// - This configuration can help fine-tune the reliability of segment submission in case of transient errors.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub max_retires: Option<usize>,
+    pub max_retries: Option<usize>,
 }
 
 /// Derives a namespace from the genesis hash for the DA backend.
@@ -409,14 +409,14 @@ mod tests {
                     config: HashMap::new(),
                     namespace: None,
                     max_segment_size: None,
-                    max_retires: None,
+                    max_retries: None,
                 }),
                 DABackendConfigType::OpenDa(DABackendOpenDAConfig {
                     scheme: OpenDAScheme::Fs,
                     config: HashMap::new(),
                     namespace: None,
                     max_segment_size: None,
-                    max_retires: None,
+                    max_retries: None,
                 }),
             ],
         };
@@ -432,7 +432,7 @@ mod tests {
         assert_eq!(da_backend_config.calculate_submit_threshold(), 2);
 
         da_backend_config.submit_strategy = None;
-        assert_eq!(da_backend_config.calculate_submit_threshold(), 2);
+        assert_eq!(da_backend_config.calculate_submit_threshold(), 1);
     }
 
     #[test]
@@ -452,7 +452,7 @@ mod tests {
             .collect(),
             namespace: None,
             max_segment_size: None,
-            max_retires: None,
+            max_retries: None,
         };
         let exp_celestia_config = DABackendOpenDAConfig {
             scheme: OpenDAScheme::Celestia,
@@ -466,14 +466,14 @@ mod tests {
                 "000000000000000000000000000000000000000102030405060708090a".to_string(),
             ),
             max_segment_size: None,
-            max_retires: None,
+            max_retries: None,
         };
         let exp_fs_config = DABackendOpenDAConfig {
             scheme: OpenDAScheme::Fs,
             config: HashMap::new(),
             namespace: None,
             max_segment_size: None,
-            max_retires: None,
+            max_retries: None,
         };
         let exp_da_config = DAConfig {
             da_backend: Some(DABackendConfig {
