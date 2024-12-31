@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 module orderbook::market_v2 {
     use std::option;
-    use std::option::{Option, is_some, destroy_none};
+    use std::option::{Option, is_some, destroy_none, none, some};
+    use std::signer::address_of;
     use std::string;
     use std::string::String;
     use std::vector;
@@ -28,6 +29,12 @@ module orderbook::market_v2 {
     };
     use orderbook::critbit;
     use app_admin::admin::AdminCap;
+    use moveos_std::event::emit;
+    #[test_only]
+    use std::u64;
+
+    #[test_only]
+    use rooch_framework::account::create_account_for_testing;
 
     const DEPLOYER: address = @orderbook;
 
@@ -41,6 +48,8 @@ module orderbook::market_v2 {
     const MIN_BID_ORDER_ID: u64 = 1;
     const MIN_ASK_ORDER_ID: u64 = 1 << 63;
 
+    const UNIT_PRICE_SCALE: u256 = 100000;
+
     const ErrorWrongVersion: u64 = 0;
     const ErrorWrongPaused: u64 = 1;
     const ErrorInputCoin: u64 = 2;
@@ -52,6 +61,8 @@ module orderbook::market_v2 {
     const ErrorUnauthorizedCancel: u64 = 8;
     const ErrorOrderLength: u64 = 9;
     const ErrorDeprecated: u64 = 10;
+    const ErrorInvalidAmount: u64 = 11;
+    const ErrorQuantityTooLow: u64 = 12;
 
 
     /// listing info in the market
@@ -125,6 +136,19 @@ module orderbook::market_v2 {
         market_info: LinkedTable<String, ObjectID>,
     }
 
+
+    struct OrderEvent<phantom BaseAsset: key + store, phantom QuoteAsset: key + store> has copy, drop {
+        order_id: u64,
+        unit_price: u64,
+        quantity: u256,
+        owner: address,
+        timestamp: u64,
+        // 0 is list, 1 is create bid, 2 is cancel bid, 3 is cancel list, 4 is buy, 5 is accept bid
+        order_type: u8
+    }
+
+
+
     fun init() {
         let market_house = MarketplaceHouse {
             market_info: linked_table::new(),
@@ -143,7 +167,7 @@ module orderbook::market_v2 {
             version: VERSION,
             bids: critbit::new(),
             asks: critbit::new(),
-            // Order id of the next bid order, starting from 0.
+            // Order id of the next bid order, starting from 1.
             next_bid_order_id: MIN_BID_ORDER_ID,
             // Order id of the next ask order, starting from 1<<63.
             next_ask_order_id: MIN_ASK_ORDER_ID,
@@ -178,18 +202,19 @@ module orderbook::market_v2 {
     ) {
         let coin= account_coin_store::withdraw<QuoteAsset>(signer, quantity);
         let market = object::borrow_mut(market_obj);
-        assert!(market.version == VERSION, ErrorWrongVersion);
+        // assert!(market.version == VERSION, ErrorWrongVersion);
         assert!(market.is_paused == false, ErrorWrongPaused);
         let order_id = market.next_ask_order_id;
         market.next_ask_order_id = market.next_ask_order_id + 1;
         // TODO here maybe wrap to u512?
         // let price = (unit_price as u256) * quantity;
         assert!(unit_price > 0, ErrorPriceTooLow);
+        assert!(quantity > 0, ErrorQuantityTooLow);
         let asks = Order {
             order_id,
             unit_price,
             quantity,
-            owner: sender(),
+            owner: address_of(signer),
             is_bid: false,
         };
         coin_store::deposit(&mut market.quote_asset, coin);
@@ -203,11 +228,18 @@ module orderbook::market_v2 {
         let tick_level = critbit::borrow_mut_leaf_by_index(&mut market.asks, index);
         linked_table::push_back(&mut tick_level.open_orders, order_id, asks);
         //
-        if (!table::contains(&market.user_order_info, sender())) {
-            table::add(&mut market.user_order_info, sender(), linked_table::new());
+        if (!table::contains(&market.user_order_info, address_of(signer))) {
+            table::add(&mut market.user_order_info, address_of(signer), linked_table::new());
         };
-        linked_table::push_back(table::borrow_mut(&mut market.user_order_info, sender()), order_id, unit_price);
-
+        linked_table::push_back(table::borrow_mut(&mut market.user_order_info, address_of(signer)), order_id, unit_price);
+        emit(OrderEvent<BaseAsset, QuoteAsset> {
+            order_id,
+            unit_price,
+            quantity,
+            owner: address_of(signer),
+            timestamp: now_milliseconds(),
+            order_type: 0
+        })
     }
 
     public entry fun create_bid<BaseAsset: key + store, QuoteAsset: key + store>(
@@ -217,12 +249,12 @@ module orderbook::market_v2 {
         quantity: u256,
     ) {
         let market = object::borrow_mut(market_obj);
-        assert!(market.version == VERSION, ErrorWrongVersion);
+        // assert!(market.version == VERSION, ErrorWrongVersion);
         assert!(market.is_paused == false, ErrorWrongPaused);
-        assert!(quantity > 0, ErrorWrongCreateBid);
+        assert!(quantity > 0, ErrorQuantityTooLow);
         assert!(unit_price > 0, ErrorWrongCreateBid);
         // TODO here maybe wrap to u512?
-        let price = (unit_price as u256) * quantity;
+        let price = (unit_price as u256) * quantity / UNIT_PRICE_SCALE;
         let paid = account_coin_store::withdraw<BaseAsset>(signer, price);
         let order_id = market.next_bid_order_id;
         market.next_bid_order_id = market.next_bid_order_id + 1;
@@ -230,7 +262,7 @@ module orderbook::market_v2 {
             order_id,
             unit_price,
             quantity,
-            owner: sender(),
+            owner: address_of(signer),
             is_bid: true,
         };
         coin_store::deposit(&mut market.base_asset, paid);
@@ -244,10 +276,18 @@ module orderbook::market_v2 {
         };
         let tick_level = critbit::borrow_mut_leaf_by_index(&mut market.bids, index);
         linked_table::push_back(&mut tick_level.open_orders, order_id, bid);
-        if (!table::contains(&market.user_order_info, sender())) {
-            table::add(&mut market.user_order_info, sender(), linked_table::new());
+        if (!table::contains(&market.user_order_info, address_of(signer))) {
+            table::add(&mut market.user_order_info, address_of(signer), linked_table::new());
         };
-        linked_table::push_back(table::borrow_mut(&mut market.user_order_info, sender()), order_id, unit_price);
+        linked_table::push_back(table::borrow_mut(&mut market.user_order_info, address_of(signer)), order_id, unit_price);
+        emit(OrderEvent<BaseAsset, QuoteAsset> {
+            order_id,
+            unit_price,
+            quantity,
+            owner: address_of(signer),
+            timestamp: now_milliseconds(),
+            order_type: 1
+        })
     }
 
     ///Cancel the listing of inscription
@@ -257,7 +297,7 @@ module orderbook::market_v2 {
     ) {
         //Get the list from the collection
         let market = object::borrow_mut(market_obj);
-        assert!(market.version == VERSION, ErrorWrongVersion);
+        // assert!(market.version == VERSION, ErrorWrongVersion);
 
         let usr_open_orders = table::borrow_mut(&mut market.user_order_info, sender());
         let tick_price = *linked_table::borrow(usr_open_orders, order_id);
@@ -273,10 +313,26 @@ module orderbook::market_v2 {
         );
         if (is_bid) {
             // TODO here maybe wrap to u512?
-            let total_balance = (order.unit_price as u256) * order.quantity;
-            account_coin_store::deposit(sender(), coin_store::withdraw(&mut market.base_asset, total_balance))
+            let total_balance = (order.unit_price as u256) * order.quantity / UNIT_PRICE_SCALE;
+            account_coin_store::deposit(sender(), coin_store::withdraw(&mut market.base_asset, total_balance));
+            emit(OrderEvent<BaseAsset, QuoteAsset> {
+                order_id,
+                unit_price: order.unit_price,
+                quantity: order.quantity,
+                owner: sender(),
+                timestamp: now_milliseconds(),
+                order_type: 2
+            })
         }else {
-            account_coin_store::deposit(sender(), coin_store::withdraw(&mut market.quote_asset, order.quantity))
+            account_coin_store::deposit(sender(), coin_store::withdraw(&mut market.quote_asset, order.quantity));
+            emit(OrderEvent<BaseAsset, QuoteAsset> {
+                order_id,
+                unit_price: order.unit_price,
+                quantity: order.quantity,
+                owner: sender(),
+                timestamp: now_milliseconds(),
+                order_type: 3
+            })
         }
     }
 
@@ -319,7 +375,7 @@ module orderbook::market_v2 {
     ): Option<Coin<QuoteAsset>> {
         let market = object::borrow_mut(market_obj);
         assert!(market.is_paused == false, ErrorWrongPaused);
-        assert!(market.version == VERSION, ErrorWrongVersion);
+        // assert!(market.version == VERSION, ErrorWrongVersion);
         let usr_open_orders = table::borrow_mut(&mut market.user_order_info, order_owner);
         let tick_price = *linked_table::borrow(usr_open_orders, order_id);
         let (tick_exists, tick_index) = find_leaf(&market.asks, tick_price);
@@ -330,7 +386,7 @@ module orderbook::market_v2 {
         assert!(tick_exists, ErrorInvalidOrderId);
         let order = remove_order(&mut market.asks, usr_open_orders, tick_index, order_id, order_owner);
         // TODO here maybe wrap to u512?
-        let total_price = order.quantity * (order.unit_price as u256);
+        let total_price = order.quantity * (order.unit_price as u256) / UNIT_PRICE_SCALE;
         let trade_coin = account_coin_store::withdraw<BaseAsset>(signer, total_price);
         let trade_info = &mut market.trade_info;
         trade_info.total_volume = trade_info.total_volume + total_price;
@@ -348,7 +404,116 @@ module orderbook::market_v2 {
         let trade_fee = total_price * market.fee / TRADE_FEE_BASE_RATIO;
         coin_store::deposit(&mut market.base_asset_trading_fees, coin::extract(&mut trade_coin, trade_fee));
         account_coin_store::deposit(order.owner, trade_coin);
+        emit(OrderEvent<BaseAsset, QuoteAsset> {
+            order_id,
+            unit_price: order.unit_price,
+            quantity: order.quantity,
+            owner: sender(),
+            timestamp: now_milliseconds(),
+            order_type: 4
+        });
         option::some(coin_store::withdraw(&mut market.quote_asset, order.quantity))
+
+    }
+
+
+    public entry fun buy_from_origin<BaseAsset: key + store, QuoteAsset: key + store>(
+        signer: &signer,
+        market_obj: &mut Object<Marketplace<BaseAsset, QuoteAsset>>,
+        order_id: u64,
+        amount: u256,
+        order_owner: address,
+        assert_order_exist: bool,
+        receiver: address
+    ){
+        let option_coin = do_buy_external<BaseAsset, QuoteAsset>(signer, market_obj, order_id, amount, order_owner, assert_order_exist, none());
+        if (is_some(&option_coin)) {
+            account_coin_store::deposit(receiver, option::extract(&mut option_coin))
+        };
+        destroy_none(option_coin)
+    }
+
+    public entry fun buy_from_distributor<BaseAsset: key + store, QuoteAsset: key + store>(
+        signer: &signer,
+        market_obj: &mut Object<Marketplace<BaseAsset, QuoteAsset>>,
+        order_id: u64,
+        amount: u256,
+        order_owner: address,
+        assert_order_exist: bool,
+        receiver: address,
+        distributor: address
+    ){
+        let option_coin = do_buy_external<BaseAsset, QuoteAsset>(signer, market_obj, order_id, amount, order_owner, assert_order_exist, some(distributor));
+        if (is_some(&option_coin)) {
+            account_coin_store::deposit(receiver, option::extract(&mut option_coin))
+        };
+        destroy_none(option_coin)
+    }
+
+
+    public fun do_buy_external<BaseAsset: key + store, QuoteAsset: key + store>(
+        signer: &signer,
+        market_obj: &mut Object<Marketplace<BaseAsset, QuoteAsset>>,
+        order_id: u64,
+        amount: u256,
+        order_owner: address,
+        assert_order_exist: bool,
+        distributor: Option<address>
+    ): Option<Coin<QuoteAsset>> {
+        let market = object::borrow_mut(market_obj);
+        assert!(market.is_paused == false, ErrorWrongPaused);
+        // assert!(market.version == VERSION, ErrorWrongVersion);
+        let usr_open_orders = table::borrow_mut(&mut market.user_order_info, order_owner);
+        let tick_price = *linked_table::borrow(usr_open_orders, order_id);
+        let (tick_exists, tick_index) = find_leaf(&market.asks, tick_price);
+        // Return non-existent orders to none instead of panic during bulk buying
+        if (!assert_order_exist && !tick_exists) {
+            return option::none()
+        };
+        assert!(tick_exists, ErrorInvalidOrderId);
+        assert!(amount > 0, ErrorQuantityTooLow);
+        let order = borrow_mut_order(&mut market.asks, usr_open_orders, tick_index, order_id, order_owner);
+        assert!(amount <= order.quantity, ErrorInvalidAmount);
+        // TODO here maybe wrap to u512?
+        let total_price = amount * (order.unit_price as u256) / UNIT_PRICE_SCALE;
+        let trade_coin = account_coin_store::withdraw<BaseAsset>(signer, total_price);
+        let trade_info = &mut market.trade_info;
+        trade_info.total_volume = trade_info.total_volume + total_price;
+        trade_info.txs = trade_info.txs + 1;
+        if (now_milliseconds() - trade_info.timestamp > 86400000) {
+            trade_info.yesterday_volume = trade_info.today_volume;
+            trade_info.today_volume = total_price;
+            trade_info.timestamp = now_milliseconds();
+        }else {
+            trade_info.today_volume = trade_info.today_volume + total_price;
+        };
+
+        // TODO here maybe wrap to u512?
+        // Here is trade fee is BaseAsset
+        let trade_fee = total_price * market.fee / TRADE_FEE_BASE_RATIO;
+        if (option::is_some(&distributor)){
+            let distributor_address = option::extract(&mut distributor);
+            let trade_fee_coin = coin::extract(&mut trade_coin, trade_fee);
+            let distributor_fee = trade_fee / 2;
+            account_coin_store::deposit(distributor_address, coin::extract(&mut trade_fee_coin, distributor_fee));
+            coin_store::deposit(&mut market.base_asset_trading_fees, trade_fee_coin);
+        }else{
+            coin_store::deposit(&mut market.base_asset_trading_fees, coin::extract(&mut trade_coin, trade_fee));
+        };
+        account_coin_store::deposit(order.owner, trade_coin);
+        emit(OrderEvent<BaseAsset, QuoteAsset> {
+            order_id,
+            unit_price: order.unit_price,
+            quantity: order.quantity,
+            owner: sender(),
+            timestamp: now_milliseconds(),
+            order_type: 4
+        });
+        order.quantity = order.quantity - amount;
+        if (order.quantity == 0 ) {
+            let _ = remove_order(&mut market.asks, usr_open_orders, tick_index, order_id, order_owner);
+        };
+        option::some(coin_store::withdraw(&mut market.quote_asset, amount))
     }
 
 
@@ -392,7 +557,7 @@ module orderbook::market_v2 {
     {
         let market = object::borrow_mut(market_obj);
         assert!(market.is_paused == false, ErrorWrongPaused);
-        assert!(market.version == VERSION, ErrorWrongVersion);
+        // assert!(market.version == VERSION, ErrorWrongVersion);
         let usr_open_orders = table::borrow_mut(&mut market.user_order_info, order_owner);
         let tick_price = *linked_table::borrow(usr_open_orders, order_id);
         let (tick_exists, tick_index) = find_leaf(&market.bids, tick_price);
@@ -407,10 +572,12 @@ module orderbook::market_v2 {
         // assert!(coin::value(paid) >=  order.quantity, ErrorInputCoin);
         // let trade_coin = coin::extract(paid, order.quantity);
         // TODO here maybe wrap to u512?
-        let total_price = (order.unit_price as u256) * order.quantity;
+        let total_price = (order.unit_price as u256) * order.quantity / UNIT_PRICE_SCALE;
+        // let total_price = (order.unit_price as u256) * order.quantity;
         let trade_info = &mut market.trade_info;
 
         trade_info.total_volume = trade_info.total_volume + total_price;
+        trade_info.txs = trade_info.txs + 1;
         if (now_milliseconds() - trade_info.timestamp > 86400000) {
             trade_info.yesterday_volume = trade_info.today_volume;
             trade_info.today_volume = total_price;
@@ -423,6 +590,116 @@ module orderbook::market_v2 {
         let trade_fee = order.quantity * market.fee / TRADE_FEE_BASE_RATIO;
         coin_store::deposit(&mut market.quote_asset_trading_fees, coin::extract(&mut trade_coin, trade_fee));
         account_coin_store::deposit(order.owner, trade_coin);
+        emit(OrderEvent<BaseAsset, QuoteAsset> {
+            order_id,
+            unit_price: order.unit_price,
+            quantity: order.quantity,
+            owner: sender(),
+            timestamp: now_milliseconds(),
+            order_type: 5
+        });
+        option::some(coin_store::withdraw(&mut market.base_asset, total_price))
+    }
+
+
+    public entry fun accept_bid_from_origin<BaseAsset: key + store, QuoteAsset: key + store>(
+        signer: &signer,
+        market_obj: &mut Object<Marketplace<BaseAsset, QuoteAsset>>,
+        order_id: u64,
+        amount: u256,
+        order_owner: address,
+        assert_order_exist: bool,
+        receiver: address
+    ){
+        let option_coin = do_accept_bid_external<BaseAsset, QuoteAsset>(signer, market_obj, order_id, amount, order_owner, assert_order_exist, none());
+        if (is_some(&option_coin)) {
+            account_coin_store::deposit(receiver, option::extract(&mut option_coin))
+        };
+        destroy_none(option_coin)
+    }
+
+    public entry fun accept_bid_from_distributor<BaseAsset: key + store, QuoteAsset: key + store>(
+        signer: &signer,
+        market_obj: &mut Object<Marketplace<BaseAsset, QuoteAsset>>,
+        order_id: u64,
+        amount: u256,
+        order_owner: address,
+        assert_order_exist: bool,
+        receiver: address,
+        distributor: address
+    ){
+        let option_coin = do_accept_bid_external<BaseAsset, QuoteAsset>(signer, market_obj, order_id, amount, order_owner, assert_order_exist, some(distributor));
+        if (is_some(&option_coin)) {
+            account_coin_store::deposit(receiver, option::extract(&mut option_coin))
+        };
+        destroy_none(option_coin)
+    }
+
+    public fun do_accept_bid_external<BaseAsset: key + store, QuoteAsset: key + store>(
+        signer: &signer,
+        market_obj: &mut Object<Marketplace<BaseAsset, QuoteAsset>>,
+        order_id: u64,
+        amount: u256,
+        order_owner: address,
+        assert_order_exist: bool,
+        distributor: Option<address>
+    ): Option<Coin<BaseAsset>>
+    {
+        let market = object::borrow_mut(market_obj);
+        assert!(market.is_paused == false, ErrorWrongPaused);
+        // assert!(market.version == VERSION, ErrorWrongVersion);
+        let usr_open_orders = table::borrow_mut(&mut market.user_order_info, order_owner);
+        let tick_price = *linked_table::borrow(usr_open_orders, order_id);
+        let (tick_exists, tick_index) = find_leaf(&market.bids, tick_price);
+        // Return non-existent orders to none instead of panic during bulk buying
+        if (!assert_order_exist && !tick_exists) {
+            return option::none()
+        };
+        assert!(tick_exists, ErrorInvalidOrderId);
+        assert!(amount > 0, ErrorQuantityTooLow);
+        let order = borrow_mut_order(&mut market.bids, usr_open_orders, tick_index, order_id, order_owner);
+        assert!(order.quantity >= amount, ErrorInvalidAmount);
+        let trade_coin = account_coin_store::withdraw<QuoteAsset>(signer, amount);
+        // TODO here maybe wrap to u512?
+        let total_price = (order.unit_price as u256) * amount / UNIT_PRICE_SCALE;
+        // let total_price = (order.unit_price as u256) * amount;
+        let trade_info = &mut market.trade_info;
+
+        trade_info.total_volume = trade_info.total_volume + total_price;
+        trade_info.txs = trade_info.txs + 1;
+        if (now_milliseconds() - trade_info.timestamp > 86400000) {
+            trade_info.yesterday_volume = trade_info.today_volume;
+            trade_info.today_volume = total_price;
+            trade_info.timestamp = now_milliseconds();
+        }else {
+            trade_info.today_volume = trade_info.today_volume + total_price;
+        };
+
+        // Here trade fee is QuoteAsset
+        let trade_fee = amount * market.fee / TRADE_FEE_BASE_RATIO;
+        if (option::is_some(&distributor)){
+            let distributor_address = option::extract(&mut distributor);
+            let trade_fee_coin = coin::extract(&mut trade_coin, trade_fee);
+            let distributor_fee = trade_fee / 2;
+            account_coin_store::deposit(distributor_address, coin::extract(&mut trade_fee_coin, distributor_fee));
+            coin_store::deposit(&mut market.quote_asset_trading_fees, trade_fee_coin);
+        }else{
+            coin_store::deposit(&mut market.quote_asset_trading_fees, coin::extract(&mut trade_coin, trade_fee));
+        };
+        account_coin_store::deposit(order.owner, trade_coin);
+        emit(OrderEvent<BaseAsset, QuoteAsset> {
+            order_id,
+            unit_price: order.unit_price,
+            quantity: order.quantity,
+            owner: sender(),
+            timestamp: now_milliseconds(),
+            order_type: 5
+        });
+        order.quantity = order.quantity - amount;
+        if (order.quantity == 0) {
+            let _ = remove_order(&mut market.bids, usr_open_orders, tick_index, order_id, order_owner);
+        };
+
         option::some(coin_store::withdraw(&mut market.base_asset, total_price))
     }
 
@@ -434,7 +711,7 @@ module orderbook::market_v2 {
         receiver: address,
     ) {
         let market = object::borrow_mut(market_obj);
-        assert!(market.version == VERSION, ErrorWrongVersion);
+        // assert!(market.version == VERSION, ErrorWrongVersion);
         let quote_amount = coin_store::balance(&market.quote_asset_trading_fees);
         account_coin_store::deposit(receiver, coin_store::withdraw(&mut market.quote_asset_trading_fees, quote_amount));
         let base_amount = coin_store::balance(&market.base_asset_trading_fees);
@@ -448,7 +725,7 @@ module orderbook::market_v2 {
         fee: u256,
     ) {
         let market = object::borrow_mut(market_obj);
-        assert!(market.version == VERSION, ErrorWrongVersion);
+        // assert!(market.version == VERSION, ErrorWrongVersion);
         assert!(fee < TRADE_FEE_BASE_RATIO, ErrorFeeTooHigh);
         market.fee = fee
     }
@@ -459,7 +736,7 @@ module orderbook::market_v2 {
         status: bool,
     ) {
         let market = object::borrow_mut(market_obj);
-        assert!(market.version == VERSION, ErrorWrongVersion);
+        // assert!(market.version == VERSION, ErrorWrongVersion);
         market.is_paused = status
     }
 
@@ -490,6 +767,26 @@ module orderbook::market_v2 {
         order
     }
 
+
+    fun borrow_mut_order(
+        open_orders: &mut CritbitTree<TickLevel>,
+        _user_order_info: &mut LinkedTable<u64, u64>,
+        tick_index: u64,
+        order_id: u64,
+        user: address,
+    ): &mut Order {
+        // linked_table::remove(user_order_info, order_id);
+        let tick_level = borrow_leaf_by_index(open_orders, tick_index);
+        assert!(linked_table::contains(&tick_level.open_orders, order_id), ErrorInvalidOrderId);
+        let mut_tick_level = borrow_mut_leaf_by_index(open_orders, tick_index);
+        let order = linked_table::borrow_mut(&mut mut_tick_level.open_orders, order_id);
+        assert!(order.owner == user, ErrorUnauthorizedCancel);
+        // if (linked_table::is_empty(&mut_tick_level.open_orders)) {
+        //     destroy_empty_level(remove_leaf_by_index(open_orders, tick_index));
+        // };
+        order
+    }
+
     fun destroy_empty_level(level: TickLevel) {
         let TickLevel {
             price: _,
@@ -509,7 +806,11 @@ module orderbook::market_v2 {
 
         let market = object::borrow(market_obj);
         let order_infos = vector::empty<OrderInfo>();
+
         if (query_bid) {
+            if (critbit::is_empty(&market.bids)) {
+                return order_infos
+            };
             let i = 0;
             let from = if (from_price_is_none) {
                 let (key, _) = critbit::max_leaf(&market.bids);
@@ -552,6 +853,9 @@ module orderbook::market_v2 {
                 }
             };
         }else {
+            if (critbit::is_empty(&market.asks)) {
+                return order_infos
+            };
             let i = 0;
             let from = if (from_price_is_none) {
                 let (key, _) = critbit::min_leaf(&market.asks);
@@ -670,4 +974,220 @@ module orderbook::market_v2 {
     fun order_is_bid(order_id: u64): bool {
         return order_id < MIN_ASK_ORDER_ID
     }
+
+    #[test_only]
+    struct TestBaseCoin has key, store{}
+    #[test_only]
+    struct TestQuoteCoin has key, store{}
+
+    #[test_only]
+    fun init_for_test(base_decimal: u8, quote_decimal: u8):(Object<Marketplace<TestBaseCoin, TestQuoteCoin>>, Coin<TestBaseCoin>, Coin<TestQuoteCoin>) {
+        let base_coin_info = coin::register_extend<TestBaseCoin>(
+        string::utf8(b"Test Base Coin"),
+            string::utf8(b"TBC"),
+            option::none(),
+            base_decimal,
+        );
+        let quote_coin_info = coin::register_extend<TestQuoteCoin>(
+        string::utf8(b"Test Quote Coin"),
+            string::utf8(b"TQC"),
+            option::none(),
+            quote_decimal,
+        );
+        let base_coin = coin::mint_extend<TestBaseCoin>(&mut base_coin_info, (1000 * u64::pow(10, base_decimal) as u256));
+        let quote_coin = coin::mint_extend<TestQuoteCoin>(&mut quote_coin_info, (1000 * u64::pow(10, quote_decimal) as u256));
+        to_shared(base_coin_info);
+        to_shared(quote_coin_info);
+        let market_obj = new_named_object(Marketplace {
+            is_paused: false,
+            version: VERSION,
+            bids: critbit::new(),
+            asks: critbit::new(),
+            // Order id of the next bid order, starting from 0.
+            next_bid_order_id: MIN_BID_ORDER_ID,
+            // Order id of the next ask order, starting from 1<<63.
+            next_ask_order_id: MIN_ASK_ORDER_ID,
+            fee: 0,
+            user_order_info: table::new(),
+            base_asset: create_coin_store<TestBaseCoin>(),
+            quote_asset: create_coin_store<TestQuoteCoin>(),
+            base_asset_trading_fees: create_coin_store<TestBaseCoin>(),
+            quote_asset_trading_fees: create_coin_store<TestQuoteCoin>(),
+            trade_info: TradeInfo{
+                timestamp: now_milliseconds(),
+                yesterday_volume: 0,
+                today_volume: 0,
+                total_volume: 0,
+                txs: 0
+            }
+        });
+        (market_obj, base_coin, quote_coin)
+    }
+
+    #[test]
+    public fun test_buy_1() {
+        rooch_framework::genesis::init_for_test();
+        let base_decimal = 0;
+        let quote_decimal = 0;
+        let account_list = create_account_for_testing(@0x43);
+        let address_list = address_of(&account_list);
+        let account_buy = create_account_for_testing(@0x44);
+        let address_buy = address_of(&account_buy);
+        let (market_obj, base_coin, quote_coin )= init_for_test(base_decimal, quote_decimal);
+        account_coin_store::deposit(address_list, quote_coin);
+        account_coin_store::deposit(address_buy, base_coin);
+        // Here we list it at price 10 base/quote, and list 10 quote coin
+        list(&account_list, &mut market_obj, (10 * u64::pow(10, quote_decimal) as u256), (10 * UNIT_PRICE_SCALE as u64) / u64::pow(10, quote_decimal));
+        buy(&account_buy, &mut market_obj, MIN_ASK_ORDER_ID, address_list, true, address_buy);
+        to_shared(market_obj);
+        // list account will recieve 10 * 10 = 100 base coin
+        assert!(account_coin_store::balance<TestBaseCoin>(address_list) == 100, 0);
+        // buy account will recieve 10 quote coin
+        assert!(account_coin_store::balance<TestQuoteCoin>(address_buy) == 10, 1);
+        // list account will pay 10 quote coin
+        assert!(account_coin_store::balance<TestQuoteCoin>(address_list) == 990, 2);
+        // buy account will pay 10 * 10 = 100 base coin
+        assert!(account_coin_store::balance<TestBaseCoin>(address_buy) == 900, 3);
+    }
+
+    #[test]
+    public fun test_buy_2() {
+        rooch_framework::genesis::init_for_test();
+        let base_decimal = 8;
+        let quote_decimal = 0;
+        let account_list = create_account_for_testing(@0x43);
+        let address_list = address_of(&account_list);
+        let account_buy = create_account_for_testing(@0x44);
+        let address_buy = address_of(&account_buy);
+        let (market_obj, base_coin, quote_coin )= init_for_test(base_decimal, quote_decimal);
+        account_coin_store::deposit(address_list, quote_coin);
+        account_coin_store::deposit(address_buy, base_coin);
+        // Here we list it at price 10 base/quote, and list 10.0 quote coin
+        list(&account_list, &mut market_obj, (10 * u64::pow(10, quote_decimal) as u256), ((UNIT_PRICE_SCALE as u64) / u64::pow(10, quote_decimal)) * (10 * u64::pow(10, base_decimal)));
+        buy(&account_buy, &mut market_obj, MIN_ASK_ORDER_ID, address_list, true, address_buy);
+        to_shared(market_obj);
+        // list account will recieve 10 * 10 = 100.0000000000 base coin
+        assert!(account_coin_store::balance<TestBaseCoin>(address_list) == 100_00000000, 0);
+        // buy account will recieve 10 quote coin
+        assert!(account_coin_store::balance<TestQuoteCoin>(address_buy) == 10, 1);
+        // list account will pay 10 quote coin
+        assert!(account_coin_store::balance<TestQuoteCoin>(address_list) == 990, 2);
+        // buy account will pay 10 * 10 = 100.0000000000 base coin
+        assert!(account_coin_store::balance<TestBaseCoin>(address_buy) == 900_00000000, 3);
+    }
+
+
+    #[test]
+    public fun test_buy_3() {
+        rooch_framework::genesis::init_for_test();
+        let base_decimal = 10;
+        let quote_decimal = 3;
+        let account_list = create_account_for_testing(@0x43);
+        let address_list = address_of(&account_list);
+        let account_buy = create_account_for_testing(@0x44);
+        let address_buy = address_of(&account_buy);
+        let (market_obj, base_coin, quote_coin )= init_for_test(base_decimal, quote_decimal);
+        account_coin_store::deposit(address_list, quote_coin);
+        account_coin_store::deposit(address_buy, base_coin);
+        // Here we list it at price 10 base/quote, and list 10.000 quote coin
+        list(&account_list, &mut market_obj, (10 * u64::pow(10, quote_decimal) as u256), ((UNIT_PRICE_SCALE as u64) / u64::pow(10, quote_decimal) * 10 * u64::pow(10, base_decimal)));
+        buy(&account_buy, &mut market_obj, MIN_ASK_ORDER_ID, address_list, true, address_buy);
+        to_shared(market_obj);
+        // list account will recieve 10 * 10 = 100.0000000000 base coin
+        assert!(account_coin_store::balance<TestBaseCoin>(address_list) == 100_0000000000, 0);
+        // buy account will recieve 10.000 quote coin
+        assert!(account_coin_store::balance<TestQuoteCoin>(address_buy) == 10000, 1);
+        // list account will pay 10.000 quote coin
+        assert!(account_coin_store::balance<TestQuoteCoin>(address_list) == 990_000, 2);
+        // buy account will pay 10 * 10 = 100.0000000000 base coin
+        assert!(account_coin_store::balance<TestBaseCoin>(address_buy) == 900_0000000000, 3);
+    }
+
+
+    // u64 max >= 1 * base_decimal * price * UNIT_PRICE_SCALE >  quote_decimal
+
+    #[test]
+    public fun test_buy_4() {
+        rooch_framework::genesis::init_for_test();
+        let base_decimal = 8;
+        let quote_decimal = 10;
+        let account_list = create_account_for_testing(@0x43);
+        let address_list = address_of(&account_list);
+        let account_buy = create_account_for_testing(@0x44);
+        let address_buy = address_of(&account_buy);
+        let (market_obj, base_coin, quote_coin )= init_for_test(base_decimal, quote_decimal);
+        account_coin_store::deposit(address_list, quote_coin);
+        account_coin_store::deposit(address_buy, base_coin);
+        // Here we list it at price 10 base/quote, and list 10.000 quote coin
+        list(&account_list, &mut market_obj, (10 * u64::pow(10, quote_decimal) as u256), ((UNIT_PRICE_SCALE as u64) * 10 * u64::pow(10, base_decimal) / u64::pow(10, quote_decimal) ));
+        buy(&account_buy, &mut market_obj, MIN_ASK_ORDER_ID, address_list, true, address_buy);
+        to_shared(market_obj);
+        // list account will recieve 10 * 10 = 100.00000000 base coin
+        assert!(account_coin_store::balance<TestBaseCoin>(address_list) == 100_00000000, 0);
+        // buy account will recieve 10.0000000000 quote coin
+        assert!(account_coin_store::balance<TestQuoteCoin>(address_buy) == 10_0000000000, 1);
+        // list account will pay 10.0000000000 quote coin
+        assert!(account_coin_store::balance<TestQuoteCoin>(address_list) == 990_0000000000, 2);
+        // buy account will pay 10 * 10 = 100.00000000 base coin
+        assert!(account_coin_store::balance<TestBaseCoin>(address_buy) == 900_00000000, 3);
+    }
+
+    #[test]
+    public fun test_buy_5() {
+        rooch_framework::genesis::init_for_test();
+        let base_decimal = 8;
+        let quote_decimal = 10;
+        let account_list = create_account_for_testing(@0x43);
+        let address_list = address_of(&account_list);
+        let account_buy = create_account_for_testing(@0x44);
+        let address_buy = address_of(&account_buy);
+        let (market_obj, base_coin, quote_coin )= init_for_test(base_decimal, quote_decimal);
+        account_coin_store::deposit(address_list, quote_coin);
+        account_coin_store::deposit(address_buy, base_coin);
+        // Here we list it at price 10 base/quote, and list 10.000 quote coin
+        list(&account_list, &mut market_obj, (10 * u64::pow(10, quote_decimal) as u256), ((UNIT_PRICE_SCALE as u64) * 10 * u64::pow(10, base_decimal) / u64::pow(10, quote_decimal) ));
+        buy_from_origin(&account_buy, &mut market_obj, MIN_ASK_ORDER_ID,
+            (5 * u64::pow(10, quote_decimal) as u256), address_list, true, address_buy);
+        // list account will recieve 10 * 5 = 50.00000000 base coin
+        assert!(account_coin_store::balance<TestBaseCoin>(address_list) == 50_00000000, 0);
+        // buy account will recieve 5.0000000000 quote coin
+        assert!(account_coin_store::balance<TestQuoteCoin>(address_buy) == 5_0000000000, 1);
+        // list account will pay 10.0000000000 quote coin
+        assert!(account_coin_store::balance<TestQuoteCoin>(address_list) == 990_0000000000, 2);
+        // buy account will pay 10 * 5 = 50.00000000 base coin
+        assert!(account_coin_store::balance<TestBaseCoin>(address_buy) == 950_00000000, 3);
+        buy_from_origin(&account_buy, &mut market_obj, MIN_ASK_ORDER_ID,
+            (5 * u64::pow(10, quote_decimal) as u256), address_list, true, address_buy);
+        to_shared(market_obj);
+    }
+
+    #[test]
+    public fun test_accept_bid() {
+        rooch_framework::genesis::init_for_test();
+        let base_decimal = 8;
+        let quote_decimal = 10;
+        let account_create_bid = create_account_for_testing(@0x43);
+        let address_create_bid = address_of(&account_create_bid);
+        let account_accept_bid = create_account_for_testing(@0x44);
+        let address_accept_bid = address_of(&account_accept_bid);
+        let (market_obj, base_coin, quote_coin )= init_for_test(base_decimal, quote_decimal);
+        account_coin_store::deposit(address_accept_bid, quote_coin);
+        account_coin_store::deposit(address_create_bid, base_coin);
+        // Here we list it at price 10 base/quote, and list 10.000 quote coin
+        create_bid(&account_create_bid, &mut market_obj,((UNIT_PRICE_SCALE as u64) * 10 * u64::pow(10, base_decimal) / u64::pow(10, quote_decimal) ), (10 * u64::pow(10, quote_decimal) as u256), );
+        accept_bid_from_origin(&account_accept_bid, &mut market_obj, MIN_BID_ORDER_ID,
+            (5 * u64::pow(10, quote_decimal) as u256), address_create_bid, true, address_accept_bid);
+        // accept bid account will recieve 10 * 5 = 50.00000000 base coin
+        assert!(account_coin_store::balance<TestBaseCoin>(address_accept_bid) == 50_00000000, 0);
+        // create bid account will recieve 5.0000000000 quote coin
+        assert!(account_coin_store::balance<TestQuoteCoin>(address_create_bid) == 5_0000000000, 1);
+        // accept bid account will pay 5.0000000000 quote coin
+        assert!(account_coin_store::balance<TestQuoteCoin>(address_accept_bid) == 995_0000000000, 2);
+        // create bid account will pay 10 * 10 = 100.00000000 base coin
+        assert!(account_coin_store::balance<TestBaseCoin>(address_create_bid) == 900_00000000, 3);
+        accept_bid_from_origin(&account_accept_bid, &mut market_obj, MIN_BID_ORDER_ID,
+            (5 * u64::pow(10, quote_decimal) as u256), address_create_bid, true, address_accept_bid);
+        to_shared(market_obj);
+    }
 }
+

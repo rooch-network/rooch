@@ -98,6 +98,7 @@ rooch-integration-test-runner = { workspace = true }
 rooch-indexer = { workspace = true }
 rooch-event = { workspace = true }
 rooch-db = { workspace = true }
+rooch-pipeline-processor = { workspace = true }
 rooch-common = { workspace = true }
 rooch-store = { workspace = true }
 rooch-faucet = { workspace = true }

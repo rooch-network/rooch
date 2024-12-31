@@ -105,7 +105,7 @@ export const navData = [
         icon: <Iconify icon="solar:infinity-line-duotone" />,
         noAddressRequired: true,
       },
-    ].filter((item) => !(isMainNetwork() && item.title === 'Apps')),
+    ]// .filter((item) => !(isMainNetwork() && item.title === 'Apps')),
   },
 ].filter((item) => !(isMainNetwork() && item.subheader === 'Tokens'));
 // .filter((item) => !(isMainNetwork() && (item.subheader === 'Tokens' || item.subheader === 'Trade')));

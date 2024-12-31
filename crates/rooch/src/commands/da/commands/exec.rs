@@ -25,6 +25,7 @@ use rooch_event::actor::EventActor;
 use rooch_executor::actor::executor::ExecutorActor;
 use rooch_executor::actor::reader_executor::ReaderExecutorActor;
 use rooch_executor::proxy::ExecutorProxy;
+use rooch_pipeline_processor::actor::processor::is_vm_panic_error;
 use rooch_types::bitcoin::types::Block as BitcoinBlock;
 use rooch_types::error::RoochResult;
 use rooch_types::rooch_network::RoochChainID;
@@ -438,10 +439,43 @@ impl ExecInner {
             ledger_tx,
             l1_block_with_body,
         } = msg;
+        let is_l2_tx = ledger_tx.data.is_l2_tx();
         let moveos_tx = self
             .validate_ledger_transaction(ledger_tx, l1_block_with_body)
             .await?;
-        self.execute_moveos_tx(tx_order, moveos_tx).await
+        if let Err(err) = self.execute_moveos_tx(tx_order, moveos_tx).await {
+            self.handle_execution_error(err, is_l2_tx, tx_order)?;
+        }
+
+        Ok(())
+    }
+
+    fn handle_execution_error(
+        &self,
+        error: anyhow::Error,
+        is_l2_tx: bool,
+        tx_order: u64,
+    ) -> anyhow::Result<()> {
+        if is_l2_tx {
+            return if is_vm_panic_error(&error) {
+                tracing::error!(
+                    "Execute L2 Tx failed while VM panic occurred, error: {:?}; tx_order: {}",
+                    error,
+                    tx_order
+                );
+                Err(error)
+            } else {
+                tracing::warn!(
+                    "L2 Tx execution failed with a non-VM panic error. Ignoring and returning Ok; tx_order: {}, error: {:?}",
+                    tx_order,
+                    error
+                );
+                Ok(()) // Gracefully handle non-VM panic L2Tx errors.
+            };
+        }
+
+        // Default error handling for non-L2Tx transactions and other cases.
+        Err(error)
     }
 
     async fn validate_ledger_transaction(
@@ -449,15 +483,28 @@ impl ExecInner {
         ledger_tx: LedgerTransaction,
         l1block_with_body: Option<L1BlockWithBody>,
     ) -> anyhow::Result<VerifiedMoveOSTransaction> {
-        let mut moveos_tx = match &ledger_tx.data {
+        let moveos_tx_result = match &ledger_tx.data {
             LedgerTxData::L1Block(_block) => {
                 self.executor
                     .validate_l1_block(l1block_with_body.unwrap())
-                    .await?
+                    .await
             }
-            LedgerTxData::L1Tx(l1_tx) => self.executor.validate_l1_tx(l1_tx.clone()).await?,
-            LedgerTxData::L2Tx(l2_tx) => self.executor.validate_l2_tx(l2_tx.clone()).await?,
+            LedgerTxData::L1Tx(l1_tx) => self.executor.validate_l1_tx(l1_tx.clone()).await,
+            LedgerTxData::L2Tx(l2_tx) => self.executor.validate_l2_tx(l2_tx.clone()).await,
         };
+
+        let mut moveos_tx = match moveos_tx_result {
+            Ok(tx) => tx,
+            Err(err) => {
+                tracing::error!(
+                    "Error validating transaction: tx_order: {}, error: {:?}",
+                    ledger_tx.sequence_info.tx_order,
+                    err
+                );
+                return Err(err);
+            }
+        };
+
         moveos_tx.ctx.add(ledger_tx.sequence_info.clone())?;
         Ok(moveos_tx)
     }
