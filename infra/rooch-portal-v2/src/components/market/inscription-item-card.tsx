@@ -107,7 +107,7 @@ export default function InscriptionItemCard({
             toast.success('Buy Success');
             await onRefetchMarketData();
           } else {
-            toast.error('Buy Failed');
+            toast.error(`Buy Failed: ${data.execution_info.status.error}`);
           }
         },
         onError(error) {
