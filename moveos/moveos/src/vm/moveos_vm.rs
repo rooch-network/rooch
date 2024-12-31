@@ -223,7 +223,7 @@ where
                     call.ty_args.as_slice(),
                 )?;
                 let location = Location::Script;
-                moveos_verifier::verifier::verify_entry_function(&loaded_function, &self.session)
+                moveos_verifier::verifier::verify_entry_function(&loaded_function, &self.session, self.remote)
                     .map_err(|e| e.finish(location.clone()))?;
                 let _serialized_args =
                     self.resolve_argument(&loaded_function, call.args.clone(), location, false)?;
