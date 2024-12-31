@@ -6,11 +6,13 @@ use anyhow::anyhow;
 use async_trait::async_trait;
 use rooch_config::da_config::{DABackendConfig, DABackendConfigType};
 use rooch_types::da::batch::DABatch;
+use std::collections::HashMap;
 use std::sync::Arc;
 
 pub mod openda;
 
 // manually set backend priority
+// lower index means higher priority
 pub const BACKENDS_PRIORITY: [&str; 5] = [
     "openda-fs",
     "openda-gcs",
@@ -18,6 +20,7 @@ pub const BACKENDS_PRIORITY: [&str; 5] = [
     "openda-avail",
     "openda-celestia",
 ];
+pub const UNKNOWN_BACKEND_PRIORITY: usize = usize::MAX;
 
 #[async_trait]
 pub trait DABackend: Sync + Send {
@@ -74,14 +77,20 @@ impl DABackends {
 
     // sort backends by their priority
     fn sort_backends(&mut self) {
+        let priority_map: HashMap<&str, usize> = BACKENDS_PRIORITY
+            .iter()
+            .enumerate()
+            .map(|(i, &id)| (id, i))
+            .collect();
+
         self.backends.sort_by(|a, b| {
-            let a = BACKENDS_PRIORITY
-                .iter()
-                .position(|x| *x == a.get_identifier());
-            let b = BACKENDS_PRIORITY
-                .iter()
-                .position(|x| *x == b.get_identifier());
-            a.cmp(&b)
+            let a_priority = priority_map
+                .get(a.get_identifier().as_str())
+                .unwrap_or(&UNKNOWN_BACKEND_PRIORITY);
+            let b_priority = priority_map
+                .get(b.get_identifier().as_str())
+                .unwrap_or(&UNKNOWN_BACKEND_PRIORITY);
+            a_priority.cmp(b_priority)
         });
     }
 
