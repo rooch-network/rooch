@@ -66,6 +66,7 @@ For more details, please refer to https://rooch.network/docs/developer-guides/ob
 -  [Function `contains_field_internal`](#0x2_object_contains_field_internal)
 -  [Function `contains_field_with_type`](#0x2_object_contains_field_with_type)
 -  [Function `field_size`](#0x2_object_field_size)
+-  [Function `list_fields`](#0x2_object_list_fields)
 
 
 <pre><code><b>use</b> <a href="">0x1::hash</a>;
@@ -979,4 +980,16 @@ Returns the size of the object fields, the number of key-value pairs
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_field_size">field_size</a>&lt;T: key&gt;(obj: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;): u64
+</code></pre>
+
+
+
+<a name="0x2_object_list_fields"></a>
+
+## Function `list_fields`
+
+List all fields of the object
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_list_fields">list_fields</a>&lt;T: key, Name: <b>copy</b>, drop, store, Value: store&gt;(obj: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;): <a href="">vector</a>&lt;<a href="object.md#0x2_object_DynamicField">object::DynamicField</a>&lt;Name, Value&gt;&gt;
 </code></pre>

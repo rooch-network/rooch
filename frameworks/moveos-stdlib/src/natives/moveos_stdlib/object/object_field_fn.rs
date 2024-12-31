@@ -11,7 +11,7 @@ use move_vm_runtime::native_functions::NativeContext;
 use move_vm_types::{
     loaded_data::runtime_types::Type, natives::function::NativeResult, pop_arg, values::Value,
 };
-use smallvec::smallvec;
+use smallvec::{smallvec, SmallVec};
 use std::collections::VecDeque;
 
 use super::{error_to_abort_code, CommonGasParameters};
@@ -24,6 +24,7 @@ use moveos_types::moveos_std::onchain_features::VALUE_SIZE_GAS_FEATURE;
 use moveos_types::{
     moveos_std::object::ObjectID, state::FieldKey, state_resolver::StatelessResolver,
 };
+use tracing::debug;
 
 /***************************************************************************************************
  * native fun native_add_field<V>(obj_id: ObjectID, key: address, val: V): Object<V>;
@@ -242,6 +243,59 @@ pub(crate) fn native_remove_field(
             rt_obj.remove_field(layout_loader, resolver, field_key, &ty_args[0])
         },
     )
+}
+
+/***************************************************************************************************
+ * native fun native_list_fields<V>(obj_id: ObjectID): V;
+ **************************************************************************************************/
+#[derive(Debug, Clone)]
+pub struct ListFieldsGasParameters {
+    pub base: InternalGas,
+    pub per_byte_serialized: InternalGasPerByte,
+}
+
+pub(crate) fn native_list_fields(
+    gas_parameters: &GasParameters,
+    context: &mut NativeContext,
+    ty_args: Vec<Type>,
+    mut args: VecDeque<Value>,
+) -> PartialVMResult<NativeResult> {
+    debug_assert_eq!(ty_args.len(), 1);
+    debug_assert_eq!(args.len(), 1);
+
+    let obj_id = pop_object_id(&mut args)?;
+    debug!("obj_id: {}", obj_id);
+
+    let common_gas_parameter = gas_parameters.common.clone();
+    let list_fields_gas_parameter = gas_parameters.native_list_fields.clone();
+
+    let object_context = context.extensions().get::<ObjectRuntimeContext>();
+    let binding = object_context.object_runtime();
+    let mut object_runtime = binding.write();
+    let resolver = object_runtime.resolver();
+    let (rt_obj, object_load_gas) = object_runtime.load_object(context, &obj_id)?;
+    let field_key_bytes = AccountAddress::LENGTH as u64;
+    let gas_cost = list_fields_gas_parameter.base
+        + list_fields_gas_parameter.per_byte_serialized * NumBytes::new(field_key_bytes)
+        + common_gas_parameter.calculate_load_cost(object_load_gas);
+
+    debug!("gas_cost: {}", gas_cost);
+
+    let result = rt_obj.list_fields(context, resolver, None, usize::MAX, &ty_args[0]);
+    match result {
+        Ok((value, field_load_gas)) => {
+            debug!("value: {:#?} field_load_gas: {:?}", value, field_load_gas);
+            Ok(NativeResult::ok(
+                gas_cost + common_gas_parameter.calculate_load_cost(field_load_gas),
+                SmallVec::from_vec(value),
+            ))
+        }
+        Err(err) => {
+            let abort_code = error_to_abort_code(err);
+            debug!("failed by abort_code: {:#?}", abort_code);
+            Ok(NativeResult::err(gas_cost, abort_code))
+        }
+    }
 }
 
 fn object_field_fn_dispatch(

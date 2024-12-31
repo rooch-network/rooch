@@ -31,6 +31,7 @@ use moveos_types::{
     state_resolver::StatelessResolver,
 };
 use std::collections::{btree_map::Entry, BTreeMap};
+use tracing::debug;
 
 type ScanFieldList = Vec<(FieldKey, Value)>;
 type FieldList = Vec<(FieldKey, RuntimeObject, Option<Option<NumBytes>>)>;
@@ -640,6 +641,46 @@ impl RuntimeObject {
         }
 
         Ok((fields, Some(total_bytes_len)))
+    }
+
+    /// List fields of the object from the state store.
+    pub fn list_fields(
+        &self,
+        layout_loader: &dyn TypeLayoutLoader,
+        resolver: &dyn StatelessResolver,
+        cursor: Option<FieldKey>,
+        limit: usize,
+        field_type: &Type,
+    ) -> PartialVMResult<(Vec<Value>, Option<Option<NumBytes>>)> {
+        debug!("enter list_fields");
+        let expect_value_type = layout_loader.type_to_type_tag(field_type)?;
+        debug!("expect_value_type: {:#?}", expect_value_type);
+        let fields_with_objects =
+            self.list_field_objects_from_db(layout_loader, resolver, cursor, limit)?;
+
+        let mut fields = Vec::with_capacity(fields_with_objects.len());
+        let mut total_bytes_len = NumBytes::zero();
+
+        for (key, db_obj, bytes_len_opt) in fields_with_objects {
+            let (value, bytes_len) = if let Some(cached_field) = self.get_loaded_field(&key) {
+                (
+                    cached_field.borrow_value(Some(&expect_value_type))?,
+                    Some(NumBytes::zero()),
+                )
+            } else {
+                (
+                    db_obj.borrow_value(Some(&expect_value_type))?,
+                    bytes_len_opt.flatten(),
+                )
+            };
+
+            fields.push(value);
+            if let Some(bytes_len) = bytes_len {
+                total_bytes_len += bytes_len;
+            }
+        }
+
+        Ok((fields, Some(Some(total_bytes_len))))
     }
 }
 
