@@ -9,12 +9,12 @@ This module provides the foundation for typesafe Coins.
 -  [Struct `Coin`](#0x3_coin_Coin)
 -  [Resource `CoinInfo`](#0x3_coin_CoinInfo)
 -  [Resource `CoinMetadata`](#0x3_coin_CoinMetadata)
--  [Resource `CoinRegister`](#0x3_coin_CoinRegister)
+-  [Resource `CoinRegistry`](#0x3_coin_CoinRegistry)
 -  [Struct `MintEvent`](#0x3_coin_MintEvent)
 -  [Struct `BurnEvent`](#0x3_coin_BurnEvent)
 -  [Constants](#@Constants_0)
 -  [Function `genesis_init`](#0x3_coin_genesis_init)
--  [Function `init_coin_register`](#0x3_coin_init_coin_register)
+-  [Function `init_coin_registry`](#0x3_coin_init_coin_registry)
 -  [Function `coin_address`](#0x3_coin_coin_address)
 -  [Function `check_coin_info_registered`](#0x3_coin_check_coin_info_registered)
 -  [Function `is_registered`](#0x3_coin_is_registered)
@@ -90,7 +90,7 @@ CoinInfo<CoinType> is a named Object, the <code>coin_type</code> is the unique k
 
 ## Resource `CoinMetadata`
 
-Coin metadata is copied from CoinInfo, and stored as dynamic field of CoinRegister
+Coin metadata is copied from CoinInfo, and stored as dynamic field of CoinRegistry
 
 
 <pre><code><b>struct</b> <a href="coin.md#0x3_coin_CoinMetadata">CoinMetadata</a> <b>has</b> store, key
@@ -98,14 +98,14 @@ Coin metadata is copied from CoinInfo, and stored as dynamic field of CoinRegist
 
 
 
-<a name="0x3_coin_CoinRegister"></a>
+<a name="0x3_coin_CoinRegistry"></a>
 
-## Resource `CoinRegister`
+## Resource `CoinRegistry`
 
-The register of all coin types.
+The registry of all coin types.
 
 
-<pre><code><b>struct</b> <a href="coin.md#0x3_coin_CoinRegister">CoinRegister</a> <b>has</b> key
+<pre><code><b>struct</b> <a href="coin.md#0x3_coin_CoinRegistry">CoinRegistry</a> <b>has</b> key
 </code></pre>
 
 
@@ -297,14 +297,14 @@ Coin amount cannot be zero
 
 
 
-<a name="0x3_coin_init_coin_register"></a>
+<a name="0x3_coin_init_coin_registry"></a>
 
-## Function `init_coin_register`
+## Function `init_coin_registry`
 
-Initialize the CoinRegister, this function is for framework upgrade.
+Initialize the CoinRegistry, this function is for framework upgrade.
 
 
-<pre><code>entry <b>fun</b> <a href="coin.md#0x3_coin_init_coin_register">init_coin_register</a>()
+<pre><code>entry <b>fun</b> <a href="coin.md#0x3_coin_init_coin_registry">init_coin_registry</a>()
 </code></pre>
 
 
