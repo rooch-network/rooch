@@ -170,11 +170,18 @@ fn check_scheme_config(
     //   - If not set:
     //     - using /`namespace`.
     //     - If the `root` field is set in the `config`, set it to `<original_root>/<namespace>`.
+    let namespace_without_first_slash = namespace.trim_start_matches('/');
     if let Some(root) = config.get("root") {
         let root = root.clone();
-        config.insert("root".to_string(), format!("{}/{}", root, namespace));
+        config.insert(
+            "root".to_string(),
+            format!("{}/{}", root, namespace_without_first_slash),
+        );
     } else {
-        config.insert("root".to_string(), format!("/{}", namespace));
+        config.insert(
+            "root".to_string(),
+            format!("/{}", namespace_without_first_slash),
+        );
     }
     Ok(())
 }
@@ -201,9 +208,10 @@ mod tests {
     use std::collections::HashMap;
 
     const TEST_NAMESPACE: &str = "test_namespace";
+    const TEST_NAMESPACE_SLASH: &str = "/test_namespace";
 
     #[test]
-    fn test_check_backend_config_fs() {
+    fn check_scheme_config_fs() {
         let scheme = OpenDAScheme::Fs;
         let mut map_config = HashMap::new();
         let result =
@@ -223,7 +231,7 @@ mod tests {
     }
 
     #[test]
-    fn test_check_backend_config_gcs() {
+    fn check_scheme_config_gcs() {
         let scheme = OpenDAScheme::Gcs;
         let mut map_config = HashMap::new();
         map_config.insert("credential".to_string(), "test_credential".to_string());
@@ -241,6 +249,16 @@ mod tests {
             result.is_ok(),
             "GCS scheme should return Ok if 'bucket' and 'credential' are provided"
         );
+
+        assert_eq!(map_config.get("root").unwrap(), "/test_namespace");
+        map_config.insert("root".to_string(), "/some/path".to_string());
+        let result = check_scheme_config(
+            scheme.clone(),
+            &mut map_config,
+            TEST_NAMESPACE_SLASH.to_string(),
+        );
+        assert!(result.is_ok(), "{}", result.unwrap_err());
+        assert_eq!(map_config.get("root").unwrap(), "/some/path/test_namespace");
 
         map_config.remove("credential");
         map_config.insert(
@@ -260,7 +278,5 @@ mod tests {
         assert!(result3.is_err(), "GCS scheme should return Err if neither 'credential' nor 'credential_path' are provided");
 
         assert_eq!(map_config.get("default_storage_class").unwrap(), "STANDARD");
-
-        assert_eq!(map_config.get("root").unwrap(), "/test_namespace");
     }
 }
