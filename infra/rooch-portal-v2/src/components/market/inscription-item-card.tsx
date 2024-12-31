@@ -18,6 +18,7 @@ import { Iconify } from 'src/components/iconify';
 
 import InscriptionShopCard from './inscription-shop-card';
 import { useNetworkVariable } from '../../hooks/use-networks';
+import {fNumber} from "../../utils/format-number";
 
 export type InscriptionItemCardProps = {
   item: MarketItem;
@@ -103,11 +104,12 @@ export default function InscriptionItemCard({
       },
       {
         async onSuccess(data) {
+          console.log(JSON.stringify(data.execution_info.status));
           if (data.execution_info.status.type === 'executed') {
             toast.success('Buy Success');
             await onRefetchMarketData();
           } else {
-            toast.error(`Buy Failed: ${data.execution_info.status.error}`);
+            toast.error('Buy Failed');
           }
         },
         onError(error) {
@@ -259,7 +261,7 @@ export default function InscriptionItemCard({
             <strong>Balance Changes</strong>
           </p>
           <p style={{ color: 'green', margin: 0, textAlign: 'right' }}>
-            + {confirmData.quantity} {tick.toUpperCase()}
+            + {fNumber(fromDust(confirmData.quantity, toCoinBalanceInfo.decimals).toNumber())} {tick.toUpperCase()}
           </p>
           <p style={{ color: 'red', margin: 0, textAlign: 'right' }}>
             - {new BigNumber(price).isNaN()
