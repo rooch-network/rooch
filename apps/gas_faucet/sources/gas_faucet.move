@@ -132,6 +132,8 @@ module gas_faucet::gas_faucet {
       };
       if (claim_rgas_amount > claimed_rgas_amount) {
         claim_rgas_amount = claim_rgas_amount - claimed_rgas_amount;
+      }else{
+        claim_rgas_amount = ONE_RGAS;
       };
       let remaining_rgas_amount = coin_store::balance(&faucet.rgas_store);
       if (claim_rgas_amount > remaining_rgas_amount) {
