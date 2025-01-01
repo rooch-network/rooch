@@ -496,7 +496,7 @@ fn bitcoincli_run_cmd(w: &mut World, input_tpl: String) {
     bitcoincli_args.extend(args.iter().map(|&s| s.to_string()));
 
     let joined_args = bitcoincli_args.join(" ");
-    debug!("run cmd: {}", joined_args.clone());
+    debug!("run cmd: {}", joined_args);
 
     let exec_cmd = ExecCommand {
         cmd: joined_args.clone(),

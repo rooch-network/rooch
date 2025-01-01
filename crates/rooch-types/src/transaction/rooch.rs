@@ -232,7 +232,7 @@ impl RoochTransaction {
         } else {
             let hash = self.data.tx_hash();
             self.data_hash = Some(hash);
-            self.data_hash.unwrap()
+            hash
         }
     }
 
