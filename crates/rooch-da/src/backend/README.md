@@ -1,29 +1,37 @@
 # Backend
 
-Implementations of DA backend.
+## Overview
 
-## Open-DA
+```
++-------------------------+
+|       DAServerActor     |
+|   (Manages Backends)    |
++-------------------------+
+|
+v
++-------------------------+
+|       DABackend         | <- Trait for all backends
++-------------------------+
+^
+|
+v
++---------------------------------------------------+
+|               OpenDABackendManager                | <- Manages OpenDA-specific backends
+| - Common OpenDA logic (batches, configs, etc.)    |
+| - Reduces redundancy among OpenDA backends        |
++---------------------------------------------------+
+|
+v
++-------------------------------------+
+|          OpenDAAdapter              | <- Trait for OpenDA-specific backend operations
+| - submit_segment(), ...             |
+| - Backend-specific operations       |
++-------------------------------------+
+^
+|
+v
++-------------------+   +-------------------+
+|  CelestiaAdapter  |   |   AvailAdapter    | <- Actual backend-specific adapter implementations
++-------------------+   +-------------------+
+```
 
-> - fs: local/remote file system
->- avail: Avail project DA
->- celestia: Celestia DA
-
-## New Backend
-
-For new added backend:
-
-If it could satisfy open-da config, it should be added to `open-da` folder as a module. If not, it should be added to
-`backend` folder directly.
-
-## Backend Implementations & Verification
-
-| Name     | Description                                | Category | Implementation               | Local | Testnet | Mainnet |
-|----------|--------------------------------------------|----------|------------------------------|-------|---------|---------|
-| fs       | file I/O based on local/remote file system | open-da  | [fs](open-da/fs)             | ✅     | ✅       | ✅       |
-| avail    | Avail project DA                           | open-da  | [avail](open-da/avail)       | 🔲    | 🔲      | 🔲      |
-| celestia | Celestia DA                                | open-da  | [celestia](open-da/celestia) | 🔲    | 🔲      | 🔲      |
-| gcs      | file I/O based on Google Cloud Storage     | open-da  | [gcs](open-da/fs)            | ✅     | ✅       | ✅       |
-
-- [x] ✅ done
-- [ ] 🔲 unfinished
-- [ ] ❌ has issues

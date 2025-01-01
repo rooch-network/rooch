@@ -540,7 +540,6 @@ impl DAMetaStore for DAMetaDBStore {
         Ok(blocks)
     }
 
-    // TODO combine set_submitting_block_done and set_background_submit_block_cursor: no more user-facing submit block
     fn set_submitting_block_done(
         &self,
         block_number: u128,

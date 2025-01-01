@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::backend::openda::operator::Operator;
+use crate::backend::openda::adapter::OpenDAAdapter;
 use anyhow::anyhow;
 use async_trait::async_trait;
 use base64::engine::general_purpose;
@@ -15,58 +15,52 @@ use tokio::time::{sleep, Duration};
 
 // small blob size for transaction to get included in a block quickly
 pub(crate) const DEFAULT_AVAIL_MAX_SEGMENT_SIZE: u64 = 256 * 1024;
+// another mechanism guarantees eventual consistency, ok to retry once
+pub(crate) const DEFAULT_AVAIL_MAX_RETRIES: usize = 1;
+const MAX_BACKOFF_DELAY: Duration = Duration::from_secs(30);
 
 const MIN_BACKOFF_DELAY: Duration = Duration::from_millis(3000);
 const SUBMIT_API_PATH: &str = "v2/submit";
 
-// TurboDA provides relay service,
-// so the delay is shorter.
-// default retry duration(seconds): 0.5, 1, 2, 4, 8, 10
-const MIN_BACKOFF_DELAY_TURBO: Duration = Duration::from_millis(500);
-const MAX_BACKOFF_DELAY_TURBO: Duration = Duration::from_secs(10);
+const TURBO_MIN_BACKOFF_DELAY: Duration = Duration::from_millis(500);
 const TURBO_SUBMIT_API_PATH: &str = "user/submit_raw_data";
 
 /// Avail client: A turbo and Light
 /// Turbo client has higher priority, if not available, use the Light client
 #[derive(Clone)]
-pub struct AvailFusionClient {
+pub struct AvailFusionAdapter {
     turbo_client: Option<AvailTurboClient>,
     light_client: Option<AvailLightClient>,
 }
 
 #[async_trait]
-impl Operator for AvailFusionClient {
+impl OpenDAAdapter for AvailFusionAdapter {
     async fn submit_segment(
         &self,
         segment_id: SegmentID,
-        segment_bytes: Vec<u8>,
-        prefix: Option<String>,
+        segment_bytes: &[u8],
     ) -> anyhow::Result<()> {
-        // Fallback to light_client if turbo_client is not available
-        if let Some(turbo_client) = &self.turbo_client {
-            let turbo_result = turbo_client
-                .submit_segment(segment_id, segment_bytes.clone(), prefix.clone())
-                .await;
-
-            if let Err(error) = turbo_result {
-                tracing::warn!(
-                    "Failed to submit segment to Avail Turbo: {}, trying light_client if available",
-                    error
-                );
-
-                if let Some(light_client) = &self.light_client {
-                    return light_client
-                        .submit_segment(segment_id, segment_bytes, prefix)
-                        .await;
-                } else {
-                    return Err(anyhow!("Light client is not available"));
+        match &self.turbo_client {
+            Some(turbo_client) => {
+                match turbo_client.submit_segment(segment_id, segment_bytes).await {
+                    Ok(result) => return Ok(result), // No fallback needed
+                    Err(error) => {
+                        tracing::warn!(
+                            "Failed to submit segment to Avail Turbo: {}, trying light_client if available",
+                            error
+                        );
+                    }
                 }
             }
+            None => {
+                // No turbo_client, drop directly to light_client
+            }
+        }
 
-            turbo_result
-        } else if let Some(light_client) = &self.light_client {
+        // If it reaches here, try light_client if available
+        if let Some(light_client) = &self.light_client {
             light_client
-                .submit_segment(segment_id, segment_bytes, prefix)
+                .submit_segment(segment_id, segment_bytes) // Takes ownership here
                 .await
         } else {
             Err(anyhow!("Both turbo and light clients are not available"))
@@ -105,7 +99,7 @@ impl AvailFusionClientConfig {
         })
     }
 
-    pub fn build_client(&self) -> anyhow::Result<AvailFusionClient> {
+    pub fn build_client(&self) -> anyhow::Result<AvailFusionAdapter> {
         let turbo_client = if let Some(endpoint) = &self.turbo_endpoint {
             Some(AvailTurboClient::new(
                 endpoint,
@@ -121,7 +115,7 @@ impl AvailFusionClientConfig {
             None
         };
 
-        Ok(AvailFusionClient {
+        Ok(AvailFusionAdapter {
             turbo_client,
             light_client,
         })
@@ -180,17 +174,16 @@ pub struct AvailTurboClientSubmitResponse {
 }
 
 #[async_trait]
-impl Operator for AvailTurboClient {
+impl OpenDAAdapter for AvailTurboClient {
     async fn submit_segment(
         &self,
         segment_id: SegmentID,
-        segment_bytes: Vec<u8>,
-        _prefix: Option<String>,
+        segment_bytes: &[u8],
     ) -> anyhow::Result<()> {
         let submit_url = format!("{}/{}", self.endpoint, TURBO_SUBMIT_API_PATH);
         let max_attempts = self.max_retries + 1; // max_attempts = max_retries + first attempt
         let mut attempts = 0;
-        let mut retry_delay = MIN_BACKOFF_DELAY_TURBO;
+        let mut retry_delay = TURBO_MIN_BACKOFF_DELAY;
 
         // token for turbo submit,
         // will support more tokens in the future
@@ -204,7 +197,7 @@ impl Operator for AvailTurboClient {
                 .query(&[("token", TOKEN.to_string())])
                 .bearer_auth(&self.auth_token)
                 .header("Content-Type", "application/json")
-                .body(segment_bytes.clone());
+                .body(segment_bytes.to_vec());
 
             let response = request.send().await?;
 
@@ -222,7 +215,7 @@ impl Operator for AvailTurboClient {
                             retry_delay.as_millis(),
                         );
                     sleep(retry_delay).await;
-                    retry_delay = std::cmp::min(retry_delay * 2, MAX_BACKOFF_DELAY_TURBO);
+                    retry_delay = std::cmp::min(retry_delay * 2, MAX_BACKOFF_DELAY);
                     continue;
                 }
 
@@ -270,15 +263,14 @@ pub struct AvailLightClientSubmitResponse {
 }
 
 #[async_trait]
-impl Operator for AvailLightClient {
+impl OpenDAAdapter for AvailLightClient {
     async fn submit_segment(
         &self,
         segment_id: SegmentID,
-        segment_bytes: Vec<u8>,
-        _prefix: Option<String>,
+        segment_bytes: &[u8],
     ) -> anyhow::Result<()> {
         let submit_url = format!("{}/{}", self.endpoint, SUBMIT_API_PATH);
-        let data = general_purpose::STANDARD.encode(&segment_bytes);
+        let data = general_purpose::STANDARD.encode(segment_bytes);
         let max_attempts = self.max_retries + 1; // max_attempts = max_retries + first attempt
         let mut attempts = 0;
         let mut retry_delay = MIN_BACKOFF_DELAY;

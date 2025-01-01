@@ -28,6 +28,6 @@ pub struct DAServerStatus {
     /// 1. DA backends collapse
     /// 2. RoochStore is not consistent (cannot get tx from DB by tx order)
     pub last_avail_block_update_time: Option<u64>,
-    /// The available backends names
+    /// The available backend_identifiers
     pub avail_backends: Vec<String>,
 }
