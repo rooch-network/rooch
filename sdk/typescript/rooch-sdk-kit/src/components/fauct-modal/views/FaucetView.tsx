@@ -47,6 +47,7 @@ export function FaucetView({ inviter, swapRGas }: FaucetViewProps) {
   const [faucetAward, setFaucetAward] = useState(0)
   const [errorMessage, setErrorMessage] = useState<string>()
   const [claimedMessage, setClaimedMessage] = useState<string>()
+  const [needCheck, setNeedCheck] = useState<boolean>(false)
   const triggerRequest = useTriggerRequest()
 
   const env = currentNetwork === 'mainnet' ? ENVS.main : ENVS.test
@@ -65,14 +66,14 @@ export function FaucetView({ inviter, swapRGas }: FaucetViewProps) {
     })
   }, [finish])
 
-  useEffect(() => {
+  const checkClaim = useCallback(() => {
     if (!currentAddress) {
       return
     }
     setFaucetAward(0)
     setErrorMessage(undefined)
     setClaimedMessage(undefined)
-    startLoading('Checking things out for you... 🕵️‍♀️✨')
+    startLoading('Verifying your eligibility for gas... 🕵️‍♀️✨')
 
     client
       .queryUTXO({
@@ -108,16 +109,13 @@ export function FaucetView({ inviter, swapRGas }: FaucetViewProps) {
       })
       .finally(() => {
         finishLoading()
+        setNeedCheck(false)
       })
-  }, [
-    client,
-    currentAddress,
-    currentNetwork,
-    env.faucet.CA,
-    env.faucet.Obj,
-    finishLoading,
-    startLoading,
-  ])
+  }, [client, currentAddress, env.faucet.CA, env.faucet.Obj, finishLoading, startLoading])
+
+  useEffect(() => {
+    checkClaim()
+  }, [checkClaim])
 
   const handleClaim = async () => {
     if (errorMessage) {
@@ -143,6 +141,7 @@ export function FaucetView({ inviter, swapRGas }: FaucetViewProps) {
       const d: any = await response.json()
       const awardRGAS = fixedBalance(d.gas || 0, 8)
       setClaimedMessage(`Awesome! You've got ${awardRGAS} RGas in your pocket! 🚀🎉`)
+      setNeedCheck(true)
       triggerRequest('success')
     } catch (e: any) {
       if ('message' in e) {
@@ -219,9 +218,9 @@ export function FaucetView({ inviter, swapRGas }: FaucetViewProps) {
           disabled={loading !== undefined}
           type="button"
           variant="outline"
-          onClick={handleClaim}
+          onClick={needCheck ? checkClaim : handleClaim}
         >
-          {errorMessage ? 'Swap RGas' : 'Claim'}
+          {errorMessage ? 'Swap RGas' : needCheck ? 'Check' : 'Claim'}
         </Button>
       </div>
     </div>
