@@ -238,7 +238,7 @@ module invitation_record::invitation {
         assert!(user_invitation_records.remaining_luckey_ticket >= amount, ErrorNoRemainingLuckeyTicket);
         while (amount > 0) {
             let reward_amount = rand_u64_range(10_000_000, 100_000_000, amount);
-            if (reward_amount % 150 == 0) {
+            if (reward_amount % 18 == 0) {
                 reward_amount = reward_amount * 1000
             };
             let rgas_coin = coin_store::withdraw(&mut invitation_conf.rgas_store, (reward_amount as u256));

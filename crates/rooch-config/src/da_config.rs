@@ -11,74 +11,103 @@ use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::sync::Arc;
 
-const NAMESPACE_FROM_GENESIS_LENGTH: usize = 8;
+const DA_NAMESPACE_FROM_GENESIS_LENGTH: usize = 8;
 const DEFAULT_OPENDA_FS_DIR: &str = "openda-fs";
+// Default background submit interval: 5 seconds
+// a smaller interval helps to reduce the delay of blocks-making and submitting.
+//
+// After the first background submit job which, the cursor will be updated to the last submitted block number.
+// Only a few database operations are needed to catch up with the latest block numbers after a restart,
+// so it's okay to have a small interval.
+pub const DEFAULT_DA_BACKGROUND_SUBMIT_INTERVAL: u64 = 5;
 
+/// This enum specifies the strategy for submitting DA data.
+///
+/// `All` means all backends must submit.
+/// `Quorum` means a majority (>= n/2+1) must submit.
+/// `Number(n)` means at least `n` backends must submit.
+///
+/// No matter what the strategy is, an independent process will sync all the data to all backends.
+/// Eventual consistency is guaranteed.
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(rename_all = "lowercase")]
-pub enum DAServerSubmitStrategy {
-    // = n
+pub enum DASubmitStrategy {
     All,
-    // >= n/2+1
     Quorum,
-    // >= number, at least 1
     Number(usize),
 }
 
-impl FromStr for DAServerSubmitStrategy {
+impl FromStr for DASubmitStrategy {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
-            "all" => Ok(DAServerSubmitStrategy::All),
-            "quorum" => Ok(DAServerSubmitStrategy::Quorum),
+            "all" => Ok(DASubmitStrategy::All),
+            "quorum" => Ok(DASubmitStrategy::Quorum),
             _ => {
                 if let Ok(n) = s.parse::<usize>() {
-                    Ok(DAServerSubmitStrategy::Number(n))
+                    Ok(DASubmitStrategy::Number(n))
                 } else {
-                    Err(format!("invalid da server submit strategy: {}", s))
+                    Err(format!("invalid da submit strategy: {}", s))
                 }
             }
         }
     }
 }
 
-impl Display for DAServerSubmitStrategy {
+impl Display for DASubmitStrategy {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            DAServerSubmitStrategy::All => write!(f, "all"),
-            DAServerSubmitStrategy::Quorum => write!(f, "quorum"),
-            DAServerSubmitStrategy::Number(n) => write!(f, "{}", n),
+            DASubmitStrategy::All => write!(f, "all"),
+            DASubmitStrategy::Quorum => write!(f, "quorum"),
+            DASubmitStrategy::Number(n) => write!(f, "{}", n),
         }
     }
 }
 
+/// Represents the available Open-DA schemes supported by the backend.
+///
+/// Each enum variant corresponds to a specific backend type and its respective configuration.
 #[derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum OpenDAScheme {
-    // local filesystem, main config:
-    // root: file path
+    /// Local file system backend.
+    ///
+    /// Main configuration:
+    /// - `root`: The root file path for storing data files.
     #[default]
     Fs,
-    // gcs(Google Could Service), main config:
-    // bucket
-    // credential/credential_path (using path instead)
+
+    /// Google Cloud Storage (GCS) backend.
+    ///
+    /// Main configuration:
+    /// - `bucket`: The storage bucket.
+    /// - `credential`: The authentication credential (or `credential_path`, using a file path).
     Gcs,
-    // s3, main config:
-    // bucket
-    // region
-    // endpoint
-    // access_key_id
-    // secret_access_key
+
+    /// Amazon S3-compatible backend.
+    ///
+    /// Main configuration:
+    /// - `bucket`: The storage bucket.
+    /// - `region`: The AWS region.
+    /// - `endpoint`: The S3 endpoint URL.
+    /// - `access_key_id`: The AWS access key ID.
+    /// - `secret_access_key`: The AWS secret access key.
     S3,
-    // Avail Fusion(TurboDA & Light Client),
-    // turbo_endpoint
-    // turbo_auth_token
-    // light_endpoint
+
+    /// Avail Fusion backend, supporting TurboDA and Light Client.
+    ///
+    /// Main configuration:
+    /// - `turbo_endpoint`: The TurboDA service endpoint.
+    /// - `turbo_auth_token`: The authentication token for TurboDA.
+    /// - `light_endpoint`: The Light Client service endpoint.
     Avail,
-    // Celestia, main config:
-    // endpoint
-    // Option<auth_token>
+
+    /// Celestia backend.
+    ///
+    /// Main configuration:
+    /// - `endpoint`: The Celestia service endpoint.
+    /// - `auth_token` (optional): The authentication token for accessing the Celestia backend.
     Celestia,
 }
 
@@ -122,16 +151,39 @@ impl From<OpenDAScheme> for opendal::Scheme {
     }
 }
 
+/// Configuration for Data Availability (DA).
+///
+/// This struct controls how the node interacts with DA backends and specifies the starting point
+/// for submitting blocks to DA. It balances flexibility, efficiency, and clarity while ensuring
+/// compatibility with other configuration components.
 #[derive(Clone, Default, Debug, PartialEq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "kebab-case")]
 pub struct DAConfig {
+    /// Specifies the configuration for the DA backends.
+    ///
+    /// This contains details about the backends used to ensure data availability,
+    /// such as their types and additional configuration options. If not set, no DA
+    /// backends will be used.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub da_backend: Option<DABackendConfig>,
+
+    /// The first block to be submitted to the DA.
+    ///
+    /// If left unset, all blocks will be submitted starting from the genesis block.
+    /// This allows flexibility in choosing whether to submit old blocks or just newly
+    /// created ones.
     #[serde(skip_serializing_if = "Option::is_none")]
-    /// The first block to be submitted.
-    /// If not set, all blocks will be submitted.
     pub da_min_block_to_submit: Option<u128>,
+    /// Specifies the interval for background submission in seconds.
+    /// If not set, the default value is `DEFAULT_DA_BACKGROUND_SUBMIT_INTERVAL`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub background_submit_interval: Option<u64>,
+
+    /// Internal reference to the base configuration.
+    ///
+    /// This is used internally by the node to access basic configuration details
+    /// (e.g., data directories) and is initialized when the configuration is loaded.
     #[serde(skip)]
     base: Option<Arc<BaseConfig>>,
 }
@@ -161,6 +213,9 @@ impl FromStr for DAConfig {
 impl DAConfig {
     pub(crate) fn init(&mut self, base: Arc<BaseConfig>) -> anyhow::Result<()> {
         self.base = Some(base);
+
+        self.background_submit_interval
+            .get_or_insert(DEFAULT_DA_BACKGROUND_SUBMIT_INTERVAL);
 
         let default_fs_root = self.get_openda_fs_dir();
 
@@ -216,76 +271,117 @@ impl DAConfig {
     }
 }
 
+/// Configuration for DA (Data Availability) backends.
+///
+/// This struct defines how the node interacts with different DA backends,
+/// including their types and the strategy used for submitting data to them.
 #[derive(Clone, Default, Debug, PartialEq, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
 #[serde(deny_unknown_fields)]
 pub struct DABackendConfig {
+    /// Configures the submission strategy for DA operations.
+    ///
+    /// This option defines how many backends are required to successfully process data submissions:
+    /// - `All`: All backends must successfully submit the data.
+    /// - `Quorum`: A majority (>= n/2 + 1) of backends must submit.
+    /// - `Number(n)`: At least `n` backends must submit.
+    ///
+    /// If not set, the default behavior is equivalent to requiring `All`.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub submit_strategy: Option<DAServerSubmitStrategy>, // specifies the submission strategy of DA. 'all' with all backends, 'quorum' with quorum backends, 'n' with n backends, etc.
-    pub backends: Vec<DABackendConfigType>, // specifies the type of DA backends to be used. 'celestia' with corresponding Celestia backend configuration, 'foo' with corresponding foo backend configuration, etc.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub background_submit_interval: Option<u64>, // specifies the interval of background submit in seconds. If not set, the default value is 600s.
+    pub submit_strategy: Option<DASubmitStrategy>,
+
+    /// Specifies the types of DA backends to be used.
+    ///
+    /// Each backend entry corresponds to a specific configuration.
+    /// For example,
+    /// - `OpenDA`: Configured for access to storage solutions like S3, GCS, etc.
+    /// - Additional backend types can extend this field as the system grows.
+    pub backends: Vec<DABackendConfigType>,
 }
 
 impl DABackendConfig {
+    const DEFAULT_SUBMIT_STRATEGY: DASubmitStrategy = DASubmitStrategy::Number(1);
+
     pub fn calculate_submit_threshold(&mut self) -> usize {
         self.adjust_submit_strategy(); // Make sure submit_strategy is adjusted before calling this function.
 
         let backends_count = self.backends.len();
         match self.submit_strategy {
-            Some(DAServerSubmitStrategy::All) => backends_count,
-            Some(DAServerSubmitStrategy::Quorum) => backends_count / 2 + 1,
-            Some(DAServerSubmitStrategy::Number(number)) => number,
-            None => backends_count, // Default to 'All' if submit_strategy is None
+            Some(DASubmitStrategy::All) => backends_count,
+            Some(DASubmitStrategy::Quorum) => backends_count / 2 + 1,
+            Some(DASubmitStrategy::Number(number)) => number,
+            None => 1, // Default to 1
         }
     }
 
     fn adjust_submit_strategy(&mut self) {
-        // Set default strategy to All if it's None.
         let strategy = self
             .submit_strategy
-            .get_or_insert(DAServerSubmitStrategy::All);
+            .get_or_insert(Self::DEFAULT_SUBMIT_STRATEGY);
 
         let backends_count = self.backends.len();
 
         // If it's Number, adjust the value to be within [1, n].
-        if let DAServerSubmitStrategy::Number(ref mut num) = strategy {
+        if let DASubmitStrategy::Number(ref mut num) = strategy {
             *num = std::cmp::max(1, std::cmp::min(*num, backends_count));
         }
     }
 }
 
+/// Represents the type of DA (Data Availability) backend configuration.
+///
+/// Each variant corresponds to a specific backend type and its associated configuration.
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum DABackendConfigType {
+    /// OpenDA backend configuration.
+    ///
+    /// This variant contains the configuration specific to OpenDA, enabling access
+    /// to various storage backends (e.g., Avail, Celestia, S3, GCS, etc.).
     OpenDa(DABackendOpenDAConfig),
 }
 
+/// Configuration for the Open DA backend.
+///
+/// Open DA provides the ability to interact with various backend implementations.
+/// Each backend is defined by its unique configuration options.
 #[derive(Clone, Default, Debug, PartialEq, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
 #[serde(deny_unknown_fields)]
-/// Open DA provides ability to access various backends
 pub struct DABackendOpenDAConfig {
-    /// specifies the type of backend to be used. 'gcs' with corresponding GCS server configuration, 's3' with corresponding S3 server configuration, etc
+    /// Specifies the type of backend to be used.
+    /// The `scheme` informs the backend logic on how to handle the associated configuration.
     #[serde(default)]
     pub scheme: OpenDAScheme,
-    /// specifies the configuration of the backend. 'gcs' with corresponding GCS server configuration, 's3' with corresponding S3 server configuration, etc.
+
+    /// Specifies the detailed configuration for the selected backend.
     pub config: HashMap<String, String>,
+
+    /// Specifies the namespace for data storage, depending on the backend.
+    ///
+    /// - **Filesystem-like backends** (e.g., S3, GCS, local filesystem):
+    ///   - The path is structured as `<namespace>/<segment_id>` to store the segment.
+    ///   - If not set:
+    ///     - `<derive_genesis_namespace>/<segment_id>` is used as the full path.
+    ///     - If the `root` field is set in the `config`, the full path becomes `<root>/<namespace>/<segment_id>`.
+    /// - **Celestia**:
+    ///   - The namespace must already exist and is specified directly in hexadecimal format.
     #[serde(skip_serializing_if = "Option::is_none")]
-    /// for fs backend:
-    /// <namespace>/<segment_id> is the path to store the segment.
-    /// If not set, the <derive_genesis_namespace>/<segment_id> is the full path
-    /// If root is set in config, the <root>/<namespace>/<segment_id> is the full path
-    /// for celestia:
-    /// must be existed, it's Namespace in hex
     pub namespace: Option<String>,
+
+    /// Specifies the maximum segment size (in bytes).
+    ///
+    /// - If not set, the backend implementation will use its default value.
+    /// - This helps determine the maximum allowed size for data segments.
     #[serde(skip_serializing_if = "Option::is_none")]
-    /// max segment size.
-    /// Set at crates/rooch-da/src/backend/openda if None.
     pub max_segment_size: Option<u64>,
+
+    /// Specifies the maximum number of retry attempts for failed segment submissions.
+    ///
+    /// - If not set, the backend implementation will determine the default number of retries.
+    /// - This configuration can help fine-tune the reliability of segment submission in case of transient errors.
     #[serde(skip_serializing_if = "Option::is_none")]
-    /// maximum number of attempts to retransmit a failed segment submission.
-    pub max_retires: Option<usize>,
+    pub max_retries: Option<usize>,
 }
 
 /// Derives a namespace from the genesis hash for the DA backend.
@@ -295,7 +391,7 @@ pub fn derive_namespace_from_genesis(genesis_hash: H256) -> String {
     let encoded_hash = hex::encode(genesis_hash.0);
     encoded_hash
         .chars()
-        .take(NAMESPACE_FROM_GENESIS_LENGTH)
+        .take(DA_NAMESPACE_FROM_GENESIS_LENGTH)
         .collect()
 }
 
@@ -306,38 +402,37 @@ mod tests {
     #[test]
     fn calculate_submit_threshold() {
         let mut da_backend_config = DABackendConfig {
-            submit_strategy: Some(DAServerSubmitStrategy::All),
+            submit_strategy: Some(DASubmitStrategy::All),
             backends: vec![
                 DABackendConfigType::OpenDa(DABackendOpenDAConfig {
                     scheme: OpenDAScheme::Fs,
                     config: HashMap::new(),
                     namespace: None,
                     max_segment_size: None,
-                    max_retires: None,
+                    max_retries: None,
                 }),
                 DABackendConfigType::OpenDa(DABackendOpenDAConfig {
                     scheme: OpenDAScheme::Fs,
                     config: HashMap::new(),
                     namespace: None,
                     max_segment_size: None,
-                    max_retires: None,
+                    max_retries: None,
                 }),
             ],
-            background_submit_interval: None,
         };
         assert_eq!(da_backend_config.calculate_submit_threshold(), 2);
 
-        da_backend_config.submit_strategy = Some(DAServerSubmitStrategy::Quorum);
+        da_backend_config.submit_strategy = Some(DASubmitStrategy::Quorum);
         assert_eq!(da_backend_config.calculate_submit_threshold(), 2);
 
-        da_backend_config.submit_strategy = Some(DAServerSubmitStrategy::Number(1));
+        da_backend_config.submit_strategy = Some(DASubmitStrategy::Number(1));
         assert_eq!(da_backend_config.calculate_submit_threshold(), 1);
 
-        da_backend_config.submit_strategy = Some(DAServerSubmitStrategy::Number(3));
+        da_backend_config.submit_strategy = Some(DASubmitStrategy::Number(3));
         assert_eq!(da_backend_config.calculate_submit_threshold(), 2);
 
         da_backend_config.submit_strategy = None;
-        assert_eq!(da_backend_config.calculate_submit_threshold(), 2);
+        assert_eq!(da_backend_config.calculate_submit_threshold(), 1);
     }
 
     #[test]
@@ -357,7 +452,7 @@ mod tests {
             .collect(),
             namespace: None,
             max_segment_size: None,
-            max_retires: None,
+            max_retries: None,
         };
         let exp_celestia_config = DABackendOpenDAConfig {
             scheme: OpenDAScheme::Celestia,
@@ -371,26 +466,26 @@ mod tests {
                 "000000000000000000000000000000000000000102030405060708090a".to_string(),
             ),
             max_segment_size: None,
-            max_retires: None,
+            max_retries: None,
         };
         let exp_fs_config = DABackendOpenDAConfig {
             scheme: OpenDAScheme::Fs,
             config: HashMap::new(),
             namespace: None,
             max_segment_size: None,
-            max_retires: None,
+            max_retries: None,
         };
         let exp_da_config = DAConfig {
             da_backend: Some(DABackendConfig {
-                submit_strategy: Some(DAServerSubmitStrategy::All),
+                submit_strategy: Some(DASubmitStrategy::All),
                 backends: vec![
                     DABackendConfigType::OpenDa(exp_gcs_config.clone()),
                     DABackendConfigType::OpenDa(exp_celestia_config.clone()),
                     DABackendConfigType::OpenDa(exp_fs_config.clone()),
                 ],
-                background_submit_interval: None,
             }),
             da_min_block_to_submit: Some(340282366920938463463374607431768211455),
+            background_submit_interval: None,
             base: None,
         };
         match DAConfig::from_str(da_config_str) {
@@ -411,9 +506,9 @@ mod tests {
             da_backend: Some(DABackendConfig {
                 submit_strategy: None,
                 backends: vec![DABackendConfigType::OpenDa(exp_fs_config.clone())],
-                background_submit_interval: None,
             }),
             da_min_block_to_submit: None,
+            background_submit_interval: None,
             base: None,
         };
         match DAConfig::from_str(da_config_str) {
