@@ -291,7 +291,7 @@ criterion = { version = "0.5.1", features = [
     "async_tokio",
     "html_reports",
 ] }
-xxhash-rust = { version = "0.8.14", features = ["std", "xxh3"] }
+xxhash-rust = { version = "0.8.15", features = ["std", "xxh3"] }
 base64 = "0.22.1"
 wasmer = "4.2.5"
 wasmer-types = "4.2.5"
