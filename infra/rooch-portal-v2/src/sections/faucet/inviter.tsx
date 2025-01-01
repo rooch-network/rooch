@@ -2,7 +2,7 @@
 
 import type { Bytes } from '@roochnetwork/rooch-sdk';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from "react";
 import { Args, toHEX, stringToBytes } from '@roochnetwork/rooch-sdk';
 import {
   useRoochClient,
@@ -54,6 +54,7 @@ export function InviterFaucetView({ inviterAddress }: { inviterAddress: string }
   const [errorMsg, setErrorMsg] = useState<string>();
   const [faucetStatus, setFaucetStatus] = useState<boolean>(false);
   const [UTXOs, setUTXOs] = useState<Array<string> | null>(null);
+  const [needCheck, setNeedCheck] = useState(false);
 
   const { data: inviter } = useRoochClientQuery('queryObjectStates', {
     filter: {
@@ -84,7 +85,7 @@ export function InviterFaucetView({ inviterAddress }: { inviterAddress: string }
     { refetchInterval: 5000 }
   );
 
-  useEffect(() => {
+  const checkClaim = useCallback(() => {
     if (!viewAddress) {
       return;
     }
@@ -111,6 +112,7 @@ export function InviterFaucetView({ inviterAddress }: { inviterAddress: string }
           if (result.vm_status === 'Executed') {
             const gas = Number(formatCoin(Number(result.return_values![0].decoded_value), 8, 2));
             setClaimGas(gas);
+            setNeedCheck(false);
           } else if ('MoveAbort' in result.vm_status) {
             setErrorMsg(ERROR_MSG[Number(result.vm_status.MoveAbort.abort_code)]);
           }
@@ -121,7 +123,12 @@ export function InviterFaucetView({ inviterAddress }: { inviterAddress: string }
       .finally(() => {
         setFaucetStatus(false);
       });
-  }, [client, faucetCfg, viewAddress]);
+  }, [client, faucetCfg, viewAddress])
+
+  useEffect(() => {
+
+    checkClaim();
+  }, [checkClaim]);
 
   const fetchFaucet = async () => {
     if (errorMsg === ALREADY_CLAIMED) {
@@ -182,6 +189,7 @@ export function InviterFaucetView({ inviterAddress }: { inviterAddress: string }
         const d = await response.json();
         window.localStorage.setItem(INVITER_ADDRESS_KEY, '');
         await refetch();
+        setNeedCheck(true);
         toast.success(
           `Faucet Success! RGas: ${formatCoin(Number(d.gas || 0), data?.decimals || 0, 2)}`
         );
@@ -226,11 +234,11 @@ export function InviterFaucetView({ inviterAddress }: { inviterAddress: string }
               color="primary"
               disabled={errorMsg !== undefined && errorMsg !== ALREADY_CLAIMED}
               loading={isPending || faucetStatus}
-              onClick={fetchFaucet}
+              onClick={needCheck ? checkClaim : fetchFaucet}
             >
               {errorMsg === ALREADY_CLAIMED
                 ? 'Purchase RGas'
-                : errorMsg || `Claim: ${claimGas} RGas`}
+                : errorMsg || needCheck ? 'Check' : `Claim: ${claimGas} RGas`}
             </LoadingButton>
           </Stack>
         </CardContent>
