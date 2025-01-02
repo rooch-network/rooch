@@ -667,15 +667,15 @@ impl RuntimeObject {
 
         let fields_with_objects =
             self.list_field_objects_from_db(layout_loader, resolver, cursor, limit)?;
-        let mut fields = Vec::with_capacity(fields_with_objects.len());
-        fields_with_objects
+        let fields = fields_with_objects
             .into_iter()
-            .for_each(|(key, _db_obj, bytes_len_opt)| {
-                fields.push(key.into());
+            .filter_map(|(key, _db_obj, bytes_len_opt)| {
                 bytes_len_opt
                     .flatten()
                     .map(|bytes_len| total_bytes_len += bytes_len);
-            });
+                Some(key.into())
+            })
+            .collect::<Vec<AccountAddress>>();
         Ok((fields, Some(Some(total_bytes_len))))
     }
 }
