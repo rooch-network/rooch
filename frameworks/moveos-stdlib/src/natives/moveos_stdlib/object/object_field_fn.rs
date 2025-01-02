@@ -11,7 +11,7 @@ use move_vm_runtime::native_functions::NativeContext;
 use move_vm_types::{
     loaded_data::runtime_types::Type, natives::function::NativeResult, pop_arg, values::Value,
 };
-use smallvec::{smallvec, SmallVec};
+use smallvec::smallvec;
 use std::collections::VecDeque;
 
 use super::{error_to_abort_code, CommonGasParameters};
@@ -287,7 +287,10 @@ pub(crate) fn native_list_fields(
             debug!("value: {:#?} field_load_gas: {:?}", value, field_load_gas);
             Ok(NativeResult::ok(
                 gas_cost + common_gas_parameter.calculate_load_cost(field_load_gas),
-                SmallVec::from_vec(value),
+                //The the function in Move support tuple, so it returns a vector of values
+                //If we want to return vector<V>, we need to conver it to Value::Vec
+                //TODO make the vector_for_testing_only function to stable
+                smallvec![Value::vector_for_testing_only(value)],
             ))
         }
         Err(err) => {

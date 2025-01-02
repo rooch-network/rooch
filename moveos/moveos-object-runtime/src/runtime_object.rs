@@ -652,12 +652,18 @@ impl RuntimeObject {
         limit: usize,
         field_type: &Type,
     ) -> PartialVMResult<(Vec<Value>, Option<Option<NumBytes>>)> {
-        debug!("enter list_fields");
+        debug!(
+            "enter list_fields, cursor:{:?}, limit:{:?}, field_type:{:?}",
+            cursor, limit, field_type
+        );
         let expect_value_type = layout_loader.type_to_type_tag(field_type)?;
         debug!("expect_value_type: {:#?}", expect_value_type);
         let fields_with_objects =
             self.list_field_objects_from_db(layout_loader, resolver, cursor, limit)?;
-
+        debug!(
+            "list_field_objects_from_db length: {}",
+            fields_with_objects.len()
+        );
         let mut fields = Vec::with_capacity(fields_with_objects.len());
         let mut total_bytes_len = NumBytes::zero();
 
