@@ -58,20 +58,20 @@ We just keep the raw bytes of the address and do care about the network.
 ## Constants
 
 
-<a name="0x3_bitcoin_address_ErrorArgNotVectorU8"></a>
-
-
-
-<pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_ErrorArgNotVectorU8">ErrorArgNotVectorU8</a>: u64 = 2;
-</code></pre>
-
-
-
 <a name="0x3_bitcoin_address_ErrorDeprecated"></a>
 
 
 
 <pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_ErrorDeprecated">ErrorDeprecated</a>: u64 = 6;
+</code></pre>
+
+
+
+<a name="0x3_bitcoin_address_ErrorArgNotVectorU8"></a>
+
+
+
+<pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_ErrorArgNotVectorU8">ErrorArgNotVectorU8</a>: u64 = 2;
 </code></pre>
 
 
