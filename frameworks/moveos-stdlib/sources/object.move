@@ -496,7 +496,7 @@ module moveos_std::object {
 
     /// List all field names of the object
     fun list_field_keys<T: key>(obj: &Object<T>): vector<address> {
-        native_list_fields<address>(obj.id)
+        native_list_field_keys<address>(obj.id)
     }
 
 
@@ -567,7 +567,7 @@ module moveos_std::object {
 
     native fun native_remove_field<V>(obj_id: ObjectID, key: address): V;
 
-    native fun native_list_fields<V>(obj_id: ObjectID): vector<V>;
+    native fun native_list_field_keys<V>(obj_id: ObjectID): vector<V>;
 
     #[test_only]
     /// Testing only: allows to drop a Object even if it's fields is not empty.
@@ -1007,8 +1007,8 @@ module moveos_std::object {
         assert!(field_size(&obj) == 2, 1000);
 
         let field_keys = list_field_keys<TestStruct>(&obj);
-        // assert!(!vector::is_empty(&field_keys), 1001);
-        // assert!(vector::length(&field_keys) == 2, 1002);
+        assert!(!vector::is_empty(&field_keys), 1001);
+        assert!(vector::length(&field_keys) == 2, 1002);
 
         std::debug::print(&field_keys);
 
@@ -1021,15 +1021,13 @@ module moveos_std::object {
         assert!(field1.name == b"key1", 1003);
         assert!(field1.value == 1u64, 1004);
 
-        let field2 = vector::borrow(&field_keys, 1);
-        std::debug::print(field2);
+        let field_key2 = *vector::borrow(&field_keys, 1);
+        std::debug::print(&field_key2);
 
-        // assert!(field1.name == b"key1", 1003);
-        // assert!(field1.value == 1u64, 1004);
-        // assert!(field2.name == b"key2", 1005);
-        // assert!(field2.value == 2u64, 1006);
+        let field2 = native_borrow_field<DynamicField<vector<u8>, u64>>(obj.id, field_key2);
+        assert!(field2.name == b"key2", 1005);
+        assert!(field2.value == 2u64, 1006);
 
-        //vector::destroy_empty(field_keys);
         let TestStruct{ count: _} = drop_unchecked(obj);
     }
 }

@@ -24,7 +24,6 @@ use moveos_types::moveos_std::onchain_features::VALUE_SIZE_GAS_FEATURE;
 use moveos_types::{
     moveos_std::object::ObjectID, state::FieldKey, state_resolver::StatelessResolver,
 };
-use tracing::debug;
 
 /***************************************************************************************************
  * native fun native_add_field<V>(obj_id: ObjectID, key: address, val: V): Object<V>;
@@ -246,7 +245,7 @@ pub(crate) fn native_remove_field(
 }
 
 /***************************************************************************************************
- * native fun native_list_fields<V>(obj_id: ObjectID): V;
+ * native fun native_list_field_keys<V>(obj_id: ObjectID): V;
  **************************************************************************************************/
 #[derive(Debug, Clone)]
 pub struct ListFieldsGasParameters {
@@ -254,7 +253,7 @@ pub struct ListFieldsGasParameters {
     pub per_byte_serialized: InternalGasPerByte,
 }
 
-pub(crate) fn native_list_fields(
+pub(crate) fn native_list_field_keys(
     gas_parameters: &GasParameters,
     context: &mut NativeContext,
     ty_args: Vec<Type>,
@@ -264,10 +263,9 @@ pub(crate) fn native_list_fields(
     debug_assert_eq!(args.len(), 1);
 
     let obj_id = pop_object_id(&mut args)?;
-    debug!("obj_id: {}", obj_id);
 
     let common_gas_parameter = gas_parameters.common.clone();
-    let list_fields_gas_parameter = gas_parameters.native_list_fields.clone();
+    let list_fields_gas_parameter = gas_parameters.native_list_field_keys.clone();
 
     let object_context = context.extensions().get::<ObjectRuntimeContext>();
     let binding = object_context.object_runtime();
@@ -279,20 +277,14 @@ pub(crate) fn native_list_fields(
         + list_fields_gas_parameter.per_byte_serialized * NumBytes::new(field_key_bytes)
         + common_gas_parameter.calculate_load_cost(object_load_gas);
 
-    debug!("gas_cost: {}", gas_cost);
-
-    let result = rt_obj.list_field_keys(context, resolver, None, usize::MAX, &ty_args[0]);
+    let result = rt_obj.list_field_keys(context, resolver, None, usize::MAX);
     match result {
-        Ok((field_keys, field_load_gas)) => {
-            debug!("value: {:#?}", field_keys);
-            Ok(NativeResult::ok(
-                gas_cost + common_gas_parameter.calculate_load_cost(field_load_gas),
-                smallvec![Value::vector_address(field_keys)],
-            ))
-        }
+        Ok((field_keys, field_load_gas)) => Ok(NativeResult::ok(
+            gas_cost + common_gas_parameter.calculate_load_cost(field_load_gas),
+            smallvec![Value::vector_address(field_keys)],
+        )),
         Err(err) => {
             let abort_code = error_to_abort_code(err);
-            debug!("failed by abort_code: {:#?}", abort_code);
             Ok(NativeResult::err(gas_cost, abort_code))
         }
     }

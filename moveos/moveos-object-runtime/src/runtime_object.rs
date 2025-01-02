@@ -31,7 +31,6 @@ use moveos_types::{
     state_resolver::StatelessResolver,
 };
 use std::collections::{btree_map::Entry, BTreeMap};
-use tracing::debug;
 
 type ScanFieldList = Vec<(FieldKey, Value)>;
 type FieldList = Vec<(FieldKey, RuntimeObject, Option<Option<NumBytes>>)>;
@@ -650,15 +649,7 @@ impl RuntimeObject {
         resolver: &dyn StatelessResolver,
         cursor: Option<FieldKey>,
         limit: usize,
-        field_type: &Type,
     ) -> PartialVMResult<(Vec<AccountAddress>, Option<Option<NumBytes>>)> {
-        debug!(
-            "enter list_fields, cursor:{:?}, limit:{:?}, field_type:{:?}",
-            cursor, limit, field_type
-        );
-        let expect_value_type = layout_loader.type_to_type_tag(field_type)?;
-        debug!("expect_value_type: {:#?}", expect_value_type);
-
         let mut total_bytes_len = NumBytes::zero();
         let cached_fields = self
             .fields
@@ -676,10 +667,6 @@ impl RuntimeObject {
 
         let fields_with_objects =
             self.list_field_objects_from_db(layout_loader, resolver, cursor, limit)?;
-        debug!(
-            "list_field_objects_from_db length: {}",
-            fields_with_objects.len()
-        );
         let mut fields = Vec::with_capacity(fields_with_objects.len());
         for (key, _db_obj, bytes_len_opt) in fields_with_objects {
             fields.push(key.into());
@@ -687,7 +674,6 @@ impl RuntimeObject {
                 total_bytes_len += bytes_len;
             }
         }
-
         Ok((fields, Some(Some(total_bytes_len))))
     }
 }
