@@ -668,12 +668,14 @@ impl RuntimeObject {
         let fields_with_objects =
             self.list_field_objects_from_db(layout_loader, resolver, cursor, limit)?;
         let mut fields = Vec::with_capacity(fields_with_objects.len());
-        for (key, _db_obj, bytes_len_opt) in fields_with_objects {
-            fields.push(key.into());
-            if let Some(bytes_len) = bytes_len_opt.flatten() {
-                total_bytes_len += bytes_len;
-            }
-        }
+        fields_with_objects
+            .into_iter()
+            .for_each(|(key, _db_obj, bytes_len_opt)| {
+                fields.push(key.into());
+                bytes_len_opt
+                    .flatten()
+                    .map(|bytes_len| total_bytes_len += bytes_len);
+            });
         Ok((fields, Some(Some(total_bytes_len))))
     }
 }
