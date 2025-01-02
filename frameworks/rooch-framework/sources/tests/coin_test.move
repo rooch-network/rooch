@@ -52,6 +52,12 @@ module rooch_framework::coin_test{
             assert!(symbol<FakeCoin>(coin_info) == symbol, 2);
             assert!(decimals<FakeCoin>(coin_info) == decimals, 3);
         };
+        //coin info by type
+        assert!(coin::supply_by_type<FakeCoin>() == 0, 4);
+        assert!(coin::name_by_type<FakeCoin>() == name, 5);
+        assert!(coin::symbol_by_type<FakeCoin>() == symbol, 6);
+        assert!(coin::decimals_by_type<FakeCoin>() == decimals, 7);
+        assert!(coin::icon_url_by_type<FakeCoin>() == option::none(), 8);
 
         let coins_minted = mint_extend<FakeCoin>(&mut coin_info_obj, 100);
         

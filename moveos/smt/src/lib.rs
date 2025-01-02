@@ -204,7 +204,7 @@ where
         let tree: JellyfishMerkleTree<K, V, NR> = JellyfishMerkleTree::new(&self.node_reader);
         let (data, proof) = tree.get_with_proof(state_root.into(), key)?;
 
-        let size = data.clone().map(|v| v.raw.len()).unwrap_or(0);
+        let size = data.as_ref().map(|v| v.raw.len()).unwrap_or(0);
         self.metrics
             .smt_get_with_proof_bytes
             .with_label_values(&[fn_name])

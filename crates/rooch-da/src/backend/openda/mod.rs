@@ -1,10 +1,15 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+mod adapter;
 mod avail;
-mod backend;
 mod celestia;
+mod manager;
 mod opendal;
-mod operator;
 
-pub use self::backend::OpenDABackend;
+pub use self::manager::OpenDABackendManager;
+use rooch_config::da_config::OpenDAScheme;
+
+pub fn derive_identifier(scheme: OpenDAScheme) -> String {
+    format!("openda-{}", scheme)
+}

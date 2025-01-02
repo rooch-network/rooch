@@ -8,19 +8,27 @@ This module provides the foundation for typesafe Coins.
 
 -  [Struct `Coin`](#0x3_coin_Coin)
 -  [Resource `CoinInfo`](#0x3_coin_CoinInfo)
+-  [Resource `CoinMetadata`](#0x3_coin_CoinMetadata)
+-  [Resource `CoinRegistry`](#0x3_coin_CoinRegistry)
 -  [Struct `MintEvent`](#0x3_coin_MintEvent)
 -  [Struct `BurnEvent`](#0x3_coin_BurnEvent)
 -  [Constants](#@Constants_0)
 -  [Function `genesis_init`](#0x3_coin_genesis_init)
+-  [Function `init_coin_registry`](#0x3_coin_init_coin_registry)
 -  [Function `coin_address`](#0x3_coin_coin_address)
 -  [Function `check_coin_info_registered`](#0x3_coin_check_coin_info_registered)
 -  [Function `is_registered`](#0x3_coin_is_registered)
 -  [Function `coin_info_id`](#0x3_coin_coin_info_id)
 -  [Function `name`](#0x3_coin_name)
+-  [Function `name_by_type`](#0x3_coin_name_by_type)
 -  [Function `symbol`](#0x3_coin_symbol)
+-  [Function `symbol_by_type`](#0x3_coin_symbol_by_type)
 -  [Function `decimals`](#0x3_coin_decimals)
+-  [Function `decimals_by_type`](#0x3_coin_decimals_by_type)
 -  [Function `supply`](#0x3_coin_supply)
+-  [Function `supply_by_type`](#0x3_coin_supply_by_type)
 -  [Function `icon_url`](#0x3_coin_icon_url)
+-  [Function `icon_url_by_type`](#0x3_coin_icon_url_by_type)
 -  [Function `is_same_coin`](#0x3_coin_is_same_coin)
 -  [Function `destroy_zero`](#0x3_coin_destroy_zero)
 -  [Function `extract`](#0x3_coin_extract)
@@ -31,6 +39,7 @@ This module provides the foundation for typesafe Coins.
 -  [Function `coin_info`](#0x3_coin_coin_info)
 -  [Function `upsert_icon_url`](#0x3_coin_upsert_icon_url)
 -  [Function `register_extend`](#0x3_coin_register_extend)
+-  [Function `init_metadata`](#0x3_coin_init_metadata)
 -  [Function `mint`](#0x3_coin_mint)
 -  [Function `mint_extend`](#0x3_coin_mint_extend)
 -  [Function `burn`](#0x3_coin_burn)
@@ -73,6 +82,30 @@ CoinInfo<CoinType> is a named Object, the <code>coin_type</code> is the unique k
 
 
 <pre><code><b>struct</b> <a href="coin.md#0x3_coin_CoinInfo">CoinInfo</a>&lt;CoinType: key&gt; <b>has</b> store, key
+</code></pre>
+
+
+
+<a name="0x3_coin_CoinMetadata"></a>
+
+## Resource `CoinMetadata`
+
+Coin metadata is copied from CoinInfo, and stored as dynamic field of CoinRegistry
+
+
+<pre><code><b>struct</b> <a href="coin.md#0x3_coin_CoinMetadata">CoinMetadata</a> <b>has</b> store, key
+</code></pre>
+
+
+
+<a name="0x3_coin_CoinRegistry"></a>
+
+## Resource `CoinRegistry`
+
+The registry of all coin types.
+
+
+<pre><code><b>struct</b> <a href="coin.md#0x3_coin_CoinRegistry">CoinRegistry</a> <b>has</b> key
 </code></pre>
 
 
@@ -175,12 +208,32 @@ Name of the coin is too long
 
 
 
+<a name="0x3_coin_ErrorCoinRegisterAlreadyInitialized"></a>
+
+CoinRegister is already initialized
+
+
+<pre><code><b>const</b> <a href="coin.md#0x3_coin_ErrorCoinRegisterAlreadyInitialized">ErrorCoinRegisterAlreadyInitialized</a>: u64 = 9;
+</code></pre>
+
+
+
 <a name="0x3_coin_ErrorCoinSymbolTooLong"></a>
 
 Symbol of the coin is too long
 
 
 <pre><code><b>const</b> <a href="coin.md#0x3_coin_ErrorCoinSymbolTooLong">ErrorCoinSymbolTooLong</a>: u64 = 7;
+</code></pre>
+
+
+
+<a name="0x3_coin_ErrorDeprecated"></a>
+
+The function is deprecated
+
+
+<pre><code><b>const</b> <a href="coin.md#0x3_coin_ErrorDeprecated">ErrorDeprecated</a>: u64 = 10;
 </code></pre>
 
 
@@ -240,6 +293,18 @@ Coin amount cannot be zero
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="coin.md#0x3_coin_genesis_init">genesis_init</a>(__genesis_account: &<a href="">signer</a>)
+</code></pre>
+
+
+
+<a name="0x3_coin_init_coin_registry"></a>
+
+## Function `init_coin_registry`
+
+Initialize the CoinRegistry, this function is for framework upgrade.
+
+
+<pre><code>entry <b>fun</b> <a href="coin.md#0x3_coin_init_coin_registry">init_coin_registry</a>()
 </code></pre>
 
 
@@ -304,6 +369,18 @@ Returns the name of the coin.
 
 
 
+<a name="0x3_coin_name_by_type"></a>
+
+## Function `name_by_type`
+
+Returns the name of the coin by the type <code>CoinType</code>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_name_by_type">name_by_type</a>&lt;CoinType: key&gt;(): <a href="_String">string::String</a>
+</code></pre>
+
+
+
 <a name="0x3_coin_symbol"></a>
 
 ## Function `symbol`
@@ -312,6 +389,18 @@ Returns the symbol of the coin, usually a shorter version of the name.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_symbol">symbol</a>&lt;CoinType: key&gt;(coin_info: &<a href="coin.md#0x3_coin_CoinInfo">coin::CoinInfo</a>&lt;CoinType&gt;): <a href="_String">string::String</a>
+</code></pre>
+
+
+
+<a name="0x3_coin_symbol_by_type"></a>
+
+## Function `symbol_by_type`
+
+Returns the symbol of the coin by the type <code>CoinType</code>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_symbol_by_type">symbol_by_type</a>&lt;CoinType: key&gt;(): <a href="_String">string::String</a>
 </code></pre>
 
 
@@ -330,6 +419,18 @@ be displayed to a user as <code>5.05</code> (<code>505 / 10 ** 2</code>).
 
 
 
+<a name="0x3_coin_decimals_by_type"></a>
+
+## Function `decimals_by_type`
+
+Returns the decimals of the coin by the type <code>CoinType</code>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_decimals_by_type">decimals_by_type</a>&lt;CoinType: key&gt;(): u8
+</code></pre>
+
+
+
 <a name="0x3_coin_supply"></a>
 
 ## Function `supply`
@@ -342,6 +443,18 @@ Returns the amount of coin in existence.
 
 
 
+<a name="0x3_coin_supply_by_type"></a>
+
+## Function `supply_by_type`
+
+Returns the amount of coin in existence by the type <code>CoinType</code>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_supply_by_type">supply_by_type</a>&lt;CoinType: key&gt;(): <a href="">u256</a>
+</code></pre>
+
+
+
 <a name="0x3_coin_icon_url"></a>
 
 ## Function `icon_url`
@@ -350,6 +463,18 @@ Returns the icon url of coin.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_icon_url">icon_url</a>&lt;CoinType: key&gt;(coin_info: &<a href="coin.md#0x3_coin_CoinInfo">coin::CoinInfo</a>&lt;CoinType&gt;): <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;
+</code></pre>
+
+
+
+<a name="0x3_coin_icon_url_by_type"></a>
+
+## Function `icon_url_by_type`
+
+Returns the icon url of coin by the type <code>CoinType</code>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_icon_url_by_type">icon_url_by_type</a>&lt;CoinType: key&gt;(): <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;
 </code></pre>
 
 
@@ -475,6 +600,18 @@ This function is protected by <code>private_generics</code>, so it can only be c
 
 <pre><code>#[private_generics(#[CoinType])]
 <b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_register_extend">register_extend</a>&lt;CoinType: key&gt;(name: <a href="_String">string::String</a>, symbol: <a href="_String">string::String</a>, icon_url: <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;, decimals: u8): <a href="_Object">object::Object</a>&lt;<a href="coin.md#0x3_coin_CoinInfo">coin::CoinInfo</a>&lt;CoinType&gt;&gt;
+</code></pre>
+
+
+
+<a name="0x3_coin_init_metadata"></a>
+
+## Function `init_metadata`
+
+This function for the old code to initialize the CoinMetadata
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_init_metadata">init_metadata</a>&lt;CoinType: key&gt;(coin_info: &<a href="_Object">object::Object</a>&lt;<a href="coin.md#0x3_coin_CoinInfo">coin::CoinInfo</a>&lt;CoinType&gt;&gt;)
 </code></pre>
 
 
