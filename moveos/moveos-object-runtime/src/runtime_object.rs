@@ -658,6 +658,22 @@ impl RuntimeObject {
         );
         let expect_value_type = layout_loader.type_to_type_tag(field_type)?;
         debug!("expect_value_type: {:#?}", expect_value_type);
+
+        let mut total_bytes_len = NumBytes::zero();
+        let cached_fields = self
+            .fields
+            .iter()
+            .filter_map(|(key, field)| {
+                if field.is_none() {
+                    return None;
+                }
+                Some(Value::address((*key).into()))
+            })
+            .collect::<Vec<Value>>();
+        if !cached_fields.is_empty() {
+            return Ok((cached_fields, Some(Some(total_bytes_len))));
+        }
+
         let fields_with_objects =
             self.list_field_objects_from_db(layout_loader, resolver, cursor, limit)?;
         debug!(
@@ -665,23 +681,9 @@ impl RuntimeObject {
             fields_with_objects.len()
         );
         let mut fields = Vec::with_capacity(fields_with_objects.len());
-        let mut total_bytes_len = NumBytes::zero();
-
-        for (key, db_obj, bytes_len_opt) in fields_with_objects {
-            let (value, bytes_len) = if let Some(cached_field) = self.get_loaded_field(&key) {
-                (
-                    cached_field.borrow_value(Some(&expect_value_type))?,
-                    Some(NumBytes::zero()),
-                )
-            } else {
-                (
-                    db_obj.borrow_value(Some(&expect_value_type))?,
-                    bytes_len_opt.flatten(),
-                )
-            };
-
-            fields.push(value);
-            if let Some(bytes_len) = bytes_len {
+        for (key, _db_obj, bytes_len_opt) in fields_with_objects {
+            fields.push(Value::address(key.into()));
+            if let Some(bytes_len) = bytes_len_opt.flatten() {
                 total_bytes_len += bytes_len;
             }
         }

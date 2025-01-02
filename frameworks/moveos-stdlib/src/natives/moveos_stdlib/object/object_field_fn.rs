@@ -284,7 +284,7 @@ pub(crate) fn native_list_fields(
     let result = rt_obj.list_fields(context, resolver, None, usize::MAX, &ty_args[0]);
     match result {
         Ok((value, field_load_gas)) => {
-            debug!("value: {:#?} field_load_gas: {:?}", value, field_load_gas);
+            debug!("value: {:#?}", value);
             Ok(NativeResult::ok(
                 gas_cost + common_gas_parameter.calculate_load_cost(field_load_gas),
                 //The the function in Move support tuple, so it returns a vector of values
