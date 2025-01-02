@@ -19,16 +19,19 @@ use move_core_types::metadata::Metadata;
 use move_ir_types::ast::CopyableVal_;
 use move_ir_types::ast::Exp_;
 use move_ir_types::ast::Metadata as ASTMetadata;
+use move_model::metadata::{CompilerVersion, LanguageVersion};
 use move_model::model::GlobalEnv;
 use move_model::options::ModelBuilderOptions;
 use move_model::run_model_builder_with_options_and_compilation_flags;
 use move_package::compilation::compiled_package::CompiledPackage;
+use move_package::compilation::model_builder::make_options_for_v2_compiler;
 use move_package::compilation::package_layout::CompiledPackageLayout;
 use move_package::resolution::resolution_graph::{
     Renaming, ResolvedGraph, ResolvedPackage, ResolvedTable,
 };
-use move_package::{BuildConfig, ModelConfig};
+use move_package::{BuildConfig, CompilerConfig, ModelConfig};
 use std::collections::{BTreeMap, BTreeSet};
+use std::fmt::Debug;
 use std::path::Path;
 use termcolor::{ColorChoice, StandardStream};
 
@@ -89,11 +92,12 @@ impl ModelBuilder {
                 )))
             })
             .collect::<anyhow::Result<Vec<_>>>()?;
-        let (target, deps) = make_source_and_deps_for_compiler(
-            &self.resolution_graph,
-            &root_package,
-            deps_source_info,
-        )?;
+        let (target, deps) =
+            move_package::compilation::compiled_package::make_source_and_deps_for_compiler(
+                &self.resolution_graph,
+                &root_package,
+                deps_source_info,
+            )?;
         let (all_targets, all_deps) = if self.model_config.all_files_as_targets {
             let mut targets = vec![target];
             targets.extend(deps.into_iter().map(|(p, _)| p).collect_vec());
@@ -136,7 +140,39 @@ impl ModelBuilder {
             ),
         };
 
-        run_model_builder_with_options(all_targets, all_deps, ModelBuilderOptions::default())
+        let skip_attribute_checks = self
+            .resolution_graph
+            .build_options
+            .compiler_config
+            .skip_attribute_checks;
+        let known_attributes = &self
+            .resolution_graph
+            .build_options
+            .compiler_config
+            .known_attributes;
+        match self.model_config.compiler_version {
+            CompilerVersion::V1 => run_model_builder_with_options(
+                all_targets,
+                vec![],
+                all_deps,
+                ModelBuilderOptions::default(),
+                known_attributes,
+            ),
+            CompilerVersion::V2_0 | CompilerVersion::V2_1 => {
+                let mut options = make_options_for_v2_compiler(all_targets, all_deps);
+                options.language_version = self
+                    .resolution_graph
+                    .build_options
+                    .compiler_config
+                    .language_version;
+                options.compiler_version = Some(self.model_config.compiler_version);
+                options.known_attributes.clone_from(known_attributes);
+                options.skip_attribute_checks = skip_attribute_checks;
+                options.compile_verify_code = true;
+                let mut error_writer = StandardStream::stderr(ColorChoice::Auto);
+                move_compiler_v2::run_move_compiler_for_analysis(&mut error_writer, options)
+            }
+        }
     }
 }
 
@@ -146,15 +182,24 @@ use move_symbol_pool::{Symbol as MoveSymbol, Symbol};
 /// named addreses.
 /// This collects transitive dependencies for move sources from the provided directory list.
 fn run_model_builder_with_options<
-    Paths: Into<MoveSymbol> + Clone,
-    NamedAddress: Into<MoveSymbol> + Clone,
+    Paths: Into<MoveSymbol> + Clone + Debug,
+    NamedAddress: Into<MoveSymbol> + Clone + Debug,
 >(
-    move_sources: Vec<PackagePaths<Paths, NamedAddress>>,
+    move_sources_targets: Vec<PackagePaths<Paths, NamedAddress>>,
+    move_sources_deps: Vec<PackagePaths<Paths, NamedAddress>>,
     deps: Vec<PackagePaths<Paths, NamedAddress>>,
     options: ModelBuilderOptions,
+    known_attributes: &BTreeSet<String>,
 ) -> anyhow::Result<GlobalEnv> {
     let flag = Flags::verification().set_keep_testing_functions(true);
-    run_model_builder_with_options_and_compilation_flags(move_sources, deps, options, flag)
+    run_model_builder_with_options_and_compilation_flags(
+        move_sources_targets,
+        move_sources_deps,
+        deps,
+        options,
+        flag,
+        known_attributes,
+    )
 }
 
 fn make_source_and_deps_for_compiler(
@@ -254,24 +299,33 @@ pub fn build_model(
     dev_mode: bool,
     target_filter: Option<String>,
 ) -> anyhow::Result<GlobalEnv> {
-    let build_config = BuildConfig {
+    let mut build_config = BuildConfig {
         dev_mode,
         additional_named_addresses,
         architecture: None,
         generate_abis: false,
+        generate_move_model: false,
         generate_docs: false,
         install_dir: None,
         test_mode: false,
         force_recompilation: false,
         fetch_deps_only: false,
         skip_fetch_latest_git_deps: true,
-        bytecode_version: Some(BYTECODE_VERSION),
+        override_std: None,
+        full_model_generation: false,
+        compiler_config: Default::default(),
     };
+    let mut compiler_v2_config = CompilerConfig::default();
+    compiler_v2_config.compiler_version = Some(CompilerVersion::V2_1);
+    compiler_v2_config.language_version = Some(LanguageVersion::V2_1);
+    build_config.compiler_config = compiler_v2_config.clone();
     build_config.move_model_for_package(
         package_path,
         ModelConfig {
             target_filter,
+            compiler_version: CompilerVersion::V2_1,
             all_files_as_targets: true,
+            language_version: LanguageVersion::V2_1,
         },
     )
 }
@@ -281,24 +335,33 @@ pub fn build_model_with_test_attr(
     additional_named_addresses: BTreeMap<String, AccountAddress>,
     target_filter: Option<String>,
 ) -> anyhow::Result<GlobalEnv> {
-    let build_config = BuildConfig {
+    let mut build_config = BuildConfig {
         dev_mode: false,
         additional_named_addresses,
         architecture: None,
         generate_abis: false,
+        generate_move_model: false,
         generate_docs: false,
         install_dir: None,
         test_mode: false,
         force_recompilation: false,
         fetch_deps_only: false,
         skip_fetch_latest_git_deps: true,
-        bytecode_version: Some(BYTECODE_VERSION),
+        override_std: None,
+        full_model_generation: false,
+        compiler_config: Default::default(),
     };
     let resolved_graph =
-        build_config.resolution_graph_for_package(package_path, &mut std::io::stdout())?;
+        build_config.clone().resolution_graph_for_package(package_path, &mut std::io::stdout())?;
+    let mut compiler_v2_config = CompilerConfig::default();
+    compiler_v2_config.compiler_version = Some(CompilerVersion::V2_1);
+    compiler_v2_config.language_version = Some(LanguageVersion::V2_1);
+    build_config.compiler_config = compiler_v2_config.clone();
     let model_config = ModelConfig {
         target_filter,
+        compiler_version: CompilerVersion::V2_1,
         all_files_as_targets: true,
+        language_version: LanguageVersion::V2_1,
     };
     ModelBuilder::create(resolved_graph, model_config).build_model()
 }
