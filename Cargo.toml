@@ -379,6 +379,7 @@ move-ir-compiler = { path = "/home/roy/move-language/move/language/move-ir-compi
 move-ir-to-bytecode = { path = "/home/roy/move-language/move/language/move-ir-compiler/move-ir-to-bytecode" }
 move-bytecode-source-map = { path = "/home/roy/move-language/move/language/move-ir-compiler/move-bytecode-source-map" }
 move-compiler = { path = "/home/roy/move-language/move/language/move-compiler" }
+move-compiler-v2 = { path = "/home/roy/move-language/move/language/move-compiler-v2" }
 move-vm-runtime = { path = "/home/roy/move-language/move/language/move-vm/runtime" }
 move-vm-types = { path = "/home/roy/move-language/move/language/move-vm/types" }
 move-model = { path = "/home/roy/move-language/move/language/move-model" }
