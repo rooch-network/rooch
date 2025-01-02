@@ -495,8 +495,8 @@ module moveos_std::object {
     }
 
     /// List all field names of the object
-    public fun list_field_names<T: key, Value: store>(obj: &Object<T>): vector<Value> {
-        native_list_fields<Value>(obj.id)
+    fun list_field_keys<T: key>(obj: &Object<T>): vector<address> {
+        native_list_fields<address>(obj.id)
     }
 
 
@@ -1006,18 +1006,22 @@ module moveos_std::object {
 
         assert!(field_size(&obj) == 2, 1000);
 
-        let field_names = list_field_names<TestStruct, address>(&obj);
-        // assert!(!vector::is_empty(&field_names), 1001);
-        // assert!(vector::length(&field_names) == 2, 1002);
+        let field_keys = list_field_keys<TestStruct>(&obj);
+        // assert!(!vector::is_empty(&field_keys), 1001);
+        // assert!(vector::length(&field_keys) == 2, 1002);
 
-        // std::debug::print(&fields);
+        std::debug::print(&field_keys);
 
         std::debug::print_string(b"test_list_fields");
 
-        let field1 = vector::borrow(&field_names, 0);
-        std::debug::print(field1);
+        let field_key1 = *vector::borrow(&field_keys, 0);
+        std::debug::print(&field_key1);
 
-        let field2 = vector::borrow(&field_names, 1);
+        let field1 = native_borrow_field<DynamicField<vector<u8>, u64>>(obj.id, field_key1);
+        assert!(field1.name == b"key1", 1003);
+        assert!(field1.value == 1u64, 1004);
+
+        let field2 = vector::borrow(&field_keys, 1);
         std::debug::print(field2);
 
         // assert!(field1.name == b"key1", 1003);
@@ -1025,7 +1029,7 @@ module moveos_std::object {
         // assert!(field2.name == b"key2", 1005);
         // assert!(field2.value == 2u64, 1006);
 
-        vector::destroy_empty(field_names);
+        //vector::destroy_empty(field_keys);
         let TestStruct{ count: _} = drop_unchecked(obj);
     }
 }

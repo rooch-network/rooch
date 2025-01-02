@@ -281,16 +281,13 @@ pub(crate) fn native_list_fields(
 
     debug!("gas_cost: {}", gas_cost);
 
-    let result = rt_obj.list_fields(context, resolver, None, usize::MAX, &ty_args[0]);
+    let result = rt_obj.list_field_keys(context, resolver, None, usize::MAX, &ty_args[0]);
     match result {
-        Ok((value, field_load_gas)) => {
-            debug!("value: {:#?}", value);
+        Ok((field_keys, field_load_gas)) => {
+            debug!("value: {:#?}", field_keys);
             Ok(NativeResult::ok(
                 gas_cost + common_gas_parameter.calculate_load_cost(field_load_gas),
-                //The the function in Move support tuple, so it returns a vector of values
-                //If we want to return vector<V>, we need to conver it to Value::Vec
-                //TODO make the vector_for_testing_only function to stable
-                smallvec![Value::vector_for_testing_only(value)],
+                smallvec![Value::vector_address(field_keys)],
             ))
         }
         Err(err) => {

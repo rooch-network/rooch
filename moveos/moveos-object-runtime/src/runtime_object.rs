@@ -643,15 +643,15 @@ impl RuntimeObject {
         Ok((fields, Some(total_bytes_len)))
     }
 
-    /// List fields of the object from the state store.
-    pub fn list_fields(
+    /// List fields keys of the object from the state store.
+    pub fn list_field_keys(
         &self,
         layout_loader: &dyn TypeLayoutLoader,
         resolver: &dyn StatelessResolver,
         cursor: Option<FieldKey>,
         limit: usize,
         field_type: &Type,
-    ) -> PartialVMResult<(Vec<Value>, Option<Option<NumBytes>>)> {
+    ) -> PartialVMResult<(Vec<AccountAddress>, Option<Option<NumBytes>>)> {
         debug!(
             "enter list_fields, cursor:{:?}, limit:{:?}, field_type:{:?}",
             cursor, limit, field_type
@@ -667,9 +667,9 @@ impl RuntimeObject {
                 if field.is_none() {
                     return None;
                 }
-                Some(Value::address((*key).into()))
+                Some(AccountAddress::from(*key))
             })
-            .collect::<Vec<Value>>();
+            .collect::<Vec<AccountAddress>>();
         if !cached_fields.is_empty() {
             return Ok((cached_fields, Some(Some(total_bytes_len))));
         }
@@ -682,7 +682,7 @@ impl RuntimeObject {
         );
         let mut fields = Vec::with_capacity(fields_with_objects.len());
         for (key, _db_obj, bytes_len_opt) in fields_with_objects {
-            fields.push(Value::address(key.into()));
+            fields.push(key.into());
             if let Some(bytes_len) = bytes_len_opt.flatten() {
                 total_bytes_len += bytes_len;
             }
