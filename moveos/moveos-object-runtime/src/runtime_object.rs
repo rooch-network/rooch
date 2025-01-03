@@ -327,17 +327,18 @@ impl RuntimeObject {
                 partial_extension_error(format!("remote object resolver failure: {}", err))
             })?;
 
-        let mut fields = Vec::new();
-        for (key, obj_state) in state_kvs {
-            let field_obj_id = self.id().child_id(key);
-            debug_assert!(
-                obj_state.metadata.id == field_obj_id,
-                "The loaded object id should be equal to the expected field object id"
-            );
-            let state_bytes_len = obj_state.value.len() as u64;
-            fields.push((key, Some(Some(NumBytes::new(state_bytes_len)))));
-        }
-
+        let fields = state_kvs
+            .into_iter()
+            .map(|(key, obj_state)| {
+                let field_obj_id = self.id().child_id(key);
+                debug_assert!(
+                    obj_state.metadata.id == field_obj_id,
+                    "The loaded object id should be equal to the expected field object id"
+                );
+                let state_bytes_len = obj_state.value.len() as u64;
+                (key, Some(Some(NumBytes::new(state_bytes_len))))
+            })
+            .collect::<Vec<_>>();
         Ok(fields)
     }
 
