@@ -654,6 +654,14 @@ impl RuntimeObject {
         let cached_fields = self
             .fields
             .iter()
+            .skip_while(|(k, _)| {
+                if let Some(cur) = cursor {
+                    *k <= &cur
+                } else {
+                    false
+                }
+            })
+            .take(limit)
             .filter_map(|(key, field)| {
                 if field.is_none() {
                     return None;

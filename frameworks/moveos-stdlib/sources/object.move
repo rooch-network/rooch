@@ -5,6 +5,7 @@
 /// For more details, please refer to https://rooch.network/docs/developer-guides/object
 module moveos_std::object {
     use std::hash;
+    use std::option::Option;
     use std::vector;
     use moveos_std::signer;
     use moveos_std::tx_context;
@@ -495,8 +496,8 @@ module moveos_std::object {
     }
 
     /// List all field names of the object
-    fun list_field_keys<T: key>(obj: &Object<T>): vector<address> {
-        native_list_field_keys<address>(obj.id)
+    fun list_field_keys<T: key>(obj: &Object<T>, cursor: Option<address>, limit: u64): vector<address> {
+        native_list_field_keys(obj.id, cursor, limit)
     }
 
 
@@ -567,7 +568,7 @@ module moveos_std::object {
 
     native fun native_remove_field<V>(obj_id: ObjectID, key: address): V;
 
-    native fun native_list_field_keys<V>(obj_id: ObjectID): vector<V>;
+    native fun native_list_field_keys(obj_id: ObjectID, cursor: Option<address>, limit: u64): vector<address>;
 
     #[test_only]
     /// Testing only: allows to drop a Object even if it's fields is not empty.
@@ -1000,19 +1001,18 @@ module moveos_std::object {
 
     #[test]
     fun test_list_fields(){
+        use std::option;
         let obj = new(TestStruct { count: 1 });
         add_field(&mut obj, b"key1", 1u64);
         add_field(&mut obj, b"key2", 2u64);
 
         assert!(field_size(&obj) == 2, 1000);
 
-        let field_keys = list_field_keys<TestStruct>(&obj);
-        assert!(!vector::is_empty(&field_keys), 1001);
-        assert!(vector::length(&field_keys) == 2, 1002);
-
+        let field_keys = list_field_keys<TestStruct>(&obj, option::none(), 10);
         std::debug::print(&field_keys);
 
-        std::debug::print_string(b"test_list_fields");
+        assert!(!vector::is_empty(&field_keys), 1001);
+        assert!(vector::length(&field_keys) == 2, 1002);
 
         let field_key1 = *vector::borrow(&field_keys, 0);
         std::debug::print(&field_key1);

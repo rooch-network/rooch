@@ -1,11 +1,12 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use move_binary_format::errors::PartialVMResult;
+use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_core_types::gas_algebra::{GasQuantity, InternalGasUnit};
 use move_core_types::{
     account_address::AccountAddress,
     gas_algebra::{InternalGas, InternalGasPerByte, NumBytes},
+    vm_status::StatusCode,
 };
 use move_vm_runtime::native_functions::NativeContext;
 use move_vm_types::{
@@ -22,7 +23,8 @@ use moveos_object_runtime::{
 };
 use moveos_types::moveos_std::onchain_features::VALUE_SIZE_GAS_FEATURE;
 use moveos_types::{
-    moveos_std::object::ObjectID, state::FieldKey, state_resolver::StatelessResolver,
+    move_std::option::MoveOption, moveos_std::object::ObjectID, state::FieldKey, state::MoveState,
+    state_resolver::StatelessResolver,
 };
 
 /***************************************************************************************************
@@ -245,7 +247,7 @@ pub(crate) fn native_remove_field(
 }
 
 /***************************************************************************************************
- * native fun native_list_field_keys<V>(obj_id: ObjectID): V;
+ * native fun native_list_field_keys(obj_id: ObjectID, cursor: Option<address>, limit: u64): vector<address>;
  **************************************************************************************************/
 #[derive(Debug, Clone)]
 pub struct ListFieldsGasParameters {
@@ -259,10 +261,20 @@ pub(crate) fn native_list_field_keys(
     ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
-    debug_assert_eq!(ty_args.len(), 1);
-    debug_assert_eq!(args.len(), 1);
+    debug_assert_eq!(ty_args.len(), 0);
+    debug_assert_eq!(args.len(), 3);
 
+    let limit = pop_arg!(args, u64);
+    let cursor_arg = args.pop_back().expect("cursor is missing");
     let obj_id = pop_object_id(&mut args)?;
+
+    let cursor_address: Option<AccountAddress> = MoveOption::from_runtime_value(cursor_arg)
+        .map_err(|e| {
+            PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR)
+                .with_message(format!("Failed to parse cursor: {}", e))
+        })?
+        .into();
+    let cursor: Option<FieldKey> = cursor_address.map(|addr| addr.into());
 
     let common_gas_parameter = gas_parameters.common.clone();
     let list_fields_gas_parameter = gas_parameters.native_list_field_keys.clone();
@@ -277,7 +289,7 @@ pub(crate) fn native_list_field_keys(
         + list_fields_gas_parameter.per_byte_serialized * NumBytes::new(field_key_bytes)
         + common_gas_parameter.calculate_load_cost(object_load_gas);
 
-    let result = rt_obj.list_field_keys(context, resolver, None, usize::MAX);
+    let result = rt_obj.list_field_keys(context, resolver, cursor, limit as usize);
     match result {
         Ok((field_keys, field_load_gas)) => Ok(NativeResult::ok(
             gas_cost + common_gas_parameter.calculate_load_cost(field_load_gas),
