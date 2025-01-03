@@ -34,6 +34,7 @@ use std::collections::{btree_map::Entry, BTreeMap};
 
 type ScanFieldList = Vec<(FieldKey, Value)>;
 type FieldList = Vec<(FieldKey, RuntimeObject, Option<Option<NumBytes>>)>;
+type FieldKeyList = Vec<(FieldKey, Option<Option<NumBytes>>)>;
 
 /// A structure representing a single runtime object.
 pub struct RuntimeObject {
@@ -141,6 +142,10 @@ impl RuntimeObject {
 
     pub fn is_none(&self) -> bool {
         self.rt_meta.is_none()
+    }
+
+    pub fn is_fresh(&self) -> bool {
+        self.rt_meta.is_fresh()
     }
 
     pub fn id(&self) -> &ObjectID {
@@ -303,6 +308,34 @@ impl RuntimeObject {
                 RuntimeObject::load(value_layout, obj_state)?,
                 Some(Some(NumBytes::new(state_bytes_len))),
             ));
+        }
+
+        Ok(fields)
+    }
+
+    /// List field keys of the object from the state store.
+    fn list_field_keys_from_db(
+        &self,
+        resolver: &dyn StatelessResolver,
+        cursor: Option<FieldKey>,
+        limit: usize,
+    ) -> PartialVMResult<FieldKeyList> {
+        let state_root = self.state_root()?;
+        let state_kvs = resolver
+            .list_fields_at(state_root, cursor, limit)
+            .map_err(|err| {
+                partial_extension_error(format!("remote object resolver failure: {}", err))
+            })?;
+
+        let mut fields = Vec::new();
+        for (key, obj_state) in state_kvs {
+            let field_obj_id = self.id().child_id(key);
+            debug_assert!(
+                obj_state.metadata.id == field_obj_id,
+                "The loaded object id should be equal to the expected field object id"
+            );
+            let state_bytes_len = obj_state.value.len() as u64;
+            fields.push((key, Some(Some(NumBytes::new(state_bytes_len)))));
         }
 
         Ok(fields)
@@ -645,45 +678,50 @@ impl RuntimeObject {
     /// List fields keys of the object from the state store.
     pub fn list_field_keys(
         &self,
-        layout_loader: &dyn TypeLayoutLoader,
         resolver: &dyn StatelessResolver,
         cursor: Option<FieldKey>,
         limit: usize,
     ) -> PartialVMResult<(Vec<AccountAddress>, Option<Option<NumBytes>>)> {
         let mut total_bytes_len = NumBytes::zero();
-        let cached_fields = self
-            .fields
-            .iter()
-            .skip_while(|(k, _)| {
-                if let Some(cur) = cursor {
-                    *k <= &cur
-                } else {
-                    false
-                }
-            })
-            .take(limit)
-            .filter_map(|(key, field)| {
-                if field.is_none() {
-                    return None;
-                }
-                Some(AccountAddress::from(*key))
-            })
-            .collect::<Vec<AccountAddress>>();
-        if !cached_fields.is_empty() {
-            return Ok((cached_fields, Some(Some(total_bytes_len))));
+        // First get fields from DB
+        let mut fields_with_objects = self.list_field_keys_from_db(resolver, cursor, limit)?;
+
+        let remaining_limit = limit - fields_with_objects.len();
+        // If DB results less than limit, supplement with fresh fields from cache
+        if remaining_limit > 0 {
+            let last_key = fields_with_objects.last().map(|(key, _)| key.clone());
+
+            let fresh_fields = self
+                .fields
+                .iter()
+                .skip_while(|(k, _)| {
+                    if let Some(last) = &last_key {
+                        *k <= last
+                    } else {
+                        false
+                    }
+                })
+                .take(remaining_limit)
+                .filter_map(|(key, field)| {
+                    if field.is_fresh() {
+                        return Some((key.clone(), Some(Some(NumBytes::zero()))));
+                    }
+                    None
+                });
+
+            fields_with_objects.extend(fresh_fields);
         }
 
-        let fields_with_objects =
-            self.list_field_objects_from_db(layout_loader, resolver, cursor, limit)?;
         let fields = fields_with_objects
             .into_iter()
-            .filter_map(|(key, _db_obj, bytes_len_opt)| {
+            .filter_map(|(key, bytes_len_opt)| {
                 bytes_len_opt
                     .flatten()
                     .map(|bytes_len| total_bytes_len += bytes_len);
                 Some(key.into())
             })
             .collect::<Vec<AccountAddress>>();
+
         Ok((fields, Some(Some(total_bytes_len))))
     }
 }

@@ -28,6 +28,8 @@ mod object_field_fn;
 mod object_fn;
 mod object_meta_fn;
 
+pub use object_field_fn::{ListFieldsGasParameters, ListFieldsGasParametersOption};
+
 #[derive(Debug, Clone)]
 pub struct CommonGasParameters {
     pub load_base: InternalGas,
@@ -145,10 +147,7 @@ impl GasParameters {
                 base: 0.into(),
                 per_byte_serialized: 0.into(),
             },
-            native_list_field_keys: ListFieldsGasParameters {
-                base: 0.into(),
-                per_byte_serialized: 0.into(),
-            },
+            native_list_field_keys: ListFieldsGasParameters::zeros(),
         }
     }
 }

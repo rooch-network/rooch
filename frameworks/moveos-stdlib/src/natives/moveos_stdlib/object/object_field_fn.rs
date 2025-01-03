@@ -250,9 +250,48 @@ pub(crate) fn native_remove_field(
  * native fun native_list_field_keys(obj_id: ObjectID, cursor: Option<address>, limit: u64): vector<address>;
  **************************************************************************************************/
 #[derive(Debug, Clone)]
+pub struct ListFieldsGasParametersOption {
+    pub base: Option<InternalGas>,
+    pub per_byte: Option<InternalGasPerByte>,
+}
+
+impl ListFieldsGasParametersOption {
+    pub fn zeros() -> Self {
+        Self {
+            base: Some(0.into()),
+            per_byte: Some(0.into()),
+        }
+    }
+
+    pub fn init(base: InternalGas, per_byte: InternalGasPerByte) -> Self {
+        Self {
+            base: Some(base),
+            per_byte: Some(per_byte),
+        }
+    }
+
+    fn calculate_load_cost(&self, loaded: Option<Option<NumBytes>>) -> InternalGas {
+        match loaded {
+            Some(Some(num_bytes)) => {
+                self.per_byte.unwrap_or_else(InternalGasPerByte::zero) * num_bytes
+            }
+            Some(None) => 0.into(),
+            None => 0.into(),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct ListFieldsGasParameters {
-    pub base: InternalGas,
-    pub per_byte_serialized: InternalGasPerByte,
+    pub list_field_keys: ListFieldsGasParametersOption,
+}
+
+impl ListFieldsGasParameters {
+    pub fn zeros() -> Self {
+        Self {
+            list_field_keys: ListFieldsGasParametersOption::zeros(),
+        }
+    }
 }
 
 pub(crate) fn native_list_field_keys(
@@ -276,8 +315,10 @@ pub(crate) fn native_list_field_keys(
         .into();
     let cursor: Option<FieldKey> = cursor_address.map(|addr| addr.into());
 
-    let common_gas_parameter = gas_parameters.common.clone();
-    let list_fields_gas_parameter = gas_parameters.native_list_field_keys.clone();
+    let gas_params = gas_parameters
+        .native_list_field_keys
+        .list_field_keys
+        .clone();
 
     let object_context = context.extensions().get::<ObjectRuntimeContext>();
     let binding = object_context.object_runtime();
@@ -285,14 +326,15 @@ pub(crate) fn native_list_field_keys(
     let resolver = object_runtime.resolver();
     let (rt_obj, object_load_gas) = object_runtime.load_object(context, &obj_id)?;
     let field_key_bytes = AccountAddress::LENGTH as u64;
-    let gas_cost = list_fields_gas_parameter.base
-        + list_fields_gas_parameter.per_byte_serialized * NumBytes::new(field_key_bytes)
-        + common_gas_parameter.calculate_load_cost(object_load_gas);
+    let gas_cost = gas_params.base.unwrap_or_else(InternalGas::zero)
+        + (gas_params.per_byte.unwrap_or_else(InternalGasPerByte::zero)
+            * NumBytes::new(field_key_bytes))
+        + gas_params.calculate_load_cost(object_load_gas);
 
-    let result = rt_obj.list_field_keys(context, resolver, cursor, limit as usize);
+    let result = rt_obj.list_field_keys(resolver, cursor, limit as usize);
     match result {
         Ok((field_keys, field_load_gas)) => Ok(NativeResult::ok(
-            gas_cost + common_gas_parameter.calculate_load_cost(field_load_gas),
+            gas_cost + gas_params.calculate_load_cost(field_load_gas),
             smallvec![Value::vector_address(field_keys)],
         )),
         Err(err) => {
