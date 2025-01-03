@@ -519,5 +519,61 @@ mod tests {
                 panic!("Error parsing DA Config: {}", e)
             }
         }
+
+        let da_config_str = "{\"da-backend\":{\"backends\":[{\"open-da\":{\"scheme\":\"gcs\",\"config\":{\"bucket\":\"$OPENDA_GCP_TESTNET_BUCKET\",\"credential\":\"$OPENDA_GCP_TESTNET_CREDENTIAL\"}}},{\"open-da\":{\"scheme\":\"avail\",\"config\":{\"turbo_endpoint\":\"$TURBO_DA_TURING_ENDPOINT\",\"turbo_auth_token\":\"$TURBO_DA_TURING_TOKEN\"}}}]}}";
+        let exp_da_config = DAConfig {
+            da_backend: Some(DABackendConfig {
+                submit_strategy: None,
+                backends: vec![
+                    DABackendConfigType::OpenDa(DABackendOpenDAConfig {
+                        scheme: OpenDAScheme::Gcs,
+                        config: vec![
+                            (
+                                "bucket".to_string(),
+                                "$OPENDA_GCP_TESTNET_BUCKET".to_string(),
+                            ),
+                            (
+                                "credential".to_string(),
+                                "$OPENDA_GCP_TESTNET_CREDENTIAL".to_string(),
+                            ),
+                        ]
+                        .into_iter()
+                        .collect(),
+                        namespace: None,
+                        max_segment_size: None,
+                        max_retries: None,
+                    }),
+                    DABackendConfigType::OpenDa(DABackendOpenDAConfig {
+                        scheme: OpenDAScheme::Avail,
+                        config: vec![
+                            (
+                                "turbo_endpoint".to_string(),
+                                "$TURBO_DA_TURING_ENDPOINT".to_string(),
+                            ),
+                            (
+                                "turbo_auth_token".to_string(),
+                                "$TURBO_DA_TURING_TOKEN".to_string(),
+                            ),
+                        ]
+                        .into_iter()
+                        .collect(),
+                        namespace: None,
+                        max_segment_size: None,
+                        max_retries: None,
+                    }),
+                ],
+            }),
+            da_min_block_to_submit: None,
+            background_submit_interval: None,
+            base: None,
+        };
+        match DAConfig::from_str(da_config_str) {
+            Ok(da_config) => {
+                assert_eq!(da_config, exp_da_config);
+            }
+            Err(e) => {
+                panic!("Error parsing DA Config: {}", e)
+            }
+        }
     }
 }
