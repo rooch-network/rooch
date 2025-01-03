@@ -153,7 +153,7 @@ impl GasParameters {
 }
 
 pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, NativeFunction)> {
-    let natives = [
+    let mut natives = [
         (
             "native_object_owner",
             helpers::make_native(gas_params.clone(), native_object_owner),
@@ -222,11 +222,15 @@ pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, Nati
             "native_contains_field_with_value_type",
             helpers::make_native(gas_params.clone(), native_contains_field_with_value_type),
         ),
-        (
+    ]
+    .to_vec();
+
+    if !gas_params.clone().native_list_field_keys.is_empty() {
+        natives.push((
             "native_list_field_keys",
             helpers::make_native(gas_params.clone(), native_list_field_keys),
-        ),
-    ];
+        ));
+    }
 
     make_module_natives(natives)
 }
