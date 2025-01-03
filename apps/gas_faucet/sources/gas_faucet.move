@@ -71,15 +71,20 @@ module gas_faucet::gas_faucet {
 
     /// Anyone can call this function to help the claimer claim the faucet
     public entry fun claim(faucet_obj: &mut Object<RGasFaucet>, claimer: address, utxo_ids: vector<ObjectID>){
+      Self::do_claim(faucet_obj, claimer, utxo_ids);
+    }
+
+    /// Claim the faucet for the claimer, return true if it is the first time to claim
+    public fun do_claim(faucet_obj: &mut Object<RGasFaucet>, claimer: address, utxo_ids: vector<ObjectID>): bool{
       let claim_rgas_amount = Self::check_claim(faucet_obj, claimer, utxo_ids);
       let faucet = object::borrow_mut(faucet_obj);
       let rgas_coin = coin_store::withdraw(&mut faucet.rgas_store, claim_rgas_amount);
       account_coin_store::deposit<RGas>(claimer, rgas_coin);
       let total_claim_amount = table::borrow_mut_with_default(&mut faucet.claim_records, claimer, 0u256);
+      let first_claim = *total_claim_amount == 0;
       *total_claim_amount = *total_claim_amount + claim_rgas_amount;
+      first_claim
     }
-
-
 
 
     public entry fun deposit_rgas_coin(
