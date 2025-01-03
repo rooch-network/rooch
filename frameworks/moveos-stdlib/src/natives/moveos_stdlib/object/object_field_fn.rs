@@ -264,7 +264,7 @@ impl ListFieldsGasParametersOption {
     }
 
     pub fn is_empty(&self) -> bool {
-        self.base.is_none() && self.per_byte.is_none()
+        self.base.is_none() || self.per_byte.is_none()
     }
 
     pub fn init(base: InternalGas, per_byte: InternalGasPerByte) -> Self {
