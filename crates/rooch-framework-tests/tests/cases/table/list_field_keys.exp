@@ -1,10 +1,10 @@
 processed 4 tasks
 
-task 1 'publish'. lines 3-61:
+task 1 'publish'. lines 3-65:
 status EXECUTED
 
-task 2 'run'. lines 63-89:
+task 2 'run'. lines 67-107:
 status EXECUTED
 
-task 3 'run'. lines 91-116:
-status ABORTED with code 2 in 0x0000000000000000000000000000000000000000000000000000000000000002::object
+task 3 'run'. lines 109-131:
+status EXECUTED

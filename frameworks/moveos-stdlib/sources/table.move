@@ -118,13 +118,13 @@ module moveos_std::table {
     /// Returns a immutable reference to the next key-value pair in the table, starting from the given iterator.
     public fun next<K: copy + drop + store, V:store>(iterator: &mut Iterator<K, V>): &V {
         let key = vector::pop_back(&mut iterator.keys);
-        object::borrow_field_internal(iterator.handle, key)
+        object::borrow_field_key_internal<K, V>(iterator.handle, key)
     }
 
     /// Returns a mutable reference to the next key-value pair in the table, starting from the given iterator.
     public fun next_mut<K: copy + drop + store, V:store>(iterator: &mut Iterator<K, V>): &mut V {
         let key = vector::pop_back(&mut iterator.keys);
-        object::borrow_mut_field_internal(iterator.handle, key)
+        object::borrow_mut_field_key_internal<K, V>(iterator.handle, key)
     }
 
     /// Destroy a table. Aborts if the table is not empty.

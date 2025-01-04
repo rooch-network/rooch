@@ -55,9 +55,11 @@ For more details, please refer to https://rooch.network/docs/developer-guides/ob
 -  [Function `add_field_internal`](#0x2_object_add_field_internal)
 -  [Function `borrow_field`](#0x2_object_borrow_field)
 -  [Function `borrow_field_internal`](#0x2_object_borrow_field_internal)
+-  [Function `borrow_field_key_internal`](#0x2_object_borrow_field_key_internal)
 -  [Function `borrow_field_with_default`](#0x2_object_borrow_field_with_default)
 -  [Function `borrow_mut_field`](#0x2_object_borrow_mut_field)
 -  [Function `borrow_mut_field_internal`](#0x2_object_borrow_mut_field_internal)
+-  [Function `borrow_mut_field_key_internal`](#0x2_object_borrow_mut_field_key_internal)
 -  [Function `borrow_mut_field_with_default`](#0x2_object_borrow_mut_field_with_default)
 -  [Function `upsert_field`](#0x2_object_upsert_field)
 -  [Function `remove_field`](#0x2_object_remove_field)
@@ -845,6 +847,18 @@ Borrow FieldValue and return the val of FieldValue
 
 
 
+<a name="0x2_object_borrow_field_key_internal"></a>
+
+## Function `borrow_field_key_internal`
+
+Borrow FieldValue and return the val of FieldValue
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_borrow_field_key_internal">borrow_field_key_internal</a>&lt;Name: <b>copy</b>, drop, store, Value&gt;(obj_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, field_key: <b>address</b>): &Value
+</code></pre>
+
+
+
 <a name="0x2_object_borrow_field_with_default"></a>
 
 ## Function `borrow_field_with_default`
@@ -881,6 +895,19 @@ Aborts if there is no field for <code>key</code>.
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_borrow_mut_field_internal">borrow_mut_field_internal</a>&lt;Name: <b>copy</b>, drop, store, Value&gt;(obj_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, name: Name): &<b>mut</b> Value
+</code></pre>
+
+
+
+<a name="0x2_object_borrow_mut_field_key_internal"></a>
+
+## Function `borrow_mut_field_key_internal`
+
+Acquire a mutable reference to the value which <code>key</code> maps to.
+Aborts if there is no field for <code>key</code>.
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_borrow_mut_field_key_internal">borrow_mut_field_key_internal</a>&lt;Name: <b>copy</b>, drop, store, Value&gt;(obj_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, field_key: <b>address</b>): &<b>mut</b> Value
 </code></pre>
 
 
