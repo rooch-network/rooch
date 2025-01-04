@@ -690,7 +690,7 @@ impl RuntimeObject {
         let remaining_limit = limit.saturating_sub(fields_with_objects.len());
         // If DB results less than limit, supplement with fresh fields from cache
         if remaining_limit > 0 {
-            let last_key = fields_with_objects.last().map(|(key, _)| key.clone());
+            let last_key = fields_with_objects.last().map(|(key, _)| *key);
 
             let fresh_fields = self
                 .fields
@@ -704,7 +704,7 @@ impl RuntimeObject {
                 })
                 .filter_map(|(key, field)| {
                     if field.is_fresh() {
-                        return Some((key.clone(), Some(Some(NumBytes::zero()))));
+                        return Some((*key, Some(Some(NumBytes::zero()))));
                     }
                     None
                 })
@@ -715,11 +715,11 @@ impl RuntimeObject {
 
         let fields = fields_with_objects
             .into_iter()
-            .filter_map(|(key, bytes_len_opt)| {
-                bytes_len_opt
-                    .flatten()
-                    .map(|bytes_len| total_bytes_len += bytes_len);
-                Some(key.into())
+            .map(|(key, bytes_len_opt)| {
+                if let Some(Some(bytes_len)) = bytes_len_opt {
+                    total_bytes_len += bytes_len;
+                }
+                key.into()
             })
             .collect::<Vec<AccountAddress>>();
 
