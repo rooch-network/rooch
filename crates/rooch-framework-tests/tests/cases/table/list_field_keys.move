@@ -42,6 +42,10 @@ module test::m {
     public fun list_field_keys(store: &KVStore): vector<address> {
         table::list_field_keys(&store.table, option::none(), 10000)
     }
+
+    public fun length(store: &KVStore): u64 {
+        table::length(&store.table)
+    }
 }
 
 //# run --signers test
@@ -78,11 +82,13 @@ script {
         assert!(m::contains(kv, string::utf8(b"test")), 1000);
 
         let keys = m::list_field_keys(kv);
-        std::debug::print(&keys);
         assert!(vector::length(&keys) == 3, 1001);
 
+        let size = m::length(kv);
+        assert!(size == 3, 1002);
+
         let v = m::borrow(kv, string::utf8(b"test"));
-        assert!(v == &b"value", 1002);
+        assert!(v == &b"value", 1003);
     }
 }
 
@@ -104,10 +110,13 @@ script {
         let keys = m::list_field_keys(kv);
         assert!(vector::length(&keys) == 3, 1001);
 
+        let size = m::length(kv);
+        assert!(size == 5, 1002);
+
         let v = m::borrow(kv, string::utf8(b"test4"));
-        assert!(v == &b"value4", 1002);
+        assert!(v == &b"value4", 1003);
 
         let v = m::borrow(kv, string::utf8(b"test5"));
-        assert!(v == &b"value5", 1003);
+        assert!(v == &b"value5", 1004);
     }
 }

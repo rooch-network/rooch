@@ -193,7 +193,9 @@ Returns true if <code><a href="table.md#0x2_table">table</a></code> contains an 
 
 ## Function `list_field_keys`
 
-Returns a vector of all keys in the table.
+Returns a vector of keys in the table from the given cursor position, up to the specified limit.
+cursor: Optional address to start listing from. If None, starts from the beginning.
+limit: Maximum number of keys to return.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_list_field_keys">list_field_keys</a>&lt;K: <b>copy</b>, drop, store, V: store&gt;(<a href="table.md#0x2_table">table</a>: &<a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;, cursor: <a href="_Option">option::Option</a>&lt;<b>address</b>&gt;, limit: u64): <a href="">vector</a>&lt;<b>address</b>&gt;
