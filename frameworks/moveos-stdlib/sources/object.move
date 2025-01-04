@@ -393,7 +393,7 @@ module moveos_std::object {
         &native_borrow_field<DynamicField<Name, Value>>(obj_id, field_key).value
     }
 
-    /// Borrow FieldValue and return the val of FieldValue
+    /// Direct field access based on field_key and return field value reference.
     public(friend) fun borrow_field_key_internal<Name: copy + drop + store, Value>(obj_id: ObjectID, field_key: address): &Value {
         &native_borrow_field<DynamicField<Name, Value>>(obj_id, field_key).value
     }
@@ -428,8 +428,8 @@ module moveos_std::object {
         &mut native_borrow_mut_field<DynamicField<Name, Value>>(obj_id, field_key).value
     }
 
-    /// Acquire a mutable reference to the value which `key` maps to.
-    /// Aborts if there is no field for `key`.
+    /// Obtain a mutable reference to the value associated with `field_key`.
+    /// Will abort if no field exists for the given `field_key`.
     public(friend) fun borrow_mut_field_key_internal<Name: copy + drop + store, Value>(obj_id: ObjectID, field_key: address): &mut Value {
         &mut native_borrow_mut_field<DynamicField<Name, Value>>(obj_id, field_key).value
     }
