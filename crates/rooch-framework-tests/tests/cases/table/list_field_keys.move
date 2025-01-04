@@ -5,7 +5,7 @@ module test::m {
     use std::string::String;
     use std::option;
 
-    use moveos_std::table::{Self, Table};
+    use moveos_std::table::{Self, Table, Iterator};
 
     use moveos_std::object::ObjectID;
     use moveos_std::object;
@@ -39,19 +39,30 @@ module test::m {
         object_id
     }
 
-    public fun list_field_keys(store: &KVStore): vector<address> {
+    public fun list_field_keys(store: &KVStore): Iterator<String, vector<u8>> {
         table::list_field_keys(&store.table, option::none(), 10000)
+    }
+
+    public fun field_keys_len(iterator: &Iterator<String, vector<u8>>): u64 {
+        table::field_keys_len(iterator)
+    }
+
+    public fun next(iterator: &mut Iterator<String, vector<u8>>): vector<u8> {
+        *table::next(iterator)
     }
 
     public fun length(store: &KVStore): u64 {
         table::length(&store.table)
+    }
+
+    public fun drop_iterator(iterator: Iterator<String, vector<u8>>) {
+        table::drop_iterator(iterator)
     }
 }
 
 //# run --signers test
 script {
     use std::string;
-    use std::vector;
     use test::m;
 
     fun main() {
@@ -60,14 +71,16 @@ script {
         m::add(&mut kv, string::utf8(b"test2"), b"value2");
         m::add(&mut kv, string::utf8(b"test3"), b"value3");
 
-        let keys = m::list_field_keys(&kv);
-        std::debug::print(&keys);
-        assert!(vector::length(&keys) == 3, 1001);
+        let iter = m::list_field_keys(&kv);
+        std::debug::print(&iter);
+        assert!(m::field_keys_len(&iter) == 3, 1001);
+        m::drop_iterator(iter);
 
         m::add(&mut kv, string::utf8(b"test4"), b"value4");
-        let keys = m::list_field_keys(&kv);
-        std::debug::print(&keys);
-        assert!(vector::length(&keys) == 4, 1002);
+        let iter = m::list_field_keys(&kv);
+        std::debug::print(&iter);
+        assert!(m::field_keys_len(&iter) == 4, 1002);
+        m::drop_iterator(iter);
 
         let object_id = m::save_to_object_storage(kv);
         std::debug::print(&110120);
@@ -75,11 +88,10 @@ script {
     }
 }
 
-//# run --signers test --args object:0x2bd4b62753418099f2edc2e68733333fc5e2597e395ec269169e4d0920163b1d
+//# run --signers test --args object:0xfb90a770aeb8f118406bcfae78a8581100e50b52bd9ce272fa98ebadf9ac2011
 
 script {
     use std::string;
-    use std::vector;
     use moveos_std::object::{Self, Object};
     use test::m::{Self, KVStore};
 
@@ -87,13 +99,18 @@ script {
         let kv = object::borrow(kv_object);
         assert!(m::contains(kv, string::utf8(b"test")), 1000);
 
-        let keys = m::list_field_keys(kv);
-        assert!(vector::length(&keys) == 4, 1001);
+        let iter = m::list_field_keys(kv);
+        assert!(m::field_keys_len(&iter) == 4, 1001);
 
         let size = m::length(kv);
         assert!(size == 4, 1002);
 
         let v = m::borrow(kv, string::utf8(b"test"));
         assert!(v == &b"value", 1003);
+
+        let data = m::next(&mut iter);
+        std::debug::print(&data);
+
+        m::drop_iterator(iter);
     }
 }

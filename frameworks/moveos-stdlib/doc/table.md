@@ -13,6 +13,7 @@ struct itself, while the operations are implemented as native functions. No trav
 
 -  [Resource `TablePlaceholder`](#0x2_table_TablePlaceholder)
 -  [Struct `Table`](#0x2_table_Table)
+-  [Struct `Iterator`](#0x2_table_Iterator)
 -  [Function `new`](#0x2_table_new)
 -  [Function `new_with_object_id_by_system`](#0x2_table_new_with_object_id_by_system)
 -  [Function `add`](#0x2_table_add)
@@ -24,10 +25,14 @@ struct itself, while the operations are implemented as native functions. No trav
 -  [Function `remove`](#0x2_table_remove)
 -  [Function `contains`](#0x2_table_contains)
 -  [Function `list_field_keys`](#0x2_table_list_field_keys)
+-  [Function `field_keys_len`](#0x2_table_field_keys_len)
+-  [Function `next`](#0x2_table_next)
+-  [Function `next_mut`](#0x2_table_next_mut)
 -  [Function `destroy_empty`](#0x2_table_destroy_empty)
 -  [Function `length`](#0x2_table_length)
 -  [Function `is_empty`](#0x2_table_is_empty)
 -  [Function `drop`](#0x2_table_drop)
+-  [Function `drop_iterator`](#0x2_table_drop_iterator)
 -  [Function `handle`](#0x2_table_handle)
 
 
@@ -57,6 +62,17 @@ Type of tables
 
 
 <pre><code><b>struct</b> <a href="table.md#0x2_table_Table">Table</a>&lt;K: <b>copy</b>, drop, store, V&gt; <b>has</b> store
+</code></pre>
+
+
+
+<a name="0x2_table_Iterator"></a>
+
+## Struct `Iterator`
+
+
+
+<pre><code><b>struct</b> <a href="table.md#0x2_table_Iterator">Iterator</a>&lt;K: <b>copy</b>, drop, store, V&gt; <b>has</b> store
 </code></pre>
 
 
@@ -198,7 +214,43 @@ cursor: Optional address to start listing from. If None, starts from the beginni
 limit: Maximum number of keys to return.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_list_field_keys">list_field_keys</a>&lt;K: <b>copy</b>, drop, store, V: store&gt;(<a href="table.md#0x2_table">table</a>: &<a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;, cursor: <a href="_Option">option::Option</a>&lt;<b>address</b>&gt;, limit: u64): <a href="">vector</a>&lt;<b>address</b>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_list_field_keys">list_field_keys</a>&lt;K: <b>copy</b>, drop, store, V: store&gt;(<a href="table.md#0x2_table">table</a>: &<a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;, cursor: <a href="_Option">option::Option</a>&lt;<b>address</b>&gt;, limit: u64): <a href="table.md#0x2_table_Iterator">table::Iterator</a>&lt;K, V&gt;
+</code></pre>
+
+
+
+<a name="0x2_table_field_keys_len"></a>
+
+## Function `field_keys_len`
+
+Returns the number of keys in the table.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_field_keys_len">field_keys_len</a>&lt;K: <b>copy</b>, drop, store, V: store&gt;(iterator: &<a href="table.md#0x2_table_Iterator">table::Iterator</a>&lt;K, V&gt;): u64
+</code></pre>
+
+
+
+<a name="0x2_table_next"></a>
+
+## Function `next`
+
+Returns a immutable reference to the next key-value pair in the table, starting from the given iterator.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_next">next</a>&lt;K: <b>copy</b>, drop, store, V: store&gt;(iterator: &<b>mut</b> <a href="table.md#0x2_table_Iterator">table::Iterator</a>&lt;K, V&gt;): &V
+</code></pre>
+
+
+
+<a name="0x2_table_next_mut"></a>
+
+## Function `next_mut`
+
+Returns a mutable reference to the next key-value pair in the table, starting from the given iterator.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_next_mut">next_mut</a>&lt;K: <b>copy</b>, drop, store, V: store&gt;(iterator: &<b>mut</b> <a href="table.md#0x2_table_Iterator">table::Iterator</a>&lt;K, V&gt;): &<b>mut</b> V
 </code></pre>
 
 
@@ -248,6 +300,17 @@ Usable only if the value type <code>V</code> has the <code>drop</code> ability
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_drop">drop</a>&lt;K: <b>copy</b>, drop, store, V: drop&gt;(<a href="table.md#0x2_table">table</a>: <a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;)
+</code></pre>
+
+
+
+<a name="0x2_table_drop_iterator"></a>
+
+## Function `drop_iterator`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_drop_iterator">drop_iterator</a>&lt;K: <b>copy</b>, drop, store, V: store&gt;(iterator: <a href="table.md#0x2_table_Iterator">table::Iterator</a>&lt;K, V&gt;)
 </code></pre>
 
 
