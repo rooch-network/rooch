@@ -34,7 +34,7 @@ jobs:
           name: docker_tag
           path: .
           run-id: ${{ github.event.workflow_run.id }}
-          github-token: ${{ secrets.GIT_PACKAGE_TOKEN }}
+          github-token: ${{ secrets.GIT_PACKAGE_TOKEN2 }}
 
       - name: Determine ref
         id: determine-ref
