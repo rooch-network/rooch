@@ -851,7 +851,7 @@ Borrow FieldValue and return the val of FieldValue
 
 ## Function `borrow_field_key_internal`
 
-Borrow FieldValue and return the val of FieldValue
+Direct field access based on field_key and return field value reference.
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_borrow_field_key_internal">borrow_field_key_internal</a>&lt;Name: <b>copy</b>, drop, store, Value&gt;(obj_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, field_key: <b>address</b>): &Value
@@ -903,8 +903,8 @@ Aborts if there is no field for <code>key</code>.
 
 ## Function `borrow_mut_field_key_internal`
 
-Acquire a mutable reference to the value which <code>key</code> maps to.
-Aborts if there is no field for <code>key</code>.
+Obtain a mutable reference to the value associated with <code>field_key</code>.
+Will abort if no field exists for the given <code>field_key</code>.
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_borrow_mut_field_key_internal">borrow_mut_field_key_internal</a>&lt;Name: <b>copy</b>, drop, store, Value&gt;(obj_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, field_key: <b>address</b>): &<b>mut</b> Value
