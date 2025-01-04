@@ -108,6 +108,6 @@ script {
         assert!(v == &b"value4", 1002);
 
         let v = m::borrow(kv, string::utf8(b"test5"));
-        assert!(v == &b"value5", 1002);
+        assert!(v == &b"value5", 1003);
     }
 }
