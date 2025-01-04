@@ -89,7 +89,9 @@ module moveos_std::table {
         object::contains_field(&table.handle, key)
     }
 
-    /// Returns a vector of all keys in the table.
+    /// Returns a vector of keys in the table from the given cursor position, up to the specified limit.
+    /// cursor: Optional address to start listing from. If None, starts from the beginning.
+    /// limit: Maximum number of keys to return.
     public fun list_field_keys<K: copy + drop + store, V:store>(table: &Table<K, V>, cursor: Option<address>, limit: u64): vector<address> {
         object::list_field_keys(&table.handle, cursor, limit)
     }
@@ -254,7 +256,7 @@ module moveos_std::table {
 
         let borrowed_mut_t2 = borrow_mut(&mut t1, t1_key);
         remove(borrowed_mut_t2, t2_key);
-        
+
         drop_unchecked(t1);
     }
 
