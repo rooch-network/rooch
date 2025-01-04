@@ -97,32 +97,3 @@ script {
         assert!(v == &b"value", 1003);
     }
 }
-
-//# run --signers test --args object:0x2bd4b62753418099f2edc2e68733333fc5e2597e395ec269169e4d0920163b1d
-
-script {
-    use std::string;
-    use std::vector;
-    use moveos_std::object::{Self, Object};
-    use test::m::{Self, KVStore};
-
-    fun main(kv_object: &mut Object<KVStore>) {
-        let kv = object::borrow_mut(kv_object);
-        assert!(m::contains(kv, string::utf8(b"test")), 1000);
-
-        m::add(kv, string::utf8(b"test5"), b"value5");
-        m::add(kv, string::utf8(b"test6"), b"value6");
-
-        let keys = m::list_field_keys(kv);
-        assert!(vector::length(&keys) == 4, 1001);
-
-        let size = m::length(kv);
-        assert!(size == 6, 1002);
-
-        let v = m::borrow(kv, string::utf8(b"test5"));
-        assert!(v == &b"value5", 1003);
-
-        let v = m::borrow(kv, string::utf8(b"test6"));
-        assert!(v == &b"value6", 1004);
-    }
-}

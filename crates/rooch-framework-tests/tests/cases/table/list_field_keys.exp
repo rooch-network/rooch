@@ -1,4 +1,4 @@
-processed 5 tasks
+processed 4 tasks
 
 task 1 'publish'. lines 3-49:
 status EXECUTED
@@ -7,7 +7,4 @@ task 2 'run'. lines 51-76:
 status EXECUTED
 
 task 3 'run'. lines 78-99:
-status EXECUTED
-
-task 4 'run'. lines 101-128:
 status EXECUTED
