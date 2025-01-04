@@ -25,7 +25,7 @@ module moveos_std::table {
         handle: Object<TablePlaceholder>,
     }
 
-    struct Iterator<phantom K: copy + drop + store, phantom V> has store {
+    struct Iterator<phantom K: copy + drop + store, phantom V> has store, drop {
         handle: ObjectID,
         cursor: Option<address>,
         limit: u64,
@@ -116,15 +116,15 @@ module moveos_std::table {
     }
 
     /// Returns a immutable reference to the next key-value pair in the table, starting from the given iterator.
-    public fun next<K: copy + drop + store, V:store>(iterator: &mut Iterator<K, V>): &V {
+    public fun next<K: copy + drop + store, V:store>(iterator: &mut Iterator<K, V>): (&K, &V) {
         let key = vector::pop_back(&mut iterator.keys);
-        object::borrow_field_key_internal<K, V>(iterator.handle, key)
+        object::borrow_field_with_key_internal<K, V>(iterator.handle, key)
     }
 
     /// Returns a mutable reference to the next key-value pair in the table, starting from the given iterator.
-    public fun next_mut<K: copy + drop + store, V:store>(iterator: &mut Iterator<K, V>): &mut V {
+    public fun next_mut<K: copy + drop + store, V:store>(iterator: &mut Iterator<K, V>): (&K, &mut V) {
         let key = vector::pop_back(&mut iterator.keys);
-        object::borrow_mut_field_key_internal<K, V>(iterator.handle, key)
+        object::borrow_mut_field_with_key_internal<K, V>(iterator.handle, key)
     }
 
     /// Destroy a table. Aborts if the table is not empty.
@@ -156,10 +156,6 @@ module moveos_std::table {
     public fun drop_unchecked<K: copy + drop + store, V:store>(table: Table<K, V>) {
         let Table { handle } = table;
         let TablePlaceholder{_placeholder:_} = object::remove_unchecked(handle);
-    }
-
-    public fun drop_iterator<K: copy + drop + store, V:store>(iterator: Iterator<K, V>) {
-        let Iterator { handle:_, cursor:_, limit:_, keys:_ } = iterator;
     }
 
     /// Returns table handle of `table`.

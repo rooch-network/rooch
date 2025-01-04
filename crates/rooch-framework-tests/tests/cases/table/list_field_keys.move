@@ -47,20 +47,18 @@ module test::m {
         table::field_keys_len(iterator)
     }
 
-    public fun next(iterator: &mut Iterator<String, vector<u8>>): vector<u8> {
-        *table::next(iterator)
+    public fun next(iterator: &mut Iterator<String, vector<u8>>): (String, vector<u8>) {
+        let (k, v) = table::next(iterator);
+        (*k, *v)
     }
 
-    public fun next_mut(iterator: &mut Iterator<String, vector<u8>>): vector<u8> {
-        *table::next_mut(iterator)
+    public fun next_mut(iterator: &mut Iterator<String, vector<u8>>): (String, vector<u8>) {
+        let (k, v) = table::next_mut(iterator);
+        (*k, *v)
     }
 
     public fun length(store: &KVStore): u64 {
         table::length(&store.table)
-    }
-
-    public fun drop_iterator(iterator: Iterator<String, vector<u8>>) {
-        table::drop_iterator(iterator)
     }
 }
 
@@ -78,27 +76,29 @@ script {
         let iter = m::list_field_keys(&kv);
         std::debug::print(&iter);
         assert!(m::field_keys_len(&iter) == 3, 1001);
-        m::drop_iterator(iter);
 
         m::add(&mut kv, string::utf8(b"test4"), b"value4");
         let iter = m::list_field_keys(&kv);
         std::debug::print(&iter);
         assert!(m::field_keys_len(&iter) == 4, 1002);
 
-        let v = m::next_mut(&mut iter);
+        let (k, v) = m::next_mut(&mut iter);
+        std::debug::print(&k);
         std::debug::print(&string::utf8(v));
         v = b"new_value";
         std::debug::print(&string::utf8(v));
 
-        let v = m::next(&mut iter);
+        let (k, v) = m::next(&mut iter);
+        std::debug::print(&k);
         std::debug::print(&string::utf8(v));
 
-        let v = m::next(&mut iter);
+        let (k, v) = m::next(&mut iter);
+        std::debug::print(&k);
         std::debug::print(&string::utf8(v));
 
-        let v = m::next(&mut iter);
+        let (k, v) = m::next(&mut iter);
+        std::debug::print(&k);
         std::debug::print(&string::utf8(v));
-        m::drop_iterator(iter);
 
         let object_id = m::save_to_object_storage(kv);
         std::debug::print(&110120);
@@ -106,7 +106,7 @@ script {
     }
 }
 
-//# run --signers test --args object:0xf7880e413d6d2429cb7deb95c23b878f177acedf23dab514ff3a3297cf296fbb
+//# run --signers test --args object:0xde3404893a0c26436e8e026a22db115e06510b38ad7dd088ca192fe394792731
 
 script {
     use std::string;
@@ -125,7 +125,5 @@ script {
 
         let v = m::borrow(kv, string::utf8(b"test"));
         assert!(v == &b"value", 1003);
-
-        m::drop_iterator(iter);
     }
 }

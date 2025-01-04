@@ -394,8 +394,9 @@ module moveos_std::object {
     }
 
     /// Direct field access based on field_key and return field value reference.
-    public(friend) fun borrow_field_key_internal<Name: copy + drop + store, Value>(obj_id: ObjectID, field_key: address): &Value {
-        &native_borrow_field<DynamicField<Name, Value>>(obj_id, field_key).value
+    public(friend) fun borrow_field_with_key_internal<Name: copy + drop + store, Value>(obj_id: ObjectID, field_key: address): (&Name, &Value) {
+        let df = native_borrow_field<DynamicField<Name, Value>>(obj_id, field_key);
+        (&df.name, &df.value)
     }
 
     /// Acquire an immutable reference to the value which `key` maps to.
@@ -430,8 +431,9 @@ module moveos_std::object {
 
     /// Obtain a mutable reference to the value associated with `field_key`.
     /// Will abort if no field exists for the given `field_key`.
-    public(friend) fun borrow_mut_field_key_internal<Name: copy + drop + store, Value>(obj_id: ObjectID, field_key: address): &mut Value {
-        &mut native_borrow_mut_field<DynamicField<Name, Value>>(obj_id, field_key).value
+    public(friend) fun borrow_mut_field_with_key_internal<Name: copy + drop + store, Value>(obj_id: ObjectID, field_key: address): (&Name, &mut Value) {
+        let df = native_borrow_mut_field<DynamicField<Name, Value>>(obj_id, field_key);
+        (&df.name, &mut df.value)
     }
 
     #[private_generics(T)]

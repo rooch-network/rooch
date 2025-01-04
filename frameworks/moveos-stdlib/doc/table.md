@@ -32,7 +32,6 @@ struct itself, while the operations are implemented as native functions. No trav
 -  [Function `length`](#0x2_table_length)
 -  [Function `is_empty`](#0x2_table_is_empty)
 -  [Function `drop`](#0x2_table_drop)
--  [Function `drop_iterator`](#0x2_table_drop_iterator)
 -  [Function `handle`](#0x2_table_handle)
 
 
@@ -72,7 +71,7 @@ Type of tables
 
 
 
-<pre><code><b>struct</b> <a href="table.md#0x2_table_Iterator">Iterator</a>&lt;K: <b>copy</b>, drop, store, V&gt; <b>has</b> store
+<pre><code><b>struct</b> <a href="table.md#0x2_table_Iterator">Iterator</a>&lt;K: <b>copy</b>, drop, store, V&gt; <b>has</b> drop, store
 </code></pre>
 
 
@@ -238,7 +237,7 @@ Returns the number of keys in the table.
 Returns a immutable reference to the next key-value pair in the table, starting from the given iterator.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_next">next</a>&lt;K: <b>copy</b>, drop, store, V: store&gt;(iterator: &<b>mut</b> <a href="table.md#0x2_table_Iterator">table::Iterator</a>&lt;K, V&gt;): &V
+<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_next">next</a>&lt;K: <b>copy</b>, drop, store, V: store&gt;(iterator: &<b>mut</b> <a href="table.md#0x2_table_Iterator">table::Iterator</a>&lt;K, V&gt;): (&K, &V)
 </code></pre>
 
 
@@ -250,7 +249,7 @@ Returns a immutable reference to the next key-value pair in the table, starting 
 Returns a mutable reference to the next key-value pair in the table, starting from the given iterator.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_next_mut">next_mut</a>&lt;K: <b>copy</b>, drop, store, V: store&gt;(iterator: &<b>mut</b> <a href="table.md#0x2_table_Iterator">table::Iterator</a>&lt;K, V&gt;): &<b>mut</b> V
+<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_next_mut">next_mut</a>&lt;K: <b>copy</b>, drop, store, V: store&gt;(iterator: &<b>mut</b> <a href="table.md#0x2_table_Iterator">table::Iterator</a>&lt;K, V&gt;): (&K, &<b>mut</b> V)
 </code></pre>
 
 
@@ -300,17 +299,6 @@ Usable only if the value type <code>V</code> has the <code>drop</code> ability
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_drop">drop</a>&lt;K: <b>copy</b>, drop, store, V: drop&gt;(<a href="table.md#0x2_table">table</a>: <a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;)
-</code></pre>
-
-
-
-<a name="0x2_table_drop_iterator"></a>
-
-## Function `drop_iterator`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_drop_iterator">drop_iterator</a>&lt;K: <b>copy</b>, drop, store, V: store&gt;(iterator: <a href="table.md#0x2_table_Iterator">table::Iterator</a>&lt;K, V&gt;)
 </code></pre>
 
 
