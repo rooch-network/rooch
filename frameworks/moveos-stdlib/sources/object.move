@@ -5,6 +5,7 @@
 /// For more details, please refer to https://rooch.network/docs/developer-guides/object
 module moveos_std::object {
     use std::hash;
+    use std::option::Option;
     use std::vector;
     use moveos_std::signer;
     use moveos_std::tx_context;
@@ -40,7 +41,7 @@ module moveos_std::object {
     const ErrorTypeMismatch: u64 = 10;
     /// The child object level is too deep
     const ErrorChildObjectTooDeep: u64 = 11;
-    /// The object has no parent 
+    /// The object has no parent
     const ErrorWithoutParent: u64 = 12;
     /// The parent object is not match
     const ErrorParentNotMatch: u64 = 13;
@@ -138,10 +139,10 @@ module moveos_std::object {
         let child = derive_object_key<ID, T>(id);
         let path = parent_id.path;
         vector::push_back(&mut path, child);
-        ObjectID { path } 
+        ObjectID { path }
     }
 
-    /// Object<T> is a pointer type to the Object in storage, It has `key` and `store` ability. 
+    /// Object<T> is a pointer type to the Object in storage, It has `key` and `store` ability.
     struct Object<phantom T> has key, store {
         id: ObjectID,
     }
@@ -291,7 +292,7 @@ module moveos_std::object {
     }
 
     /// Remove the object from the global storage, and return the object value
-    /// Do not check if the dynamic fields are empty 
+    /// Do not check if the dynamic fields are empty
     public(friend) fun remove_unchecked<T: key>(self: Object<T>): T {
         let Object{id} = self;
         let (parent, key) = into_parent_id_and_key(id);
@@ -472,7 +473,7 @@ module moveos_std::object {
         let DynamicField { name:_, value } = native_remove_field<DynamicField<Name, Value>>(obj_id, key);
         value
     }
-   
+
     /// Returns true if `object` contains an field for `key`, include normal field and object field
     public fun contains_field<T: key, Name: copy + drop + store>(obj: &Object<T>, name: Name): bool {
         contains_field_internal<Name>(obj.id, name)
@@ -492,6 +493,11 @@ module moveos_std::object {
     /// Returns the size of the object fields, the number of key-value pairs
     public fun field_size<T: key>(obj: &Object<T>): u64 {
         native_object_size(obj.id)
+    }
+
+    /// List all field names of the object
+    public(friend) fun list_field_keys<T: key>(obj: &Object<T>, cursor: Option<address>, limit: u64): vector<address> {
+        native_list_field_keys(obj.id, cursor, limit)
     }
 
 
@@ -538,7 +544,7 @@ module moveos_std::object {
     native fun native_transfer_object<T: key>(obj: Object<T>, new_owner: address);
 
     native fun native_to_shared_object<T: key>(obj: Object<T>);
-    
+
     native fun native_to_frozen_object<T: key>(obj: Object<T>);
 
     native fun native_borrow_object<T: key>(object_id: ObjectID): &Object<T>;
@@ -561,6 +567,8 @@ module moveos_std::object {
     native fun native_contains_field_with_value_type<V>(obj_id: ObjectID, key: address): bool;
 
     native fun native_remove_field<V>(obj_id: ObjectID, key: address): V;
+
+    native fun native_list_field_keys(obj_id: ObjectID, cursor: Option<address>, limit: u64): vector<address>;
 
     #[test_only]
     /// Testing only: allows to drop a Object even if it's fields is not empty.
@@ -752,7 +760,7 @@ module moveos_std::object {
             let _obj = borrow_mut_object<TestStruct>(alice, object_id);
         };
 
-        // borrow_mut_object by non-owner failed 
+        // borrow_mut_object by non-owner failed
         {
             let _obj = borrow_mut_object<TestStruct>(bob, object_id);
         };
@@ -989,5 +997,37 @@ module moveos_std::object {
         field_key_derive_test(1u64, @0x7eb4036673c8611e43c3eff1202446612f22a4b3bac92b7e14c0562ade5f1a3f);
         //test address
         field_key_derive_test(@0x1, @0x07d29b5cffb95d39f98baed1a973e676891bc9d379022aba6f4a2e4912a5e552);
+    }
+
+    #[test]
+    fun test_list_fields(){
+        use std::option;
+        let obj = new(TestStruct { count: 1 });
+        add_field(&mut obj, b"key1", 1u64);
+        add_field(&mut obj, b"key2", 2u64);
+
+        assert!(field_size(&obj) == 2, 1000);
+
+        let field_keys = list_field_keys<TestStruct>(&obj, option::none(), 10);
+        std::debug::print(&field_keys);
+
+        assert!(!vector::is_empty(&field_keys), 1001);
+        assert!(vector::length(&field_keys) == 2, 1002);
+
+        let field_key1 = *vector::borrow(&field_keys, 0);
+        std::debug::print(&field_key1);
+
+        let field1 = native_borrow_field<DynamicField<vector<u8>, u64>>(obj.id, field_key1);
+        assert!(field1.name == b"key1", 1003);
+        assert!(field1.value == 1u64, 1004);
+
+        let field_key2 = *vector::borrow(&field_keys, 1);
+        std::debug::print(&field_key2);
+
+        let field2 = native_borrow_field<DynamicField<vector<u8>, u64>>(obj.id, field_key2);
+        assert!(field2.name == b"key2", 1005);
+        assert!(field2.value == 2u64, 1006);
+
+        let TestStruct{ count: _} = drop_unchecked(obj);
     }
 }

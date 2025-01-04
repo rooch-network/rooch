@@ -65,6 +65,7 @@ pub struct GasParameters {
     pub bls12381: moveos_stdlib::bls12381::GasParameters,
     pub evm: moveos_stdlib::evm::GasParameters,
     pub groth16: moveos_stdlib::groth16::GasParameters,
+    pub object_list_field_keys: moveos_stdlib::object::ListFieldsGasParameters,
 }
 
 impl GasParameters {
@@ -91,6 +92,7 @@ impl GasParameters {
             bls12381: moveos_stdlib::bls12381::GasParameters::zeros(),
             evm: moveos_stdlib::evm::GasParameters::zeros(),
             groth16: moveos_stdlib::groth16::GasParameters::zeros(),
+            object_list_field_keys: moveos_stdlib::object::ListFieldsGasParameters::zeros(),
         }
     }
 }

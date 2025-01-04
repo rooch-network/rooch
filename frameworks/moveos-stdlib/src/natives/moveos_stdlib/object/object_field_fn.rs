@@ -1,11 +1,12 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use move_binary_format::errors::PartialVMResult;
+use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_core_types::gas_algebra::{GasQuantity, InternalGasUnit};
 use move_core_types::{
     account_address::AccountAddress,
     gas_algebra::{InternalGas, InternalGasPerByte, NumBytes},
+    vm_status::StatusCode,
 };
 use move_vm_runtime::native_functions::NativeContext;
 use move_vm_types::{
@@ -22,7 +23,8 @@ use moveos_object_runtime::{
 };
 use moveos_types::moveos_std::onchain_features::VALUE_SIZE_GAS_FEATURE;
 use moveos_types::{
-    moveos_std::object::ObjectID, state::FieldKey, state_resolver::StatelessResolver,
+    move_std::option::MoveOption, moveos_std::object::ObjectID, state::FieldKey, state::MoveState,
+    state_resolver::StatelessResolver,
 };
 
 /***************************************************************************************************
@@ -242,6 +244,112 @@ pub(crate) fn native_remove_field(
             rt_obj.remove_field(layout_loader, resolver, field_key, &ty_args[0])
         },
     )
+}
+
+/***************************************************************************************************
+ * native fun native_list_field_keys(obj_id: ObjectID, cursor: Option<address>, limit: u64): vector<address>;
+ **************************************************************************************************/
+#[derive(Debug, Clone)]
+pub struct ListFieldsGasParametersOption {
+    pub base: Option<InternalGas>,
+    pub per_byte: Option<InternalGasPerByte>,
+}
+
+impl ListFieldsGasParametersOption {
+    pub fn zeros() -> Self {
+        Self {
+            base: Some(0.into()),
+            per_byte: Some(0.into()),
+        }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.base.is_none() || self.per_byte.is_none()
+    }
+
+    pub fn init(base: InternalGas, per_byte: InternalGasPerByte) -> Self {
+        Self {
+            base: Some(base),
+            per_byte: Some(per_byte),
+        }
+    }
+
+    fn calculate_load_cost(&self, loaded: Option<Option<NumBytes>>) -> InternalGas {
+        match loaded {
+            Some(Some(num_bytes)) => {
+                self.per_byte.unwrap_or_else(InternalGasPerByte::zero) * num_bytes
+            }
+            Some(None) => 0.into(),
+            None => 0.into(),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct ListFieldsGasParameters {
+    pub list_field_keys: ListFieldsGasParametersOption,
+}
+
+impl ListFieldsGasParameters {
+    pub fn zeros() -> Self {
+        Self {
+            list_field_keys: ListFieldsGasParametersOption::zeros(),
+        }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.list_field_keys.is_empty()
+    }
+}
+
+pub(crate) fn native_list_field_keys(
+    gas_parameters: &GasParameters,
+    context: &mut NativeContext,
+    ty_args: Vec<Type>,
+    mut args: VecDeque<Value>,
+) -> PartialVMResult<NativeResult> {
+    debug_assert_eq!(ty_args.len(), 0);
+    debug_assert_eq!(args.len(), 3);
+
+    let limit = pop_arg!(args, u64);
+    let cursor_arg = args.pop_back().expect("cursor is missing");
+    let obj_id = pop_object_id(&mut args)?;
+
+    let cursor_address: Option<AccountAddress> = MoveOption::from_runtime_value(cursor_arg)
+        .map_err(|e| {
+            PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR)
+                .with_message(format!("Failed to parse cursor: {}", e))
+        })?
+        .into();
+    let cursor: Option<FieldKey> = cursor_address.map(|addr| addr.into());
+
+    let gas_params = gas_parameters
+        .native_list_field_keys
+        .list_field_keys
+        .clone();
+
+    let object_context = context.extensions().get::<ObjectRuntimeContext>();
+    let binding = object_context.object_runtime();
+    let mut object_runtime = binding.write();
+    let resolver = object_runtime.resolver();
+    let (rt_obj, object_load_gas) = object_runtime.load_object(context, &obj_id)?;
+    let field_key_bytes = AccountAddress::LENGTH as u64;
+    let gas_cost = gas_params.base.unwrap_or_else(InternalGas::zero)
+        + (gas_params.per_byte.unwrap_or_else(InternalGasPerByte::zero)
+            * NumBytes::new(field_key_bytes))
+        + gas_params.calculate_load_cost(object_load_gas);
+
+    let result = rt_obj.list_field_keys(resolver, cursor, limit as usize);
+    match result {
+        Ok((field_keys, field_load_gas)) => Ok(NativeResult::ok(
+            gas_cost + gas_params.calculate_load_cost(field_load_gas),
+            smallvec![Value::vector_address(field_keys)],
+        )),
+        Err(err) => {
+            let abort_code = error_to_abort_code(err);
+            Ok(NativeResult::err(gas_cost, abort_code))
+        }
+    }
 }
 
 fn object_field_fn_dispatch(
