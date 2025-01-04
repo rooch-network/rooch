@@ -23,6 +23,7 @@ struct itself, while the operations are implemented as native functions. No trav
 -  [Function `upsert`](#0x2_table_upsert)
 -  [Function `remove`](#0x2_table_remove)
 -  [Function `contains`](#0x2_table_contains)
+-  [Function `list_field_keys`](#0x2_table_list_field_keys)
 -  [Function `destroy_empty`](#0x2_table_destroy_empty)
 -  [Function `length`](#0x2_table_length)
 -  [Function `is_empty`](#0x2_table_is_empty)
@@ -30,7 +31,8 @@ struct itself, while the operations are implemented as native functions. No trav
 -  [Function `handle`](#0x2_table_handle)
 
 
-<pre><code><b>use</b> <a href="core_addresses.md#0x2_core_addresses">0x2::core_addresses</a>;
+<pre><code><b>use</b> <a href="">0x1::option</a>;
+<b>use</b> <a href="core_addresses.md#0x2_core_addresses">0x2::core_addresses</a>;
 <b>use</b> <a href="object.md#0x2_object">0x2::object</a>;
 </code></pre>
 
@@ -183,6 +185,18 @@ Returns true if <code><a href="table.md#0x2_table">table</a></code> contains an 
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_contains">contains</a>&lt;K: <b>copy</b>, drop, store, V: store&gt;(<a href="table.md#0x2_table">table</a>: &<a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;, key: K): bool
+</code></pre>
+
+
+
+<a name="0x2_table_list_field_keys"></a>
+
+## Function `list_field_keys`
+
+Returns a vector of all keys in the table.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_list_field_keys">list_field_keys</a>&lt;K: <b>copy</b>, drop, store, V: store&gt;(<a href="table.md#0x2_table">table</a>: &<a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;, cursor: <a href="_Option">option::Option</a>&lt;<b>address</b>&gt;, limit: u64): <a href="">vector</a>&lt;<b>address</b>&gt;
 </code></pre>
 
 

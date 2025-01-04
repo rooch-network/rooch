@@ -9,6 +9,8 @@
 /// struct itself, while the operations are implemented as native functions. No traversal is provided.
 
 module moveos_std::table {
+    use std::option::Option;
+
     use moveos_std::core_addresses;
     use moveos_std::object::ObjectID;
     use moveos_std::object::{Self, Object};
@@ -85,6 +87,11 @@ module moveos_std::table {
     /// Returns true if `table` contains an entry for `key`.
     public fun contains<K: copy + drop + store, V:store>(table: &Table<K, V>, key: K): bool {
         object::contains_field(&table.handle, key)
+    }
+
+    /// Returns a vector of all keys in the table.
+    public fun list_field_keys<K: copy + drop + store, V:store>(table: &Table<K, V>, cursor: Option<address>, limit: u64): vector<address> {
+        object::list_field_keys(&table.handle, cursor, limit)
     }
 
     /// Destroy a table. Aborts if the table is not empty.
