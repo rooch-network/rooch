@@ -51,7 +51,7 @@ module test::m {
 //# run --signers test
 script {
     use std::string;
-
+    use std::vector;
     use test::m;
 
     fun main() {
@@ -62,6 +62,12 @@ script {
 
         let keys = m::list_field_keys(&kv);
         std::debug::print(&keys);
+        assert!(vector::length(&keys) == 3, 1001);
+
+        m::add(&mut kv, string::utf8(b"test4"), b"value4");
+        let keys = m::list_field_keys(&kv);
+        std::debug::print(&keys);
+        assert!(vector::length(&keys) == 4, 1002);
 
         let object_id = m::save_to_object_storage(kv);
         std::debug::print(&110120);
@@ -69,7 +75,7 @@ script {
     }
 }
 
-//# run --signers test --args object:0x79c5dcbfa65443bac7cb2bea1b85bbc0dfd82ab17969c5d620ac6261a458735f
+//# run --signers test --args object:0x2bd4b62753418099f2edc2e68733333fc5e2597e395ec269169e4d0920163b1d
 
 script {
     use std::string;
@@ -82,17 +88,17 @@ script {
         assert!(m::contains(kv, string::utf8(b"test")), 1000);
 
         let keys = m::list_field_keys(kv);
-        assert!(vector::length(&keys) == 3, 1001);
+        assert!(vector::length(&keys) == 4, 1001);
 
         let size = m::length(kv);
-        assert!(size == 3, 1002);
+        assert!(size == 4, 1002);
 
         let v = m::borrow(kv, string::utf8(b"test"));
         assert!(v == &b"value", 1003);
     }
 }
 
-//# run --signers test --args object:0x79c5dcbfa65443bac7cb2bea1b85bbc0dfd82ab17969c5d620ac6261a458735f
+//# run --signers test --args object:0x2bd4b62753418099f2edc2e68733333fc5e2597e395ec269169e4d0920163b1d
 
 script {
     use std::string;
@@ -104,19 +110,19 @@ script {
         let kv = object::borrow_mut(kv_object);
         assert!(m::contains(kv, string::utf8(b"test")), 1000);
 
-        m::add(kv, string::utf8(b"test4"), b"value4");
         m::add(kv, string::utf8(b"test5"), b"value5");
+        m::add(kv, string::utf8(b"test6"), b"value6");
 
         let keys = m::list_field_keys(kv);
-        assert!(vector::length(&keys) == 3, 1001);
+        assert!(vector::length(&keys) == 4, 1001);
 
         let size = m::length(kv);
-        assert!(size == 5, 1002);
-
-        let v = m::borrow(kv, string::utf8(b"test4"));
-        assert!(v == &b"value4", 1003);
+        assert!(size == 6, 1002);
 
         let v = m::borrow(kv, string::utf8(b"test5"));
-        assert!(v == &b"value5", 1004);
+        assert!(v == &b"value5", 1003);
+
+        let v = m::borrow(kv, string::utf8(b"test6"));
+        assert!(v == &b"value6", 1004);
     }
 }
