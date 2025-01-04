@@ -213,7 +213,7 @@ cursor: Optional address to start listing from. If None, starts from the beginni
 limit: Maximum number of keys to return.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_list_field_keys">list_field_keys</a>&lt;K: <b>copy</b>, drop, store, V: store&gt;(<a href="table.md#0x2_table">table</a>: &<a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;, cursor: <a href="_Option">option::Option</a>&lt;<b>address</b>&gt;, limit: u64): <a href="table.md#0x2_table_Iterator">table::Iterator</a>&lt;K, V&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_list_field_keys">list_field_keys</a>&lt;K: <b>copy</b>, drop, store, V: store&gt;(<a href="table.md#0x2_table">table</a>: &<a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;, cursor: <a href="_Option">option::Option</a>&lt;K&gt;, limit: u64): <a href="table.md#0x2_table_Iterator">table::Iterator</a>&lt;K, V&gt;
 </code></pre>
 
 

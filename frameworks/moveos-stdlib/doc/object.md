@@ -1019,5 +1019,5 @@ Returns the size of the object fields, the number of key-value pairs
 List all field names of the object
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_list_field_keys">list_field_keys</a>&lt;T: key&gt;(obj: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;, cursor: <a href="_Option">option::Option</a>&lt;<b>address</b>&gt;, limit: u64): <a href="">vector</a>&lt;<b>address</b>&gt;
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_list_field_keys">list_field_keys</a>&lt;T: key, Name: <b>copy</b>, drop, store&gt;(obj: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;, name: <a href="_Option">option::Option</a>&lt;Name&gt;, limit: u64): <a href="">vector</a>&lt;<b>address</b>&gt;
 </code></pre>

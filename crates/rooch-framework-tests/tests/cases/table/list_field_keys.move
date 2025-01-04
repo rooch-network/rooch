@@ -43,6 +43,10 @@ module test::m {
         table::list_field_keys(&store.table, option::none(), 10000)
     }
 
+    public fun list_field_keys_with_name(store: &KVStore, key: String, limit: u64): Iterator<String, vector<u8>> {
+        table::list_field_keys(&store.table, option::some(key), limit)
+    }
+
     public fun field_keys_len(iterator: &Iterator<String, vector<u8>>): u64 {
         table::field_keys_len(iterator)
     }
@@ -100,13 +104,25 @@ script {
         std::debug::print(&k);
         std::debug::print(&string::utf8(v));
 
+        let iter = m::list_field_keys_with_name(&kv, string::utf8(b"test"), 2);
+        std::debug::print(&iter);
+        assert!(m::field_keys_len(&iter) == 2, 1003);
+
+        let (k, v) = m::next(&mut iter);
+        std::debug::print(&k);
+        std::debug::print(&string::utf8(v));
+
+        let (k, v) = m::next(&mut iter);
+        std::debug::print(&k);
+        std::debug::print(&string::utf8(v));
+
         let object_id = m::save_to_object_storage(kv);
         std::debug::print(&110120);
         std::debug::print(&object_id);
     }
 }
 
-//# run --signers test --args object:0xde3404893a0c26436e8e026a22db115e06510b38ad7dd088ca192fe394792731
+//# run --signers test --args object:0x5f3e8d46295d27dd3b6d60c6f629e96cfb83a0aa4d75ec61a331d6ac0d4d1358
 
 script {
     use std::string;

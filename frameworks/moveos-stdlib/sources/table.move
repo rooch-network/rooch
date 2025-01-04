@@ -25,9 +25,9 @@ module moveos_std::table {
         handle: Object<TablePlaceholder>,
     }
 
-    struct Iterator<phantom K: copy + drop + store, phantom V> has store, drop {
+    struct Iterator<K: copy + drop + store, phantom V> has store, drop {
         handle: ObjectID,
-        cursor: Option<address>,
+        cursor: Option<K>,
         limit: u64,
         keys: vector<address>,
     }
@@ -100,7 +100,7 @@ module moveos_std::table {
     /// Returns a vector of keys in the table from the given cursor position, up to the specified limit.
     /// cursor: Optional address to start listing from. If None, starts from the beginning.
     /// limit: Maximum number of keys to return.
-    public fun list_field_keys<K: copy + drop + store, V:store>(table: &Table<K, V>, cursor: Option<address>, limit: u64): Iterator<K, V> {
+    public fun list_field_keys<K: copy + drop + store, V:store>(table: &Table<K, V>, cursor: Option<K>, limit: u64): Iterator<K, V> {
         let keys = object::list_field_keys(&table.handle, cursor, limit);
         Iterator {
             handle: object::id(&table.handle),

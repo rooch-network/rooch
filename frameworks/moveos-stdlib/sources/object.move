@@ -5,7 +5,7 @@
 /// For more details, please refer to https://rooch.network/docs/developer-guides/object
 module moveos_std::object {
     use std::hash;
-    use std::option::Option;
+    use std::option::{Self, Option};
     use std::vector;
     use moveos_std::signer;
     use moveos_std::tx_context;
@@ -509,7 +509,12 @@ module moveos_std::object {
     }
 
     /// List all field names of the object
-    public(friend) fun list_field_keys<T: key>(obj: &Object<T>, cursor: Option<address>, limit: u64): vector<address> {
+    public(friend) fun list_field_keys<T: key, Name: copy + drop + store>(obj: &Object<T>, name: Option<Name>, limit: u64): vector<address> {
+        let cursor = if (option::is_some(&name)) {
+            option::some(derive_field_key(option::extract(&mut name)))
+        } else {
+            option::none()
+        };
         native_list_field_keys(obj.id, cursor, limit)
     }
 
@@ -1021,7 +1026,7 @@ module moveos_std::object {
 
         assert!(field_size(&obj) == 2, 1000);
 
-        let field_keys = list_field_keys<TestStruct>(&obj, option::none(), 10);
+        let field_keys = list_field_keys<TestStruct, vector<u8>>(&obj, option::none(), 10);
         std::debug::print(&field_keys);
 
         assert!(!vector::is_empty(&field_keys), 1001);
