@@ -496,7 +496,7 @@ module moveos_std::object {
     }
 
     /// List all field names of the object
-    fun list_field_keys<T: key>(obj: &Object<T>, cursor: Option<address>, limit: u64): vector<address> {
+    public(friend) fun list_field_keys<T: key>(obj: &Object<T>, cursor: Option<address>, limit: u64): vector<address> {
         native_list_field_keys(obj.id, cursor, limit)
     }
 

@@ -687,7 +687,7 @@ impl RuntimeObject {
         // First get fields from DB
         let mut fields_with_objects = self.list_field_keys_from_db(resolver, cursor, limit)?;
 
-        let remaining_limit = limit - fields_with_objects.len();
+        let remaining_limit = limit.saturating_sub(fields_with_objects.len());
         // If DB results less than limit, supplement with fresh fields from cache
         if remaining_limit > 0 {
             let last_key = fields_with_objects.last().map(|(key, _)| key.clone());
@@ -702,13 +702,13 @@ impl RuntimeObject {
                         false
                     }
                 })
-                .take(remaining_limit)
                 .filter_map(|(key, field)| {
                     if field.is_fresh() {
                         return Some((key.clone(), Some(Some(NumBytes::zero()))));
                     }
                     None
-                });
+                })
+                .take(remaining_limit);
 
             fields_with_objects.extend(fresh_fields);
         }
