@@ -60,7 +60,7 @@ module grow_registration::grow_registration {
         table::add(&mut registration.register_point_box, object::id(point_box_obj), true);
     }
 
-    public fun update_register_info(signer: &signer, registration_obj: &mut Object<Registration>, register_info: String) {
+    public entry fun update_register_info(signer: &signer, registration_obj: &mut Object<Registration>, register_info: String) {
         let registration = object::borrow_mut(registration_obj);
         let user_info = table::borrow_mut(&mut registration.user_info, address_of(signer));
         user_info.register_info = register_info
