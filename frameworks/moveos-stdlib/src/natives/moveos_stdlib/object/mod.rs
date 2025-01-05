@@ -28,6 +28,8 @@ mod object_field_fn;
 mod object_fn;
 mod object_meta_fn;
 
+pub use object_field_fn::{ListFieldsGasParameters, ListFieldsGasParametersOption};
+
 #[derive(Debug, Clone)]
 pub struct CommonGasParameters {
     pub load_base: InternalGas,
@@ -108,6 +110,7 @@ pub struct GasParameters {
     pub native_contains_field: ContainsFieldGasParameters,
     pub native_contains_field_with_value_type: ContainsFieldGasParameters,
     pub native_remove_field: RemoveFieldGasParameters,
+    pub native_list_field_keys: ListFieldsGasParameters,
 }
 
 impl GasParameters {
@@ -144,12 +147,13 @@ impl GasParameters {
                 base: 0.into(),
                 per_byte_serialized: 0.into(),
             },
+            native_list_field_keys: ListFieldsGasParameters::zeros(),
         }
     }
 }
 
 pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, NativeFunction)> {
-    let natives = [
+    let mut natives = [
         (
             "native_object_owner",
             helpers::make_native(gas_params.clone(), native_object_owner),
@@ -218,7 +222,15 @@ pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, Nati
             "native_contains_field_with_value_type",
             helpers::make_native(gas_params.clone(), native_contains_field_with_value_type),
         ),
-    ];
+    ]
+    .to_vec();
+
+    if !gas_params.clone().native_list_field_keys.is_empty() {
+        natives.push((
+            "native_list_field_keys",
+            helpers::make_native(gas_params.clone(), native_list_field_keys),
+        ));
+    }
 
     make_module_natives(natives)
 }
