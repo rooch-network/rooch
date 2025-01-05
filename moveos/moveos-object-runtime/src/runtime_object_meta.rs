@@ -100,6 +100,10 @@ impl RuntimeObjectMeta {
         matches!(self, RuntimeObjectMeta::None(_))
     }
 
+    pub fn is_fresh(&self) -> bool {
+        matches!(self, RuntimeObjectMeta::Fresh(_))
+    }
+
     pub fn id(&self) -> &ObjectID {
         match self {
             Self::None(id) => id,
