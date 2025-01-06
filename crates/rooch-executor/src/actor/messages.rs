@@ -94,6 +94,7 @@ impl Message for ResolveMessage {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AnnotatedStatesMessage {
+    pub state_root: Option<H256>,
     pub access_path: AccessPath,
 }
 
@@ -115,6 +116,7 @@ impl Message for ListStatesMessage {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ListAnnotatedStatesMessage {
+    pub state_root: Option<H256>,
     pub access_path: AccessPath,
     pub cursor: Option<FieldKey>,
     pub limit: usize,
