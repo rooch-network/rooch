@@ -38,6 +38,12 @@ module grow_bitcoin::grow_registration {
         to_shared(object::new_with_id(project_id, registration));
     }
 
+    public entry fun update_registration_time(registration_obj: &mut Object<Registration>, start_time: u64, end_time: u64, _admin: &mut Object<AdminCap>) {
+        let registration = object::borrow_mut(registration_obj);
+        registration.start_time = start_time;
+        registration.end_time = end_time;
+    }
+
     public entry fun register_batch(signer: &signer, registration_obj: &mut Object<Registration>, point_box_objs: vector<ObjectID>, register_info: String) {
         let i = 0;
         while (i < length(&point_box_objs)) {
@@ -64,6 +70,16 @@ module grow_bitcoin::grow_registration {
         let registration = object::borrow_mut(registration_obj);
         let user_info = table::borrow_mut(&mut registration.user_info, address_of(signer));
         user_info.register_info = register_info
+    }
+
+    public fun get_user_info(registration_obj: &Object<Registration>, account: address): (String, u256) {
+        let registration = object::borrow(registration_obj);
+        if(table::contains(&registration.user_info, account)){
+            let user_info = table::borrow(&registration.user_info, account);
+            (user_info.register_info, user_info.amount)
+        }else{
+            (std::string::utf8(b""), 0u256)
+        }
     }
 }
 
