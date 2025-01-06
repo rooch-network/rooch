@@ -1,4 +1,4 @@
-module grow_registration::grow_registration {
+module grow_bitcoin::grow_registration {
 
     use std::signer::address_of;
     use std::string::String;
@@ -66,3 +66,4 @@ module grow_registration::grow_registration {
         user_info.register_info = register_info
     }
 }
+
