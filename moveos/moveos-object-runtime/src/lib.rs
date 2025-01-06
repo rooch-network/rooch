@@ -19,13 +19,17 @@ pub trait TypeLayoutLoader {
     fn type_to_type_tag(&self, ty: &Type) -> PartialVMResult<TypeTag>;
 }
 
-impl<'a, 'b> TypeLayoutLoader for NativeContext<'a, 'b> {
+impl<'a, 'b, 'c> TypeLayoutLoader for NativeContext<'a, 'b, 'c> {
     fn get_type_layout(&self, type_tag: &TypeTag) -> PartialVMResult<MoveTypeLayout> {
-        self.get_type_layout(type_tag).map_err(|e| e.to_partial())
+        self.get_type_layout(type_tag).map_err(|e| e.to_owned())
     }
+
     fn type_to_type_layout(&self, ty: &Type) -> PartialVMResult<MoveTypeLayout> {
-        self.type_to_type_layout(ty)?
-            .ok_or_else(|| partial_extension_error("cannot determine type layout"))
+        let v = self.type_to_type_layout(ty);
+        match v {
+            Ok(layout) => Ok(layout),
+            Err(e) => Err(e.to_owned()),
+        }
     }
     fn type_to_type_tag(&self, ty: &Type) -> PartialVMResult<TypeTag> {
         self.type_to_type_tag(ty)
