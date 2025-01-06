@@ -132,9 +132,13 @@ impl ExecutorProxy {
     pub async fn get_annotated_states(
         &self,
         access_path: AccessPath,
+        state_root: Option<H256>,
     ) -> Result<Vec<Option<AnnotatedState>>> {
         self.reader_actor
-            .send(AnnotatedStatesMessage { access_path })
+            .send(AnnotatedStatesMessage {
+                state_root,
+                access_path,
+            })
             .await?
     }
 
@@ -157,12 +161,14 @@ impl ExecutorProxy {
 
     pub async fn list_annotated_states(
         &self,
+        state_root: Option<H256>,
         access_path: AccessPath,
         cursor: Option<FieldKey>,
         limit: usize,
     ) -> Result<Vec<AnnotatedStateKV>> {
         self.reader_actor
             .send(ListAnnotatedStatesMessage {
+                state_root,
                 access_path,
                 cursor,
                 limit,

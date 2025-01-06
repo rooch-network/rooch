@@ -208,7 +208,7 @@ impl RoochAPIServer for RoochServer {
         let state_views = if state_option.decode || show_display {
             let states = self
                 .rpc_service
-                .get_annotated_states(access_path.into())
+                .get_annotated_states(access_path.into(), state_root)
                 .await?;
 
             if show_display {
@@ -273,7 +273,7 @@ impl RoochAPIServer for RoochServer {
         let mut data: Vec<StateKVView> = if state_option.decode || show_display {
             let (key_states, states): (Vec<FieldKey>, Vec<AnnotatedState>) = self
                 .rpc_service
-                .list_annotated_states(access_path.into(), cursor_of, limit_of + 1)
+                .list_annotated_states(state_root, access_path.into(), cursor_of, limit_of + 1)
                 .await?
                 .into_iter()
                 .unzip();
@@ -335,8 +335,10 @@ impl RoochAPIServer for RoochServer {
         let show_display = state_option.show_display;
 
         let mut objects_view = if decode || show_display {
-            let states: Vec<Option<AnnotatedState>> =
-                self.rpc_service.get_annotated_states(access_path).await?;
+            let states: Vec<Option<AnnotatedState>> = self
+                .rpc_service
+                .get_annotated_states(access_path, None)
+                .await?;
 
             let mut valid_display_field_views = if show_display {
                 let valid_states = states.iter().filter_map(|s| s.as_ref()).collect::<Vec<_>>();

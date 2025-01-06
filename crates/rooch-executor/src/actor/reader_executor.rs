@@ -163,7 +163,12 @@ impl Handler<AnnotatedStatesMessage> for ReaderExecutorActor {
         msg: AnnotatedStatesMessage,
         _ctx: &mut ActorContext,
     ) -> Result<Vec<Option<AnnotatedState>>, anyhow::Error> {
-        let resolver = RootObjectResolver::new(self.root.clone(), &self.moveos_store);
+        let resolver = if let Some(state_root) = msg.state_root {
+            let root_object_meta = ObjectMeta::root_metadata(state_root, 0);
+            RootObjectResolver::new(root_object_meta, &self.moveos_store)
+        } else {
+            RootObjectResolver::new(self.root.clone(), &self.moveos_store)
+        };
         resolver.get_annotated_states(msg.access_path)
     }
 }
@@ -192,7 +197,12 @@ impl Handler<ListAnnotatedStatesMessage> for ReaderExecutorActor {
         msg: ListAnnotatedStatesMessage,
         _ctx: &mut ActorContext,
     ) -> Result<Vec<AnnotatedStateKV>, anyhow::Error> {
-        let resolver = RootObjectResolver::new(self.root.clone(), &self.moveos_store);
+        let resolver = if let Some(state_root) = msg.state_root {
+            let root_object_meta = ObjectMeta::root_metadata(state_root, 0);
+            RootObjectResolver::new(root_object_meta, &self.moveos_store)
+        } else {
+            RootObjectResolver::new(self.root.clone(), &self.moveos_store)
+        };
         resolver.list_annotated_states(msg.access_path, msg.cursor, msg.limit)
     }
 }
