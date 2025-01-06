@@ -18,10 +18,11 @@ use move_binary_format::file_format::CompiledScript;
 use move_binary_format::CompiledModule;
 use move_core_types::language_storage::{ModuleId, StructTag};
 use move_vm_runtime::{Module, Script};
+use move_vm_types::code::Code;
 use move_vm_types::code::{
-    ModuleCache, ScriptCache, UnsyncModuleCache, UnsyncScriptCache, WithBytes, WithHash,
+    ambassador_impl_ScriptCache, ModuleCache, ScriptCache, UnsyncModuleCache, UnsyncScriptCache,
+    WithBytes, WithHash,
 };
-use move_vm_types::sha3_256;
 use moveos_config::store_config::{MoveOSStoreConfig, RocksdbConfig};
 use moveos_config::DataDirPath;
 use moveos_types::genesis_info::GenesisInfo;
@@ -105,7 +106,7 @@ impl MoveOSStore {
     pub fn as_script_cache(
         &self,
     ) -> &dyn ScriptCache<Key = [u8; 32], Deserialized = CompiledScript, Verified = Script> {
-        &self.script_cache
+        self.get_script_cache()
     }
 
     fn as_module_cache(
@@ -117,7 +118,7 @@ impl MoveOSStore {
         Extension = RoochModuleExtension,
         Version = Option<TxnIndex>,
     > {
-        &self.module_cache
+        self.get_module_cache()
     }
 }
 
@@ -159,6 +160,22 @@ impl MoveOSStore {
 
         //The testcases should hold the tmpdir to prevent the tmpdir from being deleted.
         Ok((Self::new(tmpdir.path(), &registry)?, tmpdir))
+    }
+
+    pub fn get_script_cache(&self) -> &UnsyncScriptCache<[u8; 32], CompiledScript, Script> {
+        &self.script_cache
+    }
+
+    pub fn get_module_cache(
+        &self,
+    ) -> &dyn ModuleCache<
+        Key = ModuleId,
+        Deserialized = CompiledModule,
+        Verified = Module,
+        Extension = RoochModuleExtension,
+        Version = Option<TxnIndex>,
+    > {
+        &self.module_cache
     }
 
     pub fn get_event_store(&self) -> &EventDBStore {
@@ -438,6 +455,7 @@ pub fn load_feature_store_object<Resolver: StateResolver>(
 }
 
 /// Additional data stored alongside deserialized or verified modules.
+#[derive(Clone)]
 pub struct RoochModuleExtension {
     /// Serialized representation of the module.
     bytes: Bytes,

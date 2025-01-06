@@ -401,7 +401,11 @@ impl<'r> ObjectRuntime<'r> {
                 self.object_pointer_in_args
                     .insert(object_id.clone(), RuntimeObjectArg::Ref(pointer_value));
             }
-            Type::StructInstantiation(_, _) => {
+            Type::StructInstantiation {
+                idx: _,
+                ty_args: _,
+                ability: _,
+            } => {
                 let pointer_value = rt_obj
                     .take_object(None)
                     .map_err(|e| e.finish(Location::Module(object::MODULE_ID.clone())))?;

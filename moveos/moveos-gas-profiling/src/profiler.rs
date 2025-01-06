@@ -1,12 +1,14 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::log::{CallFrame, ExecutionAndIOCosts, ExecutionGasEvent, FrameName, TransactionGasLog};
+use crate::log::{
+    CallFrame, Dependency, ExecutionAndIOCosts, ExecutionGasEvent, FrameName, TransactionGasLog,
+};
 use move_binary_format::file_format::CodeOffset;
 use move_binary_format::file_format_common::Opcodes;
 use move_core_types::account_address::AccountAddress;
-use move_core_types::gas_algebra::{InternalGas, NumArgs, NumBytes};
-use move_core_types::identifier::Identifier;
+use move_core_types::gas_algebra::{InternalGas, NumArgs, NumBytes, NumTypeNodes};
+use move_core_types::identifier::{IdentStr, Identifier};
 use move_core_types::language_storage::{ModuleId, TypeTag};
 use move_vm_types::gas::{GasMeter, SimpleInstruction};
 use move_vm_types::natives::function::PartialVMResult;
@@ -19,6 +21,7 @@ use std::sync::{Arc, RwLock};
 pub struct GasProfiler<G> {
     base: G,
     frames: Arc<RwLock<Vec<CallFrame>>>,
+    dependencies: Vec<Dependency>,
     metering: bool,
 }
 
@@ -65,6 +68,7 @@ impl<G> GasProfiler<G> {
             frames: Arc::new(RwLock::new(vec![CallFrame::new_function(
                 module_id, func_name, ty_args,
             )])),
+            dependencies: vec![],
             metering: true,
         }
     }
@@ -437,6 +441,36 @@ impl<G: GasMeter> GasMeter for GasProfiler<G> {
             ty_args,
             cost,
         });
+
+        res
+    }
+
+    fn charge_create_ty(&mut self, num_nodes: NumTypeNodes) -> PartialVMResult<()> {
+        let (cost, res) = self.delegate_charge(|base| base.charge_create_ty(num_nodes));
+
+        self.record_gas_event(ExecutionGasEvent::CreateTy { cost });
+
+        res
+    }
+
+    fn charge_dependency(
+        &mut self,
+        is_new: bool,
+        addr: &AccountAddress,
+        name: &IdentStr,
+        size: NumBytes,
+    ) -> PartialVMResult<()> {
+        let (cost, res) =
+            self.delegate_charge(|base| base.charge_dependency(is_new, addr, name, size));
+
+        if !cost.is_zero() {
+            self.dependencies.push(Dependency {
+                is_new,
+                id: ModuleId::new(*addr, name.to_owned()),
+                size,
+                cost,
+            });
+        }
 
         res
     }
