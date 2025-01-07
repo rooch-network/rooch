@@ -7,9 +7,9 @@ use rooch_types::error::RoochResult;
 use std::collections::{BinaryHeap, HashMap, HashSet};
 
 use std::cmp::Reverse;
+use std::fs;
 use std::io::{BufWriter, Write};
 use std::path::PathBuf;
-use std::{fs, u64};
 
 /// Unpack batches to human-readable LedgerTransaction List from segments directory.
 #[derive(Debug, Parser)]
@@ -93,7 +93,7 @@ impl UnpackInner {
         let mut new_unpacked = HashSet::new();
 
         let mut l2tx_hist = TxStats {
-            hist: hdrhistogram::Histogram::<u64>::new_with_bounds(1, 4096_000, 3)?,
+            hist: hdrhistogram::Histogram::<u64>::new_with_bounds(1, 4_096_000, 3)?,
             tops: BinaryHeap::new(),
             top_n: TOP_N,
         };
@@ -113,22 +113,17 @@ impl UnpackInner {
             let mut last_tx_order = 0; // the first tx_order in DA is 1
             for tx in &tx_list {
                 let tx_order = tx.sequence_info.tx_order;
-                if last_tx_order != 0 {
-                    if tx_order != last_tx_order + 1 {
-                        return Err(anyhow::anyhow!(
+                if last_tx_order != 0 && tx_order != last_tx_order + 1 {
+                    return Err(anyhow::anyhow!(
                             "Transaction order is not strictly incremental for block {}: last_tx_order: {}, tx_order: {}",
                             chunk_id, last_tx_order, tx_order
                         ));
-                    }
                 }
                 last_tx_order = tx_order;
-                match &tx.data {
-                    rooch_types::transaction::LedgerTxData::L2Tx(tx) => {
-                        let tx_size = tx.tx_size();
-                        l2tx_hist.record(tx_order, tx_size)?;
-                    }
-                    _ => {}
-                };
+                if let rooch_types::transaction::LedgerTxData::L2Tx(tx) = &tx.data {
+                    let tx_size = tx.tx_size();
+                    l2tx_hist.record(tx_order, tx_size)?;
+                }
             }
 
             if self.stats_only {
