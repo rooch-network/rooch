@@ -7320,6 +7320,7 @@ dependencies = [
  "serde_json",
  "smallvec",
  "tracing",
+ "triomphe",
 ]
 
 [[package]]
@@ -9777,6 +9778,7 @@ dependencies = [
  "move-vm-types",
  "moveos-object-runtime",
  "moveos-types",
+ "triomphe",
 ]
 
 [[package]]

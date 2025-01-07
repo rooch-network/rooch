@@ -37,8 +37,8 @@ impl rlp::Encodable for MoveValueWrapper {
         use MoveTypeLayout as L;
         match (&self.layout, &self.val) {
             (L::Struct(layout), MoveValue::Struct(struct_)) => {
-                let layout_fields = layout.fields();
-                let value_fields = struct_.fields();
+                let layout_fields = layout.fields(None);
+                let (_, value_fields) = struct_.optional_variant_and_fields();
                 s.begin_list(layout_fields.len());
                 for (layout, value) in layout_fields.iter().zip(value_fields) {
                     s.append(&MoveValueWrapper {
@@ -120,7 +120,7 @@ fn decode_rlp(rlp: Rlp, layout: MoveTypeLayout) -> anyhow::Result<Value> {
         }
         MoveTypeLayout::Struct(ty) => {
             let mut fields = vec![];
-            for (index, field_ty) in ty.into_fields().into_iter().enumerate() {
+            for (index, field_ty) in ty.into_fields(None).into_iter().enumerate() {
                 let val = decode_rlp(rlp.at(index)?, field_ty)?;
                 fields.push(val);
             }
@@ -146,6 +146,7 @@ fn decode_rlp(rlp: Rlp, layout: MoveTypeLayout) -> anyhow::Result<Value> {
                 }
             }
         }
+        _ => unreachable!(),
     };
     Ok(value)
 }
@@ -183,9 +184,9 @@ fn native_to_bytes(
     let arg_type = ty_args.pop().unwrap();
 
     // get type layout
-    let layout = match context.type_to_type_layout(&arg_type)? {
-        Some(layout) => layout,
-        None => {
+    let layout = match context.type_to_type_layout(&arg_type) {
+        Ok(layout) => layout,
+        Err(_) => {
             return Ok(NativeResult::err(cost, E_RLP_SERIALIZATION_FAILURE));
         }
     };
@@ -239,12 +240,19 @@ fn native_from_bytes(
     let mut cost = gas_params.base;
 
     // TODO(Gas): charge for getting the layout
-    let layout = context.type_to_type_layout(&ty_args[0])?.ok_or_else(|| {
-        PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR).with_message(format!(
-            "Failed to get layout of type {:?} -- this should not happen",
-            ty_args[0]
-        ))
-    })?;
+    let layout = match context.type_to_type_layout(&ty_args[0]) {
+        Ok(layout) => layout,
+        Err(_) => {
+            return Err(
+                PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR).with_message(
+                    format!(
+                        "Failed to get layout of type {:?} -- this should not happen",
+                        ty_args[0]
+                    ),
+                ),
+            )
+        }
+    };
 
     let bytes = pop_arg!(args, Vec<u8>);
     cost += gas_params.per_byte * NumBytes::new(bytes.len() as u64);

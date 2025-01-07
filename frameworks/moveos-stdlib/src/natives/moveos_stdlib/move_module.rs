@@ -35,6 +35,7 @@ use smallvec::smallvec;
 use std::collections::{BTreeSet, HashMap, VecDeque};
 use std::hash::Hash;
 use std::str::FromStr;
+use triomphe::Arc as TriompheArc;
 // ========================================================================================
 
 const E_ADDRESS_NOT_MATCH_WITH_SIGNER: u64 = 1;
@@ -582,7 +583,7 @@ fn modify_modules(
         let value = Value::vector_u8(binary);
         remapped_bundles.push(value);
     }
-    let output_modules = Vector::pack(&Type::Vector(Box::new(Type::U8)), remapped_bundles)?;
+    let output_modules = Vector::pack(&Type::Vector(TriompheArc::new(Type::U8)), remapped_bundles)?;
     Ok(output_modules)
 }
 

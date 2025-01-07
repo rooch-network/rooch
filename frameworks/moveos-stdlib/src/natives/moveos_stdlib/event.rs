@@ -70,12 +70,20 @@ pub fn native_emit(
         }
     };
     let msg = args.pop_back().unwrap();
-    let layout = context.type_to_type_layout(&ty)?.ok_or_else(|| {
-        PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR).with_message(format!(
-            "Failed to get layout of type {:?} -- this should not happen",
-            ty
-        ))
-    })?;
+    let layout = match context.type_to_type_layout(&ty) {
+        Ok(layout) => layout,
+        Err(_) => {
+            return Err(
+                PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR).with_message(
+                    format!(
+                        "Failed to get layout of type {:?} -- this should not happen",
+                        ty
+                    ),
+                ),
+            )
+        }
+    };
+
     if tracing::enabled!(tracing::Level::TRACE) {
         tracing::trace!("Emitting event {}, {:?}", struct_tag, msg);
     }

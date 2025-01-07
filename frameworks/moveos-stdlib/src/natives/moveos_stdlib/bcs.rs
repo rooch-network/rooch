@@ -46,12 +46,19 @@ fn native_from_bytes(
     let type_param = &ty_args[0];
 
     // TODO(Gas): charge for getting the layout
-    let layout = context.type_to_type_layout(&ty_args[0])?.ok_or_else(|| {
-        PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR).with_message(format!(
-            "Failed to get layout of type {:?} -- this should not happen",
-            ty_args[0]
-        ))
-    })?;
+    let layout = match context.type_to_type_layout(&ty_args[0]) {
+        Ok(layout) => layout,
+        Err(_) => {
+            return Err(
+                PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR).with_message(
+                    format!(
+                        "Failed to get layout of type {:?} -- this should not happen",
+                        ty_args[0]
+                    ),
+                ),
+            )
+        }
+    };
 
     let bytes = pop_arg!(args, Vec<u8>);
     cost += gas_params.per_byte_deserialize * NumBytes::new(bytes.len() as u64);

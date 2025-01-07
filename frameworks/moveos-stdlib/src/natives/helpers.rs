@@ -58,6 +58,7 @@ where
                                 partial_cost
                             );
                         }
+                        _ => {}
                     },
                 }
             }

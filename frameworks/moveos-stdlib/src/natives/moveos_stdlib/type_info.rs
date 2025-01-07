@@ -26,10 +26,10 @@ const E_TYPE_MISMATCH: u64 = 1;
 
 fn type_of_internal(struct_tag: &StructTag) -> Result<SmallVec<[Value; 1]>, std::fmt::Error> {
     let mut name = struct_tag.name.to_string();
-    if let Some(first_ty) = struct_tag.type_params.first() {
+    if let Some(first_ty) = struct_tag.type_args.first() {
         write!(name, "<")?;
         write!(name, "{}", first_ty)?;
-        for ty in struct_tag.type_params.iter().skip(1) {
+        for ty in struct_tag.type_args.iter().skip(1) {
             write!(name, ", {}", ty)?;
         }
         write!(name, ">")?;
