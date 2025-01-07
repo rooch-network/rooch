@@ -34,6 +34,7 @@ use primitive_types::U256 as PrimitiveU256;
 use smallvec::smallvec;
 use std::collections::VecDeque;
 use std::io::Cursor;
+use ciborium::Value;
 
 const STATUS_CODE_FAILED_TO_SERIALIZE_VALUE: u64 = 1;
 const E_CBOR_SERIALIZATION_FAILURE: u64 = 2;
@@ -43,7 +44,7 @@ const TAG_BIGPOS: u64 = 2;
 fn parse_move_value_from_cbor(
     layout: &MoveTypeLayout,
     bytes: Vec<u8>,
-    context: &NativeContext,
+    context: &mut NativeContext,
 ) -> Result<MoveValue> {
     let cursor = Cursor::new(bytes);
     let cbor_value: CborValue = from_reader(cursor)?;
@@ -54,7 +55,7 @@ fn parse_move_value_from_cbor(
 fn parse_struct_value_from_cbor_value(
     layout: &MoveStructLayout,
     cbor_value: &CborValue,
-    context: &NativeContext,
+    context: &mut NativeContext,
 ) -> Result<Struct> {
     if let MoveStructLayout::WithTypes {
         type_: struct_type,
@@ -185,7 +186,7 @@ fn cbor_obj_to_key_value_pairs(cbor_value: &CborValue) -> Result<Vec<(String, Ve
 fn parse_move_value_from_cbor_value(
     layout: &MoveTypeLayout,
     cbor_value: &CborValue,
-    context: &NativeContext,
+    context: &mut NativeContext,
 ) -> Result<MoveValue> {
     match layout {
         // Parse a boolean value
@@ -305,6 +306,7 @@ fn parse_move_value_from_cbor_value(
             value.to_little_endian(&mut buffer);
             Ok(MoveValue::u256(u256::U256::from_le_bytes(&buffer)))
         }
+        _ => Err(anyhow::anyhow!("Invalid move type")),
     }
 }
 
@@ -406,8 +408,8 @@ fn serialize_move_struct_to_cbor_value(
                 fields: layout_fields,
             },
             MoveStruct::WithTypes {
-                type_: _,
-                fields: value_fields,
+                _type_: _,
+                _fields: value_fields,
             },
         ) => {
             if struct_type.is_ascii_string(&MOVE_STD_ADDRESS) {
@@ -481,8 +483,8 @@ fn serialize_move_struct_to_cbor_value(
 
                         let fields = match struct_ {
                             MoveStruct::WithTypes {
-                                type_: _,
-                                fields: value_fields,
+                                _type_: _,
+                                _fields: value_fields,
                             } => value_fields,
                             _ => return Err(anyhow::anyhow!("Invalid element in SimpleMap data")),
                         };
@@ -491,8 +493,8 @@ fn serialize_move_struct_to_cbor_value(
                             MoveValue::Struct(struct_) => {
                                 let value_fields = match struct_ {
                                     MoveStruct::WithTypes {
-                                        type_: _,
-                                        fields: value_fields,
+                                        _type_: _,
+                                        _fields: value_fields,
                                     } => value_fields,
                                     _ => {
                                         return Err(anyhow::anyhow!(
@@ -627,16 +629,19 @@ fn native_from_cbor(
 
     let mut cost = gas_params.base;
     let type_param = &ty_args[0];
-    let layout = context
-        .type_to_fully_annotated_layout(type_param)?
-        .ok_or_else(|| {
-            PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR).with_message(
-                format!(
-                    "Failed to get layout of type {:?} -- this should not happen",
-                    ty_args[0]
+    let layout = match context.type_to_fully_annotated_layout(type_param) {
+        Ok(layout) => layout,
+        Err(_) => {
+            return Err(
+                PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR).with_message(
+                    format!(
+                        "Failed to get layout of type {:?} -- this should not happen",
+                        ty_args[0]
+                    ),
                 ),
             )
-        })?;
+        }
+    };
 
     let bytes = pop_arg!(args, Vec<u8>);
     cost += gas_params.per_byte_in_str * NumBytes::new(bytes.len() as u64);
@@ -699,18 +704,18 @@ fn native_to_cbor(
     let arg_type = ty_args.pop().unwrap();
 
     // get type layout
-    let layout = match context.type_to_type_layout(&arg_type)? {
-        Some(layout) => layout,
-        None => {
+    let layout = match context.type_to_type_layout(&arg_type) {
+        Ok(layout) => layout,
+        Err(_) => {
             return Ok(NativeResult::err(cost, E_CBOR_SERIALIZATION_FAILURE));
         }
     };
 
     let move_val = ref_to_val.read_ref()?.as_move_value(&layout);
 
-    let annotated_layout = match context.type_to_fully_annotated_layout(&arg_type)? {
-        Some(layout) => layout,
-        None => {
+    let annotated_layout = match context.type_to_fully_annotated_layout(&arg_type) {
+        Ok(layout) => layout,
+        Err(_) => {
             return Ok(NativeResult::err(cost, E_CBOR_SERIALIZATION_FAILURE));
         }
     };
