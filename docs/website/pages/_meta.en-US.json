@@ -25,17 +25,53 @@
       "typesetting": "article"
     }
   },
-  "portal": {
-    "title": "Portal",
+  "grow": {
+    "title": "Grow",
     "type": "page",
-    "href": "https://portal.rooch.network/",
-    "newWindow": true
+    "newWindow": true,
+    "href": "https://grow.rooch.network/"
   },
-  "apps": {
-    "title": "Apps",
+  "explorer": {
+    "title": "Explorer",
     "type": "page",
-    "href": "https://portal.rooch.network/apps",
-    "newWindow": true
+    "newWindow": true,
+    "href": "https://roochscan.io/"
+  },
+  "portal": {
+    "title": "Portal 入口",
+    "type": "menu",
+    "items": {
+      "apps": {
+        "title": "Apps",
+        "type": "page",
+        "newWindow": true,
+        "href": "https://portal.rooch.network/apps"
+      },
+      "account": {
+        "title": "Account",
+        "type": "page",
+        "newWindow": true,
+        "href": "https://portal.rooch.network/account"
+      },
+      "faucet": {
+        "title": "Faucet",
+        "type": "page",
+        "newWindow": true,
+        "href": "https://portal.rooch.network/faucet"
+      },
+      "purchase_gas": {
+        "title": "Purchase Gas",
+        "type": "page",
+        "newWindow": true,
+        "href": "https://portal.rooch.network/gas-swap"
+      },
+      "marketplace": {
+        "title": "Marketplace",
+        "type": "page",
+        "newWindow": true,
+        "href": "https://portal.rooch.network/trade"
+      }
+    }
   },
   "404": {
     "type": "page",
