@@ -465,6 +465,14 @@ impl ExecInner {
                 );
                 Err(error)
             } else {
+                // return error if is state root not equal to RoochNetwork
+                if error
+                    .to_string()
+                    .contains("Execution state root is not equal to RoochNetwork")
+                {
+                    return Err(error);
+                }
+
                 tracing::warn!(
                     "L2 Tx execution failed with a non-VM panic error. Ignoring and returning Ok; tx_order: {}, error: {:?}",
                     tx_order,
