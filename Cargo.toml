@@ -182,6 +182,7 @@ eyre = "0.6.8"
 fastcrypto = { git = "https://github.com/MystenLabs/fastcrypto", rev = "56f6223b84ada922b6cb2c672c69db2ea3dc6a13" }
 futures = "0.3.31"
 futures-util = "0.3.31"
+hdrhistogram = "7.5.4"
 hex = "0.4.3"
 itertools = "0.13.0"
 jsonrpsee = { version = "0.23.2", features = ["full"] }
