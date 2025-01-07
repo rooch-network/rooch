@@ -4,8 +4,9 @@
 use crate::commands::da::commands::{collect_chunks, get_tx_list_from_chunk};
 use clap::Parser;
 use rooch_types::error::RoochResult;
-use std::collections::{HashMap, HashSet};
+use std::collections::{BinaryHeap, HashMap, HashSet};
 
+use std::cmp::Reverse;
 use std::io::{BufWriter, Write};
 use std::path::PathBuf;
 use std::{fs, u64};
@@ -93,7 +94,7 @@ impl UnpackInner {
 
         let mut l2tx_hist = TxStats {
             hist: hdrhistogram::Histogram::<u64>::new_with_bounds(1, 4096_000, 3)?,
-            tops: Vec::with_capacity(TOP_N + 1),
+            tops: BinaryHeap::new(),
             top_n: TOP_N,
         };
 
@@ -112,11 +113,13 @@ impl UnpackInner {
             let mut last_tx_order = 0; // the first tx_order in DA is 1
             for tx in &tx_list {
                 let tx_order = tx.sequence_info.tx_order;
-                if tx_order != last_tx_order + 1 {
-                    return Err(anyhow::anyhow!(
-                        "Transaction order is not strictly incremental for block {}: last_tx_order: {}, tx_order: {}",
-                        chunk_id, last_tx_order, tx_order
-                    ));
+                if last_tx_order != 0 {
+                    if tx_order != last_tx_order + 1 {
+                        return Err(anyhow::anyhow!(
+                            "Transaction order is not strictly incremental for block {}: last_tx_order: {}, tx_order: {}",
+                            chunk_id, last_tx_order, tx_order
+                        ));
+                    }
                 }
                 last_tx_order = tx_order;
                 match &tx.data {
@@ -160,7 +163,7 @@ impl UnpackInner {
 
 struct TxStats {
     hist: hdrhistogram::Histogram<u64>,
-    tops: Vec<(u64, u64)>, // (tx_order, tx_size) pairs with max tx_size
+    tops: BinaryHeap<Reverse<(u64, u64)>>, // (tx_size, tx_order) Use Reverse to keep the smallest element at the top
     top_n: usize,
 }
 
@@ -168,12 +171,25 @@ impl TxStats {
     fn record(&mut self, tx_order: u64, tx_size: u64) -> anyhow::Result<()> {
         self.hist.record(tx_size)?;
 
-        // Add new item
-        self.tops.push((tx_order, tx_size));
-        // Sort by tx_size (descending) and truncate
-        self.tops.sort_by(|a, b| b.1.cmp(&a.1)); // Sort by size, descending
-        self.tops.truncate(self.top_n); // Keep only top-N
+        if self.tops.len() < self.top_n {
+            // Add the new item directly if space is available
+            self.tops.push(Reverse((tx_size, tx_order)));
+        } else if let Some(&Reverse((smallest_size, _))) = self.tops.peek() {
+            // Compare with the smallest item in the heap
+            if tx_size > smallest_size {
+                self.tops.pop(); // Remove the smallest
+                self.tops.push(Reverse((tx_size, tx_order))); // Add the new larger item
+            }
+        }
+        // Keep only top-N
         Ok(())
+    }
+
+    /// Returns the top N items, sorted by `tx_size` in descending order
+    pub fn get_top(&self) -> Vec<(u64, u64)> {
+        let mut sorted: Vec<_> = self.tops.iter().map(|&Reverse(x)| x).collect();
+        sorted.sort_by(|a, b| b.0.cmp(&a.0)); // Sort by tx_size in descending order
+        sorted
     }
 
     fn print(&mut self) {
@@ -203,7 +219,8 @@ impl TxStats {
 
         // each pair one line
         println!("-------------Top{} transactions--------------", self.top_n);
-        for (tx_order, tx_size) in &self.tops {
+        let tops = self.get_top();
+        for (tx_size, tx_order) in &tops {
             println!("tx_order: {}, tx_size: {}", tx_order, tx_size);
         }
     }
