@@ -6,7 +6,7 @@ use moveos_store::transaction_store::{TransactionDBStore, TransactionStore};
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::object::ObjectMeta;
 use moveos_types::transaction::TransactionExecutionInfo;
-use rooch_common::utils::vec::find_last_true;
+use rooch_common::vec::find_last_true;
 use rooch_config::RoochOpt;
 use rooch_db::RoochDB;
 use rooch_types::da::chunk::chunk_from_segments;
@@ -86,9 +86,13 @@ pub(crate) fn build_rooch_db(
     base_data_dir: Option<PathBuf>,
     chain_id: Option<RoochChainID>,
     enable_rocks_stats: bool,
+    row_cache_size: Option<u64>,
+    block_cache_size: Option<u64>,
 ) -> (ObjectMeta, RoochDB) {
     let mut opt = RoochOpt::new_with_default(base_data_dir, chain_id, None).unwrap();
     opt.store.enable_statistics = enable_rocks_stats;
+    opt.store.row_cache_size = row_cache_size;
+    opt.store.block_cache_size = block_cache_size;
     let registry_service = RegistryService::default();
     let rooch_db = RoochDB::init(opt.store_config(), &registry_service.default_registry()).unwrap();
     let root = rooch_db.latest_root().unwrap().unwrap();

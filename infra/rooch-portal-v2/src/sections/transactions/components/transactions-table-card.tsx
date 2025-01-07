@@ -24,7 +24,7 @@ import { shortAddress } from 'src/utils/address';
 import { formatCoin } from 'src/utils/format-number';
 import { getUTCOffset } from 'src/utils/format-time';
 
-import { ROOCH_GAS_COIN_DECIMALS } from 'src/config/constant';
+import { GAS_COIN_DECIMALS } from 'src/config/constant';
 
 import { Scrollbar } from 'src/components/scrollbar';
 import TableSkeleton from 'src/components/skeleton/table-skeleton';
@@ -117,7 +117,7 @@ export default function TransactionsTableCard({
                       <TableCell className="!text-xs">
                         {formatCoin(
                           Number(item.execution_info.gas_used),
-                          ROOCH_GAS_COIN_DECIMALS,
+                          GAS_COIN_DECIMALS,
                           6
                         )}
                       </TableCell>

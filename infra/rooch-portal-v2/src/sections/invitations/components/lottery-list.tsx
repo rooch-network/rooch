@@ -1,9 +1,8 @@
 import dayjs from 'dayjs';
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from 'react';
 import { Args, Transaction } from '@roochnetwork/rooch-sdk';
-import { useRoochClient, useCurrentSession } from '@roochnetwork/rooch-sdk-kit';
+import { useRoochClient, SessionKeyGuard, useCurrentSession } from '@roochnetwork/rooch-sdk-kit';
 
-import { LoadingButton } from '@mui/lab';
 import {
   Box,
   Card,
@@ -19,10 +18,9 @@ import { Scrollbar } from '../../../components/scrollbar';
 import { getUTCOffset } from '../../../utils/format-time';
 import { formatCoin } from '../../../utils/format-number';
 import { useNetworkVariable } from '../../../hooks/use-networks';
-import { ROOCH_GAS_COIN_DECIMALS } from '../../../config/constant';
+import { GAS_COIN_DECIMALS } from '../../../config/constant';
 import TableSkeleton from '../../../components/skeleton/table-skeleton';
 import { TableNoData, TableHeadCustom } from '../../../components/table';
-import SessionKeyGuardButtonV1 from "../../../components/auth/session-key-guard-button-v1";
 
 const options = [1, 5, 10, 0];
 
@@ -31,62 +29,69 @@ type ListType = {
   timestamp: number;
 };
 
-export function InvitationLotteryList({ table, ticket = 0, openCallback }: { table?: string, ticket: number, openCallback: () => void }) {
+export function InvitationLotteryList({
+  table,
+  ticket = 0,
+  openCallback,
+}: {
+  table?: string;
+  ticket: number;
+  openCallback: () => void;
+}) {
   const client = useRoochClient();
   const [data, setData] = useState<Array<ListType>>();
   const [loading, setLoading] = useState(false);
   const [opening, setOpening] = useState(false);
   const [ticketOption, setTicketOption] = useState(1);
   const session = useCurrentSession();
-  const [inviterCA, inviterModule, inviterObj] = useNetworkVariable('inviterCA');
+  // const [inviterCA, inviterModule, inviterObj] = useNetworkVariable('inviterCA');
+  const inviterCfg = useNetworkVariable('inviter');
 
   const fetch = useCallback(() => {
-      setLoading(true);
-      client
-        .listStates({
-          accessPath: `/table/${table}`,
-          stateOption: {
-            decode: true,
-          },
-        })
-        .then((result) => {
-          setData(
-            result.data.map((item) => {
-              console.log(result)
-              const view = (item.state.decoded_value!.value as any).value.value;
-              return {
-                address: view.address,
-                reward: view.reward_amount,
-                timestamp: view.timestamp,
-              };
-            })
-          );
-        })
-        .catch((e) => {
-          console.log(e);
-        })
-        .finally(() => setLoading(false));
-  }, [client, table])
+    setLoading(true);
+    client
+      .listStates({
+        accessPath: `/table/${table}`,
+        stateOption: {
+          decode: true,
+        },
+      })
+      .then((result) => {
+        setData(
+          result.data.map((item) => {
+            console.log(result);
+            const view = (item.state.decoded_value!.value as any).value.value;
+            return {
+              address: view.address,
+              reward: view.reward_amount,
+              timestamp: view.timestamp,
+            };
+          })
+        );
+      })
+      .catch((e) => {
+        console.log(e);
+      })
+      .finally(() => setLoading(false));
+  }, [client, table]);
 
   useEffect(() => {
     if (!table) {
       return;
     }
 
-    fetch()
-
+    fetch();
   }, [fetch, table]);
 
   const openTicket = async () => {
-    setOpening(true)
+    setOpening(true);
     const tx = new Transaction();
     tx.callFunction({
-      target: `${inviterCA}::${inviterModule}::lottery`,
-      args: [Args.object({
-        address: inviterCA,
-        module: inviterModule,
-        name: inviterObj,
-      }), Args.u64(BigInt(ticketOption === 0 ? ticket : ticketOption))],
+      target: `${inviterCfg.address}::${inviterCfg.module}::lottery`,
+      args: [
+        Args.object(inviterCfg.obj(inviterCfg)),
+        Args.u64(BigInt(ticketOption === 0 ? ticket : ticketOption)),
+      ],
     });
 
     const result = await client.signAndExecuteTransaction({
@@ -95,10 +100,10 @@ export function InvitationLotteryList({ table, ticket = 0, openCallback }: { tab
     });
 
     if (result.execution_info.status.type === 'executed') {
-      openCallback()
-      fetch()
+      openCallback();
+      fetch();
     }
-    setOpening(false)
+    setOpening(false);
     console.log(result);
   };
 
@@ -126,7 +131,9 @@ export function InvitationLotteryList({ table, ticket = 0, openCallback }: { tab
                 {item === 0 ? 'All' : item}
               </Button>
             ))}
-            <SessionKeyGuardButtonV1 desc="Open Ticket" callback={openTicket}/>
+            <SessionKeyGuard onClick={openTicket}>
+              <Button variant="outlined">Open Ticket</Button>
+            </SessionKeyGuard>
           </Box>
         )}
       </Box>
@@ -157,7 +164,7 @@ export function InvitationLotteryList({ table, ticket = 0, openCallback }: { tab
                     </TableCell>
                     {item.reward && (
                       <TableCell className="!text-xs">
-                        {formatCoin(Number(item.reward), ROOCH_GAS_COIN_DECIMALS, 6)}
+                        {formatCoin(Number(item.reward), GAS_COIN_DECIMALS, 6)}
                       </TableCell>
                     )}
                   </TableRow>

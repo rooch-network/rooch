@@ -14,6 +14,7 @@ use move_vm_runtime::native_functions::NativeFunction;
 use moveos::gas::table::VMGasParameters;
 use moveos::moveos::{MoveOS, MoveOSConfig};
 use moveos_stdlib::natives::moveos_stdlib::base64::EncodeDecodeGasParametersOption;
+use moveos_stdlib::natives::moveos_stdlib::object::ListFieldsGasParametersOption;
 use moveos_store::MoveOSStore;
 use moveos_types::genesis_info::GenesisInfo;
 use moveos_types::h256::H256;
@@ -162,8 +163,20 @@ impl FrameworksGasParameters {
         v1_gas_parameter
     }
 
+    pub fn v3() -> Self {
+        let mut v2_gas_parameter = FrameworksGasParameters::v2();
+
+        v2_gas_parameter
+            .rooch_framework_gas_params
+            .moveos_stdlib
+            .object_list_field_keys
+            .list_field_keys = ListFieldsGasParametersOption::init(1000.into(), 150.into());
+
+        v2_gas_parameter
+    }
+
     pub fn latest() -> Self {
-        FrameworksGasParameters::v2()
+        FrameworksGasParameters::v3()
     }
 
     pub fn to_gas_schedule_config(&self, chain_id: ChainID) -> GasScheduleConfig {

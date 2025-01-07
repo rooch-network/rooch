@@ -33,6 +33,11 @@ const ROOCH_TEAM: Record<string, AuthorDetails> = {
     name: "Justin Y.",
     twitterUsername: "justinkn08",
     avatar: "/images/people/justin.jpg"
+  },
+  baichuan: {
+    name: "Bai Chuan",
+    twitterUsername: "muzixinly",
+    avatar: "/images/people/baichuan.jpg"
   }
 };
 

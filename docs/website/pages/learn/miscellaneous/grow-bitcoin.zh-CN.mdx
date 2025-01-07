@@ -44,7 +44,11 @@ Session Key 的详细描述请参考这篇文档 https://rooch.network/zh-CN/lea
 
 RGas 是 Rooch 网络上的原生 gas 代币，用于支付交易和运营成本。
 
-#### 账户有 BTC 了但是没有 UTXO
+#### 什么是 UTXO？
+
+UTXO 即未花费的交易输出（Unspent Transaction Output），UTXO 代表 BTC 的找零，一个账户的 BTC 余额为账户下的所有 UTXO 相加的总额。
+
+#### 账户有 BTC 了但是没有显示 UTXO
 
 BTC 转账交易，需要等待三个区块确认后，`UTXO` 才可以在 Rooch 中使用。
 
@@ -96,13 +100,19 @@ GROW 总量为 `210,000,000,000`，`180` 天挖完。
 
 大约 0.02 ~ 0.03 RGas。
 
-#### Babylon Stake
+#### Babylon Staking
 
 同一个 UTXO 不能 Self Staking 然后再到 Babylon 上 Stake。
 
 需要先在 Babylon stake，然后通过 Babylon Stake Seal 来 Stake。
 
 Babylon 的质押带有时间锁，它的质押具有时间权重。
+
+> 由于具有时间权重，等量的 BTC，在 Babylon Staking 上获得的 GROW 要比 Self Staking 多。
+
+#### 使用 Babylon Staking，解质押后再次质押时间权重是否会失效？
+
+不会。只要 BTC 还锁定在 Babylon 平台，那么在 Grow Bitcoin 质押仍然具有时间权重。
 
 #### Rooch 有价格预言机了吗
 
@@ -136,6 +146,10 @@ Babylon 的质押带有时间锁，它的质押具有时间权重。
 
 Taproot。
 
+#### 误删了绑定 X 的地址，如何找回？
+
+只要助记词没有丢，就可以找回。同一个助记词，创建出多个账户地址，账户 1 的地址是 a，账户 2 的地址是 b。即便把所有地址都删除了，用同样的助记词重新创建，地址也是 a，b……
+
 #### GROW 在哪里交易
 
 后续将推出 GROW 的交易市场。
@@ -156,10 +170,6 @@ Taproot。
 #### Discord 找不到 Faucet 频道
 
 请在 `contributor-role` 频道获取 `seed` 角色。
-
-#### 账户有 BTC 了但是没有 UTXO
-
-BTC 转账交易，需要等待三个区块确认后，`UTXO` 才可以在 Rooch 中使用。
 
 #### Grow Bitcion 使用的是哪个版本的 Bitcoin 测试网
 

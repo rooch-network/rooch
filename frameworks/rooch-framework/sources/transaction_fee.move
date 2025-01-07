@@ -134,6 +134,7 @@ module rooch_framework::transaction_fee {
     #[test]
     fun test_distribute_fee(){
         let system_signer = moveos_std::account::create_signer_for_testing(SystemFeeAddress);   
+        rooch_framework::coin::init_for_testing();
         rooch_framework::gas_coin::genesis_init(&system_signer);
         genesis_init(&system_signer);
 

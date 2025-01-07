@@ -26,7 +26,7 @@ module invitation_record::invitation {
     use rooch_framework::gas_coin::RGas;
     use rooch_framework::coin_store::CoinStore;
     use rooch_framework::coin_store;
-    use gas_faucet::gas_faucet::{RGasFaucet, claim};
+    use gas_faucet::gas_faucet::{RGasFaucet, do_claim};
     use moveos_std::table;
     use moveos_std::object;
     use app_admin::admin::AdminCap;
@@ -153,11 +153,17 @@ module invitation_record::invitation {
         let full_message = encode_full_message(MessagePrefix, message);
         verify_btc_signature(bitcoin_address, public_key, signature, full_message);
         let claimer = bitcoin_address::to_rooch_address(&bitcoin_address);
-        assert!(inviter != claimer, ErrorCannotInviteOneself);
+        //assert!(inviter != claimer, ErrorCannotInviteOneself);
         let invitation_conf = object::borrow_mut(invitation_obj);
         assert!(invitation_conf.is_open, ErrorFaucetNotOpen);
-        if (inviter == @rooch_framework){
-            claim(faucet_obj, claimer, utxo_ids);
+        //If the inviter is the rooch_framework or the claimer, we do not need to record the invitation relationship
+        if (inviter == @rooch_framework || inviter == claimer){
+            do_claim(faucet_obj, claimer, utxo_ids);
+            return
+        };
+        let first_claim = do_claim(faucet_obj, claimer, utxo_ids);
+        //If the claimer has claimed the faucet, we do not need to record the invitation relationship
+        if (!first_claim){
             return
         };
         if (!table::contains(&invitation_conf.invitation_records, inviter)) {
@@ -181,8 +187,6 @@ module invitation_record::invitation {
         user_invitation_records.remaining_luckey_ticket = user_invitation_records.remaining_luckey_ticket + 1u64;
         let rgas_coin = coin_store::withdraw(&mut invitation_conf.rgas_store, invitation_conf.unit_invitation_amount);
         account_coin_store::deposit<RGas>(inviter, rgas_coin);
-
-        claim(faucet_obj, claimer, utxo_ids);
     }
 
     public entry fun claim_from_twitter(
@@ -238,7 +242,7 @@ module invitation_record::invitation {
         assert!(user_invitation_records.remaining_luckey_ticket >= amount, ErrorNoRemainingLuckeyTicket);
         while (amount > 0) {
             let reward_amount = rand_u64_range(10_000_000, 100_000_000, amount);
-            if (reward_amount % 150 == 0) {
+            if (reward_amount % 18 == 0) {
                 reward_amount = reward_amount * 1000
             };
             let rgas_coin = coin_store::withdraw(&mut invitation_conf.rgas_store, (reward_amount as u256));

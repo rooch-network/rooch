@@ -12,9 +12,12 @@ import './index.css'
 // Mock the environment in case, we are outside Telegram.
 import './mockEnv.ts'
 import { TonConnectUIProvider } from '@tonconnect/ui-react'
+import { RoochProvider, WalletProvider } from '@roochnetwork/rooch-sdk-kit'
+import { networkConfig } from './networks.ts'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 const root = ReactDOM.createRoot(document.getElementById('root')!)
-
+const queryClient = new QueryClient()
 try {
   // Configure all application dependencies.
   init(retrieveLaunchParams().startParam === 'debug' || import.meta.env.DEV)
@@ -39,7 +42,13 @@ try {
           ],
         }}
       >
-        <Root />
+        <QueryClientProvider client={queryClient}>
+          <RoochProvider networks={networkConfig} defaultNetwork="testnet">
+            <WalletProvider preferredWallets={['UniSat']} chain={'bitcoin'} autoConnect>
+              <Root />
+            </WalletProvider>
+          </RoochProvider>
+        </QueryClientProvider>
       </TonConnectUIProvider>
     </StrictMode>,
   )

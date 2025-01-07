@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_types::CommandAction;
+use crate::commands::db::commands::best_rollback::BestRollbackCommand;
 use crate::commands::db::commands::drop::DropCommand;
 use crate::commands::db::commands::dump_tx_root::DumpTxRootCommand;
 use crate::commands::db::commands::get_changeset_by_order::GetChangesetByOrderCommand;
@@ -51,6 +52,9 @@ impl CommandAction<String> for DB {
                     serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
                 })
             }
+            DBCommand::BestRollback(best_rollback) => best_rollback.execute().await.map(|resp| {
+                serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
+            }),
         }
     }
 }
@@ -65,4 +69,5 @@ pub enum DBCommand {
     GetChangesetByOrder(GetChangesetByOrderCommand),
     DumpTxRoot(DumpTxRootCommand),
     GetExecutionInfoByOrder(GetExecutionInfoByOrderCommand),
+    BestRollback(BestRollbackCommand),
 }

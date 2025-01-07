@@ -3,7 +3,7 @@ import HomeView from 'src/sections/trade/home-view';
 // ----------------------------------------------------------------------
 
 export const metadata = {
-  title: 'Market | Orderbook',
+  title: 'Marketplace | List',
 };
 
 export default function Page() {

@@ -25,6 +25,7 @@ use rooch_event::actor::EventActor;
 use rooch_executor::actor::executor::ExecutorActor;
 use rooch_executor::actor::reader_executor::ReaderExecutorActor;
 use rooch_executor::proxy::ExecutorProxy;
+use rooch_pipeline_processor::actor::processor::is_vm_panic_error;
 use rooch_types::bitcoin::types::Block as BitcoinBlock;
 use rooch_types::error::RoochResult;
 use rooch_types::rooch_network::RoochChainID;
@@ -68,7 +69,18 @@ pub struct ExecCommand {
     pub btc_rpc_user_name: String,
     #[clap(long = "btc-rpc-password")]
     pub btc_rpc_password: String,
+    #[clap(long = "btc-local-block-store-dir")]
+    pub btc_local_block_store_dir: Option<PathBuf>,
 
+    #[clap(name = "rocksdb-row-cache-size", long, help = "rocksdb row cache size")]
+    pub row_cache_size: Option<u64>,
+
+    #[clap(
+        name = "rocksdb-block-cache-size",
+        long,
+        help = "rocksdb block cache size"
+    )]
+    pub block_cache_size: Option<u64>,
     #[clap(long = "enable-rocks-stats", help = "rocksdb-enable-statistics")]
     pub enable_rocks_stats: bool,
 
@@ -97,6 +109,7 @@ impl ExecCommand {
             self.btc_rpc_url.clone(),
             self.btc_rpc_user_name.clone(),
             self.btc_rpc_password.clone(),
+            self.btc_local_block_store_dir.clone(),
             &actor_system,
         )
         .await?;
@@ -105,6 +118,8 @@ impl ExecCommand {
             self.chain_id.clone(),
             &actor_system,
             self.enable_rocks_stats,
+            self.row_cache_size,
+            self.block_cache_size,
         )
         .await?;
 
@@ -424,10 +439,51 @@ impl ExecInner {
             ledger_tx,
             l1_block_with_body,
         } = msg;
+        let is_l2_tx = ledger_tx.data.is_l2_tx();
         let moveos_tx = self
             .validate_ledger_transaction(ledger_tx, l1_block_with_body)
             .await?;
-        self.execute_moveos_tx(tx_order, moveos_tx).await
+        if let Err(err) = self.execute_moveos_tx(tx_order, moveos_tx).await {
+            self.handle_execution_error(err, is_l2_tx, tx_order)?;
+        }
+
+        Ok(())
+    }
+
+    fn handle_execution_error(
+        &self,
+        error: anyhow::Error,
+        is_l2_tx: bool,
+        tx_order: u64,
+    ) -> anyhow::Result<()> {
+        if is_l2_tx {
+            return if is_vm_panic_error(&error) {
+                tracing::error!(
+                    "Execute L2 Tx failed while VM panic occurred, error: {:?}; tx_order: {}",
+                    error,
+                    tx_order
+                );
+                Err(error)
+            } else {
+                // return error if is state root not equal to RoochNetwork
+                if error
+                    .to_string()
+                    .contains("Execution state root is not equal to RoochNetwork")
+                {
+                    return Err(error);
+                }
+
+                tracing::warn!(
+                    "L2 Tx execution failed with a non-VM panic error. Ignoring and returning Ok; tx_order: {}, error: {:?}",
+                    tx_order,
+                    error
+                );
+                Ok(()) // Gracefully handle non-VM panic L2Tx errors.
+            };
+        }
+
+        // Default error handling for non-L2Tx transactions and other cases.
+        Err(error)
     }
 
     async fn validate_ledger_transaction(
@@ -435,15 +491,28 @@ impl ExecInner {
         ledger_tx: LedgerTransaction,
         l1block_with_body: Option<L1BlockWithBody>,
     ) -> anyhow::Result<VerifiedMoveOSTransaction> {
-        let mut moveos_tx = match &ledger_tx.data {
+        let moveos_tx_result = match &ledger_tx.data {
             LedgerTxData::L1Block(_block) => {
                 self.executor
                     .validate_l1_block(l1block_with_body.unwrap())
-                    .await?
+                    .await
             }
-            LedgerTxData::L1Tx(l1_tx) => self.executor.validate_l1_tx(l1_tx.clone()).await?,
-            LedgerTxData::L2Tx(l2_tx) => self.executor.validate_l2_tx(l2_tx.clone()).await?,
+            LedgerTxData::L1Tx(l1_tx) => self.executor.validate_l1_tx(l1_tx.clone()).await,
+            LedgerTxData::L2Tx(l2_tx) => self.executor.validate_l2_tx(l2_tx.clone()).await,
         };
+
+        let mut moveos_tx = match moveos_tx_result {
+            Ok(tx) => tx,
+            Err(err) => {
+                tracing::error!(
+                    "Error validating transaction: tx_order: {}, error: {:?}",
+                    ledger_tx.sequence_info.tx_order,
+                    err
+                );
+                return Err(err);
+            }
+        };
+
         moveos_tx.ctx.add(ledger_tx.sequence_info.clone())?;
         Ok(moveos_tx)
     }
@@ -483,12 +552,14 @@ async fn build_btc_client_proxy(
     btc_rpc_url: String,
     btc_rpc_user_name: String,
     btc_rpc_password: String,
+    btc_local_block_store_dir: Option<PathBuf>,
     actor_system: &ActorSystem,
 ) -> anyhow::Result<BitcoinClientProxy> {
     let bitcoin_client_config = BitcoinClientConfig {
         btc_rpc_url,
         btc_rpc_user_name,
         btc_rpc_password,
+        local_block_store_dir: btc_local_block_store_dir,
     };
 
     let bitcoin_client = bitcoin_client_config.build()?;
@@ -503,11 +574,18 @@ async fn build_executor_and_store(
     chain_id: Option<RoochChainID>,
     actor_system: &ActorSystem,
     enable_rocks_stats: bool,
+    row_cache_size: Option<u64>,
+    block_cache_size: Option<u64>,
 ) -> anyhow::Result<(ExecutorProxy, MoveOSStore, RoochDB)> {
     let registry_service = RegistryService::default();
 
-    let (root, rooch_db) =
-        build_rooch_db(base_data_dir.clone(), chain_id.clone(), enable_rocks_stats);
+    let (root, rooch_db) = build_rooch_db(
+        base_data_dir.clone(),
+        chain_id.clone(),
+        enable_rocks_stats,
+        row_cache_size,
+        block_cache_size,
+    );
     let (rooch_store, moveos_store) = (rooch_db.rooch_store.clone(), rooch_db.moveos_store.clone());
 
     let event_bus = EventBus::new();

@@ -123,6 +123,7 @@ impl DAMetaDBStore {
         } else {
             Some(min_block_number_wait_rm - 1)
         };
+        let last_block_number_wait_rm = *remove_blocks.last().unwrap();
 
         let inner_store = self.block_submit_state_store.get_store().store();
         let mut cf_batches: Vec<WriteBatchCF> = Vec::new();
@@ -148,6 +149,20 @@ impl DAMetaDBStore {
                     cf_name: DA_BLOCK_CURSOR_COLUMN_FAMILY_NAME.to_string(),
                 };
                 cf_batches.push(last_block_batch);
+
+                // update background_submit_block_cursor
+                let background_submit_block_cursor = self.get_background_submit_block_cursor()?;
+                if let Some(background_submit_block_cursor) = background_submit_block_cursor {
+                    if background_submit_block_cursor > new_last_block_number {
+                        cf_batches.push(WriteBatchCF {
+                            batch: WriteBatch::new_with_rows(vec![(
+                                to_bytes(BACKGROUND_SUBMIT_BLOCK_CURSOR_KEY).unwrap(),
+                                WriteOp::Value(to_bytes(&new_last_block_number).unwrap()),
+                            )]),
+                            cf_name: DA_BLOCK_CURSOR_COLUMN_FAMILY_NAME.to_string(),
+                        });
+                    }
+                }
             }
             None => {
                 let last_block_batch = WriteBatchCF {
@@ -158,22 +173,29 @@ impl DAMetaDBStore {
                     cf_name: DA_BLOCK_CURSOR_COLUMN_FAMILY_NAME.to_string(),
                 };
                 cf_batches.push(last_block_batch);
+
+                // If no block left, remove background_submit_block_cursor directly
+                cf_batches.push(WriteBatchCF {
+                    batch: WriteBatch::new_with_rows(vec![(
+                        to_bytes(BACKGROUND_SUBMIT_BLOCK_CURSOR_KEY).unwrap(),
+                        WriteOp::Deletion,
+                    )]),
+                    cf_name: DA_BLOCK_CURSOR_COLUMN_FAMILY_NAME.to_string(),
+                });
             }
         }
-        // remove background_submit_block_cursor directly, since we could catch up with the last order by background submitter
-        //  will just ignore the blocks that have been submitted
-        cf_batches.push(WriteBatchCF {
-            batch: WriteBatch::new_with_rows(vec![(
-                to_bytes(BACKGROUND_SUBMIT_BLOCK_CURSOR_KEY).unwrap(),
-                WriteOp::Deletion,
-            )]),
-            cf_name: DA_BLOCK_CURSOR_COLUMN_FAMILY_NAME.to_string(),
-        });
 
-        inner_store.write_cf_batch(cf_batches, true)
+        inner_store.write_cf_batch(cf_batches, true)?;
+        tracing::info!(
+            "rollback to block {:?} successfully, removed blocks: [{},{}]",
+            remove_blocks,
+            min_block_number_wait_rm,
+            last_block_number_wait_rm
+        );
+        Ok(())
     }
 
-    // generate the blocks need to be removed by tx_order_end > last_order
+    // generate the block need to be removed by tx_order_end > last_order
     pub(crate) fn generate_remove_blocks_after_order(
         &self,
         last_block_number: Option<u128>,
@@ -377,9 +399,10 @@ impl DAMetaDBStore {
                             Some(last_block_number),
                             last_order,
                         )?;
-                        issues += remove_blocks.len();
-                        fixed += remove_blocks.len();
+                        let remove_blocks_len = remove_blocks.len();
+                        issues += remove_blocks_len;
                         self.inner_rollback(remove_blocks)?;
+                        fixed += remove_blocks_len;
                         self.try_repair_blocks(last_order, issues, fixed)
                     }
                     Ordering::Equal => Ok((issues, fixed)),
@@ -517,7 +540,6 @@ impl DAMetaStore for DAMetaDBStore {
         Ok(blocks)
     }
 
-    // TODO combine set_submitting_block_done and set_background_submit_block_cursor: no more user-facing submit block
     fn set_submitting_block_done(
         &self,
         block_number: u128,

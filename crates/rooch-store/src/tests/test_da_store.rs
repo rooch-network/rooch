@@ -50,7 +50,7 @@ async fn get_submitting_blocks() {
 }
 
 #[tokio::test]
-async fn rollback_to_last_tx_order() {
+async fn generate_remove_blocks() {
     let (rooch_store, _) = RoochStore::mock_rooch_store().unwrap();
     let da_meta_store = rooch_store.get_da_meta_store();
 

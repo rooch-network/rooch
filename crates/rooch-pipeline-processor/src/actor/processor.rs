@@ -114,6 +114,7 @@ impl PipelineProcessorActor {
                 .get_transaction_by_hash(tx_hash)
                 .await?
                 .ok_or_else(|| anyhow::anyhow!("The tx with hash {} should exists", tx_hash))?;
+            let tx_order = ledger_tx.sequence_info.tx_order;
             match &ledger_tx.data {
                 LedgerTxData::L1Block(block) => {
                     debug!("process_sequenced_tx_on_startup l1_block_tx: {:?}", block);
@@ -124,14 +125,11 @@ impl PipelineProcessorActor {
                                 bitcoin::block::BlockHash::from_slice(&block_hash_vec)?;
                             let btc_block = bitcoin_client_proxy.get_block(block_hash).await?;
                             let block_body = BitcoinBlock::from(btc_block);
-                            let moveos_tx = self
-                                .executor
-                                .validate_l1_block(L1BlockWithBody::new(
-                                    block.clone(),
-                                    block_body.encode(),
-                                ))
-                                .await?;
-                            self.execute_tx(ledger_tx.clone(), moveos_tx).await?;
+                            self.execute_l1_block(L1BlockWithBody::new(
+                                block.clone(),
+                                block_body.encode(),
+                            ))
+                            .await?;
                         }
                         None => {
                             return Err(anyhow::anyhow!(
@@ -142,13 +140,23 @@ impl PipelineProcessorActor {
                 }
                 LedgerTxData::L1Tx(l1_tx) => {
                     debug!("process_sequenced_tx_on_startup l1_tx: {:?}", l1_tx);
-                    let moveos_tx = self.executor.validate_l1_tx(l1_tx.clone()).await?;
-                    self.execute_tx(ledger_tx.clone(), moveos_tx).await?;
+                    self.execute_l1_tx(l1_tx.clone()).await?;
                 }
                 LedgerTxData::L2Tx(l2_tx) => {
                     debug!("process_sequenced_tx_on_startup l2_tx: {:?}", l2_tx);
-                    let moveos_tx = self.executor.validate_l2_tx(l2_tx.clone()).await?;
-                    self.execute_tx(ledger_tx.clone(), moveos_tx).await?;
+
+                    match self.execute_l2_tx(l2_tx.clone()).await {
+                        Ok(_v) => {}
+                        Err(err) => {
+                            if is_vm_panic_error(&err) {
+                                tracing::error!(
+                                    "Execute L2 Tx failed while VM panic occurred in process_sequenced_tx_on_startup. error: {:?}; tx_order: {}, tx_hash {:?}",
+                                    err, tx_order, tx_hash
+                                );
+                                return Err(err);
+                            }
+                        }
+                    };
                 }
             }
         }
@@ -418,7 +426,7 @@ impl Handler<GetServiceStatusMessage> for PipelineProcessorActor {
     }
 }
 
-fn is_vm_panic_error(error: &Error) -> bool {
+pub fn is_vm_panic_error(error: &Error) -> bool {
     if let Some(vm_error) = error.downcast_ref::<VMPanicError>() {
         match vm_error {
             VMPanicError::VerifierPanicError(_) | VMPanicError::SystemCallPanicError(_) => true,

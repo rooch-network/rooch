@@ -139,8 +139,11 @@ impl RpcService {
     pub async fn get_annotated_states(
         &self,
         access_path: AccessPath,
+        state_root: Option<H256>,
     ) -> Result<Vec<Option<AnnotatedState>>> {
-        self.executor.get_annotated_states(access_path).await
+        self.executor
+            .get_annotated_states(access_path, state_root)
+            .await
     }
 
     pub async fn list_states(
@@ -157,12 +160,13 @@ impl RpcService {
 
     pub async fn list_annotated_states(
         &self,
+        state_root: Option<H256>,
         access_path: AccessPath,
         cursor: Option<FieldKey>,
         limit: usize,
     ) -> Result<Vec<AnnotatedStateKV>> {
         self.executor
-            .list_annotated_states(access_path, cursor, limit)
+            .list_annotated_states(state_root, access_path, cursor, limit)
             .await
     }
 
@@ -387,7 +391,7 @@ impl RpcService {
 
         let access_path = AccessPath::objects(object_ids.clone());
         let mut object_states = if decode || show_display {
-            let annotated_states = self.get_annotated_states(access_path).await?;
+            let annotated_states = self.get_annotated_states(access_path, None).await?;
             let mut displays: BTreeMap<ObjectID, Option<DisplayFieldsView>> = if show_display {
                 let valid_states = annotated_states
                     .iter()

@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::backend::openda::operator::Operator;
+use crate::backend::openda::adapter::OpenDAAdapter;
 use anyhow::anyhow;
 use async_trait::async_trait;
 use celestia_rpc::{BlobClient, Client};
@@ -15,19 +15,18 @@ use tokio::time::sleep;
 
 // small blob size for transaction to get included in a block quickly
 pub(crate) const DEFAULT_CELESTIA_MAX_SEGMENT_SIZE: u64 = 256 * 1024;
-// default retry duration(seconds): 3, 9, 27, 81
-// 81s > 60s(5 blocks) for:
-// By default, nodes will drop a transaction if it does not get included in 5 blocks (roughly 1 minute).
-// At this point, the user must resubmit their transaction if they want it to eventually be included.
+// another mechanism guarantees eventual consistency, ok to retry once
+pub(crate) const DEFAULT_CELESTIA_MAX_RETRIES: usize = 1;
 const BACK_OFF_MIN_DELAY: Duration = Duration::from_millis(3000);
+const MAX_BACKOFF_DELAY: Duration = Duration::from_secs(30);
 
-pub(crate) struct CelestiaClient {
+pub(crate) struct CelestiaAdapter {
     namespace: Namespace,
     client: Client,
     max_retries: usize,
 }
 
-impl CelestiaClient {
+impl CelestiaAdapter {
     pub async fn new(
         namespace: Namespace,
         endpoint: &str,
@@ -35,7 +34,7 @@ impl CelestiaClient {
         max_retries: usize,
     ) -> anyhow::Result<Self> {
         let celestia_client = Client::new(endpoint, auth_token).await?;
-        Ok(CelestiaClient {
+        Ok(CelestiaAdapter {
             namespace,
             client: celestia_client,
             max_retries,
@@ -44,14 +43,13 @@ impl CelestiaClient {
 }
 
 #[async_trait]
-impl Operator for CelestiaClient {
+impl OpenDAAdapter for CelestiaAdapter {
     async fn submit_segment(
         &self,
         segment_id: SegmentID,
-        segment_bytes: Vec<u8>,
-        _prefix: Option<String>,
+        segment_bytes: &[u8],
     ) -> anyhow::Result<()> {
-        let blob = Blob::new(self.namespace, segment_bytes)?;
+        let blob = Blob::new(self.namespace, segment_bytes.to_vec())?;
         let max_attempts = self.max_retries + 1; // max_attempts = max_retries + first attempt
         let mut attempts = 0;
         let mut retry_delay = BACK_OFF_MIN_DELAY;
@@ -82,7 +80,7 @@ impl Operator for CelestiaClient {
                             retry_delay.as_millis(),
                         );
                         sleep(retry_delay).await;
-                        retry_delay *= 3;
+                        retry_delay = std::cmp::min(retry_delay * 2, MAX_BACKOFF_DELAY);
                     } else {
                         return Err(anyhow!(
                             "Failed to submit segment: {:?} to Celestia: {:?} after {} attempts",

@@ -4,17 +4,18 @@ import type { BidItem } from 'src/hooks/trade/use-market-data';
 import { useMemo } from 'react';
 import BigNumber from 'bignumber.js';
 import { Args, Transaction } from '@roochnetwork/rooch-sdk';
-import { useCurrentAddress, UseSignAndExecuteTransaction } from '@roochnetwork/rooch-sdk-kit';
+import { useCurrentAddress, useSignAndExecuteTransaction } from '@roochnetwork/rooch-sdk-kit';
 
 import { LoadingButton } from '@mui/lab';
 import { Card, Stack, Button, CardActions } from '@mui/material';
 
 import { fromDust } from 'src/utils/number';
+import { formatUnitPrice } from 'src/utils/marketplace';
 
-import { NETWORK, NETWORK_PACKAGE } from 'src/config/trade';
+import { toast } from 'src/components/snackbar';
 
-import { toast } from '../snackbar';
 import InscriptionShopCard from './inscription-shop-card';
+import { useNetworkVariable } from '../../hooks/use-networks';
 
 export type InscriptionItemCardProps = {
   item: BidItem;
@@ -33,12 +34,13 @@ export default function InscriptionItemBidCard({
   onAcceptBid,
   onRefetchMarketData,
 }: InscriptionItemCardProps) {
+  const market = useNetworkVariable('market')
   const account = useCurrentAddress();
-  const { mutate: signAndExecuteTransaction, isPending } = UseSignAndExecuteTransaction();
+  const { mutate: signAndExecuteTransaction, isPending } = useSignAndExecuteTransaction();
 
   const price = useMemo(
     () =>
-      new BigNumber(item.unit_price)
+      new BigNumber(formatUnitPrice(item.unit_price, toCoinBalanceInfo.decimals))
         .times(fromDust(item.quantity, toCoinBalanceInfo.decimals))
         .toString(),
     [toCoinBalanceInfo.decimals, item.quantity, item.unit_price]
@@ -64,7 +66,7 @@ export default function InscriptionItemBidCard({
         amount={item.quantity}
         seller={item.owner}
         price={price}
-        unitPrice={item.unit_price}
+        unitPrice={formatUnitPrice(item.unit_price, toCoinBalanceInfo.decimals)}
         selectMode={false}
         type="bid"
       />
@@ -77,7 +79,7 @@ export default function InscriptionItemBidCard({
           justifyContent="space-around"
           spacing={2}
         >
-          {account?.genRoochAddress().toStr() === item.owner ? (
+          {account?.genRoochAddress().toHexAddress() === item.owner ? (
             <LoadingButton
               loading={isPending}
               variant="outlined"
@@ -85,15 +87,21 @@ export default function InscriptionItemBidCard({
               fullWidth
               size="small"
               onClick={() => {
+                // Cancel Bid
+                console.log(
+                  '🚀 ~ file: inscription-item-card.tsx:226 ~ fromCoinBalanceInfo:',
+                  fromCoinBalanceInfo
+                );
                 const tx = new Transaction();
                 tx.callFunction({
-                  target: `${NETWORK_PACKAGE[NETWORK].MARKET_PACKAGE_ID}::market::cancel_bid`,
+                  target: `${market.orderBookAddress}::market_v2::cancel_order`,
                   args: [
                     Args.objectId(
-                      NETWORK_PACKAGE[NETWORK].tickInfo[tick.toLowerCase()].MARKET_OBJECT_ID
+                      market.tickInfo[tick.toLowerCase()].obj
                     ),
-                    Args.objectId(item.order_id),
+                    Args.u64(BigInt(item.order_id)),
                   ],
+                  typeArgs: [fromCoinBalanceInfo.coin_type, toCoinBalanceInfo.coin_type],
                 });
                 signAndExecuteTransaction(
                   {
@@ -101,9 +109,12 @@ export default function InscriptionItemBidCard({
                   },
                   {
                     async onSuccess(data) {
-                      // await refetchAddressOwnedInscription();
-                      toast.success('Cancel Bid Success');
-                      onRefetchMarketData();
+                      if (data.execution_info.status.type === 'executed') {
+                        toast.success('Cancel Bid Success');
+                        onRefetchMarketData();
+                      } else {
+                        toast.error('Cancel Bid Failed');
+                      }
                     },
                     onError(error) {
                       toast.error(String(error));
@@ -121,14 +132,14 @@ export default function InscriptionItemBidCard({
               fullWidth
               size="small"
               disabled={
-                Boolean(!account?.genRoochAddress().toStr()) ||
+                Boolean(!account?.genRoochAddress().toHexAddress()) ||
                 new BigNumber(toCoinBalanceInfo.balance || 0).isLessThan(item.quantity)
               }
               onClick={() => {
                 onAcceptBid(item);
               }}
             >
-              {!account?.genRoochAddress().toStr()
+              {!account?.genRoochAddress().toHexAddress()
                 ? 'Please connect wallet'
                 : new BigNumber(toCoinBalanceInfo.balance || 0).isLessThan(item.quantity)
                   ? 'Insufficient Balance'

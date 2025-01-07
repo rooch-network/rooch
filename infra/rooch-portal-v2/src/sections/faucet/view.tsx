@@ -1,14 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from "react";
+import { CopyToClipboard } from 'react-copy-to-clipboard'
 import { Args, isValidBitcoinAddress } from '@roochnetwork/rooch-sdk';
-import { useCurrentNetwork, useRoochClient, useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit';
+import { useRoochClient, useCurrentNetwork, useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit';
 
 import { LoadingButton } from '@mui/lab';
 import { Box, Card, Chip, Stack, CardHeader, CardContent } from '@mui/material';
 
 import { useRouter } from 'src/routes/hooks';
-import useAddressChanged from 'src/routes/hooks/useAddressChanged';
 
 import { useNetworkVariable } from 'src/hooks/use-networks';
 
@@ -19,7 +19,6 @@ import { DashboardContent } from 'src/layouts/dashboard';
 
 import { toast } from 'src/components/snackbar';
 
-import { CopyToClipboard } from 'react-copy-to-clipboard'
 import { paths } from '../../routes/paths'
 import { INVITER_ADDRESS_KEY } from "../../utils/inviter"
 
@@ -41,16 +40,13 @@ export function FaucetView({ address }: { address: string }) {
   const [viewAddress, setViewAddress] = useState<string>();
   const [viewRoochAddress, setViewRoochAddress] = useState<string>();
   const [faucetStatus, setFaucetStatus] = useState<boolean>(false);
-  const faucetUrl = useNetworkVariable('faucetUrl');
+  const faucet = useNetworkVariable('faucet');
   const [errorMsg, setErrorMsg] = useState<string>();
   const client = useRoochClient();
-  const faucetAddress = useNetworkVariable('faucetAddress');
-  const faucetObject = useNetworkVariable('faucetObject');
   const [claimGas, setClaimGas] = useState(0);
   const router = useRouter();
-  const network = useCurrentNetwork()
-
-  useAddressChanged({ address, path: 'faucet' });
+  const network = useCurrentNetwork();
+  const [needCheck, setNeedCheck] = useState(false);
 
   useEffect(() => {
     const inviterAddress = window.localStorage.getItem(INVITER_ADDRESS_KEY)
@@ -80,7 +76,7 @@ export function FaucetView({ address }: { address: string }) {
     { refetchInterval: 5000 }
   );
 
-  useEffect(() => {
+  const checkClaim = useCallback(() => {
     if (!viewRoochAddress) {
       return;
     }
@@ -95,9 +91,9 @@ export function FaucetView({ address }: { address: string }) {
         const utxoIds = result.data.map((item) => item.id);
         if (utxoIds) {
           const result = await client.executeViewFunction({
-            target: `${faucetAddress}::gas_faucet::check_claim`,
+            target: `${faucet.address}::gas_faucet::check_claim`,
             args: [
-              Args.objectId(faucetObject),
+              Args.objectId(faucet.obj),
               Args.address(viewRoochAddress),
               Args.vec('objectId', utxoIds),
             ],
@@ -106,6 +102,7 @@ export function FaucetView({ address }: { address: string }) {
           if (result.vm_status === 'Executed') {
             const gas = Number(formatCoin(Number(result.return_values![0].decoded_value), 8, 2));
             setClaimGas(gas);
+            setNeedCheck(false);
           } else if ('MoveAbort' in result.vm_status) {
             setErrorMsg(ERROR_MSG[Number(result.vm_status.MoveAbort.abort_code)]);
           }
@@ -116,7 +113,11 @@ export function FaucetView({ address }: { address: string }) {
       .finally(() => {
         setFaucetStatus(false);
       });
-  }, [address, client, faucetAddress, faucetObject, viewRoochAddress]);
+  }, [address, client, faucet, viewRoochAddress])
+
+  useEffect(() => {
+    checkClaim()
+  }, [checkClaim]);
 
   const fetchFaucet = async () => {
 
@@ -130,7 +131,7 @@ export function FaucetView({ address }: { address: string }) {
       const payload = JSON.stringify({
         claimer: viewAddress,
       });
-      const response = await fetch(`${faucetUrl}/faucet`, {
+      const response = await fetch(`${faucet.url}/faucet`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -154,9 +155,11 @@ export function FaucetView({ address }: { address: string }) {
 
       const d = await response.json();
       await refetch();
+      setNeedCheck(true);
       toast.success(
         `Faucet Success! RGas: ${formatCoin(Number(d.gas || 0), data?.decimals || 0, 2)}`
       );
+
     } catch (error) {
       console.error('Error:', error);
       toast.error(`faucet error: ${error}`);
@@ -206,9 +209,9 @@ export function FaucetView({ address }: { address: string }) {
               color="primary"
               disabled={errorMsg !== undefined && errorMsg !== ALREADY_CLAIMED}
               loading={isPending || faucetStatus}
-              onClick={fetchFaucet}
+              onClick={needCheck ? checkClaim : fetchFaucet}
             >
-              {errorMsg === ALREADY_CLAIMED ? 'Purchase RGas' : errorMsg || `Claim: ${claimGas} RGas`}
+              {errorMsg === ALREADY_CLAIMED ? 'Purchase RGas' : errorMsg || needCheck ? 'Check' : `Claim: ${claimGas} RGas`}
             </LoadingButton>
           </Stack>
         </CardContent>

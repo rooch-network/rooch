@@ -44,7 +44,11 @@ Only needs to ensure that the UniSat wallet has UTXO and [Claim RGas](https://po
 
 RGas is the native gas token on the Rooch Network and is used to cover transaction and operating costs.
 
-#### The account has BTC but no UTXO
+#### What is UTXO?
+
+UTXO is the unspent transaction output (Unspent Transaction Output). UTXO represents the change of BTC. The BTC balance of an account is the total of all UTXOs under the account.
+
+#### The account has BTC but UTXO is not displayed
 
 BTC transfer transactions need to wait for three blocks to be confirmed before UTXO can be used in Rooch.
 
@@ -96,13 +100,19 @@ There is no limit on the number of times, you can claim as long as you have stak
 
 About 0.02 ~ 0.03 RGas.
 
-#### Babylon Stakes
+#### Babylon Staking
 
 The same UTXO cannot be Self-Staking and then staked on Babylon.
 
 You need to stake in Babylon first, and then stake via Babylon Stake Seal.
 
 Babylon's staking has a time lock, and its staking has time weight.
+
+> Due to the time weight, the same amount of BTC will earn more GROW on Babylon Staking than on Self Staking.
+
+#### When using Babylon Staking, will the time weight become invalid after unstaking?
+
+Won't. Staking on Grow Bitcoin still has time weight as long as BTC is locked on the Babylon platform.
 
 #### Does Rooch have a price oracle?
 
@@ -136,6 +146,10 @@ A new Bitcoin address can `Claim` RGas once.
 
 Taproot.
 
+#### I accidentally deleted the address bound to X, how to retrieve it?
+
+As long as the mnemonic phrase is not lost, it can be retrieved. The same mnemonic word creates multiple account addresses. The address of account 1 is a, and the address of account 2 is b. Even if all addresses are deleted and re-created with the same mnemonic, the addresses will still be a, b...
+
 #### Where GROW trades
 
 GROW’s trading market will be launched in the future.
@@ -156,10 +170,6 @@ If this problem occurs, please transfer BTC to your account once.
 #### Discord can't find Faucet channel
 
 Please get the `seed` role in the `contributor-role` channel.
-
-#### The account has BTC but no UTXO
-
-BTC transfer transactions need to wait for three blocks to be confirmed before UTXO can be used in Rooch.
 
 #### Which version of Bitcoin testnet is Grow Bitcion using?
 

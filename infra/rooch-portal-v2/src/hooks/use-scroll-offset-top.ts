@@ -37,9 +37,7 @@ export function useScrollOffSetTop(top = 0): UseScrollOffSetTopReturn {
     useMemo(() => handleScrollChange, [handleScrollChange])
   );
 
-  const memoizedValue = useMemo(() => ({ elementRef, offsetTop }), [offsetTop]);
-
-  return memoizedValue;
+  return useMemo(() => ({ elementRef, offsetTop }), [offsetTop]);
 }
 
 /*

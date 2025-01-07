@@ -34,7 +34,7 @@ jobs:
           name: docker_tag
           path: .
           run-id: ${{ github.event.workflow_run.id }}
-          github-token: ${{ secrets.GIT_PACKAGE_TOKEN }}
+          github-token: ${{ secrets.GIT_PACKAGE_TOKEN2 }}
 
       - name: Determine ref
         id: determine-ref
@@ -74,4 +74,6 @@ jobs:
             '${{ secrets.BTC_TEST_RPC_URL }}' \
             '${{ secrets.BTC_TEST_RPC_PWD }}' \
             '${{ secrets.OPENDA_GCP_TESTNET_BUCKET }}' \
-            '${{ secrets.OPENDA_GCP_TESTNET_CREDENTIAL }}'"
+            '${{ secrets.OPENDA_GCP_TESTNET_CREDENTIAL }}' \
+            '${{ secrets.TURBO_DA_TURING_ENDPOINT }}' \
+            '${{ secrets.TURBO_DA_TURING_TOKEN }}'"  
