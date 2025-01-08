@@ -2,6 +2,32 @@
 
 这篇文档将介绍如何将 Rooch 的钱包功能（查询、转账）集成到钱包、资产浏览器、聚合器等应用中，将向钱包开发者介绍 Rooch 提供的 TS SDK 方法。
 
+## 账户相关
+
+### 获取当前地址
+
+```ts
+import { useCurrentAddress } from '@roochnetwork/rooch-sdk-kit';
+
+const address = useCurrentAddress();
+```
+
+### 余额信息
+
+```ts
+export interface BalanceInfoView {
+    balance: string;
+    coin_type: string;
+    decimals: number;
+    icon_url?: string | null;
+    name: string;
+    supply: string;
+    symbol: string;
+}
+```
+
+<++>
+
 ## 网络切换
 
 对于网络切换可以使用 `useSwitchNetwork` 方法，传递以下参数：
@@ -29,6 +55,24 @@ export interface ClientProviderContext {
 ## 客户端操作
 
 `useRoochClientQuery` 和 `useRoochClient` 方法提供了客户端查询和调用。
+
+```ts
+export declare function useRoochClientQuery<T extends keyof RpcMethods, TData = RpcMethods[T]['result']>(...args: undefined extends RpcMethods[T]['params'] ? [method: T, params?: RpcMethods[T]['params'], options?: UseRoochClientQueryOptions<T, TData>] : [method: T, params: RpcMethods[T]['params'], options?: UseRoochClientQueryOptions<T, TData>]): UseQueryResult<TData, Error>;
+```
+
+调用 `rooch_getBlances` 方法的例子：
+
+```ts
+useRoochClientQuery(
+'getBalances',
+{
+  owner: BitcoinAddressToRoochAddress(address).toHexAddress(),
+},
+{ refetchInterval: 5000 }
+);
+```
+
+<++>
 
 ## 发送交易
 
