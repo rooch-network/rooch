@@ -95,31 +95,6 @@ pub struct MoveOSStore {
     pub transaction_store: TransactionDBStore,
     pub config_store: ConfigDBStore,
     pub state_store: StateDBStore,
-    pub script_cache: UnsyncScriptCache<[u8; 32], CompiledScript, Script>,
-    pub module_cache:
-        UnsyncModuleCache<ModuleId, CompiledModule, Module, RoochModuleExtension, Option<TxnIndex>>,
-}
-
-#[delegate_to_methods]
-#[delegate(ScriptCache, target_ref = "as_script_cache")]
-impl MoveOSStore {
-    pub fn as_script_cache(
-        &self,
-    ) -> &dyn ScriptCache<Key = [u8; 32], Deserialized = CompiledScript, Verified = Script> {
-        self.get_script_cache()
-    }
-
-    fn as_module_cache(
-        &self,
-    ) -> &dyn ModuleCache<
-        Key = ModuleId,
-        Deserialized = CompiledModule,
-        Verified = Module,
-        Extension = RoochModuleExtension,
-        Version = Option<TxnIndex>,
-    > {
-        self.get_module_cache()
-    }
 }
 
 impl MoveOSStore {
@@ -148,8 +123,6 @@ impl MoveOSStore {
             transaction_store: TransactionDBStore::new(instance.clone()),
             config_store: ConfigDBStore::new(instance),
             state_store,
-            script_cache: UnsyncScriptCache::empty(),
-            module_cache: UnsyncModuleCache::empty(),
         };
         Ok(store)
     }
@@ -160,22 +133,6 @@ impl MoveOSStore {
 
         //The testcases should hold the tmpdir to prevent the tmpdir from being deleted.
         Ok((Self::new(tmpdir.path(), &registry)?, tmpdir))
-    }
-
-    pub fn get_script_cache(&self) -> &UnsyncScriptCache<[u8; 32], CompiledScript, Script> {
-        &self.script_cache
-    }
-
-    pub fn get_module_cache(
-        &self,
-    ) -> &dyn ModuleCache<
-        Key = ModuleId,
-        Deserialized = CompiledModule,
-        Verified = Module,
-        Extension = RoochModuleExtension,
-        Version = Option<TxnIndex>,
-    > {
-        &self.module_cache
     }
 
     pub fn get_event_store(&self) -> &EventDBStore {

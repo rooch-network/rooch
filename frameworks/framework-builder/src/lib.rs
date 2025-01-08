@@ -20,6 +20,7 @@ use std::{
     io::{stderr, Write},
     path::{Path, PathBuf},
 };
+use move_model::metadata::{CompilerVersion, LanguageVersion};
 
 pub mod releaser;
 pub mod stdlib_configs;
@@ -100,10 +101,10 @@ impl StdlibBuildConfig {
         let project_path = self.path.clone();
         let project_path = reroot_path(Some(project_path))?;
 
-        let mut compiled_package = self
+        let (mut compiled_package, _) = self
             .build_config
             .clone()
-            .compile_package_no_exit(&self.path, &mut stderr())?;
+            .compile_package_no_exit(&self.path, vec![], &mut stderr())?;
 
         run_verifier(
             &project_path,
@@ -129,6 +130,8 @@ impl StdlibBuildConfig {
             ModelConfig {
                 all_files_as_targets: false,
                 target_filter: None,
+                compiler_version: CompilerVersion::V2_1,
+                language_version: LanguageVersion::V2_1,
             },
         )?;
 

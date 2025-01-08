@@ -8,7 +8,8 @@ use move_core_types::value::MoveValue;
 use move_core_types::vm_status::VMStatus;
 use move_core_types::{language_storage::TypeTag, vm_status::StatusCode};
 use move_vm_runtime::data_cache::TransactionCache;
-use move_vm_runtime::session::{LoadedFunctionInstantiation, Session};
+use move_vm_runtime::session::{LoadedFunction, Session};
+use move_vm_runtime::{LoadedFunction, ModuleStorage};
 use move_vm_types::loaded_data::runtime_types::{StructType, Type};
 use moveos_common::types::{ClassifiedGasMeter, SwitchableGasMeter};
 use moveos_object_runtime::resolved_arg::ResolvedArg;
@@ -36,17 +37,18 @@ where
 {
     pub fn resolve_argument(
         &self,
-        func: &LoadedFunctionInstantiation,
+        func: &LoadedFunction,
         mut args: Vec<Vec<u8>>,
         location: Location,
         load_object: bool,
+        module_storage: &dyn ModuleStorage,
     ) -> VMResult<Vec<Vec<u8>>> {
-        let parameters = func.parameters.clone();
+        let parameters = func.param_tys().clone();
 
         //fill the type arguments to parameter type
         let parameters = parameters
             .into_iter()
-            .map(|ty| ty.subst(&func.type_arguments))
+            .map(|ty| ty.subst(&func.ty_args()))
             .collect::<PartialVMResult<Vec<_>>>()
             .map_err(|err| err.finish(location.clone()))?;
 
@@ -59,8 +61,13 @@ where
 
         let mut args = args.into_iter();
 
-        let serialized_args =
-            self.resolve_args(parameters.clone(), &mut args, load_object, location.clone())?;
+        let serialized_args = self.resolve_args(
+            parameters.clone(),
+            &mut args,
+            load_object,
+            location.clone(),
+            module_storage,
+        )?;
 
         if args.next().is_some() {
             return Err(
@@ -70,12 +77,12 @@ where
             );
         }
 
-        if func.parameters.len() != serialized_args.len() {
+        if func.param_tys().len() != serialized_args.len() {
             return Err(
                 PartialVMError::new(StatusCode::NUMBER_OF_ARGUMENTS_MISMATCH)
                     .with_message(format!(
                         "Invalid argument length, expect:{}, got:{}",
-                        func.parameters.len(),
+                        func.param_tys().len(),
                         serialized_args.len()
                     ))
                     .finish(location.clone()),
@@ -148,11 +155,17 @@ where
         args: &mut IntoIter<Vec<u8>>,
         load_object: bool,
         location: Location,
+        module_storage: &dyn ModuleStorage,
     ) -> VMResult<Vec<Vec<u8>>> {
         let mut res_args = vec![];
         for (ty, arg) in parameters.iter().zip(args) {
-            let constructed_arg =
-                self.construct_arg(ty, arg.clone(), load_object, location.clone())?;
+            let constructed_arg = self.construct_arg(
+                ty,
+                arg.clone(),
+                load_object,
+                location.clone(),
+                module_storage,
+            )?;
             res_args.push(constructed_arg);
         }
         Ok(res_args)
@@ -164,10 +177,17 @@ where
         arg: Vec<u8>,
         load_object: bool,
         location: Location,
+        module_storage: &dyn ModuleStorage,
     ) -> VMResult<Vec<u8>> {
         use Type::*;
         match ty {
-            Vector(..) | Struct(..) | StructInstantiation(..) => {
+            Vector(..)
+            | Struct { idx: _, ability: _ }
+            | StructInstantiation {
+                idx: _,
+                ty_args: _,
+                ability: _,
+            } => {
                 let initial_cursor_len = arg.len();
                 let mut cursor = Cursor::new(&arg[..]);
                 let mut new_arg = vec![];
@@ -178,6 +198,7 @@ where
                     initial_cursor_len,
                     load_object,
                     location,
+                    module_storage,
                 )?;
                 Ok(new_arg)
             }
@@ -200,6 +221,7 @@ where
                     initial_cursor_len,
                     load_object,
                     location,
+                    module_storage,
                 )?;
                 Ok(new_arg)
             }
@@ -217,6 +239,7 @@ where
         initial_cursor_len: usize,
         load_object: bool,
         location: Location,
+        module_storage: &dyn ModuleStorage,
     ) -> VMResult<()> {
         use Type::*;
 
@@ -252,11 +275,13 @@ where
                     initial_cursor_len,
                     load_object,
                     location.clone(),
+                    module_storage,
                 )?;
                 len -= 1;
             }
             Ok(())
-        } else if let Some(struct_arg_type) = as_struct_no_panic(&self.session, ty) {
+        } else if let Some(struct_arg_type) = as_struct_no_panic(&self.session, ty, module_storage)
+        {
             if is_object(&struct_arg_type) {
                 let mut len = get_len(cursor).map_err(|_| {
                     PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT)
@@ -324,8 +349,16 @@ where
                         let mut v = object.id().to_bytes();
                         arg.append(&mut v);
                     }
-                    StructInstantiation(_, instantiation_types, _) => {
-                        if let Some(Struct(struct_idx, _)) = instantiation_types.first() {
+                    StructInstantiation {
+                        idx: _,
+                        ty_args: instantiation_types,
+                        ability: _,
+                    } => {
+                        if let Some(Struct {
+                            idx: struct_idx,
+                            ability: _,
+                        }) = instantiation_types.first()
+                        {
                             let first_struct_type =
                                 self.get_struct_type(*struct_idx).ok_or_else(|| {
                                     PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT)
@@ -460,16 +493,20 @@ fn is_signer(t: &Type) -> bool {
     matches!(t, Type::Signer) || matches!(t, Type::Reference(r) if matches!(**r, Type::Signer))
 }
 
-pub fn as_struct_no_panic<T>(session: &Session<T>, t: &Type) -> Option<Arc<StructType>>
+pub fn as_struct_no_panic<T>(
+    session: &Session<T>,
+    t: &Type,
+    module_storage: &dyn ModuleStorage,
+) -> Option<Arc<StructType>>
 where
     T: TransactionCache,
 {
     match t {
         Type::Struct(s, _) | Type::StructInstantiation(s, _, _) => {
-            session.fetch_struct_ty_by_idx(*s, session.module_store)
+            session.fetch_struct_ty_by_idx(*s, module_storage)
         }
-        Type::Reference(r) => as_struct_no_panic(session, r),
-        Type::MutableReference(r) => as_struct_no_panic(session, r),
+        Type::Reference(r) => as_struct_no_panic(session, r, module_storage),
+        Type::MutableReference(r) => as_struct_no_panic(session, r, module_storage),
         _ => None,
     }
 }
