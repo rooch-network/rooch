@@ -1,6 +1,6 @@
 <mxfile host="65bd71144e" pages="7" scale="1" border="5" disableSvgWarning="true">
     <diagram id="elLn6caSq64X3h7uAWg6" name="bbr-bitcoin">
-        <mxGraphModel dx="779" dy="470" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" background="#ffffff" math="0" shadow="0">
+        <mxGraphModel dx="972" dy="629" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" background="#ffffff" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -124,7 +124,7 @@
         </mxGraphModel>
     </diagram>
     <diagram id="-QpOnCaREW6gQg4wZRnw" name="bbr-bitcoin-v2">
-        <mxGraphModel dx="779" dy="470" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
+        <mxGraphModel dx="972" dy="629" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -222,7 +222,7 @@
                 <mxCell id="UwWoVQ_mAnQsa1yY3RdR-32" value="" style="endArrow=none;dashed=1;html=1;strokeWidth=1;fontSize=7;fillColor=#E6E6E6;" parent="1" edge="1">
                     <mxGeometry width="50" height="50" relative="1" as="geometry">
                         <mxPoint x="40" y="200" as="sourcePoint"/>
-                        <mxPoint x="890" y="200" as="targetPoint"/>
+                        <mxPoint x="909" y="200" as="targetPoint"/>
                     </mxGeometry>
                 </mxCell>
                 <mxCell id="UwWoVQ_mAnQsa1yY3RdR-33" value="Bitcoin" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;dashed=1;dashPattern=1 1;strokeWidth=3;fontSize=20;" parent="1" vertex="1">
@@ -292,7 +292,7 @@
         </mxGraphModel>
     </diagram>
     <diagram id="vNgs2ceD4Dqfg0M4li7r" name="Programmable Bitcoin account">
-        <mxGraphModel dx="779" dy="470" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
+        <mxGraphModel dx="972" dy="629" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -313,7 +313,7 @@
                 <mxCell id="qrbCptKzSba5pEQFrVCd-4" value="Move App&lt;br&gt;Contract" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=none;" parent="1" vertex="1">
                     <mxGeometry x="299" y="275" width="105" height="105" as="geometry"/>
                 </mxCell>
-                <mxCell id="qrbCptKzSba5pEQFrVCd-5" style="edgeStyle=none;html=1;exitX=0.25;exitY=1;exitDx=0;exitDy=0;" parent="1" source="qrbCptKzSba5pEQFrVCd-6" target="qrbCptKzSba5pEQFrVCd-4" edge="1">
+                <mxCell id="qrbCptKzSba5pEQFrVCd-5" style="edgeStyle=none;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" parent="1" source="qrbCptKzSba5pEQFrVCd-6" target="qrbCptKzSba5pEQFrVCd-4" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
                 <mxCell id="w9eMSnvx8m58iLeggIaT-3" value="Read" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="qrbCptKzSba5pEQFrVCd-5" vertex="1" connectable="0">
@@ -322,7 +322,7 @@
                     </mxGeometry>
                 </mxCell>
                 <mxCell id="qrbCptKzSba5pEQFrVCd-6" value="UTXO Set" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;" parent="1" vertex="1">
-                    <mxGeometry x="327" y="170" width="100" height="50" as="geometry"/>
+                    <mxGeometry x="303" y="163" width="100" height="50" as="geometry"/>
                 </mxCell>
                 <mxCell id="UHDMLbAf6pIalCaHUMxE-2" value="" style="endArrow=none;dashed=1;html=1;dashPattern=1 3;strokeWidth=2;" parent="1" edge="1">
                     <mxGeometry width="50" height="50" relative="1" as="geometry">
@@ -345,7 +345,7 @@
                     </mxGeometry>
                 </mxCell>
                 <mxCell id="w9eMSnvx8m58iLeggIaT-5" value="Signer" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;strokeWidth=0.5;" parent="1" vertex="1">
-                    <mxGeometry x="670" y="460" width="60" height="60" as="geometry"/>
+                    <mxGeometry x="659" y="440" width="60" height="60" as="geometry"/>
                 </mxCell>
                 <mxCell id="w9eMSnvx8m58iLeggIaT-11" style="edgeStyle=none;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;strokeWidth=0.5;" parent="1" source="w9eMSnvx8m58iLeggIaT-7" edge="1">
                     <mxGeometry relative="1" as="geometry">
@@ -378,60 +378,60 @@
         </mxGraphModel>
     </diagram>
     <diagram id="tyzoxvBb0zk9txnTHnmG" name="Multisign Account">
-        <mxGraphModel dx="1106" dy="519" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
+        <mxGraphModel dx="972" dy="629" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
-                <mxCell id="NvaFngmGSqhw2My3WK3O-1" value="Bitcoin Multisign Account" style="rounded=1;whiteSpace=wrap;html=1;labelBackgroundColor=none;labelBorderColor=none;strokeColor=default;strokeWidth=1;fontFamily=Verdana;fontSize=11;fontColor=#000000;fillColor=#FFFFFF;gradientColor=none;flipV=1;flipH=1;verticalAlign=top;dashed=1;dashPattern=1 1;" vertex="1" parent="1">
+                <mxCell id="NvaFngmGSqhw2My3WK3O-1" value="Bitcoin Multisign Account" style="rounded=1;whiteSpace=wrap;html=1;labelBackgroundColor=none;labelBorderColor=none;strokeColor=default;strokeWidth=1;fontFamily=Verdana;fontSize=11;fontColor=#000000;fillColor=#FFFFFF;gradientColor=none;flipV=1;flipH=1;verticalAlign=top;dashed=1;dashPattern=1 1;" parent="1" vertex="1">
                     <mxGeometry x="189" y="231" width="220" height="174" as="geometry"/>
                 </mxCell>
-                <mxCell id="yJD0OrtuWyjzNP3R0p-M-1" value="SignerN" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;strokeWidth=0.5;" vertex="1" parent="1">
+                <mxCell id="yJD0OrtuWyjzNP3R0p-M-1" value="SignerN" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;strokeWidth=0.5;" parent="1" vertex="1">
                     <mxGeometry x="409" y="81" width="60" height="60" as="geometry"/>
                 </mxCell>
-                <mxCell id="yJD0OrtuWyjzNP3R0p-M-2" value="Signer2" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;strokeWidth=0.5;" vertex="1" parent="1">
+                <mxCell id="yJD0OrtuWyjzNP3R0p-M-2" value="Signer2" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;strokeWidth=0.5;" parent="1" vertex="1">
                     <mxGeometry x="229" y="81" width="60" height="60" as="geometry"/>
                 </mxCell>
-                <mxCell id="yJD0OrtuWyjzNP3R0p-M-3" value="Signer1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;strokeWidth=0.5;" vertex="1" parent="1">
+                <mxCell id="yJD0OrtuWyjzNP3R0p-M-3" value="Signer1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;strokeWidth=0.5;" parent="1" vertex="1">
                     <mxGeometry x="139" y="81" width="60" height="60" as="geometry"/>
                 </mxCell>
-                <mxCell id="yJD0OrtuWyjzNP3R0p-M-4" value="..." style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;strokeWidth=0.5;" vertex="1" parent="1">
+                <mxCell id="yJD0OrtuWyjzNP3R0p-M-4" value="..." style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;strokeWidth=0.5;" parent="1" vertex="1">
                     <mxGeometry x="319" y="81" width="60" height="60" as="geometry"/>
                 </mxCell>
-                <mxCell id="c1CmRuNpQNT3NSTJH_Hi-1" value="" style="endArrow=none;dashed=1;html=1;dashPattern=1 3;strokeWidth=2;" edge="1" parent="1">
+                <mxCell id="c1CmRuNpQNT3NSTJH_Hi-1" value="" style="endArrow=none;dashed=1;html=1;dashPattern=1 3;strokeWidth=2;" parent="1" edge="1">
                     <mxGeometry width="50" height="50" relative="1" as="geometry">
                         <mxPoint x="39" y="321" as="sourcePoint"/>
                         <mxPoint x="659" y="321" as="targetPoint"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="c1CmRuNpQNT3NSTJH_Hi-2" value="Validator" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;strokeWidth=0.5;" vertex="1" parent="1">
+                <mxCell id="c1CmRuNpQNT3NSTJH_Hi-2" value="Validator" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;strokeWidth=0.5;" parent="1" vertex="1">
                     <mxGeometry x="229" y="461" width="60" height="60" as="geometry"/>
                 </mxCell>
-                <mxCell id="c1CmRuNpQNT3NSTJH_Hi-3" value="Validator" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;strokeWidth=0.5;" vertex="1" parent="1">
+                <mxCell id="c1CmRuNpQNT3NSTJH_Hi-3" value="Validator" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;strokeWidth=0.5;" parent="1" vertex="1">
                     <mxGeometry x="139" y="461" width="60" height="60" as="geometry"/>
                 </mxCell>
-                <mxCell id="c1CmRuNpQNT3NSTJH_Hi-4" value="Validator" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;strokeWidth=0.5;" vertex="1" parent="1">
+                <mxCell id="c1CmRuNpQNT3NSTJH_Hi-4" value="Validator" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;strokeWidth=0.5;" parent="1" vertex="1">
                     <mxGeometry x="409" y="461" width="60" height="60" as="geometry"/>
                 </mxCell>
-                <mxCell id="c1CmRuNpQNT3NSTJH_Hi-5" value="..." style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;strokeWidth=0.5;" vertex="1" parent="1">
+                <mxCell id="c1CmRuNpQNT3NSTJH_Hi-5" value="..." style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;strokeWidth=0.5;" parent="1" vertex="1">
                     <mxGeometry x="319" y="461" width="60" height="60" as="geometry"/>
                 </mxCell>
-                <mxCell id="sdRyYx8jPrSu1arQPV6--1" value="Move App&lt;br&gt;Contract" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=none;" vertex="1" parent="1">
+                <mxCell id="sdRyYx8jPrSu1arQPV6--1" value="Move App&lt;br&gt;Contract" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=none;" parent="1" vertex="1">
                     <mxGeometry x="209" y="331" width="64" height="64" as="geometry"/>
                 </mxCell>
-                <mxCell id="RyOOar_EfJbf8IZ9fHBU-1" value="UTXO Set" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;" vertex="1" parent="1">
+                <mxCell id="RyOOar_EfJbf8IZ9fHBU-1" value="UTXO Set" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;" parent="1" vertex="1">
                     <mxGeometry x="209" y="271" width="77" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="iSqPVvJYej7526_2bj6H-1" value="Tx Queue" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;verticalAlign=top;" vertex="1" parent="1">
+                <mxCell id="iSqPVvJYej7526_2bj6H-1" value="Tx Queue" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;verticalAlign=top;" parent="1" vertex="1">
                     <mxGeometry x="319" y="347" width="70" height="32" as="geometry"/>
                 </mxCell>
-                <mxCell id="CASKtDbe0s8PgljQ73Eh-1" value="1. Taproot Multisign&lt;br&gt;2. FROST&lt;br&gt;3. Bool Network" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;strokeWidth=0.5;" vertex="1" parent="1">
+                <mxCell id="CASKtDbe0s8PgljQ73Eh-1" value="1. Taproot Multisign&lt;br&gt;2. FROST&lt;br&gt;3. Bool Network" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;strokeWidth=0.5;" parent="1" vertex="1">
                     <mxGeometry x="680" y="160" width="160" height="100" as="geometry"/>
                 </mxCell>
             </root>
         </mxGraphModel>
     </diagram>
     <diagram id="9JDQrS5Pb6l38tsz0AnO" name="rooch btx action call tx">
-        <mxGraphModel dx="779" dy="470" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
+        <mxGraphModel dx="972" dy="629" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -470,6 +470,23 @@
                 </mxCell>
                 <mxCell id="edyXlw5dm8qABM0wpr3T-11" value="Tx Queue" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=0.5;verticalAlign=top;dashed=1;" parent="1" vertex="1">
                     <mxGeometry x="655" y="227" width="100" height="170" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+    <diagram id="FrVje_TBxfq2pIaTBySK" name="move on bitcoin">
+        <mxGraphModel dx="972" dy="629" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="t1UcLpDVmO2nK-3orOv6-1" value="Bitcoin" style="rounded=1;whiteSpace=wrap;html=1;verticalAlign=middle;labelBackgroundColor=none;fillColor=none;fontColor=#333333;strokeColor=#666666;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="87" y="102" width="215" height="41.5" as="geometry"/>
+                </mxCell>
+                <mxCell id="t1UcLpDVmO2nK-3orOv6-3" value="Bitcoin" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="98" y="475" width="614" height="35" as="geometry"/>
+                </mxCell>
+                <mxCell id="t1UcLpDVmO2nK-3orOv6-4" value="MoveVM" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=bottom;" parent="1" vertex="1">
+                    <mxGeometry x="98" y="345" width="614" height="104" as="geometry"/>
                 </mxCell>
             </root>
         </mxGraphModel>
