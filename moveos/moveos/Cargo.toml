@@ -28,6 +28,8 @@ parking_lot = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 ambassador = { workspace = true }
+bytes = { workspace = true }
+sha3 = { workspace = true }
 
 move-binary-format = { workspace = true }
 move-core-types = { workspace = true }

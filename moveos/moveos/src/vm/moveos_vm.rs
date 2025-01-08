@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::data_cache::{into_change_set, MoveosDataCache};
+use ambassador::delegate_to_methods;
 use move_binary_format::compatibility::Compatibility;
 use move_binary_format::file_format::CompiledScript;
 use move_binary_format::normalized;
@@ -28,9 +29,10 @@ use move_vm_runtime::{
     native_extensions::NativeContextExtensions,
     native_functions::NativeFunction,
     session::{LoadedFunction, Session},
-    CodeStorage, LoadedFunction, ModuleStorage, RuntimeEnvironment, Script,
+    CodeStorage, LoadedFunction, Module, ModuleStorage, RuntimeEnvironment, Script,
 };
-use move_vm_types::code::UnsyncScriptCache;
+use move_vm_types::code::{ambassador_impl_ScriptCache, WithBytes, WithHash};
+use move_vm_types::code::{ModuleCache, ScriptCache, UnsyncModuleCache, UnsyncScriptCache};
 use move_vm_types::gas::UnmeteredGasMeter;
 use move_vm_types::loaded_data::runtime_types::{StructNameIndex, StructType, Type};
 use moveos_common::types::{ClassifiedGasMeter, SwitchableGasMeter};
@@ -38,7 +40,7 @@ use moveos_object_runtime::runtime::{ObjectRuntime, ObjectRuntimeContext};
 use moveos_stdlib::natives::moveos_stdlib::{
     event::NativeEventContext, move_module::NativeModuleContext,
 };
-use moveos_store::load_feature_store_object;
+use moveos_store::{load_feature_store_object, MoveOSStore, RoochModuleExtension, TxnIndex};
 use moveos_types::state::ObjectState;
 use moveos_types::{addresses, transaction::RawTransactionOutput};
 use moveos_types::{
@@ -57,6 +59,7 @@ use parking_lot::RwLock;
 use std::collections::BTreeSet;
 use std::rc::Rc;
 use std::{borrow::Borrow, sync::Arc};
+use move_vm_types::code::Code;
 
 /// MoveOSVM is a wrapper of MoveVM with MoveOS specific features.
 pub struct MoveOSVM {
@@ -133,15 +136,69 @@ impl MoveOSVM {
     }
 }
 
+pub struct MoveOSCodeCache {
+    pub script_cache: UnsyncScriptCache<[u8; 32], CompiledScript, Script>,
+    pub module_cache:
+        UnsyncModuleCache<ModuleId, CompiledModule, Module, RoochModuleExtension, Option<TxnIndex>>,
+}
+
+impl MoveOSCodeCache {
+    pub fn new() -> Self {
+        Self {
+            script_cache: UnsyncScriptCache::empty(),
+            module_cache: UnsyncModuleCache::empty(),
+        }
+    }
+
+    pub fn get_script_cache(&self) -> &UnsyncScriptCache<[u8; 32], CompiledScript, Script> {
+        &self.script_cache
+    }
+
+    pub fn get_module_cache(
+        &self,
+    ) -> &dyn ModuleCache<
+        Key = ModuleId,
+        Deserialized = CompiledModule,
+        Verified = Module,
+        Extension = RoochModuleExtension,
+        Version = Option<TxnIndex>,
+    > {
+        &self.module_cache
+    }
+}
+
+#[delegate_to_methods]
+#[delegate(ScriptCache, target_ref = "as_script_cache")]
+impl MoveOSCodeCache {
+    pub fn as_script_cache(
+        &self,
+    ) -> &dyn ScriptCache<Key = [u8; 32], Deserialized = CompiledScript, Verified = Script> {
+        self.get_script_cache()
+    }
+
+    fn as_module_cache(
+        &self,
+    ) -> &dyn ModuleCache<
+        Key = ModuleId,
+        Deserialized = CompiledModule,
+        Verified = Module,
+        Extension = RoochModuleExtension,
+        Version = Option<TxnIndex>,
+    > {
+        self.get_module_cache()
+    }
+}
+
 /// MoveOSSession is a wrapper of MoveVM session with MoveOS specific features.
 /// It is used to execute a transaction, every transaction should be executed in a new session.
 /// Every session has a TxContext, if the transaction have multiple actions, the TxContext is shared.
-pub struct MoveOSSession<'r, 'l, S: CodeStorage + ModuleStorage, G> {
+pub struct MoveOSSession<'r, 'l, S, G> {
     pub(crate) vm: &'l MoveVM,
     pub(crate) remote: &'r S,
     pub(crate) session: Session<'r, 'l, MoveosDataCache<'r, 'l, S>>,
     pub(crate) object_runtime: Rc<RwLock<ObjectRuntime<'r>>>,
     pub(crate) gas_meter: G,
+    pub(crate) code_cache: MoveOSCodeCache,
     pub(crate) read_only: bool,
 }
 
@@ -164,6 +221,7 @@ where
             session: Self::new_inner_session(vm, remote, object_runtime.clone()),
             object_runtime,
             gas_meter,
+            code_cache: MoveOSCodeCache::new(),
             read_only,
         }
     }
@@ -223,8 +281,12 @@ where
                     call.ty_args.as_slice(),
                 )?;
                 let location = Location::Script;
-                moveos_verifier::verifier::verify_entry_function(&loaded_function, &self.session, self.remote)
-                    .map_err(|e| e.finish(location.clone()))?;
+                moveos_verifier::verifier::verify_entry_function(
+                    &loaded_function,
+                    &self.session,
+                    self.remote,
+                )
+                .map_err(|e| e.finish(location.clone()))?;
                 let _serialized_args =
                     self.resolve_argument(&loaded_function, call.args.clone(), location, false)?;
 
@@ -251,8 +313,12 @@ where
                     call.ty_args.as_slice(),
                 )?;
                 let location = Location::Module(call.function_id.module_id.clone());
-                moveos_verifier::verifier::verify_entry_function(&loaded_function, &self.session)
-                    .map_err(|e| e.finish(location.clone()))?;
+                moveos_verifier::verifier::verify_entry_function(
+                    &loaded_function,
+                    &self.session,
+                    self.remote,
+                )
+                .map_err(|e| e.finish(location.clone()))?;
                 let _resolved_args =
                     self.resolve_argument(&loaded_function, call.args.clone(), location, false)?;
                 Ok(VerifiedMoveAction::Function {

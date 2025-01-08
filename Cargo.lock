@@ -6949,6 +6949,7 @@ version = "0.8.4"
 dependencies = [
  "ambassador",
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "bytes",
  "clap 4.5.17",
  "codespan",
  "codespan-reporting",
@@ -6978,6 +6979,7 @@ dependencies = [
  "rayon",
  "regex",
  "serde",
+ "sha3 0.10.8",
  "tempfile",
  "thiserror",
  "tracing",
