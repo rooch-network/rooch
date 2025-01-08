@@ -16,15 +16,15 @@ export class TestBox extends TestBoxA {
   private client: RoochClient
   keypair: Secp256k1Keypair
 
-  constructor(keypair: Secp256k1Keypair) {
+  constructor(keypair: Secp256k1Keypair, url?: string) {
     super()
     this.keypair = keypair
-    this.client = new RoochClient({ url: DEFAULT_NODE_URL })
+    this.client = new RoochClient({ url: url || DEFAULT_NODE_URL })
   }
 
-  static setup(): TestBox {
+  static setup(url?: string): TestBox {
     const kp = Secp256k1Keypair.generate()
-    return new TestBox(kp)
+    return new TestBox(kp, url)
   }
 
   async loadRoochEnv(
