@@ -513,7 +513,7 @@ impl ExecInner {
             }
         };
 
-        moveos_tx.ctx.add(ledger_tx.sequence_info.clone())?;
+        moveos_tx.ctx.add(ledger_tx.sequence_info)?;
         Ok(moveos_tx)
     }
 
