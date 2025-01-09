@@ -141,7 +141,7 @@ impl From<AnnotatedMoveStruct> for AnnotatedMoveStructView {
     fn from(origin: AnnotatedMoveStruct) -> Self {
         Self {
             abilities: origin.abilities.into_u8(),
-            type_: StrView(origin.type_),
+            type_: StrView(origin.ty_tag),
             value: origin
                 .value
                 .into_iter()
@@ -179,7 +179,7 @@ impl AnnotatedMoveStructVectorView {
                     .map(|x| IdentifierView::from(x.0.clone()))
                     .collect();
                 let abilities = ele.abilities.into_u8();
-                let type_ = StrView(ele.type_.clone());
+                let type_ = StrView(ele.ty_tag.clone());
                 let value: Vec<Vec<AnnotatedMoveValueView>> = origin
                     .into_iter()
                     .map(|v| {
@@ -217,15 +217,15 @@ pub enum SpecificStructView {
 
 impl SpecificStructView {
     pub fn try_from_annotated(move_struct: &AnnotatedMoveStruct) -> Option<Self> {
-        if MoveString::struct_tag_match(&move_struct.type_) {
+        if MoveString::struct_tag_match(&move_struct.ty_tag) {
             MoveString::try_from(move_struct)
                 .ok()
                 .map(SpecificStructView::MoveString)
-        } else if MoveAsciiString::struct_tag_match(&move_struct.type_) {
+        } else if MoveAsciiString::struct_tag_match(&move_struct.ty_tag) {
             MoveAsciiString::try_from(move_struct)
                 .ok()
                 .map(SpecificStructView::MoveAsciiString)
-        } else if ObjectID::struct_tag_match(&move_struct.type_) {
+        } else if ObjectID::struct_tag_match(&move_struct.ty_tag) {
             ObjectID::try_from(move_struct)
                 .ok()
                 .map(SpecificStructView::ObjectID)

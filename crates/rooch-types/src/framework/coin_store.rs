@@ -28,7 +28,7 @@ impl MoveStructType for Balance {
             address: Self::ADDRESS,
             module: Self::MODULE_NAME.to_owned(),
             name: Self::STRUCT_NAME.to_owned(),
-            type_params: vec![],
+            type_args: vec![],
         }
     }
 }
@@ -54,7 +54,7 @@ impl CoinStore {
             address: Self::ADDRESS,
             module: Self::MODULE_NAME.to_owned(),
             name: Self::STRUCT_NAME.to_owned(),
-            type_params: vec![],
+            type_args: vec![],
         }
     }
 }
@@ -93,7 +93,7 @@ where
             address: Self::ADDRESS,
             module: Self::MODULE_NAME.to_owned(),
             name: Self::STRUCT_NAME.to_owned(),
-            type_params: vec![coin_type.into()],
+            type_args: vec![coin_type.into()],
         }
     }
 }
@@ -169,10 +169,10 @@ impl TryFrom<ObjectState> for CoinStoreInfo {
             "Expected CoinStore struct tag"
         );
         ensure!(
-            raw_object.value.struct_tag.type_params.len() == 1,
+            raw_object.value.struct_tag.type_args.len() == 1,
             "Expected CoinStore type params length to be 1"
         );
-        let coin_type = raw_object.value.struct_tag.type_params[0].clone();
+        let coin_type = raw_object.value.struct_tag.type_args[0].clone();
         let coin_type = match coin_type {
             TypeTag::Struct(coin_type) => *coin_type,
             _ => return Err(anyhow::anyhow!("Invalid CoinType TypeTag")),
