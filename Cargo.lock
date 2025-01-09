@@ -16,7 +16,7 @@ dependencies = [
 name = "accumulator"
 version = "0.8.6"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "bcs-ext",
  "itertools 0.13.0",
  "lru",
@@ -252,13 +252,13 @@ source = "git+https://github.com/dtolnay/anyhow?tag=1.0.76#5cad3bf6a2d6198ae2906
 [[package]]
 name = "anyhow"
 version = "1.0.93"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4c95c10ba0b00a02636238b814946408b1322d5ac4760326e6fb8ec956d85775"
+source = "git+https://github.com/dtolnay/anyhow?tag=1.0.93#713bda9247df3846c1444a7c1b3b2a3b9a4f5907"
 
 [[package]]
 name = "anyhow"
-version = "1.0.93"
-source = "git+https://github.com/dtolnay/anyhow?tag=1.0.93#713bda9247df3846c1444a7c1b3b2a3b9a4f5907"
+version = "1.0.95"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "34ac096ce696dc2fcabef30516bb13c0a68a11d30131d3df6f04711467681b04"
 
 [[package]]
 name = "arbitrary"
@@ -1042,7 +1042,7 @@ dependencies = [
 name = "bcs-ext"
 version = "1.13.6"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "bcs",
  "serde 1.0.216",
 ]
@@ -1225,7 +1225,7 @@ dependencies = [
 name = "bitcoin-client"
 version = "0.8.6"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "async-trait",
  "bitcoin 0.32.3",
  "bitcoincore-rpc",
@@ -1255,7 +1255,7 @@ checksum = "340e09e8399c7bd8912f495af6aa58bea0c9214773417ffaa8f6460f93aaee56"
 name = "bitcoin-move"
 version = "0.8.6"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "axum",
  "bitcoin 0.32.3",
  "brotli 3.5.0",
@@ -1774,7 +1774,7 @@ name = "celestia-proto"
 version = "0.1.0"
 source = "git+https://github.com/eigerco/celestia-node-rs.git?rev=129272e8d926b4c7badf27a26dea915323dd6489#129272e8d926b4c7badf27a26dea915323dd6489"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "prost",
  "prost-build",
  "prost-types",
@@ -2711,7 +2711,7 @@ version = "0.21.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6cd12917efc3a8b069a4975ef3cb2f2d835d42d04b3814d90838488f9dd9bf69"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "clap 4.5.17",
  "console",
  "cucumber-codegen",
@@ -2998,7 +2998,7 @@ dependencies = [
 name = "data-verify"
 version = "0.8.6"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "rooch-rpc-api",
  "serde 1.0.216",
  "serde_json",
@@ -4150,7 +4150,7 @@ dependencies = [
 name = "evm-exec-utils"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "evm",
  "evm-runtime",
  "hex",
@@ -4576,7 +4576,7 @@ dependencies = [
 name = "framework-builder"
 version = "0.8.6"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "bcs",
  "codespan-reporting",
  "framework-types",
@@ -4600,7 +4600,7 @@ dependencies = [
 name = "framework-release"
 version = "0.8.6"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "bcs",
  "clap 4.5.17",
  "framework-builder",
@@ -5675,7 +5675,7 @@ version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0a0c890c85da4bab7bce4204c707396bbd3c6c8a681716a51c8814cfc2b682df"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "proc-macro-hack",
  "proc-macro2 1.0.92",
  "quote 1.0.38",
@@ -5934,7 +5934,7 @@ version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "feb61a6bd5d40ffb161d35da618bdc09163de3d697f281fc6c2926bb19bd3caa"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "jsonpath-plus",
  "once_cell",
  "regex",
@@ -6057,7 +6057,7 @@ version = "0.20.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f24ea59b037b6b9b0e2ebe2c30a3e782b56bd7c76dcc5d6d70ba55d442af56e3"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "async-lock 2.8.0",
  "async-trait",
  "beef",
@@ -6079,7 +6079,7 @@ version = "0.23.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "79712302e737d23ca0daa178e752c9334846b08321d439fd89af9a384f8c830b"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "async-trait",
  "beef",
  "bytes",
@@ -6179,7 +6179,7 @@ version = "0.23.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "654afab2e92e5d88ebd8a39d6074483f3f2bfdf91c5ac57fe285e7127cdd4f51"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "futures-util",
  "http 1.1.0",
  "http-body 1.0.0",
@@ -6207,7 +6207,7 @@ version = "0.20.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3264e339143fe37ed081953842ee67bfafa99e3b91559bdded6e4abd8fc8535e"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "beef",
  "serde 1.0.216",
  "serde_json",
@@ -6719,7 +6719,7 @@ dependencies = [
 name = "metrics"
 version = "0.8.6"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "async-trait",
  "axum",
  "axum-server",
@@ -6854,7 +6854,7 @@ checksum = "1fafa6961cabd9c63bcd77a45d7e3b7f3b552b70417831fb0f56db717e72407e"
 name = "move-abigen"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "bcs",
  "codespan-reporting",
  "datatest-stable 0.1.3",
@@ -6875,7 +6875,7 @@ dependencies = [
 name = "move-binary-format"
 version = "0.0.3"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "arbitrary",
  "backtrace",
  "indexmap 1.9.3",
@@ -6896,7 +6896,7 @@ version = "0.0.1"
 name = "move-bytecode-source-map"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "bcs",
  "move-binary-format",
  "move-command-line-common",
@@ -6910,7 +6910,7 @@ dependencies = [
 name = "move-bytecode-utils"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "move-binary-format",
  "move-core-types",
  "petgraph 0.5.1",
@@ -6934,7 +6934,7 @@ dependencies = [
 name = "move-bytecode-viewer"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "clap 4.5.17",
  "crossterm 0.26.1",
  "move-binary-format",
@@ -6948,7 +6948,7 @@ dependencies = [
 name = "move-cli"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "bcs",
  "clap 4.5.17",
  "codespan-reporting",
@@ -6989,7 +6989,7 @@ dependencies = [
 name = "move-command-line-common"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "difference",
  "dirs-next",
  "hex",
@@ -7005,7 +7005,7 @@ dependencies = [
 name = "move-compiler"
 version = "0.0.1"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "bcs",
  "clap 4.5.17",
  "codespan-reporting",
@@ -7032,7 +7032,7 @@ dependencies = [
 name = "move-compiler-v2"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "clap 3.2.25",
  "codespan-reporting",
  "datatest-stable 0.1.3",
@@ -7048,7 +7048,7 @@ dependencies = [
 name = "move-core-types"
 version = "0.0.4"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "arbitrary",
  "bcs",
  "ethnum",
@@ -7071,7 +7071,7 @@ dependencies = [
 name = "move-coverage"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "bcs",
  "clap 4.5.17",
  "codespan",
@@ -7089,7 +7089,7 @@ dependencies = [
 name = "move-disassembler"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "clap 4.5.17",
  "colored",
  "move-binary-format",
@@ -7105,7 +7105,7 @@ dependencies = [
 name = "move-docgen"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "codespan",
  "codespan-reporting",
  "datatest-stable 0.1.3",
@@ -7126,7 +7126,7 @@ dependencies = [
 name = "move-errmapgen"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "codespan-reporting",
  "datatest-stable 0.1.3",
  "move-command-line-common",
@@ -7149,7 +7149,7 @@ dependencies = [
 name = "move-ir-compiler"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "bcs",
  "clap 4.5.17",
  "move-binary-format",
@@ -7165,7 +7165,7 @@ dependencies = [
 name = "move-ir-to-bytecode"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "codespan-reporting",
  "log",
  "move-binary-format",
@@ -7182,7 +7182,7 @@ dependencies = [
 name = "move-ir-to-bytecode-syntax"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "hex",
  "move-command-line-common",
  "move-core-types",
@@ -7206,7 +7206,7 @@ dependencies = [
 name = "move-model"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "codespan",
  "codespan-reporting",
  "datatest-stable 0.1.3",
@@ -7232,7 +7232,7 @@ dependencies = [
 name = "move-package"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "clap 4.5.17",
  "colored",
  "datatest-stable 0.1.3",
@@ -7269,7 +7269,7 @@ dependencies = [
 name = "move-prover"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "atty",
  "clap 4.5.17",
  "codespan-reporting",
@@ -7296,7 +7296,7 @@ dependencies = [
 name = "move-prover-boogie-backend"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "async-trait",
  "codespan",
  "codespan-reporting",
@@ -7323,7 +7323,7 @@ dependencies = [
 name = "move-prover-test-utils"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "move-command-line-common",
  "prettydiff",
  "regex",
@@ -7333,7 +7333,7 @@ dependencies = [
 name = "move-resource-viewer"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "hex",
  "move-binary-format",
  "move-bytecode-utils",
@@ -7345,7 +7345,7 @@ dependencies = [
 name = "move-stackless-bytecode"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "codespan-reporting",
  "datatest-stable 0.1.3",
  "ethnum",
@@ -7369,7 +7369,7 @@ dependencies = [
 name = "move-stdlib"
 version = "0.1.1"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "dir-diff",
  "file_diff",
  "hex",
@@ -7406,7 +7406,7 @@ dependencies = [
 name = "move-table-extension"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "better_any",
  "move-binary-format",
  "move-cli",
@@ -7425,7 +7425,7 @@ dependencies = [
 name = "move-to-yul"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "atty",
  "clap 4.5.17",
  "codespan",
@@ -7454,7 +7454,7 @@ dependencies = [
 name = "move-transactional-test-runner"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "clap 4.5.17",
  "datatest-stable 0.1.3",
  "difference",
@@ -7483,7 +7483,7 @@ dependencies = [
 name = "move-unit-test"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "better_any",
  "clap 4.5.17",
  "codespan-reporting",
@@ -7517,7 +7517,7 @@ dependencies = [
 name = "move-vm-runtime"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "better_any",
  "fail",
  "hex",
@@ -7538,7 +7538,7 @@ dependencies = [
 name = "move-vm-test-utils"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "move-binary-format",
  "move-core-types",
  "move-table-extension",
@@ -7563,7 +7563,7 @@ dependencies = [
 name = "moveos"
 version = "0.8.6"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "clap 4.5.17",
  "codespan",
  "codespan-reporting",
@@ -7602,7 +7602,7 @@ dependencies = [
 name = "moveos-common"
 version = "0.8.6"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "bcs",
  "itertools 0.13.0",
  "libc",
@@ -7617,7 +7617,7 @@ dependencies = [
 name = "moveos-compiler"
 version = "0.8.6"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "move-binary-format",
  "petgraph 0.6.5",
 ]
@@ -7635,7 +7635,7 @@ dependencies = [
 name = "moveos-eventbus"
 version = "0.8.6"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "coerce",
  "crossbeam-channel",
  "thiserror",
@@ -7646,7 +7646,7 @@ dependencies = [
 name = "moveos-gas-profiling"
 version = "0.8.6"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "handlebars",
  "inferno",
  "move-binary-format",
@@ -7679,7 +7679,7 @@ dependencies = [
 name = "moveos-stdlib"
 version = "0.8.6"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "base64 0.22.1",
  "bech32 0.11.0",
  "better_any",
@@ -7713,7 +7713,7 @@ name = "moveos-store"
 version = "0.8.6"
 dependencies = [
  "accumulator",
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "bcs",
  "chrono",
  "function_name",
@@ -7735,7 +7735,7 @@ dependencies = [
 name = "moveos-types"
 version = "0.8.6"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "bcs",
  "fastcrypto 0.1.8 (git+https://github.com/MystenLabs/fastcrypto?rev=56f6223b84ada922b6cb2c672c69db2ea3dc6a13)",
  "hex",
@@ -7762,7 +7762,7 @@ dependencies = [
 name = "moveos-verifier"
 version = "0.8.6"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "bcs",
  "codespan-reporting",
  "itertools 0.13.0",
@@ -7787,7 +7787,7 @@ dependencies = [
 name = "moveos-wasm"
 version = "0.8.6"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "once_cell",
  "rand 0.8.5",
  "tracing",
@@ -8217,7 +8217,7 @@ version = "0.50.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cb28bb6c64e116ceaf8dd4e87099d3cfea4a58e85e62b104fef74c91afba0f44"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "async-trait",
  "backon",
  "base64 0.22.1",
@@ -9281,7 +9281,7 @@ version = "0.12.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "81bddcdb20abf9501610992b6759a4c888aef7d1a7247ef75e2404275ac24af1"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "itertools 0.12.1",
  "proc-macro2 1.0.92",
  "quote 1.0.38",
@@ -9613,7 +9613,7 @@ dependencies = [
 name = "raw-store"
 version = "0.8.6"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "metrics",
  "moveos-common",
  "moveos-config",
@@ -9791,7 +9791,7 @@ version = "0.16.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "eb0075a66c8bfbf4cc8b70dca166e722e1f55a3ea9250ecbb85f4d92a5f64149"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "async-trait",
  "base64 0.22.1",
  "chrono",
@@ -10083,7 +10083,7 @@ dependencies = [
 name = "rooch"
 version = "0.8.6"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "async-trait",
  "bcs",
  "bitcoin 0.32.3",
@@ -10179,8 +10179,8 @@ name = "rooch-benchmarks"
 version = "0.8.6"
 dependencies = [
  "anyhow 1.0.76",
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
- "anyhow 1.0.93 (git+https://github.com/dtolnay/anyhow?tag=1.0.93)",
+ "anyhow 1.0.93",
+ "anyhow 1.0.95",
  "bcs",
  "bitcoin 0.32.3",
  "bitcoincore-rpc",
@@ -10240,7 +10240,7 @@ dependencies = [
 name = "rooch-config"
 version = "0.8.6"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "clap 4.5.17",
  "dirs",
  "dirs-next",
@@ -10271,7 +10271,7 @@ dependencies = [
 name = "rooch-da"
 version = "0.8.6"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "async-trait",
  "base64 0.22.1",
  "celestia-rpc",
@@ -10295,7 +10295,7 @@ name = "rooch-db"
 version = "0.8.6"
 dependencies = [
  "accumulator",
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "moveos-common",
  "moveos-store",
  "moveos-types",
@@ -10312,7 +10312,7 @@ dependencies = [
 name = "rooch-event"
 version = "0.8.6"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "async-trait",
  "coerce",
  "moveos-eventbus",
@@ -10324,7 +10324,7 @@ dependencies = [
 name = "rooch-executor"
 version = "0.8.6"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "async-trait",
  "coerce",
  "function_name",
@@ -10349,7 +10349,7 @@ dependencies = [
 name = "rooch-faucet"
 version = "0.8.6"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "async-trait",
  "axum",
  "axum-server",
@@ -10397,7 +10397,7 @@ dependencies = [
 name = "rooch-framework-tests"
 version = "0.8.6"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "bcs",
  "bitcoin 0.32.3",
  "bitcoin-client",
@@ -10436,7 +10436,7 @@ name = "rooch-genesis"
 version = "0.8.6"
 dependencies = [
  "accumulator",
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "bcs",
  "bitcoin-move",
  "clap 4.5.17",
@@ -10467,7 +10467,7 @@ dependencies = [
 name = "rooch-indexer"
 version = "0.8.6"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "async-trait",
  "bcs",
  "coerce",
@@ -10494,7 +10494,7 @@ dependencies = [
 name = "rooch-integration-test-runner"
 version = "0.8.6"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "bcs",
  "clap 4.5.17",
  "codespan-reporting",
@@ -10527,7 +10527,7 @@ dependencies = [
 name = "rooch-key"
 version = "0.8.6"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "argon2",
  "bip32",
  "enum_dispatch",
@@ -10571,7 +10571,7 @@ dependencies = [
 name = "rooch-open-rpc"
 version = "0.8.6"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "clap 4.5.17",
  "fastcrypto 0.1.8 (git+https://github.com/MystenLabs/fastcrypto?rev=56f6223b84ada922b6cb2c672c69db2ea3dc6a13)",
  "rand 0.8.5",
@@ -10609,7 +10609,7 @@ dependencies = [
 name = "rooch-open-rpc-spec-builder"
 version = "0.8.6"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "clap 4.5.17",
  "rand 0.8.5",
  "rooch-open-rpc",
@@ -10622,7 +10622,7 @@ dependencies = [
 name = "rooch-oracle"
 version = "0.8.6"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "async-trait",
  "clap 4.5.17",
  "futures",
@@ -10647,7 +10647,7 @@ dependencies = [
 name = "rooch-ord"
 version = "0.8.6"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "ordinals",
  "reqwest 0.12.7",
  "rooch-types",
@@ -10661,7 +10661,7 @@ dependencies = [
 name = "rooch-pipeline-processor"
 version = "0.8.6"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "async-trait",
  "bcs",
  "bitcoin 0.32.3",
@@ -10687,7 +10687,7 @@ dependencies = [
 name = "rooch-proposer"
 version = "0.8.6"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "async-trait",
  "coerce",
  "metrics",
@@ -10704,7 +10704,7 @@ dependencies = [
 name = "rooch-relayer"
 version = "0.8.6"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "async-trait",
  "bitcoin 0.32.3",
  "bitcoin-client",
@@ -10732,7 +10732,7 @@ name = "rooch-rpc-api"
 version = "0.8.6"
 dependencies = [
  "accumulator",
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "bcs",
  "bitcoin 0.32.3",
  "ethers",
@@ -10756,7 +10756,7 @@ dependencies = [
 name = "rooch-rpc-client"
 version = "0.8.6"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "bcs",
  "bitcoin 0.32.3",
  "bitcoincore-rpc",
@@ -10778,7 +10778,7 @@ dependencies = [
 name = "rooch-rpc-server"
 version = "0.8.6"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "axum",
  "bcs",
  "bitcoin-client",
@@ -10827,7 +10827,7 @@ name = "rooch-sequencer"
 version = "0.8.6"
 dependencies = [
  "accumulator",
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "async-trait",
  "coerce",
  "function_name",
@@ -10852,7 +10852,7 @@ name = "rooch-store"
 version = "0.8.6"
 dependencies = [
  "accumulator",
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "moveos-common",
  "moveos-config",
  "moveos-types",
@@ -10868,7 +10868,7 @@ dependencies = [
 name = "rooch-test-transaction-builder"
 version = "0.8.6"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "bcs",
  "move-core-types",
  "move-package",
@@ -10883,7 +10883,7 @@ name = "rooch-types"
 version = "0.8.6"
 dependencies = [
  "accumulator",
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "argon2",
  "bcs",
  "bech32 0.11.0",
@@ -11225,9 +11225,9 @@ dependencies = [
 
 [[package]]
 name = "rustversion"
-version = "1.0.18"
+version = "1.0.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0e819f2bc632f285be6d7cd36e25940d45b2391dd6d9b939e79de557f7014248"
+checksum = "f7c45b9784283f1b2e7fb61b42047c2fd678ef0960d4f6f1eba131594cc369d4"
 
 [[package]]
 name = "rusty-fork"
@@ -12132,7 +12132,7 @@ checksum = "b7c388c1b5e93756d0c740965c41e8822f866621d41acbdf6336a6a168f8840c"
 name = "smt"
 version = "0.8.6"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "backtrace",
  "bcs",
  "bitcoin_hashes 0.14.0",
@@ -12700,7 +12700,7 @@ dependencies = [
 name = "testsuite"
 version = "0.8.6"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "assert_cmd",
  "backtrace",
  "clap 4.5.17",
@@ -12811,7 +12811,7 @@ dependencies = [
 name = "timeout-join-handler"
 version = "0.8.6"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "thiserror",
 ]
 
@@ -13697,7 +13697,7 @@ version = "9.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c32e7318e93a9ac53693b6caccfb05ff22e04a44c7cf8a279051f24c09da286f"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "cargo_metadata",
  "derive_builder 0.20.2",
  "getset",
@@ -13714,7 +13714,7 @@ version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a62c52cd2b2b8b7ec75fc20111b3022ac3ff83e4fc14b9497cfcfd39c54f9c67"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "derive_builder 0.20.2",
  "git2",
  "rustversion",
@@ -13729,7 +13729,7 @@ version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e06bee42361e43b60f363bad49d63798d0f42fb1768091812270eca00c784720"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "derive_builder 0.20.2",
  "getset",
  "rustversion",
@@ -13737,11 +13737,11 @@ dependencies = [
 
 [[package]]
 name = "vergen-pretty"
-version = "0.3.6"
+version = "0.3.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "69f0cedcb598e15120e748b19e97426e376be2ec27987570e11bbd350d0bdb09"
+checksum = "04254b37b76932a729334385888685a4ff91bdff0c5925db81fcaca9dbad20af"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "convert_case 0.6.0",
  "derive_builder 0.20.2",
  "rustversion",
@@ -14006,7 +14006,7 @@ version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "54a0f70c177b1c5062cfe0f5308c3317751796fef9403c22a0cd7b4cacd4ccd8"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "bytesize",
  "derive_builder 0.12.0",
  "hex",
@@ -14142,7 +14142,7 @@ version = "6.0.0-rc1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c1fc686c7b43c9bc630a499f6ae1f0a4c4bd656576a53ae8a147b0cc9bc983ad"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow 1.0.95",
  "base64 0.21.7",
  "bytes",
  "cfg-if",
