@@ -24,6 +24,7 @@ const SUBMIT_API_PATH: &str = "v2/submit";
 
 const TURBO_MIN_BACKOFF_DELAY: Duration = Duration::from_millis(500);
 const TURBO_SUBMIT_API_PATH: &str = "user/submit_raw_data";
+const DEFAULT_TURBO_PAYMENT_TOKEN: &str = "ethereum";
 
 /// Avail client: A turbo and Light
 /// Turbo client has higher priority, if not available, use the Light client
@@ -71,6 +72,7 @@ impl OpenDAAdapter for AvailFusionAdapter {
 pub struct AvailFusionClientConfig {
     pub turbo_endpoint: Option<String>,
     pub turbo_auth_token: Option<String>,
+    pub turbo_payment_token: Option<String>,
     pub light_endpoint: Option<String>,
     pub max_retries: usize,
 }
@@ -82,6 +84,7 @@ impl AvailFusionClientConfig {
     ) -> anyhow::Result<Self> {
         let turbo_endpoint = scheme_config.get("turbo_endpoint").cloned();
         let turbo_auth_token = scheme_config.get("turbo_auth_token").cloned();
+        let turbo_payment_token = scheme_config.get("turbo_payment_token").cloned();
         let light_endpoint = scheme_config.get("light_endpoint").cloned();
 
         if turbo_endpoint.is_none() && light_endpoint.is_none() {
@@ -95,6 +98,7 @@ impl AvailFusionClientConfig {
             turbo_endpoint,
             turbo_auth_token,
             light_endpoint,
+            turbo_payment_token,
             max_retries,
         })
     }
@@ -105,6 +109,9 @@ impl AvailFusionClientConfig {
                 endpoint,
                 self.max_retries,
                 self.turbo_auth_token.as_ref().unwrap(),
+                self.turbo_payment_token
+                    .as_deref()
+                    .unwrap_or(DEFAULT_TURBO_PAYMENT_TOKEN),
             )?)
         } else {
             None
@@ -128,6 +135,7 @@ pub(crate) struct AvailTurboClient {
     http_client: Client,
     max_retries: usize,
     auth_token: String,
+    payment_token: String,
 }
 
 impl AvailTurboClient {
@@ -135,6 +143,7 @@ impl AvailTurboClient {
         endpoint: &str,
         max_retries: usize,
         auth_token: &str,
+        payment_token: &str,
     ) -> anyhow::Result<Self> {
         let client = Client::new();
 
@@ -143,6 +152,7 @@ impl AvailTurboClient {
             http_client: client,
             max_retries,
             auth_token: auth_token.to_string(),
+            payment_token: payment_token.to_string(),
         })
     }
 
@@ -185,18 +195,14 @@ impl OpenDAAdapter for AvailTurboClient {
         let mut attempts = 0;
         let mut retry_delay = TURBO_MIN_BACKOFF_DELAY;
 
-        // token for turbo submit,
-        // will support more tokens in the future
-        const TOKEN: &str = "avail";
-
         loop {
             attempts += 1;
             let request = self
                 .http_client
                 .post(&submit_url)
-                .query(&[("token", TOKEN.to_string())])
+                .query(&[("token", self.payment_token.clone())])
                 .bearer_auth(&self.auth_token)
-                .header("Content-Type", "application/json")
+                .header("Content-Type", "text/plain")
                 .body(segment_bytes.to_vec());
 
             let response = request.send().await?;
