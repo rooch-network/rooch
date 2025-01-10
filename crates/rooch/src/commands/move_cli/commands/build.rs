@@ -70,7 +70,8 @@ impl CommandAction<Option<Value>> for BuildCommand {
 
         let config_cloned = config.clone();
 
-        let mut package = config.compile_package_no_exit(&rerooted_path, &mut std::io::stdout())?;
+        let (mut package, _) =
+            config.compile_package_no_exit(&rerooted_path, vec![], &mut std::io::stdout())?;
 
         run_verifier(rerooted_path.clone(), config_cloned.clone(), &mut package)?;
 

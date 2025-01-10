@@ -14,6 +14,7 @@ use function_name::named;
 use move_core_types::vm_status::VMStatus;
 use move_vm_runtime::RuntimeEnvironment;
 use moveos::moveos::{MoveOS, MoveOSConfig};
+use moveos::vm::module_cache::GlobalModuleCache;
 use moveos::vm::vm_status_explainer::explain_vm_status;
 use moveos_eventbus::bus::EventData;
 use moveos_store::MoveOSStore;
@@ -51,9 +52,9 @@ use rooch_types::transaction::{
 use std::str::FromStr;
 use std::sync::Arc;
 
-pub struct ExecutorActor {
+pub struct ExecutorActor<'a> {
     root: ObjectMeta,
-    moveos: MoveOS,
+    moveos: MoveOS<'a>,
     moveos_store: MoveOSStore,
     rooch_store: RoochStore,
     metrics: Arc<ExecutorMetrics>,
@@ -74,12 +75,14 @@ impl ExecutorActor {
         let gas_parameters = FrameworksGasParameters::load_from_chain(&resolver)?;
 
         let runtime_environment = RuntimeEnvironment::new(gas_parameters.all_natives());
+        let global_module_cache = GlobalModuleCache::empty();
 
         let moveos = MoveOS::new(
             &runtime_environment,
             moveos_store.clone(),
             system_pre_execute_functions(),
             system_post_execute_functions(),
+            &global_module_cache,
         )?;
 
         Ok(Self {
@@ -545,12 +548,14 @@ impl Handler<EventData> for ExecutorActor {
             let gas_parameters = FrameworksGasParameters::load_from_chain(&resolver)?;
 
             let runtime_environment = RuntimeEnvironment::new(gas_parameters.all_natives());
+            let global_module_cache = GlobalModuleCache::empty();
 
             self.moveos = MoveOS::new(
                 &runtime_environment,
                 self.moveos_store.clone(),
                 system_pre_execute_functions(),
                 system_post_execute_functions(),
+                &global_module_cache,
             )?;
         }
         Ok(())

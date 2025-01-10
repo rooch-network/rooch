@@ -120,7 +120,7 @@ impl<'r, 'l, S: MoveOSResolver> TransactionCache for MoveosDataCache<'r, 'l, S> 
     }
 
     /// Get the serialized format of a `CompiledModule` given a `ModuleId`.
-    fn load_module(&self, module_id: &ModuleId) -> VMResult<Vec<u8>> {
+    fn load_module(&self, module_id: &ModuleId) -> PartialVMResult<Bytes> {
         //if we use object_runtime.write() here, it will cause a deadlock
         //TODO refactor DataCache and ObjectRuntime to avoid this deadlock
         let object_runtime = self.object_runtime.read();
@@ -150,21 +150,20 @@ impl<'r, 'l, S: MoveOSResolver> TransactionCache for MoveosDataCache<'r, 'l, S> 
             });
 
         match result {
-            Ok(Some(code)) => Ok(code),
+            Ok(Some(code)) => Ok(Bytes::from(code)),
             Ok(None) => {
                 let field_key = FieldKey::derive_module_key(module_id.name());
                 Err(PartialVMError::new(StatusCode::LINKER_ERROR)
                     .with_message(format!(
                         "Cannot find module {:?}(key:{}) in ObjectRuntime and Storage",
                         module_id, field_key,
-                    ))
-                    .finish(Location::Undefined))
+                    )))
             }
             Err(err) => {
                 if tracing::enabled!(tracing::Level::DEBUG) {
                     tracing::warn!("Error loading module {:?}: {:?}", module_id, err);
                 }
-                Err(err.finish(Location::Undefined))
+                Err(err)
             }
         }
     }
@@ -311,7 +310,7 @@ pub fn into_change_set(
 }
 
 impl<'r, 'l, S: MoveOSResolver> TypeLayoutLoader for MoveosDataCache<'r, 'l, S> {
-    fn get_type_layout(&mut self, type_tag: &TypeTag) -> PartialVMResult<MoveTypeLayout> {
+    fn get_type_layout(&self, type_tag: &TypeTag) -> PartialVMResult<MoveTypeLayout> {
         self.loader
             .get_type_layout(type_tag, self, self, self)
             .map_err(|e| e.to_partial())

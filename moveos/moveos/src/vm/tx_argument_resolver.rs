@@ -30,7 +30,7 @@ use std::ops::Deref;
 use std::sync::Arc;
 use std::vec::IntoIter;
 
-impl<'r, 'l, S, G> MoveOSSession<'r, 'l, S, G>
+impl<'c, 'r, 'l, S, G> MoveOSSession<'c, 'r, 'l, S, G>
 where
     S: MoveOSResolver,
     G: SwitchableGasMeter + ClassifiedGasMeter,
@@ -460,22 +460,22 @@ where
     }
 }
 
-impl<'r, 'l, S, G> TypeLayoutLoader for MoveOSSession<'r, 'l, S, G>
+impl<'c, 'r, 'l, S, G> TypeLayoutLoader for MoveOSSession<'c, 'r, 'l, S, G>
 where
     S: MoveOSResolver,
     G: SwitchableGasMeter + ClassifiedGasMeter,
 {
     fn get_type_layout(
-        &mut self,
+        &self,
         type_tag: &TypeTag,
     ) -> move_binary_format::errors::PartialVMResult<move_core_types::value::MoveTypeLayout> {
         self.session
-            .get_type_layout(type_tag, self.remote)
+            .get_type_layout(type_tag, &self.code_cache)
             .map_err(|e| e.to_partial())
     }
 
     fn type_to_type_layout(
-        &mut self,
+        &self,
         ty: &Type,
     ) -> move_binary_format::errors::PartialVMResult<move_core_types::value::MoveTypeLayout> {
         let type_tag = self.type_to_type_tag(ty)?;

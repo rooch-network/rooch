@@ -620,7 +620,7 @@ fn get_table_name_by_state_type(state_type: ObjectStateType) -> IndexerTableName
 fn object_type_query(object_type: &StructTag) -> String {
     let object_type_str = object_type.to_string();
     // if the caller does not specify the type parameters, we will use the prefix match
-    if object_type.type_params.is_empty() {
+    if object_type.type_args.is_empty() {
         let (first_bound, second_bound, upper_bound) =
             optimize_object_type_like_query(object_type_str.as_str());
         format!(
@@ -635,7 +635,7 @@ fn object_type_query(object_type: &StructTag) -> String {
 fn not_object_type_query(object_type: &StructTag) -> String {
     let object_type_str = object_type.to_string();
     // if the caller does not specify the type parameters, we will use the prefix match
-    if object_type.type_params.is_empty() {
+    if object_type.type_args.is_empty() {
         let (first_bound, second_bound, upper_bound) =
             optimize_object_type_like_query(object_type_str.as_str());
         format!(
