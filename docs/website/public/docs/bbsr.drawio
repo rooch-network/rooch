@@ -1,6 +1,6 @@
 <mxfile host="65bd71144e" pages="7" scale="1" border="5" disableSvgWarning="true">
     <diagram id="elLn6caSq64X3h7uAWg6" name="bbr-bitcoin">
-        <mxGraphModel dx="972" dy="629" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" background="#ffffff" math="0" shadow="0">
+        <mxGraphModel dx="770" dy="428" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" background="#ffffff" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -124,7 +124,7 @@
         </mxGraphModel>
     </diagram>
     <diagram id="-QpOnCaREW6gQg4wZRnw" name="bbr-bitcoin-v2">
-        <mxGraphModel dx="972" dy="629" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
+        <mxGraphModel dx="770" dy="428" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -431,7 +431,7 @@
         </mxGraphModel>
     </diagram>
     <diagram id="9JDQrS5Pb6l38tsz0AnO" name="rooch btx action call tx">
-        <mxGraphModel dx="972" dy="629" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
+        <mxGraphModel dx="770" dy="428" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -475,18 +475,30 @@
         </mxGraphModel>
     </diagram>
     <diagram id="FrVje_TBxfq2pIaTBySK" name="move on bitcoin">
-        <mxGraphModel dx="972" dy="629" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+        <mxGraphModel dx="770" dy="428" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
-                <mxCell id="t1UcLpDVmO2nK-3orOv6-1" value="Bitcoin" style="rounded=1;whiteSpace=wrap;html=1;verticalAlign=middle;labelBackgroundColor=none;fillColor=none;fontColor=#333333;strokeColor=#666666;fontSize=14;" parent="1" vertex="1">
-                    <mxGeometry x="87" y="102" width="215" height="41.5" as="geometry"/>
+                <mxCell id="d39kvRZaCPzMSFTnTxyO-5" value="Bitcoin Application Layer -- RoochNetwork" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;dashed=1;" vertex="1" parent="1">
+                    <mxGeometry x="92" y="327" width="647" height="147" as="geometry"/>
                 </mxCell>
                 <mxCell id="t1UcLpDVmO2nK-3orOv6-3" value="Bitcoin" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
-                    <mxGeometry x="98" y="475" width="614" height="35" as="geometry"/>
+                    <mxGeometry x="92" y="483" width="648" height="35" as="geometry"/>
                 </mxCell>
-                <mxCell id="t1UcLpDVmO2nK-3orOv6-4" value="MoveVM" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=bottom;" parent="1" vertex="1">
-                    <mxGeometry x="98" y="345" width="614" height="104" as="geometry"/>
+                <mxCell id="t1UcLpDVmO2nK-3orOv6-4" value="MoveVM" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=middle;" parent="1" vertex="1">
+                    <mxGeometry x="98" y="426" width="635" height="41" as="geometry"/>
+                </mxCell>
+                <mxCell id="t1UcLpDVmO2nK-3orOv6-1" value="BTCFi" style="rounded=1;whiteSpace=wrap;html=1;verticalAlign=middle;labelBackgroundColor=none;fillColor=none;fontColor=#333333;strokeColor=#666666;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="101" y="361" width="136" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="d39kvRZaCPzMSFTnTxyO-1" value="Foc Application&amp;nbsp;" style="rounded=1;whiteSpace=wrap;html=1;verticalAlign=middle;labelBackgroundColor=none;fillColor=none;fontColor=#333333;strokeColor=#666666;fontSize=14;" vertex="1" parent="1">
+                    <mxGeometry x="265" y="362" width="136" height="49" as="geometry"/>
+                </mxCell>
+                <mxCell id="d39kvRZaCPzMSFTnTxyO-2" value="Foc AI Game" style="rounded=1;whiteSpace=wrap;html=1;verticalAlign=middle;labelBackgroundColor=none;fillColor=none;fontColor=#333333;strokeColor=#666666;fontSize=14;" vertex="1" parent="1">
+                    <mxGeometry x="429" y="362" width="136" height="49" as="geometry"/>
+                </mxCell>
+                <mxCell id="d39kvRZaCPzMSFTnTxyO-3" value="Foc AI Agent" style="rounded=1;whiteSpace=wrap;html=1;verticalAlign=middle;labelBackgroundColor=none;fillColor=none;fontColor=#333333;strokeColor=#666666;fontSize=14;" vertex="1" parent="1">
+                    <mxGeometry x="593" y="362" width="136" height="49" as="geometry"/>
                 </mxCell>
             </root>
         </mxGraphModel>
