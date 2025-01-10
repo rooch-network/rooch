@@ -5,7 +5,7 @@ use anyhow::Result;
 use move_binary_format::access::ModuleAccess;
 use move_binary_format::file_format::FunctionHandleIndex;
 use move_binary_format::CompiledModule;
-use move_core_types::resolver::MoveResolver;
+use move_vm_types::resolver::MoveResolver;
 use move_core_types::vm_status::AbortLocation;
 use move_core_types::vm_status::VMStatus;
 use serde::Deserialize;

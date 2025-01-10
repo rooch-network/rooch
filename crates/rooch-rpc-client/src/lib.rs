@@ -1,13 +1,18 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::{ensure, Error, Result};
+use anyhow::{anyhow, ensure, Error, Result};
+use bytes::Bytes;
 use jsonrpsee::core::client::ClientT;
 use jsonrpsee::http_client::{HttpClient, HttpClientBuilder};
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::{ModuleId, StructTag};
 use move_core_types::metadata::Metadata;
-use move_core_types::resolver::{ModuleResolver, ResourceResolver};
+use move_core_types::value::MoveTypeLayout;
+use move_core_types::vm_status::StatusCode;
+use move_vm_types::natives::function::{PartialVMError, PartialVMResult};
+use move_vm_types::resolver::ModuleResolver;
+use move_vm_types::resolver::ResourceResolver;
 use moveos_types::access_path::AccessPath;
 use moveos_types::h256::H256;
 use moveos_types::move_std::string::MoveString;
@@ -111,17 +116,30 @@ impl ModuleResolver for &Client {
         Vec::new()
     }
 
-    fn get_module(&self, id: &ModuleId) -> Result<Option<Vec<u8>>> {
+    fn get_module(&self, id: &ModuleId) -> PartialVMResult<Option<Bytes>> {
         tokio::task::block_in_place(|| {
             Handle::current().block_on(async {
-                let mut states = self.rooch.get_states(AccessPath::module(id), None).await?;
+                let mut states = match self.rooch.get_states(AccessPath::module(id), None).await {
+                    Ok(states) => states,
+                    Err(e) => {
+                        return Err(
+                            PartialVMError::new(StatusCode::ABORTED).with_message(e.to_string())
+                        )
+                    }
+                };
                 states
                     .pop()
                     .flatten()
                     .map(|state_view| {
                         let state = ObjectState::from(state_view);
-                        let module = state.value_as_df::<MoveString, MoveModule>()?;
-                        Ok(module.value.byte_codes)
+                        let module = match state.value_as_df::<MoveString, MoveModule>() {
+                            Ok(v) => v,
+                            Err(e) => {
+                                return Err(PartialVMError::new(StatusCode::ABORTED)
+                                    .with_message(e.to_string()))
+                            }
+                        };
+                        Ok(Bytes::copy_from_slice(module.value.byte_codes.as_slice()))
                     })
                     .transpose()
             })
@@ -139,15 +157,13 @@ impl ClientResolver {
     pub fn new(client: Client, root: ObjectMeta) -> Self {
         Self { root, client }
     }
-}
 
-impl ResourceResolver for ClientResolver {
     fn get_resource_with_metadata(
         &self,
         address: &AccountAddress,
         resource_tag: &StructTag,
         _metadata: &[Metadata],
-    ) -> std::result::Result<(Option<Vec<u8>>, usize), Error> {
+    ) -> std::result::Result<(Option<Bytes>, usize), Error> {
         let account_object_id = Account::account_object_id(*address);
 
         let key = FieldKey::derive_resource_key(resource_tag);
@@ -168,7 +184,7 @@ impl ResourceResolver for ClientResolver {
         match result {
             Ok(opt) => {
                 if let Some(data) = opt {
-                    Ok((Some(data), 0))
+                    Ok((Some(Bytes::copy_from_slice(data.as_slice())), 0))
                 } else {
                     Ok((None, 0))
                 }
@@ -178,12 +194,27 @@ impl ResourceResolver for ClientResolver {
     }
 }
 
+impl ResourceResolver for ClientResolver {
+    fn get_resource_bytes_with_metadata_and_layout(
+        &self,
+        address: &AccountAddress,
+        struct_tag: &StructTag,
+        metadata: &[Metadata],
+        _layout: Option<&MoveTypeLayout>,
+    ) -> PartialVMResult<(Option<Bytes>, usize)> {
+        match self.get_resource_with_metadata(address, struct_tag, metadata) {
+            Ok(v) => Ok(v),
+            Err(e) => Err(PartialVMError::new(StatusCode::ABORTED).with_message(format!("{}", e))),
+        }
+    }
+}
+
 impl ModuleResolver for ClientResolver {
     fn get_module_metadata(&self, _module_id: &ModuleId) -> Vec<Metadata> {
         vec![]
     }
 
-    fn get_module(&self, id: &ModuleId) -> std::result::Result<Option<Vec<u8>>, Error> {
+    fn get_module(&self, id: &ModuleId) -> PartialVMResult<Option<Bytes>> {
         (&self.client).get_module(id)
     }
 }

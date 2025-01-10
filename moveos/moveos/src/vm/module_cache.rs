@@ -1,5 +1,6 @@
 use ambassador::delegate_to_methods;
 use bytes::Bytes;
+use itertools::Itertools;
 use move_binary_format::errors::VMResult;
 use move_binary_format::file_format::CompiledScript;
 use move_binary_format::CompiledModule;
@@ -17,6 +18,7 @@ use std::hash::Hash;
 use std::ops::Deref;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use move_vm_types::code::ambassador_impl_ScriptCache;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum PanicError {
@@ -615,5 +617,22 @@ impl<'a> ModuleCache for MoveOSCodeCache<'a> {
 
     fn num_modules(&self) -> usize {
         self.as_module_cache().num_modules()
+    }
+}
+
+impl ModuleCodeBuilder for MoveOSCodeCache {
+    type Key = ModuleId;
+    type Deserialized = CompiledModule;
+    type Verified = Module;
+    type Extension = RoochModuleExtension;
+
+    fn build(
+        &self,
+        key: &Self::Key,
+    ) -> VMResult<Option<ModuleCode<Self::Deserialized, Self::Verified, Self::Extension>>> {
+        match self.global_module_cache.module_cache.get(key) {
+            None => Ok(None),
+            Some(v) => Ok(Some(v.module.deref().clone())),
+        }
     }
 }

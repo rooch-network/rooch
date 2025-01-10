@@ -16,6 +16,7 @@ use moveos_types::{
 };
 use parking_lot::RwLock;
 use std::rc::Rc;
+use move_vm_runtime::RuntimeEnvironment;
 
 #[test]
 #[allow(clippy::arc_with_non_send_sync)]
@@ -27,7 +28,9 @@ fn publish_and_load_module() {
     let module_id = module.self_id();
     module.serialize(&mut bytes).unwrap();
 
-    let move_vm = MoveVM::new(vec![]).unwrap();
+    let runtime_environment = RuntimeEnvironment::new(vec![]);
+
+    let move_vm = MoveVM::new_with_runtime_environment(&runtime_environment);
     let remote_view = RemoteStore::new();
     let loader = move_vm.runtime.loader();
     let object_runtime = Rc::new(RwLock::new(ObjectRuntime::genesis(
