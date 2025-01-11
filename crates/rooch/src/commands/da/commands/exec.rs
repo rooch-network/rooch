@@ -32,6 +32,7 @@ use rooch_types::bitcoin::types::Block as BitcoinBlock;
 use rooch_types::error::RoochResult;
 use rooch_types::rooch_network::RoochChainID;
 use rooch_types::transaction::{L1BlockWithBody, LedgerTransaction, LedgerTxData};
+use std::cmp::min;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Read};
@@ -123,6 +124,10 @@ impl ExecMode {
 
     pub fn is_seq(&self) -> bool {
         self.as_bits() & 0b01 != 0
+    }
+
+    pub fn is_both(&self) -> bool {
+        self.as_bits() == 0b11
     }
 
     pub fn get_verify_targets(&self) -> String {
@@ -333,21 +338,12 @@ impl ExecInner {
     async fn produce_tx(&self, tx: Sender<ExecMsg>) -> anyhow::Result<()> {
         let last_executed_opt = self.tx_da_indexer.find_last_executed()?;
         let last_sequenced_tx = self.sequenced_tx_store.get_last_tx_order();
-        let next_tx_order = last_executed_opt
+        let mut next_tx_order = last_executed_opt
             .clone()
             .map(|v| v.tx_order + 1)
             .unwrap_or(1);
-        let mut next_block_number = last_executed_opt
-            .clone()
-            .map(|v| v.block_number) // next_tx_order and last executed tx may be in the same block
-            .unwrap_or(0);
-        info!(
-            "next_tx_order: {:?}. need rollback soon: {:?}",
-            next_tx_order,
-            self.rollback.is_some()
-        );
 
-        if self.mode.is_seq() && next_tx_order != last_sequenced_tx + 1 {
+        if self.mode.is_both() && next_tx_order != last_sequenced_tx + 1 {
             let last_executed_tx_order = match last_executed_opt {
                 Some(v) => v.tx_order,
                 None => 0,
@@ -356,10 +352,26 @@ impl ExecInner {
                 "Last executed tx order: {}, last sequenced tx order: {}, need rollback to tx order: {}",
                 last_executed_tx_order,
                 last_sequenced_tx,
-                self.rollback.unwrap()
+                min(last_sequenced_tx, last_executed_tx_order)
             };
             return Ok(());
         }
+
+        let mut next_block_number = last_executed_opt
+            .clone()
+            .map(|v| v.block_number) // next_tx_order and last executed tx may be in the same block
+            .unwrap_or(0);
+
+        if !self.mode.is_exec() {
+            next_tx_order = last_sequenced_tx + 1;
+            next_block_number = self.tx_da_indexer.find_tx_block(next_tx_order).unwrap();
+        }
+
+        info!(
+            "next_tx_order: {:?}. need rollback soon: {:?}",
+            next_tx_order,
+            self.rollback.is_some()
+        );
 
         // If rollback not set or ge executed_tx_order, start from executed_tx_order+1(nothing to do); otherwise, rollback to this order
         if let (Some(rollback), Some(last_executed)) = (self.rollback, last_executed_opt.clone()) {
@@ -369,7 +381,7 @@ impl ExecInner {
                     self.tx_da_indexer.slice(rollback, last_executed_tx_order)?;
                 // split into two parts, the first get execution info for new startup, all others rollback
                 let (new_last, rollback_part) = new_last_and_rollback.split_first().unwrap();
-                tracing::info!(
+                info!(
                     "Start to rollback transactions tx_order: [{}, {}]",
                     rollback_part.first().unwrap().tx_order,
                     rollback_part.last().unwrap().tx_order,
@@ -388,17 +400,14 @@ impl ExecInner {
                 let rollback_execution_info =
                     self.tx_da_indexer.get_execution_info(new_last.tx_hash)?;
                 self.update_startup_info_after_rollback(rollback_execution_info.unwrap())?;
-                tracing::info!(
-                    "Rollback transactions done. Please RESTART process without rollback."
-                );
+                info!("Rollback transactions done. Please RESTART process without rollback.");
                 return Ok(()); // rollback done, need to restart to get new state_root for startup rooch store
             }
         };
 
-        tracing::info!(
+        info!(
             "Start to produce transactions from tx_order: {}, check from block: {}",
-            next_tx_order,
-            next_block_number,
+            next_tx_order, next_block_number,
         );
         let mut produced_tx_order = 0;
         let mut reach_end = false;

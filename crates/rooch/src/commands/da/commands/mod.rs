@@ -106,6 +106,11 @@ impl SequencedTxStore {
                     exp_accumulator_root,
                     tx_accumulator_info.accumulator_root
                 ));
+            } else {
+                info!(
+                    "Accumulator root is equal to RoochNetwork: tx_order: {}",
+                    tx_order
+                );
             }
         }
 
@@ -351,6 +356,19 @@ impl TxDAIndexer {
             self.has_executed(item.tx_hash)
         });
         Ok(r.cloned())
+    }
+
+    pub fn find_tx_block(&self, tx_order: u64) -> Option<u128> {
+        let r = self
+            .tx_order_hash_blocks
+            .binary_search_by(|x| x.tx_order.cmp(&tx_order));
+        let idx = match r {
+            Ok(i) => i,
+            Err(_) => {
+                return None;
+            }
+        };
+        Some(self.tx_order_hash_blocks[idx].block_number)
     }
 
     fn has_executed(&self, tx_hash: H256) -> bool {
