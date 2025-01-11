@@ -85,6 +85,7 @@ framework-types = { workspace = true }
 raw-store = { workspace = true }
 smt = { workspace = true }
 
+accumulator = { workspace = true }
 bitcoin-client = { workspace = true }
 rooch-executor = { workspace = true }
 rooch-key = { workspace = true }

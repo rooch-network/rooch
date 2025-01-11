@@ -10083,6 +10083,7 @@ dependencies = [
 name = "rooch"
 version = "0.8.6"
 dependencies = [
+ "accumulator",
  "anyhow 1.0.95",
  "async-trait",
  "bcs",
