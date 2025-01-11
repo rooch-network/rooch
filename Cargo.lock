@@ -10083,6 +10083,7 @@ dependencies = [
 name = "rooch"
 version = "0.8.6"
 dependencies = [
+ "accumulator",
  "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
  "async-trait",
  "bcs",
