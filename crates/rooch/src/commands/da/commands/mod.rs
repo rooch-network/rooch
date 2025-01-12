@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use accumulator::{Accumulator, MerkleAccumulator};
 use metrics::RegistryService;
 use moveos_store::transaction_store::{TransactionDBStore, TransactionStore};
 use moveos_types::h256::H256;
@@ -9,20 +10,119 @@ use moveos_types::transaction::TransactionExecutionInfo;
 use rooch_common::vec::find_last_true;
 use rooch_config::RoochOpt;
 use rooch_db::RoochDB;
+use rooch_store::RoochStore;
 use rooch_types::da::chunk::chunk_from_segments;
 use rooch_types::da::segment::{segment_from_bytes, SegmentID};
 use rooch_types::rooch_network::RoochChainID;
+use rooch_types::sequencer::SequencerInfo;
 use rooch_types::transaction::LedgerTransaction;
 use std::collections::HashMap;
 use std::fs;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Read};
 use std::path::PathBuf;
+use std::sync::atomic::AtomicU64;
+use tracing::info;
 
 pub mod exec;
 pub mod index_tx;
 pub mod namespace;
 pub mod unpack;
+
+pub(crate) struct SequencedTxStore {
+    tx_accumulator: MerkleAccumulator,
+    last_sequenced_tx_order: AtomicU64,
+    rooch_store: RoochStore,
+}
+
+impl SequencedTxStore {
+    pub(crate) fn new(rooch_store: RoochStore) -> anyhow::Result<Self> {
+        // The sequencer info would be initialized when genesis, so the sequencer info should not be None
+        let last_sequencer_info = rooch_store
+            .get_meta_store()
+            .get_sequencer_info()?
+            .ok_or_else(|| anyhow::anyhow!("Load sequencer info failed"))?;
+        let (last_order, last_accumulator_info) = (
+            last_sequencer_info.last_order,
+            last_sequencer_info.last_accumulator_info.clone(),
+        );
+        info!("Load latest sequencer order {:?}", last_order);
+        info!(
+            "Load latest sequencer accumulator info {:?}",
+            last_accumulator_info
+        );
+        let tx_accumulator = MerkleAccumulator::new_with_info(
+            last_accumulator_info,
+            rooch_store.get_transaction_accumulator_store(),
+        );
+
+        Ok(SequencedTxStore {
+            tx_accumulator,
+            last_sequenced_tx_order: AtomicU64::new(last_order),
+            rooch_store,
+        })
+    }
+
+    pub(crate) fn get_last_tx_order(&self) -> u64 {
+        self.last_sequenced_tx_order
+            .load(std::sync::atomic::Ordering::SeqCst)
+    }
+
+    pub(crate) fn store_tx(
+        &self,
+        mut tx: LedgerTransaction,
+        exp_accumulator_root: Option<H256>,
+    ) -> anyhow::Result<()> {
+        let tx_order = tx.sequence_info.tx_order;
+        match self.last_sequenced_tx_order.compare_exchange(
+            tx_order - 1,
+            tx_order,
+            std::sync::atomic::Ordering::SeqCst,
+            std::sync::atomic::Ordering::SeqCst,
+        ) {
+            Ok(_) => {
+                // CAS succeeded, continue with function logic
+            }
+            Err(current) => {
+                return Err(anyhow::anyhow!(
+                    "CAS failed: Tx order is not strictly incremental. \
+                Expected: {}, Actual: {}, Tx Order: {}",
+                    tx_order - 1,
+                    current,
+                    tx_order
+                ));
+            }
+        }
+
+        let tx_hash = tx.tx_hash();
+        let _tx_accumulator_root = self.tx_accumulator.append(vec![tx_hash].as_slice())?;
+        let tx_accumulator_unsaved_nodes = self.tx_accumulator.pop_unsaved_nodes();
+        let tx_accumulator_info = self.tx_accumulator.get_info();
+
+        if let Some(exp_accumulator_root) = exp_accumulator_root {
+            if tx_accumulator_info.accumulator_root != exp_accumulator_root {
+                return Err(anyhow::anyhow!(
+                    "Tx accumulator root mismatch, expect: {:?}, actual: {:?}",
+                    exp_accumulator_root,
+                    tx_accumulator_info.accumulator_root
+                ));
+            } else {
+                info!(
+                    "Accumulator root is equal to RoochNetwork: tx_order: {}",
+                    tx_order
+                );
+            }
+        }
+
+        let sequencer_info = SequencerInfo::new(tx_order, tx_accumulator_info);
+        self.rooch_store.save_sequenced_tx(
+            tx_hash,
+            tx.clone(),
+            sequencer_info,
+            tx_accumulator_unsaved_nodes,
+        )
+    }
+}
 
 // collect all the chunks from segment_dir.
 // each segment is stored in a file named by the segment_id.
@@ -256,6 +356,19 @@ impl TxDAIndexer {
             self.has_executed(item.tx_hash)
         });
         Ok(r.cloned())
+    }
+
+    pub fn find_tx_block(&self, tx_order: u64) -> Option<u128> {
+        let r = self
+            .tx_order_hash_blocks
+            .binary_search_by(|x| x.tx_order.cmp(&tx_order));
+        let idx = match r {
+            Ok(i) => i,
+            Err(_) => {
+                return None;
+            }
+        };
+        Some(self.tx_order_hash_blocks[idx].block_number)
     }
 
     fn has_executed(&self, tx_hash: H256) -> bool {
