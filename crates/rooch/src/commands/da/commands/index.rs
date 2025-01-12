@@ -10,14 +10,14 @@ use std::path::PathBuf;
 
 /// Index tx_order:tx_hash:block_number to a file from segments
 #[derive(Debug, clap::Parser)]
-pub struct IndexTxCommand {
+pub struct IndexCommand {
     #[clap(long = "segment-dir")]
     pub segment_dir: PathBuf,
     #[clap(long = "output")]
     pub output: PathBuf,
 }
 
-impl IndexTxCommand {
+impl IndexCommand {
     pub fn execute(self) -> RoochResult<()> {
         let ledger_tx_loader = LedgerTxGetter::new(self.segment_dir)?;
         let mut block_number = ledger_tx_loader.get_min_chunk_id();
