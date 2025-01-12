@@ -13739,9 +13739,9 @@ dependencies = [
 
 [[package]]
 name = "vergen-pretty"
-version = "0.3.7"
+version = "0.3.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "04254b37b76932a729334385888685a4ff91bdff0c5925db81fcaca9dbad20af"
+checksum = "7b6dba3d634a79e4a7af9eb2eb75d3629f81e3bbb8ae55d3ec2821acdeaac618"
 dependencies = [
  "anyhow 1.0.95",
  "convert_case 0.6.0",
