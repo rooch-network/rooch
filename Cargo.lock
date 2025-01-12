@@ -10234,6 +10234,7 @@ dependencies = [
 name = "rooch-common"
 version = "0.8.6"
 dependencies = [
+ "anyhow 1.0.95",
  "libc",
 ]
 

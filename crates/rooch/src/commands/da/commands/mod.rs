@@ -15,7 +15,7 @@ use rooch_types::da::chunk::chunk_from_segments;
 use rooch_types::da::segment::{segment_from_bytes, SegmentID};
 use rooch_types::rooch_network::RoochChainID;
 use rooch_types::sequencer::SequencerInfo;
-use rooch_types::transaction::LedgerTransaction;
+use rooch_types::transaction::{LedgerTransaction, TransactionSequenceInfo};
 use std::collections::HashMap;
 use std::fs;
 use std::fs::File;
@@ -299,12 +299,14 @@ impl std::str::FromStr for TxDAIndex {
 pub struct TxDAIndexer {
     tx_order_hash_blocks: Vec<TxDAIndex>,
     transaction_store: TransactionDBStore,
+    rooch_store: RoochStore,
 }
 
 impl TxDAIndexer {
     pub fn load_from_file(
         file_path: PathBuf,
         transaction_store: TransactionDBStore,
+        rooch_store: RoochStore,
     ) -> anyhow::Result<Self> {
         let mut tx_order_hashes = Vec::with_capacity(70000000);
         let mut reader = BufReader::new(File::open(file_path)?);
@@ -314,13 +316,14 @@ impl TxDAIndexer {
             tx_order_hashes.push(item);
         }
         tx_order_hashes.sort_by(|a, b| a.tx_order.cmp(&b.tx_order)); // avoiding wrong order
-        tracing::info!(
+        info!(
             "tx_order:tx_hash:block indexer loaded, tx cnt: {}",
             tx_order_hashes.len()
         );
         Ok(TxDAIndexer {
             tx_order_hash_blocks: tx_order_hashes,
             transaction_store,
+            rooch_store,
         })
     }
 
@@ -383,8 +386,18 @@ impl TxDAIndexer {
         &self,
         tx_hash: H256,
     ) -> anyhow::Result<Option<TransactionExecutionInfo>> {
-        let execution_info = self.transaction_store.get_tx_execution_info(tx_hash)?;
-        Ok(execution_info)
+        self.transaction_store.get_tx_execution_info(tx_hash)
+    }
+
+    pub fn get_sequencer_info(
+        &self,
+        tx_hash: H256,
+    ) -> anyhow::Result<Option<TransactionSequenceInfo>> {
+        Ok(self
+            .rooch_store
+            .transaction_store
+            .get_transaction_by_hash(tx_hash)?
+            .map(|transaction| transaction.sequence_info))
     }
 
     pub fn get_execution_info_by_order(

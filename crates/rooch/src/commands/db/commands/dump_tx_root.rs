@@ -43,6 +43,7 @@ impl DumpTxRootCommand {
         let tx_da_indexer = TxDAIndexer::load_from_file(
             self.order_hash_path.clone(),
             moveos_store.transaction_store,
+            rooch_db.rooch_store.clone(),
         )?;
 
         let file = File::create(self.output.clone())?;
