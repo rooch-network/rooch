@@ -19,6 +19,10 @@ module rooch_dex::swap {
     use moveos_std::object::{Object, ObjectID};
     use rooch_framework::coin_store::{CoinStore, balance, deposit, withdraw};
     use rooch_framework::coin_store;
+    #[test_only]
+    use moveos_std::object::to_shared;
+    #[test_only]
+    use rooch_framework::coin::Coin;
 
 
 
@@ -131,7 +135,7 @@ module rooch_dex::swap {
 
         let coin_info = coin::register_extend<LPToken<X, Y>>(
             lp_name,
-            string::utf8(b"RoochDex-LP"),
+            string::utf8(b"RDex-LP"),
             none(),
             8,
         );
@@ -645,5 +649,23 @@ module rooch_dex::swap {
             let token_pair = account::borrow_mut_resource<TokenPair<Y, X>>(RESOURCE_ACCOUNT);
             token_pair.is_open = status
         };
+    }
+
+    #[test_only]
+    struct TestCoinX has key, store{}
+    #[test_only]
+    struct TestCoinY has key, store{}
+
+    #[test_only]
+    public fun init_lp_for_test(amount: u256) : Coin<LPToken<TestCoinX, TestCoinY>> {
+        let coin_info = coin::register_extend<LPToken<TestCoinX, TestCoinY>>(
+            string::utf8(b"RoochDex LPs"),
+            string::utf8(b"RDex-LP"),
+            none(),
+            8,
+        );
+        let lp_coin = coin::mint(&mut coin_info, amount);
+        to_shared(coin_info);
+        return lp_coin
     }
 }
