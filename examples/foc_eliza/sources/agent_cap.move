@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 module foc_eliza::agent_cap {
 
     use moveos_std::object::{Self, Object};

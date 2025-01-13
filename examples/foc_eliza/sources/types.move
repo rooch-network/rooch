@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 module foc_eliza::types {
 
     use std::string::String;
@@ -71,16 +74,16 @@ module foc_eliza::types {
         }
     }
 
-    #[data_struct]
-    struct MessageTemplate has store, copy, drop{
-        user: String,
-        content: Content,
-    }
+    // #[data_struct]
+    // struct MessageTemplate has store, copy, drop{
+    //     user: String,
+    //     content: Content,
+    // }
 
-    public fun new_message_template(user: String, content: Content) : MessageTemplate {
-        MessageTemplate {
-            user,
-            content,
-        }
-    }
+    // public fun new_message_template(user: String, content: Content) : MessageTemplate {
+    //     MessageTemplate {
+    //         user,
+    //         content,
+    //     }
+    // }
 }

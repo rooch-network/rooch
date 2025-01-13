@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 module foc_eliza::character {
 
     use std::string::{Self, String};
@@ -8,7 +11,7 @@ module foc_eliza::character {
     use moveos_std::json;
     use moveos_std::signer;
 
-    use foc_eliza::types::{Self, Style, MessageTemplate};
+    use foc_eliza::types::{Self, Style, TwitterProfile};
     use foc_eliza::agent_cap::{Self, AgentCap};
 
     #[data_struct]
@@ -25,12 +28,12 @@ module foc_eliza::character {
         system: String,
         bio: vector<String>,
         lore: vector<String>,
-        messageExamples: vector<vector<MessageTemplate>>,
         postExamples: vector<String>,
         topics: vector<String>,
         style: Style,
         adjectives: vector<String>,
         knowledge: vector<String>,
+        twitterProfile: Option<TwitterProfile>,
     }
 
     /// A character in the Eliza system.
@@ -48,12 +51,12 @@ module foc_eliza::character {
         system: String,
         bio: vector<String>,
         lore: vector<String>,
-        messageExamples: vector<vector<MessageTemplate>>,
         postExamples: vector<String>,
         topics: vector<String>,
         style: Style,
         adjectives: vector<String>,
         knowledge: vector<String>,
+        twitterProfile: Option<TwitterProfile>,
     } 
 
     public fun new_character_data(name: String, username: String, modelProvider: String, system: String): CharacterData {
@@ -70,12 +73,12 @@ module foc_eliza::character {
             system,
             bio: vector[],
             lore: vector[],
-            messageExamples: vector[],
             postExamples: vector[],
             topics: vector[],
             style: types::new_style(vector[], vector[], vector[]),
             adjectives: vector[],
             knowledge: vector[],
+            twitterProfile: none(),
         }
     }
 
@@ -93,12 +96,12 @@ module foc_eliza::character {
             system: data.system,
             bio: data.bio,
             lore: data.lore,
-            messageExamples: data.messageExamples,
             postExamples: data.postExamples,
             topics: data.topics,
             style: data.style,
             adjectives: data.adjectives,
             knowledge: data.knowledge,
+            twitterProfile: data.twitterProfile,
         };
         // Every account only has one character
         object::new_account_named_object(agent_account, character)

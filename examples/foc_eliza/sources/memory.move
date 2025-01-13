@@ -1,13 +1,15 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 module foc_eliza::memory {
 
     use std::string::{Self, String};
     use std::option::{Self, Option};
     
     use moveos_std::json;
-    use moveos_std::table::{Self, Table};
     use moveos_std::object::{Self, Object};
 
-    use foc_eliza::types::{Self, Content};
+    use foc_eliza::types::{Content};
     use foc_eliza::agent_cap::{Self, MemoryCap};
 
     #[data_struct]
@@ -26,7 +28,6 @@ module foc_eliza::memory {
 
     struct MemoryStore has key {
         agent_account: address,
-        store: Table<String, Memory>,
     }
 
     public fun new_memory(
@@ -56,16 +57,14 @@ module foc_eliza::memory {
     }
 
     fun init_memory_store(agent_account: address){
-        let store = table::new<String, Memory>();
         let memory_store = MemoryStore {
             agent_account,
-            store,
         };
         let memory_store_obj = object::new_account_named_object(agent_account, memory_store);
         object::transfer_extend(memory_store_obj, agent_account);
     }
 
-    fun init_or_borrow_memory_store(agent_account: address) : &mut MemoryStore {
+    fun init_or_borrow_memory_store(agent_account: address) : &mut Object<MemoryStore> {
         let memory_store_obj_id = object::account_named_object_id<MemoryStore>(agent_account);
         let memory_store_obj = if (object::exists_object(memory_store_obj_id)) {
             object::borrow_mut_object_extend<MemoryStore>(memory_store_obj_id)
@@ -73,13 +72,13 @@ module foc_eliza::memory {
             init_memory_store(agent_account);
             object::borrow_mut_object_extend<MemoryStore>(memory_store_obj_id)
         };
-        object::borrow_mut(memory_store_obj)
+        memory_store_obj
     }
 
     public fun create_memory(cap: &mut Object<MemoryCap>, memory: Memory) {
         let agent_account = agent_cap::check_memory_create_cap(cap);
-        let memory_store = init_or_borrow_memory_store(agent_account);
-        table::add(&mut memory_store.store, memory.id, memory);
+        let memory_store_obj = init_or_borrow_memory_store(agent_account);
+        object::add_field(memory_store_obj, memory.id, memory);
     }
 
     public entry fun create_memory_entry(cap: &mut Object<MemoryCap>, memory_json: String) {
@@ -89,8 +88,8 @@ module foc_eliza::memory {
 
     public fun remove_memory(cap: &mut Object<MemoryCap>, memory_id: String) {
         let agent_account = agent_cap::check_memory_remove_cap(cap);
-        let memory_store = init_or_borrow_memory_store(agent_account);
-        table::remove(&mut memory_store.store, memory_id);
+        let memory_store_obj = init_or_borrow_memory_store(agent_account);
+        let _memory: Memory = object::remove_field(memory_store_obj, memory_id);
     }
 
     public entry fun remove_memory_entry(cap: &mut Object<MemoryCap>, memory_id: String) {
@@ -103,11 +102,10 @@ module foc_eliza::memory {
             return option::none()
         };
         let memory_store_obj = object::borrow_object<MemoryStore>(memory_store_obj_id);
-        let memory_store = object::borrow(memory_store_obj);
-        if (!table::contains(&memory_store.store, memory_id)) {
+        if (!object::contains_field(memory_store_obj, memory_id)) {
             return option::none()
         };
-        let memory = table::borrow(&memory_store.store, memory_id);
+        let memory = object::borrow_field(memory_store_obj, memory_id);
         option::some(*memory)
     }
 
@@ -119,7 +117,7 @@ module foc_eliza::memory {
         let user_id = string::utf8(b"362b9cda-fd51-44c2-bbb2-83af3baf793b");
         let agent_id = string::utf8(b"67561f62-d8f9-4f2b-a2c8-61ce15a73749");
         let created_at = 1710384000;
-        let content = types::new_content(string::utf8(b"Hello, world!"), option::none(), option::none(), option::none(), option::none(), vector[]);
+        let content = foc_eliza::types::new_content(string::utf8(b"Hello, world!"), option::none(), option::none(), option::none(), option::none(), vector[]);
         let character = string::utf8(b"Eliza");
         let embedding = vector[1, 2, 3];
         let room_id = string::utf8(b"67561f62-d8f9-4f2b-a2c8-61ce15a73749");
