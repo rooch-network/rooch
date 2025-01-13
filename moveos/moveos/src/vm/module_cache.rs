@@ -19,6 +19,7 @@ use std::ops::Deref;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use move_vm_types::code::ambassador_impl_ScriptCache;
+use move_vm_types::code::Code;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum PanicError {
@@ -474,17 +475,6 @@ enum PersistedStateValue {
     },
 }
 
-impl StateValue {
-    fn to_persistable_form(&self) -> PersistedStateValue {
-        let Self { data, metadata } = self.clone();
-        let metadata = metadata.into_persistable();
-        match metadata {
-            None => PersistedStateValue::V0(data),
-            Some(metadata) => PersistedStateValue::WithMetadata { data, metadata },
-        }
-    }
-}
-
 pub struct MoveOSCodeCache<'a> {
     pub runtime_environment: &'a RuntimeEnvironment,
     pub script_cache: UnsyncScriptCache<[u8; 32], CompiledScript, Script>,
@@ -537,7 +527,7 @@ impl<'a> MoveOSCodeCache<'a> {
 
 #[delegate_to_methods]
 #[delegate(ScriptCache, target_ref = "as_script_cache")]
-impl MoveOSCodeCache {
+impl<'a> MoveOSCodeCache<'a> {
     pub fn as_script_cache(
         &self,
     ) -> &dyn ScriptCache<Key = [u8; 32], Deserialized = CompiledScript, Verified = Script> {
@@ -620,7 +610,7 @@ impl<'a> ModuleCache for MoveOSCodeCache<'a> {
     }
 }
 
-impl ModuleCodeBuilder for MoveOSCodeCache {
+impl<'a> ModuleCodeBuilder for MoveOSCodeCache<'a> {
     type Key = ModuleId;
     type Deserialized = CompiledModule;
     type Verified = Module;

@@ -603,7 +603,7 @@ fn func_name_from_db(
     data_cache: &MoveosDataCache<RootObjectResolver<MoveOSStore>>,
 ) -> Result<String> {
     let module_bytes = data_cache.load_module(module_id)?;
-    let compiled_module = CompiledModule::deserialize(module_bytes.as_slice())?;
+    let compiled_module = CompiledModule::deserialize(module_bytes.as_ref())?;
     let module_bin_view = BinaryIndexedView::Module(&compiled_module);
     let func_def = module_bin_view.function_def_at(*func_idx)?;
     Ok(module_bin_view
