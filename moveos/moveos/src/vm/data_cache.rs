@@ -137,7 +137,7 @@ impl<'r, 'l, S: MoveOSResolver> TransactionCache for MoveosDataCache<'r, 'l, S> 
                 None => match self.resolver.get_module(module_id) {
                     Ok(bytes_opt) => match bytes_opt {
                         None => Ok(None),
-                        Some(v) => Ok(Some(v.into_vec())),
+                        Some(v) => Ok(Some(v.to_vec())),
                     },
                     Err(e) => {
                         let msg = format!("Unexpected storage error: {:?}", e);
@@ -153,11 +153,12 @@ impl<'r, 'l, S: MoveOSResolver> TransactionCache for MoveosDataCache<'r, 'l, S> 
             Ok(Some(code)) => Ok(Bytes::from(code)),
             Ok(None) => {
                 let field_key = FieldKey::derive_module_key(module_id.name());
-                Err(PartialVMError::new(StatusCode::LINKER_ERROR)
-                    .with_message(format!(
+                Err(
+                    PartialVMError::new(StatusCode::LINKER_ERROR).with_message(format!(
                         "Cannot find module {:?}(key:{}) in ObjectRuntime and Storage",
                         module_id, field_key,
-                    )))
+                    )),
+                )
             }
             Err(err) => {
                 if tracing::enabled!(tracing::Level::DEBUG) {
@@ -263,13 +264,16 @@ impl<'r, 'l, S: MoveOSResolver> TransactionCache for MoveosDataCache<'r, 'l, S> 
         _allow_loading_failure: bool,
     ) -> VMResult<(Arc<CompiledModule>, usize, [u8; 32])> {
         let cache = &mut self.compiled_modules;
-        match cache.entry(id) {
+        match cache.entry(id.clone()) {
             btree_map::Entry::Occupied(entry) => Ok(entry.get().clone()),
             btree_map::Entry::Vacant(entry) => {
                 // bytes fetching, allow loading to fail if the flag is set
 
                 let module_id = entry.key();
-                let module_bytes = self.load_module(module_id)?;
+                let module_bytes = match self.load_module(module_id) {
+                    Ok(v) => v,
+                    Err(err) => return Err(err.finish(Location::Module(id.clone()))),
+                };
 
                 let mut sha3_256 = Sha3_256::new();
                 sha3_256.update(&module_bytes);

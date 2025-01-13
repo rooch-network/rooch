@@ -34,6 +34,7 @@ use rayon::iter::Either;
 
 use codespan_reporting::diagnostic::Severity;
 use codespan_reporting::term::termcolor::Buffer;
+use move_compiler::shared::known_attributes::KnownAttribute;
 use move_ir_types::ast::Metadata as ASTMetadata;
 use move_model::options::ModelBuilderOptions;
 use moveos_verifier::build::compile_and_inject_metadata;
@@ -302,12 +303,17 @@ fn compile_source_unit(
     }
 
     use move_compiler::PASS_COMPILATION;
-    let (mut files, comments_and_compiler_res) =
-        move_compiler::Compiler::from_files(target_pseudo, deps_pseudo, named_address_mapping)
-            .set_pre_compiled_lib_opt(pre_compiled_deps)
-            .set_flags(move_compiler::Flags::empty().set_sources_shadow_deps(true))
-            .run_with_sources::<PASS_COMPILATION>(target_sources, deps_sources.to_vec())
-            .unwrap();
+    let flags = move_compiler::Flags::empty().set_sources_shadow_deps(true);
+    let (mut files, comments_and_compiler_res) = move_compiler::Compiler::from_files(
+        target_pseudo,
+        deps_pseudo,
+        named_address_mapping,
+        flags,
+        KnownAttribute::get_all_attribute_names(),
+    )
+    .set_pre_compiled_lib_opt(pre_compiled_deps)
+    .run_with_sources::<PASS_COMPILATION>(target_sources, deps_sources.to_vec())
+    .unwrap();
     let units_or_diags = comments_and_compiler_res
         .map(|(_comments, move_compiler)| move_compiler.into_compiled_units());
 
@@ -445,7 +451,7 @@ pub trait MoveOSTestAdapter<'a>: Sized {
             TaskCommand::Init { .. } => {
                 panic!("The 'init' command is optional. But if used, it must be the first command")
             }
-            TaskCommand::PrintBytecode(PrintBytecodeCommand { input }) => {
+            TaskCommand::PrintBytecode(PrintBytecodeCommand { input, syntax: _ }) => {
                 let state = self.compiled_state();
                 let data = match data {
                     Some(f) => f,
@@ -478,7 +484,14 @@ pub trait MoveOSTestAdapter<'a>: Sized {
                 let disassembler = Disassembler::new(source_mapping, DisassemblerOptions::new());
                 Ok(Some(disassembler.disassemble()?))
             }
-            TaskCommand::Publish(PublishCommand { gas_budget, syntax }, extra_args) => {
+            TaskCommand::Publish(
+                PublishCommand {
+                    gas_budget,
+                    syntax,
+                    print_bytecode: _,
+                },
+                extra_args,
+            ) => {
                 let syntax = syntax.unwrap_or_else(|| self.default_syntax());
                 let data = match data {
                     Some(f) => f,
@@ -554,6 +567,7 @@ pub trait MoveOSTestAdapter<'a>: Sized {
                     gas_budget,
                     syntax,
                     name: None,
+                    print_bytecode: _,
                 },
                 extra_args,
             ) => {
@@ -610,6 +624,7 @@ pub trait MoveOSTestAdapter<'a>: Sized {
                     gas_budget,
                     syntax,
                     name: Some((raw_addr, module_name, name)),
+                    print_bytecode: _,
                 },
                 extra_args,
             ) => {
@@ -639,7 +654,7 @@ pub trait MoveOSTestAdapter<'a>: Sized {
                     address: module_addr,
                     module,
                     name,
-                    type_params: type_arguments,
+                    type_args: type_arguments,
                 } = resource
                     .into_struct_tag(&|s| Some(state.resolve_named_address(s)))
                     .unwrap();

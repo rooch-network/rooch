@@ -4,6 +4,7 @@
 use move_command_line_common::address::NumericalAddress;
 use move_compiler::command_line::compiler::PASS_COMPILATION;
 use move_compiler::expansion::ast::{self as E};
+use move_compiler::shared::known_attributes::KnownAttribute;
 use move_compiler::{compiled_unit, Compiler, FullyCompiledProgram};
 use move_model::model::GlobalEnv;
 use move_model::options::ModelBuilderOptions;
@@ -41,11 +42,16 @@ pub fn build_file_to_module_env(
     use move_compiler::command_line::compiler::PASS_PARSER;
 
     // Step 1: parse the program to get comments and a separation of targets and dependencies.
-    let (files, comments_and_compiler_res) =
-        move_compiler::Compiler::from_files(path, deps, named_address_mapping)
-            .set_pre_compiled_lib_opt(pre_compiled_deps)
-            .set_flags(move_compiler::Flags::empty().set_sources_shadow_deps(true))
-            .run_with_sources::<PASS_PARSER>(targets_sources, deps_sources)?;
+    let flags = move_compiler::Flags::empty().set_sources_shadow_deps(true);
+    let (files, comments_and_compiler_res) = move_compiler::Compiler::from_files(
+        path,
+        deps,
+        named_address_mapping,
+        flags,
+        KnownAttribute::get_all_attribute_names(),
+    )
+    .set_pre_compiled_lib_opt(pre_compiled_deps)
+    .run_with_sources::<PASS_PARSER>(targets_sources, deps_sources)?;
 
     let (comment_map, compiler) = match comments_and_compiler_res {
         Err(diags) => {
@@ -58,7 +64,7 @@ pub fn build_file_to_module_env(
                     fname.as_str(),
                     fsrc,
                     /* is_target */ true,
-                    targets_sources.contains(fname.as_str()),
+                    targets_sources.contains(&fname.to_string()),
                 );
             }
             add_move_lang_diagnostics(&mut env, diags);
@@ -95,7 +101,7 @@ pub fn build_file_to_module_env(
             fname.as_str(),
             fsrc,
             is_dep,
-            targets_sources.contains(fname.as_str()),
+            targets_sources.contains(&fname.to_string()),
         );
     }
 
@@ -112,7 +118,7 @@ pub fn build_file_to_module_env(
                 fname.as_str(),
                 fsrc,
                 is_dep,
-                targets_sources.contains(fname.as_str()),
+                targets_sources.contains(&fname.to_string()),
             );
         }
     }
@@ -176,7 +182,6 @@ pub fn build_file_to_module_env(
             }
         }
     }
-
     // Step 3: selective compilation.
     let expansion_ast = {
         let E::Program { modules, scripts } = expansion_ast;
