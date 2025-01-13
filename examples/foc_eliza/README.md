@@ -28,7 +28,7 @@ rooch move test
 
 1. Publish the module
 ```sh
-rooch move publish
+rooch move publish --named-addresses foc_eliza=default
 ```
 2. Create a on-chain character
 
