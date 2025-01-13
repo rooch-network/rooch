@@ -110,9 +110,9 @@ framework-release = { workspace = true }
 
 #We should keep the allocator in the last of the dependencies
 [target.'cfg(not(target_env = "msvc"))'.dependencies]
-jemallocator = { version = "0.5.4", features = ["unprefixed_malloc_on_supported_platforms", "profiling"] }
+tikv-jemallocator = { workspace = true }
 [target.'cfg(target_env = "msvc")'.dependencies]
-mimalloc = { version = "0.1.39" }
+mimalloc = { workspace = true }
 
 [build-dependencies]
 anyhow = { workspace = true }
