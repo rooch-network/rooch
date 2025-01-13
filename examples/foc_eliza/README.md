@@ -47,7 +47,7 @@ rooch move test
 ```sh
 rooch move publish --named-addresses foc_eliza=default
 ```
-2. Create a on-chain character
+2. Create an on-chain character
 
 ```sh
 rooch move run --function default::character::create_character_from_json --args file:../../../eliza/characters/dobby.character.json
