@@ -51,7 +51,7 @@ use tokio::sync::mpsc::Receiver;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::watch;
 use tokio::time;
-use tracing::info;
+use tracing::{info, warn};
 
 /// exec LedgerTransaction List for verification.
 #[derive(Debug, Parser)]
@@ -111,6 +111,12 @@ pub struct ExecCommand {
     pub block_cache_size: Option<String>,
     #[clap(long = "enable-rocks-stats", help = "rocksdb-enable-statistics")]
     pub enable_rocks_stats: bool,
+
+    #[clap(
+        long = "force-align",
+        help = "force align to min(last_sequenced_tx_order, last_executed_tx_order)"
+    )]
+    pub force_align: bool,
 }
 
 #[derive(Debug, Copy, Clone, clap::ValueEnum)]
@@ -200,6 +206,7 @@ impl ExecCommand {
         )?;
         Ok(ExecInner {
             mode: self.mode,
+            force_align: self.force_align,
             ledger_tx_getter: ledger_tx_loader,
             tx_da_indexer,
             order_state_pair,
@@ -238,6 +245,7 @@ impl ExecCommand {
 
 struct ExecInner {
     mode: ExecMode,
+    force_align: bool,
 
     ledger_tx_getter: LedgerTxGetter,
     tx_da_indexer: TxDAIndexer,
@@ -395,18 +403,23 @@ impl ExecInner {
         let last_partial_executed_tx_order = max(last_sequenced_tx, last_executed_tx_order);
 
         let mut rollback_to = self.rollback;
+        let origin_rollback = self.rollback;
         if self.mode.need_all() && next_tx_order != next_sequence_tx {
-            info! {
-                "Last executed tx order: {}, last sequenced tx order: {}, need rollback to tx order: {}",
+            warn! {
+                "Last executed tx order: {}, last sequenced tx order: {}; run exec/seq only to catch up or run with `force-align` to rollback to tx order: {}",
                 last_executed_tx_order,
                 last_sequenced_tx,
                 last_full_executed_tx_order
             };
+
             if rollback_to.is_none() {
                 rollback_to = Some(last_full_executed_tx_order);
             } else {
                 rollback_to = Some(min(rollback_to.unwrap(), last_full_executed_tx_order));
             }
+        }
+        if rollback_to != origin_rollback && !self.force_align {
+            return Ok(());
         }
 
         // If rollback not set or ge `last_partial_executed_tx_order`: nothing to do;
