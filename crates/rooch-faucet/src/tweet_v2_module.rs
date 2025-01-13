@@ -18,7 +18,7 @@ pub fn tweet_struct_tag(module_addresss: AccountAddress) -> StructTag {
         address: module_addresss,
         module: MODULE_NAME.to_owned(),
         name: STRUCT_NAME.to_owned(),
-        type_params: vec![],
+        type_args: vec![],
     }
 }
 

@@ -4,7 +4,7 @@
 use move_command_line_common::address::NumericalAddress;
 use move_compiler::command_line::compiler::PASS_COMPILATION;
 use move_compiler::expansion::ast::{self as E};
-use move_compiler::{compiled_unit, FullyCompiledProgram};
+use move_compiler::{compiled_unit, Compiler, FullyCompiledProgram};
 use move_model::model::GlobalEnv;
 use move_model::options::ModelBuilderOptions;
 use move_model::{add_move_lang_diagnostics, collect_related_modules_recursive, run_spec_checker};
@@ -34,7 +34,7 @@ pub fn build_file_to_module_env(
                 .iter()
                 .map(|(symbol, addr)| (env.symbol_pool().make(symbol.as_str()), *addr))
                 .collect();
-            env.add_source(fhash, Rc::new(aliases), fname.as_str(), fsrc, false);
+            env.add_source(fhash, Rc::new(aliases), fname.as_str(), fsrc, false, false);
         }
     }
 
@@ -57,7 +57,8 @@ pub fn build_file_to_module_env(
                     empty_alias.clone(),
                     fname.as_str(),
                     fsrc,
-                    /* is_dep */ false,
+                    /* is_target */ true,
+                    targets_sources.contains(fname.as_str()),
                 );
             }
             add_move_lang_diagnostics(&mut env, diags);
@@ -88,7 +89,14 @@ pub fn build_file_to_module_env(
             .iter()
             .map(|(symbol, addr)| (env.symbol_pool().make(symbol.as_str()), *addr))
             .collect();
-        env.add_source(fhash, Rc::new(aliases), fname.as_str(), fsrc, is_dep);
+        env.add_source(
+            fhash,
+            Rc::new(aliases),
+            fname.as_str(),
+            fsrc,
+            is_dep,
+            targets_sources.contains(fname.as_str()),
+        );
     }
 
     use itertools::Itertools;
@@ -104,6 +112,7 @@ pub fn build_file_to_module_env(
                 fname.as_str(),
                 fsrc,
                 is_dep,
+                targets_sources.contains(fname.as_str()),
             );
         }
     }

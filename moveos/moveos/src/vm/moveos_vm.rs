@@ -258,7 +258,7 @@ where
         let loader = vm.runtime.loader();
         let data_store: MoveosDataCache<'r, 'l, S> =
             MoveosDataCache::new(remote, loader, object_runtime);
-        vm.new_session_with_cache_and_extensions(data_store, extensions)
+        vm.new_session_with_extensions_legacy(data_store, extensions)
     }
 
     pub(crate) fn tx_context(&self) -> TxContext {
