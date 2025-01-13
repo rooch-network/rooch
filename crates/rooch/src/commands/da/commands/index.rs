@@ -10,19 +10,19 @@ use std::path::PathBuf;
 
 /// Index tx_order:tx_hash:block_number to a file from segments
 #[derive(Debug, clap::Parser)]
-pub struct IndexTxCommand {
-    #[clap(long = "segment-dir")]
+pub struct IndexCommand {
+    #[clap(long = "segment-dir", short = 's')]
     pub segment_dir: PathBuf,
-    #[clap(long = "output")]
-    pub output: PathBuf,
+    #[clap(long = "index", short = 'i')]
+    pub index_path: PathBuf,
 }
 
-impl IndexTxCommand {
+impl IndexCommand {
     pub fn execute(self) -> RoochResult<()> {
         let ledger_tx_loader = LedgerTxGetter::new(self.segment_dir)?;
         let mut block_number = ledger_tx_loader.get_min_chunk_id();
         let mut expected_tx_order = 0;
-        let file = File::create(self.output.clone())?;
+        let file = File::create(self.index_path.clone())?;
         let mut writer = BufWriter::with_capacity(8 * 1024 * 1024, file.try_clone().unwrap());
 
         loop {
