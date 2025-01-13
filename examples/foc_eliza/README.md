@@ -2,17 +2,34 @@
 
 A Move language implementation of Fully on-chain Eliza
 
-## Overview
+## Project Overview
 
-This example demonstrates:
+FocEliza demonstrates how to create and manage AI characters on blockchain, featuring:
 
+* On-chain character creation and storage
+* Dynamic character state updates
+* On-chain memory system
+* Character personality customization and evolution
 
-## Getting Started
+## Features
+
+✅ Implemented:
+* Character creation and storage
+* Character attribute updates
+* Basic memory system
+
+🚧 In Development:
+* On-chain action system
+* On-chain evolution mechanism
+* On-chain decision-making system
+* The character loader plugin for eliza
+
+## Quick Start
 
 ### Prerequisites
 
-- Rooch CLI installed
-- Local Rooch server running
+- Install [Rooch CLI](https://rooch.network/learn/getting-started/installation)
+- Running local Rooch node
 
 ### Build and Test
 
@@ -53,12 +70,13 @@ New objects:
     type    : 0x285529d7fd13ffcda9d89cd250b4025ba9226c0e2e57f5ca3d739cb236dc259d::character::Character
 ```
 
-3. Query the character object
+3. Query the character information
 
 ```sh
 rooch object -i 0xd858ebbc8e0e5c2128800b9a715e3bd8ceae2fb8a75df5cc40b58b86f1dc77ee
 ```
-> Note: Replace the `-i` argument with your Character ObjectID.
+> Note: Replace the `-i` argument with your Character objectId.
+
 ```json
 {
   "data": [
@@ -346,7 +364,7 @@ rooch object -i 0xd858ebbc8e0e5c2128800b9a715e3bd8ceae2fb8a75df5cc40b58b86f1dc77
 4. Update the character via add a bio
 
 ```bash
-rooch move run --function default::character::add_bio_entry --args object:0x8604bfaa406b4eae756e9eaf710c074573e18feae6f8c974df1fc9b0259e7e62 --args string:"Bobby is a programmer"
+rooch move run --function default::character::add_bio_entry --args object:<your-AgentCap-object-id> --args string:"Bobby is a programmer"
 ```
 ```text
 Execution info:
