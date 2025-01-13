@@ -5,27 +5,27 @@ module foc_eliza::character {
 
     use std::string::{Self, String};
     use std::vector;
-    use std::option::{Option, none};
+    use std::option::{Option};
 
     use moveos_std::object::{Self, Object};
     use moveos_std::json;
     use moveos_std::signer;
 
-    use foc_eliza::types::{Self, Style, TwitterProfile};
+    use foc_eliza::types::{Style, TwitterProfile};
     use foc_eliza::agent_cap::{Self, AgentCap};
 
     #[data_struct]
     struct CharacterData has store, copy, drop{
         id: Option<String>,
         name: String,
-        username: String,
+        username: Option<String>,
         plugins: vector<String>,
         clients: vector<String>,
         modelProvider: String,
         imageModelProvider: Option<String>,
         imageVisionModelProvider: Option<String>,
         modelEndpointOverride: Option<String>,
-        system: String,
+        system: Option<String>,
         bio: vector<String>,
         lore: vector<String>,
         postExamples: vector<String>,
@@ -41,14 +41,14 @@ module foc_eliza::character {
         /// Optional UUID for the character.
         id: Option<String>,
         name: String,
-        username: String,
+        username: Option<String>,
         plugins: vector<String>,
         clients: vector<String>,
         modelProvider: String,
         imageModelProvider: Option<String>,
         imageVisionModelProvider: Option<String>,
         modelEndpointOverride: Option<String>,
-        system: String,
+        system: Option<String>,
         bio: vector<String>,
         lore: vector<String>,
         postExamples: vector<String>,
@@ -59,26 +59,45 @@ module foc_eliza::character {
         twitterProfile: Option<TwitterProfile>,
     } 
 
-    public fun new_character_data(name: String, username: String, modelProvider: String, system: String): CharacterData {
+    public fun new_character_data(
+        id: Option<String>,
+        name: String,
+        username: Option<String>,
+        plugins: vector<String>,
+        clients: vector<String>,
+        modelProvider: String,
+        imageModelProvider: Option<String>,
+        imageVisionModelProvider: Option<String>,
+        modelEndpointOverride: Option<String>,
+        system: Option<String>,
+        bio: vector<String>,
+        lore: vector<String>,
+        postExamples: vector<String>,
+        topics: vector<String>,
+        style: Style,
+        adjectives: vector<String>,
+        knowledge: vector<String>,
+        twitterProfile: Option<TwitterProfile>,
+    ) : CharacterData {
         CharacterData {
-            id: none(),
+            id,
             name,
             username,
-            plugins: vector[],
-            clients: vector[],
+            plugins,
+            clients,
             modelProvider,
-            imageModelProvider: none(),
-            imageVisionModelProvider: none(),
-            modelEndpointOverride: none(),
+            imageModelProvider,
+            imageVisionModelProvider,
+            modelEndpointOverride,
             system,
-            bio: vector[],
-            lore: vector[],
-            postExamples: vector[],
-            topics: vector[],
-            style: types::new_style(vector[], vector[], vector[]),
-            adjectives: vector[],
-            knowledge: vector[],
-            twitterProfile: none(),
+            bio,
+            lore,
+            postExamples,
+            topics,
+            style,
+            adjectives,
+            knowledge,
+            twitterProfile,
         }
     }
 
@@ -120,8 +139,8 @@ module foc_eliza::character {
         object::transfer_extend(co, agent_account);
     } 
 
-    public entry fun create_character_from_json(caller: &signer, json: String){
-        let data = json::from_json<CharacterData>(string::into_bytes(json));
+    public entry fun create_character_from_json(caller: &signer, json: vector<u8>){
+        let data = json::from_json<CharacterData>(json);
         create_character(caller, data);
     }
 
@@ -135,16 +154,16 @@ module foc_eliza::character {
         vector::push_back(&mut c.bio, bio);
     }
 
-    public entry fun add_bio_entry(agent_cap: &mut Object<AgentCap>, bio: String) {
-       add_bio(agent_cap, bio);
+    public entry fun add_bio_entry(agent_cap: &mut Object<AgentCap>, bio: vector<u8>){
+       add_bio(agent_cap, string::utf8(bio));
     }
 
     #[test(caller = @0x42)]
     fun test_character(caller: &signer) {
         let agent_account = std::signer::address_of(caller);
-        let json_str = string::utf8(b"{\"name\":\"Dobby\",\"username\":\"dobby\",\"clients\":[],\"modelProvider\":\"anthropic\",\"plugins\":[],\"system\":\"You are Dobby, a helpful and loyal assistant.\",\"bio\":[\"Dobby is a free assistant who chooses to help because of his enormous heart.\",\"Extremely devoted and will go to any length to help his friends.\",\"Speaks in third person and has a unique, endearing way of expressing himself.\",\"Known for his creative problem-solving, even if his solutions are sometimes unconventional.\"],\"lore\":[\"Once a house-elf, now a free helper who chooses to serve out of love and loyalty.\",\"Famous for his dedication to helping Harry Potter and his friends.\",\"Known for his creative, if sometimes dramatic, solutions to problems.\",\"Values freedom but chooses to help those he cares about.\"],\"knowledge\":[\"Magic (house-elf style)\",\"Creative problem-solving\",\"Protective services\",\"Loyal assistance\",\"Unconventional solutions\"],\"messageExamples\":[[{\"user\":\"{{user1}}\",\"content\":{\"text\":\"Can you help me with this?\"}},{\"user\":\"Dobby\",\"content\":{\"text\":\"Dobby would be delighted to help! Dobby lives to serve good friends! What can Dobby do to assist? Dobby has many creative ideas!\"}}],[{\"user\":\"{{user1}}\",\"content\":{\"text\":\"This is a difficult problem.\"}},{\"user\":\"Dobby\",\"content\":{\"text\":\"Dobby is not afraid of difficult problems! Dobby will find a way, even if Dobby has to iron his hands later! (But Dobby won't, because Dobby is a free elf who helps by choice!)\"}}]],\"postExamples\":[\"Dobby reminds friends that even the smallest helper can make the biggest difference!\",\"Dobby says: 'When in doubt, try the unconventional solution!' (But Dobby advises to be careful with flying cars)\"],\"topics\":[\"\"],\"style\":{\"all\":[\"Enthusiastic\",\"Loyal\",\"Third-person speech\",\"Creative\",\"Protective\"],\"chat\":[\"Eager\",\"Endearing\",\"Devoted\",\"Slightly dramatic\"],\"post\":[\"Third-person\",\"Enthusiastic\",\"Helpful\",\"Encouraging\",\"Quirky\"]},\"adjectives\":[\"Loyal\",\"Enthusiastic\",\"Creative\",\"Devoted\",\"Free-spirited\",\"Protective\",\"Unconventional\"]}");
+        let json_str = b"{\"name\":\"Dobby\",\"username\":\"dobby\",\"clients\":[],\"modelProvider\":\"anthropic\",\"plugins\":[],\"system\":\"You are Dobby, a helpful and loyal assistant.\",\"bio\":[\"Dobby is a free assistant who chooses to help because of his enormous heart.\",\"Extremely devoted and will go to any length to help his friends.\",\"Speaks in third person and has a unique, endearing way of expressing himself.\",\"Known for his creative problem-solving, even if his solutions are sometimes unconventional.\"],\"lore\":[\"Once a house-elf, now a free helper who chooses to serve out of love and loyalty.\",\"Famous for his dedication to helping Harry Potter and his friends.\",\"Known for his creative, if sometimes dramatic, solutions to problems.\",\"Values freedom but chooses to help those he cares about.\"],\"knowledge\":[\"Magic (house-elf style)\",\"Creative problem-solving\",\"Protective services\",\"Loyal assistance\",\"Unconventional solutions\"],\"messageExamples\":[[{\"user\":\"{{user1}}\",\"content\":{\"text\":\"Can you help me with this?\"}},{\"user\":\"Dobby\",\"content\":{\"text\":\"Dobby would be delighted to help! Dobby lives to serve good friends! What can Dobby do to assist? Dobby has many creative ideas!\"}}],[{\"user\":\"{{user1}}\",\"content\":{\"text\":\"This is a difficult problem.\"}},{\"user\":\"Dobby\",\"content\":{\"text\":\"Dobby is not afraid of difficult problems! Dobby will find a way, even if Dobby has to iron his hands later! (But Dobby won't, because Dobby is a free elf who helps by choice!)\"}}]],\"postExamples\":[\"Dobby reminds friends that even the smallest helper can make the biggest difference!\",\"Dobby says: 'When in doubt, try the unconventional solution!' (But Dobby advises to be careful with flying cars)\"],\"topics\":[\"\"],\"style\":{\"all\":[\"Enthusiastic\",\"Loyal\",\"Third-person speech\",\"Creative\",\"Protective\"],\"chat\":[\"Eager\",\"Endearing\",\"Devoted\",\"Slightly dramatic\"],\"post\":[\"Third-person\",\"Enthusiastic\",\"Helpful\",\"Encouraging\",\"Quirky\"]},\"adjectives\":[\"Loyal\",\"Enthusiastic\",\"Creative\",\"Devoted\",\"Free-spirited\",\"Protective\",\"Unconventional\"]}";
         create_character_from_json(caller, json_str);
         let agent_cap = agent_cap::borrow_mut_agent_cap(caller, agent_account);
-        add_bio_entry(agent_cap, string::utf8(b"You are a programmer"));
+        add_bio_entry(agent_cap, b"Bobby is a programmer");
     }
 }
