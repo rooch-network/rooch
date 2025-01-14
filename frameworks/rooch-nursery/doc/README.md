@@ -14,6 +14,7 @@ This is the reference documentation of the Rooch Nursery Framework.
 
 -  [`0xa::bitseed`](bitseed.md#0xa_bitseed)
 -  [`0xa::brc20`](brc20.md#0xa_brc20)
+-  [`0xa::btc_script`](btc_script.md#0xa_btc_script)
 -  [`0xa::cosmwasm_std`](cosmwasm_std.md#0xa_cosmwasm_std)
 -  [`0xa::cosmwasm_vm`](cosmwasm_vm.md#0xa_cosmwasm_vm)
 -  [`0xa::ethereum`](ethereum.md#0xa_ethereum)
