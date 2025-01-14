@@ -1,7 +1,9 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::commands::da::commands::{build_rooch_db, LedgerTxGetter, TxDAIndexer};
+use crate::commands::da::commands::{
+    build_rooch_db, LedgerTxGetter, SequencedTxStore, TxDAIndexer,
+};
 use anyhow::Context;
 use bitcoin::hashes::Hash;
 use bitcoin_client::actor::client::BitcoinClientConfig;
@@ -19,6 +21,7 @@ use moveos_types::startup_info;
 use moveos_types::transaction::{TransactionExecutionInfo, VerifiedMoveOSTransaction};
 use raw_store::rocks::batch::WriteBatch;
 use raw_store::traits::DBStore;
+use rooch_common::humanize::parse_bytes;
 use rooch_config::R_OPT_NET_HELP;
 use rooch_db::RoochDB;
 use rooch_event::actor::EventActor;
@@ -26,10 +29,16 @@ use rooch_executor::actor::executor::ExecutorActor;
 use rooch_executor::actor::reader_executor::ReaderExecutorActor;
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_pipeline_processor::actor::processor::is_vm_panic_error;
+use rooch_store::meta_store::SEQUENCER_INFO_KEY;
+use rooch_store::META_SEQUENCER_INFO_COLUMN_FAMILY_NAME;
 use rooch_types::bitcoin::types::Block as BitcoinBlock;
 use rooch_types::error::RoochResult;
 use rooch_types::rooch_network::RoochChainID;
-use rooch_types::transaction::{L1BlockWithBody, LedgerTransaction, LedgerTxData};
+use rooch_types::sequencer::SequencerInfo;
+use rooch_types::transaction::{
+    L1BlockWithBody, LedgerTransaction, LedgerTxData, TransactionSequenceInfo,
+};
+use std::cmp::{max, min};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Read};
@@ -42,22 +51,38 @@ use tokio::sync::mpsc::Receiver;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::watch;
 use tokio::time;
+use tracing::{info, warn};
 
 /// exec LedgerTransaction List for verification.
 #[derive(Debug, Parser)]
 pub struct ExecCommand {
+    #[clap(
+        long = "mode",
+        default_value = "all",
+        help = "Execution mode: exec, seq, all. Default is all"
+    )]
+    pub mode: ExecMode,
     #[clap(long = "segment-dir")]
     pub segment_dir: PathBuf,
     #[clap(
         long = "order-state-path",
-        help = "Path to tx_order:state_root file(results from RoochNetwork), for verification"
+        help = "Path to tx_order:state_root file(results from RoochNetwork), for fast verification avoiding blocking on RPC requests"
     )]
     pub order_state_path: PathBuf,
+    #[clap(
+        long = "order-hash-path",
+        help = "Path to tx_order:tx_hash:l2_block_number file"
+    )]
+    pub order_hash_path: PathBuf,
+    #[clap(
+        long = "rollback",
+        help = "rollback to tx order. If not set or ge executed_tx_order, start from executed_tx_order+1(nothing to do); otherwise, rollback to this order."
+    )]
+    pub rollback: Option<u64>,
 
     #[clap(long = "data-dir", short = 'd')]
     /// Path to data dir, this dir is base dir, the final data_dir is base_dir/chain_network_name
     pub base_data_dir: Option<PathBuf>,
-
     /// If local chainid, start the service with a temporary data store.
     /// All data will be deleted when the service is stopped.
     #[clap(long, short = 'n', help = R_OPT_NET_HELP)]
@@ -72,39 +97,97 @@ pub struct ExecCommand {
     #[clap(long = "btc-local-block-store-dir")]
     pub btc_local_block_store_dir: Option<PathBuf>,
 
-    #[clap(name = "rocksdb-row-cache-size", long, help = "rocksdb row cache size")]
-    pub row_cache_size: Option<u64>,
-
+    #[clap(
+        name = "rocksdb-row-cache-size",
+        long,
+        help = "rocksdb row cache size, default 128M"
+    )]
+    pub row_cache_size: Option<String>,
     #[clap(
         name = "rocksdb-block-cache-size",
         long,
-        help = "rocksdb block cache size"
+        help = "rocksdb block cache size, default 4G"
     )]
-    pub block_cache_size: Option<u64>,
+    pub block_cache_size: Option<String>,
     #[clap(long = "enable-rocks-stats", help = "rocksdb-enable-statistics")]
     pub enable_rocks_stats: bool,
 
     #[clap(
-        long = "order-hash-path",
-        help = "Path to tx_order:tx_hash:block_number file"
+        long = "force-align",
+        help = "force align to min(last_sequenced_tx_order, last_executed_tx_order)"
     )]
-    pub order_hash_path: PathBuf,
-    #[clap(
-        long = "rollback",
-        help = "rollback to tx order. If not set or ge executed_tx_order, start from executed_tx_order+1(nothing to do); otherwise, rollback to this order."
-    )]
-    pub rollback: Option<u64>,
+    pub force_align: bool,
+}
+
+#[derive(Debug, Copy, Clone, clap::ValueEnum)]
+pub enum ExecMode {
+    Exec, // Only execute transactions, no sequence updates
+    Seq,  // Only update sequence data, no execution
+    All,  // Execute transactions and update sequence data
+}
+
+impl ExecMode {
+    pub fn as_bits(&self) -> u8 {
+        match self {
+            ExecMode::Exec => 0b10, // Execute
+            ExecMode::Seq => 0b01,  // Sequence
+            ExecMode::All => 0b11,  // All
+        }
+    }
+
+    pub fn need_exec(&self) -> bool {
+        self.as_bits() & 0b10 != 0
+    }
+
+    pub fn need_seq(&self) -> bool {
+        self.as_bits() & 0b01 != 0
+    }
+
+    pub fn need_all(&self) -> bool {
+        self.as_bits() == 0b11
+    }
+
+    pub fn get_verify_targets(&self) -> String {
+        match self {
+            ExecMode::Exec => "state root",
+            ExecMode::Seq => "accumulator root",
+            ExecMode::All => "state+accumulator root",
+        }
+        .to_string()
+    }
 }
 
 impl ExecCommand {
     pub async fn execute(self) -> RoochResult<()> {
-        let exec_inner = self.build_exec_inner().await?;
+        let mut exec_inner = self.build_exec_inner().await?;
         exec_inner.run().await?;
         Ok(())
     }
 
     async fn build_exec_inner(&self) -> anyhow::Result<ExecInner> {
         let actor_system = ActorSystem::global_system();
+
+        let row_cache_size = self
+            .row_cache_size
+            .clone()
+            .and_then(|v| parse_bytes(&v).ok());
+        let block_cache_size = self
+            .block_cache_size
+            .clone()
+            .and_then(|v| parse_bytes(&v).ok());
+
+        let (executor, moveos_store, rooch_db) = build_executor_and_store(
+            self.base_data_dir.clone(),
+            self.chain_id.clone(),
+            &actor_system,
+            self.enable_rocks_stats,
+            row_cache_size,
+            block_cache_size,
+        )
+        .await?;
+
+        let sequenced_tx_store = SequencedTxStore::new(rooch_db.rooch_store.clone())?;
+
         let bitcoin_client_proxy = build_btc_client_proxy(
             self.btc_rpc_url.clone(),
             self.btc_rpc_user_name.clone(),
@@ -113,27 +196,22 @@ impl ExecCommand {
             &actor_system,
         )
         .await?;
-        let (executor, moveos_store, rooch_db) = build_executor_and_store(
-            self.base_data_dir.clone(),
-            self.chain_id.clone(),
-            &actor_system,
-            self.enable_rocks_stats,
-            self.row_cache_size,
-            self.block_cache_size,
-        )
-        .await?;
 
         let (order_state_pair, tx_order_end) = self.load_order_state_pair();
         let ledger_tx_loader = LedgerTxGetter::new(self.segment_dir.clone())?;
         let tx_da_indexer = TxDAIndexer::load_from_file(
             self.order_hash_path.clone(),
             moveos_store.transaction_store,
+            rooch_db.rooch_store.clone(),
         )?;
         Ok(ExecInner {
+            mode: self.mode,
+            force_align: self.force_align,
             ledger_tx_getter: ledger_tx_loader,
             tx_da_indexer,
             order_state_pair,
             tx_order_end,
+            sequenced_tx_store,
             bitcoin_client_proxy,
             executor,
             produced: Arc::new(AtomicU64::new(0)),
@@ -144,7 +222,7 @@ impl ExecCommand {
         })
     }
 
-    fn load_order_state_pair(&self) -> (HashMap<u64, H256>, u64) {
+    fn load_order_state_pair(&self) -> (HashMap<u64, (H256, H256)>, u64) {
         let mut order_state_pair = HashMap::new();
         let mut tx_order_end = 0;
 
@@ -155,7 +233,8 @@ impl ExecCommand {
             let parts: Vec<&str> = line.split(':').collect();
             let tx_order = parts[0].parse::<u64>().unwrap();
             let state_root = H256::from_str(parts[1]).unwrap();
-            order_state_pair.insert(tx_order, state_root);
+            let accumulator_root = H256::from_str(parts[2]).unwrap();
+            order_state_pair.insert(tx_order, (state_root, accumulator_root));
             if tx_order > tx_order_end {
                 tx_order_end = tx_order;
             }
@@ -165,10 +244,15 @@ impl ExecCommand {
 }
 
 struct ExecInner {
+    mode: ExecMode,
+    force_align: bool,
+
     ledger_tx_getter: LedgerTxGetter,
     tx_da_indexer: TxDAIndexer,
-    order_state_pair: HashMap<u64, H256>,
+    order_state_pair: HashMap<u64, (H256, H256)>,
     tx_order_end: u64,
+
+    sequenced_tx_store: SequencedTxStore,
 
     bitcoin_client_proxy: BitcoinClientProxy,
     executor: ExecutorProxy,
@@ -243,7 +327,7 @@ impl ExecInner {
         }
     }
 
-    async fn run(&self) -> anyhow::Result<()> {
+    async fn run(&mut self) -> anyhow::Result<()> {
         let (shutdown_tx, shutdown_rx) = watch::channel(());
         self.start_logging_task(shutdown_rx);
 
@@ -263,48 +347,91 @@ impl ExecInner {
 
     fn update_startup_info_after_rollback(
         &self,
-        execution_info: TransactionExecutionInfo,
+        execution_info: Option<TransactionExecutionInfo>,
+        sequencer_info: Option<TransactionSequenceInfo>,
     ) -> anyhow::Result<()> {
-        let rollback_startup_info =
-            startup_info::StartupInfo::new(execution_info.state_root, execution_info.size);
+        let rollback_sequencer_info = if let Some(sequencer_info) = sequencer_info {
+            Some(SequencerInfo::new(
+                sequencer_info.tx_order,
+                sequencer_info.tx_accumulator_info(),
+            ))
+        } else {
+            None
+        };
+        let rollback_startup_info = if let Some(execution_info) = execution_info {
+            Some(startup_info::StartupInfo::new(
+                execution_info.state_root,
+                execution_info.size,
+            ))
+        } else {
+            None
+        };
 
         let inner_store = &self.rooch_db.rooch_store.store_instance;
         let mut write_batch = WriteBatch::new();
-        let cf_names = vec![CONFIG_STARTUP_INFO_COLUMN_FAMILY_NAME];
-
-        write_batch.put(
-            to_bytes(STARTUP_INFO_KEY).unwrap(),
-            to_bytes(&rollback_startup_info).unwrap(),
-        )?;
+        let mut cf_names = Vec::new();
+        if let Some(rollback_sequencer_info) = rollback_sequencer_info {
+            cf_names.push(META_SEQUENCER_INFO_COLUMN_FAMILY_NAME);
+            write_batch.put(
+                to_bytes(SEQUENCER_INFO_KEY).unwrap(),
+                to_bytes(&rollback_sequencer_info).unwrap(),
+            )?;
+        }
+        if let Some(rollback_startup_info) = rollback_startup_info {
+            cf_names.push(CONFIG_STARTUP_INFO_COLUMN_FAMILY_NAME);
+            write_batch.put(
+                to_bytes(STARTUP_INFO_KEY).unwrap(),
+                to_bytes(&rollback_startup_info).unwrap(),
+            )?;
+        }
 
         inner_store.write_batch_across_cfs(cf_names, write_batch, true)
     }
 
     async fn produce_tx(&self, tx: Sender<ExecMsg>) -> anyhow::Result<()> {
         let last_executed_opt = self.tx_da_indexer.find_last_executed()?;
-        let next_tx_order = last_executed_opt
-            .clone()
-            .map(|v| v.tx_order + 1)
-            .unwrap_or(1);
-        let mut next_block_number = last_executed_opt
-            .clone()
-            .map(|v| v.block_number) // next_tx_order and last executed tx may be in the same block
-            .unwrap_or(0);
-        tracing::info!(
-            "next_tx_order: {:?}. need rollback soon: {:?}",
-            next_tx_order,
-            self.rollback.is_some()
-        );
+        let last_executed_tx_order = match last_executed_opt.clone() {
+            Some(v) => v.tx_order,
+            None => 0,
+        };
+        let mut next_tx_order = last_executed_tx_order + 1;
 
-        // If rollback not set or ge executed_tx_order, start from executed_tx_order+1(nothing to do); otherwise, rollback to this order
-        if let (Some(rollback), Some(last_executed)) = (self.rollback, last_executed_opt.clone()) {
-            let last_executed_tx_order = last_executed.tx_order;
-            if rollback < last_executed_tx_order {
-                let new_last_and_rollback =
-                    self.tx_da_indexer.slice(rollback, last_executed_tx_order)?;
+        let last_sequenced_tx = self.sequenced_tx_store.get_last_tx_order();
+        let next_sequence_tx = last_sequenced_tx + 1;
+
+        let last_full_executed_tx_order = min(last_sequenced_tx, last_executed_tx_order);
+        let last_partial_executed_tx_order = max(last_sequenced_tx, last_executed_tx_order);
+
+        let mut rollback_to = self.rollback;
+        let origin_rollback = self.rollback;
+        if self.mode.need_all() && next_tx_order != next_sequence_tx {
+            warn! {
+                "Last executed tx order: {}, last sequenced tx order: {}; run exec/seq only to catch up or run with `force-align` to rollback to tx order: {}",
+                last_executed_tx_order,
+                last_sequenced_tx,
+                last_full_executed_tx_order
+            };
+
+            if rollback_to.is_none() {
+                rollback_to = Some(last_full_executed_tx_order);
+            } else {
+                rollback_to = Some(min(rollback_to.unwrap(), last_full_executed_tx_order));
+            }
+        }
+        if rollback_to != origin_rollback && !self.force_align {
+            return Ok(());
+        }
+
+        // If rollback not set or ge `last_partial_executed_tx_order`: nothing to do;
+        // otherwise, rollback to this order
+        if let Some(rollback) = rollback_to {
+            if rollback < last_partial_executed_tx_order {
+                let new_last_and_rollback = self
+                    .tx_da_indexer
+                    .slice(rollback, last_partial_executed_tx_order)?;
                 // split into two parts, the first get execution info for new startup, all others rollback
                 let (new_last, rollback_part) = new_last_and_rollback.split_first().unwrap();
-                tracing::info!(
+                info!(
                     "Start to rollback transactions tx_order: [{}, {}]",
                     rollback_part.first().unwrap().tx_order,
                     rollback_part.last().unwrap().tx_order,
@@ -322,18 +449,29 @@ impl ExecInner {
                 }
                 let rollback_execution_info =
                     self.tx_da_indexer.get_execution_info(new_last.tx_hash)?;
-                self.update_startup_info_after_rollback(rollback_execution_info.unwrap())?;
-                tracing::info!(
-                    "Rollback transactions done. Please RESTART process without rollback."
-                );
+                let rollback_sequencer_info =
+                    self.tx_da_indexer.get_sequencer_info(new_last.tx_hash)?;
+                self.update_startup_info_after_rollback(
+                    rollback_execution_info,
+                    rollback_sequencer_info,
+                )?;
+                info!("Rollback transactions done. Please RESTART process without rollback.");
                 return Ok(()); // rollback done, need to restart to get new state_root for startup rooch store
             }
         };
 
-        tracing::info!(
+        let mut next_block_number = last_executed_opt
+            .clone()
+            .map(|v| v.block_number) // next_tx_order and last executed tx may be in the same block
+            .unwrap_or(0);
+
+        if !self.mode.need_exec() {
+            next_tx_order = last_sequenced_tx + 1;
+            next_block_number = self.tx_da_indexer.find_tx_block(next_tx_order).unwrap();
+        }
+        info!(
             "Start to produce transactions from tx_order: {}, check from block: {}",
-            next_tx_order,
-            next_block_number,
+            next_tx_order, next_block_number,
         );
         let mut produced_tx_order = 0;
         let mut reach_end = false;
@@ -382,18 +520,20 @@ impl ExecInner {
             }
             next_block_number += 1;
         }
-        tracing::info!(
+        info!(
             "All transactions are produced, max_block_number: {}, max_tx_order: {}",
-            next_block_number,
-            produced_tx_order
+            next_block_number, produced_tx_order
         );
         Ok(())
     }
 
     async fn consume_tx(&self, mut rx: Receiver<ExecMsg>) -> anyhow::Result<()> {
-        tracing::info!("Start to consume transactions");
+        info!("Start to consume transactions");
         let mut executed_tx_order = 0;
         let mut last_record_time = std::time::Instant::now();
+
+        const STATISTICS_INTERVAL: u64 = 100000;
+
         loop {
             let exec_msg_opt = rx.recv().await;
             if exec_msg_opt.is_none() {
@@ -404,7 +544,7 @@ impl ExecInner {
 
             self.execute(exec_msg).await.with_context(|| {
                 format!(
-                    "Error executing transaction: tx_order: {}, executed_tx_order: {}",
+                    "Error occurs: tx_order: {}, executed_tx_order: {}",
                     tx_order, executed_tx_order
                 )
             })?;
@@ -414,20 +554,21 @@ impl ExecInner {
                 .store(executed_tx_order, std::sync::atomic::Ordering::Relaxed);
             let done = self.done.fetch_add(1, std::sync::atomic::Ordering::Relaxed) + 1;
 
-            if done % 10000 == 0 {
+            if done % STATISTICS_INTERVAL == 0 {
                 let elapsed = last_record_time.elapsed();
-                tracing::info!(
-                    "execute tx range: [{}, {}], cost: {:?}, avg: {:.3} ms/tx",
-                    tx_order + 1 - 10000, // add first, avoid overflow
+                info!(
+                    "tx range: [{}, {}], cost: {:?}, avg: {:.3} ms/tx",
+                    tx_order + 1 - STATISTICS_INTERVAL, // add first, avoid overflow
                     tx_order,
                     elapsed,
-                    elapsed.as_millis() as f64 / 10000f64
+                    elapsed.as_millis() as f64 / STATISTICS_INTERVAL as f64
                 );
                 last_record_time = std::time::Instant::now();
             }
         }
-        tracing::info!(
-            "All transactions execution state root are strictly equal to RoochNetwork: [0, {}]",
+        info!(
+            "All transactions {} are strictly equal to RoochNetwork: [0, {}]",
+            self.mode.get_verify_targets(),
             executed_tx_order
         );
         Ok(())
@@ -439,12 +580,28 @@ impl ExecInner {
             ledger_tx,
             l1_block_with_body,
         } = msg;
+
         let is_l2_tx = ledger_tx.data.is_l2_tx();
-        let moveos_tx = self
-            .validate_ledger_transaction(ledger_tx, l1_block_with_body)
-            .await?;
-        if let Err(err) = self.execute_moveos_tx(tx_order, moveos_tx).await {
-            self.handle_execution_error(err, is_l2_tx, tx_order)?;
+
+        let exp_root_opt = self.order_state_pair.get(&tx_order);
+        let exp_state_root = exp_root_opt.map(|v| v.0);
+        let exp_accumulator_root = exp_root_opt.map(|v| v.1);
+
+        if self.mode.need_seq() {
+            self.sequenced_tx_store
+                .store_tx(ledger_tx.clone(), exp_accumulator_root)?;
+        }
+
+        if self.mode.need_exec() {
+            let moveos_tx = self
+                .validate_ledger_transaction(ledger_tx, l1_block_with_body)
+                .await?;
+            if let Err(err) = self
+                .execute_moveos_tx(tx_order, moveos_tx, exp_state_root)
+                .await
+            {
+                self.handle_execution_error(err, is_l2_tx, tx_order)?;
+            }
         }
 
         Ok(())
@@ -513,7 +670,7 @@ impl ExecInner {
             }
         };
 
-        moveos_tx.ctx.add(ledger_tx.sequence_info.clone())?;
+        moveos_tx.ctx.add(ledger_tx.sequence_info)?;
         Ok(moveos_tx)
     }
 
@@ -521,23 +678,23 @@ impl ExecInner {
         &self,
         tx_order: u64,
         moveos_tx: VerifiedMoveOSTransaction,
+        exp_state_root_opt: Option<H256>,
     ) -> anyhow::Result<()> {
         let executor = self.executor.clone();
 
         let (_output, execution_info) = executor.execute_transaction(moveos_tx.clone()).await?;
 
         let root = execution_info.root_metadata();
-        let expected_root_opt = self.order_state_pair.get(&tx_order);
-        match expected_root_opt {
+        match exp_state_root_opt {
             Some(expected_root) => {
-                if root.state_root.unwrap() != *expected_root {
+                if root.state_root.unwrap() != expected_root {
                     return Err(anyhow::anyhow!(
                         "Execution state root is not equal to RoochNetwork: tx_order: {}, exp: {:?}, act: {:?}; act_execution_info: {:?}",
                         tx_order,
-                        *expected_root, root.state_root.unwrap(), execution_info
+                        expected_root, root.state_root.unwrap(), execution_info
                     ));
                 }
-                tracing::info!(
+                info!(
                     "Execution state root is equal to RoochNetwork: tx_order: {}",
                     tx_order
                 );

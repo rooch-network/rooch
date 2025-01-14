@@ -3,7 +3,14 @@
 import axios from 'axios';
 import { useState, useEffect, useCallback } from 'react';
 import { CopyToClipboard } from 'react-copy-to-clipboard';
-import { Args, toHEX, Transaction, stringToBytes } from '@roochnetwork/rooch-sdk';
+import {
+  Args,
+  toHEX,
+  Transaction,
+  stringToBytes,
+  BitcoinAddress,
+  isValidRoochAddress,
+} from '@roochnetwork/rooch-sdk';
 import {
   useRoochClient,
   SessionKeyGuard,
@@ -14,7 +21,16 @@ import {
 } from '@roochnetwork/rooch-sdk-kit';
 
 import { LoadingButton } from '@mui/lab';
-import { Card , Chip, Stack, Button, TextField, CardHeader, Typography, CardContent } from '@mui/material';
+import {
+  Card,
+  Chip,
+  Stack,
+  Button,
+  TextField,
+  CardHeader,
+  Typography,
+  CardContent,
+} from '@mui/material';
 
 import { sleep } from 'src/utils/common';
 
@@ -36,7 +52,7 @@ export function SettingsView() {
   const wallet = useCurrentWallet();
   const faucetUrl = useNetworkVariable('faucet').url;
   const twitterOracleAddress = useNetworkVariable('roochMultiSigAddr');
-  const inviter = useNetworkVariable('inviter')
+  const inviter = useNetworkVariable('inviter');
   const [tweetStatus, setTweetStatus] = useState('');
   const [twitterId, setTwitterId] = useState<string>();
   const [verifying, setVerifying] = useState(false);
@@ -172,8 +188,12 @@ export function SettingsView() {
     const sign = await wallet.wallet?.sign(stringToBytes('utf8', signMsg));
     const pk = wallet.wallet!.getPublicKey().toBytes();
 
+    const inviterRoochAddr = isValidRoochAddress(inviterAddr)
+      ? inviterAddr
+      : new BitcoinAddress(inviterAddr).genRoochAddress().toStr();
+
     const payload = JSON.stringify({
-      inviter: inviterAddr,
+      inviter: inviterRoochAddr,
       tweet_id: pureTweetId,
       claimer_sign: toHEX(sign!),
       public_key: toHEX(pk),
@@ -204,7 +224,7 @@ export function SettingsView() {
 
       // step 2, check inviter
       const inviterAddr = window.localStorage.getItem(INVITER_ADDRESS_KEY);
-      if (inviterAddr && inviterAddr !== '') {
+      if (inviterAddr && inviterAddr !== '' && inviterAddr !== address?.toStr()) {
         // check invite is open
         const result = await client.queryObjectStates({
           filter: {
