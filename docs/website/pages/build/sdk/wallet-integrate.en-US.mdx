@@ -1,0 +1,162 @@
+# Wallet integration
+
+This document will introduce how to integrate Rooch's wallet functions (query, transfer) into wallets, asset browsers, aggregators and other applications, and will introduce the TS SDK methods provided by Rooch to wallet developers.
+
+## Client operations
+
+`useRoochClientQuery` provides an encapsulation for calling RPC methods. After passing the RPC method name and parameter list, the return result is processed. For details about which RPC methods, parameters and return results can be passed, please refer to [Rooch JSON RPC](https://playground.open-rpc.org/?schemaUrl=https://raw.githubusercontent.com/rooch-network/rooch/main/crates/rooch-open-rpc-spec/schemas/openrpc.json).
+
+```ts
+export declare function useRoochClientQuery<T extends keyof RpcMethods, TData = RpcMethods[T]['result']>(...args: undefined extends RpcMethods[T]['params'] ? [method: T, params?: RpcMethods[T]['params'], options?: UseRoochClientQueryOptions<T, TData>] : [method: T, params: RpcMethods[T]['params'], options?: UseRoochClientQueryOptions<T, TData>]): UseQueryResult<TData, Error>;
+```
+
+Here are some examples of calls:
+
+- Example of calling the `rooch_getBlances` method:
+
+```tsx
+const {
+data: assetsList,
+isPending,
+refetch: refetchAssetsList,
+} = useRoochClientQuery(
+'getBalances',
+{
+  owner: BitcoinAddressToRoochAddress(address).toHexAddress(),
+},
+{ refetchInterval: 5000 }
+);
+```
+
+- Example of calling `btc_queryUTXOs` method:
+
+```tsx
+const { data: utxoList, isPending: isUTXOPending } = useRoochClientQuery(
+'queryUTXO',
+{
+  filter: {
+    owner: address,
+  },
+  cursor: queryOptions.cursor,
+  limit: queryOptions.pageSize,
+},
+{ enabled: !!address }
+);
+```
+
+## Account related
+
+### Get session key
+
+```ts
+export declare function useCurrentSession(): import("@roochnetwork/rooch-sdk").Session | null;
+```
+
+Example:
+
+```ts
+import { useCurrentSession } from '@roochnetwork/rooch-sdk-kit';
+
+const sessionKey = useCurrentSession();
+```
+
+### Get current address
+
+```ts
+import { useCurrentAddress } from '@roochnetwork/rooch-sdk-kit';
+
+const address = useCurrentAddress();
+```
+
+## Network switching
+
+For network switching, use the `useSwitchNetwork` method, passing the following parameters:
+
+```ts
+type UseSwitchNetworkArgs = string;
+```
+
+If you are connected to the network, you can use the `useCurrentNetwork` method.
+
+## Get context
+
+The `useRoochContext` method is used to obtain the context. The context information is as follows:
+
+```ts
+export interface ClientProviderContext {
+    client: RoochClient;
+    networks: NetworkConfigs;
+    network: NetworkType;
+    config: NetworkConfig | null;
+    selectNetwork: (network: string) => void;
+}
+```
+
+## Send transaction
+
+`UseSignAndExecuteTransaction` method, to execute signed transactions, needs to pass the following parameters:
+
+```ts
+type UseSignAndExecuteTransactionArgs = {
+    transaction: Transaction;
+    signer?: Signer;
+};
+```
+
+## Transfer
+
+### Coin
+
+```ts
+export declare function useTransferCoin({ mutationKey, ...mutationOptions }?: UseSwitchNetworkMutationOptions): UseMutationResult<UseTransferCoinResult, Error, UseTransferCoinArgs, unknown>;
+```
+
+- For transfer transactions, you can use the `useTransferCoin` method, passing the following parameters:
+
+```ts
+type UseTransferCoinArgs = {
+    signer?: Signer;
+    recipient: address;
+    amount: number | bigint;
+    coinType: TypeArgs;
+};
+```
+
+### Object
+
+For object transfer, you can use the `useTransferObject` method, passing the following parameters:
+
+```ts
+type UseTransferObjectArgs = {
+    signer: Signer;
+    recipient: string;
+    objectId: string;
+    objectType: TypeArgs;
+};
+```
+
+## Integrate wallet functionality into Rooch SDK
+
+Rooch currently provides a set of TypeScript SDKs, providing a convenient development experience for Rooch developers or application developers.
+
+### Introduce
+
+`rooch-sdk` provides some basic encapsulation, while `rooch-sdk-kit` provides more practical development tools for application development. Wallet integration uses these tools. The relevant code is stored in the `rooch` repo. The detailed path is:
+
+```
+rooch/sdk/typescript/rooch-sdk-kit/src/wellet
+```
+
+### How to integrate a wallet into Rooch
+
+At present, Rooch has integrated `UniSat`, `OneKey` and `OKX`. If the wallet manufacturer needs to integrate the wallet into Rooch, it needs to use the SDK to do some corresponding development and submit the code for wallet integration to the above directory.
+
+Assets created on Rooch only need to call a `getBalance` interface.
+
+Taking UniSat as an example, apart from some code development related to operating connections, the final asset must be displayed. The most critical thing is this code:
+
+```ts
+getBalance(): Promise<{ confirmed: number; unconfirmed: number; total: string }> {
+return this.getTarget().getBalance()
+}
+```
