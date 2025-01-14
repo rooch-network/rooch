@@ -1,0 +1,51 @@
+//# publish
+module 0x11.TestModule1 {
+    import 0x1.string;
+    import 0x2.table;
+    import 0x1.option;
+
+    struct Media has store, copy, drop {
+        id: string.String,
+        url: string.String,
+        title: string.String,
+        source: string.String,
+        description: string.String,
+        text: string.String,
+        contentType: string.String,
+    }
+
+    struct Content has store, copy, drop {
+            text: string.String,
+            action: option.Option<string.String>,
+            source: option.Option<string.String>,
+            url: option.Option<string.String>,
+            inReplyTo: option.Option<string.String>,
+            attachments: vector<Self.Media>,
+    }
+
+    struct Memory has store, copy, drop {
+            id: string.String,
+            userId: string.String,
+            agentId: string.String,
+            createdAt: option.Option<u64>,
+            content: Self.Content,
+            character: string.String,
+            embedding: vector<u128>,
+            roomId: string.String,
+            unique: bool,
+            similarity: option.Option<u128>,
+    }
+
+    struct MemoryStore has key {
+            agent_account: address,
+            store: table.Table<string.String, Self.Memory>,
+    }
+
+    metadata {
+        data_struct {
+            0x11::TestModule1::Media -> true;
+            0x11::TestModule1::Content -> true;
+            0x11::TestModule1::Memory -> true;
+        }
+    }
+}
