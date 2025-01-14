@@ -2,6 +2,8 @@
 
 A Move language implementation of Fully on-chain Eliza
 
+[focElizaRFC](https://github.com/focai-acc/focElizaRFC/tree/main)
+
 ## Project Overview
 
 FocEliza demonstrates how to create and manage AI characters on blockchain, featuring:
