@@ -7,7 +7,7 @@ use std::process::exit;
 
 #[cfg(not(target_env = "msvc"))]
 mod allocator {
-    use jemallocator::Jemalloc;
+    use tikv_jemallocator::Jemalloc;
 
     pub type Allocator = Jemalloc;
 

@@ -25,7 +25,7 @@ use std::sync::atomic::AtomicU64;
 use tracing::info;
 
 pub mod exec;
-pub mod index_tx;
+pub mod index;
 pub mod namespace;
 pub mod unpack;
 
