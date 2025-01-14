@@ -375,61 +375,60 @@ Execution info:
     event root: 0x6b25ec6fd717296603fb0818f24682d88bfdf9c55d995091865c582eed18dc71
 ```
 
-### Why Store Characters and Memory On-Chain?
+### Why On-Chain?
 
-Currently, Eliza defines characters using static JSON files. By storing characters and memory on-chain, we unlock the following key advantages:
+Storing AI characters and their memory on-chain provides three key advantages:
 
 1. **Dynamic Evolution**
-    
-On-chain storage allows the character’s `bio`, interests (`topics`), and message templates to evolve dynamically during conversations.
+- Characters evolve through conversations
+- Bio, interests, and templates update dynamically
+- Transparent growth process with community oversight
 
-This evolutionary process is fully transparent, enabling community participation and oversight of the character’s growth and changes.
-    
-2. **Governance and Auditing**
-    
-On-chain storage supports governance for defining character evolution rules. For example:
+2. **Governance & Auditing**
+- Community-managed memory system
+- Prevents memory contamination
+- Public behavior auditing
+- Alignment with community standards
 
- - The community can audit and manage the AI Agent’s memory through on-chain governance to prevent memory contamination caused by user interactions.
- - Public AI Agents can have their behavior audited to ensure alignment with community expectations.
+3. **Decentralized Trust**
+- Enhanced trustworthiness
+- Fair and open AI ecosystem
+- Transparent character development
 
-3. **Decentralized Trustworthiness**
-    
-Storing characters and memory on-chain enhances Eliza’s trustworthiness, making it suitable for open and fair AI ecosystems.
+### Roadmap
 
-### Next Steps
+1. **Character System**
+- Dynamic character loading
+- Real-time definition updates
 
-1. **Dynamic Character Loader**
-    
-Enable Eliza to load character data from the blockchain dynamically and support real-time reloading of character definitions upon updates.
-    
-2. **On-Chain Memory Sync Plugin**
-    
-Develop a plugin to synchronize memory from the blockchain, allowing Eliza to update its state in real time during interactions.
-    
-3. **AI Oracle Integration**
-    
-Explore using an on-chain AI Oracle to provide decision-making capabilities for AI Agents, enhancing intelligent on-chain interactions.
-    
-4. **Standardized On-Chain Components**
-    
-Abstract the fundamental on-chain components of AI Agents and integrate them into the Move framework of Rooch to standardize on-chain AI Agent development.
+2. **Memory System**
+- On-chain memory sync
+- Real-time state updates
+- Interaction history
 
-### How to participate
+3. **AI Integration**
+- On-chain AI Oracle
+- Decision-making capabilities
+- Smart contract inference
 
-1. **Push the Boundaries of Smart Contracts**
-    
-Collaborate to explore the possibilities of implementing on-chain AI Agents, such as:
+4. **Framework Development**
+- Standardized components
+- Move framework integration
+- Developer tools
 
-  - Supporting automatic state vectorization and vector retrieval directly in smart contracts(RGA on-chain).
-  - Developing more advanced on-chain AI inference mechanisms.
+### Get Involved
 
-2. **Provide More On-Chain Services**
-    
-Build additional on-chain services tailored for AI Agents, such as:
+1. **Core Development**
+- On-chain vector operations
+- AI inference mechanisms
+- Smart contract innovations
 
-  - Twitter/Blog services for AI Agents.
-  - On-chain chatroom services to support multi-user interactions with Agents.
+2. **Service Building**
+- AI Agent social services
+- Multi-user chatrooms
+- Character interaction systems
 
-3. **Explore AI and DeFi/BTCFi Integration**
-    
-Combine the dynamic capabilities of on-chain AI Agents with innovative financial applications.
+3. **Integration**
+- AI + DeFi applications
+- BTCFi integration
+- Cross-chain capabilities
