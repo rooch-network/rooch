@@ -18,6 +18,7 @@ use std::hash::Hash;
 use std::ops::Deref;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use move_vm_runtime::loader::modules::LegacyModuleCache;
 use move_vm_types::code::ambassador_impl_ScriptCache;
 use move_vm_types::code::Code;
 
@@ -482,6 +483,7 @@ pub struct MoveOSCodeCache<'a> {
         UnsyncModuleCache<ModuleId, CompiledModule, Module, RoochModuleExtension, Option<TxnIndex>>,
     pub global_module_cache:
         &'a GlobalModuleCache<ModuleId, CompiledModule, Module, RoochModuleExtension>,
+    pub legacy_module_cache: LegacyModuleCache,
 }
 
 impl<'a> WithRuntimeEnvironment for MoveOSCodeCache<'a> {
@@ -505,6 +507,7 @@ impl<'a> MoveOSCodeCache<'a> {
             module_cache: UnsyncModuleCache::empty(),
             global_module_cache,
             runtime_environment,
+            legacy_module_cache: LegacyModuleCache::new(),
         }
     }
 
