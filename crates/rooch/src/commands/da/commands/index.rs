@@ -1,29 +1,110 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::commands::da::commands::{LedgerTxGetter, TxDAIndex};
-use rooch_types::error::{RoochError, RoochResult};
-use std::fs::File;
-use std::io::BufWriter;
-use std::io::Write;
+use crate::commands::da::commands::LedgerTxGetter;
+use anyhow::anyhow;
+use heed::byteorder::BigEndian;
+use heed::types::{SerdeBincode, U64};
+use heed::{Database, Env, EnvOpenOptions};
+use moveos_types::h256::H256;
+use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
-/// Index tx_order:tx_hash:block_number to a file from segments
+const MAP_SIZE: usize = 1 << 34; // 16G
+const MAX_DBS: u32 = 16;
+const ORDER_DATABASE_NAME: &str = "order_db";
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct TxPosition {
+    pub tx_hash: H256,
+    pub block_number: u128,
+}
+
+/// Index tx_order:tx_hash:block_number
 #[derive(Debug, clap::Parser)]
 pub struct IndexCommand {
     #[clap(long = "segment-dir", short = 's')]
     pub segment_dir: PathBuf,
     #[clap(long = "index", short = 'i')]
     pub index_path: PathBuf,
+    #[clap(
+        long = "reset-from",
+        short = 'r',
+        help = "Reset from tx order(inclusive), all tx orders after this will be re-indexed"
+    )]
+    pub reset_from: Option<u64>,
+    // TODO add load from & stop block number
+}
+
+pub struct Indexer {
+    db_env: Env,
+    last_tx_order: u64,
+    last_block_number: u128,
+}
+
+impl Indexer {
+    pub fn new(db_path: PathBuf, reset_from: Option<u64>) -> anyhow::Result<Self> {
+        let env = unsafe {
+            EnvOpenOptions::new()
+                .map_size(MAP_SIZE) // 16G
+                .max_dbs(MAX_DBS)
+                .open(db_path)?
+        };
+        let mut indexer = Indexer {
+            db_env: env,
+            last_tx_order: 0,
+            last_block_number: 0,
+        };
+        if let Some(from) = reset_from {
+            indexer.reset_from(from)?;
+        }
+
+        indexer.init_cursor()?;
+        Ok(indexer)
+    }
+
+    fn init_cursor(&mut self) -> anyhow::Result<()> {
+        // init cursor by search last tx_order
+        let rtxn = self.db_env.read_txn()?;
+        let db: Database<U64<BigEndian>, SerdeBincode<TxPosition>> = self
+            .db_env
+            .open_database(&rtxn, Some(ORDER_DATABASE_NAME))?
+            .ok_or(anyhow::anyhow!("db not found"))?;
+        if let Some((k, v)) = db.last(&rtxn)? {
+            self.last_tx_order = k;
+            self.last_block_number = v.block_number;
+        }
+        rtxn.commit()?;
+        Ok(())
+    }
+
+    fn reset_from(&self, from: u64) -> anyhow::Result<()> {
+        let mut wtxn = self.db_env.write_txn()?;
+        let db: Database<U64<BigEndian>, SerdeBincode<TxPosition>> = self
+            .db_env
+            .create_database(&mut wtxn, Some(ORDER_DATABASE_NAME))?;
+
+        let range = from..;
+        db.delete_range(&mut wtxn, &range)?;
+        wtxn.commit()?;
+        Ok(())
+    }
 }
 
 impl IndexCommand {
-    pub fn execute(self) -> RoochResult<()> {
+    pub fn execute(self) -> anyhow::Result<()> {
+        let db_path = self.index_path.clone();
+        let reset_from = self.reset_from;
+        let indexer = Indexer::new(db_path, reset_from)?;
+
         let ledger_tx_loader = LedgerTxGetter::new(self.segment_dir)?;
-        let mut block_number = ledger_tx_loader.get_min_chunk_id();
-        let mut expected_tx_order = 0;
-        let file = File::create(self.index_path.clone())?;
-        let mut writer = BufWriter::with_capacity(8 * 1024 * 1024, file.try_clone().unwrap());
+        let mut block_number = indexer.last_block_number; // avoiding partial indexing
+        let mut expected_tx_order = indexer.last_tx_order + 1;
+
+        let mut wtxn = indexer.db_env.write_txn()?;
+        let db: Database<U64<BigEndian>, SerdeBincode<TxPosition>> = indexer
+            .db_env
+            .create_database(&mut wtxn, Some(ORDER_DATABASE_NAME))?;
 
         loop {
             if block_number > ledger_tx_loader.get_max_chunk_id() {
@@ -33,27 +114,28 @@ impl IndexCommand {
             let tx_list = tx_list.unwrap();
             for mut ledger_tx in tx_list {
                 let tx_order = ledger_tx.sequence_info.tx_order;
-                let tx_hash = ledger_tx.tx_hash();
-                if expected_tx_order == 0 {
-                    expected_tx_order = tx_order;
-                } else if tx_order != expected_tx_order {
-                    return Err(RoochError::from(anyhow::anyhow!(
-                        "tx_order mismatch: expected {}, got {}",
+                if tx_order < expected_tx_order {
+                    continue;
+                }
+                if tx_order != expected_tx_order {
+                    return Err(anyhow!(
+                        "tx_order not continuous, expect: {}, got: {}",
                         expected_tx_order,
                         tx_order
-                    )));
+                    ));
                 }
-                writeln!(
-                    writer,
-                    "{}",
-                    TxDAIndex::new(tx_order, tx_hash, block_number)
-                )?;
+                let tx_hash = ledger_tx.tx_hash();
+                let tx_position = TxPosition {
+                    tx_hash,
+                    block_number,
+                };
+                db.put(&mut wtxn, &tx_order, &tx_position)?;
                 expected_tx_order += 1;
             }
             block_number += 1;
         }
-        writer.flush()?;
-        file.sync_data()?;
+        wtxn.commit()?;
+        indexer.db_env.force_sync()?;
         Ok(())
     }
 }

@@ -35,6 +35,7 @@ codespan-reporting = { workspace = true }
 termcolor = { workspace = true }
 itertools = { workspace = true }
 hdrhistogram = { workspace = true }
+heed = { workspace = true }
 hex = { workspace = true }
 regex = { workspace = true }
 parking_lot = { workspace = true }

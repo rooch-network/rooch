@@ -184,6 +184,7 @@ futures = "0.3.31"
 futures-util = "0.3.31"
 hdrhistogram = "7.5.4"
 hex = "0.4.3"
+heed = "0.21.0"
 itertools = "0.13.0"
 jsonrpsee = { version = "0.23.2", features = ["full"] }
 jpst = "0.1.1"
