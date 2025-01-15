@@ -11,7 +11,7 @@ module foc_eliza::character {
     use moveos_std::json;
     use moveos_std::signer;
 
-    use foc_eliza::types::{Style, TwitterProfile};
+    use foc_eliza::types::{Style, TwitterProfile, MessageTemplate};
     use foc_eliza::agent_cap::{Self, AgentCap};
 
     #[data_struct]
@@ -28,6 +28,7 @@ module foc_eliza::character {
         system: Option<String>,
         bio: vector<String>,
         lore: vector<String>,
+        messageExamples: vector<vector<MessageTemplate>>,
         postExamples: vector<String>,
         topics: vector<String>,
         style: Style,
@@ -51,6 +52,7 @@ module foc_eliza::character {
         system: Option<String>,
         bio: vector<String>,
         lore: vector<String>,
+        messageExamples: vector<vector<MessageTemplate>>,
         postExamples: vector<String>,
         topics: vector<String>,
         style: Style,
@@ -72,6 +74,7 @@ module foc_eliza::character {
         system: Option<String>,
         bio: vector<String>,
         lore: vector<String>,
+        messageExamples: vector<vector<MessageTemplate>>,
         postExamples: vector<String>,
         topics: vector<String>,
         style: Style,
@@ -92,6 +95,7 @@ module foc_eliza::character {
             system,
             bio,
             lore,
+            messageExamples,
             postExamples,
             topics,
             style,
@@ -115,6 +119,7 @@ module foc_eliza::character {
             system: data.system,
             bio: data.bio,
             lore: data.lore,
+            messageExamples: data.messageExamples,
             postExamples: data.postExamples,
             topics: data.topics,
             style: data.style,
@@ -124,6 +129,30 @@ module foc_eliza::character {
         };
         // Every account only has one character
         object::new_account_named_object(agent_account, character)
+    }
+
+    fun drop_character(c: Character) {
+        let Character {
+            id:_,
+            name:_,
+            username:_,
+            plugins:_,
+            clients:_,
+            modelProvider:_,
+            imageModelProvider:_,
+            imageVisionModelProvider:_,
+            modelEndpointOverride:_,
+            system:_,
+            bio:_,
+            lore:_,
+            messageExamples:_,
+            postExamples:_,
+            topics:_,
+            style:_,
+            adjectives:_,
+            knowledge:_,
+            twitterProfile:_,
+        } = c;
     }
 
     fun borrow_mut_character(agent_account: address) : &mut Object<Character> {
@@ -156,6 +185,15 @@ module foc_eliza::character {
 
     public entry fun add_bio_entry(agent_cap: &mut Object<AgentCap>, bio: vector<u8>){
        add_bio(agent_cap, string::utf8(bio));
+    }
+
+    public entry fun destroy_character(agent_cap: Object<AgentCap>){
+        let agent_account = agent_cap::check_agent_cap(&mut agent_cap);
+        let character_obj_id = object::account_named_object_id<Character>(agent_account);
+        let co = object::take_object_extend<Character>(character_obj_id);
+        let c = object::remove(co);
+        drop_character(c);
+        agent_cap::destroy_agent_cap(agent_cap);
     }
 
     #[test(caller = @0x42)]

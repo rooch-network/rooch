@@ -74,16 +74,16 @@ module foc_eliza::types {
         }
     }
 
-    // #[data_struct]
-    // struct MessageTemplate has store, copy, drop{
-    //     user: String,
-    //     content: Content,
-    // }
+    #[data_struct]
+    struct MessageTemplate has store, copy, drop{
+        user: String,
+        content: Content,
+    }
 
-    // public fun new_message_template(user: String, content: Content) : MessageTemplate {
-    //     MessageTemplate {
-    //         user,
-    //         content,
-    //     }
-    // }
+    public fun new_message_template(user: String, content: Content) : MessageTemplate {
+        MessageTemplate {
+            user,
+            content,
+        }
+    }
 }
