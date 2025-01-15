@@ -51,7 +51,7 @@ pub fn build_file_to_module_env(
         KnownAttribute::get_all_attribute_names(),
     )
     .set_pre_compiled_lib_opt(pre_compiled_deps)
-    .run_with_sources::<PASS_PARSER>(targets_sources, deps_sources)?;
+    .run_with_sources::<PASS_PARSER>(targets_sources.clone(), deps_sources)?;
 
     let (comment_map, compiler) = match comments_and_compiler_res {
         Err(diags) => {

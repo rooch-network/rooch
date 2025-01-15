@@ -75,7 +75,6 @@ impl MoveOSVM {
     }
 
     pub fn new_session<
-        'c,
         'r,
         S: MoveOSResolver,
         G: SwitchableGasMeter + ClassifiedGasMeter + Clone,
@@ -84,14 +83,14 @@ impl MoveOSVM {
         remote: &'r S,
         ctx: TxContext,
         gas_meter: G,
-        global_module_cache: &'c GlobalModuleCache<
+        global_module_cache: &'r GlobalModuleCache<
             ModuleId,
             CompiledModule,
             Module,
             RoochModuleExtension,
         >,
-        runtime_environment: &'c RuntimeEnvironment,
-    ) -> MoveOSSession<'c, 'r, '_, S, G> {
+        runtime_environment: &'r RuntimeEnvironment,
+    ) -> MoveOSSession<'r, '_, S, G> {
         let root = remote.root();
         let object_runtime = Rc::new(RwLock::new(ObjectRuntime::new(ctx, root.clone(), remote)));
         MoveOSSession::new(
@@ -105,19 +104,19 @@ impl MoveOSVM {
         )
     }
 
-    pub fn new_genesis_session<'c, 'r, S: MoveOSResolver>(
+    pub fn new_genesis_session<'r, S: MoveOSResolver>(
         &self,
         remote: &'r S,
         ctx: TxContext,
         genesis_objects: Vec<(ObjectState, MoveTypeLayout)>,
-        global_module_cache: &'c GlobalModuleCache<
+        global_module_cache: &'r GlobalModuleCache<
             ModuleId,
             CompiledModule,
             Module,
             RoochModuleExtension,
         >,
-        runtime_environment: &'c RuntimeEnvironment,
-    ) -> MoveOSSession<'c, 'r, '_, S, UnmeteredGasMeter> {
+        runtime_environment: &'r RuntimeEnvironment,
+    ) -> MoveOSSession<'r, '_, S, UnmeteredGasMeter> {
         let root = remote.root();
         let object_runtime = Rc::new(RwLock::new(ObjectRuntime::genesis(
             ctx,
@@ -139,7 +138,6 @@ impl MoveOSVM {
     }
 
     pub fn new_readonly_session<
-        'c,
         'r,
         S: MoveOSResolver,
         G: SwitchableGasMeter + ClassifiedGasMeter + Clone,
@@ -148,14 +146,14 @@ impl MoveOSVM {
         remote: &'r S,
         ctx: TxContext,
         gas_meter: G,
-        global_module_cache: &'c GlobalModuleCache<
+        global_module_cache: &'r GlobalModuleCache<
             ModuleId,
             CompiledModule,
             Module,
             RoochModuleExtension,
         >,
-        runtime_environment: &'c RuntimeEnvironment,
-    ) -> MoveOSSession<'c, 'r, '_, S, G> {
+        runtime_environment: &'r RuntimeEnvironment,
+    ) -> MoveOSSession<'r, '_, S, G> {
         let root = remote.root();
         let object_runtime = Rc::new(RwLock::new(ObjectRuntime::new(ctx, root.clone(), remote)));
         MoveOSSession::new(
@@ -181,18 +179,18 @@ impl MoveOSVM {
 /// MoveOSSession is a wrapper of MoveVM session with MoveOS specific features.
 /// It is used to execute a transaction, every transaction should be executed in a new session.
 /// Every session has a TxContext, if the transaction have multiple actions, the TxContext is shared.
-pub struct MoveOSSession<'c, 'r, 'l, S, G> {
+pub struct MoveOSSession<'r, 'l, S, G> {
     pub(crate) vm: &'l MoveVM,
     pub(crate) remote: &'r S,
     pub(crate) session: Session<'r, 'l, MoveosDataCache<'r, 'l, S>>,
     pub(crate) object_runtime: Rc<RwLock<ObjectRuntime<'r>>>,
     pub(crate) gas_meter: G,
-    pub(crate) code_cache: MoveOSCodeCache<'c>,
+    pub(crate) code_cache: MoveOSCodeCache<'r>,
     pub(crate) read_only: bool,
 }
 
 #[allow(clippy::arc_with_non_send_sync)]
-impl<'c, 'r, 'l, S, G> MoveOSSession<'c, 'r, 'l, S, G>
+impl<'r, 'l, S, G> MoveOSSession<'r, 'l, S, G>
 where
     S: MoveOSResolver,
     G: SwitchableGasMeter + ClassifiedGasMeter,
@@ -203,18 +201,24 @@ where
         object_runtime: Rc<RwLock<ObjectRuntime<'r>>>,
         gas_meter: G,
         read_only: bool,
-        global_module_cache: &'c GlobalModuleCache<
+        global_module_cache: &'r GlobalModuleCache<
             ModuleId,
             CompiledModule,
             Module,
             RoochModuleExtension,
         >,
-        runtime_environment: &'c RuntimeEnvironment,
+        runtime_environment: &'r RuntimeEnvironment,
     ) -> Self {
         Self {
             vm,
             remote,
-            session: Self::new_inner_session(vm, remote, object_runtime.clone()),
+            session: Self::new_inner_session(
+                vm,
+                remote,
+                object_runtime.clone(),
+                global_module_cache,
+                runtime_environment,
+            ),
             object_runtime,
             gas_meter,
             code_cache: MoveOSCodeCache::new(global_module_cache, runtime_environment),
@@ -230,7 +234,13 @@ where
         let root = self.remote.root().clone();
         let object_runtime = Rc::new(RwLock::new(ObjectRuntime::new(new_ctx, root, self.remote)));
         Self {
-            session: Self::new_inner_session(self.vm, self.remote, object_runtime.clone()),
+            session: Self::new_inner_session(
+                self.vm,
+                self.remote,
+                object_runtime.clone(),
+                self.code_cache.global_module_cache,
+                self.code_cache.runtime_environment
+            ),
             object_runtime,
             ..self
         }
@@ -240,6 +250,13 @@ where
         vm: &'l MoveVM,
         remote: &'r S,
         object_runtime: Rc<RwLock<ObjectRuntime<'r>>>,
+        global_module_cache: &'r GlobalModuleCache<
+            ModuleId,
+            CompiledModule,
+            Module,
+            RoochModuleExtension,
+        >,
+        runtime_environment: &'r RuntimeEnvironment,
     ) -> Session<'r, 'l, MoveosDataCache<'r, 'l, S>> {
         let mut extensions = NativeContextExtensions::default();
 
@@ -256,8 +273,12 @@ where
         // vm.mark_loader_cache_as_invalid();
         vm.flush_loader_cache_if_invalidated();
         let loader = vm.runtime.loader();
-        let data_store: MoveosDataCache<'r, 'l, S> =
-            MoveosDataCache::new(remote, loader, object_runtime);
+        let data_store: MoveosDataCache<'r, 'l, S> = MoveosDataCache::new(
+            remote,
+            loader,
+            object_runtime,
+            MoveOSCodeCache::new(global_module_cache, runtime_environment),
+        );
         vm.new_session_with_extensions_legacy(data_store, extensions)
     }
 
@@ -272,7 +293,7 @@ where
         match action {
             MoveAction::Script(call) => {
                 let loaded_function = self.session.load_script(
-                    self.remote,
+                    &self.code_cache,
                     call.code.as_slice(),
                     call.ty_args.as_slice(),
                 )?;

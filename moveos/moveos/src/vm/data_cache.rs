@@ -19,7 +19,7 @@ use move_core_types::{
     language_storage::ModuleId, value::MoveTypeLayout, vm_status::StatusCode,
 };
 use move_vm_runtime::data_cache::TransactionCache;
-use move_vm_runtime::loader::modules::LegacyModuleStorageAdapter;
+use move_vm_runtime::loader::modules::{LegacyModuleStorage, LegacyModuleStorageAdapter};
 use move_vm_runtime::logging::expect_no_verification_errors;
 use move_vm_runtime::ModuleStorage;
 use move_vm_types::{
@@ -57,7 +57,7 @@ pub struct MoveosDataCache<'r, 'l, S> {
     compiled_scripts: BTreeMap<[u8; 32], Arc<CompiledScript>>,
     compiled_modules: BTreeMap<ModuleId, (Arc<CompiledModule>, usize, [u8; 32])>,
 
-    code_cache: &'r MoveOSCodeCache<'r>,
+    code_cache: MoveOSCodeCache<'r>,
 }
 
 impl<'r, 'l, S: MoveOSResolver> MoveosDataCache<'r, 'l, S> {
@@ -67,7 +67,7 @@ impl<'r, 'l, S: MoveOSResolver> MoveosDataCache<'r, 'l, S> {
         resolver: &'r S,
         loader: &'l Loader,
         object_runtime: Rc<RwLock<ObjectRuntime<'r>>>,
-        code_cache: &'r MoveOSCodeCache<'r>,
+        code_cache: MoveOSCodeCache<'r>,
     ) -> Self {
         MoveosDataCache {
             resolver,
@@ -320,25 +320,28 @@ pub fn into_change_set(
 
 impl<'r, 'l, S: MoveOSResolver> TypeLayoutLoader for MoveosDataCache<'r, 'l, S> {
     fn get_type_layout(&self, type_tag: &TypeTag) -> PartialVMResult<MoveTypeLayout> {
+        let legacy_module_cache =
+            Arc::new(self.code_cache.legacy_module_cache.clone()) as Arc<dyn LegacyModuleStorage>;
+        let legacy_module_storage = &LegacyModuleStorageAdapter::new(legacy_module_cache);
         self.loader
             .get_type_layout(
                 type_tag,
                 self.resolver,
-                &LegacyModuleStorageAdapter::new(Arc::new(&self.code_cache.legacy_module_cache)),
-                self.code_cache,
+                legacy_module_storage,
+                &self.code_cache,
             )
             .map_err(|e| e.to_partial())
     }
 
     fn type_to_type_layout(&self, ty: &Type) -> PartialVMResult<MoveTypeLayout> {
-        self.loader.type_to_type_layout(
-            ty,
-            &LegacyModuleStorageAdapter::new(Arc::new(&self.code_cache.legacy_module_cache)),
-            self.code_cache,
-        )
+        let legacy_module_cache =
+            Arc::new(self.code_cache.legacy_module_cache.clone()) as Arc<dyn LegacyModuleStorage>;
+        let legacy_module_storage = &LegacyModuleStorageAdapter::new(legacy_module_cache);
+        self.loader
+            .type_to_type_layout(ty, legacy_module_storage, &self.code_cache)
     }
 
     fn type_to_type_tag(&self, ty: &Type) -> PartialVMResult<TypeTag> {
-        self.loader.type_to_type_tag(ty, self.code_cache)
+        self.loader.type_to_type_tag(ty, &self.code_cache)
     }
 }

@@ -30,7 +30,7 @@ use std::ops::Deref;
 use std::sync::Arc;
 use std::vec::IntoIter;
 
-impl<'c, 'r, 'l, S, G> MoveOSSession<'c, 'r, 'l, S, G>
+impl<'r, 'l, S, G> MoveOSSession<'r, 'l, S, G>
 where
     S: MoveOSResolver,
     G: SwitchableGasMeter + ClassifiedGasMeter,
@@ -460,7 +460,7 @@ where
     }
 }
 
-impl<'c, 'r, 'l, S, G> TypeLayoutLoader for MoveOSSession<'c, 'r, 'l, S, G>
+impl<'r, 'l, S, G> TypeLayoutLoader for MoveOSSession<'r, 'l, S, G>
 where
     S: MoveOSResolver,
     G: SwitchableGasMeter + ClassifiedGasMeter,
