@@ -193,6 +193,7 @@ where
     }
 }
 
+#[derive(Clone)]
 pub struct RoochModuleExtension {
     /// Serialized representation of the module.
     bytes: Bytes,
@@ -476,6 +477,7 @@ enum PersistedStateValue {
     },
 }
 
+#[derive(Clone)]
 pub struct MoveOSCodeCache<'a> {
     pub runtime_environment: &'a RuntimeEnvironment,
     pub script_cache: UnsyncScriptCache<[u8; 32], CompiledScript, Script>,

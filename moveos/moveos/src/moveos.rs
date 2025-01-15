@@ -135,7 +135,7 @@ pub struct MoveOS<'a> {
 
 impl<'a> MoveOS<'a> {
     pub fn new(
-        runtime_environment: &RuntimeEnvironment,
+        runtime_environment: &'a RuntimeEnvironment,
         db: MoveOSStore,
         system_pre_execute_functions: Vec<FunctionCall>,
         system_post_execute_functions: Vec<FunctionCall>,
@@ -482,7 +482,7 @@ impl<'a> MoveOS<'a> {
     // else return VMError and a bool which indicate if we should respawn the session.
     fn execute_action(
         &self,
-        session: &mut MoveOSSession<'_, '_, '_, RootObjectResolver<MoveOSStore>, MoveOSGasMeter>,
+        session: &mut MoveOSSession<'_, '_, RootObjectResolver<MoveOSStore>, MoveOSGasMeter>,
         action: VerifiedMoveAction,
         tx_size: u64,
     ) -> Result<(), VMError> {
@@ -498,7 +498,7 @@ impl<'a> MoveOS<'a> {
     fn execution_cleanup(
         &self,
         is_system_call: bool,
-        mut session: MoveOSSession<'_, '_, '_, RootObjectResolver<MoveOSStore>, MoveOSGasMeter>,
+        mut session: MoveOSSession<'_, '_, RootObjectResolver<MoveOSStore>, MoveOSGasMeter>,
         status: VMStatus,
         vm_error_info: Option<VMErrorInfo>,
     ) -> Result<(RawTransactionOutput, Option<VMErrorInfo>)> {
