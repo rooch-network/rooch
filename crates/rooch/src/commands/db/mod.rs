@@ -44,9 +44,6 @@ impl CommandAction<String> for DB {
                     serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
                 })
             }
-            DBCommand::DumpTxRoot(dump_tx_root) => dump_tx_root.execute().await.map(|resp| {
-                serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
-            }),
             DBCommand::GetExecutionInfoByHash(get_execution_info_by_hash) => {
                 get_execution_info_by_hash.execute().map(|resp| {
                     serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
@@ -67,7 +64,6 @@ pub enum DBCommand {
     Drop(DropCommand),
     Repair(RepairCommand),
     GetChangesetByOrder(GetChangesetByOrderCommand),
-    DumpTxRoot(DumpTxRootCommand),
     GetExecutionInfoByHash(GetExecutionInfoByHashCommand),
     BestRollback(BestRollbackCommand),
 }
