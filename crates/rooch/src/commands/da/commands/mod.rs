@@ -375,11 +375,8 @@ impl TxDAIndexer {
     }
 
     fn has_executed(&self, tx_hash: H256) -> bool {
-        let execution_info = self
-            .transaction_store
-            .get_tx_execution_info(tx_hash)
-            .unwrap();
-        execution_info.is_some()
+        self.get_execution_info(tx_hash)
+            .map_or(false, |info| info.is_some())
     }
 
     pub fn get_execution_info(
@@ -398,19 +395,5 @@ impl TxDAIndexer {
             .transaction_store
             .get_transaction_by_hash(tx_hash)?
             .map(|transaction| transaction.sequence_info))
-    }
-
-    pub fn get_execution_info_by_order(
-        &self,
-        tx_order: u64,
-    ) -> anyhow::Result<Option<TransactionExecutionInfo>> {
-        let tx_hash_option = self.get_tx_hash(tx_order);
-
-        if let Some(tx_hash) = tx_hash_option {
-            let execution_info = self.transaction_store.get_tx_execution_info(tx_hash)?;
-            Ok(execution_info)
-        } else {
-            Ok(None)
-        }
     }
 }
