@@ -3,6 +3,7 @@
 
 use crate::commands::db::commands::init;
 use clap::Parser;
+use moveos_types::state::StateChangeSetExt;
 use rooch_config::R_OPT_NET_HELP;
 use rooch_store::state_store::StateStore;
 use rooch_types::error::RoochResult;
@@ -26,13 +27,11 @@ pub struct GetChangesetByOrderCommand {
 }
 
 impl GetChangesetByOrderCommand {
-    pub async fn execute(self) -> RoochResult<()> {
+    pub async fn execute(self) -> RoochResult<Option<StateChangeSetExt>> {
         let (_root, rooch_db, _start_time) = init(self.base_data_dir, self.chain_id);
         let rooch_store = rooch_db.rooch_store;
         let tx_order = self.order;
         let state_change_set_ext_opt = rooch_store.get_state_change_set(tx_order)?;
-        println!("{:?}", state_change_set_ext_opt);
-
-        Ok(())
+        Ok(state_change_set_ext_opt)
     }
 }
