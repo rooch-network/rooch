@@ -4,22 +4,20 @@
 use crate::commands::da::commands::TxDAIndexer;
 use crate::commands::db::commands::init;
 use clap::Parser;
+use moveos_store::transaction_store::TransactionStore;
+use moveos_types::h256::H256;
 use rooch_config::R_OPT_NET_HELP;
+use rooch_rpc_api::jsonrpc_types::transaction_view::TransactionWithInfoView;
 use rooch_types::error::RoochResult;
 use rooch_types::rooch_network::RoochChainID;
 use std::path::PathBuf;
 
-/// Get ExecutionInfo by order
+/// Get ExecutionInfo by tx_hash
 #[derive(Debug, Parser)]
-pub struct GetExecutionInfoByOrderCommand {
+pub struct GetExecutionInfoByHashCommand {
+    /// Transaction's hash
     #[clap(long)]
-    pub order: u64,
-
-    #[clap(
-        long = "order-hash-path",
-        help = "Path to tx_order:tx_hash:block_number file"
-    )]
-    pub order_hash_path: PathBuf,
+    pub hash: H256,
 
     #[clap(long = "data-dir", short = 'd')]
     /// Path to data dir, this dir is base dir, the final data_dir is base_dir/chain_network_name
@@ -31,25 +29,21 @@ pub struct GetExecutionInfoByOrderCommand {
     pub chain_id: Option<RoochChainID>,
 }
 
-impl GetExecutionInfoByOrderCommand {
+impl GetExecutionInfoByHashCommand {
     pub fn execute(self) -> RoochResult<()> {
         let (_root, rooch_db, _start_time) = init(self.base_data_dir, self.chain_id);
         let moveos_store = rooch_db.moveos_store.clone();
-        let tx_da_indexer = TxDAIndexer::load_from_file(
-            self.order_hash_path.clone(),
-            moveos_store.transaction_store,
-            rooch_db.rooch_store.clone(),
-        )?;
 
-        let tx_order = self.order;
-
-        let execution_info = tx_da_indexer.get_execution_info_by_order(tx_order)?;
+        let tx_hash = self.hash;
+        let execution_info = moveos_store
+            .get_transaction_store()
+            .get_tx_execution_info(self.hash)?;
         match execution_info {
             Some(_) => {
-                println!("{}:{:?}", tx_order, execution_info.unwrap());
+                println!("{:?}:{:?}", tx_hash, execution_info.unwrap());
             }
             None => {
-                tracing::warn!("tx_order {} execution_info not found", tx_order);
+                tracing::warn!("execution_info not found for tx_hash: {} ", tx_hash);
             }
         }
 
