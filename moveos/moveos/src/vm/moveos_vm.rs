@@ -329,7 +329,7 @@ where
             }
             MoveAction::Function(call) => {
                 let loaded_function = self.session.load_function(
-                    self.remote,
+                    &self.code_cache,
                     &call.function_id.module_id,
                     &call.function_id.function_name,
                     call.ty_args.as_slice(),
@@ -412,7 +412,7 @@ where
         let action_result = match action {
             VerifiedMoveAction::Script { call } => {
                 let loaded_function = self.session.load_script(
-                    self.remote,
+                    &self.code_cache,
                     call.code.as_slice(),
                     call.ty_args.as_slice(),
                 )?;
@@ -431,7 +431,7 @@ where
                     serialized_args,
                     &mut self.gas_meter,
                     &mut traversal_context,
-                    self.remote,
+                    &self.code_cache,
                 )
             }
             VerifiedMoveAction::Function {
@@ -439,7 +439,7 @@ where
                 bypass_visibility,
             } => {
                 let loaded_function = self.session.load_function(
-                    self.remote,
+                    &self.code_cache,
                     &call.function_id.module_id,
                     &call.function_id.function_name,
                     call.ty_args.as_slice(),
@@ -462,7 +462,7 @@ where
                             serialized_args,
                             &mut self.gas_meter,
                             &mut traversal_context,
-                            self.remote,
+                            &self.code_cache,
                         )
                         .map(|ret| {
                             debug_assert!(
@@ -472,7 +472,7 @@ where
                         })
                 } else {
                     let loaded_function = self.session.load_function(
-                        self.remote,
+                        &self.code_cache,
                         &call.function_id.module_id,
                         &call.function_id.function_name,
                         call.ty_args.as_slice(),
@@ -482,7 +482,7 @@ where
                         call.ty_args.clone(),
                         &mut self.gas_meter,
                         &mut traversal_context,
-                        &self.remote,
+                        &self.code_cache,
                     )
                 }
             }
@@ -549,7 +549,7 @@ where
                     let module_id = module.self_id();
 
                     if data_store.exists_module(&module_id)? && compat.need_check_compat() {
-                        let old_module = self.vm.load_module(&module_id, &self.remote)?;
+                        let old_module = self.vm.load_module(&module_id, self.remote)?;
                         let old_m = normalized::Module::new(old_module.as_ref());
                         let new_m = normalized::Module::new(module);
                         compat
@@ -622,7 +622,7 @@ where
 
         let loaded_function = self.session.load_function(
             &self.code_cache,
-            self.remote & call.function_id.module_id,
+            &call.function_id.module_id,
             &call.function_id.function_name,
             call.ty_args.as_slice(),
         )?;
@@ -641,7 +641,7 @@ where
             serialized_args,
             &mut self.gas_meter,
             &mut traversal_context,
-            self.remote,
+            &self.code_cache,
         )?;
         return_values
             .return_values
@@ -655,9 +655,9 @@ where
 
                 let type_tag = match ty {
                     Type::Reference(ty) | Type::MutableReference(ty) => {
-                        self.session.get_type_tag(ty, self.remote)?
+                        self.session.get_type_tag(ty, &self.code_cache)?
                     }
-                    _ => self.session.get_type_tag(ty, self.remote)?,
+                    _ => self.session.get_type_tag(ty, &self.code_cache)?,
                 };
 
                 Ok(FunctionReturnValue::new(type_tag, v))
@@ -702,7 +702,7 @@ where
             read_only,
             code_cache: _,
         } = self;
-        let (changeset, mut extensions) = session.finish_with_extensions(self.remote)?;
+        let (changeset, mut extensions) = session.finish_with_extensions(&self.code_cache)?;
         //We do not use the event API from data_cache. Instead, we use the NativeEventContext
         //debug_assert!(raw_events.is_empty());
         //We do not use the account, resource, and module API from data_cache. Instead, we use the ObjectRuntimeContext
@@ -848,7 +848,7 @@ where
         ty_args: Vec<TypeTag>,
     ) -> VMResult<LoadedFunction> {
         self.session
-            .load_script(self.remote, script, ty_args.as_slice())
+            .load_script(&self.code_cache, script, ty_args.as_slice())
     }
 
     /// Load a module, a function, and all of its types into cache
@@ -858,7 +858,7 @@ where
         type_arguments: &[TypeTag],
     ) -> VMResult<LoadedFunction> {
         self.session.load_function(
-            self.remote,
+            &self.code_cache,
             &function_id.module_id,
             &function_id.function_name,
             type_arguments,
@@ -870,7 +870,7 @@ where
     pub fn get_type_tag_option(&self, t: &Type) -> Option<TypeTag> {
         match t {
             Type::Struct(_, _) | Type::StructInstantiation(_, _, _) => {
-                self.session.get_type_tag(t, self.remote).ok()
+                self.session.get_type_tag(t, &self.code_cache).ok()
             }
             Type::Reference(r) => self.get_type_tag_option(r),
             Type::MutableReference(r) => self.get_type_tag_option(r),
@@ -879,11 +879,11 @@ where
     }
 
     pub fn get_type_tag(&self, ty: &Type) -> VMResult<TypeTag> {
-        self.session.get_type_tag(ty, self.remote)
+        self.session.get_type_tag(ty, &self.code_cache)
     }
 
     pub fn load_type(&mut self, type_tag: &TypeTag) -> VMResult<Type> {
-        self.session.load_type(type_tag, self.remote)
+        self.session.load_type(type_tag, &self.code_cache)
     }
 
     pub fn get_fully_annotated_type_layout(
@@ -891,11 +891,11 @@ where
         type_tag: &TypeTag,
     ) -> VMResult<MoveTypeLayout> {
         self.session
-            .get_fully_annotated_type_layout(type_tag, self.remote)
+            .get_fully_annotated_type_layout(type_tag, &self.code_cache)
     }
 
     pub fn get_struct_type(&self, index: StructNameIndex) -> Option<Arc<StructType>> {
-        self.session.fetch_struct_ty_by_idx(index, self.remote)
+        self.session.fetch_struct_ty_by_idx(index, &self.code_cache)
     }
 
     pub fn get_type_abilities(&self, ty: &Type) -> VMResult<AbilitySet> {
