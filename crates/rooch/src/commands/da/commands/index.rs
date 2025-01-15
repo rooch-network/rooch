@@ -8,6 +8,7 @@ use heed::types::{SerdeBincode, U64};
 use heed::{Database, Env, EnvOpenOptions};
 use moveos_types::h256::H256;
 use serde::{Deserialize, Serialize};
+use std::cmp::max;
 use std::path::PathBuf;
 
 const MAP_SIZE: usize = 1 << 34; // 16G
@@ -29,11 +30,11 @@ pub struct IndexCommand {
     pub index_path: PathBuf,
     #[clap(
         long = "reset-from",
-        short = 'r',
         help = "Reset from tx order(inclusive), all tx orders after this will be re-indexed"
     )]
     pub reset_from: Option<u64>,
-    // TODO add load from & stop block number
+    #[clap(long = "max-block-number", help = "Max block number to index")]
+    pub max_block_number: Option<u128>,
 }
 
 pub struct Indexer {
@@ -100,6 +101,11 @@ impl IndexCommand {
         let ledger_tx_loader = LedgerTxGetter::new(self.segment_dir)?;
         let mut block_number = indexer.last_block_number; // avoiding partial indexing
         let mut expected_tx_order = indexer.last_tx_order + 1;
+        let stop_at = if let Some(max_block_number) = self.max_block_number {
+            max(max_block_number, ledger_tx_loader.get_max_chunk_id())
+        } else {
+            ledger_tx_loader.get_max_chunk_id()
+        };
 
         let mut wtxn = indexer.db_env.write_txn()?;
         let db: Database<U64<BigEndian>, SerdeBincode<TxPosition>> = indexer
@@ -107,7 +113,7 @@ impl IndexCommand {
             .create_database(&mut wtxn, Some(ORDER_DATABASE_NAME))?;
 
         loop {
-            if block_number > ledger_tx_loader.get_max_chunk_id() {
+            if block_number > stop_at {
                 break;
             }
             let tx_list = ledger_tx_loader.load_ledger_tx_list(block_number, true)?;
