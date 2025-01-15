@@ -2,11 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::vm::data_cache::{into_change_set, MoveosDataCache};
+use crate::vm::module_cache::GlobalModuleCache;
 #[cfg(test)]
 use crate::vm::unit_tests::vm_arguments_tests::{make_script_function, RemoteStore};
 use move_binary_format::file_format::{Signature, SignatureToken};
 use move_vm_runtime::data_cache::TransactionCache;
 use move_vm_runtime::move_vm::MoveVM;
+use move_vm_runtime::RuntimeEnvironment;
 use moveos_object_runtime::runtime::ObjectRuntime;
 use moveos_types::{
     moveos_std::{
@@ -16,7 +18,6 @@ use moveos_types::{
 };
 use parking_lot::RwLock;
 use std::rc::Rc;
-use move_vm_runtime::RuntimeEnvironment;
 
 #[test]
 #[allow(clippy::arc_with_non_send_sync)]
@@ -29,6 +30,7 @@ fn publish_and_load_module() {
     module.serialize(&mut bytes).unwrap();
 
     let runtime_environment = RuntimeEnvironment::new(vec![]);
+    let global_module_cache = GlobalModuleCache::empty();
 
     let move_vm = MoveVM::new_with_runtime_environment(&runtime_environment);
     let remote_view = RemoteStore::new();
@@ -49,7 +51,12 @@ fn publish_and_load_module() {
         ],
     )));
 
-    let mut data_cache = MoveosDataCache::new(&remote_view, loader, object_runtime.clone());
+    let mut data_cache = MoveosDataCache::new(
+        &remote_view,
+        loader,
+        object_runtime.clone(),
+        &global_module_cache,
+    );
 
     // check
     assert!(!data_cache.exists_module(&module_id).unwrap());
