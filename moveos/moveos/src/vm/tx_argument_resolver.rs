@@ -484,7 +484,7 @@ where
 
     fn type_to_type_tag(&self, ty: &Type) -> move_binary_format::errors::PartialVMResult<TypeTag> {
         self.session
-            .get_type_tag(ty, self.remote)
+            .get_type_tag(ty, &self.code_cache)
             .map_err(|e| e.to_partial())
     }
 }
