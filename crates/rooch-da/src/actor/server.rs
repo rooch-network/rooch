@@ -362,7 +362,14 @@ impl BackgroundSubmitter {
 
         // there is no unsubmitted block
         if unsubmitted_blocks.is_empty() {
-            self.update_cursor(last_block_number)?;
+            // if no changes, don't update cursor,
+            // avoid unnecessary disk I/O and misleading update time
+            if let Some(origin_cursor) = origin_background_cursor {
+                if origin_cursor != last_block_number {
+                    // update cursor to last_block_number, because cursor maybe behind than set_submitting_block_done
+                    self.update_cursor(last_block_number)?;
+                }
+            }
             return Ok(());
         }
         let first_unsubmitted_block = unsubmitted_blocks.first().unwrap().block_number;
