@@ -4,7 +4,6 @@
 use crate::cli_types::CommandAction;
 use crate::commands::db::commands::best_rollback::BestRollbackCommand;
 use crate::commands::db::commands::drop::DropCommand;
-use crate::commands::db::commands::dump_tx_root::DumpTxRootCommand;
 use crate::commands::db::commands::get_changeset_by_order::GetChangesetByOrderCommand;
 use crate::commands::db::commands::get_execution_info_by_hash::GetExecutionInfoByHashCommand;
 use crate::commands::db::commands::repair::RepairCommand;
