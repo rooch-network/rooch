@@ -29,16 +29,12 @@ Developers can interact with Eliza dynamically by leveraging on-chain character 
 1. **Deploy the `foc_eliza` modules to Rooch:**
     
     ```bash
-    bash
-    Copy code
     rooch move publish --named-addresses foc_eliza=default
     ```
     
 2. **Create an on-chain character using an Eliza character JSON file:**
     
     ```bash
-    bash
-    Copy code
     rooch move run --function default::character::create_character_from_json --args file:../../../eliza/characters/dobby.character.json
     ```
 
