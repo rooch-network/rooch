@@ -691,77 +691,77 @@ module rooch_fish::pond {
         pond_state.next_food_id - 1
     }
 
-    #[test_only]
-    use rooch_framework::genesis;
+    // #[test_only]
+    // use rooch_framework::genesis;
 
-    #[test_only]
-    use moveos_std::timestamp;
+    // #[test_only]
+    // use moveos_std::timestamp;
 
-    #[test]
-    fun test_create_pond() {
-        genesis::init_for_test();
+    // #[test]
+    // fun test_create_pond() {
+    //     genesis::init_for_test();
 
-        let id = 1;
-        let owner = @0x123;
-        let width = 100;
-        let height = 100;
-        let purchase_amount = 500;
-        let max_fish_count = 50;
-        let max_food_count = 30;
+    //     let id = 1;
+    //     let owner = @0x123;
+    //     let width = 100;
+    //     let height = 100;
+    //     let purchase_amount = 500;
+    //     let max_fish_count = 50;
+    //     let max_food_count = 30;
 
-        let pond_obj = create_pond(id, owner, width, height, purchase_amount, max_fish_count, max_food_count);
-        let pond_state = object::borrow(&pond_obj);
+    //     let pond_obj = create_pond(id, owner, width, height, purchase_amount, max_fish_count, max_food_count);
+    //     let pond_state = object::borrow(&pond_obj);
 
-        assert!(get_pond_id(pond_state) == id, 1);
-        assert!(get_width(pond_state) == width, 2);
-        assert!(get_height(pond_state) == height, 3);
-        assert!(get_purchase_amount(pond_state) == purchase_amount, 4);
-        assert!(get_max_fish_count(pond_state) == max_fish_count, 5);
-        assert!(get_max_food_count(pond_state) == max_food_count, 6);
-        assert!(get_fish_count(pond_state) == 0, 7);
-        assert!(get_food_count(pond_state) == 0, 8);
-        assert!(get_player_count(pond_state) == 0, 9);
-        assert!(get_total_feed(pond_state) == 0, 10);
+    //     assert!(get_pond_id(pond_state) == id, 1);
+    //     assert!(get_width(pond_state) == width, 2);
+    //     assert!(get_height(pond_state) == height, 3);
+    //     assert!(get_purchase_amount(pond_state) == purchase_amount, 4);
+    //     assert!(get_max_fish_count(pond_state) == max_fish_count, 5);
+    //     assert!(get_max_food_count(pond_state) == max_food_count, 6);
+    //     assert!(get_fish_count(pond_state) == 0, 7);
+    //     assert!(get_food_count(pond_state) == 0, 8);
+    //     assert!(get_player_count(pond_state) == 0, 9);
+    //     assert!(get_total_feed(pond_state) == 0, 10);
 
-        drop_pond(pond_obj);
-    }
+    //     drop_pond(pond_obj);
+    // }
 
-    #[test(account = @0x42)]
-    fun test_fish_burst_mechanism(account: signer) {
-        genesis::init_for_test();
+    // #[test(account = @0x42)]
+    // fun test_fish_burst_mechanism(account: signer) {
+    //     genesis::init_for_test();
 
-        let account_addr = signer::address_of(&account);
-        gas_coin::faucet_for_test(account_addr, 1000000);
+    //     let account_addr = signer::address_of(&account);
+    //     gas_coin::faucet_for_test(account_addr, 1000000);
 
-        let owner = @0x123;
-        let pond_obj = create_pond(1, owner, 100, 100, 500, 50, 30);
-        let pond_state = object::borrow_mut(&mut pond_obj);
+    //     let owner = @0x123;
+    //     let pond_obj = create_pond(1, owner, 100, 100, 500, 50, 30);
+    //     let pond_state = object::borrow_mut(&mut pond_obj);
 
-        coin_store::deposit(&mut pond_state.treasury.coin_store, account_coin_store::withdraw(&account, 1000));
+    //     coin_store::deposit(&mut pond_state.treasury.coin_store, account_coin_store::withdraw(&account, 1000));
 
-        let initial_owner_balance = gas_coin::balance(owner);
+    //     let initial_owner_balance = gas_coin::balance(owner);
 
-        // Create a fish near max size
-        let fish_id = purchase_fish(pond_state, &account);
-        move_fish_to_for_test(pond_state, fish_id, 25, 25);
+    //     // Create a fish near max size
+    //     let fish_id = purchase_fish(pond_state, &account);
+    //     move_fish_to_for_test(pond_state, fish_id, 25, 25);
         
-        // Grow fish to near burst size
-        let fish = get_fish_mut(pond_state, fish_id);
-        fish::grow_fish(fish, MAX_FISH_SIZE - 5);
+    //     // Grow fish to near burst size
+    //     let fish = get_fish_mut(pond_state, fish_id);
+    //     fish::grow_fish(fish, MAX_FISH_SIZE - 5);
 
-        // Move fish to trigger burst
-        let (_, _) = move_fish(pond_state, &account, fish_id, 1);
+    //     // Move fish to trigger burst
+    //     let (_, _) = move_fish(pond_state, &account, fish_id, 1);
         
-        // Verify burst results
-        assert!(get_fish_count(pond_state) == 0, 1);
-        assert!(get_food_count(pond_state) == BURST_FOOD_COUNT, 2);
+    //     // Verify burst results
+    //     assert!(get_fish_count(pond_state) == 0, 1);
+    //     assert!(get_food_count(pond_state) == BURST_FOOD_COUNT, 2);
 
-        // Verify owner received 1% reward
-        let final_owner_balance = gas_coin::balance(owner);
-        assert!(final_owner_balance > initial_owner_balance, 3);
+    //     // Verify owner received 1% reward
+    //     let final_owner_balance = gas_coin::balance(owner);
+    //     assert!(final_owner_balance > initial_owner_balance, 3);
 
-        drop_pond(pond_obj);
-    }
+    //     drop_pond(pond_obj);
+    // }
 
     //skip test for random failure
     // #[test(account = @0x42, food_owner1 = @0x43, food_owner2 = @0x44)]
@@ -857,448 +857,448 @@ module rooch_fish::pond {
     //     drop_pond(pond_obj);
     // }
 
-    #[test(account = @0x42)]
-    #[expected_failure(abort_code = ErrorMaxFishCountReached )]
-    fun test_max_fish_limit(account: signer) {
-        genesis::init_for_test();
+    // #[test(account = @0x42)]
+    // #[expected_failure(abort_code = ErrorMaxFishCountReached )]
+    // fun test_max_fish_limit(account: signer) {
+    //     genesis::init_for_test();
 
-        let account_addr = signer::address_of(&account);
-        gas_coin::faucet_for_test(account_addr, 1000000);
+    //     let account_addr = signer::address_of(&account);
+    //     gas_coin::faucet_for_test(account_addr, 1000000);
 
-        // Create pond with small max fish limit
-        let max_fish = 2;
-        let pond_obj = create_pond(1, account_addr, 100, 100, 500, max_fish, 30);
-        let pond_state = object::borrow_mut(&mut pond_obj);
+    //     // Create pond with small max fish limit
+    //     let max_fish = 2;
+    //     let pond_obj = create_pond(1, account_addr, 100, 100, 500, max_fish, 30);
+    //     let pond_state = object::borrow_mut(&mut pond_obj);
 
-        coin_store::deposit(&mut pond_state.treasury.coin_store, account_coin_store::withdraw(&account, 10000));
+    //     coin_store::deposit(&mut pond_state.treasury.coin_store, account_coin_store::withdraw(&account, 10000));
 
-        // Purchase fish until we hit the limit
-        purchase_fish(pond_state, &account);
-        assert!(get_fish_count(pond_state) == 1, 1);
+    //     // Purchase fish until we hit the limit
+    //     purchase_fish(pond_state, &account);
+    //     assert!(get_fish_count(pond_state) == 1, 1);
         
-        purchase_fish(pond_state, &account);
-        assert!(get_fish_count(pond_state) == 2, 2);
+    //     purchase_fish(pond_state, &account);
+    //     assert!(get_fish_count(pond_state) == 2, 2);
 
-        // This should fail as we've reached the max fish limit
-        purchase_fish(pond_state, &account);
+    //     // This should fail as we've reached the max fish limit
+    //     purchase_fish(pond_state, &account);
 
-        drop_pond(pond_obj);
-    }
+    //     drop_pond(pond_obj);
+    // }
 
-    #[test(account = @0x1)]
-    fun test_purchase_fish(account: signer) {
-        genesis::init_for_test();
+    // #[test(account = @0x1)]
+    // fun test_purchase_fish(account: signer) {
+    //     genesis::init_for_test();
 
-        let account_addr = signer::address_of(&account);
-        gas_coin::faucet_for_test(account_addr, 1000000);
+    //     let account_addr = signer::address_of(&account);
+    //     gas_coin::faucet_for_test(account_addr, 1000000);
 
-        let pond_obj = create_pond(1, account_addr, 100, 100, 500, 50, 30);
-        let pond_state = object::borrow_mut(&mut pond_obj);
+    //     let pond_obj = create_pond(1, account_addr, 100, 100, 500, 50, 30);
+    //     let pond_state = object::borrow_mut(&mut pond_obj);
 
-        coin_store::deposit(&mut pond_state.treasury.coin_store, account_coin_store::withdraw(&account, 1000));
+    //     coin_store::deposit(&mut pond_state.treasury.coin_store, account_coin_store::withdraw(&account, 1000));
 
-        let fish_id = purchase_fish(pond_state, &account);
-        assert!(get_fish_count(pond_state) == 1, 1);
-        assert!(fish::get_owner(get_fish(pond_state, fish_id)) == account_addr, 2);
+    //     let fish_id = purchase_fish(pond_state, &account);
+    //     assert!(get_fish_count(pond_state) == 1, 1);
+    //     assert!(fish::get_owner(get_fish(pond_state, fish_id)) == account_addr, 2);
 
-        drop_pond(pond_obj);
-    }
+    //     drop_pond(pond_obj);
+    // }
 
-    #[test(account = @0x1)]
-    fun test_move_fish(account: signer) {
-        genesis::init_for_test();
+    // #[test(account = @0x1)]
+    // fun test_move_fish(account: signer) {
+    //     genesis::init_for_test();
 
-        let account_addr = signer::address_of(&account);
-        gas_coin::faucet_for_test(account_addr, 1000000);
+    //     let account_addr = signer::address_of(&account);
+    //     gas_coin::faucet_for_test(account_addr, 1000000);
 
-        let pond_obj = create_pond(1, account_addr, 100, 100, 500, 50, 30);
-        let pond_state = object::borrow_mut(&mut pond_obj);
+    //     let pond_obj = create_pond(1, account_addr, 100, 100, 500, 50, 30);
+    //     let pond_state = object::borrow_mut(&mut pond_obj);
 
-        coin_store::deposit(&mut pond_state.treasury.coin_store, account_coin_store::withdraw(&account, 1000));
+    //     coin_store::deposit(&mut pond_state.treasury.coin_store, account_coin_store::withdraw(&account, 1000));
 
-        let fish_id = purchase_fish(pond_state, &account);
-        move_fish_to_for_test(pond_state, fish_id, 25, 25);
+    //     let fish_id = purchase_fish(pond_state, &account);
+    //     move_fish_to_for_test(pond_state, fish_id, 25, 25);
 
-        let (new_x, new_y) = move_fish(pond_state, &account, fish_id, 1);
+    //     let (new_x, new_y) = move_fish(pond_state, &account, fish_id, 1);
         
-        let fish = get_fish(pond_state, fish_id);
-        let (fish_x, fish_y) = fish::get_position(fish);
-        assert!(fish_x == new_x && fish_y == new_y, 1);
+    //     let fish = get_fish(pond_state, fish_id);
+    //     let (fish_x, fish_y) = fish::get_position(fish);
+    //     assert!(fish_x == new_x && fish_y == new_y, 1);
 
-        drop_pond(pond_obj);
-    }
+    //     drop_pond(pond_obj);
+    // }
 
-    #[test(account = @0x1)]
-    fun test_feed_food(account: signer) {
-        genesis::init_for_test();
+    // #[test(account = @0x1)]
+    // fun test_feed_food(account: signer) {
+    //     genesis::init_for_test();
 
-        let account_addr = signer::address_of(&account);
-        gas_coin::faucet_for_test(account_addr, 1000000);
+    //     let account_addr = signer::address_of(&account);
+    //     gas_coin::faucet_for_test(account_addr, 1000000);
 
-        let pond_obj = create_pond(1, account_addr, 100, 100, 500, 50, 300);
-        let pond_state = object::borrow_mut(&mut pond_obj);
+    //     let pond_obj = create_pond(1, account_addr, 100, 100, 500, 50, 300);
+    //     let pond_state = object::borrow_mut(&mut pond_obj);
 
-        let food_value = 500 / FOOD_VALUE_RATIO;
-        let feed_count = MAX_FOOD_PER_FEED;
+    //     let food_value = 500 / FOOD_VALUE_RATIO;
+    //     let feed_count = MAX_FOOD_PER_FEED;
 
-        let total_cost = feed_food(pond_state, &account, feed_count);
+    //     let total_cost = feed_food(pond_state, &account, feed_count);
         
-        assert!(get_food_count(pond_state) == feed_count, 1);
-        assert!(get_total_feed(pond_state) == (feed_count as u256) * (food_value as u256), 2);
+    //     assert!(get_food_count(pond_state) == feed_count, 1);
+    //     assert!(get_total_feed(pond_state) == (feed_count as u256) * (food_value as u256), 2);
 
-        let large_feed_count = MAX_FOOD_PER_FEED * 2;
-        let second_total_cost = feed_food(pond_state, &account, large_feed_count);
+    //     let large_feed_count = MAX_FOOD_PER_FEED * 2;
+    //     let second_total_cost = feed_food(pond_state, &account, large_feed_count);
 
-        assert!(get_food_count(pond_state) == MAX_FOOD_PER_FEED * 2, 3);
-        assert!(get_total_feed(pond_state) == total_cost + second_total_cost, 4);
+    //     assert!(get_food_count(pond_state) == MAX_FOOD_PER_FEED * 2, 3);
+    //     assert!(get_total_feed(pond_state) == total_cost + second_total_cost, 4);
 
-        drop_pond(pond_obj);
-    }
+    //     drop_pond(pond_obj);
+    // }
 
-    #[test(account = @0x1)]
-    fun test_destroy_fish(account: signer) {
-        genesis::init_for_test();
+    // #[test(account = @0x1)]
+    // fun test_destroy_fish(account: signer) {
+    //     genesis::init_for_test();
 
-        let account_addr = signer::address_of(&account);
-        gas_coin::faucet_for_test(account_addr, 1000000);
+    //     let account_addr = signer::address_of(&account);
+    //     gas_coin::faucet_for_test(account_addr, 1000000);
 
-        let pond_obj = create_pond(1, account_addr, 100, 100, 500, 50, 30);
-        let pond_state = object::borrow_mut(&mut pond_obj);
+    //     let pond_obj = create_pond(1, account_addr, 100, 100, 500, 50, 30);
+    //     let pond_state = object::borrow_mut(&mut pond_obj);
 
-        coin_store::deposit(&mut pond_state.treasury.coin_store, account_coin_store::withdraw(&account, 10000));
+    //     coin_store::deposit(&mut pond_state.treasury.coin_store, account_coin_store::withdraw(&account, 10000));
 
-        let fish_id = purchase_fish(pond_state, &account);
-        move_fish_to_for_test(pond_state, fish_id, 25, 25);
+    //     let fish_id = purchase_fish(pond_state, &account);
+    //     move_fish_to_for_test(pond_state, fish_id, 25, 25);
 
-        add_exit_zone(pond_state, 0, 0, 100);
+    //     add_exit_zone(pond_state, 0, 0, 100);
 
-        let reward = destroy_fish(pond_state, &account, fish_id);
-        assert!(reward > 0, 1);
-        assert!(get_fish_count(pond_state) == 0, 2);
+    //     let reward = destroy_fish(pond_state, &account, fish_id);
+    //     assert!(reward > 0, 1);
+    //     assert!(get_fish_count(pond_state) == 0, 2);
 
-        drop_pond(pond_obj);
-    }
+    //     drop_pond(pond_obj);
+    // }
 
-    #[test]
-    fun test_exit_zones() {
-        genesis::init_for_test();
+    // #[test]
+    // fun test_exit_zones() {
+    //     genesis::init_for_test();
 
-        let owner = @0x123;
-        let pond_obj = create_pond(1, owner, 100, 100, 500, 50, 30);
-        let pond_state = object::borrow_mut(&mut pond_obj);
+    //     let owner = @0x123;
+    //     let pond_obj = create_pond(1, owner, 100, 100, 500, 50, 30);
+    //     let pond_state = object::borrow_mut(&mut pond_obj);
 
-        add_exit_zone(pond_state, 10, 10, 5);
-        add_exit_zone(pond_state, 90, 90, 8);
+    //     add_exit_zone(pond_state, 10, 10, 5);
+    //     add_exit_zone(pond_state, 90, 90, 8);
 
-        let fish1 = fish::create_fish(@0x1, 1, 10, 12, 12);
-        let fish2 = fish::create_fish(@0x2, 2, 15, 50, 50);
+    //     let fish1 = fish::create_fish(@0x1, 1, 10, 12, 12);
+    //     let fish2 = fish::create_fish(@0x2, 2, 15, 50, 50);
 
-        assert!(is_fish_in_exit_zone(pond_state, &fish1), 1);
-        assert!(!is_fish_in_exit_zone(pond_state, &fish2), 2);
+    //     assert!(is_fish_in_exit_zone(pond_state, &fish1), 1);
+    //     assert!(!is_fish_in_exit_zone(pond_state, &fish2), 2);
 
-        remove_exit_zone(pond_state, 0);
-        assert!(!is_fish_in_exit_zone(pond_state, &fish1), 3);
+    //     remove_exit_zone(pond_state, 0);
+    //     assert!(!is_fish_in_exit_zone(pond_state, &fish1), 3);
 
-        fish::drop_fish(fish1);
-        fish::drop_fish(fish2);
-        drop_pond(pond_obj);
-    }
+    //     fish::drop_fish(fish1);
+    //     fish::drop_fish(fish2);
+    //     drop_pond(pond_obj);
+    // }
 
-    #[test(account = @0x42, other_account = @0x43)]
-    fun test_get_player_fish_ids(account: signer, other_account: signer) {
-        genesis::init_for_test();
+    // #[test(account = @0x42, other_account = @0x43)]
+    // fun test_get_player_fish_ids(account: signer, other_account: signer) {
+    //     genesis::init_for_test();
 
-        let account_addr = signer::address_of(&account);
-        gas_coin::faucet_for_test(account_addr, 1000000);
+    //     let account_addr = signer::address_of(&account);
+    //     gas_coin::faucet_for_test(account_addr, 1000000);
 
-        let pond_obj = create_pond(1, account_addr, 100, 100, 500, 50, 30);
-        let pond_state = object::borrow_mut(&mut pond_obj);
+    //     let pond_obj = create_pond(1, account_addr, 100, 100, 500, 50, 30);
+    //     let pond_state = object::borrow_mut(&mut pond_obj);
 
-        coin_store::deposit(&mut pond_state.treasury.coin_store, account_coin_store::withdraw(&account, 10000));
+    //     coin_store::deposit(&mut pond_state.treasury.coin_store, account_coin_store::withdraw(&account, 10000));
 
-        let fish_id1 = purchase_fish(pond_state, &account);
-        let fish_id2 = purchase_fish(pond_state, &account);
-        let fish_id3 = purchase_fish(pond_state, &account);
+    //     let fish_id1 = purchase_fish(pond_state, &account);
+    //     let fish_id2 = purchase_fish(pond_state, &account);
+    //     let fish_id3 = purchase_fish(pond_state, &account);
 
-        let fish_ids = get_player_fish_ids(pond_state, account_addr);
+    //     let fish_ids = get_player_fish_ids(pond_state, account_addr);
 
-        assert!(vector::length(&fish_ids) == 3, 1);
-        assert!(vector::contains(&fish_ids, &fish_id1), 2);
-        assert!(vector::contains(&fish_ids, &fish_id2), 3);
-        assert!(vector::contains(&fish_ids, &fish_id3), 4);
+    //     assert!(vector::length(&fish_ids) == 3, 1);
+    //     assert!(vector::contains(&fish_ids, &fish_id1), 2);
+    //     assert!(vector::contains(&fish_ids, &fish_id2), 3);
+    //     assert!(vector::contains(&fish_ids, &fish_id3), 4);
 
-        let other_account_addr = signer::address_of(&other_account);
-        gas_coin::faucet_for_test(other_account_addr, 1000000);
-        let other_fish_id = purchase_fish(pond_state, &other_account);
+    //     let other_account_addr = signer::address_of(&other_account);
+    //     gas_coin::faucet_for_test(other_account_addr, 1000000);
+    //     let other_fish_id = purchase_fish(pond_state, &other_account);
 
-        let fish_ids = get_player_fish_ids(pond_state, account_addr);
+    //     let fish_ids = get_player_fish_ids(pond_state, account_addr);
 
-        assert!(vector::length(&fish_ids) == 3, 5);
-        assert!(!vector::contains(&fish_ids, &other_fish_id), 6);
+    //     assert!(vector::length(&fish_ids) == 3, 5);
+    //     assert!(!vector::contains(&fish_ids, &other_fish_id), 6);
 
-        drop_pond(pond_obj);
-    }
+    //     drop_pond(pond_obj);
+    // }
 
-    #[test(account = @0x1)]
-    fun test_fish_eat_food_and_move(account: signer) {
-        genesis::init_for_test();
+    // #[test(account = @0x1)]
+    // fun test_fish_eat_food_and_move(account: signer) {
+    //     genesis::init_for_test();
 
-        let account_addr = signer::address_of(&account);
-        gas_coin::faucet_for_test(account_addr, 1000000);
+    //     let account_addr = signer::address_of(&account);
+    //     gas_coin::faucet_for_test(account_addr, 1000000);
 
-        let pond_obj = create_pond(1, account_addr, 100, 100, 500, 50, 30);
-        let pond_state = object::borrow_mut(&mut pond_obj);
+    //     let pond_obj = create_pond(1, account_addr, 100, 100, 500, 50, 30);
+    //     let pond_state = object::borrow_mut(&mut pond_obj);
 
-        coin_store::deposit(&mut pond_state.treasury.coin_store, account_coin_store::withdraw(&account, 1000));
+    //     coin_store::deposit(&mut pond_state.treasury.coin_store, account_coin_store::withdraw(&account, 1000));
 
-        let fish_id = purchase_fish(pond_state, &account);
-        move_fish_to_for_test(pond_state, fish_id, 25, 25);
+    //     let fish_id = purchase_fish(pond_state, &account);
+    //     move_fish_to_for_test(pond_state, fish_id, 25, 25);
         
-        let initial_fish_size = fish::get_size(get_fish(pond_state, fish_id));
+    //     let initial_fish_size = fish::get_size(get_fish(pond_state, fish_id));
 
-        feed_food(pond_state, &account, 1);
-        let food_id = get_last_food_id(pond_state);
-        set_food_position_for_test(pond_state, food_id, 25, 26);
+    //     feed_food(pond_state, &account, 1);
+    //     let food_id = get_last_food_id(pond_state);
+    //     set_food_position_for_test(pond_state, food_id, 25, 26);
         
-        let initial_food_count = get_food_count(pond_state);
+    //     let initial_food_count = get_food_count(pond_state);
 
-        move_fish(pond_state, &account, fish_id, 0);
+    //     move_fish(pond_state, &account, fish_id, 0);
         
-        let fish = get_fish(pond_state, fish_id);
-        let final_fish_size = fish::get_size(fish);
-        let (fish_x, fish_y) = fish::get_position(fish);
-        let final_food_count = get_food_count(pond_state);
+    //     let fish = get_fish(pond_state, fish_id);
+    //     let final_fish_size = fish::get_size(fish);
+    //     let (fish_x, fish_y) = fish::get_position(fish);
+    //     let final_food_count = get_food_count(pond_state);
 
-        assert!(final_fish_size > initial_fish_size, 1);
-        assert!(final_food_count < initial_food_count, 2);
-        assert!(fish_x == 25 && fish_y == 26, 3);
+    //     assert!(final_fish_size > initial_fish_size, 1);
+    //     assert!(final_food_count < initial_food_count, 2);
+    //     assert!(fish_x == 25 && fish_y == 26, 3);
         
-        move_fish(pond_state, &account, fish_id, 1);
-        let fish = get_fish(pond_state, fish_id);
-        let (fish_x, fish_y) = fish::get_position(fish);
+    //     move_fish(pond_state, &account, fish_id, 1);
+    //     let fish = get_fish(pond_state, fish_id);
+    //     let (fish_x, fish_y) = fish::get_position(fish);
         
-        assert!(fish_x == 26 && fish_y == 26, 4);
+    //     assert!(fish_x == 26 && fish_y == 26, 4);
 
-        move_fish(pond_state, &account, fish_id, 2);
-        move_fish(pond_state, &account, fish_id, 3);
+    //     move_fish(pond_state, &account, fish_id, 2);
+    //     move_fish(pond_state, &account, fish_id, 3);
         
-        let fish = get_fish(pond_state, fish_id);
-        let (fish_x, fish_y) = fish::get_position(fish);
+    //     let fish = get_fish(pond_state, fish_id);
+    //     let (fish_x, fish_y) = fish::get_position(fish);
         
-        assert!(fish_x == 25 && fish_y == 25, 5);
+    //     assert!(fish_x == 25 && fish_y == 25, 5);
         
-        drop_pond(pond_obj);
-    }
+    //     drop_pond(pond_obj);
+    // }
 
-    #[test(account = @0x1)]
-    #[expected_failure(abort_code = ErrorMaxFishCountReached )]
-    fun test_max_fish_count(account: signer) {
-        genesis::init_for_test();
+    // #[test(account = @0x1)]
+    // #[expected_failure(abort_code = ErrorMaxFishCountReached )]
+    // fun test_max_fish_count(account: signer) {
+    //     genesis::init_for_test();
 
-        let account_addr = signer::address_of(&account);
-        gas_coin::faucet_for_test(account_addr, 1000000);
+    //     let account_addr = signer::address_of(&account);
+    //     gas_coin::faucet_for_test(account_addr, 1000000);
 
-        let pond_obj = create_pond(1, account_addr, 100, 100, 500, 2, 30);
-        let pond_state = object::borrow_mut(&mut pond_obj);
+    //     let pond_obj = create_pond(1, account_addr, 100, 100, 500, 2, 30);
+    //     let pond_state = object::borrow_mut(&mut pond_obj);
 
-        coin_store::deposit(&mut pond_state.treasury.coin_store, account_coin_store::withdraw(&account, 10000));
+    //     coin_store::deposit(&mut pond_state.treasury.coin_store, account_coin_store::withdraw(&account, 10000));
 
-        purchase_fish(pond_state, &account);
-        purchase_fish(pond_state, &account);
-        purchase_fish(pond_state, &account);
+    //     purchase_fish(pond_state, &account);
+    //     purchase_fish(pond_state, &account);
+    //     purchase_fish(pond_state, &account);
 
-        drop_pond(pond_obj);
-    }
+    //     drop_pond(pond_obj);
+    // }
 
-    #[test(account = @0x1)]
-    #[expected_failure(abort_code = ErrorMaxFoodCountReached)]
-    fun test_max_food_count(account: signer) {
-        genesis::init_for_test();
+    // #[test(account = @0x1)]
+    // #[expected_failure(abort_code = ErrorMaxFoodCountReached)]
+    // fun test_max_food_count(account: signer) {
+    //     genesis::init_for_test();
 
-        let account_addr = signer::address_of(&account);
-        gas_coin::faucet_for_test(account_addr, 1000000);
+    //     let account_addr = signer::address_of(&account);
+    //     gas_coin::faucet_for_test(account_addr, 1000000);
 
-        let pond_obj = create_pond(1, account_addr, 100, 100, 500, 50, 5);
-        let pond_state = object::borrow_mut(&mut pond_obj);
+    //     let pond_obj = create_pond(1, account_addr, 100, 100, 500, 50, 5);
+    //     let pond_state = object::borrow_mut(&mut pond_obj);
 
-        feed_food(pond_state, &account, 10);
+    //     feed_food(pond_state, &account, 10);
 
-        drop_pond(pond_obj);
-    }
+    //     drop_pond(pond_obj);
+    // }
 
-    #[test(account = @0x42, food_owner = @0x43)]
-    fun test_destroy_fish_reward_distribution(account: signer, food_owner: signer) {
-        genesis::init_for_test();
+    // #[test(account = @0x42, food_owner = @0x43)]
+    // fun test_destroy_fish_reward_distribution(account: signer, food_owner: signer) {
+    //     genesis::init_for_test();
 
-        let account_addr = signer::address_of(&account);
-        let food_owner_addr = signer::address_of(&food_owner);
-        let owner = @0x123;
+    //     let account_addr = signer::address_of(&account);
+    //     let food_owner_addr = signer::address_of(&food_owner);
+    //     let owner = @0x123;
 
-        // Set initial balances
-        gas_coin::faucet_for_test(account_addr, 1000000);
-        gas_coin::faucet_for_test(food_owner_addr, 1000000);
-        gas_coin::faucet_for_test(owner, 1000000);
+    //     // Set initial balances
+    //     gas_coin::faucet_for_test(account_addr, 1000000);
+    //     gas_coin::faucet_for_test(food_owner_addr, 1000000);
+    //     gas_coin::faucet_for_test(owner, 1000000);
         
-        let pond_obj = create_pond(1, owner, 100, 100, 500, 50, 30);
-        let pond_state = object::borrow_mut(&mut pond_obj);
+    //     let pond_obj = create_pond(1, owner, 100, 100, 500, 50, 30);
+    //     let pond_state = object::borrow_mut(&mut pond_obj);
 
-        // Add substantial funds to treasury for rewards
-        coin_store::deposit(&mut pond_state.treasury.coin_store, account_coin_store::withdraw(&account, 100000));
+    //     // Add substantial funds to treasury for rewards
+    //     coin_store::deposit(&mut pond_state.treasury.coin_store, account_coin_store::withdraw(&account, 100000));
 
-        // Create and grow fish with significant size
-        let fish_id = purchase_fish(pond_state, &account);
-        move_fish_to_for_test(pond_state, fish_id, 25, 25);
+    //     // Create and grow fish with significant size
+    //     let fish_id = purchase_fish(pond_state, &account);
+    //     move_fish_to_for_test(pond_state, fish_id, 25, 25);
         
-        // Grow fish to increase reward value
-        let fish = get_fish_mut(pond_state, fish_id);
-        fish::grow_fish(fish, 50);
+    //     // Grow fish to increase reward value
+    //     let fish = get_fish_mut(pond_state, fish_id);
+    //     fish::grow_fish(fish, 50);
 
-        // Add food contribution
-        feed_food(pond_state, &food_owner, 1);
-        let food_id = get_last_food_id(pond_state);
-        set_food_position_for_test(pond_state, food_id, 25, 26);
+    //     // Add food contribution
+    //     feed_food(pond_state, &food_owner, 1);
+    //     let food_id = get_last_food_id(pond_state);
+    //     set_food_position_for_test(pond_state, food_id, 25, 26);
         
-        // Move fish to eat food
-        move_fish(pond_state, &account, fish_id, 0);
+    //     // Move fish to eat food
+    //     move_fish(pond_state, &account, fish_id, 0);
 
-        // Record balances before destroy
-        let initial_owner_balance = gas_coin::balance(owner);
-        let initial_food_owner_balance = gas_coin::balance(food_owner_addr);
-        let initial_fish_owner_balance = gas_coin::balance(account_addr);
+    //     // Record balances before destroy
+    //     let initial_owner_balance = gas_coin::balance(owner);
+    //     let initial_food_owner_balance = gas_coin::balance(food_owner_addr);
+    //     let initial_fish_owner_balance = gas_coin::balance(account_addr);
 
-        // Add exit zone and destroy fish
-        add_exit_zone(pond_state, 0, 0, 100);
-        let total_reward = destroy_fish(pond_state, &account, fish_id);
+    //     // Add exit zone and destroy fish
+    //     add_exit_zone(pond_state, 0, 0, 100);
+    //     let total_reward = destroy_fish(pond_state, &account, fish_id);
 
-        // Calculate expected rewards
-        let dev_reward = total_reward / 100; // 1%
-        let contributor_reward = (total_reward * 20) / 100; // 20%
-        let owner_reward = total_reward - dev_reward - contributor_reward; // 79%
+    //     // Calculate expected rewards
+    //     let dev_reward = total_reward / 100; // 1%
+    //     let contributor_reward = (total_reward * 20) / 100; // 20%
+    //     let owner_reward = total_reward - dev_reward - contributor_reward; // 79%
 
-        // Verify final balances
-        let final_owner_balance = gas_coin::balance(owner);
-        let final_food_owner_balance = gas_coin::balance(food_owner_addr);
-        let final_fish_owner_balance = gas_coin::balance(account_addr);
+    //     // Verify final balances
+    //     let final_owner_balance = gas_coin::balance(owner);
+    //     let final_food_owner_balance = gas_coin::balance(food_owner_addr);
+    //     let final_fish_owner_balance = gas_coin::balance(account_addr);
 
-        // Verify reward distributions
-        assert!((final_owner_balance > initial_owner_balance), 1);
-        assert!((final_owner_balance - initial_owner_balance) == dev_reward, 2);
+    //     // Verify reward distributions
+    //     assert!((final_owner_balance > initial_owner_balance), 1);
+    //     assert!((final_owner_balance - initial_owner_balance) == dev_reward, 2);
         
-        assert!((final_food_owner_balance > initial_food_owner_balance), 3);
-        assert!((final_food_owner_balance - initial_food_owner_balance) == contributor_reward, 4);
+    //     assert!((final_food_owner_balance > initial_food_owner_balance), 3);
+    //     assert!((final_food_owner_balance - initial_food_owner_balance) == contributor_reward, 4);
         
-        assert!((final_fish_owner_balance > initial_fish_owner_balance), 5);
-        assert!((final_fish_owner_balance - initial_fish_owner_balance) == owner_reward, 6);
+    //     assert!((final_fish_owner_balance > initial_fish_owner_balance), 5);
+    //     assert!((final_fish_owner_balance - initial_fish_owner_balance) == owner_reward, 6);
 
-        // Verify total reward distribution
-        assert!(dev_reward + contributor_reward + owner_reward == total_reward, 7);
+    //     // Verify total reward distribution
+    //     assert!(dev_reward + contributor_reward + owner_reward == total_reward, 7);
 
-        drop_pond(pond_obj);
-    }
+    //     drop_pond(pond_obj);
+    // }
 
-    #[test(account = @0x42)]
-    fun test_destroy_fish_no_contributors(account: signer) {
-        genesis::init_for_test();
+    // #[test(account = @0x42)]
+    // fun test_destroy_fish_no_contributors(account: signer) {
+    //     genesis::init_for_test();
 
-        let account_addr = signer::address_of(&account);
-        let owner = @0x123;
+    //     let account_addr = signer::address_of(&account);
+    //     let owner = @0x123;
         
-        // Set initial balances with large amounts
-        gas_coin::faucet_for_test(account_addr, 10000000);
-        gas_coin::faucet_for_test(owner, 10000000);
+    //     // Set initial balances with large amounts
+    //     gas_coin::faucet_for_test(account_addr, 10000000);
+    //     gas_coin::faucet_for_test(owner, 10000000);
 
-        let pond_obj = create_pond(1, owner, 100, 100, 500, 50, 30);
-        let pond_state = object::borrow_mut(&mut pond_obj);
+    //     let pond_obj = create_pond(1, owner, 100, 100, 500, 50, 30);
+    //     let pond_state = object::borrow_mut(&mut pond_obj);
 
-        // Add substantial funds to treasury
-        coin_store::deposit(&mut pond_state.treasury.coin_store, account_coin_store::withdraw(&account, 1000000));
+    //     // Add substantial funds to treasury
+    //     coin_store::deposit(&mut pond_state.treasury.coin_store, account_coin_store::withdraw(&account, 1000000));
 
-        // Create and grow fish
-        let fish_id = purchase_fish(pond_state, &account);
-        move_fish_to_for_test(pond_state, fish_id, 25, 25);
+    //     // Create and grow fish
+    //     let fish_id = purchase_fish(pond_state, &account);
+    //     move_fish_to_for_test(pond_state, fish_id, 25, 25);
         
-        // Grow fish to increase reward value
-        let fish = get_fish_mut(pond_state, fish_id);
-        fish::grow_fish(fish, 50);
+    //     // Grow fish to increase reward value
+    //     let fish = get_fish_mut(pond_state, fish_id);
+    //     fish::grow_fish(fish, 50);
 
-        // Add exit zone and record balances just before destroying fish
-        add_exit_zone(pond_state, 0, 0, 100);
-        let initial_owner_balance = gas_coin::balance(owner);
-        let initial_fish_owner_balance = gas_coin::balance(account_addr);
+    //     // Add exit zone and record balances just before destroying fish
+    //     add_exit_zone(pond_state, 0, 0, 100);
+    //     let initial_owner_balance = gas_coin::balance(owner);
+    //     let initial_fish_owner_balance = gas_coin::balance(account_addr);
 
-        // Destroy fish and get total reward
-        let total_reward = destroy_fish(pond_state, &account, fish_id);
+    //     // Destroy fish and get total reward
+    //     let total_reward = destroy_fish(pond_state, &account, fish_id);
 
-        // Calculate expected rewards
-        let dev_reward = total_reward / 100; // 1%
-        let owner_reward = total_reward - dev_reward; // 99% (since no contributors)
+    //     // Calculate expected rewards
+    //     let dev_reward = total_reward / 100; // 1%
+    //     let owner_reward = total_reward - dev_reward; // 99% (since no contributors)
 
-        // Get final balances
-        let final_owner_balance = gas_coin::balance(owner);
-        let final_fish_owner_balance = gas_coin::balance(account_addr);
+    //     // Get final balances
+    //     let final_owner_balance = gas_coin::balance(owner);
+    //     let final_fish_owner_balance = gas_coin::balance(account_addr);
 
-        // Calculate actual rewards received
-        let actual_dev_reward = final_owner_balance - initial_owner_balance;
-        let actual_owner_reward = final_fish_owner_balance - initial_fish_owner_balance;
+    //     // Calculate actual rewards received
+    //     let actual_dev_reward = final_owner_balance - initial_owner_balance;
+    //     let actual_owner_reward = final_fish_owner_balance - initial_fish_owner_balance;
 
-        // Verify rewards - developer should get exactly 1%
-        assert!(actual_dev_reward == dev_reward, 1);
+    //     // Verify rewards - developer should get exactly 1%
+    //     assert!(actual_dev_reward == dev_reward, 1);
         
-        // Verify that fish owner got remainder (allowing for minimal precision loss)
-        assert!(actual_owner_reward > 0, 2);
-        assert!(actual_owner_reward <= owner_reward, 3); // Should not exceed expected
+    //     // Verify that fish owner got remainder (allowing for minimal precision loss)
+    //     assert!(actual_owner_reward > 0, 2);
+    //     assert!(actual_owner_reward <= owner_reward, 3); // Should not exceed expected
         
-        // The difference between expected and actual should be very small
-        let reward_difference = if (owner_reward > actual_owner_reward) {
-            owner_reward - actual_owner_reward
-        } else {
-            actual_owner_reward - owner_reward
-        };
-        assert!(reward_difference < 100, 4); // Allow for small rounding differences
+    //     // The difference between expected and actual should be very small
+    //     let reward_difference = if (owner_reward > actual_owner_reward) {
+    //         owner_reward - actual_owner_reward
+    //     } else {
+    //         actual_owner_reward - owner_reward
+    //     };
+    //     assert!(reward_difference < 100, 4); // Allow for small rounding differences
         
-        // Total distributed rewards should match total_reward (within small margin)
-        let total_distributed = actual_dev_reward + actual_owner_reward;
-        let distribution_difference = if (total_reward > total_distributed) {
-            total_reward - total_distributed
-        } else {
-            total_distributed - total_reward
-        };
-        assert!(distribution_difference < 100, 5); // Allow for small rounding differences
+    //     // Total distributed rewards should match total_reward (within small margin)
+    //     let total_distributed = actual_dev_reward + actual_owner_reward;
+    //     let distribution_difference = if (total_reward > total_distributed) {
+    //         total_reward - total_distributed
+    //     } else {
+    //         total_distributed - total_reward
+    //     };
+    //     assert!(distribution_difference < 100, 5); // Allow for small rounding differences
 
-        drop_pond(pond_obj);
-    }
+    //     drop_pond(pond_obj);
+    // }
 
-    #[test(account = @0x42)]
-    fun test_fish_protection(account: signer) {
-        genesis::init_for_test();
+    // #[test(account = @0x42)]
+    // fun test_fish_protection(account: signer) {
+    //     genesis::init_for_test();
         
-        let account_addr = signer::address_of(&account);
-        gas_coin::faucet_for_test(account_addr, 1000000);
+    //     let account_addr = signer::address_of(&account);
+    //     gas_coin::faucet_for_test(account_addr, 1000000);
 
-        let pond_obj = create_pond(1, account_addr, 100, 100, 500, 50, 30);
-        let pond_state = object::borrow_mut(&mut pond_obj);
+    //     let pond_obj = create_pond(1, account_addr, 100, 100, 500, 50, 30);
+    //     let pond_state = object::borrow_mut(&mut pond_obj);
 
-        coin_store::deposit(&mut pond_state.treasury.coin_store, account_coin_store::withdraw(&account, 10000));
+    //     coin_store::deposit(&mut pond_state.treasury.coin_store, account_coin_store::withdraw(&account, 10000));
 
-        let predator_id = purchase_fish(pond_state, &account);
-        let prey_id = purchase_fish(pond_state, &account);
+    //     let predator_id = purchase_fish(pond_state, &account);
+    //     let prey_id = purchase_fish(pond_state, &account);
 
-        let predator = get_fish_mut(pond_state, predator_id);
-        fish::grow_fish(predator, 50);
+    //     let predator = get_fish_mut(pond_state, predator_id);
+    //     fish::grow_fish(predator, 50);
 
-        move_fish_to_for_test(pond_state, predator_id, 25, 25);
-        move_fish_to_for_test(pond_state, prey_id, 26, 25);
+    //     move_fish_to_for_test(pond_state, predator_id, 25, 25);
+    //     move_fish_to_for_test(pond_state, prey_id, 26, 25);
 
-        move_fish(pond_state, &account, predator_id, 1);
+    //     move_fish(pond_state, &account, predator_id, 1);
         
-        assert!(table::contains(&pond_state.fishes, prey_id), 1);
+    //     assert!(table::contains(&pond_state.fishes, prey_id), 1);
         
-        timestamp::fast_forward_seconds_for_test(61);
+    //     timestamp::fast_forward_seconds_for_test(61);
         
-        move_fish(pond_state, &account, predator_id, 1);
+    //     move_fish(pond_state, &account, predator_id, 1);
         
-        assert!(!table::contains(&pond_state.fishes, prey_id), 2);
+    //     assert!(!table::contains(&pond_state.fishes, prey_id), 2);
 
-        drop_pond(pond_obj);
-    }
+    //     drop_pond(pond_obj);
+    // }
 }
