@@ -1,0 +1,20 @@
+[package]
+name = "verity-move-example"
+version = "0.0.1"
+
+[dependencies]
+MoveStdlib = { git = "https://github.com/rooch-network/rooch.git", subdir = "frameworks/move-stdlib", rev = "main" }
+MoveosStdlib = { git = "https://github.com/rooch-network/rooch.git", subdir = "frameworks/moveos-stdlib", rev = "main" }
+RoochFramework = { git = "https://github.com/rooch-network/rooch.git", subdir = "frameworks/rooch-framework", rev = "main" }
+VerityMoveOracles = { git = "https://github.com/usherlabs/verity-move-oracles.git", subdir = "rooch", rev = "feature/open-ai" } # change feature/open-ai to main once PR#15 is merged
+
+
+[addresses]
+verity = "0x0d6144b074dd19a9ff581abd5bf7815a39222c8b3ac68ce5938c9d9723544e08"
+verity_oracle_example = "_"
+std = "0x1"
+moveos_std = "0x2"
+rooch_framework = "0x3"
+
+[dev-addresses]
+verity_oracle_example = "0x43"
