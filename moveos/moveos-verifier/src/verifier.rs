@@ -18,7 +18,9 @@ use move_core_types::identifier::Identifier;
 use move_core_types::language_storage::ModuleId;
 use move_core_types::vm_status::StatusCode;
 use move_vm_runtime::data_cache::TransactionCache;
-use move_vm_runtime::session::{LoadedFunction, Session};
+use move_vm_runtime::loader::function::LoadedFunction;
+use move_vm_runtime::ModuleStorage;
+use move_vm_runtime::session::Session;
 use move_vm_types::loaded_data::runtime_types::Type;
 use move_vm_types::resolver::ModuleResolver;
 use once_cell::sync::Lazy;
@@ -212,18 +214,18 @@ fn is_signer(t: &SignatureToken) -> bool {
         || matches!(t, SignatureToken::Reference(r) if matches!(**r, SignatureToken::Signer))
 }
 
-pub fn verify_entry_function<S>(func: &LoadedFunction, session: &Session<S>) -> PartialVMResult<()>
+pub fn verify_entry_function<S>(func: &LoadedFunction, session: &Session<S>, resolver: &S) -> PartialVMResult<()>
 where
-    S: TransactionCache,
+    S: TransactionCache + ModuleStorage,
 {
-    if !func.return_.is_empty() {
+    if !func.return_tys().is_empty() {
         return Err(PartialVMError::new(StatusCode::ABORTED)
             .with_sub_status(ErrorCode::INVALID_PARAM_TYPE_ENTRY_FUNCTION.into())
             .with_message("function should not return values".to_owned()));
     }
 
-    for (idx, ty) in func.parameters.iter().enumerate() {
-        if !check_transaction_input_type(ty, session) {
+    for (idx, ty) in func.param_tys().iter().enumerate() {
+        if !check_transaction_input_type(ty, session, resolver) {
             return Err(PartialVMError::new(StatusCode::ABORTED)
                 .with_sub_status(ErrorCode::INVALID_ENTRY_FUNC_SIGNATURE.into())
                 .with_message(format!("The type of the {} parameter is not allowed", idx)));
@@ -298,9 +300,9 @@ fn struct_full_name_from_sid(
     format!("0x{}::{}::{}", module_address, module_name, struct_name)
 }
 
-fn check_transaction_input_type<S>(ety: &Type, session: &Session<S>) -> bool
+fn check_transaction_input_type<S>(ety: &Type, session: &Session<S>, resolver: &S) -> bool
 where
-    S: TransactionCache,
+    S: TransactionCache + ModuleStorage,
 {
     use Type::*;
     match ety {
@@ -308,10 +310,15 @@ where
         Bool | U8 | U16 | U32 | U64 | U128 | U256 | Address | Signer => true,
         Vector(ety) => {
             // Vectors are allowed if element type is allowed
-            check_transaction_input_type(ety.deref(), session)
+            check_transaction_input_type(ety.deref(), session, resolver)
         }
-        Struct(idx) | StructInstantiation(idx, _) => {
-            if let Some(st) = session.get_struct_type(*idx) {
+        Struct { idx, ability: _ }
+        | StructInstantiation {
+            idx,
+            ty_args: _,
+            ability: _,
+        } => {
+            if let Some(st) = session.fetch_struct_ty_by_idx(*idx, resolver) {
                 let full_name = format!("{}::{}", st.module.short_str_lossless(), st.name);
                 is_allowed_input_struct(full_name)
             } else {
@@ -320,12 +327,12 @@ where
         }
         Reference(bt)
             if matches!(bt.as_ref(), Signer)
-                || is_allowed_reference_types(bt.as_ref(), session) =>
+                || is_allowed_reference_types(bt.as_ref(), session, resolver) =>
         {
             // Immutable Reference to signer and specific types is allowed
             true
         }
-        MutableReference(bt) if is_allowed_reference_types(bt.as_ref(), session) => {
+        MutableReference(bt) if is_allowed_reference_types(bt.as_ref(), session, resolver) => {
             // Mutable references to specific types is allowed
             true
         }
@@ -336,17 +343,22 @@ where
     }
 }
 
-fn is_allowed_reference_types<S>(bt: &Type, session: &Session<S>) -> bool
+fn is_allowed_reference_types<S>(bt: &Type, session: &Session<S>, resolver: &S) -> bool
 where
-    S: TransactionCache,
+    S: TransactionCache + ModuleStorage,
 {
     match bt {
-        Type::Struct(sid) | Type::StructInstantiation(sid, _) => {
-            let st_option = session.get_struct_type(*sid);
+        Type::Struct { idx, ability: _ }
+        | Type::StructInstantiation {
+            idx,
+            ty_args: _,
+            ability: _,
+        } => {
+            let st_option = session.fetch_struct_ty_by_idx(*idx, resolver);
             debug_assert!(
                 st_option.is_some(),
                 "Can not find by struct handle index:{:?}",
-                sid
+                idx
             );
             if let Some(st) = st_option {
                 let full_name = format!("{}::{}", st.module.short_str_lossless(), st.name);
@@ -1312,36 +1324,34 @@ fn validate_struct_fields(
         return (false, ErrorCode::INVALID_DATA_STRUCT_WITH_TYPE_PARAMETER);
     }
 
-    let field_count = struct_def.declared_field_count().unwrap();
-    for idx in (0..field_count).by_ref() {
-        let struct_field_def_opt = struct_def.field(idx as usize);
-        match struct_field_def_opt {
-            None => return (false, ErrorCode::INVALID_DATA_STRUCT),
-            Some(struct_fields_def) => {
-                let field_type = struct_fields_def.signature.0.clone();
-                match check_depth_of_type(
-                    current_module,
-                    verified_modules,
-                    db,
-                    &field_type,
-                    MAX_DATA_STRUCT_TYPE_DEPTH,
-                    1,
-                ) {
-                    Ok(_) => {}
-                    Err(_) => return (false, ErrorCode::INVALID_DATA_STRUCT_OVER_MAX_TYPE_DEPTH),
-                }
-                let (is_valid_struct_field, error_code) = validate_fields_type(
-                    &field_type,
-                    current_module,
-                    module_bin_view,
-                    verified_modules,
-                    db,
-                );
-                if !is_valid_struct_field {
-                    return (false, error_code);
-                }
-            }
-        };
+    let struct_fields = struct_def.field_information.fields(None);
+    if struct_fields.is_empty() {
+        return (false, ErrorCode::INVALID_DATA_STRUCT);
+    }
+
+    for field in struct_fields {
+        let field_type = field.signature.0.clone();
+        match check_depth_of_type(
+            current_module,
+            verified_modules,
+            db,
+            &field_type,
+            MAX_DATA_STRUCT_TYPE_DEPTH,
+            1,
+        ) {
+            Ok(_) => {}
+            Err(_) => return (false, ErrorCode::INVALID_DATA_STRUCT_OVER_MAX_TYPE_DEPTH),
+        }
+        let (is_valid_struct_field, error_code) = validate_fields_type(
+            &field_type,
+            current_module,
+            module_bin_view,
+            verified_modules,
+            db,
+        );
+        if !is_valid_struct_field {
+            return (false, error_code);
+        }
     }
 
     (true, ErrorCode::UNKNOWN_CODE)
@@ -1680,7 +1690,7 @@ fn get_module_from_db(module_id: &ModuleId, db: &dyn ModuleResolver) -> Option<C
         Err(_) => None,
         Ok(value) => match value {
             None => None,
-            Some(bytes) => CompiledModule::deserialize(bytes.as_slice()).ok(),
+            Some(bytes) => CompiledModule::deserialize(bytes.as_ref()).ok(),
         },
     }
 }
@@ -1887,10 +1897,9 @@ fn calculate_depth_of_struct(
 
     let mut struct_fields = Vec::new();
     if let Some(struct_def) = struct_def_opt {
-        let field_count = struct_def.declared_field_count().unwrap();
-        for field_idx in 0..field_count {
-            let field_def = struct_def.field(field_idx as usize).unwrap().clone();
-            struct_fields.push(field_def);
+        let struct_fields_vec = struct_def.field_information.fields(None);
+        for field_def in struct_fields_vec {
+            struct_fields.push(field_def.clone());
         }
     }
 
