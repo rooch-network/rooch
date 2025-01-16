@@ -1,8 +1,9 @@
 ---
 title: 'Fully On-Chain Eliza with Move Language: Pioneering Decentralized AI Agents'
+description: ""
 author: jolestar
-date: 2025/01/16
 category: Developer
+date: 2025/01/16
 ---
 
 import PostHeader from "/components/blog/postHeader";
@@ -15,7 +16,7 @@ Rooch Network is breaking new ground by exploring implementing a fully on-chain 
 
 ## Defining Characters in Move
 
-At the core of this initiative lies the character definition in Move. 
+At the core of this initiative lies the character definition in Move.
 
 ![](/blog/eliza-with-move/code.png)
 
@@ -31,7 +32,6 @@ Developers can interact with Eliza dynamically by leveraging on-chain character 
     bash
     Copy code
     rooch move publish --named-addresses foc_eliza=default
-    
     ```
     
 2. **Create an on-chain character using an Eliza character JSON file:**
@@ -40,9 +40,7 @@ Developers can interact with Eliza dynamically by leveraging on-chain character 
     bash
     Copy code
     rooch move run --function default::character::create_character_from_json --args file:../../../eliza/characters/dobby.character.json
-    
     ```
-    
 
 ## Why On-Chain?
 
@@ -82,7 +80,6 @@ Our vision for on-chain AI agents includes the following milestones:
 4. **Standardized On-Chain Components**
     
     Abstract core on-chain components for AI agents and integrate them into the Rooch Move framework to standardize AI agent development.
-    
 
 ## How to Participate
 
@@ -98,10 +95,10 @@ We invite developers and innovators to push the boundaries of on-chain AI by con
     
     - On-chain chatrooms for multi-user interactions.
     - Social media utilities like Twitter or blogging tools for AI agents.
+
 3. **Explore AI and DeFi/BTCFi Integration**
     
     Merge on-chain AI capabilities with decentralized finance applications, unlocking novel opportunities for the Bitcoin ecosystem.
-    
 
 ## Conclusion
 
