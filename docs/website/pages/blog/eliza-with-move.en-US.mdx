@@ -1,0 +1,103 @@
+---
+title: 'Fully On-Chain Eliza with Move Language: Pioneering Decentralized AI Agents'
+description: ""
+author: jolestar
+category: Developer
+date: 2025/01/16
+---
+
+import PostHeader from "/components/blog/postHeader";
+
+<PostHeader />
+
+![](/blog/eliza-with-move/eliza-with-move.jpg)
+
+Rooch Network is breaking new ground by exploring implementing a fully on-chain version of Eliza using the Move language. This innovative approach stores character data and memory directly within smart contracts, unlocking the potential for truly decentralized AI agents. 
+
+## Defining Characters in Move
+
+At the core of this initiative lies the character definition in Move.
+
+![](/blog/eliza-with-move/code.png)
+
+The data structure adheres to the JSON standard previously used by Eliza, facilitating seamless migration of existing character definitions onto the blockchain. For the complete code, visit the [Rooch GitHub repository](https://github.com/rooch-network/rooch/tree/main/examples/foc_eliza).
+
+## Getting Started with On-Chain Eliza
+
+Developers can interact with Eliza dynamically by leveraging on-chain character and memory storage. Here's a quick guide to deploying and using it:
+
+1. **Deploy the `foc_eliza` modules to Rooch:**
+    
+    ```bash
+    rooch move publish --named-addresses foc_eliza=default
+    ```
+    
+2. **Create an on-chain character using an Eliza character JSON file:**
+    
+    ```bash
+    rooch move run --function default::character::create_character_from_json --args file:../../../eliza/characters/dobby.character.json
+    ```
+
+## Why On-Chain?
+
+Transitioning Eliza’s character and memory storage on-chain offers transformative benefits:
+
+**1.Dynamic Evolution**
+
+On-chain storage enables characters’ bios, interests, and message templates to evolve dynamically through user interactions. This fosters a transparent, community-driven process, where participants can oversee and shape the development of AI agents.
+
+**2. Governance and Auditing**
+
+With on-chain governance, communities can define and enforce rules for character evolution and memory management. For example:
+
+- Prevent memory contamination from harmful inputs.
+- Audit public AI agents’ behavior to align with community expectations.
+
+**3.Decentralized Trustworthiness**
+
+Storing characters and memory on-chain enhances transparency and reliability, making Eliza an ideal fit for open and trustworthy AI ecosystems.
+
+## Future Developments
+
+Our vision for on-chain AI agents includes the following milestones:
+
+1. **Dynamic Character Loader**
+    
+    Enable Eliza to dynamically load and update character definitions directly from the blockchain.
+    
+2. **On-Chain Memory Sync Plugin**
+    
+    Develop a plugin to synchronize Eliza’s memory with on-chain states in real-time.
+    
+3. **AI Oracle Integration**
+    
+    Integrate AI Oracles for advanced decision-making, enhancing intelligent on-chain interactions.
+    
+4. **Standardized On-Chain Components**
+    
+    Abstract core on-chain components for AI agents and integrate them into the Rooch Move framework to standardize AI agent development.
+
+## How to Participate
+
+We invite developers and innovators to push the boundaries of on-chain AI by contributing to the following initiatives:
+
+1. **Push the Boundaries of Smart Contracts**
+    
+    Collaborate to explore the possibilities of implementing on-chain AI Agents, such as:Supporting automatic state vectorization and vector retrieval directly in smart contracts(RGA on-chain)
+    
+2. **Provide More On-Chain Services**
+    
+    Build services tailored for AI agents, such as:
+    
+    - On-chain chatrooms for multi-user interactions.
+    - Social media utilities like Twitter or blogging tools for AI agents.
+
+3. **Explore AI and DeFi/BTCFi Integration**
+    
+    Merge on-chain AI capabilities with decentralized finance applications, unlocking novel opportunities for the Bitcoin ecosystem.
+
+## Conclusion
+
+Rooch Network’s fully on-chain Eliza project marks a pivotal step in decentralizing AI agent development. By leveraging Move language and on-chain storage, we aim to create transparent, community-driven, and reliable AI agents for the future.
+
+**Join us in building the next frontier of AI agents on-chain!**
