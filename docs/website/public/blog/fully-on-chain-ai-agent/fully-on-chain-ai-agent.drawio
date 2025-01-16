@@ -1,6 +1,6 @@
 <mxfile host="65bd71144e" pages="7" scale="1" border="5" disableSvgWarning="true">
     <diagram id="fAX5VN4QjjlmQhpSPQlF" name="Page-5">
-        <mxGraphModel dx="691" dy="322" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
+        <mxGraphModel dx="912" dy="491" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -48,7 +48,7 @@
         </mxGraphModel>
     </diagram>
     <diagram id="T3-93icGesZCB4wK9PBx" name="Page-6">
-        <mxGraphModel dx="691" dy="237" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
+        <mxGraphModel dx="912" dy="491" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -138,7 +138,7 @@
         </mxGraphModel>
     </diagram>
     <diagram id="OCkp_mSsAuCf5aVDO59i" name="Fully on chain AI Agent">
-        <mxGraphModel dx="691" dy="237" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
+        <mxGraphModel dx="912" dy="491" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -203,7 +203,7 @@
         </mxGraphModel>
     </diagram>
     <diagram id="LfP_1H0d4wNYqQU20IXf" name="Human vs AIAgent decision">
-        <mxGraphModel dx="691" dy="237" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" background="#ffffff" math="0" shadow="0">
+        <mxGraphModel dx="912" dy="491" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" background="#ffffff" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -315,7 +315,7 @@
         </mxGraphModel>
     </diagram>
     <diagram id="TbNJ9dCIXGfMt4xWhO-V" name="Fully AI Agent workflow">
-        <mxGraphModel dx="691" dy="237" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
+        <mxGraphModel dx="912" dy="491" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -454,11 +454,66 @@
             </root>
         </mxGraphModel>
     </diagram>
-    <diagram id="wUofpKEVH7Dxh-LL1AgS" name="Page-7">
-        <mxGraphModel dx="794" dy="563" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
+    <diagram id="wUofpKEVH7Dxh-LL1AgS" name="on-chain agent &amp; cloud">
+        <mxGraphModel dx="912" dy="491" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
+                <mxCell id="TORpbYHQ2LwHZnW9Mo1B-7" value="Chain" style="rounded=0;whiteSpace=wrap;html=1;dashed=1;verticalAlign=top;fillColor=#337AB7;strokeColor=none;fontColor=#FFFFFF;" vertex="1" parent="1">
+                    <mxGeometry x="300" y="80" width="240" height="160" as="geometry"/>
+                </mxCell>
+                <mxCell id="TORpbYHQ2LwHZnW9Mo1B-3" value="Cloud Service" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;fillColor=#F0AD4E;strokeColor=none;" vertex="1" parent="1">
+                    <mxGeometry x="370" y="290" width="230" height="160" as="geometry"/>
+                </mxCell>
+                <mxCell id="TORpbYHQ2LwHZnW9Mo1B-2" value="Developer" style="rounded=0;whiteSpace=wrap;html=1;dashed=1;verticalAlign=top;fillColor=#00994D;strokeColor=none;fontColor=#FFFFFF;" vertex="1" parent="1">
+                    <mxGeometry x="89" y="120" width="120" height="300" as="geometry"/>
+                </mxCell>
+                <mxCell id="zlhuJSx0ImvcoeatEIDZ-7" style="edgeStyle=none;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="1" source="m_JYxtJiCm3svVnMdtyB-1" target="m_JYxtJiCm3svVnMdtyB-2">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="zlhuJSx0ImvcoeatEIDZ-8" value="Load Character&amp;amp;Config&amp;amp;Memory" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="zlhuJSx0ImvcoeatEIDZ-7">
+                    <mxGeometry x="-0.1138" y="2" relative="1" as="geometry">
+                        <mxPoint x="-1" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="m_JYxtJiCm3svVnMdtyB-1" value="Agent&lt;br&gt;OnChain State&lt;br&gt;&lt;br&gt;Character,&lt;br&gt;Config,&lt;br&gt;Memory" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;" vertex="1" parent="1">
+                    <mxGeometry x="350" y="115" width="110" height="110" as="geometry"/>
+                </mxCell>
+                <mxCell id="m_JYxtJiCm3svVnMdtyB-2" value="AI&lt;br&gt;Agent" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;" vertex="1" parent="1">
+                    <mxGeometry x="399" y="310" width="80" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="zlhuJSx0ImvcoeatEIDZ-6" value="Load code&lt;br&gt;Framework&amp;amp;Plugin" style="edgeStyle=none;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="1" source="zlhuJSx0ImvcoeatEIDZ-3" target="m_JYxtJiCm3svVnMdtyB-2">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="zlhuJSx0ImvcoeatEIDZ-3" value="Agent&lt;br&gt;Docker Image" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;" vertex="1" parent="1">
+                    <mxGeometry x="109" y="310" width="80" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="zlhuJSx0ImvcoeatEIDZ-5" style="edgeStyle=none;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="1" source="zlhuJSx0ImvcoeatEIDZ-4" target="m_JYxtJiCm3svVnMdtyB-1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="TORpbYHQ2LwHZnW9Mo1B-8" value="&lt;span style=&quot;font-size: 11px;&quot;&gt;Initialize AI Agent&lt;/span&gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="zlhuJSx0ImvcoeatEIDZ-5">
+                    <mxGeometry x="-0.0574" relative="1" as="geometry">
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="zlhuJSx0ImvcoeatEIDZ-4" value="User" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;" vertex="1" parent="1">
+                    <mxGeometry x="698" y="135" width="70" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="zlhuJSx0ImvcoeatEIDZ-10" style="edgeStyle=none;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="zlhuJSx0ImvcoeatEIDZ-9" target="zlhuJSx0ImvcoeatEIDZ-3">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="zlhuJSx0ImvcoeatEIDZ-9" value="Agent&lt;br&gt;Source Code" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;" vertex="1" parent="1">
+                    <mxGeometry x="109" y="193" width="80" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="TORpbYHQ2LwHZnW9Mo1B-4" value="TEE" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;" vertex="1" parent="1">
+                    <mxGeometry x="500" y="330" width="40" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="TORpbYHQ2LwHZnW9Mo1B-5" value="GPU" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;" vertex="1" parent="1">
+                    <mxGeometry x="480" y="380" width="40" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="TORpbYHQ2LwHZnW9Mo1B-6" value="LLM" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;" vertex="1" parent="1">
+                    <mxGeometry x="410" y="400" width="40" height="40" as="geometry"/>
+                </mxCell>
             </root>
         </mxGraphModel>
     </diagram>
