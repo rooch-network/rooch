@@ -12,7 +12,7 @@ import PostHeader from "/components/blog/postHeader";
 
 ![](/blog/eliza-with-move/eliza-with-move.jpg)
 
-Rooch Network 通过探索使用 Move 语言实现 Eliza 的完全链上版本来开辟新天地。这种创新方法将角色数据和内存直接存储在智能合约中，释放了真正去中心化人工智能代理的潜力。
+Rooch Network 通过探索使用 Move 语言实现 Eliza 的完全链上版本来开辟新天地。这种创新方法将角色数据和记忆直接存储在智能合约中，释放了真正去中心化人工智能代理的潜力。
 
 ## 在 Move 中定义角色
 
@@ -24,27 +24,23 @@ Rooch Network 通过探索使用 Move 语言实现 Eliza 的完全链上版本�
 
 ## 链上 Eliza 入门
 
-开发人员可以利用链上字符和内存存储与 Eliza 进行动态交互。以下是部署和使用它的快速指南：
+开发人员可以利用链上字符和记忆存储与 Eliza 进行动态交互。以下是部署和使用它的快速指南：
 
 1. **将 `foc_eliza` 模块部署到 Rooch：**
     
     ```bash
-    bash
-    Copy code
     rooch move publish --named-addresses foc_eliza=default
     ```
     
 2. **使用 Eliza 角色 JSON 文件创建链上角色：**
     
     ```bash
-    bash
-    Copy code
     rooch move run --function default::character::create_character_from_json --args file:../../../eliza/characters/dobby.character.json
     ```
 
 ## 为什么要上链？
 
-将 Eliza 的角色和内存存储转移到链上可带来变革性的好处：
+将 Eliza 的角色和记忆存储转移到链上可带来变革性的好处：
 
 1. **动态演化**
 
@@ -52,14 +48,14 @@ Rooch Network 通过探索使用 Move 语言实现 Eliza 的完全链上版本�
 
 2. **治理和审计**
 
-通过链上治理，社区可以定义和执行角色进化和内存管理的规则。例如：
+通过链上治理，社区可以定义和执行角色进化和记忆管理的规则。例如：
 
-- 防止有害输入造成内存污染。
+- 防止有害输入造成记忆污染。
 - 审核公共人工智能代理的行为以符合社区期望。
 
 3. **去中心化的可信度**
 
-在链上存储字符和内存可增强透明度和可靠性，使 Eliza 成为开放且值得信赖的人工智能生态系统的理想选择。
+在链上存储字符和记忆可增强透明度和可靠性，使 Eliza 成为开放且值得信赖的人工智能生态系统的理想选择。
 
 ## 未来发展
 
@@ -69,9 +65,9 @@ Rooch Network 通过探索使用 Move 语言实现 Eliza 的完全链上版本�
 
     使 Eliza 能够直接从区块链动态加载和更新角色定义。
 
-2. **链上内存同步插件**
+2. **链上记忆同步插件**
 
-    开发一个插件来实时同步 Eliza 的内存和链上状态。
+    开发一个插件来实时同步 Eliza 的记忆和链上状态。
 
 3. **人工智能预言机集成**
 
