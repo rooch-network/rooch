@@ -8,7 +8,7 @@ use move_core_types::value::MoveValue;
 use move_core_types::vm_status::VMStatus;
 use move_core_types::{language_storage::TypeTag, vm_status::StatusCode};
 use move_vm_runtime::data_cache::TransactionCache;
-use move_vm_runtime::session::{LoadedFunction, Session};
+use move_vm_runtime::session::Session;
 use move_vm_runtime::{LoadedFunction, ModuleStorage};
 use move_vm_types::loaded_data::runtime_types::{StructType, Type};
 use moveos_common::types::{ClassifiedGasMeter, SwitchableGasMeter};
@@ -41,7 +41,7 @@ where
         mut args: Vec<Vec<u8>>,
         location: Location,
         load_object: bool,
-        module_storage: &dyn ModuleStorage,
+        module_storage: &impl ModuleStorage,
     ) -> VMResult<Vec<Vec<u8>>> {
         let parameters = func.param_tys().clone();
 
@@ -155,7 +155,7 @@ where
         args: &mut IntoIter<Vec<u8>>,
         load_object: bool,
         location: Location,
-        module_storage: &dyn ModuleStorage,
+        module_storage: &impl ModuleStorage,
     ) -> VMResult<Vec<Vec<u8>>> {
         let mut res_args = vec![];
         for (ty, arg) in parameters.iter().zip(args) {
@@ -177,7 +177,7 @@ where
         arg: Vec<u8>,
         load_object: bool,
         location: Location,
-        module_storage: &dyn ModuleStorage,
+        module_storage: &impl ModuleStorage,
     ) -> VMResult<Vec<u8>> {
         use Type::*;
         match ty {
@@ -239,7 +239,7 @@ where
         initial_cursor_len: usize,
         load_object: bool,
         location: Location,
-        module_storage: &dyn ModuleStorage,
+        module_storage: &impl ModuleStorage,
     ) -> VMResult<()> {
         use Type::*;
 
@@ -496,7 +496,7 @@ fn is_signer(t: &Type) -> bool {
 pub fn as_struct_no_panic<T>(
     session: &Session<T>,
     t: &Type,
-    module_storage: &dyn ModuleStorage,
+    module_storage: &impl ModuleStorage,
 ) -> Option<Arc<StructType>>
 where
     T: TransactionCache,

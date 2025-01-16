@@ -238,71 +238,56 @@ impl<'r, 'l, S: MoveOSResolver> TransactionCache for MoveosDataCache<'r, 'l, S> 
     }
 
     fn load_compiled_script_to_cache(
-        &mut self,
+        &self,
         script_blob: &[u8],
-        hash_value: [u8; 32],
+        _hash_value: [u8; 32],
     ) -> VMResult<Arc<CompiledScript>> {
-        let cache = &mut self.compiled_scripts;
-        match cache.entry(hash_value) {
-            btree_map::Entry::Occupied(entry) => Ok(entry.get().clone()),
-            btree_map::Entry::Vacant(entry) => {
-                let script = match CompiledScript::deserialize_with_config(
-                    script_blob,
-                    &DeserializerConfig::default(),
-                ) {
-                    Ok(script) => script,
-                    Err(err) => {
-                        let msg = format!("[VM] deserializer for script returned error: {:?}", err);
-                        return Err(PartialVMError::new(StatusCode::CODE_DESERIALIZATION_ERROR)
-                            .with_message(msg)
-                            .finish(Location::Script));
-                    }
-                };
-                Ok(entry.insert(Arc::new(script)).clone())
+        let script = match CompiledScript::deserialize_with_config(
+            script_blob,
+            &DeserializerConfig::default(),
+        ) {
+            Ok(script) => script,
+            Err(err) => {
+                let msg = format!("[VM] deserializer for script returned error: {:?}", err);
+                return Err(PartialVMError::new(StatusCode::CODE_DESERIALIZATION_ERROR)
+                    .with_message(msg)
+                    .finish(Location::Script));
             }
-        }
+        };
+        Ok(Arc::new(script))
     }
 
     fn load_compiled_module_to_cache(
-        &mut self,
+        &self,
         id: ModuleId,
-        _allow_loading_failure: bool,
+        allow_loading_failure: bool,
     ) -> VMResult<(Arc<CompiledModule>, usize, [u8; 32])> {
-        let cache = &mut self.compiled_modules;
-        match cache.entry(id.clone()) {
-            btree_map::Entry::Occupied(entry) => Ok(entry.get().clone()),
-            btree_map::Entry::Vacant(entry) => {
-                // bytes fetching, allow loading to fail if the flag is set
+        let bytes = match self
+            .load_module(&id)
+            .map_err(|err| err.finish(Location::Undefined))
+        {
+            Ok(bytes) => bytes,
+            Err(err) if allow_loading_failure => return Err(err),
+            Err(err) => {
+                return Err(expect_no_verification_errors(err));
+            }
+        };
 
-                let module_id = entry.key();
-                let module_bytes = match self.load_module(module_id) {
-                    Ok(v) => v,
-                    Err(err) => return Err(err.finish(Location::Module(id.clone()))),
-                };
-
-                let mut sha3_256 = Sha3_256::new();
-                sha3_256.update(&module_bytes);
-                let hash_value: [u8; 32] = sha3_256.finalize().into();
-
-                // for bytes obtained from the data store, they should always deserialize and verify.
-                // It is an invariant violation if they don't.
-                let module = CompiledModule::deserialize_with_config(
-                    &module_bytes,
-                    &DeserializerConfig::default(),
-                )
+        let module =
+            CompiledModule::deserialize_with_config(&bytes, &DeserializerConfig::default())
                 .map_err(|err| {
                     let msg = format!("Deserialization error: {:?}", err);
                     PartialVMError::new(StatusCode::CODE_DESERIALIZATION_ERROR)
                         .with_message(msg)
-                        .finish(Location::Module(entry.key().clone()))
+                        .finish(Location::Module(id.clone()))
                 })
                 .map_err(expect_no_verification_errors)?;
 
-                Ok(entry
-                    .insert((Arc::new(module), module_bytes.len(), hash_value))
-                    .clone())
-            }
-        }
+        let mut sha3_256 = Sha3_256::new();
+        sha3_256.update(&bytes);
+        let hash_value: [u8; 32] = sha3_256.finalize().into();
+
+        Ok((Arc::new(module), bytes.len(), hash_value))
     }
 }
 
@@ -324,12 +309,7 @@ impl<'r, 'l, S: MoveOSResolver> TypeLayoutLoader for MoveosDataCache<'r, 'l, S> 
             Arc::new(self.code_cache.legacy_module_cache.clone()) as Arc<dyn LegacyModuleStorage>;
         let legacy_module_storage = &LegacyModuleStorageAdapter::new(legacy_module_cache);
         self.loader
-            .get_type_layout(
-                type_tag,
-                self.resolver,
-                legacy_module_storage,
-                &self.code_cache,
-            )
+            .get_type_layout(type_tag, self, legacy_module_storage, &self.code_cache)
             .map_err(|e| e.to_partial())
     }
 

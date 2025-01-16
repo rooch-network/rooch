@@ -19,8 +19,8 @@ use move_core_types::language_storage::ModuleId;
 use move_core_types::vm_status::StatusCode;
 use move_vm_runtime::data_cache::TransactionCache;
 use move_vm_runtime::loader::function::LoadedFunction;
-use move_vm_runtime::ModuleStorage;
 use move_vm_runtime::session::Session;
+use move_vm_runtime::ModuleStorage;
 use move_vm_types::loaded_data::runtime_types::Type;
 use move_vm_types::resolver::ModuleResolver;
 use once_cell::sync::Lazy;
@@ -36,8 +36,7 @@ const MAX_DATA_STRUCT_TYPE_DEPTH: u64 = 16;
 pub static INIT_FN_NAME_IDENTIFIER: Lazy<Identifier> =
     Lazy::new(|| Identifier::new("init").unwrap());
 
-pub fn verify_modules(modules: &Vec<CompiledModule>, db: &dyn ModuleResolver) -> VMResult<bool>
-{
+pub fn verify_modules(modules: &Vec<CompiledModule>, db: &dyn ModuleResolver) -> VMResult<bool> {
     let mut verified_modules: BTreeMap<ModuleId, CompiledModule> = BTreeMap::new();
     for module in modules {
         verify_private_generics(module, db, &mut verified_modules)?;
@@ -214,9 +213,13 @@ fn is_signer(t: &SignatureToken) -> bool {
         || matches!(t, SignatureToken::Reference(r) if matches!(**r, SignatureToken::Signer))
 }
 
-pub fn verify_entry_function<S>(func: &LoadedFunction, session: &Session<S>, resolver: &S) -> PartialVMResult<()>
+pub fn verify_entry_function<S>(
+    func: &LoadedFunction,
+    session: &Session<S>,
+    module_storage: &impl ModuleStorage,
+) -> PartialVMResult<()>
 where
-    S: TransactionCache + ModuleStorage,
+    S: TransactionCache,
 {
     if !func.return_tys().is_empty() {
         return Err(PartialVMError::new(StatusCode::ABORTED)
@@ -225,7 +228,7 @@ where
     }
 
     for (idx, ty) in func.param_tys().iter().enumerate() {
-        if !check_transaction_input_type(ty, session, resolver) {
+        if !check_transaction_input_type(ty, session, module_storage) {
             return Err(PartialVMError::new(StatusCode::ABORTED)
                 .with_sub_status(ErrorCode::INVALID_ENTRY_FUNC_SIGNATURE.into())
                 .with_message(format!("The type of the {} parameter is not allowed", idx)));
@@ -300,9 +303,13 @@ fn struct_full_name_from_sid(
     format!("0x{}::{}::{}", module_address, module_name, struct_name)
 }
 
-fn check_transaction_input_type<S>(ety: &Type, session: &Session<S>, resolver: &S) -> bool
+fn check_transaction_input_type<S>(
+    ety: &Type,
+    session: &Session<S>,
+    module_storage: &impl ModuleStorage,
+) -> bool
 where
-    S: TransactionCache + ModuleStorage,
+    S: TransactionCache,
 {
     use Type::*;
     match ety {
@@ -310,7 +317,7 @@ where
         Bool | U8 | U16 | U32 | U64 | U128 | U256 | Address | Signer => true,
         Vector(ety) => {
             // Vectors are allowed if element type is allowed
-            check_transaction_input_type(ety.deref(), session, resolver)
+            check_transaction_input_type(ety.deref(), session, module_storage)
         }
         Struct { idx, ability: _ }
         | StructInstantiation {
@@ -318,7 +325,7 @@ where
             ty_args: _,
             ability: _,
         } => {
-            if let Some(st) = session.fetch_struct_ty_by_idx(*idx, resolver) {
+            if let Some(st) = session.fetch_struct_ty_by_idx(*idx, module_storage) {
                 let full_name = format!("{}::{}", st.module.short_str_lossless(), st.name);
                 is_allowed_input_struct(full_name)
             } else {
@@ -327,12 +334,12 @@ where
         }
         Reference(bt)
             if matches!(bt.as_ref(), Signer)
-                || is_allowed_reference_types(bt.as_ref(), session, resolver) =>
+                || is_allowed_reference_types(bt.as_ref(), session, module_storage) =>
         {
             // Immutable Reference to signer and specific types is allowed
             true
         }
-        MutableReference(bt) if is_allowed_reference_types(bt.as_ref(), session, resolver) => {
+        MutableReference(bt) if is_allowed_reference_types(bt.as_ref(), session, module_storage) => {
             // Mutable references to specific types is allowed
             true
         }
@@ -343,9 +350,13 @@ where
     }
 }
 
-fn is_allowed_reference_types<S>(bt: &Type, session: &Session<S>, resolver: &S) -> bool
+fn is_allowed_reference_types<S>(
+    bt: &Type,
+    session: &Session<S>,
+    moduole_storage: &impl ModuleStorage,
+) -> bool
 where
-    S: TransactionCache + ModuleStorage,
+    S: TransactionCache,
 {
     match bt {
         Type::Struct { idx, ability: _ }
@@ -354,7 +365,7 @@ where
             ty_args: _,
             ability: _,
         } => {
-            let st_option = session.fetch_struct_ty_by_idx(*idx, resolver);
+            let st_option = session.fetch_struct_ty_by_idx(*idx, moduole_storage);
             debug_assert!(
                 st_option.is_some(),
                 "Can not find by struct handle index:{:?}",
@@ -422,8 +433,7 @@ pub fn verify_private_generics(
     module: &CompiledModule,
     db: &dyn ModuleResolver,
     verified_modules: &mut BTreeMap<ModuleId, CompiledModule>,
-) -> VMResult<bool>
-{
+) -> VMResult<bool> {
     if let Err(err) = check_metadata_format(module) {
         return Err(PartialVMError::new(StatusCode::ABORTED)
             .with_message(err.to_string())
@@ -786,8 +796,7 @@ pub fn verify_data_struct(
     caller_module: &CompiledModule,
     db: &dyn ModuleResolver,
     verified_modules: &mut BTreeMap<ModuleId, CompiledModule>,
-) -> VMResult<bool>
-{
+) -> VMResult<bool> {
     if let Err(err) = check_metadata_format(caller_module) {
         return Err(PartialVMError::new(StatusCode::ABORTED)
             .with_message(err.to_string())
@@ -973,8 +982,7 @@ fn load_data_structs_map_from_struct(
     db: &dyn ModuleResolver,
     view: &BinaryIndexedView,
     verified_modules: &mut BTreeMap<ModuleId, CompiledModule>,
-) -> VMResult<BTreeMap<String, bool>>
-{
+) -> VMResult<BTreeMap<String, bool>> {
     match type_arg {
         SignatureToken::Struct(struct_handle_idx) => {
             load_data_structs(db, view, *struct_handle_idx, verified_modules)
@@ -991,8 +999,7 @@ fn load_data_structs(
     view: &BinaryIndexedView,
     struct_handle_idx: StructHandleIndex,
     verified_modules: &mut BTreeMap<ModuleId, CompiledModule>,
-) -> VMResult<BTreeMap<String, bool>>
-{
+) -> VMResult<BTreeMap<String, bool>> {
     let mut data_structs_map: BTreeMap<String, bool> = BTreeMap::new();
 
     // load module from struct handle
@@ -1181,8 +1188,7 @@ fn struct_def_from_struct_handle(
     verified_modules: &mut BTreeMap<ModuleId, CompiledModule>,
     struct_name: &str,
     db: &dyn ModuleResolver,
-) -> Option<StructDefinition>
-{
+) -> Option<StructDefinition> {
     let current_module_bin_view = BinaryIndexedView::Module(current_module);
     for struct_def in current_module.struct_defs.iter() {
         let struct_handle_idx = struct_def.struct_handle;
@@ -1230,9 +1236,8 @@ fn validate_data_struct_map(
     data_struct_map: &BTreeMap<String, bool>,
     module: &CompiledModule,
     verified_modules: &mut BTreeMap<ModuleId, CompiledModule>,
-    db: &dyn ModuleResolver
-) -> VMResult<bool>
-{
+    db: &dyn ModuleResolver,
+) -> VMResult<bool> {
     let module_bin_view = BinaryIndexedView::Module(module);
     for (data_struct_name, _) in data_struct_map.iter() {
         let module_name_opt = extract_module_name(data_struct_name);
@@ -1301,9 +1306,8 @@ fn validate_struct_fields(
     current_module: &CompiledModule,
     module_bin_view: &BinaryIndexedView,
     verified_modules: &mut BTreeMap<ModuleId, CompiledModule>,
-    db: &dyn ModuleResolver
-) -> (bool, ErrorCode)
-{
+    db: &dyn ModuleResolver,
+) -> (bool, ErrorCode) {
     if struct_def.field_information == StructFieldInformation::Native {
         return (false, ErrorCode::INVALID_DATA_STRUCT_WITH_NATIVE_STRUCT);
     }
@@ -1362,9 +1366,8 @@ fn validate_fields_type(
     current_module: &CompiledModule,
     module_bin_view: &BinaryIndexedView,
     verified_modules: &mut BTreeMap<ModuleId, CompiledModule>,
-    db: &dyn ModuleResolver
-) -> (bool, ErrorCode)
-{
+    db: &dyn ModuleResolver,
+) -> (bool, ErrorCode) {
     return if is_primitive_type(field_type) {
         (true, ErrorCode::UNKNOWN_CODE)
     } else {
@@ -1418,8 +1421,7 @@ fn validate_struct(
     module_bin_view: &BinaryIndexedView,
     verified_modules: &mut BTreeMap<ModuleId, CompiledModule>,
     db: &dyn ModuleResolver,
-) -> (bool, ErrorCode)
-{
+) -> (bool, ErrorCode) {
     //if is_allowed_data_struct_type(struct_name) {
     //    return (true, ErrorCode::UNKNOWN_CODE);
     //}
@@ -1473,8 +1475,7 @@ fn verify_struct_from_module_metadata(
     other_module_id: &ModuleId,
     verified_modules: &mut BTreeMap<ModuleId, CompiledModule>,
     db: &dyn ModuleResolver,
-) -> (bool, ErrorCode)
-{
+) -> (bool, ErrorCode) {
     for (_, m) in verified_modules.iter() {
         match get_metadata_from_compiled_module(m) {
             None => {}
@@ -1640,8 +1641,7 @@ fn load_compiled_module_from_struct_handle(
     view: &BinaryIndexedView,
     struct_idx: StructHandleIndex,
     verified_modules: &mut BTreeMap<ModuleId, CompiledModule>,
-) -> Option<CompiledModule>
-{
+) -> Option<CompiledModule> {
     let struct_handle = view.struct_handle_at(struct_idx);
     let module_handle = view.module_handle_at(struct_handle.module);
     let module_address = view.address_identifier_at(module_handle.address);
@@ -1661,8 +1661,7 @@ fn load_compiled_module_from_finst_idx(
     finst_idx: FunctionInstantiationIndex,
     verified_modules: &mut BTreeMap<ModuleId, CompiledModule>,
     search_verified_modules: bool,
-) -> Option<CompiledModule>
-{
+) -> Option<CompiledModule> {
     let FunctionInstantiation {
         handle,
         type_parameters: _type_parameters,
@@ -1684,8 +1683,7 @@ fn load_compiled_module_from_finst_idx(
     }
 }
 
-fn get_module_from_db(module_id: &ModuleId, db: &dyn ModuleResolver) -> Option<CompiledModule>
-{
+fn get_module_from_db(module_id: &ModuleId, db: &dyn ModuleResolver) -> Option<CompiledModule> {
     match db.get_module(module_id) {
         Err(_) => None,
         Ok(value) => match value {
@@ -1822,8 +1820,7 @@ pub fn check_depth_of_type(
     ty: &SignatureToken,
     max_depth: u64,
     depth: u64,
-) -> VMResult<u64>
-{
+) -> VMResult<u64> {
     macro_rules! check_depth {
         ($additional_depth:expr) => {{
             let new_depth = depth.saturating_add($additional_depth);
@@ -1882,8 +1879,7 @@ fn calculate_depth_of_struct(
     verified_modules: &mut BTreeMap<ModuleId, CompiledModule>,
     db: &dyn ModuleResolver,
     struct_idx: StructHandleIndex,
-) -> VMResult<TypeDepthFormula>
-{
+) -> VMResult<TypeDepthFormula> {
     let bin_view = BinaryIndexedView::Module(caller_module);
 
     let struct_full_name = struct_full_name_from_sid(&struct_idx, &bin_view);
@@ -1925,8 +1921,7 @@ fn calculate_depth_of_type(
     verified_modules: &mut BTreeMap<ModuleId, CompiledModule>,
     db: &dyn ModuleResolver,
     field_type: &SignatureToken,
-) -> VMResult<TypeDepthFormula>
-{
+) -> VMResult<TypeDepthFormula> {
     Ok(match field_type {
         SignatureToken::Bool
         | SignatureToken::U8

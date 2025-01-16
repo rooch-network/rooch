@@ -29,7 +29,7 @@ use move_vm_runtime::{
     move_vm::MoveVM,
     native_extensions::NativeContextExtensions,
     native_functions::NativeFunction,
-    session::{LoadedFunction, Session},
+    session::Session,
     CodeStorage, LoadedFunction, Module, ModuleStorage, RuntimeEnvironment, Script,
 };
 use move_vm_types::code::Code;
@@ -239,7 +239,7 @@ where
                 self.remote,
                 object_runtime.clone(),
                 self.code_cache.global_module_cache,
-                self.code_cache.runtime_environment
+                self.code_cache.runtime_environment,
             ),
             object_runtime,
             ..self
@@ -301,7 +301,7 @@ where
                 moveos_verifier::verifier::verify_entry_function(
                     &loaded_function,
                     &self.session,
-                    self.remote,
+                    &self.code_cache,
                 )
                 .map_err(|e| e.finish(location.clone()))?;
                 let _serialized_args = self.resolve_argument(
@@ -338,7 +338,7 @@ where
                 moveos_verifier::verifier::verify_entry_function(
                     &loaded_function,
                     &self.session,
-                    self.remote,
+                    &self.code_cache,
                 )
                 .map_err(|e| e.finish(location.clone()))?;
                 let _resolved_args = self.resolve_argument(
