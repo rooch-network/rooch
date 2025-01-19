@@ -38,7 +38,7 @@ const theme: DocsThemeConfig = {
   logo: (
     <div>
       <Image
-        src="/logo/rooch_black_combine.svg"
+        src="/logo/combine/rooch_black_combine.svg"
         alt="Rooch Architecture"
         width={100}
         height={70}
