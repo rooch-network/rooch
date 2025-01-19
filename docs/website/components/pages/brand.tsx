@@ -4,6 +4,7 @@ import axios from 'axios'
 import { useRouter } from 'next/router'
 import JSZip from 'jszip'
 import FileSaver from 'file-saver'
+import clsx from 'clsx'
 
 const Brand = () => {
   const basePath = useRouter().basePath
@@ -105,8 +106,8 @@ const Brand = () => {
                     )}
                   </div>
                 </div>
-                <div className="basis-1/2 mt-6 mb-6 bg-white p-3">
-                  <img className="mx-auto" src={basePath + pngUrl} alt={`${category} image`} />
+                <div className={clsx("basis-1/2 mt-6 mb-6 p-3", svgUrl?.includes('white') ?'bg-black':'bg-white', {'!bg-white': category==='banner'})}>
+                  <img className="mx-auto max-h-[256px]" src={basePath + category==='banner' ? pngUrl : svgUrl} alt={`${category} image`} />
                 </div>
               </div>
             )
