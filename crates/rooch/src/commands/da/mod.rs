@@ -12,7 +12,7 @@ use async_trait::async_trait;
 use clap::Parser;
 use rooch_types::error::RoochResult;
 
-/// DB Commands
+/// DA Commands
 #[derive(Parser)]
 pub struct DA {
     #[clap(subcommand)]
