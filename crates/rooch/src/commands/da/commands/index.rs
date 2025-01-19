@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::commands::da::commands::{Indexer, LedgerTxGetter, TxPosition};
+use crate::commands::da::commands::{LedgerTxGetter, TxPosition, TxPositionIndexer};
 use anyhow::anyhow;
 use std::cmp::max;
 use std::path::PathBuf;
@@ -30,7 +30,7 @@ pub struct IndexCommand {
 impl IndexCommand {
     pub fn execute(self) -> anyhow::Result<()> {
         if self.index_file_path.is_some() {
-            return Indexer::load_or_dump(
+            return TxPositionIndexer::load_or_dump(
                 self.index_path,
                 self.index_file_path.unwrap(),
                 self.dump,
@@ -39,7 +39,7 @@ impl IndexCommand {
 
         let db_path = self.index_path.clone();
         let reset_from = self.reset_from;
-        let mut indexer = Indexer::new(db_path, reset_from)?;
+        let mut indexer = TxPositionIndexer::new(db_path, reset_from)?;
 
         info!("indexer stats after reset: {:?}", indexer.get_stats()?);
 
@@ -84,6 +84,7 @@ impl IndexCommand {
                 }
                 let tx_hash = ledger_tx.tx_hash();
                 let tx_position = TxPosition {
+                    tx_order,
                     tx_hash,
                     block_number,
                 };
@@ -102,11 +103,10 @@ impl IndexCommand {
             }
         }
         wtxn.commit()?;
-        indexer.db_env.force_sync()?;
 
         indexer.init_cursor()?;
-
         info!("indexer stats after job: {:?}", indexer.get_stats()?);
+        indexer.close()?;
 
         Ok(())
     }

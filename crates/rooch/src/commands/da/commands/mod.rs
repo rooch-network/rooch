@@ -11,7 +11,6 @@ use moveos_store::transaction_store::{TransactionDBStore, TransactionStore};
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::object::ObjectMeta;
 use moveos_types::transaction::TransactionExecutionInfo;
-use rooch_common::vec::find_last_true;
 use rooch_config::RoochOpt;
 use rooch_db::RoochDB;
 use rooch_store::RoochStore;
@@ -253,131 +252,128 @@ impl LedgerTxGetter {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct TxDAIndex {
-    pub tx_order: u64,
-    pub tx_hash: H256,
-    pub block_number: u128,
-}
-
-impl TxDAIndex {
-    pub fn new(tx_order: u64, tx_hash: H256, block_number: u128) -> Self {
-        TxDAIndex {
-            tx_order,
-            tx_hash,
-            block_number,
-        }
-    }
-}
-
-impl std::fmt::Display for TxDAIndex {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}:{:?}:{}",
-            self.tx_order, self.tx_hash, self.block_number
-        )
-    }
-}
-
-impl std::str::FromStr for TxDAIndex {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let parts: Vec<&str> = s.split(':').collect();
-        if parts.len() != 3 {
-            return Err(anyhow::anyhow!("Invalid format"));
-        }
-        let tx_order = parts[0].parse::<u64>()?;
-        let tx_hash = H256::from_str(parts[1])?;
-        let block_number = parts[2].parse::<u128>()?;
-        Ok(TxDAIndex {
-            tx_order,
-            tx_hash,
-            block_number,
-        })
-    }
-}
-
-/// TxOrderHashBlockGetter is used to get TxOrderHashBlock from a file
-/// all tx_order_hash_blocks(start from tx_order 1) are stored in a file,
-/// each line is a TxOrderHashBlock
-pub struct TxDAIndexer {
-    tx_order_hash_blocks: Vec<TxDAIndex>,
+pub(crate) struct TxMetaStore {
+    tx_position_indexer: TxPositionIndexer,
+    exp_roots: HashMap<u64, (H256, H256)>, // tx_order -> (state_root, accumulator_root)
+    max_verified_tx_order: u64,
     transaction_store: TransactionDBStore,
     rooch_store: RoochStore,
 }
 
-impl TxDAIndexer {
-    pub fn load_from_file(
-        file_path: PathBuf,
+struct ExpRootsMap {
+    exp_roots: HashMap<u64, (H256, H256)>,
+    max_verified_tx_order: u64,
+}
+
+impl TxMetaStore {
+    pub(crate) fn new(
+        tx_position_indexer_path: PathBuf,
+        exp_roots_path: PathBuf,
         transaction_store: TransactionDBStore,
         rooch_store: RoochStore,
     ) -> anyhow::Result<Self> {
-        let mut tx_order_hashes = Vec::with_capacity(70000000);
-        let mut reader = BufReader::new(File::open(file_path)?);
-        for line in reader.by_ref().lines() {
-            let line = line?;
-            let item = line.parse::<TxDAIndex>()?;
-            tx_order_hashes.push(item);
-        }
-        tx_order_hashes.sort_by(|a, b| a.tx_order.cmp(&b.tx_order)); // avoiding wrong order
-        info!(
-            "tx_order:tx_hash:block indexer loaded, tx cnt: {}",
-            tx_order_hashes.len()
-        );
-        Ok(TxDAIndexer {
-            tx_order_hash_blocks: tx_order_hashes,
+        let tx_position_indexer = TxPositionIndexer::new(tx_position_indexer_path, None)?;
+        let exp_roots_map = Self::load_exp_roots(exp_roots_path)?;
+        Ok(TxMetaStore {
+            tx_position_indexer,
+            exp_roots: exp_roots_map.exp_roots,
+            max_verified_tx_order: exp_roots_map.max_verified_tx_order,
             transaction_store,
             rooch_store,
         })
     }
 
-    pub fn get_tx_hash(&self, tx_order: u64) -> Option<H256> {
-        let r = self
-            .tx_order_hash_blocks
-            .binary_search_by(|x| x.tx_order.cmp(&tx_order));
-        let idx = match r {
-            Ok(i) => i,
-            Err(_) => {
-                return None;
+    fn load_exp_roots(exp_roots_path: PathBuf) -> anyhow::Result<ExpRootsMap> {
+        let mut exp_roots = HashMap::new();
+        let mut max_verified_tx_order = 0;
+
+        let mut reader = BufReader::new(File::open(exp_roots_path)?);
+        for line in reader.by_ref().lines() {
+            let line = line.unwrap();
+            let parts: Vec<&str> = line.split(':').collect();
+            let tx_order = parts[0].parse::<u64>()?;
+            let state_root = H256::from_str(parts[1])?;
+            let accumulator_root = H256::from_str(parts[2])?;
+            exp_roots.insert(tx_order, (state_root, accumulator_root));
+            if tx_order > max_verified_tx_order {
+                max_verified_tx_order = tx_order;
             }
-        };
-        Some(self.tx_order_hash_blocks[idx].tx_hash)
+        }
+        Ok(ExpRootsMap {
+            exp_roots,
+            max_verified_tx_order,
+        })
     }
 
-    pub fn slice(&self, start_tx_order: u64, end_tx_order: u64) -> anyhow::Result<Vec<TxDAIndex>> {
-        let r = self
-            .tx_order_hash_blocks
-            .binary_search_by(|x| x.tx_order.cmp(&start_tx_order));
-        let start_idx = match r {
-            Ok(i) => i,
-            Err(_) => {
-                return Err(anyhow::anyhow!("start_tx_order not found"));
-            }
-        };
-        let end_idx = start_idx + (end_tx_order - start_tx_order) as usize;
-        Ok(self.tx_order_hash_blocks[start_idx..end_idx + 1].to_vec())
+    pub(crate) fn get_exp_roots(&self, tx_order: u64) -> Option<(H256, H256)> {
+        self.exp_roots.get(&tx_order).cloned()
     }
 
-    pub fn find_last_executed(&self) -> anyhow::Result<Option<TxDAIndex>> {
-        let r = find_last_true(&self.tx_order_hash_blocks, |item| {
-            self.has_executed(item.tx_hash)
-        });
-        Ok(r.cloned())
+    pub(crate) fn get_max_verified_tx_order(&self) -> u64 {
+        self.max_verified_tx_order
     }
 
-    pub fn find_tx_block(&self, tx_order: u64) -> Option<u128> {
+    pub(crate) fn get_tx_hash(&self, tx_order: u64) -> Option<H256> {
         let r = self
-            .tx_order_hash_blocks
-            .binary_search_by(|x| x.tx_order.cmp(&tx_order));
-        let idx = match r {
-            Ok(i) => i,
-            Err(_) => {
-                return None;
+            .tx_position_indexer
+            .get_tx_position(tx_order)
+            .ok()
+            .flatten();
+        r.map(|tx_position| tx_position.tx_hash)
+    }
+
+    pub(crate) fn get_tx_positions_in_range(
+        &self,
+        start_tx_order: u64,
+        end_tx_order: u64,
+    ) -> anyhow::Result<Vec<TxPosition>> {
+        self.tx_position_indexer
+            .get_tx_positions_in_range(start_tx_order, end_tx_order)
+    }
+
+    pub(crate) fn find_last_executed(&self) -> anyhow::Result<Option<TxPosition>> {
+        let predicate = |tx_order: &u64| self.has_executed_by_tx_order(*tx_order);
+        let last_tx_order = self.tx_position_indexer.last_tx_order;
+        if last_tx_order == 0 {
+            // no tx indexed through DA segments
+            return Ok(None);
+        }
+        if !predicate(&1) {
+            return Ok(None); // first tx in DA segments is not executed
+        }
+        if predicate(&last_tx_order) {
+            return self.tx_position_indexer.get_tx_position(last_tx_order); // last tx is executed
+        }
+
+        // binary search [1, self.tx_position_indexer.last_tx_order]
+        let mut left = 1; // first tx is executed, has checked
+        let mut right = last_tx_order;
+
+        while left + 1 < right {
+            let mid = left + (right - left) / 2;
+            if predicate(&mid) {
+                left = mid; // mid is true, the final answer is mid or on the right
+            } else {
+                right = mid; // mid is false, the final answer is on the left
             }
-        };
-        Some(self.tx_order_hash_blocks[idx].block_number)
+        }
+
+        // left is the last true position
+        self.tx_position_indexer.get_tx_position(left)
+    }
+
+    pub(crate) fn find_tx_block(&self, tx_order: u64) -> Option<u128> {
+        let r = self
+            .tx_position_indexer
+            .get_tx_position(tx_order)
+            .ok()
+            .flatten();
+        r.map(|tx_position| tx_position.block_number)
+    }
+
+    fn has_executed_by_tx_order(&self, tx_order: u64) -> bool {
+        self.get_tx_hash(tx_order)
+            .map_or(false, |tx_hash| self.has_executed(tx_hash))
     }
 
     fn has_executed(&self, tx_hash: H256) -> bool {
@@ -385,14 +381,14 @@ impl TxDAIndexer {
             .map_or(false, |info| info.is_some())
     }
 
-    pub fn get_execution_info(
+    pub(crate) fn get_execution_info(
         &self,
         tx_hash: H256,
     ) -> anyhow::Result<Option<TransactionExecutionInfo>> {
         self.transaction_store.get_tx_execution_info(tx_hash)
     }
 
-    pub fn get_sequencer_info(
+    pub(crate) fn get_sequencer_info(
         &self,
         tx_hash: H256,
     ) -> anyhow::Result<Option<TransactionSequenceInfo>> {
@@ -409,12 +405,13 @@ const MAX_DBS: u32 = 1;
 const ORDER_DATABASE_NAME: &str = "order_db";
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
-pub struct TxPosition {
-    pub tx_hash: H256,
-    pub block_number: u128,
+pub(crate) struct TxPosition {
+    pub(crate) tx_order: u64,
+    pub(crate) tx_hash: H256,
+    pub(crate) block_number: u128,
 }
 
-pub struct Indexer {
+pub(crate) struct TxPositionIndexer {
     db_env: Env,
     db: Database<U64<BigEndian>, SerdeBincode<TxPosition>>,
     last_tx_order: u64,
@@ -422,23 +419,27 @@ pub struct Indexer {
 }
 
 #[derive(Debug, Serialize)]
-pub struct IndexerStats {
-    pub total_tx_count: u64,
-    pub last_tx_order: u64,
-    pub last_block_number: u128,
+pub(crate) struct TxPositionIndexerStats {
+    pub(crate) total_tx_count: u64,
+    pub(crate) last_tx_order: u64,
+    pub(crate) last_block_number: u128,
 }
 
-impl Indexer {
-    pub fn load_or_dump(db_path: PathBuf, file_path: PathBuf, dump: bool) -> anyhow::Result<()> {
+impl TxPositionIndexer {
+    pub(crate) fn load_or_dump(
+        db_path: PathBuf,
+        file_path: PathBuf,
+        dump: bool,
+    ) -> anyhow::Result<()> {
         if dump {
-            let indexer = Indexer::new(db_path, None)?;
+            let indexer = TxPositionIndexer::new(db_path, None)?;
             indexer.dump_to_file(file_path)
         } else {
-            Indexer::load_from_file(db_path, file_path)
+            TxPositionIndexer::load_from_file(db_path, file_path)
         }
     }
 
-    pub fn dump_to_file(&self, file_path: PathBuf) -> anyhow::Result<()> {
+    pub(crate) fn dump_to_file(&self, file_path: PathBuf) -> anyhow::Result<()> {
         let db = self.db;
         let file = std::fs::File::create(file_path)?;
         let mut writer = BufWriter::with_capacity(8 * 1024 * 1024, file.try_clone().unwrap());
@@ -454,7 +455,7 @@ impl Indexer {
         Ok(())
     }
 
-    pub fn load_from_file(db_path: PathBuf, file_path: PathBuf) -> anyhow::Result<()> {
+    pub(crate) fn load_from_file(db_path: PathBuf, file_path: PathBuf) -> anyhow::Result<()> {
         let mut last_tx_order = 0;
         let mut last_tx_hash = H256::zero();
         let mut last_block_number = 0;
@@ -490,6 +491,7 @@ impl Indexer {
             let tx_hash = H256::from_str(parts[1])?;
             let block_number = parts[2].parse::<u128>()?;
             let tx_position = TxPosition {
+                tx_order,
                 tx_hash,
                 block_number,
             };
@@ -519,6 +521,7 @@ impl Indexer {
                 Some((
                     last_tx_order,
                     TxPosition {
+                        tx_order: last_tx_order,
                         tx_hash: last_tx_hash,
                         block_number: last_block_number,
                     }
@@ -538,14 +541,14 @@ impl Indexer {
         Ok(())
     }
 
-    pub fn new(db_path: PathBuf, reset_from: Option<u64>) -> anyhow::Result<Self> {
+    pub(crate) fn new(db_path: PathBuf, reset_from: Option<u64>) -> anyhow::Result<Self> {
         let db_env = Self::create_env(db_path)?;
         let mut txn = db_env.write_txn()?;
         let db: Database<U64<BigEndian>, SerdeBincode<TxPosition>> =
             db_env.create_database(&mut txn, Some(ORDER_DATABASE_NAME))?;
         txn.commit()?;
 
-        let mut indexer = Indexer {
+        let mut indexer = TxPositionIndexer {
             db_env,
             db,
             last_tx_order: 0,
@@ -559,12 +562,30 @@ impl Indexer {
         Ok(indexer)
     }
 
-    pub fn get_tx_position(&self, tx_order: u64) -> anyhow::Result<Option<TxPosition>> {
+    pub(crate) fn get_tx_position(&self, tx_order: u64) -> anyhow::Result<Option<TxPosition>> {
         let rtxn = self.db_env.read_txn()?;
         let db = self.db;
         let ret = db.get(&rtxn, &tx_order)?;
         rtxn.commit()?;
         Ok(ret)
+    }
+
+    pub(crate) fn get_tx_positions_in_range(
+        &self,
+        start: u64,
+        end: u64,
+    ) -> anyhow::Result<Vec<TxPosition>> {
+        let rtxn = self.db_env.read_txn()?;
+        let db = self.db;
+        let mut tx_positions = Vec::new();
+        let range = start..=end;
+        let mut iter = db.range(&rtxn, &range)?;
+        while let Some((_k, v)) = iter.next().transpose()? {
+            tx_positions.push(v);
+        }
+        drop(iter);
+        rtxn.commit()?;
+        Ok(tx_positions)
     }
 
     fn create_env(db_path: PathBuf) -> anyhow::Result<Env> {
@@ -578,7 +599,7 @@ impl Indexer {
     }
 
     // init cursor by search last tx_order
-    fn init_cursor(&mut self) -> anyhow::Result<()> {
+    pub(crate) fn init_cursor(&mut self) -> anyhow::Result<()> {
         let rtxn = self.db_env.read_txn()?;
         let db = self.db;
         if let Some((k, v)) = db.last(&rtxn)? {
@@ -600,15 +621,22 @@ impl Indexer {
         Ok(())
     }
 
-    pub fn get_stats(&self) -> anyhow::Result<IndexerStats> {
+    pub(crate) fn get_stats(&self) -> anyhow::Result<TxPositionIndexerStats> {
         let rtxn = self.db_env.read_txn()?;
         let db = self.db;
         let count = db.iter(&rtxn)?.count();
         rtxn.commit()?;
-        Ok(IndexerStats {
+        Ok(TxPositionIndexerStats {
             total_tx_count: count as u64,
             last_tx_order: self.last_tx_order,
             last_block_number: self.last_block_number,
         })
+    }
+
+    pub(crate) fn close(&self) -> anyhow::Result<()> {
+        let env = self.db_env.clone();
+        env.force_sync()?;
+        drop(env);
+        Ok(())
     }
 }
