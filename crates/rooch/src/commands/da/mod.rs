@@ -12,7 +12,7 @@ use async_trait::async_trait;
 use clap::Parser;
 use rooch_types::error::RoochResult;
 
-/// DB Commands
+/// DA Commands
 #[derive(Parser)]
 pub struct DA {
     #[clap(subcommand)]
@@ -26,7 +26,10 @@ impl CommandAction<String> for DA {
             DACommand::Unpack(unpack) => unpack.execute().map(|_| "".to_owned()),
             DACommand::Namespace(namespace) => namespace.execute().map(|_| "".to_owned()),
             DACommand::Exec(exec) => exec.execute().await.map(|_| "".to_owned()),
-            DACommand::Index(index) => index.execute().map(|_| "".to_owned()),
+            DACommand::Index(index) => {
+                index.execute()?;
+                Ok("".to_owned())
+            }
         }
     }
 }

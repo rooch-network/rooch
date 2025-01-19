@@ -3,18 +3,20 @@
 
 use crate::commands::db::commands::init;
 use clap::Parser;
-use moveos_types::state::StateChangeSetExt;
+use moveos_store::transaction_store::TransactionStore;
+use moveos_types::h256::H256;
+use moveos_types::transaction::TransactionExecutionInfo;
 use rooch_config::R_OPT_NET_HELP;
-use rooch_store::state_store::StateStore;
 use rooch_types::error::RoochResult;
 use rooch_types::rooch_network::RoochChainID;
 use std::path::PathBuf;
 
-/// Get changeset by order
+/// Get ExecutionInfo by tx_hash
 #[derive(Debug, Parser)]
-pub struct GetChangesetByOrderCommand {
+pub struct GetExecutionInfoByHashCommand {
+    /// Transaction's hash
     #[clap(long)]
-    pub order: u64,
+    pub hash: H256,
 
     #[clap(long = "data-dir", short = 'd')]
     /// Path to data dir, this dir is base dir, the final data_dir is base_dir/chain_network_name
@@ -26,12 +28,14 @@ pub struct GetChangesetByOrderCommand {
     pub chain_id: Option<RoochChainID>,
 }
 
-impl GetChangesetByOrderCommand {
-    pub async fn execute(self) -> RoochResult<Option<StateChangeSetExt>> {
+impl GetExecutionInfoByHashCommand {
+    pub fn execute(self) -> RoochResult<Option<TransactionExecutionInfo>> {
         let (_root, rooch_db, _start_time) = init(self.base_data_dir, self.chain_id);
-        let rooch_store = rooch_db.rooch_store;
-        let tx_order = self.order;
-        let state_change_set_ext_opt = rooch_store.get_state_change_set(tx_order)?;
-        Ok(state_change_set_ext_opt)
+        let moveos_store = rooch_db.moveos_store.clone();
+
+        let execution_info = moveos_store
+            .get_transaction_store()
+            .get_tx_execution_info(self.hash)?;
+        Ok(execution_info)
     }
 }
