@@ -1,0 +1,33 @@
+---
+title:  Move on Bitcoin
+description: "通过 Move 来实现 Bitcoin 的可编程性"
+author: jolestar
+date: 2025/01/17
+category: Developer
+---
+
+Bitcoin 的可编程性一直是行业内追求的圣杯之一，有不同的路线在探索，而 Rooch 通过堆叠式 Layer2 的方案，将 Move 引入 Bitcoin，带来了新的可能性。
+
+## Bitcoin 的叙事转换
+
+Bitcoin 从最早的数字黄金，正在向价值存储转换，未来比特币网络上承载的不只是 BTC，会包含更多的资产以及重要数据。毕竟 Bitcoin 网络经过了时间的考验，是世界上最安全的网络。
+
+所以 Bitcoin 的可编程性解决方案，不仅仅要给 BTC 带来可编程性，同时也要给比特币网络承载的其他资产和数据带来可编程性。而这种可编程环境，也需要具备可扩展性，方便开发者增加新的功能（Functional scalability），同时提供更高的交易吞吐（Load scalability），给 Bitcoin 生态带来更多的新用户。
+
+## Bitcoin 网络的可编程性
+
+如果我们把可编程性扩展到 Bitcoin 网络承载的资产和数据，解决方案就不能局限在 BTC 和 BTC 脚本上，需要有更通用的解决方案。
+
+任何一个通用的编程环境，都可以抽象成一个接受输入和产生输出的状态机。而为了避免每次交易都将整个历史状态作为输入，所以系统需要维护一个状态集，这个状态集在 Bitcoin 网络上表达为 UTXO 集，在 Ethereum 则表达为状态树。
+
+
+
+而在 Bitcoin 网络上，区块作为账本，记录了区块
+而在 Bitcoin 网络这个场景中，可编程环境需要将所有的 Bitcoin 交易作为输入，产生新的状态进行累加，根据需要产生新的交易 Bitcoin 作为输出。
+
+这就是堆叠式 Layer2 的关键思路。
+
+## 堆叠式 Layer2 的方案概述
+
+
+
