@@ -15,7 +15,7 @@ module rooch_dex::swap {
     use moveos_std::tx_context::sender;
     use moveos_std::object;
     use moveos_std::account;
-    use rooch_framework::coin::{CoinInfo, coin_info};
+    use rooch_framework::coin::{CoinInfo, coin_info, symbol_by_type, supply_by_type};
     use moveos_std::object::{Object, ObjectID};
     use rooch_framework::coin_store::{CoinStore, balance, deposit, withdraw};
     use rooch_framework::coin_store;
@@ -123,8 +123,8 @@ module rooch_dex::swap {
         let resource_signer = module_signer<RoochDexCap>();
 
         let lp_name: string::String = string::utf8(b"RoochDex-");
-        let name_x = coin::symbol<X>(coin_info<X>());
-        let name_y = coin::symbol<Y>(coin_info<Y>());
+        let name_x = symbol_by_type<X>();
+        let name_y = symbol_by_type<Y>();
         string::append(&mut lp_name, name_x);
         string::append_utf8(&mut lp_name, b"-");
         string::append(&mut lp_name, name_y);
@@ -189,7 +189,7 @@ module rooch_dex::swap {
 
     /// Get the total supply of LP Tokens
     public fun total_lp_supply<X:key+store, Y:key+store>(): u128 {
-        (coin::supply(coin_info<LPToken<X, Y>>()) as u128)
+        (supply_by_type<LPToken<X, Y>>() as u128)
     }
 
     /// Get the current reserves of T0 and T1 with the latest updated timestamp
