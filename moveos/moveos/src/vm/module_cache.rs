@@ -13,11 +13,11 @@ use move_vm_types::code::{
 use move_vm_types::sha3_256;
 use moveos_store::TxnIndex;
 use serde::{Deserialize, Deserializer, Serialize};
-use std::collections::HashMap;
 use std::hash::Hash;
 use std::ops::Deref;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use hashbrown::HashMap;
 use move_vm_runtime::loader::modules::LegacyModuleCache;
 use move_vm_types::code::ambassador_impl_ScriptCache;
 use move_vm_types::code::Code;

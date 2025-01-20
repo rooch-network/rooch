@@ -25,12 +25,9 @@ use move_model::script_into_module;
 use move_vm_runtime::data_cache::TransactionCache;
 use move_vm_runtime::module_traversal::{TraversalContext, TraversalStorage};
 use move_vm_runtime::{
-    config::VMConfig,
-    move_vm::MoveVM,
-    native_extensions::NativeContextExtensions,
-    native_functions::NativeFunction,
-    session::Session,
-    CodeStorage, LoadedFunction, Module, ModuleStorage, RuntimeEnvironment, Script,
+    config::VMConfig, move_vm::MoveVM, native_extensions::NativeContextExtensions,
+    native_functions::NativeFunction, session::Session, CodeStorage, LoadedFunction, Module,
+    ModuleStorage, RuntimeEnvironment, Script,
 };
 use move_vm_types::code::Code;
 use move_vm_types::code::{ambassador_impl_ScriptCache, WithBytes, WithHash};
@@ -39,6 +36,7 @@ use move_vm_types::gas::UnmeteredGasMeter;
 use move_vm_types::loaded_data::runtime_types::{StructNameIndex, StructType, Type};
 use moveos_common::types::{ClassifiedGasMeter, SwitchableGasMeter};
 use moveos_object_runtime::runtime::{ObjectRuntime, ObjectRuntimeContext};
+use moveos_object_runtime::TypeLayoutLoader;
 use moveos_stdlib::natives::moveos_stdlib::{
     event::NativeEventContext, move_module::NativeModuleContext,
 };
@@ -371,6 +369,7 @@ where
                     Err(err) => return Err(err),
                 }
 
+                /*
                 self.vm
                     .runtime
                     .loader()
@@ -378,6 +377,7 @@ where
                         compiled_modules.as_slice(),
                         &self.session.data_cache,
                     )?;
+                 */
 
                 let mut init_function_modules = vec![];
 
@@ -447,7 +447,7 @@ where
                 let location = Location::Module(call.function_id.module_id.clone());
                 let serialized_args = self.resolve_argument(
                     &loaded_function,
-                    call.args,
+                    call.args.clone(),
                     location,
                     true,
                     &self.code_cache,
@@ -479,7 +479,7 @@ where
                     )?;
                     self.session.execute_entry_function(
                         loaded_function,
-                        call.ty_args.clone(),
+                        call.args,
                         &mut self.gas_meter,
                         &mut traversal_context,
                         &self.code_cache,
@@ -550,10 +550,8 @@ where
 
                     if data_store.exists_module(&module_id)? && compat.need_check_compat() {
                         let old_module = self.vm.load_module(&module_id, self.remote)?;
-                        let old_m = normalized::Module::new(old_module.as_ref());
-                        let new_m = normalized::Module::new(module);
                         compat
-                            .check(&old_m, &new_m)
+                            .check(&old_module, &module)
                             .map_err(|e| e.finish(Location::Undefined))?;
                     }
                     if !bundle_unverified.insert(module_id) {
@@ -562,11 +560,13 @@ where
                     }
                 }
 
+                /*
                 // Perform bytecode and loading verification. Modules must be sorted in topological order.
                 self.vm
                     .runtime
                     .loader()
                     .verify_module_bundle_for_publication(&compiled_modules, data_store)?;
+                 */
 
                 for (module, blob) in compiled_modules.into_iter().zip(module_bundle.into_iter()) {
                     let is_republishing = data_store.exists_module(&module.self_id())?;
@@ -869,9 +869,12 @@ where
     /// This function also support struct reference and mutable reference
     pub fn get_type_tag_option(&self, t: &Type) -> Option<TypeTag> {
         match t {
-            Type::Struct(_, _) | Type::StructInstantiation(_, _, _) => {
-                self.session.get_type_tag(t, &self.code_cache).ok()
-            }
+            Type::Struct { idx: _, ability: _ }
+            | Type::StructInstantiation {
+                idx: _,
+                ty_args: _,
+                ability: _,
+            } => self.session.get_type_tag(t, &self.code_cache).ok(),
             Type::Reference(r) => self.get_type_tag_option(r),
             Type::MutableReference(r) => self.get_type_tag_option(r),
             _ => None,
@@ -899,7 +902,10 @@ where
     }
 
     pub fn get_type_abilities(&self, ty: &Type) -> VMResult<AbilitySet> {
-        self.session.get_type_abilities(ty)
+        match ty.abilities() {
+            Ok(v) => Ok(v),
+            Err(e) => Err(e.finish(Location::Undefined)),
+        }
     }
 
     pub fn get_data_store(&mut self) -> &mut dyn TransactionCache {
