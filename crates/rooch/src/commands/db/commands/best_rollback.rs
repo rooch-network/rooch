@@ -5,16 +5,22 @@ use bitcoin::hashes::Hash;
 use clap::Parser;
 use rooch_types::da::chunk::chunk_from_segments;
 use rooch_types::da::segment::{segment_from_bytes, Segment};
-use rooch_types::error::RoochResult;
+use rooch_types::error::{RoochError, RoochResult};
 use rooch_types::transaction::{LedgerTransaction, LedgerTxData};
 use std::collections::HashSet;
+
+#[derive(clap::ValueEnum, Clone, Debug)]
+pub enum DataSource {
+    Mempool,
+    Blockstream,
+}
 
 /// try to find the best tx_order for rollback caused by chain reorg
 #[derive(Debug, Parser)]
 pub struct BestRollbackCommand {
     #[clap(
         long = "da-url",
-        help = "open-da rpc url. e.g., https://storage.googleapis.com/rooch-openda-testnet/7a6b74d2"
+        help = "open-da rpc url. e.g., https://storage.googleapis.com/rooch-openda-testnet/31e8fe04 for testnet, https://storage.googleapis.com/rooch-openda-main/527d69c3 for mainnet"
     )]
     pub da_url: String,
 
@@ -29,6 +35,13 @@ pub struct BestRollbackCommand {
         default_value = "16"
     )]
     pub search_depth: Option<u64>,
+    #[clap(
+        long = "data-source",
+        help = "data source for btc block hash",
+        default_value = "mempool",
+        value_enum
+    )]
+    pub data_source: DataSource,
     #[clap(long = "main", help = "Bitcoin Mainnet or not. default is false")]
     pub main: bool,
 }
@@ -57,17 +70,35 @@ impl BestRollbackCommand {
         let mut best_tx_order = 0;
         let mut found_matched_block_hash = false;
         let mut found_best_tx_order = false;
+
+        let mut last_matched_block_height: u64 = 0;
+        let mut last_matched_block_hash = String::new();
+
+        let mut first_mismatched_block_height = 0;
+        let mut first_mismatched_block_hash_exp = String::new();
+        let mut first_mismatched_block_hash_act = String::new();
+
+        let data_source = self.data_source.clone();
+
         for da_block_hash in da_hashes.iter() {
             let block_height = da_block_hash.block_height;
-            let rpc_block_hash = get_block_hash_from_btc_rpc(block_height, self.main).await?;
+            let rpc_block_hash =
+                get_block_hash_from_btc_rpc(data_source.clone(), block_height, self.main).await?;
             if rpc_block_hash != da_block_hash.block_hash {
                 if found_matched_block_hash {
                     best_tx_order = da_block_hash.previous_tx_order;
                     found_best_tx_order = true;
+                    first_mismatched_block_height = block_height;
+                    first_mismatched_block_hash_exp = rpc_block_hash;
+                    first_mismatched_block_hash_act = da_block_hash.block_hash.clone();
                     break;
                 }
             } else {
                 found_matched_block_hash = true;
+                if block_height > last_matched_block_height {
+                    last_matched_block_height = block_height;
+                    last_matched_block_hash = rpc_block_hash;
+                }
             }
         }
 
@@ -80,7 +111,24 @@ impl BestRollbackCommand {
             println!("all block hash matched, no need to rollback");
             return Ok(());
         } else {
+            if first_mismatched_block_height != last_matched_block_height + 1 {
+                return Err(RoochError::from(anyhow::anyhow!(
+                    "first mismatched block height is not next to last matched block height"
+                )));
+            }
+
             println!("best rollback tx_order: {}", best_tx_order);
+            println!("--------------- details ------------------");
+            println!(
+                "last matched block height: {}, block hash: {}",
+                last_matched_block_height, last_matched_block_hash
+            );
+            println!(
+                "first mismatched block height: {}, exp block hash: {}, act block hash: {}",
+                first_mismatched_block_height,
+                first_mismatched_block_hash_exp,
+                first_mismatched_block_hash_act
+            );
         }
 
         Ok(())
@@ -166,14 +214,29 @@ async fn get_segment(
     segment_from_bytes(&res.bytes().await?)
 }
 
-async fn get_block_hash_from_btc_rpc(block_height: u64, main: bool) -> anyhow::Result<String> {
-    let url = if main {
-        "https://blockstream.info/api/block-height/"
-    } else {
-        "https://blockstream.info/testnet/api/block-height/"
+async fn get_block_hash_from_btc_rpc(
+    data_source: DataSource,
+    block_height: u64,
+    main: bool,
+) -> anyhow::Result<String> {
+    let base_url = match data_source {
+        DataSource::Mempool => {
+            if main {
+                "https://mempool.space/api/block-height/"
+            } else {
+                "https://mempool.space/testnet/api/block-height/"
+            }
+        }
+        DataSource::Blockstream => {
+            if main {
+                "https://blockstream.info/api/block-height/"
+            } else {
+                "https://blockstream.info/testnet/api/block-height/"
+            }
+        }
     };
 
-    let url = format!("{}{}", url, block_height);
+    let url = format!("{}{}", base_url, block_height);
     let block_hash = reqwest::get(url).await.unwrap().text().await?;
     Ok(block_hash)
 }
