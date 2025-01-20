@@ -502,9 +502,12 @@ where
     T: TransactionCache,
 {
     match t {
-        Type::Struct(s, _) | Type::StructInstantiation(s, _, _) => {
-            session.fetch_struct_ty_by_idx(*s, module_storage)
-        }
+        Type::Struct { idx: s, ability: _ }
+        | Type::StructInstantiation {
+            idx: s,
+            ty_args: _,
+            ability: _,
+        } => session.fetch_struct_ty_by_idx(*s, module_storage),
         Type::Reference(r) => as_struct_no_panic(session, r, module_storage),
         Type::MutableReference(r) => as_struct_no_panic(session, r, module_storage),
         _ => None,

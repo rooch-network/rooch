@@ -88,7 +88,7 @@ where
 fn extract_func_name<T>(
     location: &AbortLocation,
     function: &u16,
-    module_resolver: T,
+    module_resolver: &T,
 ) -> Option<String>
 where
     T: MoveResolver,
