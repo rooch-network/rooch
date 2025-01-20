@@ -15,7 +15,7 @@ module rooch_dex::swap {
     use moveos_std::tx_context::sender;
     use moveos_std::object;
     use moveos_std::account;
-    use rooch_framework::coin::{CoinInfo, coin_info, symbol_by_type, supply_by_type};
+    use rooch_framework::coin::{CoinInfo, symbol_by_type, supply_by_type};
     use moveos_std::object::{Object, ObjectID};
     use rooch_framework::coin_store::{CoinStore, balance, deposit, withdraw};
     use rooch_framework::coin_store;
