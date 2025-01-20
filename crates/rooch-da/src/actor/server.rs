@@ -128,6 +128,8 @@ impl DAServerActor {
             .zip(self.adapter_stats.iter())
         {
             let identifier = identifier.clone();
+            // Get the latest done chunk id
+            // (it's block number too for ChunkV0, which is the only version now)
             let future = stat.get_latest_done_chunk_id();
             let result = future.await; // Resolve the future
             avail_backends.push((identifier, result));
