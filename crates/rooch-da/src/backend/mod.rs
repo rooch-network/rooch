@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::backend::openda::OpenDABackendManager;
+use crate::backend::openda::{AdapterSubmitStat, OpenDABackendManager};
 use anyhow::anyhow;
 use async_trait::async_trait;
 use rooch_config::da_config::{DABackendConfig, DABackendConfigType};
@@ -26,6 +26,7 @@ pub const UNKNOWN_BACKEND_PRIORITY: usize = usize::MAX;
 pub trait DABackend: Sync + Send {
     async fn submit_batch(&self, batch: Arc<DABatch>) -> anyhow::Result<()>;
     fn get_identifier(&self) -> String;
+    fn get_adapter_stats(&self) -> AdapterSubmitStat;
 }
 
 pub struct DABackends {

@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::backend::openda::adapter::{OpenDAAdapter, OpenDAAdapterConfig};
+use crate::backend::openda::adapter::{AdapterSubmitStat, OpenDAAdapter, OpenDAAdapterConfig};
 use crate::backend::openda::derive_identifier;
 use crate::backend::DABackend;
 use async_trait::async_trait;
@@ -13,6 +13,7 @@ use std::sync::Arc;
 /// manage OpenDA backends while integrating specific adapter logic
 pub struct OpenDABackendManager {
     identifier: String,
+    adapter_stats: AdapterSubmitStat,
     adapter_config: OpenDAAdapterConfig,
     adapter: Box<dyn OpenDAAdapter>,
 }
@@ -22,10 +23,13 @@ impl OpenDABackendManager {
         open_da_config: &DABackendOpenDAConfig,
     ) -> anyhow::Result<OpenDABackendManager> {
         let adapter_config = OpenDAAdapterConfig::derive_from_open_da_config(open_da_config)?;
-        let adapter = adapter_config.build().await?;
+        let adapter_stats = AdapterSubmitStat::new();
+
+        let adapter = adapter_config.build(adapter_stats.clone()).await?;
 
         Ok(Self {
             identifier: derive_identifier(open_da_config.scheme.clone()),
+            adapter_stats: adapter_stats.clone(),
             adapter_config,
             adapter,
         })
@@ -40,15 +44,21 @@ impl DABackend for OpenDABackendManager {
         let max_segment_size = self.adapter_config.max_segment_size;
 
         let segments = chunk.to_segments(max_segment_size);
+        let segment_count = segments.len() as u64;
         for segment in segments {
             let bytes = segment.to_bytes();
-
-            match self.adapter.submit_segment(segment.get_id(), &bytes).await {
+            let segment_id = segment.get_id();
+            let is_last_segment = segment_id.segment_number == segment_count - 1;
+            match self
+                .adapter
+                .submit_segment(segment.get_id(), &bytes, is_last_segment)
+                .await
+            {
                 Ok(_) => {}
                 Err(e) => {
                     tracing::warn!(
                         "failed to submit segment to {:?}, segment_id: {:?}, error:{:?}",
-                        self.identifier,
+                        self.get_identifier(),
                         segment.get_id(),
                         e,
                     );
@@ -62,5 +72,9 @@ impl DABackend for OpenDABackendManager {
 
     fn get_identifier(&self) -> String {
         self.identifier.clone()
+    }
+
+    fn get_adapter_stats(&self) -> AdapterSubmitStat {
+        self.adapter_stats.clone()
     }
 }
