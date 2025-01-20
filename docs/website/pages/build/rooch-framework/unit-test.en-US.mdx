@@ -154,3 +154,19 @@ Test result: FAILED. Total tests: 1; passed: 0; failed: 1
 ```
 
 As you can see, the Move compiler clearly indicates the location of the assertion program, so we can easily locate a certain location in our test program and know that the execution result of a certain function does not meet our expectations.
+
+## Rooch Framework Test
+
+When using Rooch Framework to test code, you need to call the init_for_test() function.
+
+For example:
+
+```move
+#[test_only]
+/// init the genesis context for test
+public fun init_for_test(){
+    rooch_framework::genesis::init_for_test();
+    let genesis_account = moveos_std::signer::module_signer<GenesisContext>();
+    init(&genesis_account);
+}
+```

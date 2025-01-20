@@ -158,3 +158,19 @@ Test result: FAILED. Total tests: 1; passed: 0; failed: 1
 ```
 
 可以看到，Move 编译器很清楚地指明了断言程序的位置，因此我们就能很容易地定位到我们测试程序的某个位置，进而知道某个函数的执行结果没有达到我们的预期。
+
+## Rooch Framework 测试
+
+使用 Rooch Framework 对代码测试时，需要调用 `init_for_test()` 函数。
+
+例如：
+
+```move
+#[test_only]
+/// init the genesis context for test
+public fun init_for_test(){
+    rooch_framework::genesis::init_for_test();
+    let genesis_account = moveos_std::signer::module_signer<GenesisContext>();
+    init(&genesis_account);
+}
+```
