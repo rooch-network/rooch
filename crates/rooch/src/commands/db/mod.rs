@@ -4,9 +4,8 @@
 use crate::cli_types::CommandAction;
 use crate::commands::db::commands::best_rollback::BestRollbackCommand;
 use crate::commands::db::commands::drop::DropCommand;
-use crate::commands::db::commands::dump_tx_root::DumpTxRootCommand;
 use crate::commands::db::commands::get_changeset_by_order::GetChangesetByOrderCommand;
-use crate::commands::db::commands::get_execution_info_by_order::GetExecutionInfoByOrderCommand;
+use crate::commands::db::commands::get_execution_info_by_hash::GetExecutionInfoByHashCommand;
 use crate::commands::db::commands::repair::RepairCommand;
 use crate::commands::db::commands::revert::RevertCommand;
 use async_trait::async_trait;
@@ -44,11 +43,8 @@ impl CommandAction<String> for DB {
                     serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
                 })
             }
-            DBCommand::DumpTxRoot(dump_tx_root) => dump_tx_root.execute().await.map(|resp| {
-                serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
-            }),
-            DBCommand::GetExecutionInfoByOrder(get_execution_info_by_order) => {
-                get_execution_info_by_order.execute().map(|resp| {
+            DBCommand::GetExecutionInfoByHash(get_execution_info_by_hash) => {
+                get_execution_info_by_hash.execute().map(|resp| {
                     serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
                 })
             }
@@ -67,7 +63,6 @@ pub enum DBCommand {
     Drop(DropCommand),
     Repair(RepairCommand),
     GetChangesetByOrder(GetChangesetByOrderCommand),
-    DumpTxRoot(DumpTxRootCommand),
-    GetExecutionInfoByOrder(GetExecutionInfoByOrderCommand),
+    GetExecutionInfoByHash(GetExecutionInfoByHashCommand),
     BestRollback(BestRollbackCommand),
 }

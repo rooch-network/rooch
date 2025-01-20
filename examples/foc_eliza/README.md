@@ -377,6 +377,17 @@ Execution info:
     event root: 0x6b25ec6fd717296603fb0818f24682d88bfdf9c55d995091865c582eed18dc71
 ```
 
+### Testnet
+
+* Module address: 0x45e8af026e02c8efe11f1bc12ee05645175fb90922656956c0ccfe5c6f699cab
+* Example character id: 0x167f5fab11227c394905cbad1e8b25d0d12c6a881ba2d6899e9dbf8138eaecfd
+
+```bash
+rooch env switch --alias test
+rooch object -i 0x167f5fab11227c394905cbad1e8b25d0d12c6a881ba2d6899e9dbf8138eaecfd
+rooch move run --function 0x45e8af026e02c8efe11f1bc12ee05645175fb90922656956c0ccfe5c6f699cab::character::create_character_from_json --args file:../../../../ai16z/eliza/characters/dobby.character.json
+```
+
 ### Why On-Chain?
 
 Storing AI characters and their memory on-chain provides three key advantages:

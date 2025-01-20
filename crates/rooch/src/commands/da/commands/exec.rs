@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::commands::da::commands::{
-    build_rooch_db, LedgerTxGetter, SequencedTxStore, TxDAIndexer,
+    build_rooch_db, LedgerTxGetter, SequencedTxStore, TxMetaStore,
 };
 use anyhow::Context;
 use bitcoin::hashes::Hash;
@@ -39,11 +39,7 @@ use rooch_types::transaction::{
     L1BlockWithBody, LedgerTransaction, LedgerTxData, TransactionSequenceInfo,
 };
 use std::cmp::{max, min};
-use std::collections::HashMap;
-use std::fs::File;
-use std::io::{BufRead, BufReader, Read};
 use std::path::PathBuf;
-use std::str::FromStr;
 use std::sync::atomic::AtomicU64;
 use std::sync::Arc;
 use std::time::Duration;
@@ -65,15 +61,15 @@ pub struct ExecCommand {
     #[clap(long = "segment-dir")]
     pub segment_dir: PathBuf,
     #[clap(
-        long = "order-state-path",
-        help = "Path to tx_order:state_root file(results from RoochNetwork), for fast verification avoiding blocking on RPC requests"
+        long = "tx-position",
+        help = "Path to tx_order:tx_hash:l2_block_number database directory"
     )]
-    pub order_state_path: PathBuf,
+    pub tx_position_path: PathBuf,
     #[clap(
-        long = "order-hash-path",
-        help = "Path to tx_order:tx_hash:l2_block_number file"
+        long = "exp-root",
+        help = "Path to tx_order:state_root:accumulator_root file(results from RoochNetwork), for fast verification avoiding blocking on RPC requests"
     )]
-    pub order_hash_path: PathBuf,
+    pub exp_root_path: PathBuf,
     #[clap(
         long = "rollback",
         help = "rollback to tx order. If not set or ge executed_tx_order, start from executed_tx_order+1(nothing to do); otherwise, rollback to this order."
@@ -197,10 +193,10 @@ impl ExecCommand {
         )
         .await?;
 
-        let (order_state_pair, tx_order_end) = self.load_order_state_pair();
         let ledger_tx_loader = LedgerTxGetter::new(self.segment_dir.clone())?;
-        let tx_da_indexer = TxDAIndexer::load_from_file(
-            self.order_hash_path.clone(),
+        let tx_da_indexer = TxMetaStore::new(
+            self.tx_position_path.clone(),
+            self.exp_root_path.clone(),
             moveos_store.transaction_store,
             rooch_db.rooch_store.clone(),
         )?;
@@ -208,9 +204,7 @@ impl ExecCommand {
             mode: self.mode,
             force_align: self.force_align,
             ledger_tx_getter: ledger_tx_loader,
-            tx_da_indexer,
-            order_state_pair,
-            tx_order_end,
+            tx_meta_store: tx_da_indexer,
             sequenced_tx_store,
             bitcoin_client_proxy,
             executor,
@@ -221,26 +215,6 @@ impl ExecCommand {
             rooch_db,
         })
     }
-
-    fn load_order_state_pair(&self) -> (HashMap<u64, (H256, H256)>, u64) {
-        let mut order_state_pair = HashMap::new();
-        let mut tx_order_end = 0;
-
-        let mut reader = BufReader::new(File::open(self.order_state_path.clone()).unwrap());
-        // collect all `tx_order:state_root` pairs
-        for line in reader.by_ref().lines() {
-            let line = line.unwrap();
-            let parts: Vec<&str> = line.split(':').collect();
-            let tx_order = parts[0].parse::<u64>().unwrap();
-            let state_root = H256::from_str(parts[1]).unwrap();
-            let accumulator_root = H256::from_str(parts[2]).unwrap();
-            order_state_pair.insert(tx_order, (state_root, accumulator_root));
-            if tx_order > tx_order_end {
-                tx_order_end = tx_order;
-            }
-        }
-        (order_state_pair, tx_order_end)
-    }
 }
 
 struct ExecInner {
@@ -248,9 +222,7 @@ struct ExecInner {
     force_align: bool,
 
     ledger_tx_getter: LedgerTxGetter,
-    tx_da_indexer: TxDAIndexer,
-    order_state_pair: HashMap<u64, (H256, H256)>,
-    tx_order_end: u64,
+    tx_meta_store: TxMetaStore,
 
     sequenced_tx_store: SequencedTxStore,
 
@@ -389,8 +361,8 @@ impl ExecInner {
     }
 
     async fn produce_tx(&self, tx: Sender<ExecMsg>) -> anyhow::Result<()> {
-        let last_executed_opt = self.tx_da_indexer.find_last_executed()?;
-        let last_executed_tx_order = match last_executed_opt.clone() {
+        let last_executed_opt = self.tx_meta_store.find_last_executed()?;
+        let last_executed_tx_order = match last_executed_opt {
             Some(v) => v.tx_order,
             None => 0,
         };
@@ -427,8 +399,8 @@ impl ExecInner {
         if let Some(rollback) = rollback_to {
             if rollback < last_partial_executed_tx_order {
                 let new_last_and_rollback = self
-                    .tx_da_indexer
-                    .slice(rollback, last_partial_executed_tx_order)?;
+                    .tx_meta_store
+                    .get_tx_positions_in_range(rollback, last_partial_executed_tx_order)?;
                 // split into two parts, the first get execution info for new startup, all others rollback
                 let (new_last, rollback_part) = new_last_and_rollback.split_first().unwrap();
                 info!(
@@ -448,9 +420,9 @@ impl ExecInner {
                         })?;
                 }
                 let rollback_execution_info =
-                    self.tx_da_indexer.get_execution_info(new_last.tx_hash)?;
+                    self.tx_meta_store.get_execution_info(new_last.tx_hash)?;
                 let rollback_sequencer_info =
-                    self.tx_da_indexer.get_sequencer_info(new_last.tx_hash)?;
+                    self.tx_meta_store.get_sequencer_info(new_last.tx_hash)?;
                 self.update_startup_info_after_rollback(
                     rollback_execution_info,
                     rollback_sequencer_info,
@@ -461,13 +433,12 @@ impl ExecInner {
         };
 
         let mut next_block_number = last_executed_opt
-            .clone()
             .map(|v| v.block_number) // next_tx_order and last executed tx may be in the same block
             .unwrap_or(0);
 
         if !self.mode.need_exec() {
             next_tx_order = last_sequenced_tx + 1;
-            next_block_number = self.tx_da_indexer.find_tx_block(next_tx_order).unwrap();
+            next_block_number = self.tx_meta_store.find_tx_block(next_tx_order).unwrap();
         }
         info!(
             "Start to produce transactions from tx_order: {}, check from block: {}",
@@ -475,6 +446,7 @@ impl ExecInner {
         );
         let mut produced_tx_order = 0;
         let mut reach_end = false;
+        let max_verified_tx_order = self.tx_meta_store.get_max_verified_tx_order();
         loop {
             if reach_end {
                 break;
@@ -489,7 +461,7 @@ impl ExecInner {
             let tx_list = tx_list.unwrap();
             for ledger_tx in tx_list {
                 let tx_order = ledger_tx.sequence_info.tx_order;
-                if tx_order > self.tx_order_end {
+                if tx_order > max_verified_tx_order {
                     reach_end = true;
                     break;
                 }
@@ -583,7 +555,7 @@ impl ExecInner {
 
         let is_l2_tx = ledger_tx.data.is_l2_tx();
 
-        let exp_root_opt = self.order_state_pair.get(&tx_order);
+        let exp_root_opt = self.tx_meta_store.get_exp_roots(tx_order);
         let exp_state_root = exp_root_opt.map(|v| v.0);
         let exp_accumulator_root = exp_root_opt.map(|v| v.1);
 

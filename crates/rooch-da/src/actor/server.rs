@@ -66,7 +66,7 @@ impl DAServerActor {
             last_block_number,
             last_block_update_time: 0,
             background_last_block_update_time: background_last_block_update_time.clone(),
-            batch_maker: BatchMaker::new(),
+            batch_maker: BatchMaker::new(rooch_store.clone()),
         };
 
         if submit_threshold != 0 {
@@ -137,11 +137,8 @@ impl DAServerActor {
     ) -> anyhow::Result<()> {
         let tx_order = msg.tx_order;
         let tx_timestamp = msg.tx_timestamp;
-        let batch = self.batch_maker.append_transaction(tx_order, tx_timestamp);
-        if let Some((tx_order_start, tx_order_end)) = batch {
-            let block_number = self
-                .rooch_store
-                .append_submitting_block(tx_order_start, tx_order_end)?;
+        let block_number_opt = self.batch_maker.append_transaction(tx_order, tx_timestamp);
+        if let Some(block_number) = block_number_opt {
             self.last_block_number = Some(block_number);
             self.last_block_update_time = SystemTime::now()
                 .duration_since(time::UNIX_EPOCH)?
@@ -362,7 +359,14 @@ impl BackgroundSubmitter {
 
         // there is no unsubmitted block
         if unsubmitted_blocks.is_empty() {
-            self.update_cursor(last_block_number)?;
+            // if no changes, don't update cursor,
+            // avoid unnecessary disk I/O and misleading update time
+            if let Some(origin_cursor) = origin_background_cursor {
+                if origin_cursor != last_block_number {
+                    // update cursor to last_block_number, because cursor maybe behind than set_submitting_block_done
+                    self.update_cursor(last_block_number)?;
+                }
+            }
             return Ok(());
         }
         let first_unsubmitted_block = unsubmitted_blocks.first().unwrap().block_number;
