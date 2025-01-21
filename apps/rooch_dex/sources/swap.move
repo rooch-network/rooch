@@ -116,7 +116,7 @@ module rooch_dex::swap {
     /// Create the specified coin pair
     public(friend) fun create_pair<X:key+store, Y:key+store>(
         sender: &signer,
-    ) {
+    ): ObjectID {
         assert!(!is_pair_created<X, Y>(), ErrorAlreadyExists);
 
         let sender_addr = signer::address_of(sender);
@@ -140,6 +140,7 @@ module rooch_dex::swap {
             8,
         );
 
+        let coin_info_id = object::id(&coin_info);
         account::move_resource_to<TokenPairReserve<X, Y>>(
             &resource_signer,
             TokenPairReserve {
@@ -174,6 +175,7 @@ module rooch_dex::swap {
         );
 
         object::to_shared(coin_info);
+        return coin_info_id
     }
 
 
