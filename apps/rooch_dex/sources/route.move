@@ -2,6 +2,7 @@ module rooch_dex::router {
     use rooch_dex::swap;
     use std::signer;
     use std::signer::address_of;
+    use rooch_dex::swap::LPToken;
     use rooch_framework::account_coin_store;
     use moveos_std::object::ObjectID;
     use rooch_framework::coin;
@@ -57,6 +58,14 @@ module rooch_dex::router {
             assert!(amount_x >= amount_x_min, ErrorInsufficientXAmount);
             assert!(amount_y >= amount_y_min, ErrorInsufficientYAmount);
         };
+    }
+
+    public fun lp_balance<X:key+store, Y:key+store>(addr: address): u256 {
+        if (swap_utils::sort_token_type<X, Y>()) {
+            account_coin_store::balance<LPToken<X, Y>>(addr)
+        } else {
+            account_coin_store::balance<LPToken<Y, X>>(addr)
+        }
     }
 
     fun assert_token_pair_created<X:key+store, Y:key+store>(){

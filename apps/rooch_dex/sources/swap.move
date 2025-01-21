@@ -183,12 +183,6 @@ module rooch_dex::swap {
         account::exists_resource<TokenPair<X, Y>>(RESOURCE_ACCOUNT)
     }
 
-    /// Obtain the LP token balance of `addr`.
-    /// This method can only be used to check other users' balance.
-    public fun lp_balance<X:key+store, Y:key+store>(addr: address): u256 {
-        account_coin_store::balance<LPToken<X, Y>>(addr)
-    }
-
     /// Get the total supply of LP Tokens
     public fun total_lp_supply<X:key+store, Y:key+store>(): u128 {
         (supply_by_type<LPToken<X, Y>>() as u128)
