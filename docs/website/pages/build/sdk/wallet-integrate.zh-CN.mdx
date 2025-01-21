@@ -1,0 +1,162 @@
+# 钱包集成
+
+这篇文档将介绍如何将 Rooch 的钱包功能（查询、转账）集成到钱包、资产浏览器、聚合器等应用中，将向钱包开发者介绍 Rooch 提供的 TS SDK 方法。
+
+## 客户端操作
+
+`useRoochClientQuery` 提供了调用 RPC 方法的封装，传递 RPC 方法名和参数列表后对返回结果进行处理，具体可以传递哪些 RPC 方法、参数以及返回结果，请参考 [Rooch JSON RPC](https://playground.open-rpc.org/?schemaUrl=https://raw.githubusercontent.com/rooch-network/rooch/main/crates/rooch-open-rpc-spec/schemas/openrpc.json)。
+
+```ts
+export declare function useRoochClientQuery<T extends keyof RpcMethods, TData = RpcMethods[T]['result']>(...args: undefined extends RpcMethods[T]['params'] ? [method: T, params?: RpcMethods[T]['params'], options?: UseRoochClientQueryOptions<T, TData>] : [method: T, params: RpcMethods[T]['params'], options?: UseRoochClientQueryOptions<T, TData>]): UseQueryResult<TData, Error>;
+```
+
+接下来会举几个调用例子：
+
+- 调用 `rooch_getBlances` 方法的例子：
+
+```tsx
+const {
+data: assetsList,
+isPending,
+refetch: refetchAssetsList,
+} = useRoochClientQuery(
+'getBalances',
+{
+  owner: BitcoinAddressToRoochAddress(address).toHexAddress(),
+},
+{ refetchInterval: 5000 }
+);
+```
+
+- 调用 `btc_queryUTXOs` 方法的例子：
+
+```tsx
+const { data: utxoList, isPending: isUTXOPending } = useRoochClientQuery(
+'queryUTXO',
+{
+  filter: {
+    owner: address,
+  },
+  cursor: queryOptions.cursor,
+  limit: queryOptions.pageSize,
+},
+{ enabled: !!address }
+);
+```
+
+## 账户相关
+
+### 获取 Session Key
+
+```ts
+export declare function useCurrentSession(): import("@roochnetwork/rooch-sdk").Session | null;
+```
+
+例子：
+
+```ts
+import { useCurrentSession } from '@roochnetwork/rooch-sdk-kit';
+
+const sessionKey = useCurrentSession();
+```
+
+### 获取当前地址
+
+```ts
+import { useCurrentAddress } from '@roochnetwork/rooch-sdk-kit';
+
+const address = useCurrentAddress();
+```
+
+## 网络切换
+
+对于网络切换可以使用 `useSwitchNetwork` 方法，传递以下参数：
+
+```ts
+type UseSwitchNetworkArgs = string;
+```
+
+如果已连接网路，可以使用 `useCurrentNetwork` 方法。
+
+## 获取上下文
+
+`useRoochContext` 方法用于获取上下文，上下文信息如下所示：
+
+```ts
+export interface ClientProviderContext {
+    client: RoochClient;
+    networks: NetworkConfigs;
+    network: NetworkType;
+    config: NetworkConfig | null;
+    selectNetwork: (network: string) => void;
+}
+```
+
+## 发送交易
+
+`UseSignAndExecuteTransaction` 方法，执行签名交易，需要传递以下参数：
+
+```ts
+type UseSignAndExecuteTransactionArgs = {
+    transaction: Transaction;
+    signer?: Signer;
+};
+```
+
+## 转账
+
+### Coin
+
+```ts
+export declare function useTransferCoin({ mutationKey, ...mutationOptions }?: UseSwitchNetworkMutationOptions): UseMutationResult<UseTransferCoinResult, Error, UseTransferCoinArgs, unknown>;
+```
+
+- 对于转账交易可以使用 `useTransferCoin` 方法，传递以下参数：
+
+```ts
+type UseTransferCoinArgs = {
+    signer?: Signer;
+    recipient: address;
+    amount: number | bigint;
+    coinType: TypeArgs;
+};
+```
+
+### Object
+
+- 对于对象的转移可以使用 `useTransferObject` 方法，传递以下参数：
+
+```ts
+type UseTransferObjectArgs = {
+    signer: Signer;
+    recipient: string;
+    objectId: string;
+    objectType: TypeArgs;
+};
+```
+
+## 将钱包功能集成到 Rooch SDK 中
+
+Rooch 目前提供了一套 TypeScript 的 SDK，为 Rooch 开发者或应用开发者提供了便捷的开发体验。
+
+### 介绍
+
+`rooch-sdk` 提供了一些基础的封装，`rooch-sdk-kit` 则为应用开发提供了更实用的开发工具。而钱包集成就用到了这些工具，相关代码存放在 `rooch` 仓库中，详细路径为：
+
+```
+rooch/sdk/typescript/rooch-sdk-kit/src/wellet
+```
+
+### 如何集成钱包到 Rooch 中
+
+目前 Rooch 已经集成了 `UniSat`、`OneKey` 和 `OKX`，如果钱包厂商需要集成钱包到 Rooch 中，则需要使用 SDK 做一些相应的开发，并将实现钱包集成的代码，提交到上述目录中。
+
+在 Rooch 上创建的资产只需要通过调用一个 `getBalance` 接口即可。
+
+以 UniSat 为例，除去一些操作连接相关的代码开发外，最终要显示资产，最关键的是这段代码：
+
+```ts
+getBalance(): Promise<{ confirmed: number; unconfirmed: number; total: string }> {
+return this.getTarget().getBalance()
+}
+```
