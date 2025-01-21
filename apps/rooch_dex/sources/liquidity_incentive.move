@@ -158,7 +158,10 @@ module rooch_dex::liquidity_incentive {
     ){
         let reward_coin = account_coin_store::withdraw<RewardToken>(account, coin_amount);
         let farming_asset = object::borrow_mut(farming_asset_obj);
-        coin_store::deposit(&mut farming_asset.coin_store, reward_coin)
+        coin_store::deposit(&mut farming_asset.coin_store, reward_coin);
+        assert!(farming_asset.end_time >= now_seconds(), ErrorFarmingNotAlive);
+        let end_time = (coin_amount / (farming_asset.release_per_second as u256) as u64);
+        farming_asset.end_time = farming_asset.end_time + end_time
     }
 
     public entry fun withdraw_incentive<X: key+store, Y: key+store, RewardToken: key+store>(
@@ -170,7 +173,9 @@ module rooch_dex::liquidity_incentive {
         let farming_asset = object::borrow_mut(farming_asset_obj);
         assert!(address_of(account) == farming_asset.creator, ErrorNotCreator);
         let coin = coin_store::withdraw(&mut farming_asset.coin_store, coin_amount);
-        account_coin_store::deposit(farming_asset.creator, coin)
+        account_coin_store::deposit(farming_asset.creator, coin);
+        let end_time = (coin_amount / (farming_asset.release_per_second as u256) as u64);
+        farming_asset.end_time = farming_asset.end_time - end_time
     }
 
 
@@ -362,7 +367,7 @@ module rooch_dex::liquidity_incentive {
     }
 
     /// The user can quering all yield farming amount in any time and scene
-    public fun query_gov_token_amount<X: key+store, Y: key+store, RewardToken: key+store>(
+    public fun query_harvest_token_amount<X: key+store, Y: key+store, RewardToken: key+store>(
         account: address,
         farming_asset_obj: &Object<FarmingAsset<X, Y, RewardToken>>
     ): u128 {
@@ -371,7 +376,7 @@ module rooch_dex::liquidity_incentive {
             return 0
         };
         let stake = table::borrow(&farming_asset.stake_info, account);
-        let now_seconds = now_seconds();
+        let now_seconds = u64::min(now_seconds(), farming_asset.end_time);
 
         let new_harvest_index = calculate_harvest_index_with_asset(
             farming_asset,
@@ -514,15 +519,15 @@ module rooch_dex::liquidity_incentive {
         stake(&sender, 100, &mut farming_asset_obj);
         let seconds = 100;
         timestamp::fast_forward_seconds_for_test(seconds);
-        let reward_a = query_gov_token_amount(address_of(&sender), &farming_asset_obj);
+        let reward_a = query_harvest_token_amount(address_of(&sender), &farming_asset_obj);
         stake(&account_b, 100, &mut farming_asset_obj);
         let total_weight = query_total_stake(&farming_asset_obj);
         assert!(total_weight == 200, 1);
         assert!(reward_a == 10000, 2);
         timestamp::fast_forward_seconds_for_test(seconds);
-        reward_a = query_gov_token_amount(address_of(&sender), &farming_asset_obj);
+        reward_a = query_harvest_token_amount(address_of(&sender), &farming_asset_obj);
         assert!(reward_a == 15000, 3);
-        let reward_b = query_gov_token_amount(address_of(&account_b), &farming_asset_obj);
+        let reward_b = query_harvest_token_amount(address_of(&account_b), &farming_asset_obj);
         assert!(reward_b == 5000, 4);
         let reward_coin = do_harvest(&sender, &mut farming_asset_obj);
         assert!(coin::value(&reward_coin) == 15000, 5);
