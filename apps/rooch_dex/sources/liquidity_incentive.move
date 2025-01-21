@@ -5,8 +5,6 @@ module rooch_dex::liquidity_incentive {
 
     use std::signer::address_of;
     use std::u64;
-    use moveos_std::bag::add;
-    use app_admin::admin::AdminCap;
     use moveos_std::table;
     use rooch_framework::coin;
     use moveos_std::table::{Table, new};
