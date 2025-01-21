@@ -18,12 +18,13 @@ module rooch_dex::swap_utils {
     public fun get_amount_out(
         amount_in: u64,
         reserve_in: u64,
-        reserve_out: u64
+        reserve_out: u64,
+        fee_rate: u64,
     ): u64 {
         assert!(amount_in > 0, ErrorInputTokenAmount);
         assert!(reserve_in > 0 && reserve_out > 0, ErrorInsufficientLiquidity);
 
-        let amount_in_with_fee = (amount_in as u128) * 9975u128;
+        let amount_in_with_fee = (amount_in as u128) * (fee_rate as u128);
         let numerator = amount_in_with_fee * (reserve_out as u128);
         let denominator = (reserve_in as u128) * 10000u128 + amount_in_with_fee;
         ((numerator / denominator) as u64)
@@ -32,13 +33,14 @@ module rooch_dex::swap_utils {
     public fun get_amount_in(
         amount_out: u64,
         reserve_in: u64,
-        reserve_out: u64
+        reserve_out: u64,
+        fee_rate: u64
     ): u64 {
         assert!(amount_out > 0, ErrorOutputTokenAmount);
         assert!(reserve_in > 0 && reserve_out > 0, ErrorInsufficientLiquidity);
 
         let numerator = (reserve_in as u128) * (amount_out as u128) * 10000u128;
-        let denominator = ((reserve_out as u128) - (amount_out as u128)) * 9975u128;
+        let denominator = ((reserve_out as u128) - (amount_out as u128)) * (fee_rate as u128);
         (((numerator / denominator) as u64) + 1u64)
     }
 

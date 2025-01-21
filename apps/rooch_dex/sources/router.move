@@ -2,7 +2,7 @@ module rooch_dex::router {
     use rooch_dex::swap;
     use std::signer;
     use std::signer::address_of;
-    use rooch_dex::swap::LPToken;
+    use rooch_dex::swap::{LPToken, borrow_fee_rate};
     use rooch_framework::account_coin_store;
     use rooch_framework::coin;
     use rooch_dex::swap_utils;
@@ -129,12 +129,14 @@ module rooch_dex::router {
     ) {
         assert_token_pair_created<X, Y>();
         let x_in = if (swap_utils::sort_token_type<X, Y>()) {
+            let fee_rate = borrow_fee_rate<X, Y>();
             let (rin, rout, _) = swap::token_reserves<X, Y>();
-            let amount_in = swap_utils::get_amount_in(y_out, rin, rout);
+            let amount_in = swap_utils::get_amount_in(y_out, rin, rout, fee_rate);
             swap::swap_x_to_exact_y<X, Y>(sender, amount_in, y_out, signer::address_of(sender))
         } else {
+            let fee_rate = borrow_fee_rate<Y, X>();
             let (rout, rin, _) = swap::token_reserves<Y, X>();
-            let amount_in = swap_utils::get_amount_in(y_out, rin, rout);
+            let amount_in = swap_utils::get_amount_in(y_out, rin, rout, fee_rate);
             swap::swap_y_to_exact_x<Y, X>(sender, amount_in, y_out, signer::address_of(sender))
         };
         assert!(x_in <= x_max_in, ErrorInsufficientInputAmount);
@@ -179,21 +181,25 @@ module rooch_dex::router {
 
     fun get_amount_in_internal<X:key+store, Y:key+store>(is_x_to_y:bool, y_out_amount: u64): u64 {
         if (is_x_to_y) {
+            let fee_rate = borrow_fee_rate<X, Y>();
             let (rin, rout, _) = swap::token_reserves<X, Y>();
-            swap_utils::get_amount_in(y_out_amount, rin, rout)
+            swap_utils::get_amount_in(y_out_amount, rin, rout, fee_rate)
         } else {
+            let fee_rate = borrow_fee_rate<Y, X>();
             let (rout, rin, _) = swap::token_reserves<Y, X>();
-            swap_utils::get_amount_in(y_out_amount, rin, rout)
+            swap_utils::get_amount_in(y_out_amount, rin, rout, fee_rate)
         }
     }
 
     fun get_amount_out_internal<X:key+store, Y:key+store>(is_x_to_y:bool, x_in_amount: u64): u64 {
         if (is_x_to_y) {
+            let fee_rate = borrow_fee_rate<X, Y>();
             let (rin, rout, _) = swap::token_reserves<X, Y>();
-            swap_utils::get_amount_out(x_in_amount, rin, rout)
+            swap_utils::get_amount_out(x_in_amount, rin, rout, fee_rate)
         } else {
+            let fee_rate = borrow_fee_rate<Y, X>();
             let (rout, rin, _) = swap::token_reserves<Y, X>();
-            swap_utils::get_amount_out(x_in_amount, rin, rout)
+            swap_utils::get_amount_out(x_in_amount, rin, rout, fee_rate)
         }
     }
 
@@ -269,18 +275,22 @@ module rooch_dex::router {
         let rin;
         let rout;
         let y_out = if (second_is_y_to_z) {
+            let fee_rate = borrow_fee_rate<Y, Z>();
             (rin, rout, _) = swap::token_reserves<Y, Z>();
-            swap_utils::get_amount_in(z_out, rin, rout)
+            swap_utils::get_amount_in(z_out, rin, rout, fee_rate)
         }else {
+            let fee_rate = borrow_fee_rate<Z, Y>();
             (rout, rin, _) = swap::token_reserves<Z, Y>();
-            swap_utils::get_amount_in(z_out, rin, rout)
+            swap_utils::get_amount_in(z_out, rin, rout, fee_rate)
         };
         let x_in = if (first_is_x_to_y) {
+            let fee_rate = borrow_fee_rate<X, Y>();
             (rin, rout, _) = swap::token_reserves<X, Y>();
-            swap_utils::get_amount_in(y_out, rin, rout)
+            swap_utils::get_amount_in(y_out, rin, rout, fee_rate)
         }else {
+            let fee_rate = borrow_fee_rate<Y, X>();
             (rout, rin, _) = swap::token_reserves<Y, X>();
-            swap_utils::get_amount_in(y_out, rin, rout)
+            swap_utils::get_amount_in(y_out, rin, rout, fee_rate)
         };
 
         assert!(x_in <= x_max_in, ErrorInsufficientInputAmount);
@@ -371,26 +381,32 @@ module rooch_dex::router {
         let rin;
         let rout;
         let z_out = if (third_is_z_to_a) {
+            let fee_rate = borrow_fee_rate<Z, A>();
             (rin, rout, _) = swap::token_reserves<Z, A>();
-            swap_utils::get_amount_in(a_out, rin, rout)
+            swap_utils::get_amount_in(a_out, rin, rout, fee_rate)
         }else {
+            let fee_rate = borrow_fee_rate<A, Z>();
             (rout, rin, _) = swap::token_reserves<A, Z>();
-            swap_utils::get_amount_in(a_out, rin, rout)
+            swap_utils::get_amount_in(a_out, rin, rout, fee_rate)
         };
 
         let y_out = if (second_is_y_to_z) {
+            let fee_rate = borrow_fee_rate<Y, Z>();
             (rin, rout, _) = swap::token_reserves<Y, Z>();
-            swap_utils::get_amount_in(z_out, rin, rout)
+            swap_utils::get_amount_in(z_out, rin, rout, fee_rate)
         }else {
+            let fee_rate = borrow_fee_rate<Z, Y>();
             (rout, rin, _) = swap::token_reserves<Z, Y>();
-            swap_utils::get_amount_in(z_out, rin, rout)
+            swap_utils::get_amount_in(z_out, rin, rout, fee_rate)
         };
         let x_in = if (first_is_x_to_y) {
+            let fee_rate = borrow_fee_rate<X, Y>();
             (rin, rout, _) = swap::token_reserves<X, Y>();
-            swap_utils::get_amount_in(y_out, rin, rout)
+            swap_utils::get_amount_in(y_out, rin, rout, fee_rate)
         }else {
+            let fee_rate = borrow_fee_rate<Y, X>();
             (rout, rin, _) = swap::token_reserves<Y, X>();
-            swap_utils::get_amount_in(y_out, rin, rout)
+            swap_utils::get_amount_in(y_out, rin, rout, fee_rate)
         };
 
         assert!(x_in <= x_max_in, ErrorInsufficientInputAmount);
@@ -496,34 +512,42 @@ module rooch_dex::router {
         let rout;
 
         let a_out = if (fourth_is_a_to_b) {
+            let fee_rate = borrow_fee_rate<A, B>();
             (rin, rout, _) = swap::token_reserves<A, B>();
-            swap_utils::get_amount_in(b_out, rin, rout)
+            swap_utils::get_amount_in(b_out, rin, rout, fee_rate)
         }else {
+            let fee_rate = borrow_fee_rate<B, A>();
             (rout, rin, _) = swap::token_reserves<B, A>();
-            swap_utils::get_amount_in(b_out, rin, rout)
+            swap_utils::get_amount_in(b_out, rin, rout, fee_rate)
         };
 
         let z_out = if (third_is_z_to_a) {
+            let fee_rate = borrow_fee_rate<Z, A>();
             (rin, rout, _) = swap::token_reserves<Z, A>();
-            swap_utils::get_amount_in(a_out, rin, rout)
+            swap_utils::get_amount_in(a_out, rin, rout, fee_rate)
         }else {
+            let fee_rate = borrow_fee_rate<A, Z>();
             (rout, rin, _) = swap::token_reserves<A, Z>();
-            swap_utils::get_amount_in(a_out, rin, rout)
+            swap_utils::get_amount_in(a_out, rin, rout, fee_rate)
         };
 
         let y_out = if (second_is_y_to_z) {
+            let fee_rate = borrow_fee_rate<Y, Z>();
             (rin, rout, _) = swap::token_reserves<Y, Z>();
-            swap_utils::get_amount_in(z_out, rin, rout)
+            swap_utils::get_amount_in(z_out, rin, rout, fee_rate)
         }else {
+            let fee_rate = borrow_fee_rate<Z, Y>();
             (rout, rin, _) = swap::token_reserves<Z, Y>();
-            swap_utils::get_amount_in(z_out, rin, rout)
+            swap_utils::get_amount_in(z_out, rin, rout, fee_rate)
         };
         let x_in = if (first_is_x_to_y) {
+            let fee_rate = borrow_fee_rate<X, Y>();
             (rin, rout, _) = swap::token_reserves<X, Y>();
-            swap_utils::get_amount_in(y_out, rin, rout)
+            swap_utils::get_amount_in(y_out, rin, rout, fee_rate)
         }else {
+            let fee_rate = borrow_fee_rate<Y, X>();
             (rout, rin, _) = swap::token_reserves<Y, X>();
-            swap_utils::get_amount_in(y_out, rin, rout)
+            swap_utils::get_amount_in(y_out, rin, rout, fee_rate)
         };
 
         assert!(x_in <= x_max_in, ErrorInsufficientInputAmount);
