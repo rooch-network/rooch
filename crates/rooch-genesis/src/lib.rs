@@ -14,6 +14,7 @@ use move_vm_runtime::native_functions::NativeFunction;
 use move_vm_runtime::RuntimeEnvironment;
 use moveos::gas::table::VMGasParameters;
 use moveos::moveos::{MoveOS, MoveOSConfig};
+use moveos::vm::module_cache::GlobalModuleCache;
 use moveos_stdlib::natives::moveos_stdlib::base64::EncodeDecodeGasParametersOption;
 use moveos_stdlib::natives::moveos_stdlib::object::ListFieldsGasParametersOption;
 use moveos_store::MoveOSStore;
@@ -323,10 +324,13 @@ impl RoochGenesis {
         genesis_moveos_tx.ctx.add(bitcoin_genesis_ctx.clone())?;
         genesis_moveos_tx.ctx.add(gas_config.clone())?;
 
-        let vm_config = MoveOSConfig::default();
         let (moveos_store, _temp_dir) = MoveOSStore::mock_moveos_store()?;
-        let runtime_environment = RuntimeEnvironment::new(gas_parameter.all_natives());
-        let moveos = MoveOS::new(&runtime_environment, moveos_store, vec![], vec![])?;
+        let moveos = MoveOS::new(
+            gas_parameter.all_natives(),
+            moveos_store,
+            vec![],
+            vec![],
+        )?;
         let output = moveos.init_genesis(
             genesis_moveos_tx.clone(),
             genesis_config.genesis_objects.clone(),
@@ -421,9 +425,8 @@ impl RoochGenesis {
             self.initial_gas_config.max_gas_amount,
             self.initial_gas_config.entries.clone(),
         )?;
-        let runtime_environment = RuntimeEnvironment::new(genesis_gas_parameter.all_natives());
         let moveos = MoveOS::new(
-            &runtime_environment,
+            genesis_gas_parameter.all_natives(),
             rooch_db.moveos_store.clone(),
             vec![],
             vec![],

@@ -119,7 +119,23 @@ impl Clone for MoveOSConfig {
     }
 }
 
-pub struct MoveOS<'a> {
+#[derive(Clone)]
+pub struct MoveOSCacheManager {
+    pub runtime_environment: Arc<RwLock<RuntimeEnvironment>>,
+    pub global_module_cache:
+        Arc<RwLock<GlobalModuleCache<ModuleId, CompiledModule, Module, RoochModuleExtension>>>,
+}
+
+impl MoveOSCacheManager {
+    pub fn new(all_natives: Vec<(AccountAddress, Identifier, Identifier, NativeFunction)>) -> Self {
+        Self {
+            runtime_environment: Arc::new(RwLock::new(RuntimeEnvironment::new(all_natives))),
+            global_module_cache: Arc::new(RwLock::new(GlobalModuleCache::empty())),
+        }
+    }
+}
+
+pub struct MoveOS {
     vm: MoveOSVM,
     //MoveOS do not need to hold the db
     //It just need a StateResolver to get the state.
@@ -128,35 +144,27 @@ pub struct MoveOS<'a> {
     cost_table: Arc<RwLock<Option<CostTable>>>,
     system_pre_execute_functions: Vec<FunctionCall>,
     system_post_execute_functions: Vec<FunctionCall>,
-    pub runtime_environment: &'a RuntimeEnvironment,
-    pub global_module_cache:
-        &'a GlobalModuleCache<ModuleId, CompiledModule, Module, RoochModuleExtension>,
+    cache_manager: MoveOSCacheManager,
 }
 
-impl<'a> MoveOS<'a> {
+impl MoveOS {
     pub fn new(
-        runtime_environment: &'a RuntimeEnvironment,
+        all_natives: Vec<(AccountAddress, Identifier, Identifier, NativeFunction)>,
         db: MoveOSStore,
         system_pre_execute_functions: Vec<FunctionCall>,
         system_post_execute_functions: Vec<FunctionCall>,
-        global_module_cache: &'a GlobalModuleCache<
-            ModuleId,
-            CompiledModule,
-            Module,
-            RoochModuleExtension,
-        >,
     ) -> Result<Self> {
         //TODO load the gas table from argument, and remove the cost_table lock.
+        let moveos_cache_manager = MoveOSCacheManager::new(all_natives);
 
-        let vm = MoveOSVM::new(runtime_environment)?;
+        let vm = MoveOSVM::new(moveos_cache_manager.clone())?;
         Ok(Self {
             vm,
             db,
             cost_table: Arc::new(RwLock::new(None)),
             system_pre_execute_functions,
             system_post_execute_functions,
-            runtime_environment,
-            global_module_cache,
+            cache_manager: moveos_cache_manager,
         })
     }
 
@@ -176,12 +184,14 @@ impl<'a> MoveOS<'a> {
         let MoveOSTransaction { root, ctx, action } = tx;
         assert!(root.is_genesis());
         let resolver = GenesisResolver::default();
+        let runtime_environment = self.cache_manager.runtime_environment.read();
+        let global_module_cache = self.cache_manager.global_module_cache.read();
         let mut session = self.vm.new_genesis_session(
             &resolver,
             ctx,
             genesis_objects,
-            self.global_module_cache,
-            self.runtime_environment,
+            &global_module_cache,
+            &runtime_environment,
         );
 
         let verified_action = session.verify_move_action(action).map_err(|e| {
@@ -272,12 +282,14 @@ impl<'a> MoveOS<'a> {
         }
 
         let resolver = RootObjectResolver::new(root.clone(), &self.db);
+        let runtime_environment = self.cache_manager.runtime_environment.read();
+        let global_module_cache = self.cache_manager.global_module_cache.read();
         let mut session = self.vm.new_readonly_session(
             &resolver,
             ctx.clone(),
             gas_meter,
-            self.global_module_cache,
-            self.runtime_environment,
+            &global_module_cache,
+            &runtime_environment,
         );
 
         let verified_action = session.verify_move_action(action)?;
@@ -323,12 +335,14 @@ impl<'a> MoveOS<'a> {
         let tx_size = ctx.tx_size;
 
         let resolver = RootObjectResolver::new(root, &self.db);
+        let runtime_environment = self.cache_manager.runtime_environment.read();
+        let global_module_cache = self.cache_manager.global_module_cache.read();
         let mut session = self.vm.new_session(
             &resolver,
             ctx,
             gas_meter,
-            self.global_module_cache,
-            self.runtime_environment,
+            &global_module_cache,
+            &runtime_environment,
         );
 
         //We do not execute pre_execute and post_execute functions for system call
@@ -451,12 +465,14 @@ impl<'a> MoveOS<'a> {
         );
         gas_meter.set_metering(true);
         let resolver = RootObjectResolver::new(root, &self.db);
+        let runtime_environment = self.cache_manager.runtime_environment.read();
+        let global_module_cache = self.cache_manager.global_module_cache.read();
         let mut session = self.vm.new_readonly_session(
             &resolver,
             tx_context.clone(),
             gas_meter,
-            self.global_module_cache,
-            self.runtime_environment,
+            &global_module_cache,
+            &runtime_environment,
         );
 
         let result = session.execute_function_bypass_visibility(function_call);

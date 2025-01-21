@@ -392,6 +392,8 @@ fn native_execute_wasm_function(
                 ret_vals: smallvec![Value::u64(0), Value::u64(abort_code)],
             }),
             NativeResult::OutOfGas { partial_cost } => Ok(NativeResult::OutOfGas { partial_cost }),
+            // #TODO: Handle other cases.
+            _ => Ok(native_result),
         },
         PartialVMResult::Err(err) => {
             warn!("execute_wasm_function_inner vm_error: {:?}", err);

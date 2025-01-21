@@ -59,6 +59,7 @@ use parking_lot::RwLock;
 use std::collections::BTreeSet;
 use std::rc::Rc;
 use std::{borrow::Borrow, sync::Arc};
+use crate::moveos::MoveOSCacheManager;
 
 /// MoveOSVM is a wrapper of MoveVM with MoveOS specific features.
 pub struct MoveOSVM {
@@ -66,9 +67,10 @@ pub struct MoveOSVM {
 }
 
 impl MoveOSVM {
-    pub fn new(runtime_environment: &RuntimeEnvironment) -> VMResult<Self> {
+    pub fn new(moveos_cache_manager: MoveOSCacheManager) -> VMResult<Self> {
+        let read_gurad = moveos_cache_manager.runtime_environment.read();
         Ok(Self {
-            inner: MoveVM::new_with_runtime_environment(runtime_environment),
+            inner: MoveVM::new_with_runtime_environment(&read_gurad),
         })
     }
 

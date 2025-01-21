@@ -22,6 +22,8 @@ crate::natives::gas_parameter::native::define_gas_parameters_for_natives!(GasPar
     [.string.sub_string.per_byte, "string.sub_string.per_byte", (4 + 1) *  MUL],
     [.string.index_of.per_byte_searched, "string.index_of.per_byte_searched", (4 + 1)  * MUL],
 
+    /*
+    // TODO: It is necessary to retain gas records to maintain compatibility.
     [.vector.length.base, "vector.length.base", (98 + 1) * MUL],
     [.vector.empty.base, "vector.empty.base", (84 + 1) * MUL],
     [.vector.borrow.base, "vector.borrow.base", (1334 + 1) * MUL],
@@ -29,4 +31,5 @@ crate::natives::gas_parameter::native::define_gas_parameters_for_natives!(GasPar
     [.vector.pop_back.base, "vector.pop_back.base", (227 + 1) * MUL],
     [.vector.destroy_empty.base, "vector.destroy_empty.base", (572 + 1) * MUL],
     [.vector.swap.base, "vector.swap.base", (1436 + 1) * MUL],
+     */
 ], allow_unmapped = 2);
