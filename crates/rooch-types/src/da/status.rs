@@ -28,6 +28,7 @@ pub struct DAServerStatus {
     /// 1. DA backends collapse
     /// 2. RoochStore is not consistent (cannot get tx from DB by tx order)
     pub last_avail_block_update_time: Option<u64>,
-    /// The available backend_identifiers and their last block numbers. e.g., [("openda-gcs", 100), ("openda-fs", 200)]
+    /// The available backend_identifiers and their latest block numbers. e.g., [("openda-gcs", 100), ("openda-fs", 200)]
+    /// Block numbers only update in runtime, not in startup. In the beginning, it should be 0.
     pub avail_backends: Vec<(String, u128)>,
 }
