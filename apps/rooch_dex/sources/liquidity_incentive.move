@@ -4,6 +4,8 @@
 module rooch_dex::liquidity_incentive {
 
     use std::signer::address_of;
+    use std::u64;
+    use moveos_std::bag::add;
     use app_admin::admin::AdminCap;
     use moveos_std::table;
     use rooch_framework::coin;
@@ -42,6 +44,7 @@ module rooch_dex::liquidity_incentive {
     const ErrorFarmingNotAlive: u64 = 7;
     const ErrorFarmingAliveStateInvalid: u64 = 8;
     const ErrorFarmingNotStake: u64 = 9;
+    const ErrorNotCreator: u64 = 10;
 
     const EXP_MAX_SCALE: u128 = 9;
 
@@ -117,6 +120,7 @@ module rooch_dex::liquidity_incentive {
 
 
     struct FarmingAsset<phantom X: key+store, phantom Y: key+ store, phantom RewardToken: key+store> has key, store {
+        creator: address,
         asset_total_weight: u128,
         harvest_index: u128,
         last_update_timestamp: u64,
@@ -124,6 +128,7 @@ module rooch_dex::liquidity_incentive {
         release_per_second: u128,
         // Start time, by seconds, user can operate stake only after this timestamp
         start_time: u64,
+        end_time: u64,
         coin_store: Object<CoinStore<RewardToken>>,
         stake_info: Table<address, Stake<X, Y>>,
         // Representing the pool is alive, false: not alive, true: alive.
@@ -143,29 +148,53 @@ module rooch_dex::liquidity_incentive {
         release_per_second: u128,
         coin_amount: u256,
         start_time: u64,
-        admin: &mut Object<AdminCap>
     ){
         let reward_coin = account_coin_store::withdraw<RewardToken>(account, coin_amount);
-        create_pool_with_coin<X, Y, RewardToken>(release_per_second, reward_coin, start_time, admin)
+        create_pool_with_coin<X, Y, RewardToken>(account, release_per_second, reward_coin, start_time)
+    }
+
+    public entry fun add_incentive<X: key+store, Y: key+store, RewardToken: key+store>(
+        account: &signer,
+        farming_asset_obj: &mut Object<FarmingAsset<X, Y, RewardToken>>,
+        coin_amount: u256,
+    ){
+        let reward_coin = account_coin_store::withdraw<RewardToken>(account, coin_amount);
+        let farming_asset = object::borrow_mut(farming_asset_obj);
+        coin_store::deposit(&mut farming_asset.coin_store, reward_coin)
+    }
+
+    public entry fun withdraw_incentive<X: key+store, Y: key+store, RewardToken: key+store>(
+        account: &signer,
+        farming_asset_obj: &mut Object<FarmingAsset<X, Y, RewardToken>>,
+        coin_amount: u256,
+    ){
+
+        let reward_coin = account_coin_store::withdraw<RewardToken>(account, coin_amount);
+        let farming_asset = object::borrow_mut(farming_asset_obj);
+        assert!(address_of(account) == farming_asset.creator, ErrorNotCreator);
+        coin_store::deposit(&mut farming_asset.coin_store, reward_coin)
     }
 
 
     /// Add asset pools
     public fun create_pool_with_coin<X: key+store, Y: key+store, RewardToken: key+store>(
+        account: &signer,
         release_per_second: u128,
         coin: Coin<RewardToken>,
         start_time: u64,
-        _admin: &mut Object<AdminCap>
     ) {
+        let end_time = (coin::value(&coin) / (release_per_second as u256) as u64);
         let coin_store = coin_store::create_coin_store<RewardToken>();
         coin_store::deposit(&mut coin_store, coin);
         if (swap_utils::sort_token_type<X, Y>()) {
             let farming_asset = object::new(FarmingAsset<X, Y, RewardToken> {
+                creator: address_of(account),
                 asset_total_weight: 0,
                 harvest_index: 0,
                 last_update_timestamp: start_time,
                 release_per_second,
                 start_time,
+                end_time,
                 coin_store,
                 stake_info: new(),
                 alive: true
@@ -173,43 +202,19 @@ module rooch_dex::liquidity_incentive {
             object::to_shared(farming_asset)
         }else {
             let farming_asset = object::new(FarmingAsset<Y, X, RewardToken> {
+                creator: address_of(account),
                 asset_total_weight: 0,
                 harvest_index: 0,
                 last_update_timestamp: start_time,
                 release_per_second,
                 start_time,
+                end_time,
                 coin_store,
                 stake_info: new(),
                 alive: true
             });
             object::to_shared(farming_asset)
         };
-    }
-
-    public fun modify_parameter<X: key+store, Y: key+store, RewardToken: key+store>(
-        release_per_second: u128,
-        alive: bool,
-        farming_asset_obj: &mut Object<FarmingAsset<X, Y, RewardToken>>,
-        _admin: &mut Object<AdminCap>
-    ) {
-        // Not support to shuttingdown alive state.
-        assert!(alive, ErrorFarmingAliveStateInvalid);
-
-        let farming_asset = object::borrow_mut<FarmingAsset<X,Y,RewardToken>>(farming_asset_obj);
-
-        let now_seconds = now_seconds();
-
-        farming_asset.release_per_second = release_per_second;
-        farming_asset.last_update_timestamp = now_seconds;
-
-        // if the pool is alive, then update index
-        if (farming_asset.alive) {
-            farming_asset.harvest_index = calculate_harvest_index_with_asset(
-                farming_asset,
-                now_seconds
-            );
-        };
-        farming_asset.alive = alive;
     }
 
     /// Call by stake user, staking amount of asset in order to get yield farming token
@@ -236,6 +241,7 @@ module rooch_dex::liquidity_incentive {
         // Check locking time
         let now_seconds = now_seconds();
         assert!(farming_asset.start_time <= now_seconds, ErrorFarmingNotStillFreeze);
+        assert!(farming_asset.end_time > now_seconds, ErrorFarmingNotStillFreeze);
 
         let time_period = now_seconds - farming_asset.last_update_timestamp;
 
@@ -298,7 +304,7 @@ module rooch_dex::liquidity_incentive {
         let Stake { last_harvest_index, asset_weight, asset, gain } =
             table::remove(&mut farming_asset.stake_info, signer::address_of(signer));
 
-        let now_seconds = now_seconds();
+        let now_seconds = u64::min(now_seconds(), farming_asset.end_time);
         let new_harvest_index = calculate_harvest_index_with_asset(farming_asset, now_seconds);
 
         let period_gain = calculate_withdraw_amount(new_harvest_index, last_harvest_index, asset_weight);
@@ -309,6 +315,7 @@ module rooch_dex::liquidity_incentive {
 
         // Update farm asset
         farming_asset.asset_total_weight = farming_asset.asset_total_weight - asset_weight;
+
         farming_asset.last_update_timestamp = now_seconds;
 
         if (farming_asset.alive) {
@@ -333,7 +340,7 @@ module rooch_dex::liquidity_incentive {
     ): Coin<RewardToken> {
         let farming_asset = object::borrow_mut(farming_asset_obj);
         assert!(table::contains(&farming_asset.stake_info, signer::address_of(signer)), ErrorFarmingNotStake);
-        let now_seconds = now_seconds();
+        let now_seconds = u64::min(now_seconds(), farming_asset.end_time);
         let new_harvest_index = calculate_harvest_index_with_asset(farming_asset, now_seconds);
         let stake = table::borrow_mut(&mut farming_asset.stake_info, signer::address_of(signer));
         let period_gain = calculate_withdraw_amount(
@@ -452,7 +459,8 @@ module rooch_dex::liquidity_incentive {
         asset_total_weight: u128,
         last_update_timestamp: u64,
         now_seconds: u64,
-        release_per_second: u128): u128 {
+        release_per_second: u128
+    ): u128 {
         assert!(asset_total_weight > 0, ErrorFarmingTotalWeightIsZero);
         assert!(last_update_timestamp <= now_seconds, ErrorFarmingTimestampInvalid);
 
@@ -494,11 +502,13 @@ module rooch_dex::liquidity_incentive {
         coin_store::deposit(&mut coin_store, lp_reward_coin);
         let farming_asset_obj = object::new(
             FarmingAsset<TestCoinX, TestCoinY, TestRewardCoin> {
+                creator: address_of(&sender),
                 asset_total_weight: 0,
                 harvest_index: 0,
                 last_update_timestamp: now_seconds(),
                 release_per_second: 100,
                 start_time:now_seconds(),
+                end_time: now_seconds() + 10000,
                 coin_store,
                 stake_info: new(),
                 alive: true
