@@ -14,16 +14,25 @@ module rooch_dex::router {
     const ErrorInsufficientXAmount: u64 = 3;
     const ErrorInsufficientYAmount: u64 = 4;
     const ErrorTokenPairNotExist: u64 = 5;
+    const ErrorTokenPairAlreadyExist: u64 = 6;
 
 
     public entry fun create_token_pair<X:key+store, Y:key+store>(
         sender: &signer,
+        amount_x_desired: u64,
+        amount_y_desired: u64,
+        amount_x_min: u64,
+        amount_y_min: u64,
     ) {
+        assert!(!(swap::is_pair_created<X, Y>() || swap::is_pair_created<Y, X>()), ErrorTokenPairAlreadyExist);
         if (swap_utils::sort_token_type<X, Y>()) {
-            swap::create_pair<X, Y>(sender);
+            let coin_info_id = swap::create_pair<X, Y>(sender);
+            add_liquidity<X, Y>(sender, amount_x_desired, amount_y_desired, amount_x_min, amount_y_min, coin_info_id);
         } else {
-            swap::create_pair<Y, X>(sender);
-        }
+            let coin_info_id = swap::create_pair<Y, X>(sender);
+            add_liquidity<Y, X>(sender, amount_x_desired, amount_y_desired, amount_x_min, amount_y_min, coin_info_id);
+        };
+
     }
 
 
@@ -35,9 +44,6 @@ module rooch_dex::router {
         amount_y_min: u64,
         coin_info: ObjectID,
     ) {
-        if (!(swap::is_pair_created<X, Y>() || swap::is_pair_created<Y, X>())) {
-            create_token_pair<X, Y>(sender);
-        };
 
         let amount_x;
         let amount_y;
