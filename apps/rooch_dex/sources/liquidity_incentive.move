@@ -167,10 +167,10 @@ module rooch_dex::liquidity_incentive {
         coin_amount: u256,
     ){
 
-        let reward_coin = account_coin_store::withdraw<RewardToken>(account, coin_amount);
         let farming_asset = object::borrow_mut(farming_asset_obj);
         assert!(address_of(account) == farming_asset.creator, ErrorNotCreator);
-        coin_store::deposit(&mut farming_asset.coin_store, reward_coin)
+        let coin = coin_store::withdraw(&mut farming_asset.coin_store, coin_amount);
+        account_coin_store::deposit(farming_asset.creator, coin)
     }
 
 
