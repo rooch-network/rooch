@@ -6839,6 +6839,7 @@ dependencies = [
  "clap 4.5.17",
  "move-binary-format",
  "move-bytecode-source-map",
+ "move-bytecode-utils",
  "move-bytecode-verifier",
  "move-command-line-common",
  "move-compiler",

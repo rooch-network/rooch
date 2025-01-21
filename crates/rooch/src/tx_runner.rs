@@ -38,6 +38,7 @@ use rooch_types::framework::system_pre_execute_functions;
 use rooch_types::transaction::RoochTransactionData;
 use std::rc::Rc;
 use std::str::FromStr;
+use moveos::vm::module_cache::GlobalModuleCache;
 
 pub fn execute_tx_locally(
     state_root_bytes: Vec<u8>,
@@ -58,12 +59,17 @@ pub fn execute_tx_locally(
     );
     gas_meter.charge_io_write(tx.tx_size()).unwrap();
 
+    let runtime_environment = RuntimeEnvironment::new(genesis_gas_parameter.all_natives());
+    let global_module_cache = GlobalModuleCache::empty();
+
     let mut moveos_session = MoveOSSession::new(
         move_mv.inner(),
         client_resolver,
         object_runtime,
         gas_meter,
         false,
+        &runtime_environment,
+        &global_module_cache
     );
 
     let system_pre_execute_functions = system_pre_execute_functions();
@@ -124,6 +130,8 @@ pub fn execute_tx_locally_with_gas_profile(
     gas_meter.charge_io_write(tx.tx_size()).unwrap();
 
     let mut gas_profiler = new_gas_profiler(tx.clone().action, gas_meter);
+    let runtime_environment = RuntimeEnvironment::new(genesis_gas_parameter.all_natives());
+    let global_module_cache = GlobalModuleCache::empty();
 
     let mut moveos_session = MoveOSSession::new(
         move_mv.inner(),
@@ -131,6 +139,8 @@ pub fn execute_tx_locally_with_gas_profile(
         object_runtime,
         gas_profiler.clone(),
         false,
+        &runtime_environment,
+        &global_module_cache
     );
 
     let system_pre_execute_functions = system_pre_execute_functions();

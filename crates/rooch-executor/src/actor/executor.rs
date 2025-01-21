@@ -49,9 +49,9 @@ use rooch_types::transaction::{
 use std::str::FromStr;
 use std::sync::Arc;
 
-pub struct ExecutorActor<'a> {
+pub struct ExecutorActor {
     root: ObjectMeta,
-    moveos: MoveOS<'a>,
+    moveos: MoveOS,
     moveos_store: MoveOSStore,
     rooch_store: RoochStore,
     metrics: Arc<ExecutorMetrics>,
@@ -71,15 +71,12 @@ impl ExecutorActor {
         let resolver = RootObjectResolver::new(root.clone(), &moveos_store);
         let gas_parameters = FrameworksGasParameters::load_from_chain(&resolver)?;
 
-        let runtime_environment = RuntimeEnvironment::new(gas_parameters.all_natives());
-        let global_module_cache = GlobalModuleCache::empty();
 
         let moveos = MoveOS::new(
-            &runtime_environment,
+            gas_parameters.all_natives(),
             moveos_store.clone(),
             system_pre_execute_functions(),
             system_post_execute_functions(),
-            &global_module_cache,
         )?;
 
         Ok(Self {
@@ -526,15 +523,11 @@ impl Handler<EventData> for ExecutorActor {
             let resolver = RootObjectResolver::new(self.root.clone(), &self.moveos_store);
             let gas_parameters = FrameworksGasParameters::load_from_chain(&resolver)?;
 
-            let runtime_environment = RuntimeEnvironment::new(gas_parameters.all_natives());
-            let global_module_cache = GlobalModuleCache::empty();
-
             self.moveos = MoveOS::new(
-                &runtime_environment,
+                gas_parameters.all_natives(),
                 self.moveos_store.clone(),
                 system_pre_execute_functions(),
                 system_post_execute_functions(),
-                &global_module_cache,
             )?;
         }
         Ok(())

@@ -4,6 +4,7 @@
 use clap::Parser;
 use codespan_reporting::diagnostic::Severity;
 use codespan_reporting::term::termcolor::Buffer;
+use move_binary_format::CompiledModule;
 use move_command_line_common::files::{extension_equals, find_filenames, MOVE_EXTENSION};
 use move_command_line_common::parser::NumberFormat;
 use move_command_line_common::{
@@ -11,6 +12,7 @@ use move_command_line_common::{
     files::verify_and_create_named_address_mapping,
     values::ParsableValue,
 };
+use move_compiler::shared::known_attributes::KnownAttribute;
 use move_compiler::shared::PackagePaths;
 use move_compiler::FullyCompiledProgram;
 use move_core_types::{identifier::Identifier, language_storage::ModuleId};
@@ -20,9 +22,10 @@ use move_transactional_test_runner::{
     vm_test_harness::view_resource_in_move_storage,
 };
 use move_vm_runtime::session::SerializedReturnValues;
-use move_vm_runtime::RuntimeEnvironment;
+use move_vm_runtime::{Module, RuntimeEnvironment};
 use moveos::moveos::{MoveOS, MoveOSConfig};
 use moveos::moveos_test_runner::{CompiledState, MoveOSTestAdapter, TaskInput};
+use moveos::vm::module_cache::{GlobalModuleCache, RoochModuleExtension};
 use moveos_config::DataDirPath;
 use moveos_store::MoveOSStore;
 use moveos_types::move_std::string::MoveString;
@@ -118,9 +121,8 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
         let moveos_store = MoveOSStore::new(temp_dir.path(), &registry).unwrap();
         let genesis_gas_parameter = FrameworksGasParameters::initial();
         let genesis: &RoochGenesis = &rooch_genesis::ROOCH_LOCAL_GENESIS;
-        let runtime_environment = RuntimeEnvironment::new(genesis_gas_parameter.all_natives());
         let moveos = MoveOS::new(
-            &runtime_environment,
+            genesis_gas_parameter.all_natives(),
             moveos_store.clone(),
             rooch_types::framework::system_pre_execute_functions(),
             rooch_types::framework::system_post_execute_functions(),
@@ -305,7 +307,7 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
         type_args: Vec<move_core_types::language_storage::TypeTag>,
     ) -> anyhow::Result<String> {
         let resolver = RootObjectResolver::new(self.root.clone(), self.moveos.moveos_store());
-        view_resource_in_move_storage(&resolver, address, module, resource, type_args)
+        view_resource_in_move_storage(&resolver, &resolver, address, module, resource, type_args)
     }
 
     fn handle_subcommand(
@@ -523,6 +525,7 @@ pub fn all_pre_compiled_libs() -> Option<FullyCompiledProgram> {
         ],
         None,
         move_compiler::Flags::empty(),
+        KnownAttribute::get_all_attribute_names(),
     )
     .unwrap();
     match program_res {

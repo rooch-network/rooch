@@ -52,9 +52,8 @@ impl ReaderExecutorActor {
     ) -> Result<Self> {
         let resolver = RootObjectResolver::new(root.clone(), &moveos_store);
         let gas_parameters = FrameworksGasParameters::load_from_chain(&resolver)?;
-        let runtime_environment = RuntimeEnvironment::new(gas_parameters.all_natives());
         let moveos = MoveOS::new(
-            &runtime_environment,
+            gas_parameters.all_natives(),
             moveos_store.clone(),
             system_pre_execute_functions(),
             system_post_execute_functions(),
@@ -321,11 +320,10 @@ impl Handler<EventData> for ReaderExecutorActor {
             tracing::debug!("ReadExecutorActor: Reload the MoveOS instance...");
 
             let resolver = RootObjectResolver::new(self.root.clone(), &self.moveos_store);
-            let gas_parameters = FrameworksGasParameters::load_from_chain(&resolver)?;
-            let runtime_environment = RuntimeEnvironment::new(gas_parameters.all_natives());
+            let gas_parameters = FrameworksGasParameters::load_from_chain(&resolver)?;;
 
             self.moveos = MoveOS::new(
-                &runtime_environment,
+                gas_parameters.all_natives(),
                 self.moveos_store.clone(),
                 system_pre_execute_functions(),
                 system_post_execute_functions(),
