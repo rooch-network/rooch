@@ -631,7 +631,7 @@ module rooch_dex::swap {
         };
     }
 
-    public fun update_fee_rate<X:key+store, Y:key+store>(fee_rate: u64){
+    public entry fun update_fee_rate<X:key+store, Y:key+store>(_admin_cap: &mut Object<AdminCap>, fee_rate: u64){
         let token_pair_obj = object::borrow_mut_object_shared<TokenPair<X, Y>>(named_object_id<TokenPair<X, Y>>());
         let token_pair = object::borrow_mut<TokenPair<X, Y>>(token_pair_obj);
         token_pair.fee_rate = fee_rate
