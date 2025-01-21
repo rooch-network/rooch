@@ -3,7 +3,7 @@ module rooch_dex::swap {
     use std::option::none;
     use std::string;
     use std::u128;
-    use app_admin::admin;
+    use app_admin::admin::AdminCap;
     use moveos_std::timestamp;
     use moveos_std::account::borrow_mut_resource;
     use rooch_dex::swap_utils;
@@ -12,7 +12,6 @@ module rooch_dex::swap {
     use moveos_std::type_info;
     use rooch_framework::coin;
     use moveos_std::signer::module_signer;
-    use moveos_std::tx_context::sender;
     use moveos_std::object;
     use moveos_std::account;
     use rooch_framework::coin::{CoinInfo, symbol_by_type, supply_by_type};
@@ -101,22 +100,8 @@ module rooch_dex::swap {
         amount_y_out: u64
     }
 
-    struct RoochDexCap has key {}
-
-    fun init() {
-        object::transfer_extend(object::new_named_object(RoochDexCap{}), sender())
-    }
 
 
-    public entry fun create_admin(_admin: &mut Object<admin::AdminCap>, receiver: address){
-        let new_admin = object::new(RoochDexCap{});
-        object::transfer_extend(new_admin, receiver)
-    }
-
-    public entry fun delete_admin(_admin: &mut Object<admin::AdminCap>, admin_id: ObjectID){
-        let admin_obj = object::take_object_extend<RoochDexCap>(admin_id);
-        let RoochDexCap{} = object::remove(admin_obj);
-    }
 
     /// Create the specified coin pair
     public(friend) fun create_pair<X:key+store, Y:key+store>(
@@ -125,7 +110,7 @@ module rooch_dex::swap {
         assert!(!is_pair_created<X, Y>(), ErrorAlreadyExists);
 
         let sender_addr = signer::address_of(sender);
-        let resource_signer = module_signer<RoochDexCap>();
+        let resource_signer = module_signer<TokenPair<X, Y>>();
 
         let lp_name: string::String = string::utf8(b"RoochDex-");
         let name_x = symbol_by_type<X>();
@@ -359,10 +344,11 @@ module rooch_dex::swap {
     public(friend) fun swap_exact_x_to_y_direct<X:key+store, Y:key+store>(
         coins_in: coin::Coin<X>
     ): (coin::Coin<X>, coin::Coin<Y>){
+        let fee_rate = borrow_fee_rate<X, Y>();
         let amount_in = coin::value<X>(&coins_in);
         deposit_x<X, Y>(coins_in);
         let (rin, rout, _) = token_reserves<X, Y>();
-        let amount_out = swap_utils::get_amount_out((amount_in as u64), rin, rout);
+        let amount_out = swap_utils::get_amount_out((amount_in as u64), rin, rout, fee_rate);
         let (coins_x_out, coins_y_out) = swap<X, Y>(0, amount_out);
         assert!(coin::value<X>(&coins_x_out) == 0, ErrorOutputTokenAmount);
         (coins_x_out, coins_y_out)
@@ -430,10 +416,11 @@ module rooch_dex::swap {
     public(friend) fun swap_exact_y_to_x_direct<X:key+store, Y:key+store>(
         coins_in: coin::Coin<Y>
     ): (coin::Coin<X>, coin::Coin<Y>) {
+        let fee_rate = borrow_fee_rate<X, Y>();
         let amount_in = coin::value<Y>(&coins_in);
         deposit_y<X, Y>(coins_in);
         let (rout, rin, _) = token_reserves<X, Y>();
-        let amount_out = swap_utils::get_amount_out((amount_in as u64), rin, rout);
+        let amount_out = swap_utils::get_amount_out((amount_in as u64), rin, rout, fee_rate);
         let (coins_x_out, coins_y_out) = swap<X, Y>(amount_out, 0);
         assert!(coin::value<Y>(&coins_y_out) == 0, ErrorOutputTokenAmount);
         (coins_x_out, coins_y_out)
@@ -614,7 +601,7 @@ module rooch_dex::swap {
         fee
     }
 
-    public entry fun withdraw_fee<X:key+store, Y:key+store>(admin_cap: &mut Object<RoochDexCap>){
+    public entry fun withdraw_fee<X:key+store, Y:key+store>(admin_cap: &mut Object<AdminCap>){
         if (swap_utils::sort_token_type<X, Y>()) {
         let token_pair_obj = object::borrow_mut_object_shared<TokenPair<X, Y>>(named_object_id<TokenPair<X, Y>>());
         let token_pair = object::borrow_mut<TokenPair<X, Y>>(token_pair_obj);
@@ -632,7 +619,7 @@ module rooch_dex::swap {
         };
     }
 
-    public entry fun update_token_pair_status<X:key+store, Y:key+store>(_admin_cap: &mut Object<RoochDexCap>, status: bool){
+    public entry fun update_token_pair_status<X:key+store, Y:key+store>(_admin_cap: &mut Object<AdminCap>, status: bool){
         if (swap_utils::sort_token_type<X, Y>()) {
             let token_pair_obj = object::borrow_mut_object_shared<TokenPair<X, Y>>(named_object_id<TokenPair<X, Y>>());
             let token_pair = object::borrow_mut<TokenPair<X, Y>>(token_pair_obj);
@@ -642,6 +629,17 @@ module rooch_dex::swap {
             let token_pair = object::borrow_mut<TokenPair<Y, X>>(token_pair_obj);
             token_pair.is_open = status
         };
+    }
+
+    public fun update_fee_rate<X:key+store, Y:key+store>(fee_rate: u64){
+        let token_pair_obj = object::borrow_mut_object_shared<TokenPair<X, Y>>(named_object_id<TokenPair<X, Y>>());
+        let token_pair = object::borrow_mut<TokenPair<X, Y>>(token_pair_obj);
+        token_pair.fee_rate = fee_rate
+    }
+
+    public fun borrow_fee_rate<X:key+store, Y:key+store>() : u64{
+        let token_pair_obj = object::borrow_object<TokenPair<X, Y>>(named_object_id<TokenPair<X, Y>>());
+        object::borrow<TokenPair<X, Y>>(token_pair_obj).fee_rate
     }
 
     #[test_only]
