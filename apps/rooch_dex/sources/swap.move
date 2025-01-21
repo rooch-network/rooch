@@ -125,7 +125,7 @@ module rooch_dex::swap {
 
         let coin_info = coin::register_extend<LPToken<X, Y>>(
             lp_name,
-            string::utf8(b"RDex-LP"),
+            string::utf8(b"RDexLP"),
             none(),
             8,
         );
@@ -651,7 +651,7 @@ module rooch_dex::swap {
     public fun init_lp_for_test(amount: u256) : Coin<LPToken<TestCoinX, TestCoinY>> {
         let coin_info = coin::register_extend<LPToken<TestCoinX, TestCoinY>>(
             string::utf8(b"RoochDex LPs"),
-            string::utf8(b"RDex-LP"),
+            string::utf8(b"RDexLP"),
             none(),
             8,
         );

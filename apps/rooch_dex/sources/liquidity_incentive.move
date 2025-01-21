@@ -141,12 +141,20 @@ module rooch_dex::liquidity_incentive {
         gain: u128,
     }
 
+    /// Create a new farming asset pool
+    /// The pool will start to release reward token after start_time(seconds)
     public entry fun create_pool<X: key+store, Y: key+store, RewardToken: key+store>(
         account: &signer,
         release_per_second: u128,
         coin_amount: u256,
-        start_time: u64,
+        start_time_in_seconds: u64,
     ){
+        let now = now_seconds();
+        let start_time = if (start_time_in_seconds > now) {
+            start_time_in_seconds
+        }else {
+            now
+        };
         let reward_coin = account_coin_store::withdraw<RewardToken>(account, coin_amount);
         create_pool_with_coin<X, Y, RewardToken>(account, release_per_second, reward_coin, start_time)
     }
@@ -156,6 +164,7 @@ module rooch_dex::liquidity_incentive {
         farming_asset_obj: &mut Object<FarmingAsset<X, Y, RewardToken>>,
         coin_amount: u256,
     ){
+        
         let reward_coin = account_coin_store::withdraw<RewardToken>(account, coin_amount);
         let farming_asset = object::borrow_mut(farming_asset_obj);
         coin_store::deposit(&mut farming_asset.coin_store, reward_coin);
