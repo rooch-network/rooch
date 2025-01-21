@@ -3,7 +3,7 @@ module rooch_dex::swap {
     use std::option::none;
     use std::string;
     use std::u128;
-    use app_admin::admin;
+    use app_admin::admin::AdminCap;
     use moveos_std::timestamp;
     use moveos_std::account::borrow_mut_resource;
     use rooch_dex::swap_utils;
@@ -12,11 +12,10 @@ module rooch_dex::swap {
     use moveos_std::type_info;
     use rooch_framework::coin;
     use moveos_std::signer::module_signer;
-    use moveos_std::tx_context::sender;
     use moveos_std::object;
     use moveos_std::account;
-    use rooch_framework::coin::{CoinInfo, coin_info};
-    use moveos_std::object::{Object, ObjectID};
+    use rooch_framework::coin::{CoinInfo, symbol_by_type, supply_by_type};
+    use moveos_std::object::{Object, ObjectID, named_object_id};
     use rooch_framework::coin_store::{CoinStore, balance, deposit, withdraw};
     use rooch_framework::coin_store;
     #[test_only]
@@ -47,16 +46,20 @@ module rooch_dex::swap {
 
     const PRECISION: u64 = 10000;
 
+    const DEFAULT_FEE_RATE: u64 = 9975;
+
     const MAX_U128: u128 = 340282366920938463463374607431768211455;
 
     struct LPToken<phantom X: key+store, phantom Y: key+store> has key, store {}
 
-    struct TokenPair<phantom X: key+store, phantom Y: key+store> has key {
+    struct TokenPair<phantom X: key+store, phantom Y: key+store> has key, store {
         creator: address,
         fee: Object<CoinStore<LPToken<X, Y>>>,
+        fee_rate: u64,
         k_last: u128,
         balance_x: Object<CoinStore<X>>,
         balance_y: Object<CoinStore<Y>>,
+        coin_info: Object<CoinInfo<LPToken<X, Y>>>,
         is_open: bool
     }
 
@@ -68,6 +71,7 @@ module rooch_dex::swap {
 
     struct PairCreatedEvent has drop, store, copy {
         user: address,
+        token_pair_id: ObjectID,
         token_x: string::String,
         token_y: string::String
     }
@@ -96,35 +100,21 @@ module rooch_dex::swap {
         amount_y_out: u64
     }
 
-    struct RoochDexCap has key {}
-
-    fun init() {
-        object::transfer_extend(object::new_named_object(RoochDexCap{}), sender())
-    }
 
 
-    public entry fun create_admin(_admin: &mut Object<admin::AdminCap>, receiver: address){
-        let new_admin = object::new(RoochDexCap{});
-        object::transfer_extend(new_admin, receiver)
-    }
-
-    public entry fun delete_admin(_admin: &mut Object<admin::AdminCap>, admin_id: ObjectID){
-        let admin_obj = object::take_object_extend<RoochDexCap>(admin_id);
-        let RoochDexCap{} = object::remove(admin_obj);
-    }
 
     /// Create the specified coin pair
     public(friend) fun create_pair<X:key+store, Y:key+store>(
         sender: &signer,
-    ) {
+    ){
         assert!(!is_pair_created<X, Y>(), ErrorAlreadyExists);
 
         let sender_addr = signer::address_of(sender);
-        let resource_signer = module_signer<RoochDexCap>();
+        let resource_signer = module_signer<TokenPair<X, Y>>();
 
         let lp_name: string::String = string::utf8(b"RoochDex-");
-        let name_x = coin::symbol<X>(coin_info<X>());
-        let name_y = coin::symbol<Y>(coin_info<Y>());
+        let name_x = symbol_by_type<X>();
+        let name_y = symbol_by_type<Y>();
         string::append(&mut lp_name, name_x);
         string::append_utf8(&mut lp_name, b"-");
         string::append(&mut lp_name, name_y);
@@ -149,18 +139,17 @@ module rooch_dex::swap {
             }
         );
 
-        account::move_resource_to<TokenPair<X, Y>>(
-            &resource_signer,
-            TokenPair {
-                creator: sender_addr,
-                fee: coin_store::create_coin_store(),
-                k_last: 0,
-                balance_x: coin_store::create_coin_store(),
-                balance_y: coin_store::create_coin_store(),
-                is_open: true
-            }
-        );
-
+        let token_pair = object::new_named_object(TokenPair<X, Y> {
+            creator: sender_addr,
+            fee: coin_store::create_coin_store(),
+            k_last: 0,
+            fee_rate: DEFAULT_FEE_RATE,
+            balance_x: coin_store::create_coin_store(),
+            balance_y: coin_store::create_coin_store(),
+            coin_info,
+            is_open: true
+            });
+        let token_pair_id = object::id(&token_pair);
         // pair created event
         let token_x = type_info::type_name<X>();
         let token_y = type_info::type_name<Y>();
@@ -168,28 +157,23 @@ module rooch_dex::swap {
         event::emit<PairCreatedEvent>(
             PairCreatedEvent {
                 user: sender_addr,
+                token_pair_id,
                 token_x,
                 token_y
             }
         );
 
-        object::to_shared(coin_info);
+        object::to_shared(token_pair)
     }
 
 
     public fun is_pair_created<X:key+store, Y:key+store>(): bool {
-        account::exists_resource<TokenPair<X, Y>>(RESOURCE_ACCOUNT)
-    }
-
-    /// Obtain the LP token balance of `addr`.
-    /// This method can only be used to check other users' balance.
-    public fun lp_balance<X:key+store, Y:key+store>(addr: address): u256 {
-        account_coin_store::balance<LPToken<X, Y>>(addr)
+        object::exists_object_with_type<TokenPair<X, Y>>(object::named_object_id<TokenPair<X, Y>>())
     }
 
     /// Get the total supply of LP Tokens
     public fun total_lp_supply<X:key+store, Y:key+store>(): u128 {
-        (coin::supply(coin_info<LPToken<X, Y>>()) as u128)
+        (supply_by_type<LPToken<X, Y>>() as u128)
     }
 
     /// Get the current reserves of T0 and T1 with the latest updated timestamp
@@ -203,9 +187,7 @@ module rooch_dex::swap {
     }
 
     /// The amount of balance currently in pools of the liquidity pair
-    public fun token_balances<X:key+store, Y:key+store>(): (u64, u64) {
-        let token_pair =
-            account::borrow_resource<TokenPair<X, Y>>(RESOURCE_ACCOUNT);
+    public fun token_balances<X:key+store, Y:key+store>(token_pair: &TokenPair<X, Y>): (u64, u64) {
         (
             (balance(&token_pair.balance_x) as u64),
             (balance(&token_pair.balance_y) as u64)
@@ -220,12 +202,10 @@ module rooch_dex::swap {
         sender: &signer,
         amount_x: u64,
         amount_y: u64,
-        coin_info_id: ObjectID
     ): (u64, u64, u64) {
-        let coin_info = object::borrow_mut_object_shared(coin_info_id);
         let (a_x, a_y, coin_lp, fee, coin_left_x, coin_left_y) = add_liquidity_direct(account_coin_store::withdraw<X>(sender,
             (amount_x as u256)
-        ), account_coin_store::withdraw<Y>(sender, (amount_y as u256)), coin_info);
+        ), account_coin_store::withdraw<Y>(sender, (amount_y as u256)));
         let sender_addr = signer::address_of(sender);
         let lp_amount = (coin::value(&coin_lp) as u64);
         assert!(lp_amount > 0, ErrorInsufficientLiquidity);
@@ -288,7 +268,6 @@ module rooch_dex::swap {
     fun add_liquidity_direct<X:key+store, Y:key+store>(
         x: coin::Coin<X>,
         y: coin::Coin<Y>,
-        coin_info: &mut Object<CoinInfo<LPToken<X, Y>>>
     ): (u64, u64, coin::Coin<LPToken<X, Y>>, u64, coin::Coin<X>, coin::Coin<Y>){
         let amount_x = (coin::value(&x) as u64);
         let amount_y = (coin::value(&y) as u64);
@@ -313,7 +292,7 @@ module rooch_dex::swap {
         let left_y = coin::extract(&mut y, (amount_y - a_y as u256));
         deposit_x<X, Y>(x);
         deposit_y<X, Y>(y);
-        let (lp, fee) = mint<X, Y>(coin_info);
+        let (lp, fee) = mint<X, Y>();
         (a_x, a_y, lp, fee, left_x, left_y)
     }
 
@@ -321,11 +300,9 @@ module rooch_dex::swap {
     public(friend) fun remove_liquidity<X:key+store, Y:key+store>(
         sender: &signer,
         liquidity: u64,
-        coin_info_id: ObjectID
     ): (u64, u64) {
-        let coin_info = object::borrow_mut_object_shared(coin_info_id);
         let coins = account_coin_store::withdraw<LPToken<X, Y>>(sender, (liquidity as u256));
-        let (coins_x, coins_y, fee) = remove_liquidity_direct<X, Y>(coins, coin_info);
+        let (coins_x, coins_y, fee) = remove_liquidity_direct<X, Y>(coins);
         let amount_x = (coin::value(&coins_x) as u64);
         let amount_y = (coin::value(&coins_y) as u64);
         let sender_addr = signer::address_of(sender);
@@ -345,11 +322,8 @@ module rooch_dex::swap {
     }
 
     /// Remove liquidity to token types.
-    fun remove_liquidity_direct<X:key+store, Y:key+store>(
-        liquidity: coin::Coin<LPToken<X, Y>>,
-        coin_info: &mut Object<CoinInfo<LPToken<X, Y>>>
-    ): (coin::Coin<X>, coin::Coin<Y>, u64){
-        burn<X, Y>(liquidity, coin_info)
+    fun remove_liquidity_direct<X:key+store, Y:key+store>(liquidity: coin::Coin<LPToken<X, Y>>): (coin::Coin<X>, coin::Coin<Y>, u64){
+        burn<X, Y>(liquidity)
     }
 
     /// Swap X to Y, X is in and Y is out. This method assumes amount_out_min is 0
@@ -370,10 +344,11 @@ module rooch_dex::swap {
     public(friend) fun swap_exact_x_to_y_direct<X:key+store, Y:key+store>(
         coins_in: coin::Coin<X>
     ): (coin::Coin<X>, coin::Coin<Y>){
+        let fee_rate = borrow_fee_rate<X, Y>();
         let amount_in = coin::value<X>(&coins_in);
         deposit_x<X, Y>(coins_in);
         let (rin, rout, _) = token_reserves<X, Y>();
-        let amount_out = swap_utils::get_amount_out((amount_in as u64), rin, rout);
+        let amount_out = swap_utils::get_amount_out((amount_in as u64), rin, rout, fee_rate);
         let (coins_x_out, coins_y_out) = swap<X, Y>(0, amount_out);
         assert!(coin::value<X>(&coins_x_out) == 0, ErrorOutputTokenAmount);
         (coins_x_out, coins_y_out)
@@ -441,10 +416,11 @@ module rooch_dex::swap {
     public(friend) fun swap_exact_y_to_x_direct<X:key+store, Y:key+store>(
         coins_in: coin::Coin<Y>
     ): (coin::Coin<X>, coin::Coin<Y>) {
+        let fee_rate = borrow_fee_rate<X, Y>();
         let amount_in = coin::value<Y>(&coins_in);
         deposit_y<X, Y>(coins_in);
         let (rout, rin, _) = token_reserves<X, Y>();
-        let amount_out = swap_utils::get_amount_out((amount_in as u64), rin, rout);
+        let amount_out = swap_utils::get_amount_out((amount_in as u64), rin, rout, fee_rate);
         let (coins_x_out, coins_y_out) = swap<X, Y>(amount_out, 0);
         assert!(coin::value<Y>(&coins_y_out) == 0, ErrorOutputTokenAmount);
         (coins_x_out, coins_y_out)
@@ -458,14 +434,14 @@ module rooch_dex::swap {
 
         let reserves = account::borrow_mut_resource<TokenPairReserve<X, Y>>(RESOURCE_ACCOUNT);
         assert!(amount_x_out < reserves.reserve_x && amount_y_out < reserves.reserve_y, ErrorInsufficientLiquidity);
-
-        let token_pair = account::borrow_mut_resource<TokenPair<X, Y>>(RESOURCE_ACCOUNT);
+        let token_pair_obj = object::borrow_mut_object_shared<TokenPair<X, Y>>(named_object_id<TokenPair<X, Y>>());
+        let token_pair = object::borrow_mut<TokenPair<X, Y>>(token_pair_obj);
         assert!(token_pair.is_open, ErrorTokenPairNotOpen);
         let coins_x_out = coin::zero<X>();
         let coins_y_out = coin::zero<Y>();
         if (amount_x_out > 0) coin::merge(&mut coins_x_out, withdraw_x((amount_x_out as u256), token_pair));
         if (amount_y_out > 0) coin::merge(&mut coins_y_out, withdraw_y((amount_y_out as u256), token_pair));
-        let (balance_x, balance_y) = token_balances<X, Y>();
+        let (balance_x, balance_y) = token_balances<X, Y>(token_pair);
 
         let amount_x_in = if (balance_x > reserves.reserve_x - amount_x_out) {
             balance_x - (reserves.reserve_x - amount_x_out)
@@ -498,17 +474,16 @@ module rooch_dex::swap {
 
     /// Mint LP Token.
     /// This low-level function should be called from a contract which performs important safety checks
-    fun mint<X:key+store, Y:key+store>(
-        coin_info: &mut Object<CoinInfo<LPToken<X, Y>>>
-    ): (coin::Coin<LPToken<X, Y>>, u64) {
-        let token_pair = borrow_mut_resource<TokenPair<X, Y>>(RESOURCE_ACCOUNT);
+    fun mint<X:key+store, Y:key+store>(): (coin::Coin<LPToken<X, Y>>, u64) {
+        let token_pair_obj = object::borrow_mut_object_shared<TokenPair<X, Y>>(named_object_id<TokenPair<X, Y>>());
+        let token_pair = object::borrow_mut<TokenPair<X, Y>>(token_pair_obj);
         assert!(token_pair.is_open, ErrorTokenPairNotOpen);
         let (balance_x, balance_y) = (balance(&token_pair.balance_x), balance(&token_pair.balance_y));
         let reserves = borrow_mut_resource<TokenPairReserve<X, Y>>(RESOURCE_ACCOUNT);
         let amount_x = (balance_x as u128) - (reserves.reserve_x as u128);
         let amount_y = (balance_y as u128) - (reserves.reserve_y as u128);
 
-        let fee = mint_fee<X, Y>(reserves.reserve_x, reserves.reserve_y, token_pair, coin_info);
+        let fee = mint_fee<X, Y>(reserves.reserve_x, reserves.reserve_y, token_pair);
 
         //Need to add fee amount which have not been mint.
         let total_supply = total_lp_supply<X, Y>();
@@ -517,7 +492,7 @@ module rooch_dex::swap {
             assert!(sqrt > MINIMUM_LIQUIDITY, ErrorInsufficientLiquidityAmount);
             let l = sqrt - MINIMUM_LIQUIDITY;
             // permanently lock the first MINIMUM_LIQUIDITY tokens
-            mint_lp_to<X, Y>(RESOURCE_ACCOUNT, (MINIMUM_LIQUIDITY as u64), coin_info);
+            mint_lp_to<X, Y>(RESOURCE_ACCOUNT, (MINIMUM_LIQUIDITY as u64), &mut token_pair.coin_info);
             l
         } else {
             let liquidity = u128::min(amount_x * total_supply / (reserves.reserve_x as u128), amount_y * total_supply / (reserves.reserve_y as u128));
@@ -526,7 +501,7 @@ module rooch_dex::swap {
         };
 
 
-        let lp = mint_lp<X, Y>((liquidity as u64), coin_info);
+        let lp = mint_lp<X, Y>((liquidity as u64), &mut token_pair.coin_info);
 
         update<X, Y>((balance_x as u64), (balance_y as u64), reserves);
 
@@ -535,20 +510,21 @@ module rooch_dex::swap {
         (lp, fee)
     }
 
-    fun burn<X:key+store, Y:key+store>(lp_tokens: coin::Coin<LPToken<X, Y>>, coin_info: &mut Object<CoinInfo<LPToken<X, Y>>>): (coin::Coin<X>, coin::Coin<Y>, u64){
-        let token_pair = account::borrow_mut_resource<TokenPair<X, Y>>(RESOURCE_ACCOUNT);
+    fun burn<X:key+store, Y:key+store>(lp_tokens: coin::Coin<LPToken<X, Y>>): (coin::Coin<X>, coin::Coin<Y>, u64){
+        let token_pair_obj = object::borrow_mut_object_shared<TokenPair<X, Y>>(named_object_id<TokenPair<X, Y>>());
+        let token_pair = object::borrow_mut<TokenPair<X, Y>>(token_pair_obj);
         assert!(token_pair.is_open, ErrorTokenPairNotOpen);
         let reserves = account::borrow_mut_resource<TokenPairReserve<X, Y>>(RESOURCE_ACCOUNT);
         let liquidity = coin::value(&lp_tokens);
 
-        let fee = mint_fee<X, Y>(reserves.reserve_x, reserves.reserve_y, token_pair, coin_info);
+        let fee = mint_fee<X, Y>(reserves.reserve_x, reserves.reserve_y, token_pair);
 
         //Need to add fee amount which have not been mint.
         let total_lp_supply = total_lp_supply<X, Y>();
         let amount_x = ((coin_store::balance(&token_pair.balance_x) as u128) * (liquidity as u128) / total_lp_supply as u256);
         let amount_y = ((coin_store::balance(&token_pair.balance_x) as u128) * (liquidity as u128) / total_lp_supply as u256);
         assert!(amount_x > 0 && amount_y > 0, ErrorLiquidityBurned);
-        coin::burn<LPToken<X, Y>>(coin_info, lp_tokens);
+        coin::burn<LPToken<X, Y>>(&mut token_pair.coin_info, lp_tokens);
 
         let w_x = withdraw_x(amount_x, token_pair);
         let w_y = withdraw_y(amount_y, token_pair);
@@ -584,14 +560,14 @@ module rooch_dex::swap {
     }
 
     fun deposit_x<X:key+store, Y:key+store>(amount: coin::Coin<X>){
-        let token_pair =
-            borrow_mut_resource<TokenPair<X, Y>>(RESOURCE_ACCOUNT);
+        let token_pair_obj = object::borrow_mut_object_shared<TokenPair<X, Y>>(named_object_id<TokenPair<X, Y>>());
+        let token_pair = object::borrow_mut<TokenPair<X, Y>>(token_pair_obj);
         deposit(&mut token_pair.balance_x, amount);
     }
 
     fun deposit_y<X:key+store, Y:key+store>(amount: coin::Coin<Y>) {
-        let token_pair =
-            borrow_mut_resource<TokenPair<X, Y>>(RESOURCE_ACCOUNT);
+        let token_pair_obj = object::borrow_mut_object_shared<TokenPair<X, Y>>(named_object_id<TokenPair<X, Y>>());
+        let token_pair = object::borrow_mut<TokenPair<X, Y>>(token_pair_obj);
         deposit(&mut token_pair.balance_y, amount);
     }
 
@@ -605,7 +581,7 @@ module rooch_dex::swap {
         withdraw(&mut token_pair.balance_y, amount)
     }
 
-    fun mint_fee<X:key+store, Y:key+store>(reserve_x: u64, reserve_y: u64, token_pair: &mut TokenPair<X, Y>, coin_info: &mut Object<CoinInfo<LPToken<X, Y>>>): u64 {
+    fun mint_fee<X:key+store, Y:key+store>(reserve_x: u64, reserve_y: u64, token_pair: &mut TokenPair<X, Y>): u64 {
         let fee = 0u64;
         if (token_pair.k_last != 0) {
             let root_k = u128::sqrt((reserve_x as u128) * (reserve_y as u128));
@@ -616,7 +592,7 @@ module rooch_dex::swap {
                 let liquidity = numerator / denominator;
                 fee = (liquidity as u64);
                 if (fee > 0) {
-                    let coin = mint_lp(fee, coin_info);
+                    let coin = mint_lp(fee, &mut token_pair.coin_info);
                     deposit(&mut token_pair.fee, coin);
                 }
             };
@@ -625,15 +601,17 @@ module rooch_dex::swap {
         fee
     }
 
-    public entry fun withdraw_fee<X:key+store, Y:key+store>(admin_cap: &mut Object<RoochDexCap>){
+    public entry fun withdraw_fee<X:key+store, Y:key+store>(admin_cap: &mut Object<AdminCap>){
         if (swap_utils::sort_token_type<X, Y>()) {
-            let token_pair = account::borrow_mut_resource<TokenPair<X, Y>>(RESOURCE_ACCOUNT);
+        let token_pair_obj = object::borrow_mut_object_shared<TokenPair<X, Y>>(named_object_id<TokenPair<X, Y>>());
+        let token_pair = object::borrow_mut<TokenPair<X, Y>>(token_pair_obj);
             assert!(balance(&token_pair.fee) > 0, ErrorWithdrawFee);
             let fee = balance(&token_pair.fee);
             let coin = withdraw(&mut token_pair.fee, fee);
             account_coin_store::deposit(object::owner(admin_cap), coin);
         } else {
-            let token_pair = account::borrow_mut_resource<TokenPair<Y, X>>(RESOURCE_ACCOUNT);
+        let token_pair_obj = object::borrow_mut_object_shared<TokenPair<Y, X>>(named_object_id<TokenPair<X, Y>>());
+        let token_pair = object::borrow_mut<TokenPair<Y, X>>(token_pair_obj);
             assert!(balance(&token_pair.fee) > 0, ErrorWithdrawFee);
             let fee = balance(&token_pair.fee);
             let coin = withdraw(&mut token_pair.fee, fee);
@@ -641,14 +619,27 @@ module rooch_dex::swap {
         };
     }
 
-    public entry fun update_token_pair_status<X:key+store, Y:key+store>(_admin_cap: &mut Object<RoochDexCap>, status: bool){
+    public entry fun update_token_pair_status<X:key+store, Y:key+store>(_admin_cap: &mut Object<AdminCap>, status: bool){
         if (swap_utils::sort_token_type<X, Y>()) {
-            let token_pair = account::borrow_mut_resource<TokenPair<X, Y>>(RESOURCE_ACCOUNT);
+            let token_pair_obj = object::borrow_mut_object_shared<TokenPair<X, Y>>(named_object_id<TokenPair<X, Y>>());
+            let token_pair = object::borrow_mut<TokenPair<X, Y>>(token_pair_obj);
             token_pair.is_open = status
         } else {
-            let token_pair = account::borrow_mut_resource<TokenPair<Y, X>>(RESOURCE_ACCOUNT);
+            let token_pair_obj = object::borrow_mut_object_shared<TokenPair<Y, X>>(named_object_id<TokenPair<X, Y>>());
+            let token_pair = object::borrow_mut<TokenPair<Y, X>>(token_pair_obj);
             token_pair.is_open = status
         };
+    }
+
+    public entry fun update_fee_rate<X:key+store, Y:key+store>(_admin_cap: &mut Object<AdminCap>, fee_rate: u64){
+        let token_pair_obj = object::borrow_mut_object_shared<TokenPair<X, Y>>(named_object_id<TokenPair<X, Y>>());
+        let token_pair = object::borrow_mut<TokenPair<X, Y>>(token_pair_obj);
+        token_pair.fee_rate = fee_rate
+    }
+
+    public fun borrow_fee_rate<X:key+store, Y:key+store>() : u64{
+        let token_pair_obj = object::borrow_object<TokenPair<X, Y>>(named_object_id<TokenPair<X, Y>>());
+        object::borrow<TokenPair<X, Y>>(token_pair_obj).fee_rate
     }
 
     #[test_only]

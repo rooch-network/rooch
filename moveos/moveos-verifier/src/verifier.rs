@@ -1181,7 +1181,7 @@ fn struct_def_from_struct_handle<Resolver>(
     verified_modules: &mut BTreeMap<ModuleId, CompiledModule>,
     struct_name: &str,
     db: &Resolver,
-) -> Option<StructDefinition>
+) -> Option<(StructDefinition, CompiledModule)>
 where
     Resolver: ModuleResolver,
 {
@@ -1191,7 +1191,7 @@ where
         let iterator_struct_name =
             struct_full_name_from_sid(&struct_handle_idx, &current_module_bin_view);
         if iterator_struct_name == struct_name {
-            return Some(struct_def.clone());
+            return Some((struct_def.clone(), current_module.clone()));
         }
     }
 
@@ -1202,7 +1202,7 @@ where
             let iterator_struct_name =
                 struct_full_name_from_sid(&struct_handle_idx, &iterator_module_bin_view);
             if iterator_struct_name == struct_name {
-                return Some(struct_def.clone());
+                return Some((struct_def.clone(), m.clone()));
             }
         }
     }
@@ -1220,7 +1220,7 @@ where
                 let iterator_struct_name =
                     struct_full_name_from_sid(&struct_handle_idx, &target_module_bin_view);
                 if iterator_struct_name == struct_name {
-                    return Some(struct_def.clone());
+                    return Some((struct_def.clone(), target_module));
                 }
             }
             None
@@ -1455,7 +1455,7 @@ where
         db,
     );
     match struct_def_opt {
-        Some(struct_def) => validate_struct_fields(
+        Some((struct_def, _)) => validate_struct_fields(
             &struct_def,
             current_module,
             module_bin_view,
@@ -1910,19 +1910,21 @@ where
     );
 
     let mut struct_fields = Vec::new();
-    if let Some(struct_def) = struct_def_opt {
-        let field_count = struct_def.declared_field_count().unwrap();
-        for field_idx in 0..field_count {
-            let field_def = struct_def.field(field_idx as usize).unwrap().clone();
-            struct_fields.push(field_def);
-        }
+    let mut target_module = caller_module.clone();
+    if let Some((struct_def, m)) = struct_def_opt {
+        let v = match struct_def.field_information {
+            StructFieldInformation::Native => vec![],
+            StructFieldInformation::Declared(v) => v,
+        };
+        target_module = m.clone();
+        struct_fields.extend(v);
     }
 
     let formulas = struct_fields
         .iter()
         .map(|field_def| {
             calculate_depth_of_type(
-                caller_module,
+                &target_module,
                 verified_modules,
                 db,
                 &field_def.signature.0.clone(),

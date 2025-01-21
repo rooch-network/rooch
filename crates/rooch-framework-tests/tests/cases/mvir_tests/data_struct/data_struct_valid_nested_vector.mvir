@@ -1,0 +1,67 @@
+//# publish
+module 0x11.TestModule1 {
+    import 0x1.string;
+    import 0x2.table;
+    import 0x1.option;
+
+    struct Style has store, copy, drop {
+        all: vector<string.String>,
+        chat: vector<string.String>,
+        post: vector<string.String>,
+    }
+
+    struct Media has store, copy, drop {
+            id: string.String,
+            url: string.String,
+            title: string.String,
+            source: string.String,
+            description: string.String,
+            text: string.String,
+            contentType: string.String,
+    }
+
+   struct Content has store, copy, drop {
+            text: string.String,
+            action: option.Option<string.String>,
+            source: option.Option<string.String>,
+            url: option.Option<string.String>,
+            inReplyTo: option.Option<string.String>,
+            attachments: vector<Self.Media>,
+   }
+
+    struct MessageTemplate has store, copy, drop{
+        user: string.String,
+        content: Self.Content,
+    }
+
+    struct Character has key {
+            /// Optional UUID for the character.
+            id: option.Option<string.String>,
+            name: string.String,
+            username: string.String,
+            plugins: vector<string.String>,
+            clients: vector<string.String>,
+            modelProvider: string.String,
+            imageModelProvider: option.Option<string.String>,
+            imageVisionModelProvider: option.Option<string.String>,
+            modelEndpointOverride: option.Option<string.String>,
+            system: string.String,
+            bio: vector<string.String>,
+            lore: vector<string.String>,
+            messageExamples: vector<vector<Self.MessageTemplate>>,
+            postExamples: vector<string.String>,
+            topics: vector<string.String>,
+            style: Self.Style,
+            adjectives: vector<string.String>,
+            knowledge: vector<string.String>,
+    }
+
+    metadata {
+        data_struct {
+            0x11::TestModule1::Style -> true;
+            0x11::TestModule1::Content -> true;
+            0x11::TestModule1::Media -> true;
+            0x11::TestModule1::MessageTemplate -> true;
+        }
+    }
+}
