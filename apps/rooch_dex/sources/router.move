@@ -2,8 +2,8 @@ module rooch_dex::router {
     use rooch_dex::swap;
     use std::signer;
     use std::signer::address_of;
+    use rooch_dex::swap::LPToken;
     use rooch_framework::account_coin_store;
-    use moveos_std::object::ObjectID;
     use rooch_framework::coin;
     use rooch_dex::swap_utils;
 
@@ -26,11 +26,11 @@ module rooch_dex::router {
     ) {
         assert!(!(swap::is_pair_created<X, Y>() || swap::is_pair_created<Y, X>()), ErrorTokenPairAlreadyExist);
         if (swap_utils::sort_token_type<X, Y>()) {
-            let coin_info_id = swap::create_pair<X, Y>(sender);
-            add_liquidity<X, Y>(sender, amount_x_desired, amount_y_desired, amount_x_min, amount_y_min, coin_info_id);
+            swap::create_pair<X, Y>(sender);
+            add_liquidity<X, Y>(sender, amount_x_desired, amount_y_desired, amount_x_min, amount_y_min);
         } else {
-            let coin_info_id = swap::create_pair<Y, X>(sender);
-            add_liquidity<Y, X>(sender, amount_x_desired, amount_y_desired, amount_x_min, amount_y_min, coin_info_id);
+            swap::create_pair<Y, X>(sender);
+            add_liquidity<Y, X>(sender, amount_x_desired, amount_y_desired, amount_x_min, amount_y_min);
         };
 
     }
@@ -42,21 +42,28 @@ module rooch_dex::router {
         amount_y_desired: u64,
         amount_x_min: u64,
         amount_y_min: u64,
-        coin_info: ObjectID,
     ) {
 
         let amount_x;
         let amount_y;
         let _lp_amount;
         if (swap_utils::sort_token_type<X, Y>()) {
-            (amount_x, amount_y, _lp_amount) = swap::add_liquidity<X, Y>(sender, amount_x_desired, amount_y_desired, coin_info);
+            (amount_x, amount_y, _lp_amount) = swap::add_liquidity<X, Y>(sender, amount_x_desired, amount_y_desired);
             assert!(amount_x >= amount_x_min, ErrorInsufficientXAmount);
             assert!(amount_y >= amount_y_min, ErrorInsufficientYAmount);
         } else {
-            (amount_y, amount_x, _lp_amount) = swap::add_liquidity<Y, X>(sender, amount_y_desired, amount_x_desired, coin_info);
+            (amount_y, amount_x, _lp_amount) = swap::add_liquidity<Y, X>(sender, amount_y_desired, amount_x_desired);
             assert!(amount_x >= amount_x_min, ErrorInsufficientXAmount);
             assert!(amount_y >= amount_y_min, ErrorInsufficientYAmount);
         };
+    }
+
+    public fun lp_balance<X:key+store, Y:key+store>(addr: address): u256 {
+        if (swap_utils::sort_token_type<X, Y>()) {
+            account_coin_store::balance<LPToken<X, Y>>(addr)
+        } else {
+            account_coin_store::balance<LPToken<Y, X>>(addr)
+        }
     }
 
     fun assert_token_pair_created<X:key+store, Y:key+store>(){
@@ -69,17 +76,16 @@ module rooch_dex::router {
         liquidity: u64,
         amount_x_min: u64,
         amount_y_min: u64,
-        coin_info: ObjectID
     ) {
         assert_token_pair_created<X, Y>();
         let amount_x;
         let amount_y;
         if (swap_utils::sort_token_type<X, Y>()) {
-            (amount_x, amount_y) = swap::remove_liquidity<X, Y>(sender, liquidity, coin_info);
+            (amount_x, amount_y) = swap::remove_liquidity<X, Y>(sender, liquidity);
             assert!(amount_x >= amount_x_min, ErrorInsufficientXAmount);
             assert!(amount_y >= amount_y_min, ErrorInsufficientYAmount);
         } else {
-            (amount_y, amount_x) = swap::remove_liquidity<Y, X>(sender, liquidity, coin_info);
+            (amount_y, amount_x) = swap::remove_liquidity<Y, X>(sender, liquidity);
             assert!(amount_x >= amount_x_min, ErrorInsufficientXAmount);
             assert!(amount_y >= amount_y_min, ErrorInsufficientYAmount);
         }
