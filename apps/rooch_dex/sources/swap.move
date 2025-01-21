@@ -496,7 +496,7 @@ module rooch_dex::swap {
         let amount_x = (balance_x as u128) - (reserves.reserve_x as u128);
         let amount_y = (balance_y as u128) - (reserves.reserve_y as u128);
 
-        let fee = mint_fee<X, Y>(reserves.reserve_x, reserves.reserve_y, token_pair, &mut token_pair.coin_info);
+        let fee = mint_fee<X, Y>(reserves.reserve_x, reserves.reserve_y, token_pair);
 
         //Need to add fee amount which have not been mint.
         let total_supply = total_lp_supply<X, Y>();
@@ -530,7 +530,7 @@ module rooch_dex::swap {
         let reserves = account::borrow_mut_resource<TokenPairReserve<X, Y>>(RESOURCE_ACCOUNT);
         let liquidity = coin::value(&lp_tokens);
 
-        let fee = mint_fee<X, Y>(reserves.reserve_x, reserves.reserve_y, token_pair, &mut token_pair.coin_info);
+        let fee = mint_fee<X, Y>(reserves.reserve_x, reserves.reserve_y, token_pair);
 
         //Need to add fee amount which have not been mint.
         let total_lp_supply = total_lp_supply<X, Y>();
@@ -594,7 +594,7 @@ module rooch_dex::swap {
         withdraw(&mut token_pair.balance_y, amount)
     }
 
-    fun mint_fee<X:key+store, Y:key+store>(reserve_x: u64, reserve_y: u64, token_pair: &mut TokenPair<X, Y>, coin_info: &mut Object<CoinInfo<LPToken<X, Y>>>): u64 {
+    fun mint_fee<X:key+store, Y:key+store>(reserve_x: u64, reserve_y: u64, token_pair: &mut TokenPair<X, Y>): u64 {
         let fee = 0u64;
         if (token_pair.k_last != 0) {
             let root_k = u128::sqrt((reserve_x as u128) * (reserve_y as u128));
@@ -605,7 +605,7 @@ module rooch_dex::swap {
                 let liquidity = numerator / denominator;
                 fee = (liquidity as u64);
                 if (fee > 0) {
-                    let coin = mint_lp(fee, coin_info);
+                    let coin = mint_lp(fee, &mut token_pair.coin_info);
                     deposit(&mut token_pair.fee, coin);
                 }
             };
