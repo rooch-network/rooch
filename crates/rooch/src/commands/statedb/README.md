@@ -10,7 +10,8 @@ A tool to export/import rooch statedb.
 
 `genesis` is a subcommand to generate rooch statedb from utxo and ord source files. Run it before starting rooch node.
 
-Source data needed by `genesis` for Rooch MainNet could be found [here](TODO).
+Source data needed by `genesis` for Rooch MainNet could be
+found [here](https://storage.googleapis.com/rooch_dev/genesis-source/README.md).
 
 For protecting the data integrity, verify checksum file's sha256 before running `genesis` command.
 

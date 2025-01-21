@@ -37,3 +37,6 @@ fuzzing = [
     "proptest",
     "proptest-derive",
 ]
+
+[package.metadata.cargo-machete]
+ignored = ["tiny-bip39", "proptest", "proptest-derive"]

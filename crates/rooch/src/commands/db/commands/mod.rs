@@ -11,7 +11,11 @@ use std::collections::HashSet;
 use std::path::PathBuf;
 use std::time::SystemTime;
 
+pub mod best_rollback;
 pub mod drop;
+pub mod get_changeset_by_order;
+pub mod get_execution_info_by_hash;
+pub mod repair;
 pub mod revert;
 pub mod rollback;
 

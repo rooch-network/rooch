@@ -141,10 +141,10 @@ pub static G_DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
     stdlib_version: StdlibVersion::Latest,
 });
 
-//curl -sSL "https://mempool.space/testnet/api/block/$(curl -sSL https://mempool.space/testnet/api/block-height/2902859)/header"
+// curl -sSL "https://mempool.space/testnet/api/block/$(curl -sSL https://mempool.space/testnet/api/block-height/3518200)/header"
 static TESTNET_GENESIS_HEIGHT_HEADER: Lazy<(u64, Header)> = Lazy::new(|| {
-    (2902859, bitcoin::consensus::deserialize(
-        &hex::decode("000000207a518c54d035787e573beab94dcaa241116629f2d1b578fc6e4bcbbc000000001cb54b96888834d31e7418652c0e6ddeeee956b4b261766d92d5ff59d030ea52fdc2d766c0ff3f19b8051295")
+    (3518200, bitcoin::consensus::deserialize(
+        &hex::decode("00e0a523e38e0c995e1dffb39ce6c05c9b031d9ecf234581739cb555060000000000000064cdbe6ce56bc79f5e58213b47128229b0c402ed57239d80364214bd0c1d301e2a464d6700171019b48314b9")
             .expect("Should be valid"),
     ).expect("Should be valid"))
 });
@@ -154,11 +154,12 @@ pub static G_TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         bitcoin_network: crate::bitcoin::network::Network::Testnet.to_num(),
         bitcoin_block_height: TESTNET_GENESIS_HEIGHT_HEADER.0,
         bitcoin_block_hash: TESTNET_GENESIS_HEIGHT_HEADER.1.block_hash(),
-        bitcoin_reorg_block_count: 3,
+        bitcoin_reorg_block_count: 5,
         //Make sure this timestamp is the same as Genesis Object Timestamp
         timestamp: TESTNET_GENESIS_HEIGHT_HEADER.1.time as u64 * 1000,
         sequencer_account: BitcoinAddress::from_str(
-            "bc1p56tdhxkcpc5xvdurfnufn9lkkywsh0gxttv5ktkvlezj0t23nasq8lj2sg",
+            // the mainnet format is: bc1p56tdhxkcpc5xvdurfnufn9lkkywsh0gxttv5ktkvlezj0t23nasq8lj2sg
+            "tb1p56tdhxkcpc5xvdurfnufn9lkkywsh0gxttv5ktkvlezj0t23nasqshy928",
         )
         .expect("Should be valid"),
         rooch_dao: MultisignAccountConfig {
@@ -196,7 +197,7 @@ pub static G_TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
                 ModuleStore::type_layout(),
             ),
         ],
-        stdlib_version: StdlibVersion::Version(8),
+        stdlib_version: StdlibVersion::Version(16),
     }
 });
 

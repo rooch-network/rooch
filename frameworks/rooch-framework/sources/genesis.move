@@ -58,7 +58,7 @@ module rooch_framework::genesis {
         // Some test cases use framework account as sequencer, it may already exist
         if(!moveos_std::account::exists_at(sequencer_addr)){
             account::create_account(sequencer_addr);
-            address_mapping::bind_bitcoin_address(sequencer_addr, genesis_context.sequencer);
+            address_mapping::bind_bitcoin_address_internal(sequencer_addr, genesis_context.sequencer);
         };
         let rooch_dao_address = bitcoin_address::to_rooch_address(&genesis_context.rooch_dao);
 
@@ -73,8 +73,8 @@ module rooch_framework::genesis {
         // give initial gas to the rooch dao
         gas_coin::faucet(rooch_dao_address, GENESIS_INIT_GAS_AMOUNT);
 
-        // give initial gas to the sequencer if it's local or dev
-        if(chain_id::is_local_or_dev()){
+        // give initial gas to the sequencer if it's not mainnet
+        if(!chain_id::is_main()){
             gas_coin::faucet(sequencer_addr, GENESIS_INIT_GAS_AMOUNT);
         }
     }

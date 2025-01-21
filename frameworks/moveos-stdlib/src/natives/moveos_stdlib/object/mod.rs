@@ -28,6 +28,8 @@ mod object_field_fn;
 mod object_fn;
 mod object_meta_fn;
 
+pub use object_field_fn::{ListFieldsGasParameters, ListFieldsGasParametersOption};
+
 #[derive(Debug, Clone)]
 pub struct CommonGasParameters {
     pub load_base: InternalGas,
@@ -52,8 +54,8 @@ impl CommonGasParameters {
 pub(crate) fn pop_object_id(args: &mut VecDeque<Value>) -> PartialVMResult<ObjectID> {
     let handle = args.pop_back().unwrap();
     ObjectID::from_runtime_value(handle).map_err(|e| {
-        if log::log_enabled!(log::Level::Debug) {
-            log::warn!("[ObjectRuntime] get_object_id: {:?}", e);
+        if tracing::enabled!(tracing::Level::DEBUG) {
+            tracing::warn!("[ObjectRuntime] get_object_id: {:?}", e);
         }
         PartialVMError::new(StatusCode::TYPE_RESOLUTION_FAILURE).with_message(e.to_string())
     })
@@ -67,7 +69,7 @@ pub(crate) fn read_object_id(value: &Value) -> PartialVMResult<ObjectID> {
 }
 
 pub(crate) fn partial_extension_error(msg: impl ToString) -> PartialVMError {
-    log::debug!("PartialVMError: {}", msg.to_string());
+    tracing::debug!("PartialVMError: {}", msg.to_string());
     PartialVMError::new(StatusCode::VM_EXTENSION_ERROR).with_message(msg.to_string())
 }
 
@@ -82,8 +84,8 @@ pub(crate) fn error_to_abort_code(err: PartialVMError) -> u64 {
         StatusCode::ABORTED => err.sub_status().unwrap_or(ERROR_OBJECT_RUNTIME_ERROR),
         _ => ERROR_OBJECT_RUNTIME_ERROR,
     };
-    if log::log_enabled!(log::Level::Debug) {
-        log::warn!(
+    if tracing::enabled!(tracing::Level::DEBUG) {
+        tracing::warn!(
             "[ObjectRuntime] error err: {:?}, abort: {}",
             err,
             abort_code
@@ -108,6 +110,7 @@ pub struct GasParameters {
     pub native_contains_field: ContainsFieldGasParameters,
     pub native_contains_field_with_value_type: ContainsFieldGasParameters,
     pub native_remove_field: RemoveFieldGasParameters,
+    pub native_list_field_keys: ListFieldsGasParameters,
 }
 
 impl GasParameters {
@@ -144,12 +147,13 @@ impl GasParameters {
                 base: 0.into(),
                 per_byte_serialized: 0.into(),
             },
+            native_list_field_keys: ListFieldsGasParameters::zeros(),
         }
     }
 }
 
 pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, NativeFunction)> {
-    let natives = [
+    let mut natives = [
         (
             "native_object_owner",
             helpers::make_native(gas_params.clone(), native_object_owner),
@@ -218,7 +222,15 @@ pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, Nati
             "native_contains_field_with_value_type",
             helpers::make_native(gas_params.clone(), native_contains_field_with_value_type),
         ),
-    ];
+    ]
+    .to_vec();
+
+    if !gas_params.clone().native_list_field_keys.is_empty() {
+        natives.push((
+            "native_list_field_keys",
+            helpers::make_native(gas_params.clone(), native_list_field_keys),
+        ));
+    }
 
     make_module_natives(natives)
 }

@@ -18,7 +18,7 @@ use moveos_store::MoveOSStore;
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::object::GENESIS_STATE_ROOT;
 use moveos_types::state::{FieldKey, ObjectState};
-use rooch_common::fs::file_cache::FileCacheManager;
+use rooch_common::fs::FileCacheManager;
 use rooch_config::R_OPT_NET_HELP;
 use rooch_types::error::RoochResult;
 use rooch_types::rooch_network::RoochChainID;
@@ -234,7 +234,7 @@ pub(crate) fn apply_address_updates(
             gen_nodes_cost, apply_nodes_cost
         );
 
-        log::debug!(
+        tracing::debug!(
             "last_rooch_to_bitcoin_address_mapping_state_root: {:?}, new rooch_to_bitcoin_address_mapping_state_root: {:?}",
             last_rooch_to_bitcoin_address_mapping_state_root,rooch_to_bitcoin_address_mapping_state_root
         );
@@ -291,7 +291,7 @@ pub(crate) fn apply_utxo_updates(
             apply_nodes_cost
         );
 
-        log::debug!(
+        tracing::debug!(
             "last_utxo_store_state_root: {:?}, new utxo_store_state_root: {:?}",
             last_utxo_store_state_root,
             utxo_store_state_root,

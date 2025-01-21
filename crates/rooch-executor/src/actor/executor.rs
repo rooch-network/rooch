@@ -46,7 +46,6 @@ use rooch_types::transaction::{
 };
 use std::str::FromStr;
 use std::sync::Arc;
-use tracing::{debug, warn};
 
 pub struct ExecutorActor {
     root: ObjectMeta,
@@ -268,7 +267,7 @@ impl ExecutorActor {
             .start_timer();
         let sender = tx.sender();
         let tx_hash = tx.tx_hash();
-        debug!("executor validate_l2_tx: {:?}, sender: {}", tx_hash, sender);
+        tracing::debug!("executor validate_l2_tx: {:?}, sender: {}", tx_hash, sender);
 
         let authenticator = tx.authenticator_info();
         let mut moveos_tx: MoveOSTransaction = tx.into_moveos_transaction(self.root.clone());
@@ -287,7 +286,7 @@ impl ExecutorActor {
                     match verify_result {
                         Ok(verified_tx) => Ok(verified_tx),
                         Err(e) => {
-                            log::warn!(
+                            tracing::warn!(
                                 "transaction verify vm error, tx_hash: {}, error:{:?}",
                                 tx_hash,
                                 e
@@ -299,16 +298,17 @@ impl ExecutorActor {
                 Err(e) => {
                     let resolver = RootObjectResolver::new(self.root.clone(), &self.moveos_store);
                     let status_view = explain_vm_status(&resolver, e.clone())?;
-                    warn!(
+                    tracing::warn!(
                         "transaction validate vm error, tx_hash: {}, error:{:?}",
-                        tx_hash, status_view,
+                        tx_hash,
+                        status_view,
                     );
                     //TODO how to return the vm status to rpc client.
                     Err(e.into())
                 }
             },
             Err(e) => {
-                log::warn!(
+                tracing::warn!(
                     "transaction validate error, tx_hash: {}, error:{:?}",
                     tx_hash,
                     e
@@ -516,7 +516,7 @@ impl MoveFunctionCaller for ExecutorActor {
 impl Handler<EventData> for ExecutorActor {
     async fn handle(&mut self, message: EventData, _ctx: &mut ActorContext) -> Result<()> {
         if let Ok(_gas_upgrade_msg) = message.data.downcast::<GasUpgradeEvent>() {
-            log::debug!("ExecutorActor: Reload the MoveOS instance...");
+            tracing::info!("ExecutorActor: Reload the MoveOS instance...");
 
             let resolver = RootObjectResolver::new(self.root.clone(), &self.moveos_store);
             let gas_parameters = FrameworksGasParameters::load_from_chain(&resolver)?;

@@ -1,0 +1,59 @@
+---
+title: 'Rooch Network 第二期漏洞赏金活动结果公示'
+author: omnihand
+category: News
+date: 2024/12/30
+description: ''
+image: '/blog/bug-bounty/bounty-result2-zh.jpg'
+---
+
+import PostHeader from '/components/blog/postHeader'
+
+<PostHeader />
+
+![](/blog/bug-bounty/bounty-result2-zh.jpg)
+
+Rooch Network 第二期为期一个月的 Bug Bounty 活动圆满落幕！我们衷心感谢所有参与本次活动的开发者和安全专家，是你们的支持与贡献，让 Rooch 网络在准主网上的运行更加安全稳健。以下为本次活动的成果详情：
+
+## 漏洞发现与分析
+
+本期活动共报告 **4 个有效漏洞**，其中包括 **2 个高危漏洞**和 **2 个中危漏洞**，具体如下：
+
+### 高危漏洞（High Severity）：
+
+1. [同时查询多个相同的 Object 导致内存快速耗尽](https://github.com/rooch-network/rooch/security/advisories/GHSA-4382-rfr8-9698)
+    
+    提交者：[m4sterchain](https://github.com/m4sterchain)
+    
+2. [字节码中对象过多导致进程内存耗尽](https://github.com/rooch-network/rooch/security/advisories/GHSA-xfmq-crqf-429m)
+    
+    提交者：[m4sterchain](https://github.com/m4sterchain)
+
+### 中危漏洞（Medium Severity）：
+
+1. [错误的值更新方式导致 grow_information.move 中状态不一致](https://github.com/rooch-network/rooch/security/advisories/GHSA-f737-542f-mjvg)
+    
+    提交者：[nathanogaga118](https://github.com/nathanogaga118)
+    
+2. [传递过大的 maxInactiveInterval 导致整数运算溢出](https://github.com/rooch-network/rooch/security/advisories/GHSA-v477-4gc2-j6v4)
+    
+    提交者：[baicaiyihao](https://github.com/baicaiyihao)
+    
+
+更多细节（报告 ID 及 Github ID 等）均已公布在👉：https://github.com/rooch-network/rooch/issues/3113
+
+## 奖励分配
+
+根据 [Bug Bounty 第二期规则](https://rooch.network/blog/bug-bounty2)，奖励将在 TGE（代币生成事件）时发放。总奖励金额为 **12,000 U** 等值的 Rooch Token，具体分配如下：
+
+| 提交者                                              | 漏洞类型     | 奖励金额             |
+|-----------------------------------------------------|--------------|----------------------|
+| [m4sterchain](https://github.com/m4sterchain)       | 高危漏洞 * 2 | 10,000 U Rooch Token |
+| [nathanogaga118](https://github.com/nathanogaga118) | 中危漏洞 * 1 | 1,000 U Rooch Token  |
+| [baicaiyihao](https://github.com/baicaiyihao)       | 中危漏洞 * 1 | 1,000 U Rooch Token  |
+
+## 总结与展望
+
+通过本次活动，Rooch Network 不仅提升了网络安全性，还展现了我们与社区共同发展的承诺。未来，我们将继续优化网络性能，并开放更多漏洞赏金活动，与开发者共同构建更强大的 Bitcoin 生态系统。
+
+特别感谢所有贡献者和支持者的付出与信任！让我们携手打造更加安全、高效的 Rooch Network。

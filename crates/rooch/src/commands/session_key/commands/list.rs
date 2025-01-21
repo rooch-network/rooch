@@ -21,6 +21,10 @@ pub struct ListCommand {
 
     #[clap(flatten)]
     pub context_options: WalletContextOptions,
+
+    /// Display output as a table instead of JSON
+    #[clap(long)]
+    pub json: bool,
 }
 
 #[async_trait]

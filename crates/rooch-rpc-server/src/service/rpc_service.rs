@@ -1,7 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::{format_err, Ok, Result};
+use anyhow::{format_err, Result};
+use bitcoin_client::proxy::BitcoinClientProxy;
 use bitcoincore_rpc::bitcoin::Txid;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::{ModuleId, StructTag};
@@ -21,7 +22,6 @@ use rooch_executor::actor::messages::DryRunTransactionResult;
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_indexer::proxy::IndexerProxy;
 use rooch_pipeline_processor::proxy::PipelineProcessorProxy;
-use rooch_relayer::actor::bitcoin_client_proxy::BitcoinClientProxy;
 use rooch_rpc_api::jsonrpc_types::{
     BitcoinStatus, DisplayFieldsView, IndexerObjectStateView, ObjectMetaView, RoochStatus, Status,
 };
@@ -139,8 +139,11 @@ impl RpcService {
     pub async fn get_annotated_states(
         &self,
         access_path: AccessPath,
+        state_root: Option<H256>,
     ) -> Result<Vec<Option<AnnotatedState>>> {
-        self.executor.get_annotated_states(access_path).await
+        self.executor
+            .get_annotated_states(access_path, state_root)
+            .await
     }
 
     pub async fn list_states(
@@ -157,12 +160,13 @@ impl RpcService {
 
     pub async fn list_annotated_states(
         &self,
+        state_root: Option<H256>,
         access_path: AccessPath,
         cursor: Option<FieldKey>,
         limit: usize,
     ) -> Result<Vec<AnnotatedStateKV>> {
         self.executor
-            .list_annotated_states(access_path, cursor, limit)
+            .list_annotated_states(state_root, access_path, cursor, limit)
             .await
     }
 
@@ -387,7 +391,7 @@ impl RpcService {
 
         let access_path = AccessPath::objects(object_ids.clone());
         let mut object_states = if decode || show_display {
-            let annotated_states = self.get_annotated_states(access_path).await?;
+            let annotated_states = self.get_annotated_states(access_path, None).await?;
             let mut displays: BTreeMap<ObjectID, Option<DisplayFieldsView>> = if show_display {
                 let valid_states = annotated_states
                     .iter()
@@ -409,7 +413,7 @@ impl RpcService {
                 .zip(indexer_ids)
                 .filter_map(|(state_opt, (object_id, indexer_state_id))| {
                     match state_opt {
-                        Some(state) => Some(IndexerObjectStateView::new_from_annotated_state(
+                        Some(state) => Some(IndexerObjectStateView::try_new_from_annotated_state(
                             state,
                             indexer_state_id,
                         )),
@@ -423,7 +427,7 @@ impl RpcService {
                         }
                     }
                 })
-                .collect::<Vec<_>>();
+                .collect::<Result<Vec<_>>>()?;
             if !displays.is_empty() {
                 object_states.iter_mut().for_each(|object_state| {
                     object_state.display_fields =
@@ -763,26 +767,32 @@ impl RpcService {
             .collect::<Vec<_>>();
 
         let result = match filter {
-            SyncStateFilter::ObjectID(object_id) => {
-                states
-                    .into_iter()
-                    .map(|s| {
-                        let filter_changes = s
-                            .state_change_set
-                            .changes
-                            .into_iter()
-                            // Only includes Global Object, not include Child Object
-                            .filter(|(_, value)| value.metadata.id == object_id)
-                            .collect();
-                        let filter_state_change_set = StateChangeSet::new_with_changes(
-                            s.state_change_set.state_root,
-                            s.state_change_set.global_size,
-                            filter_changes,
-                        );
-                        StateChangeSetWithTxOrder::new(s.tx_order, filter_state_change_set)
-                    })
-                    .collect()
-            }
+            SyncStateFilter::ObjectID(object_id) => states
+                .into_iter()
+                .filter_map(|s| {
+                    let filter_changes = s
+                        .state_change_set
+                        .changes
+                        .into_iter()
+                        .filter(|(_, value)| value.metadata.id == object_id)
+                        .collect();
+
+                    let filter_state_change_set = StateChangeSet::new_with_changes(
+                        s.state_change_set.state_root,
+                        s.state_change_set.global_size,
+                        filter_changes,
+                    );
+
+                    if !filter_state_change_set.changes.is_empty() {
+                        Some(StateChangeSetWithTxOrder::new(
+                            s.tx_order,
+                            filter_state_change_set,
+                        ))
+                    } else {
+                        None
+                    }
+                })
+                .collect(),
             SyncStateFilter::All => states,
         };
 
@@ -793,10 +803,12 @@ impl RpcService {
         let service_status = self.pipeline_processor.get_service_status().await?;
         let sequencer_info = self.sequencer.get_sequencer_info().await?;
         let root_state = self.executor.get_root().await?;
+        let da_server_status = self.da_server.get_status().await?;
 
         let rooch_status = RoochStatus {
             sequencer_info: sequencer_info.into(),
             root_state: root_state.into(),
+            da_info: da_server_status.into(),
         };
 
         let pending_block = {
@@ -813,13 +825,10 @@ impl RpcService {
             pending_block: pending_block.map(Into::into),
         };
 
-        let da_server_status = self.da_server.get_status().await?;
-
         Ok(Status {
             service_status,
             rooch_status,
             bitcoin_status,
-            da_server_status,
         })
     }
 }

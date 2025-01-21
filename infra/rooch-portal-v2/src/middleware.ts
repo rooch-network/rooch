@@ -10,12 +10,12 @@ const iconDomains = [
   'https://api.iconify.design',
   'https://api.simplesvg.com',
 ];
-const faucetDomains = [FAUCET_MAINNET, FAUCET_TESTNET];
 const apiDomains = [
   getRoochNodeUrl('mainnet'),
   getRoochNodeUrl('testnet'),
-  'https://test-faucet.rooch.network',
-  'https://main-faucet.rooch.network',
+  FAUCET_MAINNET,
+  FAUCET_TESTNET,
+  'http://127.0.0.1:6868',
 ];
 const isProduction = process.env.NODE_ENV === 'production';
 
@@ -42,7 +42,7 @@ export function middleware(request: NextRequest) {
     { name: 'frame-ancestors', values: ["'none'"] },
     {
       name: 'connect-src',
-      values: ["'self'", ...apiDomains, ...iconDomains, ...faucetDomains],
+      values: ["'self'", ...apiDomains, ...iconDomains],
     },
     { name: 'upgrade-insecure-requests', values: [] },
   ];

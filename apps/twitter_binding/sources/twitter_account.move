@@ -20,7 +20,7 @@ module twitter_binding::twitter_account {
 
     const TWITTER_ACCOUNT_BINDING_MESSAGE_PREFIX: vector<u8> = b"BTC:";
     const TWITTER_ACCOUNT_BINDING_HASH_TAG: vector<u8> = b"RoochNetwork";
-    const ADDRESS_SPLIT_CHARS: vector<u8> = b" #,.";
+    const ADDRESS_SPLIT_CHARS: vector<u8> = b" #,.\n\r";
 
     const BITCOIN_TAPROOT_ADDRESS_PREFIX_MAINNET: vector<u8> = b"bc1";
 
@@ -98,6 +98,7 @@ module twitter_binding::twitter_account {
         object::transfer_extend(mapping_obj, @twitter_binding);
     }
 
+    /// Resolve address by author id
     public fun resolve_address_by_author_id(author_id: String): Option<address> {
         let mapping = borrow_twitter_account_mapping();
         if (table::contains(&mapping.account_to_address, author_id)){
@@ -106,12 +107,51 @@ module twitter_binding::twitter_account {
         option::none()
     }
 
+    /// Resolve address by author id batch, if the address not found, the address will be 0x0
+    public fun resolve_address_by_author_id_batch(author_ids: vector<String>): vector<address> {
+        let mapping = borrow_twitter_account_mapping();
+        let len = vector::length(&author_ids);
+        let results = vector::empty<address>();
+        let i = 0;
+        while (i < len){
+            let author_id = *vector::borrow(&author_ids, i);
+            let addr = if (table::contains(&mapping.account_to_address, author_id)){
+                *table::borrow(&mapping.account_to_address, author_id)
+            }else{
+                @0x0
+            };
+            vector::push_back(&mut results, addr);
+            i = i + 1;
+        };
+        results
+    }
+
+    /// Resolve author id by address
     public fun resolve_author_id_by_address(address: address): Option<String> {
         let mapping = borrow_twitter_account_mapping();
         if (table::contains(&mapping.address_to_account, address)){
             return option::some(*table::borrow(&mapping.address_to_account, address))
         };
         option::none()
+    }
+
+    /// Resolve author id by address batch, if the address not found, the author id will be empty string
+    public fun resolve_author_id_by_address_batch(addresses: vector<address>): vector<String> {
+        let mapping = borrow_twitter_account_mapping();
+        let len = vector::length(&addresses);
+        let results = vector::empty<String>();
+        let i = 0;
+        while (i < len){
+            let addr = *vector::borrow(&addresses, i);
+            let author_id = if (table::contains(&mapping.address_to_account, addr)){
+                *table::borrow(&mapping.address_to_account, addr)
+            }else{
+                string::utf8(b"")
+            };
+            vector::push_back(&mut results, author_id);
+            i = i + 1;
+        };
+        results
     }
 
     public entry fun verify_and_binding_twitter_account(tweet_id: String){
@@ -177,6 +217,11 @@ module twitter_binding::twitter_account {
             account_coin_store::deposit<RGas>(user_rooch_address, rgas_coin);
             table::add(&mut faucet.claim_records, author_id, REWARD_RGAS_AMOUNT);
         };
+    }
+
+    public fun check_user_claimed(author_id: String): bool{
+        let faucet = borrow_twitter_rgas_faucet();
+        return table::contains(&faucet.claim_records, author_id)
     }
 
     public entry fun unbinding_twitter_account(owner: &signer){
@@ -385,5 +430,20 @@ module twitter_binding::twitter_account {
         unbinding_twitter_account_internal(expect_owner_address);
         let author_address_opt = resolve_address_by_author_id(author_id);
         assert!(option::is_none(&author_address_opt), 6);
+    }
+
+    #[test]
+    fun test_get_bitcoin_address_from_tweet_text(){
+        let text = b"BTC:bc1p72fvqwm9w4wcsd205maky9qejf6dwa6qeku5f5vnu4phpp3vvpws0p2f4g hello";
+        let bitcoin_address_str = get_bitcoin_address_from_tweet_text(&text);
+        assert!(bitcoin_address_str == b"bc1p72fvqwm9w4wcsd205maky9qejf6dwa6qeku5f5vnu4phpp3vvpws0p2f4g", 1);
+
+        let text = b"BTC:bc1p72fvqwm9w4wcsd205maky9qejf6dwa6qeku5f5vnu4phpp3vvpws0p2f4g\nabcd";
+        let bitcoin_address_str = get_bitcoin_address_from_tweet_text(&text);
+        assert!(bitcoin_address_str == b"bc1p72fvqwm9w4wcsd205maky9qejf6dwa6qeku5f5vnu4phpp3vvpws0p2f4g", 2);
+
+        let text = b"BTC:bc1p72fvqwm9w4wcsd205maky9qejf6dwa6qeku5f5vnu4phpp3vvpws0p2f4g.";
+        let bitcoin_address_str = get_bitcoin_address_from_tweet_text(&text);
+        assert!(bitcoin_address_str == b"bc1p72fvqwm9w4wcsd205maky9qejf6dwa6qeku5f5vnu4phpp3vvpws0p2f4g", 3);
     }
 }

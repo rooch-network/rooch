@@ -1,5 +1,7 @@
 import type { NavSectionProps } from 'src/components/nav-section';
 
+import { ConnectButton } from '@roochnetwork/rooch-sdk-kit';
+
 import Box from '@mui/material/Box';
 import { styled, useTheme } from '@mui/material/styles';
 
@@ -7,7 +9,6 @@ import { Logo } from 'src/components/logo';
 
 import { HeaderSection } from './header-section';
 import { MenuButton } from '../components/menu-button';
-import { AccountDrawer } from '../components/account-drawer';
 
 import type { HeaderSectionProps } from './header-section';
 
@@ -107,7 +108,7 @@ export function HeaderBase({
               }}
             >
               {/* -- Account drawer -- */}
-              {account && <AccountDrawer data-slot="account" />}
+              {account && <ConnectButton />}
 
               {/* -- Purchase button -- */}
               {/* {purchase && (

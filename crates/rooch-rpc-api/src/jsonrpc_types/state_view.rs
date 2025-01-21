@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{
-    AnnotatedMoveStructView, BytesView, H256View, HumanReadableDisplay, ObjectIDVecView,
-    ObjectIDView, QueryOptions, RoochAddressView, StrView, StructTagView, TypeTagView,
-    UnitedAddressView,
+    AnnotatedMoveStructView, AnnotatedMoveValueView, BytesView, H256View, HumanReadableDisplay,
+    ObjectIDVecView, ObjectIDView, QueryOptions, RoochAddressView, StrView, StructTagView,
+    TypeTagView, UnitedAddressView,
 };
 use anyhow::Result;
 use move_core_types::effects::Op;
@@ -328,6 +328,29 @@ impl IndexerObjectStateView {
         }
     }
 
+    pub fn try_new_from_annotated_state(
+        state: AnnotatedState,
+        indexer_id: IndexerStateID,
+    ) -> Result<IndexerObjectStateView> {
+        let (metadata, value, decoded_value) = state.into_inner();
+        let mut size = 0;
+        decoded_value.value.iter().for_each(|(_k, v)| {
+            size += AnnotatedMoveValueView::size_of_struct_recursively(v);
+        });
+        // make the size limit configurable
+        if size > 200 {
+            anyhow::bail!("The size of the object is too large to decode and display");
+        }
+
+        Ok(IndexerObjectStateView {
+            metadata: metadata.into(),
+            value: value.into(),
+            decoded_value: Some(AnnotatedMoveStructView::from(decoded_value)),
+            indexer_id: indexer_id.into(),
+            display_fields: None,
+        })
+    }
+
     pub fn with_owner_bitcoin_address(mut self, owner_bitcoin_address: Option<String>) -> Self {
         self.metadata.owner_bitcoin_address = owner_bitcoin_address;
         self
@@ -504,9 +527,7 @@ fn parse_changed_objects(
     let mut deleted_objs = vec![];
     for obj_change in changes {
         let metadata = obj_change.metadata.clone();
-        //TODO fixme
-        //https://github.com/rooch-network/rooch/issues/2657
-        //debug_assert!(obj_change.value.is_some() || !obj_change.fields.is_empty());
+        // There may have 3 type of changes: metadata, value, fields
         match obj_change.value {
             Some(OpView::New(_)) => new_objs.push(metadata),
             Some(OpView::Modify(_)) => modified_objs.push(metadata),

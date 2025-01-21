@@ -15,14 +15,14 @@ rust-version = { workspace = true }
 
 [dependencies]
 anyhow = { workspace = true }
+anyhow-old = { git = "https://github.com/dtolnay/anyhow", tag = "1.0.76", package = "anyhow" }
+anyhow-new = { git = "https://github.com/dtolnay/anyhow", tag = "1.0.93", package = "anyhow" }
 bcs = { workspace = true }
 clap = { workspace = true }
 ethers = { workspace = true }
-hex = { workspace = true }
 serde = { workspace = true }
 tracing = { workspace = true }
 rand = { workspace = true }
-log = { workspace = true }
 lazy_static = { workspace = true }
 criterion = { workspace = true }
 pprof = { workspace = true, features = ["flamegraph", "criterion", "cpp", "frame-pointer", "protobuf-codec"] }
@@ -31,9 +31,10 @@ bitcoincore-rpc = { workspace = true }
 bitcoin = { workspace = true }
 toml = { workspace = true }
 [target.'cfg(not(target_env = "msvc"))'.dependencies]
-jemallocator = { version = "0.5.4", features = ["unprefixed_malloc_on_supported_platforms", "profiling"] }
+tikv-jemallocator = { workspace = true }
 prometheus = { workspace = true }
 tokio = { workspace = true }
+tracing = { workspace = true }
 
 move-core-types = { workspace = true }
 move-resource-viewer = { workspace = true }

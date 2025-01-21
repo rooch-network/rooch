@@ -1,0 +1,83 @@
+---
+title: Babylon 集成 Rooch Network
+description: "作为Bitcoin 的原生应用层，Rooch Network 为什么要集成 Babylon，Rooch Network 又能为 Babylon 带来什么？"
+author: baichuan
+date: 2025/01/06
+category: Developer
+---
+
+import PostHeader from "/components/blog/postHeader";
+
+<PostHeader />
+
+![](/blog/babylon-integration.jpg)
+
+## Rooch Network 是什么？
+Rooch Network 是 Bitcoin 的原生应用层，基于堆叠式 L2 解决方案，为用户和开发者提供比特币资产的启动平台和比特币应用基础设施。
+
+## Babylon 是什么？
+Babylon 通过在比特币主网上构建复杂的 UTXO 脚本合约，为 BTC Layer2 和其他 POS 链实现了安全、无跨链、无托管的原生质押解决方案。
+
+## 为什么 Rooch 要集成 Babylon?
+[Babylon](https://github.com/babylonlabs-io) 提供了 [比特币质押协议](https://docs.babylonlabs.io/assets/files/btc_staking_litepaper-32bfea0c243773f0bfac63e148387aef.pdf)，允许比特币持有者在比特币链上质押 BTC，以保护任何 PoS 链。质押是无需信任的，因为 BTC 位于原生比特币网络上的自托管保险库中，而无需在其他地方进行桥接。
+
+Rooch 链与 Babylon BTC 质押协议集成，以获得比特币安全性。这带来了以下好处。
+
+- **更好的安全性：** 有原生 BTC 质押来保护 Layer2 并提高其安全性。此外，质押的 BTC 实现了 *可削减*的安全性，这是一种强大的安全特性，即使模棱两可的 L2 测序器占大多数，L2 序列器的重复行为也会被追究责任，BTC 质押也是可削减的。
+- **快速最终性：** 改进的安全性将使 Rooch 链受益，实现快速最终性。如果用户愿意信任由 BTC 质押支持的投票，那么用户可以确认交易并做出决策，而无需等待漫长的挑战期。
+- **L2 交易的可重组弹性：** 一旦交易被纳入由大多数 BTC 支持的终结性提供者签名的 L2 区块中，序列器（Sequencer）就不能在 L1 上的同一高度发布不同的 L2 区块。
+- **提供存在性证明：** 提供交易的存在性证明和不存在证明，实现可信消息验证机制，能够有效地验证交易的真实性。
+
+## 系统架构
+
+下图描述了系统架构。“→”箭头表示数据流；例如，X→Y 表示“Y 从 X 查询数据，数据从 X 流向 Y”。
+
+### Babylon 集成 Consumer Chain 流程
+![](/blog/babylon-integration-for-rooch-network/babylon-integration-consumer-chain.jpeg)
+
+### Babylon 集成 Rooch 架构图
+![](/blog/babylon-integration-for-rooch-network/babylon-integration-for-rooch.png)
+
+### 系统组件
+
+设计涉及以下主要组件：
+
+1. **Finality合约**：CosmWasm 智能合约，用于维护 Rooch finality provider 提交的所有最终性签名。
+- 它将部署在 Babylon 链上。
+- 它将查询 Babylon 以确定 finality provider 的状态和投票权。
+2. **Rooch finality provider**：守护程序，接收 BTC 质押并将最终性签名提交给 Babylon 上的 finality合约。
+- 它连接到 Babylon 节点以查询自身的投票权。
+- 它连接到 Babylon 节点中的finality合约以提交最终性签名。
+- 它连接到 Rooch 节点以获取 L2 区块元数据。
+3. **装配 Finality gadget 的 Rooch Node**：Rooch 节点将装配一个finality gadget，用于统计所有最终性签名、确定 L2 区块的最终状态，并且仅将最终确定的 L2 区块通知给 Rooch 节点本身。
+- 它连接到 Babylon 节点，用于查询 finality provider 的投票权。
+- 它连接到 Babylon 节点中的 finality合约，用于查询最终性签名。
+- 它连接到比特币 L1 节点，以接收批量数据来派生 L2 区块。
+
+### 关键工作流程
+1. **Finality provider**：持续向finality gadget合约提交 L2 区块的最终性签名。
+Rooch 链中出现新的 L2 区块时，
+- 获取 L2 区块元数据。
+- 查询 Babylon 链以确定其自身是否在此高度具有投票权。
+- 如果是，则签署最终性签名并将其提交给finality gadget合约。
+
+2. **Finality合约**：验证传入的最终性签名并识别模棱两可之处。
+最终性签名出现后，Finality合约对其进行验证并检查其是否冲突。
+- 如果有效且与任何现有签名不冲突，则接受。
+- 如果无效，则拒绝。
+- 如果有效但与现有最终性签名冲突，则发出事件，以便任何人都可以削减 finality provider 及其下的 BTC 质押。
+
+3. **装配 Finality gadget 的 Rooch Node**：持续计算从 L1 派生的 L2 区块，最终性签名和finality provider的投票权分布，并确定 L2 区块的 BTC 质押最终化状态。派生管道经过修改，因此它仅输出 BTC 质押最终化的 L2 区块。
+当从 L1 派生出新的 L2 区块时，Rooch 节点执行以下操作
+- 查询finality合约以获取此 L2 区块的所有最终性签名。
+- 查询 Babylon 以获取此消费者的所有finality provider/BTC 委托，并使用 L2 区块的时间戳确定此区块时的投票权表。
+- 统计最终性签名并确定 L2 区块是否获得法定票数。
+- 如果此 L2 区块获得法定票数并且其前缀为 BTC 质押最终态，则将此 L2 区块标记为 BTC 质押最终态并将其输出到派生管道中。
+
+## Rooch 为 Babylon 带来了什么?
+Rooch作为Bitcoin 的原生应用层，会自动解析维护全量的 UTXO 数据到Move 合约的状态树中，通过解析未花费输出（UTXO）中OP_RETURN 数据，可以获取到用户在Babylon 网络上质押相关信息，包括质押BTC 数量及解锁时长。这可以给Babylon 带来以下好处。
+
+- 扩展Babylon的 Staking/Restaking 场景,给生态带来更多玩法，且无需任何额外操作
+
+## 总结
+借助 Babylon 的 BTC 质押协议给 Consumer Chain 和 Layer2 带来的质押扩展性，将给Rooch 链带来更好的安全性和快速最终性，以及交易的存在性证明。同时，Rooch 提供的可解析的 UTXO 数据，能够扩展Babylon的 Staking/Restaking 场景，给 Babylon 生态带来更多玩法。

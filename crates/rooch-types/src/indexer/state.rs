@@ -15,6 +15,8 @@ use once_cell::sync::Lazy;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::num::ParseIntError;
+use std::str::FromStr;
 
 pub static UTXO_TYPE_TAG: Lazy<TypeTag> = Lazy::new(UTXO::type_tag);
 
@@ -305,6 +307,30 @@ impl std::fmt::Display for IndexerStateID {
             "IndexerStateID[tx order: {:?}, state index: {}]",
             self.tx_order, self.state_index,
         )
+    }
+}
+
+impl FromStr for IndexerStateID {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let parts: Vec<&str> = s.split(',').collect();
+        if parts.len() == 2 {
+            let tx_order = parts[0]
+                .parse::<u64>()
+                .map_err(|e: ParseIntError| format!("tx_order parse error: {}", e))?;
+            let state_index = parts[1]
+                .parse::<u64>()
+                .map_err(|e: ParseIntError| format!("state_index parse error: {}", e))?;
+            Ok(IndexerStateID {
+                tx_order,
+                state_index,
+            })
+        } else {
+            Err(
+                "Invalid format. Expected format: 'tx_order,state_index' (e.g., '12345,67890')"
+                    .to_string(),
+            )
+        }
     }
 }
 

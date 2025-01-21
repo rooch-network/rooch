@@ -13,6 +13,7 @@ struct itself, while the operations are implemented as native functions. No trav
 
 -  [Resource `TablePlaceholder`](#0x2_table_TablePlaceholder)
 -  [Struct `Table`](#0x2_table_Table)
+-  [Struct `Iterator`](#0x2_table_Iterator)
 -  [Function `new`](#0x2_table_new)
 -  [Function `new_with_object_id_by_system`](#0x2_table_new_with_object_id_by_system)
 -  [Function `add`](#0x2_table_add)
@@ -23,6 +24,10 @@ struct itself, while the operations are implemented as native functions. No trav
 -  [Function `upsert`](#0x2_table_upsert)
 -  [Function `remove`](#0x2_table_remove)
 -  [Function `contains`](#0x2_table_contains)
+-  [Function `list_field_keys`](#0x2_table_list_field_keys)
+-  [Function `field_keys_len`](#0x2_table_field_keys_len)
+-  [Function `next`](#0x2_table_next)
+-  [Function `next_mut`](#0x2_table_next_mut)
 -  [Function `destroy_empty`](#0x2_table_destroy_empty)
 -  [Function `length`](#0x2_table_length)
 -  [Function `is_empty`](#0x2_table_is_empty)
@@ -30,7 +35,8 @@ struct itself, while the operations are implemented as native functions. No trav
 -  [Function `handle`](#0x2_table_handle)
 
 
-<pre><code><b>use</b> <a href="core_addresses.md#0x2_core_addresses">0x2::core_addresses</a>;
+<pre><code><b>use</b> <a href="">0x1::option</a>;
+<b>use</b> <a href="core_addresses.md#0x2_core_addresses">0x2::core_addresses</a>;
 <b>use</b> <a href="object.md#0x2_object">0x2::object</a>;
 </code></pre>
 
@@ -55,6 +61,17 @@ Type of tables
 
 
 <pre><code><b>struct</b> <a href="table.md#0x2_table_Table">Table</a>&lt;K: <b>copy</b>, drop, store, V&gt; <b>has</b> store
+</code></pre>
+
+
+
+<a name="0x2_table_Iterator"></a>
+
+## Struct `Iterator`
+
+
+
+<pre><code><b>struct</b> <a href="table.md#0x2_table_Iterator">Iterator</a>&lt;K: <b>copy</b>, drop, store, V&gt; <b>has</b> drop, store
 </code></pre>
 
 
@@ -183,6 +200,56 @@ Returns true if <code><a href="table.md#0x2_table">table</a></code> contains an 
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_contains">contains</a>&lt;K: <b>copy</b>, drop, store, V: store&gt;(<a href="table.md#0x2_table">table</a>: &<a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;, key: K): bool
+</code></pre>
+
+
+
+<a name="0x2_table_list_field_keys"></a>
+
+## Function `list_field_keys`
+
+Returns a vector of keys in the table from the given cursor position, up to the specified limit.
+cursor: Optional address to start listing from. If None, starts from the beginning.
+limit: Maximum number of keys to return.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_list_field_keys">list_field_keys</a>&lt;K: <b>copy</b>, drop, store, V: store&gt;(<a href="table.md#0x2_table">table</a>: &<a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;, cursor: <a href="_Option">option::Option</a>&lt;K&gt;, limit: u64): <a href="table.md#0x2_table_Iterator">table::Iterator</a>&lt;K, V&gt;
+</code></pre>
+
+
+
+<a name="0x2_table_field_keys_len"></a>
+
+## Function `field_keys_len`
+
+Returns the number of keys in the table.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_field_keys_len">field_keys_len</a>&lt;K: <b>copy</b>, drop, store, V: store&gt;(iterator: &<a href="table.md#0x2_table_Iterator">table::Iterator</a>&lt;K, V&gt;): u64
+</code></pre>
+
+
+
+<a name="0x2_table_next"></a>
+
+## Function `next`
+
+Returns a immutable reference to the next key-value pair in the table, starting from the given iterator.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_next">next</a>&lt;K: <b>copy</b>, drop, store, V: store&gt;(iterator: &<b>mut</b> <a href="table.md#0x2_table_Iterator">table::Iterator</a>&lt;K, V&gt;): (&K, &V)
+</code></pre>
+
+
+
+<a name="0x2_table_next_mut"></a>
+
+## Function `next_mut`
+
+Returns a mutable reference to the next key-value pair in the table, starting from the given iterator.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_next_mut">next_mut</a>&lt;K: <b>copy</b>, drop, store, V: store&gt;(iterator: &<b>mut</b> <a href="table.md#0x2_table_Iterator">table::Iterator</a>&lt;K, V&gt;): (&K, &<b>mut</b> V)
 </code></pre>
 
 

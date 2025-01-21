@@ -25,11 +25,53 @@
       "typesetting": "article"
     }
   },
-  "dashboard": {
-    "title": "Portal 入口",
+  "grow": {
+    "title": "Grow",
     "type": "page",
-    "href": "https://portal.rooch.network/",
-    "newWindow": true
+    "newWindow": true,
+    "href": "https://grow.rooch.network/"
+  },
+  "explorer": {
+    "title": "浏览器",
+    "type": "page",
+    "newWindow": true,
+    "href": "https://roochscan.io/"
+  },
+  "portal": {
+    "title": "Portal",
+    "type": "menu",
+    "items": {
+      "apps": {
+        "title": "Apps",
+        "type": "page",
+        "newWindow": true,
+        "href": "https://portal.rooch.network/apps"
+      },
+      "account": {
+        "title": "账户",
+        "type": "page",
+        "newWindow": true,
+        "href": "https://portal.rooch.network/account"
+      },
+      "faucet": {
+        "title": "水龙头",
+        "type": "page",
+        "newWindow": true,
+        "href": "https://portal.rooch.network/faucet"
+      },
+      "purchase_gas": {
+        "title": "购买RGas",
+        "type": "page",
+        "newWindow": true,
+        "href": "https://portal.rooch.network/gas-swap"
+      },
+      "marketplace": {
+        "title": "市场",
+        "type": "page",
+        "newWindow": true,
+        "href": "https://portal.rooch.network/trade"
+      }
+    }
   },
   "404": {
     "type": "page",
@@ -64,6 +106,6 @@
       "timestamp": false,
       "typesetting": "article"
     },
-    "title":"Archives"
+    "title": "Archives"
   }
 }

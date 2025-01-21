@@ -295,11 +295,32 @@ impl TryFrom<AnnotatedMoveValue> for ObjectID {
     }
 }
 
+impl TryFrom<&AnnotatedMoveValue> for ObjectID {
+    type Error = anyhow::Error;
+
+    fn try_from(value: &AnnotatedMoveValue) -> Result<Self, Self::Error> {
+        match value {
+            AnnotatedMoveValue::Struct(annotated_move_struct) => {
+                ObjectID::try_from(annotated_move_struct)
+            }
+            _ => Err(anyhow::anyhow!("Invalid ObjectID")),
+        }
+    }
+}
+
 impl TryFrom<AnnotatedMoveStruct> for ObjectID {
     type Error = anyhow::Error;
 
     fn try_from(value: AnnotatedMoveStruct) -> Result<Self, Self::Error> {
         ObjectID::try_from_annotated_move_struct_ref(&value)
+    }
+}
+
+impl TryFrom<&AnnotatedMoveStruct> for ObjectID {
+    type Error = anyhow::Error;
+
+    fn try_from(value: &AnnotatedMoveStruct) -> Result<Self, Self::Error> {
+        ObjectID::try_from_annotated_move_struct_ref(value)
     }
 }
 

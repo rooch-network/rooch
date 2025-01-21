@@ -39,6 +39,7 @@ pub const VEC_SIZE: AbstractMemorySize = AbstractMemorySize::new(8);
 pub const INSTRUCTION_TIER_DEFAULT: u64 = 1;
 pub const STACK_HEIGHT_TIER_DEFAULT: u64 = 1;
 pub const STACK_SIZE_TIER_DEFAULT: u64 = 1;
+pub const IO_WRITE_SIZE_TIER_DEFAULT: u64 = 1;
 
 pub static ZERO_COST_SCHEDULE: Lazy<CostTable> = Lazy::new(zero_cost_schedule);
 
@@ -356,6 +357,7 @@ pub struct CostTable {
     pub instruction_tiers: BTreeMap<u64, u64>,
     pub stack_height_tiers: BTreeMap<u64, u64>,
     pub stack_size_tiers: BTreeMap<u64, u64>,
+    pub io_write_tiers: BTreeMap<u64, u64>,
     pub storage_gas_parameter: StorageGasParameter,
     pub instruction_gas_parameter: InstructionParameter,
     pub abstract_value_parameter: AbstractValueSizeGasParameter,
@@ -399,6 +401,14 @@ impl CostTable {
             &self.stack_size_tiers,
             stack_size,
             STACK_SIZE_TIER_DEFAULT,
+        )
+    }
+
+    pub fn io_write_tier(&self, io_write_size: u64) -> (u64, Option<u64>) {
+        Self::get_current_and_future_tier(
+            &self.io_write_tiers,
+            io_write_size,
+            IO_WRITE_SIZE_TIER_DEFAULT,
         )
     }
 }
@@ -457,6 +467,17 @@ pub fn initial_cost_schedule(gas_entries: Option<BTreeMap<String, u64>>) -> Cost
     .into_iter()
     .collect();
 
+    let io_write_tiers: BTreeMap<u64, u64> = vec![
+        (0, 1),
+        (2000, 2),
+        (4000, 4),
+        (8000, 16),
+        (160000, 23),
+        (300000, 46),
+    ]
+    .into_iter()
+    .collect();
+
     let (storage_gas_parameter, instruction_gas_parameter, abstract_value_gas_parameter) =
         if let Some(entries) = gas_entries {
             (
@@ -479,6 +500,7 @@ pub fn initial_cost_schedule(gas_entries: Option<BTreeMap<String, u64>>) -> Cost
         instruction_tiers,
         stack_size_tiers,
         stack_height_tiers,
+        io_write_tiers,
         storage_gas_parameter,
         instruction_gas_parameter,
         abstract_value_parameter: abstract_value_gas_parameter,
@@ -491,7 +513,8 @@ pub fn zero_cost_schedule() -> CostTable {
     CostTable {
         instruction_tiers: zero_tier.clone(),
         stack_size_tiers: zero_tier.clone(),
-        stack_height_tiers: zero_tier,
+        stack_height_tiers: zero_tier.clone(),
+        io_write_tiers: zero_tier,
         storage_gas_parameter: StorageGasParameter::zeros(),
         instruction_gas_parameter: InstructionParameter::zeros(),
         abstract_value_parameter: AbstractValueSizeGasParameter::zeros(),
@@ -532,6 +555,7 @@ pub struct MoveOSGasMeter {
     gas_left: InternalGas,
     //TODO we do not need to use gas_price in gas meter.
     charge: bool,
+    charge_tired_io_write: bool,
 
     execution_gas_used: Rc<RefCell<InternalGas>>,
     storage_gas_used: Rc<RefCell<InternalGas>>,
@@ -559,7 +583,7 @@ impl MoveOSGasMeter {
     ///
     /// Charge for every operation and fail when there is no more gas to pay for operations.
     /// This is the instantiation that must be used when executing a user function.
-    pub fn new(cost_table: CostTable, budget: u64) -> Self {
+    pub fn new(cost_table: CostTable, budget: u64, charge_tired_io_write: bool) -> Self {
         //assert!(gas_price > 0, "gas price cannot be 0");
         //let budget_in_unit = budget / gas_price;
         // let gas_left = Self::to_internal_units(budget_in_unit);
@@ -573,6 +597,7 @@ impl MoveOSGasMeter {
             gas_left: InternalGas::from(budget),
             cost_table,
             charge: true,
+            charge_tired_io_write,
             execution_gas_used: Rc::new(RefCell::new(InternalGas::from(0))),
             storage_gas_used: Rc::new(RefCell::new(InternalGas::from(0))),
             stack_height_high_water_mark: 0,
@@ -598,6 +623,7 @@ impl MoveOSGasMeter {
             cost_table: ZERO_COST_SCHEDULE.clone(),
             gas_left: InternalGas::from(0),
             charge: false,
+            charge_tired_io_write: false,
             execution_gas_used: Rc::new(RefCell::new(InternalGas::from(0))),
             storage_gas_used: Rc::new(RefCell::new(InternalGas::from(0))),
             stack_height_high_water_mark: 0,
@@ -738,7 +764,21 @@ impl ClassifiedGasMeter for MoveOSGasMeter {
             .storage_fee_per_transaction_byte
             .into();
 
-        match tx_size.checked_mul(tx_gas_parameter) {
+        let (factor, _) = if self.charge_tired_io_write {
+            self.cost_table.io_write_tier(tx_size)
+        } else {
+            (1_u64, None)
+        };
+
+        let factor_gas = match tx_gas_parameter.checked_mul(factor) {
+            None => {
+                self.gas_left = InternalGas::from(0);
+                return Err(PartialVMError::new(StatusCode::OUT_OF_GAS));
+            }
+            Some(final_gas) => final_gas,
+        };
+
+        match tx_size.checked_mul(factor_gas) {
             None => {
                 self.gas_left = InternalGas::from(0);
                 Err(PartialVMError::new(StatusCode::OUT_OF_GAS))

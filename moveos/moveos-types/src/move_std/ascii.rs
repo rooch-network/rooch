@@ -114,6 +114,26 @@ impl TryFrom<AnnotatedMoveStruct> for MoveAsciiString {
     }
 }
 
+impl TryFrom<&AnnotatedMoveStruct> for MoveAsciiString {
+    type Error = anyhow::Error;
+
+    fn try_from(value: &AnnotatedMoveStruct) -> Result<Self, Self::Error> {
+        let annotated_move_struct = value;
+        let (field_name, field_value) = annotated_move_struct
+            .value
+            .first()
+            .ok_or_else(|| anyhow::anyhow!("Invalid MoveAsciiString"))?;
+        debug_assert!(field_name.as_str() == "bytes");
+        let bytes = match field_value {
+            AnnotatedMoveValue::Bytes(bytes) => bytes,
+            _ => return Err(anyhow::anyhow!("Invalid MoveAsciiString")),
+        };
+        Ok(MoveAsciiString {
+            bytes: bytes.clone(),
+        })
+    }
+}
+
 impl TryFrom<MoveAsciiString> for Identifier {
     type Error = anyhow::Error;
 

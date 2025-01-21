@@ -36,7 +36,11 @@ export const navData = [
         title: 'Faucet',
         path: paths.dashboard.faucet,
         icon: <Iconify icon="solar:gift-bold-duotone" />,
-        // noAddressRequired: true,
+      },
+      {
+        title: 'Invitation',
+        path: paths.dashboard.invitation,
+        icon: <Iconify icon="solar:letter-broken" />,
       },
       {
         title: 'Settings',
@@ -44,6 +48,20 @@ export const navData = [
         icon: <Iconify icon="solar:settings-bold-duotone" />,
         noAddressRequired: true,
         connectWalletRequired: false,
+      },
+    ],
+  },
+  /**
+   * Tokens
+   */
+  {
+    subheader: 'Trade',
+    items: [
+      {
+        title: 'Marketplace',
+        path: paths.dashboard.trade,
+        icon: <Iconify icon="solar:star-fall-bold-duotone" />,
+        noAddressRequired: true,
       },
     ],
   },
@@ -87,6 +105,7 @@ export const navData = [
         icon: <Iconify icon="solar:infinity-line-duotone" />,
         noAddressRequired: true,
       },
-    ].filter((item) => !(isMainNetwork() && item.title === 'Apps')),
+    ]// .filter((item) => !(isMainNetwork() && item.title === 'Apps')),
   },
 ].filter((item) => !(isMainNetwork() && item.subheader === 'Tokens'));
+// .filter((item) => !(isMainNetwork() && (item.subheader === 'Tokens' || item.subheader === 'Trade')));

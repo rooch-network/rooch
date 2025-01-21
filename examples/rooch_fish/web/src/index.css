@@ -1,0 +1,26 @@
+/* Copyright (c) RoochNetwork */
+/* SPDX-License-Identifier: Apache-2.0 */
+/* Author: Jason Jo */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: 'Raleway Variable', var(--font-sans), ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: light dark;
+  color: #0F172A;
+  background-color: #ffffff;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background: linear-gradient(180deg, hsla(0, 0%, 100%, 0) 0, #fff 100vh), fixed 0 0 /20px 20px radial-gradient(#d1d1d1 1px, transparent 0), fixed 10px 10px /20px 20px radial-gradient(#d1d1d1 1px, transparent 0)
+}

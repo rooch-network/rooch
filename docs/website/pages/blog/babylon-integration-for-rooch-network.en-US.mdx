@@ -1,0 +1,83 @@
+---
+title: Babylon integration for Rooch Network
+description: "As the native application layer of Bitcoin, why does Rooch Network want to integrate Babylon, and what can Rooch Network bring to Babylon?"
+author: baichuan
+date: 2025/01/06
+category: Developer
+---
+
+import PostHeader from "/components/blog/postHeader";
+
+<PostHeader />
+
+![](/blog/babylon-integration.jpg)
+
+## What is Rooch Network?
+Rooch Network is a native application layer for the Bitcoin ecosystem, based on the Stackable L2 solution, serving as the go-to Bitcoin assets launchpad and Bitcoin application infra for users and devs.
+
+## What is Babylon？
+Babylon has realized a secure, cross-chain-free, and custody-free Native Staking solution for BTC Layer2 and other POS chains by building a complex UTXO script contract on the Bitcoin mainnet.
+
+## Why Rooch integration Babylon?
+[Babylon](https://github.com/babylonlabs-io) provides the [Bitcoin staking protocol](https://docs.babylonlabs.io/assets/files/btc_staking_litepaper-32bfea0c243773f0bfac63e148387aef.pdf) that allows Bitcoin holders to stake their BTCs natively on the Bitcoin chain to protect any PoS chains. The staking is trustless in the sense that the BTC resides in a self-custodian vault on the native Bitcoin network, without being bridged elsewhere.
+
+Rooch chains can integrate with the Babylon BTC staking protocol to get Bitcoin security. This leads to the following benefits.
+
+- **Better economic security:** There is native BTC staked to protect the rollup and improve its economic security. This is made more important for Rooch chains with fewer adoptions. In addition, the staked BTC achieves *slashable safety*, a strong security property that equivocations by L2 sequencers are held accountable and the BTC stake is slashable, even when equivocating L2 sequencers constitute a majority.
+- **Fast finality:** The improved economic security will benefit the Rooch chains for fast finality. If the user is willing to trust the votes backed by the BTC stake, then the user can confirm transactions and make decisions without waiting for the lengthy challenging period in optimistic rollups.
+- **Reorg resilience of L2 transactions:** Once a transaction is included in an L2 block signed by the majority of BTC-backed finality providers, the sequencer cannot publish a different L2 block at the same height on L1.
+- **Provide transaction proof**: Provide proof of existence and proof of non-existence of transactions, implement a trusted message verification mechanism, and effectively verify the authenticity of transactions.
+
+## System architecture
+The following figure depicts the system architecture. The “→” arrow denotes data flow; for example, X→ Y means “Y queries data from X and the data flows from X to Y”.
+
+### Babylon integrated with Consumer Chain flow
+![](/blog/babylon-integration-for-rooch-network/babylon-integration-consumer-chain.jpeg)
+
+### Babylon integrated with Rooch architecture
+![](/blog/babylon-integration-for-rooch-network/babylon-integration-for-rooch.png)
+
+### System components
+
+The design involves the following main components:
+
+1. **Finality contract:** a CosmWasm smart contract that maintains all finality signatures submitted from Rooch finality providers.
+    - It will be deployed on the Babylon chain.
+    - It will query Babylon for determining finality provider’s status and voting power.
+2. **Rooch finality provider:** daemon program that receives BTC stake and submits finality signatures to the finality contract on Babylon.
+    - It connects to a Babylon node for querying voting power of itself.
+    - It connects to finality contract in a Babylon node for submitting finality signatures.
+    - It connects to a Rooch node to get L2 block metadata.
+3. **Rooch node with finality gadget:** The Rooch-node will further equip a finality gadget that tallies all finality signatures, determines finalisation status of L2 blocks, and only notify Rooch-node itself about finalised L2 blocks.
+    - It connects to a Babylon node for querying voting power of finality providers.
+    - It connects to finality contract in a Babylon node for querying finality signatures.
+    - It connects to an Bitcoin L1 node to receive batch data to derive L2 blocks.
+
+### Key workflows
+
+1. **Finality provider:** keeps submitting finality signatures over L2 blocks to the finality contract.
+    Upon a new L2 block in the Rooch chain,
+    - Get L2 block metadata.
+    - Query Babylon chain to determine whether itself has voting power at this height.
+    - If yes, sign and submit a finality signature to the finality contract.
+2. **Finality contract:** verifies incoming finality signatures and identifies equivocations.
+    Upon a finality signature, finality contract verifies it and checks if it’s conflicting.
+    - If valid and non conflicting with any existing ones, then accept.
+    - If invalid, then reject.
+    - If valid but conflicting with an existing finality signature, emits an event so that anyone can slash the finality provider and BTC stake under it.
+3. **Rooch-node with finality gadget:** keeps talliing L2 blocks derived from L1 w.r.t. finality signatures and finality providers’ voting power distribution, and determines BTC staking finalisation status of L2 blocks. The derivation pipeline is modified so that it only outputs BTC staking-finalised L2 blocks.
+    Upon a new L2 block derived from L1, the Rooch-node does the following
+    - Query finality contract to get all finality signatures over this L2 block.
+    - Query Babylon to get all finality providers / BTC delegations of this consumer, and use the L2 block’s timestamp to determine the voting power table at the time of this block.
+    - Tally finality signatures and determine whether the L2 block receives a quorum.
+    - If this L2 block receives a quorum and its prefix is BTC staking-finalised, then mark this L2 block BTC staking-finalised and output it in the derivation pipeline.
+
+## What does Rooch bring to Babylon?
+
+As the native application layer of Bitcoin, Rooch will automatically parse and maintain the full amount of UTXO data in the state tree of the Move contract. By parsing the OP_RETURN data in the unspent output (UTXO), it can obtain the user's staking information on the Babylon network, including the number of BTC staked and the unlocking time. This can bring the following benefits to Babylon.
+
+- Expand Babylon's Staking/Restaking scenarios, bringing more gameplay to the ecosystem without any additional operations
+
+## Summary
+
+With the staking scalability brought by Babylon's BTC staking protocol to Consumer Chain and Layer2, Rooch chain will be given better security and fast finality, as well as proof of transaction existence. At the same time, the parseable UTXO data provided by Rooch can expand Babylon's Staking/Restaking scenarios and bring more gameplay to the Babylon ecosystem.

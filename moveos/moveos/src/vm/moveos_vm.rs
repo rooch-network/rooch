@@ -34,6 +34,7 @@ use moveos_object_runtime::runtime::{ObjectRuntime, ObjectRuntimeContext};
 use moveos_stdlib::natives::moveos_stdlib::{
     event::NativeEventContext, move_module::NativeModuleContext,
 };
+use moveos_store::load_feature_store_object;
 use moveos_types::state::ObjectState;
 use moveos_types::{addresses, transaction::RawTransactionOutput};
 use moveos_types::{
@@ -187,7 +188,11 @@ where
     ) -> Session<'r, 'l, MoveosDataCache<'r, 'l, S>> {
         let mut extensions = NativeContextExtensions::default();
 
-        extensions.add(ObjectRuntimeContext::new(object_runtime.clone()));
+        let feature_store = load_feature_store_object(remote);
+        extensions.add(ObjectRuntimeContext::new(
+            object_runtime.clone(),
+            feature_store,
+        ));
         extensions.add(NativeModuleContext::new(remote));
         extensions.add(NativeEventContext::default());
 
@@ -262,6 +267,13 @@ where
                 };
                 let compiled_modules = deserialize_modules(&module_bundle)?;
 
+                let result =
+                    moveos_verifier::verifier::verify_modules(&compiled_modules, self.remote);
+                match result {
+                    Ok(_) => {}
+                    Err(err) => return Err(err),
+                }
+
                 self.vm
                     .runtime
                     .loader()
@@ -271,13 +283,6 @@ where
                     )?;
 
                 let mut init_function_modules = vec![];
-
-                let result =
-                    moveos_verifier::verifier::verify_modules(&compiled_modules, self.remote);
-                match result {
-                    Ok(_) => {}
-                    Err(err) => return Err(err),
-                }
 
                 for module in &compiled_modules {
                     let result = moveos_verifier::verifier::verify_init_function(module);
@@ -545,8 +550,8 @@ where
         for module_id in init_function_modules {
             let function_id = FunctionId::new(module_id.clone(), INIT_FN_NAME_IDENTIFIER.clone());
             let call = FunctionCall::new(function_id, vec![], vec![]);
-            if log::log_enabled!(log::Level::Trace) {
-                log::trace!(
+            if tracing::enabled!(tracing::Level::TRACE) {
+                tracing::trace!(
                     "Execute init function for module: {:?}",
                     module_id.to_string()
                 );

@@ -13,7 +13,10 @@ use rooch_types::{
 use rpassword::prompt_password;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::fmt::Debug;
+use tabled::{
+    builder::Builder,
+    settings::{object::Columns, Modify, Style, Width},
+};
 
 /// List all keys by its Rooch address, Base64 encoded public key
 #[derive(Debug, Parser)]
@@ -83,6 +86,7 @@ impl CommandAction<Option<AccountsView>> for ListCommand {
             .get_active_env()
             .map(|env| env.guess_network())
             .unwrap_or(RoochNetwork::from(BuiltinChainID::Local));
+
         let account_views: Vec<AccountView> = accounts
             .into_iter()
             .map(|account: LocalAccount| {
@@ -110,26 +114,49 @@ impl CommandAction<Option<AccountsView>> for ListCommand {
             }
             Ok(Some(accounts_view))
         } else {
-            let mut output = String::new();
-
-            // TODO: remove non-json print as it goes too long?
-            output.push_str(&format!(
-                "{:^66} | {:^66} | {:^48} | {:^47} | {:^10}\n",
-                "Address", "Hex Address", "Bitcoin Address", "Nostr Public Key", "Active"
-            ));
-            output.push_str(&format!("{}\n", ["-"; 270].join("")));
+            let mut builder = Builder::default();
+            builder.push_record(["Field", "Value", "Active"]);
 
             for account in account_views {
-                output.push_str(&format!(
-                    "{:^66} | {:^66} | {:^48} | {:^47} | {:^10}\n",
-                    account.local_account.address,
-                    account.local_account.hex_address,
-                    account.local_account.bitcoin_address,
-                    account.local_account.nostr_public_key,
-                    account.active
-                ));
+                let fields = [
+                    "Address",
+                    "Hex Address",
+                    "Bitcoin Address",
+                    "Nostr Public Key",
+                ];
+                let values = [
+                    &account.local_account.address,
+                    &account.local_account.hex_address,
+                    &account.local_account.bitcoin_address,
+                    &account.local_account.nostr_public_key,
+                ];
+
+                let active = if account.active { "True" } else { "False" };
+
+                let mut first_row = true;
+                for (field, value) in fields.iter().zip(values.iter()) {
+                    if first_row {
+                        builder.push_record([*field, &**value, active]);
+                        first_row = false;
+                    } else {
+                        builder.push_record([*field, &**value, ""]);
+                    }
+                }
+
+                builder.push_record([
+                    "─────────────────────────────────",
+                    "─────────────────────────────────────────────────────────────────────────",
+                    "──────────",
+                ]);
             }
-            println!("{}", output);
+
+            let mut table = builder.build();
+            table
+                .with(Style::rounded())
+                .with(Modify::new(Columns::single(0)).with(Width::truncate(16)));
+
+            println!("{}", table);
+
             Ok(None)
         }
     }

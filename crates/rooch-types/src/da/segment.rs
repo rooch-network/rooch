@@ -105,7 +105,7 @@ impl Segment for SegmentV0 {
     }
 
     fn get_id(&self) -> SegmentID {
-        self.id.clone()
+        self.id
     }
 
     fn get_data(&self) -> Vec<u8> {
@@ -134,7 +134,7 @@ pub fn segment_from_bytes(bytes: &[u8]) -> anyhow::Result<Box<dyn Segment>> {
     }
 }
 
-#[derive(Serialize, Debug, PartialEq, Clone)]
+#[derive(Serialize, Debug, PartialEq, Clone, Copy)]
 pub struct SegmentID {
     // chunk id represents the sequential order of extents within a stream, commencing from 0 and incrementing successively.
     pub chunk_id: u128,

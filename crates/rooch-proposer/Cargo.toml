@@ -15,13 +15,13 @@ rust-version = { workspace = true }
 anyhow = { workspace = true }
 async-trait = { workspace = true }
 coerce = { workspace = true }
-log = { workspace = true }
-serde_yaml = { workspace = true }
 prometheus = { workspace = true }
+tracing = { workspace = true }
 
-
+moveos-store = { workspace = true }
 moveos-types = { workspace = true }
 metrics = { workspace = true }
 
+rooch-config = { workspace = true }
 rooch-types = { workspace = true }
-rooch-da = { workspace = true }
+rooch-store = { workspace = true }

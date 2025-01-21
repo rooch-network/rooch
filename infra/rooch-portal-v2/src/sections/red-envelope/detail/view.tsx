@@ -21,15 +21,17 @@ import {
   CardContent,
 } from '@mui/material';
 
+import { useNetworkVariable } from 'src/hooks/use-networks';
+
 import { shortAddress } from 'src/utils/address';
 import { fShortenNumber } from 'src/utils/format-number';
 
-import { RED_ENVELOPE } from 'src/config/constant';
 import { DashboardContent } from 'src/layouts/dashboard';
 
 import type { RedEnvelopeItem } from '../types';
 
 export default function RedEnvelopeDetail({ redEnvelopeId }: { redEnvelopeId: string }) {
+  const redEnvelope = useNetworkVariable('redEnvelope');
   const currentAddress = useCurrentAddress();
   const roochClient = useRoochClient();
 
@@ -135,7 +137,7 @@ export default function RedEnvelopeDetail({ redEnvelopeId }: { redEnvelopeId: st
                 onClick={async () => {
                   const txn = new Transaction();
                   txn.callFunction({
-                    address: RED_ENVELOPE,
+                    address: redEnvelope.address,
                     module: 'red_envelope_v3',
                     function: 'claim_coin_envelope',
                     args: [

@@ -4,21 +4,23 @@
 
 # A script to check whether a local commit related to Move repo is ready for a PR.
 
-BASE=$(git rev-parse --show-toplevel)
-
 set -e
 CARGO_HOME=${CARGO_HOME:-~/.cargo}
 
-echo $CARGO_HOME/cargo-nextest
-
-if [ ! -f ${CARGO_HOME}/bin/cargo-nextest ];then
-  echo "install nextest"
-  if [[ "$(uname)" == "Linux" ]]; then
-    curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
-  elif [[ "$(uname)" == "Darwin" ]]; then
-    curl -LsSf https://get.nexte.st/latest/mac | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
+function install_cargo_machete {
+  if ! command -v cargo-machete &>/dev/null; then
+    cargo install cargo-machete --locked --version 0.7.0
   fi
-fi
+}
+
+function install_cargo_nextest {
+  if ! command -v cargo-nextest &>/dev/null; then
+    cargo install cargo-nextest --locked
+  fi
+}
+
+install_cargo_machete
+install_cargo_nextest
 
 # Run only tests which would also be run on CI
 export ENV_TEST_ON_CI=1
@@ -31,11 +33,11 @@ Usage:
     check_pr <flags>
 Flags:
     -h   Print this help
-    -c   Check the core prover crates using cargo xfmt/xclippy.
+    -c   Check the core prover crates using cargo fmt/clippy.
          This is the default if no flags are provided.
     -x   Like -c, but adds more crates (specifically all which depend
          on move-model)
-    -t   In addition to xfmt/xclippy, run cargo test
+    -t   In addition to fmt/clippy, run cargo test
     -d   Run documentation generation, abi generation, etc. for move-stdlib
          and other tested frameworks.
     -g   Run the Move git checks script (whitespace check). This works
@@ -91,8 +93,16 @@ MOVE_TEST_CRATES="\
 "
 
 if [ ! -z "$CHECK" ]; then
-  cargo fmt -- --check
-  cargo clippy --workspace --all-targets --all-features --tests --benches -- -D warnings
+    echo "Running cargo machete..."
+    cargo machete
+
+    echo -e "\nRunning cargo fmt check..."
+    cargo fmt -- --check
+
+    echo -e "\nRunning cargo clippy..."
+    cargo clippy --workspace --all-targets --all-features --tests --benches -- -D warnings
+
+    echo "All checks passed successfully!"
 fi
 
 if [ ! -z "$ALSO_TEST" ]; then

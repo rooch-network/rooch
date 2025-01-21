@@ -1,3 +1,5 @@
+import { shortAddress } from './address';
+
 export const isSessionExpired = (lastActiveTime: number, maxInactiveInterval: number) => {
   const expirationTime = (lastActiveTime + maxInactiveInterval) * 1000;
   return Date.now() > expirationTime;
@@ -20,3 +22,19 @@ export const hexToString = (hex: string): string => {
 
   return result;
 };
+
+export function shortCoinType(
+  coinType: string | `${string}::${string}::${string}`,
+  start = 6,
+  end = 4
+): string {
+  try {
+    if (!coinType) {
+      return '';
+    }
+    const temp = coinType.split('::');
+    return `${shortAddress(temp[0], 5, 0)}...::${temp[2]}`;
+  } catch (error) {
+    return '';
+  }
+}

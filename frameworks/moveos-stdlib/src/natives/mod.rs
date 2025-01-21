@@ -4,9 +4,43 @@
 use move_core_types::gas_algebra::InternalGas;
 use move_vm_runtime::native_functions::{make_table_from_iter, NativeFunctionTable};
 use moveos_types::addresses::{MOVEOS_STD_ADDRESS, MOVE_STD_ADDRESS};
+use once_cell::sync::Lazy;
+use std::collections::{BTreeMap, Bound};
+use std::sync::Arc;
 
 pub mod helpers;
 pub mod moveos_stdlib;
+
+pub static OBJECT_ADD_FIELD_GAS_TIERS: Lazy<Arc<BTreeMap<u64, u64>>> = Lazy::new(|| {
+    Arc::new(
+        vec![
+            (0, 1),
+            (200, 2),
+            (400, 4),
+            (800, 16),
+            (1600, 32),
+            (3000, 64),
+        ]
+        .into_iter()
+        .collect(),
+    )
+});
+
+pub fn get_current_and_future_tier(
+    tiers: &BTreeMap<u64, u64>,
+    current: u64,
+    default: u64,
+) -> (u64, Option<u64>) {
+    let current_cost = tiers
+        .get(&current)
+        .or_else(|| tiers.range(..current).next_back().map(|(_, v)| v))
+        .unwrap_or(&default);
+    let next_tier_start = tiers
+        .range::<u64, _>((Bound::Excluded(current), Bound::Unbounded))
+        .next()
+        .map(|(next_tier_start, _)| *next_tier_start);
+    (*current_cost, next_tier_start)
+}
 
 #[derive(Debug, Clone)]
 pub struct GasParameters {
@@ -31,6 +65,7 @@ pub struct GasParameters {
     pub bls12381: moveos_stdlib::bls12381::GasParameters,
     pub evm: moveos_stdlib::evm::GasParameters,
     pub groth16: moveos_stdlib::groth16::GasParameters,
+    pub object_list_field_keys: moveos_stdlib::object::ListFieldsGasParameters,
 }
 
 impl GasParameters {
@@ -57,6 +92,7 @@ impl GasParameters {
             bls12381: moveos_stdlib::bls12381::GasParameters::zeros(),
             evm: moveos_stdlib::evm::GasParameters::zeros(),
             groth16: moveos_stdlib::groth16::GasParameters::zeros(),
+            object_list_field_keys: moveos_stdlib::object::ListFieldsGasParameters::zeros(),
         }
     }
 }

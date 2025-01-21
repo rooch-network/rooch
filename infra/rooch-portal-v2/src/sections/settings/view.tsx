@@ -1,19 +1,36 @@
 'use client';
 
 import axios from 'axios';
-import { Args } from '@roochnetwork/rooch-sdk';
 import { useState, useEffect, useCallback } from 'react';
 import { CopyToClipboard } from 'react-copy-to-clipboard';
 import {
+  Args,
+  toHEX,
+  Transaction,
+  stringToBytes,
+  BitcoinAddress,
+  isValidRoochAddress,
+} from '@roochnetwork/rooch-sdk';
+import {
   useRoochClient,
+  SessionKeyGuard,
+  useCurrentWallet,
   useCurrentAddress,
+  useCurrentSession,
   useRoochClientQuery,
 } from '@roochnetwork/rooch-sdk-kit';
 
 import { LoadingButton } from '@mui/lab';
-import { Card, Chip, Stack, TextField, CardHeader, Typography, CardContent } from '@mui/material';
-
-import { useRouter } from 'src/routes/hooks';
+import {
+  Card,
+  Chip,
+  Stack,
+  Button,
+  TextField,
+  CardHeader,
+  Typography,
+  CardContent,
+} from '@mui/material';
 
 import { sleep } from 'src/utils/common';
 
@@ -22,65 +39,234 @@ import { DashboardContent } from 'src/layouts/dashboard';
 import { toast } from 'src/components/snackbar';
 import { Iconify } from 'src/components/iconify';
 
-import { TWITTER_ORACLE_PACKAGE_ID } from './constant';
+import { INVITER_ADDRESS_KEY } from '../../utils/inviter';
+import { useNetworkVariable } from '../../hooks/use-networks';
+import { ShareTwitter } from '../../components/twitter/share';
 import SessionKeysTableCard from './components/session-keys-table-card';
 
 export function SettingsView() {
   const address = useCurrentAddress();
-  const router = useRouter();
 
+  const session = useCurrentSession();
   const client = useRoochClient();
-
-  const [isAddressLoaded, setIsAddressLoaded] = useState(false);
+  const wallet = useCurrentWallet();
+  const faucetUrl = useNetworkVariable('faucet').url;
+  const twitterOracleAddress = useNetworkVariable('roochMultiSigAddr');
+  const inviter = useNetworkVariable('inviter');
+  const [tweetStatus, setTweetStatus] = useState('');
+  const [twitterId, setTwitterId] = useState<string>();
+  const [verifying, setVerifying] = useState(false);
+  const [fetchTwitterIdStatus, setFetchTwitterIdStatus] = useState(true);
 
   const {
     data: sessionKeys,
     isPending: isLoadingSessionKeys,
     refetch: refetchSessionKeys,
-  } = useRoochClientQuery(
-    'getSessionKeys',
-    {
-      address: address!,
-    },
-    { enabled: !!address }
-  );
+  } = useRoochClientQuery('getSessionKeys', {
+    address: address!.genRoochAddress().toHexAddress(),
+  });
 
-  useEffect(() => {
-    if (address !== undefined) {
-      setIsAddressLoaded(true);
-    }
-  }, [address]);
-
-  useEffect(() => {
-    if (isAddressLoaded && !address) {
-      router.push('/account');
-    }
-  }, [address, isAddressLoaded, router]);
-
-  const [twitterId, setTwitterId] = useState('');
-
-  const [verifying, setVerifying] = useState(false);
-
-  const getBindingTwitterId = useCallback(async () => {
+  const fetchTwitterId = useCallback(async () => {
     if (!address) {
       return;
     }
     const res = await client.executeViewFunction({
-      address: TWITTER_ORACLE_PACKAGE_ID,
+      address: twitterOracleAddress,
       module: 'twitter_account',
       function: 'resolve_author_id_by_address',
       args: [Args.address(address.toStr())],
     });
-    setTwitterId((res.return_values?.[0].decoded_value as any).value.vec[0]);
+    let _twitterId: string | undefined;
+    if (res.vm_status === 'Executed') {
+      if (res.return_values?.[0].value.value !== '0x00') {
+        _twitterId = (res.return_values?.[0].decoded_value as any).value.vec.value[0][0] as string;
+        _twitterId = new TextDecoder('utf-8').decode(
+          stringToBytes('hex', _twitterId.replace('0x', ''))
+        );
+
+        setTwitterId(_twitterId);
+      }
+    }
     // eslint-disable-next-line consistent-return
-    return (res.return_values?.[0].decoded_value as any)?.value.vec[0];
-  }, [address, client]);
+    return _twitterId;
+  }, [address, client, twitterOracleAddress]);
 
   useEffect(() => {
-    getBindingTwitterId();
-  }, [getBindingTwitterId]);
+    fetchTwitterId().finally(() => setFetchTwitterIdStatus(false));
+  }, [fetchTwitterId]);
 
-  const [tweetId, setTweetId] = useState('');
+  const loopFetchTwitterId = async (count = 0) => {
+    const id = await fetchTwitterId();
+
+    if (id || count === 3) {
+      return id;
+    }
+
+    return loopFetchTwitterId(count + 1);
+  };
+
+  const checkTwitterObj = async (id: string) => {
+    const result = await client.queryObjectStates({
+      filter: {
+        object_id: id,
+      },
+    });
+
+    if (result.data.length === 0) {
+      await sleep(10000);
+      return checkTwitterObj(id);
+    }
+
+    // TODO: twitter post btc address !== current wallet address.
+    // if (result.data[0].owner_bitcoin_address !== address?.toStr()) {
+    //   throw (new Error('The twitter post btc address does not match the wallet address'))
+    // }
+
+    return '';
+  };
+  const fetchTwitterPost = async (pureTweetId: string) => {
+    const res = await axios.post(
+      `${faucetUrl}/fetch-tweet`,
+      {
+        tweet_id: pureTweetId,
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    if (res.data.ok) {
+      await checkTwitterObj(res.data.ok);
+    }
+  };
+
+  const disconnectTwitter = async () => {
+    if (!session) {
+      return;
+    }
+    try {
+      const tx = new Transaction();
+      tx.callFunction({
+        target: `${twitterOracleAddress}::twitter_account::unbinding_twitter_account`,
+      });
+
+      const result = await client.signAndExecuteTransaction({
+        transaction: tx,
+        signer: session,
+      });
+
+      if (result.execution_info.status.type === 'executed') {
+        setTwitterId(undefined);
+        await fetchTwitterId();
+        toast.success('Disconnect twitter success');
+      } else {
+        toast.error('Disconnect twitter aborted');
+      }
+    } catch (e) {
+      toast.error(e.message);
+    }
+  };
+
+  const bindTwitter = async (pureTweetId: string) => {
+    await axios.post(
+      `${faucetUrl}/verify-and-binding-twitter-account`,
+      {
+        tweet_id: pureTweetId,
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+  };
+
+  const bindWithInviter = async (inviterAddr: string, pureTweetId: string) => {
+    const signMsg = 'Welcome to use Rooch! Connect with Twitter and claim your Rgas.';
+    const sign = await wallet.wallet?.sign(stringToBytes('utf8', signMsg));
+    const pk = wallet.wallet!.getPublicKey().toBytes();
+
+    const inviterRoochAddr = isValidRoochAddress(inviterAddr)
+      ? inviterAddr
+      : new BitcoinAddress(inviterAddr).genRoochAddress().toStr();
+
+    const payload = JSON.stringify({
+      inviter: inviterRoochAddr,
+      tweet_id: pureTweetId,
+      claimer_sign: toHEX(sign!),
+      public_key: toHEX(pk),
+      message: signMsg,
+    });
+    await axios.post(`${faucetUrl}/binding-twitter-with-inviter`, payload, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    window.localStorage.setItem(INVITER_ADDRESS_KEY, '');
+  };
+
+  const handleBindTwitter = async () => {
+    // setp 1, check twitter
+    const match = tweetStatus.match(/status\/(\d+)/);
+
+    if (!match) {
+      toast.error('twitter invalid');
+      return;
+    }
+    setVerifying(true);
+
+    try {
+      const pureTweetId = match[1];
+      await fetchTwitterPost(pureTweetId);
+
+      // step 2, check inviter
+      const inviterAddr = window.localStorage.getItem(INVITER_ADDRESS_KEY);
+      if (inviterAddr && inviterAddr !== '' && inviterAddr !== address?.toStr()) {
+        // check invite is open
+        const result = await client.queryObjectStates({
+          filter: {
+            object_type: inviter.obj(inviter),
+          },
+          queryOption: {
+            decode: true,
+          },
+        });
+
+        if (
+          result &&
+          result.data.length > 0 &&
+          result.data[0].decoded_value?.value.is_open === true
+        ) {
+          await bindWithInviter(inviterAddr, pureTweetId);
+        } else {
+          await bindTwitter(pureTweetId);
+        }
+      } else {
+        await bindTwitter(pureTweetId);
+      }
+
+      await sleep(3000);
+      const checkRes = await loopFetchTwitterId();
+      if (checkRes) {
+        toast.success('Binding success');
+      }
+    } catch (error) {
+      if ('response' in error) {
+        if ('error' in error.response.data) {
+          toast.error(error.response.data.error);
+        } else {
+          toast.error(error.response.data);
+        }
+      } else {
+        toast.error(error.message);
+      }
+    } finally {
+      setVerifying(false);
+    }
+  };
 
   return (
     <DashboardContent maxWidth="xl">
@@ -91,7 +277,9 @@ export function SettingsView() {
         />
         <CardContent className="!pt-2">
           <Stack>
-            <Chip className="justify-start w-fit" label={address?.genRoochAddress().toStr()} />
+            <CopyToClipboard text={address?.genRoochAddress().toStr() || ''}>
+              <Chip className="justify-start w-fit" label={address?.genRoochAddress().toStr()} />
+            </CopyToClipboard>
             <Typography className="!mt-2 text-gray-400 !text-sm">
               This is your Rooch Address mapping from the wallet address
             </Typography>
@@ -102,43 +290,39 @@ export function SettingsView() {
         <CardHeader
           title={
             <Stack direction="row" spacing={1.5} alignItems="center">
-              Twitter Binding <Iconify icon="logos:twitter" />
+              Twitter Binding & Invite partners <Iconify icon="logos:twitter" />
             </Stack>
           }
           subheader="Bind a Twitter account to a Bitcoin address via publishing a tweet"
         />
         <CardContent className="!pt-2">
-          {twitterId ? (
-            <Chip
-              className="justify-start w-fit"
-              color="success"
-              label={
-                <Stack direction="row" spacing={1.5} alignItems="center">
-                  <Iconify icon="solar:check-circle-bold" />
-                  Twitter Id: {twitterId}
-                </Stack>
-              }
-            />
+          {fetchTwitterIdStatus ? (
+            <></>
+          ) : twitterId ? (
+            <Stack className="mt-2" spacing={1.5} alignItems="flex-start">
+              <Chip
+                className="justify-start w-fit"
+                color="success"
+                label={
+                  <Stack direction="row" spacing={1.5} alignItems="center">
+                    <Iconify icon="solar:check-circle-bold" />
+                    Twitter Id: {twitterId}
+                  </Stack>
+                }
+              />
+
+              <SessionKeyGuard onClick={disconnectTwitter}>
+                <Button variant="outlined">Disconnect Twitter</Button>
+              </SessionKeyGuard>
+            </Stack>
           ) : (
             <Stack className="mt-2" spacing={1.5}>
               <Stack spacing={1.5}>
                 <Stack className="font-medium" direction="row" spacing={0.5}>
                   1. Post the following text to you twitter account
-                  <span className="font-normal text-sm text-gray-400">(Click it to copy)</span>
+                  <span className="font-normal text-sm text-gray-400">(Click it to twitter)</span>
                 </Stack>
-                {address && (
-                  <CopyToClipboard
-                    text={`BTC:${address.toStr()} #RoochNetwork`}
-                    onCopy={() => toast.success('Copy success')}
-                  >
-                    <Chip
-                      variant="soft"
-                      color="default"
-                      className="w-fit font-semibold cursor-pointer"
-                      label={`BTC:${address.toStr()} #RoochNetwork`}
-                    />
-                  </CopyToClipboard>
-                )}
+                {address && <ShareTwitter />}
               </Stack>
               <Stack spacing={1.5}>
                 <Stack className="font-medium">
@@ -147,19 +331,25 @@ export function SettingsView() {
                 <TextField
                   size="small"
                   className="w-full"
-                  value={tweetId}
+                  value={tweetStatus}
                   placeholder="https://x.com/RoochNetwork/status/180000000000000000"
                   onChange={(e) => {
-                    setTweetId(e.target.value);
+                    setTweetStatus(e.target.value);
                   }}
                 />
               </Stack>
+              <Stack spacing={1.5}>
+                <Stack className="font-medium">
+                  🔔Tips: If you just posted a twitter message, Wait for on-chain synchronization
+                  (2-3 minutes)
+                </Stack>
+              </Stack>
               <LoadingButton
                 disabled={
-                  !tweetId ||
+                  !tweetStatus ||
                   (() => {
                     try {
-                      const url = new URL(tweetId);
+                      const url = new URL(tweetStatus);
                       return url.hostname !== 'x.com';
                     } catch {
                       return true;
@@ -170,50 +360,7 @@ export function SettingsView() {
                 loading={verifying}
                 className="mt-2 w-fit"
                 variant="contained"
-                onClick={async () => {
-                  try {
-                    setVerifying(true);
-                    const match = tweetId.match(/status\/(\d+)/);
-                    if (match) {
-                      const pureTweetId = match[1];
-                      const res = await axios.post(
-                        'http://test-faucet.rooch.network/fetch-tweet',
-                        {
-                          tweet_id: pureTweetId,
-                        },
-                        {
-                          headers: {
-                            'Content-Type': 'application/json',
-                          },
-                        }
-                      );
-                      console.log('🚀 ~ file: view.tsx:190 ~ onClick={ ~ res:', res);
-                      if (res?.data?.ok) {
-                        await axios.post(
-                          'http://test-faucet.rooch.network/verify-and-binding-twitter-account',
-                          {
-                            tweet_id: pureTweetId,
-                          },
-                          {
-                            headers: {
-                              'Content-Type': 'application/json',
-                            },
-                          }
-                        );
-                      }
-                      await sleep(3000);
-                      const checkRes = await getBindingTwitterId();
-                      if (checkRes) {
-                        toast.success('Binding success');
-                      }
-                    }
-                  } catch (error) {
-                    console.log('🚀 ~ file: view.tsx:211 ~ onClick={ ~ error:', error);
-                    toast.error(error.response.data.error);
-                  } finally {
-                    setVerifying(false);
-                  }
-                }}
+                onClick={handleBindTwitter}
               >
                 Verify and bind Twitter account
               </LoadingButton>

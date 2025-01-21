@@ -84,6 +84,7 @@ const client = new RoochClient({
 const tx = new Transaction()
 tx.callFunction({
   target: '0x3::empty::empty_with_signer',
+  maxGas: 100000000 // 1RGas, DEFAULT_GAS 50000000 = 0.5RGas
 })
 
 const result = await client.signAndExecuteTransaction({
@@ -103,7 +104,7 @@ const client = new RoochClient({
   url: getRoochNodeUrl('devnet'),
 })
 
-const result = provider.executeViewFunction(
+const result = await client.executeViewFunction(
   '0x49ee3cf17a017b331ab2b8a4d40ecc9706f328562f9db63cba625a9c106cdf35::counter::view',
 )
 ```

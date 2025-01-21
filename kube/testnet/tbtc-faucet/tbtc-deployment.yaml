@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: tbtc-discord-bot
-        image: ghcr.io/yourmoonlight/tbtc-discord-bot:latest
+        image: ghcr.io/yourmoonlight/tbtc-discord-bot:0.0.4
         volumeMounts:
         - name: data
           mountPath: /app/data

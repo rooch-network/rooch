@@ -7,6 +7,7 @@ module argument_resolver::argument_resolver {
     use std::string::String;
 
     struct MockObject has key,store,drop,copy {value: u64}
+    struct MockObject1 has key,drop,copy {value: u64}
 
     entry public fun create_mock_object_to_sender(account: &signer, arg: u64) {
         let user_object = object::new(MockObject{value: arg});
@@ -32,6 +33,13 @@ module argument_resolver::argument_resolver {
         let object_id = object::id(&user_object);
         debug::print(&object_id);
         object::transfer(user_object, user_address);
+    }
+
+    entry public fun create_object_without_store_ability(account: &signer) {
+        let user_object = object::new(MockObject1{value: 123});
+        let object_id = object::id(&user_object);
+        debug::print(&object_id);
+        object::transfer_extend(user_object, signer::address_of(account));
     }
 
     entry public fun object(_account:&signer, object: Object<MockObject>, arg: u64) {
@@ -66,6 +74,11 @@ module argument_resolver::argument_resolver {
 
     entry public fun no_permission_object(object: &mut Object<MockObject>) {
         debug::print(object);
+    }
+
+    entry public fun object_without_store_ability(object: Object<MockObject1>) {
+        debug::print(&object);
+        object::remove(object);
     }
 
     public fun string_argument(_account: &signer, string_argument: String): String {

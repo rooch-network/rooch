@@ -2,6 +2,7 @@ import type { SessionInfoView } from '@roochnetwork/rooch-sdk';
 
 import dayjs from 'dayjs';
 import { useMemo, Fragment, useState } from 'react';
+import { useCurrentSession } from "@roochnetwork/rooch-sdk-kit";
 
 import { LoadingButton } from '@mui/lab';
 import { Chip, Stack, Button, TableRow, Collapse, TableCell } from '@mui/material';
@@ -19,6 +20,7 @@ export default function SessionKeyRowItem({
 }) {
   const [openCollapse, setOpenCollapse] = useState(false);
   const [removing, setRemoving] = useState(false);
+  const curSession = useCurrentSession()
 
   const expired = useMemo(
     () => isSessionExpired(Number(item.lastActiveTime), item.maxInactiveInterval),
@@ -49,6 +51,7 @@ export default function SessionKeyRowItem({
         <TableCell align="center">
           <LoadingButton
             loading={removing}
+            disabled={curSession === undefined}
             onClick={async () => {
               setRemoving(true);
               try {

@@ -14,12 +14,18 @@ type RowItemProps = {
   onOpenTransferModal: (row: BalanceInfoView) => void;
 };
 
+/// TODO: Temporary exclusion
+const symbols = ['BITXP'];
+
 export default function AssetRowItem({ row, isWalletOwner, onOpenTransferModal }: RowItemProps) {
+  const balance = symbols.includes(row.symbol)
+    ? row.balance
+    : formatCoin(Number(row.balance), row.decimals, row.decimals);
+
   return (
     <TableRow>
       <TableCell width="300px">
         <Box sx={{ gap: 1, display: 'flex', alignItems: 'center' }}>
-          {/* {row.icon_url && <Image src={row.icon_url} alt={row.symbol} width={48} height={48} />} */}
           {row.icon_url ? (
             <Box
               component="span"
@@ -41,7 +47,7 @@ export default function AssetRowItem({ row, isWalletOwner, onOpenTransferModal }
 
       <TableCell>
         <ListItemText
-          primary={formatCoin(Number(row.balance), row.decimals, row.decimals)}
+          primary={Intl.NumberFormat('en-us').format(Number(balance))}
           primaryTypographyProps={{
             typography: 'body2',
             sx: {
@@ -57,6 +63,7 @@ export default function AssetRowItem({ row, isWalletOwner, onOpenTransferModal }
           <Button
             variant="outlined"
             size="small"
+            disabled={symbols.includes(row.symbol)}
             onClick={() => {
               onOpenTransferModal(row);
             }}

@@ -1,0 +1,26 @@
+[package]
+name = "invitation_record"
+version = "0.0.1"
+
+[dependencies]
+MoveStdlib = { local = "../../frameworks/move-stdlib" }
+MoveosStdlib = { local = "../../frameworks/moveos-stdlib" }
+RoochFramework = { local = "../../frameworks/rooch-framework" }
+app_admin = { local = "../../apps/app_admin" }
+gas_faucet = {local = "../../apps/gas_faucet"}
+twitter_binding = {local = "../../apps/twitter_binding"}
+
+[addresses]
+invitation_record = "_"
+gas_faucet = "_"
+app_admin = "_"
+twitter_binding = "_"
+std = "0x1"
+moveos_std = "0x2"
+rooch_framework = "0x3"
+
+[dev-addresses]
+invitation_record = "0x41"
+app_admin = "0x42"
+gas_faucet = "0x43"
+twitter_binding = "0x44"

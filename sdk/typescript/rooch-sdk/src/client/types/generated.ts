@@ -24,6 +24,15 @@ export interface AnnotatedFunctionReturnValueView {
   decoded_value: AnnotatedMoveValueView
   value: FunctionReturnValueView
 }
+export interface AnnotatedMoveStructVectorView {
+  /** alilities of each element */
+  abilities: number
+  /** field of each element */
+  field: string[]
+  /** type of each element */
+  type: string
+  value: AnnotatedMoveValueView[][]
+}
 export interface AnnotatedMoveStructView {
   abilities: number
   type: string
@@ -38,6 +47,7 @@ export type AnnotatedMoveValueView =
   | boolean
   | string
   | AnnotatedMoveValueView[]
+  | AnnotatedMoveStructVectorView
   | string
   | AnnotatedMoveStructView
   | SpecificStructView
@@ -52,6 +62,7 @@ export interface BalanceInfoView {
   name: string
   supply: string
   symbol: string
+  fixedBalance: number
 }
 export interface BitcoinStatus {
   confirmed_block?: BlockHeightHashView | null
@@ -60,6 +71,14 @@ export interface BitcoinStatus {
 export interface BlockHeightHashView {
   block_hash: string
   block_height: string
+}
+export interface DAInfoView {
+  last_avail_block_number?: string | null
+  last_avail_block_update_time?: string | null
+  last_avail_tx_order?: string | null
+  last_block_number?: string | null
+  last_block_update_time?: string | null
+  last_tx_order?: string | null
 }
 export interface DisplayFieldsView {
   fields: {
@@ -498,6 +517,7 @@ export type RepairIndexerParamsView =
       object_id: string
     }
 export interface RoochStatus {
+  da_info: DAInfoView
   root_state: RootStateView
   sequencer_info: SequencerInfoView
 }

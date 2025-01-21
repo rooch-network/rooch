@@ -8,8 +8,8 @@ use moveos_types::h256;
 use moveos_types::h256::{sha2_256_of, H256};
 use serde::{Deserialize, Serialize};
 
-#[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]
 /// The tx order range of the block.
+#[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]
 pub struct BlockRange {
     /// The Rooch block number for DA, each batch maps to a block
     pub block_number: u128,
@@ -19,8 +19,14 @@ pub struct BlockRange {
     pub tx_order_end: u64,
 }
 
-#[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]
+impl BlockRange {
+    pub fn is_legal(&self, last_order: u64) -> bool {
+        self.tx_order_start <= self.tx_order_end && self.tx_order_end <= last_order
+    }
+}
+
 /// The state of the block submission.
+#[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]
 pub struct BlockSubmitState {
     /// tx order range of the block
     pub block_range: BlockRange,
@@ -61,8 +67,8 @@ impl BlockSubmitState {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 /// Meta of DA batch
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct DABatchMeta {
     /// tx order range of the block
     pub block_range: BlockRange,
@@ -94,8 +100,8 @@ pub struct SignedDABatchMeta {
     pub signature: Vec<u8>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 /// A batch is a collection of transactions. It is the unit of data flow in DA Stream
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct DABatch {
     /// The metadata of the batch
     pub meta: DABatchMeta,

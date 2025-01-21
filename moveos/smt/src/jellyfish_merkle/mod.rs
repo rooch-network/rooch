@@ -92,13 +92,13 @@ use crate::{Key, SMTObject, Value};
 use anyhow::{bail, ensure, format_err, Result};
 use backtrace::Backtrace;
 use hash::{Hash, SMTHash, SMTNodeHash};
-use log::debug;
 use nibble_path::{skip_common_prefix, NibbleIterator, NibblePath};
 use node_type::{Child, Children, InternalNode, LeafNode, Node, NodeKey};
 use primitive_types::H256;
 use proof::{SparseMerkleProof, SparseMerkleRangeProof};
 use std::collections::{BTreeMap, BTreeSet};
 use std::marker::PhantomData;
+use tracing::debug;
 use tree_cache::TreeCache;
 
 /// The hardcoded maximum height of a [`JellyfishMerkleTree`] in nibbles.

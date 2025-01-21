@@ -94,7 +94,7 @@ impl CommandAction<()> for Init {
                         if address_and_port_regex.is_match(&url) {
                             url
                         } else {
-                            return Err(RoochError::CommandArgumentError("Invalid input format. Please provide a valid URL (e.g., http://0.0.0.0:6767).".to_owned()));
+                            return Err(RoochError::CommandArgumentError("Invalid input format. Please provide a valid URL (e.g., http://127.0.0.1:6767).".to_owned()));
                         }
                     };
                     Some(if url.trim().is_empty() {

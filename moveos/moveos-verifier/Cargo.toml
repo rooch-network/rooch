@@ -19,7 +19,9 @@ codespan-reporting = { workspace = true }
 termcolor = { workspace = true }
 bcs = { workspace = true }
 thiserror = { workspace = true }
+# log = { workspace = true }
 itertools = { workspace = true }
+tracing = { workspace = true }
 
 move-core-types = { workspace = true }
 move-model = { workspace = true }
@@ -32,5 +34,3 @@ move-vm-types = { workspace = true }
 move-symbol-pool = { workspace = true }
 move-ir-types = { workspace = true }
 
-moveos-types = { workspace = true }
-log = "0.4.21"

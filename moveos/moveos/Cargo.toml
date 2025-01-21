@@ -16,7 +16,6 @@ rust-version = { workspace = true }
 [dependencies]
 serde = { workspace = true }
 anyhow = { workspace = true }
-log = { workspace = true }
 once_cell = { workspace = true }
 clap = { workspace = true }
 rayon = { workspace = true }
@@ -26,9 +25,8 @@ codespan = { workspace = true }
 itertools = { workspace = true }
 regex = { workspace = true }
 parking_lot = { workspace = true }
-backtrace = { workspace = true }
+tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
-bcs = { workspace = true }
 
 move-binary-format = { workspace = true }
 move-core-types = { workspace = true }
@@ -49,7 +47,5 @@ moveos-store = { workspace = true }
 moveos-stdlib = { workspace = true }
 moveos-verifier = { workspace = true }
 moveos-object-runtime = { workspace = true }
-moveos-eventbus = { workspace = true }
-moveos-gas-profiling = { workspace = true }
 moveos-common = { workspace = true }
-thiserror = "1.0.65"
+thiserror = { workspace = true }

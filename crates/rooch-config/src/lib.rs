@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::da_config::DAConfig;
+use crate::proposer_config::ProposerConfig;
 use crate::store_config::StoreConfig;
 use anyhow::Result;
 use clap::Parser;
@@ -21,13 +22,18 @@ use std::{fmt::Debug, path::Path, path::PathBuf};
 
 pub mod config;
 pub mod da_config;
+pub mod proposer_config;
 pub mod server_config;
+pub mod settings;
 pub mod store_config;
 
 pub const ROOCH_DIR: &str = ".rooch";
 pub const ROOCH_CONFIR_DIR: &str = "rooch_config";
 pub const ROOCH_CLIENT_CONFIG: &str = "rooch.yaml";
 pub const ROOCH_KEYSTORE_FILENAME: &str = "rooch.keystore";
+
+const DEFAULT_BTC_REORG_AWARE_BLOCK_STORE_DIR: &str = "btc-reorg-aware-block-store";
+const DEFAULT_BTC_REORG_AWARE_HEIGHT: usize = 16; // much larger than bitcoin_reorg_block_count, no need to be too large
 
 pub static R_DEFAULT_BASE_DATA_DIR: Lazy<PathBuf> = Lazy::new(|| {
     dirs_next::home_dir()
@@ -112,24 +118,26 @@ pub struct RoochOpt {
         requires = "btc-rpc-password"
     )]
     pub btc_rpc_url: Option<String>,
-
     #[serde(skip_serializing_if = "Option::is_none")]
     #[clap(long, id = "btc-rpc-username", env = "BTC_RPC_USERNAME")]
     pub btc_rpc_username: Option<String>,
-
     #[serde(skip_serializing_if = "Option::is_none")]
     #[clap(long, id = "btc-rpc-password", env = "BTC_RPC_PASSWORD")]
     pub btc_rpc_password: Option<String>,
-
     #[serde(skip_serializing_if = "Option::is_none")]
     #[clap(long, env = "BTC_END_BLOCK_HEIGHT")]
     /// The end block height of the Bitcoin chain to stop relaying from, default is none.
     pub btc_end_block_height: Option<u64>,
-
     #[serde(skip_serializing_if = "Option::is_none")]
     #[clap(long, env = "BTC_SYNC_BLOCK_INTERVAL")]
     /// The interval of sync BTC block, default is none.
     pub btc_sync_block_interval: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[clap(long)]
+    pub btc_reorg_aware_block_store_dir: Option<PathBuf>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[clap(long)]
+    pub btc_reorg_aware_height: Option<usize>,
 
     /// The address of the sequencer account
     #[clap(long)]
@@ -140,6 +148,9 @@ pub struct RoochOpt {
 
     #[clap(long, default_value_t)]
     pub da: DAConfig,
+
+    #[clap(flatten)]
+    pub proposer: ProposerConfig,
 
     #[clap(long, default_value_t, value_enum)]
     pub service_status: ServiceStatus,
@@ -153,10 +164,10 @@ pub struct RoochOpt {
     pub traffic_burst_size: Option<u32>,
 
     /// Set the interval after which one element of the quota is replenished in seconds.
-    ///
+    /// It is floating point number, for example, 0.5 means 2 requests per second.
     /// **The interval must not be zero.**
     #[clap(long)]
-    pub traffic_per_second: Option<u64>,
+    pub traffic_per_second: Option<f64>,
 
     #[clap(long, default_value_t, value_enum)]
     pub service_type: ServiceType,
@@ -190,9 +201,12 @@ impl RoochOpt {
             btc_rpc_password: None,
             btc_end_block_height: None,
             btc_sync_block_interval: None,
+            btc_reorg_aware_block_store_dir: None,
+            btc_reorg_aware_height: None,
             sequencer_account: None,
             proposer_account: None,
             da: DAConfig::default(),
+            proposer: ProposerConfig::default(),
             service_status: ServiceStatus::default(),
             traffic_per_second: None,
             traffic_burst_size: None,
@@ -225,6 +239,7 @@ impl RoochOpt {
             self.store.init(Arc::clone(&arc_base))?;
             self.da.init(Arc::clone(&arc_base))?;
             self.base = Some(arc_base);
+            self.init_btc_reorg_aware_block_store_dir()?;
         }
         Ok(())
     }
@@ -237,6 +252,21 @@ impl RoochOpt {
             })
     }
 
+    pub fn init_btc_reorg_aware_block_store_dir(&mut self) -> Result<()> {
+        if self.btc_reorg_aware_block_store_dir.is_none() {
+            self.btc_reorg_aware_block_store_dir = Some(
+                self.base()
+                    .data_dir()
+                    .join(DEFAULT_BTC_REORG_AWARE_BLOCK_STORE_DIR),
+            );
+        }
+        let store_dir = self.btc_reorg_aware_block_store_dir.as_ref().unwrap();
+        if !store_dir.exists() {
+            create_dir_all(store_dir.clone())?;
+        }
+        Ok(())
+    }
+
     pub fn bitcoin_relayer_config(&self) -> Option<BitcoinRelayerConfig> {
         self.btc_rpc_url.as_ref()?;
         Some(BitcoinRelayerConfig {
@@ -245,6 +275,17 @@ impl RoochOpt {
             btc_rpc_password: self.btc_rpc_password.clone().unwrap(),
             btc_end_block_height: self.btc_end_block_height,
             btc_sync_block_interval: self.btc_sync_block_interval,
+            btc_reorg_aware_block_store_dir: self
+                .btc_reorg_aware_block_store_dir
+                .clone()
+                .unwrap_or_else(|| {
+                    self.base()
+                        .data_dir()
+                        .join(DEFAULT_BTC_REORG_AWARE_BLOCK_STORE_DIR)
+                }),
+            btc_reorg_aware_height: self
+                .btc_reorg_aware_height
+                .unwrap_or(DEFAULT_BTC_REORG_AWARE_HEIGHT),
         })
     }
 
@@ -308,6 +349,8 @@ pub struct BitcoinRelayerConfig {
     pub btc_rpc_password: String,
     pub btc_end_block_height: Option<u64>,
     pub btc_sync_block_interval: Option<u64>,
+    pub btc_reorg_aware_block_store_dir: PathBuf,
+    pub btc_reorg_aware_height: usize,
 }
 
 #[derive(Clone, Debug, PartialEq)]

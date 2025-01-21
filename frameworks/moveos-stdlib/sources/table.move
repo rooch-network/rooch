@@ -9,6 +9,9 @@
 /// struct itself, while the operations are implemented as native functions. No traversal is provided.
 
 module moveos_std::table {
+    use std::option::Option;
+    use std::vector;
+
     use moveos_std::core_addresses;
     use moveos_std::object::ObjectID;
     use moveos_std::object::{Self, Object};
@@ -20,6 +23,13 @@ module moveos_std::table {
     /// Type of tables
     struct Table<phantom K: copy + drop + store, phantom V> has store {
         handle: Object<TablePlaceholder>,
+    }
+
+    struct Iterator<K: copy + drop + store, phantom V> has store, drop {
+        handle: ObjectID,
+        cursor: Option<K>,
+        limit: u64,
+        keys: vector<address>,
     }
 
     /// Create a new Table.
@@ -87,6 +97,36 @@ module moveos_std::table {
         object::contains_field(&table.handle, key)
     }
 
+    /// Returns a vector of keys in the table from the given cursor position, up to the specified limit.
+    /// cursor: Optional address to start listing from. If None, starts from the beginning.
+    /// limit: Maximum number of keys to return.
+    public fun list_field_keys<K: copy + drop + store, V:store>(table: &Table<K, V>, cursor: Option<K>, limit: u64): Iterator<K, V> {
+        let keys = object::list_field_keys(&table.handle, cursor, limit);
+        Iterator {
+            handle: object::id(&table.handle),
+            cursor,
+            limit,
+            keys,
+        }
+    }
+
+    /// Returns the number of keys in the table.
+    public fun field_keys_len<K: copy + drop + store, V:store>(iterator: &Iterator<K, V>): u64 {
+        vector::length(&iterator.keys)
+    }
+
+    /// Returns a immutable reference to the next key-value pair in the table, starting from the given iterator.
+    public fun next<K: copy + drop + store, V:store>(iterator: &mut Iterator<K, V>): (&K, &V) {
+        let key = vector::pop_back(&mut iterator.keys);
+        object::borrow_field_with_key_internal<K, V>(iterator.handle, key)
+    }
+
+    /// Returns a mutable reference to the next key-value pair in the table, starting from the given iterator.
+    public fun next_mut<K: copy + drop + store, V:store>(iterator: &mut Iterator<K, V>): (&K, &mut V) {
+        let key = vector::pop_back(&mut iterator.keys);
+        object::borrow_mut_field_with_key_internal<K, V>(iterator.handle, key)
+    }
+
     /// Destroy a table. Aborts if the table is not empty.
     public fun destroy_empty<K: copy + drop + store, V:store>(table: Table<K, V>) {
         let Table { handle } = table;
@@ -117,7 +157,6 @@ module moveos_std::table {
         let Table { handle } = table;
         let TablePlaceholder{_placeholder:_} = object::remove_unchecked(handle);
     }
-
 
     /// Returns table handle of `table`.
     public fun handle<K: copy + drop + store, V:store>(table: &Table<K, V>): ObjectID {
@@ -247,7 +286,7 @@ module moveos_std::table {
 
         let borrowed_mut_t2 = borrow_mut(&mut t1, t1_key);
         remove(borrowed_mut_t2, t2_key);
-        
+
         drop_unchecked(t1);
     }
 

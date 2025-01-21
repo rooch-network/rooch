@@ -13,15 +13,16 @@ use accumulator::inmemory::InMemoryAccumulator;
 use anyhow::{Error, Result};
 use bcs::to_bytes;
 use move_core_types::language_storage::StructTag;
-use moveos_config::store_config::RocksdbConfig;
+use moveos_config::store_config::{MoveOSStoreConfig, RocksdbConfig};
 use moveos_config::DataDirPath;
 use moveos_types::genesis_info::GenesisInfo;
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::event::{Event, EventID, TransactionEvent};
 use moveos_types::moveos_std::object::ObjectID;
+use moveos_types::moveos_std::onchain_features::FeatureStore;
 use moveos_types::startup_info::StartupInfo;
 use moveos_types::state::{FieldKey, ObjectState};
-use moveos_types::state_resolver::{StateKV, StatelessResolver};
+use moveos_types::state_resolver::{StateKV, StateResolver, StatelessResolver};
 use moveos_types::transaction::{
     RawTransactionOutput, TransactionExecutionInfo, TransactionOutput,
 };
@@ -99,8 +100,10 @@ impl MoveOSStore {
     }
 
     pub fn new_with_instance(instance: StoreInstance, registry: &Registry) -> Result<Self> {
+        let store_config = MoveOSStoreConfig::default();
         let node_store = NodeDBStore::new(instance.clone());
-        let state_store = StateDBStore::new(node_store.clone(), registry);
+        let state_store =
+            StateDBStore::new(node_store.clone(), registry, store_config.state_cache_size);
 
         let store = Self {
             node_store,
@@ -168,7 +171,7 @@ impl MoveOSStore {
             .collect::<Vec<_>>();
         let event_hashes: Vec<_> = events.iter().map(|e| e.hash()).collect();
         let event_root = InMemoryAccumulator::from_leaves(event_hashes.as_slice()).root_hash();
-        let transaction_info = TransactionExecutionInfo::new(
+        let execution_info = TransactionExecutionInfo::new(
             tx_hash,
             new_state_root,
             size,
@@ -179,8 +182,8 @@ impl MoveOSStore {
         // config_store updates
         let new_startup_info = StartupInfo::new(new_state_root, size);
 
-        if log::log_enabled!(log::Level::Debug) {
-            log::debug!(
+        if tracing::enabled!(tracing::Level::DEBUG) {
+            tracing::debug!(
                 "handle_tx_output: tx_hash: {}, state_root: {}, size: {}, gas_used: {}, status: {:?}",
                 tx_hash,
                 new_state_root,
@@ -208,16 +211,18 @@ impl MoveOSStore {
         cf_batches.push(WriteBatchCF {
             batch: WriteBatch::new_with_rows(vec![(
                 to_bytes(&tx_hash).unwrap(),
-                WriteOp::Value(to_bytes(&transaction_info).unwrap()),
+                WriteOp::Value(to_bytes(&execution_info).unwrap()),
             )]),
             cf_name: TRANSACTION_EXECUTION_INFO_COLUMN_FAMILY_NAME.to_string(),
         });
-        // TODO: could use non-sync write here, because we could replay tx from rooch store(which has sync write after sequenced) at startup.
-        inner_store.write_cf_batch(cf_batches, true)?;
+        // use non-sync write here:
+        // 1. we could replay tx from rooch store(which has sync write after sequenced) at startup.
+        // 2. output write sequentially
+        inner_store.write_cf_batch(cf_batches, false)?;
 
         let out = TransactionOutput::new(status, changeset, events, gas_used, is_upgrade);
 
-        Ok((out, transaction_info))
+        Ok((out, execution_info))
     }
 }
 
@@ -372,5 +377,24 @@ impl StatelessResolver for MoveOSStore {
     ) -> Result<Vec<StateKV>, Error> {
         self.get_state_store()
             .list_fields_at(state_root, cursor, limit)
+    }
+}
+
+pub fn load_feature_store_object<Resolver: StateResolver>(
+    state_resolver: &Resolver,
+) -> Option<FeatureStore> {
+    let feature_store_object = state_resolver
+        .get_object(&FeatureStore::feature_store_object_id())
+        .unwrap_or(None);
+
+    match feature_store_object {
+        None => None,
+        Some(future_store_state) => {
+            let future_store_result = future_store_state.into_object::<FeatureStore>();
+            match future_store_result {
+                Ok(future_store) => Some(future_store.value),
+                Err(_) => None,
+            }
+        }
     }
 }

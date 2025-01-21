@@ -9,6 +9,7 @@ module rooch_framework::transaction_validator {
     use moveos_std::tx_result;
     use moveos_std::account;
     use moveos_std::gas_schedule;
+    use moveos_std::tx_meta;
     use rooch_framework::account as account_entry;
     use rooch_framework::account_authentication;
     use rooch_framework::auth_validator::{Self, TxValidateResult};
@@ -23,6 +24,8 @@ module rooch_framework::transaction_validator {
     use rooch_framework::address_mapping;
     use rooch_framework::account_coin_store;
     use rooch_framework::builtin_validators;
+    use rooch_framework::onchain_config;
+    use rooch_framework::coin;
 
     const MAX_U64: u128 = 18446744073709551615;
 
@@ -68,8 +71,7 @@ module rooch_framework::transaction_validator {
         let max_gas_amount = tx_context::max_gas_amount();
         let gas = transaction_fee::calculate_gas(max_gas_amount);
 
-        let gas_schedule = gas_schedule::gas_schedule();
-        let max_gas_amount_config = gas_schedule::gas_schedule_max_gas_amount(gas_schedule);
+        let max_gas_amount_config = gas_schedule::max_gas_amount();
         assert!(
             max_gas_amount <= max_gas_amount_config,
             auth_validator::error_validate_max_gas_amount_exceeded(),
@@ -128,7 +130,7 @@ module rooch_framework::transaction_validator {
             };
         };
         let bitcoin_addr = auth_validator::get_bitcoin_address_from_ctx();
-        address_mapping::bind_bitcoin_address(sender, bitcoin_addr); 
+        address_mapping::bind_bitcoin_address_internal(sender, bitcoin_addr); 
         let tx_sequence_info = tx_context::get_attribute<TransactionSequenceInfo>();
         if (option::is_some(&tx_sequence_info)) {
             let tx_sequence_info = option::extract(&mut tx_sequence_info);
@@ -169,10 +171,21 @@ module rooch_framework::transaction_validator {
         let max_gas_amount = tx_context::max_gas_amount();
         let paid_gas = transaction_fee::calculate_gas(max_gas_amount);
 
-        if (gas_used_after_scale < paid_gas) {
-            let refund_gas = paid_gas - gas_used_after_scale;
-            let refund_gas_coin = transaction_fee::withdraw_fee(refund_gas);
-            account_coin_store::deposit(gas_payment_account, refund_gas_coin);
+        let tx_meta = tx_context::tx_meta();
+        let function_call_opt = tx_meta::function_meta(&tx_meta);
+        let contract_address = if (option::is_some(&function_call_opt)) {
+            let function_call = option::borrow(&function_call_opt);
+            *tx_meta::function_meta_module_address(function_call)
+        } else {
+            //If it is not a function call, we use the framework address as the contract address
+            @rooch_framework
         };
+        let sequencer_address = onchain_config::sequencer();
+        let remaining_gas_coin = transaction_fee::distribute_fee(paid_gas, gas_used_after_scale, contract_address, sequencer_address);
+        if (coin::value(&remaining_gas_coin) > 0) {
+            account_coin_store::deposit(gas_payment_account, remaining_gas_coin);
+        }else{
+            coin::destroy_zero(remaining_gas_coin);
+        }
     }
 }

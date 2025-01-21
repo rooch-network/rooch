@@ -17,8 +17,9 @@ rust-version = { workspace = true }
 [dependencies]
 anyhow = { workspace = true }
 bcs = { workspace = true }
+bitcoin = { workspace = true }
 clap = { features = ["derive"], workspace = true }
-chrono = { workspace = true }
+coerce = { workspace = true }
 datatest-stable = { git = "https://github.com/rooch-network/diem-devtools", branch = "feature/pub-test-opts" }
 tokio = { features = ["full"], workspace = true }
 serde = { workspace = true }
@@ -33,75 +34,61 @@ async-trait = { workspace = true }
 codespan-reporting = { workspace = true }
 termcolor = { workspace = true }
 itertools = { workspace = true }
+hdrhistogram = { workspace = true }
+heed = { workspace = true }
 hex = { workspace = true }
 regex = { workspace = true }
 parking_lot = { workspace = true }
 rpassword = { workspace = true }
 fastcrypto = { workspace = true }
-log = { workspace = true }
 csv = { workspace = true }
 tempfile = { workspace = true }
-[target.'cfg(not(target_env = "msvc"))'.dependencies]
-jemallocator = { version = "0.5.4", features = ["unprefixed_malloc_on_supported_platforms", "profiling"] }
 rustc-hash = { workspace = true }
 rand = { workspace = true }
+tabled = { workspace = true }
 xorf = { workspace = true }
 xxhash-rust = { workspace = true, features = ["xxh3"] }
 vergen-pretty = { workspace = true }
-prometheus = { workspace = true }
 lazy_static = { workspace = true }
 schemars = { workspace = true }
-bitcoin = { workspace = true }
-bitcoincore-rpc = { workspace = true }
 ciborium = { workspace = true }
 wasmer = { workspace = true }
 tiny-keccak = { workspace = true }
-serenity = { features = [
-    "client",
-    "gateway",
-    "rustls_backend",
-    "cache",
-    "model",
-], workspace = true }
-futures = { workspace = true }
+reqwest = { workspace = true }
 
-move-bytecode-utils = { workspace = true }
 move-binary-format = { workspace = true }
-move-bytecode-verifier = { workspace = true }
 move-cli = { workspace = true }
 move-command-line-common = { workspace = true }
 move-compiler = { workspace = true }
 move-core-types = { workspace = true }
-move-coverage = { workspace = true }
-move-disassembler = { workspace = true }
 move-errmapgen = { workspace = true }
 move-package = { workspace = true }
 move-unit-test = { workspace = true }
 move-vm-runtime = { workspace = true, features = ["stacktrace", "debugging", "testing"] }
 move-vm-test-utils = { workspace = true }
-move-model = { workspace = true }
 move-stdlib = { workspace = true }
 move-vm-types = { workspace = true }
 
 moveos-stdlib = { workspace = true }
 moveos-types = { workspace = true }
 moveos-store = { workspace = true }
+moveos-eventbus = { workspace = true }
 moveos-common = { workspace = true }
 moveos = { workspace = true }
 moveos-verifier = { workspace = true }
 moveos-object-runtime = { workspace = true }
 moveos-compiler = { workspace = true }
 moveos-config = { workspace = true }
-accumulator = { workspace = true }
 metrics = { workspace = true }
 moveos-gas-profiling = { workspace = true }
 
-framework-builder = { workspace = true }
 framework-types = { workspace = true }
 raw-store = { workspace = true }
 smt = { workspace = true }
-bitcoin-move = { workspace = true }
 
+accumulator = { workspace = true }
+bitcoin-client = { workspace = true }
+rooch-executor = { workspace = true }
 rooch-key = { workspace = true }
 rooch-types = { workspace = true }
 rooch-config = { workspace = true }
@@ -112,14 +99,21 @@ rooch-rpc-server = { workspace = true }
 rooch-rpc-client = { workspace = true }
 rooch-integration-test-runner = { workspace = true }
 rooch-indexer = { workspace = true }
+rooch-event = { workspace = true }
 rooch-db = { workspace = true }
+rooch-pipeline-processor = { workspace = true }
 rooch-common = { workspace = true }
 rooch-store = { workspace = true }
-rooch-sequencer = { workspace = true }
 rooch-faucet = { workspace = true }
 rooch-oracle = { workspace = true }
 
 framework-release = { workspace = true }
+
+#We should keep the allocator in the last of the dependencies
+[target.'cfg(not(target_env = "msvc"))'.dependencies]
+tikv-jemallocator = { workspace = true }
+[target.'cfg(target_env = "msvc")'.dependencies]
+mimalloc = { workspace = true }
 
 [build-dependencies]
 anyhow = { workspace = true }

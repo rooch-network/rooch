@@ -1,9 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-// Copyright (c) The Starcoin Core Contributors
-// SPDX-License-Identifier: Apache-2.0
-
 use crate::cli_types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
 use clap::Parser;
@@ -21,6 +18,10 @@ use rooch_types::error::RoochResult;
 use schemars::JsonSchema;
 use serde::Serialize;
 use std::collections::HashMap;
+use tabled::{
+    builder::Builder,
+    settings::{Style, Width},
+};
 
 /// Show account balance, only the accounts managed by the current node are supported
 #[derive(Debug, Parser)]
@@ -30,7 +31,6 @@ pub struct BalanceCommand {
     address: ParsedAddress,
 
     /// Struct name as `<ADDRESS>::<MODULE_ID>::<STRUCT_NAME><TypeParam>`
-    /// Example: `0x3::gas_coin::RGas`, `0x123::Coin::Box<0x123::coin_box::FCoin>`
     #[clap(long, value_parser=ParsedStructType::parse)]
     coin_type: Option<ParsedStructType>,
 
@@ -96,14 +96,12 @@ impl CommandAction<Option<BalancesView>> for BalanceCommand {
         balances.push(BalanceInfoViewUnion::Bitcoin(btc_balance));
 
         let other_balances = match coin_type {
-            Some(coin_type) => {
-                vec![
-                    client
-                        .rooch
-                        .get_balance(address_addr.into(), coin_type.into())
-                        .await?,
-                ]
-            }
+            Some(coin_type) => vec![
+                client
+                    .rooch
+                    .get_balance(address_addr.into(), coin_type.into())
+                    .await?,
+            ],
             None => {
                 client
                     .rooch
@@ -113,58 +111,58 @@ impl CommandAction<Option<BalancesView>> for BalanceCommand {
             }
         };
 
-        balances.extend(other_balances.into_iter().map(BalanceInfoViewUnion::Other));
+        balances.extend(
+            other_balances
+                .iter()
+                .cloned()
+                .map(BalanceInfoViewUnion::Other),
+        );
 
         if self.json {
             let mut balances_view: BalancesView = HashMap::new();
-            for balance_info in balances {
+            for balance_info in &balances {
                 match balance_info {
                     BalanceInfoViewUnion::Bitcoin(bitcoin_balance) => {
                         balances_view.insert(
                             bitcoin_balance.coin_info.symbol.to_string(),
-                            bitcoin_balance.into(),
+                            BalanceInfoViewUnion::Bitcoin(bitcoin_balance.clone()),
                         );
                     }
                     BalanceInfoViewUnion::Other(other_balance) => {
-                        if balances_view.contains_key(&other_balance.coin_info.symbol) {
-                            balances_view.insert(
-                                other_balance.coin_info.coin_type.to_string(),
-                                other_balance.into(),
-                            );
+                        let key = if balances_view.contains_key(&other_balance.coin_info.symbol) {
+                            other_balance.coin_info.coin_type.to_string()
                         } else {
-                            balances_view.insert(
-                                other_balance.coin_info.symbol.to_string(),
-                                other_balance.into(),
-                            );
-                        }
+                            other_balance.coin_info.symbol.to_string()
+                        };
+                        balances_view
+                            .insert(key, BalanceInfoViewUnion::Other(other_balance.clone()));
                     }
                 }
             }
             Ok(Some(balances_view))
         } else {
-            print_balance_table_header();
-
-            for balance_info in balances {
+            let mut formatted_balances = vec![];
+            for balance_info in &balances {
                 match balance_info {
-                    BalanceInfoViewUnion::Bitcoin(balance_info) => {
-                        print_balance_info(
+                    BalanceInfoViewUnion::Bitcoin(bitcoin_balance) => {
+                        formatted_balances.push((
                             "Bitcoin".to_string(),
-                            balance_info.coin_info.symbol,
-                            balance_info.coin_info.decimals,
-                            balance_info.balance.to_string(),
-                        );
+                            bitcoin_balance.coin_info.symbol.clone(),
+                            bitcoin_balance.coin_info.decimals,
+                            bitcoin_balance.balance.to_string(),
+                        ));
                     }
-                    BalanceInfoViewUnion::Other(balance_info) => {
-                        print_balance_info(
-                            balance_info.coin_info.coin_type.to_string(),
-                            balance_info.coin_info.symbol,
-                            balance_info.coin_info.decimals,
-                            balance_info.balance.to_string(),
-                        );
+                    BalanceInfoViewUnion::Other(other_balance) => {
+                        formatted_balances.push((
+                            other_balance.coin_info.coin_type.to_string(),
+                            other_balance.coin_info.symbol.clone(),
+                            other_balance.coin_info.decimals,
+                            other_balance.balance.to_string(),
+                        ));
                     }
                 }
             }
-
+            print_balance_info_table(formatted_balances);
             Ok(None)
         }
     }
@@ -220,25 +218,16 @@ async fn get_total_utxo_value(
     Ok(total_value)
 }
 
-const TABLE_WIDTH: usize = 102;
-const SYMBOL_WIDTH: usize = 16;
-const DECIMALS_WIDTH: usize = 8;
-const BALANCE_WIDTH: usize = 32;
+fn print_balance_info_table(balances: Vec<(String, String, u8, String)>) {
+    let mut builder = Builder::default();
+    builder.push_record(["Coin Type", "Symbol", "Decimals", "Balance"]);
 
-fn print_balance_table_header() {
-    println!(
-        "{0: ^TABLE_WIDTH$} | {1: ^SYMBOL_WIDTH$} | {2: ^DECIMALS_WIDTH$} | {3: ^BALANCE_WIDTH$}",
-        "Coin Type", "Symbol", "Decimals", "Balance"
-    );
-    println!(
-        "{}",
-        "-".repeat(TABLE_WIDTH + SYMBOL_WIDTH + DECIMALS_WIDTH + BALANCE_WIDTH + 5)
-    );
-}
+    for (coin_type, symbol, decimals, balance) in balances {
+        builder.push_record([&coin_type, &symbol, &decimals.to_string(), &balance]);
+    }
 
-fn print_balance_info(coin_type: String, symbol: String, decimals: u8, balance: String) {
-    println!(
-        "{0: ^TABLE_WIDTH$} | {1: ^SYMBOL_WIDTH$} | {2: ^DECIMALS_WIDTH$} |  {3: ^BALANCE_WIDTH$} ",
-        coin_type, symbol, decimals, balance
-    );
+    let mut table = builder.build();
+    table.with(Style::rounded()).with(Width::increase(20));
+
+    println!("{}", table);
 }

@@ -13,6 +13,8 @@ use move_core_types::{account_address::AccountAddress, identifier::Identifier};
 use move_vm_runtime::native_functions::NativeFunction;
 use moveos::gas::table::VMGasParameters;
 use moveos::moveos::{MoveOS, MoveOSConfig};
+use moveos_stdlib::natives::moveos_stdlib::base64::EncodeDecodeGasParametersOption;
+use moveos_stdlib::natives::moveos_stdlib::object::ListFieldsGasParametersOption;
 use moveos_store::MoveOSStore;
 use moveos_types::genesis_info::GenesisInfo;
 use moveos_types::h256::H256;
@@ -96,7 +98,7 @@ impl FrameworksGasParameters {
         }
     }
 
-    pub fn latest() -> Self {
+    pub fn v1() -> Self {
         let mut gas_parameter = Self {
             max_gas_amount: GasScheduleConfig::INITIAL_MAX_GAS_AMOUNT,
             vm_gas_params: VMGasParameters::initial(),
@@ -105,38 +107,76 @@ impl FrameworksGasParameters {
             rooch_nursery_gas_params: Some(rooch_nursery::natives::GasParameters::initial()),
         };
 
-        if LATEST_GAS_SCHEDULE_VERSION >= GAS_SCHEDULE_RELEASE_V1 {
-            gas_parameter
-                .vm_gas_params
-                .instruction_gas_parameter
-                .call_base = InternalGas::new(167);
-            gas_parameter
-                .vm_gas_params
-                .instruction_gas_parameter
-                .call_per_arg = InternalGasPerArg::new(15);
-            gas_parameter
-                .vm_gas_params
-                .instruction_gas_parameter
-                .call_per_local = InternalGasPerArg::new(15);
-            gas_parameter
-                .vm_gas_params
-                .instruction_gas_parameter
-                .call_generic_base = InternalGas::new(167);
-            gas_parameter
-                .vm_gas_params
-                .instruction_gas_parameter
-                .call_generic_per_arg = InternalGasPerArg::new(15);
-            gas_parameter
-                .vm_gas_params
-                .instruction_gas_parameter
-                .call_generic_per_local = InternalGasPerArg::new(15);
-            gas_parameter
-                .vm_gas_params
-                .instruction_gas_parameter
-                .call_generic_per_ty_arg = InternalGasPerArg::new(15);
-        }
+        gas_parameter
+            .rooch_framework_gas_params
+            .moveos_stdlib
+            .base64
+            .encode = EncodeDecodeGasParametersOption {
+            base: Some(1000.into()),
+            per_byte: Some(30.into()),
+        };
 
         gas_parameter
+            .rooch_framework_gas_params
+            .moveos_stdlib
+            .base64
+            .decode = EncodeDecodeGasParametersOption {
+            base: Some(1000.into()),
+            per_byte: Some(30.into()),
+        };
+
+        gas_parameter
+    }
+
+    pub fn v2() -> Self {
+        let mut v1_gas_parameter = FrameworksGasParameters::v1();
+
+        v1_gas_parameter
+            .vm_gas_params
+            .instruction_gas_parameter
+            .call_base = InternalGas::new(167);
+        v1_gas_parameter
+            .vm_gas_params
+            .instruction_gas_parameter
+            .call_per_arg = InternalGasPerArg::new(15);
+        v1_gas_parameter
+            .vm_gas_params
+            .instruction_gas_parameter
+            .call_per_local = InternalGasPerArg::new(15);
+        v1_gas_parameter
+            .vm_gas_params
+            .instruction_gas_parameter
+            .call_generic_base = InternalGas::new(167);
+        v1_gas_parameter
+            .vm_gas_params
+            .instruction_gas_parameter
+            .call_generic_per_arg = InternalGasPerArg::new(15);
+        v1_gas_parameter
+            .vm_gas_params
+            .instruction_gas_parameter
+            .call_generic_per_local = InternalGasPerArg::new(15);
+        v1_gas_parameter
+            .vm_gas_params
+            .instruction_gas_parameter
+            .call_generic_per_ty_arg = InternalGasPerArg::new(15);
+
+        v1_gas_parameter
+    }
+
+    pub fn v3() -> Self {
+        let mut v2_gas_parameter = FrameworksGasParameters::v2();
+
+        v2_gas_parameter
+            .rooch_framework_gas_params
+            .moveos_stdlib
+            .object_list_field_keys
+            .list_field_keys = ListFieldsGasParametersOption::init(1000.into(), 150.into());
+
+        v2_gas_parameter
+    }
+
+    pub fn latest() -> Self {
+        FrameworksGasParameters::v3()
     }
 
     pub fn to_gas_schedule_config(&self, chain_id: ChainID) -> GasScheduleConfig {
@@ -268,15 +308,14 @@ impl RoochGenesis {
             .clone()
             .into_moveos_transaction(ObjectMeta::genesis_root());
 
-        let gas_parameter = {
-            if network.chain_id == BuiltinChainID::Dev.chain_id()
-                || network.chain_id == BuiltinChainID::Local.chain_id()
-            {
-                FrameworksGasParameters::latest()
-            } else {
-                FrameworksGasParameters::initial()
-            }
+        let gas_parameter = if network.chain_id == BuiltinChainID::Main.chain_id() {
+            FrameworksGasParameters::initial()
+        } else if network.chain_id == BuiltinChainID::Test.chain_id() {
+            FrameworksGasParameters::v1()
+        } else {
+            FrameworksGasParameters::latest()
         };
+
         let gas_config = gas_parameter.to_gas_schedule_config(network.chain_id);
         genesis_moveos_tx.ctx.add(genesis_ctx.clone())?;
         genesis_moveos_tx.ctx.add(moveos_genesis_ctx.clone())?;
@@ -402,11 +441,6 @@ impl RoochGenesis {
             "Genesis output mismatch"
         );
 
-        let tx_hash = self.genesis_tx().tx_hash();
-        let (output, genesis_execution_info) = rooch_db
-            .moveos_store
-            .handle_tx_output(tx_hash, genesis_raw_output.clone())?;
-
         // Save the genesis txs to sequencer
         let genesis_tx_order: u64 = 0;
         let moveos_genesis_context = self
@@ -439,6 +473,11 @@ impl RoochGenesis {
             sequencer_info,
             genesis_accumulator_unsaved_nodes,
         )?;
+
+        let tx_hash = self.genesis_tx().tx_hash();
+        let (output, genesis_execution_info) = rooch_db
+            .moveos_store
+            .handle_tx_output(tx_hash, genesis_raw_output.clone())?;
 
         // Save genesis tx state change set
         let state_change_set_ext = StateChangeSetExt::new(

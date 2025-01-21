@@ -3,5 +3,4 @@
 
 pub mod actor;
 pub mod metrics;
-pub mod proxy;
 pub mod scc;

@@ -27,7 +27,7 @@ use moveos_store::config_store::ConfigDBStore;
 use moveos_store::event_store::EventDBStore;
 use moveos_store::state_store::statedb::StateDBStore;
 use moveos_store::transaction_store::TransactionDBStore;
-use moveos_store::MoveOSStore;
+use moveos_store::{load_feature_store_object, MoveOSStore};
 use moveos_types::addresses::MOVEOS_STD_ADDRESS;
 use moveos_types::function_return_value::FunctionResult;
 use moveos_types::moveos_std::gas_schedule::{GasScheduleConfig, GasScheduleUpdated};
@@ -159,14 +159,14 @@ impl MoveOS {
         let mut session = self.vm.new_genesis_session(&resolver, ctx, genesis_objects);
 
         let verified_action = session.verify_move_action(action).map_err(|e| {
-            log::error!("verify_genesis_tx error:{:?}", e);
+            tracing::error!("verify_genesis_tx error:{:?}", e);
             e
         })?;
 
         // execute main tx
         let execute_result = session.execute_move_action(verified_action);
         if let Some(vm_error) = execute_result.clone().err() {
-            log::error!("execute_genesis_tx vm_error:{:?}", vm_error,);
+            tracing::error!("execute_genesis_tx vm_error:{:?}", vm_error,);
         }
         let status = match vm_status_of_result(execute_result.clone()).keep_or_discard() {
             Ok(status) => status,
@@ -191,8 +191,8 @@ impl MoveOS {
             }
         }
 
-        if log::log_enabled!(log::Level::Trace) {
-            log::trace!("load_cost_table from db");
+        if tracing::enabled!(tracing::Level::TRACE) {
+            tracing::trace!("load_cost_table from db");
         }
         let resolver = RootObjectResolver::new(root.clone(), &self.db);
         let gas_entries = get_gas_schedule_entries(&resolver).map_err(|e| {
@@ -206,7 +206,7 @@ impl MoveOS {
                 w.replace(cost_table.clone());
             }
             None => {
-                log::warn!("load_cost_table try_write failed");
+                tracing::warn!("load_cost_table try_write failed");
             }
         }
         Ok(cost_table)
@@ -235,7 +235,7 @@ impl MoveOS {
     pub fn verify(&self, tx: MoveOSTransaction) -> VMResult<VerifiedMoveOSTransaction> {
         let MoveOSTransaction { root, ctx, action } = tx;
         let cost_table = self.load_cost_table(&root)?;
-        let mut gas_meter = MoveOSGasMeter::new(cost_table, ctx.max_gas_amount);
+        let mut gas_meter = MoveOSGasMeter::new(cost_table, ctx.max_gas_amount, false);
         gas_meter.set_metering(false);
 
         let resolver = RootObjectResolver::new(root.clone(), &self.db);
@@ -258,8 +258,8 @@ impl MoveOS {
     ) -> Result<(RawTransactionOutput, Option<VMErrorInfo>)> {
         let VerifiedMoveOSTransaction { root, ctx, action } = tx;
         let tx_hash = ctx.tx_hash();
-        if log::log_enabled!(log::Level::Debug) {
-            log::debug!(
+        if tracing::enabled!(tracing::Level::DEBUG) {
+            tracing::debug!(
                 "execute tx(sender:{}, hash:{}, action:{})",
                 ctx.sender(),
                 tx_hash,
@@ -273,8 +273,16 @@ impl MoveOS {
         // So we keep a backup here, and then insert to the TxContext kv store when session respawed.
         let system_env = ctx.map.clone();
 
+        let feature_resolver = RootObjectResolver::new(root.clone(), &self.db);
+        let feature_store_opt = load_feature_store_object(&feature_resolver);
+        let has_io_tired_write_feature = match feature_store_opt {
+            None => false,
+            Some(feature_store) => feature_store.has_value_size_gas_feature(),
+        };
+
         let cost_table = self.load_cost_table(&root)?;
-        let mut gas_meter = MoveOSGasMeter::new(cost_table, ctx.max_gas_amount);
+        let mut gas_meter =
+            MoveOSGasMeter::new(cost_table, ctx.max_gas_amount, has_io_tired_write_feature);
         gas_meter.charge_io_write(ctx.tx_size)?;
 
         let resolver = RootObjectResolver::new(root, &self.db);
@@ -287,7 +295,7 @@ impl MoveOS {
             match session.execute_function_call(self.system_pre_execute_functions.clone(), false) {
                 Ok(_) => {}
                 Err(error) => {
-                    log::warn!("System pre execution failed: {:?}", error);
+                    tracing::warn!("System pre execution failed: {:?}", error);
                     return Err(Error::from(VMPanicError::SystemCallPanicError(
                         format_err!("Execute System Pre call Panic {:?}", error),
                     )));
@@ -298,8 +306,8 @@ impl MoveOS {
         match self.execute_action(&mut session, action.clone()) {
             Ok(_) => {
                 let status = VMStatus::Executed;
-                if log::log_enabled!(log::Level::Debug) {
-                    log::debug!(
+                if tracing::enabled!(tracing::Level::DEBUG) {
+                    tracing::debug!(
                         "execute_action ok tx(hash:{}) vm_status:{:?}",
                         tx_hash,
                         status
@@ -308,8 +316,8 @@ impl MoveOS {
                 self.execution_cleanup(is_system_call, session, status, None)
             }
             Err(vm_err) => {
-                if log::log_enabled!(log::Level::Warn) {
-                    log::warn!(
+                if tracing::enabled!(tracing::Level::WARN) {
+                    tracing::warn!(
                         "execute_action error tx(hash:{}) vm_err:{:?} need respawn session.",
                         tx_hash,
                         vm_err
@@ -385,7 +393,19 @@ impl MoveOS {
                 return FunctionResult::err(e);
             }
         };
-        let mut gas_meter = MoveOSGasMeter::new(cost_table, tx_context.max_gas_amount);
+
+        let feature_resolver = RootObjectResolver::new(root.clone(), &self.db);
+        let feature_store_opt = load_feature_store_object(&feature_resolver);
+        let has_io_tired_write_feature = match feature_store_opt {
+            None => false,
+            Some(feature_store) => feature_store.has_value_size_gas_feature(),
+        };
+
+        let mut gas_meter = MoveOSGasMeter::new(
+            cost_table,
+            tx_context.max_gas_amount,
+            has_io_tired_write_feature,
+        );
         gas_meter.set_metering(true);
         let resolver = RootObjectResolver::new(root, &self.db);
         let mut session = self
@@ -402,8 +422,8 @@ impl MoveOS {
                 }
             }
             Err(e) => {
-                if log::log_enabled!(log::Level::Debug) {
-                    log::warn!("execute_readonly_function error:{:?}", e);
+                if tracing::enabled!(tracing::Level::DEBUG) {
+                    tracing::warn!("execute_readonly_function error:{:?}", e);
                 }
                 FunctionResult::err(e)
             }
@@ -432,7 +452,7 @@ impl MoveOS {
             Ok(kept_status) => {
                 if is_system_call && kept_status != KeptVMStatus::Executed {
                     // system call should always success
-                    log::warn!("System call failed: {:?}", kept_status);
+                    tracing::warn!("System call failed: {:?}", kept_status);
                     return Err(Error::from(VMPanicError::SystemCallPanicError(
                         format_err!("Execute system call with Panic {:?}", vm_error_info),
                     )));
@@ -442,7 +462,7 @@ impl MoveOS {
             }
             Err(discard_status) => {
                 //This should not happen, if it happens, it means that the VM or verifer has a bug
-                log::warn!("Discard status: {:?}", discard_status);
+                tracing::warn!("Discard status: {:?}", discard_status);
                 return Err(Error::from(VMPanicError::VerifierPanicError(format_err!(
                     "Execute Action with Panic {:?}",
                     vm_error_info
@@ -478,7 +498,7 @@ impl MoveOS {
         let mut gas_upgrade = false;
         let gas_schedule_updated = session.tx_context().get::<GasScheduleUpdated>()?;
         if let Some(_updated) = gas_schedule_updated {
-            log::info!("Gas schedule updated");
+            tracing::info!("Gas schedule updated");
             gas_upgrade = true;
             self.cost_table.write().take();
         }

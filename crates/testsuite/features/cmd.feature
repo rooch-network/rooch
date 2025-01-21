@@ -65,7 +65,7 @@ Feature: Rooch CLI integration tests
 
       # session key
       Then cmd: "session-key create  --app-name test --app-url https:://test.rooch.network --scope 0x3::empty::empty"
-      Then cmd: "session-key list"
+      Then cmd: "session-key list --json"
       Then assert: "'{{$.session-key[-1]}}' not_contains error"
       Then cmd: "move run --function 0x3::empty::empty  --session-key {{$.session-key[-1][0].name}} --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
@@ -188,6 +188,34 @@ Feature: Rooch CLI integration tests
     Then stop the server
 
   @serial
+  Scenario: sync_states_filter
+      Given a server for sync_states_filter
+      # First publish and create the object counter
+      Then cmd: "move publish -p ../../examples/quick_start_object_counter --named-addresses quick_start_object_counter=default --json"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+      
+      # Get the Counter object ID from event
+      Then cmd: "event get-events-by-event-handle -t default::quick_start_object_counter::UserCounterCreatedEvent"
+      Then assert: "{{$.event[-1].data[0].event_id.event_seq}} == 0"
+      
+      # Increase counter to generate state change
+      Then cmd: "move run --function default::quick_start_object_counter::increase --args object:{{$.event[-1].data[0].decoded_event_data.value.id}} --json"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+      
+      # because the indexer is async update, so sleep 2 seconds to wait indexer update.
+      Then sleep: "2"
+      
+      # Test sync_states with object_id filter - should get changes for the counter object
+      Then cmd: "rpc request --method rooch_syncStates --params '[{\"object_i_d\":\"{{$.event[-1].data[0].decoded_event_data.value.id}}\"}, null, \"10\", {\"descending\":false}]' --json"
+      Then assert: "'{{$.rpc[-1].data[0].state_change_set.changes[0].metadata.id}}' == '{{$.event[-1].data[0].decoded_event_data.value.id}}'"
+      
+      # Test with a non-existent object ID - should return empty result
+      Then cmd: "rpc request --method rooch_syncStates --params '[{\"object_i_d\":\"0x1234567890123456789012345678901234567890123456789012345678901234\"}, null, \"10\", {\"descending\":false}]' --json"
+      Then assert: "'{{$.rpc[-1].data}}' == '[]'"
+
+      Then stop the server
+
+  @serial
     Scenario: kv_store example
       Given a server for kv_store
       Then cmd: "move publish -p ../../examples/kv_store  --named-addresses rooch_examples=default --json"
@@ -282,6 +310,29 @@ Feature: Rooch CLI integration tests
       Then stop the server
 
   @serial
+  Scenario: publish rpd file directly
+      Given a server for publish_rpd_direct
+
+      # First build the counter example
+      Then cmd: "move build -p ../../examples/counter --named-addresses rooch_examples=default --json"
+      Then assert: "{{$.move[-1].Result}} == Success"
+
+      # Test direct publish rpd command
+      Then cmd: "move publish ../../examples/counter/build/counter/package.rpd --json"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+
+      # Verify the counter functionality works
+      Then cmd: "move view --function default::counter::value"
+      Then assert: "{{$.move[-1].return_values[0].decoded_value}} == 0"
+      Then cmd: "move run --function default::counter::increase --json"
+      Then cmd: "move view --function default::counter::value"
+      Then assert: "{{$.move[-1].return_values[0].decoded_value}} == 1"
+      Then cmd: "resource --address default --resource default::counter::Counter"
+      Then assert: "{{$.resource[-1].decoded_value.value.value.value.value}} == 1"
+
+      Then stop the server
+
+  @serial
   Scenario: coins example
       Given a server for coins
       Then cmd: "account create --json"
@@ -300,7 +351,7 @@ Feature: Rooch CLI integration tests
       Then assert: "'{{$.rpc[-1].coin_type}}' == '{{$.address_mapping.default}}::fixed_supply_coin::FSC'"
       Then assert: "'{{$.rpc[-1].balance}}' != '0'"
 
-      Then cmd: "account transfer --coin-type default::fixed_supply_coin::FSC --to {{$.account[-1].account0.bitcoin_address}} --amount 1"
+      Then cmd: "account transfer --coin-type default::fixed_supply_coin::FSC --to {{$.account[-1].account0.bitcoin_address}} --amount 1 --json"
 
       Then assert: "{{$.account[-1].execution_info.status.type}} == executed"
       Then stop the server
@@ -410,7 +461,7 @@ Feature: Rooch CLI integration tests
       Given a server for wasm_test
 
       # publish wasm execution
-      Then cmd: "move publish -p ../../examples/wasm_execution  --named-addresses rooch_examples=default --json"
+      Then cmd: "move publish -p ../../examples/wasm_execution  --named-addresses rooch_examples=default --json --max-gas-amount=1000000000"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       # test wasm trap
@@ -442,11 +493,11 @@ Feature: Rooch CLI integration tests
       Given a server for wasm_test
 
       # publish wasm execution
-      Then cmd: "move publish -p ../../examples/cosmwasm_vm_execution  --named-addresses rooch_examples=default --json"
+      Then cmd: "move publish -p ../../examples/cosmwasm_vm_execution  --named-addresses rooch_examples=default --json --max-gas-amount=1000000000"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       # run cosmwasm execute example
-      Then cmd: "move run --function default::cosmwasm_vm_execution::run_cosmwasm_example --sender default --args 'file:./data/cosmwasm_vm_execution_opt.wasm' --json"
+      Then cmd: "move run --function default::cosmwasm_vm_execution::run_cosmwasm_example --sender default --args 'file:./data/cosmwasm_vm_execution_opt.wasm' --json --max-gas-amount=1000000000"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       # release servers

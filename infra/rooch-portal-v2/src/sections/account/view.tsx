@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { CopyToClipboard } from 'react-copy-to-clipboard';
 import { isValidBitcoinAddress } from '@roochnetwork/rooch-sdk';
 import { useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit';
 
@@ -62,22 +63,26 @@ export function AccountView({ address }: { address: string }) {
         <CardContent className="!pt-0">
           <Stack spacing={2}>
             <Stack direction="row" alignItems="center">
-              <Chip
-                className="w-fit !cursor-pointer"
-                label={viewAddress}
-                variant="soft"
-                color="secondary"
-                component={RouterLink}
-                href={`/account/${viewAddress}`}
-              />
+              <CopyToClipboard text={viewAddress}>
+                <Chip
+                  className="w-fit !cursor-pointer"
+                  label={viewAddress}
+                  variant="soft"
+                  color="secondary"
+                  component={RouterLink}
+                  href={`/account/${viewAddress}`}
+                />
+              </CopyToClipboard>
             </Stack>
             <Stack direction="row" alignItems="center" spacing={0.5}>
-              <Chip
-                className="w-fit"
-                label={BitcoinAddressToRoochAddress(viewAddress).toStr()}
-                variant="soft"
-                color="default"
-              />
+              <CopyToClipboard text={BitcoinAddressToRoochAddress(viewAddress).toStr()}>
+                <Chip
+                  className="w-fit"
+                  label={BitcoinAddressToRoochAddress(viewAddress).toStr()}
+                  variant="soft"
+                  color="default"
+                />
+              </CopyToClipboard>
               <Box className="text-gray-400 text-sm font-medium">(Rooch Address)</Box>
             </Stack>
           </Stack>

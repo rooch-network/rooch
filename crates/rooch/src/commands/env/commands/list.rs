@@ -3,6 +3,7 @@
 
 use clap::Parser;
 use rooch_types::error::RoochResult;
+use tabled::{builder::Builder, settings::Style};
 
 use crate::cli_types::WalletContextOptions;
 
@@ -15,25 +16,25 @@ pub struct ListCommand {
 impl ListCommand {
     pub async fn execute(self) -> RoochResult<()> {
         let context = self.context_options.build()?;
+        let mut builder = Builder::default();
 
-        println!(
-            "{:^24} | {:^48} | {:^48} | {:^12}",
-            "Env Alias", "RPC URL", "Websocket URL", "Active Env"
-        );
-        println!("{}", ["-"; 153].join(""));
+        builder.push_record(["Env Alias", "RPC URL", "Websocket URL", "Active Env"]);
 
         for env in context.client_config.envs.iter() {
-            let mut active = "";
-            if context.client_config.active_env == Some(env.alias.clone()) {
-                active = "True"
-            }
+            let active = if context.client_config.active_env == Some(env.alias.clone()) {
+                "True"
+            } else {
+                ""
+            };
+            let ws = env.ws.clone().unwrap_or_else(|| "Null".to_owned());
 
-            let ws = env.ws.clone().unwrap_or("Null".to_owned());
-            println!(
-                "{:^24} | {:^48} | {:^48} | {:^12}",
-                env.alias, env.rpc, ws, active
-            )
+            builder.push_record([&env.alias, &env.rpc, &ws, active]);
         }
+
+        let mut table = builder.build();
+        table.with(Style::rounded());
+
+        println!("{}", table);
 
         Ok(())
     }

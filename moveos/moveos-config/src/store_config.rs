@@ -51,6 +51,12 @@ pub struct RocksdbConfig {
     pub block_cache_size: u64,
     #[clap(name = "rocksdb-block-size", long, help = "rocksdb block size")]
     pub block_size: u64,
+    #[clap(
+        name = "rocksdb-enable-statistics",
+        long,
+        help = "rocksdb enable statistics"
+    )]
+    pub enable_statistics: bool,
 }
 
 impl RocksdbConfig {
@@ -77,6 +83,26 @@ impl Default for RocksdbConfig {
             max_write_buffer_numer: 4,
             block_cache_size: 1u64 << 32,
             block_size: 4 * 1024,
+            enable_statistics: false,
+        }
+    }
+}
+
+#[derive(Copy, Clone, Debug, Deserialize, PartialEq, Eq, Serialize, Parser)]
+#[serde(default, deny_unknown_fields)]
+pub struct MoveOSStoreConfig {
+    #[clap(
+        name = "moveos-store-state-cache-size",
+        long,
+        help = "MoveOS store state cache size"
+    )]
+    pub state_cache_size: usize,
+}
+
+impl Default for MoveOSStoreConfig {
+    fn default() -> Self {
+        Self {
+            state_cache_size: 10_000,
         }
     }
 }

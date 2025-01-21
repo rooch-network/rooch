@@ -12,22 +12,17 @@ use moveos_types::{
 };
 
 #[derive(Debug, Clone)]
-pub(crate) enum DataStatus {
-    Clean,
-    Dirty,
-}
-
-#[derive(Debug, Clone)]
 pub(crate) struct ObjectMetaValue {
     metadata: ObjectMeta,
     value_layout: MoveTypeLayout,
-    status: DataStatus,
 }
 
 pub(crate) enum RuntimeObjectMeta {
     None(ObjectID),
     Fresh(ObjectMetaValue),
-    Cached(ObjectMetaValue),
+    // The first element is the metadata to be changed in runtime,
+    // the second element is the original metadata loaded from resolver.
+    Cached((ObjectMetaValue, ObjectMeta)),
     Deleted(ObjectMetaValue),
 }
 
@@ -37,18 +32,19 @@ impl RuntimeObjectMeta {
     }
 
     pub fn cached(metadata: ObjectMeta, value_layout: MoveTypeLayout) -> Self {
-        RuntimeObjectMeta::Cached(ObjectMetaValue {
+        RuntimeObjectMeta::Cached((
+            ObjectMetaValue {
+                metadata: metadata.clone(),
+                value_layout,
+            },
             metadata,
-            value_layout,
-            status: DataStatus::Clean,
-        })
+        ))
     }
 
     pub fn fresh(metadata: ObjectMeta, value_layout: MoveTypeLayout) -> Self {
         RuntimeObjectMeta::Fresh(ObjectMetaValue {
             metadata,
             value_layout,
-            status: DataStatus::Dirty,
         })
     }
 
@@ -61,7 +57,7 @@ impl RuntimeObjectMeta {
             Self::None(id) => id.clone(),
             //If the object is removed, and init it again, we treat it is fresh
             Self::Deleted(meta) => meta.metadata.id.clone(),
-            Self::Fresh(v) | Self::Cached(v) => {
+            Self::Fresh(v) | Self::Cached((v, _)) => {
                 //If the object is removed, and init it again, the value type may be different
                 v.metadata.object_type = value_type;
                 v.value_layout = value_layout;
@@ -73,7 +69,6 @@ impl RuntimeObjectMeta {
         *self = Self::Fresh(ObjectMetaValue {
             metadata,
             value_layout,
-            status: DataStatus::Dirty,
         });
         Ok(())
     }
@@ -89,10 +84,10 @@ impl RuntimeObjectMeta {
                     _ => unreachable!(),
                 }
             }
-            Self::Cached(meta) => {
+            Self::Cached((meta, _)) => {
                 let meta_copy = meta.clone();
                 match std::mem::replace(self, Self::Deleted(meta_copy)) {
-                    Self::Cached(meta) => Ok(meta.metadata),
+                    Self::Cached((meta, _)) => Ok(meta.metadata),
                     _ => unreachable!(),
                 }
             }
@@ -105,12 +100,16 @@ impl RuntimeObjectMeta {
         matches!(self, RuntimeObjectMeta::None(_))
     }
 
+    pub fn is_fresh(&self) -> bool {
+        matches!(self, RuntimeObjectMeta::Fresh(_))
+    }
+
     pub fn id(&self) -> &ObjectID {
         match self {
             Self::None(id) => id,
             Self::Deleted(meta) => &meta.metadata.id,
             Self::Fresh(meta) => &meta.metadata.id,
-            Self::Cached(meta) => &meta.metadata.id,
+            Self::Cached((meta, _)) => &meta.metadata.id,
         }
     }
 
@@ -123,7 +122,7 @@ impl RuntimeObjectMeta {
                 Ok(&meta.metadata)
             }
             Self::Fresh(meta) => Ok(&meta.metadata),
-            Self::Cached(meta) => Ok(&meta.metadata),
+            Self::Cached((meta, _)) => Ok(&meta.metadata),
         }
     }
 
@@ -139,7 +138,7 @@ impl RuntimeObjectMeta {
             Self::Deleted(meta) => Err(PartialVMError::new(StatusCode::MISSING_DATA)
                 .with_message(format!("Layout of {} is Deleted", &meta.metadata.id))),
             Self::Fresh(meta) => Ok(&meta.value_layout),
-            Self::Cached(meta) => Ok(&meta.value_layout),
+            Self::Cached((meta, _)) => Ok(&meta.value_layout),
         }
     }
 
@@ -160,9 +159,8 @@ impl RuntimeObjectMeta {
                     .with_message(format!("ObjectMeta of {} is Deleted", &meta.metadata.id)));
             }
             RuntimeObjectMeta::Fresh(meta) => meta,
-            RuntimeObjectMeta::Cached(meta) => meta,
+            RuntimeObjectMeta::Cached((meta, _)) => meta,
         };
-        meta_value.status = DataStatus::Dirty;
         Ok(&mut meta_value.metadata)
     }
 
@@ -198,7 +196,7 @@ impl RuntimeObjectMeta {
         match meta.size.checked_add(1) {
             Some(size) => {
                 meta.size = size;
-                if log::log_enabled!(log::Level::Trace) {
+                if tracing::enabled!(tracing::Level::TRACE) {
                     tracing::trace!(
                         object_id = tracing::field::display(&meta.id),
                         op = "increase_size",
@@ -222,7 +220,7 @@ impl RuntimeObjectMeta {
         match meta.size.checked_sub(1) {
             Some(size) => {
                 meta.size = size;
-                if log::log_enabled!(log::Level::Trace) {
+                if tracing::enabled!(tracing::Level::TRACE) {
                     tracing::trace!(
                         object_id = tracing::field::display(&meta.id),
                         op = "decrease_size",
@@ -257,10 +255,10 @@ impl RuntimeObjectMeta {
         match self {
             RuntimeObjectMeta::None(_) => None,
             RuntimeObjectMeta::Fresh(meta) => Some((meta.metadata, true)),
-            RuntimeObjectMeta::Cached(meta) => match meta.status {
-                DataStatus::Clean => Some((meta.metadata, false)),
-                DataStatus::Dirty => Some((meta.metadata, true)),
-            },
+            RuntimeObjectMeta::Cached((meta, origin)) => {
+                let is_dirty = meta.metadata != origin;
+                Some((meta.metadata, is_dirty))
+            }
             RuntimeObjectMeta::Deleted(meta) => Some((meta.metadata, true)),
         }
     }

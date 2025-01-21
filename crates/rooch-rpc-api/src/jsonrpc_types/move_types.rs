@@ -151,6 +151,61 @@ impl From<AnnotatedMoveStruct> for AnnotatedMoveStructView {
     }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Eq, PartialEq, PartialOrd, Ord)]
+pub struct AnnotatedMoveStructVectorView {
+    /// alilities of each element
+    pub abilities: u8,
+    #[serde(rename = "type")]
+    /// type of each element
+    pub type_: StructTagView,
+    /// field of each element
+    pub field: Vec<IdentifierView>,
+    // values of the whole vector
+    pub value: Vec<Vec<AnnotatedMoveValueView>>,
+}
+
+impl AnnotatedMoveStructVectorView {
+    fn try_from(origin: Vec<AnnotatedMoveValue>) -> Result<Self, AnnotatedMoveValueView> {
+        if origin.is_empty() {
+            Err(AnnotatedMoveValueView::Vector(
+                origin.into_iter().map(Into::into).collect(),
+            ))
+        } else {
+            let first = origin.first().unwrap();
+            if let AnnotatedMoveValue::Struct(ele) = first {
+                let field = ele
+                    .value
+                    .iter()
+                    .map(|x| IdentifierView::from(x.0.clone()))
+                    .collect();
+                let abilities = ele.abilities.into_u8();
+                let type_ = StrView(ele.type_.clone());
+                let value: Vec<Vec<AnnotatedMoveValueView>> = origin
+                    .into_iter()
+                    .map(|v| {
+                        if let AnnotatedMoveValue::Struct(s) = v {
+                            s.value.into_iter().map(|(_, v)| v.into()).collect()
+                        } else {
+                            unreachable!("AnnotatedMoveStructVectorView")
+                        }
+                    })
+                    .collect();
+
+                Ok(Self {
+                    abilities,
+                    type_,
+                    field,
+                    value,
+                })
+            } else {
+                Err(AnnotatedMoveValueView::Vector(
+                    origin.into_iter().map(Into::into).collect(),
+                ))
+            }
+        }
+    }
+}
+
 /// Some specific struct that we want to display in a special way for better readability
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Eq, PartialEq, PartialOrd, Ord)]
 #[serde(untagged)]
@@ -161,7 +216,7 @@ pub enum SpecificStructView {
 }
 
 impl SpecificStructView {
-    pub fn try_from_annotated(move_struct: AnnotatedMoveStruct) -> Option<Self> {
+    pub fn try_from_annotated(move_struct: &AnnotatedMoveStruct) -> Option<Self> {
         if MoveString::struct_tag_match(&move_struct.type_) {
             MoveString::try_from(move_struct)
                 .ok()
@@ -192,12 +247,33 @@ pub enum AnnotatedMoveValueView {
     Bool(bool),
     Address(AccountAddressView),
     Vector(Vec<AnnotatedMoveValueView>),
+    StructVector(Box<AnnotatedMoveStructVectorView>),
     Bytes(BytesView),
     Struct(AnnotatedMoveStructView),
     SpecificStruct(SpecificStructView),
     U16(u16),
     U32(u32),
     U256(StrView<u256::U256>),
+}
+
+impl AnnotatedMoveValueView {
+    /// Calculate the total number of Move structs recursively
+    pub fn size_of_struct_recursively(origin: &AnnotatedMoveValue) -> usize {
+        match origin {
+            AnnotatedMoveValue::Vector(_, data) => match data.first() {
+                Some(first) => Self::size_of_struct_recursively(first) * data.len(),
+                None => 0,
+            },
+            AnnotatedMoveValue::Struct(data) => {
+                let mut size = 1;
+                for (_, v) in &data.value {
+                    size += Self::size_of_struct_recursively(v);
+                }
+                size
+            }
+            _ => 0,
+        }
+    }
 }
 
 impl From<AnnotatedMoveValue> for AnnotatedMoveValueView {
@@ -209,11 +285,14 @@ impl From<AnnotatedMoveValue> for AnnotatedMoveValueView {
             AnnotatedMoveValue::Bool(b) => AnnotatedMoveValueView::Bool(b),
             AnnotatedMoveValue::Address(data) => AnnotatedMoveValueView::Address(StrView(data)),
             AnnotatedMoveValue::Vector(_type_tag, data) => {
-                AnnotatedMoveValueView::Vector(data.into_iter().map(Into::into).collect())
+                match AnnotatedMoveStructVectorView::try_from(data) {
+                    Ok(v) => AnnotatedMoveValueView::StructVector(Box::new(v)),
+                    Err(v) => v,
+                }
             }
             AnnotatedMoveValue::Bytes(data) => AnnotatedMoveValueView::Bytes(StrView(data)),
             AnnotatedMoveValue::Struct(data) => {
-                match SpecificStructView::try_from_annotated(data.clone()) {
+                match SpecificStructView::try_from_annotated(&data) {
                     Some(struct_view) => AnnotatedMoveValueView::SpecificStruct(struct_view),
                     None => AnnotatedMoveValueView::Struct(data.into()),
                 }

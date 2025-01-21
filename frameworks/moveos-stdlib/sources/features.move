@@ -134,6 +134,16 @@ module moveos_std::features {
     public fun ensure_wasm_enabled() {
         assert!(is_enabled(WASM), EAPI_DISABLED);
     }
+
+    /// Whether to enable size-based gas fee for adding field values
+    const VALUE_SIZE_GAS: u64 = 7;
+    public fun get_value_size_gas_feature(): u64 { VALUE_SIZE_GAS }
+    public fun value_size_gas_enabled(): bool {
+        is_enabled(VALUE_SIZE_GAS)
+    }
+    public fun ensure_value_size_gas_enabled() {
+        assert!(is_enabled(VALUE_SIZE_GAS), EAPI_DISABLED);
+    }
     
     /// Helper for getting all features. 
     /// Update this once new feature added.
@@ -144,7 +154,8 @@ module moveos_std::features {
             TESTNET,
             MODULE_TEMPLATE,
             MODULE_PUBLISHING_ALLOWLIST,
-            WASM
+            WASM,
+            VALUE_SIZE_GAS,
         ]
     }
     // --------------------------------------------------------------------------------------------
