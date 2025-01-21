@@ -195,7 +195,7 @@ module rooch_dex::liquidity_incentive {
         coin: Coin<RewardToken>,
         start_time: u64,
     ) {
-        let end_time = (coin::value(&coin) / (release_per_second as u256) as u64);
+        let end_time = start_time + (coin::value(&coin) / (release_per_second as u256) as u64);
         let coin_store = coin_store::create_coin_store<RewardToken>();
         coin_store::deposit(&mut coin_store, coin);
         if (swap_utils::sort_token_type<X, Y>()) {

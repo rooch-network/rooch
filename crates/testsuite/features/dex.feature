@@ -58,7 +58,7 @@ Feature: RoochDAO Apps contract tests
       Then assert: "{{$.account[-1].FSC.balance}} != 0"
 
       #Create incentive pool
-      Then cmd: "move run --function default::liquidity_incentive::create_pool --type-args 0x3::gas_coin::RGas --type-args default::fixed_supply_coin::FSC --type-args default::liquid_xp::LiquidXP --args u128:10000 --args u256:10000000000 --args u64:0 --json"
+      Then cmd: "move run --function default::admin_util::create_xp_incentive_pool --type-args 0x3::gas_coin::RGas --type-args default::fixed_supply_coin::FSC --args u128:10000 --args u256:10000000000 --args u64:0 --args object:{{$.object[0].data[0].id}} --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       Then cmd: "object -t 'default::liquidity_incentive::FarmingAsset<0x3::gas_coin::RGas,default::fixed_supply_coin::FSC,default::liquid_xp::LiquidXP>'"
