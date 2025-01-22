@@ -119,12 +119,15 @@ impl BestRollbackCommand {
 
             println!("best rollback tx_order: {}", best_tx_order);
             println!("--------------- details ------------------");
-            println!(
-                "last matched block height: {}, block hash: {}",
+            print!(
+                "last matched block height: {}\n\
+                block hash: {}\n",
                 last_matched_block_height, last_matched_block_hash
             );
-            println!(
-                "first mismatched block height: {}, exp block hash: {}, act block hash: {}",
+            print!(
+                "first mismatched block height: {}\n\
+                exp block hash: {}\n\
+                act block hash: {}\n",
                 first_mismatched_block_height,
                 first_mismatched_block_hash_exp,
                 first_mismatched_block_hash_act

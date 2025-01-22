@@ -81,6 +81,7 @@ pub struct DAInfoView {
     pub last_avail_block_number: Option<StrView<u128>>,
     pub last_avail_tx_order: Option<StrView<u64>>,
     pub last_avail_block_update_time: Option<StrView<u64>>,
+    pub avail_backends: Vec<(String, StrView<u128>)>,
 }
 
 impl From<DAServerStatus> for DAInfoView {
@@ -92,6 +93,11 @@ impl From<DAServerStatus> for DAInfoView {
             last_avail_block_number: info.last_avail_block_number.map(Into::into),
             last_avail_tx_order: info.last_avail_tx_order.map(Into::into),
             last_avail_block_update_time: info.last_avail_block_update_time.map(Into::into),
+            avail_backends: info
+                .avail_backends
+                .into_iter()
+                .map(|(k, v)| (k, v.into()))
+                .collect(),
         }
     }
 }

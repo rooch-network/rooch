@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::backend::openda::adapter::OpenDAAdapter;
+use crate::backend::openda::adapter::{AdapterSubmitStat, OpenDAAdapter};
 use anyhow::anyhow;
 use async_trait::async_trait;
 use base64::engine::general_purpose;
@@ -28,19 +28,14 @@ const DEFAULT_TURBO_PAYMENT_TOKEN: &str = "ethereum";
 
 /// Avail client: A turbo and Light
 /// Turbo client has higher priority, if not available, use the Light client
-#[derive(Clone)]
 pub struct AvailFusionAdapter {
+    stats: AdapterSubmitStat,
     turbo_client: Option<AvailTurboClient>,
     light_client: Option<AvailLightClient>,
 }
 
-#[async_trait]
-impl OpenDAAdapter for AvailFusionAdapter {
-    async fn submit_segment(
-        &self,
-        segment_id: SegmentID,
-        segment_bytes: &[u8],
-    ) -> anyhow::Result<()> {
+impl AvailFusionAdapter {
+    async fn submit(&self, segment_id: SegmentID, segment_bytes: &[u8]) -> anyhow::Result<()> {
         match &self.turbo_client {
             Some(turbo_client) => {
                 match turbo_client.submit_segment(segment_id, segment_bytes).await {
@@ -65,6 +60,26 @@ impl OpenDAAdapter for AvailFusionAdapter {
                 .await
         } else {
             Err(anyhow!("Both turbo and light clients are not available"))
+        }
+    }
+}
+
+#[async_trait]
+impl OpenDAAdapter for AvailFusionAdapter {
+    async fn submit_segment(
+        &self,
+        segment_id: SegmentID,
+        segment_bytes: &[u8],
+        is_last_segment: bool,
+    ) -> anyhow::Result<()> {
+        match self.submit(segment_id, segment_bytes).await {
+            Ok(_) => {
+                self.stats
+                    .add_done_segment(segment_id, is_last_segment)
+                    .await;
+                Ok(())
+            }
+            Err(error) => Err(error),
         }
     }
 }
@@ -103,7 +118,7 @@ impl AvailFusionClientConfig {
         })
     }
 
-    pub fn build_client(&self) -> anyhow::Result<AvailFusionAdapter> {
+    pub fn build_client(&self, stats: AdapterSubmitStat) -> anyhow::Result<AvailFusionAdapter> {
         let turbo_client = if let Some(endpoint) = &self.turbo_endpoint {
             Some(AvailTurboClient::new(
                 endpoint,
@@ -123,6 +138,7 @@ impl AvailFusionClientConfig {
         };
 
         Ok(AvailFusionAdapter {
+            stats,
             turbo_client,
             light_client,
         })
@@ -183,8 +199,7 @@ pub struct AvailTurboClientSubmitResponse {
     submission_id: String,
 }
 
-#[async_trait]
-impl OpenDAAdapter for AvailTurboClient {
+impl AvailTurboClient {
     async fn submit_segment(
         &self,
         segment_id: SegmentID,
@@ -268,8 +283,7 @@ pub struct AvailLightClientSubmitResponse {
     index: u32,
 }
 
-#[async_trait]
-impl OpenDAAdapter for AvailLightClient {
+impl AvailLightClient {
     async fn submit_segment(
         &self,
         segment_id: SegmentID,

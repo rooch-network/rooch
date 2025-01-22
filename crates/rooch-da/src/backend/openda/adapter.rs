@@ -8,15 +8,15 @@ use crate::backend::openda::celestia::{
     CelestiaAdapter, WrappedNamespace, DEFAULT_CELESTIA_MAX_RETRIES,
     DEFAULT_CELESTIA_MAX_SEGMENT_SIZE,
 };
-use crate::backend::openda::opendal::BACK_OFF_MIN_DELAY;
+use crate::backend::openda::opendal::OpenDalAdapter;
 use anyhow::anyhow;
 use async_trait::async_trait;
-use opendal::layers::{LoggingLayer, RetryLayer};
-use opendal::Scheme;
 use rooch_config::da_config::{DABackendOpenDAConfig, OpenDAScheme};
 use rooch_config::retrieve_map_config_value;
 use rooch_types::da::segment::SegmentID;
 use std::collections::HashMap;
+use std::sync::Arc;
+use tokio::sync::RwLock;
 
 const DEFAULT_MAX_SEGMENT_SIZE: u64 = 8 * 1024 * 1024;
 pub(crate) const DEFAULT_MAX_RETRY_TIMES: usize = 3;
@@ -28,7 +28,62 @@ pub(crate) trait OpenDAAdapter: Sync + Send {
         &self,
         segment_id: SegmentID,
         segment_bytes: &[u8],
+        is_last_segment: bool,
     ) -> anyhow::Result<()>;
+}
+
+#[derive(Clone)]
+pub struct AdapterSubmitStat {
+    inner: Arc<RwLock<AdapterSubmitStatInner>>,
+}
+
+struct AdapterSubmitStatInner {
+    chunk_id: u128,
+    segment_number_sum: u64,
+    latest_done_chunk_id: u128,
+}
+
+impl Default for AdapterSubmitStat {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl AdapterSubmitStat {
+    pub fn new() -> Self {
+        Self {
+            inner: Arc::new(RwLock::new(AdapterSubmitStatInner {
+                chunk_id: 0,
+                segment_number_sum: 0,
+                latest_done_chunk_id: 0,
+            })),
+        }
+    }
+
+    pub async fn add_done_segment(&self, segment_id: SegmentID, is_last_segment: bool) {
+        let mut inner = self.inner.write().await;
+        if segment_id.chunk_id != inner.chunk_id {
+            // new chunk
+            inner.segment_number_sum = 0;
+            inner.chunk_id = segment_id.chunk_id;
+        }
+        inner.segment_number_sum += segment_id.segment_number;
+        if is_last_segment {
+            let mut exp_segment_number_sum = 0;
+            for i in 0..=segment_id.segment_number {
+                exp_segment_number_sum += i;
+            }
+            if exp_segment_number_sum == inner.segment_number_sum {
+                // only accept segments added in order
+                inner.latest_done_chunk_id = inner.chunk_id;
+            }
+        }
+    }
+
+    pub async fn get_latest_done_chunk_id(&self) -> u128 {
+        let inner = self.inner.read().await;
+        inner.latest_done_chunk_id
+    }
 }
 
 #[derive(Clone)]
@@ -73,7 +128,10 @@ impl OpenDAAdapterConfig {
         })
     }
 
-    pub(crate) async fn build(&self) -> anyhow::Result<Box<dyn OpenDAAdapter>> {
+    pub(crate) async fn build(
+        &self,
+        stats: AdapterSubmitStat,
+    ) -> anyhow::Result<Box<dyn OpenDAAdapter>> {
         let max_retries = self.max_retries;
         let scheme = self.scheme.clone();
         let scheme_config = self.scheme_config.clone();
@@ -82,7 +140,7 @@ impl OpenDAAdapterConfig {
             OpenDAScheme::Avail => {
                 let avail_fusion_config =
                     AvailFusionClientConfig::from_scheme_config(scheme_config, max_retries)?;
-                let avail_fusion_client = avail_fusion_config.build_client()?;
+                let avail_fusion_client = avail_fusion_config.build_client(stats)?;
                 Box::new(avail_fusion_client)
             }
             OpenDAScheme::Celestia => {
@@ -93,21 +151,15 @@ impl OpenDAAdapterConfig {
                         &scheme_config["endpoint"],
                         scheme_config.get("auth_token").map(|s| s.as_str()),
                         max_retries,
+                        stats,
                     )
                     .await?,
                 )
             }
             _ => {
-                let mut op = opendal::Operator::via_iter(Scheme::from(scheme), scheme_config)?;
-                op = op
-                    .layer(
-                        RetryLayer::new()
-                            .with_max_times(max_retries)
-                            .with_min_delay(BACK_OFF_MIN_DELAY),
-                    )
-                    .layer(LoggingLayer::default());
-                op.check().await?;
-                Box::new(op)
+                let adapter =
+                    OpenDalAdapter::new(scheme, scheme_config, max_retries, stats).await?;
+                Box::new(adapter)
             }
         };
         Ok(operator)
@@ -278,5 +330,46 @@ mod tests {
         assert!(result3.is_err(), "GCS scheme should return Err if neither 'credential' nor 'credential_path' are provided");
 
         assert_eq!(map_config.get("default_storage_class").unwrap(), "STANDARD");
+    }
+
+    #[tokio::test]
+    async fn test_adapter_submit_stats() {
+        let stats = AdapterSubmitStat::new();
+        assert_eq!(stats.get_latest_done_chunk_id().await, 0);
+
+        let segment_id1 = SegmentID {
+            chunk_id: 1,
+            segment_number: 0,
+        };
+        stats.add_done_segment(segment_id1, false).await;
+        assert_eq!(stats.get_latest_done_chunk_id().await, 0);
+
+        let segment_id2 = SegmentID {
+            chunk_id: 1,
+            segment_number: 1,
+        };
+        stats.add_done_segment(segment_id2, true).await;
+        assert_eq!(stats.get_latest_done_chunk_id().await, 1);
+
+        let segment_id3 = SegmentID {
+            chunk_id: 2,
+            segment_number: 0,
+        };
+        stats.add_done_segment(segment_id3, false).await;
+        assert_eq!(stats.get_latest_done_chunk_id().await, 1);
+
+        let segment_id4 = SegmentID {
+            chunk_id: 2,
+            segment_number: 1,
+        };
+        stats.add_done_segment(segment_id4, false).await;
+        assert_eq!(stats.get_latest_done_chunk_id().await, 1);
+
+        let segment_id5 = SegmentID {
+            chunk_id: 2,
+            segment_number: 2,
+        };
+        stats.add_done_segment(segment_id5, true).await;
+        assert_eq!(stats.get_latest_done_chunk_id().await, 2);
     }
 }
