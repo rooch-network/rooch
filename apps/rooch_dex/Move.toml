@@ -14,3 +14,8 @@ app_admin = "_"
 std = "0x1"
 moveos_std = "0x2"
 rooch_framework = "0x3"
+
+[dev-addresses]
+rooch_dex = "0x42"
+app_admin = "0x43"
+
