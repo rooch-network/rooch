@@ -204,26 +204,24 @@ pub(crate) fn build_rooch_db(
     (root, rooch_db)
 }
 
-pub struct LedgerTxGetter {
+pub(crate) struct LedgerTxGetter {
     segment_dir: PathBuf,
     chunks: HashMap<u128, Vec<u64>>,
-    min_chunk_id: u128,
     max_chunk_id: u128,
 }
 
 impl LedgerTxGetter {
-    pub fn new(segment_dir: PathBuf) -> anyhow::Result<Self> {
-        let (chunks, min_chunk_id, max_chunk_id) = collect_chunks(segment_dir.clone())?;
+    pub(crate) fn new(segment_dir: PathBuf) -> anyhow::Result<Self> {
+        let (chunks, _min_chunk_id, max_chunk_id) = collect_chunks(segment_dir.clone())?;
 
         Ok(LedgerTxGetter {
             segment_dir,
             chunks,
-            min_chunk_id,
             max_chunk_id,
         })
     }
 
-    pub fn load_ledger_tx_list(
+    pub(crate) fn load_ledger_tx_list(
         &self,
         chunk_id: u128,
         must_has: bool,
@@ -243,12 +241,8 @@ impl LedgerTxGetter {
         Ok(Some(tx_list))
     }
 
-    pub fn get_max_chunk_id(&self) -> u128 {
+    pub(crate) fn get_max_chunk_id(&self) -> u128 {
         self.max_chunk_id
-    }
-
-    pub fn get_min_chunk_id(&self) -> u128 {
-        self.min_chunk_id
     }
 }
 
