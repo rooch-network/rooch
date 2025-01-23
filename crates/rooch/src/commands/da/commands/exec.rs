@@ -194,7 +194,7 @@ impl ExecCommand {
         .await?;
 
         let ledger_tx_loader = LedgerTxGetter::new(self.segment_dir.clone())?;
-        let tx_da_indexer = TxMetaStore::new(
+        let tx_meta_store = TxMetaStore::new(
             self.tx_position_path.clone(),
             self.exp_root_path.clone(),
             moveos_store.transaction_store,
@@ -204,7 +204,7 @@ impl ExecCommand {
             mode: self.mode,
             force_align: self.force_align,
             ledger_tx_getter: ledger_tx_loader,
-            tx_meta_store: tx_da_indexer,
+            tx_meta_store,
             sequenced_tx_store,
             bitcoin_client_proxy,
             executor,
