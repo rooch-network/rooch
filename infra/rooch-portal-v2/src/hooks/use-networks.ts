@@ -48,6 +48,9 @@ const market = (network: 'test' | 'main') => ({
     };
   },
 });
+const dex = {
+  address: ROOCH_MULTI_SIG_ADDRESS,
+};
 
 const { networkConfig, useNetworkVariable, useNetworkVariables } = createNetworkConfig({
   mainnet: {
@@ -71,6 +74,7 @@ const { networkConfig, useNetworkVariable, useNetworkVariables } = createNetwork
       faucet: faucet('main'),
       inviter,
       market: market('main'),
+      dex,
     },
   },
   testnet: {
@@ -94,6 +98,7 @@ const { networkConfig, useNetworkVariable, useNetworkVariables } = createNetwork
       faucet: faucet('test'),
       inviter,
       market: market('test'),
+      dex,
     },
   },
   localnet: {
@@ -117,6 +122,7 @@ const { networkConfig, useNetworkVariable, useNetworkVariables } = createNetwork
       faucet: faucet('test'),
       inviter,
       market: market('test'),
+      dex,
     },
   },
 });

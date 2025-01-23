@@ -31,13 +31,13 @@ export default function MarketplaceHomeView() {
         <MarketplaceItemCard
           tick="grow"
           onClick={() => {
-            router.push(`/trade/grow`);
+            router.push(`/trade/market/grow`);
           }}
         />
         <MarketplaceItemCard
           tick="gold"
           onClick={() => {
-            router.push(`/trade/gold`);
+            router.push(`/trade/market/gold`);
           }}
         />
       </Box>

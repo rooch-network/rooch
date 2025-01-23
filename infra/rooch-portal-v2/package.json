@@ -37,6 +37,7 @@
     "@iconify/react": "^5.0.1",
     "@mui/lab": "^5.0.0-alpha.170",
     "@mui/material": "^5.15.20",
+    "@mui/icons-material": "6.4.0",
     "@mui/material-nextjs": "^5.15.11",
     "@mui/x-data-grid": "^7.7.0",
     "@mui/x-date-pickers": "^7.7.0",

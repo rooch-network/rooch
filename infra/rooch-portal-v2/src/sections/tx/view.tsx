@@ -31,8 +31,8 @@ import { useTabs } from 'src/hooks/use-tabs';
 import { formatCoin } from 'src/utils/format-number';
 
 import { varAlpha } from 'src/theme/styles';
-import { DashboardContent } from 'src/layouts/dashboard';
 import { GAS_COIN_DECIMALS } from 'src/config/constant';
+import { DashboardContent } from 'src/layouts/dashboard';
 
 import { Iconify } from 'src/components/iconify';
 

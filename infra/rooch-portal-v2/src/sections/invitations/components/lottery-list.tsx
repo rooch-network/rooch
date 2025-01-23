@@ -17,8 +17,8 @@ import {
 import { Scrollbar } from '../../../components/scrollbar';
 import { getUTCOffset } from '../../../utils/format-time';
 import { formatCoin } from '../../../utils/format-number';
-import { useNetworkVariable } from '../../../hooks/use-networks';
 import { GAS_COIN_DECIMALS } from '../../../config/constant';
+import { useNetworkVariable } from '../../../hooks/use-networks';
 import TableSkeleton from '../../../components/skeleton/table-skeleton';
 import { TableNoData, TableHeadCustom } from '../../../components/table';
 

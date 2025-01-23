@@ -1,6 +1,5 @@
 import type { BalanceInfoView } from '@roochnetwork/rooch-sdk';
 
-import Link from 'next/link';
 import BigNumber from 'bignumber.js';
 import { useCurrentAddress } from '@roochnetwork/rooch-sdk-kit';
 

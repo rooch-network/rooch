@@ -1,4 +1,4 @@
-import MarketplaceView from 'src/sections/trade/view';
+import MarketplaceView from 'src/sections/trade/market/view';
 
 export const metadata = {
   title: 'Market | Orderbook',
