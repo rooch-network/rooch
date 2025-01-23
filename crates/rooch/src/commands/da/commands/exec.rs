@@ -109,6 +109,12 @@ pub struct ExecCommand {
     pub enable_rocks_stats: bool,
 
     #[clap(
+        long = "open-da-path",
+        help = "open da path for downloading chunks from DA. Workign with `mode=sync`"
+    )]
+    pub open_da_path: Option<String>,
+
+    #[clap(
         long = "force-align",
         help = "force align to min(last_sequenced_tx_order, last_executed_tx_order)"
     )]
@@ -117,17 +123,23 @@ pub struct ExecCommand {
 
 #[derive(Debug, Copy, Clone, clap::ValueEnum)]
 pub enum ExecMode {
-    Exec, // Only execute transactions, no sequence updates
-    Seq,  // Only update sequence data, no execution
-    All,  // Execute transactions and update sequence data
+    /// Only execute transactions, no sequence updates
+    Exec,
+    /// Only update sequence data, no execution
+    Seq,
+    /// Execute transactions and update sequence data
+    All,
+    /// Sync from DA automatically and `All` mode
+    Sync,
 }
 
 impl ExecMode {
     pub fn as_bits(&self) -> u8 {
         match self {
-            ExecMode::Exec => 0b10, // Execute
-            ExecMode::Seq => 0b01,  // Sequence
-            ExecMode::All => 0b11,  // All
+            ExecMode::Exec => 0b10,  // Execute
+            ExecMode::Seq => 0b01,   // Sequence
+            ExecMode::All => 0b11,   // All
+            ExecMode::Sync => 0b111, // Sync
         }
     }
 
@@ -140,7 +152,7 @@ impl ExecMode {
     }
 
     pub fn need_all(&self) -> bool {
-        self.as_bits() == 0b11
+        self.as_bits() & 0b11 == 0b11
     }
 
     pub fn get_verify_targets(&self) -> String {
@@ -148,6 +160,7 @@ impl ExecMode {
             ExecMode::Exec => "state root",
             ExecMode::Seq => "accumulator root",
             ExecMode::All => "state+accumulator root",
+            ExecMode::Sync => "state+accumulator root",
         }
         .to_string()
     }
@@ -259,7 +272,7 @@ impl ExecInner {
             loop {
                 tokio::select! {
                     _ = shutdown_signal.changed() => {
-                        tracing::info!("Shutting down logging task.");
+                        info!("Shutting down logging task.");
                         break;
                     }
                     _ = interval.tick() => {
@@ -267,7 +280,7 @@ impl ExecInner {
                         let executed_tx_order = executed_tx_order_cloned.load(std::sync::atomic::Ordering::Relaxed);
                         let produced = produced_cloned.load(std::sync::atomic::Ordering::Relaxed);
 
-                        tracing::info!(
+                        info!(
                             "produced: {}, done: {}, max executed_tx_order: {}",
                             produced,
                             done,
@@ -754,4 +767,32 @@ async fn build_executor_and_store(
         moveos_store,
         rooch_db,
     ))
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::commands::da::commands::exec::ExecMode;
+
+    #[test]
+    fn test_exec_mode() {
+        let mode = ExecMode::Exec;
+        assert_eq!(mode.need_exec(), true);
+        assert_eq!(mode.need_seq(), false);
+        assert_eq!(mode.need_all(), false);
+
+        let mode = ExecMode::Seq;
+        assert_eq!(mode.need_exec(), false);
+        assert_eq!(mode.need_seq(), true);
+        assert_eq!(mode.need_all(), false);
+
+        let mode = ExecMode::All;
+        assert_eq!(mode.need_exec(), true);
+        assert_eq!(mode.need_seq(), true);
+        assert_eq!(mode.need_all(), true);
+
+        let mode = ExecMode::Sync;
+        assert_eq!(mode.need_exec(), true);
+        assert_eq!(mode.need_seq(), true);
+        assert_eq!(mode.need_all(), true);
+    }
 }

@@ -11,6 +11,7 @@ use moveos_store::transaction_store::{TransactionDBStore, TransactionStore};
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::object::ObjectMeta;
 use moveos_types::transaction::TransactionExecutionInfo;
+use reqwest::StatusCode;
 use rooch_config::RoochOpt;
 use rooch_db::RoochDB;
 use rooch_store::RoochStore;
@@ -27,7 +28,10 @@ use std::io::{BufRead, BufReader, BufWriter, Read, Write};
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::atomic::AtomicU64;
-use tracing::info;
+use std::time::Duration;
+use tokio::sync::watch;
+use tokio::time;
+use tracing::{error, info, warn};
 
 pub mod exec;
 pub mod index;
@@ -159,6 +163,27 @@ pub(crate) fn collect_chunks(
             }
         }
     }
+
+    let origin_chunk_count = chunks.len();
+    // remove chunks that don't have segment_number 0
+    // because we need to start from segment_number 0 to unpack the chunk.
+    // in the download process, we download segments to tmp dir first,
+    // then move them to segment dir,
+    // a segment with segment_number 0 is the last segment to move,
+    // so if it exists, the chunk is complete.
+    let chunks: HashMap<u128, Vec<u64>> =
+        chunks.into_iter().filter(|(_, v)| v.contains(&0)).collect();
+    let chunk_count = chunks.len();
+    if chunk_count < origin_chunk_count {
+        error!(
+            "Removed {} incomplete chunks, {} chunks left. Please check the segment dir: {:?} and download the missing segments.",
+            origin_chunk_count - chunk_count,
+            chunk_count,
+            segment_dir
+        );
+        return Err(anyhow::anyhow!("Incomplete chunks found"));
+    }
+
     if chunks.is_empty() {
         return Err(anyhow::anyhow!("No segment found in {:?}", segment_dir));
     }
@@ -204,6 +229,117 @@ pub(crate) fn build_rooch_db(
     (root, rooch_db)
 }
 
+pub(crate) struct SegmentDownloader {
+    open_da_path: String,
+    segment_dir: PathBuf,
+    next_chunk_id: u128,
+}
+
+impl SegmentDownloader {
+    pub(crate) fn new(
+        open_da_path: String,
+        segment_dir: PathBuf,
+        next_chunk_id: u128,
+    ) -> anyhow::Result<Self> {
+        Ok(SegmentDownloader {
+            open_da_path,
+            segment_dir,
+            next_chunk_id,
+        })
+    }
+
+    async fn download_chunk(
+        open_da_path: String,
+        segment_dir: PathBuf,
+        segment_tmp_dir: PathBuf,
+        chunk_id: u128,
+    ) -> anyhow::Result<bool> {
+        let tmp_dir = segment_tmp_dir;
+        let mut done_segments = Vec::new();
+        for segment_number in 0.. {
+            let segment_url = format!("{}/{}_{}", open_da_path, chunk_id, segment_number);
+            let res = reqwest::get(segment_url).await?;
+            if res.status().is_success() {
+                let segment_bytes = res.bytes().await?;
+                let segment_path = tmp_dir.join(format!("{}_{}", chunk_id, segment_number));
+                let mut file = File::create(&segment_path)?;
+                file.write_all(&segment_bytes)?;
+                done_segments.push(segment_number);
+            } else {
+                if res.status() == StatusCode::NOT_FOUND {
+                    if segment_number == 0 {
+                        return Ok(false);
+                    } else {
+                        break; // no more segments for this chunk
+                    }
+                }
+                return Err(anyhow!(
+                    "Failed to download segment: {}_{}: {} ",
+                    chunk_id,
+                    segment_number,
+                    res.status(),
+                ));
+            }
+        }
+
+        for segment_number in done_segments.into_iter().rev() {
+            let tmp_path = tmp_dir.join(format!("{}_{}", chunk_id, segment_number));
+            let dst_path = segment_dir.join(format!("{}_{}", chunk_id, segment_number));
+            fs::rename(tmp_path, dst_path)?;
+        }
+
+        Ok(true)
+    }
+
+    pub(crate) fn run_in_background(
+        self,
+        shutdown_signal: watch::Receiver<()>,
+    ) -> anyhow::Result<()> {
+        let base_url = self.open_da_path;
+        let segment_dir = self.segment_dir;
+        let tmp_dir = segment_dir.join("tmp");
+        fs::create_dir_all(&tmp_dir)?;
+        let next_chunk_id = self.next_chunk_id;
+
+        tokio::spawn(async move {
+            let mut shutdown_signal = shutdown_signal;
+
+            let mut interval = time::interval(Duration::from_secs(60 * 5));
+            interval.set_missed_tick_behavior(time::MissedTickBehavior::Skip);
+
+            let mut chunk_id = next_chunk_id;
+            let base_url = base_url.clone();
+
+            loop {
+                tokio::select! {
+                    _ = shutdown_signal.changed() => {
+                        info!("Shutting down segments download task.");
+                        break;
+                    }
+                    _ = interval.tick() => {
+                        loop {
+                            let res = Self::download_chunk(base_url.clone(), segment_dir.clone(), tmp_dir.clone(), chunk_id).await;
+                            match res {
+                                Ok(true) => {
+                                    chunk_id += 1;
+                                }
+                                Ok(false) => {
+                                    break;
+                                }
+                                Err(e) => {
+                                    warn!("Failed to download chunk: {}, error: {}", chunk_id, e);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        Ok(())
+    }
+}
+
 pub(crate) struct LedgerTxGetter {
     segment_dir: PathBuf,
     chunks: HashMap<u128, Vec<u64>>,
@@ -214,6 +350,23 @@ impl LedgerTxGetter {
     pub(crate) fn new(segment_dir: PathBuf) -> anyhow::Result<Self> {
         let (chunks, _min_chunk_id, max_chunk_id) = collect_chunks(segment_dir.clone())?;
 
+        Ok(LedgerTxGetter {
+            segment_dir,
+            chunks,
+            max_chunk_id,
+        })
+    }
+
+    pub(crate) fn new_with_open_da(
+        open_da_path: String,
+        segment_dir: PathBuf,
+        shutdown_signal: watch::Receiver<()>,
+    ) -> anyhow::Result<Self> {
+        let (chunks, _min_chunk_id, max_chunk_id) = collect_chunks(segment_dir.clone())?;
+
+        let downloader =
+            SegmentDownloader::new(open_da_path, segment_dir.clone(), max_chunk_id + 1)?;
+        downloader.run_in_background(shutdown_signal)?;
         Ok(LedgerTxGetter {
             segment_dir,
             chunks,
@@ -241,6 +394,7 @@ impl LedgerTxGetter {
         Ok(Some(tx_list))
     }
 
+    // only valid for no segments sync
     pub(crate) fn get_max_chunk_id(&self) -> u128 {
         self.max_chunk_id
     }
