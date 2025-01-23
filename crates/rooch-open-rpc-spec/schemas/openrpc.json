@@ -12,7 +12,7 @@
       "name": "Apache-2.0",
       "url": "https://raw.githubusercontent.com/rooch-network/rooch/main/LICENSE"
     },
-    "version": "0.8.7"
+    "version": "0.8.8"
   },
   "methods": [
     {
@@ -1064,7 +1064,26 @@
       },
       "DAInfoView": {
         "type": "object",
+        "required": [
+          "avail_backends"
+        ],
         "properties": {
+          "avail_backends": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": [
+                {
+                  "type": "string"
+                },
+                {
+                  "$ref": "#/components/schemas/u128"
+                }
+              ],
+              "maxItems": 2,
+              "minItems": 2
+            }
+          },
           "last_avail_block_number": {
             "anyOf": [
               {

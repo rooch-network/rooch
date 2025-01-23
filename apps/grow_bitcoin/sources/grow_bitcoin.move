@@ -821,6 +821,11 @@ module grow_bitcoin::grow_bitcoin {
         farming_asset.asset_total_weight = farming_asset.asset_total_weight - asset_weight;
     }
 
+    public entry fun init_coin_info_metadata(){
+        let farming_asset = account::borrow_resource<FarmingAsset>(DEPLOYER);
+        coin::init_metadata(&farming_asset.coin_info);
+    }
+
     #[test(sender=@0x42)]
     fun test_stake(sender: signer) {
         bitcoin_move::genesis::init_for_test();

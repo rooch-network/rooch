@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::actor::messages::{AppendTransactionMessage, GetServerStatusMessage};
+use crate::backend::openda::AdapterSubmitStat;
 use crate::backend::{DABackend, DABackends};
 use crate::batcher::BatchMaker;
 use anyhow::anyhow;
@@ -27,6 +28,7 @@ use tokio::sync::broadcast;
 pub struct DAServerActor {
     rooch_store: RoochStore,
     backend_identifiers: Vec<String>,
+    adapter_stats: Vec<AdapterSubmitStat>,
     last_block_number: Option<u128>,
     last_block_update_time: u64,
     background_last_block_update_time: Arc<AtomicU64>,
@@ -57,12 +59,17 @@ impl DAServerActor {
             .iter()
             .map(|backend| backend.get_identifier())
             .collect();
+        let adapter_stats = backends
+            .iter()
+            .map(|backend| backend.get_adapter_stats())
+            .collect();
 
         let last_block_number = rooch_store.get_last_block_number()?;
         let background_last_block_update_time = Arc::new(AtomicU64::new(0));
         let server = DAServerActor {
             rooch_store: rooch_store.clone(),
             backend_identifiers,
+            adapter_stats,
             last_block_number,
             last_block_update_time: 0,
             background_last_block_update_time: background_last_block_update_time.clone(),
@@ -85,7 +92,7 @@ impl DAServerActor {
         Ok(server)
     }
 
-    pub fn get_status(&self) -> anyhow::Result<DAServerStatus> {
+    pub async fn get_status(&self) -> anyhow::Result<DAServerStatus> {
         let last_tx_order = if let Some(last_block_number) = self.last_block_number {
             let last_block_state = self.rooch_store.get_block_state(last_block_number)?;
             Some(last_block_state.block_range.tx_order_end)
@@ -114,11 +121,19 @@ impl DAServerActor {
             None
         };
 
-        let avail_backends = if self.backend_identifiers.is_empty() {
-            vec!["nop".to_string()]
-        } else {
-            self.backend_identifiers.clone()
-        };
+        let mut avail_backends = Vec::new();
+        for (identifier, stat) in self
+            .backend_identifiers
+            .iter()
+            .zip(self.adapter_stats.iter())
+        {
+            let identifier = identifier.clone();
+            // Get the latest done chunk id
+            // (it's block number too for ChunkV0, which is the only version now)
+            let future = stat.get_latest_done_chunk_id();
+            let result = future.await; // Resolve the future
+            avail_backends.push((identifier, result));
+        }
 
         Ok(DAServerStatus {
             last_block_number: self.last_block_number,
@@ -224,7 +239,7 @@ impl Handler<GetServerStatusMessage> for DAServerActor {
         _msg: GetServerStatusMessage,
         _ctx: &mut ActorContext,
     ) -> anyhow::Result<DAServerStatus> {
-        self.get_status()
+        self.get_status().await
     }
 }
 

@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::backend::openda::adapter::OpenDAAdapter;
+use crate::backend::openda::adapter::{AdapterSubmitStat, OpenDAAdapter};
 use anyhow::anyhow;
 use async_trait::async_trait;
 use celestia_rpc::{BlobClient, Client};
@@ -21,6 +21,7 @@ const BACK_OFF_MIN_DELAY: Duration = Duration::from_millis(3000);
 const MAX_BACKOFF_DELAY: Duration = Duration::from_secs(30);
 
 pub(crate) struct CelestiaAdapter {
+    stats: AdapterSubmitStat,
     namespace: Namespace,
     client: Client,
     max_retries: usize,
@@ -32,23 +33,18 @@ impl CelestiaAdapter {
         endpoint: &str,
         auth_token: Option<&str>,
         max_retries: usize,
+        stats: AdapterSubmitStat,
     ) -> anyhow::Result<Self> {
         let celestia_client = Client::new(endpoint, auth_token).await?;
         Ok(CelestiaAdapter {
+            stats,
             namespace,
             client: celestia_client,
             max_retries,
         })
     }
-}
 
-#[async_trait]
-impl OpenDAAdapter for CelestiaAdapter {
-    async fn submit_segment(
-        &self,
-        segment_id: SegmentID,
-        segment_bytes: &[u8],
-    ) -> anyhow::Result<()> {
+    async fn submit(&self, segment_id: SegmentID, segment_bytes: &[u8]) -> anyhow::Result<()> {
         let blob = Blob::new(self.namespace, segment_bytes.to_vec())?;
         let max_attempts = self.max_retries + 1; // max_attempts = max_retries + first attempt
         let mut attempts = 0;
@@ -91,6 +87,26 @@ impl OpenDAAdapter for CelestiaAdapter {
                     }
                 }
             }
+        }
+    }
+}
+
+#[async_trait]
+impl OpenDAAdapter for CelestiaAdapter {
+    async fn submit_segment(
+        &self,
+        segment_id: SegmentID,
+        segment_bytes: &[u8],
+        is_last_segment: bool,
+    ) -> anyhow::Result<()> {
+        match self.submit(segment_id, segment_bytes).await {
+            Ok(_) => {
+                self.stats
+                    .add_done_segment(segment_id, is_last_segment)
+                    .await;
+                Ok(())
+            }
+            Err(error) => Err(error),
         }
     }
 }

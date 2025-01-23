@@ -1406,3 +1406,61 @@ curl --location 'http://localhost:6767' \
     "id": 101
 }
 ```
+
+### rooch_status
+
+Get the chain and service status
+
+By passing different node URL, the service status of different networks can be queried.
+
+```
+curl -H "Content-Type: application/json" -X POST --data '{"jsonrpc":"2.0","method":"rooch_status","params":[],"id":1}' https://dev-seed.rooch.network:443 | jq
+```
+
+Result:
+
+```
+{
+  "jsonrpc": "2.0",
+  "result": {
+    "service_status": "active",
+    "rooch_status": {
+      "sequencer_info": {
+        "last_order": "2",
+        "last_accumulator_info": {
+          "accumulator_root": "0x8701897de062418c8593f93d74b76e0b5374a4d51ad45f23b186411744402ed0",
+          "frozen_subtree_roots": [
+            "0x768a114dd60b64f51bfba9048ab15a6dea72a8df42ae892498be05987f8b0615",
+            "0x771db71c7c1a4440e80f8e162908ff701a6ba91cc768552007a9fc413c937348"
+          ],
+          "num_leaves": "3",
+          "num_nodes": "4"
+        }
+      },
+      "da_info": {
+        "last_block_number": null,
+        "last_tx_order": null,
+        "last_block_update_time": null,
+        "last_avail_block_number": null,
+        "last_avail_tx_order": null,
+        "last_avail_block_update_time": null
+      },
+      "root_state": {
+        "state_root": "0x270ab097035b82e17776a6a073cda585c50ec1932e2483a92c8ec0566acb41e0",
+        "size": "59"
+      }
+    },
+    "bitcoin_status": {
+      "confirmed_block": {
+        "block_height": "0",
+        "block_hash": "0f9188f13cb7b2c71f2a335e3a4fc328bf5beb436012afca590b1a11466e2206"
+      },
+      "pending_block": {
+        "block_height": "0",
+        "block_hash": "0f9188f13cb7b2c71f2a335e3a4fc328bf5beb436012afca590b1a11466e2206"
+      }
+    }
+  },
+  "id": 1
+}
+```
