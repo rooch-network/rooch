@@ -29,6 +29,7 @@ use rooch_types::genesis_config;
 use serde_json::Value;
 use std::rc::Rc;
 use std::{collections::BTreeMap, path::PathBuf};
+use move_core_types::effects::ChangeSet;
 use termcolor::Buffer;
 use tokio::runtime::Runtime;
 
@@ -115,6 +116,7 @@ impl CommandAction<Option<Value>> for TestCommand {
             self.move_args.package_path,
             build_config,
             natives,
+            ChangeSet::new(),
             Some(cost_table),
         )?;
 

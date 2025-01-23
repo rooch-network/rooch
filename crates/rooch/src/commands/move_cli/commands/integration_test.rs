@@ -202,7 +202,7 @@ impl CommandAction<Option<Value>> for IntegrationTestCommand {
             };
             let compiled = BuildPlan::create(resolved_graph)?.compile_with_driver(
                 &mut std::io::stdout(),
-                Some(6),
+                &build_config.compiler_config,
                 |compiler: Compiler| {
                     let compiler =
                         compiler.set_flags(Flags::empty().set_keep_testing_functions(true));

@@ -4,12 +4,13 @@
 use crate::cli_types::{CommandAction, TransactionOptions, WalletContextOptions};
 use crate::tx_runner::dry_run_tx_locally;
 use async_trait::async_trait;
+use bytes::Bytes;
 use clap::Parser;
 use move_cli::Move;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::effects::Op;
-use move_core_types::resolver::ModuleResolver;
 use move_core_types::{identifier::Identifier, language_storage::ModuleId};
+use move_vm_types::resolver::ModuleResolver;
 use moveos_compiler::dependency_order::sort_by_dependency_order;
 use moveos_types::access_path::AccessPath;
 use moveos_types::move_std::string::MoveString;
@@ -31,6 +32,7 @@ use rooch_types::error::{RoochError, RoochResult};
 use rooch_types::transaction::rooch::RoochTransaction;
 use std::collections::BTreeMap;
 use std::io::stderr;
+use move_binary_format::errors::PartialVMResult;
 use tokio::runtime::Handle;
 
 struct MemoryModuleResolver {
@@ -90,14 +92,14 @@ impl MemoryModuleResolver {
 }
 
 impl ModuleResolver for MemoryModuleResolver {
-    fn get_module(&self, module_id: &ModuleId) -> Result<Option<Vec<u8>>, anyhow::Error> {
+    fn get_module(&self, module_id: &ModuleId) -> PartialVMResult<Option<Bytes>> {
         let pkg_addr = module_id.address();
         let module_name = module_id.name();
         match self.packages.get(pkg_addr) {
             Some(modules) => {
                 let module = modules.get(module_name.as_str());
                 match module {
-                    Some(module) => Ok(Some(module.clone())),
+                    Some(module) => Ok(Some(Bytes::from(module.to_vec()))),
                     None => Ok(None),
                 }
             }
@@ -188,7 +190,8 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
         let config_cloned = config.clone();
 
         // Compile the package and run the verifier
-        let mut package = config.compile_package_no_exit(&package_path, &mut stderr())?;
+        let (mut package, _) =
+            config.compile_package_no_exit(&package_path, vec![], &mut stderr())?;
         run_verifier(package_path, config_cloned, &mut package)?;
 
         // Get the modules from the package

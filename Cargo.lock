@@ -9346,6 +9346,7 @@ dependencies = [
  "bcs 0.1.6",
  "bitcoin 0.32.3",
  "bitcoin-client",
+ "bytes",
  "ciborium",
  "clap 4.5.17",
  "codespan-reporting",

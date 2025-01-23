@@ -70,6 +70,8 @@ impl CommandAction<Option<Value>> for ErrmapCommand {
             ModelConfig {
                 all_files_as_targets: true,
                 target_filter: None,
+                compiler_version: Default::default(),
+                language_version: Default::default(),
             },
         )?;
         let mut errmap_gen = move_errmapgen::ErrmapGen::new(&model, &errmap_options);

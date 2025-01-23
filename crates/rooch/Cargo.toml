@@ -34,8 +34,6 @@ async-trait = { workspace = true }
 codespan-reporting = { workspace = true }
 termcolor = { workspace = true }
 itertools = { workspace = true }
-hdrhistogram = { workspace = true }
-heed = { workspace = true }
 hex = { workspace = true }
 regex = { workspace = true }
 parking_lot = { workspace = true }
@@ -54,8 +52,6 @@ schemars = { workspace = true }
 ciborium = { workspace = true }
 wasmer = { workspace = true }
 tiny-keccak = { workspace = true }
-reqwest = { workspace = true }
-rocksdb = { workspace = true }
 
 move-binary-format = { workspace = true }
 move-cli = { workspace = true }
@@ -73,7 +69,6 @@ move-vm-types = { workspace = true }
 moveos-stdlib = { workspace = true }
 moveos-types = { workspace = true }
 moveos-store = { workspace = true }
-moveos-eventbus = { workspace = true }
 moveos-common = { workspace = true }
 moveos = { workspace = true }
 moveos-verifier = { workspace = true }
@@ -87,7 +82,6 @@ framework-types = { workspace = true }
 raw-store = { workspace = true }
 smt = { workspace = true }
 
-accumulator = { workspace = true }
 bitcoin-client = { workspace = true }
 rooch-executor = { workspace = true }
 rooch-key = { workspace = true }
@@ -100,9 +94,7 @@ rooch-rpc-server = { workspace = true }
 rooch-rpc-client = { workspace = true }
 rooch-integration-test-runner = { workspace = true }
 rooch-indexer = { workspace = true }
-rooch-event = { workspace = true }
 rooch-db = { workspace = true }
-rooch-pipeline-processor = { workspace = true }
 rooch-common = { workspace = true }
 rooch-store = { workspace = true }
 rooch-faucet = { workspace = true }
@@ -112,9 +104,9 @@ framework-release = { workspace = true }
 
 #We should keep the allocator in the last of the dependencies
 [target.'cfg(not(target_env = "msvc"))'.dependencies]
-tikv-jemallocator = { workspace = true }
+jemallocator = { version = "0.5.4", features = ["unprefixed_malloc_on_supported_platforms", "profiling"] }
 [target.'cfg(target_env = "msvc")'.dependencies]
-mimalloc = { workspace = true }
+mimalloc = { version = "0.1.39" }
 
 [build-dependencies]
 anyhow = { workspace = true }
