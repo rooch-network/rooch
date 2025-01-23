@@ -38,15 +38,17 @@ use rooch_types::sequencer::SequencerInfo;
 use rooch_types::transaction::{
     L1BlockWithBody, LedgerTransaction, LedgerTxData, TransactionSequenceInfo,
 };
-use std::cmp::{max, min};
+use std::cmp::{max, min, PartialEq};
 use std::path::PathBuf;
 use std::sync::atomic::AtomicU64;
 use std::sync::Arc;
 use std::time::Duration;
+use tokio::signal::unix::{signal, SignalKind};
 use tokio::sync::mpsc::Receiver;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::watch;
 use tokio::time;
+use tokio::time::sleep;
 use tracing::{info, warn};
 
 /// exec LedgerTransaction List for verification.
@@ -109,7 +111,7 @@ pub struct ExecCommand {
     pub enable_rocks_stats: bool,
 
     #[clap(
-        long = "open-da-path",
+        long = "open-da",
         help = "open da path for downloading chunks from DA. Workign with `mode=sync`"
     )]
     pub open_da_path: Option<String>,
@@ -131,6 +133,12 @@ pub enum ExecMode {
     All,
     /// Sync from DA automatically and `All` mode
     Sync,
+}
+
+impl PartialEq for ExecMode {
+    fn eq(&self, other: &Self) -> bool {
+        self.as_bits() == other.as_bits()
+    }
 }
 
 impl ExecMode {
@@ -168,12 +176,39 @@ impl ExecMode {
 
 impl ExecCommand {
     pub async fn execute(self) -> RoochResult<()> {
-        let mut exec_inner = self.build_exec_inner().await?;
-        exec_inner.run().await?;
+        let (shutdown_tx, shutdown_rx) = watch::channel(());
+
+        let shutdown_tx_clone = shutdown_tx.clone();
+
+        tokio::spawn(async move {
+            let mut sigterm =
+                signal(SignalKind::terminate()).expect("Failed to listen for SIGTERM");
+            let mut sigint = signal(SignalKind::interrupt()).expect("Failed to listen for SIGINT");
+
+            tokio::select! {
+                _ = sigterm.recv() => {
+                    info!("SIGTERM received, shutting down...");
+                    let _ = shutdown_tx_clone.send(());
+                }
+                _ = sigint.recv() => {
+                    info!("SIGINT received (Ctrl+C), shutting down...");
+                    let _ = shutdown_tx_clone.send(());
+                }
+            }
+        });
+
+        let mut exec_inner = self.build_exec_inner(shutdown_rx.clone()).await?;
+        exec_inner.run(shutdown_rx).await?;
+
+        let _ = shutdown_tx.send(());
+
         Ok(())
     }
 
-    async fn build_exec_inner(&self) -> anyhow::Result<ExecInner> {
+    async fn build_exec_inner(
+        &self,
+        shutdown_signal: watch::Receiver<()>,
+    ) -> anyhow::Result<ExecInner> {
         let actor_system = ActorSystem::global_system();
 
         let row_cache_size = self
@@ -206,7 +241,14 @@ impl ExecCommand {
         )
         .await?;
 
-        let ledger_tx_loader = LedgerTxGetter::new(self.segment_dir.clone())?;
+        let ledger_tx_loader = match self.mode {
+            ExecMode::Sync => LedgerTxGetter::new_with_auto_sync(
+                self.open_da_path.clone().unwrap(),
+                self.segment_dir.clone(),
+                shutdown_signal,
+            )?,
+            _ => LedgerTxGetter::new(self.segment_dir.clone())?,
+        };
         let tx_meta_store = TxMetaStore::new(
             self.tx_position_path.clone(),
             self.exp_root_path.clone(),
@@ -312,9 +354,8 @@ impl ExecInner {
         }
     }
 
-    async fn run(&mut self) -> anyhow::Result<()> {
-        let (shutdown_tx, shutdown_rx) = watch::channel(());
-        self.start_logging_task(shutdown_rx);
+    async fn run(&mut self, shutdown_signal: watch::Receiver<()>) -> anyhow::Result<()> {
+        self.start_logging_task(shutdown_signal);
 
         // larger buffer size to avoid rx starving caused by consumer has to access disks and request btc block.
         // after consumer load data(ledger_tx) from disk/btc client, burst to executor, need large buffer to avoid blocking.
@@ -323,11 +364,7 @@ impl ExecInner {
         let producer = self.produce_tx(tx);
         let consumer = self.consume_tx(rx);
 
-        let result = self.join_producer_and_consumer(producer, consumer).await;
-
-        // Send shutdown signal and ensure logging task exits
-        let _ = shutdown_tx.send(());
-        result
+        self.join_producer_and_consumer(producer, consumer).await
     }
 
     fn update_startup_info_after_rollback(
@@ -466,8 +503,13 @@ impl ExecInner {
             }
             let tx_list = self
                 .ledger_tx_getter
-                .load_ledger_tx_list(next_block_number, false)?;
+                .load_ledger_tx_list(next_block_number, false)
+                .await?;
             if tx_list.is_none() {
+                if self.mode == ExecMode::Sync {
+                    sleep(Duration::from_secs(5 * 60)).await;
+                    continue;
+                }
                 next_block_number -= 1; // no chunk belongs to this block_number
                 break;
             }
@@ -776,23 +818,23 @@ mod tests {
     #[test]
     fn test_exec_mode() {
         let mode = ExecMode::Exec;
-        assert_eq!(mode.need_exec(), true);
-        assert_eq!(mode.need_seq(), false);
-        assert_eq!(mode.need_all(), false);
+        assert!(mode.need_exec());
+        assert!(!mode.need_seq());
+        assert!(!mode.need_all());
 
         let mode = ExecMode::Seq;
-        assert_eq!(mode.need_exec(), false);
-        assert_eq!(mode.need_seq(), true);
-        assert_eq!(mode.need_all(), false);
+        assert!(!mode.need_exec());
+        assert!(mode.need_seq());
+        assert!(!mode.need_all());
 
         let mode = ExecMode::All;
-        assert_eq!(mode.need_exec(), true);
-        assert_eq!(mode.need_seq(), true);
-        assert_eq!(mode.need_all(), true);
+        assert!(mode.need_exec());
+        assert!(mode.need_seq());
+        assert!(mode.need_all());
 
         let mode = ExecMode::Sync;
-        assert_eq!(mode.need_exec(), true);
-        assert_eq!(mode.need_seq(), true);
-        assert_eq!(mode.need_all(), true);
+        assert!(mode.need_exec());
+        assert!(mode.need_seq());
+        assert!(mode.need_all());
     }
 }
