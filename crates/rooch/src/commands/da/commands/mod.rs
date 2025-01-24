@@ -14,6 +14,7 @@ use moveos_types::transaction::TransactionExecutionInfo;
 use reqwest::StatusCode;
 use rooch_config::RoochOpt;
 use rooch_db::RoochDB;
+use rooch_rpc_client::Client;
 use rooch_store::RoochStore;
 use rooch_types::da::chunk::chunk_from_segments;
 use rooch_types::da::segment::{segment_from_bytes, SegmentID};
@@ -348,6 +349,8 @@ impl SegmentDownloader {
 pub(crate) struct LedgerTxGetter {
     segment_dir: PathBuf,
     chunks: Arc<RwLock<HashMap<u128, Vec<u64>>>>,
+    client: Option<Client>,
+    exp_roots: Arc<RwLock<HashMap<u64, (H256, H256)>>>,
     max_chunk_id: u128,
 }
 
@@ -358,6 +361,8 @@ impl LedgerTxGetter {
         Ok(LedgerTxGetter {
             segment_dir,
             chunks: Arc::new(RwLock::new(chunks)),
+            client: None,
+            exp_roots: Arc::new(RwLock::new(HashMap::new())),
             max_chunk_id,
         })
     }
@@ -365,6 +370,8 @@ impl LedgerTxGetter {
     pub(crate) fn new_with_auto_sync(
         open_da_path: String,
         segment_dir: PathBuf,
+        client: Client,
+        exp_roots: Arc<RwLock<HashMap<u64, (H256, H256)>>>,
         shutdown_signal: watch::Receiver<()>,
     ) -> anyhow::Result<Self> {
         let (chunks, _min_chunk_id, max_chunk_id) = collect_chunks(segment_dir.clone())?;
@@ -381,6 +388,8 @@ impl LedgerTxGetter {
         Ok(LedgerTxGetter {
             segment_dir,
             chunks: chunks_to_sync,
+            client: Some(client),
+            exp_roots,
             max_chunk_id,
         })
     }
@@ -390,7 +399,8 @@ impl LedgerTxGetter {
         chunk_id: u128,
         must_has: bool,
     ) -> anyhow::Result<Option<Vec<LedgerTransaction>>> {
-        self.chunks
+        let tx_list_opt = self
+            .chunks
             .read()
             .await
             .get(&chunk_id)
@@ -411,7 +421,36 @@ impl LedgerTxGetter {
                     )?;
                     Ok(Some(tx_list))
                 },
-            )
+            )?;
+        if let Some(tx_list) = tx_list_opt {
+            if let Some(client) = &self.client {
+                let exp_roots = self.exp_roots.clone();
+                let mut last_tx = tx_list.last().unwrap().clone();
+                let tx_order = last_tx.sequence_info.tx_order;
+                let last_tx_hash = last_tx.tx_hash();
+                let resp = client
+                    .rooch
+                    .get_transactions_by_hash(vec![last_tx_hash])
+                    .await?;
+                let tx_info = resp.into_iter().next().flatten().ok_or_else(|| {
+                    anyhow!("No transaction info found for tx: {:?}", last_tx_hash)
+                })?;
+                let tx_state_root = tx_info
+                    .execution_info
+                    .ok_or(anyhow!(
+                        "No execution info found for tx: {:?}",
+                        last_tx_hash
+                    ))?
+                    .state_root
+                    .0;
+                let tx_accumulator_root = tx_info.transaction.sequence_info.tx_accumulator_root.0;
+                let mut exp_roots = exp_roots.write().await;
+                exp_roots.insert(tx_order, (tx_state_root, tx_accumulator_root));
+            }
+            Ok(Some(tx_list))
+        } else {
+            Ok(None)
+        }
     }
 
     // only valid for no segments sync
@@ -422,7 +461,7 @@ impl LedgerTxGetter {
 
 pub(crate) struct TxMetaStore {
     tx_position_indexer: TxPositionIndexer,
-    exp_roots: HashMap<u64, (H256, H256)>, // tx_order -> (state_root, accumulator_root)
+    exp_roots: Arc<RwLock<HashMap<u64, (H256, H256)>>>, // tx_order -> (state_root, accumulator_root)
     max_verified_tx_order: u64,
     transaction_store: TransactionDBStore,
     rooch_store: RoochStore,
@@ -442,13 +481,18 @@ impl TxMetaStore {
     ) -> anyhow::Result<Self> {
         let tx_position_indexer = TxPositionIndexer::new(tx_position_indexer_path, None)?;
         let exp_roots_map = Self::load_exp_roots(exp_roots_path)?;
+        let max_verified_tx_order = exp_roots_map.max_verified_tx_order;
         Ok(TxMetaStore {
             tx_position_indexer,
-            exp_roots: exp_roots_map.exp_roots,
-            max_verified_tx_order: exp_roots_map.max_verified_tx_order,
+            exp_roots: Arc::new(RwLock::new(exp_roots_map.exp_roots)),
+            max_verified_tx_order,
             transaction_store,
             rooch_store,
         })
+    }
+
+    pub(crate) fn get_exp_roots_map(&self) -> Arc<RwLock<HashMap<u64, (H256, H256)>>> {
+        self.exp_roots.clone()
     }
 
     fn load_exp_roots(exp_roots_path: PathBuf) -> anyhow::Result<ExpRootsMap> {
@@ -473,8 +517,8 @@ impl TxMetaStore {
         })
     }
 
-    pub(crate) fn get_exp_roots(&self, tx_order: u64) -> Option<(H256, H256)> {
-        self.exp_roots.get(&tx_order).cloned()
+    pub(crate) async fn get_exp_roots(&self, tx_order: u64) -> Option<(H256, H256)> {
+        self.exp_roots.read().await.get(&tx_order).cloned()
     }
 
     pub(crate) fn get_max_verified_tx_order(&self) -> u64 {
