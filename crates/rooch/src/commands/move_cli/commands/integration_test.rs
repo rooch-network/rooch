@@ -16,6 +16,7 @@ use move_compiler::{
     cfgir, expansion, hlir, naming, parser, typing, Compiler, Flags, FullyCompiledProgram,
 };
 use move_package::compilation::build_plan::BuildPlan;
+use move_package::compilation::compiled_package::build_and_report_v2_driver;
 use move_package::source_package::layout::SourcePackageLayout;
 use moveos_types::addresses::MOVEOS_NAMED_ADDRESS_MAPPING;
 use once_cell::sync::Lazy;
@@ -163,6 +164,8 @@ impl CommandAction<Option<Value>> for IntegrationTestCommand {
 
         build_config.force_recompilation = true;
 
+        let cloned_build_config = build_config.clone();
+
         let resolved_graph =
             build_config.resolution_graph_for_package(&rerooted_path, &mut std::io::stdout())?;
 
@@ -202,7 +205,8 @@ impl CommandAction<Option<Value>> for IntegrationTestCommand {
             };
             let compiled = BuildPlan::create(resolved_graph)?.compile_with_driver(
                 &mut std::io::stdout(),
-                &build_config.compiler_config,
+                &cloned_build_config.compiler_config,
+                vec![],
                 |compiler: Compiler| {
                     let compiler =
                         compiler.set_flags(Flags::empty().set_keep_testing_functions(true));
@@ -283,7 +287,17 @@ impl CommandAction<Option<Value>> for IntegrationTestCommand {
                         .compiled
                         .extend(full_program.compiled.clone());
 
-                    Ok((full_program.files, full_program.compiled))
+                    Ok((full_program.files, full_program.compiled, None))
+                },
+                |options| {
+                    let (files, units, opt_env) = build_and_report_v2_driver(options).unwrap();
+                    let env = opt_env.expect("v2 driver should return env");
+                    //let root_package_in_model = env.symbol_pool().make(root_package.deref());
+                    //let built_test_plan =
+                    //plan_builder_v2::construct_test_plan(&env, Some(root_package_in_model));
+
+                    //test_plan_v2 = Some((built_test_plan, files.clone(), units.clone()));
+                    Ok((files, units, Some(env)))
                 },
             )?;
             (pre_compiled_lib, compiled)
