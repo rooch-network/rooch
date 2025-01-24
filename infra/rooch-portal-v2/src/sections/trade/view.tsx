@@ -2,7 +2,6 @@
 
 import type { BalanceInfoView, AnnotatedMoveStructView } from '@roochnetwork/rooch-sdk';
 
-import { usePagination } from 'react-use-pagination';
 import { Args, Serializer } from '@roochnetwork/rooch-sdk';
 import { useMemo, useState, useEffect, useCallback } from 'react';
 import { useRoochClient, useCurrentAddress } from '@roochnetwork/rooch-sdk-kit';
@@ -61,8 +60,6 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
   const [toCoinBalanceInfo, setToCoinBalanceInfo] = useState<BalanceInfoView>();
   const [fromCoinBalanceInfo, setFromCoinBalanceInfo] = useState<BalanceInfoView>();
 
-  const renderList = useMemo(() => marketList, [marketList]);
-
   const tickLowerCase = useMemo(() => marketplaceTick.toLowerCase(), [marketplaceTick]);
   const tickUpperCase = useMemo(() => marketplaceTick.toUpperCase(), [marketplaceTick]);
 
@@ -76,12 +73,6 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
     },
     [mergeSelected]
   );
-
-  const { currentPage, totalPages, setPage, setNextPage, startIndex, endIndex } = usePagination({
-    totalItems: renderList?.length || 0,
-    initialPage: 0,
-    initialPageSize: 50,
-  });
 
   const openAcceptBidDialog = (item: BidItem) => {
     setAcceptBidItem(item);
@@ -98,6 +89,16 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
   const [loadingOrder, setLoadingOrder] = useState(false);
 
   const [listPageParams, setListPageParams] = useState<{
+    fromPrice: number;
+    startOrderId: string;
+    hasNextPage: boolean;
+  }>({
+    fromPrice: 0,
+    startOrderId: '',
+    hasNextPage: true,
+  });
+
+  const [bidPageParams, setBidPageParams] = useState<{
     fromPrice: number;
     startOrderId: string;
     hasNextPage: boolean;
@@ -180,16 +181,16 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
     if (!toCoinBalanceInfo || !fromCoinBalanceInfo) return;
     setLoadingList(true);
     try {
-      const fromPrice = 0;
-      const start = 0;
+      let { fromPrice } = bidPageParams;
+      const { startOrderId } = bidPageParams;
       const res = await client.executeViewFunction({
         target: `${market.orderBookAddress}::market_v2::query_order_info`,
         args: [
           Args.objectId(market.tickInfo[marketplaceTick].obj),
           Args.bool(true),
-          Args.u64(fromPrice < 0 ? 0n : BigInt(fromPrice)),
-          Args.bool(true),
-          Args.u64(start < 0 ? 0n : BigInt(start)),
+          Args.u64(fromPrice <= 0 ? 0n : BigInt(fromPrice)),
+          Args.bool(fromPrice <= 0),
+          Args.u64(Number(startOrderId) <= 0 ? 0n : BigInt(startOrderId)),
         ],
         typeArgs: [fromCoinBalanceInfo.coin_type, toCoinBalanceInfo.coin_type],
       });
@@ -198,20 +199,40 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
         setBidList([]);
         return;
       }
-      const marketItemList = (decodedValue.value as unknown as any[]).map((i) => ({
+      const bidItemList = (decodedValue.value as unknown as any[]).map((i) => ({
         order_id: i[0],
         unit_price: i[1],
         quantity: i[2],
         owner: i[3],
         is_bid: i[4],
       })) as unknown as BidItem[];
-      setBidList(marketItemList);
+      console.log('🚀 ~ file: view.tsx:193 ~ marketItemList ~ marketItemList:', bidItemList);
+      setBidList((prevData) => [...prevData, ...bidItemList]);
+      const { fromPrice: countedFromPrice, start: countedStart } = countMaxOccurrences(
+        bidItemList.map((item) => Number(item.unit_price))
+      );
+      if (!(fromPrice === countedFromPrice && countedStart === 50)) {
+        fromPrice = countedFromPrice;
+      }
+      setBidPageParams(() => ({
+        fromPrice,
+        startOrderId: bidItemList[bidItemList.length - 1].order_id,
+        hasNextPage: bidItemList.length === 50,
+      }));
     } catch (error) {
       console.log('🚀 ~ file: view.tsx:260 ~ getBidData ~ error:', error);
     } finally {
       setLoadingList(false);
     }
-  }, [client, fromCoinBalanceInfo, marketplaceTick, market, toCoinBalanceInfo]);
+  }, [
+    toCoinBalanceInfo,
+    fromCoinBalanceInfo,
+    bidPageParams,
+    client,
+    market.orderBookAddress,
+    market.tickInfo,
+    marketplaceTick,
+  ]);
 
   const getMarketTradeInfo = useCallback(async () => {
     const res = await client.queryObjectStates({
@@ -269,10 +290,12 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
 
   useEffect(() => {
     getBidData();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [toCoinBalanceInfo, fromCoinBalanceInfo]);
 
   useEffect(() => {
     getListData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toCoinBalanceInfo, fromCoinBalanceInfo]);
 
   useEffect(() => {
@@ -281,14 +304,18 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
 
   const [createBidDialogOpen, setCreateBidDialogOpen] = useState(false);
 
-  const sellList = useMemo(() => renderList, [renderList]);
-  console.log('🚀 ~ file: view.tsx:275 ~ MarketplaceView ~ renderList:', renderList);
-
   const [showLimitTips, setShowLimitTips] = useState(false);
 
   const isWalletConnect = useMemo(
     () => Boolean(account?.genRoochAddress().toHexAddress()),
     [account]
+  );
+
+  console.log(
+    '🚀 ~ file: view.tsx:663 ~ MarketplaceView ~ currentTab:',
+    currentTab,
+    marketList,
+    bidList
   );
 
   return (
@@ -485,7 +512,7 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
         <Tab value="bid" label="Bid" />
       </Tabs>
 
-      {!loadingList && (currentTab === 'list' ? sellList.length === 0 : bidList.length === 0) && (
+      {!loadingList && (currentTab === 'list' ? marketList.length === 0 : bidList.length === 0) && (
         <Box
           sx={{
             mt: 4,
@@ -514,56 +541,50 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
           mt: 2,
         }}
       >
-        {loadingList && (sellList.length === 0 || !fromCoinBalanceInfo || !toCoinBalanceInfo)
+        {loadingList &&
+        ((currentTab === 'list' ? marketList.length === 0 : bidList.length === 0) ||
+          !fromCoinBalanceInfo ||
+          !toCoinBalanceInfo)
           ? renderSkeleton
           : fromCoinBalanceInfo &&
             toCoinBalanceInfo && (
               <>
-                {currentTab === 'list' ? (
-                  <>
-                    {sellList.map(
-                      (item) =>
-                        item.order_id && (
-                          <InscriptionItemCard
-                            fromCoinBalanceInfo={fromCoinBalanceInfo}
-                            toCoinBalanceInfo={toCoinBalanceInfo}
-                            key={item.order_id}
-                            item={item}
-                            tick={tickLowerCase}
-                            accountBalance={fromCoinBalanceInfo.balance}
-                            selectMode={mergeMode}
-                            selected={mergeSelected.includes(item.order_id)}
-                            onSelectItem={onSelectMergeItem}
-                            onRefetchMarketData={async () => {
-                              await Promise.all([
-                                getListData(),
-                                getBidData(),
-                                getMarketTradeInfo(),
-                              ]);
-                            }}
-                          />
-                        )
-                    )}
-                  </>
-                ) : (
-                  <>
-                    {bidList?.map((item) => (
-                      <InscriptionItemBidCard
-                        fromCoinBalanceInfo={fromCoinBalanceInfo}
-                        toCoinBalanceInfo={toCoinBalanceInfo}
-                        item={item}
-                        tick={tickLowerCase}
-                        onRefetchMarketData={async () => {
-                          setCurrentTab('bid');
-                          await Promise.all([getBidData()]);
-                        }}
-                        onAcceptBid={(item) => {
-                          openAcceptBidDialog(item);
-                        }}
-                      />
-                    ))}
-                  </>
-                )}
+                {currentTab === 'list' &&
+                  marketList.map(
+                    (item) =>
+                      item.order_id && (
+                        <InscriptionItemCard
+                          fromCoinBalanceInfo={fromCoinBalanceInfo}
+                          toCoinBalanceInfo={toCoinBalanceInfo}
+                          key={item.order_id}
+                          item={item}
+                          tick={tickLowerCase}
+                          accountBalance={fromCoinBalanceInfo.balance}
+                          selectMode={mergeMode}
+                          selected={mergeSelected.includes(item.order_id)}
+                          onSelectItem={onSelectMergeItem}
+                          onRefetchMarketData={async () => {
+                            await Promise.all([getListData(), getBidData(), getMarketTradeInfo()]);
+                          }}
+                        />
+                      )
+                  )}
+                {currentTab === 'bid' &&
+                  bidList.map((item) => (
+                    <InscriptionItemBidCard
+                      fromCoinBalanceInfo={fromCoinBalanceInfo}
+                      toCoinBalanceInfo={toCoinBalanceInfo}
+                      item={item}
+                      tick={tickLowerCase}
+                      onRefetchMarketData={async () => {
+                        setCurrentTab('bid');
+                        await Promise.all([getBidData()]);
+                      }}
+                      onAcceptBid={(item) => {
+                        openAcceptBidDialog(item);
+                      }}
+                    />
+                  ))}
                 {loadingOrder && <ProductItemSkeleton />}
               </>
             )}
@@ -581,24 +602,45 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
             theme.palette.mode === 'light' ? 'rgba(244, 246, 248, 0.95)' : 'rgba(22, 28, 36, 0.95)',
         }}
       >
-        <LoadingButton
-          size="small"
-          variant="contained"
-          loading={loadingList}
-          disabled={!listPageParams.hasNextPage}
-          onClick={async () => {
-            await getListData();
-          }}
-          sx={{
-            ml: 1,
-            height: '32px',
-          }}
-          endIcon={
-            listPageParams.hasNextPage && <Iconify icon="icon-park-outline:right" width={16} />
-          }
-        >
-          {!listPageParams.hasNextPage ? 'All Loaded' : 'Load More'}
-        </LoadingButton>
+        {currentTab === 'list' ? (
+          <LoadingButton
+            size="small"
+            variant="contained"
+            loading={loadingList}
+            disabled={!listPageParams.hasNextPage}
+            onClick={async () => {
+              await getListData();
+            }}
+            sx={{
+              ml: 1,
+              height: '32px',
+            }}
+            endIcon={
+              listPageParams.hasNextPage && <Iconify icon="icon-park-outline:right" width={16} />
+            }
+          >
+            {!listPageParams.hasNextPage ? 'All Loaded' : 'Load More'}
+          </LoadingButton>
+        ) : (
+          <LoadingButton
+            size="small"
+            variant="contained"
+            loading={loadingList}
+            disabled={!bidPageParams.hasNextPage}
+            onClick={async () => {
+              await getBidData();
+            }}
+            sx={{
+              ml: 1,
+              height: '32px',
+            }}
+            endIcon={
+              bidPageParams.hasNextPage && <Iconify icon="icon-park-outline:right" width={16} />
+            }
+          >
+            {!bidPageParams.hasNextPage ? 'All Loaded' : 'Load More'}
+          </LoadingButton>
+        )}
       </Box>
       {acceptBidItem && fromCoinBalanceInfo && toCoinBalanceInfo && (
         <AcceptBidDialog
@@ -611,7 +653,6 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
           refreshBidList={async () => {
             setCurrentTab('bid');
             await Promise.all([getListData(), getBidData(), getMarketTradeInfo()]);
-            // await Promise.all([refetchBidList(), refetchAddressOwnedInscription()]);
           }}
           close={closeAcceptBidDialog}
         />
