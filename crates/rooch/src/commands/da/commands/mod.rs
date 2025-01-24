@@ -11,8 +11,10 @@ use moveos_store::transaction_store::{TransactionDBStore, TransactionStore};
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::object::ObjectMeta;
 use moveos_types::transaction::TransactionExecutionInfo;
+use reqwest::StatusCode;
 use rooch_config::RoochOpt;
 use rooch_db::RoochDB;
+use rooch_rpc_client::Client;
 use rooch_store::RoochStore;
 use rooch_types::da::chunk::chunk_from_segments;
 use rooch_types::da::segment::{segment_from_bytes, SegmentID};
@@ -20,6 +22,7 @@ use rooch_types::rooch_network::RoochChainID;
 use rooch_types::sequencer::SequencerInfo;
 use rooch_types::transaction::{LedgerTransaction, TransactionSequenceInfo};
 use serde::{Deserialize, Serialize};
+use std::cmp::max;
 use std::collections::HashMap;
 use std::fs;
 use std::fs::File;
@@ -27,7 +30,11 @@ use std::io::{BufRead, BufReader, BufWriter, Read, Write};
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::atomic::AtomicU64;
-use tracing::info;
+use std::sync::Arc;
+use std::time::Duration;
+use tokio::sync::{watch, RwLock};
+use tokio::time;
+use tracing::{error, info, warn};
 
 pub mod exec;
 pub mod index;
@@ -159,6 +166,27 @@ pub(crate) fn collect_chunks(
             }
         }
     }
+
+    let origin_chunk_count = chunks.len();
+    // remove chunks that don't have segment_number 0
+    // because we need to start from segment_number 0 to unpack the chunk.
+    // in the download process, we download segments to tmp dir first,
+    // then move them to segment dir,
+    // a segment with segment_number 0 is the last segment to move,
+    // so if it exists, the chunk is complete.
+    let chunks: HashMap<u128, Vec<u64>> =
+        chunks.into_iter().filter(|(_, v)| v.contains(&0)).collect();
+    let chunk_count = chunks.len();
+    if chunk_count < origin_chunk_count {
+        error!(
+            "Removed {} incomplete chunks, {} chunks left. Please check the segment dir: {:?} and download the missing segments.",
+            origin_chunk_count - chunk_count,
+            chunk_count,
+            segment_dir
+        );
+        return Err(anyhow::anyhow!("Incomplete chunks found"));
+    }
+
     if chunks.is_empty() {
         return Err(anyhow::anyhow!("No segment found in {:?}", segment_dir));
     }
@@ -204,57 +232,237 @@ pub(crate) fn build_rooch_db(
     (root, rooch_db)
 }
 
-pub struct LedgerTxGetter {
+pub(crate) struct SegmentDownloader {
+    open_da_path: String,
     segment_dir: PathBuf,
-    chunks: HashMap<u128, Vec<u64>>,
-    min_chunk_id: u128,
+    next_chunk_id: u128,
+    chunks: Arc<RwLock<HashMap<u128, Vec<u64>>>>,
+}
+
+impl SegmentDownloader {
+    pub(crate) fn new(
+        open_da_path: String,
+        segment_dir: PathBuf,
+        next_chunk_id: u128,
+        chunks: Arc<RwLock<HashMap<u128, Vec<u64>>>>,
+    ) -> anyhow::Result<Self> {
+        Ok(SegmentDownloader {
+            open_da_path,
+            segment_dir,
+            next_chunk_id,
+            chunks,
+        })
+    }
+
+    async fn download_chunk(
+        open_da_path: String,
+        segment_dir: PathBuf,
+        segment_tmp_dir: PathBuf,
+        chunk_id: u128,
+    ) -> anyhow::Result<Option<Vec<u64>>> {
+        let tmp_dir = segment_tmp_dir;
+        let mut done_segments = Vec::new();
+        for segment_number in 0.. {
+            let segment_url = format!("{}/{}_{}", open_da_path, chunk_id, segment_number);
+            let res = reqwest::get(segment_url).await?;
+            if res.status().is_success() {
+                let segment_bytes = res.bytes().await?;
+                let segment_path = tmp_dir.join(format!("{}_{}", chunk_id, segment_number));
+                let mut file = File::create(&segment_path)?;
+                file.write_all(&segment_bytes)?;
+                done_segments.push(segment_number);
+            } else {
+                if res.status() == StatusCode::NOT_FOUND {
+                    if segment_number == 0 {
+                        return Ok(None);
+                    } else {
+                        break; // no more segments for this chunk
+                    }
+                }
+                return Err(anyhow!(
+                    "Failed to download segment: {}_{}: {} ",
+                    chunk_id,
+                    segment_number,
+                    res.status(),
+                ));
+            }
+        }
+
+        for segment_number in done_segments.clone().into_iter().rev() {
+            let tmp_path = tmp_dir.join(format!("{}_{}", chunk_id, segment_number));
+            let dst_path = segment_dir.join(format!("{}_{}", chunk_id, segment_number));
+            fs::rename(tmp_path, dst_path)?;
+        }
+
+        Ok(Some(done_segments))
+    }
+
+    pub(crate) fn run_in_background(
+        self,
+        shutdown_signal: watch::Receiver<()>,
+    ) -> anyhow::Result<()> {
+        let base_url = self.open_da_path;
+        let segment_dir = self.segment_dir;
+        let tmp_dir = segment_dir.join("tmp");
+        fs::create_dir_all(&tmp_dir)?;
+        let next_chunk_id = self.next_chunk_id;
+
+        tokio::spawn(async move {
+            let mut shutdown_signal = shutdown_signal;
+
+            let mut interval = time::interval(Duration::from_secs(60 * 5));
+            interval.set_missed_tick_behavior(time::MissedTickBehavior::Skip);
+
+            let mut chunk_id = next_chunk_id;
+            let base_url = base_url.clone();
+
+            loop {
+                tokio::select! {
+                    _ = shutdown_signal.changed() => {
+                        info!("Shutting down segments download task.");
+                        break;
+                    }
+                    _ = interval.tick() => {
+                        loop {
+                            let res = Self::download_chunk(base_url.clone(), segment_dir.clone(), tmp_dir.clone(), chunk_id).await;
+                            match res {
+                                Ok(Some(segments)) => {
+                                    let mut chunks = self.chunks.write().await;
+                                    chunks.insert(chunk_id, segments);
+                                    chunk_id += 1;
+                                }
+                                Err(e) => {
+                                    warn!("Failed to download chunk: {}, error: {}", chunk_id, e);
+                                    break;
+                                }
+                            _ => {
+                                break;
+                                }}
+                        }
+                    }
+                }
+            }
+        });
+        Ok(())
+    }
+}
+
+pub(crate) struct LedgerTxGetter {
+    segment_dir: PathBuf,
+    chunks: Arc<RwLock<HashMap<u128, Vec<u64>>>>,
+    client: Option<Client>,
+    exp_roots: Arc<RwLock<HashMap<u64, (H256, H256)>>>,
     max_chunk_id: u128,
 }
 
 impl LedgerTxGetter {
-    pub fn new(segment_dir: PathBuf) -> anyhow::Result<Self> {
-        let (chunks, min_chunk_id, max_chunk_id) = collect_chunks(segment_dir.clone())?;
+    pub(crate) fn new(segment_dir: PathBuf) -> anyhow::Result<Self> {
+        let (chunks, _min_chunk_id, max_chunk_id) = collect_chunks(segment_dir.clone())?;
 
         Ok(LedgerTxGetter {
             segment_dir,
-            chunks,
-            min_chunk_id,
+            chunks: Arc::new(RwLock::new(chunks)),
+            client: None,
+            exp_roots: Arc::new(RwLock::new(HashMap::new())),
             max_chunk_id,
         })
     }
 
-    pub fn load_ledger_tx_list(
+    pub(crate) fn new_with_auto_sync(
+        open_da_path: String,
+        segment_dir: PathBuf,
+        client: Client,
+        exp_roots: Arc<RwLock<HashMap<u64, (H256, H256)>>>,
+        shutdown_signal: watch::Receiver<()>,
+    ) -> anyhow::Result<Self> {
+        let (chunks, _min_chunk_id, max_chunk_id) = collect_chunks(segment_dir.clone())?;
+
+        let chunks_to_sync = Arc::new(RwLock::new(chunks.clone()));
+
+        let downloader = SegmentDownloader::new(
+            open_da_path,
+            segment_dir.clone(),
+            max_chunk_id + 1,
+            chunks_to_sync.clone(),
+        )?;
+        downloader.run_in_background(shutdown_signal)?;
+        Ok(LedgerTxGetter {
+            segment_dir,
+            chunks: chunks_to_sync,
+            client: Some(client),
+            exp_roots,
+            max_chunk_id,
+        })
+    }
+
+    pub(crate) async fn load_ledger_tx_list(
         &self,
         chunk_id: u128,
         must_has: bool,
     ) -> anyhow::Result<Option<Vec<LedgerTransaction>>> {
-        let segments = self.chunks.get(&chunk_id);
-        if segments.is_none() {
-            if must_has {
-                return Err(anyhow::anyhow!("No segment found in chunk {}", chunk_id));
+        let tx_list_opt = self
+            .chunks
+            .read()
+            .await
+            .get(&chunk_id)
+            .cloned()
+            .map_or_else(
+                || {
+                    if must_has {
+                        Err(anyhow::anyhow!("No segment found in chunk {}", chunk_id))
+                    } else {
+                        Ok(None)
+                    }
+                },
+                |segment_numbers| {
+                    let tx_list = get_tx_list_from_chunk(
+                        self.segment_dir.clone(),
+                        chunk_id,
+                        segment_numbers.clone(),
+                    )?;
+                    Ok(Some(tx_list))
+                },
+            )?;
+        if let Some(tx_list) = tx_list_opt {
+            if let Some(client) = &self.client {
+                let exp_roots = self.exp_roots.clone();
+                let mut last_tx = tx_list.last().unwrap().clone();
+                let tx_order = last_tx.sequence_info.tx_order;
+                let last_tx_hash = last_tx.tx_hash();
+                let resp = client
+                    .rooch
+                    .get_transactions_by_hash(vec![last_tx_hash])
+                    .await?;
+                let tx_info = resp.into_iter().next().flatten().ok_or_else(|| {
+                    anyhow!("No transaction info found for tx: {:?}", last_tx_hash)
+                })?;
+                let tx_state_root = tx_info
+                    .execution_info
+                    .ok_or(anyhow!(
+                        "No execution info found for tx: {:?}",
+                        last_tx_hash
+                    ))?
+                    .state_root
+                    .0;
+                let tx_accumulator_root = tx_info.transaction.sequence_info.tx_accumulator_root.0;
+                let mut exp_roots = exp_roots.write().await;
+                exp_roots.insert(tx_order, (tx_state_root, tx_accumulator_root));
             }
-            return Ok(None);
+            Ok(Some(tx_list))
+        } else {
+            Ok(None)
         }
-        let tx_list = get_tx_list_from_chunk(
-            self.segment_dir.clone(),
-            chunk_id,
-            segments.unwrap().clone(),
-        )?;
-        Ok(Some(tx_list))
     }
 
-    pub fn get_max_chunk_id(&self) -> u128 {
+    // only valid for no segments sync
+    pub(crate) fn get_max_chunk_id(&self) -> u128 {
         self.max_chunk_id
-    }
-
-    pub fn get_min_chunk_id(&self) -> u128 {
-        self.min_chunk_id
     }
 }
 
 pub(crate) struct TxMetaStore {
     tx_position_indexer: TxPositionIndexer,
-    exp_roots: HashMap<u64, (H256, H256)>, // tx_order -> (state_root, accumulator_root)
+    exp_roots: Arc<RwLock<HashMap<u64, (H256, H256)>>>, // tx_order -> (state_root, accumulator_root)
     max_verified_tx_order: u64,
     transaction_store: TransactionDBStore,
     rooch_store: RoochStore,
@@ -266,21 +474,33 @@ struct ExpRootsMap {
 }
 
 impl TxMetaStore {
-    pub(crate) fn new(
+    pub(crate) async fn new(
         tx_position_indexer_path: PathBuf,
         exp_roots_path: PathBuf,
+        segment_dir: PathBuf,
         transaction_store: TransactionDBStore,
         rooch_store: RoochStore,
     ) -> anyhow::Result<Self> {
-        let tx_position_indexer = TxPositionIndexer::new(tx_position_indexer_path, None)?;
+        let tx_position_indexer = TxPositionIndexer::new_with_updates(
+            tx_position_indexer_path,
+            None,
+            Some(segment_dir),
+            None,
+        )
+        .await?;
         let exp_roots_map = Self::load_exp_roots(exp_roots_path)?;
+        let max_verified_tx_order = exp_roots_map.max_verified_tx_order;
         Ok(TxMetaStore {
             tx_position_indexer,
-            exp_roots: exp_roots_map.exp_roots,
-            max_verified_tx_order: exp_roots_map.max_verified_tx_order,
+            exp_roots: Arc::new(RwLock::new(exp_roots_map.exp_roots)),
+            max_verified_tx_order,
             transaction_store,
             rooch_store,
         })
+    }
+
+    pub(crate) fn get_exp_roots_map(&self) -> Arc<RwLock<HashMap<u64, (H256, H256)>>> {
+        self.exp_roots.clone()
     }
 
     fn load_exp_roots(exp_roots_path: PathBuf) -> anyhow::Result<ExpRootsMap> {
@@ -305,8 +525,8 @@ impl TxMetaStore {
         })
     }
 
-    pub(crate) fn get_exp_roots(&self, tx_order: u64) -> Option<(H256, H256)> {
-        self.exp_roots.get(&tx_order).cloned()
+    pub(crate) async fn get_exp_roots(&self, tx_order: u64) -> Option<(H256, H256)> {
+        self.exp_roots.read().await.get(&tx_order).cloned()
     }
 
     pub(crate) fn get_max_verified_tx_order(&self) -> u64 {
@@ -562,6 +782,22 @@ impl TxPositionIndexer {
         Ok(indexer)
     }
 
+    pub(crate) async fn new_with_updates(
+        db_path: PathBuf,
+        reset_from: Option<u64>,
+        segment_dir: Option<PathBuf>,
+        max_block_number: Option<u128>,
+    ) -> anyhow::Result<Self> {
+        let mut indexer = TxPositionIndexer::new(db_path, reset_from)?;
+        let stats_before_reset = indexer.get_stats()?;
+        info!("indexer stats after load: {:?}", stats_before_reset);
+        indexer
+            .updates_by_segments(segment_dir, max_block_number)
+            .await?;
+        info!("indexer stats after updates: {:?}", indexer.get_stats()?);
+        Ok(indexer)
+    }
+
     pub(crate) fn get_tx_position(&self, tx_order: u64) -> anyhow::Result<Option<TxPosition>> {
         let rtxn = self.db_env.read_txn()?;
         let db = self.db;
@@ -631,6 +867,72 @@ impl TxPositionIndexer {
             last_tx_order: self.last_tx_order,
             last_block_number: self.last_block_number,
         })
+    }
+
+    pub(crate) async fn updates_by_segments(
+        &mut self,
+        segment_dir: Option<PathBuf>,
+        max_block_number: Option<u128>,
+    ) -> anyhow::Result<()> {
+        let segment_dir = segment_dir.ok_or_else(|| anyhow!("segment_dir is required"))?;
+        let ledger_tx_loader = LedgerTxGetter::new(segment_dir)?;
+        let stop_at = if let Some(max_block_number) = max_block_number {
+            max(max_block_number, ledger_tx_loader.get_max_chunk_id())
+        } else {
+            ledger_tx_loader.get_max_chunk_id()
+        };
+        let mut block_number = self.last_block_number; // avoiding partial indexing
+        let mut expected_tx_order = self.last_tx_order + 1;
+        let mut done_block = 0;
+
+        while block_number <= stop_at {
+            let tx_list = ledger_tx_loader
+                .load_ledger_tx_list(block_number, true)
+                .await?;
+            let tx_list = tx_list.unwrap();
+            {
+                let db = self.db;
+                let mut wtxn = self.db_env.write_txn()?;
+                for mut ledger_tx in tx_list {
+                    let tx_order = ledger_tx.sequence_info.tx_order;
+                    if tx_order < expected_tx_order {
+                        continue;
+                    }
+                    if tx_order == self.last_tx_order + 1 {
+                        info!(
+                            "begin to index block: {}, tx_order: {}",
+                            block_number, tx_order
+                        );
+                    }
+                    if tx_order != expected_tx_order {
+                        return Err(anyhow!(
+                            "tx_order not continuous, expect: {}, got: {}",
+                            expected_tx_order,
+                            tx_order
+                        ));
+                    }
+                    let tx_hash = ledger_tx.tx_hash();
+                    let tx_position = TxPosition {
+                        tx_order,
+                        tx_hash,
+                        block_number,
+                    };
+                    db.put(&mut wtxn, &tx_order, &tx_position)?;
+                    expected_tx_order += 1;
+                }
+                wtxn.commit()?;
+            }
+            block_number += 1;
+            done_block += 1;
+            if done_block % 1000 == 0 {
+                info!(
+                    "done: block_cnt: {}; next_block_number: {}",
+                    done_block, block_number
+                );
+            }
+        }
+
+        self.init_cursor()
     }
 
     pub(crate) fn close(&self) -> anyhow::Result<()> {

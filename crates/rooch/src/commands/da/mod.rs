@@ -27,7 +27,7 @@ impl CommandAction<String> for DA {
             DACommand::Namespace(namespace) => namespace.execute().map(|_| "".to_owned()),
             DACommand::Exec(exec) => exec.execute().await.map(|_| "".to_owned()),
             DACommand::Index(index) => {
-                index.execute()?;
+                index.execute().await?;
                 Ok("".to_owned())
             }
         }

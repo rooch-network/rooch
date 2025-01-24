@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::cli_types::WalletContextOptions;
 use crate::commands::da::commands::{
     build_rooch_db, LedgerTxGetter, SequencedTxStore, TxMetaStore,
 };
@@ -38,15 +39,17 @@ use rooch_types::sequencer::SequencerInfo;
 use rooch_types::transaction::{
     L1BlockWithBody, LedgerTransaction, LedgerTxData, TransactionSequenceInfo,
 };
-use std::cmp::{max, min};
+use std::cmp::{max, min, PartialEq};
 use std::path::PathBuf;
 use std::sync::atomic::AtomicU64;
 use std::sync::Arc;
 use std::time::Duration;
+use tokio::signal::unix::{signal, SignalKind};
 use tokio::sync::mpsc::Receiver;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::watch;
 use tokio::time;
+use tokio::time::sleep;
 use tracing::{info, warn};
 
 /// exec LedgerTransaction List for verification.
@@ -109,25 +112,46 @@ pub struct ExecCommand {
     pub enable_rocks_stats: bool,
 
     #[clap(
+        long = "open-da",
+        help = "open da path for downloading chunks from DA. Workign with `mode=sync`"
+    )]
+    pub open_da_path: Option<String>,
+
+    #[clap(
         long = "force-align",
         help = "force align to min(last_sequenced_tx_order, last_executed_tx_order)"
     )]
     pub force_align: bool,
+
+    #[clap(flatten)]
+    pub(crate) context_options: WalletContextOptions,
 }
 
 #[derive(Debug, Copy, Clone, clap::ValueEnum)]
 pub enum ExecMode {
-    Exec, // Only execute transactions, no sequence updates
-    Seq,  // Only update sequence data, no execution
-    All,  // Execute transactions and update sequence data
+    /// Only execute transactions, no sequence updates
+    Exec,
+    /// Only update sequence data, no execution
+    Seq,
+    /// Execute transactions and update sequence data
+    All,
+    /// Sync from DA automatically and `All` mode
+    Sync,
+}
+
+impl PartialEq for ExecMode {
+    fn eq(&self, other: &Self) -> bool {
+        self.as_bits() == other.as_bits()
+    }
 }
 
 impl ExecMode {
     pub fn as_bits(&self) -> u8 {
         match self {
-            ExecMode::Exec => 0b10, // Execute
-            ExecMode::Seq => 0b01,  // Sequence
-            ExecMode::All => 0b11,  // All
+            ExecMode::Exec => 0b10,  // Execute
+            ExecMode::Seq => 0b01,   // Sequence
+            ExecMode::All => 0b11,   // All
+            ExecMode::Sync => 0b111, // Sync
         }
     }
 
@@ -140,7 +164,7 @@ impl ExecMode {
     }
 
     pub fn need_all(&self) -> bool {
-        self.as_bits() == 0b11
+        self.as_bits() & 0b11 == 0b11
     }
 
     pub fn get_verify_targets(&self) -> String {
@@ -148,6 +172,7 @@ impl ExecMode {
             ExecMode::Exec => "state root",
             ExecMode::Seq => "accumulator root",
             ExecMode::All => "state+accumulator root",
+            ExecMode::Sync => "state+accumulator root",
         }
         .to_string()
     }
@@ -155,12 +180,39 @@ impl ExecMode {
 
 impl ExecCommand {
     pub async fn execute(self) -> RoochResult<()> {
-        let mut exec_inner = self.build_exec_inner().await?;
-        exec_inner.run().await?;
+        let (shutdown_tx, shutdown_rx) = watch::channel(());
+
+        let shutdown_tx_clone = shutdown_tx.clone();
+
+        tokio::spawn(async move {
+            let mut sigterm =
+                signal(SignalKind::terminate()).expect("Failed to listen for SIGTERM");
+            let mut sigint = signal(SignalKind::interrupt()).expect("Failed to listen for SIGINT");
+
+            tokio::select! {
+                _ = sigterm.recv() => {
+                    info!("SIGTERM received, shutting down...");
+                    let _ = shutdown_tx_clone.send(());
+                }
+                _ = sigint.recv() => {
+                    info!("SIGINT received (Ctrl+C), shutting down...");
+                    let _ = shutdown_tx_clone.send(());
+                }
+            }
+        });
+
+        let mut exec_inner = self.build_exec_inner(shutdown_rx.clone()).await?;
+        exec_inner.run(shutdown_rx).await?;
+
+        let _ = shutdown_tx.send(());
+
         Ok(())
     }
 
-    async fn build_exec_inner(&self) -> anyhow::Result<ExecInner> {
+    async fn build_exec_inner(
+        &self,
+        shutdown_signal: watch::Receiver<()>,
+    ) -> anyhow::Result<ExecInner> {
         let actor_system = ActorSystem::global_system();
 
         let row_cache_size = self
@@ -193,18 +245,33 @@ impl ExecCommand {
         )
         .await?;
 
-        let ledger_tx_loader = LedgerTxGetter::new(self.segment_dir.clone())?;
-        let tx_da_indexer = TxMetaStore::new(
+        let tx_meta_store = TxMetaStore::new(
             self.tx_position_path.clone(),
             self.exp_root_path.clone(),
+            self.segment_dir.clone(),
             moveos_store.transaction_store,
             rooch_db.rooch_store.clone(),
-        )?;
+        )
+        .await?;
+
+        let exp_roots = tx_meta_store.get_exp_roots_map();
+        let client = self.context_options.build()?.get_client().await?;
+        let ledger_tx_loader = match self.mode {
+            ExecMode::Sync => LedgerTxGetter::new_with_auto_sync(
+                self.open_da_path.clone().unwrap(),
+                self.segment_dir.clone(),
+                client,
+                exp_roots,
+                shutdown_signal,
+            )?,
+            _ => LedgerTxGetter::new(self.segment_dir.clone())?,
+        };
+
         Ok(ExecInner {
             mode: self.mode,
             force_align: self.force_align,
             ledger_tx_getter: ledger_tx_loader,
-            tx_meta_store: tx_da_indexer,
+            tx_meta_store,
             sequenced_tx_store,
             bitcoin_client_proxy,
             executor,
@@ -259,7 +326,7 @@ impl ExecInner {
             loop {
                 tokio::select! {
                     _ = shutdown_signal.changed() => {
-                        tracing::info!("Shutting down logging task.");
+                        info!("Shutting down logging task.");
                         break;
                     }
                     _ = interval.tick() => {
@@ -267,7 +334,7 @@ impl ExecInner {
                         let executed_tx_order = executed_tx_order_cloned.load(std::sync::atomic::Ordering::Relaxed);
                         let produced = produced_cloned.load(std::sync::atomic::Ordering::Relaxed);
 
-                        tracing::info!(
+                        info!(
                             "produced: {}, done: {}, max executed_tx_order: {}",
                             produced,
                             done,
@@ -299,9 +366,8 @@ impl ExecInner {
         }
     }
 
-    async fn run(&mut self) -> anyhow::Result<()> {
-        let (shutdown_tx, shutdown_rx) = watch::channel(());
-        self.start_logging_task(shutdown_rx);
+    async fn run(&mut self, shutdown_signal: watch::Receiver<()>) -> anyhow::Result<()> {
+        self.start_logging_task(shutdown_signal);
 
         // larger buffer size to avoid rx starving caused by consumer has to access disks and request btc block.
         // after consumer load data(ledger_tx) from disk/btc client, burst to executor, need large buffer to avoid blocking.
@@ -310,11 +376,7 @@ impl ExecInner {
         let producer = self.produce_tx(tx);
         let consumer = self.consume_tx(rx);
 
-        let result = self.join_producer_and_consumer(producer, consumer).await;
-
-        // Send shutdown signal and ensure logging task exits
-        let _ = shutdown_tx.send(());
-        result
+        self.join_producer_and_consumer(producer, consumer).await
     }
 
     fn update_startup_info_after_rollback(
@@ -453,15 +515,20 @@ impl ExecInner {
             }
             let tx_list = self
                 .ledger_tx_getter
-                .load_ledger_tx_list(next_block_number, false)?;
+                .load_ledger_tx_list(next_block_number, false)
+                .await?;
             if tx_list.is_none() {
+                if self.mode == ExecMode::Sync {
+                    sleep(Duration::from_secs(5 * 60)).await;
+                    continue;
+                }
                 next_block_number -= 1; // no chunk belongs to this block_number
                 break;
             }
             let tx_list = tx_list.unwrap();
             for ledger_tx in tx_list {
                 let tx_order = ledger_tx.sequence_info.tx_order;
-                if tx_order > max_verified_tx_order {
+                if tx_order > max_verified_tx_order && self.mode != ExecMode::Sync {
                     reach_end = true;
                     break;
                 }
@@ -555,7 +622,7 @@ impl ExecInner {
 
         let is_l2_tx = ledger_tx.data.is_l2_tx();
 
-        let exp_root_opt = self.tx_meta_store.get_exp_roots(tx_order);
+        let exp_root_opt = self.tx_meta_store.get_exp_roots(tx_order).await;
         let exp_state_root = exp_root_opt.map(|v| v.0);
         let exp_accumulator_root = exp_root_opt.map(|v| v.1);
 
@@ -754,4 +821,32 @@ async fn build_executor_and_store(
         moveos_store,
         rooch_db,
     ))
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::commands::da::commands::exec::ExecMode;
+
+    #[test]
+    fn test_exec_mode() {
+        let mode = ExecMode::Exec;
+        assert!(mode.need_exec());
+        assert!(!mode.need_seq());
+        assert!(!mode.need_all());
+
+        let mode = ExecMode::Seq;
+        assert!(!mode.need_exec());
+        assert!(mode.need_seq());
+        assert!(!mode.need_all());
+
+        let mode = ExecMode::All;
+        assert!(mode.need_exec());
+        assert!(mode.need_seq());
+        assert!(mode.need_all());
+
+        let mode = ExecMode::Sync;
+        assert!(mode.need_exec());
+        assert!(mode.need_seq());
+        assert!(mode.need_all());
+    }
 }
