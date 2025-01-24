@@ -367,13 +367,13 @@ impl ExecInner {
     }
 
     async fn run(&mut self, shutdown_signal: watch::Receiver<()>) -> anyhow::Result<()> {
-        self.start_logging_task(shutdown_signal);
+        self.start_logging_task(shutdown_signal.clone());
 
         // larger buffer size to avoid rx starving caused by consumer has to access disks and request btc block.
         // after consumer load data(ledger_tx) from disk/btc client, burst to executor, need large buffer to avoid blocking.
         // 16384 is a magic number, it's a trade-off between memory usage and performance. (usually tx count inside a block is under 8192, MAX_TXS_PER_BLOCK_IN_FIX)
         let (tx, rx) = tokio::sync::mpsc::channel(16384);
-        let producer = self.produce_tx(tx);
+        let producer = self.produce_tx(tx, shutdown_signal);
         let consumer = self.consume_tx(rx);
 
         self.join_producer_and_consumer(producer, consumer).await
@@ -422,7 +422,11 @@ impl ExecInner {
         inner_store.write_batch_across_cfs(cf_names, write_batch, true)
     }
 
-    async fn produce_tx(&self, tx: Sender<ExecMsg>) -> anyhow::Result<()> {
+    async fn produce_tx(
+        &self,
+        tx: Sender<ExecMsg>,
+        mut shutdown_signal: watch::Receiver<()>,
+    ) -> anyhow::Result<()> {
         let last_executed_opt = self.tx_meta_store.find_last_executed()?;
         let last_executed_tx_order = match last_executed_opt {
             Some(v) => v.tx_order,
@@ -513,10 +517,16 @@ impl ExecInner {
             if reach_end {
                 break;
             }
-            let tx_list = self
+
+            tokio::select! {
+                _ = shutdown_signal.changed() => {
+                    info!("Shutting down producer task.");
+                    break;
+                }
+                result = self
                 .ledger_tx_getter
-                .load_ledger_tx_list(next_block_number, false)
-                .await?;
+                .load_ledger_tx_list(next_block_number, false) => {
+                let tx_list = result?;
             if tx_list.is_none() {
                 if self.mode == ExecMode::Sync {
                     sleep(Duration::from_secs(5 * 60)).await;
@@ -558,6 +568,8 @@ impl ExecInner {
                     .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
             }
             next_block_number += 1;
+            }
+                }
         }
         info!(
             "All transactions are produced, max_block_number: {}, max_tx_order: {}",
@@ -569,7 +581,7 @@ impl ExecInner {
     async fn consume_tx(&self, mut rx: Receiver<ExecMsg>) -> anyhow::Result<()> {
         info!("Start to consume transactions");
         let mut executed_tx_order = 0;
-        let mut last_record_time = std::time::Instant::now();
+        let mut cost: u128 = 0;
 
         const STATISTICS_INTERVAL: u64 = 100000;
 
@@ -581,12 +593,14 @@ impl ExecInner {
             let exec_msg = exec_msg_opt.unwrap();
             let tx_order = exec_msg.tx_order;
 
+            let elapsed = std::time::Instant::now();
             self.execute(exec_msg).await.with_context(|| {
                 format!(
                     "Error occurs: tx_order: {}, executed_tx_order: {}",
                     tx_order, executed_tx_order
                 )
             })?;
+            cost += elapsed.elapsed().as_micros();
 
             executed_tx_order = tx_order;
             self.executed_tx_order
@@ -594,15 +608,13 @@ impl ExecInner {
             let done = self.done.fetch_add(1, std::sync::atomic::Ordering::Relaxed) + 1;
 
             if done % STATISTICS_INTERVAL == 0 {
-                let elapsed = last_record_time.elapsed();
                 info!(
-                    "tx range: [{}, {}], cost: {:?}, avg: {:.3} ms/tx",
+                    "tx range: [{}, {}], avg: {:.3} ms/tx",
                     tx_order + 1 - STATISTICS_INTERVAL, // add first, avoid overflow
                     tx_order,
-                    elapsed,
-                    elapsed.as_millis() as f64 / STATISTICS_INTERVAL as f64
+                    cost as f64 / 1000.0 / STATISTICS_INTERVAL as f64
                 );
-                last_record_time = std::time::Instant::now();
+                cost = 0;
             }
         }
         info!(
