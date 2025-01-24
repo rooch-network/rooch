@@ -248,9 +248,11 @@ impl ExecCommand {
         let tx_meta_store = TxMetaStore::new(
             self.tx_position_path.clone(),
             self.exp_root_path.clone(),
+            self.segment_dir.clone(),
             moveos_store.transaction_store,
             rooch_db.rooch_store.clone(),
-        )?;
+        )
+        .await?;
 
         let exp_roots = tx_meta_store.get_exp_roots_map();
         let client = self.context_options.build()?.get_client().await?;

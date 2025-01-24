@@ -22,6 +22,7 @@ use rooch_types::rooch_network::RoochChainID;
 use rooch_types::sequencer::SequencerInfo;
 use rooch_types::transaction::{LedgerTransaction, TransactionSequenceInfo};
 use serde::{Deserialize, Serialize};
+use std::cmp::max;
 use std::collections::HashMap;
 use std::fs;
 use std::fs::File;
@@ -473,13 +474,20 @@ struct ExpRootsMap {
 }
 
 impl TxMetaStore {
-    pub(crate) fn new(
+    pub(crate) async fn new(
         tx_position_indexer_path: PathBuf,
         exp_roots_path: PathBuf,
+        segment_dir: PathBuf,
         transaction_store: TransactionDBStore,
         rooch_store: RoochStore,
     ) -> anyhow::Result<Self> {
-        let tx_position_indexer = TxPositionIndexer::new(tx_position_indexer_path, None)?;
+        let tx_position_indexer = TxPositionIndexer::new_with_updates(
+            tx_position_indexer_path,
+            None,
+            Some(segment_dir),
+            None,
+        )
+        .await?;
         let exp_roots_map = Self::load_exp_roots(exp_roots_path)?;
         let max_verified_tx_order = exp_roots_map.max_verified_tx_order;
         Ok(TxMetaStore {
@@ -774,6 +782,22 @@ impl TxPositionIndexer {
         Ok(indexer)
     }
 
+    pub(crate) async fn new_with_updates(
+        db_path: PathBuf,
+        reset_from: Option<u64>,
+        segment_dir: Option<PathBuf>,
+        max_block_number: Option<u128>,
+    ) -> anyhow::Result<Self> {
+        let mut indexer = TxPositionIndexer::new(db_path, reset_from)?;
+        let stats_before_reset = indexer.get_stats()?;
+        info!("indexer stats after load: {:?}", stats_before_reset);
+        indexer
+            .updates_by_segments(segment_dir, max_block_number)
+            .await?;
+        info!("indexer stats after updates: {:?}", indexer.get_stats()?);
+        Ok(indexer)
+    }
+
     pub(crate) fn get_tx_position(&self, tx_order: u64) -> anyhow::Result<Option<TxPosition>> {
         let rtxn = self.db_env.read_txn()?;
         let db = self.db;
@@ -843,6 +867,72 @@ impl TxPositionIndexer {
             last_tx_order: self.last_tx_order,
             last_block_number: self.last_block_number,
         })
+    }
+
+    pub(crate) async fn updates_by_segments(
+        &mut self,
+        segment_dir: Option<PathBuf>,
+        max_block_number: Option<u128>,
+    ) -> anyhow::Result<()> {
+        let segment_dir = segment_dir.ok_or_else(|| anyhow!("segment_dir is required"))?;
+        let ledger_tx_loader = LedgerTxGetter::new(segment_dir)?;
+        let stop_at = if let Some(max_block_number) = max_block_number {
+            max(max_block_number, ledger_tx_loader.get_max_chunk_id())
+        } else {
+            ledger_tx_loader.get_max_chunk_id()
+        };
+        let mut block_number = self.last_block_number; // avoiding partial indexing
+        let mut expected_tx_order = self.last_tx_order + 1;
+        let mut done_block = 0;
+
+        while block_number <= stop_at {
+            let tx_list = ledger_tx_loader
+                .load_ledger_tx_list(block_number, true)
+                .await?;
+            let tx_list = tx_list.unwrap();
+            {
+                let db = self.db;
+                let mut wtxn = self.db_env.write_txn()?;
+                for mut ledger_tx in tx_list {
+                    let tx_order = ledger_tx.sequence_info.tx_order;
+                    if tx_order < expected_tx_order {
+                        continue;
+                    }
+                    if tx_order == self.last_tx_order + 1 {
+                        info!(
+                            "begin to index block: {}, tx_order: {}",
+                            block_number, tx_order
+                        );
+                    }
+                    if tx_order != expected_tx_order {
+                        return Err(anyhow!(
+                            "tx_order not continuous, expect: {}, got: {}",
+                            expected_tx_order,
+                            tx_order
+                        ));
+                    }
+                    let tx_hash = ledger_tx.tx_hash();
+                    let tx_position = TxPosition {
+                        tx_order,
+                        tx_hash,
+                        block_number,
+                    };
+                    db.put(&mut wtxn, &tx_order, &tx_position)?;
+                    expected_tx_order += 1;
+                }
+                wtxn.commit()?;
+            }
+            block_number += 1;
+            done_block += 1;
+            if done_block % 1000 == 0 {
+                info!(
+                    "done: block_cnt: {}; next_block_number: {}",
+                    done_block, block_number
+                );
+            }
+        }
+
+        self.init_cursor()
     }
 
     pub(crate) fn close(&self) -> anyhow::Result<()> {
