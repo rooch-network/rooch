@@ -132,6 +132,7 @@ impl DAServerActor {
             // (it's block number too for ChunkV0, which is the only version now)
             let future = stat.get_latest_done_chunk_id();
             let result = future.await; // Resolve the future
+            let result = result.unwrap_or_else(|| 0); // for compatibility with old version which doesn't have this Optional field
             avail_backends.push((identifier, result));
         }
 
