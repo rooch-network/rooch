@@ -1,24 +1,34 @@
 import type { BalanceInfoView } from '@roochnetwork/rooch-sdk';
 import type { MarketItem } from 'src/hooks/trade/use-market-data';
 
-import { useState, useMemo } from 'react';
 import BigNumber from 'bignumber.js';
+import { useMemo, useState } from 'react';
 import { Args, Transaction } from '@roochnetwork/rooch-sdk';
 import { useCurrentAddress, useSignAndExecuteTransaction } from '@roochnetwork/rooch-sdk-kit';
 
 import { LoadingButton } from '@mui/lab';
 import { grey } from '@mui/material/colors';
-import { Dialog, DialogActions, DialogContent, Button, Card, Chip, Stack, Checkbox, CardActions } from '@mui/material';
+import {
+  Card,
+  Chip,
+  Stack,
+  Dialog,
+  Button,
+  Checkbox,
+  CardActions,
+  DialogActions,
+  DialogContent,
+} from '@mui/material';
 
-import { formatNumber, fromDust } from 'src/utils/number';
 import { formatUnitPrice } from 'src/utils/marketplace';
+import { fromDust, formatNumber } from 'src/utils/number';
 
 import { toast } from 'src/components/snackbar';
 import { Iconify } from 'src/components/iconify';
 
+import { fNumber } from '../../utils/format-number';
 import InscriptionShopCard from './inscription-shop-card';
 import { useNetworkVariable } from '../../hooks/use-networks';
-import {fNumber} from "../../utils/format-number";
 
 export type InscriptionItemCardProps = {
   item: MarketItem;
@@ -123,10 +133,9 @@ export default function InscriptionItemCard({
     setOpenDialog(false);
   };
 
-
   return (
     <Card
-      key={item.order_id}
+      key={`${item.order_id}-${item.owner}-sell`}
       sx={{
         '&:hover .add-cart-btn': {
           opacity: 1,
@@ -261,12 +270,14 @@ export default function InscriptionItemCard({
             <strong>Balance Changes</strong>
           </p>
           <p style={{ color: 'green', margin: 0, textAlign: 'right' }}>
-            + {fNumber(fromDust(confirmData.quantity, toCoinBalanceInfo.decimals).toNumber())} {tick.toUpperCase()}
+            + {fNumber(fromDust(confirmData.quantity, toCoinBalanceInfo.decimals).toNumber())}{' '}
+            {tick.toUpperCase()}
           </p>
           <p style={{ color: 'red', margin: 0, textAlign: 'right' }}>
-            - {new BigNumber(price).isNaN()
-            ? '--'
-            : formatNumber(fromDust(price, fromCoinBalanceInfo.decimals).toNumber())}{' '}
+            -{' '}
+            {new BigNumber(price).isNaN()
+              ? '--'
+              : formatNumber(fromDust(price, fromCoinBalanceInfo.decimals).toNumber())}{' '}
             {fromCoinBalanceInfo.symbol}
           </p>
         </DialogContent>

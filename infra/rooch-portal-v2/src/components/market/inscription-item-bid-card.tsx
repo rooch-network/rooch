@@ -34,7 +34,7 @@ export default function InscriptionItemBidCard({
   onAcceptBid,
   onRefetchMarketData,
 }: InscriptionItemCardProps) {
-  const market = useNetworkVariable('market')
+  const market = useNetworkVariable('market');
   const account = useCurrentAddress();
   const { mutate: signAndExecuteTransaction, isPending } = useSignAndExecuteTransaction();
 
@@ -48,7 +48,7 @@ export default function InscriptionItemBidCard({
 
   return (
     <Card
-      key={item.order_id}
+      key={`${item.order_id}-${item.owner}-bid`}
       sx={{
         '&:hover .add-cart-btn': {
           opacity: 1,
@@ -96,9 +96,7 @@ export default function InscriptionItemBidCard({
                 tx.callFunction({
                   target: `${market.orderBookAddress}::market_v2::cancel_order`,
                   args: [
-                    Args.objectId(
-                      market.tickInfo[tick.toLowerCase()].obj
-                    ),
+                    Args.objectId(market.tickInfo[tick.toLowerCase()].obj),
                     Args.u64(BigInt(item.order_id)),
                   ],
                   typeArgs: [fromCoinBalanceInfo.coin_type, toCoinBalanceInfo.coin_type],
