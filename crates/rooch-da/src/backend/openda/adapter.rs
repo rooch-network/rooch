@@ -39,7 +39,7 @@ pub struct AdapterSubmitStat {
 
 struct AdapterSubmitStatInner {
     chunk_id: u128,
-    segment_number_sum: u64,
+    submitted_set: Vec<u64>,
     latest_done_chunk_id: u128,
 }
 
@@ -54,35 +54,58 @@ impl AdapterSubmitStat {
         Self {
             inner: Arc::new(RwLock::new(AdapterSubmitStatInner {
                 chunk_id: 0,
-                segment_number_sum: 0,
-                latest_done_chunk_id: 0,
+                submitted_set: Vec::new(),
+                latest_done_chunk_id: u128::MAX,
             })),
         }
+    }
+
+    // append segment_number to submitted_set
+    // if segment_number is not in submitted_set, append it
+    // return the number of segments added
+    fn append_submitted_to_chunk(submitted_set: &mut Vec<u64>, segment_number: u64) -> usize {
+        if submitted_set.is_empty() {
+            submitted_set.push(segment_number);
+            return 1;
+        }
+        let mut has_inserted = false;
+        for num in submitted_set.iter() {
+            if *num == segment_number {
+                has_inserted = true;
+                break;
+            }
+        }
+        if !has_inserted {
+            submitted_set.push(segment_number);
+        }
+        submitted_set.len()
     }
 
     pub async fn add_done_segment(&self, segment_id: SegmentID, is_last_segment: bool) {
         let mut inner = self.inner.write().await;
         if segment_id.chunk_id != inner.chunk_id {
             // new chunk
-            inner.segment_number_sum = 0;
+            inner.submitted_set.clear();
             inner.chunk_id = segment_id.chunk_id;
         }
-        inner.segment_number_sum += segment_id.segment_number;
+        let seg_num = segment_id.segment_number;
+        let submitted = Self::append_submitted_to_chunk(&mut inner.submitted_set, seg_num);
         if is_last_segment {
-            let mut exp_segment_number_sum = 0;
-            for i in 0..=segment_id.segment_number {
-                exp_segment_number_sum += i;
-            }
-            if exp_segment_number_sum == inner.segment_number_sum {
-                // only accept segments added in order
-                inner.latest_done_chunk_id = inner.chunk_id;
+            let expected = seg_num + 1;
+            if submitted == expected as usize {
+                inner.latest_done_chunk_id = segment_id.chunk_id;
             }
         }
     }
 
-    pub async fn get_latest_done_chunk_id(&self) -> u128 {
+    pub async fn get_latest_done_chunk_id(&self) -> Option<u128> {
         let inner = self.inner.read().await;
-        inner.latest_done_chunk_id
+        let chunk_id = inner.latest_done_chunk_id;
+        if chunk_id == u128::MAX {
+            None
+        } else {
+            Some(chunk_id)
+        }
     }
 }
 
@@ -335,41 +358,41 @@ mod tests {
     #[tokio::test]
     async fn test_adapter_submit_stats() {
         let stats = AdapterSubmitStat::new();
-        assert_eq!(stats.get_latest_done_chunk_id().await, 0);
+        assert_eq!(stats.get_latest_done_chunk_id().await, None);
 
         let segment_id1 = SegmentID {
             chunk_id: 1,
             segment_number: 0,
         };
         stats.add_done_segment(segment_id1, false).await;
-        assert_eq!(stats.get_latest_done_chunk_id().await, 0);
+        assert_eq!(stats.get_latest_done_chunk_id().await, None);
 
         let segment_id2 = SegmentID {
             chunk_id: 1,
             segment_number: 1,
         };
         stats.add_done_segment(segment_id2, true).await;
-        assert_eq!(stats.get_latest_done_chunk_id().await, 1);
+        assert_eq!(stats.get_latest_done_chunk_id().await, Some(1));
 
         let segment_id3 = SegmentID {
             chunk_id: 2,
             segment_number: 0,
         };
         stats.add_done_segment(segment_id3, false).await;
-        assert_eq!(stats.get_latest_done_chunk_id().await, 1);
+        assert_eq!(stats.get_latest_done_chunk_id().await, Some(1));
 
         let segment_id4 = SegmentID {
             chunk_id: 2,
             segment_number: 1,
         };
         stats.add_done_segment(segment_id4, false).await;
-        assert_eq!(stats.get_latest_done_chunk_id().await, 1);
+        assert_eq!(stats.get_latest_done_chunk_id().await, Some(1));
 
         let segment_id5 = SegmentID {
             chunk_id: 2,
             segment_number: 2,
         };
         stats.add_done_segment(segment_id5, true).await;
-        assert_eq!(stats.get_latest_done_chunk_id().await, 2);
+        assert_eq!(stats.get_latest_done_chunk_id().await, Some(2));
     }
 }
