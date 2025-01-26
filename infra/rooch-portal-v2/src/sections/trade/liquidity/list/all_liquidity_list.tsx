@@ -2,14 +2,16 @@ import type { IndexerStateIDView, AnnotatedMoveStructView } from '@roochnetwork/
 
 import { useRef, useMemo, useState, useEffect } from 'react';
 import {
-  useCurrentAddress,
   useRoochClient,
+  useCurrentAddress,
   useRoochClientQuery,
 } from '@roochnetwork/rooch-sdk-kit';
 
 import { Card, Table, Stack, TableBody, Pagination } from '@mui/material';
 
 import { useNetworkVariable } from 'src/hooks/use-networks';
+
+import { formatCoin } from 'src/utils/format-number';
 
 import { Scrollbar } from 'src/components/scrollbar';
 import TableSkeleton from 'src/components/skeleton/table-skeleton';
@@ -19,7 +21,6 @@ import AllLiquidityRowItem from './add-liquidity-modal';
 import LiquidityRowItem from './all-liquidity-row-item';
 
 import type { AllLiquidityItemType } from './all-liquidity-row-item';
-import { formatCoin } from 'src/utils/format-number';
 
 const headerLabel = [
   { id: 'create_at', label: 'Create At' },
@@ -92,30 +93,32 @@ export default function AllLiquidityList() {
   }, [tokenPairs]);
 
   useEffect(() => {
+    if (!client || !currentAddress) {
+      return;
+    }
     const fetch = async () => {
       const infos = new Map();
-      for (let item of resolvedTokenPairs) {
-        const xResult = await client.queryObjectStates({
-          filter: {
-            object_id: item.x.id,
-          },
-        });
-
-        const xCoinResult = await client.getBalance({
-          owner: currentAddress!.toStr(),
-          coinType: item.x.type,
-        });
-
-        const yResult = await client.queryObjectStates({
-          filter: {
-            object_id: item.y.id,
-          },
-        });
-
-        const yCoinResult = await client.getBalance({
-          owner: currentAddress!.toStr(),
-          coinType: item.y.type,
-        });
+      const promises = resolvedTokenPairs.map(async (item) => {
+        const [xResult, xCoinResult, yResult, yCoinResult] = await Promise.all([
+          client.queryObjectStates({
+            filter: {
+              object_id: item.x.id,
+            },
+          }),
+          client.getBalance({
+            owner: currentAddress!.toStr(),
+            coinType: item.x.type,
+          }),
+          client.queryObjectStates({
+            filter: {
+              object_id: item.y.id,
+            },
+          }),
+          client.getBalance({
+            owner: currentAddress!.toStr(),
+            coinType: item.y.type,
+          }),
+        ]);
 
         const xBalance = (xResult.data[0].decoded_value!.value.balance as AnnotatedMoveStructView)
           .value.value as string;
@@ -126,13 +129,15 @@ export default function AllLiquidityList() {
           x: formatCoin(Number(xBalance), xCoinResult.decimals, 2),
           y: formatCoin(Number(yBalance), yCoinResult.decimals, 2),
         });
-      }
+      });
+
+      await Promise.all(promises);
 
       setTokenPairInfos(infos);
     };
 
     fetch();
-  }, [resolvedTokenPairs]);
+  }, [resolvedTokenPairs, currentAddress, client]);
 
   const paginate = (index: number): void => {
     if (index < 0) {

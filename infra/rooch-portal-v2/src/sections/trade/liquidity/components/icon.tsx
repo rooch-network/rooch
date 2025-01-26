@@ -1,6 +1,9 @@
-import { Box } from '@mui/material';
 import DOMPurify from 'dompurify';
+
+import { Box } from '@mui/material';
+
 import { Iconify } from 'src/components/iconify';
+
 export default function Icon({ url }: { url?: string }) {
   return url ? (
     <Box

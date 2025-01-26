@@ -1,13 +1,9 @@
-import {
-  Args,
-  Transaction,
-  BalanceInfoView,
-  AnnotatedMoveStructView,
-} from '@roochnetwork/rooch-sdk';
+import type { BalanceInfoView, AnnotatedMoveStructView } from '@roochnetwork/rooch-sdk';
 
 import { toast } from 'sonner';
-import DOMPurify from 'dompurify';
 import BigNumber from 'bignumber.js';
+import { useDebounce } from 'react-use';
+import { Args, Transaction } from '@roochnetwork/rooch-sdk';
 import { useMemo, useState, useEffect, useCallback } from 'react';
 import {
   SessionKeyGuard,
@@ -32,14 +28,16 @@ import {
   InputAdornment,
 } from '@mui/material';
 
+import { useRouter } from 'src/routes/hooks';
+
 import { useNetworkVariable } from 'src/hooks/use-networks';
 
 import { formatCoin } from 'src/utils/format-number';
 import { toDust, bigNumberToBigInt } from 'src/utils/number';
 
-import type { AllLiquidityItemType } from './all-liquidity-row-item';
 import Icon from '../components/icon';
-import { useDebounce } from 'react-use';
+
+import type { AllLiquidityItemType } from './all-liquidity-row-item';
 
 const STEPS = ['Deposit amounts', 'You will receive'];
 
@@ -61,6 +59,7 @@ export default function AddLiquidityModal({
   const [customSlippage, setCustomSlippage] = useState('');
   const [activeStep, setActiveStep] = useState(0);
   const [yLabelError, setYLabelError] = useState<string>();
+  const router = useRouter();
 
   const { data } = useRoochClientQuery(
     'getBalances',
@@ -209,7 +208,7 @@ export default function AddLiquidityModal({
   };
 
   const fetchY = useCallback(() => {
-    if (xAmount === '' || xAmount === '0' || !reserveX || !reserveY) {
+    if (xAmount === '' || xAmount === '0' || !reserveX || !reserveY || !assetsMap) {
       return;
     }
 
@@ -223,10 +222,9 @@ export default function AddLiquidityModal({
 
     if (y.toNumber() > Number(assetsMap.get(row.y.type)?.balance || 0)) {
       setYLabelError(`Insufficient`);
-    } else {
-      setYAmount(y.toFixed(0, 1));
     }
-  }, [xAmount, reserveX, reserveY]);
+    setYAmount(y.toFixed(0, 1));
+  }, [xAmount, reserveX, reserveY, row.x.type, row.y.type, assetsMap]);
 
   useDebounce(fetchY, 500, [fetchY]);
 
@@ -259,7 +257,16 @@ export default function AddLiquidityModal({
                   inputMode="decimal"
                   autoComplete="off"
                   onChange={(e) => {
-                    setXAmount(e.target.value);
+                    const value = e.target.value;
+                    if (/^\d*\.?\d*$/.test(value) === false) {
+                      return;
+                    }
+                    const xBalance = assetsMap?.get(row.x.type)!.fixedBalance || 0;
+                    if (Number(value) > xBalance) {
+                      setXAmount(xBalance.toString());
+                    } else {
+                      setXAmount(value);
+                    }
                   }}
                   InputProps={{
                     endAdornment: (
@@ -310,15 +317,31 @@ export default function AddLiquidityModal({
               </Stack>
               <FormControl>
                 <TextField
-                  label={yLabelError ? yLabelError : 'Automatic calculation'}
+                  label={yLabelError || 'Automatic calculation'}
                   placeholder=""
                   value={yAmount}
                   inputMode="decimal"
                   autoComplete="off"
                   InputLabelProps={{ style: { color: yLabelError ? 'red' : 'inherit' } }}
-                  disabled
                   onChange={(e) => {
                     setYAmount(e.target.value);
+                  }}
+                  InputProps={{
+                    endAdornment: yLabelError && (
+                      <InputAdornment position="end">
+                        <Stack direction="row" spacing={0.5}>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            onClick={() => {
+                              router.push('./swap');
+                            }}
+                          >
+                            Go to Swap
+                          </Button>
+                        </Stack>
+                      </InputAdornment>
+                    ),
                   }}
                 />
               </FormControl>
@@ -376,13 +399,11 @@ export default function AddLiquidityModal({
                 <Stack direction="row" alignItems="center">
                   <Icon url={assetsMap.get(row.x.type)?.icon_url || ''} />
                   <Icon url={assetsMap.get(row.y.type)?.icon_url || ''} />
-                </Stack>
-                <Stack direction="row" alignItems="center">
                   <Box className="text-gray-400 text-sm font-medium">{`${row.x.symbol}-${row.y.symbol} LP : `}</Box>
-                  <Box sx={{ fontWeight: 'bold', fontSize: '1.2em', ml: 1 }}>
-                    {receive.liquidity}
-                  </Box>
                 </Stack>
+                <Box sx={{ fontWeight: 'bold', fontSize: '1.2em', ml: 1 }}>
+                  + {receive.liquidity}
+                </Box>
               </Stack>
               <Stack
                 direction="row"
@@ -403,14 +424,14 @@ export default function AddLiquidityModal({
                     <Icon url={assetsMap.get(row.x.type)?.icon_url || ''} />
                     {row.x.symbol}:
                   </Stack>
-                  <span>{xAmount}</span>
+                  <span>- {xAmount}</span>
                 </Stack>
                 <Stack direction="row" justifyContent="space-between">
                   <Stack direction="row" alignItems="center">
                     <Icon url={assetsMap.get(row.y.type)?.icon_url || ''} />
                     {row.y.symbol}:
                   </Stack>
-                  <span>{yAmount}</span>
+                  <span>- {yAmount}</span>
                 </Stack>
               </Stack>
               {/* <Stack
@@ -478,7 +499,7 @@ export default function AddLiquidityModal({
           <LoadingButton
             fullWidth
             variant="contained"
-            disabled={xAmount === '' || yAmount === ''}
+            disabled={xAmount === '' || yAmount === '' || yLabelError !== undefined}
             onClick={handleNext}
           >
             Next
