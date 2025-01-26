@@ -63,12 +63,12 @@ export const navData = [
         icon: <Iconify icon="solar:cart-large-2-broken" />,
         noAddressRequired: true,
       },
-      // {
-      //   title: 'Pool',
-      //   path: paths.dashboard.pool,
-      //   icon: <Iconify icon="solar:hand-money-broken" />,
-      //   noAddressRequired: true,
-      // },
+      {
+        title: 'Liquidity',
+        path: paths.dashboard.liquidity,
+        icon: <Iconify icon="solar:hand-money-broken" />,
+        noAddressRequired: true,
+      },
       {
         title: 'Swap',
         path: paths.dashboard.swap,
