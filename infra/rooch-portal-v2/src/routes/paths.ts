@@ -12,6 +12,7 @@ export const paths = {
     market: `${ROOTS.DASHBOARD}/trade/market`,
     liquidity: `${ROOTS.DASHBOARD}/trade/liquidity`,
     swap: `${ROOTS.DASHBOARD}/trade/swap`,
+    history: `${ROOTS.DASHBOARD}/history`,
     apps: `${ROOTS.DASHBOARD}/apps`,
     settings: `${ROOTS.DASHBOARD}/settings`,
     search: `${ROOTS.DASHBOARD}/search`,
