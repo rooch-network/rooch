@@ -21,6 +21,7 @@ use moveos_types::module_binding::MoveFunctionCaller;
 use moveos_types::move_std::option::MoveOption;
 use moveos_types::moveos_std::object::ObjectMeta;
 use moveos_types::moveos_std::tx_context::TxContext;
+use moveos_types::moveos_std::tx_meta::TxMeta;
 use moveos_types::state::{ObjectState, StateChangeSetExt};
 use moveos_types::state_resolver::RootObjectResolver;
 use moveos_types::transaction::{FunctionCall, MoveOSTransaction, VerifiedMoveAction};
@@ -377,6 +378,9 @@ impl ExecutorActor {
             tx_data.tx_hash(),
             tx_data.tx_size(),
         );
+
+        let tx_metadata = TxMeta::new_from_move_action(&tx_data.action);
+        tx_ctx.add(tx_metadata).unwrap();
 
         let mut bitcoin_address = BitcoinAddress::from_str("18cBEMRxXHqzWWCxZNtU91F5sbUNKhL5PX")?;
 
