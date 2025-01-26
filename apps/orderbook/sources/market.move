@@ -319,7 +319,7 @@ module orderbook::market_v2 {
                 order_id,
                 unit_price: order.unit_price,
                 quantity: order.quantity,
-                owner: sender(),
+                owner: order.owner,
                 timestamp: now_milliseconds(),
                 order_type: 2
             })
@@ -329,7 +329,7 @@ module orderbook::market_v2 {
                 order_id,
                 unit_price: order.unit_price,
                 quantity: order.quantity,
-                owner: sender(),
+                owner: order.owner,
                 timestamp: now_milliseconds(),
                 order_type: 3
             })
@@ -408,7 +408,7 @@ module orderbook::market_v2 {
             order_id,
             unit_price: order.unit_price,
             quantity: order.quantity,
-            owner: sender(),
+            owner: order.owner,
             timestamp: now_milliseconds(),
             order_type: 4
         });
@@ -505,7 +505,7 @@ module orderbook::market_v2 {
             order_id,
             unit_price: order.unit_price,
             quantity: order.quantity,
-            owner: sender(),
+            owner: order.owner,
             timestamp: now_milliseconds(),
             order_type: 4
         });
@@ -594,7 +594,7 @@ module orderbook::market_v2 {
             order_id,
             unit_price: order.unit_price,
             quantity: order.quantity,
-            owner: sender(),
+            owner: order.owner,
             timestamp: now_milliseconds(),
             order_type: 5
         });
@@ -691,7 +691,7 @@ module orderbook::market_v2 {
             order_id,
             unit_price: order.unit_price,
             quantity: order.quantity,
-            owner: sender(),
+            owner: order.owner,
             timestamp: now_milliseconds(),
             order_type: 5
         });
