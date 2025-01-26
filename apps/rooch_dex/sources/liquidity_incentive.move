@@ -18,6 +18,8 @@ module rooch_dex::liquidity_incentive {
     use moveos_std::object::Object;
     use moveos_std::object;
     use rooch_framework::coin::Coin;
+    #[test_only]
+    use std::debug::print;
 
     #[test_only]
     use std::option::none;
@@ -239,7 +241,7 @@ module rooch_dex::liquidity_incentive {
         let account = signer::address_of(signer);
         let asset_weight = (coin::value(&asset) as u128);
         let farming_asset = object::borrow_mut<FarmingAsset<X,Y,RewardToken>>(farming_asset_obj);
-        assert!(farming_asset.alive, ErrorFarmingNotAlive);
+        // assert!(farming_asset.alive, ErrorFarmingNotAlive);
 
         // Check locking time
         let now_seconds = now_seconds();
@@ -321,9 +323,9 @@ module rooch_dex::liquidity_incentive {
 
         farming_asset.last_update_timestamp = now_seconds;
 
-        if (farming_asset.alive) {
+        // if (farming_asset.alive) {
             farming_asset.harvest_index = new_harvest_index;
-        };
+        // };
 
         (coin_store::remove_coin_store(asset), withdraw_token)
     }
@@ -358,9 +360,9 @@ module rooch_dex::liquidity_incentive {
         stake.gain = 0;
         stake.last_harvest_index = new_harvest_index;
 
-        if (farming_asset.alive) {
+        // if (farming_asset.alive) {
             farming_asset.harvest_index = new_harvest_index;
-        };
+        // };
         farming_asset.last_update_timestamp = now_seconds;
 
         withdraw_token

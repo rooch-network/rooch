@@ -522,7 +522,7 @@ module rooch_dex::swap {
         //Need to add fee amount which have not been mint.
         let total_lp_supply = total_lp_supply<X, Y>();
         let amount_x = ((coin_store::balance(&token_pair.balance_x) as u128) * (liquidity as u128) / total_lp_supply as u256);
-        let amount_y = ((coin_store::balance(&token_pair.balance_x) as u128) * (liquidity as u128) / total_lp_supply as u256);
+        let amount_y = ((coin_store::balance(&token_pair.balance_y) as u128) * (liquidity as u128) / total_lp_supply as u256);
         assert!(amount_x > 0 && amount_y > 0, ErrorLiquidityBurned);
         coin::burn<LPToken<X, Y>>(&mut token_pair.coin_info, lp_tokens);
 
