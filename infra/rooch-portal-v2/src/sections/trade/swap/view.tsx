@@ -22,7 +22,7 @@ export default function SwapView() {
   const [loading, setLoading] = useState(false);
   const [x, setX] = useState<TradeCoinType>();
   const [y, setY] = useState<TradeCoinType>();
-  const [slippage, setSlippage] = useState(0);
+  const [slippage, setSlippage] = useState(0.005);
   const [customSlippage, setCustomSlippage] = useState('');
   const [openSwapModal, setOpenSwapModal] = useState(false);
 
@@ -52,7 +52,7 @@ export default function SwapView() {
         <span className="mt-4">Slippage</span>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
           <Box>
-            {[0.01, 0.02, 0.03].map((item, index) => (
+            {[0.005, 0.01, 0.03].map((item, index) => (
               <Button
                 key={item.toString()}
                 variant={slippage === item ? 'contained' : 'outlined'}

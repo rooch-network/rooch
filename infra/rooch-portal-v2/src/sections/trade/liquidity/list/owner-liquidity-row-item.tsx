@@ -65,7 +65,7 @@ export default function OwnerLiquidityRowItem({ row, onOpenViewModal }: RowItemP
           }}
         >
           <Button variant="outlined" size="small">
-            view
+            Remove
           </Button>
         </WalletGuard>
       </TableCell>

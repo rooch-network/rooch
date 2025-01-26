@@ -1,15 +1,13 @@
-import type {
-  IndexerStateIDView,
-  AnnotatedMoveStructView,
-} from '@roochnetwork/rooch-sdk';
+import type { IndexerStateIDView, AnnotatedMoveStructView } from '@roochnetwork/rooch-sdk';
 
 import { useRef, useMemo, useState, useEffect } from 'react';
 import {
   useCurrentAddress,
+  useRoochClient,
   useRoochClientQuery,
 } from '@roochnetwork/rooch-sdk-kit';
 
-import { Card , Table, Stack, TableBody, Pagination } from '@mui/material';
+import { Card, Table, Stack, TableBody, Pagination } from '@mui/material';
 
 import { useNetworkVariable } from 'src/hooks/use-networks';
 
@@ -21,20 +19,24 @@ import AllLiquidityRowItem from './add-liquidity-modal';
 import LiquidityRowItem from './all-liquidity-row-item';
 
 import type { AllLiquidityItemType } from './all-liquidity-row-item';
+import { formatCoin } from 'src/utils/format-number';
 
 const headerLabel = [
   { id: 'create_at', label: 'Create At' },
   { id: 'x', label: 'X' },
   { id: 'y', label: 'Y' },
-  { id: 'creator', label: 'Creator' },
   { id: 'action', label: 'Action', align: 'right' },
 ];
 
 export default function AllLiquidityList() {
   const dex = useNetworkVariable('dex');
+  const client = useRoochClient();
   const currentAddress = useCurrentAddress();
   const [paginationModel, setPaginationModel] = useState({ index: 1, limit: 10 });
   const mapPageToNextCursor = useRef<{ [page: number]: IndexerStateIDView | null }>({});
+  const [tokenPairInfos, setTokenPairInfos] = useState<Map<string, { x: string; y: string }>>(
+    new Map()
+  );
 
   const queryOptions = useMemo(
     () => ({
@@ -88,6 +90,49 @@ export default function AllLiquidityList() {
 
     return rowItme;
   }, [tokenPairs]);
+
+  useEffect(() => {
+    const fetch = async () => {
+      const infos = new Map();
+      for (let item of resolvedTokenPairs) {
+        const xResult = await client.queryObjectStates({
+          filter: {
+            object_id: item.x.id,
+          },
+        });
+
+        const xCoinResult = await client.getBalance({
+          owner: currentAddress!.toStr(),
+          coinType: item.x.type,
+        });
+
+        const yResult = await client.queryObjectStates({
+          filter: {
+            object_id: item.y.id,
+          },
+        });
+
+        const yCoinResult = await client.getBalance({
+          owner: currentAddress!.toStr(),
+          coinType: item.y.type,
+        });
+
+        const xBalance = (xResult.data[0].decoded_value!.value.balance as AnnotatedMoveStructView)
+          .value.value as string;
+        const yBalance = (yResult.data[0].decoded_value!.value.balance as AnnotatedMoveStructView)
+          .value.value as string;
+
+        infos.set(item.id, {
+          x: formatCoin(Number(xBalance), xCoinResult.decimals, 2),
+          y: formatCoin(Number(yBalance), yCoinResult.decimals, 2),
+        });
+      }
+
+      setTokenPairInfos(infos);
+    };
+
+    fetch();
+  }, [resolvedTokenPairs]);
 
   const paginate = (index: number): void => {
     if (index < 0) {
@@ -153,11 +198,16 @@ export default function AllLiquidityList() {
 
           <TableBody>
             {isPending ? (
-              <TableSkeleton col={5} row={5} rowHeight="77px" />
+              <TableSkeleton col={headerLabel.length} row={5} rowHeight="77px" />
             ) : (
               <>
                 {resolvedTokenPairs.map((row) => (
-                  <LiquidityRowItem key={row.id} row={row} onOpenViewModal={handleRemoveModal} />
+                  <LiquidityRowItem
+                    key={row.id}
+                    row={row}
+                    balance={tokenPairInfos.get(row.id)}
+                    onOpenViewModal={handleRemoveModal}
+                  />
                 ))}
                 <TableNoData title="No Coins Found" notFound={resolvedTokenPairs.length === 0} />
               </>
@@ -179,7 +229,6 @@ export default function AllLiquidityList() {
           open={openAddLiquidityModal}
           onClose={handleCloseRemoveModal}
           row={selectedRow}
-          // refetch={refetchAssetsList}
           key={openAddLiquidityModal ? 'open' : 'closed'}
         />
       )}

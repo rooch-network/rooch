@@ -8,7 +8,7 @@ import {
 import { toast } from 'sonner';
 import DOMPurify from 'dompurify';
 import BigNumber from 'bignumber.js';
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 import {
   SessionKeyGuard,
   useCurrentAddress,
@@ -38,10 +38,11 @@ import { formatCoin } from 'src/utils/format-number';
 import { toDust, bigNumberToBigInt } from 'src/utils/number';
 
 import type { AllLiquidityItemType } from './all-liquidity-row-item';
+import Icon from '../components/icon';
+import { useDebounce } from 'react-use';
 
 const STEPS = ['Deposit amounts', 'You will receive'];
 
-/// let liquidity = u128::min(amount_x * total_supply / (reserves.reserve_x as u128), amount_y * total_supply / (reserves.reserve_y as u128));
 export default function AddLiquidityModal({
   open,
   onClose,
@@ -56,9 +57,10 @@ export default function AddLiquidityModal({
   const [xAmount, setXAmount] = useState('');
   const [yAmount, setYAmount] = useState('');
   const { mutateAsync, isPending } = useSignAndExecuteTransaction();
-  const [slippage, setSlippage] = useState(0);
+  const [slippage, setSlippage] = useState(0.005);
   const [customSlippage, setCustomSlippage] = useState('');
   const [activeStep, setActiveStep] = useState(0);
+  const [yLabelError, setYLabelError] = useState<string>();
 
   const { data } = useRoochClientQuery(
     'getBalances',
@@ -181,11 +183,10 @@ export default function AddLiquidityModal({
           )
         )
       : fixdY;
-    console.log(fixdX, fixdY, minX, minY);
     const tx = new Transaction();
     tx.callFunction({
       target: `${dex.address}::router::add_liquidity`,
-      args: [Args.u64(fixdX), Args.u64(fixdY), Args.u64(BigInt(0)), Args.u64(BigInt(0))],
+      args: [Args.u64(fixdX), Args.u64(fixdY), Args.u64(minX), Args.u64(minY)],
       typeArgs: [row.x.type, row.y.type],
     });
     mutateAsync({
@@ -206,6 +207,28 @@ export default function AddLiquidityModal({
         onClose();
       });
   };
+
+  const fetchY = useCallback(() => {
+    if (xAmount === '' || xAmount === '0' || !reserveX || !reserveY) {
+      return;
+    }
+
+    const xBalance = (reserveX.data[0].decoded_value!.value.balance as AnnotatedMoveStructView)
+      .value.value as string;
+    const yBalance = (reserveY.data[0].decoded_value!.value.balance as AnnotatedMoveStructView)
+      .value.value as string;
+    const fixdX = toDust(xAmount, assetsMap.get(row.x.type)?.decimals || 0);
+    const xRate = BigNumber(fixdX.toString()).div(xBalance);
+    const y = BigNumber(yBalance).multipliedBy(xRate);
+
+    if (y.toNumber() > Number(assetsMap.get(row.y.type)?.balance || 0)) {
+      setYLabelError(`Insufficient`);
+    } else {
+      setYAmount(y.toFixed(0, 1));
+    }
+  }, [xAmount, reserveX, reserveY]);
+
+  useDebounce(fetchY, 500, [fetchY]);
 
   const getStepContent = (step: number) => {
     switch (step) {
@@ -287,43 +310,15 @@ export default function AddLiquidityModal({
               </Stack>
               <FormControl>
                 <TextField
-                  label="Amount"
+                  label={yLabelError ? yLabelError : 'Automatic calculation'}
                   placeholder=""
                   value={yAmount}
                   inputMode="decimal"
                   autoComplete="off"
+                  InputLabelProps={{ style: { color: yLabelError ? 'red' : 'inherit' } }}
+                  disabled
                   onChange={(e) => {
                     setYAmount(e.target.value);
-                  }}
-                  InputProps={{
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <Stack direction="row" spacing={0.5}>
-                          <Button
-                            size="small"
-                            variant="outlined"
-                            onClick={() => {
-                              setYAmount(
-                                new BigNumber(assetsMap.get(row.y.type)?.fixedBalance || 0)
-                                  .div(2)
-                                  .toString()
-                              );
-                            }}
-                          >
-                            Half
-                          </Button>
-                          <Button
-                            size="small"
-                            variant="outlined"
-                            onClick={() => {
-                              setYAmount((assetsMap.get(row.y.type)?.fixedBalance || 0).toString());
-                            }}
-                          >
-                            Max
-                          </Button>
-                        </Stack>
-                      </InputAdornment>
-                    ),
                   }}
                 />
               </FormControl>
@@ -379,22 +374,8 @@ export default function AddLiquidityModal({
             <Stack spacing={2} sx={{ mt: 1 }}>
               <Stack direction="row" justifyContent="space-between">
                 <Stack direction="row" alignItems="center">
-                  <Box
-                    component="span"
-                    className="mr-1"
-                    sx={{ width: 32, height: 32 }}
-                    dangerouslySetInnerHTML={{
-                      __html: DOMPurify.sanitize(assetsMap.get(row.x.type)?.icon_url || ''),
-                    }}
-                  />
-                  <Box
-                    component="span"
-                    className="mr-1"
-                    sx={{ width: 32, height: 32 }}
-                    dangerouslySetInnerHTML={{
-                      __html: DOMPurify.sanitize(assetsMap.get(row.y.type)?.icon_url || ''),
-                    }}
-                  />
+                  <Icon url={assetsMap.get(row.x.type)?.icon_url || ''} />
+                  <Icon url={assetsMap.get(row.y.type)?.icon_url || ''} />
                 </Stack>
                 <Stack direction="row" alignItems="center">
                   <Box className="text-gray-400 text-sm font-medium">{`${row.x.symbol}-${row.y.symbol} LP : `}</Box>
@@ -419,28 +400,14 @@ export default function AddLiquidityModal({
               <Stack direction="column" gap={2}>
                 <Stack direction="row" justifyContent="space-between">
                   <Stack direction="row" alignItems="center">
-                    <Box
-                      component="span"
-                      className="mr-1"
-                      sx={{ width: 32, height: 32 }}
-                      dangerouslySetInnerHTML={{
-                        __html: DOMPurify.sanitize(assetsMap.get(row.x.type)?.icon_url || ''),
-                      }}
-                    />
+                    <Icon url={assetsMap.get(row.x.type)?.icon_url || ''} />
                     {row.x.symbol}:
                   </Stack>
                   <span>{xAmount}</span>
                 </Stack>
                 <Stack direction="row" justifyContent="space-between">
                   <Stack direction="row" alignItems="center">
-                    <Box
-                      component="span"
-                      className="mr-1"
-                      sx={{ width: 32, height: 32 }}
-                      dangerouslySetInnerHTML={{
-                        __html: DOMPurify.sanitize(assetsMap.get(row.y.type)?.icon_url || ''),
-                      }}
-                    />
+                    <Icon url={assetsMap.get(row.y.type)?.icon_url || ''} />
                     {row.y.symbol}:
                   </Stack>
                   <span>{yAmount}</span>

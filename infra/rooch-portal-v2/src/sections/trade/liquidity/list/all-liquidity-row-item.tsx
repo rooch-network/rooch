@@ -22,10 +22,14 @@ export type AllLiquidityItemType = {
 
 type RowItemProps = {
   row: AllLiquidityItemType;
+  balance?: {
+    x: string;
+    y: string;
+  };
   onOpenViewModal: (row: AllLiquidityItemType) => void;
 };
 
-export default function AllLiquidityRowItem({ row, onOpenViewModal }: RowItemProps) {
+export default function AllLiquidityRowItem({ row, balance, onOpenViewModal }: RowItemProps) {
   return (
     <TableRow>
       <TableCell width="300px">
@@ -35,15 +39,11 @@ export default function AllLiquidityRowItem({ row, onOpenViewModal }: RowItemPro
       </TableCell>
 
       <TableCell>
-        <ListItemText primary={row.x.symbol} />
+        <ListItemText primary={row.x.symbol} secondary={balance?.x} />
       </TableCell>
 
       <TableCell>
-        <ListItemText primary={row.y.symbol} />
-      </TableCell>
-
-      <TableCell>
-        <ListItemText primary={row.creator} />
+        <ListItemText primary={row.y.symbol} secondary={balance?.y} />
       </TableCell>
 
       <TableCell align="right" sx={{ pr: 1 }}>
@@ -53,7 +53,7 @@ export default function AllLiquidityRowItem({ row, onOpenViewModal }: RowItemPro
           }}
         >
           <Button variant="outlined" size="small">
-            view
+            Add
           </Button>
         </WalletGuard>
       </TableCell>
