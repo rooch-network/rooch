@@ -1,12 +1,12 @@
 'use client';
 
+import { useCurrentNetwork } from '@roochnetwork/rooch-sdk-kit';
+
 import Typography from '@mui/material/Typography';
 import { Box, Card, Stack, Button, CardHeader, CardContent } from '@mui/material';
 
 import { CONFIG } from 'src/config-global';
 import { DashboardContent } from 'src/layouts/dashboard';
-import Badge from '@mui/material/Badge';
-import { useCurrentNetwork } from '@roochnetwork/rooch-sdk-kit';
 
 export interface Project {
   id: string

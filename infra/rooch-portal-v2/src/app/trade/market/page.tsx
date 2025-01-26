@@ -1,4 +1,4 @@
-import HomeView from 'src/sections/trade/home-view';
+import HomeView from 'src/sections/trade/market/home-view';
 
 // ----------------------------------------------------------------------
 

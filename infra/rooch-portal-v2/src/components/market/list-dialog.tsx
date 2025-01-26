@@ -21,7 +21,7 @@ import {
   InputAdornment,
 } from '@mui/material';
 
-import { toDust, fromDust, formatNumber, formatCoin } from 'src/utils/number';
+import { toDust, fromDust, formatNumber } from 'src/utils/number';
 
 import { warning, secondary } from 'src/theme/core';
 
@@ -29,8 +29,6 @@ import { toast } from 'src/components/snackbar';
 
 import InscriptionCard from './inscription-card';
 import { useNetworkVariable } from '../../hooks/use-networks';
-import { formatUnitPrice } from '../../utils/marketplace';
-import { GAS_COIN_DECIMALS } from '../../config/constant';
 
 export default function ListDialog({
   listDialogOpen,

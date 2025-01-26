@@ -78,7 +78,7 @@ function toDustBigNumber(val: BigNumber | number | string, decimal: number | big
 }
 
 export function bigNumberToBigInt(val: BigNumber | number | string): bigint {
-  const str = toBigNumber(val).toString();
+  const str = toBigNumber(val).toFixed(0, 1);
   if (str === 'NaN') {
     return BigInt(0);
   }

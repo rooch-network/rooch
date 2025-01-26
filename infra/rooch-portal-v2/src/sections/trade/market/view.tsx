@@ -35,8 +35,8 @@ import { renderSkeleton } from 'src/components/skeleton/product-item-skeleton-li
 import { ProductItemSkeleton } from 'src/components/skeleton/product-item-skeleton';
 import InscriptionItemBidCard from 'src/components/market/inscription-item-bid-card';
 
-import { formatUnitPrice } from '../../utils/marketplace';
-import { useNetworkVariable } from '../../hooks/use-networks';
+import { formatUnitPrice } from '../../../utils/marketplace';
+import { useNetworkVariable } from '../../../hooks/use-networks';
 
 export default function MarketplaceView({ params }: { params: { tick: string } }) {
   const { tick: marketplaceTick }: { tick: string } = params;

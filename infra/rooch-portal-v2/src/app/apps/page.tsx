@@ -1,4 +1,7 @@
-import AppsView, { Project } from 'src/sections/apps/view';
+import type { Project } from 'src/sections/apps/view';
+
+import AppsView from 'src/sections/apps/view';
+
 import { getAvatar } from '../../utils/avatar';
 
 export const metadata = { title: `Apps` };
