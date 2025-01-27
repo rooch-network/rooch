@@ -18,8 +18,7 @@ module rooch_dex::swap {
     use moveos_std::object::{Object, ObjectID, named_object_id};
     use rooch_framework::coin_store::{CoinStore, balance, deposit, withdraw};
     use rooch_framework::coin_store;
-    #[test_only]
-    use std::debug::print;
+
     #[test_only]
     use std::signer::address_of;
     #[test_only]
@@ -715,7 +714,5 @@ module rooch_dex::swap {
         let (amount_x, amount_y) = remove_liquidity<TestCoinX, TestCoinY>(&signer, 1000);
         assert!(amount_x == 997, 12);
         assert!(amount_y == 1002, 13);
-        print(&amount_x);
-        print(&amount_y);
     }
 }
