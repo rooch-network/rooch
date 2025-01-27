@@ -6,7 +6,7 @@ version = "0.0.1"
 MoveStdlib = { git = "https://github.com/rooch-network/rooch.git", subdir = "frameworks/move-stdlib", rev = "main" }
 MoveosStdlib = { git = "https://github.com/rooch-network/rooch.git", subdir = "frameworks/moveos-stdlib", rev = "main" }
 RoochFramework = { git = "https://github.com/rooch-network/rooch.git", subdir = "frameworks/rooch-framework", rev = "main" }
-VerityMoveOracles = { git = "https://github.com/usherlabs/verity-move-oracles.git", subdir = "rooch", rev = "feature/open-ai" } # change feature/open-ai to main once PR#15 is merged
+VerityMoveOracles = { git = "https://github.com/usherlabs/verity-move-oracles.git", subdir = "rooch", rev = "main" }
 
 
 [addresses]
