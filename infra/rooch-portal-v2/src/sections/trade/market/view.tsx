@@ -12,6 +12,8 @@ import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
 import { Tab, Card, Tabs, Alert, Stack, Button, Tooltip, Skeleton, useTheme } from '@mui/material';
 
+import { RouterLink } from 'src/routes/components';
+
 import {
   type BidItem,
   type MarketItem,
@@ -284,6 +286,11 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
       tempToCoinBalanceInfo.balance = toBalanceInfo.balance;
     }
 
+    console.log(
+      '🚀 ~ file: view.tsx:290 ~ getMarketTradeInfo ~ tempFromCoinBalanceInfo:',
+      tempFromCoinBalanceInfo,
+      tempToCoinBalanceInfo
+    );
     setFromCoinBalanceInfo(tempFromCoinBalanceInfo as BalanceInfoView);
     setToCoinBalanceInfo(tempToCoinBalanceInfo as BalanceInfoView);
   }, [account, client, marketplaceTick, market]);
@@ -309,13 +316,6 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
   const isWalletConnect = useMemo(
     () => Boolean(account?.genRoochAddress().toHexAddress()),
     [account]
-  );
-
-  console.log(
-    '🚀 ~ file: view.tsx:663 ~ MarketplaceView ~ currentTab:',
-    currentTab,
-    marketList,
-    bidList
   );
 
   return (
@@ -384,6 +384,16 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
               >
                 Bid
               </Button>
+              {fromCoinBalanceInfo && toCoinBalanceInfo && (
+                <Button
+                  variant="contained"
+                  color="secondary"
+                  component={RouterLink}
+                  href={`/history/${fromCoinBalanceInfo.symbol.toLowerCase()}-${toCoinBalanceInfo.symbol.toLowerCase()}`}
+                >
+                  View History
+                </Button>
+              )}
             </>
           )}
         </Stack>

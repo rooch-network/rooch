@@ -113,24 +113,24 @@ export default function InscriptionShopCard({
             }}
           />
         ) : (
-            <Chip
-              size="small"
-              label={
-                seller === account?.toStr()
-                  ? '#Your Order'
-                  : `#${objectId.slice(objectId.length - 7, objectId.length)}`
-              }
-              variant="soft"
-              color={seller === account?.toStr() ? 'success' : 'info'}
-              sx={{
-                '& .MuiChip-label': {
-                  fontSize: {
-                    xs: '0.75rem',
-                    sm: '0.8125rem',
-                  },
+          <Chip
+            size="small"
+            label={
+              seller === account?.toStr()
+                ? '#Your Order'
+                : `#${objectId.slice(objectId.length - 7, objectId.length)}`
+            }
+            variant="soft"
+            color={seller === account?.toStr() ? 'success' : 'info'}
+            sx={{
+              '& .MuiChip-label': {
+                fontSize: {
+                  xs: '0.75rem',
+                  sm: '0.8125rem',
                 },
-              }}
-            />
+              },
+            }}
+          />
         )}
       </Stack>
       <Typography
@@ -164,7 +164,6 @@ export default function InscriptionShopCard({
         </Typography>
         {fromCoinBalanceInfo.symbol.toUpperCase()}/{toCoinBalanceInfo.symbol.toUpperCase()}
       </Typography>
-      {/* <Typography>{mrcItem.content.fields.tick}</Typography> */}
 
       <Typography
         sx={{
