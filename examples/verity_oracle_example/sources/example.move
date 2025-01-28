@@ -9,12 +9,10 @@ module verity_oracle_example::example_caller {
     use moveos_std::object::{ObjectID};
     use std::option::{Self, Option};
     use std::vector;
-    use std::string::String;
+    use std::string::{Self,String};
     use verity::oracles::{Self as Oracles};
     use rooch_framework::gas_coin::RGas;
     use rooch_framework::account_coin_store;
-    #[test_only]
-    use verity::oracles;
 
     struct GlobalParams has key {
        pending_requests: vector<ObjectID>,
@@ -22,7 +20,7 @@ module verity_oracle_example::example_caller {
 
     #[test_only]
     public fun init_for_test(){
-        oracles::init_for_test();
+        Oracles::init_for_test();
         init();
     }
 
@@ -39,7 +37,7 @@ module verity_oracle_example::example_caller {
     // Initiate the module with an empty vector of pending requests
     // Requests are managed in the caller to prevent other modules from impersonating the calling module, and spoofing new data.
     fun init(){
-      // let params = account::borrow_mut_resource<GlobalParams>(@verity_test_foreign_module); // account::borrow_mut_resource  in init throws an error on deployment
+      // let params = account::borrow_mut_resource<GlobalParams>(@verity_oracle_example); // account::borrow_mut_resource  in init throws an error on deployment
       // params.pending_requests = vector::empty<ObjectID>();
       let signer = moveos_std::signer::module_signer<GlobalParams>();
       account::move_resource_to(&signer, GlobalParams { pending_requests: vector::empty<ObjectID>() });
@@ -60,16 +58,16 @@ module verity_oracle_example::example_caller {
         // We're passing the address and function identifier of the recipient address. in this from <module_name>::<function_name>
         // If you do not want to pay for the Oracle to notify your contract, you can pass in option::none() as the argument.
         let payment = account_coin_store::withdraw<RGas>(from, amount);
-        let request_id = Oracles::new_request_with_payment(http_request, pick, oracle, Oracles::with_notify(@verity_test_foreign_module, b"example_caller::receive_data"),payment);
+        let request_id = Oracles::new_request_with_payment(http_request, pick, oracle, Oracles::with_notify(@verity_oracle_example, string::utf8(b"example_caller::receive_data")),payment);
         // let no_notify_request_id = Oracles::new_request(http_request, pick, oracle, Oracles::without_notify());
-        let params = account::borrow_mut_resource<GlobalParams>(@verity_test_foreign_module);
+        let params = account::borrow_mut_resource<GlobalParams>(@verity_oracle_example);
         vector::push_back(&mut params.pending_requests, request_id);
     }
 
     // This notify function is called by the Oracle.
     // ! It must not include parameters, or return arguments.
     public entry fun receive_data() {
-        let params = account::borrow_mut_resource<GlobalParams>(@verity_test_foreign_module);
+        let params = account::borrow_mut_resource<GlobalParams>(@verity_oracle_example);
         let pending_requests = params.pending_requests;
 
         let i = 0;
@@ -78,22 +76,20 @@ module verity_oracle_example::example_caller {
             // Remove the fulfilled request from the pending_requests vector
             // This ensures unfulfilled requests are retained in the vector
             if (option::is_some(&Oracles::get_response(request_id))) {
-                vector::remove(&mut params.pending_requests, i);
-                // Decrement i to account for the removed element
-                if (i > 0) {
-                    i = i - 1;
+                let (found, index) = vector::index_of(&mut  params.pending_requests, request_id);
+                if (found){
+                    vector::remove(&mut params.pending_requests, index);
+                    // ? ------ OPTIONAL ------
+                    let request_url = Oracles::get_request_params_url(request_id);
+                    let request_method = Oracles::get_request_params_method(request_id);
+                    let response = Oracles::get_response(request_id);
+                    // For each fulfilment, emit an event
+                    event::emit(RequestFulfilledEvent {
+                    request_url,
+                    request_method,
+                    response,
+                    });
                 };
-
-                // ? ------ OPTIONAL ------
-                let request_url = Oracles::get_request_params_url(request_id);
-                let request_method = Oracles::get_request_params_method(request_id);
-                let response = Oracles::get_response(request_id);
-                // For each fulfilment, emit an event
-                event::emit(RequestFulfilledEvent {
-                  request_url,
-                  request_method,
-                  response,
-                });
                 // \ ------ OPTIONAL ------
             };
 
@@ -103,7 +99,7 @@ module verity_oracle_example::example_caller {
 
     #[view]
     public fun pending_requests_count(): u64 {
-        let params = account::borrow_resource<GlobalParams>(@verity_test_foreign_module);
+        let params = account::borrow_resource<GlobalParams>(@verity_oracle_example);
         vector::length(&params.pending_requests)
     }
 }
@@ -111,7 +107,7 @@ module verity_oracle_example::example_caller {
 #[test_only]
 module verity_oracle_example::test_foreign_module {
     use moveos_std::signer;
-    use verity_test_foreign_module::example_caller::{Self, request_data, pending_requests_count};
+    use verity_oracle_example::example_caller::{Self, request_data, pending_requests_count};
     use rooch_framework::gas_coin;
     use verity::registry;
     use std::vector;
