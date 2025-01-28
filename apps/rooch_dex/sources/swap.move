@@ -18,8 +18,13 @@ module rooch_dex::swap {
     use moveos_std::object::{Object, ObjectID, named_object_id};
     use rooch_framework::coin_store::{CoinStore, balance, deposit, withdraw};
     use rooch_framework::coin_store;
+
+    #[test_only]
+    use std::signer::address_of;
     #[test_only]
     use moveos_std::object::to_shared;
+    #[test_only]
+    use rooch_framework::account::create_account_for_testing;
     #[test_only]
     use rooch_framework::coin::Coin;
 
@@ -658,5 +663,56 @@ module rooch_dex::swap {
         let lp_coin = coin::mint(&mut coin_info, amount);
         to_shared(coin_info);
         return lp_coin
+    }
+
+    #[test]
+    fun test_swap(){
+        rooch_framework::genesis::init_for_test();
+        let signer = create_account_for_testing(@0x42);
+        let sender = address_of(&signer);
+        let receiver_signer = create_account_for_testing(@0x43);
+        let receiver = address_of(&receiver_signer);
+        let x_coin_info = coin::register_extend<TestCoinX>(
+            string::utf8(b"TestCoinX"),
+            string::utf8(b"TCX"),
+            none(),
+            8
+        );
+        let y_coin_info = coin::register_extend<TestCoinY>(
+            string::utf8(b"TestCoinY"),
+            string::utf8(b"TCY"),
+            none(),
+            8
+        );
+
+        let x_coin = coin::mint(&mut x_coin_info, 100000000);
+        account_coin_store::deposit(sender, x_coin);
+        let y_coin = coin::mint(&mut y_coin_info, 100000000);
+        account_coin_store::deposit(sender, y_coin);
+        to_shared(x_coin_info);
+        to_shared(y_coin_info);
+        create_pair<TestCoinX, TestCoinY>(&signer);
+        let (a_x, a_y, lp_amount)= add_liquidity<TestCoinX, TestCoinY>(&signer, 10000, 10000);
+        assert!(a_x == 10000, 0);
+        assert!(a_y == 10000, 1);
+        assert!(lp_amount == 9000, 2);
+        let (amount_x, amount_y) = remove_liquidity<TestCoinX, TestCoinY>(&signer, 100);
+        assert!(amount_x == 100, 3);
+        assert!(amount_y == 100, 4);
+        let (a_x, a_y, lp_amount)= add_liquidity<TestCoinX, TestCoinY>(&signer, 10100, 20200);
+        assert!(a_x == 10100, 5);
+        assert!(a_y == 10100, 6);
+        assert!(lp_amount == 10100, 7);
+        let total_lp = total_lp_supply<TestCoinX, TestCoinY>();
+        assert!(total_lp == 20000, 8);
+        let amount_out = swap_exact_x_to_y<TestCoinX, TestCoinY>(&signer, 1000, receiver);
+        assert!(amount_out == 950, 9);
+        let amount_out = swap_exact_y_to_x<TestCoinX, TestCoinY>(&signer, 1000, receiver);
+        assert!(amount_out == 1044, 10);
+        let total_lp = total_lp_supply<TestCoinX, TestCoinY>();
+        assert!(total_lp == 20000, 11);
+        let (amount_x, amount_y) = remove_liquidity<TestCoinX, TestCoinY>(&signer, 1000);
+        assert!(amount_x == 997, 12);
+        assert!(amount_y == 1002, 13);
     }
 }
