@@ -25,48 +25,48 @@ import { formatCoin } from 'src/utils/format-number';
 
 import { toast } from 'src/components/snackbar';
 
-import type { OwnerLiquidityItemType } from '../../hooks/use-owner-liquidity';
+import type { FarmRowItemType } from './farm-row-item';
 
 // TODO: 计算收入
-export default function RemoveLiquidityModal({
+export default function AddSrakeModal({
   open,
   onClose,
   row,
 }: {
   open: boolean;
   onClose: () => void;
-  row: OwnerLiquidityItemType;
+  row: FarmRowItemType;
 }) {
   const dex = useNetworkVariable('dex');
 
   const { mutateAsync, isPending } = useSignAndExecuteTransaction();
 
-  const [liquidity, setLiquidity] = useState('');
+  const [amount, setAmount] = useState('');
   const [slippage, setSlippage] = useState(0.005);
   const [customSlippage, setCustomSlippage] = useState('');
 
-  const handleRemoveLiquidity = () => {
-    const fixdLiquidity = toDust(liquidity, row.decimals);
+  const handleStake = () => {
+    const fixdAmount = toDust(amount, row.liquidity!.decimals);
     const tx = new Transaction();
     tx.callFunction({
-      target: `${dex.address}::router::remove_liquidity`,
-      args: [Args.u64(fixdLiquidity), Args.u64(BigInt(0)), Args.u64(BigInt(0))],
-      typeArgs: [row.x.type, row.y.type],
+      target: `${dex.address}::liquidity_incentive::stake`,
+      args: [Args.u256(fixdAmount), Args.objectId(row.id)],
+      typeArgs: [row.x.type, row.y.type, row.reward],
     });
     mutateAsync({
       transaction: tx,
     })
       .then((result) => {
         if (result.execution_info.status.type === 'executed') {
-          toast.success('remove success');
+          toast.success('stake success');
         } else {
           console.log(result);
-          toast.error('remove failed');
+          toast.error('stake failed');
         }
       })
       .catch((e: any) => {
         console.log(e);
-        toast.error('remove failed');
+        toast.error('stake failed');
       })
       .finally(() => {
         onClose();
@@ -75,7 +75,7 @@ export default function RemoveLiquidityModal({
 
   return (
     <Dialog open={open}>
-      <DialogTitle sx={{ pb: 2 }}>Remove Liquidity</DialogTitle>
+      <DialogTitle sx={{ pb: 2 }}>Stake</DialogTitle>
 
       <DialogContent
         sx={{
@@ -90,12 +90,14 @@ export default function RemoveLiquidityModal({
           alignItems="flex-end"
         >
           <Stack>
-            <Typography className="!font-semibold">{row.symbol}</Typography>
-            <Typography className="text-gray-400 !text-xs">{row.name}</Typography>
+            <Typography className="!font-semibold">
+              {row.x.name}-{row.y.name}
+            </Typography>
+            <Typography className="text-gray-400 !text-xs">{row.liquidity?.symbol}</Typography>
           </Stack>
           <Stack>
             <Typography className="text-gray-600 !text-sm !font-semibold">
-              Balance: {row.fixedBalance}{' '}
+              Balance: {row.liquidity?.fixedBalance}
             </Typography>
           </Stack>
         </Stack>
@@ -104,11 +106,11 @@ export default function RemoveLiquidityModal({
             <TextField
               label="Amount"
               placeholder=""
-              value={liquidity}
+              value={amount}
               inputMode="decimal"
               autoComplete="off"
               onChange={(e) => {
-                setLiquidity(e.target.value);
+                setAmount(e.target.value);
               }}
               InputProps={{
                 endAdornment: (
@@ -118,9 +120,13 @@ export default function RemoveLiquidityModal({
                         size="small"
                         variant="outlined"
                         onClick={() => {
-                          setLiquidity(
+                          setAmount(
                             new BigNumber(
-                              formatCoin(Number(row.balance), row.decimals, row.decimals)
+                              formatCoin(
+                                Number(row.liquidity!.balance || 0),
+                                Number(row.liquidity!.decimals || 0),
+                                row.liquidity!.decimals
+                              )
                             )
                               .div(2)
                               .toString()
@@ -133,9 +139,13 @@ export default function RemoveLiquidityModal({
                         size="small"
                         variant="outlined"
                         onClick={() => {
-                          setLiquidity(
+                          setAmount(
                             new BigNumber(
-                              formatCoin(Number(row.balance), row.decimals, row.decimals)
+                              formatCoin(
+                                Number(row.liquidity!.balance),
+                                row.liquidity!.decimals,
+                                row.liquidity!.decimals
+                              )
                             ).toString()
                           );
                         }}
@@ -149,27 +159,6 @@ export default function RemoveLiquidityModal({
             />
           </FormControl>
         </Stack>
-        <Box sx={{ pt: 2, mt: 2 }}>
-          <span className="text-gray-400 text-sm mt-4 mr-2">Slippage</span>
-          {[0.005, 0.01, 0.03].map((item, index) => (
-            <Button
-              key={item.toString()}
-              variant={slippage === item ? 'contained' : 'outlined'}
-              size="small"
-              sx={{ mr: 1 }}
-              onClick={() => {
-                if (slippage === item) {
-                  setSlippage(0);
-                } else {
-                  setSlippage(item);
-                  setCustomSlippage('');
-                }
-              }}
-            >
-              {item * 100}%
-            </Button>
-          ))}
-        </Box>
       </DialogContent>
 
       <DialogActions>
@@ -184,13 +173,8 @@ export default function RemoveLiquidityModal({
           Cancel
         </Button>
 
-        <SessionKeyGuard onClick={handleRemoveLiquidity}>
-          <LoadingButton
-            fullWidth
-            disabled={liquidity === ''}
-            loading={isPending}
-            variant="contained"
-          >
+        <SessionKeyGuard onClick={handleStake}>
+          <LoadingButton fullWidth disabled={amount === ''} loading={isPending} variant="contained">
             Confirm
           </LoadingButton>
         </SessionKeyGuard>

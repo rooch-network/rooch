@@ -8,11 +8,12 @@ import { DashboardContent } from 'src/layouts/dashboard';
 
 import AllLiquidityList from './all_liquidity_list';
 import OwnerLiquidityList from './owner_liquidity_list';
+import FarmList from './farm_list';
 
 const TABS = [
   { label: 'All Liquidity', value: 'all_liquidity' },
   { label: 'Your Liquidity', value: 'you_liquidity' },
-  // { label: 'Farm', value: 'farm' },
+  { label: 'Farm', value: 'farm' },
 ];
 
 export default function LiquidityListView() {
@@ -35,6 +36,7 @@ export default function LiquidityListView() {
 
       {tabs.value === 'all_liquidity' && <AllLiquidityList />}
       {tabs.value === 'you_liquidity' && <OwnerLiquidityList />}
+      {tabs.value === 'farm' && <FarmList />}
     </DashboardContent>
   );
 }
