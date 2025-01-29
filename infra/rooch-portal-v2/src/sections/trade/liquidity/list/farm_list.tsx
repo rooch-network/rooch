@@ -69,7 +69,7 @@ export default function FarmList() {
         releasePerSecond: view.release_per_second as number,
         x,
         y,
-        reward: types[2].replace('>', '').trim(),
+        reward: types[2].replaceAll('>', '').trim(),
         liquidity: lpTokens.find((item) => item.x.type === x.type && item.y.type === y.type),
       };
     });
