@@ -11,7 +11,7 @@ import RemoveLiquidityModal from './remove-liquidity-modal';
 import OwnerLiquidityRowItem from './owner-liquidity-row-item';
 import { useOwnerLiquidity } from '../../hooks/use-owner-liquidity';
 
-import type { OwnerLiquidityItemType } from './owner-liquidity-row-item';
+import type { OwnerLiquidityItemType } from '../../hooks/use-owner-liquidity';
 
 const headerLabel = [
   { id: 'lp', label: 'LP' },
