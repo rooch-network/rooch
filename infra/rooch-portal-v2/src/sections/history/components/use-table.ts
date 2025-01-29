@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 
-import { TableProps } from './types';
+import type { TableProps } from './types';
 
 // ----------------------------------------------------------------------
 

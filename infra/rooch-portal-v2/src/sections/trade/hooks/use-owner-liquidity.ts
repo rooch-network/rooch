@@ -1,6 +1,8 @@
-import { BalanceInfoView } from '@roochnetwork/rooch-sdk';
+import type { BalanceInfoView } from '@roochnetwork/rooch-sdk';
+
+import { useMemo } from 'react';
 import { useCurrentAddress, useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit';
-import { useMemo, useState, useCallback } from 'react';
+
 import { useNetworkVariable } from 'src/hooks/use-networks';
 
 export type OwnerLiquidityItemType = {

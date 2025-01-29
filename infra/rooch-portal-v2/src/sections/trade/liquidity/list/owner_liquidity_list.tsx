@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 
 import { Card, Table, TableBody } from '@mui/material';
 
@@ -9,9 +9,9 @@ import { TableNoData, TableHeadCustom } from 'src/components/table';
 
 import RemoveLiquidityModal from './remove-liquidity-modal';
 import OwnerLiquidityRowItem from './owner-liquidity-row-item';
+import { useOwnerLiquidity } from '../../hooks/use-owner-liquidity';
 
 import type { OwnerLiquidityItemType } from './owner-liquidity-row-item';
-import { useOwnerLiquidity } from '../../hooks/use-owner-liquidity';
 
 const headerLabel = [
   { id: 'lp', label: 'LP' },

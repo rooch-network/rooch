@@ -1,6 +1,5 @@
 import type { BalanceInfoView, AnnotatedMoveStructView } from '@roochnetwork/rooch-sdk';
 
-import { toast } from 'src/components/snackbar';
 import BigNumber from 'bignumber.js';
 import { useDebounce } from 'react-use';
 import { Args, Transaction } from '@roochnetwork/rooch-sdk';
@@ -34,6 +33,8 @@ import { useNetworkVariable } from 'src/hooks/use-networks';
 
 import { formatCoin } from 'src/utils/format-number';
 import { toDust, bigNumberToBigInt } from 'src/utils/number';
+
+import { toast } from 'src/components/snackbar';
 
 import Icon from '../components/icon';
 
@@ -259,7 +260,7 @@ export default function AddLiquidityModal({
                   inputMode="decimal"
                   autoComplete="off"
                   onChange={(e) => {
-                    const value = e.target.value;
+                    const {value} = e.target;
                     if (/^\d*\.?\d*$/.test(value) === false) {
                       return;
                     }

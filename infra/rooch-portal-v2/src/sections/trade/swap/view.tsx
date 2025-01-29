@@ -14,7 +14,6 @@ import SwapConfirmModal from './confirm-modal';
 import SelectTokenPair from '../components/select-token-pair';
 
 import type { TradeCoinType } from '../components/types';
-import { toDust } from 'src/utils/number';
 
 export default function SwapView() {
   const dex = useNetworkVariable('dex');

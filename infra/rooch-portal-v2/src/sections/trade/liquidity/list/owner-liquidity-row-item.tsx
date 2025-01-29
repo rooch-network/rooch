@@ -1,8 +1,8 @@
-import type { BalanceInfoView } from '@roochnetwork/rooch-sdk';
 
 import { WalletGuard } from '@roochnetwork/rooch-sdk-kit';
 
 import { Box, Button, TableRow, TableCell, ListItemText } from '@mui/material';
+
 import type { OwnerLiquidityItemType } from '../../hooks/use-owner-liquidity';
 
 type RowItemProps = {

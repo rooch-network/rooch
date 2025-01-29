@@ -1,36 +1,34 @@
+import dayjs from 'dayjs';
+import { Fragment, useState, useEffect, useCallback } from 'react';
 import { Args, Transaction, type BalanceInfoView } from '@roochnetwork/rooch-sdk';
-
 import {
+  useRoochClient,
   SessionKeyGuard,
   useCurrentAddress,
-  useRoochClient,
-  useRoochClientQuery,
   useSignAndExecuteTransaction,
-  WalletGuard,
 } from '@roochnetwork/rooch-sdk-kit';
 
+import { LoadingButton } from '@mui/lab';
+import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import {
   Box,
+  Card,
+  Stack,
   Button,
   TableRow,
-  TableCell,
-  ListItemText,
   Collapse,
-  Stack,
-  Card,
-  CardHeader,
-  CardContent,
+  TableCell,
   Typography,
-  Icon,
+  CardContent,
+  ListItemText,
 } from '@mui/material';
-import dayjs from 'dayjs';
-import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
-import { LoadingButton } from '@mui/lab';
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
-import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
-import type { OwnerLiquidityItemType } from '../../hooks/use-owner-liquidity';
+
 import { useNetworkVariable } from 'src/hooks/use-networks';
+
 import { toast } from 'src/components/snackbar';
+
+import type { OwnerLiquidityItemType } from '../../hooks/use-owner-liquidity';
 
 export type FarmRowItemType = {
   id: string;
@@ -96,11 +94,11 @@ export default function FarmRowItem({
             });
         }
       });
-  }, [client, dex, openCollapse, row]);
+  }, [client, dex, openCollapse, row, currentAddress]);
 
   useEffect(() => {
     fetchHarvest();
-  }, [selectRow]);
+  }, [selectRow, fetchHarvest]);
 
   useEffect(() => {
     fetchHarvest();

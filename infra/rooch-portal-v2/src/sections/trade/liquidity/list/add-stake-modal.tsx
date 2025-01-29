@@ -5,7 +5,6 @@ import { SessionKeyGuard, useSignAndExecuteTransaction } from '@roochnetwork/roo
 
 import { LoadingButton } from '@mui/lab';
 import {
-  Box,
   Stack,
   Button,
   Dialog,

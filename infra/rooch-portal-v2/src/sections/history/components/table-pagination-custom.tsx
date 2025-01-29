@@ -1,8 +1,8 @@
+import type { Theme, SxProps } from '@mui/material/styles';
+import type { TablePaginationProps } from '@mui/material/TablePagination';
+
 import Box from '@mui/material/Box';
-import Switch from '@mui/material/Switch';
-import { Theme, SxProps } from '@mui/material/styles';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import TablePagination, { TablePaginationProps } from '@mui/material/TablePagination';
+import TablePagination from '@mui/material/TablePagination';
 
 // ----------------------------------------------------------------------
 

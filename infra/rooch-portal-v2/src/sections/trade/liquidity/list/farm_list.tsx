@@ -10,12 +10,13 @@ import WalletGuard from 'src/components/guard/WalletGuard';
 import TableSkeleton from 'src/components/skeleton/table-skeleton';
 import { TableNoData, TableHeadCustom } from 'src/components/table';
 
-import FarmRowItem, { FarmRowItemType } from './farm-row-item';
-
+import FarmRowItem from './farm-row-item';
 import AddSrakeModal from './add-stake-modal';
-import { useOwnerLiquidity } from '../../hooks/use-owner-liquidity';
 import AddLiquidityModal from './add-liquidity-modal';
 import { useAllLiquidity } from '../../hooks/use-all-liquidity';
+import { useOwnerLiquidity } from '../../hooks/use-owner-liquidity';
+
+import type { FarmRowItemType } from './farm-row-item';
 
 const headerLabel = [
   { id: 'lp', label: 'LP' },
@@ -61,18 +62,18 @@ export default function FarmList() {
       };
       return {
         id: item.id,
-        alive: view['alive'] as boolean,
-        endtime: view['end_time'] as number,
-        assetTotalWeight: view['asset_total_weight'] as number,
-        harvestIndex: view['harvest_index'] as number,
-        releasePerSecond: view['release_per_second'] as number,
-        x: x,
-        y: y,
+        alive: view.alive as boolean,
+        endtime: view.end_time as number,
+        assetTotalWeight: view.asset_total_weight as number,
+        harvestIndex: view.harvest_index as number,
+        releasePerSecond: view.release_per_second as number,
+        x,
+        y,
         reward: types[2].replace('>', '').trim(),
         liquidity: lpTokens.find((item) => item.x.type === x.type && item.y.type === y.type),
       };
     });
-  }, [farms, lpTokens]);
+  }, [farms, lpTokens, dex.address]);
 
   const {
     data: assetsList,

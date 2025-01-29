@@ -6,9 +6,9 @@ import { useTabs } from 'src/hooks/use-tabs';
 
 import { DashboardContent } from 'src/layouts/dashboard';
 
+import FarmList from './farm_list';
 import AllLiquidityList from './all_liquidity_list';
 import OwnerLiquidityList from './owner_liquidity_list';
-import FarmList from './farm_list';
 
 const TABS = [
   { label: 'All Liquidity', value: 'all_liquidity' },
