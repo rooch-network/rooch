@@ -1,9 +1,11 @@
-import { Args, type BalanceInfoView } from '@roochnetwork/rooch-sdk';
+import { Args, Transaction, type BalanceInfoView } from '@roochnetwork/rooch-sdk';
 
 import {
+  SessionKeyGuard,
   useCurrentAddress,
   useRoochClient,
   useRoochClientQuery,
+  useSignAndExecuteTransaction,
   WalletGuard,
 } from '@roochnetwork/rooch-sdk-kit';
 
@@ -22,12 +24,13 @@ import {
   Icon,
 } from '@mui/material';
 import dayjs from 'dayjs';
-import { Fragment, useEffect, useMemo, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { LoadingButton } from '@mui/lab';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import type { OwnerLiquidityItemType } from '../../hooks/use-owner-liquidity';
 import { useNetworkVariable } from 'src/hooks/use-networks';
+import { toast } from 'src/components/snackbar';
 
 export type FarmRowItemType = {
   id: string;
@@ -47,32 +50,121 @@ export type FarmRowItemType = {
 
 type RowItemProps = {
   row: FarmRowItemType;
+  selectRow?: FarmRowItemType;
   onOpenStakeModal: (row: FarmRowItemType) => void;
+  onOpenAddLiquidityModal: (row: FarmRowItemType) => void;
 };
 
-export default function FarmRowItem({ row, onOpenStakeModal }: RowItemProps) {
+export default function FarmRowItem({
+  row,
+  onOpenStakeModal,
+  onOpenAddLiquidityModal,
+  selectRow,
+}: RowItemProps) {
   const [openCollapse, setOpenCollapse] = useState(false);
   const client = useRoochClient();
   const dex = useNetworkVariable('dex');
   const currentAddress = useCurrentAddress();
+  const [staked, setStaked] = useState(false);
   const [harvest, setHarvest] = useState(0);
+  const [rewardCoin, setRewardCoin] = useState<BalanceInfoView>();
+  const { mutateAsync, isPending } = useSignAndExecuteTransaction();
 
-  useEffect(() => {
-    if (!openCollapse || harvest) {
+  const fetchHarvest = useCallback(() => {
+    if (!openCollapse) {
       return;
     }
     client
       .executeViewFunction({
-        target: `${dex.address}::liquidity_incentive::query_harvest_token_amount`,
-        args: [Args.address(currentAddress?.toStr() || ''), Args.objectId(row.id)],
+        target: `${dex.address}::liquidity_incentive::query_stake`,
+        args: [Args.objectId(row.id), Args.address(currentAddress?.toStr() || '')],
         typeArgs: [row.x.type, row.y.type, row.reward],
       })
       .then((result) => {
         const s = result.return_values![0].decoded_value as number;
-        setHarvest(s);
-        console.log(result);
+        console.log('staked', s);
+        setStaked(s > 0);
+        if (s > 0) {
+          client
+            .executeViewFunction({
+              target: `${dex.address}::liquidity_incentive::query_harvest_token_amount`,
+              args: [Args.address(currentAddress?.toStr() || ''), Args.objectId(row.id)],
+              typeArgs: [row.x.type, row.y.type, row.reward],
+            })
+            .then((result) => {
+              const s = result.return_values![0].decoded_value as number;
+              setHarvest(s);
+            });
+        }
       });
-  }, [openCollapse]);
+  }, [client, dex, openCollapse, row]);
+
+  useEffect(() => {
+    fetchHarvest();
+    console.log('sel');
+  }, [selectRow]);
+
+  useEffect(() => {
+    fetchHarvest();
+  }, [fetchHarvest]);
+
+  useEffect(() => {
+    client
+      .getBalance({
+        owner: currentAddress?.toStr() || '',
+        coinType: row.reward,
+      })
+      .then((result) => {
+        setRewardCoin(result);
+      });
+  }, [openCollapse, client, currentAddress, row]);
+
+  const handleHarvest = () => {
+    const tx = new Transaction();
+    tx.callFunction({
+      target: `${dex.address}::liquidity_incentive::harvest`,
+      args: [Args.objectId(row.id)],
+      typeArgs: [row.x.type, row.y.type, row.reward],
+    });
+    mutateAsync({
+      transaction: tx,
+    })
+      .then((result) => {
+        if (result.execution_info.status.type === 'executed') {
+          fetchHarvest();
+          toast.success('harvest success');
+        } else {
+          toast.error('harvest failed');
+        }
+      })
+      .catch((e: any) => {
+        console.log(e);
+        toast.error('harvest failed');
+      });
+  };
+
+  const handleAction = (target: 'harvest' | 'unstake') => {
+    const tx = new Transaction();
+    tx.callFunction({
+      target: `${dex.address}::liquidity_incentive::${target}`,
+      args: [Args.objectId(row.id)],
+      typeArgs: [row.x.type, row.y.type, row.reward],
+    });
+    mutateAsync({
+      transaction: tx,
+    })
+      .then((result) => {
+        if (result.execution_info.status.type === 'executed') {
+          fetchHarvest();
+          toast.success(`${target} success`);
+        } else {
+          toast.error(`${target} failed`);
+        }
+      })
+      .catch((e: any) => {
+        toast.error(`${target} failed`);
+      });
+  };
 
   return (
     <Fragment key={row.id}>
@@ -104,15 +196,6 @@ export default function FarmRowItem({ row, onOpenStakeModal }: RowItemProps) {
 
         <TableCell align="right" sx={{ pr: 1 }}>
           {openCollapse ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
-          {/* <WalletGuard
-            onClick={() => {
-              onOpenViewModal(row);
-            }}
-          >
-            <Button variant="outlined" size="small">
-              Remove
-            </Button>
-          </WalletGuard> */}
         </TableCell>
       </TableRow>
       <TableRow>
@@ -133,19 +216,46 @@ export default function FarmRowItem({ row, onOpenStakeModal }: RowItemProps) {
                     height: '100%',
                   }}
                 >
-                  <LoadingButton variant="outlined" size="small">
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={() => onOpenAddLiquidityModal(row)}
+                  >
                     Get {row.x.name}-{row.y.name} LP
-                  </LoadingButton>
+                  </Button>
                 </CardContent>
               </Card>
               <Card sx={{ width: '100%' }}>
-                <CardContent>
-                  <Typography className="text-gray-600 !text-sm !font-semibold">
-                    Balance:
-                  </Typography>
-                  <LoadingButton variant="outlined" size="small">
-                    Harvest
-                  </LoadingButton>
+                <CardContent
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    height: '100%',
+                  }}
+                >
+                  <Stack direction="column">
+                    <Typography className="text-gray-600 !text-sm !font-semibold">
+                      Eligible ${rewardCoin?.symbol}: {harvest}
+                    </Typography>
+                    {staked && (
+                      <SessionKeyGuard
+                        onClick={() => {
+                          handleAction(harvest > 0 ? 'harvest' : 'unstake');
+                        }}
+                      >
+                        <LoadingButton
+                          loading={isPending}
+                          sx={{ mt: 1 }}
+                          variant="outlined"
+                          size="small"
+                        >
+                          {harvest > 0 && 'Harvest'}
+                          {harvest < 1 && 'Unstake'}
+                        </LoadingButton>
+                      </SessionKeyGuard>
+                    )}
+                  </Stack>
                 </CardContent>
               </Card>
               <Card sx={{ width: '100%' }}>

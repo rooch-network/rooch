@@ -31,6 +31,7 @@ export function useOwnerLiquidity(): UseOwnerLiquidityReturn {
     if (!assetsList) {
       return [];
     }
+    console.log('owner', assetsList);
     const tokens: OwnerLiquidityItemType[] = assetsList!.data
       .filter((item) => item.symbol.startsWith('RDexLP'))
       .map((item) => {

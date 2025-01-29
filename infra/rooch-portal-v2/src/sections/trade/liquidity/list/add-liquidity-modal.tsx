@@ -1,6 +1,6 @@
 import type { BalanceInfoView, AnnotatedMoveStructView } from '@roochnetwork/rooch-sdk';
 
-import { toast } from 'sonner';
+import { toast } from 'src/components/snackbar';
 import BigNumber from 'bignumber.js';
 import { useDebounce } from 'react-use';
 import { Args, Transaction } from '@roochnetwork/rooch-sdk';
@@ -221,7 +221,9 @@ export default function AddLiquidityModal({
     const y = BigNumber(yBalance).multipliedBy(xRate);
 
     if (y.toNumber() > Number(assetsMap.get(row.y.type)?.balance || 0)) {
-      setYLabelError(`Insufficient`);
+      setYLabelError('Insufficient');
+    } else {
+      setYLabelError(undefined);
     }
     setYAmount(y.toFixed(0, 1));
   }, [xAmount, reserveX, reserveY, row.x.type, row.y.type, assetsMap]);

@@ -158,18 +158,6 @@ export default function AllLiquidityList() {
     }
   }, [paginationModel, tokenPairs]);
 
-  // const {
-  //   data: assetsList,
-  //   isPending,
-  //   refetch: refetchAssetsList,
-  // } = useRoochClientQuery(
-  //   'getBalances',
-  //   {
-  //     owner: currentAddress?.toStr() || '',
-  //   },
-  //   { refetchInterval: 5000 }
-  // );
-
   const [openAddLiquidityModal, setOpenAddLiquidityModal] = useState(false);
   const [selectedRow, setSelectedRow] = useState<AllLiquidityItemType>();
 

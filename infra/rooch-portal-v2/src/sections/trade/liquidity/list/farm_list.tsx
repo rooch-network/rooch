@@ -14,6 +14,8 @@ import FarmRowItem, { FarmRowItemType } from './farm-row-item';
 
 import AddSrakeModal from './add-stake-modal';
 import { useOwnerLiquidity } from '../../hooks/use-owner-liquidity';
+import AddLiquidityModal from './add-liquidity-modal';
+import { useAllLiquidity } from '../../hooks/use-all-liquidity';
 
 const headerLabel = [
   { id: 'lp', label: 'LP' },
@@ -27,14 +29,17 @@ const headerLabel = [
 export default function FarmList() {
   const currentAddress = useCurrentAddress();
   const dex = useNetworkVariable('dex');
+  const [openStakeModal, setOpenStakeModal] = useState(false);
+  const [openAddLiquidityModal, setOpenAddLiquidityModal] = useState(false);
+  const [selectedRow, setSelectedRow] = useState<FarmRowItemType>();
+  const { lpTokens } = useOwnerLiquidity();
+  const { lpTokens: allLPTokens } = useAllLiquidity();
 
   const { data: farms } = useRoochClientQuery('queryObjectStates', {
     filter: {
       object_type: `${dex.address}::liquidity_incentive::FarmingAsset`,
     },
   });
-
-  const { lpTokens } = useOwnerLiquidity();
 
   const resolvedFarms = useMemo(() => {
     if (!farms) {
@@ -81,34 +86,29 @@ export default function FarmList() {
     { refetchInterval: 5000 }
   );
 
-  const [openRemoveLiquidityModal, setOpenRemoveLiquidityModal] = useState(false);
-  const [selectedRow, setSelectedRow] = useState<FarmRowItemType>();
-
-  const handleAddModal = (row: FarmRowItemType) => {
+  const handleOpenStakeModal = (row: FarmRowItemType) => {
     setSelectedRow(row);
-    setOpenRemoveLiquidityModal(true);
+    setOpenStakeModal(true);
   };
 
-  const handleCloseRemoveModal = () => {
-    setOpenRemoveLiquidityModal(false);
+  const handleCloseStakeModal = () => {
+    setOpenStakeModal(false);
+    setSelectedRow(undefined);
+  };
+
+  const handleOpenAddLiquidityModal = (row: FarmRowItemType) => {
+    setSelectedRow(row);
+    setOpenAddLiquidityModal(true);
+  };
+
+  const handleCloseAddLiquidityModal = () => {
+    setOpenAddLiquidityModal(false);
     setSelectedRow(undefined);
   };
 
   return (
     <WalletGuard>
       <Card className="mt-4">
-        {/* <Box
-          display="flex"
-          justifyContent="space-between"
-          alignItems="center"
-          sx={{ ml: 2, mr: 1, height: 60 }}
-        >
-          <Box display="flex" width="100%" justifyContent="flex-end" alignItems="center">
-            <Link href="./pool/add">
-              <Button variant="outlined">Create Liquidity</Button>
-            </Link>
-          </Box>
-        </Box> */}
         <Scrollbar sx={{ minHeight: 462 }}>
           <Table sx={{ minWidth: 720 }} size="medium">
             <TableHeadCustom headLabel={headerLabel} />
@@ -119,7 +119,13 @@ export default function FarmList() {
               ) : (
                 <>
                   {resolvedFarms?.map((row) => (
-                    <FarmRowItem key={row.id} row={row} onOpenStakeModal={handleAddModal} />
+                    <FarmRowItem
+                      key={row.id}
+                      row={row}
+                      onOpenAddLiquidityModal={handleOpenAddLiquidityModal}
+                      onOpenStakeModal={handleOpenStakeModal}
+                      selectRow={selectedRow}
+                    />
                   ))}
                   <TableNoData title="No Coins Found" notFound={resolvedFarms?.length === 0} />
                 </>
@@ -130,10 +136,22 @@ export default function FarmList() {
 
         {selectedRow && (
           <AddSrakeModal
-            open={openRemoveLiquidityModal}
-            onClose={handleCloseRemoveModal}
+            open={openStakeModal}
+            onClose={handleCloseStakeModal}
             row={selectedRow}
-            key={openRemoveLiquidityModal ? 'open' : 'closed'}
+            key={openStakeModal ? 'open' : 'closed'}
+          />
+        )}
+        {selectedRow && (
+          <AddLiquidityModal
+            open={openAddLiquidityModal}
+            onClose={handleCloseAddLiquidityModal}
+            row={
+              allLPTokens.find(
+                (item) => item.x.type === selectedRow.x.type && item.y.type === selectedRow.y.type
+              )!
+            }
+            key={openAddLiquidityModal ? 'open' : 'closed'}
           />
         )}
       </Card>
