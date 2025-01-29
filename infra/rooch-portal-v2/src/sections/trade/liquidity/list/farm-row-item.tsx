@@ -82,7 +82,6 @@ export default function FarmRowItem({
       })
       .then((result) => {
         const s = result.return_values![0].decoded_value as number;
-        console.log('staked', s);
         setStaked(s > 0);
         if (s > 0) {
           client
@@ -101,7 +100,6 @@ export default function FarmRowItem({
 
   useEffect(() => {
     fetchHarvest();
-    console.log('sel');
   }, [selectRow]);
 
   useEffect(() => {
