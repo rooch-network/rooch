@@ -14,6 +14,7 @@ import SwapConfirmModal from './confirm-modal';
 import SelectTokenPair from '../components/select-token-pair';
 
 import type { TradeCoinType } from '../components/types';
+import { toDust } from 'src/utils/number';
 
 export default function SwapView() {
   const dex = useNetworkVariable('dex');
@@ -25,6 +26,7 @@ export default function SwapView() {
   const [slippage, setSlippage] = useState(0.005);
   const [customSlippage, setCustomSlippage] = useState('');
   const [openSwapModal, setOpenSwapModal] = useState(false);
+  const [price, setPrice] = useState('');
 
   return (
     <>
@@ -41,13 +43,14 @@ export default function SwapView() {
           onCallback={(x, y) => {
             setX(x);
             setY(y);
+            const ratio = BigNumber(y!.amount).div(x!.amount);
+            const fixedRatio = ratio.toFixed(8, 1);
+            const finalRatio = ratio.isInteger() ? ratio.toFixed(0) : fixedRatio;
+            setPrice(finalRatio);
           }}
         />
         <span className="text-gray-400 text-sm mt-4">
-          Price{' '}
-          {x && y
-            ? `1 ${x?.symbol} ≈ ${BigNumber(y?.amount).div(x?.amount).toFixed(0, 1)} ${y?.symbol}`
-            : '-'}
+          Price {x && y ? `1 ${x?.symbol} ≈ ${price} ${y?.symbol}` : '-'}
         </span>
         <span className="mt-4">Slippage</span>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>

@@ -170,7 +170,7 @@ export default function SelectTokenPair({ onLoading, onCallback }: SelectTokenPa
           type: yCoin.coin_type,
           icon: yCoin.icon_url || undefined,
           symbol: yCoin.symbol,
-          amount: yCount,
+          amount: fixdYCount.toString(),
           decimal: yCoin.decimals,
         }
       );
