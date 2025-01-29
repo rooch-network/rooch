@@ -170,7 +170,7 @@ export default function SelectTokenPair({ onLoading, onCallback }: SelectTokenPa
           type: yCoin.coin_type,
           icon: yCoin.icon_url || undefined,
           symbol: yCoin.symbol,
-          amount: yCount,
+          amount: fixdYCount.toString(),
           decimal: yCoin.decimals,
         }
       );
@@ -226,8 +226,10 @@ export default function SelectTokenPair({ onLoading, onCallback }: SelectTokenPa
             value={xValue}
             label="X"
             onChange={(e: SelectChangeEvent) => {
+              console.log('select x');
               const s = e.target.value;
-              setX(tokenPair!.get(s)![0].x);
+              const x = tokenPair!.get(s)![0].x;
+              setX(x);
               setXValue(e.target.value);
               setY(undefined);
               setYValue('');
