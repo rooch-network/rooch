@@ -1,19 +1,9 @@
-import type { BalanceInfoView } from '@roochnetwork/rooch-sdk';
 
 import { WalletGuard } from '@roochnetwork/rooch-sdk-kit';
 
 import { Box, Button, TableRow, TableCell, ListItemText } from '@mui/material';
 
-export type OwnerLiquidityItemType = {
-  x: {
-    name: string;
-    type: string;
-  };
-  y: {
-    name: string;
-    type: string;
-  };
-} & BalanceInfoView;
+import type { OwnerLiquidityItemType } from '../../hooks/use-owner-liquidity';
 
 type RowItemProps = {
   row: OwnerLiquidityItemType;
@@ -21,23 +11,6 @@ type RowItemProps = {
 };
 
 export default function OwnerLiquidityRowItem({ row, onOpenViewModal }: RowItemProps) {
-  // const coin = useMemo(() => {
-  //   const t = row.coin_type.split(',');
-  //   const x = t[0];
-  //   const y = t[1];
-  //   const xName = x.split('::');
-  //   const yName = y.split('::');
-  //   return {
-  //     x: {
-  //       type: x,
-  //       name: xName[xName.length - 1].replaceAll('>', ''),
-  //     },
-  //     y: {
-  //       type: y,
-  //       name: yName[yName.length - 1].replaceAll('>', ''),
-  //     },
-  //   };
-  // }, [row]);
   return (
     <TableRow>
       <TableCell width="300px">

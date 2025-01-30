@@ -1,4 +1,4 @@
-import { IconifyIcon } from '@iconify/react';
+import type { IconifyIcon } from '@iconify/react';
 
 // ----------------------------------------------------------------------
 

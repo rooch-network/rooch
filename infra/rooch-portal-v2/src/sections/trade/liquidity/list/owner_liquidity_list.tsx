@@ -1,9 +1,6 @@
-import { useMemo, useState } from 'react';
-import { useCurrentAddress, useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit';
+import { useState } from 'react';
 
 import { Card, Table, TableBody } from '@mui/material';
-
-import { useNetworkVariable } from 'src/hooks/use-networks';
 
 import { Scrollbar } from 'src/components/scrollbar';
 import WalletGuard from 'src/components/guard/WalletGuard';
@@ -12,8 +9,9 @@ import { TableNoData, TableHeadCustom } from 'src/components/table';
 
 import RemoveLiquidityModal from './remove-liquidity-modal';
 import OwnerLiquidityRowItem from './owner-liquidity-row-item';
+import { useOwnerLiquidity } from '../../hooks/use-owner-liquidity';
 
-import type { OwnerLiquidityItemType } from './owner-liquidity-row-item';
+import type { OwnerLiquidityItemType } from '../../hooks/use-owner-liquidity';
 
 const headerLabel = [
   { id: 'lp', label: 'LP' },
@@ -25,53 +23,7 @@ const headerLabel = [
 ];
 
 export default function OwnerLiquidityList() {
-  const currentAddress = useCurrentAddress();
-  const dex = useNetworkVariable('dex');
-
-  const {
-    data: assetsList,
-    isPending,
-    refetch: refetchAssetsList,
-  } = useRoochClientQuery(
-    'getBalances',
-    {
-      owner: currentAddress?.toStr() || '',
-    },
-    { refetchInterval: 5000 }
-  );
-
-  const lpTokens = useMemo(() => {
-    if (!assetsList) {
-      return [];
-    }
-    const tokens: OwnerLiquidityItemType[] = assetsList!.data
-      .filter((item) => item.symbol.startsWith('RDexLP'))
-      .map((item) => {
-        const t = item.coin_type
-          .replaceAll(' ', '')
-          .replace(`${dex.address}::swap::LPToken<`, '')
-          .split(',');
-        const x = t[0];
-        const y = t[1].substring(0, t[1].length - 1);
-        const xName = x.split('::');
-        const yName = y.split('::');
-        return {
-          ...item,
-          x: {
-            type: x,
-            name: xName[xName.length - 1],
-          },
-          y: {
-            type: y,
-            name: yName[yName.length - 1],
-          },
-        };
-      })
-      .sort((a, b) => b.fixedBalance - a.fixedBalance);
-    return tokens;
-  }, [assetsList, dex.address]);
-
-  console.log('my token', lpTokens);
+  const { lpTokens, isPending } = useOwnerLiquidity();
 
   const [openRemoveLiquidityModal, setOpenRemoveLiquidityModal] = useState(false);
   const [selectedRow, setSelectedRow] = useState<OwnerLiquidityItemType>();
