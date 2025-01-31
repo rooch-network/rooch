@@ -8,7 +8,7 @@ This tutorial primarily introduces how to use the front-end template provided by
 
 ## Clone the source code of the template.
 
-```bash
+```bash copy
 git clone https://github.com/rooch-network/my-first-rooch-dapp.git
 ```
 
@@ -16,7 +16,7 @@ git clone https://github.com/rooch-network/my-first-rooch-dapp.git
 
 Install the dependencies required for the dApp:
 
-```bash
+```bash copy
 cd my-first-rooch-dapp
 bun install
 ## if you are using yarn
@@ -24,7 +24,7 @@ yarn install
 ```
 
 Run dApp：
-```bash
+```bash copy
 bun dev
 ```
 
@@ -66,7 +66,7 @@ rooch account balance
 
 After confirming that there is enough Gas Fee, you can publish the contract using the following command.
 
-```bash
+```bash copy
 ## in counter_contract directory
 rooch move publish --named-addresses quick_start_counter=default
 ```
