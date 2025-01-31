@@ -4,7 +4,7 @@
 
 通过命令 `rooch env list` 可以查看配置中的环境列表:
 
-```bash
+```bash copy
 rooch env list
 ```
 ```text                                                                                                                                              
@@ -28,7 +28,7 @@ rooch env list
 
 当前，开发者测试网会自动给开发者分配 `RGas`，开发者可直接通过命令部署合约。
 
-```bash
+```bash copy
 git clone https://github.com/rooch-network/rooch.git
 cd rooch
 rooch move publish -p ./examples/counter --sender-account default --named-addresses rooch_examples=default
@@ -36,7 +36,7 @@ rooch move publish -p ./examples/counter --sender-account default --named-addres
 
 ## 通过 curl 调用 RPC
 
-```bash
+```bash copy
 curl -H "Content-Type: application/json" -X POST --data '{"jsonrpc":"2.0","method":"rooch_getChainID","params":[],"id":1}' https://dev-seed.rooch.network
 ```
 ```json

@@ -8,7 +8,7 @@
 
 ## 克隆模板源码
 
-```bash
+```bash copy
 git clone https://github.com/rooch-network/my-first-rooch-dapp
 ```
 
@@ -16,7 +16,7 @@ git clone https://github.com/rooch-network/my-first-rooch-dapp
 
 安装 dApp 所需依赖：
 
-```bash
+```bash copy
 cd my-first-rooch-dapp
 bun install
 ## if you are using yarn
@@ -24,7 +24,7 @@ yarn install
 ```
 
 运行 dApp：
-```bash
+```bash copy
 bun dev
 ```
 
@@ -65,7 +65,7 @@ rooch account balance
 
 确认有足够的 Gas Fee 后，就可以使用下面的命令来部署合约了。
 
-```bash
+```bash copy
 ## in counter_contract directory
 rooch move publish --named-addresses quick_start_counter=default
 ```
