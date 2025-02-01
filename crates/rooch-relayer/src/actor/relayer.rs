@@ -104,7 +104,7 @@ impl RelayerActor {
     async fn handle_l1_block(&mut self, l1_block: L1BlockWithBody) -> Result<()> {
         let block_hash = hex::encode(&l1_block.block.block_hash);
         let block_height = l1_block.block.block_height;
-        let result = self.processor.execute_l1_block(l1_block.clone()).await?;
+        let result = self.processor.execute_l1_block(l1_block).await?;
 
         match result.execution_info.status {
             KeptVMStatus::Executed => {
