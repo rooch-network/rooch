@@ -246,7 +246,7 @@ http = "1.0.0"
 tower = { version = "0.5.2", features = ["full", "log", "util", "timeout", "load-shed", "limit"] }
 tower-http = { version = "0.5.2", features = ["cors", "full", "trace", "set-header", "propagate-header"] }
 tower_governor = { version = "0.4.3", features = ["tracing"] }
-pin-project = "1.1.8"
+pin-project = "1.1.9"
 mirai-annotations = "1.12.0"
 lru = "0.11.0"
 quick_cache = "0.6.9"
