@@ -73,6 +73,7 @@ export interface BlockHeightHashView {
   block_height: string
 }
 export interface DAInfoView {
+  avail_backends: [string, string][]
   last_avail_block_number?: string | null
   last_avail_block_update_time?: string | null
   last_avail_tx_order?: string | null

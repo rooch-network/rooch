@@ -151,7 +151,13 @@ export function ActionDropdownMenu() {
               <DropdownMenu.Item
                 className={clsx(styles.menuItem, styles.switchMenuItem)}
                 onSelect={() => {
-                  window.localStorage.clear()
+                  const prefix = 'rooch-sdk-kit'
+
+                  Object.keys(localStorage).forEach((key) => {
+                    if (key.startsWith(prefix)) {
+                      localStorage.removeItem(key)
+                    }
+                  })
                   window.location.reload()
                 }}
               >

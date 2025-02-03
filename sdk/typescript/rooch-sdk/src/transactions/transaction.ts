@@ -29,9 +29,14 @@ export class Transaction {
     return this.info
   }
 
+  getMaxGas() {
+    return this.getData().maxGas
+  }
+
   setMaxGas(input: number) {
     this.getData().maxGas = BigInt(input)
   }
+
   setSender(input: address) {
     this.getData().sender = input
   }
@@ -52,9 +57,13 @@ export class Transaction {
     return this.getData().hash()
   }
 
+  encodeData() {
+    return this.data!.encode()
+  }
+
   encode() {
     return bcs.RoochTransaction.serialize({
-      data: this.data!.encode(),
+      data: this.data!.encode().toBytes(),
       auth: this.auth!.encode(),
     })
   }
