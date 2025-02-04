@@ -1,7 +1,9 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::actor::messages::{AppendTransactionMessage, GetServerStatusMessage};
+use crate::actor::messages::{
+    AppendTransactionMessage, GetServerStatusMessage, RevertTransactionMessage,
+};
 use crate::backend::openda::AdapterSubmitStat;
 use crate::backend::{DABackend, DABackends};
 use crate::batcher::BatchMaker;
@@ -163,6 +165,15 @@ impl DAServerActor {
         Ok(())
     }
 
+    pub async fn revert_transaction(
+        &mut self,
+        msg: RevertTransactionMessage,
+    ) -> anyhow::Result<()> {
+        let tx_order = msg.tx_order;
+        self.batch_maker.revert_transaction(tx_order)?;
+        Ok(())
+    }
+
     // Spawns a background submitter to handle unsubmitted blocks off the main thread.
     // This prevents blocking other actor handlers and maintains the actor's responsiveness.
     fn run_background_submitter(
@@ -252,6 +263,17 @@ impl Handler<AppendTransactionMessage> for DAServerActor {
         _ctx: &mut ActorContext,
     ) -> anyhow::Result<()> {
         self.append_transaction(msg).await
+    }
+}
+
+#[async_trait]
+impl Handler<RevertTransactionMessage> for DAServerActor {
+    async fn handle(
+        &mut self,
+        msg: RevertTransactionMessage,
+        _ctx: &mut ActorContext,
+    ) -> anyhow::Result<()> {
+        self.revert_transaction(msg).await
     }
 }
 
