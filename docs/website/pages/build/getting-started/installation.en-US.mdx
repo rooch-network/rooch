@@ -6,25 +6,25 @@
 
 #### Install dependencies
 
-```shell
+```shell copy
 sudo apt install git curl cmake make gcc lld pkg-config libssl-dev libclang-dev libsqlite3-dev g++ protobuf-compiler
 ```
 
 #### Install Rust
 
-```shell
+```shell copy
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 
 #### Clone source code
 
-```shell
+```shell copy
 git clone https://github.com/rooch-network/rooch.git
 ```
 
 #### Compile and install Rooch
 
-```shell
+```shell copy
 cd rooch && cargo build && cp target/debug/rooch ~/.cargo/bin/
 ```
 
@@ -48,7 +48,7 @@ Download the Rust toolchain by clicking [here](https://static.rust-lang.org/rust
 
 Use the following command to clone the Rooch source code repository:
 
-```shell
+```shell copy
 git clone https://github.com/rooch-network/rooch.git
 ```
 
@@ -56,19 +56,19 @@ git clone https://github.com/rooch-network/rooch.git
 
 Navigate to the Rooch project directory:
 
-```shell
+```shell copy
 cd rooch
 ```
 
 Build Rooch using the following command:
 
-```shell
+```shell copy
 cargo build
 ```
 
 Finally, copy the compiled Rooch binary to your Cargo bin directory:
 
-```shell
+```shell copy
 cp target/debug/rooch.exe ~/.cargo/bin/
 ```
 
@@ -76,13 +76,13 @@ cp target/debug/rooch.exe ~/.cargo/bin/
 
 Firstly, create a binary file directory
 
-```shell
+```shell copy
 mkdir ~/.local/bin/ 
 ```
 
 Secondly, add the binary file directory path into `~/.zshrc`
 
-```shell
+```shell copy
 export PATH="$PATH:$HOME/.local/bin"
 ```
 
@@ -96,18 +96,18 @@ Fourthly, open a new terminal window and run `rooch` to check if it works
 
 #### Download
 
-```shell
+```shell copy
 wget https://github.com/rooch-network/rooch/releases/latest/download/rooch-ubuntu-latest.zip
 ```
 
 #### Decompress
 
-```shell
+```shell copy
 unzip rooch-ubuntu-latest.zip
 ```
 
 #### Install
 
-```shell
+```shell copy
 sudo cp rooch /usr/local/bin
 ```
