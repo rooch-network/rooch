@@ -1,6 +1,6 @@
 'use client';
 
-import { Tab, Tabs, Stack, Typography } from '@mui/material';
+import { Tab, Tabs, Stack, Typography, Link, Button } from '@mui/material';
 
 import { useTabs } from 'src/hooks/use-tabs';
 
@@ -9,6 +9,8 @@ import { DashboardContent } from 'src/layouts/dashboard';
 import FarmList from './farm_list';
 import AllLiquidityList from './all_liquidity_list';
 import OwnerLiquidityList from './owner_liquidity_list';
+import CreateLiquidityModal from './create-liquidity-modal';
+import { useState } from 'react';
 
 const TABS = [
   { label: 'All Liquidity', value: 'all_liquidity' },
@@ -18,6 +20,16 @@ const TABS = [
 
 export default function LiquidityListView() {
   const tabs = useTabs('all_liquidity');
+
+  const [openCreateModal, setOpenCreateModal] = useState(false);
+
+  // const handleOpenCreateModal = () => {
+  //   setOpenCreateModal(true);
+  // };
+
+  const handleCloseCreateModal = () => {
+    setOpenCreateModal(false);
+  };
 
   const renderTabs = (
     <Tabs value={tabs.value} onChange={tabs.onChange} sx={{ mb: { xs: 1, md: 1 } }}>
@@ -29,14 +41,26 @@ export default function LiquidityListView() {
 
   return (
     <DashboardContent maxWidth="xl">
-      <Stack flexDirection="row" justifyContent="space-between">
-        <Typography variant="h4">Pool</Typography>
+      <Stack flexDirection="row" alignItems="center" justifyContent="space-between">
+        <Stack>
+          <Typography variant="h4">Pool</Typography>
+          {renderTabs}
+        </Stack>
+
+        {/* <Button variant="outlined" onClick={handleOpenCreateModal}>
+          Create Liquidity
+        </Button> */}
       </Stack>
-      {renderTabs}
 
       {tabs.value === 'all_liquidity' && <AllLiquidityList />}
       {tabs.value === 'you_liquidity' && <OwnerLiquidityList />}
       {tabs.value === 'farm' && <FarmList />}
+
+      <CreateLiquidityModal
+        open={openCreateModal}
+        onClose={handleCloseCreateModal}
+        key={openCreateModal ? 'open' : 'closed'}
+      />
     </DashboardContent>
   );
 }

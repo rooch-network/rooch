@@ -3,6 +3,15 @@ import type { UserCoin } from 'src/components/swap/types';
 import numeral from 'numeral';
 import { BigNumber } from 'bignumber.js';
 
+export function formatByIntl(value?: number | string) {
+  return value
+    ? Intl.NumberFormat('en-us', {
+        maximumFractionDigits: 8,
+        minimumFractionDigits: 0,
+      }).format(Number(value))
+    : '-';
+}
+
 export function decimalsMultiplier(decimals?: BigNumber.Value) {
   return toBigNumber(10).pow(toBigNumber(decimals).abs());
 }

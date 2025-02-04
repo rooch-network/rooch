@@ -1,16 +1,22 @@
-
 import { WalletGuard } from '@roochnetwork/rooch-sdk-kit';
 
 import { Box, Button, TableRow, TableCell, ListItemText } from '@mui/material';
 
 import type { OwnerLiquidityItemType } from '../../hooks/use-owner-liquidity';
+import { formatByIntl } from 'src/utils/number';
 
 type RowItemProps = {
   row: OwnerLiquidityItemType;
-  onOpenViewModal: (row: OwnerLiquidityItemType) => void;
+  onOpenRemoveModal: (row: OwnerLiquidityItemType) => void;
+  onOpenAddModal: (row: OwnerLiquidityItemType) => void;
 };
 
-export default function OwnerLiquidityRowItem({ row, onOpenViewModal }: RowItemProps) {
+export default function OwnerLiquidityRowItem({
+  row,
+  onOpenAddModal,
+  onOpenRemoveModal,
+}: RowItemProps) {
+  console.log(row.fixedBalance);
   return (
     <TableRow>
       <TableCell width="300px">
@@ -25,20 +31,31 @@ export default function OwnerLiquidityRowItem({ row, onOpenViewModal }: RowItemP
         <ListItemText primary={row.y.name} />
       </TableCell>
       <TableCell>
-        <ListItemText primary={row.fixedBalance} />
+        <ListItemText primary={formatByIntl(row.fixedBalance)} />
       </TableCell>
       <TableCell>
-        <ListItemText primary={row.supply} />
+        <ListItemText primary={formatByIntl(row.supply)} />
       </TableCell>
 
       <TableCell align="right" sx={{ pr: 1 }}>
+        {row.fixedBalance > 0 && (
+          <WalletGuard
+            onClick={() => {
+              onOpenRemoveModal(row);
+            }}
+          >
+            <Button variant="outlined" size="small">
+              Remove
+            </Button>
+          </WalletGuard>
+        )}
         <WalletGuard
           onClick={() => {
-            onOpenViewModal(row);
+            onOpenAddModal(row);
           }}
         >
-          <Button variant="outlined" size="small">
-            Remove
+          <Button sx={{ ml: 1 }} variant="outlined" size="small">
+            Add
           </Button>
         </WalletGuard>
       </TableCell>

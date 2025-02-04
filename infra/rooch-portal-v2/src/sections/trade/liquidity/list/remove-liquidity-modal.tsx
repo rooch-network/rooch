@@ -20,12 +20,13 @@ import {
 
 import { useNetworkVariable } from 'src/hooks/use-networks';
 
-import { toDust } from 'src/utils/number';
+import { formatByIntl, toDust } from 'src/utils/number';
 import { formatCoin } from 'src/utils/format-number';
 
 import { toast } from 'src/components/snackbar';
 
 import type { OwnerLiquidityItemType } from '../../hooks/use-owner-liquidity';
+import AmountInput from '../../components/amount_input';
 
 // TODO: 计算收入
 export default function RemoveLiquidityModal({
@@ -46,7 +47,7 @@ export default function RemoveLiquidityModal({
   const [customSlippage, setCustomSlippage] = useState('');
 
   const handleRemoveLiquidity = () => {
-    const fixdLiquidity = toDust(liquidity, row.decimals);
+    const fixdLiquidity = toDust(liquidity.replaceAll(',', ''), row.decimals);
     const tx = new Transaction();
     tx.callFunction({
       target: `${dex.address}::router::remove_liquidity`,
@@ -95,59 +96,16 @@ export default function RemoveLiquidityModal({
           </Stack>
           <Stack>
             <Typography className="text-gray-600 !text-sm !font-semibold">
-              Balance: {row.fixedBalance}{' '}
+              Balance: {formatByIntl(row.fixedBalance)}
             </Typography>
           </Stack>
         </Stack>
         <Stack justifyContent="center" spacing={2} direction="column" sx={{ pt: 1 }}>
-          <FormControl>
-            <TextField
-              label="Amount"
-              placeholder=""
-              value={liquidity}
-              inputMode="decimal"
-              autoComplete="off"
-              onChange={(e) => {
-                setLiquidity(e.target.value);
-              }}
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <Stack direction="row" spacing={0.5}>
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        onClick={() => {
-                          setLiquidity(
-                            new BigNumber(
-                              formatCoin(Number(row.balance), row.decimals, row.decimals)
-                            )
-                              .div(2)
-                              .toString()
-                          );
-                        }}
-                      >
-                        Half
-                      </Button>
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        onClick={() => {
-                          setLiquidity(
-                            new BigNumber(
-                              formatCoin(Number(row.balance), row.decimals, row.decimals)
-                            ).toString()
-                          );
-                        }}
-                      >
-                        Max
-                      </Button>
-                    </Stack>
-                  </InputAdornment>
-                ),
-              }}
-            />
-          </FormControl>
+          <AmountInput
+            max={row.fixedBalance}
+            amount={liquidity}
+            onChange={(v) => setLiquidity(v)}
+          />
         </Stack>
         <Box sx={{ pt: 2, mt: 2 }}>
           <span className="text-gray-400 text-sm mt-4 mr-2">Slippage</span>

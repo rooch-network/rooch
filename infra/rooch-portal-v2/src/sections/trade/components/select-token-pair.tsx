@@ -15,7 +15,7 @@ import { Box, Button, Select, MenuItem, TextField, InputLabel, FormControl } fro
 
 import { useNetworkVariable } from 'src/hooks/use-networks';
 
-import { toDust, fromDust } from 'src/utils/number';
+import { toDust, fromDust, formatByIntl } from 'src/utils/number';
 
 import { toast } from 'src/components/snackbar';
 
@@ -139,7 +139,7 @@ export default function SelectTokenPair({ onLoading, onCallback }: SelectTokenPa
 
     try {
       setLoading(true);
-      const fixdXCount = toDust(xCount, assetsMap?.get(x.type)?.decimals || 0);
+      const fixdXCount = toDust(xCount.replaceAll(',', ''), assetsMap?.get(x.type)?.decimals || 0);
       const result = await client.executeViewFunction({
         target: `${dex.address}::router::get_amount_out`,
         args: [Args.u64(fixdXCount)],
@@ -152,7 +152,7 @@ export default function SelectTokenPair({ onLoading, onCallback }: SelectTokenPa
 
       const yCount = result.return_values![0].decoded_value as string;
       const fixdYCount = fromDust(yCount, assetsMap?.get(y.type)?.decimals || 0);
-      setYCount(fixdYCount.toString());
+      setYCount(formatByIntl(fixdYCount.toString()));
 
       const xCoin = assetsMap?.get(x.type)!;
       const yCoin = assetsMap?.get(y.type)!;
@@ -162,7 +162,7 @@ export default function SelectTokenPair({ onLoading, onCallback }: SelectTokenPa
           type: xCoin.coin_type,
           icon: xCoin.icon_url || undefined,
           symbol: xCoin.symbol,
-          amount: xCount,
+          amount: xCount.replaceAll(',', ''),
           decimal: xCoin.decimals,
         },
         {
@@ -205,9 +205,9 @@ export default function SelectTokenPair({ onLoading, onCallback }: SelectTokenPa
 
     const xbalance = assetsMap?.get(oldY.type)!.fixedBalance || 0;
     if (xRatio !== 0) {
-      setXCount((xbalance * xRatio).toString());
+      setXCount(formatByIntl(xbalance * xRatio));
     } else if (Number(xCount) > xbalance) {
-      setXCount(xbalance.toString());
+      setXCount(formatByIntl(xbalance));
       setXRation(0);
     }
   };
@@ -217,7 +217,7 @@ export default function SelectTokenPair({ onLoading, onCallback }: SelectTokenPa
   return (
     <>
       <Box sx={{ display: 'flex', alignItems: 'center', mt: 4 }}>
-        <FormControl sx={{ minWidth: 220 }}>
+        <FormControl sx={{ minWidth: 300 }}>
           <InputLabel id="select-x">X</InputLabel>
           <Select
             labelId="select-x"
@@ -226,7 +226,6 @@ export default function SelectTokenPair({ onLoading, onCallback }: SelectTokenPa
             value={xValue}
             label="X"
             onChange={(e: SelectChangeEvent) => {
-              console.log('select x');
               const s = e.target.value;
               const x = tokenPair!.get(s)![0].x;
               setX(x);
@@ -243,7 +242,7 @@ export default function SelectTokenPair({ onLoading, onCallback }: SelectTokenPa
               [...tokenPair.entries()].map(([key, pairs]) => (
                 <MenuItem key={key} id={key} value={`${key}`}>
                   <span>{key} :</span>
-                  <span>{assetsMap?.get(pairs[0].x.type)?.fixedBalance || 0}</span>
+                  <span>{formatByIntl(assetsMap?.get(pairs[0].x.type)?.fixedBalance || 0)}</span>
                 </MenuItem>
               ))}
           </Select>
@@ -278,7 +277,7 @@ export default function SelectTokenPair({ onLoading, onCallback }: SelectTokenPa
         </FormControl>
       </Box>
       <Box display="flex" alignItems="center" justifyContent="space-between" sx={{ mt: 2 }}>
-        <Box sx={{ minWidth: 220, display: 'flex', justifyContent: 'center' }}>
+        <Box sx={{ minWidth: 300, display: 'flex', justifyContent: 'center' }}>
           <Button
             startIcon={<ArrowDownwardIcon />}
             variant="text"
@@ -290,17 +289,17 @@ export default function SelectTokenPair({ onLoading, onCallback }: SelectTokenPa
           </Button>
         </Box>
         <Box display="flex" alignItems="center">
-          {[0.25, 0.5, 0.75, 1].map((item, index) => (
+          {[0.25, 0.5, 0.75, x?.name === 'RGas' ? 0.99 : 1].map((item, index) => (
             <Button
               key={item.toString()}
               variant={xRatio === item ? 'contained' : 'outlined'}
               size="small"
               sx={{ mx: 0.5 }}
               disabled={!x}
-              // loading={loading && xRatio === item}
               onClick={() => {
                 setXRation(item);
-                setXCount(((assetsMap?.get(x!.type)!.fixedBalance || 0) * item).toString());
+                const ration = item === 1 ? 0.99 : item; // TODO: Calculating gas
+                setXCount(formatByIntl((assetsMap?.get(x!.type)!.fixedBalance || 0) * ration));
               }}
             >
               {item * 100}%
@@ -309,7 +308,7 @@ export default function SelectTokenPair({ onLoading, onCallback }: SelectTokenPa
         </Box>
       </Box>
       <Box sx={{ display: 'flex', alignItems: 'center', mt: 2 }}>
-        <FormControl sx={{ minWidth: 220 }}>
+        <FormControl sx={{ minWidth: 300 }}>
           <InputLabel id="select-y">Y</InputLabel>
           <Select
             labelId="select-y"
@@ -327,7 +326,7 @@ export default function SelectTokenPair({ onLoading, onCallback }: SelectTokenPa
             {tokenPair?.get(x?.name || '')?.map((item) => (
               <MenuItem key={item.y.name} id={item.y.name} value={`${item.y.name}`}>
                 <span>{item.y.name} :</span>
-                <span>{assetsMap?.get(item.y.type)?.fixedBalance || 0}</span>
+                <span>{formatByIntl(assetsMap?.get(item.y.type)?.fixedBalance || 0)}</span>
               </MenuItem>
             ))}
           </Select>

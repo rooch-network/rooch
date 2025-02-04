@@ -32,13 +32,13 @@ import { useRouter } from 'src/routes/hooks';
 import { useNetworkVariable } from 'src/hooks/use-networks';
 
 import { formatCoin } from 'src/utils/format-number';
-import { toDust, bigNumberToBigInt } from 'src/utils/number';
+import { toDust, bigNumberToBigInt, formatByIntl } from 'src/utils/number';
 
 import { toast } from 'src/components/snackbar';
 
 import Icon from '../components/icon';
 
-import type { AllLiquidityItemType } from './all-liquidity-row-item';
+import type { AllLiquidityItemType } from '../../hooks/use-all-liquidity';
 
 const STEPS = ['Deposit amounts', 'You will receive'];
 
@@ -161,8 +161,8 @@ export default function AddLiquidityModal({
   }, [currentAddress, onClose]);
 
   const handleAddLiquidity = () => {
-    const fixdX = toDust(xAmount, assetsMap.get(row.x.type)?.decimals || 0);
-    const fixdY = toDust(yAmount, assetsMap.get(row.y.type)?.decimals || 0);
+    const fixdX = toDust(xAmount.replaceAll(',', ''), assetsMap.get(row.x.type)?.decimals || 0);
+    const fixdY = toDust(yAmount.replaceAll(',', ''), assetsMap.get(row.y.type)?.decimals || 0);
     const finalSlippage =
       slippage === 0
         ? customSlippage === '' || customSlippage === '0'
@@ -209,6 +209,7 @@ export default function AddLiquidityModal({
   };
 
   const fetchY = useCallback(() => {
+    console.log('fetch-y');
     if (xAmount === '' || xAmount === '0' || !reserveX || !reserveY || !assetsMap) {
       return;
     }
@@ -217,7 +218,7 @@ export default function AddLiquidityModal({
       .value.value as string;
     const yBalance = (reserveY.data[0].decoded_value!.value.balance as AnnotatedMoveStructView)
       .value.value as string;
-    const fixdX = toDust(xAmount, assetsMap.get(row.x.type)?.decimals || 0);
+    const fixdX = toDust(xAmount.replaceAll(',', ''), assetsMap.get(row.x.type)?.decimals || 0);
     const xRate = BigNumber(fixdX.toString()).div(xBalance);
     const y = BigNumber(yBalance).multipliedBy(xRate);
 
@@ -226,7 +227,7 @@ export default function AddLiquidityModal({
     } else {
       setYLabelError(undefined);
     }
-    setYAmount(y.toFixed(0, 1));
+    setYAmount(formatByIntl(y.toFixed(0, 1)));
   }, [xAmount, reserveX, reserveY, row.x.type, row.y.type, assetsMap]);
 
   useDebounce(fetchY, 500, [fetchY]);
@@ -247,7 +248,7 @@ export default function AddLiquidityModal({
               </Stack>
               <Stack>
                 <Typography className="text-gray-600 !text-sm !font-semibold">
-                  Balance: {assetsMap.get(row.x.type)?.fixedBalance}
+                  Balance: {formatByIntl(assetsMap.get(row.x.type)?.fixedBalance)}
                 </Typography>
               </Stack>
             </Stack>
@@ -260,15 +261,15 @@ export default function AddLiquidityModal({
                   inputMode="decimal"
                   autoComplete="off"
                   onChange={(e) => {
-                    const {value} = e.target;
+                    const value = e.target.value.replaceAll(',', '');
                     if (/^\d*\.?\d*$/.test(value) === false) {
                       return;
                     }
                     const xBalance = assetsMap?.get(row.x.type)!.fixedBalance || 0;
                     if (Number(value) > xBalance) {
-                      setXAmount(xBalance.toString());
+                      setXAmount(formatByIntl(xBalance));
                     } else {
-                      setXAmount(value);
+                      setXAmount(formatByIntl(value));
                     }
                   }}
                   InputProps={{
@@ -280,9 +281,11 @@ export default function AddLiquidityModal({
                             variant="outlined"
                             onClick={() => {
                               setXAmount(
-                                new BigNumber(assetsMap.get(row.x.type)?.fixedBalance || 0)
-                                  .div(2)
-                                  .toString()
+                                formatByIntl(
+                                  new BigNumber(assetsMap.get(row.x.type)?.fixedBalance || 0)
+                                    .div(2)
+                                    .toString()
+                                )
                               );
                             }}
                           >
@@ -292,7 +295,11 @@ export default function AddLiquidityModal({
                             size="small"
                             variant="outlined"
                             onClick={() => {
-                              setXAmount((assetsMap.get(row.x.type)?.fixedBalance || 0).toString());
+                              setXAmount(
+                                formatByIntl(
+                                  (assetsMap.get(row.x.type)?.fixedBalance || 0).toString()
+                                )
+                              );
                             }}
                           >
                             Max
@@ -314,7 +321,7 @@ export default function AddLiquidityModal({
                 </Stack>
                 <Stack>
                   <Typography className="text-gray-600 !text-sm !font-semibold">
-                    Balance: {assetsMap.get(row.y.type)?.fixedBalance}
+                    Balance: {formatByIntl(assetsMap.get(row.y.type)?.fixedBalance)}
                   </Typography>
                 </Stack>
               </Stack>
@@ -437,15 +444,6 @@ export default function AddLiquidityModal({
                   <span>- {yAmount}</span>
                 </Stack>
               </Stack>
-              {/* <Stack
-                sx={{ mt: 1 }}
-                direction="row"
-                alignItems="center"
-                justifyContent="space-between"
-              >
-                <Box className="text-gray-400 text-sm font-medium">Rates :</Box>
-                <Box> 1 Grow = 0.001 RGas </Box>
-              </Stack> */}
               <Stack
                 sx={{ mt: 1 }}
                 direction="row"
@@ -489,12 +487,7 @@ export default function AddLiquidityModal({
 
         {activeStep === STEPS.length - 1 ? (
           <SessionKeyGuard onClick={handleAddLiquidity}>
-            <LoadingButton
-              fullWidth
-              loading={isPending}
-              // disabled={transferValue === '' || !recipientIsValid()}
-              variant="contained"
-            >
+            <LoadingButton fullWidth loading={isPending} variant="contained">
               Confirm
             </LoadingButton>
           </SessionKeyGuard>

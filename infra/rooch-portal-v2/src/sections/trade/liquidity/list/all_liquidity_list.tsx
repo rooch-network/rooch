@@ -20,7 +20,8 @@ import { TableNoData, TableHeadCustom } from 'src/components/table';
 import AllLiquidityRowItem from './add-liquidity-modal';
 import LiquidityRowItem from './all-liquidity-row-item';
 
-import type { AllLiquidityItemType } from './all-liquidity-row-item';
+import type { AllLiquidityItemType } from '../../hooks/use-all-liquidity';
+import { useAllLiquidity } from '../../hooks/use-all-liquidity';
 
 const headerLabel = [
   { id: 'create_at', label: 'Create At' },
@@ -33,64 +34,11 @@ export default function AllLiquidityList() {
   const dex = useNetworkVariable('dex');
   const client = useRoochClient();
   const currentAddress = useCurrentAddress();
-  const [paginationModel, setPaginationModel] = useState({ index: 1, limit: 10 });
-  const mapPageToNextCursor = useRef<{ [page: number]: IndexerStateIDView | null }>({});
   const [tokenPairInfos, setTokenPairInfos] = useState<Map<string, { x: string; y: string }>>(
     new Map()
   );
 
-  const queryOptions = useMemo(
-    () => ({
-      cursor: mapPageToNextCursor.current[paginationModel.index - 1]?.toString(),
-      limit: paginationModel.limit.toString(),
-    }),
-    [paginationModel]
-  );
-
-  const { data: tokenPairs, isPending } = useRoochClientQuery('queryObjectStates', {
-    filter: {
-      object_type: `${dex.address}::swap::TokenPair`,
-    },
-    queryOption: {
-      showDisplay: true,
-    },
-  });
-
-  const resolvedTokenPairs = useMemo(() => {
-    if (!tokenPairs) {
-      return [];
-    }
-
-    const rowItme: AllLiquidityItemType[] = tokenPairs!.data.map((item) => {
-      const xView = item.decoded_value!.value.balance_x as AnnotatedMoveStructView;
-      let xType = xView.type.replace('0x2::object::Object<0x3::coin_store::CoinStore<', '');
-      xType = xType.replace('>>', '');
-      const xName = xType.split('::');
-      const yView = item.decoded_value!.value.balance_y as AnnotatedMoveStructView;
-      let yType = yView.type.replace('0x2::object::Object<0x3::coin_store::CoinStore<', '');
-      yType = yType.replace('>>', '');
-      const yName = yType.split('::');
-      const lpView = item.decoded_value!.value.coin_info as AnnotatedMoveStructView;
-      return {
-        id: item.id,
-        creator: item.decoded_value!.value.creator as string,
-        createAt: Number(item.created_at),
-        lpTokenId: lpView.value.id as string,
-        x: {
-          id: xView.value.id as string,
-          symbol: xName[xName.length - 1].replace('>>', ''),
-          type: xType,
-        },
-        y: {
-          id: yView.value.id as string,
-          symbol: yName[xName.length - 1].replace('>>', ''),
-          type: yType,
-        },
-      };
-    });
-
-    return rowItme;
-  }, [tokenPairs]);
+  const { isPending, lpTokens, hasNext, index, paginate } = useAllLiquidity();
 
   useEffect(() => {
     if (!client || !currentAddress) {
@@ -98,7 +46,7 @@ export default function AllLiquidityList() {
     }
     const fetch = async () => {
       const infos = new Map();
-      const promises = resolvedTokenPairs.map(async (item) => {
+      const promises = lpTokens.map(async (item) => {
         const [xResult, xCoinResult, yResult, yCoinResult] = await Promise.all([
           client.queryObjectStates({
             filter: {
@@ -137,26 +85,9 @@ export default function AllLiquidityList() {
     };
 
     fetch();
-  }, [resolvedTokenPairs, currentAddress, client]);
+  }, [lpTokens, currentAddress, client]);
 
-  const paginate = (index: number): void => {
-    if (index < 0) {
-      return;
-    }
-    setPaginationModel({
-      ...paginationModel,
-      index,
-    });
-  };
-
-  useEffect(() => {
-    if (!tokenPairs) {
-      return;
-    }
-    if (tokenPairs.has_next_page) {
-      mapPageToNextCursor.current[paginationModel.index] = tokenPairs.next_cursor ?? null;
-    }
-  }, [paginationModel, tokenPairs]);
+  console.log(hasNext, index);
 
   const [openAddLiquidityModal, setOpenAddLiquidityModal] = useState(false);
   const [selectedRow, setSelectedRow] = useState<AllLiquidityItemType>();
@@ -173,18 +104,6 @@ export default function AllLiquidityList() {
 
   return (
     <Card className="mt-4">
-      {/* <Box
-        display="flex"
-        justifyContent="space-between"
-        alignItems="center"
-        sx={{ ml: 2, mr: 1, height: 60 }}
-      >
-        <Box display="flex" width="100%" justifyContent="flex-end" alignItems="center">
-          <Link href="./pool/add">
-            <Button variant="outlined">Create Liquidity</Button>
-          </Link>
-        </Box>
-      </Box> */}
       <Scrollbar sx={{ minHeight: 462 }}>
         <Table sx={{ minWidth: 720 }} size="medium">
           <TableHeadCustom headLabel={headerLabel} />
@@ -194,7 +113,7 @@ export default function AllLiquidityList() {
               <TableSkeleton col={headerLabel.length} row={5} rowHeight="77px" />
             ) : (
               <>
-                {resolvedTokenPairs.map((row) => (
+                {lpTokens.map((row) => (
                   <LiquidityRowItem
                     key={row.id}
                     row={row}
@@ -202,21 +121,23 @@ export default function AllLiquidityList() {
                     onOpenViewModal={handleRemoveModal}
                   />
                 ))}
-                <TableNoData title="No Coins Found" notFound={resolvedTokenPairs.length === 0} />
+                <TableNoData title="No Coins Found" notFound={lpTokens.length === 0} />
               </>
             )}
           </TableBody>
         </Table>
       </Scrollbar>
-      <Stack className="mb-4 w-full mt-4" alignItems="flex-end">
-        <Pagination
-          count={tokenPairs?.has_next_page ? paginationModel.index + 1 : paginationModel.index}
-          page={paginationModel.index}
-          onChange={(event: React.ChangeEvent<unknown>, value: number) => {
-            paginate(value);
-          }}
-        />
-      </Stack>
+      {(hasNext || index > 1) && (
+        <Stack className="mb-4 w-full mt-4" alignItems="flex-end">
+          <Pagination
+            count={hasNext ? index + 1 : index}
+            page={index}
+            onChange={(event: React.ChangeEvent<unknown>, value: number) => {
+              paginate(value);
+            }}
+          />
+        </Stack>
+      )}
       {selectedRow && (
         <AllLiquidityRowItem
           open={openAddLiquidityModal}

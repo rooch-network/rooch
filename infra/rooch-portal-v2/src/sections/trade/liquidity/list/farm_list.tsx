@@ -34,7 +34,7 @@ export default function FarmList() {
   const [openAddLiquidityModal, setOpenAddLiquidityModal] = useState(false);
   const [selectedRow, setSelectedRow] = useState<FarmRowItemType>();
   const { lpTokens } = useOwnerLiquidity();
-  const { lpTokens: allLPTokens } = useAllLiquidity();
+  const { lpTokens: allLPTokens } = useAllLiquidity(200);
 
   const { data: farms } = useRoochClientQuery('queryObjectStates', {
     filter: {

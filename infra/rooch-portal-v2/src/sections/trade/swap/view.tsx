@@ -14,6 +14,8 @@ import SwapConfirmModal from './confirm-modal';
 import SelectTokenPair from '../components/select-token-pair';
 
 import type { TradeCoinType } from '../components/types';
+import { formatByIntl } from 'src/utils/number';
+import { isNumber } from 'src/utils/reg';
 
 export default function SwapView() {
   const dex = useNetworkVariable('dex');
@@ -45,7 +47,7 @@ export default function SwapView() {
             const ratio = BigNumber(y!.amount).div(x!.amount);
             const fixedRatio = ratio.toFixed(8, 1);
             const finalRatio = ratio.isInteger() ? ratio.toFixed(0) : fixedRatio;
-            setPrice(finalRatio);
+            setPrice(formatByIntl(finalRatio));
           }}
         />
         <span className="text-gray-400 text-sm mt-4">
@@ -87,8 +89,14 @@ export default function SwapView() {
                 value={customSlippage}
                 variant="outlined"
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  const value = e.target.value;
+                  if (!isNumber(value)) {
+                    return;
+                  }
+                  const numberValue = Number(value);
+
                   setSlippage(0);
-                  setCustomSlippage(e.target.value);
+                  setCustomSlippage(numberValue > 100 ? '100' : numberValue < 0 ? '0' : value);
                 }}
               />
             </FormControl>
@@ -113,7 +121,7 @@ export default function SwapView() {
             slippage === 0
               ? customSlippage === '' || customSlippage === '0'
                 ? 0
-                : Number(customSlippage)
+                : Number(customSlippage) / 100
               : slippage
           }
           open={openSwapModal}

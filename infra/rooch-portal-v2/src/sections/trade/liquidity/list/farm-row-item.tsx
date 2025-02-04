@@ -29,6 +29,7 @@ import { useNetworkVariable } from 'src/hooks/use-networks';
 import { toast } from 'src/components/snackbar';
 
 import type { OwnerLiquidityItemType } from '../../hooks/use-owner-liquidity';
+import { formatByIntl } from 'src/utils/number';
 
 export type FarmRowItemType = {
   id: string;
@@ -176,13 +177,13 @@ export default function FarmRowItem({
           </Box>
         </TableCell>
         <TableCell>
-          <ListItemText primary={row.harvestIndex} />
+          <ListItemText primary={formatByIntl(row.harvestIndex)} />
         </TableCell>
         <TableCell>
-          <ListItemText primary={row.releasePerSecond} />
+          <ListItemText primary={formatByIntl(row.releasePerSecond)} />
         </TableCell>
         <TableCell>
-          <ListItemText primary={row.assetTotalWeight} />
+          <ListItemText primary={formatByIntl(row.assetTotalWeight)} />
         </TableCell>
         <TableCell>
           <ListItemText
@@ -232,7 +233,7 @@ export default function FarmRowItem({
                 >
                   <Stack direction="column">
                     <Typography className="text-gray-600 !text-sm !font-semibold">
-                      Eligible ${rewardCoin?.symbol}: {harvest}
+                      Eligible ${rewardCoin?.symbol}: {formatByIntl(harvest)}
                     </Typography>
                     {staked && (
                       <SessionKeyGuard

@@ -19,7 +19,7 @@ import {
 
 import { useNetworkVariable } from 'src/hooks/use-networks';
 
-import { toDust, bigNumberToBigInt } from 'src/utils/number';
+import { toDust, bigNumberToBigInt, formatByIntl } from 'src/utils/number';
 
 import { toast } from 'src/components/snackbar';
 
@@ -42,6 +42,7 @@ export default function SwapConfirmModal({
   const { mutateAsync, isPending } = useSignAndExecuteTransaction();
 
   const handleSwap = () => {
+    console.log(x, y);
     if (!x || !y) {
       return;
     }
@@ -104,7 +105,7 @@ export default function SwapConfirmModal({
                   />
                   <Box className="text-gray-400 text-sm font-medium">
                     {' '}
-                    - {x.amount}
+                    - {formatByIntl(x.amount)}
                     {` ${x.symbol} `}
                   </Box>
                 </Stack>
@@ -122,7 +123,7 @@ export default function SwapConfirmModal({
                   />
                   <Box className="text-gray-400 text-sm font-medium">
                     {' '}
-                    + {y.amount}
+                    + {formatByIntl(y.amount)}
                     {` ${y.symbol} `}
                   </Box>
                 </Stack>
@@ -130,7 +131,8 @@ export default function SwapConfirmModal({
               <Stack direction="row" alignItems="center" spacing={0.5} sx={{ mt: 2 }}>
                 <Box className="text-gray-400 text-sm font-medium">Price :</Box>
                 <Box>
-                  1 {x.symbol} ≈ {`${BigNumber(y.amount).div(x.amount).toFixed(0)}`} {y.symbol}
+                  1 {x.symbol} ≈ {formatByIntl(BigNumber(y.amount).div(x.amount).toFixed(0))}
+                  {y.symbol}
                 </Box>
               </Stack>
               <Stack direction="row" alignItems="center" spacing={0.5} sx={{ mt: 2 }}>
