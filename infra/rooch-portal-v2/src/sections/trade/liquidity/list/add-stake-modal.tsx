@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import BigNumber from 'bignumber.js';
 import { Args, Transaction } from '@roochnetwork/rooch-sdk';
 import { SessionKeyGuard, useSignAndExecuteTransaction } from '@roochnetwork/rooch-sdk-kit';
 
@@ -8,23 +7,21 @@ import {
   Stack,
   Button,
   Dialog,
-  TextField,
   Typography,
   DialogTitle,
-  FormControl,
   DialogActions,
   DialogContent,
-  InputAdornment,
 } from '@mui/material';
 
 import { useNetworkVariable } from 'src/hooks/use-networks';
 
-import { formatByIntl, toDust } from 'src/utils/number';
+import { toDust, formatByIntl } from 'src/utils/number';
 
 import { toast } from 'src/components/snackbar';
 
-import type { FarmRowItemType } from './farm-row-item';
 import AmountInput from '../../components/amount_input';
+
+import type { FarmRowItemType } from './farm-row-item';
 
 // TODO: 计算收入
 export default function AddSrakeModal({

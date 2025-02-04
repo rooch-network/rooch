@@ -1,31 +1,37 @@
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  Stack,
-  Typography,
-  FormControl,
-  InputLabel,
-  Select,
-  SelectChangeEvent,
-  MenuItem,
-  TextField,
-} from '@mui/material';
-import { LoadingButton } from '@mui/lab';
+import type {
+  SelectChangeEvent} from '@mui/material';
+import type { BalanceInfoView} from '@roochnetwork/rooch-sdk';
+
+import { useMemo, useState } from 'react';
+import { Args, Transaction } from '@roochnetwork/rooch-sdk';
 import {
   SessionKeyGuard,
   useCurrentAddress,
   useRoochClientQuery,
   useSignAndExecuteTransaction,
 } from '@roochnetwork/rooch-sdk-kit';
-import { formatByIntl, toDust } from 'src/utils/number';
-import { useMemo, useState } from 'react';
-import { Args, BalanceInfoView, Transaction } from '@roochnetwork/rooch-sdk';
-import { isNumber } from 'src/utils/reg';
-import { toast } from 'src/components/snackbar';
+
+import { LoadingButton } from '@mui/lab';
+import {
+  Stack,
+  Dialog,
+  Select,
+  MenuItem,
+  TextField,
+  Typography,
+  InputLabel,
+  DialogTitle,
+  FormControl,
+  DialogContent,
+  DialogActions,
+} from '@mui/material';
+
 import { useNetworkVariable } from 'src/hooks/use-networks';
+
+import { isNumber } from 'src/utils/reg';
+import { toDust, formatByIntl } from 'src/utils/number';
+
+import { toast } from 'src/components/snackbar';
 
 export default function CreateLiquidityModal({
   open,
@@ -59,9 +65,7 @@ export default function CreateLiquidityModal({
   const assetsMap = useMemo(() => {
     const assetsMap = new Map<string, BalanceInfoView>();
     balances?.data
-      .filter((item) => {
-        return !(item.symbol.startsWith('RDexLP') || item.symbol === 'BITXP');
-      })
+      .filter((item) => !(item.symbol.startsWith('RDexLP') || item.symbol === 'BITXP'))
       .forEach((i) => {
         assetsMap.set(i.coin_type, {
           ...i,
@@ -129,7 +133,7 @@ export default function CreateLiquidityModal({
               value={xValue}
               label="X"
               onChange={(e: SelectChangeEvent) => {
-                const value = e.target.value;
+                const {value} = e.target;
                 setXValue(value);
                 setX(assetsMap.get(value));
               }}
@@ -175,7 +179,7 @@ export default function CreateLiquidityModal({
               value={yValue}
               label="Y"
               onChange={(e: SelectChangeEvent) => {
-                const value = e.target.value;
+                const {value} = e.target;
                 setYValue(value);
                 setY(assetsMap.get(value));
               }}

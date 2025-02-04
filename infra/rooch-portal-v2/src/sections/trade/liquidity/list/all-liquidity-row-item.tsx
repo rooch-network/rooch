@@ -3,8 +3,9 @@ import { WalletGuard } from '@roochnetwork/rooch-sdk-kit';
 
 import { Box, Button, TableRow, TableCell, ListItemText } from '@mui/material';
 
-import { AllLiquidityItemType } from '../../hooks/use-all-liquidity';
 import { formatByIntl } from 'src/utils/number';
+
+import type { AllLiquidityItemType } from '../../hooks/use-all-liquidity';
 
 type RowItemProps = {
   row: AllLiquidityItemType;

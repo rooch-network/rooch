@@ -1,6 +1,6 @@
-import type { AnnotatedMoveStructView, IndexerStateIDView } from '@roochnetwork/rooch-sdk';
+import type { IndexerStateIDView, AnnotatedMoveStructView } from '@roochnetwork/rooch-sdk';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useRef, useMemo, useState, useEffect } from 'react';
 import {
   useRoochClient,
   useCurrentAddress,

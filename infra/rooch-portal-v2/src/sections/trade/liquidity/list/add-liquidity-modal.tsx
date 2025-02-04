@@ -32,7 +32,7 @@ import { useRouter } from 'src/routes/hooks';
 import { useNetworkVariable } from 'src/hooks/use-networks';
 
 import { formatCoin } from 'src/utils/format-number';
-import { toDust, bigNumberToBigInt, formatByIntl } from 'src/utils/number';
+import { toDust, formatByIntl, bigNumberToBigInt } from 'src/utils/number';
 
 import { toast } from 'src/components/snackbar';
 

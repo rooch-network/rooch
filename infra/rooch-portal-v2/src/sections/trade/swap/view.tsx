@@ -8,14 +8,15 @@ import { Box, Stack, Button, TextField, Typography, FormControl } from '@mui/mat
 
 import { useNetworkVariable } from 'src/hooks/use-networks';
 
+import { isNumber } from 'src/utils/reg';
+import { formatByIntl } from 'src/utils/number';
+
 import { DashboardContent } from 'src/layouts/dashboard';
 
 import SwapConfirmModal from './confirm-modal';
 import SelectTokenPair from '../components/select-token-pair';
 
 import type { TradeCoinType } from '../components/types';
-import { formatByIntl } from 'src/utils/number';
-import { isNumber } from 'src/utils/reg';
 
 export default function SwapView() {
   const dex = useNetworkVariable('dex');
@@ -89,7 +90,7 @@ export default function SwapView() {
                 value={customSlippage}
                 variant="outlined"
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                  const value = e.target.value;
+                  const {value} = e.target;
                   if (!isNumber(value)) {
                     return;
                   }

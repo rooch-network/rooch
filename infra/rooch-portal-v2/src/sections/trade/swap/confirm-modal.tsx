@@ -19,7 +19,7 @@ import {
 
 import { useNetworkVariable } from 'src/hooks/use-networks';
 
-import { toDust, bigNumberToBigInt, formatByIntl } from 'src/utils/number';
+import { toDust, formatByIntl, bigNumberToBigInt } from 'src/utils/number';
 
 import { toast } from 'src/components/snackbar';
 

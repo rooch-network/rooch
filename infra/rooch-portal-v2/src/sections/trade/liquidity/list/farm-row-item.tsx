@@ -26,10 +26,11 @@ import {
 
 import { useNetworkVariable } from 'src/hooks/use-networks';
 
+import { formatByIntl } from 'src/utils/number';
+
 import { toast } from 'src/components/snackbar';
 
 import type { OwnerLiquidityItemType } from '../../hooks/use-owner-liquidity';
-import { formatByIntl } from 'src/utils/number';
 
 export type FarmRowItemType = {
   id: string;

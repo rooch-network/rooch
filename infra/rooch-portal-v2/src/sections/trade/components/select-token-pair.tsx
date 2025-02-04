@@ -227,7 +227,7 @@ export default function SelectTokenPair({ onLoading, onCallback }: SelectTokenPa
             label="X"
             onChange={(e: SelectChangeEvent) => {
               const s = e.target.value;
-              const x = tokenPair!.get(s)![0].x;
+              const {x} = tokenPair!.get(s)![0];
               setX(x);
               setXValue(e.target.value);
               setY(undefined);

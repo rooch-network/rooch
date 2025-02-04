@@ -1,6 +1,8 @@
 'use client';
 
-import { Tab, Tabs, Stack, Typography, Link, Button } from '@mui/material';
+import { useState } from 'react';
+
+import { Tab, Tabs, Stack, Typography } from '@mui/material';
 
 import { useTabs } from 'src/hooks/use-tabs';
 
@@ -10,7 +12,6 @@ import FarmList from './farm_list';
 import AllLiquidityList from './all_liquidity_list';
 import OwnerLiquidityList from './owner_liquidity_list';
 import CreateLiquidityModal from './create-liquidity-modal';
-import { useState } from 'react';
 
 const TABS = [
   { label: 'All Liquidity', value: 'all_liquidity' },

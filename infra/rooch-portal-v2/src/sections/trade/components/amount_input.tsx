@@ -1,8 +1,9 @@
-import { FormControl, TextField, InputAdornment, Stack, Button } from '@mui/material';
 import BigNumber from 'bignumber.js';
-import { useState } from 'react';
-import { formatByIntl } from 'src/utils/number';
+
+import { Stack, Button, TextField, FormControl, InputAdornment } from '@mui/material';
+
 import { isNumber } from 'src/utils/reg';
+import { formatByIntl } from 'src/utils/number';
 
 interface TokenPairProps {
   max: number;
