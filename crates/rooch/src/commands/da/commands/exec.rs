@@ -628,7 +628,7 @@ impl ExecInner {
     async fn execute(&self, msg: ExecMsg) -> anyhow::Result<()> {
         let ExecMsg {
             tx_order,
-            ledger_tx,
+            mut ledger_tx,
             l1_block_with_body,
         } = msg;
 
@@ -638,6 +638,12 @@ impl ExecInner {
         let exp_state_root = exp_root_opt.map(|v| v.0);
         let exp_accumulator_root = exp_root_opt.map(|v| v.1);
 
+        // cache tx_hash
+        if is_l2_tx {
+            let _ = ledger_tx.tx_hash();
+        }
+        // it's okay to sequence tx before validation,
+        // because in this case, all tx have been sequenced in Rooch Network.
         if self.mode.need_seq() {
             self.sequenced_tx_store
                 .store_tx(ledger_tx.clone(), exp_accumulator_root)?;

@@ -166,7 +166,7 @@ impl PipelineProcessorActor {
     #[named]
     pub async fn execute_l1_block(
         &mut self,
-        l1_block: L1BlockWithBody,
+        l1_block_with_body: L1BlockWithBody,
     ) -> Result<ExecuteTransactionResponse> {
         let fn_name = function_name!();
         let _timer = self
@@ -174,11 +174,14 @@ impl PipelineProcessorActor {
             .pipeline_processor_execution_tx_latency_seconds
             .with_label_values(&[fn_name])
             .start_timer();
-        let moveos_tx = self.executor.validate_l1_block(l1_block.clone()).await?;
-        let block_height = l1_block.block.block_height;
+
+        let block = l1_block_with_body.block.clone();
+        let block_height = block.block_height;
+
+        let moveos_tx = self.executor.validate_l1_block(l1_block_with_body).await?;
         let ledger_tx = self
             .sequencer
-            .sequence_transaction(LedgerTxData::L1Block(l1_block.block))
+            .sequence_transaction(LedgerTxData::L1Block(block))
             .await?;
         let tx_order = ledger_tx.sequence_info.tx_order;
         let size = moveos_tx.ctx.tx_size;
@@ -266,7 +269,9 @@ impl PipelineProcessorActor {
         &mut self,
         mut tx: RoochTransaction,
     ) -> Result<ExecuteTransactionResponse> {
+        let tx_hash = tx.tx_hash(); // cache tx_hash
         debug!("pipeline execute_l2_tx: {:?}", tx.tx_hash());
+
         let fn_name = function_name!();
         let _timer = self
             .metrics
@@ -288,7 +293,6 @@ impl PipelineProcessorActor {
                         "Execute L2 Tx failed while VM panic occurred and revert tx. error: {:?} tx info {}",
                         err, hex::encode(l2_tx_bcs_bytes)
                     );
-                    let tx_hash = tx.tx_hash();
                     self.rooch_db.revert_tx(tx_hash)?;
                 }
                 return Err(err);
@@ -332,11 +336,11 @@ impl PipelineProcessorActor {
             })
             .await?;
         let root = execution_info.root_metadata();
-        // Sync latest state root from writer executor to reader executor
+        // Sync the latest state root from writer executor to reader executor
         self.executor
             .refresh_state(root.clone(), output.is_upgrade)
             .await?;
-        // Save state change set is a notify call, do not block current task
+        // Save state change set is a notify call, do not block the current task
         let state_change_set_ext =
             StateChangeSetExt::new(output.changeset.clone(), moveos_tx.ctx.sequence_number);
         self.executor
@@ -345,19 +349,17 @@ impl PipelineProcessorActor {
 
         let indexer = self.indexer.clone();
         let sequence_info = tx.sequence_info.clone();
-        let execution_info_clone = execution_info.clone();
-        let output_clone = output.clone();
 
-        // If bitcoin block data import, don't write all indexer
+        // If bitcoin block data import, don't write indexer
         if !self.service_status.is_date_import_mode() {
-            //The update_indexer is a notify call, do not block current task
+            //The update_indexer is a notification call, do not block the current task
             let result = indexer
                 .update_indexer(
                     tx,
-                    execution_info_clone,
+                    execution_info.clone(),
                     moveos_tx,
-                    output_clone.events,
-                    output_clone.changeset,
+                    output.events.clone(),
+                    output.changeset.clone(),
                 )
                 .await;
             match result {

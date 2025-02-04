@@ -87,9 +87,9 @@ pub fn find_block_height(dir: &Path) -> Result<Vec<u64>> {
 }
 
 pub fn create_btc_blk_tx(height: u64, block_file: &Path) -> Result<L1BlockWithBody> {
-    let block_hex_str = fs::read_to_string(block_file).unwrap();
-    let block_hex = Vec::<u8>::from_hex(&block_hex_str).unwrap();
-    let origin_block: Block = deserialize(&block_hex).unwrap();
+    let block_hex_str = fs::read_to_string(block_file)?;
+    let block_hex = Vec::<u8>::from_hex(&block_hex_str)?;
+    let origin_block: Block = deserialize(&block_hex)?;
     let block = origin_block.clone();
     let block_hash = block.header.block_hash();
     let move_block = rooch_types::bitcoin::types::Block::from(block.clone());
