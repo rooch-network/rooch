@@ -65,7 +65,7 @@ import {
 } from './types/index.js'
 import { fixedBalance } from '../utils/balance.js'
 
-const DEFAULT_GAS = 10000000
+const DEFAULT_GAS = 50000000
 
 /**
  * Configuration options for the RoochClient
