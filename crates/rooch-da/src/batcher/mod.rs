@@ -127,6 +127,9 @@ impl BatchMaker {
         }
     }
 
+    // append transaction:
+    // 1. push the new transaction to pending_tx return the old one if it has
+    // 2. add the old transaction to the batch, return block number if a new batch is made
     pub fn append_transaction(&mut self, tx_order: u64, tx_timestamp: u64) -> Option<u128> {
         if let Some(old) = self.pending_tx.push(tx_order, tx_timestamp) {
             if let Some(block_number) = self.add_to_batch(old.tx_order, old.tx_timestamp) {
@@ -136,11 +139,12 @@ impl BatchMaker {
         None
     }
 
+    // revert pending transaction
     pub fn revert_transaction(&mut self, tx_order: u64) -> anyhow::Result<()> {
         self.pending_tx.revert(tx_order)
     }
 
-    // append transaction to the batch, return block number if a new batch is made
+    // add transaction to the batch, return block number if a new batch is made
     fn add_to_batch(&mut self, tx_order: u64, tx_timestamp: u64) -> Option<u128> {
         let order_range = self
             .in_progress_batch
