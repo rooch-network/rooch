@@ -30,6 +30,8 @@ use crate::{
 
 use super::RoochTransactionData;
 
+pub const AUTH_PAYLOAD_SIZE: u64 = 219;
+
 /// A `Authenticator` is an abstraction of a account authenticator.
 /// It is a part of `AccountAbstraction`
 
