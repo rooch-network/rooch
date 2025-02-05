@@ -3,22 +3,9 @@ import { WalletGuard } from '@roochnetwork/rooch-sdk-kit';
 
 import { Box, Button, TableRow, TableCell, ListItemText } from '@mui/material';
 
-export type AllLiquidityItemType = {
-  id: string;
-  createAt: number;
-  x: {
-    id: string;
-    symbol: string;
-    type: string;
-  };
-  y: {
-    id: string;
-    symbol: string;
-    type: string;
-  };
-  lpTokenId: string;
-  creator: string;
-};
+import { formatByIntl } from 'src/utils/number';
+
+import type { AllLiquidityItemType } from '../../hooks/use-all-liquidity';
 
 type RowItemProps = {
   row: AllLiquidityItemType;
@@ -39,11 +26,11 @@ export default function AllLiquidityRowItem({ row, balance, onOpenViewModal }: R
       </TableCell>
 
       <TableCell>
-        <ListItemText primary={row.x.symbol} secondary={balance?.x} />
+        <ListItemText primary={row.x.symbol} secondary={formatByIntl(balance?.x)} />
       </TableCell>
 
       <TableCell>
-        <ListItemText primary={row.y.symbol} secondary={balance?.y} />
+        <ListItemText primary={row.y.symbol} secondary={formatByIntl(balance?.y)} />
       </TableCell>
 
       <TableCell align="right" sx={{ pr: 1 }}>

@@ -7,8 +7,10 @@ import WalletGuard from 'src/components/guard/WalletGuard';
 import TableSkeleton from 'src/components/skeleton/table-skeleton';
 import { TableNoData, TableHeadCustom } from 'src/components/table';
 
+import AddLiquidityModal from './add-liquidity-modal';
 import RemoveLiquidityModal from './remove-liquidity-modal';
 import OwnerLiquidityRowItem from './owner-liquidity-row-item';
+import { useAllLiquidity } from '../../hooks/use-all-liquidity';
 import { useOwnerLiquidity } from '../../hooks/use-owner-liquidity';
 
 import type { OwnerLiquidityItemType } from '../../hooks/use-owner-liquidity';
@@ -26,7 +28,9 @@ export default function OwnerLiquidityList() {
   const { lpTokens, isPending } = useOwnerLiquidity();
 
   const [openRemoveLiquidityModal, setOpenRemoveLiquidityModal] = useState(false);
+  const [openAddLiquidityModal, setOpenAddLiquidityModal] = useState(false);
   const [selectedRow, setSelectedRow] = useState<OwnerLiquidityItemType>();
+  const { lpTokens: allLPTokens } = useAllLiquidity(200);
 
   const handleRemoveModal = (row: OwnerLiquidityItemType) => {
     setSelectedRow(row);
@@ -38,21 +42,19 @@ export default function OwnerLiquidityList() {
     setSelectedRow(undefined);
   };
 
+  const handleAddModal = (row: OwnerLiquidityItemType) => {
+    setSelectedRow(row);
+    setOpenAddLiquidityModal(true);
+  };
+
+  const handleCloseAddModal = () => {
+    setOpenAddLiquidityModal(false);
+    setSelectedRow(undefined);
+  };
+
   return (
     <WalletGuard>
       <Card className="mt-4">
-        {/* <Box
-          display="flex"
-          justifyContent="space-between"
-          alignItems="center"
-          sx={{ ml: 2, mr: 1, height: 60 }}
-        >
-          <Box display="flex" width="100%" justifyContent="flex-end" alignItems="center">
-            <Link href="./pool/add">
-              <Button variant="outlined">Create Liquidity</Button>
-            </Link>
-          </Box>
-        </Box> */}
         <Scrollbar sx={{ minHeight: 462 }}>
           <Table sx={{ minWidth: 720 }} size="medium">
             <TableHeadCustom headLabel={headerLabel} />
@@ -66,7 +68,8 @@ export default function OwnerLiquidityList() {
                     <OwnerLiquidityRowItem
                       key={row.coin_type}
                       row={row}
-                      onOpenViewModal={handleRemoveModal}
+                      onOpenAddModal={handleAddModal}
+                      onOpenRemoveModal={handleRemoveModal}
                     />
                   ))}
                   <TableNoData title="No Coins Found" notFound={lpTokens?.length === 0} />
@@ -75,7 +78,18 @@ export default function OwnerLiquidityList() {
             </TableBody>
           </Table>
         </Scrollbar>
-
+        {selectedRow && (
+          <AddLiquidityModal
+            open={openAddLiquidityModal}
+            onClose={handleCloseAddModal}
+            row={
+              allLPTokens.find(
+                (item) => item.x.type === selectedRow.x.type && item.y.type === selectedRow.y.type
+              )!
+            }
+            key={openAddLiquidityModal ? 'open' : 'closed'}
+          />
+        )}
         {selectedRow && (
           <RemoveLiquidityModal
             open={openRemoveLiquidityModal}

@@ -1,6 +1,6 @@
-import type { AnnotatedMoveStructView} from '@roochnetwork/rooch-sdk';
+import type { IndexerStateIDView, AnnotatedMoveStructView } from '@roochnetwork/rooch-sdk';
 
-import { useMemo } from 'react';
+import { useRef, useMemo, useState, useEffect } from 'react';
 import {
   useRoochClient,
   useCurrentAddress,
@@ -27,19 +27,46 @@ export type AllLiquidityItemType = {
 };
 
 export type UseAllLiquidityReturn = {
+  hasNext: boolean;
+  index: number;
+  paginate: (index: number) => void;
   lpTokens: AllLiquidityItemType[];
   isPending: boolean;
 };
 
-export function useAllLiquidity(): UseAllLiquidityReturn {
+export function useAllLiquidity(limit: number = 10): UseAllLiquidityReturn {
   const currentAddress = useCurrentAddress();
   const dex = useNetworkVariable('dex');
   const client = useRoochClient();
+
+  console.log(limit);
+  const [paginationModel, setPaginationModel] = useState({ index: 1, limit });
+  const mapPageToNextCursor = useRef<{ [page: number]: IndexerStateIDView | null }>({});
+
+  const queryOptions = useMemo(
+    () => ({
+      cursor: mapPageToNextCursor.current[paginationModel.index - 1],
+      limit: paginationModel.limit.toString(),
+    }),
+    [paginationModel]
+  );
+
+  const paginate = (index: number): void => {
+    if (index < 0) {
+      return;
+    }
+    setPaginationModel({
+      ...paginationModel,
+      index,
+    });
+  };
 
   const { data: tokenPairs, isPending } = useRoochClientQuery('queryObjectStates', {
     filter: {
       object_type: `${dex.address}::swap::TokenPair`,
     },
+    cursor: queryOptions.cursor,
+    limit: queryOptions.limit,
     queryOption: {
       showDisplay: true,
     },
@@ -81,7 +108,19 @@ export function useAllLiquidity(): UseAllLiquidityReturn {
     return rowItme;
   }, [tokenPairs]);
 
+  useEffect(() => {
+    if (!tokenPairs) {
+      return;
+    }
+    if (tokenPairs.has_next_page) {
+      mapPageToNextCursor.current[paginationModel.index] = tokenPairs.next_cursor ?? null;
+    }
+  }, [paginationModel, tokenPairs]);
+
   return {
+    hasNext: tokenPairs?.has_next_page || false,
+    index: paginationModel.index,
+    paginate,
     lpTokens: resolvedTokenPairs,
     isPending,
   };

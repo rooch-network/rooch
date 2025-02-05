@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import BigNumber from 'bignumber.js';
 import { Args, Transaction } from '@roochnetwork/rooch-sdk';
 import { SessionKeyGuard, useSignAndExecuteTransaction } from '@roochnetwork/rooch-sdk-kit';
 
@@ -8,21 +7,19 @@ import {
   Stack,
   Button,
   Dialog,
-  TextField,
   Typography,
   DialogTitle,
-  FormControl,
   DialogActions,
   DialogContent,
-  InputAdornment,
 } from '@mui/material';
 
 import { useNetworkVariable } from 'src/hooks/use-networks';
 
-import { toDust } from 'src/utils/number';
-import { formatCoin } from 'src/utils/format-number';
+import { toDust, formatByIntl } from 'src/utils/number';
 
 import { toast } from 'src/components/snackbar';
+
+import AmountInput from '../../components/amount_input';
 
 import type { FarmRowItemType } from './farm-row-item';
 
@@ -45,7 +42,7 @@ export default function AddSrakeModal({
   const [customSlippage, setCustomSlippage] = useState('');
 
   const handleStake = () => {
-    const fixdAmount = toDust(amount, row.liquidity!.decimals);
+    const fixdAmount = toDust(amount.replaceAll(',', ''), row.liquidity!.decimals);
     const tx = new Transaction();
     tx.callFunction({
       target: `${dex.address}::liquidity_incentive::stake`,
@@ -96,67 +93,16 @@ export default function AddSrakeModal({
           </Stack>
           <Stack>
             <Typography className="text-gray-600 !text-sm !font-semibold">
-              Balance: {row.liquidity?.fixedBalance}
+              Balance: {formatByIntl(row.liquidity?.fixedBalance)}
             </Typography>
           </Stack>
         </Stack>
         <Stack justifyContent="center" spacing={2} direction="column" sx={{ pt: 1 }}>
-          <FormControl>
-            <TextField
-              label="Amount"
-              placeholder=""
-              value={amount}
-              inputMode="decimal"
-              autoComplete="off"
-              onChange={(e) => {
-                setAmount(e.target.value);
-              }}
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <Stack direction="row" spacing={0.5}>
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        onClick={() => {
-                          setAmount(
-                            new BigNumber(
-                              formatCoin(
-                                Number(row.liquidity!.balance || 0),
-                                Number(row.liquidity!.decimals || 0),
-                                row.liquidity!.decimals
-                              )
-                            )
-                              .div(2)
-                              .toString()
-                          );
-                        }}
-                      >
-                        Half
-                      </Button>
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        onClick={() => {
-                          setAmount(
-                            new BigNumber(
-                              formatCoin(
-                                Number(row.liquidity!.balance),
-                                row.liquidity!.decimals,
-                                row.liquidity!.decimals
-                              )
-                            ).toString()
-                          );
-                        }}
-                      >
-                        Max
-                      </Button>
-                    </Stack>
-                  </InputAdornment>
-                ),
-              }}
-            />
-          </FormControl>
+          <AmountInput
+            max={row.liquidity?.fixedBalance || 0}
+            amount={amount}
+            onChange={(v) => setAmount(v)}
+          />
         </Stack>
       </DialogContent>
 
