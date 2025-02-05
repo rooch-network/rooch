@@ -30,3 +30,12 @@ impl AppendTransactionMessage {
         }
     }
 }
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct RevertTransactionMessage {
+    pub tx_order: u64,
+}
+
+impl Message for RevertTransactionMessage {
+    type Result = anyhow::Result<()>;
+}

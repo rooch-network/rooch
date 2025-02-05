@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use anyhow::anyhow;
 use rooch_config::settings::ROOCH_BATCH_INTERVAL;
 use rooch_store::da_store::DAMetaStore;
 use rooch_store::RoochStore;
@@ -70,20 +71,81 @@ impl InProgressBatch {
 }
 
 pub struct BatchMaker {
+    pending_tx: PendingTx,
     in_progress_batch: InProgressBatch,
     rooch_store: RoochStore,
+}
+
+struct PendingTx {
+    tx_order: u64,
+    tx_timestamp: u64,
+}
+
+impl PendingTx {
+    fn new() -> Self {
+        Self {
+            tx_order: 0,
+            tx_timestamp: 0,
+        }
+    }
+
+    fn revert(&mut self, tx_order: u64) -> anyhow::Result<()> {
+        let pending_tx_order = self.tx_order;
+        if tx_order != pending_tx_order {
+            return Err(anyhow!(
+                "failed to revert pending transaction: transaction order is not continuous, pending_tx_order: {}, revert_tx_order: {}",
+                pending_tx_order,
+                tx_order
+            ));
+        }
+        self.tx_order = 0;
+        self.tx_timestamp = 0;
+        Ok(())
+    }
+
+    fn push(&mut self, tx_order: u64, tx_timestamp: u64) -> Option<PendingTx> {
+        let old = if self.tx_order == 0 {
+            None
+        } else {
+            Some(PendingTx {
+                tx_order: self.tx_order,
+                tx_timestamp: self.tx_timestamp,
+            })
+        };
+        self.tx_order = tx_order;
+        self.tx_timestamp = tx_timestamp;
+        old
+    }
 }
 
 impl BatchMaker {
     pub fn new(rooch_store: RoochStore) -> Self {
         Self {
+            pending_tx: PendingTx::new(),
             in_progress_batch: InProgressBatch::init(),
             rooch_store,
         }
     }
 
-    // append transaction to the batch, return block number if a new batch is made
+    // append transaction:
+    // 1. push the new transaction to pending_tx return the old one if it has
+    // 2. add the old transaction to the batch, return block number if a new batch is made
     pub fn append_transaction(&mut self, tx_order: u64, tx_timestamp: u64) -> Option<u128> {
+        if let Some(old) = self.pending_tx.push(tx_order, tx_timestamp) {
+            if let Some(block_number) = self.add_to_batch(old.tx_order, old.tx_timestamp) {
+                return Some(block_number);
+            }
+        }
+        None
+    }
+
+    // revert pending transaction
+    pub fn revert_transaction(&mut self, tx_order: u64) -> anyhow::Result<()> {
+        self.pending_tx.revert(tx_order)
+    }
+
+    // add transaction to the batch, return block number if a new batch is made
+    fn add_to_batch(&mut self, tx_order: u64, tx_timestamp: u64) -> Option<u128> {
         let order_range = self
             .in_progress_batch
             .append_transaction(tx_order, tx_timestamp);

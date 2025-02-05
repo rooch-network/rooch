@@ -15,7 +15,7 @@ use moveos::moveos::VMPanicError;
 use moveos_types::state::StateChangeSetExt;
 use moveos_types::transaction::VerifiedMoveOSTransaction;
 use prometheus::Registry;
-use rooch_da::actor::messages::AppendTransactionMessage;
+use rooch_da::actor::messages::{AppendTransactionMessage, RevertTransactionMessage};
 use rooch_da::proxy::DAServerProxy;
 use rooch_db::RoochDB;
 use rooch_event::actor::{EventActor, UpdateServiceStatusMessage};
@@ -183,6 +183,12 @@ impl PipelineProcessorActor {
             .sequencer
             .sequence_transaction(LedgerTxData::L1Block(block))
             .await?;
+        self.da_server
+            .append_tx(AppendTransactionMessage {
+                tx_order: ledger_tx.sequence_info.tx_order,
+                tx_timestamp: ledger_tx.sequence_info.tx_timestamp,
+            })
+            .await?;
         let tx_order = ledger_tx.sequence_info.tx_order;
         let size = moveos_tx.ctx.tx_size;
         let result = match self.execute_tx(ledger_tx, moveos_tx).await {
@@ -226,6 +232,12 @@ impl PipelineProcessorActor {
         let ledger_tx = self
             .sequencer
             .sequence_transaction(LedgerTxData::L1Tx(l1_tx.clone()))
+            .await?;
+        self.da_server
+            .append_tx(AppendTransactionMessage {
+                tx_order: ledger_tx.sequence_info.tx_order,
+                tx_timestamp: ledger_tx.sequence_info.tx_timestamp,
+            })
             .await?;
         let size = moveos_tx.ctx.tx_size;
         let tx_order = ledger_tx.sequence_info.tx_order;
@@ -283,6 +295,13 @@ impl PipelineProcessorActor {
             .sequencer
             .sequence_transaction(LedgerTxData::L2Tx(tx.clone()))
             .await?;
+        let tx_order = ledger_tx.sequence_info.tx_order;
+        self.da_server
+            .append_tx(AppendTransactionMessage {
+                tx_order,
+                tx_timestamp: ledger_tx.sequence_info.tx_timestamp,
+            })
+            .await?;
         let size = moveos_tx.ctx.tx_size;
         let result = match self.execute_tx(ledger_tx, moveos_tx).await {
             Ok(v) => v,
@@ -293,6 +312,9 @@ impl PipelineProcessorActor {
                         "Execute L2 Tx failed while VM panic occurred and revert tx. error: {:?} tx info {}",
                         err, hex::encode(l2_tx_bcs_bytes)
                     );
+                    self.da_server
+                        .revert_tx(RevertTransactionMessage { tx_order })
+                        .await?;
                     self.rooch_db.revert_tx(tx_hash)?;
                 }
                 return Err(err);
@@ -329,12 +351,7 @@ impl PipelineProcessorActor {
         // Then execute
         let size = moveos_tx.ctx.tx_size;
         let (output, execution_info) = self.executor.execute_transaction(moveos_tx.clone()).await?;
-        self.da_server
-            .append_tx(AppendTransactionMessage {
-                tx_order: tx.sequence_info.tx_order,
-                tx_timestamp: tx.sequence_info.tx_timestamp,
-            })
-            .await?;
+
         let root = execution_info.root_metadata();
         // Sync the latest state root from writer executor to reader executor
         self.executor
