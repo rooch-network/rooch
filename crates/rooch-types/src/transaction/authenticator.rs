@@ -30,6 +30,7 @@ use crate::{
 
 use super::RoochTransactionData;
 
+// The size of the signature data.
 pub const AUTH_PAYLOAD_SIZE: u64 = 219;
 
 /// A `Authenticator` is an abstraction of a account authenticator.
