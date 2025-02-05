@@ -366,18 +366,22 @@ impl ExecutorActor {
         Ok(vm_result)
     }
 
-    pub fn convert_to_verified_tx(
+    pub fn convert_to_verified_tx_for_dry_run(
         &self,
         tx_data: RoochTransactionData,
     ) -> Result<VerifiedMoveOSTransaction> {
         let root = self.root.clone();
+
+        // The dry run supports unsigned transactions, but when calculating the transaction size,
+        // the length of the signature part needs to be included.
+        let tx_size = tx_data.tx_size() + AUTH_PAYLOAD_SIZE;
 
         let mut tx_ctx = TxContext::new(
             tx_data.sender.into(),
             tx_data.sequence_number,
             tx_data.max_gas_amount,
             tx_data.tx_hash(),
-            tx_data.tx_size() + AUTH_PAYLOAD_SIZE,
+            tx_size,
         );
 
         let tx_metadata = TxMeta::new_from_move_action(&tx_data.action);
@@ -545,7 +549,7 @@ impl Handler<ConvertL2TransactionData> for ExecutorActor {
         msg: ConvertL2TransactionData,
         _ctx: &mut ActorContext,
     ) -> Result<VerifiedMoveOSTransaction> {
-        self.convert_to_verified_tx(msg.tx_data)
+        self.convert_to_verified_tx_for_dry_run(msg.tx_data)
     }
 }
 

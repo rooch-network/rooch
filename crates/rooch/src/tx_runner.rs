@@ -57,9 +57,12 @@ pub fn execute_tx_locally(
         GasScheduleConfig::CLI_DEFAULT_MAX_GAS_AMOUNT,
         true,
     );
-    gas_meter
-        .charge_io_write(tx.tx_size() + AUTH_PAYLOAD_SIZE)
-        .unwrap();
+
+    // The dry run supports unsigned transactions, but when calculating the transaction size,
+    // the length of the signature part needs to be included.
+    let tx_size = tx.tx_size() + AUTH_PAYLOAD_SIZE;
+
+    gas_meter.charge_io_write(tx_size).unwrap();
 
     let mut moveos_session = MoveOSSession::new(
         move_mv.inner(),
