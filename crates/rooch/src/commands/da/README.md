@@ -39,6 +39,8 @@ rooch da unpack --segment-dir {segment-dir} --batch-dir {batch-dir} --verify-ord
 
 ### exec
 
+TODO: update this section with new changes, DO NOT follow this section now.
+
 Execute tx list with state root verification(compare with Rooch Network Mainnet/Testnet).
 It's a tool built for verification at development stage, not a full feature tool for sync states in production.
 
