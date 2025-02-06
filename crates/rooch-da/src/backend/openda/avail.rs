@@ -6,6 +6,7 @@ use anyhow::anyhow;
 use async_trait::async_trait;
 use base64::engine::general_purpose;
 use base64::Engine;
+use moveos_types::h256::{H256, LENGTH};
 use reqwest::{Client, StatusCode};
 use rooch_types::da::segment::SegmentID;
 use serde::{Deserialize, Serialize};
@@ -26,6 +27,23 @@ const TURBO_MIN_BACKOFF_DELAY: Duration = Duration::from_millis(500);
 const TURBO_SUBMIT_API_PATH: &str = "user/submit_raw_data";
 const DEFAULT_TURBO_PAYMENT_TOKEN: &str = "ethereum";
 
+/// calculate data hash
+pub fn calc_data_hash(segment_bytes: &[u8]) -> H256 {
+    blake2_256(segment_bytes)
+}
+
+fn blake2_256(data: &[u8]) -> H256 {
+    H256(blake2(data))
+}
+
+fn blake2(data: &[u8]) -> [u8; LENGTH] {
+    blake2b_simd::Params::new()
+        .hash_length(LENGTH)
+        .hash(data)
+        .as_bytes()
+        .try_into()
+        .expect("slice is always the necessary length")
+}
 /// Avail client: A turbo and Light
 /// Turbo client has higher priority, if not available, use the Light client
 pub struct AvailFusionAdapter {
