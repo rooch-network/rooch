@@ -16,6 +16,7 @@ module twitter_binding::twitter_account {
     use rooch_framework::gas_coin::{RGas};
 
     use twitter_binding::tweet_v2::{Self, Tweet};
+    use twitter_binding::string_util::{starts_with};
     use app_admin::admin::{AdminCap};
 
     const TWITTER_ACCOUNT_BINDING_MESSAGE_PREFIX: vector<u8> = b"BTC:";
@@ -339,26 +340,6 @@ module twitter_binding::twitter_account {
             i = i + 1;
         };
         text_len
-    }
-
-    //TODO migrate to std::string::starts_with
-    fun starts_with(haystack: &vector<u8>, needle: &vector<u8>): bool {
-        let haystack_len = vector::length(haystack);
-        let needle_len = vector::length(needle);
-
-        if (needle_len > haystack_len) {
-            return false
-        };
-
-        let i = 0;
-        while (i < needle_len) {
-            if (vector::borrow(haystack, i) != vector::borrow(needle, i)) {
-                return false
-            };
-            i = i + 1;
-        };
-
-        true
     }
 
     fun borrow_twitter_rgas_faucet() : &TwitterRGasFaucet{
