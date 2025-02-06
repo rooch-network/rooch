@@ -155,7 +155,7 @@ export default function SelectTokenPair({ onLoading, onCallback }: SelectTokenPa
       setYCount(formatByIntl(fixdYCount.toString()));
 
       const xCoin = assetsMap?.get(x.type)!;
-      const yCoin = assetsMap?.get(y.type)!;
+      const yCoin = assetsMap?.get(y.type);
       onCallback(
         {
           balance: xCoin.fixedBalance,
@@ -166,12 +166,12 @@ export default function SelectTokenPair({ onLoading, onCallback }: SelectTokenPa
           decimal: xCoin.decimals,
         },
         {
-          balance: yCoin.fixedBalance,
-          type: yCoin.coin_type,
-          icon: yCoin.icon_url || undefined,
-          symbol: yCoin.symbol,
+          balance: yCoin?.fixedBalance || 0,
+          type: yCoin?.coin_type || y.type,
+          icon: yCoin?.icon_url || undefined,
+          symbol: yCoin?.symbol || y.name,
           amount: fixdYCount.toString(),
-          decimal: yCoin.decimals,
+          decimal: yCoin?.decimals || 0, // TODO: fix
         }
       );
     } catch (e) {
