@@ -1,33 +1,34 @@
 use ambassador::delegate_to_methods;
 use bytes::Bytes;
+use hashbrown::HashMap;
 use itertools::Itertools;
 use move_binary_format::errors::VMResult;
 use move_binary_format::file_format::CompiledScript;
 use move_binary_format::CompiledModule;
 use move_core_types::language_storage::ModuleId;
+use move_vm_runtime::loader::modules::LegacyModuleCache;
 use move_vm_runtime::{Module, RuntimeEnvironment, Script, WithRuntimeEnvironment};
+use move_vm_types::code::ambassador_impl_ScriptCache;
+use move_vm_types::code::Code;
 use move_vm_types::code::{
     ModuleCache, ModuleCode, ModuleCodeBuilder, ScriptCache, UnsyncModuleCache, UnsyncScriptCache,
     WithBytes, WithHash, WithSize,
 };
 use move_vm_types::sha3_256;
 use moveos_store::TxnIndex;
+use parking_lot::RwLock;
 use serde::{Deserialize, Deserializer, Serialize};
 use std::hash::Hash;
 use std::ops::Deref;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use hashbrown::HashMap;
-use move_vm_runtime::loader::modules::LegacyModuleCache;
-use move_vm_types::code::ambassador_impl_ScriptCache;
-use move_vm_types::code::Code;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum PanicError {
     CodeInvariantError(String),
 }
 
-struct Entry<Deserialized, Verified, Extension> {
+pub struct Entry<Deserialized, Verified, Extension> {
     /// False if this code is "valid" within the block execution context (i.e., there has been no
     /// republishing of this module so far). If true, executor needs to read the module from the
     /// per-block module caches.
@@ -73,9 +74,9 @@ where
 
 pub struct GlobalModuleCache<K, D, V, E> {
     /// Module cache containing the verified code.
-    module_cache: HashMap<K, Entry<D, V, E>>,
+    pub module_cache: HashMap<K, Entry<D, V, E>>,
     /// Sum of serialized sizes (in bytes) of all cached modules.
-    size: usize,
+    pub size: usize,
 }
 
 impl<K, D, V, E> GlobalModuleCache<K, D, V, E>
@@ -171,7 +172,7 @@ where
     }
 
     /// Insert the module to cache. Used for tests only.
-    #[cfg(any(test, feature = "testing"))]
+    //#[cfg(any(test, feature = "testing"))]
     pub fn insert(&mut self, key: K, module: Arc<ModuleCode<D, V, E>>) {
         self.size += module.extension().size_in_bytes();
         self.module_cache.insert(
@@ -484,7 +485,7 @@ pub struct MoveOSCodeCache<'a> {
     pub module_cache:
         UnsyncModuleCache<ModuleId, CompiledModule, Module, RoochModuleExtension, Option<TxnIndex>>,
     pub global_module_cache:
-        &'a GlobalModuleCache<ModuleId, CompiledModule, Module, RoochModuleExtension>,
+        Arc<RwLock<GlobalModuleCache<ModuleId, CompiledModule, Module, RoochModuleExtension>>>,
     pub legacy_module_cache: LegacyModuleCache,
 }
 
@@ -496,11 +497,8 @@ impl<'a> WithRuntimeEnvironment for MoveOSCodeCache<'a> {
 
 impl<'a> MoveOSCodeCache<'a> {
     pub fn new(
-        global_module_cache: &'a GlobalModuleCache<
-            ModuleId,
-            CompiledModule,
-            Module,
-            RoochModuleExtension,
+        global_module_cache: Arc<
+            RwLock<GlobalModuleCache<ModuleId, CompiledModule, Module, RoochModuleExtension>>,
         >,
         runtime_environment: &'a RuntimeEnvironment,
     ) -> Self {
@@ -566,12 +564,8 @@ impl<'a> ModuleCache for MoveOSCodeCache<'a> {
         extension: Arc<Self::Extension>,
         version: Self::Version,
     ) -> VMResult<()> {
-        self.as_module_cache().insert_deserialized_module(
-            key,
-            deserialized_code,
-            extension,
-            version,
-        )
+        self.module_cache
+            .insert_deserialized_module(key, deserialized_code, extension, version)
     }
 
     fn insert_verified_module(
@@ -581,8 +575,12 @@ impl<'a> ModuleCache for MoveOSCodeCache<'a> {
         extension: Arc<Self::Extension>,
         version: Self::Version,
     ) -> VMResult<Arc<ModuleCode<Self::Deserialized, Self::Verified, Self::Extension>>> {
-        self.as_module_cache()
-            .insert_verified_module(key, verified_code, extension, version)
+        //let mut write_guard = self.global_module_cache.write();
+        //let m = Arc::new(ModuleCode::from_verified(verified_code.clone(), extension.clone()));
+        //write_guard.insert(key.clone(), m.clone());
+        //Ok(m)
+        self.module_cache
+            .insert_verified_module(key.clone(), verified_code, extension, version)
     }
 
     fn get_module_or_build_with(
@@ -600,13 +598,13 @@ impl<'a> ModuleCache for MoveOSCodeCache<'a> {
             Self::Version,
         )>,
     > {
-        if let Some(module) = self.global_module_cache.get(key) {
+        let read_guard = self.global_module_cache.read();
+
+        if let Some(module) = read_guard.get(key) {
             return Ok(Some((module, Self::Version::default())));
         }
 
-        let read = self
-            .get_module_cache()
-            .get_module_or_build_with(key, builder)?;
+        let read = self.module_cache.get_module_or_build_with(key, builder)?;
         Ok(read)
     }
 
@@ -625,9 +623,10 @@ impl<'a> ModuleCodeBuilder for MoveOSCodeCache<'a> {
         &self,
         key: &Self::Key,
     ) -> VMResult<Option<ModuleCode<Self::Deserialized, Self::Verified, Self::Extension>>> {
-        match self.global_module_cache.module_cache.get(key) {
+        let read_guard = self.global_module_cache.read();
+        match read_guard.get(key) {
             None => Ok(None),
-            Some(v) => Ok(Some(v.module.deref().clone())),
+            Some(v) => Ok(Some(v.deref().clone())),
         }
     }
 }

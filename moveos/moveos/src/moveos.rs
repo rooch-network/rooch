@@ -185,12 +185,12 @@ impl MoveOS {
         assert!(root.is_genesis());
         let resolver = GenesisResolver::default();
         let runtime_environment = self.cache_manager.runtime_environment.read();
-        let global_module_cache = self.cache_manager.global_module_cache.read();
+        let global_module_cache = self.cache_manager.global_module_cache.clone();
         let mut session = self.vm.new_genesis_session(
             &resolver,
             ctx,
             genesis_objects,
-            &global_module_cache,
+            global_module_cache,
             &runtime_environment,
         );
 
@@ -283,12 +283,12 @@ impl MoveOS {
 
         let resolver = RootObjectResolver::new(root.clone(), &self.db);
         let runtime_environment = self.cache_manager.runtime_environment.read();
-        let global_module_cache = self.cache_manager.global_module_cache.read();
+        let global_module_cache = self.cache_manager.global_module_cache.clone();
         let mut session = self.vm.new_readonly_session(
             &resolver,
             ctx.clone(),
             gas_meter,
-            &global_module_cache,
+            global_module_cache,
             &runtime_environment,
         );
 
@@ -336,12 +336,12 @@ impl MoveOS {
 
         let resolver = RootObjectResolver::new(root, &self.db);
         let runtime_environment = self.cache_manager.runtime_environment.read();
-        let global_module_cache = self.cache_manager.global_module_cache.read();
+        let global_module_cache = self.cache_manager.global_module_cache.clone();
         let mut session = self.vm.new_session(
             &resolver,
             ctx,
             gas_meter,
-            &global_module_cache,
+            global_module_cache,
             &runtime_environment,
         );
 
@@ -466,12 +466,12 @@ impl MoveOS {
         gas_meter.set_metering(true);
         let resolver = RootObjectResolver::new(root, &self.db);
         let runtime_environment = self.cache_manager.runtime_environment.read();
-        let global_module_cache = self.cache_manager.global_module_cache.read();
+        let global_module_cache = self.cache_manager.global_module_cache.clone();
         let mut session = self.vm.new_readonly_session(
             &resolver,
             tx_context.clone(),
             gas_meter,
-            &global_module_cache,
+            global_module_cache,
             &runtime_environment,
         );
 

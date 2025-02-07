@@ -6,6 +6,7 @@ use crate::tx_runner::dry_run_tx_locally;
 use async_trait::async_trait;
 use bytes::Bytes;
 use clap::Parser;
+use move_binary_format::errors::PartialVMResult;
 use move_cli::Move;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::effects::Op;
@@ -32,7 +33,6 @@ use rooch_types::error::{RoochError, RoochResult};
 use rooch_types::transaction::rooch::RoochTransaction;
 use std::collections::BTreeMap;
 use std::io::stderr;
-use move_binary_format::errors::PartialVMResult;
 use tokio::runtime::Handle;
 
 struct MemoryModuleResolver {

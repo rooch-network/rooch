@@ -9,7 +9,11 @@ use anyhow::Result;
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_binary_format::file_format::CodeOffset;
 use move_core_types::account_address::AccountAddress;
-use move_core_types::gas_algebra::{AbstractMemorySize, GasQuantity, InternalGas, InternalGasPerArg, InternalGasPerByte, NumArgs, NumBytes, NumTypeNodes};
+use move_core_types::gas_algebra::{
+    AbstractMemorySize, GasQuantity, InternalGas, InternalGasPerArg, InternalGasPerByte, NumArgs,
+    NumBytes, NumTypeNodes,
+};
+use move_core_types::identifier::IdentStr;
 use move_core_types::language_storage::ModuleId;
 use move_core_types::vm_status::StatusCode;
 use move_vm_types::gas::{GasMeter, SimpleInstruction};
@@ -23,7 +27,6 @@ use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::ops::{Add, Bound};
 use std::rc::Rc;
-use move_core_types::identifier::IdentStr;
 
 /// The size in bytes for a reference on the stack
 pub const REFERENCE_SIZE: AbstractMemorySize = AbstractMemorySize::new(8);
@@ -1375,7 +1378,6 @@ impl GasMeter for MoveOSGasMeter {
     ) -> PartialVMResult<()> {
         Ok(())
     }
-
 
     fn charge_create_ty(&mut self, num_nodes: NumTypeNodes) -> PartialVMResult<()> {
         /*

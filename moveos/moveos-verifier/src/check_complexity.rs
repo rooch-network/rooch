@@ -3,7 +3,10 @@
 
 use move_binary_format::binary_views::BinaryIndexedView;
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
-use move_binary_format::file_format::{Bytecode, CompiledScript, StructFieldInformation, StructVariantInstantiationIndex, VariantFieldInstantiationIndex};
+use move_binary_format::file_format::{
+    Bytecode, CompiledScript, StructFieldInformation, StructVariantInstantiationIndex,
+    VariantFieldInstantiationIndex,
+};
 use move_binary_format::file_format::{
     CodeUnit, FieldInstantiationIndex, FunctionInstantiationIndex, IdentifierIndex,
     ModuleHandleIndex, SignatureIndex, SignatureToken, StructDefInstantiationIndex, TableIndex,
@@ -247,26 +250,26 @@ impl<'a> BinaryComplexityMeter<'a> {
             match instr {
                 CallGeneric(idx) => {
                     self.meter_function_instantiation(*idx)?;
-                },
+                }
                 PackGeneric(idx) | UnpackGeneric(idx) => {
                     self.meter_struct_instantiation(*idx)?;
-                },
+                }
                 PackVariantGeneric(idx) | UnpackVariantGeneric(idx) | TestVariantGeneric(idx) => {
                     self.meter_struct_variant_instantiation(*idx)?;
-                },
+                }
                 ExistsGeneric(idx)
                 | MoveFromGeneric(idx)
                 | MoveToGeneric(idx)
                 | ImmBorrowGlobalGeneric(idx)
                 | MutBorrowGlobalGeneric(idx) => {
                     self.meter_struct_instantiation(*idx)?;
-                },
+                }
                 ImmBorrowFieldGeneric(idx) | MutBorrowFieldGeneric(idx) => {
                     self.meter_field_instantiation(*idx)?;
-                },
+                }
                 ImmBorrowVariantFieldGeneric(idx) | MutBorrowVariantFieldGeneric(idx) => {
                     self.meter_variant_field_instantiation(*idx)?;
-                },
+                }
                 VecPack(idx, _)
                 | VecLen(idx)
                 | VecImmBorrow(idx)
@@ -276,7 +279,7 @@ impl<'a> BinaryComplexityMeter<'a> {
                 | VecUnpack(idx, _)
                 | VecSwap(idx) => {
                     self.meter_signature(*idx)?;
-                },
+                }
 
                 // List out the other options explicitly so there's a compile error if a new
                 // bytecode gets added.
@@ -362,7 +365,7 @@ impl<'a> BinaryComplexityMeter<'a> {
                     for field in fields {
                         self.charge(field.signature.0.num_nodes() as u64)?;
                     }
-                },
+                }
                 StructFieldInformation::DeclaredVariants(variants) => {
                     for variant in variants {
                         self.meter_identifier(variant.name)?;
@@ -370,7 +373,7 @@ impl<'a> BinaryComplexityMeter<'a> {
                             self.charge(field.signature.0.num_nodes() as u64)?;
                         }
                     }
-                },
+                }
             }
         }
         Ok(())

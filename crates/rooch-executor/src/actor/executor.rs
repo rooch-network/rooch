@@ -74,7 +74,6 @@ impl ExecutorActor {
         let resolver = RootObjectResolver::new(root.clone(), &moveos_store);
         let gas_parameters = FrameworksGasParameters::load_from_chain(&resolver)?;
 
-
         let moveos = MoveOS::new(
             gas_parameters.all_natives(),
             moveos_store.clone(),

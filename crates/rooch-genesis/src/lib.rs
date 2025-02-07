@@ -325,12 +325,7 @@ impl RoochGenesis {
         genesis_moveos_tx.ctx.add(gas_config.clone())?;
 
         let (moveos_store, _temp_dir) = MoveOSStore::mock_moveos_store()?;
-        let moveos = MoveOS::new(
-            gas_parameter.all_natives(),
-            moveos_store,
-            vec![],
-            vec![],
-        )?;
+        let moveos = MoveOS::new(gas_parameter.all_natives(), moveos_store, vec![], vec![])?;
         let output = moveos.init_genesis(
             genesis_moveos_tx.clone(),
             genesis_config.genesis_objects.clone(),

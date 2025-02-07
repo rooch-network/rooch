@@ -9368,6 +9368,7 @@ dependencies = [
  "move-compiler",
  "move-core-types",
  "move-errmapgen",
+ "move-model",
  "move-package",
  "move-stdlib",
  "move-unit-test",

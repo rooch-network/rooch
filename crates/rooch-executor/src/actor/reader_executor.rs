@@ -330,7 +330,7 @@ impl Handler<EventData> for ReaderExecutorActor {
             tracing::info!("ReadExecutorActor: Reload the MoveOS instance...");
 
             let resolver = RootObjectResolver::new(self.root.clone(), &self.moveos_store);
-            let gas_parameters = FrameworksGasParameters::load_from_chain(&resolver)?;;
+            let gas_parameters = FrameworksGasParameters::load_from_chain(&resolver)?;
 
             self.moveos = MoveOS::new(
                 gas_parameters.all_natives(),

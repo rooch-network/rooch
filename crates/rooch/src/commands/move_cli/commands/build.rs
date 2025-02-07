@@ -11,6 +11,7 @@ use async_trait::async_trait;
 use bcs;
 use clap::Parser;
 use move_cli::{base::reroot_path, Move};
+use move_model::metadata::{CompilerVersion, LanguageVersion};
 use moveos_types::move_std::string::MoveString;
 use moveos_types::moveos_std::module_store::PackageData;
 use moveos_verifier::build::run_verifier;
@@ -48,10 +49,11 @@ pub struct BuildCommand {
 impl CommandAction<Option<Value>> for BuildCommand {
     async fn execute(self) -> RoochResult<Option<Value>> {
         let path = self.move_args.package_path;
-        let config = self.move_args.build_config;
+        let mut config = self.move_args.build_config;
+        config.compiler_config.language_version = Some(LanguageVersion::V2_1);
+        config.compiler_config.compiler_version = Some(CompilerVersion::V2_1);
 
         let context = self.config_options.build()?;
-
         let mut config = config;
         config
             .additional_named_addresses
