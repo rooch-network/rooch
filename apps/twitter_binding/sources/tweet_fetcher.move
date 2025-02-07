@@ -27,8 +27,10 @@ module twitter_binding::tweet_fetcher {
 
     const MAX_BUFFER_QUEUE_SIZE: u64 = 20;
 
-    /// The minimum balance of the oracle escrow account 10 RGas
-    const MIN_ORACLE_ESCROW_BALANCE: u256 = 10_00000000;
+    /// The minimum balance of the oracle escrow account 20 RGas
+    const MIN_ORACLE_ESCROW_BALANCE: u256 = 20_00000000;
+
+    const NOTIFY_CALLBACK: vector<u8> = b"tweet_fetcher::check_request_queue";
 
     const ErrorInvalidRequestID: u64 = 1;
     const ErrorInvalidResponse: u64 = 2;
@@ -203,6 +205,8 @@ module twitter_binding::tweet_fetcher {
     }
 
     public entry fun process_buffer_queue(){
+        //Call the oracle callback function to process the request, in case the oracle notfiy does not work
+        check_request_queue();
         let sender = tx_context::sender();
         assert!(check_oracle_escrow_balance(sender), ErrorInvalidResponse);
         let buffer_queue = borrow_mut_buffer_queue();
@@ -227,6 +231,14 @@ module twitter_binding::tweet_fetcher {
         oracles::withdraw_from_escrow(caller, amount);
     }
 
+    public entry fun update_notification_gas_allocation(caller: &signer, amount: u256){
+        oracles::update_notification_gas_allocation(caller, @twitter_binding, string::utf8(NOTIFY_CALLBACK), amount);
+    }
+
+    public fun get_notification_gas_allocation(caller_addr: address): u256 {
+        oracles::get_notification_gas_allocation(@twitter_binding, string::utf8(NOTIFY_CALLBACK), caller_addr)
+    }
+
     public fun has_buffered_tweets(): bool{
         let buffer_queue = borrow_buffer_queue();
         vector::length(&buffer_queue.buffer_queue) > 0
@@ -243,7 +255,7 @@ module twitter_binding::tweet_fetcher {
         //The jq query to parse the tweet
         let pick = string::utf8(PICK);
         let http_request = oracles::build_request(url, method, headers, body);
-        let request_id = oracles::new_request(http_request, pick, ORACLE_ADDRESS, oracles::with_notify(@twitter_binding, string::utf8(b"tweet_fetcher::check_request_queue")));
+        let request_id = oracles::new_request(http_request, pick, ORACLE_ADDRESS, oracles::with_notify(@twitter_binding, string::utf8(NOTIFY_CALLBACK)));
         let fetch_result = BatchFetchResult{
             tweet_ids,
             request_id,

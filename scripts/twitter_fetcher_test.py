@@ -8,7 +8,9 @@ import time
 ADDR = "0x701c21bf1c8cd5af8c42983890d8ca55e7a820171b8e744c13f2d9998bf76cc3"
 COMMANDS = {
     'check_balance': f"rooch move view --function {ADDR}::tweet_fetcher::check_oracle_escrow_balance --args address:default",
-    'deposit': f"rooch move run --function {ADDR}::tweet_fetcher::deposit_to_oracle_escrow --args u256:1000000000",
+    'deposit': f"rooch move run --function {ADDR}::tweet_fetcher::deposit_to_oracle_escrow --args u256:2000000000",
+    'get_notification_gas': f"rooch move view --function {ADDR}::tweet_fetcher::get_notification_gas_allocation --args address:default",
+    'update_notification_gas': f"rooch move run --function {ADDR}::tweet_fetcher::update_notification_gas_allocation --args u256:1000000000 --json",
     'fetch_tweet': f"rooch move run --function {ADDR}::tweet_fetcher::fetch_tweet_entry --args string:{{}}",
     'process_queue': f"rooch move run --function {ADDR}::tweet_fetcher::process_buffer_queue --json",
     'check_request': f"rooch move run --function {ADDR}::tweet_fetcher::check_request_queue",
@@ -21,8 +23,15 @@ def run_command(cmd):
         raise Exception(f"Command failed: {result.stderr}")
     return result.stdout
 
+def check_notification_gas_balance():
+    output = run_command(COMMANDS['get_notification_gas'])
+    data = json.loads(output)
+    balance = int(data['return_values'][0]['decoded_value'])
+    if balance < 1000000000:  # 10 RGas
+        print("Updating notification gas allocation...")
+        run_command(COMMANDS['update_notification_gas'])
+
 def check_and_deposit():
-    # Check balance
     output = run_command(COMMANDS['check_balance'])
     response = json.loads(output)
     
@@ -30,6 +39,8 @@ def check_and_deposit():
         print("Insufficient balance, depositing funds...")
         run_command(COMMANDS['deposit'])
         print("Funds deposited")
+    
+    check_notification_gas_balance()
 
 def get_request_id(process_output):
     try:
