@@ -3,10 +3,10 @@
 
 #[allow(dead_code)]
 pub mod data_cache;
+pub mod module_cache;
 pub mod moveos_vm;
 pub mod tx_argument_resolver;
 pub mod vm_status_explainer;
-pub mod module_cache;
 
 #[cfg(test)]
 mod unit_tests;

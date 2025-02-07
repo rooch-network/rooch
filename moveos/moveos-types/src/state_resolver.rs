@@ -347,7 +347,10 @@ pub trait StateReader: StateResolver {
 
 impl<R> StateReader for R where R: StateResolver {}
 
-pub trait AnnotatedStateReader: StateReader + MoveResolver where for<'a> &'a Self: CompiledModuleView {
+pub trait AnnotatedStateReader: StateReader + MoveResolver
+where
+    for<'a> &'a Self: CompiledModuleView,
+{
     fn get_annotated_states(&self, path: AccessPath) -> Result<Vec<Option<AnnotatedState>>> {
         let annotator = MoveValueAnnotator::new(self);
         self.get_states(path)?
@@ -397,7 +400,12 @@ pub trait AnnotatedStateReader: StateReader + MoveResolver where for<'a> &'a Sel
     }
 }
 
-impl<T> AnnotatedStateReader for T where T: StateReader + MoveResolver, for<'a> &'a T: CompiledModuleView {}
+impl<T> AnnotatedStateReader for T
+where
+    T: StateReader + MoveResolver,
+    for<'a> &'a T: CompiledModuleView,
+{
+}
 
 pub trait StateReaderExt: StateReader {
     fn get_account(&self, address: AccountAddress) -> Result<Option<ObjectEntity<Account>>> {

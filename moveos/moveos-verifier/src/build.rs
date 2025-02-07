@@ -351,8 +351,9 @@ pub fn build_model_with_test_attr(
         full_model_generation: false,
         compiler_config: Default::default(),
     };
-    let resolved_graph =
-        build_config.clone().resolution_graph_for_package(package_path, &mut std::io::stdout())?;
+    let resolved_graph = build_config
+        .clone()
+        .resolution_graph_for_package(package_path, &mut std::io::stdout())?;
     let mut compiler_v2_config = CompilerConfig::default();
     compiler_v2_config.compiler_version = Some(CompilerVersion::V2_1);
     compiler_v2_config.language_version = Some(LanguageVersion::V2_1);
@@ -441,9 +442,7 @@ pub fn inject_runtime_metadata<P: AsRef<Path>>(
                             .join(named_module.name.as_str())
                             .with_extension(MOVE_COMPILED_EXTENSION);
                         if path.is_file() {
-                            let bytes = unit_with_source
-                                .unit
-                                .serialize(Option::from(BYTECODE_VERSION));
+                            let bytes = unit_with_source.unit.serialize(Option::from(7));
                             std::fs::write(path, bytes).unwrap();
                         }
                     }

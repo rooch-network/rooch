@@ -2,8 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::data_cache::{into_change_set, MoveosDataCache};
-use crate::vm::module_cache::{GlobalModuleCache, MoveOSCodeCache, RoochModuleExtension};
+use crate::moveos::MoveOSCacheManager;
+use crate::vm::module_cache::{
+    GlobalModuleCache, MoveOSCodeCache, PanicError, RoochModuleExtension, StateValue,
+};
 use ambassador::delegate_to_methods;
+use bytes::Bytes;
 use move_binary_format::compatibility::Compatibility;
 use move_binary_format::file_format::CompiledScript;
 use move_binary_format::normalized;
@@ -27,13 +31,14 @@ use move_vm_runtime::module_traversal::{TraversalContext, TraversalStorage};
 use move_vm_runtime::{
     config::VMConfig, move_vm::MoveVM, native_extensions::NativeContextExtensions,
     native_functions::NativeFunction, session::Session, CodeStorage, LoadedFunction, Module,
-    ModuleStorage, RuntimeEnvironment, Script,
+    ModuleStorage, RuntimeEnvironment, Script, WithRuntimeEnvironment,
 };
-use move_vm_types::code::Code;
 use move_vm_types::code::{ambassador_impl_ScriptCache, WithBytes, WithHash};
+use move_vm_types::code::{Code, ModuleCode};
 use move_vm_types::code::{ModuleCache, ScriptCache, UnsyncModuleCache, UnsyncScriptCache};
 use move_vm_types::gas::UnmeteredGasMeter;
 use move_vm_types::loaded_data::runtime_types::{StructNameIndex, StructType, Type};
+use move_vm_types::sha3_256;
 use moveos_common::types::{ClassifiedGasMeter, SwitchableGasMeter};
 use moveos_object_runtime::runtime::{ObjectRuntime, ObjectRuntimeContext};
 use moveos_object_runtime::TypeLayoutLoader;
@@ -59,7 +64,6 @@ use parking_lot::RwLock;
 use std::collections::BTreeSet;
 use std::rc::Rc;
 use std::{borrow::Borrow, sync::Arc};
-use crate::moveos::MoveOSCacheManager;
 
 /// MoveOSVM is a wrapper of MoveVM with MoveOS specific features.
 pub struct MoveOSVM {
@@ -83,11 +87,8 @@ impl MoveOSVM {
         remote: &'r S,
         ctx: TxContext,
         gas_meter: G,
-        global_module_cache: &'r GlobalModuleCache<
-            ModuleId,
-            CompiledModule,
-            Module,
-            RoochModuleExtension,
+        global_module_cache: Arc<
+            RwLock<GlobalModuleCache<ModuleId, CompiledModule, Module, RoochModuleExtension>>,
         >,
         runtime_environment: &'r RuntimeEnvironment,
     ) -> MoveOSSession<'r, '_, S, G> {
@@ -109,11 +110,8 @@ impl MoveOSVM {
         remote: &'r S,
         ctx: TxContext,
         genesis_objects: Vec<(ObjectState, MoveTypeLayout)>,
-        global_module_cache: &'r GlobalModuleCache<
-            ModuleId,
-            CompiledModule,
-            Module,
-            RoochModuleExtension,
+        global_module_cache: Arc<
+            RwLock<GlobalModuleCache<ModuleId, CompiledModule, Module, RoochModuleExtension>>,
         >,
         runtime_environment: &'r RuntimeEnvironment,
     ) -> MoveOSSession<'r, '_, S, UnmeteredGasMeter> {
@@ -146,11 +144,8 @@ impl MoveOSVM {
         remote: &'r S,
         ctx: TxContext,
         gas_meter: G,
-        global_module_cache: &'r GlobalModuleCache<
-            ModuleId,
-            CompiledModule,
-            Module,
-            RoochModuleExtension,
+        global_module_cache: Arc<
+            RwLock<GlobalModuleCache<ModuleId, CompiledModule, Module, RoochModuleExtension>>,
         >,
         runtime_environment: &'r RuntimeEnvironment,
     ) -> MoveOSSession<'r, '_, S, G> {
@@ -174,6 +169,31 @@ impl MoveOSVM {
     pub fn inner(&self) -> &MoveVM {
         &self.inner
     }
+}
+
+fn into_module_cache_iterator(
+    compiled_modules: &Vec<CompiledModule>,
+    module_bundle: &Vec<Vec<u8>>,
+    _runtime_environment: &RuntimeEnvironment,
+) -> impl Iterator<
+    Item = (
+        ModuleId,
+        Arc<ModuleCode<CompiledModule, Module, RoochModuleExtension>>,
+    ),
+> {
+    let mut module_code_list = vec![];
+    for (idx, m) in compiled_modules.iter().enumerate() {
+        let bytes = module_bundle[idx].clone();
+        let extension = Arc::new(RoochModuleExtension::new(StateValue::new_legacy(
+            Bytes::copy_from_slice(bytes.as_slice()),
+        )));
+        let module = ModuleCode::from_deserialized(m.clone(), extension);
+        let module_code = Arc::new(module);
+
+        module_code_list.push((m.self_id(), module_code));
+    }
+
+    module_code_list.into_iter()
 }
 
 /// MoveOSSession is a wrapper of MoveVM session with MoveOS specific features.
@@ -201,11 +221,8 @@ where
         object_runtime: Rc<RwLock<ObjectRuntime<'r>>>,
         gas_meter: G,
         read_only: bool,
-        global_module_cache: &'r GlobalModuleCache<
-            ModuleId,
-            CompiledModule,
-            Module,
-            RoochModuleExtension,
+        global_module_cache: Arc<
+            RwLock<GlobalModuleCache<ModuleId, CompiledModule, Module, RoochModuleExtension>>,
         >,
         runtime_environment: &'r RuntimeEnvironment,
     ) -> Self {
@@ -216,7 +233,7 @@ where
                 vm,
                 remote,
                 object_runtime.clone(),
-                global_module_cache,
+                global_module_cache.clone(),
                 runtime_environment,
             ),
             object_runtime,
@@ -238,7 +255,7 @@ where
                 self.vm,
                 self.remote,
                 object_runtime.clone(),
-                self.code_cache.global_module_cache,
+                self.code_cache.global_module_cache.clone(),
                 self.code_cache.runtime_environment,
             ),
             object_runtime,
@@ -250,11 +267,8 @@ where
         vm: &'l MoveVM,
         remote: &'r S,
         object_runtime: Rc<RwLock<ObjectRuntime<'r>>>,
-        global_module_cache: &'r GlobalModuleCache<
-            ModuleId,
-            CompiledModule,
-            Module,
-            RoochModuleExtension,
+        global_module_cache: Arc<
+            RwLock<GlobalModuleCache<ModuleId, CompiledModule, Module, RoochModuleExtension>>,
         >,
         runtime_environment: &'r RuntimeEnvironment,
     ) -> Session<'r, 'l, MoveosDataCache<'r, 'l, S>> {
@@ -271,7 +285,7 @@ where
         // The VM code loader has bugs around module upgrade. After a module upgrade, the internal
         // cache needs to be flushed to work around those bugs.
         // vm.mark_loader_cache_as_invalid();
-        vm.flush_loader_cache_if_invalidated();
+        // vm.flush_loader_cache_if_invalidated();
         let loader = vm.runtime.loader();
         let data_store: MoveosDataCache<'r, 'l, S> = MoveosDataCache::new(
             remote,
@@ -541,6 +555,29 @@ where
                     }
                 }
 
+                for (idx, m) in compiled_modules.iter().enumerate() {
+                    let bytes = module_bundle[idx].clone();
+                    let extension = Arc::new(RoochModuleExtension::new(StateValue::new_legacy(
+                        Bytes::copy_from_slice(bytes.as_slice()),
+                    )));
+                    self.code_cache.module_cache.insert_deserialized_module(
+                        m.self_id(),
+                        m.clone(),
+                        extension,
+                        Some(1),
+                    )?
+                }
+
+                /*
+                let module_code_list = into_module_cache_iterator(
+                    &compiled_modules,
+                    &module_bundle,
+                    self.code_cache.runtime_environment,
+                );
+                self.insert_global_module_cache(module_code_list)?;
+
+                 */
+
                 // Collect ids for modules that are published together
                 let mut bundle_unverified = BTreeSet::new();
 
@@ -599,6 +636,23 @@ where
         }
 
         action_result
+    }
+
+    fn insert_global_module_cache(
+        &mut self,
+        modules: impl Iterator<
+            Item = (
+                ModuleId,
+                Arc<ModuleCode<CompiledModule, Module, RoochModuleExtension>>,
+            ),
+        >,
+    ) -> VMResult<()> {
+        let mut write_guard = self.code_cache.global_module_cache.write();
+        write_guard
+            .insert_verified(modules)
+            .expect("write_guard.insert_verified failed");
+
+        Ok(())
     }
 
     /// Resolve pending init functions request registered via the NativeModuleContext.
