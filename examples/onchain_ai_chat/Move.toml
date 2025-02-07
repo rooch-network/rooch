@@ -1,0 +1,20 @@
+[package]
+name = "onchain_ai_chat"
+version = "0.0.1"
+
+[dependencies]
+MoveStdlib = { local = "../../frameworks/move-stdlib" }
+MoveosStdlib = { local = "../../frameworks/moveos-stdlib" }
+RoochFramework = { local = "../../frameworks/rooch-framework" }
+BitcoinMove = { local = "../../frameworks/bitcoin-move" }
+VerityMoveOracles = { git = "https://github.com/usherlabs/verity-move-oracles", subdir = "rooch", rev = "5053cb6563eca20f2c1c38784e8b20e9e3bb617f"}
+
+[addresses]
+onchain_ai_chat = "_"
+verity = "0xf1290fb0e7e1de7e92e616209fb628970232e85c4c1a264858ff35092e1be231"
+std = "0x1"
+moveos_std = "0x2"
+rooch_framework = "0x3"
+
+[dev-addresses]
+onchain_ai_chat = "0x42"
