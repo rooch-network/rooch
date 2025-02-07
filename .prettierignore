@@ -22,6 +22,4 @@ generated
 generator
 templates
 third_party
-# TODO: fix
-bitseed-sdk
 examples

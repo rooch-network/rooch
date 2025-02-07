@@ -31,8 +31,6 @@ module.exports = {
     'coverage',
     'next-env.d.ts',
     'examples',
-    // # TODO: fix
-    'bitseed-sdk',
   ],
   rules: {
     'no-case-declarations': 'off',
