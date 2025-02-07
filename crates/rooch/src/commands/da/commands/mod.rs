@@ -39,6 +39,7 @@ use tracing::{error, info, warn};
 pub mod exec;
 pub mod index;
 pub mod namespace;
+pub mod sync;
 pub mod unpack;
 
 pub(crate) struct SequencedTxStore {
