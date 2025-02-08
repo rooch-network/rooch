@@ -33,6 +33,7 @@ use rooch_types::framework::address_mapping::RoochToBitcoinAddressMapping;
 use rooch_types::indexer::event::{
     AnnotatedIndexerEvent, EventFilter, IndexerEvent, IndexerEventID,
 };
+use rooch_types::indexer::field::{FieldFilter, IndexerField};
 use rooch_types::indexer::state::{
     IndexerObjectState, IndexerStateID, ObjectStateFilter, ObjectStateType, INSCRIPTION_TYPE_TAG,
     UTXO_TYPE_TAG,
@@ -836,5 +837,27 @@ impl RpcService {
             rooch_status,
             bitcoin_status,
         })
+    }
+
+    pub async fn query_fields(
+        &self,
+        filter: FieldFilter,
+        page: u64,
+        limit: usize,
+        descending_order: bool,
+    ) -> Result<Vec<IndexerField>> {
+        match filter.clone() {
+            FieldFilter::ObjectId(object_ids) => {
+                if object_ids.len() > MAX_OBJECT_IDS_PER_QUERY {
+                    return Err(anyhow::anyhow!(
+                        "Too many object IDs requested. Maximum allowed: {}",
+                        MAX_OBJECT_IDS_PER_QUERY
+                    ));
+                }
+            }
+        };
+        self.indexer
+            .query_fields(filter, page, limit, descending_order)
+            .await
     }
 }

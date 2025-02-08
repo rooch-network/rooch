@@ -64,10 +64,22 @@ diesel::table! {
     }
 }
 
+diesel::table! {
+    fields (id, field_key) {
+        id -> Text,
+        field_key -> Text,
+        name -> Text,
+        val -> BigInt,
+        created_at -> BigInt,
+        updated_at -> BigInt,
+    }
+}
+
 diesel::allow_tables_to_appear_in_same_query!(
     events,
     object_states,
     utxos,
     inscriptions,
     transactions,
+    fields,
 );

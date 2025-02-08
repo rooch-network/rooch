@@ -15,6 +15,7 @@ use errors::IndexerError;
 use once_cell::sync::Lazy;
 use prometheus::Registry;
 use rooch_types::indexer::event::IndexerEvent;
+use rooch_types::indexer::field::{IndexerField, IndexerFieldChanges};
 use rooch_types::indexer::state::{
     IndexerObjectState, IndexerObjectStateChangeSet, IndexerObjectStateChanges, ObjectStateType,
 };
@@ -48,6 +49,7 @@ pub const INDEXER_OBJECT_STATES_TABLE_NAME: IndexerTableName = "object_states";
 pub const INDEXER_OBJECT_STATE_UTXOS_TABLE_NAME: IndexerTableName = "utxos";
 pub const INDEXER_OBJECT_STATE_INSCRIPTIONS_TABLE_NAME: IndexerTableName = "inscriptions";
 pub const INDEXER_TRANSACTIONS_TABLE_NAME: IndexerTableName = "transactions";
+pub const INDEXER_FIELDS_TABLE_NAME: IndexerTableName = "fields";
 
 /// Please note that adding new indexer table needs to be added in vec simultaneously.
 static INDEXER_VEC_TABLE_NAME: Lazy<Vec<IndexerTableName>> = Lazy::new(|| {
@@ -57,6 +59,7 @@ static INDEXER_VEC_TABLE_NAME: Lazy<Vec<IndexerTableName>> = Lazy::new(|| {
         INDEXER_OBJECT_STATE_UTXOS_TABLE_NAME,
         INDEXER_OBJECT_STATE_INSCRIPTIONS_TABLE_NAME,
         INDEXER_TRANSACTIONS_TABLE_NAME,
+        INDEXER_FIELDS_TABLE_NAME,
     ]
 });
 
@@ -221,6 +224,29 @@ impl IndexerStoreTrait for IndexerStore {
     fn delete_events(&self, tx_orders: Vec<u64>) -> Result<(), IndexerError> {
         self.get_sqlite_store(INDEXER_EVENTS_TABLE_NAME)?
             .delete_events(tx_orders)
+    }
+
+    fn persist_or_update_fields(&self, fields: Vec<IndexerField>) -> Result<(), IndexerError> {
+        self.get_sqlite_store(INDEXER_FIELDS_TABLE_NAME)?
+            .persist_or_update_fields(fields)
+    }
+
+    fn delete_fields(&self, table_pks: Vec<(String, String)>) -> Result<(), IndexerError> {
+        self.get_sqlite_store(INDEXER_FIELDS_TABLE_NAME)?
+            .delete_fields(table_pks)
+    }
+
+    fn delete_fields_by_id(&self, ids: Vec<String>) -> Result<(), IndexerError> {
+        self.get_sqlite_store(INDEXER_FIELDS_TABLE_NAME)?
+            .delete_fields_by_id(ids)
+    }
+
+    fn apply_fields(&self, mut filed_changes: IndexerFieldChanges) -> Result<(), IndexerError> {
+        let mut fields_new_and_update = filed_changes.new_fields;
+        fields_new_and_update.append(&mut filed_changes.update_fields);
+        self.persist_or_update_fields(fields_new_and_update)?;
+        self.delete_fields(filed_changes.remove_fields)?;
+        self.delete_fields_by_id(filed_changes.remove_fields_by_id)
     }
 }
 
