@@ -5,8 +5,9 @@ use crate::actor::indexer::IndexerActor;
 use crate::actor::messages::{
     IndexerApplyObjectStatesMessage, IndexerDeleteAnyObjectStatesMessage, IndexerEventsMessage,
     IndexerPersistOrUpdateAnyObjectStatesMessage, IndexerRevertMessage, IndexerStatesMessage,
-    IndexerTransactionMessage, QueryIndexerEventsMessage, QueryIndexerObjectIdsMessage,
-    QueryIndexerTransactionsMessage, QueryLastStateIndexByTxOrderMessage, UpdateIndexerMessage,
+    IndexerTransactionMessage, QueryIndexerEventsMessage, QueryIndexerFieldsMessage,
+    QueryIndexerObjectIdsMessage, QueryIndexerTransactionsMessage,
+    QueryLastStateIndexByTxOrderMessage, UpdateIndexerMessage,
 };
 use crate::actor::reader_indexer::IndexerReaderActor;
 use anyhow::{Ok, Result};
@@ -17,6 +18,7 @@ use moveos_types::moveos_std::tx_context::TxContext;
 use moveos_types::state::{StateChangeSet, StateChangeSetExt};
 use moveos_types::transaction::{MoveAction, TransactionExecutionInfo, VerifiedMoveOSTransaction};
 use rooch_types::indexer::event::{EventFilter, IndexerEvent, IndexerEventID};
+use rooch_types::indexer::field::{FieldFilter, IndexerField};
 use rooch_types::indexer::state::{
     IndexerObjectState, IndexerObjectStateChangeSet, IndexerStateID, ObjectStateFilter,
     ObjectStateType,
@@ -227,5 +229,22 @@ impl IndexerProxy {
             })
             .await?;
         Ok(())
+    }
+
+    pub async fn query_fields(
+        &self,
+        filter: FieldFilter,
+        page: u64,
+        limit: usize,
+        descending_order: bool,
+    ) -> Result<Vec<IndexerField>> {
+        self.reader_actor
+            .send(QueryIndexerFieldsMessage {
+                filter,
+                page,
+                limit,
+                descending_order,
+            })
+            .await?
     }
 }

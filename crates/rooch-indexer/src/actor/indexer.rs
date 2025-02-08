@@ -14,6 +14,7 @@ use coerce::actor::{context::ActorContext, message::Handler, Actor};
 use moveos_types::moveos_std::object::ObjectMeta;
 use moveos_types::transaction::MoveAction;
 use rooch_types::indexer::event::IndexerEvent;
+use rooch_types::indexer::field::{handle_field_change, IndexerFieldChanges};
 use rooch_types::indexer::state::{
     handle_object_change, handle_revert_object_change, IndexerObjectStateChangeSet,
     IndexerObjectStatesIndexGenerator, ObjectStateType,
@@ -79,7 +80,7 @@ impl Handler<UpdateIndexerMessage> for IndexerActor {
         let mut state_index_generator = IndexerObjectStatesIndexGenerator::default();
         let mut indexer_object_state_change_set = IndexerObjectStateChangeSet::default();
 
-        for (_feild_key, object_change) in state_change_set.changes {
+        for (_field_key, object_change) in state_change_set.changes.clone() {
             let _ = handle_object_change(
                 &mut state_index_generator,
                 tx_order,
@@ -89,6 +90,13 @@ impl Handler<UpdateIndexerMessage> for IndexerActor {
         }
         self.indexer_store
             .apply_object_states(indexer_object_state_change_set)?;
+
+        //4. update indexer field
+        let mut field_changes = IndexerFieldChanges::default();
+        for (field_key, object_change) in state_change_set.changes {
+            let _ = handle_field_change(field_key, object_change, &mut field_changes)?;
+        }
+        self.indexer_store.apply_fields(field_changes)?;
 
         Ok(())
     }
@@ -256,7 +264,7 @@ impl Handler<IndexerRevertMessage> for IndexerActor {
         let mut state_index_generator = IndexerObjectStatesIndexGenerator::default();
         let mut indexer_object_state_change_set = IndexerObjectStateChangeSet::default();
 
-        for (_feild_key, object_change) in revert_state_change_set.state_change_set.changes {
+        for (_field_key, object_change) in revert_state_change_set.state_change_set.changes {
             let _ = handle_revert_object_change(
                 &mut state_index_generator,
                 revert_tx_order,

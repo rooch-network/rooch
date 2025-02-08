@@ -109,6 +109,24 @@ impl RawField {
             value_type,
         })
     }
+
+    /// Parse bcs serialized `DynamicField<N,V>` bytes to `RawField`
+    pub fn parse_unchecked_field(
+        bytes: &[u8],
+        name_type: TypeTag,
+        value_type: TypeTag,
+    ) -> anyhow::Result<Self> {
+        let (used_bytes, name_length) = Self::parse_length(bytes)?;
+        let name_bytes_length = used_bytes + name_length;
+        let name = &bytes[..name_bytes_length];
+        let value = &bytes[name_bytes_length..];
+        Ok(Self {
+            name: name.to_vec(),
+            name_type,
+            value: value.to_vec(),
+            value_type,
+        })
+    }
 }
 
 impl<N, V> MoveStructType for DynamicField<N, V>

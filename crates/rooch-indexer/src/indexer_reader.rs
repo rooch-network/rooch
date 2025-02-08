@@ -4,6 +4,7 @@
 use crate::errors::IndexerError;
 use crate::metrics::IndexerReaderMetrics;
 use crate::models::events::StoredEvent;
+use crate::models::fields::StoredField;
 use crate::models::states::{StoredObjectStateInfo, StoredStateID};
 use crate::models::transactions::StoredTransaction;
 use crate::schema::{events, transactions};
@@ -11,7 +12,7 @@ use crate::utils::escape_sql_string;
 use crate::{
     IndexerResult, IndexerStoreMeta, IndexerTableName, SqliteConnectionConfig,
     SqliteConnectionPoolConfig, SqlitePoolConnection, DEFAULT_BUSY_TIMEOUT,
-    INDEXER_EVENTS_TABLE_NAME, INDEXER_OBJECT_STATES_TABLE_NAME,
+    INDEXER_EVENTS_TABLE_NAME, INDEXER_FIELDS_TABLE_NAME, INDEXER_OBJECT_STATES_TABLE_NAME,
     INDEXER_OBJECT_STATE_INSCRIPTIONS_TABLE_NAME, INDEXER_OBJECT_STATE_UTXOS_TABLE_NAME,
     INDEXER_TRANSACTIONS_TABLE_NAME,
 };
@@ -24,6 +25,7 @@ use move_core_types::language_storage::StructTag;
 use moveos_types::moveos_std::object::ObjectID;
 use prometheus::Registry;
 use rooch_types::indexer::event::{EventFilter, IndexerEvent, IndexerEventID};
+use rooch_types::indexer::field::{FieldFilter, IndexerField};
 use rooch_types::indexer::state::{IndexerStateID, ObjectStateFilter, ObjectStateType};
 use rooch_types::indexer::transaction::{IndexerTransaction, TransactionFilter};
 use std::collections::HashMap;
@@ -51,6 +53,8 @@ pub const STATE_OBJECT_ID_STR: &str = "id";
 pub const STATE_INDEX_STR: &str = "state_index";
 pub const STATE_OBJECT_TYPE_STR: &str = "object_type";
 pub const STATE_OWNER_STR: &str = "owner";
+
+pub const FIELD_VALUE_STR: &str = "val";
 
 #[derive(Clone)]
 pub struct InnerIndexerReader {
@@ -607,6 +611,67 @@ impl IndexerReader {
             Some(stored_state_ids[0].state_index as u64)
         };
         Ok(last_state_index)
+    }
+
+    #[named]
+    pub fn query_fields_with_filter(
+        &self,
+        filter: FieldFilter,
+        page: u64,
+        limit: usize,
+        descending_order: bool,
+    ) -> IndexerResult<Vec<IndexerField>> {
+        let start = Instant::now();
+        let fn_name = function_name!();
+        let _timer = self
+            .metrics
+            .indexer_reader_query_latency_seconds
+            .with_label_values(&[fn_name])
+            .start_timer();
+        let page_of = page.max(1);
+
+        let main_where_clause = match filter {
+            FieldFilter::ObjectId(object_ids) => {
+                let object_ids_str = object_ids
+                    .into_iter()
+                    .map(|obj_id| format!("\"{}\"", obj_id))
+                    .collect::<Vec<_>>()
+                    .join(",");
+                format!("{OBJECT_ID_STR} IN ({object_ids_str})")
+            }
+        };
+
+        let order_clause = if descending_order {
+            format!("{OBJECT_ID_STR} DESC, {FIELD_VALUE_STR} DESC")
+        } else {
+            format!("{OBJECT_ID_STR} ASC, {FIELD_VALUE_STR} ASC")
+        };
+        let page_clause = format!("{}, {}", page_of - 1, limit);
+        let query = format!(
+            "
+                SELECT * FROM fields \
+                WHERE {} \
+                ORDER BY {} \
+                LIMIT {}
+            ",
+            main_where_clause, order_clause, page_clause,
+        );
+
+        tracing::debug!("Query fields: {}", query);
+        let stored_fields = self
+            .get_inner_indexer_reader(INDEXER_FIELDS_TABLE_NAME)?
+            .run_query_with_timeout(|conn| diesel::sql_query(query).load::<StoredField>(conn))?;
+
+        let result = stored_fields
+            .into_iter()
+            .map(|ev| ev.try_into_indexer_field())
+            .collect::<Result<Vec<_>>>()
+            .map_err(|e| {
+                IndexerError::SQLiteReadError(format!("Cast indexer fields failed: {:?}", e))
+            })?;
+        tracing::debug!("Query fields time elapsed: {:?}", start.elapsed());
+
+        Ok(result)
     }
 }
 
