@@ -13,6 +13,36 @@ class RoochChatTester:
         self.admin = self.accounts["default"]["hex_address"]
         self.user1 = self.accounts["account0"]["hex_address"]
         self.user2 = self.accounts["account1"]["hex_address"]
+        # Initialize gas for test accounts
+        self._init_account_gas()
+        
+    def _init_account_gas(self):
+        """Initialize gas for test accounts"""
+        test_accounts = ["account0", "account1"]
+        min_gas_amount = "1000000000"  # 1 RGas
+        
+        for account in test_accounts:
+            # Check account balance
+            balance_command = [
+                "rooch", "account", "balance",
+                "--address", self.accounts[account]["address"],
+                "--json"
+            ]
+            result = self.run_command(balance_command)
+            if result:
+                # Updated balance parsing to match new format
+                rgas_balance = result.get("RGAS", {}).get("balance", "0")
+                if int(rgas_balance) < int(min_gas_amount):
+                    print(f"Transferring gas to {account}...")
+                    transfer_command = [
+                        "rooch", "account", "transfer",
+                        "--to", self.accounts[account]["address"],
+                        "--coin-type", "0x3::gas_coin::RGas",
+                        "--amount", min_gas_amount,
+                        "--json"
+                    ]
+                    self.run_command(transfer_command)
+                    print(f"Transferred {min_gas_amount} RGas to {account}")
         
     def _get_accounts(self) -> Dict:
         """Get accounts from rooch command"""
@@ -53,17 +83,21 @@ class RoochChatTester:
             print(f"Error output: {e.stderr}")
             raise e
 
-    def create_room(self, account: str, title: str, is_public: bool) -> str:
+    def create_room(self, account: str, title: str, is_public: bool, is_ai: bool = False) -> str:
         """Create a new chat room and return its object ID"""
         # Replace spaces with underscores in title
         safe_title = title.replace(" ", "_")
+        
+        # Choose the appropriate entry function based on room type
+        entry_function = f"{self.admin}::room::create_ai_room_entry" if is_ai else f"{self.admin}::room::create_room_entry"
+        
         command = [
             "rooch", "move", "run",
             "--sender", account,
-            "--function", f"{self.admin}::room::create_room_entry",
+            "--function", entry_function,
             "--args", f"string:{safe_title}",
             "--args", f"bool:{str(is_public).lower()}",
-            "--json"  # Add json flag to get structured output
+            "--json"
         ]
         result = self.run_command(command)
         if result and 'output' in result:
@@ -73,6 +107,10 @@ class RoochChatTester:
                 if metadata.get('object_type', '').endswith('::room::Room'):
                     return metadata.get('id')
         return None
+
+    def create_ai_room(self, account: str, title: str, is_public: bool) -> str:
+        """Convenience method to create an AI chat room"""
+        return self.create_room(account, title, is_public, True)
 
     def send_message(self, account: str, room_id: str, message: str):
         """Send a message to a room"""
@@ -108,9 +146,9 @@ def main():
     print(f"User1: {tester.user1}")
     print(f"User2: {tester.user2}")
     
-    # Test 1: Create public room
+    # Test 1: Create public room (normal)
     print("\n1. Creating public room...")
-    public_room_id = tester.create_room(tester.admin, "Public_Room", True)
+    public_room_id = tester.create_room(tester.admin, "Public_Room", True, False)
     print(f"Public room created with ID: {public_room_id}")
     
     # Test 2: Send message to public room
@@ -118,23 +156,33 @@ def main():
     tester.send_message(tester.user1, public_room_id, "Hello,_public_room!")
     print("Message sent successfully")
     
-    # Test 3: Create private room
+    # Test 3: Create private room (normal)
     print("\n3. Creating private room...")
-    private_room_id = tester.create_room(tester.admin, "Private Room", False)
+    private_room_id = tester.create_room(tester.admin, "Private_Room", False, False)
     print(f"Private room created with ID: {private_room_id}")
     
-    # Test 4: Add member to private room
-    print("\n4. Adding member to private room...")
+    # Test 4: Create AI room
+    print("\n4. Creating AI room...")
+    ai_room_id = tester.create_ai_room(tester.admin, "AI_Room", True)
+    print(f"AI room created with ID: {ai_room_id}")
+    
+    # Test 5: Send message to AI room
+    print("\n5. Sending message to AI room...")
+    tester.send_message(tester.user1, ai_room_id, "Hello,_AI!")
+    print("Message sent successfully")
+    
+    # Test 6: Add member to private room
+    print("\n6. Adding member to private room...")
     tester.add_member(tester.admin, private_room_id, tester.user1)
     print(f"Added user {tester.user1} to private room")
     
-    # Test 5: Send message to private room
-    print("\n5. Sending message to private room...")
+    # Test 7: Send message to private room
+    print("\n7. Sending message to private room...")
     tester.send_message(tester.user1, private_room_id, "Hello,_private_room!")
     print("Message sent successfully")
     
-    # Test 6: Try unauthorized access (should fail)
-    print("\n6. Testing unauthorized access...")
+    # Test 8: Try unauthorized access (should fail)
+    print("\n8. Testing unauthorized access...")
     try:
         tester.send_message(tester.user2, private_room_id, "Unauthorized_message")
         print("ERROR: Unauthorized message succeeded when it should have failed")
