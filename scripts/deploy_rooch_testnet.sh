@@ -8,7 +8,7 @@ BTC_TEST_RPC_PWD="$3"
 OPENDA_GCP_TESTNET_BUCKET="$4"
 OPENDA_GCP_TESTNET_CREDENTIAL="$5"
 TURBO_DA_TURING_ENDPOINT="$6"
-TURBO_DA_TURING_TOKEN="$7"
+TURBO_DA_TURING_API_KEY="$7"
 
 sleep 30
 docker image prune -a -f
@@ -21,7 +21,7 @@ docker run -d --name rooch-testnet --restart unless-stopped -v /data:/root -p 67
     --btc-rpc-url "$BTC_TEST_RPC_URL" \
     --btc-rpc-username rooch-test \
     --btc-rpc-password "$BTC_TEST_RPC_PWD" \
-    --da "{\"da-backend\":{\"backends\":[{\"open-da\":{\"scheme\":\"gcs\",\"config\":{\"bucket\":\"$OPENDA_GCP_TESTNET_BUCKET\",\"credential\":\"$OPENDA_GCP_TESTNET_CREDENTIAL\"}}},{\"open-da\":{\"scheme\":\"avail\",\"config\":{\"turbo_endpoint\":\"$TURBO_DA_TURING_ENDPOINT\",\"turbo_auth_token\":\"$TURBO_DA_TURING_TOKEN\"}}}]}}" \
+    --da "{\"da-backend\":{\"backends\":[{\"open-da\":{\"scheme\":\"gcs\",\"config\":{\"bucket\":\"$OPENDA_GCP_TESTNET_BUCKET\",\"credential\":\"$OPENDA_GCP_TESTNET_CREDENTIAL\"}}},{\"open-da\":{\"scheme\":\"avail\",\"config\":{\"turbo_endpoint\":\"$TURBO_DA_TURING_ENDPOINT\",\"turbo_api_key\":\"$TURBO_DA_TURING_API_KEY\"}}}]}}" \
     --traffic-burst-size 200 \
     --traffic-per-second 0.1 \
     --rocksdb-row-cache-size 4294967296 \
