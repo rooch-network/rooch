@@ -99,7 +99,7 @@ pub enum OpenDAScheme {
     ///
     /// Main configuration:
     /// - `turbo_endpoint`: The TurboDA service endpoint.
-    /// - `turbo_auth_token`: The authentication token for TurboDA.
+    /// - `turbo_api_key`: The x-api-key for TurboDA.
     /// - `light_endpoint`: The Light Client service endpoint.
     Avail,
 
@@ -520,7 +520,7 @@ mod tests {
             }
         }
 
-        let da_config_str = "{\"da-backend\":{\"backends\":[{\"open-da\":{\"scheme\":\"gcs\",\"config\":{\"bucket\":\"$OPENDA_GCP_TESTNET_BUCKET\",\"credential\":\"$OPENDA_GCP_TESTNET_CREDENTIAL\"}}},{\"open-da\":{\"scheme\":\"avail\",\"config\":{\"turbo_endpoint\":\"$TURBO_DA_TURING_ENDPOINT\",\"turbo_auth_token\":\"$TURBO_DA_TURING_TOKEN\"}}}]}}";
+        let da_config_str = "{\"da-backend\":{\"backends\":[{\"open-da\":{\"scheme\":\"gcs\",\"config\":{\"bucket\":\"$OPENDA_GCP_TESTNET_BUCKET\",\"credential\":\"$OPENDA_GCP_TESTNET_CREDENTIAL\"}}},{\"open-da\":{\"scheme\":\"avail\",\"config\":{\"turbo_endpoint\":\"$TURBO_DA_TURING_ENDPOINT\",\"turbo_api_key\":\"$TURBO_DA_TURING_API_KEY\"}}}]}}";
         let exp_da_config = DAConfig {
             da_backend: Some(DABackendConfig {
                 submit_strategy: None,
@@ -551,8 +551,8 @@ mod tests {
                                 "$TURBO_DA_TURING_ENDPOINT".to_string(),
                             ),
                             (
-                                "turbo_auth_token".to_string(),
-                                "$TURBO_DA_TURING_TOKEN".to_string(),
+                                "turbo_api_key".to_string(),
+                                "$TURBO_DA_TURING_API_KEY".to_string(),
                             ),
                         ]
                         .into_iter()

@@ -31,7 +31,7 @@ v
 |
 v
 +-------------------+   +-------------------+
-|  CelestiaAdapter  |   |   AvailAdapter    | <- Actual backend-specific adapter implementations
+|  AvailAdapter     |   |   CelestiaAdapter | <- Actual backend-specific adapter implementations
 +-------------------+   +-------------------+
 ```
 
