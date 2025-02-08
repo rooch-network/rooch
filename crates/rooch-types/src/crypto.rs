@@ -223,21 +223,16 @@ impl EncodeDecodeBase64 for RoochKeyPair {
     /// Decode a RoochKeyPair from `flag || privkey` in Base64. The public key is computed directly from the private key bytes.
     fn decode_base64(value: &str) -> Result<Self, FastCryptoError> {
         let bytes = Base64::decode(value)?;
-        match SignatureScheme::from_flag_byte(
-            *bytes.first().ok_or_else(|| FastCryptoError::InvalidInput)?,
-        ) {
+        match SignatureScheme::from_flag_byte(*bytes.first().ok_or(FastCryptoError::InvalidInput)?)
+        {
             // Process Rooch key pair by default
             Ok(scheme) => match scheme {
                 SignatureScheme::Ed25519 => Ok(RoochKeyPair::Ed25519(Ed25519KeyPair::from_bytes(
-                    bytes
-                        .get(1..)
-                        .ok_or_else(|| FastCryptoError::InvalidInput)?,
+                    bytes.get(1..).ok_or(FastCryptoError::InvalidInput)?,
                 )?)),
                 SignatureScheme::Secp256k1 => {
                     Ok(RoochKeyPair::Secp256k1(Secp256k1KeyPair::from_bytes(
-                        bytes
-                            .get(1..)
-                            .ok_or_else(|| FastCryptoError::InvalidInput)?,
+                        bytes.get(1..).ok_or(FastCryptoError::InvalidInput)?,
                     )?))
                 }
             },
@@ -293,23 +288,18 @@ impl EncodeDecodeBase64 for PublicKey {
 
     fn decode_base64(value: &str) -> Result<Self, FastCryptoError> {
         let bytes = Base64::decode(value)?;
-        match SignatureScheme::from_flag_byte(
-            *bytes.first().ok_or_else(|| FastCryptoError::InvalidInput)?,
-        ) {
+        match SignatureScheme::from_flag_byte(*bytes.first().ok_or(FastCryptoError::InvalidInput)?)
+        {
             Ok(x) => match x {
                 SignatureScheme::Ed25519 => {
                     let pk: Ed25519PublicKey = Ed25519PublicKey::from_bytes(
-                        bytes
-                            .get(1..)
-                            .ok_or_else(|| FastCryptoError::InvalidInput)?,
+                        bytes.get(1..).ok_or(FastCryptoError::InvalidInput)?,
                     )?;
                     Ok(PublicKey::Ed25519((&pk).into()))
                 }
                 SignatureScheme::Secp256k1 => {
                     let pk: Secp256k1PublicKey = Secp256k1PublicKey::from_bytes(
-                        bytes
-                            .get(1..)
-                            .ok_or_else(|| FastCryptoError::InvalidInput)?,
+                        bytes.get(1..).ok_or(FastCryptoError::InvalidInput)?,
                     )?;
                     Ok(PublicKey::Secp256k1((&pk).into()))
                 }
