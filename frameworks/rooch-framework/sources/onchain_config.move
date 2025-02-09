@@ -49,13 +49,9 @@ module rooch_framework::onchain_config {
 
     public fun ensure_admin(account: &signer) {
         let sender = signer::address_of(account);
-        std::debug::print(&100100);
-        std::debug::print(&sender);
-        std::debug::print(&admin());
         assert!(sender == admin(), ErrorNotAdmin);
     }
-
-
+    
     public fun sequencer(): address {
         onchain_config().sequencer
     }
