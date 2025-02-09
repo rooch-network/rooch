@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { PaperAirplaneIcon } from '@heroicons/react/24/solid';
+import { XMarkIcon } from '@heroicons/react/24/outline';
 import { SessionKeyGuard } from '@roochnetwork/rooch-sdk-kit';
 
 interface ChatInputProps {
@@ -10,6 +11,7 @@ interface ChatInputProps {
 
 export function ChatInput({ onSend, placeholder = "Type a message...", disabled = false }: ChatInputProps) {
   const [message, setMessage] = useState('');
+  const [showWarning, setShowWarning] = useState(true);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -28,11 +30,20 @@ export function ChatInput({ onSend, placeholder = "Type a message...", disabled 
 
   return (
     <div className="w-full flex flex-col items-center">
-      <div className="w-full max-w-3xl mb-2 px-4">
-        <div className="text-sm text-amber-600 bg-amber-50 rounded-lg p-3 border border-amber-200">
-          <span className="font-medium">Note:</span> This is an on-chain AI chat. All messages are public and permanently stored on the blockchain. Please do not share any private or sensitive information.
+      {showWarning && (
+        <div className="w-full max-w-3xl mb-2 px-4">
+          <div className="relative text-sm text-amber-600 bg-amber-50 rounded-lg p-3 pr-10 border border-amber-200">
+            <span className="font-medium">Note:</span> This is an on-chain AI chat. All messages are public and permanently stored on the blockchain. Please do not share any private or sensitive information.
+            <button
+              onClick={() => setShowWarning(false)}
+              className="absolute top-2 right-2 p-1 text-amber-600 hover:text-amber-700 rounded-full hover:bg-amber-100 transition-colors"
+              aria-label="Close warning"
+            >
+              <XMarkIcon className="h-5 w-5" />
+            </button>
+          </div>
         </div>
-      </div>
+      )}
       <div className="relative w-full flex justify-center">
         <div className="relative w-full max-w-3xl">
           <textarea
