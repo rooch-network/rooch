@@ -17,6 +17,13 @@ Rooch 现在推出 `RGas` 和 `GROW` 代币对质押，接下来通过一个简�
 
 只用填写 `RGas`，LP 对会自动计算 `GROW` 的配量：
 
+配量根据官方的 Swap 池子计算，计算形式为：
+
+```
+point = x / x pool * 100%
+y = y pool * point
+```
+
 ![](/docs/portal/liquidity/liquidity-add.png)
 
 检查 LP 组的预估收益，点击 `Confirm` 按钮完成 LP 质押：
@@ -42,3 +49,5 @@ Rooch 现在推出 `RGas` 和 `GROW` 代币对质押，接下来通过一个简�
 ![](/docs/portal/liquidity/liquidity-stake-lp.png)
 
 质押 LP 后，可以获取 `$LPXP` 收益。
+
+未来可以使用 `$LPXP` 兑换**初始流动性支持**这部分 `$ROOCH` 代币，占总量的 `%5`。具体可以参考[这篇文章](https://rooch.network/zh-CN/blog/rooch-network-tokenomics#%E7%A4%BE%E5%8C%BA)。
