@@ -173,7 +173,7 @@ export function Room() {
 
       if (result.execution_info.status.type !== 'executed') {
         // Throw error instead of just logging
-        throw new Error('Failed to send message: Transaction not executed');
+        throw new Error(`Failed to send message: Transaction not executed. Details: ${JSON.stringify(result.execution_info)}`);
       }
 
       // Reset to first page and refetch
