@@ -249,12 +249,12 @@ impl IndexerStoreTrait for IndexerStore {
             .delete_fields_by_id(ids)
     }
 
-    fn apply_fields(&self, mut filed_changes: IndexerFieldChanges) -> Result<(), IndexerError> {
-        let mut fields_new_and_update = filed_changes.new_fields;
-        fields_new_and_update.append(&mut filed_changes.update_fields);
+    fn apply_fields(&self, mut field_changes: IndexerFieldChanges) -> Result<(), IndexerError> {
+        let mut fields_new_and_update = field_changes.new_fields;
+        fields_new_and_update.append(&mut field_changes.update_fields);
         self.persist_or_update_fields(fields_new_and_update)?;
-        self.delete_fields(filed_changes.remove_fields)?;
-        self.delete_fields_by_id(filed_changes.remove_fields_by_id)
+        self.delete_fields(field_changes.remove_fields)?;
+        self.delete_fields_by_id(field_changes.remove_fields_by_id)
     }
 }
 
