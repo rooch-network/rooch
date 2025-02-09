@@ -1,0 +1,2 @@
+export const DEVNET_PACKAGE_ID = "0x2bc0009d2a7d4c8bfcb9929e9253b786675cadcec7e911b2b5fbface9ab2cf64"
+export const MAINNET_PACKAGE_ID = "0x2bc0009d2a7d4c8bfcb9929e9253b786675cadcec7e911b2b5fbface9ab2cf64"
