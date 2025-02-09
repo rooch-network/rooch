@@ -147,7 +147,7 @@ pub fn random_new_fields_with_size(size: usize) -> Vec<IndexerField> {
     let mut new_fields = vec![];
     let mut rng = thread_rng();
 
-    for (_, _n) in (0..size).enumerate() {
+    for _n in 0..size {
         let value = rng.gen_range(1..=100000);
         let field = IndexerField::new(
             random_table_object().into_state().metadata,
