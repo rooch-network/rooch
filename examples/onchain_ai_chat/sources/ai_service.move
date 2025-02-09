@@ -40,7 +40,7 @@ module onchain_ai_chat::ai_service {
         content: String,
     ) {
         //TODO eliminate the gas fee
-        let oracle_fee: u256 = 1000000000;
+        let oracle_fee: u256 = 100000000;
         let url = string::utf8(b"https://api.openai.com/v1/chat/completions");
         let method = string::utf8(AI_ORACLE_METHOD);
         let headers = string::utf8(AI_ORACLE_HEADERS);
