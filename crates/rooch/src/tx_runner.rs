@@ -22,6 +22,7 @@ use moveos_types::move_std::option::MoveOption;
 use moveos_types::moveos_std::gas_schedule::GasScheduleConfig;
 use moveos_types::moveos_std::object::ObjectMeta;
 use moveos_types::moveos_std::tx_context::TxContext;
+use moveos_types::moveos_std::tx_meta::TxMeta;
 use moveos_types::transaction::{
     MoveAction, RawTransactionOutput, VMErrorInfo, VerifiedMoveAction, VerifiedMoveOSTransaction,
 };
@@ -34,6 +35,7 @@ use rooch_rpc_client::{Client, ClientResolver};
 use rooch_types::address::{BitcoinAddress, MultiChainAddress};
 use rooch_types::framework::auth_validator::{BuiltinAuthValidator, TxValidateResult};
 use rooch_types::framework::system_pre_execute_functions;
+use rooch_types::transaction::authenticator::AUTH_PAYLOAD_SIZE;
 use rooch_types::transaction::RoochTransactionData;
 use std::rc::Rc;
 use std::str::FromStr;
@@ -55,7 +57,12 @@ pub fn execute_tx_locally(
         GasScheduleConfig::CLI_DEFAULT_MAX_GAS_AMOUNT,
         true,
     );
-    gas_meter.charge_io_write(tx.tx_size()).unwrap();
+
+    // The dry run supports unsigned transactions, but when calculating the transaction size,
+    // the length of the signature part needs to be included.
+    let tx_size = tx.tx_size() + AUTH_PAYLOAD_SIZE;
+
+    gas_meter.charge_io_write(tx_size).unwrap();
 
     let mut moveos_session = MoveOSSession::new(
         move_mv.inner(),
@@ -234,6 +241,9 @@ fn convert_to_verified_tx(
         tx_data.tx_hash(),
         tx_data.tx_size(),
     );
+
+    let tx_metadata = TxMeta::new_from_move_action(&tx_data.action);
+    tx_ctx.add(tx_metadata).unwrap();
 
     let mut bitcoin_address = BitcoinAddress::from_str("18cBEMRxXHqzWWCxZNtU91F5sbUNKhL5PX")?;
 

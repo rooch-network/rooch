@@ -10,6 +10,7 @@ module twitter_binding::tweet_fetcher {
     use twitter_binding::twitter_account;
     use twitter_binding::tweet_v2;
     use app_admin::admin::{AdminCap};
+    use twitter_binding::string_util;
 
     use verity::oracles;
     
@@ -23,7 +24,7 @@ module twitter_binding::tweet_fetcher {
 
     const ORACLE_ADDRESS: address = @0x694cbe655b126e9e6a997e86aaab39e538abf30a8c78669ce23a98740b47b65d;
 
-    const MAX_BUFFER_QUEUE_SIZE: u64 = 50;
+    const MAX_BUFFER_QUEUE_SIZE: u64 = 20;
 
     const ErrorInvalidRequestID: u64 = 1;
     const ErrorInvalidResponse: u64 = 2;
@@ -274,12 +275,19 @@ module twitter_binding::tweet_fetcher {
         let status = if (response_http_status == 200){
             let response_opt = oracles::get_response(&request_id);
             let response = option::destroy_some(response_opt);
-            // The response is a JSON string including the tweet json data
-            let json_str = json::from_json<String>(string::into_bytes(response));
-            let batch_tweet_data_opt = tweet_v2::parse_batch_tweet_data(string::into_bytes(json_str));
+            // The response of the old version is a JSON string including the tweet json data
+            let json_str_opt = json::from_json_option<String>(string::into_bytes(response));
+            let json_str = if(option::is_some(&json_str_opt)){
+                option::destroy_some(json_str_opt)
+            }else{
+                response
+            };
+            let json_str_bytes = string_util::try_remove_move_string_prefix(string::into_bytes(json_str));
+            let batch_tweet_data_opt = tweet_v2::parse_batch_tweet_data(json_str_bytes);
             if (option::is_some(&batch_tweet_data_opt)){
                 let batch_tweet_data = option::destroy_some(batch_tweet_data_opt);
                 let tweet_datas = tweet_v2::unwrap_batch_tweet_data(batch_tweet_data);
+                let is_empty_data = vector::is_empty(&tweet_datas);
                 vector::for_each(tweet_datas, |tweet_data|{
                     let author_id = *tweet_v2::tweet_data_author_id(&tweet_data);
                     let tweet_id = *tweet_v2::tweet_data_id(&tweet_data);
@@ -294,7 +302,11 @@ module twitter_binding::tweet_fetcher {
                         tweet_v2::transfer_tweet_object_internal(tweet_obj, owner_address);
                     };
                 });
-                TWEET_STATUS_PROCESSED
+                if(is_empty_data){
+                    TWEET_STATUS_PROCESS_FAILED
+                }else{
+                    TWEET_STATUS_PROCESSED
+                }
             }else{
                 TWEET_STATUS_PROCESS_FAILED
             }
