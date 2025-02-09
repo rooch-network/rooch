@@ -194,6 +194,22 @@ pub fn construct_dynamic_field_struct_tag(name_tag: TypeTag, value_tag: TypeTag)
     }
 }
 
+pub fn parse_dynamic_field_type_tags(type_tag: &TypeTag) -> Option<(TypeTag, TypeTag)> {
+    if let TypeTag::Struct(struct_tag) = type_tag {
+        // Verify this is a DynamicField struct
+        if is_field_struct_tag(struct_tag) {
+            // DynamicField should have exactly 2 type parameters
+            if struct_tag.type_params.len() == 2 {
+                // Get Name and Value type tags
+                let name_type = struct_tag.type_params[0].clone();
+                let value_type = struct_tag.type_params[1].clone();
+                return Some((name_type, value_type));
+            }
+        }
+    }
+    None
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

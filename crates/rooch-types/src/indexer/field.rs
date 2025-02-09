@@ -7,10 +7,11 @@ use move_core_types::effects::Op;
 use move_core_types::language_storage::TypeTag;
 use move_core_types::u256::U256;
 use moveos_types::moveos_std::object::{
-    is_dynamic_field_type, is_field_struct_tag, ObjectID, ObjectMeta, RawField,
+    is_dynamic_field_type, parse_dynamic_field_type_tags, ObjectID, ObjectMeta, RawField,
 };
-use moveos_types::state::{FieldKey, ObjectChange};
+use moveos_types::state::{FieldKey, ObjectChange, ObjectState};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 #[derive(Eq, PartialEq, Clone, Debug, Serialize, Deserialize)]
 pub struct IndexerField {
@@ -71,7 +72,7 @@ pub fn handle_field_change(
     field_key: FieldKey,
     object_change: ObjectChange,
     field_changes: &mut IndexerFieldChanges,
-    field_indexer_ids: Vec<ObjectID>,
+    field_indexer_ids: &Vec<ObjectID>,
 ) -> Result<()> {
     let ObjectChange {
         metadata,
@@ -83,7 +84,7 @@ pub fn handle_field_change(
 
     // first, check field index config
     // then, index dynamic field object
-    if need_process_field_indexer(&object_id, field_indexer_ids.clone())
+    if need_process_field_indexer(&object_id, field_indexer_ids)
         && is_dynamic_field_type(&object_type)
     {
         let name_and_value_typetag_opt = parse_dynamic_field_type_tags(&object_type);
@@ -131,28 +132,13 @@ pub fn handle_field_change(
     }
 
     for (key, change) in fields {
-        handle_field_change(key, change, field_changes, field_indexer_ids.clone())?;
+        handle_field_change(key, change, field_changes, field_indexer_ids)?;
     }
     Ok(())
 }
 
-pub fn need_process_field_indexer(id: &ObjectID, field_indexer_ids: Vec<ObjectID>) -> bool {
+pub fn need_process_field_indexer(id: &ObjectID, field_indexer_ids: &[ObjectID]) -> bool {
     field_indexer_ids.contains(id)
-}
-pub fn parse_dynamic_field_type_tags(type_tag: &TypeTag) -> Option<(TypeTag, TypeTag)> {
-    if let TypeTag::Struct(struct_tag) = type_tag {
-        // Verify this is a DynamicField struct
-        if is_field_struct_tag(struct_tag) {
-            // DynamicField should have exactly 2 type parameters
-            if struct_tag.type_params.len() == 2 {
-                // Get Name and Value type tags
-                let name_type = struct_tag.type_params[0].clone();
-                let value_type = struct_tag.type_params[1].clone();
-                return Some((name_type, value_type));
-            }
-        }
-    }
-    None
 }
 
 pub fn resolve_value_to_u64(type_tag: &TypeTag, value: Vec<u8>) -> Option<u64> {
@@ -185,101 +171,122 @@ pub fn resolve_value_to_u64(type_tag: &TypeTag, value: Vec<u8>) -> Option<u64> {
     }
 }
 
+pub fn handle_revert_field_change(
+    field_key: FieldKey,
+    object_change: ObjectChange,
+    field_changes: &mut IndexerFieldChanges,
+    field_indexer_ids: &Vec<ObjectID>,
+    field_object_mapping: &HashMap<ObjectID, ObjectState>,
+) -> Result<()> {
+    let ObjectChange {
+        metadata,
+        value,
+        fields,
+    } = object_change;
+
+    let object_id = metadata.id.clone();
+    let object_type = metadata.object_type.clone();
+
+    if need_process_field_indexer(&object_id, field_indexer_ids)
+        && is_dynamic_field_type(&object_type)
+    {
+        let name_and_value_typetag_opt = parse_dynamic_field_type_tags(&object_type);
+        if let Some((name_type, value_type)) = name_and_value_typetag_opt {
+            if let Some(op) = value {
+                match op {
+                    Op::Modify(_field_value) => {
+                        if let Some(previous_field_object) = field_object_mapping.get(&object_id) {
+                            let raw_field = RawField::parse_unchecked_field(
+                                previous_field_object.value.as_slice(),
+                                name_type,
+                                value_type,
+                            )?;
+                            let origin_value_opt =
+                                resolve_value_to_u64(&raw_field.value_type, raw_field.value);
+                            if let Some(origin_value) = origin_value_opt {
+                                let field = IndexerField::new(
+                                    previous_field_object.metadata.clone(),
+                                    field_key,
+                                    origin_value,
+                                );
+                                field_changes.update_fields.push(field);
+                            }
+                        }
+                    }
+                    Op::Delete => {
+                        if let Some(previous_field_object) = field_object_mapping.get(&object_id) {
+                            let raw_field = RawField::parse_unchecked_field(
+                                previous_field_object.value.as_slice(),
+                                name_type,
+                                value_type,
+                            )?;
+                            let origin_value_opt =
+                                resolve_value_to_u64(&raw_field.value_type, raw_field.value);
+                            if let Some(origin_value) = origin_value_opt {
+                                let field = IndexerField::new(
+                                    previous_field_object.metadata.clone(),
+                                    field_key,
+                                    origin_value,
+                                );
+                                field_changes.new_fields.push(field);
+                            }
+                        }
+                    }
+                    Op::New(_field_value) => {
+                        field_changes
+                            .remove_fields
+                            .push((object_id.clone().to_string(), field_key.to_hex_literal()));
+                    }
+                }
+            }
+        }
+
+        return Ok(());
+    }
+
+    for (key, change) in fields {
+        handle_revert_field_change(
+            key,
+            change,
+            field_changes,
+            field_indexer_ids,
+            field_object_mapping,
+        )?;
+    }
+    Ok(())
+}
 //
-// pub fn handle_revert_object_change(
-//     state_index_generator: &mut IndexerFieldsIndexGenerator,
-//     tx_order: u64,
-//     indexer_object_state_change_set: &mut IndexerObjectStateChangeSet,
-//     object_change: ObjectChange,
-//     object_mapping: &HashMap<ObjectID, ObjectMeta>,
-// ) -> Result<()> {
-//     let ObjectChange {
-//         metadata,
-//         value,
-//         fields,
-//     } = object_change;
-//     let object_id = metadata.id.clone();
-//     let object_type = metadata.object_type.clone();
-//     let state_index = state_index_generator.get(&object_type);
-//
-//     // Do not index dynamic field object
-//     if is_dynamic_field_type(&object_type) {
-//         return Ok(());
-//     }
-//     if let Some(op) = value {
-//         match op {
-//             Op::Modify(_value) => {
-//                 // Keep the tx_order and state index consistent before reverting
-//                 if let Some(previous_object_meta) = object_mapping.get(&object_id) {
-//                     let state = IndexerObjectState::new(
-//                         previous_object_meta.clone(),
-//                         tx_order,
-//                         state_index,
-//                     );
-//                     indexer_object_state_change_set.update_fields(state);
-//                 }
-//             }
-//             Op::Delete => {
-//                 // Use the reverted tx_order and state index as the deleted restored tx_order and tx_order
-//                 if let Some(previous_object_meta) = object_mapping.get(&object_id) {
-//                     let state = IndexerObjectState::new(
-//                         previous_object_meta.clone(),
-//                         tx_order,
-//                         state_index,
-//                     );
-//                     indexer_object_state_change_set.new_fields(state);
-//                 }
-//             }
-//             Op::New(_value) => {
-//                 indexer_object_state_change_set.remove_fields(object_id, &object_type);
-//             }
-//         }
-//     }
-//
-//     state_index_generator.incr(&object_type);
-//     for (_key, change) in fields {
-//         handle_revert_object_change(
-//             state_index_generator,
-//             tx_order,
-//             indexer_object_state_change_set,
-//             change,
-//             object_mapping,
-//         )?;
-//     }
-//     Ok(())
-// }
-//
-// pub fn collect_revert_object_change_ids(
-//     object_change: ObjectChange,
-//     object_ids: &mut Vec<ObjectID>,
-// ) -> Result<()> {
-//     let ObjectChange {
-//         metadata,
-//         value,
-//         fields,
-//     } = object_change;
-//     let object_id = metadata.id.clone();
-//     let object_type = metadata.object_type.clone();
-//
-//     // Do not index dynamic field object
-//     if is_dynamic_field_type(&object_type) {
-//         return Ok(());
-//     }
-//     if let Some(op) = value {
-//         match op {
-//             Op::Modify(_value) => {
-//                 object_ids.push(object_id);
-//             }
-//             Op::Delete => {
-//                 object_ids.push(object_id);
-//             }
-//             Op::New(_value) => {}
-//         }
-//     }
-//
-//     for (_key, change) in fields {
-//         collect_revert_object_change_ids(change, object_ids)?;
-//     }
-//     Ok(())
-// }
-//
+pub fn collect_revert_field_change_ids(
+    field_indexer_ids: &Vec<ObjectID>,
+    object_change: ObjectChange,
+    field_object_ids: &mut Vec<ObjectID>,
+) -> Result<()> {
+    let ObjectChange {
+        metadata,
+        value,
+        fields,
+    } = object_change;
+    let object_id = metadata.id.clone();
+    let object_type = metadata.object_type.clone();
+
+    if need_process_field_indexer(&object_id, field_indexer_ids)
+        && is_dynamic_field_type(&object_type)
+    {
+        if let Some(op) = value {
+            match op {
+                Op::Modify(_value) => {
+                    field_object_ids.push(object_id);
+                }
+                Op::Delete => {
+                    field_object_ids.push(object_id);
+                }
+                Op::New(_value) => {}
+            }
+        }
+    }
+
+    for (_key, change) in fields {
+        collect_revert_field_change_ids(field_indexer_ids, change, field_object_ids)?;
+    }
+    Ok(())
+}
