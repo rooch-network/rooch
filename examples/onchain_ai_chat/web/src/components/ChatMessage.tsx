@@ -1,5 +1,6 @@
 import { Message } from '../types/room';
 import { UserCircleIcon } from '@heroicons/react/24/solid';
+import { formatTimestamp } from '../utils/time';
 
 interface ChatMessageProps {
   message: Message;
@@ -37,7 +38,7 @@ export function ChatMessage({ message, isCurrentUser }: ChatMessageProps) {
             </span>
             <span>•</span>
             <span>
-              {!isNaN(timestamp) && new Date(timestamp * 1000).toLocaleTimeString()}
+            {formatTimestamp(message.timestamp)}
             </span>
           </div>
           <div
@@ -49,7 +50,7 @@ export function ChatMessage({ message, isCurrentUser }: ChatMessageProps) {
                 : 'bg-gray-100'
             }`}
           >
-            {message.content}
+            <div className="text-sm break-words">{message.content}</div>
           </div>
         </div>
         {isCurrentUser && <div className="flex-shrink-0 w-8 h-8" />}

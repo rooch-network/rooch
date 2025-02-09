@@ -23,7 +23,7 @@ module onchain_ai_chat::room_tests {
     #[test]
     fun test_create_room() {
         let account = create_account();
-        timestamp::update_global_time_for_test_secs(1);
+        timestamp::update_global_time_for_test(1000); // 1 second in milliseconds
 
         let title = string::utf8(b"Test Room");
         // Specify room type as NORMAL
@@ -34,7 +34,7 @@ module onchain_ai_chat::room_tests {
         assert!(room_title == title, 0);
         assert!(is_public == true, 1);
         assert!(creator == signer::address_of(&account), 2);
-        assert!(created_at == 1, 3);
+        assert!(created_at == 1000, 3); // Check milliseconds
         assert!(last_active == created_at, 4);
         assert!(status == 0, 5);
         assert!(room_type == room::room_type_normal(), 6);
@@ -45,7 +45,7 @@ module onchain_ai_chat::room_tests {
     #[test]
     fun test_create_ai_room() {
         let account = create_account();
-        timestamp::update_global_time_for_test_secs(1);
+        timestamp::update_global_time_for_test(1000);
 
         let title = string::utf8(b"AI Room");
         let room_id = room::create_room(&account, title, true, room::room_type_ai());
@@ -55,7 +55,7 @@ module onchain_ai_chat::room_tests {
         assert!(room_title == title, 0);
         assert!(is_public == true, 1);
         assert!(creator == signer::address_of(&account), 2);
-        assert!(created_at == 1, 3);
+        assert!(created_at == 1000, 3);
         assert!(last_active == created_at, 4);
         assert!(status == 0, 5);
         assert!(room_type == room::room_type_ai(), 6);
@@ -66,18 +66,18 @@ module onchain_ai_chat::room_tests {
     #[test]
     fun test_ai_room_message() {
         let account = create_account();
-        timestamp::update_global_time_for_test_secs(1);
+        timestamp::update_global_time_for_test(1000);
 
         let room_id = room::create_room(&account, string::utf8(b"AI Room"), true, room::room_type_ai());
         
-        timestamp::update_global_time_for_test_secs(2);
+        timestamp::update_global_time_for_test(2000);
         let message = string::utf8(b"Hello AI!");
         let room = object::borrow_mut_object_shared<room::Room>(room_id);
         room::send_message(&account, room, message);
         
         let room = object::borrow_object<room::Room>(room_id);
         let (_, _, _, _, last_active, _, _) = room::get_room_info(room);
-        assert!(last_active == 2, 0);
+        assert!(last_active == 2000, 0);
 
         // Get messages and verify types
         let messages = room::get_messages(room);
@@ -107,19 +107,18 @@ module onchain_ai_chat::room_tests {
     #[test]
     fun test_send_message() {
         let account = create_account();
-        // Set initial timestamp
-        timestamp::update_global_time_for_test_secs(1);
+        timestamp::update_global_time_for_test(1000);
 
         let room_id = room::create_room(&account, string::utf8(b"Test Room"), true, room::room_type_normal());
         
-        timestamp::update_global_time_for_test_secs(2);
+        timestamp::update_global_time_for_test(2000);
         let message = string::utf8(b"Hello, World!");
         let room = object::borrow_mut_object_shared<room::Room>(room_id);
         room::send_message(&account, room, message);
         
         let room = object::borrow_object<room::Room>(room_id);
         let (_, _, _, _, last_active, _, _) = room::get_room_info(room);
-        assert!(last_active == 2, 0);
+        assert!(last_active == 2000, 0);
 
         room::delete_room_for_testing(&account, room_id);
     }
@@ -128,7 +127,7 @@ module onchain_ai_chat::room_tests {
     fun test_private_room_member_management() {
         let admin = create_account_with_address(@0x42);
         let member = create_account_with_address(@0x43);
-        timestamp::update_global_time_for_test_secs(1);
+        timestamp::update_global_time_for_test(1000);
         
         let room_id = room::create_room(&admin, string::utf8(b"Private Room"), false, room::room_type_normal());
         let room = object::borrow_object<room::Room>(room_id);
@@ -148,11 +147,11 @@ module onchain_ai_chat::room_tests {
         // Verify member info
         let (member_nickname, joined_at, last_active) = room::get_member_info(room, signer::address_of(&member));
         assert!(member_nickname == nickname, 2);
-        assert!(joined_at == 1, 3);
+        assert!(joined_at == 1000, 3);
         assert!(last_active == joined_at, 4);
         
         // Test message sending
-        timestamp::update_global_time_for_test_secs(2);
+        timestamp::update_global_time_for_test(2000);
         let message = string::utf8(b"Member message");
         let room = object::borrow_mut_object_shared<room::Room>(room_id);
         room::send_message(&member, room, message);

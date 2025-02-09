@@ -39,8 +39,8 @@ module onchain_ai_chat::room {
     struct Member has store, drop {
         address: address,
         nickname: String,
-        joined_at: u64,
-        last_active: u64,
+        joined_at: u64,    // Now in milliseconds
+        last_active: u64,  // Now in milliseconds
     }
 
     /// Room structure for chat functionality
@@ -56,8 +56,8 @@ module onchain_ai_chat::room {
         members: Table<address, Member>,  // Changed from vector to Table
         messages: Table<u64, Message>,
         message_counter: u64,
-        created_at: u64,
-        last_active: u64,
+        created_at: u64,    // Now in milliseconds
+        last_active: u64,   // Now in milliseconds
         status: u8,
         room_type: u8,  // normal or AI chat room
     }
@@ -65,7 +65,7 @@ module onchain_ai_chat::room {
     struct Message has store, copy, drop {
         sender: address,
         content: String,
-        timestamp: u64,
+        timestamp: u64,    // Now in milliseconds
         message_type: u8,  // distinguish between user messages and AI responses
     }
 
@@ -90,8 +90,8 @@ module onchain_ai_chat::room {
             members: table::new(),  // Initialize empty table
             messages: table::new(),
             message_counter: 0,
-            created_at: timestamp::now_seconds(),
-            last_active: timestamp::now_seconds(),
+            created_at: timestamp::now_milliseconds(),
+            last_active: timestamp::now_milliseconds(),
             status: ROOM_STATUS_ACTIVE,
             room_type,
         };
@@ -109,7 +109,7 @@ module onchain_ai_chat::room {
     ) {
         let sender = signer::address_of(account);
         let room_mut = object::borrow_mut(room);
-        let now = timestamp::now_seconds();
+        let now = timestamp::now_milliseconds();
         
         if (room_mut.is_public) {
             // In public rooms, sending a message automatically makes you a member
@@ -137,7 +137,7 @@ module onchain_ai_chat::room {
         let message = Message {
             sender,
             content,
-            timestamp: timestamp::now_seconds(),
+            timestamp: timestamp::now_milliseconds(),
             message_type: MESSAGE_TYPE_USER,
         };
 
@@ -149,7 +149,7 @@ module onchain_ai_chat::room {
             add_ai_response(room_mut, content);
         };
 
-        room_mut.last_active = timestamp::now_seconds();
+        room_mut.last_active = timestamp::now_milliseconds();
     }
 
     /// Add AI response to the room (will be implemented by the framework)
@@ -158,7 +158,7 @@ module onchain_ai_chat::room {
         let ai_message = Message {
             sender: @0x1,
             content: response_message,
-            timestamp: timestamp::now_seconds(),
+            timestamp: timestamp::now_milliseconds(),
             message_type: MESSAGE_TYPE_AI,
         };
         
@@ -201,7 +201,7 @@ module onchain_ai_chat::room {
         // Check if member already exists
         assert!(!table::contains(&room_mut.members, member_addr), ErrorRoomAlreadyExists);
 
-        let now = timestamp::now_seconds();
+        let now = timestamp::now_milliseconds();
         let member = Member {
             address: member_addr,
             nickname,

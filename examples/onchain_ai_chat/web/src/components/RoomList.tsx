@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { Room } from '../types/room';
 import { ChatBubbleLeftIcon } from '@heroicons/react/24/outline';
+import { formatTimestamp } from '../utils/time';
 
 interface RoomListProps {
   rooms: Room[];
@@ -27,7 +28,7 @@ export function RoomList({ rooms, activeRoomId }: RoomListProps) {
               <div className="truncate flex-1">
                 <div className="text-sm font-medium truncate">{room.title}</div>
                 <div className="text-xs text-gray-500">
-                  {new Date(room.last_active * 1000).toLocaleDateString()}
+                  {formatTimestamp(room.last_active)}
                 </div>
               </div>
             </button>
