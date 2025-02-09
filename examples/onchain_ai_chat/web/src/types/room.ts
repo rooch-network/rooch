@@ -14,12 +14,12 @@ export interface Message {
   sender: string;
   content: string;
   timestamp: number;
-  messageType: number; // 0 for user, 1 for AI
+  message_type: number; // 0 for user, 1 for AI
 }
 
 export const MessageSchema = bcs.struct('Message', {
   sender: bcs.Address,
   content: bcs.String,
   timestamp: bcs.U64,
-  messageType: bcs.U8,
+  message_type: bcs.U8,
 })

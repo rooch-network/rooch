@@ -239,6 +239,45 @@ module onchain_ai_chat::room {
         messages
     }
 
+    /// Get messages with pagination
+    /// @param room - the room object
+    /// @param start_index - starting message index
+    /// @param limit - maximum number of messages to return
+    public fun get_messages_paginated(
+        room: &Object<Room>, 
+        start_index: u64,
+        limit: u64
+    ): vector<Message> {
+        let room_ref = object::borrow(room);
+        let messages = vector::empty<Message>();
+        
+        // Check if start_index is valid
+        if (start_index >= room_ref.message_counter) {
+            return messages
+        };
+        
+        // Calculate end index
+        let end_index = if (start_index + limit > room_ref.message_counter) {
+            room_ref.message_counter
+        } else {
+            start_index + limit
+        };
+        
+        let i = start_index;
+        while (i < end_index) {
+            let msg = table::borrow(&room_ref.messages, i);
+            vector::push_back(&mut messages, *msg);
+            i = i + 1;
+        };
+        messages
+    }
+
+    /// Get total message count in the room
+    public fun get_message_count(room: &Object<Room>): u64 {
+        let room_ref = object::borrow(room);
+        room_ref.message_counter
+    }
+
     /// Get message type
     public fun get_message_type(message: &Message): u8 {
         message.message_type

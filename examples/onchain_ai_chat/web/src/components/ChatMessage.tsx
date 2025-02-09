@@ -12,7 +12,7 @@ const shortenAddress = (address: string) => {
 };
 
 export function ChatMessage({ message, isCurrentUser }: ChatMessageProps) {
-  const isAI = message.messageType === 1;
+  const isAI = message.message_type === 1; // Updated from messageType
   const timestamp = message.timestamp;
   const displayName = isAI ? 'AI Assistant' : shortenAddress(message.sender);
 
