@@ -27,7 +27,7 @@ export function Room() {
   const [totalCount, setTotalCount] = useState(0);
   const loadMoreRef = useRef<HTMLDivElement>(null);
   
-  // Query messages count
+  // Query messages count - Always enabled when we have roomId and client
   const { data: messageCountResponse, refetch: refetchMessageCount } = useRoochClientQuery(
     'executeViewFunction',
     {
@@ -36,29 +36,33 @@ export function Room() {
     },
     {
       enabled: !!roomId && !!client,
+      refetchOnMount: true,
+      refetchInterval: 2000, // Refresh every 2 seconds
     }
   );
 
-  // Update total count when messageCountResponse changes
+  // Update message count effect to be independent
   useEffect(() => {
     if (messageCountResponse?.return_values?.[0]?.decoded_value) {
-      setTotalCount(parseInt(messageCountResponse.return_values[0].decoded_value));
+      const newCount = parseInt(messageCountResponse.return_values[0].decoded_value);
+      setTotalCount(newCount);
     }
   }, [messageCountResponse]);
 
-  // Query messages using pagination - Fix pagination logic
+  // Update messages query to destructure the response
   const { data: messagesResponse, refetch: refetchMessages } = useRoochClientQuery(
     'executeViewFunction',
     {
       target: `${packageId}::room::get_messages_paginated`,
       args: [
         Args.objectId(roomId!),
-        Args.u64(Math.max(0, totalCount - (page + 1) * PAGE_SIZE)), // ensure non-negative start index
-        Args.u64(Math.min(PAGE_SIZE, totalCount - page * PAGE_SIZE)), // ensure valid limit
+        Args.u64(Math.max(0, totalCount - (page + 1) * PAGE_SIZE)),
+        Args.u64(Math.min(PAGE_SIZE, totalCount - page * PAGE_SIZE)),
       ],
     },
     {
-      enabled: !!roomId && !!client && totalCount > 0,
+      enabled: !!roomId && !!client && totalCount >= 0,
+      refetchOnMount: true,
     }
   );
 
@@ -82,55 +86,52 @@ export function Room() {
     }
   };
 
-  // Reset state when roomId changes
+  // Reset state when room changes
   useEffect(() => {
-    setAllMessages([]);
-    setPage(0);
-    setHasMore(true);
-    setTotalCount(0);
-  }, [roomId]);
+    if (roomId) {
+      // Clear messages immediately
+      setAllMessages([]);
+      setPage(0);
+      setHasMore(false);
+      
+      // Fetch new room data
+      Promise.all([
+        refetchMessageCount(),
+        refetchMessages()
+      ]).catch(console.error);
+    }
+  }, [roomId, refetchMessageCount, refetchMessages]);
 
-  // Fix message handling
+  // Handle messages update with better error handling
   useEffect(() => {
     if (messagesResponse?.return_values?.[0]?.value?.value) {
-      const newMessages = deserializeMessages(messagesResponse.return_values[0].value.value);
-      setAllMessages(prev => {
-        // If it's a new page (not page 0), append messages
-        // If it's page 0 (either initial load or new message), replace all messages
-        const baseMessages = page === 0 ? [] : prev;
+      try {
+        const newMessages = deserializeMessages(messagesResponse.return_values[0].value.value);
         
-        // Create a map of existing messages
-        const existingMessages = new Map(baseMessages.map(msg => [
-          `${msg.sender}-${msg.timestamp}`,
-          msg
-        ]));
-        
-        // Add new messages to map
-        newMessages.forEach(msg => {
-          existingMessages.set(`${msg.sender}-${msg.timestamp}`, msg);
+        setAllMessages(prev => {
+          const baseMessages = page === 0 ? [] : prev;
+          const messageMap = new Map(baseMessages.map(msg => [
+            `${msg.sender}-${msg.timestamp}`,
+            msg
+          ]));
+
+          newMessages.forEach(msg => {
+            messageMap.set(`${msg.sender}-${msg.timestamp}`, msg);
+          });
+
+          const sortedMessages = Array.from(messageMap.values())
+            .sort((a, b) => parseInt(a.timestamp) - parseInt(b.timestamp));
+
+          // Update hasMore based on message count
+          setHasMore(messageMap.size < totalCount);
+
+          return sortedMessages;
         });
-        
-        const sortedMessages = Array.from(existingMessages.values())
-          .sort((a, b) => parseInt(a.timestamp) - parseInt(b.timestamp));
-
-        // Only scroll if we're not loading more messages
-        if (page === 0) {
-          setTimeout(scrollToBottom, 100);
-        } else {
-        // Scroll to the first new message when loading more
-          setTimeout(() => {
-            loadMoreRef.current?.scrollIntoView({ behavior: 'smooth' });
-          }, 100);
-        }
-
-        // Update hasMore based on actual message count and current page
-        const currentMessageCount = existingMessages.size;
-        setHasMore(currentMessageCount < totalCount);
-
-        return sortedMessages;
-      });
+      } catch (error) {
+        console.error('Failed to process messages:', error);
+      }
     }
-  }, [messagesResponse, totalCount, page, roomId]); // Add roomId to dependencies
+  }, [messagesResponse, totalCount, page]);
 
   const loadMoreMessages = () => {
     if (!loading && hasMore) {
@@ -178,13 +179,13 @@ export function Room() {
     } catch (error) {
       // Re-throw the error to trigger ErrorGuard
       console.error('Failed to send message:', error);
-      throw error;
+      //throw error;
     } finally {
       setLoading(false);
     }
   };
 
-  // Update render logic - Remove reverse()
+  // Add loading state display
   return (
     <Layout showRoomList>
       <div className="flex-1 min-h-0 flex flex-col">
@@ -199,14 +200,20 @@ export function Room() {
         )}
         <div className="flex-1 overflow-y-auto px-4 py-2">
           <div className="space-y-4">
-            <div ref={loadMoreRef} /> {/* Add ref for load more scroll position */}
-            {allMessages.map((message, index) => (
-              <ChatMessage
-                key={`${message.sender}-${message.timestamp}-${index}`}
-                message={message}
-                isCurrentUser={message.sender === sessionKey?.roochAddress.toHexAddress()}
-              />
-            ))}
+            <div ref={loadMoreRef} />
+            {allMessages.length === 0 && !loading ? (
+              <div className="flex items-center justify-center h-full text-gray-500">
+                No messages yet
+              </div>
+            ) : (
+              allMessages.map((message, index) => (
+                <ChatMessage
+                  key={`${message.sender}-${message.timestamp}-${index}`}
+                  message={message}
+                  isCurrentUser={message.sender === sessionKey?.roochAddress.toHexAddress()}
+                />
+              ))
+            )}
             <div ref={messagesEndRef} />
           </div>
         </div>
