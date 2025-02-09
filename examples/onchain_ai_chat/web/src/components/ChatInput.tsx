@@ -26,34 +26,32 @@ export function ChatInput({ onSend, placeholder = "Type a message...", disabled 
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSubmit();
-    }
-  };
 
   return (
-    <div className="relative w-[600px]">
-      <textarea
-        ref={textareaRef}
-        value={message}
-        onChange={(e) => setMessage(e.target.value)}
-        onKeyDown={handleKeyDown}
-        placeholder={placeholder}
-        disabled={disabled}
-        className="w-full resize-none rounded-lg border border-gray-200 pr-12 py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50"
-        rows={1}
-      />
-      <SessionKeyGuard onClick={handleSubmit}>
+    <div className="relative w-full flex justify-center">
+      <div className="relative w-full max-w-3xl">
+        <textarea
+          ref={textareaRef}
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          placeholder={placeholder}
+          disabled={disabled}
+          className="w-full resize-none rounded-lg border border-gray-200 pr-12 py-3 px-4 
+            focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50
+            min-h-[60px] max-h-[200px] overflow-y-auto"
+          rows={3}
+        />
+        <SessionKeyGuard onClick={handleSubmit}>
           <button
             type="button"
             disabled={!message.trim() || disabled}
-            className="absolute right-2 bottom-2 p-2 text-blue-600 hover:text-blue-700 disabled:text-gray-400"
+            className="absolute right-2 bottom-2 p-2 text-blue-600 hover:text-blue-700 
+              disabled:text-gray-400"
           >
             <PaperAirplaneIcon className="h-6 w-6" />
           </button>
-      </SessionKeyGuard>
+        </SessionKeyGuard>
+      </div>
     </div>
   );
 }

@@ -11,7 +11,7 @@ import { ChatInput } from '../components/ChatInput'
 import { ChatMessage } from '../components/ChatMessage'
 import { useNetworkVariable } from '../networks'
 import { Args, Transaction, bcs } from '@roochnetwork/rooch-sdk'
-import { Message, MessageSchema, transformMessage } from '../types/room'
+import { Message, MessageSchema} from '../types/room'
 
 export function Room() {
   const { roomId } = useParams<{ roomId: string }>()
@@ -108,25 +108,23 @@ export function Room() {
 
   return (
     <Layout showRoomList>
-      <div className="flex h-full flex-col">
+      <div className="flex flex-col h-full">
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {messages.map((message, index) => (
             <ChatMessage
-              key={`${message.sender}-${message.timestamp}-${index}`}
+              key={index}
               message={message}
-              isCurrentUser={message.sender === sessionKey?.address}
+              isCurrentUser={message.sender === sessionKey?.roochAddress.toHexAddress()}
             />
           ))}
           <div ref={messagesEndRef} />
         </div>
-        <div className="p-4 border-t">
-          <SessionKeyGuard onClick={handleSendMessage}>
-            <ChatInput 
-              onSend={handleSendMessage}
-              disabled={loading}
-              placeholder="Type a message..."
-            />
-          </SessionKeyGuard>
+        <div className="border-t border-gray-200 p-4 bg-white">
+          <ChatInput 
+            onSend={handleSendMessage}
+            disabled={loading}
+            placeholder="Type a message..."
+          />
         </div>
       </div>
     </Layout>

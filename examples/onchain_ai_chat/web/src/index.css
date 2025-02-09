@@ -19,6 +19,12 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
 a {
   font-weight: 500;
   color: #646cff;
@@ -30,10 +36,9 @@ a:hover {
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
   min-height: 100vh;
+  background-color: white;
+  @apply bg-gray-50;
 }
 
 h1 {
@@ -70,5 +75,21 @@ button:focus-visible {
   }
   button {
     background-color: #f9f9f9;
+  }
+}
+
+@layer components {
+  .chat-message {
+    @apply p-4 rounded-lg mb-4;
+  }
+  
+  /* user message */
+  .chat-message-user {
+    @apply bg-blue-500 text-white;
+  }
+  
+  /* AI message */
+  .chat-message-ai {
+    @apply bg-gray-100 text-gray-900;
   }
 }

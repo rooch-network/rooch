@@ -85,15 +85,13 @@ export function Home() {
           <h2 className="text-3xl font-bold text-center mb-8 text-gray-900">
             How can I help you today?
           </h2>
-          <div className="w-full">
-            <ChatInput
-              onSend={handleCreateRoom}
-              placeholder="Send a message to start a new chat..."
-              disabled={loading}
-            />
-          </div>
+          <ChatInput
+            onSend={handleCreateRoom}
+            placeholder="Send a message to start a new chat..."
+            disabled={loading}
+          />
         </div>
       </div>
     </Layout>
-  );
+  )
 }
