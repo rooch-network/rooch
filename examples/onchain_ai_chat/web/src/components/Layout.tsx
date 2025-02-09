@@ -1,5 +1,7 @@
 import { ReactNode } from 'react';
 import { ConnectButton } from '@roochnetwork/rooch-sdk-kit';
+import { RoomListContainer } from '../containers/RoomListContainer';
+import { ErrorGuard } from '../ErrorGuard';
 
 interface LayoutProps {
   children: ReactNode;
@@ -16,9 +18,8 @@ export function Layout({ children, showRoomList = false }: LayoutProps) {
       <div className="flex-1 flex min-h-0">
         {showRoomList && (
           <aside className="w-64 flex-none overflow-y-auto border-r bg-gray-50">
-            <nav className="p-4">
-              {/* RoomList component will be added here */}
-            </nav>
+            <RoomListContainer />
+            <ErrorGuard />
           </aside>
         )}
         <main className="flex-1 min-w-0 overflow-hidden flex flex-col">

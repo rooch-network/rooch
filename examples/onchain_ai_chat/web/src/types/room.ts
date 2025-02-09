@@ -1,13 +1,15 @@
-import { bcs } from "@roochnetwork/rooch-sdk";
+import { bcs } from '@roochnetwork/rooch-sdk'
 
 export interface Room {
   id: string;
   title: string;
-  isPublic: boolean;
+  is_public: boolean;
   creator: string;
-  createdAt: number;
-  lastActive: number;
-  messages: Message[];
+  created_at: number;
+  last_active: number;
+  status: number;
+  room_type: number;
+  message_counter: number;
 }
 
 export interface Message {
@@ -23,3 +25,14 @@ export const MessageSchema = bcs.struct('Message', {
   timestamp: bcs.U64,
   message_type: bcs.U8,
 })
+
+export const RoomSchema = bcs.struct('Room', {
+  id: bcs.String,
+  title: bcs.String,
+  is_public: bcs.Bool,
+  creator: bcs.Address,
+  created_at: bcs.U64,
+  last_active: bcs.U64,
+  status: bcs.U8,
+  room_type: bcs.U8,
+});

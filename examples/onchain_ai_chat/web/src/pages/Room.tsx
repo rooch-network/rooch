@@ -53,8 +53,8 @@ export function Room() {
       target: `${packageId}::room::get_messages_paginated`,
       args: [
         Args.objectId(roomId!),
-        Args.u64(totalCount - Math.min(totalCount, (page + 1) * PAGE_SIZE)), // start index
-        Args.u64(Math.min(PAGE_SIZE, totalCount - page * PAGE_SIZE)), // limit
+        Args.u64(Math.max(0, totalCount - (page + 1) * PAGE_SIZE)), // ensure non-negative start index
+        Args.u64(Math.min(PAGE_SIZE, totalCount - page * PAGE_SIZE)), // ensure valid limit
       ],
     },
     {
@@ -82,13 +82,25 @@ export function Room() {
     }
   };
 
+  // Reset state when roomId changes
+  useEffect(() => {
+    setAllMessages([]);
+    setPage(0);
+    setHasMore(true);
+    setTotalCount(0);
+  }, [roomId]);
+
   // Fix message handling
   useEffect(() => {
     if (messagesResponse?.return_values?.[0]?.value?.value) {
       const newMessages = deserializeMessages(messagesResponse.return_values[0].value.value);
       setAllMessages(prev => {
-        // Create a map of existing messages to avoid duplicates
-        const existingMessages = new Map(prev.map(msg => [
+        // If it's a new page (not page 0), append messages
+        // If it's page 0 (either initial load or new message), replace all messages
+        const baseMessages = page === 0 ? [] : prev;
+        
+        // Create a map of existing messages
+        const existingMessages = new Map(baseMessages.map(msg => [
           `${msg.sender}-${msg.timestamp}`,
           msg
         ]));
@@ -105,18 +117,20 @@ export function Room() {
         if (page === 0) {
           setTimeout(scrollToBottom, 100);
         } else {
-          // Scroll to the first new message when loading more
+        // Scroll to the first new message when loading more
           setTimeout(() => {
             loadMoreRef.current?.scrollIntoView({ behavior: 'smooth' });
           }, 100);
         }
 
+        // Update hasMore based on actual message count and current page
+        const currentMessageCount = existingMessages.size;
+        setHasMore(currentMessageCount < totalCount);
+
         return sortedMessages;
       });
-      
-      setHasMore((page + 1) * PAGE_SIZE < totalCount);
     }
-  }, [messagesResponse, totalCount, page]);
+  }, [messagesResponse, totalCount, page, roomId]); // Add roomId to dependencies
 
   const loadMoreMessages = () => {
     if (!loading && hasMore) {
@@ -148,8 +162,8 @@ export function Room() {
       });
 
       if (result.execution_info.status.type !== 'executed') {
-        console.error('Send message failed');
-        return;
+        // Throw error instead of just logging
+        throw new Error('Failed to send message: Transaction not executed');
       }
 
       // Reset to first page and refetch
@@ -162,7 +176,9 @@ export function Room() {
       // Delay scroll to bottom to ensure new message is rendered
       setTimeout(scrollToBottom, 100);
     } catch (error) {
+      // Re-throw the error to trigger ErrorGuard
       console.error('Failed to send message:', error);
+      throw error;
     } finally {
       setLoading(false);
     }
@@ -172,7 +188,7 @@ export function Room() {
   return (
     <Layout showRoomList>
       <div className="flex-1 min-h-0 flex flex-col">
-        {hasMore && (
+        {totalCount > 0 && hasMore && (
           <button
             onClick={loadMoreMessages}
             disabled={loading}

@@ -27,7 +27,7 @@ export function RoomList({ rooms, activeRoomId }: RoomListProps) {
               <div className="truncate flex-1">
                 <div className="text-sm font-medium truncate">{room.title}</div>
                 <div className="text-xs text-gray-500">
-                  {new Date(room.lastActive * 1000).toLocaleDateString()}
+                  {new Date(room.last_active * 1000).toLocaleDateString()}
                 </div>
               </div>
             </button>
