@@ -15,6 +15,9 @@ module onchain_ai_chat::ai_service {
     /// Default gas allocation for notification callbacks 0.6 RGas
     const DEFAULT_NOTIFICATION_GAS: u256 = 60000000;
 
+    const AI_ORACLE_HEADERS: vector<u8> = b"{}";
+    const AI_ORACLE_METHOD: vector<u8> = b"POST";
+
     struct PendingRequest has store, copy, drop {
         room_id: ObjectID,
         request_id: ObjectID,
@@ -37,12 +40,12 @@ module onchain_ai_chat::ai_service {
         content: String,
     ) {
         //TODO eliminate the gas fee
-        let oracle_fee: u256 = 100000000;
+        let oracle_fee: u256 = 1000000000;
         let url = string::utf8(b"https://api.openai.com/v1/chat/completions");
-        let method = string::utf8(b"POST");
-        let headers = string::utf8(b"Content-Type: application/json");
+        let method = string::utf8(AI_ORACLE_METHOD);
+        let headers = string::utf8(AI_ORACLE_HEADERS);
         
-        let body = string::utf8(b"{\"model\": \"gpt-4\", \"messages\": [{\"role\": \"user\", \"content\": \"");
+        let body = string::utf8(b"{\"model\": \"gpt-4o\", \"messages\": [{\"role\": \"user\", \"content\": \"");
         string::append(&mut body, content);
         string::append(&mut body, string::utf8(b"\"}], \"temperature\": 0.7}"));
         
