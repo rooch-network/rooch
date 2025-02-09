@@ -165,7 +165,8 @@ export function Room() {
         target: `${packageId}::room::send_message_entry`,
         args: [Args.objectId(roomId), Args.string(message)],
       });
-
+      //5 RGas
+      tx.setMaxGas(5_00000000);
       const result = await client.signAndExecuteTransaction({
         transaction: tx,
         signer: sessionKey!,

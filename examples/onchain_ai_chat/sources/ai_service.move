@@ -44,6 +44,36 @@ module onchain_ai_chat::ai_service {
         });
     }
 
+    /// Escape special characters in JSON string content
+    fun escape_json_string(content: &String): String {
+        let result = vector::empty<u8>();
+        let bytes = string::bytes(content);
+        let i = 0;
+        let len = vector::length(bytes);
+        while (i < len) {
+            let byte = *vector::borrow(bytes, i);
+            if (byte == 0x22) { // double quote "
+                vector::append(&mut result, b"\\\"");
+            } else if (byte == 0x5c) { // backslash \
+                vector::append(&mut result, b"\\\\");
+            } else if (byte == 0x08) { // backspace
+                vector::append(&mut result, b"\\b");
+            } else if (byte == 0x0c) { // form feed
+                vector::append(&mut result, b"\\f");
+            } else if (byte == 0x0a) { // line feed
+                vector::append(&mut result, b"\\n");
+            } else if (byte == 0x0d) { // carriage return
+                vector::append(&mut result, b"\\r");
+            } else if (byte == 0x09) { // tab
+                vector::append(&mut result, b"\\t");
+            } else {
+                vector::push_back(&mut result, byte);
+            };
+            i = i + 1;
+        };
+        string::utf8(result)
+    }
+
     fun build_chat_context(content: String, previous_messages: &vector<Message>): String {
         //we use a fixed model for now, gpt-4o
         let body = string::utf8(b"{\"model\": \"gpt-4o\", \"messages\": [");
@@ -62,17 +92,18 @@ module onchain_ai_chat::ai_service {
                 string::utf8(b"user")
             });
             string::append(&mut body, string::utf8(b"\", \"content\": \""));
-            string::append(&mut body, message::get_content(msg));
+            // Escape message content
+            string::append(&mut body, escape_json_string(&message::get_content(msg)));
             string::append(&mut body, string::utf8(b"\"}"));
             i = i + 1;
         };
 
-        // Add current message
+        // Add current message with escaped content
         if (len > 0) {
             string::append(&mut body, string::utf8(b","));
         };
         string::append(&mut body, string::utf8(b"{\"role\": \"user\", \"content\": \""));
-        string::append(&mut body, content);
+        string::append(&mut body, escape_json_string(&content));
         string::append(&mut body, string::utf8(b"\"}], \"temperature\": 0.7}"));
 
         body
@@ -141,5 +172,57 @@ module onchain_ai_chat::ai_service {
 
     public fun unpack_pending_request(request: PendingRequest): (ObjectID, ObjectID) {
         (request.room_id, request.request_id)
+    }
+
+    #[test]
+    fun test_escape_json_string() {
+        let test_str = string::utf8(b"Hello \"world\"\nNew line\tTab");
+        let escaped = escape_json_string(&test_str);
+        assert!(escaped == string::utf8(b"Hello \\\"world\\\"\\nNew line\\tTab"), 1);
+    }
+
+    #[test]
+    fun test_build_chat_context() {
+        use std::string;
+
+        // Test with empty previous messages
+        {
+            let messages = vector::empty<Message>();
+            let content = string::utf8(b"Hello AI");
+            let context = build_chat_context(content, &messages);
+            let expected = string::utf8(b"{\"model\": \"gpt-4o\", \"messages\": [{\"role\": \"user\", \"content\": \"Hello AI\"}], \"temperature\": 0.7}");
+            assert!(context == expected, 1);
+        };
+
+        // Test with one previous message
+        {
+            let messages = vector::empty<Message>();
+            vector::push_back(&mut messages, message::new_message(0, @0x1, string::utf8(b"Hi"), message::type_user()));
+            let content = string::utf8(b"How are you?");
+            let context = build_chat_context(content, &messages);
+            let expected = string::utf8(b"{\"model\": \"gpt-4o\", \"messages\": [{\"role\": \"user\", \"content\": \"Hi\"},{\"role\": \"user\", \"content\": \"How are you?\"}], \"temperature\": 0.7}");
+            assert!(context == expected, 2);
+        };
+
+        // Test with conversation including AI response
+        {
+            let messages = vector::empty<Message>();
+            vector::push_back(&mut messages, message::new_message(0, @0x1, string::utf8(b"Hi"), message::type_user()));
+            vector::push_back(&mut messages, message::new_message(1, @0x2, string::utf8(b"Hello! How can I help?"), message::type_ai()));
+            let content = string::utf8(b"What's the weather?");
+            let context = build_chat_context(content, &messages);
+            let expected = string::utf8(b"{\"model\": \"gpt-4o\", \"messages\": [{\"role\": \"user\", \"content\": \"Hi\"},{\"role\": \"assistant\", \"content\": \"Hello! How can I help?\"},{\"role\": \"user\", \"content\": \"What's the weather?\"}], \"temperature\": 0.7}");
+            assert!(context == expected, 3);
+        };
+
+        // Test with special characters
+        {
+            let messages = vector::empty<Message>();
+            vector::push_back(&mut messages, message::new_message(0, @0x1, string::utf8(b"Hello \"AI\""), message::type_user()));
+            let content = string::utf8(b"New\nline");
+            let context = build_chat_context(content, &messages);
+            let expected = string::utf8(b"{\"model\": \"gpt-4o\", \"messages\": [{\"role\": \"user\", \"content\": \"Hello \\\"AI\\\"\"},{\"role\": \"user\", \"content\": \"New\\nline\"}], \"temperature\": 0.7}");
+            assert!(context == expected, 4);
+        };
     }
 }
