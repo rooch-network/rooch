@@ -7,6 +7,7 @@ module onchain_ai_chat::room {
     use moveos_std::signer;
     use moveos_std::hex;
     use onchain_ai_chat::ai_service;
+    use onchain_ai_chat::message::{Self, Message};
 
     friend onchain_ai_chat::ai_callback;
 
@@ -28,13 +29,7 @@ module onchain_ai_chat::room {
     const ROOM_TYPE_NORMAL: u8 = 0;
     const ROOM_TYPE_AI: u8 = 1;
 
-    // Add message type constants
-    const MESSAGE_TYPE_USER: u8 = 0;
-    const MESSAGE_TYPE_AI: u8 = 1;
-
     // Public functions to expose constants
-    public fun message_type_user(): u8 { MESSAGE_TYPE_USER }
-    public fun message_type_ai(): u8 { MESSAGE_TYPE_AI }
     public fun room_type_normal(): u8 { ROOM_TYPE_NORMAL }
     public fun room_type_ai(): u8 { ROOM_TYPE_AI }
 
@@ -57,20 +52,12 @@ module onchain_ai_chat::room {
         creator: address,
         admins: vector<address>,
         members: Table<address, Member>,  // Changed from vector to Table
-        messages: Table<u64, Message>,
+        messages: Table<u64, Message>,  // Now using shared Message type
         message_counter: u64,
         created_at: u64,    // Now in milliseconds
         last_active: u64,   // Now in milliseconds
         status: u8,
         room_type: u8,  // normal or AI chat room
-    }
-
-    struct Message has store, copy, drop {
-        id: u64,           // Add message id
-        sender: address,
-        content: String,
-        timestamp: u64,    // Now in milliseconds
-        message_type: u8,  // distinguish between user messages and AI responses
     }
 
     /// Initialize a new room with room type
@@ -107,59 +94,59 @@ module onchain_ai_chat::room {
 
     /// Add message to room - use message_counter as id
     fun add_message(room: &mut Room, sender: address, content: String, message_type: u8) {
-        let message = Message {
-            id: room.message_counter,      // Use counter as unique id
+        let msg = message::new_message(
+            room.message_counter,
             sender,
             content,
-            timestamp: timestamp::now_milliseconds(),
-            message_type,
-        };
+            message_type
+        );
         
-        table::add(&mut room.messages, room.message_counter, message);
+        table::add(&mut room.messages, room.message_counter, msg);
         room.message_counter = room.message_counter + 1;
     }
 
     /// Send a message and trigger AI response if needed
     public fun send_message(
         account: &signer,
-        room: &mut Object<Room>,
+        room_obj: &mut Object<Room>,
         content: String,
     ) {
         let sender = signer::address_of(account);
-        let room_mut = object::borrow_mut(room);
         let now = timestamp::now_milliseconds();
         
-        if (room_mut.is_public) {
+        let room = object::borrow_mut(room_obj);
+
+        if (room.is_public) {
             // In public rooms, sending a message automatically makes you a member
-            if (!table::contains(&room_mut.members, sender) && 
-                !vector::contains(&room_mut.admins, &sender)) {
+            if (!table::contains(&room.members, sender) && 
+                !vector::contains(&room.admins, &sender)) {
                 let member = Member {
                     address: sender,
-                    nickname: string::utf8(b""), // Default empty nickname
+                    nickname: generate_default_nickname(sender), // Use default nickname generator
                     joined_at: now,
                     last_active: now,
                 };
-                table::add(&mut room_mut.members, sender, member);
+                table::add(&mut room.members, sender, member);
             }
         } else {
             // In private rooms, only existing members can send messages
             assert!(
-                table::contains(&room_mut.members, sender) || 
-                vector::contains(&room_mut.admins, &sender),
+                table::contains(&room.members, sender) || 
+                vector::contains(&room.admins, &sender),
                 ErrorNotAuthorized
             );
         };
         
-        assert!(room_mut.status == ROOM_STATUS_ACTIVE, ErrorRoomInactive);
+        assert!(room.status == ROOM_STATUS_ACTIVE, ErrorRoomInactive);
 
-        add_message(room_mut, sender, content, MESSAGE_TYPE_USER);
+        add_message(room, sender, content, message::type_user());
 
-        room_mut.last_active = timestamp::now_milliseconds();
+        room.last_active = timestamp::now_milliseconds();
     }
 
     /// Add AI response to the room (will be implemented by the framework)
     public(friend) fun add_ai_response(room: &mut Room, response_message: String){
-        add_message(room, @onchain_ai_chat, response_message, MESSAGE_TYPE_AI);
+        add_message(room, @onchain_ai_chat, response_message, message::type_ai());
     }
 
     /// Generate default nickname from address
@@ -236,9 +223,6 @@ module onchain_ai_chat::room {
     }
 
     /// Get messages with pagination
-    /// @param room - the room object
-    /// @param start_index - starting message index
-    /// @param limit - maximum number of messages to return
     public fun get_messages_paginated(
         room: &Object<Room>, 
         start_index: u64,
@@ -274,24 +258,24 @@ module onchain_ai_chat::room {
         room_ref.message_counter
     }
 
-    /// Get message type
-    public fun get_message_type(message: &Message): u8 {
-        message.message_type
-    }
-
-    /// Get message content
-    public fun get_message_content(message: &Message): String {
-        message.content
-    }
-
-    /// Get message sender
-    public fun get_message_sender(message: &Message): address {
-        message.sender
-    }
-
-    /// Get message timestamp
-    public fun get_message_timestamp(message: &Message): u64 {
-        message.timestamp
+    /// Get last N messages from the room
+    public fun get_last_messages(room_obj: &Object<Room>, limit: u64): vector<Message> {
+        let room = object::borrow(room_obj);
+        let messages = vector::empty();
+        let start = if (room.message_counter > limit) {
+            room.message_counter - limit
+        } else {
+            0
+        };
+        
+        let i = 0;
+        while (i < limit && (start + i) < room.message_counter) {
+            if (table::contains(&room.messages, start + i)) {
+                vector::push_back(&mut messages, *table::borrow(&room.messages, start + i));
+            };
+            i = i + 1;
+        };
+        messages
     }
 
     /// Check if address is member of room
@@ -355,21 +339,23 @@ module onchain_ai_chat::room {
     /// Send a message and trigger AI response if needed
     public entry fun send_message_entry(
         account: &signer,
-        room: &mut Object<Room>,
+        room_obj: &mut Object<Room>,
         content: String
     ) {
-        let room_ref = object::borrow(room);
-        let is_ai_room = room_ref.room_type == ROOM_TYPE_AI;
-        
-        // First send the user message
-        send_message(account, room, content);
+        let room_id = object::id(room_obj);
+        let is_ai_room = object::borrow(room_obj).room_type == ROOM_TYPE_AI;
+        send_message(account, room_obj, content);
         
         // If it's an AI room, request AI response
         if (is_ai_room) {
+            //TODO make the number of messages to fetch configurable
+            let message_limit: u64 = 10;
+            let prev_messages = get_last_messages(room_obj, message_limit);
             ai_service::request_ai_response(
                 account,
-                object::id(room),
-                content
+                room_id,
+                content,
+                prev_messages
             );
         }
     }

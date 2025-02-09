@@ -1,11 +1,14 @@
 module onchain_ai_chat::ai_service {
     use std::string::{Self, String};
     use std::vector;
+    use std::option;
     use moveos_std::object::ObjectID;
     use moveos_std::account;
     use verity::oracles;
+    use verity::registry;
     use rooch_framework::gas_coin::RGas;
     use rooch_framework::account_coin_store;
+    use onchain_ai_chat::message::{Self, Message};
 
     friend onchain_ai_chat::ai_callback;
     friend onchain_ai_chat::room;
@@ -14,9 +17,16 @@ module onchain_ai_chat::ai_service {
     const NOTIFY_CALLBACK: vector<u8> = b"ai_callback::process_response";
     /// Default gas allocation for notification callbacks 0.6 RGas
     const DEFAULT_NOTIFICATION_GAS: u256 = 60000000;
+    const DEFAULT_ORACLE_FEE: u256 = 200000000;
 
     const AI_ORACLE_HEADERS: vector<u8> = b"{}";
     const AI_ORACLE_METHOD: vector<u8> = b"POST";
+
+    /// The path to the message content in the oracle response
+    /// We directly get the root, if we want to get the first choice we can use ".choices[].message.content"
+    const AI_PICK: vector<u8> = b".";
+    const AI_ORACLE_URL: vector<u8> = b"https://api.openai.com/v1/chat/completions";
+    const MAX_HISTORY_MESSAGES: u64 = 10;
 
     struct PendingRequest has store, copy, drop {
         room_id: ObjectID,
@@ -34,24 +44,63 @@ module onchain_ai_chat::ai_service {
         });
     }
 
+    fun build_chat_context(content: String, previous_messages: &vector<Message>): String {
+        //we use a fixed model for now, gpt-4o
+        let body = string::utf8(b"{\"model\": \"gpt-4o\", \"messages\": [");
+        
+        let i = 0;
+        let len = vector::length(previous_messages);
+        while (i < len) {
+            if (i > 0) {
+                string::append(&mut body, string::utf8(b","));
+            };
+            let msg = vector::borrow(previous_messages, i);
+            string::append(&mut body, string::utf8(b"{\"role\": \""));
+            string::append(&mut body, if (message::get_type(msg) == message::type_ai()) {
+                string::utf8(b"assistant")
+            } else {
+                string::utf8(b"user")
+            });
+            string::append(&mut body, string::utf8(b"\", \"content\": \""));
+            string::append(&mut body, message::get_content(msg));
+            string::append(&mut body, string::utf8(b"\"}"));
+            i = i + 1;
+        };
+
+        // Add current message
+        if (len > 0) {
+            string::append(&mut body, string::utf8(b","));
+        };
+        string::append(&mut body, string::utf8(b"{\"role\": \"user\", \"content\": \""));
+        string::append(&mut body, content);
+        string::append(&mut body, string::utf8(b"\"}], \"temperature\": 0.7}"));
+
+        body
+    }
+
     public(friend) fun request_ai_response(
         from: &signer,
         room_id: ObjectID,
         content: String,
+        previous_messages: vector<Message>
     ) {
-        //TODO eliminate the gas fee
-        let oracle_fee: u256 = 100000000;
-        let url = string::utf8(b"https://api.openai.com/v1/chat/completions");
+        let url = string::utf8(AI_ORACLE_URL);
         let method = string::utf8(AI_ORACLE_METHOD);
         let headers = string::utf8(AI_ORACLE_HEADERS);
         
-        let body = string::utf8(b"{\"model\": \"gpt-4o\", \"messages\": [{\"role\": \"user\", \"content\": \"");
-        string::append(&mut body, content);
-        string::append(&mut body, string::utf8(b"\"}], \"temperature\": 0.7}"));
+        let body = build_chat_context(content, &previous_messages);
         
-        //let pick = string::utf8(b".choices[].message.content");
-        let pick = string::utf8(b".");
+        let pick = string::utf8(AI_PICK);
         let http_request = oracles::build_request(url, method, headers, body);
+        
+        let option_min_amount = registry::estimated_cost(ORACLE_ADDRESS, url, string::length(&body), 1024);
+        let oracle_fee = DEFAULT_ORACLE_FEE*10;
+        let _oracle_fee: u256 = if(option::is_some(&option_min_amount)) {
+            option::destroy_some(option_min_amount)*2
+        } else {
+            DEFAULT_ORACLE_FEE
+        };
+        
         let payment = account_coin_store::withdraw<RGas>(from, oracle_fee);
         
         let request_id = oracles::new_request_with_payment(
