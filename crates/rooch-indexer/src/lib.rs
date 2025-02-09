@@ -12,8 +12,16 @@ use diesel::sqlite::SqliteConnection;
 use diesel::ConnectionError::BadConnection;
 use diesel::RunQueryDsl;
 use errors::IndexerError;
+use moveos_store::MoveOSStore;
+use moveos_types::move_types::type_tag_match;
+use moveos_types::moveos_std::object::{
+    is_dynamic_field_type, parse_dynamic_field_type_tags, ObjectID, RawField,
+};
+use moveos_types::state::MoveType;
+use moveos_types::state_resolver::{RootObjectResolver, StateResolver};
 use once_cell::sync::Lazy;
 use prometheus::Registry;
+use rooch_types::framework::indexer::IndexerModule;
 use rooch_types::indexer::event::IndexerEvent;
 use rooch_types::indexer::field::{IndexerField, IndexerFieldChanges};
 use rooch_types::indexer::state::{
@@ -41,7 +49,7 @@ pub mod utils;
 
 /// Type alias to improve readability.
 pub type IndexerResult<T> = Result<T, IndexerError>;
-
+pub const MAX_LIST_FIELD_SIZE: usize = 200;
 pub const DEFAULT_BUSY_TIMEOUT: u64 = 5000; // millsecond
 pub type IndexerTableName = &'static str;
 pub const INDEXER_EVENTS_TABLE_NAME: IndexerTableName = "events";
@@ -426,4 +434,34 @@ pub fn get_sqlite_pool_connection(
             e
         ))
     })
+}
+
+pub fn list_field_indexer_keys(
+    resolver: &RootObjectResolver<MoveOSStore>,
+) -> Result<Vec<ObjectID>> {
+    // let resolver = RootObjectResolver::new(self.root.clone(), &self.moveos_store);
+    let field_indexer_object_id = IndexerModule::field_indexer_object_id();
+    let states = resolver.list_fields(&field_indexer_object_id, None, MAX_LIST_FIELD_SIZE)?;
+
+    let data = states
+        .into_iter()
+        .filter_map(|state| {
+            let object_type = state.1.metadata.object_type;
+            if !is_dynamic_field_type(&object_type) {
+                return None;
+            }
+
+            parse_dynamic_field_type_tags(&object_type).and_then(|(name_type, value_type)| {
+                if !type_tag_match(&ObjectID::type_tag(), &name_type) {
+                    return None;
+                }
+
+                RawField::parse_unchecked_field(state.1.value.as_slice(), name_type, value_type)
+                    .ok()
+                    .and_then(|raw_field| bcs::from_bytes::<ObjectID>(&raw_field.name).ok())
+            })
+        })
+        .collect();
+
+    Ok(data)
 }
