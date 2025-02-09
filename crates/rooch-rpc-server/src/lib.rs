@@ -325,7 +325,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     info!("RPC Server proposer address: {:?}", proposer_account);
     let proposer = ProposerActor::new(
         proposer_keypair,
-        moveos_store,
+        moveos_store.clone(),
         rooch_store,
         &prometheus_registry,
         opt.proposer.clone(),
@@ -343,9 +343,14 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     timers.push(proposer_timer);
 
     // Init indexer
-    let indexer_executor = IndexerActor::new(root, indexer_store)?
-        .into_actor(Some("Indexer"), &actor_system)
-        .await?;
+    let indexer_executor = IndexerActor::new(
+        root,
+        indexer_store,
+        moveos_store,
+        Some(event_actor_ref.clone()),
+    )?
+    .into_actor(Some("Indexer"), &actor_system)
+    .await?;
     let indexer_reader_executor = IndexerReaderActor::new(indexer_reader)?
         .into_actor(Some("IndexerReader"), &actor_system)
         .await?;

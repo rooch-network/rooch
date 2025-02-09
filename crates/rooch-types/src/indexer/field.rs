@@ -38,33 +38,6 @@ impl IndexerField {
     }
 }
 
-// #[derive(
-//     Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize, Deserialize, JsonSchema,
-// )]
-// pub struct IndexerFieldID {
-//     pub object_id: ObjectID,
-//     pub field_key: String,
-// }
-//
-// impl std::fmt::Display for IndexerFieldID {
-//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-//         write!(
-//             f,
-//             "IndexerFieldID[object id: {:?}, field key: {}]",
-//             self.object_id, self.field_key,
-//         )
-//     }
-// }
-//
-// impl IndexerFieldID {
-//     pub fn new(object_id: ObjectID, field_key: String) -> Self {
-//         IndexerFieldID {
-//             object_id,
-//             field_key,
-//         }
-//     }
-// }
-
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum FieldFilter {
@@ -98,6 +71,7 @@ pub fn handle_field_change(
     field_key: FieldKey,
     object_change: ObjectChange,
     field_changes: &mut IndexerFieldChanges,
+    field_indexer_ids: Vec<ObjectID>,
 ) -> Result<()> {
     let ObjectChange {
         metadata,
@@ -107,9 +81,11 @@ pub fn handle_field_change(
     let object_id = metadata.id.clone();
     let object_type = metadata.object_type.clone();
 
-    // TODO check field index config
-    // index dynamic field object
-    if is_dynamic_field_type(&object_type) {
+    // first, check field index config
+    // then, index dynamic field object
+    if need_process_field_indexer(&object_id, field_indexer_ids.clone())
+        && is_dynamic_field_type(&object_type)
+    {
         let name_and_value_typetag_opt = parse_dynamic_field_type_tags(&object_type);
         if let Some((name_type, value_type)) = name_and_value_typetag_opt {
             if let Some(op) = value {
@@ -155,11 +131,14 @@ pub fn handle_field_change(
     }
 
     for (key, change) in fields {
-        handle_field_change(key, change, field_changes)?;
+        handle_field_change(key, change, field_changes, field_indexer_ids.clone())?;
     }
     Ok(())
 }
 
+pub fn need_process_field_indexer(id: &ObjectID, field_indexer_ids: Vec<ObjectID>) -> bool {
+    field_indexer_ids.contains(id)
+}
 pub fn parse_dynamic_field_type_tags(type_tag: &TypeTag) -> Option<(TypeTag, TypeTag)> {
     if let TypeTag::Struct(struct_tag) = type_tag {
         // Verify this is a DynamicField struct

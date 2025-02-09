@@ -10,28 +10,76 @@ use crate::store::traits::IndexerStoreTrait;
 use crate::IndexerStore;
 use anyhow::Result;
 use async_trait::async_trait;
-use coerce::actor::{context::ActorContext, message::Handler, Actor};
-use moveos_types::moveos_std::object::ObjectMeta;
+use coerce::actor::{context::ActorContext, message::Handler, Actor, LocalActorRef};
+use moveos_store::MoveOSStore;
+use moveos_types::move_types::type_tag_match;
+use moveos_types::moveos_std::object::{is_dynamic_field_type, ObjectID, ObjectMeta, RawField};
+use moveos_types::state::MoveType;
+use moveos_types::state_resolver::{RootObjectResolver, StateResolver};
 use moveos_types::transaction::MoveAction;
+use rooch_event::actor::EventActor;
+use rooch_types::framework::indexer::IndexerModule;
 use rooch_types::indexer::event::IndexerEvent;
-use rooch_types::indexer::field::{handle_field_change, IndexerFieldChanges};
+use rooch_types::indexer::field::{
+    handle_field_change, parse_dynamic_field_type_tags, IndexerFieldChanges,
+};
 use rooch_types::indexer::state::{
     handle_object_change, handle_revert_object_change, IndexerObjectStateChangeSet,
     IndexerObjectStatesIndexGenerator, ObjectStateType,
 };
 use rooch_types::indexer::transaction::IndexerTransaction;
 
+pub const MAX_LIST_FIELD_SIZE: usize = 200;
 pub struct IndexerActor {
     root: ObjectMeta,
     indexer_store: IndexerStore,
+    moveos_store: MoveOSStore,
+    _event_actor: Option<LocalActorRef<EventActor>>,
 }
 
 impl IndexerActor {
-    pub fn new(root: ObjectMeta, indexer_store: IndexerStore) -> Result<Self> {
+    pub fn new(
+        root: ObjectMeta,
+        indexer_store: IndexerStore,
+        moveos_store: MoveOSStore,
+        event_actor: Option<LocalActorRef<EventActor>>,
+    ) -> Result<Self> {
         Ok(Self {
             root,
             indexer_store,
+            moveos_store,
+            _event_actor: event_actor,
         })
+    }
+
+    // TODO use EventBus to trigger field indexer update
+    pub fn list_field_indexer_keys(&self) -> Result<Vec<ObjectID>> {
+        let resolver = RootObjectResolver::new(self.root.clone(), &self.moveos_store);
+
+        let field_indexer_object_id = IndexerModule::field_indexer_object_id();
+        let states = resolver.list_fields(&field_indexer_object_id, None, MAX_LIST_FIELD_SIZE)?;
+
+        let data = states
+            .into_iter()
+            .filter_map(|state| {
+                let object_type = state.1.metadata.object_type;
+                if !is_dynamic_field_type(&object_type) {
+                    return None;
+                }
+
+                parse_dynamic_field_type_tags(&object_type).and_then(|(name_type, value_type)| {
+                    if !type_tag_match(&ObjectID::type_tag(), &name_type) {
+                        return None;
+                    }
+
+                    RawField::parse_unchecked_field(state.1.value.as_slice(), name_type, value_type)
+                        .ok()
+                        .and_then(|raw_field| bcs::from_bytes::<ObjectID>(&raw_field.name).ok())
+                })
+            })
+            .collect();
+
+        Ok(data)
     }
 }
 
@@ -47,7 +95,6 @@ impl Handler<UpdateIndexerMessage> for IndexerActor {
             events,
             state_change_set,
         } = msg;
-
         self.root = state_change_set.root_metadata();
         let tx_order = ledger_transaction.sequence_info.tx_order;
 
@@ -92,9 +139,15 @@ impl Handler<UpdateIndexerMessage> for IndexerActor {
             .apply_object_states(indexer_object_state_change_set)?;
 
         //4. update indexer field
+        let field_indexer_ids = self.list_field_indexer_keys()?;
         let mut field_changes = IndexerFieldChanges::default();
         for (field_key, object_change) in state_change_set.changes {
-            let _ = handle_field_change(field_key, object_change, &mut field_changes)?;
+            let _ = handle_field_change(
+                field_key,
+                object_change,
+                &mut field_changes,
+                field_indexer_ids.clone(),
+            )?;
         }
         self.indexer_store.apply_fields(field_changes)?;
 
