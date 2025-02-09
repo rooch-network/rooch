@@ -302,7 +302,7 @@ impl RoochDB {
             let state_change_set_ext = state_change_set_ext_opt.unwrap();
 
             let mut object_ids = vec![];
-            for (_filed_key, object_change) in state_change_set_ext.state_change_set.changes.clone()
+            for (_field_key, object_change) in state_change_set_ext.state_change_set.changes.clone()
             {
                 collect_revert_object_change_ids(object_change, &mut object_ids)?;
             }
@@ -334,7 +334,7 @@ impl RoochDB {
             let mut state_index_generator = IndexerObjectStatesIndexGenerator::default();
             let mut indexer_object_state_change_set = IndexerObjectStateChangeSet::default();
 
-            for (_filed_key, object_change) in state_change_set_ext.state_change_set.changes.clone()
+            for (_field_key, object_change) in state_change_set_ext.state_change_set.changes.clone()
             {
                 handle_revert_object_change(
                     &mut state_index_generator,
@@ -352,7 +352,7 @@ impl RoochDB {
             let field_indexer_ids = list_field_indexer_keys(&resolver)?;
 
             let mut field_object_ids = vec![];
-            for (_filed_key, object_change) in state_change_set_ext.state_change_set.changes.clone()
+            for (_field_key, object_change) in state_change_set_ext.state_change_set.changes.clone()
             {
                 collect_revert_field_change_ids(
                     &field_indexer_ids,

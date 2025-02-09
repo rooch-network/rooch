@@ -52,5 +52,5 @@ pub trait IndexerStoreTrait: Send + Sync {
 
     fn delete_fields_by_id(&self, ids: Vec<String>) -> Result<(), IndexerError>;
 
-    fn apply_fields(&self, filed_changes: IndexerFieldChanges) -> Result<(), IndexerError>;
+    fn apply_fields(&self, field_changes: IndexerFieldChanges) -> Result<(), IndexerError>;
 }

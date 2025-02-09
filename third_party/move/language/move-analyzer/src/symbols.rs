@@ -2365,9 +2365,9 @@ pub fn on_document_symbol_request(context: &Context, request: &Request, symbols:
 /// Helper function to handle struct fields
 #[allow(deprecated)]
 fn handle_struct_fields(struct_def: StructDef, fields: &mut Vec<DocumentSymbol>) {
-    let clonded_fileds = struct_def.field_defs;
+    let clonded_fields = struct_def.field_defs;
 
-    for field_def in clonded_fileds {
+    for field_def in clonded_fields {
         let field_range = Range {
             start: field_def.start,
             end: field_def.start,
