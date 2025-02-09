@@ -6,6 +6,9 @@ module onchain_ai_chat::room {
     use moveos_std::timestamp;
     use moveos_std::signer;
     use moveos_std::hex;
+    use onchain_ai_chat::ai_service;
+
+    friend onchain_ai_chat::ai_callback;
 
     // Error codes
     const ErrorRoomNotFound: u64 = 1;
@@ -63,6 +66,7 @@ module onchain_ai_chat::room {
     }
 
     struct Message has store, copy, drop {
+        id: u64,           // Add message id
         sender: address,
         content: String,
         timestamp: u64,    // Now in milliseconds
@@ -101,6 +105,20 @@ module onchain_ai_chat::room {
         room_id
     }
 
+    /// Add message to room - use message_counter as id
+    fun add_message(room: &mut Room, sender: address, content: String, message_type: u8) {
+        let message = Message {
+            id: room.message_counter,      // Use counter as unique id
+            sender,
+            content,
+            timestamp: timestamp::now_milliseconds(),
+            message_type,
+        };
+        
+        table::add(&mut room.messages, room.message_counter, message);
+        room.message_counter = room.message_counter + 1;
+    }
+
     /// Send a message and trigger AI response if needed
     public fun send_message(
         account: &signer,
@@ -134,36 +152,14 @@ module onchain_ai_chat::room {
         
         assert!(room_mut.status == ROOM_STATUS_ACTIVE, ErrorRoomInactive);
 
-        let message = Message {
-            sender,
-            content,
-            timestamp: timestamp::now_milliseconds(),
-            message_type: MESSAGE_TYPE_USER,
-        };
-
-        table::add(&mut room_mut.messages, room_mut.message_counter, message);
-        room_mut.message_counter = room_mut.message_counter + 1;
-
-        // If this is an AI room, generate AI response
-        if (room_mut.room_type == ROOM_TYPE_AI) {
-            add_ai_response(room_mut, content);
-        };
+        add_message(room_mut, sender, content, MESSAGE_TYPE_USER);
 
         room_mut.last_active = timestamp::now_milliseconds();
     }
 
     /// Add AI response to the room (will be implemented by the framework)
-    fun add_ai_response(room: &mut Room, _user_message: String){
-        let response_message = string::utf8(b"AI response to your message: ");
-        let ai_message = Message {
-            sender: @0x1,
-            content: response_message,
-            timestamp: timestamp::now_milliseconds(),
-            message_type: MESSAGE_TYPE_AI,
-        };
-        
-        table::add(&mut room.messages, room.message_counter, ai_message);
-        room.message_counter = room.message_counter + 1;
+    public(friend) fun add_ai_response(room: &mut Room, response_message: String){
+        add_message(room, @onchain_ai_chat, response_message, MESSAGE_TYPE_AI);
     }
 
     /// Generate default nickname from address
@@ -356,13 +352,26 @@ module onchain_ai_chat::room {
         let _room_id = create_room(account, title, is_public, ROOM_TYPE_AI);
     }
 
-    /// Send a message to a room - entry function
+    /// Send a message and trigger AI response if needed
     public entry fun send_message_entry(
         account: &signer,
         room: &mut Object<Room>,
         content: String
     ) {
+        let room_ref = object::borrow(room);
+        let is_ai_room = room_ref.room_type == ROOM_TYPE_AI;
+        
+        // First send the user message
         send_message(account, room, content);
+        
+        // If it's an AI room, request AI response
+        if (is_ai_room) {
+            ai_service::request_ai_response(
+                account,
+                object::id(room),
+                content
+            );
+        }
     }
 
     /// Add a member to a private room - entry function
@@ -408,4 +417,5 @@ module onchain_ai_chat::room {
         let room = object::take_object_extend<Room>(room_id);
         delete_room(account, room);
     }
+
 }

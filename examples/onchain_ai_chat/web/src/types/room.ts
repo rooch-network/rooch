@@ -13,6 +13,7 @@ export interface Room {
 }
 
 export interface Message {
+  id: number;
   sender: string;
   content: string;
   timestamp: number;
@@ -20,10 +21,11 @@ export interface Message {
 }
 
 export const MessageSchema = bcs.struct('Message', {
+  id: bcs.u64(),
   sender: bcs.Address,
-  content: bcs.String,
-  timestamp: bcs.U64,
-  message_type: bcs.U8,
+  content: bcs.string(),
+  timestamp: bcs.u64(),
+  message_type: bcs.u8(),
 })
 
 export const RoomSchema = bcs.struct('Room', {

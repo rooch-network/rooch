@@ -49,15 +49,21 @@ export function Room() {
     }
   }, [messageCountResponse]);
 
-  // Update messages query to destructure the response
+  // Update messages query to use correct pagination logic
   const { data: messagesResponse, refetch: refetchMessages } = useRoochClientQuery(
     'executeViewFunction',
     {
       target: `${packageId}::room::get_messages_paginated`,
       args: [
         Args.objectId(roomId!),
-        Args.u64(Math.max(0, totalCount - (page + 1) * PAGE_SIZE)),
-        Args.u64(Math.min(PAGE_SIZE, totalCount - page * PAGE_SIZE)),
+        // Start from the latest message and go backwards
+        Args.u64(Math.max(0, totalCount - ((page + 1) * PAGE_SIZE))),
+        // Calculate correct page size
+        Args.u64(Math.min(
+          PAGE_SIZE,
+          // For the last page, we need to handle partial page
+          totalCount - Math.max(0, totalCount - ((page + 1) * PAGE_SIZE))
+        )),
       ],
     },
     {
@@ -75,6 +81,7 @@ export function Room() {
       
       const parsedMessages = bcs.vector(MessageSchema).parse(bytes);
       return parsedMessages.map((message: any) => ({
+        id: message.id,
         sender: message.sender,
         content: message.content,
         timestamp: message.timestamp,
@@ -107,24 +114,26 @@ export function Room() {
     if (messagesResponse?.return_values?.[0]?.value?.value) {
       try {
         const newMessages = deserializeMessages(messagesResponse.return_values[0].value.value);
-        
+        console.log('newMessages:', newMessages);
         setAllMessages(prev => {
           const baseMessages = page === 0 ? [] : prev;
-          const messageMap = new Map(baseMessages.map(msg => [
-            `${msg.sender}-${msg.timestamp}`,
-            msg
-          ]));
+          // Use message id as Map key instead of sender-timestamp
+          const messageMap = new Map(baseMessages.map(msg => [msg.id, msg]));
 
           newMessages.forEach(msg => {
-            messageMap.set(`${msg.sender}-${msg.timestamp}`, msg);
+            messageMap.set(msg.id, msg);
           });
 
           const sortedMessages = Array.from(messageMap.values())
-            .sort((a, b) => parseInt(a.timestamp) - parseInt(b.timestamp));
+            // Sort by timestamp first, then by id for same timestamps
+            .sort((a, b) => {
+              const timeDiff = parseInt(a.timestamp) - parseInt(b.timestamp);
+              return timeDiff === 0 ? a.id - b.id : timeDiff;
+            });
 
-          // Update hasMore based on message count
           setHasMore(messageMap.size < totalCount);
 
+          console.log('sortedMessages:', sortedMessages);
           return sortedMessages;
         });
       } catch (error) {

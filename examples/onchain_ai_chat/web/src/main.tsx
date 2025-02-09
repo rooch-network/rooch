@@ -20,12 +20,12 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       <QueryClientProvider client={queryClient}>
             <RoochProvider networks={networkConfig} sessionConf={
               {
-                appName: "rooch_test",
+                appName: "Onchain AI Chat",
                 appUrl: "https://test.com",
                 scopes: [`${DEVNET_PACKAGE_ID}::*::*`],
-                maxInactiveInterval: 1200
+                maxInactiveInterval: 3600,
               }
-            } defaultNetwork='localnet'>
+            } defaultNetwork='testnet'>
               <WalletProvider preferredWallets={['UniSat']} chain={'bitcoin'} autoConnect>
                 <ErrorGuard/>
                 <App/>
