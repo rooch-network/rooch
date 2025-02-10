@@ -10,7 +10,7 @@ import { networkConfig } from "./networks";
 import './index.css'
 import App from './App.tsx'
 import { ErrorGuard } from "./ErrorGuard.tsx";
-import { DEVNET_PACKAGE_ID } from './constants.ts'
+import { PACKAGE_ID } from './constants.ts'
 
 const queryClient = new QueryClient();
 
@@ -22,7 +22,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               {
                 appName: "Onchain AI Chat",
                 appUrl: "https://test.com",
-                scopes: [`${DEVNET_PACKAGE_ID}::*::*`],
+                scopes: [`${PACKAGE_ID}::*::*`],
                 maxInactiveInterval: 3600,
               }
             } defaultNetwork='testnet'>

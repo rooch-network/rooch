@@ -13,6 +13,7 @@ import { useNetworkVariable } from '../networks'
 import { Args, Transaction, bcs } from '@roochnetwork/rooch-sdk'
 import { Message, MessageSchema} from '../types/room'
 import { Title } from '../components/Title';
+import { useOracleBalance } from '../components/OracleBalance';
 
 export function Room() {
   const { roomId } = useParams<{ roomId: string }>();
@@ -28,6 +29,7 @@ export function Room() {
   const [totalCount, setTotalCount] = useState(0);
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const [roomTitle, setRoomTitle] = useState<string>('Loading...');
+  const { refetch: refetchBalance } = useOracleBalance();
   
   // Query messages count - Always enabled when we have roomId and client
   const { data: messageCountResponse, refetch: refetchMessageCount } = useRoochClientQuery(
@@ -209,6 +211,7 @@ export function Room() {
       await Promise.all([
         refetchMessages(),
         refetchMessageCount(),
+        refetchBalance(),
       ]);
       
       // Delay scroll to bottom to ensure new message is rendered
