@@ -2,7 +2,7 @@
 
 ## Introduction
 
-LP tokens can be used to earn compound interest in liquidity mining, take out cryptocurrency loans, or transfer ownership of staking liquidity.
+LP (Liquidity Provider) refers to token holders who combine two different tokens (such as `RGas` and `GROW`) into a token pair and stake it in Rooch’s liquidity pool (Farm). These pools receive liquidity from `RGas` and `GROW`, and liquidity providers are rewarded based on their contribution to the pool (in the form of `$LPXP`). Users holding `$LPXP` will have the opportunity to receive `$ROOCH` airdrops in the future.
 
 Rooch now launches staking for `RGas` and `GROW` token pairs, and follows up with a simple demo to show the staking process.
 
@@ -16,6 +16,13 @@ Enter the Portal page, select `Liquidity` and click on the `Add` button on the r
 ![](/docs/portal/liquidity/liquidity-home.png)
 
 Just fill in the `RGas` and the LP pair will automatically calculate the `GROW` dosage:
+
+The amount is calculated based on the official Swap pool, and the calculation form is:
+
+```
+point = x / x pool * 100%
+y = y pool * point
+```
 
 ![](/docs/portal/liquidity/liquidity-add.png)
 
@@ -42,3 +49,5 @@ Click the `Stake LP` button to stake token pairs:
 ![](/docs/portal/liquidity/liquidity-stake-lp.png)
 
 After staking an LP, you can obtain `$LPXP` income.
+
+In the [Rooch Network Tokenomics](https://rooch.network/blog/rooch-network-tokenomics) article released by Rooch, `5%` of the `$ROOCH` tokens will be used to incentivize LP providers, and holding `$LPXP` can earn `$ROOCH` airdrops in the future.

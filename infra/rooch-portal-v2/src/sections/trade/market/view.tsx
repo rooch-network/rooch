@@ -14,6 +14,7 @@ import { Tab, Card, Tabs, Alert, Stack, Button, Tooltip, Skeleton, useTheme } fr
 
 import { RouterLink } from 'src/routes/components';
 
+import { useNetworkVariable } from 'src/hooks/use-networks';
 import {
   type BidItem,
   type MarketItem,
@@ -23,6 +24,7 @@ import {
 import { fromDust } from 'src/utils/number';
 import { shortCoinType } from 'src/utils/common';
 import { fNumber } from 'src/utils/format-number';
+import { formatUnitPrice } from 'src/utils/marketplace';
 
 import { secondary } from 'src/theme/core';
 
@@ -30,15 +32,12 @@ import { Iconify } from 'src/components/iconify';
 import ListDialog from 'src/components/market/list-dialog';
 import { EmptyContent } from 'src/components/empty-content';
 import TradeInfoItem from 'src/components/market/trade-info-item';
+import OrderItemCard from 'src/components/market/order-item-card';
 import CreateBidDialog from 'src/components/market/create-bid-dialog';
 import AcceptBidDialog from 'src/components/market/accept-bid-dialog';
-import InscriptionItemCard from 'src/components/market/inscription-item-card';
+import OrderItemBidCard from 'src/components/market/order-item-bid-card';
 import { renderSkeleton } from 'src/components/skeleton/product-item-skeleton-list';
 import { ProductItemSkeleton } from 'src/components/skeleton/product-item-skeleton';
-import InscriptionItemBidCard from 'src/components/market/inscription-item-bid-card';
-
-import { formatUnitPrice } from '../../../utils/marketplace';
-import { useNetworkVariable } from '../../../hooks/use-networks';
 
 export default function MarketplaceView({ params }: { params: { tick: string } }) {
   const { tick: marketplaceTick }: { tick: string } = params;
@@ -116,11 +115,6 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
     try {
       let { fromPrice } = listPageParams;
       const { startOrderId } = listPageParams;
-      console.log(
-        '🚀 ~ file: view.tsx:123 ~ getListData ~ fromPrice, start:',
-        fromPrice,
-        startOrderId
-      );
       const res = await client.executeViewFunction({
         target: `${market.orderBookAddress}::market_v2::query_order_info`,
         args: [
@@ -132,7 +126,6 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
         ],
         typeArgs: [fromCoinBalanceInfo.coin_type, toCoinBalanceInfo.coin_type],
       });
-      console.log(res);
       const decodedValue = res.return_values?.[0]?.decoded_value as AnnotatedMoveStructView;
       if ((decodedValue as any).length === 0) {
         // setMarketList([]);
@@ -146,15 +139,9 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
         is_bid: i[4],
       })) as unknown as MarketItem[];
       setFloorPrice(marketItemList[0].unit_price);
-      console.log('🚀 ~ file: view.tsx:140 ~ marketItemList ~ marketItemList:', marketItemList);
       setMarketList((prevData) => [...prevData, ...marketItemList]);
       const { fromPrice: countedFromPrice, start: countedStart } = countMaxOccurrences(
         marketItemList.map((item) => Number(item.unit_price))
-      );
-      console.log(
-        '🚀 ~ file: view.tsx:159 ~ getListData ~ countedFromPrice:',
-        countedFromPrice,
-        countedStart
       );
       if (!(fromPrice === countedFromPrice && countedStart === 50)) {
         fromPrice = countedFromPrice;
@@ -165,7 +152,7 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
         hasNextPage: marketItemList.length === 50,
       }));
     } catch (error) {
-      console.log('🚀 ~ file: view.tsx:231 ~ getListData ~ error:', error);
+      console.log('error', error);
     } finally {
       setLoadingList(false);
     }
@@ -208,7 +195,6 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
         owner: i[3],
         is_bid: i[4],
       })) as unknown as BidItem[];
-      console.log('🚀 ~ file: view.tsx:193 ~ marketItemList ~ marketItemList:', bidItemList);
       setBidList((prevData) => [...prevData, ...bidItemList]);
       const { fromPrice: countedFromPrice, start: countedStart } = countMaxOccurrences(
         bidItemList.map((item) => Number(item.unit_price))
@@ -222,7 +208,7 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
         hasNextPage: bidItemList.length === 50,
       }));
     } catch (error) {
-      console.log('🚀 ~ file: view.tsx:260 ~ getBidData ~ error:', error);
+      console.log('error', error);
     } finally {
       setLoadingList(false);
     }
@@ -286,11 +272,6 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
       tempToCoinBalanceInfo.balance = toBalanceInfo.balance;
     }
 
-    console.log(
-      '🚀 ~ file: view.tsx:290 ~ getMarketTradeInfo ~ tempFromCoinBalanceInfo:',
-      tempFromCoinBalanceInfo,
-      tempToCoinBalanceInfo
-    );
     setFromCoinBalanceInfo(tempFromCoinBalanceInfo as BalanceInfoView);
     setToCoinBalanceInfo(tempToCoinBalanceInfo as BalanceInfoView);
   }, [account, client, marketplaceTick, market]);
@@ -352,15 +333,6 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
           {`Fetching the user's listing records may take some time. Please be patient and wait.`}
         </Alert>
       )}
-      {/* <Alert
-        severity="success"
-        variant="outlined"
-        sx={{
-          mb: 2,
-        }}
-      >
-        Bid is now live. Welcome to give it a try!
-      </Alert> */}
       <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap">
         <Stack direction="row" alignItems="center" spacing={4} flexWrap="wrap">
           <Typography variant="h4"> Marketplace | {tickUpperCase} </Typography>
@@ -429,17 +401,10 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
       >
         <Stack
           direction="row"
-          // divider={<Divider orientation="vertical" sx={{ borderStyle: 'dashed' }} />}
           justifyContent="start"
           gap={2}
           display="flex"
           className="justify-between"
-          // gridTemplateColumns={{
-          //   xs: 'repeat(1, 1fr)',
-          //   sm: 'repeat(1, 1fr)',
-          //   md: 'repeat(3, 1fr)',
-          //   lg: 'repeat(5, 1fr)',
-          // }}
           sx={{ py: 2, pl: 2, pr: 2 }}
         >
           <TradeInfoItem
@@ -563,7 +528,7 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
                   marketList.map(
                     (item) =>
                       item.order_id && (
-                        <InscriptionItemCard
+                        <OrderItemCard
                           fromCoinBalanceInfo={fromCoinBalanceInfo}
                           toCoinBalanceInfo={toCoinBalanceInfo}
                           key={item.order_id}
@@ -581,7 +546,7 @@ export default function MarketplaceView({ params }: { params: { tick: string } }
                   )}
                 {currentTab === 'bid' &&
                   bidList.map((item) => (
-                    <InscriptionItemBidCard
+                    <OrderItemBidCard
                       fromCoinBalanceInfo={fromCoinBalanceInfo}
                       toCoinBalanceInfo={toCoinBalanceInfo}
                       item={item}

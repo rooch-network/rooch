@@ -24,10 +24,6 @@ export default function LiquidityListView() {
 
   const [openCreateModal, setOpenCreateModal] = useState(false);
 
-  // const handleOpenCreateModal = () => {
-  //   setOpenCreateModal(true);
-  // };
-
   const handleCloseCreateModal = () => {
     setOpenCreateModal(false);
   };

@@ -2,11 +2,8 @@
 
 import { useState } from 'react';
 import BigNumber from 'bignumber.js';
-import { useSignAndExecuteTransaction } from '@roochnetwork/rooch-sdk-kit';
 
 import { Box, Stack, Button, TextField, Typography, FormControl } from '@mui/material';
-
-import { useNetworkVariable } from 'src/hooks/use-networks';
 
 import { isNumber } from 'src/utils/reg';
 import { formatByIntl } from 'src/utils/number';
@@ -19,10 +16,6 @@ import SelectTokenPair from '../components/select-token-pair';
 import type { TradeCoinType } from '../components/types';
 
 export default function SwapView() {
-  const dex = useNetworkVariable('dex');
-  const { mutate, isPending } = useSignAndExecuteTransaction();
-
-  const [loading, setLoading] = useState(false);
   const [x, setX] = useState<TradeCoinType>();
   const [y, setY] = useState<TradeCoinType>();
   const [slippage, setSlippage] = useState(0.005);
@@ -39,9 +32,7 @@ export default function SwapView() {
         <span className="mt-2">Trade tokens in an instant.</span>
         <SelectTokenPair
           key="to"
-          onLoading={(loading) => {
-            setLoading(loading);
-          }}
+          onLoading={() => {}}
           onCallback={(x, y) => {
             setX(x);
             setY(y);
@@ -90,7 +81,7 @@ export default function SwapView() {
                 value={customSlippage}
                 variant="outlined"
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                  const {value} = e.target;
+                  const { value } = e.target;
                   if (!isNumber(value)) {
                     return;
                   }

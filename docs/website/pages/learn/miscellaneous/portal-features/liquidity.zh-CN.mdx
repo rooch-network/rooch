@@ -2,7 +2,7 @@
 
 ## 简介
 
-LP 代币可用于在流动性挖矿中赚取复利、取得加密货币贷款，或转让质押流动性的所有权。
+LP（流动性提供者）是指代币持有者将两种不同的代币（如 `RGas` 和 `GROW`）组合成代币对，并将其质押至 Rooch 的流动性池（Farm）。这些池子将获得 `RGas` 和 `GROW` 的流动性，而流动性提供者根据其贡献的流动性比例，获得池子的收益（`$LPXP`）。持有 `$LPXP` 的用户将有机会参与未来的 `$ROOCH` 空投。
 
 Rooch 现在推出 `RGas` 和 `GROW` 代币对质押，接下来通过一个简单的演示展示质押流程。
 
@@ -16,6 +16,13 @@ Rooch 现在推出 `RGas` 和 `GROW` 代币对质押，接下来通过一个简�
 ![](/docs/portal/liquidity/liquidity-home.png)
 
 只用填写 `RGas`，LP 对会自动计算 `GROW` 的配量：
+
+配量根据官方的 Swap 池子计算，计算形式为：
+
+```
+point = x / x pool * 100%
+y = y pool * point
+```
 
 ![](/docs/portal/liquidity/liquidity-add.png)
 
@@ -42,3 +49,5 @@ Rooch 现在推出 `RGas` 和 `GROW` 代币对质押，接下来通过一个简�
 ![](/docs/portal/liquidity/liquidity-stake-lp.png)
 
 质押 LP 后，可以获取 `$LPXP` 收益。
+
+在 Rooch 发布的[代币经济](https://rooch.network/zh-CN/blog/rooch-network-tokenomics)一文中公布了 `5%` 的 `$ROOCH` 代币将用于激励 LP 提供者，持有 `$LPXP` 可以在未来获得 `$ROOCH` 空投。

@@ -25,7 +25,7 @@ import { secondary } from 'src/theme/core';
 
 import { toast } from 'src/components/snackbar';
 
-import InscriptionShopCard from './inscription-shop-card';
+import OrderShopCard from './order-shop-card';
 import { useNetworkVariable } from '../../hooks/use-networks';
 
 export type CreateBidDialogProps = {
@@ -47,7 +47,7 @@ export default function CreateBidDialog({
   refreshBidList,
   close,
 }: CreateBidDialogProps) {
-  const market = useNetworkVariable('market')
+  const market = useNetworkVariable('market');
   const account = useCurrentAddress();
   const { mutate: signAndExecuteTransaction, isPending } = useSignAndExecuteTransaction();
 
@@ -78,7 +78,7 @@ export default function CreateBidDialog({
             p: 2,
           }}
         >
-          <InscriptionShopCard
+          <OrderShopCard
             objectId="#"
             tick={tick}
             isVerified={tick.toLowerCase() === 'move'}
@@ -195,38 +195,6 @@ export default function CreateBidDialog({
             </span>{' '}
             {fromCoinBalanceInfo.symbol}
           </Typography>
-          {/* <Typography
-            sx={{
-              color: grey[500],
-              fontSize: '0.875rem',
-              display: 'flex',
-              alignItems: 'center',
-            }}
-          >
-            Fee: 2%{' '}
-            <Tooltip
-              title={
-                <Stack
-                  sx={{
-                    fontSize: '0.75rem',
-                  }}
-                >
-                  <Box>50% Market Fee</Box>
-                  <Box>25% Community Fee</Box>
-                  <Box>12.5% Burn Fee (Easter egg)</Box>
-                  <Box>12.5% Locked in Inscription</Box>
-                </Stack>
-              }
-            >
-              <Iconify
-                icon="solar:question-circle-bold"
-                width={16}
-                sx={{
-                  ml: 1,
-                }}
-              />
-            </Tooltip>
-          </Typography> */}
         </Stack>
       </DialogContent>
 
@@ -247,11 +215,6 @@ export default function CreateBidDialog({
               return;
             }
             const tx = new Transaction();
-            console.log(
-              '🚀 ~ file: create-bid-dialog.tsx:297 ~ toCoinBalanceInfo:',
-              fromCoinBalanceInfo,
-              toCoinBalanceInfo
-            );
             const unitPrice = new BigNumber(
               toDust(bidUnitPrice, fromCoinBalanceInfo.decimals).toString()
             )

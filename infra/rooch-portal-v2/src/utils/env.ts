@@ -1,11 +1,15 @@
 'use client';
 
-export function isMainNetwork() {
-  if (typeof window !== 'undefined') {
-    return (
-      window.location.hostname === 'portal.rooch.network' ||
-      window.location.hostname === 'main-portal.rooch.network'
-    );
+const MAIN_NETWORK_DOMAINS = ['portal.rooch.network', 'main-portal.rooch.network'];
+
+const isDevMode = process.env.NODE_ENV !== 'production';
+
+export function isMainNetwork(): boolean {
+  if (isDevMode) {
+    // dev mode, can custom network,
+    // true is mainnet
+    // false is testnet
+    return true;
   }
-  return false;
+  return MAIN_NETWORK_DOMAINS.includes(window?.location?.hostname ?? '');
 }
