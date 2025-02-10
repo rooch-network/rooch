@@ -12,6 +12,18 @@ Derive DA namespace from genesis file:
 rooch da namespace --genesis-file-path {genesis-file}
 ```
 
+### index
+
+Index tx_order:tx_hash:l2_block_number
+
+basic usage:
+
+```shell
+rooch da index --segment-dir {segment-dir} -i {index-dir}
+```
+
+more options can be found by `rooch da index --help`.
+
 ### unpack
 
 #### download segments
@@ -31,27 +43,29 @@ Unpack tx list from segments to human-readable format:
 rooch da unpack --segment-dir {segment-dir} --batch-dir {batch-dir}
 ```
 
-If you want to verify tx list order, you can use `--verify-order` flag:
+If you want to get stats only, you can use `--stats-only` flag:
 
 ```shell
-rooch da unpack --segment-dir {segment-dir} --batch-dir {batch-dir} --verify-order
+rooch da unpack --segment-dir {segment-dir} --batch-dir {batch-dir} --stats-only
 ```
 
 ### exec
 
-Execute tx list with state root verification(compare with Rooch Network Mainnet/Testnet).
-It's a tool built for verification at development stage, not a full feature tool for sync states in production.
+TODO: update this section with new changes, DO NOT follow this section now.
 
-Features includes:
+Execute tx list with state root verification (compare with Rooch Network Mainnet/Testnet).
+It's a tool built for verification at the development stage, not a full feature tool for sync states in production.
+
+Features include:
 
 1. Execute tx list from segment dir and saving changes locally
 2. Compare state root with Rooch Network Mainnet/Testnet by tx_order:state_root list file
-3. We could collect performance data in execution process by tuning tools like `perf` if needed
+3. We could collect performance data in the execution process by tuning tools like `perf` if needed
 
 #### Prepare tx_order:state_root list file
 
-using [order_state.sh](https://github.com/popcnt1/roh/blob/main/scripts/order_state.sh) to generate tx_order:state_root
-list file:
+using [order_state.sh](https://github.com/popcnt1/roh/blob/main/scripts/order_state.sh) to generate tx_order:state_root:
+accumulator_root list file:
 
 ```shell
 rooch env switch -n {network}

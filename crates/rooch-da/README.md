@@ -18,7 +18,7 @@ verification:
 
 1. **Equivalent to Bitcoin Consensus**: Pack DA into Bitcoin block.
 2. **Self-Verifying**: Anyone could verify DA by checksum and its signature.
-3. **Open**: DA could be anywhere, anyone could access it without permission.
+3. **Open**: DA could be public anywhere, anyone could access it without permission.
 
 ## Key Concepts
 
@@ -33,7 +33,7 @@ verification:
 In Verifier's perspective (verifier verifies tx), the data flow is as follows:
 
 1. user submits tx to sequencer
-2. sequencer buffers transactions to a batch for lower average latency & gas cost
+2. sequencer buffers transactions to a batch for lower average latency and gas cost
 3. sequencer puts batch to DA server with signature
 4. verifier get batch from DA server by:
     1. pull DA stream from DA server (after booking)
@@ -45,9 +45,11 @@ In Verifier's perspective (verifier verifies tx), the data flow is as follows:
 
 ### Sequencer
 
-Tx batch maker. Each sequencer maintains its own DA server.
+Sequencer packs transactions to DA server. Each sequencer maintains its own DA server.
 
 ### DA Server
+
+DA server public transactions.
 
 Has responsibilities:
 
@@ -56,45 +58,26 @@ Has responsibilities:
 3. Response to DA challenges.
 
 Each DA server could connect to multiple DA backends.
+The purpose of multi DA Backend is to mitigate the single point of risk associated with DA server and improve
+performance.
 
 ## DA Backend
 
-The purpose of DA backend is to mitigate the single point of risk associated with DA server. DA server,
-not the backend, remains the principal party responsible for data publication. Therefore, the DA server may elect to
-submit data to DA backend asynchronously.
+[DA backend](./docs/backend.md) is the underlying storage for DA server.
 
-### OpenDA (Using)
+DA server, not the backend, remains the principal party responsible for data publication.
+Therefore, the DA server may elect to submit data to DA backend asynchronously.
 
-Mostly are High throughput, and low latency DA backend based on public cloud storage(or local filesystem in
-development). We could
-connect various cloud storage services at the same time, such as AWS S3, Google Cloud Storage, Azure Blob Storage, etc.
+## Data Access
 
-We could use decentralized storage network as OpenDA too. The easiest way is to connect light client.
-
-### Celestia (Developing)
-
-Celestia is a decentralized storage network that provides a secure and reliable way to store data.
-
-## DA Server APIs
-
-### Put
-
-Put includes these actions:
-
-1. Sequencer puts data to DA server
-2. Sequencer packs data meta to Proposer
-3. DA server put data to DA backends
-
-### Get
-
-There are various ways to get batch data. DA Batch could be verified by meta on Bitcoin.
+There are various ways to get batch data.
 
 #### Bypass DA server accessing DA Backend directly
 
 Verifier could access DA backend directly to get data. However, it's not recommended because of the following reasons:
 
 1. DA backend might lag behind the most recent data, given the likelihood of its data being uploaded asynchronously.
-2. DA backend might be slow to respond to requests, DA server is the professional storage node.
+2. DA backend might be slow to respond to requests.
 3. DA server, accountable for data accessibility, risks forfeiture of its deposit via arbitration if it fails to meet
    the conditions of data availability.
 
@@ -102,8 +85,8 @@ This methodology may be employed to access data in the event that all DA servers
 
 #### Booking DA Stream by DA server（TODO）
 
-Verifier subscribe to a data stream from the DA server.
+Verifiers subscribe to a data stream from the DA server.
 
-#### Get DA Batch by DA server (TODO)
+#### Get Data by DA server (TODO)
 
-DA server maintains a batch index, which is updated in real time as new batches are added. Anyone could get batch.
+DA server maintains a batch index, which is updated in real time as new batches are added.

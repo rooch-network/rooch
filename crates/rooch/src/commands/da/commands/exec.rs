@@ -113,7 +113,7 @@ pub struct ExecCommand {
 
     #[clap(
         long = "open-da",
-        help = "open da path for downloading chunks from DA. Workign with `mode=sync`"
+        help = "open da path for downloading chunks from DA. Working with `mode=sync`"
     )]
     pub open_da_path: Option<String>,
 
