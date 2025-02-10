@@ -3,6 +3,8 @@ import { UserCircleIcon } from '@heroicons/react/24/solid';
 import { formatTimestamp } from '../utils/time';
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
+import { oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism'
 
 interface ChatMessageProps {
   message: Message;
@@ -46,35 +48,50 @@ export function ChatMessage({ message, isCurrentUser }: ChatMessageProps) {
           <div
             className={`rounded-lg px-4 py-2 max-w-[80%] ${
               isCurrentUser
-                ? 'bg-blue-500 text-white'
+                ? 'bg-blue-50 text-gray-900 border border-blue-100'  // Lighter blue for user messages
                 : isAI
-                ? 'bg-purple-50 border border-purple-100'
-                : 'bg-gray-100'
+                ? 'bg-purple-50 border border-purple-100'            // Keep AI message style
+                : 'bg-gray-50 border border-gray-100'               // Lighter gray for other users
             }`}
           >
-            <div className="text-sm">
+            <div className="text-sm leading-relaxed">
               <ReactMarkdown 
                 remarkPlugins={[remarkGfm]}
+                className="prose prose-sm max-w-none"
                 components={{
-                  pre: ({children}) => (
-                    <pre className="overflow-x-auto bg-gray-50 rounded-md p-2 my-2">
-                      {children}
-                    </pre>
-                  ),
-                  code: ({node, inline, className, children, ...props}) => (
-                    <code
-                      className={`${inline 
-                        ? 'px-1 py-0.5 rounded bg-opacity-20' 
-                        : ''} 
-                        ${isCurrentUser 
-                          ? inline ? 'bg-white' : ''
-                          : inline ? 'bg-gray-200' : ''}
-                      `}
-                      {...props}
-                    >
-                      {children}
-                    </code>
-                  ),
+                  pre: ({children}) => children,
+                  code: ({node, inline, className, children, ...props}) => {
+                    const match = /language-(\w+)/.exec(className || '')
+                    const language = match ? match[1] : ''
+                    
+                    return !inline ? (
+                      <div className="my-4">
+                        <SyntaxHighlighter
+                          language={language}
+                          style={oneLight}
+                          customStyle={{
+                            backgroundColor: '#f8fafc',  // bg-slate-50
+                            padding: '1rem',
+                            borderRadius: '0.375rem',
+                            border: '1px solid #e2e8f0',  // border-slate-200
+                          }}
+                        >
+                          {String(children).replace(/\n$/, '')}
+                        </SyntaxHighlighter>
+                      </div>
+                    ) : (
+                      <code
+                        className={`px-1.5 py-0.5 rounded ${
+                          isCurrentUser 
+                            ? 'bg-blue-100/50 text-blue-800' 
+                            : 'bg-slate-100 text-slate-800'
+                        }`}
+                        {...props}
+                      >
+                        {children}
+                      </code>
+                    )
+                  },
                 }}
               >
                 {message.content}
