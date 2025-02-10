@@ -35,3 +35,17 @@ v
 +-------------------+   +-------------------+
 ```
 
+DABackend provides a common interface for all backends.
+The implementation of this trait is backend-specific, could be openDA or other backends.
+
+## OpenDA
+
+OpenDA abstracts various decentralized storage networks and cloud storage services as a single interface.
+At the same time, it keeps the characteristics of each backend:
+
+- Local/Cloud storage: high throughput, low latency. As buffer/cache layer bonded to a single sequencer(DA server) for
+  responding most access.
+- Decentralized storage: high availability. As final persistence layer.
+
+
+
