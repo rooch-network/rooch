@@ -1,0 +1,21 @@
+{
+  "buildCommand": "npm run build",
+  "devCommand": "npm run dev",
+  "framework": "vite",
+  "installCommand": "npm install",
+  "outputDirectory": "dist",
+  "routes": [
+    {
+      "src": "/assets/(.*)",
+      "headers": { "cache-control": "public, max-age=31536000, immutable" }
+    },
+    {
+      "src": "/(.*).(png|jpg|jpeg|svg|gif|webp|ico)",
+      "headers": { "cache-control": "public, max-age=31536000, immutable" }
+    },
+    { 
+      "src": "/(.*)", 
+      "destination": "/index.html" 
+    }
+  ]
+}
