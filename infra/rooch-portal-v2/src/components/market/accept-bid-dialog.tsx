@@ -29,7 +29,7 @@ import { secondary } from 'src/theme/core';
 import { toast } from 'src/components/snackbar';
 import { Iconify } from 'src/components/iconify';
 
-import InscriptionShopCard from './inscription-shop-card';
+import OrderShopCard from './order-shop-card';
 import { useNetworkVariable } from '../../hooks/use-networks';
 
 export type AcceptBidDialogProps = {
@@ -53,7 +53,7 @@ export default function AcceptBidDialog({
   refreshBidList,
   close,
 }: AcceptBidDialogProps) {
-  const market = useNetworkVariable('market')
+  const market = useNetworkVariable('market');
   const account = useCurrentAddress();
   const { mutate: signAndExecuteTransaction, isPending } = useSignAndExecuteTransaction();
 
@@ -89,21 +89,19 @@ export default function AcceptBidDialog({
             p: 2,
           }}
         >
-          <InscriptionShopCard
+          <OrderShopCard
             objectId={acceptBidItem.order_id}
             tick={tick}
-            // isVerified={tick.toLowerCase() === 'move'}
             isVerified
             amount={acceptBidItem.quantity}
             price={price}
             unitPrice={formatUnitPrice(acceptBidItem.unit_price, toCoinBalanceInfo.decimals)}
-            // acc={item.acc}
             fromCoinBalanceInfo={fromCoinBalanceInfo}
             toCoinBalanceInfo={toCoinBalanceInfo}
             seller={acceptBidItem.owner}
             selectMode={false}
             type="list"
-           />
+          />
         </Card>
 
         <Stack

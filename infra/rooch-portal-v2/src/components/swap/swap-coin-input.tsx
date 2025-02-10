@@ -3,6 +3,7 @@ import { useMemo, useState, useEffect } from 'react';
 
 import { Stack, TextField } from '@mui/material';
 
+import { fNumber } from 'src/utils/format-number';
 import { toDust, fromDust, formatCoin, toBigNumber } from 'src/utils/number';
 
 import { grey } from 'src/theme/core';
@@ -19,6 +20,7 @@ export interface SwapCoinInputProps {
   interactiveMode: InteractiveMode;
   disabledCoins: string[];
   fixedSwap?: boolean;
+  easyMode?: boolean;
   hiddenValue?: boolean;
   onChange: (coin: UserCoin, source: 'amount' | 'coin') => void;
 }
@@ -30,6 +32,7 @@ export default function SwapCoinInput({
   interactiveMode,
   disabledCoins,
   fixedSwap,
+  easyMode,
   hiddenValue,
   onChange,
 }: SwapCoinInputProps) {
@@ -49,8 +52,8 @@ export default function SwapCoinInput({
           const amount = toDust(temp, coin.decimals);
           setDebouncedValue(amount);
         } catch (e) {
-//          toast.error(String(e));
-            console.log(e)
+          //          toast.error(String(e));
+          console.log(e);
         }
       }
     },
@@ -107,7 +110,7 @@ export default function SwapCoinInput({
             }}
             sx={{ cursor: 'pointer' }}
           >
-            Balance: {formatCoin(coin, true)}
+            Balance: {fNumber(formatCoin(coin, true))}
           </Label>
         )}
       </Stack>
@@ -116,7 +119,7 @@ export default function SwapCoinInput({
         <Stack spacing={0.25} sx={{ flexGrow: 1 }}>
           <TextField
             value={value}
-            disabled={type === 'to' && fixedSwap}
+            disabled={type === 'to' && (fixedSwap || easyMode)}
             onChange={(e) => {
               setValue(e.target.value);
               setShouldUpdate(true);

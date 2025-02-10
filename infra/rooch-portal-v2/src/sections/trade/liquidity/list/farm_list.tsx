@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useCurrentAddress, useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit';
+import { useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit';
 
 import { Card, Table, TableBody } from '@mui/material';
 
@@ -11,7 +11,7 @@ import TableSkeleton from 'src/components/skeleton/table-skeleton';
 import { TableNoData, TableHeadCustom } from 'src/components/table';
 
 import FarmRowItem from './farm-row-item';
-import AddSrakeModal from './add-stake-modal';
+import AddStakeModal from './add-stake-modal';
 import AddLiquidityModal from './add-liquidity-modal';
 import { useAllLiquidity } from '../../hooks/use-all-liquidity';
 import { useOwnerLiquidity } from '../../hooks/use-owner-liquidity';
@@ -19,7 +19,7 @@ import { useOwnerLiquidity } from '../../hooks/use-owner-liquidity';
 import type { FarmRowItemType } from './farm-row-item';
 
 const headerLabel = [
-  { id: 'lp', label: 'LP' },
+  { id: 'lp', label: 'LP', maxWidth: 100 },
   { id: 'harvest_index', label: 'Harvest Index' },
   { id: 'release_per_second', label: 'Release Per Second' },
   { id: 'asset_total_weight', label: 'Asset Total Weight' },
@@ -28,7 +28,6 @@ const headerLabel = [
 ];
 
 export default function FarmList() {
-  const currentAddress = useCurrentAddress();
   const dex = useNetworkVariable('dex');
   const [openStakeModal, setOpenStakeModal] = useState(false);
   const [openAddLiquidityModal, setOpenAddLiquidityModal] = useState(false);
@@ -36,7 +35,7 @@ export default function FarmList() {
   const { lpTokens } = useOwnerLiquidity();
   const { lpTokens: allLPTokens } = useAllLiquidity(200);
 
-  const { data: farms } = useRoochClientQuery('queryObjectStates', {
+  const { data: farms, isPending } = useRoochClientQuery('queryObjectStates', {
     filter: {
       object_type: `${dex.address}::liquidity_incentive::FarmingAsset`,
     },
@@ -74,18 +73,6 @@ export default function FarmList() {
       };
     });
   }, [farms, lpTokens, dex.address]);
-
-  const {
-    data: assetsList,
-    isPending,
-    refetch: refetchAssetsList,
-  } = useRoochClientQuery(
-    'getBalances',
-    {
-      owner: currentAddress?.toStr() || '',
-    },
-    { refetchInterval: 5000 }
-  );
 
   const handleOpenStakeModal = (row: FarmRowItemType) => {
     setSelectedRow(row);
@@ -136,7 +123,7 @@ export default function FarmList() {
         </Scrollbar>
 
         {selectedRow && (
-          <AddSrakeModal
+          <AddStakeModal
             open={openStakeModal}
             onClose={handleCloseStakeModal}
             row={selectedRow}

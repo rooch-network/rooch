@@ -69,7 +69,7 @@ export default function SwapHeader({
         <>
           <Box
             component="img"
-            src="assets/icons/swap/settings.svg"
+            src="/assets/icons/swap/settings.svg"
             sx={{
               cursor: 'pointer',
               transition: 'all 0.3s ease',
@@ -112,7 +112,7 @@ export default function SwapHeader({
                 <Label sx={{ flexGrow: 1 }}>Settings</Label>
                 <Box
                   component="img"
-                  src="assets/icons/swap/chevron-down.svg"
+                  src="/assets/icons/swap/chevron-down.svg"
                   sx={{ cursor: 'pointer' }}
                   onClick={() => setAnchorEl(null)}
                 />
@@ -124,7 +124,7 @@ export default function SwapHeader({
                 }}
               >
                 <Stack direction="row" spacing="10px" alignItems="center">
-                  <Box component="img" src="assets/icons/swap/slippage-settings.svg" />
+                  <Box component="img" src="/assets/icons/swap/slippage-settings.svg" />
                   <Label sx={{ flexGrow: 1 }}>Max slippage</Label>
                   <Tooltip
                     title="Slippage refers to the difference between the expected price of a trade and the price at which the trade is executed. "

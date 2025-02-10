@@ -13,7 +13,7 @@ import { secondary } from 'src/theme/core';
 
 import { Iconify } from 'src/components/iconify';
 
-export interface InscriptionCardProps {
+export interface OrderCardProps {
   objectId: string;
   tick: string;
   isVerified: boolean;
@@ -28,7 +28,7 @@ export interface InscriptionCardProps {
   selectMode?: boolean;
 }
 
-export default function InscriptionShopCard({
+export default function OrderShopCard({
   objectId,
   tick,
   isVerified,
@@ -41,7 +41,7 @@ export default function InscriptionShopCard({
   seller,
   bidder,
   selectMode,
-}: InscriptionCardProps) {
+}: OrderCardProps) {
   const account = useCurrentAddress();
 
   return (

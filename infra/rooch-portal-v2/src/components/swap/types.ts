@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import type { StackProps } from '@mui/material';
 
 export const DEFAULT_SLIPPAGE = 0.005;
 export const VERSION_0 = 0;
@@ -35,6 +36,9 @@ export interface SwapProps {
   fixedSwap?: boolean;
   hiddenValue?: boolean;
   txHash?: string;
+  swapHeaderTitle?: ReactNode;
+  containerProps?: StackProps;
+  easyMode?: boolean;
   /**
    * Current supported token list
    */
@@ -135,7 +139,7 @@ export interface SwapProps {
    */
   validationError?: string;
 
-  isValid?: boolean
+  isValid?: boolean;
   /**
    * Gas info
    */
