@@ -1,7 +1,7 @@
 import LiquidityPage from 'src/sections/trade/liquidity/view';
 
 export const metadata = {
-  title: 'liquidity',
+  title: 'Liquidity',
 };
 
 export default function Page() {
