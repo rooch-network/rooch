@@ -1,6 +1,8 @@
 import { Message } from '../types/room';
 import { UserCircleIcon } from '@heroicons/react/24/solid';
 import { formatTimestamp } from '../utils/time';
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 
 interface ChatMessageProps {
   message: Message;
@@ -42,7 +44,7 @@ export function ChatMessage({ message, isCurrentUser }: ChatMessageProps) {
             </span>
           </div>
           <div
-            className={`rounded-lg px-4 py-2 max-w-[80%] whitespace-pre-wrap break-words ${
+            className={`rounded-lg px-4 py-2 max-w-[80%] ${
               isCurrentUser
                 ? 'bg-blue-500 text-white'
                 : isAI
@@ -50,7 +52,34 @@ export function ChatMessage({ message, isCurrentUser }: ChatMessageProps) {
                 : 'bg-gray-100'
             }`}
           >
-            <div className="text-sm break-words">{message.content}</div>
+            <div className="text-sm">
+              <ReactMarkdown 
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  pre: ({children}) => (
+                    <pre className="overflow-x-auto bg-gray-50 rounded-md p-2 my-2">
+                      {children}
+                    </pre>
+                  ),
+                  code: ({node, inline, className, children, ...props}) => (
+                    <code
+                      className={`${inline 
+                        ? 'px-1 py-0.5 rounded bg-opacity-20' 
+                        : ''} 
+                        ${isCurrentUser 
+                          ? inline ? 'bg-white' : ''
+                          : inline ? 'bg-gray-200' : ''}
+                      `}
+                      {...props}
+                    >
+                      {children}
+                    </code>
+                  ),
+                }}
+              >
+                {message.content}
+              </ReactMarkdown>
+            </div>
           </div>
         </div>
         {isCurrentUser && <div className="flex-shrink-0 w-8 h-8" />}
