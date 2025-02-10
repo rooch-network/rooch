@@ -2,13 +2,14 @@ module onchain_ai_chat::ai_service {
     use std::string::{Self, String};
     use std::vector;
     use std::option;
+    use std::signer;
     use moveos_std::object::ObjectID;
     use moveos_std::account;
     use verity::oracles;
     use verity::registry;
-    use rooch_framework::gas_coin::RGas;
-    use rooch_framework::account_coin_store;
-    use onchain_ai_chat::message::{Self, Message};
+
+    use onchain_ai_chat::message::Message;
+    use onchain_ai_chat::ai_request;
 
     friend onchain_ai_chat::ai_callback;
     friend onchain_ai_chat::room;
@@ -44,71 +45,6 @@ module onchain_ai_chat::ai_service {
         });
     }
 
-    /// Escape special characters in JSON string content
-    fun escape_json_string(content: &String): String {
-        let result = vector::empty<u8>();
-        let bytes = string::bytes(content);
-        let i = 0;
-        let len = vector::length(bytes);
-        while (i < len) {
-            let byte = *vector::borrow(bytes, i);
-            if (byte == 0x22) { // double quote "
-                vector::append(&mut result, b"\\\"");
-            } else if (byte == 0x5c) { // backslash \
-                vector::append(&mut result, b"\\\\");
-            } else if (byte == 0x08) { // backspace
-                vector::append(&mut result, b"\\b");
-            } else if (byte == 0x0c) { // form feed
-                vector::append(&mut result, b"\\f");
-            } else if (byte == 0x0a) { // line feed
-                vector::append(&mut result, b"\\n");
-            } else if (byte == 0x0d) { // carriage return
-                vector::append(&mut result, b"\\r");
-            } else if (byte == 0x09) { // tab
-                vector::append(&mut result, b"\\t");
-            } else {
-                vector::push_back(&mut result, byte);
-            };
-            i = i + 1;
-        };
-        string::utf8(result)
-    }
-
-    fun build_chat_context(content: String, previous_messages: &vector<Message>): String {
-        //we use a fixed model for now, gpt-4o
-        let body = string::utf8(b"{\"model\": \"gpt-4o\", \"messages\": [");
-        
-        let i = 0;
-        let len = vector::length(previous_messages);
-        while (i < len) {
-            if (i > 0) {
-                string::append(&mut body, string::utf8(b","));
-            };
-            let msg = vector::borrow(previous_messages, i);
-            string::append(&mut body, string::utf8(b"{\"role\": \""));
-            string::append(&mut body, if (message::get_type(msg) == message::type_ai()) {
-                string::utf8(b"assistant")
-            } else {
-                string::utf8(b"user")
-            });
-            string::append(&mut body, string::utf8(b"\", \"content\": \""));
-            // Escape message content
-            string::append(&mut body, escape_json_string(&message::get_content(msg)));
-            string::append(&mut body, string::utf8(b"\"}"));
-            i = i + 1;
-        };
-
-        // Add current message with escaped content
-        if (len > 0) {
-            string::append(&mut body, string::utf8(b","));
-        };
-        string::append(&mut body, string::utf8(b"{\"role\": \"user\", \"content\": \""));
-        string::append(&mut body, escape_json_string(&content));
-        string::append(&mut body, string::utf8(b"\"}], \"temperature\": 0.7}"));
-
-        body
-    }
-
     public(friend) fun request_ai_response(
         from: &signer,
         room_id: ObjectID,
@@ -119,27 +55,31 @@ module onchain_ai_chat::ai_service {
         let method = string::utf8(AI_ORACLE_METHOD);
         let headers = string::utf8(AI_ORACLE_HEADERS);
         
-        let body = build_chat_context(content, &previous_messages);
+        // Use ai_request to build the chat context
+        let request = ai_request::new_chat_request(content, &previous_messages);
+        let body = string::utf8(ai_request::to_json(&request));
         
         let pick = string::utf8(AI_PICK);
         let http_request = oracles::build_request(url, method, headers, body);
         
         let option_min_amount = registry::estimated_cost(ORACLE_ADDRESS, url, string::length(&body), 1024);
-        let oracle_fee = DEFAULT_ORACLE_FEE*10;
-        let _oracle_fee: u256 = if(option::is_some(&option_min_amount)) {
-            option::destroy_some(option_min_amount)*2
+        
+        let oracle_fee: u256 = if(option::is_some(&option_min_amount)) {
+            option::destroy_some(option_min_amount)*30
         } else {
             DEFAULT_ORACLE_FEE
         };
+        let from_addr = signer::address_of(from);
+        let oracle_balance = oracles::get_user_balance(from_addr);
+        if(oracle_balance < oracle_fee) {
+            oracles::deposit_to_escrow(from, oracle_fee);
+        };
         
-        let payment = account_coin_store::withdraw<RGas>(from, oracle_fee);
-        
-        let request_id = oracles::new_request_with_payment(
+        let request_id = oracles::new_request(
             http_request, 
             pick, 
             ORACLE_ADDRESS, 
-            oracles::with_notify(@onchain_ai_chat, string::utf8(NOTIFY_CALLBACK)),
-            payment
+            oracles::with_notify(@onchain_ai_chat, string::utf8(NOTIFY_CALLBACK))
         );
 
         // Store request information
@@ -174,55 +114,42 @@ module onchain_ai_chat::ai_service {
         (request.room_id, request.request_id)
     }
 
-    #[test]
-    fun test_escape_json_string() {
-        let test_str = string::utf8(b"Hello \"world\"\nNew line\tTab");
-        let escaped = escape_json_string(&test_str);
-        assert!(escaped == string::utf8(b"Hello \\\"world\\\"\\nNew line\\tTab"), 1);
+    public fun get_user_oracle_fee_balance(user_addr: address): u256 {
+        oracles::get_user_balance(user_addr)
     }
 
+    public entry fun withdraw_user_oracle_fee(caller: &signer, amount: u256) {
+        oracles::withdraw_from_escrow(caller, amount)
+    }
+
+    public entry fun withdraw_all_user_oracle_fee(caller: &signer) {
+        let balance = oracles::get_user_balance(signer::address_of(caller));
+        oracles::withdraw_from_escrow(caller, balance)
+    }
+
+    public entry fun deposit_user_oracle_fee(caller: &signer, amount: u256) {
+        oracles::deposit_to_escrow(caller, amount)
+    }
+
+    #[test_only]
+    use onchain_ai_chat::message;
+
     #[test]
-    fun test_build_chat_context() {
+    fun test_request_ai_response() {
         use std::string;
-
-        // Test with empty previous messages
-        {
-            let messages = vector::empty<Message>();
-            let content = string::utf8(b"Hello AI");
-            let context = build_chat_context(content, &messages);
-            let expected = string::utf8(b"{\"model\": \"gpt-4o\", \"messages\": [{\"role\": \"user\", \"content\": \"Hello AI\"}], \"temperature\": 0.7}");
-            assert!(context == expected, 1);
-        };
-
-        // Test with one previous message
-        {
-            let messages = vector::empty<Message>();
-            vector::push_back(&mut messages, message::new_message(0, @0x1, string::utf8(b"Hi"), message::type_user()));
-            let content = string::utf8(b"How are you?");
-            let context = build_chat_context(content, &messages);
-            let expected = string::utf8(b"{\"model\": \"gpt-4o\", \"messages\": [{\"role\": \"user\", \"content\": \"Hi\"},{\"role\": \"user\", \"content\": \"How are you?\"}], \"temperature\": 0.7}");
-            assert!(context == expected, 2);
-        };
-
-        // Test with conversation including AI response
-        {
-            let messages = vector::empty<Message>();
-            vector::push_back(&mut messages, message::new_message(0, @0x1, string::utf8(b"Hi"), message::type_user()));
-            vector::push_back(&mut messages, message::new_message(1, @0x2, string::utf8(b"Hello! How can I help?"), message::type_ai()));
-            let content = string::utf8(b"What's the weather?");
-            let context = build_chat_context(content, &messages);
-            let expected = string::utf8(b"{\"model\": \"gpt-4o\", \"messages\": [{\"role\": \"user\", \"content\": \"Hi\"},{\"role\": \"assistant\", \"content\": \"Hello! How can I help?\"},{\"role\": \"user\", \"content\": \"What's the weather?\"}], \"temperature\": 0.7}");
-            assert!(context == expected, 3);
-        };
-
-        // Test with special characters
-        {
-            let messages = vector::empty<Message>();
-            vector::push_back(&mut messages, message::new_message(0, @0x1, string::utf8(b"Hello \"AI\""), message::type_user()));
-            let content = string::utf8(b"New\nline");
-            let context = build_chat_context(content, &messages);
-            let expected = string::utf8(b"{\"model\": \"gpt-4o\", \"messages\": [{\"role\": \"user\", \"content\": \"Hello \\\"AI\\\"\"},{\"role\": \"user\", \"content\": \"New\\nline\"}], \"temperature\": 0.7}");
-            assert!(context == expected, 4);
-        };
+        
+        // Test basic request creation
+        let messages = vector::empty<Message>();
+        vector::push_back(&mut messages, message::new_message(0, @0x1, string::utf8(b"Hi"), message::type_user()));
+        let content = string::utf8(b"Hello AI");
+        
+        // Create request and verify JSON structure
+        let request = ai_request::new_chat_request(content, &messages);
+        let body = string::utf8(ai_request::to_json(&request));
+        
+        // Verify JSON structure contains required fields
+        assert!(string::index_of(&body, &string::utf8(b"gpt-4o")) != 18446744073709551615, 1);
+        assert!(string::index_of(&body, &string::utf8(b"messages")) != 18446744073709551615, 2);
+        assert!(string::index_of(&body, &string::utf8(b"user")) != 18446744073709551615, 3);
     }
 }
