@@ -23,8 +23,7 @@ const MIN_BACKOFF_DELAY: Duration = Duration::from_millis(3000);
 const SUBMIT_API_PATH: &str = "v2/submit";
 
 const TURBO_MIN_BACKOFF_DELAY: Duration = Duration::from_millis(500);
-const TURBO_SUBMIT_API_PATH: &str = "user/submit_raw_data";
-const DEFAULT_TURBO_PAYMENT_TOKEN: &str = "ethereum";
+const TURBO_SUBMIT_API_PATH: &str = "v1/submit_raw_data";
 
 /// Avail client: A turbo and Light
 /// Turbo client has higher priority, if not available, use the Light client
@@ -86,8 +85,7 @@ impl OpenDAAdapter for AvailFusionAdapter {
 
 pub struct AvailFusionClientConfig {
     pub turbo_endpoint: Option<String>,
-    pub turbo_auth_token: Option<String>,
-    pub turbo_payment_token: Option<String>,
+    pub turbo_api_key: Option<String>,
     pub light_endpoint: Option<String>,
     pub max_retries: usize,
 }
@@ -98,22 +96,20 @@ impl AvailFusionClientConfig {
         max_retries: usize,
     ) -> anyhow::Result<Self> {
         let turbo_endpoint = scheme_config.get("turbo_endpoint").cloned();
-        let turbo_auth_token = scheme_config.get("turbo_auth_token").cloned();
-        let turbo_payment_token = scheme_config.get("turbo_payment_token").cloned();
+        let turbo_api_key = scheme_config.get("turbo_api_key").cloned();
         let light_endpoint = scheme_config.get("light_endpoint").cloned();
 
         if turbo_endpoint.is_none() && light_endpoint.is_none() {
             return Err(anyhow!("turbo_endpoint or light_endpoint must be provided"));
         }
-        if turbo_endpoint.is_some() && turbo_auth_token.is_none() {
-            return Err(anyhow!("turbo_auth_token must be provided"));
+        if turbo_endpoint.is_some() && turbo_api_key.is_none() {
+            return Err(anyhow!("turbo_api_key must be provided"));
         }
 
         Ok(AvailFusionClientConfig {
             turbo_endpoint,
-            turbo_auth_token,
+            turbo_api_key,
             light_endpoint,
-            turbo_payment_token,
             max_retries,
         })
     }
@@ -123,10 +119,7 @@ impl AvailFusionClientConfig {
             Some(AvailTurboClient::new(
                 endpoint,
                 self.max_retries,
-                self.turbo_auth_token.as_ref().unwrap(),
-                self.turbo_payment_token
-                    .as_deref()
-                    .unwrap_or(DEFAULT_TURBO_PAYMENT_TOKEN),
+                self.turbo_api_key.as_ref().unwrap(),
             )?)
         } else {
             None
@@ -150,25 +143,18 @@ pub(crate) struct AvailTurboClient {
     endpoint: String,
     http_client: Client,
     max_retries: usize,
-    auth_token: String,
-    payment_token: String,
+    api_key: String,
 }
 
 impl AvailTurboClient {
-    pub(crate) fn new(
-        endpoint: &str,
-        max_retries: usize,
-        auth_token: &str,
-        payment_token: &str,
-    ) -> anyhow::Result<Self> {
+    pub(crate) fn new(endpoint: &str, max_retries: usize, api_key: &str) -> anyhow::Result<Self> {
         let client = Client::new();
 
         Ok(AvailTurboClient {
             endpoint: endpoint.to_string(),
             http_client: client,
             max_retries,
-            auth_token: auth_token.to_string(),
-            payment_token: payment_token.to_string(),
+            api_key: api_key.to_string(),
         })
     }
 
@@ -215,9 +201,8 @@ impl AvailTurboClient {
             let request = self
                 .http_client
                 .post(&submit_url)
-                .query(&[("token", self.payment_token.clone())])
-                .bearer_auth(&self.auth_token)
-                .header("Content-Type", "text/plain")
+                .header("x-api-key", &self.api_key)
+                .header("Content-Type", "application/octet-stream")
                 .body(segment_bytes.to_vec());
 
             let response = request.send().await?;

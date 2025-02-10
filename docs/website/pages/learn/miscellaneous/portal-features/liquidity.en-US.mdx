@@ -17,6 +17,13 @@ Enter the Portal page, select `Liquidity` and click on the `Add` button on the r
 
 Just fill in the `RGas` and the LP pair will automatically calculate the `GROW` dosage:
 
+The amount is calculated based on the official Swap pool, and the calculation form is:
+
+```
+point = x / x pool * 100%
+y = y pool * point
+```
+
 ![](/docs/portal/liquidity/liquidity-add.png)
 
 Check the estimated income of the LP group, click the `Confirm` button to complete the LP staking:
@@ -42,3 +49,5 @@ Click the `Stake LP` button to stake token pairs:
 ![](/docs/portal/liquidity/liquidity-stake-lp.png)
 
 After staking an LP, you can obtain `$LPXP` income.
+
+In the future, $LPXP can be used to exchange initial liquidity to support this part of $ROOCH token, accounting for %5 of the total. For details, please refer to [this article](https://rooch.network/blog/rooch-network-tokenomics#community).

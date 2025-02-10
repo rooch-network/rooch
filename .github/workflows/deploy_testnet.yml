@@ -76,4 +76,4 @@ jobs:
             '${{ secrets.OPENDA_GCP_TESTNET_BUCKET }}' \
             '${{ secrets.OPENDA_GCP_TESTNET_CREDENTIAL }}' \
             '${{ secrets.TURBO_DA_TURING_ENDPOINT }}' \
-            '${{ secrets.TURBO_DA_TURING_TOKEN }}'"  
+            '${{ secrets.TURBO_DA_TURING_API_KEY }}'"  
