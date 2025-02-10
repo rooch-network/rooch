@@ -3,6 +3,7 @@ module onchain_ai_chat::ai_service {
     use std::vector;
     use std::option;
     use std::signer;
+    use std::u256;
     use moveos_std::object::ObjectID;
     use moveos_std::account;
     use verity::oracles;
@@ -20,7 +21,7 @@ module onchain_ai_chat::ai_service {
     const NOTIFY_CALLBACK: vector<u8> = b"ai_callback::process_response";
     /// Default gas allocation for notification callbacks 0.6 RGas
     const DEFAULT_NOTIFICATION_GAS: u256 = 60000000;
-    const DEFAULT_ORACLE_FEE: u256 = 200000000;
+    const DEFAULT_ORACLE_FEE: u256 = 3200000000;
 
     const AI_ORACLE_HEADERS: vector<u8> = b"{}";
     const AI_ORACLE_METHOD: vector<u8> = b"POST";
@@ -30,6 +31,7 @@ module onchain_ai_chat::ai_service {
     const AI_PICK: vector<u8> = b".";
     const AI_ORACLE_URL: vector<u8> = b"https://api.openai.com/v1/chat/completions";
     const MAX_HISTORY_MESSAGES: u64 = 10;
+    const MAX_RESPONSE_LENGTH: u64 = 65536;
 
     const ErrorInvalidDepositAmount: u64 = 1;
     const ErrorInsufficientBalance: u64 = 2;
@@ -67,13 +69,16 @@ module onchain_ai_chat::ai_service {
         let pick = string::utf8(AI_PICK);
         let http_request = oracles::build_request(url, method, headers, body);
         
-        let option_min_amount = registry::estimated_cost(ORACLE_ADDRESS, url, string::length(&body), 1024);
+        let option_min_amount = registry::estimated_cost(ORACLE_ADDRESS, url, string::length(&body), MAX_RESPONSE_LENGTH);
         
-        let oracle_fee: u256 = if(option::is_some(&option_min_amount)) {
-            option::destroy_some(option_min_amount)*40
+        let estimated_fee: u256 = if(option::is_some(&option_min_amount)) {
+            option::destroy_some(option_min_amount)
         } else {
             DEFAULT_ORACLE_FEE
         };
+        let oracle_fee = u256::max(estimated_fee, DEFAULT_ORACLE_FEE);
+
+        
         let from_addr = signer::address_of(from);
         let oracle_balance = oracles::get_user_balance(from_addr);
         if(oracle_balance < oracle_fee) {
