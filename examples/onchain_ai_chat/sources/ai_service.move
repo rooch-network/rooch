@@ -7,6 +7,8 @@ module onchain_ai_chat::ai_service {
     use moveos_std::account;
     use verity::oracles;
     use verity::registry;
+    use rooch_framework::account_coin_store;
+    use rooch_framework::gas_coin::RGas;
 
     use onchain_ai_chat::message::Message;
     use onchain_ai_chat::ai_request;
@@ -28,6 +30,9 @@ module onchain_ai_chat::ai_service {
     const AI_PICK: vector<u8> = b".";
     const AI_ORACLE_URL: vector<u8> = b"https://api.openai.com/v1/chat/completions";
     const MAX_HISTORY_MESSAGES: u64 = 10;
+
+    const ErrorInvalidDepositAmount: u64 = 1;
+    const ErrorInsufficientBalance: u64 = 2;
 
     struct PendingRequest has store, copy, drop {
         room_id: ObjectID,
@@ -72,6 +77,8 @@ module onchain_ai_chat::ai_service {
         let from_addr = signer::address_of(from);
         let oracle_balance = oracles::get_user_balance(from_addr);
         if(oracle_balance < oracle_fee) {
+            let gas_balance = account_coin_store::balance<RGas>(from_addr);
+            assert!(gas_balance >= oracle_fee, ErrorInsufficientBalance);
             oracles::deposit_to_escrow(from, oracle_fee);
         };
         
@@ -128,6 +135,11 @@ module onchain_ai_chat::ai_service {
     }
 
     public entry fun deposit_user_oracle_fee(caller: &signer, amount: u256) {
+        // Check user's RGas balance
+        let caller_addr = signer::address_of(caller);
+        let gas_balance = account_coin_store::balance<RGas>(caller_addr);
+        assert!(gas_balance >= amount, ErrorInsufficientBalance);
+        
         oracles::deposit_to_escrow(caller, amount)
     }
 
