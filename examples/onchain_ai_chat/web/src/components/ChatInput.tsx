@@ -4,13 +4,21 @@ import { XMarkIcon } from '@heroicons/react/24/outline';
 import { SessionKeyGuard } from '@roochnetwork/rooch-sdk-kit';
 
 interface ChatInputProps {
-  onSend: (message: string) => void;
+  onSend: (message: string) => Promise<void>;  // Change to return Promise
   placeholder?: string;
   disabled?: boolean;
+  value?: string;
+  onChange?: (value: string) => void;
 }
 
-export function ChatInput({ onSend, placeholder = "Type a message...", disabled = false }: ChatInputProps) {
-  const [message, setMessage] = useState('');
+export function ChatInput({ 
+  onSend, 
+  placeholder = "Type a message...", 
+  disabled = false,
+  value,
+  onChange 
+}: ChatInputProps) {
+  const [localValue, setLocalValue] = useState(value || '');
   const [showWarning, setShowWarning] = useState(true);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -19,12 +27,27 @@ export function ChatInput({ onSend, placeholder = "Type a message...", disabled 
       textareaRef.current.style.height = 'auto';
       textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
     }
-  }, [message]);
+  }, [localValue]);
 
-  const handleSubmit = () => {
-    if (message.trim() && !disabled) {
-      onSend(message.trim());
-      setMessage('');
+  useEffect(() => {
+    if (value !== undefined) {
+      setLocalValue(value);
+    }
+  }, [value]);
+
+  const handleSubmit = async () => {
+    const message = localValue.trim();
+    if (message && !disabled) {
+      try {
+        await onSend(message);
+        // Only clear input if message was sent successfully
+        if (value === undefined) {
+          setLocalValue('');
+        }
+      } catch (error) {
+        // Keep the input value if sending failed
+        console.error('Failed to send message:', error);
+      }
     }
   };
 
@@ -46,27 +69,30 @@ export function ChatInput({ onSend, placeholder = "Type a message...", disabled 
       )}
       <div className="relative w-full flex justify-center">
         <div className="relative w-full max-w-3xl">
-          <textarea
-            ref={textareaRef}
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            placeholder={placeholder}
-            disabled={disabled}
-            className="w-full resize-none rounded-lg border border-gray-200 pr-12 py-3 px-4 
-              focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50
-              min-h-[60px] max-h-[200px] overflow-y-auto"
-            rows={3}
-          />
-          <SessionKeyGuard onClick={handleSubmit}>
-            <button
-              type="button"
-              disabled={!message.trim() || disabled}
-              className="absolute right-2 bottom-2 p-2 text-blue-600 hover:text-blue-700 
-                disabled:text-gray-400"
-            >
-              <PaperAirplaneIcon className="h-6 w-6" />
-            </button>
-          </SessionKeyGuard>
+            <textarea
+              ref={textareaRef}
+              value={localValue}
+              onChange={(e) => {
+                setLocalValue(e.target.value);
+                onChange?.(e.target.value);
+              }}
+              placeholder={placeholder}
+              disabled={disabled}
+              className="w-full resize-none rounded-lg border border-gray-200 pr-12 py-3 px-4 
+                focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50
+                min-h-[60px] max-h-[200px] overflow-y-auto"
+              rows={3}
+            />
+            <SessionKeyGuard onClick={handleSubmit}>
+              <button
+                type="button"
+                disabled={disabled || !localValue.trim()}
+                className="absolute right-2 bottom-2 p-2 text-blue-600 hover:text-blue-700 
+                  disabled:text-gray-400"
+              >
+                <PaperAirplaneIcon className="h-6 w-6" />
+              </button>
+            </SessionKeyGuard>
         </div>
       </div>
     </div>

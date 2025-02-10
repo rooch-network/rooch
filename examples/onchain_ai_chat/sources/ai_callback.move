@@ -10,6 +10,7 @@ module onchain_ai_chat::ai_callback {
     use std::vector;
     use std::string::{Self, String};
 
+    /// AI Oracle response processing callback, this function must be entry and no arguments
     public entry fun process_response() {
         let pending_requests = ai_service::get_pending_requests();
         
@@ -23,7 +24,7 @@ module onchain_ai_chat::ai_callback {
                 let response_content = option::destroy_some(response);
                 let room_obj = object::borrow_mut_object_shared<Room>(room_id);
                 let room = object::borrow_mut(room_obj);
-                let message = if (response_status == 200){
+                let message = if (response_status == 200) {
                     let json_str_opt = json::from_json_option<String>(string::into_bytes(response_content));
                     let json_str = if(option::is_some(&json_str_opt)){
                         option::destroy_some(json_str_opt)
@@ -34,6 +35,13 @@ module onchain_ai_chat::ai_callback {
                     if(option::is_some(&chat_completion_opt)){
                         let chat_completion = option::destroy_some(chat_completion_opt);
                         let message_content = ai_response::get_message_content(&chat_completion);
+                        
+                        // Try to extract and update title
+                        let title_opt = room::parse_title_from_response(&message_content);
+                        if (option::is_some(&title_opt)) {
+                            room::update_room_title(room, option::destroy_some(title_opt));
+                        };
+
                         let refusal = ai_response::get_refusal(&chat_completion);
                         if(option::is_some(&refusal)){
                             let refusal_reason = option::destroy_some(refusal);

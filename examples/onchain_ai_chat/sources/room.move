@@ -1,6 +1,7 @@
 module onchain_ai_chat::room {
     use std::string::{Self, String};
     use std::vector;
+    use std::option::{Self, Option};
     use moveos_std::table::{Self, Table};
     use moveos_std::object::{Self, Object, ObjectID};
     use moveos_std::timestamp;
@@ -344,7 +345,6 @@ module onchain_ai_chat::room {
     ) {
         let room_id = object::id(room_obj);
         let is_ai_room = object::borrow(room_obj).room_type == ROOM_TYPE_AI;
-        send_message(account, room_obj, content);
         
         // If it's an AI room, request AI response
         if (is_ai_room) {
@@ -357,7 +357,8 @@ module onchain_ai_chat::room {
                 content,
                 prev_messages
             );
-        }
+        };
+        send_message(account, room_obj, content);
     }
 
     /// Add a member to a private room - entry function
@@ -395,6 +396,91 @@ module onchain_ai_chat::room {
             ErrorInvalidRoomName
         );
         room_mut.status = new_status;
+    }
+
+    /// Create a AI room and send the first message in one transaction
+    public entry fun create_ai_room_with_message_entry(
+        account: &signer,
+        title: String,
+        is_public: bool,
+        first_message: String,
+    ) {
+        
+        // Create the room
+        let room_id = create_room(account, title, is_public, ROOM_TYPE_AI);
+        
+        // Get room object and send message
+        let room_obj = object::borrow_mut_object_shared<Room>(room_id);
+        
+        let prev_messages = vector::empty();
+        ai_service::request_ai_response(
+            account,
+            room_id,
+            first_message,
+            prev_messages
+        );
+        send_message(account, room_obj, first_message);
+    }
+
+    /// Update room title
+    public(friend) fun update_room_title(room_obj: &mut Room, new_title: String) {
+        room_obj.title = new_title;
+    }
+
+    /// Parse title from AI response - first line starting with #
+    public fun parse_title_from_response(content: &String): Option<String> {
+        let first_line_end = string::index_of(content, &string::utf8(b"\n"));
+        // If no newline found (index_of returns length if not found)
+        if (first_line_end == string::length(content)) {
+            return option::none()
+        };
+        
+        let first_line = string::sub_string(content, 0, first_line_end);
+        
+        if (starts_with(string::bytes(&first_line), &b"# ")) {
+            // Remove "# " prefix, using first_line_end for length
+            option::some(string::sub_string(&first_line, 2, first_line_end))
+        } else {
+            option::none()
+        }
+    }
+
+    //TODO migrate to std::string::starts_with
+    fun starts_with(haystack: &vector<u8>, needle: &vector<u8>): bool {
+        let haystack_len = vector::length(haystack);
+        let needle_len = vector::length(needle);
+
+        if (needle_len > haystack_len) {
+            return false
+        };
+
+        let i = 0;
+        while (i < needle_len) {
+            if (vector::borrow(haystack, i) != vector::borrow(needle, i)) {
+                return false
+            };
+            i = i + 1;
+        };
+
+        true
+    }
+
+    #[test]
+    fun test_parse_title_from_response() {
+        let content = string::utf8(b"# Understanding Move\nMove is a programming language...");
+        let title_opt = parse_title_from_response(&content);
+        assert!(option::is_some(&title_opt), 1);
+        assert!(option::borrow(&title_opt) == &string::utf8(b"Understanding Move"), 2);
+
+        // Test without newline
+        let content = string::utf8(b"# No newline");
+        let title_opt = parse_title_from_response(&content);
+        assert!(option::is_none(&title_opt), 3);
+
+        // Test without title
+        let content = string::utf8(b"This is not a title\nSecond line");
+        let title_opt = parse_title_from_response(&content);
+        assert!(option::is_none(&title_opt), 4);
     }
 
     #[test_only]

@@ -7,10 +7,11 @@ import { RoomListContainer } from '../containers/RoomListContainer'
 import { 
   useCurrentSession, 
   useRoochClient,
-  SessionKeyGuard 
 } from '@roochnetwork/rooch-sdk-kit'
 import { useNetworkVariable } from '../networks'
 import { Args, Transaction } from '@roochnetwork/rooch-sdk'
+import { ErrorToast } from '../components/ErrorToast'
+import { getErrorMessage } from '../utils/errors'
 
 export function Home() {
   const navigate = useNavigate()
@@ -18,20 +19,43 @@ export function Home() {
   const client = useRoochClient()
   const packageId = useNetworkVariable('packageId')
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [inputValue, setInputValue] = useState('');
+
+  const exampleQuestions = [
+    {
+      title: "Let's explore blockchain together",
+      question: "Explain how Move differs from Solidity in handling assets?"
+    },
+    {
+      title: "Start a community discussion",
+      question: "What are the key considerations for designing a DeFi protocol?"
+    },
+    {
+      title: "Learn with others",
+      question: "Help me understand zero-knowledge proofs with examples"
+    },
+    {
+      title: "Share knowledge",
+      question: "What's the future of decentralized identity?"
+    }
+  ];
 
   const handleCreateRoom = async (message: string) => {
   console.log('Creating room with message:', message, client, sessionKey, loading)
 
     if (!client || !sessionKey || loading) return
     setLoading(true)
+    setError(null)
 
     try {
       const tx = new Transaction()
       tx.callFunction({
-        target: `${packageId}::room::create_ai_room_entry`,
+        target: `${packageId}::room::create_ai_room_with_message_entry`,
         args: [
-          Args.string("new_chat"), 
-          Args.bool(          true), // public room
+          Args.string("new_chat"),
+          Args.bool(true),
+          Args.string(message),
         ],
       })
 
@@ -41,7 +65,8 @@ export function Home() {
       })
 
       if (result?.execution_info.status.type !== 'executed') {
-        throw new Error('Create room failed')
+        console.error('Failed to send message:', result.execution_info);
+        throw new Error(`Failed to create room and send message: Transaction not executed. status: ${JSON.stringify(result.execution_info.status)}`);
       }
 
       // Find the Room object from changeset
@@ -54,27 +79,13 @@ export function Home() {
       }
 
       const roomId = roomChange.metadata.id
-      console.log('Created room:', roomId)
-
-      // Send initial message
-      const messageTx = new Transaction()
-      messageTx.callFunction({
-        target: `${packageId}::room::send_message_entry`,
-        args: [Args.objectId(roomId), Args.string(message)],
-      })
-
-      const messageResult = await client.signAndExecuteTransaction({
-        transaction: messageTx,
-        signer: sessionKey,
-      });
-
-      if (messageResult?.execution_info.status.type !== 'executed') {
-        throw new Error('Failed to send message');
-      }
-
-      navigate(`/chat/${roomId}`); // Navigate to the new room
+      console.log('Created room with ID:', roomId)
+      navigate(`/chat/${roomId}`)
     } catch (error) {
-      console.error('Failed to create chat:', error)
+      const errorMessage = getErrorMessage(error)
+      setError(errorMessage)
+      // Throw error to prevent ChatInput from clearing
+      throw error
     } finally {
       setLoading(false)
     }
@@ -106,33 +117,35 @@ export function Home() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-4 rounded-lg border border-gray-200 hover:border-gray-300">
-                  <h3 className="font-medium mb-2">Let's explore blockchain together</h3>
-                  <p className="text-sm text-gray-500">"Explain how Move differs from Solidity in handling assets?"</p>
-                </div>
-                <div className="p-4 rounded-lg border border-gray-200 hover:border-gray-300">
-                  <h3 className="font-medium mb-2">Start a community discussion</h3>
-                  <p className="text-sm text-gray-500">"What are the key considerations for designing a DeFi protocol?"</p>
-                </div>
-                <div className="p-4 rounded-lg border border-gray-200 hover:border-gray-300">
-                  <h3 className="font-medium mb-2">Learn with others</h3>
-                  <p className="text-sm text-gray-500">"Help me understand zero-knowledge proofs with examples"</p>
-                </div>
-                <div className="p-4 rounded-lg border border-gray-200 hover:border-gray-300">
-                  <h3 className="font-medium mb-2">Share knowledge</h3>
-                  <p className="text-sm text-gray-500">"What's the future of decentralized identity?"</p>
-                </div>
+                {exampleQuestions.map((item, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setInputValue(item.question)}
+                    className="text-left p-4 rounded-lg border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-colors"
+                  >
+                    <h3 className="font-medium mb-2">{item.title}</h3>
+                    <p className="text-sm text-gray-500">{item.question}</p>
+                  </button>
+                ))}
               </div>
 
               <ChatInput
                 onSend={handleCreateRoom}
                 placeholder="Start a public discussion..."
                 disabled={loading}
+                value={inputValue}
+                onChange={setInputValue}
               />
             </div>
           </div>
         </div>
       </Layout>
+      {error && (
+        <ErrorToast 
+          message={error}
+          onClose={() => setError(null)}
+        />
+      )}
     </>
-  )
+  );
 }

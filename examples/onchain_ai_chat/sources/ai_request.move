@@ -4,6 +4,9 @@ module onchain_ai_chat::ai_request {
     use moveos_std::json;
     use onchain_ai_chat::message::{Self, Message};
 
+    /// System prompt to guide AI behavior
+    const SYSTEM_PROMPT: vector<u8> = b"You are a knowledgeable AI assistant. Begin each response with a relevant title as a Markdown h1 header (# Title) that summarizes the current conversation. After the title, provide your response using clear Markdown formatting. Format code with language-specific code blocks. Keep responses under 2000 characters. Acknowledge any uncertainties. Break down complex topics into digestible parts.";
+
     #[data_struct]
     struct ChatMessage has store, copy, drop {
         /// Must be "user" or "assistant" in JSON
@@ -20,6 +23,13 @@ module onchain_ai_chat::ai_request {
 
     public fun new_chat_request(content: String, previous_messages: &vector<Message>): ChatRequest {
         let messages = vector::empty();
+
+        // Add system prompt
+        vector::push_back(&mut messages, ChatMessage {
+            role: string::utf8(b"system"),
+            content: string::utf8(SYSTEM_PROMPT),
+        });
+
         let i = 0;
         let len = vector::length(previous_messages);
         
