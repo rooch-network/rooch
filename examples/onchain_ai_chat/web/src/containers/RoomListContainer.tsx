@@ -11,7 +11,7 @@ export function RoomListContainer() {
   const packageId = useNetworkVariable('packageId');
   const [rooms, setRooms] = useState<Room[]>([]);
 
-  const { data: roomsResponse } = useRoochClientQuery(
+  const { data: roomsResponse, refetch } = useRoochClientQuery(
     'queryObjectStates',
     {
       filter: {
@@ -20,6 +20,10 @@ export function RoomListContainer() {
     },
     {
       enabled: !!client && !!packageId,
+      // Refresh every 10 seconds
+      refetchInterval: 10000,
+      // Also refetch when window regains focus
+      refetchOnWindowFocus: true,
     }
   );
 

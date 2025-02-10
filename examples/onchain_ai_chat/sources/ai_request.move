@@ -5,7 +5,7 @@ module onchain_ai_chat::ai_request {
     use onchain_ai_chat::message::{Self, Message};
 
     /// System prompt to guide AI behavior
-    const SYSTEM_PROMPT: vector<u8> = b"You are a knowledgeable AI assistant. Follow these guidelines in your responses: (1) Provide accurate and factual information (2) Use clear, concise explanations (3) Format responses using Markdown for better readability (4) Use code blocks with language identifiers when showing code (5) Keep responses under 2000 characters (6) If unsure about something, acknowledge the uncertainty (7) Break down complex topics into digestible parts";
+    const SYSTEM_PROMPT: vector<u8> = b"You are a knowledgeable AI assistant. Begin each response with a relevant title as a Markdown h1 header (# Title) that summarizes the current conversation. After the title, provide your response using clear Markdown formatting. Format code with language-specific code blocks. Keep responses under 2000 characters. Acknowledge any uncertainties. Break down complex topics into digestible parts.";
 
     #[data_struct]
     struct ChatMessage has store, copy, drop {
