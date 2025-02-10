@@ -65,7 +65,7 @@ module onchain_ai_chat::ai_service {
         let option_min_amount = registry::estimated_cost(ORACLE_ADDRESS, url, string::length(&body), 1024);
         
         let oracle_fee: u256 = if(option::is_some(&option_min_amount)) {
-            option::destroy_some(option_min_amount)*30
+            option::destroy_some(option_min_amount)*40
         } else {
             DEFAULT_ORACLE_FEE
         };
@@ -151,5 +151,46 @@ module onchain_ai_chat::ai_service {
         assert!(string::index_of(&body, &string::utf8(b"gpt-4o")) != 18446744073709551615, 1);
         assert!(string::index_of(&body, &string::utf8(b"messages")) != 18446744073709551615, 2);
         assert!(string::index_of(&body, &string::utf8(b"user")) != 18446744073709551615, 3);
+    }
+
+    #[test]
+    fun test_oracle_fee_operations() {
+        oracles::init_for_test();
+
+        // Initialize test accounts
+        let alice = account::create_signer_for_testing(@0x77);
+        let alice_addr = signer::address_of(&alice);
+
+        // Setup test account with initial RGas
+        let fee_amount: u256 = 1000000000; // 10 RGas
+        rooch_framework::gas_coin::faucet_entry(&alice, fee_amount);
+
+        // Test Case 1: Check initial balance
+        {
+            let initial_balance = get_user_oracle_fee_balance(alice_addr);
+            assert!(initial_balance == 0, 1);
+        };
+
+        // Test Case 2: Deposit and check balance
+        {
+            deposit_user_oracle_fee(&alice, fee_amount);
+            let balance = get_user_oracle_fee_balance(alice_addr);
+            assert!(balance == fee_amount, 2);
+        };
+
+        // Test Case 3: Partial withdrawal
+        {
+            let withdraw_amount = fee_amount / 2;
+            withdraw_user_oracle_fee(&alice, withdraw_amount);
+            let balance = get_user_oracle_fee_balance(alice_addr);
+            assert!(balance == withdraw_amount, 3);
+        };
+
+        // Test Case 4: Withdraw all remaining balance
+        {
+            withdraw_all_user_oracle_fee(&alice);
+            let balance = get_user_oracle_fee_balance(alice_addr);
+            assert!(balance == 0, 4);
+        };
     }
 }

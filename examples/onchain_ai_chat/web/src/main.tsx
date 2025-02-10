@@ -21,7 +21,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
             <RoochProvider networks={networkConfig} sessionConf={
               {
                 appName: "Onchain AI Chat",
-                appUrl: "https://test.com",
+                appUrl: "https://onchain-ai-chat.vercel.app/",
                 scopes: [`${PACKAGE_ID}::*::*`],
                 maxInactiveInterval: 3600,
               }

@@ -344,7 +344,6 @@ module onchain_ai_chat::room {
     ) {
         let room_id = object::id(room_obj);
         let is_ai_room = object::borrow(room_obj).room_type == ROOM_TYPE_AI;
-        send_message(account, room_obj, content);
         
         // If it's an AI room, request AI response
         if (is_ai_room) {
@@ -357,7 +356,8 @@ module onchain_ai_chat::room {
                 content,
                 prev_messages
             );
-        }
+        };
+        send_message(account, room_obj, content);
     }
 
     /// Add a member to a private room - entry function
@@ -395,6 +395,30 @@ module onchain_ai_chat::room {
             ErrorInvalidRoomName
         );
         room_mut.status = new_status;
+    }
+
+    /// Create a AI room and send the first message in one transaction
+    public entry fun create_ai_room_with_message_entry(
+        account: &signer,
+        title: String,
+        is_public: bool,
+        first_message: String,
+    ) {
+        
+        // Create the room
+        let room_id = create_room(account, title, is_public, ROOM_TYPE_AI);
+        
+        // Get room object and send message
+        let room_obj = object::borrow_mut_object_shared<Room>(room_id);
+        
+        let prev_messages = vector::empty();
+        ai_service::request_ai_response(
+            account,
+            room_id,
+            first_message,
+            prev_messages
+        );
+        send_message(account, room_obj, first_message);
     }
 
     #[test_only]

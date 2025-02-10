@@ -7,7 +7,6 @@ import { RoomListContainer } from '../containers/RoomListContainer'
 import { 
   useCurrentSession, 
   useRoochClient,
-  SessionKeyGuard 
 } from '@roochnetwork/rooch-sdk-kit'
 import { useNetworkVariable } from '../networks'
 import { Args, Transaction } from '@roochnetwork/rooch-sdk'
@@ -20,7 +19,7 @@ export function Home() {
   const [loading, setLoading] = useState(false)
 
   const handleCreateRoom = async (message: string) => {
-  console.log('Creating room with message:', message, client, sessionKey, loading)
+    console.log('Creating room with message:', message, client, sessionKey, loading)
 
     if (!client || !sessionKey || loading) return
     setLoading(true)
@@ -28,10 +27,11 @@ export function Home() {
     try {
       const tx = new Transaction()
       tx.callFunction({
-        target: `${packageId}::room::create_ai_room_entry`,
+        target: `${packageId}::room::create_ai_room_with_message_entry`,
         args: [
-          Args.string("new_chat"), 
-          Args.bool(          true), // public room
+          Args.string("new_chat"),  // title
+          Args.bool(true),          // is_public
+          Args.string(message),     // first_message
         ],
       })
 
@@ -41,7 +41,7 @@ export function Home() {
       })
 
       if (result?.execution_info.status.type !== 'executed') {
-        throw new Error('Create room failed')
+        throw new Error(`Failed to create room and send message, ${JSON.stringify(result.execution_info)}`);
       }
 
       // Find the Room object from changeset
@@ -54,25 +54,8 @@ export function Home() {
       }
 
       const roomId = roomChange.metadata.id
-      console.log('Created room:', roomId)
-
-      // Send initial message
-      const messageTx = new Transaction()
-      messageTx.callFunction({
-        target: `${packageId}::room::send_message_entry`,
-        args: [Args.objectId(roomId), Args.string(message)],
-      })
-
-      const messageResult = await client.signAndExecuteTransaction({
-        transaction: messageTx,
-        signer: sessionKey,
-      });
-
-      if (messageResult?.execution_info.status.type !== 'executed') {
-        throw new Error('Failed to send message');
-      }
-
-      navigate(`/chat/${roomId}`); // Navigate to the new room
+      console.log('Created room with ID:', roomId)
+      navigate(`/chat/${roomId}`)
     } catch (error) {
       console.error('Failed to create chat:', error)
     } finally {

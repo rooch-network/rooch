@@ -4,7 +4,6 @@ import {
   useCurrentSession, 
   useRoochClient, 
   useRoochClientQuery,
-  SessionKeyGuard
 } from '@roochnetwork/rooch-sdk-kit'
 import { Layout } from '../components/Layout'
 import { ChatInput } from '../components/ChatInput'
