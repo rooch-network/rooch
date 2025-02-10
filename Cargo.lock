@@ -10519,7 +10519,6 @@ dependencies = [
  "anyhow 1.0.95",
  "async-trait",
  "base64 0.22.1",
- "blake2b_simd",
  "celestia-rpc",
  "celestia-types",
  "coerce",
