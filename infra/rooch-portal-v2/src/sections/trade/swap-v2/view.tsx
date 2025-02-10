@@ -1,6 +1,5 @@
 'use client';
 
-import type { ReactNode } from 'react';
 import type { CurveType, PoolVersion, InteractiveMode } from 'src/components/swap/types';
 
 import BigNumber from 'bignumber.js';
@@ -10,7 +9,6 @@ import {
   useRoochClient,
   useCurrentAddress,
   useRoochClientQuery,
-  useSignAndExecuteTransaction,
 } from '@roochnetwork/rooch-sdk-kit';
 
 import { useNetworkVariable } from 'src/hooks/use-networks';
@@ -39,20 +37,16 @@ type TokenPairType = {
 export default function SwapView() {
   const dex = useNetworkVariable('dex');
   const client = useRoochClient();
-  const { mutate, isPending, data } = useSignAndExecuteTransaction();
   const currentAddress = useCurrentAddress();
 
   const [loading, setLoading] = useState(false);
   const [curve, setCurve] = useState<CurveType>('uncorrelated');
   const [version, setVersion] = useState<PoolVersion>(0);
   const [slippage, setSlippage] = useState(0.005);
-  const [customSlippage, setCustomSlippage] = useState('');
   const [openSwapModal, setOpenSwapModal] = useState(false);
   const [price, setPrice] = useState('');
-  const [warning, setWarning] = useState<ReactNode>();
 
   const [interactiveMode, setInteractiveMode] = useState<InteractiveMode>('from');
-  const [tokenPair, setTokenPair] = useState<Map<string, TokenPairType[]>>();
 
   const [fromCoinType, setFromCoinType] = useState<string | undefined>();
   const [toCoinType, setToCoinType] = useState<string>();
@@ -129,9 +123,6 @@ export default function SwapView() {
             y: p.x,
           });
         });
-
-        // Update the state
-        setTokenPair(pairMap);
       });
   }, [client, dex]);
 
@@ -236,13 +227,10 @@ export default function SwapView() {
         interactiveMode={interactiveMode}
         canSelectCurve={false}
         curve={curve}
-        txHash={data?.execution_info.tx_hash}
-        warning={warning}
         convertRate={Number(price)}
         platformFeePercent={0}
         priceImpact={0}
         priceImpactSeverity="normal"
-        proposing={isPending}
         version={version}
         slippagePercent={slippage}
         onSlippageChange={(slippage: number) => {
@@ -264,7 +252,6 @@ export default function SwapView() {
             fromDust(fromCoin?.amount.toString() ?? '0', fromCoin?.decimals || 0).toString()
           );
           setToCoinType(toCoin?.coinType);
-          // setToCoinAmount(toCoin?.amount ?? 0n);
           setInteractiveMode(interactiveMode);
           fetchToCoin();
         }}
@@ -275,13 +262,7 @@ export default function SwapView() {
       />
       {fromCoin && toCoin && (
         <SwapConfirmModal
-          slippage={
-            slippage === 0
-              ? customSlippage === '' || customSlippage === '0'
-                ? 0
-                : Number(customSlippage) / 100
-              : slippage
-          }
+          slippage={slippage}
           open={openSwapModal}
           onClose={() => setOpenSwapModal(false)}
           fromCoin={{
