@@ -26,11 +26,11 @@ import { fromDust, formatNumber } from 'src/utils/number';
 import { toast } from 'src/components/snackbar';
 import { Iconify } from 'src/components/iconify';
 
+import OrderShopCard from './order-shop-card';
 import { fNumber } from '../../utils/format-number';
-import InscriptionShopCard from './inscription-shop-card';
 import { useNetworkVariable } from '../../hooks/use-networks';
 
-export type InscriptionItemCardProps = {
+export type OrderItemCardProps = {
   item: MarketItem;
   tick: string;
   accountBalance?: string;
@@ -42,7 +42,7 @@ export type InscriptionItemCardProps = {
   onRefetchMarketData: () => Promise<void>;
 };
 
-export default function InscriptionItemCard({
+export default function OrderItemCard({
   item,
   tick,
   accountBalance,
@@ -52,7 +52,7 @@ export default function InscriptionItemCard({
   toCoinBalanceInfo,
   onSelectItem,
   onRefetchMarketData,
-}: InscriptionItemCardProps) {
+}: OrderItemCardProps) {
   const account = useCurrentAddress();
   const market = useNetworkVariable('market');
   const { mutate: signAndExecuteTransaction, isPending } = useSignAndExecuteTransaction();
@@ -86,13 +86,6 @@ export default function InscriptionItemCard({
     if (!account?.genRoochAddress().toHexAddress()) {
       return;
     }
-    console.log(
-      '🚀 ~ file: inscription-item-card.tsx:203 ~ item:',
-      item,
-      item.order_id,
-      BigInt(item.order_id),
-      Args.u64(BigInt(item.order_id))
-    );
     setOpenDialog(false);
 
     const tx = new Transaction();
@@ -171,7 +164,7 @@ export default function InscriptionItemCard({
           )}
         </Stack>
       )}
-      <InscriptionShopCard
+      <OrderShopCard
         objectId={item.order_id}
         tick={tick}
         isVerified
@@ -223,10 +216,6 @@ export default function InscriptionItemCard({
                 size="small"
                 onClick={() => {
                   // Cancel Order
-                  console.log(
-                    '🚀 ~ file: inscription-item-card.tsx:226 ~ fromCoinBalanceInfo:',
-                    fromCoinBalanceInfo
-                  );
                   const tx = new Transaction();
                   tx.callFunction({
                     target: `${market.orderBookAddress}::market_v2::cancel_order`,

@@ -12,6 +12,8 @@ export default function SwapSwitchIcon({ onClick }: SwapSwitchIconProps) {
       component="button"
       className="flex justify-center items-center cursor-none"
       sx={{
+        mt: 1,
+        mb: 1,
         width: '32px',
         height: '32px',
         padding: '4px',
@@ -25,11 +27,11 @@ export default function SwapSwitchIcon({ onClick }: SwapSwitchIconProps) {
         //   transform: 'rotate(-180deg)',
         // },
       }}
-      // onClick={onClick}
+      onClick={onClick}
     >
       <Box
         component="img"
-        src="assets/icons/swap/swap-down.svg"
+        src="/assets/icons/swap/swap-down.svg"
         width="100%"
         className="ml-[1px]"
       />

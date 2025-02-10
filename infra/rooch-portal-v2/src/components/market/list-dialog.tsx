@@ -27,7 +27,7 @@ import { warning, secondary } from 'src/theme/core';
 
 import { toast } from 'src/components/snackbar';
 
-import InscriptionCard from './inscription-card';
+import OrderCard from './order-card';
 import { useNetworkVariable } from '../../hooks/use-networks';
 
 export default function ListDialog({
@@ -47,7 +47,7 @@ export default function ListDialog({
   refreshList: () => Promise<void>;
   close: () => void;
 }) {
-  const market = useNetworkVariable('market')
+  const market = useNetworkVariable('market');
   const { mutate: signAndExecuteTransaction, isPending } = useSignAndExecuteTransaction();
 
   const [listPrice, setListPrice] = useState('');
@@ -65,9 +65,7 @@ export default function ListDialog({
         Args.objectId(market.tickInfo[tick].obj),
         Args.u256(
           BigInt(
-            new BigNumber(
-              toDust(listAmount, toCoinBalanceInfo.decimals).toString()
-            ).toNumber()
+            new BigNumber(toDust(listAmount, toCoinBalanceInfo.decimals).toString()).toNumber()
           )
         ),
         Args.u64(
@@ -99,8 +97,8 @@ export default function ListDialog({
           toast.error(String(error));
         },
       }
-    )
-  }
+    );
+  };
 
   return (
     <Dialog
@@ -127,13 +125,13 @@ export default function ListDialog({
               p: 2,
             }}
           >
-            <InscriptionCard
+            <OrderCard
               isVerified
               tick={toCoinBalanceInfo.symbol.toUpperCase()}
               tokenBalance={formatNumber(
                 fromDust(toCoinBalanceInfo.balance, toCoinBalanceInfo.decimals).toNumber()
               )}
-             />
+            />
           </Card>
         )}
 

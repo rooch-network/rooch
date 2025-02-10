@@ -44,6 +44,7 @@ export default function SwapDetails({
   version,
   variant,
   fixedSwap,
+  easyMode,
   onVersionChange,
 }: Omit<
   SwapProps,
@@ -67,19 +68,30 @@ export default function SwapDetails({
   const header = useMemo(() => {
     if (variant === 'propose') {
       return (
-        <Typography
-          sx={{
-            fontSize: '0.875rem',
-            fontWeight: 500,
-            lineHeight: '24px',
-            color: grey[900],
-          }}
-        >
-          1 {fromCoin?.symbol} = {fNumber(toBigNumber(convertRate).toString())} {toCoin?.symbol}{' '}
-          {!fixedSwap &&
-            `(including
-          fee)`}
-        </Typography>
+        <Stack gap={0.5}>
+          <Typography
+            sx={{
+              fontSize: '0.875rem',
+              fontWeight: 500,
+              lineHeight: '24px',
+              color: grey[900],
+            }}
+          >
+            1 {fromCoin?.symbol} ≈{' '}
+            {fNumber(toBigNumber(convertRate).toString(), {
+              maximumFractionDigits: 16,
+            })}{' '}
+            {toCoin?.symbol} {!fixedSwap && !easyMode && `(including fee)`}
+          </Typography>
+          <Typography
+            sx={{
+              fontSize: '0.875rem',
+              fontWeight: 500,
+              lineHeight: '24px',
+              color: grey[500],
+            }}
+          >{`Max slippage: ${(slippagePercent || 0) * 100}%`}</Typography>
+        </Stack>
       );
     }
     return (
@@ -116,6 +128,8 @@ export default function SwapDetails({
     fromCoin?.decimals,
     fromCoin?.symbol,
     convertRate,
+    easyMode,
+    slippagePercent,
   ]);
 
   return (
@@ -133,7 +147,7 @@ export default function SwapDetails({
       >
         <AccordionSummary
           expandIcon={
-            fixedSwap ? null : (
+            fixedSwap || easyMode ? null : (
               <Iconify
                 icon="solar:alt-arrow-down-linear"
                 style={{
@@ -144,7 +158,7 @@ export default function SwapDetails({
             )
           }
           onClick={() => {
-            if (fixedSwap) {
+            if (fixedSwap || easyMode) {
               return;
             }
             setShowDetails(!showDetails);
@@ -176,7 +190,7 @@ export default function SwapDetails({
                     </Text>
                   }
                   right={
-                    fixedSwap ? null : (
+                    fixedSwap || easyMode ? null : (
                       <Label>
                         {`${fromDustToPrecision(swapAmount || 0, toCoin?.decimals || 1)} ${
                           toCoin?.symbol
@@ -186,7 +200,7 @@ export default function SwapDetails({
                   }
                 />
               )}
-              {!fixedSwap && (
+              {!fixedSwap && !easyMode && (
                 <DetailsItem
                   left={
                     <Text>Minimum Received after Slippage ({(slippagePercent || 0) * 100} %)</Text>

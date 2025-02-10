@@ -14,10 +14,10 @@ import { formatUnitPrice } from 'src/utils/marketplace';
 
 import { toast } from 'src/components/snackbar';
 
-import InscriptionShopCard from './inscription-shop-card';
+import OrderShopCard from './order-shop-card';
 import { useNetworkVariable } from '../../hooks/use-networks';
 
-export type InscriptionItemCardProps = {
+export type OrderItemBidCardProps = {
   item: BidItem;
   tick: string;
   fromCoinBalanceInfo: BalanceInfoView;
@@ -26,14 +26,14 @@ export type InscriptionItemCardProps = {
   onRefetchMarketData: () => Promise<void>;
 };
 
-export default function InscriptionItemBidCard({
+export default function OrderItemBidCard({
   item,
   tick,
   fromCoinBalanceInfo,
   toCoinBalanceInfo,
   onAcceptBid,
   onRefetchMarketData,
-}: InscriptionItemCardProps) {
+}: OrderItemBidCardProps) {
   const market = useNetworkVariable('market');
   const account = useCurrentAddress();
   const { mutate: signAndExecuteTransaction, isPending } = useSignAndExecuteTransaction();
@@ -57,7 +57,7 @@ export default function InscriptionItemBidCard({
       }}
       onClick={() => {}}
     >
-      <InscriptionShopCard
+      <OrderShopCard
         fromCoinBalanceInfo={fromCoinBalanceInfo}
         toCoinBalanceInfo={toCoinBalanceInfo}
         objectId={item.order_id}
@@ -87,11 +87,6 @@ export default function InscriptionItemBidCard({
               fullWidth
               size="small"
               onClick={() => {
-                // Cancel Bid
-                console.log(
-                  '🚀 ~ file: inscription-item-card.tsx:226 ~ fromCoinBalanceInfo:',
-                  fromCoinBalanceInfo
-                );
                 const tx = new Transaction();
                 tx.callFunction({
                   target: `${market.orderBookAddress}::market_v2::cancel_order`,

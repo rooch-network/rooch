@@ -97,7 +97,7 @@ export default function SwapCoinSelectButton({
         >
           {coin && <Box component="img" src={coin.icon} width={24} />}
           <Text sx={{ flexGrow: 1 }}>{coin ? coin.symbol : 'Select Token'}</Text>
-          <Box component="img" src="assets/icons/swap/chevron-down.svg" />
+          <Box component="img" src="/assets/icons/swap/chevron-down.svg" />
         </Stack>
       )}
 

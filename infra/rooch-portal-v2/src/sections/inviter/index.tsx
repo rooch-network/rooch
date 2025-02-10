@@ -15,6 +15,4 @@ export function InviterView({ inviterAddress }: { inviterAddress?: string }) {
     }
     router.push('/settings');
   }, [inviterAddress, router]);
-
-  return <></>;
 }
