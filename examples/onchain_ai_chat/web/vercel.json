@@ -4,18 +4,30 @@
   "framework": "vite",
   "installCommand": "npm install",
   "outputDirectory": "dist",
-  "routes": [
+  "headers": [
     {
-      "src": "/assets/(.*)",
-      "headers": { "cache-control": "public, max-age=31536000, immutable" }
+      "source": "/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
     },
     {
-      "src": "/(.*).(png|jpg|jpeg|svg|gif|webp|ico)",
-      "headers": { "cache-control": "public, max-age=31536000, immutable" }
-    },
-    { 
-      "src": "/(.*)", 
-      "destination": "/index.html" 
+      "source": "/(.*).(png|jpg|jpeg|svg|gif|webp|ico)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
