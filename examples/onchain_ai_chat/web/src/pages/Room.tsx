@@ -13,6 +13,8 @@ import { Args, Transaction, bcs } from '@roochnetwork/rooch-sdk'
 import { Message, MessageSchema} from '../types/room'
 import { Title } from '../components/Title';
 import { useOracleBalance } from '../components/OracleBalance';
+import { ErrorToast } from '../components/ErrorToast';
+import { getErrorMessage } from '../utils/errors';
 
 export function Room() {
   const { roomId } = useParams<{ roomId: string }>();
@@ -29,6 +31,7 @@ export function Room() {
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const [roomTitle, setRoomTitle] = useState<string>('Loading...');
   const { refetch: refetchBalance } = useOracleBalance();
+  const [error, setError] = useState<string | null>(null);
   
   // Query messages count - Always enabled when we have roomId and client
   const { data: messageCountResponse, refetch: refetchMessageCount } = useRoochClientQuery(
@@ -186,6 +189,7 @@ export function Room() {
     }
 
     setLoading(true);
+    setError(null);
 
     try {
       const tx = new Transaction();
@@ -193,16 +197,16 @@ export function Room() {
         target: `${packageId}::room::send_message_entry`,
         args: [Args.objectId(roomId), Args.string(message)],
       });
-      //5 RGas
       tx.setMaxGas(5_00000000);
+      
       const result = await client.signAndExecuteTransaction({
         transaction: tx,
         signer: sessionKey!,
       });
 
       if (result.execution_info.status.type !== 'executed') {
-        // Throw error instead of just logging
-        throw new Error(`Failed to send message: Transaction not executed. Details: ${JSON.stringify(result.execution_info)}`);
+        console.error('Failed to send message:', result.execution_info);
+        throw new Error(`Failed to send message: Transaction not executed. status: ${JSON.stringify(result.execution_info.status)}`);
       }
 
       // Reset to first page and refetch
@@ -216,9 +220,10 @@ export function Room() {
       // Delay scroll to bottom to ensure new message is rendered
       setTimeout(scrollToBottom, 100);
     } catch (error) {
-      // Re-throw the error to trigger ErrorGuard
-      console.error('Failed to send message:', error);
-      //throw error;
+      const errorMessage = getErrorMessage(error);
+      setError(errorMessage);
+      // Throw error to prevent ChatInput from clearing
+      throw error;
     } finally {
       setLoading(false);
     }
@@ -267,6 +272,12 @@ export function Room() {
           </div>
         </div>
       </Layout>
+      {error && (
+        <ErrorToast 
+          message={error}
+          onClose={() => setError(null)}
+        />
+      )}
     </>
   );
 }
