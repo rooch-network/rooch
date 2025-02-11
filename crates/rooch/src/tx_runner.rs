@@ -12,7 +12,7 @@ use move_vm_runtime::RuntimeEnvironment;
 use moveos::gas::table::{
     get_gas_schedule_entries, initial_cost_schedule, CostTable, MoveOSGasMeter,
 };
-use moveos::moveos::{MoveOSCacheManager, MoveOSConfig};
+use moveos::moveos::{new_moveos_global_module_cache, MoveOSCacheManager, MoveOSConfig};
 use moveos::vm::data_cache::MoveosDataCache;
 use moveos::vm::module_cache::GlobalModuleCache;
 use moveos::vm::moveos_vm::{MoveOSSession, MoveOSVM};
@@ -147,7 +147,7 @@ pub fn execute_tx_locally_with_gas_profile(
         object_runtime,
         gas_profiler.clone(),
         false,
-        global_module_cache,
+        global_module_cache.clone(),
         &runtime_environment,
     );
 
@@ -233,7 +233,10 @@ pub fn prepare_execute_env(
         client_resolver,
     )));
 
-    let moveos_cache_manager = MoveOSCacheManager::new(gas_parameters.all_natives());
+    let global_module_cache = new_moveos_global_module_cache();
+    let moveos_cache_manager =
+        MoveOSCacheManager::new(gas_parameters.all_natives(), global_module_cache);
+
     let vm = MoveOSVM::new(moveos_cache_manager).expect("create MoveVM failed");
 
     (vm, object_runtime, client_resolver, action, cost_table)

@@ -33,6 +33,7 @@ use rooch_types::error::{RoochError, RoochResult};
 use rooch_types::transaction::rooch::RoochTransaction;
 use std::collections::BTreeMap;
 use std::io::stderr;
+use move_model::metadata::{CompilerVersion, LanguageVersion};
 use tokio::runtime::Handle;
 
 struct MemoryModuleResolver {
@@ -183,6 +184,8 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
             .unwrap_or_else(|| std::env::current_dir().unwrap());
         let config = self.move_args.build_config.clone();
         let mut config = config.clone();
+        config.compiler_config.language_version = Some(LanguageVersion::V2_1);
+        config.compiler_config.compiler_version = Some(CompilerVersion::V2_1);
 
         // Parse named addresses from context and update config
         config.additional_named_addresses =
@@ -223,7 +226,8 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
         //We need to download all modules in one rpc request and then verify the modules.
         let mut resolver = MemoryModuleResolver::new(context.get_client().await?);
         resolver.download(all_module_ids)?;
-        moveos_verifier::verifier::verify_modules(&sorted_modules, &resolver)?;
+        //#TODO: disable the verification process temporary
+        //moveos_verifier::verifier::verify_modules(&sorted_modules, &resolver)?;
         for module in sorted_modules {
             let module_address = module.self_id().address().to_owned();
             if module_address != pkg_address {

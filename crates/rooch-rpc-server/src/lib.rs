@@ -62,6 +62,7 @@ use tower_governor::{governor::GovernorConfigBuilder, GovernorLayer};
 use tower_http::cors::{AllowOrigin, CorsLayer};
 use tower_http::trace::TraceLayer;
 use tracing::{error, info};
+use moveos::moveos::new_moveos_global_module_cache;
 
 mod axum_router;
 pub mod metrics_server;
@@ -251,6 +252,8 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         root.size()
     );
 
+    let global_module_cache = new_moveos_global_module_cache();
+
     let event_bus = EventBus::new();
     let event_actor = EventActor::new(event_bus.clone());
     let event_actor_ref = event_actor
@@ -263,6 +266,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         rooch_store.clone(),
         &prometheus_registry,
         Some(event_actor_ref.clone()),
+        global_module_cache.clone(),
     )?;
 
     let executor_actor_ref = executor_actor
@@ -274,6 +278,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         moveos_store.clone(),
         rooch_store.clone(),
         Some(event_actor_ref.clone()),
+        global_module_cache.clone()
     )?;
 
     let read_executor_ref = reader_executor

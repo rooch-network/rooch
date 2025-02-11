@@ -15,8 +15,9 @@ use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor, LocalActorRef};
 use move_resource_viewer::MoveValueAnnotator;
 use move_vm_runtime::RuntimeEnvironment;
-use moveos::moveos::MoveOS;
+use moveos::moveos::{MoveOS, MoveOSGlobalModuleCache};
 use moveos::moveos::MoveOSConfig;
+use moveos::vm::module_cache::GlobalModuleCache;
 use moveos_eventbus::bus::EventData;
 use moveos_store::transaction_store::TransactionStore;
 use moveos_store::MoveOSStore;
@@ -41,6 +42,7 @@ pub struct ReaderExecutorActor {
     moveos_store: MoveOSStore,
     rooch_store: RoochStore,
     event_actor: Option<LocalActorRef<EventActor>>,
+    global_module_cache: MoveOSGlobalModuleCache,
 }
 
 impl ReaderExecutorActor {
@@ -49,6 +51,7 @@ impl ReaderExecutorActor {
         moveos_store: MoveOSStore,
         rooch_store: RoochStore,
         event_actor: Option<LocalActorRef<EventActor>>,
+        global_module_cache: MoveOSGlobalModuleCache,
     ) -> Result<Self> {
         let resolver = RootObjectResolver::new(root.clone(), &moveos_store);
         let gas_parameters = FrameworksGasParameters::load_from_chain(&resolver)?;
@@ -57,6 +60,7 @@ impl ReaderExecutorActor {
             moveos_store.clone(),
             system_pre_execute_functions(),
             system_post_execute_functions(),
+            global_module_cache.clone(),
         )?;
 
         Ok(Self {
@@ -65,6 +69,7 @@ impl ReaderExecutorActor {
             moveos_store,
             rooch_store,
             event_actor,
+            global_module_cache: global_module_cache.clone(),
         })
     }
 
@@ -337,6 +342,7 @@ impl Handler<EventData> for ReaderExecutorActor {
                 self.moveos_store.clone(),
                 system_pre_execute_functions(),
                 system_post_execute_functions(),
+                self.global_module_cache.clone(),
             )?;
         }
         Ok(())

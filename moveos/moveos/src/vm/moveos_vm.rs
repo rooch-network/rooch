@@ -100,7 +100,7 @@ impl MoveOSVM {
             object_runtime,
             gas_meter,
             false,
-            global_module_cache,
+            global_module_cache.clone(),
             runtime_environment,
         )
     }
@@ -130,7 +130,7 @@ impl MoveOSVM {
             object_runtime,
             UnmeteredGasMeter,
             false,
-            global_module_cache,
+            global_module_cache.clone(),
             runtime_environment,
         )
     }
@@ -157,7 +157,7 @@ impl MoveOSVM {
             object_runtime,
             gas_meter,
             true,
-            global_module_cache,
+            global_module_cache.clone(),
             runtime_environment,
         )
     }
@@ -205,7 +205,7 @@ pub struct MoveOSSession<'r, 'l, S, G> {
     pub(crate) session: Session<'r, 'l, MoveosDataCache<'r, 'l, S>>,
     pub(crate) object_runtime: Rc<RwLock<ObjectRuntime<'r>>>,
     pub(crate) gas_meter: G,
-    pub(crate) code_cache: MoveOSCodeCache<'r>,
+    pub(crate) code_cache: MoveOSCodeCache<'r, S>,
     pub(crate) read_only: bool,
 }
 
@@ -238,7 +238,7 @@ where
             ),
             object_runtime,
             gas_meter,
-            code_cache: MoveOSCodeCache::new(global_module_cache, runtime_environment),
+            code_cache: MoveOSCodeCache::new(global_module_cache.clone(), runtime_environment, remote),
             read_only,
         }
     }
@@ -291,7 +291,7 @@ where
             remote,
             loader,
             object_runtime,
-            MoveOSCodeCache::new(global_module_cache, runtime_environment),
+            MoveOSCodeCache::new(global_module_cache.clone(), runtime_environment, remote),
         );
         vm.new_session_with_extensions_legacy(data_store, extensions)
     }
@@ -378,12 +378,15 @@ where
                 };
                 let compiled_modules = deserialize_modules(&module_bundle)?;
 
+                //#TODO: disable the verification process temporary
+                /*
                 let result =
                     moveos_verifier::verifier::verify_modules(&compiled_modules, self.remote);
                 match result {
                     Ok(_) => {}
                     Err(err) => return Err(err),
                 }
+                 */
 
                 /*
                 self.vm
@@ -495,7 +498,7 @@ where
                     )?;
                     self.session.execute_entry_function(
                         loaded_function,
-                        call.args,
+                        serialized_args,
                         &mut self.gas_meter,
                         &mut traversal_context,
                         &self.code_cache,

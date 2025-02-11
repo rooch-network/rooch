@@ -13,7 +13,7 @@ use coerce::actor::{context::ActorContext, message::Handler, Actor, LocalActorRe
 use function_name::named;
 use move_core_types::vm_status::VMStatus;
 use move_vm_runtime::RuntimeEnvironment;
-use moveos::moveos::{MoveOS, MoveOSConfig};
+use moveos::moveos::{MoveOS, MoveOSConfig, MoveOSGlobalModuleCache};
 use moveos::vm::module_cache::GlobalModuleCache;
 use moveos::vm::vm_status_explainer::explain_vm_status;
 use moveos_eventbus::bus::EventData;
@@ -59,6 +59,7 @@ pub struct ExecutorActor {
     rooch_store: RoochStore,
     metrics: Arc<ExecutorMetrics>,
     event_actor: Option<LocalActorRef<EventActor>>,
+    global_module_cache: MoveOSGlobalModuleCache,
 }
 
 type ValidateAuthenticatorResult = Result<TxValidateResult, VMStatus>;
@@ -70,6 +71,7 @@ impl ExecutorActor {
         rooch_store: RoochStore,
         registry: &Registry,
         event_actor: Option<LocalActorRef<EventActor>>,
+        global_module_cache: MoveOSGlobalModuleCache,
     ) -> Result<Self> {
         let resolver = RootObjectResolver::new(root.clone(), &moveos_store);
         let gas_parameters = FrameworksGasParameters::load_from_chain(&resolver)?;
@@ -79,6 +81,7 @@ impl ExecutorActor {
             moveos_store.clone(),
             system_pre_execute_functions(),
             system_post_execute_functions(),
+            global_module_cache.clone()
         )?;
 
         Ok(Self {
@@ -88,6 +91,7 @@ impl ExecutorActor {
             rooch_store,
             metrics: Arc::new(ExecutorMetrics::new(registry)),
             event_actor,
+            global_module_cache
         })
     }
 
@@ -548,6 +552,7 @@ impl Handler<EventData> for ExecutorActor {
                 self.moveos_store.clone(),
                 system_pre_execute_functions(),
                 system_post_execute_functions(),
+                self.global_module_cache.clone()
             )?;
         }
         Ok(())

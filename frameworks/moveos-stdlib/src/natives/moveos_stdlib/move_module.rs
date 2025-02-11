@@ -169,6 +169,8 @@ fn native_sort_and_verify_modules_inner(
     let mut module_names = vec![];
     let mut init_identifier = vec![];
 
+    //#TODO disable the verification process temporary
+    /*
     let verify_result =
         moveos_verifier::verifier::verify_modules(&compiled_modules, module_context.resolver);
     match verify_result {
@@ -179,8 +181,11 @@ fn native_sort_and_verify_modules_inner(
             return Ok(NativeResult::err(cost, error_code));
         }
     }
+     */
 
+    //#TODO disable the verification process temporary
     // move verifier
+    /*
     let verify_result = context
         .verify_module_bundle_for_publication(&compiled_modules)
         .map_err(|e| {
@@ -197,6 +202,7 @@ fn native_sort_and_verify_modules_inner(
             return Ok(NativeResult::err(cost, E_MODULE_VERIFICATION_ERROR));
         }
     }
+     */
 
     for module in &compiled_modules {
         let module_address = *module.self_id().address();

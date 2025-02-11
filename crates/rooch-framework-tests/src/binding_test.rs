@@ -41,6 +41,7 @@ use std::{env, vec};
 use tempfile::TempDir;
 use tokio::runtime::Runtime;
 use tracing::info;
+use moveos::moveos::new_moveos_global_module_cache;
 
 pub fn get_data_dir() -> DataDirPath {
     match env::var("ROOCH_TEST_DATA_DIR") {
@@ -95,12 +96,15 @@ impl RustBindingTest {
         let rooch_db = RoochDB::init(store_config, &registry_service.default_registry())?;
         let root = genesis.init_genesis(&rooch_db)?;
 
+        let global_module_cache = new_moveos_global_module_cache();
+
         let executor = ExecutorActor::new(
             root.clone(),
             rooch_db.moveos_store.clone(),
             rooch_db.rooch_store.clone(),
             &registry_service.default_registry(),
             None,
+            global_module_cache.clone(),
         )?;
 
         let reader_executor = ReaderExecutorActor::new(
@@ -108,6 +112,7 @@ impl RustBindingTest {
             rooch_db.moveos_store.clone(),
             rooch_db.rooch_store.clone(),
             None,
+            global_module_cache.clone()
         )?;
         Ok(Self {
             network,

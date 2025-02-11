@@ -119,6 +119,13 @@ impl Clone for MoveOSConfig {
     }
 }
 
+pub type MoveOSGlobalModuleCache =
+    Arc<RwLock<GlobalModuleCache<ModuleId, CompiledModule, Module, RoochModuleExtension>>>;
+
+pub fn new_moveos_global_module_cache() -> MoveOSGlobalModuleCache {
+    Arc::new(RwLock::new(GlobalModuleCache::empty()))
+}
+
 #[derive(Clone)]
 pub struct MoveOSCacheManager {
     pub runtime_environment: Arc<RwLock<RuntimeEnvironment>>,
@@ -127,10 +134,13 @@ pub struct MoveOSCacheManager {
 }
 
 impl MoveOSCacheManager {
-    pub fn new(all_natives: Vec<(AccountAddress, Identifier, Identifier, NativeFunction)>) -> Self {
+    pub fn new(
+        all_natives: Vec<(AccountAddress, Identifier, Identifier, NativeFunction)>,
+        global_module_cache: MoveOSGlobalModuleCache,
+    ) -> Self {
         Self {
             runtime_environment: Arc::new(RwLock::new(RuntimeEnvironment::new(all_natives))),
-            global_module_cache: Arc::new(RwLock::new(GlobalModuleCache::empty())),
+            global_module_cache,
         }
     }
 }
@@ -153,9 +163,10 @@ impl MoveOS {
         db: MoveOSStore,
         system_pre_execute_functions: Vec<FunctionCall>,
         system_post_execute_functions: Vec<FunctionCall>,
+        global_module_cache: MoveOSGlobalModuleCache,
     ) -> Result<Self> {
         //TODO load the gas table from argument, and remove the cost_table lock.
-        let moveos_cache_manager = MoveOSCacheManager::new(all_natives);
+        let moveos_cache_manager = MoveOSCacheManager::new(all_natives, global_module_cache);
 
         let vm = MoveOSVM::new(moveos_cache_manager.clone())?;
         Ok(Self {
@@ -305,7 +316,7 @@ impl MoveOS {
         &self,
         tx: VerifiedMoveOSTransaction,
     ) -> Result<(RawTransactionOutput, Option<VMErrorInfo>)> {
-        let VerifiedMoveOSTransaction { root, ctx, action } = tx;
+        let VerifiedMoveOSTransaction { root, ctx, action } = tx.clone();
         let tx_hash = ctx.tx_hash();
         if tracing::enabled!(tracing::Level::DEBUG) {
             tracing::debug!(
