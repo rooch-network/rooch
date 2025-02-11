@@ -15,6 +15,7 @@ import { Title } from '../components/Title';
 import { useOracleBalance } from '../components/OracleBalance';
 import { ErrorToast } from '../components/ErrorToast';
 import { getErrorMessage } from '../utils/errors';
+import { TypingIndicator } from '../components/TypingIndicator';
 
 export function Room() {
   const { roomId } = useParams<{ roomId: string }>();
@@ -32,6 +33,7 @@ export function Room() {
   const [roomTitle, setRoomTitle] = useState<string>('Loading...');
   const { refetch: refetchBalance } = useOracleBalance();
   const [error, setError] = useState<string | null>(null);
+  const [isAITyping, setIsAITyping] = useState(false);
   
   // Query messages count - Always enabled when we have roomId and client
   const { data: messageCountResponse, refetch: refetchMessageCount } = useRoochClientQuery(
@@ -47,23 +49,39 @@ export function Room() {
     }
   );
 
-  // Query room object state
-  const { data: roomResponse } = useRoochClientQuery(
-    'getObjectState',
+  // Add debug logs for dependencies
+  useEffect(() => {
+    console.log('Room query dependencies:', {
+      roomId,
+      hasClient: !!client,
+      packageId,
+    });
+  }, [roomId, client, packageId]);
+
+  // Modify room query with better dependency handling and logging
+  const { data: roomResponse, isLoading: roomLoading } = useRoochClientQuery(
+    'queryObjectStates',
     {
-      object_id: roomId!,
+      filter: { object_id: roomId! },
     },
     {
-      enabled: !!roomId && !!client,
+      enabled: Boolean(roomId) && Boolean(client) && Boolean(packageId),
       refetchOnMount: true,
+      //refetchInterval: 2000,
+      onSuccess: (data) => {
+        console.log('Room query success:', data);
+      },
+      onError: (error) => {
+        console.error('Room query error:', error);
+      },
     }
   );
 
-  // Update room title when data is available
+  // Update room title effect to handle array response
   useEffect(() => {
-    if (roomResponse?.data?.decoded_value?.value) {
+    if (roomResponse?.data?.[0]?.decoded_value?.value) {
       try {
-        const roomData = roomResponse.data.decoded_value.value;
+        const roomData = roomResponse.data[0].decoded_value.value;
         setRoomTitle(roomData.title || 'Untitled Room');
       } catch (error) {
         console.error('Failed to parse room data:', error);
@@ -229,6 +247,19 @@ export function Room() {
     }
   };
 
+  // Update isAIRoom memo to handle array response
+  const isAIRoom = useMemo(() => {
+    console.log('Room data:', roomResponse?.data?.[0]?.decoded_value?.value);
+    return roomResponse?.data?.[0]?.decoded_value?.value?.room_type === 1;
+  }, [roomResponse]);
+
+  useEffect(() => {
+    if (isAIRoom && allMessages.length > 0) {
+      const lastMessage = allMessages[allMessages.length - 1];
+      setIsAITyping(lastMessage.message_type === 0);
+    }
+  }, [isAIRoom, allMessages]);
+
   // Add loading state display
   return (
     <>
@@ -252,13 +283,16 @@ export function Room() {
                   No messages yet
                 </div>
               ) : (
-                allMessages.map((message, index) => (
-                  <ChatMessage
-                    key={`${message.sender}-${message.timestamp}-${index}`}
-                    message={message}
-                    isCurrentUser={message.sender === sessionKey?.roochAddress.toHexAddress()}
-                  />
-                ))
+                <>
+                  {allMessages.map((message, index) => (
+                    <ChatMessage
+                      key={`${message.sender}-${message.timestamp}-${index}`}
+                      message={message}
+                      isCurrentUser={message.sender === sessionKey?.roochAddress.toHexAddress()}
+                    />
+                  ))}
+                  {isAITyping && <TypingIndicator />}
+                </>
               )}
               <div ref={messagesEndRef} />
             </div>
