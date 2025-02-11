@@ -21,8 +21,7 @@
 -  [Function `change_feature_flags`](#0x3_onchain_config_change_feature_flags)
 
 
-<pre><code><b>use</b> <a href="">0x1::debug</a>;
-<b>use</b> <a href="">0x2::features</a>;
+<pre><code><b>use</b> <a href="">0x2::features</a>;
 <b>use</b> <a href="">0x2::module_store</a>;
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::signer</a>;

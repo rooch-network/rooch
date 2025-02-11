@@ -13,15 +13,11 @@ use diesel::ConnectionError::BadConnection;
 use diesel::RunQueryDsl;
 use errors::IndexerError;
 use moveos_store::MoveOSStore;
-use moveos_types::move_types::type_tag_match;
-use moveos_types::moveos_std::object::{
-    is_dynamic_field_type, parse_dynamic_field_type_tags, ObjectID, RawField,
-};
-use moveos_types::state::MoveType;
+use moveos_types::moveos_std::object::{is_dynamic_field_type, DynamicField, ObjectID};
 use moveos_types::state_resolver::{RootObjectResolver, StateResolver};
 use once_cell::sync::Lazy;
 use prometheus::Registry;
-use rooch_types::framework::indexer::IndexerModule;
+use rooch_types::framework::indexer::{FieldIndexerData, IndexerModule};
 use rooch_types::indexer::event::IndexerEvent;
 use rooch_types::indexer::field::{IndexerField, IndexerFieldChanges};
 use rooch_types::indexer::state::{
@@ -439,27 +435,22 @@ pub fn get_sqlite_pool_connection(
 pub fn list_field_indexer_keys(
     resolver: &RootObjectResolver<MoveOSStore>,
 ) -> Result<Vec<ObjectID>> {
-    // let resolver = RootObjectResolver::new(self.root.clone(), &self.moveos_store);
     let field_indexer_object_id = IndexerModule::field_indexer_object_id();
     let states = resolver.list_fields(&field_indexer_object_id, None, MAX_LIST_FIELD_SIZE)?;
 
     let data = states
         .into_iter()
         .filter_map(|state| {
-            let object_type = state.1.metadata.object_type;
+            let object_type = state.1.metadata.object_type.clone();
             if !is_dynamic_field_type(&object_type) {
                 return None;
             }
 
-            parse_dynamic_field_type_tags(&object_type).and_then(|(name_type, value_type)| {
-                if !type_tag_match(&ObjectID::type_tag(), &name_type) {
-                    return None;
-                }
-
-                RawField::parse_unchecked_field(state.1.value.as_slice(), name_type, value_type)
-                    .ok()
-                    .and_then(|raw_field| bcs::from_bytes::<ObjectID>(&raw_field.name).ok())
-            })
+            state
+                .1
+                .value_as_uncheck::<DynamicField<ObjectID, FieldIndexerData>>()
+                .ok()
+                .map(|df| df.name)
         })
         .collect();
 
