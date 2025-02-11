@@ -67,7 +67,7 @@ export function Room() {
     {
       enabled: Boolean(roomId) && Boolean(client) && Boolean(packageId),
       refetchOnMount: true,
-      refetchInterval: 2000,
+      //refetchInterval: 2000,
       onSuccess: (data) => {
         console.log('Room query success:', data);
       },
