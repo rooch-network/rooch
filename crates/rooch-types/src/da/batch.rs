@@ -165,7 +165,11 @@ impl DABatch {
         for mut tx in tx_list {
             let tx_order = tx.sequence_info.tx_order;
             if tx_order != last_order {
-                return Err(anyhow::anyhow!("tx order mismatch"));
+                // return detail error
+                return Err(anyhow::anyhow!(
+                    "Transaction order is not strictly incremental for block {}: last_tx_order: {}, tx_order: {}",
+                            self.meta.block_range.block_number, last_order, tx_order
+                ));
             }
 
             let tx_hash = tx.data.tx_hash();
