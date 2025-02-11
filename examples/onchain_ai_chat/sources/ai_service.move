@@ -30,7 +30,7 @@ module onchain_ai_chat::ai_service {
     /// We directly get the root, if we want to get the first choice we can use ".choices[].message.content"
     const AI_PICK: vector<u8> = b".";
     const AI_ORACLE_URL: vector<u8> = b"https://api.openai.com/v1/chat/completions";
-    const MAX_HISTORY_MESSAGES: u64 = 10;
+    const MAX_HISTORY_MESSAGES: u64 = 20;
     const MAX_RESPONSE_LENGTH: u64 = 65536;
 
     const ErrorInvalidDepositAmount: u64 = 1;

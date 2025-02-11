@@ -4,8 +4,13 @@ module onchain_ai_chat::ai_request {
     use moveos_std::json;
     use onchain_ai_chat::message::{Self, Message};
 
-    /// System prompt to guide AI behavior
-    const SYSTEM_PROMPT: vector<u8> = b"You are a knowledgeable AI assistant. Begin each response with a relevant title as a Markdown h1 header (# Title) that summarizes the current conversation. After the title, provide your response using clear Markdown formatting. Format code with language-specific code blocks. Keep responses under 2000 characters. Acknowledge any uncertainties. Break down complex topics into digestible parts.";
+    /// Base system prompt
+    const SYSTEM_PROMPT: vector<u8> = b"You are a knowledgeable AI assistant. Begin each response with a relevant title as a Markdown h1 header (# Title). Provide clear explanations using Markdown formatting. Format code with language-specific code blocks. Keep responses under 2000 characters. Break down complex topics into digestible parts.";
+
+    /// Summary hint - add when message_id % 10 == 0
+    const SUMMARY_HINT: vector<u8> = b"Since this is a milestone in our conversation, please start your response with a brief summary of our discussion so far, then proceed with your answer to the current question. Keep the overall response natural and flowing.";
+
+    const SUMMARY_POINT: u64 = 20;
 
     #[data_struct]
     struct ChatMessage has store, copy, drop {
@@ -23,15 +28,27 @@ module onchain_ai_chat::ai_request {
 
     public fun new_chat_request(content: String, previous_messages: &vector<Message>): ChatRequest {
         let messages = vector::empty();
+        let len = vector::length(previous_messages);
 
-        // Add system prompt
+        // Add base system prompt
         vector::push_back(&mut messages, ChatMessage {
             role: string::utf8(b"system"),
             content: string::utf8(SYSTEM_PROMPT),
         });
 
+        // Check if we need summary (every 10 messages)
+        if (len > 0) {
+            let last_msg = vector::borrow(previous_messages, len - 1);
+            if (message::get_id(last_msg) % SUMMARY_POINT == 0) {
+                // Add summary hint
+                vector::push_back(&mut messages, ChatMessage {
+                    role: string::utf8(b"system"),
+                    content: string::utf8(SUMMARY_HINT),
+                });
+            };
+        };
+
         let i = 0;
-        let len = vector::length(previous_messages);
         
         while (i < len) {
             let msg = vector::borrow(previous_messages, i);
