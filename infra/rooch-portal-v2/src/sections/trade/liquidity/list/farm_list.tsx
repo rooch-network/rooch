@@ -41,6 +41,8 @@ export default function FarmList() {
     },
   });
 
+  console.log(farms);
+
   const resolvedFarms = useMemo(() => {
     if (!farms) {
       return [];

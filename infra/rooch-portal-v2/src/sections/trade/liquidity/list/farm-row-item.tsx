@@ -69,10 +69,9 @@ export default function FarmRowItem({
   const [harvest, setHarvest] = useState(0);
   const [rewardCoin, setRewardCoin] = useState<BalanceInfoView>();
   const { mutateAsync, isPending } = useSignAndExecuteTransaction();
-
   const { data: coinInfo } = useRoochClientQuery('getBalance', {
     owner: '0x3',
-    coinType: row.reward,
+    coinType: `${dex.address}::swap::LPToken<${row.x.type}, ${row.y.type}>`,
   });
 
   const fetchHarvest = useCallback(() => {
@@ -278,8 +277,8 @@ export default function FarmRowItem({
                 >
                   <Stack direction="column">
                     <Typography className="text-gray-600 !text-sm !font-semibold">
-                      Staked ${rewardCoin?.symbol}:{' '}
-                      {formatByIntl(fromDust(staked, rewardCoin?.decimals || 0).toString())}
+                      Staked LP:{' '}
+                      {formatByIntl(fromDust(staked, coinInfo?.decimals || 0).toString())}
                     </Typography>
                     <Button
                       sx={{ mt: 1 }}
