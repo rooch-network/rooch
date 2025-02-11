@@ -13,7 +13,7 @@ use move_core_types::{account_address::AccountAddress, identifier::Identifier};
 use move_vm_runtime::native_functions::NativeFunction;
 use move_vm_runtime::RuntimeEnvironment;
 use moveos::gas::table::VMGasParameters;
-use moveos::moveos::{MoveOS, MoveOSConfig};
+use moveos::moveos::{new_moveos_global_module_cache, MoveOS, MoveOSConfig};
 use moveos::vm::module_cache::GlobalModuleCache;
 use moveos_stdlib::natives::moveos_stdlib::base64::EncodeDecodeGasParametersOption;
 use moveos_store::MoveOSStore;
@@ -311,8 +311,9 @@ impl RoochGenesis {
         genesis_moveos_tx.ctx.add(bitcoin_genesis_ctx.clone())?;
         genesis_moveos_tx.ctx.add(gas_config.clone())?;
 
+        let global_module_cache = new_moveos_global_module_cache();
         let (moveos_store, _temp_dir) = MoveOSStore::mock_moveos_store()?;
-        let moveos = MoveOS::new(gas_parameter.all_natives(), moveos_store, vec![], vec![])?;
+        let moveos = MoveOS::new(gas_parameter.all_natives(), moveos_store, vec![], vec![], global_module_cache)?;
         let output = moveos.init_genesis(
             genesis_moveos_tx.clone(),
             genesis_config.genesis_objects.clone(),
@@ -402,6 +403,8 @@ impl RoochGenesis {
             "Genesis already initialized"
         );
 
+        let global_module_cache = new_moveos_global_module_cache();
+
         //we load the gas parameter from genesis binary, avoid the code change affect the genesis result
         let genesis_gas_parameter = FrameworksGasParameters::load_from_gas_entries(
             self.initial_gas_config.max_gas_amount,
@@ -412,6 +415,7 @@ impl RoochGenesis {
             rooch_db.moveos_store.clone(),
             vec![],
             vec![],
+            global_module_cache
         )?;
 
         let genesis_raw_output =

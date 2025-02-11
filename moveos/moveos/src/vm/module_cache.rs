@@ -2,11 +2,12 @@ use ambassador::delegate_to_methods;
 use bytes::Bytes;
 use hashbrown::HashMap;
 use itertools::Itertools;
-use move_binary_format::errors::VMResult;
+use move_binary_format::errors::{Location, PartialVMError, VMResult};
 use move_binary_format::file_format::CompiledScript;
 use move_binary_format::CompiledModule;
 use move_core_types::language_storage::ModuleId;
-use move_vm_runtime::loader::modules::LegacyModuleCache;
+use move_core_types::vm_status::StatusCode;
+use move_vm_runtime::loader::modules::{LegacyModuleCache, LegacyModuleStorage};
 use move_vm_runtime::{Module, RuntimeEnvironment, Script, WithRuntimeEnvironment};
 use move_vm_types::code::ambassador_impl_ScriptCache;
 use move_vm_types::code::Code;
@@ -14,8 +15,10 @@ use move_vm_types::code::{
     ModuleCache, ModuleCode, ModuleCodeBuilder, ScriptCache, UnsyncModuleCache, UnsyncScriptCache,
     WithBytes, WithHash, WithSize,
 };
+use move_vm_types::resolver::ModuleResolver;
 use move_vm_types::sha3_256;
 use moveos_store::TxnIndex;
+use moveos_types::state_resolver::MoveOSResolver;
 use parking_lot::RwLock;
 use serde::{Deserialize, Deserializer, Serialize};
 use std::hash::Hash;
@@ -479,7 +482,7 @@ enum PersistedStateValue {
 }
 
 #[derive(Clone)]
-pub struct MoveOSCodeCache<'a> {
+pub struct MoveOSCodeCache<'a, S> {
     pub runtime_environment: &'a RuntimeEnvironment,
     pub script_cache: UnsyncScriptCache<[u8; 32], CompiledScript, Script>,
     pub module_cache:
@@ -487,27 +490,30 @@ pub struct MoveOSCodeCache<'a> {
     pub global_module_cache:
         Arc<RwLock<GlobalModuleCache<ModuleId, CompiledModule, Module, RoochModuleExtension>>>,
     pub legacy_module_cache: LegacyModuleCache,
+    pub resolver: &'a S,
 }
 
-impl<'a> WithRuntimeEnvironment for MoveOSCodeCache<'a> {
+impl<'a, S: MoveOSResolver> WithRuntimeEnvironment for MoveOSCodeCache<'a, S> {
     fn runtime_environment(&self) -> &RuntimeEnvironment {
         self.runtime_environment
     }
 }
 
-impl<'a> MoveOSCodeCache<'a> {
+impl<'a, S> MoveOSCodeCache<'a, S> {
     pub fn new(
         global_module_cache: Arc<
             RwLock<GlobalModuleCache<ModuleId, CompiledModule, Module, RoochModuleExtension>>,
         >,
         runtime_environment: &'a RuntimeEnvironment,
+        resolver: &'a S,
     ) -> Self {
         Self {
             script_cache: UnsyncScriptCache::empty(),
             module_cache: UnsyncModuleCache::empty(),
-            global_module_cache,
+            global_module_cache: global_module_cache.clone(),
             runtime_environment,
             legacy_module_cache: LegacyModuleCache::new(),
+            resolver,
         }
     }
 
@@ -530,7 +536,7 @@ impl<'a> MoveOSCodeCache<'a> {
 
 #[delegate_to_methods]
 #[delegate(ScriptCache, target_ref = "as_script_cache")]
-impl<'a> MoveOSCodeCache<'a> {
+impl<'a, S> MoveOSCodeCache<'a, S> {
     pub fn as_script_cache(
         &self,
     ) -> &dyn ScriptCache<Key = [u8; 32], Deserialized = CompiledScript, Verified = Script> {
@@ -550,7 +556,7 @@ impl<'a> MoveOSCodeCache<'a> {
     }
 }
 
-impl<'a> ModuleCache for MoveOSCodeCache<'a> {
+impl<'a, S> ModuleCache for MoveOSCodeCache<'a, S> {
     type Key = ModuleId;
     type Deserialized = CompiledModule;
     type Verified = Module;
@@ -575,10 +581,14 @@ impl<'a> ModuleCache for MoveOSCodeCache<'a> {
         extension: Arc<Self::Extension>,
         version: Self::Version,
     ) -> VMResult<Arc<ModuleCode<Self::Deserialized, Self::Verified, Self::Extension>>> {
-        //let mut write_guard = self.global_module_cache.write();
-        //let m = Arc::new(ModuleCode::from_verified(verified_code.clone(), extension.clone()));
-        //write_guard.insert(key.clone(), m.clone());
-        //Ok(m)
+        // insert verified code to the global module cache
+        let mut write_guard = self.global_module_cache.write();
+        let m = Arc::new(ModuleCode::from_verified(
+            verified_code.clone(),
+            extension.clone(),
+        ));
+        write_guard.insert(key.clone(), m.clone());
+        // insert verified code to the module cache
         self.module_cache
             .insert_verified_module(key.clone(), verified_code, extension, version)
     }
@@ -613,7 +623,7 @@ impl<'a> ModuleCache for MoveOSCodeCache<'a> {
     }
 }
 
-impl<'a> ModuleCodeBuilder for MoveOSCodeCache<'a> {
+impl<'a, S: MoveOSResolver> ModuleCodeBuilder for MoveOSCodeCache<'a, S> {
     type Key = ModuleId;
     type Deserialized = CompiledModule;
     type Verified = Module;
@@ -623,10 +633,27 @@ impl<'a> ModuleCodeBuilder for MoveOSCodeCache<'a> {
         &self,
         key: &Self::Key,
     ) -> VMResult<Option<ModuleCode<Self::Deserialized, Self::Verified, Self::Extension>>> {
-        let read_guard = self.global_module_cache.read();
-        match read_guard.get(key) {
-            None => Ok(None),
-            Some(v) => Ok(Some(v.deref().clone())),
-        }
+        let module_bytes = match self.resolver.get_module(key) {
+            Err(e) => return Err(e.finish(Location::Module(key.clone()))),
+            Ok(module_opt) => match module_opt {
+                None => {
+                    return Err(PartialVMError::new(StatusCode::RESOURCE_DOES_NOT_EXIST)
+                        .finish(Location::Module(key.clone())))
+                }
+                Some(bytes) => bytes,
+            },
+        };
+
+        let compiled_module = self
+            .runtime_environment()
+            .deserialize_into_compiled_module(&module_bytes)?;
+
+        let extension = Arc::new(RoochModuleExtension::new(StateValue::new_legacy(
+            Bytes::copy_from_slice(module_bytes.as_ref()),
+        )));
+
+        let module = ModuleCode::from_deserialized(compiled_module, extension);
+
+        Ok(Some(module))
     }
 }

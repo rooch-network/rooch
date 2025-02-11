@@ -57,7 +57,7 @@ pub struct MoveosDataCache<'r, 'l, S> {
     compiled_scripts: BTreeMap<[u8; 32], Arc<CompiledScript>>,
     compiled_modules: BTreeMap<ModuleId, (Arc<CompiledModule>, usize, [u8; 32])>,
 
-    code_cache: MoveOSCodeCache<'r>,
+    code_cache: MoveOSCodeCache<'r, S>,
 }
 
 impl<'r, 'l, S: MoveOSResolver> MoveosDataCache<'r, 'l, S> {
@@ -67,7 +67,7 @@ impl<'r, 'l, S: MoveOSResolver> MoveosDataCache<'r, 'l, S> {
         resolver: &'r S,
         loader: &'l Loader,
         object_runtime: Rc<RwLock<ObjectRuntime<'r>>>,
-        code_cache: MoveOSCodeCache<'r>,
+        code_cache: MoveOSCodeCache<'r, S>,
     ) -> Self {
         MoveosDataCache {
             resolver,

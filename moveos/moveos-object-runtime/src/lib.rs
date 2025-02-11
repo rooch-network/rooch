@@ -21,7 +21,7 @@ pub trait TypeLayoutLoader {
 
 impl<'a, 'b, 'c> TypeLayoutLoader for NativeContext<'a, 'b, 'c> {
     fn get_type_layout(&self, type_tag: &TypeTag) -> PartialVMResult<MoveTypeLayout> {
-        match self.get_fully_annotated_type_layout(type_tag) {
+        match self.get_type_layout_by_loader(type_tag) {
             Ok(layout) => Ok(layout),
             Err(e) => Err(partial_extension_error(format!("{:?}", e))),
         }

@@ -23,7 +23,7 @@ use move_transactional_test_runner::{
 };
 use move_vm_runtime::session::SerializedReturnValues;
 use move_vm_runtime::{Module, RuntimeEnvironment};
-use moveos::moveos::{MoveOS, MoveOSConfig};
+use moveos::moveos::{new_moveos_global_module_cache, MoveOS, MoveOSConfig};
 use moveos::moveos_test_runner::{CompiledState, MoveOSTestAdapter, TaskInput};
 use moveos::vm::module_cache::{GlobalModuleCache, RoochModuleExtension};
 use moveos_config::DataDirPath;
@@ -116,6 +116,7 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
             }
             None => BTreeMap::new(),
         };
+        let global_module_cache = new_moveos_global_module_cache();
         let temp_dir = moveos_config::temp_dir();
         let registry = prometheus::Registry::new();
         let moveos_store = MoveOSStore::new(temp_dir.path(), &registry).unwrap();
@@ -126,6 +127,7 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
             moveos_store.clone(),
             rooch_types::framework::system_pre_execute_functions(),
             rooch_types::framework::system_post_execute_functions(),
+            global_module_cache,
         )
         .unwrap();
 
