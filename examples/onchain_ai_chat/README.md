@@ -1,15 +1,19 @@
 # Onchain AI Chat
 
-A decentralized chat application built on Rooch blockchain with AI integration through Verity Oracle.
+A decentralized AI chat platform built on Rooch blockchain with Verity Oracle integration.
 
 ## Features
 
-- Create and join chat rooms
-- Real-time messaging with other users
-- AI-powered chat rooms with GPT-4 integration
+- AI-powered chat rooms with GPT-4o integration
+- Real-time messaging with context awareness
 - On-chain message storage and persistence
-- Pagination support for message history
-- Real-time message updates
+- Automatic conversation summarization
+- Paginated message history
+- Real-time updates
+
+## Live Demo
+
+Visit [ai.rooch.io](https://ai.rooch.io) to try the application.
 
 ## Architecture
 
@@ -50,7 +54,6 @@ The application follows these steps:
 5. Response is processed through the callback contract
 6. Message is stored on-chain and displayed to users
 
-
 ## Future Features
 1. Integration with OnChain AI Agent ecosystem
 2. Plugin SDK for extending chat functionality
@@ -63,7 +66,9 @@ The application follows these steps:
 - [Rooch](https://rooch.network) development environment
 - Node.js v16+ and npm/yarn
 
-## Getting Started
+## Development
+
+### Local Setup
 
 1. Clone the repository:
 ```bash
