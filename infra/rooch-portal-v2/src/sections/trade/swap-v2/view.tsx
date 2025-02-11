@@ -162,7 +162,14 @@ export default function SwapView() {
   );
 
   const fetchToCoin = useCallback(async () => {
-    if (fromCoinAmount === '0' || fromCoinAmount === '' || !fromCoin || !toCoin) {
+    if (
+      fromCoinAmount === '0' ||
+      fromCoinAmount === '' ||
+      !fromCoin ||
+      !toCoin ||
+      !fromCoin.coinType ||
+      !toCoin.coinType
+    ) {
       return;
     }
 
@@ -198,6 +205,11 @@ export default function SwapView() {
       setLoading(false);
     }
   }, [fromCoinAmount, fromCoin, toCoin, assetsMap, client, dex.address]);
+
+  useEffect(() => {
+    fetchToCoin();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fromCoinAmount, fromCoin, toCoin]);
 
   return (
     <DashboardContent maxWidth="xl" className="items-center">
