@@ -6,6 +6,7 @@ import {
   SessionKeyGuard,
   useCurrentAddress,
   useSignAndExecuteTransaction,
+  useRoochClientQuery,
 } from '@roochnetwork/rooch-sdk-kit';
 
 import { LoadingButton } from '@mui/lab';
@@ -26,7 +27,7 @@ import {
 
 import { useNetworkVariable } from 'src/hooks/use-networks';
 
-import { formatByIntl } from 'src/utils/number';
+import { formatByIntl, fromDust } from 'src/utils/number';
 
 import { toast } from 'src/components/snackbar';
 
@@ -37,7 +38,6 @@ export type FarmRowItemType = {
   alive: boolean;
   endtime: number;
   assetTotalWeight: number;
-  harvestIndex: number;
   releasePerSecond: number;
   x: {
     type: string;
@@ -65,10 +65,15 @@ export default function FarmRowItem({
   const client = useRoochClient();
   const dex = useNetworkVariable('dex');
   const currentAddress = useCurrentAddress();
-  const [staked, setStaked] = useState(false);
+  const [staked, setStaked] = useState(0);
   const [harvest, setHarvest] = useState(0);
   const [rewardCoin, setRewardCoin] = useState<BalanceInfoView>();
   const { mutateAsync, isPending } = useSignAndExecuteTransaction();
+
+  const { data: coinInfo } = useRoochClientQuery('getBalance', {
+    owner: '0x3',
+    coinType: row.reward,
+  });
 
   const fetchHarvest = useCallback(() => {
     if (!openCollapse) {
@@ -82,7 +87,7 @@ export default function FarmRowItem({
       })
       .then((result) => {
         const s = result.return_values![0].decoded_value as number;
-        setStaked(s > 0);
+        setStaked(s);
         if (s > 0) {
           client
             .executeViewFunction({
@@ -178,13 +183,18 @@ export default function FarmRowItem({
           </Box>
         </TableCell>
         <TableCell>
-          <ListItemText primary={formatByIntl(row.harvestIndex)} />
+          <ListItemText
+            primary={formatByIntl(
+              fromDust(row.releasePerSecond, coinInfo?.decimals || 0).toString()
+            )}
+          />
         </TableCell>
         <TableCell>
-          <ListItemText primary={formatByIntl(row.releasePerSecond)} />
-        </TableCell>
-        <TableCell>
-          <ListItemText primary={formatByIntl(row.assetTotalWeight)} />
+          <ListItemText
+            primary={formatByIntl(
+              fromDust(row.assetTotalWeight, coinInfo?.decimals || 0).toString()
+            )}
+          />
         </TableCell>
         <TableCell>
           <ListItemText
@@ -234,9 +244,10 @@ export default function FarmRowItem({
                 >
                   <Stack direction="column">
                     <Typography className="text-gray-600 !text-sm !font-semibold">
-                      Eligible ${rewardCoin?.symbol}: {formatByIntl(harvest)}
+                      Eligible ${rewardCoin?.symbol}:{' '}
+                      {formatByIntl(fromDust(harvest, rewardCoin?.decimals || 0).toString())}
                     </Typography>
-                    {staked && (
+                    {staked > 0 && (
                       <SessionKeyGuard
                         onClick={() => {
                           handleAction(harvest > 0 ? 'harvest' : 'unstake');
@@ -265,14 +276,21 @@ export default function FarmRowItem({
                     height: '100%',
                   }}
                 >
-                  <Button
-                    disabled={!row.liquidity || row.liquidity.fixedBalance === 0}
-                    variant="outlined"
-                    size="small"
-                    onClick={() => onOpenStakeModal(row)}
-                  >
-                    Stake LP
-                  </Button>
+                  <Stack direction="column">
+                    <Typography className="text-gray-600 !text-sm !font-semibold">
+                      Staked ${rewardCoin?.symbol}:{' '}
+                      {formatByIntl(fromDust(staked, rewardCoin?.decimals || 0).toString())}
+                    </Typography>
+                    <Button
+                      sx={{ mt: 1 }}
+                      disabled={!row.liquidity || row.liquidity.fixedBalance === 0}
+                      variant="outlined"
+                      size="small"
+                      onClick={() => onOpenStakeModal(row)}
+                    >
+                      Stake LP
+                    </Button>
+                  </Stack>
                 </CardContent>
               </Card>
             </Stack>

@@ -39,7 +39,6 @@ export function useAllLiquidity(limit: number = 10): UseAllLiquidityReturn {
   const dex = useNetworkVariable('dex');
   const client = useRoochClient();
 
-  console.log(limit);
   const [paginationModel, setPaginationModel] = useState({ index: 1, limit });
   const mapPageToNextCursor = useRef<{ [page: number]: IndexerStateIDView | null }>({});
 

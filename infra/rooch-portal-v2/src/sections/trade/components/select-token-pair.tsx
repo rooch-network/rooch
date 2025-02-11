@@ -20,9 +20,9 @@ import { toDust, fromDust, formatByIntl } from 'src/utils/number';
 import { toast } from 'src/components/snackbar';
 
 import type { TradeCoinType } from './types';
+import { useTokenPair } from '../hooks/use-token-pair';
 
 type TokenType = {
-  id: string;
   type: string;
   name: string;
 };
@@ -35,27 +35,29 @@ type TokenPairType = {
 
 interface SelectTokenPairProps {
   onLoading: (status: boolean) => void;
-  onCallback: (x?: TradeCoinType, y?: TradeCoinType) => void;
+  onCallback: (
+    x?: { amount: string } & BalanceInfoView,
+    y?: { amount: string } & BalanceInfoView
+  ) => void;
 }
 
 export default function SelectTokenPair({ onLoading, onCallback }: SelectTokenPairProps) {
   const client = useRoochClient();
   const dex = useNetworkVariable('dex');
   const currentAddress = useCurrentAddress();
+  const { tokenPairs } = useTokenPair();
 
   const [loading, setLoading] = useState(false);
-  const [x, setX] = useState<TokenType>();
+  const [x, setX] = useState<BalanceInfoView>();
   const [xValue, setXValue] = useState('');
   const [xCount, setXCount] = useState('');
   const [xRatio, setXRation] = useState(0);
-  const [y, setY] = useState<TokenType>();
+  const [y, setY] = useState<BalanceInfoView>();
   const [x2y, setX2y] = useState(true);
   const [yValue, setYValue] = useState('');
   const [yCount, setYCount] = useState('');
-  // map<x_coin_id, ...>
-  const [tokenPair, setTokenPair] = useState<Map<string, TokenPairType[]>>();
 
-  const { data } = useRoochClientQuery(
+  const { data: balances } = useRoochClientQuery(
     'getBalances',
     {
       owner: currentAddress?.toStr() || '',
@@ -68,69 +70,13 @@ export default function SelectTokenPair({ onLoading, onCallback }: SelectTokenPa
   // map<coin_type, ...>
   const assetsMap = useMemo(() => {
     const assetsMap = new Map<string, BalanceInfoView>();
-    data?.data.forEach((i) => {
+    balances?.data.forEach((i) => {
       assetsMap.set(i.coin_type, {
         ...i,
       });
     });
     return assetsMap;
-  }, [data]);
-
-  useEffect(() => {
-    client
-      .queryObjectStates({
-        filter: {
-          object_type: `${dex.address}::swap::TokenPair`,
-        },
-      })
-      .then((result) => {
-        const pair: TokenPairType[] = result.data.map((item) => {
-          const xView = item.decoded_value!.value.balance_x as AnnotatedMoveStructView;
-          let xType = xView.type.replace('0x2::object::Object<0x3::coin_store::CoinStore<', '');
-          xType = xType.replace('>>', '');
-          const xName = xType.split('::');
-          const yView = item.decoded_value!.value.balance_y as AnnotatedMoveStructView;
-          let yType = yView.type.replace('0x2::object::Object<0x3::coin_store::CoinStore<', '');
-          yType = yType.replace('>>', '');
-          const yName = yType.split('::');
-          return {
-            x2y: true,
-            x: {
-              id: xView.value.id as string,
-              type: xType,
-              name: xName[xName.length - 1].replace('>>', ''),
-            },
-            y: {
-              id: yView.value.id as string,
-              type: yType,
-              name: yName[yName.length - 1].replace('>>', ''),
-            },
-          };
-        });
-
-        const pairMap = new Map<string, TokenPairType[]>();
-        pair.forEach((p) => {
-          const key = p.x.name;
-          if (!pairMap.has(key)) {
-            pairMap.set(key, []);
-          }
-          pairMap.get(key)!.push(p);
-
-          const key1 = p.y.name;
-          if (!pairMap.has(key1)) {
-            pairMap.set(key1, []);
-          }
-          pairMap.get(key1)!.push({
-            x2y: false,
-            x: p.y,
-            y: p.x,
-          });
-        });
-
-        // Update the state
-        setTokenPair(pairMap);
-      });
-  }, [client, dex]);
+  }, [balances]);
 
   const fetchY = useCallback(async () => {
     if (xCount === '' || xCount === '0' || !x || !y) {
@@ -139,11 +85,14 @@ export default function SelectTokenPair({ onLoading, onCallback }: SelectTokenPa
 
     try {
       setLoading(true);
-      const fixdXCount = toDust(xCount.replaceAll(',', ''), assetsMap?.get(x.type)?.decimals || 0);
+      const fixdXCount = toDust(
+        xCount.replaceAll(',', ''),
+        assetsMap?.get(x.coin_type)?.decimals || 0
+      );
       const result = await client.executeViewFunction({
         target: `${dex.address}::router::get_amount_out`,
         args: [Args.u64(fixdXCount)],
-        typeArgs: [x.type, y.type],
+        typeArgs: [x.coin_type, y.coin_type],
       });
 
       if (result.vm_status !== 'Executed') {
@@ -151,27 +100,19 @@ export default function SelectTokenPair({ onLoading, onCallback }: SelectTokenPa
       }
 
       const yCount = result.return_values![0].decoded_value as string;
-      const fixdYCount = fromDust(yCount, assetsMap?.get(y.type)?.decimals || 0);
+      const fixdYCount = fromDust(yCount, assetsMap?.get(y.coin_type)?.decimals || 0);
       setYCount(formatByIntl(fixdYCount.toString()));
 
-      const xCoin = assetsMap?.get(x.type)!;
-      const yCoin = assetsMap?.get(y.type);
+      const xCoin = assetsMap?.get(x.coin_type)!;
+      const yCoin = assetsMap?.get(y.coin_type);
       onCallback(
         {
-          balance: xCoin.fixedBalance,
-          type: xCoin.coin_type,
-          icon: xCoin.icon_url || undefined,
-          symbol: xCoin.symbol,
-          amount: xCount.replaceAll(',', ''),
-          decimal: xCoin.decimals,
+          ...x,
+          amount: xCount,
         },
         {
-          balance: yCoin?.fixedBalance || 0,
-          type: yCoin?.coin_type || y.type,
-          icon: yCoin?.icon_url || undefined,
-          symbol: yCoin?.symbol || y.name,
+          ...y,
           amount: fixdYCount.toString(),
-          decimal: yCoin?.decimals || 0, // TODO: fix
         }
       );
     } catch (e) {
@@ -203,7 +144,7 @@ export default function SelectTokenPair({ onLoading, onCallback }: SelectTokenPa
     setY(oldX);
     setYValue(oldXValue);
 
-    const xbalance = assetsMap?.get(oldY.type)!.fixedBalance || 0;
+    const xbalance = assetsMap?.get(oldY.coin_type)!.fixedBalance || 0;
     if (xRatio !== 0) {
       setXCount(formatByIntl(xbalance * xRatio));
     } else if (Number(xCount) > xbalance) {
@@ -227,22 +168,24 @@ export default function SelectTokenPair({ onLoading, onCallback }: SelectTokenPa
             label="X"
             onChange={(e: SelectChangeEvent) => {
               const s = e.target.value;
-              const {x} = tokenPair!.get(s)![0];
+              const x = tokenPairs!.get(s)?.x;
               setX(x);
               setXValue(e.target.value);
               setY(undefined);
               setYValue('');
               setYCount('');
               if (xRatio !== 0) {
-                setXCount(((assetsMap?.get(x!.type)!.fixedBalance || 0) * xRatio).toString());
+                setXCount(formatByIntl((assetsMap?.get(x!.coin_type)?.fixedBalance || 0) * xRatio));
               }
             }}
           >
-            {tokenPair &&
-              [...tokenPair.entries()].map(([key, pairs]) => (
+            {tokenPairs &&
+              [...tokenPairs.entries()].map(([key, pairs]) => (
                 <MenuItem key={key} id={key} value={`${key}`}>
                   <span>{key} :</span>
-                  <span>{formatByIntl(assetsMap?.get(pairs[0].x.type)?.fixedBalance || 0)}</span>
+                  <span>
+                    {formatByIntl(assetsMap?.get(pairs.x.coin_type)?.fixedBalance || 0, '0')}
+                  </span>
                 </MenuItem>
               ))}
           </Select>
@@ -260,7 +203,7 @@ export default function SelectTokenPair({ onLoading, onCallback }: SelectTokenPa
               if (/^\d*\.?\d*$/.test(value) === false) {
                 return;
               }
-              const xBalance = assetsMap?.get(x!.type)!.fixedBalance || 0;
+              const xBalance = assetsMap?.get(x!.coin_type)!.fixedBalance || 0;
               if (xRatio !== 0) {
                 if (value !== (xBalance * xRatio).toString()) {
                   setXRation(0);
@@ -281,7 +224,7 @@ export default function SelectTokenPair({ onLoading, onCallback }: SelectTokenPa
           <Button
             startIcon={<ArrowDownwardIcon />}
             variant="text"
-            disabled={!x || !y}
+            disabled={!x || !y || assetsMap.get(y.coin_type)?.fixedBalance === 0}
             onClick={exchange}
             sx={{ display: { xs: 'none', sm: 'flex', justifyContent: 'center' } }}
           >
@@ -289,17 +232,21 @@ export default function SelectTokenPair({ onLoading, onCallback }: SelectTokenPa
           </Button>
         </Box>
         <Box display="flex" alignItems="center">
-          {[0.25, 0.5, 0.75, x?.name === 'RGas' ? 0.99 : 1].map((item, index) => (
+          {[0.25, 0.5, 0.75, x?.symbol === 'RGAS' ? 0.99 : 1].map((item, index) => (
             <Button
               key={item.toString()}
-              variant={xRatio === item ? 'contained' : 'outlined'}
+              variant={
+                xRatio === item || (xRatio === 0.99 && item === 1) ? 'contained' : 'outlined'
+              }
               size="small"
               sx={{ mx: 0.5 }}
               disabled={!x}
               onClick={() => {
                 setXRation(item);
                 const ration = item === 1 ? 0.99 : item; // TODO: Calculating gas
-                setXCount(formatByIntl((assetsMap?.get(x!.type)!.fixedBalance || 0) * ration));
+                setXCount(
+                  formatByIntl((assetsMap?.get(x!.coin_type)?.fixedBalance || 0) * ration, '0')
+                );
               }}
             >
               {item * 100}%
@@ -318,15 +265,15 @@ export default function SelectTokenPair({ onLoading, onCallback }: SelectTokenPa
             label="Y"
             onChange={(e: SelectChangeEvent) => {
               const s = e.target.value;
-              const pair = tokenPair!.get(x!.name)!.find((item) => item.y.name === s)!;
-              setY(pair.y);
+              const pair = tokenPairs!.get(x!.symbol)!.y.find((item) => item.symbol === s)!;
+              setY(pair);
               setYValue(e.target.value);
             }}
           >
-            {tokenPair?.get(x?.name || '')?.map((item) => (
-              <MenuItem key={item.y.name} id={item.y.name} value={`${item.y.name}`}>
-                <span>{item.y.name} :</span>
-                <span>{formatByIntl(assetsMap?.get(item.y.type)?.fixedBalance || 0)}</span>
+            {tokenPairs?.get(x?.symbol || '')?.y?.map((item) => (
+              <MenuItem key={item.symbol} id={item.symbol} value={`${item.symbol}`}>
+                <span>{item.symbol} :</span>
+                <span>{formatByIntl(assetsMap?.get(item.coin_type)?.fixedBalance || 0, '0')}</span>
               </MenuItem>
             ))}
           </Select>

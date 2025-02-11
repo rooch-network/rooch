@@ -1,10 +1,7 @@
 import type { AnnotatedMoveStructView } from '@roochnetwork/rooch-sdk';
 
 import { useState, useEffect } from 'react';
-import {
-  useRoochClient,
-  useCurrentAddress,
-} from '@roochnetwork/rooch-sdk-kit';
+import { useRoochClient, useCurrentAddress } from '@roochnetwork/rooch-sdk-kit';
 
 import { Card, Table, Stack, TableBody, Pagination } from '@mui/material';
 
@@ -85,8 +82,6 @@ export default function AllLiquidityList() {
 
     fetch();
   }, [lpTokens, currentAddress, client]);
-
-  console.log(hasNext, index);
 
   const [openAddLiquidityModal, setOpenAddLiquidityModal] = useState(false);
   const [selectedRow, setSelectedRow] = useState<AllLiquidityItemType>();

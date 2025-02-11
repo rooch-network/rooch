@@ -72,7 +72,7 @@ export default function OwnerLiquidityList() {
                       onOpenRemoveModal={handleRemoveModal}
                     />
                   ))}
-                  <TableNoData title="No Coins Found" notFound={lpTokens?.length === 0} />
+                  <TableNoData title="No Liquidity Found" notFound={lpTokens?.length === 0} />
                 </>
               )}
             </TableBody>
