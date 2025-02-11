@@ -646,7 +646,9 @@ impl IndexerReader {
         } else {
             format!("{OBJECT_ID_STR} ASC, {FIELD_VALUE_STR} ASC")
         };
-        let page_clause = format!("{}, {}", page_of - 1, limit);
+        let mut start_limit = (page_of - 1) * (limit as u64);
+        start_limit = start_limit.saturating_sub(1);
+        let page_clause = format!("{}, {}", start_limit, limit);
         let query = format!(
             "
                 SELECT * FROM fields \

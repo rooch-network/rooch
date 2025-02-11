@@ -152,6 +152,7 @@ pub fn random_new_fields_with_size(size: usize) -> Vec<IndexerField> {
         let field = IndexerField::new(
             random_table_object().into_state().metadata,
             FieldKey::random(),
+            random_string(),
             value as u64,
         );
 

@@ -816,9 +816,13 @@ impl RoochAPIServer for RoochServer {
         let has_next_page = fields.len() > limit_of;
         fields.truncate(limit_of);
 
-        let next_page_check = page_of.checked_add(1).ok_or(RpcError::UnexpectedError(
-            "next page value is overflow".to_string(),
-        ))?;
+        let next_page_check = if has_next_page {
+            page_of.checked_add(1).ok_or(RpcError::UnexpectedError(
+                "next page value is overflow".to_string(),
+            ))?
+        } else {
+            page_of
+        };
         let next_cursor = Some(StrView(next_page_check));
 
         Ok(FieldPageView {
