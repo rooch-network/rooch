@@ -634,7 +634,8 @@ where
             })?;
             let is_upgrade = module_flag.map_or(false, |flag| flag.is_upgrade);
             if is_upgrade {
-                self.vm.mark_loader_cache_as_invalid();
+                // the V1 calling of Loader must be disabled
+                //self.vm.mark_loader_cache_as_invalid();
             };
         }
 
