@@ -19,7 +19,6 @@ import { toDust, fromDust, formatByIntl } from 'src/utils/number';
 
 import { toast } from 'src/components/snackbar';
 
-import type { TradeCoinType } from './types';
 import { useTokenPair } from '../hooks/use-token-pair';
 
 type TokenType = {
@@ -108,7 +107,7 @@ export default function SelectTokenPair({ onLoading, onCallback }: SelectTokenPa
       onCallback(
         {
           ...x,
-          amount: xCount,
+          amount: xCount.replaceAll(',', ''),
         },
         {
           ...y,
