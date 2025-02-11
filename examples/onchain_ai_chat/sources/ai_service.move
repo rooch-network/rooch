@@ -82,9 +82,10 @@ module onchain_ai_chat::ai_service {
         let from_addr = signer::address_of(from);
         let oracle_balance = oracles::get_user_balance(from_addr);
         if(oracle_balance < oracle_fee) {
+            let pay_mee = oracle_fee - oracle_balance;
             let gas_balance = account_coin_store::balance<RGas>(from_addr);
-            assert!(gas_balance >= oracle_fee, ErrorInsufficientBalance);
-            oracles::deposit_to_escrow(from, oracle_fee);
+            assert!(gas_balance >= pay_mee, ErrorInsufficientBalance);
+            oracles::deposit_to_escrow(from, pay_mee);
         };
         
         let request_id = oracles::new_request(
