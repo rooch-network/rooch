@@ -127,12 +127,23 @@ impl SequencerActor {
             _ => {}
         }
 
+        let tx_hash = tx_data.tx_hash();
+        let tx_opt = self
+            .rooch_store
+            .transaction_store
+            .get_transaction_by_hash(tx_hash)?;
+        if tx_opt.is_some() {
+            return Err(anyhow::anyhow!(
+                "Transaction already exists, tx_hash: {}",
+                tx_hash
+            ));
+        }
+
         let now = SystemTime::now();
         let tx_timestamp = now.duration_since(SystemTime::UNIX_EPOCH)?.as_millis() as u64;
 
         let tx_order = self.last_sequencer_info.last_order + 1;
 
-        let tx_hash = tx_data.tx_hash();
         let mut witness_data = tx_hash.as_ref().to_vec();
         witness_data.extend(tx_order.to_le_bytes().iter());
         let witness_hash = h256::sha3_256_of(&witness_data);
