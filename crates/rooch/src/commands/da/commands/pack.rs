@@ -2,17 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_types::WalletContextOptions;
+use crate::utils::get_sequencer_keypair;
 use clap::Parser;
-use rooch_key::keystore::account_keystore::AccountKeystore;
-use rooch_types::address::RoochAddress;
 use rooch_types::da::batch::DABatch;
 use rooch_types::da::chunk::{Chunk, ChunkV0};
-use rooch_types::error::{RoochError, RoochResult};
+use rooch_types::error::RoochResult;
 use rooch_types::transaction::LedgerTransaction;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Read, Write};
 use std::path::PathBuf;
-use std::str::FromStr;
 
 const DEFAULT_MAX_SEGMENT_SIZE: usize = 4 * 1024 * 1024;
 
@@ -33,27 +31,8 @@ pub struct PackCommand {
 
 impl PackCommand {
     pub fn execute(self) -> RoochResult<()> {
-        let context = self.context_options.build()?;
-        let sequencer_account = if self.sequencer_account.is_none() {
-            let active_address_opt = context.client_config.active_address;
-            if active_address_opt.is_none() {
-                return Err(RoochError::ActiveAddressDoesNotExistError);
-            }
-            active_address_opt.unwrap()
-        } else {
-            RoochAddress::from_str(self.sequencer_account.clone().unwrap().as_str()).map_err(
-                |e| {
-                    RoochError::CommandArgumentError(format!(
-                        "Invalid sequencer account address: {}",
-                        e
-                    ))
-                },
-            )?
-        };
-        let sequencer_keypair = context
-            .keystore
-            .get_key_pair(&sequencer_account, None)
-            .map_err(|e| RoochError::SequencerKeyPairDoesNotExistError(e.to_string()))?;
+        let sequencer_keypair =
+            get_sequencer_keypair(self.context_options, self.sequencer_account)?;
 
         let mut reader = BufReader::new(File::open(self.batch_path)?);
         let mut tx_list = Vec::new();
