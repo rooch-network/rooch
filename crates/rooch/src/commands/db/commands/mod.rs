@@ -15,6 +15,7 @@ pub mod best_rollback;
 pub mod drop;
 pub mod get_changeset_by_order;
 pub mod get_execution_info_by_hash;
+pub mod get_tx_by_order;
 pub mod repair;
 pub mod revert;
 pub mod rollback;
