@@ -31,7 +31,7 @@ impl CommandAction<String> for Transaction {
             TransactionCommand::Build(cmd) => cmd.execute_serialized().await,
             TransactionCommand::Sign(cmd) => cmd.execute_serialized().await,
             TransactionCommand::Submit(cmd) => cmd.execute_serialized().await,
-            TransactionCommand::SignOrder(cmd) => cmd.execute_serialized().await,
+            TransactionCommand::SignOrder(cmd) => cmd.execute(),
         }
     }
 }

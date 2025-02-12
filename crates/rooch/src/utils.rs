@@ -91,7 +91,7 @@ pub fn get_sequencer_keypair(
     context_options: WalletContextOptions,
     sequencer_account: Option<String>,
 ) -> RoochResult<RoochKeyPair> {
-    let context = context_options.build()?;
+    let context = context_options.build_require_password()?;
     let sequencer_account = if sequencer_account.is_none() {
         let active_address_opt = context.client_config.active_address;
         if active_address_opt.is_none() {
@@ -105,6 +105,6 @@ pub fn get_sequencer_keypair(
     };
     context
         .keystore
-        .get_key_pair(&sequencer_account, None)
+        .get_key_pair(&sequencer_account, context.get_password())
         .map_err(|e| RoochError::SequencerKeyPairDoesNotExistError(e.to_string()))
 }
