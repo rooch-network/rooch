@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_types::CommandAction;
+use crate::commands::transaction::commands::sign_order::SignOrderCommand;
 use crate::commands::transaction::commands::{
     build::BuildCommand, get_transactions_by_hash::GetTransactionsByHashCommand,
     get_transactions_by_order::GetTransactionsByOrderCommand, query::QueryCommand,
@@ -30,6 +31,7 @@ impl CommandAction<String> for Transaction {
             TransactionCommand::Build(cmd) => cmd.execute_serialized().await,
             TransactionCommand::Sign(cmd) => cmd.execute_serialized().await,
             TransactionCommand::Submit(cmd) => cmd.execute_serialized().await,
+            TransactionCommand::SignOrder(cmd) => cmd.execute_serialized().await,
         }
     }
 }
@@ -42,4 +44,5 @@ pub enum TransactionCommand {
     Query(QueryCommand),
     Sign(SignCommand),
     Submit(SubmitCommand),
+    SignOrder(SignOrderCommand),
 }

@@ -106,6 +106,7 @@ rooch-common = { workspace = true }
 rooch-store = { workspace = true }
 rooch-faucet = { workspace = true }
 rooch-oracle = { workspace = true }
+rooch-sequencer = { workspace = true }
 
 framework-release = { workspace = true }
 

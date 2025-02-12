@@ -14,6 +14,7 @@ pub mod get_transactions_by_hash;
 pub mod get_transactions_by_order;
 pub mod query;
 pub mod sign;
+pub mod sign_order;
 pub mod submit;
 
 pub(crate) enum FileOutputData {
