@@ -53,7 +53,7 @@ module onchain_ai_chat::room {
         creator: address,
         admins: vector<address>,
         members: Table<address, Member>,  // Changed from vector to Table
-        messages: Table<u64, Message>,  // Now using shared Message type
+        messages: Table<u64, ObjectID>,  // Changed from Table<u64, Message> to Table<u64, ObjectID>
         message_counter: u64,
         created_at: u64,    // Now in milliseconds
         last_active: u64,   // Now in milliseconds
@@ -95,14 +95,13 @@ module onchain_ai_chat::room {
 
     /// Add message to room - use message_counter as id
     fun add_message(room: &mut Room, sender: address, content: String, message_type: u8) {
-        let msg = message::new_message(
+        let msg_id = message::new_message(
             room.message_counter,
             sender,
             content,
             message_type
         );
-        
-        table::add(&mut room.messages, room.message_counter, msg);
+        table::add(&mut room.messages, room.message_counter, msg_id);
         room.message_counter = room.message_counter + 1;
     }
 
@@ -216,8 +215,9 @@ module onchain_ai_chat::room {
         let messages = vector::empty<Message>();
         let i = 0;
         while (i < room_ref.message_counter) {
-            let msg = table::borrow(&room_ref.messages, i);
-            vector::push_back(&mut messages, *msg);
+            let msg_id = table::borrow(&room_ref.messages, i);
+            let msg_obj = object::borrow_object<Message>(*msg_id);
+            vector::push_back(&mut messages, *object::borrow(msg_obj));
             i = i + 1;
         };
         messages
@@ -246,8 +246,9 @@ module onchain_ai_chat::room {
         
         let i = start_index;
         while (i < end_index) {
-            let msg = table::borrow(&room_ref.messages, i);
-            vector::push_back(&mut messages, *msg);
+            let msg_id = table::borrow(&room_ref.messages, i);
+            let msg_obj = object::borrow_object<Message>(*msg_id);
+            vector::push_back(&mut messages, *object::borrow(msg_obj));
             i = i + 1;
         };
         messages
@@ -269,11 +270,11 @@ module onchain_ai_chat::room {
             0
         };
         
-        let i = 0;
-        while (i < limit && (start + i) < room.message_counter) {
-            if (table::contains(&room.messages, start + i)) {
-                vector::push_back(&mut messages, *table::borrow(&room.messages, start + i));
-            };
+        let i = start;
+        while (i < room.message_counter) {
+            let msg_id = table::borrow(&room.messages, i);
+            let msg_obj = object::borrow_object<Message>(*msg_id);
+            vector::push_back(&mut messages, *object::borrow(msg_obj));
             i = i + 1;
         };
         messages
@@ -296,27 +297,6 @@ module onchain_ai_chat::room {
             member.joined_at,
             member.last_active
         )
-    }
-
-    /// Delete a room, only creator can delete
-    public fun delete_room(account: &signer, room: Object<Room>) {
-        let room_ref = object::borrow(&room);
-        assert!(room_ref.creator == signer::address_of(account), ErrorNotAuthorized);
-        let Room { 
-            title: _,
-            is_public: _,
-            creator: _,
-            admins: _,
-            members,
-            messages,
-            message_counter: _,
-            created_at: _,
-            last_active: _,
-            status: _,
-            room_type: _,
-        } = object::remove(room);
-        table::drop(members);
-        table::drop(messages);
     }
 
     /// Create a new room - entry function
@@ -369,15 +349,6 @@ module onchain_ai_chat::room {
     ) {
         let nickname = generate_default_nickname(member);
         add_member(account, room, member, nickname);
-    }
-
-    /// Delete a room - entry function
-    public entry fun delete_room_entry(
-        account: &signer,
-        room_id: ObjectID 
-    ) {
-        let room = object::take_object_extend<Room>(room_id);
-        delete_room(account, room);
     }
 
     /// Change room status (active/closed/banned) - entry function
@@ -483,11 +454,62 @@ module onchain_ai_chat::room {
         assert!(option::is_none(&title_opt), 4);
     }
 
+    #[test]
+    fun test_send_message() {
+        use moveos_std::account;
+        
+        let alice = account::create_signer_for_testing(@0x42);
+        timestamp::update_global_time_for_test(1000);
+
+        let room_id = create_room(&alice, string::utf8(b"Test Room"), true, room_type_normal());
+        
+        timestamp::update_global_time_for_test(2000);
+        let message = string::utf8(b"Hello, World!");
+        let room = object::borrow_mut_object_shared<Room>(room_id);
+        send_message(&alice, room, message);
+        
+        let room = object::borrow_object<Room>(room_id);
+        let messages = get_messages(room);
+        assert!(vector::length(&messages) == 1, 0);
+        
+        let msg = vector::borrow(&messages, 0);
+        assert!(message::get_sender(msg) == signer::address_of(&alice), 1);
+        assert!(message::get_content(msg) == message, 2);
+
+        // Check message ownership
+        let msg_id = *table::borrow(&object::borrow(room).messages, 0);
+        let msg_obj = object::borrow_object<Message>(msg_id);
+        assert!(object::owner(msg_obj) == signer::address_of(&alice), 3);
+
+        delete_room_for_testing(room_id);
+    }
+
     #[test_only]
-    /// Test helper function to delete a room
-    public fun delete_room_for_testing(account: &signer, room_id: ObjectID) {
+    /// Test helper function to delete a room, only available in test mode
+    fun force_delete_room(room: Object<Room>) {
+        let Room { 
+            title: _,
+            is_public: _,
+            creator: _,
+            admins: _,
+            members,
+            messages,
+            message_counter: _,
+            created_at: _,
+            last_active: _,
+            status: _,
+            room_type: _,
+        } = object::remove(room);
+        
+        table::drop(members);
+        table::drop(messages);
+    }
+
+    #[test_only]
+    /// Public test helper function to delete a room
+    public fun delete_room_for_testing(room_id: ObjectID) {
         let room = object::take_object_extend<Room>(room_id);
-        delete_room(account, room);
+        force_delete_room(room);
     }
 
 }
