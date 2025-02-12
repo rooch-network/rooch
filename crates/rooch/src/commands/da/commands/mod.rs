@@ -461,10 +461,11 @@ impl LedgerTxGetter {
                 })?;
                 let tx_order_in_resp = tx_info.transaction.sequence_info.tx_order.0;
                 if tx_order_in_resp != tx_order {
-                    warn!(
+                    return Err(anyhow!(
                         "failed to request tx by RPC: Tx order mismatch, expect: {}, actual: {}",
-                        tx_order, tx_order_in_resp
-                    );
+                        tx_order,
+                        tx_order_in_resp
+                    ));
                 } else {
                     let execution_info_opt = tx_info.execution_info;
                     // not all sequenced tx could be executed successfully
