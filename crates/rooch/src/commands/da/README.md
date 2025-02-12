@@ -32,7 +32,7 @@ the easiest way to download segments is using `getda` tool from [here](https://g
 segments from cloud storage.
 
 ```shell
-getda --output={segment-dir} --url={da-cloud-storage-path} --last_chunk={max-chunk-id-expected} --max_goroutines={max-goroutines}
+getda --output={segment-dir} --url={da-cloud-storage-path} --last_chunk={max-chunk-id-expected}
 ```
 
 #### unpack segments
