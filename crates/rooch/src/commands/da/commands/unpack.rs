@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::commands::da::commands::{collect_chunks, get_tx_list_from_chunk};
+use crate::commands::da::commands::{collect_chunk, collect_chunks, get_tx_list_from_chunk};
 use clap::Parser;
 use rooch_types::error::RoochResult;
 use std::collections::{BinaryHeap, HashMap, HashSet};
@@ -18,8 +18,15 @@ pub struct UnpackCommand {
     pub segment_dir: PathBuf,
     #[clap(long = "batch-dir")]
     pub batch_dir: PathBuf,
+    #[clap(
+        long = "chunk-id",
+        help = "Only unpack the specified chunk_id, otherwise unpack all chunks"
+    )]
+    pub chunk_id: Option<u128>,
     #[clap(long = "stats-only", help = "Only print L2Tx size stats, no unpacking")]
     pub stats_only: bool,
+    #[clap(long = "force", help = "Force unpacking, even if the batch has issues")]
+    pub force: bool,
 }
 
 impl UnpackCommand {
@@ -31,7 +38,7 @@ impl UnpackCommand {
             batch_dir: self.batch_dir,
             stats_only: self.stats_only,
         };
-        unpacker.unpack()?;
+        unpacker.unpack(self.force, self.chunk_id)?;
 
         Ok(())
     }
@@ -76,19 +83,29 @@ impl UnpackInner {
         Ok(())
     }
 
-    fn collect_chunks(&mut self) -> anyhow::Result<()> {
-        let (chunks, _min_chunk_id, _max_chunk_id) = collect_chunks(self.segment_dir.clone())?;
+    fn collect_chunks(&mut self, unpack_chunk_id_opt: Option<u128>) -> anyhow::Result<()> {
+        let chunks = if let Some(chunk_id) = unpack_chunk_id_opt {
+            let segment_numbers = collect_chunk(self.segment_dir.clone(), chunk_id)?;
+            let mut chunks = HashMap::new();
+            chunks.insert(chunk_id, segment_numbers);
+            chunks
+        } else {
+            let (chunks, _min_chunk_id, _max_chunk_id) = collect_chunks(self.segment_dir.clone())?;
+            chunks
+        };
+
         self.chunks = chunks;
+
         Ok(())
     }
 
     // unpack batches from segment_dir to batch_dir.
     // warn: ChunkV0 only in present
-    fn unpack(&mut self) -> anyhow::Result<()> {
+    fn unpack(&mut self, force: bool, unpack_chunk_id_opt: Option<u128>) -> anyhow::Result<()> {
         const TOP_N: usize = 20;
 
         self.collect_unpacked()?;
-        self.collect_chunks()?;
+        self.collect_chunks(unpack_chunk_id_opt)?;
 
         let mut new_unpacked = HashSet::new();
 
@@ -108,18 +125,11 @@ impl UnpackInner {
                 self.segment_dir.clone(),
                 *chunk_id,
                 segment_numbers.clone(),
+                !force,
             )?;
 
-            let mut last_tx_order = 0; // the first tx_order in DA is 1
             for tx in &tx_list {
                 let tx_order = tx.sequence_info.tx_order;
-                if last_tx_order != 0 && tx_order != last_tx_order + 1 {
-                    return Err(anyhow::anyhow!(
-                            "Transaction order is not strictly incremental for block {}: last_tx_order: {}, tx_order: {}",
-                            chunk_id, last_tx_order, tx_order
-                        ));
-                }
-                last_tx_order = tx_order;
                 if let rooch_types::transaction::LedgerTxData::L2Tx(tx) = &tx.data {
                     let tx_size = tx.tx_size();
                     l2tx_hist.record(tx_order, tx_size)?;
