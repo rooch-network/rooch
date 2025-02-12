@@ -10,11 +10,13 @@ use clap::Parser;
 use coerce::actor::system::ActorSystem;
 use coerce::actor::IntoActor;
 use metrics::RegistryService;
+use moveos::moveos::{new_moveos_global_module_cache, MoveOSCacheManager};
 use moveos_common::utils::to_bytes;
 use moveos_store::config_store::STARTUP_INFO_KEY;
 use moveos_store::{MoveOSStore, CONFIG_STARTUP_INFO_COLUMN_FAMILY_NAME};
 use moveos_types::h256::H256;
 use moveos_types::startup_info;
+use moveos_types::state_resolver::RootObjectResolver;
 use moveos_types::transaction::{TransactionExecutionInfo, VerifiedMoveOSTransaction};
 use raw_store::rocks::batch::WriteBatch;
 use raw_store::traits::DBStore;
@@ -23,6 +25,7 @@ use rooch_db::RoochDB;
 use rooch_executor::actor::executor::ExecutorActor;
 use rooch_executor::actor::reader_executor::ReaderExecutorActor;
 use rooch_executor::proxy::ExecutorProxy;
+use rooch_genesis::FrameworksGasParameters;
 use rooch_types::bitcoin::types::Block as BitcoinBlock;
 use rooch_types::error::RoochResult;
 use rooch_types::rooch_network::RoochChainID;
@@ -39,7 +42,6 @@ use tokio::sync::mpsc::Receiver;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::watch;
 use tokio::time;
-use moveos::moveos::new_moveos_global_module_cache;
 
 /// exec LedgerTransaction List for verification.
 #[derive(Debug, Parser)]
@@ -507,7 +509,12 @@ async fn build_executor_and_store(
         build_rooch_db(base_data_dir.clone(), chain_id.clone(), enable_rocks_stats);
     let (rooch_store, moveos_store) = (rooch_db.rooch_store.clone(), rooch_db.moveos_store.clone());
 
+    let resolver = RootObjectResolver::new(root.clone(), &moveos_store);
+    let gas_parameters = FrameworksGasParameters::load_from_chain(&resolver)?;
+
     let global_module_cache = new_moveos_global_module_cache();
+    let global_cache_manager =
+        MoveOSCacheManager::new(gas_parameters.all_natives(), global_module_cache.clone());
 
     let executor_actor = ExecutorActor::new(
         root.clone(),
@@ -515,7 +522,7 @@ async fn build_executor_and_store(
         rooch_store.clone(),
         &registry_service.default_registry(),
         None,
-        global_module_cache.clone()
+        global_cache_manager.clone(),
     )?;
 
     let executor_actor_ref = executor_actor
@@ -527,7 +534,7 @@ async fn build_executor_and_store(
         moveos_store.clone(),
         rooch_store.clone(),
         None,
-        global_module_cache.clone()
+        global_cache_manager.clone(),
     )?;
 
     let read_executor_ref = reader_executor

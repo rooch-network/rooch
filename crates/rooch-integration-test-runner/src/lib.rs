@@ -23,7 +23,7 @@ use move_transactional_test_runner::{
 };
 use move_vm_runtime::session::SerializedReturnValues;
 use move_vm_runtime::{Module, RuntimeEnvironment};
-use moveos::moveos::{new_moveos_global_module_cache, MoveOS, MoveOSConfig};
+use moveos::moveos::{new_moveos_global_module_cache, MoveOS, MoveOSCacheManager, MoveOSConfig};
 use moveos::moveos_test_runner::{CompiledState, MoveOSTestAdapter, TaskInput};
 use moveos::vm::module_cache::{GlobalModuleCache, RoochModuleExtension};
 use moveos_config::DataDirPath;
@@ -122,12 +122,17 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
         let moveos_store = MoveOSStore::new(temp_dir.path(), &registry).unwrap();
         let genesis_gas_parameter = FrameworksGasParameters::initial();
         let genesis: &RoochGenesis = &rooch_genesis::ROOCH_LOCAL_GENESIS;
-        let moveos = MoveOS::new(
+
+        let global_cache_manager = MoveOSCacheManager::new(
             genesis_gas_parameter.all_natives(),
+            global_module_cache.clone(),
+        );
+
+        let moveos = MoveOS::new(
             moveos_store.clone(),
             rooch_types::framework::system_pre_execute_functions(),
             rooch_types::framework::system_post_execute_functions(),
-            global_module_cache,
+            global_cache_manager,
         )
         .unwrap();
 
