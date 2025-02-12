@@ -74,6 +74,8 @@ pub struct TransactionView {
     pub action_type: MoveActionTypeView,
     pub action: MoveActionView,
     pub raw: BytesView,
+    pub chain_id: StrView<u64>,
+    pub max_gas_amount: StrView<u64>,
 }
 
 impl TransactionView {
@@ -88,6 +90,8 @@ impl TransactionView {
             action: transaction.action().clone().into(),
             action_type: transaction.action().clone().into(),
             raw: transaction.encode().into(),
+            chain_id: transaction.chain_id().into(),
+            max_gas_amount: transaction.max_gas_amount().into(),
         }
     }
 }
