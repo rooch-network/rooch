@@ -58,7 +58,7 @@ pub struct ExecCommand {
     #[clap(
         long = "mode",
         default_value = "all",
-        help = "Execution mode: exec, seq, all. Default is all"
+        help = "Execution mode: exec, seq, all, sync. Default is all"
     )]
     pub mode: ExecMode,
     #[clap(long = "segment-dir")]

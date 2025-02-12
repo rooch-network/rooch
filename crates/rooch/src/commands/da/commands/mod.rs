@@ -542,7 +542,12 @@ impl TxMetaStore {
             let line = line.unwrap();
             let parts: Vec<&str> = line.split(':').collect();
             let tx_order = parts[0].parse::<u64>()?;
-            let state_root = H256::from_str(parts[1])?;
+            let state_root_raw = parts[1];
+            let state_root = if state_root_raw == "null" {
+                H256::zero()
+            } else {
+                H256::from_str(state_root_raw)?
+            };
             let accumulator_root = H256::from_str(parts[2])?;
             exp_roots.insert(tx_order, (state_root, accumulator_root));
             if tx_order > max_verified_tx_order {
