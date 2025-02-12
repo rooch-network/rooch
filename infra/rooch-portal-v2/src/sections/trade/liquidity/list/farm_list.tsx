@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit';
+import { useCurrentAddress, useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit';
 
 import { Card, Table, TableBody } from '@mui/material';
 
@@ -11,7 +11,7 @@ import TableSkeleton from 'src/components/skeleton/table-skeleton';
 import { TableNoData, TableHeadCustom } from 'src/components/table';
 
 import FarmRowItem from './farm-row-item';
-import AddStakeModal from './add-stake-modal';
+import AddSrakeModal from './add-stake-modal';
 import AddLiquidityModal from './add-liquidity-modal';
 import { useAllLiquidity } from '../../hooks/use-all-liquidity';
 import { useOwnerLiquidity } from '../../hooks/use-owner-liquidity';
@@ -19,8 +19,7 @@ import { useOwnerLiquidity } from '../../hooks/use-owner-liquidity';
 import type { FarmRowItemType } from './farm-row-item';
 
 const headerLabel = [
-  { id: 'lp', label: 'LP', maxWidth: 100 },
-  { id: 'harvest_index', label: 'Harvest Index' },
+  { id: 'lp', label: 'LP' },
   { id: 'release_per_second', label: 'Release Per Second' },
   { id: 'asset_total_weight', label: 'Asset Total Weight' },
   { id: 'endtime', label: 'Endtime' },
@@ -28,6 +27,7 @@ const headerLabel = [
 ];
 
 export default function FarmList() {
+  const currentAddress = useCurrentAddress();
   const dex = useNetworkVariable('dex');
   const [openStakeModal, setOpenStakeModal] = useState(false);
   const [openAddLiquidityModal, setOpenAddLiquidityModal] = useState(false);
@@ -41,37 +41,41 @@ export default function FarmList() {
     },
   });
 
+  console.log(farms);
+
   const resolvedFarms = useMemo(() => {
     if (!farms) {
       return [];
     }
-    return farms.data.map((item) => {
-      const view = item.decoded_value!.value;
-      const types = item.object_type
-        .replace(`${dex.address}::liquidity_incentive::FarmingAsset<`, '')
-        .trim()
-        .split(',');
-      const x = {
-        type: types[0].trim(),
-        name: types[0].split('::')[2].trim(),
-      };
-      const y = {
-        type: types[1].trim(),
-        name: types[1].split('::')[2].trim(),
-      };
-      return {
-        id: item.id,
-        alive: view.alive as boolean,
-        endtime: view.end_time as number,
-        assetTotalWeight: view.asset_total_weight as number,
-        harvestIndex: view.harvest_index as number,
-        releasePerSecond: view.release_per_second as number,
-        x,
-        y,
-        reward: types[2].replaceAll('>', '').trim(),
-        liquidity: lpTokens.find((item) => item.x.type === x.type && item.y.type === y.type),
-      };
-    });
+    const now = Date.now() / 1000;
+    return farms.data
+      .map((item) => {
+        const view = item.decoded_value!.value;
+        const types = item.object_type
+          .replace(`${dex.address}::liquidity_incentive::FarmingAsset<`, '')
+          .trim()
+          .split(',');
+        const x = {
+          type: types[0].trim(),
+          name: types[0].split('::')[2].trim(),
+        };
+        const y = {
+          type: types[1].trim(),
+          name: types[1].split('::')[2].trim(),
+        };
+        return {
+          id: item.id,
+          alive: view.alive as boolean,
+          endtime: view.end_time as number,
+          assetTotalWeight: view.asset_total_weight as number,
+          releasePerSecond: view.release_per_second as number,
+          x,
+          y,
+          reward: types[2].replaceAll('>', '').trim(),
+          liquidity: lpTokens.find((item) => item.x.type === x.type && item.y.type === y.type),
+        };
+      })
+      .filter((item) => item.endtime > now);
   }, [farms, lpTokens, dex.address]);
 
   const handleOpenStakeModal = (row: FarmRowItemType) => {
@@ -115,7 +119,7 @@ export default function FarmList() {
                       selectRow={selectedRow}
                     />
                   ))}
-                  <TableNoData title="No Coins Found" notFound={resolvedFarms?.length === 0} />
+                  <TableNoData title="No Farms Found" notFound={resolvedFarms?.length === 0} />
                 </>
               )}
             </TableBody>
@@ -123,7 +127,7 @@ export default function FarmList() {
         </Scrollbar>
 
         {selectedRow && (
-          <AddStakeModal
+          <AddSrakeModal
             open={openStakeModal}
             onClose={handleCloseStakeModal}
             row={selectedRow}

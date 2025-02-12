@@ -47,8 +47,8 @@ export default function SwapConfirmModal({
       return;
     }
     const tx = new Transaction();
-    const fixdX = toDust(x.amount, x.decimal);
-    const fixdY = toDust(y.amount, y.decimal);
+    const fixdX = toDust(x.amount, x.decimals);
+    const fixdY = toDust(y.amount, y.decimals);
 
     const finalY =
       slippage !== 0
@@ -61,7 +61,7 @@ export default function SwapConfirmModal({
     tx.callFunction({
       target: `${dex.address}::router::swap_with_exact_input`,
       args: [Args.u64(fixdX), Args.u64(finalY)],
-      typeArgs: [x!.type, y!.type],
+      typeArgs: [x!.coin_type, y!.coin_type],
     });
 
     mutateAsync({ transaction: tx })
@@ -101,7 +101,7 @@ export default function SwapConfirmModal({
                     component="span"
                     className="mr-1"
                     sx={{ width: 32, height: 32 }}
-                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(x.icon || '') }}
+                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(x.icon_url || '') }}
                   />
                   <Box className="text-gray-400 text-sm font-medium">
                     {' '}
@@ -119,7 +119,7 @@ export default function SwapConfirmModal({
                     component="span"
                     className="mr-1"
                     sx={{ width: 32, height: 32 }}
-                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(y.icon || '') }}
+                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(y.icon_url || '') }}
                   />
                   <Box className="text-gray-400 text-sm font-medium">
                     {' '}

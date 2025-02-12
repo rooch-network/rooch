@@ -1,9 +1,9 @@
-import type { SelectChangeEvent} from '@mui/material';
+import type { SelectChangeEvent } from '@mui/material';
 
 import { useState } from 'react';
 import { useDebounce } from 'react-use';
 
-import { Box, Button, Select , MenuItem , TextField ,  InputLabel, FormControl } from '@mui/material';
+import { Box, Button, Select, MenuItem, TextField, InputLabel, FormControl } from '@mui/material';
 
 import type { TradeCoinType } from './types';
 
@@ -42,7 +42,7 @@ export default function TokenPair({ coins, onChange }: TokenPairProps) {
             }}
           >
             {coins.map((item) => (
-              <MenuItem id={item.symbol} value={`${item.type}&${item.balance}`}>
+              <MenuItem id={item.symbol} value={`${item.symbol}&${item.balance}`}>
                 <span>{item.symbol} :</span>
                 <span> {item.balance}</span>
               </MenuItem>
