@@ -2,8 +2,11 @@
 
 import { useState } from 'react';
 import BigNumber from 'bignumber.js';
+import { useSignAndExecuteTransaction } from '@roochnetwork/rooch-sdk-kit';
 
 import { Box, Stack, Button, TextField, Typography, FormControl } from '@mui/material';
+
+import { useNetworkVariable } from 'src/hooks/use-networks';
 
 import { isNumber } from 'src/utils/reg';
 import { formatByIntl } from 'src/utils/number';
@@ -32,7 +35,7 @@ export default function SwapView() {
         <span className="mt-2">Trade tokens in an instant.</span>
         <SelectTokenPair
           key="to"
-          onLoading={() => {}}
+          onLoading={(loading) => {}}
           onCallback={(x, y) => {
             setX(x);
             setY(y);

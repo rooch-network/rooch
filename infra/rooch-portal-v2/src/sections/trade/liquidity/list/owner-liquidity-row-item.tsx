@@ -2,7 +2,7 @@ import { WalletGuard } from '@roochnetwork/rooch-sdk-kit';
 
 import { Box, Button, TableRow, TableCell, ListItemText } from '@mui/material';
 
-import { formatByIntl } from 'src/utils/number';
+import { formatByIntl, fromDust, toDust } from 'src/utils/number';
 
 import type { OwnerLiquidityItemType } from '../../hooks/use-owner-liquidity';
 
@@ -35,7 +35,7 @@ export default function OwnerLiquidityRowItem({
         <ListItemText primary={formatByIntl(row.fixedBalance)} />
       </TableCell>
       <TableCell>
-        <ListItemText primary={formatByIntl(row.supply)} />
+        <ListItemText primary={formatByIntl(fromDust(row.supply, row.decimals).toString())} />
       </TableCell>
 
       <TableCell align="right" sx={{ pr: 1 }}>

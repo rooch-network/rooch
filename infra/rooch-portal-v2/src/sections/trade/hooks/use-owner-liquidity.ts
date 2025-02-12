@@ -61,6 +61,8 @@ export function useOwnerLiquidity(): UseOwnerLiquidityReturn {
     return tokens;
   }, [assetsList, dex.address]);
 
+  console.log(lpTokens);
+
   return {
     lpTokens,
     isPending,
