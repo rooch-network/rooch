@@ -13,7 +13,7 @@ use coerce::actor::{context::ActorContext, message::Handler, Actor, LocalActorRe
 use function_name::named;
 use move_core_types::vm_status::VMStatus;
 use move_vm_runtime::RuntimeEnvironment;
-use moveos::moveos::{MoveOS, MoveOSConfig, MoveOSGlobalModuleCache};
+use moveos::moveos::{MoveOS, MoveOSCacheManager, MoveOSConfig, MoveOSGlobalModuleCache};
 use moveos::vm::module_cache::GlobalModuleCache;
 use moveos::vm::vm_status_explainer::explain_vm_status;
 use moveos_eventbus::bus::EventData;
@@ -59,7 +59,7 @@ pub struct ExecutorActor {
     rooch_store: RoochStore,
     metrics: Arc<ExecutorMetrics>,
     event_actor: Option<LocalActorRef<EventActor>>,
-    global_module_cache: MoveOSGlobalModuleCache,
+    global_cache_manager: MoveOSCacheManager,
 }
 
 type ValidateAuthenticatorResult = Result<TxValidateResult, VMStatus>;
@@ -71,17 +71,13 @@ impl ExecutorActor {
         rooch_store: RoochStore,
         registry: &Registry,
         event_actor: Option<LocalActorRef<EventActor>>,
-        global_module_cache: MoveOSGlobalModuleCache,
+        global_cache_manager: MoveOSCacheManager,
     ) -> Result<Self> {
-        let resolver = RootObjectResolver::new(root.clone(), &moveos_store);
-        let gas_parameters = FrameworksGasParameters::load_from_chain(&resolver)?;
-
         let moveos = MoveOS::new(
-            gas_parameters.all_natives(),
             moveos_store.clone(),
             system_pre_execute_functions(),
             system_post_execute_functions(),
-            global_module_cache.clone()
+            global_cache_manager.clone()
         )?;
 
         Ok(Self {
@@ -91,7 +87,7 @@ impl ExecutorActor {
             rooch_store,
             metrics: Arc::new(ExecutorMetrics::new(registry)),
             event_actor,
-            global_module_cache
+            global_cache_manager
         })
     }
 
@@ -544,15 +540,11 @@ impl Handler<EventData> for ExecutorActor {
         if let Ok(_gas_upgrade_msg) = message.data.downcast::<GasUpgradeEvent>() {
             tracing::info!("ExecutorActor: Reload the MoveOS instance...");
 
-            let resolver = RootObjectResolver::new(self.root.clone(), &self.moveos_store);
-            let gas_parameters = FrameworksGasParameters::load_from_chain(&resolver)?;
-
             self.moveos = MoveOS::new(
-                gas_parameters.all_natives(),
                 self.moveos_store.clone(),
                 system_pre_execute_functions(),
                 system_post_execute_functions(),
-                self.global_module_cache.clone()
+                self.global_cache_manager.clone()
             )?;
         }
         Ok(())

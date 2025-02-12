@@ -39,6 +39,7 @@ use tokio::sync::mpsc::Receiver;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::watch;
 use tokio::time;
+use moveos::moveos::{new_moveos_global_module_cache, MoveOSCacheManager};
 
 /// exec LedgerTransaction List for verification.
 #[derive(Debug, Parser)]
@@ -506,12 +507,16 @@ async fn build_executor_and_store(
         build_rooch_db(base_data_dir.clone(), chain_id.clone(), enable_rocks_stats);
     let (rooch_store, moveos_store) = (rooch_db.rooch_store.clone(), rooch_db.moveos_store.clone());
 
+    let global_module_cache = new_moveos_global_module_cache();
+    let moveos_cache_manager = MoveOSCacheManager::new(vec![], global_module_cache);
+
     let executor_actor = ExecutorActor::new(
         root.clone(),
         moveos_store.clone(),
         rooch_store.clone(),
         &registry_service.default_registry(),
         None,
+        moveos_cache_manager.clone()
     )?;
 
     let executor_actor_ref = executor_actor
@@ -523,6 +528,7 @@ async fn build_executor_and_store(
         moveos_store.clone(),
         rooch_store.clone(),
         None,
+        moveos_cache_manager.clone()
     )?;
 
     let read_executor_ref = reader_executor

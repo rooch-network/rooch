@@ -13,7 +13,7 @@ use move_core_types::{account_address::AccountAddress, identifier::Identifier};
 use move_vm_runtime::native_functions::NativeFunction;
 use move_vm_runtime::RuntimeEnvironment;
 use moveos::gas::table::VMGasParameters;
-use moveos::moveos::{new_moveos_global_module_cache, MoveOS, MoveOSConfig};
+use moveos::moveos::{new_moveos_global_module_cache, MoveOS, MoveOSCacheManager, MoveOSConfig};
 use moveos::vm::module_cache::GlobalModuleCache;
 use moveos_stdlib::natives::moveos_stdlib::base64::EncodeDecodeGasParametersOption;
 use moveos_stdlib::natives::moveos_stdlib::object::ListFieldsGasParametersOption;
@@ -325,8 +325,10 @@ impl RoochGenesis {
         genesis_moveos_tx.ctx.add(gas_config.clone())?;
 
         let global_module_cache = new_moveos_global_module_cache();
+        let global_cache_manager = MoveOSCacheManager::new(gas_parameter.all_natives(), global_module_cache.clone());
+
         let (moveos_store, _temp_dir) = MoveOSStore::mock_moveos_store()?;
-        let moveos = MoveOS::new(gas_parameter.all_natives(), moveos_store, vec![], vec![], global_module_cache)?;
+        let moveos = MoveOS::new(moveos_store, vec![], vec![], global_cache_manager)?;
         let output = moveos.init_genesis(
             genesis_moveos_tx.clone(),
             genesis_config.genesis_objects.clone(),
@@ -423,12 +425,14 @@ impl RoochGenesis {
             self.initial_gas_config.max_gas_amount,
             self.initial_gas_config.entries.clone(),
         )?;
+
+        let global_cache_manager = MoveOSCacheManager::new(genesis_gas_parameter.all_natives(), global_module_cache.clone());
+
         let moveos = MoveOS::new(
-            genesis_gas_parameter.all_natives(),
             rooch_db.moveos_store.clone(),
             vec![],
             vec![],
-            global_module_cache
+            global_cache_manager
         )?;
 
         let genesis_raw_output =

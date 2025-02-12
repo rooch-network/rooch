@@ -82,8 +82,7 @@ pub fn execute_tx_locally(
     gas_meter.charge_io_write(tx_size).unwrap();
 
     let global_module_cache = moveos_cache_manager.global_module_cache;
-    let read_guard = moveos_cache_manager.runtime_environment.read();
-    let runtime_environment = read_guard.deref();
+    let runtime_environment = moveos_cache_manager.runtime_environment;
 
     let mut moveos_session = MoveOSSession::new(
         move_mv.inner(),
@@ -164,8 +163,7 @@ pub fn execute_tx_locally_with_gas_profile(
 
     let mut gas_profiler = new_gas_profiler(tx.clone().action, gas_meter);
     let global_module_cache = moveos_cache_manager.global_module_cache;
-    let read_guard = moveos_cache_manager.runtime_environment.read();
-    let runtime_environment = read_guard.deref();
+    let runtime_environment = moveos_cache_manager.runtime_environment;
 
     let mut moveos_session = MoveOSSession::new(
         move_mv.inner(),

@@ -15,7 +15,7 @@ use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor, LocalActorRef};
 use move_resource_viewer::MoveValueAnnotator;
 use move_vm_runtime::RuntimeEnvironment;
-use moveos::moveos::{MoveOS, MoveOSGlobalModuleCache};
+use moveos::moveos::{MoveOS, MoveOSCacheManager, MoveOSGlobalModuleCache};
 use moveos::moveos::MoveOSConfig;
 use moveos::vm::module_cache::GlobalModuleCache;
 use moveos_eventbus::bus::EventData;
@@ -42,7 +42,7 @@ pub struct ReaderExecutorActor {
     moveos_store: MoveOSStore,
     rooch_store: RoochStore,
     event_actor: Option<LocalActorRef<EventActor>>,
-    global_module_cache: MoveOSGlobalModuleCache,
+    global_cache_manager: MoveOSCacheManager,
 }
 
 impl ReaderExecutorActor {
@@ -51,16 +51,13 @@ impl ReaderExecutorActor {
         moveos_store: MoveOSStore,
         rooch_store: RoochStore,
         event_actor: Option<LocalActorRef<EventActor>>,
-        global_module_cache: MoveOSGlobalModuleCache,
+        global_cache_manager: MoveOSCacheManager,
     ) -> Result<Self> {
-        let resolver = RootObjectResolver::new(root.clone(), &moveos_store);
-        let gas_parameters = FrameworksGasParameters::load_from_chain(&resolver)?;
         let moveos = MoveOS::new(
-            gas_parameters.all_natives(),
             moveos_store.clone(),
             system_pre_execute_functions(),
             system_post_execute_functions(),
-            global_module_cache.clone(),
+            global_cache_manager.clone(),
         )?;
 
         Ok(Self {
@@ -69,7 +66,7 @@ impl ReaderExecutorActor {
             moveos_store,
             rooch_store,
             event_actor,
-            global_module_cache: global_module_cache.clone(),
+            global_cache_manager
         })
     }
 
@@ -334,15 +331,11 @@ impl Handler<EventData> for ReaderExecutorActor {
         if let Ok(_gas_upgrade_msg) = message.data.downcast::<GasUpgradeEvent>() {
             tracing::info!("ReadExecutorActor: Reload the MoveOS instance...");
 
-            let resolver = RootObjectResolver::new(self.root.clone(), &self.moveos_store);
-            let gas_parameters = FrameworksGasParameters::load_from_chain(&resolver)?;
-
             self.moveos = MoveOS::new(
-                gas_parameters.all_natives(),
                 self.moveos_store.clone(),
                 system_pre_execute_functions(),
                 system_post_execute_functions(),
-                self.global_module_cache.clone(),
+                self.global_cache_manager.clone()
             )?;
         }
         Ok(())

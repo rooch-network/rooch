@@ -282,15 +282,8 @@ impl MoveOS {
     pub fn verify(&self, tx: MoveOSTransaction) -> VMResult<VerifiedMoveOSTransaction> {
         let MoveOSTransaction { root, ctx, action } = tx;
         let cost_table = self.load_cost_table(&root)?;
-        let mut gas_meter = MoveOSGasMeter::new(cost_table, ctx.max_gas_amount, true);
+        let mut gas_meter = MoveOSGasMeter::new(cost_table, ctx.max_gas_amount, false);
         gas_meter.set_metering(false);
-
-        // Check if the gas fee for the transaction size is sufficient during transaction validation.
-        let tx_size = ctx.tx_size;
-        let io_writes_gas = gas_meter.calculate_io_writes_gas(tx_size);
-        if ctx.max_gas_amount < io_writes_gas {
-            return Err(PartialVMError::new(StatusCode::OUT_OF_GAS).finish(Location::Undefined));
-        }
 
         let resolver = RootObjectResolver::new(root.clone(), &self.db);
         let runtime_environment = self.cache_manager.runtime_environment.read();
@@ -320,7 +313,7 @@ impl MoveOS {
         let tx_hash = ctx.tx_hash();
         if tracing::enabled!(tracing::Level::DEBUG) {
             tracing::debug!(
-                "execute tx(sender:{}, hash:{:?}, action:{})",
+                "execute tx(sender:{}, hash:{}, action:{})",
                 ctx.sender(),
                 tx_hash,
                 action
@@ -341,9 +334,9 @@ impl MoveOS {
         };
 
         let cost_table = self.load_cost_table(&root)?;
-        let gas_meter =
+        let mut gas_meter =
             MoveOSGasMeter::new(cost_table, ctx.max_gas_amount, has_io_tired_write_feature);
-        let tx_size = ctx.tx_size;
+        gas_meter.charge_io_write(ctx.tx_size)?;
 
         let resolver = RootObjectResolver::new(root, &self.db);
         let runtime_environment = self.cache_manager.runtime_environment.read();
@@ -371,12 +364,12 @@ impl MoveOS {
             }
         }
 
-        match self.execute_action(&mut session, action.clone(), tx_size) {
+        match self.execute_action(&mut session, action.clone()) {
             Ok(_) => {
                 let status = VMStatus::Executed;
                 if tracing::enabled!(tracing::Level::DEBUG) {
                     tracing::debug!(
-                        "execute_action ok tx(hash:{:?}) vm_status:{:?}",
+                        "execute_action ok tx(hash:{}) vm_status:{:?}",
                         tx_hash,
                         status
                     );
@@ -386,7 +379,7 @@ impl MoveOS {
             Err(vm_err) => {
                 if tracing::enabled!(tracing::Level::WARN) {
                     tracing::warn!(
-                        "execute_action error tx(hash:{:?}) vm_err:{:?} need respawn session.",
+                        "execute_action error tx(hash:{}) vm_err:{:?} need respawn session.",
                         tx_hash,
                         vm_err
                     );
@@ -511,14 +504,7 @@ impl MoveOS {
         &self,
         session: &mut MoveOSSession<'_, '_, RootObjectResolver<MoveOSStore>, MoveOSGasMeter>,
         action: VerifiedMoveAction,
-        tx_size: u64,
     ) -> Result<(), VMError> {
-        match session.gas_meter.charge_io_write(tx_size) {
-            Ok(_) => {}
-            Err(e) => {
-                return Err(e.finish(Location::Undefined));
-            }
-        }
         session.execute_move_action(action)
     }
 

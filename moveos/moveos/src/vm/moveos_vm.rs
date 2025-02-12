@@ -72,9 +72,9 @@ pub struct MoveOSVM {
 
 impl MoveOSVM {
     pub fn new(moveos_cache_manager: MoveOSCacheManager) -> VMResult<Self> {
-        let read_gurad = moveos_cache_manager.runtime_environment.read();
+        let env = moveos_cache_manager.runtime_environment;
         Ok(Self {
-            inner: MoveVM::new_with_runtime_environment(&read_gurad),
+            inner: MoveVM::new_with_runtime_environment(&env),
         })
     }
 
