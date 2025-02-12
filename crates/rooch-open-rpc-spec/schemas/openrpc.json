@@ -2017,6 +2017,8 @@
             "required": [
               "action",
               "action_type",
+              "chain_id",
+              "max_gas_amount",
               "raw",
               "sender",
               "sequence_number",
@@ -2028,6 +2030,12 @@
               },
               "action_type": {
                 "$ref": "#/components/schemas/MoveActionTypeView"
+              },
+              "chain_id": {
+                "$ref": "#/components/schemas/u64"
+              },
+              "max_gas_amount": {
+                "$ref": "#/components/schemas/u64"
               },
               "raw": {
                 "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
