@@ -136,6 +136,27 @@ impl SequencedTxStore {
     }
 }
 
+pub(crate) fn collect_chunk(segment_dir: PathBuf, chunk_id: u128) -> anyhow::Result<Vec<u64>> {
+    let mut segments = Vec::new();
+    for segment_number in 0.. {
+        let segment_id = SegmentID {
+            chunk_id,
+            segment_number,
+        };
+        let segment_path = segment_dir.join(segment_id.to_string());
+        if !segment_path.exists() {
+            if segment_number == 0 {
+                return Err(anyhow::anyhow!("No segment found in chunk: {}", chunk_id));
+            } else {
+                break;
+            }
+        }
+
+        segments.push(segment_number);
+    }
+    Ok(segments)
+}
+
 // collect all the chunks from segment_dir.
 // each segment is stored in a file named by the segment_id.
 // each chunk may contain multiple segments.
@@ -446,6 +467,7 @@ impl LedgerTxGetter {
                     );
                 } else {
                     let execution_info_opt = tx_info.execution_info;
+                    // not all sequenced tx could be executed successfully
                     if let Some(execution_info) = execution_info_opt {
                         let tx_state_root = execution_info.state_root.0;
                         let tx_accumulator_root =

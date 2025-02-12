@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::commands::da::commands::{collect_chunks, get_tx_list_from_chunk};
+use crate::commands::da::commands::{collect_chunk, collect_chunks, get_tx_list_from_chunk};
 use clap::Parser;
 use rooch_types::error::RoochResult;
 use std::collections::{BinaryHeap, HashMap, HashSet};
@@ -84,22 +84,17 @@ impl UnpackInner {
     }
 
     fn collect_chunks(&mut self, unpack_chunk_id_opt: Option<u128>) -> anyhow::Result<()> {
-        let (chunks, _min_chunk_id, _max_chunk_id) = collect_chunks(self.segment_dir.clone())?;
-        self.chunks = chunks;
+        let chunks = if let Some(chunk_id) = unpack_chunk_id_opt {
+            let segment_numbers = collect_chunk(self.segment_dir.clone(), chunk_id)?;
+            let mut chunks = HashMap::new();
+            chunks.insert(chunk_id, segment_numbers);
+            chunks
+        } else {
+            let (chunks, _min_chunk_id, _max_chunk_id) = collect_chunks(self.segment_dir.clone())?;
+            chunks
+        };
 
-        if let Some(chunk_id) = unpack_chunk_id_opt {
-            if !self.chunks.contains_key(&chunk_id) {
-                return Err(anyhow::anyhow!(
-                    "Chunk {} not found in segment_dir: {:?}",
-                    chunk_id,
-                    self.segment_dir
-                ));
-            } else {
-                let segments = self.chunks.get(&chunk_id).unwrap().clone();
-                self.chunks.clear();
-                self.chunks.insert(chunk_id, segments);
-            }
-        }
+        self.chunks = chunks;
 
         Ok(())
     }
