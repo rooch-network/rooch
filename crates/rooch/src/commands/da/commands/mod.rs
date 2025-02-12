@@ -511,12 +511,13 @@ impl TxMetaStore {
         segment_dir: PathBuf,
         transaction_store: TransactionDBStore,
         rooch_store: RoochStore,
+        max_block_number: Option<u128>,
     ) -> anyhow::Result<Self> {
         let tx_position_indexer = TxPositionIndexer::new_with_updates(
             tx_position_indexer_path,
             None,
             Some(segment_dir),
-            None,
+            max_block_number,
         )
         .await?;
         let exp_roots_map = Self::load_exp_roots(exp_roots_path)?;
