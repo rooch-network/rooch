@@ -39,18 +39,17 @@ impl CommandAction<String> for DB {
             DBCommand::Repair(repair) => repair.execute().await.map(|resp| {
                 serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
             }),
-            DBCommand::GetTxByOrder(get_tx_by_order) => get_tx_by_order.execute().map(|resp| {
-                serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
-            }),
-            DBCommand::GetChangesetByOrder(get_changeset_by_order) => {
-                get_changeset_by_order.execute().await.map(|resp| {
-                    serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
-                })
-            }
+            DBCommand::GetTxByOrder(get_tx_by_order) => get_tx_by_order
+                .execute()
+                .map(|resp| serde_json::to_string(&resp).expect("Failed to serialize response")),
+            DBCommand::GetChangesetByOrder(get_changeset_by_order) => get_changeset_by_order
+                .execute()
+                .await
+                .map(|resp| serde_json::to_string(&resp).expect("Failed to serialize response")),
             DBCommand::GetExecutionInfoByHash(get_execution_info_by_hash) => {
-                get_execution_info_by_hash.execute().map(|resp| {
-                    serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
-                })
+                get_execution_info_by_hash
+                    .execute()
+                    .map(|resp| serde_json::to_string(&resp).expect("Failed to serialize response"))
             }
             DBCommand::BestRollback(best_rollback) => best_rollback.execute().await.map(|resp| {
                 serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
