@@ -136,6 +136,27 @@ impl SequencedTxStore {
     }
 }
 
+pub(crate) fn collect_chunk(segment_dir: PathBuf, chunk_id: u128) -> anyhow::Result<Vec<u64>> {
+    let mut segments = Vec::new();
+    for segment_number in 0.. {
+        let segment_id = SegmentID {
+            chunk_id,
+            segment_number,
+        };
+        let segment_path = segment_dir.join(segment_id.to_string());
+        if !segment_path.exists() {
+            if segment_number == 0 {
+                return Err(anyhow::anyhow!("No segment found in chunk: {}", chunk_id));
+            } else {
+                break;
+            }
+        }
+
+        segments.push(segment_number);
+    }
+    Ok(segments)
+}
+
 // collect all the chunks from segment_dir.
 // each segment is stored in a file named by the segment_id.
 // each chunk may contain multiple segments.
@@ -197,6 +218,7 @@ pub(crate) fn get_tx_list_from_chunk(
     segment_dir: PathBuf,
     chunk_id: u128,
     segment_numbers: Vec<u64>,
+    verify_order: bool,
 ) -> anyhow::Result<Vec<LedgerTransaction>> {
     let mut segments = Vec::new();
     for segment_number in segment_numbers {
@@ -211,7 +233,7 @@ pub(crate) fn get_tx_list_from_chunk(
     }
     let chunk = chunk_from_segments(segments)?;
     let batch = chunk.get_batches().into_iter().next().unwrap();
-    batch.verify(true)?;
+    batch.verify(verify_order)?;
     Ok(batch.get_tx_list())
 }
 
@@ -419,6 +441,7 @@ impl LedgerTxGetter {
                         self.segment_dir.clone(),
                         chunk_id,
                         segment_numbers.clone(),
+                        true,
                     )?;
                     Ok(Some(tx_list))
                 },
@@ -436,17 +459,24 @@ impl LedgerTxGetter {
                 let tx_info = resp.into_iter().next().flatten().ok_or_else(|| {
                     anyhow!("No transaction info found for tx: {:?}", last_tx_hash)
                 })?;
-                let tx_state_root = tx_info
-                    .execution_info
-                    .ok_or(anyhow!(
-                        "No execution info found for tx: {:?}",
-                        last_tx_hash
-                    ))?
-                    .state_root
-                    .0;
-                let tx_accumulator_root = tx_info.transaction.sequence_info.tx_accumulator_root.0;
-                let mut exp_roots = exp_roots.write().await;
-                exp_roots.insert(tx_order, (tx_state_root, tx_accumulator_root));
+                let tx_order_in_resp = tx_info.transaction.sequence_info.tx_order.0;
+                if tx_order_in_resp != tx_order {
+                    return Err(anyhow!(
+                        "failed to request tx by RPC: Tx order mismatch, expect: {}, actual: {}",
+                        tx_order,
+                        tx_order_in_resp
+                    ));
+                } else {
+                    let execution_info_opt = tx_info.execution_info;
+                    // not all sequenced tx could be executed successfully
+                    if let Some(execution_info) = execution_info_opt {
+                        let tx_state_root = execution_info.state_root.0;
+                        let tx_accumulator_root =
+                            tx_info.transaction.sequence_info.tx_accumulator_root.0;
+                        let mut exp_roots = exp_roots.write().await;
+                        exp_roots.insert(tx_order, (tx_state_root, tx_accumulator_root));
+                    }
+                }
             }
             Ok(Some(tx_list))
         } else {
