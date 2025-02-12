@@ -22,7 +22,7 @@ use rooch_types::rooch_network::RoochChainID;
 use rooch_types::sequencer::SequencerInfo;
 use rooch_types::transaction::{LedgerTransaction, TransactionSequenceInfo};
 use serde::{Deserialize, Serialize};
-use std::cmp::max;
+use std::cmp::min;
 use std::collections::HashMap;
 use std::fs;
 use std::fs::File;
@@ -913,7 +913,7 @@ impl TxPositionIndexer {
         let segment_dir = segment_dir.ok_or_else(|| anyhow!("segment_dir is required"))?;
         let ledger_tx_loader = LedgerTxGetter::new(segment_dir)?;
         let stop_at = if let Some(max_block_number) = max_block_number {
-            max(max_block_number, ledger_tx_loader.get_max_chunk_id())
+            min(max_block_number, ledger_tx_loader.get_max_chunk_id())
         } else {
             ledger_tx_loader.get_max_chunk_id()
         };
