@@ -12,5 +12,6 @@ repository = { workspace = true }
 rust-version = { workspace = true }
 
 [dependencies]
-libc = { workspace = true }
 anyhow = { workspace = true }
+libc = { workspace = true }
+indexmap = { workspace = true }

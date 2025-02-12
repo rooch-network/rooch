@@ -18,6 +18,7 @@ use function_name::named;
 use moveos_eventbus::bus::EventData;
 use moveos_types::h256::{self, H256};
 use prometheus::Registry;
+use rooch_common::set::RecentSet;
 use rooch_event::actor::{EventActor, EventActorSubscribeMessage};
 use rooch_event::event::ServiceStatusEvent;
 use rooch_store::transaction_store::TransactionStore;
@@ -28,6 +29,8 @@ use rooch_types::service_status::ServiceStatus;
 use rooch_types::transaction::{LedgerTransaction, LedgerTxData};
 use tracing::info;
 
+const MAX_RECENT_TX_HASHES: usize = 8192;
+
 pub struct SequencerActor {
     last_sequencer_info: SequencerInfo,
     tx_accumulator: MerkleAccumulator,
@@ -36,6 +39,7 @@ pub struct SequencerActor {
     service_status: ServiceStatus,
     metrics: Arc<SequencerMetrics>,
     event_actor: Option<LocalActorRef<EventActor>>,
+    recent_tx_hashes: RecentSet<H256>,
 }
 
 impl SequencerActor {
@@ -73,6 +77,7 @@ impl SequencerActor {
             service_status,
             metrics: Arc::new(SequencerMetrics::new(registry)),
             event_actor,
+            recent_tx_hashes: RecentSet::new(MAX_RECENT_TX_HASHES),
         })
     }
 
@@ -128,6 +133,15 @@ impl SequencerActor {
         }
 
         let tx_hash = tx_data.tx_hash();
+
+        // check recent tx in mem for reducing disk I/O
+        if !self.recent_tx_hashes.insert(tx_hash) {
+            return Err(anyhow::anyhow!(
+                "Transaction already exists, tx_hash: {}",
+                tx_hash
+            ));
+        }
+
         let tx_opt = self
             .rooch_store
             .transaction_store

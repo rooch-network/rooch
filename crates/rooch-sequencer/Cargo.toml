@@ -30,6 +30,7 @@ raw-store = { workspace = true }
 rooch-types = { workspace = true }
 rooch-store = { workspace = true }
 rooch-config = { workspace = true }
+rooch-common = { workspace = true }
 rooch-db = { workspace = true }
 rooch-genesis = { workspace = true }
 rooch-event = { workspace = true }

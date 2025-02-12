@@ -10478,6 +10478,7 @@ name = "rooch-common"
 version = "0.8.9"
 dependencies = [
  "anyhow 1.0.95",
+ "indexmap 2.7.1",
  "libc",
 ]
 
@@ -11081,6 +11082,7 @@ dependencies = [
  "moveos-types",
  "prometheus",
  "raw-store",
+ "rooch-common",
  "rooch-config",
  "rooch-db",
  "rooch-event",
