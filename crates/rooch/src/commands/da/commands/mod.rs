@@ -39,6 +39,7 @@ use tracing::{error, info, warn};
 pub mod exec;
 pub mod index;
 pub mod namespace;
+pub mod pack;
 pub mod unpack;
 
 pub(crate) struct SequencedTxStore {
@@ -539,7 +540,7 @@ impl TxMetaStore {
 
         let mut reader = BufReader::new(File::open(exp_roots_path)?);
         for line in reader.by_ref().lines() {
-            let line = line.unwrap();
+            let line = line?;
             let parts: Vec<&str> = line.split(':').collect();
             let tx_order = parts[0].parse::<u64>()?;
             let state_root_raw = parts[1];
@@ -696,8 +697,8 @@ impl TxPositionIndexer {
 
     pub(crate) fn dump_to_file(&self, file_path: PathBuf) -> anyhow::Result<()> {
         let db = self.db;
-        let file = std::fs::File::create(file_path)?;
-        let mut writer = BufWriter::with_capacity(8 * 1024 * 1024, file.try_clone().unwrap());
+        let file = File::create(file_path)?;
+        let mut writer = BufWriter::with_capacity(8 * 1024 * 1024, file.try_clone()?);
         let rtxn = self.db_env.read_txn()?;
         let mut iter = db.iter(&rtxn)?;
         while let Some((k, v)) = iter.next().transpose()? {
@@ -716,8 +717,8 @@ impl TxPositionIndexer {
         let mut last_block_number = 0;
 
         let db_env = Self::create_env(db_path.clone())?;
-        let file = std::fs::File::open(file_path)?;
-        let reader = std::io::BufReader::new(file);
+        let file = File::open(file_path)?;
+        let reader = BufReader::new(file);
 
         let mut wtxn = db_env.write_txn()?; // Begin write_transaction early for create/put
 

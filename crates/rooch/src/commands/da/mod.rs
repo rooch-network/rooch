@@ -7,6 +7,7 @@ use crate::cli_types::CommandAction;
 use crate::commands::da::commands::exec::ExecCommand;
 use crate::commands::da::commands::index::IndexCommand;
 use crate::commands::da::commands::namespace::NamespaceCommand;
+use crate::commands::da::commands::pack::PackCommand;
 use crate::commands::da::commands::unpack::UnpackCommand;
 use async_trait::async_trait;
 use clap::Parser;
@@ -23,6 +24,7 @@ pub struct DA {
 impl CommandAction<String> for DA {
     async fn execute(self) -> RoochResult<String> {
         match self.cmd {
+            DACommand::Pack(pack) => pack.execute().map(|_| "".to_owned()),
             DACommand::Unpack(unpack) => unpack.execute().map(|_| "".to_owned()),
             DACommand::Namespace(namespace) => namespace.execute().map(|_| "".to_owned()),
             DACommand::Exec(exec) => exec.execute().await.map(|_| "".to_owned()),
@@ -37,6 +39,7 @@ impl CommandAction<String> for DA {
 #[derive(clap::Subcommand)]
 #[clap(name = "da")]
 pub enum DACommand {
+    Pack(PackCommand),
     Unpack(UnpackCommand),
     Namespace(NamespaceCommand),
     Exec(Box<ExecCommand>),
