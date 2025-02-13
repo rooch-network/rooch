@@ -22,7 +22,7 @@ use rooch_types::rooch_network::RoochChainID;
 use rooch_types::sequencer::SequencerInfo;
 use rooch_types::transaction::{LedgerTransaction, TransactionSequenceInfo};
 use serde::{Deserialize, Serialize};
-use std::cmp::max;
+use std::cmp::min;
 use std::collections::HashMap;
 use std::fs;
 use std::fs::File;
@@ -39,6 +39,7 @@ use tracing::{error, info, warn};
 pub mod exec;
 pub mod index;
 pub mod namespace;
+pub mod pack;
 pub mod unpack;
 
 pub(crate) struct SequencedTxStore {
@@ -510,12 +511,13 @@ impl TxMetaStore {
         segment_dir: PathBuf,
         transaction_store: TransactionDBStore,
         rooch_store: RoochStore,
+        max_block_number: Option<u128>,
     ) -> anyhow::Result<Self> {
         let tx_position_indexer = TxPositionIndexer::new_with_updates(
             tx_position_indexer_path,
             None,
             Some(segment_dir),
-            None,
+            max_block_number,
         )
         .await?;
         let exp_roots_map = Self::load_exp_roots(exp_roots_path)?;
@@ -539,7 +541,7 @@ impl TxMetaStore {
 
         let mut reader = BufReader::new(File::open(exp_roots_path)?);
         for line in reader.by_ref().lines() {
-            let line = line.unwrap();
+            let line = line?;
             let parts: Vec<&str> = line.split(':').collect();
             let tx_order = parts[0].parse::<u64>()?;
             let state_root_raw = parts[1];
@@ -696,8 +698,8 @@ impl TxPositionIndexer {
 
     pub(crate) fn dump_to_file(&self, file_path: PathBuf) -> anyhow::Result<()> {
         let db = self.db;
-        let file = std::fs::File::create(file_path)?;
-        let mut writer = BufWriter::with_capacity(8 * 1024 * 1024, file.try_clone().unwrap());
+        let file = File::create(file_path)?;
+        let mut writer = BufWriter::with_capacity(8 * 1024 * 1024, file.try_clone()?);
         let rtxn = self.db_env.read_txn()?;
         let mut iter = db.iter(&rtxn)?;
         while let Some((k, v)) = iter.next().transpose()? {
@@ -716,8 +718,8 @@ impl TxPositionIndexer {
         let mut last_block_number = 0;
 
         let db_env = Self::create_env(db_path.clone())?;
-        let file = std::fs::File::open(file_path)?;
-        let reader = std::io::BufReader::new(file);
+        let file = File::open(file_path)?;
+        let reader = BufReader::new(file);
 
         let mut wtxn = db_env.write_txn()?; // Begin write_transaction early for create/put
 
@@ -912,7 +914,7 @@ impl TxPositionIndexer {
         let segment_dir = segment_dir.ok_or_else(|| anyhow!("segment_dir is required"))?;
         let ledger_tx_loader = LedgerTxGetter::new(segment_dir)?;
         let stop_at = if let Some(max_block_number) = max_block_number {
-            max(max_block_number, ledger_tx_loader.get_max_chunk_id())
+            min(max_block_number, ledger_tx_loader.get_max_chunk_id())
         } else {
             ledger_tx_loader.get_max_chunk_id()
         };

@@ -123,6 +123,9 @@ pub struct ExecCommand {
     )]
     pub force_align: bool,
 
+    #[clap(long = "max-block-number", help = "Max block number to exec")]
+    pub max_block_number: Option<u128>,
+
     #[clap(flatten)]
     pub(crate) context_options: WalletContextOptions,
 }
@@ -251,6 +254,7 @@ impl ExecCommand {
             self.segment_dir.clone(),
             moveos_store.transaction_store,
             rooch_db.rooch_store.clone(),
+            self.max_block_number,
         )
         .await?;
 
