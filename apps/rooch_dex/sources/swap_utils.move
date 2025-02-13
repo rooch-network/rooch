@@ -2,7 +2,7 @@
 module rooch_dex::swap_utils {
     use std::string;
     use moveos_std::type_info;
-    use moveos_std::compare::compare;
+    use moveos_std::compare::compare_vector_u8;
 
 
     const EQUAL: u8 = 0;
@@ -52,15 +52,13 @@ module rooch_dex::swap_utils {
 
     public fun get_token_info<T>(): vector<u8> {
         let type_name = type_info::type_name<T>();
-        *string::bytes(&type_name)
+        string::into_bytes(type_name)
     }
 
     fun compare_struct<X, Y>(): u8 {
-        // let struct_x_bytes: vector<u8> = get_token_info<X>();
-        // let struct_y_bytes: vector<u8> = get_token_info<Y>();
-        // std::debug::print(&struct_x_bytes);
-        // std::debug::print(&struct_y_bytes);
-        compare(&type_info::type_name<X>(), &type_info::type_name<Y>())
+        let struct_x_bytes: vector<u8> = get_token_info<X>();
+        let struct_y_bytes: vector<u8> = get_token_info<Y>();
+        compare_vector_u8(&struct_x_bytes, &struct_y_bytes)
     }
 
     public fun get_smaller_enum(): u8 {
