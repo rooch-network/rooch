@@ -80,28 +80,26 @@ module rooch_dex::swap_utils {
     }
 
     #[test_only]
-    struct TokenABC {}
+    struct TokenA {}
     #[test_only]
-    struct TokenCBA {}
+    struct TokenB {}
     #[test_only]
-    struct TokenACB {}
+    struct TokenAB {}
 
     #[test_only]
     const FEE_RATE: u64 = 9975; // 0.25% fee = 9975/10000
     
     #[test]
     fun test_sort_token_type() {
-        assert!(sort_token_type<TokenABC, TokenCBA>(), 1);
-        // assert!(!sort_token_type<TokenB, TokenA>(), 2);
-        // assert!(sort_token_type<rooch_framework::gas_coin::RGas, TokenA>(), 3);
-        // assert!(sort_token_type<rooch_framework::gas_coin::RGas, TokenB>(), 4);
+        assert!(sort_token_type<TokenA, TokenB>(), 1);
+        assert!(sort_token_type<TokenAB, TokenB>(), 2);
     }
 
-    // #[test]
-    // #[expected_failure(abort_code = ErrorTokenPairAleardyExist, location = rooch_dex::swap_utils)]
-    // fun test_sort_token_type_same() {
-    //     sort_token_type<TokenA, TokenA>();
-    // }
+    #[test]
+    #[expected_failure(abort_code = ErrorTokenPairAleardyExist, location = rooch_dex::swap_utils)]
+    fun test_sort_token_type_same() {
+        sort_token_type<TokenA, TokenA>();
+    }
 
     #[test]
     fun test_get_amount_out() {
@@ -121,5 +119,15 @@ module rooch_dex::swap_utils {
     #[expected_failure(abort_code = ErrorInsufficientLiquidity, location = rooch_dex::swap_utils)]
     fun test_get_amount_out_zero_reserves() {
         get_amount_out(100, 0, 0, FEE_RATE);
+    }
+}
+
+#[test_only]
+module rooch_dex::test{
+    struct TokenC{}
+    #[test]
+    fun test_sort_token_type() {
+        // rooch_framework = 0x3, so it should be less than rooch_dex, 
+        assert!(rooch_dex::swap_utils::sort_token_type<rooch_framework::gas_coin::RGas, TokenC>(), 1);
     }
 }
