@@ -4,6 +4,7 @@
 // import { PACKAGE_VERSION, TARGETED_RPC_VERSION } from '../version.js'
 
 import { JsonRpcError, RoochHTTPStatusError } from './error.js'
+import { RoochTransport, RoochTransportRequestOptions } from './transportInterface.js'
 
 export type HttpHeaders = { [header: string]: string }
 
@@ -14,15 +15,6 @@ export interface RoochHTTPTransportOptions {
     headers?: HttpHeaders
     url?: string
   }
-}
-
-export interface RoochTransportRequestOptions {
-  method: string
-  params: unknown[]
-}
-
-export interface RoochTransport {
-  request<T = unknown>(input: RoochTransportRequestOptions): Promise<T>
 }
 
 export class RoochHTTPTransport implements RoochTransport {
