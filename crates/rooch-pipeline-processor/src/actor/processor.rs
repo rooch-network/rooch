@@ -148,13 +148,11 @@ impl PipelineProcessorActor {
                     match self.execute_l2_tx(l2_tx.clone()).await {
                         Ok(_v) => {}
                         Err(err) => {
-                            if is_vm_panic_error(&err) {
-                                tracing::error!(
-                                    "Execute L2 Tx failed while VM panic occurred in process_sequenced_tx_on_startup. error: {:?}; tx_order: {}, tx_hash {:?}",
-                                    err, tx_order, tx_hash
-                                );
-                                return Err(err);
-                            }
+                            tracing::error!(
+                                "Execute L2 Tx failed while VM panic occurred in process_sequenced_tx_on_startup. error: {:?}; tx_order: {}, tx_hash {:?}",
+                                err, tx_order, tx_hash
+                            );
+                            return Err(err);
                         }
                     };
                 }
@@ -306,17 +304,15 @@ impl PipelineProcessorActor {
         let result = match self.execute_tx(ledger_tx, moveos_tx).await {
             Ok(v) => v,
             Err(err) => {
-                if is_vm_panic_error(&err) {
-                    let l2_tx_bcs_bytes = bcs::to_bytes(&tx)?;
-                    tracing::error!(
-                        "Execute L2 Tx failed while VM panic occurred and revert tx. error: {:?} tx info {}",
-                        err, hex::encode(l2_tx_bcs_bytes)
-                    );
-                    self.da_server
-                        .revert_tx(RevertTransactionMessage { tx_order })
-                        .await?;
-                    self.rooch_db.revert_tx(tx_hash)?;
-                }
+                let l2_tx_bcs_bytes = bcs::to_bytes(&tx)?;
+                tracing::error!(
+                    "Execute L2 Tx failed while VM panic occurred and revert tx. error: {:?} tx info {}",
+                    err, hex::encode(l2_tx_bcs_bytes)
+                );
+                self.da_server
+                    .revert_tx(RevertTransactionMessage { tx_order })
+                    .await?;
+                self.rooch_db.revert_tx(tx_hash)?;
                 return Err(err);
             }
         };
