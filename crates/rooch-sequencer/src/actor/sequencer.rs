@@ -157,13 +157,7 @@ impl SequencerActor {
         let tx_timestamp = now.duration_since(SystemTime::UNIX_EPOCH)?.as_millis() as u64;
 
         let tx_order = self.last_sequencer_info.last_order + 1;
-
-        let mut witness_data = tx_hash.as_ref().to_vec();
-        witness_data.extend(tx_order.to_le_bytes().iter());
-        let witness_hash = h256::sha3_256_of(&witness_data);
-        let tx_order_signature = Signature::sign(&witness_hash.0, &self.sequencer_key)
-            .as_ref()
-            .to_vec();
+        let tx_order_signature = sign_tx_order(tx_order, tx_hash, &self.sequencer_key);
 
         // Calc transaction accumulator
         let _tx_accumulator_root = self.tx_accumulator.append(vec![tx_hash].as_slice())?;
@@ -193,6 +187,15 @@ impl SequencerActor {
 
         Ok(tx)
     }
+}
+
+pub fn sign_tx_order(tx_order: u64, tx_hash: H256, sequencer_key: &RoochKeyPair) -> Vec<u8> {
+    let mut witness_data = tx_hash.as_ref().to_vec();
+    witness_data.extend(tx_order.to_le_bytes().iter());
+    let witness_hash = h256::sha3_256_of(&witness_data);
+    Signature::sign(&witness_hash.0, sequencer_key)
+        .as_ref()
+        .to_vec()
 }
 
 #[async_trait]

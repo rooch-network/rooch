@@ -58,7 +58,7 @@ pub struct ExecCommand {
     #[clap(
         long = "mode",
         default_value = "all",
-        help = "Execution mode: exec, seq, all. Default is all"
+        help = "Execution mode: exec, seq, all, sync. Default is all"
     )]
     pub mode: ExecMode,
     #[clap(long = "segment-dir")]
@@ -122,6 +122,9 @@ pub struct ExecCommand {
         help = "force align to min(last_sequenced_tx_order, last_executed_tx_order)"
     )]
     pub force_align: bool,
+
+    #[clap(long = "max-block-number", help = "Max block number to exec")]
+    pub max_block_number: Option<u128>,
 
     #[clap(flatten)]
     pub(crate) context_options: WalletContextOptions,
@@ -251,6 +254,7 @@ impl ExecCommand {
             self.segment_dir.clone(),
             moveos_store.transaction_store,
             rooch_db.rooch_store.clone(),
+            self.max_block_number,
         )
         .await?;
 

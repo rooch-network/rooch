@@ -62,14 +62,17 @@ Features include:
 2. Compare state root with Rooch Network Mainnet/Testnet by tx_order:state_root list file
 3. We could collect performance data in the execution process by tuning tools like `perf` if needed
 
-#### Prepare tx_order:state_root list file
+#### Prepare tx_order:state_root:accumulator_root list file
 
-using [order_state.sh](https://github.com/popcnt1/roh/blob/main/scripts/order_state.sh) to generate tx_order:state_root:
+If not run with `--mode sync`, you should prepare tx_order:state_root:accumulator_root list file by yourself.
+
+using [get_state_interval.sh](https://github.com/popcnt1/roh/blob/main/scripts/get_state_interval.sh) to generate
+tx_order:state_root:
 accumulator_root list file:
 
 ```shell
 rooch env switch -n {network}
-./order_state.sh {start_order} {end_order} {interval}
+./get_state_interval.sh {start_order} {end_order} {interval}
 ```
 
 #### Prepare genesis

@@ -77,7 +77,9 @@ impl From<L1Transaction> for L1TransactionView {
 pub enum LedgerTxDataView {
     L1Block(L1BlockView),
     L1Tx(L1TransactionView),
-    L2Tx(TransactionView),
+    // The entire enum is at least 312 bytes
+    // Consider boxing the large fields to reduce the total size of the enum
+    L2Tx(Box<TransactionView>),
 }
 
 impl LedgerTxDataView {
@@ -88,9 +90,9 @@ impl LedgerTxDataView {
         match data {
             LedgerTxData::L1Block(block) => LedgerTxDataView::L1Block(block.into()),
             LedgerTxData::L1Tx(tx) => LedgerTxDataView::L1Tx(tx.into()),
-            LedgerTxData::L2Tx(tx) => LedgerTxDataView::L2Tx(
+            LedgerTxData::L2Tx(tx) => LedgerTxDataView::L2Tx(Box::new(
                 TransactionView::new_from_rooch_transaction(tx, sender_bitcoin_address),
-            ),
+            )),
         }
     }
 }
