@@ -164,7 +164,7 @@ impl BitcoinRelayer {
                 .await?;
 
             info!(
-                "BitcoinRelayer buffer block, height: {}, hash: {}",
+                "BitcoinRelayer buffer block, height: {}, hash: {:?}",
                 next_block_height, header_info.hash
             );
             self.buffer.push(BlockResult { header_info, block });
@@ -187,7 +187,7 @@ impl BitcoinRelayer {
             let time = block_result.block.header.time;
             let tx_size = block_result.block.txdata.len();
             info!(
-                "BitcoinRelayer process block, height: {}, hash: {}, tx_size: {}, time: {}",
+                "BitcoinRelayer process block, height: {}, hash: {:?}, tx_size: {}, time: {}",
                 block_height, block_hash, tx_size, time
             );
             debug!("GetBlockHeaderResult: {:?}", block_result);

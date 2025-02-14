@@ -289,7 +289,7 @@ impl ExecutorActor {
                         Ok(verified_tx) => Ok(verified_tx),
                         Err(e) => {
                             tracing::warn!(
-                                "transaction verify vm error, tx_hash: {}, error:{:?}",
+                                "transaction verify vm error, tx_hash: {:?}, error:{:?}",
                                 tx_hash,
                                 e
                             );
@@ -301,7 +301,7 @@ impl ExecutorActor {
                     let resolver = RootObjectResolver::new(self.root.clone(), &self.moveos_store);
                     let status_view = explain_vm_status(&resolver, e.clone())?;
                     tracing::warn!(
-                        "transaction validate vm error, tx_hash: {}, error:{:?}",
+                        "transaction validate vm error, tx_hash: {:?}, error:{:?}",
                         tx_hash,
                         status_view,
                     );
@@ -311,7 +311,7 @@ impl ExecutorActor {
             },
             Err(e) => {
                 tracing::warn!(
-                    "transaction validate error, tx_hash: {}, error:{:?}",
+                    "transaction validate error, tx_hash: {:?}, error:{:?}",
                     tx_hash,
                     e
                 );

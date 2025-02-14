@@ -109,14 +109,14 @@ impl RelayerActor {
         match result.execution_info.status {
             KeptVMStatus::Executed => {
                 info!(
-                    "Relayer execute relay block(hash: {}, height: {}) success",
+                    "Relayer execute relay block(hash: {:?}, height: {}) success",
                     block_hash, block_height
                 );
             }
             _ => {
                 //TODO should we stop the service if the relayer failed
                 error!(
-                    "Relayer execute relay block(hash: {}, height: {}) failed, status: {:?}",
+                    "Relayer execute relay block(hash: {:?}, height: {}) failed, status: {:?}",
                     block_hash, block_height, result.execution_info.status
                 );
             }

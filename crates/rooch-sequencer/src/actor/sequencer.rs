@@ -157,7 +157,7 @@ impl SequencerActor {
             tx_accumulator_unsaved_nodes,
         )?;
         info!(
-            "sequencer sequenced tx_hash: {} tx_order: {:?}",
+            "sequencer sequenced tx_hash: {:?} tx_order: {:?}",
             tx_hash, tx_order
         );
         self.last_sequencer_info = sequencer_info;

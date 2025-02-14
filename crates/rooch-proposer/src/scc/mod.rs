@@ -116,7 +116,7 @@ impl StateCommitmentChain {
         let tx_execution_info_opt = self.moveos_store.get_tx_execution_info(tx_hash)?;
         if tx_execution_info_opt.is_none() {
             return Err(anyhow::anyhow!(
-                "TransactionExecutionInfo not found for tx_hash: {}",
+                "TransactionExecutionInfo not found for tx_hash: {:?}",
                 tx_hash
             ));
         };

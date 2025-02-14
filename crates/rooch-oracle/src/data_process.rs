@@ -208,7 +208,7 @@ pub async fn execute_submit_data_tx(
         Ok(tx) => match tx.execution_info.status {
             KeptVMStatusView::Executed => {
                 info!(
-                    "Submit data value: {}, timestamp:{}, tx_hash: {}, gas_used:{}",
+                    "Submit data value: {}, timestamp:{}, tx_hash: {:?}, gas_used:{}",
                     data.value,
                     data.timestamp,
                     tx.execution_info.tx_hash,
