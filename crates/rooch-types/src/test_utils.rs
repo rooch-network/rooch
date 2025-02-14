@@ -11,6 +11,7 @@ use move_core_types::account_address::AccountAddress;
 use moveos_types::moveos_std::object::ObjectID;
 use rand::{thread_rng, Rng};
 
+use crate::crypto::RoochKeyPair;
 use crate::indexer::state::IndexerObjectState;
 pub use moveos_types::test_utils::*;
 
@@ -26,6 +27,19 @@ pub fn random_ledger_transaction() -> LedgerTransaction {
     let accumulator_info = random_accumulator_info();
     let random_sequence_info =
         TransactionSequenceInfo::new(rand::random(), tx_order_signature, accumulator_info, 0);
+    LedgerTransaction::new_l2_tx(rooch_transaction, random_sequence_info)
+}
+
+pub fn random_ledger_transaction_with_order(
+    tx_order: u64,
+    keypair: &RoochKeyPair,
+) -> LedgerTransaction {
+    let mut rooch_transaction = random_rooch_transaction();
+    let tx_hash = rooch_transaction.tx_hash();
+    let tx_order_signature = LedgerTransaction::sign_tx_order(tx_order, tx_hash, keypair);
+    let accumulator_info = random_accumulator_info();
+    let random_sequence_info =
+        TransactionSequenceInfo::new(tx_order, tx_order_signature, accumulator_info, 0);
     LedgerTransaction::new_l2_tx(rooch_transaction, random_sequence_info)
 }
 

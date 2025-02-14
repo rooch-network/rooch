@@ -16,13 +16,13 @@ use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor, LocalActorRef};
 use function_name::named;
 use moveos_eventbus::bus::EventData;
-use moveos_types::h256::{self, H256};
+use moveos_types::h256::H256;
 use prometheus::Registry;
 use rooch_event::actor::{EventActor, EventActorSubscribeMessage};
 use rooch_event::event::ServiceStatusEvent;
 use rooch_store::transaction_store::TransactionStore;
 use rooch_store::RoochStore;
-use rooch_types::crypto::{RoochKeyPair, Signature};
+use rooch_types::crypto::RoochKeyPair;
 use rooch_types::sequencer::SequencerInfo;
 use rooch_types::service_status::ServiceStatus;
 use rooch_types::transaction::{LedgerTransaction, LedgerTxData};
@@ -133,7 +133,8 @@ impl SequencerActor {
         let tx_order = self.last_sequencer_info.last_order + 1;
 
         let tx_hash = tx_data.tx_hash();
-        let tx_order_signature = sign_tx_order(tx_order, tx_hash, &self.sequencer_key);
+        let tx_order_signature =
+            LedgerTransaction::sign_tx_order(tx_order, tx_hash, &self.sequencer_key);
 
         // Calc transaction accumulator
         let _tx_accumulator_root = self.tx_accumulator.append(vec![tx_hash].as_slice())?;
@@ -163,15 +164,6 @@ impl SequencerActor {
 
         Ok(tx)
     }
-}
-
-pub fn sign_tx_order(tx_order: u64, tx_hash: H256, sequencer_key: &RoochKeyPair) -> Vec<u8> {
-    let mut witness_data = tx_hash.as_ref().to_vec();
-    witness_data.extend(tx_order.to_le_bytes().iter());
-    let witness_hash = h256::sha3_256_of(&witness_data);
-    Signature::sign(&witness_hash.0, sequencer_key)
-        .as_ref()
-        .to_vec()
 }
 
 #[async_trait]

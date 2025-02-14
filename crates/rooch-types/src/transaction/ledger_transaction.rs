@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{RoochTransaction, TransactionSequenceInfo};
+use crate::crypto::{RoochKeyPair, Signature};
 use crate::{
     address::RoochAddress,
     multichain_id::{MultiChainID, RoochMultiChainID},
@@ -10,6 +11,7 @@ use accumulator::accumulator_info::AccumulatorInfo;
 use anyhow::Result;
 use bitcoin::hashes::Hash;
 use core::fmt;
+use moveos_types::h256;
 use moveos_types::h256::H256;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
@@ -221,5 +223,15 @@ impl LedgerTransaction {
         );
 
         LedgerTransaction::new(tx_data, tx_sequence_info)
+    }
+
+    /// Sign the tx order with the sequencer key.
+    pub fn sign_tx_order(tx_order: u64, tx_hash: H256, sequencer_key: &RoochKeyPair) -> Vec<u8> {
+        let mut witness_data = tx_hash.as_ref().to_vec();
+        witness_data.extend(tx_order.to_le_bytes().iter());
+        let witness_hash = h256::sha3_256_of(&witness_data);
+        Signature::sign(&witness_hash.0, sequencer_key)
+            .as_ref()
+            .to_vec()
     }
 }
