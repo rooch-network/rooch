@@ -50,7 +50,8 @@ impl PackCommand {
             tx_order_end,
             &tx_list,
             sequencer_keypair,
-        );
+        )?;
+        // ensure the batch is valid
         batch.verify(true)?;
 
         let segments = ChunkV0::from(batch).to_segments(DEFAULT_MAX_SEGMENT_SIZE);
