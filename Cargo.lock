@@ -27,7 +27,7 @@ dependencies = [
  "proptest",
  "proptest-derive",
  "rand 0.8.5",
- "rand_core 0.6.4",
+ "rand_core 0.9.0",
  "serde 1.0.216",
  "tracing",
 ]
