@@ -204,7 +204,7 @@ async fn get_tx_list_from_chunk(
     let chunk = chunk_from_segments(segments)?;
     let batch = chunk.get_batches().into_iter().next().unwrap();
     batch.verify(true)?;
-    Ok(batch.get_tx_list())
+    batch.get_tx_list()
 }
 
 async fn get_segment(

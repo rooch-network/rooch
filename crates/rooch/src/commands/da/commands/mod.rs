@@ -235,7 +235,7 @@ pub(crate) fn get_tx_list_from_chunk(
     let chunk = chunk_from_segments(segments)?;
     let batch = chunk.get_batches().into_iter().next().unwrap();
     batch.verify(verify_order)?;
-    Ok(batch.get_tx_list())
+    batch.get_tx_list()
 }
 
 pub(crate) fn build_rooch_db(

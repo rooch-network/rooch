@@ -119,7 +119,7 @@ impl DABatch {
         tx_list: &Vec<LedgerTransaction>,
         sequencer_key: RoochKeyPair,
     ) -> anyhow::Result<Self> {
-        // fast check before signing
+        // Verify transaction ordering constraints before signing
         verify_tx_order(block_number, tx_list, tx_order_start, tx_order_end)?;
 
         let tx_list_bytes = bcs::to_bytes(tx_list).expect("encode tx_list should success");
@@ -164,7 +164,7 @@ impl DABatch {
     }
 
     fn verify_order_and_signature(&self) -> anyhow::Result<()> {
-        let tx_list = self.get_tx_list();
+        let tx_list = self.get_tx_list()?;
         verify_tx_order(
             self.meta.block_range.block_number,
             &tx_list,
@@ -184,8 +184,9 @@ impl DABatch {
         Ok(())
     }
 
-    pub fn get_tx_list(&self) -> Vec<LedgerTransaction> {
-        bcs::from_bytes(&self.tx_list_bytes).expect("decode tx_list should success")
+    pub fn get_tx_list(&self) -> anyhow::Result<Vec<LedgerTransaction>> {
+        let tx_list: Vec<LedgerTransaction> = bcs::from_bytes(&self.tx_list_bytes)?;
+        Ok(tx_list)
     }
 }
 
