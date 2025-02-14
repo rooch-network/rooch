@@ -70,4 +70,8 @@ export class RoochHTTPTransport implements RoochTransport {
 
     return data.result
   }
+
+  destroy(): void {
+    // HTTP is stateless, no cleanup needed
+  }
 }
