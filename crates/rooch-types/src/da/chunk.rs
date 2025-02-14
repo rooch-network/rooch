@@ -176,8 +176,7 @@ impl ChunkV0 {
 mod tests {
     use super::*;
     use crate::crypto::RoochKeyPair;
-    use crate::test_utils::random_ledger_transaction;
-    use crate::transaction::LedgerTransaction;
+    use crate::test_utils::random_ledger_transaction_with_order;
 
     #[test]
     fn test_chunk_v0() {
@@ -185,9 +184,10 @@ mod tests {
         let keypair = RoochKeyPair::generate_secp256k1();
 
         let tx_list = (0..tx_cnt)
-            .map(|_| random_ledger_transaction())
+            .map(|i| random_ledger_transaction_with_order(i as u64 + 1, &keypair))
             .collect::<Vec<_>>();
-        let batch = DABatch::new(123, 56, 78, &tx_list, keypair);
+        let batch =
+            DABatch::new(123, 1, 128, &tx_list, keypair).expect("create batch should success");
 
         let chunk = ChunkV0::from(batch.clone());
         let segments = chunk.to_segments(1023);
@@ -196,11 +196,8 @@ mod tests {
         let batches = chunk.get_batches();
         let act_batch = batches.first().unwrap();
         assert_eq!(act_batch, &batch);
-
-        let act_tx_list: Vec<LedgerTransaction> =
-            bcs::from_bytes(&act_batch.tx_list_bytes).expect("decode tx_list should success");
-        assert_eq!(tx_list, act_tx_list);
-
-        assert!(act_batch.verify(false).is_ok())
+        // should not compare act_tx_list and tx_list directly, because tx_hash field has been updated when making batch,
+        // after serialization and deserialization, tx_hash will be dropped.
+        assert!(act_batch.verify(true).is_ok())
     }
 }

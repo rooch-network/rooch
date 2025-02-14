@@ -10392,7 +10392,6 @@ dependencies = [
  "rooch-rpc-api",
  "rooch-rpc-client",
  "rooch-rpc-server",
- "rooch-sequencer",
  "rooch-store",
  "rooch-types",
  "rpassword",

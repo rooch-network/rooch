@@ -4,8 +4,8 @@
 use crate::cli_types::WalletContextOptions;
 use crate::utils::get_sequencer_keypair;
 use moveos_types::h256::H256;
-use rooch_sequencer::actor::sequencer::sign_tx_order;
 use rooch_types::error::RoochResult;
+use rooch_types::transaction::LedgerTransaction;
 
 /// Get transactions by hashes
 #[derive(Debug, clap::Parser)]
@@ -25,7 +25,8 @@ impl SignOrderCommand {
     pub fn execute(self) -> RoochResult<String> {
         let sequencer_keypair =
             get_sequencer_keypair(self.context_options, self.sequencer_account)?;
-        let tx_order_sign = sign_tx_order(self.tx_order, self.tx_hash, &sequencer_keypair);
+        let tx_order_sign =
+            LedgerTransaction::sign_tx_order(self.tx_order, self.tx_hash, &sequencer_keypair);
         let tx_order_sign_str = serde_json::to_string(&tx_order_sign)?;
         Ok(tx_order_sign_str)
     }

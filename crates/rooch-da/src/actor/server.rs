@@ -302,7 +302,7 @@ impl Submitter {
             tx_order_end,
             &tx_list,
             self.sequencer_key.copy(),
-        );
+        )?;
         let batch_meta = batch.meta.clone();
         let meta_signature = batch.meta_signature.clone();
         let batch_hash = batch.get_hash();
