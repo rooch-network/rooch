@@ -12,13 +12,9 @@ npm i @roochnetwork/rooch-sdk
 
 ## Connecting to Rooch Network
 
-The JsonRpcProvider class provides a connection to the JSON-RPC Server and should be used for all read-only operations. The default URLs to connect with the RPC server are:
+The SDK supports both HTTP and WebSocket connections. You can choose the appropriate transport based on your needs:
 
-- local: http://127.0.0.1:6767
-- DevNet: https://dev-seed.rooch.network::443
-- TestNet: https://test-seed.rooch.network
-
-For local development, you can run cargo run server start to start a local network. Refer to this guide for more information.
+### HTTP Connection (Default)
 
 ```typescript
 import { RoochClient, getRoochNodeUrl } from '@roochnetwork/rooch-sdk'
@@ -34,20 +30,47 @@ await client.getBalances({
 })
 ```
 
-You can also construct your own in custom connections, with the URL for your own network
+### WebSocket Connection
 
 ```typescript
-import { RoochClient } from '@roochnetwork/rooch-sdk'
+import { RoochClient, RoochWebSocketTransport, getRoochNodeUrl } from '@roochnetwork/rooch-sdk'
 
-const client = new RoochClient({
-  url: 'http://127.0.0.1:6767',
+// Create WebSocket transport with custom options
+const wsTransport = new RoochWebSocketTransport({
+  url: getRoochNodeUrl('testnet'),
+  reconnectDelay: 1000, // Delay between reconnection attempts (default: 1000ms)
+  maxReconnectAttempts: 5, // Maximum number of reconnection attempts (default: 5)
+  requestTimeout: 30000, // Request timeout (default: 30000ms)
+  connectionReadyTimeout: 5000, // Connection ready timeout (default: 5000ms)
 })
 
-// get balances
+// Create client with WebSocket transport
+const client = new RoochClient({
+  transport: wsTransport
+})
+
+// Use client as normal
 await client.getBalances({
   owner: '',
 })
+
+// Clean up resources when done
+client.destroy()
 ```
+
+The WebSocket transport provides additional features:
+- Automatic reconnection on connection loss
+- Configurable timeouts and retry attempts
+- Connection state management
+- Resource cleanup
+
+You can customize the WebSocket behavior through the following options:
+- `url`: WebSocket endpoint URL (required)
+- `reconnectDelay`: Delay between reconnection attempts in milliseconds
+- `maxReconnectAttempts`: Maximum number of reconnection attempts
+- `requestTimeout`: Timeout for individual requests
+- `connectionReadyTimeout`: Timeout for waiting for connection to be ready
+- `protocols`: WebSocket sub-protocols (optional)
 
 ## Writing APIs
 
