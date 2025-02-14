@@ -104,7 +104,7 @@ impl RoochAPIServer for RoochServer {
         debug!("send_raw_transaction payload: {:?}", payload);
         let mut tx = bcs::from_bytes::<RoochTransaction>(&payload.0)?;
         info!(
-            "send_raw_transaction tx sender:{:?}, hash:{}",
+            "send_raw_transaction tx sender:{:?}, hash:{:?}",
             tx.sender(),
             tx.tx_hash()
         );

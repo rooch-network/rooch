@@ -183,7 +183,7 @@ impl SignCommand {
     fn print_tx_details(input: &SignInput) {
         let tx_data = |tx_data: &RoochTransactionData| -> String {
             format!(
-                " Sender: {}\n Sequence number: {}\n Chain id: {}\n Max gas amount: {}\n Action: {}\n Transaction hash: {}\n",
+                " Sender: {}\n Sequence number: {}\n Chain id: {}\n Max gas amount: {}\n Action: {}\n Transaction hash: {:?}\n",
                 tx_data.sender,
                 tx_data.sequence_number,
                 tx_data.chain_id,

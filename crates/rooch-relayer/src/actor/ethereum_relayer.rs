@@ -46,7 +46,7 @@ impl EthereumRelayer {
                 }
                 let block_header = BlockHeader::try_from(&block)?;
                 info!(
-                    "EthereumRelayer process block, hash: {}, number: {}, timestamp: {}",
+                    "EthereumRelayer process block, hash: {:?}, number: {}, timestamp: {}",
                     block_hash, block_header.number, block_header.timestamp
                 );
                 let l1_block = L1BlockWithBody {

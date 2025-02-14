@@ -184,7 +184,7 @@ impl MoveOSStore {
 
         if tracing::enabled!(tracing::Level::DEBUG) {
             tracing::debug!(
-                "handle_tx_output: tx_hash: {}, state_root: {}, size: {}, gas_used: {}, status: {:?}",
+                "handle_tx_output: tx_hash: {:?}, state_root: {}, size: {}, gas_used: {}, status: {:?}",
                 tx_hash,
                 new_state_root,
                 size,

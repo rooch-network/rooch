@@ -260,7 +260,7 @@ impl MoveOS {
         let tx_hash = ctx.tx_hash();
         if tracing::enabled!(tracing::Level::DEBUG) {
             tracing::debug!(
-                "execute tx(sender:{}, hash:{}, action:{})",
+                "execute tx(sender:{}, hash:{:?}, action:{})",
                 ctx.sender(),
                 tx_hash,
                 action
@@ -308,7 +308,7 @@ impl MoveOS {
                 let status = VMStatus::Executed;
                 if tracing::enabled!(tracing::Level::DEBUG) {
                     tracing::debug!(
-                        "execute_action ok tx(hash:{}) vm_status:{:?}",
+                        "execute_action ok tx(hash:{:?}) vm_status:{:?}",
                         tx_hash,
                         status
                     );
@@ -318,7 +318,7 @@ impl MoveOS {
             Err(vm_err) => {
                 if tracing::enabled!(tracing::Level::WARN) {
                     tracing::warn!(
-                        "execute_action error tx(hash:{}) vm_err:{:?} need respawn session.",
+                        "execute_action error tx(hash:{:?}) vm_err:{:?} need respawn session.",
                         tx_hash,
                         vm_err
                     );
