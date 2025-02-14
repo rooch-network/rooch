@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+import WebSocket from 'ws'
 import { JsonRpcError } from './error.js'
 import { RoochTransport, RoochTransportRequestOptions } from './transportInterface.js'
 
@@ -11,6 +12,7 @@ export interface RoochWebSocketTransportOptions {
   reconnectDelay?: number
   maxReconnectAttempts?: number
   requestTimeout?: number
+  connectionReadyTimeout?: number
 }
 
 interface WsRequest {
@@ -30,6 +32,7 @@ export class RoochWebSocketTransport implements RoochTransport {
   readonly #maxReconnectAttempts: number
   readonly #reconnectDelay: number
   readonly #requestTimeout: number
+  readonly #connectionReadyTimeout: number
   readonly #WebSocketImpl: typeof WebSocket
 
   constructor(options: RoochWebSocketTransportOptions) {
@@ -37,6 +40,7 @@ export class RoochWebSocketTransport implements RoochTransport {
     this.#maxReconnectAttempts = options.maxReconnectAttempts ?? 5
     this.#reconnectDelay = options.reconnectDelay ?? 1000
     this.#requestTimeout = options.requestTimeout ?? 30000
+    this.#connectionReadyTimeout = options.connectionReadyTimeout ?? 5000
     this.#WebSocketImpl = options.WebSocket ?? WebSocket
     this.#connect()
   }
@@ -55,7 +59,7 @@ export class RoochWebSocketTransport implements RoochTransport {
       this.#handleReconnect()
     }
 
-    this.#ws.onmessage = (event) => {
+    this.#ws.onmessage = (event: any) => {
       try {
         const response = JSON.parse(event.data)
         const request = this.#pendingRequests.get(response.id)
@@ -92,7 +96,20 @@ export class RoochWebSocketTransport implements RoochTransport {
 
   async request<T>(input: RoochTransportRequestOptions): Promise<T> {
     if (!this.#ws || this.#ws.readyState !== WebSocket.OPEN) {
-      throw new Error('WebSocket is not connected')
+      const startTime = Date.now()
+      while (true) {
+        if (this.#ws?.readyState === WebSocket.OPEN) break
+
+        if (Date.now() - startTime >= this.#connectionReadyTimeout) {
+          throw new Error(`WebSocket connection not ready within ${this.#connectionReadyTimeout}ms`)
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 100))
+
+        if (this.#ws?.readyState === WebSocket.CLOSED) {
+          this.#connect()
+        }
+      }
     }
 
     return new Promise((resolve, reject) => {
@@ -124,8 +141,16 @@ export class RoochWebSocketTransport implements RoochTransport {
     })
   }
 
-  disconnect(): void {
-    this.#ws?.close()
-    this.#rejectAllPending(new Error('WebSocket disconnected'))
+  destroy(): void {
+    this.disconnect()
+  }
+
+  // Make disconnect private since we now have destroy()
+  private disconnect(): void {
+    if (this.#ws) {
+      this.#ws.close()
+      this.#rejectAllPending(new Error('WebSocket disconnected'))
+      this.#ws = null
+    }
   }
 }

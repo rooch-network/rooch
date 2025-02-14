@@ -687,4 +687,8 @@ export class RoochClient {
       hasNextPage: statePage.has_next_page,
     }
   }
+
+  destroy(): void {
+    this.transport.destroy()
+  }
 }
