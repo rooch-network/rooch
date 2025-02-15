@@ -1,4 +1,5 @@
 import type { UserCoin } from 'src/components/swap/types';
+import type { UserCoin as GasUserCoin } from 'src/components/gas-swap/types';
 
 import numeral from 'numeral';
 import { BigNumber } from 'bignumber.js';
@@ -116,7 +117,7 @@ export function fromDustToPrecision(
   return real.toFixed(0);
 }
 
-export function formatCoin(coin: UserCoin, useBalance?: boolean) {
+export function formatCoin(coin: UserCoin | GasUserCoin, useBalance?: boolean) {
   return fromDustToPrecision(useBalance ? coin.balance : coin.amount, coin.decimals);
 }
 
