@@ -1,23 +1,20 @@
+import type { BalanceInfoView, AnnotatedMoveStructView } from '@roochnetwork/rooch-sdk';
+
+import { useState, useEffect } from 'react';
 import {
-  useCurrentAddress,
   useRoochClient,
+  useCurrentAddress,
   useRoochClientQuery,
 } from '@roochnetwork/rooch-sdk-kit';
-import { useEffect, useState } from 'react';
-import type { AnnotatedMoveStructView, BalanceInfoView } from '@roochnetwork/rooch-sdk';
-import { useNetworkVariable } from '../../../hooks/use-networks';
 
-export type UseTokenPairReturn = {
-  tokenPairs: Map<string, TokenPairType>;
-  isPending: boolean;
-};
+import { useNetworkVariable } from 'src/hooks/use-networks';
 
 type TokenPairType = {
   x: BalanceInfoView;
   y: BalanceInfoView[];
 };
 
-export function useTokenPair(): UseTokenPairReturn {
+export function useTokenPair() {
   const client = useRoochClient();
   const currentAddress = useCurrentAddress();
   const dex = useNetworkVariable('dex');
@@ -63,7 +60,7 @@ export function useTokenPair(): UseTokenPairReturn {
 
         result.forEach((item) => {
           // insert
-          const key = item.x.symbol;
+          const key = item.x.coin_type;
           if (!pairMap.has(key)) {
             pairMap.set(key, {
               x: item.x,
@@ -74,7 +71,7 @@ export function useTokenPair(): UseTokenPairReturn {
           }
 
           // reverse
-          const key1 = item.y.symbol;
+          const key1 = item.y.coin_type;
           if (!pairMap.has(key1)) {
             pairMap.set(key1, {
               x: item.y,

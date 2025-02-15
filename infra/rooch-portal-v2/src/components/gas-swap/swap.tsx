@@ -17,8 +17,7 @@ import type { SwapProps } from './types';
 
 export default function Swap({
   loading,
-  availableFromCoins,
-  availableToCoins,
+  coins,
   fromCoin,
   toCoin,
   interactiveMode,
@@ -56,21 +55,21 @@ export default function Swap({
   onPropose,
 }: SwapProps) {
   const disabledCoins: string[] = useMemo(
-    () => [fromCoin?.coin_type || '', toCoin?.coin_type || ''],
-    [fromCoin?.coin_type, toCoin?.coin_type]
+    () => [fromCoin?.coinType || '', toCoin?.coinType || ''],
+    [fromCoin?.coinType, toCoin?.coinType]
   );
   const { memPool } = useNetworkVariable('gasMarket');
 
   const showDetails = useMemo(
     () =>
       !!(
-        fromCoin?.coin_type &&
+        fromCoin?.coinType &&
         fromCoin?.amount &&
-        toCoin?.coin_type &&
+        toCoin?.coinType &&
         toCoin?.amount &&
         interactiveMode
       ),
-    [fromCoin?.coin_type, fromCoin?.amount, toCoin?.coin_type, toCoin?.amount, interactiveMode]
+    [fromCoin?.coinType, fromCoin?.amount, toCoin?.coinType, toCoin?.amount, interactiveMode]
   );
 
   const proposeButtonContent: { text: string; disabled?: boolean } = useMemo(() => {
@@ -81,7 +80,7 @@ export default function Swap({
       };
     }
 
-    if ((Number(fromCoin?.amount) || 0) > (Number(fromCoin?.balance) || 0)) {
+    if ((fromCoin?.amount || 0) > (fromCoin?.balance || 0)) {
       return {
         text: 'Insufficient balance',
         disabled: true,
@@ -106,26 +105,15 @@ export default function Swap({
     };
   }, [validationError, fromCoin?.amount, fromCoin?.balance, slippagePercent, showDetails]);
 
-  const sortedBalanceAvailableFromCoins = useMemo(
+  const sortedBalanceCoins = useMemo(
     () =>
-      availableFromCoins.sort((a, b) => {
-        if (Number(a.balance) === 0) {
+      coins.sort((a, b) => {
+        if (a.balance === 0n) {
           return 1;
         }
         return -1;
       }),
-    [availableFromCoins]
-  );
-
-  const sortedBalanceAvailableToCoins = useMemo(
-    () =>
-      availableToCoins.sort((a, b) => {
-        if (Number(a.balance) === 0) {
-          return 1;
-        }
-        return -1;
-      }),
-    [availableToCoins]
+    [coins]
   );
 
   return (
@@ -150,13 +138,12 @@ export default function Swap({
           <SwapCoinInput
             hiddenValue={hiddenValue}
             fixedSwap={fixedSwap}
-            coins={sortedBalanceAvailableFromCoins}
+            coins={coins}
             coin={fromCoin}
             type="from"
             interactiveMode={interactiveMode}
             disabledCoins={disabledCoins}
             onChange={(coin, source) => {
-              console.log('🚀 ~ swap.tsx:159 ~ coin:', coin);
               onSwap({
                 fromCoin: coin,
                 toCoin,
@@ -168,7 +155,7 @@ export default function Swap({
           <SwapCoinInput
             hiddenValue={hiddenValue}
             fixedSwap={fixedSwap}
-            coins={sortedBalanceAvailableToCoins}
+            coins={sortedBalanceCoins}
             coin={toCoin}
             type="to"
             easyMode={easyMode}
