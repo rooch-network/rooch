@@ -13,29 +13,20 @@ A web interface for the Onchain AI Chat application built with React, TypeScript
 ## Prerequisites
 
 - Node.js (v18 or later)
-- npm or pnpm
+- npm
 - Rooch Network local node running
 
 ## Quick Start
 
 1. Install dependencies:
 ```bash
-pnpm install
+npm install
 ```
 
-2. Set up environment variables:
-```bash
-cp .env.example .env
-```
-Update `.env` with your configuration:
-```plaintext
-VITE_ROOCH_RPC_URL=http://localhost:50051
-VITE_PACKAGE_ID=your_package_id_here
-```
 
-3. Start development server:
+2. Start development server:
 ```bash
-pnpm dev
+npm run dev
 ```
 
 ## Project Structure
@@ -96,10 +87,10 @@ export default tseslint.config({
 
 ### Available Scripts
 
-- `pnpm dev` - Start development server
-- `pnpm build` - Build for production
-- `pnpm preview` - Preview production build
-- `pnpm lint` - Run ESLint
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run preview` - Preview production build
+- `npm run lint` - Run ESLint
 
 ## Contributing
 
@@ -111,4 +102,4 @@ export default tseslint.config({
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the Apache2 License - see the LICENSE file for details.

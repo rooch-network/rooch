@@ -1,13 +1,16 @@
 module onchain_ai_chat::message {
     use std::string::String;
     use moveos_std::timestamp;
+    use moveos_std::object::{Self, ObjectID};
 
     /// Message types
     const MESSAGE_TYPE_USER: u8 = 0;
     const MESSAGE_TYPE_AI: u8 = 1;
 
-    #[data_struct]
-    struct Message has store, copy, drop {
+    /// The message object structure
+    /// The message object is owned by the sender
+    /// But it is no `store` ability, so the owner can't transfer it to another account
+    struct Message has key, copy, drop {
         id: u64,
         sender: address,
         content: String,
@@ -15,15 +18,19 @@ module onchain_ai_chat::message {
         message_type: u8,
     }
 
-    // Constructor
-    public fun new_message(id: u64, sender: address, content: String, message_type: u8): Message {
-        Message {
+    /// Constructor - message belongs to the sender
+    public fun new_message(id: u64, sender: address, content: String, message_type: u8): ObjectID {
+        let message = Message {
             id,
             sender,
             content,
             timestamp: timestamp::now_milliseconds(),
             message_type,
-        }
+        };
+        let msg_obj = object::new(message);
+        let msg_id = object::id(&msg_obj);
+        object::transfer_extend(msg_obj, sender);
+        msg_id
     }
 
     // Getters
@@ -54,11 +61,15 @@ module onchain_ai_chat::message {
     #[test]
     fun test_message_creation() {
         use std::string;
+ 
+        let msg_id = new_message(1, @0x42, string::utf8(b"test content"), type_user());
+        let msg_obj = object::borrow_object<Message>(msg_id);
+        let msg = object::borrow(msg_obj);
         
-        let msg = new_message(1, @0x1, string::utf8(b"test content"), type_user());
-        assert!(get_id(&msg) == 1, 0);
-        assert!(get_content(&msg) == string::utf8(b"test content"), 1);
-        assert!(get_type(&msg) == type_user(), 2);
-        assert!(get_sender(&msg) == @0x1, 3);
+        assert!(get_id(msg) == 1, 0);
+        assert!(get_content(msg) == string::utf8(b"test content"), 1);
+        assert!(get_type(msg) == type_user(), 2);
+        assert!(get_sender(msg) == @0x42, 3);
+        assert!(object::owner(msg_obj) == @0x42, 4);
     }
 }

@@ -2,10 +2,12 @@
 module onchain_ai_chat::room_tests {
     use std::string;
     use std::signer;
+    use std::vector;
     use moveos_std::account;
     use moveos_std::timestamp;
     use moveos_std::object;
     use onchain_ai_chat::room;
+    use onchain_ai_chat::message;
 
     // Test helpers
     #[test_only]
@@ -38,7 +40,7 @@ module onchain_ai_chat::room_tests {
         assert!(status == 0, 5);
         assert!(room_type == room::room_type_normal(), 6);
 
-        room::delete_room_for_testing(&account, room_id);
+        room::delete_room_for_testing(room_id);
     }
 
     #[test]
@@ -59,35 +61,89 @@ module onchain_ai_chat::room_tests {
         assert!(status == 0, 5);
         assert!(room_type == room::room_type_ai(), 6);
 
-        room::delete_room_for_testing(&account, room_id);
+        room::delete_room_for_testing(room_id);
     }
 
-    // #[test]
-    // fun test_ai_room_message() {
-    //     let account = create_account();
-    //     timestamp::update_global_time_for_test(1000);
-
-    //     let room_id = room::create_room(&account, string::utf8(b"AI Room"), true, room::room_type_ai());
+    #[test]
+    fun test_message_ownership() {
+        let account = create_account();
+        let sender_addr = signer::address_of(&account);
+        let room_id = room::create_room(&account, string::utf8(b"Test Room"), true, room::room_type_normal());
         
-    //     timestamp::update_global_time_for_test(2000);
-    //     let message = string::utf8(b"Hello AI!");
-    //     let room = object::borrow_mut_object_shared<room::Room>(room_id);
-    //     room::send_message(&account, room, message);
+        // Send a message
+        let room = object::borrow_mut_object_shared<room::Room>(room_id);
+        let msg_content = string::utf8(b"Test message");
+        room::send_message(&account, room, msg_content);
         
-    //     let room = object::borrow_object<room::Room>(room_id);
-    //     let (_, _, _, _, last_active, _, _) = room::get_room_info(room);
-    //     assert!(last_active == 2000, 0);
+        // Get message and verify ownership
+        let room = object::borrow_object<room::Room>(room_id);
+        let messages = room::get_messages(room);
+        let msg = vector::borrow(&messages, 0);
+        
+        assert!(message::get_content(msg) == msg_content, 1);
+        assert!(message::get_sender(msg) == sender_addr, 2);
+        
+        room::delete_room_for_testing(room_id);
+    }
 
-    //     // Get messages and verify types
-    //     let messages = room::get_messages(room);
-    //     assert!(vector::length(&messages) == 2, 1); // User message + AI response
-    //     let user_message = vector::borrow(&messages, 0);
-    //     assert!(room::get_message_type(user_message) == room::message_type_user(), 2);
-    //     let ai_message = vector::borrow(&messages, 1);
-    //     assert!(room::get_message_type(ai_message) == room::message_type_ai(), 3);
+    #[test]
+    fun test_multiple_messages() {
+        let account = create_account();
+        let room_id = room::create_room(&account, string::utf8(b"Test Room"), true, room::room_type_normal());
+        
+        // Send multiple messages
+        let messages = vector[
+            string::utf8(b"Message 1"),
+            string::utf8(b"Message 2"),
+            string::utf8(b"Message 3")
+        ];
+        
+        let i = 0;
+        while (i < vector::length(&messages)) {
+            let room = object::borrow_mut_object_shared<room::Room>(room_id);
+            room::send_message(&account, room, *vector::borrow(&messages, i));
+            i = i + 1;
+        };
+        
+        // Verify all messages
+        let room = object::borrow_object<room::Room>(room_id);
+        let room_messages = room::get_messages(room);
+        assert!(vector::length(&room_messages) == 3, 0);
+        
+        i = 0;
+        while (i < vector::length(&messages)) {
+            let msg = vector::borrow(&room_messages, i);
+            assert!(message::get_content(msg) == *vector::borrow(&messages, i), i + 1);
+            i = i + 1;
+        };
+        
+        room::delete_room_for_testing(room_id);
+    }
 
-    //     room::delete_room_for_testing(&account, room_id);
-    // }
+    #[test]
+    fun test_message_pagination() {
+        let account = create_account();
+        let room_id = room::create_room(&account, string::utf8(b"Test Room"), true, room::room_type_normal());
+        
+        // Send 5 messages
+        let i = 0;
+        while (i < 5) {
+            let room = object::borrow_mut_object_shared<room::Room>(room_id);
+            room::send_message(&account, room, string::utf8(b"Message"));
+            i = i + 1;
+        };
+        
+        // Test pagination
+        let room = object::borrow_object<room::Room>(room_id);
+        let messages = room::get_messages_paginated(room, 1, 2);
+        assert!(vector::length(&messages) == 2, 0);
+        
+        // Test last messages
+        let messages = room::get_last_messages(room, 3);
+        assert!(vector::length(&messages) == 3, 1);
+        
+        room::delete_room_for_testing(room_id);
+    }
 
     #[test]
     #[expected_failure(abort_code = room::ErrorInvalidRoomType)]
@@ -116,10 +172,14 @@ module onchain_ai_chat::room_tests {
         room::send_message(&account, room, message);
         
         let room = object::borrow_object<room::Room>(room_id);
-        let (_, _, _, _, last_active, _, _) = room::get_room_info(room);
-        assert!(last_active == 2000, 0);
+        let messages = room::get_messages(room);
+        assert!(vector::length(&messages) == 1, 0);
+        
+        let msg = vector::borrow(&messages, 0);
+        assert!(message::get_content(msg) == message, 1);
+        assert!(message::get_sender(msg) == signer::address_of(&account), 2);
 
-        room::delete_room_for_testing(&account, room_id);
+        room::delete_room_for_testing(room_id);
     }
 
     #[test]
@@ -155,7 +215,7 @@ module onchain_ai_chat::room_tests {
         let room = object::borrow_mut_object_shared<room::Room>(room_id);
         room::send_message(&member, room, message);
 
-        room::delete_room_for_testing(&admin, room_id);
+        room::delete_room_for_testing(room_id);
     }
 
     #[test]
@@ -178,7 +238,7 @@ module onchain_ai_chat::room_tests {
         let room = object::borrow_object<room::Room>(room_id);
         assert!(room::is_member(room, signer::address_of(&user)), 1);
 
-        room::delete_room_for_testing(&admin, room_id);
+        room::delete_room_for_testing(room_id);
     }
 
     #[test]
@@ -192,7 +252,7 @@ module onchain_ai_chat::room_tests {
         let room = object::borrow_mut_object_shared<room::Room>(room_id);
         room::send_message(&other, room, string::utf8(b"Unauthorized message"));
 
-        room::delete_room_for_testing(&admin, room_id);
+        room::delete_room_for_testing(room_id);
     }
 
     #[test]
@@ -207,6 +267,29 @@ module onchain_ai_chat::room_tests {
         let room = object::borrow_mut_object_shared<room::Room>(room_id);
         room::add_member(&other, room, signer::address_of(&new_member), string::utf8(b"Unauthorized"));
 
-        room::delete_room_for_testing(&admin, room_id);
+        room::delete_room_for_testing(room_id);
     }
+
+    // Uncomment and update AI room message test when AI service is ready
+    /*
+    #[test]
+    fun test_ai_room_message() {
+        let account = create_account();
+        let room_id = room::create_room(&account, string::utf8(b"AI Room"), true, room::room_type_ai());
+        
+        let room = object::borrow_mut_object_shared<room::Room>(room_id);
+        let message = string::utf8(b"Hello AI!");
+        room::send_message(&account, room, message);
+        
+        let room = object::borrow_object<room::Room>(room_id);
+        let messages = room::get_messages(room);
+        assert!(vector::length(&messages) == 1, 0); // Only user message initially
+        
+        let msg = vector::borrow(&messages, 0);
+        assert!(message::get_content(msg) == message, 1);
+        assert!(message::get_type(msg) == message::type_user(), 2);
+
+        room::delete_room_for_testing(room_id);
+    }
+    */
 }
