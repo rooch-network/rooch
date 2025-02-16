@@ -71,7 +71,7 @@ export default function SwapCoinSelectButton({
             borderRadius: '6px',
           }}
         >
-          {coin && <Box component="img" src={coin.icon_url} width={24} />}
+          {coin && <Box component="img" src={coin.icon} width={24} />}
           <Text>{coin ? coin.symbol : 'Select Token'}</Text>
         </Stack>
       ) : (
@@ -95,7 +95,7 @@ export default function SwapCoinSelectButton({
             },
           }}
         >
-          {coin && <Box component="img" src={coin.icon_url} width={24} />}
+          {coin && <Box component="img" src={coin.icon} width={24} />}
           <Text sx={{ flexGrow: 1 }}>{coin ? coin.symbol : 'Select Token'}</Text>
           <Box component="img" src="/assets/icons/swap/chevron-down.svg" />
         </Stack>
@@ -155,7 +155,7 @@ export default function SwapCoinSelectButton({
                 key={index}
                 disablePadding
                 onClick={() => {
-                  if (!disabledCoins.includes(coin.coin_type)) {
+                  if (!disabledCoins.includes(coin.coinType)) {
                     onSelect(coin);
                     setSearch('');
                     setShowModal(false);
@@ -163,13 +163,13 @@ export default function SwapCoinSelectButton({
                 }}
               >
                 <ListItemButton
-                  disabled={disabledCoins.includes(coin.coin_type)}
+                  disabled={disabledCoins.includes(coin.coinType)}
                   sx={{
                     borderRadius: '4px',
                   }}
                 >
                   <ListItemIcon>
-                    <Box component="img" src={coin.icon_url} alt={coin.name} />
+                    <Box component="img" src={coin.icon} alt={coin.name} />
                   </ListItemIcon>
                   <ListItemText>
                     <Typography className="name">{coin.symbol}</Typography>

@@ -132,7 +132,7 @@ function SwapItem({
             spacing={1}
             sx={{ '& img': { width: imageSize, height: imageSize } }}
           >
-            <Box component="img" src={coin.icon_url} />
+            <Box component="img" src={coin.icon} />
             <Typography
               sx={{
                 fontSize: '1.125rem',
