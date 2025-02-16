@@ -88,6 +88,42 @@ fn test_error_on_bad_parameters() {
 }
 
 #[test]
+fn accumulator_pop_unsaved() {
+    let mock_store = MockAccumulatorStore::new();
+    let mock_store_arc = Arc::new(mock_store);
+    let tx_accumulator = MerkleAccumulator::new_empty(mock_store_arc.clone());
+    let leaves = vec![H256::random(), H256::random(), H256::random()];
+    let _root = tx_accumulator.append(&leaves).unwrap();
+    let accumulator_info = tx_accumulator.get_info();
+
+    let num_leaves = accumulator_info.num_leaves;
+    let tx_accumulator_unsaved =
+        MerkleAccumulator::new_with_info(accumulator_info.clone(), mock_store_arc.clone());
+    for i in 0..num_leaves - 1 {
+        let leaf = tx_accumulator_unsaved.get_leaf(i);
+        assert!(leaf.is_err());
+    }
+    // the last leaf should be in frozen_subtree_roots, so it should be found.
+    assert_eq!(
+        leaves[num_leaves as usize - 1],
+        tx_accumulator_unsaved
+            .get_leaf(num_leaves - 1)
+            .unwrap()
+            .unwrap()
+    );
+
+    let unsaved_nodes = tx_accumulator.pop_unsaved_nodes();
+    mock_store_arc.save_nodes(unsaved_nodes.unwrap()).unwrap();
+    let tx_accumulator_saved =
+        MerkleAccumulator::new_with_info(accumulator_info, mock_store_arc.clone());
+    for i in 0..num_leaves {
+        let leaf = tx_accumulator_saved.get_leaf(i);
+        assert!(leaf.is_ok());
+        assert_eq!(leaves[i as usize], leaf.unwrap().unwrap());
+    }
+}
+
+#[test]
 fn test_multiple_chain() {
     let leaves = create_leaves(50..52);
     let mock_store = Arc::new(MockAccumulatorStore::new());
