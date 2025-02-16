@@ -46,7 +46,7 @@ const wsTransport = new RoochWebSocketTransport({
 
 // Create client with WebSocket transport
 const client = new RoochClient({
-  transport: wsTransport
+  transport: wsTransport,
 })
 
 // Use client as normal
@@ -59,12 +59,14 @@ client.destroy()
 ```
 
 The WebSocket transport provides additional features:
+
 - Automatic reconnection on connection loss
 - Configurable timeouts and retry attempts
 - Connection state management
 - Resource cleanup
 
 You can customize the WebSocket behavior through the following options:
+
 - `url`: WebSocket endpoint URL (required)
 - `reconnectDelay`: Delay between reconnection attempts in milliseconds
 - `maxReconnectAttempts`: Maximum number of reconnection attempts

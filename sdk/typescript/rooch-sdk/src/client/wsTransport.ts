@@ -37,12 +37,21 @@ export class RoochWebSocketTransport implements RoochTransport {
 
   constructor(options: RoochWebSocketTransportOptions) {
     this.#options = options
-    this.#maxReconnectAttempts = options.maxReconnectAttempts ?? 5
+    this.#maxReconnectAttempts = this.#validateMaxReconnectAttempts(
+      options.maxReconnectAttempts ?? 5,
+    )
     this.#reconnectDelay = options.reconnectDelay ?? 1000
     this.#requestTimeout = options.requestTimeout ?? 30000
     this.#connectionReadyTimeout = options.connectionReadyTimeout ?? 5000
     this.#WebSocketImpl = options.WebSocket ?? WebSocket
     this.#connect()
+  }
+
+  #validateMaxReconnectAttempts(attempts: number): number {
+    if (attempts < 0 || attempts > 10) {
+      throw new Error('maxReconnectAttempts must be between 0 and 10')
+    }
+    return attempts
   }
 
   #connect(): void {
