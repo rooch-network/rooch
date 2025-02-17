@@ -133,7 +133,9 @@ impl SequencedTxStore {
             tx.clone(),
             sequencer_info,
             tx_accumulator_unsaved_nodes,
-        )
+        )?;
+        self.tx_accumulator.clear_after_save();
+        Ok(())
     }
 }
 

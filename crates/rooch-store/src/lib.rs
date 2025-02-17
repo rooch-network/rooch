@@ -158,7 +158,6 @@ impl RoochStore {
         sequencer_info: SequencerInfo,
         accumulator_nodes: Option<Vec<AccumulatorNode>>,
     ) -> Result<()> {
-        // TODO use txn GetForUpdate to guard against Read-Write Conflicts (need open rocksdb with TransactionDB)
         let pre_sequencer_info = self.get_sequencer_info()?;
         if let Some(pre_sequencer_info) = pre_sequencer_info {
             if sequencer_info.last_order != pre_sequencer_info.last_order + 1 {
@@ -186,6 +185,7 @@ impl RoochStore {
                 cf_names.push(TX_ACCUMULATOR_NODE_COLUMN_FAMILY_NAME);
             }
         }
+
         inner_store.write_batch_across_cfs(cf_names, write_batch, true)?;
         Ok(())
     }
