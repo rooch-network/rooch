@@ -157,11 +157,18 @@ impl RoochStore {
         tx: LedgerTransaction,
         sequencer_info: SequencerInfo,
         accumulator_nodes: Option<Vec<AccumulatorNode>>,
+        tx_order_checked: bool,
     ) -> Result<()> {
-        let pre_sequencer_info = self.get_sequencer_info()?;
-        if let Some(pre_sequencer_info) = pre_sequencer_info {
+        if !tx_order_checked {
+            let pre_sequencer_info = self
+                .get_sequencer_info()?
+                .ok_or(anyhow::anyhow!("Sequencer info not found"))?;
             if sequencer_info.last_order != pre_sequencer_info.last_order + 1 {
-                return Err(anyhow::anyhow!("Sequencer order is not continuous"));
+                return Err(anyhow::anyhow!(
+                    "Tx order not continuous, expect: {}, actual: {}",
+                    pre_sequencer_info.last_order + 1,
+                    sequencer_info.last_order
+                ));
             }
         }
 

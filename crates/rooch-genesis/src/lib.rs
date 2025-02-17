@@ -472,6 +472,7 @@ impl RoochGenesis {
             ledger_tx.clone(),
             sequencer_info,
             genesis_accumulator_unsaved_nodes,
+            true,
         )?;
         genesis_tx_accumulator.clear_after_save();
 
