@@ -6,6 +6,7 @@ module twitter_binding::tweet_fetcher {
     use moveos_std::json;
     use moveos_std::object::{Self, ObjectID, Object};
     use moveos_std::event;
+    use moveos_std::tx_context;
     
     use twitter_binding::twitter_account;
     use twitter_binding::tweet_v2;
@@ -26,10 +27,17 @@ module twitter_binding::tweet_fetcher {
 
     const MAX_BUFFER_QUEUE_SIZE: u64 = 20;
 
+    /// The minimum balance of the oracle escrow account 20 RGas
+    const MIN_ORACLE_ESCROW_BALANCE: u256 = 20_00000000;
+
+    const NOTIFY_CALLBACK: vector<u8> = b"tweet_fetcher::check_request_queue";
+
     const ErrorInvalidRequestID: u64 = 1;
     const ErrorInvalidResponse: u64 = 2;
     const ErrorTooManyPendingRequests: u64 = 3;
     const ErrorDeprecatedFunction: u64 = 4;
+    /// The oracle escrow balance is not enough, please call `oracles::deposit_to_escrow` to deposit more RGas
+    const ErrorOracleEscrowBalanceNotEnough: u64 = 5;
 
     struct BufferQueue has key {
         // Buffered tweet ids
@@ -175,9 +183,8 @@ module twitter_binding::tweet_fetcher {
         if (vector::contains(&buffer_queue.buffer_queue, &tweet_id)){
             return TWEET_STATUS_IN_BUFFER_QUEUE
         };
-        if (vector::length(&buffer_queue.buffer_queue) == MAX_BUFFER_QUEUE_SIZE){
-            process_buffer_queue();
-        };
+        assert!(vector::length(&buffer_queue.buffer_queue) < MAX_BUFFER_QUEUE_SIZE, ErrorTooManyPendingRequests);
+
         vector::push_back(&mut buffer_queue.buffer_queue, tweet_id);
         TWEET_STATUS_FETCHING
     }
@@ -198,12 +205,38 @@ module twitter_binding::tweet_fetcher {
     }
 
     public entry fun process_buffer_queue(){
+        //Call the oracle callback function to process the request, in case the oracle notfiy does not work
+        check_request_queue();
+        let sender = tx_context::sender();
+        assert!(check_oracle_escrow_balance(sender), ErrorInvalidResponse);
         let buffer_queue = borrow_mut_buffer_queue();
-        if (vector::length(&buffer_queue.buffer_queue) == 0){
+        let buffer_queue_len = vector::length(&buffer_queue.buffer_queue);
+        if (buffer_queue_len == 0){
             return
         };
         let tweet_ids = vector::trim_reverse(&mut buffer_queue.buffer_queue, 0);
         let _batch_fetch_result = batch_fetch_tweets(tweet_ids);
+    }
+
+    public fun check_oracle_escrow_balance(addr: address): bool{
+        let balance = oracles::get_user_balance(addr);
+        balance >= MIN_ORACLE_ESCROW_BALANCE
+    }
+
+    public entry fun deposit_to_oracle_escrow(caller: &signer, amount: u256){
+        oracles::deposit_to_escrow(caller, amount);
+    }
+
+    public entry fun withdraw_from_oracle_escrow(caller: &signer, amount: u256){
+        oracles::withdraw_from_escrow(caller, amount);
+    }
+
+    public entry fun update_notification_gas_allocation(caller: &signer, amount: u256){
+        oracles::update_notification_gas_allocation(caller, @twitter_binding, string::utf8(NOTIFY_CALLBACK), amount);
+    }
+
+    public fun get_notification_gas_allocation(caller_addr: address): u256 {
+        oracles::get_notification_gas_allocation(@twitter_binding, string::utf8(NOTIFY_CALLBACK), caller_addr)
     }
 
     public fun has_buffered_tweets(): bool{
@@ -222,7 +255,7 @@ module twitter_binding::tweet_fetcher {
         //The jq query to parse the tweet
         let pick = string::utf8(PICK);
         let http_request = oracles::build_request(url, method, headers, body);
-        let request_id = oracles::new_request(http_request, pick, ORACLE_ADDRESS, oracles::with_notify(@twitter_binding, b"tweet_fetcher::check_request_queue"));
+        let request_id = oracles::new_request(http_request, pick, ORACLE_ADDRESS, oracles::with_notify(@twitter_binding, string::utf8(NOTIFY_CALLBACK)));
         let fetch_result = BatchFetchResult{
             tweet_ids,
             request_id,
