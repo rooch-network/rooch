@@ -12,6 +12,7 @@ use bitcoin_client::proxy::BitcoinClientProxy;
 use coerce::actor::{context::ActorContext, message::Handler, Actor, LocalActorRef};
 use function_name::named;
 use moveos::moveos::VMPanicError;
+use moveos_types::h256::H256;
 use moveos_types::state::StateChangeSetExt;
 use moveos_types::transaction::VerifiedMoveOSTransaction;
 use prometheus::Registry;
@@ -30,6 +31,7 @@ use rooch_types::{
         LedgerTxData, RoochTransaction,
     },
 };
+use std::io;
 use std::sync::Arc;
 use tracing::{debug, info};
 
@@ -161,6 +163,89 @@ impl PipelineProcessorActor {
         Ok(())
     }
 
+    // sequence tx and public tx to DA
+    async fn sequence_and_public_tx(&mut self, tx_data: LedgerTxData) -> Result<LedgerTransaction> {
+        let ledger_tx_ret = self.sequencer.sequence_transaction(tx_data).await;
+        let mut ledger_tx = match ledger_tx_ret {
+            Ok(v) => v,
+            Err(err) => {
+                if let Some(_io_err) = err.downcast_ref::<io::Error>() {
+                    tracing::error!(
+                        "Sequence transaction failed while io_error occurred then \
+                        set service to Maintenance mode and pause the relayer. error: {:?}",
+                        err
+                    );
+                    self.update_service_status(ServiceStatus::Maintenance).await;
+                }
+                return Err(err);
+            }
+        };
+
+        let tx_order = ledger_tx.sequence_info.tx_order;
+        let public_ret = self
+            .da_server
+            .append_tx(AppendTransactionMessage {
+                tx_order: ledger_tx.sequence_info.tx_order,
+                tx_timestamp: ledger_tx.sequence_info.tx_timestamp,
+            })
+            .await;
+        match public_ret {
+            Ok(_) => Ok(ledger_tx),
+            Err(err) => {
+                tracing::error!(
+                    "Public transaction(tx_order: {}) failed, revert tx soon. error: {:?}",
+                    tx_order,
+                    err
+                );
+                self.rooch_db.revert_tx(ledger_tx.tx_hash())?;
+                Err(err)
+            }
+        }
+    }
+
+    // for non-VM panic error, revert tx avoiding hole between executed tx:
+    // e.g., executed_tx_0, failed_tx_1, executed_tx_3, executed_tx_4.
+    // executed_tx_3 may start with wrong state.
+    // for VM panic error:
+    // 1. L1Block, L1Tx: set service to Maintenance mode and keep tx for debug
+    // 2. L2Tx: revert tx
+    async fn handle_execute_error(
+        &mut self,
+        err: &Error,
+        tx_order: u64,
+        tx_hash: H256,
+        tx_type: &str,
+        details: Option<&str>,
+    ) {
+        if is_vm_panic_error(err) {
+            tracing::error!(
+                    "Execute {} failed while VM panic occurred. error: {:?}, tx_order: {}, tx_hash: {:?}, {}",
+                    tx_type,
+                    err,
+                    tx_order,
+                    tx_hash,
+                    details.unwrap_or("")
+                );
+            if tx_type != "L2Tx" {
+                let _ = self.update_service_status(ServiceStatus::Maintenance).await; // okay to ignore
+                tracing::info!("set service to Maintenance mode and pause the relayer");
+                return;
+            }
+        }
+        let _ = self
+            .da_server
+            .revert_tx(RevertTransactionMessage { tx_order })
+            .await; // if revert public failed, only pause runtime DA state, easy to monitor and restart service will fix it
+        let ret = self.rooch_db.revert_tx(tx_hash);
+        if let Err(e) = ret {
+            tracing::error!(
+                    "Revert tx failed, set service to Maintenance mode and pause the relayer. error: {:?}",
+                    e,
+                );
+            self.update_service_status(ServiceStatus::Maintenance).await;
+        }
+    }
+
     #[named]
     pub async fn execute_l1_block(
         &mut self,
@@ -174,32 +259,27 @@ impl PipelineProcessorActor {
             .start_timer();
 
         let block = l1_block_with_body.block.clone();
-        let block_height = block.block_height;
-
         let moveos_tx = self.executor.validate_l1_block(l1_block_with_body).await?;
-        let ledger_tx = self
-            .sequencer
-            .sequence_transaction(LedgerTxData::L1Block(block))
+        let block_height = block.block_height;
+        let mut ledger_tx = self
+            .sequence_and_public_tx(LedgerTxData::L1Block(block))
             .await?;
-        self.da_server
-            .append_tx(AppendTransactionMessage {
-                tx_order: ledger_tx.sequence_info.tx_order,
-                tx_timestamp: ledger_tx.sequence_info.tx_timestamp,
-            })
-            .await?;
+
         let tx_order = ledger_tx.sequence_info.tx_order;
+        let tx_hash = ledger_tx.tx_hash();
         let size = moveos_tx.ctx.tx_size;
+
         let result = match self.execute_tx(ledger_tx, moveos_tx).await {
             Ok(v) => v,
             Err(err) => {
-                if is_vm_panic_error(&err) {
-                    tracing::error!(
-                        "Execute L1 Block failed while VM panic occurred then \
-                        set service to Maintenance mode and pause the relayer. error: {:?}, block {}, tx order {}",
-                        err, block_height, tx_order
-                    );
-                    self.update_service_status(ServiceStatus::Maintenance).await;
-                }
+                self.handle_execute_error(
+                    &err,
+                    tx_order,
+                    tx_hash,
+                    "L1Block",
+                    Some(&format!("block_height: {}", block_height)),
+                )
+                .await;
                 return Err(err);
             }
         };
@@ -226,30 +306,20 @@ impl PipelineProcessorActor {
             .pipeline_processor_execution_tx_latency_seconds
             .with_label_values(&[fn_name])
             .start_timer();
+
         let moveos_tx = self.executor.validate_l1_tx(l1_tx.clone()).await?;
-        let ledger_tx = self
-            .sequencer
-            .sequence_transaction(LedgerTxData::L1Tx(l1_tx.clone()))
+        let mut ledger_tx = self
+            .sequence_and_public_tx(LedgerTxData::L1Tx(l1_tx))
             .await?;
-        self.da_server
-            .append_tx(AppendTransactionMessage {
-                tx_order: ledger_tx.sequence_info.tx_order,
-                tx_timestamp: ledger_tx.sequence_info.tx_timestamp,
-            })
-            .await?;
+
         let size = moveos_tx.ctx.tx_size;
         let tx_order = ledger_tx.sequence_info.tx_order;
+        let tx_hash = ledger_tx.tx_hash();
         let result = match self.execute_tx(ledger_tx, moveos_tx).await {
             Ok(v) => v,
             Err(err) => {
-                if is_vm_panic_error(&err) {
-                    tracing::error!(
-                        "Execute L1 Tx failed while VM panic occurred then \
-                        set service to Maintenance mode and pause the relayer. error: {:?}, tx order {}",
-                        err, tx_order
-                    );
-                    self.update_service_status(ServiceStatus::Maintenance).await;
-                }
+                self.handle_execute_error(&err, tx_order, tx_hash, "L1Tx", None)
+                    .await;
                 return Err(err);
             }
         };
@@ -265,54 +335,39 @@ impl PipelineProcessorActor {
         Ok(result)
     }
 
-    async fn update_service_status(&mut self, status: ServiceStatus) {
-        self.service_status = status;
-        if let Some(event_actor) = self.event_actor.clone() {
-            let _ = event_actor
-                .send(UpdateServiceStatusMessage { status })
-                .await;
-        }
-    }
-
     #[named]
     pub async fn execute_l2_tx(
         &mut self,
         mut tx: RoochTransaction,
     ) -> Result<ExecuteTransactionResponse> {
-        let tx_hash = tx.tx_hash(); // cache tx_hash
-        debug!("pipeline execute_l2_tx: {:?}", tx.tx_hash());
-
         let fn_name = function_name!();
         let _timer = self
             .metrics
             .pipeline_processor_execution_tx_latency_seconds
             .with_label_values(&[fn_name])
             .start_timer();
+
+        let tx_hash = tx.tx_hash(); // cache tx_hash
         let moveos_tx = self.executor.validate_l2_tx(tx.clone()).await?;
         let ledger_tx = self
-            .sequencer
-            .sequence_transaction(LedgerTxData::L2Tx(tx.clone()))
+            .sequence_and_public_tx(LedgerTxData::L2Tx(tx.clone()))
             .await?;
+
         let tx_order = ledger_tx.sequence_info.tx_order;
-        self.da_server
-            .append_tx(AppendTransactionMessage {
-                tx_order,
-                tx_timestamp: ledger_tx.sequence_info.tx_timestamp,
-            })
-            .await?;
         let size = moveos_tx.ctx.tx_size;
+
         let result = match self.execute_tx(ledger_tx, moveos_tx).await {
             Ok(v) => v,
             Err(err) => {
                 let l2_tx_bcs_bytes = bcs::to_bytes(&tx)?;
-                tracing::error!(
-                    "Execute L2 Tx failed while VM panic occurred and revert tx. error: {:?} tx info {}",
-                    err, hex::encode(l2_tx_bcs_bytes)
-                );
-                self.da_server
-                    .revert_tx(RevertTransactionMessage { tx_order })
-                    .await?;
-                self.rooch_db.revert_tx(tx_hash)?;
+                self.handle_execute_error(
+                    &err,
+                    tx_order,
+                    tx_hash,
+                    "L2Tx",
+                    Some(&format!("tx_info: {}", hex::encode(l2_tx_bcs_bytes))),
+                )
+                .await;
                 return Err(err);
             }
         };
@@ -341,6 +396,7 @@ impl PipelineProcessorActor {
             .pipeline_processor_execution_tx_latency_seconds
             .with_label_values(&[fn_name])
             .start_timer();
+
         // Add sequence info to tx context, let the Move contract can get the sequence info
         moveos_tx.ctx.add(tx.sequence_info.clone())?;
 
@@ -391,6 +447,15 @@ impl PipelineProcessorActor {
             execution_info,
             output,
         })
+    }
+
+    async fn update_service_status(&mut self, status: ServiceStatus) {
+        self.service_status = status;
+        if let Some(event_actor) = self.event_actor.clone() {
+            let _ = event_actor
+                .send(UpdateServiceStatusMessage { status })
+                .await;
+        }
     }
 }
 
