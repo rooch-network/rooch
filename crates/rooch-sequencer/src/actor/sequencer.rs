@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use std::io;
 use std::ops::Deref;
 use std::sync::Arc;
 use std::time::SystemTime;
@@ -94,15 +95,8 @@ impl SequencerActor {
         self.last_sequencer_info.last_order
     }
 
-    #[named]
-    pub fn sequence(&mut self, mut tx_data: LedgerTxData) -> Result<LedgerTransaction> {
-        let fn_name = function_name!();
-        let _timer = self
-            .metrics
-            .sequencer_sequence_latency_seconds
-            .with_label_values(&[fn_name])
-            .start_timer();
-
+    /// Check the service status and validate the incoming transaction based on the status
+    fn check_service_status(&self, tx_data: &LedgerTxData) -> Result<()> {
         match self.service_status {
             ServiceStatus::ReadOnlyMode => {
                 return Err(anyhow::anyhow!("The service is in read-only mode"));
@@ -126,20 +120,29 @@ impl SequencerActor {
             }
             _ => {}
         }
+        Ok(())
+    }
+
+    #[named]
+    pub fn sequence(&mut self, mut tx_data: LedgerTxData) -> Result<LedgerTransaction> {
+        let fn_name = function_name!();
+        let _timer = self
+            .metrics
+            .sequencer_sequence_latency_seconds
+            .with_label_values(&[fn_name])
+            .start_timer();
+
+        self.check_service_status(&tx_data)?;
 
         let now = SystemTime::now();
         let tx_timestamp = now.duration_since(SystemTime::UNIX_EPOCH)?.as_millis() as u64;
-
         let tx_order = self.last_sequencer_info.last_order + 1;
-
         let tx_hash = tx_data.tx_hash();
         let tx_order_signature =
             LedgerTransaction::sign_tx_order(tx_order, tx_hash, &self.sequencer_key);
-
-        // Calc transaction accumulator
         let _tx_accumulator_root = self.tx_accumulator.append(vec![tx_hash].as_slice())?;
-        let tx_accumulator_unsaved_nodes = self.tx_accumulator.pop_unsaved_nodes();
 
+        let tx_accumulator_unsaved_nodes = self.tx_accumulator.pop_unsaved_nodes();
         let tx_accumulator_info = self.tx_accumulator.get_info();
         let tx = LedgerTransaction::build_ledger_transaction(
             tx_data,
@@ -148,14 +151,32 @@ impl SequencerActor {
             tx_order_signature,
             tx_accumulator_info.clone(),
         );
-
         let sequencer_info = SequencerInfo::new(tx_order, tx_accumulator_info);
-        self.rooch_store.save_sequenced_tx(
+        let save_ret = self.rooch_store.save_sequenced_tx(
             tx_hash,
             tx.clone(),
             sequencer_info.clone(),
             tx_accumulator_unsaved_nodes,
-        )?;
+        );
+        if let Err(e) = save_ret {
+            // database error/inconsistent issue happened,
+            // revert accumulator appends avoiding dirty data in runtime
+            // and set status to maintenance
+            self.tx_accumulator = self
+                .tx_accumulator
+                .fork(Some(self.last_sequencer_info.last_accumulator_info.clone()));
+            self.service_status = ServiceStatus::Maintenance;
+            tracing::error!(
+                        "Failed to save sequenced tx, tx_order: {}, error: {:?}, set sequencer to Maintenance mode.",
+                        tx_order, e
+                    );
+            return Err(io::Error::new(
+                io::ErrorKind::Other,
+                format!("Save sequenced tx failed: {:?}", e),
+            )
+            .into());
+        }
+        self.tx_accumulator.clear_after_save();
         info!(
             "sequencer sequenced tx_hash: {:?} tx_order: {:?}",
             tx_hash, tx_order

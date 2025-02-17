@@ -12,14 +12,11 @@ use std::path::PathBuf;
 #[derive(Debug, Parser)]
 pub struct DropCommand {
     #[clap(long = "cf-name")]
-    /// column family name
     pub cf_name: String,
-
     #[clap(
         long = "re-create",
         help = "re-create column family after drop to clear column family, default is false"
     )]
-    /// re-create column family after drop, default is false
     pub re_create: bool,
 
     #[clap(
@@ -29,11 +26,7 @@ pub struct DropCommand {
     pub force: bool,
 
     #[clap(long = "data-dir", short = 'd')]
-    /// Path to data dir, this dir is base dir, the final data_dir is base_dir/chain_network_name
     pub base_data_dir: Option<PathBuf>,
-
-    /// If local chainid, start the service with a temporary data store.
-    /// All data will be deleted when the service is stopped.
     #[clap(long, short = 'n', help = R_OPT_NET_HELP)]
     pub chain_id: Option<RoochChainID>,
 }

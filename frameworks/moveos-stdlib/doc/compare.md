@@ -15,7 +15,9 @@ Utilities for comparing Move values
 -  [Function `cmp_bcs_bytes`](#0x2_compare_cmp_bcs_bytes)
 
 
-<pre><code><b>use</b> <a href="">0x1::compare</a>;
+<pre><code><b>use</b> <a href="">0x1::ascii</a>;
+<b>use</b> <a href="">0x1::compare</a>;
+<b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x1::type_name</a>;
 <b>use</b> <a href="">0x1::u256</a>;
 <b>use</b> <a href="bcs.md#0x2_bcs">0x2::bcs</a>;

@@ -113,9 +113,12 @@ module moveos_std::compare {
             } else {
                 return LESS_THAN
             }
-        }
-        else {
-            compare_vector_u8(&bcs::into_remainder_bytes(a), &bcs::into_remainder_bytes(b))
+        } else if (t == type_name::get<vector<u8>>() || t == type_name::get<std::string::String>() || t == type_name::get<std::ascii::String>()) {
+            let a_value = bcs::peel_vec_u8(&mut a);
+            let b_value = bcs::peel_vec_u8(&mut b);
+            return compare_vector_u8(&a_value, &b_value)
+        } else {
+            return compare_vector_u8(&bcs::into_remainder_bytes(a), &bcs::into_remainder_bytes(b))
         }
     }
     
@@ -218,11 +221,66 @@ module moveos_std::compare {
 
     #[test]
     fun test_compare_vector_u8() {
-        let a: vector<u8> = b"1";
-        let b: vector<u8> = b"2";
-        assert!(compare_vector_u8(&a, &b) == LESS_THAN, 1);
-        assert!(compare_vector_u8(&b, &a) == GREATER_THAN, 1);
-        assert!(compare_vector_u8(&a, &a) == EQUAL, 1);
+        // 1. Simple byte comparison
+        let v1 = b"0x1";
+        let v2 = b"0x2";
+        assert!(compare_vector_u8(&v1, &v2) == LESS_THAN, 1);
+        assert!(compare_vector_u8(&v2, &v1) == GREATER_THAN, 2);
+        
+        // 2. Equal length comparison
+        let v3 = b"abc";
+        let v4 = b"abd";
+        assert!(compare_vector_u8(&v3, &v4) == LESS_THAN, 3);
+        
+        // 3. Different length comparison
+        let v5 = b"ab";
+        let v6 = b"abc";
+        assert!(compare_vector_u8(&v5, &v6) == LESS_THAN, 4);
+    }
+
+    #[test]
+    fun test_compare_string() {
+        use std::string;
+        
+        // 1. ASCII comparison
+        assert!(compare<string::String>(&string::utf8(b"a"), &string::utf8(b"b")) == LESS_THAN, 1);
+        assert!(compare<string::String>(&string::utf8(b"b"), &string::utf8(b"a")) == GREATER_THAN, 2);
+        
+        // 2. Equal strings
+        assert!(compare<string::String>(&string::utf8(b"abc"), &string::utf8(b"abc")) == EQUAL, 3);
+        
+        // 3. Length difference
+        assert!(compare<string::String>(&string::utf8(b"ab"), &string::utf8(b"abc")) == LESS_THAN, 4);
+        
+        // 4. Empty string
+        assert!(compare<string::String>(&string::utf8(b""), &string::utf8(b"a")) == LESS_THAN, 5);
+    }
+
+    #[test]
+    fun test_compare_module_address() {
+        use std::string;
+        
+        // 1. Simple address comparison
+        assert!(compare<string::String>(&string::utf8(b"0x1"), &string::utf8(b"0x2")) == LESS_THAN, 1);
+        assert!(compare<string::String>(&string::utf8(b"0x2"), &string::utf8(b"0x1")) == GREATER_THAN, 2);
+        
+        // 2. Full address comparison
+        assert!(compare<string::String>(
+            &string::utf8(b"0x0000000000000000000000000000000000000000000000000000000000000001"),
+            &string::utf8(b"0x0000000000000000000000000000000000000000000000000000000000000002")
+        ) == LESS_THAN, 3);
+        
+        // 3. Module comparison (same address)
+        assert!(compare<string::String>(
+            &string::utf8(b"0x1::coin"),
+            &string::utf8(b"0x1::token")
+        ) == LESS_THAN, 4);
+        
+        // 4. Full module path comparison
+        assert!(compare<string::String>(
+            &string::utf8(b"0x1::coin::CoinStore"),
+            &string::utf8(b"0x1::coin::Supply")
+        ) == LESS_THAN, 5);
     }
 
 }

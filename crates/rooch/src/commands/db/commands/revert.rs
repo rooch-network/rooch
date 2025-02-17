@@ -8,27 +8,18 @@ use rooch_types::error::{RoochError, RoochResult};
 use rooch_types::rooch_network::RoochChainID;
 use std::path::PathBuf;
 
-use crate::cli_types::WalletContextOptions;
 use crate::commands::db::commands::init;
 
 /// Revert tx by db command.
 #[derive(Debug, Parser)]
 pub struct RevertCommand {
     #[clap(long, short = 'o')]
-    /// tx order
     pub tx_order: u64,
 
     #[clap(long = "data-dir", short = 'd')]
-    /// Path to data dir, this dir is base dir, the final data_dir is base_dir/chain_network_name
     pub base_data_dir: Option<PathBuf>,
-
-    /// If local chainid, start the service with a temporary data store.
-    /// All data will be deleted when the service is stopped.
     #[clap(long, short = 'n', help = R_OPT_NET_HELP)]
     pub chain_id: Option<RoochChainID>,
-
-    #[clap(flatten)]
-    pub context_options: WalletContextOptions,
 }
 
 impl RevertCommand {
