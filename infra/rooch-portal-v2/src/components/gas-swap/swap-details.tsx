@@ -48,8 +48,7 @@ export default function SwapDetails({
   onVersionChange,
 }: Omit<
   SwapProps,
-  | 'availableFromCoins'
-  | 'availableToCoins'
+  | 'coins'
   | 'onSlippageChange'
   | 'onCurveTypeChange'
   | 'onVersionChange'

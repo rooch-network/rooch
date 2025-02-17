@@ -155,10 +155,14 @@ module onchain_ai_chat::ai_service {
     #[test]
     fun test_request_ai_response() {
         use std::string;
+        use moveos_std::object;
         
         // Test basic request creation
         let messages = vector::empty<Message>();
-        vector::push_back(&mut messages, message::new_message(0, @0x1, string::utf8(b"Hi"), message::type_user()));
+        let msg_obj_id = message::new_message(0, @0x1, string::utf8(b"Hi"), message::type_user());
+        let msg_obj = object::borrow_object<Message>(msg_obj_id);
+        let msg = object::borrow(msg_obj);
+        vector::push_back(&mut messages, *msg);
         let content = string::utf8(b"Hello AI");
         
         // Create request and verify JSON structure

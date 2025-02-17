@@ -2,7 +2,7 @@
 module rooch_dex::swap_utils {
     use std::string;
     use moveos_std::type_info;
-    use moveos_std::compare::compare;
+    use moveos_std::compare::compare_vector_u8;
 
 
     const EQUAL: u8 = 0;
@@ -52,13 +52,13 @@ module rooch_dex::swap_utils {
 
     public fun get_token_info<T>(): vector<u8> {
         let type_name = type_info::type_name<T>();
-        *string::bytes(&type_name)
+        string::into_bytes(type_name)
     }
 
     fun compare_struct<X, Y>(): u8 {
         let struct_x_bytes: vector<u8> = get_token_info<X>();
         let struct_y_bytes: vector<u8> = get_token_info<Y>();
-        compare(&struct_x_bytes, &struct_y_bytes)
+        compare_vector_u8(&struct_x_bytes, &struct_y_bytes)
     }
 
     public fun get_smaller_enum(): u8 {
@@ -77,5 +77,57 @@ module rooch_dex::swap_utils {
         let compare_x_y: u8 = compare_struct<X, Y>();
         assert!(compare_x_y != get_equal_enum(), ErrorTokenPairAleardyExist);
         (compare_x_y == get_smaller_enum())
+    }
+
+    #[test_only]
+    struct TokenA {}
+    #[test_only]
+    struct TokenB {}
+    #[test_only]
+    struct TokenAB {}
+
+    #[test_only]
+    const FEE_RATE: u64 = 9975; // 0.25% fee = 9975/10000
+    
+    #[test]
+    fun test_sort_token_type() {
+        assert!(sort_token_type<TokenA, TokenB>(), 1);
+        assert!(sort_token_type<TokenAB, TokenB>(), 2);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = ErrorTokenPairAleardyExist, location = rooch_dex::swap_utils)]
+    fun test_sort_token_type_same() {
+        sort_token_type<TokenA, TokenA>();
+    }
+
+    #[test]
+    fun test_get_amount_out() {
+        let amount_out = get_amount_out(100, 1000, 1000, FEE_RATE);
+        assert!(amount_out > 0, 0);
+        let expected = 90;
+        assert!(amount_out == expected, 1);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = ErrorInputTokenAmount, location = rooch_dex::swap_utils)]
+    fun test_get_amount_out_zero_input() {
+        get_amount_out(0, 1000, 1000, FEE_RATE);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = ErrorInsufficientLiquidity, location = rooch_dex::swap_utils)]
+    fun test_get_amount_out_zero_reserves() {
+        get_amount_out(100, 0, 0, FEE_RATE);
+    }
+}
+
+#[test_only]
+module rooch_dex::test{
+    struct TokenC{}
+    #[test]
+    fun test_sort_token_type() {
+        // rooch_framework = 0x3, so it should be less than rooch_dex, 
+        assert!(rooch_dex::swap_utils::sort_token_type<rooch_framework::gas_coin::RGas, TokenC>(), 1);
     }
 }

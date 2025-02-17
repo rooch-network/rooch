@@ -15,6 +15,7 @@ module rooch_dex::router {
     const ErrorInsufficientYAmount: u64 = 4;
     const ErrorTokenPairNotExist: u64 = 5;
     const ErrorTokenPairAlreadyExist: u64 = 6;
+    const ErrorZeroAmount: u64 = 7;
 
 
     public entry fun create_token_pair<X:key+store, Y:key+store>(
@@ -30,7 +31,7 @@ module rooch_dex::router {
             add_liquidity<X, Y>(sender, amount_x_desired, amount_y_desired, amount_x_min, amount_y_min);
         } else {
             swap::create_pair<Y, X>(sender);
-            add_liquidity<Y, X>(sender, amount_x_desired, amount_y_desired, amount_x_min, amount_y_min);
+            add_liquidity<Y, X>(sender, amount_y_desired, amount_x_desired, amount_y_min, amount_x_min);
         };
 
     }
@@ -43,7 +44,7 @@ module rooch_dex::router {
         amount_x_min: u64,
         amount_y_min: u64,
     ) {
-
+        assert!(amount_x_desired > 0 && amount_y_desired > 0, ErrorZeroAmount);
         let amount_x;
         let amount_y;
         let _lp_amount;

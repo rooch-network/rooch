@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
 import type { StackProps } from '@mui/material';
-import type { BalanceInfoView } from '@roochnetwork/rooch-sdk';
 
 export const DEFAULT_SLIPPAGE = 0.005;
 export const VERSION_0 = 0;
@@ -11,9 +10,18 @@ export type SimulationStatus = 'new' | 'simulating' | 'success' | 'error';
 /**
  * Common coin info type
  */
-export interface UserCoin extends BalanceInfoView {
-  amount: string;
-  icon_url: string;
+export interface Coin {
+  coinType: string;
+  decimals: number;
+  name: string;
+  symbol: string;
+  icon: string;
+  balance: bigint;
+  price: number;
+}
+
+export interface UserCoin extends Coin {
+  amount: bigint;
 }
 
 export type InteractiveMode = 'from' | 'to';
@@ -34,8 +42,7 @@ export interface SwapProps {
   /**
    * Current supported token list
    */
-  availableFromCoins: UserCoin[];
-  availableToCoins: UserCoin[];
+  coins: UserCoin[];
 
   /**
    * General loading status

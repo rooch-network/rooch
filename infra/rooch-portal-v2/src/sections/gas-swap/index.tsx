@@ -1,7 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import type { CurveType, PoolVersion, InteractiveMode } from 'src/components/swap/types';
+import type { CurveType, PoolVersion, InteractiveMode } from 'src/components/gas-swap/types';
 
 import BigNumber from 'bignumber.js';
 import { useState, useEffect } from 'react';
@@ -10,13 +10,13 @@ import { useRoochClient, useCurrentWallet, useCurrentAddress } from '@roochnetwo
 
 import { Stack } from '@mui/material';
 
+import { useNetworkVariable } from 'src/hooks/use-networks';
+
 import { GAS_COIN_TYPE } from 'src/config/constant';
+import WalletSwitchNetworkModal from 'src/layouts/components/wallet-switch-network-modal';
 
-import Swap from 'src/components/swap/swap';
+import Swap from 'src/components/gas-swap/swap';
 import { toast } from 'src/components/snackbar';
-
-import { useNetworkVariable } from '../../hooks/use-networks';
-import WalletSwitchNetworkModal from '../../layouts/components/wallet-switch-network-modal';
 
 const swapCoins = [
   {

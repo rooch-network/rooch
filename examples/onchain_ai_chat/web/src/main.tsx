@@ -21,11 +21,11 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
             <RoochProvider networks={networkConfig} sessionConf={
               {
                 appName: "Onchain AI Chat",
-                appUrl: "https://onchain-ai-chat.vercel.app/",
+                appUrl: "https://ai.rooch.io/",
                 scopes: [`${PACKAGE_ID}::*::*`],
                 maxInactiveInterval: 3600,
               }
-            } defaultNetwork='testnet'>
+            } defaultNetwork='mainnet'>
               <WalletProvider preferredWallets={['UniSat']} chain={'bitcoin'} autoConnect>
                 <ErrorGuard/>
                 <App/>

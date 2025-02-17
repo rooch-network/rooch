@@ -4,7 +4,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { Stack, TextField } from '@mui/material';
 
 import { fNumber } from 'src/utils/format-number';
-import { toDust, fromDust, formatCoin } from 'src/utils/number';
+import { toDust, fromDust, formatCoin, toBigNumber } from 'src/utils/number';
 
 import { grey } from 'src/theme/core';
 
@@ -37,7 +37,7 @@ export default function SwapCoinInput({
   onChange,
 }: SwapCoinInputProps) {
   const [value, setValue] = useState('');
-  const [debouncedValue, setDebouncedValue] = useState(coin?.amount || '0');
+  const [debouncedValue, setDebouncedValue] = useState(coin?.amount || 0n);
   const [shouldUpdate, setShouldUpdate] = useState(false);
 
   useDebounce(
@@ -50,7 +50,7 @@ export default function SwapCoinInput({
             temp = value.substring(0, decimalIndex + coin.decimals + 1);
           }
           const amount = toDust(temp, coin.decimals);
-          setDebouncedValue(amount.toString());
+          setDebouncedValue(amount);
         } catch (e) {
           //          toast.error(String(e));
           console.log(e);
@@ -64,12 +64,12 @@ export default function SwapCoinInput({
   useEffect(() => {
     if (coin) {
       setShouldUpdate(false);
-      setValue(coin.amount);
+      setValue(fromDust(coin.amount, coin.decimals).decimalPlaces(coin.decimals).toString());
     }
   }, [coin, coin?.amount]);
 
   useEffect(() => {
-    if (coin && shouldUpdate) {
+    if (coin && shouldUpdate && toBigNumber(debouncedValue).gt(0)) {
       onChange(
         {
           ...coin,
@@ -85,8 +85,7 @@ export default function SwapCoinInput({
     if (!coin) {
       return 0;
     }
-    // return fromDust(coin.amount, coin.decimals).times(coin.price).decimalPlaces(2).toNumber();
-    return fromDust(coin.amount, coin.decimals).times(0).decimalPlaces(2).toNumber();
+    return fromDust(coin.amount, coin.decimals).times(coin.price).decimalPlaces(2).toNumber();
   }, [coin]);
 
   return (

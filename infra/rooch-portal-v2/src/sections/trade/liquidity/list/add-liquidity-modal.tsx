@@ -32,7 +32,7 @@ import { useRouter } from 'src/routes/hooks';
 import { useNetworkVariable } from 'src/hooks/use-networks';
 
 import { formatCoin } from 'src/utils/format-number';
-import { toDust, formatByIntl, bigNumberToBigInt } from 'src/utils/number';
+import { toDust, formatByIntl, bigNumberToBigInt, fromDust } from 'src/utils/number';
 
 import { toast } from 'src/components/snackbar';
 
@@ -209,7 +209,6 @@ export default function AddLiquidityModal({
   };
 
   const fetchY = useCallback(() => {
-    console.log('fetch-y');
     if (xAmount === '' || xAmount === '0' || !reserveX || !reserveY || !assetsMap) {
       return;
     }
@@ -221,13 +220,14 @@ export default function AddLiquidityModal({
     const fixdX = toDust(xAmount.replaceAll(',', ''), assetsMap.get(row.x.type)?.decimals || 0);
     const xRate = BigNumber(fixdX.toString()).div(xBalance);
     const y = BigNumber(yBalance).multipliedBy(xRate);
+    const ycoin = assetsMap.get(row.y.type);
 
-    if (y.toNumber() > Number(assetsMap.get(row.y.type)?.balance || 0)) {
+    if (y.toNumber() > Number(ycoin?.balance || 0)) {
       setYLabelError('Insufficient');
     } else {
       setYLabelError(undefined);
     }
-    setYAmount(formatByIntl(y.toFixed(0, 1)));
+    setYAmount(formatByIntl(fromDust(y.toFixed(0, 1), ycoin?.decimals || 0).toString()));
   }, [xAmount, reserveX, reserveY, row.x.type, row.y.type, assetsMap]);
 
   useDebounce(fetchY, 500, [fetchY]);
