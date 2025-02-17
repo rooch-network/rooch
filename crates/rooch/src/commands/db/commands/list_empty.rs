@@ -3,7 +3,6 @@
 
 use crate::commands::db::commands::init;
 use clap::Parser;
-use move_core_types::effects::Op;
 use moveos_store::transaction_store::TransactionStore;
 use moveos_types::h256::H256;
 use rooch_config::R_OPT_NET_HELP;
