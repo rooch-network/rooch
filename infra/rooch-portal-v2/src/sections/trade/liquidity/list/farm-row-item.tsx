@@ -184,7 +184,7 @@ export default function FarmRowItem({
         <TableCell>
           <ListItemText
             primary={formatByIntl(
-              fromDust(row.releasePerSecond, coinInfo?.decimals || 0).toString()
+              fromDust(row.releasePerSecond, rewardCoin?.decimals || 0).toString()
             )}
           />
         </TableCell>

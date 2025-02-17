@@ -21,7 +21,7 @@ import type { FarmRowItemType } from './farm-row-item';
 const headerLabel = [
   { id: 'lp', label: 'LP' },
   { id: 'release_per_second', label: 'Release Per Second' },
-  { id: 'asset_total_weight', label: 'Asset Total Weight' },
+  { id: 'asset_total_weight', label: 'Total Staked LP' },
   { id: 'endtime', label: 'Endtime' },
   { id: 'action', label: '', align: 'right' },
 ];
