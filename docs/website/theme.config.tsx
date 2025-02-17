@@ -45,7 +45,7 @@ const theme: DocsThemeConfig = {
         className="dark:hidden"
       />
       <Image
-        src="/logo/rooch_white_combine.svg"
+        src="/logo/combine/rooch_white_combine.svg"
         alt="Rooch Architecture"
         width={100}
         height={70}
@@ -125,17 +125,17 @@ const theme: DocsThemeConfig = {
         <meta name="twitter:creator" content="https://rooch.network" />
         <meta name="twitter:title" content={pageTitle} />
         {/* FAVICON */}
-        <link rel="icon" href="/logo/rooch_black_logo.svg" type="image/svg+xml" />
-        <link rel="icon" href="/logo/rooch_black_logo.png" type="image/png" />
+        <link rel="icon" href="/logo/logo/rooch_black_logo.svg" type="image/svg+xml" />
+        <link rel="icon" href="/logo/logo/rooch_black_logo.png" type="image/png" />
         <link
           rel="icon"
-          href="/logo/rooch_white_logo.svg"
+          href="/logo/logo/rooch_white_logo.svg"
           type="image/svg+xml"
           media="(prefers-color-scheme: dark)"
         />
         <link
           rel="icon"
-          href="/logo/rooch_white_logo.png"
+          href="/logo/logo/rooch_white_logo.png"
           type="image/png"
           media="(prefers-color-scheme: dark)"
         />
