@@ -473,6 +473,7 @@ impl RoochGenesis {
             sequencer_info,
             genesis_accumulator_unsaved_nodes,
         )?;
+        genesis_tx_accumulator.clear_after_save();
 
         let tx_hash = self.genesis_tx().tx_hash();
         let (output, genesis_execution_info) = rooch_db

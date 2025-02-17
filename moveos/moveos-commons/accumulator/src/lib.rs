@@ -50,11 +50,13 @@ pub trait Accumulator {
     fn flush(&self) -> Result<()>;
     /// Pop unsaved nodes for atomic updates with other operations .
     fn pop_unsaved_nodes(&self) -> Option<Vec<AccumulatorNode>>;
+    /// Clear after save nodes popped by pop_unsaved_nodes.
+    fn clear_after_save(&self);
     /// Get current accumulator tree root hash.
     fn root_hash(&self) -> H256;
-    /// Get current accumulator tree number of leaves.
+    /// Get the current accumulator tree number of leaves.
     fn num_leaves(&self) -> u64;
-    /// Get current accumulator tree number of nodes.
+    /// Get the current accumulator tree number of nodes.
     fn num_nodes(&self) -> u64;
     /// Get frozen subtree roots.
     fn get_frozen_subtree_roots(&self) -> Vec<H256>;
@@ -197,6 +199,10 @@ impl Accumulator for MerkleAccumulator {
 
     fn pop_unsaved_nodes(&self) -> Option<Vec<AccumulatorNode>> {
         self.tree.lock().pop_unsaved_nodes()
+    }
+
+    fn clear_after_save(&self) {
+        self.tree.lock().clear_after_save()
     }
 
     fn root_hash(&self) -> H256 {
