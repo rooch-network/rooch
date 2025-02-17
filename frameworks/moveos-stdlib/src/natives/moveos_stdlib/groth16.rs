@@ -26,6 +26,10 @@ pub const BN254: u8 = 1;
 // We need to set an upper bound on the number of public inputs to avoid a DoS attack
 pub const MAX_PUBLIC_INPUTS: usize = 8;
 
+// Originally from fastcrypto_zkp::bls12381::conversions::SCALAR_SIZE
+// But they are removed from the crate, TODO: use the new
+const SCALAR_SIZE: usize = 32;
+
 /***************************************************************************************************
  * native fun prepare_verifying_key_internal
  * Implementation of the Move native function `prepare_verifying_key_internal(curve: u8, verifying_key: &vector<u8>): PreparedVerifyingKey`
@@ -126,10 +130,7 @@ pub fn native_verify_groth16_proof_internal(
         BLS12381 => (
             52, // TODO: use variable?
             2,  // TODO: use variable?
-            (public_proof_inputs_bytes_ref.len()
-                + fastcrypto_zkp::bls12381::conversions::SCALAR_SIZE
-                - 1)
-                / fastcrypto_zkp::bls12381::conversions::SCALAR_SIZE,
+            (public_proof_inputs_bytes_ref.len() + SCALAR_SIZE - 1) / SCALAR_SIZE,
         ),
         BN254 => (
             52, // TODO: use variable?
@@ -148,9 +149,7 @@ pub fn native_verify_groth16_proof_internal(
 
     let result;
     if curve == BLS12381 {
-        if public_proof_inputs_bytes_ref.len()
-            > fastcrypto_zkp::bls12381::conversions::SCALAR_SIZE * MAX_PUBLIC_INPUTS
-        {
+        if public_proof_inputs_bytes_ref.len() > SCALAR_SIZE * MAX_PUBLIC_INPUTS {
             return Ok(NativeResult::err(cost, E_TOO_MANY_PUBLIC_INPUTS));
         }
         result = fastcrypto_zkp::bls12381::api::verify_groth16_in_bytes(
