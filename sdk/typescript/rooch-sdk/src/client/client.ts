@@ -51,8 +51,21 @@ import {
   ModuleABIView,
   GetModuleABIParams,
   BroadcastTXParams,
+  GetObjectStatesParams,
+  GetFieldStatesParams,
+  ListFieldStatesParams,
+  GetTransactionsByHashParams,
+  TransactionWithInfoView,
+  GetTransactionsByOrderParams,
+  RepairIndexerParams,
+  SyncStatesParams,
+  PaginatedStateChangeSetWithTxOrderViews,
+  DryRunRawTransactionParams,
+  DryRunTransactionResponseView,
 } from './types/index.js'
 import { fixedBalance } from '../utils/balance.js'
+
+const DEFAULT_GAS = 50000000
 
 /**
  * Configuration options for the RoochClient
@@ -132,6 +145,13 @@ export class RoochClient {
     })
   }
 
+  async dryrun(input: DryRunRawTransactionParams): Promise<DryRunTransactionResponseView> {
+    return await this.transport.request({
+      method: 'rooch_dryRunRawTransaction',
+      params: [input.txBcsHex],
+    })
+  }
+
   async signAndExecuteTransaction({
     transaction,
     signer,
@@ -153,6 +173,20 @@ export class RoochClient {
       transaction.setSeqNumber(await this.getSequenceNumber(sender))
       transaction.setSender(sender)
 
+      // need dry_run
+      if (!transaction.getMaxGas()) {
+        transaction.setMaxGas(DEFAULT_GAS)
+        // const s = transaction.encodeData().toHex()
+        // const result = await this.dryrun({ txBcsHex: s })
+        //
+        // if (result.raw_output.status.type === 'executed') {
+        //   transaction.setMaxGas(Math.ceil(Number(result.raw_output.gas_used) * 100))
+        // } else {
+        //   // TODO: abort?
+        //   throw Error(result.raw_output.status.type)
+        // }
+      }
+
       const auth = await signer.signTransaction(transaction)
 
       transaction.setAuth(auth)
@@ -163,6 +197,24 @@ export class RoochClient {
     return await this.transport.request({
       method: 'rooch_executeRawTransaction',
       params: [transactionHex, option],
+    })
+  }
+
+  async repairIndexer(input: RepairIndexerParams) {
+    await this.transport.request({
+      method: 'rooch_repairIndexer',
+      params: [input.repairType, input.repairParams],
+    })
+  }
+
+  async syncStates(input: SyncStatesParams): Promise<PaginatedStateChangeSetWithTxOrderViews> {
+    const opt = input.queryOption || {
+      decode: true,
+      showDisplay: true,
+    }
+    return await this.transport.request({
+      method: 'rooch_repairIndexer',
+      params: [input.filter, input.cursor, input.limit, opt],
     })
   }
 
@@ -198,6 +250,7 @@ export class RoochClient {
       params: [input.moduleAddr, input.moduleName],
     })
   }
+
   async getEvents(input: GetEventsByEventHandleParams): Promise<PaginatedEventViews> {
     const opt = input.eventOptions || {
       decode: true,
@@ -207,7 +260,7 @@ export class RoochClient {
       params: [input.eventHandleType, input.cursor, input.limit, input.descendingOrder, opt],
     })
   }
-  // curl -H "Content-Type: application/json" -X POST --data '{"jsonrpc":"2.0","method":"rooch_getEventsByEventHandle","params":["0x488e11bd0086861e110586909fd72c8142506f6fc636982051271a694bf5b0ed::event_test::WithdrawEvent", null, "1", null, {"decode":true}],"id":1}' http://127.0.0.1:6767 | jq
+
   async queryEvents(input: QueryEventsParams): Promise<PaginatedIndexerEventViews> {
     if ('sender' in input.filter) {
       if (input.filter.sender === '') {
@@ -231,7 +284,6 @@ export class RoochClient {
     })
   }
 
-  // Query the Inscription via global index by Inscription filter
   async queryInscriptions(input: QueryInscriptionsParams): Promise<PaginatedInscriptionStateViews> {
     if (typeof input.filter !== 'string' && 'owner' in input.filter) {
       if (input.filter.owner === '') {
@@ -263,6 +315,42 @@ export class RoochClient {
     })
   }
 
+  async getObjectStates(input: GetObjectStatesParams): Promise<ObjectStateView[]> {
+    const idsStr = input.ids.join(',')
+    const opt = input.stateOption || {
+      decode: true,
+      showDisplay: true,
+    }
+    return this.transport.request({
+      method: 'rooch_getObjectStates',
+      params: [idsStr, opt],
+    })
+  }
+
+  async getFieldStates(input: GetFieldStatesParams): Promise<ObjectStateView[]> {
+    const opt = input.stateOption || {
+      decode: true,
+      showDisplay: true,
+    }
+
+    return this.transport.request({
+      method: 'rooch_getFieldStates',
+      params: [input.objectId, input.fieldKey, opt],
+    })
+  }
+
+  async listFieldStates(input: ListFieldStatesParams): Promise<PaginatedStateKVViews> {
+    const opt = input.stateOption || {
+      decode: true,
+      showDisplay: true,
+    }
+
+    return this.transport.request({
+      method: 'rooch_getFieldStates',
+      params: [input.objectId, input.cursor, input.limit, opt],
+    })
+  }
+
   async queryObjectStates(
     input: QueryObjectStatesParams,
   ): Promise<PaginatedIndexerObjectStateViews> {
@@ -285,6 +373,24 @@ export class RoochClient {
     return this.transport.request({
       method: 'rooch_queryObjectStates',
       params: [input.filter, input.cursor, input.limit, opt],
+    })
+  }
+
+  async getTransactionsByHash(
+    input: GetTransactionsByHashParams,
+  ): Promise<TransactionWithInfoView> {
+    return this.transport.request({
+      method: 'rooch_getTransactionsByHash',
+      params: [input.txHashes],
+    })
+  }
+
+  async getTransactionsByOrder(
+    input: GetTransactionsByOrderParams,
+  ): Promise<PaginatedTransactionWithInfoViews> {
+    return this.transport.request({
+      method: 'rooch_queryTransactions',
+      params: [input.cursor, input.limit, input.descendingOrder],
     })
   }
 
@@ -463,41 +569,36 @@ export class RoochClient {
     package_address,
     limit,
     cursor,
-  }:{
+  }: {
     package_address: address
   } & PaginationArguments<string>): Promise<Map<string, string>> {
-    const packageObjectID = `0x14481947570f6c2f50d190f9a13bf549ab2f0c9debc41296cd4d506002379659${decodeToPackageAddressStr(package_address)}`;
+    const packageObjectID = `0x14481947570f6c2f50d190f9a13bf549ab2f0c9debc41296cd4d506002379659${decodeToPackageAddressStr(package_address)}`
     const result = await this.transport.request({
       method: 'rooch_listFieldStates',
-      params: [
-        packageObjectID,
-        cursor,
-        limit,
-        { decode: true },
-      ],
-    });
+      params: [packageObjectID, cursor, limit, { decode: true }],
+    })
 
     const moduleInfo = result as unknown as ObjectStateView[]
-    const moduleMap = new Map<string, string>();
+    const moduleMap = new Map<string, string>()
 
     if (moduleInfo && typeof moduleInfo === 'object' && 'data' in moduleInfo) {
-      const { data } = moduleInfo;
+      const { data } = moduleInfo
       if (Array.isArray(data)) {
         for (const item of data) {
-          const decodedValue = item?.state?.decoded_value;
+          const decodedValue = item?.state?.decoded_value
 
           if (decodedValue) {
-            const name = decodedValue?.value?.name;
-            const byte_codes = decodedValue?.value?.value?.value?.byte_codes;
+            const name = decodedValue?.value?.name
+            const byte_codes = decodedValue?.value?.value?.value?.byte_codes
             if (name && byte_codes) {
-              moduleMap.set(name, byte_codes);
+              moduleMap.set(name, byte_codes)
             }
           }
         }
       }
     }
 
-    return moduleMap;
+    return moduleMap
   }
 
   async getSessionKeys({

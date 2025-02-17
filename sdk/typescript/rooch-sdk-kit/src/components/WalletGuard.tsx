@@ -12,10 +12,10 @@ type ConnectButtonProps = {
 } & ButtonHTMLAttributes<HTMLButtonElement>
 
 export function WalletGuard({ children, onClick }: ConnectButtonProps) {
-  const { wallet } = useCurrentWallet()
+  const { status } = useCurrentWallet()
   return (
     <>
-      {wallet ? (
+      {status === 'connected' ? (
         <button
           style={{
             all: 'unset',

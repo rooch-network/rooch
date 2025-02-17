@@ -7,8 +7,6 @@ import { Args, bcs, Serializer } from '../bcs/index.js'
 import { address, Bytes, identifier, u8, u64 } from '../types/index.js'
 import { CallFunctionArgs, CallScript } from './types.js'
 
-const DEFAULT_GAS = BigInt(50000000)
-
 export class CallFunction {
   address: string
   module: identifier
@@ -69,7 +67,7 @@ export class TransactionData {
   sender?: address
   sequenceNumber?: u64
   chainId?: u64
-  maxGas: u64
+  maxGas?: u64
   action: MoveAction
 
   constructor(
@@ -83,17 +81,17 @@ export class TransactionData {
     this.sequenceNumber = sequenceNumber
     this.chainId = chainId
     this.action = action
-    this.maxGas = maxGas || DEFAULT_GAS
+    this.maxGas = maxGas
   }
 
-  encode(): Bytes {
+  encode() {
     const call = this.action.val as CallFunction
 
     return bcs.RoochTransactionData.serialize({
       sender: this.sender!,
       sequenceNumber: this.sequenceNumber!,
       chainId: this.chainId!,
-      maxGas: this.maxGas,
+      maxGas: this.maxGas!,
       action: {
         kind: 'CallFunction',
         functionId: {
@@ -106,10 +104,10 @@ export class TransactionData {
         args: Array.from(call.encodeArgsToByteArrays()),
         typeArgs: call.typeArgs,
       },
-    }).toBytes()
+    })
   }
 
   hash(): Bytes {
-    return sha3_256(this.encode())
+    return sha3_256(this.encode().toBytes())
   }
 }

@@ -21,6 +21,7 @@ describe('Transactions', () => {
     tx.setSender(signer.getRoochAddress().toHexAddress())
     tx.setSeqNumber(BigInt(0))
     tx.setChainId(BigInt(4))
+    tx.setMaxGas(1)
 
     const auth = await signer.signTransaction(tx)
 

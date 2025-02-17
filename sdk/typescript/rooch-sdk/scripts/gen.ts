@@ -75,6 +75,14 @@ const options: {
     //   },
     //   flattenParams: ['function_call']
     // },
+    rooch_getObjectStates: {
+      params: {
+        object_ids: {
+          alias: 'ids',
+          typeAlias: 'string[]',
+        },
+      },
+    },
     rooch_getBalance: {
       params: {
         account_addr: {

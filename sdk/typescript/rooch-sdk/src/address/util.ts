@@ -40,13 +40,16 @@ export function decodeToRoochAddressStr(input: address): string {
 }
 
 export function decodeToPackageAddressStr(input: address): string {
-  const packageAddressStr = decodeToRoochAddressStr(input);
-  if (packageAddressStr.length === ROOCH_ADDRESS_LENGTH * 2){
-    return packageAddressStr;
+  const packageAddressStr = decodeToRoochAddressStr(input)
+  if (packageAddressStr.length === ROOCH_ADDRESS_LENGTH * 2) {
+    return packageAddressStr
   }
 
-  if (packageAddressStr.length === ROOCH_ADDRESS_LENGTH * 2 + 2 && packageAddressStr.startsWith('0x')){
-    return packageAddressStr.slice(2);
+  if (
+    packageAddressStr.length === ROOCH_ADDRESS_LENGTH * 2 + 2 &&
+    packageAddressStr.startsWith('0x')
+  ) {
+    return packageAddressStr.slice(2)
   }
 
   throw Error('Invalid Address')
