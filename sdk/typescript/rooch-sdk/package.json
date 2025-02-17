@@ -74,11 +74,13 @@
     "@scure/bip32": "^1.5.0",
     "@scure/bip39": "^1.4.0",
     "@suchipi/femver": "^1.0.0",
+    "@types/ws": "^8.5.14",
     "bech32": "^2.0.0",
     "bs58check": "4.0.0",
     "buffer": "6.0.3",
     "tweetnacl": "^1.0.3",
-    "valibot": "^0.41.0"
+    "valibot": "^0.41.0",
+    "ws": "^8.18.0"
   },
   "publishConfig": {
     "access": "public",
