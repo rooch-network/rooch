@@ -720,6 +720,14 @@ impl MoveOSGasMeter {
             return Ok(());
         }
 
+        self.do_deduct_gas(cost)
+    }
+
+    pub fn set_metering(&mut self, enabled: bool) {
+        self.charge = enabled;
+    }
+
+    pub fn do_deduct_gas(&mut self, cost: InternalGas) -> PartialVMResult<()> {
         match self.gas_left.checked_sub(cost) {
             None => {
                 self.gas_left = InternalGas::from(0);
@@ -732,32 +740,7 @@ impl MoveOSGasMeter {
         }
     }
 
-    pub fn set_metering(&mut self, enabled: bool) {
-        self.charge = enabled;
-    }
-}
-
-impl ClassifiedGasMeter for MoveOSGasMeter {
-    fn charge_execution(&mut self, gas_cost: u64) -> PartialVMResult<()> {
-        if !self.charge {
-            return Ok(());
-        }
-
-        let new_value = self
-            .execution_gas_used
-            .borrow()
-            .add(InternalGas::from(gas_cost));
-        *self.execution_gas_used.borrow_mut() = new_value;
-        Ok(())
-    }
-
-    // fn charge_io_read(&mut self) {}
-
-    fn charge_io_write(&mut self, tx_size: u64) -> PartialVMResult<()> {
-        if !self.charge {
-            return Ok(());
-        }
-
+    pub fn do_charge_io_writes(&mut self, tx_size: u64) -> PartialVMResult<()> {
         let tx_gas_parameter: u64 = self
             .cost_table
             .storage_gas_parameter
@@ -783,8 +766,33 @@ impl ClassifiedGasMeter for MoveOSGasMeter {
                 self.gas_left = InternalGas::from(0);
                 Err(PartialVMError::new(StatusCode::OUT_OF_GAS))
             }
-            Some(final_gas) => self.charge_v1(InternalGas::from(final_gas)),
+            Some(final_gas) => self.do_deduct_gas(InternalGas::from(final_gas)),
         }
+    }
+}
+
+impl ClassifiedGasMeter for MoveOSGasMeter {
+    fn charge_execution(&mut self, gas_cost: u64) -> PartialVMResult<()> {
+        if !self.charge {
+            return Ok(());
+        }
+
+        let new_value = self
+            .execution_gas_used
+            .borrow()
+            .add(InternalGas::from(gas_cost));
+        *self.execution_gas_used.borrow_mut() = new_value;
+        Ok(())
+    }
+
+    // fn charge_io_read(&mut self) {}
+
+    fn charge_io_write(&mut self, tx_size: u64) -> PartialVMResult<()> {
+        if !self.charge {
+            return Ok(());
+        }
+
+        self.do_charge_io_writes(tx_size)
     }
     //TODO cleanup
     // fn charge_event(&mut self, events: &[TransactionEvent]) -> PartialVMResult<()> {
