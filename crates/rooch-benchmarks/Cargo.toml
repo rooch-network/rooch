@@ -84,6 +84,10 @@ name = "bench_tx_validate"
 
 [[bench]]
 harness = false
+name = "bench_tx_sequence"
+
+[[bench]]
+harness = false
 name = "bench_tx_exec"
 
 [[bench]]
