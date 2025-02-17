@@ -235,8 +235,14 @@ impl MoveOS {
     pub fn verify(&self, tx: MoveOSTransaction) -> VMResult<VerifiedMoveOSTransaction> {
         let MoveOSTransaction { root, ctx, action } = tx;
         let cost_table = self.load_cost_table(&root)?;
-        let mut gas_meter = MoveOSGasMeter::new(cost_table, ctx.max_gas_amount, false);
+        let mut gas_meter = MoveOSGasMeter::new(cost_table, ctx.max_gas_amount, true);
         gas_meter.set_metering(false);
+
+        // Check if the gas fee for the transaction size is sufficient during transaction validation.
+        let tx_size = ctx.tx_size;
+        if let Err(e) = gas_meter.do_charge_io_writes(tx_size) {
+            return Err(e.finish(Location::Undefined));
+        }
 
         let resolver = RootObjectResolver::new(root.clone(), &self.db);
         let session = self
