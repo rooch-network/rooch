@@ -7,13 +7,17 @@ use crate::actor::messages::{
     IndexerTransactionMessage, UpdateIndexerMessage,
 };
 use crate::store::traits::IndexerStoreTrait;
-use crate::IndexerStore;
+use crate::{list_field_indexer_keys, IndexerStore};
 use anyhow::Result;
 use async_trait::async_trait;
-use coerce::actor::{context::ActorContext, message::Handler, Actor};
-use moveos_types::moveos_std::object::ObjectMeta;
+use coerce::actor::{context::ActorContext, message::Handler, Actor, LocalActorRef};
+use moveos_store::MoveOSStore;
+use moveos_types::moveos_std::object::{ObjectID, ObjectMeta};
+use moveos_types::state_resolver::RootObjectResolver;
 use moveos_types::transaction::MoveAction;
+use rooch_event::actor::EventActor;
 use rooch_types::indexer::event::IndexerEvent;
+use rooch_types::indexer::field::{handle_field_change, IndexerFieldChanges};
 use rooch_types::indexer::state::{
     handle_object_change, handle_revert_object_change, IndexerObjectStateChangeSet,
     IndexerObjectStatesIndexGenerator, ObjectStateType,
@@ -23,14 +27,29 @@ use rooch_types::indexer::transaction::IndexerTransaction;
 pub struct IndexerActor {
     root: ObjectMeta,
     indexer_store: IndexerStore,
+    moveos_store: MoveOSStore,
+    _event_actor: Option<LocalActorRef<EventActor>>,
 }
 
 impl IndexerActor {
-    pub fn new(root: ObjectMeta, indexer_store: IndexerStore) -> Result<Self> {
+    pub fn new(
+        root: ObjectMeta,
+        indexer_store: IndexerStore,
+        moveos_store: MoveOSStore,
+        event_actor: Option<LocalActorRef<EventActor>>,
+    ) -> Result<Self> {
         Ok(Self {
             root,
             indexer_store,
+            moveos_store,
+            _event_actor: event_actor,
         })
+    }
+
+    // TODO use EventBus to trigger field indexer update
+    pub fn get_all_field_indexer_keys(&self) -> Result<Vec<ObjectID>> {
+        let resolver = RootObjectResolver::new(self.root.clone(), &self.moveos_store);
+        list_field_indexer_keys(&resolver)
     }
 }
 
@@ -46,7 +65,6 @@ impl Handler<UpdateIndexerMessage> for IndexerActor {
             events,
             state_change_set,
         } = msg;
-
         self.root = state_change_set.root_metadata();
         let tx_order = ledger_transaction.sequence_info.tx_order;
 
@@ -79,7 +97,7 @@ impl Handler<UpdateIndexerMessage> for IndexerActor {
         let mut state_index_generator = IndexerObjectStatesIndexGenerator::default();
         let mut indexer_object_state_change_set = IndexerObjectStateChangeSet::default();
 
-        for (_feild_key, object_change) in state_change_set.changes {
+        for (_field_key, object_change) in state_change_set.changes.clone() {
             let _ = handle_object_change(
                 &mut state_index_generator,
                 tx_order,
@@ -89,6 +107,19 @@ impl Handler<UpdateIndexerMessage> for IndexerActor {
         }
         self.indexer_store
             .apply_object_states(indexer_object_state_change_set)?;
+
+        //4. update indexer field
+        let field_indexer_ids = self.get_all_field_indexer_keys()?;
+        let mut field_changes = IndexerFieldChanges::default();
+        for (field_key, object_change) in state_change_set.changes {
+            let _ = handle_field_change(
+                field_key,
+                object_change,
+                &mut field_changes,
+                &field_indexer_ids,
+            )?;
+        }
+        self.indexer_store.apply_fields(field_changes)?;
 
         Ok(())
     }
@@ -256,7 +287,7 @@ impl Handler<IndexerRevertMessage> for IndexerActor {
         let mut state_index_generator = IndexerObjectStatesIndexGenerator::default();
         let mut indexer_object_state_change_set = IndexerObjectStateChangeSet::default();
 
-        for (_feild_key, object_change) in revert_state_change_set.state_change_set.changes {
+        for (_field_key, object_change) in revert_state_change_set.state_change_set.changes {
             let _ = handle_revert_object_change(
                 &mut state_index_generator,
                 revert_tx_order,

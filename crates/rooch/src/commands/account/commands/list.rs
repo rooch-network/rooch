@@ -122,12 +122,14 @@ impl CommandAction<Option<AccountsView>> for ListCommand {
                     "Address",
                     "Hex Address",
                     "Bitcoin Address",
+                    "Public Key",
                     "Nostr Public Key",
                 ];
                 let values = [
                     &account.local_account.address,
                     &account.local_account.hex_address,
                     &account.local_account.bitcoin_address,
+                    &account.local_account.public_key,
                     &account.local_account.nostr_public_key,
                 ];
 

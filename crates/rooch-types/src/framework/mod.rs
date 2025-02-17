@@ -22,6 +22,7 @@ pub mod ethereum_address;
 pub mod ethereum_validator;
 pub mod gas_coin;
 pub mod genesis;
+pub mod indexer;
 pub mod onchain_config;
 pub mod oracle;
 pub mod session_key;
