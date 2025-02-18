@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 use crate::binding_test::RustBindingTest;
 use move_core_types::identifier::Identifier;
 use move_core_types::language_storage::ModuleId;
