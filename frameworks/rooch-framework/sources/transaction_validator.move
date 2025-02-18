@@ -188,4 +188,53 @@ module rooch_framework::transaction_validator {
             coin::destroy_zero(remaining_gas_coin);
         }
     }
+
+    // TODO: tx validator test
+    #[test]
+    fun test_validate_success() {
+        // chain id
+        let chain_id = 3;
+        // auth validator id
+        let session_validator_id = session_validator::auth_validator_id();
+        let authenticator_payload = x"008b91427a5eaea2970a093a5a996a947fd7073d0155eaf85db9367715572662b20ddeb9fbb56a3d2a9ebd9d41c8cfc0089e7f7c6b2b2da954c4764527a8a2bd077495252f4c098ae79597de12da55e446256953a5a05d95e54adcd5e1e561cbe0";
+        rooch_framework::genesis::init_for_test();
+
+        // session key
+        let sender_addr = tx_context::sender();
+        let sender = moveos_std::account::create_signer_for_testing(sender_addr);
+        let scope = session_key::new_session_scope(@0x1, std::string::utf8(b"*"), std::string::utf8(b"*"));
+        let authentication_key = bcs::to_bytes(&sender_addr);
+        let max_inactive_interval = 10;
+        let app_name = std::string::utf8(b"test");
+        let app_url = std::string::utf8(b"https://test.rooch.network");
+        session_key::create_session_key(&sender, app_name, app_url,  authentication_key, vector::singleton(scope), max_inactive_interval);
+        let session_key_opt = session_key::get_session_key(sender_addr, authentication_key);
+        assert!(option::is_some(&session_key_opt), 1000);
+
+        // TODO: session validator: authenticator_payload
+        
+
+        // validate function
+        let tx_validate_result = validate(chain_id, session_validator_id, authenticator_payload);
+        std::debug::print(&tx_validate_result);
+
+        let id = 1;
+        let module_address = @000000000003;
+        let module_name = string::utf8(b"rooch_framework::empty");
+        let expected_auth_validator = auth_validator::new_auth_validator(id, module_address, module_name);
+        std::debug::print(&expected_auth_validator);
+        let expected_session_key = vector::empty<u8>();
+        let expected_bitcoin_addr = bitcoin_address::from_string(&string::utf8(b"bc1p72fvqwm9w4wcsd205maky9qejf6dwa6qeku5f5vnu4phpp3vvpws0p2f4g"));
+        std::debug::print(&expected_bitcoin_addr);
+
+        let auth_validator_id = 1;
+        let auth_validator = option::some(expected_auth_validator);
+        let session_key = option::some(expected_session_key);
+        let bitcoin_address = expected_bitcoin_addr;
+
+        let expected_tx_validate_result = auth_validator::new_tx_validate_result(auth_validator_id, auth_validator, session_key, bitcoin_address);
+        std::debug::print(&expected_tx_validate_result);
+
+        assert!(tx_validate_result == expected_tx_validate_result, 1000);
+    }
 }
