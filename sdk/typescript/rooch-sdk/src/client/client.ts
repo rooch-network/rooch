@@ -13,7 +13,8 @@ import {
 } from '../address/index.js'
 import { address, Bytes, u64 } from '../types/index.js'
 import { fromHEX, str } from '../utils/index.js'
-import { RoochHTTPTransport, RoochTransport } from './httpTransport.js'
+import { RoochTransport } from './transportInterface.js'
+import { RoochHTTPTransport } from './httpTransport.js'
 import {
   CallFunction,
   CallFunctionArgs,
@@ -463,41 +464,36 @@ export class RoochClient {
     package_address,
     limit,
     cursor,
-  }:{
+  }: {
     package_address: address
   } & PaginationArguments<string>): Promise<Map<string, string>> {
-    const packageObjectID = `0x14481947570f6c2f50d190f9a13bf549ab2f0c9debc41296cd4d506002379659${decodeToPackageAddressStr(package_address)}`;
+    const packageObjectID = `0x14481947570f6c2f50d190f9a13bf549ab2f0c9debc41296cd4d506002379659${decodeToPackageAddressStr(package_address)}`
     const result = await this.transport.request({
       method: 'rooch_listFieldStates',
-      params: [
-        packageObjectID,
-        cursor,
-        limit,
-        { decode: true },
-      ],
-    });
+      params: [packageObjectID, cursor, limit, { decode: true }],
+    })
 
     const moduleInfo = result as unknown as ObjectStateView[]
-    const moduleMap = new Map<string, string>();
+    const moduleMap = new Map<string, string>()
 
     if (moduleInfo && typeof moduleInfo === 'object' && 'data' in moduleInfo) {
-      const { data } = moduleInfo;
+      const { data } = moduleInfo
       if (Array.isArray(data)) {
         for (const item of data) {
-          const decodedValue = item?.state?.decoded_value;
+          const decodedValue = item?.state?.decoded_value
 
           if (decodedValue) {
-            const name = decodedValue?.value?.name;
-            const byte_codes = decodedValue?.value?.value?.value?.byte_codes;
+            const name = decodedValue?.value?.name
+            const byte_codes = decodedValue?.value?.value?.value?.byte_codes
             if (name && byte_codes) {
-              moduleMap.set(name, byte_codes);
+              moduleMap.set(name, byte_codes)
             }
           }
         }
       }
     }
 
-    return moduleMap;
+    return moduleMap
   }
 
   async getSessionKeys({
@@ -585,5 +581,9 @@ export class RoochClient {
       cursor: statePage.next_cursor,
       hasNextPage: statePage.has_next_page,
     }
+  }
+
+  destroy(): void {
+    this.transport.destroy()
   }
 }
