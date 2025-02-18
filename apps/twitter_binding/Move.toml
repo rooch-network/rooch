@@ -7,14 +7,13 @@ MoveStdlib = { local = "../../frameworks/move-stdlib" }
 MoveosStdlib = { local = "../../frameworks/moveos-stdlib" }
 RoochFramework = { local = "../../frameworks/rooch-framework" }
 BitcoinMove = { local = "../../frameworks/bitcoin-move" }
-verity-move-oracles = { git = "https://github.com/usherlabs/verity-move-oracles", subdir = "rooch", rev = "d08d06fe56ff2e6daae63555dc776454bb1e0405"}
+VerityMoveOracles = { git = "https://github.com/usherlabs/verity-move-oracles", subdir = "rooch", rev = "5053cb6563eca20f2c1c38784e8b20e9e3bb617f"}
 app_admin = { local = "../../apps/app_admin" }
 
 [addresses]
 twitter_binding = "_"
 app_admin = "_"
-verity = "0x9ce8eaf2166e9a6d4e8f1d27626297a0cf5ba1eaeb31137e08cc8f7773fb83f8"
-verity_test_foreign_module = "0x9ce8eaf2166e9a6d4e8f1d27626297a0cf5ba1eaeb31137e08cc8f7773fb83f8"
+verity = "0xf1290fb0e7e1de7e92e616209fb628970232e85c4c1a264858ff35092e1be231"
 std = "0x1"
 moveos_std = "0x2"
 rooch_framework = "0x3"
