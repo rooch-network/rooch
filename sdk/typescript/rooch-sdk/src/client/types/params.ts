@@ -80,7 +80,7 @@ export interface GetModuleABIParams {
 }
 /** Get object states by object id */
 export interface GetObjectStatesParams {
-  objectIds: string
+  ids: string[]
   stateOption?: RpcTypes.StateOptions | null | undefined
 }
 /**

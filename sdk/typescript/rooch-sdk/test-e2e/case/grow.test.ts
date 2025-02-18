@@ -4,7 +4,14 @@
 import { beforeAll, describe, it, afterAll } from 'vitest'
 import { TestBox } from '../setup.js'
 import { Args, bcs } from '../../src/bcs/index.js'
-import { BitcoinAddress, BitcoinNetowkType, fromHEX, getRoochNodeUrl, RoochAddress, StateKVView } from "../../src";
+import {
+  BitcoinAddress,
+  BitcoinNetowkType,
+  fromHEX,
+  getRoochNodeUrl,
+  RoochAddress,
+  StateKVView,
+} from '../../src'
 
 describe('Checkpoints Transfer API', () => {
   let testBox: TestBox
@@ -119,7 +126,7 @@ describe('Checkpoints Transfer API', () => {
       const result = await testBox.getClient().listStates({
         accessPath: '/table/0xa1e5d1779e9764839a0526e35d5972d28584d3dcfac1d2305e231b6490a59740',
         limit: '200',
-        cursor: nextCursor
+        cursor: nextCursor,
       })
       nextCursor = result.next_cursor
       votes = votes.concat(result.data)
