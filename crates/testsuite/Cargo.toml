@@ -42,7 +42,7 @@ hmac = "0.12.1"
 hex = "0.4.3"
 
 [dependencies.uuid]
-version = "1.13.1"
+version = "1.13.2"
 features = [
     "v4", # Lets you generate random UUIDs
     "fast-rng", # Use a faster (but still sufficiently random) RNG

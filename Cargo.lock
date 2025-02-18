@@ -2096,7 +2096,7 @@ dependencies = [
  "tokio",
  "tokio-util",
  "tracing",
- "uuid 1.13.1",
+ "uuid 1.13.2",
  "valuable",
 ]
 
@@ -3035,7 +3035,7 @@ version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bef552e6f588e446098f6ba40d89ac146c8c7b64aade83c051ee00bb5d2bc18d"
 dependencies = [
- "uuid 1.13.1",
+ "uuid 1.13.2",
 ]
 
 [[package]]
@@ -6933,7 +6933,7 @@ dependencies = [
  "tap",
  "tokio",
  "tracing",
- "uuid 1.13.1",
+ "uuid 1.13.2",
 ]
 
 [[package]]
@@ -8437,7 +8437,7 @@ dependencies = [
  "serde 1.0.216",
  "serde_json",
  "tokio",
- "uuid 1.13.1",
+ "uuid 1.13.2",
 ]
 
 [[package]]
@@ -10275,7 +10275,7 @@ dependencies = [
  "rkyv_derive",
  "seahash",
  "tinyvec",
- "uuid 1.13.1",
+ "uuid 1.13.2",
 ]
 
 [[package]]
@@ -12625,7 +12625,7 @@ dependencies = [
  "debugid",
  "memmap2 0.9.4",
  "stable_deref_trait",
- "uuid 1.13.1",
+ "uuid 1.13.2",
 ]
 
 [[package]]
@@ -12986,7 +12986,7 @@ dependencies = [
  "testcontainers",
  "tokio",
  "tracing",
- "uuid 1.13.1",
+ "uuid 1.13.2",
 ]
 
 [[package]]
@@ -13470,7 +13470,7 @@ dependencies = [
  "tower-layer",
  "tower-service",
  "tracing",
- "uuid 1.13.1",
+ "uuid 1.13.2",
 ]
 
 [[package]]
@@ -13929,9 +13929,9 @@ dependencies = [
 
 [[package]]
 name = "uuid"
-version = "1.13.1"
+version = "1.13.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ced87ca4be083373936a67f8de945faa23b6b42384bd5b64434850802c6dccd0"
+checksum = "8c1f41ffb7cf259f1ecc2876861a17e7142e63ead296f671f81f6ae85903e0d6"
 dependencies = [
  "getrandom 0.3.1",
  "rand 0.9.0",
@@ -13941,9 +13941,9 @@ dependencies = [
 
 [[package]]
 name = "uuid-macro-internal"
-version = "1.13.1"
+version = "1.13.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d28dd23acb5f2fa7bd2155ab70b960e770596b3bb6395119b40476c3655dfba4"
+checksum = "f02e7142329d47ebfcb5fc40e357b867f971230181e6f78744e52d9325d8f052"
 dependencies = [
  "proc-macro2 1.0.93",
  "quote 1.0.38",
