@@ -526,7 +526,7 @@ impl ExecInner {
                 }
                 result = self
                 .ledger_tx_getter
-                .load_ledger_tx_list(next_block_number, false) => {
+                .load_ledger_tx_list(next_block_number, false, true) => {
                 let tx_list = result?;
             if tx_list.is_none() {
                 if self.mode == ExecMode::Sync {

@@ -9,6 +9,7 @@ use crate::commands::da::commands::index::IndexCommand;
 use crate::commands::da::commands::namespace::NamespaceCommand;
 use crate::commands::da::commands::pack::PackCommand;
 use crate::commands::da::commands::unpack::UnpackCommand;
+use crate::commands::da::commands::verify::VerifyCommand;
 use async_trait::async_trait;
 use clap::Parser;
 use rooch_types::error::RoochResult;
@@ -32,6 +33,10 @@ impl CommandAction<String> for DA {
                 index.execute().await?;
                 Ok("".to_owned())
             }
+            DACommand::Verify(verify) => {
+                verify.execute().await?;
+                Ok("".to_owned())
+            }
         }
     }
 }
@@ -44,4 +49,5 @@ pub enum DACommand {
     Namespace(NamespaceCommand),
     Exec(Box<ExecCommand>),
     Index(IndexCommand),
+    Verify(VerifyCommand),
 }

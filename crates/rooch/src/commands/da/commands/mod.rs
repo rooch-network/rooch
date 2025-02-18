@@ -41,6 +41,7 @@ pub mod index;
 pub mod namespace;
 pub mod pack;
 pub mod unpack;
+pub mod verify;
 
 pub(crate) struct SequencedTxStore {
     tx_accumulator: MerkleAccumulator,
@@ -425,6 +426,7 @@ impl LedgerTxGetter {
         &self,
         chunk_id: u128,
         must_has: bool,
+        verify_order: bool,
     ) -> anyhow::Result<Option<Vec<LedgerTransaction>>> {
         let tx_list_opt = self
             .chunks
@@ -445,7 +447,7 @@ impl LedgerTxGetter {
                         self.segment_dir.clone(),
                         chunk_id,
                         segment_numbers.clone(),
-                        true,
+                        verify_order,
                     )?;
                     Ok(Some(tx_list))
                 },
@@ -927,7 +929,7 @@ impl TxPositionIndexer {
 
         while block_number <= stop_at {
             let tx_list = ledger_tx_loader
-                .load_ledger_tx_list(block_number, true)
+                .load_ledger_tx_list(block_number, true, true)
                 .await?;
             let tx_list = tx_list.unwrap();
             {
