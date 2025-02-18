@@ -88,7 +88,32 @@ fn test_error_on_bad_parameters() {
 }
 
 #[test]
-fn accumulator_pop_unsaved() {
+fn test_append_dup() {
+    let mock_store = MockAccumulatorStore::new();
+    let mock_store_arc = Arc::new(mock_store);
+    let tx_accumulator = MerkleAccumulator::new_empty(mock_store_arc.clone());
+
+    // proof verify
+    let leaves_0 = create_leaves(0..10);
+    let root_0 = tx_accumulator.append(&leaves_0).unwrap();
+    proof_verify(&tx_accumulator, root_0, &leaves_0, 0);
+
+    // append duplicate leaves and verify duplicate leaves
+    tx_accumulator.append(&leaves_0[9..10]).unwrap();
+    let root_1 = tx_accumulator.root_hash();
+    assert_ne!(root_0, root_1);
+    proof_verify(&tx_accumulator, root_1, &leaves_0[9..10], 10);
+
+    // append new leaves and verify all
+    let leaves_1 = create_leaves(10..20);
+    let root_2 = tx_accumulator.append(&leaves_1).unwrap();
+    proof_verify(&tx_accumulator, root_2, &leaves_0, 0);
+    proof_verify(&tx_accumulator, root_2, &leaves_0[9..10], 10);
+    proof_verify(&tx_accumulator, root_2, &leaves_1, 11);
+}
+
+#[test]
+fn test_pop_unsaved() {
     let mock_store = MockAccumulatorStore::new();
     let mock_store_arc = Arc::new(mock_store);
     let tx_accumulator = MerkleAccumulator::new_empty(mock_store_arc.clone());
