@@ -123,6 +123,18 @@ impl SequencerActor {
         Ok(())
     }
 
+    // last_sequencer_info may be inconsistent with the sequencer info in db caused by pipeline revert
+    fn get_next_tx_order(&mut self) -> Result<u64> {
+        let sequencer_info_db = self
+            .rooch_store
+            .get_meta_store()
+            .get_sequencer_info()?
+            .ok_or_else(|| anyhow::anyhow!("Load sequencer info failed"))?;
+        self.last_sequencer_info = sequencer_info_db;
+
+        Ok(self.last_sequencer_info.last_order + 1)
+    }
+
     #[named]
     pub fn sequence(&mut self, mut tx_data: LedgerTxData) -> Result<LedgerTransaction> {
         let fn_name = function_name!();
@@ -136,7 +148,7 @@ impl SequencerActor {
 
         let now = SystemTime::now();
         let tx_timestamp = now.duration_since(SystemTime::UNIX_EPOCH)?.as_millis() as u64;
-        let tx_order = self.last_sequencer_info.last_order + 1;
+        let tx_order = self.get_next_tx_order()?;
         let tx_hash = tx_data.tx_hash();
         let tx_order_signature =
             LedgerTransaction::sign_tx_order(tx_order, tx_hash, &self.sequencer_key);
@@ -157,6 +169,7 @@ impl SequencerActor {
             tx.clone(),
             sequencer_info.clone(),
             tx_accumulator_unsaved_nodes,
+            true,
         );
         if let Err(e) = save_ret {
             // database error/inconsistent issue happened,
