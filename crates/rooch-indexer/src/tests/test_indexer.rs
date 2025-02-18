@@ -18,11 +18,13 @@ use rooch_config::store_config::DEFAULT_DB_INDEXER_SUBDIR;
 use rooch_types::framework::coin_store::CoinStore;
 use rooch_types::framework::gas_coin::RGas;
 use rooch_types::indexer::event::{EventFilter, IndexerEvent};
+use rooch_types::indexer::field::FieldFilter;
 use rooch_types::indexer::state::{IndexerObjectState, ObjectStateFilter, ObjectStateType};
 use rooch_types::indexer::transaction::{IndexerTransaction, TransactionFilter};
 use rooch_types::test_utils::{
-    random_event, random_ledger_transaction, random_new_object_states, random_remove_object_states,
-    random_update_object_states, random_verified_move_action,
+    random_event, random_ledger_transaction, random_new_fields, random_new_object_states,
+    random_remove_fields, random_remove_fields_by_id, random_remove_object_states,
+    random_update_fields, random_update_object_states, random_verified_move_action,
 };
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -254,5 +256,38 @@ async fn test_escape_transaction() -> Result<()> {
     let query_transactions =
         indexer_reader.query_transactions_with_filter(filter, None, 1, true)?;
     assert_eq!(query_transactions.len(), 1);
+    Ok(())
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn test_field_store() -> Result<()> {
+    let registry_service = RegistryService::default();
+    let tmpdir = moveos_config::temp_dir();
+    let indexer_db = tmpdir.path().join(DEFAULT_DB_INDEXER_SUBDIR);
+    let indexer_store =
+        IndexerStore::new(indexer_db.clone(), &registry_service.default_registry())?;
+    let indexer_reader = IndexerReader::new(indexer_db, &registry_service.default_registry())?;
+
+    let mut new_fields = random_new_fields();
+    let new_object_ids = new_fields
+        .iter()
+        .map(|field| field.id.clone())
+        .collect::<Vec<_>>();
+    let mut update_fields = random_update_fields(new_fields.clone());
+    let remove_fields = random_remove_fields();
+    let remove_fields_by_id = random_remove_fields_by_id();
+
+    //Merge new fields and update fields
+    new_fields.append(&mut update_fields);
+    indexer_store.persist_or_update_fields(new_fields.clone())?;
+    indexer_store.delete_fields(remove_fields)?;
+    indexer_store.delete_fields_by_id(remove_fields_by_id)?;
+
+    // test for querying batch fields with filter FieldFilter::ObjectId
+    let _num_objs = new_object_ids.len();
+    let filter = FieldFilter::ObjectId(new_object_ids);
+    let query_fields = indexer_reader.query_fields_with_filter(filter, 1, 1, true)?;
+    assert_eq!(query_fields.len(), 1);
+
     Ok(())
 }
