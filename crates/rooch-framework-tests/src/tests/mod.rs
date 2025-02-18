@@ -9,6 +9,7 @@ mod bitcoin_tester_test;
 mod bitcoin_validator_tests;
 mod brc20_test;
 mod chain_id_test;
+mod check_tx_size;
 mod empty_tests;
 mod ethereum_test;
 mod multisign_account_tests;
