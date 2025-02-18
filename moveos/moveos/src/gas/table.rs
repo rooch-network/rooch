@@ -740,7 +740,7 @@ impl MoveOSGasMeter {
         }
     }
 
-    pub fn do_charge_io_writes(&mut self, tx_size: u64) -> PartialVMResult<()> {
+    pub fn calculate_io_writes_gas(&self, tx_size: u64) -> u64 {
         let tx_gas_parameter: u64 = self
             .cost_table
             .storage_gas_parameter
@@ -755,19 +755,12 @@ impl MoveOSGasMeter {
 
         let factor_gas = match tx_gas_parameter.checked_mul(factor) {
             None => {
-                self.gas_left = InternalGas::from(0);
-                return Err(PartialVMError::new(StatusCode::OUT_OF_GAS));
+                return 0;
             }
             Some(final_gas) => final_gas,
         };
 
-        match tx_size.checked_mul(factor_gas) {
-            None => {
-                self.gas_left = InternalGas::from(0);
-                Err(PartialVMError::new(StatusCode::OUT_OF_GAS))
-            }
-            Some(final_gas) => self.do_deduct_gas(InternalGas::from(final_gas)),
-        }
+        tx_size.checked_mul(factor_gas).unwrap_or(0)
     }
 }
 
@@ -792,7 +785,15 @@ impl ClassifiedGasMeter for MoveOSGasMeter {
             return Ok(());
         }
 
-        self.do_charge_io_writes(tx_size)
+        let io_writes_gas = match self.calculate_io_writes_gas(tx_size) {
+            0 => {
+                self.gas_left = InternalGas::from(0);
+                return Err(PartialVMError::new(StatusCode::OUT_OF_GAS));
+            }
+            gas_left => gas_left,
+        };
+
+        self.deduct_gas(InternalGas::from(io_writes_gas))
     }
     //TODO cleanup
     // fn charge_event(&mut self, events: &[TransactionEvent]) -> PartialVMResult<()> {
