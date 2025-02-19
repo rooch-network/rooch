@@ -3,11 +3,21 @@
 
 use crate::cli_types::WalletContextOptions;
 use itertools::Itertools;
+use metrics::RegistryService;
+use moveos_config::store_config::RocksdbConfig;
+use moveos_types::moveos_std::object::ObjectMeta;
+use raw_store::rocks::RocksDB;
+use rocksdb::{ColumnFamilyDescriptor, DB};
+use rooch_config::RoochOpt;
+use rooch_db::RoochDB;
 use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_types::address::RoochAddress;
 use rooch_types::crypto::RoochKeyPair;
 use rooch_types::error::{RoochError, RoochResult};
+use rooch_types::rooch_network::RoochChainID;
 use std::io::{self, stdout, Write};
+use std::path::PathBuf;
+use std::time::SystemTime;
 use std::{collections::BTreeMap, str::FromStr};
 
 /// Error message for parsing a map
@@ -107,4 +117,49 @@ pub fn get_sequencer_keypair(
         .keystore
         .get_key_pair(&sequencer_account, context.get_password())
         .map_err(|e| RoochError::SequencerKeyPairDoesNotExistError(e.to_string()))
+}
+
+pub fn open_rooch_db(
+    base_data_dir: Option<PathBuf>,
+    chain_id: Option<RoochChainID>,
+) -> (ObjectMeta, RoochDB, SystemTime) {
+    let start_time = SystemTime::now();
+
+    let opt = RoochOpt::new_with_default(base_data_dir, chain_id, None).unwrap();
+    let registry_service = RegistryService::default();
+    let rooch_db = RoochDB::init(opt.store_config(), &registry_service.default_registry()).unwrap();
+    let root = rooch_db.latest_root().unwrap().unwrap();
+    (root, rooch_db, start_time)
+}
+
+pub fn open_inner_rocks(
+    path: &str,
+    column_families: Vec<String>,
+    readonly: bool,
+) -> anyhow::Result<DB> {
+    let config = RocksdbConfig::default();
+    let mut rocksdb_opts = RocksDB::gen_rocksdb_options(&config);
+    let table_opts = RocksDB::generate_table_opts(&config);
+    if readonly {
+        let error_if_log_file_exists = false;
+        let inner = DB::open_cf_for_read_only(
+            &rocksdb_opts,
+            path,
+            column_families,
+            error_if_log_file_exists,
+        )?;
+        Ok(inner)
+    } else {
+        rocksdb_opts.create_if_missing(true);
+        rocksdb_opts.create_missing_column_families(true);
+        let inner = DB::open_cf_descriptors(
+            &rocksdb_opts,
+            path,
+            column_families.iter().map(|cf_name| {
+                let cf_opts = RocksDB::generate_cf_options(cf_name, &table_opts);
+                ColumnFamilyDescriptor::new((*cf_name).to_string(), cf_opts)
+            }),
+        )?;
+        Ok(inner)
+    }
 }
