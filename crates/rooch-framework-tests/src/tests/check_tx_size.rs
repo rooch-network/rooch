@@ -6,7 +6,6 @@ use move_core_types::identifier::Identifier;
 use move_core_types::language_storage::ModuleId;
 use move_core_types::value::MoveValue;
 use moveos_types::addresses::MOVEOS_STD_ADDRESS;
-use moveos_types::module_binding::ModuleBinding;
 use moveos_types::move_types::FunctionId;
 use moveos_types::transaction::MoveAction;
 use rand::Rng;
@@ -31,7 +30,7 @@ async fn check_tx_size() {
 
     let action = MoveAction::new_function_call(function_id, vec![], arg_bytes);
 
-    let mut keystore = InMemKeystore::new_insecure_for_tests(1);
+    let keystore = InMemKeystore::new_insecure_for_tests(1);
     let sender = keystore.addresses()[0];
     let tx_data = RoochTransactionData::new_for_test(sender, 0, action);
     let tx = keystore.sign_transaction(&sender, tx_data, None).unwrap();
