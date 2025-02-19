@@ -25,10 +25,12 @@ module.exports = {
     'out',
     'generated',
     'templates',
-    'grow-rooch-v1',
+    'infra',
     'dist',
+    'third_party',
     'coverage',
     'next-env.d.ts',
+    'examples',
   ],
   rules: {
     'no-case-declarations': 'off',
