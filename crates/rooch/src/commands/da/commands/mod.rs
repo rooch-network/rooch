@@ -16,7 +16,9 @@ use rooch_config::RoochOpt;
 use rooch_db::RoochDB;
 use rooch_rpc_client::Client;
 use rooch_store::RoochStore;
-use rooch_types::da::chunk::chunk_from_segments;
+use rooch_types::crypto::RoochKeyPair;
+use rooch_types::da::batch::DABatch;
+use rooch_types::da::chunk::{chunk_from_segments, Chunk, ChunkV0};
 use rooch_types::da::segment::{segment_from_bytes, SegmentID};
 use rooch_types::rooch_network::RoochChainID;
 use rooch_types::sequencer::SequencerInfo;
@@ -40,8 +42,11 @@ pub mod exec;
 pub mod index;
 pub mod namespace;
 pub mod pack;
+pub mod repair;
 pub mod unpack;
 pub mod verify;
+
+const DEFAULT_MAX_SEGMENT_SIZE: usize = 4 * 1024 * 1024;
 
 pub(crate) struct SequencedTxStore {
     tx_accumulator: MerkleAccumulator,
@@ -983,4 +988,32 @@ impl TxPositionIndexer {
         drop(env);
         Ok(())
     }
+}
+
+fn write_down_segments(
+    chunk_id: u128,
+    tx_order_start: u64,
+    tx_order_end: u64,
+    tx_list: &Vec<LedgerTransaction>,
+    sequencer_keypair: &RoochKeyPair,
+    segment_dir: PathBuf,
+) -> anyhow::Result<()> {
+    let batch = DABatch::new(
+        chunk_id,
+        tx_order_start,
+        tx_order_end,
+        tx_list,
+        sequencer_keypair,
+    )?;
+    // ensure the batch is valid
+    batch.verify(true)?;
+
+    let segments = ChunkV0::from(batch).to_segments(DEFAULT_MAX_SEGMENT_SIZE);
+    for segment in segments.iter() {
+        let segment_path = segment_dir.join(segment.get_id().to_string());
+        let mut writer = File::create(segment_path)?;
+        writer.write_all(&segment.to_bytes())?;
+        writer.flush()?;
+    }
+    Ok(())
 }

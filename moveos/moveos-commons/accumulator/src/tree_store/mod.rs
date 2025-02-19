@@ -11,6 +11,7 @@ use moveos_types::h256::H256;
 use std::any::type_name;
 
 pub mod mock;
+pub mod rocks;
 
 pub trait AccumulatorTreeStore: std::marker::Send + std::marker::Sync {
     fn store_type(&self) -> &'static str {

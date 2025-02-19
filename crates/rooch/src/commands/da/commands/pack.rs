@@ -2,17 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_types::WalletContextOptions;
+use crate::commands::da::commands::write_down_segments;
 use crate::utils::get_sequencer_keypair;
 use clap::Parser;
-use rooch_types::da::batch::DABatch;
-use rooch_types::da::chunk::{Chunk, ChunkV0};
 use rooch_types::error::RoochResult;
 use rooch_types::transaction::LedgerTransaction;
 use std::fs::File;
-use std::io::{BufRead, BufReader, Read, Write};
+use std::io::{BufRead, BufReader, Read};
 use std::path::PathBuf;
-
-const DEFAULT_MAX_SEGMENT_SIZE: usize = 4 * 1024 * 1024;
 
 /// Unpack human-readable LedgerTransaction List to segments.
 #[derive(Debug, Parser)]
@@ -44,23 +41,14 @@ impl PackCommand {
         let tx_order_start = tx_list.first().unwrap().sequence_info.tx_order;
         let tx_order_end = tx_list.last().unwrap().sequence_info.tx_order;
 
-        let batch = DABatch::new(
+        write_down_segments(
             self.chunk_id,
             tx_order_start,
             tx_order_end,
             &tx_list,
-            sequencer_keypair,
+            &sequencer_keypair,
+            self.segment_dir,
         )?;
-        // ensure the batch is valid
-        batch.verify(true)?;
-
-        let segments = ChunkV0::from(batch).to_segments(DEFAULT_MAX_SEGMENT_SIZE);
-        for segment in segments.iter() {
-            let segment_path = self.segment_dir.join(segment.get_id().to_string());
-            let mut writer = File::create(segment_path)?;
-            writer.write_all(&segment.to_bytes())?;
-            writer.flush()?;
-        }
 
         Ok(())
     }

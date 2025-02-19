@@ -8,6 +8,7 @@ use crate::commands::da::commands::exec::ExecCommand;
 use crate::commands::da::commands::index::IndexCommand;
 use crate::commands::da::commands::namespace::NamespaceCommand;
 use crate::commands::da::commands::pack::PackCommand;
+use crate::commands::da::commands::repair::RepairCommand;
 use crate::commands::da::commands::unpack::UnpackCommand;
 use crate::commands::da::commands::verify::VerifyCommand;
 use async_trait::async_trait;
@@ -37,6 +38,10 @@ impl CommandAction<String> for DA {
                 verify.execute().await?;
                 Ok("".to_owned())
             }
+            DACommand::Repair(repair) => {
+                repair.execute().await?;
+                Ok("".to_owned())
+            }
         }
     }
 }
@@ -50,4 +55,5 @@ pub enum DACommand {
     Exec(Box<ExecCommand>),
     Index(IndexCommand),
     Verify(VerifyCommand),
+    Repair(RepairCommand),
 }
