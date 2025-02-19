@@ -549,11 +549,25 @@ impl TxMetaStore {
         let mut exp_roots = HashMap::new();
         let mut max_verified_tx_order = 0;
 
+        // tx orders with the same hash, the tx info stored in the db is the latest one
+        // need to skip these tx orders
+        // tx_order, tx_order_with_same_hash, tx_hash, block_number
+        // 84658122,84658124,0x4854d82441239cda0805b963b404a007ecbc6366ce3fd4c37572cdb692624430,373386
+        // 84659999,84660000,0x44955c646f81defdcd4db2d038fc52f50949e943b59dc02757587f05e14ef007,373386
+        // 84706263,84706267,0xbb3bf39a48f85413e43f09de8a16b90237379f33abd77a8e6ea3c19ca96f2bc0,373392
+        // 84706265,84706267,0xbb3bf39a48f85413e43f09de8a16b90237379f33abd77a8e6ea3c19ca96f2bc0,373392
+        // 84706266,84706267,0xbb3bf39a48f85413e43f09de8a16b90237379f33abd77a8e6ea3c19ca96f2bc0,373392
+        const TX_ORDER_WITH_DUP_HASH_ISSUE: Vec<u64> =
+            vec![84658122, 84659999, 84706263, 84706265, 84706266];
+
         let mut reader = BufReader::new(File::open(exp_roots_path)?);
         for line in reader.by_ref().lines() {
             let line = line?;
             let parts: Vec<&str> = line.split(':').collect();
             let tx_order = parts[0].parse::<u64>()?;
+            if TX_ORDER_WITH_DUP_HASH_ISSUE.contains(&tx_order) {
+                continue;
+            }
             let state_root_raw = parts[1];
             let state_root = if state_root_raw == "null" {
                 H256::zero()
