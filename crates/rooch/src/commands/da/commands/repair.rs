@@ -127,9 +127,8 @@ impl InnerRepair {
             if previous_tx_order <= self.first_tx_order {
                 return self.min_timestamp;
             }
-            let tx_timestamp = self.get_tx_timestamp(previous_tx_order);
-            if tx_timestamp.is_some() {
-                return tx_timestamp.unwrap();
+            if let Some(tx_timestamp) = self.get_tx_timestamp(previous_tx_order) {
+                return tx_timestamp;
             }
             previous_tx_order -= 1;
         }
