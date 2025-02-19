@@ -49,16 +49,12 @@ impl DBMigrator {
         let mut batch = WriteBatch::default();
         let mut count = 0;
 
-        let mut iter = self
+        let iter = self
             .source_db
             .iterator_cf(source_cf, rocksdb::IteratorMode::Start);
 
-        loop {
-            let (key, value) = match iter.next() {
-                Some(result) => result?,
-                None => break,
-            };
-
+        for result in iter {
+            let (key, value) = result?;
             batch.put_cf(&target_cf, key, value);
             count += 1;
 
