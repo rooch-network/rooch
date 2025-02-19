@@ -241,7 +241,7 @@ impl ExecutorActor {
             RoochMultiChainID::Bitcoin => {
                 // Validate the l1 tx before execution via contract,
                 // If it already execute, skip the tx.
-                let l1_tx_exist = self.validate_l1_tx_exist(tx_hash.clone())?;
+                let l1_tx_exist = self.validate_l1_tx_exist(tx_hash)?;
                 if l1_tx_exist {
                     return Err(anyhow::anyhow!("L1 tx {:?} has been executed", tx_hash));
                 }
