@@ -13,7 +13,8 @@ import {
 } from '../address/index.js'
 import { address, Bytes, u64 } from '../types/index.js'
 import { fromHEX, str } from '../utils/index.js'
-import { RoochHTTPTransport, RoochTransport } from './httpTransport.js'
+import { RoochTransport } from './transportInterface.js'
+import { RoochHTTPTransport } from './httpTransport.js'
 import {
   CallFunction,
   CallFunctionArgs,
@@ -686,5 +687,9 @@ export class RoochClient {
       cursor: statePage.next_cursor,
       hasNextPage: statePage.has_next_page,
     }
+  }
+
+  destroy(): void {
+    this.transport.destroy()
   }
 }
