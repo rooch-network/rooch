@@ -187,7 +187,7 @@ mod tests {
             .map(|i| random_ledger_transaction_with_order(i as u64 + 1, &keypair))
             .collect::<Vec<_>>();
         let batch =
-            DABatch::new(123, 1, 128, &tx_list, keypair).expect("create batch should success");
+            DABatch::new(123, 1, 128, &tx_list, &keypair).expect("create batch should success");
 
         let chunk = ChunkV0::from(batch.clone());
         let segments = chunk.to_segments(1023);
