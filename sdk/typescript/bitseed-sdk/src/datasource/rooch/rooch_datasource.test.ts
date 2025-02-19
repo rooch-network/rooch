@@ -52,6 +52,8 @@ class MockRoochTransport implements RoochTransport {
     throw new Error(`No mock response or error set for method: ${method}`);
   }
 
+  destroy(): void {}
+
   resetMocks() {
     this.mockResponses.clear();
     this.mockErrors.clear();
