@@ -8,7 +8,7 @@ use rooch_types::error::{RoochError, RoochResult};
 use rooch_types::rooch_network::RoochChainID;
 use std::path::PathBuf;
 
-use crate::commands::db::commands::init;
+use crate::utils::open_rooch_db;
 
 /// Revert tx by db command.
 #[derive(Debug, Parser)]
@@ -30,7 +30,7 @@ impl RevertCommand {
                 "tx order should be greater than 0",
             )));
         }
-        let (_root, rooch_db, _start_time) = init(self.base_data_dir, self.chain_id);
+        let (_root, rooch_db, _start_time) = open_rooch_db(self.base_data_dir, self.chain_id);
 
         let tx_hashes = rooch_db
             .rooch_store

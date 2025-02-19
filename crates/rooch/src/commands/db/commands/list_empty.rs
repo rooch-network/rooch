@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::commands::db::commands::init;
+use crate::utils::open_rooch_db;
 use clap::Parser;
 use moveos_store::transaction_store::TransactionStore;
 use moveos_types::h256::H256;
@@ -30,7 +30,7 @@ pub struct ListEmptyCommand {
 
 impl ListEmptyCommand {
     pub fn execute(self) -> RoochResult<()> {
-        let (_root, rooch_db, _start_time) = init(self.base_data_dir, self.chain_id);
+        let (_root, rooch_db, _start_time) = open_rooch_db(self.base_data_dir, self.chain_id);
         let moveos_store = rooch_db.moveos_store.clone();
 
         let mut tx_hash_order_map: HashMap<H256, u64> =

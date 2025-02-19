@@ -96,11 +96,11 @@ impl RocksDB {
 
         let table_opts = Self::generate_table_opts(&rocksdb_config);
         let db = if readonly {
-            Self::open_readonly(&rocksdb_opts, path, column_families.clone())?
+            Self::open_readonly_inner_db(&rocksdb_opts, path, column_families.clone())?
         } else {
             rocksdb_opts.create_if_missing(true);
             rocksdb_opts.create_missing_column_families(true);
-            Self::open_inner(&table_opts, &rocksdb_opts, path, column_families.clone())?
+            Self::open_inner_db(&table_opts, &rocksdb_opts, path, column_families.clone())?
         };
         check_open_fds_limit(rocksdb_config.max_open_files as u64 + RES_FDS)?;
         Ok(RocksDB {
@@ -110,7 +110,7 @@ impl RocksDB {
         })
     }
 
-    fn generate_table_opts(rocksdb_config: &RocksdbConfig) -> BlockBasedOptions {
+    pub fn generate_table_opts(rocksdb_config: &RocksdbConfig) -> BlockBasedOptions {
         let mut table_opts = BlockBasedOptions::default();
 
         // options for enabling partitioned index filter
@@ -127,7 +127,7 @@ impl RocksDB {
         table_opts
     }
 
-    fn open_inner(
+    fn open_inner_db(
         table_opts: &BlockBasedOptions,
         opts: &Options,
         path: impl AsRef<Path>,
@@ -144,7 +144,7 @@ impl RocksDB {
         Ok(inner)
     }
 
-    fn generate_cf_options(cf_name: &str, table_opts: &BlockBasedOptions) -> Options {
+    pub fn generate_cf_options(cf_name: &str, table_opts: &BlockBasedOptions) -> Options {
         let mut cf_opts = Options::default();
         cf_opts.set_level_compaction_dynamic_level_bytes(true);
         cf_opts.set_compression_per_level(&[
@@ -176,7 +176,7 @@ impl RocksDB {
         cf_opts
     }
 
-    fn open_readonly(
+    fn open_readonly_inner_db(
         db_opts: &Options,
         path: impl AsRef<Path>,
         column_families: Vec<ColumnFamilyName>,
@@ -246,7 +246,7 @@ impl RocksDB {
         opts
     }
 
-    fn gen_rocksdb_options(config: &RocksdbConfig) -> Options {
+    pub fn gen_rocksdb_options(config: &RocksdbConfig) -> Options {
         let mut db_opts = Options::default();
         db_opts.set_max_open_files(config.max_open_files);
         db_opts.set_max_total_wal_size(config.max_total_wal_size);

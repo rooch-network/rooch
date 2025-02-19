@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::commands::db::commands::init;
+use crate::utils::open_rooch_db;
 use clap::Parser;
 use moveos_types::state::StateChangeSetExt;
 use rooch_config::R_OPT_NET_HELP;
@@ -24,7 +24,7 @@ pub struct GetChangesetByOrderCommand {
 
 impl GetChangesetByOrderCommand {
     pub async fn execute(self) -> RoochResult<Option<StateChangeSetExt>> {
-        let (_root, rooch_db, _start_time) = init(self.base_data_dir, self.chain_id);
+        let (_root, rooch_db, _start_time) = open_rooch_db(self.base_data_dir, self.chain_id);
         let rooch_store = rooch_db.rooch_store;
         let tx_order = self.order;
         let state_change_set_ext_opt = rooch_store.get_state_change_set(tx_order)?;
