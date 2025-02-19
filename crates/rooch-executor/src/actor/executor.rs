@@ -17,6 +17,7 @@ use moveos::vm::vm_status_explainer::explain_vm_status;
 use moveos_eventbus::bus::EventData;
 use moveos_store::MoveOSStore;
 use moveos_types::function_return_value::FunctionResult;
+use moveos_types::h256::H256;
 use moveos_types::module_binding::MoveFunctionCaller;
 use moveos_types::move_std::option::MoveOption;
 use moveos_types::moveos_std::object::ObjectMeta;
@@ -236,9 +237,15 @@ impl ExecutorActor {
         let tx_hash = l1_tx.tx_hash();
         let tx_size = l1_tx.tx_size();
         let ctx = TxContext::new_system_call_ctx(tx_hash, tx_size);
-        //TODO we should call the contract to validate the l1 tx has been executed
         let result = match RoochMultiChainID::try_from(l1_tx.chain_id.id())? {
             RoochMultiChainID::Bitcoin => {
+                // Validate the l1 tx before execution via contract,
+                // If it already execute, skip the tx.
+                let l1_tx_exist = self.validate_l1_tx_exist(tx_hash.clone())?;
+                if l1_tx_exist {
+                    return Err(anyhow::anyhow!("L1 tx {:?} has been executed", tx_hash));
+                }
+
                 let action = VerifiedMoveAction::Function {
                     call: BitcoinModule::create_execute_l1_tx_call(l1_tx.block_hash, l1_tx.txid)?,
                     bypass_visibility: true,
@@ -257,6 +264,11 @@ impl ExecutorActor {
             .with_label_values(&[fn_name])
             .observe(tx_size as f64);
         result
+    }
+
+    fn validate_l1_tx_exist(&self, l1_tx_hash: H256) -> Result<bool> {
+        let tx_validator = self.as_module_binding::<BitcoinModule>();
+        tx_validator.exist_l1_tx(l1_tx_hash)
     }
 
     #[named]
