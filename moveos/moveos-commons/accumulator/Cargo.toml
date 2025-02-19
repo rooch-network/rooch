@@ -22,6 +22,8 @@ serde = { workspace = true }
 mirai-annotations = { workspace = true }
 moveos-types = { workspace = true }
 bcs-ext = { workspace = true }
+rocksdb = { workspace = true }
+bcs = { workspace = true }
 
 [dev-dependencies]
 proptest = { workspace = true }
