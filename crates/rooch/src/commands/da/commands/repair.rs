@@ -121,8 +121,18 @@ impl InnerRepair {
             return self.min_timestamp;
         }
 
-        self.get_tx_timestamp(tx_order - 1)
-            .expect("tx should exist")
+        // loop until get the timestamp of the previous tx
+        let mut previous_tx_order = tx_order - 1;
+        loop {
+            if previous_tx_order <= self.first_tx_order {
+                return self.min_timestamp;
+            }
+            let tx_timestamp = self.get_tx_timestamp(previous_tx_order);
+            if tx_timestamp.is_some() {
+                return tx_timestamp.unwrap();
+            }
+            previous_tx_order -= 1;
+        }
     }
 
     fn get_tx_timestamp(&self, tx_order: u64) -> Option<u64> {
