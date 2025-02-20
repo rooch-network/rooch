@@ -32,7 +32,7 @@ impl StateDBMetrics {
             .unwrap(),
             state_update_fields_bytes: register_histogram_vec_with_registry!(
                 "state_update_fields_bytes",
-                "State update fileds data size in bytes",
+                "State update fields data size in bytes",
                 &["fn_name"],
                 prometheus::exponential_buckets(1.0, 4.0, 15)
                     .unwrap()
@@ -93,7 +93,7 @@ impl StateDBMetrics {
             .unwrap(),
             state_get_field_at_bytes: register_histogram_vec_with_registry!(
                 "state_get_field_at_bytes",
-                "State get filed data size in bytes",
+                "State get field data size in bytes",
                 &["fn_name"],
                 prometheus::exponential_buckets(1.0, 4.0, 15)
                     .unwrap()

@@ -51,8 +51,7 @@ module rooch_framework::onchain_config {
         let sender = signer::address_of(account);
         assert!(sender == admin(), ErrorNotAdmin);
     }
-
-
+    
     public fun sequencer(): address {
         onchain_config().sequencer
     }

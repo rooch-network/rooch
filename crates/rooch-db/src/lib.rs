@@ -25,13 +25,16 @@ use raw_store::traits::DBStore;
 use raw_store::{rocks::RocksDB, StoreInstance};
 use rooch_config::store_config::StoreConfig;
 use rooch_indexer::store::traits::IndexerStoreTrait;
-use rooch_indexer::{indexer_reader::IndexerReader, IndexerStore};
+use rooch_indexer::{indexer_reader::IndexerReader, list_field_indexer_keys, IndexerStore};
 use rooch_store::meta_store::{MetaStore, SEQUENCER_INFO_KEY};
 use rooch_store::state_store::StateStore;
 use rooch_store::transaction_store::TransactionStore;
 use rooch_store::{
     RoochStore, META_SEQUENCER_INFO_COLUMN_FAMILY_NAME, STATE_CHANGE_SET_COLUMN_FAMILY_NAME,
     TRANSACTION_COLUMN_FAMILY_NAME, TX_SEQUENCE_INFO_MAPPING_COLUMN_FAMILY_NAME,
+};
+use rooch_types::indexer::field::{
+    collect_revert_field_change_ids, handle_revert_field_change, IndexerFieldChanges,
 };
 use rooch_types::indexer::state::{
     collect_revert_object_change_ids, handle_revert_object_change, IndexerObjectStateChangeSet,
@@ -299,7 +302,7 @@ impl RoochDB {
             let state_change_set_ext = state_change_set_ext_opt.unwrap();
 
             let mut object_ids = vec![];
-            for (_filed_key, object_change) in state_change_set_ext.state_change_set.changes.clone()
+            for (_field_key, object_change) in state_change_set_ext.state_change_set.changes.clone()
             {
                 collect_revert_object_change_ids(object_change, &mut object_ids)?;
             }
@@ -331,7 +334,8 @@ impl RoochDB {
             let mut state_index_generator = IndexerObjectStatesIndexGenerator::default();
             let mut indexer_object_state_change_set = IndexerObjectStateChangeSet::default();
 
-            for (_filed_key, object_change) in state_change_set_ext.state_change_set.changes {
+            for (_field_key, object_change) in state_change_set_ext.state_change_set.changes.clone()
+            {
                 handle_revert_object_change(
                     &mut state_index_generator,
                     tx_order,
@@ -343,6 +347,41 @@ impl RoochDB {
             self.indexer_store
                 .apply_object_states(indexer_object_state_change_set)
                 .map_err(|e| anyhow!(format!("Revert indexer states error: {:?}", e)))?;
+
+            //4. revert indexer field
+            let field_indexer_ids = list_field_indexer_keys(&resolver)?;
+
+            let mut field_object_ids = vec![];
+            for (_field_key, object_change) in state_change_set_ext.state_change_set.changes.clone()
+            {
+                collect_revert_field_change_ids(
+                    &field_indexer_ids,
+                    object_change,
+                    &mut field_object_ids,
+                )?;
+            }
+
+            let field_object_mapping = resolver
+                .get_states(AccessPath::objects(field_object_ids))?
+                .into_iter()
+                .flatten()
+                .map(|v| (v.metadata.id.clone(), v))
+                .collect::<HashMap<_, _>>();
+
+            let mut field_changes = IndexerFieldChanges::default();
+            for (field_key, object_change) in state_change_set_ext.state_change_set.changes.clone()
+            {
+                handle_revert_field_change(
+                    field_key,
+                    object_change,
+                    &mut field_changes,
+                    &field_indexer_ids,
+                    &field_object_mapping,
+                )?;
+            }
+            self.indexer_store
+                .apply_fields(field_changes)
+                .map_err(|e| anyhow!(format!("Revert indexer field error: {:?}", e)))?;
         };
         Ok(())
     }
