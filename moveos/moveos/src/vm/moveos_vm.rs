@@ -238,7 +238,11 @@ where
             ),
             object_runtime,
             gas_meter,
-            code_cache: MoveOSCodeCache::new(global_module_cache.clone(), runtime_environment, remote),
+            code_cache: MoveOSCodeCache::new(
+                global_module_cache.clone(),
+                runtime_environment,
+                remote,
+            ),
             read_only,
         }
     }
@@ -625,6 +629,7 @@ where
         };
 
         if action_result.is_ok() {
+            self.save_module_to_cache()?;
             self.resolve_pending_init_functions()?;
             // Check if there are modules upgrading
             let module_flag = self.tx_context().get::<ModuleUpgradeFlag>().map_err(|e| {
@@ -671,6 +676,37 @@ where
         } else {
             Ok(())
         }
+    }
+
+    pub fn save_module_to_cache(&mut self) -> VMResult<()> {
+        let ctx = self
+            .session
+            .get_native_extensions_mut()
+            .get_mut::<NativeModuleContext>();
+        let published_functions = ctx.publish_modules.clone();
+
+        for (m_id, m) in published_functions.iter() {
+            let mut module_bytes = Vec::new();
+            match m.serialize(&mut module_bytes) {
+                Ok(_) => (),
+                Err(_) => {
+                    return Err(PartialVMError::new(StatusCode::UNKNOWN_SERIALIZED_TYPE)
+                        .with_message("module serialization failed".to_string())
+                        .finish(Location::Module(m_id.clone())))
+                }
+            };
+            let bytes = Bytes::copy_from_slice(module_bytes.as_slice());
+
+            let extension = Arc::new(RoochModuleExtension::new(StateValue::new_legacy(bytes)));
+            self.code_cache.module_cache.insert_deserialized_module(
+                m_id.clone(),
+                m.clone(),
+                extension,
+                Some(1),
+            )?
+        }
+
+        Ok(())
     }
 
     pub fn execute_function_bypass_visibility(

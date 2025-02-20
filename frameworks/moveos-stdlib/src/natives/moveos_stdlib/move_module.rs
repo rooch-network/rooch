@@ -32,7 +32,7 @@ use moveos_compiler::dependency_order::sort_by_dependency_order;
 use moveos_types::moveos_std::move_module::MoveModuleId;
 use moveos_verifier::verifier::check_metadata_compatibility;
 use smallvec::smallvec;
-use std::collections::{BTreeSet, HashMap, VecDeque};
+use std::collections::{BTreeMap, BTreeSet, HashMap, VecDeque};
 use std::hash::Hash;
 use std::str::FromStr;
 use triomphe::Arc as TriompheArc;
@@ -48,6 +48,7 @@ const E_LENTH_NOT_MATCH: u64 = 4;
 pub struct NativeModuleContext<'a> {
     resolver: &'a dyn ModuleResolver,
     pub init_functions: BTreeSet<ModuleId>,
+    pub publish_modules: BTreeMap<ModuleId, CompiledModule>,
 }
 
 impl<'a> NativeModuleContext<'a> {
@@ -57,6 +58,7 @@ impl<'a> NativeModuleContext<'a> {
         Self {
             resolver,
             init_functions: BTreeSet::new(),
+            publish_modules: BTreeMap::new(),
         }
     }
 }
@@ -254,6 +256,13 @@ fn native_sort_and_verify_modules_inner(
         },
         init_module_names,
     )?;
+
+    // save modules to the NativeModuleContext
+    let module_context = context.extensions_mut().get_mut::<NativeModuleContext>();
+    for module in compiled_modules.iter() {
+        module_context.publish_modules.insert(module.self_id(), module.clone());
+    }
+
     let sorted_indices = Value::vector_u64(indices);
     Ok(NativeResult::ok(
         cost,
