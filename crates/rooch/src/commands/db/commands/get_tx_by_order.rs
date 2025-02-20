@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::commands::db::commands::init;
+use crate::utils::open_rooch_db;
 use clap::Parser;
 use rooch_config::R_OPT_NET_HELP;
 use rooch_types::error::RoochResult;
@@ -23,7 +23,7 @@ pub struct GetTxByOrderCommand {
 
 impl GetTxByOrderCommand {
     pub fn execute(self) -> RoochResult<Option<LedgerTransaction>> {
-        let (_root, rooch_db, _start_time) = init(self.base_data_dir, self.chain_id);
+        let (_root, rooch_db, _start_time) = open_rooch_db(self.base_data_dir, self.chain_id);
         let rooch_store = rooch_db.rooch_store.clone();
 
         let tx_opt = rooch_store

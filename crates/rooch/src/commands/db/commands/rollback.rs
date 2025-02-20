@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::commands::db::commands::init;
+use crate::utils::open_rooch_db;
 use anyhow::Error;
 use clap::Parser;
 use moveos_common::utils::to_bytes;
@@ -39,7 +39,7 @@ impl RollbackCommand {
                 "tx order should be greater than 0",
             )));
         }
-        let (_root, rooch_db, _start_time) = init(self.base_data_dir, self.chain_id);
+        let (_root, rooch_db, _start_time) = open_rooch_db(self.base_data_dir, self.chain_id);
 
         // check
         // 1. tx_hash exist via tx_order

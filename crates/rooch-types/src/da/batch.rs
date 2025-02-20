@@ -117,7 +117,7 @@ impl DABatch {
         tx_order_start: u64,
         tx_order_end: u64,
         tx_list: &Vec<LedgerTransaction>,
-        sequencer_key: RoochKeyPair,
+        sequencer_key: &RoochKeyPair,
     ) -> anyhow::Result<Self> {
         // Verify transaction ordering constraints before signing
         verify_tx_order(block_number, tx_list, tx_order_start, tx_order_end)?;
@@ -127,7 +127,7 @@ impl DABatch {
         let batch_meta = DABatchMeta::new(block_number, tx_order_start, tx_order_end, tx_list_hash);
         let meta_bytes = bcs::to_bytes(&batch_meta).expect("encode batch_meta should success");
         let meta_hash = sha2_256_of(&meta_bytes);
-        let meta_signature = Signature::sign(&meta_hash.0, &sequencer_key)
+        let meta_signature = Signature::sign(&meta_hash.0, sequencer_key)
             .as_ref()
             .to_vec();
 

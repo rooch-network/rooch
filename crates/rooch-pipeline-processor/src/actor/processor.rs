@@ -197,6 +197,14 @@ impl PipelineProcessorActor {
                     tx_order,
                     err
                 );
+                // try to revert this tx for DA, error may cause by network or other reasons
+                let ret = self
+                    .da_server
+                    .revert_tx(RevertTransactionMessage { tx_order })
+                    .await; // if revert public failed, only pause runtime DA state, easy to monitor and restart service will fix it
+                if let Err(e) = ret {
+                    tracing::error!("Revert public tx failed, error: {:?}", e);
+                }
                 self.rooch_db.revert_tx(ledger_tx.tx_hash())?;
                 Err(err)
             }
@@ -232,10 +240,13 @@ impl PipelineProcessorActor {
                 return;
             }
         }
-        let _ = self
+        let ret = self
             .da_server
             .revert_tx(RevertTransactionMessage { tx_order })
             .await; // if revert public failed, only pause runtime DA state, easy to monitor and restart service will fix it
+        if let Err(e) = ret {
+            tracing::error!("Revert public tx failed, error: {:?}", e);
+        }
         let ret = self.rooch_db.revert_tx(tx_hash);
         if let Err(e) = ret {
             tracing::error!(

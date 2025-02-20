@@ -688,7 +688,7 @@ impl ExecInner {
                     return Err(error);
                 }
 
-                tracing::warn!(
+                warn!(
                     "L2 Tx execution failed with a non-VM panic error. Ignoring and returning Ok; tx_order: {}, error: {:?}",
                     tx_order,
                     error

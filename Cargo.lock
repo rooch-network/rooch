@@ -17,6 +17,7 @@ name = "accumulator"
 version = "0.8.9"
 dependencies = [
  "anyhow 1.0.95",
+ "bcs",
  "bcs-ext",
  "itertools 0.13.0",
  "lru",
@@ -28,6 +29,7 @@ dependencies = [
  "proptest-derive",
  "rand 0.8.5",
  "rand_core 0.9.1",
+ "rocksdb",
  "serde 1.0.216",
  "tracing",
 ]
@@ -10376,6 +10378,7 @@ dependencies = [
  "raw-store",
  "regex",
  "reqwest 0.12.7",
+ "rocksdb",
  "rooch-common",
  "rooch-config",
  "rooch-db",

@@ -1,17 +1,14 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use metrics::RegistryService;
-use moveos_types::moveos_std::object::ObjectMeta;
 use raw_store::rocks::RocksDB;
 use rooch_config::RoochOpt;
-use rooch_db::RoochDB;
 use rooch_types::rooch_network::RoochChainID;
 use std::collections::HashSet;
 use std::path::PathBuf;
-use std::time::SystemTime;
 
 pub mod best_rollback;
+pub mod cp_cf;
 pub mod drop;
 pub mod get_changeset_by_order;
 pub mod get_execution_info_by_hash;
@@ -20,19 +17,6 @@ pub mod list_empty;
 pub mod repair;
 pub mod revert;
 pub mod rollback;
-
-fn init(
-    base_data_dir: Option<PathBuf>,
-    chain_id: Option<RoochChainID>,
-) -> (ObjectMeta, RoochDB, SystemTime) {
-    let start_time = SystemTime::now();
-
-    let opt = RoochOpt::new_with_default(base_data_dir, chain_id, None).unwrap();
-    let registry_service = RegistryService::default();
-    let rooch_db = RoochDB::init(opt.store_config(), &registry_service.default_registry()).unwrap();
-    let root = rooch_db.latest_root().unwrap().unwrap();
-    (root, rooch_db, start_time)
-}
 
 fn open_rocks(
     base_data_dir: Option<PathBuf>,
