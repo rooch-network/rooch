@@ -24,5 +24,5 @@ docker run -d --name rooch-testnet --restart unless-stopped -v /data:/root -p 67
     --da "{\"da-backend\":{\"backends\":[{\"open-da\":{\"scheme\":\"gcs\",\"config\":{\"bucket\":\"$OPENDA_GCP_TESTNET_BUCKET\",\"credential\":\"$OPENDA_GCP_TESTNET_CREDENTIAL\"}}},{\"open-da\":{\"scheme\":\"avail\",\"config\":{\"turbo_endpoint\":\"$TURBO_DA_TURING_ENDPOINT\",\"turbo_api_key\":\"$TURBO_DA_TURING_API_KEY\"}}}]}}" \
     --traffic-burst-size 200 \
     --traffic-per-second 0.1 \
-    --rocksdb-row-cache-size 4294967296 \
-    --rocksdb-block-cache-size 8589934592
+    --rocksdb-row-cache-size 1073741824 \
+    --rocksdb-block-cache-size 12884901888
