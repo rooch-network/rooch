@@ -1,10 +1,9 @@
 'use client';
 
 import axios from 'axios';
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { CopyToClipboard } from 'react-copy-to-clipboard';
 import {
-  Args,
   toHEX,
   Transaction,
   stringToBytes,
@@ -43,6 +42,7 @@ import { INVITER_ADDRESS_KEY } from '../../utils/inviter';
 import { useNetworkVariable } from '../../hooks/use-networks';
 import { ShareTwitter } from '../../components/twitter/share';
 import SessionKeysTableCard from './components/session-keys-table-card';
+import useAccountTwitterId from '../../hooks/account/use-account-twitter-id';
 
 export function SettingsView() {
   const address = useCurrentAddress();
@@ -54,9 +54,7 @@ export function SettingsView() {
   const twitterOracleAddress = useNetworkVariable('roochMultiSigAddr');
   const inviter = useNetworkVariable('inviter');
   const [tweetStatus, setTweetStatus] = useState('');
-  const [twitterId, setTwitterId] = useState<string>();
   const [verifying, setVerifying] = useState(false);
-  const [fetchTwitterIdStatus, setFetchTwitterIdStatus] = useState(true);
 
   const {
     data: sessionKeys,
@@ -66,37 +64,15 @@ export function SettingsView() {
     address: address!.genRoochAddress().toHexAddress(),
   });
 
-  const fetchTwitterId = useCallback(async () => {
-    if (!address) {
-      return;
-    }
-    const res = await client.executeViewFunction({
-      address: twitterOracleAddress,
-      module: 'twitter_account',
-      function: 'resolve_author_id_by_address',
-      args: [Args.address(address.toStr())],
-    });
-    let _twitterId: string | undefined;
-    if (res.vm_status === 'Executed') {
-      if (res.return_values?.[0].value.value !== '0x00') {
-        _twitterId = (res.return_values?.[0].decoded_value as any).value.vec.value[0][0] as string;
-        _twitterId = new TextDecoder('utf-8').decode(
-          stringToBytes('hex', _twitterId.replace('0x', ''))
-        );
-
-        setTwitterId(_twitterId);
-      }
-    }
-    // eslint-disable-next-line consistent-return
-    return _twitterId;
-  }, [address, client, twitterOracleAddress]);
-
-  useEffect(() => {
-    fetchTwitterId().finally(() => setFetchTwitterIdStatus(false));
-  }, [fetchTwitterId]);
+  const {
+    data: twitterId,
+    isFetching: isFetchingTwitterId,
+    isPending: isPendingTwitterId,
+    refetch: refetchTwitterId,
+  } = useAccountTwitterId(address);
 
   const loopFetchTwitterId = async (count = 0) => {
-    const id = await fetchTwitterId();
+    const id = await refetchTwitterId();
 
     if (id || count === 3) {
       return id;
@@ -158,8 +134,7 @@ export function SettingsView() {
       });
 
       if (result.execution_info.status.type === 'executed') {
-        setTwitterId(undefined);
-        await fetchTwitterId();
+        await refetchTwitterId();
         toast.success('Disconnect twitter success');
       } else {
         toast.error('Disconnect twitter aborted');
@@ -209,7 +184,7 @@ export function SettingsView() {
   };
 
   const handleBindTwitter = async () => {
-    // setp 1, check twitter
+    // step 1, check twitter
     const match = tweetStatus.match(/status\/(\d+)/);
 
     if (!match) {
@@ -296,7 +271,8 @@ export function SettingsView() {
           subheader="Bind a Twitter account to a Bitcoin address via publishing a tweet"
         />
         <CardContent className="!pt-2">
-          {fetchTwitterIdStatus ? (
+          {isPendingTwitterId ? (
+            // eslint-disable-next-line react/jsx-no-useless-fragment
             <></>
           ) : twitterId ? (
             <Stack className="mt-2" spacing={1.5} alignItems="flex-start">

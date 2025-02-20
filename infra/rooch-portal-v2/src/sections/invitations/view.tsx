@@ -30,7 +30,6 @@ type inviterDataType = {
 };
 
 export function InvitationsView() {
-  // const [inviterCA, inviterModule, inviterObj] = useNetworkVariable('inviterCA');
   const inviter = useNetworkVariable('inviter');
   const currentAddress = useCurrentAddress();
   const tabs = useTabs('invitation_records');

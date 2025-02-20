@@ -1,11 +1,7 @@
 import type { IndexerStateIDView, AnnotatedMoveStructView } from '@roochnetwork/rooch-sdk';
 
 import { useRef, useMemo, useState, useEffect } from 'react';
-import {
-  useRoochClient,
-  useCurrentAddress,
-  useRoochClientQuery,
-} from '@roochnetwork/rooch-sdk-kit';
+import { useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit';
 
 import { useNetworkVariable } from 'src/hooks/use-networks';
 
@@ -35,9 +31,7 @@ export type UseAllLiquidityReturn = {
 };
 
 export function useAllLiquidity(limit: number = 10): UseAllLiquidityReturn {
-  const currentAddress = useCurrentAddress();
   const dex = useNetworkVariable('dex');
-  const client = useRoochClient();
 
   const [paginationModel, setPaginationModel] = useState({ index: 1, limit });
   const mapPageToNextCursor = useRef<{ [page: number]: IndexerStateIDView | null }>({});

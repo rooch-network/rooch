@@ -1,6 +1,6 @@
 import type { IndexerStateIDView } from '@roochnetwork/rooch-sdk';
 
-import { useRef, useMemo, useState } from 'react';
+import { useRef, useMemo } from 'react';
 import { useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit';
 
 import { Box, Card, Skeleton, CardHeader, CardContent } from '@mui/material';
@@ -10,17 +10,17 @@ import { fNumber } from 'src/utils/format-number';
 
 import { EmptyContent } from 'src/components/empty-content';
 
+const paginationModel = { page: 0, pageSize: 10 };
+
 export default function UTXOList({ address }: { address: string }) {
-  const [selectedUTXO, setSelectUTXO] = useState('');
-  const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 10 });
   const mapPageToNextCursor = useRef<{ [page: number]: IndexerStateIDView | null }>({});
 
   const queryOptions = useMemo(
     () => ({
       cursor: mapPageToNextCursor.current[paginationModel.page - 1] || undefined,
-      pageSize: paginationModel.pageSize.toString(),
+      pageSize: '0',
     }),
-    [paginationModel]
+    []
   );
 
   const { data: utxoList, isPending: isUTXOPending } = useRoochClientQuery(

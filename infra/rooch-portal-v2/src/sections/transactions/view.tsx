@@ -43,7 +43,6 @@ export function TransactionsView({ address }: { address: string }) {
   }, [paginationModel, transactionsList]);
 
   const paginate = (index: number): void => {
-    console.log(index);
     if (index < 0) {
       return;
     }
