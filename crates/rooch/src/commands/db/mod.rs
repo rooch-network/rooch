@@ -3,6 +3,7 @@
 
 use crate::cli_types::CommandAction;
 use crate::commands::db::commands::best_rollback::BestRollbackCommand;
+use crate::commands::db::commands::changeset::ChangesetCommand;
 use crate::commands::db::commands::cp_cf::CpCfCommand;
 use crate::commands::db::commands::drop::DropCommand;
 use crate::commands::db::commands::get_changeset_by_order::GetChangesetByOrderCommand;
@@ -62,6 +63,9 @@ impl CommandAction<String> for DB {
             DBCommand::CpCf(cp_cf) => cp_cf.execute().map(|resp| {
                 serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
             }),
+            DBCommand::Changeset(changeset) => changeset.execute().await.map(|resp| {
+                serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
+            }),
         }
     }
 }
@@ -79,4 +83,5 @@ pub enum DBCommand {
     BestRollback(BestRollbackCommand),
     ListEmpty(ListEmptyCommand),
     CpCf(CpCfCommand),
+    Changeset(ChangesetCommand),
 }

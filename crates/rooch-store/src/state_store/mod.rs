@@ -26,6 +26,8 @@ pub trait StateStore {
         tx_orders: Vec<u64>,
     ) -> Result<Vec<Option<StateChangeSetExt>>>;
     fn remove_state_change_set(&self, tx_order: u64) -> Result<()>;
+
+    fn check_state_change_set(&self, tx_orders: Vec<u64>) -> Result<Vec<u64>>;
 }
 
 #[derive(Clone)]
@@ -62,5 +64,18 @@ impl StateDBStore {
 
     pub fn remove_state_change_set(&self, tx_order: u64) -> Result<()> {
         self.state_change_set_store.remove(tx_order)
+    }
+
+    pub fn check_state_change_set(&self, tx_orders: Vec<u64>) -> Result<Vec<u64>> {
+        let values = self
+            .state_change_set_store
+            .multiple_get_raw(tx_orders.clone())?;
+
+        let missing_tx_orders = tx_orders
+            .into_iter()
+            .zip(values)
+            .filter_map(|(k, v)| if v.is_none() { Some(k) } else { None })
+            .collect::<Vec<_>>();
+        Ok(missing_tx_orders)
     }
 }

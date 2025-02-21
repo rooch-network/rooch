@@ -213,6 +213,15 @@ impl Message for GetStateChangeSetsMessage {
     type Result = Result<Vec<Option<StateChangeSetExt>>>;
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CheckStateChangeSetsMessage {
+    pub tx_orders: Vec<u64>,
+}
+
+impl Message for CheckStateChangeSetsMessage {
+    type Result = Result<Vec<u64>>;
+}
+
 #[derive(Debug)]
 pub struct ConvertL2TransactionData {
     pub tx_data: RoochTransactionData,

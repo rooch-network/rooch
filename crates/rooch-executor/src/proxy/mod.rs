@@ -2,10 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::actor::messages::{
-    ConvertL2TransactionData, DryRunTransactionResult, GetAnnotatedEventsByEventIDsMessage,
-    GetEventsByEventHandleMessage, GetEventsByEventIDsMessage, GetStateChangeSetsMessage,
-    GetTxExecutionInfosByHashMessage, ListAnnotatedStatesMessage, ListStatesMessage,
-    RefreshStateMessage, SaveStateChangeSetMessage, ValidateL1BlockMessage, ValidateL1TxMessage,
+    CheckStateChangeSetsMessage, ConvertL2TransactionData, DryRunTransactionResult,
+    GetAnnotatedEventsByEventIDsMessage, GetEventsByEventHandleMessage, GetEventsByEventIDsMessage,
+    GetStateChangeSetsMessage, GetTxExecutionInfosByHashMessage, ListAnnotatedStatesMessage,
+    ListStatesMessage, RefreshStateMessage, SaveStateChangeSetMessage, ValidateL1BlockMessage,
+    ValidateL1TxMessage,
 };
 use crate::actor::reader_executor::ReaderExecutorActor;
 use crate::actor::{
@@ -276,6 +277,12 @@ impl ExecutorProxy {
     ) -> Result<Vec<Option<StateChangeSetExt>>> {
         self.reader_actor
             .send(GetStateChangeSetsMessage { tx_orders })
+            .await?
+    }
+
+    pub async fn check_state_change_sets(&self, tx_orders: Vec<u64>) -> Result<Vec<u64>> {
+        self.reader_actor
+            .send(CheckStateChangeSetsMessage { tx_orders })
             .await?
     }
 
