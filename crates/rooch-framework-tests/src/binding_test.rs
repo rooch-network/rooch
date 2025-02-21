@@ -6,6 +6,7 @@ use metrics::RegistryService;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::u256::U256;
 use move_core_types::vm_status::KeptVMStatus;
+use moveos::moveos::new_moveos_global_module_cache;
 use moveos_config::DataDirPath;
 use moveos_store::MoveOSStore;
 use moveos_types::function_return_value::FunctionResult;
@@ -41,7 +42,6 @@ use std::{env, vec};
 use tempfile::TempDir;
 use tokio::runtime::Runtime;
 use tracing::info;
-use moveos::moveos::new_moveos_global_module_cache;
 
 pub fn get_data_dir() -> DataDirPath {
     match env::var("ROOCH_TEST_DATA_DIR") {
@@ -112,7 +112,7 @@ impl RustBindingTest {
             rooch_db.moveos_store.clone(),
             rooch_db.rooch_store.clone(),
             None,
-            global_module_cache.clone()
+            global_module_cache.clone(),
         )?;
         Ok(Self {
             network,

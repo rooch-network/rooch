@@ -6,6 +6,7 @@ use codespan_reporting::term::termcolor::{ColorChoice, StandardStream};
 use move_binary_format::{errors::Location, CompiledModule};
 use move_cli::base::reroot_path;
 use move_core_types::account_address::AccountAddress;
+use move_model::metadata::{CompilerVersion, LanguageVersion};
 use move_model::model::GlobalEnv;
 use move_package::{compilation::compiled_package::CompiledPackage, BuildConfig, ModelConfig};
 use moveos_compiler::dependency_order::sort_by_dependency_order;
@@ -20,7 +21,6 @@ use std::{
     io::{stderr, Write},
     path::{Path, PathBuf},
 };
-use move_model::metadata::{CompilerVersion, LanguageVersion};
 
 pub mod releaser;
 pub mod stdlib_configs;
@@ -101,10 +101,10 @@ impl StdlibBuildConfig {
         let project_path = self.path.clone();
         let project_path = reroot_path(Some(project_path))?;
 
-        let (mut compiled_package, _) = self
-            .build_config
-            .clone()
-            .compile_package_no_exit(&self.path, vec![], &mut stderr())?;
+        let (mut compiled_package, _) =
+            self.build_config
+                .clone()
+                .compile_package_no_exit(&self.path, vec![], &mut stderr())?;
 
         run_verifier(
             &project_path,

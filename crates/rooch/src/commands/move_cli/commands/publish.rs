@@ -11,6 +11,7 @@ use move_cli::Move;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::effects::Op;
 use move_core_types::{identifier::Identifier, language_storage::ModuleId};
+use move_model::metadata::{CompilerVersion, LanguageVersion};
 use move_vm_types::resolver::ModuleResolver;
 use moveos_compiler::dependency_order::sort_by_dependency_order;
 use moveos_types::access_path::AccessPath;
@@ -33,7 +34,6 @@ use rooch_types::error::{RoochError, RoochResult};
 use rooch_types::transaction::rooch::RoochTransaction;
 use std::collections::BTreeMap;
 use std::io::stderr;
-use move_model::metadata::{CompilerVersion, LanguageVersion};
 use tokio::runtime::Handle;
 
 struct MemoryModuleResolver {

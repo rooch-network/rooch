@@ -260,7 +260,9 @@ fn native_sort_and_verify_modules_inner(
     // save modules to the NativeModuleContext
     let module_context = context.extensions_mut().get_mut::<NativeModuleContext>();
     for module in compiled_modules.iter() {
-        module_context.publish_modules.insert(module.self_id(), module.clone());
+        module_context
+            .publish_modules
+            .insert(module.self_id(), module.clone());
     }
 
     let sorted_indices = Value::vector_u64(indices);

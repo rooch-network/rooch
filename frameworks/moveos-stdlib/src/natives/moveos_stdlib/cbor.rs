@@ -24,6 +24,7 @@ use move_vm_types::{
 };
 use tracing::debug;
 
+use ciborium::Value;
 use move_core_types::u256::{self, U256_NUM_BYTES};
 use moveos_types::addresses::MOVE_STD_ADDRESS;
 use moveos_types::move_std::string::MoveString;
@@ -34,7 +35,6 @@ use primitive_types::U256 as PrimitiveU256;
 use smallvec::smallvec;
 use std::collections::VecDeque;
 use std::io::Cursor;
-use ciborium::Value;
 
 const STATUS_CODE_FAILED_TO_SERIALIZE_VALUE: u64 = 1;
 const E_CBOR_SERIALIZATION_FAILURE: u64 = 2;
