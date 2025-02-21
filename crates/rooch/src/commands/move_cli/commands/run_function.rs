@@ -75,6 +75,7 @@ impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
         let address_mapping = context.address_mapping();
         let sender: RoochAddress = context.resolve_address(self.tx_options.sender)?.into();
         let max_gas_amount: Option<u64> = self.tx_options.max_gas_amount;
+        let sequence_number: Option<u64> = self.tx_options.sequence_number;
         let function_id = self.function.into_function_id(&address_mapping)?;
         let args = self
             .args
@@ -94,7 +95,12 @@ impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
 
         if self.dry_run {
             let rooch_tx_data = context
-                .build_tx_data(sender, action.clone(), max_gas_amount)
+                .build_tx_data_with_sequence_number(
+                    sender,
+                    action.clone(),
+                    max_gas_amount,
+                    sequence_number,
+                )
                 .await?;
             let dry_run_result_opt =
                 dry_run_tx_locally(context.get_client().await?, rooch_tx_data).await?;
@@ -109,7 +115,12 @@ impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
         let result = match (self.tx_options.authenticator, self.tx_options.session_key) {
             (Some(authenticator), _) => {
                 let tx_data = context
-                    .build_tx_data(sender, action, max_gas_amount)
+                    .build_tx_data_with_sequence_number(
+                        sender,
+                        action,
+                        max_gas_amount,
+                        sequence_number,
+                    )
                     .await?;
                 //TODO the authenticator usually is associated with the RoochTransactinData
                 //So we need to find a way to let user generate the authenticator based on the tx_data.
@@ -118,7 +129,12 @@ impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
             }
             (_, Some(session_key)) => {
                 let tx_data = context
-                    .build_tx_data(sender, action, max_gas_amount)
+                    .build_tx_data_with_sequence_number(
+                        sender,
+                        action,
+                        max_gas_amount,
+                        sequence_number,
+                    )
                     .await?;
                 let tx = context
                     .sign_transaction_via_session_key(&sender, tx_data, &session_key)
@@ -127,7 +143,12 @@ impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
             }
             (None, None) => {
                 let tx_data = context
-                    .build_tx_data(sender, action.clone(), max_gas_amount)
+                    .build_tx_data_with_sequence_number(
+                        sender,
+                        action.clone(),
+                        max_gas_amount,
+                        sequence_number,
+                    )
                     .await?;
                 let tx_execution_result = context.sign_and_execute(sender, tx_data.clone()).await?;
 

@@ -401,6 +401,13 @@ module bitcoin_move::bitcoin{
         option::is_some(&block)
     }
 
+    /// Check is l1 tx exist
+    public fun exist_l1_tx(tx_hash: address): bool{
+        let btc_block_store_obj = borrow_block_store();
+        let btc_block_store = object::borrow(btc_block_store_obj);
+        table::contains(&btc_block_store.txs, tx_hash)
+    }
+
     #[test_only]
     public fun execute_l1_block_for_test(block_height: u64, block: Block){
         let block_hash = types::header_to_hash(types::header(&block));
