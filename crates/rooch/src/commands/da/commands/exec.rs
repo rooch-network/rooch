@@ -12,6 +12,7 @@ use bitcoin_client::proxy::BitcoinClientProxy;
 use clap::Parser;
 use coerce::actor::system::ActorSystem;
 use coerce::actor::IntoActor;
+use hdrhistogram::Histogram;
 use metrics::RegistryService;
 use moveos_common::utils::to_bytes;
 use moveos_eventbus::bus::EventBus;
@@ -78,11 +79,19 @@ pub struct ExecCommand {
         help = "rollback to tx order. If not set or ge executed_tx_order, start from executed_tx_order+1(nothing to do); otherwise, rollback to this order."
     )]
     pub rollback: Option<u64>,
+    #[clap(
+        long = "open-da",
+        help = "open da path for downloading chunks from DA. Working with `mode=sync`"
+    )]
+    pub open_da_path: Option<String>,
 
-    #[clap(long = "data-dir", short = 'd')]
-    pub base_data_dir: Option<PathBuf>,
-    #[clap(long, short = 'n', help = R_OPT_NET_HELP)]
-    pub chain_id: Option<RoochChainID>,
+    #[clap(
+        long = "force-align",
+        help = "force align to min(last_sequenced_tx_order, last_executed_tx_order)"
+    )]
+    pub force_align: bool,
+    #[clap(long = "max-block-number", help = "Max block number to exec")]
+    pub max_block_number: Option<u128>,
 
     #[clap(long = "btc-rpc-url")]
     pub btc_rpc_url: String,
@@ -108,21 +117,10 @@ pub struct ExecCommand {
     #[clap(long = "enable-rocks-stats", help = "rocksdb-enable-statistics")]
     pub enable_rocks_stats: bool,
 
-    #[clap(
-        long = "open-da",
-        help = "open da path for downloading chunks from DA. Working with `mode=sync`"
-    )]
-    pub open_da_path: Option<String>,
-
-    #[clap(
-        long = "force-align",
-        help = "force align to min(last_sequenced_tx_order, last_executed_tx_order)"
-    )]
-    pub force_align: bool,
-
-    #[clap(long = "max-block-number", help = "Max block number to exec")]
-    pub max_block_number: Option<u128>,
-
+    #[clap(long = "data-dir", short = 'd')]
+    pub base_data_dir: Option<PathBuf>,
+    #[clap(long, short = 'n', help = R_OPT_NET_HELP)]
+    pub chain_id: Option<RoochChainID>,
     #[clap(flatten)]
     pub(crate) context_options: WalletContextOptions,
 }
@@ -300,7 +298,6 @@ struct ExecInner {
     rooch_db: RoochDB,
     rollback: Option<u64>,
 
-    // stats
     produced: Arc<AtomicU64>,
     done: Arc<AtomicU64>,
     executed_tx_order: Arc<AtomicU64>,
@@ -449,7 +446,7 @@ impl ExecInner {
                 last_executed_tx_order,
                 last_sequenced_tx,
                 last_full_executed_tx_order
-            };
+            }
 
             if rollback_to.is_none() {
                 rollback_to = Some(last_full_executed_tx_order);
@@ -579,12 +576,49 @@ impl ExecInner {
         Ok(())
     }
 
+    fn print_tx_cost_stats(hist: &Histogram<u64>, tx_type_str: &str, verbos: bool) {
+        let min_size = hist.min() as f64 / 1000f64;
+        let max_size = hist.max() as f64 / 1000f64;
+        let mean_size = hist.mean() / 1000f64;
+
+        info!(
+            "cost stats: {} (ms), count={}, min={}, max={}, mean={:.2}, stdev={:.2}",
+            tx_type_str,
+            hist.len(),
+            min_size,
+            max_size,
+            mean_size,
+            hist.stdev()
+        );
+
+        if !verbos {
+            return;
+        }
+
+        println!(
+            "-----------------{} cost percentiles distribution-----------------",
+            tx_type_str
+        );
+        let percentiles = [
+            1.00, 5.00, 10.00, 20.00, 30.00, 40.00, 50.00, 60.00, 70.00, 80.00, 90.00, 95.00,
+            99.00, 99.50, 99.90, 99.95, 99.99,
+        ];
+        for &p in &percentiles {
+            let v = hist.value_at_percentile(p);
+            println!("| {:6.2}th=[{}]", p, v);
+        }
+    }
+
     async fn consume_tx(&self, mut rx: Receiver<ExecMsg>) -> anyhow::Result<()> {
         info!("Start to consume transactions");
         let mut executed_tx_order = 0;
-        let mut cost: u128 = 0;
+        let mut cost: u64 = 0;
 
         const STATISTICS_INTERVAL: u64 = 100000;
+
+        let mut hist_l1block = Histogram::<u64>::new_with_bounds(256, 1 << 28, 3)?;
+        let mut hist_l1tx = Histogram::<u64>::new_with_bounds(256, 1 << 28, 3)?;
+        let mut hist_l2tx = Histogram::<u64>::new_with_bounds(256, 1 << 28, 3)?;
 
         loop {
             let exec_msg_opt = rx.recv().await;
@@ -594,6 +628,12 @@ impl ExecInner {
             let exec_msg = exec_msg_opt.unwrap();
             let tx_order = exec_msg.tx_order;
 
+            let tx_type = match &exec_msg.ledger_tx.data {
+                LedgerTxData::L1Block(_) => "L1Block",
+                LedgerTxData::L1Tx(_) => "L1Tx",
+                LedgerTxData::L2Tx(_) => "L2Tx",
+            };
+
             let elapsed = std::time::Instant::now();
             self.execute(exec_msg).await.with_context(|| {
                 format!(
@@ -601,7 +641,20 @@ impl ExecInner {
                     tx_order, executed_tx_order
                 )
             })?;
-            cost += elapsed.elapsed().as_micros();
+            cost += elapsed.elapsed().as_micros() as u64;
+
+            match tx_type {
+                "L1Block" => {
+                    hist_l1block.record(cost)?;
+                }
+                "L1Tx" => {
+                    hist_l1tx.record(cost)?;
+                }
+                "L2Tx" => {
+                    hist_l2tx.record(cost)?;
+                }
+                _ => {}
+            }
 
             executed_tx_order = tx_order;
             self.executed_tx_order
@@ -616,6 +669,9 @@ impl ExecInner {
                     cost as f64 / 1000.0 / STATISTICS_INTERVAL as f64
                 );
                 cost = 0;
+                Self::print_tx_cost_stats(&hist_l1block, "L1Block", false);
+                Self::print_tx_cost_stats(&hist_l1tx, "L1Tx", false);
+                Self::print_tx_cost_stats(&hist_l2tx, "L2Tx", false);
             }
         }
         info!(
@@ -623,6 +679,9 @@ impl ExecInner {
             self.mode.get_verify_targets(),
             executed_tx_order
         );
+        Self::print_tx_cost_stats(&hist_l1block, "L1Block", true);
+        Self::print_tx_cost_stats(&hist_l1tx, "L1Tx", true);
+        Self::print_tx_cost_stats(&hist_l2tx, "L2Tx", true);
         Ok(())
     }
 
