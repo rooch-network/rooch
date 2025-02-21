@@ -15,6 +15,7 @@ use moveos_types::{
     moveos_std::{move_module::MoveModule, object::ObjectID},
     state::{AnnotatedState, FieldKey},
 };
+use rooch_rpc_api::api::MAX_INTERNAL_LIMIT_USIZE;
 use rooch_rpc_api::jsonrpc_types::{
     account_view::BalanceInfoView,
     event_view::{EventFilterView, EventView, IndexerEventIDView, IndexerEventView},
@@ -859,6 +860,48 @@ impl RoochAPIServer for RoochServer {
     async fn status(&self) -> RpcResult<Status> {
         let status = self.rpc_service.status().await?;
         Ok(status)
+    }
+
+    async fn check_change_set(
+        &self,
+        cursor: Option<StrView<u64>>,
+        limit: Option<StrView<u64>>,
+        query_option: Option<QueryOptions>,
+    ) -> RpcResult<Vec<u64>> {
+        let limit_of = min(
+            limit.map(Into::into).unwrap_or(MAX_INTERNAL_LIMIT_USIZE),
+            MAX_INTERNAL_LIMIT_USIZE,
+        ) as u64;
+        let cursor_of = cursor.map(|v| v.0);
+        // Sync from asc by default
+        let descending_order = query_option.map(|v| v.descending).unwrap_or(false);
+
+        let last_sequencer_order = self.rpc_service.get_sequencer_order().await?;
+        let tx_orders = if descending_order {
+            let start = cursor_of.unwrap_or(last_sequencer_order + 1);
+            let end = if start >= (limit_of + 1) {
+                start - (limit_of + 1)
+            } else {
+                0
+            };
+
+            (end..start).rev().collect::<Vec<_>>()
+        } else {
+            let start = cursor_of.map(|s| s + 1).unwrap_or(0);
+            let end_check = start
+                .checked_add(limit_of + 1)
+                .ok_or(RpcError::UnexpectedError(
+                    "cursor value is overflow".to_string(),
+                ))?;
+            let end = min(end_check, last_sequencer_order + 1);
+
+            (start..end).collect::<Vec<_>>()
+        };
+
+        let mut data = self.rpc_service.check_state_change_sets(tx_orders).await?;
+        data.truncate(limit_of as usize);
+
+        Ok(data)
     }
 }
 

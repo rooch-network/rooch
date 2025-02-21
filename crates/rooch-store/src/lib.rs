@@ -342,6 +342,10 @@ impl StateStore for RoochStore {
     fn remove_state_change_set(&self, tx_order: u64) -> Result<()> {
         self.get_state_store().remove_state_change_set(tx_order)
     }
+
+    fn check_state_change_set(&self, tx_orders: Vec<u64>) -> Result<Vec<u64>> {
+        self.get_state_store().check_state_change_set(tx_orders)
+    }
 }
 
 impl DAMetaStore for RoochStore {
