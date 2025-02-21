@@ -1,5 +1,5 @@
 import type { SelectChangeEvent } from '@mui/material';
-import type { BalanceInfoView, AnnotatedMoveStructView } from '@roochnetwork/rooch-sdk';
+import type { BalanceInfoView } from '@roochnetwork/rooch-sdk';
 
 import { useDebounce } from 'react-use';
 import { Args } from '@roochnetwork/rooch-sdk';
@@ -20,17 +20,6 @@ import { toDust, fromDust, formatByIntl } from 'src/utils/number';
 import { toast } from 'src/components/snackbar';
 
 import { useTokenPair } from '../hooks/use-token-pair';
-
-type TokenType = {
-  type: string;
-  name: string;
-};
-
-type TokenPairType = {
-  x2y: boolean;
-  x: TokenType;
-  y: TokenType;
-};
 
 interface SelectTokenPairProps {
   onLoading: (status: boolean) => void;
@@ -84,26 +73,23 @@ export default function SelectTokenPair({ onLoading, onCallback }: SelectTokenPa
 
     try {
       setLoading(true);
-      const fixdXCount = toDust(
+      const fixedXCount = toDust(
         xCount.replaceAll(',', ''),
         assetsMap?.get(x.coin_type)?.decimals || 0
       );
       const result = await client.executeViewFunction({
         target: `${dex.address}::router::get_amount_out`,
-        args: [Args.u64(fixdXCount)],
+        args: [Args.u64(fixedXCount)],
         typeArgs: [x.coin_type, y.coin_type],
       });
 
       if (result.vm_status !== 'Executed') {
-        toast.error('unknow error');
+        toast.error('unknown error');
       }
 
       const yCount = result.return_values![0].decoded_value as string;
-      const fixdYCount = fromDust(yCount, assetsMap?.get(y.coin_type)?.decimals || 0);
-      setYCount(formatByIntl(fixdYCount.toString()));
-
-      const xCoin = assetsMap?.get(x.coin_type)!;
-      const yCoin = assetsMap?.get(y.coin_type);
+      const fixedYCount = fromDust(yCount, assetsMap?.get(y.coin_type)?.decimals || 0);
+      setYCount(formatByIntl(fixedYCount.toString()));
       onCallback(
         {
           ...x,
@@ -111,7 +97,7 @@ export default function SelectTokenPair({ onLoading, onCallback }: SelectTokenPa
         },
         {
           ...y,
-          amount: fixdYCount.toString(),
+          amount: fixedYCount.toString(),
         }
       );
     } catch (e) {
@@ -143,11 +129,11 @@ export default function SelectTokenPair({ onLoading, onCallback }: SelectTokenPa
     setY(oldX);
     setYValue(oldXValue);
 
-    const xbalance = assetsMap?.get(oldY.coin_type)!.fixedBalance || 0;
+    const xBalance = assetsMap?.get(oldY.coin_type)!.fixedBalance || 0;
     if (xRatio !== 0) {
-      setXCount(formatByIntl(xbalance * xRatio));
-    } else if (Number(xCount) > xbalance) {
-      setXCount(formatByIntl(xbalance));
+      setXCount(formatByIntl(xBalance * xRatio));
+    } else if (Number(xCount) > xBalance) {
+      setXCount(formatByIntl(xBalance));
       setXRation(0);
     }
   };

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useCurrentAddress, useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit';
+import { useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit';
 
 import { Card, Table, TableBody } from '@mui/material';
 
@@ -10,11 +10,11 @@ import WalletGuard from 'src/components/guard/WalletGuard';
 import TableSkeleton from 'src/components/skeleton/table-skeleton';
 import { TableNoData, TableHeadCustom } from 'src/components/table';
 
+import { useAllLiquidity } from 'src/sections/trade/hooks/use-all-liquidity';
+import { useOwnerLiquidity } from 'src/sections/trade/hooks/use-owner-liquidity';
 import FarmRowItem from './farm-row-item';
-import AddSrakeModal from './add-stake-modal';
+import AddStakeModal from './add-stake-modal';
 import AddLiquidityModal from './add-liquidity-modal';
-import { useAllLiquidity } from '../../hooks/use-all-liquidity';
-import { useOwnerLiquidity } from '../../hooks/use-owner-liquidity';
 
 import type { FarmRowItemType } from './farm-row-item';
 
@@ -27,7 +27,6 @@ const headerLabel = [
 ];
 
 export default function FarmList() {
-  const currentAddress = useCurrentAddress();
   const dex = useNetworkVariable('dex');
   const [openStakeModal, setOpenStakeModal] = useState(false);
   const [openAddLiquidityModal, setOpenAddLiquidityModal] = useState(false);
@@ -127,7 +126,7 @@ export default function FarmList() {
         </Scrollbar>
 
         {selectedRow && (
-          <AddSrakeModal
+          <AddStakeModal
             open={openStakeModal}
             onClose={handleCloseStakeModal}
             row={selectedRow}

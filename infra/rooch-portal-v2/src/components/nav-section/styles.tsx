@@ -8,9 +8,9 @@ import ListSubheader from '@mui/material/ListSubheader';
 
 import { stylesMode } from 'src/theme/styles';
 
+import { svgColorClasses } from 'src/components/svg-color';
+import { Iconify, iconifyClasses } from 'src/components/iconify';
 import { navSectionClasses } from './classes';
-import { svgColorClasses } from '../svg-color';
-import { Iconify, iconifyClasses } from '../iconify';
 
 export function stateClasses({
   open,

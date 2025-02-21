@@ -14,13 +14,13 @@ import {
   Typography,
 } from '@mui/material';
 
-import { Scrollbar } from '../../../components/scrollbar';
-import { getUTCOffset } from '../../../utils/format-time';
-import { formatCoin } from '../../../utils/format-number';
-import { GAS_COIN_DECIMALS } from '../../../config/constant';
-import { useNetworkVariable } from '../../../hooks/use-networks';
-import TableSkeleton from '../../../components/skeleton/table-skeleton';
-import { TableNoData, TableHeadCustom } from '../../../components/table';
+import { Scrollbar } from 'src/components/scrollbar';
+import { getUTCOffset } from 'src/utils/format-time';
+import { formatCoin } from 'src/utils/format-number';
+import { GAS_COIN_DECIMALS } from 'src/config/constant';
+import { useNetworkVariable } from 'src/hooks/use-networks';
+import TableSkeleton from 'src/components/skeleton/table-skeleton';
+import { TableNoData, TableHeadCustom } from 'src/components/table';
 
 const options = [1, 5, 10, 0];
 
@@ -41,7 +41,6 @@ export function InvitationLotteryList({
   const client = useRoochClient();
   const [data, setData] = useState<Array<ListType>>();
   const [loading, setLoading] = useState(false);
-  const [opening, setOpening] = useState(false);
   const [ticketOption, setTicketOption] = useState(1);
   const session = useCurrentSession();
   // const [inviterCA, inviterModule, inviterObj] = useNetworkVariable('inviterCA');
@@ -84,7 +83,6 @@ export function InvitationLotteryList({
   }, [fetch, table]);
 
   const openTicket = async () => {
-    setOpening(true);
     const tx = new Transaction();
     tx.callFunction({
       target: `${inviterCfg.address}::${inviterCfg.module}::lottery`,
@@ -103,8 +101,6 @@ export function InvitationLotteryList({
       openCallback();
       fetch();
     }
-    setOpening(false);
-    console.log(result);
   };
 
   return (

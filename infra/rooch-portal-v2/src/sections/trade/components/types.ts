@@ -1,4 +1,4 @@
-import { BalanceInfoView } from '@roochnetwork/rooch-sdk';
+import type { BalanceInfoView } from '@roochnetwork/rooch-sdk';
 
 export type TradeCoinType = {
   amount: string;

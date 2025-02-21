@@ -1,4 +1,4 @@
-import type { BackgroundType } from '../types';
+import type { BackgroundType } from 'src/components/animate/types';
 
 export const varBgColor = (props?: BackgroundType) => {
   const colors = props?.colors || ['#19dcea', '#b22cff'];

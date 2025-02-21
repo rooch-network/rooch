@@ -1,6 +1,5 @@
-import type {
-  SelectChangeEvent} from '@mui/material';
-import type { BalanceInfoView} from '@roochnetwork/rooch-sdk';
+import type { SelectChangeEvent } from '@mui/material';
+import type { BalanceInfoView } from '@roochnetwork/rooch-sdk';
 
 import { useMemo, useState } from 'react';
 import { Args, Transaction } from '@roochnetwork/rooch-sdk';
@@ -79,16 +78,16 @@ export default function CreateLiquidityModal({
       return;
     }
 
-    const fixdXAmount = toDust(xAmount.replaceAll(',', ''), x!.decimals);
-    const fixdYAmount = toDust(yAmount.replaceAll(',', ''), y!.decimals);
+    const fixedXAmount = toDust(xAmount.replaceAll(',', ''), x!.decimals);
+    const fixedYAmount = toDust(yAmount.replaceAll(',', ''), y!.decimals);
     const tx = new Transaction();
     tx.callFunction({
       target: `${dex.address}::router::create_token_pair`,
       args: [
-        Args.u64(fixdXAmount),
-        Args.u64(fixdYAmount),
-        Args.u64(fixdXAmount),
-        Args.u64(fixdYAmount),
+        Args.u64(fixedXAmount),
+        Args.u64(fixedYAmount),
+        Args.u64(fixedXAmount),
+        Args.u64(fixedYAmount),
       ],
       typeArgs: [x.coin_type, y.coin_type],
     });
@@ -114,7 +113,7 @@ export default function CreateLiquidityModal({
 
   return (
     <Dialog open={open} onClose={onClose}>
-      <DialogTitle sx={{ pb: 2 }}>Create Liqidity</DialogTitle>
+      <DialogTitle sx={{ pb: 2 }}>Create Liquidity</DialogTitle>
 
       <DialogContent
         sx={{
@@ -133,7 +132,7 @@ export default function CreateLiquidityModal({
               value={xValue}
               label="X"
               onChange={(e: SelectChangeEvent) => {
-                const {value} = e.target;
+                const { value } = e.target;
                 setXValue(value);
                 setX(assetsMap.get(value));
               }}
@@ -179,7 +178,7 @@ export default function CreateLiquidityModal({
               value={yValue}
               label="Y"
               onChange={(e: SelectChangeEvent) => {
-                const {value} = e.target;
+                const { value } = e.target;
                 setYValue(value);
                 setY(assetsMap.get(value));
               }}

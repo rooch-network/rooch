@@ -1,6 +1,6 @@
 import { Stack, Button, Tooltip } from '@mui/material';
 
-import { Iconify } from '../iconify';
+import { Iconify } from 'src/components/iconify';
 
 import type { CurveType } from './types';
 

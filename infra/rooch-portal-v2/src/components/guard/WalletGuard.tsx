@@ -8,7 +8,7 @@ import { Box, Card, Stack, Button, CardHeader, CardContent } from '@mui/material
 
 import { DashboardContent } from 'src/layouts/dashboard';
 
-import { Iconify } from '../iconify';
+import { Iconify } from 'src/components/iconify';
 
 export default function CustomWalletGuard({ children }: { children: ReactNode }) {
   const { status } = useCurrentWallet();

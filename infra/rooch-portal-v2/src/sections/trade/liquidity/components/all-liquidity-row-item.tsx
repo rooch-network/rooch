@@ -5,7 +5,7 @@ import { Box, Button, TableRow, TableCell, ListItemText } from '@mui/material';
 
 import { formatByIntl } from 'src/utils/number';
 
-import type { AllLiquidityItemType } from '../../hooks/use-all-liquidity';
+import type { AllLiquidityItemType } from 'src/sections/trade/hooks/use-all-liquidity';
 
 type RowItemProps = {
   row: AllLiquidityItemType;

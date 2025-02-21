@@ -2,9 +2,9 @@ import { WalletGuard } from '@roochnetwork/rooch-sdk-kit';
 
 import { Box, Button, TableRow, TableCell, ListItemText } from '@mui/material';
 
-import { formatByIntl, fromDust, toDust } from 'src/utils/number';
+import { fromDust, formatByIntl } from 'src/utils/number';
 
-import type { OwnerLiquidityItemType } from '../../hooks/use-owner-liquidity';
+import type { OwnerLiquidityItemType } from 'src/sections/trade/hooks/use-owner-liquidity';
 
 type RowItemProps = {
   row: OwnerLiquidityItemType;

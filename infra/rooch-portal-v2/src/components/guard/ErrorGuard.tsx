@@ -1,22 +1,22 @@
-'use client'
+'use client';
 
-import { useEffect } from 'react'
-import { useSubscribeOnError } from '@roochnetwork/rooch-sdk-kit'
+import { useEffect } from 'react';
+import { useSubscribeOnError } from '@roochnetwork/rooch-sdk-kit';
 
-import { toast } from 'src/components/snackbar'
+import { toast } from 'src/components/snackbar';
 
 export function ErrorGuard() {
-  const subscribeToError = useSubscribeOnError()
+  const subscribeToError = useSubscribeOnError();
 
   useEffect(() => {
     const unsubscribe = subscribeToError((error) => {
-      toast.error(error.message)
-    })
+      toast.error(error.message);
+    });
 
     return () => {
-      unsubscribe()
-    }
-  }, [subscribeToError])
+      unsubscribe();
+    };
+  }, [subscribeToError]);
 
-  return <></>
+  return <></>;
 }

@@ -7,12 +7,13 @@ import { Box, Card, Skeleton, CardHeader, Typography, CardContent } from '@mui/m
 
 import { EmptyContent } from 'src/components/empty-content/empty-content';
 
-import { shortAddress } from "../../../utils/address";
+import { shortAddress } from '../../../utils/address';
 
 export default function BBLlList({ address }: { address: string }) {
   const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 10 });
   const mapPageToNextCursor = useRef<{ [page: number]: IndexerStateIDView | null }>({});
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handlePageChange = (selectedPage: number) => {
     if (selectedPage < 0) return;
 
@@ -30,19 +31,19 @@ export default function BBLlList({ address }: { address: string }) {
     [paginationModel]
   );
 
-  const { data: bbns, isPending: isQueryBBNsPending } = useRoochClientQuery("queryObjectStates", {
+  const { data: bbns, isPending: isQueryBBNsPending } = useRoochClientQuery('queryObjectStates', {
     filter: {
       object_type_with_owner: {
         owner: address,
-        object_type: "0x4::bbn::BBNStakeSeal",
+        object_type: '0x4::bbn::BBNStakeSeal',
       },
     },
     queryOption: {
       decode: true,
-      showDisplay: true
+      showDisplay: true,
     },
     cursor: queryOptions.cursor as IndexerStateIDView | null,
-    limit: queryOptions.pageSize
+    limit: queryOptions.pageSize,
   });
 
   return (
@@ -70,24 +71,28 @@ export default function BBLlList({ address }: { address: string }) {
           <EmptyContent title="No Babylon Staking Found" sx={{ py: 3 }} />
         ) : (
           bbns?.data.map((i) => (
-              <Card key={i.id} elevation={0} className="!bg-gray-100 !shadow-none">
-                <CardHeader title={<span>
+            <Card key={i.id} elevation={0} className="!bg-gray-100 !shadow-none">
+              <CardHeader
+                title={
+                  <span>
                     Stake ID <span className="text-sm">{shortAddress(i.id, 6, 4)}</span>
-                  </span>} />
-                <CardContent>
-                  <Typography
-                    noWrap
-                    sx={{
-                      whiteSpace: 'pre-wrap',
-                      wordBreak: 'break-word',
-                      overflowWrap: 'break-word',
-                    }}
-                  >
-                    {i.decoded_value?.value.staking_value as string} Sats
-                  </Typography>
-                </CardContent>
-              </Card>
-            ))
+                  </span>
+                }
+              />
+              <CardContent>
+                <Typography
+                  noWrap
+                  sx={{
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word',
+                    overflowWrap: 'break-word',
+                  }}
+                >
+                  {i.decoded_value?.value.staking_value as string} Sats
+                </Typography>
+              </CardContent>
+            </Card>
+          ))
         )}
       </CardContent>
     </Card>

@@ -4,6 +4,7 @@ import { SessionKeyGuard, useSignAndExecuteTransaction } from '@roochnetwork/roo
 
 import { LoadingButton } from '@mui/lab';
 import {
+  Box,
   Stack,
   Button,
   Dialog,
@@ -19,50 +20,48 @@ import { toDust, formatByIntl } from 'src/utils/number';
 
 import { toast } from 'src/components/snackbar';
 
-import AmountInput from '../../components/amount_input';
+import AmountInput from '../../components/amount-input';
 
-import type { FarmRowItemType } from './farm-row-item';
+import type { OwnerLiquidityItemType } from '../../hooks/use-owner-liquidity';
 
-// TODO: 计算收入
-export default function AddSrakeModal({
+export default function RemoveLiquidityModal({
   open,
   onClose,
   row,
 }: {
   open: boolean;
   onClose: () => void;
-  row: FarmRowItemType;
+  row: OwnerLiquidityItemType;
 }) {
   const dex = useNetworkVariable('dex');
 
   const { mutateAsync, isPending } = useSignAndExecuteTransaction();
 
-  const [amount, setAmount] = useState('');
+  const [liquidity, setLiquidity] = useState('');
   const [slippage, setSlippage] = useState(0.005);
-  const [customSlippage, setCustomSlippage] = useState('');
 
-  const handleStake = () => {
-    const fixdAmount = toDust(amount.replaceAll(',', ''), row.liquidity!.decimals);
+  const handleRemoveLiquidity = () => {
+    const fixedLiquidity = toDust(liquidity.replaceAll(',', ''), row.decimals);
     const tx = new Transaction();
     tx.callFunction({
-      target: `${dex.address}::liquidity_incentive::stake`,
-      args: [Args.u256(fixdAmount), Args.objectId(row.id)],
-      typeArgs: [row.x.type, row.y.type, row.reward],
+      target: `${dex.address}::router::remove_liquidity`,
+      args: [Args.u64(fixedLiquidity), Args.u64(BigInt(0)), Args.u64(BigInt(0))],
+      typeArgs: [row.x.type, row.y.type],
     });
     mutateAsync({
       transaction: tx,
     })
       .then((result) => {
         if (result.execution_info.status.type === 'executed') {
-          toast.success('stake success');
+          toast.success('remove success');
         } else {
           console.log(result);
-          toast.error('stake failed');
+          toast.error('remove failed');
         }
       })
       .catch((e: any) => {
         console.log(e);
-        toast.error('stake failed');
+        toast.error('remove failed');
       })
       .finally(() => {
         onClose();
@@ -71,7 +70,7 @@ export default function AddSrakeModal({
 
   return (
     <Dialog open={open}>
-      <DialogTitle sx={{ pb: 2 }}>Stake</DialogTitle>
+      <DialogTitle sx={{ pb: 2 }}>Remove Liquidity</DialogTitle>
 
       <DialogContent
         sx={{
@@ -86,24 +85,42 @@ export default function AddSrakeModal({
           alignItems="flex-end"
         >
           <Stack>
-            <Typography className="!font-semibold">
-              {row.x.name}-{row.y.name}
-            </Typography>
-            <Typography className="text-gray-400 !text-xs">{row.liquidity?.symbol}</Typography>
+            <Typography className="!font-semibold">{row.symbol}</Typography>
+            <Typography className="text-gray-400 !text-xs">{row.name}</Typography>
           </Stack>
           <Stack>
             <Typography className="text-gray-600 !text-sm !font-semibold">
-              Balance: {formatByIntl(row.liquidity?.fixedBalance)}
+              Balance: {formatByIntl(row.fixedBalance)}
             </Typography>
           </Stack>
         </Stack>
         <Stack justifyContent="center" spacing={2} direction="column" sx={{ pt: 1 }}>
           <AmountInput
-            max={row.liquidity?.fixedBalance || 0}
-            amount={amount}
-            onChange={(v) => setAmount(v)}
+            max={row.fixedBalance}
+            amount={liquidity}
+            onChange={(v) => setLiquidity(v)}
           />
         </Stack>
+        <Box sx={{ pt: 2, mt: 2 }}>
+          <span className="text-gray-400 text-sm mt-4 mr-2">Slippage</span>
+          {[0.005, 0.01, 0.03].map((item, index) => (
+            <Button
+              key={item.toString()}
+              variant={slippage === item ? 'contained' : 'outlined'}
+              size="small"
+              sx={{ mr: 1 }}
+              onClick={() => {
+                if (slippage === item) {
+                  setSlippage(0);
+                } else {
+                  setSlippage(item);
+                }
+              }}
+            >
+              {item * 100}%
+            </Button>
+          ))}
+        </Box>
       </DialogContent>
 
       <DialogActions>
@@ -118,8 +135,13 @@ export default function AddSrakeModal({
           Cancel
         </Button>
 
-        <SessionKeyGuard onClick={handleStake}>
-          <LoadingButton fullWidth disabled={amount === ''} loading={isPending} variant="contained">
+        <SessionKeyGuard onClick={handleRemoveLiquidity}>
+          <LoadingButton
+            fullWidth
+            disabled={liquidity === ''}
+            loading={isPending}
+            variant="contained"
+          >
             Confirm
           </LoadingButton>
         </SessionKeyGuard>

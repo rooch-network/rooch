@@ -5,13 +5,13 @@ import { Alert, Stack, CircularProgress } from '@mui/material';
 
 import { grey } from 'src/theme/core';
 
+import { useNetworkVariable } from 'src/hooks/use-networks';
 import SwapHeader from './swap-header';
 import SwapDetails from './swap-details';
 import { DEFAULT_SLIPPAGE } from './types';
 import SwapCoinInput from './swap-coin-input';
 import SwapSwitchIcon from './swap-switch-icon';
 import CurveTypeSelect from './curve-type-select';
-import { useNetworkVariable } from '../../hooks/use-networks';
 
 import type { SwapProps } from './types';
 

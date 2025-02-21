@@ -145,25 +145,12 @@ export default function MarketPlaceHistoryView({ tick }: { tick: string }) {
     [handleFilters]
   );
 
-  // const dateError = isAfter(filters.startDate, filters.endDate);
-
-  const dataInPage = tableData?.slice(
-    table.page * table.rowsPerPage,
-    table.page * table.rowsPerPage + table.rowsPerPage
-  );
-
   const dataFiltered = applyFilter({
     inputData: (tableData as RenderEvent[]) || [],
     comparator: getComparator(table.order, table.orderBy),
     filters,
     dateError: false,
   });
-
-  // const canReset =
-  //   !!filters.name || filters.status !== 'all' || (!!filters.startDate && !!filters.endDate);
-  const notFound = !tableData?.length || !tableData.length;
-
-  const denseHeight = table.dense ? 56 : 56 + 20;
 
   const [targetDate, setTargetDate] = useState<number | undefined>(Date.now() + 30 * 1000);
 

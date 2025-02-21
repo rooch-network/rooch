@@ -5,8 +5,8 @@ import {
   useRoochClient,
   SessionKeyGuard,
   useCurrentAddress,
-  useSignAndExecuteTransaction,
   useRoochClientQuery,
+  useSignAndExecuteTransaction,
 } from '@roochnetwork/rooch-sdk-kit';
 
 import { LoadingButton } from '@mui/lab';
@@ -27,11 +27,11 @@ import {
 
 import { useNetworkVariable } from 'src/hooks/use-networks';
 
-import { formatByIntl, fromDust } from 'src/utils/number';
+import { fromDust, formatByIntl } from 'src/utils/number';
 
 import { toast } from 'src/components/snackbar';
 
-import type { OwnerLiquidityItemType } from '../../hooks/use-owner-liquidity';
+import type { OwnerLiquidityItemType } from 'src/sections/trade/hooks/use-owner-liquidity';
 
 export type FarmRowItemType = {
   id: string;
@@ -120,30 +120,6 @@ export default function FarmRowItem({
         setRewardCoin(result);
       });
   }, [openCollapse, client, currentAddress, row]);
-
-  const handleHarvest = () => {
-    const tx = new Transaction();
-    tx.callFunction({
-      target: `${dex.address}::liquidity_incentive::harvest`,
-      args: [Args.objectId(row.id)],
-      typeArgs: [row.x.type, row.y.type, row.reward],
-    });
-    mutateAsync({
-      transaction: tx,
-    })
-      .then((result) => {
-        if (result.execution_info.status.type === 'executed') {
-          fetchHarvest();
-          toast.success('harvest success');
-        } else {
-          toast.error('harvest failed');
-        }
-      })
-      .catch((e: any) => {
-        console.log(e);
-        toast.error('harvest failed');
-      });
-  };
 
   const handleAction = (target: 'harvest' | 'unstake') => {
     const tx = new Transaction();

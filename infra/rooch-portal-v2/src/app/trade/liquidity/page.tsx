@@ -1,9 +1,9 @@
-import LiquidityPage from 'src/sections/trade/liquidity/view';
+import LiquidityListView from 'src/sections/trade/liquidity/list/view';
 
 export const metadata = {
   title: 'Liquidity',
 };
 
 export default function Page() {
-  return <LiquidityPage />;
+  return <LiquidityListView />;
 }

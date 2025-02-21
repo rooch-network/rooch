@@ -38,11 +38,11 @@ import { DashboardContent } from 'src/layouts/dashboard';
 import { toast } from 'src/components/snackbar';
 import { Iconify } from 'src/components/iconify';
 
-import { INVITER_ADDRESS_KEY } from '../../utils/inviter';
-import { useNetworkVariable } from '../../hooks/use-networks';
-import { ShareTwitter } from '../../components/twitter/share';
+import { INVITER_ADDRESS_KEY } from 'src/utils/inviter';
+import { useNetworkVariable } from 'src/hooks/use-networks';
+import { ShareTwitter } from 'src/components/twitter/share';
+import useAccountTwitterId from 'src/hooks/account/use-account-twitter-id';
 import SessionKeysTableCard from './components/session-keys-table-card';
-import useAccountTwitterId from '../../hooks/account/use-account-twitter-id';
 
 export function SettingsView() {
   const address = useCurrentAddress();
@@ -61,12 +61,11 @@ export function SettingsView() {
     isPending: isLoadingSessionKeys,
     refetch: refetchSessionKeys,
   } = useRoochClientQuery('getSessionKeys', {
-    address: address!.genRoochAddress().toHexAddress(),
+    address: address?.genRoochAddress().toHexAddress() || '',
   });
 
   const {
     data: twitterId,
-    isFetching: isFetchingTwitterId,
     isPending: isPendingTwitterId,
     refetch: refetchTwitterId,
   } = useAccountTwitterId(address);
@@ -272,7 +271,6 @@ export function SettingsView() {
         />
         <CardContent className="!pt-2">
           {isPendingTwitterId ? (
-            // eslint-disable-next-line react/jsx-no-useless-fragment
             <></>
           ) : twitterId ? (
             <Stack className="mt-2" spacing={1.5} alignItems="flex-start">

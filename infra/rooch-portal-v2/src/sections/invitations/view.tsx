@@ -7,11 +7,11 @@ import { useCurrentAddress, useRoochClientQuery } from '@roochnetwork/rooch-sdk-
 import Typography from '@mui/material/Typography';
 import { Tab, Box, Tabs, Card, Stack, CardHeader, CardContent } from '@mui/material';
 
-import { useTabs } from '../../hooks/use-tabs';
-import { fromDustToPrecision } from '../../utils/number';
-import { AnimateCountUp } from '../../components/animate';
-import { DashboardContent } from '../../layouts/dashboard';
-import { useNetworkVariable } from '../../hooks/use-networks';
+import { useTabs } from 'src/hooks/use-tabs';
+import { fromDustToPrecision } from 'src/utils/number';
+import { AnimateCountUp } from 'src/components/animate';
+import { DashboardContent } from 'src/layouts/dashboard';
+import { useNetworkVariable } from 'src/hooks/use-networks';
 import { InvitationList } from './components/invitation-list';
 import { InvitationLotteryList } from './components/lottery-list';
 
