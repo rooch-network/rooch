@@ -612,13 +612,13 @@ impl ExecInner {
     async fn consume_tx(&self, mut rx: Receiver<ExecMsg>) -> anyhow::Result<()> {
         info!("Start to consume transactions");
         let mut executed_tx_order = 0;
-        let mut cost: u64 = 0;
+        let mut interval_cost: u64 = 0;
 
         const STATISTICS_INTERVAL: u64 = 100000;
 
-        let mut hist_l1block = Histogram::<u64>::new_with_bounds(256, 1 << 28, 3)?;
-        let mut hist_l1tx = Histogram::<u64>::new_with_bounds(256, 1 << 28, 3)?;
-        let mut hist_l2tx = Histogram::<u64>::new_with_bounds(256, 1 << 28, 3)?;
+        let mut hist_l1block = Histogram::<u64>::new_with_bounds(256, 1 << 30, 3)?;
+        let mut hist_l1tx = Histogram::<u64>::new_with_bounds(256, 1 << 30, 3)?;
+        let mut hist_l2tx = Histogram::<u64>::new_with_bounds(256, 1 << 30, 3)?;
 
         loop {
             let exec_msg_opt = rx.recv().await;
@@ -641,17 +641,18 @@ impl ExecInner {
                     tx_order, executed_tx_order
                 )
             })?;
-            cost += elapsed.elapsed().as_micros() as u64;
+            let tx_cost = elapsed.elapsed().as_micros() as u64;
+            interval_cost += tx_cost;
 
             match tx_type {
                 "L1Block" => {
-                    hist_l1block.record(cost)?;
+                    hist_l1block.record(tx_cost)?;
                 }
                 "L1Tx" => {
-                    hist_l1tx.record(cost)?;
+                    hist_l1tx.record(tx_cost)?;
                 }
                 "L2Tx" => {
-                    hist_l2tx.record(cost)?;
+                    hist_l2tx.record(tx_cost)?;
                 }
                 _ => {}
             }
@@ -666,9 +667,9 @@ impl ExecInner {
                     "tx range: [{}, {}], avg: {:.3} ms/tx",
                     tx_order + 1 - STATISTICS_INTERVAL, // add first, avoid overflow
                     tx_order,
-                    cost as f64 / 1000.0 / STATISTICS_INTERVAL as f64
+                    interval_cost as f64 / 1000.0 / STATISTICS_INTERVAL as f64
                 );
-                cost = 0;
+                interval_cost = 0;
                 Self::print_tx_cost_stats(&hist_l1block, "L1Block", false);
                 Self::print_tx_cost_stats(&hist_l1tx, "L1Tx", false);
                 Self::print_tx_cost_stats(&hist_l2tx, "L2Tx", false);
