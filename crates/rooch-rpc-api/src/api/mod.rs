@@ -11,6 +11,7 @@ pub const DEFAULT_RESULT_LIMIT_USIZE: usize = DEFAULT_RESULT_LIMIT as usize;
 
 pub const MAX_RESULT_LIMIT: u64 = 200;
 pub const MAX_RESULT_LIMIT_USIZE: usize = MAX_RESULT_LIMIT as usize;
+pub const MAX_INTERNAL_LIMIT_USIZE: usize = 2000;
 
 // pub fn validate_limit(limit: Option<u64>, max: usize) -> Result<usize, anyhow::Error> {
 //     match limit {

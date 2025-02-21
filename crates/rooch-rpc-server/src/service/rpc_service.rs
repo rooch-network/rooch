@@ -799,6 +799,12 @@ impl RpcService {
         Ok(result)
     }
 
+    pub async fn check_state_change_sets(&self, tx_orders: Vec<u64>) -> Result<Vec<u64>> {
+        let result = self.executor.check_state_change_sets(tx_orders).await?;
+
+        Ok(result)
+    }
+
     pub async fn status(&self) -> Result<Status> {
         let service_status = self.pipeline_processor.get_service_status().await?;
         let sequencer_info = self.sequencer.get_sequencer_info().await?;

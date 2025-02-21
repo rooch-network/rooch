@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::messages::{
-    AnnotatedStatesMessage, ExecuteViewFunctionMessage, GetAnnotatedEventsByEventHandleMessage,
-    GetAnnotatedEventsByEventIDsMessage, GetEventsByEventHandleMessage, GetStateChangeSetsMessage,
-    RefreshStateMessage, StatesMessage,
+    AnnotatedStatesMessage, CheckStateChangeSetsMessage, ExecuteViewFunctionMessage,
+    GetAnnotatedEventsByEventHandleMessage, GetAnnotatedEventsByEventIDsMessage,
+    GetEventsByEventHandleMessage, GetStateChangeSetsMessage, RefreshStateMessage, StatesMessage,
 };
 use crate::actor::messages::{
     GetEventsByEventIDsMessage, GetTxExecutionInfosByHashMessage, ListAnnotatedStatesMessage,
@@ -355,5 +355,19 @@ impl Handler<GetStateChangeSetsMessage> for ReaderExecutorActor {
         self.rooch_store
             .state_store
             .multi_get_state_change_set(tx_orders)
+    }
+}
+
+#[async_trait]
+impl Handler<CheckStateChangeSetsMessage> for ReaderExecutorActor {
+    async fn handle(
+        &mut self,
+        msg: CheckStateChangeSetsMessage,
+        _ctx: &mut ActorContext,
+    ) -> Result<Vec<u64>> {
+        let CheckStateChangeSetsMessage { tx_orders } = msg;
+        self.rooch_store
+            .state_store
+            .check_state_change_set(tx_orders)
     }
 }

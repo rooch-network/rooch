@@ -214,4 +214,13 @@ pub trait RoochAPI {
     /// Get the chain and service status
     #[method(name = "status")]
     async fn status(&self) -> RpcResult<Status>;
+
+    /// Check change sets from sync states
+    #[method(name = "checkChangeSets")]
+    async fn check_change_set(
+        &self,
+        cursor: Option<StrView<u64>>,
+        limit: Option<StrView<u64>>,
+        query_option: Option<QueryOptions>,
+    ) -> RpcResult<Vec<u64>>;
 }

@@ -126,6 +126,42 @@
       }
     },
     {
+      "name": "rooch_checkChangeSets",
+      "description": "Check change sets from sync states",
+      "params": [
+        {
+          "name": "cursor",
+          "schema": {
+            "$ref": "#/components/schemas/u64"
+          }
+        },
+        {
+          "name": "limit",
+          "schema": {
+            "$ref": "#/components/schemas/u64"
+          }
+        },
+        {
+          "name": "query_option",
+          "schema": {
+            "$ref": "#/components/schemas/QueryOptions"
+          }
+        }
+      ],
+      "result": {
+        "name": "Vec<u64>",
+        "required": true,
+        "schema": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          }
+        }
+      }
+    },
+    {
       "name": "rooch_dryRunRawTransaction",
       "params": [
         {

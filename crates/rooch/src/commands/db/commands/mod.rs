@@ -8,6 +8,7 @@ use std::collections::HashSet;
 use std::path::PathBuf;
 
 pub mod best_rollback;
+pub mod changeset;
 pub mod cp_cf;
 pub mod drop;
 pub mod get_changeset_by_order;
