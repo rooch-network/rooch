@@ -11,7 +11,7 @@ import { DashboardContent } from 'src/layouts/dashboard';
 import { Iconify } from '../iconify';
 
 export default function CustomWalletGuard({ children }: { children: ReactNode }) {
-  const { status, wallet } = useCurrentWallet();
+  const { status } = useCurrentWallet();
 
   if (status === 'connected') {
     return children;
@@ -47,11 +47,7 @@ export default function CustomWalletGuard({ children }: { children: ReactNode })
             spacing={2}
           >
             <Iconify icon="solar:wallet-money-bold-duotone" width="64px" />
-            <WalletGuard
-              onClick={() => {
-                console.log('hahah');
-              }}
-            >
+            <WalletGuard onClick={() => {}}>
               <Button variant="outlined">Connect</Button>
             </WalletGuard>
           </Stack>

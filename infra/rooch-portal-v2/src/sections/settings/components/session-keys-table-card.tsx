@@ -48,6 +48,8 @@ export default function SessionKeysTableCard({
     [removeSession, refetchSessionKeys]
   );
 
+  const offSet = getUTCOffset();
+
   return (
     <Card className="mt-4">
       <CardHeader
@@ -65,7 +67,7 @@ export default function SessionKeysTableCard({
                 id: 'grantedAt',
                 label: (
                   <Box>
-                    Granted at <span className="text-xs ml-1">({getUTCOffset()})</span>
+                    Granted at <span className="text-xs ml-1">({offSet})</span>
                   </Box>
                 ),
               },
@@ -73,7 +75,7 @@ export default function SessionKeysTableCard({
                 id: 'lastActiveAt',
                 label: (
                   <Box>
-                    Last Active at <span className="text-xs ml-1">({getUTCOffset()})</span>
+                    Last Active at <span className="text-xs ml-1">({offSet})</span>
                   </Box>
                 ),
               },

@@ -1,5 +1,3 @@
-import { useCurrentAddress, useSignAndExecuteTransaction } from '@roochnetwork/rooch-sdk-kit';
-
 import { LoadingButton } from '@mui/lab';
 import { grey, yellow } from '@mui/material/colors';
 import { Card, Chip, Stack, Typography, CardActions } from '@mui/material';
@@ -14,9 +12,6 @@ export type MarketplaceItemCardProps = {
 };
 
 export default function MarketplaceItemCard({ tick, onClick }: MarketplaceItemCardProps) {
-  const account = useCurrentAddress();
-  const { mutate: signAndExecuteTransaction, isPending } = useSignAndExecuteTransaction();
-
   const isVerified = true;
 
   return (
@@ -119,7 +114,6 @@ export default function MarketplaceItemCard({ tick, onClick }: MarketplaceItemCa
           spacing={2}
         >
           <LoadingButton
-            loading={isPending}
             variant="outlined"
             color="primary"
             fullWidth

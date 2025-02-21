@@ -9,7 +9,7 @@ export function isMainNetwork(): boolean {
     // dev mode, can custom network,
     // true is mainnet
     // false is testnet
-    return false;
+    return true;
   }
   return MAIN_NETWORK_DOMAINS.includes(window?.location?.hostname ?? '');
 }

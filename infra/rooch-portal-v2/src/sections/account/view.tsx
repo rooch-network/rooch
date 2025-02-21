@@ -45,7 +45,7 @@ export function AccountView({ address }: { address: string }) {
     'queryTransactions',
     {
       filter: {
-        sender: viewRoochAddress!,
+        sender: viewRoochAddress || '',
       },
       limit: '5',
     },
