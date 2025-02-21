@@ -5,7 +5,7 @@ import type { UserCoin, CurveType, PoolVersion, InteractiveMode } from 'src/comp
 import BigNumber from 'bignumber.js';
 import { Args } from '@roochnetwork/rooch-sdk';
 import { useMemo, useState, useCallback } from 'react';
-import { useRoochClient, useCurrentAddress } from '@roochnetwork/rooch-sdk-kit';
+import { useRoochClient } from '@roochnetwork/rooch-sdk-kit';
 
 import { useNetworkVariable } from 'src/hooks/use-networks';
 
@@ -25,7 +25,6 @@ const normalizeCoinIconUrl = (onChainCoinIconUrl?: string | null) =>
 export default function SwapView() {
   const dex = useNetworkVariable('dex');
   const client = useRoochClient();
-  const currentAddress = useCurrentAddress();
 
   const [loading, setLoading] = useState(false);
   const [curve, setCurve] = useState<CurveType>('uncorrelated');
@@ -117,11 +116,6 @@ export default function SwapView() {
         fromCoinAmount.replaceAll(',', ''),
         fromCoinInfo.decimals || 0
       );
-      console.log(
-        '🚀 ~ view.tsx:120 ~ fetchToCoin ~ fromCoinInfo.decimals:',
-        fromCoinInfo.decimals
-      );
-      console.log('🚀 ~ view.tsx:119 ~ fetchToCoin ~ fixedFromCoinAmount:', fixedFromCoinAmount);
       const result = await client.executeViewFunction({
         target: `${dex.address}::router::get_amount_out`,
         args: [Args.u64(fixedFromCoinAmount)],
@@ -134,10 +128,6 @@ export default function SwapView() {
 
       const toCoinAmount = result.return_values![0].decoded_value as string;
       const fixedToCoinAmount = fromDust(toCoinAmount, toCoinInfo?.decimals || 0);
-      console.log(
-        '🚀 ~ view.tsx:131 ~ fetchToCoin ~ fixedToCoinAmount:',
-        fixedToCoinAmount.toString()
-      );
       const ratio = BigNumber(fixedToCoinAmount).div(fromCoinAmount);
       const fixedRatio = ratio.toFixed(8, 1);
       const finalRatio = ratio.isInteger() ? ratio.toFixed(0) : fixedRatio;
@@ -190,12 +180,6 @@ export default function SwapView() {
         }}
         onSwap={async (payload) => {
           const { fromCoin, toCoin, interactiveMode } = payload;
-          console.log(
-            '🚀 ~ view.tsx:176 ~ onSwap={ ~ fromCoin, toCoin, interactiveMode:',
-            fromCoin,
-            toCoin,
-            interactiveMode
-          );
           setFromCoinType(fromCoin?.coin_type);
           setFromCoinAmount(
             fromDust(fromCoin?.amount.toString() ?? '0', fromCoinInfo?.decimals || 0).toString() ||

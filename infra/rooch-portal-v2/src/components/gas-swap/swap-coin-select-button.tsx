@@ -25,8 +25,9 @@ import { formatCoin, toBigNumber } from 'src/utils/number';
 
 import { grey } from 'src/theme/core';
 
+import { Iconify } from 'src/components/iconify';
+
 import Text from './typography/text';
-import { Iconify } from '../iconify';
 
 import type { UserCoin } from './types';
 

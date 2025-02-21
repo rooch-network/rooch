@@ -20,8 +20,8 @@ import { DashboardContent } from 'src/layouts/dashboard';
 
 import { toast } from 'src/components/snackbar';
 
-import { paths } from '../../routes/paths';
-import { INVITER_ADDRESS_KEY } from '../../utils/inviter';
+import { paths } from 'src/routes/paths';
+import { INVITER_ADDRESS_KEY } from 'src/utils/inviter';
 
 const FAUCET_NOT_OPEN = 'Faucet Not Open';
 const INVALID_UTXO = 'Invalid UTXO';

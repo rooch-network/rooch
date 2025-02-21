@@ -50,10 +50,10 @@ module.exports = {
     'react/no-children-prop': 0,
     'react/react-in-jsx-scope': 0,
     'react/no-array-index-key': 0,
+    'react/jsx-no-useless-fragment': 0,
     'react/require-default-props': 0,
     'react/jsx-props-no-spreading': 0,
     'react/function-component-definition': 0,
-    'react/jsx-no-useless-fragment': [1, { allowExpressions: true }],
     'react/no-unstable-nested-components': [1, { allowAsProps: true }],
     'react/jsx-no-duplicate-props': [1, { ignoreCase: false }],
     'react-refresh/only-export-components': 0,
@@ -71,7 +71,7 @@ module.exports = {
     'perfectionist/sort-named-imports': [1, { order: 'asc', type: 'line-length' }],
     'perfectionist/sort-named-exports': [1, { order: 'asc', type: 'line-length' }],
     'perfectionist/sort-imports': [
-      1,
+      0,
       {
         order: 'asc',
         type: 'line-length',

@@ -10,7 +10,7 @@ import { varAlpha } from 'src/theme/styles';
 
 import { Iconify } from 'src/components/iconify';
 
-import { SvgColor } from '../../svg-color';
+import { SvgColor } from 'src/components/svg-color';
 
 type Props = ButtonBaseProps & {
   icon: string;

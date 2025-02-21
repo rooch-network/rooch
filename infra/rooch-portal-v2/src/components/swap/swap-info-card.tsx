@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 
-import { Box, CircularProgress, Stack, Typography } from '@mui/material';
+import { Box, Stack, Typography, CircularProgress } from '@mui/material';
 
 import { grey, secondary } from 'src/theme/core';
 import swapDownIcon from '@/assets/swap/swap-down.svg';

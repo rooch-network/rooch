@@ -4,8 +4,8 @@ import ButtonBase from '@mui/material/ButtonBase';
 import { CONFIG } from 'src/config-global';
 import { setFont, varAlpha, stylesMode } from 'src/theme/styles';
 
+import { SvgColor } from 'src/components/svg-color';
 import { Block } from './styles';
-import { SvgColor } from '../../svg-color';
 
 type Props = {
   value: string;

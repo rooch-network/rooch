@@ -8,8 +8,8 @@ import ButtonBase from '@mui/material/ButtonBase';
 import { CONFIG } from 'src/config-global';
 import { varAlpha, stylesMode } from 'src/theme/styles';
 
+import { SvgColor, svgColorClasses } from 'src/components/svg-color';
 import { Block } from './styles';
-import { SvgColor, svgColorClasses } from '../../svg-color';
 
 import type { SettingsState } from '../types';
 

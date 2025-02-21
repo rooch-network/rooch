@@ -8,10 +8,10 @@ import { useTabs } from 'src/hooks/use-tabs';
 
 import { DashboardContent } from 'src/layouts/dashboard';
 
-import FarmList from './farm_list';
-import AllLiquidityList from './all_liquidity_list';
-import OwnerLiquidityList from './owner_liquidity_list';
-import CreateLiquidityModal from './create-liquidity-modal';
+import FarmList from '../components/farm-list';
+import AllLiquidityList from '../components/all-liquidity-list';
+import OwnerLiquidityList from '../components/owner-liquidity-list';
+import CreateLiquidityModal from '../components/create-liquidity-modal';
 
 const TABS = [
   { label: 'All Liquidity', value: 'all_liquidity' },
