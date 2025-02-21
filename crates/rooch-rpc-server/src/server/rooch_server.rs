@@ -524,7 +524,7 @@ impl RoochAPIServer for RoochServer {
 
             (end..start).rev().collect::<Vec<_>>()
         } else {
-            let start = cursor.unwrap_or(0);
+            let start = cursor.map(|s| s + 1).unwrap_or(0);
             let start_plus = start
                 .checked_add(limit_of + 1)
                 .ok_or(RpcError::UnexpectedError(
@@ -818,15 +818,15 @@ impl RoochAPIServer for RoochServer {
         let last_sequencer_order = self.rpc_service.get_sequencer_order().await?;
         let tx_orders = if descending_order {
             let start = cursor_of.unwrap_or(last_sequencer_order + 1);
-            let end = if start >= limit_of {
-                start - limit_of
+            let end = if start >= (limit_of + 1) {
+                start - (limit_of + 1)
             } else {
                 0
             };
 
             (end..start).rev().collect::<Vec<_>>()
         } else {
-            let start = cursor_of.unwrap_or(0);
+            let start = cursor_of.map(|s| s + 1).unwrap_or(0);
             let end_check = start
                 .checked_add(limit_of + 1)
                 .ok_or(RpcError::UnexpectedError(
