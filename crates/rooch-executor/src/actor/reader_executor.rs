@@ -15,8 +15,8 @@ use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor, LocalActorRef};
 use move_resource_viewer::MoveValueAnnotator;
 use move_vm_runtime::RuntimeEnvironment;
-use moveos::moveos::{MoveOS, MoveOSCacheManager, MoveOSGlobalModuleCache};
 use moveos::moveos::MoveOSConfig;
+use moveos::moveos::{MoveOS, MoveOSCacheManager, MoveOSGlobalModuleCache};
 use moveos::vm::module_cache::GlobalModuleCache;
 use moveos_eventbus::bus::EventData;
 use moveos_store::transaction_store::TransactionStore;
@@ -66,7 +66,7 @@ impl ReaderExecutorActor {
             moveos_store,
             rooch_store,
             event_actor,
-            global_cache_manager
+            global_cache_manager,
         })
     }
 
@@ -335,7 +335,7 @@ impl Handler<EventData> for ReaderExecutorActor {
                 self.moveos_store.clone(),
                 system_pre_execute_functions(),
                 system_post_execute_functions(),
-                self.global_cache_manager.clone()
+                self.global_cache_manager.clone(),
             )?;
         }
         Ok(())

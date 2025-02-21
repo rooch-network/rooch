@@ -77,7 +77,7 @@ impl ExecutorActor {
             moveos_store.clone(),
             system_pre_execute_functions(),
             system_post_execute_functions(),
-            global_cache_manager.clone()
+            global_cache_manager.clone(),
         )?;
 
         Ok(Self {
@@ -87,7 +87,7 @@ impl ExecutorActor {
             rooch_store,
             metrics: Arc::new(ExecutorMetrics::new(registry)),
             event_actor,
-            global_cache_manager
+            global_cache_manager,
         })
     }
 
@@ -544,7 +544,7 @@ impl Handler<EventData> for ExecutorActor {
                 self.moveos_store.clone(),
                 system_pre_execute_functions(),
                 system_post_execute_functions(),
-                self.global_cache_manager.clone()
+                self.global_cache_manager.clone(),
             )?;
         }
         Ok(())
