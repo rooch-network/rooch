@@ -43,12 +43,12 @@ where
         load_object: bool,
         module_storage: &impl ModuleStorage,
     ) -> VMResult<Vec<Vec<u8>>> {
-        let parameters = func.param_tys().clone();
+        let parameters = func.param_tys();
 
         //fill the type arguments to parameter type
         let parameters = parameters
-            .into_iter()
-            .map(|ty| ty.subst(&func.ty_args()))
+            .iter()
+            .map(|ty| ty.subst(func.ty_args()))
             .collect::<PartialVMResult<Vec<_>>>()
             .map_err(|err| err.finish(location.clone()))?;
 
