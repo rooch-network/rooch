@@ -4,23 +4,18 @@
 use super::data_cache::{into_change_set, MoveosDataCache};
 use crate::moveos::MoveOSCacheManager;
 use crate::vm::module_cache::{
-    GlobalModuleCache, MoveOSCodeCache, PanicError, RoochModuleExtension, StateValue,
+    GlobalModuleCache, MoveOSCodeCache, RoochModuleExtension, StateValue,
 };
-use ambassador::delegate_to_methods;
 use bytes::Bytes;
 use move_binary_format::compatibility::Compatibility;
 use move_binary_format::file_format::CompiledScript;
-use move_binary_format::normalized;
 use move_binary_format::{
     access::ModuleAccess,
     errors::{verification_error, Location, PartialVMError, PartialVMResult, VMError, VMResult},
     file_format::AbilitySet,
     CompiledModule, IndexKind,
 };
-use move_core_types::identifier::IdentStr;
 use move_core_types::{
-    account_address::AccountAddress,
-    identifier::Identifier,
     language_storage::{ModuleId, TypeTag},
     value::MoveTypeLayout,
     vm_status::{KeptVMStatus, StatusCode},
@@ -29,23 +24,18 @@ use move_model::script_into_module;
 use move_vm_runtime::data_cache::TransactionCache;
 use move_vm_runtime::module_traversal::{TraversalContext, TraversalStorage};
 use move_vm_runtime::{
-    config::VMConfig, move_vm::MoveVM, native_extensions::NativeContextExtensions,
-    native_functions::NativeFunction, session::Session, CodeStorage, LoadedFunction, Module,
-    ModuleStorage, RuntimeEnvironment, Script, WithRuntimeEnvironment,
+    move_vm::MoveVM, native_extensions::NativeContextExtensions, session::Session, LoadedFunction, Module, RuntimeEnvironment, WithRuntimeEnvironment,
 };
-use move_vm_types::code::{ambassador_impl_ScriptCache, WithBytes, WithHash};
-use move_vm_types::code::{Code, ModuleCode};
-use move_vm_types::code::{ModuleCache, ScriptCache, UnsyncModuleCache, UnsyncScriptCache};
+use move_vm_types::code::ModuleCode;
+use move_vm_types::code::ModuleCache;
 use move_vm_types::gas::UnmeteredGasMeter;
 use move_vm_types::loaded_data::runtime_types::{StructNameIndex, StructType, Type};
-use move_vm_types::sha3_256;
 use moveos_common::types::{ClassifiedGasMeter, SwitchableGasMeter};
 use moveos_object_runtime::runtime::{ObjectRuntime, ObjectRuntimeContext};
-use moveos_object_runtime::TypeLayoutLoader;
 use moveos_stdlib::natives::moveos_stdlib::{
     event::NativeEventContext, move_module::NativeModuleContext,
 };
-use moveos_store::{load_feature_store_object, MoveOSStore, TxnIndex};
+use moveos_store::load_feature_store_object;
 use moveos_types::state::ObjectState;
 use moveos_types::{addresses, transaction::RawTransactionOutput};
 use moveos_types::{
@@ -597,7 +587,7 @@ where
                     if data_store.exists_module(&module_id)? && compat.need_check_compat() {
                         let old_module = self.vm.load_module(&module_id, self.remote)?;
                         compat
-                            .check(&old_module, &module)
+                            .check(&old_module, module)
                             .map_err(|e| e.finish(Location::Undefined))?;
                     }
                     if !bundle_unverified.insert(module_id) {
@@ -732,7 +722,7 @@ where
         )?;
         let return_values = self.session.execute_function_bypass_visibility(
             &call.function_id.module_id,
-            &call.function_id.function_name.as_ident_str(),
+            call.function_id.function_name.as_ident_str(),
             call.ty_args,
             serialized_args,
             &mut self.gas_meter,

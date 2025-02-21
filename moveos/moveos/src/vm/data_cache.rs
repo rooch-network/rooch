@@ -4,7 +4,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use move_vm_runtime::loader::Loader;
-use std::collections::{btree_map, BTreeMap};
+use std::collections::BTreeMap;
 
 use crate::vm::module_cache::MoveOSCodeCache;
 use bytes::Bytes;
@@ -146,10 +146,10 @@ impl<'r, 'l, S: MoveOSResolver> TransactionCache for MoveosDataCache<'r, 'l, S> 
                     },
                     Err(e) => {
                         let msg = format!("Unexpected storage error: {:?}", e);
-                        return Err(PartialVMError::new(
+                        Err(PartialVMError::new(
                             StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR,
                         )
-                        .with_message(msg));
+                        .with_message(msg))
                     }
                 },
             });
