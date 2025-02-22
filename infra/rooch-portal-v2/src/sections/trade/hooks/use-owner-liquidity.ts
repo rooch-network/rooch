@@ -21,6 +21,40 @@ export type UseOwnerLiquidityReturn = {
   isPending: boolean;
 };
 
+function parseLPTokens(
+  assetsList: BalanceInfoView[],
+  dexAddress: string
+): OwnerLiquidityItemType[] {
+  if (!assetsList) {
+    return [];
+  }
+
+  return assetsList
+    .filter((item) => item.symbol.startsWith('RDexLP'))
+    .map((item) => {
+      const t = item.coin_type
+        .replaceAll(' ', '')
+        .replace(`${dexAddress}::swap::LPToken<`, '')
+        .split(',');
+      const x = t[0];
+      const y = t[1].substring(0, t[1].length - 1);
+      const xName = x.split('::');
+      const yName = y.split('::');
+      return {
+        ...item,
+        x: {
+          type: x,
+          name: xName[xName.length - 1],
+        },
+        y: {
+          type: y,
+          name: yName[yName.length - 1],
+        },
+      };
+    })
+    .sort((a, b) => b.fixedBalance - a.fixedBalance);
+}
+
 export function useOwnerLiquidity(): UseOwnerLiquidityReturn {
   const currentAddress = useCurrentAddress();
   const dex = useNetworkVariable('dex');
@@ -29,39 +63,10 @@ export function useOwnerLiquidity(): UseOwnerLiquidityReturn {
     owner: currentAddress?.toStr() || '',
   });
 
-  const lpTokens = useMemo(() => {
-    if (!assetsList) {
-      return [];
-    }
-
-    const tokens: OwnerLiquidityItemType[] = assetsList!.data
-      .filter((item) => item.symbol.startsWith('RDexLP'))
-      .map((item) => {
-        const t = item.coin_type
-          .replaceAll(' ', '')
-          .replace(`${dex.address}::swap::LPToken<`, '')
-          .split(',');
-        const x = t[0];
-        const y = t[1].substring(0, t[1].length - 1);
-        const xName = x.split('::');
-        const yName = y.split('::');
-        return {
-          ...item,
-          x: {
-            type: x,
-            name: xName[xName.length - 1],
-          },
-          y: {
-            type: y,
-            name: yName[yName.length - 1],
-          },
-        };
-      })
-      .sort((a, b) => b.fixedBalance - a.fixedBalance);
-    return tokens;
-  }, [assetsList, dex.address]);
-
-  console.log(lpTokens);
+  const lpTokens = useMemo(
+    () => parseLPTokens(assetsList?.data || [], dex.address),
+    [assetsList, dex.address]
+  );
 
   return {
     lpTokens,

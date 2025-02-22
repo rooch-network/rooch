@@ -16,14 +16,14 @@ import {
 
 import { toast } from 'src/components/snackbar';
 
-import { shortAddress } from '../../../utils/address';
-import { Scrollbar } from '../../../components/scrollbar';
-import { getUTCOffset } from '../../../utils/format-time';
-import { formatCoin } from '../../../utils/format-number';
-import { GAS_COIN_DECIMALS } from '../../../config/constant';
-import TableSkeleton from '../../../components/skeleton/table-skeleton';
-import { TableNoData, TableHeadCustom } from '../../../components/table';
-import { getShareLink, getTwitterShareText } from '../../../utils/inviter';
+import { shortAddress } from 'src/utils/address';
+import { Scrollbar } from 'src/components/scrollbar';
+import { getUTCOffset } from 'src/utils/format-time';
+import { formatCoin } from 'src/utils/format-number';
+import { GAS_COIN_DECIMALS } from 'src/config/constant';
+import TableSkeleton from 'src/components/skeleton/table-skeleton';
+import { TableNoData, TableHeadCustom } from 'src/components/table';
+import { getShareLink, getTwitterShareText } from 'src/utils/inviter';
 
 type ListType = {
   address: string;

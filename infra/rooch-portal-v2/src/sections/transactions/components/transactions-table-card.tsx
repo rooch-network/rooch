@@ -115,11 +115,7 @@ export default function TransactionsTableCard({
                     </TableCell>
                     {item.execution_info && (
                       <TableCell className="!text-xs">
-                        {formatCoin(
-                          Number(item.execution_info.gas_used),
-                          GAS_COIN_DECIMALS,
-                          6
-                        )}
+                        {formatCoin(Number(item.execution_info.gas_used), GAS_COIN_DECIMALS, 6)}
                       </TableCell>
                     )}
                     {item.execution_info && (

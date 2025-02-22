@@ -8,9 +8,9 @@ import { toBigNumber } from 'src/utils/number';
 
 import { grey } from 'src/theme/core';
 
+import { Iconify } from 'src/components/iconify';
 import Label from './typography/label';
 import Header from './typography/header';
-import { Iconify } from '../iconify/iconify';
 
 export interface SwapWidgetHeaderProps {
   slippage: number;
