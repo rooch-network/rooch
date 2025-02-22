@@ -37,10 +37,12 @@ impl ListEmptyCommand {
             HashMap::with_capacity_and_hasher(100 * 1024 * 1024, Default::default());
         let mut tx_hash_order_dup_map: HashMap<H256, Vec<u64>> =
             HashMap::with_capacity_and_hasher(1024, Default::default());
-        let mut non_execution_info_tx_orders = Vec::with_capacity(1024);
+        let mut non_execution_info_tx_orders: Vec<(u64, H256)> = Vec::with_capacity(1024);
 
         let mut tx_order = self.start_order.unwrap_or(1);
-        let mut done_count = 0;
+        let mut done_count: u64 = 0;
+        let mut tx_hash_dup_count: u64 = 0;
+        let mut tx_no_execution_info_count: u64 = 0;
         loop {
             let tx_hashes = rooch_db
                 .rooch_store
@@ -61,18 +63,29 @@ impl ListEmptyCommand {
                     .get_mut(&tx_hash)
                     .unwrap()
                     .push(tx_order);
+                tx_hash_dup_count += 1;
             }
 
             let execution_info = moveos_store
                 .get_transaction_store()
                 .get_tx_execution_info(tx_hash)?;
             if execution_info.is_none() {
-                non_execution_info_tx_orders.push(tx_order);
+                non_execution_info_tx_orders.push((tx_order, tx_hash));
+                tx_no_execution_info_count += 1;
             }
 
             done_count += 1;
             if done_count % (1024 * 1024) == 0 {
-                tracing::info!("done: {}", done_count);
+                tracing::info!(
+                    "done: {}. tx_order range: [{},{}], tx_hash_dup: {}, no_exec_info: {}",
+                    done_count,
+                    done_count - 1024 * 1024,
+                    done_count,
+                    tx_hash_dup_count,
+                    tx_no_execution_info_count
+                );
+                tx_hash_dup_count = 0;
+                tx_no_execution_info_count = 0;
             }
 
             tx_order += 1;
@@ -91,8 +104,8 @@ impl ListEmptyCommand {
         tracing::info!("dup count: {}", dup_count);
 
         writeln!(writer, "--- tx with no execution info ---")?;
-        for order in non_execution_info_tx_orders.iter() {
-            writeln!(writer, "{}", order)?;
+        for (order, tx_hash) in non_execution_info_tx_orders.iter() {
+            writeln!(writer, "{}:{:?}", order, tx_hash)?;
         }
         tracing::info!(
             "no execution info count: {}",
