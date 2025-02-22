@@ -596,16 +596,23 @@ impl ExecInner {
         }
 
         println!(
-            "-----------------{} cost percentiles distribution-----------------",
+            "-----------------{} cost percentiles distribution(ms)-----------------",
             tx_type_str
         );
         let percentiles = [
             1.00, 5.00, 10.00, 20.00, 30.00, 40.00, 50.00, 60.00, 70.00, 80.00, 90.00, 95.00,
             99.00, 99.50, 99.90, 99.95, 99.99,
         ];
-        for &p in &percentiles {
-            let v = hist.value_at_percentile(p);
-            println!("| {:6.2}th=[{}]", p, v);
+        let percentile_rows = percentiles.chunks(4);
+        for row in percentile_rows {
+            let values: Vec<String> = row
+                .iter()
+                .map(|&p| {
+                    let v = hist.value_at_percentile(p) as f64 / 1000f64;
+                    format!("{:6.2}th=[{:9.2}]", p, v)
+                })
+                .collect();
+            println!("| {}", values.join(", "));
         }
     }
 
