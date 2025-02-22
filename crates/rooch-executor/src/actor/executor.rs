@@ -17,7 +17,6 @@ use moveos::vm::vm_status_explainer::explain_vm_status;
 use moveos_eventbus::bus::EventData;
 use moveos_store::MoveOSStore;
 use moveos_types::function_return_value::FunctionResult;
-use moveos_types::h256::H256;
 use moveos_types::module_binding::MoveFunctionCaller;
 use moveos_types::move_std::option::MoveOption;
 use moveos_types::moveos_std::object::ObjectMeta;
@@ -34,6 +33,7 @@ use rooch_genesis::FrameworksGasParameters;
 use rooch_store::state_store::StateStore;
 use rooch_store::RoochStore;
 use rooch_types::address::{BitcoinAddress, MultiChainAddress};
+// use rooch_types::bitcoin::transaction_validator::TransactionValidator as L1TransactionValidator;
 use rooch_types::bitcoin::BitcoinModule;
 use rooch_types::framework::auth_validator::{
     AuthValidatorCaller, BuiltinAuthValidator, TxValidateResult,
@@ -239,12 +239,16 @@ impl ExecutorActor {
         let ctx = TxContext::new_system_call_ctx(tx_hash, tx_size);
         let result = match RoochMultiChainID::try_from(l1_tx.chain_id.id())? {
             RoochMultiChainID::Bitcoin => {
-                // Validate the l1 tx before execution via contract,
-                // If it already execute, skip the tx.
-                let l1_tx_exist = self.validate_l1_tx_exist(tx_hash)?;
-                if l1_tx_exist {
-                    return Err(anyhow::anyhow!("L1 tx {:?} has been executed", tx_hash));
-                }
+                //L1 tx validate first launches the contract, then opens the Rust code
+                // // Validate the l1 tx before execution via contract,
+                // let l1_tx_validator = self.as_module_binding::<L1TransactionValidator>();
+                // let tx_validator_result = l1_tx_validator
+                //     .validate_l1_tx(ctx, tx_hash, vec![])
+                //     .map_err(Into::into)?;
+                // // If the l1 tx already execute, skip the tx.
+                // if !tx_validator_result {
+                //     return Err(RoochError::L1TxAlreadyExecuted);
+                // }
 
                 let action = VerifiedMoveAction::Function {
                     call: BitcoinModule::create_execute_l1_tx_call(l1_tx.block_hash, l1_tx.txid)?,
@@ -256,6 +260,7 @@ impl ExecutorActor {
                     action,
                 ))
             }
+            // _id => Err(RoochError::InvalidChainID),
             id => Err(anyhow::anyhow!("Chain {} not supported yet", id)),
         };
 
@@ -264,11 +269,6 @@ impl ExecutorActor {
             .with_label_values(&[fn_name])
             .observe(tx_size as f64);
         result
-    }
-
-    fn validate_l1_tx_exist(&self, l1_tx_hash: H256) -> Result<bool> {
-        let tx_validator = self.as_module_binding::<BitcoinModule>();
-        tx_validator.exist_l1_tx(l1_tx_hash)
     }
 
     #[named]

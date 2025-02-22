@@ -41,6 +41,7 @@ pub mod utxo;
 
 #[cfg(test)]
 mod tests;
+pub mod transaction_validator;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BitcoinBlockStore {

@@ -27,6 +27,7 @@ This is the reference documentation of the Bitcoin Move Framework.
 -  [`0x4::script_buf`](script_buf.md#0x4_script_buf)
 -  [`0x4::taproot_builder`](taproot_builder.md#0x4_taproot_builder)
 -  [`0x4::temp_state`](temp_state.md#0x4_temp_state)
+-  [`0x4::transaction_validator`](transaction_validator.md#0x4_transaction_validator)
 -  [`0x4::types`](types.md#0x4_types)
 -  [`0x4::utxo`](utxo.md#0x4_utxo)
 
