@@ -1,6 +1,6 @@
-import { varTranExit, varTranEnter } from './transition';
+import type { VariantsType } from 'src/components/animate/types';
 
-import type { VariantsType } from '../types';
+import { varTranExit, varTranEnter } from 'src/components/animate/variants/transition';
 
 export const varSlide = (props?: VariantsType) => {
   const distance = props?.distance || 160;

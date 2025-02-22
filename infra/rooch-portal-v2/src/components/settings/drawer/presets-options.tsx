@@ -4,8 +4,8 @@ import { alpha as hexAlpha } from '@mui/material/styles';
 
 import { CONFIG } from 'src/config-global';
 
+import { SvgColor } from 'src/components/svg-color';
 import { Block } from './styles';
-import { SvgColor } from '../../svg-color';
 
 import type { SettingsState } from '../types';
 

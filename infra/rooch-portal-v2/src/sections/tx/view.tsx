@@ -258,11 +258,7 @@ export function TxView({ hash }: { hash: string }) {
                   <PropsValueItem loading={isPending}>
                     {txDetail && (
                       <Box className="text-sm font-semibold">
-                        {formatCoin(
-                          Number(txDetail.execution_info.gas_used),
-                          GAS_COIN_DECIMALS,
-                          8
-                        )}{' '}
+                        {formatCoin(Number(txDetail.execution_info.gas_used), GAS_COIN_DECIMALS, 8)}{' '}
                         RGAS
                       </Box>
                     )}

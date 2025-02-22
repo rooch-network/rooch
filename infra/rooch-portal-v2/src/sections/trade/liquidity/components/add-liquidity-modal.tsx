@@ -32,11 +32,11 @@ import { useRouter } from 'src/routes/hooks';
 import { useNetworkVariable } from 'src/hooks/use-networks';
 
 import { formatCoin } from 'src/utils/format-number';
-import { toDust, formatByIntl, bigNumberToBigInt, fromDust } from 'src/utils/number';
+import { toDust, fromDust, formatByIntl, bigNumberToBigInt } from 'src/utils/number';
 
 import { toast } from 'src/components/snackbar';
 
-import Icon from '../components/icon';
+import Icon from './icon';
 
 import type { AllLiquidityItemType } from '../../hooks/use-all-liquidity';
 
@@ -125,12 +125,12 @@ export default function AddLiquidityModal({
     const yBalance = (reserveY.data[0].decoded_value!.value.balance as AnnotatedMoveStructView)
       .value.value as string;
 
-    const fixdXAmout = toDust(xAmount, assetsMap.get(row.x.type)?.decimals || 0);
-    const fixdYAmout = toDust(yAmount, assetsMap.get(row.y.type)?.decimals || 0);
+    const fixedXAmount = toDust(xAmount, assetsMap.get(row.x.type)?.decimals || 0);
+    const fixedYAmount = toDust(yAmount, assetsMap.get(row.y.type)?.decimals || 0);
 
     const liquidity = Math.min(
-      BigNumber(fixdXAmout.toString()).multipliedBy(totalSupply).div(xBalance).toNumber(),
-      BigNumber(fixdYAmout.toString()).multipliedBy(totalSupply).div(yBalance).toNumber()
+      BigNumber(fixedXAmount.toString()).multipliedBy(totalSupply).div(xBalance).toNumber(),
+      BigNumber(fixedYAmount.toString()).multipliedBy(totalSupply).div(yBalance).toNumber()
     );
     const share = BigNumber(liquidity.toString()).div(totalSupply).toFixed(4, 1);
     return { liquidity: formatCoin(liquidity, lpDecimals, 2), share };
@@ -161,8 +161,8 @@ export default function AddLiquidityModal({
   }, [currentAddress, onClose]);
 
   const handleAddLiquidity = () => {
-    const fixdX = toDust(xAmount.replaceAll(',', ''), assetsMap.get(row.x.type)?.decimals || 0);
-    const fixdY = toDust(yAmount.replaceAll(',', ''), assetsMap.get(row.y.type)?.decimals || 0);
+    const fixedX = toDust(xAmount.replaceAll(',', ''), assetsMap.get(row.x.type)?.decimals || 0);
+    const fixedY = toDust(yAmount.replaceAll(',', ''), assetsMap.get(row.y.type)?.decimals || 0);
     const finalSlippage =
       slippage === 0
         ? customSlippage === '' || customSlippage === '0'
@@ -171,22 +171,22 @@ export default function AddLiquidityModal({
         : slippage;
     const minX = finalSlippage
       ? bigNumberToBigInt(
-          BigNumber(fixdX.toString()).minus(
-            BigNumber(fixdX.toString()).multipliedBy(BigNumber(slippage))
+          BigNumber(fixedX.toString()).minus(
+            BigNumber(fixedX.toString()).multipliedBy(BigNumber(slippage))
           )
         )
-      : fixdX;
+      : fixedX;
     const minY = finalSlippage
       ? bigNumberToBigInt(
-          BigNumber(fixdY.toString()).minus(
-            BigNumber(fixdY.toString()).multipliedBy(BigNumber(slippage))
+          BigNumber(fixedY.toString()).minus(
+            BigNumber(fixedY.toString()).multipliedBy(BigNumber(slippage))
           )
         )
-      : fixdY;
+      : fixedY;
     const tx = new Transaction();
     tx.callFunction({
       target: `${dex.address}::router::add_liquidity`,
-      args: [Args.u64(fixdX), Args.u64(fixdY), Args.u64(minX), Args.u64(minY)],
+      args: [Args.u64(fixedX), Args.u64(fixedY), Args.u64(minX), Args.u64(minY)],
       typeArgs: [row.x.type, row.y.type],
     });
     mutateAsync({
@@ -217,17 +217,17 @@ export default function AddLiquidityModal({
       .value.value as string;
     const yBalance = (reserveY.data[0].decoded_value!.value.balance as AnnotatedMoveStructView)
       .value.value as string;
-    const fixdX = toDust(xAmount.replaceAll(',', ''), assetsMap.get(row.x.type)?.decimals || 0);
-    const xRate = BigNumber(fixdX.toString()).div(xBalance);
+    const fixedX = toDust(xAmount.replaceAll(',', ''), assetsMap.get(row.x.type)?.decimals || 0);
+    const xRate = BigNumber(fixedX.toString()).div(xBalance);
     const y = BigNumber(yBalance).multipliedBy(xRate);
-    const ycoin = assetsMap.get(row.y.type);
+    const yCoin = assetsMap.get(row.y.type);
 
-    if (y.toNumber() > Number(ycoin?.balance || 0)) {
+    if (y.toNumber() > Number(yCoin?.balance || 0)) {
       setYLabelError('Insufficient');
     } else {
       setYLabelError(undefined);
     }
-    setYAmount(formatByIntl(fromDust(y.toFixed(0, 1), ycoin?.decimals || 0).toString()));
+    setYAmount(formatByIntl(fromDust(y.toFixed(0, 1), yCoin?.decimals || 0).toString()));
   }, [xAmount, reserveX, reserveY, row.x.type, row.y.type, assetsMap]);
 
   useDebounce(fetchY, 500, [fetchY]);

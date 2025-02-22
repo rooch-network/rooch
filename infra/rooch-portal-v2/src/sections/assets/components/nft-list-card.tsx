@@ -34,6 +34,7 @@ export default function NFTList({ address }: { address: string }) {
     setSelectedNFT(undefined);
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handlePageChange = (selectedPage: number) => {
     if (selectedPage < 0) return;
 
@@ -90,7 +91,7 @@ export default function NFTList({ address }: { address: string }) {
         }
       >
         {isNFTListPending ? (
-          Array.from({ length: 4 }).map((i,index) => <Skeleton key={index} height={256} />)
+          Array.from({ length: 4 }).map((i, index) => <Skeleton key={index} height={256} />)
         ) : nftList?.data.length === 0 ? (
           <EmptyContent title="No NFT Found" sx={{ py: 3 }} />
         ) : (

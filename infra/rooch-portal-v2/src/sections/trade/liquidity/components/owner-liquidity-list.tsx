@@ -7,13 +7,12 @@ import WalletGuard from 'src/components/guard/WalletGuard';
 import TableSkeleton from 'src/components/skeleton/table-skeleton';
 import { TableNoData, TableHeadCustom } from 'src/components/table';
 
+import type { OwnerLiquidityItemType } from 'src/sections/trade/hooks/use-owner-liquidity';
+import { useAllLiquidity } from 'src/sections/trade/hooks/use-all-liquidity';
+import { useOwnerLiquidity } from 'src/sections/trade/hooks/use-owner-liquidity';
 import AddLiquidityModal from './add-liquidity-modal';
 import RemoveLiquidityModal from './remove-liquidity-modal';
 import OwnerLiquidityRowItem from './owner-liquidity-row-item';
-import { useAllLiquidity } from '../../hooks/use-all-liquidity';
-import { useOwnerLiquidity } from '../../hooks/use-owner-liquidity';
-
-import type { OwnerLiquidityItemType } from '../../hooks/use-owner-liquidity';
 
 const headerLabel = [
   { id: 'lp', label: 'LP' },

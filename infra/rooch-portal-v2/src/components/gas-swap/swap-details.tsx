@@ -17,11 +17,11 @@ import { fNumber } from 'src/utils/format-number';
 
 import { grey, error, success, warning } from 'src/theme/core';
 
+import { Iconify } from 'src/components/iconify';
+import { toBigNumber, formatCurrency, fromDustToPrecision } from 'src/utils/number';
 import Text from './typography/text';
-import { Iconify } from '../iconify';
 import Label from './typography/label';
 import PoolVersionSelect from './pool-version-select';
-import { toBigNumber, formatCurrency, fromDustToPrecision } from '../../utils/number';
 
 import type { SwapProps, PoolVersion, PriceImpactSeverity } from './types';
 

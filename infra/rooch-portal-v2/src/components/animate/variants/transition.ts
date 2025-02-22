@@ -1,4 +1,4 @@
-import type { TranExitType, TranHoverType, TranEnterType } from '../types';
+import type { TranExitType, TranHoverType, TranEnterType } from 'src/components/animate/types';
 
 export const varTranHover = (props?: TranHoverType) => {
   const duration = props?.duration || 0.32;

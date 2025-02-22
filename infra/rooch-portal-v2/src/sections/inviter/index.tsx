@@ -3,8 +3,8 @@
 import { useEffect } from 'react';
 import { isValidAddress } from '@roochnetwork/rooch-sdk';
 
-import { useRouter } from '../../routes/hooks';
-import { INVITER_ADDRESS_KEY } from '../../utils/inviter';
+import { useRouter } from 'src/routes/hooks';
+import { INVITER_ADDRESS_KEY } from 'src/utils/inviter';
 
 export function InviterView({ inviterAddress }: { inviterAddress?: string }) {
   const router = useRouter();

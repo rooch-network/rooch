@@ -1,6 +1,6 @@
-import { varTranExit, varTranEnter } from './transition';
+import type { VariantsType } from 'src/components/animate/types';
 
-import type { VariantsType } from '../types';
+import { varTranExit, varTranEnter } from 'src/components/animate/variants/transition';
 
 export const varFlip = (props?: VariantsType) => {
   const durationIn = props?.durationIn;

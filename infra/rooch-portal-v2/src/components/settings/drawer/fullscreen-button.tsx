@@ -7,7 +7,7 @@ import IconButton from '@mui/material/IconButton';
 
 import { CONFIG } from 'src/config-global';
 
-import { SvgColor, svgColorClasses } from '../../svg-color';
+import { SvgColor, svgColorClasses } from 'src/components/svg-color';
 
 export function FullScreenButton() {
   const [fullscreen, setFullscreen] = useState(false);
