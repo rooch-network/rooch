@@ -5,6 +5,7 @@ use crate::cli_types::WalletContextOptions;
 use crate::commands::da::commands::{
     build_rooch_db, LedgerTxGetter, SequencedTxStore, TxMetaStore,
 };
+use crate::utils::derive_builtin_genesis_namespace;
 use anyhow::Context;
 use bitcoin::hashes::Hash;
 use bitcoin_client::actor::client::BitcoinClientConfig;
@@ -31,11 +32,12 @@ use rooch_executor::actor::executor::ExecutorActor;
 use rooch_executor::actor::reader_executor::ReaderExecutorActor;
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_pipeline_processor::actor::processor::is_vm_panic_error;
+use rooch_pipeline_processor::actor::{load_tx_anomalies, TxAnomalies};
 use rooch_store::meta_store::SEQUENCER_INFO_KEY;
 use rooch_store::META_SEQUENCER_INFO_COLUMN_FAMILY_NAME;
 use rooch_types::bitcoin::types::Block as BitcoinBlock;
 use rooch_types::error::RoochResult;
-use rooch_types::rooch_network::RoochChainID;
+use rooch_types::rooch_network::{BuiltinChainID, RoochChainID};
 use rooch_types::sequencer::SequencerInfo;
 use rooch_types::transaction::{
     L1BlockWithBody, LedgerTransaction, LedgerTxData, TransactionSequenceInfo,
@@ -118,9 +120,9 @@ pub struct ExecCommand {
     pub enable_rocks_stats: bool,
 
     #[clap(long = "data-dir", short = 'd')]
-    pub base_data_dir: Option<PathBuf>,
+    pub base_data_dir: PathBuf,
     #[clap(long, short = 'n', help = R_OPT_NET_HELP)]
-    pub chain_id: Option<RoochChainID>,
+    pub chain_id: BuiltinChainID,
     #[clap(flatten)]
     pub(crate) context_options: WalletContextOptions,
 }
@@ -223,8 +225,8 @@ impl ExecCommand {
             .and_then(|v| parse_bytes(&v).ok());
 
         let (executor, moveos_store, rooch_db) = build_executor_and_store(
-            self.base_data_dir.clone(),
-            self.chain_id.clone(),
+            Some(self.base_data_dir.clone()),
+            Some(RoochChainID::Builtin(self.chain_id)),
             &actor_system,
             self.enable_rocks_stats,
             row_cache_size,
@@ -266,6 +268,9 @@ impl ExecCommand {
             _ => LedgerTxGetter::new(self.segment_dir.clone())?,
         };
 
+        let genesis_namespace = derive_builtin_genesis_namespace(self.chain_id)?;
+        let tx_anomalies = load_tx_anomalies(genesis_namespace)?;
+
         Ok(ExecInner {
             mode: self.mode,
             force_align: self.force_align,
@@ -279,6 +284,7 @@ impl ExecCommand {
             executed_tx_order: Arc::new(AtomicU64::new(0)),
             rollback: self.rollback,
             rooch_db,
+            tx_anomalies,
         })
     }
 }
@@ -301,6 +307,8 @@ struct ExecInner {
     produced: Arc<AtomicU64>,
     done: Arc<AtomicU64>,
     executed_tx_order: Arc<AtomicU64>,
+
+    tx_anomalies: Option<TxAnomalies>,
 }
 
 struct ExecMsg {
@@ -699,17 +707,23 @@ impl ExecInner {
             mut ledger_tx,
             l1_block_with_body,
         } = msg;
-
+        let tx_hash = ledger_tx.tx_hash();
         let is_l2_tx = ledger_tx.data.is_l2_tx();
 
         let exp_root_opt = self.tx_meta_store.get_exp_roots(tx_order).await;
         let exp_state_root = exp_root_opt.map(|v| v.0);
-        let exp_accumulator_root = exp_root_opt.map(|v| v.1);
+        let mut exp_accumulator_root = exp_root_opt.map(|v| v.1);
 
-        // cache tx_hash
-        if is_l2_tx {
-            let _ = ledger_tx.tx_hash();
+        let mut bypass_execution = false;
+        if let Some(tx_anomalies) = &self.tx_anomalies {
+            if tx_anomalies.is_dup_hash(&tx_hash) {
+                exp_accumulator_root = None;
+            }
+            if tx_anomalies.is_no_execution_info(&tx_hash) {
+                bypass_execution = true;
+            }
         }
+
         // it's okay to sequence tx before validation,
         // because in this case, all tx have been sequenced in Rooch Network.
         if self.mode.need_seq() {
@@ -717,7 +731,7 @@ impl ExecInner {
                 .store_tx(ledger_tx.clone(), exp_accumulator_root)?;
         }
 
-        if self.mode.need_exec() {
+        if self.mode.need_exec() && !bypass_execution {
             let moveos_tx = self
                 .validate_ledger_transaction(ledger_tx, l1_block_with_body)
                 .await?;

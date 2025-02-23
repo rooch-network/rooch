@@ -8,13 +8,15 @@ use moveos_config::store_config::RocksdbConfig;
 use moveos_types::moveos_std::object::ObjectMeta;
 use raw_store::rocks::RocksDB;
 use rocksdb::{ColumnFamilyDescriptor, DB};
+use rooch_config::da_config::derive_namespace_from_genesis;
 use rooch_config::RoochOpt;
 use rooch_db::RoochDB;
+use rooch_genesis::load_genesis_from_binary;
 use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_types::address::RoochAddress;
 use rooch_types::crypto::RoochKeyPair;
 use rooch_types::error::{RoochError, RoochResult};
-use rooch_types::rooch_network::RoochChainID;
+use rooch_types::rooch_network::{BuiltinChainID, RoochChainID};
 use std::io::{self, stdout, Write};
 use std::path::PathBuf;
 use std::time::SystemTime;
@@ -162,4 +164,10 @@ pub fn open_inner_rocks(
         )?;
         Ok(inner)
     }
+}
+
+pub fn derive_builtin_genesis_namespace(chain_id: BuiltinChainID) -> anyhow::Result<String> {
+    let genesis = load_genesis_from_binary(chain_id)?.expect("Genesis not found");
+    let genesis_hash = genesis.genesis_hash();
+    Ok(derive_namespace_from_genesis(genesis_hash))
 }
