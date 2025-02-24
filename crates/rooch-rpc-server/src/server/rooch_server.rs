@@ -806,7 +806,7 @@ impl RoochAPIServer for RoochServer {
         let descending_order = query_option.descending;
         let decode = query_option.decode;
 
-        let mut fields = self
+        let (fields, mut fields_view) = self
             .rpc_service
             .query_fields(
                 filter.into(),
@@ -818,7 +818,10 @@ impl RoochAPIServer for RoochServer {
             .await?;
 
         let has_next_page = fields.len() > limit_of;
-        fields.truncate(limit_of);
+        // Solve the pagation consistency problem after indexer data filtering
+        if fields_view.len() >= fields.len() {
+            fields_view.truncate(limit_of);
+        }
 
         let next_page_check = if has_next_page {
             page_of.checked_add(1).ok_or(RpcError::UnexpectedError(
@@ -830,7 +833,7 @@ impl RoochAPIServer for RoochServer {
         let next_cursor = Some(StrView(next_page_check));
 
         Ok(FieldPageView {
-            data: fields,
+            data: fields_view,
             next_cursor,
             has_next_page,
         })

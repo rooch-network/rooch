@@ -34,7 +34,7 @@ use rooch_types::framework::address_mapping::RoochToBitcoinAddressMapping;
 use rooch_types::indexer::event::{
     AnnotatedIndexerEvent, EventFilter, IndexerEvent, IndexerEventID,
 };
-use rooch_types::indexer::field::FieldFilter;
+use rooch_types::indexer::field::{FieldFilter, IndexerField};
 use rooch_types::indexer::state::{
     IndexerObjectState, IndexerStateID, ObjectStateFilter, ObjectStateType, INSCRIPTION_TYPE_TAG,
     UTXO_TYPE_TAG,
@@ -847,7 +847,7 @@ impl RpcService {
         limit: usize,
         descending_order: bool,
         decode: bool,
-    ) -> Result<Vec<IndexerFieldView>> {
+    ) -> Result<(Vec<IndexerField>, Vec<IndexerFieldView>)> {
         match filter.clone() {
             FieldFilter::ObjectId(object_ids) => {
                 if object_ids.len() > MAX_OBJECT_IDS_PER_QUERY {
@@ -872,7 +872,7 @@ impl RpcService {
             let annotated_states = self.get_annotated_states(access_path, None).await?;
             annotated_states
                 .into_iter()
-                .zip(fields)
+                .zip(fields.clone())
                 .filter_map(|(state_opt, field)| {
                     match state_opt {
                         Some(state) => {
@@ -893,7 +893,7 @@ impl RpcService {
             let states = self.get_states(access_path, None).await?;
             states
                 .into_iter()
-                .zip(fields)
+                .zip(fields.clone())
                 .filter_map(|(state_opt, field)| {
                     match state_opt {
                         Some(state) => Some(IndexerFieldView::new_from_state(field, state)),
@@ -910,6 +910,6 @@ impl RpcService {
                 .collect::<Vec<_>>()
         };
 
-        Ok(result)
+        Ok((fields, result))
     }
 }
