@@ -816,9 +816,6 @@ impl RoochAPIServer for RoochServer {
                 decode,
             )
             .await?;
-        // .into_iter()
-        // .map(IndexerFieldView::from)
-        // .collect::<Vec<_>>();
 
         let has_next_page = fields.len() > limit_of;
         fields.truncate(limit_of);
