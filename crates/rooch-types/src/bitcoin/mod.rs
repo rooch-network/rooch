@@ -8,6 +8,7 @@ use bitcoin::BlockHash;
 use move_core_types::{
     account_address::AccountAddress, ident_str, identifier::IdentStr, value::MoveValue,
 };
+use moveos_types::h256::H256;
 use moveos_types::{
     module_binding::{ModuleBinding, MoveFunctionCaller},
     move_std::option::MoveOption,
@@ -40,6 +41,7 @@ pub mod utxo;
 
 #[cfg(test)]
 mod tests;
+pub mod transaction_validator;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BitcoinBlockStore {
@@ -99,6 +101,7 @@ impl<'a> BitcoinModule<'a> {
     pub const EXECUTE_L1_BLOCK_FUNCTION_NAME: &'static IdentStr = ident_str!("execute_l1_block");
     pub const GET_GENESIS_BLOCK_FUNCTION_NAME: &'static IdentStr = ident_str!("get_genesis_block");
     pub const EXECUTE_L1_TX_FUNCTION_NAME: &'static IdentStr = ident_str!("execute_l1_tx");
+    pub const EXIST_L1_TX_FUNCTION_NAME: &'static IdentStr = ident_str!("exist_l1_tx");
 
     pub fn get_block(&self, block_hash: BlockHash) -> Result<Option<Header>> {
         let call = Self::create_function_call(
@@ -228,6 +231,25 @@ impl<'a> BitcoinModule<'a> {
             vec![],
             vec![MoveValue::Address(block_hash), MoveValue::Address(txid)],
         ))
+    }
+
+    pub fn exist_l1_tx(&self, tx_hash: H256) -> Result<bool> {
+        let call = Self::create_function_call(
+            Self::EXIST_L1_TX_FUNCTION_NAME,
+            vec![],
+            vec![MoveValue::Address(tx_hash.into_address())],
+        );
+        let ctx = TxContext::new_readonly_ctx(AccountAddress::ZERO);
+        let exist = self
+            .caller
+            .call_function(&ctx, call)?
+            .into_result()
+            .map(|mut values| {
+                let value = values.pop().expect("should have one return value");
+                bcs::from_bytes::<bool>(&value.value).expect("should be a valid bool")
+            })
+            .map_err(|e| anyhow::anyhow!("Failed to check l1 tx exist: {:?}", e))?;
+        Ok(exist)
     }
 }
 

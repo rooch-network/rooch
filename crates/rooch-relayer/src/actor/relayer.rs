@@ -19,6 +19,7 @@ use rooch_event::event::ServiceStatusEvent;
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_pipeline_processor::proxy::PipelineProcessorProxy;
 use rooch_types::bitcoin::pending_block::PendingBlockModule;
+use rooch_types::error::RoochError;
 use rooch_types::multichain_id::RoochMultiChainID;
 use rooch_types::service_status::ServiceStatus;
 use rooch_types::transaction::{L1BlockWithBody, L1Transaction};
@@ -126,19 +127,32 @@ impl RelayerActor {
 
     async fn handle_l1_tx(&mut self, l1_tx: L1Transaction) -> Result<()> {
         let txid = hex::encode(&l1_tx.txid);
-        let result = self.processor.execute_l1_tx(l1_tx).await?;
-
-        match result.execution_info.status {
-            KeptVMStatus::Executed => {
-                info!("Relayer execute relay tx(txid: {}) success", txid);
-            }
-            _ => {
-                error!(
-                    "Relayer execute relay tx(txid: {}) failed, status: {:?}",
-                    txid, result.execution_info.status
-                );
+        match self.processor.execute_l1_tx(l1_tx).await {
+            Ok(result) => match result.execution_info.status {
+                KeptVMStatus::Executed => {
+                    info!("Relayer execute relay tx(txid: {}) success", txid);
+                }
+                _ => {
+                    error!(
+                        "Relayer execute relay tx(txid: {}) failed, status: {:?}",
+                        txid, result.execution_info.status
+                    );
+                }
+            },
+            Err(error) => {
+                // Handle specific RoochError::L1TxAlreadyExecuted case
+                if error.downcast_ref::<RoochError>() == Some(&RoochError::L1TxAlreadyExecuted) {
+                    info!("Relayer has skip execute relay tx(txid: {}) due to it has been already executed", txid);
+                } else {
+                    error!(
+                        "Relayer execute relay tx(txid: {}) failed, error: {}",
+                        txid,
+                        error.to_string()
+                    );
+                }
             }
         }
+
         Ok(())
     }
 

@@ -39,3 +39,5 @@ sdk/typescript/src/generated/
 
 # pnpm store
 .pnpm-store/
+
+rooch-book

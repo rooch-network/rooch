@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use coerce::actor::ActorRefErr;
 use move_binary_format::errors::VMError;
 use moveos_types::genesis_info::GenesisInfo;
 use std::io;
@@ -134,8 +135,15 @@ pub enum RoochError {
     #[error("The onchain gas schedule is empty.")]
     OnchainGasScheduleIsEmpty,
 
+    #[error("The l1 tx has been executed.")]
+    L1TxAlreadyExecuted,
+
     #[error("VM error: {0}")]
     VMError(VMError),
+
+    // Add new variant for ActorRefErr
+    #[error("Actor reference error: {0}")]
+    ActorRefError(String),
 }
 
 impl From<anyhow::Error> for RoochError {
@@ -188,6 +196,12 @@ impl From<bitcoin::psbt::Error> for RoochError {
 impl From<hex::FromHexError> for RoochError {
     fn from(e: hex::FromHexError) -> Self {
         RoochError::CommandArgumentError(e.to_string())
+    }
+}
+
+impl From<ActorRefErr> for RoochError {
+    fn from(e: ActorRefErr) -> Self {
+        RoochError::ActorRefError(e.to_string())
     }
 }
 
