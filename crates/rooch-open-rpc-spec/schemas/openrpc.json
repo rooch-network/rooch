@@ -1615,22 +1615,28 @@
         "type": "object",
         "required": [
           "field_key",
-          "id",
-          "name",
-          "value"
+          "sort_key",
+          "state"
         ],
         "properties": {
+          "decoded_value": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AnnotatedMoveStructView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "field_key": {
+            "$ref": "#/components/schemas/moveos_types::state::FieldKey"
+          },
+          "sort_key": {
             "type": "string"
           },
-          "id": {
-            "$ref": "#/components/schemas/ObjectID"
-          },
-          "name": {
-            "type": "string"
-          },
-          "value": {
-            "$ref": "#/components/schemas/u64"
+          "state": {
+            "$ref": "#/components/schemas/ObjectStateView"
           }
         }
       },
