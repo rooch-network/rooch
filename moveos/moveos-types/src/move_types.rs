@@ -196,7 +196,7 @@ pub fn type_tag_prop_strategy() -> impl Strategy<Value = TypeTag> {
                             address,
                             module,
                             name,
-                            type_args,
+                            type_args: type_params,
                         }))
                     }),
             ]

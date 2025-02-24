@@ -9741,6 +9741,7 @@ dependencies = [
  "include_dir",
  "move-core-types",
  "move-vm-runtime",
+ "move-vm-types",
  "moveos",
  "moveos-stdlib",
  "moveos-store",

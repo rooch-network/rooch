@@ -588,7 +588,7 @@ mod tests {
     use super::*;
     use move_core_types::identifier::Identifier;
     use move_core_types::language_storage::ModuleId;
-    use move_core_types::resolver::{ModuleResolver, MoveResolver};
+    use move_vm_types::resolver::{ModuleResolver, ResourceResolver};
     use moveos_types::moveos_std::module_store::{ModuleStore, Package};
     use moveos_types::state::MoveStructType;
     use moveos_types::state_resolver::{RootObjectResolver, StateResolver};
@@ -689,10 +689,12 @@ mod tests {
             .to_rooch_address();
         let rooch_dao_account = resolver.get_account(rooch_dao_address.into()).unwrap();
         assert!(rooch_dao_account.is_some());
-        let multisign_account_info_data = resolver
-            .get_resource(
+        let (multisign_account_info_data, _size) = resolver
+            .get_resource_bytes_with_metadata_and_layout(
                 &rooch_dao_address.into(),
                 &MultisignAccountInfo::struct_tag(),
+                &vec![],
+                None,
             )
             .unwrap();
         assert!(multisign_account_info_data.is_some());
