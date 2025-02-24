@@ -280,9 +280,7 @@ where
                         Ok(Bytes::copy_from_slice(x.as_slice()))
                     }
                     Err(e) => {
-                        return Err(
-                            PartialVMError::new(StatusCode::ABORTED).with_message(format!("{}", e))
-                        )
+                        Err(PartialVMError::new(StatusCode::ABORTED).with_message(format!("{}", e)))
                     }
                 })
                 .transpose(),

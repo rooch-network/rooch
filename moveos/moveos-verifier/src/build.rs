@@ -314,9 +314,11 @@ pub fn build_model(
         full_model_generation: false,
         compiler_config: Default::default(),
     };
-    let mut compiler_v2_config = CompilerConfig::default();
-    compiler_v2_config.compiler_version = Some(CompilerVersion::V2_1);
-    compiler_v2_config.language_version = Some(LanguageVersion::V2_1);
+    let compiler_v2_config = CompilerConfig {
+        compiler_version: Some(CompilerVersion::V2_1),
+        language_version: Some(LanguageVersion::V2_1),
+        ..Default::default()
+    };
     build_config.compiler_config = compiler_v2_config.clone();
     build_config.move_model_for_package(
         package_path,
@@ -353,9 +355,11 @@ pub fn build_model_with_test_attr(
     let resolved_graph = build_config
         .clone()
         .resolution_graph_for_package(package_path, &mut std::io::stdout())?;
-    let mut compiler_v2_config = CompilerConfig::default();
-    compiler_v2_config.compiler_version = Some(CompilerVersion::V2_1);
-    compiler_v2_config.language_version = Some(LanguageVersion::V2_1);
+    let compiler_v2_config = CompilerConfig {
+        compiler_version: Some(CompilerVersion::V2_1),
+        language_version: Some(LanguageVersion::V2_1),
+        ..Default::default()
+    };
     build_config.compiler_config = compiler_v2_config.clone();
     let model_config = ModelConfig {
         target_filter,
