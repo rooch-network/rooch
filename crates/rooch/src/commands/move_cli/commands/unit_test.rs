@@ -30,6 +30,7 @@ use rooch_types::genesis_config;
 use serde_json::Value;
 use std::rc::Rc;
 use std::{collections::BTreeMap, path::PathBuf};
+use move_model::metadata::{CompilerVersion, LanguageVersion};
 use termcolor::Buffer;
 use tokio::runtime::Runtime;
 
@@ -67,6 +68,9 @@ impl CommandAction<Option<Value>> for TestCommand {
         build_config
             .additional_named_addresses
             .extend(context.parse_and_resolve_addresses(self.named_addresses)?);
+
+        build_config.compiler_config.language_version = Some(LanguageVersion::V2_1);
+        build_config.compiler_config.compiler_version = Some(CompilerVersion::V2_1);
 
         let root_path = self
             .move_args
