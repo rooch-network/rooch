@@ -1,0 +1,16 @@
+[package]
+name = "free_tunnel_rooch"
+version = "1.0.0"
+authors = []
+
+[dependencies]
+MoveStdlib = { local = "../../../frameworks/move-stdlib" }
+MoveosStdlib = { local = "../../../frameworks/moveos-stdlib" }
+RoochFramework = { local = "../../../frameworks/rooch-framework" }
+minter_manager = { local = "../minter_manager" }
+
+[addresses]
+std = "0x1"
+moveos_std = "0x2"
+rooch_framework = "0x3"
+free_tunnel_rooch = "_"
