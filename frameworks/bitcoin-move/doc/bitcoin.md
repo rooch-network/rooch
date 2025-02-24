@@ -20,6 +20,7 @@
 -  [Function `get_latest_block`](#0x4_bitcoin_get_latest_block)
 -  [Function `get_bitcoin_time`](#0x4_bitcoin_get_bitcoin_time)
 -  [Function `contains_header`](#0x4_bitcoin_contains_header)
+-  [Function `exist_l1_tx`](#0x4_bitcoin_exist_l1_tx)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
@@ -272,4 +273,16 @@ Get the bitcoin time in seconds
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="bitcoin.md#0x4_bitcoin_contains_header">contains_header</a>(block_header: &<a href="types.md#0x4_types_Header">types::Header</a>): bool
+</code></pre>
+
+
+
+<a name="0x4_bitcoin_exist_l1_tx"></a>
+
+## Function `exist_l1_tx`
+
+Check is l1 tx exist
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin.md#0x4_bitcoin_exist_l1_tx">exist_l1_tx</a>(tx_hash: <b>address</b>): bool
 </code></pre>

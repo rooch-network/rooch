@@ -43,6 +43,7 @@ argon2 = { workspace = true }
 tracing = { workspace = true }
 xxhash-rust = { workspace = true, features = ["xxh3"] }
 lz4 = { workspace = true }
+coerce = { workspace = true }
 
 move-core-types = { workspace = true }
 move-vm-types = { workspace = true }

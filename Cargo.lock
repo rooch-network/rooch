@@ -11140,6 +11140,7 @@ dependencies = [
  "bs58 0.5.1",
  "chacha20poly1305",
  "clap 4.5.17",
+ "coerce",
  "derive_more 1.0.0",
  "enum_dispatch",
  "ethers",
