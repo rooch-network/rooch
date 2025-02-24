@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::vm::data_cache::{into_change_set, MoveosDataCache};
-use crate::vm::module_cache::GlobalModuleCache;
+use crate::vm::module_cache::{GlobalModuleCache, MoveOSCodeCache};
 #[cfg(test)]
 use crate::vm::unit_tests::vm_arguments_tests::{make_script_function, RemoteStore};
 use move_binary_format::file_format::{Signature, SignatureToken};
@@ -18,6 +18,7 @@ use moveos_types::{
 };
 use parking_lot::RwLock;
 use std::rc::Rc;
+use std::sync::Arc;
 
 #[test]
 #[allow(clippy::arc_with_non_send_sync)]
@@ -30,7 +31,7 @@ fn publish_and_load_module() {
     module.serialize(&mut bytes).unwrap();
 
     let runtime_environment = RuntimeEnvironment::new(vec![]);
-    let global_module_cache = GlobalModuleCache::empty();
+    let global_module_cache = Arc::new(RwLock::new(GlobalModuleCache::empty()));
 
     let move_vm = MoveVM::new_with_runtime_environment(&runtime_environment);
     let remote_view = RemoteStore::new();
@@ -55,7 +56,7 @@ fn publish_and_load_module() {
         &remote_view,
         loader,
         object_runtime.clone(),
-        &global_module_cache,
+        MoveOSCodeCache::new(global_module_cache, &runtime_environment, &remote_view),
     );
 
     // check

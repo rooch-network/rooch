@@ -4,7 +4,6 @@
 use clap::Parser;
 use codespan_reporting::diagnostic::Severity;
 use codespan_reporting::term::termcolor::Buffer;
-use move_binary_format::CompiledModule;
 use move_command_line_common::files::{extension_equals, find_filenames, MOVE_EXTENSION};
 use move_command_line_common::parser::NumberFormat;
 use move_command_line_common::{
@@ -22,10 +21,8 @@ use move_transactional_test_runner::{
     vm_test_harness::view_resource_in_move_storage,
 };
 use move_vm_runtime::session::SerializedReturnValues;
-use move_vm_runtime::{Module, RuntimeEnvironment};
-use moveos::moveos::{new_moveos_global_module_cache, MoveOS, MoveOSCacheManager, MoveOSConfig};
+use moveos::moveos::{new_moveos_global_module_cache, MoveOS, MoveOSCacheManager};
 use moveos::moveos_test_runner::{CompiledState, MoveOSTestAdapter, TaskInput};
-use moveos::vm::module_cache::{GlobalModuleCache, RoochModuleExtension};
 use moveos_config::DataDirPath;
 use moveos_store::MoveOSStore;
 use moveos_types::move_std::string::MoveString;

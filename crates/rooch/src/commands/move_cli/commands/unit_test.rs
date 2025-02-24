@@ -10,6 +10,7 @@ use move_cli::{base::test, Move};
 use move_command_line_common::address::NumericalAddress;
 use move_command_line_common::parser::NumberFormat;
 use move_core_types::effects::ChangeSet;
+use move_model::metadata::{CompilerVersion, LanguageVersion};
 use move_unit_test::extensions::set_extension_hook;
 use move_vm_runtime::native_extensions::NativeContextExtensions;
 use moveos_config::DataDirPath;
@@ -30,7 +31,6 @@ use rooch_types::genesis_config;
 use serde_json::Value;
 use std::rc::Rc;
 use std::{collections::BTreeMap, path::PathBuf};
-use move_model::metadata::{CompilerVersion, LanguageVersion};
 use termcolor::Buffer;
 use tokio::runtime::Runtime;
 

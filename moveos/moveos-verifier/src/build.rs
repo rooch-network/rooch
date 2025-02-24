@@ -8,10 +8,9 @@ use crate::metadata::{
 use codespan_reporting::diagnostic::Severity;
 use itertools::Itertools;
 use move_binary_format::CompiledModule;
-use move_command_line_common::address::NumericalAddress;
 use move_command_line_common::files::MOVE_COMPILED_EXTENSION;
 use move_compiler::compiled_unit::CompiledUnit;
-use move_compiler::shared::{NamedAddressMap, PackagePaths};
+use move_compiler::shared::PackagePaths;
 use move_compiler::Flags;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::ModuleId;
@@ -26,9 +25,7 @@ use move_model::run_model_builder_with_options_and_compilation_flags;
 use move_package::compilation::compiled_package::CompiledPackage;
 use move_package::compilation::model_builder::make_options_for_v2_compiler;
 use move_package::compilation::package_layout::CompiledPackageLayout;
-use move_package::resolution::resolution_graph::{
-    Renaming, ResolvedGraph, ResolvedPackage, ResolvedTable,
-};
+use move_package::resolution::resolution_graph::ResolvedGraph;
 use move_package::{BuildConfig, CompilerConfig, ModelConfig};
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Debug;
@@ -176,7 +173,7 @@ impl ModelBuilder {
     }
 }
 
-use move_symbol_pool::{Symbol as MoveSymbol, Symbol};
+use move_symbol_pool::Symbol as MoveSymbol;
 
 /// Build the move model with default compilation flags and custom options and a set of provided
 /// named addreses.
@@ -202,6 +199,7 @@ fn run_model_builder_with_options<
     )
 }
 
+/*
 fn make_source_and_deps_for_compiler(
     resolution_graph: &ResolvedGraph,
     root: &ResolvedPackage,
@@ -285,6 +283,7 @@ fn apply_named_address_renaming(
         })
         .collect()
 }
+ */
 
 pub const BYTECODE_VERSION: u32 = 6;
 

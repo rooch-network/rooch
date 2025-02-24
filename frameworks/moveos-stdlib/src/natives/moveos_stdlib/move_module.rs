@@ -8,7 +8,7 @@ use move_binary_format::file_format::AbilitySet;
 use move_binary_format::{
     compatibility::Compatibility,
     errors::{PartialVMError, PartialVMResult},
-    normalized, CompiledModule,
+    CompiledModule,
 };
 use move_core_types::u256::U256;
 use move_core_types::{
@@ -44,6 +44,7 @@ const E_MODULE_INCOMPATIBLE: u64 = 3;
 const E_LENTH_NOT_MATCH: u64 = 4;
 
 /// The native module context.
+#[allow(dead_code)]
 #[derive(Tid)]
 pub struct NativeModuleContext<'a> {
     resolver: &'a dyn ModuleResolver,
@@ -167,7 +168,7 @@ fn native_sort_and_verify_modules_inner(
         .collect();
 
     // moveos verifier
-    let module_context = context.extensions_mut().get_mut::<NativeModuleContext>();
+    let _module_context = context.extensions_mut().get_mut::<NativeModuleContext>();
     let mut module_names = vec![];
     let mut init_identifier = vec![];
 

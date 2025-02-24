@@ -23,8 +23,6 @@ use move_core_types::{
     value::{MoveStructLayout, MoveTypeLayout, MoveValue},
 };
 use move_resource_viewer::{AnnotatedMoveStruct, MoveValueAnnotator};
-use move_vm_types::resolver::ModuleResolver;
-use move_vm_types::resolver::MoveResolver;
 use move_vm_types::values::{Struct, Value};
 use primitive_types::H256;
 use serde::{

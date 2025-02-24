@@ -10,17 +10,13 @@ use crate::state::{FieldKey, MoveType, ObjectState};
 use crate::{
     access_path::AccessPath, h256::H256, moveos_std::object::AnnotatedObject, state::AnnotatedState,
 };
-use anyhow::{ensure, Error, Result};
+use anyhow::{ensure, Result};
 use bytes::Bytes;
 use move_binary_format::deserializer::DeserializerConfig;
-use move_binary_format::errors::{
-    BinaryLoaderResult, Location, PartialVMError, PartialVMResult, VMResult,
-};
-use move_binary_format::file_format::CompiledScript;
+use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_binary_format::file_format_common::{IDENTIFIER_SIZE_MAX, VERSION_MAX};
 use move_binary_format::CompiledModule;
 use move_bytecode_utils::compiled_module_viewer::CompiledModuleView;
-use move_core_types::identifier::{IdentStr, Identifier};
 use move_core_types::metadata::Metadata;
 use move_core_types::value::MoveTypeLayout;
 use move_core_types::vm_status::StatusCode;
@@ -29,13 +25,7 @@ use move_core_types::{
     language_storage::{ModuleId, StructTag, TypeTag},
 };
 use move_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue, MoveValueAnnotator};
-use move_vm_runtime::{
-    CodeStorage, Module, ModuleStorage, RuntimeEnvironment, Script, WithRuntimeEnvironment,
-};
-use move_vm_types::code::Code;
 use move_vm_types::resolver::{ModuleResolver, MoveResolver, ResourceResolver};
-use std::env::temp_dir;
-use std::sync::Arc;
 
 pub type StateKV = (FieldKey, ObjectState);
 pub type AnnotatedStateKV = (FieldKey, AnnotatedState);
@@ -263,7 +253,7 @@ where
                     Ok((None, 0))
                 }
             }
-            Err(err) => Err(PartialVMError::new(StatusCode::ABORTED)),
+            Err(_err) => Err(PartialVMError::new(StatusCode::ABORTED)),
         }
     }
 }

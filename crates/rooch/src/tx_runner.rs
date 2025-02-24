@@ -5,19 +5,14 @@ use move_binary_format::binary_views::BinaryIndexedView;
 use move_binary_format::errors::VMError;
 use move_binary_format::file_format::FunctionDefinitionIndex;
 use move_binary_format::CompiledModule;
-use move_core_types::account_address::AccountAddress;
-use move_core_types::identifier::Identifier;
 use move_core_types::language_storage::ModuleId;
 use move_core_types::vm_status::KeptVMStatus::Executed;
 use move_vm_runtime::data_cache::TransactionCache;
-use move_vm_runtime::native_functions::NativeFunction;
-use move_vm_runtime::RuntimeEnvironment;
 use moveos::gas::table::{
     get_gas_schedule_entries, initial_cost_schedule, CostTable, MoveOSGasMeter,
 };
-use moveos::moveos::{new_moveos_global_module_cache, MoveOSCacheManager, MoveOSConfig};
+use moveos::moveos::{new_moveos_global_module_cache, MoveOSCacheManager};
 use moveos::vm::data_cache::MoveosDataCache;
-use moveos::vm::module_cache::GlobalModuleCache;
 use moveos::vm::moveos_vm::{MoveOSSession, MoveOSVM};
 use moveos_common::types::ClassifiedGasMeter;
 use moveos_gas_profiling::profiler::{new_gas_profiler, ProfileGasMeter};
@@ -42,10 +37,8 @@ use rooch_types::framework::auth_validator::{BuiltinAuthValidator, TxValidateRes
 use rooch_types::framework::system_pre_execute_functions;
 use rooch_types::transaction::authenticator::AUTH_PAYLOAD_SIZE;
 use rooch_types::transaction::RoochTransactionData;
-use std::ops::Deref;
 use std::rc::Rc;
 use std::str::FromStr;
-use std::sync::Arc;
 
 pub fn execute_tx_locally(
     state_root_bytes: Vec<u8>,

@@ -8,9 +8,7 @@ use crate::Stdlib;
 use anyhow::{bail, ensure, Result};
 use framework_types::addresses::ROOCH_NURSERY_ADDRESS;
 use itertools::Itertools;
-use move_binary_format::{
-    compatibility::Compatibility, errors::PartialVMResult, normalized::Module, CompiledModule,
-};
+use move_binary_format::{compatibility::Compatibility, errors::PartialVMResult, CompiledModule};
 use std::collections::HashMap;
 use tracing::{debug, info, warn};
 

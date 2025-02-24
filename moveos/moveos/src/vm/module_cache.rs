@@ -1,7 +1,6 @@
 use ambassador::delegate_to_methods;
 use bytes::Bytes;
 use hashbrown::HashMap;
-use itertools::Itertools;
 use move_binary_format::errors::{Location, PartialVMError, VMResult};
 use move_binary_format::file_format::CompiledScript;
 use move_binary_format::CompiledModule;
@@ -15,7 +14,6 @@ use move_vm_types::code::{
     ModuleCache, ModuleCode, ModuleCodeBuilder, ScriptCache, UnsyncModuleCache, UnsyncScriptCache,
     WithBytes, WithHash, WithSize,
 };
-use move_vm_types::resolver::ModuleResolver;
 use move_vm_types::sha3_256;
 use moveos_store::TxnIndex;
 use moveos_types::state_resolver::MoveOSResolver;
@@ -186,7 +184,6 @@ where
 
     /// Removes the module from cache and returns true. If the module does not exist for the
     /// associated key, returns false. Used for tests only.
-    #[cfg(any(test, feature = "testing"))]
     pub fn remove(&mut self, key: &K) -> bool {
         if let Some(entry) = self.module_cache.remove(key) {
             self.size -= entry.module_code().extension().size_in_bytes();
@@ -394,8 +391,9 @@ pub struct StateValue {
     metadata: StateValueMetadata,
 }
 
+#[allow(dead_code)]
 impl StateValue {
-    fn to_persistable_form(&self) -> PersistedStateValue {
+    fn to_perishable_form(&self) -> PersistedStateValue {
         let Self { data, metadata } = self.clone();
         let metadata = metadata.into_persistable();
         match metadata {
@@ -464,7 +462,6 @@ impl From<Vec<u8>> for StateValue {
     }
 }
 
-#[cfg(any(test, feature = "fuzzing"))]
 impl From<Bytes> for StateValue {
     fn from(bytes: Bytes) -> Self {
         StateValue::new_legacy(bytes)

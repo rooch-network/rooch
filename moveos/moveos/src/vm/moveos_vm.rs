@@ -24,9 +24,9 @@ use move_model::script_into_module;
 use move_vm_runtime::data_cache::TransactionCache;
 use move_vm_runtime::module_traversal::{TraversalContext, TraversalStorage};
 use move_vm_runtime::{
-    move_vm::MoveVM, native_extensions::NativeContextExtensions, session::Session, LoadedFunction, Module, RuntimeEnvironment, WithRuntimeEnvironment,
+    move_vm::MoveVM, native_extensions::NativeContextExtensions, session::Session, LoadedFunction,
+    Module, RuntimeEnvironment,
 };
-use move_vm_types::code::ModuleCode;
 use move_vm_types::code::ModuleCache;
 use move_vm_types::gas::UnmeteredGasMeter;
 use move_vm_types::loaded_data::runtime_types::{StructNameIndex, StructType, Type};
@@ -153,7 +153,7 @@ impl MoveOSVM {
     }
 
     pub fn mark_loader_cache_as_invalid(&self) {
-        self.inner.mark_loader_cache_as_invalid()
+        //self.inner.mark_loader_cache_as_invalid()
     }
 
     pub fn inner(&self) -> &MoveVM {
@@ -161,6 +161,7 @@ impl MoveOSVM {
     }
 }
 
+/*
 fn into_module_cache_iterator(
     compiled_modules: &Vec<CompiledModule>,
     module_bundle: &Vec<Vec<u8>>,
@@ -185,6 +186,7 @@ fn into_module_cache_iterator(
 
     module_code_list.into_iter()
 }
+ */
 
 /// MoveOSSession is a wrapper of MoveVM session with MoveOS specific features.
 /// It is used to execute a transaction, every transaction should be executed in a new session.
@@ -637,6 +639,7 @@ where
         action_result
     }
 
+    /*
     fn insert_global_module_cache(
         &mut self,
         modules: impl Iterator<
@@ -653,6 +656,7 @@ where
 
         Ok(())
     }
+     */
 
     /// Resolve pending init functions request registered via the NativeModuleContext.
     fn resolve_pending_init_functions(&mut self) -> VMResult<()> {

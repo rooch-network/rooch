@@ -14,10 +14,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor, LocalActorRef};
 use move_resource_viewer::MoveValueAnnotator;
-use move_vm_runtime::RuntimeEnvironment;
-use moveos::moveos::MoveOSConfig;
-use moveos::moveos::{MoveOS, MoveOSCacheManager, MoveOSGlobalModuleCache};
-use moveos::vm::module_cache::GlobalModuleCache;
+use moveos::moveos::{MoveOS, MoveOSCacheManager};
 use moveos_eventbus::bus::EventData;
 use moveos_store::transaction_store::TransactionStore;
 use moveos_store::MoveOSStore;
@@ -32,7 +29,6 @@ use moveos_types::state_resolver::{AnnotatedStateKV, AnnotatedStateReader, State
 use moveos_types::transaction::TransactionExecutionInfo;
 use rooch_event::actor::{EventActor, EventActorSubscribeMessage};
 use rooch_event::event::GasUpgradeEvent;
-use rooch_genesis::FrameworksGasParameters;
 use rooch_store::RoochStore;
 use rooch_types::framework::{system_post_execute_functions, system_pre_execute_functions};
 

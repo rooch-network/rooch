@@ -1379,7 +1379,7 @@ impl GasMeter for MoveOSGasMeter {
         Ok(())
     }
 
-    fn charge_create_ty(&mut self, num_nodes: NumTypeNodes) -> PartialVMResult<()> {
+    fn charge_create_ty(&mut self, _num_nodes: NumTypeNodes) -> PartialVMResult<()> {
         /*
         let (_cost, res) = self.delegate_charge(|base| base.charge_create_ty(num_nodes));
         res
@@ -1389,10 +1389,10 @@ impl GasMeter for MoveOSGasMeter {
 
     fn charge_dependency(
         &mut self,
-        is_new: bool,
-        addr: &AccountAddress,
-        name: &IdentStr,
-        size: NumBytes,
+        _is_new: bool,
+        _addr: &AccountAddress,
+        _name: &IdentStr,
+        _size: NumBytes,
     ) -> PartialVMResult<()> {
         /*
         let (cost, res) =

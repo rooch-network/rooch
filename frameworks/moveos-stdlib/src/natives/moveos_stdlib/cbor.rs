@@ -24,7 +24,6 @@ use move_vm_types::{
 };
 use tracing::debug;
 
-use ciborium::Value;
 use move_core_types::u256::{self, U256_NUM_BYTES};
 use moveos_types::addresses::MOVE_STD_ADDRESS;
 use moveos_types::move_std::string::MoveString;

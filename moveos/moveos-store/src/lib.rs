@@ -10,19 +10,9 @@ use crate::state_store::statedb::StateDBStore;
 use crate::state_store::{nodes_to_write_batch, NodeDBStore};
 use crate::transaction_store::{TransactionDBStore, TransactionStore};
 use accumulator::inmemory::InMemoryAccumulator;
-use ambassador::delegate_to_methods;
 use anyhow::{Error, Result};
 use bcs::to_bytes;
-use bytes::Bytes;
-use move_binary_format::file_format::CompiledScript;
-use move_binary_format::CompiledModule;
-use move_core_types::language_storage::{ModuleId, StructTag};
-use move_vm_runtime::{Module, Script};
-use move_vm_types::code::Code;
-use move_vm_types::code::{
-    ambassador_impl_ScriptCache, ModuleCache, ScriptCache, UnsyncModuleCache, UnsyncScriptCache,
-    WithBytes, WithHash,
-};
+use move_core_types::language_storage::StructTag;
 use moveos_config::store_config::{MoveOSStoreConfig, RocksdbConfig};
 use moveos_config::DataDirPath;
 use moveos_types::genesis_info::GenesisInfo;

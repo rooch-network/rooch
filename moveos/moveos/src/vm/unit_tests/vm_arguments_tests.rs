@@ -4,8 +4,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::gas::table::{initial_cost_schedule, MoveOSGasMeter};
+use crate::moveos::{new_moveos_global_module_cache, MoveOSCacheManager};
 use crate::vm::moveos_vm::MoveOSVM;
-use anyhow::Error;
+use bytes::Bytes;
+use move_binary_format::errors::PartialVMResult;
 use move_binary_format::file_format::empty_module;
 use move_binary_format::{
     errors::VMResult,
@@ -19,17 +21,18 @@ use move_binary_format::{
 };
 use move_core_types::identifier::{IdentStr, Identifier};
 use move_core_types::metadata::Metadata;
+use move_core_types::value::MoveTypeLayout;
 use move_core_types::vm_status::StatusType;
 use move_core_types::{
     account_address::AccountAddress,
     language_storage::{ModuleId, StructTag, TypeTag},
-    resolver::{ModuleResolver, ResourceResolver},
     u256::U256,
     value::{serialize_values, MoveValue},
     vm_status::StatusCode,
 };
-use move_vm_runtime::config::VMConfig;
 use move_vm_runtime::RuntimeEnvironment;
+use move_vm_types::resolver::ModuleResolver;
+use move_vm_types::resolver::ResourceResolver;
 use moveos_types::moveos_std::object::ObjectMeta;
 use moveos_types::state::{FieldKey, ObjectState};
 use moveos_types::state_resolver::{StateKV, StatelessResolver};
@@ -119,6 +122,7 @@ fn make_script_with_non_linking_structs(parameters: Signature) -> Vec<u8> {
             parameters: SignatureIndex(1),
             return_: SignatureIndex(0),
             type_parameters: vec![],
+            access_specifiers: None,
         }],
 
         function_instantiations: vec![],
@@ -192,6 +196,7 @@ pub(crate) fn make_module_with_function(
             parameters: parameters_idx,
             return_: return_idx,
             type_parameters,
+            access_specifiers: None,
         }],
         field_handles: vec![],
         friend_decls: vec![],
@@ -228,6 +233,10 @@ pub(crate) fn make_module_with_function(
                 code: vec![Bytecode::LdU64(0), Bytecode::Abort],
             }),
         }],
+        struct_variant_handles: vec![],
+        struct_variant_instantiations: vec![],
+        variant_field_handles: vec![],
+        variant_field_instantiations: vec![],
     };
     (module, function_name)
 }
@@ -269,18 +278,22 @@ impl ModuleResolver for RemoteStore {
         todo!()
     }
 
-    fn get_module(&self, module_id: &ModuleId) -> Result<Option<Vec<u8>>, Error> {
-        Ok(self.modules.get(module_id).cloned())
+    fn get_module(&self, module_id: &ModuleId) -> PartialVMResult<Option<Bytes>> {
+        match self.modules.get(module_id) {
+            Some(module) => Ok(Some(Bytes::from(module.to_vec()))),
+            None => Ok(None),
+        }
     }
 }
 
 impl ResourceResolver for RemoteStore {
-    fn get_resource_with_metadata(
+    fn get_resource_bytes_with_metadata_and_layout(
         &self,
         _address: &AccountAddress,
         _typ: &StructTag,
         _metadata: &[Metadata],
-    ) -> Result<(Option<Vec<u8>>, usize), Error> {
+        _layout: Option<&MoveTypeLayout>,
+    ) -> PartialVMResult<(Option<Bytes>, usize)> {
         todo!()
     }
 }
@@ -344,13 +357,21 @@ fn call_script_with_args_ty_args_signers(
     signers: Vec<AccountAddress>,
 ) -> VMResult<()> {
     let runtime_environment = RuntimeEnvironment::new(vec![]);
-    let moveos_vm = MoveOSVM::new(&runtime_environment).unwrap();
+    let global_module_cache = new_moveos_global_module_cache();
+    let moveos_cache_manager = MoveOSCacheManager::new(vec![], global_module_cache);
+    let moveos_vm = MoveOSVM::new(moveos_cache_manager.clone()).unwrap();
     let remote_view = RemoteStore::new();
     let ctx = TxContext::random_for_testing_only();
     let cost_table = initial_cost_schedule(None);
     let mut gas_meter = MoveOSGasMeter::new(cost_table, ctx.max_gas_amount, false);
     gas_meter.set_metering(false);
-    let mut session = moveos_vm.new_session(&remote_view, ctx, gas_meter);
+    let mut session = moveos_vm.new_session(
+        &remote_view,
+        ctx,
+        gas_meter,
+        moveos_cache_manager.global_module_cache,
+        &runtime_environment,
+    );
 
     let script_action = MoveAction::new_script_call(
         script,
@@ -373,7 +394,9 @@ fn call_script_function_with_args_ty_args_signers(
     signers: Vec<AccountAddress>,
 ) -> VMResult<()> {
     let runtime_environment = RuntimeEnvironment::new(vec![]);
-    let moveos_vm = MoveOSVM::new(&runtime_environment).unwrap();
+    let global_module_cache = new_moveos_global_module_cache();
+    let moveos_cache_manager = MoveOSCacheManager::new(vec![], global_module_cache);
+    let moveos_vm = MoveOSVM::new(moveos_cache_manager.clone()).unwrap();
     let mut remote_view = RemoteStore::new();
     let id = module.self_id();
     remote_view.add_module(module);
@@ -382,7 +405,13 @@ fn call_script_function_with_args_ty_args_signers(
     let mut gas_meter = MoveOSGasMeter::new(cost_table, ctx.max_gas_amount, false);
     gas_meter.set_metering(false);
     let mut session: crate::vm::moveos_vm::MoveOSSession<'_, '_, RemoteStore, MoveOSGasMeter> =
-        moveos_vm.new_session(&remote_view, ctx, gas_meter);
+        moveos_vm.new_session(
+            &remote_view,
+            ctx,
+            gas_meter,
+            moveos_cache_manager.global_module_cache,
+            &runtime_environment,
+        );
 
     let function_action = MoveAction::new_function_call(
         FunctionId::new(id, function_name),
@@ -856,13 +885,21 @@ fn call_missing_item() {
     let function_name = IdentStr::new("foo").unwrap();
     // missing module
     let runtime_environment = RuntimeEnvironment::new(vec![]);
-    let moveos_vm = MoveOSVM::new(&runtime_environment).unwrap();
+    let global_module_cache = new_moveos_global_module_cache();
+    let moveos_cache_manager = MoveOSCacheManager::new(vec![], global_module_cache);
+    let moveos_vm = MoveOSVM::new(moveos_cache_manager.clone()).unwrap();
     let mut remote_view = RemoteStore::new();
     let ctx = TxContext::random_for_testing_only();
     let cost_table = initial_cost_schedule(None);
     let mut gas_meter = MoveOSGasMeter::new(cost_table, ctx.max_gas_amount, false);
     gas_meter.set_metering(false);
-    let mut session = moveos_vm.new_session(&remote_view, ctx.clone(), gas_meter);
+    let mut session = moveos_vm.new_session(
+        &remote_view,
+        ctx.clone(),
+        gas_meter,
+        moveos_cache_manager.clone().global_module_cache,
+        &runtime_environment,
+    );
     let func_call = FunctionCall::new(
         FunctionId::new(id.clone(), function_name.into()),
         vec![],
@@ -881,7 +918,13 @@ fn call_missing_item() {
     let cost_table = initial_cost_schedule(None);
     let mut gas_meter = MoveOSGasMeter::new(cost_table, ctx.max_gas_amount, false);
     gas_meter.set_metering(false);
-    let mut session = moveos_vm.new_session(&remote_view, ctx, gas_meter);
+    let mut session = moveos_vm.new_session(
+        &remote_view,
+        ctx,
+        gas_meter,
+        moveos_cache_manager.global_module_cache,
+        &runtime_environment,
+    );
     let error = session
         .execute_function_bypass_visibility(func_call)
         .err()

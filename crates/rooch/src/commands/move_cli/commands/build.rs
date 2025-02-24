@@ -54,7 +54,6 @@ impl CommandAction<Option<Value>> for BuildCommand {
         config.compiler_config.compiler_version = Some(CompilerVersion::V2_1);
 
         let context = self.config_options.build()?;
-        let mut config = config;
         config
             .additional_named_addresses
             .extend(context.parse_and_resolve_addresses(self.named_addresses)?);

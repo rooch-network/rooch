@@ -146,10 +146,10 @@ impl<'r, 'l, S: MoveOSResolver> TransactionCache for MoveosDataCache<'r, 'l, S> 
                     },
                     Err(e) => {
                         let msg = format!("Unexpected storage error: {:?}", e);
-                        Err(PartialVMError::new(
-                            StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR,
+                        Err(
+                            PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR)
+                                .with_message(msg),
                         )
-                        .with_message(msg))
                     }
                 },
             });
@@ -233,7 +233,7 @@ impl<'r, 'l, S: MoveOSResolver> TransactionCache for MoveosDataCache<'r, 'l, S> 
         Ok(Changes::<Bytes, Resource>::new())
     }
 
-    fn num_mutated_resources(&self, sender: &AccountAddress) -> u64 {
+    fn num_mutated_resources(&self, _sender: &AccountAddress) -> u64 {
         0
     }
 
