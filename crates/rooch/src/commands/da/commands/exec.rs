@@ -755,9 +755,9 @@ impl ExecInner {
         if is_l2_tx {
             return if is_vm_panic_error(&error) {
                 tracing::error!(
-                    "Execute L2 Tx failed while VM panic occurred, error: {:?}; tx_order: {}",
+                    "Execute L2 Tx failed while VM panic occurred. tx_order: {}, error: {:?}",
+                    tx_order,
                     error,
-                    tx_order
                 );
                 Err(error)
             } else {
@@ -770,11 +770,10 @@ impl ExecInner {
                 }
 
                 warn!(
-                    "L2 Tx execution failed with a non-VM panic error. Ignoring and returning Ok; tx_order: {}, error: {:?}",
-                    tx_order,
-                    error
+                    "Execute L2 Tx failed while non-VM panic occurred. tx_order: {}, error: {:?}",
+                    tx_order, error
                 );
-                Ok(()) // Gracefully handle non-VM panic L2Tx errors.
+                Err(error) // return every error
             };
         }
 
