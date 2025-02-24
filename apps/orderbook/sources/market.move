@@ -49,6 +49,7 @@ module orderbook::market_v2 {
     const MIN_ASK_ORDER_ID: u64 = 1 << 63;
 
     const UNIT_PRICE_SCALE: u256 = 100000;
+    const MAX_U256: u256 = 115792089237316195423570985008687907853269984665640564039457584007913129639935;
 
     const ErrorWrongVersion: u64 = 0;
     const ErrorWrongPaused: u64 = 1;
@@ -803,10 +804,20 @@ module orderbook::market_v2 {
         from_price_is_none: bool,
         start_order_id: u64
     ): vector<OrderInfo> {
+        query_order_info_with_total_quantity(market_obj, query_bid, from_price, from_price_is_none, start_order_id, MAX_U256)
+    }
 
+    public fun query_order_info_with_total_quantity<BaseAsset: key + store, QuoteAsset: key + store>(
+        market_obj: &Object<Marketplace<BaseAsset, QuoteAsset>>,
+        query_bid: bool,
+        from_price: u64,
+        from_price_is_none: bool,
+        start_order_id: u64,
+        total_quantity: u256
+    ): vector<OrderInfo> {
         let market = object::borrow(market_obj);
         let order_infos = vector::empty<OrderInfo>();
-
+        let current_quantity = 0;
         if (query_bid) {
             if (critbit::is_empty(&market.bids)) {
                 return order_infos
@@ -832,6 +843,9 @@ module orderbook::market_v2 {
                 while (option::is_some(option_order_id)) {
                     let order_id = option::destroy_some(*option_order_id);
                     let order = linked_table::borrow(&tick_level.open_orders, order_id);
+                    if (current_quantity >= total_quantity) {
+                        return order_infos
+                    };
                     vector::push_back(&mut order_infos, OrderInfo {
                         order_id: order.order_id,
                         unit_price: order.unit_price,
@@ -839,6 +853,7 @@ module orderbook::market_v2 {
                         owner: order.owner,
                         is_bid: order.is_bid
                     });
+                    current_quantity = current_quantity + order.quantity;
                     i = i + 1;
                     if (i >= 50) {
                         return order_infos
