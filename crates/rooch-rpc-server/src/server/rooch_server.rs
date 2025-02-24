@@ -16,7 +16,7 @@ use moveos_types::{
     state::{AnnotatedState, FieldKey},
 };
 use rooch_rpc_api::api::MAX_INTERNAL_LIMIT_USIZE;
-use rooch_rpc_api::jsonrpc_types::field_view::{FieldFilterView, IndexerFieldView};
+use rooch_rpc_api::jsonrpc_types::field_view::FieldFilterView;
 use rooch_rpc_api::jsonrpc_types::{
     account_view::BalanceInfoView,
     event_view::{EventFilterView, EventView, IndexerEventIDView, IndexerEventView},
@@ -804,14 +804,21 @@ impl RoochAPIServer for RoochServer {
         );
         let query_option = query_option.unwrap_or_default();
         let descending_order = query_option.descending;
+        let decode = query_option.decode;
 
         let mut fields = self
             .rpc_service
-            .query_fields(filter.into(), page_of, limit_of + 1, descending_order)
-            .await?
-            .into_iter()
-            .map(IndexerFieldView::from)
-            .collect::<Vec<_>>();
+            .query_fields(
+                filter.into(),
+                page_of,
+                limit_of + 1,
+                descending_order,
+                decode,
+            )
+            .await?;
+        // .into_iter()
+        // .map(IndexerFieldView::from)
+        // .collect::<Vec<_>>();
 
         let has_next_page = fields.len() > limit_of;
         fields.truncate(limit_of);

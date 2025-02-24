@@ -148,12 +148,11 @@ pub fn random_new_fields_with_size(size: usize) -> Vec<IndexerField> {
     let mut rng = thread_rng();
 
     for _n in 0..size {
-        let value = rng.gen_range(1..=100000);
+        let sort_key = rng.gen_range(1..=100000);
         let field = IndexerField::new(
             random_table_object().into_state().metadata,
             FieldKey::random(),
-            random_string(),
-            value as u64,
+            sort_key as u64,
         );
 
         new_fields.push(field);
@@ -165,31 +164,30 @@ pub fn random_new_fields_with_size(size: usize) -> Vec<IndexerField> {
 pub fn random_update_fields(fields: Vec<IndexerField>) -> Vec<IndexerField> {
     fields
         .into_iter()
-        .map(|item| IndexerField {
-            id: item.id,
-            field_key: item.field_key,
-            name: item.name,
-            value: item.value + 1,
-            created_at: item.created_at,
-            updated_at: item.updated_at + 1,
+        .map(|mut item| {
+            item.metadata.updated_at += 1;
+            IndexerField {
+                field_key: item.field_key,
+                metadata: item.metadata,
+                sort_key: item.sort_key + 1,
+            }
         })
         .collect()
 }
 
-pub fn random_remove_fields() -> Vec<(String, String)> {
+pub fn random_remove_fields() -> Vec<String> {
     let mut remove_fields = vec![];
 
     let mut rng = thread_rng();
     for _n in 0..rng.gen_range(1..=10) {
         let object_id = ObjectID::from(AccountAddress::random());
-        let field_key = FieldKey::random().to_hex_literal();
-        remove_fields.push((object_id.to_string(), field_key));
+        remove_fields.push(object_id.to_string());
     }
 
     remove_fields
 }
 
-pub fn random_remove_fields_by_id() -> Vec<String> {
+pub fn random_remove_fields_by_parent_id() -> Vec<String> {
     let mut remove_fields = vec![];
 
     let mut rng = thread_rng();

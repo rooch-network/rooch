@@ -450,9 +450,9 @@ impl SqliteIndexerStore {
                 format!(
                     "('{}', '{}', '{}', {}, {}, {})",
                     escape_sql_string(field.id),
+                    escape_sql_string(field.parent_id),
                     escape_sql_string(field.field_key),
-                    escape_sql_string(field.name),
-                    field.val,
+                    field.sort_key,
                     field.created_at,
                     field.updated_at,
                 )
@@ -461,11 +461,12 @@ impl SqliteIndexerStore {
             .join(",");
         let query = format!(
             "
-                INSERT INTO fields (id, field_key, name, val, created_at, updated_at) \
+                INSERT INTO fields (id, parent_id, field_key, sort_key, created_at, updated_at) \
                 VALUES {} \
-                ON CONFLICT (id, field_key) DO UPDATE SET \
-                name = excluded.name, \
-                val = excluded.val, \
+                ON CONFLICT (id) DO UPDATE SET \
+                parent_id = excluded.parent_id, \
+                field_key = excluded.field_key, \
+                sort_key = excluded.sort_key, \
                 updated_at = excluded.updated_at
             ",
             values_clause
@@ -483,7 +484,7 @@ impl SqliteIndexerStore {
         Ok(())
     }
 
-    pub fn delete_fields(&self, field_pks: Vec<(String, String)>) -> Result<(), IndexerError> {
+    pub fn delete_fields(&self, field_pks: Vec<String>) -> Result<(), IndexerError> {
         if field_pks.is_empty() {
             return Ok(());
         }
@@ -492,20 +493,14 @@ impl SqliteIndexerStore {
         // Diesel for SQLite don't support batch delete on composite primary key yet, so implements batch delete directly via raw SQL
         let values_clause = field_pks
             .into_iter()
-            .map(|pk| {
-                format!(
-                    "('{}', '{}')",
-                    escape_sql_string(pk.0),
-                    escape_sql_string(pk.1),
-                )
-            })
+            .map(|pk| format!("('{}')", escape_sql_string(pk),))
             .collect::<Vec<_>>()
             .join(",");
 
         let query = format!(
             "
                 DELETE FROM fields \
-                WHERE (id, field_key) IN ({})
+                WHERE (id) IN ({})
             ",
             values_clause
         );
@@ -523,7 +518,7 @@ impl SqliteIndexerStore {
     }
 
     #[named]
-    pub fn delete_fields_by_id(&self, ids: Vec<String>) -> Result<(), IndexerError> {
+    pub fn delete_fields_by_parent_id(&self, ids: Vec<String>) -> Result<(), IndexerError> {
         if ids.is_empty() {
             return Ok(());
         }
@@ -537,7 +532,7 @@ impl SqliteIndexerStore {
             .start_timer();
         let mut connection = get_sqlite_pool_connection(&self.connection_pool)?;
 
-        diesel::delete(fields::table.filter(fields::id.eq_any(ids.as_slice())))
+        diesel::delete(fields::table.filter(fields::parent_id.eq_any(ids.as_slice())))
             .execute(&mut connection)
             .map_err(|e| IndexerError::SQLiteWriteError(e.to_string()))
             .context("Failed to delete fields to SQLiteDB")?;

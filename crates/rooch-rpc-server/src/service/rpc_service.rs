@@ -22,6 +22,7 @@ use rooch_executor::actor::messages::DryRunTransactionResult;
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_indexer::proxy::IndexerProxy;
 use rooch_pipeline_processor::proxy::PipelineProcessorProxy;
+use rooch_rpc_api::jsonrpc_types::field_view::IndexerFieldView;
 use rooch_rpc_api::jsonrpc_types::{
     BitcoinStatus, DisplayFieldsView, IndexerObjectStateView, ObjectMetaView, RoochStatus, Status,
 };
@@ -33,7 +34,7 @@ use rooch_types::framework::address_mapping::RoochToBitcoinAddressMapping;
 use rooch_types::indexer::event::{
     AnnotatedIndexerEvent, EventFilter, IndexerEvent, IndexerEventID,
 };
-use rooch_types::indexer::field::{FieldFilter, IndexerField};
+use rooch_types::indexer::field::FieldFilter;
 use rooch_types::indexer::state::{
     IndexerObjectState, IndexerStateID, ObjectStateFilter, ObjectStateType, INSCRIPTION_TYPE_TAG,
     UTXO_TYPE_TAG,
@@ -845,7 +846,8 @@ impl RpcService {
         page: u64,
         limit: usize,
         descending_order: bool,
-    ) -> Result<Vec<IndexerField>> {
+        decode: bool,
+    ) -> Result<Vec<IndexerFieldView>> {
         match filter.clone() {
             FieldFilter::ObjectId(object_ids) => {
                 if object_ids.len() > MAX_OBJECT_IDS_PER_QUERY {
@@ -856,8 +858,58 @@ impl RpcService {
                 }
             }
         };
-        self.indexer
+        let fields = self
+            .indexer
             .query_fields(filter, page, limit, descending_order)
-            .await
+            .await?;
+
+        let fields_ids = fields
+            .iter()
+            .map(|m| m.metadata.id.clone())
+            .collect::<Vec<_>>();
+        let access_path = AccessPath::objects(fields_ids.clone());
+        let result = if decode {
+            let annotated_states = self.get_annotated_states(access_path, None).await?;
+            annotated_states
+                .into_iter()
+                .zip(fields)
+                .filter_map(|(state_opt, field)| {
+                    match state_opt {
+                        Some(state) => {
+                            Some(IndexerFieldView::new_from_annotated_state(field, state))
+                        }
+                        None => {
+                            // Sometimes the indexer is delayed, maybe the field object is deleted in the state
+                            tracing::trace!(
+                                "Field object {} in the indexer but can not found in state",
+                                field.metadata.id.to_string()
+                            );
+                            None
+                        }
+                    }
+                })
+                .collect::<Vec<_>>()
+        } else {
+            let states = self.get_states(access_path, None).await?;
+            states
+                .into_iter()
+                .zip(fields)
+                .filter_map(|(state_opt, field)| {
+                    match state_opt {
+                        Some(state) => Some(IndexerFieldView::new_from_state(field, state)),
+                        None => {
+                            // Sometimes the indexer is delayed, maybe the field object is deleted in the state
+                            tracing::trace!(
+                                "Field object {} in the indexer but can not found in state",
+                                field.metadata.id.to_string()
+                            );
+                            None
+                        }
+                    }
+                })
+                .collect::<Vec<_>>()
+        };
+
+        Ok(result)
     }
 }

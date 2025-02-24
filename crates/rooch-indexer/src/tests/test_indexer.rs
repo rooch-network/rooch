@@ -23,7 +23,7 @@ use rooch_types::indexer::state::{IndexerObjectState, ObjectStateFilter, ObjectS
 use rooch_types::indexer::transaction::{IndexerTransaction, TransactionFilter};
 use rooch_types::test_utils::{
     random_event, random_ledger_transaction, random_new_fields, random_new_object_states,
-    random_remove_fields, random_remove_fields_by_id, random_remove_object_states,
+    random_remove_fields, random_remove_fields_by_parent_id, random_remove_object_states,
     random_update_fields, random_update_object_states, random_verified_move_action,
 };
 
@@ -271,17 +271,17 @@ async fn test_field_store() -> Result<()> {
     let mut new_fields = random_new_fields();
     let new_object_ids = new_fields
         .iter()
-        .map(|field| field.id.clone())
+        .map(|field| field.metadata.id.clone())
         .collect::<Vec<_>>();
     let mut update_fields = random_update_fields(new_fields.clone());
     let remove_fields = random_remove_fields();
-    let remove_fields_by_id = random_remove_fields_by_id();
+    let remove_fields_by_parent_id = random_remove_fields_by_parent_id();
 
     //Merge new fields and update fields
     new_fields.append(&mut update_fields);
     indexer_store.persist_or_update_fields(new_fields.clone())?;
     indexer_store.delete_fields(remove_fields)?;
-    indexer_store.delete_fields_by_id(remove_fields_by_id)?;
+    indexer_store.delete_fields_by_parent_id(remove_fields_by_parent_id)?;
 
     // test for querying batch fields with filter FieldFilter::ObjectId
     let _num_objs = new_object_ids.len();

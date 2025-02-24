@@ -67,9 +67,10 @@ diesel::table! {
 diesel::table! {
     fields (id, field_key) {
         id -> Text,
+        parent_id -> Text,
         field_key -> Text,
-        name -> Text,
-        val -> BigInt,
+        // name -> Text,
+        sort_key -> BigInt,
         created_at -> BigInt,
         updated_at -> BigInt,
     }

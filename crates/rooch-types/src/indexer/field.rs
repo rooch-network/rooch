@@ -18,26 +18,22 @@ use std::collections::HashMap;
 
 #[derive(Eq, PartialEq, Clone, Debug, Serialize, Deserialize)]
 pub struct IndexerField {
-    pub id: ObjectID,
-    pub field_key: String,
-    pub name: String,
-    pub value: u64,
-    /// the field item created timestamp on chain
-    pub created_at: u64,
-    /// the field item updated timestamp on chain
-    pub updated_at: u64,
+    pub field_key: FieldKey,
+    pub metadata: ObjectMeta,
+    // pub name: String,
+    pub sort_key: u64,
+    // /// the field item created timestamp on chain
+    // pub created_at: u64,
+    // /// the field item updated timestamp on chain
+    // pub updated_at: u64,
 }
 
 impl IndexerField {
-    pub fn new(metadata: ObjectMeta, field_key: FieldKey, name: String, value: u64) -> Self {
+    pub fn new(metadata: ObjectMeta, field_key: FieldKey, sort_key: u64) -> Self {
         IndexerField {
-            id: metadata.id.parent().unwrap_or(ObjectID::root()),
-            field_key: field_key.to_hex_literal(),
-            name,
-            value,
-
-            created_at: metadata.created_at,
-            updated_at: metadata.updated_at,
+            field_key,
+            metadata,
+            sort_key,
         }
     }
 }
@@ -52,7 +48,10 @@ pub enum FieldFilter {
 impl FieldFilter {
     fn try_matches(&self, item: &IndexerField) -> Result<bool> {
         Ok(match self {
-            FieldFilter::ObjectId(object_ids) => object_ids.len() == 1 && object_ids[0] == item.id,
+            FieldFilter::ObjectId(object_ids) => {
+                let parent_id = item.metadata.id.parent();
+                object_ids.len() == 1 && parent_id.is_some() && object_ids[0] == parent_id.unwrap()
+            }
         })
     }
 }
@@ -67,8 +66,8 @@ impl Filter<IndexerField> for FieldFilter {
 pub struct IndexerFieldChanges {
     pub new_fields: Vec<IndexerField>,
     pub update_fields: Vec<IndexerField>,
-    pub remove_fields: Vec<(String, String)>,
-    pub remove_fields_by_id: Vec<String>,
+    pub remove_fields: Vec<String>,
+    pub remove_fields_by_parent_id: Vec<String>,
 }
 
 pub fn handle_field_change(
@@ -104,31 +103,17 @@ pub fn handle_field_change(
                         .ok();
 
                         if let Some(raw_field) = raw_field_opt {
-                            let origin_name =
-                                bytes_to_string(raw_field.name.as_slice(), &raw_field.name_type)
-                                    .unwrap_or("".to_string());
-                            let origin_value_opt =
+                            let sort_key_opt =
                                 resolve_value_to_u64(&raw_field.value_type, raw_field.value);
-                            if let Some(origin_value) = origin_value_opt {
-                                let field = IndexerField::new(
-                                    metadata.clone(),
-                                    field_key,
-                                    origin_name,
-                                    origin_value,
-                                );
+                            if let Some(sort_key) = sort_key_opt {
+                                let field =
+                                    IndexerField::new(metadata.clone(), field_key, sort_key);
                                 field_changes.update_fields.push(field);
                             }
                         }
                     }
                     Op::Delete => {
-                        field_changes.remove_fields.push((
-                            object_id
-                                .clone()
-                                .parent()
-                                .unwrap_or(ObjectID::root())
-                                .to_string(),
-                            field_key.to_hex_literal(),
-                        ));
+                        field_changes.remove_fields.push(object_id.to_string());
                     }
                     Op::New(field_value) => {
                         // ignore dynamic raw field parse error
@@ -140,18 +125,11 @@ pub fn handle_field_change(
                         .ok();
 
                         if let Some(raw_field) = raw_field_opt {
-                            let origin_name =
-                                bytes_to_string(raw_field.name.as_slice(), &raw_field.name_type)
-                                    .unwrap_or("".to_string());
-                            let origin_value_opt =
+                            let sort_key_opt =
                                 resolve_value_to_u64(&raw_field.value_type, raw_field.value);
-                            if let Some(origin_value) = origin_value_opt {
-                                let field = IndexerField::new(
-                                    metadata.clone(),
-                                    field_key,
-                                    origin_name,
-                                    origin_value,
-                                );
+                            if let Some(sort_key) = sort_key_opt {
+                                let field =
+                                    IndexerField::new(metadata.clone(), field_key, sort_key);
                                 field_changes.new_fields.push(field);
                             }
                         }
@@ -241,19 +219,13 @@ pub fn handle_revert_field_change(
                             .ok();
 
                             if let Some(raw_field) = raw_field_opt {
-                                let origin_name = bytes_to_string(
-                                    raw_field.name.as_slice(),
-                                    &raw_field.name_type,
-                                )
-                                .unwrap_or("".to_string());
-                                let origin_value_opt =
+                                let sort_key_opt =
                                     resolve_value_to_u64(&raw_field.value_type, raw_field.value);
-                                if let Some(origin_value) = origin_value_opt {
+                                if let Some(sort_key) = sort_key_opt {
                                     let field = IndexerField::new(
                                         previous_field_object.metadata.clone(),
                                         field_key,
-                                        origin_name,
-                                        origin_value,
+                                        sort_key,
                                     );
                                     field_changes.update_fields.push(field);
                                 }
@@ -270,19 +242,13 @@ pub fn handle_revert_field_change(
                             )
                             .ok();
                             if let Some(raw_field) = raw_field_opt {
-                                let origin_value_opt =
+                                let sort_key_opt =
                                     resolve_value_to_u64(&raw_field.value_type, raw_field.value);
-                                let origin_name = bytes_to_string(
-                                    raw_field.name.as_slice(),
-                                    &raw_field.name_type,
-                                )
-                                .unwrap_or("".to_string());
-                                if let Some(origin_value) = origin_value_opt {
+                                if let Some(sort_key) = sort_key_opt {
                                     let field = IndexerField::new(
                                         previous_field_object.metadata.clone(),
                                         field_key,
-                                        origin_name,
-                                        origin_value,
+                                        sort_key,
                                     );
                                     field_changes.new_fields.push(field);
                                 }
@@ -290,14 +256,7 @@ pub fn handle_revert_field_change(
                         }
                     }
                     Op::New(_field_value) => {
-                        field_changes.remove_fields.push((
-                            object_id
-                                .clone()
-                                .parent()
-                                .unwrap_or(ObjectID::root())
-                                .to_string(),
-                            field_key.to_hex_literal(),
-                        ));
+                        field_changes.remove_fields.push(object_id.to_string());
                     }
                 }
             }

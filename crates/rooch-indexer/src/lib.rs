@@ -235,14 +235,14 @@ impl IndexerStoreTrait for IndexerStore {
             .persist_or_update_fields(fields)
     }
 
-    fn delete_fields(&self, table_pks: Vec<(String, String)>) -> Result<(), IndexerError> {
+    fn delete_fields(&self, table_pks: Vec<String>) -> Result<(), IndexerError> {
         self.get_sqlite_store(INDEXER_FIELDS_TABLE_NAME)?
             .delete_fields(table_pks)
     }
 
-    fn delete_fields_by_id(&self, ids: Vec<String>) -> Result<(), IndexerError> {
+    fn delete_fields_by_parent_id(&self, ids: Vec<String>) -> Result<(), IndexerError> {
         self.get_sqlite_store(INDEXER_FIELDS_TABLE_NAME)?
-            .delete_fields_by_id(ids)
+            .delete_fields_by_parent_id(ids)
     }
 
     fn apply_fields(&self, mut field_changes: IndexerFieldChanges) -> Result<(), IndexerError> {
@@ -250,7 +250,7 @@ impl IndexerStoreTrait for IndexerStore {
         fields_new_and_update.append(&mut field_changes.update_fields);
         self.persist_or_update_fields(fields_new_and_update)?;
         self.delete_fields(field_changes.remove_fields)?;
-        self.delete_fields_by_id(field_changes.remove_fields_by_id)
+        self.delete_fields_by_parent_id(field_changes.remove_fields_by_parent_id)
     }
 }
 

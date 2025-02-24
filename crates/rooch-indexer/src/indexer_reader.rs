@@ -54,7 +54,8 @@ pub const STATE_INDEX_STR: &str = "state_index";
 pub const STATE_OBJECT_TYPE_STR: &str = "object_type";
 pub const STATE_OWNER_STR: &str = "owner";
 
-pub const FIELD_VALUE_STR: &str = "val";
+pub const PARENT_OBJECT_ID_STR: &str = "parent_id";
+pub const SORT_KEY_STR: &str = "sort_key";
 
 #[derive(Clone)]
 pub struct InnerIndexerReader {
@@ -637,14 +638,14 @@ impl IndexerReader {
                     .map(|obj_id| format!("\"{}\"", obj_id))
                     .collect::<Vec<_>>()
                     .join(",");
-                format!("{OBJECT_ID_STR} IN ({object_ids_str})")
+                format!("{PARENT_OBJECT_ID_STR} IN ({object_ids_str})")
             }
         };
 
         let order_clause = if descending_order {
-            format!("{OBJECT_ID_STR} DESC, {FIELD_VALUE_STR} DESC")
+            format!("{PARENT_OBJECT_ID_STR} DESC, {SORT_KEY_STR} DESC")
         } else {
-            format!("{OBJECT_ID_STR} ASC, {FIELD_VALUE_STR} ASC")
+            format!("{PARENT_OBJECT_ID_STR} ASC, {SORT_KEY_STR} ASC")
         };
         let mut start_limit = (page_of - 1) * (limit as u64);
         start_limit = start_limit.saturating_sub(1);
