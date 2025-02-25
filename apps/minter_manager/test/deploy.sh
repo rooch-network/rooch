@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 # Export your address here
 export MINTER_MANAGER="0x0af854fcad035f4134636ff2d7fa22591f8ff2f264f354ac04e53da06e318529"          # address #1
 
