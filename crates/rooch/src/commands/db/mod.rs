@@ -9,7 +9,7 @@ use crate::commands::db::commands::drop::DropCommand;
 use crate::commands::db::commands::get_changeset_by_order::GetChangesetByOrderCommand;
 use crate::commands::db::commands::get_execution_info_by_hash::GetExecutionInfoByHashCommand;
 use crate::commands::db::commands::get_tx_by_order::GetTxByOrderCommand;
-use crate::commands::db::commands::list_empty::ListEmptyCommand;
+use crate::commands::db::commands::list_anomaly::ListAnomaly;
 use crate::commands::db::commands::repair::RepairCommand;
 use crate::commands::db::commands::revert::RevertCommand;
 use async_trait::async_trait;
@@ -57,7 +57,7 @@ impl CommandAction<String> for DB {
             DBCommand::BestRollback(best_rollback) => best_rollback.execute().await.map(|resp| {
                 serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
             }),
-            DBCommand::ListEmpty(list_empty) => list_empty.execute().map(|resp| {
+            DBCommand::ListAnomaly(list_anomaly) => list_anomaly.execute().map(|resp| {
                 serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
             }),
             DBCommand::CpCf(cp_cf) => cp_cf.execute().map(|resp| {
@@ -81,7 +81,7 @@ pub enum DBCommand {
     GetChangesetByOrder(GetChangesetByOrderCommand),
     GetExecutionInfoByHash(GetExecutionInfoByHashCommand),
     BestRollback(BestRollbackCommand),
-    ListEmpty(ListEmptyCommand),
+    ListAnomaly(ListAnomaly),
     CpCf(CpCfCommand),
     Changeset(ChangesetCommand),
 }
