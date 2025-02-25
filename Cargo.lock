@@ -10917,6 +10917,7 @@ dependencies = [
  "coerce",
  "function_name",
  "hex",
+ "include_dir",
  "metrics",
  "moveos",
  "moveos-types",
@@ -10928,6 +10929,8 @@ dependencies = [
  "rooch-indexer",
  "rooch-sequencer",
  "rooch-types",
+ "serde 1.0.218",
+ "serde_json",
  "tracing",
 ]
 
