@@ -7,6 +7,7 @@ module minter_manager::minter_manager {
     use moveos_std::object::{Self, Object, ObjectID};
     use rooch_framework::coin::{Self, Coin, CoinInfo};
     use rooch_framework::account_coin_store;
+    use app_admin::admin::AdminCap;
 
 
     // =========================== Constants ==========================
@@ -111,6 +112,19 @@ module minter_manager::minter_manager {
     ) {
         let treasuryCapManager = object::borrow_mut(treasuryCapManagerObj);
         assert!(signer::address_of(coinAdmin) == treasuryCapManager.admin, ENOT_ADMIN);
+        let minterCapObj = object::new(MinterCap<CoinType> {
+            managerId: object::id(treasuryCapManagerObj),
+        });
+        let minterCapId = object::id(&minterCapObj);
+        object::transfer(minterCapObj, recipient);
+        event::emit(MinterCapIssued { recipient, minterCapId });
+    }
+
+    public entry fun issueMinterCapByAdminCap<CoinType: key + store>(
+        treasuryCapManagerObj: &mut Object<TreasuryCapManager<CoinType>>,
+        recipient: address,
+        _admin_cap: &mut Object<AdminCap>,
+    ) {
         let minterCapObj = object::new(MinterCap<CoinType> {
             managerId: object::id(treasuryCapManagerObj),
         });
