@@ -47,6 +47,10 @@ pub trait ModuleBinding<'a> {
         FunctionId::new(Self::module_id(), function_name.to_owned())
     }
 
+    fn function_id_with_module_id(module_id: &ModuleId, function_name: &IdentStr) -> FunctionId {
+        FunctionId::new(module_id.to_owned(), function_name.to_owned())
+    }
+
     /// Construct a MoveAction for a function call
     fn create_move_action(
         function_name: &IdentStr,
@@ -62,8 +66,18 @@ pub trait ModuleBinding<'a> {
         ty_args: Vec<TypeTag>,
         args: Vec<MoveValue>,
     ) -> FunctionCall {
+        Self::create_function_call_with_module_id(&Self::module_id(), function_name, ty_args, args)
+    }
+
+    /// Çonstruct a FunctionCall
+    fn create_function_call_with_module_id(
+        module_id: &ModuleId,
+        function_name: &IdentStr,
+        ty_args: Vec<TypeTag>,
+        args: Vec<MoveValue>,
+    ) -> FunctionCall {
         FunctionCall::new(
-            Self::function_id(function_name),
+            Self::function_id_with_module_id(module_id, function_name),
             ty_args,
             args.into_iter()
                 .map(|v| v.simple_serialize().expect("Failed to serialize MoveValue"))
