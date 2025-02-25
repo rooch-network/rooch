@@ -166,6 +166,22 @@ pub fn open_inner_rocks(
     }
 }
 
+pub fn derive_builtin_genesis_namespace_from_rooch_chain_id(
+    chain_id: Option<RoochChainID>,
+) -> anyhow::Result<Option<String>> {
+    if chain_id.is_none() {
+        return Ok(None);
+    }
+
+    match chain_id.unwrap() {
+        RoochChainID::Builtin(builtin_chain_id) => {
+            let namespace = derive_builtin_genesis_namespace(builtin_chain_id)?;
+            Ok(Some(namespace))
+        }
+        RoochChainID::Custom(_) => Ok(None),
+    }
+}
+
 pub fn derive_builtin_genesis_namespace(chain_id: BuiltinChainID) -> anyhow::Result<String> {
     let genesis = load_genesis_from_binary(chain_id)?.expect("Genesis not found");
     let genesis_hash = genesis.genesis_hash();

@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::utils::open_rooch_db;
+use crate::utils::{derive_builtin_genesis_namespace_from_rooch_chain_id, open_rooch_db};
 use anyhow::Error;
 use clap::Parser;
 use moveos_common::utils::to_bytes;
@@ -12,6 +12,7 @@ use moveos_types::startup_info;
 use raw_store::rocks::batch::WriteBatch;
 use raw_store::traits::DBStore;
 use rooch_config::R_OPT_NET_HELP;
+use rooch_pipeline_processor::actor::load_tx_anomalies;
 use rooch_store::meta_store::SEQUENCER_INFO_KEY;
 use rooch_store::META_SEQUENCER_INFO_COLUMN_FAMILY_NAME;
 use rooch_types::error::{RoochError, RoochResult};
@@ -33,6 +34,14 @@ pub struct RollbackCommand {
 
 impl RollbackCommand {
     pub async fn execute(self) -> RoochResult<()> {
+        let tx_anomalies = if let Some(genesis_namespace) =
+            derive_builtin_genesis_namespace_from_rooch_chain_id(self.chain_id.clone())?
+        {
+            load_tx_anomalies(genesis_namespace)?
+        } else {
+            None
+        };
+
         let tx_order = self.tx_order;
         if tx_order == 0 {
             return Err(RoochError::from(Error::msg(
@@ -42,7 +51,7 @@ impl RollbackCommand {
         let (_root, rooch_db, _start_time) = open_rooch_db(self.base_data_dir, self.chain_id);
 
         // check
-        // 1. tx_hash exist via tx_order
+        // 1. tx_hash exists via tx_order
         let tx_hashes = rooch_db
             .rooch_store
             .transaction_store
@@ -54,7 +63,16 @@ impl RollbackCommand {
             ))));
         }
         let tx_hash = tx_hashes[0].unwrap();
-        // 2. tx_order must be less than last_order
+        // 2. tx_hash is not duplicate
+        if let Some(anomalies) = tx_anomalies {
+            if anomalies.is_dup_hash(&tx_hash) {
+                return Err(RoochError::from(Error::msg(format!(
+                    "rollback tx failed: tx_hash {:?} is duplicate, try to rollback previous tx",
+                    tx_hash
+                ))));
+            }
+        }
+        // 3. tx_order must be less than last_order
         let last_sequencer_info = rooch_db
             .rooch_store
             .get_meta_store()
@@ -67,8 +85,8 @@ impl RollbackCommand {
                 tx_order, last_order
             ))));
         }
-        // 3. tx saved, sequenced, executed
-        // 3.1 tx saved
+        // 4. tx saved, sequenced, executed
+        // 4.1 tx saved
         let ledger_tx_opt = rooch_db
             .rooch_store
             .transaction_store
@@ -79,10 +97,10 @@ impl RollbackCommand {
                 tx_hash
             ))));
         }
-        // 3.2 tx sequenced
+        // 4.2 tx sequenced
         let sequencer_info = ledger_tx_opt.unwrap().sequence_info;
         assert_eq!(sequencer_info.tx_order, tx_order);
-        // 3.3 tx executed
+        // 4.3 tx executed
         let execution_info = rooch_db
             .moveos_store
             .transaction_store
