@@ -131,7 +131,7 @@ mod tests {
             address: AccountAddress::random(),
             module: Identifier::new("DummyModule").unwrap(),
             name: Identifier::new("DummyStruct").unwrap(),
-            type_params: vec![TypeTag::Vector(Box::new(TypeTag::U8))],
+            type_args: vec![TypeTag::Vector(Box::new(TypeTag::U8))],
         };
 
         let dummy_as_strings = dummy_st.to_string();
