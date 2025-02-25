@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 use ambassador::delegate_to_methods;
 use bytes::Bytes;
 use hashbrown::HashMap;
