@@ -269,9 +269,16 @@ async fn test_field_store() -> Result<()> {
     let indexer_reader = IndexerReader::new(indexer_db, &registry_service.default_registry())?;
 
     let mut new_fields = random_new_fields();
-    let new_object_ids = new_fields
+    let new_object_parent_ids = new_fields
         .iter()
-        .map(|field| field.metadata.id.clone())
+        .map(|field| {
+            field
+                .metadata
+                .id
+                .parent()
+                .unwrap_or(ObjectID::root())
+                .clone()
+        })
         .collect::<Vec<_>>();
     let mut update_fields = random_update_fields(new_fields.clone());
     let remove_fields = random_remove_fields();
@@ -284,8 +291,8 @@ async fn test_field_store() -> Result<()> {
     indexer_store.delete_fields_by_parent_id(remove_fields_by_parent_id)?;
 
     // test for querying batch fields with filter FieldFilter::ObjectId
-    let _num_objs = new_object_ids.len();
-    let filter = FieldFilter::ObjectId(new_object_ids);
+    let _num_objs = new_object_parent_ids.len();
+    let filter = FieldFilter::ObjectId(new_object_parent_ids);
     let query_fields = indexer_reader.query_fields_with_filter(filter, 1, 1, true)?;
     assert_eq!(query_fields.len(), 1);
 
