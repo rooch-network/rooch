@@ -157,23 +157,20 @@ pub struct MoveOS {
 
 impl MoveOS {
     pub fn new(
-        all_natives: Vec<(AccountAddress, Identifier, Identifier, NativeFunction)>,
         db: MoveOSStore,
         system_pre_execute_functions: Vec<FunctionCall>,
         system_post_execute_functions: Vec<FunctionCall>,
-        global_module_cache: MoveOSGlobalModuleCache,
+        global_cache_manager: MoveOSCacheManager,
     ) -> Result<Self> {
-        //TODO load the gas table from argument, and remove the cost_table lock.
-        let moveos_cache_manager = MoveOSCacheManager::new(all_natives, global_module_cache);
+        let vm = MoveOSVM::new(global_cache_manager.clone())?;
 
-        let vm = MoveOSVM::new(moveos_cache_manager.clone())?;
         Ok(Self {
             vm,
             db,
             cost_table: Arc::new(RwLock::new(None)),
             system_pre_execute_functions,
             system_post_execute_functions,
-            cache_manager: moveos_cache_manager,
+            cache_manager: global_cache_manager.clone(),
         })
     }
 

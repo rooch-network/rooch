@@ -339,7 +339,9 @@ where
             // Immutable Reference to signer and specific types is allowed
             true
         }
-        MutableReference(bt) if is_allowed_reference_types(bt.as_ref(), session, module_storage) => {
+        MutableReference(bt)
+            if is_allowed_reference_types(bt.as_ref(), session, module_storage) =>
+        {
             // Mutable references to specific types is allowed
             true
         }
