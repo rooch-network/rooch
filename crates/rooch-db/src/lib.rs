@@ -389,7 +389,7 @@ impl RoochDB {
 
     /// repair the rooch store, return the (issues count, fixed count)
     /// if exec is false, only report issues, otherwise repair the issues
-    pub fn repair(&self, thorough: bool, exec: bool) -> anyhow::Result<(usize, usize)> {
+    pub fn repair(&self, thorough: bool, exec: bool) -> Result<(usize, usize)> {
         let mut issues = 0;
         let mut fixed = 0;
         // repair the rooch store
