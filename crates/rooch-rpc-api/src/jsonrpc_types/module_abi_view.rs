@@ -322,6 +322,7 @@ impl MoveStructView {
                     .map(|f| new_move_struct_field_view(m, f))
                     .collect(),
             ),
+            _ => (false, vec![]),
         };
 
         let abilities = handle

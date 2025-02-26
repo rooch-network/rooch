@@ -50,6 +50,10 @@ pub const FUNCTION_HANDLE_INDEX_MAX: u64 = TABLE_INDEX_MAX;
 pub const FUNCTION_INST_INDEX_MAX: u64 = TABLE_INDEX_MAX;
 pub const FIELD_HANDLE_INDEX_MAX: u64 = TABLE_INDEX_MAX;
 pub const FIELD_INST_INDEX_MAX: u64 = TABLE_INDEX_MAX;
+pub const VARIANT_FIELD_HANDLE_INDEX_MAX: u64 = TABLE_INDEX_MAX;
+pub const VARIANT_FIELD_INST_INDEX_MAX: u64 = TABLE_INDEX_MAX;
+pub const STRUCT_VARIANT_HANDLE_INDEX_MAX: u64 = TABLE_INDEX_MAX;
+pub const STRUCT_VARIANT_INST_INDEX_MAX: u64 = TABLE_INDEX_MAX;
 pub const STRUCT_DEF_INST_INDEX_MAX: u64 = TABLE_INDEX_MAX;
 pub const CONSTANT_INDEX_MAX: u64 = TABLE_INDEX_MAX;
 
@@ -218,6 +222,17 @@ pub enum Opcodes {
     CAST_U16                    = 0x4B,
     CAST_U32                    = 0x4C,
     CAST_U256                   = 0x4D,
+    // Since bytecode version 7
+    IMM_BORROW_VARIANT_FIELD    = 0x4E,
+    MUT_BORROW_VARIANT_FIELD    = 0x4F,
+    IMM_BORROW_VARIANT_FIELD_GENERIC    = 0x50,
+    MUT_BORROW_VARIANT_FIELD_GENERIC    = 0x51,
+    PACK_VARIANT                = 0x52,
+    PACK_VARIANT_GENERIC        = 0x53,
+    UNPACK_VARIANT              = 0x54,
+    UNPACK_VARIANT_GENERIC      = 0x55,
+    TEST_VARIANT                = 0x56,
+    TEST_VARIANT_GENERIC        = 0x57,
 }
 
 #[allow(clippy::legacy_numeric_constants)]
@@ -626,6 +641,17 @@ pub fn instruction_key(instruction: &Bytecode) -> u8 {
         CastU16 => Opcodes::CAST_U16,
         CastU32 => Opcodes::CAST_U32,
         CastU256 => Opcodes::CAST_U256,
+        // Since bytecode version 7
+        ImmBorrowVariantField(_) => Opcodes::IMM_BORROW_VARIANT_FIELD,
+        ImmBorrowVariantFieldGeneric(_) => Opcodes::IMM_BORROW_VARIANT_FIELD_GENERIC,
+        MutBorrowVariantField(_) => Opcodes::MUT_BORROW_VARIANT_FIELD,
+        MutBorrowVariantFieldGeneric(_) => Opcodes::MUT_BORROW_VARIANT_FIELD_GENERIC,
+        PackVariant(_) => Opcodes::PACK_VARIANT,
+        PackVariantGeneric(_) => Opcodes::PACK_VARIANT_GENERIC,
+        UnpackVariant(_) => Opcodes::UNPACK_VARIANT,
+        UnpackVariantGeneric(_) => Opcodes::UNPACK_VARIANT_GENERIC,
+        TestVariant(_) => Opcodes::TEST_VARIANT,
+        TestVariantGeneric(_) => Opcodes::TEST_VARIANT_GENERIC,
     };
     opcode as u8
 }

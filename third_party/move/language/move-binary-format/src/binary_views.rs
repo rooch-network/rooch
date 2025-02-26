@@ -2,6 +2,11 @@
 // Copyright (c) The Move Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::file_format::{
+    StructVariantHandle, StructVariantHandleIndex, StructVariantInstantiation,
+    StructVariantInstantiationIndex, VariantFieldHandle, VariantFieldHandleIndex,
+    VariantFieldInstantiation, VariantFieldInstantiationIndex,
+};
 use crate::{
     access::{ModuleAccess, ScriptAccess},
     control_flow_graph::VMControlFlowGraph,
@@ -157,6 +162,13 @@ impl<'a> BinaryIndexedView<'a> {
         }
     }
 
+    pub fn variant_field_handles(&self) -> Option<&[VariantFieldHandle]> {
+        match self {
+            BinaryIndexedView::Module(module) => Some(&module.variant_field_handles),
+            BinaryIndexedView::Script(_) => None,
+        }
+    }
+
     pub fn field_handle_at(&self, idx: FieldHandleIndex) -> PartialVMResult<&FieldHandle> {
         match self {
             BinaryIndexedView::Module(module) => Ok(module.field_handle_at(idx)),
@@ -199,12 +211,67 @@ impl<'a> BinaryIndexedView<'a> {
         }
     }
 
+    pub fn variant_field_instantiations(&self) -> Option<&[VariantFieldInstantiation]> {
+        match self {
+            BinaryIndexedView::Module(module) => Some(&module.variant_field_instantiations),
+            BinaryIndexedView::Script(_) => None,
+        }
+    }
+
     pub fn field_instantiation_at(
         &self,
         idx: FieldInstantiationIndex,
     ) -> PartialVMResult<&FieldInstantiation> {
         match self {
             BinaryIndexedView::Module(module) => Ok(module.field_instantiation_at(idx)),
+            BinaryIndexedView::Script(_) => {
+                Err(PartialVMError::new(StatusCode::INVALID_OPERATION_IN_SCRIPT))
+            }
+        }
+    }
+
+    pub fn variant_field_handle_at(
+        &self,
+        idx: VariantFieldHandleIndex,
+    ) -> PartialVMResult<&VariantFieldHandle> {
+        match self {
+            BinaryIndexedView::Module(module) => Ok(module.variant_field_handle_at(idx)),
+            BinaryIndexedView::Script(_) => {
+                Err(PartialVMError::new(StatusCode::INVALID_OPERATION_IN_SCRIPT))
+            }
+        }
+    }
+
+    pub fn variant_field_instantiation_at(
+        &self,
+        idx: VariantFieldInstantiationIndex,
+    ) -> PartialVMResult<&VariantFieldInstantiation> {
+        match self {
+            BinaryIndexedView::Module(module) => Ok(module.variant_field_instantiation_at(idx)),
+            BinaryIndexedView::Script(_) => {
+                Err(PartialVMError::new(StatusCode::INVALID_OPERATION_IN_SCRIPT))
+            }
+        }
+    }
+
+    pub fn struct_variant_instantiation_at(
+        &self,
+        idx: StructVariantInstantiationIndex,
+    ) -> PartialVMResult<&StructVariantInstantiation> {
+        match self {
+            BinaryIndexedView::Module(module) => Ok(module.struct_variant_instantiation_at(idx)),
+            BinaryIndexedView::Script(_) => {
+                Err(PartialVMError::new(StatusCode::INVALID_OPERATION_IN_SCRIPT))
+            }
+        }
+    }
+
+    pub fn struct_variant_handle_at(
+        &self,
+        idx: StructVariantHandleIndex,
+    ) -> PartialVMResult<&StructVariantHandle> {
+        match self {
+            BinaryIndexedView::Module(module) => Ok(module.struct_variant_handle_at(idx)),
             BinaryIndexedView::Script(_) => {
                 Err(PartialVMError::new(StatusCode::INVALID_OPERATION_IN_SCRIPT))
             }
@@ -224,6 +291,20 @@ impl<'a> BinaryIndexedView<'a> {
             BinaryIndexedView::Script(_) => {
                 Err(PartialVMError::new(StatusCode::INVALID_OPERATION_IN_SCRIPT))
             }
+        }
+    }
+
+    pub fn struct_variant_handles(&self) -> Option<&[StructVariantHandle]> {
+        match self {
+            BinaryIndexedView::Module(module) => Some(&module.struct_variant_handles),
+            BinaryIndexedView::Script(_) => None,
+        }
+    }
+
+    pub fn struct_variant_instantiations(&self) -> Option<&[StructVariantInstantiation]> {
+        match self {
+            BinaryIndexedView::Module(module) => Some(&module.struct_variant_instantiations),
+            BinaryIndexedView::Script(_) => None,
         }
     }
 

@@ -117,43 +117,43 @@ module moveos_std::account {
 
    // === Account Object Functions
 
-   public fun account_borrow_resource<T: key>(self: &Object<Account>): &T {
-      assert!(object::contains_field(self, key<T>()), ErrorResourceNotExists);
-      object::borrow_field_internal(object::id(self), key<T>())
+   public fun account_borrow_resource<T: key>(obj: &Object<Account>): &T {
+      assert!(object::contains_field(obj, key<T>()), ErrorResourceNotExists);
+      object::borrow_field_internal(object::id(obj), key<T>())
    }
 
    #[private_generics(T)]
-   public fun account_borrow_mut_resource<T: key>(self: &mut Object<Account>): &mut T {
-      account_borrow_mut_resource_interal(self)
+   public fun account_borrow_mut_resource<T: key>(obj: &mut Object<Account>): &mut T {
+      account_borrow_mut_resource_interal(obj)
    }
 
-   fun account_borrow_mut_resource_interal<T: key>(self: &mut Object<Account>): &mut T {
-      assert!(object::contains_field(self, key<T>()), ErrorResourceNotExists);
-      object::borrow_mut_field_internal(object::id(self), key<T>())
-   }
-
-   #[private_generics(T)]
-   public fun account_move_resource_to<T: key>(self: &mut Object<Account>, resource: T){
-      account_move_resource_to_internal(self, resource)
-   }
-
-   fun account_move_resource_to_internal<T: key>(self: &mut Object<Account>, resource: T){
-      assert!(!object::contains_field(self, key<T>()), ErrorResourceAlreadyExists);
-      object::add_field_internal<std::string::String, T>(object::id(self), key<T>(), resource)
+   fun account_borrow_mut_resource_interal<T: key>(obj: &mut Object<Account>): &mut T {
+      assert!(object::contains_field(obj, key<T>()), ErrorResourceNotExists);
+      object::borrow_mut_field_internal(object::id(obj), key<T>())
    }
 
    #[private_generics(T)]
-   public fun account_move_resource_from<T: key>(self: &mut Object<Account>): T {
-      account_move_resource_from_internal(self)
+   public fun account_move_resource_to<T: key>(obj: &mut Object<Account>, resource: T){
+      account_move_resource_to_internal(obj, resource)
    }
 
-   fun account_move_resource_from_internal<T: key>(self: &mut Object<Account>): T {
-      assert!(object::contains_field(self, key<T>()), ErrorResourceNotExists);
-      object::remove_field_internal<Account, std::string::String, T>(object::id(self), key<T>())
+   fun account_move_resource_to_internal<T: key>(obj: &mut Object<Account>, resource: T){
+      assert!(!object::contains_field(obj, key<T>()), ErrorResourceAlreadyExists);
+      object::add_field_internal<std::string::String, T>(object::id(obj), key<T>(), resource)
    }
 
-   public fun account_exists_resource<T: key>(self: &Object<Account>) : bool {
-      object::contains_field_internal(object::id(self), key<T>())
+   #[private_generics(T)]
+   public fun account_move_resource_from<T: key>(obj: &mut Object<Account>): T {
+      account_move_resource_from_internal(obj)
+   }
+
+   fun account_move_resource_from_internal<T: key>(obj: &mut Object<Account>): T {
+      assert!(object::contains_field(obj, key<T>()), ErrorResourceNotExists);
+      object::remove_field_internal<Account, std::string::String, T>(object::id(obj), key<T>())
+   }
+
+   public fun account_exists_resource<T: key>(obj: &Object<Account>) : bool {
+      object::contains_field_internal(object::id(obj), key<T>())
    }
    
    fun transfer(obj: Object<Account>, account: address) {
@@ -279,8 +279,8 @@ module moveos_std::account {
    }
 
    #[test_only]
-   fun drop_account_object(self: Object<Account>) {
-      let obj = object::drop_unchecked(self);
+   fun drop_account_object(obj: Object<Account>) {
+      let obj = object::drop_unchecked(obj);
       let Account {addr: _, sequence_number:_} = obj;
    }
 

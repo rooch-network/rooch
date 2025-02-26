@@ -47,7 +47,7 @@ const E_JSON_SERIALIZATION_FAILURE: u64 = 3;
 fn parse_struct_value_from_bytes(
     layout: &MoveStructLayout,
     bytes: Vec<u8>,
-    context: &NativeContext,
+    context: &mut NativeContext,
 ) -> Result<Struct> {
     let json_str = std::str::from_utf8(&bytes)?;
     let json_obj: JsonValue = serde_json::from_str(json_str)?;
@@ -57,7 +57,7 @@ fn parse_struct_value_from_bytes(
 fn parse_struct_value_from_json(
     layout: &MoveStructLayout,
     json_value: &JsonValue,
-    context: &NativeContext,
+    context: &mut NativeContext,
 ) -> Result<Struct> {
     if let MoveStructLayout::WithTypes {
         type_: struct_type,
@@ -150,7 +150,7 @@ fn parse_struct_value_from_json(
 fn parse_move_value_from_json(
     layout: &MoveTypeLayout,
     json_value: &JsonValue,
-    context: &NativeContext,
+    context: &mut NativeContext,
 ) -> Result<Value> {
     match layout {
         MoveTypeLayout::Bool => {
@@ -238,6 +238,7 @@ fn parse_move_value_from_json(
                 U256::from_str(u256_str).map_err(|_| anyhow::anyhow!("Invalid u256 value"))?;
             Ok(Value::u256(u256_value))
         }
+        _ => Err(anyhow::anyhow!("Invalid MoveTypeLayout")),
     }
 }
 
@@ -293,16 +294,19 @@ fn native_from_json(
     let mut cost = gas_params.base;
     let type_param = &ty_args[0];
     // TODO(Gas): charge for getting the layout
-    let layout = context
-        .type_to_fully_annotated_layout(type_param)?
-        .ok_or_else(|| {
-            PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR).with_message(
-                format!(
-                    "Failed to get layout of type {:?} -- this should not happen",
-                    ty_args[0]
+    let layout = match context.type_to_fully_annotated_layout(type_param) {
+        Ok(layout) => layout,
+        Err(_) => {
+            return Err(
+                PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR).with_message(
+                    format!(
+                        "Failed to get layout of type {:?} -- this should not happen",
+                        ty_args[0]
+                    ),
                 ),
             )
-        })?;
+        }
+    };
 
     let bytes = pop_arg!(args, Vec<u8>);
     cost += gas_params.per_byte_in_str * NumBytes::new(bytes.len() as u64);
@@ -438,8 +442,8 @@ fn serialize_move_struct_to_json(
                 fields: layout_fields,
             },
             MoveStruct::WithTypes {
-                type_: _,
-                fields: value_fields,
+                _type_: _,
+                _fields: value_fields,
             },
         ) => {
             if struct_type.is_ascii_string(&MOVE_STD_ADDRESS)
@@ -499,8 +503,8 @@ fn serialize_move_struct_to_json(
 
                         let fields = match struct_ {
                             MoveStruct::WithTypes {
-                                type_: _,
-                                fields: value_fields,
+                                _type_: _,
+                                _fields: value_fields,
                             } => value_fields,
                             _ => return Err(anyhow::anyhow!("Invalid element in SimpleMap data")),
                         };
@@ -509,8 +513,8 @@ fn serialize_move_struct_to_json(
                             MoveValue::Struct(struct_) => {
                                 let value_fields = match struct_ {
                                     MoveStruct::WithTypes {
-                                        type_: _,
-                                        fields: value_fields,
+                                        _type_: _,
+                                        _fields: value_fields,
                                     } => value_fields,
                                     _ => {
                                         return Err(anyhow::anyhow!(
@@ -616,18 +620,18 @@ fn native_to_json(
     let arg_type = ty_args.pop().unwrap();
 
     // get type layout
-    let layout = match context.type_to_type_layout(&arg_type)? {
-        Some(layout) => layout,
-        None => {
+    let layout = match context.type_to_type_layout(&arg_type) {
+        Ok(layout) => layout,
+        Err(_) => {
             return Ok(NativeResult::err(cost, E_JSON_SERIALIZATION_FAILURE));
         }
     };
 
     let move_val = ref_to_val.read_ref()?.as_move_value(&layout);
 
-    let annotated_layout = match context.type_to_fully_annotated_layout(&arg_type)? {
-        Some(layout) => layout,
-        None => {
+    let annotated_layout = match context.type_to_fully_annotated_layout(&arg_type) {
+        Ok(layout) => layout,
+        Err(_) => {
             return Ok(NativeResult::err(cost, E_JSON_SERIALIZATION_FAILURE));
         }
     };

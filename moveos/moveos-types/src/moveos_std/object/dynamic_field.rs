@@ -181,7 +181,7 @@ where
             address: Self::ADDRESS,
             module: Self::MODULE_NAME.to_owned(),
             name: Self::STRUCT_NAME.to_owned(),
-            type_params: vec![N::type_tag(), V::type_tag()],
+            type_args: vec![N::type_tag(), V::type_tag()],
         }
     }
 }
@@ -228,7 +228,7 @@ pub fn construct_dynamic_field_struct_tag(name_tag: TypeTag, value_tag: TypeTag)
         address: MOVEOS_STD_ADDRESS,
         module: super::MODULE_NAME.to_owned(),
         name: DYNAMIC_FIELD_STRUCT_NAME.to_owned(),
-        type_params: vec![name_tag, value_tag],
+        type_args: vec![name_tag, value_tag],
     }
 }
 

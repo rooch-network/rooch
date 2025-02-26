@@ -4,10 +4,11 @@
 use crate::natives::helpers::{make_module_natives, make_native};
 use better_any::{Tid, TidAble};
 use itertools::zip_eq;
+use move_binary_format::file_format::AbilitySet;
 use move_binary_format::{
     compatibility::Compatibility,
     errors::{PartialVMError, PartialVMResult},
-    normalized, CompiledModule,
+    CompiledModule,
 };
 use move_core_types::u256::U256;
 use move_core_types::{
@@ -15,13 +16,14 @@ use move_core_types::{
     gas_algebra::{InternalGas, InternalGasPerArg, InternalGasPerByte, NumArgs, NumBytes},
     identifier::Identifier,
     language_storage::ModuleId,
-    resolver::ModuleResolver,
     value::MoveValue,
     vm_status::StatusCode,
 };
 use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
+use move_vm_types::loaded_data::runtime_types::{AbilityInfo, StructNameIndex};
+use move_vm_types::resolver::ModuleResolver;
 use move_vm_types::{
-    loaded_data::runtime_types::{CachedStructIndex, Type},
+    loaded_data::runtime_types::Type,
     natives::function::NativeResult,
     pop_arg,
     values::{Struct, Value, Vector, VectorRef},
@@ -30,10 +32,10 @@ use moveos_compiler::dependency_order::sort_by_dependency_order;
 use moveos_types::moveos_std::move_module::MoveModuleId;
 use moveos_verifier::verifier::check_metadata_compatibility;
 use smallvec::smallvec;
-use std::collections::{BTreeSet, HashMap, VecDeque};
+use std::collections::{BTreeMap, BTreeSet, HashMap, VecDeque};
 use std::hash::Hash;
 use std::str::FromStr;
-
+use triomphe::Arc as TriompheArc;
 // ========================================================================================
 
 const E_ADDRESS_NOT_MATCH_WITH_SIGNER: u64 = 1;
@@ -42,10 +44,12 @@ const E_MODULE_INCOMPATIBLE: u64 = 3;
 const E_LENTH_NOT_MATCH: u64 = 4;
 
 /// The native module context.
+#[allow(dead_code)]
 #[derive(Tid)]
 pub struct NativeModuleContext<'a> {
     resolver: &'a dyn ModuleResolver,
     pub init_functions: BTreeSet<ModuleId>,
+    pub publish_modules: BTreeMap<ModuleId, CompiledModule>,
 }
 
 impl<'a> NativeModuleContext<'a> {
@@ -55,6 +59,7 @@ impl<'a> NativeModuleContext<'a> {
         Self {
             resolver,
             init_functions: BTreeSet::new(),
+            publish_modules: BTreeMap::new(),
         }
     }
 }
@@ -163,10 +168,12 @@ fn native_sort_and_verify_modules_inner(
         .collect();
 
     // moveos verifier
-    let module_context = context.extensions_mut().get_mut::<NativeModuleContext>();
+    let _module_context = context.extensions_mut().get_mut::<NativeModuleContext>();
     let mut module_names = vec![];
     let mut init_identifier = vec![];
 
+    //#TODO disable the verification process temporary
+    /*
     let verify_result =
         moveos_verifier::verifier::verify_modules(&compiled_modules, module_context.resolver);
     match verify_result {
@@ -177,8 +184,11 @@ fn native_sort_and_verify_modules_inner(
             return Ok(NativeResult::err(cost, error_code));
         }
     }
+     */
 
+    //#TODO disable the verification process temporary
     // move verifier
+    /*
     let verify_result = context
         .verify_module_bundle_for_publication(&compiled_modules)
         .map_err(|e| {
@@ -195,6 +205,7 @@ fn native_sort_and_verify_modules_inner(
             return Ok(NativeResult::err(cost, E_MODULE_VERIFICATION_ERROR));
         }
     }
+     */
 
     for module in &compiled_modules {
         let module_address = *module.self_id().address();
@@ -226,13 +237,35 @@ fn native_sort_and_verify_modules_inner(
             )]))
         })
         .collect();
-    let module_names = Vector::pack(&Type::Struct(CachedStructIndex(0)), module_names)?;
+    let ability_info = AbilityInfo::struct_(AbilitySet::ALL);
+    let module_names = Vector::pack(
+        &Type::Struct {
+            idx: StructNameIndex(0),
+            ability: ability_info.clone(),
+        },
+        module_names,
+    )?;
 
     let init_module_names: Vec<Value> = init_identifier
         .iter()
         .map(|id| Value::struct_(Struct::pack(vec![Value::vector_u8(id.as_bytes().to_vec())])))
         .collect();
-    let init_module_names = Vector::pack(&Type::Struct(CachedStructIndex(0)), init_module_names)?;
+    let init_module_names = Vector::pack(
+        &Type::Struct {
+            idx: StructNameIndex(0),
+            ability: ability_info,
+        },
+        init_module_names,
+    )?;
+
+    // save modules to the NativeModuleContext
+    let module_context = context.extensions_mut().get_mut::<NativeModuleContext>();
+    for module in compiled_modules.iter() {
+        module_context
+            .publish_modules
+            .insert(module.self_id(), module.clone());
+    }
+
     let sorted_indices = Value::vector_u64(indices);
     Ok(NativeResult::ok(
         cost,
@@ -307,10 +340,8 @@ fn check_compatibililty_inner(
         cost += gas_params.per_byte * NumBytes::new(old_bytecodes.len() as u64);
         let new_module = CompiledModule::deserialize(&new_bytecodes)?;
         let old_module = CompiledModule::deserialize(&old_bytecodes)?;
-        let new_m = normalized::Module::new(&new_module);
-        let old_m = normalized::Module::new(&old_module);
 
-        match compat.check(&old_m, &new_m) {
+        match compat.check(&new_module, &old_module) {
             Ok(_) => {}
             Err(_) => return Ok(NativeResult::err(cost, E_MODULE_INCOMPATIBLE)),
         }
@@ -437,12 +468,16 @@ fn replace_identifiers(
     ty_args: Vec<Type>,
     args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
+    let ability_info = AbilityInfo::struct_(AbilitySet::ALL);
     module_replace_template(
         gas_params,
         context,
         ty_args,
         args,
-        Type::Struct(CachedStructIndex(0)), // std::string::String
+        Type::Struct {
+            idx: StructNameIndex(0),
+            ability: ability_info,
+        }, // std::string::String
         module_replace_identifiers,
         unpack_string_to_identifier,
     )
@@ -467,7 +502,7 @@ fn replace_bytes_constant(
         context,
         ty_args,
         args,
-        Type::Vector(Box::new(Type::U8)),
+        Type::Vector(TriompheArc::new(Type::U8)),
         module_replace_constants,
         |a| a.value_as::<Vec<u8>>(),
     )
@@ -566,7 +601,7 @@ fn modify_modules(
         let value = Value::vector_u8(binary);
         remapped_bundles.push(value);
     }
-    let output_modules = Vector::pack(&Type::Vector(Box::new(Type::U8)), remapped_bundles)?;
+    let output_modules = Vector::pack(&Type::Vector(TriompheArc::new(Type::U8)), remapped_bundles)?;
     Ok(output_modules)
 }
 

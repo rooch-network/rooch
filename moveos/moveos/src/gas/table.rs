@@ -11,8 +11,9 @@ use move_binary_format::file_format::CodeOffset;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::gas_algebra::{
     AbstractMemorySize, GasQuantity, InternalGas, InternalGasPerArg, InternalGasPerByte, NumArgs,
-    NumBytes,
+    NumBytes, NumTypeNodes,
 };
+use move_core_types::identifier::IdentStr;
 use move_core_types::language_storage::ModuleId;
 use move_core_types::vm_status::StatusCode;
 use move_vm_types::gas::{GasMeter, SimpleInstruction};
@@ -138,6 +139,12 @@ pub struct InstructionParameter {
     pub mut_borrow_loc: InternalGas,
     pub imm_borrow_field: InternalGas,
     pub mut_borrow_field: InternalGas,
+    pub imm_borrow_variant_filed: InternalGas,
+    pub mut_borrow_variant_filed: InternalGas,
+    pub imm_borrow_variant_filed_generic: InternalGas,
+    pub mut_borrow_variant_filed_generic: InternalGas,
+    pub test_variant: InternalGas,
+    pub test_variant_generic: InternalGas,
     pub imm_borrow_field_generic: InternalGas,
     pub mut_borrow_field_generic: InternalGas,
     pub copy_loc_base: InternalGas,
@@ -236,6 +243,12 @@ impl InstructionParameter {
             mut_borrow_loc: 0.into(),
             imm_borrow_field: 0.into(),
             mut_borrow_field: 0.into(),
+            imm_borrow_variant_filed: 0.into(),
+            mut_borrow_variant_filed: 0.into(),
+            imm_borrow_variant_filed_generic: 0.into(),
+            mut_borrow_variant_filed_generic: 0.into(),
+            test_variant: 0.into(),
+            test_variant_generic: 0.into(),
             imm_borrow_field_generic: 0.into(),
             mut_borrow_field_generic: 0.into(),
             copy_loc_base: 0.into(),
@@ -916,6 +929,12 @@ impl GasMeter for MoveOSGasMeter {
             MutBorrowLoc => instruction_gas_parameter.mut_borrow_loc,
             ImmBorrowField => instruction_gas_parameter.imm_borrow_field,
             MutBorrowField => instruction_gas_parameter.mut_borrow_field,
+            ImmBorrowVariantField => instruction_gas_parameter.imm_borrow_variant_filed,
+            MutBorrowVariantField => instruction_gas_parameter.mut_borrow_variant_filed,
+            ImmBorrowVariantFieldGeneric => instruction_gas_parameter.imm_borrow_variant_filed_generic,
+            MutBorrowVariantFieldGeneric => instruction_gas_parameter.mut_borrow_variant_filed_generic,
+            TestVariant => instruction_gas_parameter.mut_borrow_field,
+            TestVariantGeneric => instruction_gas_parameter.mut_borrow_field,
             ImmBorrowFieldGeneric => instruction_gas_parameter.imm_borrow_field_generic,
             MutBorrowFieldGeneric => instruction_gas_parameter.mut_borrow_field_generic,
             FreezeRef => instruction_gas_parameter.freeze_ref,
@@ -1357,6 +1376,39 @@ impl GasMeter for MoveOSGasMeter {
         &mut self,
         _locals: impl Iterator<Item = impl ValueView>,
     ) -> PartialVMResult<()> {
+        Ok(())
+    }
+
+    fn charge_create_ty(&mut self, _num_nodes: NumTypeNodes) -> PartialVMResult<()> {
+        /*
+        let (_cost, res) = self.delegate_charge(|base| base.charge_create_ty(num_nodes));
+        res
+         */
+        Ok(())
+    }
+
+    fn charge_dependency(
+        &mut self,
+        _is_new: bool,
+        _addr: &AccountAddress,
+        _name: &IdentStr,
+        _size: NumBytes,
+    ) -> PartialVMResult<()> {
+        /*
+        let (cost, res) =
+            self.delegate_charge(|base| base.charge_dependency(is_new, addr, name, size));
+
+        if !cost.is_zero() {
+            self.dependencies.push(Dependency {
+                is_new,
+                id: ModuleId::new(*addr, name.to_owned()),
+                size,
+                cost,
+            });
+        }
+
+        res
+         */
         Ok(())
     }
 }

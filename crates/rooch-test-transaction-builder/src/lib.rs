@@ -171,7 +171,8 @@ impl TestTransactionBuilder {
         let config_cloned = config.clone();
 
         // Compile the package and run the verifier
-        let mut package = config.compile_package_no_exit(&package_path, &mut stderr())?;
+        let (mut package, _) =
+            config.compile_package_no_exit(&package_path, vec![], &mut stderr())?;
         run_verifier(package_path, config_cloned, &mut package)?;
 
         // Get the modules from the package
