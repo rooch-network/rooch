@@ -10237,7 +10237,7 @@ dependencies = [
  "rooch-indexer",
  "rooch-sequencer",
  "rooch-types",
- "serde 1.0.218",
+ "serde",
  "serde_json",
  "tracing",
 ]
