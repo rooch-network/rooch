@@ -355,7 +355,7 @@ module moveos_std::object {
     // === Object Storage ===
 
     /// The global root object id is `[]`
-    fun root_object_id(): ObjectID {
+    public fun root_object_id(): ObjectID {
         ObjectID { path: vector::empty() }
     }
 

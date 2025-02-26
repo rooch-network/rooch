@@ -52,6 +52,10 @@ module moveos_std::json{
     use std::vector;
     #[test_only]
     use std::string;
+    #[test_only]
+    use moveos_std::object;
+    #[test_only]
+    use moveos_std::object::ObjectID;
 
     #[test_only]
     #[data_struct]
@@ -171,8 +175,13 @@ module moveos_std::json{
     }
 
     #[test_only]
-    struct SimpleStruct has copy, drop {
+    struct SimpleStruct has copy, drop, store {
         value: u64
+    }
+
+    #[test_only]
+    struct TestStruct has key {
+        count: u64,
     }
 
     #[test]
@@ -256,5 +265,25 @@ module moveos_std::json{
         assert!(simple_map::borrow(&map, &string::utf8(b"bytes")) == &string::utf8(b"[]"), 5);
         assert!(simple_map::borrow(&map, &string::utf8(b"inner_array")) == &string::utf8(b"[{\"value\":101}]"), 6);
         assert!(simple_map::borrow(&map, &string::utf8(b"account")) == &string::utf8(b"0x42"), 7);
+    }
+
+    #[test]
+    fun test_to_json_object() {
+        let root_object_id = object::root_object_id();
+        let parent_id = SimpleStruct { value: 1 };
+        let id = SimpleStruct { value: 10 };
+        let parent_object_id = object::custom_object_id<SimpleStruct, TestStruct>(parent_id);
+        let object_id = object::custom_object_id_with_parent<SimpleStruct, TestStruct>(parent_object_id, id);
+
+        let root_object_id_json = to_json(&root_object_id);
+        let object_id_json = to_json(&object_id);
+        let parent_object_id_json = to_json(&parent_object_id);
+
+        let from_root_object_id = from_json<ObjectID>(root_object_id_json);
+        let from_object_id = from_json<ObjectID>(object_id_json);
+        let from_parent_object_id = from_json<ObjectID>(parent_object_id_json);
+        assert!(root_object_id == from_root_object_id, 1);
+        assert!(object_id == from_object_id, 2);
+        assert!(parent_object_id == from_parent_object_id, 3);
     }
 }

@@ -35,8 +35,9 @@ use move_vm_types::{
 
 use moveos_types::addresses::MOVE_STD_ADDRESS;
 use moveos_types::move_std::string::MoveString;
+use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::moveos_std::simple_map::{Element, SimpleMap};
-use moveos_types::state::{MoveStructType, MoveType};
+use moveos_types::state::{MoveStructState, MoveStructType, MoveType};
 
 use crate::natives::helpers::{make_module_natives, make_native};
 
@@ -117,6 +118,34 @@ fn parse_struct_value_from_json(
             }
             let element_type = context.load_type(&Element::<MoveString, MoveString>::type_tag())?;
             Ok(Struct::pack(vec![Vector::pack(&element_type, key_values)?]))
+        } else if is_object_id(struct_type) {
+            let vec_layout = fields
+                .first()
+                .ok_or_else(|| anyhow::anyhow!("Invalid object id layout"))?;
+            let type_tag: TypeTag = (&vec_layout.layout).try_into()?;
+            let ty = context.load_type(&type_tag)?;
+
+            if json_value.is_null() {
+                let value = Vector::pack(&ty, vec![])?;
+                return Ok(Struct::pack(vec![value]));
+            }
+
+            if let MoveTypeLayout::Vector(vec_layout) = vec_layout.layout.clone() {
+                let struct_layout = vec_layout.as_ref();
+                if let MoveTypeLayout::Address = struct_layout {
+                    let addr_str = json_value
+                        .as_str()
+                        .ok_or_else(|| anyhow::anyhow!("Invalid object id value"))?;
+                    let object_id = ObjectID::from_hex_literal(addr_str)
+                        .map_err(|_| anyhow::anyhow!("Invalid object id value"))?;
+                    let struct_value = object_id.to_runtime_value_struct();
+                    return Ok(struct_value);
+                } else {
+                    return Err(anyhow::anyhow!("Invalid object id layout"));
+                }
+            }
+
+            Err(anyhow::anyhow!("Invalid object id layout"))
         } else {
             let field_values = fields
                 .iter()
@@ -552,6 +581,36 @@ fn serialize_move_struct_to_json(
                     .collect::<Result<Vec<_>>>()?;
 
                 JsonValue::Object(key_value_pairs.into_iter().collect())
+            } else if is_object_id(struct_type) {
+                let vec_layout = layout_fields
+                    .first()
+                    .ok_or_else(|| anyhow::anyhow!("Invalid bytes layout"))?;
+                let vec_field = value_fields
+                    .first()
+                    .ok_or_else(|| anyhow::anyhow!("Invalid bytes field"))?;
+
+                match (&vec_layout.layout, &vec_field.1) {
+                    (MoveTypeLayout::Vector(vec_layout), MoveValue::Vector(vec)) => {
+                        let layout = vec_layout.as_ref();
+
+                        if let MoveTypeLayout::Address = layout {
+                            let bytes: Vec<u8> = vec
+                                .iter()
+                                .filter_map(|item| match item {
+                                    MoveValue::Address(addr) => Some(addr.to_vec()),
+                                    _ => None,
+                                })
+                                .flatten()
+                                .collect();
+
+                            let object_id_hex = format!("0x{}", hex::encode(&bytes));
+                            JsonValue::String(object_id_hex)
+                        } else {
+                            return Err(anyhow::anyhow!("Invalid object id"));
+                        }
+                    }
+                    _ => return Err(anyhow::anyhow!("Invalid object id")),
+                }
             } else {
                 serialize_move_fields_to_json(layout_fields, value_fields)?
             }
@@ -575,6 +634,12 @@ fn is_std_option(struct_tag: &StructTag, move_std_addr: &AccountAddress) -> bool
     struct_tag.address == *move_std_addr
         && struct_tag.module.as_str().eq("option")
         && struct_tag.name.as_str().eq("Option")
+}
+
+fn is_object_id(struct_tag: &StructTag) -> bool {
+    struct_tag.address == ObjectID::ADDRESS
+        && struct_tag.module == ObjectID::module_identifier()
+        && struct_tag.name == ObjectID::struct_identifier()
 }
 
 fn serialize_move_fields_to_json(
