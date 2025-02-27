@@ -272,8 +272,8 @@ module moveos_std::json{
     }
 
     #[test]
-    fun test_to_json_object() {
-        let root_object_id = object::root_object_id();
+    fun test_json_object() {
+        let root_object_id = object::new_object_id_for_test(vector[]);
         let parent_id = SimpleStruct { value: 1 };
         let id = SimpleStruct { value: 10 };
         let parent_object_id = object::custom_object_id<SimpleStruct, TestStruct>(parent_id);
@@ -289,14 +289,19 @@ module moveos_std::json{
         assert!(root_object_id == from_root_object_id, 1);
         assert!(object_id == from_object_id, 2);
         assert!(parent_object_id == from_parent_object_id, 3);
+        std::debug::print(&string::utf8(object_id_json));
+        std::debug::print(&string::utf8(parent_object_id_json));
+
+        // ensure object id to json result is consistent with ObjectID.tostring()
+        assert!(&string::utf8(object_id_json) == &string::utf8(b"\"0xa7afe75c4f3a7631191905601f4396b25dde044539807de65ed4fc7358dbd98e922b7bfcb1937ef58a03e80216493fff916d18cddc747b7a1fb93ce631ee9c62\""), 4);
+        assert!(&string::utf8(parent_object_id_json) == &string::utf8(b"\"0xa7afe75c4f3a7631191905601f4396b25dde044539807de65ed4fc7358dbd98e\""), 4);
 
         let str_json = to_json(&string::utf8(b"abc"));
-        assert!(&string::utf8(parent_object_id_json) == &string::utf8(b"\"0xa7afe75c4f3a7631191905601f4396b25dde044539807de65ed4fc7358dbd98e\""), 4);
         assert!(&string::utf8(str_json) == &string::utf8(b"\"abc\""), 5);
     }
 
     #[test]
-    fun test_to_json_decimal_value() {
+    fun test_json_decimal_value() {
         let decimal_value = decimal_value::new(1000000, 6);
         let decimal_value_json = to_json(&decimal_value);
 

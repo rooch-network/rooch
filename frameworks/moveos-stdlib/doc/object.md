@@ -51,7 +51,6 @@ For more details, please refer to https://rooch.network/docs/developer-guides/ob
 -  [Function `owner`](#0x2_object_owner)
 -  [Function `is_system_owned`](#0x2_object_is_system_owned)
 -  [Function `is_user_owned`](#0x2_object_is_user_owned)
--  [Function `root_object_id`](#0x2_object_root_object_id)
 -  [Function `add_field`](#0x2_object_add_field)
 -  [Function `add_field_internal`](#0x2_object_add_field_internal)
 -  [Function `borrow_field`](#0x2_object_borrow_field)
@@ -793,18 +792,6 @@ This function is for the module of <code>T</code> to extend the <code>transfer</
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_is_user_owned">is_user_owned</a>&lt;T: key&gt;(self: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;): bool
-</code></pre>
-
-
-
-<a name="0x2_object_root_object_id"></a>
-
-## Function `root_object_id`
-
-The global root object id is <code>[]</code>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_root_object_id">root_object_id</a>(): <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>
 </code></pre>
 
 

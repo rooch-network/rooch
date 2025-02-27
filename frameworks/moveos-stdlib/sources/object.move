@@ -355,7 +355,7 @@ module moveos_std::object {
     // === Object Storage ===
 
     /// The global root object id is `[]`
-    public fun root_object_id(): ObjectID {
+    fun root_object_id(): ObjectID {
         ObjectID { path: vector::empty() }
     }
 
@@ -587,6 +587,11 @@ module moveos_std::object {
     native fun native_remove_field<V>(obj_id: ObjectID, key: address): V;
 
     native fun native_list_field_keys(obj_id: ObjectID, cursor: Option<address>, limit: u64): vector<address>;
+
+    #[test_only]
+    public fun new_object_id_for_test(path: vector<address>): ObjectID {
+        ObjectID { path }
+    }
 
     #[test_only]
     /// Testing only: allows to drop a Object even if it's fields is not empty.
