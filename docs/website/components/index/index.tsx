@@ -699,20 +699,20 @@ const Index = ({
             <div
               className="w-[45%] h-[586px] border-2 border-[#036840] rounded-[15px] cursor-pointer bg-white dark:bg-inherit"
               onClick={() => {
-                window.open('https://rooch.network/blog/unveiling-rooch-pre-mainnet', '_blank')
+                window.open('https://rooch.network/blog/rooch-network-tokenomics', '_blank')
               }}
             >
               <div className="w-full h-[376px] -mt-[2px]">
                 <img
-                  src="/home/blog/blog-0.png"
+                  src="/blog/rooch-tokenomics/img1.png"
                   className="inline-block w-full h-full object-cover rounded-t-[15px] mt-1"
                   alt="blog-1"
                 />
               </div>
               <div className="flex flex-col items-start p-6">
-                <div className="text-base font-normal font-[Kanit]">9th Sep, 2024</div>
+                <div className="text-base font-normal font-[Kanit]">22th Jan, 2025</div>
                 <div className="w-[80%] text-4xl mt-6 font-normal font-[Kanit]">
-                  Unveiling Rooch Pre-Mainnet: A New Era for Bitcoin Applications
+                  Rooch Network Tokenomics - $ROOCH
                 </div>
               </div>
             </div>
@@ -721,22 +721,22 @@ const Index = ({
                 className="w-full h-[190px] border-2 border-[#036840] rounded-[15px] flex p-6 cursor-pointer bg-white dark:bg-inherit"
                 onClick={() => {
                   window.open(
-                    'https://rooch.network/blog/the-application-layer-of-bitcoin',
+                    'https://rooch.network/blog/rooch-ambassador-program',
                     '_blank',
                   )
                 }}
               >
                 <div className="w-[40%] max-w-[220px] h-full flex flex-col items-center">
                   <img
-                    src="/home/blog/blog-1.jpg"
+                    src="/blog/ambassador.png"
                     alt="blog-1"
                     className="w-full rounded-xl object-cover"
                   />
-                  <div className="text-base font-normal mt-2 font-[Kanit]">24th Apr, 2024</div>
+                  <div className="text-base font-normal mt-2 font-[Kanit]">14th Feb, 2025</div>
                 </div>
                 <div className="w-[60%] h-full flex flex-col justify-between ml-4">
                   <div className="text-2xl font-normal font-[Kanit]">
-                    Rooch Network - The Application Layer of Bitcoin
+                    Announcing The Rooch Network Ambassador Program 
                   </div>
                   <div className="ml-auto">
                     <img src="/home/blog-enter.svg" className="h-8" alt="blog-enter" />
@@ -746,19 +746,19 @@ const Index = ({
               <div
                 className="w-full h-[190px] border-2 border-[#036840] rounded-[15px] flex p-6 cursor-pointer bg-white dark:bg-inherit"
                 onClick={() => {
-                  window.open('https://rooch.network/blog/sprouting-of-rooch', '_blank')
+                  window.open('https://rooch.network/blog/partnership-annoucement-pan-network', '_blank')
                 }}
               >
                 <div className="w-[40%] max-w-[220px] h-full flex flex-col items-center">
                   <img
-                    src="/home/blog/blog-2.jpg"
+                    src="/blog/partnership/pan/pan.png"
                     alt="blog-2"
                     className="w-full rounded-xl object-cover"
                   />
-                  <div className="text-base font-normal mt-2">13th Jun, 2024</div>
+                  <div className="text-base font-normal mt-2">10th Feb, 2025</div>
                 </div>
                 <div className="w-[60%] h-full flex flex-col justify-between ml-4">
-                  <div className="text-2xl font-normal">The Sprouting of Rooch</div>
+                  <div className="text-2xl font-normal">Rooch Network x PAN Network Dual Mining Program</div>
                   <div className="ml-auto">
                     <img src="/home/blog-enter.svg" className="h-8" alt="blog-enter" />
                   </div>
@@ -767,12 +767,12 @@ const Index = ({
               <div
                 className="w-full h-[190px] border-2 border-[#036840] rounded-[15px] flex p-6 cursor-pointer bg-white dark:bg-inherit"
                 onClick={() => {
-                  window.open('https://rooch.network/blog/bug-bounty2', '_blank')
+                  window.open('https://rooch.network/blog/partnership-annoucement-world3', '_blank')
                 }}
               >
                 <div className="w-[40%] max-w-[220px] h-full flex flex-col items-center">
                   <img
-                    src="/home/blog/blog-3.jpg"
+                    src="/blog/partnership/world3/world3.png"
                     alt="blog-3"
                     className="w-full rounded-xl object-cover"
                   />
@@ -780,7 +780,7 @@ const Index = ({
                 </div>
                 <div className="w-[60%] h-full flex flex-col justify-between ml-4">
                   <div className="text-2xl font-normal">
-                    Rooch Network Bug Bounty Program Phase II{' '}
+                  Rooch Network x World3 Dual Mining Program{' '}
                   </div>
                   <div className="ml-auto">
                     <img src="/home/blog-enter.svg" className="h-8" alt="blog-enter" />
