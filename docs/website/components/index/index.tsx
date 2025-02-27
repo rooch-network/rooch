@@ -315,8 +315,7 @@ const Index = ({
               </div>
             </div>
             <div className="mt-6 text-2xl text-center text-black dark:text-[#EAEAEA] max-w-3xl font-[Kanit]">
-              Rooch is a Bitcoin application layer solution that <br /> features MoveVM and Bitcoin
-              staking
+              Rooch Network is the MoveVM-based Bitcoin Layer 2, <br /> enabling Bitcoin programmable, scalable, and interoperable. 
             </div>
           </div>
           <div className="flex flex-col items-center justify-center w-full relative top-[-2.2rem]">
