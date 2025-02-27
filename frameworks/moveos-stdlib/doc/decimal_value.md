@@ -21,7 +21,8 @@
 
 
 
-<pre><code><b>struct</b> <a href="decimal_value.md#0x2_decimal_value_DecimalValue">DecimalValue</a> <b>has</b> <b>copy</b>, drop, store
+<pre><code>#[data_struct]
+<b>struct</b> <a href="decimal_value.md#0x2_decimal_value_DecimalValue">DecimalValue</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 

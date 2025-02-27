@@ -53,6 +53,10 @@ module moveos_std::json{
     #[test_only]
     use std::string;
     #[test_only]
+    use moveos_std::decimal_value;
+    #[test_only]
+    use moveos_std::decimal_value::DecimalValue;
+    #[test_only]
     use moveos_std::object;
     #[test_only]
     use moveos_std::object::ObjectID;
@@ -285,5 +289,18 @@ module moveos_std::json{
         assert!(root_object_id == from_root_object_id, 1);
         assert!(object_id == from_object_id, 2);
         assert!(parent_object_id == from_parent_object_id, 3);
+
+        let str_json = to_json(&string::utf8(b"abc"));
+        assert!(&string::utf8(parent_object_id_json) == &string::utf8(b"\"0xa7afe75c4f3a7631191905601f4396b25dde044539807de65ed4fc7358dbd98e\""), 4);
+        assert!(&string::utf8(str_json) == &string::utf8(b"\"abc\""), 5);
+    }
+
+    #[test]
+    fun test_to_json_decimal_value() {
+        let decimal_value = decimal_value::new(1000000, 6);
+        let decimal_value_json = to_json(&decimal_value);
+
+        let from_decimal_value = from_json<DecimalValue>(decimal_value_json);
+        assert!(decimal_value == from_decimal_value, 1);
     }
 }
