@@ -9,9 +9,11 @@ use accumulator::accumulator_info::AccumulatorInfo;
 use ethers::types::H256;
 use move_core_types::account_address::AccountAddress;
 use moveos_types::moveos_std::object::ObjectID;
+use moveos_types::state::FieldKey;
 use rand::{thread_rng, Rng};
 
 use crate::crypto::RoochKeyPair;
+use crate::indexer::field::IndexerField;
 use crate::indexer::state::IndexerObjectState;
 pub use moveos_types::test_utils::*;
 
@@ -134,4 +136,65 @@ pub fn random_remove_object_states() -> Vec<String> {
     }
 
     remove_object_states
+}
+
+pub fn random_new_fields() -> Vec<IndexerField> {
+    let mut rng = thread_rng();
+    random_new_fields_with_size(rng.gen_range(1..=10))
+}
+
+pub fn random_new_fields_with_size(size: usize) -> Vec<IndexerField> {
+    let mut new_fields = vec![];
+    let mut rng = thread_rng();
+
+    for _n in 0..size {
+        let sort_key = rng.gen_range(1..=100000);
+        let field = IndexerField::new(
+            random_table_object().into_state().metadata,
+            FieldKey::random(),
+            sort_key as u64,
+        );
+
+        new_fields.push(field);
+    }
+
+    new_fields
+}
+
+pub fn random_update_fields(fields: Vec<IndexerField>) -> Vec<IndexerField> {
+    fields
+        .into_iter()
+        .map(|mut item| {
+            item.metadata.updated_at += 1;
+            IndexerField {
+                field_key: item.field_key,
+                metadata: item.metadata,
+                sort_key: item.sort_key + 1,
+            }
+        })
+        .collect()
+}
+
+pub fn random_remove_fields() -> Vec<String> {
+    let mut remove_fields = vec![];
+
+    let mut rng = thread_rng();
+    for _n in 0..rng.gen_range(1..=10) {
+        let object_id = ObjectID::from(AccountAddress::random());
+        remove_fields.push(object_id.to_string());
+    }
+
+    remove_fields
+}
+
+pub fn random_remove_fields_by_parent_id() -> Vec<String> {
+    let mut remove_fields = vec![];
+
+    let mut rng = thread_rng();
+    for _n in 0..rng.gen_range(1..=10) {
+        let object_id = ObjectID::from(AccountAddress::random());
+        remove_fields.push(object_id.to_string());
+    }
+
+    remove_fields
 }
