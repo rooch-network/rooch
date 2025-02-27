@@ -52,8 +52,8 @@ impl RollbackCommand {
 
         let (_root, rooch_db, _start_time) = open_rooch_db(self.base_data_dir, self.chain_id);
 
-        // check
-        // 1. tx_hash exists via tx_order
+        // 1. check
+        // 1.1 tx_hash exists via tx_order
         let tx_hashes = rooch_db
             .rooch_store
             .transaction_store
@@ -65,7 +65,7 @@ impl RollbackCommand {
             ))));
         }
         let tx_hash = tx_hashes[0].unwrap();
-        // 3. tx_order must be less than last_order
+        // 1.2 tx_order must be less than last_order
         let last_sequencer_info = rooch_db
             .rooch_store
             .get_meta_store()
@@ -78,8 +78,8 @@ impl RollbackCommand {
                 tx_order, last_order
             ))));
         }
-        // 4. tx saved, sequenced, executed
-        // 4.1 tx saved
+        // 1.3 tx saved, sequenced, executed
+        // 1.3.1 tx saved
         let ledger_tx_opt = rooch_db
             .rooch_store
             .transaction_store
@@ -90,10 +90,10 @@ impl RollbackCommand {
                 tx_hash
             ))));
         }
-        // 4.2 tx sequenced
+        // 1.3.2 tx sequenced
         let sequencer_info = ledger_tx_opt.unwrap().sequence_info;
         assert_eq!(sequencer_info.tx_order, tx_order);
-        // 4.3 tx executed
+        // 1.3.3 tx executed
         let execution_info = rooch_db
             .moveos_store
             .transaction_store
@@ -106,7 +106,7 @@ impl RollbackCommand {
         }
         let execution_info = execution_info.unwrap();
 
-        // rollback
+        // 2. rollback
         let start_order = tx_order + 1;
         for tx_order_i in (start_order..=last_order).rev() {
             let tx_hashes = rooch_db
@@ -142,7 +142,8 @@ impl RollbackCommand {
             META_SEQUENCER_INFO_COLUMN_FAMILY_NAME,
             CONFIG_STARTUP_INFO_COLUMN_FAMILY_NAME,
         ];
-        // save sequencer info and startup info for setup with rollback tx values
+
+        // 3. save sequencer info and startup info for setup with rollback tx values
         write_batch.put(
             to_bytes(SEQUENCER_INFO_KEY).unwrap(),
             to_bytes(&rollback_sequencer_info).unwrap(),
