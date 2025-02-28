@@ -594,17 +594,24 @@ fn serialize_move_struct_to_json(
                         let layout = vec_layout.as_ref();
 
                         if let MoveTypeLayout::Address = layout {
-                            let bytes: Vec<u8> = vec
+                            let addresses = vec
                                 .iter()
                                 .filter_map(|item| match item {
-                                    MoveValue::Address(addr) => Some(addr.to_vec()),
+                                    MoveValue::Address(addr) => Some(addr.clone()),
                                     _ => None,
                                 })
-                                .flatten()
-                                .collect();
+                                .collect::<Vec<_>>();
 
-                            let object_id_hex = format!("0x{}", hex::encode(&bytes));
-                            JsonValue::String(object_id_hex)
+                            // ensure object id to json result is consistent with ObjectID.tostring()
+                            let obj_id = match addresses.len() {
+                                0 => ObjectID::root(),
+                                1 => ObjectID::new(addresses[0].into_bytes()),
+                                _ => ObjectID::new_with_parent_id(
+                                    addresses[0].into_bytes(),
+                                    addresses[1].into_bytes(),
+                                ),
+                            };
+                            JsonValue::String(obj_id.to_string())
                         } else {
                             return Err(anyhow::anyhow!("Invalid object id"));
                         }

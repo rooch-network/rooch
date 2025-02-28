@@ -295,7 +295,6 @@ module moveos_std::json{
         // ensure object id to json result is consistent with ObjectID.tostring()
         assert!(&string::utf8(object_id_json) == &string::utf8(b"\"0xa7afe75c4f3a7631191905601f4396b25dde044539807de65ed4fc7358dbd98e922b7bfcb1937ef58a03e80216493fff916d18cddc747b7a1fb93ce631ee9c62\""), 4);
         assert!(&string::utf8(parent_object_id_json) == &string::utf8(b"\"0xa7afe75c4f3a7631191905601f4396b25dde044539807de65ed4fc7358dbd98e\""), 5);
-
         let str_json = to_json(&string::utf8(b"abc"));
         assert!(&string::utf8(str_json) == &string::utf8(b"\"abc\""), 6);
     }

@@ -594,6 +594,11 @@ module moveos_std::object {
     }
 
     #[test_only]
+    public fun derive_object_id_for_test():ObjectID{
+        address_to_object_id(tx_context::fresh_address())
+    }
+
+    #[test_only]
     /// Testing only: allows to drop a Object even if it's fields is not empty.
     public fun drop_unchecked<T: key>(self: Object<T>): T {
         remove_unchecked(self)
