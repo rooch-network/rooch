@@ -301,10 +301,28 @@ module moveos_std::json{
 
     #[test]
     fun test_json_decimal_value() {
+        // ("1.000000", DecimalValue { value: U256::from(1u64), decimal: 0 }),
         let decimal_value = decimal_value::new(1000000, 6);
         let decimal_value_json = to_json(&decimal_value);
-
         let from_decimal_value = from_json<DecimalValue>(decimal_value_json);
         assert!(decimal_value == from_decimal_value, 1);
+
+        // ("1234.567", DecimalValue { value: U256::from(1234567u64), decimal: 3 }),
+        let decimal_value2 = decimal_value::new(1234567, 3);
+        let decimal_value_json2 = to_json(&decimal_value2);
+        let from_decimal_value2 = from_json<DecimalValue>(decimal_value_json2);
+        assert!(decimal_value2 == from_decimal_value2, 2);
+
+        // ("0.123", DecimalValue { value: U256::from(123u64), decimal: 3 }),
+        let decimal_value3 = decimal_value::new(123, 3);
+        let decimal_value_json3 = to_json(&decimal_value3);
+        let from_decimal_value3 = from_json<DecimalValue>(decimal_value_json3);
+        assert!(decimal_value3 == from_decimal_value3, 3);
+
+        // ("25", DecimalValue { value: U256::from(25u64), decimal: 0 }),
+        let decimal_value4 = decimal_value::new(25, 0);
+        let decimal_value_json4 = to_json(&decimal_value4);
+        let from_decimal_value4 = from_json<DecimalValue>(decimal_value_json4);
+        assert!(decimal_value4 == from_decimal_value4, 4);
     }
 }
