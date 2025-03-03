@@ -21,6 +21,8 @@ For more details, please refer to https://rooch.network/docs/developer-guides/ob
 -  [Function `account_named_object_id`](#0x2_object_account_named_object_id)
 -  [Function `custom_object_id`](#0x2_object_custom_object_id)
 -  [Function `custom_object_id_with_parent`](#0x2_object_custom_object_id_with_parent)
+-  [Function `to_string`](#0x2_object_to_string)
+-  [Function `from_string`](#0x2_object_from_string)
 -  [Function `new`](#0x2_object_new)
 -  [Function `new_with_id`](#0x2_object_new_with_id)
 -  [Function `new_named_object`](#0x2_object_new_named_object)
@@ -77,6 +79,7 @@ For more details, please refer to https://rooch.network/docs/developer-guides/ob
 <b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="address.md#0x2_address">0x2::address</a>;
 <b>use</b> <a href="bcs.md#0x2_bcs">0x2::bcs</a>;
+<b>use</b> <a href="hex.md#0x2_hex">0x2::hex</a>;
 <b>use</b> <a href="signer.md#0x2_signer">0x2::signer</a>;
 <b>use</b> <a href="tx_context.md#0x2_tx_context">0x2::tx_context</a>;
 <b>use</b> <a href="type_info.md#0x2_type_info">0x2::type_info</a>;
@@ -162,6 +165,16 @@ The dynamic fields is not empty
 
 
 <pre><code><b>const</b> <a href="object.md#0x2_object_ErrorFieldsNotEmpty">ErrorFieldsNotEmpty</a>: u64 = 8;
+</code></pre>
+
+
+
+<a name="0x2_object_ErrorInvalidHex"></a>
+
+The hex string is invalid
+
+
+<pre><code><b>const</b> <a href="object.md#0x2_object_ErrorInvalidHex">ErrorInvalidHex</a>: u64 = 16;
 </code></pre>
 
 
@@ -418,6 +431,29 @@ Generate a new ObjectID from an address
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_custom_object_id_with_parent">custom_object_id_with_parent</a>&lt;ID: <b>copy</b>, drop, store, T: key&gt;(parent_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, id: ID): <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>
+</code></pre>
+
+
+
+<a name="0x2_object_to_string"></a>
+
+## Function `to_string`
+
+the ObjectI::to_string() format is the same as ObjectID::to_str() in Rust
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_to_string">to_string</a>(id: &<a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): <a href="_String">string::String</a>
+</code></pre>
+
+
+
+<a name="0x2_object_from_string"></a>
+
+## Function `from_string`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_from_string">from_string</a>(str: &<a href="_String">string::String</a>): <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>
 </code></pre>
 
 

@@ -610,7 +610,7 @@ fn serialize_move_struct_to_json(
                             let addresses = vec
                                 .iter()
                                 .filter_map(|item| match item {
-                                    MoveValue::Address(addr) => Some(addr.clone()),
+                                    MoveValue::Address(addr) => Some(*addr),
                                     _ => None,
                                 })
                                 .collect::<Vec<_>>();

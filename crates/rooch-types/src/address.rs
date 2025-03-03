@@ -10,7 +10,7 @@ use crate::{
 };
 use anyhow::{bail, Result};
 use bech32::segwit::encode_to_fmt_unchecked;
-use bech32::{Bech32m, Hrp};
+use bech32::Bech32m;
 use bitcoin::address::AddressData;
 use bitcoin::hashes::Hash;
 use bitcoin::params::Params;
