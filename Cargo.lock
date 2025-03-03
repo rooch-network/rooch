@@ -7940,6 +7940,7 @@ version = "0.8.9"
 dependencies = [
  "anyhow 1.0.95",
  "bcs",
+ "bech32 0.11.0",
  "fastcrypto 0.1.8 (git+https://github.com/MystenLabs/fastcrypto?rev=56f6223b84ada922b6cb2c672c69db2ea3dc6a13)",
  "hex",
  "move-binary-format",

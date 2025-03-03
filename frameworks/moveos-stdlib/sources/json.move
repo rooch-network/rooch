@@ -148,11 +148,6 @@ module moveos_std::json{
         let u128_json = to_json(&u128_value);
         assert!(string::utf8(u128_json) == string::utf8(b"\"340282366920938463463374607431768211455\""), 3);
 
-        // Test address
-        let address_value = @0x42;
-        let address_json = to_json(&address_value);
-        assert!(string::utf8(address_json) == string::utf8(b"\"0x42\""), 4);
-
         // Test String
         let string_value = string::utf8(b"rooch.network");
         let string_json = to_json(&string_value);
@@ -186,6 +181,13 @@ module moveos_std::json{
     #[test_only]
     struct TestStruct has key {
         count: u64,
+    }
+
+    #[test_only]
+    #[data_struct]
+    struct TestAddressStruct has key,copy,drop {
+        value: u64,
+        addr: address,
     }
 
     #[test]
@@ -324,5 +326,25 @@ module moveos_std::json{
         let decimal_value_json4 = to_json(&decimal_value4);
         let from_decimal_value4 = from_json<DecimalValue>(decimal_value_json4);
         assert!(decimal_value4 == from_decimal_value4, 4);
+    }
+
+    #[test]
+    fun test_json_address() {
+        let _test_address_bech32 = b"";
+        let test_struct = TestAddressStruct {
+            value: 0,
+            addr: @0xa7afe75c4f3a7631191905601f4396b25dde044539807de65ed4fc7358dbd98e
+        };
+        let test_struct_json = to_json(&test_struct);
+        let from_test_struct = from_json<TestAddressStruct>(test_struct_json);
+        assert!(test_struct == from_test_struct, 1);
+
+        // Test address
+        let address_value = @0x42;
+        let address_json = to_json(&address_value);
+        // let _from_address_value = from_json<address>(address_json);
+        // assert!(address_value == from_address_value, 2);
+        assert!(string::utf8(address_json) == string::utf8(b"\"rooch1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqppq6exstd\""), 3);
+        std::debug::print(&string::utf8(address_json));
     }
 }

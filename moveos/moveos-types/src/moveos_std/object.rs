@@ -86,15 +86,9 @@ impl ObjectID {
         Self(vec![AccountAddress::new(obj_id)])
     }
 
-    /// Creates a new ObjectID with parent id
-    pub fn new_with_parent_id(
-        parent_id: [u8; AccountAddress::LENGTH],
-        child_id: [u8; AccountAddress::LENGTH],
-    ) -> Self {
-        Self(vec![
-            AccountAddress::new(parent_id),
-            AccountAddress::new(child_id),
-        ])
+    /// Creates a new ObjectID with path
+    pub fn new_with_path(path: Vec<AccountAddress>) -> Self {
+        Self(path)
     }
 
     pub fn root() -> Self {

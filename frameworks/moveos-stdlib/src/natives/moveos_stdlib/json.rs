@@ -33,7 +33,7 @@ use move_vm_types::{
     values::{values_impl::Reference, Struct, Value, Vector},
 };
 
-use moveos_types::addresses::MOVE_STD_ADDRESS;
+use moveos_types::addresses::{from_bech32, to_bech32, MOVE_STD_ADDRESS};
 use moveos_types::move_std::string::MoveString;
 use moveos_types::moveos_std::decimal_value::DecimalValue;
 use moveos_types::moveos_std::object::ObjectID;
@@ -222,9 +222,8 @@ fn parse_move_value_from_json(
             let addr_str = json_value
                 .as_str()
                 .ok_or_else(|| anyhow::anyhow!("Invalid address value"))?;
-            // TODO handle bench32 address
-            let addr = AccountAddress::from_hex_literal(addr_str)
-                .map_err(|_| anyhow::anyhow!("Invalid address value"))?;
+            let addr =
+                from_bech32(addr_str).map_err(|_| anyhow::anyhow!("Invalid address value"))?;
             Ok(Value::address(addr))
         }
         MoveTypeLayout::Vector(item_layout) => {
@@ -415,8 +414,10 @@ fn serialize_move_value_to_json(layout: &MoveTypeLayout, value: &MoveValue) -> R
             JsonValue::String(value.to_string())
         }
         (L::Address, MoveValue::Address(addr)) => {
-            // let rooch_address = RoochAddress::from_bytes(addr.to_vec());
-            JsonValue::String(addr.to_hex_literal())
+            // Output address as rooch style address roochxxx
+            let value = to_bech32(addr)
+                .map_err(|e| anyhow::anyhow!("Invalid address: {}", e.to_string()))?;
+            JsonValue::String(value)
         }
         (L::Signer, MoveValue::Signer(_a)) => {
             return Err(anyhow::anyhow!("Do not support Signer type"))
@@ -615,14 +616,7 @@ fn serialize_move_struct_to_json(
                                 .collect::<Vec<_>>();
 
                             // ensure object id to json result is consistent with ObjectID.tostring()
-                            let obj_id = match addresses.len() {
-                                0 => ObjectID::root(),
-                                1 => ObjectID::new(addresses[0].into_bytes()),
-                                _ => ObjectID::new_with_parent_id(
-                                    addresses[0].into_bytes(),
-                                    addresses[1].into_bytes(),
-                                ),
-                            };
+                            let obj_id = ObjectID::new_with_path(addresses);
                             JsonValue::String(obj_id.to_string())
                         } else {
                             return Err(anyhow::anyhow!("Invalid object id"));
