@@ -105,7 +105,7 @@ mod tests {
         // println!("{}", txid_zero);
         // println!("{}", addr_zero);
         assert_eq!(
-            "0000000000000000000000000000000000000000000000000000000000000000",
+            "0x0",
             addr_zero.to_string()
         );
         assert_eq!(AccountAddress::ZERO, addr_zero);
@@ -135,8 +135,8 @@ mod tests {
         let address = txid.into_address();
         println!("{}", address);
         assert_eq!(
-            "0a6ae4da3ad30a8357dec1123f59f9805fdc144267eb6ab32c90cadcaf227320",
-            address.to_string()
+            "0x0a6ae4da3ad30a8357dec1123f59f9805fdc144267eb6ab32c90cadcaf227320",
+            address.to_canonical_string()
         );
     }
 }

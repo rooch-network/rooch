@@ -694,7 +694,7 @@ fn check_script() {
             .err()
             .unwrap()
             .major_status();
-        assert_eq!(status, StatusCode::LINKER_ERROR);
+        assert_eq!(status, StatusCode::RESOURCE_DOES_NOT_EXIST);
     }
 
     //
@@ -909,8 +909,8 @@ fn call_missing_item() {
         .execute_function_bypass_visibility(func_call.clone())
         .err()
         .unwrap();
-    assert_eq!(error.major_status(), StatusCode::LINKER_ERROR);
-    assert_eq!(error.status_type(), StatusType::Verification);
+    assert_eq!(error.major_status(), StatusCode::RESOURCE_DOES_NOT_EXIST);
+    assert_eq!(error.status_type(), StatusType::Execution);
     drop(session);
 
     // missing function
