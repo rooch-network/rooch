@@ -262,6 +262,10 @@ export default function AddLiquidityModal({
                   autoComplete="off"
                   onChange={(e) => {
                     const value = e.target.value.replaceAll(',', '');
+                    if (value === '') {
+                      setXAmount('');
+                      return;
+                    }
                     if (/^\d*\.?\d*$/.test(value) === false) {
                       return;
                     }
