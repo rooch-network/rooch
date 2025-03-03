@@ -50,6 +50,7 @@ export type FarmRowItemType = {
 
 type RowItemProps = {
   row: FarmRowItemType;
+  finished: boolean;
   selectRow?: FarmRowItemType;
   onOpenStakeModal: (row: FarmRowItemType) => void;
   onOpenAddLiquidityModal: (row: FarmRowItemType) => void;
@@ -57,6 +58,7 @@ type RowItemProps = {
 
 export default function FarmRowItem({
   row,
+  finished,
   onOpenStakeModal,
   onOpenAddLiquidityModal,
   selectRow,
@@ -258,7 +260,7 @@ export default function FarmRowItem({
                     </Typography>
                     <Button
                       sx={{ mt: 1 }}
-                      disabled={!row.liquidity || row.liquidity.fixedBalance === 0}
+                      disabled={!row.liquidity || row.liquidity.fixedBalance === 0 || finished}
                       variant="outlined"
                       size="small"
                       onClick={() => onOpenStakeModal(row)}
