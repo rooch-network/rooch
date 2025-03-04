@@ -11,11 +11,15 @@ module moveos_std::address {
     use std::ascii;
     use std::string;
     use std::option::{Self, Option};
+    use moveos_std::bech32;
     use moveos_std::bcs;
     use moveos_std::hex;
 
     /// The length of an address, in bytes
     const LENGTH: u64 = 32;
+
+    /// HRP for Rooch addresses
+    const ROOCH_HRP: vector<u8> = b"rooch";
 
     // The largest integer that can be represented with 32 bytes
     const MAX: u256 = 115792089237316195423570985008687907853269984665640564039457584007913129639935;
@@ -40,7 +44,7 @@ module moveos_std::address {
 
     /// Convert `bytes` into an address.
     /// Aborts with `ErrorAddressParseError` if the length of `bytes` is invalid length or if the bytes are not a valid address
-    public fun from_bytes(bytes: vector<u8>): address{
+    public fun from_bytes(bytes: vector<u8>): address {
         bcs::from_bytes<address>(bytes)
     }
 
@@ -60,7 +64,7 @@ module moveos_std::address {
         ascii::string(hex::encode(to_bytes(a)))
     }
 
-    /// Convert `a` to a hex-encoded ASCII string
+    /// Convert `a` to a hex-encoded utf8 string
     public fun to_string(a: &address): string::String {
         string::utf8(hex::encode(to_bytes(a)))
     }
@@ -98,10 +102,25 @@ module moveos_std::address {
 
         let bytes = option::destroy_some(opt_bytes);
 
-        vector::reverse(&mut bytes); // Convert little endian encoding to big endian
+        // vector::reverse(&mut bytes); // Convert little endian encoding to big endian
         bcs::from_bytes_option<address>(bytes)
     }
 
+    /// Convert `a` to a bech32 string
+    public fun to_bech32_string(addr: address): string::String {
+        let addr_bytes = bcs::to_bytes(&addr);
+        let result = bech32::encode(bech32::bech32m_to_bip(), ROOCH_HRP, addr_bytes);
+        string::utf8(result)
+    }
+
+    /// Convert a bech32 string to `address`
+    public fun from_bech32_string(str: &string::String): address {
+        let encoded_bytes = string::bytes(str);
+        assert!(!vector::is_empty(encoded_bytes), ErrorAddressParseError);
+
+        let decode_data = bech32::decode(ROOCH_HRP, *encoded_bytes);
+        moveos_std::bcs::to_address(decode_data)
+    }
 
     /// Length of a Rooch address in bytes
     public fun length(): u64 {
@@ -119,7 +138,7 @@ module moveos_std::address {
     }
 
     #[test]
-    fun test_from_ascii_bytes(){
+    fun test_from_ascii_bytes() {
         let ascii_bytes = b"1f1e1d1c1b1a191817161514131211100f0e0d0c0b0a09080706050403020100";
         let addr = from_ascii_bytes(&ascii_bytes);
         assert!(addr == @0x1f1e1d1c1b1a191817161514131211100f0e0d0c0b0a09080706050403020100, 1);
@@ -184,5 +203,39 @@ module moveos_std::address {
         let expected_address = @0x1f1e1d1c1b1a191817161514131211100f0e0D0c0b0a09080706050403020100;
         let result = from_ascii_bytes(&valid_hex_bytes);
         assert!(result == expected_address, 1);
+    }
+
+    #[test]
+    fun test_bech32_string() {
+        let addr = @0x42;
+        let addr_str = to_bech32_string(addr);
+        // rooch1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqppq6exstd
+        std::debug::print(&addr_str);
+        assert!(addr_str == string::utf8(b"rooch1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqppq6exstd"), 1001);
+        let addr_from = from_bech32_string(&addr_str);
+        assert!(addr == addr_from, 1002);
+
+        let addr2 = @0xa7afe75c4f3a7631191905601f4396b25dde044539807de65ed4fc7358dbd98e;
+        let addr_str2 = to_bech32_string(addr2);
+        assert!(addr_str2 == string::utf8(b"rooch157h7whz08fmrzxgeq4sp7sukkfwaupz98xq8mej76n78xkxmmx8q9ujmg6"), 1003);
+        let addr_from2 = from_bech32_string(&addr_str2);
+        assert!(addr2 == addr_from2, 1004)
+    }
+
+    #[test]
+    fun test_ascii_string() {
+        let addr = @0x42;
+        let addr_str = to_ascii_string(&addr);
+        // rooch1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqppq6exstd
+        std::debug::print(&addr_str);
+        let addr_from_opt = from_ascii_string(addr_str);
+        let addr_from = option::extract(&mut addr_from_opt);
+        assert!(addr == addr_from, 1001);
+
+        let addr2 = @0xa7afe75c4f3a7631191905601f4396b25dde044539807de65ed4fc7358dbd98e;
+        let addr_str2 = to_ascii_string(&addr2);
+        let addr_from_opt2 = from_ascii_string(addr_str2);
+        let addr_from2 = option::extract(&mut addr_from_opt2);
+        assert!(addr2 == addr_from2, 1001);
     }
 }
