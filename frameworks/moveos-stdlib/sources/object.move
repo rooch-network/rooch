@@ -6,7 +6,10 @@
 module moveos_std::object {
     use std::hash;
     use std::option::{Self, Option};
+    use std::string;
+    use std::string::String;
     use std::vector;
+    use moveos_std::hex;
     use moveos_std::signer;
     use moveos_std::tx_context;
     use moveos_std::bcs;
@@ -49,6 +52,8 @@ module moveos_std::object {
     const ErrorObjectRuntimeError: u64 = 14;
     /// The object or field is already taken out or embedded in other struct
     const ErrorObjectAlreadyTakenOutOrEmbeded: u64 = 15;
+    /// The hex string is invalid
+    const ErrorInvalidHex: u64 = 16;
 
     const SYSTEM_OWNER_ADDRESS: address = @0x0;
 
@@ -140,6 +145,74 @@ module moveos_std::object {
         let path = parent_id.path;
         vector::push_back(&mut path, child);
         ObjectID { path }
+    }
+
+    /// the ObjectI::to_string() format is the same as ObjectID::to_str() in Rust
+    public fun to_string(id: &ObjectID): String{
+        let bytes = vector::empty<u8>();
+        let i = 0;
+
+        // Flatten all addresses into a single byte vector
+        while (i < vector::length(&id.path)) {
+            let addr = *vector::borrow(&id.path, i);
+            let addr_bytes = bcs::to_bytes(&addr);
+            vector::append(&mut bytes, addr_bytes);
+            i = i + 1;
+        };
+
+        // Convert to hex string with "0x" prefix
+        let hex_value = hex::encode(bytes);
+        let hex_str = string::utf8(b"0x");
+        string::append(&mut hex_str, string::utf8(hex_value));
+        hex_str
+    }
+
+    public fun from_string(str: &String): ObjectID{
+        let bytes = *string::bytes(str);
+
+        // Strip "0x" prefix if present
+        if (vector::length(&bytes) >= 2 && vector::slice(&bytes, 0, 2) == b"0x") {
+            bytes = vector::slice(&bytes, 2, vector::length(&bytes));
+        };
+
+        // Handle empty string (root object)
+        if (vector::is_empty(&bytes)) {
+            return ObjectID { path: vector::empty() }
+        };
+
+        // Pad with zeros if too short
+        let hex_len = vector::length(&bytes);
+        if (hex_len < address::length() * 2) {
+            let padded = vector::empty<u8>();
+            let i = 0;
+            while (i < address::length() * 2 - hex_len) {
+                vector::append(&mut padded, b"0");
+                i = i + 1;
+            };
+            vector::append(&mut padded, bytes);
+            bytes = padded;
+        };
+
+        // Convert hex string to bytes and create address
+        let addr_bytes = hex::decode(&bytes);
+        let path = create_address_from_bytes(addr_bytes);
+
+        ObjectID { path }
+    }
+
+    /// Create addresses from bytes
+    fun create_address_from_bytes(bytes: vector<u8>): vector<address> {
+        assert!(vector::length(&bytes) >= address::length(), ErrorInvalidHex);
+        let addresses = vector::empty<address>();
+
+        while (vector::length(&bytes) >= address::length()) {
+            let addr_bytes = vector::slice(&bytes, 0, address::length());
+            let addr = address::from_bytes(addr_bytes);
+            vector::push_back(&mut addresses, addr);
+            bytes = vector::slice(&bytes, address::length(), vector::length(&bytes));
+        };
+        addresses
+
     }
 
     /// Object<T> is a pointer type to the Object in storage, It has `key` and `store` ability.
@@ -587,6 +660,16 @@ module moveos_std::object {
     native fun native_remove_field<V>(obj_id: ObjectID, key: address): V;
 
     native fun native_list_field_keys(obj_id: ObjectID, cursor: Option<address>, limit: u64): vector<address>;
+
+    #[test_only]
+    public fun new_object_id_for_test(path: vector<address>): ObjectID {
+        ObjectID { path }
+    }
+
+    #[test_only]
+    public fun derive_object_id_for_test():ObjectID{
+        address_to_object_id(tx_context::fresh_address())
+    }
 
     #[test_only]
     /// Testing only: allows to drop a Object even if it's fields is not empty.
@@ -1047,5 +1130,40 @@ module moveos_std::object {
         assert!(field2.value == 2u64, 1006);
 
         let TestStruct{ count: _} = drop_unchecked(obj);
+    }
+
+    #[test]
+    fun test_object_id_to_string() {
+        let path = vector::empty<address>();
+        vector::push_back(&mut path, @0x1);
+        vector::push_back(&mut path, @0xa7afe75c4f3a7631191905601f4396b25dde044539807de65ed4fc7358dbd98e);
+
+        let id = ObjectID { path };
+        let str = to_string(&id);
+        // Expected: "0x0000000000000000000000000000000000000000000000000000000000000001a7afe75c4f3a7631191905601f4396b25dde044539807de65ed4fc7358dbd98e"
+        assert!(str == string::utf8(b"0x0000000000000000000000000000000000000000000000000000000000000001a7afe75c4f3a7631191905601f4396b25dde044539807de65ed4fc7358dbd98e"), 1000);
+        let from_id = from_string(&str);
+        assert!(id == from_id, 1001);
+
+        let id2 = ObjectID{path: vector[@0x1234]};
+        let str2 = to_string(&id2);
+        let from_id2 = from_string(&str2);
+        assert!(id2 == from_id2, 1002);
+    }
+
+    #[test]
+    fun test_object_id_from_string() {
+        // test empty string (root)
+        let root = from_string(&string::utf8(b""));
+        assert!(vector::is_empty(&root.path), 1010);
+
+        // test with "0x" prefix
+        // let id1 = from_string(&string::utf8(b"0x1234"));
+        let id1 = from_string(&string::utf8(b"0x0000000000000000000000000000000000000000000000000000000000001234"));
+        assert!(vector::length(&id1.path) == 1, 1011);
+
+        // test without prefix
+        let id2 = from_string(&string::utf8(b"1234"));
+        assert!(vector::length(&id2.path) == 1, 1012);
     }
 }

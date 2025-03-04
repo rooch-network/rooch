@@ -10,7 +10,7 @@ use crate::{
 };
 use anyhow::{bail, Result};
 use bech32::segwit::encode_to_fmt_unchecked;
-use bech32::{Bech32m, Hrp};
+use bech32::Bech32m;
 use bitcoin::address::AddressData;
 use bitcoin::hashes::Hash;
 use bitcoin::params::Params;
@@ -30,6 +30,7 @@ use move_core_types::{
     identifier::IdentStr,
     value::{MoveStructLayout, MoveTypeLayout},
 };
+use moveos_types::addresses::ROOCH_HRP;
 #[cfg(any(test, feature = "fuzzing"))]
 use moveos_types::h256;
 use moveos_types::state::MoveState;
@@ -207,8 +208,6 @@ impl MoveStructState for MultiChainAddress {
         ])
     }
 }
-
-pub const ROOCH_HRP: Hrp = Hrp::parse_unchecked("rooch");
 
 /// Rooch address type
 #[derive(Copy, Clone, Ord, PartialOrd, PartialEq, Eq, Hash)]
