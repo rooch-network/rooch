@@ -67,4 +67,29 @@ mod tests {
         addr[AccountAddress::LENGTH - 1] = u;
         AccountAddress::new(addr)
     }
+
+    #[test]
+    fn test_address_bech32() {
+        //ensure the rust to_bech32 is the same as move address::to_bech32_string()
+        let addr = AccountAddress::from_hex_literal("0x42").unwrap();
+        let addr_bech32_str = to_bech32(&addr).unwrap();
+        assert_eq!(
+            addr_bech32_str,
+            "rooch1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqppq6exstd"
+        );
+        let address_from_bech32 = from_bech32(&addr_bech32_str).unwrap();
+        assert_eq!(addr, address_from_bech32);
+
+        let addr2 = AccountAddress::from_hex_literal(
+            "0xa7afe75c4f3a7631191905601f4396b25dde044539807de65ed4fc7358dbd98e",
+        )
+        .unwrap();
+        let addr_bech32_str2 = to_bech32(&addr2).unwrap();
+        assert_eq!(
+            addr_bech32_str2,
+            "rooch157h7whz08fmrzxgeq4sp7sukkfwaupz98xq8mej76n78xkxmmx8q9ujmg6"
+        );
+        let address2_from_bech32 = from_bech32(&addr_bech32_str2).unwrap();
+        assert_eq!(addr2, address2_from_bech32);
+    }
 }

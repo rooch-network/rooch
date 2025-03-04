@@ -11,6 +11,7 @@ Module which defines bech32 functions.
 -  [Function `segwit_encode`](#0x2_bech32_segwit_encode)
 -  [Function `decode`](#0x2_bech32_decode)
 -  [Function `segwit_decode`](#0x2_bech32_segwit_decode)
+-  [Function `bech32m_to_bip`](#0x2_bech32_bech32m_to_bip)
 
 
 <pre><code></code></pre>
@@ -27,6 +28,15 @@ Module which defines bech32 functions.
 
 
 <pre><code><b>const</b> <a href="bech32.md#0x2_bech32_E_DECODE_FAILED">E_DECODE_FAILED</a>: u64 = 2;
+</code></pre>
+
+
+
+<a name="0x2_bech32_BIP350"></a>
+
+
+
+<pre><code><b>const</b> <a href="bech32.md#0x2_bech32_BIP350">BIP350</a>: u16 = 350;
 </code></pre>
 
 
@@ -121,4 +131,15 @@ Decode an encoded Bitcoin address
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="bech32.md#0x2_bech32_segwit_decode">segwit_decode</a>(hrp: <a href="">vector</a>&lt;u8&gt;, witness_ascii_version: u8, encoded: <a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;
+</code></pre>
+
+
+
+<a name="0x2_bech32_bech32m_to_bip"></a>
+
+## Function `bech32m_to_bip`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bech32.md#0x2_bech32_bech32m_to_bip">bech32m_to_bip</a>(): u16
 </code></pre>

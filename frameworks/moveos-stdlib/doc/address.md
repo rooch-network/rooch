@@ -14,6 +14,8 @@
 -  [Function `from_ascii_bytes`](#0x2_address_from_ascii_bytes)
 -  [Function `from_ascii_bytes_option`](#0x2_address_from_ascii_bytes_option)
 -  [Function `from_ascii_string`](#0x2_address_from_ascii_string)
+-  [Function `to_bech32_string`](#0x2_address_to_bech32_string)
+-  [Function `from_bech32_string`](#0x2_address_from_bech32_string)
 -  [Function `length`](#0x2_address_length)
 -  [Function `max`](#0x2_address_max)
 -  [Function `zero`](#0x2_address_zero)
@@ -24,6 +26,7 @@
 <b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="bcs.md#0x2_bcs">0x2::bcs</a>;
+<b>use</b> <a href="bech32.md#0x2_bech32">0x2::bech32</a>;
 <b>use</b> <a href="hex.md#0x2_hex">0x2::hex</a>;
 </code></pre>
 
@@ -69,6 +72,16 @@ The length of an address, in bytes
 
 
 <pre><code><b>const</b> <a href="address.md#0x2_address_MAX">MAX</a>: <a href="">u256</a> = 115792089237316195423570985008687907853269984665640564039457584007913129639935;
+</code></pre>
+
+
+
+<a name="0x2_address_ROOCH_HRP"></a>
+
+HRP for Rooch addresses
+
+
+<pre><code><b>const</b> <a href="address.md#0x2_address_ROOCH_HRP">ROOCH_HRP</a>: <a href="">vector</a>&lt;u8&gt; = [114, 111, 111, 99, 104];
 </code></pre>
 
 
@@ -140,7 +153,7 @@ Convert <code>a</code> to a hex-encoded ASCII string
 
 ## Function `to_string`
 
-Convert <code>a</code> to a hex-encoded ASCII string
+Convert <code>a</code> to a hex-encoded utf8 string
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="address.md#0x2_address_to_string">to_string</a>(a: &<b>address</b>): <a href="_String">string::String</a>
@@ -180,10 +193,34 @@ or if an invalid character is encountered.
 
 ## Function `from_ascii_string`
 
-Convert <code>a</code> from a little endian encoding hex ASCII string
+Convert <code>a</code> from hex ASCII string
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="address.md#0x2_address_from_ascii_string">from_ascii_string</a>(a: <a href="_String">ascii::String</a>): <a href="_Option">option::Option</a>&lt;<b>address</b>&gt;
+</code></pre>
+
+
+
+<a name="0x2_address_to_bech32_string"></a>
+
+## Function `to_bech32_string`
+
+Convert <code>a</code> to a bech32 string
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="address.md#0x2_address_to_bech32_string">to_bech32_string</a>(addr: <b>address</b>): <a href="_String">string::String</a>
+</code></pre>
+
+
+
+<a name="0x2_address_from_bech32_string"></a>
+
+## Function `from_bech32_string`
+
+Convert a bech32 string to <code><b>address</b></code>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="address.md#0x2_address_from_bech32_string">from_bech32_string</a>(str: &<a href="_String">string::String</a>): <b>address</b>
 </code></pre>
 
 

@@ -3,6 +3,10 @@
 
 /// Module which defines bech32 functions.
 module moveos_std::bech32 {
+   #[test_only]
+   use moveos_std::bcs;
+
+   const BIP350:u16 = 350; // bip350 is bech32m
 
    // Encode failed error
    const E_ENCODE_FAILED: u64 = 1;
@@ -40,6 +44,10 @@ module moveos_std::bech32 {
    /// @param encoded: encoded bytes to be decoded as data
    /// Decode an encoded Bitcoin address
    native public fun segwit_decode(hrp: vector<u8>, witness_ascii_version: u8, encoded: vector<u8>): vector<u8>;
+
+   public fun bech32m_to_bip() : u16 {
+      BIP350
+   }
 
    // Test succeeded with https://slowli.github.io/bech32-buffer/ on Data
    #[test]
@@ -146,5 +154,20 @@ module moveos_std::bech32 {
       let rooch_addr_str = b"rooch10lnft7hhq37vl0y97lwvkmzqt48fk76y0z88rfcu8zg6qm8qegfqx0rq2h";
       let data = decode(b"rooch", rooch_addr_str);
       assert!(moveos_std::bcs::to_address(data) == @0x7fe695faf7047ccfbc85f7dccb6c405d4e9b7b44788e71a71c3891a06ce0ca12, 1000);
+   }
+
+   #[test]
+   fun test_address_bech32() {
+      let bip = 350; // bip350 is bech32m
+      let hrp = b"rooch"; // hrp "rooch" for custom human-readable part
+      let addr = @0x42;
+      let data = bcs::to_bytes(&addr);
+      let encoded = encode(bip, hrp, data);
+      let expected_encoded = b"rooch1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqppq6exstd";
+      assert!(encoded == expected_encoded, 1001);
+
+      let decode_data = decode(b"rooch", encoded);
+      let address_from = moveos_std::bcs::to_address(decode_data);
+      assert!(addr == address_from, 1002);
    }
 }
