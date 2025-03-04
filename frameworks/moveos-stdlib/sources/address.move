@@ -93,7 +93,7 @@ module moveos_std::address {
         option::some(from_bytes(hex_bytes))
     }
 
-    /// Convert `a` from a little endian encoding hex ASCII string
+    /// Convert `a` from hex ASCII string
     public fun from_ascii_string(a: ascii::String): Option<address> {
         let opt_bytes = hex::decode_option(&ascii::into_bytes(a));
         if (option::is_none(&opt_bytes)) {
@@ -101,8 +101,6 @@ module moveos_std::address {
         };
 
         let bytes = option::destroy_some(opt_bytes);
-
-        // vector::reverse(&mut bytes); // Convert little endian encoding to big endian
         bcs::from_bytes_option<address>(bytes)
     }
 
@@ -209,8 +207,6 @@ module moveos_std::address {
     fun test_bech32_string() {
         let addr = @0x42;
         let addr_str = to_bech32_string(addr);
-        // rooch1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqppq6exstd
-        std::debug::print(&addr_str);
         assert!(addr_str == string::utf8(b"rooch1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqppq6exstd"), 1001);
         let addr_from = from_bech32_string(&addr_str);
         assert!(addr == addr_from, 1002);
@@ -226,8 +222,6 @@ module moveos_std::address {
     fun test_ascii_string() {
         let addr = @0x42;
         let addr_str = to_ascii_string(&addr);
-        // rooch1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqppq6exstd
-        std::debug::print(&addr_str);
         let addr_from_opt = from_ascii_string(addr_str);
         let addr_from = option::extract(&mut addr_from_opt);
         assert!(addr == addr_from, 1001);
