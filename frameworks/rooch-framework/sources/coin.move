@@ -435,24 +435,37 @@ module rooch_framework::coin {
         object::borrow_mut_object_extend<CoinRegistry>(object::named_object_id<CoinRegistry>())
     }
 
-    fun borrow_mut_coin_metadata<CoinType: key>(coin_info: &Object<CoinInfo<CoinType>>) : &mut CoinMetadata {
+    fun borrow_mut_coin_metadata<CoinType: key>(coin_info_obj: &Object<CoinInfo<CoinType>>) : &mut CoinMetadata {
         let coin_type = type_info::type_name<CoinType>();
         let registry = borrow_mut_registry();
+        let coin_info_id = object::id(coin_info_obj);
+        let coin_info = object::borrow(coin_info_obj);
         // If the coin metadata is not initialized, it is the Coin registered before v19
         // We need to initialize the coin metadata here
         if (!object::contains_field(registry, coin_type)){
+            
             let coin_metadata = CoinMetadata {
-                coin_info_id: object::id(coin_info),
+                coin_info_id,
                 coin_type,
-                name: string::utf8(b""),
-                symbol: string::utf8(b""),
-                icon_url: option::none(),
-                decimals: 0,
-                supply: 0,
+                name: coin_info.name,
+                symbol: coin_info.symbol,
+                icon_url: coin_info.icon_url,
+                decimals: coin_info.decimals,
+                supply: coin_info.supply,
             };
             object::add_field(registry, coin_type, coin_metadata);
-        };
-        object::borrow_mut_field(registry, coin_type)
+            object::borrow_mut_field(registry, coin_type)
+        }else{
+            //sync the coin metadata with coin info
+            let metadata = object::borrow_mut_field(registry, coin_type);
+            metadata.coin_info_id = coin_info_id;
+            metadata.icon_url = coin_info.icon_url;
+            metadata.name = coin_info.name;
+            metadata.symbol = coin_info.symbol;
+            metadata.decimals = coin_info.decimals;
+            metadata.supply = coin_info.supply;
+            metadata
+        }
     }
 
     // Unpack the Coin and return the value
