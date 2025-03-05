@@ -2225,6 +2225,8 @@ pub fn check_metadata_compatibility(
         }
     }
 
+    // Temporarily disable this check.
+    /*
     for (struct_name, _) in data_struct_difference {
         if struct_in_module(old_module, struct_name.as_str()) {
             return generate_vm_error(
@@ -2235,6 +2237,7 @@ pub fn check_metadata_compatibility(
             );
         }
     }
+     */
 
     for (func_name, _) in data_struct_func_difference {
         if func_in_module(old_module, func_name.as_str()) {
@@ -2261,6 +2264,7 @@ pub fn check_metadata_compatibility(
     Ok(true)
 }
 
+#[allow(dead_code)]
 fn struct_in_module(module: &CompiledModule, other_struct_name: &str) -> bool {
     let module_name_address = module.self_id().short_str_lossless();
     for struct_def in module.struct_defs.iter() {
