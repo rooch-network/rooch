@@ -189,10 +189,7 @@ module rooch_framework::coin {
     /// Returns the symbol of the coin by the type `CoinType`
     public fun symbol_by_type<CoinType: key>(): string::String {
         let coin_type = type_info::type_name<CoinType>();
-        let registry = borrow_registry();
-        assert!(object::contains_field(registry, coin_type), ErrorCoinInfoNotRegistered);
-        let coin_metadata: &CoinMetadata = object::borrow_field(registry, coin_type);
-        coin_metadata.symbol
+        symbol_by_type_name(&coin_type)
     }
 
     /// Returns the number of decimals used to get its user representation.
@@ -239,10 +236,19 @@ module rooch_framework::coin {
         coin_metadata.icon_url
     }
 
+    /// Returns the symbol of the coin by the coin type name
+    public fun symbol_by_type_name(coin_type_name: &String): string::String {
+        let registry = borrow_registry();
+        assert!(object::contains_field(registry, coin_type_name), ErrorCoinInfoNotRegistered);
+        let coin_metadata: &CoinMetadata = object::borrow_field(registry, coin_type_name);
+        coin_metadata.symbol
+    }
+
     /// Return true if the type `CoinType1` is same with `CoinType2`
     public fun is_same_coin<CoinType1, CoinType2>(): bool {
         return type_info::type_of<CoinType1>() == type_info::type_of<CoinType2>()
     }
+
 
     /// Destroys a zero-value coin. Calls will fail if the `value` in the passed-in `coin` is non-zero
     /// so it is impossible to "burn" any non-zero amount of `Coin`. 
@@ -290,6 +296,17 @@ module rooch_framework::coin {
         assert!(object::exists_object_with_type<CoinInfo<CoinType>>(coin_info_id), ErrorCoinInfosNotFound);
         let coin_info_obj = object::borrow_object<CoinInfo<CoinType>>(coin_info_id);
         object::borrow(coin_info_obj)
+    }
+
+    // Add this function to help with dynamic coin operations
+    public fun get_coin_info_by_type_name(coin_type_name: &String): Option<ObjectID> {
+        let registry = borrow_registry();
+        if (!object::contains_field(registry, *coin_type_name)) {
+            option::none()
+        } else {
+            let metadata: &CoinMetadata = object::borrow_field(registry, *coin_type_name);
+            option::some(metadata.coin_info_id)
+        }
     }
 
     //

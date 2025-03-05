@@ -66,4 +66,13 @@ module rooch_framework::transfer {
         address_mapping::bind_bitcoin_address_internal(rooch_address, btc_address);
         object::transfer(obj, rooch_address);
     }
+
+    public entry fun transfer_coin_by_type_name(
+        from: &signer,
+        to: address,
+        coin_type_name: String,
+        amount: u256,
+    ) {
+        account_coin_store::transfer_by_type_name(from, to, coin_type_name, amount)
+    }
 }
