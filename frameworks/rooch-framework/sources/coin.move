@@ -457,7 +457,7 @@ module rooch_framework::coin {
             object::borrow_mut_field(registry, coin_type)
         }else{
             //sync the coin metadata with coin info
-            let metadata = object::borrow_mut_field(registry, coin_type);
+            let metadata :&mut CoinMetadata = object::borrow_mut_field(registry, coin_type);
             metadata.coin_info_id = coin_info_id;
             metadata.icon_url = coin_info.icon_url;
             metadata.name = coin_info.name;
