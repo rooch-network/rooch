@@ -89,6 +89,13 @@ module rooch_examples::entry_function {
       event::emit<VecU8Event>(VecU8Event { value });
    }
 
+   struct VecVecU8Event has drop, copy {
+      value: vector<vector<u8>>
+   }
+   public entry fun emit_vec_vec_u8(value: vector<vector<u8>>) {
+      event::emit<VecVecU8Event>(VecVecU8Event { value });
+   }
+
    struct VecObjectIDEvent has drop, copy {
       value: vector<ObjectID>
    }
