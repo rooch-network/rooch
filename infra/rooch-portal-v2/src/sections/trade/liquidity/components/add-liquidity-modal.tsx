@@ -344,7 +344,7 @@ export default function AddLiquidityModal({
                             size="small"
                             variant="outlined"
                             onClick={() => {
-                              router.push('./swap');
+                              router.push('./swap-v2');
                             }}
                           >
                             Go to Swap
