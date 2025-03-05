@@ -74,4 +74,6 @@ jobs:
             '${{ secrets.BTC_MAIN_RPC_URL }}' \
             '${{ secrets.BTC_MAIN_RPC_PWD }}' \
             '${{ secrets.OPENDA_GCP_MAINNET_BUCKET }}' \
-            '${{ secrets.OPENDA_GCP_MAINNET_CREDENTIAL }}'"
+            '${{ secrets.OPENDA_GCP_MAINNET_CREDENTIAL }}' \
+            '${{ secrets.TURBO_DA_MAINNET_ENDPOINT }}' \
+            '${{ secrets.TURBO_DA_MAINNET_API_KEY }}'"  
