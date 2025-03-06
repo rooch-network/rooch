@@ -12,9 +12,14 @@ use diesel::sqlite::SqliteConnection;
 use diesel::ConnectionError::BadConnection;
 use diesel::RunQueryDsl;
 use errors::IndexerError;
+use moveos_store::MoveOSStore;
+use moveos_types::moveos_std::object::{is_dynamic_field_type, DynamicField, ObjectID};
+use moveos_types::state_resolver::{RootObjectResolver, StateResolver};
 use once_cell::sync::Lazy;
 use prometheus::Registry;
+use rooch_types::framework::indexer::{FieldIndexerData, IndexerModule};
 use rooch_types::indexer::event::IndexerEvent;
+use rooch_types::indexer::field::{IndexerField, IndexerFieldChanges};
 use rooch_types::indexer::state::{
     IndexerObjectState, IndexerObjectStateChangeSet, IndexerObjectStateChanges, ObjectStateType,
 };
@@ -40,7 +45,7 @@ pub mod utils;
 
 /// Type alias to improve readability.
 pub type IndexerResult<T> = Result<T, IndexerError>;
-
+pub const MAX_LIST_FIELD_SIZE: usize = 200;
 pub const DEFAULT_BUSY_TIMEOUT: u64 = 5000; // millsecond
 pub type IndexerTableName = &'static str;
 pub const INDEXER_EVENTS_TABLE_NAME: IndexerTableName = "events";
@@ -48,6 +53,7 @@ pub const INDEXER_OBJECT_STATES_TABLE_NAME: IndexerTableName = "object_states";
 pub const INDEXER_OBJECT_STATE_UTXOS_TABLE_NAME: IndexerTableName = "utxos";
 pub const INDEXER_OBJECT_STATE_INSCRIPTIONS_TABLE_NAME: IndexerTableName = "inscriptions";
 pub const INDEXER_TRANSACTIONS_TABLE_NAME: IndexerTableName = "transactions";
+pub const INDEXER_FIELDS_TABLE_NAME: IndexerTableName = "fields";
 
 /// Please note that adding new indexer table needs to be added in vec simultaneously.
 static INDEXER_VEC_TABLE_NAME: Lazy<Vec<IndexerTableName>> = Lazy::new(|| {
@@ -57,6 +63,7 @@ static INDEXER_VEC_TABLE_NAME: Lazy<Vec<IndexerTableName>> = Lazy::new(|| {
         INDEXER_OBJECT_STATE_UTXOS_TABLE_NAME,
         INDEXER_OBJECT_STATE_INSCRIPTIONS_TABLE_NAME,
         INDEXER_TRANSACTIONS_TABLE_NAME,
+        INDEXER_FIELDS_TABLE_NAME,
     ]
 });
 
@@ -221,6 +228,29 @@ impl IndexerStoreTrait for IndexerStore {
     fn delete_events(&self, tx_orders: Vec<u64>) -> Result<(), IndexerError> {
         self.get_sqlite_store(INDEXER_EVENTS_TABLE_NAME)?
             .delete_events(tx_orders)
+    }
+
+    fn persist_or_update_fields(&self, fields: Vec<IndexerField>) -> Result<(), IndexerError> {
+        self.get_sqlite_store(INDEXER_FIELDS_TABLE_NAME)?
+            .persist_or_update_fields(fields)
+    }
+
+    fn delete_fields(&self, table_pks: Vec<String>) -> Result<(), IndexerError> {
+        self.get_sqlite_store(INDEXER_FIELDS_TABLE_NAME)?
+            .delete_fields(table_pks)
+    }
+
+    fn delete_fields_by_parent_id(&self, ids: Vec<String>) -> Result<(), IndexerError> {
+        self.get_sqlite_store(INDEXER_FIELDS_TABLE_NAME)?
+            .delete_fields_by_parent_id(ids)
+    }
+
+    fn apply_fields(&self, mut field_changes: IndexerFieldChanges) -> Result<(), IndexerError> {
+        let mut fields_new_and_update = field_changes.new_fields;
+        fields_new_and_update.append(&mut field_changes.update_fields);
+        self.persist_or_update_fields(fields_new_and_update)?;
+        self.delete_fields(field_changes.remove_fields)?;
+        self.delete_fields_by_parent_id(field_changes.remove_fields_by_parent_id)
     }
 }
 
@@ -400,4 +430,29 @@ pub fn get_sqlite_pool_connection(
             e
         ))
     })
+}
+
+pub fn list_field_indexer_keys(
+    resolver: &RootObjectResolver<MoveOSStore>,
+) -> Result<Vec<ObjectID>> {
+    let field_indexer_object_id = IndexerModule::field_indexer_object_id();
+    let states = resolver.list_fields(&field_indexer_object_id, None, MAX_LIST_FIELD_SIZE)?;
+
+    let data = states
+        .into_iter()
+        .filter_map(|state| {
+            let object_type = state.1.metadata.object_type.clone();
+            if !is_dynamic_field_type(&object_type) {
+                return None;
+            }
+
+            state
+                .1
+                .value_as_uncheck::<DynamicField<ObjectID, FieldIndexerData>>()
+                .ok()
+                .map(|df| df.name)
+        })
+        .collect();
+
+    Ok(data)
 }

@@ -262,6 +262,10 @@ export default function AddLiquidityModal({
                   autoComplete="off"
                   onChange={(e) => {
                     const value = e.target.value.replaceAll(',', '');
+                    if (value === '') {
+                      setXAmount('');
+                      return;
+                    }
                     if (/^\d*\.?\d*$/.test(value) === false) {
                       return;
                     }
@@ -344,7 +348,7 @@ export default function AddLiquidityModal({
                             size="small"
                             variant="outlined"
                             onClick={() => {
-                              router.push('./swap');
+                              router.push('./swap-v2');
                             }}
                           >
                             Go to Swap

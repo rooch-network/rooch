@@ -6,6 +6,7 @@
 pub mod account;
 pub mod any;
 pub mod copyable_any;
+pub mod decimal_value;
 pub mod display;
 pub mod event;
 pub mod gas_schedule;

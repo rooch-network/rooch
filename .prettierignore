@@ -1,14 +1,14 @@
 # ignore everything by default
-/*
+# /*
 # Enable prettier for apps, dapps and sdk
 !/infra/dashboard
 !/sdk
 !/infra/rooch-portal-v1
 !/.config
 !/*.js
+!/docs/website
 
 # ignore generated files
-infra
 .vscode
 .next
 node_modules

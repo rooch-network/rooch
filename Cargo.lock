@@ -38,7 +38,7 @@ dependencies = [
  "proptest",
  "proptest-derive 0.3.0",
  "rand 0.8.5",
- "rand_core 0.6.4",
+ "rand_core 0.9.3",
  "rocksdb",
  "serde",
  "tracing",
@@ -1920,7 +1920,7 @@ dependencies = [
  "tokio",
  "tokio-util",
  "tracing",
- "uuid 1.14.0",
+ "uuid 1.15.1",
  "valuable",
 ]
 
@@ -2825,7 +2825,7 @@ version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bef552e6f588e446098f6ba40d89ac146c8c7b64aade83c051ee00bb5d2bc18d"
 dependencies = [
- "uuid 1.14.0",
+ "uuid 1.15.1",
 ]
 
 [[package]]
@@ -6375,7 +6375,7 @@ dependencies = [
  "tap",
  "tokio",
  "tracing",
- "uuid 1.14.0",
+ "uuid 1.15.1",
 ]
 
 [[package]]
@@ -7392,9 +7392,10 @@ dependencies = [
 name = "moveos-types"
 version = "0.8.4"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
- "bcs 0.1.6",
  "bytes",
+ "anyhow 1.0.95",
+ "bcs",
+ "bech32 0.11.0",
  "fastcrypto 0.1.8 (git+https://github.com/MystenLabs/fastcrypto?rev=56f6223b84ada922b6cb2c672c69db2ea3dc6a13)",
  "hex",
  "move-binary-format",
@@ -7888,7 +7889,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tokio",
- "uuid 1.14.0",
+ "uuid 1.15.1",
 ]
 
 [[package]]
@@ -8938,14 +8939,14 @@ dependencies = [
 
 [[package]]
 name = "quick_cache"
-version = "0.6.9"
+version = "0.6.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7d7c94f8935a9df96bb6380e8592c70edf497a643f94bd23b2f76b399385dbf4"
+checksum = "0af25b4e960ffdf0dead61cf0cec0c2e44c76927bf933ab4f02e2858fb449397"
 dependencies = [
  "ahash 0.8.11",
  "equivalent",
- "hashbrown 0.14.5",
- "parking_lot",
+ "hashbrown 0.15.2",
+ "parking_lot 0.12.3",
 ]
 
 [[package]]
@@ -9068,8 +9069,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3779b94aeb87e8bd4e834cee3650289ee9e0d5677f976ecdb6d219e5f4f6cd94"
 dependencies = [
  "rand_chacha 0.9.0",
- "rand_core 0.9.2",
- "zerocopy 0.8.20",
+ "rand_core 0.9.3",
+ "zerocopy 0.8.16",
 ]
 
 [[package]]
@@ -9099,7 +9100,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d3022b5f1df60f26e1ffddd6c66e8aa15de382ae63b3a0c1bfc0e4d3e3f325cb"
 dependencies = [
  "ppv-lite86",
- "rand_core 0.9.2",
+ "rand_core 0.9.3",
 ]
 
 [[package]]
@@ -9122,9 +9123,9 @@ dependencies = [
 
 [[package]]
 name = "rand_core"
-version = "0.9.2"
+version = "0.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7a509b1a2ffbe92afab0e55c8fd99dea1c280e8171bd2d88682bb20bc41cbc2c"
+checksum = "99d9a13982dcf210057a8a78572b2217b667c3beacbf3a0d8b454f6f82837d38"
 dependencies = [
  "getrandom 0.3.1",
  "zerocopy 0.8.20",
@@ -9579,7 +9580,7 @@ dependencies = [
  "rkyv_derive",
  "seahash",
  "tinyvec",
- "uuid 1.14.0",
+ "uuid 1.15.1",
 ]
 
 [[package]]
@@ -10033,11 +10034,13 @@ dependencies = [
  "metrics",
  "move-core-types",
  "moveos-config",
+ "moveos-store",
  "moveos-types",
  "once_cell",
  "prometheus",
  "rand 0.8.5",
  "rooch-config",
+ "rooch-event",
  "rooch-types",
  "serde",
  "tap",
@@ -10866,9 +10869,9 @@ dependencies = [
 
 [[package]]
 name = "schemars"
-version = "0.8.21"
+version = "0.8.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "09c024468a378b7e36765cd36702b7a90cc3cba11654f6685c8f233408e89e92"
+checksum = "3fbf2ae1b8bc8e02df939598064d22402220cd5bbcca1c76f7d6a310974d5615"
 dependencies = [
  "dyn-clone",
  "either",
@@ -10880,9 +10883,9 @@ dependencies = [
 
 [[package]]
 name = "schemars_derive"
-version = "0.8.21"
+version = "0.8.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b1eee588578aff73f856ab961cd2f79e36bc45d7ded33a7562adba4667aecc0e"
+checksum = "32e265784ad618884abaea0600a9adf15393368d840e0222d101a072f3f7534d"
 dependencies = [
  "proc-macro2 1.0.92",
  "quote 1.0.37",
@@ -11891,7 +11894,7 @@ dependencies = [
  "debugid",
  "memmap2 0.9.4",
  "stable_deref_trait",
- "uuid 1.14.0",
+ "uuid 1.15.1",
 ]
 
 [[package]]
@@ -12251,7 +12254,7 @@ dependencies = [
  "testcontainers",
  "tokio",
  "tracing",
- "uuid 1.14.0",
+ "uuid 1.15.1",
 ]
 
 [[package]]
@@ -12711,7 +12714,7 @@ dependencies = [
  "tower-layer",
  "tower-service",
  "tracing",
- "uuid 1.14.0",
+ "uuid 1.15.1",
 ]
 
 [[package]]
@@ -13191,9 +13194,9 @@ dependencies = [
 
 [[package]]
 name = "uuid"
-version = "1.14.0"
+version = "1.15.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "93d59ca99a559661b96bf898d8fce28ed87935fd2bea9f05983c1464dd6c71b1"
+checksum = "e0f540e3240398cce6128b64ba83fdbdd86129c16a3aa1a3a252efd66eb3d587"
 dependencies = [
  "getrandom 0.3.1",
  "rand 0.9.0",
@@ -13203,9 +13206,9 @@ dependencies = [
 
 [[package]]
 name = "uuid-macro-internal"
-version = "1.14.0"
+version = "1.15.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1be57878a5f7e409a1a82be6691922b11e59687a168205b1f21b087c4acdd194"
+checksum = "9521621447c21497fac206ffe6e9f642f977c4f82eeba9201055f64884d9cb01"
 dependencies = [
  "proc-macro2 1.0.92",
  "quote 1.0.37",

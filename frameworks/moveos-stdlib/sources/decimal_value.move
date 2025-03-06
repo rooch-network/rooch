@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module moveos_std::decimal_value {
+    #[data_struct]
     struct DecimalValue has store, drop, copy {
         value: u256,
         decimal: u8,

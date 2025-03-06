@@ -1,141 +1,54 @@
-import Link from 'next/link'
 import Image from 'next/image'
 import { useEffect, useState } from 'react'
 import '@fontsource/kanit/400.css'
 import '@fontsource/kanit/500.css'
 import '@fontsource/kanit/700.css'
 import '@fontsource/kanit/900.css'
-interface Card {
-  title: string
-  description: string
-  logo: string
-  buttonHref?: string
-  buttonDesc?: string
+
+const ECOSYSTEM_IMAGE_URL = {
+  btc: [
+    'https://lombard.finance',
+    'https://lorenzo-protocol.xyz/',
+    'https://www.bedrock.technology/',
+    'https://solv.finance',
+    'https://mainnet.pumpbtc.xyz/',
+    'https://x.com/FBTC_brc20',
+    'https://pstake.finance',
+  ],
+  infra: [
+    'https://portaltobitcoin.com/',
+    'https://babylonchain.io',
+    'https://www.gonative.cc/',
+    'https://nubit.org',
+    'https://www.apro.com/',
+    'https://availproject.org',
+    'https://meson.fi',
+    'https://free.tech',
+    'https://usher.so',
+    'https://ankr.com',
+  ],
+  move: [
+    'https://aptosfoundation.org/',
+    'https://pontem.network',
+    'https://movementlabs.xyz',
+    'https://initia.xyz',
+    'https://www.cetus.zone/',
+    'https://www.echo-protocol.xyz/',
+  ],
 }
 
-interface Brand {
-  brandLogo: string
-  brandTitle: string
-  brandUrl: string
-}
+const BACKED_BY_URL = [
+  'https://x.com/Sky9Capital',
+  'https://x.com/gate_ventures',
+  'https://x.com/Globalcoinrsrch',
+  'https://x.com/AnkerOfficial',
+  'https://x.com/Cointelegraph',
+  'https://x.com/babylonlabs_io',
+  'https://x.com/AvailProject',
+  'https://x.com/Aptos',
+]
 
-interface Blog {
-  title: string
-  date: string
-  link: string
-  image: string
-}
-
-interface IndexProps {
-  // HERO
-  heroTitle: string
-  heroSlogan?: string
-  heroDescription: string
-  heroButton: string
-  heroButtonHref: string
-
-  // FEATURES
-  featuresTitle: string
-  featuresButton: string
-  features: Card[]
-
-  // EXPLORE
-  exploreTitle: string
-  exploreContent: string
-  exploreButtonHref: string
-  explores: Card[]
-
-  // ECOSYSTEM
-  ecosystemTitle: string
-  ecosystemContent: string
-  ecosystemBrand: Brand[]
-
-  // BLOGS
-  blogsTitle: string
-  blogs: Blog[]
-}
-
-const Index = ({
-  heroTitle,
-  heroSlogan,
-  heroDescription,
-  heroButton,
-  heroButtonHref,
-  featuresTitle,
-  featuresButton,
-  features,
-  exploreTitle,
-  exploreContent,
-  exploreButtonHref,
-  explores,
-  ecosystemTitle,
-  // ecosystemContent,
-  ecosystemBrand,
-  blogsTitle,
-  blogs,
-}: IndexProps) => {
-  // Function to check if the string contains Chinese characters
-  const containsChinese = (text: string) => /[\u4e00-\u9fa5]/.test(text)
-
-  // Define phrases to highlight for Chinese text
-  const phrasesToHighlightForFeaturesChinese = ['比特币生态']
-  const phrasesToHighlightForExploreChinese = ['状态', '应用']
-  const phrasesToHighlightForEcosystemChinese = ['合作伙伴']
-  const phrasesToHighlightForBlogsChinese = ['博客']
-
-  // Define phrases to highlight for English text
-  const phrasesToHighlightForFeaturesEnglish = ['Bitcoin', 'Ecosystem']
-  const phrasesToHighlightForExploreEnglish = ['State', 'App']
-  const phrasesToHighlightForEcosystemEnglish = ['Partnerships']
-  const phrasesToHighlightForBlogsEnglish = ['Blog']
-
-  const highlightColor = '#FF914B'
-  const highlightColorForExplore = '#46977E'
-
-  const highlightSpecificPhrases = (
-    text: string,
-    phrasesToHighlight: string[],
-    highlightColor: string,
-  ) => {
-    let result = text
-    phrasesToHighlight.forEach((phrase) => {
-      const regex = new RegExp(`(${phrase})`, 'g')
-      result = result.replace(regex, `<span style="color: ${highlightColor};">$1</span>`)
-    })
-    return <span dangerouslySetInnerHTML={{ __html: result }} />
-  }
-
-  const highlightTitle = (
-    title: string,
-    phrasesToHighlightChinese: string[],
-    phrasesToHighlightEnglish: string[],
-    highlightColor: string,
-  ) => {
-    if (containsChinese(title)) {
-      return highlightSpecificPhrases(title, phrasesToHighlightChinese, highlightColor)
-    } else {
-      const words = title.split(' ')
-      return (
-        <>
-          {words.map((word, index) =>
-            phrasesToHighlightEnglish.includes(word) ? (
-              <span key={index} style={{ color: highlightColor }}>
-                {word}{' '}
-              </span>
-            ) : (
-              word + ' '
-            ),
-          )}
-        </>
-      )
-    }
-  }
-
-  const handleButtonOnClick = (href: string) => {
-    console.log(href)
-    window.open(href)
-  }
-
+const Index = () => {
   const [signboardStates, setSignboardStates] = useState({
     board1: false,
     board2: false,
@@ -160,6 +73,8 @@ const Index = ({
   const [moveTranslateX, setMoveTranslateX] = useState(0)
   const [btcStart, setBtcStart] = useState(1)
   const [moveStart, setMoveStart] = useState(1)
+
+  const BACKED_BY_IMAGE_COUNT = 8
 
   const INFRA_IMAGE_COUNT = 10
   const BTC_IMAGE_COUNT = 7
@@ -280,11 +195,24 @@ const Index = ({
     return `/home/${category}${darkSuffix}/${num}.svg`
   }
 
+  const getBackedByImagePath = (num: number) => {
+    const darkSuffix = isDarkMode ? 'dark' : 'light'
+    return `/home/backed-by/${darkSuffix}/${num}.svg`
+  }
+
+  const getImageUrl = (category: string, num: number) => {
+    return ECOSYSTEM_IMAGE_URL[category][num]
+  }
+
+  const getBackedByUrl = (num: number) => {
+    return BACKED_BY_URL[num - 1]
+  }
+
   return (
     <>
       <div className="antialiased overflow-x-hidden">
         {/* HERO */}
-        <div className="flex flex-col items-center justify-center md:justify-center h-full px-4 sm:px-6 md:px-8 lg:px-20 dark:border-b dark:border-b-zinc-800 overflow-x-hidden">
+        <div className="flex flex-col items-center justify-center md:justify-center h-full px-4 sm:px-6 md:px-8 lg:px-20 dark:border-b dark:border-b-zinc-800 overflow-x-hidden overflow-y-hidden">
           <div
             style={{
               overflowX: 'hidden',
@@ -303,23 +231,14 @@ const Index = ({
           ></div>
           <div className="flex flex-col items-center justify-center w-full font-[Han] z-10 relative top-[3rem]">
             <div className="text-5xl md:text-5xl font-bold text-center text-black dark:text-[#EEEBEB]">
-              Build with Move
-              <br />
-              <div className="mt-4 flex items-center">
-                Build on{' '}
-                <div className="ml-5 flex items-center">
-                  Bitc
-                  <img className="w-[30px] h-[30px] ml-1 mr-1" src="./home/coin.svg" alt="" />
-                  in
-                </div>
-              </div>
+              Where Bitcoin Becomes More Than Money
             </div>
             <div className="mt-6 text-2xl text-center text-black dark:text-[#EAEAEA] max-w-3xl font-[Kanit]">
-              Rooch is a Bitcoin application layer solution that <br /> features MoveVM and Bitcoin
-              staking
+              Rooch Network is the MoveVM-based Bitcoin Layer 2, enabling Bitcoin programmable,
+              scalable, and interoperable.
             </div>
           </div>
-          <div className="flex flex-col items-center justify-center w-full relative top-[-2.2rem]">
+          <div className="flex flex-col items-center justify-center w-full relative top-[2rem] md:top-[0.2rem]">
             {/* signboard list */}
             <div className="text-center mx-auto flex items-end justify-center relative w-full">
               <div className="flex items-end justify-center w-full relative">
@@ -601,8 +520,27 @@ const Index = ({
           </div>
         </div>
 
-        {/* EXPLORE */}
-        <div className="py-10 px-4 sm:px-6 md:px-8 lg:px-20 dark:bg-inherit flex flex-col md:flex-row items-center justify-center gap-6 md:gap-8 dark:border-b dark:border-b-zinc-800">
+        {/* ECOSYSTEM PARTNER */}
+        <div className="py-10 px-4 sm:px-6 md:px-8 lg:px-20 dark:bg-inherit flex flex-col md:flex-col items-center justify-center gap-6 md:gap-8 dark:border-b dark:border-b-zinc-800">
+          <div className="my-7 text-5xl md:text-5xl font-['Han'] font-bold text-center text-black dark:text-[#EEEBEB]">
+            Backed by
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-16 place-items-center place-content-center w-full mb-7">
+            {Array.from({ length: BACKED_BY_IMAGE_COUNT }, (_, index) => (
+              <div key={`backed-by-${index}`} className="flex items-center justify-center">
+                <img
+                  src={getBackedByImagePath(index + 1)}
+                  className="flex-shrink-0 cursor-pointer"
+                  onClick={() => {
+                    window.open(getBackedByUrl(index + 1), '_blank')
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+          <div className="mt-14 mb-7 text-5xl md:text-5xl font-['Han'] font-bold text-center text-black dark:text-[#EEEBEB]">
+            BTC Staking
+          </div>
           <div className="w-full h-full flex items-center justify-center">
             <div className="flex flex-col gap-y-12 font-['Han'] text-center">
               <div className="text-3xl w-[318px] h-[150px] font-medium rounded-[28px] border-[#81B39F] border-[3px] flex items-center justify-center">
@@ -625,7 +563,10 @@ const Index = ({
                   <img
                     key={`${num}-${index}`}
                     src={getImagePath('infra', num)}
-                    className="w-[191px] flex-shrink-0"
+                    className="w-[191px] flex-shrink-0 cursor-pointer"
+                    onClick={() => {
+                      window.open(getImageUrl('infra', num - 1), '_blank')
+                    }}
                   />
                 ))}
               </div>
@@ -640,7 +581,10 @@ const Index = ({
                     <img
                       key={`btc-${num}-${index}`}
                       src={getImagePath('btc', num)}
-                      className="w-[191px] flex-shrink-0"
+                      className="w-[191px] flex-shrink-0 cursor-pointer"
+                      onClick={() => {
+                        window.open(getImageUrl('btc', num - 1), '_blank')
+                      }}
                     />
                   ))}
                 </div>
@@ -656,7 +600,10 @@ const Index = ({
                     <img
                       key={`move-${num}-${index}`}
                       src={getImagePath('move', num)}
-                      className="w-[191px] flex-shrink-0"
+                      className="w-[191px] flex-shrink-0 cursor-pointer"
+                      onClick={() => {
+                        window.open(getImageUrl('move', num - 1), '_blank')
+                      }}
                     />
                   ))}
                 </div>
@@ -700,20 +647,20 @@ const Index = ({
             <div
               className="w-[45%] h-[586px] border-2 border-[#036840] rounded-[15px] cursor-pointer bg-white dark:bg-inherit"
               onClick={() => {
-                window.open('https://rooch.network/blog/unveiling-rooch-pre-mainnet', '_blank')
+                window.open('https://rooch.network/blog/rooch-network-tokenomics', '_blank')
               }}
             >
               <div className="w-full h-[376px] -mt-[2px]">
                 <img
-                  src="/home/blog/blog-0.png"
+                  src="/blog/rooch-tokenomics/img1.png"
                   className="inline-block w-full h-full object-cover rounded-t-[15px] mt-1"
                   alt="blog-1"
                 />
               </div>
               <div className="flex flex-col items-start p-6">
-                <div className="text-base font-normal font-[Kanit]">9th Sep, 2024</div>
+                <div className="text-base font-normal font-[Kanit]">22th Jan, 2025</div>
                 <div className="w-[80%] text-4xl mt-6 font-normal font-[Kanit]">
-                  Unveiling Rooch Pre-Mainnet: A New Era for Bitcoin Applications
+                  Rooch Network Tokenomics - $ROOCH
                 </div>
               </div>
             </div>
@@ -721,45 +668,47 @@ const Index = ({
               <div
                 className="w-full h-[190px] border-2 border-[#036840] rounded-[15px] flex p-6 cursor-pointer bg-white dark:bg-inherit"
                 onClick={() => {
+                  window.open('https://rooch.network/blog/rooch-ambassador-program', '_blank')
+                }}
+              >
+                <div className="w-[40%] max-w-[220px] h-full flex flex-col items-center">
+                  <img
+                    src="/blog/ambassador.png"
+                    alt="blog-1"
+                    className="w-full rounded-xl object-cover"
+                  />
+                  <div className="text-base font-normal mt-2 font-[Kanit]">14th Feb, 2025</div>
+                </div>
+                <div className="w-[60%] h-full flex flex-col justify-between ml-4">
+                  <div className="text-2xl font-normal font-[Kanit]">
+                    Announcing The Rooch Network Ambassador Program
+                  </div>
+                  <div className="ml-auto">
+                    <img src="/home/blog-enter.svg" className="h-8" alt="blog-enter" />
+                  </div>
+                </div>
+              </div>
+              <div
+                className="w-full h-[190px] border-2 border-[#036840] rounded-[15px] flex p-6 cursor-pointer bg-white dark:bg-inherit"
+                onClick={() => {
                   window.open(
-                    'https://rooch.network/blog/the-application-layer-of-bitcoin',
+                    'https://rooch.network/blog/partnership-annoucement-pan-network',
                     '_blank',
                   )
                 }}
               >
                 <div className="w-[40%] max-w-[220px] h-full flex flex-col items-center">
                   <img
-                    src="/home/blog/blog-1.jpg"
-                    alt="blog-1"
-                    className="w-full rounded-xl object-cover"
-                  />
-                  <div className="text-base font-normal mt-2 font-[Kanit]">24th Apr, 2024</div>
-                </div>
-                <div className="w-[60%] h-full flex flex-col justify-between ml-4">
-                  <div className="text-2xl font-normal font-[Kanit]">
-                    Rooch Network - The Application Layer of Bitcoin
-                  </div>
-                  <div className="ml-auto">
-                    <img src="/home/blog-enter.svg" className="h-8" alt="blog-enter" />
-                  </div>
-                </div>
-              </div>
-              <div
-                className="w-full h-[190px] border-2 border-[#036840] rounded-[15px] flex p-6 cursor-pointer bg-white dark:bg-inherit"
-                onClick={() => {
-                  window.open('https://rooch.network/blog/sprouting-of-rooch', '_blank')
-                }}
-              >
-                <div className="w-[40%] max-w-[220px] h-full flex flex-col items-center">
-                  <img
-                    src="/home/blog/blog-2.jpg"
+                    src="/blog/partnership/pan/pan.png"
                     alt="blog-2"
                     className="w-full rounded-xl object-cover"
                   />
-                  <div className="text-base font-normal mt-2">13th Jun, 2024</div>
+                  <div className="text-base font-normal mt-2">10th Feb, 2025</div>
                 </div>
                 <div className="w-[60%] h-full flex flex-col justify-between ml-4">
-                  <div className="text-2xl font-normal">The Sprouting of Rooch</div>
+                  <div className="text-2xl font-normal">
+                    Rooch Network x PAN Network Dual Mining Program
+                  </div>
                   <div className="ml-auto">
                     <img src="/home/blog-enter.svg" className="h-8" alt="blog-enter" />
                   </div>
@@ -768,12 +717,12 @@ const Index = ({
               <div
                 className="w-full h-[190px] border-2 border-[#036840] rounded-[15px] flex p-6 cursor-pointer bg-white dark:bg-inherit"
                 onClick={() => {
-                  window.open('https://rooch.network/blog/bug-bounty2', '_blank')
+                  window.open('https://rooch.network/blog/partnership-annoucement-world3', '_blank')
                 }}
               >
                 <div className="w-[40%] max-w-[220px] h-full flex flex-col items-center">
                   <img
-                    src="/home/blog/blog-3.jpg"
+                    src="/blog/partnership/world3/world3.png"
                     alt="blog-3"
                     className="w-full rounded-xl object-cover"
                   />
@@ -781,7 +730,7 @@ const Index = ({
                 </div>
                 <div className="w-[60%] h-full flex flex-col justify-between ml-4">
                   <div className="text-2xl font-normal">
-                    Rooch Network Bug Bounty Program Phase II{' '}
+                    Rooch Network x World3 Dual Mining Program{' '}
                   </div>
                   <div className="ml-auto">
                     <img src="/home/blog-enter.svg" className="h-8" alt="blog-enter" />

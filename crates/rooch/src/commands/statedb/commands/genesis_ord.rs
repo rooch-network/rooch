@@ -147,7 +147,7 @@ pub(crate) fn apply_inscription_updates(
 ) {
     let mut inscription_store_state_root = *GENESIS_STATE_ROOT;
     let mut last_inscription_store_state_root = inscription_store_state_root;
-    let mut inscritpion_store_filed_count = 0u32;
+    let mut inscritpion_store_field_count = 0u32;
     let mut cursed_inscription_count = 0u32;
     let mut blessed_inscription_count = 0u32;
     let moveos_store = moveos_store_arc.as_ref();
@@ -172,11 +172,11 @@ pub(crate) fn apply_inscription_updates(
         apply_nodes(moveos_store, nodes).expect("failed to apply inscription nodes");
         let apply_nodes_cost = apply_nodes_start.elapsed();
 
-        inscritpion_store_filed_count += cnt as u32;
+        inscritpion_store_field_count += cnt as u32;
 
         println!(
             "{} inscription applied ({} cursed, {} blessed). this batch: value size: {}, cost: {:?}(gen_nodes: {:?}, apply_nodes: {:?})",
-            inscritpion_store_filed_count / 2, // both inscription and inscription_id as field
+            inscritpion_store_field_count / 2, // both inscription and inscription_id as field
             cursed_inscription_count,
             blessed_inscription_count,
             humanize::human_readable_bytes(batch.updates_value_bytes),
@@ -198,7 +198,7 @@ pub(crate) fn apply_inscription_updates(
 
     println!(
         "genesis InscriptionStore object updated, state_root: {:?}, cursed: {}, blessed: {}, total: {}",
-        inscription_store_state_root, cursed_inscription_count, blessed_inscription_count, inscritpion_store_filed_count / 2
+        inscription_store_state_root, cursed_inscription_count, blessed_inscription_count, inscritpion_store_field_count / 2
     );
 
     let act_stats = InscriptionStats {
@@ -207,7 +207,7 @@ pub(crate) fn apply_inscription_updates(
         blessed_inscription_count,
         unbound_inscription_count: exp_stats.unbound_inscription_count,
         lost_sats: exp_stats.lost_sats,
-        next_sequence_number: inscritpion_store_filed_count / 2,
+        next_sequence_number: inscritpion_store_field_count / 2,
     };
     assert_eq!(act_stats, exp_stats, "Inscription stats not match");
 }

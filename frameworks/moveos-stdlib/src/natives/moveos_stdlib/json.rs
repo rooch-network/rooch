@@ -33,10 +33,12 @@ use move_vm_types::{
     values::{values_impl::Reference, Struct, Value, Vector},
 };
 
-use moveos_types::addresses::MOVE_STD_ADDRESS;
+use moveos_types::addresses::{from_bech32, to_bech32, MOVE_STD_ADDRESS};
 use moveos_types::move_std::string::MoveString;
+use moveos_types::moveos_std::decimal_value::DecimalValue;
+use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::moveos_std::simple_map::{Element, SimpleMap};
-use moveos_types::state::{MoveStructType, MoveType};
+use moveos_types::state::{MoveStructState, MoveStructType, MoveType};
 
 use crate::natives::helpers::{make_module_natives, make_native};
 
@@ -117,6 +119,41 @@ fn parse_struct_value_from_json(
             }
             let element_type = context.load_type(&Element::<MoveString, MoveString>::type_tag())?;
             Ok(Struct::pack(vec![Vector::pack(&element_type, key_values)?]))
+        } else if is_object_id(struct_type) {
+            let vec_layout = fields
+                .first()
+                .ok_or_else(|| anyhow::anyhow!("Invalid object id layout"))?;
+            let type_tag: TypeTag = (&vec_layout.layout).try_into()?;
+            let ty = context.load_type(&type_tag)?;
+
+            if json_value.is_null() {
+                let value = Vector::pack(&ty, vec![])?;
+                return Ok(Struct::pack(vec![value]));
+            }
+
+            if let MoveTypeLayout::Vector(vec_layout) = vec_layout.layout.clone() {
+                let struct_layout = vec_layout.as_ref();
+                if let MoveTypeLayout::Address = struct_layout {
+                    let addr_str = json_value
+                        .as_str()
+                        .ok_or_else(|| anyhow::anyhow!("Invalid object id value"))?;
+                    let object_id = ObjectID::from_hex_literal(addr_str)
+                        .map_err(|_| anyhow::anyhow!("Invalid object id value"))?;
+                    let struct_value = object_id.to_runtime_value_struct();
+                    return Ok(struct_value);
+                } else {
+                    return Err(anyhow::anyhow!("Invalid object id layout"));
+                }
+            }
+
+            Err(anyhow::anyhow!("Invalid object id layout"))
+        } else if is_decimal_value(struct_type) {
+            let str_value = json_value
+                .as_str()
+                .ok_or_else(|| anyhow::anyhow!("Invalid decimal value str"))?;
+            let decimal_value = DecimalValue::from_str(str_value)?;
+            let struct_value = decimal_value.to_runtime_value_struct();
+            return Ok(struct_value);
         } else {
             let field_values = fields
                 .iter()
@@ -185,8 +222,8 @@ fn parse_move_value_from_json(
             let addr_str = json_value
                 .as_str()
                 .ok_or_else(|| anyhow::anyhow!("Invalid address value"))?;
-            let addr = AccountAddress::from_hex_literal(addr_str)
-                .map_err(|_| anyhow::anyhow!("Invalid address value"))?;
+            let addr =
+                from_bech32(addr_str).map_err(|_| anyhow::anyhow!("Invalid address value"))?;
             Ok(Value::address(addr))
         }
         MoveTypeLayout::Vector(item_layout) => {
@@ -380,7 +417,12 @@ fn serialize_move_value_to_json(layout: &MoveTypeLayout, value: &MoveValue) -> R
             let value = PrimitiveU256::from_little_endian(&slice);
             JsonValue::String(value.to_string())
         }
-        (L::Address, MoveValue::Address(addr)) => JsonValue::String(addr.to_hex_literal()),
+        (L::Address, MoveValue::Address(addr)) => {
+            // Output address as rooch style address roochxxx
+            let value = to_bech32(addr)
+                .map_err(|e| anyhow::anyhow!("Invalid address: {}", e.to_string()))?;
+            JsonValue::String(value)
+        }
         (L::Signer, MoveValue::Signer(_a)) => {
             return Err(anyhow::anyhow!("Do not support Signer type"))
         }
@@ -556,6 +598,62 @@ fn serialize_move_struct_to_json(
                     .collect::<Result<Vec<_>>>()?;
 
                 JsonValue::Object(key_value_pairs.into_iter().collect())
+            } else if is_object_id(struct_type) {
+                let vec_layout = layout_fields
+                    .first()
+                    .ok_or_else(|| anyhow::anyhow!("Invalid object id layout"))?;
+                let vec_field = value_fields
+                    .first()
+                    .ok_or_else(|| anyhow::anyhow!("Invalid object id field"))?;
+
+                match (&vec_layout.layout, &vec_field.1) {
+                    (MoveTypeLayout::Vector(vec_layout), MoveValue::Vector(vec)) => {
+                        let layout = vec_layout.as_ref();
+
+                        if let MoveTypeLayout::Address = layout {
+                            let addresses = vec
+                                .iter()
+                                .filter_map(|item| match item {
+                                    MoveValue::Address(addr) => Some(*addr),
+                                    _ => None,
+                                })
+                                .collect::<Vec<_>>();
+
+                            // ensure object id to json result is consistent with ObjectID.tostring()
+                            let obj_id = ObjectID::new_with_path(addresses);
+                            JsonValue::String(obj_id.to_string())
+                        } else {
+                            return Err(anyhow::anyhow!("Invalid object id"));
+                        }
+                    }
+                    _ => return Err(anyhow::anyhow!("Invalid object id")),
+                }
+            } else if is_decimal_value(struct_type) {
+                let first_layout = layout_fields
+                    .first()
+                    .ok_or_else(|| anyhow::anyhow!("Invalid decimal value first layout"))?;
+                let first_field = value_fields
+                    .first()
+                    .ok_or_else(|| anyhow::anyhow!("Invalid decimal value first field"))?;
+
+                let second_layout = layout_fields
+                    .get(1)
+                    .ok_or_else(|| anyhow::anyhow!("Invalid decimal value second layout"))?;
+                let second_field = value_fields
+                    .get(1)
+                    .ok_or_else(|| anyhow::anyhow!("Invalid decimal value second field"))?;
+
+                let value = match (&first_layout.layout, &first_field.1) {
+                    (MoveTypeLayout::U256, MoveValue::U256(val)) => *val,
+                    _ => return Err(anyhow::anyhow!("Invalid value of decimal value")),
+                };
+                let decimal = match (&second_layout.layout, &second_field.1) {
+                    (MoveTypeLayout::U8, MoveValue::U8(val)) => *val,
+                    _ => return Err(anyhow::anyhow!("Invalid decimal of decimal value")),
+                };
+
+                let decimal_value = DecimalValue::new(value, decimal);
+                JsonValue::String(decimal_value.to_string())
             } else {
                 serialize_move_fields_to_json(layout_fields, value_fields)?
             }
@@ -579,6 +677,18 @@ fn is_std_option(struct_tag: &StructTag, move_std_addr: &AccountAddress) -> bool
     struct_tag.address == *move_std_addr
         && struct_tag.module.as_str().eq("option")
         && struct_tag.name.as_str().eq("Option")
+}
+
+fn is_object_id(struct_tag: &StructTag) -> bool {
+    struct_tag.address == ObjectID::ADDRESS
+        && struct_tag.module == ObjectID::module_identifier()
+        && struct_tag.name == ObjectID::struct_identifier()
+}
+
+fn is_decimal_value(struct_tag: &StructTag) -> bool {
+    struct_tag.address == DecimalValue::ADDRESS
+        && struct_tag.module == DecimalValue::module_identifier()
+        && struct_tag.name == DecimalValue::struct_identifier()
 }
 
 fn serialize_move_fields_to_json(
