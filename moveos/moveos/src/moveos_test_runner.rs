@@ -266,8 +266,7 @@ fn compile_source_unit(
 
     use crate::moveos_test_model_builder::build_file_to_module_env;
     use moveos_verifier::metadata::run_extended_checks;
-    let mut model_build_options = ModelBuilderOptions::default();
-    model_build_options.compile_via_model = false;
+    let model_build_options = ModelBuilderOptions::default();
     let global_env = build_file_to_module_env(
         pre_compiled_deps,
         named_address_mapping.clone(),
