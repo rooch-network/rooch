@@ -20,8 +20,24 @@ Just fill in the `RGas` and the LP pair will automatically calculate the `GROW` 
 The amount is calculated based on the official Swap pool, and the calculation form is:
 
 ```
-point = x / x pool * 100%
-y = y pool * point
+let amount_in_with_fee = (amount_in as u128) * (fee_rate as u128);
+        let numerator = amount_in_with_fee * (reserve_out as u128);
+        let denominator = (reserve_in as u128) * 10000u128 + amount_in_with_fee;
+        ((numerator / denominator) as u64)
+public fun get_amount_out(
+        amount_in: u64,
+        reserve_in: u64,
+        reserve_out: u64,
+        fee_rate: u64,
+    ): u64 {
+        assert!(amount_in > 0, ErrorInputTokenAmount);
+        assert!(reserve_in > 0 && reserve_out > 0, ErrorInsufficientLiquidity);
+
+        let amount_in_with_fee = (amount_in as u128) * (fee_rate as u128);
+        let numerator = amount_in_with_fee * (reserve_out as u128);
+        let denominator = (reserve_in as u128) * 10000u128 + amount_in_with_fee;
+        ((numerator / denominator) as u64)
+    }
 ```
 
 ![](/docs/portal/liquidity/liquidity-add.png)
@@ -37,6 +53,13 @@ You can see the LP situation of the group just now:
 Click the `Remove` button on the right to unstaking:
 
 ![](/docs/portal/liquidity/liquidity-remove.png)
+
+The calculation formula for group LP pairs:
+
+```
+point = x / x pool * 100%
+y = y pool * point
+```
 
 ## Earn token pairs
 

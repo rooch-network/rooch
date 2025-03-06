@@ -20,8 +20,24 @@ Rooch 现在推出 `RGas` 和 `GROW` 代币对质押，接下来通过一个简�
 配量根据官方的 Swap 池子计算，计算形式为：
 
 ```
-point = x / x pool * 100%
-y = y pool * point
+let amount_in_with_fee = (amount_in as u128) * (fee_rate as u128);
+        let numerator = amount_in_with_fee * (reserve_out as u128);
+        let denominator = (reserve_in as u128) * 10000u128 + amount_in_with_fee;
+        ((numerator / denominator) as u64)
+public fun get_amount_out(
+        amount_in: u64,
+        reserve_in: u64,
+        reserve_out: u64,
+        fee_rate: u64,
+    ): u64 {
+        assert!(amount_in > 0, ErrorInputTokenAmount);
+        assert!(reserve_in > 0 && reserve_out > 0, ErrorInsufficientLiquidity);
+
+        let amount_in_with_fee = (amount_in as u128) * (fee_rate as u128);
+        let numerator = amount_in_with_fee * (reserve_out as u128);
+        let denominator = (reserve_in as u128) * 10000u128 + amount_in_with_fee;
+        ((numerator / denominator) as u64)
+    }
 ```
 
 ![](/docs/portal/liquidity/liquidity-add.png)
@@ -37,6 +53,13 @@ y = y pool * point
 点击右侧 `Remove` 按钮，可以解质押：
 
 ![](/docs/portal/liquidity/liquidity-remove.png)
+
+组 LP 对的计算公式：
+
+```
+point = x / x pool * 100%
+y = y pool * point
+```
 
 ## 赚取代币对收益
 
