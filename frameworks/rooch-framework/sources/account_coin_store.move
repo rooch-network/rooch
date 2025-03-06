@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module rooch_framework::account_coin_store {
-
-    use std::string;
     use moveos_std::account;
     use moveos_std::object::{Self, ObjectID, Object};
     use moveos_std::table;
@@ -124,18 +122,6 @@ module rooch_framework::account_coin_store {
         transfer_internal<CoinType>(from_addr, to, amount);
     }
 
-    /// Transfer `amount` of coins `coin_type_name` from `from` to `to`.
-    /// Any account and module can call this function to transfer coins, the `CoinType` corresponding to `coin_type_name` must must have `key` and `store` abilities.
-    public fun transfer_coin_by_type_name(
-        from: &signer,
-        to: address,
-        coin_type_name: string::String,
-        amount: u256,
-    ) {
-        let from_addr = signer::address_of(from);
-        transfer_internal<CoinType>(from_addr, to, amount);
-    }
-
     public fun exist_account_coin_store<CoinType: key>(addr: address): bool {
         let account_coin_store_id = account_coin_store_id<CoinType>(addr);
         object::exists_object_with_type<CoinStore<CoinType>>(account_coin_store_id)
@@ -248,16 +234,6 @@ module rooch_framework::account_coin_store {
     fun transfer_internal<CoinType: key>(
         from: address,
         to: address,
-        amount: u256,
-    ) {
-        let coin = withdraw_internal<CoinType>(from, amount);
-        deposit_internal(to, coin);
-    }
-
-    fun transfer_coin_by_type_name_internal(
-        from: address,
-        to: address,
-        coin_type_name: string::String,
         amount: u256,
     ) {
         let coin = withdraw_internal<CoinType>(from, amount);
