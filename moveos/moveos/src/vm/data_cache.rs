@@ -4,18 +4,24 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use move_vm_runtime::loader::Loader;
+use std::collections::BTreeMap;
 
+use crate::vm::module_cache::MoveOSCodeCache;
+use bytes::Bytes;
+use move_binary_format::deserializer::DeserializerConfig;
 use move_binary_format::errors::{Location, PartialVMError, PartialVMResult, VMResult};
+use move_binary_format::file_format::CompiledScript;
+use move_binary_format::CompiledModule;
+use move_core_types::effects::Changes;
 use move_core_types::language_storage::TypeTag;
 use move_core_types::{
-    account_address::AccountAddress,
-    effects::{ChangeSet, Event},
-    gas_algebra::NumBytes,
-    language_storage::ModuleId,
-    value::MoveTypeLayout,
-    vm_status::StatusCode,
+    account_address::AccountAddress, effects::ChangeSet, gas_algebra::NumBytes,
+    language_storage::ModuleId, value::MoveTypeLayout, vm_status::StatusCode,
 };
 use move_vm_runtime::data_cache::TransactionCache;
+use move_vm_runtime::loader::modules::{LegacyModuleStorage, LegacyModuleStorageAdapter};
+use move_vm_runtime::logging::expect_no_verification_errors;
+use move_vm_runtime::ModuleStorage;
 use move_vm_types::{
     loaded_data::runtime_types::Type,
     values::{GlobalValue, Value},
@@ -24,7 +30,9 @@ use moveos_object_runtime::{runtime::ObjectRuntime, TypeLayoutLoader};
 use moveos_types::state::{FieldKey, StateChangeSet};
 use moveos_types::{moveos_std::tx_context::TxContext, state_resolver::MoveOSResolver};
 use parking_lot::RwLock;
+use sha3::{Digest, Sha3_256};
 use std::rc::Rc;
+use std::sync::Arc;
 
 /// Transaction data cache. Keep updates within a transaction so they can all be published at
 /// once when the transaction succeeds.
@@ -44,6 +52,12 @@ pub struct MoveosDataCache<'r, 'l, S> {
     loader: &'l Loader,
     event_data: Vec<(Vec<u8>, u64, Type, MoveTypeLayout, Value)>,
     object_runtime: Rc<RwLock<ObjectRuntime<'r>>>,
+
+    // Caches to help avoid duplicate deserialization calls.
+    compiled_scripts: BTreeMap<[u8; 32], Arc<CompiledScript>>,
+    compiled_modules: BTreeMap<ModuleId, (Arc<CompiledModule>, usize, [u8; 32])>,
+
+    code_cache: MoveOSCodeCache<'r, S>,
 }
 
 impl<'r, 'l, S: MoveOSResolver> MoveosDataCache<'r, 'l, S> {
@@ -53,12 +67,16 @@ impl<'r, 'l, S: MoveOSResolver> MoveosDataCache<'r, 'l, S> {
         resolver: &'r S,
         loader: &'l Loader,
         object_runtime: Rc<RwLock<ObjectRuntime<'r>>>,
+        code_cache: MoveOSCodeCache<'r, S>,
     ) -> Self {
         MoveosDataCache {
             resolver,
             loader,
             event_data: vec![],
             object_runtime,
+            compiled_scripts: BTreeMap::new(),
+            compiled_modules: BTreeMap::new(),
+            code_cache,
         }
     }
 }
@@ -68,17 +86,22 @@ impl<'r, 'l, S: MoveOSResolver> TransactionCache for MoveosDataCache<'r, 'l, S> 
     /// published modules.
     ///
     /// Gives all proper guarantees on lifetime of global data as well.
-    fn into_effects(self, loader: &Loader) -> PartialVMResult<(ChangeSet, Vec<Event>)> {
-        let mut events = vec![];
-        for (guid, seq_num, ty, ty_layout, val) in self.event_data {
-            let ty_tag = loader.type_to_type_tag(&ty)?;
-            let blob = val
-                .simple_serialize(&ty_layout)
-                .ok_or_else(|| PartialVMError::new(StatusCode::INTERNAL_TYPE_ERROR))?;
-            events.push((guid, seq_num, ty_tag, blob))
-        }
-
-        Ok((ChangeSet::new(), events))
+    fn into_effects(
+        self,
+        loader: &Loader,
+        module_storage: &dyn ModuleStorage,
+    ) -> PartialVMResult<ChangeSet> {
+        let resource_converter =
+            |value: Value, layout: MoveTypeLayout, _: bool| -> PartialVMResult<Bytes> {
+                value
+                    .simple_serialize(&layout)
+                    .map(Into::into)
+                    .ok_or_else(|| {
+                        PartialVMError::new(StatusCode::INTERNAL_TYPE_ERROR)
+                            .with_message(format!("Error when serializing resource {}.", value))
+                    })
+            };
+        self.into_custom_effects(&resource_converter, loader, module_storage)
     }
 
     fn num_mutated_accounts(&self, _sender: &AccountAddress) -> u64 {
@@ -93,14 +116,16 @@ impl<'r, 'l, S: MoveOSResolver> TransactionCache for MoveosDataCache<'r, 'l, S> 
     fn load_resource(
         &mut self,
         _loader: &Loader,
+        _module_storage: &dyn ModuleStorage,
         _addr: AccountAddress,
         _ty: &Type,
+        _module_store: &LegacyModuleStorageAdapter,
     ) -> PartialVMResult<(&mut GlobalValue, Option<NumBytes>)> {
         unreachable!("Global operations are disabled")
     }
 
     /// Get the serialized format of a `CompiledModule` given a `ModuleId`.
-    fn load_module(&self, module_id: &ModuleId) -> VMResult<Vec<u8>> {
+    fn load_module(&self, module_id: &ModuleId) -> PartialVMResult<Bytes> {
         //if we use object_runtime.write() here, it will cause a deadlock
         //TODO refactor DataCache and ObjectRuntime to avoid this deadlock
         let object_runtime = self.object_runtime.read();
@@ -114,29 +139,37 @@ impl<'r, 'l, S: MoveOSResolver> TransactionCache for MoveosDataCache<'r, 'l, S> 
                     }
                     Ok(Some(move_module.byte_codes))
                 }
-                None => self.resolver.get_module(module_id).map_err(|e| {
-                    let msg = format!("Unexpected storage error: {:?}", e);
-                    PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR)
-                        .with_message(msg)
-                }),
+                None => match self.resolver.get_module(module_id) {
+                    Ok(bytes_opt) => match bytes_opt {
+                        None => Ok(None),
+                        Some(v) => Ok(Some(v.to_vec())),
+                    },
+                    Err(e) => {
+                        let msg = format!("Unexpected storage error: {:?}", e);
+                        Err(
+                            PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR)
+                                .with_message(msg),
+                        )
+                    }
+                },
             });
 
         match result {
-            Ok(Some(code)) => Ok(code),
+            Ok(Some(code)) => Ok(Bytes::from(code)),
             Ok(None) => {
                 let field_key = FieldKey::derive_module_key(module_id.name());
-                Err(PartialVMError::new(StatusCode::LINKER_ERROR)
-                    .with_message(format!(
+                Err(
+                    PartialVMError::new(StatusCode::LINKER_ERROR).with_message(format!(
                         "Cannot find module {:?}(key:{}) in ObjectRuntime and Storage",
                         module_id, field_key,
-                    ))
-                    .finish(Location::Undefined))
+                    )),
+                )
             }
             Err(err) => {
                 if tracing::enabled!(tracing::Level::DEBUG) {
                     tracing::warn!("Error loading module {:?}: {:?}", module_id, err);
                 }
-                Err(err.finish(Location::Undefined))
+                Err(err)
             }
         }
     }
@@ -173,6 +206,7 @@ impl<'r, 'l, S: MoveOSResolver> TransactionCache for MoveosDataCache<'r, 'l, S> 
             .is_some())
     }
 
+    /*
     fn emit_event(
         &mut self,
         loader: &Loader,
@@ -185,9 +219,75 @@ impl<'r, 'l, S: MoveOSResolver> TransactionCache for MoveosDataCache<'r, 'l, S> 
         self.event_data.push((guid, seq_num, ty, ty_layout, val));
         Ok(())
     }
+     */
 
-    fn events(&self) -> &Vec<(Vec<u8>, u64, Type, MoveTypeLayout, Value)> {
-        &self.event_data
+    fn into_custom_effects<Resource>(
+        self,
+        _resource_converter: &dyn Fn(Value, MoveTypeLayout, bool) -> PartialVMResult<Resource>,
+        _loader: &Loader,
+        _module_storage: &dyn ModuleStorage,
+    ) -> PartialVMResult<Changes<Bytes, Resource>>
+    where
+        Self: Sized,
+    {
+        Ok(Changes::<Bytes, Resource>::new())
+    }
+
+    fn num_mutated_resources(&self, _sender: &AccountAddress) -> u64 {
+        0
+    }
+
+    fn load_compiled_script_to_cache(
+        &self,
+        script_blob: &[u8],
+        _hash_value: [u8; 32],
+    ) -> VMResult<Arc<CompiledScript>> {
+        let script = match CompiledScript::deserialize_with_config(
+            script_blob,
+            &DeserializerConfig::default(),
+        ) {
+            Ok(script) => script,
+            Err(err) => {
+                let msg = format!("[VM] deserializer for script returned error: {:?}", err);
+                return Err(PartialVMError::new(StatusCode::CODE_DESERIALIZATION_ERROR)
+                    .with_message(msg)
+                    .finish(Location::Script));
+            }
+        };
+        Ok(Arc::new(script))
+    }
+
+    fn load_compiled_module_to_cache(
+        &self,
+        id: ModuleId,
+        allow_loading_failure: bool,
+    ) -> VMResult<(Arc<CompiledModule>, usize, [u8; 32])> {
+        let bytes = match self
+            .load_module(&id)
+            .map_err(|err| err.finish(Location::Undefined))
+        {
+            Ok(bytes) => bytes,
+            Err(err) if allow_loading_failure => return Err(err),
+            Err(err) => {
+                return Err(expect_no_verification_errors(err));
+            }
+        };
+
+        let module =
+            CompiledModule::deserialize_with_config(&bytes, &DeserializerConfig::default())
+                .map_err(|err| {
+                    let msg = format!("Deserialization error: {:?}", err);
+                    PartialVMError::new(StatusCode::CODE_DESERIALIZATION_ERROR)
+                        .with_message(msg)
+                        .finish(Location::Module(id.clone()))
+                })
+                .map_err(expect_no_verification_errors)?;
+
+        let mut sha3_256 = Sha3_256::new();
+        sha3_256.update(&bytes);
+        let hash_value: [u8; 32] = sha3_256.finalize().into();
+
+        Ok((Arc::new(module), bytes.len(), hash_value))
     }
 }
 
@@ -205,16 +305,23 @@ pub fn into_change_set(
 
 impl<'r, 'l, S: MoveOSResolver> TypeLayoutLoader for MoveosDataCache<'r, 'l, S> {
     fn get_type_layout(&self, type_tag: &TypeTag) -> PartialVMResult<MoveTypeLayout> {
+        let legacy_module_cache =
+            Arc::new(self.code_cache.legacy_module_cache.clone()) as Arc<dyn LegacyModuleStorage>;
+        let legacy_module_storage = &LegacyModuleStorageAdapter::new(legacy_module_cache);
         self.loader
-            .get_type_layout(type_tag, self)
+            .get_type_layout(type_tag, self, legacy_module_storage, &self.code_cache)
             .map_err(|e| e.to_partial())
     }
 
     fn type_to_type_layout(&self, ty: &Type) -> PartialVMResult<MoveTypeLayout> {
-        self.loader.type_to_type_layout(ty)
+        let legacy_module_cache =
+            Arc::new(self.code_cache.legacy_module_cache.clone()) as Arc<dyn LegacyModuleStorage>;
+        let legacy_module_storage = &LegacyModuleStorageAdapter::new(legacy_module_cache);
+        self.loader
+            .type_to_type_layout(ty, legacy_module_storage, &self.code_cache)
     }
 
     fn type_to_type_tag(&self, ty: &Type) -> PartialVMResult<TypeTag> {
-        self.loader.type_to_type_tag(ty)
+        self.loader.type_to_type_tag(ty, &self.code_cache)
     }
 }

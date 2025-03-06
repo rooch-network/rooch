@@ -72,6 +72,7 @@ impl From<KeptVMStatus> for KeptVMStatusView {
                 location,
                 function,
                 code_offset,
+                message: _message,
             } => Self::ExecutionFailure {
                 location: location.into(),
                 function,

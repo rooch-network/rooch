@@ -697,6 +697,16 @@ impl<'a> ExtendedChecker<'a> {
                     | Bytecode::VecPushBack(_)
                     | Bytecode::VecPopBack(_)
                     | Bytecode::VecUnpack(_, _)
+                    | Bytecode::PackVariant(_)
+                    | Bytecode::PackVariantGeneric(_)
+                    | Bytecode::UnpackVariant(_)
+                    | Bytecode::UnpackVariantGeneric(_)
+                    | Bytecode::TestVariant(_)
+                    | Bytecode::TestVariantGeneric(_)
+                    | Bytecode::MutBorrowVariantField(_)
+                    | Bytecode::MutBorrowVariantFieldGeneric(_)
+                    | Bytecode::ImmBorrowVariantField(_)
+                    | Bytecode::ImmBorrowVariantFieldGeneric(_)
                     | Bytecode::VecSwap(_) => {}
                 }
             }

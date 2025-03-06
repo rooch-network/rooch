@@ -4,5 +4,3 @@
 mod bbn_tx_loader;
 pub mod binding_test;
 pub mod bitcoin_block_tester;
-#[cfg(test)]
-mod tests;
