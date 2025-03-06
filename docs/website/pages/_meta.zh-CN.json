@@ -69,7 +69,7 @@
         "title": "市场",
         "type": "page",
         "newWindow": true,
-        "href": "https://portal.rooch.network/trade"
+        "href": "https://portal.rooch.network/trade/market"
       }
     }
   },
