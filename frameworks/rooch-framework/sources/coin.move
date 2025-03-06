@@ -391,8 +391,10 @@ module rooch_framework::coin {
         let coin_info = object::borrow_mut(coin_info_obj);
         coin_info.supply = coin_info.supply + amount;
         
-        let coin_metadata: &mut CoinMetadata = borrow_mut_coin_metadata<CoinType>(coin_info_obj);
-        coin_metadata.supply = coin_metadata.supply + amount;
+        let _coin_metadata: &mut CoinMetadata = borrow_mut_coin_metadata<CoinType>(coin_info_obj);
+        // We sync the supply with coin info, so we don't need to update the supply here
+        // After we remove the sync, we need to update the supply here
+        //coin_metadata.supply = coin_metadata.supply + amount;
 
         event::emit<MintEvent>(MintEvent {
             coin_type,
@@ -412,8 +414,10 @@ module rooch_framework::coin {
 
         coin_info.supply = coin_info.supply - amount;
 
-        let coin_metadata: &mut CoinMetadata = borrow_mut_coin_metadata<CoinType>(coin_info_obj);
-        coin_metadata.supply = coin_metadata.supply - amount;
+        let _coin_metadata: &mut CoinMetadata = borrow_mut_coin_metadata<CoinType>(coin_info_obj);
+        // We sync the supply with coin info, so we don't need to update the supply here
+        // After we remove the sync, we need to update the supply here
+        //coin_metadata.supply = coin_metadata.supply - amount;
         
         event::emit<BurnEvent>(BurnEvent {
             coin_type,
