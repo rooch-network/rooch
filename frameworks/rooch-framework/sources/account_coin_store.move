@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module rooch_framework::account_coin_store {
-
     use moveos_std::account;
     use moveos_std::object::{Self, ObjectID, Object};
     use moveos_std::table;
@@ -98,7 +97,6 @@ module rooch_framework::account_coin_store {
     /// Withdraw specified `amount` of coin `CoinType` from the signing account.
     /// This public entry function requires the `CoinType` to have `key` and `store` abilities.
     public fun withdraw<CoinType: key + store>(
-        
         account: &signer,
         amount: u256,
     ): Coin<CoinType> {
@@ -116,7 +114,6 @@ module rooch_framework::account_coin_store {
     /// Transfer `amount` of coins `CoinType` from `from` to `to`.
     /// Any account and module can call this function to transfer coins, the `CoinType` must have `key` and `store` abilities.
     public fun transfer<CoinType: key + store>(
-        
         from: &signer,
         to: address,
         amount: u256,
@@ -143,7 +140,6 @@ module rooch_framework::account_coin_store {
     /// Withdraw specified `amount` of coin `CoinType` from any addr, this function does not check the Coin `frozen` attribute
     /// This function is only called by the `CoinType` module, for the developer to extend custom withdraw logic
     public fun withdraw_extend<CoinType: key>(
-        
         addr: address,
         amount: u256,
     ): Coin<CoinType> {
@@ -161,7 +157,6 @@ module rooch_framework::account_coin_store {
     /// Transfer `amount` of coins `CoinType` from `from` to `to`.
     /// This function is only called by the `CoinType` module, for the developer to extend custom transfer logic
     public fun transfer_extend<CoinType: key>(
-        
         from: address,
         to: address,
         amount: u256,
@@ -220,7 +215,6 @@ module rooch_framework::account_coin_store {
 
 
     fun withdraw_internal<CoinType: key>(
-        
         addr: address,
         amount: u256,
     ): Coin<CoinType> {
@@ -238,7 +232,6 @@ module rooch_framework::account_coin_store {
     }
 
     fun transfer_internal<CoinType: key>(
-        
         from: address,
         to: address,
         amount: u256,
