@@ -237,10 +237,10 @@ pub fn parse_dynamic_field_type_tags(type_tag: &TypeTag) -> Option<(TypeTag, Typ
         // Verify this is a DynamicField struct
         if is_field_struct_tag(struct_tag) {
             // DynamicField should have exactly 2 type parameters
-            if struct_tag.type_params.len() == 2 {
+            if struct_tag.type_args.len() == 2 {
                 // Get Name and Value type tags
-                let name_type = struct_tag.type_params[0].clone();
-                let value_type = struct_tag.type_params[1].clone();
+                let name_type = struct_tag.type_args[0].clone();
+                let value_type = struct_tag.type_args[1].clone();
                 return Some((name_type, value_type));
             }
         }
