@@ -122,7 +122,7 @@ script {
     }
 }
 
-//# run --signers test --args object:0x5f3e8d46295d27dd3b6d60c6f629e96cfb83a0aa4d75ec61a331d6ac0d4d1358
+//# run --signers test --args object:0x9a14fa31b2a9bdd355f0b059f32c010c471a9f52f13af5b7d11640fd02ff2e2c
 
 script {
     use std::string;

@@ -168,12 +168,10 @@ fn native_sort_and_verify_modules_inner(
         .collect();
 
     // moveos verifier
-    let _module_context = context.extensions_mut().get_mut::<NativeModuleContext>();
+    let module_context = context.extensions_mut().get_mut::<NativeModuleContext>();
     let mut module_names = vec![];
     let mut init_identifier = vec![];
 
-    //#TODO disable the verification process temporary
-    /*
     let verify_result =
         moveos_verifier::verifier::verify_modules(&compiled_modules, module_context.resolver);
     match verify_result {
@@ -184,7 +182,6 @@ fn native_sort_and_verify_modules_inner(
             return Ok(NativeResult::err(cost, error_code));
         }
     }
-     */
 
     //#TODO disable the verification process temporary
     // move verifier
