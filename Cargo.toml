@@ -230,7 +230,7 @@ versions = "4.1.0"
 pretty_assertions = "1.4.1"
 syn = { version = "1.0.104", features = ["full", "extra-traits"] }
 quote = "1.0"
-proc-macro2 = "1.0.93"
+proc-macro2 = "1.0.94"
 derive-syn-parse = "0.1.5"
 unescape = "0.1.0"
 tempfile = "3.17.1"
