@@ -257,7 +257,7 @@ argon2 = "0.5.2"
 rpassword = "7.2.0"
 uint = "0.9.5"
 rlp = "0.5.2"
-diesel = { version = "2.2.7", features = [
+diesel = { version = "2.2.8", features = [
     "chrono",
     "sqlite",
     "r2d2",
