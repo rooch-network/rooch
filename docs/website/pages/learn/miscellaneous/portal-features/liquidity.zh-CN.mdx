@@ -17,27 +17,11 @@ Rooch 现在推出 `RGas` 和 `GROW` 代币对质押，接下来通过一个简�
 
 只用填写 `RGas`，LP 对会自动计算 `GROW` 的配量：
 
-配量根据官方的 Swap 池子计算，计算形式为：
+配量根据官方的 Swap 池子计算，计算公式为：
 
 ```
-let amount_in_with_fee = (amount_in as u128) * (fee_rate as u128);
-        let numerator = amount_in_with_fee * (reserve_out as u128);
-        let denominator = (reserve_in as u128) * 10000u128 + amount_in_with_fee;
-        ((numerator / denominator) as u64)
-public fun get_amount_out(
-        amount_in: u64,
-        reserve_in: u64,
-        reserve_out: u64,
-        fee_rate: u64,
-    ): u64 {
-        assert!(amount_in > 0, ErrorInputTokenAmount);
-        assert!(reserve_in > 0 && reserve_out > 0, ErrorInsufficientLiquidity);
-
-        let amount_in_with_fee = (amount_in as u128) * (fee_rate as u128);
-        let numerator = amount_in_with_fee * (reserve_out as u128);
-        let denominator = (reserve_in as u128) * 10000u128 + amount_in_with_fee;
-        ((numerator / denominator) as u64)
-    }
+amount-in-with-fee = amount-in * fee-rate
+amount-out = (amount-in-with-fee * reserve-out) / (reserve-in * 10000 + amount-in-with-fee)
 ```
 
 ![](/docs/portal/liquidity/liquidity-add.png)

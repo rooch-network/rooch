@@ -17,27 +17,11 @@ Enter the Portal page, select `Liquidity` and click on the `Add` button on the r
 
 Just fill in the `RGas` and the LP pair will automatically calculate the `GROW` dosage:
 
-The amount is calculated based on the official Swap pool, and the calculation form is:
+The amount is calculated based on the official Swap pool, and the calculation formula is:
 
 ```
-let amount_in_with_fee = (amount_in as u128) * (fee_rate as u128);
-        let numerator = amount_in_with_fee * (reserve_out as u128);
-        let denominator = (reserve_in as u128) * 10000u128 + amount_in_with_fee;
-        ((numerator / denominator) as u64)
-public fun get_amount_out(
-        amount_in: u64,
-        reserve_in: u64,
-        reserve_out: u64,
-        fee_rate: u64,
-    ): u64 {
-        assert!(amount_in > 0, ErrorInputTokenAmount);
-        assert!(reserve_in > 0 && reserve_out > 0, ErrorInsufficientLiquidity);
-
-        let amount_in_with_fee = (amount_in as u128) * (fee_rate as u128);
-        let numerator = amount_in_with_fee * (reserve_out as u128);
-        let denominator = (reserve_in as u128) * 10000u128 + amount_in_with_fee;
-        ((numerator / denominator) as u64)
-    }
+amount-in-with-fee = amount-in * fee-rate
+amount-out = (amount-in-with-fee * reserve-out) / (reserve-in * 10000 + amount-in-with-fee)
 ```
 
 ![](/docs/portal/liquidity/liquidity-add.png)
