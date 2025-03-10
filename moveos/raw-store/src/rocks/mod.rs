@@ -269,6 +269,7 @@ impl RocksDB {
             db_opts.enable_statistics();
             db_opts.set_statistics_level(statistics::StatsLevel::ExceptTimeForMutex);
         }
+
         db_opts
     }
     fn iter_with_direction<K, V>(
