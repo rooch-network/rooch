@@ -76,6 +76,12 @@ export const navData = [
         icon: <Iconify icon="solar:money-bag-broken" />,
         noAddressRequired: true,
       },
+      {
+        title: 'Tunnel',
+        path: 'https://rooch.free.tech',
+        icon: <Iconify icon="solar:tuning-2-outline" />,
+        noAddressRequired: false,
+      },
     ],
   },
   /**
