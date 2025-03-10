@@ -31,6 +31,7 @@ pub mod batch;
 
 pub const DEFAULT_COLUMN_FAMILY_NAME: ColumnFamilyName = "default";
 pub const RES_FDS: u64 = 4096;
+const DEFAULT_ESTIMATED_ENTRY_CHARGE_SIZE: usize = 4200;
 
 #[allow(clippy::upper_case_acronyms)]
 pub struct RocksDB {
@@ -122,7 +123,10 @@ impl RocksDB {
         table_opts.set_pin_top_level_index_and_filter(true);
         table_opts.set_pin_l0_filter_and_index_blocks_in_cache(true);
 
-        let cache = Cache::new_lru_cache(rocksdb_config.block_cache_size as usize);
+        let cache = Cache::new_hyper_clock_cache(
+            rocksdb_config.block_cache_size as usize,
+            DEFAULT_ESTIMATED_ENTRY_CHARGE_SIZE,
+        );
         table_opts.set_block_cache(&cache);
         table_opts
     }
@@ -254,7 +258,10 @@ impl RocksDB {
         db_opts.set_bytes_per_sync(config.bytes_per_sync);
         db_opts.set_max_background_jobs(config.max_background_jobs as c_int);
         db_opts.set_max_write_buffer_number(config.max_write_buffer_numer as c_int);
-        let cache = Cache::new_lru_cache(config.row_cache_size as usize);
+        let cache = Cache::new_hyper_clock_cache(
+            config.row_cache_size as usize,
+            DEFAULT_ESTIMATED_ENTRY_CHARGE_SIZE,
+        );
         db_opts.set_row_cache(&cache);
         db_opts.set_enable_pipelined_write(true);
         db_opts.set_wal_recovery_mode(DBRecoveryMode::PointInTime); // for memtable crash recovery
