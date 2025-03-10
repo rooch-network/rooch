@@ -258,10 +258,7 @@ impl RocksDB {
         db_opts.set_bytes_per_sync(config.bytes_per_sync);
         db_opts.set_max_background_jobs(config.max_background_jobs as c_int);
         db_opts.set_max_write_buffer_number(config.max_write_buffer_numer as c_int);
-        let cache = Cache::new_hyper_clock_cache(
-            config.row_cache_size as usize,
-            DEFAULT_ESTIMATED_ENTRY_CHARGE_SIZE,
-        );
+        let cache = Cache::new_hyper_clock_cache(config.row_cache_size as usize, 256);
         db_opts.set_row_cache(&cache);
         db_opts.set_enable_pipelined_write(true);
         db_opts.set_wal_recovery_mode(DBRecoveryMode::PointInTime); // for memtable crash recovery
