@@ -17,9 +17,7 @@ rust-version = { workspace = true }
 anyhow = { workspace = true }
 serde = { workspace = true }
 tap = { workspace = true }
-tokio = { workspace = true }
 rocksdb = { workspace = true }
-parking_lot = { workspace = true }
 
 prometheus = { workspace = true }
 once_cell = { workspace = true }
