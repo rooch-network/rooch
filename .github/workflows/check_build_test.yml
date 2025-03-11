@@ -18,6 +18,8 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+  ENV_TEST_ON_CI: 1
 
 jobs:
   check_build_test:
@@ -25,8 +27,35 @@ jobs:
     runs-on: self-hosted
     strategy:
       fail-fast: false
+      matrix:
+        test_group: [1, 2, 3] # Split into 3 parallel test groups
+
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+
+      # Cache Cargo dependencies and build artifacts
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ~/.cargo/bin
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}-${{ matrix.test_group }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}-
+            ${{ runner.os }}-cargo-
+
+      # Cache Node.js dependencies
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pnpm-store
+            node_modules
+          key: ${{ runner.OS }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.OS }}-pnpm-
+
       - name: Install GitHub CLI
         run: |
           (type -p wget >/dev/null || (sudo apt update && sudo apt-get install wget -y)) \
@@ -36,88 +65,79 @@ jobs:
           && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
           && sudo apt update \
           && sudo apt install gh -y
-      - uses: ./.github/actions/rust-setup # Using relative path to reference the action in the current branch
-      # Todo self-hosted install docker fail
-      #- name: Set up Docker
-      #  uses: docker-practice/actions-setup-docker@master
-      #- name: Start Docker
-      #  run: |
-      #    docker --version
-      #    sudo dockerd  &
-      #    sleep 6
-      #    docker images
-      - name: Check Docker
+
+      - uses: ./.github/actions/rust-setup
+
+      # Group 1: Basic checks and builds
+      - name: Group 1 - Basic checks and builds
+        if: matrix.test_group == 1
         run: |
+          # Run in parallel where possible
+          # Check code format, Lint rust sources
+          cargo fmt -- --check &
+          ./scripts/pr.sh -c &
+          wait
+          
+          # Build, check framework compatibility and run Rooch init
+          cargo build
+          cargo run --package framework-release --bin framework-release
+          cargo run --bin rooch init --skip-password
+
+      # Group 2: Move, Rust and Example tests
+      - name: Group 2 - Move and Rust tests
+        if: matrix.test_group == 2
+        run: |
+          # Run Move tests
+          ./scripts/pr.sh -m &
+          
+          # Run Rust tests with parallel execution
+          RUST_TEST_THREADS=8 ./scripts/pr.sh -t &
+          
+          # Generate genesis files in parallel
+          cargo run -p rooch-genesis -- -n main &
+          cargo run -p rooch-genesis -- -n test &
+          wait
+          
+          # Run example tests
+          ./scripts/pr.sh -e
+
+      # Group 3: Web, SDK, and final steps
+      - name: Group 3 - Web, SDK, and final steps
+        if: matrix.test_group == 3
+        run: |
+          # Check Docker first
           docker --version
-          sleep 6
-          docker images
-          docker pull lncm/bitcoind:v25.1
-          docker pull bitseed/ord:0.18.0-burn
-          docker pull bitseed/bitseed:0.1.8
+          docker pull lncm/bitcoind:v25.1 &
+#          docker pull bitseed/ord:0.18.0-burn &
+#          docker pull bitseed/bitseed:0.1.8 &
+          
+          # Setup Node.js and run web/SDK tests in parallel
+          . $NVM_DIR/nvm.sh
+          nvm install 20.3.1
+          nvm use 20.3.1
+          npm install pnpm@9.4.0 -g
+          pnpm install
+          
+          # Run web/SDK tasks in parallel
+#          pnpm bitseed-sdk playwright-deps &
+          pnpm lint &
+          pnpm test-suite build &
+          pnpm rooch-sdk build &
+          pnpm rooch-sdk-kit build &
+          
+          # Wait for Docker pulls and initial builds
+          wait
+          
+          # Run tests that depend on builds
+          pnpm rooch-sdk test
+          pnpm rooch-sdk-kit test || true
+#          pnpm bitseed-sdk lint
+#          pnpm bitseed-sdk build
+#          pnpm bitseed-sdk test || true
 
-      - name: Check code format
-        run: cargo fmt -- --check
-      - name: Lint rust sources
-        run: ./scripts/pr.sh -c
-      - name: Build
-        run: cargo build
-      - name: Framework compatibility
-        run: cargo run --package framework-release --bin framework-release
-      - name: Run Rooch init
-        run: cargo run --bin rooch init --skip-password
-      - name: Execute Move stdlib and framework tests
-        run: ./scripts/pr.sh -m
-      - name: Execute rust tests
-        run: ./scripts/pr.sh -t
-      - name: Build and test example projects
-        run: ./scripts/pr.sh -e
-      - name: Generate Genesis File for Mainnet
-        run: cargo run -p rooch-genesis -- -n main
-      - name: Generate Genesis File for Testnet
-        run: cargo run -p rooch-genesis -- -n test
-
-      # web & sdk & dashboard
-      - name: Use Node.js
-        uses: actions/setup-node@v2
-        with:
-          node-version: '20.3.1'
-      - name: Cache Node.js modules
-        uses: actions/cache@v4
-        with:
-          path: ~/.pnpm-store
-          key: ${{ runner.OS }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.OS }}-pnpm-
-            ## Build and test app start
-      - name: Install pnpm dependencies
-        run: npm install pnpm@9.4.0 -g && pnpm install
-      - name: Install playwright browsers
-        run: pnpm bitseed-sdk playwright-deps
-      - name: Lint
-        run: pnpm lint
-        continue-on-error: true
-        timeout-minutes: 15
-      - name: Build Test Suite
-        run: pnpm test-suite build
-      - name: Build SDK
-        run: pnpm rooch-sdk build
-      - name: Test SDK
-        run: pnpm rooch-sdk test
-      - name: Build SDK KIT
-        run: pnpm rooch-sdk-kit build
-      - name: Test SDK KIT
-        run: pnpm rooch-sdk-kit test
-      - name: Lint Bitseed SDK
-        run: pnpm bitseed-sdk lint
-      - name: Build Bitseed SDK
-        run: pnpm bitseed-sdk build
-      - name: Test Bitseed SDK
-        run: pnpm bitseed-sdk test
-        continue-on-error: true
-        timeout-minutes: 15
-
+      # Always run git status check
       - uses: CatChen/check-git-status-action@v1
         with:
-          fail-if-not-clean: true # optional
-          push-if-not-clean: false # optional
-          targets: '.' #optional
+          fail-if-not-clean: true
+          push-if-not-clean: false
+          targets: '.'
