@@ -22,18 +22,12 @@ env:
   ENV_TEST_ON_CI: 1
 
 jobs:
-  check_build_test:
-    name: Check-Build-Test
+  group1:
+    name: Check-Build-Test (Group 1)
     runs-on: self-hosted
-    strategy:
-      fail-fast: false
-      matrix:
-        test_group: [1, 2, 3] # Split into 3 parallel test groups
-
     steps:
       - uses: actions/checkout@v4
 
-      # Cache Cargo dependencies and build artifacts
       - uses: actions/cache@v4
         with:
           path: |
@@ -41,20 +35,10 @@ jobs:
             ~/.cargo/git
             ~/.cargo/bin
             target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}-${{ matrix.test_group }}
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}-group1
           restore-keys: |
             ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}-
             ${{ runner.os }}-cargo-
-
-      # Cache Node.js dependencies
-      - uses: actions/cache@v4
-        with:
-          path: |
-            ~/.pnpm-store
-            node_modules
-          key: ${{ runner.OS }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.OS }}-pnpm-
 
       - name: Install GitHub CLI
         run: |
@@ -68,8 +52,7 @@ jobs:
 
       - uses: ./.github/actions/rust-setup
 
-      - name: Check-Build-Test (Group 1 - Basic checks and builds)
-        if: matrix.test_group == 1
+      - name: Basic checks and builds
         run: |
           # Run in parallel where possible
           # Check code format, Lint rust sources
@@ -82,8 +65,28 @@ jobs:
           cargo run --package framework-release --bin framework-release
           cargo run --bin rooch init --skip-password
 
-      - name: Check-Build-Test (Group 2 - Move, Rust and Example tests)
-        if: matrix.test_group == 2
+  group2:
+    name: Check-Build-Test (Group 2 - Move, Rust and Example tests)
+    needs: group1
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ~/.cargo/bin
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}-group2
+          restore-keys: |
+            ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}-
+            ${{ runner.os }}-cargo-
+
+      - uses: ./.github/actions/rust-setup
+
+      - name: Move, Rust and Example tests
         run: |
           # Run Move tests
           ./scripts/pr.sh -m &
@@ -99,8 +102,37 @@ jobs:
           # Run example tests
           ./scripts/pr.sh -e
 
-      - name: Check-Build-Test (Group 3 - Web and SDK)
-        if: matrix.test_group == 3
+  group3:
+    name: Check-Build-Test (Group 3 - Web and SDK)
+    needs: group1
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ~/.cargo/bin
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}-group3
+          restore-keys: |
+            ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}-
+            ${{ runner.os }}-cargo-
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pnpm-store
+            node_modules
+          key: ${{ runner.OS }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.OS }}-pnpm-
+
+      - uses: ./.github/actions/rust-setup
+
+      - name: Web and SDK tests
         run: |
           # Check Docker first
           docker --version
@@ -132,7 +164,6 @@ jobs:
           # pnpm bitseed-sdk build
           # pnpm bitseed-sdk test || true
 
-      # Always run git status check
       - uses: CatChen/check-git-status-action@v1
         with:
           fail-if-not-clean: true
