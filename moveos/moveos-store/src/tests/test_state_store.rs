@@ -8,9 +8,8 @@ use moveos_types::h256::H256;
 use moveos_types::test_utils::random_state_change_set;
 use raw_store::metrics::DBMetrics;
 use raw_store::rocks::RocksDB;
-use raw_store::{StoreInstance, CF_METRICS_REPORT_PERIOD_MILLIS};
+use raw_store::StoreInstance;
 use smt::NodeReader;
-use std::time::Duration;
 
 #[tokio::test]
 async fn test_reopen() -> Result<()> {
@@ -22,7 +21,7 @@ async fn test_reopen() -> Result<()> {
     let node = b"testnode".to_vec();
     {
         let db_metrics = DBMetrics::get_or_init(&registry_service.default_registry()).clone();
-        let mut store_instance = StoreInstance::new_db_instance(
+        let store_instance = StoreInstance::new_db_instance(
             RocksDB::new(
                 temp_dir.path(),
                 StoreMeta::get_column_family_names().to_vec(),
@@ -41,9 +40,6 @@ async fn test_reopen() -> Result<()> {
             .map_err(|e| anyhow::anyhow!("test_state_store test_reopen error: {:?}", e))
             .ok();
         assert_eq!(node_store.get(&key).unwrap(), Some(node.clone()));
-        let _ = store_instance.cancel_metrics_task();
-        // Wait for rocksdb cancel metrics task to avoid db lock
-        tokio::time::sleep(Duration::from_millis(CF_METRICS_REPORT_PERIOD_MILLIS)).await;
     }
     {
         // To aviod AlreadyReg for re open the same db
