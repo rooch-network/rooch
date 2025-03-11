@@ -6,7 +6,7 @@ use coerce::actor::{system::ActorSystem, IntoActor};
 use metrics::RegistryService;
 use prometheus::Registry;
 use raw_store::metrics::DBMetrics;
-use raw_store::{StoreInstance, CF_METRICS_REPORT_PERIOD_MILLIS};
+use raw_store::StoreInstance;
 use rooch_config::RoochOpt;
 use rooch_db::RoochDB;
 use rooch_genesis::RoochGenesis;
@@ -16,7 +16,6 @@ use rooch_types::{
     service_status::ServiceStatus,
     transaction::{LedgerTxData, RoochTransaction},
 };
-use std::time::Duration;
 
 fn init_rooch_db(opt: &RoochOpt, registry: &Registry) -> Result<RoochDB> {
     DBMetrics::init(registry);
@@ -41,7 +40,7 @@ async fn test_sequencer() -> Result<()> {
     let mut last_tx_order = 0;
     let registry_service = RegistryService::default();
     {
-        let mut store_instance = RoochDB::generate_store_instance(
+        let store_instance = RoochDB::generate_store_instance(
             opt.store_config(),
             &registry_service.default_registry(),
         )?;
@@ -66,10 +65,6 @@ async fn test_sequencer() -> Result<()> {
             last_tx_order = ledger_tx.sequence_info.tx_order;
         }
         assert_eq!(sequencer.last_order(), last_tx_order);
-
-        let _ = store_instance.cancel_metrics_task();
-        // Wait for rocksdb cancel metrics task to avoid db lock
-        tokio::time::sleep(Duration::from_millis(CF_METRICS_REPORT_PERIOD_MILLIS)).await;
     }
     // load from db again
     {
