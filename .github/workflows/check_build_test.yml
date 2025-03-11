@@ -69,7 +69,7 @@ jobs:
       - uses: ./.github/actions/rust-setup
 
       # Group 1: Basic checks and builds
-      - name: Group 1 - Basic checks and builds
+      - name: Check-Build-Test (Group 1 - Basic checks and builds)
         if: matrix.test_group == 1
         run: |
           # Run in parallel where possible
@@ -84,7 +84,7 @@ jobs:
           cargo run --bin rooch init --skip-password
 
       # Group 2: Move, Rust and Example tests
-      - name: Group 2 - Move and Rust tests
+      - name: Check-Build-Test (Group 2 - Move, Rust and Example tests)
         if: matrix.test_group == 2
         run: |
           # Run Move tests
@@ -102,7 +102,7 @@ jobs:
           ./scripts/pr.sh -e
 
       # Group 3: Web, SDK, and final steps
-      - name: Group 3 - Web, SDK, and final steps
+      - name: Check-Build-Test (Group 3 - Web and SDK)
         if: matrix.test_group == 3
         run: |
           # Check Docker first
