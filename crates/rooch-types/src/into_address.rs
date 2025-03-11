@@ -104,10 +104,7 @@ mod tests {
         let addr_zero = txid_zero.into_address();
         // println!("{}", txid_zero);
         // println!("{}", addr_zero);
-        assert_eq!(
-            "0x0",
-            addr_zero.to_string()
-        );
+        assert_eq!("0x0", addr_zero.to_string());
         assert_eq!(AccountAddress::ZERO, addr_zero);
     }
 

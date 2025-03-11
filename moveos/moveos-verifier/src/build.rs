@@ -29,7 +29,7 @@ use move_package::resolution::resolution_graph::ResolvedGraph;
 use move_package::{BuildConfig, CompilerConfig, ModelConfig};
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Debug;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use termcolor::{ColorChoice, StandardStream};
 
 #[derive(Debug, Clone)]
@@ -400,16 +400,16 @@ pub fn run_verifier<P: AsRef<Path>>(
             .join(package.compiled_package_info.package_name.as_str()),
         package,
         runtime_metadata,
-    );
+    )?;
 
     Ok(true)
 }
 
-pub fn inject_runtime_metadata<P: AsRef<Path>>(
-    package_path: P,
+pub fn inject_runtime_metadata(
+    package_path: PathBuf,
     pack: &mut CompiledPackage,
     metadata: BTreeMap<ModuleId, RuntimeModuleMetadataV1>,
-) {
+) -> anyhow::Result<()> {
     for unit_with_source in pack.root_compiled_units.iter_mut() {
         match &mut unit_with_source.unit {
             CompiledUnit::Module(named_module) => {
@@ -440,13 +440,12 @@ pub fn inject_runtime_metadata<P: AsRef<Path>>(
 
                         // Also need to update the .mv file on disk.
                         let path = package_path
-                            .as_ref()
                             .join(CompiledPackageLayout::CompiledModules.path())
                             .join(named_module.name.as_str())
                             .with_extension(MOVE_COMPILED_EXTENSION);
                         if path.is_file() {
                             let bytes = unit_with_source.unit.serialize(Option::from(7));
-                            std::fs::write(path, bytes).unwrap();
+                            std::fs::write(path, bytes)?;
                         }
                     }
                 }
@@ -454,6 +453,8 @@ pub fn inject_runtime_metadata<P: AsRef<Path>>(
             CompiledUnit::Script(_) => {}
         }
     }
+
+    Ok(())
 }
 
 pub fn compile_and_inject_metadata(

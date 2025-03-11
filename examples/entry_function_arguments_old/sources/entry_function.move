@@ -94,8 +94,8 @@ module rooch_examples::entry_function {
       event::emit<VecObjectIDEvent>(VecObjectIDEvent { value });
    }
 
-   // public entry fun emit_mix(value1: u8, value2: vector<ObjectID>) {
-   //    event::emit<U8Event>(U8Event { value: value1 });
-   //    event::emit<VecObjectIDEvent>(VecObjectIDEvent { value: value2 });     
-   // }
+    public entry fun emit_mix(value1: u8, value2: vector<ObjectID>) {
+       event::emit<U8Event>(U8Event { value: value1 });
+       event::emit<VecObjectIDEvent>(VecObjectIDEvent { value: value2 });     
+    }
 }

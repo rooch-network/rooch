@@ -1646,8 +1646,6 @@ pub fn check_metadata_format(module: &CompiledModule) -> Result<(), MalformedErr
                 bcs::from_bytes::<RuntimeModuleMetadataV1>(&data.value)
                     .map_err(|e| MalformedError::DeserializedError(data.key.clone(), e.clone()))?;
             }
-        } else {
-            return Err(MalformedError::UnknownKey(data.key.clone()));
         }
     }
 

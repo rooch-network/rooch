@@ -5,26 +5,49 @@ module rooch_examples::move_v2 {
     /********************* enum type ***********************/
 
     use std::vector;
+
+    #[data_struct]
+    struct Value has copy,drop {
+        value: u64
+    }
+
+    fun extract_value(v: &Value): u64 {
+        v.value
+    }
+
+    enum RadiusValue has copy,drop {
+        V1{value: u64},
+        V2{value: u64},
+    }
+
+    public fun extract_radius_value(radius: &RadiusValue): u64 {
+        match(radius) {
+            RadiusValue::V1{value} => *value,
+            RadiusValue::V2{value} => *value,
+        }
+    }
+
     #[data_struct]
     enum Shape has copy,drop {
-        Circle{radius: u64},
-        Rectangle{width: u64, height: u64}
+        Circle{radius: RadiusValue},
+        Rectangle{width: u64, height: Value}
     }
     
     public entry fun call_enum() {
         let v = 123;
-        let value = Shape::Circle{radius: 123};
-        match (&value) {
-            Circle{radius}           => v = *radius * *radius,
-            Rectangle{width, height} => v = *width * *height
+        let radius_value = RadiusValue::V1{value: 123};
+        let shape = Shape::Circle{radius: radius_value};
+        match (&shape) {
+            Circle{radius}           => v = extract_radius_value(radius) * extract_radius_value(radius),
+            Rectangle{width, height} => v = *width * extract_value(height),
         };
         let _v1 = v;
     }
 
     fun area(self: &Shape): u64 {
         match (self) {
-            Circle{radius}           => *radius * *radius,
-            Rectangle{width, height} => *width * *height
+            Circle{radius}           => extract_radius_value(radius) * extract_radius_value(radius),
+            Rectangle{width, height} => *width * extract_value(height),
         }
     }
 
@@ -34,9 +57,10 @@ module rooch_examples::move_v2 {
     }
 
     fun f2() {
-        let v = Shape::Circle{radius: 123};
+        let radius_value = RadiusValue::V1{value: 123};
+        let shape = Shape::Circle{radius: radius_value};
         //f1<Shape::Circle>(v);
-        f1<Shape>(v);
+        f1<Shape>(shape);
     }
 
     /********************* self receiver ***********************/

@@ -327,7 +327,8 @@ where
                     Ok(v) => v,
                     Err(err) => return Err(err.finish(Location::Undefined)),
                 };
-                let script_module = script_into_module(compiled_script, "__temp_module_from_script");
+                let script_module =
+                    script_into_module(compiled_script, "__temp_module_from_script");
                 let modules = vec![script_module];
                 let result = moveos_verifier::verifier::verify_modules(&modules, self.remote);
                 match result {
