@@ -105,8 +105,8 @@ jobs:
           # Check Docker first
           docker --version
           docker pull lncm/bitcoind:v25.1 &
-#          docker pull bitseed/ord:0.18.0-burn &
-#          docker pull bitseed/bitseed:0.1.8 &
+          # docker pull bitseed/ord:0.18.0-burn &
+          # docker pull bitseed/bitseed:0.1.8 &
           
           # Setup Node.js and run web/SDK tests in parallel
           . $NVM_DIR/nvm.sh
@@ -116,7 +116,7 @@ jobs:
           pnpm install
           
           # Run web/SDK tasks in parallel
-#          pnpm bitseed-sdk playwright-deps &
+          # pnpm bitseed-sdk playwright-deps &
           pnpm lint &
           pnpm test-suite build &
           pnpm rooch-sdk build &
@@ -128,9 +128,9 @@ jobs:
           # Run tests that depend on builds
           pnpm rooch-sdk test
           pnpm rooch-sdk-kit test || true
-#          pnpm bitseed-sdk lint
-#          pnpm bitseed-sdk build
-#          pnpm bitseed-sdk test || true
+          # pnpm bitseed-sdk lint
+          # pnpm bitseed-sdk build
+          # pnpm bitseed-sdk test || true
 
       # Always run git status check
       - uses: CatChen/check-git-status-action@v1
