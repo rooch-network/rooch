@@ -68,7 +68,6 @@ jobs:
 
       - uses: ./.github/actions/rust-setup
 
-      # Group 1: Basic checks and builds
       - name: Check-Build-Test (Group 1 - Basic checks and builds)
         if: matrix.test_group == 1
         run: |
@@ -83,7 +82,6 @@ jobs:
           cargo run --package framework-release --bin framework-release
           cargo run --bin rooch init --skip-password
 
-      # Group 2: Move, Rust and Example tests
       - name: Check-Build-Test (Group 2 - Move, Rust and Example tests)
         if: matrix.test_group == 2
         run: |
@@ -101,7 +99,6 @@ jobs:
           # Run example tests
           ./scripts/pr.sh -e
 
-      # Group 3: Web, SDK, and final steps
       - name: Check-Build-Test (Group 3 - Web and SDK)
         if: matrix.test_group == 3
         run: |
