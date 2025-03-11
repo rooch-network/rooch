@@ -77,7 +77,7 @@ export const navData = [
         noAddressRequired: true,
       },
       {
-        title: 'Tunnel',
+        title: 'Bridge',
         path: 'https://rooch.free.tech',
         icon: <Iconify icon="solar:tuning-2-outline" />,
         noAddressRequired: false,
