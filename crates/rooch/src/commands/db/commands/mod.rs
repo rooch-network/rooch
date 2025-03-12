@@ -13,6 +13,7 @@ pub mod cp_cf;
 pub mod drop;
 pub mod get_changeset_by_order;
 pub mod get_execution_info_by_hash;
+pub mod get_sequencer_info;
 pub mod get_tx_by_order;
 pub mod list_anomaly;
 pub mod repair;

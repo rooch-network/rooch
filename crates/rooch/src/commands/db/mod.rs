@@ -8,6 +8,7 @@ use crate::commands::db::commands::cp_cf::CpCfCommand;
 use crate::commands::db::commands::drop::DropCommand;
 use crate::commands::db::commands::get_changeset_by_order::GetChangesetByOrderCommand;
 use crate::commands::db::commands::get_execution_info_by_hash::GetExecutionInfoByHashCommand;
+use crate::commands::db::commands::get_sequencer_info::GetSequencerInfoCommand;
 use crate::commands::db::commands::get_tx_by_order::GetTxByOrderCommand;
 use crate::commands::db::commands::list_anomaly::ListAnomaly;
 use crate::commands::db::commands::repair::RepairCommand;
@@ -76,6 +77,11 @@ impl CommandAction<String> for DB {
             DBCommand::VerifyOrder(verify_order) => verify_order.execute().map(|resp| {
                 serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
             }),
+            DBCommand::GetSequencerInfo(get_sequencer_info) => {
+                get_sequencer_info.execute().map(|resp| {
+                    serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
+                })
+            }
         }
     }
 }
@@ -96,4 +102,5 @@ pub enum DBCommand {
     Changeset(ChangesetCommand),
     StatChangeset(StatChangesetCommand),
     VerifyOrder(VerifyOrderCommand),
+    GetSequencerInfo(GetSequencerInfoCommand),
 }

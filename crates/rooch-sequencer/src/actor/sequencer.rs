@@ -193,7 +193,7 @@ impl SequencerActor {
                 .fork(Some(self.last_sequencer_info.last_accumulator_info.clone()));
             self.service_status = ServiceStatus::Maintenance;
             tracing::error!(
-                        "Failed to save sequenced tx, tx_order: {}, error: {:?}, set sequencer to Maintenance mode.",
+                        "Failed to save sequenced tx, tx_order: {}, error: {:?}, set sequencer to Maintenance mode. Please try to restart later",
                         tx_order, e
                     );
             return Err(io::Error::new(
