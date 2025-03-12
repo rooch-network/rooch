@@ -33,7 +33,7 @@ const RPC_PORT: u16 = 18443;
 const ORD_RPC_PORT: u16 = 80;
 
 // Global port counter for unique port allocation
-static BASE_PORT: AtomicU16 = AtomicU16::new(18443);
+static BASE_PORT: AtomicU16 = AtomicU16::new(6767);
 
 #[derive(cucumber::World, Debug)]
 struct World {
@@ -67,7 +67,7 @@ impl Default for World {
         // }
 
         // Get unique port for this test instance
-        let port = BASE_PORT.fetch_add(1, Ordering::SeqCst);
+        let port = BASE_PORT.fetch_add(5, Ordering::SeqCst);
 
         World {
             opt: RoochOpt::new_with_temp_store().expect("new rooch opt should be ok"),
@@ -697,7 +697,7 @@ async fn wait_port_available(port: u16) {
         count += 1;
         if count > 60 {
             // Instead of panicking, try next port
-            BASE_PORT.fetch_add(1, Ordering::SeqCst);
+            BASE_PORT.fetch_add(5, Ordering::SeqCst);
             return;
         }
     }
