@@ -105,12 +105,34 @@ if [ ! -z "$CHECK" ]; then
     echo "All checks passed successfully!"
 fi
 
+#if [ ! -z "$ALSO_TEST" ]; then
+#    export RUST_BACKTRACE=1
+#    cargo nextest run --workspace --all-features --exclude rooch-framework-tests --exclude rooch-integration-test-runner -v
+#    cargo test -p rooch-framework-tests -p rooch-integration-test-runner
+#    cargo test --release -p rooch-framework-tests bitcoin_test
+#    RUST_LOG=warn cargo test -p testsuite --test integration
+#fi
+
 if [ ! -z "$ALSO_TEST" ]; then
     export RUST_BACKTRACE=1
-    cargo nextest run --workspace --all-features --exclude rooch-framework-tests --exclude rooch-integration-test-runner -v
-    cargo test -p rooch-framework-tests -p rooch-integration-test-runner
-    cargo test --release -p rooch-framework-tests bitcoin_test
-    RUST_LOG=warn cargo test -p testsuite --test integration
+
+    # Run standard tests with optimized settings
+    cargo nextest run \
+        --workspace \
+        --all-features \
+        --exclude rooch-framework-tests \
+        --exclude rooch-integration-test-runner \
+        -j 8 \
+        --retries 2 \
+        --success-output final \
+        --failure-output immediate-final \
+        # --no-capture
+
+    # Run framework tests in parallel
+    cargo test -p rooch-framework-tests -p rooch-integration-test-runner --test-threads=8 &
+    cargo test --release -p rooch-framework-tests bitcoin_test --test-threads=8 &
+    RUST_LOG=warn cargo test -p testsuite --test integration --test-threads=8 &
+    wait
 fi
 
 if [ ! -z "$MOVE_TESTS" ]; then

@@ -22,8 +22,8 @@ env:
   ENV_TEST_ON_CI: 1
 
 jobs:
-  group1:
-    name: Check-Build-Test (Group 1)
+  check_build_test:
+    name: Check-Build-Test
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
@@ -35,10 +35,18 @@ jobs:
             ~/.cargo/git
             ~/.cargo/bin
             target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}-group1
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}-
             ${{ runner.os }}-cargo-
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pnpm-store
+            node_modules
+          key: ${{ runner.OS }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.OS }}-pnpm-
 
       - name: Install GitHub CLI
         run: |
@@ -54,115 +62,59 @@ jobs:
 
       - name: Basic checks and builds
         run: |
-          # Run in parallel where possible
-          # Check code format, Lint rust sources
+          # Run basic checks in parallel
           cargo fmt -- --check &
           ./scripts/pr.sh -c &
           wait
           
-          # Build, check framework compatibility and run Rooch init
+          # Build and init
           cargo build
           cargo run --package framework-release --bin framework-release
           cargo run --bin rooch init --skip-password
 
-  group2:
-    name: Check-Build-Test (Group 2 - Move, Rust and Example tests)
-    needs: group1
-    runs-on: self-hosted
-    steps:
-      - uses: actions/checkout@v4
+      - name: Run Rust tests in multi theads
+        run: ./scripts/pr.sh -t
 
-      - uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            ~/.cargo/bin
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}-group2
-          restore-keys: |
-            ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}-
-            ${{ runner.os }}-cargo-
+      - name: Run Move tests
+        run: ./scripts/pr.sh -m
 
-      - uses: ./.github/actions/rust-setup
-
-      - name: Move, Rust and Example tests
+      - name: Generate genesis files
         run: |
-          # Run Move tests
-          ./scripts/pr.sh -m &
-          
-          # Run Rust tests with parallel execution
-          RUST_TEST_THREADS=8 ./scripts/pr.sh -t &
-          
-          # Generate genesis files in parallel
           cargo run -p rooch-genesis -- -n main &
           cargo run -p rooch-genesis -- -n test &
           wait
-          
-          # Run example tests
-          ./scripts/pr.sh -e
 
-  group3:
-    name: Check-Build-Test (Group 3 - Web and SDK)
-    needs: group1
-    runs-on: self-hosted
-    steps:
-      - uses: actions/checkout@v4
+      - name: Run example tests
+        run: ./scripts/pr.sh -e
 
-      - uses: actions/cache@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
         with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            ~/.cargo/bin
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}-group3
-          restore-keys: |
-            ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}-
-            ${{ runner.os }}-cargo-
+          node-version: '20.3.1'
 
-      - uses: actions/cache@v4
-        with:
-          path: |
-            ~/.pnpm-store
-            node_modules
-          key: ${{ runner.OS }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.OS }}-pnpm-
-
-      - uses: ./.github/actions/rust-setup
-
-      - name: Web and SDK tests
+      - name: Run Web and SDK tests
         run: |
-          # Check Docker first
+          # Check Docker
           docker --version
           docker pull lncm/bitcoind:v25.1 &
-          # docker pull bitseed/ord:0.18.0-burn &
-          # docker pull bitseed/bitseed:0.1.8 &
           
-          # Setup Node.js and run web/SDK tests in parallel
-          . $NVM_DIR/nvm.sh
-          nvm install 20.3.1
-          nvm use 20.3.1
+          # Setup pnpm and run web/SDK tests
+          # . $NVM_DIR/nvm.sh
+          # nvm install 20.3.1
+          # nvm use 20.3.1
           npm install pnpm@9.4.0 -g
           pnpm install
           
           # Run web/SDK tasks in parallel
-          # pnpm bitseed-sdk playwright-deps &
           pnpm lint &
           pnpm test-suite build &
           pnpm rooch-sdk build &
           pnpm rooch-sdk-kit build &
-          
-          # Wait for Docker pulls and initial builds
           wait
           
-          # Run tests that depend on builds
+          # Run tests
           pnpm rooch-sdk test
           pnpm rooch-sdk-kit test || true
-          # pnpm bitseed-sdk lint
-          # pnpm bitseed-sdk build
-          # pnpm bitseed-sdk test || true
 
       - uses: CatChen/check-git-status-action@v1
         with:
