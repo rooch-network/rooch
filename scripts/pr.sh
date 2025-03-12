@@ -129,9 +129,9 @@ if [ ! -z "$ALSO_TEST" ]; then
         # --no-capture
 
     # Run framework tests in parallel
-    cargo test -p rooch-framework-tests -p rooch-integration-test-runner --test-threads=8 &
-    cargo test --release -p rooch-framework-tests bitcoin_test --test-threads=8 &
-    RUST_LOG=warn cargo test -p testsuite --test integration --test-threads=8 &
+    cargo test -p rooch-framework-tests -p rooch-integration-test-runner -- --test-threads=8 &
+    cargo test --release -p rooch-framework-tests bitcoin_test -- --test-threads=8 &
+    RUST_LOG=warn cargo test -p testsuite --test integration -- --test-threads=8 &
     wait
 fi
 
