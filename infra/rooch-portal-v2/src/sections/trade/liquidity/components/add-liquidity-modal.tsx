@@ -62,16 +62,6 @@ export default function AddLiquidityModal({
   const [yLabelError, setYLabelError] = useState<string>();
   const router = useRouter();
 
-  const { data } = useRoochClientQuery(
-    'getBalances',
-    {
-      owner: currentAddress?.toStr() || '',
-    },
-    {
-      refetchInterval: 5000,
-    }
-  );
-
   const { data: lpTotalSupply } = useRoochClientQuery('queryObjectStates', {
     filter: {
       object_id: row.lpTokenId,
@@ -90,16 +80,15 @@ export default function AddLiquidityModal({
     },
   });
 
-  // map<coin_type, ...>
-  const assetsMap = useMemo(() => {
-    const assetsMap = new Map<string, BalanceInfoView>();
-    data?.data.forEach((i) => {
-      assetsMap.set(i.coin_type, {
-        ...i,
-      });
-    });
-    return assetsMap;
-  }, [data]);
+  const { data: xCoinInfo } = useRoochClientQuery('getBalance', {
+    coinType: row.x.type,
+    owner: currentAddress?.toStr() || ''
+  });
+
+  const { data: yCoinInfo } = useRoochClientQuery('getBalance', {
+    coinType: row.y.type,
+    owner: currentAddress?.toStr() || ''
+  });
 
   const receive = useMemo(() => {
     if (
@@ -109,7 +98,8 @@ export default function AddLiquidityModal({
       !reserveY ||
       xAmount === '' ||
       yAmount === '' ||
-      !assetsMap
+      !xCoinInfo ||
+      !yCoinInfo
     ) {
       return {
         liquidity: '-',
@@ -125,8 +115,8 @@ export default function AddLiquidityModal({
     const yBalance = (reserveY.data[0].decoded_value!.value.balance as AnnotatedMoveStructView)
       .value.value as string;
 
-    const fixedXAmount = toDust(xAmount, assetsMap.get(row.x.type)?.decimals || 0);
-    const fixedYAmount = toDust(yAmount, assetsMap.get(row.y.type)?.decimals || 0);
+    const fixedXAmount = toDust(xAmount, xCoinInfo.decimals || 0);
+    const fixedYAmount = toDust(yAmount, yCoinInfo.decimals || 0);
 
     const liquidity = Math.min(
       BigNumber(fixedXAmount.toString()).multipliedBy(totalSupply).div(xBalance).toNumber(),
@@ -134,17 +124,7 @@ export default function AddLiquidityModal({
     );
     const share = BigNumber(liquidity.toString()).div(totalSupply).toFixed(4, 1);
     return { liquidity: formatCoin(liquidity, lpDecimals, 2), share };
-  }, [
-    lpTotalSupply,
-    reserveX,
-    reserveY,
-    xAmount,
-    yAmount,
-    assetsMap,
-    row.x.type,
-    row.y.type,
-    activeStep,
-  ]);
+  }, [lpTotalSupply, reserveX, reserveY, xAmount, yAmount, xCoinInfo, yCoinInfo, activeStep]);
 
   const handleNext = () => {
     setActiveStep(activeStep + 1);
@@ -161,8 +141,8 @@ export default function AddLiquidityModal({
   }, [currentAddress, onClose]);
 
   const handleAddLiquidity = () => {
-    const fixedX = toDust(xAmount.replaceAll(',', ''), assetsMap.get(row.x.type)?.decimals || 0);
-    const fixedY = toDust(yAmount.replaceAll(',', ''), assetsMap.get(row.y.type)?.decimals || 0);
+    const fixedX = toDust(xAmount.replaceAll(',', ''), xCoinInfo!.decimals || 0);
+    const fixedY = toDust(yAmount.replaceAll(',', ''), yCoinInfo!.decimals || 0);
     const finalSlippage =
       slippage === 0
         ? customSlippage === '' || customSlippage === '0'
@@ -209,26 +189,26 @@ export default function AddLiquidityModal({
   };
 
   const fetchY = useCallback(() => {
-    if (xAmount === '' || xAmount === '0' || !reserveX || !reserveY || !assetsMap) {
+    if (xAmount === '' || xAmount === '0' || !reserveX || !reserveY || !xCoinInfo || !yCoinInfo) {
       return;
     }
 
+    console.log('hahah')
     const xBalance = (reserveX.data[0].decoded_value!.value.balance as AnnotatedMoveStructView)
       .value.value as string;
     const yBalance = (reserveY.data[0].decoded_value!.value.balance as AnnotatedMoveStructView)
       .value.value as string;
-    const fixedX = toDust(xAmount.replaceAll(',', ''), assetsMap.get(row.x.type)?.decimals || 0);
+    const fixedX = toDust(xAmount.replaceAll(',', ''), xCoinInfo.decimals || 0);
     const xRate = BigNumber(fixedX.toString()).div(xBalance);
     const y = BigNumber(yBalance).multipliedBy(xRate);
-    const yCoin = assetsMap.get(row.y.type);
 
-    if (y.toNumber() > Number(yCoin?.balance || 0)) {
+    if (y.toNumber() > Number(yCoinInfo.balance || 0)) {
       setYLabelError('Insufficient');
     } else {
       setYLabelError(undefined);
     }
-    setYAmount(formatByIntl(fromDust(y.toFixed(0, 1), yCoin?.decimals || 0).toString()));
-  }, [xAmount, reserveX, reserveY, row.x.type, row.y.type, assetsMap]);
+    setYAmount(formatByIntl(fromDust(y.toFixed(0, 1), yCoinInfo.decimals || 0).toString()));
+  }, [xAmount, reserveX, reserveY, xCoinInfo, yCoinInfo]);
 
   useDebounce(fetchY, 500, [fetchY]);
 
@@ -248,7 +228,7 @@ export default function AddLiquidityModal({
               </Stack>
               <Stack>
                 <Typography className="text-gray-600 !text-sm !font-semibold">
-                  Balance: {formatByIntl(assetsMap.get(row.x.type)?.fixedBalance)}
+                  Balance: {formatByIntl(xCoinInfo?.fixedBalance)}
                 </Typography>
               </Stack>
             </Stack>
@@ -269,7 +249,7 @@ export default function AddLiquidityModal({
                     if (/^\d*\.?\d*$/.test(value) === false) {
                       return;
                     }
-                    const xBalance = assetsMap?.get(row.x.type)!.fixedBalance || 0;
+                    const xBalance = xCoinInfo?.fixedBalance || 0;
                     if (Number(value) > xBalance) {
                       setXAmount(formatByIntl(xBalance));
                     } else {
@@ -286,7 +266,7 @@ export default function AddLiquidityModal({
                             onClick={() => {
                               setXAmount(
                                 formatByIntl(
-                                  new BigNumber(assetsMap.get(row.x.type)?.fixedBalance || 0)
+                                  new BigNumber(xCoinInfo?.fixedBalance || 0)
                                     .div(2)
                                     .toString()
                                 )
@@ -301,7 +281,7 @@ export default function AddLiquidityModal({
                             onClick={() => {
                               setXAmount(
                                 formatByIntl(
-                                  (assetsMap.get(row.x.type)?.fixedBalance || 0).toString()
+                                  (xCoinInfo?.fixedBalance || 0).toString()
                                 )
                               );
                             }}
@@ -325,7 +305,7 @@ export default function AddLiquidityModal({
                 </Stack>
                 <Stack>
                   <Typography className="text-gray-600 !text-sm !font-semibold">
-                    Balance: {formatByIntl(assetsMap.get(row.y.type)?.fixedBalance)}
+                    Balance: {formatByIntl(yCoinInfo?.fixedBalance)}
                   </Typography>
                 </Stack>
               </Stack>
@@ -411,8 +391,8 @@ export default function AddLiquidityModal({
             <Stack spacing={2} sx={{ mt: 1 }}>
               <Stack direction="row" justifyContent="space-between">
                 <Stack direction="row" alignItems="center">
-                  <Icon url={assetsMap.get(row.x.type)?.icon_url || ''} />
-                  <Icon url={assetsMap.get(row.y.type)?.icon_url || ''} />
+                  <Icon url={xCoinInfo?.icon_url || ''} />
+                  <Icon url={yCoinInfo?.icon_url || ''} />
                   <Box className="text-gray-400 text-sm font-medium">{`${row.x.symbol}-${row.y.symbol} LP : `}</Box>
                 </Stack>
                 <Box sx={{ fontWeight: 'bold', fontSize: '1.2em', ml: 1 }}>
@@ -435,14 +415,14 @@ export default function AddLiquidityModal({
               <Stack direction="column" gap={2}>
                 <Stack direction="row" justifyContent="space-between">
                   <Stack direction="row" alignItems="center">
-                    <Icon url={assetsMap.get(row.x.type)?.icon_url || ''} />
+                    <Icon url={xCoinInfo?.icon_url || ''} />
                     {row.x.symbol}:
                   </Stack>
                   <span>- {xAmount}</span>
                 </Stack>
                 <Stack direction="row" justifyContent="space-between">
                   <Stack direction="row" alignItems="center">
-                    <Icon url={assetsMap.get(row.y.type)?.icon_url || ''} />
+                    <Icon url={yCoinInfo?.icon_url || ''} />
                     {row.y.symbol}:
                   </Stack>
                   <span>- {yAmount}</span>
