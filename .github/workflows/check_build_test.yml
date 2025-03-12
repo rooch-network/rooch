@@ -31,17 +31,6 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            ~/.cargo/bin
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
-
-      - uses: actions/cache@v4
-        with:
-          path: |
             ~/.pnpm-store
             node_modules
           key: ${{ runner.OS }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
@@ -78,14 +67,14 @@ jobs:
       - name: Run Move tests
         run: ./scripts/pr.sh -m
 
-      - name: Generate genesis files
+      - name: Run example tests
+        run: ./scripts/pr.sh -e
+
+      - name: Generate genesis files for Mainnet and Testnet
         run: |
           cargo run -p rooch-genesis -- -n main &
           cargo run -p rooch-genesis -- -n test &
           wait
-
-      - name: Run example tests
-        run: ./scripts/pr.sh -e
 
       - name: Setup Node.js
         uses: actions/setup-node@v2
