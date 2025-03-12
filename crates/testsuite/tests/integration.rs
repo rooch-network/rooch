@@ -686,7 +686,14 @@ fn extract_json(output: &String) -> Result<Value> {
     Ok(json)
 }
 
+// #[tokio::main]
+// async fn main() {
+//     World::cucumber().run_and_exit("./features/").await;
+// }
+
 #[tokio::main]
 async fn main() {
-    World::cucumber().run_and_exit("./features/").await;
+    // Get feature path from env var or use default
+    let feature_path = std::env::var("FEATURE_PATH").unwrap_or_else(|_| "./features/".to_string());
+    World::cucumber().run_and_exit(feature_path).await;
 }

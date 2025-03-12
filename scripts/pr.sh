@@ -125,9 +125,23 @@ if [ ! -z "$ALSO_TEST" ]; then
     cargo test --release -p rooch-framework-tests bitcoin_test -- --test-threads=8 &
     wait
 
-    # Run integration tests separately without parallel execution
-    echo "Running integration tests..."
-    RUST_LOG=warn cargo test -p testsuite --test integration
+    # Run integration tests in parallel by feature files
+    echo "Running integration tests in parallel..."
+
+    # Find all feature files
+    feature_files=(./features/*)
+
+    # Run up to 4 feature files in parallel
+    for ((i = 0; i < ${#feature_files[@]}; i += 4)); do
+        for ((j = i; j < i + 4 && j < ${#feature_files[@]}; j++)); do
+            feature_file="${feature_files[j]}"
+            (
+                echo "Testing feature: $feature_file"
+                FEATURE_PATH="$feature_file" RUST_LOG=warn cargo test -p testsuite --test integration
+            ) &
+        done
+        wait
+    done
 fi
 
 if [ ! -z "$MOVE_TESTS" ]; then
