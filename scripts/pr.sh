@@ -127,7 +127,7 @@ if [ ! -z "$ALSO_TEST" ]; then
 
     # Run integration tests separately without parallel execution
     echo "Running integration tests..."
-    RUST_LOG=warn cargo test -p testsuite --test integration -- --test-threads=1
+    RUST_LOG=warn cargo test -p testsuite --test integration
 fi
 
 if [ ! -z "$MOVE_TESTS" ]; then
