@@ -3,6 +3,7 @@
 
 use crate::utils::open_rooch_db;
 use clap::Parser;
+use rooch_config::R_OPT_NET_HELP;
 use rooch_store::meta_store::MetaStore;
 use rooch_types::error::RoochResult;
 use rooch_types::rooch_network::RoochChainID;

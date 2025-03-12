@@ -107,7 +107,9 @@ impl SequencedTxStore {
 
         if tx_accumulator_info != exp_accumulator_info {
             return Err(anyhow::anyhow!(
-                "Tx accumulator mismatch, expect: {:?}, actual: {:?}",
+                "Tx accumulator mismatch for tx_order: {}, tx_hash: {:?}, expect: {:?}, actual: {:?}",
+                tx_order,
+                tx_hash,
                 exp_accumulator_info,
                 tx_accumulator_info
             ));
