@@ -93,6 +93,7 @@ impl SequencedTxStore {
         let tx_order = tx.sequence_info.tx_order;
 
         let tx_hash = tx.tx_hash();
+        let _tx_accumulator_root = self.tx_accumulator.append(vec![tx_hash].as_slice())?;
         let tx_accumulator_unsaved_nodes = self.tx_accumulator.pop_unsaved_nodes();
         let tx_accumulator_info = self.tx_accumulator.get_info();
 
