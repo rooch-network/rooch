@@ -3,11 +3,10 @@
 
 module rooch_examples::move_v2 {
     /********************* enum type ***********************/
-
     use std::vector;
 
     #[data_struct]
-    struct Value has copy,drop {
+    struct Value has copy,drop,store {
         value: u64
     }
 
@@ -15,7 +14,8 @@ module rooch_examples::move_v2 {
         v.value
     }
 
-    enum RadiusValue has copy,drop {
+    #[data_struct]
+    enum RadiusValue has copy,drop,store {
         V1{value: u64},
         V2{value: u64},
     }
@@ -28,11 +28,11 @@ module rooch_examples::move_v2 {
     }
 
     #[data_struct]
-    enum Shape has copy,drop {
+    enum Shape has copy,drop,store,key {
         Circle{radius: RadiusValue},
         Rectangle{width: u64, height: Value}
     }
-    
+
     public entry fun call_enum() {
         let v = 123;
         let radius_value = RadiusValue::V1{value: 123};

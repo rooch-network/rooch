@@ -1330,8 +1330,22 @@ fn validate_struct_fields(
         return (false, ErrorCode::INVALID_DATA_STRUCT_WITH_TYPE_PARAMETER);
     }
 
-    let struct_fields = struct_def.field_information.fields(None);
-    if struct_fields.is_empty() {
+    let mut struct_fields = vec![];
+    let variant_struct_fields = struct_def.field_information.variants();
+    let normal_struct_fields = struct_def.field_information.fields(None);
+    if !variant_struct_fields.is_empty() {
+        let variants_def = variant_struct_fields;
+        for variant in variants_def {
+            let variant_fields = variant.fields.clone();
+            for field in variant_fields {
+                struct_fields.push(field);
+            }
+        }
+    } else if !normal_struct_fields.is_empty() {
+        for field in normal_struct_fields {
+            struct_fields.push(field.clone());
+        }
+    } else {
         return (false, ErrorCode::INVALID_DATA_STRUCT);
     }
 
