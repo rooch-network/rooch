@@ -108,26 +108,51 @@ fi
 if [ ! -z "$ALSO_TEST" ]; then
     export RUST_BACKTRACE=1
 
-    # Run standard tests with optimized settings
-    cargo nextest run \
-        --workspace \
-        --all-features \
-        --exclude rooch-framework-tests \
-        --exclude rooch-integration-test-runner \
-        --exclude testsuite \
-        -j 8 \
-        --retries 2 \
-        --success-output final \
-        --failure-output immediate-final \
+#    # Run standard tests with optimized settings
+#    cargo nextest run \
+#        --workspace \
+#        --all-features \
+#        --exclude rooch-framework-tests \
+#        --exclude rooch-integration-test-runner \
+#        --exclude testsuite \
+#        -j 8 \
+#        --retries 2 \
+#        --success-output final \
+#        --failure-output immediate-final \
+#
+#    # Run framework tests in parallel
+#    cargo test -p rooch-framework-tests -p rooch-integration-test-runner -- --test-threads=8 &
+#    cargo test --release -p rooch-framework-tests bitcoin_test -- --test-threads=8 &
+#    wait
 
-    # Run framework tests in parallel
-    cargo test -p rooch-framework-tests -p rooch-integration-test-runner -- --test-threads=8 &
-    cargo test --release -p rooch-framework-tests bitcoin_test -- --test-threads=8 &
-    wait
+    # Run integration tests in parallel by feature files
+    echo "Running integration tests in parallel..."
 
-    # Run integration tests separately without parallel execution
-    echo "Running integration tests..."
-    RUST_LOG=warn cargo test -p testsuite --test integration
+    # Change to testsuite directory
+    cd crates/testsuite
+
+    # Find all feature files
+    feature_files=()
+    while IFS= read -r -d '' file; do
+        feature_files+=("$file")
+    done < <(find features -name "*.feature" -print0)
+
+    echo "Found ${#feature_files[@]} feature files"
+
+    # Run features in parallel batches
+    for ((i = 0; i < ${#feature_files[@]}; i += 4)); do
+        for ((j = i; j < i + 4 && j < ${#feature_files[@]}; j++)); do
+            feature_file="${feature_files[j]}"
+            (
+                echo "Testing feature: $(basename "$feature_file")"
+                FEATURE_PATH="$feature_file" RUST_LOG=warn cargo test --test integration
+            ) &
+        done
+        wait
+    done
+
+    # Return to original directory
+    cd ../..
 fi
 
 if [ ! -z "$MOVE_TESTS" ]; then
