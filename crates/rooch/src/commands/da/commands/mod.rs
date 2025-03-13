@@ -38,6 +38,7 @@ use tokio::sync::{watch, RwLock};
 use tokio::time;
 use tracing::{error, info, warn};
 
+pub mod accumulator_anomaly;
 pub mod exec;
 pub mod index;
 pub mod namespace;

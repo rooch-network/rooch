@@ -4,6 +4,7 @@
 pub mod commands;
 
 use crate::cli_types::CommandAction;
+use crate::commands::da::commands::accumulator_anomaly::AccumulatorAnomalyCommand;
 use crate::commands::da::commands::exec::ExecCommand;
 use crate::commands::da::commands::index::IndexCommand;
 use crate::commands::da::commands::namespace::NamespaceCommand;
@@ -42,6 +43,10 @@ impl CommandAction<String> for DA {
                 repair.execute().await?;
                 Ok("".to_owned())
             }
+            DACommand::AccumulatorAnomaly(accumulator_anomaly) => {
+                accumulator_anomaly.execute().await?;
+                Ok("".to_owned())
+            }
         }
     }
 }
@@ -56,4 +61,5 @@ pub enum DACommand {
     Index(IndexCommand),
     Verify(VerifyCommand),
     Repair(RepairCommand),
+    AccumulatorAnomaly(AccumulatorAnomalyCommand),
 }

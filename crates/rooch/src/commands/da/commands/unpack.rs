@@ -4,9 +4,9 @@
 use crate::commands::da::commands::{collect_chunk, collect_chunks, get_tx_list_from_chunk};
 use clap::Parser;
 use rooch_types::error::RoochResult;
-use std::collections::{BinaryHeap, HashMap, HashSet};
+use std::collections::{HashMap, HashSet};
 
-use std::cmp::Reverse;
+use crate::utils::TxSizeHist;
 use std::fs;
 use std::io::{BufWriter, Write};
 use std::path::PathBuf;
@@ -109,11 +109,7 @@ impl UnpackInner {
 
         let mut new_unpacked = HashSet::new();
 
-        let mut l2tx_hist = TxStats {
-            hist: hdrhistogram::Histogram::<u64>::new_with_bounds(1, 4_096_000, 3)?,
-            tops: BinaryHeap::new(),
-            top_n: TOP_N,
-        };
+        let mut l2tx_hist = TxSizeHist::new("L2Tx".to_string(), TOP_N, None, None)?;
 
         for (chunk_id, segment_numbers) in &self.chunks {
             if self.unpacked.contains(chunk_id) {
@@ -163,70 +159,5 @@ impl UnpackInner {
         l2tx_hist.print();
 
         Ok(())
-    }
-}
-
-struct TxStats {
-    hist: hdrhistogram::Histogram<u64>,
-    tops: BinaryHeap<Reverse<(u64, u64)>>, // (tx_size, tx_order) Use Reverse to keep the smallest element at the top
-    top_n: usize,
-}
-
-impl TxStats {
-    fn record(&mut self, tx_order: u64, tx_size: u64) -> anyhow::Result<()> {
-        self.hist.record(tx_size)?;
-
-        if self.tops.len() < self.top_n {
-            // Add the new item directly if space is available
-            self.tops.push(Reverse((tx_size, tx_order)));
-        } else if let Some(&Reverse((smallest_size, _))) = self.tops.peek() {
-            // Compare with the smallest item in the heap
-            if tx_size > smallest_size {
-                self.tops.pop(); // Remove the smallest
-                self.tops.push(Reverse((tx_size, tx_order))); // Add the new larger item
-            }
-        }
-        // Keep only top-N
-        Ok(())
-    }
-
-    /// Returns the top N items, sorted by `tx_size` in descending order
-    pub fn get_top(&self) -> Vec<(u64, u64)> {
-        let mut sorted: Vec<_> = self.tops.iter().map(|&Reverse(x)| x).collect();
-        sorted.sort_by(|a, b| b.0.cmp(&a.0)); // Sort by tx_size in descending order
-        sorted
-    }
-
-    fn print(&mut self) {
-        let hist = &self.hist;
-
-        let min_size = hist.min();
-        let max_size = hist.max();
-        let mean_size = hist.mean();
-
-        println!("-----------------L2Tx Size Stats-----------------");
-        println!(
-            "Tx Size Percentiles distribution(count: {}): min={}, max={}, mean={:.2}, stdev={:.2}: ",
-            hist.len(),
-            min_size,
-            max_size,
-            mean_size,
-            hist.stdev()
-        );
-        let percentiles = [
-            1.00, 5.00, 10.00, 20.00, 30.00, 40.00, 50.00, 60.00, 70.00, 80.00, 90.00, 95.00,
-            99.00, 99.50, 99.90, 99.95, 99.99,
-        ];
-        for &p in &percentiles {
-            let v = hist.value_at_percentile(p);
-            println!("| {:6.2}th=[{}]", p, v);
-        }
-
-        // each pair one line
-        println!("-------------Top{} transactions--------------", self.top_n);
-        let tops = self.get_top();
-        for (tx_size, tx_order) in &tops {
-            println!("tx_order: {}, tx_size: {}", tx_order, tx_size);
-        }
     }
 }

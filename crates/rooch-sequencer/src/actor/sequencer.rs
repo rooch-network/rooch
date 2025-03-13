@@ -123,14 +123,19 @@ impl SequencerActor {
         Ok(())
     }
 
-    // last_sequencer_info may be inconsistent with the sequencer info in db caused by pipeline revert
+    // last_sequencer_info may be inconsistent with the sequencer info in db caused by pipeline revert,
+    // so we need to get the next tx order from db instead of using last_sequencer_info directly
+    // to avoid the inconsistency.
+    // tx_accumulator should be forked from the last accumulator info in db to avoid dirty data in runtime
     fn get_next_tx_order(&mut self) -> Result<u64> {
         let sequencer_info_db = self
             .rooch_store
             .get_meta_store()
             .get_sequencer_info()?
             .ok_or_else(|| anyhow::anyhow!("Load sequencer info failed"))?;
-        self.last_sequencer_info = sequencer_info_db;
+        self.last_sequencer_info = sequencer_info_db.clone();
+        self.tx_accumulator
+            .fork(Some(sequencer_info_db.last_accumulator_info));
 
         Ok(self.last_sequencer_info.last_order + 1)
     }
