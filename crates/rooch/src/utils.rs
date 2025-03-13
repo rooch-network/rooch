@@ -17,6 +17,8 @@ use rooch_types::address::RoochAddress;
 use rooch_types::crypto::RoochKeyPair;
 use rooch_types::error::{RoochError, RoochResult};
 use rooch_types::rooch_network::{BuiltinChainID, RoochChainID};
+use std::cmp::Reverse;
+use std::collections::BinaryHeap;
 use std::io::{self, stdout, Write};
 use std::path::PathBuf;
 use std::time::SystemTime;
@@ -186,4 +188,90 @@ pub fn derive_builtin_genesis_namespace(chain_id: BuiltinChainID) -> anyhow::Res
     let genesis = load_genesis_from_binary(chain_id)?.expect("Genesis not found");
     let genesis_hash = genesis.genesis_hash();
     Ok(derive_namespace_from_genesis(genesis_hash))
+}
+
+pub struct TxSizeHist {
+    hist: hdrhistogram::Histogram<u64>,
+    tops: BinaryHeap<Reverse<(u64, u64)>>, // (size, tx_order) Use Reverse to keep the smallest element at the top
+    top_n: usize,
+    title: String,
+}
+
+impl TxSizeHist {
+    pub fn new(
+        title: String,
+        top_n: usize,
+        low_size: Option<u64>,
+        high_size: Option<u64>,
+    ) -> anyhow::Result<Self> {
+        let low = low_size.unwrap_or(1);
+        let high = high_size.unwrap_or(4_096_000);
+
+        Ok(TxSizeHist {
+            hist: hdrhistogram::Histogram::<u64>::new_with_bounds(low, high, 3)?,
+            tops: BinaryHeap::new(),
+            top_n,
+            title,
+        })
+    }
+
+    pub fn record(&mut self, tx_order: u64, size: u64) -> anyhow::Result<()> {
+        self.hist.record(size)?;
+
+        if self.tops.len() < self.top_n {
+            // Add the new item directly if space is available
+            self.tops.push(Reverse((size, tx_order)));
+        } else if let Some(&Reverse((smallest_size, _))) = self.tops.peek() {
+            // Compare with the smallest item in the heap
+            if size > smallest_size {
+                self.tops.pop(); // Remove the smallest
+                self.tops.push(Reverse((size, tx_order))); // Add the new larger item
+            }
+        }
+        // Keep only top-N
+        Ok(())
+    }
+
+    /// Returns the top N items, sorted by `tx_size` in descending order
+    pub fn get_top(&self) -> Vec<(u64, u64)> {
+        let mut sorted: Vec<_> = self.tops.iter().map(|&Reverse(x)| x).collect();
+        sorted.sort_by(|a, b| b.0.cmp(&a.0)); // Sort by tx_size in descending order
+        sorted
+    }
+
+    pub fn print(&mut self) {
+        let hist = &self.hist;
+
+        let min_size = hist.min();
+        let max_size = hist.max();
+        let mean_size = hist.mean();
+
+        print!(
+            "-----------------{} Size Stats-----------------\n",
+            self.title
+        );
+        println!(
+            "Percentiles distribution(count: {}): min={}, max={}, mean={:.2}, stdev={:.2}: ",
+            hist.len(),
+            min_size,
+            max_size,
+            mean_size,
+            hist.stdev()
+        );
+        let percentiles = [
+            1.00, 5.00, 10.00, 20.00, 30.00, 40.00, 50.00, 60.00, 70.00, 80.00, 90.00, 95.00,
+            99.00, 99.50, 99.90, 99.95, 99.99,
+        ];
+        for &p in &percentiles {
+            let v = hist.value_at_percentile(p);
+            println!("| {:6.2}th=[{}]", p, v);
+        }
+
+        // each pair one line
+        println!("-------------Top{} transactions--------------", self.top_n);
+        let tops = self.get_top();
+        for (tx_size, tx_order) in &tops {
+            println!("tx_order: {}, size: {}", tx_order, tx_size);
+        }
+    }
 }
