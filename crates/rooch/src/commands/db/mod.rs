@@ -13,6 +13,7 @@ use crate::commands::db::commands::list_anomaly::ListAnomaly;
 use crate::commands::db::commands::repair::RepairCommand;
 use crate::commands::db::commands::revert::RevertCommand;
 use crate::commands::db::commands::stat_changeset::StatChangesetCommand;
+use crate::commands::db::commands::verify_order::VerifyOrderCommand;
 use async_trait::async_trait;
 use clap::Parser;
 use commands::rollback::RollbackCommand;
@@ -72,6 +73,9 @@ impl CommandAction<String> for DB {
                     serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
                 })
             }
+            DBCommand::VerifyOrder(verify_order) => verify_order.execute().map(|resp| {
+                serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
+            }),
         }
     }
 }
@@ -91,4 +95,5 @@ pub enum DBCommand {
     CpCf(CpCfCommand),
     Changeset(ChangesetCommand),
     StatChangeset(StatChangesetCommand),
+    VerifyOrder(VerifyOrderCommand),
 }
