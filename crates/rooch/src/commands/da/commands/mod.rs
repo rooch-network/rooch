@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use accumulator::accumulator_info::AccumulatorInfo;
 use accumulator::{Accumulator, MerkleAccumulator};
 use anyhow::anyhow;
 use heed::byteorder::BigEndian;
@@ -31,7 +32,6 @@ use std::fs::File;
 use std::io::{BufRead, BufReader, BufWriter, Read, Write};
 use std::path::PathBuf;
 use std::str::FromStr;
-use std::sync::atomic::AtomicU64;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::{watch, RwLock};
@@ -50,8 +50,8 @@ pub mod verify;
 const DEFAULT_MAX_SEGMENT_SIZE: usize = 4 * 1024 * 1024;
 
 pub(crate) struct SequencedTxStore {
+    last_sequenced_tx_order_in_last_job: u64,
     tx_accumulator: MerkleAccumulator,
-    last_sequenced_tx_order: AtomicU64,
     rooch_store: RoochStore,
 }
 
@@ -62,11 +62,14 @@ impl SequencedTxStore {
             .get_meta_store()
             .get_sequencer_info()?
             .ok_or_else(|| anyhow::anyhow!("Load sequencer info failed"))?;
-        let (last_order, last_accumulator_info) = (
+        let (last_sequenced_tx_order_in_last_job, last_accumulator_info) = (
             last_sequencer_info.last_order,
             last_sequencer_info.last_accumulator_info.clone(),
         );
-        info!("Load latest sequencer order {:?}", last_order);
+        info!(
+            "Load latest sequencer order {:?}",
+            last_sequenced_tx_order_in_last_job
+        );
         info!(
             "Load latest sequencer accumulator info {:?}",
             last_accumulator_info
@@ -78,69 +81,49 @@ impl SequencedTxStore {
 
         Ok(SequencedTxStore {
             tx_accumulator,
-            last_sequenced_tx_order: AtomicU64::new(last_order),
             rooch_store,
+            last_sequenced_tx_order_in_last_job,
         })
     }
 
-    pub(crate) fn get_last_tx_order(&self) -> u64 {
-        self.last_sequenced_tx_order
-            .load(std::sync::atomic::Ordering::SeqCst)
+    pub(crate) fn get_last_sequenced_tx_order_in_last_job(&self) -> u64 {
+        self.last_sequenced_tx_order_in_last_job
     }
 
-    pub(crate) fn store_tx(
-        &self,
-        mut tx: LedgerTransaction,
-        exp_accumulator_root: Option<H256>,
-    ) -> anyhow::Result<()> {
+    pub(crate) fn save_tx(&self, mut tx: LedgerTransaction) -> anyhow::Result<()> {
         let tx_order = tx.sequence_info.tx_order;
-        match self.last_sequenced_tx_order.compare_exchange(
-            tx_order - 1,
-            tx_order,
-            std::sync::atomic::Ordering::SeqCst,
-            std::sync::atomic::Ordering::SeqCst,
-        ) {
-            Ok(_) => {
-                // CAS succeeded, continue with function logic
-            }
-            Err(current) => {
-                return Err(anyhow::anyhow!(
-                    "CAS failed: Tx order is not strictly incremental. \
-                Expected: {}, Actual: {}, Tx Order: {}",
-                    tx_order - 1,
-                    current,
-                    tx_order
-                ));
-            }
-        }
 
         let tx_hash = tx.tx_hash();
+
         let _tx_accumulator_root = self.tx_accumulator.append(vec![tx_hash].as_slice())?;
         let tx_accumulator_unsaved_nodes = self.tx_accumulator.pop_unsaved_nodes();
         let tx_accumulator_info = self.tx_accumulator.get_info();
 
-        if let Some(exp_accumulator_root) = exp_accumulator_root {
-            if tx_accumulator_info.accumulator_root != exp_accumulator_root {
-                return Err(anyhow::anyhow!(
-                    "Tx accumulator root mismatch, expect: {:?}, actual: {:?}",
-                    exp_accumulator_root,
-                    tx_accumulator_info.accumulator_root
-                ));
-            } else {
-                info!(
-                    "Accumulator root is equal to RoochNetwork: tx_order: {}",
-                    tx_order
-                );
-            }
+        let exp_accumulator_root = tx.sequence_info.tx_accumulator_root;
+        let exp_accumulator_info = AccumulatorInfo {
+            accumulator_root: exp_accumulator_root,
+            frozen_subtree_roots: tx.sequence_info.tx_accumulator_frozen_subtree_roots.clone(),
+            num_leaves: tx.sequence_info.tx_accumulator_num_leaves,
+            num_nodes: tx.sequence_info.tx_accumulator_num_nodes,
+        };
+
+        if tx_accumulator_info != exp_accumulator_info {
+            return Err(anyhow::anyhow!(
+                "Tx accumulator mismatch for tx_order: {}, tx_hash: {:?}, expect: {:?}, actual: {:?}",
+                tx_order,
+                tx_hash,
+                exp_accumulator_info,
+                tx_accumulator_info
+            ));
         }
 
         let sequencer_info = SequencerInfo::new(tx_order, tx_accumulator_info);
         self.rooch_store.save_sequenced_tx(
             tx_hash,
-            tx.clone(),
+            tx,
             sequencer_info,
             tx_accumulator_unsaved_nodes,
-            false,
+            true,
         )?;
         self.tx_accumulator.clear_after_save();
         Ok(())
@@ -384,7 +367,7 @@ pub(crate) struct LedgerTxGetter {
     segment_dir: PathBuf,
     chunks: Arc<RwLock<HashMap<u128, Vec<u64>>>>,
     client: Option<Client>,
-    exp_roots: Arc<RwLock<HashMap<u64, (H256, H256)>>>,
+    exp_roots: Arc<RwLock<HashMap<u64, H256>>>,
     max_chunk_id: u128,
 }
 
@@ -405,7 +388,7 @@ impl LedgerTxGetter {
         open_da_path: String,
         segment_dir: PathBuf,
         client: Client,
-        exp_roots: Arc<RwLock<HashMap<u64, (H256, H256)>>>,
+        exp_roots: Arc<RwLock<HashMap<u64, H256>>>,
         shutdown_signal: watch::Receiver<()>,
     ) -> anyhow::Result<Self> {
         let (chunks, _min_chunk_id, max_chunk_id) = collect_chunks(segment_dir.clone())?;
@@ -483,10 +466,8 @@ impl LedgerTxGetter {
                     // some txs may not be executed for genesis_namespace: 527d69c3
                     if let Some(execution_info) = execution_info_opt {
                         let tx_state_root = execution_info.state_root.0;
-                        let tx_accumulator_root =
-                            tx_info.transaction.sequence_info.tx_accumulator_root.0;
                         let mut exp_roots = exp_roots.write().await;
-                        exp_roots.insert(tx_order, (tx_state_root, tx_accumulator_root));
+                        exp_roots.insert(tx_order, tx_state_root);
                     }
                 }
             }
@@ -504,14 +485,14 @@ impl LedgerTxGetter {
 
 pub(crate) struct TxMetaStore {
     tx_position_indexer: TxPositionIndexer,
-    exp_roots: Arc<RwLock<HashMap<u64, (H256, H256)>>>, // tx_order -> (state_root, accumulator_root)
+    exp_roots: Arc<RwLock<HashMap<u64, H256>>>, // tx_order -> (state_root, accumulator_root)
     max_verified_tx_order: u64,
     transaction_store: TransactionDBStore,
     rooch_store: RoochStore,
 }
 
 struct ExpRootsMap {
-    exp_roots: HashMap<u64, (H256, H256)>,
+    exp_root: HashMap<u64, H256>,
     max_verified_tx_order: u64,
 }
 
@@ -536,14 +517,14 @@ impl TxMetaStore {
 
         Ok(TxMetaStore {
             tx_position_indexer,
-            exp_roots: Arc::new(RwLock::new(exp_roots_map.exp_roots)),
+            exp_roots: Arc::new(RwLock::new(exp_roots_map.exp_root)),
             max_verified_tx_order,
             transaction_store,
             rooch_store,
         })
     }
 
-    pub(crate) fn get_exp_roots_map(&self) -> Arc<RwLock<HashMap<u64, (H256, H256)>>> {
+    pub(crate) fn get_exp_roots_map(&self) -> Arc<RwLock<HashMap<u64, H256>>> {
         self.exp_roots.clone()
     }
 
@@ -561,19 +542,18 @@ impl TxMetaStore {
                 continue;
             }
             let state_root = H256::from_str(state_root_raw)?;
-            let accumulator_root = H256::from_str(parts[2])?;
-            exp_roots.insert(tx_order, (state_root, accumulator_root));
+            exp_roots.insert(tx_order, state_root);
             if tx_order > max_verified_tx_order {
                 max_verified_tx_order = tx_order;
             }
         }
         Ok(ExpRootsMap {
-            exp_roots,
+            exp_root: exp_roots,
             max_verified_tx_order,
         })
     }
 
-    pub(crate) async fn get_exp_roots(&self, tx_order: u64) -> Option<(H256, H256)> {
+    pub(crate) async fn get_exp_state_root(&self, tx_order: u64) -> Option<H256> {
         self.exp_roots.read().await.get(&tx_order).cloned()
     }
 
