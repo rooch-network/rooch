@@ -33,8 +33,9 @@ use rooch_genesis::FrameworksGasParameters;
 use rooch_store::state_store::StateStore;
 use rooch_store::RoochStore;
 use rooch_types::address::{BitcoinAddress, MultiChainAddress};
-// use rooch_types::bitcoin::transaction_validator::TransactionValidator as L1TransactionValidator;
+use rooch_types::bitcoin::transaction_validator::TransactionValidator as L1TransactionValidator;
 use rooch_types::bitcoin::BitcoinModule;
+use rooch_types::error::RoochError;
 use rooch_types::framework::auth_validator::{
     AuthValidatorCaller, BuiltinAuthValidator, TxValidateResult,
 };
@@ -239,16 +240,13 @@ impl ExecutorActor {
         let ctx = TxContext::new_system_call_ctx(tx_hash, tx_size);
         let result = match RoochMultiChainID::try_from(l1_tx.chain_id.id())? {
             RoochMultiChainID::Bitcoin => {
-                //L1 tx validate first launches the contract, then opens the Rust code
-                // // Validate the l1 tx before execution via contract,
-                // let l1_tx_validator = self.as_module_binding::<L1TransactionValidator>();
-                // let tx_validator_result = l1_tx_validator
-                //     .validate_l1_tx(ctx, tx_hash, vec![])
-                //     .map_err(Into::into)?;
-                // // If the l1 tx already execute, skip the tx.
-                // if !tx_validator_result {
-                //     return Err(RoochError::L1TxAlreadyExecuted);
-                // }
+                // Validate the l1 tx before execution via contract,
+                let l1_tx_validator = self.as_module_binding::<L1TransactionValidator>();
+                let tx_validator_result = l1_tx_validator.validate_l1_tx(&ctx, tx_hash, vec![])?;
+                // If the l1 tx already execute, skip the tx.
+                if !tx_validator_result {
+                    return Err(RoochError::L1TxAlreadyExecuted.into());
+                }
 
                 let action = VerifiedMoveAction::Function {
                     call: BitcoinModule::create_execute_l1_tx_call(l1_tx.block_hash, l1_tx.txid)?,
@@ -260,7 +258,6 @@ impl ExecutorActor {
                     action,
                 ))
             }
-            // _id => Err(RoochError::InvalidChainID),
             id => Err(anyhow::anyhow!("Chain {} not supported yet", id)),
         };
 
