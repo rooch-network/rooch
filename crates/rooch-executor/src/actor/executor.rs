@@ -237,7 +237,7 @@ impl ExecutorActor {
             .start_timer();
         let tx_hash = l1_tx.tx_hash();
         let tx_size = l1_tx.tx_size();
-        let ctx = TxContext::new_system_call_ctx(tx_hash, tx_size);
+        let ctx = TxContext::new_system_readonly_call_ctx(tx_hash, tx_size);
         let result = match RoochMultiChainID::try_from(l1_tx.chain_id.id())? {
             RoochMultiChainID::Bitcoin => {
                 // Validate the l1 tx before execution via contract,
