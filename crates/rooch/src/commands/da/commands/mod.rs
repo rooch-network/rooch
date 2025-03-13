@@ -93,13 +93,6 @@ impl SequencedTxStore {
         let tx_order = tx.sequence_info.tx_order;
 
         let tx_hash = tx.tx_hash();
-        if tx_order == 99075174 {
-            let extra_tx_hash = H256::from_str(
-                "0x8fc04ace38e2d8e7870e75a46592c08ed18cca188bc6e9a4a91db70cada937ba",
-            )?;
-            let _tx_accumulator_root =
-                self.tx_accumulator.append(vec![extra_tx_hash].as_slice())?;
-        }
 
         let _tx_accumulator_root = self.tx_accumulator.append(vec![tx_hash].as_slice())?;
         let tx_accumulator_unsaved_nodes = self.tx_accumulator.pop_unsaved_nodes();
