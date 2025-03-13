@@ -246,8 +246,8 @@ impl TxSizeHist {
         let max_size = hist.max();
         let mean_size = hist.mean();
 
-        print!(
-            "-----------------{} Size Stats-----------------\n",
+        println!(
+            "-----------------{} Size Stats-----------------",
             self.title
         );
         println!(
