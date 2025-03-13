@@ -18,6 +18,7 @@ pub mod list_anomaly;
 pub mod repair;
 pub mod revert;
 pub mod rollback;
+pub mod verify_order;
 
 fn open_rocks(
     base_data_dir: Option<PathBuf>,
