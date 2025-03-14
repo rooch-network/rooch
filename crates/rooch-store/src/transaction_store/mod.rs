@@ -100,4 +100,8 @@ impl TransactionDBStore {
             None => Ok(None),
         }
     }
+
+    pub fn get_tx_hash(&self, tx_order: u64) -> Result<Option<H256>> {
+        self.tx_sequence_info_mapping_store.kv_get(tx_order)
+    }
 }
