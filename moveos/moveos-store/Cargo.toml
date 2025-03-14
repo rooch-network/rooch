@@ -24,13 +24,8 @@ prometheus = { workspace = true }
 tokio = { workspace = true }
 function_name = { workspace = true }
 tracing = { workspace = true }
-ambassador = { workspace = true }
-bytes = { workspace = true }
 
 move-core-types = { workspace = true }
-move-vm-types = { workspace = true }
-move-binary-format = { workspace = true }
-move-vm-runtime = { workspace = true }
 
 moveos-types = { workspace = true }
 raw-store = { workspace = true }

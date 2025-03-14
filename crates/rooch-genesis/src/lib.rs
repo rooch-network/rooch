@@ -693,7 +693,7 @@ mod tests {
             .get_resource_bytes_with_metadata_and_layout(
                 &rooch_dao_address.into(),
                 &MultisignAccountInfo::struct_tag(),
-                &vec![],
+                &[],
                 None,
             )
             .unwrap();
