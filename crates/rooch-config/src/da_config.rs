@@ -520,7 +520,7 @@ mod tests {
             }
         }
 
-        let da_config_str = "{\"da-backend\":{\"backends\":[{\"open-da\":{\"scheme\":\"gcs\",\"config\":{\"bucket\":\"$OPENDA_GCP_TESTNET_BUCKET\",\"credential\":\"$OPENDA_GCP_TESTNET_CREDENTIAL\"}}},{\"open-da\":{\"scheme\":\"avail\",\"config\":{\"turbo_endpoint\":\"$TURBO_DA_TURING_ENDPOINT\",\"turbo_api_key\":\"$TURBO_DA_TURING_API_KEY\"}}}]}}";
+        let da_config_str = "{\"da-min-block-to-submit\":1023, \"da-backend\":{\"backends\":[{\"open-da\":{\"scheme\":\"gcs\",\"config\":{\"bucket\":\"$OPENDA_GCP_TESTNET_BUCKET\",\"credential\":\"$OPENDA_GCP_TESTNET_CREDENTIAL\"}}},{\"open-da\":{\"scheme\":\"avail\",\"config\":{\"turbo_endpoint\":\"$TURBO_DA_TURING_ENDPOINT\",\"turbo_api_key\":\"$TURBO_DA_TURING_API_KEY\"}}}]}}";
         let exp_da_config = DAConfig {
             da_backend: Some(DABackendConfig {
                 submit_strategy: None,
@@ -563,7 +563,7 @@ mod tests {
                     }),
                 ],
             }),
-            da_min_block_to_submit: None,
+            da_min_block_to_submit: Some(1023),
             background_submit_interval: None,
             base: None,
         };
