@@ -18,7 +18,7 @@ version = "0.1.0"
 source = "git+https://github.com/rooch-network/move?rev=c85fc3f4f4fd93650b5cafe7ec73450387f780f2#c85fc3f4f4fd93650b5cafe7ec73450387f780f2"
 dependencies = [
  "proc-macro2 1.0.94",
- "quote 1.0.37",
+ "quote 1.0.40",
  "syn 1.0.109",
 ]
 
@@ -191,7 +191,7 @@ checksum = "6b27ba24e4d8a188489d5a03c7fabc167a60809a383cdb4d15feb37479cd2a48"
 dependencies = [
  "itertools 0.10.5",
  "proc-macro2 1.0.94",
- "quote 1.0.37",
+ "quote 1.0.40",
  "syn 1.0.109",
 ]
 
@@ -433,7 +433,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "db2fd794a08ccb318058009eefdf15bcaaaaf6f8161eb3345f907222bac38b20"
 dependencies = [
  "num-bigint 0.4.5",
- "num-traits 0.2.19",
+ "num-traits",
  "quote 1.0.40",
  "syn 1.0.109",
 ]
@@ -2962,7 +2962,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "afdf9e6fb6c8a925c6b19b78ec3a80152e7a46dc7811be5f1fa64568e7c7b6c0"
 dependencies = [
  "proc-macro2 1.0.94",
- "quote 1.0.37",
+ "quote 1.0.40",
  "syn 1.0.109",
 ]
 
@@ -4480,7 +4480,7 @@ dependencies = [
  "heck 0.4.1",
  "peg",
  "quote 1.0.40",
- "serde 1.0.219",
+ "serde",
  "serde_json",
  "syn 2.0.87",
  "textwrap",
@@ -6556,7 +6556,7 @@ version = "0.1.0"
 source = "git+https://github.com/rooch-network/move?rev=c85fc3f4f4fd93650b5cafe7ec73450387f780f2#c85fc3f4f4fd93650b5cafe7ec73450387f780f2"
 dependencies = [
  "once_cell",
- "quote 1.0.37",
+ "quote 1.0.40",
  "syn 1.0.109",
 ]
 
@@ -8783,7 +8783,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9cf16337405ca084e9c78985114633b6827711d22b9e6ef6c6c0d665eb3f0b6e"
 dependencies = [
  "proc-macro2 1.0.94",
- "quote 1.0.37",
+ "quote 1.0.40",
  "syn 1.0.109",
 ]
 
@@ -12865,7 +12865,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b9c81686f7ab4065ccac3df7a910c4249f8c0f3fb70421d6ddec19b9311f63f9"
 dependencies = [
  "proc-macro2 1.0.94",
- "quote 1.0.37",
+ "quote 1.0.40",
  "syn 2.0.87",
 ]
 
