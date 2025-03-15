@@ -213,7 +213,7 @@ impl DAServerActor {
                          Ok(Some(last_block_number)) => {
                              if let Some(block_number_for_last_job) = old_last_block_number {
                                  if block_number_for_last_job > last_block_number {
-                                          tracing::error!("da: last block number is smaller than last background job block number: {} < {}, database is inconsistent",
+                                          tracing::error!("da: last block number is smaller than last background job block number: {} < {}, database is inconsistent, will exit background submission",
                                               last_block_number, block_number_for_last_job);
                                           break;
                                       }
@@ -225,11 +225,11 @@ impl DAServerActor {
                                       .await
                                   {
                                       match e {
-                                          SubmitBatchError::Recoverable(e) => {
-                                              tracing::warn!("da: background submitter failed: {:?}", e);
+                                          SubmitBatchError::Recoverable(_) => {
+                                              tracing::warn!("da: background submitter failed: {}", e);
                                           }
-                                          SubmitBatchError::DatabaseInconsistent(e) => {
-                                              tracing::error!("da: background submitter failed: {:?}", e);
+                                          SubmitBatchError::DatabaseInconsistent(_) => {
+                                              tracing::error!("da: background submitter failed, will exit background submission: {}", e);
                                               break;
                                           }
                                       }
@@ -237,7 +237,7 @@ impl DAServerActor {
                          }
                           Ok(None) => {
                                  if let Some(block_number_for_last_job) = old_last_block_number {
-                                      tracing::error!("da: last block number is None, last background job block number: {}, database is inconsistent",
+                                      tracing::error!("da: last block number is None, last background job block number: {}, database is inconsistent, will exit background submission",
                                           block_number_for_last_job);
                                       break;
                                   }
