@@ -10538,6 +10538,7 @@ dependencies = [
  "rooch-types",
  "serde 1.0.219",
  "serde_json",
+ "thiserror",
  "tokio",
  "tracing",
 ]
