@@ -448,8 +448,8 @@ impl BackgroundSubmitter {
                 .rooch_store
                 .get_tx_hashes(tx_orders.clone())
                 .map_err(SubmitBatchError::Recoverable)?;
-            let tx_order_hash_pairs =
-                pair_tx_order_hash(tx_orders, tx_hashes).map_err(SubmitBatchError::Recoverable)?;
+            let tx_order_hash_pairs = pair_tx_order_hash(tx_orders, tx_hashes)
+                .map_err(SubmitBatchError::DatabaseInconsistent)?;
 
             let mut tx_list: Vec<LedgerTransaction> = Vec::new();
             for (tx_order, tx_hash) in tx_order_hash_pairs {
