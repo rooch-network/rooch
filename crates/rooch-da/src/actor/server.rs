@@ -315,11 +315,6 @@ impl Submitter {
         let batch = match batch_ret {
             Ok(batch) => batch,
             Err(e) => {
-                tracing::error!(
-                    "Critical error: Failed to create batch for block {}, error: {:?}",
-                    block_number,
-                    e
-                );
                 return Err(SubmitBatchError::DatabaseInconsistent(e));
             }
         };
