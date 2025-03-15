@@ -31,6 +31,7 @@ clap = { features = ["derive", ], workspace = true }
 rand = { workspace = true }
 csv = { workspace = true }
 
+moveos = { workspace = true }
 move-core-types = { workspace = true }
 moveos-types = { workspace = true }
 moveos-store = { workspace = true }

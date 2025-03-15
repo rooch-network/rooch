@@ -6,6 +6,7 @@ use metrics::RegistryService;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::u256::U256;
 use move_core_types::vm_status::KeptVMStatus;
+use moveos::moveos::{new_moveos_global_module_cache, MoveOSCacheManager};
 use moveos_config::DataDirPath;
 use moveos_store::MoveOSStore;
 use moveos_types::function_return_value::FunctionResult;
@@ -95,12 +96,16 @@ impl RustBindingTest {
         let rooch_db = RoochDB::init(store_config, &registry_service.default_registry())?;
         let root = genesis.init_genesis(&rooch_db)?;
 
+        let global_module_cache = new_moveos_global_module_cache();
+        let moveos_cache_manager = MoveOSCacheManager::new(vec![], global_module_cache);
+
         let executor = ExecutorActor::new(
             root.clone(),
             rooch_db.moveos_store.clone(),
             rooch_db.rooch_store.clone(),
             &registry_service.default_registry(),
             None,
+            moveos_cache_manager.clone(),
         )?;
 
         let reader_executor = ReaderExecutorActor::new(
@@ -108,6 +113,7 @@ impl RustBindingTest {
             rooch_db.moveos_store.clone(),
             rooch_db.rooch_store.clone(),
             None,
+            moveos_cache_manager,
         )?;
         Ok(Self {
             network,

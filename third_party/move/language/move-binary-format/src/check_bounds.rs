@@ -379,16 +379,38 @@ impl<'a> BoundsChecker<'a> {
                     *idx,
                     bytecode_offset,
                 )?,
+                MutBorrowVariantField(idx) | ImmBorrowVariantField(idx) => self
+                    .check_code_unit_bounds_impl_opt(
+                        &self.view.variant_field_handles(),
+                        *idx,
+                        bytecode_offset,
+                    )?,
                 MutBorrowFieldGeneric(idx) | ImmBorrowFieldGeneric(idx) => {
                     self.check_code_unit_bounds_impl_opt(
                         &self.view.field_instantiations(),
                         *idx,
                         bytecode_offset,
                     )?;
-                    // check type parameters in borrow are bound to the function type parameters
                     if let Some(field_inst) = self
                         .view
                         .field_instantiations()
+                        .and_then(|f| f.get(idx.into_index()))
+                    {
+                        self.check_type_parameters_in_signature(
+                            field_inst.type_parameters,
+                            type_param_count,
+                        )?;
+                    }
+                }
+                MutBorrowVariantFieldGeneric(idx) | ImmBorrowVariantFieldGeneric(idx) => {
+                    self.check_code_unit_bounds_impl_opt(
+                        &self.view.variant_field_instantiations(),
+                        *idx,
+                        bytecode_offset,
+                    )?;
+                    if let Some(field_inst) = self
+                        .view
+                        .variant_field_instantiations()
                         .and_then(|f| f.get(idx.into_index()))
                     {
                         self.check_type_parameters_in_signature(
@@ -408,7 +430,6 @@ impl<'a> BoundsChecker<'a> {
                         *idx,
                         bytecode_offset,
                     )?;
-                    // check type parameters in call are bound to the function type parameters
                     if let Some(func_inst) =
                         self.view.function_instantiations().get(idx.into_index())
                     {
@@ -422,6 +443,12 @@ impl<'a> BoundsChecker<'a> {
                 | MutBorrowGlobal(idx) | MoveFrom(idx) | MoveTo(idx) => self
                     .check_code_unit_bounds_impl_opt(
                         &self.view.struct_defs(),
+                        *idx,
+                        bytecode_offset,
+                    )?,
+                PackVariant(idx) | UnpackVariant(idx) | TestVariant(idx) => self
+                    .check_code_unit_bounds_impl_opt(
+                        &self.view.struct_variant_handles(),
                         *idx,
                         bytecode_offset,
                     )?,
@@ -445,6 +472,24 @@ impl<'a> BoundsChecker<'a> {
                     {
                         self.check_type_parameters_in_signature(
                             struct_inst.type_parameters,
+                            type_param_count,
+                        )?;
+                    }
+                }
+                PackVariantGeneric(idx) | UnpackVariantGeneric(idx) | TestVariantGeneric(idx) => {
+                    self.check_code_unit_bounds_impl_opt(
+                        &self.view.struct_variant_instantiations(),
+                        *idx,
+                        bytecode_offset,
+                    )?;
+                    // check type parameters
+                    if let Some(struct_variant_inst) = self
+                        .view
+                        .struct_variant_instantiations()
+                        .and_then(|s| s.get(idx.into_index()))
+                    {
+                        self.check_type_parameters_in_signature(
+                            struct_variant_inst.type_parameters,
                             type_param_count,
                         )?;
                     }

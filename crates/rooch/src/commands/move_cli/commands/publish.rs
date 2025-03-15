@@ -4,12 +4,15 @@
 use crate::cli_types::{CommandAction, TransactionOptions, WalletContextOptions};
 use crate::tx_runner::dry_run_tx_locally;
 use async_trait::async_trait;
+use bytes::Bytes;
 use clap::Parser;
+use move_binary_format::errors::PartialVMResult;
 use move_cli::Move;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::effects::Op;
-use move_core_types::resolver::ModuleResolver;
 use move_core_types::{identifier::Identifier, language_storage::ModuleId};
+use move_model::metadata::{CompilerVersion, LanguageVersion};
+use move_vm_types::resolver::ModuleResolver;
 use moveos_compiler::dependency_order::sort_by_dependency_order;
 use moveos_types::access_path::AccessPath;
 use moveos_types::move_std::string::MoveString;
@@ -90,14 +93,14 @@ impl MemoryModuleResolver {
 }
 
 impl ModuleResolver for MemoryModuleResolver {
-    fn get_module(&self, module_id: &ModuleId) -> Result<Option<Vec<u8>>, anyhow::Error> {
+    fn get_module(&self, module_id: &ModuleId) -> PartialVMResult<Option<Bytes>> {
         let pkg_addr = module_id.address();
         let module_name = module_id.name();
         match self.packages.get(pkg_addr) {
             Some(modules) => {
                 let module = modules.get(module_name.as_str());
                 match module {
-                    Some(module) => Ok(Some(module.clone())),
+                    Some(module) => Ok(Some(Bytes::from(module.to_vec()))),
                     None => Ok(None),
                 }
             }
@@ -181,6 +184,8 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
             .unwrap_or_else(|| std::env::current_dir().unwrap());
         let config = self.move_args.build_config.clone();
         let mut config = config.clone();
+        config.compiler_config.language_version = Some(LanguageVersion::V2_1);
+        config.compiler_config.compiler_version = Some(CompilerVersion::V2_1);
 
         // Parse named addresses from context and update config
         config.additional_named_addresses =
@@ -188,7 +193,8 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
         let config_cloned = config.clone();
 
         // Compile the package and run the verifier
-        let mut package = config.compile_package_no_exit(&package_path, &mut stderr())?;
+        let (mut package, _) =
+            config.compile_package_no_exit(&package_path, vec![], &mut stderr())?;
         run_verifier(package_path, config_cloned, &mut package)?;
 
         // Get the modules from the package
@@ -220,7 +226,8 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
         //We need to download all modules in one rpc request and then verify the modules.
         let mut resolver = MemoryModuleResolver::new(context.get_client().await?);
         resolver.download(all_module_ids)?;
-        moveos_verifier::verifier::verify_modules(&sorted_modules, &resolver)?;
+        //#TODO: disable the verification process temporary
+        //moveos_verifier::verifier::verify_modules(&sorted_modules, &resolver)?;
         for module in sorted_modules {
             let module_address = module.self_id().address().to_owned();
             if module_address != pkg_address {

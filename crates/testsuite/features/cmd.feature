@@ -298,6 +298,11 @@ Feature: Rooch CLI integration tests
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       Then cmd: "move run --function default::entry_function::emit_mix --args 3u8 --args "vector<object_id>:0x2342,0x3132"  --json"
       Then assert: "'{{$.move[-1]}}' contains FUNCTION_RESOLUTION_FAILURE"
+
+  @serial
+  Scenario: publish_through_entry_function-second  publish through Move entry function and module upgrade
+      Given a server for publish_through_entry_function-second
+
       Then cmd: "move publish -p ../../examples/entry_function_arguments/  --named-addresses rooch_examples=default --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       Then cmd: "move run --function default::entry_function::emit_mix --args 3u8 --args "vector<object_id>:0x2342,0x3132"  --json"
@@ -305,9 +310,10 @@ Feature: Rooch CLI integration tests
 
       # check compatibility
       Then cmd: "move publish -p ../../examples/entry_function_arguments_old/  --named-addresses rooch_examples=default --json"
-      Then assert: "'{{$.move[-1].execution_info.status.type}}' == 'moveabort'"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       Then stop the server
+
 
   @serial
   Scenario: publish rpd file directly

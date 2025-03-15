@@ -5,9 +5,9 @@ use anyhow::Result;
 use move_binary_format::access::ModuleAccess;
 use move_binary_format::file_format::FunctionHandleIndex;
 use move_binary_format::CompiledModule;
-use move_core_types::resolver::MoveResolver;
 use move_core_types::vm_status::AbortLocation;
 use move_core_types::vm_status::VMStatus;
+use move_vm_types::resolver::MoveResolver;
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -88,7 +88,7 @@ where
 fn extract_func_name<T>(
     location: &AbortLocation,
     function: &u16,
-    module_resolver: T,
+    module_resolver: &T,
 ) -> Option<String>
 where
     T: MoveResolver,
