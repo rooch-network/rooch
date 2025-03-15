@@ -41,7 +41,7 @@ module rooch_examples::move_v2 {
             Circle{radius}           => v = extract_radius_value(radius) * extract_radius_value(radius),
             Rectangle{width, height} => v = *width * extract_value(height),
         };
-        let _v1 = v;
+        assert!(v==15129, 1);
     }
 
     fun area(self: &Shape): u64 {
