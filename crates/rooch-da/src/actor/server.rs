@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::actor::errors::SubmitBatchError;
 use crate::actor::messages::{
     AppendTransactionMessage, GetServerStatusMessage, RevertTransactionMessage,
 };
@@ -223,7 +224,15 @@ impl DAServerActor {
                                       .start_job(last_block_number, min_block_to_submit_opt)
                                       .await
                                   {
-                                      tracing::error!("da: background submitter failed: {:?}", e);
+                                      match e {
+                                          SubmitBatchError::Recoverable(e) => {
+                                              tracing::warn!("da: background submitter failed: {:?}", e);
+                                          }
+                                          SubmitBatchError::DatabaseInconsistent(e) => {
+                                              tracing::error!("da: background submitter failed: {:?}", e);
+                                              break;
+                                          }
+                                      }
                                   }
                          }
                           Ok(None) => {
@@ -290,25 +299,38 @@ impl Submitter {
         &self,
         block_range: BlockRange,
         tx_list: Vec<LedgerTransaction>,
-    ) -> anyhow::Result<SignedDABatchMeta> {
+    ) -> anyhow::Result<SignedDABatchMeta, SubmitBatchError> {
         let block_number = block_range.block_number;
         let tx_order_start = block_range.tx_order_start;
         let tx_order_end = block_range.tx_order_end;
 
         // create batch
-        let batch = DABatch::new(
+        let batch_ret = DABatch::new(
             block_number,
             tx_order_start,
             tx_order_end,
             &tx_list,
             &self.sequencer_key,
-        )?;
+        );
+        let batch = match batch_ret {
+            Ok(batch) => batch,
+            Err(e) => {
+                tracing::error!(
+                    "Critical error: Failed to create batch for block {}, error: {:?}",
+                    block_number,
+                    e
+                );
+                return Err(SubmitBatchError::DatabaseInconsistent(e));
+            }
+        };
         let batch_meta = batch.meta.clone();
         let meta_signature = batch.meta_signature.clone();
         let batch_hash = batch.get_hash();
 
         // submit batch
-        self.submit_batch_to_backends(batch).await?;
+        self.submit_batch_to_backends(batch)
+            .await
+            .map_err(SubmitBatchError::Recoverable)?;
 
         match self.rooch_store.set_submitting_block_done(
             block_number,
@@ -375,17 +397,18 @@ impl BackgroundSubmitter {
         &self,
         last_block_number: u128,
         min_block_to_submit_opt: Option<u128>,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<(), SubmitBatchError> {
         // try to get unsubmitted blocks from [cursor, last_block_number]
-        let origin_background_cursor = self.rooch_store.get_background_submit_block_cursor()?;
+        let origin_background_cursor = self
+            .rooch_store
+            .get_background_submit_block_cursor()
+            .map_err(SubmitBatchError::Recoverable)?;
         let cursor_opt = Self::adjust_cursor(origin_background_cursor, min_block_to_submit_opt);
         let exp_count = if let Some(cursor) = cursor_opt {
             if cursor > last_block_number {
-                return Err(anyhow!(
+                return Err(SubmitBatchError::DatabaseInconsistent(anyhow::anyhow!(
                     "background submitter cursor should not be larger than last_block_number: {} > {}, database is inconsistent",
-                    cursor,
-                    last_block_number
-                ));
+                    cursor,last_block_number)));
             }
             last_block_number - cursor
         } else {
@@ -393,7 +416,8 @@ impl BackgroundSubmitter {
         };
         let unsubmitted_blocks = self
             .rooch_store
-            .get_submitting_blocks(cursor_opt.unwrap_or(0), Some(exp_count as usize))?;
+            .get_submitting_blocks(cursor_opt.unwrap_or(0), Some(exp_count as usize))
+            .map_err(SubmitBatchError::Recoverable)?;
 
         // there is no unsubmitted block
         if unsubmitted_blocks.is_empty() {
@@ -402,7 +426,8 @@ impl BackgroundSubmitter {
             if let Some(origin_cursor) = origin_background_cursor {
                 if origin_cursor != last_block_number {
                     // update cursor to last_block_number, because cursor maybe behind than set_submitting_block_done
-                    self.update_cursor(last_block_number)?;
+                    self.update_cursor(last_block_number)
+                        .map_err(SubmitBatchError::Recoverable)?;
                 }
             }
             return Ok(());
@@ -412,7 +437,8 @@ impl BackgroundSubmitter {
             // submitted: [cursor, first_unsubmitted_block - 1]
             let new_cursor = first_unsubmitted_block - 1;
             // update cursor to new_cursor, because cursor maybe behind than set_submitting_block_done
-            self.update_cursor(new_cursor)?;
+            self.update_cursor(new_cursor)
+                .map_err(SubmitBatchError::Recoverable)?;
         }
 
         let mut done_count: u128 = 0;
@@ -423,21 +449,27 @@ impl BackgroundSubmitter {
             let tx_order_end = unsubmitted_block_range.tx_order_end;
             // collect tx from start to end for rooch_store
             let tx_orders: Vec<u64> = (tx_order_start..=tx_order_end).collect();
-            let tx_hashes = self.rooch_store.get_tx_hashes(tx_orders.clone())?;
-            let tx_order_hash_pairs = pair_tx_order_hash(tx_orders, tx_hashes)?;
+            let tx_hashes = self
+                .rooch_store
+                .get_tx_hashes(tx_orders.clone())
+                .map_err(SubmitBatchError::Recoverable)?;
+            let tx_order_hash_pairs =
+                pair_tx_order_hash(tx_orders, tx_hashes).map_err(SubmitBatchError::Recoverable)?;
 
             let mut tx_list: Vec<LedgerTransaction> = Vec::new();
             for (tx_order, tx_hash) in tx_order_hash_pairs {
                 let tx = self
                     .rooch_store
-                    .get_transaction_by_hash(tx_hash)?
+                    .get_transaction_by_hash(tx_hash)
+                    .map_err(SubmitBatchError::Recoverable)?
                     .ok_or_else(|| {
                         anyhow!(
                             "fail to get transaction by tx_hash: {:?}, tx_order: {}",
                             tx_hash,
                             tx_order
                         )
-                    })?; // should not happen
+                    })
+                    .map_err(SubmitBatchError::Recoverable)?; // should not happen
                 tx_list.push(tx);
             }
             self.submitter
@@ -447,20 +479,22 @@ impl BackgroundSubmitter {
             max_block_number_submitted = block_number;
             if done_count % 16 == 0 {
                 // it's okay to set cursor a bit behind: submit_batch_raw has set submitting block done, so it won't be submitted again after restart
-                self.update_cursor(block_number)?;
+                self.update_cursor(block_number)
+                    .map_err(SubmitBatchError::Recoverable)?;
             }
         }
 
         if done_count == 0 {
-            return Err(anyhow!("da: background submitting job failed: no blocks submitted after checking, should not happen"));
-        };
-
-        self.update_cursor(max_block_number_submitted)?;
-        tracing::info!(
+            tracing::warn!("da: background submitting job failed: no blocks submitted after checking, should not happen");
+        } else {
+            self.update_cursor(max_block_number_submitted)
+                .map_err(SubmitBatchError::Recoverable)?;
+            tracing::info!(
             "da: background submitting job done: {} blocks submitted, new avail block number: {}",
             done_count,
             max_block_number_submitted
         );
+        }
 
         Ok(())
     }
