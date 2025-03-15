@@ -29,9 +29,8 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
 
-moveos-types = { workspace = true }
-
 rooch-config = { workspace = true }
+rooch-common = { workspace = true }
 rooch-types = { workspace = true }
 rooch-store = { workspace = true }
 

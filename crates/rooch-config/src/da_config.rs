@@ -19,7 +19,7 @@ const DEFAULT_OPENDA_FS_DIR: &str = "openda-fs";
 // After the first background submit job which, the cursor will be updated to the last submitted block number.
 // Only a few database operations are needed to catch up with the latest block numbers after a restart,
 // so it's okay to have a small interval.
-pub const DEFAULT_DA_BACKGROUND_SUBMIT_INTERVAL: u64 = 5;
+pub const DEFAULT_DA_BACKGROUND_SUBMIT_INTERVAL: u64 = 15;
 
 /// This enum specifies the strategy for submitting DA data.
 ///
