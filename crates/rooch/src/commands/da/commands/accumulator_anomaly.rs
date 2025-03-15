@@ -13,6 +13,11 @@ pub struct AccumulatorAnomalyCommand {
     pub segment_dir: PathBuf,
     #[clap(long = "start-from", help = "Start from the specified block number")]
     pub start_from: Option<u128>,
+    #[clap(
+        long = "found-count",
+        help = "Anomaly already found count before start-from"
+    )]
+    pub found_count: Option<u128>,
 }
 
 impl AccumulatorAnomalyCommand {
@@ -23,7 +28,7 @@ impl AccumulatorAnomalyCommand {
         let mut block_number = self.start_from.unwrap_or(0);
 
         let mut expected_number_leaves: u64 = 1;
-        let mut number_leaves_mismatched_count: u64 = 0;
+        let mut number_leaves_mismatched_count: u64 = self.found_count.unwrap_or(0) as u64;
 
         println!(
             "exp_number_leaves,act_number_leaves,tx_order,tx_hash,block_number,mismatched_count,timestamp"
@@ -41,6 +46,7 @@ impl AccumulatorAnomalyCommand {
                     .unwrap()
                     .sequence_info
                     .tx_accumulator_num_leaves;
+                expected_number_leaves -= number_leaves_mismatched_count;
             }
 
             for mut ledger_tx in tx_list {
