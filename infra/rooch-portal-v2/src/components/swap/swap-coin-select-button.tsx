@@ -29,6 +29,7 @@ import Text from './typography/text';
 import { Iconify } from '../iconify';
 
 import type { UserCoin } from './types';
+import { fNumber } from 'src/utils/format-number';
 
 export interface CoinSelectButtonProps {
   coins: UserCoin[];
@@ -177,7 +178,7 @@ export default function SwapCoinSelectButton({
                   </ListItemText>
                   {toBigNumber(coin.balance).gt(0) && (
                     <ListItemSecondaryAction>
-                      <Typography className="amount">{formatCoin(coin, true)}</Typography>
+                      <Typography className="amount">{fNumber(formatCoin(coin, true))}</Typography>
                     </ListItemSecondaryAction>
                   )}
                 </ListItemButton>

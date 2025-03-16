@@ -31,12 +31,14 @@ export default function SwapConfirmModal({
   fromCoin,
   toCoin,
   slippage,
+  onSuccess,
 }: {
   open: boolean;
   onClose: () => void;
   fromCoin: UserCoin;
   toCoin: UserCoin;
   slippage: number;
+  onSuccess: () => void;
 }) {
   const dex = useNetworkVariable('dex');
   const { mutateAsync, isPending } = useSignAndExecuteTransaction();
@@ -68,6 +70,7 @@ export default function SwapConfirmModal({
       .then((result) => {
         if (result.execution_info.status.type === 'executed') {
           toast.success('swap success');
+          onSuccess();
         } else {
           toast.error('swap failed');
         }
