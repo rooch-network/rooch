@@ -25,11 +25,11 @@ import { formatCoin, toBigNumber } from 'src/utils/number';
 
 import { grey } from 'src/theme/core';
 
+import { fNumber } from 'src/utils/format-number';
 import Text from './typography/text';
 import { Iconify } from '../iconify';
 
 import type { UserCoin } from './types';
-import { fNumber } from 'src/utils/format-number';
 
 export interface CoinSelectButtonProps {
   coins: UserCoin[];
