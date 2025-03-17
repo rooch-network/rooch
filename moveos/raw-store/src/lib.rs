@@ -126,6 +126,18 @@ impl DBStore for StoreInstance {
         }
     }
 
+    fn may_contains_key(&self, cf_name: &str, key: &[u8]) -> Result<bool> {
+        match self {
+            StoreInstance::DB {
+                db,
+                db_metrics: _db_metrics,
+            } => {
+                let res = db.may_contains_key(cf_name, key)?;
+                Ok(res)
+            }
+        }
+    }
+
     fn remove(&self, cf_name: &str, key: Vec<u8>) -> Result<()> {
         match self {
             StoreInstance::DB { db, db_metrics } => {
@@ -368,6 +380,10 @@ where
         self.instance.contains_key(self.cf_name, key)
     }
 
+    fn may_contains_key(&self, key: &[u8]) -> Result<bool> {
+        self.instance.may_contains_key(self.cf_name, key)
+    }
+
     fn remove(&self, key: Vec<u8>) -> Result<()> {
         self.instance.remove(self.cf_name, key)
     }
@@ -504,6 +520,8 @@ where
 
     fn contains_key(&self, key: K) -> Result<bool>;
 
+    fn may_contains_key(&self, key: K) -> Result<bool>;
+
     fn remove(&self, key: K) -> Result<()>;
 
     fn write_batch(&self, batch: CodecWriteBatch<K, V>) -> Result<()>;
@@ -572,6 +590,10 @@ where
 
     fn contains_key(&self, key: K) -> Result<bool> {
         KVStore::contains_key(self.get_store(), to_bytes(&key)?.as_slice())
+    }
+
+    fn may_contains_key(&self, key: K) -> Result<bool> {
+        KVStore::may_contains_key(self.get_store(), to_bytes(&key)?.as_slice())
     }
 
     fn remove(&self, key: K) -> Result<()> {

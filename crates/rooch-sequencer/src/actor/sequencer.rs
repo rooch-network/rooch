@@ -150,17 +150,25 @@ impl SequencerActor {
             .start_timer();
 
         self.check_service_status(&tx_data)?;
-
         let now = SystemTime::now();
         let tx_timestamp = now.duration_since(SystemTime::UNIX_EPOCH)?.as_millis() as u64;
-        let tx_order = self.get_next_tx_order()?;
+
         let tx_hash = tx_data.tx_hash();
+        if !self
+            .rooch_store
+            .transaction_store
+            .is_safe_to_sequence(tx_hash)?
+        {
+            return Err(anyhow::anyhow!("Transaction already sequenced"));
+        }
+
+        let tx_order = self.get_next_tx_order()?;
         let tx_order_signature =
             LedgerTransaction::sign_tx_order(tx_order, tx_hash, &self.sequencer_key);
         let _tx_accumulator_root = self.tx_accumulator.append(vec![tx_hash].as_slice())?;
-
         let tx_accumulator_unsaved_nodes = self.tx_accumulator.pop_unsaved_nodes();
         let tx_accumulator_info = self.tx_accumulator.get_info();
+
         let tx = LedgerTransaction::build_ledger_transaction(
             tx_data,
             tx_timestamp,

@@ -10,6 +10,7 @@ pub trait KVStore: Send + Sync {
     fn multiple_get(&self, keys: Vec<Vec<u8>>) -> Result<Vec<Option<Vec<u8>>>>;
     fn put(&self, key: Vec<u8>, value: Vec<u8>) -> Result<()>;
     fn contains_key(&self, key: &[u8]) -> Result<bool>;
+    fn may_contains_key(&self, key: &[u8]) -> Result<bool>;
     fn remove(&self, key: Vec<u8>) -> Result<()>;
     fn write_batch(&self, batch: WriteBatch) -> Result<()>;
     fn get_len(&self) -> Result<u64>;
@@ -38,4 +39,5 @@ pub trait DBStore: Send + Sync {
     // write batch across column families, each batch is for one column family for avoiding redundant column family name passing(we may have big batch)
     fn write_cf_batch(&self, cf_batches: Vec<WriteBatchCF>, sync: bool) -> Result<()>;
     fn multi_get(&self, cf_name: &str, keys: Vec<Vec<u8>>) -> Result<Vec<Option<Vec<u8>>>>;
+    fn may_contains_key(&self, cf_name: &str, key: &[u8]) -> Result<bool>;
 }
