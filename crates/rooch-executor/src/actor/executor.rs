@@ -11,6 +11,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor, LocalActorRef};
 use function_name::named;
+use move_core_types::account_address::AccountAddress;
 use move_core_types::vm_status::VMStatus;
 use moveos::moveos::{MoveOS, MoveOSCacheManager};
 use moveos::vm::vm_status_explainer::explain_vm_status;
@@ -235,12 +236,13 @@ impl ExecutorActor {
             .start_timer();
         let tx_hash = l1_tx.tx_hash();
         let tx_size = l1_tx.tx_size();
-        let ctx = TxContext::new_system_readonly_call_ctx(tx_hash, tx_size);
         let result = match RoochMultiChainID::try_from(l1_tx.chain_id.id())? {
             RoochMultiChainID::Bitcoin => {
-                // Validate the l1 tx before execution via contract,
+                // Validate the l1 tx before execution via contract
+                let readonly_ctx = TxContext::new_readonly_ctx(AccountAddress::ZERO);
                 let l1_tx_validator = self.as_module_binding::<L1TransactionValidator>();
-                let tx_validator_result = l1_tx_validator.validate_l1_tx(&ctx, tx_hash, vec![])?;
+                let tx_validator_result =
+                    l1_tx_validator.validate_l1_tx(&readonly_ctx, tx_hash, vec![])?;
                 // If the l1 tx already execute, skip the tx.
                 if !tx_validator_result {
                     return Err(RoochError::L1TxAlreadyExecuted.into());
@@ -250,6 +252,7 @@ impl ExecutorActor {
                     call: BitcoinModule::create_execute_l1_tx_call(l1_tx.block_hash, l1_tx.txid)?,
                     bypass_visibility: true,
                 };
+                let ctx = TxContext::new_system_call_ctx(tx_hash, tx_size);
                 Ok(VerifiedMoveOSTransaction::new(
                     self.root.clone(),
                     ctx,

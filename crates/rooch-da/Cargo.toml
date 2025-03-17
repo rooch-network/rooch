@@ -27,10 +27,10 @@ tokio = { workspace = true }
 reqwest = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
-
-moveos-types = { workspace = true }
+thiserror = { workspace = true }
 
 rooch-config = { workspace = true }
+rooch-common = { workspace = true }
 rooch-types = { workspace = true }
 rooch-store = { workspace = true }
 

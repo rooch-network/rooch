@@ -214,7 +214,7 @@ export class RoochClient {
       showDisplay: true,
     }
     return await this.transport.request({
-      method: 'rooch_repairIndexer',
+      method: 'rooch_syncStates',
       params: [input.filter, input.cursor, input.limit, opt],
     })
   }

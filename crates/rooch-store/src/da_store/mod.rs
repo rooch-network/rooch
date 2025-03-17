@@ -516,25 +516,24 @@ impl DAMetaStore for DAMetaDBStore {
     ) -> anyhow::Result<Vec<BlockRange>> {
         let exp_count = exp_count.unwrap_or(SUBMITTING_BLOCKS_PAGE_SIZE);
         // try to get exp_count unsubmitted blocks
-        // TODO use multi-get to get unsubmitted blocks
         let mut blocks = Vec::with_capacity(exp_count);
-        let mut found = 0;
-        let mut block_number = start_block;
-        while found < exp_count {
-            let state = self.block_submit_state_store.kv_get(block_number)?;
+
+        // get unsubmitted blocks: [start_block, start_block + exp_count)
+        let states = self
+            .block_submit_state_store
+            .multiple_get((start_block..).take(exp_count).collect())?;
+        for state in states {
             if let Some(state) = state {
                 if !state.done {
                     blocks.push(BlockRange {
-                        block_number,
+                        block_number: state.block_range.block_number,
                         tx_order_start: state.block_range.tx_order_start,
                         tx_order_end: state.block_range.tx_order_end,
                     });
-                    found += 1;
                 }
             } else {
                 break; // no more blocks
             }
-            block_number += 1;
         }
 
         Ok(blocks)

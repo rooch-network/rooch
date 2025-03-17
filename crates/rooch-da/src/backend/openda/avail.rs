@@ -11,7 +11,8 @@ use rooch_types::da::segment::SegmentID;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::collections::HashMap;
-use tokio::time::{sleep, Duration};
+use tokio::sync::Mutex;
+use tokio::time::{sleep, Duration, Instant};
 
 // small blob size for transaction to get included in a block quickly
 pub(crate) const DEFAULT_AVAIL_MAX_SEGMENT_SIZE: u64 = 256 * 1024;
@@ -25,15 +26,39 @@ const SUBMIT_API_PATH: &str = "v2/submit";
 const TURBO_MIN_BACKOFF_DELAY: Duration = Duration::from_millis(500);
 const TURBO_SUBMIT_API_PATH: &str = "v1/submit_raw_data";
 
+const MAX_REQUESTS_PER_MINUTE: usize = 20;
+const MIN_INTERVAL: Duration = Duration::from_secs(60 / MAX_REQUESTS_PER_MINUTE as u64);
+
 /// Avail client: A turbo and Light
 /// Turbo client has higher priority, if not available, use the Light client
 pub struct AvailFusionAdapter {
     stats: AdapterSubmitStat,
     turbo_client: Option<AvailTurboClient>,
     light_client: Option<AvailLightClient>,
+    last_submit_time: Mutex<Instant>, // Enforces rate-limiting
 }
 
 impl AvailFusionAdapter {
+    async fn rate_limited_submit(
+        &self,
+        segment_id: SegmentID,
+        segment_bytes: &[u8],
+    ) -> anyhow::Result<()> {
+        let mut last_time = self.last_submit_time.lock().await;
+
+        // Calculate the time difference since the last submission
+        let now = Instant::now();
+        if *last_time + MIN_INTERVAL > now {
+            // Sleep to maintain the rate limit
+            let delay_duration = (*last_time + MIN_INTERVAL) - now;
+            sleep(delay_duration).await;
+        }
+
+        // Perform the actual submission
+        *last_time = now;
+        self.submit(segment_id, segment_bytes).await
+    }
+
     async fn submit(&self, segment_id: SegmentID, segment_bytes: &[u8]) -> anyhow::Result<()> {
         match &self.turbo_client {
             Some(turbo_client) => {
@@ -71,7 +96,7 @@ impl OpenDAAdapter for AvailFusionAdapter {
         segment_bytes: &[u8],
         is_last_segment: bool,
     ) -> anyhow::Result<()> {
-        match self.submit(segment_id, segment_bytes).await {
+        match self.rate_limited_submit(segment_id, segment_bytes).await {
             Ok(_) => {
                 self.stats
                     .add_done_segment(segment_id, is_last_segment)
@@ -134,6 +159,7 @@ impl AvailFusionClientConfig {
             stats,
             turbo_client,
             light_client,
+            last_submit_time: Mutex::new(Instant::now() - MIN_INTERVAL),
         })
     }
 }
