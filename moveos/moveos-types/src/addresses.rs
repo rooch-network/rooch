@@ -35,6 +35,14 @@ pub fn to_bech32(addr: &AccountAddress) -> Result<String> {
         .map_err(|e| anyhow!(format!("bech32 encode error: {}", e.to_string())))
 }
 
+pub fn from_str(s: &str) -> Result<AccountAddress> {
+    if s.starts_with("0x") {
+        Ok(AccountAddress::from_hex_literal(s)?)
+    } else {
+        from_bech32(s)
+    }
+}
+
 pub fn from_bech32(bech32: &str) -> Result<AccountAddress> {
     let (hrp, data) = bech32::decode(bech32)?;
     anyhow::ensure!(hrp == ROOCH_HRP, "invalid account address hrp");
