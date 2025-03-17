@@ -322,6 +322,12 @@ impl RocksDB {
         }
     }
 
+    fn get_no_cache_options() -> ReadOptions {
+        let mut opts = ReadOptions::default();
+        opts.fill_cache(false);
+        opts
+    }
+
     pub fn property_int_value_cf(
         &self,
         cf: &impl AsColumnFamilyRef,
@@ -492,7 +498,9 @@ impl DBStore for RocksDB {
             .map(|(key, handle)| (handle, key.as_slice()))
             .collect::<Vec<_>>();
 
-        let result = self.db.multi_get_cf(keys_multi);
+        let result = self
+            .db
+            .multi_get_opt(keys_multi, &Self::get_no_cache_options());
         let mut res = vec![];
         for item in result {
             let item = item?;
