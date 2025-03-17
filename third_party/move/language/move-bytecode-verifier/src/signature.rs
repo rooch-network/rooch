@@ -166,10 +166,39 @@ impl<'a> SignatureChecker<'a> {
                         type_parameters,
                     )
                 }
+                PackVariantGeneric(idx) | UnpackVariantGeneric(idx) | TestVariantGeneric(idx) => {
+                    let variant_inst = self.resolver.struct_variant_instantiation_at(*idx)?;
+                    let variant_handle = self
+                        .resolver
+                        .struct_variant_handle_at(variant_inst.handle)?;
+                    let struct_def = self.resolver.struct_def_at(variant_handle.struct_index)?;
+                    let struct_handle = self.resolver.struct_handle_at(struct_def.struct_handle);
+                    let type_arguments =
+                        &self.resolver.signature_at(variant_inst.type_parameters).0;
+                    self.check_signature_tokens(type_arguments)?;
+                    self.check_generic_instance(
+                        type_arguments,
+                        struct_handle.type_param_constraints(),
+                        type_parameters,
+                    )
+                }
                 ImmBorrowFieldGeneric(idx) | MutBorrowFieldGeneric(idx) => {
                     let field_inst = self.resolver.field_instantiation_at(*idx)?;
                     let field_handle = self.resolver.field_handle_at(field_inst.handle)?;
                     let struct_def = self.resolver.struct_def_at(field_handle.owner)?;
+                    let struct_handle = self.resolver.struct_handle_at(struct_def.struct_handle);
+                    let type_arguments = &self.resolver.signature_at(field_inst.type_parameters).0;
+                    self.check_signature_tokens(type_arguments)?;
+                    self.check_generic_instance(
+                        type_arguments,
+                        struct_handle.type_param_constraints(),
+                        type_parameters,
+                    )
+                }
+                ImmBorrowVariantFieldGeneric(idx) | MutBorrowVariantFieldGeneric(idx) => {
+                    let field_inst = self.resolver.variant_field_instantiation_at(*idx)?;
+                    let field_handle = self.resolver.variant_field_handle_at(field_inst.handle)?;
+                    let struct_def = self.resolver.struct_def_at(field_handle.struct_index)?;
                     let struct_handle = self.resolver.struct_handle_at(struct_def.struct_handle);
                     let type_arguments = &self.resolver.signature_at(field_inst.type_parameters).0;
                     self.check_signature_tokens(type_arguments)?;
@@ -202,14 +231,70 @@ impl<'a> SignatureChecker<'a> {
 
                 // List out the other options explicitly so there's a compile error if a new
                 // bytecode gets added.
-                Pop | Ret | Branch(_) | BrTrue(_) | BrFalse(_) | LdU8(_) | LdU16(_) | LdU32(_)
-                | LdU64(_) | LdU128(_) | LdU256(_) | LdConst(_) | CastU8 | CastU16 | CastU32
-                | CastU64 | CastU128 | CastU256 | LdTrue | LdFalse | Call(_) | Pack(_)
-                | Unpack(_) | ReadRef | WriteRef | FreezeRef | Add | Sub | Mul | Mod | Div
-                | BitOr | BitAnd | Xor | Shl | Shr | Or | And | Not | Eq | Neq | Lt | Gt | Le
-                | Ge | CopyLoc(_) | MoveLoc(_) | StLoc(_) | MutBorrowLoc(_) | ImmBorrowLoc(_)
-                | MutBorrowField(_) | ImmBorrowField(_) | MutBorrowGlobal(_)
-                | ImmBorrowGlobal(_) | Exists(_) | MoveTo(_) | MoveFrom(_) | Abort | Nop => Ok(()),
+                Pop
+                | Ret
+                | Branch(_)
+                | BrTrue(_)
+                | BrFalse(_)
+                | LdU8(_)
+                | LdU16(_)
+                | LdU32(_)
+                | LdU64(_)
+                | LdU128(_)
+                | LdU256(_)
+                | LdConst(_)
+                | CastU8
+                | CastU16
+                | CastU32
+                | CastU64
+                | CastU128
+                | CastU256
+                | LdTrue
+                | LdFalse
+                | Call(_)
+                | Pack(_)
+                | Unpack(_)
+                | PackVariant(_)
+                | UnpackVariant(_)
+                | TestVariant(_)
+                | ReadRef
+                | WriteRef
+                | FreezeRef
+                | Add
+                | Sub
+                | Mul
+                | Mod
+                | Div
+                | BitOr
+                | BitAnd
+                | Xor
+                | Shl
+                | Shr
+                | Or
+                | And
+                | Not
+                | Eq
+                | Neq
+                | Lt
+                | Gt
+                | Le
+                | Ge
+                | CopyLoc(_)
+                | MoveLoc(_)
+                | StLoc(_)
+                | MutBorrowLoc(_)
+                | ImmBorrowLoc(_)
+                | MutBorrowField(_)
+                | ImmBorrowField(_)
+                | MutBorrowVariantField(_)
+                | ImmBorrowVariantField(_)
+                | MutBorrowGlobal(_)
+                | ImmBorrowGlobal(_)
+                | Exists(_)
+                | MoveTo(_)
+                | MoveFrom(_)
+                | Abort
+                | Nop => Ok(()),
             };
             result.map_err(|err| {
                 err.append_message_with_separator(' ', format!("at offset {} ", offset))

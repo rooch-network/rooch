@@ -37,7 +37,7 @@ impl CommandAction<Option<Value>> for InfoCommand {
             let json_result = json!({ "Result": "Success" });
             Ok(Some(json_result))
         } else {
-            resolved_graph.print_info()?;
+            println!("{:?}", resolved_graph.graph);
             Ok(None)
         }
     }

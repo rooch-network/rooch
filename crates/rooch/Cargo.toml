@@ -82,6 +82,7 @@ moveos-compiler = { workspace = true }
 moveos-config = { workspace = true }
 metrics = { workspace = true }
 moveos-gas-profiling = { workspace = true }
+move-model = { workspace = true }
 
 framework-types = { workspace = true }
 raw-store = { workspace = true }
@@ -107,6 +108,7 @@ rooch-common = { workspace = true }
 rooch-store = { workspace = true }
 rooch-faucet = { workspace = true }
 rooch-oracle = { workspace = true }
+bytes = { workspace = true }
 
 framework-release = { workspace = true }
 
