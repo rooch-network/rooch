@@ -6,14 +6,17 @@
 
 
 -  [Resource `Account`](#0x2_account_Account)
+-  [Resource `AccountCap`](#0x2_account_AccountCap)
 -  [Constants](#@Constants_0)
 -  [Function `create_account_by_system`](#0x2_account_create_account_by_system)
 -  [Function `create_account`](#0x2_account_create_account)
+-  [Function `create_account_with_cap`](#0x2_account_create_account_with_cap)
 -  [Function `sequence_number`](#0x2_account_sequence_number)
 -  [Function `increment_sequence_number_for_system`](#0x2_account_increment_sequence_number_for_system)
 -  [Function `exists_at`](#0x2_account_exists_at)
 -  [Function `create_signer_for_system`](#0x2_account_create_signer_for_system)
 -  [Function `create_signer_with_account`](#0x2_account_create_signer_with_account)
+-  [Function `create_signer_with_account_cap`](#0x2_account_create_signer_with_account_cap)
 -  [Function `account_object_id`](#0x2_account_account_object_id)
 -  [Function `account_borrow_resource`](#0x2_account_account_borrow_resource)
 -  [Function `account_borrow_mut_resource`](#0x2_account_account_borrow_mut_resource)
@@ -21,6 +24,7 @@
 -  [Function `account_move_resource_from`](#0x2_account_account_move_resource_from)
 -  [Function `account_exists_resource`](#0x2_account_account_exists_resource)
 -  [Function `destroy_account`](#0x2_account_destroy_account)
+-  [Function `destroy_account_cap`](#0x2_account_destroy_account_cap)
 -  [Function `borrow_account`](#0x2_account_borrow_account)
 -  [Function `borrow_mut_account`](#0x2_account_borrow_mut_account)
 -  [Function `borrow_resource`](#0x2_account_borrow_resource)
@@ -44,11 +48,23 @@
 
 ## Resource `Account`
 
-Account is part of the StorageAbstraction
-It is also used to store the account's resources
+Account is a struct that holds the sequence number for an address
 
 
 <pre><code><b>struct</b> <a href="account.md#0x2_account_Account">Account</a> <b>has</b> key
+</code></pre>
+
+
+
+<a name="0x2_account_AccountCap"></a>
+
+## Resource `AccountCap`
+
+AccountCap is a capability for Account
+The contract that has AccountCap can access the Account object
+
+
+<pre><code><b>struct</b> <a href="account.md#0x2_account_AccountCap">AccountCap</a> <b>has</b> store, key
 </code></pre>
 
 
@@ -83,6 +99,16 @@ Cannot create account because address is reserved
 
 
 <pre><code><b>const</b> <a href="account.md#0x2_account_ErrorAddressReserved">ErrorAddressReserved</a>: u64 = 3;
+</code></pre>
+
+
+
+<a name="0x2_account_ErrorDeprecateFunction"></a>
+
+Deprecate function
+
+
+<pre><code><b>const</b> <a href="account.md#0x2_account_ErrorDeprecateFunction">ErrorDeprecateFunction</a>: u64 = 7;
 </code></pre>
 
 
@@ -143,10 +169,22 @@ Create a new account for the given address, only callable by the system account
 
 ## Function `create_account`
 
-Create an Account Object with a generated address
+This function is deprecated, please use <code>create_account_with_cap</code> instead
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_create_account">create_account</a>(): <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="account.md#0x2_account_Account">account::Account</a>&gt;
+</code></pre>
+
+
+
+<a name="0x2_account_create_account_with_cap"></a>
+
+## Function `create_account_with_cap`
+
+Create a new account and return the AccountCap
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_create_account_with_cap">create_account_with_cap</a>(): <a href="account.md#0x2_account_AccountCap">account::AccountCap</a>
 </code></pre>
 
 
@@ -200,10 +238,21 @@ Return the current sequence number at <code>addr</code>
 
 ## Function `create_signer_with_account`
 
-Create a signer with mutable Object<Account>
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_create_signer_with_account">create_signer_with_account</a>(<a href="account.md#0x2_account">account</a>: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="account.md#0x2_account_Account">account::Account</a>&gt;): <a href="">signer</a>
+</code></pre>
+
+
+
+<a name="0x2_account_create_signer_with_account_cap"></a>
+
+## Function `create_signer_with_account_cap`
+
+Create a signer with the given account capability
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_create_signer_with_account_cap">create_signer_with_account_cap</a>(cap: &<b>mut</b> <a href="account.md#0x2_account_AccountCap">account::AccountCap</a>): <a href="">signer</a>
 </code></pre>
 
 
@@ -281,10 +330,22 @@ Create a signer with mutable Object<Account>
 
 ## Function `destroy_account`
 
-Destroy the account object
+Deprecated, we do not allow to destroy account object directly
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_destroy_account">destroy_account</a>(account_obj: <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="account.md#0x2_account_Account">account::Account</a>&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_destroy_account">destroy_account</a>(_account_obj: <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="account.md#0x2_account_Account">account::Account</a>&gt;)
+</code></pre>
+
+
+
+<a name="0x2_account_destroy_account_cap"></a>
+
+## Function `destroy_account_cap`
+
+Destroy the account capability
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_destroy_account_cap">destroy_account_cap</a>(account_cap: <a href="account.md#0x2_account_AccountCap">account::AccountCap</a>)
 </code></pre>
 
 
