@@ -415,6 +415,9 @@ inherits = "release"
 lto = "off"
 codegen-units = 16
 
+# This profile is used for CI
 [profile.optci]
 inherits = "optdev"
+# actually, incremental compilation is disabled already for release profile,
+# but we want to make it explicit.
 incremental = false
