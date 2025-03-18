@@ -1,0 +1,120 @@
+# Rooch TypeScript SDK 方法清单
+
+1. 客户端初始化相关
+
+```typescript
+// 创建客户端
+new RoochClient(config: RoochClientConfig)
+
+// 获取节点URL
+getRoochNodeUrl(network: 'testnet' | 'mainnet')
+
+// 创建WebSocket传输
+new RoochWebSocketTransport(config: WebSocketConfig)
+```
+
+2. 账户和会话管理
+
+```typescript
+// 创建会话
+createSession(params: CreateSessionParams)
+
+// 生成密钥对
+Secp256k1Keypair.generate()
+
+// 获取账户信息
+getAccount(params: GetAccountParams)
+
+// 获取账户余额
+getBalances(params: GetBalancesParams)
+```
+
+3. 交易相关
+
+```typescript
+// 创建交易
+new Transaction()
+
+// 调用合约函数
+callFunction(params: CallFunctionParams)
+
+// 签名并执行交易
+signAndExecuteTransaction(params: SignAndExecuteTransactionParams)
+
+// 获取交易信息
+getTransaction(params: GetTransactionParams)
+
+// 获取交易状态
+getTransactionStatus(params: GetTransactionStatusParams)
+
+// 等待交易完成
+waitForTransaction(params: WaitForTransactionParams)
+```
+
+4. 合约交互
+
+```typescript
+// 执行视图函数
+executeViewFunction(params: ExecuteViewFunctionParams)
+
+// 获取模块
+getModule(params: GetModuleParams)
+
+// 获取资源
+getResource(params: GetResourceParams)
+
+// 获取事件
+getEvents(params: GetEventsParams)
+```
+
+5. 状态查询
+
+```typescript
+// 获取状态
+getStates(params: GetStatesParams) 
+
+// 获取链信息
+getChainId()
+
+// 获取最新区块高度
+getLatestBlockHeight()
+```
+
+6. 工具方法
+
+```typescript
+// 地址转换
+addressToHex(address: string)
+hexToAddress(hex: string)
+
+// 编码解码
+encodeStruct(data: any)
+decodeStruct(data: any)
+
+// Gas估算
+estimateGasPrice()
+estimateGasUsage(transaction: Transaction)
+```
+
+7. WebSocket专用
+
+```typescript
+// 订阅事件
+subscribe(params: SubscribeParams)
+
+// 取消订阅
+unsubscribe(params: UnsubscribeParams)
+
+// 关闭连接
+destroy()
+```
+
+8. 错误处理
+
+```typescript
+// 获取错误信息
+getErrorMessage(error: RoochError)
+
+// 检查错误类型
+isRoochError(error: any)
+```
