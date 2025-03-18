@@ -33,7 +33,7 @@ use move_vm_types::{
     values::{values_impl::Reference, Struct, Value, Vector},
 };
 
-use moveos_types::addresses::{from_bech32, to_bech32, MOVE_STD_ADDRESS};
+use moveos_types::addresses::{self, to_bech32, MOVE_STD_ADDRESS};
 use moveos_types::move_std::string::MoveString;
 use moveos_types::moveos_std::decimal_value::DecimalValue;
 use moveos_types::moveos_std::object::ObjectID;
@@ -148,10 +148,7 @@ fn parse_struct_value_from_json(
 
             Err(anyhow::anyhow!("Invalid object id layout"))
         } else if is_decimal_value(struct_type) {
-            let str_value = json_value
-                .as_str()
-                .ok_or_else(|| anyhow::anyhow!("Invalid decimal value str"))?;
-            let decimal_value = DecimalValue::from_str(str_value)?;
+            let decimal_value = DecimalValue::from_json_value(json_value)?;
             let struct_value = decimal_value.to_runtime_value_struct();
             return Ok(struct_value);
         } else {
@@ -222,8 +219,8 @@ fn parse_move_value_from_json(
             let addr_str = json_value
                 .as_str()
                 .ok_or_else(|| anyhow::anyhow!("Invalid address value"))?;
-            let addr =
-                from_bech32(addr_str).map_err(|_| anyhow::anyhow!("Invalid address value"))?;
+            let addr = addresses::from_str(addr_str)
+                .map_err(|_| anyhow::anyhow!("Invalid address value"))?;
             Ok(Value::address(addr))
         }
         MoveTypeLayout::Vector(item_layout) => {
@@ -649,7 +646,7 @@ fn serialize_move_struct_to_json(
                 };
 
                 let decimal_value = DecimalValue::new(value, decimal);
-                JsonValue::String(decimal_value.to_string())
+                decimal_value.to_json_value()
             } else {
                 serialize_move_fields_to_json(layout_fields, value_fields)?
             }
