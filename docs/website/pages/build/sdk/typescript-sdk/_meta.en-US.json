@@ -1,12 +1,11 @@
 {
+  "ts-sdk-quick-start": {
+    "title": "Quick Start"
+  },
   "sdk-using-guide": {
     "title": "SDK Using Guide"
   },
   "sdk-method-list": {
     "title": "SDK Method List"
-  },
-  "ts-sdk-quick-start": {
-    "title": "Quick Start",
-    "display": "hidden"
   }
 }
