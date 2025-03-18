@@ -34,7 +34,7 @@ module moveos_std::account {
    const ErrorResourceAlreadyExists: u64 = 5;
    /// The resource with the given type not exists
    const ErrorResourceNotExists: u64 = 6;
-   /// Deprecate function
+   /// The function is deprecated
    const ErrorDeprecateFunction: u64 = 7;
 
    /// Create a new account for the given address, only callable by the system account
@@ -43,7 +43,7 @@ module moveos_std::account {
       create_account_internal(new_address)
    }
 
-   /// This function is deprecated, please use `create_account_with_cap` instead
+   /// This function is deprecated, please use `create_account_and_return_cap` instead
    public fun create_account(): Object<Account> {
       //We shoud not return Object<Account> directly,
       //Becase if other struct hold the Object<Account>, and the resource functions will not work
@@ -51,7 +51,7 @@ module moveos_std::account {
    }
 
    /// Create a new account and return the AccountCap
-   public fun create_account_with_cap(): AccountCap {
+   public fun create_account_and_return_cap(): AccountCap {
       let new_address = tx_context::fresh_address();
       let account_obj = create_account_object(new_address);
       object::transfer_extend(account_obj, new_address);
@@ -188,7 +188,7 @@ module moveos_std::account {
       object::transfer_extend(obj, account);
    }
 
-   /// Deprecated, we do not allow to destroy account object directly
+   /// Deprecated: Direct destruction of account objects is not allowed.
    public fun destroy_account(_account_obj: Object<Account>){
       abort ErrorDeprecateFunction
    }
@@ -473,8 +473,8 @@ module moveos_std::account {
 
    #[test]
    fun test_account_cap_holder(){
-      let alice = create_account_with_cap();
-      let bob = create_account_with_cap();
+      let alice = create_account_and_return_cap();
+      let bob = create_account_and_return_cap();
       let holder = AccountHolder{
          alice: alice,
          bob: bob,

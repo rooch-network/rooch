@@ -10,7 +10,7 @@
 -  [Constants](#@Constants_0)
 -  [Function `create_account_by_system`](#0x2_account_create_account_by_system)
 -  [Function `create_account`](#0x2_account_create_account)
--  [Function `create_account_with_cap`](#0x2_account_create_account_with_cap)
+-  [Function `create_account_and_return_cap`](#0x2_account_create_account_and_return_cap)
 -  [Function `sequence_number`](#0x2_account_sequence_number)
 -  [Function `increment_sequence_number_for_system`](#0x2_account_increment_sequence_number_for_system)
 -  [Function `exists_at`](#0x2_account_exists_at)
@@ -105,7 +105,7 @@ Cannot create account because address is reserved
 
 <a name="0x2_account_ErrorDeprecateFunction"></a>
 
-Deprecate function
+The function is deprecated
 
 
 <pre><code><b>const</b> <a href="account.md#0x2_account_ErrorDeprecateFunction">ErrorDeprecateFunction</a>: u64 = 7;
@@ -169,7 +169,7 @@ Create a new account for the given address, only callable by the system account
 
 ## Function `create_account`
 
-This function is deprecated, please use <code>create_account_with_cap</code> instead
+This function is deprecated, please use <code>create_account_and_return_cap</code> instead
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_create_account">create_account</a>(): <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="account.md#0x2_account_Account">account::Account</a>&gt;
@@ -177,14 +177,14 @@ This function is deprecated, please use <code>create_account_with_cap</code> ins
 
 
 
-<a name="0x2_account_create_account_with_cap"></a>
+<a name="0x2_account_create_account_and_return_cap"></a>
 
-## Function `create_account_with_cap`
+## Function `create_account_and_return_cap`
 
 Create a new account and return the AccountCap
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_create_account_with_cap">create_account_with_cap</a>(): <a href="account.md#0x2_account_AccountCap">account::AccountCap</a>
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_create_account_and_return_cap">create_account_and_return_cap</a>(): <a href="account.md#0x2_account_AccountCap">account::AccountCap</a>
 </code></pre>
 
 
@@ -330,7 +330,7 @@ Create a signer with the given account capability
 
 ## Function `destroy_account`
 
-Deprecated, we do not allow to destroy account object directly
+Deprecated: Direct destruction of account objects is not allowed.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_destroy_account">destroy_account</a>(_account_obj: <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="account.md#0x2_account_Account">account::Account</a>&gt;)
