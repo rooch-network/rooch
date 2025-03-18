@@ -414,3 +414,7 @@ inherits = "release"
 inherits = "release"
 lto = "off"
 codegen-units = 16
+
+[profile.optci]
+inherits = "optdev"
+incremental = false
