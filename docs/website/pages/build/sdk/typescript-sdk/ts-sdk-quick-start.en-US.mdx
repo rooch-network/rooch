@@ -1,35 +1,35 @@
 # Rooch TypeScript SDK quick start
 
-Rooch TypeScript SDK 是一个用于与 Rooch 交互的模块化工具库，封装了 RPC 方法。使用它能够简化向 RPC 节点发送查询、构建和签署交易以及与 Rooch 网络交互的流程。
+The Rooch TypeScript SDK is a modular toolkit for interacting with Rooch, encapsulating RPC methods. It simplifies the process of sending queries to RPC nodes, building and signing transactions, and interacting with the Rooch network.
 
-这篇文章主要引导你快速上手 Roock 的 TypeScript 开发者工具（TS SDK）。
+This article mainly guides you to quickly get started with Rooch's TypeScript developer tools (TS SDK).
 
-## 创建新项目
+## Create a new project
 
-> 注：本篇教程在 Linux 环境下演示！
+> Note: This tutorial is demonstrated in a Linux environment!
 
-首先创建一个目录，再使用 JS/TS 等包管理工具初始化项目 —— `sdk-quick-start`：
+First, create a directory and then initialize the project using JS/TS package management tools — `sdk-quick-start`:
 
 ```bash
-# 创建项目目录
+# Create project directory
 mkdir sdk-quick-start
 
-# 切换到项目根目录
+# Switch to the project root directory
 cd sdk-quick-start
 
-# 初始化项目
+# Initialize the project
 npm init -y
 ```
 
-## 添加依赖
+## Add dependencies
 
-这里只需要添加 `rooch-sdk` 依赖：
+Here, you only need to add the `rooch-sdk` dependency:
 
 ```sh npm2yarn
 npm i @roochnetwork/rooch-sdk
 ```
 
-检查 `package.json` 文件，`dependencies` 已经添加了我们需要使用的依赖清单：
+Check the `package.json` file, and the `dependencies` should already include the list of dependencies we need:
 
 ```json
 "dependencies": {
@@ -37,28 +37,28 @@ npm i @roochnetwork/rooch-sdk
 }
 ```
 
-## 更新配置
+## Update configuration
 
-在 `package.json` 里添加下面这句来启用模块特性：
+Add the following line in `package.json` to enable module features:
 
 ```json
 "type": "module",
 ```
 
-## 在代码中调用 RPC 方法
+## Call RPC methods in the code
 
 ```ts
 import { RoochClient, getRoochNodeUrl } from '@roochnetwork/rooch-sdk'
 
 async function main() {
   try {
-    // 创建客户端连接测试网
+    // Create a client to connect to the testnet
     const client = new RoochClient({
       url: getRoochNodeUrl('testnet')
     })
     console.log('Connected to Rooch testnet')
 
-    // 查询链信息
+    // Query chain information
     const chainInfo = await client.getChainId()
     console.log('Chain Info:', chainInfo)
 
@@ -70,9 +70,9 @@ async function main() {
 main()
 ```
 
-这里主要是使用 `RoochClient` 创建一个客户端实例，并用来获取一些常见的 Rooch RPC 操作方法。
+Here, we mainly use `RoochClient` to create a client instance and use it to get some common Rooch RPC operation methods.
 
-`getRoochNodeUrl('testnet')` 连接到测试网，并使用客户端提供的一个 RPC 方法 `chainId()` 来查看链当前的 ID：
+`getRoochNodeUrl('testnet')` connects to the testnet and uses a client-provided RPC method `chainId()` to view the current chain ID:
 
 ```bash
 $ npm run start
@@ -84,9 +84,9 @@ Connected to Rooch testnet
 Chain Info: 2
 ```
 
-## 通过 SDK 调用查询账户余额的方法
+## Call the method to query account balance through the SDK
 
-稍微修改一下上面的程序，这次连接主网，并查询主网上某个账户的余额：
+Slightly modify the above program, this time connect to the mainnet and query the balance of an account on the mainnet:
 
 ```ts
 import pkg from '@roochnetwork/rooch-sdk';
@@ -94,13 +94,13 @@ const { RoochClient, getRoochNodeUrl } = pkg;
 
 async function main() {
   try {
-    // 创建客户端连接主网
+    // Create a client to connect to the mainnet
     const client = new RoochClient({
       url: getRoochNodeUrl('mainnet')
     })
     console.log('Connected to Rooch mainnet')
 
-    // 查询账户余额
+    // Query account balance
     const balances = await client.getBalances({
       owner: "bc1ph25pk4xm36y3mt6uwclm0fgj8dgdnf5u7xf987qvyv58x987cldswp09hc",
       cursor: null,
@@ -116,7 +116,7 @@ async function main() {
 main()
 ```
 
-输出：
+Output:
 
 ```bash
 [joe@mx my-rooch-app]$ npm start
@@ -158,12 +158,12 @@ Connected to Rooch mainnet
 }
 ```
 
-> 注意返回结果中的 `balance` 字段！
+> Note the `balance` field in the returned result!
 
-## 总结
+## Summary
 
-至此，你已经了解了如何使用 SDK 了！
+So far, you have learned how to use the SDK!
 
-使用 SDK 我们可以方便地在代码中使用 RPC 方法来处理相应的操作，而不需要在命令行中手动地输入 RPC 方法。
+With the SDK, we can conveniently use RPC methods in the code to handle corresponding operations without manually entering RPC methods in the command line.
 
-接下来将带你开始 Rooch TypeScript SDK 开发之旅！
+Next, we will start the Rooch TypeScript SDK development journey!
