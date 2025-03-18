@@ -186,7 +186,6 @@ module moveos_std::json{
     #[test_only]
     #[data_struct]
     struct TestAddressStruct has key,copy,drop {
-        value: u64,
         addr: address,
     }
 
@@ -307,8 +306,10 @@ module moveos_std::json{
         // ("1.000000", DecimalValue { value: U256::from(1u64), decimal: 0 }),
         let decimal_value = decimal_value::new(1000000, 6);
         let decimal_value_json = to_json(&decimal_value);
+        //std::debug::print(&string::utf8(decimal_value_json));
         let from_decimal_value = from_json<DecimalValue>(decimal_value_json);
-        assert!(decimal_value == from_decimal_value, 1);
+        //std::debug::print(&from_decimal_value);
+        assert!(decimal_value::is_equal(&decimal_value,&from_decimal_value), 1);
 
         // ("1234.567", DecimalValue { value: U256::from(1234567u64), decimal: 3 }),
         let decimal_value2 = decimal_value::new(1234567, 3);
@@ -330,22 +331,46 @@ module moveos_std::json{
     }
 
     #[test]
-    fun test_json_address() {
+    fun test_json_decimal_value_number_and_string() {
+        let decimal_value = from_json<DecimalValue>(b"\"1.1\"");
+        let decimal_value2 = from_json<DecimalValue>(b"1.1");
+        assert!(decimal_value == decimal_value2, 1);
+        let decimal_json = to_json(&decimal_value);
+        assert!(decimal_json == b"1.1", 2);
+    }
+
+    #[test]
+    fun test_json_decimal_value_too_bug(){
+        //u128 max
+        let decimal_value = decimal_value::new(0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF,2);
+        let decimal_value_json = to_json(&decimal_value);
+        //std::debug::print(&string::utf8(decimal_value_json));
+        //The value is too big to be represented in float, so it will be represented in string
+        assert!(decimal_value_json == b"\"3402823669209384634633746074317682114.55\"", 2);
+    }
+
+    #[test]
+    fun test_json_address_in_struct() {
         let _test_address_bech32 = b"";
         let test_struct = TestAddressStruct {
-            value: 0,
             addr: @0xa7afe75c4f3a7631191905601f4396b25dde044539807de65ed4fc7358dbd98e
         };
         let test_struct_json = to_json(&test_struct);
         let from_test_struct = from_json<TestAddressStruct>(test_struct_json);
         assert!(test_struct == from_test_struct, 1);
+    }
 
-        // Test address
-        let address_value = @0x42;
-        let address_json = to_json(&address_value);
-        // let _from_address_value = from_json<address>(address_json);
-        // assert!(address_value == from_address_value, 2);
-        assert!(string::utf8(address_json) == string::utf8(b"\"rooch1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqppq6exstd\""), 3);
-        std::debug::print(&string::utf8(address_json));
+    //The json from address can be either hex or bech32
+    //But the json to address will always be bech32
+    #[test]
+    fun test_json_address_hex_and_bech32(){
+        let addr = @0x42;
+        let test_address_struct = from_json<TestAddressStruct>(b"{\"addr\":\"rooch1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqppq6exstd\"}");
+        let test_address_struct2 = from_json<TestAddressStruct>(b"{\"addr\":\"0x42\"}");
+        assert!(addr == test_address_struct.addr, 1);
+        assert!(addr == test_address_struct2.addr, 2);
+
+        let address_json = to_json(&addr);
+        assert!(address_json == b"\"rooch1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqppq6exstd\"", 3);
     }
 }
