@@ -1,187 +1,169 @@
 # Rooch TypeScript SDK quick start
 
-The Rooch TypeScript SDK is a modular library of tools for interacting with the Rooch Layer2. Use it to send queries to RPC nodes, build and sign transactions, and interact with a Rooch or local network.
+Rooch TypeScript SDK 是一个用于与 Rooch 交互的模块化工具库，封装了 RPC 方法。使用它能够简化向 RPC 节点发送查询、构建和签署交易以及与 Rooch 网络交互的流程。
 
-This article mainly guides you to quickly get started with Roock's TypeScript development tools (TS SDK).
+这篇文章主要引导你快速上手 Roock 的 TypeScript 开发者工具（TS SDK）。
 
-## Create new project
+## 创建新项目
 
-> Note: This tutorial is demonstrated in a Linux environment!
+> 注：本篇教程在 Linux 环境下演示！
 
-First create a directory, and then use package management tools such as JS/TS to initialize the project - `sdk-quick-start`:
+首先创建一个目录，再使用 JS/TS 等包管理工具初始化项目 —— `sdk-quick-start`：
 
 ```bash
+# 创建项目目录
 mkdir sdk-quick-start
+
+# 切换到项目根目录
 cd sdk-quick-start
+
+# 初始化项目
+npm init -y
 ```
 
-```bash
-[joe@mx sdk-quick-start]$ npm init
-This utility will walk you through creating a package.json file.
-It only covers the most common items, and tries to guess sensible defaults.
+## 添加依赖
 
-See `npm help init` for definitive documentation on these fields
-and exactly what they do.
-
-Use `npm install <pkg>` afterwards to install a package and
-save it as a dependency in the package.json file.
-
-Press ^C at any time to quit.
-package name: (sdk-quick-start)
-version: (1.0.0)
-description: Rooch TS SDK Test.
-entry point: (index.js)
-test command:
-git repository:
-keywords:
-author: Joe Chen
-license: (ISC)
-About to write to /home/joe/i/sdk-quick-start/package.json:
-
-{
-  "name": "sdk-quick-start",
-  "version": "1.0.0",
-  "description": "Rooch TS SDK Test.",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "author": "Joe Chen",
-  "license": "ISC"
-}
-
-
-Is this OK? (yes) yes
-```
-
-## Add dependencies
-
-Here you only need to add the `rooch-sdk` dependency:
+这里只需要添加 `rooch-sdk` 依赖：
 
 ```sh npm2yarn
 npm i @roochnetwork/rooch-sdk
 ```
 
-Check the `package.json` file, the `dependencies` list we need to use has been added:
+检查 `package.json` 文件，`dependencies` 已经添加了我们需要使用的依赖清单：
 
 ```json
 "dependencies": {
-  "@roochnetwork/rooch-sdk": "^0.1.0"
+    "@roochnetwork/rooch-sdk": "latest"
 }
 ```
 
-## Update configuration
+## 更新配置
 
-Add the following line to `package.json` to enable module features:
+在 `package.json` 里添加下面这句来启用模块特性：
 
 ```json
 "type": "module",
 ```
 
-## Call RPC methods in code
+## 在代码中调用 RPC 方法
 
 ```ts
-import pkg from '@roochnetwork/rooch-sdk';
-const { DevNetwork, RoochClient } = pkg;
+import { RoochClient, getRoochNodeUrl } from '@roochnetwork/rooch-sdk'
 
-// create a provider connected to devnet
-const provider = new RoochClient(DevNetwork);
+async function main() {
+  try {
+    // 创建客户端连接测试网
+    const client = new RoochClient({
+      url: getRoochNodeUrl('testnet')
+    })
+    console.log('Connected to Rooch testnet')
 
-console.log(provider);
-```
+    // 查询链信息
+    const chainInfo = await client.getChainId()
+    console.log('Chain Info:', chainInfo)
 
-Here we mainly use `RoochClient` to create a client instance and obtain some common Rooch RPC operation methods.
-
-The object information of `RoochClient` is displayed here.
-
-```json
-[joe@mx sdk-quick-start]$ node index.js
-
-RoochClient {
-  options: { versionCacheTimeoutInSeconds: 600 },
-  network: Network {
-    id: 20230103,
-    name: 'dev',
-    options: { url: 'https://dev-seed.rooch.network:443' }
-  },
-  client: JsonRpcClient {
-    requestManager: RequestManager {
-      batch: [],
-      batchStarted: false,
-      lastId: -1,
-      transports: [Array],
-      requests: {},
-      connectPromise: [Promise],
-      requestChannel: [EventEmitter],
-      nextID: [Function (anonymous)]
-    }
+  } catch (error) {
+    console.error('Error:', error)
   }
 }
+
+main()
 ```
 
-We use an RPC method `ChainInfo()` provided by the client to view the current information of the chain:
+这里主要是使用 `RoochClient` 创建一个客户端实例，并用来获取一些常见的 Rooch RPC 操作方法。
 
-```ts
-const rooch_chain = provider.ChainInfo();
+`getRoochNodeUrl('testnet')` 连接到测试网，并使用客户端提供的一个 RPC 方法 `chainId()` 来查看链当前的 ID：
 
-// console.log(provider);
-console.log(rooch_chain);
+```bash
+$ npm run start
+
+> my-rooch-app@1.0.0 start
+> node index.js
+
+Connected to Rooch testnet
+Chain Info: 2
 ```
 
-Return:
+## 通过 SDK 调用查询账户余额的方法
 
-```json
-{
-  chainId: '0x134afd7',
-  chainName: 'dev',
-  iconUrls: [
-    'https://github.com/rooch-network/rooch/blob/main/docs/website/public/logo/rooch_black_text.png'
-  ],
-  nativeCurrency: { name: 'ROH', symbol: 'ROH', decimals: 18 },
-  rpcUrls: [ 'https://dev-seed.rooch.network:443' ]
-}
-```
-
-Then we can use the returned JSON information to perform corresponding operations.
-
-Modify the code as follows:
+稍微修改一下上面的程序，这次连接主网，并查询主网上某个账户的余额：
 
 ```ts
 import pkg from '@roochnetwork/rooch-sdk';
-const { DevNetwork, RoochClient } = pkg;
+const { RoochClient, getRoochNodeUrl } = pkg;
 
-// create a provider connected to devnet
-const provider = new RoochClient(DevNetwork);
+async function main() {
+  try {
+    // 创建客户端连接主网
+    const client = new RoochClient({
+      url: getRoochNodeUrl('mainnet')
+    })
+    console.log('Connected to Rooch mainnet')
 
-const rooch_chain = provider.ChainInfo();
+    // 查询账户余额
+    const balances = await client.getBalances({
+      owner: "bc1ph25pk4xm36y3mt6uwclm0fgj8dgdnf5u7xf987qvyv58x987cldswp09hc",
+      cursor: null,
+      limit: 10
+    })
+    console.log(balances)
 
-// console.log(provider);
-// console.log(rooch_chain);
+  } catch (error) {
+    console.error('Error:', error)
+  }
+}
 
-console.log(
-  `Welcome to Rooch Typescript SDK Quick Start!\n
-=> The network you are currently linked to is ${rooch_chain.chainName}.
-=> The RPC URL is ${rooch_chain.rpcUrls}
-=> Rooch's Token is "${rooch_chain.nativeCurrency.symbol}."`
-);
+main()
 ```
 
-Running result:
+输出：
 
 ```bash
-[joe@mx sdk-quick-start]$ node index.js
+[joe@mx my-rooch-app]$ npm start
 
-Welcome to Rooch Typescript SDK Quick Start!
+> my-rooch-app@1.0.0 start
+> node index.js
 
-=> The network you are currently linked to is dev.
-=> The RPC URL is https://dev-seed.rooch.network:443
-=> Rooch's Token is "ROH."
+Connected to Rooch mainnet
+{
+  data: [
+    {
+      coin_type: '0x3::gas_coin::RGas',
+      name: 'Rooch Gas Coin',
+      symbol: 'RGAS',
+      icon_url: '<?xml version="1.0" encoding="UTF-8"?>\n' +
+        '<svg id="uuid-f3c10da3-9417-410e-a3ab-8ce1ab7d75a2" data-name="layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500">\n' +
+        '  <defs>\n' +
+        '    <style>\n' +
+        '      .uuid-f8ed1a91-d770-44e4-b9a1-8898aed79e23 {\n' +
+        '        fill: #006840;\n' +
+        '      }\n' +
+        '\n' +
+        '      .uuid-06e2debf-0aef-494d-b577-6d49611e1cf8 {\n' +
+        '        fill: #b2ff04;\n' +
+        '      }\n' +
+        '    </style>\n' +
+        '  </defs>\n' +
+        '  <circle class="uuid-06e2debf-0aef-494d-b577-6d49611e1cf8" cx="250" cy="250" r="250"/>\n' +
+        '  <path class="uuid-f8ed1a91-d770-44e4-b9a1-8898aed79e23" d="M346.39,403.15c-26.17-23.18-51.58-45.69-77.73-68.86-.13,2.58-.28,4.18-.29,5.77-.19,30.24-.36,60.48-.54,90.73q-.04,6.48-6.74,6.45c-8.78-.05-17.57-.27-26.35-.07-3.46,.08-4.36-.83-4.32-4.3,.33-31.62,.46-63.23,.64-94.85,0-1.05,.01-2.09,.02-4.12-26.46,22.99-52.29,45.44-78.06,67.84-1.6-.72-.96-1.95-.96-2.88,.04-14.97,.2-29.94,.17-44.9,0-2.36,.75-3.86,2.52-5.42,28.99-25.57,57.91-51.22,86.85-76.84,.67-.59,1.45-1.07,2.4-1.76-1.89-1.66-3.64-1.09-5.18-1.1-27.12-.2-54.24-.43-81.36-.41-3.91,0-4.88-1.05-4.74-4.83,.34-9.46,.42-18.94,.16-28.4-.11-3.83,1.29-4.39,4.68-4.35,26.96,.28,53.93,.38,80.9,.54,1.68,0,3.37,.02,5.83,.03-2.08-3.59-5.06-5.5-7.53-7.74-27-24.56-54.06-49.05-81.17-73.49-1.49-1.35-2.15-2.64-2.13-4.66,.17-16.03,.23-32.07,.33-49.24,26.24,23.34,51.86,46.12,78.27,69.61,.01-2.46,.02-4.06,.03-5.65,.18-31.01,.43-62.01,.45-93.02,0-3.71,1.1-4.55,4.65-4.44,9.39,.29,18.8,.42,28.19,.14,4.06-.12,4.69,1.28,4.65,4.93-.33,30.7-.44,61.4-.62,92.1,0,1.63-.02,3.27-.04,6.19,26.52-23.13,52.16-45.5,77.98-68.01,1.04,1.6,.64,2.99,.64,4.27-.05,13.9-.29,27.8-.13,41.7,.05,3.86-1.14,6.41-4.05,8.97-28.31,24.95-56.48,50.05-84.69,75.1-.78,.69-1.52,1.41-2.45,2.27,1.66,1.71,3.6,1.03,5.27,1.04,26.96,.21,53.93,.41,80.9,.44,3.42,0,4.77,.6,4.62,4.41-.37,9.61-.37,19.24-.19,28.86,.06,3.38-.77,4.35-4.31,4.31-27.12-.32-54.24-.4-81.36-.56-1.64,0-3.28-.02-6.14-.04,8.77,7.94,16.64,15.09,24.54,22.22,21.63,19.52,43.26,39.04,64.91,58.53,1.08,.97,1.81,1.89,1.8,3.46-.14,16.32-.22,32.64-.32,50.05Z"/>\n' +
+        '</svg>',
+      decimals: 8,
+      supply: '50000000200000000',
+      balance: '9758826626',
+      fixedBalance: 97.58826626
+    }
+  ],
+  next_cursor: { tx_order: '57954988', state_index: '2' },
+  has_next_page: false
+}
 ```
 
-## Summary
+> 注意返回结果中的 `balance` 字段！
 
-At this point, you already know how to use the SDK!
+## 总结
 
-Using the SDK we can easily use RPC methods in code to handle corresponding operations without having to manually enter RPC methods on the command line.
+至此，你已经了解了如何使用 SDK 了！
 
-Next, we will take you to start the Rooch TypeScript SDK development journey!
+使用 SDK 我们可以方便地在代码中使用 RPC 方法来处理相应的操作，而不需要在命令行中手动地输入 RPC 方法。
+
+接下来将带你开始 Rooch TypeScript SDK 开发之旅！
