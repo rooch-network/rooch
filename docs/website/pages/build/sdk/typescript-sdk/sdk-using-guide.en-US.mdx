@@ -1,109 +1,108 @@
+# Rooch TypeScript SDK Usage Guide
 
-# Rooch TypeScript SDK 使用教程
+1. Installation
 
-1. 安装
-
-首先需要安装 SDK 包:
+First, you need to install the SDK package:
 
 ```
 npm install @roochnetwork/rooch-sdk
 ```
 
-2. 创建客户端连接
+2. Creating a Client Connection
 
-有两种方式连接 Rooch 网络:
+There are two ways to connect to the Rooch network:
 
-HTTP连接(推荐新手使用)
+HTTP Connection (recommended for beginners)
 
 ```typescript
 import { RoochClient, getRoochNodeUrl } from '@roochnetwork/rooch-sdk'
 
-// 连接测试网
+// Connect to the testnet
 const client = new RoochClient({
   url: getRoochNodeUrl('testnet')
 })
 ```
 
-WebSocket连接
+WebSocket Connection
 
 ```typescript
 import { RoochClient, RoochWebSocketTransport } from '@roochnetwork/rooch-sdk'
 
-// 创建WebSocket传输
+// Create WebSocket transport
 const wsTransport = new RoochWebSocketTransport({
   url: getRoochNodeUrl('testnet'),
   reconnectDelay: 1000,
   maxReconnectAttempts: 5
 })
 
-// 使用WebSocket创建客户端
+// Create client using WebSocket
 const client = new RoochClient({
   transport: wsTransport
 })
 ```
 
-3. 创建会话账户
+3. Creating a Session Account
 
-为了调用合约,需要先创建会话账户:
+To call a contract, you need to create a session account first:
 
 ```typescript
 import { Secp256k1Keypair } from '@roochnetwork/rooch-sdk'
 
-// 生成密钥对
+// Generate a key pair
 const keypair = Secp256k1Keypair.generate()
 
-// 创建会话
+// Create a session
 const session = await client.createSession({
   sessionArgs: {
     appName: 'MyApp',
     appUrl: 'https://myapp.com',
-    scopes: ['0x3::empty::empty_with_signer'] // 需要访问的合约方法
+    scopes: ['0x3::empty::empty_with_signer'] // Contract methods to access
   },
   signer: keypair
 })
 ```
 
-4. 调用合约
+4. Calling a Contract
 
 ```typescript
 import { Transaction } from '@roochnetwork/rooch-sdk'
 
-// 创建交易对象
+// Create a transaction object
 const tx = new Transaction()
 
-// 调用合约方法
+// Call a contract method
 tx.callFunction({
   target: '0x3::empty::empty_with_signer',
-  maxGas: 100000000 // 设置最大gas费用
+  maxGas: 100000000 // Set the maximum gas fee
 })
 
-// 签名并执行交易
+// Sign and execute the transaction
 const result = await client.signAndExecuteTransaction({
   transaction: tx,
   signer: session
 })
 ```
 
-5. 查询数据
+5. Querying Data
 
 ```typescript
-// 查询余额
+// Query balance
 const balances = await client.getBalances({
-  owner: '0x...' // 账户地址
+  owner: '0x...' // Account address
 })
 
-// 调用合约视图函数
+// Call a contract view function
 const viewResult = await client.executeViewFunction({
   target: '0x3::counter::view'
 })
 ```
 
-> 注意事项
-> 1. 测试网络仍在开发中,API可能会频繁变动
-> 2. 使用WebSocket时记得在不使用时调用 client.destroy() 清理资源
-> 3. Gas费用默认为 50000000 (0.5 RGas),可根据需要调整
-> 4. 创建会话时需要指定合约调用权限范围
+> Notes
+> 1. The test network is still under development, and the API may change frequently.
+> 2. When using WebSocket, remember to call client.destroy() to clean up resources when not in use.
+> 3. The default gas fee is 50000000 (0.5 RGas), which can be adjusted as needed.
+> 4. When creating a session, you need to specify the contract call permission scope.
 
-这是最基础的使用流程,SDK 还提供了更多高级功能,可以根据需要参考 API 文档深入学习。
+This is the most basic usage process. The SDK also provides more advanced features, which you can learn about in depth by referring to the API documentation.
 
-SDK API 的列表和详细说明请参考[SDK 方法清单](./sdk-methon-list)。
+For a list and detailed description of SDK APIs, please refer to [SDK Method List](./sdk-methon-list).

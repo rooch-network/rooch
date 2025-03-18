@@ -4,5 +4,9 @@
   },
   "sdk-method-list": {
     "title": "SDK Method List"
+  },
+  "ts-sdk-quick-start": {
+    "title": "Quick Start",
+    "display": "hidden"
   }
 }
