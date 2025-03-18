@@ -1,0 +1,141 @@
+# Rooch SDK Kit 主要方法清单
+
+Rooch SDK Kit 提供了一系列的 React Hooks 和组件，用于快速构建区块链应用。以下是 SDK Kit 的主要方法清单：
+
+1. 钱包相关钩子
+
+```tsx
+// 钱包连接状态
+useWallet()
+useConnect()
+useDisconnect()
+useWalletClient()
+
+// 多链钱包
+useMultiChainWallet()
+useMultiWalletClient()
+
+// 账户信息
+useAccount()
+useBalance()
+```
+
+2. 查询钩子
+
+```tsx
+// 基础查询
+useRoochClientQuery()
+useRoochClientInfiniteQuery()
+useRoochClientMutation()
+
+// 状态查询
+useStates()
+useEvents()
+useLatestBlock()
+useTransaction()
+
+// 合约查询
+useResource()
+useModule()
+useViewFunction()
+```
+
+3. 交易相关
+
+```tsx
+// 交易操作
+useTransaction()
+useTransactionStatus()
+useWaitForTransaction()
+
+// 合约调用
+useContractCall()
+useContractWrite()
+```
+
+4. 网络状态
+
+```tsx
+// 网络信息
+useNetwork()
+useSwitchNetwork()
+useNetworkState()
+
+// Chain ID
+useChainId()
+```
+
+5. 实用工具钩子
+
+```tsx
+// Gas 相关
+useGasPrice()
+useGasEstimate()
+
+// 数据格式化
+useAddressFormat()
+useAmountFormat()
+
+// Toast 通知
+useToast()
+```
+
+6. 常用组件
+
+```tsx
+// 钱包组件
+<WalletProvider />
+<WalletConnect />
+<WalletButton />
+
+// 网络组件
+<NetworkSelect />
+<NetworkBadge />
+
+// 交易组件
+<TransactionStatus />
+<TransactionHistory />
+<TransactionButton />
+```
+
+7. 上下文提供者
+
+```tsx
+// 核心Provider
+<RoochProvider />
+<WalletProvider />
+<QueryClientProvider />
+
+// 扩展Provider
+<ThemeProvider />
+<ToastProvider />
+```
+
+## 使用示例
+
+```tsx
+import { useWallet, useBalance } from '@roochnetwork/rooch-sdk-kit'
+
+function WalletStatus() {
+  const { address, isConnected } = useWallet()
+  const { data: balance } = useBalance(address)
+
+  return (
+    <div>
+      {isConnected ? (
+        <>
+          <div>地址: {address}</div>
+          <div>余额: {balance}</div>
+        </>
+      ) : (
+        <div>未连接钱包</div>
+      )}
+    </div>
+  )
+}
+```
+
+## 参考文档
+
+- [Rooch TypeScript SDK 使用教程](./sdk-using-guide)
+- [Rooch SDK Kit 使用教程](./sdk-kit-using-guide)
