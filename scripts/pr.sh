@@ -120,7 +120,7 @@ if [ ! -z "$ALSO_TEST" ]; then
         --retries 2 \
         --success-output final \
         --failure-output immediate-final \
-        --profile optci \
+        --cargo-profile optci \
 
     # Run framework tests in parallel
     cargo test --profile optci -p rooch-framework-tests -p rooch-integration-test-runner -- --test-threads=8 &
