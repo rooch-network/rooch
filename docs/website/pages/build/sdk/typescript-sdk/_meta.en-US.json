@@ -1,12 +1,12 @@
 {
+  "sdk-using-guide": {
+    "title": "SDK Using Guide"
+  },
+  "sdk-method-list": {
+    "title": "SDK Method List"
+  },
   "ts-sdk-quick-start": {
-    "title": "Rooch TS SDK quick start"
-  },
-  "install": {
-    "title": "Install"
-  },
-  "faucet": {
-    "title": "Faucet",
+    "title": "Quick Start",
     "display": "hidden"
   }
 }
