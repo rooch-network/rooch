@@ -221,7 +221,7 @@ impl DAServerActor {
                                   old_last_block_number = Some(last_block_number);
 
                                   if let Err(e) = background_submitter
-                                      .start_job( min_block_to_submit_opt)
+                                      .start_job(min_block_to_submit_opt)
                                       .await
                                   {
                                       match e {
