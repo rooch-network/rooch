@@ -9,9 +9,11 @@
 -  [Function `new`](#0x2_decimal_value_new)
 -  [Function `value`](#0x2_decimal_value_value)
 -  [Function `decimal`](#0x2_decimal_value_decimal)
+-  [Function `is_equal`](#0x2_decimal_value_is_equal)
 
 
-<pre><code></code></pre>
+<pre><code><b>use</b> <a href="">0x1::u256</a>;
+</code></pre>
 
 
 
@@ -56,4 +58,16 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="decimal_value.md#0x2_decimal_value_decimal">decimal</a>(self: &<a href="decimal_value.md#0x2_decimal_value_DecimalValue">decimal_value::DecimalValue</a>): u8
+</code></pre>
+
+
+
+<a name="0x2_decimal_value_is_equal"></a>
+
+## Function `is_equal`
+
+Check if two DecimalValue instances represent the same numerical value
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="decimal_value.md#0x2_decimal_value_is_equal">is_equal</a>(a: &<a href="decimal_value.md#0x2_decimal_value_DecimalValue">decimal_value::DecimalValue</a>, b: &<a href="decimal_value.md#0x2_decimal_value_DecimalValue">decimal_value::DecimalValue</a>): bool
 </code></pre>

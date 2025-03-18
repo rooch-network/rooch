@@ -5,16 +5,18 @@ use crate::{
     addresses::MOVEOS_STD_ADDRESS,
     state::{MoveStructState, MoveStructType},
 };
+use anyhow::{bail, Result};
 use move_core_types::u256::U256;
 use move_core_types::{account_address::AccountAddress, ident_str, identifier::IdentStr};
 use serde::{Deserialize, Serialize};
+use serde_json::Number;
 use std::fmt;
 use std::str::FromStr;
 
 const MODULE_NAME: &IdentStr = ident_str!("decimal_value");
 
 /// `DecimalValue` is represented `moveos_std::decimal_value::DecimalValue` in Move.
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[derive(Clone, Debug, Deserialize, Serialize, Eq)]
 pub struct DecimalValue {
     pub value: U256,
     pub decimal: u8,
@@ -23,6 +25,72 @@ pub struct DecimalValue {
 impl DecimalValue {
     pub fn new(value: U256, decimal: u8) -> Self {
         Self { value, decimal }
+    }
+
+    pub fn from_number(number: Number) -> Result<Self> {
+        match number.as_f64() {
+            Some(f) => {
+                let f_str = f.to_string();
+                Ok(Self::from_str(&f_str)?)
+            }
+            None => {
+                match number.as_u64() {
+                    Some(u) => {
+                        let value = U256::from(u);
+                        Ok(Self { value, decimal: 0 })
+                    }
+                    None => {
+                        //Do not support i64
+                        bail!("Unsupported number type: {:?}", number);
+                    }
+                }
+            }
+        }
+    }
+
+    pub fn to_number(&self) -> Result<Number> {
+        let value: u128 = self
+            .value
+            .try_into()
+            .map_err(|_| anyhow::anyhow!("Failed to convert DecimalValue to Number"))?;
+
+        if self.decimal == 0 {
+            Number::from_u128(value).ok_or_else(|| {
+                anyhow::anyhow!("Failed to convert DecimalValue to Number: {}", value)
+            })
+        } else {
+            // Check if value is too large for f64
+            if value > (1u128 << 53) {
+                return Err(anyhow::anyhow!(
+                    "Value too large for f64 conversion: {}",
+                    value
+                ));
+            }
+
+            let divisor = 10u64.pow(self.decimal as u32) as f64;
+            let f = (value as f64) / divisor;
+
+            Number::from_f64(f)
+                .ok_or_else(|| anyhow::anyhow!("Failed to convert DecimalValue to Number"))
+        }
+    }
+
+    pub fn from_json_value(value: &serde_json::Value) -> Result<Self> {
+        match value {
+            serde_json::Value::Number(number) => Self::from_number(number.clone()),
+            serde_json::Value::String(s) => Self::from_str(s),
+            _ => bail!("Unsupported json value: {:?}", value),
+        }
+    }
+
+    /// Convert `DecimalValue` to `serde_json::Value`.
+    /// we use `serde_json::Value::Number` if the decimal value can be represented as a number,
+    /// otherwise we use `serde_json::Value::String`.
+    pub fn to_json_value(&self) -> serde_json::Value {
+        match self.to_number() {
+            Ok(number) => serde_json::Value::Number(number),
+            Err(_) => serde_json::Value::String(self.to_string()),
+        }
     }
 }
 
@@ -100,6 +168,30 @@ impl MoveStructState for DecimalValue {
             move_core_types::value::MoveTypeLayout::U256,
             move_core_types::value::MoveTypeLayout::U8,
         ])
+    }
+}
+
+impl PartialEq<DecimalValue> for DecimalValue {
+    fn eq(&self, other: &DecimalValue) -> bool {
+        if self.decimal == other.decimal {
+            // If decimals are the same, we can compare values directly
+            return self.value == other.value;
+        }
+
+        // Otherwise, we need to normalize the values to compare
+        let (adjusted_self, adjusted_other) = if self.decimal > other.decimal {
+            // Scale up other's value
+            let scale_factor = 10u64.pow((self.decimal - other.decimal) as u32);
+            let scaled_other = other.value * U256::from(scale_factor);
+            (self.value, scaled_other)
+        } else {
+            // Scale up self's value
+            let scale_factor = 10u64.pow((other.decimal - self.decimal) as u32);
+            let scaled_self = self.value * U256::from(scale_factor);
+            (scaled_self, other.value)
+        };
+
+        adjusted_self == adjusted_other
     }
 }
 
@@ -209,5 +301,41 @@ mod tests {
         assert!("".parse::<DecimalValue>().is_err());
         assert!("123.456.789".parse::<DecimalValue>().is_err());
         assert!("abc".parse::<DecimalValue>().is_err());
+    }
+
+    #[test]
+    fn test_decimal_value_from_number() {
+        let test_cases = vec![
+            serde_json::Number::from_f64(1234.567).unwrap(),
+            serde_json::Number::from_f64(0.123).unwrap(),
+            serde_json::Number::from_f64(1234.00000).unwrap(),
+            serde_json::Number::from_f64(0.000123).unwrap(),
+            serde_json::Number::from_u128(1234).unwrap(),
+            serde_json::Number::from_u128(1234567).unwrap(),
+        ];
+
+        for input in test_cases {
+            let parsed = DecimalValue::from_number(input.clone()).unwrap();
+            let parsed2 = DecimalValue::from_number(parsed.to_number().unwrap()).unwrap();
+            assert_eq!(parsed, parsed2);
+        }
+
+        // Test error cases
+        assert!(DecimalValue::from_number(serde_json::Number::from_i128(-1234).unwrap()).is_err());
+    }
+
+    #[test]
+    fn test_decimal_value_large_numbers() {
+        let large_value = DecimalValue {
+            value: U256::from(u128::MAX),
+            decimal: 2,
+        };
+        assert!(large_value.to_number().is_err());
+
+        let safe_value = DecimalValue {
+            value: U256::from(1u128 << 53),
+            decimal: 2,
+        };
+        assert!(safe_value.to_number().is_ok());
     }
 }
