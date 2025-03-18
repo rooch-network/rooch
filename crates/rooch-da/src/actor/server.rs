@@ -221,7 +221,7 @@ impl DAServerActor {
                                   old_last_block_number = Some(last_block_number);
 
                                   if let Err(e) = background_submitter
-                                      .start_job(last_block_number, min_block_to_submit_opt)
+                                      .start_job( min_block_to_submit_opt)
                                       .await
                                   {
                                       match e {
@@ -390,7 +390,6 @@ impl BackgroundSubmitter {
     // start a job to submit unsubmitted blocks in this duration
     async fn start_job(
         &self,
-        last_block_number: u128,
         min_block_to_submit_opt: Option<u128>,
     ) -> anyhow::Result<(), SubmitBatchError> {
         // try to get unsubmitted blocks from [cursor, last_block_number]
@@ -399,44 +398,21 @@ impl BackgroundSubmitter {
             .get_background_submit_block_cursor()
             .map_err(SubmitBatchError::Recoverable)?;
         let cursor_opt = Self::adjust_cursor(origin_background_cursor, min_block_to_submit_opt);
-        let exp_count = if let Some(cursor) = cursor_opt {
-            if cursor > last_block_number {
-                return Err(SubmitBatchError::DatabaseInconsistent(anyhow::anyhow!(
-                    "background submitter cursor should not be larger than last_block_number: {} > {}",
-                    cursor,last_block_number)));
-            }
-            last_block_number - cursor
-        } else {
-            last_block_number + 1
-        };
-        let unsubmitted_blocks = self
+
+        let mut unsubmitted_blocks = self
             .rooch_store
-            .get_submitting_blocks(cursor_opt.unwrap_or(0), Some(exp_count as usize))
+            .get_submitting_blocks(cursor_opt.unwrap_or(0), None)
             .map_err(SubmitBatchError::Recoverable)?;
 
-        // there is no unsubmitted block
+        // there is no unsubmitted block，wait for the next round
         if unsubmitted_blocks.is_empty() {
-            // if no changes, don't update cursor,
-            // avoid unnecessary disk I/O and misleading update time
-            if let Some(origin_cursor) = origin_background_cursor {
-                if origin_cursor != last_block_number {
-                    // update cursor to last_block_number, because cursor maybe behind than set_submitting_block_done
-                    self.update_cursor(last_block_number)
-                        .map_err(SubmitBatchError::Recoverable)?;
-                }
-            }
             return Ok(());
-        }
-        let first_unsubmitted_block = unsubmitted_blocks.first().unwrap().block_number;
-        if first_unsubmitted_block > 0 {
-            // submitted: [cursor, first_unsubmitted_block - 1]
-            let new_cursor = first_unsubmitted_block - 1;
-            // update cursor to new_cursor, because cursor maybe behind than set_submitting_block_done
-            self.update_cursor(new_cursor)
-                .map_err(SubmitBatchError::Recoverable)?;
         }
 
         const DEFAULT_SUBMIT_INTERVAL: u64 = 2; // 2 seconds sleep between each block submission
+
+        // ensure sorted by block number
+        unsubmitted_blocks.sort_by(|a, b| a.block_number.cmp(&b.block_number));
 
         let mut done_count: u128 = 0;
         let mut max_block_number_submitted: u128 = 0;
@@ -468,8 +444,6 @@ impl BackgroundSubmitter {
                 .await?;
             done_count += 1;
             max_block_number_submitted = block_number;
-            self.update_cursor(block_number)
-                .map_err(SubmitBatchError::Recoverable)?;
             tokio::time::sleep(Duration::from_secs(DEFAULT_SUBMIT_INTERVAL)).await;
         }
 
@@ -502,19 +476,19 @@ impl BackgroundSubmitter {
 
     // adjust cursor(N) = max(cursor_opt, min_block_to_submit_opt), submit state checking start from N
     fn adjust_cursor(
-        origin_cursor: Option<u128>,
+        origin_cursor_opt: Option<u128>,
         min_block_to_submit_opt: Option<u128>,
     ) -> Option<u128> {
         if let Some(min_block_to_submit) = min_block_to_submit_opt {
-            if let Some(cursor) = origin_cursor {
-                if cursor < min_block_to_submit {
+            if let Some(origin_cursor) = origin_cursor_opt {
+                if origin_cursor < min_block_to_submit {
                     return Some(min_block_to_submit);
                 }
             } else {
                 return Some(min_block_to_submit);
             }
         }
-        origin_cursor
+        origin_cursor_opt
     }
 }
 
