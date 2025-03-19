@@ -57,6 +57,7 @@ jobs:
           wait
           
           # Build and init
+          cargo build
           cargo build --profile optci
           cargo run --profile optci --package framework-release --bin framework-release 
           cargo run --profile optci --bin rooch init --skip-password 
