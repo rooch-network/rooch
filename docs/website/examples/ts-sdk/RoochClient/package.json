@@ -1,0 +1,15 @@
+{
+  "name": "roochclient",
+  "version": "1.0.0",
+  "main": "index.js","type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@roochnetwork/rooch-sdk": "latest"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": ""
+}
