@@ -1,18 +1,18 @@
 # RoochClient
 
-## Examples
+## 例子
 
-Demonstration code for `index.js`:
+`index.js` 的演示代码：
 
 ```js
 import pkg from '@roochnetwork/rooch-sdk';
 const { RoochClient, getRoochNodeUrl, Transaction } = pkg;
 
 function main() {
-    const NETWORK = 'testnet'; // Try changing to 'mainnet' to connect to the main network
-    // Create a client instance
+    const NETWORK = 'testnet'; // 尝试修改为 'mainnet' 可连接到主网
+    // 创建客户端实例
     const client = new RoochClient({
-        url: getRoochNodeUrl(NETWORK)  // Connect to the Rooch network
+        url: getRoochNodeUrl(NETWORK)  // 连接 Rooch 网络
     });
     console.log(`Connected to Rooch ${NETWORK}`);
 }
@@ -20,7 +20,7 @@ function main() {
 main();
 ```
 
-Configuration for `package.json`:
+`package.json` 的配置：
 
 ```json
 {
@@ -41,7 +41,7 @@ Configuration for `package.json`:
 }
 ```
 
-## Run
+## 运行
 
 ```bash
 npm start
@@ -52,7 +52,7 @@ npm start
 Connected to Rooch testnet
 ```
 
-After changing `NETWORK` to `mainnet`:
+修改 `NETWORK` 为 `mainnet` 后：
 
 ```bash
 npm start
