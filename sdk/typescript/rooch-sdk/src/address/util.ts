@@ -68,7 +68,6 @@ export function convertToRoochAddressBytes(input: address): Bytes {
         return decode.bytes
       }
     }
-    // throw new Error('invalid address')
 
     return new BitcoinAddress(input).genRoochAddress().toBytes()
   }
