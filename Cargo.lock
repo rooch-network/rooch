@@ -10386,7 +10386,6 @@ dependencies = [
  "rooch-common",
  "rooch-config",
  "rooch-db",
- "rooch-event",
  "rooch-executor",
  "rooch-faucet",
  "rooch-framework",
@@ -10394,6 +10393,7 @@ dependencies = [
  "rooch-indexer",
  "rooch-integration-test-runner",
  "rooch-key",
+ "rooch-notify",
  "rooch-oracle",
  "rooch-pipeline-processor",
  "rooch-rpc-api",
@@ -10562,18 +10562,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "rooch-event"
-version = "0.9.0"
-dependencies = [
- "anyhow 1.0.95",
- "async-trait",
- "coerce",
- "moveos-eventbus",
- "rooch-types",
- "tracing",
-]
-
-[[package]]
 name = "rooch-executor"
 version = "0.9.0"
 dependencies = [
@@ -10589,8 +10577,8 @@ dependencies = [
  "moveos-store",
  "moveos-types",
  "prometheus",
- "rooch-event",
  "rooch-genesis",
+ "rooch-notify",
  "rooch-store",
  "rooch-types",
  "serde 1.0.219",
@@ -10736,7 +10724,7 @@ dependencies = [
  "prometheus",
  "rand 0.8.5",
  "rooch-config",
- "rooch-event",
+ "rooch-notify",
  "rooch-types",
  "serde 1.0.219",
  "tap",
@@ -10795,6 +10783,26 @@ dependencies = [
  "serde_with 2.3.3",
  "signature 2.2.0",
  "tiny-bip39",
+]
+
+[[package]]
+name = "rooch-notify"
+version = "0.9.0"
+dependencies = [
+ "anyhow 1.0.95",
+ "async-trait",
+ "coerce",
+ "metrics",
+ "move-core-types",
+ "moveos-eventbus",
+ "moveos-types",
+ "parking_lot 0.12.3",
+ "prometheus",
+ "rooch-types",
+ "serde 1.0.219",
+ "tokio",
+ "tokio-stream",
+ "tracing",
 ]
 
 [[package]]
@@ -10931,9 +10939,9 @@ dependencies = [
  "prometheus",
  "rooch-da",
  "rooch-db",
- "rooch-event",
  "rooch-executor",
  "rooch-indexer",
+ "rooch-notify",
  "rooch-sequencer",
  "rooch-types",
  "serde 1.0.219",
@@ -10978,8 +10986,8 @@ dependencies = [
  "moveos-types",
  "prometheus",
  "rooch-config",
- "rooch-event",
  "rooch-executor",
+ "rooch-notify",
  "rooch-pipeline-processor",
  "rooch-types",
  "tracing",
@@ -11058,10 +11066,10 @@ dependencies = [
  "rooch-config",
  "rooch-da",
  "rooch-db",
- "rooch-event",
  "rooch-executor",
  "rooch-genesis",
  "rooch-indexer",
+ "rooch-notify",
  "rooch-open-rpc",
  "rooch-open-rpc-spec-builder",
  "rooch-pipeline-processor",
@@ -11096,8 +11104,8 @@ dependencies = [
  "raw-store",
  "rooch-config",
  "rooch-db",
- "rooch-event",
  "rooch-genesis",
+ "rooch-notify",
  "rooch-store",
  "rooch-types",
  "serde 1.0.219",
@@ -13212,6 +13220,7 @@ dependencies = [
  "signal-hook-registry",
  "socket2",
  "tokio-macros",
+ "tracing",
  "windows-sys 0.52.0",
 ]
 

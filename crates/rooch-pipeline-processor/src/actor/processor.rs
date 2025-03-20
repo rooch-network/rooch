@@ -5,7 +5,7 @@ use super::messages::{
     ExecuteL1BlockMessage, ExecuteL1TxMessage, ExecuteL2TxMessage, GetServiceStatusMessage,
 };
 use crate::metrics::PipelineProcessorMetrics;
-use anyhow::{Error, Result};
+use anyhow::{anyhow, Error, Result};
 use async_trait::async_trait;
 use bitcoin::hashes::Hash;
 use bitcoin_client::proxy::BitcoinClientProxy;
@@ -13,17 +13,20 @@ use coerce::actor::{context::ActorContext, message::Handler, Actor, LocalActorRe
 use function_name::named;
 use moveos::moveos::VMPanicError;
 use moveos_types::h256::H256;
+use moveos_types::moveos_std::event::Event;
+use moveos_types::moveos_std::tx_context::TxContext;
 use moveos_types::state::StateChangeSetExt;
 use moveos_types::transaction::VerifiedMoveOSTransaction;
 use prometheus::Registry;
 use rooch_da::actor::messages::{AppendTransactionMessage, RevertTransactionMessage};
 use rooch_da::proxy::DAServerProxy;
 use rooch_db::RoochDB;
-use rooch_event::actor::{EventActor, UpdateServiceStatusMessage};
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_indexer::proxy::IndexerProxy;
+use rooch_notify::actor::{NotifyActor, ProcessTxWithEventsMessage, UpdateServiceStatusMessage};
 use rooch_sequencer::proxy::SequencerProxy;
 use rooch_types::bitcoin::types::Block as BitcoinBlock;
+use rooch_types::transaction::TransactionWithInfo;
 use rooch_types::{
     service_status::ServiceStatus,
     transaction::{
@@ -43,7 +46,7 @@ pub struct PipelineProcessorActor {
     pub(crate) indexer: IndexerProxy,
     pub(crate) service_status: ServiceStatus,
     pub(crate) metrics: Arc<PipelineProcessorMetrics>,
-    event_actor: Option<LocalActorRef<EventActor>>,
+    notify_actor: Option<LocalActorRef<NotifyActor>>,
     rooch_db: RoochDB,
     bitcoin_client_proxy: Option<BitcoinClientProxy>,
 }
@@ -56,7 +59,7 @@ impl PipelineProcessorActor {
         indexer: IndexerProxy,
         service_status: ServiceStatus,
         registry: &Registry,
-        event_actor: Option<LocalActorRef<EventActor>>,
+        notify_actor: Option<LocalActorRef<NotifyActor>>,
         rooch_db: RoochDB,
         bitcoin_client_proxy: Option<BitcoinClientProxy>,
     ) -> Self {
@@ -67,7 +70,7 @@ impl PipelineProcessorActor {
             indexer,
             service_status,
             metrics: Arc::new(PipelineProcessorMetrics::new(registry)),
-            event_actor,
+            notify_actor,
             rooch_db,
             bitcoin_client_proxy,
         }
@@ -435,9 +438,9 @@ impl PipelineProcessorActor {
             //The update_indexer is a notification call, do not block the current task
             let result = indexer
                 .update_indexer(
-                    tx,
+                    tx.clone(),
                     execution_info.clone(),
-                    moveos_tx,
+                    moveos_tx.clone(),
                     output.events.clone(),
                     output.changeset.clone(),
                 )
@@ -446,6 +449,16 @@ impl PipelineProcessorActor {
                 Ok(_) => {}
                 Err(error) => tracing::error!("Update indexer error: {}", error),
             };
+        };
+
+        // Process subscription, skip errors
+        let tx_with_info = TransactionWithInfo::new(tx, execution_info.clone());
+        let result = self
+            .process_subscription(tx_with_info, output.events.clone(), moveos_tx.ctx)
+            .await;
+        match result {
+            Ok(_) => {}
+            Err(error) => tracing::error!("Process subscription error: {}", error),
         };
 
         self.metrics
@@ -462,11 +475,25 @@ impl PipelineProcessorActor {
 
     async fn update_service_status(&mut self, status: ServiceStatus) {
         self.service_status = status;
-        if let Some(event_actor) = self.event_actor.clone() {
-            let _ = event_actor
+        if let Some(notify_actor) = self.notify_actor.clone() {
+            let _ = notify_actor
                 .send(UpdateServiceStatusMessage { status })
                 .await;
         }
+    }
+
+    async fn process_subscription(
+        &mut self,
+        tx: TransactionWithInfo,
+        events: Vec<Event>,
+        ctx: TxContext,
+    ) -> Result<()> {
+        if let Some(notify_actor) = self.notify_actor.clone() {
+            return notify_actor
+                .notify(ProcessTxWithEventsMessage { tx, events, ctx })
+                .map_err(|e| anyhow!(format!("Process subscription notify error: {:?}", e)));
+        }
+        Ok(())
     }
 }
 

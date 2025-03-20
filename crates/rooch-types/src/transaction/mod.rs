@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use accumulator::accumulator_info::AccumulatorInfo;
-use anyhow::Result;
 use framework_types::addresses::ROOCH_FRAMEWORK_ADDRESS;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::ident_str;
@@ -152,14 +151,11 @@ pub struct TransactionWithInfo {
 }
 
 impl TransactionWithInfo {
-    pub fn new(
-        ledger_tx: LedgerTransaction,
-        execution_info: TransactionExecutionInfo,
-    ) -> Result<Self> {
-        Ok(TransactionWithInfo {
+    pub fn new(ledger_tx: LedgerTransaction, execution_info: TransactionExecutionInfo) -> Self {
+        TransactionWithInfo {
             transaction: ledger_tx,
             execution_info: Some(execution_info),
-        })
+        }
     }
 }
 

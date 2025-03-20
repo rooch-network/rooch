@@ -1,7 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::transaction::{LedgerTransaction, LedgerTxData};
+use crate::indexer::Filter;
+use crate::transaction::{LedgerTransaction, LedgerTxData, TransactionWithInfo};
 use anyhow::Result;
 use move_core_types::account_address::AccountAddress;
 use moveos_types::h256::H256;
@@ -86,4 +87,45 @@ pub enum TransactionFilter {
         /// right endpoint of transaction order, exclusive
         to_order: u64,
     },
+}
+
+impl TransactionFilter {
+    fn try_matches(&self, item: &TransactionWithInfo) -> Result<bool> {
+        Ok(match self {
+            TransactionFilter::Sender(sender) => {
+                if let Some(tx_sender) = item.transaction.sender() {
+                    sender == &AccountAddress::from(tx_sender)
+                } else {
+                    false
+                }
+            }
+            TransactionFilter::TxHashes(tx_hash) => {
+                if let Some(execution_info) = item.execution_info.clone() {
+                    tx_hash.contains(&execution_info.tx_hash)
+                } else {
+                    false
+                }
+            }
+            TransactionFilter::TimeRange {
+                start_time,
+                end_time,
+            } => {
+                *start_time <= item.transaction.sequence_info.tx_timestamp
+                    && item.transaction.sequence_info.tx_timestamp < *end_time
+            }
+            TransactionFilter::TxOrderRange {
+                from_order,
+                to_order,
+            } => {
+                *from_order <= item.transaction.sequence_info.tx_order
+                    && item.transaction.sequence_info.tx_order < *to_order
+            }
+        })
+    }
+}
+
+impl Filter<TransactionWithInfo> for TransactionFilter {
+    fn matches(&self, item: &TransactionWithInfo) -> bool {
+        self.try_matches(item).unwrap_or_default()
+    }
 }

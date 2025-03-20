@@ -14,9 +14,9 @@ use move_core_types::vm_status::KeptVMStatus;
 use moveos_eventbus::bus::EventData;
 use moveos_types::module_binding::MoveFunctionCaller;
 use rooch_config::{BitcoinRelayerConfig, EthereumRelayerConfig};
-use rooch_event::actor::{EventActor, EventActorSubscribeMessage};
-use rooch_event::event::ServiceStatusEvent;
 use rooch_executor::proxy::ExecutorProxy;
+use rooch_notify::actor::{NotifyActor, NotifyActorSubscribeMessage};
+use rooch_notify::event::ServiceStatusEvent;
 use rooch_pipeline_processor::proxy::PipelineProcessorProxy;
 use rooch_types::bitcoin::pending_block::PendingBlockModule;
 use rooch_types::error::RoochError;
@@ -32,7 +32,7 @@ pub struct RelayerActor {
     processor: PipelineProcessorProxy,
     ethereum_config: Option<EthereumRelayerConfig>,
     bitcoin_config: Option<BitcoinRelayerConfig>,
-    event_actor: Option<LocalActorRef<EventActor>>,
+    notify_actor: Option<LocalActorRef<NotifyActor>>,
     paused: bool,
 }
 
@@ -42,7 +42,7 @@ impl RelayerActor {
         processor: PipelineProcessorProxy,
         ethereum_config: Option<EthereumRelayerConfig>,
         bitcoin_config: Option<BitcoinRelayerConfig>,
-        event_actor: Option<LocalActorRef<EventActor>>,
+        notify_actor: Option<LocalActorRef<NotifyActor>>,
     ) -> Result<Self> {
         Ok(Self {
             relayers: vec![],
@@ -50,23 +50,23 @@ impl RelayerActor {
             processor,
             ethereum_config,
             bitcoin_config,
-            event_actor,
+            notify_actor,
             paused: false,
         })
     }
 
     pub async fn subscribe_event(
         &self,
-        event_actor_ref: LocalActorRef<EventActor>,
+        notify_actor_ref: LocalActorRef<NotifyActor>,
         executor_actor_ref: LocalActorRef<RelayerActor>,
     ) {
         let service_status_event = ServiceStatusEvent::default();
-        let actor_subscribe_message = EventActorSubscribeMessage::new(
+        let actor_subscribe_message = NotifyActorSubscribeMessage::new(
             service_status_event,
             "relayer".to_string(),
             Box::new(executor_actor_ref),
         );
-        let _ = event_actor_ref.send(actor_subscribe_message).await;
+        let _ = notify_actor_ref.send(actor_subscribe_message).await;
     }
 
     async fn init_relayer(&mut self, ctx: &mut ActorContext) -> Result<()> {
@@ -262,8 +262,8 @@ impl Actor for RelayerActor {
         }
 
         let local_actor_ref: LocalActorRef<Self> = ctx.actor_ref();
-        if let Some(event_actor) = self.event_actor.clone() {
-            let _ = self.subscribe_event(event_actor, local_actor_ref).await;
+        if let Some(notify_actor) = self.notify_actor.clone() {
+            let _ = self.subscribe_event(notify_actor, local_actor_ref).await;
         }
     }
 }

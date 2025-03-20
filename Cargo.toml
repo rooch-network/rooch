@@ -50,7 +50,7 @@ members = [
     "crates/rooch-store",
     "crates/rooch-test-transaction-builder",
     "crates/rooch-types",
-    "crates/rooch-event",
+    "crates/rooch-notify",
     "crates/rooch-cosmwasm-vm",
     "crates/testsuite",
     "crates/rooch-ord",
@@ -140,7 +140,7 @@ rooch-benchmarks = { path = "crates/rooch-benchmarks" }
 rooch-faucet = { path = "crates/rooch-faucet" }
 rooch-test-transaction-builder = { path = "crates/rooch-test-transaction-builder" }
 rooch-db = { path = "crates/rooch-db" }
-rooch-event = { path = "crates/rooch-event" }
+rooch-notify = { path = "crates/rooch-notify" }
 rooch-ord = { path = "crates/rooch-ord" }
 rooch-cosmwasm-vm = { path = "crates/rooch-cosmwasm-vm" }
 rooch-oracle = { path = "crates/rooch-oracle" }
