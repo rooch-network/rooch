@@ -124,7 +124,7 @@ if [ ! -z "$ALSO_TEST" ]; then
 
     # Run framework tests in parallel
     cargo test --profile optci -p rooch-framework-tests -p rooch-integration-test-runner -- --test-threads=8 &
-    cargo test --profile optci --release -p rooch-framework-tests bitcoin_test -- --test-threads=8 &
+    cargo test --profile optci -p rooch-framework-tests bitcoin_test -- --test-threads=8 &
     wait
 
     # Run integration tests separately without parallel execution
