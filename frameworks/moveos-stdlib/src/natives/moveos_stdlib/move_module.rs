@@ -7,7 +7,7 @@ use itertools::zip_eq;
 use move_binary_format::{
     compatibility::Compatibility,
     errors::{PartialVMError, PartialVMResult},
-    normalized, CompiledModule,
+    CompiledModule,
 };
 use move_core_types::u256::U256;
 use move_core_types::{
@@ -307,10 +307,8 @@ fn check_compatibililty_inner(
         cost += gas_params.per_byte * NumBytes::new(old_bytecodes.len() as u64);
         let new_module = CompiledModule::deserialize(&new_bytecodes)?;
         let old_module = CompiledModule::deserialize(&old_bytecodes)?;
-        let new_m = normalized::Module::new(&new_module);
-        let old_m = normalized::Module::new(&old_module);
 
-        match compat.check(&old_m, &new_m) {
+        match compat.check(&old_module, &new_module) {
             Ok(_) => {}
             Err(_) => return Ok(NativeResult::err(cost, E_MODULE_INCOMPATIBLE)),
         }

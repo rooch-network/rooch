@@ -4,7 +4,6 @@
 use super::data_cache::{into_change_set, MoveosDataCache};
 use move_binary_format::compatibility::Compatibility;
 use move_binary_format::file_format::CompiledScript;
-use move_binary_format::normalized;
 use move_binary_format::{
     access::ModuleAccess,
     errors::{verification_error, Location, PartialVMError, PartialVMResult, VMError, VMResult},
@@ -440,10 +439,8 @@ where
 
                     if data_store.exists_module(&module_id)? && compat.need_check_compat() {
                         let old_module = self.vm.load_module(&module_id, &self.remote)?;
-                        let old_m = normalized::Module::new(old_module.as_ref());
-                        let new_m = normalized::Module::new(module);
                         compat
-                            .check(&old_m, &new_m)
+                            .check(&old_module, module)
                             .map_err(|e| e.finish(Location::Undefined))?;
                     }
                     if !bundle_unverified.insert(module_id) {
