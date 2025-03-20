@@ -58,8 +58,9 @@ jobs:
           
           # Build and init
           cargo build
-          cargo run --package framework-release --bin framework-release
-          cargo run --bin rooch init --skip-password
+          cargo build --profile optci
+          cargo run --profile optci --package framework-release --bin framework-release 
+          cargo run --profile optci --bin rooch init --skip-password 
 
       - name: Run Rust tests in parallel
         run: ./scripts/pr.sh -t
@@ -72,8 +73,8 @@ jobs:
 
       - name: Generate genesis files for Mainnet and Testnet
         run: |
-          cargo run -p rooch-genesis -- -n main &
-          cargo run -p rooch-genesis -- -n test &
+          cargo run --profile optci -p rooch-genesis -- -n main &
+          cargo run --profile optci -p rooch-genesis -- -n test &
           wait
 
       - name: Setup Node.js
