@@ -17,7 +17,8 @@ import Swap from 'src/components/swap/swap';
 import { toast } from 'src/components/snackbar';
 
 import SwapConfirmModal from './confirm-modal';
-import { useTokenPair } from '../hooks/use-token-pair';
+// import { useTokenPair } from '../hooks/use-token-pair';
+import { useTokenPairRouter } from '../hooks/use-token-pair-router';
 
 const normalizeCoinIconUrl = (onChainCoinIconUrl?: string | null) =>
   `data:image/svg+xml;utf8,${encodeURIComponent(onChainCoinIconUrl || '')}`;
@@ -40,41 +41,72 @@ export default function SwapView() {
   const [fromCoinAmount, setFromCoinAmount] = useState<string>('0');
   const [toCoinAmount, setToCoinAmount] = useState<string>('');
 
-  const { tokenPairs } = useTokenPair();
+  // const { tokenPairs } = useTokenPair();
 
+  const { tokenPairsMap, refetchTokenPairs } = useTokenPairRouter();
+
+  // const availableFromCoins = useMemo(
+  //   () =>
+  //     Array.from(tokenPairs.values()).map((i) => ({
+  //       ...i.x,
+  //       icon_url: normalizeCoinIconUrl(i.x.icon_url),
+  //       amount: '0',
+  //     })),
+  //   [tokenPairs]
+  // );
   const availableFromCoins = useMemo(
     () =>
-      Array.from(tokenPairs.values()).map((i) => ({
+      Array.from(tokenPairsMap.values()).map((i) => ({
         ...i.x,
         icon_url: normalizeCoinIconUrl(i.x.icon_url),
         amount: '0',
       })),
-    [tokenPairs]
+    [tokenPairsMap]
   );
 
+  // const availableToCoins = useMemo(() => {
+  //   if (!tokenPairs) {
+  //     return [];
+  //   }
+  //   if (!fromCoinType) {
+  //     return Array.from(tokenPairs.values()).map((i) => ({
+  //       ...i.x,
+  //       icon_url: normalizeCoinIconUrl(i.x.icon_url),
+  //       amount: '0',
+  //     }));
+  //   }
+  //   return (
+  //     tokenPairs.get(fromCoinType as string)?.y.map((i) => ({
+  //       ...i,
+  //       icon_url: normalizeCoinIconUrl(i.icon_url),
+  //       amount: '0',
+  //     })) || []
+  //   );
+  // }, [fromCoinType, tokenPairs]);
+
   const availableToCoins = useMemo(() => {
-    if (!tokenPairs) {
+    if (!tokenPairsMap) {
       return [];
     }
     if (!fromCoinType) {
-      return Array.from(tokenPairs.values()).map((i) => ({
+      return Array.from(tokenPairsMap.values()).map((i) => ({
         ...i.x,
         icon_url: normalizeCoinIconUrl(i.x.icon_url),
         amount: '0',
       }));
     }
     return (
-      tokenPairs.get(fromCoinType as string)?.y.map((i) => ({
+      tokenPairsMap.get(fromCoinType as string)?.y.map((i) => ({
         ...i,
         icon_url: normalizeCoinIconUrl(i.icon_url),
         amount: '0',
       })) || []
     );
-  }, [fromCoinType, tokenPairs]);
+  }, [fromCoinType, tokenPairsMap]);
 
   const fromCoinInfo = useMemo(
-    () => tokenPairs.get(fromCoinType as string)?.x,
-    [tokenPairs, fromCoinType]
+    () => tokenPairsMap.get(fromCoinType as string)?.x,
+    [tokenPairsMap, fromCoinType]
   );
 
   const toCoinInfo = useMemo(
@@ -212,6 +244,9 @@ export default function SwapView() {
             decimals: toCoin.decimals,
             balance: toCoin.balance.toString(),
             amount: toCoinAmount,
+          }}
+          onSuccess={() => {
+            refetchTokenPairs();
           }}
         />
       )}

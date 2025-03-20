@@ -25,6 +25,7 @@ import { formatCoin, toBigNumber } from 'src/utils/number';
 
 import { grey } from 'src/theme/core';
 
+import { fNumber } from 'src/utils/format-number';
 import Text from './typography/text';
 import { Iconify } from '../iconify';
 
@@ -177,7 +178,7 @@ export default function SwapCoinSelectButton({
                   </ListItemText>
                   {toBigNumber(coin.balance).gt(0) && (
                     <ListItemSecondaryAction>
-                      <Typography className="amount">{formatCoin(coin, true)}</Typography>
+                      <Typography className="amount">{fNumber(formatCoin(coin, true))}</Typography>
                     </ListItemSecondaryAction>
                   )}
                 </ListItemButton>
