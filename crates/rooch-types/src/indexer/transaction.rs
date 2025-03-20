@@ -87,6 +87,7 @@ pub enum TransactionFilter {
         /// right endpoint of transaction order, exclusive
         to_order: u64,
     },
+    All,
 }
 
 impl TransactionFilter {
@@ -120,6 +121,7 @@ impl TransactionFilter {
                 *from_order <= item.transaction.sequence_info.tx_order
                     && item.transaction.sequence_info.tx_order < *to_order
             }
+            TransactionFilter::All => true,
         })
     }
 }
