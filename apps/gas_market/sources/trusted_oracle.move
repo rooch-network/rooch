@@ -85,13 +85,22 @@ module gas_market::trusted_oracle {
     #[test_only]
     use rooch_framework::oracle;
     #[test_only]
-    use gas_market::admin;
+    use app_admin::admin;
 
     #[test]
     fun test_btc_price() {
         genesis::init_for_test();
-        let admin_cap = admin::init_for_test();
+        init_for_test();
+        let price = trusted_price(utf8(b"BTCUSD"));
+        assert!(decimal_value::value(&price) == 5805206000000, 1);
+        assert!(decimal_value::decimal(&price) == 8, 1);
+    }
+
+    #[test_only]
+    public fun init_for_test() {
         init();
+
+        let admin_cap = admin::init_for_test();
 
         let (oracle1, admin_cap1) =
             oracle::create(
@@ -152,8 +161,5 @@ module gas_market::trusted_oracle {
         transfer(admin_cap1, sender());
         transfer(admin_cap2, sender());
         transfer(admin_cap3, sender());
-        let price = trusted_price(utf8(b"BTCUSD"));
-        assert!(decimal_value::value(&price) == 5805206000000, 1);
-        assert!(decimal_value::decimal(&price) == 8, 1);
     }
 }
