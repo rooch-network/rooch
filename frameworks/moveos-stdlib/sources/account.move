@@ -136,6 +136,17 @@ module moveos_std::account {
 
    // === Account Object Functions
 
+   public fun account_address(self: &Object<Account>): address {
+      object::borrow(self).addr
+   }
+
+   public fun account_cap_address(self: &AccountCap): address {
+      self.addr
+   }
+
+   public fun account_sequence_number(self: &Object<Account>): u64 {
+      object::borrow(self).sequence_number
+   }
 
    public fun account_borrow_resource<T: key>(self: &Object<Account>): &T {
       account_borrow_resource_internal(self)
@@ -197,8 +208,6 @@ module moveos_std::account {
    public fun destroy_account_cap(account_cap: AccountCap){
       let AccountCap{addr:_} = account_cap;
    }
-
-   // === Account Storage functions ===
 
    public fun borrow_account(account: address): &Object<Account>{
       object::borrow_object<Account>(account_object_id(account))
