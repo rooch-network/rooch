@@ -5,10 +5,10 @@ use coerce::actor::message::Message;
 use moveos_eventbus::bus::EventNotifier;
 use moveos_types::moveos_std::event::Event;
 use moveos_types::moveos_std::tx_context::TxContext;
-use rooch_rpc_api::jsonrpc_types::event_view::IndexerEventView;
-use rooch_rpc_api::jsonrpc_types::transaction_view::TransactionWithInfoView;
-use rooch_types::indexer::event::EventFilter;
-use rooch_types::indexer::transaction::TransactionFilter;
+use rooch_rpc_api::jsonrpc_types::event_view::{EventFilterView, IndexerEventView};
+use rooch_rpc_api::jsonrpc_types::transaction_view::{
+    TransactionFilterView, TransactionWithInfoView,
+};
 use rooch_types::service_status::ServiceStatus;
 use rooch_types::transaction::TransactionWithInfo;
 use tokio_stream::wrappers::ReceiverStream;
@@ -66,7 +66,7 @@ impl Message for ProcessTxWithEventsMessage {
 
 #[derive(Clone, Debug)]
 pub struct SubscribeEventsMessage {
-    pub filter: EventFilter,
+    pub filter: EventFilterView,
 }
 
 impl Message for SubscribeEventsMessage {
@@ -75,7 +75,7 @@ impl Message for SubscribeEventsMessage {
 
 #[derive(Clone, Debug)]
 pub struct SubscribeTransactionsMessage {
-    pub filter: TransactionFilter,
+    pub filter: TransactionFilterView,
 }
 
 impl Message for SubscribeTransactionsMessage {

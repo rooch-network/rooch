@@ -5,10 +5,10 @@ use crate::actor::NotifyActor;
 use crate::messages::{SubscribeEventsMessage, SubscribeTransactionsMessage};
 use anyhow::Result;
 use coerce::actor::ActorRef;
-use rooch_rpc_api::jsonrpc_types::event_view::IndexerEventView;
-use rooch_rpc_api::jsonrpc_types::transaction_view::TransactionWithInfoView;
-use rooch_types::indexer::event::EventFilter;
-use rooch_types::indexer::transaction::TransactionFilter;
+use rooch_rpc_api::jsonrpc_types::event_view::{EventFilterView, IndexerEventView};
+use rooch_rpc_api::jsonrpc_types::transaction_view::{
+    TransactionFilterView, TransactionWithInfoView,
+};
 use tokio_stream::wrappers::ReceiverStream;
 
 #[derive(Clone)]
@@ -23,7 +23,7 @@ impl NotifyProxy {
 
     pub async fn subscribe_events(
         &self,
-        filter: EventFilter,
+        filter: EventFilterView,
     ) -> Result<ReceiverStream<IndexerEventView>> {
         // pub fn subscribe_events(&self, filter: EventFilter) -> ReceiverStream<IndexerEvent> {
         self.actor.send(SubscribeEventsMessage { filter }).await?
@@ -31,7 +31,7 @@ impl NotifyProxy {
 
     pub async fn subscribe_transactions(
         &self,
-        filter: TransactionFilter,
+        filter: TransactionFilterView,
     ) -> Result<ReceiverStream<TransactionWithInfoView>> {
         self.actor
             .send(SubscribeTransactionsMessage { filter })

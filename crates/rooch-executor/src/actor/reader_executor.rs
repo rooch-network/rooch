@@ -29,8 +29,9 @@ use moveos_types::state_resolver::RootObjectResolver;
 use moveos_types::state_resolver::{AnnotatedStateKV, AnnotatedStateReader, StateKV, StateReader};
 use moveos_types::transaction::TransactionExecutionInfo;
 use rooch_genesis::FrameworksGasParameters;
-use rooch_notify::actor::{NotifyActor, NotifyActorSubscribeMessage};
+use rooch_notify::actor::NotifyActor;
 use rooch_notify::event::GasUpgradeEvent;
+use rooch_notify::messages::NotifyActorSubscribeMessage;
 use rooch_store::RoochStore;
 use rooch_types::framework::{system_post_execute_functions, system_pre_execute_functions};
 

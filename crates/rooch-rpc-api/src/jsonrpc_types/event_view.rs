@@ -267,29 +267,10 @@ impl From<EventFilterView> for EventFilter {
 }
 
 impl EventFilterView {
-    fn try_matches(&self, item_view: &IndexerEventView) -> Result<bool> {
-        let item = IndexerEvent::from(item_view.clone());
-        Ok(EventFilter::matches(&item))
-        // Ok(match self {
-        //     EventFilter::EventTypeWithSender {
-        //         event_type, sender, ..
-        //     } => struct_tag_match(&item.event_type, event_type) && sender == &item.sender,
-        //     EventFilter::EventType(event_type) => struct_tag_match(&item.event_type, event_type),
-        //     EventFilter::Sender(sender) => sender == &item.sender,
-        //     EventFilter::TxHash(tx_hash) => tx_hash == &item.tx_hash,
-        //     EventFilter::TimeRange {
-        //         start_time,
-        //         end_time,
-        //     } => *start_time <= item.created_at && item.created_at < *end_time,
-        //     EventFilter::TxOrderRange {
-        //         from_order,
-        //         to_order,
-        //     } => {
-        //         *from_order <= item.indexer_event_id.tx_order
-        //             && item.indexer_event_id.tx_order < *to_order
-        //     }
-        //     EventFilter::All => true,
-        // })
+    fn try_matches(&self, item_view: &IndexerEventView) -> anyhow::Result<bool> {
+        let filter: EventFilter = self.clone().into();
+        let item: IndexerEvent = item_view.clone().into();
+        Ok(filter.matches(&item))
     }
 }
 

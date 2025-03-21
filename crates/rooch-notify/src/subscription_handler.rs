@@ -14,10 +14,11 @@ use prometheus::{
     register_int_counter_vec_with_registry, register_int_gauge_vec_with_registry, IntCounterVec,
     IntGaugeVec, Registry,
 };
-use rooch_rpc_api::jsonrpc_types::event_view::IndexerEventView;
-use rooch_rpc_api::jsonrpc_types::transaction_view::TransactionWithInfoView;
-use rooch_types::indexer::event::{EventFilter, IndexerEvent};
-use rooch_types::indexer::transaction::TransactionFilter;
+use rooch_rpc_api::jsonrpc_types::event_view::{EventFilterView, IndexerEventView};
+use rooch_rpc_api::jsonrpc_types::transaction_view::{
+    TransactionFilterView, TransactionWithInfoView,
+};
+use rooch_types::indexer::event::IndexerEvent;
 use rooch_types::transaction::TransactionWithInfo;
 use tokio_stream::wrappers::ReceiverStream;
 use tracing::{error, trace};
@@ -68,9 +69,9 @@ impl SubscriptionMetrics {
 }
 
 pub struct SubscriptionHandler {
-    event_streamer: Streamer<IndexerEventView, IndexerEventView, EventFilter>,
+    event_streamer: Streamer<IndexerEventView, IndexerEventView, EventFilterView>,
     transaction_streamer:
-        Streamer<TransactionWithInfoView, TransactionWithInfoView, TransactionFilter>,
+        Streamer<TransactionWithInfoView, TransactionWithInfoView, TransactionFilterView>,
 }
 
 impl SubscriptionHandler {
@@ -120,13 +121,13 @@ impl SubscriptionHandler {
     }
 
     // pub fn subscribe_events(&self, filter: EventFilter) -> impl Stream<Item = Event> {
-    pub fn subscribe_events(&self, filter: EventFilter) -> ReceiverStream<IndexerEventView> {
+    pub fn subscribe_events(&self, filter: EventFilterView) -> ReceiverStream<IndexerEventView> {
         self.event_streamer.subscribe(filter)
     }
 
     pub fn subscribe_transactions(
         &self,
-        filter: TransactionFilter,
+        filter: TransactionFilterView,
         // ) -> impl Stream<Item = TransactionWithInfo> {
     ) -> ReceiverStream<TransactionWithInfoView> {
         self.transaction_streamer.subscribe(filter)

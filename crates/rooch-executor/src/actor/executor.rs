@@ -29,8 +29,9 @@ use moveos_types::transaction::{FunctionCall, MoveOSTransaction, VerifiedMoveAct
 use moveos_types::transaction::{MoveAction, VerifiedMoveOSTransaction};
 use prometheus::Registry;
 use rooch_genesis::FrameworksGasParameters;
-use rooch_notify::actor::{GasUpgradeMessage, NotifyActor, NotifyActorSubscribeMessage};
+use rooch_notify::actor::NotifyActor;
 use rooch_notify::event::GasUpgradeEvent;
+use rooch_notify::messages::{GasUpgradeMessage, NotifyActorSubscribeMessage};
 use rooch_store::state_store::StateStore;
 use rooch_store::RoochStore;
 use rooch_types::address::{BitcoinAddress, MultiChainAddress};

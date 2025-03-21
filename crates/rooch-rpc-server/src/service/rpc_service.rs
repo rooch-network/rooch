@@ -4,7 +4,6 @@
 use anyhow::{bail, format_err, Result};
 use bitcoin_client::proxy::BitcoinClientProxy;
 use bitcoincore_rpc::bitcoin::Txid;
-use coerce::actor::LocalActorRef;
 use futures_core::Stream;
 use jsonrpsee::core::SubscriptionResult;
 use jsonrpsee::PendingSubscriptionSink;
@@ -26,7 +25,6 @@ use rooch_da::proxy::DAServerProxy;
 use rooch_executor::actor::messages::DryRunTransactionResult;
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_indexer::proxy::IndexerProxy;
-use rooch_notify::actor::NotifyActor;
 use rooch_notify::proxy::NotifyProxy;
 use rooch_pipeline_processor::proxy::PipelineProcessorProxy;
 use rooch_rpc_api::jsonrpc_types::event_view::EventFilterView;
@@ -984,12 +982,12 @@ impl RpcService {
     pub fn subscribe_events(
         &self,
         sink: PendingSubscriptionSink,
-        filter: EventFilter,
+        filter: EventFilterView,
     ) -> SubscriptionResult {
         let permit = self.acquire_subscribe_permit()?;
         let stream = tokio::task::block_in_place(|| {
-            Handle::current().block_on(async { self.notify.subscribe_events(filter).await? })
-        });
+            Handle::current().block_on(async { self.notify.subscribe_events(filter).await })
+        })?;
         spawn_subscription(
             sink,
             // self.state
@@ -1004,12 +1002,12 @@ impl RpcService {
     pub fn subscribe_transactions(
         &self,
         sink: PendingSubscriptionSink,
-        filter: TransactionFilter,
+        filter: TransactionFilterView,
     ) -> SubscriptionResult {
         let permit = self.acquire_subscribe_permit()?;
         let stream = tokio::task::block_in_place(|| {
-            Handle::current().block_on(async { self.notify.subscribe_transactions(filter).await? })
-        });
+            Handle::current().block_on(async { self.notify.subscribe_transactions(filter).await })
+        })?;
         spawn_subscription(
             sink,
             // self.state

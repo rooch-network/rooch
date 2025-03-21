@@ -967,7 +967,7 @@ impl RoochAPIServer for RoochServer {
         sink: PendingSubscriptionSink,
         filter: EventFilterView,
     ) -> SubscriptionResult {
-        self.rpc_service.subscribe_events(sink, filter.into())?;
+        self.rpc_service.subscribe_events(sink, filter)?;
         Ok(())
     }
 
@@ -977,7 +977,7 @@ impl RoochAPIServer for RoochServer {
         filter: TransactionFilterView,
     ) -> SubscriptionResult {
         self.rpc_service
-            .subscribe_transactions(sink, filter.into())?;
+            .subscribe_transactions(sink, filter)?;
         Ok(())
     }
 }
