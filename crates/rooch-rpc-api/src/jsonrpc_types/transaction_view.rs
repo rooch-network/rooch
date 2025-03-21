@@ -2,11 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{BytesView, StrView};
+use crate::jsonrpc_types::event_view::IndexerEventView;
 use crate::jsonrpc_types::{
     H256View, TransactionExecutionInfoView, TransactionSequenceInfoView, TransactionView,
     UnitedAddressView,
 };
 use bitcoin::hashes::Hash;
+use rooch_types::indexer::event::IndexerEvent;
 use rooch_types::indexer::transaction::TransactionFilter;
 use rooch_types::transaction::{
     L1Block, L1Transaction, LedgerTransaction, LedgerTxData, TransactionWithInfo,
@@ -136,6 +138,15 @@ impl TransactionWithInfoView {
     }
 }
 
+impl From<TransactionWithInfo> for TransactionWithInfoView {
+    fn from(tx: TransactionWithInfo) -> Self {
+        TransactionWithInfoView {
+            transaction: LedgerTransactionView::new_from_ledger_transaction(tx.transaction, None),
+            execution_info: tx.execution_info.map(Into::into),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum TransactionFilterView {
@@ -158,6 +169,7 @@ pub enum TransactionFilterView {
         /// right endpoint of transaction order, exclusive
         to_order: StrView<u64>,
     },
+    All,
 }
 
 impl From<TransactionFilterView> for TransactionFilter {
@@ -181,6 +193,7 @@ impl From<TransactionFilterView> for TransactionFilter {
                 from_order: from_order.0,
                 to_order: to_order.0,
             },
+            TransactionFilterView::All => Self::All,
         }
     }
 }

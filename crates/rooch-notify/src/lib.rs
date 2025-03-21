@@ -3,6 +3,8 @@
 
 pub mod actor;
 pub mod event;
+pub mod messages;
+pub mod proxy;
 pub mod streamer;
 pub mod subscription_handler;
 #[cfg(test)]

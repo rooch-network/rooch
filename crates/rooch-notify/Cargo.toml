@@ -28,3 +28,4 @@ moveos-types = { workspace = true }
 moveos-eventbus = { workspace = true }
 
 rooch-types = { workspace = true }
+rooch-rpc-api = { workspace = true }

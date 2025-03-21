@@ -144,7 +144,7 @@ impl MoveStructState for TransactionSequenceInfo {
 }
 
 /// Transaction with sequence info and execution info.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TransactionWithInfo {
     pub transaction: LedgerTransaction,
     pub execution_info: Option<TransactionExecutionInfo>,

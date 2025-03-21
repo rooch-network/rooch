@@ -4,7 +4,8 @@
 use crate::service::aggregate_service::AggregateService;
 use crate::service::rpc_service::RpcService;
 use anyhow::Result;
-use jsonrpsee::{core::async_trait, RpcModule};
+use jsonrpsee::core::SubscriptionResult;
+use jsonrpsee::{core::async_trait, PendingSubscriptionSink, RpcModule};
 use move_core_types::{
     account_address::AccountAddress, identifier::Identifier, language_storage::ModuleId,
 };
@@ -952,6 +953,32 @@ impl RoochAPIServer for RoochServer {
         data.truncate(limit_of as usize);
 
         Ok(data)
+    }
+
+    // fn acquire_subscribe_permit(&self) -> anyhow::Result<OwnedSemaphorePermit> {
+    //     match self.subscription_semaphore.clone().try_acquire_owned() {
+    //         Ok(p) => Ok(p),
+    //         Err(_) => bail!("Resources exhausted"),
+    //     }
+    // }
+
+    fn subscribe_events(
+        &self,
+        sink: PendingSubscriptionSink,
+        filter: EventFilterView,
+    ) -> SubscriptionResult {
+        self.rpc_service.subscribe_events(sink, filter.into())?;
+        Ok(())
+    }
+
+    fn subscribe_transactions(
+        &self,
+        sink: PendingSubscriptionSink,
+        filter: TransactionFilterView,
+    ) -> SubscriptionResult {
+        self.rpc_service
+            .subscribe_transactions(sink, filter.into())?;
+        Ok(())
     }
 }
 

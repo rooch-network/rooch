@@ -99,10 +99,6 @@ async fn test_event_subscription() {
         received_event.is_ok(),
         "Should receive event within timeout"
     );
-
-    // if let Ok(Some(received)) = received_event {
-    //     assert_eq!(received.created_at >= 0, true);
-    // }
 }
 
 #[tokio::test]

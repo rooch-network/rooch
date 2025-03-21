@@ -14,13 +14,16 @@ use prometheus::{
     register_int_counter_vec_with_registry, register_int_gauge_vec_with_registry, IntCounterVec,
     IntGaugeVec, Registry,
 };
+use rooch_rpc_api::jsonrpc_types::event_view::IndexerEventView;
+use rooch_rpc_api::jsonrpc_types::transaction_view::TransactionWithInfoView;
 use rooch_types::indexer::event::{EventFilter, IndexerEvent};
 use rooch_types::indexer::transaction::TransactionFilter;
 use rooch_types::transaction::TransactionWithInfo;
 use tokio_stream::wrappers::ReceiverStream;
 use tracing::{error, trace};
 
-pub const EVENT_DISPATCH_BUFFER_SIZE: usize = 1000;
+pub const TRANSACTION_DISPATCH_BUFFER_SIZE: usize = 1000;
+pub const EVENT_DISPATCH_BUFFER_SIZE: usize = 5000;
 
 pub struct SubscriptionMetrics {
     pub streaming_success: IntCounterVec,
@@ -65,8 +68,9 @@ impl SubscriptionMetrics {
 }
 
 pub struct SubscriptionHandler {
-    event_streamer: Streamer<IndexerEvent, IndexerEvent, EventFilter>,
-    transaction_streamer: Streamer<TransactionWithInfo, TransactionWithInfo, TransactionFilter>,
+    event_streamer: Streamer<IndexerEventView, IndexerEventView, EventFilter>,
+    transaction_streamer:
+        Streamer<TransactionWithInfoView, TransactionWithInfoView, TransactionFilter>,
 }
 
 impl SubscriptionHandler {
@@ -74,7 +78,7 @@ impl SubscriptionHandler {
         let metrics = Arc::new(SubscriptionMetrics::new(registry));
         Self {
             event_streamer: Streamer::spawn(EVENT_DISPATCH_BUFFER_SIZE, metrics.clone(), "event"),
-            transaction_streamer: Streamer::spawn(EVENT_DISPATCH_BUFFER_SIZE, metrics, "tx"),
+            transaction_streamer: Streamer::spawn(TRANSACTION_DISPATCH_BUFFER_SIZE, metrics, "tx"),
         }
     }
 }
@@ -94,14 +98,18 @@ impl SubscriptionHandler {
             );
         }
 
-        if let Err(e) = self.transaction_streamer.try_send(tx.clone()) {
+        let tx_view = TransactionWithInfoView::new_from_transaction_with_info(tx.clone(), None);
+        if let Err(e) = self.transaction_streamer.try_send(tx_view) {
             error!("Failed to send transaction to dispatch: {:?}", e);
         }
 
         // serially dispatch event processing to normal events' orders.
         let indexer_events = events
             .into_iter()
-            .map(|event| IndexerEvent::new(event, tx.transaction.clone(), ctx.clone()))
+            .map(|event| {
+                let indexer_event = IndexerEvent::new(event, tx.transaction.clone(), ctx.clone());
+                IndexerEventView::from(indexer_event)
+            })
             .collect::<Vec<_>>();
         for event in indexer_events.clone() {
             if let Err(e) = self.event_streamer.try_send(event) {
@@ -112,7 +120,7 @@ impl SubscriptionHandler {
     }
 
     // pub fn subscribe_events(&self, filter: EventFilter) -> impl Stream<Item = Event> {
-    pub fn subscribe_events(&self, filter: EventFilter) -> ReceiverStream<IndexerEvent> {
+    pub fn subscribe_events(&self, filter: EventFilter) -> ReceiverStream<IndexerEventView> {
         self.event_streamer.subscribe(filter)
     }
 
@@ -120,7 +128,7 @@ impl SubscriptionHandler {
         &self,
         filter: TransactionFilter,
         // ) -> impl Stream<Item = TransactionWithInfo> {
-    ) -> ReceiverStream<TransactionWithInfo> {
+    ) -> ReceiverStream<TransactionWithInfoView> {
         self.transaction_streamer.subscribe(filter)
     }
 }
