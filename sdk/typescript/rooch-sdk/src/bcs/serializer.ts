@@ -3,10 +3,12 @@
 
 import { splitGenericParameters } from '@mysten/bcs'
 
-import { sha3_256, toHEX } from '../utils/index.js'
-import { canonicalRoochAddress, normalizeRoochAddress } from '../address/index.js'
+import { concatBytes, isBytes, sha3_256, stringToBytes, toHEX } from '../utils/index.js'
+import { canonicalRoochAddress, normalizeRoochAddress, RoochAddress } from '../address/index.js'
 
 import { StructTag, TypeTag, BcsTypeTag } from './types.js'
+import { address } from '../types/rooch.js'
+import { Bytes } from '../types/bytes.js'
 
 const VECTOR_REGEX = /^vector<(.+)>$/
 const STRUCT_REGEX = /^([^:]+)::([^:]+)::([^<]+)(<(.+)>)?/
@@ -14,6 +16,25 @@ const STRUCT_REGEX = /^([^:]+)::([^:]+)::([^<]+)(<(.+)>)?/
 export class Serializer {
   static structTagToObjectID(input: StructTag | string): string {
     return `0x${toHEX(sha3_256(typeof input === 'string' ? input : Serializer.structTagToCanonicalString(input)))}`
+  }
+
+  static accountNamedObjectID(address: address, structTag: StructTag | string) {
+    let addressBytes: Bytes
+    if (typeof address === 'string') {
+      const normalizeAddress = normalizeRoochAddress(address)
+      addressBytes = new RoochAddress(normalizeAddress).toBytes()
+    } else if (isBytes(address)) {
+      addressBytes = address
+    } else {
+      addressBytes = address.toBytes()
+    }
+
+    const tagBytes = stringToBytes(
+      'utf8',
+      typeof structTag === 'string' ? structTag : Serializer.structTagToCanonicalString(structTag),
+    )
+
+    return `0x${toHEX(sha3_256(concatBytes(addressBytes, tagBytes)))}`
   }
 
   static structTagToCanonicalString(input: StructTag): string {
