@@ -154,4 +154,4 @@ jobs:
 
       - name: Scripts-Check
         if: ${{ steps.changes.outputs.scripts == 'true' }}
-        uses: Azbagheri/shell-linter@latest
+        uses: Azbagheri/shell-linter@v0.8.0
