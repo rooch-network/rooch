@@ -71,11 +71,11 @@ jobs:
           restore-keys: |
             ${{ runner.OS }}-pnpm-
 
-      - name: Setup Rust and Build
+      - name: Setup Rust
         if: ${{ steps.changes.outputs.core == 'true' || steps.changes.outputs.sdk_web == 'true' }}
         uses: ./.github/actions/rust-setup
 
-      - name: Rust Build
+      - name: Build Rust
         if: ${{ steps.changes.outputs.core == 'true' || steps.changes.outputs.sdk_web == 'true' }}
         run: cargo build --profile optci
 
