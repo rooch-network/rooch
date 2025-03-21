@@ -16,7 +16,7 @@ use move_binary_format::{
     compatibility::Compatibility,
     errors::{verification_error, Location, PartialVMError, PartialVMResult, VMResult},
     file_format::LocalIndex,
-    normalized, CompiledModule, IndexKind,
+    CompiledModule, IndexKind,
 };
 use move_bytecode_verifier::script_signature;
 use move_core_types::{
@@ -107,10 +107,8 @@ impl VMRuntime {
             if data_store.exists_module(&module_id)? && compat.need_check_compat() {
                 let old_module_ref = self.loader.load_module(&module_id, data_store)?;
                 let old_module = old_module_ref.module();
-                let old_m = normalized::Module::new(old_module);
-                let new_m = normalized::Module::new(module);
                 compat
-                    .check(&old_m, &new_m)
+                    .check(old_module, module)
                     .map_err(|e| e.finish(Location::Undefined))?;
             }
             if !bundle_unverified.insert(module_id) {
