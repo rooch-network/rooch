@@ -21,6 +21,8 @@ env:
   RUST_BACKTRACE: 1
   ENV_TEST_ON_CI: 1
   CARGO_INCREMENTAL: 0
+  SCCACHE_GHA_ENABLED: "true"
+  RUSTC_WRAPPER: "sccache"
 
 jobs:
   check_build_test:
@@ -75,9 +77,13 @@ jobs:
         if: ${{ steps.changes.outputs.core == 'true' || steps.changes.outputs.sdk_web == 'true' }}
         uses: ./.github/actions/rust-setup
 
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.8
+
       - name: Build Rust
         if: ${{ steps.changes.outputs.core == 'true' || steps.changes.outputs.sdk_web == 'true' }}
-        run: cargo build --profile optci
+        run: |
+          cargo build
 
       - name: Run Rust Lint
         if: ${{ steps.changes.outputs.core == 'true'}}
@@ -155,3 +161,6 @@ jobs:
       - name: Scripts-Check
         if: ${{ steps.changes.outputs.scripts == 'true' }}
         uses: Azbagheri/shell-linter@v0.8.0
+        with:
+          path: "scripts/*.sh"
+          severity: "error"
