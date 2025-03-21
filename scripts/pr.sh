@@ -34,10 +34,9 @@ Usage:
 Flags:
     -h   Print this help
     -c   Check the core prover crates using cargo fmt/clippy.
-         This is the default if no flags are provided.
     -x   Like -c, but adds more crates (specifically all which depend
          on move-model)
-    -t   In addition to fmt/clippy, run cargo test
+    -t   Run cargo test
     -d   Run documentation generation, abi generation, etc. for move-stdlib
          and other tested frameworks.
     -g   Run the Move git checks script (whitespace check). This works
@@ -62,8 +61,7 @@ EOF
       GIT_CHECKS=1
       ;;
     t)
-      CHECK=1
-      ALSO_TEST=1
+      STD_TEST=1
       ;;
     m)
       MOVE_TESTS=1
@@ -76,7 +74,7 @@ EOF
       CHECK_MORE=1
       GEN_ARTIFACTS=1
       GIT_CHECKS=1
-      ALSO_TEST=1
+      STD_TEST=1
       MOVE_TESTS=1
       MOVE_E2E_TESTS=1
       EXAMPLES_TESTS=1
@@ -105,7 +103,7 @@ if [ ! -z "$CHECK" ]; then
     echo "All checks passed successfully!"
 fi
 
-if [ ! -z "$ALSO_TEST" ]; then
+if [ ! -z "$STD_TEST" ]; then
     export RUST_BACKTRACE=1
 
     # Run standard tests with optimized settings
