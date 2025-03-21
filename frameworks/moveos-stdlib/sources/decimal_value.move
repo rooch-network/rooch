@@ -22,6 +22,30 @@ module moveos_std::decimal_value {
         self.decimal
     }
 
+    /// Create a new DecimalValue with the given decimal precision
+    /// For example, convert 1.234 (value=1234, decimal=3) to 1.23400000 (value=123400000, decimal=8)
+    public fun with_precision(self: &DecimalValue, new_decimal: u8): DecimalValue {
+        if (self.decimal == new_decimal) {
+            return *self
+        };
+        
+        if (self.decimal < new_decimal) {
+            // Increase precision (multiply)
+            let scale_factor = u256::pow(10u256, (new_decimal - self.decimal));
+            DecimalValue {
+                value: self.value * scale_factor,
+                decimal: new_decimal
+            }
+        } else {
+            // Decrease precision (divide) - note: this can lose precision
+            let scale_factor = u256::pow(10u256, (self.decimal - new_decimal));
+            DecimalValue {
+                value: self.value / scale_factor,
+                decimal: new_decimal
+            }
+        }
+    }
+
     /// Check if two DecimalValue instances represent the same numerical value
     public fun is_equal(a: &DecimalValue, b: &DecimalValue): bool {
         if (a.decimal == b.decimal) {
@@ -71,5 +95,30 @@ module moveos_std::decimal_value {
             &DecimalValue { value: 0, decimal: 4 },     // 0.0000
             &DecimalValue { value: 0, decimal: 0 }      // 0
         ), 4);
+    }
+
+    #[test]
+    fun test_with_precision() {
+        // Increase precision
+        let d1 = DecimalValue { value: 1234, decimal: 3 }; // 1.234
+        let d2 = with_precision(&d1, 8); // 1.23400000
+        assert!(d2.value == 123400000, 0);
+        assert!(d2.decimal == 8, 1);
+        assert!(is_equal(&d1, &d2), 2);
+        
+        // Decrease precision
+        let d3 = DecimalValue { value: 123456789, decimal: 8 }; // 1.23456789
+        let d4 = with_precision(&d3, 3); // 1.234
+        assert!(d4.value == 1234, 3);
+        assert!(d4.decimal == 3, 4);
+        // Note: this loses precision
+        assert!(!is_equal(&d3, &d4), 5);
+        
+        // Same precision
+        let d5 = DecimalValue { value: 1234, decimal: 3 };
+        let d6 = with_precision(&d5, 3);
+        assert!(d6.value == 1234, 6);
+        assert!(d6.decimal == 3, 7);
+        assert!(is_equal(&d5, &d6), 8);
     }
 }
