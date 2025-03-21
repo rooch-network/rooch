@@ -27,6 +27,9 @@ jobs:
     name: Check-Build-Test
     runs-on: self-hosted
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Filter Changed Files
         uses: dorny/paths-filter@v3
         id: changes
