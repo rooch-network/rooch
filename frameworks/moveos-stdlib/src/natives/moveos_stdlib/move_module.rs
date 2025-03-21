@@ -317,8 +317,8 @@ fn check_compatibililty_inner(
             Ok(_) => {}
             Err(e) => {
                 tracing::info!("module compatibility checking failed {:?}", e);
-                return Ok(NativeResult::err(cost, e.sub_status().unwrap_or(0)))
-            },
+                return Ok(NativeResult::err(cost, e.sub_status().unwrap_or(0)));
+            }
         }
     }
     Ok(NativeResult::ok(cost, smallvec![]))

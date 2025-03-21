@@ -28,7 +28,9 @@ use moveos_types::transaction::{
 };
 use parking_lot::RwLock;
 use rooch_genesis::FrameworksGasParameters;
-use rooch_rpc_api::jsonrpc_types::{DryRunTransactionResponseView, H256View, KeptVMStatusView, RawTransactionOutputView, StrView};
+use rooch_rpc_api::jsonrpc_types::{
+    DryRunTransactionResponseView, H256View, KeptVMStatusView, RawTransactionOutputView, StrView,
+};
 use rooch_rpc_client::{Client, ClientResolver};
 use rooch_types::address::{BitcoinAddress, MultiChainAddress};
 use rooch_types::framework::auth_validator::{BuiltinAuthValidator, TxValidateResult};
@@ -283,7 +285,8 @@ pub async fn dry_run_tx_locally(
     tx: RoochTransactionData,
 ) -> anyhow::Result<DryRunTransactionResponseView> {
     let state_root = get_latest_state_root(&client).await?;
-    let (_, raw_transaction_output, error_info_opt) = execute_tx_locally(state_root, client, tx.clone())?;
+    let (_, raw_transaction_output, error_info_opt) =
+        execute_tx_locally(state_root, client, tx.clone())?;
 
     let raw_output_view = RawTransactionOutputView {
         tx_hash: H256View::from(tx.tx_hash()),
