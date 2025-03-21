@@ -97,6 +97,54 @@ module moveos_std::string_utils {
         option::destroy_some(result)
     }
 
+    /// Parse a string into a u16, returning an option
+    public fun parse_u16_option(s: &String): Option<u16> {
+        let bytes: &vector<u8> = string::bytes(s);
+        let i = 0;
+        let result = 0u16;
+        while (i < vector::length(bytes)) {
+            let c = *vector::borrow(bytes, i);
+            if (c >= 48 && c <= 57) {
+                result = result * 10 + ((c - 48) as u16);
+            } else {
+                return option::none()
+            };
+            i = i + 1;
+        };
+        option::some(result)
+    }
+
+    /// Parse a string into a u16, aborting if the string is not a valid number
+    public fun parse_u16(s: &String): u16 {
+        let result = parse_u16_option(s);
+        assert!(option::is_some(&result), ErrorInvalidStringNumber);
+        option::destroy_some(result)
+    }
+
+    /// Parse a string into a u32, returning an option
+    public fun parse_u32_option(s: &String): Option<u32> {
+        let bytes: &vector<u8> = string::bytes(s);
+        let i = 0;
+        let result = 0u32;
+        while (i < vector::length(bytes)) {
+            let c = *vector::borrow(bytes, i);
+            if (c >= 48 && c <= 57) {
+                result = result * 10 + ((c - 48) as u32);
+            } else {
+                return option::none()
+            };
+            i = i + 1;
+        };
+        option::some(result)
+    }
+
+    /// Parse a string into a u32, aborting if the string is not a valid number
+    public fun parse_u32(s: &String): u32 {
+        let result = parse_u32_option(s);
+        assert!(option::is_some(&result), ErrorInvalidStringNumber);
+        option::destroy_some(result)
+    }
+
     public fun parse_decimal_option(s: &String, decimal: u8): Option<u256> {
         let bytes = string::bytes(s);
         let i = 0;
@@ -543,5 +591,79 @@ module moveos_std::string_utils {
         assert!(*vector::borrow(&parts, 0) == string::utf8(x"E38182"), 2);
         assert!(*vector::borrow(&parts, 1) == string::utf8(x"E38183"), 3);
         assert!(*vector::borrow(&parts, 2) == string::utf8(x"E38184"), 4);
+    }
+
+    #[test]
+    fun test_parse_u16_option() {
+        let s = string::utf8(b"12345");
+        let result = parse_u16_option(&s);
+        assert!(result == option::some(12345u16), 1);
+        
+        let s = string::utf8(b"abc");
+        let result = parse_u16_option(&s);
+        assert!(option::is_none(&result), 2);
+    }
+
+    #[test]
+    fun test_parse_u16() {
+        let s = string::utf8(b"12345");
+        assert!(parse_u16(&s) == 12345u16, 1);
+    }
+
+    #[test]
+    #[expected_failure(abort_code=ErrorInvalidStringNumber, location=moveos_std::string_utils)]
+    fun test_parse_u16_failed() {
+        let s = string::utf8(b"abc");
+        parse_u16(&s);
+    }
+
+    #[test]
+    #[expected_failure]
+    fun test_parse_u16_overflow() {
+        let s = string::utf8(b"65536"); // Max u16 is 65535
+        parse_u16(&s);
+    }
+
+    #[test]
+    fun test_parse_u32_option() {
+        let s = string::utf8(b"123456789");
+        let result = parse_u32_option(&s);
+        assert!(result == option::some(123456789u32), 1);
+        
+        let s = string::utf8(b"abc");
+        let result = parse_u32_option(&s);
+        assert!(option::is_none(&result), 2);
+    }
+
+    #[test]
+    fun test_parse_u32() {
+        let s = string::utf8(b"123456789");
+        assert!(parse_u32(&s) == 123456789u32, 1);
+    }
+
+    #[test]
+    #[expected_failure(abort_code=ErrorInvalidStringNumber, location=moveos_std::string_utils)]
+    fun test_parse_u32_failed() {
+        let s = string::utf8(b"abc");
+        parse_u32(&s);
+    }
+
+    #[test]
+    fun test_u16_max() {
+        let s = string::utf8(b"65535");
+        assert!(parse_u16(&s) == 65535u16, 1);
+    }
+
+    #[test]
+    fun test_u32_max() {
+        let s = string::utf8(b"4294967295");
+        assert!(parse_u32(&s) == 4294967295u32, 1);
+    }
+
+    #[test]
+    #[expected_failure]
+    fun test_parse_u32_overflow() {
+        let s = string::utf8(b"4294967296"); // Max u32 is 4294967295
+        parse_u32(&s);
     }
 }
