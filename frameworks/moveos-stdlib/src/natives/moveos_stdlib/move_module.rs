@@ -315,7 +315,10 @@ fn check_compatibililty_inner(
 
         match check_metadata_compatibility(&old_module, &new_module) {
             Ok(_) => {}
-            Err(e) => return Ok(NativeResult::err(cost, e.sub_status().unwrap_or(0))),
+            Err(e) => {
+                tracing::info!("module compatibility checking failed {:?}", e);
+                return Ok(NativeResult::err(cost, e.sub_status().unwrap_or(0)))
+            },
         }
     }
     Ok(NativeResult::ok(cost, smallvec![]))
