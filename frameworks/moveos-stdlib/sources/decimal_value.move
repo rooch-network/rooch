@@ -2,13 +2,18 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module moveos_std::decimal_value {
+    use std::string::{Self, String};
+    use std::vector;
     use std::u256;
+    use std::option::{Self, Option};
 
     // Error codes
     const ErrorUnderflow: u64 = 1;
     const ErrorDivisionByZero: u64 = 2;
     const ErrorInvalidPrecision: u64 = 3;
     const ErrorOverflow: u64 = 4;
+    const ErrorInvalidDecimalString: u64 = 5;
+    const ErrorDecimalPartTooLong: u64 = 6;
 
     #[data_struct]
     struct DecimalValue has store, drop, copy {
@@ -217,6 +222,167 @@ module moveos_std::decimal_value {
         }
     }
 
+    /// Parse a string representation of a decimal number into a DecimalValue
+    /// Accepts strings like "123", "123.456", "0.123"
+    public fun from_string(s: &String): DecimalValue {
+        let bytes = string::bytes(s);
+        let len = vector::length(bytes);
+        
+        // Empty string is invalid
+        assert!(len > 0, ErrorInvalidDecimalString);
+        
+        let i = 0;
+        let decimal_pos: Option<u64> = option::none();
+        
+        // Find decimal point position
+        while (i < len) {
+            let char = *vector::borrow(bytes, i);
+            if (char == 46) { // '.' character
+                // Ensure we don't have multiple decimal points
+                assert!(option::is_none(&decimal_pos), ErrorInvalidDecimalString);
+                decimal_pos = option::some(i);
+            } else {
+                // Ensure all other characters are digits
+                assert!(char >= 48 && char <= 57, ErrorInvalidDecimalString); // '0' to '9'
+            };
+            i = i + 1;
+        };
+        
+        let value = 0u256;
+        let decimal = 0u8;
+        
+        if (option::is_none(&decimal_pos)) {
+            // No decimal point, parse as integer
+            i = 0;
+            while (i < len) {
+                let digit = ((*vector::borrow(bytes, i) - 48) as u8); // Convert ASCII to digit
+                value = value * 10 + (digit as u256);
+                i = i + 1;
+            };
+        } else {
+            // Has decimal point
+            let dp = option::extract(&mut decimal_pos);
+            
+            // Process integer part
+            i = 0;
+            while (i < dp) {
+                let digit = ((*vector::borrow(bytes, i) - 48) as u8);
+                value = value * 10 + (digit as u256);
+                i = i + 1;
+            };
+            
+            // Skip decimal point
+            i = dp + 1;
+            
+            // Process decimal part
+            let decimal_start = i;
+            while (i < len) {
+                let digit = ((*vector::borrow(bytes, i) - 48) as u8);
+                value = value * 10 + (digit as u256);
+                i = i + 1;
+            };
+            
+            // Calculate decimal places
+            decimal = ((len - decimal_start) as u8);
+            
+            // Safety check
+            assert!(decimal <= 77, ErrorDecimalPartTooLong); // u256 can handle at most 77 decimal places
+        };
+        
+        DecimalValue { value, decimal }
+    }
+    
+    /// Convert a DecimalValue to its string representation
+    /// Returns strings like "123", "123.456", "0.123"
+    public fun to_string(d: &DecimalValue): String {
+        if (d.value == 0) {
+            return string::utf8(b"0")
+        };
+
+        if (d.decimal == 0) {
+            // Simple integer case
+            return internal_to_string_no_decimal(d.value)
+        };
+        
+        let divisor = u256::pow(10u256, d.decimal);
+        let int_part = d.value / divisor;
+        let frac_part = d.value % divisor;
+        
+        if (frac_part == 0) {
+            // No fractional part, just return integer
+            return internal_to_string_no_decimal(int_part)
+        };
+        
+        let int_str = internal_to_string_no_decimal(int_part);
+        let frac_str = internal_to_string_no_decimal(frac_part);
+        
+        // Pad fractional part with leading zeros if needed
+        let frac_len = string::length(&frac_str);
+        let padding_zeros = d.decimal - (frac_len as u8);
+        
+        let result = int_str;
+        string::append(&mut result, string::utf8(b"."));
+        
+        // Add leading zeros
+        let i = 0;
+        while (i < padding_zeros) {
+            string::append(&mut result, string::utf8(b"0"));
+            i = i + 1;
+        };
+        
+        string::append(&mut result, frac_str);
+        
+        // Remove trailing zeros
+        let result_bytes = string::bytes(&result);
+        let len = vector::length(result_bytes);
+        let last_non_zero = len;
+        
+        while (last_non_zero > 0) {
+            let char = *vector::borrow(result_bytes, last_non_zero - 1);
+            if (char != 48) { // '0'
+                break
+            };
+            last_non_zero = last_non_zero - 1;
+        };
+        
+        // If we removed all decimal part, remove the decimal point too
+        if (last_non_zero > 0 && *vector::borrow(result_bytes, last_non_zero - 1) == 46) { // '.'
+            last_non_zero = last_non_zero - 1;
+        };
+        
+        string::sub_string(&result, 0, last_non_zero)
+    }
+    
+    /// Helper function to convert a u256 to a string without decimal places
+    fun internal_to_string_no_decimal(value: u256): String {
+        if (value == 0) {
+            return string::utf8(b"0")
+        };
+        
+        let result = vector<u8>[];
+        
+        while (value > 0) {
+            let digit = ((value % 10) as u8) + 48; // Convert to ASCII
+            vector::push_back(&mut result, digit);
+            value = value / 10;
+        };
+        
+        // Reverse the result
+        let len = vector::length(&result);
+        let i = 0;
+        let j = len - 1;
+        
+        while (i < j) {
+            let temp = *vector::borrow(&result, i);
+            *vector::borrow_mut(&mut result, i) = *vector::borrow(&result, j);
+            *vector::borrow_mut(&mut result, j) = temp;
+            i = i + 1;
+            j = j - 1;
+        };
+        
+        string::utf8(result)
+    }
+
     #[test]
     fun test_decimal_equality() {
         // Same value, same decimal
@@ -394,5 +560,110 @@ module moveos_std::decimal_value {
         
         // This should fail with ErrorDivisionByZero
         div(&a, &b, 4);
+    }
+
+    #[test]
+    fun test_from_string() {
+        // Integer
+        let s = string::utf8(b"12345");
+        let d = from_string(&s);
+        assert!(d.value == 12345, 0);
+        assert!(d.decimal == 0, 1);
+        
+        // Decimal
+        let s = string::utf8(b"123.45");
+        let d = from_string(&s);
+        assert!(d.value == 12345, 2);
+        assert!(d.decimal == 2, 3);
+        
+        // Decimal with leading zero
+        let s = string::utf8(b"0.123");
+        let d = from_string(&s);
+        assert!(d.value == 123, 4);
+        assert!(d.decimal == 3, 5);
+        
+        // Zero
+        let s = string::utf8(b"0");
+        let d = from_string(&s);
+        assert!(d.value == 0, 6);
+        assert!(d.decimal == 0, 7);
+        
+        // Zero with decimal
+        let s = string::utf8(b"0.0");
+        let d = from_string(&s);
+        assert!(d.value == 0, 8);
+        assert!(d.decimal == 1, 9);
+    }
+    
+    #[test]
+    #[expected_failure(abort_code = ErrorInvalidDecimalString)]
+    fun test_from_string_invalid() {
+        // Invalid character
+        let s = string::utf8(b"123a.45");
+        from_string(&s);
+    }
+    
+    #[test]
+    #[expected_failure(abort_code = ErrorInvalidDecimalString)]
+    fun test_from_string_multiple_decimal_points() {
+        // Multiple decimal points
+        let s = string::utf8(b"123.45.6");
+        from_string(&s);
+    }
+    
+    #[test]
+    fun test_to_string() {
+        // Integer
+        let d = DecimalValue { value: 12345, decimal: 0 };
+        let s = to_string(&d);
+        assert!(s == string::utf8(b"12345"), 0);
+        
+        // Decimal
+        let d = DecimalValue { value: 12345, decimal: 2 };
+        let s = to_string(&d);
+        assert!(s == string::utf8(b"123.45"), 1);
+        
+        // Small decimal
+        let d = DecimalValue { value: 123, decimal: 3 };
+        let s = to_string(&d);
+        assert!(s == string::utf8(b"0.123"), 2);
+        
+        // Zero
+        let d = DecimalValue { value: 0, decimal: 0 };
+        let s = to_string(&d);
+        assert!(s == string::utf8(b"0"), 3);
+        
+        // Trailing zeros
+        let d = DecimalValue { value: 12300, decimal: 2 };
+        let s = to_string(&d);
+        assert!(s == string::utf8(b"123"), 4);
+        
+        // Leading zeros in decimal part
+        let d = DecimalValue { value: 12, decimal: 3 };
+        let s = to_string(&d);
+        assert!(s == string::utf8(b"0.012"), 5);
+    }
+    
+    #[test]
+    fun test_round_trip() {
+        // Test round-trip conversion from string to DecimalValue and back
+        let test_cases = vector[
+            b"123",
+            b"123.45",
+            b"0.123",
+            b"0",
+            b"999999.999999"
+        ];
+        
+        let i = 0;
+        let len = vector::length(&test_cases);
+        
+        while (i < len) {
+            let s = string::utf8(*vector::borrow(&test_cases, i));
+            let d = from_string(&s);
+            let s2 = to_string(&d);
+            assert!(s == s2, i);
+            i = i + 1;
+        };
     }
 }
