@@ -4,6 +4,12 @@
 module moveos_std::decimal_value {
     use std::u256;
 
+    // Error codes
+    const ErrorUnderflow: u64 = 1;
+    const ErrorDivisionByZero: u64 = 2;
+    const ErrorInvalidPrecision: u64 = 3;
+    const ErrorOverflow: u64 = 4;
+
     #[data_struct]
     struct DecimalValue has store, drop, copy {
         value: u256,
@@ -65,6 +71,152 @@ module moveos_std::decimal_value {
         }
     }
 
+    /// Add two DecimalValue instances
+    public fun add(a: &DecimalValue, b: &DecimalValue): DecimalValue {
+        // Normalize to the same decimal precision (use the larger one)
+        let result_decimal = if (a.decimal > b.decimal) { a.decimal } else { b.decimal };
+        
+        let a_normalized = with_precision(a, result_decimal);
+        let b_normalized = with_precision(b, result_decimal);
+        
+        // Add the normalized values
+        DecimalValue {
+            value: a_normalized.value + b_normalized.value,
+            decimal: result_decimal
+        }
+    }
+    
+    /// Subtract b from a
+    public fun sub(a: &DecimalValue, b: &DecimalValue): DecimalValue {
+        // Normalize to the same decimal precision (use the larger one)
+        let result_decimal = if (a.decimal > b.decimal) { a.decimal } else { b.decimal };
+        
+        let a_normalized = with_precision(a, result_decimal);
+        let b_normalized = with_precision(b, result_decimal);
+        
+        // Ensure a >= b to avoid underflow
+        assert!(a_normalized.value >= b_normalized.value, ErrorUnderflow);
+        
+        // Subtract the normalized values
+        DecimalValue {
+            value: a_normalized.value - b_normalized.value,
+            decimal: result_decimal
+        }
+    }
+    
+    /// Multiply two DecimalValue instances
+    public fun mul(a: &DecimalValue, b: &DecimalValue): DecimalValue {
+        // When multiplying decimal values, we add the decimal places
+        // For example: 1.23 * 4.56 = (123 * 456) / 10^(2+2) = 56088 / 10^4 = 5.6088
+        
+        // Multiply the raw values
+        let result_value = a.value * b.value;
+        
+        // Add the decimal places
+        let result_decimal = a.decimal + b.decimal;
+        
+        DecimalValue {
+            value: result_value,
+            decimal: result_decimal
+        }
+    }
+    
+    /// Divide a by b
+    public fun div(a: &DecimalValue, b: &DecimalValue, precision: u8): DecimalValue {
+        // Ensure b is not zero
+        assert!(b.value > 0, ErrorDivisionByZero);
+        
+        // For division with decimal values, we need to adjust the scale
+        // For example: 1.23 / 4.56 = (123 * 10^precision) / 456
+        
+        // Scale up the dividend to maintain precision
+        let scale_factor = u256::pow(10u256, precision);
+        let scaled_a = a.value * scale_factor;
+        
+        // Perform the division
+        let result_value = scaled_a / b.value;
+        
+        // Calculate the result's decimal places: a.decimal + precision - b.decimal
+        let result_decimal = a.decimal + precision;
+        if (result_decimal >= b.decimal) {
+            result_decimal = result_decimal - b.decimal;
+        } else {
+            // Handle underflow case (should be rare with sufficient precision)
+            result_decimal = 0;
+        };
+        
+        DecimalValue {
+            value: result_value,
+            decimal: result_decimal
+        }
+    }
+    
+    /// Multiply by an integer
+    public fun mul_u256(a: &DecimalValue, b: u256): DecimalValue {
+        DecimalValue {
+            value: a.value * b,
+            decimal: a.decimal
+        }
+    }
+    
+    /// Divide by an integer
+    public fun div_u256(a: &DecimalValue, b: u256): DecimalValue {
+        assert!(b > 0, ErrorDivisionByZero);
+        
+        DecimalValue {
+            value: a.value / b,
+            decimal: a.decimal
+        }
+    }
+    
+    /// Convert to integer part represented as a DecimalValue with decimal=0
+    public fun as_integer_decimal(self: &DecimalValue): DecimalValue {
+        if (self.decimal == 0) {
+            return *self
+        };
+        
+        let divisor = u256::pow(10u256, self.decimal);
+        DecimalValue {
+            value: self.value / divisor,
+            decimal: 0
+        }
+    }
+
+    /// Convert to integer by truncating decimal part and returning raw u256
+    public fun to_integer(self: &DecimalValue): u256 {
+        if (self.decimal == 0) {
+            return self.value
+        };
+        
+        let divisor = u256::pow(10u256, self.decimal);
+        self.value / divisor
+    }
+    
+    /// Round the decimal value to the specified number of decimal places
+    public fun round(self: &DecimalValue, new_decimal: u8): DecimalValue {
+        if (self.decimal <= new_decimal) {
+            // If already has fewer decimal places, just adjust precision
+            return with_precision(self, new_decimal)
+        };
+        
+        // Get the digit after the rounding point
+        let scale_down = u256::pow(10u256, (self.decimal - new_decimal - 1));
+        let scale_up = u256::pow(10u256, (self.decimal - new_decimal));
+        
+        let rounding_digit = (self.value / scale_down) % 10;
+        
+        // Perform the rounding
+        let rounded_value = self.value / scale_up;
+        if (rounding_digit >= 5) {
+            rounded_value = rounded_value + 1;
+        };
+        
+        DecimalValue {
+            value: rounded_value,
+            decimal: new_decimal
+        }
+    }
+
     #[test]
     fun test_decimal_equality() {
         // Same value, same decimal
@@ -120,5 +272,127 @@ module moveos_std::decimal_value {
         assert!(d6.value == 1234, 6);
         assert!(d6.decimal == 3, 7);
         assert!(is_equal(&d5, &d6), 8);
+    }
+
+    #[test]
+    fun test_addition() {
+        let a = DecimalValue { value: 1234, decimal: 2 }; // 12.34
+        let b = DecimalValue { value: 567, decimal: 2 };  // 5.67
+        
+        let c = add(&a, &b);
+        assert!(c.value == 1801, 0); // 18.01
+        assert!(c.decimal == 2, 1);
+        
+        // Different decimal places
+        let d = DecimalValue { value: 123, decimal: 1 }; // 12.3
+        let e = add(&a, &d);
+        assert!(e.value == 2464, 2); // 24.64 
+        assert!(e.decimal == 2, 3);
+    }
+    
+    #[test]
+    fun test_subtraction() {
+        let a = DecimalValue { value: 1234, decimal: 2 }; // 12.34
+        let b = DecimalValue { value: 567, decimal: 2 };  // 5.67
+        
+        let c = sub(&a, &b);
+        assert!(c.value == 667, 0); // 6.67
+        assert!(c.decimal == 2, 1);
+        
+        // Different decimal places
+        let d = DecimalValue { value: 123, decimal: 1 }; // 12.3
+        let e = sub(&a, &d);
+        assert!(e.value == 4, 2); // 0.04
+        assert!(e.decimal == 2, 3);
+    }
+    
+    #[test]
+    fun test_multiplication() {
+        let a = DecimalValue { value: 1234, decimal: 2 }; // 12.34
+        let b = DecimalValue { value: 567, decimal: 2 };  // 5.67
+        
+        let c = mul(&a, &b);
+        assert!(c.value == 699678, 0); // 69.9678
+        assert!(c.decimal == 4, 1);
+        
+        // Multiply by integer
+        let d = mul_u256(&a, 10);
+        assert!(d.value == 12340, 2); // 123.4
+        assert!(d.decimal == 2, 3);
+    }
+    
+    #[test]
+    fun test_division() {
+        let a = DecimalValue { value: 1234, decimal: 2 }; // 12.34
+        let b = DecimalValue { value: 567, decimal: 2 };  // 5.67
+        
+        // Using precision 4
+        let c = div(&a, &b, 4);
+        assert!(c.value == 21763, 0); // 2.1763...
+        assert!(c.decimal == 4, 1);
+        
+        // Divide by integer
+        let d = div_u256(&a, 10);
+        assert!(d.value == 123, 2); // 1.23
+        assert!(d.decimal == 2, 3);
+    }
+    
+    #[test]
+    fun test_to_integer() {
+        let a = DecimalValue { value: 1234, decimal: 2 }; // 12.34
+        let b = as_integer_decimal(&a);
+        assert!(b.value == 12, 0);
+        assert!(b.decimal == 0, 1);
+        assert!(to_integer(&a) == 12, 2);
+        
+        // Already an integer
+        let c = DecimalValue { value: 123, decimal: 0 }; // 123
+        let d = as_integer_decimal(&c);
+        assert!(d.value == 123, 2);
+        assert!(d.decimal == 0, 3);
+        assert!(to_integer(&c) == 123, 4);
+    }
+    
+    #[test]
+    fun test_rounding() {
+        let a = DecimalValue { value: 12345, decimal: 3 }; // 12.345
+        
+        // Round to 2 decimal places (rounding up, since 5 at rounding position)
+        let b = round(&a, 2);
+        //std::debug::print(&b);
+        assert!(b.value == 1235, 0); // 12.35 (correct rounding of 12.345)
+        assert!(b.decimal == 2, 1);
+        
+        // Test a case that should round down
+        let c = DecimalValue { value: 12344, decimal: 3 }; // 12.344
+        let d = round(&c, 2);
+        //std::debug::print(&d);
+        assert!(d.value == 1234, 2); // 12.34
+        assert!(d.decimal == 2, 3);
+        
+        // Round to 0 decimal places
+        let e = round(&a, 0);
+        assert!(e.value == 12, 4); // 12
+        assert!(e.decimal == 0, 5);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = ErrorUnderflow)]
+    fun test_subtraction_underflow() {
+        let a = DecimalValue { value: 100, decimal: 2 }; // 1.00
+        let b = DecimalValue { value: 200, decimal: 2 }; // 2.00
+        
+        // This should fail with ErrorUnderflow
+        sub(&a, &b);
+    }
+    
+    #[test]
+    #[expected_failure(abort_code = ErrorDivisionByZero)]
+    fun test_division_by_zero() {
+        let a = DecimalValue { value: 1234, decimal: 2 }; // 12.34
+        let b = DecimalValue { value: 0, decimal: 2 };    // 0.00
+        
+        // This should fail with ErrorDivisionByZero
+        div(&a, &b, 4);
     }
 }
