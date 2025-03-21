@@ -5,7 +5,6 @@ import { describe, it, expect } from 'vitest'
 
 import { StructTag, TypeTag } from './types.js'
 import { Serializer } from './serializer.js'
-import { Address } from '../address/address.js'
 import { RoochAddress } from '../address/rooch.js'
 
 describe('Serializer', () => {
