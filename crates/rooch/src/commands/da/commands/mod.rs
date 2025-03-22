@@ -15,6 +15,7 @@ use moveos_types::transaction::TransactionExecutionInfo;
 use reqwest::StatusCode;
 use rooch_config::RoochOpt;
 use rooch_db::RoochDB;
+use rooch_pipeline_processor::actor::TxAnomalies;
 use rooch_rpc_client::Client;
 use rooch_store::RoochStore;
 use rooch_types::crypto::RoochKeyPair;
@@ -53,10 +54,14 @@ pub(crate) struct SequencedTxStore {
     last_sequenced_tx_order_in_last_job: u64,
     tx_accumulator: MerkleAccumulator,
     rooch_store: RoochStore,
+    tx_anomalies: Option<TxAnomalies>,
 }
 
 impl SequencedTxStore {
-    pub(crate) fn new(rooch_store: RoochStore) -> anyhow::Result<Self> {
+    pub(crate) fn new(
+        rooch_store: RoochStore,
+        tx_anomalies: Option<TxAnomalies>,
+    ) -> anyhow::Result<Self> {
         // The sequencer info would be initialized when genesis, so the sequencer info should not be None
         let last_sequencer_info = rooch_store
             .get_meta_store()
@@ -83,6 +88,7 @@ impl SequencedTxStore {
             tx_accumulator,
             rooch_store,
             last_sequenced_tx_order_in_last_job,
+            tx_anomalies,
         })
     }
 
@@ -92,6 +98,14 @@ impl SequencedTxStore {
 
     pub(crate) fn save_tx(&self, mut tx: LedgerTransaction) -> anyhow::Result<()> {
         let tx_order = tx.sequence_info.tx_order;
+        if let Some(tx_anomalies) = &self.tx_anomalies {
+            if let Some(tx_hash_should_revert) =
+                tx_anomalies.get_accumulator_should_revert(tx_order)
+            {
+                self.tx_accumulator
+                    .append(vec![tx_hash_should_revert].as_slice())?;
+            }
+        }
 
         let tx_hash = tx.tx_hash();
 

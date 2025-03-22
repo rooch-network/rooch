@@ -234,7 +234,11 @@ impl ExecCommand {
         )
         .await?;
 
-        let sequenced_tx_store = SequencedTxStore::new(rooch_db.rooch_store.clone())?;
+        let genesis_namespace = derive_builtin_genesis_namespace(self.chain_id)?;
+        let tx_anomalies = load_tx_anomalies(genesis_namespace)?;
+
+        let sequenced_tx_store =
+            SequencedTxStore::new(rooch_db.rooch_store.clone(), tx_anomalies.clone())?;
 
         let bitcoin_client_proxy = build_btc_client_proxy(
             self.btc_rpc_url.clone(),
@@ -267,9 +271,6 @@ impl ExecCommand {
             )?,
             _ => LedgerTxGetter::new(self.segment_dir.clone())?,
         };
-
-        let genesis_namespace = derive_builtin_genesis_namespace(self.chain_id)?;
-        let tx_anomalies = load_tx_anomalies(genesis_namespace)?;
 
         Ok(ExecInner {
             mode: self.mode,
