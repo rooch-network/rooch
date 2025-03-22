@@ -112,7 +112,11 @@ fn current_max_version() -> u64 {
 
 /// Check whether the new stdlib is compatible with the old stdlib
 fn check_stdlib_compatibility(curr_stdlib: &Stdlib, prev_stdlib: &Stdlib) -> Result<()> {
-    check_modules_compat(curr_stdlib.all_modules()?, prev_stdlib.all_modules()?)
+    check_modules_compat(
+        curr_stdlib.all_modules()?,
+        prev_stdlib.all_modules()?,
+        false,
+    )
 }
 
 pub fn check_modules_compat(
@@ -206,7 +210,7 @@ pub fn check_package_compat(
 ) -> Result<()> {
     let new_modules = new_package_data.compiled_modules()?;
     let pre_modules = pre_package_data.compiled_modules()?;
-    check_modules_compat(new_modules, pre_modules)
+    check_modules_compat(new_modules, pre_modules, false)
 }
 
 /// check module compatibility
