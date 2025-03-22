@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::commands::db::commands::load_accumulator;
 use crate::utils::open_rooch_db;
 use accumulator::accumulator_info::AccumulatorInfo;
 use accumulator::{Accumulator, MerkleAccumulator};
@@ -213,26 +214,4 @@ fn verify_proof(
         .get_proof(leaf_index)?
         .ok_or_else(|| anyhow::anyhow!("Proof of tx_order: {} not exist", leaf_index))?;
     proof.verify(root_hash, tx_hash, leaf_index)
-}
-
-fn load_accumulator(rooch_store: RoochStore) -> anyhow::Result<(MerkleAccumulator, u64)> {
-    // The sequencer info would be initialized when genesis, so the sequencer info should not be None
-    let last_sequencer_info = rooch_store
-        .get_meta_store()
-        .get_sequencer_info()?
-        .ok_or_else(|| anyhow::anyhow!("Load sequencer info failed"))?;
-    let (last_order, last_accumulator_info) = (
-        last_sequencer_info.last_order,
-        last_sequencer_info.last_accumulator_info.clone(),
-    );
-    info!("Load latest sequencer order {:?}", last_order);
-    info!(
-        "Load latest sequencer accumulator info {:?}",
-        last_accumulator_info
-    );
-    let tx_accumulator = MerkleAccumulator::new_with_info(
-        last_accumulator_info,
-        rooch_store.get_transaction_accumulator_store(),
-    );
-    Ok((tx_accumulator, last_order))
 }

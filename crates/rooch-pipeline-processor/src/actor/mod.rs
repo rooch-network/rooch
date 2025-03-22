@@ -29,11 +29,19 @@ pub struct TxAnomalies {
     pub genesis_namespace: String,
     pub dup_hash: HashMap<H256, Vec<u64>>,
     pub no_execution_info: HashMap<H256, u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub accumulator_should_revert: Option<HashMap<u64, H256>>,
 }
 
 impl TxAnomalies {
     pub fn is_dup_hash(&self, hash: &H256) -> bool {
         self.dup_hash.contains_key(hash)
+    }
+
+    pub fn get_accumulator_should_revert(&self, order: u64) -> Option<H256> {
+        self.accumulator_should_revert
+            .as_ref()
+            .and_then(|map| map.get(&order).cloned())
     }
 
     pub fn is_no_execution_info(&self, hash: &H256) -> bool {
