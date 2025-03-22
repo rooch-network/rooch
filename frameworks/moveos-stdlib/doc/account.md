@@ -18,6 +18,9 @@
 -  [Function `create_signer_with_account`](#0x2_account_create_signer_with_account)
 -  [Function `create_signer_with_account_cap`](#0x2_account_create_signer_with_account_cap)
 -  [Function `account_object_id`](#0x2_account_account_object_id)
+-  [Function `account_address`](#0x2_account_account_address)
+-  [Function `account_cap_address`](#0x2_account_account_cap_address)
+-  [Function `account_sequence_number`](#0x2_account_account_sequence_number)
 -  [Function `account_borrow_resource`](#0x2_account_account_borrow_resource)
 -  [Function `account_borrow_mut_resource`](#0x2_account_account_borrow_mut_resource)
 -  [Function `account_move_resource_to`](#0x2_account_account_move_resource_to)
@@ -264,6 +267,39 @@ Create a signer with the given account capability
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_account_object_id">account_object_id</a>(<a href="account.md#0x2_account">account</a>: <b>address</b>): <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>
+</code></pre>
+
+
+
+<a name="0x2_account_account_address"></a>
+
+## Function `account_address`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_account_address">account_address</a>(self: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="account.md#0x2_account_Account">account::Account</a>&gt;): <b>address</b>
+</code></pre>
+
+
+
+<a name="0x2_account_account_cap_address"></a>
+
+## Function `account_cap_address`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_account_cap_address">account_cap_address</a>(self: &<a href="account.md#0x2_account_AccountCap">account::AccountCap</a>): <b>address</b>
+</code></pre>
+
+
+
+<a name="0x2_account_account_sequence_number"></a>
+
+## Function `account_sequence_number`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_account_sequence_number">account_sequence_number</a>(self: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="account.md#0x2_account_Account">account::Account</a>&gt;): u64
 </code></pre>
 
 
