@@ -37,11 +37,10 @@ use fastcrypto::{
     hash::{Blake2b256, HashFunction},
     secp256k1::{Secp256k1PublicKey, Secp256k1Signature, Secp256k1SignatureAsBytes},
 };
-use moveos_types::serde::Readable;
 use schemars::JsonSchema;
 use serde::ser::Serializer;
 use serde::{Deserialize, Deserializer, Serialize};
-use serde_with::{serde_as, Bytes};
+use serde_with::serde_as;
 use std::{hash::Hash, str::FromStr};
 
 pub type DefaultHash = Blake2b256;
@@ -222,23 +221,22 @@ impl EncodeDecodeBase64 for RoochKeyPair {
     }
 
     /// Decode a RoochKeyPair from `flag || privkey` in Base64. The public key is computed directly from the private key bytes.
-    fn decode_base64(value: &str) -> Result<Self, eyre::Report> {
-        let bytes = Base64::decode(value).map_err(|e| eyre!("{}", e.to_string()))?;
-        match SignatureScheme::from_flag_byte(
-            *bytes.first().ok_or_else(|| eyre!("Invalid length"))?,
-        ) {
+    fn decode_base64(value: &str) -> Result<Self, FastCryptoError> {
+        let bytes = Base64::decode(value)?;
+        match SignatureScheme::from_flag_byte(*bytes.first().ok_or(FastCryptoError::InvalidInput)?)
+        {
             // Process Rooch key pair by default
             Ok(scheme) => match scheme {
                 SignatureScheme::Ed25519 => Ok(RoochKeyPair::Ed25519(Ed25519KeyPair::from_bytes(
-                    bytes.get(1..).ok_or_else(|| eyre!("Invalid length"))?,
+                    bytes.get(1..).ok_or(FastCryptoError::InvalidInput)?,
                 )?)),
                 SignatureScheme::Secp256k1 => {
                     Ok(RoochKeyPair::Secp256k1(Secp256k1KeyPair::from_bytes(
-                        bytes.get(1..).ok_or_else(|| eyre!("Invalid length"))?,
+                        bytes.get(1..).ok_or(FastCryptoError::InvalidInput)?,
                     )?))
                 }
             },
-            _ => Err(eyre!("Invalid bytes")),
+            _ => Err(FastCryptoError::InvalidInput),
         }
     }
 }
@@ -288,26 +286,25 @@ impl EncodeDecodeBase64 for PublicKey {
         Base64::encode(&bytes[..])
     }
 
-    fn decode_base64(value: &str) -> Result<Self, eyre::Report> {
-        let bytes = Base64::decode(value).map_err(|e| eyre!("{}", e.to_string()))?;
-        match SignatureScheme::from_flag_byte(
-            *bytes.first().ok_or_else(|| eyre!("Invalid length"))?,
-        ) {
+    fn decode_base64(value: &str) -> Result<Self, FastCryptoError> {
+        let bytes = Base64::decode(value)?;
+        match SignatureScheme::from_flag_byte(*bytes.first().ok_or(FastCryptoError::InvalidInput)?)
+        {
             Ok(x) => match x {
                 SignatureScheme::Ed25519 => {
                     let pk: Ed25519PublicKey = Ed25519PublicKey::from_bytes(
-                        bytes.get(1..).ok_or_else(|| eyre!("Invalid length"))?,
+                        bytes.get(1..).ok_or(FastCryptoError::InvalidInput)?,
                     )?;
                     Ok(PublicKey::Ed25519((&pk).into()))
                 }
                 SignatureScheme::Secp256k1 => {
                     let pk: Secp256k1PublicKey = Secp256k1PublicKey::from_bytes(
-                        bytes.get(1..).ok_or_else(|| eyre!("Invalid length"))?,
+                        bytes.get(1..).ok_or(FastCryptoError::InvalidInput)?,
                     )?;
                     Ok(PublicKey::Secp256k1((&pk).into()))
                 }
             },
-            Err(e) => Err(eyre!("Invalid bytes :{}", e)),
+            Err(_) => Err(FastCryptoError::InvalidInput),
         }
     }
 }
@@ -700,7 +697,8 @@ impl<S: RoochSignatureInner + Sized> RoochSignature for S {
 #[as_ref(forward)]
 pub struct Ed25519RoochSignature(
     #[schemars(with = "Base64")]
-    #[serde_as(as = "Readable<Base64, Bytes>")]
+    // Replace the problematic serde_as attribute with a simpler one
+    #[serde_as(as = "serde_with::base64::Base64")]
     [u8; Ed25519PublicKey::LENGTH + Ed25519Signature::LENGTH + 1],
 );
 
@@ -743,7 +741,8 @@ impl RoochSignatureInner for Ed25519RoochSignature {
 #[as_ref(forward)]
 pub struct Secp256k1RoochSignature(
     #[schemars(with = "Base64")]
-    #[serde_as(as = "Readable<Base64, Bytes>")]
+    // Replace the problematic serde_as attribute with a simpler one
+    #[serde_as(as = "serde_with::base64::Base64")]
     [u8; Secp256k1PublicKey::LENGTH + Secp256k1Signature::LENGTH + 1],
 );
 
