@@ -11,8 +11,9 @@ use moveos_types::state::MoveStructState;
 use moveos_types::test_utils::random_event;
 use moveos_types::transaction::TransactionExecutionInfo;
 use prometheus::Registry;
-use rooch_types::indexer::event::EventFilter;
-use rooch_types::indexer::transaction::TransactionFilter;
+use rooch_rpc_api::jsonrpc_types::event_view::EventFilterView;
+use rooch_rpc_api::jsonrpc_types::transaction_view::TransactionFilterView;
+use rooch_rpc_api::jsonrpc_types::StrView;
 use rooch_types::test_utils::random_ledger_transaction;
 use rooch_types::transaction::TransactionWithInfo;
 use serde::Deserialize;
@@ -71,7 +72,7 @@ async fn test_event_subscription() {
     // };
 
     // Create an event filter that matches all
-    let event_filter = EventFilter::All;
+    let event_filter = EventFilterView::All;
     // let event_filter = EventFilter::EventType(TestEvent::type_layout());
 
     // Subscribe to events
@@ -107,9 +108,9 @@ async fn test_transaction_subscription() {
     let handler = SubscriptionHandler::new(&registry);
 
     // Create a transaction filter that matches all transactions in a time range
-    let tx_filter = TransactionFilter::TimeRange {
-        start_time: 0,
-        end_time: u64::MAX,
+    let tx_filter = TransactionFilterView::TimeRange {
+        start_time: StrView(0),
+        end_time: StrView(u64::MAX),
     };
 
     // Subscribe to transactions
@@ -134,7 +135,7 @@ async fn test_transaction_subscription() {
 
     if let Ok(Some(received)) = received_tx {
         assert_eq!(
-            received.transaction.sequence_info.tx_order,
+            received.transaction.sequence_info.tx_order.0,
             tx.transaction.sequence_info.tx_order
         );
     }
@@ -147,7 +148,7 @@ async fn test_multiple_subscribers() {
 
     // Create multiple subscribers
     // let event_filter = EventFilter::EventType(TestEvent::type_layout());
-    let event_filter = EventFilter::All;
+    let event_filter = EventFilterView::All;
     let mut stream1 = handler.subscribe_events(event_filter.clone());
     let mut stream2 = handler.subscribe_events(event_filter);
 

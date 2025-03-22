@@ -885,7 +885,9 @@ async fn build_executor_and_store(
     let (rooch_store, moveos_store) = (rooch_db.rooch_store.clone(), rooch_db.moveos_store.clone());
 
     let event_bus = EventBus::new();
-    let subscription_handle = SubscriptionHandler::new(&registry_service.default_registry());
+    let subscription_handle = Arc::new(SubscriptionHandler::new(
+        &registry_service.default_registry(),
+    ));
     let notify_actor = NotifyActor::new(event_bus.clone(), subscription_handle);
     let notify_actor_ref = notify_actor
         .into_actor(Some("NotifyActor"), actor_system)

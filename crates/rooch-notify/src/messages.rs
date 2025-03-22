@@ -5,13 +5,8 @@ use coerce::actor::message::Message;
 use moveos_eventbus::bus::EventNotifier;
 use moveos_types::moveos_std::event::Event;
 use moveos_types::moveos_std::tx_context::TxContext;
-use rooch_rpc_api::jsonrpc_types::event_view::{EventFilterView, IndexerEventView};
-use rooch_rpc_api::jsonrpc_types::transaction_view::{
-    TransactionFilterView, TransactionWithInfoView,
-};
 use rooch_types::service_status::ServiceStatus;
 use rooch_types::transaction::TransactionWithInfo;
-use tokio_stream::wrappers::ReceiverStream;
 
 #[derive(Default, Clone, Debug)]
 pub struct GasUpgradeMessage {}
@@ -62,22 +57,4 @@ pub struct ProcessTxWithEventsMessage {
 
 impl Message for ProcessTxWithEventsMessage {
     type Result = anyhow::Result<()>;
-}
-
-#[derive(Clone, Debug)]
-pub struct SubscribeEventsMessage {
-    pub filter: EventFilterView,
-}
-
-impl Message for SubscribeEventsMessage {
-    type Result = anyhow::Result<ReceiverStream<IndexerEventView>>;
-}
-
-#[derive(Clone, Debug)]
-pub struct SubscribeTransactionsMessage {
-    pub filter: TransactionFilterView,
-}
-
-impl Message for SubscribeTransactionsMessage {
-    type Result = anyhow::Result<ReceiverStream<TransactionWithInfoView>>;
 }

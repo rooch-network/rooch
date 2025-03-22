@@ -20,7 +20,7 @@ hex = { workspace = true }
 jsonrpsee = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
-futures-core = { workspace = true }
+futures = { workspace = true }
 tower = { workspace = true }
 tower-http = { workspace = true }
 tracing = { workspace = true }
@@ -29,12 +29,14 @@ axum = { workspace = true }
 prometheus = { workspace = true }
 bitcoincore-rpc = { workspace = true }
 tokio = { workspace = true }
+#tokio-stream = { workspace = true }
 hyper = { workspace = true }
 tower_governor = { workspace = true }
 http = { workspace = true }
+pin-project = { workspace = true }
+
 move-core-types = { workspace = true }
 move-resource-viewer = { workspace = true }
-pin-project = { workspace = true }
 
 moveos-types = { workspace = true }
 moveos-eventbus = { workspace = true }

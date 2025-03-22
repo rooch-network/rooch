@@ -955,13 +955,6 @@ impl RoochAPIServer for RoochServer {
         Ok(data)
     }
 
-    // fn acquire_subscribe_permit(&self) -> anyhow::Result<OwnedSemaphorePermit> {
-    //     match self.subscription_semaphore.clone().try_acquire_owned() {
-    //         Ok(p) => Ok(p),
-    //         Err(_) => bail!("Resources exhausted"),
-    //     }
-    // }
-
     fn subscribe_events(
         &self,
         sink: PendingSubscriptionSink,
@@ -976,8 +969,7 @@ impl RoochAPIServer for RoochServer {
         sink: PendingSubscriptionSink,
         filter: TransactionFilterView,
     ) -> SubscriptionResult {
-        self.rpc_service
-            .subscribe_transactions(sink, filter)?;
+        self.rpc_service.subscribe_transactions(sink, filter)?;
         Ok(())
     }
 }

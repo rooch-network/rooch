@@ -6,6 +6,7 @@
 
 use crate::subscription_handler::{SubscriptionMetrics, EVENT_DISPATCH_BUFFER_SIZE};
 use anyhow::Result;
+use futures::Stream;
 use metrics::metered_channel::Sender;
 use metrics::spawn_monitored_task;
 use moveos_types::moveos_std::object::ObjectID;
@@ -135,7 +136,8 @@ where
     }
 
     /// Subscribe to the data stream filtered by the filter object.
-    pub fn subscribe(&self, filter: F) -> ReceiverStream<S> {
+    // pub fn subscribe(&self, filter: F) -> ReceiverStream<S> {
+    pub fn subscribe(&self, filter: F) -> impl Stream<Item = S> {
         let (tx, rx) = mpsc::channel::<S>(EVENT_DISPATCH_BUFFER_SIZE);
         self.subscribers
             .write()

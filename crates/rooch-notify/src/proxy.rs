@@ -2,14 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::actor::NotifyActor;
-use crate::messages::{SubscribeEventsMessage, SubscribeTransactionsMessage};
-use anyhow::Result;
 use coerce::actor::ActorRef;
-use rooch_rpc_api::jsonrpc_types::event_view::{EventFilterView, IndexerEventView};
-use rooch_rpc_api::jsonrpc_types::transaction_view::{
-    TransactionFilterView, TransactionWithInfoView,
-};
-use tokio_stream::wrappers::ReceiverStream;
 
 #[derive(Clone)]
 pub struct NotifyProxy {
@@ -19,23 +12,6 @@ pub struct NotifyProxy {
 impl NotifyProxy {
     pub fn new(actor: ActorRef<NotifyActor>) -> Self {
         Self { actor }
-    }
-
-    pub async fn subscribe_events(
-        &self,
-        filter: EventFilterView,
-    ) -> Result<ReceiverStream<IndexerEventView>> {
-        // pub fn subscribe_events(&self, filter: EventFilter) -> ReceiverStream<IndexerEvent> {
-        self.actor.send(SubscribeEventsMessage { filter }).await?
-    }
-
-    pub async fn subscribe_transactions(
-        &self,
-        filter: TransactionFilterView,
-    ) -> Result<ReceiverStream<TransactionWithInfoView>> {
-        self.actor
-            .send(SubscribeTransactionsMessage { filter })
-            .await?
     }
 }
 

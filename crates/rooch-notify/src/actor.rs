@@ -4,7 +4,7 @@
 use crate::event::{GasUpgradeEvent, ServiceStatusEvent};
 use crate::messages::{
     GasUpgradeMessage, NotifyActorSubscribeMessage, ProcessTxWithEventsMessage,
-    SubscribeEventsMessage, SubscribeTransactionsMessage, UpdateServiceStatusMessage,
+    UpdateServiceStatusMessage,
 };
 use crate::subscription_handler::SubscriptionHandler;
 use async_trait::async_trait;
@@ -12,10 +12,7 @@ use coerce::actor::context::ActorContext;
 use coerce::actor::message::Handler;
 use coerce::actor::Actor;
 use moveos_eventbus::bus::EventBus;
-use rooch_rpc_api::jsonrpc_types::event_view::IndexerEventView;
-use rooch_rpc_api::jsonrpc_types::transaction_view::TransactionWithInfoView;
 use std::sync::Arc;
-use tokio_stream::wrappers::ReceiverStream;
 
 pub struct NotifyActor {
     event_bus: EventBus,
@@ -95,33 +92,5 @@ impl Handler<ProcessTxWithEventsMessage> for NotifyActor {
             message.ctx,
         )?;
         Ok(())
-    }
-}
-
-#[async_trait]
-impl Handler<SubscribeEventsMessage> for NotifyActor {
-    async fn handle(
-        &mut self,
-        message: SubscribeEventsMessage,
-        _ctx: &mut ActorContext,
-    ) -> anyhow::Result<ReceiverStream<IndexerEventView>> {
-        tracing::debug!("NotifyActor receive message {:?}", message);
-        let stream = self.subscription_handler.subscribe_events(message.filter);
-        Ok(stream)
-    }
-}
-
-#[async_trait]
-impl Handler<SubscribeTransactionsMessage> for NotifyActor {
-    async fn handle(
-        &mut self,
-        message: SubscribeTransactionsMessage,
-        _ctx: &mut ActorContext,
-    ) -> anyhow::Result<ReceiverStream<TransactionWithInfoView>> {
-        tracing::debug!("NotifyActor receive message {:?}", message);
-        let stream = self
-            .subscription_handler
-            .subscribe_transactions(message.filter);
-        Ok(stream)
     }
 }

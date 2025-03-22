@@ -20,7 +20,7 @@ use rooch_rpc_api::jsonrpc_types::transaction_view::{
 };
 use rooch_types::indexer::event::IndexerEvent;
 use rooch_types::transaction::TransactionWithInfo;
-use tokio_stream::wrappers::ReceiverStream;
+use tokio_stream::Stream;
 use tracing::{error, trace};
 
 pub const TRANSACTION_DISPATCH_BUFFER_SIZE: usize = 1000;
@@ -120,16 +120,19 @@ impl SubscriptionHandler {
         Ok(())
     }
 
-    // pub fn subscribe_events(&self, filter: EventFilter) -> impl Stream<Item = Event> {
-    pub fn subscribe_events(&self, filter: EventFilterView) -> ReceiverStream<IndexerEventView> {
+    pub fn subscribe_events(
+        &self,
+        filter: EventFilterView,
+    ) -> impl Stream<Item = IndexerEventView> {
+        // pub fn subscribe_events(&self, filter: EventFilterView) -> ReceiverStream<IndexerEventView> {
         self.event_streamer.subscribe(filter)
     }
 
     pub fn subscribe_transactions(
         &self,
         filter: TransactionFilterView,
-        // ) -> impl Stream<Item = TransactionWithInfo> {
-    ) -> ReceiverStream<TransactionWithInfoView> {
+    ) -> impl Stream<Item = TransactionWithInfoView> {
+        // ) -> ReceiverStream<TransactionWithInfoView> {
         self.transaction_streamer.subscribe(filter)
     }
 }

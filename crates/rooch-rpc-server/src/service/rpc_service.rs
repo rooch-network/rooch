@@ -4,7 +4,7 @@
 use anyhow::{bail, format_err, Result};
 use bitcoin_client::proxy::BitcoinClientProxy;
 use bitcoincore_rpc::bitcoin::Txid;
-use futures_core::Stream;
+use futures::{Stream, StreamExt};
 use jsonrpsee::core::SubscriptionResult;
 use jsonrpsee::PendingSubscriptionSink;
 use metrics::spawn_monitored_task;
@@ -126,7 +126,6 @@ impl RpcService {
         pipeline_processor: PipelineProcessorProxy,
         bitcoin_client: Option<BitcoinClientProxy>,
         da_server: DAServerProxy,
-        // notify: NotifyProxy,
         subscription_handler: Arc<SubscriptionHandler>,
         max_subscriptions: Option<usize>,
     ) -> Self {
@@ -140,7 +139,6 @@ impl RpcService {
             pipeline_processor,
             bitcoin_client,
             da_server,
-            // notify,
             subscription_handler,
             subscription_semaphore: Arc::new(Semaphore::new(max_subscriptions)),
         }
