@@ -33,7 +33,6 @@ use rooch_indexer::actor::indexer::IndexerActor;
 use rooch_indexer::actor::reader_indexer::IndexerReaderActor;
 use rooch_indexer::proxy::IndexerProxy;
 use rooch_notify::actor::NotifyActor;
-use rooch_notify::proxy::NotifyProxy;
 use rooch_notify::subscription_handler::SubscriptionHandler;
 use rooch_pipeline_processor::actor::processor::PipelineProcessorActor;
 use rooch_pipeline_processor::proxy::PipelineProcessorProxy;
@@ -254,12 +253,12 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     );
 
     let event_bus = EventBus::new();
-    let subscription_handle = SubscriptionHandler::new(&prometheus_registry);
-    let notify_actor = NotifyActor::new(event_bus.clone(), subscription_handle);
+    let subscription_handle = Arc::new(SubscriptionHandler::new(&prometheus_registry));
+    let notify_actor = NotifyActor::new(event_bus.clone(), subscription_handle.clone());
     let notify_actor_ref = notify_actor
         .into_actor(Some("NotifyActor"), &actor_system)
         .await?;
-    let notify_proxy = NotifyProxy::new(notify_actor_ref.clone().into());
+    // let _notify_proxy = NotifyProxy::new(notify_actor_ref.clone().into());
 
     let executor_actor = ExecutorActor::new(
         root.clone(),
@@ -433,7 +432,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         processor_proxy,
         bitcoin_client_proxy,
         da_proxy,
-        notify_proxy,
+        subscription_handle,
         None,
     );
     let aggregate_service = AggregateService::new(rpc_service.clone());

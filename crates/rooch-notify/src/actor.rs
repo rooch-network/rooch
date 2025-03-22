@@ -23,10 +23,10 @@ pub struct NotifyActor {
 }
 
 impl NotifyActor {
-    pub fn new(event_bus: EventBus, subscription_handler: SubscriptionHandler) -> Self {
+    pub fn new(event_bus: EventBus, subscription_handler: Arc<SubscriptionHandler>) -> Self {
         Self {
             event_bus,
-            subscription_handler: Arc::new(subscription_handler),
+            subscription_handler,
         }
     }
 }

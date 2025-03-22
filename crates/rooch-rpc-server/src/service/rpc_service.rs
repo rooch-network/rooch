@@ -25,7 +25,7 @@ use rooch_da::proxy::DAServerProxy;
 use rooch_executor::actor::messages::DryRunTransactionResult;
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_indexer::proxy::IndexerProxy;
-use rooch_notify::proxy::NotifyProxy;
+use rooch_notify::subscription_handler::SubscriptionHandler;
 use rooch_pipeline_processor::proxy::PipelineProcessorProxy;
 use rooch_rpc_api::jsonrpc_types::event_view::EventFilterView;
 use rooch_rpc_api::jsonrpc_types::field_view::IndexerFieldView;
@@ -55,7 +55,6 @@ use rooch_types::transaction::{
 use serde::Serialize;
 use std::collections::{BTreeMap, HashMap};
 use std::sync::Arc;
-use tokio::runtime::Handle;
 use tokio::sync::{OwnedSemaphorePermit, Semaphore};
 
 pub fn spawn_subscription<S, T>(
@@ -112,7 +111,8 @@ pub struct RpcService {
     pub(crate) pipeline_processor: PipelineProcessorProxy,
     pub(crate) bitcoin_client: Option<BitcoinClientProxy>,
     pub(crate) da_server: DAServerProxy,
-    pub(crate) notify: NotifyProxy,
+    // pub(crate) notify: NotifyProxy,
+    pub(crate) subscription_handler: Arc<SubscriptionHandler>,
     pub(crate) subscription_semaphore: Arc<Semaphore>,
 }
 
@@ -126,7 +126,8 @@ impl RpcService {
         pipeline_processor: PipelineProcessorProxy,
         bitcoin_client: Option<BitcoinClientProxy>,
         da_server: DAServerProxy,
-        notify: NotifyProxy,
+        // notify: NotifyProxy,
+        subscription_handler: Arc<SubscriptionHandler>,
         max_subscriptions: Option<usize>,
     ) -> Self {
         let max_subscriptions = max_subscriptions.unwrap_or(DEFAULT_MAX_SUBSCRIPTIONS);
@@ -139,7 +140,8 @@ impl RpcService {
             pipeline_processor,
             bitcoin_client,
             da_server,
-            notify,
+            // notify,
+            subscription_handler,
             subscription_semaphore: Arc::new(Semaphore::new(max_subscriptions)),
         }
     }
@@ -985,17 +987,8 @@ impl RpcService {
         filter: EventFilterView,
     ) -> SubscriptionResult {
         let permit = self.acquire_subscribe_permit()?;
-        let stream = tokio::task::block_in_place(|| {
-            Handle::current().block_on(async { self.notify.subscribe_events(filter).await })
-        })?;
-        spawn_subscription(
-            sink,
-            // self.state
-            //     .get_subscription_handler()
-            //     .subscribe_events(filter),
-            stream,
-            Some(permit),
-        );
+        let stream = self.subscription_handler.subscribe_events(filter);
+        spawn_subscription(sink, stream, Some(permit));
         Ok(())
     }
 
@@ -1005,17 +998,8 @@ impl RpcService {
         filter: TransactionFilterView,
     ) -> SubscriptionResult {
         let permit = self.acquire_subscribe_permit()?;
-        let stream = tokio::task::block_in_place(|| {
-            Handle::current().block_on(async { self.notify.subscribe_transactions(filter).await })
-        })?;
-        spawn_subscription(
-            sink,
-            // self.state
-            //     .get_subscription_handler()
-            //     .subscribe_transactions(filter),
-            stream,
-            Some(permit),
-        );
+        let stream = self.subscription_handler.subscribe_transactions(filter);
+        spawn_subscription(sink, stream, Some(permit));
         Ok(())
     }
 }
