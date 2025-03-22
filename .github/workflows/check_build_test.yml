@@ -21,8 +21,6 @@ env:
   RUST_BACKTRACE: 1
   ENV_TEST_ON_CI: 1
   CARGO_INCREMENTAL: 0
-  SCCACHE_GHA_ENABLED: "true"
-  RUSTC_WRAPPER: "sccache"
 
 jobs:
   check_build_test:
@@ -76,10 +74,6 @@ jobs:
       - name: Setup Rust
         if: ${{ steps.changes.outputs.core == 'true' || steps.changes.outputs.sdk_web == 'true' }}
         uses: ./.github/actions/rust-setup
-
-      - name: Run sccache-cache
-        if: ${{ steps.changes.outputs.core == 'true' || steps.changes.outputs.sdk_web == 'true' }}
-        uses: mozilla-actions/sccache-action@v0.0.8
 
       - name: Build Rust
         if: ${{ steps.changes.outputs.core == 'true' || steps.changes.outputs.sdk_web == 'true' }}
