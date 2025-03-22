@@ -4,7 +4,8 @@
 use crate::service::aggregate_service::AggregateService;
 use crate::service::rpc_service::RpcService;
 use anyhow::Result;
-use jsonrpsee::{core::async_trait, RpcModule};
+use jsonrpsee::core::SubscriptionResult;
+use jsonrpsee::{core::async_trait, PendingSubscriptionSink, RpcModule};
 use move_core_types::{
     account_address::AccountAddress, identifier::Identifier, language_storage::ModuleId,
 };
@@ -955,6 +956,24 @@ impl RoochAPIServer for RoochServer {
         data.truncate(limit_of as usize);
 
         Ok(data)
+    }
+
+    fn subscribe_events(
+        &self,
+        sink: PendingSubscriptionSink,
+        filter: EventFilterView,
+    ) -> SubscriptionResult {
+        self.rpc_service.subscribe_events(sink, filter)?;
+        Ok(())
+    }
+
+    fn subscribe_transactions(
+        &self,
+        sink: PendingSubscriptionSink,
+        filter: TransactionFilterView,
+    ) -> SubscriptionResult {
+        self.rpc_service.subscribe_transactions(sink, filter)?;
+        Ok(())
     }
 }
 

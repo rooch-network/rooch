@@ -108,6 +108,7 @@ pub enum EventFilter {
         /// right endpoint of transaction order, exclusive
         to_order: u64,
     },
+    All,
 }
 
 impl EventFilter {
@@ -130,6 +131,7 @@ impl EventFilter {
                 *from_order <= item.indexer_event_id.tx_order
                     && item.indexer_event_id.tx_order < *to_order
             }
+            EventFilter::All => true,
         })
     }
 }

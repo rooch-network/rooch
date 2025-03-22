@@ -226,7 +226,7 @@ impl AggregateService {
                 let execution_info = execution_info_opt.ok_or(anyhow::anyhow!(
                     "TransactionExecutionInfo should have value"
                 ))?;
-                TransactionWithInfo::new(ledger_tx, execution_info)
+                Ok(TransactionWithInfo::new(ledger_tx, execution_info))
             })
             .collect::<Result<Vec<_>>>()?;
         Ok(data)

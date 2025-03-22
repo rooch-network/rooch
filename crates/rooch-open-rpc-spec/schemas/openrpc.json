@@ -834,6 +834,62 @@
       }
     },
     {
+      "name": "rooch_subscribeEvents",
+      "tags": [
+        {
+          "name": "Websocket"
+        },
+        {
+          "name": "PubSub"
+        }
+      ],
+      "description": "Subscribe to a stream of event",
+      "params": [
+        {
+          "name": "filter",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/EventFilterView"
+          }
+        }
+      ],
+      "result": {
+        "name": "IndexerEventView",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/IndexerEventView"
+        }
+      }
+    },
+    {
+      "name": "rooch_subscribeTransactions",
+      "tags": [
+        {
+          "name": "Websocket"
+        },
+        {
+          "name": "PubSub"
+        }
+      ],
+      "description": "Subscribe to a stream of transaction with execution info",
+      "params": [
+        {
+          "name": "filter",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/TransactionFilterView"
+          }
+        }
+      ],
+      "result": {
+        "name": "TransactionWithInfoView",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/TransactionWithInfoView"
+        }
+      }
+    },
+    {
       "name": "rooch_syncStates",
       "description": "Sync state change sets",
       "params": [
@@ -1251,6 +1307,12 @@
       },
       "EventFilterView": {
         "oneOf": [
+          {
+            "type": "string",
+            "enum": [
+              "all"
+            ]
+          },
           {
             "description": "Query by event type with sender",
             "type": "object",
@@ -3381,6 +3443,12 @@
       },
       "TransactionFilterView": {
         "oneOf": [
+          {
+            "type": "string",
+            "enum": [
+              "all"
+            ]
+          },
           {
             "description": "Query by sender address.",
             "type": "object",

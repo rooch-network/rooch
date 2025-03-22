@@ -50,7 +50,7 @@ members = [
     "crates/rooch-store",
     "crates/rooch-test-transaction-builder",
     "crates/rooch-types",
-    "crates/rooch-event",
+    "crates/rooch-notify",
     "crates/rooch-cosmwasm-vm",
     "crates/testsuite",
     "crates/rooch-ord",
@@ -140,7 +140,7 @@ rooch-benchmarks = { path = "crates/rooch-benchmarks" }
 rooch-faucet = { path = "crates/rooch-faucet" }
 rooch-test-transaction-builder = { path = "crates/rooch-test-transaction-builder" }
 rooch-db = { path = "crates/rooch-db" }
-rooch-event = { path = "crates/rooch-event" }
+rooch-notify = { path = "crates/rooch-notify" }
 rooch-ord = { path = "crates/rooch-ord" }
 rooch-cosmwasm-vm = { path = "crates/rooch-cosmwasm-vm" }
 rooch-oracle = { path = "crates/rooch-oracle" }
@@ -182,11 +182,13 @@ eyre = "0.6.8"
 fastcrypto = { git = "https://github.com/MystenLabs/fastcrypto", rev = "56f6223b84ada922b6cb2c672c69db2ea3dc6a13" }
 futures = "0.3.31"
 futures-util = "0.3.31"
+futures-core = "0.3.21"
 hdrhistogram = "7.5.4"
 hex = "0.4.3"
 heed = "0.21.0"
 itertools = "0.13.0"
-jsonrpsee = { version = "0.23.2", features = ["full"] }
+#jsonrpsee = { version = "0.23.2", features = ["full"] }
+jsonrpsee = { version = "0.24.7", features = ["server", "macros", "ws-client", "http-client", "jsonrpsee-core"] }
 jpst = "0.1.1"
 lazy_static = "1.5.0"
 more-asserts = "0.3.0"

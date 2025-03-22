@@ -15,7 +15,7 @@ use moveos_store::MoveOSStore;
 use moveos_types::moveos_std::object::{ObjectID, ObjectMeta};
 use moveos_types::state_resolver::RootObjectResolver;
 use moveos_types::transaction::MoveAction;
-use rooch_event::actor::EventActor;
+use rooch_notify::actor::NotifyActor;
 use rooch_types::indexer::event::IndexerEvent;
 use rooch_types::indexer::field::{handle_field_change, IndexerFieldChanges};
 use rooch_types::indexer::state::{
@@ -28,7 +28,7 @@ pub struct IndexerActor {
     root: ObjectMeta,
     indexer_store: IndexerStore,
     moveos_store: MoveOSStore,
-    _event_actor: Option<LocalActorRef<EventActor>>,
+    _notify_actor: Option<LocalActorRef<NotifyActor>>,
 }
 
 impl IndexerActor {
@@ -36,13 +36,13 @@ impl IndexerActor {
         root: ObjectMeta,
         indexer_store: IndexerStore,
         moveos_store: MoveOSStore,
-        event_actor: Option<LocalActorRef<EventActor>>,
+        notify_actor: Option<LocalActorRef<NotifyActor>>,
     ) -> Result<Self> {
         Ok(Self {
             root,
             indexer_store,
             moveos_store,
-            _event_actor: event_actor,
+            _notify_actor: notify_actor,
         })
     }
 

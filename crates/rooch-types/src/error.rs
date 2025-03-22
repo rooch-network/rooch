@@ -144,6 +144,9 @@ pub enum RoochError {
     // Add new variant for ActorRefErr
     #[error("Actor reference error: {0}")]
     ActorRefError(String),
+
+    #[error("Failed to dispatch subscription: {0}")]
+    FailedToDispatchSubscription(String),
 }
 
 impl From<anyhow::Error> for RoochError {

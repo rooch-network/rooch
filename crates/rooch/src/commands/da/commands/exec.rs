@@ -27,10 +27,11 @@ use raw_store::traits::DBStore;
 use rooch_common::humanize::parse_bytes;
 use rooch_config::R_OPT_NET_HELP;
 use rooch_db::RoochDB;
-use rooch_event::actor::EventActor;
 use rooch_executor::actor::executor::ExecutorActor;
 use rooch_executor::actor::reader_executor::ReaderExecutorActor;
 use rooch_executor::proxy::ExecutorProxy;
+use rooch_notify::actor::NotifyActor;
+use rooch_notify::subscription_handler::SubscriptionHandler;
 use rooch_pipeline_processor::actor::processor::is_vm_panic_error;
 use rooch_pipeline_processor::actor::{load_tx_anomalies, TxAnomalies};
 use rooch_store::meta_store::SEQUENCER_INFO_KEY;
@@ -881,9 +882,12 @@ async fn build_executor_and_store(
     let (rooch_store, moveos_store) = (rooch_db.rooch_store.clone(), rooch_db.moveos_store.clone());
 
     let event_bus = EventBus::new();
-    let event_actor = EventActor::new(event_bus.clone());
-    let event_actor_ref = event_actor
-        .into_actor(Some("EventActor"), actor_system)
+    let subscription_handle = Arc::new(SubscriptionHandler::new(
+        &registry_service.default_registry(),
+    ));
+    let notify_actor = NotifyActor::new(event_bus.clone(), subscription_handle);
+    let notify_actor_ref = notify_actor
+        .into_actor(Some("NotifyActor"), actor_system)
         .await?;
 
     let executor_actor = ExecutorActor::new(
@@ -891,7 +895,7 @@ async fn build_executor_and_store(
         moveos_store.clone(),
         rooch_store.clone(),
         &registry_service.default_registry(),
-        Some(event_actor_ref.clone()),
+        Some(notify_actor_ref.clone()),
     )?;
 
     let executor_actor_ref = executor_actor

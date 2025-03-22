@@ -39,4 +39,4 @@ moveos-store = { workspace = true }
 
 rooch-types = { workspace = true }
 rooch-config = { workspace = true }
-rooch-event = { workspace = true }
+rooch-notify = { workspace = true }
