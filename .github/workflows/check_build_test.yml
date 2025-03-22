@@ -74,18 +74,16 @@ jobs:
       - name: Setup Rust
         if: ${{ steps.changes.outputs.core == 'true' || steps.changes.outputs.sdk_web == 'true' }}
         uses: ./.github/actions/rust-setup
-
       - name: Build Rust
         if: ${{ steps.changes.outputs.core == 'true' || steps.changes.outputs.sdk_web == 'true' }}
         run: |
           cargo build
-
       - name: Run Rust Lint
         if: ${{ steps.changes.outputs.core == 'true'}}
+        run: ./scripts/pr.sh -c
+      - name: Rooch init
+        if: ${{ steps.changes.outputs.core == 'true' || steps.changes.outputs.sdk_web == 'true' }}
         run: |
-          # Lint
-          ./scripts/pr.sh -c           
-          # init
           cargo run --profile optci --package framework-release --bin framework-release 
           cargo run --profile optci --bin rooch init --skip-password
       - name: Run Rust tests
@@ -153,7 +151,7 @@ jobs:
         run: |
           brew audit --strict --online Formula/rooch.rb
 
-      - name: Scripts-Check
+      - name: Run ShellCheck
         if: ${{ steps.changes.outputs.scripts == 'true' }}
         uses: Azbagheri/shell-linter@v0.8.0
         with:
