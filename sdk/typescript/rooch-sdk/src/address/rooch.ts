@@ -16,7 +16,8 @@ export class RoochAddress extends Address {
     let bytes: Bytes
     if (typeof input === 'string') {
       if (isHex(input)) {
-        bytes = fromHEX(input)
+        const normalizeAddress = normalizeRoochAddress(input)
+        bytes = fromHEX(normalizeAddress)
       } else {
         bytes = bech32m.decodeToBytes(input).bytes
       }

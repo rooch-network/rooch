@@ -1,7 +1,7 @@
 <div width="400" align="center">
   <br />
   <br />
-  <a href="https://rooch.network"><img alt="Rooch" src="https://rooch.network/logo/rooch_black_combine.svg" width=384></a>
+  <a href="https://rooch.network"><img alt="Rooch" src="https://github.com/rooch-network/asset-download/blob/main/logo/rooch_black_combine.svg" width=384></a>
   <br />
   <h3><a href="https://rooch.network">Rooch</a> is a VApp Container with <a href="https://github.com/move-language/move">Move</a> language for Bitcoin ecosystem.</h3>
   <br />

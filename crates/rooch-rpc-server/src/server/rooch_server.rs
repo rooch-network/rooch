@@ -170,9 +170,12 @@ impl RoochAPIServer for RoochServer {
 
     async fn dry_run(&self, payload: BytesView) -> RpcResult<DryRunTransactionResponseView> {
         let tx = bcs::from_bytes::<RoochTransactionData>(&payload.0)?;
+        let tx_hash = tx.tx_hash();
         let tx_result = self.rpc_service.dry_run_tx(tx).await?;
         let raw_output = tx_result.raw_output;
         let raw_output_view = RawTransactionOutputView {
+            tx_hash: tx_hash.into(),
+            state_root: raw_output.changeset.state_root.into(),
             status: raw_output.status.into(),
             gas_used: raw_output.gas_used.into(),
             is_upgrade: raw_output.is_upgrade,

@@ -1166,4 +1166,14 @@ module moveos_std::object {
         let id2 = from_string(&string::utf8(b"1234"));
         assert!(vector::length(&id2.path) == 1, 1012);
     }
+
+    #[test]
+    fun test_remove_field_and_contains(){
+        let obj = new(TestStruct { count: 1 });
+        add_field(&mut obj, b"key", 1u64);
+        assert!(contains_field(&obj, b"key"), 1000);
+        let _v:u64 = remove_field(&mut obj, b"key");
+        assert!(!contains_field(&obj, b"key"), 1001);
+        let TestStruct{ count: _} = remove(obj);
+    }
 }

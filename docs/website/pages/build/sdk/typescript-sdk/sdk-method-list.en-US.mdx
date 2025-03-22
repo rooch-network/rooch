@@ -1,0 +1,120 @@
+# Rooch TypeScript SDK Method List
+
+1. Client Initialization
+
+```typescript
+// Create client
+new RoochClient(config: RoochClientConfig)
+
+// Get node URL
+getRoochNodeUrl(network: 'testnet' | 'mainnet')
+
+// Create WebSocket transport
+new RoochWebSocketTransport(config: WebSocketConfig)
+```
+
+2. Account and Session Management
+
+```typescript
+// Create session
+createSession(params: CreateSessionParams)
+
+// Generate key pair
+Secp256k1Keypair.generate()
+
+// Get account information
+getAccount(params: GetAccountParams)
+
+// Get account balances
+getBalances(params: GetBalancesParams)
+```
+
+3. Transactions
+
+```typescript
+// Create transaction
+new Transaction()
+
+// Call contract function
+callFunction(params: CallFunctionParams)
+
+// Sign and execute transaction
+signAndExecuteTransaction(params: SignAndExecuteTransactionParams)
+
+// Get transaction information
+getTransaction(params: GetTransactionParams)
+
+// Get transaction status
+getTransactionStatus(params: GetTransactionStatusParams)
+
+// Wait for transaction completion
+waitForTransaction(params: WaitForTransactionParams)
+```
+
+4. Contract Interaction
+
+```typescript
+// Execute view function
+executeViewFunction(params: ExecuteViewFunctionParams)
+
+// Get module
+getModule(params: GetModuleParams)
+
+// Get resource
+getResource(params: GetResourceParams)
+
+// Get events
+getEvents(params: GetEventsParams)
+```
+
+5. State Queries
+
+```typescript
+// Get states
+getStates(params: GetStatesParams) 
+
+// Get chain information
+getChainId()
+
+// Get latest block height
+getLatestBlockHeight()
+```
+
+6. Utility Methods
+
+```typescript
+// Address conversion
+addressToHex(address: string)
+hexToAddress(hex: string)
+
+// Encoding and decoding
+encodeStruct(data: any)
+decodeStruct(data: any)
+
+// Gas estimation
+estimateGasPrice()
+estimateGasUsage(transaction: Transaction)
+```
+
+7. WebSocket Specific
+
+```typescript
+// Subscribe to events
+subscribe(params: SubscribeParams)
+
+// Unsubscribe from events
+unsubscribe(params: UnsubscribeParams)
+
+// Close connection
+destroy()
+```
+
+8. Error Handling
+
+```typescript
+// Get error message
+getErrorMessage(error: RoochError)
+
+// Check error type
+isRoochError(error: any)
+```

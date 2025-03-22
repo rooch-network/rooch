@@ -126,6 +126,12 @@ module gas_faucet::gas_faucet {
       if (!faucet.allow_repeat && claimed_rgas_amount >= FAUCET_RGAS_PER_USER) {
         abort ErrorAlreadyClaimed
       };
+
+      let min_claim_rgas_amount = if(chain_id::is_main()) {
+        ONE_RGAS
+      } else {
+        ONE_RGAS * 50
+      };
       
       let total_sat_amount = Self::total_sat_amount(claimer, utxo_ids);
       if (faucet.require_utxo && total_sat_amount == 0) {
@@ -133,12 +139,12 @@ module gas_faucet::gas_faucet {
       };
       let claim_rgas_amount = Self::sat_amount_to_rgas(total_sat_amount);
       if (claim_rgas_amount == 0) {
-        claim_rgas_amount = ONE_RGAS;
+        claim_rgas_amount = min_claim_rgas_amount;
       };
       if (claim_rgas_amount > claimed_rgas_amount) {
         claim_rgas_amount = claim_rgas_amount - claimed_rgas_amount;
       }else{
-        claim_rgas_amount = ONE_RGAS;
+        claim_rgas_amount = min_claim_rgas_amount;
       };
       let remaining_rgas_amount = coin_store::balance(&faucet.rgas_store);
       if (claim_rgas_amount > remaining_rgas_amount) {

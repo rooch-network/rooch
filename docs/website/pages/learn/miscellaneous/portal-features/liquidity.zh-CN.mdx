@@ -17,11 +17,55 @@ Rooch 现在推出 `RGas` 和 `GROW` 代币对质押，接下来通过一个简�
 
 只用填写 `RGas`，LP 对会自动计算 `GROW` 的配量：
 
-配量根据官方的 Swap 池子计算，计算形式为：
+配量根据官方的 Swap 池子计算，计算公式为：
 
 ```
-point = x / x pool * 100%
-y = y pool * point
+amount-in: 输入代币数量
+reserve-in: 输入代币储备量
+reserve-out: 输出代币储备量
+fee-rate: 手续费率
+
+amount-in-with-fee = amount-in * fee-rate
+amount-out = (amount-in-with-fee * reserve-out) / (reserve-in * 10000 + amount-in-with-fee)
+
+amount-in = (reserve-in * amount-out * 10000) / (reserve-out - amount-out * fee-rate) + 1
+```
+
+详细解释请看代码批注：
+
+```move
+// 计算用户能获得多少输出代币
+public fun get_amount_out(
+    amount_in: u64,
+    reserve_in: u64,
+    reserve_out: u64,
+    fee_rate: u64,
+): u64 {
+    assert!(amount_in > 0, ErrorInputTokenAmount); // 确保输入金额大于 0
+    assert!(reserve_in > 0 && reserve_out > 0, ErrorInsufficientLiquidity); // 确保池子有足够流动性
+
+    let amount_in_with_fee = (amount_in as u128) * (fee_rate as u128); // 计算手续费
+    // 基于恒定乘积公式: (x + Δx)(y - Δy) = xy 计算输出金额
+    let numerator = amount_in_with_fee * (reserve_out as u128);
+    let denominator = (reserve_in as u128) * 10000u128 + amount_in_with_fee;
+    ((numerator / denominator) as u64)
+}
+
+// 计算要获得特定数量的输出代币需要投入多少输入代币
+public fun get_amount_in(
+    amount_out: u64,
+    reserve_in: u64,
+    reserve_out: u64,
+    fee_rate: u64
+): u64 {
+    assert!(amount_out > 0, ErrorOutputTokenAmount);
+    assert!(reserve_in > 0 && reserve_out > 0, ErrorInsufficientLiquidity);
+
+    // 从恒定乘积公式反向计算，加 1 确保有足够的输入量
+    let numerator = (reserve_in as u128) * (amount_out as u128) * 10000u128;
+    let denominator = ((reserve_out as u128) - (amount_out as u128)) * (fee_rate as u128);
+    (((numerator / denominator) as u64) + 1u64)
+}
 ```
 
 ![](/docs/portal/liquidity/liquidity-add.png)
@@ -37,6 +81,13 @@ y = y pool * point
 点击右侧 `Remove` 按钮，可以解质押：
 
 ![](/docs/portal/liquidity/liquidity-remove.png)
+
+组 LP 对的计算公式：
+
+```
+point = x / x pool * 100%
+y = y pool * point
+```
 
 ## 赚取代币对收益
 

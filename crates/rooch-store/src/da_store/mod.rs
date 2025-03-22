@@ -11,7 +11,7 @@ use rooch_types::da::batch::{BlockRange, BlockSubmitState};
 use std::cmp::{min, Ordering};
 use std::ops::RangeInclusive;
 
-pub const SUBMITTING_BLOCKS_PAGE_SIZE: usize = 1024;
+pub const SUBMITTING_BLOCKS_PAGE_SIZE: usize = 64;
 pub const MAX_TXS_PER_BLOCK_IN_FIX: usize = 8192; // avoid OOM when fix submitting blocks after collapse
 
 // [0,background_submit_block_cursor] are submitted blocks verified by background submitter
