@@ -3,7 +3,7 @@
 
 use crate::jsonrpc_types::account_view::BalanceInfoView;
 use crate::jsonrpc_types::address::UnitedAddressView;
-use crate::jsonrpc_types::event_view::{EventFilterView, IndexerEventIDView};
+use crate::jsonrpc_types::event_view::{EventFilterView, IndexerEventIDView, IndexerEventView};
 use crate::jsonrpc_types::field_view::FieldFilterView;
 use crate::jsonrpc_types::repair_view::{RepairIndexerParamsView, RepairIndexerTypeView};
 use crate::jsonrpc_types::transaction_view::{TransactionFilterView, TransactionWithInfoView};
@@ -17,6 +17,7 @@ use crate::jsonrpc_types::{
 };
 use crate::jsonrpc_types::{DryRunTransactionResponseView, Status};
 use crate::RpcResult;
+use jsonrpsee::core::SubscriptionResult;
 use jsonrpsee::proc_macros::rpc;
 use moveos_types::{access_path::AccessPath, state::FieldKey};
 use rooch_open_rpc_macros::open_rpc;
@@ -234,4 +235,12 @@ pub trait RoochAPI {
         limit: Option<StrView<u64>>,
         query_option: Option<QueryOptions>,
     ) -> RpcResult<Vec<u64>>;
+
+    /// Subscribe to a stream of event
+    #[subscription(name = "subscribeEvents", item = IndexerEventView)]
+    fn subscribe_events(&self, filter: EventFilterView) -> SubscriptionResult;
+
+    /// Subscribe to a stream of transaction with execution info
+    #[subscription(name = "subscribeTransactions", item = TransactionWithInfoView)]
+    fn subscribe_transactions(&self, filter: TransactionFilterView) -> SubscriptionResult;
 }

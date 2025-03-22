@@ -1,18 +1,21 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{BytesView, StrView};
+use super::{BytesView, RoochAddressView, StrView};
 use crate::jsonrpc_types::{
     H256View, TransactionExecutionInfoView, TransactionSequenceInfoView, TransactionView,
     UnitedAddressView,
 };
 use bitcoin::hashes::Hash;
+use rooch_types::address::RoochAddress;
 use rooch_types::indexer::transaction::TransactionFilter;
+use rooch_types::indexer::Filter;
 use rooch_types::transaction::{
     L1Block, L1Transaction, LedgerTransaction, LedgerTxData, TransactionWithInfo,
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use std::str::FromStr;
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct L1BlockView {
@@ -113,6 +116,17 @@ impl LedgerTransactionView {
             sequence_info: tx.sequence_info.into(),
         }
     }
+
+    pub fn sender(&self) -> anyhow::Result<Option<RoochAddressView>> {
+        match self.data.clone() {
+            LedgerTxDataView::L1Block(_) => Ok(None),
+            LedgerTxDataView::L2Tx(tx) => {
+                let sender = RoochAddress::from_str(tx.sender.as_str())?;
+                Ok(Some(sender.into()))
+            }
+            LedgerTxDataView::L1Tx(_) => Ok(None),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
@@ -133,6 +147,12 @@ impl TransactionWithInfoView {
             ),
             execution_info: tx.execution_info.map(Into::into),
         }
+    }
+}
+
+impl From<TransactionWithInfo> for TransactionWithInfoView {
+    fn from(tx: TransactionWithInfo) -> Self {
+        TransactionWithInfoView::new_from_transaction_with_info(tx, None)
     }
 }
 
@@ -158,6 +178,7 @@ pub enum TransactionFilterView {
         /// right endpoint of transaction order, exclusive
         to_order: StrView<u64>,
     },
+    All,
 }
 
 impl From<TransactionFilterView> for TransactionFilter {
@@ -181,6 +202,50 @@ impl From<TransactionFilterView> for TransactionFilter {
                 from_order: from_order.0,
                 to_order: to_order.0,
             },
+            TransactionFilterView::All => Self::All,
         }
+    }
+}
+
+impl TransactionFilterView {
+    fn try_matches(&self, item: &TransactionWithInfoView) -> anyhow::Result<bool> {
+        Ok(match self {
+            TransactionFilterView::Sender(sender) => {
+                let sender_opt = item.transaction.sender()?;
+                if let Some(tx_sender) = sender_opt {
+                    sender.0.rooch_address == tx_sender.0
+                } else {
+                    false
+                }
+            }
+            TransactionFilterView::TxHashes(tx_hash) => {
+                if let Some(execution_info) = item.execution_info.clone() {
+                    tx_hash.contains(&execution_info.tx_hash)
+                } else {
+                    false
+                }
+            }
+            TransactionFilterView::TimeRange {
+                start_time,
+                end_time,
+            } => {
+                start_time.0 <= item.transaction.sequence_info.tx_timestamp.0
+                    && item.transaction.sequence_info.tx_timestamp.0 < end_time.0
+            }
+            TransactionFilterView::TxOrderRange {
+                from_order,
+                to_order,
+            } => {
+                from_order.0 <= item.transaction.sequence_info.tx_order.0
+                    && item.transaction.sequence_info.tx_order.0 < to_order.0
+            }
+            TransactionFilterView::All => true,
+        })
+    }
+}
+
+impl Filter<TransactionWithInfoView> for TransactionFilterView {
+    fn matches(&self, item: &TransactionWithInfoView) -> bool {
+        self.try_matches(item).unwrap_or_default()
     }
 }

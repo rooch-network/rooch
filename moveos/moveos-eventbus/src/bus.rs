@@ -277,8 +277,8 @@ impl EventBus {
             }
         };
 
-        let event_actors = actors.entry(event_type_id).or_default();
-        event_actors.insert(subscriber.to_string(), actor);
+        let notify_actors = actors.entry(event_type_id).or_default();
+        notify_actors.insert(subscriber.to_string(), actor);
         Ok(())
     }
 

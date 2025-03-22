@@ -33,7 +33,7 @@ bitcoin-client = { workspace = true }
 rooch-da = { workspace = true }
 rooch-db = { workspace = true }
 rooch-executor = { workspace = true }
-rooch-event = { workspace = true }
+rooch-notify = { workspace = true }
 rooch-indexer = { workspace = true }
 rooch-sequencer = { workspace = true }
 rooch-types = { workspace = true }
