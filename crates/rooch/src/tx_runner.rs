@@ -52,11 +52,7 @@ pub fn execute_tx_locally(
     let (move_mv, object_runtime, client_resolver, action, cost_table) =
         prepare_execute_env(root_object_meta, &client_resolver, tx.clone());
 
-    let mut gas_meter = MoveOSGasMeter::new(
-        cost_table,
-        GasScheduleConfig::CLI_DEFAULT_MAX_GAS_AMOUNT,
-        true,
-    );
+    let mut gas_meter = MoveOSGasMeter::new(cost_table, tx.max_gas_amount, true);
 
     // The dry run supports unsigned transactions, but when calculating the transaction size,
     // the length of the signature part needs to be included.
