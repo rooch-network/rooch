@@ -104,6 +104,10 @@ impl SequencedTxStore {
             {
                 self.tx_accumulator
                     .append(vec![tx_hash_should_revert].as_slice())?;
+                info!(
+                    "append tx_hash_should_revert: {:?}, tx_order: {}",
+                    tx_hash_should_revert, tx_order
+                );
             }
         }
 
