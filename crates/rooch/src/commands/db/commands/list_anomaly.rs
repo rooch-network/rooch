@@ -110,6 +110,7 @@ impl ListAnomaly {
             genesis_namespace,
             dup_hash,
             no_execution_info,
+            accumulator_should_revert: None,
         };
 
         if self.pretty {
