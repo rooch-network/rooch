@@ -9834,7 +9834,6 @@ dependencies = [
  "moveos-store",
  "moveos-types",
  "prometheus",
- "rooch-genesis",
  "rooch-notify",
  "rooch-store",
  "rooch-types",

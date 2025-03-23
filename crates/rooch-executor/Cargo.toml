@@ -31,6 +31,5 @@ moveos-eventbus = { workspace = true }
 metrics = { workspace = true }
 
 rooch-types = { workspace = true }
-rooch-genesis = { workspace = true }
 rooch-notify = { workspace = true }
 rooch-store = { workspace = true }
