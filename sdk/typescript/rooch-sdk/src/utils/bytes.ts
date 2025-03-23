@@ -47,7 +47,7 @@ export const bytesToString = (type: CoderType, bytes: Bytes): string => {
   if (!isBytes(bytes)) throw new TypeError('bytesToString() expects Uint8Array')
   return CODERS[type].encode(bytes)
 }
-export const str = bytesToString // as in python, but for bytes only
+export const str = bytesToString
 
 export const stringToBytes = (type: CoderType, str: string): Bytes => {
   if (!CODERS.hasOwnProperty(type)) throw new TypeError(coderTypeError)

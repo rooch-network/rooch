@@ -29,7 +29,7 @@ use moveos_types::transaction::{
 use parking_lot::RwLock;
 use rooch_genesis::FrameworksGasParameters;
 use rooch_rpc_api::jsonrpc_types::{
-    DryRunTransactionResponseView, KeptVMStatusView, RawTransactionOutputView, StrView,
+    DryRunTransactionResponseView, H256View, KeptVMStatusView, RawTransactionOutputView, StrView,
 };
 use rooch_rpc_client::{Client, ClientResolver};
 use rooch_types::address::{BitcoinAddress, MultiChainAddress};
@@ -306,23 +306,34 @@ fn convert_to_verified_tx(
 pub async fn dry_run_tx_locally(
     client: Client,
     tx: RoochTransactionData,
-) -> anyhow::Result<Option<DryRunTransactionResponseView>> {
+) -> anyhow::Result<DryRunTransactionResponseView> {
     let state_root = get_latest_state_root(&client).await?;
-    let (_, raw_transaction_output, error_info_opt) = execute_tx_locally(state_root, client, tx)?;
+    let (_, raw_transaction_output, error_info_opt) =
+        execute_tx_locally(state_root, client, tx.clone())?;
+
+    let raw_output_view = RawTransactionOutputView {
+        tx_hash: H256View::from(tx.tx_hash()),
+        state_root: H256View::from(raw_transaction_output.changeset.state_root),
+        status: KeptVMStatusView::from(raw_transaction_output.status),
+        gas_used: StrView::from(raw_transaction_output.gas_used),
+        is_upgrade: false,
+    };
 
     match error_info_opt {
-        Some(vm_error_info) => {
-            let raw_output_view = RawTransactionOutputView {
-                status: KeptVMStatusView::from(raw_transaction_output.status),
-                gas_used: StrView::from(raw_transaction_output.gas_used),
-                is_upgrade: false,
+        Some(vm_error_info) => Ok(DryRunTransactionResponseView {
+            raw_output: raw_output_view,
+            vm_error_info,
+        }),
+        None => {
+            let empty_error_info = VMErrorInfo {
+                error_message: "".to_string(),
+                execution_state: vec![],
             };
-            Ok(Some(DryRunTransactionResponseView {
+            Ok(DryRunTransactionResponseView {
                 raw_output: raw_output_view,
-                vm_error_info,
-            }))
+                vm_error_info: empty_error_info,
+            })
         }
-        None => Ok(None),
     }
 }
 

@@ -50,7 +50,7 @@ members = [
     "crates/rooch-store",
     "crates/rooch-test-transaction-builder",
     "crates/rooch-types",
-    "crates/rooch-event",
+    "crates/rooch-notify",
     "crates/rooch-cosmwasm-vm",
     "crates/testsuite",
     "crates/rooch-ord",
@@ -140,7 +140,7 @@ rooch-benchmarks = { path = "crates/rooch-benchmarks" }
 rooch-faucet = { path = "crates/rooch-faucet" }
 rooch-test-transaction-builder = { path = "crates/rooch-test-transaction-builder" }
 rooch-db = { path = "crates/rooch-db" }
-rooch-event = { path = "crates/rooch-event" }
+rooch-notify = { path = "crates/rooch-notify" }
 rooch-ord = { path = "crates/rooch-ord" }
 rooch-cosmwasm-vm = { path = "crates/rooch-cosmwasm-vm" }
 rooch-oracle = { path = "crates/rooch-oracle" }
@@ -185,12 +185,14 @@ eyre = "0.6.8"
 fastcrypto = { git = "https://github.com/MystenLabs/fastcrypto", rev = "56f6223b84ada922b6cb2c672c69db2ea3dc6a13" }
 futures = "0.3.31"
 futures-util = "0.3.31"
+futures-core = "0.3.21"
 hdrhistogram = "7.5.4"
 hex = "0.4.3"
 heed = "0.21.0"
 rustc-hex = "2.1"
 itertools = "0.13.0"
-jsonrpsee = { version = "0.23.2", features = ["full"] }
+#jsonrpsee = { version = "0.23.2", features = ["full"] }
+jsonrpsee = { version = "0.24.7", features = ["server", "macros", "ws-client", "http-client", "jsonrpsee-core"] }
 jpst = "0.1.1"
 lazy_static = "1.5.0"
 linked-hash-map = "0.5.6"
@@ -248,7 +250,7 @@ quote = "1.0"
 proc-macro2 = "1.0.94"
 derive-syn-parse = "0.1.5"
 unescape = "0.1.0"
-tempfile = "3.19.0"
+tempfile = "3.19.1"
 regex = "1.11.1"
 walkdir = "2.3.3"
 prometheus = "0.13.3"
@@ -345,7 +347,7 @@ revm-primitives = "4.0.0"
 ord = "0.18.5"
 sled = { version = "0.34.7" }
 scopeguard = "1.1"
-uuid = { version = "1.15.1", features = ["v4", "fast-rng"] }
+uuid = { version = "1.16.0", features = ["v4", "fast-rng"] }
 protobuf = { version = "2.28", features = ["with-bytes"] }
 redb = { version = "2.1.1" }
 rocksdb = { version = "0.23.0", features = ["lz4", "mt_static", "jemalloc"] }
@@ -365,7 +367,7 @@ triomphe = "0.1.14"
 hashbrown = "0.15.2"
 indexmap = "2.8.0"
 tikv-jemallocator = { version = "0.6.0", features = ["unprefixed_malloc_on_supported_platforms", "profiling"] }
-mimalloc = { version = "0.1.39" }
+mimalloc = { version = "0.1.44" }
 
 # Note: the BEGIN and END comments below are required for external tooling. Do not remove.
 # BEGIN MOVE DEPENDENCIES
@@ -456,3 +458,14 @@ codegen-units = 1 # Help to achieve better result with lto
 inherits = "release"
 #debug = true
 
+[profile.optdev]
+inherits = "release"
+lto = "off"
+codegen-units = 16
+
+# This profile is used for CI
+[profile.optci]
+inherits = "optdev"
+# actually, incremental compilation is disabled already for release profile,
+# but we want to make it explicit.
+incremental = false

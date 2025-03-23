@@ -1,0 +1,108 @@
+# Rooch TypeScript SDK Usage Guide
+
+1. Installation
+
+First, you need to install the SDK package:
+
+```
+npm install @roochnetwork/rooch-sdk
+```
+
+2. Creating a Client Connection
+
+There are two ways to connect to the Rooch network:
+
+HTTP Connection (recommended for beginners)
+
+```typescript
+import { RoochClient, getRoochNodeUrl } from '@roochnetwork/rooch-sdk'
+
+// Connect to the testnet
+const client = new RoochClient({
+  url: getRoochNodeUrl('testnet')
+})
+```
+
+WebSocket Connection
+
+```typescript
+import { RoochClient, RoochWebSocketTransport } from '@roochnetwork/rooch-sdk'
+
+// Create WebSocket transport
+const wsTransport = new RoochWebSocketTransport({
+  url: getRoochNodeUrl('testnet'),
+  reconnectDelay: 1000,
+  maxReconnectAttempts: 5
+})
+
+// Create client using WebSocket
+const client = new RoochClient({
+  transport: wsTransport
+})
+```
+
+3. Creating a Session Account
+
+To call a contract, you need to create a session account first:
+
+```typescript
+import { Secp256k1Keypair } from '@roochnetwork/rooch-sdk'
+
+// Generate a key pair
+const keypair = Secp256k1Keypair.generate()
+
+// Create a session
+const session = await client.createSession({
+  sessionArgs: {
+    appName: 'MyApp',
+    appUrl: 'https://myapp.com',
+    scopes: ['0x3::empty::empty_with_signer'] // Contract methods to access
+  },
+  signer: keypair
+})
+```
+
+4. Calling a Contract
+
+```typescript
+import { Transaction } from '@roochnetwork/rooch-sdk'
+
+// Create a transaction object
+const tx = new Transaction()
+
+// Call a contract method
+tx.callFunction({
+  target: '0x3::empty::empty_with_signer',
+  maxGas: 100000000 // Set the maximum gas fee
+})
+
+// Sign and execute the transaction
+const result = await client.signAndExecuteTransaction({
+  transaction: tx,
+  signer: session
+})
+```
+
+5. Querying Data
+
+```typescript
+// Query balance
+const balances = await client.getBalances({
+  owner: '0x...' // Account address
+})
+
+// Call a contract view function
+const viewResult = await client.executeViewFunction({
+  target: '0x3::counter::view'
+})
+```
+
+> Notes
+> 1. The test network is still under development, and the API may change frequently.
+> 2. When using WebSocket, remember to call client.destroy() to clean up resources when not in use.
+> 3. The default gas fee is 50000000 (0.5 RGas), which can be adjusted as needed.
+> 4. When creating a session, you need to specify the contract call permission scope.
+
+This is the most basic usage process. The SDK also provides more advanced features, which you can learn about in depth by referring to the API documentation.
+
+For a list and detailed description of SDK APIs, please refer to [SDK Method List](./sdk-method-list).

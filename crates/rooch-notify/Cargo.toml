@@ -1,0 +1,31 @@
+[package]
+name = "rooch-notify"
+authors.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+publish.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+[dependencies]
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+coerce = { workspace = true }
+tracing = { workspace = true }
+tokio = { workspace = true, features = ["full", "tracing", "test-util"] }
+tokio-stream = { workspace = true }
+parking_lot = { workspace = true }
+prometheus = { workspace = true }
+serde = { workspace = true }
+futures = { workspace = true }
+
+move-core-types = { workspace = true }
+
+metrics = { workspace = true }
+moveos-types = { workspace = true }
+moveos-eventbus = { workspace = true }
+
+rooch-types = { workspace = true }
+rooch-rpc-api = { workspace = true }

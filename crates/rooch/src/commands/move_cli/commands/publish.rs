@@ -24,9 +24,7 @@ use moveos_types::{
     transaction::MoveAction,
 };
 use moveos_verifier::build::run_verifier;
-use rooch_rpc_api::jsonrpc_types::{
-    ExecuteTransactionResponseView, HumanReadableDisplay, KeptVMStatusView,
-};
+use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, HumanReadableDisplay};
 use rooch_rpc_client::wallet_context::WalletContext;
 use rooch_rpc_client::Client;
 use rooch_types::address::RoochAddress;
@@ -405,14 +403,10 @@ impl Publish {
             let rooch_tx_data = context
                 .build_tx_data(sender, action.clone(), max_gas_amount)
                 .await?;
-            let dry_run_result_opt =
+            let dry_run_result =
                 dry_run_tx_locally(context.get_client().await?, rooch_tx_data).await?;
 
-            if let Some(dry_run_result) = dry_run_result_opt {
-                if dry_run_result.raw_output.status != KeptVMStatusView::Executed {
-                    return Ok(dry_run_result.into());
-                }
-            }
+            return Ok(dry_run_result.into());
         }
 
         let tx_data = context

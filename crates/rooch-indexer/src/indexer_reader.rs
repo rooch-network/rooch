@@ -243,6 +243,11 @@ impl IndexerReader {
                     from_order, to_order
                 )
             }
+            TransactionFilter::All => {
+                return Err(IndexerError::NotSupportedError(
+                    "Not implemented".to_string(),
+                ));
+            }
         };
 
         let cursor_clause = if descending_order {
@@ -355,6 +360,11 @@ impl IndexerReader {
                     "({TX_ORDER_STR} >= {} AND {TX_ORDER_STR} < {})",
                     from_order, to_order
                 )
+            }
+            EventFilter::All => {
+                return Err(IndexerError::NotSupportedError(
+                    "Not implemented".to_string(),
+                ));
             }
         };
 

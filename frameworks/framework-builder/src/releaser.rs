@@ -198,9 +198,8 @@ fn check_compiled_module_compat(
         new_module.self_id(),
         old_module.self_id()
     );
-
     // TODO: config compatibility through global configuration
     // We allow `friend` function to be broken
     let compat = Compatibility::new(true, true, false);
-    compat.check(new_module, old_module)
+    compat.check(old_module, new_module)
 }

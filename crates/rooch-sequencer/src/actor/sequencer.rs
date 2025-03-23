@@ -19,8 +19,9 @@ use function_name::named;
 use moveos_eventbus::bus::EventData;
 use moveos_types::h256::H256;
 use prometheus::Registry;
-use rooch_event::actor::{EventActor, EventActorSubscribeMessage};
-use rooch_event::event::ServiceStatusEvent;
+use rooch_notify::actor::NotifyActor;
+use rooch_notify::event::ServiceStatusEvent;
+use rooch_notify::messages::NotifyActorSubscribeMessage;
 use rooch_store::transaction_store::TransactionStore;
 use rooch_store::RoochStore;
 use rooch_types::crypto::RoochKeyPair;
@@ -36,7 +37,7 @@ pub struct SequencerActor {
     rooch_store: RoochStore,
     service_status: ServiceStatus,
     metrics: Arc<SequencerMetrics>,
-    event_actor: Option<LocalActorRef<EventActor>>,
+    notify_actor: Option<LocalActorRef<NotifyActor>>,
 }
 
 impl SequencerActor {
@@ -45,7 +46,7 @@ impl SequencerActor {
         rooch_store: RoochStore,
         service_status: ServiceStatus,
         registry: &Registry,
-        event_actor: Option<LocalActorRef<EventActor>>,
+        notify_actor: Option<LocalActorRef<NotifyActor>>,
     ) -> Result<Self> {
         // The sequencer info would be initialized when genesis, so the sequencer info should not be None
         let last_sequencer_info = rooch_store
@@ -73,22 +74,22 @@ impl SequencerActor {
             rooch_store,
             service_status,
             metrics: Arc::new(SequencerMetrics::new(registry)),
-            event_actor,
+            notify_actor,
         })
     }
 
     pub async fn subscribe_event(
         &self,
-        event_actor_ref: LocalActorRef<EventActor>,
+        notify_actor_ref: LocalActorRef<NotifyActor>,
         executor_actor_ref: LocalActorRef<SequencerActor>,
     ) {
         let service_status_event = ServiceStatusEvent::default();
-        let actor_subscribe_message = EventActorSubscribeMessage::new(
+        let actor_subscribe_message = NotifyActorSubscribeMessage::new(
             service_status_event,
             "sequencer".to_string(),
             Box::new(executor_actor_ref),
         );
-        let _ = event_actor_ref.send(actor_subscribe_message).await;
+        let _ = notify_actor_ref.send(actor_subscribe_message).await;
     }
 
     pub fn last_order(&self) -> u64 {
@@ -150,17 +151,25 @@ impl SequencerActor {
             .start_timer();
 
         self.check_service_status(&tx_data)?;
-
         let now = SystemTime::now();
         let tx_timestamp = now.duration_since(SystemTime::UNIX_EPOCH)?.as_millis() as u64;
-        let tx_order = self.get_next_tx_order()?;
+
         let tx_hash = tx_data.tx_hash();
+        if !self
+            .rooch_store
+            .transaction_store
+            .is_safe_to_sequence(tx_hash)?
+        {
+            return Err(anyhow::anyhow!("Transaction already sequenced"));
+        }
+
+        let tx_order = self.get_next_tx_order()?;
         let tx_order_signature =
             LedgerTransaction::sign_tx_order(tx_order, tx_hash, &self.sequencer_key);
         let _tx_accumulator_root = self.tx_accumulator.append(vec![tx_hash].as_slice())?;
-
         let tx_accumulator_unsaved_nodes = self.tx_accumulator.pop_unsaved_nodes();
         let tx_accumulator_info = self.tx_accumulator.get_info();
+
         let tx = LedgerTransaction::build_ledger_transaction(
             tx_data,
             tx_timestamp,
@@ -185,7 +194,7 @@ impl SequencerActor {
                 .fork(Some(self.last_sequencer_info.last_accumulator_info.clone()));
             self.service_status = ServiceStatus::Maintenance;
             tracing::error!(
-                        "Failed to save sequenced tx, tx_order: {}, error: {:?}, set sequencer to Maintenance mode.",
+                        "Failed to save sequenced tx, tx_order: {}, error: {:?}, set sequencer to Maintenance mode. Please try to restart later",
                         tx_order, e
                     );
             return Err(io::Error::new(
@@ -209,8 +218,8 @@ impl SequencerActor {
 impl Actor for SequencerActor {
     async fn started(&mut self, ctx: &mut ActorContext) {
         let local_actor_ref: LocalActorRef<Self> = ctx.actor_ref();
-        if let Some(event_actor) = self.event_actor.clone() {
-            let _ = self.subscribe_event(event_actor, local_actor_ref).await;
+        if let Some(notify_actor) = self.notify_actor.clone() {
+            let _ = self.subscribe_event(notify_actor, local_actor_ref).await;
         }
     }
 }

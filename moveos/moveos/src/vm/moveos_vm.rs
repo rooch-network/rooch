@@ -588,13 +588,10 @@ where
                     let module_id = module.self_id();
 
                     if data_store.exists_module(&module_id)? && compat.need_check_compat() {
-                        // #TODO: Deploying modules through MoveAction is only used in Genesis transactions.
-                        // should retrieve the newly deployed module through the module_cache ?
-
-                        //let old_module = self.vm.load_module(&module_id, self.remote)?;
-                        //compat
-                        //    .check(&old_module, module)
-                        //    .map_err(|e| e.finish(Location::Undefined))?;
+                        let old_module = self.vm.load_module(&module_id, &self.remote)?;
+                        compat
+                            .check(&old_module, module)
+                            .map_err(|e| e.finish(Location::Undefined))?;
                     }
                     if !bundle_unverified.insert(module_id) {
                         return Err(PartialVMError::new(StatusCode::DUPLICATE_MODULE_NAME)

@@ -27,7 +27,6 @@ use rooch_config::{RoochOpt, ServerOpt};
 use rooch_da::actor::server::DAServerActor;
 use rooch_da::proxy::DAServerProxy;
 use rooch_db::RoochDB;
-use rooch_event::actor::EventActor;
 use rooch_executor::actor::executor::ExecutorActor;
 use rooch_executor::actor::reader_executor::ReaderExecutorActor;
 use rooch_executor::proxy::ExecutorProxy;
@@ -35,6 +34,8 @@ use rooch_genesis::{FrameworksGasParameters, RoochGenesis};
 use rooch_indexer::actor::indexer::IndexerActor;
 use rooch_indexer::actor::reader_indexer::IndexerReaderActor;
 use rooch_indexer::proxy::IndexerProxy;
+use rooch_notify::actor::NotifyActor;
+use rooch_notify::subscription_handler::SubscriptionHandler;
 use rooch_pipeline_processor::actor::processor::PipelineProcessorActor;
 use rooch_pipeline_processor::proxy::PipelineProcessorProxy;
 use rooch_proposer::actor::messages::ProposeBlock;
@@ -260,17 +261,19 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         MoveOSCacheManager::new(gas_parameters.all_natives(), global_module_cache.clone());
 
     let event_bus = EventBus::new();
-    let event_actor = EventActor::new(event_bus.clone());
-    let event_actor_ref = event_actor
-        .into_actor(Some("EventActor"), &actor_system)
+    let subscription_handle = Arc::new(SubscriptionHandler::new(&prometheus_registry));
+    let notify_actor = NotifyActor::new(event_bus.clone(), subscription_handle.clone());
+    let notify_actor_ref = notify_actor
+        .into_actor(Some("NotifyActor"), &actor_system)
         .await?;
+    // let _notify_proxy = NotifyProxy::new(notify_actor_ref.clone().into());
 
     let executor_actor = ExecutorActor::new(
         root.clone(),
         moveos_store.clone(),
         rooch_store.clone(),
         &prometheus_registry,
-        Some(event_actor_ref.clone()),
+        Some(notify_actor_ref.clone()),
         global_cache_manager.clone(),
     )?;
 
@@ -282,7 +285,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         root.clone(),
         moveos_store.clone(),
         rooch_store.clone(),
-        Some(event_actor_ref.clone()),
+        Some(notify_actor_ref.clone()),
         global_cache_manager.clone(),
     )?;
 
@@ -302,7 +305,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         rooch_store.clone(),
         service_status,
         &prometheus_registry,
-        Some(event_actor_ref.clone()),
+        Some(notify_actor_ref.clone()),
     )?
     .into_actor(Some("Sequencer"), &actor_system)
     .await?;
@@ -312,7 +315,11 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     let genesis_hash = genesis.genesis_hash();
     let genesis_namespace = derive_namespace_from_genesis(genesis_hash);
     let last_tx_order = sequencer_proxy.get_sequencer_order().await?;
-    let (da_issues, da_fixed) = rooch_store.try_repair_da_meta(last_tx_order, false)?;
+    let (da_issues, da_fixed) = rooch_store.try_repair_da_meta(
+        last_tx_order,
+        false,
+        opt.da_config().da_min_block_to_submit,
+    )?;
     info!("DA meta issues: {:?}, fixed: {:?}", da_issues, da_fixed);
     let da_config = opt.da_config().clone();
     let da_proxy = DAServerProxy::new(
@@ -357,7 +364,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         root,
         indexer_store,
         moveos_store,
-        Some(event_actor_ref.clone()),
+        Some(notify_actor_ref.clone()),
     )?
     .into_actor(Some("Indexer"), &actor_system)
     .await?;
@@ -392,7 +399,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         indexer_proxy.clone(),
         service_status,
         &prometheus_registry,
-        Some(event_actor_ref.clone()),
+        Some(notify_actor_ref.clone()),
         rooch_db,
         bitcoin_client_proxy.clone(),
     );
@@ -416,7 +423,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
             processor_proxy.clone(),
             ethereum_relayer_config,
             bitcoin_relayer_config.clone(),
-            Some(event_actor_ref),
+            Some(notify_actor_ref),
         )
         .await?
         .into_actor(Some("Relayer"), &actor_system)
@@ -439,6 +446,8 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         processor_proxy,
         bitcoin_client_proxy,
         da_proxy,
+        subscription_handle,
+        None,
     );
     let aggregate_service = AggregateService::new(rpc_service.clone());
 

@@ -338,14 +338,17 @@ fn check_compatibililty_inner(
         let new_module = CompiledModule::deserialize(&new_bytecodes)?;
         let old_module = CompiledModule::deserialize(&old_bytecodes)?;
 
-        match compat.check(&new_module, &old_module) {
+        match compat.check(&old_module, &new_module) {
             Ok(_) => {}
             Err(_) => return Ok(NativeResult::err(cost, E_MODULE_INCOMPATIBLE)),
         }
 
         match check_metadata_compatibility(&old_module, &new_module) {
             Ok(_) => {}
-            Err(e) => return Ok(NativeResult::err(cost, e.sub_status().unwrap_or(0))),
+            Err(e) => {
+                tracing::info!("module compatibility checking failed {:?}", e);
+                return Ok(NativeResult::err(cost, e.sub_status().unwrap_or(0)));
+            }
         }
     }
     Ok(NativeResult::ok(cost, smallvec![]))

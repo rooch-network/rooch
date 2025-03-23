@@ -63,6 +63,24 @@ impl TransactionDBStore {
         }
     }
 
+    /// Checks if the transaction hash is safe to sequence.
+    pub fn is_safe_to_sequence(&self, tx_hash: H256) -> Result<bool> {
+        // Use bloom filter to quickly check if the transaction might exist
+        if !self.tx_store.may_contains_key(tx_hash)? {
+            return Ok(true); // Definitely not in the store
+        }
+        // Bloom filter says it might exist; need to confirm by checking the real storage
+        let tx = self.tx_store.kv_get(tx_hash)?;
+        let existed = tx.is_some();
+        if existed {
+            tracing::warn!(
+                "Transaction {:?} already exists but want to be sequenced",
+                tx_hash
+            );
+        }
+        Ok(tx.is_none())
+    }
+
     pub fn remove_transaction(&self, tx_hash: H256, tx_order: u64) -> Result<()> {
         let inner_store = self.tx_store.store.store();
 

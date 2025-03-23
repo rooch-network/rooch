@@ -5,11 +5,11 @@
   "description": "Rooch Test Suite",
   "license": "Apache-2.0",
   "engines": {
-  "node": ">=18.0.0"
-},
+    "node": ">=18.0.0"
+  },
   "packageManager": "pnpm@8.6.6",
   "scripts": {
-  "clean": "rimraf tsconfig.tsbuildinfo rimraf dist",
+    "clean": "rimraf tsconfig.tsbuildinfo rimraf dist",
     "build": "pnpm build:package",
     "build:package": "build-package",
     "vitest": "vitest",
@@ -17,7 +17,7 @@
     "test:unit": "vitest run src",
     "test:e2e": "pnpm prepare:e2e && wait-on tcp:0.0.0.0:6767 -l --timeout 180000 && vitest run e2e; pnpm stop:e2e",
     "test:e2e:nowait": "vitest run e2e",
-    "prepare:e2e": "nohup cargo run --bin rooch server start -n local -d TMP --port 6767 > /dev/null 2>&1 &",
+    "prepare:e2e": "nohup cargo run --profile optci --bin rooch server start -n local -d TMP --port 6767 > /dev/null 2>&1 &",
     "stop:e2e": "lsof -ti:6767 | xargs kill",
     "prepublishOnly": "pnpm build",
     "size": "size-limit",
@@ -28,22 +28,25 @@
     "prettier:fix": "prettier -w --ignore-unknown .",
     "lint": "pnpm eslint:check && pnpm prettier:check",
     "lint:fix": "pnpm eslint:fix && pnpm prettier:fix"
-},
+  },
   "repository": {
-  "type": "git",
+    "type": "git",
     "url": "https://github.com/rooch-network/rooch.git"
-},
+  },
   "homepage": "https://github.com/rooch-network/rooch",
   "bugs": {
-  "url": "https://github.com/rooch-network/rooch/issues"
-},
-  "files": ["dist", "src"],
+    "url": "https://github.com/rooch-network/rooch/issues"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
   "type": "module",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
   "types": "./dist/cjs/index.d.ts",
   "devDependencies": {
-  "@roochnetwork/build-scripts": "workspace:*",
+    "@roochnetwork/build-scripts": "workspace:*",
     "@types/node": "^20.14.10",
     "@types/tmp": "^0.2.1",
     "typescript": "^5.3.3",
@@ -51,12 +54,11 @@
     "vitest": "^1.6.0",
     "tmp": "^0.2.1",
     "testcontainers": "10.11.0"
-},
+  },
   "dependencies": {
-
-},
+  },
   "publishConfig": {
-  "access": "public",
+    "access": "public",
     "registry": "https://registry.npmjs.org/"
-}
+  }
 }

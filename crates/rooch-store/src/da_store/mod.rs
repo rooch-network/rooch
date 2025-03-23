@@ -9,8 +9,9 @@ use raw_store::traits::DBStore;
 use raw_store::{derive_store, CodecKVStore, SchemaStore, WriteOp};
 use rooch_types::da::batch::{BlockRange, BlockSubmitState};
 use std::cmp::{min, Ordering};
+use std::ops::RangeInclusive;
 
-pub const SUBMITTING_BLOCKS_PAGE_SIZE: usize = 1024;
+pub const SUBMITTING_BLOCKS_PAGE_SIZE: usize = 64;
 pub const MAX_TXS_PER_BLOCK_IN_FIX: usize = 8192; // avoid OOM when fix submitting blocks after collapse
 
 // [0,background_submit_block_cursor] are submitted blocks verified by background submitter
@@ -44,8 +45,12 @@ pub trait DAMetaStore {
     // after repair with condition2, we may need to repair with condition1 for the last block(it will be done automatically)
     //
     // If thorough is true, will try to repair the tx orders first, then repair blocks. It's design for deep repair.
-    fn try_repair_da_meta(&self, last_order: u64, thorough: bool)
-        -> anyhow::Result<(usize, usize)>;
+    fn try_repair_da_meta(
+        &self,
+        last_order: u64,
+        thorough: bool,
+        da_min_block_to_submit: Option<u128>,
+    ) -> anyhow::Result<(usize, usize)>;
 
     // append new submitting block with tx_order_start and tx_order_end, return the block_number
     // LAST_BLOCK_NUMBER & block state must be updated atomically, they must be consistent (version >= v0.7.6)
@@ -374,6 +379,72 @@ impl DAMetaDBStore {
         }
     }
 
+    fn remove_background_submit_block_cursor(&self) -> anyhow::Result<()> {
+        self.block_cursor_store
+            .remove(BACKGROUND_SUBMIT_BLOCK_CURSOR_KEY.to_string())
+    }
+
+    fn try_repair_background_submit_block_cursor(
+        &self,
+        da_min_block_to_submit_opt: Option<u128>,
+    ) -> anyhow::Result<()> {
+        let background_submit_block_cursor = self.get_background_submit_block_cursor()?;
+        match background_submit_block_cursor {
+            Some(background_submit_block_cursor) => {
+                let da_min_block_to_submit = da_min_block_to_submit_opt.unwrap_or(0);
+                if da_min_block_to_submit >= background_submit_block_cursor {
+                    Ok(())
+                } else {
+                    let max_submitted_block_number = self.search_max_submitted_block_number(
+                        da_min_block_to_submit..=background_submit_block_cursor,
+                    )?;
+                    if let Some(max_submitted_block_number) = max_submitted_block_number {
+                        if max_submitted_block_number != background_submit_block_cursor {
+                            self.set_background_submit_block_cursor(max_submitted_block_number)
+                        } else {
+                            Ok(())
+                        }
+                    } else {
+                        // remove background_submit_block_cursor directly,
+                        // since we could catch up with the last order by background submitter
+                        self.remove_background_submit_block_cursor()
+                    }
+                }
+            }
+            None => {
+                // background_submit_block_cursor is not set,
+                // nothing to do
+                // background submitter will set it when submitting blocks
+                Ok(())
+            }
+        }
+    }
+
+    // search max submitted block number in the range
+    // avoid holes(not submitted) in the expected submitted blocks
+    fn search_max_submitted_block_number(
+        &self,
+        search_range: RangeInclusive<u128>,
+    ) -> anyhow::Result<Option<u128>> {
+        let mut max_submitted_block_number = None;
+        for block_number in search_range {
+            let block_state = self.try_get_block_state(block_number)?;
+            match block_state {
+                Some(block_state) => {
+                    if block_state.done {
+                        max_submitted_block_number = Some(block_number);
+                    } else {
+                        break;
+                    }
+                }
+                None => {
+                    break;
+                }
+            }
+        }
+        Ok(max_submitted_block_number)
+    }
+
     pub(crate) fn try_repair_blocks(
         &self,
         last_order: u64,
@@ -457,6 +528,7 @@ impl DAMetaStore for DAMetaDBStore {
         &self,
         last_order: u64,
         thorough: bool,
+        da_min_block_to_submit: Option<u128>,
     ) -> anyhow::Result<(usize, usize)> {
         let mut issues = 0;
         let mut fixed = 0;
@@ -466,6 +538,7 @@ impl DAMetaStore for DAMetaDBStore {
             fixed += order_fixed;
         }
         (issues, fixed) = self.try_repair_blocks(last_order, issues, fixed)?;
+        self.try_repair_background_submit_block_cursor(da_min_block_to_submit)?;
 
         Ok((issues, fixed))
     }

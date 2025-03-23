@@ -8,6 +8,7 @@ on:
       - 'fixtures/**'
       - 'kube/**'
       - '**.md'
+      - 'crates/rooch-pipeline-processor/tx_anomalies/**'
   pull_request:
     branches: [ 'main' ]
     paths-ignore:
@@ -15,20 +16,55 @@ on:
       - 'fixtures/**'
       - 'kube/**'
       - '**.md'
+      - 'crates/rooch-pipeline-processor/tx_anomalies/**'
 
 env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
   ENV_TEST_ON_CI: 1
+  CARGO_INCREMENTAL: 0
 
 jobs:
   check_build_test:
     name: Check-Build-Test
     runs-on: self-hosted
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - uses: actions/cache@v4
+      - name: Filter Changed Files
+        uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            core:
+              - '.cargo/**'
+              - '.github/workflows/check_build_test.yml'
+              - 'crates/**'
+              - 'moveos/**'
+              - 'framework/**'
+              - 'Cargo.toml'
+              - 'Cargo.lock'
+              - 'rust-toolchain.toml'
+              - 'apps/**'
+              - 'examples/**'
+              - 'framework/**'
+              - 'generator/**'
+              - 'third-party/**'
+            sdk_web:
+              - 'infra/**'
+              - 'sdk/**'
+              - '.eslintrc.js'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - 'prettier.config.js'
+            scripts:
+              - 'scripts/**'
+
+      - name: Setup pnpm Cache
+        if: ${{ steps.changes.outputs.core == 'true' || steps.changes.outputs.sdk_web == 'true' }}
+        uses: actions/cache@v4
         with:
           path: |
             ~/.pnpm-store
@@ -37,58 +73,50 @@ jobs:
           restore-keys: |
             ${{ runner.OS }}-pnpm-
 
-      - name: Install GitHub CLI
+      - name: Setup Rust
+        if: ${{ steps.changes.outputs.core == 'true' || steps.changes.outputs.sdk_web == 'true' }}
+        uses: ./.github/actions/rust-setup
+      - name: Build Rust
+        if: ${{ steps.changes.outputs.core == 'true' || steps.changes.outputs.sdk_web == 'true' }}
         run: |
-          (type -p wget >/dev/null || (sudo apt update && sudo apt-get install wget -y)) \
-          && sudo mkdir -p -m 755 /etc/apt/keyrings \
-          && wget -qO- https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo tee /etc/apt/keyrings/githubcli-archive-keyring.gpg > /dev/null \
-          && sudo chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg \
-          && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
-          && sudo apt update \
-          && sudo apt install gh -y
-
-      - uses: ./.github/actions/rust-setup
-
-      - name: Basic checks and builds
-        run: |
-          # Run basic checks in parallel
-          cargo fmt -- --check &
-          ./scripts/pr.sh -c &
-          wait
-          
-          # Build and init
           cargo build
-          cargo run --package framework-release --bin framework-release
-          cargo run --bin rooch init --skip-password
-
-      - name: Run Rust tests in parallel
-        run: ./scripts/pr.sh -t
-
-      - name: Run Move tests
-        run: ./scripts/pr.sh -m
-
-      - name: Run example tests
-        run: ./scripts/pr.sh -e
-
-      - name: Generate genesis files for Mainnet and Testnet
+      - name: Run Rust Lint
+        if: ${{ steps.changes.outputs.core == 'true'}}
+        run: ./scripts/pr.sh -c
+      - name: Rooch init
+        if: ${{ steps.changes.outputs.core == 'true' || steps.changes.outputs.sdk_web == 'true' }}
         run: |
-          cargo run -p rooch-genesis -- -n main &
-          cargo run -p rooch-genesis -- -n test &
+          cargo run --profile optci --package framework-release --bin framework-release 
+          cargo run --profile optci --bin rooch init --skip-password
+      - name: Run Rust tests
+        if: ${{ steps.changes.outputs.core == 'true'}}
+        run: ./scripts/pr.sh -t
+      - name: Run Move tests
+        if: ${{ steps.changes.outputs.core == 'true'}}
+        run: ./scripts/pr.sh -m
+      - name: Run example tests
+        if: ${{ steps.changes.outputs.core == 'true'}}
+        run: ./scripts/pr.sh -e
+      - name: Generate genesis files for Mainnet and Testnet
+        if: ${{ steps.changes.outputs.core == 'true'}}
+        run: |
+          cargo run --profile optci -p rooch-genesis -- -n main &
+          cargo run --profile optci -p rooch-genesis -- -n test &
           wait
 
       - name: Setup Node.js
+        if: ${{ steps.changes.outputs.core == 'true' || steps.changes.outputs.sdk_web == 'true' }}
         uses: actions/setup-node@v2
         with:
           node-version: '20.3.1'
-
       - name: Run Web and SDK tests
+        if: ${{ steps.changes.outputs.core == 'true' || steps.changes.outputs.sdk_web == 'true' }}
         run: |
           # Check Docker
           docker --version
           docker pull lncm/bitcoind:v25.1 &
           # docker pull bitseed/ord:0.18.0-burn &
           # docker pull bitseed/bitseed:0.1.8 &
-          
           # Setup pnpm and run web/SDK tests
           # . $NVM_DIR/nvm.sh
           # nvm install 20.3.1
@@ -96,7 +124,6 @@ jobs:
           npm install pnpm@9.4.0 -g
           pnpm install
           # pnpm bitseed-sdk playwright-deps
-          
           # Run web/SDK tasks in parallel
           pnpm lint &
           pnpm test-suite build &
@@ -105,14 +132,30 @@ jobs:
           # pnpm bitseed-sdk lint &
           # pnpm bitseed-sdk build &
           wait
-          
           # Run tests
           pnpm rooch-sdk test
           pnpm rooch-sdk-kit test || true
           # pnpm bitseed-sdk test || true
-
       - uses: CatChen/check-git-status-action@v1
         with:
           fail-if-not-clean: true
           push-if-not-clean: false
           targets: '.'
+
+      - name: Validate Debug Docker files
+        if: contains(github.event.pull_request.changed_files.*.filename, 'docker/DockerfileDebug')
+        run: docker build -f docker/DockerfileDebug -t rooch-test-debug .
+      - name: Validate Docker files
+        if: contains(github.event.pull_request.changed_files.*.filename, 'docker/Dockerfile')
+        run: docker build -f docker/Dockerfile -t rooch-test .
+      - name: Validate Homebrew formula
+        if: contains(github.event.pull_request.changed_files.*.filename, 'Formula/')
+        run: |
+          brew audit --strict --online Formula/rooch.rb
+
+      - name: Run ShellCheck
+        if: ${{ steps.changes.outputs.scripts == 'true' }}
+        uses: Azbagheri/shell-linter@v0.8.0
+        with:
+          path: "scripts/*.sh"
+          severity: "error"

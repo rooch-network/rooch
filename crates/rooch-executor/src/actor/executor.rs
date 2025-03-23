@@ -28,8 +28,10 @@ use moveos_types::state_resolver::RootObjectResolver;
 use moveos_types::transaction::{FunctionCall, MoveOSTransaction, VerifiedMoveAction};
 use moveos_types::transaction::{MoveAction, VerifiedMoveOSTransaction};
 use prometheus::Registry;
-use rooch_event::actor::{EventActor, EventActorSubscribeMessage, GasUpgradeMessage};
-use rooch_event::event::GasUpgradeEvent;
+use rooch_genesis::FrameworksGasParameters;
+use rooch_notify::actor::NotifyActor;
+use rooch_notify::event::GasUpgradeEvent;
+use rooch_notify::messages::{GasUpgradeMessage, NotifyActorSubscribeMessage};
 use rooch_store::state_store::StateStore;
 use rooch_store::RoochStore;
 use rooch_types::address::{BitcoinAddress, MultiChainAddress};
@@ -57,7 +59,7 @@ pub struct ExecutorActor {
     moveos_store: MoveOSStore,
     rooch_store: RoochStore,
     metrics: Arc<ExecutorMetrics>,
-    event_actor: Option<LocalActorRef<EventActor>>,
+    notify_actor: Option<LocalActorRef<NotifyActor>>,
     global_cache_manager: MoveOSCacheManager,
 }
 
@@ -69,7 +71,7 @@ impl ExecutorActor {
         moveos_store: MoveOSStore,
         rooch_store: RoochStore,
         registry: &Registry,
-        event_actor: Option<LocalActorRef<EventActor>>,
+        notify_actor: Option<LocalActorRef<NotifyActor>>,
         global_cache_manager: MoveOSCacheManager,
     ) -> Result<Self> {
         let moveos = MoveOS::new(
@@ -85,23 +87,23 @@ impl ExecutorActor {
             moveos_store,
             rooch_store,
             metrics: Arc::new(ExecutorMetrics::new(registry)),
-            event_actor,
+            notify_actor,
             global_cache_manager,
         })
     }
 
     pub async fn subscribe_event(
         &self,
-        event_actor_ref: LocalActorRef<EventActor>,
+        notify_actor_ref: LocalActorRef<NotifyActor>,
         executor_actor_ref: LocalActorRef<ExecutorActor>,
     ) {
         let gas_upgrade_event = GasUpgradeEvent::default();
-        let actor_subscribe_message = EventActorSubscribeMessage::new(
+        let actor_subscribe_message = NotifyActorSubscribeMessage::new(
             gas_upgrade_event,
             "executor".to_string(),
             Box::new(executor_actor_ref),
         );
-        let _ = event_actor_ref.send(actor_subscribe_message).await;
+        let _ = notify_actor_ref.send(actor_subscribe_message).await;
     }
 
     pub fn get_rooch_store(&self) -> RoochStore {
@@ -138,8 +140,8 @@ impl ExecutorActor {
             .observe(size as f64);
 
         if is_gas_upgrade {
-            if let Some(event_actor) = self.event_actor.clone() {
-                let _ = event_actor.notify(GasUpgradeMessage {});
+            if let Some(notify_actor) = self.notify_actor.clone() {
+                let _ = notify_actor.notify(GasUpgradeMessage {});
             }
         }
 
@@ -451,8 +453,8 @@ impl ExecutorActor {
 impl Actor for ExecutorActor {
     async fn started(&mut self, ctx: &mut ActorContext) {
         let local_actor_ref: LocalActorRef<Self> = ctx.actor_ref();
-        if let Some(event_actor) = self.event_actor.clone() {
-            let _ = self.subscribe_event(event_actor, local_actor_ref).await;
+        if let Some(notify_actor) = self.notify_actor.clone() {
+            let _ = self.subscribe_event(notify_actor, local_actor_ref).await;
         }
     }
 }

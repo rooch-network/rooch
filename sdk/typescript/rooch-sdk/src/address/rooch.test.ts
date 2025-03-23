@@ -34,7 +34,10 @@ describe('RoochAddress', () => {
     expect(address).toBeDefined()
     expect(address.toHexAddress()).toBe(normalizeRoochAddress(validHex))
     expect(address.toBech32Address()).toBe(
-      bech32m.encode(ROOCH_BECH32_PREFIX, bech32m.toWords(fromHEX(validHex))),
+      bech32m.encode(
+        ROOCH_BECH32_PREFIX,
+        bech32m.toWords(fromHEX(normalizeRoochAddress(validHex))),
+      ),
     )
   })
 

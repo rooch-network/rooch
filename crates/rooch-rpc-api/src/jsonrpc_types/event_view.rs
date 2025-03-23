@@ -13,6 +13,7 @@ use rooch_types::address::RoochAddress;
 use rooch_types::indexer::event::{
     AnnotatedIndexerEvent, EventFilter, IndexerEvent, IndexerEventID,
 };
+use rooch_types::indexer::Filter;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -173,6 +174,20 @@ impl From<IndexerEvent> for IndexerEventView {
     }
 }
 
+impl From<IndexerEventView> for IndexerEvent {
+    fn from(event: IndexerEventView) -> Self {
+        IndexerEvent {
+            indexer_event_id: event.indexer_event_id.into(),
+            event_id: event.event_id.into(),
+            event_type: event.event_type.into(),
+            event_data: Some(event.event_data.0),
+            tx_hash: event.tx_hash.into(),
+            sender: RoochAddress::from(event.sender).into(),
+            created_at: event.created_at.into(),
+        }
+    }
+}
+
 impl From<AnnotatedIndexerEvent> for IndexerEventView {
     fn from(event: AnnotatedIndexerEvent) -> Self {
         IndexerEventView {
@@ -217,6 +232,7 @@ pub enum EventFilterView {
         /// right endpoint of transaction order, exclusive
         to_order: StrView<u64>,
     },
+    All,
 }
 
 impl From<EventFilterView> for EventFilter {
@@ -245,6 +261,21 @@ impl From<EventFilterView> for EventFilter {
                 from_order: from_order.0,
                 to_order: to_order.0,
             },
+            EventFilterView::All => Self::All,
         }
+    }
+}
+
+impl EventFilterView {
+    fn try_matches(&self, item_view: &IndexerEventView) -> anyhow::Result<bool> {
+        let filter: EventFilter = self.clone().into();
+        let item: IndexerEvent = item_view.clone().into();
+        Ok(filter.matches(&item))
+    }
+}
+
+impl Filter<IndexerEventView> for EventFilterView {
+    fn matches(&self, item: &IndexerEventView) -> bool {
+        self.try_matches(item).unwrap_or_default()
     }
 }

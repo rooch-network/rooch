@@ -34,7 +34,7 @@ module twitter_binding::twitter_account {
 
     const INIT_GAS_AMOUNT: u256 = 1000000_00000000;
 
-    const REWARD_RGAS_AMOUNT: u256 = 50_00000000;
+    const REWARD_RGAS_AMOUNT: u256 = 10_00000000;
 
     //Deprecated
     struct TwitterBindingErrorEvent has store, drop, copy {

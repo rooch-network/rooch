@@ -34,10 +34,9 @@ Usage:
 Flags:
     -h   Print this help
     -c   Check the core prover crates using cargo fmt/clippy.
-         This is the default if no flags are provided.
     -x   Like -c, but adds more crates (specifically all which depend
          on move-model)
-    -t   In addition to fmt/clippy, run cargo test
+    -t   Run cargo test
     -d   Run documentation generation, abi generation, etc. for move-stdlib
          and other tested frameworks.
     -g   Run the Move git checks script (whitespace check). This works
@@ -62,8 +61,7 @@ EOF
       GIT_CHECKS=1
       ;;
     t)
-      CHECK=1
-      ALSO_TEST=1
+      STD_TEST=1
       ;;
     m)
       MOVE_TESTS=1
@@ -76,7 +74,7 @@ EOF
       CHECK_MORE=1
       GEN_ARTIFACTS=1
       GIT_CHECKS=1
-      ALSO_TEST=1
+      STD_TEST=1
       MOVE_TESTS=1
       MOVE_E2E_TESTS=1
       EXAMPLES_TESTS=1
@@ -105,10 +103,11 @@ if [ ! -z "$CHECK" ]; then
     echo "All checks passed successfully!"
 fi
 
-if [ ! -z "$ALSO_TEST" ]; then
+if [ ! -z "$STD_TEST" ]; then
     export RUST_BACKTRACE=1
 
     # Run standard tests with optimized settings
+    cargo build --profile optci
     cargo nextest run \
         --workspace \
         --all-features \
@@ -119,22 +118,23 @@ if [ ! -z "$ALSO_TEST" ]; then
         --retries 2 \
         --success-output final \
         --failure-output immediate-final \
+        --cargo-profile optci \
 
     # Run framework tests in parallel
-    cargo test -p rooch-framework-tests -p rooch-integration-test-runner -- --test-threads=8 &
-    cargo test --release -p rooch-framework-tests bitcoin_test -- --test-threads=8 &
+    cargo test --profile optci -p rooch-framework-tests -p rooch-integration-test-runner -- --test-threads=8 &
+    cargo test --profile optci -p rooch-framework-tests bitcoin_test -- --test-threads=8 &
     wait
 
     # Run integration tests separately without parallel execution
     echo "Running integration tests..."
-    RUST_LOG=warn cargo test -p testsuite --test integration
+    RUST_LOG=warn cargo test --profile optci -p testsuite --test integration
 fi
 
 if [ ! -z "$MOVE_TESTS" ]; then
   for crate in $MOVE_TEST_CRATES; do
     echo "*************** [check-pr] Move tests $crate"
     (
-      cargo run --bin rooch move test -p $crate
+      cargo run --profile optci --bin rooch move test -p $crate
     )
   done
 fi
@@ -155,8 +155,8 @@ if [ ! -z "$EXAMPLES_TESTS" ]; then
       name_addr=$(basename "$dir")
       (
         echo "Testing example: $name_addr"
-        cargo run --bin rooch move build -p "$dir" --named-addresses rooch_examples=default,$name_addr=default && \
-        cargo run --bin rooch move test -p "$dir"
+        cargo run --profile optci --bin rooch move build -p "$dir" --named-addresses rooch_examples=default,$name_addr=default && \
+        cargo run --profile optci --bin rooch move test -p "$dir"
       ) &
     done
     wait

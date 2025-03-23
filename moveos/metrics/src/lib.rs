@@ -136,18 +136,18 @@ macro_rules! monitored_future {
         };
 
         async move {
-            let metrics = mysten_metrics::get_metrics();
+            let metrics = metrics::get_metrics();
 
             let _metrics_guard = if let Some(m) = metrics {
                 m.$metric.with_label_values(&[location]).inc();
-                Some(mysten_metrics::scopeguard::guard(m, |metrics| {
+                Some(metrics::scopeguard::guard(m, |metrics| {
                     m.$metric.with_label_values(&[location]).dec();
                 }))
             } else {
                 None
             };
             let _logging_guard = if $logging_enabled {
-                Some(mysten_metrics::scopeguard::guard((), |_| {
+                Some(metrics::scopeguard::guard((), |_| {
                     tracing::event!(
                         tracing::Level::$logging_level,
                         "Future {} completed",
@@ -174,28 +174,22 @@ macro_rules! monitored_future {
 #[macro_export]
 macro_rules! spawn_monitored_task {
     ($fut: expr) => {
-        tokio::task::spawn(mysten_metrics::monitored_future!(
-            tasks, $fut, "", INFO, false
-        ))
+        tokio::task::spawn(metrics::monitored_future!(tasks, $fut, "", INFO, false))
     };
 }
 
 #[macro_export]
 macro_rules! spawn_logged_monitored_task {
     ($fut: expr) => {
-        tokio::task::spawn(mysten_metrics::monitored_future!(
-            tasks, $fut, "", INFO, true
-        ))
+        tokio::task::spawn(metrics::monitored_future!(tasks, $fut, "", INFO, true))
     };
 
     ($fut: expr, $name: expr) => {
-        tokio::task::spawn(mysten_metrics::monitored_future!(
-            tasks, $fut, $name, INFO, true
-        ))
+        tokio::task::spawn(metrics::monitored_future!(tasks, $fut, $name, INFO, true))
     };
 
     ($fut: expr, $name: expr, $logging_level: ident) => {
-        tokio::task::spawn(mysten_metrics::monitored_future!(
+        tokio::task::spawn(metrics::monitored_future!(
             tasks,
             $fut,
             $name,

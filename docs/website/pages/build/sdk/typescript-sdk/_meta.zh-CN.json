@@ -1,12 +1,11 @@
 {
   "ts-sdk-quick-start": {
-    "title": "Rooch TS SDK 快速开始"
+    "title": "快速入门"
   },
-  "install": {
-    "title": "Install"
+  "sdk-using-guide": {
+    "title": "SDK 使用教程"
   },
-  "faucet": {
-    "title": "Faucet",
-    "display": "hidden"
+  "sdk-method-list": {
+    "title": "SDK 方法清单"
   }
 }

@@ -9,9 +9,7 @@ use clap::Parser;
 use move_command_line_common::types::ParsedStructType;
 use move_core_types::language_storage::TypeTag;
 use moveos_types::transaction::MoveAction;
-use rooch_rpc_api::jsonrpc_types::{
-    ExecuteTransactionResponseView, HumanReadableDisplay, KeptVMStatusView,
-};
+use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, HumanReadableDisplay};
 use rooch_types::function_arg::parse_function_arg;
 use rooch_types::{
     address::RoochAddress,
@@ -102,14 +100,10 @@ impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
                     sequence_number,
                 )
                 .await?;
-            let dry_run_result_opt =
+            let dry_run_result =
                 dry_run_tx_locally(context.get_client().await?, rooch_tx_data).await?;
 
-            if let Some(dry_run_result) = dry_run_result_opt {
-                if dry_run_result.raw_output.status != KeptVMStatusView::Executed {
-                    return Ok(dry_run_result.into());
-                };
-            }
+            return Ok(dry_run_result.into());
         }
 
         let result = match (self.tx_options.authenticator, self.tx_options.session_key) {

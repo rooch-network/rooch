@@ -322,6 +322,12 @@ impl RocksDB {
         }
     }
 
+    fn get_no_cache_options() -> ReadOptions {
+        let mut opts = ReadOptions::default();
+        opts.fill_cache(false);
+        opts
+    }
+
     pub fn property_int_value_cf(
         &self,
         cf: &impl AsColumnFamilyRef,
@@ -432,6 +438,13 @@ impl DBStore for RocksDB {
             _ => Ok(false),
         }
     }
+
+    fn may_contains_key(&self, cf_name: &str, key: &[u8]) -> Result<bool> {
+        let cf_handle = self.get_cf_handle(cf_name);
+        let may_exist = self.db.key_may_exist_cf(&cf_handle, key);
+        Ok(may_exist)
+    }
+
     fn remove(&self, cf_name: &str, key: Vec<u8>) -> Result<()> {
         let cf_handle = self.get_cf_handle(cf_name);
         self.db.delete_cf(&cf_handle, key)?;
@@ -492,7 +505,9 @@ impl DBStore for RocksDB {
             .map(|(key, handle)| (handle, key.as_slice()))
             .collect::<Vec<_>>();
 
-        let result = self.db.multi_get_cf(keys_multi);
+        let result = self
+            .db
+            .multi_get_cf_opt(keys_multi, &Self::get_no_cache_options());
         let mut res = vec![];
         for item in result {
             let item = item?;
