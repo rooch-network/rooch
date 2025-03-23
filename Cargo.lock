@@ -4570,27 +4570,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "gloo-net"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "43aaa242d1239a8822c15c645f02166398da4f8b5c4bae795c1f5b44e9eee173"
-dependencies = [
- "futures-channel",
- "futures-core",
- "futures-sink",
- "gloo-utils",
- "http 0.2.12",
- "js-sys",
- "pin-project",
- "serde",
- "serde_json",
- "thiserror",
- "wasm-bindgen",
- "wasm-bindgen-futures",
- "web-sys",
-]
-
-[[package]]
 name = "gloo-timers"
 version = "0.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4612,19 +4591,6 @@ dependencies = [
  "futures-core",
  "js-sys",
  "wasm-bindgen",
-]
-
-[[package]]
-name = "gloo-utils"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0b5555354113b18c547c1d3a98fbf7fb32a9ff4f6fa112ce823a21641a0ba3aa"
-dependencies = [
- "js-sys",
- "serde",
- "serde_json",
- "wasm-bindgen",
- "web-sys",
 ]
 
 [[package]]
@@ -5754,7 +5720,6 @@ version = "0.24.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "456196007ca3a14db478346f58c7238028d55ee15c1df15115596e411ff27925"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
  "async-trait",
  "bytes",
  "futures-timer",
@@ -5763,11 +5728,11 @@ dependencies = [
  "http-body 1.0.0",
  "http-body-util",
  "jsonrpsee-types 0.24.9",
- "parking_lot 0.12.3",
+ "parking_lot",
  "pin-project",
  "rand 0.8.5",
- "rustc-hash 2.1.1",
- "serde 1.0.219",
+ "rustc-hash 2.1.0",
+ "serde",
  "serde_json",
  "thiserror",
  "tokio",
@@ -5852,7 +5817,6 @@ version = "0.24.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "55e363146da18e50ad2b51a0a7925fc423137a0b1371af8235b1c231a0647328"
 dependencies = [
- "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures-util",
  "http 1.1.0",
  "http-body 1.0.0",
@@ -8953,7 +8917,7 @@ dependencies = [
  "pin-project-lite",
  "quinn-proto",
  "quinn-udp",
- "rustc-hash 2.1.1",
+ "rustc-hash 2.1.0",
  "rustls 0.23.25",
  "socket2",
  "thiserror",
@@ -8970,7 +8934,7 @@ dependencies = [
  "bytes",
  "rand 0.8.5",
  "ring 0.17.8",
- "rustc-hash 2.1.1",
+ "rustc-hash 2.1.0",
  "rustls 0.23.25",
  "slab",
  "thiserror",
@@ -10084,7 +10048,7 @@ dependencies = [
 name = "rooch-notify"
 version = "0.9.0"
 dependencies = [
- "anyhow 1.0.95",
+ "anyhow 1.0.93 (registry+https://github.com/rust-lang/crates.io-index)",
  "async-trait",
  "coerce",
  "futures",
@@ -10092,11 +10056,11 @@ dependencies = [
  "move-core-types",
  "moveos-eventbus",
  "moveos-types",
- "parking_lot 0.12.3",
+ "parking_lot",
  "prometheus",
  "rooch-rpc-api",
  "rooch-types",
- "serde 1.0.219",
+ "serde",
  "tokio",
  "tokio-stream",
  "tracing",
@@ -10380,7 +10344,7 @@ dependencies = [
  "rooch-sequencer",
  "rooch-store",
  "rooch-types",
- "serde 1.0.219",
+ "serde",
  "serde_json",
  "tokio",
  "tower 0.5.2",
@@ -12141,8 +12105,7 @@ version = "3.19.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7437ac7763b9b123ccf33c338a5cc1bac6f69b45a136c19bdd8a65e3916435bf"
 dependencies = [
- "cfg-if",
- "fastrand 2.1.1",
+ "fastrand",
  "getrandom 0.3.1",
  "once_cell",
  "rustix 1.0.2",

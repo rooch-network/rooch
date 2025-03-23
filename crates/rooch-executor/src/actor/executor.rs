@@ -28,7 +28,6 @@ use moveos_types::state_resolver::RootObjectResolver;
 use moveos_types::transaction::{FunctionCall, MoveOSTransaction, VerifiedMoveAction};
 use moveos_types::transaction::{MoveAction, VerifiedMoveOSTransaction};
 use prometheus::Registry;
-use rooch_genesis::FrameworksGasParameters;
 use rooch_notify::actor::NotifyActor;
 use rooch_notify::event::GasUpgradeEvent;
 use rooch_notify::messages::{GasUpgradeMessage, NotifyActorSubscribeMessage};

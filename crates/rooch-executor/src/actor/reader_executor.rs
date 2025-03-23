@@ -27,7 +27,6 @@ use moveos_types::state::{AnnotatedState, ObjectState, StateChangeSetExt};
 use moveos_types::state_resolver::RootObjectResolver;
 use moveos_types::state_resolver::{AnnotatedStateKV, AnnotatedStateReader, StateKV, StateReader};
 use moveos_types::transaction::TransactionExecutionInfo;
-use rooch_genesis::FrameworksGasParameters;
 use rooch_notify::actor::NotifyActor;
 use rooch_notify::event::GasUpgradeEvent;
 use rooch_notify::messages::NotifyActorSubscribeMessage;
