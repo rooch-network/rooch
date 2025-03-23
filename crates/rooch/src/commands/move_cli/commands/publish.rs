@@ -169,6 +169,10 @@ pub struct Publish {
     /// Run the DryRun for this transaction
     #[clap(long, default_value = "false")]
     dry_run: bool,
+
+    /// Skip the client side compatibility check
+    #[clap(long, default_value = "false")]
+    skip_client_compat_check: bool,
 }
 
 #[async_trait]
@@ -253,7 +257,7 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
         resolver.download(all_module_ids)?;
         moveos_verifier::verifier::verify_modules(&sorted_modules, &resolver)?;
         let old_modules = resolver.get_modules(&pkg_address)?;
-        if !old_modules.is_empty() {
+        if !old_modules.is_empty() && !self.skip_client_compat_check {
             releaser::check_modules_compat(sorted_modules, old_modules, true)?;
         }
 
