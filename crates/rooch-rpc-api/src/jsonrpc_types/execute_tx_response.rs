@@ -216,6 +216,8 @@ impl From<TransactionOutput> for TransactionOutputView {
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct RawTransactionOutputView {
+    pub tx_hash: H256View,
+    pub state_root: H256View,
     pub status: KeptVMStatusView,
     pub gas_used: StrView<u64>,
     pub is_upgrade: bool,
@@ -256,8 +258,8 @@ impl From<DryRunTransactionResponseView> for ExecuteTransactionResponseView {
                 u64::MIN,
             ),
             execution_info: TransactionExecutionInfoView::new(
-                H256::random(),
-                H256::random(),
+                response.raw_output.tx_hash.into(),
+                response.raw_output.state_root.into(),
                 H256::random(),
                 response.raw_output.gas_used,
                 response.raw_output.status.clone(),

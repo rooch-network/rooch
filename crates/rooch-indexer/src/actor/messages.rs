@@ -9,6 +9,7 @@ use moveos_types::moveos_std::tx_context::TxContext;
 use moveos_types::state::{StateChangeSet, StateChangeSetExt};
 use moveos_types::transaction::{MoveAction, TransactionExecutionInfo, VerifiedMoveOSTransaction};
 use rooch_types::indexer::event::{EventFilter, IndexerEvent, IndexerEventID};
+use rooch_types::indexer::field::{FieldFilter, IndexerField};
 use rooch_types::indexer::state::{
     IndexerObjectState, IndexerObjectStateChangeSet, IndexerStateID, ObjectStateFilter,
     ObjectStateType,
@@ -160,4 +161,17 @@ pub struct IndexerRevertMessage {
 
 impl Message for IndexerRevertMessage {
     type Result = Result<()>;
+}
+
+/// Query Indexer Fields Message
+#[derive(Debug, Serialize, Deserialize)]
+pub struct QueryIndexerFieldsMessage {
+    pub filter: FieldFilter,
+    pub page: u64,
+    pub limit: usize,
+    pub descending_order: bool,
+}
+
+impl Message for QueryIndexerFieldsMessage {
+    type Result = Result<Vec<IndexerField>>;
 }

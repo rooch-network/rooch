@@ -100,7 +100,7 @@ rooch-rpc-server = { workspace = true }
 rooch-rpc-client = { workspace = true }
 rooch-integration-test-runner = { workspace = true }
 rooch-indexer = { workspace = true }
-rooch-event = { workspace = true }
+rooch-notify = { workspace = true }
 rooch-db = { workspace = true }
 rooch-pipeline-processor = { workspace = true }
 rooch-common = { workspace = true }

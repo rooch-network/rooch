@@ -12,7 +12,7 @@
       "name": "Apache-2.0",
       "url": "https://raw.githubusercontent.com/rooch-network/rooch/main/LICENSE"
     },
-    "version": "0.8.9"
+    "version": "0.9.0"
   },
   "methods": [
     {
@@ -661,6 +661,44 @@
       }
     },
     {
+      "name": "rooch_queryFields",
+      "description": "Query the fields indexer by field filter",
+      "params": [
+        {
+          "name": "filter",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/FieldFilterView"
+          }
+        },
+        {
+          "name": "page",
+          "schema": {
+            "$ref": "#/components/schemas/u64"
+          }
+        },
+        {
+          "name": "limit",
+          "schema": {
+            "$ref": "#/components/schemas/u64"
+          }
+        },
+        {
+          "name": "query_option",
+          "schema": {
+            "$ref": "#/components/schemas/QueryOptions"
+          }
+        }
+      ],
+      "result": {
+        "name": "FieldPageView",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/PageView_for_IndexerFieldView_and_u64"
+        }
+      }
+    },
+    {
       "name": "rooch_queryObjectStates",
       "description": "Query the object states indexer by state filter",
       "params": [
@@ -792,6 +830,62 @@
         "required": true,
         "schema": {
           "$ref": "#/components/schemas/Status"
+        }
+      }
+    },
+    {
+      "name": "rooch_subscribeEvents",
+      "tags": [
+        {
+          "name": "Websocket"
+        },
+        {
+          "name": "PubSub"
+        }
+      ],
+      "description": "Subscribe to a stream of event",
+      "params": [
+        {
+          "name": "filter",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/EventFilterView"
+          }
+        }
+      ],
+      "result": {
+        "name": "IndexerEventView",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/IndexerEventView"
+        }
+      }
+    },
+    {
+      "name": "rooch_subscribeTransactions",
+      "tags": [
+        {
+          "name": "Websocket"
+        },
+        {
+          "name": "PubSub"
+        }
+      ],
+      "description": "Subscribe to a stream of transaction with execution info",
+      "params": [
+        {
+          "name": "filter",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/TransactionFilterView"
+          }
+        }
+      ],
+      "result": {
+        "name": "TransactionWithInfoView",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/TransactionWithInfoView"
         }
       }
     },
@@ -1214,6 +1308,12 @@
       "EventFilterView": {
         "oneOf": [
           {
+            "type": "string",
+            "enum": [
+              "all"
+            ]
+          },
+          {
             "description": "Query by event type with sender",
             "type": "object",
             "required": [
@@ -1452,6 +1552,23 @@
           }
         }
       },
+      "FieldFilterView": {
+        "oneOf": [
+          {
+            "description": "Query by object ids.",
+            "type": "object",
+            "required": [
+              "object_id"
+            ],
+            "properties": {
+              "object_id": {
+                "$ref": "#/components/schemas/alloc::vec::Vec<moveos_types::moveos_std::object::ObjectID>"
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      },
       "FunctionCallView": {
         "type": "object",
         "required": [
@@ -1553,6 +1670,35 @@
           },
           "tx_hash": {
             "$ref": "#/components/schemas/primitive_types::H256"
+          }
+        }
+      },
+      "IndexerFieldView": {
+        "type": "object",
+        "required": [
+          "field_key",
+          "sort_key",
+          "state"
+        ],
+        "properties": {
+          "decoded_value": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AnnotatedMoveStructView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "field_key": {
+            "$ref": "#/components/schemas/moveos_types::state::FieldKey"
+          },
+          "sort_key": {
+            "type": "string"
+          },
+          "state": {
+            "$ref": "#/components/schemas/ObjectStateView"
           }
         }
       },
@@ -2715,6 +2861,35 @@
           }
         }
       },
+      "PageView_for_IndexerFieldView_and_u64": {
+        "description": "`next_cursor` points to the last item in the page; Reading with `next_cursor` will start from the next item after `next_cursor` if `next_cursor` is `Some`, otherwise it will start from the first item.",
+        "type": "object",
+        "required": [
+          "data",
+          "has_next_page"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IndexerFieldView"
+            }
+          },
+          "has_next_page": {
+            "type": "boolean"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/u64"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
       "PageView_for_IndexerObjectStateView_and_IndexerStateIDView": {
         "description": "`next_cursor` points to the last item in the page; Reading with `next_cursor` will start from the next item after `next_cursor` if `next_cursor` is `Some`, otherwise it will start from the first item.",
         "type": "object",
@@ -2915,7 +3090,9 @@
         "required": [
           "gas_used",
           "is_upgrade",
-          "status"
+          "state_root",
+          "status",
+          "tx_hash"
         ],
         "properties": {
           "gas_used": {
@@ -2924,8 +3101,14 @@
           "is_upgrade": {
             "type": "boolean"
           },
+          "state_root": {
+            "$ref": "#/components/schemas/primitive_types::H256"
+          },
           "status": {
             "$ref": "#/components/schemas/KeptVMStatusView"
+          },
+          "tx_hash": {
+            "$ref": "#/components/schemas/primitive_types::H256"
           }
         }
       },
@@ -3260,6 +3443,12 @@
       },
       "TransactionFilterView": {
         "oneOf": [
+          {
+            "type": "string",
+            "enum": [
+              "all"
+            ]
+          },
           {
             "description": "Query by sender address.",
             "type": "object",

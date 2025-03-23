@@ -27,10 +27,11 @@ use raw_store::traits::DBStore;
 use rooch_common::humanize::parse_bytes;
 use rooch_config::R_OPT_NET_HELP;
 use rooch_db::RoochDB;
-use rooch_event::actor::EventActor;
 use rooch_executor::actor::executor::ExecutorActor;
 use rooch_executor::actor::reader_executor::ReaderExecutorActor;
 use rooch_executor::proxy::ExecutorProxy;
+use rooch_notify::actor::NotifyActor;
+use rooch_notify::subscription_handler::SubscriptionHandler;
 use rooch_pipeline_processor::actor::processor::is_vm_panic_error;
 use rooch_pipeline_processor::actor::{load_tx_anomalies, TxAnomalies};
 use rooch_store::meta_store::SEQUENCER_INFO_KEY;
@@ -234,7 +235,11 @@ impl ExecCommand {
         )
         .await?;
 
-        let sequenced_tx_store = SequencedTxStore::new(rooch_db.rooch_store.clone())?;
+        let genesis_namespace = derive_builtin_genesis_namespace(self.chain_id)?;
+        let tx_anomalies = load_tx_anomalies(genesis_namespace)?;
+
+        let sequenced_tx_store =
+            SequencedTxStore::new(rooch_db.rooch_store.clone(), tx_anomalies.clone())?;
 
         let bitcoin_client_proxy = build_btc_client_proxy(
             self.btc_rpc_url.clone(),
@@ -267,9 +272,6 @@ impl ExecCommand {
             )?,
             _ => LedgerTxGetter::new(self.segment_dir.clone())?,
         };
-
-        let genesis_namespace = derive_builtin_genesis_namespace(self.chain_id)?;
-        let tx_anomalies = load_tx_anomalies(genesis_namespace)?;
 
         Ok(ExecInner {
             mode: self.mode,
@@ -440,7 +442,9 @@ impl ExecInner {
         };
         let mut next_tx_order = last_executed_tx_order + 1;
 
-        let last_sequenced_tx = self.sequenced_tx_store.get_last_tx_order();
+        let last_sequenced_tx = self
+            .sequenced_tx_store
+            .get_last_sequenced_tx_order_in_last_job();
         let next_sequence_tx = last_sequenced_tx + 1;
 
         let last_full_executed_tx_order = min(last_sequenced_tx, last_executed_tx_order);
@@ -710,15 +714,10 @@ impl ExecInner {
         let tx_hash = ledger_tx.tx_hash();
         let is_l2_tx = ledger_tx.data.is_l2_tx();
 
-        let exp_root_opt = self.tx_meta_store.get_exp_roots(tx_order).await;
-        let exp_state_root = exp_root_opt.map(|v| v.0);
-        let mut exp_accumulator_root = exp_root_opt.map(|v| v.1);
+        let exp_state_root = self.tx_meta_store.get_exp_state_root(tx_order).await;
 
         let mut bypass_execution = false;
         if let Some(tx_anomalies) = &self.tx_anomalies {
-            if tx_anomalies.is_dup_hash(&tx_hash) {
-                exp_accumulator_root = None;
-            }
             if tx_anomalies.is_no_execution_info(&tx_hash) {
                 bypass_execution = true;
             }
@@ -727,8 +726,7 @@ impl ExecInner {
         // it's okay to sequence tx before validation,
         // because in this case, all tx have been sequenced in Rooch Network.
         if self.mode.need_seq() {
-            self.sequenced_tx_store
-                .store_tx(ledger_tx.clone(), exp_accumulator_root)?;
+            self.sequenced_tx_store.save_tx(ledger_tx.clone())?;
         }
 
         if self.mode.need_exec() && !bypass_execution {
@@ -884,9 +882,12 @@ async fn build_executor_and_store(
     let (rooch_store, moveos_store) = (rooch_db.rooch_store.clone(), rooch_db.moveos_store.clone());
 
     let event_bus = EventBus::new();
-    let event_actor = EventActor::new(event_bus.clone());
-    let event_actor_ref = event_actor
-        .into_actor(Some("EventActor"), actor_system)
+    let subscription_handle = Arc::new(SubscriptionHandler::new(
+        &registry_service.default_registry(),
+    ));
+    let notify_actor = NotifyActor::new(event_bus.clone(), subscription_handle);
+    let notify_actor_ref = notify_actor
+        .into_actor(Some("NotifyActor"), actor_system)
         .await?;
 
     let executor_actor = ExecutorActor::new(
@@ -894,7 +895,7 @@ async fn build_executor_and_store(
         moveos_store.clone(),
         rooch_store.clone(),
         &registry_service.default_registry(),
-        Some(event_actor_ref.clone()),
+        Some(notify_actor_ref.clone()),
     )?;
 
     let executor_actor_ref = executor_actor

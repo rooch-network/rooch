@@ -31,6 +31,7 @@ pub mod batch;
 
 pub const DEFAULT_COLUMN_FAMILY_NAME: ColumnFamilyName = "default";
 pub const RES_FDS: u64 = 4096;
+const DEFAULT_ESTIMATED_ENTRY_CHARGE_SIZE: usize = 4200;
 
 #[allow(clippy::upper_case_acronyms)]
 pub struct RocksDB {
@@ -122,7 +123,10 @@ impl RocksDB {
         table_opts.set_pin_top_level_index_and_filter(true);
         table_opts.set_pin_l0_filter_and_index_blocks_in_cache(true);
 
-        let cache = Cache::new_lru_cache(rocksdb_config.block_cache_size as usize);
+        let cache = Cache::new_hyper_clock_cache(
+            rocksdb_config.block_cache_size as usize,
+            DEFAULT_ESTIMATED_ENTRY_CHARGE_SIZE,
+        );
         table_opts.set_block_cache(&cache);
         table_opts
     }
@@ -254,14 +258,13 @@ impl RocksDB {
         db_opts.set_bytes_per_sync(config.bytes_per_sync);
         db_opts.set_max_background_jobs(config.max_background_jobs as c_int);
         db_opts.set_max_write_buffer_number(config.max_write_buffer_numer as c_int);
-        let cache = Cache::new_lru_cache(config.row_cache_size as usize);
-        db_opts.set_row_cache(&cache);
         db_opts.set_enable_pipelined_write(true);
         db_opts.set_wal_recovery_mode(DBRecoveryMode::PointInTime); // for memtable crash recovery
         if config.enable_statistics {
             db_opts.enable_statistics();
             db_opts.set_statistics_level(statistics::StatsLevel::ExceptTimeForMutex);
         }
+
         db_opts
     }
     fn iter_with_direction<K, V>(
@@ -317,6 +320,12 @@ impl RocksDB {
         } else {
             Self::non_sync_write_options()
         }
+    }
+
+    fn get_no_cache_options() -> ReadOptions {
+        let mut opts = ReadOptions::default();
+        opts.fill_cache(false);
+        opts
     }
 
     pub fn property_int_value_cf(
@@ -429,6 +438,13 @@ impl DBStore for RocksDB {
             _ => Ok(false),
         }
     }
+
+    fn may_contains_key(&self, cf_name: &str, key: &[u8]) -> Result<bool> {
+        let cf_handle = self.get_cf_handle(cf_name);
+        let may_exist = self.db.key_may_exist_cf(&cf_handle, key);
+        Ok(may_exist)
+    }
+
     fn remove(&self, cf_name: &str, key: Vec<u8>) -> Result<()> {
         let cf_handle = self.get_cf_handle(cf_name);
         self.db.delete_cf(&cf_handle, key)?;
@@ -489,7 +505,9 @@ impl DBStore for RocksDB {
             .map(|(key, handle)| (handle, key.as_slice()))
             .collect::<Vec<_>>();
 
-        let result = self.db.multi_get_cf(keys_multi);
+        let result = self
+            .db
+            .multi_get_cf_opt(keys_multi, &Self::get_no_cache_options());
         let mut res = vec![];
         for item in result {
             let item = item?;

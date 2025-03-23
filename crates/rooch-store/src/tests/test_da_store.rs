@@ -47,6 +47,9 @@ async fn get_submitting_blocks() {
     assert_eq!(submitting_blocks[0].block_number, 1);
     assert_eq!(submitting_blocks[0].tx_order_start, 7);
     assert_eq!(submitting_blocks[0].tx_order_end, 7);
+
+    let submitting_blocks = da_meta_store.get_submitting_blocks(2, Some(1)).unwrap();
+    assert_eq!(submitting_blocks.len(), 0);
 }
 
 #[tokio::test]

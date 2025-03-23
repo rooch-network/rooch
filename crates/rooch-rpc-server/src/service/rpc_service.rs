@@ -1,9 +1,13 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::{format_err, Result};
+use anyhow::{bail, format_err, Result};
 use bitcoin_client::proxy::BitcoinClientProxy;
 use bitcoincore_rpc::bitcoin::Txid;
+use futures::{Stream, StreamExt};
+use jsonrpsee::core::SubscriptionResult;
+use jsonrpsee::PendingSubscriptionSink;
+use metrics::spawn_monitored_task;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::{ModuleId, StructTag};
 use moveos_types::access_path::AccessPath;
@@ -21,7 +25,11 @@ use rooch_da::proxy::DAServerProxy;
 use rooch_executor::actor::messages::DryRunTransactionResult;
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_indexer::proxy::IndexerProxy;
+use rooch_notify::subscription_handler::SubscriptionHandler;
 use rooch_pipeline_processor::proxy::PipelineProcessorProxy;
+use rooch_rpc_api::jsonrpc_types::event_view::EventFilterView;
+use rooch_rpc_api::jsonrpc_types::field_view::IndexerFieldView;
+use rooch_rpc_api::jsonrpc_types::transaction_view::TransactionFilterView;
 use rooch_rpc_api::jsonrpc_types::{
     BitcoinStatus, DisplayFieldsView, IndexerObjectStateView, ObjectMetaView, RoochStatus, Status,
 };
@@ -33,6 +41,7 @@ use rooch_types::framework::address_mapping::RoochToBitcoinAddressMapping;
 use rooch_types::indexer::event::{
     AnnotatedIndexerEvent, EventFilter, IndexerEvent, IndexerEventID,
 };
+use rooch_types::indexer::field::{FieldFilter, IndexerField};
 use rooch_types::indexer::state::{
     IndexerObjectState, IndexerStateID, ObjectStateFilter, ObjectStateType, INSCRIPTION_TYPE_TAG,
     UTXO_TYPE_TAG,
@@ -43,7 +52,51 @@ use rooch_types::state::{StateChangeSetWithTxOrder, SyncStateFilter};
 use rooch_types::transaction::{
     ExecuteTransactionResponse, LedgerTransaction, RoochTransaction, RoochTransactionData,
 };
+use serde::Serialize;
 use std::collections::{BTreeMap, HashMap};
+use std::sync::Arc;
+use tokio::sync::{OwnedSemaphorePermit, Semaphore};
+
+pub fn spawn_subscription<S, T>(
+    sink: PendingSubscriptionSink,
+    mut rx: S,
+    permit: Option<OwnedSemaphorePermit>,
+) where
+    S: Stream<Item = T> + Unpin + Send + 'static,
+    T: Serialize + Send,
+{
+    spawn_monitored_task!(async move {
+        let Ok(sink) = sink.accept().await else {
+            return;
+        };
+        let _permit = permit;
+
+        while let Some(item) = rx.next().await {
+            let Ok(message) = jsonrpsee::server::SubscriptionMessage::from_json(&item) else {
+                break;
+            };
+            let Ok(()) = sink.send(message).await else {
+                break;
+            };
+        }
+
+        //         match sink.pipe_from_stream(rx).await {
+        //             SubscriptionClosed::Success => {
+        //                 debug!("Subscription completed.");
+        //                 sink.close(SubscriptionClosed::Success);
+        //             }
+        //             SubscriptionClosed::RemotePeerAborted => {
+        //                 debug!("Subscription aborted by remote peer.");
+        //                 sink.close(SubscriptionClosed::RemotePeerAborted);
+        //             }
+        //             SubscriptionClosed::Failed(err) => {
+        //                 debug!("Subscription failed: {err:?}");
+        //                 sink.close(err);
+        //             }
+        //         };
+    });
+}
+const DEFAULT_MAX_SUBSCRIPTIONS: usize = 100;
 
 /// RpcService is the implementation of the RPC service.
 /// It is the glue between the RPC server(EthAPIServer,RoochApiServer) and the rooch's actors.
@@ -58,6 +111,9 @@ pub struct RpcService {
     pub(crate) pipeline_processor: PipelineProcessorProxy,
     pub(crate) bitcoin_client: Option<BitcoinClientProxy>,
     pub(crate) da_server: DAServerProxy,
+    // pub(crate) notify: NotifyProxy,
+    pub(crate) subscription_handler: Arc<SubscriptionHandler>,
+    pub(crate) subscription_semaphore: Arc<Semaphore>,
 }
 
 impl RpcService {
@@ -70,7 +126,10 @@ impl RpcService {
         pipeline_processor: PipelineProcessorProxy,
         bitcoin_client: Option<BitcoinClientProxy>,
         da_server: DAServerProxy,
+        subscription_handler: Arc<SubscriptionHandler>,
+        max_subscriptions: Option<usize>,
     ) -> Self {
+        let max_subscriptions = max_subscriptions.unwrap_or(DEFAULT_MAX_SUBSCRIPTIONS);
         Self {
             chain_id,
             bitcoin_network,
@@ -80,6 +139,8 @@ impl RpcService {
             pipeline_processor,
             bitcoin_client,
             da_server,
+            subscription_handler,
+            subscription_semaphore: Arc::new(Semaphore::new(max_subscriptions)),
         }
     }
 }
@@ -836,5 +897,107 @@ impl RpcService {
             rooch_status,
             bitcoin_status,
         })
+    }
+
+    pub async fn query_fields(
+        &self,
+        filter: FieldFilter,
+        page: u64,
+        limit: usize,
+        descending_order: bool,
+        decode: bool,
+    ) -> Result<(Vec<IndexerField>, Vec<IndexerFieldView>)> {
+        match filter.clone() {
+            FieldFilter::ObjectId(object_ids) => {
+                if object_ids.len() > MAX_OBJECT_IDS_PER_QUERY {
+                    return Err(anyhow::anyhow!(
+                        "Too many object IDs requested. Maximum allowed: {}",
+                        MAX_OBJECT_IDS_PER_QUERY
+                    ));
+                }
+            }
+        };
+        let fields = self
+            .indexer
+            .query_fields(filter, page, limit, descending_order)
+            .await?;
+
+        let fields_ids = fields
+            .iter()
+            .map(|m| m.metadata.id.clone())
+            .collect::<Vec<_>>();
+        let access_path = AccessPath::objects(fields_ids.clone());
+        let result = if decode {
+            let annotated_states = self.get_annotated_states(access_path, None).await?;
+            annotated_states
+                .into_iter()
+                .zip(fields.clone())
+                .filter_map(|(state_opt, field)| {
+                    match state_opt {
+                        Some(state) => {
+                            Some(IndexerFieldView::new_from_annotated_state(field, state))
+                        }
+                        None => {
+                            // Sometimes the indexer is delayed, maybe the field object is deleted in the state
+                            tracing::trace!(
+                                "Field object {} in the indexer but can not found in state",
+                                field.metadata.id.to_string()
+                            );
+                            None
+                        }
+                    }
+                })
+                .collect::<Vec<_>>()
+        } else {
+            let states = self.get_states(access_path, None).await?;
+            states
+                .into_iter()
+                .zip(fields.clone())
+                .filter_map(|(state_opt, field)| {
+                    match state_opt {
+                        Some(state) => Some(IndexerFieldView::new_from_state(field, state)),
+                        None => {
+                            // Sometimes the indexer is delayed, maybe the field object is deleted in the state
+                            tracing::trace!(
+                                "Field object {} in the indexer but can not found in state",
+                                field.metadata.id.to_string()
+                            );
+                            None
+                        }
+                    }
+                })
+                .collect::<Vec<_>>()
+        };
+
+        Ok((fields, result))
+    }
+
+    fn acquire_subscribe_permit(&self) -> anyhow::Result<OwnedSemaphorePermit> {
+        match self.subscription_semaphore.clone().try_acquire_owned() {
+            Ok(p) => Ok(p),
+            Err(_) => bail!("Resources exhausted"),
+        }
+    }
+
+    pub fn subscribe_events(
+        &self,
+        sink: PendingSubscriptionSink,
+        filter: EventFilterView,
+    ) -> SubscriptionResult {
+        let permit = self.acquire_subscribe_permit()?;
+        let stream = self.subscription_handler.subscribe_events(filter);
+        spawn_subscription(sink, stream, Some(permit));
+        Ok(())
+    }
+
+    pub fn subscribe_transactions(
+        &self,
+        sink: PendingSubscriptionSink,
+        filter: TransactionFilterView,
+    ) -> SubscriptionResult {
+        let permit = self.acquire_subscribe_permit()?;
+        let stream = self.subscription_handler.subscribe_transactions(filter);
+        spawn_subscription(sink, stream, Some(permit));
+        Ok(())
     }
 }

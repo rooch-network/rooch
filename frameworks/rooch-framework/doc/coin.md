@@ -21,14 +21,19 @@ This module provides the foundation for typesafe Coins.
 -  [Function `coin_info_id`](#0x3_coin_coin_info_id)
 -  [Function `name`](#0x3_coin_name)
 -  [Function `name_by_type`](#0x3_coin_name_by_type)
+-  [Function `name_by_type_name`](#0x3_coin_name_by_type_name)
 -  [Function `symbol`](#0x3_coin_symbol)
 -  [Function `symbol_by_type`](#0x3_coin_symbol_by_type)
+-  [Function `symbol_by_type_name`](#0x3_coin_symbol_by_type_name)
 -  [Function `decimals`](#0x3_coin_decimals)
 -  [Function `decimals_by_type`](#0x3_coin_decimals_by_type)
+-  [Function `decimals_by_type_name`](#0x3_coin_decimals_by_type_name)
 -  [Function `supply`](#0x3_coin_supply)
 -  [Function `supply_by_type`](#0x3_coin_supply_by_type)
+-  [Function `supply_by_type_name`](#0x3_coin_supply_by_type_name)
 -  [Function `icon_url`](#0x3_coin_icon_url)
 -  [Function `icon_url_by_type`](#0x3_coin_icon_url_by_type)
+-  [Function `icon_url_by_type_name`](#0x3_coin_icon_url_by_type_name)
 -  [Function `is_same_coin`](#0x3_coin_is_same_coin)
 -  [Function `destroy_zero`](#0x3_coin_destroy_zero)
 -  [Function `extract`](#0x3_coin_extract)
@@ -37,6 +42,7 @@ This module provides the foundation for typesafe Coins.
 -  [Function `value`](#0x3_coin_value)
 -  [Function `zero`](#0x3_coin_zero)
 -  [Function `coin_info`](#0x3_coin_coin_info)
+-  [Function `get_coin_info_by_type_name`](#0x3_coin_get_coin_info_by_type_name)
 -  [Function `upsert_icon_url`](#0x3_coin_upsert_icon_url)
 -  [Function `register_extend`](#0x3_coin_register_extend)
 -  [Function `init_metadata`](#0x3_coin_init_metadata)
@@ -381,6 +387,18 @@ Returns the name of the coin by the type <code>CoinType</code>
 
 
 
+<a name="0x3_coin_name_by_type_name"></a>
+
+## Function `name_by_type_name`
+
+Returns the name of the coin by the coin type name
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_name_by_type_name">name_by_type_name</a>(coin_type_name: &<a href="_String">string::String</a>): <a href="_String">string::String</a>
+</code></pre>
+
+
+
 <a name="0x3_coin_symbol"></a>
 
 ## Function `symbol`
@@ -401,6 +419,18 @@ Returns the symbol of the coin by the type <code>CoinType</code>
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_symbol_by_type">symbol_by_type</a>&lt;CoinType: key&gt;(): <a href="_String">string::String</a>
+</code></pre>
+
+
+
+<a name="0x3_coin_symbol_by_type_name"></a>
+
+## Function `symbol_by_type_name`
+
+Returns the symbol of the coin by the coin type name
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_symbol_by_type_name">symbol_by_type_name</a>(coin_type_name: &<a href="_String">string::String</a>): <a href="_String">string::String</a>
 </code></pre>
 
 
@@ -431,6 +461,18 @@ Returns the decimals of the coin by the type <code>CoinType</code>
 
 
 
+<a name="0x3_coin_decimals_by_type_name"></a>
+
+## Function `decimals_by_type_name`
+
+Returns the decimals of the coin by the coin type name
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_decimals_by_type_name">decimals_by_type_name</a>(coin_type_name: &<a href="_String">string::String</a>): u8
+</code></pre>
+
+
+
 <a name="0x3_coin_supply"></a>
 
 ## Function `supply`
@@ -455,6 +497,18 @@ Returns the amount of coin in existence by the type <code>CoinType</code>
 
 
 
+<a name="0x3_coin_supply_by_type_name"></a>
+
+## Function `supply_by_type_name`
+
+Returns the amount of coin in existence by the coin type name
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_supply_by_type_name">supply_by_type_name</a>(coin_type_name: &<a href="_String">string::String</a>): <a href="">u256</a>
+</code></pre>
+
+
+
 <a name="0x3_coin_icon_url"></a>
 
 ## Function `icon_url`
@@ -475,6 +529,18 @@ Returns the icon url of coin by the type <code>CoinType</code>
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_icon_url_by_type">icon_url_by_type</a>&lt;CoinType: key&gt;(): <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;
+</code></pre>
+
+
+
+<a name="0x3_coin_icon_url_by_type_name"></a>
+
+## Function `icon_url_by_type_name`
+
+Returns the icon url of the coin by the coin type name
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_icon_url_by_type_name">icon_url_by_type_name</a>(coin_type_name: &<a href="_String">string::String</a>): <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;
 </code></pre>
 
 
@@ -573,6 +639,17 @@ Borrow the CoinInfo<CoinType>
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_coin_info">coin_info</a>&lt;CoinType: key&gt;(): &<a href="coin.md#0x3_coin_CoinInfo">coin::CoinInfo</a>&lt;CoinType&gt;
+</code></pre>
+
+
+
+<a name="0x3_coin_get_coin_info_by_type_name"></a>
+
+## Function `get_coin_info_by_type_name`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_get_coin_info_by_type_name">get_coin_info_by_type_name</a>(coin_type_name: &<a href="_String">string::String</a>): <a href="_Option">option::Option</a>&lt;<a href="_ObjectID">object::ObjectID</a>&gt;
 </code></pre>
 
 

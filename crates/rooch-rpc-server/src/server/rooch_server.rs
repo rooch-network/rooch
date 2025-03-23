@@ -4,7 +4,8 @@
 use crate::service::aggregate_service::AggregateService;
 use crate::service::rpc_service::RpcService;
 use anyhow::Result;
-use jsonrpsee::{core::async_trait, RpcModule};
+use jsonrpsee::core::SubscriptionResult;
+use jsonrpsee::{core::async_trait, PendingSubscriptionSink, RpcModule};
 use move_core_types::{
     account_address::AccountAddress, identifier::Identifier, language_storage::ModuleId,
 };
@@ -16,12 +17,13 @@ use moveos_types::{
     state::{AnnotatedState, FieldKey},
 };
 use rooch_rpc_api::api::MAX_INTERNAL_LIMIT_USIZE;
+use rooch_rpc_api::jsonrpc_types::field_view::FieldFilterView;
 use rooch_rpc_api::jsonrpc_types::{
     account_view::BalanceInfoView,
     event_view::{EventFilterView, EventView, IndexerEventIDView, IndexerEventView},
     transaction_view::{TransactionFilterView, TransactionWithInfoView},
     AccessPathView, BalanceInfoPageView, DryRunTransactionResponseView, EventOptions,
-    EventPageView, ExecuteTransactionResponseView, FunctionCallView, H256View,
+    EventPageView, ExecuteTransactionResponseView, FieldPageView, FunctionCallView, H256View,
     IndexerEventPageView, IndexerObjectStatePageView, IndexerStateIDView, ModuleABIView,
     ObjectIDVecView, ObjectStateFilterView, ObjectStateView, QueryOptions,
     RawTransactionOutputView, RoochAddressView, StateChangeSetPageView,
@@ -43,7 +45,7 @@ use rooch_rpc_api::{
 };
 use rooch_types::indexer::state::{IndexerStateID, ObjectStateType};
 use rooch_types::transaction::{RoochTransaction, RoochTransactionData, TransactionWithInfo};
-use std::cmp::min;
+use std::cmp::{max, min};
 use std::str::FromStr;
 use tracing::{debug, info};
 
@@ -169,9 +171,12 @@ impl RoochAPIServer for RoochServer {
 
     async fn dry_run(&self, payload: BytesView) -> RpcResult<DryRunTransactionResponseView> {
         let tx = bcs::from_bytes::<RoochTransactionData>(&payload.0)?;
+        let tx_hash = tx.tx_hash();
         let tx_result = self.rpc_service.dry_run_tx(tx).await?;
         let raw_output = tx_result.raw_output;
         let raw_output_view = RawTransactionOutputView {
+            tx_hash: tx_hash.into(),
+            state_root: raw_output.changeset.state_root.into(),
             status: raw_output.status.into(),
             gas_used: raw_output.gas_used.into(),
             is_upgrade: raw_output.is_upgrade,
@@ -789,6 +794,55 @@ impl RoochAPIServer for RoochServer {
         })
     }
 
+    async fn query_fields(
+        &self,
+        filter: FieldFilterView,
+        page: Option<StrView<u64>>,
+        limit: Option<StrView<u64>>,
+        query_option: Option<QueryOptions>,
+    ) -> RpcResult<FieldPageView> {
+        let page_of = max(page.map(Into::into).unwrap_or(1), 1u64);
+        let limit_of = min(
+            limit.map(Into::into).unwrap_or(DEFAULT_RESULT_LIMIT_USIZE),
+            MAX_RESULT_LIMIT_USIZE,
+        );
+        let query_option = query_option.unwrap_or_default();
+        let descending_order = query_option.descending;
+        let decode = query_option.decode;
+
+        let (fields, mut fields_view) = self
+            .rpc_service
+            .query_fields(
+                filter.into(),
+                page_of,
+                limit_of + 1,
+                descending_order,
+                decode,
+            )
+            .await?;
+
+        let has_next_page = fields.len() > limit_of;
+        // Solve the pagation consistency problem after indexer data filtering
+        if fields_view.len() >= fields.len() {
+            fields_view.truncate(limit_of);
+        }
+
+        let next_page_check = if has_next_page {
+            page_of.checked_add(1).ok_or(RpcError::UnexpectedError(
+                "next page value is overflow".to_string(),
+            ))?
+        } else {
+            page_of
+        };
+        let next_cursor = Some(StrView(next_page_check));
+
+        Ok(FieldPageView {
+            data: fields_view,
+            next_cursor,
+            has_next_page,
+        })
+    }
+
     async fn repair_indexer(
         &self,
         repair_type: RepairIndexerTypeView,
@@ -902,6 +956,24 @@ impl RoochAPIServer for RoochServer {
         data.truncate(limit_of as usize);
 
         Ok(data)
+    }
+
+    fn subscribe_events(
+        &self,
+        sink: PendingSubscriptionSink,
+        filter: EventFilterView,
+    ) -> SubscriptionResult {
+        self.rpc_service.subscribe_events(sink, filter)?;
+        Ok(())
+    }
+
+    fn subscribe_transactions(
+        &self,
+        sink: PendingSubscriptionSink,
+        filter: TransactionFilterView,
+    ) -> SubscriptionResult {
+        self.rpc_service.subscribe_transactions(sink, filter)?;
+        Ok(())
     }
 }
 

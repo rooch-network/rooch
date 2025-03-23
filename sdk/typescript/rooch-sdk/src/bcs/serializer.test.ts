@@ -5,6 +5,7 @@ import { describe, it, expect } from 'vitest'
 
 import { StructTag, TypeTag } from './types.js'
 import { Serializer } from './serializer.js'
+import { RoochAddress } from '../address/rooch.js'
 
 describe('Serializer', () => {
   it('struct tag to string with no type params', () => {
@@ -86,7 +87,7 @@ describe('Serializer', () => {
     expect(resultObjectID).toBe(expectObjectID)
   })
 
-  it('test_account_named_object_id', () => {
+  it('test named object id with type params', () => {
     const testData: StructTag = {
       address: '0x3',
       module: 'coin_store',
@@ -104,6 +105,28 @@ describe('Serializer', () => {
     }
     const expectObjectID = '0xfdda11f9cc18bb30973779eb3610329d7e0e3c6ecce05b4d77b5a839063bff66'
     const resultObjectID = Serializer.structTagToObjectID(testData)
+    expect(resultObjectID).toBe(expectObjectID)
+  })
+
+  it('test named object id with type params', () => {
+    const address = new RoochAddress('0x42')
+    const testData: StructTag = {
+      address: '0x3',
+      module: 'coin_store',
+      name: 'CoinStore',
+      typeParams: [
+        {
+          Struct: {
+            address: '0x3',
+            module: 'gas_coin',
+            name: 'RGas',
+            typeParams: [],
+          },
+        },
+      ],
+    }
+    const expectObjectID = '0x562409111a2ca55814e56eb42186470c4adda4a04a4a84140690f4d68e8e1c06'
+    const resultObjectID = Serializer.accountNamedObjectID(address, testData)
     expect(resultObjectID).toBe(expectObjectID)
   })
 })

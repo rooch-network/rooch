@@ -35,6 +35,8 @@ move-core-types = { workspace = true }
 moveos-config = { workspace = true }
 moveos-types = { workspace = true }
 metrics = { workspace = true }
+moveos-store = { workspace = true }
 
 rooch-types = { workspace = true }
 rooch-config = { workspace = true }
+rooch-notify = { workspace = true }

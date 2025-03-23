@@ -1,14 +1,9 @@
-inputs:
-  GIT_CREDENTIALS:
-    description: "Optional credentials to pass to git"
-    required: false
-
 runs:
   using: composite
   steps:
     - run: sudo apt-get update && sudo apt-get install ca-certificates gcc libc6-dev build-essential libsqlite3-dev libprotobuf-dev protobuf-compiler wget cmake make clang g++ libsnappy-dev llvm libclang-dev curl git libpq-dev libssl-dev pkg-config lsof lld --no-install-recommends --assume-yes
       shell: bash
 
-    - uses: dtolnay/rust-toolchain@1.78.0
+    - uses: dtolnay/rust-toolchain@1.82.0
       with:
         components: rustfmt, clippy

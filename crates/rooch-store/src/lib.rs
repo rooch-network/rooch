@@ -215,9 +215,9 @@ impl RoochStore {
         }
 
         // exec or not, DA will exec repair automatically because there won't be external dependencies for repair DA meta
-        let (da_issues, da_fixed) = self
-            .da_meta_store
-            .try_repair_da_meta(exp_last_order, thorough)?;
+        let (da_issues, da_fixed) =
+            self.da_meta_store
+                .try_repair_da_meta(exp_last_order, thorough, None)?;
         info!("DA repair done, issues: {}, fixed: {}", da_issues, da_fixed);
         issues += da_issues;
         fixed += da_fixed;
@@ -349,9 +349,14 @@ impl StateStore for RoochStore {
 }
 
 impl DAMetaStore for RoochStore {
-    fn try_repair_da_meta(&self, last_order: u64, thorough: bool) -> Result<(usize, usize)> {
+    fn try_repair_da_meta(
+        &self,
+        last_order: u64,
+        thorough: bool,
+        da_min_block_to_submit: Option<u128>,
+    ) -> Result<(usize, usize)> {
         self.get_da_meta_store()
-            .try_repair_da_meta(last_order, thorough)
+            .try_repair_da_meta(last_order, thorough, da_min_block_to_submit)
     }
 
     fn append_submitting_block(&self, tx_order_start: u64, tx_order_end: u64) -> Result<u128> {

@@ -52,6 +52,14 @@ module moveos_std::json{
     use std::vector;
     #[test_only]
     use std::string;
+    #[test_only]
+    use moveos_std::decimal_value;
+    #[test_only]
+    use moveos_std::decimal_value::DecimalValue;
+    #[test_only]
+    use moveos_std::object;
+    #[test_only]
+    use moveos_std::object::ObjectID;
 
     #[test_only]
     #[data_struct]
@@ -72,7 +80,7 @@ module moveos_std::json{
 
     #[test]
     fun test_from_json() {
-        let json_str = b"{\"balance\": \"170141183460469231731687303715884105728\",\"utf8_string\":\"rooch.network\",\"age\":30,\"inner\":{\"value\":100},\"bytes\":[3,3,2,1],\"inner_array\":[{\"value\":101}],\"account\":\"0x42\"}";
+        let json_str = b"{\"balance\": \"170141183460469231731687303715884105728\",\"utf8_string\":\"rooch.network\",\"age\":30,\"inner\":{\"value\":100},\"bytes\":[3,3,2,1],\"inner_array\":[{\"value\":101}],\"account\":\"rooch1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqppq6exstd\"}";
         let obj = from_json<Test>(json_str);
         
         assert!(obj.balance == 170141183460469231731687303715884105728u128, 1);
@@ -140,11 +148,6 @@ module moveos_std::json{
         let u128_json = to_json(&u128_value);
         assert!(string::utf8(u128_json) == string::utf8(b"\"340282366920938463463374607431768211455\""), 3);
 
-        // Test address
-        let address_value = @0x42;
-        let address_json = to_json(&address_value);
-        assert!(string::utf8(address_json) == string::utf8(b"\"0x42\""), 4);
-
         // Test String
         let string_value = string::utf8(b"rooch.network");
         let string_json = to_json(&string_value);
@@ -171,8 +174,19 @@ module moveos_std::json{
     }
 
     #[test_only]
-    struct SimpleStruct has copy, drop {
+    struct SimpleStruct has copy, drop, store {
         value: u64
+    }
+
+    #[test_only]
+    struct TestStruct has key {
+        count: u64,
+    }
+
+    #[test_only]
+    #[data_struct]
+    struct TestAddressStruct has key,copy,drop {
+        addr: address,
     }
 
     #[test]
@@ -255,6 +269,108 @@ module moveos_std::json{
         assert!(simple_map::borrow(&map, &string::utf8(b"inner")) == &string::utf8(b"{\"value\":100}"), 4);
         assert!(simple_map::borrow(&map, &string::utf8(b"bytes")) == &string::utf8(b"[]"), 5);
         assert!(simple_map::borrow(&map, &string::utf8(b"inner_array")) == &string::utf8(b"[{\"value\":101}]"), 6);
-        assert!(simple_map::borrow(&map, &string::utf8(b"account")) == &string::utf8(b"0x42"), 7);
+        // rooch1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqppq6exstd is the bech32 address of 0x42
+        assert!(simple_map::borrow(&map, &string::utf8(b"account")) == &string::utf8(b"rooch1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqppq6exstd"), 7);
+    }
+
+    #[test]
+    fun test_json_object() {
+        let root_object_id = object::new_object_id_for_test(vector[]);
+        let parent_id = SimpleStruct { value: 1 };
+        let id = SimpleStruct { value: 10 };
+        let parent_object_id = object::custom_object_id<SimpleStruct, TestStruct>(parent_id);
+        let object_id = object::custom_object_id_with_parent<SimpleStruct, TestStruct>(parent_object_id, id);
+
+        let root_object_id_json = to_json(&root_object_id);
+        let object_id_json = to_json(&object_id);
+        let parent_object_id_json = to_json(&parent_object_id);
+
+        let from_root_object_id = from_json<ObjectID>(root_object_id_json);
+        let from_object_id = from_json<ObjectID>(object_id_json);
+        let from_parent_object_id = from_json<ObjectID>(parent_object_id_json);
+        assert!(root_object_id == from_root_object_id, 1);
+        assert!(object_id == from_object_id, 2);
+        assert!(parent_object_id == from_parent_object_id, 3);
+        std::debug::print(&string::utf8(object_id_json));
+        std::debug::print(&string::utf8(parent_object_id_json));
+
+        // ensure object id to json result is consistent with ObjectID.tostring()
+        assert!(&string::utf8(object_id_json) == &string::utf8(b"\"0xa7afe75c4f3a7631191905601f4396b25dde044539807de65ed4fc7358dbd98e922b7bfcb1937ef58a03e80216493fff916d18cddc747b7a1fb93ce631ee9c62\""), 4);
+        assert!(&string::utf8(parent_object_id_json) == &string::utf8(b"\"0xa7afe75c4f3a7631191905601f4396b25dde044539807de65ed4fc7358dbd98e\""), 5);
+        let str_json = to_json(&string::utf8(b"abc"));
+        assert!(&string::utf8(str_json) == &string::utf8(b"\"abc\""), 6);
+    }
+
+    #[test]
+    fun test_json_decimal_value() {
+        // ("1.000000", DecimalValue { value: U256::from(1u64), decimal: 0 }),
+        let decimal_value = decimal_value::new(1000000, 6);
+        let decimal_value_json = to_json(&decimal_value);
+        //std::debug::print(&string::utf8(decimal_value_json));
+        let from_decimal_value = from_json<DecimalValue>(decimal_value_json);
+        //std::debug::print(&from_decimal_value);
+        assert!(decimal_value::is_equal(&decimal_value,&from_decimal_value), 1);
+
+        // ("1234.567", DecimalValue { value: U256::from(1234567u64), decimal: 3 }),
+        let decimal_value2 = decimal_value::new(1234567, 3);
+        let decimal_value_json2 = to_json(&decimal_value2);
+        let from_decimal_value2 = from_json<DecimalValue>(decimal_value_json2);
+        assert!(decimal_value2 == from_decimal_value2, 2);
+
+        // ("0.123", DecimalValue { value: U256::from(123u64), decimal: 3 }),
+        let decimal_value3 = decimal_value::new(123, 3);
+        let decimal_value_json3 = to_json(&decimal_value3);
+        let from_decimal_value3 = from_json<DecimalValue>(decimal_value_json3);
+        assert!(decimal_value3 == from_decimal_value3, 3);
+
+        // ("25", DecimalValue { value: U256::from(25u64), decimal: 0 }),
+        let decimal_value4 = decimal_value::new(25, 0);
+        let decimal_value_json4 = to_json(&decimal_value4);
+        let from_decimal_value4 = from_json<DecimalValue>(decimal_value_json4);
+        assert!(decimal_value4 == from_decimal_value4, 4);
+    }
+
+    #[test]
+    fun test_json_decimal_value_number_and_string() {
+        let decimal_value = from_json<DecimalValue>(b"\"1.1\"");
+        let decimal_value2 = from_json<DecimalValue>(b"1.1");
+        assert!(decimal_value == decimal_value2, 1);
+        let decimal_json = to_json(&decimal_value);
+        assert!(decimal_json == b"1.1", 2);
+    }
+
+    #[test]
+    fun test_json_decimal_value_too_bug(){
+        //u128 max
+        let decimal_value = decimal_value::new(0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF,2);
+        let decimal_value_json = to_json(&decimal_value);
+        //std::debug::print(&string::utf8(decimal_value_json));
+        //The value is too big to be represented in float, so it will be represented in string
+        assert!(decimal_value_json == b"\"3402823669209384634633746074317682114.55\"", 2);
+    }
+
+    #[test]
+    fun test_json_address_in_struct() {
+        let _test_address_bech32 = b"";
+        let test_struct = TestAddressStruct {
+            addr: @0xa7afe75c4f3a7631191905601f4396b25dde044539807de65ed4fc7358dbd98e
+        };
+        let test_struct_json = to_json(&test_struct);
+        let from_test_struct = from_json<TestAddressStruct>(test_struct_json);
+        assert!(test_struct == from_test_struct, 1);
+    }
+
+    //The json from address can be either hex or bech32
+    //But the json to address will always be bech32
+    #[test]
+    fun test_json_address_hex_and_bech32(){
+        let addr = @0x42;
+        let test_address_struct = from_json<TestAddressStruct>(b"{\"addr\":\"rooch1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqppq6exstd\"}");
+        let test_address_struct2 = from_json<TestAddressStruct>(b"{\"addr\":\"0x42\"}");
+        assert!(addr == test_address_struct.addr, 1);
+        assert!(addr == test_address_struct2.addr, 2);
+
+        let address_json = to_json(&addr);
+        assert!(address_json == b"\"rooch1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqppq6exstd\"", 3);
     }
 }

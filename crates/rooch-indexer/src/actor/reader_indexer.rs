@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::actor::messages::{
-    QueryIndexerEventsMessage, QueryIndexerTransactionsMessage, QueryLastStateIndexByTxOrderMessage,
+    QueryIndexerEventsMessage, QueryIndexerFieldsMessage, QueryIndexerTransactionsMessage,
+    QueryLastStateIndexByTxOrderMessage,
 };
 use crate::indexer_reader::IndexerReader;
 use anyhow::{anyhow, Result};
@@ -10,6 +11,7 @@ use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
 use moveos_types::moveos_std::object::ObjectID;
 use rooch_types::indexer::event::IndexerEvent;
+use rooch_types::indexer::field::IndexerField;
 use rooch_types::indexer::state::IndexerStateID;
 use rooch_types::indexer::transaction::IndexerTransaction;
 
@@ -105,5 +107,24 @@ impl Handler<QueryLastStateIndexByTxOrderMessage> for IndexerReaderActor {
                     e
                 ))
             })
+    }
+}
+
+#[async_trait]
+impl Handler<QueryIndexerFieldsMessage> for IndexerReaderActor {
+    async fn handle(
+        &mut self,
+        msg: QueryIndexerFieldsMessage,
+        _ctx: &mut ActorContext,
+    ) -> Result<Vec<IndexerField>> {
+        let QueryIndexerFieldsMessage {
+            filter,
+            page,
+            limit,
+            descending_order,
+        } = msg;
+        self.indexer_reader
+            .query_fields_with_filter(filter, page, limit, descending_order)
+            .map_err(|e| anyhow!(format!("Failed to query indexer fields: {:?}", e)))
     }
 }

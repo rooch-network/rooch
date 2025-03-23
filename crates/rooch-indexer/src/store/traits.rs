@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::errors::IndexerError;
+use anyhow::Result;
 use rooch_types::indexer::event::IndexerEvent;
+use rooch_types::indexer::field::{IndexerField, IndexerFieldChanges};
 use rooch_types::indexer::state::{IndexerObjectState, IndexerObjectStateChangeSet};
 use rooch_types::indexer::transaction::IndexerTransaction;
 
@@ -10,7 +12,7 @@ pub trait IndexerStoreTrait: Send + Sync {
     fn apply_object_states(
         &self,
         object_state_change_set: IndexerObjectStateChangeSet,
-    ) -> anyhow::Result<(), IndexerError>;
+    ) -> Result<(), IndexerError>;
 
     fn persist_or_update_object_states(
         &self,
@@ -40,7 +42,15 @@ pub trait IndexerStoreTrait: Send + Sync {
 
     fn persist_events(&self, events: Vec<IndexerEvent>) -> Result<(), IndexerError>;
 
-    fn delete_transactions(&self, tx_orders: Vec<u64>) -> anyhow::Result<(), IndexerError>;
+    fn delete_transactions(&self, tx_orders: Vec<u64>) -> Result<(), IndexerError>;
 
-    fn delete_events(&self, tx_orders: Vec<u64>) -> anyhow::Result<(), IndexerError>;
+    fn delete_events(&self, tx_orders: Vec<u64>) -> Result<(), IndexerError>;
+
+    fn persist_or_update_fields(&self, fields: Vec<IndexerField>) -> Result<(), IndexerError>;
+
+    fn delete_fields(&self, field_pks: Vec<String>) -> Result<(), IndexerError>;
+
+    fn delete_fields_by_parent_id(&self, ids: Vec<String>) -> Result<(), IndexerError>;
+
+    fn apply_fields(&self, field_changes: IndexerFieldChanges) -> Result<(), IndexerError>;
 }

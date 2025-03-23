@@ -175,9 +175,14 @@ module rooch_framework::coin {
     /// Returns the name of the coin by the type `CoinType`
     public fun name_by_type<CoinType: key>(): string::String {
         let coin_type = type_info::type_name<CoinType>();
+        name_by_type_name(&coin_type)
+    }
+
+    /// Returns the name of the coin by the coin type name
+    public fun name_by_type_name(coin_type_name: &String): string::String {
         let registry = borrow_registry();
-        assert!(object::contains_field(registry, coin_type), ErrorCoinInfoNotRegistered);
-        let coin_metadata: &CoinMetadata = object::borrow_field(registry, coin_type);
+        assert!(object::contains_field(registry, *coin_type_name), ErrorCoinInfoNotRegistered);
+        let coin_metadata: &CoinMetadata = object::borrow_field(registry, *coin_type_name);
         coin_metadata.name
     }
 
@@ -189,9 +194,14 @@ module rooch_framework::coin {
     /// Returns the symbol of the coin by the type `CoinType`
     public fun symbol_by_type<CoinType: key>(): string::String {
         let coin_type = type_info::type_name<CoinType>();
+        symbol_by_type_name(&coin_type)
+    }
+
+    /// Returns the symbol of the coin by the coin type name
+    public fun symbol_by_type_name(coin_type_name: &String): string::String {
         let registry = borrow_registry();
-        assert!(object::contains_field(registry, coin_type), ErrorCoinInfoNotRegistered);
-        let coin_metadata: &CoinMetadata = object::borrow_field(registry, coin_type);
+        assert!(object::contains_field(registry, *coin_type_name), ErrorCoinInfoNotRegistered);
+        let coin_metadata: &CoinMetadata = object::borrow_field(registry, *coin_type_name);
         coin_metadata.symbol
     }
 
@@ -205,9 +215,14 @@ module rooch_framework::coin {
     /// Returns the decimals of the coin by the type `CoinType`
     public fun decimals_by_type<CoinType: key>(): u8 {
         let coin_type = type_info::type_name<CoinType>();
+        decimals_by_type_name(&coin_type)
+    }
+
+    /// Returns the decimals of the coin by the coin type name
+    public fun decimals_by_type_name(coin_type_name: &String): u8 {
         let registry = borrow_registry();
-        assert!(object::contains_field(registry, coin_type), ErrorCoinInfoNotRegistered);
-        let coin_metadata: &CoinMetadata = object::borrow_field(registry, coin_type);
+        assert!(object::contains_field(registry, *coin_type_name), ErrorCoinInfoNotRegistered);
+        let coin_metadata: &CoinMetadata = object::borrow_field(registry, *coin_type_name);
         coin_metadata.decimals
     }
 
@@ -219,9 +234,14 @@ module rooch_framework::coin {
     /// Returns the amount of coin in existence by the type `CoinType`
     public fun supply_by_type<CoinType: key>(): u256 {
         let coin_type = type_info::type_name<CoinType>();
+        supply_by_type_name(&coin_type)
+    }
+
+    /// Returns the amount of coin in existence by the coin type name
+    public fun supply_by_type_name(coin_type_name: &String): u256 {
         let registry = borrow_registry();
-        assert!(object::contains_field(registry, coin_type), ErrorCoinInfoNotRegistered);
-        let coin_metadata: &CoinMetadata = object::borrow_field(registry, coin_type);
+        assert!(object::contains_field(registry, *coin_type_name), ErrorCoinInfoNotRegistered);
+        let coin_metadata: &CoinMetadata = object::borrow_field(registry, *coin_type_name);
         coin_metadata.supply
     }
 
@@ -233,9 +253,14 @@ module rooch_framework::coin {
     /// Returns the icon url of coin by the type `CoinType`
     public fun icon_url_by_type<CoinType: key>(): Option<String> {
         let coin_type = type_info::type_name<CoinType>();
+        icon_url_by_type_name(&coin_type)
+    }
+
+    /// Returns the icon url of the coin by the coin type name
+    public fun icon_url_by_type_name(coin_type_name: &String): Option<String> {
         let registry = borrow_registry();
-        assert!(object::contains_field(registry, coin_type), ErrorCoinInfoNotRegistered);
-        let coin_metadata: &CoinMetadata = object::borrow_field(registry, coin_type);
+        assert!(object::contains_field(registry, *coin_type_name), ErrorCoinInfoNotRegistered);
+        let coin_metadata: &CoinMetadata = object::borrow_field(registry, *coin_type_name);
         coin_metadata.icon_url
     }
 
@@ -290,6 +315,17 @@ module rooch_framework::coin {
         assert!(object::exists_object_with_type<CoinInfo<CoinType>>(coin_info_id), ErrorCoinInfosNotFound);
         let coin_info_obj = object::borrow_object<CoinInfo<CoinType>>(coin_info_id);
         object::borrow(coin_info_obj)
+    }
+
+    // Add this function to help with dynamic coin operations
+    public fun get_coin_info_by_type_name(coin_type_name: &String): Option<ObjectID> {
+        let registry = borrow_registry();
+        if (!object::contains_field(registry, *coin_type_name)) {
+            option::none()
+        } else {
+            let metadata: &CoinMetadata = object::borrow_field(registry, *coin_type_name);
+            option::some(metadata.coin_info_id)
+        }
     }
 
     //
@@ -391,8 +427,10 @@ module rooch_framework::coin {
         let coin_info = object::borrow_mut(coin_info_obj);
         coin_info.supply = coin_info.supply + amount;
         
-        let coin_metadata: &mut CoinMetadata = borrow_mut_coin_metadata<CoinType>(coin_info_obj);
-        coin_metadata.supply = coin_metadata.supply + amount;
+        let _coin_metadata: &mut CoinMetadata = borrow_mut_coin_metadata<CoinType>(coin_info_obj);
+        // We sync the supply with coin info, so we don't need to update the supply here
+        // After we remove the sync, we need to update the supply here
+        //coin_metadata.supply = coin_metadata.supply + amount;
 
         event::emit<MintEvent>(MintEvent {
             coin_type,
@@ -412,8 +450,10 @@ module rooch_framework::coin {
 
         coin_info.supply = coin_info.supply - amount;
 
-        let coin_metadata: &mut CoinMetadata = borrow_mut_coin_metadata<CoinType>(coin_info_obj);
-        coin_metadata.supply = coin_metadata.supply - amount;
+        let _coin_metadata: &mut CoinMetadata = borrow_mut_coin_metadata<CoinType>(coin_info_obj);
+        // We sync the supply with coin info, so we don't need to update the supply here
+        // After we remove the sync, we need to update the supply here
+        //coin_metadata.supply = coin_metadata.supply - amount;
         
         event::emit<BurnEvent>(BurnEvent {
             coin_type,
@@ -435,24 +475,37 @@ module rooch_framework::coin {
         object::borrow_mut_object_extend<CoinRegistry>(object::named_object_id<CoinRegistry>())
     }
 
-    fun borrow_mut_coin_metadata<CoinType: key>(coin_info: &Object<CoinInfo<CoinType>>) : &mut CoinMetadata {
+    fun borrow_mut_coin_metadata<CoinType: key>(coin_info_obj: &Object<CoinInfo<CoinType>>) : &mut CoinMetadata {
         let coin_type = type_info::type_name<CoinType>();
         let registry = borrow_mut_registry();
+        let coin_info_id = object::id(coin_info_obj);
+        let coin_info = object::borrow(coin_info_obj);
         // If the coin metadata is not initialized, it is the Coin registered before v19
         // We need to initialize the coin metadata here
         if (!object::contains_field(registry, coin_type)){
+            
             let coin_metadata = CoinMetadata {
-                coin_info_id: object::id(coin_info),
+                coin_info_id,
                 coin_type,
-                name: string::utf8(b""),
-                symbol: string::utf8(b""),
-                icon_url: option::none(),
-                decimals: 0,
-                supply: 0,
+                name: coin_info.name,
+                symbol: coin_info.symbol,
+                icon_url: coin_info.icon_url,
+                decimals: coin_info.decimals,
+                supply: coin_info.supply,
             };
             object::add_field(registry, coin_type, coin_metadata);
-        };
-        object::borrow_mut_field(registry, coin_type)
+            object::borrow_mut_field(registry, coin_type)
+        }else{
+            //sync the coin metadata with coin info
+            let metadata :&mut CoinMetadata = object::borrow_mut_field(registry, coin_type);
+            metadata.coin_info_id = coin_info_id;
+            metadata.icon_url = coin_info.icon_url;
+            metadata.name = coin_info.name;
+            metadata.symbol = coin_info.symbol;
+            metadata.decimals = coin_info.decimals;
+            metadata.supply = coin_info.supply;
+            metadata
+        }
     }
 
     // Unpack the Coin and return the value

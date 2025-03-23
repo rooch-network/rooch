@@ -32,4 +32,4 @@ rooch-store = { workspace = true }
 rooch-config = { workspace = true }
 rooch-db = { workspace = true }
 rooch-genesis = { workspace = true }
-rooch-event = { workspace = true }
+rooch-notify = { workspace = true }

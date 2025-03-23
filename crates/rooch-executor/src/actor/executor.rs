@@ -11,6 +11,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor, LocalActorRef};
 use function_name::named;
+use move_core_types::account_address::AccountAddress;
 use move_core_types::vm_status::VMStatus;
 use moveos::moveos::{MoveOS, MoveOSConfig};
 use moveos::vm::vm_status_explainer::explain_vm_status;
@@ -27,14 +28,16 @@ use moveos_types::state_resolver::RootObjectResolver;
 use moveos_types::transaction::{FunctionCall, MoveOSTransaction, VerifiedMoveAction};
 use moveos_types::transaction::{MoveAction, VerifiedMoveOSTransaction};
 use prometheus::Registry;
-use rooch_event::actor::{EventActor, EventActorSubscribeMessage, GasUpgradeMessage};
-use rooch_event::event::GasUpgradeEvent;
 use rooch_genesis::FrameworksGasParameters;
+use rooch_notify::actor::NotifyActor;
+use rooch_notify::event::GasUpgradeEvent;
+use rooch_notify::messages::{GasUpgradeMessage, NotifyActorSubscribeMessage};
 use rooch_store::state_store::StateStore;
 use rooch_store::RoochStore;
 use rooch_types::address::{BitcoinAddress, MultiChainAddress};
-// use rooch_types::bitcoin::transaction_validator::TransactionValidator as L1TransactionValidator;
+use rooch_types::bitcoin::transaction_validator::TransactionValidator as L1TransactionValidator;
 use rooch_types::bitcoin::BitcoinModule;
+use rooch_types::error::RoochError;
 use rooch_types::framework::auth_validator::{
     AuthValidatorCaller, BuiltinAuthValidator, TxValidateResult,
 };
@@ -56,7 +59,7 @@ pub struct ExecutorActor {
     moveos_store: MoveOSStore,
     rooch_store: RoochStore,
     metrics: Arc<ExecutorMetrics>,
-    event_actor: Option<LocalActorRef<EventActor>>,
+    notify_actor: Option<LocalActorRef<NotifyActor>>,
 }
 
 type ValidateAuthenticatorResult = Result<TxValidateResult, VMStatus>;
@@ -67,7 +70,7 @@ impl ExecutorActor {
         moveos_store: MoveOSStore,
         rooch_store: RoochStore,
         registry: &Registry,
-        event_actor: Option<LocalActorRef<EventActor>>,
+        notify_actor: Option<LocalActorRef<NotifyActor>>,
     ) -> Result<Self> {
         let resolver = RootObjectResolver::new(root.clone(), &moveos_store);
         let gas_parameters = FrameworksGasParameters::load_from_chain(&resolver)?;
@@ -86,22 +89,22 @@ impl ExecutorActor {
             moveos_store,
             rooch_store,
             metrics: Arc::new(ExecutorMetrics::new(registry)),
-            event_actor,
+            notify_actor,
         })
     }
 
     pub async fn subscribe_event(
         &self,
-        event_actor_ref: LocalActorRef<EventActor>,
+        notify_actor_ref: LocalActorRef<NotifyActor>,
         executor_actor_ref: LocalActorRef<ExecutorActor>,
     ) {
         let gas_upgrade_event = GasUpgradeEvent::default();
-        let actor_subscribe_message = EventActorSubscribeMessage::new(
+        let actor_subscribe_message = NotifyActorSubscribeMessage::new(
             gas_upgrade_event,
             "executor".to_string(),
             Box::new(executor_actor_ref),
         );
-        let _ = event_actor_ref.send(actor_subscribe_message).await;
+        let _ = notify_actor_ref.send(actor_subscribe_message).await;
     }
 
     pub fn get_rooch_store(&self) -> RoochStore {
@@ -138,8 +141,8 @@ impl ExecutorActor {
             .observe(size as f64);
 
         if is_gas_upgrade {
-            if let Some(event_actor) = self.event_actor.clone() {
-                let _ = event_actor.notify(GasUpgradeMessage {});
+            if let Some(notify_actor) = self.notify_actor.clone() {
+                let _ = notify_actor.notify(GasUpgradeMessage {});
             }
         }
 
@@ -236,31 +239,29 @@ impl ExecutorActor {
             .start_timer();
         let tx_hash = l1_tx.tx_hash();
         let tx_size = l1_tx.tx_size();
-        let ctx = TxContext::new_system_call_ctx(tx_hash, tx_size);
         let result = match RoochMultiChainID::try_from(l1_tx.chain_id.id())? {
             RoochMultiChainID::Bitcoin => {
-                //L1 tx validate first launches the contract, then opens the Rust code
-                // // Validate the l1 tx before execution via contract,
-                // let l1_tx_validator = self.as_module_binding::<L1TransactionValidator>();
-                // let tx_validator_result = l1_tx_validator
-                //     .validate_l1_tx(ctx, tx_hash, vec![])
-                //     .map_err(Into::into)?;
-                // // If the l1 tx already execute, skip the tx.
-                // if !tx_validator_result {
-                //     return Err(RoochError::L1TxAlreadyExecuted);
-                // }
+                // Validate the l1 tx before execution via contract
+                let readonly_ctx = TxContext::new_readonly_ctx(AccountAddress::ZERO);
+                let l1_tx_validator = self.as_module_binding::<L1TransactionValidator>();
+                let tx_validator_result =
+                    l1_tx_validator.validate_l1_tx(&readonly_ctx, tx_hash, vec![])?;
+                // If the l1 tx already execute, skip the tx.
+                if !tx_validator_result {
+                    return Err(RoochError::L1TxAlreadyExecuted.into());
+                }
 
                 let action = VerifiedMoveAction::Function {
                     call: BitcoinModule::create_execute_l1_tx_call(l1_tx.block_hash, l1_tx.txid)?,
                     bypass_visibility: true,
                 };
+                let ctx = TxContext::new_system_call_ctx(tx_hash, tx_size);
                 Ok(VerifiedMoveOSTransaction::new(
                     self.root.clone(),
                     ctx,
                     action,
                 ))
             }
-            // _id => Err(RoochError::InvalidChainID),
             id => Err(anyhow::anyhow!("Chain {} not supported yet", id)),
         };
 
@@ -453,8 +454,8 @@ impl ExecutorActor {
 impl Actor for ExecutorActor {
     async fn started(&mut self, ctx: &mut ActorContext) {
         let local_actor_ref: LocalActorRef<Self> = ctx.actor_ref();
-        if let Some(event_actor) = self.event_actor.clone() {
-            let _ = self.subscribe_event(event_actor, local_actor_ref).await;
+        if let Some(notify_actor) = self.notify_actor.clone() {
+            let _ = self.subscribe_event(notify_actor, local_actor_ref).await;
         }
     }
 }
