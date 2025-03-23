@@ -15,7 +15,7 @@ move-stackless-bytecode = { path = "../move-prover/bytecode" }
 
 anyhow = "1.0.62"
 clap = { version = "3.2.23", features = ["derive", "env"] }
-codespan-reporting = { version = "0.11.1", features = ["serde", "serialization"] }
+codespan-reporting = { version = "0.12.0", features = ["serde", "serialization"] }
 ethnum = "1.0.4"
 #im = "15.0.0"
 #log = "0.4.14"
