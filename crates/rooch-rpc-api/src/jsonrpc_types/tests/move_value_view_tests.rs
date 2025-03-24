@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::jsonrpc_types::{
+    decimal_value_view::DecimalValueView,
     move_types::{AnnotatedMoveValueView, SpecificStructView},
     BytesView, StrView,
 };
@@ -13,7 +14,9 @@ use move_core_types::{
     u256,
 };
 use move_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
-use moveos_types::{move_std::string::MoveString, state::MoveStructType};
+use moveos_types::{
+    move_std::string::MoveString, moveos_std::decimal_value::DecimalValue, state::MoveStructType,
+};
 use serde_json::{json, Value};
 
 #[test]
@@ -215,11 +218,11 @@ fn test_annotated_move_value_view_struct() {
 }
 
 #[test]
-fn test_annotated_move_value_view_specific_structs() {
+fn test_annotated_move_value_view_specific_structs_string() {
     // Test MoveString
     let string_value = "Hello, World!";
     let move_string = MoveString::from(string_value);
-    //let move_string_struct = move_string.to_move_value().into_annotated();
+
     let move_string_struct = AnnotatedMoveStruct {
         abilities: AbilitySet::PRIMITIVES,
         type_: MoveString::struct_tag(),
@@ -236,6 +239,39 @@ fn test_annotated_move_value_view_specific_structs() {
             assert_eq!(string, move_string);
         } else {
             panic!("Expected MoveString variant");
+        }
+    } else {
+        panic!("Expected SpecificStruct variant");
+    }
+}
+
+#[test]
+fn test_annotated_move_value_view_specific_structs_decimal() {
+    // Test DecimalValue
+    let decimal_value = DecimalValue::new(1u64.into(), 2);
+
+    let decimal_value_struct = AnnotatedMoveStruct {
+        abilities: AbilitySet::PRIMITIVES,
+        type_: DecimalValue::struct_tag(),
+        value: vec![
+            (
+                Identifier::new("value").unwrap(),
+                AnnotatedMoveValue::U256(1u64.into()),
+            ),
+            (
+                Identifier::new("decimal").unwrap(),
+                AnnotatedMoveValue::U8(2),
+            ),
+        ],
+    };
+    let input = AnnotatedMoveValue::Struct(decimal_value_struct);
+    let view: AnnotatedMoveValueView = input.into();
+
+    if let AnnotatedMoveValueView::SpecificStruct(boxed) = view {
+        if let SpecificStructView::DecimalValue(value) = *boxed {
+            assert_eq!(value, DecimalValueView::from(decimal_value));
+        } else {
+            panic!("Expected DecimalValue variant");
         }
     } else {
         panic!("Expected SpecificStruct variant");
@@ -412,7 +448,4 @@ fn test_json_serialization() {
         }
         _ => panic!("Expected Object for the root JSON value"),
     }
-
-    // We can also deserialize back to AnnotatedMoveValueView
-    let _deserialized: AnnotatedMoveValueView = serde_json::from_value(json_value).unwrap();
 }

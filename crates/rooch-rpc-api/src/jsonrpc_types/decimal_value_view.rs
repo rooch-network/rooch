@@ -4,14 +4,15 @@
 use moveos_types::moveos_std::decimal_value::DecimalValue;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use serde_json::Number;
 use std::fmt::Display;
 
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Eq, PartialEq)]
-pub struct DecimalValueView(serde_json::Value);
+#[derive(Debug, Clone, JsonSchema, Deserialize, Serialize, Eq, PartialEq)]
+pub struct DecimalValueView(#[schemars(with = "Number")] DecimalValue);
 
 impl From<DecimalValue> for DecimalValueView {
     fn from(decimal_value: DecimalValue) -> Self {
-        DecimalValueView(decimal_value.to_json_value())
+        DecimalValueView(decimal_value)
     }
 }
 

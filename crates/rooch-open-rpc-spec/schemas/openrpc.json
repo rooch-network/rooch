@@ -1097,19 +1097,19 @@
             "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
           },
           {
+            "$ref": "#/components/schemas/SpecificStructView"
+          },
+          {
             "$ref": "#/components/schemas/AnnotatedMoveStructView"
           },
           {
-            "$ref": "#/components/schemas/SpecificStructView"
+            "$ref": "#/components/schemas/AnnotatedMoveStructVectorView"
           },
           {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/AnnotatedMoveValueView"
             }
-          },
-          {
-            "$ref": "#/components/schemas/AnnotatedMoveStructVectorView"
           }
         ]
       },
@@ -1276,7 +1276,9 @@
           }
         }
       },
-      "DecimalValueView": {},
+      "DecimalValueView": {
+        "type": "number"
+      },
       "DisplayFieldsView": {
         "type": "object",
         "required": [

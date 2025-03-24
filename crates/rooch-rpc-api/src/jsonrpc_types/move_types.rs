@@ -269,10 +269,12 @@ pub enum AnnotatedMoveValueView {
     Bool(bool),
     Address(AccountAddressView),
     Bytes(BytesView),
-    Struct(AnnotatedMoveStructView),
     SpecificStruct(Box<SpecificStructView>),
-    Vector(Vec<AnnotatedMoveValueView>),
+    Struct(AnnotatedMoveStructView),
     StructVector(Box<AnnotatedMoveStructVectorView>),
+    Vector(Vec<AnnotatedMoveValueView>),
+    // Add this variant as a "catch-all" for forward compatibility
+    //Unknown(serde_json::Value),
 }
 
 impl AnnotatedMoveValueView {

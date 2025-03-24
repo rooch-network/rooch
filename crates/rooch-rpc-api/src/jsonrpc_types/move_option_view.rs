@@ -41,6 +41,10 @@ impl TryFrom<&AnnotatedMoveStruct> for MoveOptionView {
                 if data.is_empty() {
                     Ok(MoveOptionView(None))
                 } else {
+                    if data.len() > 1 {
+                        // This is unexpected for an Option type - log or handle appropriately
+                        return Err(anyhow::anyhow!("Option vector has more than one element"));
+                    }
                     Ok(MoveOptionView(Some(AnnotatedMoveValueView::from(
                         data.first().unwrap().clone(),
                     ))))
