@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::jsonrpc_types::{
-    AnnotatedMoveStructView, H256View, HumanReadableDisplay, RoochAddressView, StrView,
-    StructTagView, UnitedAddressView,
+    AnnotatedMoveStructView, H256View, HumanReadableDisplay, ObjectIDView, RoochAddressView,
+    StrView, StructTagView, UnitedAddressView,
 };
 use moveos_types::moveos_std::{
     event::{AnnotatedEvent, Event, EventID, TransactionEvent},
@@ -213,6 +213,13 @@ pub enum EventFilterView {
     },
     /// Query by event type.
     EventType(StructTagView),
+    /// Query by event handle id with sender
+    EventHandleWithSender {
+        event_handle_id: ObjectIDView,
+        sender: UnitedAddressView,
+    },
+    /// Query by event handle id.
+    EventHandle(ObjectIDView),
     /// Query by sender address.
     Sender(UnitedAddressView),
     /// Return events emitted by the given transaction hash.
@@ -245,6 +252,14 @@ impl From<EventFilterView> for EventFilter {
                 }
             }
             EventFilterView::EventType(event_type) => Self::EventType(event_type.into()),
+            EventFilterView::EventHandleWithSender {
+                event_handle_id,
+                sender,
+            } => Self::EventHandleWithSender {
+                event_handle_id: event_handle_id.0,
+                sender: sender.0.rooch_address.into(),
+            },
+            EventFilterView::EventHandle(event_handle_id) => Self::EventHandle(event_handle_id.0),
             EventFilterView::Sender(address) => Self::Sender(address.0.rooch_address.into()),
             EventFilterView::TxHash(tx_hash) => Self::TxHash(tx_hash.into()),
             EventFilterView::TimeRange {

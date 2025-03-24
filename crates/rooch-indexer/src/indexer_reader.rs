@@ -336,6 +336,22 @@ impl IndexerReader {
             EventFilter::EventType(event_type) => {
                 format!("{EVENT_TYPE_STR} = \"{}\"", event_type)
             }
+            EventFilter::EventHandleWithSender {
+                event_handle_id,
+                sender,
+            } => {
+                format!(
+                    "{TX_SENDER_STR} = \"{}\" AND {EVENT_HANDLE_ID_STR} = \"{}\"",
+                    sender.to_hex_literal(),
+                    event_handle_id.to_string()
+                )
+            }
+            EventFilter::EventHandle(event_handle_id) => {
+                format!(
+                    "{EVENT_HANDLE_ID_STR} = \"{}\"",
+                    event_handle_id.to_string()
+                )
+            }
             EventFilter::Sender(sender) => {
                 format!("{TX_SENDER_STR} = \"{}\"", sender.to_hex_literal())
             }
