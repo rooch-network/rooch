@@ -69,10 +69,9 @@ export const navData = [
         icon: <Iconify icon="solar:hand-money-broken" />,
         noAddressRequired: true,
       },
-      // temporary disable swap, when the swap v2 is all good, will remove this path
       {
         title: 'Swap',
-        path: paths.dashboard['swap-v2'],
+        path: paths.dashboard.swap,
         icon: <Iconify icon="solar:money-bag-broken" />,
         noAddressRequired: true,
       },

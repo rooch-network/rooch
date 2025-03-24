@@ -1,4 +1,4 @@
-import type { BalanceInfoView, AnnotatedMoveStructView } from '@roochnetwork/rooch-sdk';
+import type { AnnotatedMoveStructView } from '@roochnetwork/rooch-sdk';
 
 import BigNumber from 'bignumber.js';
 import { useDebounce } from 'react-use';
@@ -82,12 +82,12 @@ export default function AddLiquidityModal({
 
   const { data: xCoinInfo } = useRoochClientQuery('getBalance', {
     coinType: row.x.type,
-    owner: currentAddress?.toStr() || ''
+    owner: currentAddress?.toStr() || '',
   });
 
   const { data: yCoinInfo } = useRoochClientQuery('getBalance', {
     coinType: row.y.type,
-    owner: currentAddress?.toStr() || ''
+    owner: currentAddress?.toStr() || '',
   });
 
   const receive = useMemo(() => {
@@ -193,7 +193,7 @@ export default function AddLiquidityModal({
       return;
     }
 
-    console.log('hahah')
+    console.log('hahah');
     const xBalance = (reserveX.data[0].decoded_value!.value.balance as AnnotatedMoveStructView)
       .value.value as string;
     const yBalance = (reserveY.data[0].decoded_value!.value.balance as AnnotatedMoveStructView)
@@ -266,9 +266,7 @@ export default function AddLiquidityModal({
                             onClick={() => {
                               setXAmount(
                                 formatByIntl(
-                                  new BigNumber(xCoinInfo?.fixedBalance || 0)
-                                    .div(2)
-                                    .toString()
+                                  new BigNumber(xCoinInfo?.fixedBalance || 0).div(2).toString()
                                 )
                               );
                             }}
@@ -279,11 +277,7 @@ export default function AddLiquidityModal({
                             size="small"
                             variant="outlined"
                             onClick={() => {
-                              setXAmount(
-                                formatByIntl(
-                                  (xCoinInfo?.fixedBalance || 0).toString()
-                                )
-                              );
+                              setXAmount(formatByIntl((xCoinInfo?.fixedBalance || 0).toString()));
                             }}
                           >
                             Max
@@ -328,7 +322,7 @@ export default function AddLiquidityModal({
                             size="small"
                             variant="outlined"
                             onClick={() => {
-                              router.push('./swap-v2');
+                              router.push('./swap');
                             }}
                           >
                             Go to Swap

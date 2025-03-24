@@ -1,15 +1,15 @@
 import WalletGuard from 'src/components/guard/WalletGuard';
 
-import PoolView from 'src/sections/trade/swap-v2/view';
+import SwapView from 'src/sections/trade/swap/view';
 
 export const metadata = {
   title: 'Swap',
 };
 
-export default function Page({ params }: { params: { tick: string } }) {
+export default function Page() {
   return (
     <WalletGuard>
-      <PoolView />
+      <SwapView />
     </WalletGuard>
   );
 }
