@@ -8,6 +8,7 @@ use crate::{
 use anyhow::{bail, Result};
 use move_core_types::u256::U256;
 use move_core_types::{account_address::AccountAddress, ident_str, identifier::IdentStr};
+use move_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
 use serde::{Deserialize, Serialize};
 use serde_json::Number;
 use std::fmt;
@@ -16,7 +17,7 @@ use std::str::FromStr;
 const MODULE_NAME: &IdentStr = ident_str!("decimal_value");
 
 /// `DecimalValue` is represented `moveos_std::decimal_value::DecimalValue` in Move.
-#[derive(Clone, Debug, Deserialize, Serialize, Eq)]
+#[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialOrd, Ord)]
 pub struct DecimalValue {
     pub value: U256,
     pub decimal: u8,
@@ -192,6 +193,43 @@ impl PartialEq<DecimalValue> for DecimalValue {
         };
 
         adjusted_self == adjusted_other
+    }
+}
+
+impl TryFrom<AnnotatedMoveStruct> for DecimalValue {
+    type Error = anyhow::Error;
+
+    fn try_from(annotated_move_struct: AnnotatedMoveStruct) -> Result<Self, Self::Error> {
+        DecimalValue::try_from(&annotated_move_struct)
+    }
+}
+
+impl TryFrom<&AnnotatedMoveStruct> for DecimalValue {
+    type Error = anyhow::Error;
+
+    fn try_from(annotated_move_struct: &AnnotatedMoveStruct) -> Result<Self, Self::Error> {
+        let mut fields = annotated_move_struct.value.iter();
+        let (value_field_name, value_field_value) = fields
+            .next()
+            .ok_or_else(|| anyhow::anyhow!("Invalid DecimalValue"))?;
+        let (decimal_field_name, decimal_field_value) = fields
+            .next()
+            .ok_or_else(|| anyhow::anyhow!("Invalid DecimalValue"))?;
+        debug_assert!(value_field_name.as_str() == "value");
+        debug_assert!(decimal_field_name.as_str() == "decimal");
+
+        let value = match value_field_value {
+            AnnotatedMoveValue::U256(value) => value,
+            _ => return Err(anyhow::anyhow!("Invalid DecimalValue")),
+        };
+        let decimal = match decimal_field_value {
+            AnnotatedMoveValue::U8(decimal) => decimal,
+            _ => return Err(anyhow::anyhow!("Invalid DecimalValue")),
+        };
+        Ok(DecimalValue {
+            value: *value,
+            decimal: *decimal,
+        })
     }
 }
 

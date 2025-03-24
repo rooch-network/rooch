@@ -1276,6 +1276,7 @@
           }
         }
       },
+      "DecimalValueView": {},
       "DisplayFieldsView": {
         "type": "object",
         "required": [
@@ -2399,6 +2400,16 @@
           }
         }
       },
+      "MoveOptionView": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/AnnotatedMoveValueView"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
       "MoveString": {
         "type": "object",
         "required": [
@@ -3274,6 +3285,12 @@
           },
           {
             "$ref": "#/components/schemas/ObjectID"
+          },
+          {
+            "$ref": "#/components/schemas/DecimalValueView"
+          },
+          {
+            "$ref": "#/components/schemas/MoveOptionView"
           }
         ]
       },

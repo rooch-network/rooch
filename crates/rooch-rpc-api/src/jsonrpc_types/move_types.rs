@@ -11,7 +11,6 @@ use move_core_types::{
     u256,
 };
 use move_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
-use moveos_types::move_types::parse_module_id;
 use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::moveos_std::type_info::TypeInfo;
 use moveos_types::transaction::MoveAction;
@@ -24,10 +23,13 @@ use moveos_types::{
     move_std::{ascii::MoveAsciiString, string::MoveString},
     state::MoveStructType,
 };
+use moveos_types::{move_types::parse_module_id, moveos_std::decimal_value::DecimalValue};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::str::FromStr;
+
+use super::{decimal_value_view::DecimalValueView, move_option_view::MoveOptionView};
 
 pub type ModuleIdView = StrView<ModuleId>;
 pub type TypeTagView = StrView<TypeTag>;
@@ -128,7 +130,7 @@ impl From<AbilityView> for Ability {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Eq, PartialEq)]
 pub struct AnnotatedMoveStructView {
     pub abilities: u8,
     #[serde(rename = "type")]
@@ -151,7 +153,7 @@ impl From<AnnotatedMoveStruct> for AnnotatedMoveStructView {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Eq, PartialEq)]
 pub struct AnnotatedMoveStructVectorView {
     /// alilities of each element
     pub abilities: u8,
@@ -173,6 +175,13 @@ impl AnnotatedMoveStructVectorView {
         } else {
             let first = origin.first().unwrap();
             if let AnnotatedMoveValue::Struct(ele) = first {
+                //if the first element is a specific struct, we directly convert it to vector,
+                //otherwise, we convert it to StructVector
+                if SpecificStructView::try_from_annotated(ele).is_some() {
+                    return Err(AnnotatedMoveValueView::Vector(
+                        origin.into_iter().map(Into::into).collect(),
+                    ));
+                }
                 let field = ele
                     .value
                     .iter()
@@ -207,12 +216,14 @@ impl AnnotatedMoveStructVectorView {
 }
 
 /// Some specific struct that we want to display in a special way for better readability
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Eq, PartialEq)]
 #[serde(untagged)]
 pub enum SpecificStructView {
     MoveString(MoveString),
     MoveAsciiString(MoveAsciiString),
     ObjectID(ObjectID),
+    DecimalValue(DecimalValueView),
+    Option(MoveOptionView),
 }
 
 impl SpecificStructView {
@@ -229,14 +240,22 @@ impl SpecificStructView {
             ObjectID::try_from(move_struct)
                 .ok()
                 .map(SpecificStructView::ObjectID)
+        } else if DecimalValue::struct_tag_match(&move_struct.type_) {
+            DecimalValue::try_from(move_struct)
+                .ok()
+                .map(DecimalValueView::from)
+                .map(SpecificStructView::DecimalValue)
+        } else if MoveOptionView::struct_tag_match(&move_struct.type_) {
+            MoveOptionView::try_from(move_struct)
+                .ok()
+                .map(SpecificStructView::Option)
         } else {
             None
         }
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Eq, PartialEq, PartialOrd, Ord)]
-// #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Eq, PartialEq)]
 #[serde(untagged)]
 pub enum AnnotatedMoveValueView {
     U8(u8),
@@ -250,7 +269,7 @@ pub enum AnnotatedMoveValueView {
     StructVector(Box<AnnotatedMoveStructVectorView>),
     Bytes(BytesView),
     Struct(AnnotatedMoveStructView),
-    SpecificStruct(SpecificStructView),
+    SpecificStruct(Box<SpecificStructView>),
     U16(u16),
     U32(u32),
     U256(StrView<u256::U256>),
@@ -293,7 +312,9 @@ impl From<AnnotatedMoveValue> for AnnotatedMoveValueView {
             AnnotatedMoveValue::Bytes(data) => AnnotatedMoveValueView::Bytes(StrView(data)),
             AnnotatedMoveValue::Struct(data) => {
                 match SpecificStructView::try_from_annotated(&data) {
-                    Some(struct_view) => AnnotatedMoveValueView::SpecificStruct(struct_view),
+                    Some(struct_view) => {
+                        AnnotatedMoveValueView::SpecificStruct(Box::new(struct_view))
+                    }
                     None => AnnotatedMoveValueView::Struct(data.into()),
                 }
             }

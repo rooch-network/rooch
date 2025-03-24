@@ -141,25 +141,14 @@ impl TryFrom<AnnotatedMoveStruct> for MoveString {
     type Error = anyhow::Error;
 
     fn try_from(value: AnnotatedMoveStruct) -> Result<Self, Self::Error> {
-        let mut annotated_move_struct = value;
-        let (field_name, field_value) = annotated_move_struct
-            .value
-            .pop()
-            .ok_or_else(|| anyhow::anyhow!("Invalid MoveString"))?;
-        debug_assert!(field_name.as_str() == "bytes");
-        let bytes = match field_value {
-            AnnotatedMoveValue::Bytes(bytes) => bytes,
-            _ => return Err(anyhow::anyhow!("Invalid MoveString")),
-        };
-        Ok(MoveString { bytes })
+        MoveString::try_from(&value)
     }
 }
 
 impl TryFrom<&AnnotatedMoveStruct> for MoveString {
     type Error = anyhow::Error;
 
-    fn try_from(value: &AnnotatedMoveStruct) -> Result<Self, Self::Error> {
-        let annotated_move_struct = value;
+    fn try_from(annotated_move_struct: &AnnotatedMoveStruct) -> Result<Self, Self::Error> {
         let (field_name, field_value) = annotated_move_struct
             .value
             .first()
