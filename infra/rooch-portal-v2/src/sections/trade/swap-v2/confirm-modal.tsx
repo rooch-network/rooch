@@ -31,6 +31,7 @@ export default function SwapConfirmModal({
   fromCoin,
   toCoin,
   slippage,
+  path,
   onSuccess,
 }: {
   open: boolean;
@@ -38,6 +39,7 @@ export default function SwapConfirmModal({
   fromCoin: UserCoin;
   toCoin: UserCoin;
   slippage: number;
+  path: string[];
   onSuccess: () => void;
 }) {
   const dex = useNetworkVariable('dex');
@@ -60,12 +62,20 @@ export default function SwapConfirmModal({
             )
           )
         : fixedToCoinAmount;
-    tx.callFunction({
-      target: `${dex.address}::router::swap_with_exact_input`,
-      args: [Args.u64(fixedFromCoinAmount), Args.u64(finalToCoinAmount)],
-      typeArgs: [fromCoin.coin_type, toCoin.coin_type],
-    });
 
+    if (path.length === 3) {
+      tx.callFunction({
+        target: `${dex.address}::router::swap_exact_input_doublehop`,
+        args: [Args.u64(fixedFromCoinAmount), Args.u64(finalToCoinAmount)],
+        typeArgs: [path[0], path[1], path[2]],
+      });
+    } else {
+      tx.callFunction({
+        target: `${dex.address}::router::swap_with_exact_input`,
+        args: [Args.u64(fixedFromCoinAmount), Args.u64(finalToCoinAmount)],
+        typeArgs: [fromCoin.coin_type, toCoin.coin_type],
+      });
+    }
     mutateAsync({ transaction: tx })
       .then((result) => {
         if (result.execution_info.status.type === 'executed') {

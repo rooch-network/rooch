@@ -17,7 +17,6 @@ import Swap from 'src/components/swap/swap';
 import { toast } from 'src/components/snackbar';
 
 import SwapConfirmModal from './confirm-modal';
-// import { useTokenPair } from '../hooks/use-token-pair';
 import { useTokenPairRouter } from '../hooks/use-token-pair-router';
 
 const normalizeCoinIconUrl = (onChainCoinIconUrl?: string | null) =>
@@ -41,19 +40,11 @@ export default function SwapView() {
   const [fromCoinAmount, setFromCoinAmount] = useState<string>('0');
   const [toCoinAmount, setToCoinAmount] = useState<string>('');
 
-  // const { tokenPairs } = useTokenPair();
+  const [currentPath, setCurrentPath] = useState<string[] | null>(null);
 
-  const { tokenPairsMap, refetchTokenPairs } = useTokenPairRouter();
+  const { tokenPairsMap, tokenGraph, refetchTokenPairs } = useTokenPairRouter();
+  console.log('🚀 ~ view.tsx:47 ~ SwapView ~ tokenPairsMap:', tokenPairsMap);
 
-  // const availableFromCoins = useMemo(
-  //   () =>
-  //     Array.from(tokenPairs.values()).map((i) => ({
-  //       ...i.x,
-  //       icon_url: normalizeCoinIconUrl(i.x.icon_url),
-  //       amount: '0',
-  //     })),
-  //   [tokenPairs]
-  // );
   const availableFromCoins = useMemo(
     () =>
       Array.from(tokenPairsMap.values()).map((i) => ({
@@ -63,26 +54,6 @@ export default function SwapView() {
       })),
     [tokenPairsMap]
   );
-
-  // const availableToCoins = useMemo(() => {
-  //   if (!tokenPairs) {
-  //     return [];
-  //   }
-  //   if (!fromCoinType) {
-  //     return Array.from(tokenPairs.values()).map((i) => ({
-  //       ...i.x,
-  //       icon_url: normalizeCoinIconUrl(i.x.icon_url),
-  //       amount: '0',
-  //     }));
-  //   }
-  //   return (
-  //     tokenPairs.get(fromCoinType as string)?.y.map((i) => ({
-  //       ...i,
-  //       icon_url: normalizeCoinIconUrl(i.icon_url),
-  //       amount: '0',
-  //     })) || []
-  //   );
-  // }, [fromCoinType, tokenPairs]);
 
   const availableToCoins = useMemo(() => {
     if (!tokenPairsMap) {
@@ -148,18 +119,43 @@ export default function SwapView() {
         fromCoinAmount.replaceAll(',', ''),
         fromCoinInfo.decimals || 0
       );
-      const result = await client.executeViewFunction({
-        target: `${dex.address}::router::get_amount_out`,
-        args: [Args.u64(fixedFromCoinAmount)],
-        typeArgs: [fromCoinInfo.coin_type, toCoinInfo.coin_type],
-      });
+      const path = tokenGraph.findPath(fromCoinInfo.coin_type, toCoinInfo.coin_type);
 
-      if (result.vm_status !== 'Executed') {
-        toast.error('unknown error');
+      if (!path || path.length < 2) {
+        toast.error('No valid swap path found');
+        return;
       }
 
-      const toCoinAmount = result.return_values![0].decoded_value as string;
-      const fixedToCoinAmount = fromDust(toCoinAmount, toCoinInfo?.decimals || 0);
+      // Start with the initial amount
+      let currentAmount = fixedFromCoinAmount;
+
+      // For each step in the path, call get_amount_out
+      // eslint-disable-next-line no-plusplus
+      for (let i = 0; i < path.length - 1; i++) {
+        const fromToken = path[i];
+        const toToken = path[i + 1];
+
+        // eslint-disable-next-line no-await-in-loop
+        const result = await client.executeViewFunction({
+          target: `${dex.address}::router::get_amount_out`,
+          args: [Args.u64(currentAmount)],
+          typeArgs: [fromToken, toToken],
+        });
+
+        console.log(`Step ${i + 1}: ${fromToken} -> ${toToken}, result:`, result);
+
+        if (result.vm_status !== 'Executed') {
+          toast.error(`Error in swap step ${i + 1}`);
+          return;
+        }
+
+        // Update the amount for the next step
+        currentAmount = BigInt(result.return_values![0].decoded_value as string);
+      }
+
+      setCurrentPath(path);
+
+      const fixedToCoinAmount = fromDust(currentAmount, toCoinInfo?.decimals || 0);
       const ratio = BigNumber(fixedToCoinAmount).div(fromCoinAmount);
       const fixedRatio = ratio.toFixed(8, 1);
       const finalRatio = ratio.isInteger() ? ratio.toFixed(0) : fixedRatio;
@@ -170,7 +166,7 @@ export default function SwapView() {
     } finally {
       setLoading(false);
     }
-  }, [fromCoinAmount, fromCoinInfo, toCoinInfo, client, dex.address]);
+  }, [fromCoinAmount, fromCoinInfo, toCoinInfo, client, dex.address, tokenGraph]);
 
   return (
     <DashboardContent maxWidth="xl" className="items-center">
@@ -230,6 +226,7 @@ export default function SwapView() {
         <SwapConfirmModal
           slippage={slippage}
           open={openSwapModal}
+          path={currentPath || []}
           onClose={() => setOpenSwapModal(false)}
           fromCoin={{
             ...fromCoin,
