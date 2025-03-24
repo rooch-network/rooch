@@ -61,8 +61,6 @@ impl Default for World {
 #[given(expr = "a server for {word}")] // Cucumber Expression
 async fn start_server(w: &mut World, _scenario: String) {
     tokio::time::sleep(Duration::from_secs(5)).await;
-    //Use new base dir for each test
-    w.opt = RoochOpt::new_with_temp_store().expect("new rooch opt should be ok");
     let mut service = Service::new();
     wait_port_available(w.opt.port()).await;
 

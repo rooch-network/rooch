@@ -304,7 +304,7 @@ Feature: Rooch CLI integration tests
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       # check compatibility
-      Then cmd: "move publish -p ../../examples/entry_function_arguments_old/  --named-addresses rooch_examples=default --json"
+      Then cmd: "move publish -p ../../examples/entry_function_arguments_old/  --named-addresses rooch_examples=default --skip-client-compat-check --json"
       Then assert: "'{{$.move[-1].execution_info.status.type}}' == 'moveabort'"
 
       Then stop the server
