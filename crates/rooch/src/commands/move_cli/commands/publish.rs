@@ -5,6 +5,8 @@ use crate::cli_types::{CommandAction, TransactionOptions, WalletContextOptions};
 use crate::tx_runner::dry_run_tx_locally;
 use async_trait::async_trait;
 use clap::Parser;
+use framework_builder::releaser;
+use move_binary_format::CompiledModule;
 use move_cli::Move;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::effects::Op;
@@ -85,6 +87,23 @@ impl MemoryModuleResolver {
 
         Ok(())
     }
+
+    pub fn get_modules(
+        &self,
+        package_addr: &AccountAddress,
+    ) -> Result<Vec<CompiledModule>, anyhow::Error> {
+        let modules = self.packages.get(package_addr);
+        if modules.is_none() {
+            return Ok(vec![]);
+        }
+        let modules = modules.unwrap();
+        let mut compiled_modules = vec![];
+        for module_bytes in modules.values() {
+            let compiled_module = CompiledModule::deserialize(module_bytes)?;
+            compiled_modules.push(compiled_module);
+        }
+        Ok(compiled_modules)
+    }
 }
 
 impl ModuleResolver for MemoryModuleResolver {
@@ -150,6 +169,10 @@ pub struct Publish {
     /// Run the DryRun for this transaction
     #[clap(long, default_value = "false")]
     dry_run: bool,
+
+    /// Skip the client side compatibility check
+    #[clap(long, default_value = "false")]
+    skip_client_compat_check: bool,
 }
 
 #[async_trait]
@@ -214,12 +237,7 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
             .map(|(mid, _)| mid.clone())
             .collect::<Vec<_>>();
 
-        //Because the verify modules function will load many modules from the rpc server,
-        //We need to download all modules in one rpc request and then verify the modules.
-        let mut resolver = MemoryModuleResolver::new(context.get_client().await?);
-        resolver.download(all_module_ids)?;
-        moveos_verifier::verifier::verify_modules(&sorted_modules, &resolver)?;
-        for module in sorted_modules {
+        for module in &sorted_modules {
             let module_address = module.self_id().address().to_owned();
             if module_address != pkg_address {
                 return Err(RoochError::MoveCompilationError(format!(
@@ -233,8 +251,18 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
             bundles.push(binary);
         }
 
+        //Because the verify modules function will load many modules from the rpc server,
+        //We need to download all modules in one rpc request and then verify the modules.
+        let mut resolver = MemoryModuleResolver::new(context.get_client().await?);
+        resolver.download(all_module_ids)?;
+        moveos_verifier::verifier::verify_modules(&sorted_modules, &resolver)?;
+        let old_modules = resolver.get_modules(&pkg_address)?;
+        if !old_modules.is_empty() && !self.skip_client_compat_check {
+            releaser::check_modules_compat(sorted_modules, old_modules, true)?;
+        }
+
         // Create a sender RoochAddress
-        eprintln!("Publish modules to address: {:?}", pkg_address);
+        eprintln!("Publish modules to address: {}", pkg_address);
 
         // Prepare and execute the transaction based on the action type
         let tx_result = if !self.by_move_action {
