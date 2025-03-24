@@ -136,26 +136,26 @@ module moveos_std::account {
 
    // === Account Object Functions
 
-   public fun account_address(self: &Object<Account>): address {
-      object::borrow(self).addr
+   public fun account_address(obj: &Object<Account>): address {
+      object::borrow(obj).addr
    }
 
-   public fun account_cap_address(self: &AccountCap): address {
-      self.addr
+   public fun account_cap_address(obj: &AccountCap): address {
+      obj.addr
    }
 
-   public fun account_sequence_number(self: &Object<Account>): u64 {
-      object::borrow(self).sequence_number
+   public fun account_sequence_number(obj: &Object<Account>): u64 {
+      object::borrow(obj).sequence_number
    }
 
-   public fun account_borrow_resource<T: key>(self: &Object<Account>): &T {
-      account_borrow_resource_internal(self)
+   public fun account_borrow_resource<T: key>(obj: &Object<Account>): &T {
+      account_borrow_resource_internal(obj)
    }
 
-   fun account_borrow_resource_internal<T: key>(self: &Object<Account>): &T {
+   fun account_borrow_resource_internal<T: key>(obj: &Object<Account>): &T {
       let key = key<T>();
-      assert!(object::contains_field(self, key), ErrorResourceNotExists);
-      object::borrow_field_internal(object::id(self), key)
+      assert!(object::contains_field(obj, key), ErrorResourceNotExists);
+      object::borrow_field_internal(object::id(obj), key)
    }
 
    #[private_generics(T)]
@@ -174,10 +174,10 @@ module moveos_std::account {
       account_move_resource_to_internal(obj, resource)
    }
 
-   fun account_move_resource_to_internal<T: key>(self: &mut Object<Account>, resource: T){
+   fun account_move_resource_to_internal<T: key>(obj: &mut Object<Account>, resource: T){
       let key = key<T>();
-      assert!(!object::contains_field(self, key), ErrorResourceAlreadyExists);
-      object::add_field_internal<std::string::String, T>(object::id(self), key, resource)
+      assert!(!object::contains_field(obj, key), ErrorResourceAlreadyExists);
+      object::add_field_internal<std::string::String, T>(object::id(obj), key, resource)
    }
 
    
