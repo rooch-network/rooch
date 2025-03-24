@@ -1064,6 +1064,16 @@
             "minimum": 0.0
           },
           {
+            "type": "integer",
+            "format": "uint16",
+            "minimum": 0.0
+          },
+          {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0.0
+          },
+          {
             "description": "u64, u128, U256 is too large to be serialized in json so we use string to represent them",
             "allOf": [
               {
@@ -1075,19 +1085,13 @@
             "$ref": "#/components/schemas/u128"
           },
           {
+            "$ref": "#/components/schemas/move_core_types::u256::U256"
+          },
+          {
             "type": "boolean"
           },
           {
             "$ref": "#/components/schemas/move_core_types::account_address::AccountAddress"
-          },
-          {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/AnnotatedMoveValueView"
-            }
-          },
-          {
-            "$ref": "#/components/schemas/AnnotatedMoveStructVectorView"
           },
           {
             "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
@@ -1099,17 +1103,13 @@
             "$ref": "#/components/schemas/SpecificStructView"
           },
           {
-            "type": "integer",
-            "format": "uint16",
-            "minimum": 0.0
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AnnotatedMoveValueView"
+            }
           },
           {
-            "type": "integer",
-            "format": "uint32",
-            "minimum": 0.0
-          },
-          {
-            "$ref": "#/components/schemas/move_core_types::u256::U256"
+            "$ref": "#/components/schemas/AnnotatedMoveStructVectorView"
           }
         ]
       },

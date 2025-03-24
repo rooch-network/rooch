@@ -31,6 +31,11 @@ fn test_annotated_move_value_view_primitives() {
             AnnotatedMoveValueView::U16(1234),
         ),
         (
+            AnnotatedMoveValue::U16(u16::MAX),
+            json!(u16::MAX),
+            AnnotatedMoveValueView::U16(u16::MAX),
+        ),
+        (
             AnnotatedMoveValue::U32(12345678),
             json!(12345678),
             AnnotatedMoveValueView::U32(12345678),
@@ -74,7 +79,6 @@ fn test_annotated_move_value_view_primitives() {
     for (input, expected_json, expected_view) in cases {
         let view: AnnotatedMoveValueView = input.into();
         assert_eq!(view, expected_view);
-
         let serialized = serde_json::to_value(&view).unwrap();
         assert_eq!(serialized, expected_json);
     }
@@ -105,6 +109,28 @@ fn test_annotated_move_value_view_vector() {
     let expected_json = json!([1, 2, 3]);
     assert_eq!(serialized, expected_json);
 
+    // Test vector of primitive types
+    let vec_u16 = AnnotatedMoveValue::Vector(
+        TypeTag::U16,
+        vec![
+            AnnotatedMoveValue::U16(1),
+            AnnotatedMoveValue::U16(u16::MAX),
+        ],
+    );
+
+    let view: AnnotatedMoveValueView = vec_u16.into();
+    let expected = AnnotatedMoveValueView::Vector(vec![
+        AnnotatedMoveValueView::U16(1),
+        AnnotatedMoveValueView::U16(u16::MAX),
+    ]);
+
+    assert_eq!(view, expected);
+
+    let serialized = serde_json::to_value(&view).unwrap();
+    let expected_json = json!([1, u16::MAX]);
+    //println!("{}", serialized);
+    assert_eq!(serialized, expected_json);
+
     // Test empty vector
     let empty_vec = AnnotatedMoveValue::Vector(TypeTag::U8, vec![]);
     let view: AnnotatedMoveValueView = empty_vec.into();
@@ -130,10 +156,14 @@ fn test_annotated_move_value_view_struct() {
     let fields = vec![
         (
             Identifier::new("field1").unwrap(),
-            AnnotatedMoveValue::U64(42),
+            AnnotatedMoveValue::U16(u16::MAX),
         ),
         (
             Identifier::new("field2").unwrap(),
+            AnnotatedMoveValue::U64(42),
+        ),
+        (
+            Identifier::new("field3").unwrap(),
             AnnotatedMoveValue::Bool(true),
         ),
     ];
@@ -148,23 +178,40 @@ fn test_annotated_move_value_view_struct() {
     let view: AnnotatedMoveValueView = input.into();
 
     // Extract struct view
-    if let AnnotatedMoveValueView::Struct(struct_view) = view {
+    if let AnnotatedMoveValueView::Struct(struct_view) = &view {
         assert_eq!(struct_view.abilities, 7); // COPY | DROP | STORE = 7
         assert_eq!(struct_view.type_, StrView(struct_tag));
 
         let fields = &struct_view.value;
-        assert_eq!(fields.len(), 2);
+        assert_eq!(fields.len(), 3);
         assert_eq!(
             fields.get(&Identifier::new("field1").unwrap()),
-            Some(&AnnotatedMoveValueView::U64(StrView(42)))
+            Some(&AnnotatedMoveValueView::U16(u16::MAX))
         );
         assert_eq!(
             fields.get(&Identifier::new("field2").unwrap()),
+            Some(&AnnotatedMoveValueView::U64(StrView(42)))
+        );
+        assert_eq!(
+            fields.get(&Identifier::new("field3").unwrap()),
             Some(&AnnotatedMoveValueView::Bool(true))
         );
     } else {
         panic!("Expected Struct variant");
     }
+
+    let serialized = serde_json::to_value(&view).unwrap();
+    let expected_json = json!({
+        "abilities": 7,
+        "type": "0x1::test::TestStruct",
+        "value": {
+            "field1": u16::MAX,
+            "field2": "42",
+            "field3": true
+        }
+    });
+    //println!("{}", serialized);
+    assert_eq!(serialized, expected_json);
 }
 
 #[test]

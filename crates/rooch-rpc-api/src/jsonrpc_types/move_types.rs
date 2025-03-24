@@ -259,20 +259,20 @@ impl SpecificStructView {
 #[serde(untagged)]
 pub enum AnnotatedMoveValueView {
     U8(u8),
+    U16(u16),
+    U32(u32),
     ///u64, u128, U256 is too large to be serialized in json
     /// so we use string to represent them
     U64(StrView<u64>),
     U128(StrView<u128>),
+    U256(StrView<u256::U256>),
     Bool(bool),
     Address(AccountAddressView),
-    Vector(Vec<AnnotatedMoveValueView>),
-    StructVector(Box<AnnotatedMoveStructVectorView>),
     Bytes(BytesView),
     Struct(AnnotatedMoveStructView),
     SpecificStruct(Box<SpecificStructView>),
-    U16(u16),
-    U32(u32),
-    U256(StrView<u256::U256>),
+    Vector(Vec<AnnotatedMoveValueView>),
+    StructVector(Box<AnnotatedMoveStructVectorView>),
 }
 
 impl AnnotatedMoveValueView {
