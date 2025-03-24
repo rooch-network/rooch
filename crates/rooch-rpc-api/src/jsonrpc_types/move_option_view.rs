@@ -10,10 +10,10 @@ use moveos_types::{
     state::{MoveStructType, PlaceholderStruct},
 };
 use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use std::convert::TryFrom;
 
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Eq, PartialEq)]
+#[derive(Debug, Clone, Serialize, JsonSchema, Eq, PartialEq)]
 pub struct MoveOptionView(Option<AnnotatedMoveValueView>);
 
 impl MoveOptionView {

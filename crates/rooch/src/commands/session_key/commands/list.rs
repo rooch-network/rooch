@@ -4,13 +4,11 @@
 use crate::cli_types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
 use clap::Parser;
-use move_core_types::identifier::Identifier;
 use moveos_types::module_binding::MoveFunctionCaller;
-use rooch_rpc_api::jsonrpc_types::{AnnotatedMoveValueView, StateOptions, StatePageView};
+use rooch_rpc_api::jsonrpc_types::{StateOptions, StatePageView};
 use rooch_types::address::ParsedAddress;
 use rooch_types::error::{RoochError, RoochResult};
 use rooch_types::framework::session_key::SessionKeyModule;
-use std::collections::BTreeMap;
 
 /// List all session keys by address
 #[derive(Debug, Parser)]
@@ -28,8 +26,8 @@ pub struct ListCommand {
 }
 
 #[async_trait]
-impl CommandAction<Vec<BTreeMap<Identifier, AnnotatedMoveValueView>>> for ListCommand {
-    async fn execute(self) -> RoochResult<Vec<BTreeMap<Identifier, AnnotatedMoveValueView>>> {
+impl CommandAction<Vec<serde_json::Value>> for ListCommand {
+    async fn execute(self) -> RoochResult<Vec<serde_json::Value>> {
         let context = self.context_options.build()?;
         let mapping = context.address_mapping();
         let address_addr = self.address.into_account_address(&mapping)?;
@@ -53,13 +51,11 @@ impl CommandAction<Vec<BTreeMap<Identifier, AnnotatedMoveValueView>>> for ListCo
     }
 }
 
-fn extract_session_keys(
-    field_result: StatePageView,
-) -> Vec<BTreeMap<Identifier, AnnotatedMoveValueView>> {
+fn extract_session_keys(field_result: StatePageView) -> Vec<serde_json::Value> {
     let mut value = vec![];
     for data in field_result.data {
         if let Some(decoded_value) = data.state.decoded_value {
-            value.push(decoded_value.value)
+            value.push(decoded_value);
         }
     }
     value

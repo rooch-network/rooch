@@ -3,11 +3,11 @@
 
 use moveos_types::moveos_std::decimal_value::DecimalValue;
 use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use serde_json::Number;
 use std::fmt::Display;
 
-#[derive(Debug, Clone, JsonSchema, Deserialize, Serialize, Eq, PartialEq)]
+#[derive(Debug, Clone, JsonSchema, Serialize, Eq, PartialEq)]
 pub struct DecimalValueView(#[schemars(with = "Number")] DecimalValue);
 
 impl From<DecimalValue> for DecimalValueView {

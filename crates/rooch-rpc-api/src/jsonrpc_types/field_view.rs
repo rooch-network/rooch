@@ -18,7 +18,7 @@ pub struct IndexerFieldView {
     // pub created_at: StrView<u64>,
     // /// the field item updated timestamp on chain
     // pub updated_at: StrView<u64>,
-    pub decoded_value: Option<AnnotatedMoveStructView>,
+    pub decoded_value: Option<serde_json::Value>,
 }
 
 impl IndexerFieldView {
@@ -41,7 +41,7 @@ impl IndexerFieldView {
             field_key: field.field_key.into(),
             state: state.into(),
             sort_key: StrView(field.sort_key).to_string(),
-            decoded_value: Some(AnnotatedMoveStructView::from(decoded_value)),
+            decoded_value: Some(AnnotatedMoveStructView::from(decoded_value).into()),
         }
     }
 }

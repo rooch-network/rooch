@@ -983,135 +983,11 @@
           "value"
         ],
         "properties": {
-          "decoded_value": {
-            "$ref": "#/components/schemas/AnnotatedMoveValueView"
-          },
+          "decoded_value": true,
           "value": {
             "$ref": "#/components/schemas/FunctionReturnValueView"
           }
         }
-      },
-      "AnnotatedMoveStructVectorView": {
-        "type": "object",
-        "required": [
-          "abilities",
-          "field",
-          "type",
-          "value"
-        ],
-        "properties": {
-          "abilities": {
-            "description": "alilities of each element",
-            "type": "integer",
-            "format": "uint8",
-            "minimum": 0.0
-          },
-          "field": {
-            "description": "field of each element",
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/move_core_types::identifier::Identifier"
-            }
-          },
-          "type": {
-            "description": "type of each element",
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/move_core_types::language_storage::StructTag"
-              }
-            ]
-          },
-          "value": {
-            "type": "array",
-            "items": {
-              "type": "array",
-              "items": {
-                "$ref": "#/components/schemas/AnnotatedMoveValueView"
-              }
-            }
-          }
-        }
-      },
-      "AnnotatedMoveStructView": {
-        "type": "object",
-        "required": [
-          "abilities",
-          "type",
-          "value"
-        ],
-        "properties": {
-          "abilities": {
-            "type": "integer",
-            "format": "uint8",
-            "minimum": 0.0
-          },
-          "type": {
-            "$ref": "#/components/schemas/move_core_types::language_storage::StructTag"
-          },
-          "value": {
-            "type": "object",
-            "additionalProperties": {
-              "$ref": "#/components/schemas/AnnotatedMoveValueView"
-            }
-          }
-        }
-      },
-      "AnnotatedMoveValueView": {
-        "anyOf": [
-          {
-            "type": "integer",
-            "format": "uint8",
-            "minimum": 0.0
-          },
-          {
-            "type": "integer",
-            "format": "uint16",
-            "minimum": 0.0
-          },
-          {
-            "type": "integer",
-            "format": "uint32",
-            "minimum": 0.0
-          },
-          {
-            "description": "u64, u128, U256 is too large to be serialized in json so we use string to represent them",
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/u64"
-              }
-            ]
-          },
-          {
-            "$ref": "#/components/schemas/u128"
-          },
-          {
-            "$ref": "#/components/schemas/move_core_types::u256::U256"
-          },
-          {
-            "type": "boolean"
-          },
-          {
-            "$ref": "#/components/schemas/move_core_types::account_address::AccountAddress"
-          },
-          {
-            "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
-          },
-          {
-            "$ref": "#/components/schemas/SpecificStructView"
-          },
-          {
-            "$ref": "#/components/schemas/AnnotatedMoveStructView"
-          },
-          {
-            "$ref": "#/components/schemas/AnnotatedMoveStructVectorView"
-          },
-          {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/AnnotatedMoveValueView"
-            }
-          }
-        ]
       },
       "BalanceInfoView": {
         "type": "object",
@@ -1275,9 +1151,6 @@
             ]
           }
         }
-      },
-      "DecimalValueView": {
-        "type": "number"
       },
       "DisplayFieldsView": {
         "type": "object",
@@ -1496,16 +1369,7 @@
           "event_type"
         ],
         "properties": {
-          "decoded_event_data": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/AnnotatedMoveStructView"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
+          "decoded_event_data": true,
           "event_data": {
             "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
           },
@@ -1646,16 +1510,7 @@
           "created_at": {
             "$ref": "#/components/schemas/u64"
           },
-          "decoded_event_data": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/AnnotatedMoveStructView"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
+          "decoded_event_data": true,
           "event_data": {
             "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
           },
@@ -1684,16 +1539,7 @@
           "state"
         ],
         "properties": {
-          "decoded_value": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/AnnotatedMoveStructView"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
+          "decoded_value": true,
           "field_key": {
             "$ref": "#/components/schemas/moveos_types::state::FieldKey"
           },
@@ -1723,16 +1569,7 @@
           "created_at": {
             "$ref": "#/components/schemas/u64"
           },
-          "decoded_value": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/AnnotatedMoveStructView"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
+          "decoded_value": true,
           "display_fields": {
             "anyOf": [
               {
@@ -2329,22 +2166,6 @@
           }
         }
       },
-      "MoveAsciiString": {
-        "type": "object",
-        "required": [
-          "bytes"
-        ],
-        "properties": {
-          "bytes": {
-            "type": "array",
-            "items": {
-              "type": "integer",
-              "format": "uint8",
-              "minimum": 0.0
-            }
-          }
-        }
-      },
       "MoveFunctionTypeParamView": {
         "description": "Move function generic type param",
         "type": "object",
@@ -2398,32 +2219,6 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/MoveFunctionTypeParamView"
-            }
-          }
-        }
-      },
-      "MoveOptionView": {
-        "anyOf": [
-          {
-            "$ref": "#/components/schemas/AnnotatedMoveValueView"
-          },
-          {
-            "type": "null"
-          }
-        ]
-      },
-      "MoveString": {
-        "type": "object",
-        "required": [
-          "bytes"
-        ],
-        "properties": {
-          "bytes": {
-            "type": "array",
-            "items": {
-              "type": "integer",
-              "format": "uint8",
-              "minimum": 0.0
             }
           }
         }
@@ -2675,16 +2470,7 @@
           "created_at": {
             "$ref": "#/components/schemas/u64"
           },
-          "decoded_value": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/AnnotatedMoveStructView"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
+          "decoded_value": true,
           "display_fields": {
             "anyOf": [
               {
@@ -3273,26 +3059,6 @@
             "enum": [
               "date-import-mode"
             ]
-          }
-        ]
-      },
-      "SpecificStructView": {
-        "description": "Some specific struct that we want to display in a special way for better readability",
-        "anyOf": [
-          {
-            "$ref": "#/components/schemas/MoveString"
-          },
-          {
-            "$ref": "#/components/schemas/MoveAsciiString"
-          },
-          {
-            "$ref": "#/components/schemas/ObjectID"
-          },
-          {
-            "$ref": "#/components/schemas/DecimalValueView"
-          },
-          {
-            "$ref": "#/components/schemas/MoveOptionView"
           }
         ]
       },
