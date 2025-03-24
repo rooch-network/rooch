@@ -234,6 +234,7 @@ impl TryFrom<&AnnotatedMoveStruct> for DecimalValue {
 }
 
 #[derive(Deserialize, Serialize)]
+#[serde(untagged)]
 enum NumberOrString {
     Number(Number),
     String(String),
@@ -465,6 +466,8 @@ mod tests {
         };
 
         let serialized = serde_json::to_string(&decimal_value).unwrap();
+        //number
+        assert_eq!(serialized, "1234.567");
         //println!("serialized: {}", serialized);
         let deserialized: DecimalValue = serde_json::from_str(&serialized).unwrap();
         assert_eq!(deserialized, decimal_value);
@@ -476,6 +479,8 @@ mod tests {
 
         let serialized = serde_json::to_string(&decimal_value).unwrap();
         //println!("serialized: {}", serialized);
+        //string
+        assert_eq!(serialized, "\"340282366920938463463374607431768211.455\"");
         let deserialized: DecimalValue = serde_json::from_str(&serialized).unwrap();
         assert_eq!(deserialized, decimal_value);
     }

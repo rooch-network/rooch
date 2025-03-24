@@ -52,11 +52,13 @@ impl CommandAction<Vec<serde_json::Value>> for ListCommand {
 }
 
 fn extract_session_keys(field_result: StatePageView) -> Vec<serde_json::Value> {
-    let mut value = vec![];
+    let mut result = vec![];
     for data in field_result.data {
         if let Some(decoded_value) = data.state.decoded_value {
-            value.push(decoded_value);
+            if let Some(value) = decoded_value.get("value") {
+                result.push(value.clone());
+            }
         }
     }
-    value
+    result
 }
