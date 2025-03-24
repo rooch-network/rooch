@@ -3,16 +3,39 @@
 
 import * as fs from 'fs'
 import { RoochAddress } from '../src/address/index.js'
-import { getRoochNodeUrl, RoochClient, RoochWebSocketTransport } from '../src/client/index.js'
+import { getRoochNodeUrl, RoochWebSocketTransport } from '../src/client/index.js'
 import { Secp256k1Keypair } from '../src/keypairs/index.js'
 import { Transaction } from '../src/transactions/index.js'
 import { Args } from '../src/bcs/args.js'
+import { RoochClient as RoochClientImpl } from '../src/client.js'
 
 import { TestBox as TestBoxA, RoochContainer } from '@roochnetwork/test-suite'
+import type { Provider } from '../src/providers/provider.js'
 
-export const DEFAULT_NODE_URL = import.meta.env.VITE_FULLNODE_URL ?? getRoochNodeUrl('localnet')
+// Use process.env for Node.js environment
+export const DEFAULT_NODE_URL = process.env.VITE_FULLNODE_URL ?? getRoochNodeUrl('localnet')
 
 type TransportType = 'http' | 'ws'
+
+type RoochClient = RoochClientImpl & {
+  destroy(): void
+  signAndExecuteTransaction(params: {
+    transaction: Transaction
+    signer: Secp256k1Keypair
+  }): Promise<any>
+}
+
+class HttpProvider implements Provider {
+  constructor(private readonly url: string) {}
+
+  isWebSocket(): boolean {
+    return false
+  }
+
+  subscribe<T>(): never {
+    throw new Error('HTTP provider does not support subscriptions')
+  }
+}
 
 export class TestBox extends TestBoxA {
   private client: RoochClient
@@ -22,13 +45,11 @@ export class TestBox extends TestBoxA {
     super()
     this.keypair = keypair
 
-    if (transportType === 'http') {
-      this.client = new RoochClient({ url: url || DEFAULT_NODE_URL })
-    } else {
-      this.client = new RoochClient({
-        transport: new RoochWebSocketTransport({ url: url || DEFAULT_NODE_URL }),
-      })
-    }
+    const provider: Provider = transportType === 'http'
+      ? new HttpProvider(url || DEFAULT_NODE_URL)
+      : new RoochWebSocketTransport({ url: url || DEFAULT_NODE_URL })
+
+    this.client = new RoochClientImpl(provider) as RoochClient
   }
 
   static setup(url?: string, transportType: TransportType = 'http'): TestBox {
@@ -43,25 +64,20 @@ export class TestBox extends TestBoxA {
   ): Promise<void> {
     await super.loadRoochEnv(target, port)
     const roochServerAddress = super.getRoochServerAddress()
+    const baseUrl = `http://${roochServerAddress}`
 
-    if (transportType === 'http') {
-      this.client = new RoochClient({
-        url: `http://${roochServerAddress}`,
-      })
-    } else {
-      this.client = new RoochClient({
-        transport: new RoochWebSocketTransport({
-          url: `http://${roochServerAddress}`,
-        }),
-      })
-    }
+    const provider: Provider = transportType === 'http'
+      ? new HttpProvider(baseUrl)
+      : new RoochWebSocketTransport({ url: baseUrl })
 
-    return
+    this.client = new RoochClientImpl(provider) as RoochClient
   }
 
   async cleanEnv() {
     // Clean up client resources
-    this.client.destroy()
+    if (this.client?.destroy) {
+      this.client.destroy()
+    }
 
     // Clean up environment
     super.cleanEnv()
@@ -101,9 +117,8 @@ export class TestBox extends TestBoxA {
       `move build -p ${packagePath} --named-addresses ${namedAddresses} --install-dir ${this.tmpDir.name} --json`,
     )
 
-    let fileBytes: Uint8Array
     try {
-      fileBytes = fs.readFileSync(this.tmpDir.name + '/package.rpd')
+      const fileBytes = new Uint8Array(fs.readFileSync(this.tmpDir.name + '/package.rpd'))
       const tx = new Transaction()
       tx.callFunction({
         target: '0x2::module_store::publish_package_entry',
