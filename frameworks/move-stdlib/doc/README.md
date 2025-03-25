@@ -1,5 +1,5 @@
 
-<a name="@Move_standard_library_0"></a>
+<a id="@Move_standard_library_0"></a>
 
 # Move standard library
 
@@ -7,7 +7,7 @@
 This is the reference documentation of the Move standard library.
 
 
-<a name="@Index_1"></a>
+<a id="@Index_1"></a>
 
 ## Index
 
@@ -35,7 +35,7 @@ This is the reference documentation of the Move standard library.
 
 
 
-<a name="@Reference_2"></a>
+<a id="@Reference_2"></a>
 
 ## Reference
 

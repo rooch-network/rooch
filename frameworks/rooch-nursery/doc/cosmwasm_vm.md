@@ -1,5 +1,5 @@
 
-<a name="0xa_cosmwasm_vm"></a>
+<a id="0xa_cosmwasm_vm"></a>
 
 # Module `0xa::cosmwasm_vm`
 
@@ -29,7 +29,7 @@
 
 
 
-<a name="0xa_cosmwasm_vm_Instance"></a>
+<a id="0xa_cosmwasm_vm_Instance"></a>
 
 ## Resource `Instance`
 
@@ -40,7 +40,7 @@
 
 
 
-<a name="0xa_cosmwasm_vm_code_checksum"></a>
+<a id="0xa_cosmwasm_vm_code_checksum"></a>
 
 ## Function `code_checksum`
 
@@ -51,7 +51,7 @@
 
 
 
-<a name="0xa_cosmwasm_vm_store"></a>
+<a id="0xa_cosmwasm_vm_store"></a>
 
 ## Function `store`
 
@@ -62,7 +62,7 @@
 
 
 
-<a name="0xa_cosmwasm_vm_from_code"></a>
+<a id="0xa_cosmwasm_vm_from_code"></a>
 
 ## Function `from_code`
 
@@ -73,7 +73,7 @@
 
 
 
-<a name="0xa_cosmwasm_vm_call_instantiate"></a>
+<a id="0xa_cosmwasm_vm_call_instantiate"></a>
 
 ## Function `call_instantiate`
 
@@ -85,7 +85,7 @@
 
 
 
-<a name="0xa_cosmwasm_vm_call_execute"></a>
+<a id="0xa_cosmwasm_vm_call_execute"></a>
 
 ## Function `call_execute`
 
@@ -97,7 +97,7 @@
 
 
 
-<a name="0xa_cosmwasm_vm_call_query"></a>
+<a id="0xa_cosmwasm_vm_call_query"></a>
 
 ## Function `call_query`
 
@@ -109,7 +109,7 @@
 
 
 
-<a name="0xa_cosmwasm_vm_call_migrate"></a>
+<a id="0xa_cosmwasm_vm_call_migrate"></a>
 
 ## Function `call_migrate`
 
@@ -121,7 +121,7 @@
 
 
 
-<a name="0xa_cosmwasm_vm_call_reply"></a>
+<a id="0xa_cosmwasm_vm_call_reply"></a>
 
 ## Function `call_reply`
 
@@ -132,7 +132,7 @@
 
 
 
-<a name="0xa_cosmwasm_vm_call_sudo"></a>
+<a id="0xa_cosmwasm_vm_call_sudo"></a>
 
 ## Function `call_sudo`
 
@@ -144,7 +144,7 @@
 
 
 
-<a name="0xa_cosmwasm_vm_destroy_instance"></a>
+<a id="0xa_cosmwasm_vm_destroy_instance"></a>
 
 ## Function `destroy_instance`
 

@@ -1,5 +1,5 @@
 
-<a name="0x2_simple_multimap"></a>
+<a id="0x2_simple_multimap"></a>
 
 # Module `0x2::simple_multimap`
 
@@ -32,7 +32,7 @@ A simple map that stores key/value pairs in a vector, and support multi values f
 
 
 
-<a name="0x2_simple_multimap_SimpleMultiMap"></a>
+<a id="0x2_simple_multimap_SimpleMultiMap"></a>
 
 ## Struct `SimpleMultiMap`
 
@@ -43,7 +43,7 @@ A simple map that stores key/value pairs in a vector, and support multi values f
 
 
 
-<a name="0x2_simple_multimap_Element"></a>
+<a id="0x2_simple_multimap_Element"></a>
 
 ## Struct `Element`
 
@@ -54,12 +54,12 @@ A simple map that stores key/value pairs in a vector, and support multi values f
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x2_simple_multimap_ErrorKeyNotFound"></a>
+<a id="0x2_simple_multimap_ErrorKeyNotFound"></a>
 
 Map key is not found
 
@@ -69,7 +69,7 @@ Map key is not found
 
 
 
-<a name="0x2_simple_multimap_new"></a>
+<a id="0x2_simple_multimap_new"></a>
 
 ## Function `new`
 
@@ -81,7 +81,7 @@ Create an empty SimpleMultiMap.
 
 
 
-<a name="0x2_simple_multimap_length"></a>
+<a id="0x2_simple_multimap_length"></a>
 
 ## Function `length`
 
@@ -92,7 +92,7 @@ Create an empty SimpleMultiMap.
 
 
 
-<a name="0x2_simple_multimap_is_empty"></a>
+<a id="0x2_simple_multimap_is_empty"></a>
 
 ## Function `is_empty`
 
@@ -103,7 +103,7 @@ Create an empty SimpleMultiMap.
 
 
 
-<a name="0x2_simple_multimap_borrow"></a>
+<a id="0x2_simple_multimap_borrow"></a>
 
 ## Function `borrow`
 
@@ -114,7 +114,7 @@ Create an empty SimpleMultiMap.
 
 
 
-<a name="0x2_simple_multimap_borrow_mut"></a>
+<a id="0x2_simple_multimap_borrow_mut"></a>
 
 ## Function `borrow_mut`
 
@@ -125,7 +125,7 @@ Create an empty SimpleMultiMap.
 
 
 
-<a name="0x2_simple_multimap_borrow_first"></a>
+<a id="0x2_simple_multimap_borrow_first"></a>
 
 ## Function `borrow_first`
 
@@ -136,7 +136,7 @@ Create an empty SimpleMultiMap.
 
 
 
-<a name="0x2_simple_multimap_borrow_first_mut"></a>
+<a id="0x2_simple_multimap_borrow_first_mut"></a>
 
 ## Function `borrow_first_mut`
 
@@ -147,7 +147,7 @@ Create an empty SimpleMultiMap.
 
 
 
-<a name="0x2_simple_multimap_borrow_first_with_default"></a>
+<a id="0x2_simple_multimap_borrow_first_with_default"></a>
 
 ## Function `borrow_first_with_default`
 
@@ -158,7 +158,7 @@ Create an empty SimpleMultiMap.
 
 
 
-<a name="0x2_simple_multimap_contains_key"></a>
+<a id="0x2_simple_multimap_contains_key"></a>
 
 ## Function `contains_key`
 
@@ -169,7 +169,7 @@ Create an empty SimpleMultiMap.
 
 
 
-<a name="0x2_simple_multimap_destroy_empty"></a>
+<a id="0x2_simple_multimap_destroy_empty"></a>
 
 ## Function `destroy_empty`
 
@@ -180,7 +180,7 @@ Create an empty SimpleMultiMap.
 
 
 
-<a name="0x2_simple_multimap_add"></a>
+<a id="0x2_simple_multimap_add"></a>
 
 ## Function `add`
 
@@ -191,7 +191,7 @@ Create an empty SimpleMultiMap.
 
 
 
-<a name="0x2_simple_multimap_keys"></a>
+<a id="0x2_simple_multimap_keys"></a>
 
 ## Function `keys`
 
@@ -203,7 +203,7 @@ Return all keys in the map. This requires keys to be copyable.
 
 
 
-<a name="0x2_simple_multimap_values"></a>
+<a id="0x2_simple_multimap_values"></a>
 
 ## Function `values`
 
@@ -216,7 +216,7 @@ This function flatten the vector<vector<Value>> to vector<Value>
 
 
 
-<a name="0x2_simple_multimap_to_vec_pair"></a>
+<a id="0x2_simple_multimap_to_vec_pair"></a>
 
 ## Function `to_vec_pair`
 
@@ -230,7 +230,7 @@ Note: Do not assume the key's order
 
 
 
-<a name="0x2_simple_multimap_remove"></a>
+<a id="0x2_simple_multimap_remove"></a>
 
 ## Function `remove`
 

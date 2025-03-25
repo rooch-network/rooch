@@ -1,5 +1,5 @@
 
-<a name="0x1_type_name"></a>
+<a id="0x1_type_name"></a>
 
 # Module `0x1::type_name`
 
@@ -17,7 +17,7 @@ Functionality for converting Move types into values. Use with care!
 
 
 
-<a name="0x1_type_name_TypeName"></a>
+<a id="0x1_type_name_TypeName"></a>
 
 ## Struct `TypeName`
 
@@ -28,7 +28,7 @@ Functionality for converting Move types into values. Use with care!
 
 
 
-<a name="0x1_type_name_get"></a>
+<a id="0x1_type_name_get"></a>
 
 ## Function `get`
 
@@ -40,7 +40,7 @@ Return a value representation of the type <code>T</code>.
 
 
 
-<a name="0x1_type_name_borrow_string"></a>
+<a id="0x1_type_name_borrow_string"></a>
 
 ## Function `borrow_string`
 
@@ -52,7 +52,7 @@ Get the String representation of <code>self</code>
 
 
 
-<a name="0x1_type_name_into_string"></a>
+<a id="0x1_type_name_into_string"></a>
 
 ## Function `into_string`
 

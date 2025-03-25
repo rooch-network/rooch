@@ -1,5 +1,5 @@
 
-<a name="0x2_groth16"></a>
+<a id="0x2_groth16"></a>
 
 # Module `0x2::groth16`
 
@@ -25,7 +25,7 @@ Source from https://github.com/MystenLabs/sui/blob/924c294d9b4a98d5bc50cd6c830e7
 
 
 
-<a name="0x2_groth16_Curve"></a>
+<a id="0x2_groth16_Curve"></a>
 
 ## Struct `Curve`
 
@@ -38,7 +38,7 @@ This should be given as the first parameter to <code>prepare_verifying_key</code
 
 
 
-<a name="0x2_groth16_PreparedVerifyingKey"></a>
+<a id="0x2_groth16_PreparedVerifyingKey"></a>
 
 ## Struct `PreparedVerifyingKey`
 
@@ -50,7 +50,7 @@ A <code><a href="groth16.md#0x2_groth16_PreparedVerifyingKey">PreparedVerifyingK
 
 
 
-<a name="0x2_groth16_PublicProofInputs"></a>
+<a id="0x2_groth16_PublicProofInputs"></a>
 
 ## Struct `PublicProofInputs`
 
@@ -62,7 +62,7 @@ A <code><a href="groth16.md#0x2_groth16_PublicProofInputs">PublicProofInputs</a>
 
 
 
-<a name="0x2_groth16_ProofPoints"></a>
+<a id="0x2_groth16_ProofPoints"></a>
 
 ## Struct `ProofPoints`
 
@@ -74,12 +74,12 @@ A <code><a href="groth16.md#0x2_groth16_ProofPoints">ProofPoints</a></code> wrap
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x2_groth16_E_INVALID_CURVE"></a>
+<a id="0x2_groth16_E_INVALID_CURVE"></a>
 
 
 
@@ -88,7 +88,7 @@ A <code><a href="groth16.md#0x2_groth16_ProofPoints">ProofPoints</a></code> wrap
 
 
 
-<a name="0x2_groth16_E_INVALID_VERIFYING_KEY"></a>
+<a id="0x2_groth16_E_INVALID_VERIFYING_KEY"></a>
 
 
 
@@ -97,7 +97,7 @@ A <code><a href="groth16.md#0x2_groth16_ProofPoints">ProofPoints</a></code> wrap
 
 
 
-<a name="0x2_groth16_E_TOO_MANY_PUBLIC_INPUTS"></a>
+<a id="0x2_groth16_E_TOO_MANY_PUBLIC_INPUTS"></a>
 
 
 
@@ -106,7 +106,7 @@ A <code><a href="groth16.md#0x2_groth16_ProofPoints">ProofPoints</a></code> wrap
 
 
 
-<a name="0x2_groth16_bls12381"></a>
+<a id="0x2_groth16_bls12381"></a>
 
 ## Function `bls12381`
 
@@ -118,7 +118,7 @@ Return the <code><a href="groth16.md#0x2_groth16_Curve">Curve</a></code> value i
 
 
 
-<a name="0x2_groth16_bn254"></a>
+<a id="0x2_groth16_bn254"></a>
 
 ## Function `bn254`
 
@@ -130,7 +130,7 @@ Return the <code><a href="groth16.md#0x2_groth16_Curve">Curve</a></code> value i
 
 
 
-<a name="0x2_groth16_pvk_from_bytes"></a>
+<a id="0x2_groth16_pvk_from_bytes"></a>
 
 ## Function `pvk_from_bytes`
 
@@ -142,7 +142,7 @@ Creates a <code><a href="groth16.md#0x2_groth16_PreparedVerifyingKey">PreparedVe
 
 
 
-<a name="0x2_groth16_pvk_to_bytes"></a>
+<a id="0x2_groth16_pvk_to_bytes"></a>
 
 ## Function `pvk_to_bytes`
 
@@ -154,7 +154,7 @@ Returns bytes of the four components of the <code><a href="groth16.md#0x2_groth1
 
 
 
-<a name="0x2_groth16_public_proof_inputs_from_bytes"></a>
+<a id="0x2_groth16_public_proof_inputs_from_bytes"></a>
 
 ## Function `public_proof_inputs_from_bytes`
 
@@ -166,7 +166,7 @@ Creates a <code><a href="groth16.md#0x2_groth16_PublicProofInputs">PublicProofIn
 
 
 
-<a name="0x2_groth16_proof_points_from_bytes"></a>
+<a id="0x2_groth16_proof_points_from_bytes"></a>
 
 ## Function `proof_points_from_bytes`
 
@@ -178,7 +178,7 @@ Creates a Groth16 <code><a href="groth16.md#0x2_groth16_ProofPoints">ProofPoints
 
 
 
-<a name="0x2_groth16_prepare_verifying_key"></a>
+<a id="0x2_groth16_prepare_verifying_key"></a>
 
 ## Function `prepare_verifying_key`
 
@@ -195,7 +195,7 @@ This can be used as inputs for the <code>verify_groth16_proof</code> function.
 
 
 
-<a name="0x2_groth16_verify_groth16_proof"></a>
+<a id="0x2_groth16_verify_groth16_proof"></a>
 
 ## Function `verify_groth16_proof`
 

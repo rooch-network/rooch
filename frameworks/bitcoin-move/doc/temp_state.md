@@ -1,5 +1,5 @@
 
-<a name="0x4_temp_state"></a>
+<a id="0x4_temp_state"></a>
 
 # Module `0x4::temp_state`
 
@@ -25,7 +25,7 @@ This module is used to store temporary states for UTXO and Inscription.
 
 
 
-<a name="0x4_temp_state_TempState"></a>
+<a id="0x4_temp_state_TempState"></a>
 
 ## Struct `TempState`
 
@@ -36,12 +36,12 @@ This module is used to store temporary states for UTXO and Inscription.
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x4_temp_state_ErrorMaxTempStateExceeded"></a>
+<a id="0x4_temp_state_ErrorMaxTempStateExceeded"></a>
 
 
 
@@ -50,7 +50,7 @@ This module is used to store temporary states for UTXO and Inscription.
 
 
 
-<a name="0x4_temp_state_ErrorTempStateNotFound"></a>
+<a id="0x4_temp_state_ErrorTempStateNotFound"></a>
 
 
 
@@ -59,7 +59,7 @@ This module is used to store temporary states for UTXO and Inscription.
 
 
 
-<a name="0x4_temp_state_MAX_TEMP_STATES"></a>
+<a id="0x4_temp_state_MAX_TEMP_STATES"></a>
 
 
 
@@ -68,7 +68,7 @@ This module is used to store temporary states for UTXO and Inscription.
 
 
 
-<a name="0x4_temp_state_new"></a>
+<a id="0x4_temp_state_new"></a>
 
 ## Function `new`
 
@@ -79,7 +79,7 @@ This module is used to store temporary states for UTXO and Inscription.
 
 
 
-<a name="0x4_temp_state_add_state"></a>
+<a id="0x4_temp_state_add_state"></a>
 
 ## Function `add_state`
 
@@ -90,7 +90,7 @@ This module is used to store temporary states for UTXO and Inscription.
 
 
 
-<a name="0x4_temp_state_borrow_state"></a>
+<a id="0x4_temp_state_borrow_state"></a>
 
 ## Function `borrow_state`
 
@@ -101,7 +101,7 @@ This module is used to store temporary states for UTXO and Inscription.
 
 
 
-<a name="0x4_temp_state_borrow_mut_state"></a>
+<a id="0x4_temp_state_borrow_mut_state"></a>
 
 ## Function `borrow_mut_state`
 
@@ -112,7 +112,7 @@ This module is used to store temporary states for UTXO and Inscription.
 
 
 
-<a name="0x4_temp_state_remove_state"></a>
+<a id="0x4_temp_state_remove_state"></a>
 
 ## Function `remove_state`
 
@@ -123,7 +123,7 @@ This module is used to store temporary states for UTXO and Inscription.
 
 
 
-<a name="0x4_temp_state_contains_state"></a>
+<a id="0x4_temp_state_contains_state"></a>
 
 ## Function `contains_state`
 
@@ -134,7 +134,7 @@ This module is used to store temporary states for UTXO and Inscription.
 
 
 
-<a name="0x4_temp_state_remove"></a>
+<a id="0x4_temp_state_remove"></a>
 
 ## Function `remove`
 

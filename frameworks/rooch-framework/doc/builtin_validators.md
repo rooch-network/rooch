@@ -1,5 +1,5 @@
 
-<a name="0x3_builtin_validators"></a>
+<a id="0x3_builtin_validators"></a>
 
 # Module `0x3::builtin_validators`
 
@@ -17,12 +17,12 @@
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x3_builtin_validators_ErrorGenesisInit"></a>
+<a id="0x3_builtin_validators_ErrorGenesisInit"></a>
 
 
 
@@ -31,7 +31,7 @@
 
 
 
-<a name="0x3_builtin_validators_SESSION_VALIDATOR_ID"></a>
+<a id="0x3_builtin_validators_SESSION_VALIDATOR_ID"></a>
 
 
 
@@ -40,7 +40,7 @@
 
 
 
-<a name="0x3_builtin_validators_BITCOIN_MULTISIGN_VALIDATOR_ID"></a>
+<a id="0x3_builtin_validators_BITCOIN_MULTISIGN_VALIDATOR_ID"></a>
 
 Bitcoin multisign validator is defined in bitcoin_move framework.
 
@@ -50,7 +50,7 @@ Bitcoin multisign validator is defined in bitcoin_move framework.
 
 
 
-<a name="0x3_builtin_validators_BITCOIN_VALIDATOR_ID"></a>
+<a id="0x3_builtin_validators_BITCOIN_VALIDATOR_ID"></a>
 
 
 
@@ -59,7 +59,7 @@ Bitcoin multisign validator is defined in bitcoin_move framework.
 
 
 
-<a name="0x3_builtin_validators_genesis_init"></a>
+<a id="0x3_builtin_validators_genesis_init"></a>
 
 ## Function `genesis_init`
 
@@ -70,7 +70,7 @@ Bitcoin multisign validator is defined in bitcoin_move framework.
 
 
 
-<a name="0x3_builtin_validators_is_builtin_auth_validator"></a>
+<a id="0x3_builtin_validators_is_builtin_auth_validator"></a>
 
 ## Function `is_builtin_auth_validator`
 

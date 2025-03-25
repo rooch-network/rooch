@@ -1,5 +1,5 @@
 
-<a name="0xa_multisign_wallet"></a>
+<a id="0xa_multisign_wallet"></a>
 
 # Module `0xa::multisign_wallet`
 
@@ -25,7 +25,7 @@ Bitcoin multisign account wallet to manage the multisign tx on Bitcoin and Rooch
 
 
 
-<a name="0xa_multisign_wallet_MultisignWallet"></a>
+<a id="0xa_multisign_wallet_MultisignWallet"></a>
 
 ## Resource `MultisignWallet`
 
@@ -36,7 +36,7 @@ Bitcoin multisign account wallet to manage the multisign tx on Bitcoin and Rooch
 
 
 
-<a name="0xa_multisign_wallet_BitcoinProposal"></a>
+<a id="0xa_multisign_wallet_BitcoinProposal"></a>
 
 ## Struct `BitcoinProposal`
 
@@ -47,7 +47,7 @@ Bitcoin multisign account wallet to manage the multisign tx on Bitcoin and Rooch
 
 
 
-<a name="0xa_multisign_wallet_RoochProposal"></a>
+<a id="0xa_multisign_wallet_RoochProposal"></a>
 
 ## Struct `RoochProposal`
 
@@ -58,12 +58,12 @@ Bitcoin multisign account wallet to manage the multisign tx on Bitcoin and Rooch
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0xa_multisign_wallet_ErrorInvalidPublicKey"></a>
+<a id="0xa_multisign_wallet_ErrorInvalidPublicKey"></a>
 
 
 
@@ -72,7 +72,7 @@ Bitcoin multisign account wallet to manage the multisign tx on Bitcoin and Rooch
 
 
 
-<a name="0xa_multisign_wallet_ErrorInvalidThreshold"></a>
+<a id="0xa_multisign_wallet_ErrorInvalidThreshold"></a>
 
 
 
@@ -81,7 +81,7 @@ Bitcoin multisign account wallet to manage the multisign tx on Bitcoin and Rooch
 
 
 
-<a name="0xa_multisign_wallet_ErrorInvalidSignature"></a>
+<a id="0xa_multisign_wallet_ErrorInvalidSignature"></a>
 
 
 
@@ -90,7 +90,7 @@ Bitcoin multisign account wallet to manage the multisign tx on Bitcoin and Rooch
 
 
 
-<a name="0xa_multisign_wallet_BITCOIN_COMPRESSED_PUBLIC_KEY_LEN"></a>
+<a id="0xa_multisign_wallet_BITCOIN_COMPRESSED_PUBLIC_KEY_LEN"></a>
 
 
 
@@ -99,7 +99,7 @@ Bitcoin multisign account wallet to manage the multisign tx on Bitcoin and Rooch
 
 
 
-<a name="0xa_multisign_wallet_ErrorInvalidParticipant"></a>
+<a id="0xa_multisign_wallet_ErrorInvalidParticipant"></a>
 
 
 
@@ -108,7 +108,7 @@ Bitcoin multisign account wallet to manage the multisign tx on Bitcoin and Rooch
 
 
 
-<a name="0xa_multisign_wallet_ErrorInvalidProposal"></a>
+<a id="0xa_multisign_wallet_ErrorInvalidProposal"></a>
 
 
 
@@ -117,7 +117,7 @@ Bitcoin multisign account wallet to manage the multisign tx on Bitcoin and Rooch
 
 
 
-<a name="0xa_multisign_wallet_ErrorInvalidProposalStatus"></a>
+<a id="0xa_multisign_wallet_ErrorInvalidProposalStatus"></a>
 
 
 
@@ -126,7 +126,7 @@ Bitcoin multisign account wallet to manage the multisign tx on Bitcoin and Rooch
 
 
 
-<a name="0xa_multisign_wallet_ErrorMultisignAccountNotFound"></a>
+<a id="0xa_multisign_wallet_ErrorMultisignAccountNotFound"></a>
 
 
 
@@ -135,7 +135,7 @@ Bitcoin multisign account wallet to manage the multisign tx on Bitcoin and Rooch
 
 
 
-<a name="0xa_multisign_wallet_ErrorParticipantAlreadyJoined"></a>
+<a id="0xa_multisign_wallet_ErrorParticipantAlreadyJoined"></a>
 
 
 
@@ -144,7 +144,7 @@ Bitcoin multisign account wallet to manage the multisign tx on Bitcoin and Rooch
 
 
 
-<a name="0xa_multisign_wallet_ErrorParticipantMustHasBitcoinAddress"></a>
+<a id="0xa_multisign_wallet_ErrorParticipantMustHasBitcoinAddress"></a>
 
 
 
@@ -153,7 +153,7 @@ Bitcoin multisign account wallet to manage the multisign tx on Bitcoin and Rooch
 
 
 
-<a name="0xa_multisign_wallet_ErrorProposalAlreadySigned"></a>
+<a id="0xa_multisign_wallet_ErrorProposalAlreadySigned"></a>
 
 
 
@@ -162,7 +162,7 @@ Bitcoin multisign account wallet to manage the multisign tx on Bitcoin and Rooch
 
 
 
-<a name="0xa_multisign_wallet_PROPOSAL_STATUS_APPROVED"></a>
+<a id="0xa_multisign_wallet_PROPOSAL_STATUS_APPROVED"></a>
 
 
 
@@ -171,7 +171,7 @@ Bitcoin multisign account wallet to manage the multisign tx on Bitcoin and Rooch
 
 
 
-<a name="0xa_multisign_wallet_PROPOSAL_STATUS_PENDING"></a>
+<a id="0xa_multisign_wallet_PROPOSAL_STATUS_PENDING"></a>
 
 
 
@@ -180,7 +180,7 @@ Bitcoin multisign account wallet to manage the multisign tx on Bitcoin and Rooch
 
 
 
-<a name="0xa_multisign_wallet_PROPOSAL_STATUS_REJECTED"></a>
+<a id="0xa_multisign_wallet_PROPOSAL_STATUS_REJECTED"></a>
 
 
 
@@ -189,7 +189,7 @@ Bitcoin multisign account wallet to manage the multisign tx on Bitcoin and Rooch
 
 
 
-<a name="0xa_multisign_wallet_X_ONLY_PUBLIC_KEY_LEN"></a>
+<a id="0xa_multisign_wallet_X_ONLY_PUBLIC_KEY_LEN"></a>
 
 
 
@@ -198,7 +198,7 @@ Bitcoin multisign account wallet to manage the multisign tx on Bitcoin and Rooch
 
 
 
-<a name="0xa_multisign_wallet_submit_bitcoin_proposal"></a>
+<a id="0xa_multisign_wallet_submit_bitcoin_proposal"></a>
 
 ## Function `submit_bitcoin_proposal`
 
@@ -209,7 +209,7 @@ Bitcoin multisign account wallet to manage the multisign tx on Bitcoin and Rooch
 
 
 
-<a name="0xa_multisign_wallet_sign_bitcoin_proposal"></a>
+<a id="0xa_multisign_wallet_sign_bitcoin_proposal"></a>
 
 ## Function `sign_bitcoin_proposal`
 

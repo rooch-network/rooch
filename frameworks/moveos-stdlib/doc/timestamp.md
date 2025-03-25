@@ -1,5 +1,5 @@
 
-<a name="0x2_timestamp"></a>
+<a id="0x2_timestamp"></a>
 
 # Module `0x2::timestamp`
 
@@ -30,7 +30,7 @@ It interacts with the other modules in the following ways:
 
 
 
-<a name="0x2_timestamp_Timestamp"></a>
+<a id="0x2_timestamp_Timestamp"></a>
 
 ## Resource `Timestamp`
 
@@ -43,12 +43,12 @@ Timestamp is initialized before genesis, so we do not need to initialize it in t
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x2_timestamp_ErrorInvalidTimestamp"></a>
+<a id="0x2_timestamp_ErrorInvalidTimestamp"></a>
 
 An invalid timestamp was provided
 
@@ -58,7 +58,7 @@ An invalid timestamp was provided
 
 
 
-<a name="0x2_timestamp_ErrorNotGenesisAddress"></a>
+<a id="0x2_timestamp_ErrorNotGenesisAddress"></a>
 
 
 
@@ -67,7 +67,7 @@ An invalid timestamp was provided
 
 
 
-<a name="0x2_timestamp_MILLI_CONVERSION_FACTOR"></a>
+<a id="0x2_timestamp_MILLI_CONVERSION_FACTOR"></a>
 
 Conversion factor between seconds and milliseconds
 
@@ -77,7 +77,7 @@ Conversion factor between seconds and milliseconds
 
 
 
-<a name="0x2_timestamp_update_global_time"></a>
+<a id="0x2_timestamp_update_global_time"></a>
 
 ## Function `update_global_time`
 
@@ -89,7 +89,7 @@ Updates the global clock time, if the new time is smaller than the current time,
 
 
 
-<a name="0x2_timestamp_try_update_global_time"></a>
+<a id="0x2_timestamp_try_update_global_time"></a>
 
 ## Function `try_update_global_time`
 
@@ -102,7 +102,7 @@ Only the framework genesis account can update the global clock time.
 
 
 
-<a name="0x2_timestamp_timestamp"></a>
+<a id="0x2_timestamp_timestamp"></a>
 
 ## Function `timestamp`
 
@@ -113,7 +113,7 @@ Only the framework genesis account can update the global clock time.
 
 
 
-<a name="0x2_timestamp_milliseconds"></a>
+<a id="0x2_timestamp_milliseconds"></a>
 
 ## Function `milliseconds`
 
@@ -124,7 +124,7 @@ Only the framework genesis account can update the global clock time.
 
 
 
-<a name="0x2_timestamp_seconds"></a>
+<a id="0x2_timestamp_seconds"></a>
 
 ## Function `seconds`
 
@@ -135,7 +135,7 @@ Only the framework genesis account can update the global clock time.
 
 
 
-<a name="0x2_timestamp_now_milliseconds"></a>
+<a id="0x2_timestamp_now_milliseconds"></a>
 
 ## Function `now_milliseconds`
 
@@ -147,7 +147,7 @@ Gets the current time in milliseconds.
 
 
 
-<a name="0x2_timestamp_now_seconds"></a>
+<a id="0x2_timestamp_now_seconds"></a>
 
 ## Function `now_seconds`
 
@@ -159,7 +159,7 @@ Gets the current time in seconds.
 
 
 
-<a name="0x2_timestamp_seconds_to_milliseconds"></a>
+<a id="0x2_timestamp_seconds_to_milliseconds"></a>
 
 ## Function `seconds_to_milliseconds`
 
@@ -170,7 +170,7 @@ Gets the current time in seconds.
 
 
 
-<a name="0x2_timestamp_fast_forward_seconds_by_system"></a>
+<a id="0x2_timestamp_fast_forward_seconds_by_system"></a>
 
 ## Function `fast_forward_seconds_by_system`
 

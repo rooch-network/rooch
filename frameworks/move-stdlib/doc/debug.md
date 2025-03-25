@@ -1,5 +1,5 @@
 
-<a name="0x1_debug"></a>
+<a id="0x1_debug"></a>
 
 # Module `0x1::debug`
 
@@ -14,7 +14,7 @@ Module providing debug functionality.
 
 
 
-<a name="0x1_debug_print"></a>
+<a id="0x1_debug_print"></a>
 
 ## Function `print`
 
@@ -26,7 +26,7 @@ Pretty-prints any Move value. For a Move struct, includes its field names, their
 
 
 
-<a name="0x1_debug_print_stack_trace"></a>
+<a id="0x1_debug_print_stack_trace"></a>
 
 ## Function `print_stack_trace`
 

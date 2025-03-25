@@ -1,5 +1,5 @@
 
-<a name="0x2_table_vec"></a>
+<a id="0x2_table_vec"></a>
 
 # Module `0x2::table_vec`
 
@@ -28,7 +28,7 @@ A basic scalable vector library implemented using <code>Table</code>.
 
 
 
-<a name="0x2_table_vec_TableVec"></a>
+<a id="0x2_table_vec_TableVec"></a>
 
 ## Struct `TableVec`
 
@@ -39,12 +39,12 @@ A basic scalable vector library implemented using <code>Table</code>.
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x2_table_vec_ErrorIndexOutOfBound"></a>
+<a id="0x2_table_vec_ErrorIndexOutOfBound"></a>
 
 
 
@@ -53,7 +53,7 @@ A basic scalable vector library implemented using <code>Table</code>.
 
 
 
-<a name="0x2_table_vec_ErrorTableNonEmpty"></a>
+<a id="0x2_table_vec_ErrorTableNonEmpty"></a>
 
 
 
@@ -62,7 +62,7 @@ A basic scalable vector library implemented using <code>Table</code>.
 
 
 
-<a name="0x2_table_vec_new"></a>
+<a id="0x2_table_vec_new"></a>
 
 ## Function `new`
 
@@ -74,7 +74,7 @@ Create an empty TableVec.
 
 
 
-<a name="0x2_table_vec_singleton"></a>
+<a id="0x2_table_vec_singleton"></a>
 
 ## Function `singleton`
 
@@ -86,7 +86,7 @@ Return a TableVec of size one containing element <code>e</code>.
 
 
 
-<a name="0x2_table_vec_length"></a>
+<a id="0x2_table_vec_length"></a>
 
 ## Function `length`
 
@@ -98,7 +98,7 @@ Return the length of the TableVec.
 
 
 
-<a name="0x2_table_vec_is_empty"></a>
+<a id="0x2_table_vec_is_empty"></a>
 
 ## Function `is_empty`
 
@@ -110,7 +110,7 @@ Return if the TableVec is empty or not.
 
 
 
-<a name="0x2_table_vec_borrow"></a>
+<a id="0x2_table_vec_borrow"></a>
 
 ## Function `borrow`
 
@@ -123,7 +123,7 @@ Aborts if <code>i</code> is out of bounds.
 
 
 
-<a name="0x2_table_vec_push_back"></a>
+<a id="0x2_table_vec_push_back"></a>
 
 ## Function `push_back`
 
@@ -135,7 +135,7 @@ Add element <code>e</code> to the end of the TableVec <code>t</code>.
 
 
 
-<a name="0x2_table_vec_borrow_mut"></a>
+<a id="0x2_table_vec_borrow_mut"></a>
 
 ## Function `borrow_mut`
 
@@ -148,7 +148,7 @@ Aborts if <code>i</code> is out of bounds.
 
 
 
-<a name="0x2_table_vec_pop_back"></a>
+<a id="0x2_table_vec_pop_back"></a>
 
 ## Function `pop_back`
 
@@ -161,7 +161,7 @@ Aborts if <code>t</code> is empty.
 
 
 
-<a name="0x2_table_vec_destroy_empty"></a>
+<a id="0x2_table_vec_destroy_empty"></a>
 
 ## Function `destroy_empty`
 
@@ -174,7 +174,7 @@ Aborts if <code>t</code> is not empty.
 
 
 
-<a name="0x2_table_vec_drop"></a>
+<a id="0x2_table_vec_drop"></a>
 
 ## Function `drop`
 
@@ -187,7 +187,7 @@ Usable only if the value type <code>Element</code> has the <code>drop</code> abi
 
 
 
-<a name="0x2_table_vec_swap"></a>
+<a id="0x2_table_vec_swap"></a>
 
 ## Function `swap`
 
@@ -200,7 +200,7 @@ Aborts if <code>i</code> or <code>j</code> is out of bounds.
 
 
 
-<a name="0x2_table_vec_swap_remove"></a>
+<a id="0x2_table_vec_swap_remove"></a>
 
 ## Function `swap_remove`
 
@@ -214,7 +214,7 @@ Aborts if <code>i</code> is out of bounds.
 
 
 
-<a name="0x2_table_vec_contains"></a>
+<a id="0x2_table_vec_contains"></a>
 
 ## Function `contains`
 

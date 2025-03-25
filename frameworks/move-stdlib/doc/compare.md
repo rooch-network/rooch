@@ -1,5 +1,5 @@
 
-<a name="0x1_compare"></a>
+<a id="0x1_compare"></a>
 
 # Module `0x1::compare`
 
@@ -14,12 +14,12 @@ Utilities for comparing Move values based on their representation in BCS.
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x1_compare_EQUAL"></a>
+<a id="0x1_compare_EQUAL"></a>
 
 
 
@@ -28,7 +28,7 @@ Utilities for comparing Move values based on their representation in BCS.
 
 
 
-<a name="0x1_compare_GREATER_THAN"></a>
+<a id="0x1_compare_GREATER_THAN"></a>
 
 
 
@@ -37,7 +37,7 @@ Utilities for comparing Move values based on their representation in BCS.
 
 
 
-<a name="0x1_compare_LESS_THAN"></a>
+<a id="0x1_compare_LESS_THAN"></a>
 
 
 
@@ -46,7 +46,7 @@ Utilities for comparing Move values based on their representation in BCS.
 
 
 
-<a name="0x1_compare_cmp_bcs_bytes"></a>
+<a id="0x1_compare_cmp_bcs_bytes"></a>
 
 ## Function `cmp_bcs_bytes`
 

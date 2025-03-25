@@ -1,5 +1,5 @@
 
-<a name="0x2_type_table"></a>
+<a id="0x2_type_table"></a>
 
 # Module `0x2::type_table`
 
@@ -26,7 +26,7 @@ TypeTable is a table use struct Type as Key, struct as Value
 
 
 
-<a name="0x2_type_table_TablePlaceholder"></a>
+<a id="0x2_type_table_TablePlaceholder"></a>
 
 ## Resource `TablePlaceholder`
 
@@ -37,7 +37,7 @@ TypeTable is a table use struct Type as Key, struct as Value
 
 
 
-<a name="0x2_type_table_TypeTable"></a>
+<a id="0x2_type_table_TypeTable"></a>
 
 ## Struct `TypeTable`
 
@@ -48,7 +48,7 @@ TypeTable is a table use struct Type as Key, struct as Value
 
 
 
-<a name="0x2_type_table_new"></a>
+<a id="0x2_type_table_new"></a>
 
 ## Function `new`
 
@@ -60,7 +60,7 @@ Create a new Table.
 
 
 
-<a name="0x2_type_table_key"></a>
+<a id="0x2_type_table_key"></a>
 
 ## Function `key`
 
@@ -72,7 +72,7 @@ Note: We use Type name as key, the key will be serialized by bcs in the native f
 
 
 
-<a name="0x2_type_table_add"></a>
+<a id="0x2_type_table_add"></a>
 
 ## Function `add`
 
@@ -85,7 +85,7 @@ entry of <code>V</code> type already exists.
 
 
 
-<a name="0x2_type_table_borrow"></a>
+<a id="0x2_type_table_borrow"></a>
 
 ## Function `borrow`
 
@@ -98,7 +98,7 @@ Aborts if there is no entry for <code>V</code>.
 
 
 
-<a name="0x2_type_table_borrow_mut"></a>
+<a id="0x2_type_table_borrow_mut"></a>
 
 ## Function `borrow_mut`
 
@@ -111,7 +111,7 @@ Aborts if there is no entry for <code>V</code>.
 
 
 
-<a name="0x2_type_table_remove"></a>
+<a id="0x2_type_table_remove"></a>
 
 ## Function `remove`
 
@@ -124,7 +124,7 @@ Aborts if there is no entry for <code>V</code>.
 
 
 
-<a name="0x2_type_table_contains"></a>
+<a id="0x2_type_table_contains"></a>
 
 ## Function `contains`
 
@@ -136,7 +136,7 @@ Returns true if <code><a href="table.md#0x2_table">table</a></code> contains an 
 
 
 
-<a name="0x2_type_table_handle"></a>
+<a id="0x2_type_table_handle"></a>
 
 ## Function `handle`
 
@@ -148,7 +148,7 @@ Returns table handle of <code><a href="table.md#0x2_table">table</a></code>.
 
 
 
-<a name="0x2_type_table_destroy_empty"></a>
+<a id="0x2_type_table_destroy_empty"></a>
 
 ## Function `destroy_empty`
 

@@ -1,5 +1,5 @@
 
-<a name="0x1_ascii"></a>
+<a id="0x1_ascii"></a>
 
 # Module `0x1::ascii`
 
@@ -29,7 +29,7 @@ that characters are valid ASCII, and that strings consist of only valid ASCII ch
 
 
 
-<a name="0x1_ascii_String"></a>
+<a id="0x1_ascii_String"></a>
 
 ## Struct `String`
 
@@ -46,7 +46,7 @@ defined in this module.
 
 
 
-<a name="0x1_ascii_Char"></a>
+<a id="0x1_ascii_Char"></a>
 
 ## Struct `Char`
 
@@ -58,12 +58,12 @@ An ASCII character.
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x1_ascii_EINVALID_ASCII_CHARACTER"></a>
+<a id="0x1_ascii_EINVALID_ASCII_CHARACTER"></a>
 
 An invalid ASCII character was encountered when creating an ASCII string.
 
@@ -73,7 +73,7 @@ An invalid ASCII character was encountered when creating an ASCII string.
 
 
 
-<a name="0x1_ascii_char"></a>
+<a id="0x1_ascii_char"></a>
 
 ## Function `char`
 
@@ -85,7 +85,7 @@ Convert a <code>byte</code> into a <code><a href="ascii.md#0x1_ascii_Char">Char<
 
 
 
-<a name="0x1_ascii_string"></a>
+<a id="0x1_ascii_string"></a>
 
 ## Function `string`
 
@@ -98,7 +98,7 @@ Convert a vector of bytes <code>bytes</code> into an <code><a href="ascii.md#0x1
 
 
 
-<a name="0x1_ascii_try_string"></a>
+<a id="0x1_ascii_try_string"></a>
 
 ## Function `try_string`
 
@@ -112,7 +112,7 @@ characters. Otherwise returns <code>None</code>.
 
 
 
-<a name="0x1_ascii_all_characters_printable"></a>
+<a id="0x1_ascii_all_characters_printable"></a>
 
 ## Function `all_characters_printable`
 
@@ -125,7 +125,7 @@ Returns <code><b>false</b></code> otherwise. Not all <code><a href="ascii.md#0x1
 
 
 
-<a name="0x1_ascii_push_char"></a>
+<a id="0x1_ascii_push_char"></a>
 
 ## Function `push_char`
 
@@ -136,7 +136,7 @@ Returns <code><b>false</b></code> otherwise. Not all <code><a href="ascii.md#0x1
 
 
 
-<a name="0x1_ascii_pop_char"></a>
+<a id="0x1_ascii_pop_char"></a>
 
 ## Function `pop_char`
 
@@ -147,7 +147,7 @@ Returns <code><b>false</b></code> otherwise. Not all <code><a href="ascii.md#0x1
 
 
 
-<a name="0x1_ascii_length"></a>
+<a id="0x1_ascii_length"></a>
 
 ## Function `length`
 
@@ -158,7 +158,7 @@ Returns <code><b>false</b></code> otherwise. Not all <code><a href="ascii.md#0x1
 
 
 
-<a name="0x1_ascii_as_bytes"></a>
+<a id="0x1_ascii_as_bytes"></a>
 
 ## Function `as_bytes`
 
@@ -170,7 +170,7 @@ Get the inner bytes of the <code><a href="string.md#0x1_string">string</a></code
 
 
 
-<a name="0x1_ascii_into_bytes"></a>
+<a id="0x1_ascii_into_bytes"></a>
 
 ## Function `into_bytes`
 
@@ -182,7 +182,7 @@ Unpack the <code><a href="string.md#0x1_string">string</a></code> to get its bac
 
 
 
-<a name="0x1_ascii_byte"></a>
+<a id="0x1_ascii_byte"></a>
 
 ## Function `byte`
 
@@ -194,7 +194,7 @@ Unpack the <code>char</code> into its underlying byte.
 
 
 
-<a name="0x1_ascii_is_valid_char"></a>
+<a id="0x1_ascii_is_valid_char"></a>
 
 ## Function `is_valid_char`
 
@@ -206,7 +206,7 @@ Returns <code><b>true</b></code> if <code>b</code> is a valid ASCII character. R
 
 
 
-<a name="0x1_ascii_is_printable_char"></a>
+<a id="0x1_ascii_is_printable_char"></a>
 
 ## Function `is_printable_char`
 

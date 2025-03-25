@@ -1,5 +1,5 @@
 
-<a name="0xa_mint_get_factory"></a>
+<a id="0xa_mint_get_factory"></a>
 
 # Module `0xa::mint_get_factory`
 
@@ -25,7 +25,7 @@
 
 
 
-<a name="0xa_mint_get_factory_MintGetFactory"></a>
+<a id="0xa_mint_get_factory_MintGetFactory"></a>
 
 ## Struct `MintGetFactory`
 
@@ -36,7 +36,7 @@
 
 
 
-<a name="0xa_mint_get_factory_DeployArgs"></a>
+<a id="0xa_mint_get_factory_DeployArgs"></a>
 
 ## Struct `DeployArgs`
 
@@ -48,12 +48,12 @@
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0xa_mint_get_factory_DEFAULT_AMOUNT_PER_MINT"></a>
+<a id="0xa_mint_get_factory_DEFAULT_AMOUNT_PER_MINT"></a>
 
 
 
@@ -62,7 +62,7 @@
 
 
 
-<a name="0xa_mint_get_factory_ErrorInvalidInitLockedArgs"></a>
+<a id="0xa_mint_get_factory_ErrorInvalidInitLockedArgs"></a>
 
 
 
@@ -71,7 +71,7 @@
 
 
 
-<a name="0xa_mint_get_factory_ErrorInvalidMintFunction"></a>
+<a id="0xa_mint_get_factory_ErrorInvalidMintFunction"></a>
 
 
 
@@ -80,7 +80,7 @@
 
 
 
-<a name="0xa_mint_get_factory_mint"></a>
+<a id="0xa_mint_get_factory_mint"></a>
 
 ## Function `mint`
 
@@ -91,7 +91,7 @@
 
 
 
-<a name="0xa_mint_get_factory_do_mint"></a>
+<a id="0xa_mint_get_factory_do_mint"></a>
 
 ## Function `do_mint`
 
@@ -102,7 +102,7 @@
 
 
 
-<a name="0xa_mint_get_factory_factory_type"></a>
+<a id="0xa_mint_get_factory_factory_type"></a>
 
 ## Function `factory_type`
 

@@ -1,5 +1,5 @@
 
-<a name="0x4_transaction_validator"></a>
+<a id="0x4_transaction_validator"></a>
 
 # Module `0x4::transaction_validator`
 
@@ -14,7 +14,7 @@
 
 
 
-<a name="0x4_transaction_validator_TransactionValidatorPlaceholder"></a>
+<a id="0x4_transaction_validator_TransactionValidatorPlaceholder"></a>
 
 ## Struct `TransactionValidatorPlaceholder`
 
@@ -27,7 +27,7 @@ Just using to get module signer
 
 
 
-<a name="0x4_transaction_validator_validate_l1_tx"></a>
+<a id="0x4_transaction_validator_validate_l1_tx"></a>
 
 ## Function `validate_l1_tx`
 

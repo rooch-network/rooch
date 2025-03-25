@@ -1,5 +1,5 @@
 
-<a name="0x2_simple_map"></a>
+<a id="0x2_simple_map"></a>
 
 # Module `0x2::simple_map`
 
@@ -38,7 +38,7 @@ This module provides a solution for unsorted maps, that is it has the properties
 
 
 
-<a name="0x2_simple_map_SimpleMap"></a>
+<a id="0x2_simple_map_SimpleMap"></a>
 
 ## Struct `SimpleMap`
 
@@ -49,7 +49,7 @@ This module provides a solution for unsorted maps, that is it has the properties
 
 
 
-<a name="0x2_simple_map_Element"></a>
+<a id="0x2_simple_map_Element"></a>
 
 ## Struct `Element`
 
@@ -60,12 +60,12 @@ This module provides a solution for unsorted maps, that is it has the properties
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x2_simple_map_ErrorKeyAlreadyExists"></a>
+<a id="0x2_simple_map_ErrorKeyAlreadyExists"></a>
 
 Map key already exists
 
@@ -75,7 +75,7 @@ Map key already exists
 
 
 
-<a name="0x2_simple_map_ErrorKeyNotFound"></a>
+<a id="0x2_simple_map_ErrorKeyNotFound"></a>
 
 Map key is not found
 
@@ -85,7 +85,7 @@ Map key is not found
 
 
 
-<a name="0x2_simple_map_length"></a>
+<a id="0x2_simple_map_length"></a>
 
 ## Function `length`
 
@@ -96,7 +96,7 @@ Map key is not found
 
 
 
-<a name="0x2_simple_map_new"></a>
+<a id="0x2_simple_map_new"></a>
 
 ## Function `new`
 
@@ -108,7 +108,7 @@ Create an empty SimpleMap.
 
 
 
-<a name="0x2_simple_map_clone"></a>
+<a id="0x2_simple_map_clone"></a>
 
 ## Function `clone`
 
@@ -119,7 +119,7 @@ Create an empty SimpleMap.
 
 
 
-<a name="0x2_simple_map_borrow"></a>
+<a id="0x2_simple_map_borrow"></a>
 
 ## Function `borrow`
 
@@ -130,7 +130,7 @@ Create an empty SimpleMap.
 
 
 
-<a name="0x2_simple_map_borrow_with_default"></a>
+<a id="0x2_simple_map_borrow_with_default"></a>
 
 ## Function `borrow_with_default`
 
@@ -141,7 +141,7 @@ Create an empty SimpleMap.
 
 
 
-<a name="0x2_simple_map_borrow_mut"></a>
+<a id="0x2_simple_map_borrow_mut"></a>
 
 ## Function `borrow_mut`
 
@@ -152,7 +152,7 @@ Create an empty SimpleMap.
 
 
 
-<a name="0x2_simple_map_contains_key"></a>
+<a id="0x2_simple_map_contains_key"></a>
 
 ## Function `contains_key`
 
@@ -163,7 +163,7 @@ Create an empty SimpleMap.
 
 
 
-<a name="0x2_simple_map_destroy_empty"></a>
+<a id="0x2_simple_map_destroy_empty"></a>
 
 ## Function `destroy_empty`
 
@@ -174,7 +174,7 @@ Create an empty SimpleMap.
 
 
 
-<a name="0x2_simple_map_add"></a>
+<a id="0x2_simple_map_add"></a>
 
 ## Function `add`
 
@@ -185,7 +185,7 @@ Create an empty SimpleMap.
 
 
 
-<a name="0x2_simple_map_upsert"></a>
+<a id="0x2_simple_map_upsert"></a>
 
 ## Function `upsert`
 
@@ -197,7 +197,7 @@ Insert key/value pair or update an existing key to a new value
 
 
 
-<a name="0x2_simple_map_keys"></a>
+<a id="0x2_simple_map_keys"></a>
 
 ## Function `keys`
 
@@ -209,7 +209,7 @@ Return all keys in the map. This requires keys to be copyable.
 
 
 
-<a name="0x2_simple_map_values"></a>
+<a id="0x2_simple_map_values"></a>
 
 ## Function `values`
 
@@ -221,7 +221,7 @@ Return all values in the map. This requires values to be copyable.
 
 
 
-<a name="0x2_simple_map_to_vec_pair"></a>
+<a id="0x2_simple_map_to_vec_pair"></a>
 
 ## Function `to_vec_pair`
 
@@ -234,7 +234,7 @@ Primarily used to destroy a map
 
 
 
-<a name="0x2_simple_map_remove"></a>
+<a id="0x2_simple_map_remove"></a>
 
 ## Function `remove`
 

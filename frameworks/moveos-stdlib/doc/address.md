@@ -1,5 +1,5 @@
 
-<a name="0x2_address"></a>
+<a id="0x2_address"></a>
 
 # Module `0x2::address`
 
@@ -32,12 +32,12 @@
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x2_address_ErrorAddressParseError"></a>
+<a id="0x2_address_ErrorAddressParseError"></a>
 
 Error from <code>from_bytes</code> when it is supplied too many or too few bytes.
 
@@ -47,7 +47,7 @@ Error from <code>from_bytes</code> when it is supplied too many or too few bytes
 
 
 
-<a name="0x2_address_ErrorU256TooBigToConvertToAddress"></a>
+<a id="0x2_address_ErrorU256TooBigToConvertToAddress"></a>
 
 Error from <code>from_u256</code> when
 
@@ -57,7 +57,7 @@ Error from <code>from_u256</code> when
 
 
 
-<a name="0x2_address_LENGTH"></a>
+<a id="0x2_address_LENGTH"></a>
 
 The length of an address, in bytes
 
@@ -67,7 +67,7 @@ The length of an address, in bytes
 
 
 
-<a name="0x2_address_MAX"></a>
+<a id="0x2_address_MAX"></a>
 
 
 
@@ -76,7 +76,7 @@ The length of an address, in bytes
 
 
 
-<a name="0x2_address_ROOCH_HRP"></a>
+<a id="0x2_address_ROOCH_HRP"></a>
 
 HRP for Rooch addresses
 
@@ -86,7 +86,7 @@ HRP for Rooch addresses
 
 
 
-<a name="0x2_address_ZERO"></a>
+<a id="0x2_address_ZERO"></a>
 
 
 
@@ -95,7 +95,7 @@ HRP for Rooch addresses
 
 
 
-<a name="0x2_address_from_bytes"></a>
+<a id="0x2_address_from_bytes"></a>
 
 ## Function `from_bytes`
 
@@ -112,7 +112,7 @@ Aborts with <code><a href="address.md#0x2_address_ErrorAddressParseError">ErrorA
 
 
 
-<a name="0x2_address_from_bytes_option"></a>
+<a id="0x2_address_from_bytes_option"></a>
 
 ## Function `from_bytes_option`
 
@@ -125,7 +125,7 @@ Returns <code>None</code> if the length of <code>bytes</code> is invalid length 
 
 
 
-<a name="0x2_address_to_bytes"></a>
+<a id="0x2_address_to_bytes"></a>
 
 ## Function `to_bytes`
 
@@ -137,7 +137,7 @@ Convert <code>a</code> into BCS-encoded bytes.
 
 
 
-<a name="0x2_address_to_ascii_string"></a>
+<a id="0x2_address_to_ascii_string"></a>
 
 ## Function `to_ascii_string`
 
@@ -149,7 +149,7 @@ Convert <code>a</code> to a hex-encoded ASCII string
 
 
 
-<a name="0x2_address_to_string"></a>
+<a id="0x2_address_to_string"></a>
 
 ## Function `to_string`
 
@@ -161,7 +161,7 @@ Convert <code>a</code> to a hex-encoded utf8 string
 
 
 
-<a name="0x2_address_from_ascii_bytes"></a>
+<a id="0x2_address_from_ascii_bytes"></a>
 
 ## Function `from_ascii_bytes`
 
@@ -178,7 +178,7 @@ or if an invalid character is encountered.
 
 
 
-<a name="0x2_address_from_ascii_bytes_option"></a>
+<a id="0x2_address_from_ascii_bytes_option"></a>
 
 ## Function `from_ascii_bytes_option`
 
@@ -189,7 +189,7 @@ or if an invalid character is encountered.
 
 
 
-<a name="0x2_address_from_ascii_string"></a>
+<a id="0x2_address_from_ascii_string"></a>
 
 ## Function `from_ascii_string`
 
@@ -201,7 +201,7 @@ Convert <code>a</code> from hex ASCII string
 
 
 
-<a name="0x2_address_to_bech32_string"></a>
+<a id="0x2_address_to_bech32_string"></a>
 
 ## Function `to_bech32_string`
 
@@ -213,7 +213,7 @@ Convert <code>a</code> to a bech32 string
 
 
 
-<a name="0x2_address_from_bech32_string"></a>
+<a id="0x2_address_from_bech32_string"></a>
 
 ## Function `from_bech32_string`
 
@@ -225,7 +225,7 @@ Convert a bech32 string to <code><b>address</b></code>
 
 
 
-<a name="0x2_address_length"></a>
+<a id="0x2_address_length"></a>
 
 ## Function `length`
 
@@ -237,7 +237,7 @@ Length of a Rooch address in bytes
 
 
 
-<a name="0x2_address_max"></a>
+<a id="0x2_address_max"></a>
 
 ## Function `max`
 
@@ -249,7 +249,7 @@ Largest possible address
 
 
 
-<a name="0x2_address_zero"></a>
+<a id="0x2_address_zero"></a>
 
 ## Function `zero`
 

@@ -1,5 +1,5 @@
 
-<a name="0x4_taproot_builder"></a>
+<a id="0x4_taproot_builder"></a>
 
 # Module `0x4::taproot_builder`
 
@@ -26,7 +26,7 @@ Taproot is a module that provides Bitcoin Taproot related functions.
 
 
 
-<a name="0x4_taproot_builder_TaprootBuilder"></a>
+<a id="0x4_taproot_builder_TaprootBuilder"></a>
 
 ## Struct `TaprootBuilder`
 
@@ -37,7 +37,7 @@ Taproot is a module that provides Bitcoin Taproot related functions.
 
 
 
-<a name="0x4_taproot_builder_NodeInfo"></a>
+<a id="0x4_taproot_builder_NodeInfo"></a>
 
 ## Struct `NodeInfo`
 
@@ -48,12 +48,12 @@ Taproot is a module that provides Bitcoin Taproot related functions.
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x4_taproot_builder_ErrorInvalidMerkleTreeDepth"></a>
+<a id="0x4_taproot_builder_ErrorInvalidMerkleTreeDepth"></a>
 
 
 
@@ -62,7 +62,7 @@ Taproot is a module that provides Bitcoin Taproot related functions.
 
 
 
-<a name="0x4_taproot_builder_ErrorNodeNotInDfsOrder"></a>
+<a id="0x4_taproot_builder_ErrorNodeNotInDfsOrder"></a>
 
 
 
@@ -71,7 +71,7 @@ Taproot is a module that provides Bitcoin Taproot related functions.
 
 
 
-<a name="0x4_taproot_builder_ErrorOverCompleteTree"></a>
+<a id="0x4_taproot_builder_ErrorOverCompleteTree"></a>
 
 
 
@@ -80,7 +80,7 @@ Taproot is a module that provides Bitcoin Taproot related functions.
 
 
 
-<a name="0x4_taproot_builder_ErrorUnreachable"></a>
+<a id="0x4_taproot_builder_ErrorUnreachable"></a>
 
 
 
@@ -89,7 +89,7 @@ Taproot is a module that provides Bitcoin Taproot related functions.
 
 
 
-<a name="0x4_taproot_builder_TAG_TAP_BRANCH"></a>
+<a id="0x4_taproot_builder_TAG_TAP_BRANCH"></a>
 
 
 
@@ -98,7 +98,7 @@ Taproot is a module that provides Bitcoin Taproot related functions.
 
 
 
-<a name="0x4_taproot_builder_TAG_TAP_LEAF"></a>
+<a id="0x4_taproot_builder_TAG_TAP_LEAF"></a>
 
 
 
@@ -107,7 +107,7 @@ Taproot is a module that provides Bitcoin Taproot related functions.
 
 
 
-<a name="0x4_taproot_builder_TAPROOT_CONTROL_MAX_NODE_COUNT"></a>
+<a id="0x4_taproot_builder_TAPROOT_CONTROL_MAX_NODE_COUNT"></a>
 
 
 
@@ -116,7 +116,7 @@ Taproot is a module that provides Bitcoin Taproot related functions.
 
 
 
-<a name="0x4_taproot_builder_TAPROOT_LEAF_TAPSCRIPT"></a>
+<a id="0x4_taproot_builder_TAPROOT_LEAF_TAPSCRIPT"></a>
 
 Tapscript leaf version.
 
@@ -126,7 +126,7 @@ Tapscript leaf version.
 
 
 
-<a name="0x4_taproot_builder_new"></a>
+<a id="0x4_taproot_builder_new"></a>
 
 ## Function `new`
 
@@ -137,7 +137,7 @@ Tapscript leaf version.
 
 
 
-<a name="0x4_taproot_builder_add_leaf"></a>
+<a id="0x4_taproot_builder_add_leaf"></a>
 
 ## Function `add_leaf`
 
@@ -148,7 +148,7 @@ Tapscript leaf version.
 
 
 
-<a name="0x4_taproot_builder_finalize"></a>
+<a id="0x4_taproot_builder_finalize"></a>
 
 ## Function `finalize`
 

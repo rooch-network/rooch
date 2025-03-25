@@ -1,5 +1,5 @@
 
-<a name="0x3_transaction_fee"></a>
+<a id="0x3_transaction_fee"></a>
 
 # Module `0x3::transaction_fee`
 
@@ -39,7 +39,7 @@ Distribution of Transaction Gas Fees:
 
 
 
-<a name="0x3_transaction_fee_TransactionFeePool"></a>
+<a id="0x3_transaction_fee_TransactionFeePool"></a>
 
 ## Resource `TransactionFeePool`
 
@@ -50,12 +50,12 @@ Distribution of Transaction Gas Fees:
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x3_transaction_fee_ErrorInvalidGasUsed"></a>
+<a id="0x3_transaction_fee_ErrorInvalidGasUsed"></a>
 
 Error code for invalid gas used in transaction
 
@@ -65,7 +65,7 @@ Error code for invalid gas used in transaction
 
 
 
-<a name="0x3_transaction_fee_SystemFeeAddress"></a>
+<a id="0x3_transaction_fee_SystemFeeAddress"></a>
 
 
 
@@ -74,7 +74,7 @@ Error code for invalid gas used in transaction
 
 
 
-<a name="0x3_transaction_fee_genesis_init"></a>
+<a id="0x3_transaction_fee_genesis_init"></a>
 
 ## Function `genesis_init`
 
@@ -85,7 +85,7 @@ Error code for invalid gas used in transaction
 
 
 
-<a name="0x3_transaction_fee_get_gas_factor"></a>
+<a id="0x3_transaction_fee_get_gas_factor"></a>
 
 ## Function `get_gas_factor`
 
@@ -97,7 +97,7 @@ Returns the gas factor of gas.
 
 
 
-<a name="0x3_transaction_fee_calculate_gas"></a>
+<a id="0x3_transaction_fee_calculate_gas"></a>
 
 ## Function `calculate_gas`
 
@@ -108,7 +108,7 @@ Returns the gas factor of gas.
 
 
 
-<a name="0x3_transaction_fee_withdraw_fee"></a>
+<a id="0x3_transaction_fee_withdraw_fee"></a>
 
 ## Function `withdraw_fee`
 
@@ -119,7 +119,7 @@ Returns the gas factor of gas.
 
 
 
-<a name="0x3_transaction_fee_deposit_fee"></a>
+<a id="0x3_transaction_fee_deposit_fee"></a>
 
 ## Function `deposit_fee`
 
@@ -130,7 +130,7 @@ Returns the gas factor of gas.
 
 
 
-<a name="0x3_transaction_fee_distribute_fee"></a>
+<a id="0x3_transaction_fee_distribute_fee"></a>
 
 ## Function `distribute_fee`
 
@@ -141,7 +141,7 @@ Returns the gas factor of gas.
 
 
 
-<a name="0x3_transaction_fee_withdraw_gas_revenue"></a>
+<a id="0x3_transaction_fee_withdraw_gas_revenue"></a>
 
 ## Function `withdraw_gas_revenue`
 
@@ -154,7 +154,7 @@ The contract address can use <code>moveos_std::signer::module_signer</code> to g
 
 
 
-<a name="0x3_transaction_fee_withdraw_gas_revenue_entry"></a>
+<a id="0x3_transaction_fee_withdraw_gas_revenue_entry"></a>
 
 ## Function `withdraw_gas_revenue_entry`
 
@@ -166,7 +166,7 @@ The entry function to withdraw the gas revenue for the sender
 
 
 
-<a name="0x3_transaction_fee_gas_revenue_balance"></a>
+<a id="0x3_transaction_fee_gas_revenue_balance"></a>
 
 ## Function `gas_revenue_balance`
 

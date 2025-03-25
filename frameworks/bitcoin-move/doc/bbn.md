@@ -1,5 +1,5 @@
 
-<a name="0x4_bbn"></a>
+<a id="0x4_bbn"></a>
 
 # Module `0x4::bbn`
 
@@ -65,7 +65,7 @@
 
 
 
-<a name="0x4_bbn_BBNGlobalParamV0"></a>
+<a id="0x4_bbn_BBNGlobalParamV0"></a>
 
 ## Struct `BBNGlobalParamV0`
 
@@ -76,7 +76,7 @@
 
 
 
-<a name="0x4_bbn_BBNGlobalParamV1"></a>
+<a id="0x4_bbn_BBNGlobalParamV1"></a>
 
 ## Struct `BBNGlobalParamV1`
 
@@ -87,7 +87,7 @@
 
 
 
-<a name="0x4_bbn_BBNGlobalParams"></a>
+<a id="0x4_bbn_BBNGlobalParams"></a>
 
 ## Resource `BBNGlobalParams`
 
@@ -98,7 +98,7 @@
 
 
 
-<a name="0x4_bbn_BBNOpReturnOutput"></a>
+<a id="0x4_bbn_BBNOpReturnOutput"></a>
 
 ## Struct `BBNOpReturnOutput`
 
@@ -109,7 +109,7 @@
 
 
 
-<a name="0x4_bbn_BBNV0OpReturnData"></a>
+<a id="0x4_bbn_BBNV0OpReturnData"></a>
 
 ## Struct `BBNV0OpReturnData`
 
@@ -120,7 +120,7 @@
 
 
 
-<a name="0x4_bbn_BBNStakeSeal"></a>
+<a id="0x4_bbn_BBNStakeSeal"></a>
 
 ## Resource `BBNStakeSeal`
 
@@ -131,7 +131,7 @@
 
 
 
-<a name="0x4_bbn_BBNScriptPaths"></a>
+<a id="0x4_bbn_BBNScriptPaths"></a>
 
 ## Struct `BBNScriptPaths`
 
@@ -142,7 +142,7 @@
 
 
 
-<a name="0x4_bbn_BBNStakingEvent"></a>
+<a id="0x4_bbn_BBNStakingEvent"></a>
 
 ## Struct `BBNStakingEvent`
 
@@ -153,7 +153,7 @@
 
 
 
-<a name="0x4_bbn_BBNStakingFailedEvent"></a>
+<a id="0x4_bbn_BBNStakingFailedEvent"></a>
 
 ## Struct `BBNStakingFailedEvent`
 
@@ -164,7 +164,7 @@
 
 
 
-<a name="0x4_bbn_BBNStakingUnbondingEvent"></a>
+<a id="0x4_bbn_BBNStakingUnbondingEvent"></a>
 
 ## Struct `BBNStakingUnbondingEvent`
 
@@ -175,7 +175,7 @@
 
 
 
-<a name="0x4_bbn_TempStateDropEvent"></a>
+<a id="0x4_bbn_TempStateDropEvent"></a>
 
 ## Struct `TempStateDropEvent`
 
@@ -189,12 +189,12 @@ The event is onchain event, and the event_queue name is type_name of the tempora
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x4_bbn_ErrorInvalidThreshold"></a>
+<a id="0x4_bbn_ErrorInvalidThreshold"></a>
 
 
 
@@ -203,7 +203,7 @@ The event is onchain event, and the event_queue name is type_name of the tempora
 
 
 
-<a name="0x4_bbn_TEMPORARY_AREA"></a>
+<a id="0x4_bbn_TEMPORARY_AREA"></a>
 
 
 
@@ -212,7 +212,7 @@ The event is onchain event, and the event_queue name is type_name of the tempora
 
 
 
-<a name="0x4_bbn_BBN_V1_ACTIVATION_HEIGHT"></a>
+<a id="0x4_bbn_BBN_V1_ACTIVATION_HEIGHT"></a>
 
 
 
@@ -221,7 +221,7 @@ The event is onchain event, and the event_queue name is type_name of the tempora
 
 
 
-<a name="0x4_bbn_BBN_V1_CAP_HEIGHT"></a>
+<a id="0x4_bbn_BBN_V1_CAP_HEIGHT"></a>
 
 
 
@@ -230,7 +230,7 @@ The event is onchain event, and the event_queue name is type_name of the tempora
 
 
 
-<a name="0x4_bbn_BBN_V2_ACTIVATION_HEIGHT"></a>
+<a id="0x4_bbn_BBN_V2_ACTIVATION_HEIGHT"></a>
 
 
 
@@ -239,7 +239,7 @@ The event is onchain event, and the event_queue name is type_name of the tempora
 
 
 
-<a name="0x4_bbn_BBN_V2_CAP_HEIGHT"></a>
+<a id="0x4_bbn_BBN_V2_CAP_HEIGHT"></a>
 
 
 
@@ -248,7 +248,7 @@ The event is onchain event, and the event_queue name is type_name of the tempora
 
 
 
-<a name="0x4_bbn_DeprecatedFunction"></a>
+<a id="0x4_bbn_DeprecatedFunction"></a>
 
 
 
@@ -257,7 +257,7 @@ The event is onchain event, and the event_queue name is type_name of the tempora
 
 
 
-<a name="0x4_bbn_ErrorAlreadyInit"></a>
+<a id="0x4_bbn_ErrorAlreadyInit"></a>
 
 
 
@@ -266,7 +266,7 @@ The event is onchain event, and the event_queue name is type_name of the tempora
 
 
 
-<a name="0x4_bbn_ErrorFailedToFinalizeTaproot"></a>
+<a id="0x4_bbn_ErrorFailedToFinalizeTaproot"></a>
 
 
 
@@ -275,7 +275,7 @@ The event is onchain event, and the event_queue name is type_name of the tempora
 
 
 
-<a name="0x4_bbn_ErrorInvalidBabylonOpReturn"></a>
+<a id="0x4_bbn_ErrorInvalidBabylonOpReturn"></a>
 
 
 
@@ -284,7 +284,7 @@ The event is onchain event, and the event_queue name is type_name of the tempora
 
 
 
-<a name="0x4_bbn_ErrorInvalidBytesLen"></a>
+<a id="0x4_bbn_ErrorInvalidBytesLen"></a>
 
 
 
@@ -293,7 +293,7 @@ The event is onchain event, and the event_queue name is type_name of the tempora
 
 
 
-<a name="0x4_bbn_ErrorInvalidKeysLen"></a>
+<a id="0x4_bbn_ErrorInvalidKeysLen"></a>
 
 
 
@@ -302,7 +302,7 @@ The event is onchain event, and the event_queue name is type_name of the tempora
 
 
 
-<a name="0x4_bbn_ErrorNoBabylonOpReturn"></a>
+<a id="0x4_bbn_ErrorNoBabylonOpReturn"></a>
 
 
 
@@ -311,7 +311,7 @@ The event is onchain event, and the event_queue name is type_name of the tempora
 
 
 
-<a name="0x4_bbn_ErrorNoBabylonStakingOutput"></a>
+<a id="0x4_bbn_ErrorNoBabylonStakingOutput"></a>
 
 
 
@@ -320,7 +320,7 @@ The event is onchain event, and the event_queue name is type_name of the tempora
 
 
 
-<a name="0x4_bbn_ErrorNoBabylonUTXO"></a>
+<a id="0x4_bbn_ErrorNoBabylonUTXO"></a>
 
 
 
@@ -329,7 +329,7 @@ The event is onchain event, and the event_queue name is type_name of the tempora
 
 
 
-<a name="0x4_bbn_ErrorNoKeysProvided"></a>
+<a id="0x4_bbn_ErrorNoKeysProvided"></a>
 
 
 
@@ -338,7 +338,7 @@ The event is onchain event, and the event_queue name is type_name of the tempora
 
 
 
-<a name="0x4_bbn_ErrorNotBabylonTx"></a>
+<a id="0x4_bbn_ErrorNotBabylonTx"></a>
 
 
 
@@ -347,7 +347,7 @@ The event is onchain event, and the event_queue name is type_name of the tempora
 
 
 
-<a name="0x4_bbn_ErrorOutBlockRange"></a>
+<a id="0x4_bbn_ErrorOutBlockRange"></a>
 
 
 
@@ -356,7 +356,7 @@ The event is onchain event, and the event_queue name is type_name of the tempora
 
 
 
-<a name="0x4_bbn_ErrorTransactionLockTime"></a>
+<a id="0x4_bbn_ErrorTransactionLockTime"></a>
 
 
 
@@ -365,7 +365,7 @@ The event is onchain event, and the event_queue name is type_name of the tempora
 
 
 
-<a name="0x4_bbn_ErrorTransactionNotFound"></a>
+<a id="0x4_bbn_ErrorTransactionNotFound"></a>
 
 
 
@@ -374,7 +374,7 @@ The event is onchain event, and the event_queue name is type_name of the tempora
 
 
 
-<a name="0x4_bbn_ErrorUTXOAlreadySealed"></a>
+<a id="0x4_bbn_ErrorUTXOAlreadySealed"></a>
 
 
 
@@ -383,7 +383,7 @@ The event is onchain event, and the event_queue name is type_name of the tempora
 
 
 
-<a name="0x4_bbn_UNSPENDABLEKEYPATHKEY"></a>
+<a id="0x4_bbn_UNSPENDABLEKEYPATHKEY"></a>
 
 
 
@@ -392,7 +392,7 @@ The event is onchain event, and the event_queue name is type_name of the tempora
 
 
 
-<a name="0x4_bbn_genesis_init"></a>
+<a id="0x4_bbn_genesis_init"></a>
 
 ## Function `genesis_init`
 
@@ -403,7 +403,7 @@ The event is onchain event, and the event_queue name is type_name of the tempora
 
 
 
-<a name="0x4_bbn_init_for_upgrade"></a>
+<a id="0x4_bbn_init_for_upgrade"></a>
 
 ## Function `init_for_upgrade`
 
@@ -414,7 +414,7 @@ The event is onchain event, and the event_queue name is type_name of the tempora
 
 
 
-<a name="0x4_bbn_init_bbn_global_param_v2"></a>
+<a id="0x4_bbn_init_bbn_global_param_v2"></a>
 
 ## Function `init_bbn_global_param_v2`
 
@@ -426,7 +426,7 @@ BBN global param version 2 initialization
 
 
 
-<a name="0x4_bbn_is_possible_bbn_tx"></a>
+<a id="0x4_bbn_is_possible_bbn_tx"></a>
 
 ## Function `is_possible_bbn_tx`
 
@@ -439,7 +439,7 @@ Use <code><a href="bbn_updater.md#0x4_bbn_updater_is_possible_bbn_tx">bbn_update
 
 
 
-<a name="0x4_bbn_is_possible_bbn_transaction"></a>
+<a id="0x4_bbn_is_possible_bbn_transaction"></a>
 
 ## Function `is_possible_bbn_transaction`
 
@@ -452,7 +452,7 @@ If the transaction contains an OP_RETURN output with the correct tag, it is cons
 
 
 
-<a name="0x4_bbn_process_bbn_tx_entry"></a>
+<a id="0x4_bbn_process_bbn_tx_entry"></a>
 
 ## Function `process_bbn_tx_entry`
 
@@ -465,7 +465,7 @@ Use <code><a href="bbn_updater.md#0x4_bbn_updater_process_bbn_tx_entry">bbn_upda
 
 
 
-<a name="0x4_bbn_process_bbn_transaction"></a>
+<a id="0x4_bbn_process_bbn_transaction"></a>
 
 ## Function `process_bbn_transaction`
 
@@ -476,7 +476,7 @@ Use <code><a href="bbn_updater.md#0x4_bbn_updater_process_bbn_tx_entry">bbn_upda
 
 
 
-<a name="0x4_bbn_on_utxo_spend"></a>
+<a id="0x4_bbn_on_utxo_spend"></a>
 
 ## Function `on_utxo_spend`
 
@@ -487,7 +487,7 @@ Use <code><a href="bbn_updater.md#0x4_bbn_updater_process_bbn_tx_entry">bbn_upda
 
 
 
-<a name="0x4_bbn_remove_bbn_seal"></a>
+<a id="0x4_bbn_remove_bbn_seal"></a>
 
 ## Function `remove_bbn_seal`
 
@@ -498,7 +498,7 @@ Use <code><a href="bbn_updater.md#0x4_bbn_updater_process_bbn_tx_entry">bbn_upda
 
 
 
-<a name="0x4_bbn_add_temp_state"></a>
+<a id="0x4_bbn_add_temp_state"></a>
 
 ## Function `add_temp_state`
 
@@ -510,7 +510,7 @@ Use <code><a href="bbn_updater.md#0x4_bbn_updater_process_bbn_tx_entry">bbn_upda
 
 
 
-<a name="0x4_bbn_contains_temp_state"></a>
+<a id="0x4_bbn_contains_temp_state"></a>
 
 ## Function `contains_temp_state`
 
@@ -521,7 +521,7 @@ Use <code><a href="bbn_updater.md#0x4_bbn_updater_process_bbn_tx_entry">bbn_upda
 
 
 
-<a name="0x4_bbn_borrow_temp_state"></a>
+<a id="0x4_bbn_borrow_temp_state"></a>
 
 ## Function `borrow_temp_state`
 
@@ -532,7 +532,7 @@ Use <code><a href="bbn_updater.md#0x4_bbn_updater_process_bbn_tx_entry">bbn_upda
 
 
 
-<a name="0x4_bbn_borrow_mut_temp_state"></a>
+<a id="0x4_bbn_borrow_mut_temp_state"></a>
 
 ## Function `borrow_mut_temp_state`
 
@@ -544,7 +544,7 @@ Use <code><a href="bbn_updater.md#0x4_bbn_updater_process_bbn_tx_entry">bbn_upda
 
 
 
-<a name="0x4_bbn_remove_temp_state"></a>
+<a id="0x4_bbn_remove_temp_state"></a>
 
 ## Function `remove_temp_state`
 
@@ -556,7 +556,7 @@ Use <code><a href="bbn_updater.md#0x4_bbn_updater_process_bbn_tx_entry">bbn_upda
 
 
 
-<a name="0x4_bbn_block_height"></a>
+<a id="0x4_bbn_block_height"></a>
 
 ## Function `block_height`
 
@@ -567,7 +567,7 @@ Use <code><a href="bbn_updater.md#0x4_bbn_updater_process_bbn_tx_entry">bbn_upda
 
 
 
-<a name="0x4_bbn_txid"></a>
+<a id="0x4_bbn_txid"></a>
 
 ## Function `txid`
 
@@ -578,7 +578,7 @@ Use <code><a href="bbn_updater.md#0x4_bbn_updater_process_bbn_tx_entry">bbn_upda
 
 
 
-<a name="0x4_bbn_staking_output_index"></a>
+<a id="0x4_bbn_staking_output_index"></a>
 
 ## Function `staking_output_index`
 
@@ -589,7 +589,7 @@ Use <code><a href="bbn_updater.md#0x4_bbn_updater_process_bbn_tx_entry">bbn_upda
 
 
 
-<a name="0x4_bbn_outpoint"></a>
+<a id="0x4_bbn_outpoint"></a>
 
 ## Function `outpoint`
 
@@ -600,7 +600,7 @@ Use <code><a href="bbn_updater.md#0x4_bbn_updater_process_bbn_tx_entry">bbn_upda
 
 
 
-<a name="0x4_bbn_tag"></a>
+<a id="0x4_bbn_tag"></a>
 
 ## Function `tag`
 
@@ -611,7 +611,7 @@ Use <code><a href="bbn_updater.md#0x4_bbn_updater_process_bbn_tx_entry">bbn_upda
 
 
 
-<a name="0x4_bbn_staker_pub_key"></a>
+<a id="0x4_bbn_staker_pub_key"></a>
 
 ## Function `staker_pub_key`
 
@@ -622,7 +622,7 @@ Use <code><a href="bbn_updater.md#0x4_bbn_updater_process_bbn_tx_entry">bbn_upda
 
 
 
-<a name="0x4_bbn_finality_provider_pub_key"></a>
+<a id="0x4_bbn_finality_provider_pub_key"></a>
 
 ## Function `finality_provider_pub_key`
 
@@ -633,7 +633,7 @@ Use <code><a href="bbn_updater.md#0x4_bbn_updater_process_bbn_tx_entry">bbn_upda
 
 
 
-<a name="0x4_bbn_staking_time"></a>
+<a id="0x4_bbn_staking_time"></a>
 
 ## Function `staking_time`
 
@@ -644,7 +644,7 @@ Use <code><a href="bbn_updater.md#0x4_bbn_updater_process_bbn_tx_entry">bbn_upda
 
 
 
-<a name="0x4_bbn_staking_value"></a>
+<a id="0x4_bbn_staking_value"></a>
 
 ## Function `staking_value`
 
@@ -655,7 +655,7 @@ Use <code><a href="bbn_updater.md#0x4_bbn_updater_process_bbn_tx_entry">bbn_upda
 
 
 
-<a name="0x4_bbn_is_expired"></a>
+<a id="0x4_bbn_is_expired"></a>
 
 ## Function `is_expired`
 
@@ -668,7 +668,7 @@ Use <code><a href="bbn_updater.md#0x4_bbn_updater_is_expired">bbn_updater::is_ex
 
 
 
-<a name="0x4_bbn_is_expired_at"></a>
+<a id="0x4_bbn_is_expired_at"></a>
 
 ## Function `is_expired_at`
 

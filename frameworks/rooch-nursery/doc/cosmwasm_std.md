@@ -1,5 +1,5 @@
 
-<a name="0xa_cosmwasm_std"></a>
+<a id="0xa_cosmwasm_std"></a>
 
 # Module `0xa::cosmwasm_std`
 
@@ -57,7 +57,7 @@
 
 
 
-<a name="0xa_cosmwasm_std_Coin"></a>
+<a id="0xa_cosmwasm_std_Coin"></a>
 
 ## Struct `Coin`
 
@@ -69,7 +69,7 @@
 
 
 
-<a name="0xa_cosmwasm_std_BlockInfo"></a>
+<a id="0xa_cosmwasm_std_BlockInfo"></a>
 
 ## Struct `BlockInfo`
 
@@ -81,7 +81,7 @@
 
 
 
-<a name="0xa_cosmwasm_std_TransactionInfo"></a>
+<a id="0xa_cosmwasm_std_TransactionInfo"></a>
 
 ## Struct `TransactionInfo`
 
@@ -93,7 +93,7 @@
 
 
 
-<a name="0xa_cosmwasm_std_ContractInfo"></a>
+<a id="0xa_cosmwasm_std_ContractInfo"></a>
 
 ## Struct `ContractInfo`
 
@@ -105,7 +105,7 @@
 
 
 
-<a name="0xa_cosmwasm_std_Env"></a>
+<a id="0xa_cosmwasm_std_Env"></a>
 
 ## Struct `Env`
 
@@ -117,7 +117,7 @@
 
 
 
-<a name="0xa_cosmwasm_std_MessageInfo"></a>
+<a id="0xa_cosmwasm_std_MessageInfo"></a>
 
 ## Struct `MessageInfo`
 
@@ -129,7 +129,7 @@
 
 
 
-<a name="0xa_cosmwasm_std_Attribute"></a>
+<a id="0xa_cosmwasm_std_Attribute"></a>
 
 ## Struct `Attribute`
 
@@ -141,7 +141,7 @@
 
 
 
-<a name="0xa_cosmwasm_std_Event"></a>
+<a id="0xa_cosmwasm_std_Event"></a>
 
 ## Struct `Event`
 
@@ -153,7 +153,7 @@
 
 
 
-<a name="0xa_cosmwasm_std_Response"></a>
+<a id="0xa_cosmwasm_std_Response"></a>
 
 ## Struct `Response`
 
@@ -165,7 +165,7 @@
 
 
 
-<a name="0xa_cosmwasm_std_SubMsg"></a>
+<a id="0xa_cosmwasm_std_SubMsg"></a>
 
 ## Struct `SubMsg`
 
@@ -177,7 +177,7 @@
 
 
 
-<a name="0xa_cosmwasm_std_Error"></a>
+<a id="0xa_cosmwasm_std_Error"></a>
 
 ## Struct `Error`
 
@@ -189,7 +189,7 @@
 
 
 
-<a name="0xa_cosmwasm_std_MsgResponse"></a>
+<a id="0xa_cosmwasm_std_MsgResponse"></a>
 
 ## Struct `MsgResponse`
 
@@ -201,7 +201,7 @@
 
 
 
-<a name="0xa_cosmwasm_std_SubMsgResponse"></a>
+<a id="0xa_cosmwasm_std_SubMsgResponse"></a>
 
 ## Struct `SubMsgResponse`
 
@@ -213,7 +213,7 @@
 
 
 
-<a name="0xa_cosmwasm_std_SubMsgResult"></a>
+<a id="0xa_cosmwasm_std_SubMsgResult"></a>
 
 ## Struct `SubMsgResult`
 
@@ -225,7 +225,7 @@
 
 
 
-<a name="0xa_cosmwasm_std_Reply"></a>
+<a id="0xa_cosmwasm_std_Reply"></a>
 
 ## Struct `Reply`
 
@@ -237,7 +237,7 @@
 
 
 
-<a name="0xa_cosmwasm_std_ReplyOn"></a>
+<a id="0xa_cosmwasm_std_ReplyOn"></a>
 
 ## Struct `ReplyOn`
 
@@ -249,7 +249,7 @@
 
 
 
-<a name="0xa_cosmwasm_std_StdResult"></a>
+<a id="0xa_cosmwasm_std_StdResult"></a>
 
 ## Struct `StdResult`
 
@@ -261,12 +261,12 @@
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0xa_cosmwasm_std_ErrorDeserialize"></a>
+<a id="0xa_cosmwasm_std_ErrorDeserialize"></a>
 
 This error code is returned when a deserialization error occurs.
 
@@ -276,7 +276,7 @@ This error code is returned when a deserialization error occurs.
 
 
 
-<a name="0xa_cosmwasm_std_REPLY_ALWAYS"></a>
+<a id="0xa_cosmwasm_std_REPLY_ALWAYS"></a>
 
 
 
@@ -285,7 +285,7 @@ This error code is returned when a deserialization error occurs.
 
 
 
-<a name="0xa_cosmwasm_std_REPLY_ON_ERROR"></a>
+<a id="0xa_cosmwasm_std_REPLY_ON_ERROR"></a>
 
 
 
@@ -294,7 +294,7 @@ This error code is returned when a deserialization error occurs.
 
 
 
-<a name="0xa_cosmwasm_std_REPLY_ON_SUCCESS"></a>
+<a id="0xa_cosmwasm_std_REPLY_ON_SUCCESS"></a>
 
 
 
@@ -303,7 +303,7 @@ This error code is returned when a deserialization error occurs.
 
 
 
-<a name="0xa_cosmwasm_std_new_response"></a>
+<a id="0xa_cosmwasm_std_new_response"></a>
 
 ## Function `new_response`
 
@@ -314,7 +314,7 @@ This error code is returned when a deserialization error occurs.
 
 
 
-<a name="0xa_cosmwasm_std_new_sub_msg_response"></a>
+<a id="0xa_cosmwasm_std_new_sub_msg_response"></a>
 
 ## Function `new_sub_msg_response`
 
@@ -325,7 +325,7 @@ This error code is returned when a deserialization error occurs.
 
 
 
-<a name="0xa_cosmwasm_std_new_sub_msg_error"></a>
+<a id="0xa_cosmwasm_std_new_sub_msg_error"></a>
 
 ## Function `new_sub_msg_error`
 
@@ -336,7 +336,7 @@ This error code is returned when a deserialization error occurs.
 
 
 
-<a name="0xa_cosmwasm_std_add_attribute"></a>
+<a id="0xa_cosmwasm_std_add_attribute"></a>
 
 ## Function `add_attribute`
 
@@ -347,7 +347,7 @@ This error code is returned when a deserialization error occurs.
 
 
 
-<a name="0xa_cosmwasm_std_add_event"></a>
+<a id="0xa_cosmwasm_std_add_event"></a>
 
 ## Function `add_event`
 
@@ -358,7 +358,7 @@ This error code is returned when a deserialization error occurs.
 
 
 
-<a name="0xa_cosmwasm_std_set_data"></a>
+<a id="0xa_cosmwasm_std_set_data"></a>
 
 ## Function `set_data`
 
@@ -369,7 +369,7 @@ This error code is returned when a deserialization error occurs.
 
 
 
-<a name="0xa_cosmwasm_std_add_message"></a>
+<a id="0xa_cosmwasm_std_add_message"></a>
 
 ## Function `add_message`
 
@@ -380,7 +380,7 @@ This error code is returned when a deserialization error occurs.
 
 
 
-<a name="0xa_cosmwasm_std_new_coin"></a>
+<a id="0xa_cosmwasm_std_new_coin"></a>
 
 ## Function `new_coin`
 
@@ -391,7 +391,7 @@ This error code is returned when a deserialization error occurs.
 
 
 
-<a name="0xa_cosmwasm_std_new_sub_msg"></a>
+<a id="0xa_cosmwasm_std_new_sub_msg"></a>
 
 ## Function `new_sub_msg`
 
@@ -402,7 +402,7 @@ This error code is returned when a deserialization error occurs.
 
 
 
-<a name="0xa_cosmwasm_std_new_error"></a>
+<a id="0xa_cosmwasm_std_new_error"></a>
 
 ## Function `new_error`
 
@@ -413,7 +413,7 @@ This error code is returned when a deserialization error occurs.
 
 
 
-<a name="0xa_cosmwasm_std_new_error_result"></a>
+<a id="0xa_cosmwasm_std_new_error_result"></a>
 
 ## Function `new_error_result`
 
@@ -424,7 +424,7 @@ This error code is returned when a deserialization error occurs.
 
 
 
-<a name="0xa_cosmwasm_std_new_reply"></a>
+<a id="0xa_cosmwasm_std_new_reply"></a>
 
 ## Function `new_reply`
 
@@ -435,7 +435,7 @@ This error code is returned when a deserialization error occurs.
 
 
 
-<a name="0xa_cosmwasm_std_serialize_env"></a>
+<a id="0xa_cosmwasm_std_serialize_env"></a>
 
 ## Function `serialize_env`
 
@@ -446,7 +446,7 @@ This error code is returned when a deserialization error occurs.
 
 
 
-<a name="0xa_cosmwasm_std_serialize_message_info"></a>
+<a id="0xa_cosmwasm_std_serialize_message_info"></a>
 
 ## Function `serialize_message_info`
 
@@ -457,7 +457,7 @@ This error code is returned when a deserialization error occurs.
 
 
 
-<a name="0xa_cosmwasm_std_serialize_message"></a>
+<a id="0xa_cosmwasm_std_serialize_message"></a>
 
 ## Function `serialize_message`
 
@@ -468,7 +468,7 @@ This error code is returned when a deserialization error occurs.
 
 
 
-<a name="0xa_cosmwasm_std_deserialize_stdresult"></a>
+<a id="0xa_cosmwasm_std_deserialize_stdresult"></a>
 
 ## Function `deserialize_stdresult`
 
@@ -479,7 +479,7 @@ This error code is returned when a deserialization error occurs.
 
 
 
-<a name="0xa_cosmwasm_std_new_binary"></a>
+<a id="0xa_cosmwasm_std_new_binary"></a>
 
 ## Function `new_binary`
 
@@ -490,7 +490,7 @@ This error code is returned when a deserialization error occurs.
 
 
 
-<a name="0xa_cosmwasm_std_current_chain"></a>
+<a id="0xa_cosmwasm_std_current_chain"></a>
 
 ## Function `current_chain`
 
@@ -501,7 +501,7 @@ This error code is returned when a deserialization error occurs.
 
 
 
-<a name="0xa_cosmwasm_std_current_env"></a>
+<a id="0xa_cosmwasm_std_current_env"></a>
 
 ## Function `current_env`
 
@@ -512,7 +512,7 @@ This error code is returned when a deserialization error occurs.
 
 
 
-<a name="0xa_cosmwasm_std_current_message_info"></a>
+<a id="0xa_cosmwasm_std_current_message_info"></a>
 
 ## Function `current_message_info`
 

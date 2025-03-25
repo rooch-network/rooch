@@ -1,5 +1,5 @@
 
-<a name="0x3_coin_store"></a>
+<a id="0x3_coin_store"></a>
 
 # Module `0x3::coin_store`
 
@@ -41,7 +41,7 @@
 
 
 
-<a name="0x3_coin_store_Balance"></a>
+<a id="0x3_coin_store_Balance"></a>
 
 ## Struct `Balance`
 
@@ -53,7 +53,7 @@ The Balance resource that stores the balance of a specific coin type.
 
 
 
-<a name="0x3_coin_store_CoinStore"></a>
+<a id="0x3_coin_store_CoinStore"></a>
 
 ## Resource `CoinStore`
 
@@ -66,7 +66,7 @@ These are kept in a single resource to ensure locality of data.
 
 
 
-<a name="0x3_coin_store_CreateEvent"></a>
+<a id="0x3_coin_store_CreateEvent"></a>
 
 ## Struct `CreateEvent`
 
@@ -78,7 +78,7 @@ Event emitted when a coin store is created.
 
 
 
-<a name="0x3_coin_store_DepositEvent"></a>
+<a id="0x3_coin_store_DepositEvent"></a>
 
 ## Struct `DepositEvent`
 
@@ -90,7 +90,7 @@ Event emitted when some amount of a coin is deposited into a coin store.
 
 
 
-<a name="0x3_coin_store_WithdrawEvent"></a>
+<a id="0x3_coin_store_WithdrawEvent"></a>
 
 ## Struct `WithdrawEvent`
 
@@ -102,7 +102,7 @@ Event emitted when some amount of a coin is withdrawn from a coin store.
 
 
 
-<a name="0x3_coin_store_FreezeEvent"></a>
+<a id="0x3_coin_store_FreezeEvent"></a>
 
 ## Struct `FreezeEvent`
 
@@ -114,7 +114,7 @@ Event emitted when a coin store is frozen or unfrozen.
 
 
 
-<a name="0x3_coin_store_RemoveEvent"></a>
+<a id="0x3_coin_store_RemoveEvent"></a>
 
 ## Struct `RemoveEvent`
 
@@ -126,12 +126,12 @@ Event emitted when a coin store is removed.
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x3_coin_store_ErrorInsufficientBalance"></a>
+<a id="0x3_coin_store_ErrorInsufficientBalance"></a>
 
 Not enough balance to withdraw from CoinStore
 
@@ -141,7 +141,7 @@ Not enough balance to withdraw from CoinStore
 
 
 
-<a name="0x3_coin_store_ErrorCoinStoreIsFrozen"></a>
+<a id="0x3_coin_store_ErrorCoinStoreIsFrozen"></a>
 
 CoinStore is frozen. Coins cannot be deposited or withdrawn
 
@@ -151,7 +151,7 @@ CoinStore is frozen. Coins cannot be deposited or withdrawn
 
 
 
-<a name="0x3_coin_store_ErrorCoinStoreNotFound"></a>
+<a id="0x3_coin_store_ErrorCoinStoreNotFound"></a>
 
 The CoinStore is not found in the global object store
 
@@ -161,7 +161,7 @@ The CoinStore is not found in the global object store
 
 
 
-<a name="0x3_coin_store_ErrorCoinStoreTransferNotSupported"></a>
+<a id="0x3_coin_store_ErrorCoinStoreTransferNotSupported"></a>
 
 Transfer is not supported for CoinStore
 
@@ -171,7 +171,7 @@ Transfer is not supported for CoinStore
 
 
 
-<a name="0x3_coin_store_ErrorCoinTypeAndStoreMismatch"></a>
+<a id="0x3_coin_store_ErrorCoinTypeAndStoreMismatch"></a>
 
 The CoinType parameter and CoinType in CoinStore do not match
 
@@ -181,7 +181,7 @@ The CoinType parameter and CoinType in CoinStore do not match
 
 
 
-<a name="0x3_coin_store_create_coin_store"></a>
+<a id="0x3_coin_store_create_coin_store"></a>
 
 ## Function `create_coin_store`
 
@@ -194,7 +194,7 @@ Anyone can create a CoinStore Object for public Coin<CoinType>, the <code>CoinTy
 
 
 
-<a name="0x3_coin_store_create_coin_store_extend"></a>
+<a id="0x3_coin_store_create_coin_store_extend"></a>
 
 ## Function `create_coin_store_extend`
 
@@ -207,7 +207,7 @@ This function is for the <code>CoinType</code> module to extend
 
 
 
-<a name="0x3_coin_store_remove_coin_store"></a>
+<a id="0x3_coin_store_remove_coin_store"></a>
 
 ## Function `remove_coin_store`
 
@@ -219,7 +219,7 @@ Remove the CoinStore Object, return the Coin<T> in balance
 
 
 
-<a name="0x3_coin_store_balance"></a>
+<a id="0x3_coin_store_balance"></a>
 
 ## Function `balance`
 
@@ -230,7 +230,7 @@ Remove the CoinStore Object, return the Coin<T> in balance
 
 
 
-<a name="0x3_coin_store_is_frozen"></a>
+<a id="0x3_coin_store_is_frozen"></a>
 
 ## Function `is_frozen`
 
@@ -241,7 +241,7 @@ Remove the CoinStore Object, return the Coin<T> in balance
 
 
 
-<a name="0x3_coin_store_withdraw"></a>
+<a id="0x3_coin_store_withdraw"></a>
 
 ## Function `withdraw`
 
@@ -254,7 +254,7 @@ This function requires the <code>CoinType</code> must has <code>key</code> and <
 
 
 
-<a name="0x3_coin_store_withdraw_extend"></a>
+<a id="0x3_coin_store_withdraw_extend"></a>
 
 ## Function `withdraw_extend`
 
@@ -268,7 +268,7 @@ This function is for the <code>CoinType</code> module to extend
 
 
 
-<a name="0x3_coin_store_deposit"></a>
+<a id="0x3_coin_store_deposit"></a>
 
 ## Function `deposit`
 
@@ -281,7 +281,7 @@ This function requires the <code>CoinType</code> must has <code>key</code> and <
 
 
 
-<a name="0x3_coin_store_deposit_extend"></a>
+<a id="0x3_coin_store_deposit_extend"></a>
 
 ## Function `deposit_extend`
 
@@ -295,7 +295,7 @@ This function is for the <code>CoinType</code> module to extend
 
 
 
-<a name="0x3_coin_store_transfer"></a>
+<a id="0x3_coin_store_transfer"></a>
 
 ## Function `transfer`
 
@@ -306,7 +306,7 @@ This function is for the <code>CoinType</code> module to extend
 
 
 
-<a name="0x3_coin_store_borrow_mut_coin_store_extend"></a>
+<a id="0x3_coin_store_borrow_mut_coin_store_extend"></a>
 
 ## Function `borrow_mut_coin_store_extend`
 
@@ -320,7 +320,7 @@ This function is for the <code>CoinType</code> module to extend
 
 
 
-<a name="0x3_coin_store_freeze_coin_store_extend"></a>
+<a id="0x3_coin_store_freeze_coin_store_extend"></a>
 
 ## Function `freeze_coin_store_extend`
 
@@ -335,7 +335,7 @@ Only the <code>CoinType</code> module can freeze or unfreeze a CoinStore by the 
 
 
 
-<a name="0x3_coin_store_create_coin_store_internal"></a>
+<a id="0x3_coin_store_create_coin_store_internal"></a>
 
 ## Function `create_coin_store_internal`
 
@@ -346,7 +346,7 @@ Only the <code>CoinType</code> module can freeze or unfreeze a CoinStore by the 
 
 
 
-<a name="0x3_coin_store_create_account_coin_store"></a>
+<a id="0x3_coin_store_create_account_coin_store"></a>
 
 ## Function `create_account_coin_store`
 
@@ -357,7 +357,7 @@ Only the <code>CoinType</code> module can freeze or unfreeze a CoinStore by the 
 
 
 
-<a name="0x3_coin_store_borrow_mut_coin_store_internal"></a>
+<a id="0x3_coin_store_borrow_mut_coin_store_internal"></a>
 
 ## Function `borrow_mut_coin_store_internal`
 
@@ -368,7 +368,7 @@ Only the <code>CoinType</code> module can freeze or unfreeze a CoinStore by the 
 
 
 
-<a name="0x3_coin_store_withdraw_internal"></a>
+<a id="0x3_coin_store_withdraw_internal"></a>
 
 ## Function `withdraw_internal`
 
@@ -379,7 +379,7 @@ Only the <code>CoinType</code> module can freeze or unfreeze a CoinStore by the 
 
 
 
-<a name="0x3_coin_store_deposit_internal"></a>
+<a id="0x3_coin_store_deposit_internal"></a>
 
 ## Function `deposit_internal`
 

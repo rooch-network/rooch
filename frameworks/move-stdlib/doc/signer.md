@@ -1,5 +1,5 @@
 
-<a name="0x1_signer"></a>
+<a id="0x1_signer"></a>
 
 # Module `0x1::signer`
 
@@ -14,7 +14,7 @@
 
 
 
-<a name="0x1_signer_borrow_address"></a>
+<a id="0x1_signer_borrow_address"></a>
 
 ## Function `borrow_address`
 
@@ -32,7 +32,7 @@ struct signer has drop { addr: address }
 
 
 
-<a name="0x1_signer_address_of"></a>
+<a id="0x1_signer_address_of"></a>
 
 ## Function `address_of`
 
@@ -43,6 +43,6 @@ struct signer has drop { addr: address }
 
 
 
-<a name="@Module_Specification_0"></a>
+<a id="@Module_Specification_0"></a>
 
 ## Module Specification

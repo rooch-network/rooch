@@ -1,5 +1,5 @@
 
-<a name="0x2_object"></a>
+<a id="0x2_object"></a>
 
 # Module `0x2::object`
 
@@ -87,7 +87,7 @@ For more details, please refer to https://rooch.network/docs/developer-guides/ob
 
 
 
-<a name="0x2_object_ObjectID"></a>
+<a id="0x2_object_ObjectID"></a>
 
 ## Struct `ObjectID`
 
@@ -100,7 +100,7 @@ ObjectID is a unique identifier for the Object
 
 
 
-<a name="0x2_object_Object"></a>
+<a id="0x2_object_Object"></a>
 
 ## Resource `Object`
 
@@ -112,7 +112,7 @@ Object<T> is a pointer type to the Object in storage, It has <code>key</code> an
 
 
 
-<a name="0x2_object_DynamicField"></a>
+<a id="0x2_object_DynamicField"></a>
 
 ## Resource `DynamicField`
 
@@ -124,12 +124,12 @@ The dynamic field
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x2_object_ErrorTypeMismatch"></a>
+<a id="0x2_object_ErrorTypeMismatch"></a>
 
 The type of the object or field is mismatch
 
@@ -139,7 +139,7 @@ The type of the object or field is mismatch
 
 
 
-<a name="0x2_object_ErrorAlreadyExists"></a>
+<a id="0x2_object_ErrorAlreadyExists"></a>
 
 The Object or dynamic field already exists
 
@@ -149,7 +149,7 @@ The Object or dynamic field already exists
 
 
 
-<a name="0x2_object_ErrorChildObjectTooDeep"></a>
+<a id="0x2_object_ErrorChildObjectTooDeep"></a>
 
 The child object level is too deep
 
@@ -159,7 +159,7 @@ The child object level is too deep
 
 
 
-<a name="0x2_object_ErrorFieldsNotEmpty"></a>
+<a id="0x2_object_ErrorFieldsNotEmpty"></a>
 
 The dynamic fields is not empty
 
@@ -169,7 +169,7 @@ The dynamic fields is not empty
 
 
 
-<a name="0x2_object_ErrorInvalidHex"></a>
+<a id="0x2_object_ErrorInvalidHex"></a>
 
 The hex string is invalid
 
@@ -179,7 +179,7 @@ The hex string is invalid
 
 
 
-<a name="0x2_object_ErrorInvalidOwnerAddress"></a>
+<a id="0x2_object_ErrorInvalidOwnerAddress"></a>
 
 
 
@@ -188,7 +188,7 @@ The hex string is invalid
 
 
 
-<a name="0x2_object_ErrorNotFound"></a>
+<a id="0x2_object_ErrorNotFound"></a>
 
 Can not found the Object or dynamic field
 
@@ -198,7 +198,7 @@ Can not found the Object or dynamic field
 
 
 
-<a name="0x2_object_ErrorObjectAlreadyBorrowed"></a>
+<a id="0x2_object_ErrorObjectAlreadyBorrowed"></a>
 
 The object or field is already borrowed
 
@@ -208,7 +208,7 @@ The object or field is already borrowed
 
 
 
-<a name="0x2_object_ErrorObjectAlreadyTakenOutOrEmbeded"></a>
+<a id="0x2_object_ErrorObjectAlreadyTakenOutOrEmbeded"></a>
 
 The object or field is already taken out or embedded in other struct
 
@@ -218,7 +218,7 @@ The object or field is already taken out or embedded in other struct
 
 
 
-<a name="0x2_object_ErrorObjectFrozen"></a>
+<a id="0x2_object_ErrorObjectFrozen"></a>
 
 
 
@@ -227,7 +227,7 @@ The object or field is already taken out or embedded in other struct
 
 
 
-<a name="0x2_object_ErrorObjectIsBound"></a>
+<a id="0x2_object_ErrorObjectIsBound"></a>
 
 Can not take out the object which is bound to the account
 
@@ -237,7 +237,7 @@ Can not take out the object which is bound to the account
 
 
 
-<a name="0x2_object_ErrorObjectNotShared"></a>
+<a id="0x2_object_ErrorObjectNotShared"></a>
 
 
 
@@ -246,7 +246,7 @@ Can not take out the object which is bound to the account
 
 
 
-<a name="0x2_object_ErrorObjectOwnerNotMatch"></a>
+<a id="0x2_object_ErrorObjectOwnerNotMatch"></a>
 
 
 
@@ -255,7 +255,7 @@ Can not take out the object which is bound to the account
 
 
 
-<a name="0x2_object_ErrorObjectRuntimeError"></a>
+<a id="0x2_object_ErrorObjectRuntimeError"></a>
 
 The object runtime error
 
@@ -265,7 +265,7 @@ The object runtime error
 
 
 
-<a name="0x2_object_ErrorParentNotMatch"></a>
+<a id="0x2_object_ErrorParentNotMatch"></a>
 
 The parent object is not match
 
@@ -275,7 +275,7 @@ The parent object is not match
 
 
 
-<a name="0x2_object_ErrorWithoutParent"></a>
+<a id="0x2_object_ErrorWithoutParent"></a>
 
 The object has no parent
 
@@ -285,7 +285,7 @@ The object has no parent
 
 
 
-<a name="0x2_object_FROZEN_OBJECT_FLAG_MASK"></a>
+<a id="0x2_object_FROZEN_OBJECT_FLAG_MASK"></a>
 
 
 
@@ -294,7 +294,7 @@ The object has no parent
 
 
 
-<a name="0x2_object_SHARED_OBJECT_FLAG_MASK"></a>
+<a id="0x2_object_SHARED_OBJECT_FLAG_MASK"></a>
 
 
 
@@ -303,7 +303,7 @@ The object has no parent
 
 
 
-<a name="0x2_object_SPARSE_MERKLE_PLACEHOLDER_HASH"></a>
+<a id="0x2_object_SPARSE_MERKLE_PLACEHOLDER_HASH"></a>
 
 
 
@@ -312,7 +312,7 @@ The object has no parent
 
 
 
-<a name="0x2_object_SYSTEM_OWNER_ADDRESS"></a>
+<a id="0x2_object_SYSTEM_OWNER_ADDRESS"></a>
 
 
 
@@ -321,7 +321,7 @@ The object has no parent
 
 
 
-<a name="0x2_object_has_parent"></a>
+<a id="0x2_object_has_parent"></a>
 
 ## Function `has_parent`
 
@@ -334,7 +334,7 @@ The object_id has parent means the object_id is not the root object_id
 
 
 
-<a name="0x2_object_parent_id"></a>
+<a id="0x2_object_parent_id"></a>
 
 ## Function `parent_id`
 
@@ -345,7 +345,7 @@ The object_id has parent means the object_id is not the root object_id
 
 
 
-<a name="0x2_object_child_id"></a>
+<a id="0x2_object_child_id"></a>
 
 ## Function `child_id`
 
@@ -356,7 +356,7 @@ The object_id has parent means the object_id is not the root object_id
 
 
 
-<a name="0x2_object_is_parent"></a>
+<a id="0x2_object_is_parent"></a>
 
 ## Function `is_parent`
 
@@ -368,7 +368,7 @@ Check if the <code>parent</code> is the parent of the <code>child</code>
 
 
 
-<a name="0x2_object_is_root"></a>
+<a id="0x2_object_is_root"></a>
 
 ## Function `is_root`
 
@@ -379,7 +379,7 @@ Check if the <code>parent</code> is the parent of the <code>child</code>
 
 
 
-<a name="0x2_object_address_to_object_id"></a>
+<a id="0x2_object_address_to_object_id"></a>
 
 ## Function `address_to_object_id`
 
@@ -391,7 +391,7 @@ Generate a new ObjectID from an address
 
 
 
-<a name="0x2_object_named_object_id"></a>
+<a id="0x2_object_named_object_id"></a>
 
 ## Function `named_object_id`
 
@@ -402,7 +402,7 @@ Generate a new ObjectID from an address
 
 
 
-<a name="0x2_object_account_named_object_id"></a>
+<a id="0x2_object_account_named_object_id"></a>
 
 ## Function `account_named_object_id`
 
@@ -413,7 +413,7 @@ Generate a new ObjectID from an address
 
 
 
-<a name="0x2_object_custom_object_id"></a>
+<a id="0x2_object_custom_object_id"></a>
 
 ## Function `custom_object_id`
 
@@ -424,7 +424,7 @@ Generate a new ObjectID from an address
 
 
 
-<a name="0x2_object_custom_object_id_with_parent"></a>
+<a id="0x2_object_custom_object_id_with_parent"></a>
 
 ## Function `custom_object_id_with_parent`
 
@@ -435,7 +435,7 @@ Generate a new ObjectID from an address
 
 
 
-<a name="0x2_object_to_string"></a>
+<a id="0x2_object_to_string"></a>
 
 ## Function `to_string`
 
@@ -447,7 +447,7 @@ the ObjectI::to_string() format is the same as ObjectID::to_str() in Rust
 
 
 
-<a name="0x2_object_from_string"></a>
+<a id="0x2_object_from_string"></a>
 
 ## Function `from_string`
 
@@ -458,7 +458,7 @@ the ObjectI::to_string() format is the same as ObjectID::to_str() in Rust
 
 
 
-<a name="0x2_object_new"></a>
+<a id="0x2_object_new"></a>
 
 ## Function `new`
 
@@ -471,7 +471,7 @@ Create a new Object, Add the Object to the global object storage and return the 
 
 
 
-<a name="0x2_object_new_with_id"></a>
+<a id="0x2_object_new_with_id"></a>
 
 ## Function `new_with_id`
 
@@ -485,7 +485,7 @@ The caller must ensure that the <code>id</code> is unique
 
 
 
-<a name="0x2_object_new_named_object"></a>
+<a id="0x2_object_new_named_object"></a>
 
 ## Function `new_named_object`
 
@@ -498,7 +498,7 @@ Create a new named Object, the ObjectID is generated by the type_name of <code>T
 
 
 
-<a name="0x2_object_new_account_named_object"></a>
+<a id="0x2_object_new_account_named_object"></a>
 
 ## Function `new_account_named_object`
 
@@ -511,7 +511,7 @@ Create a new account named object, the ObjectID is generated by the account addr
 
 
 
-<a name="0x2_object_new_with_object_id"></a>
+<a id="0x2_object_new_with_object_id"></a>
 
 ## Function `new_with_object_id`
 
@@ -522,7 +522,7 @@ Create a new account named object, the ObjectID is generated by the account addr
 
 
 
-<a name="0x2_object_new_with_parent"></a>
+<a id="0x2_object_new_with_parent"></a>
 
 ## Function `new_with_parent`
 
@@ -535,7 +535,7 @@ Create a new object under the parent object
 
 
 
-<a name="0x2_object_new_with_parent_and_id"></a>
+<a id="0x2_object_new_with_parent_and_id"></a>
 
 ## Function `new_with_parent_and_id`
 
@@ -548,7 +548,7 @@ Create a new object under the parent object with custom ID, the ObjectID is gene
 
 
 
-<a name="0x2_object_new_with_parent_and_key"></a>
+<a id="0x2_object_new_with_parent_and_key"></a>
 
 ## Function `new_with_parent_and_key`
 
@@ -559,7 +559,7 @@ Create a new object under the parent object with custom ID, the ObjectID is gene
 
 
 
-<a name="0x2_object_borrow"></a>
+<a id="0x2_object_borrow"></a>
 
 ## Function `borrow`
 
@@ -571,7 +571,7 @@ Borrow the object value
 
 
 
-<a name="0x2_object_borrow_mut"></a>
+<a id="0x2_object_borrow_mut"></a>
 
 ## Function `borrow_mut`
 
@@ -583,7 +583,7 @@ Borrow the object mutable value
 
 
 
-<a name="0x2_object_exists_object"></a>
+<a id="0x2_object_exists_object"></a>
 
 ## Function `exists_object`
 
@@ -595,7 +595,7 @@ Check if the object with <code>object_id</code> exists in the global object stor
 
 
 
-<a name="0x2_object_exists_object_with_type"></a>
+<a id="0x2_object_exists_object_with_type"></a>
 
 ## Function `exists_object_with_type`
 
@@ -607,7 +607,7 @@ Check if the object exists in the global object storage and the type of the obje
 
 
 
-<a name="0x2_object_borrow_object"></a>
+<a id="0x2_object_borrow_object"></a>
 
 ## Function `borrow_object`
 
@@ -621,7 +621,7 @@ Except the object is embedded in other struct
 
 
 
-<a name="0x2_object_borrow_mut_object"></a>
+<a id="0x2_object_borrow_mut_object"></a>
 
 ## Function `borrow_mut_object`
 
@@ -633,7 +633,7 @@ Borrow mut Object by <code>owner</code> and <code>object_id</code>
 
 
 
-<a name="0x2_object_borrow_mut_object_extend"></a>
+<a id="0x2_object_borrow_mut_object_extend"></a>
 
 ## Function `borrow_mut_object_extend`
 
@@ -647,7 +647,7 @@ Except the object is frozen or is embedded in other struct
 
 
 
-<a name="0x2_object_take_object"></a>
+<a id="0x2_object_take_object"></a>
 
 ## Function `take_object`
 
@@ -660,7 +660,7 @@ The <code>T</code> must have <code>key + store</code> ability.
 
 
 
-<a name="0x2_object_take_object_extend"></a>
+<a id="0x2_object_take_object_extend"></a>
 
 ## Function `take_object_extend`
 
@@ -674,7 +674,7 @@ This function is for developer to extend, Only the module of <code>T</code> can 
 
 
 
-<a name="0x2_object_borrow_mut_object_shared"></a>
+<a id="0x2_object_borrow_mut_object_shared"></a>
 
 ## Function `borrow_mut_object_shared`
 
@@ -686,7 +686,7 @@ Borrow mut Shared Object by object_id
 
 
 
-<a name="0x2_object_remove"></a>
+<a id="0x2_object_remove"></a>
 
 ## Function `remove`
 
@@ -701,7 +701,7 @@ The caller must ensure that the dynamic fields are empty before delete the Objec
 
 
 
-<a name="0x2_object_remove_unchecked"></a>
+<a id="0x2_object_remove_unchecked"></a>
 
 ## Function `remove_unchecked`
 
@@ -714,7 +714,7 @@ Do not check if the dynamic fields are empty
 
 
 
-<a name="0x2_object_to_shared"></a>
+<a id="0x2_object_to_shared"></a>
 
 ## Function `to_shared`
 
@@ -727,7 +727,7 @@ The module of <code>T</code> can call <code>take_object_extend</code> to take ou
 
 
 
-<a name="0x2_object_is_shared"></a>
+<a id="0x2_object_is_shared"></a>
 
 ## Function `is_shared`
 
@@ -738,7 +738,7 @@ The module of <code>T</code> can call <code>take_object_extend</code> to take ou
 
 
 
-<a name="0x2_object_to_frozen"></a>
+<a id="0x2_object_to_frozen"></a>
 
 ## Function `to_frozen`
 
@@ -750,7 +750,7 @@ Make the Object frozen, No one can not get the &mut Object<T> from frozen object
 
 
 
-<a name="0x2_object_is_frozen"></a>
+<a id="0x2_object_is_frozen"></a>
 
 ## Function `is_frozen`
 
@@ -761,7 +761,7 @@ Make the Object frozen, No one can not get the &mut Object<T> from frozen object
 
 
 
-<a name="0x2_object_transfer"></a>
+<a id="0x2_object_transfer"></a>
 
 ## Function `transfer`
 
@@ -774,7 +774,7 @@ Only the <code>T</code> with <code>store</code> can be directly transferred.
 
 
 
-<a name="0x2_object_transfer_extend"></a>
+<a id="0x2_object_transfer_extend"></a>
 
 ## Function `transfer_extend`
 
@@ -788,7 +788,7 @@ This function is for the module of <code>T</code> to extend the <code>transfer</
 
 
 
-<a name="0x2_object_id"></a>
+<a id="0x2_object_id"></a>
 
 ## Function `id`
 
@@ -799,7 +799,7 @@ This function is for the module of <code>T</code> to extend the <code>transfer</
 
 
 
-<a name="0x2_object_owner"></a>
+<a id="0x2_object_owner"></a>
 
 ## Function `owner`
 
@@ -810,7 +810,7 @@ This function is for the module of <code>T</code> to extend the <code>transfer</
 
 
 
-<a name="0x2_object_is_system_owned"></a>
+<a id="0x2_object_is_system_owned"></a>
 
 ## Function `is_system_owned`
 
@@ -821,7 +821,7 @@ This function is for the module of <code>T</code> to extend the <code>transfer</
 
 
 
-<a name="0x2_object_is_user_owned"></a>
+<a id="0x2_object_is_user_owned"></a>
 
 ## Function `is_user_owned`
 
@@ -832,7 +832,7 @@ This function is for the module of <code>T</code> to extend the <code>transfer</
 
 
 
-<a name="0x2_object_add_field"></a>
+<a id="0x2_object_add_field"></a>
 
 ## Function `add_field`
 
@@ -847,7 +847,7 @@ object, and cannot be discovered from it.
 
 
 
-<a name="0x2_object_add_field_internal"></a>
+<a id="0x2_object_add_field_internal"></a>
 
 ## Function `add_field_internal`
 
@@ -858,7 +858,7 @@ object, and cannot be discovered from it.
 
 
 
-<a name="0x2_object_borrow_field"></a>
+<a id="0x2_object_borrow_field"></a>
 
 ## Function `borrow_field`
 
@@ -871,7 +871,7 @@ Aborts if there is no field for <code>key</code>.
 
 
 
-<a name="0x2_object_borrow_field_internal"></a>
+<a id="0x2_object_borrow_field_internal"></a>
 
 ## Function `borrow_field_internal`
 
@@ -883,7 +883,7 @@ Borrow FieldValue and return the val of FieldValue
 
 
 
-<a name="0x2_object_borrow_field_with_key_internal"></a>
+<a id="0x2_object_borrow_field_with_key_internal"></a>
 
 ## Function `borrow_field_with_key_internal`
 
@@ -895,7 +895,7 @@ Direct field access based on field_key and return field value reference.
 
 
 
-<a name="0x2_object_borrow_field_with_default"></a>
+<a id="0x2_object_borrow_field_with_default"></a>
 
 ## Function `borrow_field_with_default`
 
@@ -908,7 +908,7 @@ Returns specified default value if there is no field for <code>key</code>.
 
 
 
-<a name="0x2_object_borrow_mut_field"></a>
+<a id="0x2_object_borrow_mut_field"></a>
 
 ## Function `borrow_mut_field`
 
@@ -922,7 +922,7 @@ Aborts if there is no field for <code>key</code>.
 
 
 
-<a name="0x2_object_borrow_mut_field_internal"></a>
+<a id="0x2_object_borrow_mut_field_internal"></a>
 
 ## Function `borrow_mut_field_internal`
 
@@ -935,7 +935,7 @@ Aborts if there is no field for <code>key</code>.
 
 
 
-<a name="0x2_object_borrow_mut_field_with_key_internal"></a>
+<a id="0x2_object_borrow_mut_field_with_key_internal"></a>
 
 ## Function `borrow_mut_field_with_key_internal`
 
@@ -948,7 +948,7 @@ Will abort if no field exists for the given <code>field_key</code>.
 
 
 
-<a name="0x2_object_borrow_mut_field_with_default"></a>
+<a id="0x2_object_borrow_mut_field_with_default"></a>
 
 ## Function `borrow_mut_field_with_default`
 
@@ -962,7 +962,7 @@ Insert the pair (<code>key</code>, <code>default</code>) first if there is no fi
 
 
 
-<a name="0x2_object_upsert_field"></a>
+<a id="0x2_object_upsert_field"></a>
 
 ## Function `upsert_field`
 
@@ -976,7 +976,7 @@ update the value of the field for <code>key</code> to <code>value</code> otherwi
 
 
 
-<a name="0x2_object_remove_field"></a>
+<a id="0x2_object_remove_field"></a>
 
 ## Function `remove_field`
 
@@ -990,7 +990,7 @@ Aborts if there is no field for <code>key</code>.
 
 
 
-<a name="0x2_object_remove_field_internal"></a>
+<a id="0x2_object_remove_field_internal"></a>
 
 ## Function `remove_field_internal`
 
@@ -1001,7 +1001,7 @@ Aborts if there is no field for <code>key</code>.
 
 
 
-<a name="0x2_object_contains_field"></a>
+<a id="0x2_object_contains_field"></a>
 
 ## Function `contains_field`
 
@@ -1013,7 +1013,7 @@ Returns true if <code><a href="object.md#0x2_object">object</a></code> contains 
 
 
 
-<a name="0x2_object_contains_field_internal"></a>
+<a id="0x2_object_contains_field_internal"></a>
 
 ## Function `contains_field_internal`
 
@@ -1024,7 +1024,7 @@ Returns true if <code><a href="object.md#0x2_object">object</a></code> contains 
 
 
 
-<a name="0x2_object_contains_field_with_type"></a>
+<a id="0x2_object_contains_field_with_type"></a>
 
 ## Function `contains_field_with_type`
 
@@ -1036,7 +1036,7 @@ Returns true if <code><a href="object.md#0x2_object">object</a></code> contains 
 
 
 
-<a name="0x2_object_field_size"></a>
+<a id="0x2_object_field_size"></a>
 
 ## Function `field_size`
 
@@ -1048,7 +1048,7 @@ Returns the size of the object fields, the number of key-value pairs
 
 
 
-<a name="0x2_object_list_field_keys"></a>
+<a id="0x2_object_list_field_keys"></a>
 
 ## Function `list_field_keys`
 

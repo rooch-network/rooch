@@ -1,5 +1,5 @@
 
-<a name="0x2_sort"></a>
+<a id="0x2_sort"></a>
 
 # Module `0x2::sort`
 
@@ -17,7 +17,7 @@ Utility functions for sorting vector.
 
 
 
-<a name="0x2_sort_quick_sort"></a>
+<a id="0x2_sort_quick_sort"></a>
 
 ## Function `quick_sort`
 
@@ -29,7 +29,7 @@ Sorts a vector using quick sort algorithm.
 
 
 
-<a name="0x2_sort_sort"></a>
+<a id="0x2_sort_sort"></a>
 
 ## Function `sort`
 
@@ -42,7 +42,7 @@ The sort algorithm used is quick sort, it maybe changed in the future.
 
 
 
-<a name="0x2_sort_sort_by_cmp"></a>
+<a id="0x2_sort_sort_by_cmp"></a>
 
 ## Function `sort_by_cmp`
 
@@ -55,7 +55,7 @@ The comparison function should return true if the first element is greater than 
 
 
 
-<a name="0x2_sort_sort_by_key"></a>
+<a id="0x2_sort_sort_by_key"></a>
 
 ## Function `sort_by_key`
 

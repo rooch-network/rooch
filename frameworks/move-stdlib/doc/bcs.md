@@ -1,5 +1,5 @@
 
-<a name="0x1_bcs"></a>
+<a id="0x1_bcs"></a>
 
 # Module `0x1::bcs`
 
@@ -17,7 +17,7 @@ details on BCS.
 
 
 
-<a name="0x1_bcs_to_bytes"></a>
+<a id="0x1_bcs_to_bytes"></a>
 
 ## Function `to_bytes`
 
@@ -29,6 +29,6 @@ Return the binary representation of <code>v</code> in BCS (Binary Canonical Seri
 
 
 
-<a name="@Module_Specification_0"></a>
+<a id="@Module_Specification_0"></a>
 
 ## Module Specification

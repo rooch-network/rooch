@@ -1,5 +1,5 @@
 
-<a name="0x2_event_queue"></a>
+<a id="0x2_event_queue"></a>
 
 # Module `0x2::event_queue`
 
@@ -28,7 +28,7 @@
 
 
 
-<a name="0x2_event_queue_EventQueue"></a>
+<a id="0x2_event_queue_EventQueue"></a>
 
 ## Resource `EventQueue`
 
@@ -39,7 +39,7 @@
 
 
 
-<a name="0x2_event_queue_OnChainEvent"></a>
+<a id="0x2_event_queue_OnChainEvent"></a>
 
 ## Struct `OnChainEvent`
 
@@ -50,7 +50,7 @@
 
 
 
-<a name="0x2_event_queue_OffChainEvent"></a>
+<a id="0x2_event_queue_OffChainEvent"></a>
 
 ## Struct `OffChainEvent`
 
@@ -63,7 +63,7 @@ Every on-chain event also trigger an off-chain event
 
 
 
-<a name="0x2_event_queue_Subscriber"></a>
+<a id="0x2_event_queue_Subscriber"></a>
 
 ## Resource `Subscriber`
 
@@ -74,12 +74,12 @@ Every on-chain event also trigger an off-chain event
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x2_event_queue_EVENT_EXPIRE_TIME"></a>
+<a id="0x2_event_queue_EVENT_EXPIRE_TIME"></a>
 
 
 
@@ -88,7 +88,7 @@ Every on-chain event also trigger an off-chain event
 
 
 
-<a name="0x2_event_queue_ErrorEventNotFound"></a>
+<a id="0x2_event_queue_ErrorEventNotFound"></a>
 
 
 
@@ -97,7 +97,7 @@ Every on-chain event also trigger an off-chain event
 
 
 
-<a name="0x2_event_queue_ErrorEventQueueNotFound"></a>
+<a id="0x2_event_queue_ErrorEventQueueNotFound"></a>
 
 
 
@@ -106,7 +106,7 @@ Every on-chain event also trigger an off-chain event
 
 
 
-<a name="0x2_event_queue_ErrorInvalidSequenceNumber"></a>
+<a id="0x2_event_queue_ErrorInvalidSequenceNumber"></a>
 
 
 
@@ -115,7 +115,7 @@ Every on-chain event also trigger an off-chain event
 
 
 
-<a name="0x2_event_queue_ErrorSubscriberNotFound"></a>
+<a id="0x2_event_queue_ErrorSubscriberNotFound"></a>
 
 
 
@@ -124,7 +124,7 @@ Every on-chain event also trigger an off-chain event
 
 
 
-<a name="0x2_event_queue_ErrorTooManySubscribers"></a>
+<a id="0x2_event_queue_ErrorTooManySubscribers"></a>
 
 
 
@@ -133,7 +133,7 @@ Every on-chain event also trigger an off-chain event
 
 
 
-<a name="0x2_event_queue_REMOVE_EXPIRED_EVENT_BATCH_SIZE"></a>
+<a id="0x2_event_queue_REMOVE_EXPIRED_EVENT_BATCH_SIZE"></a>
 
 
 
@@ -142,7 +142,7 @@ Every on-chain event also trigger an off-chain event
 
 
 
-<a name="0x2_event_queue_emit"></a>
+<a id="0x2_event_queue_emit"></a>
 
 ## Function `emit`
 
@@ -156,7 +156,7 @@ But if there are no subscribers, we do not store the event
 
 
 
-<a name="0x2_event_queue_consume"></a>
+<a id="0x2_event_queue_consume"></a>
 
 ## Function `consume`
 
@@ -168,7 +168,7 @@ Consume the event from the event queue
 
 
 
-<a name="0x2_event_queue_subscribe"></a>
+<a id="0x2_event_queue_subscribe"></a>
 
 ## Function `subscribe`
 
@@ -181,7 +181,7 @@ Return the subscriber object
 
 
 
-<a name="0x2_event_queue_unsubscribe"></a>
+<a id="0x2_event_queue_unsubscribe"></a>
 
 ## Function `unsubscribe`
 
@@ -193,7 +193,7 @@ Unsubscribe the subscriber
 
 
 
-<a name="0x2_event_queue_remove_expired_events"></a>
+<a id="0x2_event_queue_remove_expired_events"></a>
 
 ## Function `remove_expired_events`
 
@@ -206,7 +206,7 @@ Anyone can call this function to remove the expired events
 
 
 
-<a name="0x2_event_queue_subscriber_info"></a>
+<a id="0x2_event_queue_subscriber_info"></a>
 
 ## Function `subscriber_info`
 
@@ -217,7 +217,7 @@ Anyone can call this function to remove the expired events
 
 
 
-<a name="0x2_event_queue_exists_new_events"></a>
+<a id="0x2_event_queue_exists_new_events"></a>
 
 ## Function `exists_new_events`
 

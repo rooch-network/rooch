@@ -1,5 +1,5 @@
 
-<a name="0x4_bitcoin_hash"></a>
+<a id="0x4_bitcoin_hash"></a>
 
 # Module `0x4::bitcoin_hash`
 
@@ -22,12 +22,12 @@
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x4_bitcoin_hash_ErrorInvalidHex"></a>
+<a id="0x4_bitcoin_hash_ErrorInvalidHex"></a>
 
 
 
@@ -36,7 +36,7 @@
 
 
 
-<a name="0x4_bitcoin_hash_from_ascii_bytes"></a>
+<a id="0x4_bitcoin_hash_from_ascii_bytes"></a>
 
 ## Function `from_ascii_bytes`
 
@@ -50,7 +50,7 @@ Abort if the input is not a valid hex
 
 
 
-<a name="0x4_bitcoin_hash_from_ascii_bytes_option"></a>
+<a id="0x4_bitcoin_hash_from_ascii_bytes_option"></a>
 
 ## Function `from_ascii_bytes_option`
 
@@ -64,7 +64,7 @@ Return None if the input is not a valid hex
 
 
 
-<a name="0x4_bitcoin_hash_to_string"></a>
+<a id="0x4_bitcoin_hash_to_string"></a>
 
 ## Function `to_string`
 
@@ -77,7 +77,7 @@ Because Bitcoin Hash hex is reversed, we need to reverse the bytes
 
 
 
-<a name="0x4_bitcoin_hash_sha256d"></a>
+<a id="0x4_bitcoin_hash_sha256d"></a>
 
 ## Function `sha256d`
 

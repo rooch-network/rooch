@@ -1,5 +1,5 @@
 
-<a name="0x3_empty"></a>
+<a id="0x3_empty"></a>
 
 # Module `0x3::empty`
 
@@ -17,7 +17,7 @@ It is used to test or demo some use cases
 
 
 
-<a name="0x3_empty_Empty"></a>
+<a id="0x3_empty_Empty"></a>
 
 ## Resource `Empty`
 
@@ -28,7 +28,7 @@ It is used to test or demo some use cases
 
 
 
-<a name="0x3_empty_empty"></a>
+<a id="0x3_empty_empty"></a>
 
 ## Function `empty`
 
@@ -40,7 +40,7 @@ This empty function does nothing
 
 
 
-<a name="0x3_empty_empty_with_signer"></a>
+<a id="0x3_empty_empty_with_signer"></a>
 
 ## Function `empty_with_signer`
 

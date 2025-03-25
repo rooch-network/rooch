@@ -1,5 +1,5 @@
 
-<a name="0x4_inscription_updater"></a>
+<a id="0x4_inscription_updater"></a>
 
 # Module `0x4::inscription_updater`
 
@@ -47,7 +47,7 @@ https://github.com/ordinals/ord/blob/e59bd3e73d30ed9bc0b252ba2084bba670d6b0db/sr
 
 
 
-<a name="0x4_inscription_updater_FlotsamNew"></a>
+<a id="0x4_inscription_updater_FlotsamNew"></a>
 
 ## Struct `FlotsamNew`
 
@@ -58,7 +58,7 @@ https://github.com/ordinals/ord/blob/e59bd3e73d30ed9bc0b252ba2084bba670d6b0db/sr
 
 
 
-<a name="0x4_inscription_updater_Flotsam"></a>
+<a id="0x4_inscription_updater_Flotsam"></a>
 
 ## Struct `Flotsam`
 
@@ -69,7 +69,7 @@ https://github.com/ordinals/ord/blob/e59bd3e73d30ed9bc0b252ba2084bba670d6b0db/sr
 
 
 
-<a name="0x4_inscription_updater_InscriptionCreatedEvent"></a>
+<a id="0x4_inscription_updater_InscriptionCreatedEvent"></a>
 
 ## Struct `InscriptionCreatedEvent`
 
@@ -87,7 +87,7 @@ Triggered when a new inscription is created
 
 
 
-<a name="0x4_inscription_updater_InscriptionTransferredEvent"></a>
+<a id="0x4_inscription_updater_InscriptionTransferredEvent"></a>
 
 ## Struct `InscriptionTransferredEvent`
 
@@ -105,7 +105,7 @@ Triggered when an inscription is transferred
 
 
 
-<a name="0x4_inscription_updater_InscriptionUpdater"></a>
+<a id="0x4_inscription_updater_InscriptionUpdater"></a>
 
 ## Struct `InscriptionUpdater`
 
@@ -116,7 +116,7 @@ Triggered when an inscription is transferred
 
 
 
-<a name="0x4_inscription_updater_Location"></a>
+<a id="0x4_inscription_updater_Location"></a>
 
 ## Struct `Location`
 
@@ -127,7 +127,7 @@ Triggered when an inscription is transferred
 
 
 
-<a name="0x4_inscription_updater_Range"></a>
+<a id="0x4_inscription_updater_Range"></a>
 
 ## Struct `Range`
 
@@ -138,7 +138,7 @@ Triggered when an inscription is transferred
 
 
 
-<a name="0x4_inscription_updater_ReinscribeCounter"></a>
+<a id="0x4_inscription_updater_ReinscribeCounter"></a>
 
 ## Struct `ReinscribeCounter`
 
@@ -149,12 +149,12 @@ Triggered when an inscription is transferred
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x4_inscription_updater_CURSE_DUPLICATE_FIELD"></a>
+<a id="0x4_inscription_updater_CURSE_DUPLICATE_FIELD"></a>
 
 Curse Inscription
 
@@ -164,7 +164,7 @@ Curse Inscription
 
 
 
-<a name="0x4_inscription_updater_CURSE_INCOMPLETE_FIELD"></a>
+<a id="0x4_inscription_updater_CURSE_INCOMPLETE_FIELD"></a>
 
 
 
@@ -173,7 +173,7 @@ Curse Inscription
 
 
 
-<a name="0x4_inscription_updater_CURSE_NOT_AT_OFFSET_ZERO"></a>
+<a id="0x4_inscription_updater_CURSE_NOT_AT_OFFSET_ZERO"></a>
 
 
 
@@ -182,7 +182,7 @@ Curse Inscription
 
 
 
-<a name="0x4_inscription_updater_CURSE_NOT_IN_FIRST_INPUT"></a>
+<a id="0x4_inscription_updater_CURSE_NOT_IN_FIRST_INPUT"></a>
 
 
 
@@ -191,7 +191,7 @@ Curse Inscription
 
 
 
-<a name="0x4_inscription_updater_CURSE_POINTER"></a>
+<a id="0x4_inscription_updater_CURSE_POINTER"></a>
 
 
 
@@ -200,7 +200,7 @@ Curse Inscription
 
 
 
-<a name="0x4_inscription_updater_CURSE_PUSHNUM"></a>
+<a id="0x4_inscription_updater_CURSE_PUSHNUM"></a>
 
 
 
@@ -209,7 +209,7 @@ Curse Inscription
 
 
 
-<a name="0x4_inscription_updater_CURSE_REINSCRIPTION"></a>
+<a id="0x4_inscription_updater_CURSE_REINSCRIPTION"></a>
 
 
 
@@ -218,7 +218,7 @@ Curse Inscription
 
 
 
-<a name="0x4_inscription_updater_CURSE_STUTTER"></a>
+<a id="0x4_inscription_updater_CURSE_STUTTER"></a>
 
 
 
@@ -227,7 +227,7 @@ Curse Inscription
 
 
 
-<a name="0x4_inscription_updater_CURSE_UNRECOGNIZED_EVEN_FIELD"></a>
+<a id="0x4_inscription_updater_CURSE_UNRECOGNIZED_EVEN_FIELD"></a>
 
 
 
@@ -236,7 +236,7 @@ Curse Inscription
 
 
 
-<a name="0x4_inscription_updater_ErrorFlotsamNotProcessed"></a>
+<a id="0x4_inscription_updater_ErrorFlotsamNotProcessed"></a>
 
 
 
@@ -245,7 +245,7 @@ Curse Inscription
 
 
 
-<a name="0x4_inscription_updater_ErrorUTXOBalanceNotMatch"></a>
+<a id="0x4_inscription_updater_ErrorUTXOBalanceNotMatch"></a>
 
 
 
@@ -254,7 +254,7 @@ Curse Inscription
 
 
 
-<a name="0x4_inscription_updater_ORDINAL_GENESIS_HEIGHT"></a>
+<a id="0x4_inscription_updater_ORDINAL_GENESIS_HEIGHT"></a>
 
 
 
@@ -263,7 +263,7 @@ Curse Inscription
 
 
 
-<a name="0x4_inscription_updater_process_tx"></a>
+<a id="0x4_inscription_updater_process_tx"></a>
 
 ## Function `process_tx`
 
@@ -274,7 +274,7 @@ Curse Inscription
 
 
 
-<a name="0x4_inscription_updater_need_process_oridinals"></a>
+<a id="0x4_inscription_updater_need_process_oridinals"></a>
 
 ## Function `need_process_oridinals`
 
@@ -285,7 +285,7 @@ Curse Inscription
 
 
 
-<a name="0x4_inscription_updater_curse_duplicate_field"></a>
+<a id="0x4_inscription_updater_curse_duplicate_field"></a>
 
 ## Function `curse_duplicate_field`
 
@@ -296,7 +296,7 @@ Curse Inscription
 
 
 
-<a name="0x4_inscription_updater_curse_incompleted_field"></a>
+<a id="0x4_inscription_updater_curse_incompleted_field"></a>
 
 ## Function `curse_incompleted_field`
 
@@ -307,7 +307,7 @@ Curse Inscription
 
 
 
-<a name="0x4_inscription_updater_curse_not_at_offset_zero"></a>
+<a id="0x4_inscription_updater_curse_not_at_offset_zero"></a>
 
 ## Function `curse_not_at_offset_zero`
 
@@ -318,7 +318,7 @@ Curse Inscription
 
 
 
-<a name="0x4_inscription_updater_curse_not_in_first_input"></a>
+<a id="0x4_inscription_updater_curse_not_in_first_input"></a>
 
 ## Function `curse_not_in_first_input`
 
@@ -329,7 +329,7 @@ Curse Inscription
 
 
 
-<a name="0x4_inscription_updater_curse_pointer"></a>
+<a id="0x4_inscription_updater_curse_pointer"></a>
 
 ## Function `curse_pointer`
 
@@ -340,7 +340,7 @@ Curse Inscription
 
 
 
-<a name="0x4_inscription_updater_curse_pushnum"></a>
+<a id="0x4_inscription_updater_curse_pushnum"></a>
 
 ## Function `curse_pushnum`
 
@@ -351,7 +351,7 @@ Curse Inscription
 
 
 
-<a name="0x4_inscription_updater_curse_reinscription"></a>
+<a id="0x4_inscription_updater_curse_reinscription"></a>
 
 ## Function `curse_reinscription`
 
@@ -362,7 +362,7 @@ Curse Inscription
 
 
 
-<a name="0x4_inscription_updater_curse_stutter"></a>
+<a id="0x4_inscription_updater_curse_stutter"></a>
 
 ## Function `curse_stutter`
 
@@ -373,7 +373,7 @@ Curse Inscription
 
 
 
-<a name="0x4_inscription_updater_curse_unrecognized_even_field"></a>
+<a id="0x4_inscription_updater_curse_unrecognized_even_field"></a>
 
 ## Function `curse_unrecognized_even_field`
 

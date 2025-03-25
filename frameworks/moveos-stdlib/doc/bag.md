@@ -1,5 +1,5 @@
 
-<a name="0x2_bag"></a>
+<a id="0x2_bag"></a>
 
 # Module `0x2::bag`
 
@@ -44,7 +44,7 @@ assert!(&bag1 != &bag2, 0);
 
 
 
-<a name="0x2_bag_BagInner"></a>
+<a id="0x2_bag_BagInner"></a>
 
 ## Resource `BagInner`
 
@@ -55,7 +55,7 @@ assert!(&bag1 != &bag2, 0);
 
 
 
-<a name="0x2_bag_Bag"></a>
+<a id="0x2_bag_Bag"></a>
 
 ## Struct `Bag`
 
@@ -66,12 +66,12 @@ assert!(&bag1 != &bag2, 0);
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x2_bag_ErrorBagIsDropable"></a>
+<a id="0x2_bag_ErrorBagIsDropable"></a>
 
 If add a non-dropable value to a dropable bag, will abort with this code
 
@@ -81,7 +81,7 @@ If add a non-dropable value to a dropable bag, will abort with this code
 
 
 
-<a name="0x2_bag_ErrorBagIsNotDropable"></a>
+<a id="0x2_bag_ErrorBagIsNotDropable"></a>
 
 If drop a non-dropable bag, will abort with this code
 
@@ -91,7 +91,7 @@ If drop a non-dropable bag, will abort with this code
 
 
 
-<a name="0x2_bag_new"></a>
+<a id="0x2_bag_new"></a>
 
 ## Function `new`
 
@@ -103,7 +103,7 @@ Creates a new, empty bag
 
 
 
-<a name="0x2_bag_new_dropable"></a>
+<a id="0x2_bag_new_dropable"></a>
 
 ## Function `new_dropable`
 
@@ -115,7 +115,7 @@ Creates a new, empty bag that can be dropped, so all its values should be droppe
 
 
 
-<a name="0x2_bag_add"></a>
+<a id="0x2_bag_add"></a>
 
 ## Function `add`
 
@@ -128,7 +128,7 @@ If the bag is dropable, should call <code>add_dropable</code> instead
 
 
 
-<a name="0x2_bag_add_dropable"></a>
+<a id="0x2_bag_add_dropable"></a>
 
 ## Function `add_dropable`
 
@@ -140,7 +140,7 @@ Adds a key-value pair to the bag <code><a href="bag.md#0x2_bag">bag</a>: &<b>mut
 
 
 
-<a name="0x2_bag_borrow"></a>
+<a id="0x2_bag_borrow"></a>
 
 ## Function `borrow`
 
@@ -152,7 +152,7 @@ Immutable borrows the value associated with the key in the bag <code><a href="ba
 
 
 
-<a name="0x2_bag_borrow_mut"></a>
+<a id="0x2_bag_borrow_mut"></a>
 
 ## Function `borrow_mut`
 
@@ -164,7 +164,7 @@ Mutably borrows the value associated with the key in the bag <code><a href="bag.
 
 
 
-<a name="0x2_bag_remove"></a>
+<a id="0x2_bag_remove"></a>
 
 ## Function `remove`
 
@@ -176,7 +176,7 @@ Mutably borrows the key-value pair in the bag <code><a href="bag.md#0x2_bag">bag
 
 
 
-<a name="0x2_bag_contains"></a>
+<a id="0x2_bag_contains"></a>
 
 ## Function `contains`
 
@@ -188,7 +188,7 @@ Returns true iff there is an value associated with the key <code>k: K</code> in 
 
 
 
-<a name="0x2_bag_contains_with_type"></a>
+<a id="0x2_bag_contains_with_type"></a>
 
 ## Function `contains_with_type`
 
@@ -200,7 +200,7 @@ Returns true iff there is an value associated with the key <code>k: K</code> in 
 
 
 
-<a name="0x2_bag_length"></a>
+<a id="0x2_bag_length"></a>
 
 ## Function `length`
 
@@ -212,7 +212,7 @@ Returns the size of the bag, the number of key-value pairs
 
 
 
-<a name="0x2_bag_is_empty"></a>
+<a id="0x2_bag_is_empty"></a>
 
 ## Function `is_empty`
 
@@ -224,7 +224,7 @@ Returns true iff the bag is empty (if <code>length</code> returns <code>0</code>
 
 
 
-<a name="0x2_bag_destroy_empty"></a>
+<a id="0x2_bag_destroy_empty"></a>
 
 ## Function `destroy_empty`
 
@@ -236,7 +236,7 @@ Destroys an empty bag
 
 
 
-<a name="0x2_bag_drop"></a>
+<a id="0x2_bag_drop"></a>
 
 ## Function `drop`
 

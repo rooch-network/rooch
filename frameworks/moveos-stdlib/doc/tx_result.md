@@ -1,5 +1,5 @@
 
-<a name="0x2_tx_result"></a>
+<a id="0x2_tx_result"></a>
 
 # Module `0x2::tx_result`
 
@@ -14,7 +14,7 @@
 
 
 
-<a name="0x2_tx_result_TxResult"></a>
+<a id="0x2_tx_result_TxResult"></a>
 
 ## Struct `TxResult`
 
@@ -28,7 +28,7 @@ We can get the result in the <code>post_execute</code> function.
 
 
 
-<a name="0x2_tx_result_is_executed"></a>
+<a id="0x2_tx_result_is_executed"></a>
 
 ## Function `is_executed`
 
@@ -39,7 +39,7 @@ We can get the result in the <code>post_execute</code> function.
 
 
 
-<a name="0x2_tx_result_gas_used"></a>
+<a id="0x2_tx_result_gas_used"></a>
 
 ## Function `gas_used`
 

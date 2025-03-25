@@ -1,5 +1,5 @@
 
-<a name="0x2_cbor"></a>
+<a id="0x2_cbor"></a>
 
 # Module `0x2::cbor`
 
@@ -19,12 +19,12 @@
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x2_cbor_ERROR_INVALID_CBOR_BYTES"></a>
+<a id="0x2_cbor_ERROR_INVALID_CBOR_BYTES"></a>
 
 Error if the CBOR bytes are invalid
 
@@ -34,7 +34,7 @@ Error if the CBOR bytes are invalid
 
 
 
-<a name="0x2_cbor_from_cbor"></a>
+<a id="0x2_cbor_from_cbor"></a>
 
 ## Function `from_cbor`
 
@@ -47,7 +47,7 @@ Function to deserialize a type T from CBOR bytes.
 
 
 
-<a name="0x2_cbor_from_cbor_option"></a>
+<a id="0x2_cbor_from_cbor_option"></a>
 
 ## Function `from_cbor_option`
 
@@ -61,7 +61,7 @@ If the CBOR bytes are invalid, it will return None.
 
 
 
-<a name="0x2_cbor_to_map"></a>
+<a id="0x2_cbor_to_map"></a>
 
 ## Function `to_map`
 
@@ -75,7 +75,7 @@ If the field type is primitive type, it will be parsed to bytes, array or object
 
 
 
-<a name="0x2_cbor_to_cbor"></a>
+<a id="0x2_cbor_to_cbor"></a>
 
 ## Function `to_cbor`
 

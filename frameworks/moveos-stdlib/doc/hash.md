@@ -1,5 +1,5 @@
 
-<a name="0x2_hash"></a>
+<a id="0x2_hash"></a>
 
 # Module `0x2::hash`
 
@@ -19,7 +19,7 @@ Move standard library and wrap the functions at here.
 
 
 
-<a name="0x2_hash_sha2_256"></a>
+<a id="0x2_hash_sha2_256"></a>
 
 ## Function `sha2_256`
 
@@ -30,7 +30,7 @@ Move standard library and wrap the functions at here.
 
 
 
-<a name="0x2_hash_sha3_256"></a>
+<a id="0x2_hash_sha3_256"></a>
 
 ## Function `sha3_256`
 
@@ -41,7 +41,7 @@ Move standard library and wrap the functions at here.
 
 
 
-<a name="0x2_hash_blake2b256"></a>
+<a id="0x2_hash_blake2b256"></a>
 
 ## Function `blake2b256`
 
@@ -54,7 +54,7 @@ Hash the input bytes using Blake2b-256 and returns 32 bytes.
 
 
 
-<a name="0x2_hash_keccak256"></a>
+<a id="0x2_hash_keccak256"></a>
 
 ## Function `keccak256`
 
@@ -67,7 +67,7 @@ Hash the input bytes using keccak256 and returns 32 bytes.
 
 
 
-<a name="0x2_hash_ripemd160"></a>
+<a id="0x2_hash_ripemd160"></a>
 
 ## Function `ripemd160`
 

@@ -1,5 +1,5 @@
 
-<a name="0x2_display"></a>
+<a id="0x2_display"></a>
 
 # Module `0x2::display`
 
@@ -26,7 +26,7 @@
 
 
 
-<a name="0x2_display_Display"></a>
+<a id="0x2_display_Display"></a>
 
 ## Resource `Display`
 
@@ -38,7 +38,7 @@ Display<T> is used to define the display of the <code>T</code>
 
 
 
-<a name="0x2_display_DisplayCreate"></a>
+<a id="0x2_display_DisplayCreate"></a>
 
 ## Struct `DisplayCreate`
 
@@ -50,7 +50,7 @@ Event when Display<T> created
 
 
 
-<a name="0x2_display_display"></a>
+<a id="0x2_display_display"></a>
 
 ## Function `display`
 
@@ -64,7 +64,7 @@ Only the module of <code>T</code> can call this function.
 
 
 
-<a name="0x2_display_set_value"></a>
+<a id="0x2_display_set_value"></a>
 
 ## Function `set_value`
 
@@ -72,71 +72,71 @@ Set the key-value pair for the display object
 If the key already exists, the value will be updated, otherwise a new key-value pair will be created.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="display.md#0x2_display_set_value">set_value</a>&lt;T&gt;(self: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="display.md#0x2_display_Display">display::Display</a>&lt;T&gt;&gt;, key: <a href="_String">string::String</a>, value: <a href="_String">string::String</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="display.md#0x2_display_set_value">set_value</a>&lt;T&gt;(obj: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="display.md#0x2_display_Display">display::Display</a>&lt;T&gt;&gt;, key: <a href="_String">string::String</a>, value: <a href="_String">string::String</a>)
 </code></pre>
 
 
 
-<a name="0x2_display_borrow_value"></a>
+<a id="0x2_display_borrow_value"></a>
 
 ## Function `borrow_value`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="display.md#0x2_display_borrow_value">borrow_value</a>&lt;T&gt;(self: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="display.md#0x2_display_Display">display::Display</a>&lt;T&gt;&gt;, key: &<a href="_String">string::String</a>): &<a href="_String">string::String</a>
+<pre><code><b>public</b> <b>fun</b> <a href="display.md#0x2_display_borrow_value">borrow_value</a>&lt;T&gt;(obj: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="display.md#0x2_display_Display">display::Display</a>&lt;T&gt;&gt;, key: &<a href="_String">string::String</a>): &<a href="_String">string::String</a>
 </code></pre>
 
 
 
-<a name="0x2_display_borrow_mut_value"></a>
+<a id="0x2_display_borrow_mut_value"></a>
 
 ## Function `borrow_mut_value`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="display.md#0x2_display_borrow_mut_value">borrow_mut_value</a>&lt;T&gt;(self: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="display.md#0x2_display_Display">display::Display</a>&lt;T&gt;&gt;, key: &<a href="_String">string::String</a>): &<b>mut</b> <a href="_String">string::String</a>
+<pre><code><b>public</b> <b>fun</b> <a href="display.md#0x2_display_borrow_mut_value">borrow_mut_value</a>&lt;T&gt;(obj: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="display.md#0x2_display_Display">display::Display</a>&lt;T&gt;&gt;, key: &<a href="_String">string::String</a>): &<b>mut</b> <a href="_String">string::String</a>
 </code></pre>
 
 
 
-<a name="0x2_display_remove_value"></a>
+<a id="0x2_display_remove_value"></a>
 
 ## Function `remove_value`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="display.md#0x2_display_remove_value">remove_value</a>&lt;T&gt;(self: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="display.md#0x2_display_Display">display::Display</a>&lt;T&gt;&gt;, key: &<a href="_String">string::String</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="display.md#0x2_display_remove_value">remove_value</a>&lt;T&gt;(obj: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="display.md#0x2_display_Display">display::Display</a>&lt;T&gt;&gt;, key: &<a href="_String">string::String</a>)
 </code></pre>
 
 
 
-<a name="0x2_display_keys"></a>
+<a id="0x2_display_keys"></a>
 
 ## Function `keys`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="display.md#0x2_display_keys">keys</a>&lt;T&gt;(self: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="display.md#0x2_display_Display">display::Display</a>&lt;T&gt;&gt;): <a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="display.md#0x2_display_keys">keys</a>&lt;T&gt;(obj: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="display.md#0x2_display_Display">display::Display</a>&lt;T&gt;&gt;): <a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;
 </code></pre>
 
 
 
-<a name="0x2_display_values"></a>
+<a id="0x2_display_values"></a>
 
 ## Function `values`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="display.md#0x2_display_values">values</a>&lt;T&gt;(self: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="display.md#0x2_display_Display">display::Display</a>&lt;T&gt;&gt;): <a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="display.md#0x2_display_values">values</a>&lt;T&gt;(obj: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="display.md#0x2_display_Display">display::Display</a>&lt;T&gt;&gt;): <a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;
 </code></pre>
 
 
 
-<a name="0x2_display_contains_key"></a>
+<a id="0x2_display_contains_key"></a>
 
 ## Function `contains_key`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="display.md#0x2_display_contains_key">contains_key</a>&lt;T&gt;(self: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="display.md#0x2_display_Display">display::Display</a>&lt;T&gt;&gt;, key: &<a href="_String">string::String</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="display.md#0x2_display_contains_key">contains_key</a>&lt;T&gt;(obj: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="display.md#0x2_display_Display">display::Display</a>&lt;T&gt;&gt;, key: &<a href="_String">string::String</a>): bool
 </code></pre>

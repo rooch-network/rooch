@@ -1,5 +1,5 @@
 
-<a name="0xa_ethereum_validator"></a>
+<a id="0xa_ethereum_validator"></a>
 
 # Module `0xa::ethereum_validator`
 
@@ -25,7 +25,7 @@ This module implements Ethereum validator with the ECDSA recoverable signature o
 
 
 
-<a name="0xa_ethereum_validator_EthereumValidator"></a>
+<a id="0xa_ethereum_validator_EthereumValidator"></a>
 
 ## Struct `EthereumValidator`
 
@@ -36,12 +36,12 @@ This module implements Ethereum validator with the ECDSA recoverable signature o
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0xa_ethereum_validator_ETHEREUM_AUTH_VALIDATOR_ID"></a>
+<a id="0xa_ethereum_validator_ETHEREUM_AUTH_VALIDATOR_ID"></a>
 
 there defines auth validator id for each blockchain
 
@@ -51,7 +51,7 @@ there defines auth validator id for each blockchain
 
 
 
-<a name="0xa_ethereum_validator_auth_validator_id"></a>
+<a id="0xa_ethereum_validator_auth_validator_id"></a>
 
 ## Function `auth_validator_id`
 
@@ -62,7 +62,7 @@ there defines auth validator id for each blockchain
 
 
 
-<a name="0xa_ethereum_validator_validate_signature"></a>
+<a id="0xa_ethereum_validator_validate_signature"></a>
 
 ## Function `validate_signature`
 
@@ -74,7 +74,7 @@ Only validate the authenticator's signature.
 
 
 
-<a name="0xa_ethereum_validator_validate"></a>
+<a id="0xa_ethereum_validator_validate"></a>
 
 ## Function `validate`
 

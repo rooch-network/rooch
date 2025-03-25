@@ -1,5 +1,5 @@
 
-<a name="0x2_rlp"></a>
+<a id="0x2_rlp"></a>
 
 # Module `0x2::rlp`
 
@@ -16,12 +16,12 @@ https://ethereum.org/nl/developers/docs/data-structures-and-encoding/rlp/
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x2_rlp_ErrorRLPDeserializationFailure"></a>
+<a id="0x2_rlp_ErrorRLPDeserializationFailure"></a>
 
 
 
@@ -30,7 +30,7 @@ https://ethereum.org/nl/developers/docs/data-structures-and-encoding/rlp/
 
 
 
-<a name="0x2_rlp_ErrorRLPSerializationFailure"></a>
+<a id="0x2_rlp_ErrorRLPSerializationFailure"></a>
 
 
 
@@ -39,7 +39,7 @@ https://ethereum.org/nl/developers/docs/data-structures-and-encoding/rlp/
 
 
 
-<a name="0x2_rlp_to_bytes"></a>
+<a id="0x2_rlp_to_bytes"></a>
 
 ## Function `to_bytes`
 
@@ -50,7 +50,7 @@ https://ethereum.org/nl/developers/docs/data-structures-and-encoding/rlp/
 
 
 
-<a name="0x2_rlp_from_bytes"></a>
+<a id="0x2_rlp_from_bytes"></a>
 
 ## Function `from_bytes`
 

@@ -1,5 +1,5 @@
 
-<a name="0x4_pending_block"></a>
+<a id="0x4_pending_block"></a>
 
 # Module `0x4::pending_block`
 
@@ -47,7 +47,7 @@ PendingStore is used to store the pending blocks and txs, and handle the reorg
 
 
 
-<a name="0x4_pending_block_PendingBlock"></a>
+<a id="0x4_pending_block_PendingBlock"></a>
 
 ## Resource `PendingBlock`
 
@@ -58,7 +58,7 @@ PendingStore is used to store the pending blocks and txs, and handle the reorg
 
 
 
-<a name="0x4_pending_block_PendingStore"></a>
+<a id="0x4_pending_block_PendingStore"></a>
 
 ## Resource `PendingStore`
 
@@ -69,7 +69,7 @@ PendingStore is used to store the pending blocks and txs, and handle the reorg
 
 
 
-<a name="0x4_pending_block_InprocessBlock"></a>
+<a id="0x4_pending_block_InprocessBlock"></a>
 
 ## Struct `InprocessBlock`
 
@@ -82,7 +82,7 @@ This is a hot potato struct, can not be store and drop
 
 
 
-<a name="0x4_pending_block_ReorgEvent"></a>
+<a id="0x4_pending_block_ReorgEvent"></a>
 
 ## Struct `ReorgEvent`
 
@@ -93,7 +93,7 @@ This is a hot potato struct, can not be store and drop
 
 
 
-<a name="0x4_pending_block_PendingTxs"></a>
+<a id="0x4_pending_block_PendingTxs"></a>
 
 ## Struct `PendingTxs`
 
@@ -104,12 +104,12 @@ This is a hot potato struct, can not be store and drop
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x4_pending_block_ErrorBlockAlreadyProcessed"></a>
+<a id="0x4_pending_block_ErrorBlockAlreadyProcessed"></a>
 
 
 
@@ -118,7 +118,7 @@ This is a hot potato struct, can not be store and drop
 
 
 
-<a name="0x4_pending_block_ErrorNeedToWaitMoreBlocks"></a>
+<a id="0x4_pending_block_ErrorNeedToWaitMoreBlocks"></a>
 
 
 
@@ -127,7 +127,7 @@ This is a hot potato struct, can not be store and drop
 
 
 
-<a name="0x4_pending_block_ErrorPendingBlockNotFinished"></a>
+<a id="0x4_pending_block_ErrorPendingBlockNotFinished"></a>
 
 
 
@@ -136,7 +136,7 @@ This is a hot potato struct, can not be store and drop
 
 
 
-<a name="0x4_pending_block_ErrorPendingBlockNotFound"></a>
+<a id="0x4_pending_block_ErrorPendingBlockNotFound"></a>
 
 
 
@@ -145,7 +145,7 @@ This is a hot potato struct, can not be store and drop
 
 
 
-<a name="0x4_pending_block_ErrorPendingTxNotFound"></a>
+<a id="0x4_pending_block_ErrorPendingTxNotFound"></a>
 
 
 
@@ -154,7 +154,7 @@ This is a hot potato struct, can not be store and drop
 
 
 
-<a name="0x4_pending_block_ErrorReorgFailed"></a>
+<a id="0x4_pending_block_ErrorReorgFailed"></a>
 
 
 
@@ -163,7 +163,7 @@ This is a hot potato struct, can not be store and drop
 
 
 
-<a name="0x4_pending_block_ErrorUnsupportedChain"></a>
+<a id="0x4_pending_block_ErrorUnsupportedChain"></a>
 
 
 
@@ -172,7 +172,7 @@ This is a hot potato struct, can not be store and drop
 
 
 
-<a name="0x4_pending_block_TX_IDS_KEY"></a>
+<a id="0x4_pending_block_TX_IDS_KEY"></a>
 
 
 
@@ -181,7 +181,7 @@ This is a hot potato struct, can not be store and drop
 
 
 
-<a name="0x4_pending_block_genesis_init"></a>
+<a id="0x4_pending_block_genesis_init"></a>
 
 ## Function `genesis_init`
 
@@ -192,7 +192,7 @@ This is a hot potato struct, can not be store and drop
 
 
 
-<a name="0x4_pending_block_add_pending_block"></a>
+<a id="0x4_pending_block_add_pending_block"></a>
 
 ## Function `add_pending_block`
 
@@ -203,7 +203,7 @@ This is a hot potato struct, can not be store and drop
 
 
 
-<a name="0x4_pending_block_block_height"></a>
+<a id="0x4_pending_block_block_height"></a>
 
 ## Function `block_height`
 
@@ -214,7 +214,7 @@ This is a hot potato struct, can not be store and drop
 
 
 
-<a name="0x4_pending_block_take_intermediate"></a>
+<a id="0x4_pending_block_take_intermediate"></a>
 
 ## Function `take_intermediate`
 
@@ -226,7 +226,7 @@ The intermediate is used to store the intermediate state during the tx processin
 
 
 
-<a name="0x4_pending_block_add_intermediate"></a>
+<a id="0x4_pending_block_add_intermediate"></a>
 
 ## Function `add_intermediate`
 
@@ -237,7 +237,7 @@ The intermediate is used to store the intermediate state during the tx processin
 
 
 
-<a name="0x4_pending_block_exists_intermediate"></a>
+<a id="0x4_pending_block_exists_intermediate"></a>
 
 ## Function `exists_intermediate`
 
@@ -248,7 +248,7 @@ The intermediate is used to store the intermediate state during the tx processin
 
 
 
-<a name="0x4_pending_block_process_pending_tx"></a>
+<a id="0x4_pending_block_process_pending_tx"></a>
 
 ## Function `process_pending_tx`
 
@@ -259,7 +259,7 @@ The intermediate is used to store the intermediate state during the tx processin
 
 
 
-<a name="0x4_pending_block_finish_pending_tx"></a>
+<a id="0x4_pending_block_finish_pending_tx"></a>
 
 ## Function `finish_pending_tx`
 
@@ -270,7 +270,7 @@ The intermediate is used to store the intermediate state during the tx processin
 
 
 
-<a name="0x4_pending_block_finish_pending_block"></a>
+<a id="0x4_pending_block_finish_pending_block"></a>
 
 ## Function `finish_pending_block`
 
@@ -281,7 +281,7 @@ The intermediate is used to store the intermediate state during the tx processin
 
 
 
-<a name="0x4_pending_block_inprocess_block_pending_block"></a>
+<a id="0x4_pending_block_inprocess_block_pending_block"></a>
 
 ## Function `inprocess_block_pending_block`
 
@@ -292,7 +292,7 @@ The intermediate is used to store the intermediate state during the tx processin
 
 
 
-<a name="0x4_pending_block_inprocess_block_tx"></a>
+<a id="0x4_pending_block_inprocess_block_tx"></a>
 
 ## Function `inprocess_block_tx`
 
@@ -303,7 +303,7 @@ The intermediate is used to store the intermediate state during the tx processin
 
 
 
-<a name="0x4_pending_block_inprocess_block_header"></a>
+<a id="0x4_pending_block_inprocess_block_header"></a>
 
 ## Function `inprocess_block_header`
 
@@ -314,7 +314,7 @@ The intermediate is used to store the intermediate state during the tx processin
 
 
 
-<a name="0x4_pending_block_inprocess_block_height"></a>
+<a id="0x4_pending_block_inprocess_block_height"></a>
 
 ## Function `inprocess_block_height`
 
@@ -325,7 +325,7 @@ The intermediate is used to store the intermediate state during the tx processin
 
 
 
-<a name="0x4_pending_block_get_ready_pending_txs"></a>
+<a id="0x4_pending_block_get_ready_pending_txs"></a>
 
 ## Function `get_ready_pending_txs`
 
@@ -337,7 +337,7 @@ Get the pending txs which are ready to be processed
 
 
 
-<a name="0x4_pending_block_get_best_block"></a>
+<a id="0x4_pending_block_get_best_block"></a>
 
 ## Function `get_best_block`
 
@@ -348,7 +348,7 @@ Get the pending txs which are ready to be processed
 
 
 
-<a name="0x4_pending_block_get_reorg_block_count"></a>
+<a id="0x4_pending_block_get_reorg_block_count"></a>
 
 ## Function `get_reorg_block_count`
 
@@ -359,7 +359,7 @@ Get the pending txs which are ready to be processed
 
 
 
-<a name="0x4_pending_block_update_reorg_block_count"></a>
+<a id="0x4_pending_block_update_reorg_block_count"></a>
 
 ## Function `update_reorg_block_count`
 
@@ -371,7 +371,7 @@ Update the <code>reorg_block_count</code> config
 
 
 
-<a name="0x4_pending_block_update_reorg_block_count_for_local"></a>
+<a id="0x4_pending_block_update_reorg_block_count_for_local"></a>
 
 ## Function `update_reorg_block_count_for_local`
 
