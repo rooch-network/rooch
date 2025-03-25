@@ -352,14 +352,14 @@ pub(crate) fn explain_publish_error(
 
             let old_module = state.get_module_by_id(&module_id)?.unwrap();
 
-            if Compatibility::new(false, true, false)
+            if Compatibility::new(false, true, false, false)
                 .check(&old_module, module)
                 .is_err()
             {
                 // TODO: we could choose to make this more precise by walking the global state and looking for published
                 // structs of this type. but probably a bad idea
                 println!("Layout API for structs of module {} has changed. Need to do a data migration of published structs", module_id)
-            } else if Compatibility::new(true, false, false)
+            } else if Compatibility::new(true, false, false, false)
                 .check(&old_module, module)
                 .is_err()
             {

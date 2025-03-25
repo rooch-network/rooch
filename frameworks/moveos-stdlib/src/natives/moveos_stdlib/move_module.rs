@@ -299,7 +299,7 @@ fn check_compatibililty_inner(
     let mut cost = gas_params.base;
     // TODO: config compatibility through global configuration
     // We allow `friend` function to be broken
-    let compat = Compatibility::new(true, true, false);
+    let compat = Compatibility::new(true, true, false, true);
     if compat.need_check_compat() {
         let old_bytecodes = pop_arg!(args, Vec<u8>);
         let new_bytecodes = pop_arg!(args, Vec<u8>);
