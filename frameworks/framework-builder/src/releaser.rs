@@ -226,8 +226,8 @@ fn check_compiled_module_compat(
         new_module.self_id(),
         old_module.self_id()
     );
-    // TODO: config compatibility through global configuration
-    // We allow `friend` function to be broken
-    let compat = Compatibility::new(true, true, false, true);
+    //We enable all compatibility checks, do not allow friend functions break after the issue
+    //https://github.com/rooch-network/rooch/pull/3465
+    let compat = Compatibility::new(true, true, true, true);
     compat.check(old_module, new_module)
 }
