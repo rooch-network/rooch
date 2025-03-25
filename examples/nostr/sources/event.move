@@ -38,7 +38,7 @@ module nostr::event {
         pubkey: vector<u8>, // 32-bytes lowercase hex-encoded public key of the event creator
         created_at: u64, // unix timestamp in seconds
         kind: u16, // integer between 0 and 65535
-        tags: vector<vector<Tags>>, // list of Tags from arbitrary string
+        tags: vector<vector<Tags>>, // an array of arrays of Tags from non-null arbitrary string
         content: vector<u8>, // arbitrary string
         sig: vector<u8> // 64-bytes lowercase hex of the signature of the sha256 hash of the serialized event data, which is the same as the "id" field
     }
@@ -61,42 +61,42 @@ module nostr::event {
     #[data_struct]
     struct Tags {
         /// For referring to an event
-        event_data: EventData,
+        event: Option<EventTag>,
         /// For another user
-        user_data: UserData,
+        user: Option<UserTag>,
         /// For addressable or replaceable events
-        events_data: EventsData,
+        addressable_replaceable: Option<AddressableReplaceableTag>,
         /// For other non-null strings
-        non_null_string: NonNullString
+        non_null_string: Option<NonNullStringTag>
     }
 
-    /// EventData with `e` identifier
+    /// EventTag with `e` identifier
     #[data_struct]
-    struct EventData {
+    struct EventTag {
         id: ObjectID,
         url: Option<String>,
         pubkey: Option<vector<u8>>
     }
 
-    /// UserData with `p` identifier
+    /// UserTag with `p` identifier
     #[data_struct]
-    struct UserData {
+    struct UserTag {
         pubkey: vector<u8>,
         url: Option<String>
     }
 
-    /// EventsData with `a` identifier
+    /// AddressableReplaceableTag with `a` identifier
     #[data_struct]
-    struct EventsData {
+    struct AddressableReplaceableTag {
         kind: u64,
         pubkey: vector<u8>,
         value: Option<String>,
         url: Option<String>
     }
 
-    /// NonNullString with non-empty value
+    /// NonNullStringTag with non-empty value
     #[data_struct]
-    struct NonNullString {
+    struct NonNullStringTag {
         str: String
     }
 
@@ -120,7 +120,9 @@ module nostr::event {
         let kind_bytes = bcs::to_bytes(event.kind);
         vector::push_back(&mut serialized, kind_bytes);
 
-        // TODO: tag
+        // tags
+        let tags_bytes = bcs::to_bytes(event.tags);
+        vector::push_back(&mut serialized, tags_bytes);
 
         // content
         while (vector::contains(event.content, LF)) {
@@ -145,9 +147,10 @@ module nostr::event {
             vector::remove_value(event.content, FF);
         }
         vector::push_back(&mut serialized, event.content);
+        serialized
     }
 
-    /// Check signature of the event using schnorr verification scheme
+    /// Check signature of the event whether it is valid for the id of the event
     public fun check_signature(): bool {
 
     }
