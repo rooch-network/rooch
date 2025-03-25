@@ -111,6 +111,7 @@ rooch-oracle = { workspace = true }
 bytes = { workspace = true }
 
 framework-release = { workspace = true }
+framework-builder = { workspace = true }
 
 #We should keep the allocator in the last of the dependencies
 [target.'cfg(not(target_env = "msvc"))'.dependencies]

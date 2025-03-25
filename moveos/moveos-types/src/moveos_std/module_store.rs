@@ -10,6 +10,7 @@ use crate::{
     state::{MoveStructState, MoveStructType},
 };
 use anyhow::Result;
+use move_binary_format::CompiledModule;
 use move_core_types::language_storage::StructTag;
 use move_core_types::{
     account_address::AccountAddress,
@@ -127,6 +128,13 @@ impl PackageData {
         let contents = bcs::to_bytes(&self)?;
         file.write_all(&contents)?;
         Ok(())
+    }
+
+    pub fn compiled_modules(&self) -> Result<Vec<CompiledModule>> {
+        self.modules
+            .iter()
+            .map(|bytes| CompiledModule::deserialize(bytes).map_err(Into::into))
+            .collect()
     }
 }
 

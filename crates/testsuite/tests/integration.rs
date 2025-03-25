@@ -61,7 +61,6 @@ impl Default for World {
 #[given(expr = "a server for {word}")] // Cucumber Expression
 async fn start_server(w: &mut World, _scenario: String) {
     tokio::time::sleep(Duration::from_secs(5)).await;
-
     let mut service = Service::new();
     wait_port_available(w.opt.port()).await;
 

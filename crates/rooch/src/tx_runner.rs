@@ -62,11 +62,7 @@ pub fn execute_tx_locally(
         moveos_cache_manager.clone(),
     );
 
-    let mut gas_meter = MoveOSGasMeter::new(
-        cost_table,
-        GasScheduleConfig::CLI_DEFAULT_MAX_GAS_AMOUNT,
-        true,
-    );
+    let mut gas_meter = MoveOSGasMeter::new(cost_table, tx.max_gas_amount, true);
 
     // The dry run supports unsigned transactions, but when calculating the transaction size,
     // the length of the signature part needs to be included.
