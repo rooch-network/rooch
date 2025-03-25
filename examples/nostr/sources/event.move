@@ -1,0 +1,159 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
+/// Implements NIP-01 event structure
+module nostr::event {
+    use moveos_std::object::{Self, Object, ObjectID};
+    use moveos_std::event;
+    use moveos_std::bcs;
+    use std::vector;
+
+    // Identifier for the tag of the event
+    const EVENT_TAG: String = "e";
+    const USER_TAG: String = "p";
+    const ADDRESSABLE_REPLACEABLE_TAG: String = "a";
+
+    // Kind of the event
+    const EVENT_KIND_USER_METADATA: u16 = 0;
+
+    // Output JSON filter in NIP-01
+    const SPACE: u8 = 32; // 0x20, \ , [Space]
+
+    // Content filter in NIP-01
+    const LF: u8 = 10; // 0x0A, \n, Line Feed
+    const DOUBLEQUOTE: u8 = 34; // 0x22, \", Double Quote
+    const BACKSLASH: u8 = 92; // 0x5C, \\, Backslash
+    const CR: u8 = 13; // 0x0D, \r, Carriage Return
+    const TAB: u8 = 9; // 0x09, \t, Tab
+    const BS: u8 = 8; // 0x08, \b, Backspace
+    const FF: u8 = 12; // 0x0C, \f, Form Feed
+
+    // Error codes starting from 1000
+    const ErrorMalformedPublicKey: u64 = 1000;
+
+    /// Event
+    #[data_struct]
+    struct Event has key, store {
+        id: ObjectID, // 32-bytes lowercase hex-encoded sha256 of the serialized event data
+        pubkey: vector<u8>, // 32-bytes lowercase hex-encoded public key of the event creator
+        created_at: u64, // unix timestamp in seconds
+        kind: u16, // integer between 0 and 65535
+        tags: vector<vector<Tags>>, // list of Tags from arbitrary string
+        content: vector<u8>, // arbitrary string
+        sig: vector<u8> // 64-bytes lowercase hex of the signature of the sha256 hash of the serialized event data, which is the same as the "id" field
+    }
+
+    /// Event create notification for Move events
+    #[data_struct]
+    struct MoveEventNotification has store {
+        id: ObjectID
+    }
+
+    /// UserMetadata field as stringified JSON object, when the Event kind is equal to 0
+    #[data_struct]
+    struct UserMetadata has key {
+        name: String,
+        about: String,
+        picture: String
+    }
+
+    /// Tags
+    #[data_struct]
+    struct Tags {
+        /// For referring to an event
+        event_data: EventData,
+        /// For another user
+        user_data: UserData,
+        /// For addressable or replaceable events
+        events_data: EventsData,
+        /// For other non-null strings
+        non_null_string: NonNullString
+    }
+
+    /// EventData with `e` identifier
+    #[data_struct]
+    struct EventData {
+        id: ObjectID,
+        url: Option<String>,
+        pubkey: Option<vector<u8>>
+    }
+
+    /// UserData with `p` identifier
+    #[data_struct]
+    struct UserData {
+        pubkey: vector<u8>,
+        url: Option<String>
+    }
+
+    /// EventsData with `a` identifier
+    #[data_struct]
+    struct EventsData {
+        kind: u64,
+        pubkey: vector<u8>,
+        value: Option<String>,
+        url: Option<String>
+    }
+
+    /// NonNullString with non-empty value
+    #[data_struct]
+    struct NonNullString {
+        str: String
+    }
+
+    /// TODO: Serialize the Event body to byte arrays, which could be sha256 hashed and be converted to ObjectID for the Event.id
+    public fun serialize(event: &Event): vector<u8> {
+        let serialized = vector::empty<u8>();
+
+        // version 0, as described in NIP-01
+        let version = vector::singleton<u8>(0);
+        vector::push_back(&mut serialized, version);
+
+        // public key
+        assert!(vector::length(event.pubkey) != 32, ErrorMalformedPublicKey);
+        vector::push_back(&mut serialized, event.pubkey);
+
+        // creation time
+        let created_at_bytes = bcs::to_bytes(event.created_at);
+        vector::push_back(&mut serialized, created_at_bytes);
+
+        // kind
+        let kind_bytes = bcs::to_bytes(event.kind);
+        vector::push_back(&mut serialized, kind_bytes);
+
+        // TODO: tag
+
+        // content
+        while (vector::contains(event.content, LF)) {
+            vector::remove_value(event.content, LF);
+        }
+        while (vector::contains(event.content, DOUBLEQUOTE)) {
+            vector::remove_value(event.content, DOUBLEQUOTE);
+        }
+        while (vector::contains(event.content, BACKSLASH)) {
+            vector::remove_value(event.content, BACKSLASH);
+        }
+        while (vector::contains(event.content, CR)) {
+            vector::remove_value(event.content, CR);
+        }
+        while (vector::contains(event.content, TAB)) {
+            vector::remove_value(event.content, TAB);
+        }
+        while (vector::contains(event.content, BS)) {
+            vector::remove_value(event.content, BS);
+        }
+        while (vector::contains(event.content, FF)) {
+            vector::remove_value(event.content, FF);
+        }
+        vector::push_back(&mut serialized, event.content);
+    }
+
+    /// Check signature of the event using schnorr verification scheme
+    public fun check_signature(): bool {
+
+    }
+
+    /// Create an event
+    public fun create_event(owner: &signer) {
+
+    }
+}
