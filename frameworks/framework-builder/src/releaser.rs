@@ -228,6 +228,6 @@ fn check_compiled_module_compat(
     );
     // TODO: config compatibility through global configuration
     // We allow `friend` function to be broken
-    let compat = Compatibility::new(true, true, true);
+    let compat = Compatibility::new(true, true, false, true);
     compat.check(old_module, new_module)
 }
