@@ -177,31 +177,26 @@ impl<'de> Deserialize<'de> for TransactionEvent {
             where
                 V: serde::de::SeqAccess<'de>,
             {
-                println!("[Debug] visit_seq 1 {:?}", seq.);
+                println!("[Debug] visit_seq 1 ");
                 let event_type = seq
                     .next_element()?
                     .ok_or_else(|| serde::de::Error::invalid_length(0, &self))?;
-                println!("[Debug] visit_seq 2 {:?}", seq);
+                println!("[Debug] visit_seq 2 ");
                 let event_data = seq
                     .next_element()?
                     .ok_or_else(|| serde::de::Error::invalid_length(1, &self))?;
-                println!("[Debug] visit_seq 3 {:?}", seq);
+                println!("[Debug] visit_seq 3 ");
                 let event_index = seq
                     .next_element()?
                     .ok_or_else(|| serde::de::Error::invalid_length(2, &self))?;
 
-                println!("[Debug] visit_seq 4 {:?}", seq);
+                println!("[Debug] visit_seq 4 ");
                 // For old data format, derive event_handle_id from event_type
-                let event_handle_id = seq
-                    .next_element()
-                    .unwrap_or(None)
-                    .unwrap_or(EventHandle::derive_event_handle_id(&event_type));
-                // For old data format, derive event_handle_id from event_type
-                // let event_handle_id = if let Some(id) = seq.next_element()? {
-                //     id
-                // } else {
-                //     EventHandle::derive_event_handle_id(&event_type)
-                // };
+                let event_handle_id = EventHandle::derive_event_handle_id(&event_type);
+                // let event_handle_id = seq
+                //     .next_element()
+                //     .unwrap_or(None)
+                //     .unwrap_or(EventHandle::derive_event_handle_id(&event_type));
 
                 Ok(TransactionEvent {
                     event_type,
