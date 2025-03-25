@@ -99,9 +99,23 @@ jobs:
       - name: Generate genesis files for Mainnet and Testnet
         if: ${{ steps.changes.outputs.core == 'true'}}
         run: |
-          cargo run --profile optci -p rooch-genesis -- -n main
-          cargo run --profile optci -p rooch-genesis -- -n test
-          wait
+          cargo run --profile optci -p rooch-genesis -- -n main &
+          PID_MAIN=$!
+          cargo run --profile optci -p rooch-genesis -- -n test &
+          PID_TEST=$!
+          wait $PID_MAIN
+          EXIT_CODE_MAIN=$?
+          wait $PID_TEST
+          EXIT_CODE_TEST=$?
+          if [ $EXIT_CODE_MAIN -ne 0 ]; then
+          echo "Error: The mainnet genesis generation failed."
+          exit $EXIT_CODE_MAIN
+          fi
+          if [ $EXIT_CODE_TEST -ne 0 ]; then
+          echo "Error: The testnet genesis generation failed."
+          exit $EXIT_CODE_TEST
+          fi
+          echo "Genesis files generated successfully."
 
       - name: Setup Node.js
         if: ${{ steps.changes.outputs.core == 'true' || steps.changes.outputs.sdk_web == 'true' }}
@@ -124,13 +138,41 @@ jobs:
           pnpm install
           # pnpm bitseed-sdk playwright-deps
           # Run web/SDK tasks in parallel
-          pnpm lint
-          pnpm test-suite build
-          pnpm rooch-sdk build
-          pnpm rooch-sdk-kit build
+          pnpm lint &
+          PID_LINT=$!
+          pnpm test-suite build &
+          PID_TEST_SUITE=$!
+          pnpm rooch-sdk build &
+          PID_SDK=$!
+          pnpm rooch-sdk-kit build &
+          PID_SDK_KIT=$!
           # pnpm bitseed-sdk lint
           # pnpm bitseed-sdk build
-          wait
+          wait $PID_LINT
+          EXIT_CODE_LINT=$?
+          wait $PID_TEST_SUITE
+          EXIT_CODE_TEST_SUITE=$?
+          wait $PID_SDK
+          EXIT_CODE_SDK=$?
+          wait $PID_SDK_KIT
+          EXIT_CODE_SDK_KIT=$?
+          if [ $EXIT_CODE_LINT -ne 0 ]; then
+          echo "Error: The linting failed."
+          exit $EXIT_CODE_LINT
+          fi
+          if [ $EXIT_CODE_TEST_SUITE -ne 0 ]; then
+          echo "Error: The test suite build failed."
+          exit $EXIT_CODE_TEST_SUITE
+          fi
+          if [ $EXIT_CODE_SDK -ne 0 ]; then
+          echo "Error: The SDK build failed."
+          exit $EXIT_CODE_SDK
+          fi
+          if [ $EXIT_CODE_SDK_KIT -ne 0 ]; then
+          echo "Error: The SDK kit build failed."
+          exit $EXIT_CODE_SDK_KIT
+          fi
+          echo "Web and SDK tests passed."
           # Run tests
           pnpm rooch-sdk test
           pnpm rooch-sdk-kit test || true
