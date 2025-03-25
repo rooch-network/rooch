@@ -318,7 +318,7 @@ Parse a string into a u32, aborting if the string is not a valid number
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="string_utils.md#0x2_string_utils_starts_with">starts_with</a>(haystack_str: &<a href="_String">string::String</a>, needle: &<a href="_String">string::String</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="string_utils.md#0x2_string_utils_starts_with">starts_with</a>(haystack_str: &<a href="_String">string::String</a>, needle: &<a href="_String">string::String</a>): bool
 </code></pre>
 
 
@@ -329,7 +329,7 @@ Parse a string into a u32, aborting if the string is not a valid number
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="string_utils.md#0x2_string_utils_contains">contains</a>(s: &<a href="_String">string::String</a>, sub: &<a href="_String">string::String</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="string_utils.md#0x2_string_utils_contains">contains</a>(s: &<a href="_String">string::String</a>, sub: &<a href="_String">string::String</a>): bool
 </code></pre>
 
 
