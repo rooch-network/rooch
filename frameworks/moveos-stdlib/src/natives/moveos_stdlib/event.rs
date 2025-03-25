@@ -131,6 +131,7 @@ pub fn native_emit_with_handle(
             return Err(PartialVMError::new(StatusCode::INTERNAL_TYPE_ERROR));
         }
     };
+
     let msg = args.pop_back().unwrap();
     let layout = context.type_to_type_layout(&ty)?.ok_or_else(|| {
         PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR).with_message(format!(
@@ -162,14 +163,14 @@ pub fn native_emit_with_handle(
 #[derive(Debug, Clone)]
 pub struct GasParameters {
     pub emit: EmitGasParameters,
-    pub emit_with_handle: EmitGasParameters,
+    pub emit_with_handle: EmitWithHandleGasParameters,
 }
 
 impl GasParameters {
     pub fn zeros() -> Self {
         Self {
             emit: EmitGasParameters::zeros(),
-            emit_with_handle: EmitGasParameters::zeros(),
+            emit_with_handle: EmitWithHandleGasParameters::zeros(),
         }
     }
 }

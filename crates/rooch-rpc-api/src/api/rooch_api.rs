@@ -111,11 +111,22 @@ pub trait RoochAPI {
             .await
     }
 
-    /// Get the events by event handle id
+    /// Get the events by event handle type
     #[method(name = "getEventsByEventHandle")]
     async fn get_events_by_event_handle(
         &self,
         event_handle_type: StructTagView,
+        cursor: Option<StrView<u64>>,
+        limit: Option<StrView<u64>>,
+        descending_order: Option<bool>,
+        event_options: Option<EventOptions>,
+    ) -> RpcResult<EventPageView>;
+
+    /// Get the events by event handle id
+    #[method(name = "getEventsByEventHandleV2")]
+    async fn get_events_by_event_handle_v2(
+        &self,
+        event_handle_id: ObjectIDView,
         cursor: Option<StrView<u64>>,
         limit: Option<StrView<u64>>,
         descending_order: Option<bool>,

@@ -9,6 +9,7 @@ use jsonrpsee::{core::async_trait, PendingSubscriptionSink, RpcModule};
 use move_core_types::{
     account_address::AccountAddress, identifier::Identifier, language_storage::ModuleId,
 };
+use moveos_types::moveos_std::event::EventHandle;
 use moveos_types::{
     access_path::AccessPath,
     h256::H256,
@@ -25,7 +26,7 @@ use rooch_rpc_api::jsonrpc_types::{
     AccessPathView, BalanceInfoPageView, DryRunTransactionResponseView, EventOptions,
     EventPageView, ExecuteTransactionResponseView, FieldPageView, FunctionCallView, H256View,
     IndexerEventPageView, IndexerObjectStatePageView, IndexerStateIDView, ModuleABIView,
-    ObjectIDVecView, ObjectStateFilterView, ObjectStateView, QueryOptions,
+    ObjectIDVecView, ObjectIDView, ObjectStateFilterView, ObjectStateView, QueryOptions,
     RawTransactionOutputView, RoochAddressView, StateChangeSetPageView,
     StateChangeSetWithTxOrderView, StateKVView, StateOptions, StatePageView, StrView,
     StructTagView, SyncStateFilterView, TransactionWithInfoPageView, TxOptions, UnitedAddressView,
@@ -409,6 +410,25 @@ impl RoochAPIServer for RoochServer {
         descending_order: Option<bool>,
         event_options: Option<EventOptions>,
     ) -> RpcResult<EventPageView> {
+        let event_handle_id = EventHandle::derive_event_handle_id(&event_handle_type.into());
+        self.get_events_by_event_handle_v2(
+            event_handle_id.into(),
+            cursor,
+            limit,
+            descending_order,
+            event_options,
+        )
+        .await
+    }
+
+    async fn get_events_by_event_handle_v2(
+        &self,
+        event_handle_id: ObjectIDView,
+        cursor: Option<StrView<u64>>,
+        limit: Option<StrView<u64>>,
+        descending_order: Option<bool>,
+        event_options: Option<EventOptions>,
+    ) -> RpcResult<EventPageView> {
         let event_options = event_options.unwrap_or_default();
         let cursor = cursor.map(|v| v.0);
         let limit = limit.map(|v| v.0);
@@ -420,7 +440,7 @@ impl RoochAPIServer for RoochServer {
         let mut data = if event_options.decode {
             self.rpc_service
                 .get_annotated_events_by_event_handle(
-                    event_handle_type.into(),
+                    event_handle_id.0,
                     cursor,
                     limit,
                     descending_order,
@@ -431,12 +451,7 @@ impl RoochAPIServer for RoochServer {
                 .collect::<Vec<_>>()
         } else {
             self.rpc_service
-                .get_events_by_event_handle(
-                    event_handle_type.into(),
-                    cursor,
-                    limit,
-                    descending_order,
-                )
+                .get_events_by_event_handle(event_handle_id.0, cursor, limit, descending_order)
                 .await?
                 .into_iter()
                 .map(EventView::from)

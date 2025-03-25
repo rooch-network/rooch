@@ -298,13 +298,57 @@
     },
     {
       "name": "rooch_getEventsByEventHandle",
-      "description": "Get the events by event handle id",
+      "description": "Get the events by event handle type",
       "params": [
         {
           "name": "event_handle_type",
           "required": true,
           "schema": {
             "$ref": "#/components/schemas/move_core_types::language_storage::StructTag"
+          }
+        },
+        {
+          "name": "cursor",
+          "schema": {
+            "$ref": "#/components/schemas/u64"
+          }
+        },
+        {
+          "name": "limit",
+          "schema": {
+            "$ref": "#/components/schemas/u64"
+          }
+        },
+        {
+          "name": "descending_order",
+          "schema": {
+            "type": "boolean"
+          }
+        },
+        {
+          "name": "event_options",
+          "schema": {
+            "$ref": "#/components/schemas/EventOptions"
+          }
+        }
+      ],
+      "result": {
+        "name": "EventPageView",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/PageView_for_EventView_and_u64"
+        }
+      }
+    },
+    {
+      "name": "rooch_getEventsByEventHandleV2",
+      "description": "Get the events by event handle id",
+      "params": [
+        {
+          "name": "event_handle_id",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/ObjectID"
           }
         },
         {
@@ -1347,6 +1391,44 @@
             "properties": {
               "event_type": {
                 "$ref": "#/components/schemas/move_core_types::language_storage::StructTag"
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "description": "Query by event handle id with sender",
+            "type": "object",
+            "required": [
+              "event_handle_with_sender"
+            ],
+            "properties": {
+              "event_handle_with_sender": {
+                "type": "object",
+                "required": [
+                  "event_handle_id",
+                  "sender"
+                ],
+                "properties": {
+                  "event_handle_id": {
+                    "$ref": "#/components/schemas/ObjectID"
+                  },
+                  "sender": {
+                    "$ref": "#/components/schemas/rooch_rpc_api::jsonrpc_types::address::UnitedAddress"
+                  }
+                }
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "description": "Query by event handle id.",
+            "type": "object",
+            "required": [
+              "event_handle"
+            ],
+            "properties": {
+              "event_handle": {
+                "$ref": "#/components/schemas/ObjectID"
               }
             },
             "additionalProperties": false
