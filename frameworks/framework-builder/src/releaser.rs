@@ -192,7 +192,7 @@ pub fn check_modules_compat(
                 .map(|module_id| module_id.to_string())
                 .join(",")
         );
-    } else {
+    } else if !deleted_module_ids.is_empty() {
         warn!(
             "Modules {} is deleted in local, but them still on the Chain!. If you want to deprecated them, please abort the all public functions in the module.",
             deleted_module_ids
