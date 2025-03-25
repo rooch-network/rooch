@@ -15,7 +15,8 @@ use crate::transaction::FunctionCall;
 use anyhow::{ensure, Error, Result};
 use move_core_types::account_address::AccountAddress;
 use move_core_types::identifier::IdentStr;
-use move_core_types::{ident_str, language_storage::StructTag, language_storage::TypeTag};
+use move_core_types::language_storage::TypeTag;
+use move_core_types::{ident_str, language_storage::StructTag};
 use move_resource_viewer::AnnotatedMoveStruct;
 use schemars::JsonSchema;
 use serde::de::DeserializeOwned;
@@ -155,43 +156,52 @@ pub struct TransactionEvent {
     /// event index in the transaction events.
     pub event_index: u64,
     /// The event handle id, must be the last field to compatible with the origin event data.
-    #[serde(default)]
     pub event_handle_id: ObjectID,
 }
 
-// Implement custom Deserialize for TransactionEvent to be compatible with old data.
+// Implement custom Deserialize for TransactionEvent to be compatible with old data
 impl<'de> Deserialize<'de> for TransactionEvent {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
     {
         struct TransactionEventVisitor;
-
         impl<'de> serde::de::Visitor<'de> for TransactionEventVisitor {
             type Value = TransactionEvent;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-                formatter.write_str("Expect TransactionEvent for deserializer")
+                formatter.write_str("struct TransactionEvent")
             }
 
-            // To be compatible with old data, event_handle_id are allowed to be missing.
-            fn visit_seq<S>(self, mut seq: S) -> Result<Self::Value, S::Error>
+            fn visit_seq<V>(self, mut seq: V) -> Result<TransactionEvent, V::Error>
             where
-                S: serde::de::SeqAccess<'de>,
+                V: serde::de::SeqAccess<'de>,
             {
-                let event_type = seq.next_element()?.ok_or_else(|| {
-                    serde::de::Error::custom(
-                        "Missing or invalid tx_order field when deserialize TransactionEvent",
-                    )
-                })?;
-                let event_data = seq.next_element()?.ok_or_else(|| serde::de::Error::custom("Missing or invalid tx_order_signature field when deserialize TransactionEvent"))?;
-                let event_index = seq.next_element()?.ok_or_else(|| serde::de::Error::custom("Missing or invalid tx_accumulator_root field when deserialize TransactionEvent"))?;
+                println!("[Debug] visit_seq 1 {:?}", seq.);
+                let event_type = seq
+                    .next_element()?
+                    .ok_or_else(|| serde::de::Error::invalid_length(0, &self))?;
+                println!("[Debug] visit_seq 2 {:?}", seq);
+                let event_data = seq
+                    .next_element()?
+                    .ok_or_else(|| serde::de::Error::invalid_length(1, &self))?;
+                println!("[Debug] visit_seq 3 {:?}", seq);
+                let event_index = seq
+                    .next_element()?
+                    .ok_or_else(|| serde::de::Error::invalid_length(2, &self))?;
 
-                // Ignore deserialize error "unexpected end of input" for old data when missing field
+                println!("[Debug] visit_seq 4 {:?}", seq);
+                // For old data format, derive event_handle_id from event_type
                 let event_handle_id = seq
                     .next_element()
                     .unwrap_or(None)
                     .unwrap_or(EventHandle::derive_event_handle_id(&event_type));
+                // For old data format, derive event_handle_id from event_type
+                // let event_handle_id = if let Some(id) = seq.next_element()? {
+                //     id
+                // } else {
+                //     EventHandle::derive_event_handle_id(&event_type)
+                // };
 
                 Ok(TransactionEvent {
                     event_type,
@@ -203,8 +213,8 @@ impl<'de> Deserialize<'de> for TransactionEvent {
         }
 
         deserializer.deserialize_struct(
-            TRANSACTION_EVENT_STR,
-            TRANSACTION_EVENT_FIELDS,
+            "TransactionEvent",
+            &["event_type", "event_data", "event_index", "event_handle_id"],
             TransactionEventVisitor,
         )
     }
