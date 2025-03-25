@@ -396,6 +396,7 @@ impl<'a> BBNModule<'a> {
         Ok(bbn_staking_output_opt.into())
     }
 
+    //TODO this function is deprecated
     pub fn is_possible_bbn_tx(&self, txid: Txid) -> Result<bool> {
         let call = Self::create_function_call(
             Self::IS_POSSIBLE_BBN_TX_FUNCTION_NAME,
@@ -414,7 +415,7 @@ impl<'a> BBNModule<'a> {
             .map_err(|e| anyhow::anyhow!("Failed to get is bbn tx: {:?}", e))?;
         Ok(is_bbn_tx)
     }
-
+    //TODO this function is deprecated
     pub fn create_process_bbn_tx_entry_call(txid: Txid) -> Result<FunctionCall> {
         Ok(Self::create_function_call(
             Self::PROCESS_BBN_TX_ENTRY_FUNCTION_NAME,
