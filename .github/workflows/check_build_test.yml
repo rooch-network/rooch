@@ -99,8 +99,8 @@ jobs:
       - name: Generate genesis files for Mainnet and Testnet
         if: ${{ steps.changes.outputs.core == 'true'}}
         run: |
-          cargo run --profile optci -p rooch-genesis -- -n main &
-          cargo run --profile optci -p rooch-genesis -- -n test &
+          cargo run --profile optci -p rooch-genesis -- -n main
+          cargo run --profile optci -p rooch-genesis -- -n test
           wait
 
       - name: Setup Node.js
@@ -113,9 +113,9 @@ jobs:
         run: |
           # Check Docker
           docker --version
-          docker pull lncm/bitcoind:v25.1 &
-          # docker pull bitseed/ord:0.18.0-burn &
-          # docker pull bitseed/bitseed:0.1.8 &
+          docker pull lncm/bitcoind:v25.1
+          # docker pull bitseed/ord:0.18.0-burn
+          # docker pull bitseed/bitseed:0.1.8
           # Setup pnpm and run web/SDK tests
           # . $NVM_DIR/nvm.sh
           # nvm install 20.3.1
@@ -124,12 +124,12 @@ jobs:
           pnpm install
           # pnpm bitseed-sdk playwright-deps
           # Run web/SDK tasks in parallel
-          pnpm lint &
-          pnpm test-suite build &
-          pnpm rooch-sdk build &
-          pnpm rooch-sdk-kit build &
-          # pnpm bitseed-sdk lint &
-          # pnpm bitseed-sdk build &
+          pnpm lint
+          pnpm test-suite build
+          pnpm rooch-sdk build
+          pnpm rooch-sdk-kit build
+          # pnpm bitseed-sdk lint
+          # pnpm bitseed-sdk build
           wait
           # Run tests
           pnpm rooch-sdk test

@@ -121,8 +121,8 @@ if [ ! -z "$STD_TEST" ]; then
         --cargo-profile optci \
 
     # Run framework tests in parallel
-    cargo test --profile optci -p rooch-framework-tests -p rooch-integration-test-runner -- --test-threads=8 &
-    cargo test --profile optci -p rooch-framework-tests bitcoin_test -- --test-threads=8 &
+    cargo test --profile optci -p rooch-framework-tests -p rooch-integration-test-runner -- --test-threads=8
+    cargo test --profile optci -p rooch-framework-tests bitcoin_test -- --test-threads=8
     wait
 
     # Run integration tests separately without parallel execution
