@@ -177,6 +177,16 @@ impl From<GenesisTransactionEvent> for TransactionEvent {
     }
 }
 
+impl From<TransactionEvent> for GenesisTransactionEvent {
+    fn from(genesis_event: TransactionEvent) -> Self {
+        Self {
+            event_type: genesis_event.event_type.clone(),
+            event_data: genesis_event.event_data,
+            event_index: genesis_event.event_index,
+        }
+    }
+}
+
 // Implement custom Deserialize for TransactionEvent to be compatible with old data
 impl<'de> Deserialize<'de> for TransactionEvent {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>

@@ -458,6 +458,23 @@ impl From<GenesisRawTransactionOutput> for RawTransactionOutput {
     }
 }
 
+impl From<RawTransactionOutput> for GenesisRawTransactionOutput {
+    fn from(raw_tx_output: RawTransactionOutput) -> Self {
+        Self {
+            status: raw_tx_output.status,
+            changeset: raw_tx_output.changeset,
+            events: raw_tx_output
+                .events
+                .into_iter()
+                .map(GenesisTransactionEvent::from)
+                .collect(),
+            gas_used: raw_tx_output.gas_used,
+            is_upgrade: raw_tx_output.is_upgrade,
+            is_gas_upgrade: raw_tx_output.is_gas_upgrade,
+        }
+    }
+}
+
 /// TransactionOutput is the execution result of a MoveOS transaction, and pack TransactionEvent to Event
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TransactionOutput {

@@ -308,10 +308,39 @@ impl From<RoochGenesis> for RoochGenesisV2 {
     }
 }
 
+impl From<RoochGenesisV2> for RoochGenesis {
+    fn from(genesis: RoochGenesisV2) -> Self {
+        {
+            RoochGenesis {
+                tx_output: genesis.tx_output.into(),
+                initial_gas_config: genesis.initial_gas_config,
+                genesis_objects: genesis.genesis_objects,
+                genesis_tx: genesis.genesis_tx,
+                genesis_moveos_tx: genesis.genesis_moveos_tx,
+            }
+        }
+    }
+}
+
 impl RoochGenesis {
     // released genesis file (testnet and mainnet) must by decode by RoochGenesis
     pub fn decode(bytes: &[u8]) -> Result<Self> {
         bcs::from_bytes(bytes).map_err(Into::into)
+    }
+
+    pub fn encode(&self) -> Vec<u8> {
+        bcs::to_bytes(self).expect("RoochGenesis bcs::to_bytes should success")
+    }
+
+    pub fn genesis_hash(&self) -> H256 {
+        h256::sha3_256_of(self.encode().as_slice())
+    }
+
+    pub fn genesis_info(&self) -> GenesisInfo {
+        GenesisInfo {
+            genesis_package_hash: self.genesis_hash(),
+            genesis_bin: self.encode(),
+        }
     }
 }
 
@@ -435,10 +464,15 @@ impl RoochGenesisV2 {
                 //if the genesis_info in the store we should check the genesis version between the store and the binary
 
                 let genesis_from_binary = Self::load_or_build(network)?;
+                let genesis_from_binary_v1 = RoochGenesis::from(genesis_from_binary.clone());
 
                 let genesis_info_from_binary = genesis_from_binary.genesis_info();
+                let genesis_info_from_binary_v1 = genesis_from_binary_v1.genesis_info();
+                //Check both new and old genesis_package_hash
                 if genesis_info_from_store.genesis_package_hash
                     != genesis_info_from_binary.genesis_package_hash
+                    && genesis_info_from_store.genesis_package_hash
+                        != genesis_info_from_binary_v1.genesis_package_hash
                 {
                     return Err(GenesisError::GenesisVersionMismatch {
                         from_store: Box::new(genesis_info_from_store),
