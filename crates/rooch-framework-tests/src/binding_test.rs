@@ -24,7 +24,7 @@ use rooch_config::RoochOpt;
 use rooch_db::RoochDB;
 use rooch_executor::actor::reader_executor::ReaderExecutorActor;
 use rooch_executor::actor::{executor::ExecutorActor, messages::ExecuteTransactionResult};
-use rooch_genesis::RoochGenesis;
+use rooch_genesis::RoochGenesisV2;
 use rooch_types::address::BitcoinAddress;
 use rooch_types::crypto::RoochKeyPair;
 use rooch_types::framework::gas_coin::RGas;
@@ -88,7 +88,7 @@ impl RustBindingTest {
 
         network.mock_genesis_account(&kp)?;
 
-        let genesis = RoochGenesis::build(network.clone())?;
+        let genesis = RoochGenesisV2::build(network.clone())?;
         let opt = RoochOpt::new_with_temp_store()?;
         let store_config = opt.store_config();
         let registry_service = metrics::RegistryService::default();

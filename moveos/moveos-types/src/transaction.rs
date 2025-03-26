@@ -23,7 +23,7 @@ use std::fmt::{self, Display, Formatter};
 
 #[cfg(any(test, feature = "fuzzing"))]
 use crate::move_types::type_tag_prop_strategy;
-use crate::moveos_std::event::Event;
+use crate::moveos_std::event::{Event, GenesisTransactionEvent};
 use crate::test_utils::random_state_change_set;
 #[cfg(any(test, feature = "fuzzing"))]
 use move_core_types::identifier::Identifier;
@@ -415,6 +415,19 @@ impl Default for VMErrorInfo {
     }
 }
 
+/// RawTransactionOutput is the execution result of a MoveOS transaction, only for genesis transaction
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct GenesisRawTransactionOutput {
+    pub status: KeptVMStatus,
+    //The changeset in RawTransactionOutput is not the same as the changeset in TransactionOutput
+    //Because the changeset do not apply to the state tree, so it's StateRoot not updated
+    pub changeset: StateChangeSet,
+    pub events: Vec<GenesisTransactionEvent>,
+    pub gas_used: u64,
+    pub is_upgrade: bool,
+    pub is_gas_upgrade: bool,
+}
+
 /// RawTransactionOutput is the execution result of a MoveOS transaction
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct RawTransactionOutput {
@@ -426,6 +439,23 @@ pub struct RawTransactionOutput {
     pub gas_used: u64,
     pub is_upgrade: bool,
     pub is_gas_upgrade: bool,
+}
+
+impl From<GenesisRawTransactionOutput> for RawTransactionOutput {
+    fn from(raw_tx_output: GenesisRawTransactionOutput) -> Self {
+        Self {
+            status: raw_tx_output.status,
+            changeset: raw_tx_output.changeset,
+            events: raw_tx_output
+                .events
+                .into_iter()
+                .map(TransactionEvent::from)
+                .collect(),
+            gas_used: raw_tx_output.gas_used,
+            is_upgrade: raw_tx_output.is_upgrade,
+            is_gas_upgrade: raw_tx_output.is_gas_upgrade,
+        }
+    }
 }
 
 /// TransactionOutput is the execution result of a MoveOS transaction, and pack TransactionEvent to Event

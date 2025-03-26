@@ -3,7 +3,7 @@
 
 use anyhow::{bail, Result};
 use clap::Parser;
-use rooch_genesis::{genesis_file, RoochGenesis};
+use rooch_genesis::{genesis_file, RoochGenesisV2};
 use rooch_types::rooch_network::{BuiltinChainID, RoochNetwork};
 use tracing::info;
 
@@ -30,7 +30,7 @@ async fn main() -> Result<()> {
     }
     info!("start to build genesis for chain: {:?}", opts.chain_id);
     let network: RoochNetwork = RoochNetwork::builtin(opts.chain_id);
-    let genesis = RoochGenesis::build(network)?;
+    let genesis = RoochGenesisV2::build(network)?;
     let genesis_file = genesis_file(opts.chain_id);
     genesis.save_to(genesis_file)?;
     Ok(())

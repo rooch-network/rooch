@@ -98,16 +98,27 @@ pub fn native_emit(
 
 #[derive(Debug, Clone)]
 pub struct EmitWithHandleGasParameters {
-    pub base: InternalGas,
-    pub per_byte_in_str: InternalGasPerByte,
+    pub base: Option<InternalGas>,
+    pub per_byte_in_str: Option<InternalGasPerByte>,
 }
 
 impl EmitWithHandleGasParameters {
     pub fn zeros() -> Self {
         Self {
-            base: InternalGas::zero(),
-            per_byte_in_str: InternalGasPerByte::zero(),
+            base: Some(InternalGas::zero()),
+            per_byte_in_str: Some(InternalGasPerByte::zero()),
         }
+    }
+
+    pub fn init(base: InternalGas, per_byte: InternalGasPerByte) -> Self {
+        Self {
+            base: Some(base),
+            per_byte_in_str: Some(per_byte),
+        }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.base.is_none() || self.per_byte_in_str.is_none()
     }
 }
 
@@ -120,7 +131,7 @@ pub fn native_emit_with_handle(
     debug_assert!(ty_args.len() == 1);
     debug_assert!(args.len() == 2);
 
-    let mut cost = gas_params.base;
+    let mut cost = gas_params.base.unwrap_or_else(InternalGas::zero);
 
     let ty = ty_args.pop().unwrap();
     let type_tag = context.type_to_type_tag(&ty)?;
@@ -145,7 +156,10 @@ pub fn native_emit_with_handle(
     let event_data = msg
         .simple_serialize(&layout)
         .ok_or_else(|| PartialVMError::new(StatusCode::INTERNAL_TYPE_ERROR))?;
-    cost += gas_params.per_byte_in_str * NumBytes::new(event_data.len() as u64);
+    cost += gas_params
+        .per_byte_in_str
+        .unwrap_or_else(InternalGasPerByte::zero)
+        * NumBytes::new(event_data.len() as u64);
 
     let event_handle_id = pop_object_id(&mut args)?;
     let event_context = context.extensions_mut().get_mut::<NativeEventContext>();

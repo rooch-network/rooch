@@ -3,7 +3,7 @@
 
 use clap::Parser;
 use rooch_config::da_config::derive_namespace_from_genesis;
-use rooch_genesis::RoochGenesis;
+use rooch_genesis::RoochGenesisV2;
 use rooch_types::error::RoochResult;
 use rooch_types::rooch_network::{BuiltinChainID, RoochNetwork};
 use std::path::PathBuf;
@@ -22,7 +22,7 @@ impl NamespaceCommand {
         let genesis = if let Some(genesis_file) = self.genesis_file {
             load_genesis_from_file(genesis_file)?
         } else {
-            RoochGenesis::load_or_build(RoochNetwork::builtin(self.chain_id.unwrap()))?
+            RoochGenesisV2::load_or_build(RoochNetwork::builtin(self.chain_id.unwrap()))?
         };
 
         let genesis_hash = genesis.genesis_hash();
@@ -34,7 +34,7 @@ impl NamespaceCommand {
     }
 }
 
-fn load_genesis_from_file(path: PathBuf) -> anyhow::Result<RoochGenesis> {
+fn load_genesis_from_file(path: PathBuf) -> anyhow::Result<RoochGenesisV2> {
     let contents = std::fs::read(path)?;
-    RoochGenesis::decode(&contents)
+    RoochGenesisV2::decode(&contents)
 }

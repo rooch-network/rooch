@@ -24,11 +24,6 @@ use serde::{Deserialize, Deserializer, Serialize};
 use std::convert::TryFrom;
 use std::str::FromStr;
 
-pub const TRANSACTION_EVENT_STR: &str = "TransactionEvent";
-
-pub const TRANSACTION_EVENT_FIELDS: &[&str] =
-    &["event_type", "event_data", "event_index", "event_handle_id"];
-
 /// Rust bindings for MoveosStd event module
 pub struct EventModule<'a> {
     caller: &'a dyn MoveFunctionCaller,
@@ -145,6 +140,18 @@ impl EventID {
     }
 }
 
+/// Entry produced via a call to the `emit_event` builtin, only for genesis transaction.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub struct GenesisTransactionEvent {
+    /// The type of the data
+    pub event_type: StructTag,
+    /// The data payload of the event
+    #[serde(with = "serde_bytes")]
+    pub event_data: Vec<u8>,
+    /// event index in the transaction events.
+    pub event_index: u64,
+}
+
 /// Entry produced via a call to the `emit_event` builtin.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 pub struct TransactionEvent {
@@ -159,6 +166,17 @@ pub struct TransactionEvent {
     pub event_handle_id: ObjectID,
 }
 
+impl From<GenesisTransactionEvent> for TransactionEvent {
+    fn from(genesis_event: GenesisTransactionEvent) -> Self {
+        Self {
+            event_type: genesis_event.event_type.clone(),
+            event_data: genesis_event.event_data,
+            event_index: genesis_event.event_index,
+            event_handle_id: EventHandle::derive_event_handle_id(&genesis_event.event_type),
+        }
+    }
+}
+
 // Implement custom Deserialize for TransactionEvent to be compatible with old data
 impl<'de> Deserialize<'de> for TransactionEvent {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
@@ -170,33 +188,34 @@ impl<'de> Deserialize<'de> for TransactionEvent {
             type Value = TransactionEvent;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-                formatter.write_str("struct TransactionEvent")
+                formatter.write_str("Expect TransactionEvent for deserializer")
             }
 
             fn visit_seq<V>(self, mut seq: V) -> Result<TransactionEvent, V::Error>
             where
                 V: serde::de::SeqAccess<'de>,
             {
-                println!("[Debug] visit_seq 1 ");
-                let event_type = seq
-                    .next_element()?
-                    .ok_or_else(|| serde::de::Error::invalid_length(0, &self))?;
-                println!("[Debug] visit_seq 2 ");
-                let event_data = seq
-                    .next_element()?
-                    .ok_or_else(|| serde::de::Error::invalid_length(1, &self))?;
-                println!("[Debug] visit_seq 3 ");
-                let event_index = seq
-                    .next_element()?
-                    .ok_or_else(|| serde::de::Error::invalid_length(2, &self))?;
+                let event_type = seq.next_element()?.ok_or_else(|| {
+                    serde::de::Error::custom(
+                        "Missing or invalid event_type field when deserialize TransactionEvent",
+                    )
+                })?;
+                let event_data = seq.next_element()?.ok_or_else(|| {
+                    serde::de::Error::custom(
+                        "Missing or invalid event_data field when deserialize TransactionEvent",
+                    )
+                })?;
+                let event_index = seq.next_element()?.ok_or_else(|| {
+                    serde::de::Error::custom(
+                        "Missing or invalid event_index field when deserialize TransactionEvent",
+                    )
+                })?;
 
-                println!("[Debug] visit_seq 4 ");
                 // For old data format, derive event_handle_id from event_type
-                let event_handle_id = EventHandle::derive_event_handle_id(&event_type);
-                // let event_handle_id = seq
-                //     .next_element()
-                //     .unwrap_or(None)
-                //     .unwrap_or(EventHandle::derive_event_handle_id(&event_type));
+                let event_handle_id = seq
+                    .next_element()
+                    .unwrap_or(None)
+                    .unwrap_or(EventHandle::derive_event_handle_id(&event_type));
 
                 Ok(TransactionEvent {
                     event_type,
