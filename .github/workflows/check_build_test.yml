@@ -138,8 +138,9 @@ jobs:
           pnpm install
           # pnpm bitseed-sdk playwright-deps
           # Run web/SDK tasks in parallel
-          pnpm lint &
-          PID_LINT=$!
+          
+          pnpm rooch-sdk lint
+          
           pnpm test-suite build &
           PID_TEST_SUITE=$!
           pnpm rooch-sdk build &
@@ -148,7 +149,7 @@ jobs:
           PID_SDK_KIT=$!
           # pnpm bitseed-sdk lint
           # pnpm bitseed-sdk build
-          wait $PID_LINT
+          
           EXIT_CODE_LINT=$?
           wait $PID_TEST_SUITE
           EXIT_CODE_TEST_SUITE=$?
