@@ -30,6 +30,7 @@ module nostr::event {
 
     // Error codes starting from 1000
     const ErrorMalformedPublicKey: u64 = 1000;
+    const ErrorMalformedEventId: u64 = 1001;
 
     /// Event
     #[data_struct]
@@ -109,7 +110,7 @@ module nostr::event {
         vector::push_back(&mut serialized, version);
 
         // public key
-        assert!(vector::length(event.pubkey) != 32, ErrorMalformedPublicKey);
+        assert!(vector::length(event.pubkey) == 32, ErrorMalformedPublicKey);
         vector::push_back(&mut serialized, event.pubkey);
 
         // creation time
@@ -151,8 +152,28 @@ module nostr::event {
     }
 
     /// Check signature of the event whether it is valid for the id of the event
-    public fun check_signature(): bool {
+    public fun check_signature(event: Event): bool {
+        // public key
+        assert!(vector::length(event.pubkey) == 32, ErrorMalformedPublicKey);
+        // id
+        assert!(object::has_parent(&event.id), ErrorEventIdIsEmpty);
+        let bytes = vector::empty<u8>();
+        let i = 0;
+        while (i < vector::length(&id.path)) {
+            let addr = *vector::borrow(&id.path, i);
+            let addr_bytes = bcs::to_bytes(&addr);
+            vector::append(&mut bytes, addr_bytes);
+            i = i + 1;
+        };
+        assert!(vector::length(bytes) == 32, ErrorMalformedEventId);
+        // TODO: signature
 
+
+        // TODO: with schnorr verify
+        assert!(ecdsa_k1::verify(
+
+            ,
+        ))
     }
 
     /// Create an event
