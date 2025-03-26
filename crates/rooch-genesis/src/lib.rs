@@ -400,7 +400,7 @@ impl RoochGenesisV2 {
         };
 
         match genesis {
-            Some(genesis) => Ok(genesis.into()),
+            Some(genesis) => Ok(genesis),
             None => {
                 let genesis = Self::build(network)?;
                 Ok(genesis)
@@ -595,7 +595,7 @@ impl RoochGenesisV2 {
     }
 
     pub fn decode(bytes: &[u8]) -> Result<Self> {
-        match RoochGenesis::decode(&bytes) {
+        match RoochGenesis::decode(bytes) {
             Ok(genesis) => Ok(genesis.into()),
             // Parse with the old format first, and then try to parse with the new format if it fails
             Err(_e) => bcs::from_bytes(bytes).map_err(Into::into),
