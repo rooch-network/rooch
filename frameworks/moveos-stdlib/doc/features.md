@@ -44,6 +44,9 @@ feature flag is disabled, those functions can constantly return true.
 -  [Function `get_value_size_gas_feature`](#0x2_features_get_value_size_gas_feature)
 -  [Function `value_size_gas_enabled`](#0x2_features_value_size_gas_enabled)
 -  [Function `ensure_value_size_gas_enabled`](#0x2_features_ensure_value_size_gas_enabled)
+-  [Function `get_compatibility_checker_v2_feature`](#0x2_features_get_compatibility_checker_v2_feature)
+-  [Function `compatibility_checker_v2_enabled`](#0x2_features_compatibility_checker_v2_enabled)
+-  [Function `ensure_compatibility_checker_v2_enabled`](#0x2_features_ensure_compatibility_checker_v2_enabled)
 -  [Function `get_all_features`](#0x2_features_get_all_features)
 
 
@@ -68,6 +71,16 @@ The enabled features, represented by a bitset stored on chain.
 <a name="@Constants_0"></a>
 
 ## Constants
+
+
+<a name="0x2_features_COMPATIBILITY_CHECKER_V2"></a>
+
+Whether to enable compatibility checker v2
+
+
+<pre><code><b>const</b> <a href="features.md#0x2_features_COMPATIBILITY_CHECKER_V2">COMPATIBILITY_CHECKER_V2</a>: u64 = 8;
+</code></pre>
+
 
 
 <a name="0x2_features_DEVNET"></a>
@@ -424,6 +437,39 @@ All features are enabled for system reserved accounts.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="features.md#0x2_features_ensure_value_size_gas_enabled">ensure_value_size_gas_enabled</a>()
+</code></pre>
+
+
+
+<a name="0x2_features_get_compatibility_checker_v2_feature"></a>
+
+## Function `get_compatibility_checker_v2_feature`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x2_features_get_compatibility_checker_v2_feature">get_compatibility_checker_v2_feature</a>(): u64
+</code></pre>
+
+
+
+<a name="0x2_features_compatibility_checker_v2_enabled"></a>
+
+## Function `compatibility_checker_v2_enabled`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x2_features_compatibility_checker_v2_enabled">compatibility_checker_v2_enabled</a>(): bool
+</code></pre>
+
+
+
+<a name="0x2_features_ensure_compatibility_checker_v2_enabled"></a>
+
+## Function `ensure_compatibility_checker_v2_enabled`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x2_features_ensure_compatibility_checker_v2_enabled">ensure_compatibility_checker_v2_enabled</a>()
 </code></pre>
 
 
