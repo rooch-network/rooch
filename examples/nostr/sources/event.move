@@ -8,6 +8,8 @@ module nostr::event {
     use moveos_std::bcs;
     use std::vector;
     use rooch_framework::ecdsa_k1;
+    use std::string::{Self, String};
+    use moveos_std::timestamp;
 
     // Identifier for the tag of the event
     const EVENT_TAG: String = "e";
@@ -35,6 +37,7 @@ module nostr::event {
     const ErrorMalformedId: u64 = 1002;
     const ErrorMalformedSignature: u64 = 1003;
     const ErrorSignatureValidationFailure: u64 = 1004;
+    const ErrorContentTooLarge: u64 = 1005;
 
     /// Event
     #[data_struct]
@@ -93,7 +96,7 @@ module nostr::event {
     /// AddressableReplaceableTag with `a` identifier
     #[data_struct]
     struct AddressableReplaceableTag {
-        kind: u64,
+        kind: u16,
         pubkey: vector<u8>,
         value: Option<String>,
         url: Option<String>
@@ -105,8 +108,8 @@ module nostr::event {
         str: String
     }
 
-    /// TODO: Serialize the Event body to byte arrays, which could be sha256 hashed and be converted to ObjectID for the Event.id
-    public fun serialize(event: &Event): vector<u8> {
+    /// Serialize to byte arrays, which could be sha256 hashed and be converted to ObjectID for the Event.id
+    public fun serialize(public_key: &vector<u8>, kind: &u16, tags: &vector<vector<Tags>>, content: &vector<u8>): vector<u8> {
         let serialized = vector::empty<u8>();
 
         // version 0, as described in NIP-01
@@ -114,44 +117,45 @@ module nostr::event {
         vector::push_back(&mut serialized, version);
 
         // public key
-        assert!(vector::length(event.pubkey) == 32, ErrorMalformedPublicKey);
-        vector::push_back(&mut serialized, event.pubkey);
+        assert!(vector::length(public_key) == 32, ErrorMalformedPublicKey);
+        vector::push_back(&mut serialized, public_key);
 
         // creation time
-        let created_at_bytes = bcs::to_bytes(event.created_at);
+        let created_at = timestamp::now_seconds();
+        let created_at_bytes = bcs::to_bytes(created_at);
         vector::push_back(&mut serialized, created_at_bytes);
 
         // kind
-        let kind_bytes = bcs::to_bytes(event.kind);
+        let kind_bytes = bcs::to_bytes(kind);
         vector::push_back(&mut serialized, kind_bytes);
 
         // tags
-        let tags_bytes = bcs::to_bytes(event.tags);
+        let tags_bytes = bcs::to_bytes(tags);
         vector::push_back(&mut serialized, tags_bytes);
 
         // content
-        while (vector::contains(event.content, LF)) {
-            vector::remove_value(event.content, LF);
+        while (vector::contains(content, LF)) {
+            vector::remove_value(content, LF);
         }
-        while (vector::contains(event.content, DOUBLEQUOTE)) {
-            vector::remove_value(event.content, DOUBLEQUOTE);
+        while (vector::contains(content, DOUBLEQUOTE)) {
+            vector::remove_value(content, DOUBLEQUOTE);
         }
-        while (vector::contains(event.content, BACKSLASH)) {
-            vector::remove_value(event.content, BACKSLASH);
+        while (vector::contains(content, BACKSLASH)) {
+            vector::remove_value(content, BACKSLASH);
         }
-        while (vector::contains(event.content, CR)) {
-            vector::remove_value(event.content, CR);
+        while (vector::contains(content, CR)) {
+            vector::remove_value(content, CR);
         }
-        while (vector::contains(event.content, TAB)) {
-            vector::remove_value(event.content, TAB);
+        while (vector::contains(content, TAB)) {
+            vector::remove_value(content, TAB);
         }
-        while (vector::contains(event.content, BS)) {
-            vector::remove_value(event.content, BS);
+        while (vector::contains(content, BS)) {
+            vector::remove_value(content, BS);
         }
-        while (vector::contains(event.content, FF)) {
-            vector::remove_value(event.content, FF);
+        while (vector::contains(content, FF)) {
+            vector::remove_value(content, FF);
         }
-        vector::push_back(&mut serialized, event.content);
+        vector::push_back(&mut serialized, content);
         serialized
     }
 
@@ -181,8 +185,13 @@ module nostr::event {
         ), ErrorSignatureValidationFailure);
     }
 
-    /// Create an event
-    public fun create_event(owner: &signer) {
-
+    /// Create an Event
+    public fun create_event(owner: &signer, public_key: &vector<u8>, kind: &u16, tags: &String, content_str: &String) {
+        assert!(!string::length(content_str) > 1000, ErrorContentTooLarge);
+        let content = bcs::to_bytes(content_str);
+        
+        // serialize input to bytes for an Event id
+        let serialized = serialize(public_key, kind, tags, &content); // TODO: tags.
+        
     }
 }
