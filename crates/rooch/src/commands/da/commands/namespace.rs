@@ -3,7 +3,7 @@
 
 use clap::Parser;
 use rooch_config::da_config::derive_namespace_from_genesis;
-use rooch_genesis::RoochGenesisV2;
+use rooch_genesis::{RoochGenesis, RoochGenesisV2};
 use rooch_types::error::RoochResult;
 use rooch_types::rooch_network::{BuiltinChainID, RoochNetwork};
 use std::path::PathBuf;
@@ -25,7 +25,8 @@ impl NamespaceCommand {
             RoochGenesisV2::load_or_build(RoochNetwork::builtin(self.chain_id.unwrap()))?
         };
 
-        let genesis_hash = genesis.genesis_hash();
+        let genesis_v1 = RoochGenesis::from(genesis);
+        let genesis_hash = genesis_v1.genesis_hash();
         let namespace = derive_namespace_from_genesis(genesis_hash);
         println!("namespace: {}", namespace);
         let encoded_hash = hex::encode(genesis_hash.0);

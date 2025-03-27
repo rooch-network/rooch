@@ -298,57 +298,13 @@
     },
     {
       "name": "rooch_getEventsByEventHandle",
-      "description": "Get the events by event handle type",
+      "description": "Get the events by event handle type or event handle id",
       "params": [
         {
-          "name": "event_handle_type",
+          "name": "event_handle",
           "required": true,
           "schema": {
-            "$ref": "#/components/schemas/move_core_types::language_storage::StructTag"
-          }
-        },
-        {
-          "name": "cursor",
-          "schema": {
-            "$ref": "#/components/schemas/u64"
-          }
-        },
-        {
-          "name": "limit",
-          "schema": {
-            "$ref": "#/components/schemas/u64"
-          }
-        },
-        {
-          "name": "descending_order",
-          "schema": {
-            "type": "boolean"
-          }
-        },
-        {
-          "name": "event_options",
-          "schema": {
-            "$ref": "#/components/schemas/EventOptions"
-          }
-        }
-      ],
-      "result": {
-        "name": "EventPageView",
-        "required": true,
-        "schema": {
-          "$ref": "#/components/schemas/PageView_for_EventView_and_u64"
-        }
-      }
-    },
-    {
-      "name": "rooch_getEventsByEventHandleV2",
-      "description": "Get the events by event handle id",
-      "params": [
-        {
-          "name": "event_handle_id",
-          "required": true,
-          "schema": {
-            "$ref": "#/components/schemas/ObjectID"
+            "$ref": "#/components/schemas/StructTagOrObjectIDView"
           }
         },
         {
@@ -3471,6 +3427,34 @@
             ]
           }
         }
+      },
+      "StructTagOrObjectIDView": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "StructTag"
+            ],
+            "properties": {
+              "StructTag": {
+                "$ref": "#/components/schemas/move_core_types::language_storage::StructTag"
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": [
+              "ObjectID"
+            ],
+            "properties": {
+              "ObjectID": {
+                "$ref": "#/components/schemas/ObjectID"
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
       },
       "SyncStateFilterView": {
         "oneOf": [
