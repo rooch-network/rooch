@@ -410,7 +410,7 @@ impl RoochAPIServer for RoochServer {
         descending_order: Option<bool>,
         event_options: Option<EventOptions>,
     ) -> RpcResult<EventPageView> {
-        let event_handle_id: ObjectIDView = event_handle.into();
+        let event_handle_id: ObjectIDView = StructTagOrObjectIDView::from_str(&event_handle()).into();
         let event_options = event_options.unwrap_or_default();
         let cursor = cursor.map(|v| v.0);
         let limit = limit.map(|v| v.0);

@@ -60,15 +60,19 @@ impl CommandAction<EventPageView> for GetEventsByEventHandle {
         let address_mapping = context.address_mapping();
         let client = context.get_client().await?;
 
+        // Parse the event handle as either StructTag or ObjectID
+        // Need handle the adderss mapping, so we can't use StructTagOrObjectIDView::from_str directly
         let event_handle =
-            // Try parsing as ObjectID first
-            match ObjectID::from_str(&self.event_handle) {
-                Ok(object_id) => StructTagOrObjectIDView::ObjectID(StrView(object_id)),
-                Err(_) => {
-                    // If not a valid ObjectID, try parsing as StructTag
-                    let parsed_type = ParsedStructType::parse(&self.event_handle)?;
+            // Try parsing as StructTag first
+            match ParsedStructType::parse(&self.event_handle) {
+                Ok(parsed_type) => {
                     let struct_tag = parsed_type.into_struct_tag(&address_mapping)?;
                     StructTagOrObjectIDView::StructTag(StrView(struct_tag))
+                },
+                Err(_) => {
+                    // If not a valid StructTag, try parsing as ObjectID
+                    let object_id = ObjectID::from_str(&self.event_handle)?;
+                    StructTagOrObjectIDView::ObjectID(StrView(object_id))
                 }
             };
 

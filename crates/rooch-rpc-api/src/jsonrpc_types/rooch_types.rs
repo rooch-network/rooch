@@ -21,6 +21,7 @@ use rooch_types::framework::coin::CoinInfo;
 use rooch_types::transaction::rooch::RoochTransaction;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use std::str::FromStr;
 use std::string::String;
 
 pub type EventPageView = PageView<EventView, StrView<u64>>;
@@ -128,21 +129,41 @@ impl<CoinType> From<CoinInfo<CoinType>> for CoinInfoView {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
-pub enum StructTagOrObjectIDView {
-    StructTag(StructTagView),
-    ObjectID(ObjectIDView),
-}
+pub type StructTagOrObjectIDView = String;
+// pub type StructTagOrObjectIDView = StrView<String>;
+// #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+// pub enum StructTagOrObjectIDView {
+//     StructTag(StructTagView),
+//     ObjectID(ObjectIDView),
+// }
 
-impl From<StructTagView> for StructTagOrObjectIDView {
-    fn from(view: StructTagView) -> Self {
-        Self::StructTag(view)
-    }
-}
+// impl From<StructTagView> for StructTagOrObjectIDView {
+//     fn from(view: StructTagView) -> Self {
+//         Self::StructTag(view)
+//     }
+// }
+//
+// impl From<ObjectIDView> for StructTagOrObjectIDView {
+//     fn from(view: ObjectIDView) -> Self {
+//         Self::ObjectID(view)
+//     }
+// }
 
-impl From<ObjectIDView> for StructTagOrObjectIDView {
-    fn from(view: ObjectIDView) -> Self {
-        Self::ObjectID(view)
+impl FromStr for StructTagOrObjectIDView {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        // Try to parse as StructTagView first
+        if let Ok(struct_tag) = StructTagView::from_str(s) {
+            return Ok(StructTagOrObjectIDView::StructTag(struct_tag));
+        }
+        // If not a valid StructTag, try to parse as ObjectID
+        if let Ok(object_id) = ObjectIDView::from_str(s) {
+            return Ok(StructTagOrObjectIDView::ObjectID(object_id));
+        }
+        Err(anyhow::anyhow!(
+            "Failed to parse as either StructTag or ObjectID"
+        ))
     }
 }
 
