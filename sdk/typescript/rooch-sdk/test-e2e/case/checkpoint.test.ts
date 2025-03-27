@@ -127,7 +127,7 @@ describe('Checkpoints Reading API', () => {
     await testBox.delay(3)
 
     const result1 = await testBox.getClient().getEvents({
-      eventHandleType: `${await testBox.defaultCmdAddress()}::event_test::WithdrawEvent`,
+      eventHandle: `${await testBox.defaultCmdAddress()}::event_test::WithdrawEvent`,
       limit: '1',
       descendingOrder: false,
     })
