@@ -7,6 +7,7 @@ module nostr::event {
     use moveos_std::event;
     use moveos_std::bcs;
     use std::vector;
+    use rooch_framework::ecdsa_k1;
 
     // Identifier for the tag of the event
     const EVENT_TAG: String = "e";
@@ -30,7 +31,10 @@ module nostr::event {
 
     // Error codes starting from 1000
     const ErrorMalformedPublicKey: u64 = 1000;
-    const ErrorMalformedEventId: u64 = 1001;
+    const ErrorIdIsEmpty: u64 = 1001;
+    const ErrorMalformedId: u64 = 1002;
+    const ErrorMalformedSignature: u64 = 1003;
+    const ErrorSignatureValidationFailure: u64 = 1004;
 
     /// Event
     #[data_struct]
@@ -152,28 +156,29 @@ module nostr::event {
     }
 
     /// Check signature of the event whether it is valid for the id of the event
-    public fun check_signature(event: Event): bool {
+    public fun check_signature(event: Event) {
         // public key
         assert!(vector::length(event.pubkey) == 32, ErrorMalformedPublicKey);
         // id
-        assert!(object::has_parent(&event.id), ErrorEventIdIsEmpty);
-        let bytes = vector::empty<u8>();
+        assert!(object::has_parent(&event.id), ErrorIdIsEmpty);
+        let id_bytes = vector::empty<u8>();
         let i = 0;
         while (i < vector::length(&id.path)) {
             let addr = *vector::borrow(&id.path, i);
             let addr_bytes = bcs::to_bytes(&addr);
-            vector::append(&mut bytes, addr_bytes);
+            vector::append(&mut id_bytes, addr_bytes);
             i = i + 1;
         };
-        assert!(vector::length(bytes) == 32, ErrorMalformedEventId);
-        // TODO: signature
-
-
+        assert!(vector::length(id_bytes) == 32, ErrorMalformedId);
+        // signature
+        assert!(vector::length(event.sig) == 64, ErrorMalformedSignature);
         // TODO: with schnorr verify
         assert!(ecdsa_k1::verify(
-
-            ,
-        ))
+            &event.sig,
+            &event.pubkey,
+            &id_bytes,
+            ecdsa_k1::sha256()
+        ), ErrorSignatureValidationFailure);
     }
 
     /// Create an event
