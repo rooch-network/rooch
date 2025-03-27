@@ -1,0 +1,136 @@
+# Rooch SDK Kit 使用教程
+
+1. 安装必要依赖
+
+首先需要安装以下包:
+
+```bash
+npm install @roochnetwork/roo ch-sdk-kit @roochnetwork/rooch-sdk @tanstack/react-query
+```
+
+2. 配置 Provider 
+
+在你的 React 应用根组件中添加必要的 Provider:
+
+```tsx
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { DevNetwork } from '@roochnetwork/rooch-sdk'
+import { WalletProvider, RoochClientProvider, SupportChain } from '@roochnetwork/rooch-sdk-kit'
+
+// 创建查询客户端
+const queryClient = new QueryClient()
+
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <RoochClientProvider defaultNetwork={DevNetwork}>
+        <WalletProvider chain={SupportChain.BITCOIN} autoConnect>
+          <YourApp />
+        </WalletProvider>
+      </RoochClientProvider>
+    </QueryClientProvider>
+  )
+}
+```
+
+3. 使用钱包连接按钮
+
+Rooch SDK Kit 提供了开箱即用的钱包连接按钮:
+
+```tsx
+import { ConnectButton } from '@roochnetwork/rooch-sdk-kit'
+
+function YourApp() {
+  return (
+    <div>
+      <ConnectButton />
+      {/* 其他组件 */}
+    </div>
+  )
+}
+```
+
+4. 查询链上数据
+
+使用内置的查询 hooks 来获取数据:
+
+```tsx
+import { useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit'
+
+function StateViewer() {
+  const { data, isPending, error } = useRoochClientQuery('getStates', '/object/0x1')
+
+  if (isPending) return <div>加载中...</div>
+  if (error) return <div>出错了: {error.message}</div>
+
+  return <pre>{JSON.stringify(data, null, 2)}</pre>
+}
+```
+
+5. 使用会话密钥
+
+会话密钥可以让用户在一段时间内无需重复签名:
+
+```tsx
+import { useCreateSessionKey } from '@roochnetwork/rooch-sdk-kit'
+
+function SessionManager() {
+  const { mutate: createSession } = useCreateSessionKey()
+
+  const handleCreateSession = () => {
+    createSession({
+      sessionArgs: {
+        appName: "MyApp",
+        appUrl: "https://myapp.com",
+        scopes: ['0x3::counter::increment']
+      }
+    })
+  }
+
+  return (
+    <button onClick={handleCreateSession}>
+      创建会话密钥
+    </button>
+  )
+}
+```
+
+6. 监听钱包变化
+
+使用钱包状态 hooks 来监听钱包连接状态:
+
+```tsx
+import { useCurrentWallet, useCurrentAddress } from '@roochnetwork/rooch-sdk-kit'
+
+function WalletInfo() {
+  const { wallet } = useCurrentWallet()
+  const address = useCurrentAddress()
+
+  return (
+    <div>
+      <p>当前钱包: {wallet?.name}</p>
+      <p>当前地址: {address}</p>
+    </div>
+  )
+}
+```
+
+## 注意事项
+
+1. 目前支持的钱包:
+
+- Bitcoin: Unisat, OKX
+
+2. 确保在使用任何 hooks 之前已经正确配置了所有必要的 Provider
+3. 使用 autoConnect 属性可以让钱包自动连接
+4. 查询数据时记得处理加载和错误状态
+5. 会话密钥可以提升用户体验,但要注意合理设置权限范围
+
+这个 SDK 的设计目标是简化 dApp 开发流程,主要提供了:
+
+- 查询链上数据的 hooks
+- 钱包连接和状态管理
+- 会话密钥管理
+- 常用 UI 组件
+
+通过使用这些工具,你可以专注于构建应用的核心功能,而不用过多关注底层细节。
