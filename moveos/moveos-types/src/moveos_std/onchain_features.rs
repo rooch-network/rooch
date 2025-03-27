@@ -28,7 +28,10 @@ impl FeatureStore {
     pub fn contains_feature(&self, feature: u64) -> bool {
         let byte_index = feature / 8;
         let bit_mask = 1 << ((feature % 8) as u8);
-        let value = self.entries[byte_index as usize];
+        let value = match self.entries.get(byte_index as usize) {
+            Some(value) => *value,
+            None => return false,
+        };
         byte_index < self.entries.len() as u64 && (value & bit_mask) != 0
     }
 
