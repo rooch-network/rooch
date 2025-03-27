@@ -12,8 +12,9 @@ use crate::jsonrpc_types::{
     EventPageView, ExecuteTransactionResponseView, FieldKeyView, FieldPageView, FunctionCallView,
     H256View, IndexerEventPageView, IndexerObjectStatePageView, IndexerStateIDView, ModuleABIView,
     ObjectIDVecView, ObjectIDView, ObjectStateFilterView, ObjectStateView, QueryOptions,
-    RoochAddressView, StateChangeSetPageView, StateOptions, StatePageView, StrView, StructTagView,
-    SyncStateFilterView, TransactionWithInfoPageView, TxOptions,
+    RoochAddressView, StateChangeSetPageView, StateOptions, StatePageView, StrView,
+    StructTagOrObjectIDView, StructTagView, SyncStateFilterView, TransactionWithInfoPageView,
+    TxOptions,
 };
 use crate::jsonrpc_types::{DryRunTransactionResponseView, Status};
 use crate::RpcResult;
@@ -111,22 +112,11 @@ pub trait RoochAPI {
             .await
     }
 
-    /// Get the events by event handle type
+    /// Get the events by event handle type or event handle id
     #[method(name = "getEventsByEventHandle")]
     async fn get_events_by_event_handle(
         &self,
-        event_handle_type: StructTagView,
-        cursor: Option<StrView<u64>>,
-        limit: Option<StrView<u64>>,
-        descending_order: Option<bool>,
-        event_options: Option<EventOptions>,
-    ) -> RpcResult<EventPageView>;
-
-    /// Get the events by event handle id
-    #[method(name = "getEventsByEventHandleV2")]
-    async fn get_events_by_event_handle_v2(
-        &self,
-        event_handle_id: ObjectIDView,
+        event_handle: StructTagOrObjectIDView,
         cursor: Option<StrView<u64>>,
         limit: Option<StrView<u64>>,
         descending_order: Option<bool>,

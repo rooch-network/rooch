@@ -5,8 +5,10 @@ use crate::cli_types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
 use clap::{Parser, Subcommand};
 use move_command_line_common::types::ParsedStructType;
-use rooch_rpc_api::jsonrpc_types::{EventOptions, EventPageView};
+use moveos_types::moveos_std::object::ObjectID;
+use rooch_rpc_api::jsonrpc_types::{EventOptions, EventPageView, StrView, StructTagOrObjectIDView};
 use rooch_types::error::{RoochError, RoochResult};
+use std::str::FromStr;
 
 /// Tool for interacting with event
 #[derive(Parser)]
@@ -31,10 +33,12 @@ pub enum EventSubCommand {
 /// Retrieves events based on their event handle.
 #[derive(Debug, Parser)]
 pub struct GetEventsByEventHandle {
-    /// Struct name as `ADDRESS::MODULE_NAME::STRUCT_NAME<TypeParam1?, TypeParam2?>`
-    /// Example: `0x123::event_test::WithdrawEvent --cursor 0 --limit 1`
-    #[clap(short = 't',long = "event-handle-type", value_parser=ParsedStructType::parse)]
-    event_handle_type: ParsedStructType,
+    /// Event handle as either:
+    /// 1. Struct name: `ADDRESS::MODULE_NAME::STRUCT_NAME<TypeParam1?, TypeParam2?>`
+    ///    Example: `0x123::event_test::WithdrawEvent`
+    /// 2. Event handle ID: `0x123...abc`
+    #[clap(short = 't', long = "event-handle")]
+    event_handle: String,
     /// start position
     #[clap(long)]
     cursor: Option<u64>,
@@ -54,12 +58,24 @@ impl CommandAction<EventPageView> for GetEventsByEventHandle {
     async fn execute(self) -> RoochResult<EventPageView> {
         let context = self.context_options.build()?;
         let address_mapping = context.address_mapping();
-        let event_handle_type = self.event_handle_type.into_struct_tag(&address_mapping)?;
         let client = context.get_client().await?;
+
+        let event_handle =
+            // Try parsing as ObjectID first
+            match ObjectID::from_str(&self.event_handle) {
+                Ok(object_id) => StructTagOrObjectIDView::ObjectID(StrView(object_id)),
+                Err(_) => {
+                    // If not a valid ObjectID, try parsing as StructTag
+                    let parsed_type = ParsedStructType::parse(&self.event_handle)?;
+                    let struct_tag = parsed_type.into_struct_tag(&address_mapping)?;
+                    StructTagOrObjectIDView::StructTag(StrView(struct_tag))
+                }
+            };
+
         let resp = client
             .rooch
             .get_events_by_event_handle(
-                event_handle_type.into(),
+                event_handle,
                 self.cursor,
                 self.limit,
                 self.descending_order,

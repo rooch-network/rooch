@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::event_view::IndexerEventIDView;
-use super::{HumanReadableDisplay, IndexerStateIDView, StateChangeSetWithTxOrderView};
+use super::{
+    HumanReadableDisplay, IndexerStateIDView, ObjectIDView, StateChangeSetWithTxOrderView,
+};
 use crate::jsonrpc_types::account_view::BalanceInfoView;
 use crate::jsonrpc_types::btc::ord::InscriptionStateView;
 use crate::jsonrpc_types::btc::utxo::UTXOStateView;
@@ -14,6 +16,7 @@ use crate::jsonrpc_types::{
     BytesView, IndexerObjectStateView, StateKVView, StrView, StructTagView,
 };
 use move_core_types::u256::U256;
+use moveos_types::moveos_std::event::EventHandle;
 use rooch_types::framework::coin::CoinInfo;
 use rooch_types::transaction::rooch::RoochTransaction;
 use schemars::JsonSchema;
@@ -121,6 +124,35 @@ impl<CoinType> From<CoinInfo<CoinType>> for CoinInfoView {
             icon_url: coin_info.icon_url(),
             decimals: coin_info.decimals(),
             supply: StrView(coin_info.supply()),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub enum StructTagOrObjectIDView {
+    StructTag(StructTagView),
+    ObjectID(ObjectIDView),
+}
+
+impl From<StructTagView> for StructTagOrObjectIDView {
+    fn from(view: StructTagView) -> Self {
+        Self::StructTag(view)
+    }
+}
+
+impl From<ObjectIDView> for StructTagOrObjectIDView {
+    fn from(view: ObjectIDView) -> Self {
+        Self::ObjectID(view)
+    }
+}
+
+impl From<StructTagOrObjectIDView> for ObjectIDView {
+    fn from(view: StructTagOrObjectIDView) -> Self {
+        match view {
+            StructTagOrObjectIDView::StructTag(struct_tag) => {
+                EventHandle::derive_event_handle_id(&struct_tag.0).into()
+            }
+            StructTagOrObjectIDView::ObjectID(object_id) => object_id,
         }
     }
 }

@@ -9,7 +9,6 @@ use jsonrpsee::{core::async_trait, PendingSubscriptionSink, RpcModule};
 use move_core_types::{
     account_address::AccountAddress, identifier::Identifier, language_storage::ModuleId,
 };
-use moveos_types::moveos_std::event::EventHandle;
 use moveos_types::{
     access_path::AccessPath,
     h256::H256,
@@ -29,7 +28,8 @@ use rooch_rpc_api::jsonrpc_types::{
     ObjectIDVecView, ObjectIDView, ObjectStateFilterView, ObjectStateView, QueryOptions,
     RawTransactionOutputView, RoochAddressView, StateChangeSetPageView,
     StateChangeSetWithTxOrderView, StateKVView, StateOptions, StatePageView, StrView,
-    StructTagView, SyncStateFilterView, TransactionWithInfoPageView, TxOptions, UnitedAddressView,
+    StructTagOrObjectIDView, StructTagView, SyncStateFilterView, TransactionWithInfoPageView,
+    TxOptions, UnitedAddressView,
 };
 use rooch_rpc_api::jsonrpc_types::{
     repair_view::{RepairIndexerParamsView, RepairIndexerTypeView},
@@ -404,31 +404,13 @@ impl RoochAPIServer for RoochServer {
 
     async fn get_events_by_event_handle(
         &self,
-        event_handle_type: StructTagView,
+        event_handle: StructTagOrObjectIDView,
         cursor: Option<StrView<u64>>,
         limit: Option<StrView<u64>>,
         descending_order: Option<bool>,
         event_options: Option<EventOptions>,
     ) -> RpcResult<EventPageView> {
-        let event_handle_id = EventHandle::derive_event_handle_id(&event_handle_type.into());
-        self.get_events_by_event_handle_v2(
-            event_handle_id.into(),
-            cursor,
-            limit,
-            descending_order,
-            event_options,
-        )
-        .await
-    }
-
-    async fn get_events_by_event_handle_v2(
-        &self,
-        event_handle_id: ObjectIDView,
-        cursor: Option<StrView<u64>>,
-        limit: Option<StrView<u64>>,
-        descending_order: Option<bool>,
-        event_options: Option<EventOptions>,
-    ) -> RpcResult<EventPageView> {
+        let event_handle_id: ObjectIDView = event_handle.into();
         let event_options = event_options.unwrap_or_default();
         let cursor = cursor.map(|v| v.0);
         let limit = limit.map(|v| v.0);
