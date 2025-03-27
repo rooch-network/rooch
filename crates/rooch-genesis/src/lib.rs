@@ -342,6 +342,14 @@ impl RoochGenesis {
             genesis_bin: self.encode(),
         }
     }
+
+    pub fn save_to<P: AsRef<Path>>(&self, genesis_file: P) -> Result<()> {
+        eprintln!("Save genesis to {:?}", genesis_file.as_ref());
+        let mut file = File::create(genesis_file)?;
+        let contents = bcs::to_bytes(&self)?;
+        file.write_all(&contents)?;
+        Ok(())
+    }
 }
 
 impl RoochGenesisV2 {
