@@ -304,7 +304,7 @@
           "name": "event_handle",
           "required": true,
           "schema": {
-            "$ref": "#/components/schemas/StructTagOrObjectIDView"
+            "type": "string"
           }
         },
         {
@@ -3427,34 +3427,6 @@
             ]
           }
         }
-      },
-      "StructTagOrObjectIDView": {
-        "oneOf": [
-          {
-            "type": "object",
-            "required": [
-              "StructTag"
-            ],
-            "properties": {
-              "StructTag": {
-                "$ref": "#/components/schemas/move_core_types::language_storage::StructTag"
-              }
-            },
-            "additionalProperties": false
-          },
-          {
-            "type": "object",
-            "required": [
-              "ObjectID"
-            ],
-            "properties": {
-              "ObjectID": {
-                "$ref": "#/components/schemas/ObjectID"
-              }
-            },
-            "additionalProperties": false
-          }
-        ]
       },
       "SyncStateFilterView": {
         "oneOf": [

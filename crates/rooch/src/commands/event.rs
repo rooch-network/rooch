@@ -6,7 +6,9 @@ use async_trait::async_trait;
 use clap::{Parser, Subcommand};
 use move_command_line_common::types::ParsedStructType;
 use moveos_types::moveos_std::object::ObjectID;
-use rooch_rpc_api::jsonrpc_types::{EventOptions, EventPageView, StrView, StructTagOrObjectIDView};
+use rooch_rpc_api::jsonrpc_types::{
+    EnumStructTagOrObjectID, EnumStructTagOrObjectIDView, EventOptions, EventPageView, StrView,
+};
 use rooch_types::error::{RoochError, RoochResult};
 use std::str::FromStr;
 
@@ -61,25 +63,25 @@ impl CommandAction<EventPageView> for GetEventsByEventHandle {
         let client = context.get_client().await?;
 
         // Parse the event handle as either StructTag or ObjectID
-        // Need handle the adderss mapping, so we can't use StructTagOrObjectIDView::from_str directly
-        let event_handle =
+        // Need handle the adderss mapping, so we can't use StructTagOrObjectID::from_str directly
+        let event_handle: EnumStructTagOrObjectIDView =
             // Try parsing as StructTag first
             match ParsedStructType::parse(&self.event_handle) {
                 Ok(parsed_type) => {
                     let struct_tag = parsed_type.into_struct_tag(&address_mapping)?;
-                    StructTagOrObjectIDView::StructTag(StrView(struct_tag))
+                    StrView(EnumStructTagOrObjectID::StructTag(struct_tag))
                 },
                 Err(_) => {
                     // If not a valid StructTag, try parsing as ObjectID
                     let object_id = ObjectID::from_str(&self.event_handle)?;
-                    StructTagOrObjectIDView::ObjectID(StrView(object_id))
+                    StrView(EnumStructTagOrObjectID::ObjectID(object_id))
                 }
             };
 
         let resp = client
             .rooch
             .get_events_by_event_handle(
-                event_handle,
+                event_handle.to_string(),
                 self.cursor,
                 self.limit,
                 self.descending_order,

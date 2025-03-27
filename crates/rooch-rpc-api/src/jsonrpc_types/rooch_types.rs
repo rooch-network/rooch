@@ -15,8 +15,10 @@ use crate::jsonrpc_types::{
     move_types::{MoveActionTypeView, MoveActionView},
     BytesView, IndexerObjectStateView, StateKVView, StrView, StructTagView,
 };
+use move_core_types::language_storage::StructTag;
 use move_core_types::u256::U256;
 use moveos_types::moveos_std::event::EventHandle;
+use moveos_types::moveos_std::object::ObjectID;
 use rooch_types::framework::coin::CoinInfo;
 use rooch_types::transaction::rooch::RoochTransaction;
 use schemars::JsonSchema;
@@ -129,37 +131,38 @@ impl<CoinType> From<CoinInfo<CoinType>> for CoinInfoView {
     }
 }
 
+// To compatiable with the old format RPC request
 pub type StructTagOrObjectIDView = String;
-// pub type StructTagOrObjectIDView = StrView<String>;
-// #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
-// pub enum StructTagOrObjectIDView {
-//     StructTag(StructTagView),
-//     ObjectID(ObjectIDView),
-// }
+pub type EnumStructTagOrObjectIDView = StrView<EnumStructTagOrObjectID>;
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum EnumStructTagOrObjectID {
+    StructTag(StructTag),
+    ObjectID(ObjectID),
+}
 
-// impl From<StructTagView> for StructTagOrObjectIDView {
-//     fn from(view: StructTagView) -> Self {
-//         Self::StructTag(view)
-//     }
-// }
-//
-// impl From<ObjectIDView> for StructTagOrObjectIDView {
-//     fn from(view: ObjectIDView) -> Self {
-//         Self::ObjectID(view)
-//     }
-// }
+impl From<StructTag> for EnumStructTagOrObjectID {
+    fn from(item: StructTag) -> Self {
+        Self::StructTag(item)
+    }
+}
 
-impl FromStr for StructTagOrObjectIDView {
+impl From<ObjectID> for EnumStructTagOrObjectID {
+    fn from(item: ObjectID) -> Self {
+        Self::ObjectID(item)
+    }
+}
+
+impl FromStr for EnumStructTagOrObjectIDView {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        // Try to parse as StructTagView first
-        if let Ok(struct_tag) = StructTagView::from_str(s) {
-            return Ok(StructTagOrObjectIDView::StructTag(struct_tag));
+        // Try to parse as StructTag first
+        if let Ok(struct_tag) = StructTag::from_str(s) {
+            return Ok(StrView(EnumStructTagOrObjectID::StructTag(struct_tag)));
         }
         // If not a valid StructTag, try to parse as ObjectID
-        if let Ok(object_id) = ObjectIDView::from_str(s) {
-            return Ok(StructTagOrObjectIDView::ObjectID(object_id));
+        if let Ok(object_id) = ObjectID::from_str(s) {
+            return Ok(StrView(EnumStructTagOrObjectID::ObjectID(object_id)));
         }
         Err(anyhow::anyhow!(
             "Failed to parse as either StructTag or ObjectID"
@@ -167,13 +170,27 @@ impl FromStr for StructTagOrObjectIDView {
     }
 }
 
-impl From<StructTagOrObjectIDView> for ObjectIDView {
-    fn from(view: StructTagOrObjectIDView) -> Self {
-        match view {
-            StructTagOrObjectIDView::StructTag(struct_tag) => {
-                EventHandle::derive_event_handle_id(&struct_tag.0).into()
+impl From<EnumStructTagOrObjectIDView> for ObjectIDView {
+    fn from(view: EnumStructTagOrObjectIDView) -> Self {
+        match view.0 {
+            EnumStructTagOrObjectID::StructTag(struct_tag) => {
+                StrView(EventHandle::derive_event_handle_id(&struct_tag))
             }
-            StructTagOrObjectIDView::ObjectID(object_id) => object_id,
+            EnumStructTagOrObjectID::ObjectID(object_id) => StrView(object_id),
+        }
+    }
+}
+
+impl std::fmt::Display for EnumStructTagOrObjectIDView {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self.0 {
+            EnumStructTagOrObjectID::StructTag(struct_tag) => {
+                // EventHandle::derive_event_handle_id(&struct_tag).into()
+                write!(f, "{}", struct_tag.to_canonical_string())
+            }
+            EnumStructTagOrObjectID::ObjectID(object_id) => {
+                write!(f, "{}", object_id)
+            }
         }
     }
 }

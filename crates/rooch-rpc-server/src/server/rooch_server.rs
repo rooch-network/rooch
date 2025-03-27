@@ -22,14 +22,14 @@ use rooch_rpc_api::jsonrpc_types::{
     account_view::BalanceInfoView,
     event_view::{EventFilterView, EventView, IndexerEventIDView, IndexerEventView},
     transaction_view::{TransactionFilterView, TransactionWithInfoView},
-    AccessPathView, BalanceInfoPageView, DryRunTransactionResponseView, EventOptions,
-    EventPageView, ExecuteTransactionResponseView, FieldPageView, FunctionCallView, H256View,
-    IndexerEventPageView, IndexerObjectStatePageView, IndexerStateIDView, ModuleABIView,
-    ObjectIDVecView, ObjectIDView, ObjectStateFilterView, ObjectStateView, QueryOptions,
-    RawTransactionOutputView, RoochAddressView, StateChangeSetPageView,
-    StateChangeSetWithTxOrderView, StateKVView, StateOptions, StatePageView, StrView,
-    StructTagOrObjectIDView, StructTagView, SyncStateFilterView, TransactionWithInfoPageView,
-    TxOptions, UnitedAddressView,
+    AccessPathView, BalanceInfoPageView, DryRunTransactionResponseView,
+    EnumStructTagOrObjectIDView, EventOptions, EventPageView, ExecuteTransactionResponseView,
+    FieldPageView, FunctionCallView, H256View, IndexerEventPageView, IndexerObjectStatePageView,
+    IndexerStateIDView, ModuleABIView, ObjectIDVecView, ObjectIDView, ObjectStateFilterView,
+    ObjectStateView, QueryOptions, RawTransactionOutputView, RoochAddressView,
+    StateChangeSetPageView, StateChangeSetWithTxOrderView, StateKVView, StateOptions,
+    StatePageView, StrView, StructTagOrObjectIDView, StructTagView, SyncStateFilterView,
+    TransactionWithInfoPageView, TxOptions, UnitedAddressView,
 };
 use rooch_rpc_api::jsonrpc_types::{
     repair_view::{RepairIndexerParamsView, RepairIndexerTypeView},
@@ -410,7 +410,8 @@ impl RoochAPIServer for RoochServer {
         descending_order: Option<bool>,
         event_options: Option<EventOptions>,
     ) -> RpcResult<EventPageView> {
-        let event_handle_id: ObjectIDView = StructTagOrObjectIDView::from_str(&event_handle()).into();
+        let event_handle_id: ObjectIDView =
+            EnumStructTagOrObjectIDView::from_str(event_handle.as_str())?.into();
         let event_options = event_options.unwrap_or_default();
         let cursor = cursor.map(|v| v.0);
         let limit = limit.map(|v| v.0);
