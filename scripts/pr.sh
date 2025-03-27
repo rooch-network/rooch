@@ -122,8 +122,22 @@ if [ ! -z "$STD_TEST" ]; then
 
     # Run framework tests in parallel
     cargo test --profile optci -p rooch-framework-tests -p rooch-integration-test-runner -- --test-threads=8 &
+    PID_INTEG_TESTS=$!
     cargo test --profile optci -p rooch-framework-tests bitcoin_test -- --test-threads=8 &
-    wait
+    PID_BITCOIN_TESTS=$!
+    wait $PID_INTEG_TESTS
+    EXIT_CODE_INTEG_TESTS=$?
+    wait $PID_BITCOIN_TESTS
+    EXIT_CODE_BITCOIN_TESTS=$?
+    if [ $EXIT_CODE_INTEG_TESTS -ne 0 ]; then
+    echo "Error: The framework-rooch-integration-test failed."
+    exit $EXIT_CODE_INTEG_TESTS
+    fi
+    if [ $EXIT_CODE_BITCOIN_TESTS -ne 0 ]; then
+    echo "Error: The framework-rooch-bitcoin-test failed."
+    exit $EXIT_CODE_BITCOIN_TESTS
+    fi
+    echo "Framework tests successfully."
 
     # Run integration tests separately without parallel execution
     echo "Running integration tests..."

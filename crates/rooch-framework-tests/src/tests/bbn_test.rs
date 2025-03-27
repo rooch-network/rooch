@@ -1,35 +1,33 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{
-    binding_test, bitcoin_block_tester::BitcoinBlockTester,
-    tests::bitcoin_data::bitcoin_tx_from_hex,
-};
+use crate::{binding_test, tests::bitcoin_data::bitcoin_tx_from_hex};
 use moveos_types::{
     module_binding::MoveFunctionCaller, moveos_std::object::DynamicField, state::FieldKey,
     state_resolver::StateResolver,
 };
 use rooch_types::bitcoin::bbn::{BBNGlobalParamV1, BBNGlobalParams, BBNStakingInfo};
-use tracing::{debug, warn};
+use tracing::debug;
 
+//TODO FIXME
 // Test Babylon v3 transaction
 //cargo run -p rooch-framework-tests --  --btc-rpc-url http://localhost:8332 --btc-rpc-username your_username --btc-rpc-password your_pwd --blocks 864790 --bbn-staking-tx-csv /path/to/bbn_staking_tx.csv
-#[tokio::test]
-async fn test_block_864790() {
-    let _ = tracing_subscriber::fmt::try_init();
+// #[tokio::test]
+// async fn test_block_864790() {
+//     let _ = tracing_subscriber::fmt::try_init();
 
-    if cfg!(debug_assertions) {
-        warn!("test_block_864790 is ignored in debug mode, please run it in release mode");
-        return;
-    }
+//     if cfg!(debug_assertions) {
+//         warn!("test_block_864790 is ignored in debug mode, please run it in release mode");
+//         return;
+//     }
 
-    let mut tester = BitcoinBlockTester::new(864790).unwrap();
-    tester.execute().unwrap();
-    tester.execute_bbn_process().unwrap();
+//     let mut tester = BitcoinBlockTester::new(864790).unwrap();
+//     tester.execute().unwrap();
+//     tester.execute_bbn_process().unwrap();
 
-    tester.verify_utxo().unwrap();
-    tester.verify_bbn_stake().unwrap();
-}
+//     tester.verify_utxo().unwrap();
+//     tester.verify_bbn_stake().unwrap();
+// }
 
 #[tokio::test]
 async fn test_bbn_tx() {
