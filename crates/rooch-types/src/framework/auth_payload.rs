@@ -6,10 +6,9 @@ use crate::{
     transaction::RoochTransactionData,
 };
 use anyhow::{ensure, Result};
-use bitcoin::{
-    consensus::{Decodable, Encodable},
-    io::BufRead,
-};
+use bitcoin::consensus::{Decodable, Encodable};
+use bitcoin::io::{Read, Write};
+
 use fastcrypto::{
     hash::Sha256,
     secp256k1::{Secp256k1PublicKey, Secp256k1Signature},
@@ -94,17 +93,14 @@ impl SignData {
 }
 
 impl Encodable for SignData {
-    fn consensus_encode<S: bitcoin::io::Write + ?Sized>(
-        &self,
-        s: &mut S,
-    ) -> Result<usize, bitcoin::io::Error> {
+    fn consensus_encode<S: Write + ?Sized>(&self, s: &mut S) -> Result<usize, bitcoin::io::Error> {
         let len = self.message_prefix.consensus_encode(s)?;
         Ok(len + self.message_info.consensus_encode(s)?)
     }
 }
 
 impl Decodable for SignData {
-    fn consensus_decode<D: BufRead + ?Sized>(
+    fn consensus_decode<D: Read + ?Sized>(
         d: &mut D,
     ) -> Result<Self, bitcoin::consensus::encode::Error> {
         Ok(SignData {
