@@ -144,7 +144,17 @@ module moveos_std::features {
     public fun ensure_value_size_gas_enabled() {
         assert!(is_enabled(VALUE_SIZE_GAS), EAPI_DISABLED);
     }
-    
+
+    /// Whether to enable compatibility checker v2
+    const COMPATIBILITY_CHECKER_V2: u64 = 8;
+    public fun get_compatibility_checker_v2_feature(): u64 { COMPATIBILITY_CHECKER_V2 }
+    public fun compatibility_checker_v2_enabled(): bool {
+        is_enabled(COMPATIBILITY_CHECKER_V2)
+    }
+    public fun ensure_compatibility_checker_v2_enabled() {
+        assert!(is_enabled(COMPATIBILITY_CHECKER_V2), EAPI_DISABLED);
+    }
+
     /// Helper for getting all features. 
     /// Update this once new feature added.
     public fun get_all_features(): vector<u64> {
@@ -156,6 +166,7 @@ module moveos_std::features {
             MODULE_PUBLISHING_ALLOWLIST,
             WASM,
             VALUE_SIZE_GAS,
+            COMPATIBILITY_CHECKER_V2,
         ]
     }
     // --------------------------------------------------------------------------------------------

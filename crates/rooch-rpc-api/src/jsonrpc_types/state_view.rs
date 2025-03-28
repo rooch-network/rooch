@@ -293,7 +293,7 @@ pub struct IndexerObjectStateView {
     pub metadata: ObjectMetaView,
     /// bcs bytes of the Object.
     pub value: BytesView,
-    pub decoded_value: Option<AnnotatedMoveStructView>,
+    pub decoded_value: Option<serde_json::Value>,
     #[serde(flatten)]
     pub indexer_id: IndexerStateIDView,
     pub display_fields: Option<DisplayFieldsView>,
@@ -322,7 +322,7 @@ impl IndexerObjectStateView {
         IndexerObjectStateView {
             metadata: metadata.into(),
             value: value.into(),
-            decoded_value: Some(AnnotatedMoveStructView::from(decoded_value)),
+            decoded_value: Some(AnnotatedMoveStructView::from(decoded_value).into()),
             indexer_id: indexer_id.into(),
             display_fields: None,
         }
@@ -345,7 +345,7 @@ impl IndexerObjectStateView {
         Ok(IndexerObjectStateView {
             metadata: metadata.into(),
             value: value.into(),
-            decoded_value: Some(AnnotatedMoveStructView::from(decoded_value)),
+            decoded_value: Some(AnnotatedMoveStructView::from(decoded_value).into()),
             indexer_id: indexer_id.into(),
             display_fields: None,
         })
@@ -436,7 +436,7 @@ pub struct ObjectStateView {
     #[serde(flatten)]
     pub metadata: ObjectMetaView,
     pub value: BytesView,
-    pub decoded_value: Option<AnnotatedMoveStructView>,
+    pub decoded_value: Option<serde_json::Value>,
     pub display_fields: Option<DisplayFieldsView>,
 }
 
@@ -448,7 +448,7 @@ impl ObjectStateView {
             metadata: metadata.into(),
             value: value.into(),
             decoded_value: if decode {
-                Some(AnnotatedMoveStructView::from(decoded_value))
+                Some(AnnotatedMoveStructView::from(decoded_value).into())
             } else {
                 None
             },

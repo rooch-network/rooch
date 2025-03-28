@@ -51,9 +51,9 @@ pub fn native_ec_recover(
     data.extend(s);
 
     match secp256k1::ec_recover_run(&data.into(), 5000) {
-        Ok((_, out)) => Ok(NativeResult::ok(
+        Ok(out) => Ok(NativeResult::ok(
             cost,
-            smallvec![Value::vector_u8(out.to_vec())],
+            smallvec![Value::vector_u8(out.bytes.to_vec())],
         )),
 
         Err(_) => Ok(NativeResult::err(cost, E_EC_RECOVER_FAILED)),
@@ -99,9 +99,9 @@ pub fn native_modexp(
     data.extend(m);
 
     match modexp::byzantium_run(&data.into(), 100_000_000_000) {
-        Ok((_, output)) => Ok(NativeResult::ok(
+        Ok(output) => Ok(NativeResult::ok(
             cost,
-            smallvec![Value::vector_u8(output.to_vec())],
+            smallvec![Value::vector_u8(output.bytes.to_vec())],
         )),
 
         Err(_) => Ok(NativeResult::err(cost, E_MODEXP_FAILED)),
@@ -138,8 +138,8 @@ pub fn native_ec_add(
     data.extend(y2);
 
     match bn128::run_add(&data, 0, 10) {
-        Ok((_, sum)) => {
-            let (sum_x, sum_y) = sum.split_at(32);
+        Ok(output) => {
+            let (sum_x, sum_y) = output.bytes.split_at(32);
             let sum_x = Value::vector_u8(sum_x.to_vec());
             let sum_y = Value::vector_u8(sum_y.to_vec());
             Ok(NativeResult::ok(cost, smallvec![sum_x, sum_y]))
@@ -177,8 +177,8 @@ pub fn native_ec_mul(
     data.extend(s);
 
     match bn128::run_mul(&data, 0, 10) {
-        Ok((_, mul)) => {
-            let (mul_x, mul_y) = mul.split_at(32);
+        Ok(output) => {
+            let (mul_x, mul_y) = output.bytes.split_at(32);
             let mul_x = Value::vector_u8(mul_x.to_vec());
             let mul_y = Value::vector_u8(mul_y.to_vec());
             Ok(NativeResult::ok(cost, smallvec![mul_x, mul_y]))
@@ -205,8 +205,8 @@ pub fn native_ec_pairing(
     let cost = gas_params.base + (gas_params.per_byte * NumBytes::new(data.len() as u64));
 
     match bn128::run_pair(&data, 0, 0, 10) {
-        Ok((_, pair)) => {
-            let success = Value::vector_u8(pair.to_vec());
+        Ok(output) => {
+            let success = Value::vector_u8(output.bytes.to_vec());
             Ok(NativeResult::ok(cost, smallvec![success]))
         }
         Err(_) => Ok(NativeResult::err(cost, E_EC_PAIRING_FAILED)),
@@ -245,9 +245,9 @@ pub fn native_blake2f(
     data.extend(f);
 
     match blake2::run(&data.into(), 100_000_000_000) {
-        Ok((_, out)) => Ok(NativeResult::ok(
+        Ok(output) => Ok(NativeResult::ok(
             cost,
-            smallvec![Value::vector_u8(out.to_vec())],
+            smallvec![Value::vector_u8(output.bytes.to_vec())],
         )),
         Err(_) => Ok(NativeResult::err(cost, E_EC_PAIRING_FAILED)),
     }
@@ -291,8 +291,8 @@ pub fn native_point_evaluation(
     let env = Env::default();
 
     match kzg_point_evaluation::run(&data.into(), 100_000_000_000, &env) {
-        Ok((_, output)) => {
-            let (output_f, output_b) = output.split_at(32);
+        Ok(output) => {
+            let (output_f, output_b) = output.bytes.split_at(32);
             let output_f = Value::vector_u8(output_f.to_vec());
             let output_b = Value::vector_u8(output_b.to_vec());
             Ok(NativeResult::ok(cost, smallvec![output_f, output_b]))

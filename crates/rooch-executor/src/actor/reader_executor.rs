@@ -20,7 +20,6 @@ use moveos_store::transaction_store::TransactionStore;
 use moveos_store::MoveOSStore;
 use moveos_types::function_return_value::AnnotatedFunctionResult;
 use moveos_types::function_return_value::AnnotatedFunctionReturnValue;
-use moveos_types::moveos_std::event::EventHandle;
 use moveos_types::moveos_std::event::{AnnotatedEvent, Event};
 use moveos_types::moveos_std::object::ObjectMeta;
 use moveos_types::state::{AnnotatedState, ObjectState, StateChangeSetExt};
@@ -214,16 +213,14 @@ impl Handler<GetAnnotatedEventsByEventHandleMessage> for ReaderExecutorActor {
         _ctx: &mut ActorContext,
     ) -> Result<Vec<AnnotatedEvent>> {
         let GetAnnotatedEventsByEventHandleMessage {
-            event_handle_type,
+            event_handle_id,
             cursor,
             limit,
             descending_order,
         } = msg;
         let event_store = self.moveos().event_store();
-
         let resolver = RootObjectResolver::new(self.root.clone(), &self.moveos_store);
 
-        let event_handle_id = EventHandle::derive_event_handle_id(&event_handle_type);
         let events = event_store.get_events_by_event_handle_id(
             &event_handle_id,
             cursor,
@@ -235,7 +232,7 @@ impl Handler<GetAnnotatedEventsByEventHandleMessage> for ReaderExecutorActor {
             .into_iter()
             .map(|event| {
                 let event_move_value = MoveValueAnnotator::new(&resolver)
-                    .view_resource(&event_handle_type, event.event_data())?;
+                    .view_resource(&event.event_type, event.event_data())?;
                 Ok(AnnotatedEvent::new(event, event_move_value))
             })
             .collect::<Result<Vec<_>>>()
@@ -250,14 +247,12 @@ impl Handler<GetEventsByEventHandleMessage> for ReaderExecutorActor {
         _ctx: &mut ActorContext,
     ) -> Result<Vec<Event>> {
         let GetEventsByEventHandleMessage {
-            event_handle_type,
+            event_handle_id,
             cursor,
             limit,
             descending_order,
         } = msg;
         let event_store = self.moveos().event_store();
-
-        let event_handle_id = EventHandle::derive_event_handle_id(&event_handle_type);
         event_store.get_events_by_event_handle_id(&event_handle_id, cursor, limit, descending_order)
     }
 }

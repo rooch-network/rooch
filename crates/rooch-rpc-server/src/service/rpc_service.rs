@@ -9,7 +9,7 @@ use jsonrpsee::core::SubscriptionResult;
 use jsonrpsee::PendingSubscriptionSink;
 use metrics::spawn_monitored_task;
 use move_core_types::account_address::AccountAddress;
-use move_core_types::language_storage::{ModuleId, StructTag};
+use move_core_types::language_storage::ModuleId;
 use moveos_types::access_path::AccessPath;
 use moveos_types::function_return_value::AnnotatedFunctionResult;
 use moveos_types::h256::H256;
@@ -233,33 +233,28 @@ impl RpcService {
 
     pub async fn get_annotated_events_by_event_handle(
         &self,
-        event_handle_type: StructTag,
+        event_handle_id: ObjectID,
         cursor: Option<u64>,
         limit: u64,
         descending_order: bool,
     ) -> Result<Vec<AnnotatedEvent>> {
         let resp = self
             .executor
-            .get_annotated_events_by_event_handle(
-                event_handle_type,
-                cursor,
-                limit,
-                descending_order,
-            )
+            .get_annotated_events_by_event_handle(event_handle_id, cursor, limit, descending_order)
             .await?;
         Ok(resp)
     }
 
     pub async fn get_events_by_event_handle(
         &self,
-        event_handle_type: StructTag,
+        event_handle_id: ObjectID,
         cursor: Option<u64>,
         limit: u64,
         descending_order: bool,
     ) -> Result<Vec<Event>> {
         let resp = self
             .executor
-            .get_events_by_event_handle(event_handle_type, cursor, limit, descending_order)
+            .get_events_by_event_handle(event_handle_id, cursor, limit, descending_order)
             .await?;
         Ok(resp)
     }

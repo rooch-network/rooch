@@ -42,13 +42,12 @@ jobs:
               - '.github/workflows/check_build_test.yml'
               - 'crates/**'
               - 'moveos/**'
-              - 'framework/**'
+              - 'frameworks/**'
               - 'Cargo.toml'
               - 'Cargo.lock'
               - 'rust-toolchain.toml'
               - 'apps/**'
               - 'examples/**'
-              - 'framework/**'
               - 'generator/**'
               - 'third-party/**'
             sdk_web:
@@ -101,8 +100,22 @@ jobs:
         if: ${{ steps.changes.outputs.core == 'true'}}
         run: |
           cargo run --profile optci -p rooch-genesis -- -n main &
+          PID_MAIN=$!
           cargo run --profile optci -p rooch-genesis -- -n test &
-          wait
+          PID_TEST=$!
+          wait $PID_MAIN
+          EXIT_CODE_MAIN=$?
+          wait $PID_TEST
+          EXIT_CODE_TEST=$?
+          if [ $EXIT_CODE_MAIN -ne 0 ]; then
+          echo "Error: The mainnet genesis generation failed."
+          exit $EXIT_CODE_MAIN
+          fi
+          if [ $EXIT_CODE_TEST -ne 0 ]; then
+          echo "Error: The testnet genesis generation failed."
+          exit $EXIT_CODE_TEST
+          fi
+          echo "Genesis files generated successfully."
 
       - name: Setup Node.js
         if: ${{ steps.changes.outputs.core == 'true' || steps.changes.outputs.sdk_web == 'true' }}
@@ -114,9 +127,9 @@ jobs:
         run: |
           # Check Docker
           docker --version
-          docker pull lncm/bitcoind:v25.1 &
-          # docker pull bitseed/ord:0.18.0-burn &
-          # docker pull bitseed/bitseed:0.1.8 &
+          docker pull lncm/bitcoind:v25.1
+          # docker pull bitseed/ord:0.18.0-burn
+          # docker pull bitseed/bitseed:0.1.8
           # Setup pnpm and run web/SDK tests
           # . $NVM_DIR/nvm.sh
           # nvm install 20.3.1
@@ -125,13 +138,42 @@ jobs:
           pnpm install
           # pnpm bitseed-sdk playwright-deps
           # Run web/SDK tasks in parallel
-          pnpm lint &
+          
+          pnpm rooch-sdk lint
+          
           pnpm test-suite build &
+          PID_TEST_SUITE=$!
           pnpm rooch-sdk build &
+          PID_SDK=$!
           pnpm rooch-sdk-kit build &
-          # pnpm bitseed-sdk lint &
-          # pnpm bitseed-sdk build &
-          wait
+          PID_SDK_KIT=$!
+          # pnpm bitseed-sdk lint
+          # pnpm bitseed-sdk build
+          
+          EXIT_CODE_LINT=$?
+          wait $PID_TEST_SUITE
+          EXIT_CODE_TEST_SUITE=$?
+          wait $PID_SDK
+          EXIT_CODE_SDK=$?
+          wait $PID_SDK_KIT
+          EXIT_CODE_SDK_KIT=$?
+          if [ $EXIT_CODE_LINT -ne 0 ]; then
+          echo "Error: The linting failed."
+          exit $EXIT_CODE_LINT
+          fi
+          if [ $EXIT_CODE_TEST_SUITE -ne 0 ]; then
+          echo "Error: The test suite build failed."
+          exit $EXIT_CODE_TEST_SUITE
+          fi
+          if [ $EXIT_CODE_SDK -ne 0 ]; then
+          echo "Error: The SDK build failed."
+          exit $EXIT_CODE_SDK
+          fi
+          if [ $EXIT_CODE_SDK_KIT -ne 0 ]; then
+          echo "Error: The SDK kit build failed."
+          exit $EXIT_CODE_SDK_KIT
+          fi
+          echo "Web and SDK tests passed."
           # Run tests
           pnpm rooch-sdk test
           pnpm rooch-sdk-kit test || true

@@ -611,6 +611,7 @@ impl MoveType for [u8] {
 
 /// A placeholder struct for unknown Move Struct
 /// Sometimes we need a generic struct type, but we don't know the struct type
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct PlaceholderStruct;
 
 impl MoveStructType for PlaceholderStruct {
@@ -619,6 +620,12 @@ impl MoveStructType for PlaceholderStruct {
     const STRUCT_NAME: &'static IdentStr = ident_str!("PlaceholderStruct");
 
     fn type_params() -> Vec<TypeTag> {
+        panic!("PlaceholderStruct should not be used as a type")
+    }
+}
+
+impl MoveStructState for PlaceholderStruct {
+    fn struct_layout() -> MoveStructLayout {
         panic!("PlaceholderStruct should not be used as a type")
     }
 }

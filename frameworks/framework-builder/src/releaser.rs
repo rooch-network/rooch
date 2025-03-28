@@ -192,7 +192,7 @@ pub fn check_modules_compat(
                 .map(|module_id| module_id.to_string())
                 .join(",")
         );
-    } else {
+    } else if !deleted_module_ids.is_empty() {
         warn!(
             "Modules {} is deleted in local, but them still on the Chain!. If you want to deprecated them, please abort the all public functions in the module.",
             deleted_module_ids
@@ -226,8 +226,8 @@ fn check_compiled_module_compat(
         new_module.self_id(),
         old_module.self_id()
     );
-    // TODO: config compatibility through global configuration
-    // We allow `friend` function to be broken
-    let compat = Compatibility::new(true, true, true);
+    //We enable all compatibility checks, do not allow friend functions break after the issue
+    //https://github.com/rooch-network/rooch/pull/3465
+    let compat = Compatibility::new(true, true, true, true);
     compat.check(old_module, new_module)
 }

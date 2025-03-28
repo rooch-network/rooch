@@ -11,7 +11,6 @@ use move_core_types::{
     u256,
 };
 use move_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
-use moveos_types::move_types::parse_module_id;
 use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::moveos_std::type_info::TypeInfo;
 use moveos_types::transaction::MoveAction;
@@ -24,10 +23,13 @@ use moveos_types::{
     move_std::{ascii::MoveAsciiString, string::MoveString},
     state::MoveStructType,
 };
+use moveos_types::{move_types::parse_module_id, moveos_std::decimal_value::DecimalValue};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::str::FromStr;
+
+use super::{decimal_value_view::DecimalValueView, move_option_view::MoveOptionView};
 
 pub type ModuleIdView = StrView<ModuleId>;
 pub type TypeTagView = StrView<TypeTag>;
@@ -128,7 +130,7 @@ impl From<AbilityView> for Ability {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Serialize, JsonSchema, Eq, PartialEq)]
 pub struct AnnotatedMoveStructView {
     pub abilities: u8,
     #[serde(rename = "type")]
@@ -151,7 +153,18 @@ impl From<AnnotatedMoveStruct> for AnnotatedMoveStructView {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Eq, PartialEq, PartialOrd, Ord)]
+impl From<AnnotatedMoveStructView> for serde_json::Value {
+    fn from(value: AnnotatedMoveStructView) -> Self {
+        let to_json_result = serde_json::to_value(value);
+        debug_assert!(
+            to_json_result.is_ok(),
+            "AnnotatedMoveStructView to json failed"
+        );
+        to_json_result.unwrap_or(serde_json::Value::Null)
+    }
+}
+
+#[derive(Debug, Clone, Serialize, JsonSchema, Eq, PartialEq)]
 pub struct AnnotatedMoveStructVectorView {
     /// alilities of each element
     pub abilities: u8,
@@ -173,6 +186,13 @@ impl AnnotatedMoveStructVectorView {
         } else {
             let first = origin.first().unwrap();
             if let AnnotatedMoveValue::Struct(ele) = first {
+                //if the first element is a specific struct, we directly convert it to vector,
+                //otherwise, we convert it to StructVector
+                if SpecificStructView::try_from_annotated(ele).is_some() {
+                    return Err(AnnotatedMoveValueView::Vector(
+                        origin.into_iter().map(Into::into).collect(),
+                    ));
+                }
                 let field = ele
                     .value
                     .iter()
@@ -207,12 +227,14 @@ impl AnnotatedMoveStructVectorView {
 }
 
 /// Some specific struct that we want to display in a special way for better readability
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Serialize, JsonSchema, Eq, PartialEq)]
 #[serde(untagged)]
 pub enum SpecificStructView {
     MoveString(MoveString),
     MoveAsciiString(MoveAsciiString),
     ObjectID(ObjectID),
+    DecimalValue(DecimalValueView),
+    Option(MoveOptionView),
 }
 
 impl SpecificStructView {
@@ -229,31 +251,42 @@ impl SpecificStructView {
             ObjectID::try_from(move_struct)
                 .ok()
                 .map(SpecificStructView::ObjectID)
+        } else if DecimalValue::struct_tag_match(&move_struct.type_) {
+            DecimalValue::try_from(move_struct)
+                .ok()
+                .map(DecimalValueView::from)
+                .map(SpecificStructView::DecimalValue)
+        } else if MoveOptionView::struct_tag_match(&move_struct.type_) {
+            MoveOptionView::try_from(move_struct)
+                .ok()
+                .map(SpecificStructView::Option)
         } else {
             None
         }
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Eq, PartialEq, PartialOrd, Ord)]
-// #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+/// AnnotatedMoveValueView only used for serialization
+#[derive(Debug, Clone, Serialize, JsonSchema, Eq, PartialEq)]
 #[serde(untagged)]
 pub enum AnnotatedMoveValueView {
     U8(u8),
+    U16(u16),
+    U32(u32),
     ///u64, u128, U256 is too large to be serialized in json
     /// so we use string to represent them
     U64(StrView<u64>),
     U128(StrView<u128>),
+    U256(StrView<u256::U256>),
     Bool(bool),
     Address(AccountAddressView),
-    Vector(Vec<AnnotatedMoveValueView>),
-    StructVector(Box<AnnotatedMoveStructVectorView>),
     Bytes(BytesView),
+    SpecificStruct(Box<SpecificStructView>),
     Struct(AnnotatedMoveStructView),
-    SpecificStruct(SpecificStructView),
-    U16(u16),
-    U32(u32),
-    U256(StrView<u256::U256>),
+    StructVector(Box<AnnotatedMoveStructVectorView>),
+    Vector(Vec<AnnotatedMoveValueView>),
+    // Add this variant as a "catch-all" for forward compatibility
+    //Unknown(serde_json::Value),
 }
 
 impl AnnotatedMoveValueView {
@@ -293,7 +326,9 @@ impl From<AnnotatedMoveValue> for AnnotatedMoveValueView {
             AnnotatedMoveValue::Bytes(data) => AnnotatedMoveValueView::Bytes(StrView(data)),
             AnnotatedMoveValue::Struct(data) => {
                 match SpecificStructView::try_from_annotated(&data) {
-                    Some(struct_view) => AnnotatedMoveValueView::SpecificStruct(struct_view),
+                    Some(struct_view) => {
+                        AnnotatedMoveValueView::SpecificStruct(Box::new(struct_view))
+                    }
                     None => AnnotatedMoveValueView::Struct(data.into()),
                 }
             }
@@ -304,39 +339,16 @@ impl From<AnnotatedMoveValue> for AnnotatedMoveValueView {
     }
 }
 
-//We can not support convert from AnnotatedMoveValueView to AnnotatedMoveValue
-// It is not easy to implement because:
-// 1. We need to put type_tag in the Vector
-// 2. We need to support convert SpecificStruct to AnnotatedMoveStruct
-// impl TryFrom<AnnotatedMoveValueView> for AnnotatedMoveValue {
-//     type Error = anyhow::Error;
-//     fn try_from(value: AnnotatedMoveValueView) -> Result<Self, Self::Error> {
-//         Ok(match value {
-//             AnnotatedMoveValueView::U8(u8) => AnnotatedMoveValue::U8(u8),
-//             AnnotatedMoveValueView::U64(u64) => AnnotatedMoveValue::U64(u64.0),
-//             AnnotatedMoveValueView::U128(u128) => AnnotatedMoveValue::U128(u128.0),
-//             AnnotatedMoveValueView::Bool(bool) => AnnotatedMoveValue::Bool(bool),
-//             AnnotatedMoveValueView::Address(address) => AnnotatedMoveValue::Address(address.0),
-//             AnnotatedMoveValueView::Vector(type_tag, data) =>
-//                 AnnotatedMoveValue::Vector(
-//                 type_tag.0,
-//                 data.into_iter()
-//                     .map(AnnotatedMoveValue::try_from)
-//                     .collect::<Result<Vec<_>, Self::Error>>()?,
-//             ),
-//             AnnotatedMoveValueView::Bytes(data) => AnnotatedMoveValue::Bytes(data.0),
-//             AnnotatedMoveValueView::Struct(data) => AnnotatedMoveValue::Struct(data.try_into()?),
-//             AnnotatedMoveValueView::SpecificStruct(data) => match data {
-//                 SpecificStructView::MoveString(string) => AnnotatedMoveValue::Struct(string.into()),
-//                 SpecificStructView::MoveAsciiString(string) => AnnotatedMoveValue::Struct(string.into()),
-//                 SpecificStructView::ObjectID(id) => AnnotatedMoveValue::Struct(id.into()),
-//             },
-//             AnnotatedMoveValueView::U16(u16) => AnnotatedMoveValue::U16(u16),
-//             AnnotatedMoveValueView::U32(u32) => AnnotatedMoveValue::U32(u32),
-//             AnnotatedMoveValueView::U256(u256) => AnnotatedMoveValue::U256(u256.0),
-//         })
-//     }
-// }
+impl From<AnnotatedMoveValueView> for serde_json::Value {
+    fn from(value: AnnotatedMoveValueView) -> Self {
+        let to_json_result = serde_json::to_value(value);
+        debug_assert!(
+            to_json_result.is_ok(),
+            "AnnotatedMoveValueView to json failed"
+        );
+        to_json_result.unwrap_or(serde_json::Value::Null)
+    }
+}
 
 #[derive(Clone, Debug, Deserialize, Serialize, JsonSchema)]
 pub struct ScriptCallView {

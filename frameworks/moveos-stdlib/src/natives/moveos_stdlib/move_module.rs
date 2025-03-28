@@ -29,7 +29,9 @@ use move_vm_types::{
     values::{Struct, Value, Vector, VectorRef},
 };
 use moveos_compiler::dependency_order::sort_by_dependency_order;
+use moveos_object_runtime::runtime::ObjectRuntimeContext;
 use moveos_types::moveos_std::move_module::MoveModuleId;
+use moveos_types::moveos_std::onchain_features::COMPATIBILITY_CHECKER_V2;
 use moveos_verifier::verifier::check_metadata_compatibility;
 use smallvec::smallvec;
 use std::collections::{BTreeMap, BTreeSet, HashMap, VecDeque};
@@ -322,14 +324,23 @@ pub struct CheckCompatibilityInnerGasParameters {
 
 fn check_compatibililty_inner(
     gas_params: &CheckCompatibilityInnerGasParameters,
-    _context: &mut NativeContext,
+    context: &mut NativeContext,
     _ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
     let mut cost = gas_params.base;
+
+    let object_runtime_ctx = context.extensions().get::<ObjectRuntimeContext>();
+    let feature_store_opt = object_runtime_ctx.feature_store();
+    let check_friend_linking = if let Some(feature_store) = feature_store_opt {
+        feature_store.contains_feature(COMPATIBILITY_CHECKER_V2)
+    } else {
+        false
+    };
+
     // TODO: config compatibility through global configuration
     // We allow `friend` function to be broken
-    let compat = Compatibility::new(true, true, false);
+    let compat = Compatibility::new(true, true, check_friend_linking, true);
     if compat.need_check_compat() {
         let old_bytecodes = pop_arg!(args, Vec<u8>);
         let new_bytecodes = pop_arg!(args, Vec<u8>);

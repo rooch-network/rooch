@@ -258,7 +258,7 @@ export class RoochClient {
     }
     return await this.transport.request({
       method: 'rooch_getEventsByEventHandle',
-      params: [input.eventHandleType, input.cursor, input.limit, input.descendingOrder, opt],
+      params: [input.eventHandle, input.cursor, input.limit, input.descendingOrder, opt],
     })
   }
 
@@ -513,7 +513,11 @@ export class RoochClient {
     if (result.vm_status === 'Executed' && result.return_values) {
       const value = (result.return_values?.[0]?.decoded_value as AnnotatedMoveStructView).value
 
-      const address = (((value as any).vec as AnnotatedMoveStructView).value[0] as Array<string>)[0]
+      const address =
+        value && value.vec
+          ? //compatible with old option version
+            (((value as any).vec as AnnotatedMoveStructView).value[0] as Array<string>)[0]
+          : ((value as any).bytes as string)
 
       return new BitcoinAddress(address, input.network)
     }

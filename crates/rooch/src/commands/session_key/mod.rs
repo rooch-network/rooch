@@ -50,8 +50,11 @@ pub enum SessionKeyCommand {
 }
 
 fn display_json_as_table(data: &Value) {
+    println!("Session Keys data: {:?}", data);
     if let Some(array) = data.as_array() {
+        println!("Session Keys: {:?}", array);
         for item in array {
+            println!("Session Key item: {:?}", item);
             let mut main_table = Builder::default();
             main_table.push_record(["Field", "Value"]);
 

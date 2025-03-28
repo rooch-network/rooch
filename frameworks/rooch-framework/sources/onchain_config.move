@@ -119,10 +119,12 @@ module rooch_framework::onchain_config {
             vector::push_back(&mut enables, features::get_devnet_feature());
             vector::push_back(&mut enables, features::get_testnet_feature());
             vector::push_back(&mut enables, features::get_value_size_gas_feature());
+            vector::push_back(&mut enables, features::get_compatibility_checker_v2_feature());
         } else if (chain_id::is_dev()) {
             vector::push_back(&mut enables, features::get_devnet_feature());
             vector::push_back(&mut enables, features::get_testnet_feature());
             vector::push_back(&mut enables, features::get_value_size_gas_feature());
+            vector::push_back(&mut enables, features::get_compatibility_checker_v2_feature());
         } else if (chain_id::is_test()) {
             vector::push_back(&mut enables, features::get_testnet_feature());
             vector::push_back(&mut enables, features::get_value_size_gas_feature());

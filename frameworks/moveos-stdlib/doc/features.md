@@ -1,5 +1,5 @@
 
-<a id="0x2_features"></a>
+<a name="0x2_features"></a>
 
 # Module `0x2::features`
 
@@ -44,6 +44,9 @@ feature flag is disabled, those functions can constantly return true.
 -  [Function `get_value_size_gas_feature`](#0x2_features_get_value_size_gas_feature)
 -  [Function `value_size_gas_enabled`](#0x2_features_value_size_gas_enabled)
 -  [Function `ensure_value_size_gas_enabled`](#0x2_features_ensure_value_size_gas_enabled)
+-  [Function `get_compatibility_checker_v2_feature`](#0x2_features_get_compatibility_checker_v2_feature)
+-  [Function `compatibility_checker_v2_enabled`](#0x2_features_compatibility_checker_v2_enabled)
+-  [Function `ensure_compatibility_checker_v2_enabled`](#0x2_features_ensure_compatibility_checker_v2_enabled)
 -  [Function `get_all_features`](#0x2_features_get_all_features)
 
 
@@ -53,7 +56,7 @@ feature flag is disabled, those functions can constantly return true.
 
 
 
-<a id="0x2_features_FeatureStore"></a>
+<a name="0x2_features_FeatureStore"></a>
 
 ## Resource `FeatureStore`
 
@@ -65,12 +68,22 @@ The enabled features, represented by a bitset stored on chain.
 
 
 
-<a id="@Constants_0"></a>
+<a name="@Constants_0"></a>
 
 ## Constants
 
 
-<a id="0x2_features_DEVNET"></a>
+<a name="0x2_features_COMPATIBILITY_CHECKER_V2"></a>
+
+Whether to enable compatibility checker v2
+
+
+<pre><code><b>const</b> <a href="features.md#0x2_features_COMPATIBILITY_CHECKER_V2">COMPATIBILITY_CHECKER_V2</a>: u64 = 8;
+</code></pre>
+
+
+
+<a name="0x2_features_DEVNET"></a>
 
 This feature will only be enabled on devnet.
 
@@ -80,7 +93,7 @@ This feature will only be enabled on devnet.
 
 
 
-<a id="0x2_features_EAPI_DISABLED"></a>
+<a name="0x2_features_EAPI_DISABLED"></a>
 
 
 
@@ -89,7 +102,7 @@ This feature will only be enabled on devnet.
 
 
 
-<a id="0x2_features_EINVALID_FEATURE"></a>
+<a name="0x2_features_EINVALID_FEATURE"></a>
 
 
 
@@ -98,7 +111,7 @@ This feature will only be enabled on devnet.
 
 
 
-<a id="0x2_features_LOCALNET"></a>
+<a name="0x2_features_LOCALNET"></a>
 
 This feature will only be enabled on localnet.
 
@@ -108,7 +121,7 @@ This feature will only be enabled on localnet.
 
 
 
-<a id="0x2_features_MODULE_PUBLISHING_ALLOWLIST"></a>
+<a name="0x2_features_MODULE_PUBLISHING_ALLOWLIST"></a>
 
 Whether enable the allowlist feature for publishing modules.
 
@@ -118,7 +131,7 @@ Whether enable the allowlist feature for publishing modules.
 
 
 
-<a id="0x2_features_MODULE_TEMPLATE"></a>
+<a name="0x2_features_MODULE_TEMPLATE"></a>
 
 Whether allowing replacing module's address, module identifier, struct identifier
 and constant address.
@@ -131,7 +144,7 @@ thus developers can used to publish new modules in Move.
 
 
 
-<a id="0x2_features_TESTNET"></a>
+<a name="0x2_features_TESTNET"></a>
 
 This feature will only be enabled on testnet, devnet or localnet.
 
@@ -141,7 +154,7 @@ This feature will only be enabled on testnet, devnet or localnet.
 
 
 
-<a id="0x2_features_VALUE_SIZE_GAS"></a>
+<a name="0x2_features_VALUE_SIZE_GAS"></a>
 
 Whether to enable size-based gas fee for adding field values
 
@@ -151,7 +164,7 @@ Whether to enable size-based gas fee for adding field values
 
 
 
-<a id="0x2_features_WASM"></a>
+<a name="0x2_features_WASM"></a>
 
 Whether enable the wasm feature.
 
@@ -161,7 +174,7 @@ Whether enable the wasm feature.
 
 
 
-<a id="0x2_features_init_feature_store"></a>
+<a name="0x2_features_init_feature_store"></a>
 
 ## Function `init_feature_store`
 
@@ -172,7 +185,7 @@ Whether enable the wasm feature.
 
 
 
-<a id="0x2_features_change_feature_flags"></a>
+<a name="0x2_features_change_feature_flags"></a>
 
 ## Function `change_feature_flags`
 
@@ -184,7 +197,7 @@ Enable or disable features. Only the framework signers can call this function.
 
 
 
-<a id="0x2_features_is_enabled"></a>
+<a name="0x2_features_is_enabled"></a>
 
 ## Function `is_enabled`
 
@@ -197,7 +210,7 @@ All features are enabled for system reserved accounts.
 
 
 
-<a id="0x2_features_get_localnet_feature"></a>
+<a name="0x2_features_get_localnet_feature"></a>
 
 ## Function `get_localnet_feature`
 
@@ -208,7 +221,7 @@ All features are enabled for system reserved accounts.
 
 
 
-<a id="0x2_features_localnet_enabled"></a>
+<a name="0x2_features_localnet_enabled"></a>
 
 ## Function `localnet_enabled`
 
@@ -219,7 +232,7 @@ All features are enabled for system reserved accounts.
 
 
 
-<a id="0x2_features_ensure_localnet_enabled"></a>
+<a name="0x2_features_ensure_localnet_enabled"></a>
 
 ## Function `ensure_localnet_enabled`
 
@@ -230,7 +243,7 @@ All features are enabled for system reserved accounts.
 
 
 
-<a id="0x2_features_get_devnet_feature"></a>
+<a name="0x2_features_get_devnet_feature"></a>
 
 ## Function `get_devnet_feature`
 
@@ -241,7 +254,7 @@ All features are enabled for system reserved accounts.
 
 
 
-<a id="0x2_features_devnet_enabled"></a>
+<a name="0x2_features_devnet_enabled"></a>
 
 ## Function `devnet_enabled`
 
@@ -252,7 +265,7 @@ All features are enabled for system reserved accounts.
 
 
 
-<a id="0x2_features_ensure_devnet_enabled"></a>
+<a name="0x2_features_ensure_devnet_enabled"></a>
 
 ## Function `ensure_devnet_enabled`
 
@@ -263,7 +276,7 @@ All features are enabled for system reserved accounts.
 
 
 
-<a id="0x2_features_get_testnet_feature"></a>
+<a name="0x2_features_get_testnet_feature"></a>
 
 ## Function `get_testnet_feature`
 
@@ -274,7 +287,7 @@ All features are enabled for system reserved accounts.
 
 
 
-<a id="0x2_features_testnet_enabled"></a>
+<a name="0x2_features_testnet_enabled"></a>
 
 ## Function `testnet_enabled`
 
@@ -285,7 +298,7 @@ All features are enabled for system reserved accounts.
 
 
 
-<a id="0x2_features_ensure_testnet_enabled"></a>
+<a name="0x2_features_ensure_testnet_enabled"></a>
 
 ## Function `ensure_testnet_enabled`
 
@@ -296,7 +309,7 @@ All features are enabled for system reserved accounts.
 
 
 
-<a id="0x2_features_get_module_template_feature"></a>
+<a name="0x2_features_get_module_template_feature"></a>
 
 ## Function `get_module_template_feature`
 
@@ -307,7 +320,7 @@ All features are enabled for system reserved accounts.
 
 
 
-<a id="0x2_features_module_template_enabled"></a>
+<a name="0x2_features_module_template_enabled"></a>
 
 ## Function `module_template_enabled`
 
@@ -318,7 +331,7 @@ All features are enabled for system reserved accounts.
 
 
 
-<a id="0x2_features_ensure_module_template_enabled"></a>
+<a name="0x2_features_ensure_module_template_enabled"></a>
 
 ## Function `ensure_module_template_enabled`
 
@@ -329,7 +342,7 @@ All features are enabled for system reserved accounts.
 
 
 
-<a id="0x2_features_get_module_publishing_allowlist_feature"></a>
+<a name="0x2_features_get_module_publishing_allowlist_feature"></a>
 
 ## Function `get_module_publishing_allowlist_feature`
 
@@ -340,7 +353,7 @@ All features are enabled for system reserved accounts.
 
 
 
-<a id="0x2_features_module_publishing_allowlist_enabled"></a>
+<a name="0x2_features_module_publishing_allowlist_enabled"></a>
 
 ## Function `module_publishing_allowlist_enabled`
 
@@ -351,7 +364,7 @@ All features are enabled for system reserved accounts.
 
 
 
-<a id="0x2_features_ensure_module_publishing_allowlist_enabled"></a>
+<a name="0x2_features_ensure_module_publishing_allowlist_enabled"></a>
 
 ## Function `ensure_module_publishing_allowlist_enabled`
 
@@ -362,7 +375,7 @@ All features are enabled for system reserved accounts.
 
 
 
-<a id="0x2_features_get_wasm_feature"></a>
+<a name="0x2_features_get_wasm_feature"></a>
 
 ## Function `get_wasm_feature`
 
@@ -373,7 +386,7 @@ All features are enabled for system reserved accounts.
 
 
 
-<a id="0x2_features_wasm_enabled"></a>
+<a name="0x2_features_wasm_enabled"></a>
 
 ## Function `wasm_enabled`
 
@@ -384,7 +397,7 @@ All features are enabled for system reserved accounts.
 
 
 
-<a id="0x2_features_ensure_wasm_enabled"></a>
+<a name="0x2_features_ensure_wasm_enabled"></a>
 
 ## Function `ensure_wasm_enabled`
 
@@ -395,7 +408,7 @@ All features are enabled for system reserved accounts.
 
 
 
-<a id="0x2_features_get_value_size_gas_feature"></a>
+<a name="0x2_features_get_value_size_gas_feature"></a>
 
 ## Function `get_value_size_gas_feature`
 
@@ -406,7 +419,7 @@ All features are enabled for system reserved accounts.
 
 
 
-<a id="0x2_features_value_size_gas_enabled"></a>
+<a name="0x2_features_value_size_gas_enabled"></a>
 
 ## Function `value_size_gas_enabled`
 
@@ -417,7 +430,7 @@ All features are enabled for system reserved accounts.
 
 
 
-<a id="0x2_features_ensure_value_size_gas_enabled"></a>
+<a name="0x2_features_ensure_value_size_gas_enabled"></a>
 
 ## Function `ensure_value_size_gas_enabled`
 
@@ -428,7 +441,40 @@ All features are enabled for system reserved accounts.
 
 
 
-<a id="0x2_features_get_all_features"></a>
+<a name="0x2_features_get_compatibility_checker_v2_feature"></a>
+
+## Function `get_compatibility_checker_v2_feature`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x2_features_get_compatibility_checker_v2_feature">get_compatibility_checker_v2_feature</a>(): u64
+</code></pre>
+
+
+
+<a name="0x2_features_compatibility_checker_v2_enabled"></a>
+
+## Function `compatibility_checker_v2_enabled`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x2_features_compatibility_checker_v2_enabled">compatibility_checker_v2_enabled</a>(): bool
+</code></pre>
+
+
+
+<a name="0x2_features_ensure_compatibility_checker_v2_enabled"></a>
+
+## Function `ensure_compatibility_checker_v2_enabled`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x2_features_ensure_compatibility_checker_v2_enabled">ensure_compatibility_checker_v2_enabled</a>()
+</code></pre>
+
+
+
+<a name="0x2_features_get_all_features"></a>
 
 ## Function `get_all_features`
 

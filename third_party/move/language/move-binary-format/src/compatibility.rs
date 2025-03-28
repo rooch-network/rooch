@@ -59,12 +59,13 @@ impl Compatibility {
     }
 
     pub fn new(
+        check_struct_and_pub_function_linking: bool,
         check_struct_layout: bool,
         check_friend_linking: bool,
         treat_entry_as_public: bool,
     ) -> Self {
         Self {
-            check_struct_and_pub_function_linking: true,
+            check_struct_and_pub_function_linking,
             check_struct_layout,
             check_friend_linking,
             treat_entry_as_public,

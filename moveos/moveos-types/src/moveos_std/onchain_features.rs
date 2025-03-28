@@ -13,6 +13,7 @@ use serde::{Deserialize, Serialize};
 
 pub const MODULE_NAME: &IdentStr = ident_str!("features");
 pub const VALUE_SIZE_GAS_FEATURE: u64 = 7;
+pub const COMPATIBILITY_CHECKER_V2: u64 = 8;
 
 #[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
 pub struct FeatureStore {
@@ -27,12 +28,19 @@ impl FeatureStore {
     pub fn contains_feature(&self, feature: u64) -> bool {
         let byte_index = feature / 8;
         let bit_mask = 1 << ((feature % 8) as u8);
-        let value = self.entries[byte_index as usize];
+        let value = match self.entries.get(byte_index as usize) {
+            Some(value) => *value,
+            None => return false,
+        };
         byte_index < self.entries.len() as u64 && (value & bit_mask) != 0
     }
 
     pub fn has_value_size_gas_feature(&self) -> bool {
         self.contains_feature(VALUE_SIZE_GAS_FEATURE)
+    }
+
+    pub fn has_compatibility_checker_v2(&self) -> bool {
+        self.contains_feature(COMPATIBILITY_CHECKER_V2)
     }
 }
 

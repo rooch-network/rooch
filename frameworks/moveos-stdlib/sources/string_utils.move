@@ -239,7 +239,7 @@ module moveos_std::string_utils {
         to_string_u256((n as u256))
     }
 
-    public(friend) fun starts_with(haystack_str: &String, needle: &String): bool {
+    public fun starts_with(haystack_str: &String, needle: &String): bool {
         if (string::length(needle) > string::length(haystack_str)) {
             return false
         };
@@ -247,7 +247,7 @@ module moveos_std::string_utils {
         sub == *needle
     }
 
-    public(friend) fun contains(s: &String, sub: &String): bool {
+    public fun contains(s: &String, sub: &String): bool {
         if (string::length(sub) == 0) {
             return true
         };

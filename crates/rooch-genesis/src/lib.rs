@@ -14,6 +14,7 @@ use move_vm_runtime::native_functions::NativeFunction;
 use moveos::gas::table::VMGasParameters;
 use moveos::moveos::{new_moveos_global_module_cache, MoveOS, MoveOSCacheManager};
 use moveos_stdlib::natives::moveos_stdlib::base64::EncodeDecodeGasParametersOption;
+use moveos_stdlib::natives::moveos_stdlib::event::EmitWithHandleGasParameters;
 use moveos_stdlib::natives::moveos_stdlib::object::ListFieldsGasParametersOption;
 use moveos_store::MoveOSStore;
 use moveos_types::genesis_info::GenesisInfo;
@@ -22,7 +23,9 @@ use moveos_types::move_std::string::MoveString;
 use moveos_types::moveos_std::gas_schedule::{GasEntry, GasSchedule, GasScheduleConfig};
 use moveos_types::moveos_std::object::ObjectMeta;
 use moveos_types::state::{ObjectState, StateChangeSetExt};
-use moveos_types::transaction::{MoveAction, MoveOSTransaction, RawTransactionOutput};
+use moveos_types::transaction::{
+    GenesisRawTransactionOutput, MoveAction, MoveOSTransaction, RawTransactionOutput,
+};
 use moveos_types::{h256, state_resolver};
 use once_cell::sync::Lazy;
 use rooch_db::RoochDB;
@@ -51,9 +54,9 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use std::{fs::File, io::Write, path::Path};
 
-pub static ROOCH_LOCAL_GENESIS: Lazy<RoochGenesis> = Lazy::new(|| {
+pub static ROOCH_LOCAL_GENESIS: Lazy<RoochGenesisV2> = Lazy::new(|| {
     let network: RoochNetwork = BuiltinChainID::Local.into();
-    RoochGenesis::build(network).expect("build rooch genesis failed")
+    RoochGenesisV2::build(network).expect("build rooch genesis failed")
 });
 pub const LATEST_GAS_SCHEDULE_VERSION: u64 = GAS_SCHEDULE_RELEASE_V1;
 // update the gas config for function calling
@@ -61,11 +64,11 @@ pub const GAS_SCHEDULE_RELEASE_V1: u64 = 1;
 
 pub(crate) const STATIC_GENESIS_DIR: Dir = include_dir!("released");
 
-pub fn load_genesis_from_binary(chain_id: BuiltinChainID) -> Result<Option<RoochGenesis>> {
+pub fn load_genesis_from_binary(chain_id: BuiltinChainID) -> Result<Option<RoochGenesisV2>> {
     STATIC_GENESIS_DIR
         .get_file(chain_id.chain_name())
         .map(|f| {
-            let genesis = RoochGenesis::decode(f.contents())?;
+            let genesis = RoochGenesisV2::decode(f.contents())?;
             Ok(genesis)
         })
         .transpose()
@@ -175,8 +178,20 @@ impl FrameworksGasParameters {
         v2_gas_parameter
     }
 
+    pub fn v4() -> Self {
+        let mut v3_gas_parameter = FrameworksGasParameters::v3();
+
+        v3_gas_parameter
+            .rooch_framework_gas_params
+            .moveos_stdlib
+            .events
+            .emit_with_handle = EmitWithHandleGasParameters::init(1000.into(), 150.into());
+
+        v3_gas_parameter
+    }
+
     pub fn latest() -> Self {
-        FrameworksGasParameters::v3()
+        FrameworksGasParameters::v4()
     }
 
     pub fn to_gas_schedule_config(&self, chain_id: ChainID) -> GasScheduleConfig {
@@ -262,6 +277,16 @@ impl FrameworksGasParameters {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct RoochGenesis {
     /// The genesis tx output
+    pub tx_output: GenesisRawTransactionOutput,
+    pub initial_gas_config: GasScheduleConfig,
+    pub genesis_objects: Vec<(ObjectState, MoveTypeLayout)>,
+    pub genesis_tx: RoochTransaction,
+    pub genesis_moveos_tx: MoveOSTransaction,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct RoochGenesisV2 {
+    /// The genesis tx output
     pub tx_output: RawTransactionOutput,
     pub initial_gas_config: GasScheduleConfig,
     pub genesis_objects: Vec<(ObjectState, MoveTypeLayout)>,
@@ -269,7 +294,65 @@ pub struct RoochGenesis {
     pub genesis_moveos_tx: MoveOSTransaction,
 }
 
+impl From<RoochGenesis> for RoochGenesisV2 {
+    fn from(genesis: RoochGenesis) -> Self {
+        {
+            RoochGenesisV2 {
+                tx_output: genesis.tx_output.into(),
+                initial_gas_config: genesis.initial_gas_config,
+                genesis_objects: genesis.genesis_objects,
+                genesis_tx: genesis.genesis_tx,
+                genesis_moveos_tx: genesis.genesis_moveos_tx,
+            }
+        }
+    }
+}
+
+impl From<RoochGenesisV2> for RoochGenesis {
+    fn from(genesis: RoochGenesisV2) -> Self {
+        {
+            RoochGenesis {
+                tx_output: genesis.tx_output.into(),
+                initial_gas_config: genesis.initial_gas_config,
+                genesis_objects: genesis.genesis_objects,
+                genesis_tx: genesis.genesis_tx,
+                genesis_moveos_tx: genesis.genesis_moveos_tx,
+            }
+        }
+    }
+}
+
 impl RoochGenesis {
+    // released genesis file (testnet and mainnet) must by decode by RoochGenesis
+    pub fn decode(bytes: &[u8]) -> Result<Self> {
+        bcs::from_bytes(bytes).map_err(Into::into)
+    }
+
+    pub fn encode(&self) -> Vec<u8> {
+        bcs::to_bytes(self).expect("RoochGenesis bcs::to_bytes should success")
+    }
+
+    pub fn genesis_hash(&self) -> H256 {
+        h256::sha3_256_of(self.encode().as_slice())
+    }
+
+    pub fn genesis_info(&self) -> GenesisInfo {
+        GenesisInfo {
+            genesis_package_hash: self.genesis_hash(),
+            genesis_bin: self.encode(),
+        }
+    }
+
+    pub fn save_to<P: AsRef<Path>>(&self, genesis_file: P) -> Result<()> {
+        eprintln!("Save genesis to {:?}", genesis_file.as_ref());
+        let mut file = File::create(genesis_file)?;
+        let contents = bcs::to_bytes(&self)?;
+        file.write_all(&contents)?;
+        Ok(())
+    }
+}
+
+impl RoochGenesisV2 {
     pub fn build(network: RoochNetwork) -> Result<Self> {
         let genesis_config = network.genesis_config;
 
@@ -386,10 +469,15 @@ impl RoochGenesis {
                 //if the genesis_info in the store we should check the genesis version between the store and the binary
 
                 let genesis_from_binary = Self::load_or_build(network)?;
+                let genesis_from_binary_v1 = RoochGenesis::from(genesis_from_binary.clone());
 
                 let genesis_info_from_binary = genesis_from_binary.genesis_info();
+                let genesis_info_from_binary_v1 = genesis_from_binary_v1.genesis_info();
+                //Check both new and old genesis_package_hash
                 if genesis_info_from_store.genesis_package_hash
                     != genesis_info_from_binary.genesis_package_hash
+                    && genesis_info_from_store.genesis_package_hash
+                        != genesis_info_from_binary_v1.genesis_package_hash
                 {
                     return Err(GenesisError::GenesisVersionMismatch {
                         from_store: Box::new(genesis_info_from_store),
@@ -553,11 +641,15 @@ impl RoochGenesis {
     }
 
     pub fn decode(bytes: &[u8]) -> Result<Self> {
-        bcs::from_bytes(bytes).map_err(Into::into)
+        match RoochGenesis::decode(bytes) {
+            Ok(genesis) => Ok(genesis.into()),
+            // Parse with the old format first, and then try to parse with the new format if it fails
+            Err(_e) => bcs::from_bytes(bytes).map_err(Into::into),
+        }
     }
 
     pub fn encode(&self) -> Vec<u8> {
-        bcs::to_bytes(self).expect("RoochGenesis bcs::to_bytes should success")
+        bcs::to_bytes(self).expect("RoochGenesisV2 bcs::to_bytes should success")
     }
 
     pub fn load_from<P: AsRef<Path>>(genesis_file: P) -> Result<Self> {
@@ -601,7 +693,7 @@ mod tests {
     use state_resolver::StateReaderExt;
     use tracing::info;
 
-    fn genesis_init_test_case(network: RoochNetwork, genesis: RoochGenesis) {
+    fn genesis_init_test_case(network: RoochNetwork, genesis: RoochGenesisV2) {
         info!(
             "genesis init test case for network: {:?}",
             network.chain_id.id
@@ -711,23 +803,23 @@ mod tests {
         let _ = tracing_subscriber::fmt::try_init();
         {
             let network: RoochNetwork = BuiltinChainID::Local.into();
-            let genesis = RoochGenesis::load_or_build(network.clone()).unwrap();
+            let genesis = RoochGenesisV2::load_or_build(network.clone()).unwrap();
             genesis_init_test_case(network, genesis);
         }
         {
             let network: RoochNetwork = BuiltinChainID::Dev.into();
-            let genesis = RoochGenesis::load_or_build(network.clone()).unwrap();
+            let genesis = RoochGenesisV2::load_or_build(network.clone()).unwrap();
             genesis_init_test_case(network, genesis);
         }
         {
             let network: RoochNetwork = BuiltinChainID::Test.into();
-            let genesis = RoochGenesis::load_or_build(network.clone()).unwrap();
+            let genesis = RoochGenesisV2::load_or_build(network.clone()).unwrap();
             genesis_init_test_case(network, genesis);
         }
         //We need to import the pre genesis state tree to init the mainnet genesis
         // {
         //     let network: RoochNetwork = BuiltinChainID::Main.into();
-        //     let genesis = RoochGenesis::load_or_build(network.clone()).unwrap();
+        //     let genesis = RoochGenesisV2::load_or_build(network.clone()).unwrap();
         //     genesis_init_test_case(network, genesis);
         // }
     }
@@ -736,7 +828,7 @@ mod tests {
     async fn test_custom_genesis_init() {
         let network: RoochNetwork =
             RoochNetwork::new(100.into(), BuiltinChainID::Test.genesis_config().clone());
-        let genesis = RoochGenesis::build(network.clone()).unwrap();
+        let genesis = RoochGenesisV2::build(network.clone()).unwrap();
         genesis_init_test_case(network, genesis);
     }
 

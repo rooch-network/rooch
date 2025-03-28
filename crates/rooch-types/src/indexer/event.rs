@@ -10,6 +10,7 @@ use move_resource_viewer::AnnotatedMoveStruct;
 use moveos_types::h256::H256;
 use moveos_types::move_types::struct_tag_match;
 use moveos_types::moveos_std::event::{Event, EventID};
+use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::moveos_std::tx_context::TxContext;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -90,6 +91,13 @@ pub enum EventFilter {
     },
     /// Query by event type.
     EventType(StructTag),
+    /// Query by event handle id with sender
+    EventHandleWithSender {
+        event_handle_id: ObjectID,
+        sender: AccountAddress,
+    },
+    /// Query by event handle id.
+    EventHandle(ObjectID),
     /// Query by sender address.
     Sender(AccountAddress),
     /// Return events emitted by the given transaction hash.
@@ -118,6 +126,14 @@ impl EventFilter {
                 event_type, sender, ..
             } => struct_tag_match(&item.event_type, event_type) && sender == &item.sender,
             EventFilter::EventType(event_type) => struct_tag_match(&item.event_type, event_type),
+            EventFilter::EventHandleWithSender {
+                event_handle_id,
+                sender,
+                ..
+            } => event_handle_id == &item.event_id.event_handle_id && sender == &item.sender,
+            EventFilter::EventHandle(event_handle_id) => {
+                event_handle_id == &item.event_id.event_handle_id
+            }
             EventFilter::Sender(sender) => sender == &item.sender,
             EventFilter::TxHash(tx_hash) => tx_hash == &item.tx_hash,
             EventFilter::TimeRange {

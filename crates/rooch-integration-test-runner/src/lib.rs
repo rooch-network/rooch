@@ -41,7 +41,7 @@ use moveos_verifier::build::build_model;
 use moveos_verifier::metadata::run_extended_checks;
 use once_cell::sync::Lazy;
 use regex::Regex;
-use rooch_genesis::{FrameworksGasParameters, RoochGenesis};
+use rooch_genesis::{FrameworksGasParameters, RoochGenesisV2};
 use rooch_types::framework::auth_validator::TxValidateResult;
 use rooch_types::function_arg::FunctionArg;
 use std::path::PathBuf;
@@ -118,7 +118,7 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
         let registry = prometheus::Registry::new();
         let moveos_store = MoveOSStore::new(temp_dir.path(), &registry).unwrap();
         let genesis_gas_parameter = FrameworksGasParameters::initial();
-        let genesis: &RoochGenesis = &rooch_genesis::ROOCH_LOCAL_GENESIS;
+        let genesis: &RoochGenesisV2 = &rooch_genesis::ROOCH_LOCAL_GENESIS;
 
         let global_cache_manager = MoveOSCacheManager::new(
             genesis_gas_parameter.all_natives(),

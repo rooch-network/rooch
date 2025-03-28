@@ -4,12 +4,11 @@
 use anyhow::Result;
 use coerce::actor::message::Message;
 use move_core_types::account_address::AccountAddress;
-use move_core_types::language_storage::StructTag;
 use moveos_types::access_path::AccessPath;
 use moveos_types::function_return_value::AnnotatedFunctionResult;
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::event::{AnnotatedEvent, Event, EventID};
-use moveos_types::moveos_std::object::ObjectMeta;
+use moveos_types::moveos_std::object::{ObjectID, ObjectMeta};
 use moveos_types::state::{AnnotatedState, FieldKey, ObjectState, StateChangeSetExt};
 use moveos_types::state_resolver::{AnnotatedStateKV, StateKV};
 use moveos_types::transaction::TransactionExecutionInfo;
@@ -128,7 +127,7 @@ impl Message for ListAnnotatedStatesMessage {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct GetAnnotatedEventsByEventHandleMessage {
-    pub event_handle_type: StructTag,
+    pub event_handle_id: ObjectID,
     pub cursor: Option<u64>,
     pub limit: u64,
     pub descending_order: bool,
@@ -140,7 +139,7 @@ impl Message for GetAnnotatedEventsByEventHandleMessage {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct GetEventsByEventHandleMessage {
-    pub event_handle_type: StructTag,
+    pub event_handle_id: ObjectID,
     pub cursor: Option<u64>,
     pub limit: u64,
     pub descending_order: bool,

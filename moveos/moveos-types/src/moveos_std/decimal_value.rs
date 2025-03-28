@@ -8,6 +8,7 @@ use crate::{
 use anyhow::{bail, Result};
 use move_core_types::u256::U256;
 use move_core_types::{account_address::AccountAddress, ident_str, identifier::IdentStr};
+use move_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
 use serde::{Deserialize, Serialize};
 use serde_json::Number;
 use std::fmt;
@@ -16,7 +17,7 @@ use std::str::FromStr;
 const MODULE_NAME: &IdentStr = ident_str!("decimal_value");
 
 /// `DecimalValue` is represented `moveos_std::decimal_value::DecimalValue` in Move.
-#[derive(Clone, Debug, Deserialize, Serialize, Eq)]
+#[derive(Clone, Debug, Eq, PartialOrd, Ord)]
 pub struct DecimalValue {
     pub value: U256,
     pub decimal: u8,
@@ -195,6 +196,124 @@ impl PartialEq<DecimalValue> for DecimalValue {
     }
 }
 
+impl TryFrom<AnnotatedMoveStruct> for DecimalValue {
+    type Error = anyhow::Error;
+
+    fn try_from(annotated_move_struct: AnnotatedMoveStruct) -> Result<Self, Self::Error> {
+        DecimalValue::try_from(&annotated_move_struct)
+    }
+}
+
+impl TryFrom<&AnnotatedMoveStruct> for DecimalValue {
+    type Error = anyhow::Error;
+
+    fn try_from(annotated_move_struct: &AnnotatedMoveStruct) -> Result<Self, Self::Error> {
+        let mut fields = annotated_move_struct.value.iter();
+        let (value_field_name, value_field_value) = fields
+            .next()
+            .ok_or_else(|| anyhow::anyhow!("Invalid DecimalValue"))?;
+        let (decimal_field_name, decimal_field_value) = fields
+            .next()
+            .ok_or_else(|| anyhow::anyhow!("Invalid DecimalValue"))?;
+        debug_assert!(value_field_name.as_str() == "value");
+        debug_assert!(decimal_field_name.as_str() == "decimal");
+
+        let value = match value_field_value {
+            AnnotatedMoveValue::U256(value) => value,
+            _ => return Err(anyhow::anyhow!("Invalid DecimalValue")),
+        };
+        let decimal = match decimal_field_value {
+            AnnotatedMoveValue::U8(decimal) => decimal,
+            _ => return Err(anyhow::anyhow!("Invalid DecimalValue")),
+        };
+        Ok(DecimalValue {
+            value: *value,
+            decimal: *decimal,
+        })
+    }
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(untagged)]
+enum NumberOrString {
+    Number(Number),
+    String(String),
+}
+
+impl TryFrom<NumberOrString> for DecimalValue {
+    type Error = anyhow::Error;
+
+    fn try_from(value: NumberOrString) -> Result<Self, Self::Error> {
+        match value {
+            NumberOrString::Number(number) => DecimalValue::from_number(number),
+            NumberOrString::String(s) => DecimalValue::from_str(&s),
+        }
+    }
+}
+
+impl From<DecimalValue> for NumberOrString {
+    fn from(decimal_value: DecimalValue) -> Self {
+        match decimal_value.to_number() {
+            Ok(number) => NumberOrString::Number(number),
+            Err(_) => NumberOrString::String(decimal_value.to_string()),
+        }
+    }
+}
+
+#[derive(Deserialize, Serialize)]
+struct BCSDecimalValue {
+    value: U256,
+    decimal: u8,
+}
+
+impl From<DecimalValue> for BCSDecimalValue {
+    fn from(decimal_value: DecimalValue) -> Self {
+        BCSDecimalValue {
+            value: decimal_value.value,
+            decimal: decimal_value.decimal,
+        }
+    }
+}
+
+impl From<BCSDecimalValue> for DecimalValue {
+    fn from(bcs_decimal_value: BCSDecimalValue) -> Self {
+        DecimalValue {
+            value: bcs_decimal_value.value,
+            decimal: bcs_decimal_value.decimal,
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for DecimalValue {
+    fn deserialize<D>(deserializer: D) -> Result<DecimalValue, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        if deserializer.is_human_readable() {
+            let s = NumberOrString::deserialize(deserializer)?;
+            DecimalValue::try_from(s).map_err(serde::de::Error::custom)
+        } else {
+            let bcs_decimal_value = BCSDecimalValue::deserialize(deserializer)?;
+            Ok(DecimalValue::from(bcs_decimal_value))
+        }
+    }
+}
+
+impl Serialize for DecimalValue {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        if serializer.is_human_readable() {
+            let s = NumberOrString::from(self.clone());
+            s.serialize(serializer)
+        } else {
+            let bcs_decimal_value = BCSDecimalValue::from(self.clone());
+            bcs_decimal_value.serialize(serializer)
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::moveos_std::decimal_value::DecimalValue;
@@ -337,5 +456,32 @@ mod tests {
             decimal: 2,
         };
         assert!(safe_value.to_number().is_ok());
+    }
+
+    #[test]
+    fn test_decimal_value_serialize_deserialize() {
+        let decimal_value = DecimalValue {
+            value: U256::from(1234567u64),
+            decimal: 3,
+        };
+
+        let serialized = serde_json::to_string(&decimal_value).unwrap();
+        //number
+        assert_eq!(serialized, "1234.567");
+        //println!("serialized: {}", serialized);
+        let deserialized: DecimalValue = serde_json::from_str(&serialized).unwrap();
+        assert_eq!(deserialized, decimal_value);
+
+        let decimal_value = DecimalValue {
+            value: U256::from(u128::MAX),
+            decimal: 3,
+        };
+
+        let serialized = serde_json::to_string(&decimal_value).unwrap();
+        //println!("serialized: {}", serialized);
+        //string
+        assert_eq!(serialized, "\"340282366920938463463374607431768211.455\"");
+        let deserialized: DecimalValue = serde_json::from_str(&serialized).unwrap();
+        assert_eq!(deserialized, decimal_value);
     }
 }
