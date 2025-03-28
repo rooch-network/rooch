@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use super::{decimal_value_view::DecimalValueView, move_option_view::MoveOptionView};
 use crate::jsonrpc_types::{BytesView, StrView};
 use anyhow::Result;
 use move_binary_format::file_format::Ability;
@@ -29,7 +30,11 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::str::FromStr;
 
-use super::{decimal_value_view::DecimalValueView, move_option_view::MoveOptionView};
+// This feature flag to control should we handle the Move Option as special struct.
+// This change is not backward compatible, so we need to prepare compatible solution first.
+// After that, we can enable this feature flag to make the output more readable.
+// https://github.com/rooch-network/rooch/issues/3445
+const SPECIFIC_STRUCTS_OPTION_FEATURE_FLAG: bool = false;
 
 pub type ModuleIdView = StrView<ModuleId>;
 pub type TypeTagView = StrView<TypeTag>;
@@ -186,12 +191,15 @@ impl AnnotatedMoveStructVectorView {
         } else {
             let first = origin.first().unwrap();
             if let AnnotatedMoveValue::Struct(ele) = first {
-                //if the first element is a specific struct, we directly convert it to vector,
-                //otherwise, we convert it to StructVector
-                if SpecificStructView::try_from_annotated(ele).is_some() {
-                    return Err(AnnotatedMoveValueView::Vector(
-                        origin.into_iter().map(Into::into).collect(),
-                    ));
+                //For compatibility reasons, we do not enable this feature flag by default
+                if SPECIFIC_STRUCTS_OPTION_FEATURE_FLAG {
+                    //if the first element is a specific struct, we directly convert it to vector,
+                    //otherwise, we convert it to StructVector
+                    if SpecificStructView::try_from_annotated(ele).is_some() {
+                        return Err(AnnotatedMoveValueView::Vector(
+                            origin.into_iter().map(Into::into).collect(),
+                        ));
+                    }
                 }
                 let field = ele
                     .value
@@ -257,9 +265,14 @@ impl SpecificStructView {
                 .map(DecimalValueView::from)
                 .map(SpecificStructView::DecimalValue)
         } else if MoveOptionView::struct_tag_match(&move_struct.type_) {
-            MoveOptionView::try_from(move_struct)
-                .ok()
-                .map(SpecificStructView::Option)
+            if SPECIFIC_STRUCTS_OPTION_FEATURE_FLAG {
+                // if the feature flag is enabled, we will treat MoveOption as a specific struct
+                MoveOptionView::try_from(move_struct)
+                    .ok()
+                    .map(SpecificStructView::Option)
+            } else {
+                None
+            }
         } else {
             None
         }
