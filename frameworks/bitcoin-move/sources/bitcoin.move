@@ -17,6 +17,7 @@ module bitcoin_move::bitcoin{
     
     use rooch_framework::address_mapping;
     use rooch_framework::bitcoin_address::BitcoinAddress;
+    use rooch_framework::chain_id;
     
     use bitcoin_move::network;
     use bitcoin_move::types::{Self, Block, Header, Transaction, BlockHeightHash, OutPoint};
@@ -266,11 +267,15 @@ module bitcoin_move::bitcoin{
         let block_header = types::header(&block);
         let time = types::time(block_header);
         if(pending_block::add_pending_block(block_height, block_hash, block)){
-            //We directly update the global time do not wait the pending block to be confirmed
-            //The reorg do not affect the global time
-            let timestamp_seconds = (time as u64);
-            let module_signer = signer::module_signer<BitcoinBlockStore>();
-            timestamp::try_update_global_time(&module_signer, timestamp::seconds_to_milliseconds(timestamp_seconds));
+            //We do not update the timestamp via bitcoin block header in testnet
+            //Because the testnet block time is not accurate
+            if(!chain_id::is_test()){
+                //We directly update the global time do not wait the pending block to be confirmed
+                //The reorg do not affect the global time
+                let timestamp_seconds = (time as u64);
+                let module_signer = signer::module_signer<BitcoinBlockStore>();
+                timestamp::try_update_global_time(&module_signer, timestamp::seconds_to_milliseconds(timestamp_seconds));
+            }
         };
     }
 
