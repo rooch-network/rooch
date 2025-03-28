@@ -4,6 +4,9 @@
     "title": "Rooch Framework",
     "display": "hidden"
   },
-  "sdk": "SDK",
-  "rpc": "RPC"
+  "rpc": "RPC",
+  "sdk": {
+    "title": "SDK",
+    "href": "../sdk/typescript-sdk/ts-sdk-quick-start"
+  }
 }
