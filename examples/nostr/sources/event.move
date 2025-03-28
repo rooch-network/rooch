@@ -3,13 +3,17 @@
 
 /// Implements NIP-01 event structure
 module nostr::event {
+    use std::vector;
+    use std::string::{Self, String};
     use moveos_std::object::{Self, Object, ObjectID};
     use moveos_std::event;
     use moveos_std::bcs;
-    use std::vector;
-    use rooch_framework::schnorr;
-    use std::string::{Self, String};
+    use moveos_std::hash;
+    use moveos_std::hex;
     use moveos_std::timestamp;
+    use moveos_std::event;
+    use rooch_framework::bitcoin_address;
+    use rooch_framework::schnorr;
 
     // Identifier for the tag of the event
     const EVENT_TAG: String = "e";
@@ -38,7 +42,7 @@ module nostr::event {
 
     /// Event
     #[data_struct]
-    struct Event has key, store {
+    struct Event has key {
         id: vector<u8>, // 32-bytes lowercase hex-encoded sha256 of the serialized event data
         pubkey: vector<u8>, // 32-bytes lowercase hex-encoded public key of the event creator
         created_at: u64, // unix timestamp in seconds
@@ -106,7 +110,7 @@ module nostr::event {
     }
 
     /// Serialize to byte arrays, which could be sha256 hashed and be converted to ObjectID for the Event.id
-    public fun serialize(public_key: &vector<u8>, kind: &u16, tags: &vector<vector<Tags>>, content: &vector<u8>): vector<u8> {
+    public fun serialize(public_key: &vector<u8>, created_at: &u64, kind: &u16, tags: &vector<vector<Tags>>, content: &vector<u8>): vector<u8> {
         let serialized = vector::empty<u8>();
 
         // version 0, as described in NIP-01
@@ -118,7 +122,6 @@ module nostr::event {
         vector::push_back(&mut serialized, public_key);
 
         // creation time
-        let created_at = timestamp::now_seconds();
         let created_at_bytes = bcs::to_bytes(created_at);
         vector::push_back(&mut serialized, created_at_bytes);
 
@@ -171,8 +174,11 @@ module nostr::event {
         assert!(!string::length(content_str) > 1000, ErrorContentTooLarge);
         let content = bcs::to_bytes(content_str);
 
+        // get now timestamp by seconds
+        let created_at = timestamp::now_seconds();
+
         // serialize input to bytes for an Event id
-        let serialized = serialize(public_key, kind, tags, &content); // TODO: tags.
+        let serialized = serialize(public_key, &created_at, kind, tags, &content); // TODO: tags.
 
         // hash with sha256
         let hased_data = hash::sha2_256(serialized);
@@ -186,7 +192,42 @@ module nostr::event {
         // check the signature
         check_signature(public_key, &id, signature);
 
-        // handle a range of different kinds of an Event
+        // derive a bitcoin taproot address from the public key
+        let bitcoin_taproot_address = derive_bitcoin_taproot_address_from_pubkey(public_key);
 
+        // derive a rooch address from the bitcoin taproot address
+        let rooch_address = to_rooch_address(&bitcoin_taproot_address);
+
+        // handle a range of different kinds of an Event
+        if (kind == EVENT_KIND_USER_METADATA) {
+            // clear past user metadata events from the user with the same rooch address from the public key
+            let event_object_id = object::account_named_object_id<Event>(rooch_address);
+            let event_object = object::take_object_extend<Event>(event_object_id);
+            let event = object::remove(event_object);
+            drop_event(event);
+        }
+
+        // save the event to the rooch address mapped to the public key
+        let event = Event {
+            id,
+            pubkey: *public_key,
+            created_at,
+            kind: *kind,
+            tags, // TODO: tags
+            content,
+            sig: *signature
+        }
+        let event_object = object::new_account_named_object(rooch_address, event);
+        object::transfer_extend(event_object, rooch_address);
+        // emit a move event nofitication
+        let event_object_id = object::id(&event_object);
+        let move_event = MoveEventNotification {
+            id: event_object_id
+        }
+        event::emit(move_event)
+    }
+
+    fun drop_event(event: Event) {
+        let Event {id: _, pubkey: _, created_at: _, kind: _, tags: _, content: _, sig: _} = event;
     }
 }
