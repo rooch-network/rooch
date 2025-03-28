@@ -258,7 +258,7 @@ export class RoochClient {
     }
     return await this.transport.request({
       method: 'rooch_getEventsByEventHandle',
-      params: [input.eventHandleType, input.cursor, input.limit, input.descendingOrder, opt],
+      params: [input.eventHandle, input.cursor, input.limit, input.descendingOrder, opt],
     })
   }
 

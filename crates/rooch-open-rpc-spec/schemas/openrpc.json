@@ -298,13 +298,13 @@
     },
     {
       "name": "rooch_getEventsByEventHandle",
-      "description": "Get the events by event handle id",
+      "description": "Get the events by event handle type or event handle id",
       "params": [
         {
-          "name": "event_handle_type",
+          "name": "event_handle",
           "required": true,
           "schema": {
-            "$ref": "#/components/schemas/move_core_types::language_storage::StructTag"
+            "type": "string"
           }
         },
         {
@@ -1223,6 +1223,44 @@
             "properties": {
               "event_type": {
                 "$ref": "#/components/schemas/move_core_types::language_storage::StructTag"
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "description": "Query by event handle id with sender",
+            "type": "object",
+            "required": [
+              "event_handle_with_sender"
+            ],
+            "properties": {
+              "event_handle_with_sender": {
+                "type": "object",
+                "required": [
+                  "event_handle_id",
+                  "sender"
+                ],
+                "properties": {
+                  "event_handle_id": {
+                    "$ref": "#/components/schemas/ObjectID"
+                  },
+                  "sender": {
+                    "$ref": "#/components/schemas/rooch_rpc_api::jsonrpc_types::address::UnitedAddress"
+                  }
+                }
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "description": "Query by event handle id.",
+            "type": "object",
+            "required": [
+              "event_handle"
+            ],
+            "properties": {
+              "event_handle": {
+                "$ref": "#/components/schemas/ObjectID"
               }
             },
             "additionalProperties": false

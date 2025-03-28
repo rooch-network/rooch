@@ -612,8 +612,13 @@ where
         let events: Vec<_> = raw_events
             .into_iter()
             .enumerate()
-            .map(|(i, (struct_tag, event_data))| {
-                Ok(TransactionEvent::new(struct_tag, event_data, i as u64))
+            .map(|(i, (struct_tag, event_handle_id, event_data))| {
+                Ok(TransactionEvent::new_with_handle(
+                    struct_tag,
+                    event_data,
+                    i as u64,
+                    event_handle_id,
+                ))
             })
             .collect::<VMResult<_>>()?;
 

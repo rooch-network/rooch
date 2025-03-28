@@ -5,7 +5,7 @@ use clap::Parser;
 use metrics::RegistryService;
 use rooch_config::{RoochOpt, R_OPT_NET_HELP};
 use rooch_db::RoochDB;
-use rooch_genesis::RoochGenesis;
+use rooch_genesis::RoochGenesisV2;
 use rooch_types::{
     error::{RoochError, RoochResult},
     rooch_network::RoochChainID,
@@ -38,7 +38,7 @@ impl InitCommand {
         let registry_service = RegistryService::default();
         let rooch_db = RoochDB::init(store_config, &registry_service.default_registry())?;
         let network = opt.network();
-        let _genesis = RoochGenesis::load_or_init(network, &rooch_db)?;
+        let _genesis = RoochGenesisV2::load_or_init(network, &rooch_db)?;
         let root = rooch_db
             .latest_root()?
             .ok_or_else(|| RoochError::from(anyhow::anyhow!("Load latest root failed")))?;

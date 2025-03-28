@@ -28,7 +28,7 @@ use rooch_db::RoochDB;
 use rooch_executor::actor::executor::ExecutorActor;
 use rooch_executor::actor::reader_executor::ReaderExecutorActor;
 use rooch_executor::proxy::ExecutorProxy;
-use rooch_genesis::RoochGenesis;
+use rooch_genesis::RoochGenesisV2;
 use rooch_indexer::actor::indexer::IndexerActor;
 use rooch_indexer::actor::reader_indexer::IndexerReaderActor;
 use rooch_indexer::proxy::IndexerProxy;
@@ -241,7 +241,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         );
     }
 
-    let genesis = RoochGenesis::load_or_init(network.clone(), &rooch_db)?;
+    let genesis = RoochGenesisV2::load_or_init(network.clone(), &rooch_db)?;
 
     let root = rooch_db
         .latest_root()?

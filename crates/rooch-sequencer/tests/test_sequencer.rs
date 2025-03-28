@@ -9,7 +9,7 @@ use raw_store::metrics::DBMetrics;
 use raw_store::StoreInstance;
 use rooch_config::RoochOpt;
 use rooch_db::RoochDB;
-use rooch_genesis::RoochGenesis;
+use rooch_genesis::RoochGenesisV2;
 use rooch_sequencer::{actor::sequencer::SequencerActor, proxy::SequencerProxy};
 use rooch_types::{
     crypto::RoochKeyPair,
@@ -30,7 +30,7 @@ fn init_rooch_db_with_instance(
 ) -> Result<RoochDB> {
     let rooch_db = RoochDB::init_with_instance(opt.store_config(), instance, registry)?;
     let network = opt.network();
-    let _genesis = RoochGenesis::load_or_init(network, &rooch_db)?;
+    let _genesis = RoochGenesisV2::load_or_init(network, &rooch_db)?;
     Ok(rooch_db)
 }
 

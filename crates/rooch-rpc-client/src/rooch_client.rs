@@ -18,7 +18,7 @@ use rooch_rpc_api::jsonrpc_types::btc::utxo::{UTXOFilterView, UTXOObjectView};
 use rooch_rpc_api::jsonrpc_types::transaction_view::TransactionFilterView;
 use rooch_rpc_api::jsonrpc_types::{
     account_view::BalanceInfoView, transaction_view::TransactionWithInfoView, InscriptionPageView,
-    Status, UTXOPageView,
+    Status, StructTagOrObjectIDView, UTXOPageView,
 };
 use rooch_rpc_api::jsonrpc_types::{
     AccessPathView, AnnotatedFunctionResultView, BalanceInfoPageView, BytesView, EventOptions,
@@ -181,7 +181,7 @@ impl RoochRpcClient {
 
     pub async fn get_events_by_event_handle(
         &self,
-        event_handle_type: StructTagView,
+        event_handle_type: StructTagOrObjectIDView,
         cursor: Option<u64>,
         limit: Option<u64>,
         descending_order: Option<bool>,

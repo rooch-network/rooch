@@ -19,13 +19,12 @@ use crate::actor::{
 use anyhow::{anyhow, Result};
 use coerce::actor::ActorRef;
 use move_core_types::account_address::AccountAddress;
-use move_core_types::language_storage::StructTag;
 use moveos_types::function_return_value::{AnnotatedFunctionResult, FunctionResult};
 use moveos_types::h256::H256;
 use moveos_types::module_binding::MoveFunctionCaller;
 use moveos_types::moveos_std::account::Account;
 use moveos_types::moveos_std::event::{Event, EventID};
-use moveos_types::moveos_std::object::ObjectMeta;
+use moveos_types::moveos_std::object::{ObjectID, ObjectMeta};
 use moveos_types::moveos_std::tx_context::TxContext;
 use moveos_types::state::{FieldKey, StateChangeSetExt};
 use moveos_types::state_resolver::{AnnotatedStateKV, StateKV};
@@ -179,14 +178,14 @@ impl ExecutorProxy {
 
     pub async fn get_annotated_events_by_event_handle(
         &self,
-        event_handle_type: StructTag,
+        event_handle_id: ObjectID,
         cursor: Option<u64>,
         limit: u64,
         descending_order: bool,
     ) -> Result<Vec<AnnotatedEvent>> {
         self.reader_actor
             .send(GetAnnotatedEventsByEventHandleMessage {
-                event_handle_type,
+                event_handle_id,
                 cursor,
                 limit,
                 descending_order,
@@ -196,14 +195,14 @@ impl ExecutorProxy {
 
     pub async fn get_events_by_event_handle(
         &self,
-        event_handle_type: StructTag,
+        event_handle_id: ObjectID,
         cursor: Option<u64>,
         limit: u64,
         descending_order: bool,
     ) -> Result<Vec<Event>> {
         self.reader_actor
             .send(GetEventsByEventHandleMessage {
-                event_handle_type,
+                event_handle_id,
                 cursor,
                 limit,
                 descending_order,

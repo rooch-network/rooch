@@ -66,8 +66,7 @@ impl EventDBStore {
         self.event_handle_store.kv_get(event_handle_id)
     }
 
-    fn get_or_create_event_handle(&self, event_handle_type: &StructTag) -> Result<EventHandle> {
-        let event_handle_id = EventHandle::derive_event_handle_id(event_handle_type);
+    fn get_or_create_event_handle(&self, event_handle_id: ObjectID) -> Result<EventHandle> {
         let event_handle = self.get_event_handle(event_handle_id.clone())?;
         if let Some(event_handle) = event_handle {
             return Ok(event_handle);
@@ -83,15 +82,15 @@ impl EventDBStore {
     }
 
     pub fn save_events(&self, tx_events: Vec<TransactionEvent>) -> Result<Vec<EventID>> {
-        let event_types = tx_events
+        let event_handle_ids = tx_events
             .iter()
-            .map(|event| event.event_type.clone())
+            .map(|event| event.event_handle_id.clone())
             .collect::<HashSet<_>>();
-        let mut event_handles = event_types
+        let mut event_handles = event_handle_ids
             .into_iter()
-            .map(|event_type| {
-                let handle = self.get_or_create_event_handle(&event_type)?;
-                Ok((event_type, handle))
+            .map(|event_handle_id| {
+                let handle = self.get_or_create_event_handle(event_handle_id.clone())?;
+                Ok((event_handle_id, handle))
             })
             .collect::<Result<HashMap<_, _>>>()?;
         let mut event_ids = vec![];
@@ -99,7 +98,7 @@ impl EventDBStore {
             .into_iter()
             .map(|tx_event| {
                 let handle = event_handles
-                    .get_mut(&tx_event.event_type)
+                    .get_mut(&tx_event.event_handle_id)
                     .expect("Event handle must exist");
                 let event_id = EventID::new(handle.id.clone(), handle.count);
                 let event = Event::new(

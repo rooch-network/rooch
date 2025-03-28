@@ -33,7 +33,7 @@ describe('Events API', () => {
     expect(await testBox.signAndExecuteTransaction(tx)).toBeTruthy()
 
     const result1 = await testBox.getClient().getEvents({
-      eventHandleType: `${await testBox.defaultCmdAddress()}::event_test::WithdrawEvent`,
+      eventHandle: `${await testBox.defaultCmdAddress()}::event_test::WithdrawEvent`,
     })
 
     expect(result1.next_cursor).eq('0')

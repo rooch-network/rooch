@@ -15,11 +15,12 @@ use crate::transaction::FunctionCall;
 use anyhow::{ensure, Error, Result};
 use move_core_types::account_address::AccountAddress;
 use move_core_types::identifier::IdentStr;
-use move_core_types::{ident_str, language_storage::StructTag, language_storage::TypeTag};
+use move_core_types::language_storage::TypeTag;
+use move_core_types::{ident_str, language_storage::StructTag};
 use move_resource_viewer::AnnotatedMoveStruct;
 use schemars::JsonSchema;
 use serde::de::DeserializeOwned;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use std::convert::TryFrom;
 use std::str::FromStr;
 
@@ -139,9 +140,9 @@ impl EventID {
     }
 }
 
-/// Entry produced via a call to the `emit_event` builtin.
+/// Entry produced via a call to the `emit_event` builtin, only for genesis transaction.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
-pub struct TransactionEvent {
+pub struct GenesisTransactionEvent {
     /// The type of the data
     pub event_type: StructTag,
     /// The data payload of the event
@@ -151,12 +152,120 @@ pub struct TransactionEvent {
     pub event_index: u64,
 }
 
+/// Entry produced via a call to the `emit_event` builtin.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+pub struct TransactionEvent {
+    /// The type of the data
+    pub event_type: StructTag,
+    /// The data payload of the event
+    #[serde(with = "serde_bytes")]
+    pub event_data: Vec<u8>,
+    /// event index in the transaction events.
+    pub event_index: u64,
+    /// The event handle id, must be the last field to compatible with the origin event data.
+    pub event_handle_id: ObjectID,
+}
+
+impl From<GenesisTransactionEvent> for TransactionEvent {
+    fn from(genesis_event: GenesisTransactionEvent) -> Self {
+        Self {
+            event_type: genesis_event.event_type.clone(),
+            event_data: genesis_event.event_data,
+            event_index: genesis_event.event_index,
+            event_handle_id: EventHandle::derive_event_handle_id(&genesis_event.event_type),
+        }
+    }
+}
+
+impl From<TransactionEvent> for GenesisTransactionEvent {
+    fn from(genesis_event: TransactionEvent) -> Self {
+        Self {
+            event_type: genesis_event.event_type.clone(),
+            event_data: genesis_event.event_data,
+            event_index: genesis_event.event_index,
+        }
+    }
+}
+
+// Implement custom Deserialize for TransactionEvent to be compatible with old data
+impl<'de> Deserialize<'de> for TransactionEvent {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        struct TransactionEventVisitor;
+        impl<'de> serde::de::Visitor<'de> for TransactionEventVisitor {
+            type Value = TransactionEvent;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                formatter.write_str("Expect TransactionEvent for deserializer")
+            }
+
+            fn visit_seq<V>(self, mut seq: V) -> Result<TransactionEvent, V::Error>
+            where
+                V: serde::de::SeqAccess<'de>,
+            {
+                let event_type = seq.next_element()?.ok_or_else(|| {
+                    serde::de::Error::custom(
+                        "Missing or invalid event_type field when deserialize TransactionEvent",
+                    )
+                })?;
+                let event_data = seq.next_element()?.ok_or_else(|| {
+                    serde::de::Error::custom(
+                        "Missing or invalid event_data field when deserialize TransactionEvent",
+                    )
+                })?;
+                let event_index = seq.next_element()?.ok_or_else(|| {
+                    serde::de::Error::custom(
+                        "Missing or invalid event_index field when deserialize TransactionEvent",
+                    )
+                })?;
+
+                // For old data format, derive event_handle_id from event_type
+                let event_handle_id = seq
+                    .next_element()
+                    .unwrap_or(None)
+                    .unwrap_or(EventHandle::derive_event_handle_id(&event_type));
+
+                Ok(TransactionEvent {
+                    event_type,
+                    event_data,
+                    event_index,
+                    event_handle_id,
+                })
+            }
+        }
+
+        deserializer.deserialize_struct(
+            "TransactionEvent",
+            &["event_type", "event_data", "event_index", "event_handle_id"],
+            TransactionEventVisitor,
+        )
+    }
+}
+
 impl TransactionEvent {
     pub fn new(event_type: StructTag, event_data: Vec<u8>, event_index: u64) -> Self {
+        let event_handle_id = EventHandle::derive_event_handle_id(&event_type);
         Self {
             event_type,
             event_data,
             event_index,
+            event_handle_id,
+        }
+    }
+
+    pub fn new_with_handle(
+        event_type: StructTag,
+        event_data: Vec<u8>,
+        event_index: u64,
+        event_handle_id: ObjectID,
+    ) -> Self {
+        Self {
+            event_type,
+            event_data,
+            event_index,
+            event_handle_id,
         }
     }
 }
@@ -275,6 +384,13 @@ impl EventHandle {
 
     pub fn derive_event_handle_id(event_handle_type: &StructTag) -> ObjectID {
         object::named_object_id(event_handle_type)
+    }
+
+    pub fn custom_event_handle_id<ID: Serialize>(
+        id: &ID,
+        event_handle_type: &StructTag,
+    ) -> ObjectID {
+        object::custom_object_id(id, event_handle_type)
     }
 }
 

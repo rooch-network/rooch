@@ -61,7 +61,7 @@ export interface GetBalancesParams {
 export interface GetChainIDParams {}
 /** Get the events by event handle id */
 export interface GetEventsByEventHandleParams {
-  eventHandleType: string
+  eventHandle: string
   cursor?: string | null | undefined
   limit?: string | null | undefined
   descendingOrder?: boolean | null | undefined
