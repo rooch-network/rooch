@@ -28,3 +28,4 @@ mod signer;
 mod test_helper;
 mod tx_context;
 mod type_info;
+mod schnorr;

@@ -25,6 +25,35 @@
 ## Constants
 
 
+<a name="0x3_ecdsa_k1_ErrorInvalidPubKey"></a>
+
+Error if the public key is invalid.
+
+
+<pre><code><b>const</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_ErrorInvalidPubKey">ErrorInvalidPubKey</a>: u64 = 3;
+</code></pre>
+
+
+
+<a name="0x3_ecdsa_k1_ErrorInvalidSignature"></a>
+
+Error if the signature is invalid.
+
+
+<pre><code><b>const</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_ErrorInvalidSignature">ErrorInvalidSignature</a>: u64 = 2;
+</code></pre>
+
+
+
+<a name="0x3_ecdsa_k1_SHA256"></a>
+
+
+
+<pre><code><b>const</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_SHA256">SHA256</a>: u8 = 1;
+</code></pre>
+
+
+
 <a name="0x3_ecdsa_k1_ECDSA_K1_COMPRESSED_PUBKEY_LENGTH"></a>
 
 constant codes
@@ -73,41 +102,12 @@ Invalid hash function
 
 
 
-<a name="0x3_ecdsa_k1_ErrorInvalidPubKey"></a>
-
-Error if the public key is invalid.
-
-
-<pre><code><b>const</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_ErrorInvalidPubKey">ErrorInvalidPubKey</a>: u64 = 3;
-</code></pre>
-
-
-
-<a name="0x3_ecdsa_k1_ErrorInvalidSignature"></a>
-
-Error if the signature is invalid.
-
-
-<pre><code><b>const</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_ErrorInvalidSignature">ErrorInvalidSignature</a>: u64 = 2;
-</code></pre>
-
-
-
 <a name="0x3_ecdsa_k1_KECCAK256"></a>
 
 Hash function name that are valid for ecrecover and verify.
 
 
 <pre><code><b>const</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_KECCAK256">KECCAK256</a>: u8 = 0;
-</code></pre>
-
-
-
-<a name="0x3_ecdsa_k1_SHA256"></a>
-
-
-
-<pre><code><b>const</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_SHA256">SHA256</a>: u8 = 1;
 </code></pre>
 
 
