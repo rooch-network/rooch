@@ -121,10 +121,15 @@ impl FromStr for FunctionArgType {
                         return Err(RoochError::CommandArgumentError(
                             "vector<raw> is not supported".to_owned(),
                         ));
-                    } else if matches!(arg, FunctionArgType::Vector(_)) {
-                        return Err(RoochError::CommandArgumentError(
-                            "nested vector<vector<_>> is not supported".to_owned(),
-                        ));
+                    } else if let FunctionArgType::Vector(inner) = arg {
+                        if *inner == FunctionArgType::Raw {
+                            return Err(RoochError::CommandArgumentError(
+                                "vector<vector<raw>> is not supported".to_owned(),
+                            ));
+                        }
+                        return Ok(FunctionArgType::Vector(Box::new(FunctionArgType::Vector(
+                            inner,
+                        ))));
                     }
 
                     Ok(FunctionArgType::Vector(Box::new(arg)))

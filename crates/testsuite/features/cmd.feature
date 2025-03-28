@@ -263,6 +263,8 @@ Feature: Rooch CLI integration tests
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       Then cmd: "move run --function default::entry_function::emit_object_mut --args "object:default::entry_function::TestStruct"  --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+      Then cmd: "move run --function default::entry_function::emit_vec_vec_u8 --args "vector<vector<u8>>:std::vector[2,3,4],std::vector[5,6,7]"  --json"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       Then stop the server
 
