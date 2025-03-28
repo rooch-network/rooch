@@ -251,12 +251,12 @@ impl SpecificStructView {
             ObjectID::try_from(move_struct)
                 .ok()
                 .map(SpecificStructView::ObjectID)
-        } else if DecimalValue::struct_tag_match(&move_struct.type_) {
+        } else if DecimalValue::struct_tag_match(&move_struct.ty_tag) {
             DecimalValue::try_from(move_struct)
                 .ok()
                 .map(DecimalValueView::from)
                 .map(SpecificStructView::DecimalValue)
-        } else if MoveOptionView::struct_tag_match(&move_struct.type_) {
+        } else if MoveOptionView::struct_tag_match(&move_struct.ty_tag) {
             MoveOptionView::try_from(move_struct)
                 .ok()
                 .map(SpecificStructView::Option)

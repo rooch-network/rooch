@@ -30,7 +30,7 @@ use rooch_db::RoochDB;
 use rooch_executor::actor::executor::ExecutorActor;
 use rooch_executor::actor::reader_executor::ReaderExecutorActor;
 use rooch_executor::proxy::ExecutorProxy;
-use rooch_genesis::{FrameworksGasParameters, RoochGenesis};
+use rooch_genesis::FrameworksGasParameters;
 use rooch_genesis::RoochGenesisV2;
 use rooch_indexer::actor::indexer::IndexerActor;
 use rooch_indexer::actor::reader_indexer::IndexerReaderActor;
