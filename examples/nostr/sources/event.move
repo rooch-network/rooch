@@ -6,6 +6,8 @@ module nostr::event {
     use moveos_std::object::{Self, Object, ObjectID};
     use moveos_std::event;
     use moveos_std::bcs;
+    use moveos_std::hash;
+    use moveos_std::hex;
     use std::vector;
     use rooch_framework::ecdsa_k1;
     use std::string::{Self, String};
