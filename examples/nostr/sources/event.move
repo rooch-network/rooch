@@ -7,7 +7,7 @@ module nostr::event {
     use moveos_std::event;
     use moveos_std::bcs;
     use std::vector;
-    use rooch_framework::ecdsa_k1;
+    use rooch_framework::schnorr;
     use std::string::{Self, String};
     use moveos_std::timestamp;
 
@@ -32,17 +32,14 @@ module nostr::event {
     const FF: u8 = 12; // 0x0C, \f, Form Feed
 
     // Error codes starting from 1000
-    const ErrorMalformedPublicKey: u64 = 1000;
-    const ErrorIdIsEmpty: u64 = 1001;
-    const ErrorMalformedId: u64 = 1002;
-    const ErrorMalformedSignature: u64 = 1003;
-    const ErrorSignatureValidationFailure: u64 = 1004;
-    const ErrorContentTooLarge: u64 = 1005;
+    const ErrorContentTooLarge: u64 = 1000;
+    const ErrorMalformedId: u64 = 1001;
+    const ErrorSignatureValidationFailure: u64 = 1002;
 
     /// Event
     #[data_struct]
     struct Event has key, store {
-        id: ObjectID, // 32-bytes lowercase hex-encoded sha256 of the serialized event data
+        id: vector<u8>, // 32-bytes lowercase hex-encoded sha256 of the serialized event data
         pubkey: vector<u8>, // 32-bytes lowercase hex-encoded public key of the event creator
         created_at: u64, // unix timestamp in seconds
         kind: u16, // integer between 0 and 65535
@@ -159,39 +156,37 @@ module nostr::event {
         serialized
     }
 
-    /// Check signature of the event whether it is valid for the id of the event
-    public fun check_signature(event: Event) {
-        // public key
-        assert!(vector::length(event.pubkey) == 32, ErrorMalformedPublicKey);
-        // id
-        assert!(object::has_parent(&event.id), ErrorIdIsEmpty);
-        let id_bytes = vector::empty<u8>();
-        let i = 0;
-        while (i < vector::length(&id.path)) {
-            let addr = *vector::borrow(&id.path, i);
-            let addr_bytes = bcs::to_bytes(&addr);
-            vector::append(&mut id_bytes, addr_bytes);
-            i = i + 1;
-        };
-        assert!(vector::length(id_bytes) == 32, ErrorMalformedId);
-        // signature
-        assert!(vector::length(event.sig) == 64, ErrorMalformedSignature);
-        // TODO: with schnorr verify
-        assert!(ecdsa_k1::verify(
-            &event.sig,
-            &event.pubkey,
-            &id_bytes,
-            ecdsa_k1::sha256()
+    /// Check signature with public key, id and signature for schnorr
+    public fun check_signature(public_key: &vector<u8>, id: &vector<u8>, signature: &vector<u8>) {
+        assert!(schnorr::verify(
+            signature,
+            public_key,
+            id,
+            schnorr::sha256()
         ), ErrorSignatureValidationFailure);
     }
 
     /// Create an Event
-    public fun create_event(owner: &signer, public_key: &vector<u8>, kind: &u16, tags: &String, content_str: &String) {
+    public fun create_event(owner: &signer, public_key: &vector<u8>, kind: &u16, tags: &String, content_str: &String, signature: &vector<u8>): Event {
         assert!(!string::length(content_str) > 1000, ErrorContentTooLarge);
         let content = bcs::to_bytes(content_str);
-        
+
         // serialize input to bytes for an Event id
         let serialized = serialize(public_key, kind, tags, &content); // TODO: tags.
-        
+
+        // hash with sha256
+        let hased_data = hash::sha2_256(serialized);
+
+        // encode with lowercase hex
+        let id = hex::encode(hashed_data);
+
+        // verify the length of the hex bytes to 32 bytes
+        assert!(vector::length(&id) == 32, ErrorMalformedId);
+
+        // check the signature
+        check_signature(public_key, &id, signature);
+
+        // handle a range of different kinds of an Event
+
     }
 }
