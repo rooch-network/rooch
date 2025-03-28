@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{EVENT_COLUMN_FAMILY_NAME, EVENT_HANDLE_COLUMN_FAMILY_NAME};
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use move_core_types::language_storage::StructTag;
 use moveos_types::moveos_std::event::{Event, EventHandle, EventID, TransactionEvent};
 use moveos_types::moveos_std::object::ObjectID;
@@ -145,14 +145,11 @@ impl EventDBStore {
         limit: u64,
         descending_order: bool,
     ) -> Result<Vec<Event>> {
-        let event_handle = self
-            .get_event_handle(event_handle_id.clone())?
-            .ok_or_else(|| {
-                anyhow!(
-                    "Can not find event handle by id: {}",
-                    event_handle_id.to_string()
-                )
-            })?;
+        let event_handle = self.get_event_handle(event_handle_id.clone())?;
+        if event_handle.is_none() {
+            return Ok(vec![]);
+        }
+        let event_handle = event_handle.unwrap();
         let last_seq = event_handle.count;
         let ids = if descending_order {
             let start = cursor.unwrap_or(last_seq);

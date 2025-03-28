@@ -64,10 +64,10 @@ pub trait StateResolver: StatelessResolver {
         cursor: Option<FieldKey>,
         limit: usize,
     ) -> Result<Vec<StateKV>, anyhow::Error> {
-        let obj = self
-            .get_object(object_id)?
-            .ok_or_else(|| anyhow::format_err!("Object with id {} not found", object_id))?;
-        self.list_fields_at(obj.state_root(), cursor, limit)
+        match self.get_object(object_id)? {
+            Some(obj) => self.list_fields_at(obj.state_root(), cursor, limit),
+            None => Ok(vec![]),
+        }
     }
 
     fn root(&self) -> &ObjectMeta;
