@@ -1,5 +1,5 @@
 
-<a name="0x4_bitcoin"></a>
+<a id="0x4_bitcoin"></a>
 
 # Module `0x4::bitcoin`
 
@@ -47,7 +47,7 @@
 
 
 
-<a name="0x4_bitcoin_UTXONotExistsEvent"></a>
+<a id="0x4_bitcoin_UTXONotExistsEvent"></a>
 
 ## Struct `UTXONotExistsEvent`
 
@@ -58,7 +58,7 @@
 
 
 
-<a name="0x4_bitcoin_RepeatCoinbaseTxEvent"></a>
+<a id="0x4_bitcoin_RepeatCoinbaseTxEvent"></a>
 
 ## Struct `RepeatCoinbaseTxEvent`
 
@@ -69,7 +69,7 @@
 
 
 
-<a name="0x4_bitcoin_BitcoinBlockStore"></a>
+<a id="0x4_bitcoin_BitcoinBlockStore"></a>
 
 ## Resource `BitcoinBlockStore`
 
@@ -80,12 +80,12 @@
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x4_bitcoin_ErrorBlockAlreadyProcessed"></a>
+<a id="0x4_bitcoin_ErrorBlockAlreadyProcessed"></a>
 
 
 
@@ -94,7 +94,7 @@
 
 
 
-<a name="0x4_bitcoin_ORDINAL_GENESIS_HEIGHT"></a>
+<a id="0x4_bitcoin_ORDINAL_GENESIS_HEIGHT"></a>
 
 
 
@@ -103,7 +103,7 @@
 
 
 
-<a name="0x4_bitcoin_BIP_34_HEIGHT"></a>
+<a id="0x4_bitcoin_BIP_34_HEIGHT"></a>
 
 https://github.com/bitcoin/bips/blob/master/bip-0034.mediawiki
 
@@ -113,7 +113,7 @@ https://github.com/bitcoin/bips/blob/master/bip-0034.mediawiki
 
 
 
-<a name="0x4_bitcoin_ErrorBlockProcessError"></a>
+<a id="0x4_bitcoin_ErrorBlockProcessError"></a>
 
 If the process block failed, we need to stop the system and fix the issue
 
@@ -123,7 +123,7 @@ If the process block failed, we need to stop the system and fix the issue
 
 
 
-<a name="0x4_bitcoin_ErrorReorgTooDeep"></a>
+<a id="0x4_bitcoin_ErrorReorgTooDeep"></a>
 
 The reorg is too deep, we need to stop the system and fix the issue
 
@@ -133,7 +133,7 @@ The reorg is too deep, we need to stop the system and fix the issue
 
 
 
-<a name="0x4_bitcoin_ErrorUTXONotExists"></a>
+<a id="0x4_bitcoin_ErrorUTXONotExists"></a>
 
 
 
@@ -142,7 +142,7 @@ The reorg is too deep, we need to stop the system and fix the issue
 
 
 
-<a name="0x4_bitcoin_ORDINALS_PAUSE_HEIGHT"></a>
+<a id="0x4_bitcoin_ORDINALS_PAUSE_HEIGHT"></a>
 
 
 
@@ -151,7 +151,7 @@ The reorg is too deep, we need to stop the system and fix the issue
 
 
 
-<a name="0x4_bitcoin_genesis_init"></a>
+<a id="0x4_bitcoin_genesis_init"></a>
 
 ## Function `genesis_init`
 
@@ -162,7 +162,7 @@ The reorg is too deep, we need to stop the system and fix the issue
 
 
 
-<a name="0x4_bitcoin_get_tx"></a>
+<a id="0x4_bitcoin_get_tx"></a>
 
 ## Function `get_tx`
 
@@ -173,7 +173,7 @@ The reorg is too deep, we need to stop the system and fix the issue
 
 
 
-<a name="0x4_bitcoin_get_tx_height"></a>
+<a id="0x4_bitcoin_get_tx_height"></a>
 
 ## Function `get_tx_height`
 
@@ -184,7 +184,7 @@ The reorg is too deep, we need to stop the system and fix the issue
 
 
 
-<a name="0x4_bitcoin_get_block"></a>
+<a id="0x4_bitcoin_get_block"></a>
 
 ## Function `get_block`
 
@@ -196,7 +196,7 @@ Get block via block_hash
 
 
 
-<a name="0x4_bitcoin_get_block_height"></a>
+<a id="0x4_bitcoin_get_block_height"></a>
 
 ## Function `get_block_height`
 
@@ -207,7 +207,7 @@ Get block via block_hash
 
 
 
-<a name="0x4_bitcoin_get_block_hash_by_height"></a>
+<a id="0x4_bitcoin_get_block_hash_by_height"></a>
 
 ## Function `get_block_hash_by_height`
 
@@ -219,7 +219,7 @@ Get block hash via block_height
 
 
 
-<a name="0x4_bitcoin_get_block_by_height"></a>
+<a id="0x4_bitcoin_get_block_by_height"></a>
 
 ## Function `get_block_by_height`
 
@@ -231,7 +231,7 @@ Get block via block_height
 
 
 
-<a name="0x4_bitcoin_get_genesis_block"></a>
+<a id="0x4_bitcoin_get_genesis_block"></a>
 
 ## Function `get_genesis_block`
 
@@ -242,7 +242,7 @@ Get block via block_height
 
 
 
-<a name="0x4_bitcoin_get_latest_block"></a>
+<a id="0x4_bitcoin_get_latest_block"></a>
 
 ## Function `get_latest_block`
 
@@ -254,7 +254,7 @@ Get latest block height
 
 
 
-<a name="0x4_bitcoin_get_bitcoin_time"></a>
+<a id="0x4_bitcoin_get_bitcoin_time"></a>
 
 ## Function `get_bitcoin_time`
 
@@ -266,7 +266,7 @@ Get the bitcoin time in seconds
 
 
 
-<a name="0x4_bitcoin_contains_header"></a>
+<a id="0x4_bitcoin_contains_header"></a>
 
 ## Function `contains_header`
 
@@ -277,7 +277,7 @@ Get the bitcoin time in seconds
 
 
 
-<a name="0x4_bitcoin_exist_l1_tx"></a>
+<a id="0x4_bitcoin_exist_l1_tx"></a>
 
 ## Function `exist_l1_tx`
 

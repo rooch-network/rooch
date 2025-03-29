@@ -67,6 +67,8 @@ static VEC_COLUMN_FAMILY_NAME: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
     ]
 });
 
+pub type TxnIndex = u32;
+
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub struct StoreMeta {}
 

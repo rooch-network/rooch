@@ -19,6 +19,7 @@ use moveos_types::h256;
 use moveos_types::state::FieldKey;
 use moveos_types::state::MoveState;
 use moveos_types::state_resolver::StatelessResolver;
+use triomphe::Arc as TriompheArc;
 
 type IteratorItem = (FieldKey, Vec<u8>);
 type IteratorState = (Vec<IteratorItem>, usize);
@@ -82,7 +83,7 @@ impl<'a> Storage for MoveStorage<'a> {
         let hash = h256::sha3_256_of(key);
         let field_key = FieldKey::new(hash.into());
         let move_layout = Vec::<u8>::type_layout();
-        let move_type = Type::Vector(Box::new(Type::U8));
+        let move_type = Type::Vector(TriompheArc::new(Type::U8));
 
         match self
             .object
@@ -109,7 +110,7 @@ impl<'a> Storage for MoveStorage<'a> {
         let hash = h256::sha3_256_of(key);
         let field_key = FieldKey::new(hash.into());
         let move_layout = Vec::<u8>::type_layout();
-        let move_type = Type::Vector(Box::new(Type::U8));
+        let move_type = Type::Vector(TriompheArc::new(Type::U8));
 
         let deserialized_value = match self.deserialize_value(&move_layout, value) {
             Ok(v) => v,
@@ -134,7 +135,7 @@ impl<'a> Storage for MoveStorage<'a> {
     fn remove(&mut self, key: &[u8]) -> BackendResult<()> {
         let hash = h256::sha3_256_of(key);
         let field_key = FieldKey::new(hash.into());
-        let move_type = Type::Vector(Box::new(Type::U8));
+        let move_type = Type::Vector(TriompheArc::new(Type::U8));
 
         match self
             .object
@@ -167,7 +168,7 @@ impl<'a> Storage for MoveStorage<'a> {
             self.resolver,
             cursor,
             usize::MAX,
-            &Type::Vector(Box::new(Type::U8)), // Assuming values are Vec<u8>
+            &Type::Vector(TriompheArc::new(Type::U8)), // Assuming values are Vec<u8>
         ) {
             Ok((values, bytes_len_opt)) => {
                 let move_layout = Vec::<u8>::type_layout();

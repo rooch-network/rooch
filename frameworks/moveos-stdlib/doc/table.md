@@ -1,5 +1,5 @@
 
-<a name="0x2_table"></a>
+<a id="0x2_table"></a>
 
 # Module `0x2::table`
 
@@ -42,7 +42,7 @@ struct itself, while the operations are implemented as native functions. No trav
 
 
 
-<a name="0x2_table_TablePlaceholder"></a>
+<a id="0x2_table_TablePlaceholder"></a>
 
 ## Resource `TablePlaceholder`
 
@@ -53,7 +53,7 @@ struct itself, while the operations are implemented as native functions. No trav
 
 
 
-<a name="0x2_table_Table"></a>
+<a id="0x2_table_Table"></a>
 
 ## Struct `Table`
 
@@ -65,7 +65,7 @@ Type of tables
 
 
 
-<a name="0x2_table_Iterator"></a>
+<a id="0x2_table_Iterator"></a>
 
 ## Struct `Iterator`
 
@@ -76,7 +76,7 @@ Type of tables
 
 
 
-<a name="0x2_table_new"></a>
+<a id="0x2_table_new"></a>
 
 ## Function `new`
 
@@ -88,7 +88,7 @@ Create a new Table.
 
 
 
-<a name="0x2_table_new_with_object_id_by_system"></a>
+<a id="0x2_table_new_with_object_id_by_system"></a>
 
 ## Function `new_with_object_id_by_system`
 
@@ -100,7 +100,7 @@ Create a new Table with object id.
 
 
 
-<a name="0x2_table_add"></a>
+<a id="0x2_table_add"></a>
 
 ## Function `add`
 
@@ -114,7 +114,7 @@ table, and cannot be discovered from it.
 
 
 
-<a name="0x2_table_borrow"></a>
+<a id="0x2_table_borrow"></a>
 
 ## Function `borrow`
 
@@ -127,7 +127,7 @@ Aborts if there is no entry for <code>key</code>.
 
 
 
-<a name="0x2_table_borrow_with_default"></a>
+<a id="0x2_table_borrow_with_default"></a>
 
 ## Function `borrow_with_default`
 
@@ -140,7 +140,7 @@ Returns specified default value if there is no entry for <code>key</code>.
 
 
 
-<a name="0x2_table_borrow_mut"></a>
+<a id="0x2_table_borrow_mut"></a>
 
 ## Function `borrow_mut`
 
@@ -153,7 +153,7 @@ Aborts if there is no entry for <code>key</code>.
 
 
 
-<a name="0x2_table_borrow_mut_with_default"></a>
+<a id="0x2_table_borrow_mut_with_default"></a>
 
 ## Function `borrow_mut_with_default`
 
@@ -166,7 +166,7 @@ Insert the pair (<code>key</code>, <code>default</code>) first if there is no en
 
 
 
-<a name="0x2_table_upsert"></a>
+<a id="0x2_table_upsert"></a>
 
 ## Function `upsert`
 
@@ -179,7 +179,7 @@ update the value of the entry for <code>key</code> to <code>value</code> otherwi
 
 
 
-<a name="0x2_table_remove"></a>
+<a id="0x2_table_remove"></a>
 
 ## Function `remove`
 
@@ -192,7 +192,7 @@ Aborts if there is no entry for <code>key</code>.
 
 
 
-<a name="0x2_table_contains"></a>
+<a id="0x2_table_contains"></a>
 
 ## Function `contains`
 
@@ -204,7 +204,7 @@ Returns true if <code><a href="table.md#0x2_table">table</a></code> contains an 
 
 
 
-<a name="0x2_table_list_field_keys"></a>
+<a id="0x2_table_list_field_keys"></a>
 
 ## Function `list_field_keys`
 
@@ -218,7 +218,7 @@ limit: Maximum number of keys to return.
 
 
 
-<a name="0x2_table_field_keys_len"></a>
+<a id="0x2_table_field_keys_len"></a>
 
 ## Function `field_keys_len`
 
@@ -230,7 +230,7 @@ Returns the number of keys in the table.
 
 
 
-<a name="0x2_table_next"></a>
+<a id="0x2_table_next"></a>
 
 ## Function `next`
 
@@ -242,7 +242,7 @@ Returns a immutable reference to the next key-value pair in the table, starting 
 
 
 
-<a name="0x2_table_next_mut"></a>
+<a id="0x2_table_next_mut"></a>
 
 ## Function `next_mut`
 
@@ -254,7 +254,7 @@ Returns a mutable reference to the next key-value pair in the table, starting fr
 
 
 
-<a name="0x2_table_destroy_empty"></a>
+<a id="0x2_table_destroy_empty"></a>
 
 ## Function `destroy_empty`
 
@@ -266,7 +266,7 @@ Destroy a table. Aborts if the table is not empty.
 
 
 
-<a name="0x2_table_length"></a>
+<a id="0x2_table_length"></a>
 
 ## Function `length`
 
@@ -278,7 +278,7 @@ Returns the size of the table, the number of key-value pairs
 
 
 
-<a name="0x2_table_is_empty"></a>
+<a id="0x2_table_is_empty"></a>
 
 ## Function `is_empty`
 
@@ -290,7 +290,7 @@ Returns true iff the table is empty (if <code>length</code> returns <code>0</cod
 
 
 
-<a name="0x2_table_drop"></a>
+<a id="0x2_table_drop"></a>
 
 ## Function `drop`
 
@@ -303,7 +303,7 @@ Usable only if the value type <code>V</code> has the <code>drop</code> ability
 
 
 
-<a name="0x2_table_handle"></a>
+<a id="0x2_table_handle"></a>
 
 ## Function `handle`
 

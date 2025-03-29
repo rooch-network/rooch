@@ -1,5 +1,5 @@
 
-<a name="0x2_result"></a>
+<a id="0x2_result"></a>
 
 # Module `0x2::result`
 
@@ -29,7 +29,7 @@
 
 
 
-<a name="0x2_result_Result"></a>
+<a id="0x2_result_Result"></a>
 
 ## Struct `Result`
 
@@ -43,12 +43,12 @@ But in some cases, we need to return a result to ensure the caller can handle th
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x2_result_ErrorExpectErr"></a>
+<a id="0x2_result_ErrorExpectErr"></a>
 
 Expected the result is err but the result is ok.
 
@@ -58,7 +58,7 @@ Expected the result is err but the result is ok.
 
 
 
-<a name="0x2_result_ErrorExpectOk"></a>
+<a id="0x2_result_ErrorExpectOk"></a>
 
 Expected the result is ok but the result is err.
 
@@ -68,7 +68,7 @@ Expected the result is ok but the result is err.
 
 
 
-<a name="0x2_result_ok"></a>
+<a id="0x2_result_ok"></a>
 
 ## Function `ok`
 
@@ -79,7 +79,7 @@ Expected the result is ok but the result is err.
 
 
 
-<a name="0x2_result_is_ok"></a>
+<a id="0x2_result_is_ok"></a>
 
 ## Function `is_ok`
 
@@ -90,7 +90,7 @@ Expected the result is ok but the result is err.
 
 
 
-<a name="0x2_result_get"></a>
+<a id="0x2_result_get"></a>
 
 ## Function `get`
 
@@ -101,7 +101,7 @@ Expected the result is ok but the result is err.
 
 
 
-<a name="0x2_result_err"></a>
+<a id="0x2_result_err"></a>
 
 ## Function `err`
 
@@ -112,7 +112,7 @@ Expected the result is ok but the result is err.
 
 
 
-<a name="0x2_result_err_str"></a>
+<a id="0x2_result_err_str"></a>
 
 ## Function `err_str`
 
@@ -125,7 +125,7 @@ err_str(b"msg").
 
 
 
-<a name="0x2_result_is_err"></a>
+<a id="0x2_result_is_err"></a>
 
 ## Function `is_err`
 
@@ -136,7 +136,7 @@ err_str(b"msg").
 
 
 
-<a name="0x2_result_get_err"></a>
+<a id="0x2_result_get_err"></a>
 
 ## Function `get_err`
 
@@ -147,19 +147,19 @@ err_str(b"msg").
 
 
 
-<a name="0x2_result_as_err"></a>
+<a id="0x2_result_as_err"></a>
 
 ## Function `as_err`
 
 Convert an error Result<T, String> to error Result<U, String>.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="result.md#0x2_result_as_err">as_err</a>&lt;U, T&gt;(self: <a href="result.md#0x2_result_Result">result::Result</a>&lt;T, <a href="_String">string::String</a>&gt;): <a href="result.md#0x2_result_Result">result::Result</a>&lt;U, <a href="_String">string::String</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="result.md#0x2_result_as_err">as_err</a>&lt;U, T&gt;(<a href="result.md#0x2_result">result</a>: <a href="result.md#0x2_result_Result">result::Result</a>&lt;T, <a href="_String">string::String</a>&gt;): <a href="result.md#0x2_result_Result">result::Result</a>&lt;U, <a href="_String">string::String</a>&gt;
 </code></pre>
 
 
 
-<a name="0x2_result_unpack"></a>
+<a id="0x2_result_unpack"></a>
 
 ## Function `unpack`
 
@@ -170,7 +170,7 @@ Convert an error Result<T, String> to error Result<U, String>.
 
 
 
-<a name="0x2_result_and_then"></a>
+<a id="0x2_result_and_then"></a>
 
 ## Function `and_then`
 
@@ -181,7 +181,7 @@ Convert an error Result<T, String> to error Result<U, String>.
 
 
 
-<a name="0x2_result_unwrap"></a>
+<a id="0x2_result_unwrap"></a>
 
 ## Function `unwrap`
 
@@ -192,7 +192,7 @@ Convert an error Result<T, String> to error Result<U, String>.
 
 
 
-<a name="0x2_result_unwrap_err"></a>
+<a id="0x2_result_unwrap_err"></a>
 
 ## Function `unwrap_err`
 
@@ -203,7 +203,7 @@ Convert an error Result<T, String> to error Result<U, String>.
 
 
 
-<a name="0x2_result_assert_ok"></a>
+<a id="0x2_result_assert_ok"></a>
 
 ## Function `assert_ok`
 
@@ -218,7 +218,7 @@ This ensures the abort_code is the caller's location.
 
 
 
-<a name="0x2_result_assert_err"></a>
+<a id="0x2_result_assert_err"></a>
 
 ## Function `assert_err`
 

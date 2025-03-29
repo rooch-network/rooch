@@ -1,5 +1,5 @@
 
-<a name="0x3_gas_coin"></a>
+<a id="0x3_gas_coin"></a>
 
 # Module `0x3::gas_coin`
 
@@ -29,7 +29,7 @@ This module defines Rooch Gas Coin.
 
 
 
-<a name="0x3_gas_coin_RGas"></a>
+<a id="0x3_gas_coin_RGas"></a>
 
 ## Resource `RGas`
 
@@ -41,12 +41,12 @@ RGas is the symbol of Rooch Gas Coin
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x3_gas_coin_DECIMALS"></a>
+<a id="0x3_gas_coin_DECIMALS"></a>
 
 
 
@@ -55,7 +55,7 @@ RGas is the symbol of Rooch Gas Coin
 
 
 
-<a name="0x3_gas_coin_decimals"></a>
+<a id="0x3_gas_coin_decimals"></a>
 
 ## Function `decimals`
 
@@ -66,7 +66,7 @@ RGas is the symbol of Rooch Gas Coin
 
 
 
-<a name="0x3_gas_coin_balance"></a>
+<a id="0x3_gas_coin_balance"></a>
 
 ## Function `balance`
 
@@ -77,7 +77,7 @@ RGas is the symbol of Rooch Gas Coin
 
 
 
-<a name="0x3_gas_coin_burn"></a>
+<a id="0x3_gas_coin_burn"></a>
 
 ## Function `burn`
 
@@ -88,7 +88,7 @@ RGas is the symbol of Rooch Gas Coin
 
 
 
-<a name="0x3_gas_coin_deduct_gas"></a>
+<a id="0x3_gas_coin_deduct_gas"></a>
 
 ## Function `deduct_gas`
 
@@ -100,7 +100,7 @@ deduct gas coin from the given account.
 
 
 
-<a name="0x3_gas_coin_faucet"></a>
+<a id="0x3_gas_coin_faucet"></a>
 
 ## Function `faucet`
 
@@ -112,7 +112,7 @@ Mint gas coin to the given account.
 
 
 
-<a name="0x3_gas_coin_faucet_entry"></a>
+<a id="0x3_gas_coin_faucet_entry"></a>
 
 ## Function `faucet_entry`
 
@@ -124,7 +124,7 @@ Entry point for the faucet, anyone can get Gas via this function on local/dev ne
 
 
 
-<a name="0x3_gas_coin_genesis_init"></a>
+<a id="0x3_gas_coin_genesis_init"></a>
 
 ## Function `genesis_init`
 

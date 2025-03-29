@@ -1,5 +1,5 @@
 
-<a name="0x3_oracle_data"></a>
+<a id="0x3_oracle_data"></a>
 
 # Module `0x3::oracle_data`
 
@@ -18,7 +18,7 @@
 
 
 
-<a name="0x3_oracle_data_Data"></a>
+<a id="0x3_oracle_data_Data"></a>
 
 ## Struct `Data`
 
@@ -29,7 +29,7 @@
 
 
 
-<a name="0x3_oracle_data_Metadata"></a>
+<a id="0x3_oracle_data_Metadata"></a>
 
 ## Struct `Metadata`
 
@@ -40,7 +40,7 @@
 
 
 
-<a name="0x3_oracle_data_new"></a>
+<a id="0x3_oracle_data_new"></a>
 
 ## Function `new`
 
@@ -51,7 +51,7 @@
 
 
 
-<a name="0x3_oracle_data_value"></a>
+<a id="0x3_oracle_data_value"></a>
 
 ## Function `value`
 
@@ -62,7 +62,7 @@
 
 
 
-<a name="0x3_oracle_data_oracle_address"></a>
+<a id="0x3_oracle_data_oracle_address"></a>
 
 ## Function `oracle_address`
 
@@ -73,7 +73,7 @@
 
 
 
-<a name="0x3_oracle_data_timestamp"></a>
+<a id="0x3_oracle_data_timestamp"></a>
 
 ## Function `timestamp`
 

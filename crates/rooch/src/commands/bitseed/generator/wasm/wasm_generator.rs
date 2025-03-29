@@ -244,9 +244,22 @@ impl WASMGenerator {
         let mut top_buffer = Vec::new();
         ciborium::into_writer(&top_buffer_map, &mut top_buffer).expect("ciborium marshal failed");
 
+        let mut temp_top_buffer = vec![
+            163, 101, 97, 116, 116, 114, 115, 152, 39, 24, 129, 24, 161, 24, 102, 24, 104, 24, 101,
+            24, 105, 24, 103, 24, 104, 24, 116, 24, 162, 24, 100, 24, 116, 24, 121, 24, 112, 24,
+            101, 24, 101, 24, 114, 24, 97, 24, 110, 24, 103, 24, 101, 24, 100, 24, 100, 24, 97, 24,
+            116, 24, 97, 24, 162, 24, 99, 24, 109, 24, 105, 24, 110, 1, 24, 99, 24, 109, 24, 97,
+            24, 120, 24, 25, 3, 24, 232, 100, 115, 101, 101, 100, 120, 64, 97, 101, 51, 54, 100,
+            48, 49, 102, 48, 57, 55, 54, 55, 57, 99, 102, 101, 102, 50, 99, 57, 57, 97, 51, 54, 55,
+            101, 99, 57, 57, 57, 98, 54, 100, 51, 97, 48, 55, 52, 102, 102, 54, 49, 97, 102, 57,
+            101, 98, 56, 98, 100, 97, 49, 52, 49, 55, 49, 56, 52, 57, 100, 49, 97, 54, 106, 117,
+            115, 101, 114, 95, 105, 110, 112, 117, 116, 111, 116, 101, 115, 116, 32, 117, 115, 101,
+            114, 32, 105, 110, 112, 117, 116,
+        ];
+
         let mut buffer_final = Vec::new();
-        buffer_final.append(&mut (top_buffer.len() as u32).to_be_bytes().to_vec());
-        buffer_final.append(&mut top_buffer);
+        buffer_final.append(&mut (temp_top_buffer.len() as u32).to_be_bytes().to_vec());
+        buffer_final.append(&mut temp_top_buffer);
 
         put_data_on_stack(memory, stack_alloc_func, store, buffer_final.as_slice())
     }

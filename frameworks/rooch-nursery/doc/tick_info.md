@@ -1,5 +1,5 @@
 
-<a name="0xa_tick_info"></a>
+<a id="0xa_tick_info"></a>
 
 # Module `0xa::tick_info`
 
@@ -40,7 +40,7 @@
 
 
 
-<a name="0xa_tick_info_TickInfoStore"></a>
+<a id="0xa_tick_info_TickInfoStore"></a>
 
 ## Resource `TickInfoStore`
 
@@ -52,7 +52,7 @@ Store the tick -> TickInfo ObjectID mapping in Object<TickInfoStore> dynamic fie
 
 
 
-<a name="0xa_tick_info_TickInfo"></a>
+<a id="0xa_tick_info_TickInfo"></a>
 
 ## Resource `TickInfo`
 
@@ -63,12 +63,12 @@ Store the tick -> TickInfo ObjectID mapping in Object<TickInfoStore> dynamic fie
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0xa_tick_info_BIT_SEED_GENERATOR_TICK"></a>
+<a id="0xa_tick_info_BIT_SEED_GENERATOR_TICK"></a>
 
 
 
@@ -77,7 +77,7 @@ Store the tick -> TickInfo ObjectID mapping in Object<TickInfoStore> dynamic fie
 
 
 
-<a name="0xa_tick_info_ErrorInvalidMintFactory"></a>
+<a id="0xa_tick_info_ErrorInvalidMintFactory"></a>
 
 
 
@@ -86,7 +86,7 @@ Store the tick -> TickInfo ObjectID mapping in Object<TickInfoStore> dynamic fie
 
 
 
-<a name="0xa_tick_info_ErrorMaxSupplyReached"></a>
+<a id="0xa_tick_info_ErrorMaxSupplyReached"></a>
 
 
 
@@ -95,7 +95,7 @@ Store the tick -> TickInfo ObjectID mapping in Object<TickInfoStore> dynamic fie
 
 
 
-<a name="0xa_tick_info_ErrorMetaprotocolNotFound"></a>
+<a id="0xa_tick_info_ErrorMetaprotocolNotFound"></a>
 
 
 
@@ -104,7 +104,7 @@ Store the tick -> TickInfo ObjectID mapping in Object<TickInfoStore> dynamic fie
 
 
 
-<a name="0xa_tick_info_ErrorNoMintFactory"></a>
+<a id="0xa_tick_info_ErrorNoMintFactory"></a>
 
 
 
@@ -113,7 +113,7 @@ Store the tick -> TickInfo ObjectID mapping in Object<TickInfoStore> dynamic fie
 
 
 
-<a name="0xa_tick_info_ErrorTickNotFound"></a>
+<a id="0xa_tick_info_ErrorTickNotFound"></a>
 
 
 
@@ -122,7 +122,7 @@ Store the tick -> TickInfo ObjectID mapping in Object<TickInfoStore> dynamic fie
 
 
 
-<a name="0xa_tick_info_genesis_init"></a>
+<a id="0xa_tick_info_genesis_init"></a>
 
 ## Function `genesis_init`
 
@@ -133,7 +133,7 @@ Store the tick -> TickInfo ObjectID mapping in Object<TickInfoStore> dynamic fie
 
 
 
-<a name="0xa_tick_info_is_deployed"></a>
+<a id="0xa_tick_info_is_deployed"></a>
 
 ## Function `is_deployed`
 
@@ -145,7 +145,7 @@ Check if the tick is deployed.
 
 
 
-<a name="0xa_tick_info_borrow_tick_info"></a>
+<a id="0xa_tick_info_borrow_tick_info"></a>
 
 ## Function `borrow_tick_info`
 
@@ -156,7 +156,7 @@ Check if the tick is deployed.
 
 
 
-<a name="0xa_tick_info_deploy_tick"></a>
+<a id="0xa_tick_info_deploy_tick"></a>
 
 ## Function `deploy_tick`
 
@@ -167,7 +167,7 @@ Check if the tick is deployed.
 
 
 
-<a name="0xa_tick_info_mint"></a>
+<a id="0xa_tick_info_mint"></a>
 
 ## Function `mint`
 
@@ -179,7 +179,7 @@ Check if the tick is deployed.
 
 
 
-<a name="0xa_tick_info_burn"></a>
+<a id="0xa_tick_info_burn"></a>
 
 ## Function `burn`
 
@@ -190,7 +190,7 @@ Check if the tick is deployed.
 
 
 
-<a name="0xa_tick_info_mint_on_bitcoin"></a>
+<a id="0xa_tick_info_mint_on_bitcoin"></a>
 
 ## Function `mint_on_bitcoin`
 
@@ -201,7 +201,7 @@ Check if the tick is deployed.
 
 
 
-<a name="0xa_tick_info_metaprotocol"></a>
+<a id="0xa_tick_info_metaprotocol"></a>
 
 ## Function `metaprotocol`
 
@@ -212,7 +212,7 @@ Check if the tick is deployed.
 
 
 
-<a name="0xa_tick_info_tick"></a>
+<a id="0xa_tick_info_tick"></a>
 
 ## Function `tick`
 
@@ -223,7 +223,7 @@ Check if the tick is deployed.
 
 
 
-<a name="0xa_tick_info_generator"></a>
+<a id="0xa_tick_info_generator"></a>
 
 ## Function `generator`
 
@@ -234,7 +234,7 @@ Check if the tick is deployed.
 
 
 
-<a name="0xa_tick_info_factory"></a>
+<a id="0xa_tick_info_factory"></a>
 
 ## Function `factory`
 
@@ -245,7 +245,7 @@ Check if the tick is deployed.
 
 
 
-<a name="0xa_tick_info_max"></a>
+<a id="0xa_tick_info_max"></a>
 
 ## Function `max`
 
@@ -256,7 +256,7 @@ Check if the tick is deployed.
 
 
 
-<a name="0xa_tick_info_deploy_args"></a>
+<a id="0xa_tick_info_deploy_args"></a>
 
 ## Function `deploy_args`
 
@@ -267,7 +267,7 @@ Check if the tick is deployed.
 
 
 
-<a name="0xa_tick_info_supply"></a>
+<a id="0xa_tick_info_supply"></a>
 
 ## Function `supply`
 
@@ -278,7 +278,7 @@ Check if the tick is deployed.
 
 
 
-<a name="0xa_tick_info_repeat"></a>
+<a id="0xa_tick_info_repeat"></a>
 
 ## Function `repeat`
 
@@ -289,7 +289,7 @@ Check if the tick is deployed.
 
 
 
-<a name="0xa_tick_info_has_user_input"></a>
+<a id="0xa_tick_info_has_user_input"></a>
 
 ## Function `has_user_input`
 

@@ -1,5 +1,5 @@
 
-<a name="0x4_script_buf"></a>
+<a id="0x4_script_buf"></a>
 
 # Module `0x4::script_buf`
 
@@ -38,7 +38,7 @@
 
 
 
-<a name="0x4_script_buf_ScriptBuf"></a>
+<a id="0x4_script_buf_ScriptBuf"></a>
 
 ## Struct `ScriptBuf`
 
@@ -50,12 +50,12 @@
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x4_script_buf_BITCOIN_PUBKEY_HASH_SIZE"></a>
+<a id="0x4_script_buf_BITCOIN_PUBKEY_HASH_SIZE"></a>
 
 
 
@@ -64,7 +64,7 @@
 
 
 
-<a name="0x4_script_buf_BITCOIN_PUBKEY_SIZE"></a>
+<a id="0x4_script_buf_BITCOIN_PUBKEY_SIZE"></a>
 
 
 
@@ -73,7 +73,7 @@
 
 
 
-<a name="0x4_script_buf_BITCOIN_SCRIPT_HASH_SIZE"></a>
+<a id="0x4_script_buf_BITCOIN_SCRIPT_HASH_SIZE"></a>
 
 
 
@@ -82,7 +82,7 @@
 
 
 
-<a name="0x4_script_buf_BITCOIN_X_ONLY_PUBKEY_SIZE"></a>
+<a id="0x4_script_buf_BITCOIN_X_ONLY_PUBKEY_SIZE"></a>
 
 
 
@@ -91,7 +91,7 @@
 
 
 
-<a name="0x4_script_buf_ErrorInvalidKeySize"></a>
+<a id="0x4_script_buf_ErrorInvalidKeySize"></a>
 
 
 
@@ -100,7 +100,7 @@
 
 
 
-<a name="0x4_script_buf_ErrorInvalidPubkeyHash"></a>
+<a id="0x4_script_buf_ErrorInvalidPubkeyHash"></a>
 
 
 
@@ -109,7 +109,7 @@
 
 
 
-<a name="0x4_script_buf_ErrorInvalidScriptHash"></a>
+<a id="0x4_script_buf_ErrorInvalidScriptHash"></a>
 
 
 
@@ -118,7 +118,7 @@
 
 
 
-<a name="0x4_script_buf_ErrorNumberOverflow"></a>
+<a id="0x4_script_buf_ErrorNumberOverflow"></a>
 
 
 
@@ -127,7 +127,7 @@
 
 
 
-<a name="0x4_script_buf_I64_MAX"></a>
+<a id="0x4_script_buf_I64_MAX"></a>
 
 
 
@@ -136,7 +136,7 @@
 
 
 
-<a name="0x4_script_buf_empty"></a>
+<a id="0x4_script_buf_empty"></a>
 
 ## Function `empty`
 
@@ -147,7 +147,7 @@
 
 
 
-<a name="0x4_script_buf_new"></a>
+<a id="0x4_script_buf_new"></a>
 
 ## Function `new`
 
@@ -158,7 +158,7 @@
 
 
 
-<a name="0x4_script_buf_single"></a>
+<a id="0x4_script_buf_single"></a>
 
 ## Function `single`
 
@@ -169,7 +169,7 @@
 
 
 
-<a name="0x4_script_buf_new_p2pkh"></a>
+<a id="0x4_script_buf_new_p2pkh"></a>
 
 ## Function `new_p2pkh`
 
@@ -180,7 +180,7 @@
 
 
 
-<a name="0x4_script_buf_new_p2sh"></a>
+<a id="0x4_script_buf_new_p2sh"></a>
 
 ## Function `new_p2sh`
 
@@ -191,7 +191,7 @@
 
 
 
-<a name="0x4_script_buf_script_pubkey"></a>
+<a id="0x4_script_buf_script_pubkey"></a>
 
 ## Function `script_pubkey`
 
@@ -203,7 +203,7 @@ Generates a script pubkey spending to this address.
 
 
 
-<a name="0x4_script_buf_match_script_pubkey"></a>
+<a id="0x4_script_buf_match_script_pubkey"></a>
 
 ## Function `match_script_pubkey`
 
@@ -215,7 +215,7 @@ Returns true if the address creates a particular script
 
 
 
-<a name="0x4_script_buf_is_empty"></a>
+<a id="0x4_script_buf_is_empty"></a>
 
 ## Function `is_empty`
 
@@ -226,7 +226,7 @@ Returns true if the address creates a particular script
 
 
 
-<a name="0x4_script_buf_bytes"></a>
+<a id="0x4_script_buf_bytes"></a>
 
 ## Function `bytes`
 
@@ -237,7 +237,7 @@ Returns true if the address creates a particular script
 
 
 
-<a name="0x4_script_buf_into_bytes"></a>
+<a id="0x4_script_buf_into_bytes"></a>
 
 ## Function `into_bytes`
 
@@ -248,7 +248,7 @@ Returns true if the address creates a particular script
 
 
 
-<a name="0x4_script_buf_is_p2sh"></a>
+<a id="0x4_script_buf_is_p2sh"></a>
 
 ## Function `is_p2sh`
 
@@ -260,7 +260,7 @@ Checks if the given script is a P2SH script.
 
 
 
-<a name="0x4_script_buf_p2sh_script_hash"></a>
+<a id="0x4_script_buf_p2sh_script_hash"></a>
 
 ## Function `p2sh_script_hash`
 
@@ -273,7 +273,7 @@ This function does not check if the script is a P2SH script, the caller must do 
 
 
 
-<a name="0x4_script_buf_is_p2pkh"></a>
+<a id="0x4_script_buf_is_p2pkh"></a>
 
 ## Function `is_p2pkh`
 
@@ -285,7 +285,7 @@ Checks if the given script is a P2PKH script.
 
 
 
-<a name="0x4_script_buf_p2pkh_pubkey_hash"></a>
+<a id="0x4_script_buf_p2pkh_pubkey_hash"></a>
 
 ## Function `p2pkh_pubkey_hash`
 
@@ -298,7 +298,7 @@ This function does not check if the script is a P2PKH script, the caller must do
 
 
 
-<a name="0x4_script_buf_is_witness_program"></a>
+<a id="0x4_script_buf_is_witness_program"></a>
 
 ## Function `is_witness_program`
 
@@ -309,7 +309,7 @@ This function does not check if the script is a P2PKH script, the caller must do
 
 
 
-<a name="0x4_script_buf_witness_program"></a>
+<a id="0x4_script_buf_witness_program"></a>
 
 ## Function `witness_program`
 
@@ -321,7 +321,7 @@ Get the witness program from a witness program script.
 
 
 
-<a name="0x4_script_buf_is_op_return"></a>
+<a id="0x4_script_buf_is_op_return"></a>
 
 ## Function `is_op_return`
 
@@ -333,7 +333,7 @@ Checks if the given script is an OP_RETURN script.
 
 
 
-<a name="0x4_script_buf_push_opcode"></a>
+<a id="0x4_script_buf_push_opcode"></a>
 
 ## Function `push_opcode`
 
@@ -344,7 +344,7 @@ Checks if the given script is an OP_RETURN script.
 
 
 
-<a name="0x4_script_buf_push_data"></a>
+<a id="0x4_script_buf_push_data"></a>
 
 ## Function `push_data`
 
@@ -355,7 +355,7 @@ Checks if the given script is an OP_RETURN script.
 
 
 
-<a name="0x4_script_buf_push_int"></a>
+<a id="0x4_script_buf_push_int"></a>
 
 ## Function `push_int`
 
@@ -372,7 +372,7 @@ The value over the I64_MAX will abort, we can support negative value in the futu
 
 
 
-<a name="0x4_script_buf_push_key"></a>
+<a id="0x4_script_buf_push_key"></a>
 
 ## Function `push_key`
 
@@ -384,7 +384,7 @@ Push a Bitcoin public key to the script
 
 
 
-<a name="0x4_script_buf_push_x_only_key"></a>
+<a id="0x4_script_buf_push_x_only_key"></a>
 
 ## Function `push_x_only_key`
 

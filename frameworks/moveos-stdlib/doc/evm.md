@@ -1,5 +1,5 @@
 
-<a name="0x2_evm"></a>
+<a id="0x2_evm"></a>
 
 # Module `0x2::evm`
 
@@ -24,12 +24,12 @@
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x2_evm_ErrorBlake2fFailed"></a>
+<a id="0x2_evm_ErrorBlake2fFailed"></a>
 
 
 
@@ -38,7 +38,7 @@
 
 
 
-<a name="0x2_evm_ErrorEcAddFailed"></a>
+<a id="0x2_evm_ErrorEcAddFailed"></a>
 
 
 
@@ -47,7 +47,7 @@
 
 
 
-<a name="0x2_evm_ErrorEcMulFailed"></a>
+<a id="0x2_evm_ErrorEcMulFailed"></a>
 
 
 
@@ -56,7 +56,7 @@
 
 
 
-<a name="0x2_evm_ErrorEcPairingFailed"></a>
+<a id="0x2_evm_ErrorEcPairingFailed"></a>
 
 
 
@@ -65,7 +65,7 @@
 
 
 
-<a name="0x2_evm_ErrorEcRecoverFailed"></a>
+<a id="0x2_evm_ErrorEcRecoverFailed"></a>
 
 
 
@@ -74,7 +74,7 @@
 
 
 
-<a name="0x2_evm_ErrorInvalidInputSize"></a>
+<a id="0x2_evm_ErrorInvalidInputSize"></a>
 
 
 
@@ -83,7 +83,7 @@
 
 
 
-<a name="0x2_evm_ErrorModexpFailed"></a>
+<a id="0x2_evm_ErrorModexpFailed"></a>
 
 
 
@@ -92,7 +92,7 @@
 
 
 
-<a name="0x2_evm_ErrorPointEvaluationFailed"></a>
+<a id="0x2_evm_ErrorPointEvaluationFailed"></a>
 
 
 
@@ -101,7 +101,7 @@
 
 
 
-<a name="0x2_evm_ec_recover"></a>
+<a id="0x2_evm_ec_recover"></a>
 
 ## Function `ec_recover`
 
@@ -120,7 +120,7 @@ Elliptic curve digital signature algorithm (ECDSA) public key recovery function.
 
 
 
-<a name="0x2_evm_sha2_256"></a>
+<a id="0x2_evm_sha2_256"></a>
 
 ## Function `sha2_256`
 
@@ -136,7 +136,7 @@ Hash function.
 
 
 
-<a name="0x2_evm_ripemd_160"></a>
+<a id="0x2_evm_ripemd_160"></a>
 
 ## Function `ripemd_160`
 
@@ -152,7 +152,7 @@ Hash function.
 
 
 
-<a name="0x2_evm_identity"></a>
+<a id="0x2_evm_identity"></a>
 
 ## Function `identity`
 
@@ -168,7 +168,7 @@ Returns the input.
 
 
 
-<a name="0x2_evm_modexp"></a>
+<a id="0x2_evm_modexp"></a>
 
 ## Function `modexp`
 
@@ -189,7 +189,7 @@ Arbitrary-precision exponentiation under modulo.
 
 
 
-<a name="0x2_evm_ec_add"></a>
+<a id="0x2_evm_ec_add"></a>
 
 ## Function `ec_add`
 
@@ -211,7 +211,7 @@ Point addition (ADD) on the elliptic curve 'alt_bn128'.
 
 
 
-<a name="0x2_evm_ec_mul"></a>
+<a id="0x2_evm_ec_mul"></a>
 
 ## Function `ec_mul`
 
@@ -232,7 +232,7 @@ Scalar multiplication (MUL) on the elliptic curve 'alt_bn128'.
 
 
 
-<a name="0x2_evm_ec_pairing"></a>
+<a id="0x2_evm_ec_pairing"></a>
 
 ## Function `ec_pairing`
 
@@ -251,7 +251,7 @@ Bilinear function on groups on the elliptic curve 'alt_bn128'.
 
 
 
-<a name="0x2_evm_blake2f"></a>
+<a id="0x2_evm_blake2f"></a>
 
 ## Function `blake2f`
 
@@ -271,7 +271,7 @@ Compression function F used in the BLAKE2 cryptographic hashing algorithm.
 
 
 
-<a name="0x2_evm_point_evaluation"></a>
+<a id="0x2_evm_point_evaluation"></a>
 
 ## Function `point_evaluation`
 

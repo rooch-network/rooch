@@ -1,5 +1,5 @@
 
-<a name="0x2_bech32"></a>
+<a id="0x2_bech32"></a>
 
 # Module `0x2::bech32`
 
@@ -18,12 +18,12 @@ Module which defines bech32 functions.
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x2_bech32_E_DECODE_FAILED"></a>
+<a id="0x2_bech32_E_DECODE_FAILED"></a>
 
 
 
@@ -32,7 +32,7 @@ Module which defines bech32 functions.
 
 
 
-<a name="0x2_bech32_BIP350"></a>
+<a id="0x2_bech32_BIP350"></a>
 
 
 
@@ -41,7 +41,7 @@ Module which defines bech32 functions.
 
 
 
-<a name="0x2_bech32_E_ENCODE_FAILED"></a>
+<a id="0x2_bech32_E_ENCODE_FAILED"></a>
 
 
 
@@ -50,7 +50,7 @@ Module which defines bech32 functions.
 
 
 
-<a name="0x2_bech32_E_INVALID_BIP_CODE"></a>
+<a id="0x2_bech32_E_INVALID_BIP_CODE"></a>
 
 
 
@@ -59,7 +59,7 @@ Module which defines bech32 functions.
 
 
 
-<a name="0x2_bech32_E_INVALID_NETWORK"></a>
+<a id="0x2_bech32_E_INVALID_NETWORK"></a>
 
 
 
@@ -68,7 +68,7 @@ Module which defines bech32 functions.
 
 
 
-<a name="0x2_bech32_E_INVALID_WITNESS_VERSION"></a>
+<a id="0x2_bech32_E_INVALID_WITNESS_VERSION"></a>
 
 
 
@@ -77,7 +77,7 @@ Module which defines bech32 functions.
 
 
 
-<a name="0x2_bech32_encode"></a>
+<a id="0x2_bech32_encode"></a>
 
 ## Function `encode`
 
@@ -91,7 +91,7 @@ Encode arbitrary data using string as the human-readable part and append a bech3
 
 
 
-<a name="0x2_bech32_segwit_encode"></a>
+<a id="0x2_bech32_segwit_encode"></a>
 
 ## Function `segwit_encode`
 
@@ -106,7 +106,7 @@ Encode arbitrary data to a Bitcoin address using string as the network, number a
 
 
 
-<a name="0x2_bech32_decode"></a>
+<a id="0x2_bech32_decode"></a>
 
 ## Function `decode`
 
@@ -120,7 +120,7 @@ Decode a bech32 encoded string that includes a bech32 checksum.
 
 
 
-<a name="0x2_bech32_segwit_decode"></a>
+<a id="0x2_bech32_segwit_decode"></a>
 
 ## Function `segwit_decode`
 
@@ -135,7 +135,7 @@ Decode an encoded Bitcoin address
 
 
 
-<a name="0x2_bech32_bech32m_to_bip"></a>
+<a id="0x2_bech32_bech32m_to_bip"></a>
 
 ## Function `bech32m_to_bip`
 

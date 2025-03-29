@@ -1,5 +1,5 @@
 
-<a name="0x3_ecdsa_k1"></a>
+<a id="0x3_ecdsa_k1"></a>
 
 # Module `0x3::ecdsa_k1`
 
@@ -20,12 +20,12 @@
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x3_ecdsa_k1_ECDSA_K1_COMPRESSED_PUBKEY_LENGTH"></a>
+<a id="0x3_ecdsa_k1_ECDSA_K1_COMPRESSED_PUBKEY_LENGTH"></a>
 
 constant codes
 
@@ -35,7 +35,7 @@ constant codes
 
 
 
-<a name="0x3_ecdsa_k1_ECDSA_K1_SIG_LENGTH"></a>
+<a id="0x3_ecdsa_k1_ECDSA_K1_SIG_LENGTH"></a>
 
 
 
@@ -44,7 +44,7 @@ constant codes
 
 
 
-<a name="0x3_ecdsa_k1_ECDSA_K1_UNCOMPRESSED_PUBKEY_LENGTH"></a>
+<a id="0x3_ecdsa_k1_ECDSA_K1_UNCOMPRESSED_PUBKEY_LENGTH"></a>
 
 
 
@@ -53,7 +53,7 @@ constant codes
 
 
 
-<a name="0x3_ecdsa_k1_ErrorFailToRecoverPubKey"></a>
+<a id="0x3_ecdsa_k1_ErrorFailToRecoverPubKey"></a>
 
 Error if the public key cannot be recovered from the signature.
 
@@ -63,7 +63,7 @@ Error if the public key cannot be recovered from the signature.
 
 
 
-<a name="0x3_ecdsa_k1_ErrorInvalidHashType"></a>
+<a id="0x3_ecdsa_k1_ErrorInvalidHashType"></a>
 
 Invalid hash function
 
@@ -73,7 +73,7 @@ Invalid hash function
 
 
 
-<a name="0x3_ecdsa_k1_ErrorInvalidPubKey"></a>
+<a id="0x3_ecdsa_k1_ErrorInvalidPubKey"></a>
 
 Error if the public key is invalid.
 
@@ -83,7 +83,7 @@ Error if the public key is invalid.
 
 
 
-<a name="0x3_ecdsa_k1_ErrorInvalidSignature"></a>
+<a id="0x3_ecdsa_k1_ErrorInvalidSignature"></a>
 
 Error if the signature is invalid.
 
@@ -93,7 +93,7 @@ Error if the signature is invalid.
 
 
 
-<a name="0x3_ecdsa_k1_KECCAK256"></a>
+<a id="0x3_ecdsa_k1_KECCAK256"></a>
 
 Hash function name that are valid for ecrecover and verify.
 
@@ -103,7 +103,7 @@ Hash function name that are valid for ecrecover and verify.
 
 
 
-<a name="0x3_ecdsa_k1_SHA256"></a>
+<a id="0x3_ecdsa_k1_SHA256"></a>
 
 
 
@@ -112,7 +112,7 @@ Hash function name that are valid for ecrecover and verify.
 
 
 
-<a name="0x3_ecdsa_k1_public_key_length"></a>
+<a id="0x3_ecdsa_k1_public_key_length"></a>
 
 ## Function `public_key_length`
 
@@ -124,7 +124,7 @@ built-in functions
 
 
 
-<a name="0x3_ecdsa_k1_uncompressed_public_key_length"></a>
+<a id="0x3_ecdsa_k1_uncompressed_public_key_length"></a>
 
 ## Function `uncompressed_public_key_length`
 
@@ -135,7 +135,7 @@ built-in functions
 
 
 
-<a name="0x3_ecdsa_k1_keccak256"></a>
+<a id="0x3_ecdsa_k1_keccak256"></a>
 
 ## Function `keccak256`
 
@@ -146,7 +146,7 @@ built-in functions
 
 
 
-<a name="0x3_ecdsa_k1_sha256"></a>
+<a id="0x3_ecdsa_k1_sha256"></a>
 
 ## Function `sha256`
 
@@ -157,7 +157,7 @@ built-in functions
 
 
 
-<a name="0x3_ecdsa_k1_ecrecover"></a>
+<a id="0x3_ecdsa_k1_ecrecover"></a>
 
 ## Function `ecrecover`
 
@@ -176,7 +176,7 @@ applied to Ecdsa signatures.
 
 
 
-<a name="0x3_ecdsa_k1_decompress_pubkey"></a>
+<a id="0x3_ecdsa_k1_decompress_pubkey"></a>
 
 ## Function `decompress_pubkey`
 
@@ -191,7 +191,7 @@ otherwise throw error.
 
 
 
-<a name="0x3_ecdsa_k1_verify"></a>
+<a id="0x3_ecdsa_k1_verify"></a>
 
 ## Function `verify`
 

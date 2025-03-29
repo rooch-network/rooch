@@ -113,7 +113,7 @@ async fn test_event_store() {
         address: AccountAddress::random(),
         module: Identifier::new("Module").unwrap(),
         name: Identifier::new("Name").unwrap(),
-        type_params: vec![TypeTag::Bool],
+        type_args: vec![TypeTag::Bool],
     };
     let tx_events = vec![
         TransactionEvent::new(test_struct_tag.clone(), b"data0".to_vec(), 100),
