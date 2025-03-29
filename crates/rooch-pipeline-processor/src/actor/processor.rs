@@ -131,10 +131,10 @@ impl PipelineProcessorActor {
                                 bitcoin::block::BlockHash::from_slice(&block_hash_vec)?;
                             let btc_block = bitcoin_client_proxy.get_block(block_hash).await?;
                             let block_body = BitcoinBlock::from(btc_block);
-                            self.execute_l1_block(L1BlockWithBody::new(
-                                block.clone(),
-                                block_body.encode(),
-                            ))
+                            self.execute_l1_block(
+                                L1BlockWithBody::new(block.clone(), block_body.encode()),
+                                Some(tx_hash),
+                            )
                             .await?;
                         }
                         None => {
@@ -146,12 +146,12 @@ impl PipelineProcessorActor {
                 }
                 LedgerTxData::L1Tx(l1_tx) => {
                     debug!("process_sequenced_tx_on_startup l1_tx: {:?}", l1_tx);
-                    self.execute_l1_tx(l1_tx.clone()).await?;
+                    self.execute_l1_tx(l1_tx.clone(), Some(tx_hash)).await?;
                 }
                 LedgerTxData::L2Tx(l2_tx) => {
                     debug!("process_sequenced_tx_on_startup l2_tx: {:?}", l2_tx);
 
-                    match self.execute_l2_tx(l2_tx.clone()).await {
+                    match self.execute_l2_tx(l2_tx.clone(), Some(tx_hash)).await {
                         Ok(_v) => {}
                         Err(err) => {
                             tracing::error!(
@@ -240,7 +240,7 @@ impl PipelineProcessorActor {
                 );
             if tx_type != "L2Tx" {
                 let _ = self.update_service_status(ServiceStatus::Maintenance).await; // okay to ignore
-                tracing::info!("set service to Maintenance mode and pause the relayer");
+                info!("set service to Maintenance mode and pause the relayer");
                 return;
             }
         }
@@ -265,6 +265,7 @@ impl PipelineProcessorActor {
     pub async fn execute_l1_block(
         &mut self,
         l1_block_with_body: L1BlockWithBody,
+        sequenced_tx_hash: Option<H256>,
     ) -> Result<ExecuteTransactionResponse> {
         let fn_name = function_name!();
         let _timer = self
@@ -276,9 +277,16 @@ impl PipelineProcessorActor {
         let block = l1_block_with_body.block.clone();
         let moveos_tx = self.executor.validate_l1_block(l1_block_with_body).await?;
         let block_height = block.block_height;
-        let mut ledger_tx = self
-            .sequence_and_public_tx(LedgerTxData::L1Block(block))
-            .await?;
+        let mut ledger_tx: LedgerTransaction = if let Some(tx_hash) = sequenced_tx_hash {
+            self.rooch_db
+                .rooch_store
+                .transaction_store
+                .get_transaction_by_hash(tx_hash)?
+                .ok_or_else(|| anyhow::anyhow!("The tx with hash {} should exists", tx_hash))?
+        } else {
+            self.sequence_and_public_tx(LedgerTxData::L1Block(block))
+                .await?
+        };
 
         let tx_order = ledger_tx.sequence_info.tx_order;
         let tx_hash = ledger_tx.tx_hash();
@@ -314,6 +322,7 @@ impl PipelineProcessorActor {
     pub async fn execute_l1_tx(
         &mut self,
         l1_tx: L1Transaction,
+        sequenced_tx_hash: Option<H256>,
     ) -> Result<ExecuteTransactionResponse> {
         let fn_name = function_name!();
         let _timer = self
@@ -323,9 +332,16 @@ impl PipelineProcessorActor {
             .start_timer();
 
         let moveos_tx = self.executor.validate_l1_tx(l1_tx.clone()).await?;
-        let mut ledger_tx = self
-            .sequence_and_public_tx(LedgerTxData::L1Tx(l1_tx))
-            .await?;
+        let mut ledger_tx: LedgerTransaction = if let Some(tx_hash) = sequenced_tx_hash {
+            self.rooch_db
+                .rooch_store
+                .transaction_store
+                .get_transaction_by_hash(tx_hash)?
+                .ok_or_else(|| anyhow::anyhow!("The tx with hash {} should exists", tx_hash))?
+        } else {
+            self.sequence_and_public_tx(LedgerTxData::L1Tx(l1_tx))
+                .await?
+        };
 
         let size = moveos_tx.ctx.tx_size;
         let tx_order = ledger_tx.sequence_info.tx_order;
@@ -354,6 +370,7 @@ impl PipelineProcessorActor {
     pub async fn execute_l2_tx(
         &mut self,
         mut tx: RoochTransaction,
+        sequenced_tx_hash: Option<H256>,
     ) -> Result<ExecuteTransactionResponse> {
         let fn_name = function_name!();
         let _timer = self
@@ -364,9 +381,16 @@ impl PipelineProcessorActor {
 
         let tx_hash = tx.tx_hash(); // cache tx_hash
         let moveos_tx = self.executor.validate_l2_tx(tx.clone()).await?;
-        let ledger_tx = self
-            .sequence_and_public_tx(LedgerTxData::L2Tx(tx.clone()))
-            .await?;
+        let ledger_tx = if let Some(tx_hash) = sequenced_tx_hash {
+            self.rooch_db
+                .rooch_store
+                .transaction_store
+                .get_transaction_by_hash(tx_hash)?
+                .ok_or_else(|| anyhow::anyhow!("The tx with hash {} should exists", tx_hash))?
+        } else {
+            self.sequence_and_public_tx(LedgerTxData::L2Tx(tx.clone()))
+                .await?
+        };
 
         let tx_order = ledger_tx.sequence_info.tx_order;
         let size = moveos_tx.ctx.tx_size;
@@ -508,7 +532,7 @@ impl Handler<ExecuteL2TxMessage> for PipelineProcessorActor {
         msg: ExecuteL2TxMessage,
         _ctx: &mut ActorContext,
     ) -> Result<ExecuteTransactionResponse> {
-        self.execute_l2_tx(msg.tx).await
+        self.execute_l2_tx(msg.tx, None).await
     }
 }
 
@@ -519,7 +543,7 @@ impl Handler<ExecuteL1BlockMessage> for PipelineProcessorActor {
         msg: ExecuteL1BlockMessage,
         _ctx: &mut ActorContext,
     ) -> Result<ExecuteTransactionResponse> {
-        self.execute_l1_block(msg.tx).await
+        self.execute_l1_block(msg.tx, None).await
     }
 }
 
@@ -530,7 +554,7 @@ impl Handler<ExecuteL1TxMessage> for PipelineProcessorActor {
         msg: ExecuteL1TxMessage,
         _ctx: &mut ActorContext,
     ) -> Result<ExecuteTransactionResponse> {
-        self.execute_l1_tx(msg.tx).await
+        self.execute_l1_tx(msg.tx, None).await
     }
 }
 
