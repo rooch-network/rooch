@@ -11,7 +11,7 @@ use rocksdb::{ColumnFamilyDescriptor, DB};
 use rooch_config::da_config::derive_namespace_from_genesis;
 use rooch_config::RoochOpt;
 use rooch_db::RoochDB;
-use rooch_genesis::load_genesis_from_binary;
+use rooch_genesis::{load_genesis_from_binary, RoochGenesis};
 use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_types::address::RoochAddress;
 use rooch_types::crypto::RoochKeyPair;
@@ -186,7 +186,9 @@ pub fn derive_builtin_genesis_namespace_from_rooch_chain_id(
 
 pub fn derive_builtin_genesis_namespace(chain_id: BuiltinChainID) -> anyhow::Result<String> {
     let genesis = load_genesis_from_binary(chain_id)?.expect("Genesis not found");
-    let genesis_hash = genesis.genesis_hash();
+    let genesis_v1 = RoochGenesis::from(genesis);
+
+    let genesis_hash = genesis_v1.genesis_hash();
     Ok(derive_namespace_from_genesis(genesis_hash))
 }
 

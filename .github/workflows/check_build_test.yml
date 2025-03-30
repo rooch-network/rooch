@@ -8,7 +8,7 @@ on:
       - 'fixtures/**'
       - 'kube/**'
       - '**.md'
-      - 'crates/rooch-pipeline-processor/tx_anomalies/**'
+      - 'crates/rooch-anomalies/static/**'
   pull_request:
     branches: [ 'main' ]
     paths-ignore:
@@ -16,7 +16,7 @@ on:
       - 'fixtures/**'
       - 'kube/**'
       - '**.md'
-      - 'crates/rooch-pipeline-processor/tx_anomalies/**'
+      - 'crates/rooch-anomalies/static/**'
 
 env:
   CARGO_TERM_COLOR: always

@@ -23,6 +23,7 @@ members = [
     "crates/bitcoin-client",
     "crates/data_verify",
     "crates/rooch",
+    "crates/rooch-anomalies",
     "crates/rooch-benchmarks",
     "crates/rooch-common",
     "crates/rooch-config",
@@ -113,6 +114,7 @@ moveos-gas-profiling = { path = "moveos/moveos-gas-profiling" }
 bitcoin-client = { path = "crates/bitcoin-client" }
 data-verify = { path = "crates/data_verify" }
 rooch = { path = "crates/rooch" }
+rooch-anomalies = { path = "crates/rooch-anomalies" }
 rooch-common = { path = "crates/rooch-common" }
 rooch-key = { path = "crates/rooch-key" }
 rooch-types = { path = "crates/rooch-types" }
