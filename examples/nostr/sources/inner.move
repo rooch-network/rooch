@@ -1,0 +1,209 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
+/// Internal data structures
+module nostr::inner {
+    use std::vector;
+    use std::string::{Self, String};
+    use std::option;
+
+    // Name of the tag of the event
+    const EVENT_TAG_KEY: vector<u8> = b"e";
+    const USER_TAG_KEY: vector<u8> = b"p";
+    const ADDRESSABLE_REPLACEABLE_TAG_KEY: vector<u8> = b"a";
+
+    // Punctuation marks
+    const COLON: vector<u8> = b":";
+
+    // Hex literals for kind max value
+    const KIND_UPPER_VALUE: u16 = 0xFFFF;
+
+    // Error codes starting from 1000
+    const ErrorMalformedOtherEventId: u64 = 1000;
+    const ErrorMalformedPublicKey: u64 = 1001;
+    const ErrorKindOutOfRange: u64 = 1002;
+
+    /// EventData for the internal data struct
+    #[data_struct]
+    struct EventData has key {
+        id: vector<u8>, // 32-bytes lowercase hex-encoded sha256 of the serialized event data
+        pubkey: vector<u8>, // 32-bytes lowercase hex-encoded public key of the event creator
+        created_at: u64, // unix timestamp in seconds
+        kind: u16, // integer between 0 and 65535
+        tags: vector<Tags>, // an array of Tags from non-null arbitrary string
+        content: vector<u8>, // arbitrary string
+        sig: vector<u8> // 64-bytes lowercase hex of the signature of the sha256 hash of the serialized event data, which is the same as the "id" field
+    }
+
+    /// Tags
+    #[data_struct]
+    struct Tags {
+        /// For referring to an event
+        event: Option<EventTag>,
+        /// For another user
+        user: Option<UserTag>,
+        /// For addressable or replaceable events
+        addressable_replaceable: Option<AddressableReplaceableTag>,
+        /// For other non-null strings
+        non_null_string: Option<NonNullStringTag>
+    }
+
+    /// EventTag with `e` name
+    #[data_struct]
+    struct EventTag {
+        id: vector<u8>,
+        url: Option<String>,
+        pubkey: Option<vector<u8>>
+    }
+
+    /// UserTag with `p` name
+    #[data_struct]
+    struct UserTag {
+        pubkey: vector<u8>,
+        url: Option<String>
+    }
+
+    /// AddressableReplaceableTag with `a` name
+    #[data_struct]
+    struct AddressableReplaceableTag {
+        kind: u16,
+        pubkey: vector<u8>,
+        d: Option<String>,
+        url: Option<String>
+    }
+
+    /// NonNullStringTag with non-empty value
+    #[data_struct]
+    struct NonNullStringTag {
+        str: String
+    }
+
+    /// build string tags to inner struct tags
+    fun build_tags(tags_str: vector<vector<String>>): vector<Tags> {
+        // init tags list
+        let tags_list = vector::empty<Tags>();
+        // perform build
+        let i = 0;
+        let tags_str_len = vector::length(tags_str);
+        while (i < tags_str_len) {
+            let tag_str_list = vector::borrow(&tags_str, i);
+            let o = 0;
+            let tag_str_list_len = vector::length(tag_str_list);
+            while (o < tag_str_list_len) {
+                let tag_str = vector::borrow(&tag_str_list, o);
+                // take special circumstance for the NIP-01 defined tag keys
+                if (o == 0) {
+                    let tag_value_index = o + 1;
+                    let tag_value = vector::borrow(&tag_str_list, tag_value_index);
+                    let tag_bytes = string::bytes(&tag_str);
+                    // EVENT_TAG_KEY
+                    if (tag_bytes == &EVENT_TAG_KEY) {
+                        // get the id of another Event
+                        let id = bcs::to_bytes(&tag_value);
+                        assert!(vector::length(&id) == 32, ErrorMalformedOtherEventId);
+                        // get the url of recommended relay if it exists
+                        let url_option = option::none<String>();
+                        if (tag_str_list_len == 3) {
+                            let index = o + 2;
+                            let str = vector::borrow(&tag_str_list, index);
+                            option::fill<String>(url_option, str);
+                        }
+                        // get the author's public key if it exists
+                        let pubkey_option = option::none<vector<u8>>();
+                        if (tag_str_list_len == 4) {
+                            let index = o + 3;
+                            let pubkey = vector::borrow(&tag_str_list, index);
+                            option::fill<String>(pubkey_option, pubkey);
+                        }
+                        let event_tag = EventTag {
+                            id,
+                            url: url_option,
+                            pubkey: pubkey_option
+                        }
+                        let tags = Tags {
+                            event: option::some(event_tag),
+                            user: option::none<UserTag>(),
+                            addressable_replaceable: option::none<AddressableReplaceableTag>(),
+                            non_null_string: option::none<NonNullStringTag>()
+                        }
+                        vector::push_back(&mut tags_list, tags);
+                    }
+                    // USER_TAG_KEY
+                    if (tag_bytes == &USER_TAG_KEY) {
+                        // get the public key
+                        let pubkey = bcs::to_bytes(&tag_value);
+                        assert!(vector::length(&pubkey) == 32, ErrorMalformedPublicKey);
+                        // get the url of recommended relay if it exists
+                        let url_option = option::none<String>();
+                        if (tag_str_list_len == 3) {
+                            let index = o + 2;
+                            let url = vector::borrow(&tag_str_list, index);
+                            option::fill<String>(url_option, url);
+                        }
+                        let user_tag = UserTag {
+                            pubkey,
+                            url: url_option,
+                        }
+                        let tags = Tags {
+                            event: option::none<EventTag>(),
+                            user: option::some(user_tag),
+                            addressable_replaceable: option::none<AddressableReplaceableTag>(),
+                            non_null_string: option::none<NonNullStringTag>()
+                        }
+                        vector::push_back(&mut tags_list, tags);
+                    }
+                    // ADDRESSABLE_REPLACEABLE_TAG_KEY
+                    if (tag_bytes == &ADDRESSABLE_REPLACEABLE_TAG_KEY) {
+                        // identify the colon
+                        let colon = string::utf8(COLON);
+                        // get first colon position
+                        let first_occur_colon_pos = string::index_of(&tag_value, &colon);
+                        // kind of the string
+                        let kind = string::sub_string(&tag_value, 0, first_occur_colon_pos);
+                        let kind_bytes = string::bytes(&kind);
+                        assert!(kind_bytes <= &KIND_UPPER_VALUE, ErrorKindOutOfRange);
+                        // get the length of the string
+                        let tag_value_len = vector::length(&tag_value);
+                        // get remaining values of the string, ignore the first colon
+                        let remain_str = string::sub_string(&tag_value, first_occur_colon_pos + 1, tag_value_len);
+                        // get second colon position
+                        let second_occur_colon_pos = string::index_of(&remain_str, &colon);
+                        // public key of the string
+                        let pubkey = string::sub_string(&remain_str, 0, second_occur_colon_pos);
+                        let pubkey_bytes = string::bytes(&pubkey);
+                        let pubkey_len = vector::length(pubkey_bytes);
+                        assert!(pubkey_len == 32, ErrorMalformedPublicKey);
+                        // handle d tag value
+                        let d_tag_option = option::none<String>();
+                        if (second_occur_colon_pos + 1 <= tag_value_len) {
+                            let d_tag = string::sub_string(&remain_str, second_occur_colon_pos + 1, tag_value_len);
+                            option::fill<String>(d_tag_option, d_tag);
+                        }
+                        // get the url of recommended relay if it exists
+                        let url_option = option::none<String>();
+                        if (tag_str_list_len == 3) {
+                            let index = o + 2;
+                            let url = vector::borrow(&tag_str_list, index);
+                            option::fill<String>(url_option, url);
+                        }
+                        let addressable_replaceable_tag = AddressableReplaceableTag {
+                            kind: *kind_bytes,
+                            pubkey: *pubkey_bytes,
+                            d: d_tag_option,
+                            url: url_option,
+                        }
+                        let tags = Tags {
+                            event: option::none<EventTag>(),
+                            user: option::none<UserTag>(),
+                            addressable_replaceable: option::some(addressable_replaceable_tag),
+                            non_null_string: option::none<NonNullStringTag>()
+                        }
+                        vector::push_back(&mut tags_list, tags);
+                    }
+                }
+                // TODO: proceed with normal arbitrary strings
+
+            }
+        }
+    }
+}
