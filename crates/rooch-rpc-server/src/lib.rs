@@ -309,6 +309,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         last_tx_order,
         false,
         opt.da_config().da_min_block_to_submit,
+        false,
     )?;
     info!("DA meta issues: {:?}, fixed: {:?}", da_issues, da_fixed);
     let da_config = opt.da_config().clone();
