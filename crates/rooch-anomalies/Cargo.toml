@@ -1,0 +1,23 @@
+[package]
+name = "rooch-anomalies"
+
+# Workspace inherited keys
+version = { workspace = true }
+authors = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+publish = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+
+[dependencies]
+anyhow = { workspace = true }
+bcs = { workspace = true }
+tracing = { workspace = true }
+include_dir = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+proptest = { workspace = true }
+
+moveos-types = { workspace = true }

@@ -24,6 +24,7 @@ use moveos_types::startup_info;
 use moveos_types::transaction::{TransactionExecutionInfo, VerifiedMoveOSTransaction};
 use raw_store::rocks::batch::WriteBatch;
 use raw_store::traits::DBStore;
+use rooch_anomalies::{load_tx_anomalies, TxAnomalies};
 use rooch_common::humanize::parse_bytes;
 use rooch_config::R_OPT_NET_HELP;
 use rooch_db::RoochDB;
@@ -33,7 +34,6 @@ use rooch_executor::proxy::ExecutorProxy;
 use rooch_notify::actor::NotifyActor;
 use rooch_notify::subscription_handler::SubscriptionHandler;
 use rooch_pipeline_processor::actor::processor::is_vm_panic_error;
-use rooch_pipeline_processor::actor::{load_tx_anomalies, TxAnomalies};
 use rooch_store::meta_store::SEQUENCER_INFO_KEY;
 use rooch_store::META_SEQUENCER_INFO_COLUMN_FAMILY_NAME;
 use rooch_types::bitcoin::types::Block as BitcoinBlock;
@@ -236,7 +236,7 @@ impl ExecCommand {
         .await?;
 
         let genesis_namespace = derive_builtin_genesis_namespace(self.chain_id)?;
-        let tx_anomalies = load_tx_anomalies(genesis_namespace)?;
+        let tx_anomalies = load_tx_anomalies(genesis_namespace.clone())?;
 
         let sequenced_tx_store =
             SequencedTxStore::new(rooch_db.rooch_store.clone(), tx_anomalies.clone())?;
@@ -539,7 +539,7 @@ impl ExecInner {
                 let tx_list = result?;
             if tx_list.is_none() {
                 if self.mode == ExecMode::Sync {
-                    sleep(Duration::from_secs(5 * 60)).await;
+                    sleep(Duration::from_secs(5)).await;
                     continue;
                 }
                 next_block_number -= 1; // no chunk belongs to this block_number

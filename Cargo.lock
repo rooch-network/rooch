@@ -10320,6 +10320,7 @@ dependencies = [
  "regex",
  "reqwest 0.12.7",
  "rocksdb",
+ "rooch-anomalies",
  "rooch-common",
  "rooch-config",
  "rooch-db",
@@ -10360,6 +10361,20 @@ dependencies = [
  "wasmer",
  "xorf",
  "xxhash-rust",
+]
+
+[[package]]
+name = "rooch-anomalies"
+version = "0.9.2"
+dependencies = [
+ "anyhow 1.0.95",
+ "bcs",
+ "include_dir",
+ "moveos-types",
+ "proptest",
+ "serde 1.0.219",
+ "serde_json",
+ "tracing",
 ]
 
 [[package]]
@@ -10871,7 +10886,6 @@ dependencies = [
  "coerce",
  "function_name",
  "hex",
- "include_dir",
  "metrics",
  "moveos",
  "moveos-types",
@@ -10883,8 +10897,6 @@ dependencies = [
  "rooch-notify",
  "rooch-sequencer",
  "rooch-types",
- "serde 1.0.219",
- "serde_json",
  "tracing",
 ]
 

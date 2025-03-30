@@ -2,15 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::commands::db::commands::load_accumulator;
-use crate::utils::open_rooch_db;
+use crate::utils::{derive_builtin_genesis_namespace, open_rooch_db};
 use accumulator::accumulator_info::AccumulatorInfo;
 use accumulator::{Accumulator, MerkleAccumulator};
 use clap::Parser;
 use moveos_types::h256::H256;
+use rooch_anomalies::{load_tx_anomalies, AccumulatorIndexMapper};
 use rooch_config::R_OPT_NET_HELP;
 use rooch_store::RoochStore;
 use rooch_types::error::RoochResult;
-use rooch_types::rooch_network::RoochChainID;
+use rooch_types::rooch_network::{BuiltinChainID, RoochChainID};
 use std::path::PathBuf;
 use tracing::info;
 
@@ -30,14 +31,21 @@ pub struct VerifyOrderCommand {
     #[clap(long = "data-dir", short = 'd')]
     pub base_data_dir: Option<PathBuf>,
     #[clap(long, short = 'n', help = R_OPT_NET_HELP)]
-    pub chain_id: Option<RoochChainID>,
+    pub chain_id: BuiltinChainID,
 }
 
 impl VerifyOrderCommand {
     pub fn execute(self) -> RoochResult<()> {
-        let (_root, rooch_db, _start_time) = open_rooch_db(self.base_data_dir, self.chain_id);
+        let (_root, rooch_db, _start_time) = open_rooch_db(
+            self.base_data_dir,
+            Some(RoochChainID::Builtin(self.chain_id)),
+        );
         let rooch_store = rooch_db.rooch_store;
         let (tx_accumulator, last_tx_order_in_db) = load_accumulator(rooch_store.clone())?;
+
+        let genesis_namespace = derive_builtin_genesis_namespace(self.chain_id)?;
+        let tx_anomalies = load_tx_anomalies(genesis_namespace)?;
+        let accumulator_index_mapper = AccumulatorIndexMapper::new(tx_anomalies);
 
         if let Some(tx_hash) = self.tx_hash {
             let tx_order = self
@@ -49,6 +57,7 @@ impl VerifyOrderCommand {
                 tx_order,
                 Some(tx_hash),
                 self.bypass_hash_check,
+                &accumulator_index_mapper,
             )?;
             return Ok(());
         }
@@ -56,7 +65,13 @@ impl VerifyOrderCommand {
         let first_tx_order = self.first_tx_order.unwrap_or(0);
         let last_tx_order = self.last_tx_order.unwrap_or(last_tx_order_in_db);
 
-        verify_txs(&tx_accumulator, rooch_store, first_tx_order, last_tx_order)?;
+        verify_txs(
+            &tx_accumulator,
+            rooch_store,
+            first_tx_order,
+            last_tx_order,
+            &accumulator_index_mapper,
+        )?;
         Ok(())
     }
 }
@@ -67,6 +82,7 @@ fn verify_single_tx(
     tx_order: u64,
     tx_hash_opt: Option<H256>,
     bypass_hash_check: bool,
+    accumulator_index_mapper: &AccumulatorIndexMapper,
 ) -> anyhow::Result<()> {
     let tx_hash_in_db = rooch_store
         .transaction_store
@@ -102,6 +118,7 @@ fn verify_single_tx(
         tx_accumulator_root,
         tx_hash,
         tx_order,
+        accumulator_index_mapper,
     )
 }
 
@@ -110,6 +127,7 @@ fn verify_txs(
     rooch_store: RoochStore,
     first_tx_order: u64,
     last_tx_order: u64,
+    accumulator_index_mapper: &AccumulatorIndexMapper,
 ) -> anyhow::Result<()> {
     info!(
         "Searching for invalid transaction between orders {} and {}",
@@ -123,6 +141,7 @@ fn verify_txs(
         first_tx_order,
         None,
         false,
+        accumulator_index_mapper,
     )
     .is_ok()
     {
@@ -131,6 +150,7 @@ fn verify_txs(
             rooch_store.clone(),
             first_tx_order,
             last_tx_order,
+            accumulator_index_mapper,
         );
 
         match min_invalid_tx_order {
@@ -143,7 +163,14 @@ fn verify_txs(
                 );
 
                 // Verify the invalid transaction to get the detailed error
-                verify_single_tx(accumulator, rooch_store, invalid_order, None, false)
+                verify_single_tx(
+                    accumulator,
+                    rooch_store,
+                    invalid_order,
+                    None,
+                    false,
+                    accumulator_index_mapper,
+                )
             }
             None => {
                 info!(
@@ -154,9 +181,15 @@ fn verify_txs(
             }
         }
     } else {
-        // First transaction is invalid
         info!("First transaction (order {}) is invalid", first_tx_order);
-        verify_single_tx(accumulator, rooch_store, first_tx_order, None, false)
+        verify_single_tx(
+            accumulator,
+            rooch_store,
+            first_tx_order,
+            None,
+            false,
+            accumulator_index_mapper,
+        )
     }
 }
 
@@ -166,8 +199,9 @@ fn find_first_invalid_tx(
     rooch_store: RoochStore,
     mut low: u64,
     mut high: u64,
+    accumulator_index_mapper: &AccumulatorIndexMapper,
 ) -> Option<u64> {
-    // Assuming all transactions in the range [low, high] might contain an invalid tx
+    // Assuming all transactions in the range [low, high] might contain an invalid tx,
     // We know low is valid (checked before calling this function)
 
     if low > high {
@@ -178,7 +212,15 @@ fn find_first_invalid_tx(
         // Check if we've narrowed down to adjacent transactions
         if high - low <= 1 {
             // Since we know low is valid, check if high is valid
-            return if verify_single_tx(accumulator, rooch_store.clone(), high, None, false).is_ok()
+            return if verify_single_tx(
+                accumulator,
+                rooch_store.clone(),
+                high,
+                None,
+                false,
+                accumulator_index_mapper,
+            )
+            .is_ok()
             {
                 None // All transactions are valid
             } else {
@@ -190,7 +232,16 @@ fn find_first_invalid_tx(
 
         info!("Binary search: checking tx order {}", mid);
 
-        if verify_single_tx(accumulator, rooch_store.clone(), mid, None, false).is_ok() {
+        if verify_single_tx(
+            accumulator,
+            rooch_store.clone(),
+            mid,
+            None,
+            false,
+            accumulator_index_mapper,
+        )
+        .is_ok()
+        {
             // If mid is valid, look in the higher half
             low = mid;
         } else {
@@ -208,8 +259,9 @@ fn verify_proof(
     root_hash: H256,
     tx_hash: H256,
     tx_order: u64,
+    accumulator_index_mapper: &AccumulatorIndexMapper,
 ) -> anyhow::Result<()> {
-    let leaf_index = tx_order;
+    let leaf_index = accumulator_index_mapper.get_index_for_order(tx_order);
     let proof = accumulator
         .get_proof(leaf_index)?
         .ok_or_else(|| anyhow::anyhow!("Proof of tx_order: {} not exist", leaf_index))?;
