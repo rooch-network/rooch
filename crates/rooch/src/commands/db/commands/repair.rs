@@ -22,6 +22,11 @@ pub struct RepairCommand {
         help = "execute repair, otherwise only report issues. default is false"
     )]
     pub exec: bool,
+    #[clap(
+        long = "fast-fail",
+        help = "fail fast on the first error, otherwise continue to check all issues"
+    )]
+    pub fast_fail: bool,
 
     #[clap(long = "data-dir", short = 'd')]
     pub base_data_dir: Option<PathBuf>,
@@ -33,7 +38,7 @@ impl RepairCommand {
     pub async fn execute(self) -> RoochResult<()> {
         let (_root, rooch_db, _start_time) = open_rooch_db(self.base_data_dir, self.chain_id);
 
-        let (issues, fixed) = rooch_db.repair(self.thorough, self.exec)?;
+        let (issues, fixed) = rooch_db.repair(self.thorough, self.exec, self.fast_fail)?;
 
         println!("issues found: {}, fixed: {}", issues, fixed);
 
