@@ -44,38 +44,42 @@ module nostr::inner {
         user: Option<UserTag>,
         /// For addressable or replaceable events
         addressable_replaceable: Option<AddressableReplaceableTag>,
-        /// For other non-null strings
-        non_null_string: Option<NonNullStringTag>
+        /// For other arrays of non-null strings
+        strings_list: Option<StringsListTag>
     }
 
-    /// EventTag with `e` name
+    /// EventTag with `e` key or name
     #[data_struct]
     struct EventTag {
+        // id as value
         id: vector<u8>,
         url: Option<String>,
         pubkey: Option<vector<u8>>
     }
 
-    /// UserTag with `p` name
+    /// UserTag with `p` key or name
     #[data_struct]
     struct UserTag {
+        // pubkey as value
         pubkey: vector<u8>,
         url: Option<String>
     }
 
-    /// AddressableReplaceableTag with `a` name
+    /// AddressableReplaceableTag with `a` key or name
     #[data_struct]
     struct AddressableReplaceableTag {
+        // kind:pubkey:d as value
         kind: u16,
         pubkey: vector<u8>,
         d: Option<String>,
         url: Option<String>
     }
 
-    /// NonNullStringTag with non-empty value
+    /// StringsListTag with non-empty array value of strings
     #[data_struct]
-    struct NonNullStringTag {
-        str: String
+    struct StringsListTag {
+        // the first and second elements of this string list are key or name and value
+        strings: vector<String>
     }
 
     /// build string tags to inner struct tags
@@ -86,6 +90,8 @@ module nostr::inner {
         let i = 0;
         let tags_str_len = vector::length(tags_str);
         while (i < tags_str_len) {
+            // init empty string list
+            let string_list = vector::empty<String>();
             let tag_str_list = vector::borrow(&tags_str, i);
             let o = 0;
             let tag_str_list_len = vector::length(tag_str_list);
@@ -119,14 +125,16 @@ module nostr::inner {
                             id,
                             url: url_option,
                             pubkey: pubkey_option
-                        }
+                        };
                         let tags = Tags {
                             event: option::some(event_tag),
                             user: option::none<UserTag>(),
                             addressable_replaceable: option::none<AddressableReplaceableTag>(),
-                            non_null_string: option::none<NonNullStringTag>()
-                        }
+                            strings_list: option::none<NonNullStringTag>()
+                        };
                         vector::push_back(&mut tags_list, tags);
+                        i = i + 1;
+                        break;
                     }
                     // USER_TAG_KEY
                     if (tag_bytes == &USER_TAG_KEY) {
@@ -143,14 +151,16 @@ module nostr::inner {
                         let user_tag = UserTag {
                             pubkey,
                             url: url_option,
-                        }
+                        };
                         let tags = Tags {
                             event: option::none<EventTag>(),
                             user: option::some(user_tag),
                             addressable_replaceable: option::none<AddressableReplaceableTag>(),
-                            non_null_string: option::none<NonNullStringTag>()
-                        }
+                            strings_list: option::none<NonNullStringTag>()
+                        };
                         vector::push_back(&mut tags_list, tags);
+                        i = i + 1;
+                        break;
                     }
                     // ADDRESSABLE_REPLACEABLE_TAG_KEY
                     if (tag_bytes == &ADDRESSABLE_REPLACEABLE_TAG_KEY) {
@@ -191,19 +201,35 @@ module nostr::inner {
                             pubkey: *pubkey_bytes,
                             d: d_tag_option,
                             url: url_option,
-                        }
+                        };
                         let tags = Tags {
                             event: option::none<EventTag>(),
                             user: option::none<UserTag>(),
                             addressable_replaceable: option::some(addressable_replaceable_tag),
-                            non_null_string: option::none<NonNullStringTag>()
-                        }
+                            strings_list: option::none<NonNullStringTag>()
+                        };
                         vector::push_back(&mut tags_list, tags);
+                        i = i + 1;
+                        break;
                     }
                 }
-                // TODO: proceed with normal arbitrary strings
-
+                // proceed with normal arbitrary tags
+                vector::push_back(&mut string_list, tag_str);
+                o = o + 1;
             }
+            // submit a list of strings to the tags and push to the tags list
+            let strings_list_tag = StringsListTag {
+                strings: string_list
+            };
+            let tags = Tags {
+                event: option::none<EventTag>(),
+                user: option::none<UserTag>(),
+                addressable_replaceable: option::none<AddressableReplaceableTag>(),
+                strings_list: option::some(strings_list_tag)
+            };
+            vector::push_back(&mut tags_list, tags);
+            i = i + 1;
         }
+        tags_list
     }
 }
