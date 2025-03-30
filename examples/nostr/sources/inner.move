@@ -6,6 +6,7 @@ module nostr::inner {
     use std::vector;
     use std::string::{Self, String};
     use std::option;
+    use moveos_std::string_utils;
 
     // Name of the tag of the event
     const EVENT_TAG_KEY: vector<u8> = b"e";
@@ -82,6 +83,22 @@ module nostr::inner {
         strings: vector<String>
     }
 
+    public fun event_tag_key_string(): String {
+        string::utf8(EVENT_TAG_KEY)
+    }
+
+    public fun user_tag_key_string(): String {
+        string::utf8(USER_TAG_KEY)
+    }
+
+    public fun addressable_replaceable_tag_key_string(): String {
+        string::utf8(ADDRESSABLE_REPLACEABLE_TAG_KEY)
+    }
+
+    public fun colon_string(): String {
+        string::utf8(COLON)
+    }
+
     /// build string tags to inner struct tags
     fun build_tags(tags_str: vector<vector<String>>): vector<Tags> {
         // init tags list
@@ -101,9 +118,8 @@ module nostr::inner {
                 if (o == 0) {
                     let tag_value_index = o + 1;
                     let tag_value = vector::borrow(&tag_str_list, tag_value_index);
-                    let tag_bytes = string::bytes(&tag_str);
                     // EVENT_TAG_KEY
-                    if (tag_bytes == &EVENT_TAG_KEY) {
+                    if (tag_str == event_tag_key_string()) {
                         // get the id of another Event
                         let id = bcs::to_bytes(&tag_value);
                         assert!(vector::length(&id) == 32, ErrorMalformedOtherEventId);
@@ -137,7 +153,7 @@ module nostr::inner {
                         break;
                     }
                     // USER_TAG_KEY
-                    if (tag_bytes == &USER_TAG_KEY) {
+                    if (tag_str == user_tag_key_string()) {
                         // get the public key
                         let pubkey = bcs::to_bytes(&tag_value);
                         assert!(vector::length(&pubkey) == 32, ErrorMalformedPublicKey);
@@ -163,21 +179,19 @@ module nostr::inner {
                         break;
                     }
                     // ADDRESSABLE_REPLACEABLE_TAG_KEY
-                    if (tag_bytes == &ADDRESSABLE_REPLACEABLE_TAG_KEY) {
-                        // identify the colon
-                        let colon = string::utf8(COLON);
+                    if (tag_str == addressable_replaceable_tag_key_string()) {
                         // get first colon position
-                        let first_occur_colon_pos = string::index_of(&tag_value, &colon);
+                        let first_occur_colon_pos = string::index_of(&tag_value, &colon_string());
                         // kind of the string
                         let kind = string::sub_string(&tag_value, 0, first_occur_colon_pos);
-                        let kind_bytes = string::bytes(&kind);
-                        assert!(kind_bytes <= &KIND_UPPER_VALUE, ErrorKindOutOfRange);
+                        let kind_value = string_utils::parse_u16(&kind);
+                        assert!(kind_value <= KIND_UPPER_VALUE, ErrorKindOutOfRange);
                         // get the length of the string
                         let tag_value_len = vector::length(&tag_value);
                         // get remaining values of the string, ignore the first colon
                         let remain_str = string::sub_string(&tag_value, first_occur_colon_pos + 1, tag_value_len);
                         // get second colon position
-                        let second_occur_colon_pos = string::index_of(&remain_str, &colon);
+                        let second_occur_colon_pos = string::index_of(&remain_str, &colon_string());
                         // public key of the string
                         let pubkey = string::sub_string(&remain_str, 0, second_occur_colon_pos);
                         let pubkey_bytes = string::bytes(&pubkey);
@@ -197,7 +211,7 @@ module nostr::inner {
                             option::fill<String>(url_option, url);
                         }
                         let addressable_replaceable_tag = AddressableReplaceableTag {
-                            kind: *kind_bytes,
+                            kind: kind_value,
                             pubkey: *pubkey_bytes,
                             d: d_tag_option,
                             url: url_option,
