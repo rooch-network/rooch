@@ -2,8 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import WebSocket from 'ws'
-import { JsonRpcError } from './error.js'
+import { EventEmitter } from 'events'
+import { JsonRpcRequest } from './types/jsonRpc.js'
+import { Subscription, RoochSubscriptionTransport } from './subscriptionTransportInterface.js'
 import { RoochTransport, RoochTransportRequestOptions } from './transportInterface.js'
+import { JsonRpcError } from './error.js'
 
 export interface RoochWebSocketTransportOptions {
   url: string
@@ -19,16 +22,18 @@ interface WsRequest {
   resolve: (value: any) => void
   reject: (error: Error) => void
   method: string
-  params: unknown[]
+  params: any
   timestamp: number
 }
 
-export class RoochWebSocketTransport implements RoochTransport {
+export class RoochWebSocketTransport implements RoochTransport, RoochSubscriptionTransport {
   #ws: WebSocket | null = null
   #requestId = 0
   #options: RoochWebSocketTransportOptions
   #pendingRequests = new Map<number, WsRequest>()
   #reconnectAttempts = 0
+  #subscriptions = new Map<string, { request: JsonRpcRequest; id: string }>()
+  #eventEmitter = new EventEmitter()
   readonly #maxReconnectAttempts: number
   readonly #reconnectDelay: number
   readonly #requestTimeout: number
@@ -62,6 +67,8 @@ export class RoochWebSocketTransport implements RoochTransport {
 
     this.#ws.onopen = () => {
       this.#reconnectAttempts = 0
+      this.#eventEmitter.emit('reconnected')
+      this.#resubscribeAll()
     }
 
     this.#ws.onclose = () => {
@@ -70,15 +77,23 @@ export class RoochWebSocketTransport implements RoochTransport {
 
     this.#ws.onmessage = (event: any) => {
       try {
-        const response = JSON.parse(event.data)
-        const request = this.#pendingRequests.get(response.id)
-        if (!request) return
+        const data = JSON.parse(event.data)
 
-        this.#pendingRequests.delete(response.id)
-        if ('error' in response && response.error != null) {
-          request.reject(new JsonRpcError(response.error.message, response.error.code))
-        } else {
-          request.resolve(response.result)
+        // Handle subscription events
+        if (data.method === 'subscription' && data.params) {
+          this.#eventEmitter.emit('event', data.params)
+          return
+        }
+
+        // Handle regular RPC responses
+        const request = this.#pendingRequests.get(data.id)
+        if (request) {
+          this.#pendingRequests.delete(data.id)
+          if ('error' in data && data.error != null) {
+            request.reject(new JsonRpcError(data.error.message, data.error.code))
+          } else {
+            request.resolve(data.result)
+          }
         }
       } catch (error) {
         console.error('Failed to parse WebSocket message:', error)
@@ -88,7 +103,13 @@ export class RoochWebSocketTransport implements RoochTransport {
 
   #handleReconnect(): void {
     if (this.#reconnectAttempts >= this.#maxReconnectAttempts) {
-      this.#rejectAllPending(new Error('WebSocket connection failed'))
+      this.#rejectAllPending(
+        new Error('WebSocket connection failed after maximum reconnection attempts'),
+      )
+      this.#eventEmitter.emit(
+        'error',
+        new Error('WebSocket connection failed after maximum reconnection attempts'),
+      )
       return
     }
 
@@ -103,7 +124,17 @@ export class RoochWebSocketTransport implements RoochTransport {
     this.#pendingRequests.clear()
   }
 
-  async request<T>(input: RoochTransportRequestOptions): Promise<T> {
+  #resubscribeAll(): void {
+    for (const [subscriptionId, { request }] of this.#subscriptions.entries()) {
+      // Don't wait for the promise since we're just restoring subscriptions
+      this.subscribe(request).catch((error) => {
+        console.error(`Failed to resubscribe to ${subscriptionId}:`, error)
+        this.#eventEmitter.emit('error', error)
+      })
+    }
+  }
+
+  async #ensureConnection(): Promise<void> {
     if (!this.#ws || this.#ws.readyState !== WebSocket.OPEN) {
       const startTime = Date.now()
       while (true) {
@@ -120,46 +151,135 @@ export class RoochWebSocketTransport implements RoochTransport {
         }
       }
     }
+  }
 
-    return new Promise((resolve, reject) => {
+  // RoochTransport implementation
+  async request<T>(input: RoochTransportRequestOptions): Promise<T> {
+    try {
+      await this.#ensureConnection()
+
+      return new Promise((resolve, reject) => {
+        const id = ++this.#requestId
+        const request: WsRequest = {
+          resolve,
+          reject,
+          method: input.method,
+          params: input.params,
+          timestamp: Date.now(),
+        }
+
+        this.#pendingRequests.set(id, request)
+        this.#ws!.send(
+          JSON.stringify({
+            jsonrpc: '2.0',
+            id,
+            method: input.method,
+            params: input.params,
+          }),
+        )
+
+        setTimeout(() => {
+          if (this.#pendingRequests.has(id)) {
+            this.#pendingRequests.delete(id)
+            reject(new Error('Request timeout'))
+          }
+        }, this.#requestTimeout)
+      })
+    } catch (error) {
+      throw error
+    }
+  }
+
+  // RoochSubscriptionTransport implementation
+  async subscribe(request: JsonRpcRequest): Promise<Subscription> {
+    try {
+      await this.#ensureConnection()
+
       const id = ++this.#requestId
-      const request: WsRequest = {
-        resolve,
-        reject,
-        method: input.method,
-        params: input.params,
-        timestamp: Date.now(),
-      }
 
-      this.#pendingRequests.set(id, request)
-      this.#ws!.send(
+      return new Promise((resolve, reject) => {
+        const wsRequest: WsRequest = {
+          resolve: (result) => {
+            const subscriptionId = result
+            this.#subscriptions.set(subscriptionId, {
+              request,
+              id: subscriptionId,
+            })
+
+            resolve({
+              id: subscriptionId,
+              unsubscribe: () => this.unsubscribe(subscriptionId),
+            })
+          },
+          reject,
+          method: request.method,
+          params: request.params || [],
+          timestamp: Date.now(),
+        }
+
+        this.#pendingRequests.set(id, wsRequest)
+
+        this.#ws!.send(
+          JSON.stringify({
+            jsonrpc: '2.0',
+            id,
+            method: request.method,
+            params: request.params || [],
+          }),
+        )
+
+        setTimeout(() => {
+          if (this.#pendingRequests.has(id)) {
+            this.#pendingRequests.delete(id)
+            reject(new Error('Subscription request timeout'))
+          }
+        }, this.#requestTimeout)
+      })
+    } catch (error) {
+      this.#eventEmitter.emit('error', error)
+      throw error
+    }
+  }
+
+  unsubscribe(subscriptionId: string): void {
+    if (!this.#subscriptions.has(subscriptionId)) return
+
+    if (this.#ws?.readyState === WebSocket.OPEN) {
+      const id = ++this.#requestId
+      this.#ws.send(
         JSON.stringify({
           jsonrpc: '2.0',
           id,
-          method: input.method,
-          params: input.params,
+          method: 'rooch_unsubscribe',
+          params: [subscriptionId],
         }),
       )
+    }
 
-      setTimeout(() => {
-        if (this.#pendingRequests.has(id)) {
-          this.#pendingRequests.delete(id)
-          reject(new Error('Request timeout'))
-        }
-      }, this.#requestTimeout)
-    })
+    this.#subscriptions.delete(subscriptionId)
+  }
+
+  onEvent(callback: (event: any) => void): void {
+    this.#eventEmitter.on('event', callback)
+  }
+
+  onReconnected(callback: () => void): void {
+    this.#eventEmitter.on('reconnected', callback)
+  }
+
+  onError(callback: (error: Error) => void): void {
+    this.#eventEmitter.on('error', callback)
   }
 
   destroy(): void {
-    this.disconnect()
-  }
-
-  // Make disconnect private since we now have destroy()
-  private disconnect(): void {
     if (this.#ws) {
       this.#ws.close()
-      this.#rejectAllPending(new Error('WebSocket disconnected'))
       this.#ws = null
     }
+
+    this.#rejectAllPending(new Error('WebSocket disconnected'))
+    this.#eventEmitter.removeAllListeners()
+    this.#subscriptions.clear()
+    this.#pendingRequests.clear()
   }
 }
