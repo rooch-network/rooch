@@ -27,6 +27,8 @@ pub struct RepairCommand {
         help = "fail fast on the first error, otherwise continue to check all issues"
     )]
     pub fast_fail: bool,
+    #[clap(long = "sync-mode", help = "if true, no DA block will be generated")]
+    pub sync_mode: bool,
 
     #[clap(long = "data-dir", short = 'd')]
     pub base_data_dir: Option<PathBuf>,
@@ -38,7 +40,8 @@ impl RepairCommand {
     pub async fn execute(self) -> RoochResult<()> {
         let (_root, rooch_db, _start_time) = open_rooch_db(self.base_data_dir, self.chain_id);
 
-        let (issues, fixed) = rooch_db.repair(self.thorough, self.exec, self.fast_fail)?;
+        let (issues, fixed) =
+            rooch_db.repair(self.thorough, self.exec, self.fast_fail, self.sync_mode)?;
 
         println!("issues found: {}, fixed: {}", issues, fixed);
 

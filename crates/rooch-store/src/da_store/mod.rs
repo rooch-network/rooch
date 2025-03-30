@@ -51,6 +51,7 @@ pub trait DAMetaStore {
         thorough: bool,
         da_min_block_to_submit: Option<u128>,
         fast_fail: bool,
+        sync_mode: bool,
     ) -> anyhow::Result<(usize, usize)>;
 
     // append new submitting block with tx_order_start and tx_order_end, return the block_number
@@ -543,6 +544,7 @@ impl DAMetaStore for DAMetaDBStore {
         thorough: bool,
         da_min_block_to_submit: Option<u128>,
         fast_fail: bool,
+        sync_mode: bool,
     ) -> anyhow::Result<(usize, usize)> {
         let mut issues = 0;
         let mut fixed = 0;
@@ -551,7 +553,12 @@ impl DAMetaStore for DAMetaDBStore {
             issues += order_issues;
             fixed += order_fixed;
         }
-        (issues, fixed) = self.try_repair_blocks(last_order, issues, fixed)?;
+        if !sync_mode {
+            // sync_mode: no da block will be generated
+            // so we don't need to repair blocks
+            (issues, fixed) = self.try_repair_blocks(last_order, issues, fixed)?;
+        }
+
         self.try_repair_background_submit_block_cursor(da_min_block_to_submit)?;
 
         Ok((issues, fixed))

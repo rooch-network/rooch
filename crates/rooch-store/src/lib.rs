@@ -197,7 +197,13 @@ impl RoochStore {
         Ok(())
     }
 
-    pub fn repair(&self, thorough: bool, _exec: bool, fast_fail: bool) -> Result<(usize, usize)> {
+    pub fn repair(
+        &self,
+        thorough: bool,
+        _exec: bool,
+        fast_fail: bool,
+        sync_mode: bool,
+    ) -> Result<(usize, usize)> {
         let sequence_info = self
             .get_sequencer_info()?
             .ok_or_else(|| anyhow::anyhow!("Sequencer info not found"))?;
@@ -218,10 +224,13 @@ impl RoochStore {
             return Err(anyhow::anyhow!("Found issues, fast fail"));
         }
 
-        // exec or not, DA will exec repair automatically because there won't be external dependencies for repair DA meta
-        let (da_issues, da_fixed) =
-            self.da_meta_store
-                .try_repair_da_meta(exp_last_order, thorough, None, fast_fail)?;
+        let (da_issues, da_fixed) = self.da_meta_store.try_repair_da_meta(
+            exp_last_order,
+            thorough,
+            None,
+            fast_fail,
+            sync_mode,
+        )?;
         info!("DA repair done, issues: {}, fixed: {}", da_issues, da_fixed);
         issues += da_issues;
         fixed += da_fixed;
@@ -359,12 +368,14 @@ impl DAMetaStore for RoochStore {
         thorough: bool,
         da_min_block_to_submit: Option<u128>,
         fast_fail: bool,
+        sync_mode: bool,
     ) -> Result<(usize, usize)> {
         self.get_da_meta_store().try_repair_da_meta(
             last_order,
             thorough,
             da_min_block_to_submit,
             fast_fail,
+            sync_mode,
         )
     }
 
