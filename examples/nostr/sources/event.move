@@ -13,6 +13,7 @@ module nostr::event {
     use moveos_std::hex;
     use moveos_std::timestamp;
     use moveos_std::event;
+    use moveos_std::json;
     use rooch_framework::bitcoin_address;
     use rooch_framework::schnorr;
 
@@ -41,7 +42,7 @@ module nostr::event {
 
     /// Event
     #[data_struct]
-    struct Event has key {
+    struct Event has key, copy {
         id: vector<u8>, // 32-bytes lowercase hex-encoded sha256 of the serialized event data
         pubkey: vector<u8>, // 32-bytes lowercase hex-encoded public key of the event creator
         created_at: u64, // unix timestamp in seconds
@@ -140,7 +141,7 @@ module nostr::event {
     }
 
     /// Create an Event
-    public fun create_event(public_key: &vector<u8>, kind: &u16, tags: &vector<vector<String>>, content: &String, signature: &vector<u8>): Event {
+    public entry fun create_event(public_key: &vector<u8>, kind: &u16, tags: &vector<vector<String>>, content: &String, signature: &vector<u8>): Event {
         assert!(!string::length(content) > 1000, ErrorContentTooLarge);
         let pubkey = string::utf8(*public_key);
 
