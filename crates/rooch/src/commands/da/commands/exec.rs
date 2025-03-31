@@ -718,7 +718,7 @@ impl ExecInner {
 
         let mut bypass_execution = false;
         if let Some(tx_anomalies) = &self.tx_anomalies {
-            if tx_anomalies.is_no_execution_info(&tx_hash) {
+            if tx_anomalies.has_no_execution_info(&tx_hash) {
                 bypass_execution = true;
             }
         }

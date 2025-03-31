@@ -23,6 +23,7 @@ use raw_store::metrics::DBMetrics;
 use raw_store::rocks::batch::WriteBatch;
 use raw_store::traits::DBStore;
 use raw_store::{rocks::RocksDB, StoreInstance};
+use rooch_anomalies::TxAnomalies;
 use rooch_config::store_config::StoreConfig;
 use rooch_indexer::store::traits::IndexerStoreTrait;
 use rooch_indexer::{indexer_reader::IndexerReader, list_field_indexer_keys, IndexerStore};
@@ -388,8 +389,8 @@ impl RoochDB {
 
     // check the moveos store:
     // last execution info match state root
-    fn check_moveos_store_thorough(&self) -> anyhow::Result<()> {
-        let mut last_order = self
+    fn check_moveos_store_thorough(&self, tx_anomalies: Option<TxAnomalies>) -> anyhow::Result<()> {
+        let last_order = self
             .rooch_store
             .get_sequencer_info()?
             .ok_or_else(|| anyhow::anyhow!("Sequencer info not found"))?
@@ -397,30 +398,54 @@ impl RoochDB {
         if last_order == 0 {
             return Ok(()); // Only genesis
         }
-        let mut state_root = H256::default();
+
+        // backwards search for the last executed transaction
+        let mut last_executed_tx_order = 0;
         for order in (1..=last_order).rev() {
             let tx_hash = self.rooch_store.get_tx_hashes(vec![order])?.pop().flatten();
+
             if let Some(tx_hash) = tx_hash {
-                let execution_info = self.moveos_store.get_tx_execution_info(tx_hash)?;
-                if let Some(execution_info) = execution_info {
-                    state_root = execution_info.state_root;
-                    last_order = order;
-                    break; // found the last execution info
+                if let Some(tx_anomalies) = &tx_anomalies {
+                    if tx_anomalies.has_no_execution_info(&tx_hash) {
+                        continue; // skip anomaly tx
+                    }
                 }
+                let execution_info = self.moveos_store.get_tx_execution_info(tx_hash)?;
+                if execution_info.is_none() {
+                    break;
+                }
+                last_executed_tx_order = order;
+            } else {
+                return Err(anyhow!(
+                    "Transaction hash not found for order {}. Database is inconsistent",
+                    order
+                ));
             }
         }
-        let startup_info = self.moveos_store.config_store.get_startup_info()?;
-        let startup_state_root = startup_info
-            .map(|s| s.state_root)
-            .ok_or_else(|| anyhow::anyhow!("Startup info not found"))?;
 
-        if state_root != startup_state_root {
-            return Err(anyhow!(
-                "State root mismatch: last execution info state root {:?} for order: {}, startup state root {:?}",
-                state_root,
-                last_order,
-                startup_state_root
-            ));
+        // forwards search for ensuring no gap
+        for order in 1..=last_executed_tx_order {
+            let tx_hash = self.rooch_store.get_tx_hashes(vec![order])?.pop().flatten();
+
+            if let Some(tx_hash) = tx_hash {
+                if let Some(tx_anomalies) = &tx_anomalies {
+                    if tx_anomalies.has_no_execution_info(&tx_hash) {
+                        continue; // skip anomaly tx
+                    }
+                }
+                let execution_info = self.moveos_store.get_tx_execution_info(tx_hash)?;
+                if execution_info.is_none() {
+                    return Err(anyhow!(
+                        "Transaction execution info not found for order {}. Database is inconsistent",
+                        order
+                    ));
+                }
+            } else {
+                return Err(anyhow!(
+                    "Transaction hash not found for order {}. Database is inconsistent",
+                    order
+                ));
+            }
         }
 
         Ok(())
@@ -434,6 +459,7 @@ impl RoochDB {
         exec: bool,
         fast_fail: bool,
         sync_mode: bool,
+        tx_anomalies: Option<TxAnomalies>,
     ) -> Result<(usize, usize)> {
         let mut issues = 0;
         let mut fixed = 0;
@@ -445,7 +471,7 @@ impl RoochDB {
         fixed += rooch_store_fixed;
         // check moveos store
         if thorough {
-            match self.check_moveos_store_thorough() {
+            match self.check_moveos_store_thorough(tx_anomalies) {
                 Ok(_) => {}
                 Err(e) => {
                     issues += 1;
