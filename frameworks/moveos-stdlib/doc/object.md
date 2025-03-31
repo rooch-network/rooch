@@ -408,7 +408,7 @@ Generate a new ObjectID from an address
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_account_named_object_id">account_named_object_id</a>&lt;T: key&gt;(<a href="account.md#0x2_account">account</a>: <b>address</b>): <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_account_named_object_id">account_named_object_id</a>&lt;T&gt;(<a href="account.md#0x2_account">account</a>: <b>address</b>): <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>
 </code></pre>
 
 
@@ -419,7 +419,7 @@ Generate a new ObjectID from an address
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_custom_object_id">custom_object_id</a>&lt;ID: <b>copy</b>, drop, store, T: key&gt;(id: ID): <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_custom_object_id">custom_object_id</a>&lt;ID: <b>copy</b>, drop, store, T&gt;(id: ID): <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>
 </code></pre>
 
 
@@ -430,7 +430,7 @@ Generate a new ObjectID from an address
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_custom_object_id_with_parent">custom_object_id_with_parent</a>&lt;ID: <b>copy</b>, drop, store, T: key&gt;(parent_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, id: ID): <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_custom_object_id_with_parent">custom_object_id_with_parent</a>&lt;ID: <b>copy</b>, drop, store, T&gt;(parent_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, id: ID): <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>
 </code></pre>
 
 

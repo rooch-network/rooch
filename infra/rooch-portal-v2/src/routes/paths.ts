@@ -12,7 +12,6 @@ export const paths = {
     market: `${ROOTS.DASHBOARD}/trade/market`,
     liquidity: `${ROOTS.DASHBOARD}/trade/liquidity`,
     swap: `${ROOTS.DASHBOARD}/trade/swap`,
-    'swap-v2': `${ROOTS.DASHBOARD}/trade/swap-v2`,
     history: `${ROOTS.DASHBOARD}/history`,
     apps: `${ROOTS.DASHBOARD}/apps`,
     settings: `${ROOTS.DASHBOARD}/settings`,

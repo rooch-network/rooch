@@ -18,6 +18,8 @@ pub enum ServiceStatus {
     ReadOnlyMode,
     /// The service is in date import mode.
     DateImportMode,
+    /// The service is in sync mode.
+    SyncMode,
 }
 
 impl ServiceStatus {
@@ -35,5 +37,9 @@ impl ServiceStatus {
 
     pub fn is_date_import_mode(&self) -> bool {
         matches!(self, ServiceStatus::DateImportMode)
+    }
+
+    pub fn is_sync_mode(&self) -> bool {
+        matches!(self, ServiceStatus::SyncMode)
     }
 }

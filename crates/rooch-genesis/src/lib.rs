@@ -58,9 +58,11 @@ pub static ROOCH_LOCAL_GENESIS: Lazy<RoochGenesisV2> = Lazy::new(|| {
     let network: RoochNetwork = BuiltinChainID::Local.into();
     RoochGenesisV2::build(network).expect("build rooch genesis failed")
 });
-pub const LATEST_GAS_SCHEDULE_VERSION: u64 = GAS_SCHEDULE_RELEASE_V1;
+pub const LATEST_GAS_SCHEDULE_VERSION: u64 = GAS_SCHEDULE_RELEASE_V2;
 // update the gas config for function calling
 pub const GAS_SCHEDULE_RELEASE_V1: u64 = 1;
+
+pub const GAS_SCHEDULE_RELEASE_V2: u64 = 2;
 
 pub(crate) const STATIC_GENESIS_DIR: Dir = include_dir!("released");
 

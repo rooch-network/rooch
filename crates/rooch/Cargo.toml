@@ -90,6 +90,8 @@ smt = { workspace = true }
 
 accumulator = { workspace = true }
 bitcoin-client = { workspace = true }
+
+rooch-anomalies = { workspace = true }
 rooch-executor = { workspace = true }
 rooch-key = { workspace = true }
 rooch-types = { workspace = true }
