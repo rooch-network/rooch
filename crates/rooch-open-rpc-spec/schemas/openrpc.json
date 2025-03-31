@@ -3097,6 +3097,13 @@
             "enum": [
               "date-import-mode"
             ]
+          },
+          {
+            "description": "The service is in sync mode.",
+            "type": "string",
+            "enum": [
+              "sync-mode"
+            ]
           }
         ]
       },

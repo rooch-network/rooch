@@ -50,6 +50,8 @@ pub trait DAMetaStore {
         last_order: u64,
         thorough: bool,
         da_min_block_to_submit: Option<u128>,
+        fast_fail: bool,
+        sync_mode: bool,
     ) -> anyhow::Result<(usize, usize)>;
 
     // append new submitting block with tx_order_start and tx_order_end, return the block_number
@@ -356,7 +358,11 @@ impl DAMetaDBStore {
     //
     // tx orders issues may be caused by:
     // break changes causes inconsistent tx orders (after v0.7.6 is stable)
-    pub(crate) fn try_repair_orders(&self, last_order: u64) -> anyhow::Result<(usize, usize)> {
+    pub(crate) fn try_repair_orders(
+        &self,
+        last_order: u64,
+        fast_fail: bool,
+    ) -> anyhow::Result<(usize, usize)> {
         let last_block_number = self.get_last_block_number()?;
         let mut issues = 0;
         match last_block_number {
@@ -366,6 +372,14 @@ impl DAMetaDBStore {
                 match first_illegal {
                     None => Ok((0, 0)),
                     Some(first_illegal) => {
+                        if fast_fail {
+                            return Err(anyhow::anyhow!(
+                                "found illegal block: {}, last_order: {}, last_block_number: {}",
+                                first_illegal,
+                                last_order,
+                                last_block_number
+                            ));
+                        }
                         let mut remove_blocks = Vec::new();
                         for block_number in first_illegal..=last_block_number {
                             remove_blocks.push(block_number);
@@ -529,15 +543,22 @@ impl DAMetaStore for DAMetaDBStore {
         last_order: u64,
         thorough: bool,
         da_min_block_to_submit: Option<u128>,
+        fast_fail: bool,
+        sync_mode: bool,
     ) -> anyhow::Result<(usize, usize)> {
         let mut issues = 0;
         let mut fixed = 0;
         if thorough {
-            let (order_issues, order_fixed) = self.try_repair_orders(last_order)?;
+            let (order_issues, order_fixed) = self.try_repair_orders(last_order, fast_fail)?;
             issues += order_issues;
             fixed += order_fixed;
         }
-        (issues, fixed) = self.try_repair_blocks(last_order, issues, fixed)?;
+        if !sync_mode {
+            // sync_mode: no da block will be generated
+            // so we don't need to repair blocks
+            (issues, fixed) = self.try_repair_blocks(last_order, issues, fixed)?;
+        }
+
         self.try_repair_background_submit_block_cursor(da_min_block_to_submit)?;
 
         Ok((issues, fixed))

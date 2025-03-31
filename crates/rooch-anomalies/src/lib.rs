@@ -58,7 +58,7 @@ impl TxAnomalies {
             .and_then(|map| map.get(&order).cloned())
     }
 
-    pub fn is_no_execution_info(&self, hash: &H256) -> bool {
+    pub fn has_no_execution_info(&self, hash: &H256) -> bool {
         self.no_execution_info.contains_key(hash)
     }
 

@@ -10506,6 +10506,7 @@ dependencies = [
  "moveos-types",
  "prometheus",
  "raw-store",
+ "rooch-anomalies",
  "rooch-config",
  "rooch-indexer",
  "rooch-store",
