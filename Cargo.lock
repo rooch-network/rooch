@@ -9672,11 +9672,11 @@ name = "rooch-anomalies"
 version = "0.9.3"
 dependencies = [
  "anyhow 1.0.95",
- "bcs",
+ "bcs 0.1.6",
  "include_dir",
  "moveos-types",
  "proptest",
- "serde 1.0.219",
+ "serde",
  "serde_json",
  "tracing",
 ]
@@ -10204,8 +10204,6 @@ dependencies = [
  "rooch-notify",
  "rooch-sequencer",
  "rooch-types",
- "serde",
- "serde_json",
  "tracing",
 ]
 
