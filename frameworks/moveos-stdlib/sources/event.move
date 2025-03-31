@@ -9,7 +9,7 @@ module moveos_std::event {
         object::named_object_id<T>()
     }
 
-    public fun custom_event_handle_id<ID: store + copy + drop, T: key>(id: ID): ObjectID {
+    public fun custom_event_handle_id<ID: store + copy + drop, T>(id: ID): ObjectID {
         object::custom_object_id<ID, T>(id)
     }
 
