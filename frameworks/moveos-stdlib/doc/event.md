@@ -33,7 +33,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="event.md#0x2_event_custom_event_handle_id">custom_event_handle_id</a>&lt;ID: <b>copy</b>, drop, store, T: key&gt;(id: ID): <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>
+<pre><code><b>public</b> <b>fun</b> <a href="event.md#0x2_event_custom_event_handle_id">custom_event_handle_id</a>&lt;ID: <b>copy</b>, drop, store, T&gt;(id: ID): <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>
 </code></pre>
 
 

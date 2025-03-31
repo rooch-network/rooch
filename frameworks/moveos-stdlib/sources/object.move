@@ -126,7 +126,7 @@ module moveos_std::object {
         )
     }
 
-    public fun account_named_object_id<T: key>(account: address): ObjectID {
+    public fun account_named_object_id<T>(account: address): ObjectID {
         let bytes = bcs::to_bytes(&account);
         vector::append(&mut bytes, *std::string::bytes(&type_info::type_name<T>()));
         address_to_object_id(
@@ -136,11 +136,11 @@ module moveos_std::object {
         )
     }
 
-    public fun custom_object_id<ID: store + copy + drop, T: key>(id: ID): ObjectID {
+    public fun custom_object_id<ID: store + copy + drop, T>(id: ID): ObjectID {
         address_to_object_id(derive_object_key<ID, T>(id))
     }
 
-    public fun custom_object_id_with_parent<ID: store + copy + drop, T: key>(parent_id: ObjectID, id: ID): ObjectID {
+    public fun custom_object_id_with_parent<ID: store + copy + drop, T>(parent_id: ObjectID, id: ID): ObjectID {
         let child = derive_object_key<ID, T>(id);
         let path = parent_id.path;
         vector::push_back(&mut path, child);
