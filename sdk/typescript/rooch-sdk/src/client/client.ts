@@ -62,8 +62,12 @@ import {
   PaginatedStateChangeSetWithTxOrderViews,
   DryRunRawTransactionParams,
   DryRunTransactionResponseView,
+  EventFilterView,
+  TransactionFilterView,
+  IndexerEventView,
 } from './types/index.js'
 import { fixedBalance } from '../utils/balance.js'
+import { RoochSubscriptionTransport, Subscription } from './subscriptionTransportInterface.js'
 
 const DEFAULT_GAS = 50000000
 
@@ -77,9 +81,11 @@ type NetworkOrTransport =
   | {
       url: string
       transport?: never
+      subscriptionTransport?: never
     }
   | {
       transport: RoochTransport
+      subscriptionTransport?: RoochSubscriptionTransport
       url?: never
     }
 
@@ -93,9 +99,22 @@ export function isRoochClient(client: unknown): client is RoochClient {
   )
 }
 
+type SubscriptionEvent =
+  | { type: 'event'; data: IndexerEventView }
+  | { type: 'transaction'; data: TransactionWithInfoView }
+
+export interface SubscriptionOptions {
+  type: 'event' | 'transaction' // Subscription type
+  filter?: EventFilterView | TransactionFilterView // Optional Rust-defined filter
+  onEvent: (event: SubscriptionEvent) => void // Callback for received events
+  onError?: (error: Error) => void // Optional callback for errors
+}
+
 export class RoochClient {
   protected chainID: bigint | undefined
   protected transport: RoochTransport
+  private subscriptions: Map<string, SubscriptionOptions> = new Map()
+  protected subscriptionTransport?: RoochSubscriptionTransport
 
   get [ROOCH_CLIENT_BRAND]() {
     return true
@@ -108,6 +127,16 @@ export class RoochClient {
    */
   constructor(options: RoochClientOptions) {
     this.transport = options.transport ?? new RoochHTTPTransport({ url: options.url })
+
+    this.subscriptionTransport = options.subscriptionTransport
+    if (this.subscriptionTransport) {
+      // Register subscription event listeners
+      this.subscriptionTransport.onEvent((event) => this.handleEvent(event))
+      // Register reconnection listener for re-subscription
+      this.subscriptionTransport.onReconnected(() => this.resubscribeAll())
+      // Register error listener for transport-level errors
+      this.subscriptionTransport.onError((error) => this.handleError(error))
+    }
   }
 
   async getRpcApiVersion(): Promise<string | undefined> {
@@ -688,7 +717,75 @@ export class RoochClient {
     }
   }
 
+  /**
+   * Subscribe to events or transactions
+   * @param options Subscription options including type, filter, onEvent, onError
+   * @returns A Subscription object containing the subscription ID and unsubscribe method
+   */
+  async subscribe(options: SubscriptionOptions): Promise<Subscription> {
+    if (!this.subscriptionTransport) {
+      throw new Error('Subscription transport is not configured')
+    }
+
+    const { type, filter } = options
+    const method = type === 'event' ? 'rooch_subscribeEvents' : 'rooch_subscribeTransactions'
+    const params = filter ? [filter as any] : []
+    const request = {
+      jsonrpc: '2.0',
+      method,
+      params,
+    }
+
+    const subscription = await this.subscriptionTransport.subscribe(request)
+    this.subscriptions.set(subscription.id, options)
+    return subscription
+  }
+
+  private handleEvent(event: any): void {
+    const subscriptionId = event.subscription
+    const options = this.subscriptions.get(subscriptionId)
+    if (options) {
+      options.onEvent(event.result)
+    }
+  }
+
+  private resubscribeAll(): void {
+    if (!this.subscriptionTransport) {
+      return
+    }
+
+    for (const [_id, options] of this.subscriptions) {
+      const method =
+        options.type === 'event' ? 'rooch_subscribeEvents' : 'rooch_subscribeTransactions'
+      const params = options.filter ? [options.filter] : []
+      const request = {
+        jsonrpc: '2.0',
+        method,
+        params,
+      }
+      this.subscriptionTransport.subscribe(request)
+    }
+  }
+
+  private handleError(error: Error): void {
+    console.error('Transport error:', error.message)
+    // Custom logic: Notify users, fallback to polling, etc.
+  }
+
+  /**
+   * Unsubscribe from a specific subscription
+   * @param subscriptionId The subscription ID
+   */
+  unsubscribe(subscriptionId: string): void {
+    if (!this.subscriptionTransport) {
+      throw new Error('Subscription transport is not configured')
+    }
+
+    this.subscriptionTransport.unsubscribe(subscriptionId)
+  }
+
   destroy(): void {
     this.transport.destroy()
+    this.subscriptions.clear()
   }
 }

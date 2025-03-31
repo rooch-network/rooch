@@ -2,14 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 export interface JsonRpcRequest {
-  jsonrpc: '2.0'
+  jsonrpc: string
   method: string
   params?: any[] | object
   id?: string | number | null
 }
 
 export interface JsonRpcResponse {
-  jsonrpc: '2.0'
+  jsonrpc: string
   result?: any
   error?: {
     code: number
