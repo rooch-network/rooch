@@ -42,7 +42,7 @@ use rooch_types::indexer::state::{
     IndexerObjectStatesIndexGenerator,
 };
 use rooch_types::sequencer::SequencerInfo;
-use tracing::error;
+use tracing::{error, info, warn};
 
 #[derive(Clone)]
 pub struct RoochDB {
@@ -423,6 +423,8 @@ impl RoochDB {
             }
         }
 
+        info!("last_executed_tx_order: {}", last_executed_tx_order);
+
         // forwards search for ensuring no gap
         for order in 1..=last_executed_tx_order {
             let tx_hash = self.rooch_store.get_tx_hashes(vec![order])?.pop().flatten();
@@ -446,6 +448,26 @@ impl RoochDB {
                     order
                 ));
             }
+        }
+
+        self.check_changeset_store(last_executed_tx_order)?;
+
+        Ok(())
+    }
+
+    fn check_changeset_store(&self, last_executed_tx_order: u64) -> Result<()> {
+        let mut changest_not_found = HashSet::new();
+        for order in 1..=last_executed_tx_order {
+            let changeset_opt = self.rooch_store.get_state_change_set(order)?;
+            if changeset_opt.is_none() {
+                changest_not_found.insert(order);
+            }
+        }
+        if !changest_not_found.is_empty() {
+            warn!(
+                "State change set not found for orders {:?}.",
+                changest_not_found
+            );
         }
 
         Ok(())

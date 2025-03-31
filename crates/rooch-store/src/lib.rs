@@ -207,16 +207,21 @@ impl RoochStore {
         let sequence_info = self
             .get_sequencer_info()?
             .ok_or_else(|| anyhow::anyhow!("Sequencer info not found"))?;
-        let exp_last_order = sequence_info.last_order;
-        if exp_last_order == 0 {
+        let last_sequenced_tx_order = sequence_info.last_order;
+        if last_sequenced_tx_order == 0 {
             return Ok((0, 0));
         }
+
+        info!(
+            "Repairing sequenced tx, last sequenced tx order: {}",
+            last_sequenced_tx_order
+        );
 
         let mut issues = 0;
         let mut fixed = 0;
 
         if thorough {
-            issues += self.check_sequenced_tx(exp_last_order)?;
+            issues += self.check_sequenced_tx(last_sequenced_tx_order)?;
             info!("Thorough sequenced tx check done, issues: {}", issues);
         }
 
@@ -225,7 +230,7 @@ impl RoochStore {
         }
 
         let (da_issues, da_fixed) = self.da_meta_store.try_repair_da_meta(
-            exp_last_order,
+            last_sequenced_tx_order,
             thorough,
             None,
             fast_fail,
