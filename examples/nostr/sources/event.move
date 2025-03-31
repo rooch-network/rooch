@@ -59,7 +59,7 @@ module nostr::event {
 
     /// UserMetadata field as stringified JSON object, when the Event kind is equal to 0
     #[data_struct]
-    struct UserMetadata has key {
+    struct UserMetadata has copy {
         name: String,
         about: String,
         picture: String
@@ -170,6 +170,9 @@ module nostr::event {
 
         // handle a range of different kinds of an Event
         if (kind == EVENT_KIND_USER_METADATA) {
+            // check the content integrity
+            let content_bytes = string::bytes(content);
+            let _ = json::from_json<UserMetadata>(*content_bytes);
             // clear past user metadata events from the user with the same rooch address from the public key
             let event_object_id = object::account_named_object_id<Event>(rooch_address);
             let event_object = object::take_object_extend<Event>(event_object_id);
