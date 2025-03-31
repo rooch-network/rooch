@@ -24,16 +24,10 @@ module nostr::inner {
     const ErrorMalformedPublicKey: u64 = 1001;
     const ErrorKindOutOfRange: u64 = 1002;
 
-    /// EventData for the internal data struct
+    /// TagIndex for the internal data struct from a-z to A-Z
     #[data_struct]
-    struct EventData has key {
-        id: vector<u8>, // 32-bytes lowercase hex-encoded sha256 of the serialized event data
-        pubkey: vector<u8>, // 32-bytes lowercase hex-encoded public key of the event creator
-        created_at: u64, // unix timestamp in seconds
-        kind: u16, // integer between 0 and 65535
-        tags: vector<Tags>, // an array of Tags from non-null arbitrary string
-        content: vector<u8>, // arbitrary string
-        sig: vector<u8> // 64-bytes lowercase hex of the signature of the sha256 hash of the serialized event data, which is the same as the "id" field
+    struct TagIndex has key {
+        alphabet: SimpleMultiMap<String, String>
     }
 
     /// Tags
