@@ -1,5 +1,5 @@
 
-<a name="0x2_decimal_value"></a>
+<a id="0x2_decimal_value"></a>
 
 # Module `0x2::decimal_value`
 
@@ -32,7 +32,7 @@
 
 
 
-<a name="0x2_decimal_value_DecimalValue"></a>
+<a id="0x2_decimal_value_DecimalValue"></a>
 
 ## Struct `DecimalValue`
 
@@ -44,12 +44,12 @@
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x2_decimal_value_ErrorDecimalPartTooLong"></a>
+<a id="0x2_decimal_value_ErrorDecimalPartTooLong"></a>
 
 
 
@@ -58,7 +58,7 @@
 
 
 
-<a name="0x2_decimal_value_ErrorDivisionByZero"></a>
+<a id="0x2_decimal_value_ErrorDivisionByZero"></a>
 
 
 
@@ -67,7 +67,7 @@
 
 
 
-<a name="0x2_decimal_value_ErrorInvalidDecimalString"></a>
+<a id="0x2_decimal_value_ErrorInvalidDecimalString"></a>
 
 
 
@@ -76,7 +76,7 @@
 
 
 
-<a name="0x2_decimal_value_ErrorInvalidPrecision"></a>
+<a id="0x2_decimal_value_ErrorInvalidPrecision"></a>
 
 
 
@@ -85,7 +85,7 @@
 
 
 
-<a name="0x2_decimal_value_ErrorOverflow"></a>
+<a id="0x2_decimal_value_ErrorOverflow"></a>
 
 
 
@@ -94,7 +94,7 @@
 
 
 
-<a name="0x2_decimal_value_ErrorUnderflow"></a>
+<a id="0x2_decimal_value_ErrorUnderflow"></a>
 
 
 
@@ -103,7 +103,7 @@
 
 
 
-<a name="0x2_decimal_value_new"></a>
+<a id="0x2_decimal_value_new"></a>
 
 ## Function `new`
 
@@ -114,7 +114,7 @@
 
 
 
-<a name="0x2_decimal_value_value"></a>
+<a id="0x2_decimal_value_value"></a>
 
 ## Function `value`
 
@@ -125,7 +125,7 @@
 
 
 
-<a name="0x2_decimal_value_decimal"></a>
+<a id="0x2_decimal_value_decimal"></a>
 
 ## Function `decimal`
 
@@ -136,7 +136,7 @@
 
 
 
-<a name="0x2_decimal_value_with_precision"></a>
+<a id="0x2_decimal_value_with_precision"></a>
 
 ## Function `with_precision`
 
@@ -149,7 +149,7 @@ For example, convert 1.234 (value=1234, decimal=3) to 1.23400000 (value=12340000
 
 
 
-<a name="0x2_decimal_value_is_equal"></a>
+<a id="0x2_decimal_value_is_equal"></a>
 
 ## Function `is_equal`
 
@@ -161,7 +161,7 @@ Check if two DecimalValue instances represent the same numerical value
 
 
 
-<a name="0x2_decimal_value_add"></a>
+<a id="0x2_decimal_value_add"></a>
 
 ## Function `add`
 
@@ -173,7 +173,7 @@ Add two DecimalValue instances
 
 
 
-<a name="0x2_decimal_value_sub"></a>
+<a id="0x2_decimal_value_sub"></a>
 
 ## Function `sub`
 
@@ -185,7 +185,7 @@ Subtract b from a
 
 
 
-<a name="0x2_decimal_value_mul"></a>
+<a id="0x2_decimal_value_mul"></a>
 
 ## Function `mul`
 
@@ -197,7 +197,7 @@ Multiply two DecimalValue instances
 
 
 
-<a name="0x2_decimal_value_div"></a>
+<a id="0x2_decimal_value_div"></a>
 
 ## Function `div`
 
@@ -209,7 +209,7 @@ Divide a by b
 
 
 
-<a name="0x2_decimal_value_mul_u256"></a>
+<a id="0x2_decimal_value_mul_u256"></a>
 
 ## Function `mul_u256`
 
@@ -221,7 +221,7 @@ Multiply by an integer
 
 
 
-<a name="0x2_decimal_value_div_u256"></a>
+<a id="0x2_decimal_value_div_u256"></a>
 
 ## Function `div_u256`
 
@@ -233,7 +233,7 @@ Divide by an integer
 
 
 
-<a name="0x2_decimal_value_as_integer_decimal"></a>
+<a id="0x2_decimal_value_as_integer_decimal"></a>
 
 ## Function `as_integer_decimal`
 
@@ -245,7 +245,7 @@ Convert to integer part represented as a DecimalValue with decimal=0
 
 
 
-<a name="0x2_decimal_value_to_integer"></a>
+<a id="0x2_decimal_value_to_integer"></a>
 
 ## Function `to_integer`
 
@@ -257,7 +257,7 @@ Convert to integer by truncating decimal part and returning raw u256
 
 
 
-<a name="0x2_decimal_value_round"></a>
+<a id="0x2_decimal_value_round"></a>
 
 ## Function `round`
 
@@ -269,7 +269,7 @@ Round the decimal value to the specified number of decimal places
 
 
 
-<a name="0x2_decimal_value_from_string"></a>
+<a id="0x2_decimal_value_from_string"></a>
 
 ## Function `from_string`
 
@@ -282,7 +282,7 @@ Accepts strings like "123", "123.456", "0.123"
 
 
 
-<a name="0x2_decimal_value_to_string"></a>
+<a id="0x2_decimal_value_to_string"></a>
 
 ## Function `to_string`
 

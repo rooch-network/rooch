@@ -4,7 +4,13 @@ task 1 'publish'. lines 3-11:
 status EXECUTED
 
 task 2 'publish'. lines 13-39:
-Error: error: resource type "KeyStruct" in function "0x2::object::new" not defined in current module or not allowed
+Error: error: resource type "KeyStruct" in function "0x42::test::publish_foo" not defined in current module or not allowed
+   ┌─ /tmp/tempfile:28:9
+   │
+28 │         publish_foo<KeyStruct>(s)
+   │         ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error: resource type "KeyStruct" in function "0x2::object::new" not defined in current module or not allowed
    ┌─ /tmp/tempfile:31:22
    │
 31 │         let object = object::new(test0::new_key_struct(100));
@@ -15,11 +21,5 @@ error: resource type "KeyStruct" in function "0x2::object::remove" not defined i
    │
 32 │         let _key_struct = object::remove(object);
    │                           ^^^^^^^^^^^^^^^^^^^^^^
-
-error: resource type "KeyStruct" in function "0x42::test::publish_foo" not defined in current module or not allowed
-   ┌─ /tmp/tempfile:28:9
-   │
-28 │         publish_foo<KeyStruct>(s)
-   │         ^^^^^^^^^^^^^^^^^^^^^^^^^
 
 

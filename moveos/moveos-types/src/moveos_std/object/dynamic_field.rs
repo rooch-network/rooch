@@ -181,7 +181,7 @@ where
             address: Self::ADDRESS,
             module: Self::MODULE_NAME.to_owned(),
             name: Self::STRUCT_NAME.to_owned(),
-            type_params: vec![N::type_tag(), V::type_tag()],
+            type_args: vec![N::type_tag(), V::type_tag()],
         }
     }
 }
@@ -228,7 +228,7 @@ pub fn construct_dynamic_field_struct_tag(name_tag: TypeTag, value_tag: TypeTag)
         address: MOVEOS_STD_ADDRESS,
         module: super::MODULE_NAME.to_owned(),
         name: DYNAMIC_FIELD_STRUCT_NAME.to_owned(),
-        type_params: vec![name_tag, value_tag],
+        type_args: vec![name_tag, value_tag],
     }
 }
 
@@ -237,10 +237,10 @@ pub fn parse_dynamic_field_type_tags(type_tag: &TypeTag) -> Option<(TypeTag, Typ
         // Verify this is a DynamicField struct
         if is_field_struct_tag(struct_tag) {
             // DynamicField should have exactly 2 type parameters
-            if struct_tag.type_params.len() == 2 {
+            if struct_tag.type_args.len() == 2 {
                 // Get Name and Value type tags
-                let name_type = struct_tag.type_params[0].clone();
-                let value_type = struct_tag.type_params[1].clone();
+                let name_type = struct_tag.type_args[0].clone();
+                let value_type = struct_tag.type_args[1].clone();
                 return Some((name_type, value_type));
             }
         }

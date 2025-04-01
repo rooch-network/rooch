@@ -1,5 +1,5 @@
 
-<a name="0xa_wasm"></a>
+<a id="0xa_wasm"></a>
 
 # Module `0xa::wasm`
 
@@ -25,7 +25,7 @@
 
 
 
-<a name="0xa_wasm_WASMInstance"></a>
+<a id="0xa_wasm_WASMInstance"></a>
 
 ## Struct `WASMInstance`
 
@@ -36,7 +36,7 @@
 
 
 
-<a name="0xa_wasm_get_instance_id"></a>
+<a id="0xa_wasm_get_instance_id"></a>
 
 ## Function `get_instance_id`
 
@@ -47,7 +47,7 @@
 
 
 
-<a name="0xa_wasm_create_wasm_instance"></a>
+<a id="0xa_wasm_create_wasm_instance"></a>
 
 ## Function `create_wasm_instance`
 
@@ -58,7 +58,7 @@
 
 
 
-<a name="0xa_wasm_create_wasm_instance_option"></a>
+<a id="0xa_wasm_create_wasm_instance_option"></a>
 
 ## Function `create_wasm_instance_option`
 
@@ -69,7 +69,7 @@
 
 
 
-<a name="0xa_wasm_create_cbor_values"></a>
+<a id="0xa_wasm_create_cbor_values"></a>
 
 ## Function `create_cbor_values`
 
@@ -80,7 +80,7 @@
 
 
 
-<a name="0xa_wasm_add_length_with_data"></a>
+<a id="0xa_wasm_add_length_with_data"></a>
 
 ## Function `add_length_with_data`
 
@@ -91,7 +91,7 @@
 
 
 
-<a name="0xa_wasm_create_memory_wasm_args"></a>
+<a id="0xa_wasm_create_memory_wasm_args"></a>
 
 ## Function `create_memory_wasm_args`
 
@@ -102,7 +102,7 @@
 
 
 
-<a name="0xa_wasm_execute_wasm_function"></a>
+<a id="0xa_wasm_execute_wasm_function"></a>
 
 ## Function `execute_wasm_function`
 
@@ -113,7 +113,7 @@
 
 
 
-<a name="0xa_wasm_execute_wasm_function_option"></a>
+<a id="0xa_wasm_execute_wasm_function_option"></a>
 
 ## Function `execute_wasm_function_option`
 
@@ -124,7 +124,7 @@
 
 
 
-<a name="0xa_wasm_read_data_length"></a>
+<a id="0xa_wasm_read_data_length"></a>
 
 ## Function `read_data_length`
 
@@ -135,7 +135,7 @@
 
 
 
-<a name="0xa_wasm_read_data_from_heap"></a>
+<a id="0xa_wasm_read_data_from_heap"></a>
 
 ## Function `read_data_from_heap`
 
@@ -146,7 +146,7 @@
 
 
 
-<a name="0xa_wasm_release_wasm_instance"></a>
+<a id="0xa_wasm_release_wasm_instance"></a>
 
 ## Function `release_wasm_instance`
 

@@ -1,5 +1,5 @@
 
-<a name="0x3_transaction_validator"></a>
+<a id="0x3_transaction_validator"></a>
 
 # Module `0x3::transaction_validator`
 
@@ -39,7 +39,7 @@
 
 
 
-<a name="0x3_transaction_validator_TransactionValidatorPlaceholder"></a>
+<a id="0x3_transaction_validator_TransactionValidatorPlaceholder"></a>
 
 ## Struct `TransactionValidatorPlaceholder`
 
@@ -51,12 +51,12 @@ Just using to get module signer
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x3_transaction_validator_MAX_U64"></a>
+<a id="0x3_transaction_validator_MAX_U64"></a>
 
 
 
@@ -65,7 +65,7 @@ Just using to get module signer
 
 
 
-<a name="0x3_transaction_validator_validate"></a>
+<a id="0x3_transaction_validator_validate"></a>
 
 ## Function `validate`
 

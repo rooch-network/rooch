@@ -1,5 +1,5 @@
 
-<a name="0x3_auth_validator_registry"></a>
+<a id="0x3_auth_validator_registry"></a>
 
 # Module `0x3::auth_validator_registry`
 
@@ -29,7 +29,7 @@
 
 
 
-<a name="0x3_auth_validator_registry_AuthValidatorWithType"></a>
+<a id="0x3_auth_validator_registry_AuthValidatorWithType"></a>
 
 ## Resource `AuthValidatorWithType`
 
@@ -40,7 +40,7 @@
 
 
 
-<a name="0x3_auth_validator_registry_ValidatorRegistry"></a>
+<a id="0x3_auth_validator_registry_ValidatorRegistry"></a>
 
 ## Resource `ValidatorRegistry`
 
@@ -51,12 +51,12 @@
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x3_auth_validator_registry_ErrorValidatorAlreadyRegistered"></a>
+<a id="0x3_auth_validator_registry_ErrorValidatorAlreadyRegistered"></a>
 
 
 
@@ -65,7 +65,7 @@
 
 
 
-<a name="0x3_auth_validator_registry_ErrorValidatorUnregistered"></a>
+<a id="0x3_auth_validator_registry_ErrorValidatorUnregistered"></a>
 
 
 
@@ -74,7 +74,7 @@
 
 
 
-<a name="0x3_auth_validator_registry_genesis_init"></a>
+<a id="0x3_auth_validator_registry_genesis_init"></a>
 
 ## Function `genesis_init`
 
@@ -86,7 +86,7 @@ Init function called by genesis.
 
 
 
-<a name="0x3_auth_validator_registry_register"></a>
+<a id="0x3_auth_validator_registry_register"></a>
 
 ## Function `register`
 
@@ -99,7 +99,7 @@ Register a new validator. This feature not enabled in the mainnet.
 
 
 
-<a name="0x3_auth_validator_registry_register_by_system"></a>
+<a id="0x3_auth_validator_registry_register_by_system"></a>
 
 ## Function `register_by_system`
 
@@ -111,7 +111,7 @@ Register a new validator by system. This function is only called by system.
 
 
 
-<a name="0x3_auth_validator_registry_register_internal"></a>
+<a id="0x3_auth_validator_registry_register_internal"></a>
 
 ## Function `register_internal`
 
@@ -122,7 +122,7 @@ Register a new validator by system. This function is only called by system.
 
 
 
-<a name="0x3_auth_validator_registry_is_registered"></a>
+<a id="0x3_auth_validator_registry_is_registered"></a>
 
 ## Function `is_registered`
 
@@ -133,7 +133,7 @@ Register a new validator by system. This function is only called by system.
 
 
 
-<a name="0x3_auth_validator_registry_borrow_validator"></a>
+<a id="0x3_auth_validator_registry_borrow_validator"></a>
 
 ## Function `borrow_validator`
 
@@ -144,7 +144,7 @@ Register a new validator by system. This function is only called by system.
 
 
 
-<a name="0x3_auth_validator_registry_borrow_validator_by_type"></a>
+<a id="0x3_auth_validator_registry_borrow_validator_by_type"></a>
 
 ## Function `borrow_validator_by_type`
 

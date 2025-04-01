@@ -11,7 +11,7 @@ use move_vm_runtime::data_cache::TransactionCache;
 use moveos::gas::table::{
     get_gas_schedule_entries, initial_cost_schedule, CostTable, MoveOSGasMeter,
 };
-use moveos::moveos::MoveOSConfig;
+use moveos::moveos::{new_moveos_global_module_cache, MoveOSCacheManager};
 use moveos::vm::data_cache::MoveosDataCache;
 use moveos::vm::moveos_vm::{MoveOSSession, MoveOSVM};
 use moveos_common::types::ClassifiedGasMeter;
@@ -49,8 +49,18 @@ pub fn execute_tx_locally(
     let root_object_meta = ObjectMeta::root_metadata(state_root, 0);
     let client_resolver = ClientResolver::new(client, root_object_meta.clone());
 
-    let (move_mv, object_runtime, client_resolver, action, cost_table) =
-        prepare_execute_env(root_object_meta, &client_resolver, tx.clone());
+    let gas_parameters =
+        FrameworksGasParameters::load_from_chain(&client_resolver).expect("load_from_chain failed");
+    let global_module_cache = new_moveos_global_module_cache();
+    let moveos_cache_manager =
+        MoveOSCacheManager::new(gas_parameters.all_natives(), global_module_cache);
+
+    let (move_mv, object_runtime, client_resolver, action, cost_table) = prepare_execute_env(
+        root_object_meta,
+        &client_resolver,
+        tx.clone(),
+        moveos_cache_manager.clone(),
+    );
 
     let mut gas_meter = MoveOSGasMeter::new(cost_table, tx.max_gas_amount, true);
 
@@ -60,12 +70,17 @@ pub fn execute_tx_locally(
 
     gas_meter.charge_io_write(tx_size).unwrap();
 
+    let global_module_cache = moveos_cache_manager.global_module_cache;
+    let runtime_environment = moveos_cache_manager.runtime_environment.read();
+
     let mut moveos_session = MoveOSSession::new(
         move_mv.inner(),
         client_resolver,
         object_runtime,
         gas_meter,
         false,
+        global_module_cache,
+        &runtime_environment,
     );
 
     let system_pre_execute_functions = system_pre_execute_functions();
@@ -115,8 +130,18 @@ pub fn execute_tx_locally_with_gas_profile(
     let root_object_meta = ObjectMeta::root_metadata(state_root, 0);
     let client_resolver = ClientResolver::new(client, root_object_meta.clone());
 
-    let (move_mv, object_runtime, client_resolver, action, cost_table) =
-        prepare_execute_env(root_object_meta, &client_resolver, tx.clone());
+    let gas_parameters =
+        FrameworksGasParameters::load_from_chain(&client_resolver).expect("load_from_chain failed");
+    let global_module_cache = new_moveos_global_module_cache();
+    let moveos_cache_manager =
+        MoveOSCacheManager::new(gas_parameters.all_natives(), global_module_cache);
+
+    let (move_mv, object_runtime, client_resolver, action, cost_table) = prepare_execute_env(
+        root_object_meta,
+        &client_resolver,
+        tx.clone(),
+        moveos_cache_manager.clone(),
+    );
 
     let mut gas_meter = MoveOSGasMeter::new(
         cost_table,
@@ -126,6 +151,8 @@ pub fn execute_tx_locally_with_gas_profile(
     gas_meter.charge_io_write(tx.tx_size()).unwrap();
 
     let mut gas_profiler = new_gas_profiler(tx.clone().action, gas_meter);
+    let global_module_cache = moveos_cache_manager.global_module_cache;
+    let runtime_environment = moveos_cache_manager.runtime_environment.read();
 
     let mut moveos_session = MoveOSSession::new(
         move_mv.inner(),
@@ -133,6 +160,8 @@ pub fn execute_tx_locally_with_gas_profile(
         object_runtime,
         gas_profiler.clone(),
         false,
+        global_module_cache.clone(),
+        &runtime_environment,
     );
 
     let system_pre_execute_functions = system_pre_execute_functions();
@@ -188,6 +217,7 @@ pub fn prepare_execute_env(
     state_root: ObjectMeta,
     client_resolver: &ClientResolver,
     tx: RoochTransactionData,
+    moveos_cache_manager: MoveOSCacheManager,
 ) -> (
     MoveOSVM,
     Rc<RwLock<ObjectRuntime>>,
@@ -208,20 +238,13 @@ pub fn prepare_execute_env(
         action,
     } = verified_tx;
 
-    let gas_parameters =
-        FrameworksGasParameters::load_from_chain(client_resolver).expect("load_from_chain failed");
-
     let object_runtime = Rc::new(RwLock::new(ObjectRuntime::new(
         ctx,
         state_root,
         client_resolver,
     )));
 
-    let vm = MoveOSVM::new(
-        gas_parameters.all_natives(),
-        MoveOSConfig::default().vm_config,
-    )
-    .expect("create MoveVM failed");
+    let vm = MoveOSVM::new(moveos_cache_manager).expect("create MoveVM failed");
 
     (vm, object_runtime, client_resolver, action, cost_table)
 }
@@ -354,7 +377,7 @@ fn func_name_from_db(
     module_resolver: &MoveosDataCache<ClientResolver>,
 ) -> anyhow::Result<String> {
     let module_bytes = module_resolver.load_module(module_id)?;
-    let compiled_module = CompiledModule::deserialize(module_bytes.as_slice())?;
+    let compiled_module = CompiledModule::deserialize(module_bytes.to_vec().as_slice())?;
     let module_bin_view = BinaryIndexedView::Module(&compiled_module);
     let func_def = module_bin_view.function_def_at(*func_idx)?;
     Ok(module_bin_view

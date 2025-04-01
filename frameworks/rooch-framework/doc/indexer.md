@@ -1,5 +1,5 @@
 
-<a name="0x3_indexer"></a>
+<a id="0x3_indexer"></a>
 
 # Module `0x3::indexer`
 
@@ -22,7 +22,7 @@
 
 
 
-<a name="0x3_indexer_FieldIndexerTablePlaceholder"></a>
+<a id="0x3_indexer_FieldIndexerTablePlaceholder"></a>
 
 ## Resource `FieldIndexerTablePlaceholder`
 
@@ -33,7 +33,7 @@
 
 
 
-<a name="0x3_indexer_FieldIndexerData"></a>
+<a id="0x3_indexer_FieldIndexerData"></a>
 
 ## Struct `FieldIndexerData`
 
@@ -44,7 +44,7 @@
 
 
 
-<a name="0x3_indexer_AddFieldIndexerEvent"></a>
+<a id="0x3_indexer_AddFieldIndexerEvent"></a>
 
 ## Struct `AddFieldIndexerEvent`
 
@@ -55,7 +55,7 @@
 
 
 
-<a name="0x3_indexer_add_field_indexer_entry"></a>
+<a id="0x3_indexer_add_field_indexer_entry"></a>
 
 ## Function `add_field_indexer_entry`
 
@@ -66,7 +66,7 @@
 
 
 
-<a name="0x3_indexer_add_field_indexer"></a>
+<a id="0x3_indexer_add_field_indexer"></a>
 
 ## Function `add_field_indexer`
 

@@ -1,5 +1,5 @@
 
-<a name="0xa_ethereum"></a>
+<a id="0xa_ethereum"></a>
 
 # Module `0xa::ethereum`
 
@@ -24,7 +24,7 @@
 
 
 
-<a name="0xa_ethereum_BlockHeader"></a>
+<a id="0xa_ethereum_BlockHeader"></a>
 
 ## Struct `BlockHeader`
 
@@ -36,7 +36,7 @@
 
 
 
-<a name="0xa_ethereum_BlockStore"></a>
+<a id="0xa_ethereum_BlockStore"></a>
 
 ## Resource `BlockStore`
 
@@ -47,12 +47,12 @@
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0xa_ethereum_ErrorBlockNotFound"></a>
+<a id="0xa_ethereum_ErrorBlockNotFound"></a>
 
 
 
@@ -61,7 +61,7 @@
 
 
 
-<a name="0xa_ethereum_genesis_init"></a>
+<a id="0xa_ethereum_genesis_init"></a>
 
 ## Function `genesis_init`
 
@@ -72,7 +72,7 @@
 
 
 
-<a name="0xa_ethereum_execute_l1_block"></a>
+<a id="0xa_ethereum_execute_l1_block"></a>
 
 ## Function `execute_l1_block`
 
@@ -84,7 +84,7 @@ The relay server submit a new Ethereum block to the light client.
 
 
 
-<a name="0xa_ethereum_get_block"></a>
+<a id="0xa_ethereum_get_block"></a>
 
 ## Function `get_block`
 

@@ -1,5 +1,5 @@
 
-<a name="0x2_linked_table"></a>
+<a id="0x2_linked_table"></a>
 
 # Module `0x2::linked_table`
 
@@ -36,7 +36,7 @@ removal
 
 
 
-<a name="0x2_linked_table_TablePlaceholder"></a>
+<a id="0x2_linked_table_TablePlaceholder"></a>
 
 ## Resource `TablePlaceholder`
 
@@ -47,7 +47,7 @@ removal
 
 
 
-<a name="0x2_linked_table_LinkedTable"></a>
+<a id="0x2_linked_table_LinkedTable"></a>
 
 ## Resource `LinkedTable`
 
@@ -58,7 +58,7 @@ removal
 
 
 
-<a name="0x2_linked_table_Node"></a>
+<a id="0x2_linked_table_Node"></a>
 
 ## Struct `Node`
 
@@ -69,12 +69,12 @@ removal
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x2_linked_table_ErrorTableIsEmpty"></a>
+<a id="0x2_linked_table_ErrorTableIsEmpty"></a>
 
 
 
@@ -83,7 +83,7 @@ removal
 
 
 
-<a name="0x2_linked_table_ErrorTableNotEmpty"></a>
+<a id="0x2_linked_table_ErrorTableNotEmpty"></a>
 
 
 
@@ -92,7 +92,7 @@ removal
 
 
 
-<a name="0x2_linked_table_new"></a>
+<a id="0x2_linked_table_new"></a>
 
 ## Function `new`
 
@@ -104,7 +104,7 @@ Creates a new, empty table
 
 
 
-<a name="0x2_linked_table_front"></a>
+<a id="0x2_linked_table_front"></a>
 
 ## Function `front`
 
@@ -116,7 +116,7 @@ Returns the key for the first element in the table, or None if the table is empt
 
 
 
-<a name="0x2_linked_table_back"></a>
+<a id="0x2_linked_table_back"></a>
 
 ## Function `back`
 
@@ -128,7 +128,7 @@ Returns the key for the last element in the table, or None if the table is empty
 
 
 
-<a name="0x2_linked_table_push_front"></a>
+<a id="0x2_linked_table_push_front"></a>
 
 ## Function `push_front`
 
@@ -143,7 +143,7 @@ that key <code>k: K</code>.
 
 
 
-<a name="0x2_linked_table_push_back"></a>
+<a id="0x2_linked_table_push_back"></a>
 
 ## Function `push_back`
 
@@ -158,7 +158,7 @@ that key <code>k: K</code>.
 
 
 
-<a name="0x2_linked_table_borrow"></a>
+<a id="0x2_linked_table_borrow"></a>
 
 ## Function `borrow`
 
@@ -172,7 +172,7 @@ that key <code>k: K</code>.
 
 
 
-<a name="0x2_linked_table_borrow_mut"></a>
+<a id="0x2_linked_table_borrow_mut"></a>
 
 ## Function `borrow_mut`
 
@@ -186,7 +186,7 @@ that key <code>k: K</code>.
 
 
 
-<a name="0x2_linked_table_prev"></a>
+<a id="0x2_linked_table_prev"></a>
 
 ## Function `prev`
 
@@ -201,7 +201,7 @@ that key <code>k: K</code>
 
 
 
-<a name="0x2_linked_table_next"></a>
+<a id="0x2_linked_table_next"></a>
 
 ## Function `next`
 
@@ -216,7 +216,7 @@ that key <code>k: K</code>
 
 
 
-<a name="0x2_linked_table_remove"></a>
+<a id="0x2_linked_table_remove"></a>
 
 ## Function `remove`
 
@@ -231,7 +231,7 @@ that key <code>k: K</code>. Note: this is also what happens when the table is em
 
 
 
-<a name="0x2_linked_table_pop_front"></a>
+<a id="0x2_linked_table_pop_front"></a>
 
 ## Function `pop_front`
 
@@ -244,7 +244,7 @@ Aborts with <code>ETableIsEmpty</code> if the table is empty
 
 
 
-<a name="0x2_linked_table_pop_back"></a>
+<a id="0x2_linked_table_pop_back"></a>
 
 ## Function `pop_back`
 
@@ -257,7 +257,7 @@ Aborts with <code>ETableIsEmpty</code> if the table is empty
 
 
 
-<a name="0x2_linked_table_contains"></a>
+<a id="0x2_linked_table_contains"></a>
 
 ## Function `contains`
 
@@ -270,7 +270,7 @@ Returns true iff there is a value associated with the key <code>k: K</code> in t
 
 
 
-<a name="0x2_linked_table_length"></a>
+<a id="0x2_linked_table_length"></a>
 
 ## Function `length`
 
@@ -282,7 +282,7 @@ Returns the size of the table, the number of key-value pairs
 
 
 
-<a name="0x2_linked_table_is_empty"></a>
+<a id="0x2_linked_table_is_empty"></a>
 
 ## Function `is_empty`
 
@@ -294,7 +294,7 @@ Returns true if the table is empty (if <code>length</code> returns <code>0</code
 
 
 
-<a name="0x2_linked_table_destroy_empty"></a>
+<a id="0x2_linked_table_destroy_empty"></a>
 
 ## Function `destroy_empty`
 
@@ -307,7 +307,7 @@ Aborts with <code>ETableNotEmpty</code> if the table still contains values
 
 
 
-<a name="0x2_linked_table_drop"></a>
+<a id="0x2_linked_table_drop"></a>
 
 ## Function `drop`
 
