@@ -16,6 +16,7 @@ module nostr::event {
     use moveos_std::json;
     use rooch_framework::bitcoin_address;
     use rooch_framework::schnorr;
+    use nostr::inner;
 
     // Kind of the event
     const EVENT_KIND_USER_METADATA: u16 = 0;
@@ -67,7 +68,7 @@ module nostr::event {
     }
 
     /// Serialize to byte arrays, which could be sha256 hashed and hex-encoded with lowercase to 32 byte arrays
-    public fun serialize(pubkey: &String, created_at: &u64, kind: &u16, tags: &vector<vector<String>>, content: &String): vector<u8> {
+    fun serialize(pubkey: &String, created_at: &u64, kind: &u16, tags: &vector<vector<String>>, content: &String): vector<u8> {
         let serialized = vector::empty<u8>();
 
         // version 0, as described in NIP-01
@@ -131,7 +132,7 @@ module nostr::event {
     }
 
     /// Check signature with public key, id and signature for schnorr
-    public fun check_signature(public_key: &vector<u8>, id: &vector<u8>, signature: &vector<u8>) {
+    fun check_signature(public_key: &vector<u8>, id: &vector<u8>, signature: &vector<u8>) {
         assert!(schnorr::verify(
             signature,
             public_key,
@@ -163,11 +164,8 @@ module nostr::event {
         // check the signature
         check_signature(public_key, &id, signature);
 
-        // derive a bitcoin taproot address from the public key
-        let bitcoin_taproot_address = derive_bitcoin_taproot_address_from_pubkey(public_key);
-
-        // derive a rooch address from the bitcoin taproot address
-        let rooch_address = to_rooch_address(&bitcoin_taproot_address);
+        // derive a rooch address
+        let rooch_address = inner::derive_rooch_address(public_key);
 
         // handle a range of different kinds of an Event
         if (kind == EVENT_KIND_USER_METADATA) {
