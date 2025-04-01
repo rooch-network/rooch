@@ -20,6 +20,8 @@ module 0x11.TestModule1 {
     }
 
     public f2() {
+        label b0:
+            return;
     }
 }
 

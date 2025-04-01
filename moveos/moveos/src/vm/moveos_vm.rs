@@ -25,7 +25,7 @@ use move_vm_runtime::data_cache::TransactionCache;
 use move_vm_runtime::module_traversal::{TraversalContext, TraversalStorage};
 use move_vm_runtime::{
     move_vm::MoveVM, native_extensions::NativeContextExtensions, session::Session, LoadedFunction,
-    Module, RuntimeEnvironment,
+    Module, ModuleStorage, RuntimeEnvironment,
 };
 use move_vm_types::code::ModuleCache;
 use move_vm_types::gas::UnmeteredGasMeter;
@@ -376,15 +376,12 @@ where
                 };
                 let compiled_modules = deserialize_modules(&module_bundle)?;
 
-                //#TODO: disable the verification process temporary
-                /*
                 let result =
                     moveos_verifier::verifier::verify_modules(&compiled_modules, self.remote);
                 match result {
                     Ok(_) => {}
                     Err(err) => return Err(err),
                 }
-                 */
 
                 /*
                 self.vm
@@ -641,10 +638,33 @@ where
                     let module_id = module.self_id();
 
                     if data_store.exists_module(&module_id)? && compat.need_check_compat() {
-                        //let old_module = self.vm.load_module(&module_id, &self.remote)?;
-                        //compat
-                        //    .check(&old_module, module)
-                        //    .map_err(|e| e.finish(Location::Undefined))?;
+                        let old_module_bytes = match self.remote.get_module(&module_id) {
+                            Ok(Some(v)) => v,
+                            Ok(None) => {
+                                return Err(PartialVMError::new(
+                                    StatusCode::RESOURCE_DOES_NOT_EXIST,
+                                )
+                                .finish(Location::Module(module_id)))
+                            }
+                            Err(e) => {
+                                return Err(PartialVMError::new(
+                                    StatusCode::RESOURCE_DOES_NOT_EXIST,
+                                )
+                                .with_message(e.to_string())
+                                .finish(Location::Module(module_id)))
+                            }
+                        };
+                        let old_module = match CompiledModule::deserialize(&old_module_bytes) {
+                            Ok(v) => v,
+                            Err(_) => {
+                                return Err(PartialVMError::new(StatusCode::ABORTED)
+                                    .with_message("CompiledModule::deserialize failed".to_string())
+                                    .finish(Location::Module(module_id)))
+                            }
+                        };
+                        compat
+                            .check(&old_module, module)
+                            .map_err(|e| e.finish(Location::Undefined))?;
                     }
                     if !bundle_unverified.insert(module_id) {
                         return Err(PartialVMError::new(StatusCode::DUPLICATE_MODULE_NAME)
@@ -652,13 +672,27 @@ where
                     }
                 }
 
-                /*
-                // Perform bytecode and loading verification. Modules must be sorted in topological order.
-                self.vm
-                    .runtime
-                    .loader()
-                    .verify_module_bundle_for_publication(&compiled_modules, data_store)?;
-                 */
+                // Perform bytecode and move verifier verification.
+                // Modules must be sorted in topological order.
+                for module in &compiled_modules {
+                    let module_address = module.address();
+                    let module_name = module.name();
+                    match &self
+                        .code_cache
+                        .fetch_verified_module(module_address, module_name)
+                    {
+                        Ok(_) => {}
+                        Err(e) => {
+                            tracing::info!(
+                                "execute_move_action module verification error: {:?}",
+                                e
+                            );
+                            return Err(PartialVMError::new(StatusCode::ABORTED)
+                                .with_message(e.to_string())
+                                .finish(Location::Module(module.self_id())));
+                        }
+                    }
+                }
 
                 for (module, blob) in compiled_modules.into_iter().zip(module_bundle.into_iter()) {
                     let is_republishing = data_store.exists_module(&module.self_id())?;

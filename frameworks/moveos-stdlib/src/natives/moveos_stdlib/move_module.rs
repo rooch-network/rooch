@@ -186,6 +186,7 @@ fn native_sort_and_verify_modules_inner(
         }
     }
 
+    // move verifier
     for module in &compiled_modules {
         let module_storage = context.resolver().module_storage();
 
@@ -194,32 +195,11 @@ fn native_sort_and_verify_modules_inner(
         match module_storage.fetch_verified_module(module_address, module_name) {
             Ok(_) => {}
             Err(e) => {
-                tracing::info!("module verification error: {:?}", e);
+                println!("module verification error: {:?}", e);
                 return Ok(NativeResult::err(cost, E_MODULE_VERIFICATION_ERROR));
             }
         }
     }
-
-    //#TODO disable the verification process temporary
-    // move verifier
-    /*
-    let verify_result = context
-        .verify_module_bundle_for_publication(&compiled_modules)
-        .map_err(|e| {
-            let modules = compiled_modules
-                .iter()
-                .map(|m| m.self_id().short_str_lossless())
-                .collect::<Vec<_>>();
-            e.append_message_with_separator('|', format!("modules: {:?}", modules))
-        });
-    match verify_result {
-        Ok(_) => {}
-        Err(e) => {
-            tracing::info!("modules verification error: {:?}", e);
-            return Ok(NativeResult::err(cost, E_MODULE_VERIFICATION_ERROR));
-        }
-    }
-     */
 
     for module in &compiled_modules {
         let module_address = *module.self_id().address();
