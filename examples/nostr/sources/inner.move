@@ -93,6 +93,15 @@ module nostr::inner {
         string::utf8(COLON)
     }
 
+    /// derive a rooch address from a bitcoin taproot address from a x-only public key
+    public fun derive_rooch_address(public_key: &vector<u8>): address {
+        // derive a bitcoin taproot address from the public key
+        let bitcoin_taproot_address = derive_bitcoin_taproot_address_from_pubkey(public_key);
+        // derive a rooch address from the bitcoin taproot address
+        let rooch_address = to_rooch_address(&bitcoin_taproot_address);
+        rooch_address
+    }
+
     /// build string tags to inner struct tags
     fun build_tags(tags_str: vector<vector<String>>): vector<Tags> {
         // init tags list
