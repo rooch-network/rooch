@@ -31,6 +31,7 @@ ambassador = { workspace = true }
 bytes = { workspace = true }
 sha3 = { workspace = true }
 hashbrown = { workspace = true }
+bcs_sys = { package = "bcs", version = "0.1.0" }
 
 move-binary-format = { workspace = true }
 move-core-types = { workspace = true }

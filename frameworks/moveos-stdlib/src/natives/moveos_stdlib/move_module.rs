@@ -4,6 +4,7 @@
 use crate::natives::helpers::{make_module_natives, make_native};
 use better_any::{Tid, TidAble};
 use itertools::zip_eq;
+use move_binary_format::access::ModuleAccess;
 use move_binary_format::file_format::AbilitySet;
 use move_binary_format::{
     compatibility::Compatibility,
@@ -182,6 +183,20 @@ fn native_sort_and_verify_modules_inner(
             tracing::info!("modules verification error: {:?}", e);
             let error_code = e.sub_status().unwrap_or(E_MODULE_VERIFICATION_ERROR);
             return Ok(NativeResult::err(cost, error_code));
+        }
+    }
+
+    for module in &compiled_modules {
+        let module_storage = context.resolver().module_storage();
+
+        let module_address = module.address();
+        let module_name = module.name();
+        match module_storage.fetch_verified_module(module_address, module_name) {
+            Ok(_) => {}
+            Err(e) => {
+                tracing::info!("module verification error: {:?}", e);
+                return Ok(NativeResult::err(cost, E_MODULE_VERIFICATION_ERROR));
+            }
         }
     }
 

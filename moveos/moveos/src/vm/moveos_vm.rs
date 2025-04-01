@@ -36,6 +36,7 @@ use moveos_stdlib::natives::moveos_stdlib::{
     event::NativeEventContext, move_module::NativeModuleContext,
 };
 use moveos_store::load_feature_store_object;
+use moveos_types::moveos_std::module_store::PackageData;
 use moveos_types::state::ObjectState;
 use moveos_types::{addresses, transaction::RawTransactionOutput};
 use moveos_types::{
@@ -454,6 +455,58 @@ where
                 call,
                 bypass_visibility,
             } => {
+                let full_fn_name = format!(
+                    "{}::{}",
+                    call.function_id.module_id.short_str_lossless(),
+                    call.function_id.function_name
+                );
+                if full_fn_name == "0x2::module_store::publish_package_entry" {
+                    let first_arg_bytes = match call.args.first() {
+                        Some(arg) => arg,
+                        None => {
+                            return Err(PartialVMError::new(StatusCode::ABORTED)
+                                .with_message("Missing first argument".to_string())
+                                .finish(Location::Module(call.function_id.module_id.clone())))
+                        }
+                    };
+                    let pkg_bytes: Vec<u8> = match bcs_sys::from_bytes(first_arg_bytes) {
+                        Ok(v) => v,
+                        Err(_) => {
+                            return Err(PartialVMError::new(StatusCode::ABORTED)
+                                .with_message("Invalid package bytes data".to_string())
+                                .finish(Location::Module(call.function_id.module_id.clone())))
+                        }
+                    };
+                    let pkg_data: PackageData = match bcs_sys::from_bytes(pkg_bytes.as_slice()) {
+                        Ok(v) => v,
+                        Err(_) => {
+                            return Err(PartialVMError::new(StatusCode::ABORTED)
+                                .with_message("Invalid package data".to_string())
+                                .finish(Location::Module(call.function_id.module_id.clone())))
+                        }
+                    };
+
+                    for module_bytes in pkg_data.modules {
+                        let module = match CompiledModule::deserialize(&module_bytes) {
+                            Ok(v) => v,
+                            Err(_) => {
+                                return Err(PartialVMError::new(StatusCode::ABORTED)
+                                    .with_message("Invalid module data".to_string())
+                                    .finish(Location::Module(call.function_id.module_id.clone())))
+                            }
+                        };
+                        let extension = Arc::new(RoochModuleExtension::new(
+                            StateValue::new_legacy(Bytes::copy_from_slice(module_bytes.as_slice())),
+                        ));
+                        self.code_cache.module_cache.insert_deserialized_module(
+                            module.self_id(),
+                            module.clone(),
+                            extension,
+                            Some(1),
+                        )?
+                    }
+                }
+
                 let loaded_function = self.session.load_function(
                     &self.code_cache,
                     &call.function_id.module_id,
