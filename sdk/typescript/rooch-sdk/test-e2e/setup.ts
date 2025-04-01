@@ -51,10 +51,12 @@ export class TestBox extends TestBoxA {
         url: `http://${roochServerAddress}`,
       })
     } else {
+      const wsTransport = new RoochWebSocketTransport({
+        url: `http://${roochServerAddress}`,
+      })
       this.client = new RoochClient({
-        transport: new RoochWebSocketTransport({
-          url: `http://${roochServerAddress}`,
-        }),
+        transport: wsTransport,
+        subscriptionTransport: wsTransport,
       })
     }
 
