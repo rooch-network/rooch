@@ -26,7 +26,7 @@ export interface RoochSubscriptionTransport {
    * Register a callback to handle subscription events
    * @param callback Function to handle subscription events
    */
-  onEvent(callback: (event: any) => void): void
+  onMessage(callback: (msg: any) => void): void
 
   /**
    * Register a callback to handle reconnection events

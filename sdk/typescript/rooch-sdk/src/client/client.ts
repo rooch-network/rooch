@@ -131,7 +131,7 @@ export class RoochClient {
     this.subscriptionTransport = options.subscriptionTransport
     if (this.subscriptionTransport) {
       // Register subscription event listeners
-      this.subscriptionTransport.onEvent((event) => this.handleEvent(event))
+      this.subscriptionTransport.onMessage((msg) => this.handleSubscribeMessage(msg))
       // Register reconnection listener for re-subscription
       this.subscriptionTransport.onReconnected(() => this.resubscribeAll())
       // Register error listener for transport-level errors
@@ -729,9 +729,8 @@ export class RoochClient {
 
     const { type, filter } = options
     const method = type === 'event' ? 'rooch_subscribeEvents' : 'rooch_subscribeTransactions'
-    const params = filter ? [filter as any] : []
+    const params = filter ? [filter as any] : ['all']
     const request = {
-      jsonrpc: '2.0',
       method,
       params,
     }
@@ -741,11 +740,21 @@ export class RoochClient {
     return subscription
   }
 
-  private handleEvent(event: any): void {
-    const subscriptionId = event.subscription
+  private handleSubscribeMessage(msg: any): void {
+    const subscriptionId = msg.params.subscription
     const options = this.subscriptions.get(subscriptionId)
     if (options) {
-      options.onEvent(event.result)
+      if (msg.method === 'rooch_subscribeEvents') {
+        options.onEvent({
+          type: 'event',
+          data: msg.params.result,
+        })
+      } else if (msg.method === 'rooch_subscribeTransactions') {
+        options.onEvent({
+          type: 'transaction',
+          data: msg.params.result,
+        })
+      }
     }
   }
 
@@ -757,9 +766,8 @@ export class RoochClient {
     for (const [_id, options] of this.subscriptions) {
       const method =
         options.type === 'event' ? 'rooch_subscribeEvents' : 'rooch_subscribeTransactions'
-      const params = options.filter ? [options.filter] : []
+      const params = options.filter ? [options.filter] : ['all']
       const request = {
-        jsonrpc: '2.0',
         method,
         params,
       }
