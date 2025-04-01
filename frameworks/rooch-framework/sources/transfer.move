@@ -66,4 +66,49 @@ module rooch_framework::transfer {
         address_mapping::bind_bitcoin_address_internal(rooch_address, btc_address);
         object::transfer(obj, rooch_address);
     }
+
+    /// Direct transfer by coin type name
+    public entry fun direct_transfer(
+        from: &signer,
+        to: address,
+        coin_type_name: String,
+        amount: u256,
+    ) {
+        // Get coin metadata and info ID
+        let registry = coin::borrow_registry();
+        assert!(object::contains_field(registry, coin_type_name), ErrorCoinTypeNotRegistered);
+        let metadata: &CoinMetadata = object::borrow_field(registry, coin_type_name);
+        let coin_info_id = metadata.coin_info_id;
+
+        // Get or create coin stores
+        let from_addr = signer::address_of(from);
+        let from_store_id = account_coin_store_v2::get_or_create_coin_store(from_addr, coin_info_id, coin_type_name);
+        let to_store_id = account_coin_store_v2::get_or_create_coin_store(to, coin_info_id, coin_type_name);
+
+        // Perform direct transfer
+        coin_store_v2::direct_transfer(from_store_id, to_store_id, amount);
+    }
+
+    /// Forward generic transfers to non-generic system if it's available
+    public fun transfer_coin<CoinType: key + store>(
+        from: &signer,
+        to: address,
+        amount: u256,
+    ) {
+        if (is_v2_enabled()) {
+            // Use V2 transfer
+            let coin_type_name = type_info::type_name<CoinType>();
+            transfer_v2::direct_transfer(from, to, coin_type_name, amount);
+        } else {
+            // Use original generic transfer
+            transfer::transfer_coin<CoinType>(from, to, amount);
+        }
+    }
+
+    /// Check if V2 system is enabled
+    fun is_v2_enabled(): bool {
+        // Logic to check if V2 system is enabled
+        // This could be a global flag or based on a feature flag
+        true // For simplicity
+    }
 }

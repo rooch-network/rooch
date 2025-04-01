@@ -44,6 +44,19 @@ module rooch_framework::coin_store {
         frozen: bool,
     }
 
+    /// A holder of a specific coin types.
+    /// The non-generic coin store that holds coins by coin_info_id
+    struct CoinStoreV2 has key {
+        /// The coin info ID this store is for
+        coin_info_id: ObjectID,
+        /// Coin type name for easy reference
+        coin_type: string::String,
+        /// Balance of coin this store has
+        balance: Balance,
+        /// Whether the store is frozen
+        frozen: bool,
+    }
+
     /// Event emitted when a coin store is created.
     struct CreateEvent has drop, store, copy {
         /// The id of the coin store that was created
@@ -286,6 +299,269 @@ module rooch_framework::coin_store {
         event::emit(DepositEvent {
             coin_store_id: object_id,
             coin_type,
+            amount,
+        });
+    }
+
+    // === Non-generic functions ===
+    // ====== coin store v2 ======
+
+    // Create a new non-generic coin store
+    public fun create_coin_store_v2(coin_info_id: ObjectID, coin_type: string::String): Object<CoinStoreV2> {
+        let coin_store_obj = object::new(CoinStoreV2 {
+            coin_info_id,
+            coin_type,
+            value: 0,
+            frozen: false,
+        });
+
+        event::emit(CreateEventV2 {
+            coin_store_id: object::id(&coin_store_obj),
+            coin_type,
+            coin_info_id,
+        });
+
+        coin_store_obj
+    }
+
+    // Create account coin store
+    public fun create_account_coin_store_v2(account: address, coin_info_id: ObjectID, coin_type: string::String): ObjectID {
+        let coin_store_obj = object::new_account_named_object(
+            account,
+            CoinStoreV2 {
+                coin_info_id,
+                coin_type,
+                value: 0,
+                frozen: false,
+            }
+        );
+
+        let coin_store_id = object::id(&coin_store_obj);
+        object::transfer_extend(coin_store_obj, account);
+
+        event::emit(CreateEventV2 {
+            coin_store_id,
+            coin_type,
+            coin_info_id,
+        });
+
+        coin_store_id
+    }
+
+    // Direct transfer between coin stores
+    public fun direct_transfer(
+        from_store_id: ObjectID,
+        to_store_id: ObjectID,
+        amount: u256,
+    ) {
+        let from_store = borrow_mut_coin_store(from_store_id);
+        let to_store = borrow_mut_coin_store(to_store_id);
+
+        // Ensure stores are for the same coin type
+        assert!(from_store.coin_info_id == to_store.coin_info_id, ErrorCoinTypeMismatch);
+
+        // Check if stores are frozen
+        assert!(!from_store.frozen, ErrorCoinStoreIsFrozen);
+        assert!(!to_store.frozen, ErrorCoinStoreIsFrozen);
+
+        // Check balance
+        assert!(from_store.value >= amount, ErrorInsufficientBalance);
+
+        // Perform transfer
+        from_store.value = from_store.value - amount;
+        to_store.value = to_store.value + amount;
+
+        // Emit events
+        event::emit(WithdrawEventV2 {
+            coin_store_id: from_store_id,
+            coin_type: from_store.coin_type,
+            amount,
+        });
+
+        event::emit(DepositEventV2 {
+            coin_store_id: to_store_id,
+            coin_type: to_store.coin_type,
+            amount,
+        });
+    }
+
+
+    // Internal v2 functions
+
+    public(friend) fun create_coin_store_v2_internal(coin_info_id: ObjectID, coin_type: string::String): Object<CoinStoreV2> {
+        coin::check_coin_info_registered<CoinType>();
+        let coin_type = type_info::type_name<CoinType>();
+        let coin_store_obj = object::new(CoinStore<CoinType> {
+            balance: Balance { value: 0 },
+            frozen: false,
+        });
+        event::emit(CreateEvent {
+            coin_store_id: object::id(&coin_store_obj),
+            coin_type,
+        });
+        coin_store_obj
+    }
+
+    // Non-generic versions of methods
+    public fun create_coin_store_by_type(coin_type: string::String): Object<CoinStoreV2> {
+        create_coin_store_internal_by_type(coin_type)
+    }
+
+    public fun create_coin_store_extend_by_type(coin_type: string::String): Object<CoinStoreV2> {
+        create_coin_store_internal_by_type(coin_type)
+    }
+
+    public fun remove_coin_store_by_type(coin_store_object: Object<CoinStoreV2>): Coin<CoinInfo> {
+        let coin_store_id = object::id(&coin_store_object);
+        let coin_store = object::remove(coin_store_object);
+
+        let CoinStoreV2 { coin_info_id, coin_type, balance, frozen } = coin_store;
+        // Cannot remove a frozen CoinStore, because if we allow this, the frozen is meaningless
+        assert!(!frozen, ErrorCoinStoreIsFrozen);
+        let Balance { value } = balance;
+        let coin = coin::pack<CoinInfo>(value);
+
+        event::emit(RemoveEvent {
+            coin_store_id,
+            coin_type,
+        });
+
+        coin
+    }
+
+    public fun balance_by_type(coin_store_obj: &Object<CoinStoreV2>): u256 {
+        object::borrow(coin_store_obj).balance.value
+    }
+
+    public fun is_frozen_by_type(coin_store_obj: &Object<CoinStoreV2>): bool {
+        object::borrow(coin_store_obj).frozen
+    }
+
+    public fun withdraw_by_type(
+        coin_store_obj: &mut Object<CoinStoreV2>,
+        amount: u256
+    ): Coin<CoinInfo> {
+        withdraw_internal_by_type(coin_store_obj, amount)
+    }
+
+    public fun withdraw_extend_by_type(
+        coin_store_obj: &mut Object<CoinStoreV2>,
+        amount: u256
+    ): Coin<CoinInfo> {
+        withdraw_internal_by_type(coin_store_obj, amount)
+    }
+
+    public fun deposit_by_type(coin_store_obj: &mut Object<CoinStoreV2>, coin: Coin<CoinInfo>) {
+        deposit_internal_by_type(coin_store_obj, coin)
+    }
+
+    public fun deposit_extend_by_type(coin_store_obj: &mut Object<CoinStoreV2>, coin: Coin<CoinInfo>) {
+        deposit_internal_by_type(coin_store_obj, coin)
+    }
+
+    public fun transfer_by_type(_coin_store_obj: Object<CoinStoreV2>, _owner: address) {
+        abort ErrorCoinStoreTransferNotSupported
+    }
+
+    public fun borrow_mut_coin_store_extend_by_type(
+        object_id: ObjectID
+    ): &mut Object<CoinStoreV2> {
+        borrow_mut_coin_store_internal_by_type(object_id)
+    }
+
+    public fun freeze_coin_store_extend_by_type(
+        coin_store_obj: &mut Object<CoinStoreV2>,
+        frozen: bool,
+    ) {
+        let coin_store_id = object::id(coin_store_obj);
+        let coin_store = object::borrow_mut(coin_store_obj);
+        coin_store.frozen = frozen;
+        event::emit(FreezeEvent {
+            coin_store_id,
+            coin_type: coin_store.coin_type,
+            frozen,
+        });
+    }
+
+    public(friend) fun create_coin_store_internal_by_type(coin_type: string::String): Object<CoinStoreV2> {
+        let coin_info_id = coin::coin_info_id_by_type(coin_type);
+        let coin_store_obj = object::new(CoinStoreV2 {
+            coin_info_id,
+            coin_type,
+            balance: Balance { value: 0 },
+            frozen: false,
+        });
+        event::emit(CreateEvent {
+            coin_store_id: object::id(&coin_store_obj),
+            coin_type,
+        });
+        coin_store_obj
+    }
+
+    public(friend) fun create_account_coin_store_by_type(account: address, coin_type: string::String): ObjectID {
+        let coin_info_id = coin::coin_info_id_by_type(coin_type);
+        let coin_store_obj = object::new_account_named_object(account, CoinStoreV2 {
+            coin_info_id,
+            coin_type,
+            balance: Balance { value: 0 },
+            frozen: false,
+        });
+        let coin_store_id = object::id(&coin_store_obj);
+        object::transfer_extend(coin_store_obj, account);
+        event::emit(CreateEvent {
+            coin_store_id,
+            coin_type,
+        });
+        coin_store_id
+    }
+
+    public(friend) fun borrow_mut_coin_store_internal_by_type(
+        object_id: ObjectID
+    ): &mut Object<CoinStoreV2> {
+        assert!(object::exists_object_with_type<CoinStoreV2>(object_id), ErrorCoinStoreNotFound);
+        object::borrow_object_mut<CoinStoreV2>(object_id)
+    }
+
+    fun check_coin_store_not_frozen_by_type(coin_store: &CoinStoreV2) {
+        assert!(!coin_store.frozen, ErrorCoinStoreIsFrozen);
+    }
+
+    fun extract_from_balance_by_type(coin_store: &mut CoinStoreV2, amount: u256): Coin<CoinInfo> {
+        check_coin_store_not_frozen_by_type(coin_store);
+        assert!(coin_store.balance.value >= amount, ErrorInsufficientBalance);
+        coin_store.balance.value = coin_store.balance.value - amount;
+        coin::pack<CoinInfo>(amount)
+    }
+
+    fun merge_to_balance_by_type(coin_store: &mut CoinStoreV2, source_coin: Coin<CoinInfo>) {
+        check_coin_store_not_frozen_by_type(coin_store);
+        let amount = coin::unpack<CoinInfo>(source_coin);
+        coin_store.balance.value = coin_store.balance.value + amount;
+    }
+
+    public(friend) fun withdraw_internal_by_type(
+        coin_store_obj: &mut Object<CoinStoreV2>,
+        amount: u256
+    ): Coin<CoinInfo> {
+        let coin_store_id = object::id(coin_store_obj);
+        let coin_store = object::borrow_mut(coin_store_obj);
+        let coin = extract_from_balance_by_type(coin_store, amount);
+        event::emit(WithdrawEvent {
+            coin_store_id,
+            coin_type: coin_store.coin_type,
+            amount,
+        });
+        coin
+    }
+
+    public(friend) fun deposit_internal_by_type(coin_store_obj: &mut Object<CoinStoreV2>, coin: Coin<CoinInfo>) {
+        let coin_store_id = object::id(coin_store_obj);
+        let coin_store = object::borrow_mut(coin_store_obj);
+        let amount = coin::unpack<CoinInfo>(coin);
+        merge_to_balance_by_type(coin_store, coin::pack<CoinInfo>(amount));
+        event::emit(DepositEvent {
+            coin_store_id,
+            coin_type: coin_store.coin_type,
             amount,
         });
     }
