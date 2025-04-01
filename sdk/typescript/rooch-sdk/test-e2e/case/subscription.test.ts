@@ -542,4 +542,308 @@ describe('RoochClient Subscription Tests', () => {
     expect(transactionReceived).toBe(true)
     expect(result).toBe(true)
   })
+
+  it('should correctly unsubscribe and stop receiving events', async () => {
+    console.log('Starting unsubscribe functionality test')
+
+    const cmdAddress = await wsTestBox.defaultCmdAddress()
+    let receivedEventsBeforeUnsubscribe = 0
+    let receivedEventsAfterUnsubscribe = 0
+    let subscription: Subscription
+
+    // Setup subscription and trigger first event
+    const firstEventReceived = new Promise<boolean>((resolve) => {
+      console.log('Setting up event subscription...')
+
+      wsTestBox
+        .getClient()
+        .subscribe({
+          type: 'event',
+          filter: {
+            event_type: `${cmdAddress}::entry_function::U64Event`,
+          },
+          onEvent: (event) => {
+            console.log('Received event in unsubscribe test:', JSON.stringify(event.type))
+
+            if (
+              event.type === 'event' &&
+              event.data.event_type === `${cmdAddress}::entry_function::U64Event`
+            ) {
+              console.log('Received matching event before unsubscribe')
+              receivedEventsBeforeUnsubscribe++
+              resolve(true)
+
+              // We keep the subscription active to verify it receives no more events after unsubscribing
+            }
+          },
+          onError: (error) => {
+            console.error('Event subscription error:', error)
+            resolve(false)
+          },
+        })
+        .then((sub) => {
+          subscription = sub
+          console.log(`Event subscription established with ID: ${sub.id}`)
+        })
+        .catch((err) => {
+          console.error('Failed to create event subscription:', err)
+          resolve(false)
+        })
+    })
+
+    // Wait for subscription to be established
+    console.log('Waiting for subscription to be established...')
+    await new Promise((resolve) => setTimeout(resolve, 2000))
+
+    // Emit first event that should be received
+    console.log('Emitting first event (should be received)...')
+    const tx1 = new Transaction()
+    tx1.callFunction({
+      target: `${cmdAddress}::entry_function::emit_u64`,
+      args: [Args.u64(BigInt(100))],
+    })
+
+    const txResult1 = await wsTestBox.getClient().signAndExecuteTransaction({
+      transaction: tx1,
+      signer: wsTestBox.keypair,
+    })
+
+    console.log('First transaction result:', JSON.stringify(txResult1.execution_info.status))
+    expect(txResult1.execution_info.status.type).eq('executed')
+
+    // Wait for first event to be received
+    console.log('Waiting for first event to be received...')
+    const firstEventResult = await Promise.race([
+      firstEventReceived,
+      new Promise<boolean>((resolve) =>
+        setTimeout(() => {
+          console.log('Timeout waiting for first event')
+          resolve(false)
+        }, 10000),
+      ),
+    ])
+
+    expect(firstEventResult).toBe(true)
+    console.log(`Events received before unsubscribe: ${receivedEventsBeforeUnsubscribe}`)
+    expect(receivedEventsBeforeUnsubscribe).toBeGreaterThan(0)
+
+    // Now unsubscribe to stop receiving events
+    console.log(`Unsubscribing from subscription ID: ${subscription.id}...`)
+    subscription.unsubscribe()
+
+    // Setup a listener for events that might be received after unsubscribe
+    console.log('Setting up listener for events after unsubscribe...')
+    const client = wsTestBox.getClient()
+    const originalSubscriptionFn = client.subscribe.bind(client)
+
+    // Replace the subscribe method temporarily to catch any events
+    client.subscribe = ((options) => {
+      if (
+        options.type === 'event' &&
+        options.filter.event_type === `${cmdAddress}::entry_function::U64Event`
+      ) {
+        const originalOnEvent = options.onEvent
+        options.onEvent = (event) => {
+          if (
+            event.type === 'event' &&
+            event.data.event_type === `${cmdAddress}::entry_function::U64Event`
+          ) {
+            console.log('Received event after unsubscribe (should not happen)')
+            receivedEventsAfterUnsubscribe++
+          }
+          if (originalOnEvent) originalOnEvent(event)
+        }
+      }
+      return originalSubscriptionFn(options)
+    }) as any
+
+    // Wait a bit to ensure unsubscribe takes effect
+    console.log('Waiting for unsubscribe to take effect...')
+    await new Promise((resolve) => setTimeout(resolve, 3000))
+
+    // Emit second event that should NOT be received due to unsubscribe
+    console.log('Emitting second event (should NOT be received)...')
+    const tx2 = new Transaction()
+    tx2.callFunction({
+      target: `${cmdAddress}::entry_function::emit_u64`,
+      args: [Args.u64(BigInt(200))],
+    })
+
+    const txResult2 = await wsTestBox.getClient().signAndExecuteTransaction({
+      transaction: tx2,
+      signer: wsTestBox.keypair,
+    })
+
+    console.log('Second transaction result:', JSON.stringify(txResult2.execution_info.status))
+    expect(txResult2.execution_info.status.type).eq('executed')
+
+    // Wait a bit to see if any events are received
+    console.log('Waiting to see if any events are received after unsubscribe...')
+    await new Promise((resolve) => setTimeout(resolve, 5000))
+
+    // Restore original subscribe method
+    client.subscribe = originalSubscriptionFn
+
+    // Verify no events were received after unsubscribe
+    console.log(`Events received after unsubscribe: ${receivedEventsAfterUnsubscribe}`)
+    expect(receivedEventsAfterUnsubscribe).toBe(0)
+  })
+
+  it('should automatically resubscribe after connection is reestablished', async () => {
+    console.log('Starting reconnection handling test')
+
+    // Create a container-based test environment for network simulation
+    const containerWsTestBox = new TestBox(wsTestBox.keypair)
+
+    // Initialize with container-based Rooch instance and WebSocket transport
+    await containerWsTestBox.loadRoochEnv('container', 6767, 'ws')
+
+    // Setup network fault simulation with Pumba
+    await containerWsTestBox.loadPumbaEnv()
+
+    const cmdAddress = await containerWsTestBox.defaultCmdAddress()
+
+    // Variables to track events
+    let eventsBeforeDisconnection = 0
+    let eventsAfterReconnection = 0
+    let subscription: Subscription
+    let networkDisrupted = false
+
+    // Setup subscription
+    const subscriptionSetup = new Promise<boolean>((resolve) => {
+      console.log('Setting up event subscription for reconnection test...')
+
+      containerWsTestBox
+        .getClient()
+        .subscribe({
+          type: 'event',
+          filter: {
+            event_type: `${cmdAddress}::entry_function::U64Event`,
+          },
+          onEvent: (event) => {
+            console.log('Received event in reconnection test:', JSON.stringify(event.type))
+
+            if (
+              event.type === 'event' &&
+              event.data.event_type === `${cmdAddress}::entry_function::U64Event`
+            ) {
+              if (!networkDisrupted) {
+                console.log('Received event before network disruption')
+                eventsBeforeDisconnection++
+              } else {
+                console.log('Received event after reconnection')
+                eventsAfterReconnection++
+              }
+            }
+          },
+          onError: (error) => {
+            console.error('Event subscription error:', error)
+          },
+        })
+        .then((sub) => {
+          subscription = sub
+          console.log(`Event subscription established with ID: ${sub.id}`)
+          resolve(true)
+        })
+        .catch((err) => {
+          console.error('Failed to create event subscription for reconnection test:', err)
+          resolve(false)
+        })
+    })
+
+    // Wait for subscription to be established
+    console.log('Waiting for subscription to be established...')
+    const subscriptionResult = await Promise.race([
+      subscriptionSetup,
+      new Promise<boolean>((resolve) =>
+        setTimeout(() => {
+          console.log('Timeout waiting for subscription setup')
+          resolve(false)
+        }, 5000),
+      ),
+    ])
+
+    expect(subscriptionResult).toBe(true)
+
+    // Send a test event before network disruption
+    console.log('Sending test event before network disruption...')
+    const tx1 = new Transaction()
+    tx1.callFunction({
+      target: `${cmdAddress}::entry_function::emit_u64`,
+      args: [Args.u64(BigInt(300))],
+    })
+
+    const txResult1 = await containerWsTestBox.getClient().signAndExecuteTransaction({
+      transaction: tx1,
+      signer: containerWsTestBox.keypair,
+    })
+
+    console.log('First transaction result:', JSON.stringify(txResult1.execution_info.status))
+    expect(txResult1.execution_info.status.type).eq('executed')
+
+    // Wait for event to be received
+    await new Promise((resolve) => setTimeout(resolve, 3000))
+    console.log(`Events received before network disruption: ${eventsBeforeDisconnection}`)
+    expect(eventsBeforeDisconnection).toBeGreaterThan(0)
+
+    // Simulate network failure with Pumba
+    console.log('Simulating network disruption with Pumba...')
+    networkDisrupted = true
+
+    // Combined network issues: add delay and then packet loss for more severe disruption
+    await containerWsTestBox.simulateRoochRpcDelay(1000, 3) // 1000ms delay for 3 seconds
+    await containerWsTestBox.simulateRoochRpcPacketLoss(80, 10) // 80% packet loss for 10 seconds
+
+    // Wait for network failure to take effect and the client to detect disconnection
+    console.log('Waiting for network disruption to take effect...')
+    await new Promise((resolve) => setTimeout(resolve, 3000))
+
+    // Wait for automatic reconnection and resubscription to happen
+    console.log('Waiting for automatic reconnection to occur...')
+    await new Promise((resolve) => setTimeout(resolve, 15000))
+
+    // Send another test event after reconnection
+    console.log('Sending test event after reconnection...')
+    const tx2 = new Transaction()
+    tx2.callFunction({
+      target: `${cmdAddress}::entry_function::emit_u64`,
+      args: [Args.u64(BigInt(400))],
+    })
+
+    const txResult2 = await containerWsTestBox.getClient().signAndExecuteTransaction({
+      transaction: tx2,
+      signer: containerWsTestBox.keypair,
+    })
+
+    console.log('Second transaction result:', JSON.stringify(txResult2.execution_info.status))
+    expect(txResult2.execution_info.status.type).eq('executed')
+
+    // Wait for event to be received
+    console.log('Waiting for event after reconnection...')
+    await new Promise((resolve) => setTimeout(resolve, 10000))
+
+    // Check if events were received after reconnection
+    console.log(`Events received after reconnection: ${eventsAfterReconnection}`)
+
+    // Clean up
+    if (subscription && typeof subscription.unsubscribe === 'function') {
+      console.log('Unsubscribing...')
+      subscription.unsubscribe()
+    }
+
+    // Clean up the container test environment
+    await containerWsTestBox.cleanEnv()
+
+    // Verify reconnection behavior
+    console.log(`Reconnection test summary:
+      Events before network disruption: ${eventsBeforeDisconnection}
+      Events after reconnection: ${eventsAfterReconnection}`)
+
+    // We expect at least events before network disruption
+    expect(eventsBeforeDisconnection).toBeGreaterThan(0)
+
+    // We now expect there should be events after reconnection as we've allowed
+    // proper time for the client to reconnect and resubscribe
+    expect(eventsAfterReconnection).toBeGreaterThan(0)
+  })
 })

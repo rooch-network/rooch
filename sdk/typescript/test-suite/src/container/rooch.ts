@@ -266,4 +266,14 @@ export class StartedRoochContainer extends AbstractStartedContainer {
   public getConnectionAddress(): string {
     return `${this.getHost()}:${this.getPort()}`
   }
+
+  /**
+   * Returns the Docker container name that can be used with Pumba for network simulations.
+   * @returns The container name as a string
+   */
+  public getContainerName(): string {
+    // The Docker container ID is available from the startedTestContainer
+    // For Pumba, we need the full container name/ID
+    return this.startedTestContainer.getId()
+  }
 }
