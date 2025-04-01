@@ -80,8 +80,8 @@ export class RoochWebSocketTransport implements RoochTransport, RoochSubscriptio
         const data = JSON.parse(event.data)
 
         // Handle subscription events
-        if (data.method === 'subscription' && data.params) {
-          this.#eventEmitter.emit('event', data.params)
+        if (data.method && data.method.startsWith('rooch_subscribe') && data.params) {
+          this.#eventEmitter.emit('subscription', data)
           return
         }
 
@@ -259,8 +259,8 @@ export class RoochWebSocketTransport implements RoochTransport, RoochSubscriptio
     this.#subscriptions.delete(subscriptionId)
   }
 
-  onEvent(callback: (event: any) => void): void {
-    this.#eventEmitter.on('event', callback)
+  onMessage(callback: (msg: any) => void): void {
+    this.#eventEmitter.on('subscription', callback)
   }
 
   onReconnected(callback: () => void): void {
