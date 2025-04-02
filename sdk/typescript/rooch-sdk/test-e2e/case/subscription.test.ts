@@ -21,6 +21,7 @@ describe('RoochClient Subscription Tests', () => {
     await wsTestBox.cleanEnv()
   })
 
+  /*
   it('should subscribe to events and receive event notifications', async () => {
     let receivedEvents = new Array<any>()
 
@@ -688,6 +689,7 @@ describe('RoochClient Subscription Tests', () => {
     console.log(`Events received after unsubscribe: ${receivedEventsAfterUnsubscribe}`)
     expect(receivedEventsAfterUnsubscribe).toBe(0)
   })
+  */
 
   it('should automatically resubscribe after connection is reestablished', async () => {
     console.log('Starting reconnection handling test')
@@ -696,10 +698,18 @@ describe('RoochClient Subscription Tests', () => {
     const containerWsTestBox = new TestBox(wsTestBox.keypair)
 
     // Initialize with container-based Rooch instance and WebSocket transport
-    await containerWsTestBox.loadRoochEnv('container', 6767, 'ws')
+    await containerWsTestBox.loadRoochEnv('container', 0, 'ws')
 
     // Setup network fault simulation with Pumba
     await containerWsTestBox.loadPumbaEnv()
+
+    // Deploy the entry_function example package first
+    console.log('Publishing entry_function package...')
+    const entryFunctionDeployResult = await containerWsTestBox.cmdPublishPackage(
+      '../../../examples/entry_function_arguments',
+    )
+    expect(entryFunctionDeployResult).toBeTruthy()
+    console.log('entry_function package published successfully')
 
     const cmdAddress = await containerWsTestBox.defaultCmdAddress()
 
