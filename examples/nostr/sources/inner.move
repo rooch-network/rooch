@@ -5,7 +5,7 @@
 module nostr::inner {
     use std::vector;
     use std::string::{Self, String};
-    use std::option;
+    use std::option::{Self, Option};
     use moveos_std::string_utils;
 
     // Name of the tag of the event
@@ -33,13 +33,13 @@ module nostr::inner {
     /// Tags
     #[data_struct]
     struct Tags {
-        /// For referring to an event
+        // For referring to an event
         event: Option<EventTag>,
-        /// For another user
+        // For another user
         user: Option<UserTag>,
-        /// For addressable or replaceable events
+        // For addressable or replaceable events
         addressable_replaceable: Option<AddressableReplaceableTag>,
-        /// For other arrays of non-null strings
+        // For other arrays of non-null strings
         strings_list: Option<StringsListTag>
     }
 

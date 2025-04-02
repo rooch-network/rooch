@@ -5,7 +5,6 @@
 module nostr::event {
     use std::vector;
     use std::string::{Self, String};
-    use std::option;
     use moveos_std::object::{Self, Object, ObjectID};
     use moveos_std::event;
     use moveos_std::bcs;
@@ -202,5 +201,10 @@ module nostr::event {
     /// drop an event
     fun drop_event(event: Event) {
         let Event {id: _, pubkey: _, created_at: _, kind: _, tags: _, content: _, sig: _} = event;
+    }
+
+    public fun unpack_event(event: Event): (vector<u8>, vector<u8>, u64, u16, vector<vector<String>>, String, vector<u8>) {
+        let Event { id, pubkey, created_at, kind, tags, content, sig } = event;
+        (id, pubkey, created_at, kind, tags, content, sig)
     }
 }
