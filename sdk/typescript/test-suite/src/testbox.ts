@@ -14,6 +14,7 @@ import { OrdContainer, StartedOrdContainer } from './container/ord.js'
 import { RoochContainer, StartedRoochContainer } from './container/rooch.js'
 import { BitcoinContainer, StartedBitcoinContainer } from './container/bitcoin.js'
 import { PumbaContainer, StartedPumbaContainer } from './container/pumba.js'
+import { LogConsumer } from './container/debug/log_consumer.js'
 
 const ordNetworkAlias = 'ord'
 const bitcoinNetworkAlias = 'bitcoind'
@@ -140,13 +141,27 @@ export class TestBox {
       return
     }
 
-    const container = new RoochContainer().withHostConfigPath(`${this.tmpDir.name}/.rooch`)
-    await container.initializeRooch()
+    this.roochCommand(['init', '--config-dir', `${this.roochDir}`, '--skip-password'])
+    const container = new RoochContainer()
+
+    // Find local Rooch binary path as in the 'local' mode
+    const root = this.findRootDir('pnpm-workspace.yaml')
+    const localRoochPath = path.join(root!, 'target', 'debug', 'rooch')
+
+    // Verify local binary exists
+    if (!fs.existsSync(localRoochPath)) {
+      throw new Error(
+        `Local Rooch binary not found at ${localRoochPath}. Make sure to build it first.`,
+      )
+    }
+
+    // Configure container with local binary
+    container.withLocalBinary(localRoochPath).withLogConsumer(new LogConsumer().waitUntilReady)
 
     container
       .withNetwork(await this.getNetwork())
       .withDataDir('TMP')
-      .withPort(port)
+      .withPort(6767)
 
     if (this.bitcoinContainer) {
       container
@@ -157,6 +172,20 @@ export class TestBox {
     }
 
     this.roochContainer = await container.start()
+
+    const rpcURL = this.roochContainer.getConnectionAddress()
+    console.log('container rooch rpc:', rpcURL)
+    this.roochCommand([
+      'env',
+      'add',
+      '--config-dir',
+      `${this.roochDir}`,
+      '--alias',
+      'local',
+      '--rpc',
+      'http://' + rpcURL,
+    ])
+    this.roochCommand(['env', 'switch', '--config-dir', `${this.roochDir}`, '--alias', 'local'])
   }
 
   cleanEnv() {
