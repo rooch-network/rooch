@@ -2,10 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::natives::helpers::{make_module_natives, make_native};
-use fastcrypto::{
-    hash::Sha256,
-    secp256k1::schnorr::{SchnorrPublicKey, SchnorrSignature},
-    traits::ToFromBytes,
+use k256::schnorr::{
+    Signature,
+    VerifyingKey
 };
 use move_binary_format::errors::PartialVMResult;
 use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte, NumBytes};
@@ -19,10 +18,8 @@ use move_vm_types::{
 use smallvec::smallvec;
 use std::collections::VecDeque;
 
-pub const SHA256: u8 = 0;
-
 pub const E_INVALID_SIGNATURE: u64 = 1;
-pub const E_INVALID_PUBKEY: u64 = 2;
+pub const E_INVALID_VERIFYING_KEY: u64 = 2;
 
 pub fn native_verify(
     gas_params: &FromBytesGasParameters,
@@ -31,37 +28,31 @@ pub fn native_verify(
     mut args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
     debug_assert!(ty_args.is_empty());
-    debug_assert!(args.len() == 4);
+    debug_assert!(args.len() == 3);
 
-    let hash = pop_arg!(args, u8);
     let msg = pop_arg!(args, VectorRef);
-    let public_key_bytes = pop_arg!(args, VectorRef);
+    let verifying_key_bytes = pop_arg!(args, VectorRef);
     let signature_bytes = pop_arg!(args, VectorRef);
 
     let msg_ref = msg.as_bytes_ref();
     let signature_bytes_ref = signature_bytes.as_bytes_ref();
-    let public_key_bytes_ref = public_key_bytes.as_bytes_ref();
+    let verifying_key_bytes_ref = verifying_key_bytes.as_bytes_ref();
 
     let cost = gas_params.base
         + gas_params.per_byte * NumBytes::new(msg_ref.len() as u64)
         + gas_params.per_byte * NumBytes::new(signature_bytes_ref.len() as u64)
-        + gas_params.per_byte * NumBytes::new(public_key_bytes_ref.len() as u64);
+        + gas_params.per_byte * NumBytes::new(verifying_key_bytes_ref.len() as u64);
 
-    let Ok(sign) = SchnorrSignature::from_bytes(&signature_bytes_ref) else {
+    let Ok(sig) = Signature::try_from(signature_bytes_ref.to_vec().as_slice()) else {
         return Ok(NativeResult::err(cost, E_INVALID_SIGNATURE));
     };
 
-    let Ok(public_key) = <SchnorrPublicKey as ToFromBytes>::from_bytes(&public_key_bytes_ref)
+    let Ok(verifying_key) = VerifyingKey::from_bytes(&verifying_key_bytes_ref)
     else {
-        return Ok(NativeResult::err(cost, E_INVALID_PUBKEY));
+        return Ok(NativeResult::err(cost, E_INVALID_VERIFYING_KEY));
     };
 
-    let result = match hash {
-        SHA256 => public_key
-            .verify_with_hash::<Sha256>(&msg_ref, &sign)
-            .is_ok(),
-        _ => false,
-    };
+    let result = verifying_key.verify_raw(&msg_ref, &sig).is_ok();
 
     Ok(NativeResult::ok(cost, smallvec![Value::bool(result)]))
 }
