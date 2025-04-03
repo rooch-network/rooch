@@ -3,10 +3,17 @@
 
 import { Readable } from 'stream'
 
-export class LogConsumer {
-  public async waitUntilReady(stream: Readable): Promise<void> {
-    stream.on('data', (line) => {
-      console.log(`[Container Log] ${line.toString().trim()}`)
+export function logConsumer(name: string) {
+  return (stream: Readable): Promise<void> => {
+    const topic = `Container ${name} log`
+
+    return new Promise((resolve, reject) => {
+      stream.on('data', (line) => {
+        console.log(`[${topic}] ${line.toString().trim()}`)
+      })
+
+      stream.on('end', () => resolve())
+      stream.on('error', (err) => reject(err))
     })
   }
 }

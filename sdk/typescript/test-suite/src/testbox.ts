@@ -13,8 +13,8 @@ import { Network, StartedNetwork } from 'testcontainers'
 import { OrdContainer, StartedOrdContainer } from './container/ord.js'
 import { RoochContainer, StartedRoochContainer } from './container/rooch.js'
 import { BitcoinContainer, StartedBitcoinContainer } from './container/bitcoin.js'
-import { PumbaContainer, StartedPumbaContainer } from './container/pumba.js'
-import { LogConsumer } from './container/debug/log_consumer.js'
+import { PumbaContainer } from './container/pumba.js'
+import { logConsumer } from './container/debug/log_consumer.js'
 
 const ordNetworkAlias = 'ord'
 const bitcoinNetworkAlias = 'bitcoind'
@@ -26,7 +26,6 @@ export class TestBox {
   ordContainer?: StartedOrdContainer
   bitcoinContainer?: StartedBitcoinContainer
   roochContainer?: StartedRoochContainer | number
-  pumbaContainer?: StartedPumbaContainer
   roochDir: string
 
   roochPort?: number
@@ -156,7 +155,7 @@ export class TestBox {
     }
 
     // Configure container with local binary
-    container.withLocalBinary(localRoochPath).withLogConsumer(new LogConsumer().waitUntilReady)
+    container.withLocalBinary(localRoochPath).withLogConsumer(logConsumer('rooch'))
 
     container
       .withNetwork(await this.getNetwork())
@@ -369,17 +368,6 @@ export class TestBox {
     return null
   }
 
-  async loadPumbaEnv(customContainer?: PumbaContainer) {
-    if (customContainer) {
-      this.pumbaContainer = await customContainer.start()
-    } else {
-      this.pumbaContainer = await new PumbaContainer().withNetwork(await this.getNetwork()).start()
-    }
-
-    // Give Pumba a moment to initialize
-    await this.delay(2)
-  }
-
   /**
    * Simulates network delay for the Rooch RPC endpoint.
    *
@@ -387,16 +375,12 @@ export class TestBox {
    * @param durationSec Duration of the simulated delay in seconds
    */
   async simulateRoochRpcDelay(delayMs: number, durationSec: number): Promise<void> {
-    if (!this.pumbaContainer) {
-      throw new Error('Pumba container not initialized. Call loadPumbaEnv() first.')
-    }
-
     if (!(this.roochContainer instanceof StartedRoochContainer)) {
       throw new Error('This method only works with containerized Rooch instances')
     }
 
     const containerName = this.roochContainer.getContainerName()
-    await this.pumbaContainer.simulateDelay(containerName, delayMs, durationSec)
+    await PumbaContainer.simulateDelay(containerName, delayMs, durationSec)
   }
 
   /**
@@ -406,16 +390,12 @@ export class TestBox {
    * @param durationSec Duration of the simulated loss in seconds
    */
   async simulateRoochRpcPacketLoss(lossPercent: number, durationSec: number): Promise<void> {
-    if (!this.pumbaContainer) {
-      throw new Error('Pumba container not initialized. Call loadPumbaEnv() first.')
-    }
-
     if (!(this.roochContainer instanceof StartedRoochContainer)) {
       throw new Error('This method only works with containerized Rooch instances')
     }
 
     const containerName = this.roochContainer.getContainerName()
-    await this.pumbaContainer.simulateLoss(containerName, lossPercent, durationSec)
+    await PumbaContainer.simulateLoss(containerName, lossPercent, durationSec)
   }
 
   /**
@@ -425,16 +405,12 @@ export class TestBox {
    * @param durationSec Duration of the bandwidth limitation in seconds
    */
   async simulateRoochRpcBandwidthLimit(rate: string, durationSec: number): Promise<void> {
-    if (!this.pumbaContainer) {
-      throw new Error('Pumba container not initialized. Call loadPumbaEnv() first.')
-    }
-
     if (!(this.roochContainer instanceof StartedRoochContainer)) {
       throw new Error('This method only works with containerized Rooch instances')
     }
 
     const containerName = this.roochContainer.getContainerName()
-    await this.pumbaContainer.simulateBandwidth(containerName, rate, durationSec)
+    await PumbaContainer.simulateBandwidth(containerName, rate, durationSec)
   }
 }
 

@@ -1,44 +1,37 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { GenericContainer, AbstractStartedContainer, StartedTestContainer } from 'testcontainers'
+import { GenericContainer } from 'testcontainers'
 
-// PumbaContainer: Configures and starts the Pumba container
-export class PumbaContainer extends GenericContainer {
-  constructor(image = 'gaiaadm/pumba:latest') {
-    super(image)
-    // Mount Docker socket to allow Pumba to control other containers
-    this.withBindMounts([{ source: '/var/run/docker.sock', target: '/var/run/docker.sock' }])
-      .withCommand(['sleep', 'infinity']) // Keep container running
-      .withStartupTimeout(120_000) // Allow 120 seconds for startup
-  }
+export class PumbaContainer {
+  private static async runPumbaCommand(command: string[]): Promise<void> {
+    console.log(`Executing Pumba command: ${command.join(' ')}`)
 
-  /**
-   * Starts the Pumba container and returns a StartedPumbaContainer instance.
-   * @returns Promise<StartedPumbaContainer>
-   */
-  public override async start(): Promise<StartedPumbaContainer> {
-    const container = await super.start()
-    return new StartedPumbaContainer(container)
-  }
-}
+    const container = await new GenericContainer('gaiaadm/pumba:latest')
+      .withBindMounts([{ source: '/var/run/docker.sock', target: '/var/run/docker.sock' }])
+      .withCommand(command)
+      .withStartupTimeout(120_000)
+      .start()
 
-// StartedPumbaContainer: Provides methods to simulate network faults
-export class StartedPumbaContainer extends AbstractStartedContainer {
-  constructor(startedTestContainer: StartedTestContainer) {
-    super(startedTestContainer)
-  }
+    console.log('Pumba command started successfully')
 
-  /**
-   * Executes a Pumba command inside the container.
-   * @param command The Pumba command array to execute.
-   * @throws Error if the command fails.
-   */
-  private async execPumbaCommand(command: string[]): Promise<void> {
-    const result = await this.startedTestContainer.exec(command)
-    if (result.exitCode !== 0) {
-      throw new Error(`Pumba command failed with exit code ${result.exitCode}: ${result.output}`)
-    }
+    // Wait for the container to stop by itself
+    const stream = await container.logs()
+    return new Promise<void>((resolve, reject) => {
+      stream.on('data', (line) => {
+        console.log(`[Pumba] ${line.toString().trim()}`)
+      })
+
+      stream.on('end', () => {
+        console.log('Pumba command completed')
+        resolve()
+      })
+
+      stream.on('error', (err) => {
+        console.error('Pumba command error:', err)
+        reject(err)
+      })
+    })
   }
 
   /**
@@ -47,13 +40,12 @@ export class StartedPumbaContainer extends AbstractStartedContainer {
    * @param delayMs Delay in milliseconds.
    * @param durationSec Duration of the fault in seconds.
    */
-  public async simulateDelay(
+  public static async simulateDelay(
     targetContainerName: string,
     delayMs: number,
     durationSec: number,
   ): Promise<void> {
-    await this.execPumbaCommand([
-      'pumba',
+    await this.runPumbaCommand([
       'netem',
       '--duration',
       `${durationSec}s`,
@@ -70,13 +62,12 @@ export class StartedPumbaContainer extends AbstractStartedContainer {
    * @param lossPercent Packet loss percentage (0-100).
    * @param durationSec Duration of the fault in seconds.
    */
-  public async simulateLoss(
+  public static async simulateLoss(
     targetContainerName: string,
     lossPercent: number,
     durationSec: number,
   ): Promise<void> {
-    await this.execPumbaCommand([
-      'pumba',
+    await this.runPumbaCommand([
       'netem',
       '--duration',
       `${durationSec}s`,
@@ -88,18 +79,17 @@ export class StartedPumbaContainer extends AbstractStartedContainer {
   }
 
   /**
-   * Simulates bandwidth limitation for a target container (optional extension).
+   * Simulates bandwidth limitation for a target container.
    * @param targetContainerName Name of the container to target.
    * @param rate Bandwidth rate (e.g., "1mbit").
    * @param durationSec Duration of the fault in seconds.
    */
-  public async simulateBandwidth(
+  public static async simulateBandwidth(
     targetContainerName: string,
     rate: string,
     durationSec: number,
   ): Promise<void> {
-    await this.execPumbaCommand([
-      'pumba',
+    await this.runPumbaCommand([
       'netem',
       '--duration',
       `${durationSec}s`,
