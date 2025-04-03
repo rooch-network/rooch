@@ -113,11 +113,19 @@ export interface SubscriptionOptions {
 export class RoochClient {
   protected chainID: bigint | undefined
   protected transport: RoochTransport
-  private subscriptions: Map<string, SubscriptionOptions> = new Map()
   protected subscriptionTransport?: RoochSubscriptionTransport
+  private subscriptions: Map<string, SubscriptionOptions> = new Map()
 
   get [ROOCH_CLIENT_BRAND]() {
     return true
+  }
+
+  getTransport() {
+    return this.transport
+  }
+
+  getSubscriptionTransport() {
+    return this.subscriptionTransport
   }
 
   /**

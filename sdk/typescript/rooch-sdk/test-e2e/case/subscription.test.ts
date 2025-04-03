@@ -700,9 +700,6 @@ describe('RoochClient Subscription Tests', () => {
     // Initialize with container-based Rooch instance and WebSocket transport
     await containerWsTestBox.loadRoochEnv('container', 0, 'ws')
 
-    // Setup network fault simulation with Pumba
-    await containerWsTestBox.loadPumbaEnv()
-
     // Deploy the entry_function example package first
     console.log('Publishing entry_function package...')
     const entryFunctionDeployResult = await containerWsTestBox.cmdPublishPackage(
@@ -775,6 +772,15 @@ describe('RoochClient Subscription Tests', () => {
 
     expect(subscriptionResult).toBe(true)
 
+    let reconnectCount = 0
+    containerWsTestBox
+      .getClient()
+      .getSubscriptionTransport()
+      ?.onReconnected(() => {
+        console.log('SubscriptionTransport Reconnected')
+        reconnectCount++
+      })
+
     // Send a test event before network disruption
     console.log('Sending test event before network disruption...')
     const tx1 = new Transaction()
@@ -811,6 +817,9 @@ describe('RoochClient Subscription Tests', () => {
     // Wait for automatic reconnection and resubscription to happen
     console.log('Waiting for automatic reconnection to occur...')
     await new Promise((resolve) => setTimeout(resolve, 15000))
+
+    // We expect at least reconnect Count > 0
+    expect(reconnectCount).toBeGreaterThan(0)
 
     // Send another test event after reconnection
     console.log('Sending test event after reconnection...')
