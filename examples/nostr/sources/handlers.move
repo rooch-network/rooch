@@ -34,7 +34,7 @@ module nostr::handlers {
         string::utf8(CLOSE_KEY)
     }
 
-    /// Publish an event to supported NIP relays using an external oracle
+    /// Publish a signed event to relays using an external oracle call
     public entry fun publish_event(event_message: &SimpleMap<String, String>) {
         assert!(is_event_message(event_message), ErrorEventMessage);
 
@@ -66,7 +66,7 @@ module nostr::handlers {
         let body = string::uft8(event_request_json);
         let http_request = oracles::build_request(url, method, headers, body);
 
-        // TODO: withdraw fees from connected NWC wallet from application interface
+        // TODO: account module and account balance
         // oracle fees
         let oracle_address = requests::oracle_address();
         let request_body_length = string::length(&body);
