@@ -25,8 +25,10 @@ export class TestBox extends TestBoxA {
     if (transportType === 'http') {
       this.client = new RoochClient({ url: url || DEFAULT_NODE_URL })
     } else {
+      const wsTransport = new RoochWebSocketTransport({ url: url || DEFAULT_NODE_URL })
       this.client = new RoochClient({
-        transport: new RoochWebSocketTransport({ url: url || DEFAULT_NODE_URL }),
+        transport: wsTransport,
+        subscriptionTransport: wsTransport,
       })
     }
   }
@@ -49,10 +51,12 @@ export class TestBox extends TestBoxA {
         url: `http://${roochServerAddress}`,
       })
     } else {
+      const wsTransport = new RoochWebSocketTransport({
+        url: `http://${roochServerAddress}`,
+      })
       this.client = new RoochClient({
-        transport: new RoochWebSocketTransport({
-          url: `http://${roochServerAddress}`,
-        }),
+        transport: wsTransport,
+        subscriptionTransport: wsTransport,
       })
     }
 

@@ -55,8 +55,7 @@
     "tmp": "^0.2.1",
     "testcontainers": "10.11.0"
   },
-  "dependencies": {
-  },
+  "dependencies": {},
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"
