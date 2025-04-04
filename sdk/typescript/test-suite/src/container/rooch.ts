@@ -286,6 +286,6 @@ export class StartedRoochContainer extends AbstractStartedContainer {
   public getContainerName(): string {
     // The Docker container ID is available from the startedTestContainer
     // For Pumba, we need the full container name/ID
-    return this.startedTestContainer.getId()
+    return this.startedTestContainer.getName().slice(1) // Remove the leading slash
   }
 }

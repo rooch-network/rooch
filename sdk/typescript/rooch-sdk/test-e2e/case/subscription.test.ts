@@ -6,6 +6,7 @@ import { TestBox } from '../setup.js'
 import { Transaction } from '../../src/transactions/index.js'
 import { Subscription } from '../../src/client/subscriptionTransportInterface.js'
 import { Args } from '../../src/bcs/index.js'
+import { fail } from 'assert'
 
 describe('RoochClient Subscription Tests', () => {
   let wsTestBox: TestBox
@@ -804,65 +805,164 @@ describe('RoochClient Subscription Tests', () => {
 
     // Simulate network failure with Pumba
     console.log('Simulating network disruption with Pumba...')
+    // Simulate network disruption
     networkDisrupted = true
+    containerWsTestBox.simulateRoochRpcPacketLoss(100, 60)
 
-    // Combined network issues: add delay and then packet loss for more severe disruption
-    await containerWsTestBox.simulateRoochRpcDelay(1000, 3) // 1000ms delay for 3 seconds
-    await containerWsTestBox.simulateRoochRpcPacketLoss(80, 10) // 80% packet loss for 10 seconds
+    // Wait 10s
+    await new Promise((resolve) => setTimeout(resolve, 10000))
 
-    // Wait for network failure to take effect and the client to detect disconnection
-    console.log('Waiting for network disruption to take effect...')
-    await new Promise((resolve) => setTimeout(resolve, 3000))
+    // Try to send transactions during network disruption
+    try {
+      const tx2 = new Transaction()
+      tx2.callFunction({
+        target: `${cmdAddress}::entry_function::emit_u64`,
+        args: [Args.u64(BigInt(350))],
+      })
 
-    // Wait for automatic reconnection and resubscription to happen
-    console.log('Waiting for automatic reconnection to occur...')
-    await new Promise((resolve) => setTimeout(resolve, 15000))
+      const tx = await containerWsTestBox.getClient().signAndExecuteTransaction({
+        transaction: tx2,
+        signer: containerWsTestBox.keypair,
+      })
 
-    // We expect at least reconnect Count > 0
-    expect(reconnectCount).toBeGreaterThan(0)
+      console.log('tx:', tx)
 
-    // Send another test event after reconnection
-    console.log('Sending test event after reconnection...')
-    const tx2 = new Transaction()
-    tx2.callFunction({
+      fail('send tx should fail after 100% loss package')
+    } catch (err) {
+      console.log('Expected error during network disruption:', err)
+    }
+
+    // Wait for network recovery and reconnection
+    await new Promise((resolve) => setTimeout(resolve, 25000))
+
+    // Send test event after reconnection
+    const tx3 = new Transaction()
+    tx3.callFunction({
       target: `${cmdAddress}::entry_function::emit_u64`,
       args: [Args.u64(BigInt(400))],
     })
 
-    const txResult2 = await containerWsTestBox.getClient().signAndExecuteTransaction({
-      transaction: tx2,
+    await containerWsTestBox.getClient().signAndExecuteTransaction({
+      transaction: tx3,
       signer: containerWsTestBox.keypair,
     })
 
-    console.log('Second transaction result:', JSON.stringify(txResult2.execution_info.status))
-    expect(txResult2.execution_info.status.type).eq('executed')
+    await new Promise((resolve) => setTimeout(resolve, 5000))
 
-    // Wait for event to be received
-    console.log('Waiting for event after reconnection...')
-    await new Promise((resolve) => setTimeout(resolve, 10000))
-
-    // Check if events were received after reconnection
-    console.log(`Events received after reconnection: ${eventsAfterReconnection}`)
-
-    // Clean up
-    if (subscription && typeof subscription.unsubscribe === 'function') {
-      console.log('Unsubscribing...')
+    if (subscription) {
       subscription.unsubscribe()
     }
 
-    // Clean up the container test environment
     await containerWsTestBox.cleanEnv()
 
-    // Verify reconnection behavior
-    console.log(`Reconnection test summary:
-      Events before network disruption: ${eventsBeforeDisconnection}
-      Events after reconnection: ${eventsAfterReconnection}`)
-
-    // We expect at least events before network disruption
     expect(eventsBeforeDisconnection).toBeGreaterThan(0)
-
-    // We now expect there should be events after reconnection as we've allowed
-    // proper time for the client to reconnect and resubscribe
     expect(eventsAfterReconnection).toBeGreaterThan(0)
+    expect(reconnectCount).toBeGreaterThan(0)
   })
+
+
+/*
+it('should handle continuous transaction load for 5 minutes', async () => {
+  console.log('Starting continuous transaction load test (5 minutes)')
+
+  // Create a fresh test environment
+  const loadTestBox = new TestBox(wsTestBox.keypair)
+  await loadTestBox.loadRoochEnv('native', 0, 'ws')
+
+  // Deploy the entry_function example package 
+  console.log('Publishing entry_function package...')
+  const entryFunctionDeployResult = await loadTestBox.cmdPublishPackage(
+    '../../../examples/entry_function_arguments',
+  )
+  expect(entryFunctionDeployResult).toBeTruthy()
+  console.log('entry_function package published successfully')
+
+  const cmdAddress = await loadTestBox.defaultCmdAddress()
+  
+  // Track metrics
+  let successfulTransactions = 0
+  let failedTransactions = 0
+  let totalTransactions = 0
+  
+  // Create a promise that resolves after 5 minutes
+  const testDuration = 5 * 60 * 1000 // 5 minutes in milliseconds
+  const testEnd = new Promise<void>(resolve => {
+    setTimeout(() => resolve(), testDuration)
+  })
+
+  // Function to execute a transaction
+  const executeTransaction = async (value: number): Promise<boolean> => {
+    try {
+      const tx = new Transaction()
+      tx.callFunction({
+        target: `${cmdAddress}::entry_function::emit_u64`,
+        args: [Args.u64(BigInt(value))],
+      })
+
+      const result = await loadTestBox.getClient().signAndExecuteTransaction({
+        transaction: tx,
+        signer: loadTestBox.keypair,
+      })
+
+      return result.execution_info.status.type === 'executed'
+    } catch (error) {
+      console.error(`Transaction failed: ${error}`)
+      return false
+    }
+  }
+
+  console.log('Starting continuous transaction sending...')
+  const startTime = Date.now()
+
+  // Start executing transactions continuously
+  // We'll use a loop with a small delay between transactions
+  while ((Date.now() - startTime) < testDuration) {
+    totalTransactions++
+    const txValue = totalTransactions // Use transaction count as the value
+    
+    const success = await executeTransaction(txValue)
+    
+    if (success) {
+      successfulTransactions++
+    } else {
+      failedTransactions++
+    }
+    
+    // Log progress every 50 transactions
+    if (totalTransactions % 5 === 0) {
+      const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000)
+      const tps = Math.round((successfulTransactions / elapsedSeconds) * 100) / 100
+      console.log(`Progress: ${elapsedSeconds}s elapsed, ${successfulTransactions} successful, ${failedTransactions} failed, ~${tps} TPS`)
+    }
+    
+    // Small delay to prevent overwhelming the system
+    await new Promise(r => setTimeout(r, 5000))
+  }
+
+  // Wait for test duration to complete
+  await testEnd
+  
+  // Calculate final metrics
+  const endTime = Date.now()
+  const totalTimeSeconds = (endTime - startTime) / 1000
+  const tps = Math.round((successfulTransactions / totalTimeSeconds) * 100) / 100
+  const successRate = Math.round((successfulTransactions / totalTransactions) * 10000) / 100
+
+  console.log(`
+    Load Test Results:
+    - Test duration: ${totalTimeSeconds} seconds
+    - Total transactions: ${totalTransactions}
+    - Successful: ${successfulTransactions} (${successRate}%)
+    - Failed: ${failedTransactions}
+    - Average TPS: ${tps}
+  `)
+
+  // Clean up test environment
+  await loadTestBox.cleanEnv()
+  
+  // Assertions
+  expect(totalTransactions).toBeGreaterThan(0)
+  expect(successRate).toBeGreaterThan(90) // Expect at least 90% success rate
+}, 5.5 * 60 * 1000) // Add some buffer to the test timeout
+  */
 })

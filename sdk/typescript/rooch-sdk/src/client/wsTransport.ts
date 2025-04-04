@@ -71,13 +71,11 @@ export class RoochWebSocketTransport implements RoochTransport, RoochSubscriptio
       this.#resubscribeAll()
     }
 
-    this.#ws.onclose = () => {
-      this.#handleReconnect()
-    }
-
     this.#ws.onmessage = (event: any) => {
       try {
         const data = JSON.parse(event.data)
+
+        console.log('onmessage data:', data)
 
         // Handle subscription events
         if (data.method && data.method.startsWith('rooch_subscribe') && data.params) {
@@ -98,6 +96,15 @@ export class RoochWebSocketTransport implements RoochTransport, RoochSubscriptio
       } catch (error) {
         console.error('Failed to parse WebSocket message:', error)
       }
+    }
+
+    this.#ws.onclose = () => {
+      this.#handleReconnect()
+    }
+
+    this.#ws.onerror = (event: WebSocket.ErrorEvent) => {
+      console.error(`websocket_error:`, event)
+      this.#handleReconnect()
     }
   }
 

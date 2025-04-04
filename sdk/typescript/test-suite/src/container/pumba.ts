@@ -47,6 +47,8 @@ export class PumbaContainer {
   ): Promise<void> {
     await this.runPumbaCommand([
       'netem',
+      '--tc-image',
+      'ghcr.io/alexei-led/pumba-alpine-nettools:latest',
       '--duration',
       `${durationSec}s`,
       'delay',
@@ -67,13 +69,17 @@ export class PumbaContainer {
     lossPercent: number,
     durationSec: number,
   ): Promise<void> {
+    const probability = Math.min(Math.max(lossPercent, 0), 100) / 100.0
+
     await this.runPumbaCommand([
-      'netem',
+      'iptables',
+      '--iptables-image',
+      'ghcr.io/alexei-led/pumba-alpine-nettools:latest',
       '--duration',
       `${durationSec}s`,
       'loss',
-      '--percent',
-      `${lossPercent}`,
+      '--probability',
+      `${probability}`,
       targetContainerName,
     ])
   }
@@ -91,6 +97,8 @@ export class PumbaContainer {
   ): Promise<void> {
     await this.runPumbaCommand([
       'netem',
+      '--tc-image',
+      'ghcr.io/alexei-led/pumba-alpine-nettools:latest',
       '--duration',
       `${durationSec}s`,
       'rate',
