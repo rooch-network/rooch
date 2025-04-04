@@ -2,10 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::natives::helpers::{make_module_natives, make_native};
-use k256::schnorr::{
-    Signature,
-    VerifyingKey
-};
+use k256::schnorr::{Signature, VerifyingKey};
 use move_binary_format::errors::PartialVMResult;
 use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte, NumBytes};
 use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
@@ -47,8 +44,7 @@ pub fn native_verify(
         return Ok(NativeResult::err(cost, E_INVALID_SIGNATURE));
     };
 
-    let Ok(verifying_key) = VerifyingKey::from_bytes(&verifying_key_bytes_ref)
-    else {
+    let Ok(verifying_key) = VerifyingKey::from_bytes(&verifying_key_bytes_ref) else {
         return Ok(NativeResult::err(cost, E_INVALID_VERIFYING_KEY));
     };
 
