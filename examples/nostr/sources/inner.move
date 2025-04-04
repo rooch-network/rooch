@@ -6,7 +6,9 @@ module nostr::inner {
     use std::vector;
     use std::string::{Self, String};
     use std::option::{Self, Option};
+    use moveos_std::bcs;
     use moveos_std::string_utils;
+    use rooch_framework::bitcoin_address;
 
     // Name of the tag of the event
     const EVENT_TAG_KEY: vector<u8> = b"e";
@@ -24,15 +26,15 @@ module nostr::inner {
     const ErrorMalformedPublicKey: u64 = 1001;
     const ErrorKindOutOfRange: u64 = 1002;
 
-    /// TagIndex for the internal data struct from a-z to A-Z
-    #[data_struct]
-    struct TagIndex has key {
-        alphabet: SimpleMultiMap<String, String>
-    }
+    // TODO: TagIndex for the internal data struct from a-z to A-Z
+    // #[data_struct]
+    // struct TagIndex has key, copy, drop {
+    //     alphabet: SimpleMultiMap<String, String>
+    // }
 
-    /// Tags
     #[data_struct]
-    struct Tags {
+    /// Tags
+    struct Tags has copy, drop {
         // For referring to an event
         event: Option<EventTag>,
         // For another user
@@ -43,26 +45,26 @@ module nostr::inner {
         strings_list: Option<StringsListTag>
     }
 
-    /// EventTag with `e` key or name
     #[data_struct]
-    struct EventTag {
+    /// EventTag with `e` key or name
+    struct EventTag has copy, drop {
         // id as value
         id: vector<u8>,
         url: Option<String>,
         pubkey: Option<vector<u8>>
     }
 
-    /// UserTag with `p` key or name
     #[data_struct]
-    struct UserTag {
+    /// UserTag with `p` key or name
+    struct UserTag has copy, drop {
         // pubkey as value
         pubkey: vector<u8>,
         url: Option<String>
     }
 
-    /// AddressableReplaceableTag with `a` key or name
     #[data_struct]
-    struct AddressableReplaceableTag {
+    /// AddressableReplaceableTag with `a` key or name
+    struct AddressableReplaceableTag has copy, drop {
         // kind:pubkey:d as value
         kind: u16,
         pubkey: vector<u8>,
@@ -70,9 +72,9 @@ module nostr::inner {
         url: Option<String>
     }
 
-    /// StringsListTag with non-empty array value of strings
     #[data_struct]
-    struct StringsListTag {
+    /// StringsListTag with non-empty array value of strings
+    struct StringsListTag has copy, drop {
         // the first and second elements of this string list are key or name and value
         strings: vector<String>
     }
@@ -94,11 +96,11 @@ module nostr::inner {
     }
 
     /// derive a rooch address from a bitcoin taproot address from a x-only public key
-    public fun derive_rooch_address(public_key: &vector<u8>): address {
+    public fun derive_rooch_address(public_key: vector<u8>): address {
         // derive a bitcoin taproot address from the public key
-        let bitcoin_taproot_address = derive_bitcoin_taproot_address_from_pubkey(public_key);
+        let bitcoin_taproot_address = bitcoin_address::derive_bitcoin_taproot_address_from_pubkey(&public_key);
         // derive a rooch address from the bitcoin taproot address
-        let rooch_address = to_rooch_address(&bitcoin_taproot_address);
+        let rooch_address = bitcoin_address::to_rooch_address(&bitcoin_taproot_address);
         rooch_address
     }
 
@@ -108,7 +110,7 @@ module nostr::inner {
         let tags_list = vector::empty<Tags>();
         // perform build
         let i = 0;
-        let tags_str_len = vector::length(tags_str);
+        let tags_str_len = vector::length(&tags_str);
         while (i < tags_str_len) {
             // init empty string list
             let string_list = vector::empty<String>();
@@ -116,30 +118,31 @@ module nostr::inner {
             let o = 0;
             let tag_str_list_len = vector::length(tag_str_list);
             while (o < tag_str_list_len) {
-                let tag_str = vector::borrow(&tag_str_list, o);
+                let tag_str = vector::borrow(tag_str_list, o);
                 // take special circumstance for the NIP-01 defined tag keys
                 if (o == 0) {
                     let tag_value_index = o + 1;
-                    let tag_value = vector::borrow(&tag_str_list, tag_value_index);
+                    let tag_value = vector::borrow(tag_str_list, tag_value_index);
                     // EVENT_TAG_KEY
-                    if (tag_str == event_tag_key_string()) {
+                    if (*tag_str == event_tag_key_string()) {
                         // get the id of another Event
-                        let id = bcs::to_bytes(&tag_value);
+                        let id = bcs::to_bytes(tag_value);
                         assert!(vector::length(&id) == 32, ErrorMalformedOtherEventId);
                         // get the url of recommended relay if it exists
                         let url_option = option::none<String>();
                         if (tag_str_list_len == 3) {
                             let index = o + 2;
-                            let str = vector::borrow(&tag_str_list, index);
-                            option::fill<String>(url_option, str);
-                        }
+                            let str = vector::borrow(tag_str_list, index);
+                            option::fill<String>(&mut url_option, *str);
+                        };
                         // get the author's public key if it exists
                         let pubkey_option = option::none<vector<u8>>();
                         if (tag_str_list_len == 4) {
                             let index = o + 3;
-                            let pubkey = vector::borrow(&tag_str_list, index);
-                            option::fill<String>(pubkey_option, pubkey);
-                        }
+                            let pubkey = vector::borrow(tag_str_list, index);
+                            let pubkey_bytes = string::bytes(pubkey);
+                            option::fill<vector<u8>>(&mut pubkey_option, *pubkey_bytes);
+                        };
                         let event_tag = EventTag {
                             id,
                             url: url_option,
@@ -149,24 +152,24 @@ module nostr::inner {
                             event: option::some(event_tag),
                             user: option::none<UserTag>(),
                             addressable_replaceable: option::none<AddressableReplaceableTag>(),
-                            strings_list: option::none<NonNullStringTag>()
+                            strings_list: option::none<StringsListTag>()
                         };
                         vector::push_back(&mut tags_list, tags);
                         i = i + 1;
-                        break;
-                    }
+                        break
+                    };
                     // USER_TAG_KEY
-                    if (tag_str == user_tag_key_string()) {
+                    if (*tag_str == user_tag_key_string()) {
                         // get the public key
-                        let pubkey = bcs::to_bytes(&tag_value);
+                        let pubkey = bcs::to_bytes(tag_value);
                         assert!(vector::length(&pubkey) == 32, ErrorMalformedPublicKey);
                         // get the url of recommended relay if it exists
                         let url_option = option::none<String>();
                         if (tag_str_list_len == 3) {
                             let index = o + 2;
-                            let url = vector::borrow(&tag_str_list, index);
-                            option::fill<String>(url_option, url);
-                        }
+                            let url = vector::borrow(tag_str_list, index);
+                            option::fill<String>(&mut url_option, *url);
+                        };
                         let user_tag = UserTag {
                             pubkey,
                             url: url_option,
@@ -175,24 +178,24 @@ module nostr::inner {
                             event: option::none<EventTag>(),
                             user: option::some(user_tag),
                             addressable_replaceable: option::none<AddressableReplaceableTag>(),
-                            strings_list: option::none<NonNullStringTag>()
+                            strings_list: option::none<StringsListTag>()
                         };
                         vector::push_back(&mut tags_list, tags);
                         i = i + 1;
-                        break;
-                    }
+                        break
+                    };
                     // ADDRESSABLE_REPLACEABLE_TAG_KEY
-                    if (tag_str == addressable_replaceable_tag_key_string()) {
+                    if (*tag_str == addressable_replaceable_tag_key_string()) {
                         // get first colon position
-                        let first_occur_colon_pos = string::index_of(&tag_value, &colon_string());
+                        let first_occur_colon_pos = string::index_of(tag_value, &colon_string());
                         // kind of the string
-                        let kind = string::sub_string(&tag_value, 0, first_occur_colon_pos);
+                        let kind = string::sub_string(tag_value, 0, first_occur_colon_pos);
                         let kind_value = string_utils::parse_u16(&kind);
                         assert!(kind_value <= KIND_UPPER_VALUE, ErrorKindOutOfRange);
                         // get the length of the string
-                        let tag_value_len = vector::length(&tag_value);
+                        let tag_value_len = string::length(tag_value);
                         // get remaining values of the string, ignore the first colon
-                        let remain_str = string::sub_string(&tag_value, first_occur_colon_pos + 1, tag_value_len);
+                        let remain_str = string::sub_string(tag_value, first_occur_colon_pos + 1, tag_value_len);
                         // get second colon position
                         let second_occur_colon_pos = string::index_of(&remain_str, &colon_string());
                         // public key of the string
@@ -204,15 +207,15 @@ module nostr::inner {
                         let d_tag_option = option::none<String>();
                         if (second_occur_colon_pos + 1 <= tag_value_len) {
                             let d_tag = string::sub_string(&remain_str, second_occur_colon_pos + 1, tag_value_len);
-                            option::fill<String>(d_tag_option, d_tag);
-                        }
+                            option::fill<String>(&mut d_tag_option, d_tag);
+                        };
                         // get the url of recommended relay if it exists
                         let url_option = option::none<String>();
                         if (tag_str_list_len == 3) {
                             let index = o + 2;
-                            let url = vector::borrow(&tag_str_list, index);
-                            option::fill<String>(url_option, url);
-                        }
+                            let url = vector::borrow(tag_str_list, index);
+                            option::fill<String>(&mut url_option, *url);
+                        };
                         let addressable_replaceable_tag = AddressableReplaceableTag {
                             kind: kind_value,
                             pubkey: *pubkey_bytes,
@@ -223,17 +226,17 @@ module nostr::inner {
                             event: option::none<EventTag>(),
                             user: option::none<UserTag>(),
                             addressable_replaceable: option::some(addressable_replaceable_tag),
-                            strings_list: option::none<NonNullStringTag>()
+                            strings_list: option::none<StringsListTag>()
                         };
                         vector::push_back(&mut tags_list, tags);
                         i = i + 1;
-                        break;
-                    }
-                }
+                        break
+                    };
+                };
                 // proceed with normal arbitrary tags
-                vector::push_back(&mut string_list, tag_str);
+                vector::push_back(&mut string_list, *tag_str);
                 o = o + 1;
-            }
+            };
             // submit a list of strings to the tags and push to the tags list
             let strings_list_tag = StringsListTag {
                 strings: string_list
@@ -246,7 +249,7 @@ module nostr::inner {
             };
             vector::push_back(&mut tags_list, tags);
             i = i + 1;
-        }
+        };
         tags_list
     }
 }

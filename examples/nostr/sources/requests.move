@@ -3,8 +3,8 @@
 
 /// Third party HTTP/HTTPS API request calls through oracle
 module nostr::requests {
+    use std::string::{Self, String};
     use moveos_std::json;
-    use nostr::event::{Self, Event};
 
     // oracle address
     const ORACLE_ADDRESS: address = @0x694cbe655b126e9e6a997e86aaab39e538abf30a8c78669ce23a98740b47b65d;
@@ -34,7 +34,7 @@ module nostr::requests {
     const NOTIFY_CALLBACK: vector<u8> = b"callback::publish_response";
 
     #[data_struct]
-    struct EventRequest {
+    struct EventRequest has copy, drop {
         id: String,
         pubkey: String,
         created_at: u64,
@@ -45,7 +45,7 @@ module nostr::requests {
     }
 
     #[data_struct]
-    struct EventRequestWithRelays {
+    struct EventRequestWithRelays has copy, drop {
         id: String,
         pubkey: String,
         created_at: u64,
@@ -84,16 +84,18 @@ module nostr::requests {
         string::utf8(NOSTR_PATH_PICK)
     }
 
-    public fun status_path_string(): String {
-        string::utf8(STATUS_PATH)
+    // TODO: NIP-47 subpaths
+
+    public fun publish_path_string(): String {
+        string::utf8(PUBLISH_PATH)
     }
 
-    public fun event_path_string(): String {
-        string::utf8(EVENT_PATH)
+    public fun subscriptions_path_string(): String {
+        string::utf8(SUBSCRIPTIONS_PATH)
     }
 
-    public fun feed_path_string(): String {
-        string::utf8(FEED_PATH)
+    public fun subscriptions_id_path_string(): String {
+        string::utf8(SUBSCRIPTIONS_ID_PATH)
     }
 
     public fun max_response_length(): u64 {
@@ -114,7 +116,7 @@ module nostr::requests {
             tags,
             content,
             sig
-        }
+        };
         event_request
     }
 
@@ -129,7 +131,7 @@ module nostr::requests {
             content,
             sig,
             relays
-        }
+        };
         event_request_with_relays
     }
 
