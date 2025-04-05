@@ -49,6 +49,9 @@ module moveos_std::type_info {
         std::string::utf8(std::ascii::into_bytes(ascii))
     }
 
+    // Ensure the return of type_name_with_type(type) is the same as the type_name<T>
+    native public fun type_name_with_type(type: string::String): string::String;
+
     /// Return the BCS size, in bytes, of value at `val_ref`.
     ///
     /// See the [BCS spec](https://github.com/diem/bcs)
