@@ -1,9 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-module rooch_framework::account_coin_store {
+module rooch_framework::account_coin_store2 {
     use std::string;
-    use rooch_framework::coin;
     use moveos_std::account;
     use moveos_std::object::{Self, ObjectID, Object};
     use moveos_std::table;
@@ -11,8 +10,8 @@ module rooch_framework::account_coin_store {
     use moveos_std::event;
     use moveos_std::signer;
 
-    use rooch_framework::coin::{Coin, CoinV2};
-    use rooch_framework::coin_store::{Self, CoinStore, CoinStoreV2};
+    use rooch_framework::coin::{Coin};
+    use rooch_framework::coin_store::{Self, CoinStore};
 
     friend rooch_framework::genesis;
     friend rooch_framework::account;
@@ -191,7 +190,7 @@ module rooch_framework::account_coin_store {
 
     //
     // Internal functions
-    //
+    // 
 
     fun borrow_account_coin_store<CoinType: key>(addr: address): &Object<CoinStore<CoinType>> {
         let account_coin_store_id = account_coin_store_id<CoinType>(addr);
@@ -242,173 +241,161 @@ module rooch_framework::account_coin_store {
         deposit_internal(to, coin);
     }
 
-    // === Non-generic functions functions ===
+    // ====== Non-generic methods ======
 
-    public fun balance_v2(addr: address, coin_type: string::String): u256 {
-        if (exist_account_coin_store_v2(addr, coin_type)) {
-            let coin_store = borrow_account_coin_store_v2(addr, coin_type);
-            coin_store::balance_v2(coin_store)
-        } else {
-            0
-        }
-    }
-
-    public fun account_coin_store_id_v2(addr: address, coin_type: string::String): ObjectID {
-        object::account_named_object_id_with_type<CoinStoreV2>(addr, coin_type)
-
-        // object::account_named_object_id<CoinStore<CoinType>>(addr)
-    }
-
-    public fun is_accept_coin_v2(addr: address, coin_type: string::String): bool {
-        if (can_auto_accept_coin(addr)) {
-            true
-        } else {
-            exist_account_coin_store_v2(addr, coin_type)
-        }
-    }
-
-    // /// Add a balance of `Coin` type to the sending account.
-    // /// If user turns off AutoAcceptCoin, call this method to receive the corresponding Coin
-    // public fun do_accept_coin<CoinType: key>(account: &signer) {
-    //     let addr = signer::address_of(account);
-    //     create_or_borrow_mut_account_coin_store<CoinType>(addr);
-    // }
-    public fun do_accept_coin_v2(account: &signer, coin_type: string::String) {
-        let addr = signer::address_of(account);
-        create_or_borrow_mut_account_coin_store_v2(addr, coin_type);
-
-        // let coin_info_id = coin::coin_info_id_v2(coin_type);
-        // let account_coin_store_id = account_coin_store_id_v2(addr, coin_type);
-        // if (!object::exists_object_with_type<CoinStoreV2>(account_coin_store_id)) {
-        //     let coin_store = coin_store::create_coin_store<CoinInfo>();
-        //     object::transfer_extend(coin_store, addr);
-        //     event::emit(AcceptCoinEvent { enable: true });
-        // }
-    }
-
-    public fun withdraw_v2(
-        account: &signer,
-        coin_type: string::String,
-        amount: u256,
-    ): CoinV2 {
-        let addr = signer::address_of(account);
-        withdraw_internal_v2(addr, coin_type, amount)
-    }
-
-    public fun deposit_v2(addr: address, coin: CoinV2) {
-        deposit_internal_v2(addr, coin);
-    }
-
-    public fun transfer_v2(
-        from: &signer,
-        to: address,
-        coin_type: string::String,
-        amount: u256,
-    ) {
-        let from_addr = signer::address_of(from);
-        transfer_internal_v2(from_addr, to, coin_type, amount);
-    }
-
-    public fun exist_account_coin_store_v2(addr: address, coin_type: string::String): bool {
-        let account_coin_store_id = account_coin_store_id_v2(addr, coin_type);
-        object::exists_object_with_type<CoinStoreV2>(account_coin_store_id)
-    }
-
-    public fun is_account_coin_store_frozen_v2(addr: address, coin_type: string::String): bool {
-        if (exist_account_coin_store_v2(addr, coin_type)) {
-            let coin_store = borrow_account_coin_store_v2(addr, coin_type);
-            coin_store::is_frozen_v2(coin_store)
-        } else {
-            false
-        }
-    }
-
-    public fun withdraw_extend_v2(
-        addr: address,
-        coin_type: string::String,
-        amount: u256,
-    ): CoinV2 {
-        withdraw_internal_v2(addr, coin_type, amount)
-    }
-
-    public fun deposit_extend_v2(addr: address, coin: CoinV2) {
-        deposit_internal_v2(addr, coin);
-    }
-
-    public fun transfer_extend_v2(
-        from: address,
-        to: address,
-        coin_type: string::String,
-        amount: u256,
-    ) {
-        transfer_internal_v2(from, to, coin_type, amount);
-    }
-
-    public entry fun accept_coin_entry_v2(account: &signer, coin_type: string::String) {
-        do_accept_coin_v2(account, coin_type)
-    }
-
-    fun borrow_account_coin_store_v2(addr: address, coin_type: string::String): &Object<CoinStoreV2> {
-        let account_coin_store_id = account_coin_store_id_v2(addr, coin_type);
-        object::borrow_object<CoinStoreV2>(account_coin_store_id)
-    }
-
-    fun borrow_mut_account_coin_store_v2(
-        addr: address,
-        coin_type: string::String
-    ): &mut Object<CoinStoreV2> {
-        let account_coin_store_id = account_coin_store_id_v2(addr, coin_type);
-        object::borrow_mut_object_extend<CoinStoreV2>(account_coin_store_id)
-    }
-
-
-
-    // fun create_or_borrow_mut_account_coin_store<CoinType: key>(
-    //     addr: address
-    // ): &mut Object<CoinStore<CoinType>> {
-    //     let account_coin_store_id = account_coin_store_id<CoinType>(addr);
-    //     if (!object::exists_object_with_type<CoinStore<CoinType>>(account_coin_store_id)) {
-    //         coin_store::create_account_coin_store<CoinType>(addr);
-    //     };
-    //     coin_store::borrow_mut_coin_store_internal<CoinType>(account_coin_store_id)
-    // }
-    fun create_or_borrow_mut_account_coin_store_v2(
-        addr: address,
-        coin_type: string::String
-    ): &mut Object<CoinStoreV2> {
-        let account_coin_store_id = account_coin_store_id_v2(addr, coin_type);
-        if (!object::exists_object_with_type<CoinStoreV2>(account_coin_store_id)) {
-            let coin_info_id = coin::coin_info_id_v2(coin_type);
-            coin_store::create_account_coin_store_v2(addr, coin_info_id, coin_type);
+    public fun balance_by_type(addr: address, coin_type: string::String): u256 {
+        let coin_info_id = coin::coin_info_id_by_type(coin_type);
+        let coin_store_id = coin_store_id(addr, coin_info_id);
+        if (!object::exists_object_with_type<CoinStore<CoinInfo>>(coin_store_id)) {
+            return 0
         };
-        object::borrow_mut_object_extend<CoinStoreV2>(account_coin_store_id)
+        let coin_store = object::borrow_object<CoinStore<CoinInfo>>(coin_store_id);
+        coin_store::balance(coin_store)
+
+
+        if (exist_account_coin_store<CoinType>(addr)) {
+            let coin_store = borrow_account_coin_store<CoinType>(addr);
+            coin_store::balance(coin_store)
+        } else {
+            0u256
+        }
     }
 
-    fun withdraw_internal_v2(
-        addr: address,
-        coin_type: string::String,
-        amount: u256,
-    ): CoinV2 {
-        let coin_store = borrow_mut_account_coin_store_v2(addr, coin_type);
-        coin_store::withdraw_v2(coin_store, amount)
+    public fun coin_store_id(addr: address, coin_info_id: ObjectID): ObjectID {
+        let account_coin_store = borrow_global<AccountCoinStore>(addr);
+        table::borrow(&account_coin_store.coin_stores, coin_info_id)
     }
 
-    fun deposit_internal_v2(addr: address, coin: CoinV2) {
-        assert!(
-            is_accept_coin_v2(addr, coin.coin_type),
-            ErrorAccountNotAcceptCoin,
-        );
-        let coin_store = create_or_borrow_mut_account_coin_store_v2(addr, coin.coin_type);
-        coin_store::deposit_v2(coin_store, coin)
+    public fun is_accept_coin_by_type(addr: address, coin_type: string::String): bool {
+        let coin_info_id = coin::coin_info_id_by_type(coin_type);
+        let account_coin_store = borrow_global<AccountCoinStore>(addr);
+        table::contains(&account_coin_store.coin_stores, coin_info_id)
     }
 
-    fun transfer_internal_v2(
-        from: address,
-        to: address,
-        coin_type: string::String,
-        amount: u256,
-    ) {
-        let coin = withdraw_internal_v2(from, coin_type, amount);
-        deposit_internal_v2(to, coin);
+    public fun do_accept_coin_by_type(account: &signer, coin_type: string::String) {
+        let addr = signer::address_of(account);
+        let coin_info_id = coin::coin_info_id_by_type(coin_type);
+        let account_coin_store = borrow_global_mut<AccountCoinStore>(addr);
+        if (!table::contains(&account_coin_store.coin_stores, coin_info_id)) {
+            let coin_store = coin_store::create_coin_store<CoinInfo>();
+            table::add(&mut account_coin_store.coin_stores, coin_info_id, object::id(&coin_store));
+            event::emit(AcceptCoinEvent { account: addr, coin_type });
+        }
+    }
+
+    public fun withdraw_by_type(addr: address, coin_type: string::String, amount: u256): Coin<CoinInfo> {
+        let coin_info_id = coin::coin_info_id_by_type(coin_type);
+        let coin_store_id = coin_store_id(addr, coin_info_id);
+        let coin_store = object::borrow_object<CoinStore<CoinInfo>>(coin_store_id);
+        coin_store::withdraw(coin_store, amount)
+    }
+
+    public fun deposit_by_type(addr: address, coin: Coin<CoinInfo>) {
+        let coin_info_id = coin::coin_info_id(&coin);
+        let coin_store_id = coin_store_id(addr, coin_info_id);
+        let coin_store = object::borrow_object<CoinStore<CoinInfo>>(coin_store_id);
+        coin_store::deposit(coin_store, coin);
+    }
+
+    public fun transfer_by_type(from: address, to: address, coin_type: string::String, amount: u256) {
+        let coin_info_id = coin::coin_info_id_by_type(coin_type);
+        let from_coin_store_id = coin_store_id(from, coin_info_id);
+        let to_coin_store_id = coin_store_id(to, coin_info_id);
+        let from_coin_store = object::borrow_object<CoinStore<CoinInfo>>(from_coin_store_id);
+        let to_coin_store = object::borrow_object<CoinStore<CoinInfo>>(to_coin_store_id);
+        coin_store::transfer(from_coin_store, to_coin_store, amount);
+    }
+
+    public fun exist_account_coin_store_by_type(addr: address, coin_type: string::String): bool {
+        let coin_info_id = coin::coin_info_id_by_type(coin_type);
+        let account_coin_store = borrow_global<AccountCoinStore>(addr);
+        table::contains(&account_coin_store.coin_stores, coin_info_id)
+    }
+
+    public fun is_account_coin_store_frozen_by_type(addr: address, coin_type: string::String): bool {
+        let coin_info_id = coin::coin_info_id_by_type(coin_type);
+        let coin_store_id = coin_store_id(addr, coin_info_id);
+        let coin_store = object::borrow_object<CoinStore<CoinInfo>>(coin_store_id);
+        coin_store::is_frozen(coin_store)
+    }
+
+    public fun withdraw_extend_by_type(addr: address, coin_type: string::String, amount: u256): Coin<CoinInfo> {
+        let coin_info_id = coin::coin_info_id_by_type(coin_type);
+        let coin_store_id = coin_store_id(addr, coin_info_id);
+        let coin_store = object::borrow_object<CoinStore<CoinInfo>>(coin_store_id);
+        coin_store::withdraw_extend(coin_store, amount)
+    }
+
+    public fun deposit_extend_by_type(addr: address, coin: Coin<CoinInfo>) {
+        let coin_info_id = coin::coin_info_id(&coin);
+        let coin_store_id = coin_store_id(addr, coin_info_id);
+        let coin_store = object::borrow_object<CoinStore<CoinInfo>>(coin_store_id);
+        coin_store::deposit_extend(coin_store, coin);
+    }
+
+    public fun transfer_extend_by_type(from: address, to: address, coin_type: string::String, amount: u256) {
+        let coin_info_id = coin::coin_info_id_by_type(coin_type);
+        let from_coin_store_id = coin_store_id(from, coin_info_id);
+        let to_coin_store_id = coin_store_id(to, coin_info_id);
+        let from_coin_store = object::borrow_object<CoinStore<CoinInfo>>(from_coin_store_id);
+        let to_coin_store = object::borrow_object<CoinStore<CoinInfo>>(to_coin_store_id);
+        coin_store::transfer_extend(from_coin_store, to_coin_store, amount);
+    }
+
+    public entry fun accept_coin_entry_by_type(account: &signer, coin_type: string::String) {
+        let addr = signer::address_of(account);
+        let coin_info_id = coin::coin_info_id_by_type(coin_type);
+        let account_coin_store = borrow_global_mut<AccountCoinStore>(addr);
+        if (!table::contains(&account_coin_store.coin_stores, coin_info_id)) {
+            let coin_store = coin_store::create_coin_store<CoinInfo>();
+            table::add(&mut account_coin_store.coin_stores, coin_info_id, object::id(&coin_store));
+            event::emit(AcceptCoinEvent { account: addr, coin_type });
+        }
+    }
+
+    fun borrow_account_coin_store_by_type(addr: address, coin_type: string::String): &Object<CoinStore<CoinInfo>> {
+        let coin_info_id = coin::coin_info_id_by_type(coin_type);
+        let coin_store_id = coin_store_id(addr, coin_info_id);
+        object::borrow_object<CoinStore<CoinInfo>>(coin_store_id)
+    }
+
+    fun borrow_mut_account_coin_store_by_type(addr: address, coin_type: string::String): &mut Object<CoinStore<CoinInfo>> {
+        let coin_info_id = coin::coin_info_id_by_type(coin_type);
+        let coin_store_id = coin_store_id(addr, coin_info_id);
+        object::borrow_object_mut<CoinStore<CoinInfo>>(coin_store_id)
+    }
+
+    fun create_or_borrow_mut_account_coin_store_by_type(addr: address, coin_type: string::String): &mut Object<CoinStore<CoinInfo>> {
+        let coin_info_id = coin::coin_info_id_by_type(coin_type);
+        let account_coin_store = borrow_global_mut<AccountCoinStore>(addr);
+        if (!table::contains(&account_coin_store.coin_stores, coin_info_id)) {
+            let coin_store = coin_store::create_coin_store<CoinInfo>();
+            table::add(&mut account_coin_store.coin_stores, coin_info_id, object::id(&coin_store));
+            event::emit(AcceptCoinEvent { account: addr, coin_type });
+        };
+        object::borrow_object_mut<CoinStore<CoinInfo>>(table::borrow(&account_coin_store.coin_stores, coin_info_id))
+    }
+
+    fun withdraw_internal_by_type(addr: address, coin_type: string::String, amount: u256): Coin<CoinInfo> {
+        let coin_info_id = coin::coin_info_id_by_type(coin_type);
+        let coin_store_id = coin_store_id(addr, coin_info_id);
+        let coin_store = object::borrow_object<CoinStore<CoinInfo>>(coin_store_id);
+        coin_store::withdraw(coin_store, amount)
+    }
+
+    fun deposit_internal_by_type(addr: address, coin: Coin<CoinInfo>) {
+        let coin_info_id = coin::coin_info_id(&coin);
+        let coin_store_id = coin_store_id(addr, coin_info_id);
+        let coin_store = object::borrow_object<CoinStore<CoinInfo>>(coin_store_id);
+        coin_store::deposit(coin_store, coin);
+    }
+
+    fun transfer_internal_by_type(from: address, to: address, coin_type: string::String, amount: u256) {
+        let coin_info_id = coin::coin_info_id_by_type(coin_type);
+        let from_coin_store_id = coin_store_id(from, coin_info_id);
+        let to_coin_store_id = coin_store_id(to, coin_info_id);
+        let from_coin_store = object::borrow_object<CoinStore<CoinInfo>>(from_coin_store_id);
+        let to_coin_store = object::borrow_object<CoinStore<CoinInfo>>(to_coin_store_id);
+        coin_store::transfer(from_coin_store, to_coin_store, amount);
     }
 }

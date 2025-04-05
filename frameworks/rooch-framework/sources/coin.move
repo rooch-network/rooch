@@ -49,6 +49,9 @@ module rooch_framework::coin {
     /// The function is deprecated
     const ErrorDeprecated: u64 = 10;
 
+    /// The coin type is not match
+    const ErrorCoinTypeNotMatch: u64 = 11;
+
     //
     // Constants
     //
@@ -112,26 +115,29 @@ module rooch_framework::coin {
         supply: u256,
     }
 
-    /// Information about a specific coin type. Stored in the global Object storage.
-    /// The non-generic CoinInfoV2 is a named Object, the `coin_type` is the unique key.
-    struct CoinInfoV2 has key, store {
-        /// Type of the coin: `address::module_name::CoinStructName`, same as `moveos_std::type_info::type_name<CoinType>()`.
-        /// The name and symbol can repeat across different coin types, but the coin type must be unique.
-        coin_type: string::String,
-        /// Name of the coin.
-        name: string::String,
-        /// Symbol of the coin, usually a shorter version of the name.
-        /// For example, Singapore Dollar is SGD.
-        symbol: string::String,
-        /// Icon url of the coin
-        icon_url: Option<string::String>,
-        /// Number of decimals used to get its user representation.
-        /// For example, if `decimals` equals `2`, a balance of `505` coins should
-        /// be displayed to a user as `5.05` (`505 / 10 ** 2`).
-        decimals: u8,
-        /// The total value for the coin represented by coin type. Mutable.
-        supply: u256,
-    }
+    /// Placeholder for the CoinType, used for the generic function.
+    struct CoinTypePlaceholder has key {}
+
+    // /// Information about a specific coin type. Stored in the global Object storage.
+    // /// The non-generic CoinInfoV2 is a named Object, the `coin_type` is the unique key.
+    // struct CoinInfoV2 has key, store {
+    //     /// Type of the coin: `address::module_name::CoinStructName`, same as `moveos_std::type_info::type_name<CoinType>()`.
+    //     /// The name and symbol can repeat across different coin types, but the coin type must be unique.
+    //     coin_type: string::String,
+    //     /// Name of the coin.
+    //     name: string::String,
+    //     /// Symbol of the coin, usually a shorter version of the name.
+    //     /// For example, Singapore Dollar is SGD.
+    //     symbol: string::String,
+    //     /// Icon url of the coin
+    //     icon_url: Option<string::String>,
+    //     /// Number of decimals used to get its user representation.
+    //     /// For example, if `decimals` equals `2`, a balance of `505` coins should
+    //     /// be displayed to a user as `5.05` (`505 / 10 ** 2`).
+    //     decimals: u8,
+    //     /// The total value for the coin represented by coin type. Mutable.
+    //     supply: u256,
+    // }
 
     /// Coin metadata is copied from CoinInfo, and stored as dynamic field of CoinRegistry
     struct CoinMetadata has key, store {
@@ -512,7 +518,37 @@ module rooch_framework::coin {
 
     fun borrow_mut_coin_metadata<CoinType: key>(coin_info_obj: &Object<CoinInfo<CoinType>>) : &mut CoinMetadata {
         let coin_type = type_info::type_name<CoinType>();
-        borrow_mut_coin_metadata_by_type(coin_type, coin_info_obj)
+        // borrow_mut_coin_metadata_v2(coin_type, coin_info_obj)
+
+        let registry = borrow_mut_registry();
+        let coin_info_id = object::id(coin_info_obj);
+        let coin_info = object::borrow(coin_info_obj);
+        // If the coin metadata is not initialized, it is the Coin registered before v19
+        // We need to initialize the coin metadata here
+        if (!object::contains_field(registry, coin_type)){
+
+            let coin_metadata = CoinMetadata {
+                coin_info_id,
+                coin_type,
+                name: coin_info.name,
+                symbol: coin_info.symbol,
+                icon_url: coin_info.icon_url,
+                decimals: coin_info.decimals,
+                supply: coin_info.supply,
+            };
+            object::add_field(registry, coin_type, coin_metadata);
+            object::borrow_mut_field(registry, coin_type)
+        }else{
+            //sync the coin metadata with coin info
+            let metadata :&mut CoinMetadata = object::borrow_mut_field(registry, coin_type);
+            metadata.coin_info_id = coin_info_id;
+            metadata.icon_url = coin_info.icon_url;
+            metadata.name = coin_info.name;
+            metadata.symbol = coin_info.symbol;
+            metadata.decimals = coin_info.decimals;
+            metadata.supply = coin_info.supply;
+            metadata
+        }
     }
 
     // Unpack the Coin and return the value
@@ -540,301 +576,333 @@ module rooch_framework::coin {
     }
 
 
-    // === Old struct convert to Non-generic helper functions ===
-
-    public fun convert_coin_info_to_v2<CoinType: key>(coin_info_obj: &Object<CoinInfo<CoinType>>): ObjectID {
-        let coin_type = type_info::type_name<CoinType>();
-        let coin_info = object::borrow(coin_info_obj);
-
-        // Check if CoinInfoV2 already exists for this coin type
-        let v2_id = coin_info_id_by_type(coin_type);
-        if (object::exists_object_with_type<CoinInfoV2>(v2_id)) {
-            return v2_id
-        }
-
-        // Create new CoinInfoV2 with the same data
-        let coin_info_v2 = CoinInfoV2 {
-            coin_type,
-            name: coin_info.name,
-            symbol: coin_info.symbol,
-            icon_url: coin_info.icon_url,
-            decimals: coin_info.decimals,
-            supply: coin_info.supply,
-        };
-
-        // Create and return the new object
-        let coin_info_v2_obj = object::new_object(coin_info_v2);
-        object::transfer_extend(coin_info_v2_obj, @rooch_framework);
-        object::id(&coin_info_v2_obj)
-    }
-
-    // === Non-generic functions ===
-
-    // TODO add native funtion
-    // public fun coin_address_by_type(coin_type: string::String): address {
-    //     let coin_info_id = coin_info_id_by_type(coin_type);
-    //     object::account_address(&coin_info_id)
+    // // === Old struct convert to Non-generic helper functions ===
+    //
+    // public fun convert_coin_info_to_v2<CoinType: key>(coin_info_obj: &Object<CoinInfo<CoinType>>): ObjectID {
+    //     let coin_type = type_info::type_name<CoinType>();
+    //     let coin_info = object::borrow(coin_info_obj);
+    //
+    //     // Check if CoinInfoV2 already exists for this coin type
+    //     let v2_id = coin_info_id_v2(coin_type);
+    //     if (object::exists_object_with_type<CoinInfoV2>(v2_id)) {
+    //         return v2_id
+    //     }
+    //
+    //     // Create new CoinInfoV2 with the same data
+    //     let coin_info_v2 = CoinInfoV2 {
+    //         coin_type,
+    //         name: coin_info.name,
+    //         symbol: coin_info.symbol,
+    //         icon_url: coin_info.icon_url,
+    //         decimals: coin_info.decimals,
+    //         supply: coin_info.supply,
+    //     };
+    //
+    //     // Create and return the new object
+    //     let coin_info_v2_obj = object::new_object(coin_info_v2);
+    //     object::transfer_extend(coin_info_v2_obj, @rooch_framework);
+    //     object::id(&coin_info_v2_obj)
     // }
-
-    public fun check_coin_info_registered_by_type(coin_type: string::String) {
-        assert!(is_registered_by_type(coin_type), ErrorCoinInfoNotRegistered);
-    }
-
-    public fun is_registered_by_type(coin_type: string::String): bool {
-        let object_id = coin_info_id_by_type(coin_type);
-        object::exists_object_with_type<CoinInfoV2>(object_id)
-    }
-
-    public fun coin_info_id_by_type(coin_type: string::String): ObjectID {
+    //
+    // // === Non-generic functions ===
+    //
+    // // TODO add native funtion
+    // // public fun coin_address_by_type(coin_type: string::String): address {
+    // //     let coin_info_id = coin_info_id_by_type(coin_type);
+    // //     object::account_address(&coin_info_id)
+    // // }
+    //
+    // public fun check_coin_info_registered_v2(coin_type: string::String) {
+    //     assert!(is_registered_v2(coin_type), ErrorCoinInfoNotRegistered);
+    // }
+    //
+    // public fun is_registered_v2(coin_type: string::String): bool {
+    //     let object_id = coin_info_id_v2(coin_type);
+    //     object::exists_object_with_type<CoinInfoV2>(object_id)
+    // }
+    // Ensure the objectID generated by named_object_id_with_type is the same as the one generated by object::named_object_id
+    public fun coin_info_id_v2(coin_type: string::String): ObjectID {
         // let registry = borrow_registry();
         // assert!(object::contains_field(registry, coin_type), ErrorCoinInfoNotRegistered);
         // let coin_metadata: &CoinMetadata = object::borrow_field(registry, coin_type);
         // coin_metadata.coin_info_id
 
         // object::named_object_id<CoinInfo<CoinType>>()
-        object::custom_object_id<string::String, CoinInfoV2>(coin_type)
+        object::named_object_id_with_type<CoinInfo<CoinTypePlaceholder>>(coin_type)
+        // object::custom_object_id<string::String, CoinInfo>(coin_type)
+
+        // object::address_to_object_id(
+        //     address::from_bytes(
+        //         hash::sha3_256(
+        //             std::string::into_bytes(type_info::type_name<T>())
+        //         )
+        //     )
+        // )
     }
 
-    // public fun name_by_type(coin_type: string::String): string::String {
-    //     let registry = borrow_registry();
-    //     assert!(object::contains_field(registry, coin_type), ErrorCoinInfoNotRegistered);
-    //     let coin_metadata: &CoinMetadata = object::borrow_field(registry, coin_type);
-    //     coin_metadata.name
+    // // Ensure the objectID generated by named_object_id_with_type is the same as the one generated by object::named_object_id
+    // fun named_object_id_with_type<T>(type: string::String): ObjectID {
+    //     address_to_object_id(
+    //         address::from_bytes(
+    //             hash::sha3_256(
+    //                 std::string::into_bytes(type_info::type_name<T>())
+    //             )
+    //         )
+    //     )
     // }
 
-    // public fun symbol_by_type(coin_type: string::String): string::String {
-    //     let registry = borrow_registry();
-    //     assert!(object::contains_field(registry, coin_type), ErrorCoinInfoNotRegistered);
-    //     let coin_metadata: &CoinMetadata = object::borrow_field(registry, coin_type);
-    //     coin_metadata.symbol
-    // }
-
-    // public fun decimals_by_type(coin_type: string::String): u8 {
-    //     let registry = borrow_registry();
-    //     assert!(object::contains_field(registry, coin_type), ErrorCoinInfoNotRegistered);
-    //     let coin_metadata: &CoinMetadata = object::borrow_field(registry, coin_type);
-    //     coin_metadata.decimals
+    //
+    // // public fun name_by_type(coin_type: string::String): string::String {
+    // //     let registry = borrow_registry();
+    // //     assert!(object::contains_field(registry, coin_type), ErrorCoinInfoNotRegistered);
+    // //     let coin_metadata: &CoinMetadata = object::borrow_field(registry, coin_type);
+    // //     coin_metadata.name
+    // // }
+    //
+    // // public fun symbol_by_type(coin_type: string::String): string::String {
+    // //     let registry = borrow_registry();
+    // //     assert!(object::contains_field(registry, coin_type), ErrorCoinInfoNotRegistered);
+    // //     let coin_metadata: &CoinMetadata = object::borrow_field(registry, coin_type);
+    // //     coin_metadata.symbol
+    // // }
+    //
+    // // public fun decimals_by_type(coin_type: string::String): u8 {
+    // //     let registry = borrow_registry();
+    // //     assert!(object::contains_field(registry, coin_type), ErrorCoinInfoNotRegistered);
+    // //     let coin_metadata: &CoinMetadata = object::borrow_field(registry, coin_type);
+    // //     coin_metadata.decimals
+    // // }
+    // //
+    // // public fun supply_by_type(coin_type: string::String): u256 {
+    // //     let registry = borrow_registry();
+    // //     assert!(object::contains_field(registry, coin_type), ErrorCoinInfoNotRegistered);
+    // //     let coin_metadata: &CoinMetadata = object::borrow_field(registry, coin_type);
+    // //     coin_metadata.supply
+    // // }
+    //
+    // // public fun icon_url_by_type(coin_type: string::String): Option<String> {
+    // //     let registry = borrow_registry();
+    // //     assert!(object::contains_field(registry, coin_type), ErrorCoinInfoNotRegistered);
+    // //     let coin_metadata: &CoinMetadata = object::borrow_field(registry, coin_type);
+    // //     coin_metadata.icon_url
+    // // }
+    //
+    // public fun is_same_coin_by_type(coin_type1: string::String, coin_type2: string::String): bool {
+    //     coin_type1 == coin_type2
     // }
     //
-    // public fun supply_by_type(coin_type: string::String): u256 {
-    //     let registry = borrow_registry();
-    //     assert!(object::contains_field(registry, coin_type), ErrorCoinInfoNotRegistered);
-    //     let coin_metadata: &CoinMetadata = object::borrow_field(registry, coin_type);
-    //     coin_metadata.supply
+    // public fun destroy_zero_v2(zero_coin: CoinV2) {
+    //     assert!(value_v2(&zero_coin) == 0, ErrorDestroyOfNonZeroCoin);
     // }
-
-    // public fun icon_url_by_type(coin_type: string::String): Option<String> {
-    //     let registry = borrow_registry();
-    //     assert!(object::contains_field(registry, coin_type), ErrorCoinInfoNotRegistered);
-    //     let coin_metadata: &CoinMetadata = object::borrow_field(registry, coin_type);
-    //     coin_metadata.icon_url
+    //
+    // public fun extract_v2(coin: &mut CoinV2, amount: u256): CoinV2 {
+    //     let coin_type = coin.coin_type;
+    //     assert!(coin.value >= amount, ErrorInsufficientBalance);
+    //     coin.value = coin.value - amount;
+    //     CoinV2 { coin_type, value: amount }
     // }
-
-    public fun is_same_coin_by_type(coin_type1: string::String, coin_type2: string::String): bool {
-        coin_type1 == coin_type2
+    //
+    // // public fun extract_all_by_type(coin_type: string::String, coin: &mut CoinV2): CoinV2 {
+    // public fun extract_all_v2(coin: &mut CoinV2): CoinV2 {
+    //     let coin_type = coin.coin_type;
+    //     let total_value = coin.value;
+    //     coin.value = 0;
+    //     CoinV2 { coin_type, value: total_value }
+    // }
+    //
+    // // public fun merge_by_type(coin_type: string::String, dst_coin: &mut CoinV2, source_coin: CoinV2) {
+    // public fun merge_v2(dst_coin: &mut CoinV2, source_coin: CoinV2) {
+    //     // let value = value_by_type(coin_type, &source_coin);
+    //     // value_by_type(coin_type, dst_coin) = value_by_type(coin_type, dst_coin) + value;
+    //     assert!(dst_coin.coin_type == source_coin.coin_type, ErrorCoinTypeNotMatch);
+    //     let coin_type = dst_coin.coin_type;
+    //     let CoinV2 { coin_type: _coin_type, value } = source_coin;
+    //     dst_coin.value = dst_coin.value + value;
+    // }
+    //
+    // public fun value_by_type(coin_type: string::String, coin: &CoinV2): u256 {
+    public fun value_v2(coin: &CoinV2): u256 {
+        coin.value
     }
-
-    public fun destroy_zero_by_type(coin_type: string::String, zero_coin: CoinV2) {
-        assert!(coin::value(&zero_coin) == 0, ErrorDestroyOfNonZeroCoin);
-    }
-
-    public fun extract_by_type(coin_type: string::String, coin: &mut CoinV2, amount: u256): CoinV2 {
-        assert!(coin::value(coin) >= amount, ErrorInsufficientBalance);
-        coin::value(coin) = coin::value(coin) - amount;
-        coin::pack<CoinInfo>(amount)
-    }
-
-    public fun extract_all_by_type(coin_type: string::String, coin: &mut CoinV2): CoinV2 {
-        let value = coin::value(coin);
-        coin::value(coin) = 0;
-        coin::pack<CoinInfo>(value)
-    }
-
-    public fun merge_by_type(coin_type: string::String, dst_coin: &mut CoinV2, source_coin: CoinV2) {
-        let value = coin::value(&source_coin);
-        coin::value(dst_coin) = coin::value(dst_coin) + value;
-    }
-
-    public fun value_by_type(coin_type: string::String, coin: &CoinV2): u256 {
-        coin::value(coin)
-    }
-
-    public fun zero_by_type(coin_type: string::String): CoinV2 {
-        coin::pack<CoinInfo>(0)
-    }
-
-    public fun coin_info_by_type(coin_type: string::String): &CoinInfoV2 {
-        let object_id = coin_info_id_by_type(coin_type);
-        object::borrow_object<CoinInfoV2>(object_id)
-    }
-
-    public fun upsert_icon_url_by_type(coin_type: string::String, coin_info_obj: &mut Object<CoinInfoV2>, icon_url: String) {
-        upsert_icon_url_internal_by_type(coin_type, coin_info_obj, icon_url)
-    }
-
-    public fun register_extend_by_type(
-        coin_type: string::String,
-        coin_info_obj: &mut Object<CoinInfoV2>,
-        name: String,
-        symbol: String,
-        decimals: u8,
-        icon_url: Option<String>,
-    ) {
-        assert!(string::length(&name) <= MAX_COIN_NAME_LENGTH, ErrorCoinNameTooLong);
-        assert!(string::length(&symbol) <= MAX_COIN_SYMBOL_LENGTH, ErrorCoinSymbolTooLong);
-        assert!(!is_registered_by_type(coin_type), ErrorCoinInfoAlreadyRegistered);
-
-        let coin_info = object::borrow_mut(coin_info_obj);
-        coin_info.name = name;
-        coin_info.symbol = symbol;
-        coin_info.decimals = decimals;
-        coin_info.icon_url = icon_url;
-        coin_info.supply = 0;
-        coin_info.coin_type = coin_type;
-
-        let coin_metadata = CoinMetadata {
-            coin_info_id: object::id(coin_info_obj),
-            coin_type,
-            name: coin_info.name,
-            symbol: coin_info.symbol,
-            icon_url: coin_info.icon_url,
-            decimals: coin_info.decimals,
-            supply: coin_info.supply,
-        };
-
-        let registry = borrow_mut_registry();
-        object::add_field(registry, coin_type, coin_metadata);
-    }
-
-    public fun init_metadata_by_type(coin_type: string::String, coin_info: &Object<CoinInfoV2>) {
-        let coin_info_obj = object::borrow(coin_info);
-        let coin_metadata = CoinMetadata {
-            coin_info_id: object::id(coin_info),
-            coin_type,
-            name: coin_info_obj.name,
-            symbol: coin_info_obj.symbol,
-            icon_url: coin_info_obj.icon_url,
-            decimals: coin_info_obj.decimals,
-            supply: coin_info_obj.supply,
-        };
-
-        let registry = borrow_mut_registry();
-        object::add_field(registry, coin_type, coin_metadata);
-    }
-
-    public fun mint_by_type(coin_type: string::String, coin_info: &mut Object<CoinInfoV2>, amount: u256): CoinV2 {
-        mint_internal_by_type(coin_type, coin_info, amount)
-    }
-
-    public fun mint_extend_by_type(coin_type: string::String, coin_info: &mut Object<CoinInfoV2>, amount: u256): CoinV2 {
-        mint_internal_by_type(coin_type, coin_info, amount)
-    }
-
-    public fun burn_by_type(coin_type: string::String, coin_info: &mut Object<CoinInfoV2>, coin: CoinV2) {
-        burn_internal_by_type(coin_type, coin_info, coin)
-    }
-
-    public fun burn_extend_by_type(coin_type: string::String, coin_info: &mut Object<CoinInfoV2>, coin: CoinV2) {
-        burn_internal_by_type(coin_type, coin_info, coin)
-    }
-
-    fun mint_internal_by_type(coin_type: string::String, coin_info_obj: &mut Object<CoinInfoV2>, amount: u256): CoinV2 {
-        assert!(amount > 0, ErrorZeroCoinAmount);
-        let coin_info = object::borrow_mut(coin_info_obj);
-        coin_info.supply = coin_info.supply + amount;
-        let coin = coin::pack<CoinInfo>(amount);
-        event::emit(MintEvent { coin_type, amount });
-        coin
-    }
-
-    fun burn_internal_by_type(coin_type: string::String, coin_info_obj: &mut Object<CoinInfoV2>, coin: CoinV2) {
-        let amount = coin::unpack<CoinInfoV2>(coin);
-        assert!(amount > 0, ErrorZeroCoinAmount);
-        let coin_info = object::borrow_mut(coin_info_obj);
-        coin_info.supply = coin_info.supply - amount;
-        event::emit(BurnEvent { coin_type, amount });
-    }
-
-    fun upsert_icon_url_internal_by_type(coin_type: string::String, coin_info_obj: &mut Object<CoinInfoV2>, icon_url: String) {
-        let coin_info = object::borrow_mut(coin_info_obj);
-        coin_info.icon_url = option::some(icon_url);
-        let coin_metadata = borrow_mut_coin_metadata_by_type(coin_type);
-        coin_metadata.icon_url = option::some(icon_url);
-    }
-
-    // fun borrow_mut_coin_metadata<CoinType: key>(coin_info_obj: &Object<CoinInfo<CoinType>>)
-    fun borrow_mut_coin_metadata_by_type(coin_type: string::String, coin_info_obj: &Object<CoinInfoV2>): &mut CoinMetadata {
-        // let coin_type = type_info::type_name<CoinType>();
-        let registry = borrow_mut_registry();
-        let coin_info_id = object::id(coin_info_obj);
-        let coin_info = object::borrow(coin_info_obj);
-        // If the coin metadata is not initialized, it is the Coin registered before v19
-        // We need to initialize the coin metadata here
-        if (!object::contains_field(registry, coin_type)){
-            let coin_metadata = CoinMetadata {
-                coin_info_id,
-                coin_type,
-                name: coin_info.name,
-                symbol: coin_info.symbol,
-                icon_url: coin_info.icon_url,
-                decimals: coin_info.decimals,
-                supply: coin_info.supply,
-            };
-            object::add_field(registry, coin_type, coin_metadata);
-            object::borrow_mut_field(registry, coin_type)
-        }else{
-            //sync the coin metadata with coin info
-            let metadata :&mut CoinMetadata = object::borrow_mut_field(registry, coin_type);
-            metadata.coin_info_id = coin_info_id;
-            metadata.icon_url = coin_info.icon_url;
-            metadata.name = coin_info.name;
-            metadata.symbol = coin_info.symbol;
-            metadata.decimals = coin_info.decimals;
-            metadata.supply = coin_info.supply;
-            metadata
-        }
-    }
-
-    public(friend) fun unpack_by_type(_coin_type: string::String, coin: CoinV2): u256 {
-        // coin::unpack<CoinInfo>(coin)
-        let CoinV2 { coin_type: _coin_type, value } = coin;
+    //
+    // public fun zero_v2(coin_type: string::String): CoinV2 {
+    //     pack_v2(coin_type, 0)
+    // }
+    //
+    // public fun coin_info_v2(coin_type: string::String): &CoinInfoV2 {
+    //     let coin_info_id = coin_info_id_v2(coin_type);
+    //     // assert!(object::exists_object_with_type<CoinInfo<CoinType>>(coin_info_id), ErrorCoinInfosNotFound);
+    //     assert!(object::exists_object(coin_info_id), ErrorCoinInfosNotFound);
+    //     let coin_info_obj = object::borrow_object<CoinInfoV2>(coin_info_id);
+    //     let coin_info = object::borrow(coin_info_obj);
+    //     assert!(coin_type == coin_info.coin_type, ErrorCoinTypeNotMatch);
+    //     coin_info
+    // }
+    //
+    // public fun upsert_icon_url_v2(coin_info_obj: &mut Object<CoinInfoV2>, icon_url: String) {
+    //     upsert_icon_url_internal_v2(coin_info_obj, icon_url)
+    // }
+    //
+    // public fun register_extend_by_type(
+    //     coin_type: string::String,
+    //     coin_info_obj: &mut Object<CoinInfoV2>,
+    //     name: String,
+    //     symbol: String,
+    //     decimals: u8,
+    //     icon_url: Option<String>,
+    // ) {
+    //     assert!(string::length(&name) <= MAX_COIN_NAME_LENGTH, ErrorCoinNameTooLong);
+    //     assert!(string::length(&symbol) <= MAX_COIN_SYMBOL_LENGTH, ErrorCoinSymbolTooLong);
+    //     assert!(!is_registered_v2(coin_type), ErrorCoinInfoAlreadyRegistered);
+    //
+    //     let coin_info = object::borrow_mut(coin_info_obj);
+    //     coin_info.name = name;
+    //     coin_info.symbol = symbol;
+    //     coin_info.decimals = decimals;
+    //     coin_info.icon_url = icon_url;
+    //     coin_info.supply = 0;
+    //     coin_info.coin_type = coin_type;
+    //
+    //     let coin_metadata = CoinMetadata {
+    //         coin_info_id: object::id(coin_info_obj),
+    //         coin_type,
+    //         name: coin_info.name,
+    //         symbol: coin_info.symbol,
+    //         icon_url: coin_info.icon_url,
+    //         decimals: coin_info.decimals,
+    //         supply: coin_info.supply,
+    //     };
+    //
+    //     let registry = borrow_mut_registry();
+    //     object::add_field(registry, coin_type, coin_metadata);
+    // }
+    //
+    // public fun init_metadata_v2(coin_info: &Object<CoinInfoV2>) {
+    //     let coin_info_obj = object::borrow(coin_info);
+    //     let coin_type = coin_info_obj.coin_type;
+    //     let coin_metadata = CoinMetadata {
+    //         coin_info_id: object::id(coin_info),
+    //         coin_type,
+    //         name: coin_info_obj.name,
+    //         symbol: coin_info_obj.symbol,
+    //         icon_url: coin_info_obj.icon_url,
+    //         decimals: coin_info_obj.decimals,
+    //         supply: coin_info_obj.supply,
+    //     };
+    //
+    //     let registry = borrow_mut_registry();
+    //     object::add_field(registry, coin_type, coin_metadata);
+    // }
+    //
+    // public fun mint_v2(coin_info: &mut Object<CoinInfoV2>, amount: u256): CoinV2 {
+    //     mint_internal_v2(coin_info, amount)
+    // }
+    //
+    // public fun mint_extend_v2(coin_info: &mut Object<CoinInfoV2>, amount: u256): CoinV2 {
+    //     mint_internal_v2(coin_info, amount)
+    // }
+    //
+    // public fun burn_v2(coin_type: string::String, coin_info: &mut Object<CoinInfoV2>, coin: CoinV2) {
+    //     burn_internal_v2(coin_type, coin_info, coin)
+    // }
+    //
+    // public fun burn_extend_v2(coin_type: string::String, coin_info: &mut Object<CoinInfoV2>, coin: CoinV2) {
+    //     burn_internal_v2(coin_type, coin_info, coin)
+    // }
+    //
+    // // fun mint_internal_by_type(coin_type: string::String, coin_info_obj: &mut Object<CoinInfoV2>, amount: u256): CoinV2 {
+    // fun mint_internal_v2(coin_info_obj: &mut Object<CoinInfoV2>, amount: u256): CoinV2 {
+    //     assert!(amount > 0, ErrorZeroCoinAmount);
+    //     let coin_info = object::borrow_mut(coin_info_obj);
+    //     coin_info.supply = coin_info.supply + amount;
+    //     let coin_type = coin_info.coin_type;
+    //
+    //     let _coin_metadata: &mut CoinMetadata = borrow_mut_coin_metadata_v2(coin_info_obj);
+    //     // We sync the supply with coin info, so we don't need to update the supply here
+    //     // After we remove the sync, we need to update the supply here
+    //     //coin_metadata.supply = coin_metadata.supply + amount;
+    //
+    //     let coin = pack_v2(coin_type, amount);
+    //     event::emit(MintEvent { coin_type, amount });
+    //     coin
+    // }
+    //
+    // // fun burn_internal_by_type(coin_type: string::String, coin_info_obj: &mut Object<CoinInfoV2>, coin: CoinV2) {
+    // fun burn_internal_v2(coin_info_obj: &mut Object<CoinInfoV2>, coin: CoinV2) {
+    //     let coin_type = coin.coin_type;
+    //     let amount = unpack_by_type(coin_type, coin);
+    //     assert!(amount > 0, ErrorZeroCoinAmount);
+    //     let coin_info = object::borrow_mut(coin_info_obj);
+    //     coin_info.supply = coin_info.supply - amount;
+    //     event::emit(BurnEvent { coin_type, amount });
+    // }
+    //
+    // // fun upsert_icon_url_internal_by_type(coin_type: string::String, coin_info_obj: &mut Object<CoinInfoV2>, icon_url: String) {
+    // fun upsert_icon_url_internal_v2(coin_info_obj: &mut Object<CoinInfoV2>, icon_url: String) {
+    //     let coin_info = object::borrow_mut(coin_info_obj);
+    //     coin_info.icon_url = option::some(icon_url);
+    //     let coin_metadata = borrow_mut_coin_metadata_v2(coin_info_obj);
+    //     coin_metadata.icon_url = option::some(icon_url);
+    // }
+    //
+    // // fun borrow_mut_coin_metadata<CoinType: key>(coin_info_obj: &Object<CoinInfo<CoinType>>)
+    // // fun borrow_mut_coin_metadata_by_type(coin_type: string::String, coin_info_obj: &Object<CoinInfoV2>): &mut CoinMetadata {
+    // fun borrow_mut_coin_metadata_v2(coin_info_obj: &Object<CoinInfoV2>): &mut CoinMetadata {
+    //     // let coin_type = type_info::type_name<CoinType>();
+    //     let registry = borrow_mut_registry();
+    //     let coin_info_id = object::id(coin_info_obj);
+    //     let coin_info = object::borrow(coin_info_obj);
+    //     let coin_type= coin_info.coin_type;
+    //     // If the coin metadata is not initialized, it is the Coin registered before v19
+    //     // We need to initialize the coin metadata here
+    //     if (!object::contains_field(registry, coin_type)){
+    //         let coin_metadata = CoinMetadata {
+    //             coin_info_id,
+    //             coin_type,
+    //             name: coin_info.name,
+    //             symbol: coin_info.symbol,
+    //             icon_url: coin_info.icon_url,
+    //             decimals: coin_info.decimals,
+    //             supply: coin_info.supply,
+    //         };
+    //         object::add_field(registry, coin_type, coin_metadata);
+    //         object::borrow_mut_field(registry, coin_type)
+    //     }else{
+    //         //sync the coin metadata with coin info
+    //         let metadata :&mut CoinMetadata = object::borrow_mut_field(registry, coin_type);
+    //         metadata.coin_info_id = coin_info_id;
+    //         metadata.icon_url = coin_info.icon_url;
+    //         metadata.name = coin_info.name;
+    //         metadata.symbol = coin_info.symbol;
+    //         metadata.decimals = coin_info.decimals;
+    //         metadata.supply = coin_info.supply;
+    //         metadata
+    //     }
+    // }
+    //
+    public(friend) fun unpack_v2(coin: CoinV2): u256 {
+        let CoinV2 { coin_type: _, value } = coin;
         value
     }
 
-    public(friend) fun pack_by_type(coin_type: string::String, value: u256): CoinV2 {
+    public(friend) fun pack_v2(coin_type: string::String, value: u256): CoinV2 {
         CoinV2 {
             coin_type,
             value
         }
     }
-
-    public fun destroy_for_testing_by_type(coin_type: string::String, coin: CoinV2) {
-        coin::destroy_for_testing<CoinInfo>(coin)
-    }
-
-    public fun convert_coin_info_to_v2<CoinType: key>(coin_info_obj: &Object<CoinInfo<CoinType>>): ObjectID {
-        let coin_type = type_info::type_name<CoinType>();
-        let coin_info = object::borrow(coin_info_obj);
-        
-        // Check if CoinInfoV2 already exists for this coin type
-        let v2_id = coin_info_id_by_type(coin_type);
-        if (object::exists_object_with_type<CoinInfoV2>(v2_id)) {
-            return v2_id
-        }
-        
-        // Create new CoinInfoV2 with the same data
-        let coin_info_v2 = CoinInfoV2 {
-            coin_type,
-            name: coin_info.name,
-            symbol: coin_info.symbol,
-            icon_url: coin_info.icon_url,
-            decimals: coin_info.decimals,
-            supply: coin_info.supply,
-        };
-        
-        // Create and return the new object
-        let coin_info_v2_obj = object::new_object(coin_info_v2);
-        object::transfer_extend(coin_info_v2_obj, @rooch_framework);
-        object::id(&coin_info_v2_obj)
-    }
+    //
+    // /// Helper function for getting the coin type name from a CoinV2
+    // public fun coin_type_name(coin: &CoinV2): string::String {
+    //     coin.coin_type
+    // }
+    //
+    // /// Helper function for getting the value from a CoinV2
+    // // public fun value(coin: &CoinV2): u256 {
+    // //     coin.value
+    // // }
+    //
+    // public fun destroy_for_testing_by_type(coin_type: string::String, coin: CoinV2) {
+    //     let CoinV2 { coin_type: _, value: _ } = coin;
+    // }
 }
