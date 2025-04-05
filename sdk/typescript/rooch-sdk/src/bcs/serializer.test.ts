@@ -129,4 +129,26 @@ describe('Serializer', () => {
     const resultObjectID = Serializer.accountNamedObjectID(address, testData)
     expect(resultObjectID).toBe(expectObjectID)
   })
+
+  it('test named object id with type params', () => {
+    const address = new RoochAddress('0x42').toBech32Address()
+    const testData: StructTag = {
+      address: '0x3',
+      module: 'coin_store',
+      name: 'CoinStore',
+      typeParams: [
+        {
+          Struct: {
+            address: '0x3',
+            module: 'gas_coin',
+            name: 'RGas',
+            typeParams: [],
+          },
+        },
+      ],
+    }
+    const expectObjectID = '0x562409111a2ca55814e56eb42186470c4adda4a04a4a84140690f4d68e8e1c06'
+    const resultObjectID = Serializer.accountNamedObjectID(address, testData)
+    expect(resultObjectID).toBe(expectObjectID)
+  })
 })
