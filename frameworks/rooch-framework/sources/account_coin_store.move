@@ -362,7 +362,6 @@ module rooch_framework::account_coin_store {
     }
 
 
-
     // fun create_or_borrow_mut_account_coin_store<CoinType: key>(
     //     addr: address
     // ): &mut Object<CoinStore<CoinType>> {
@@ -378,8 +377,8 @@ module rooch_framework::account_coin_store {
     ): &mut Object<CoinStoreV2> {
         let account_coin_store_id = account_coin_store_id_v2(addr, coin_type);
         if (!object::exists_object_with_type<CoinStoreV2>(account_coin_store_id)) {
-            let coin_info_id = coin::coin_info_id_v2(coin_type);
-            coin_store::create_account_coin_store_v2(addr, coin_info_id, coin_type);
+            let coin_info_id = coin::coin_info_id_with_type(coin_type);
+            coin_store::create_account_coin_store_v2(addr, coin_type);
         };
         object::borrow_mut_object_extend<CoinStoreV2>(account_coin_store_id)
     }
@@ -394,11 +393,12 @@ module rooch_framework::account_coin_store {
     }
 
     fun deposit_internal_v2(addr: address, coin: CoinV2) {
+        let coin_type = coin::coin_type(&coin);
         assert!(
-            is_accept_coin_v2(addr, coin.coin_type),
+            is_accept_coin_v2(addr, coin_type),
             ErrorAccountNotAcceptCoin,
         );
-        let coin_store = create_or_borrow_mut_account_coin_store_v2(addr, coin.coin_type);
+        let coin_store = create_or_borrow_mut_account_coin_store_v2(addr, coin_type);
         coin_store::deposit_v2(coin_store, coin)
     }
 
