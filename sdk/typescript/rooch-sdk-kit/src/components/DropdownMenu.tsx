@@ -130,7 +130,9 @@ export function ActionDropdownMenu() {
                   setFaucetOpen(true)
                 }}
               >
-                <Text mono>Faucet</Text>
+                <Text mono className={styles.menuItemText}>
+                  Faucet
+                </Text>
               </DropdownMenu.Item>
               <DropdownMenu.Item
                 className={clsx(styles.menuItem, styles.switchMenuItem)}
@@ -138,7 +140,9 @@ export function ActionDropdownMenu() {
                   setSwapGasOpen(true)
                 }}
               >
-                <Text mono>Swap RGas</Text>
+                <Text mono className={styles.menuItemText}>
+                  Swap RGas
+                </Text>
               </DropdownMenu.Item>
               <DropdownMenu.Item
                 className={clsx(styles.menuItem, styles.switchMenuItem)}
@@ -146,7 +150,9 @@ export function ActionDropdownMenu() {
                   setSessionOpen(true)
                 }}
               >
-                <Text mono>Sessions Manager</Text>
+                <Text mono className={styles.menuItemText}>
+                  Sessions Manager
+                </Text>
               </DropdownMenu.Item>
               <DropdownMenu.Item
                 className={clsx(styles.menuItem, styles.switchMenuItem)}
@@ -161,7 +167,9 @@ export function ActionDropdownMenu() {
                   window.location.reload()
                 }}
               >
-                <Text mono>Disconnect</Text>
+                <Text mono className={styles.menuItemText}>
+                  Disconnect
+                </Text>
               </DropdownMenu.Item>
             </DropdownMenu.Content>
           </StyleMarker>

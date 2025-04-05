@@ -11,10 +11,19 @@ type WalletListItemProps = {
   name: string
   icon: ReactNode
   isSelected?: boolean
+  isInstalled?: boolean
+  isDetecting?: boolean
   onClick: () => void
 }
 
-export function WalletListItem({ name, icon, onClick, isSelected = false }: WalletListItemProps) {
+export function WalletListItem({
+  name,
+  icon,
+  onClick,
+  isSelected = false,
+  isInstalled = false,
+  isDetecting = false,
+}: WalletListItemProps) {
   return (
     <li className={styles.container}>
       <button
@@ -30,6 +39,23 @@ export function WalletListItem({ name, icon, onClick, isSelected = false }: Wall
         <Heading size="md" truncate asChild>
           <div>{name}</div>
         </Heading>
+        <span
+          className={clsx(styles.walletStatus, {
+            [styles.installedStatus]: (isInstalled && !isDetecting) || name === 'Local',
+            [styles.notInstalledStatus]: !isInstalled && !isDetecting,
+            [styles.detectingStatus]: isDetecting && name !== 'Local',
+          })}
+        >
+          {isDetecting && name !== 'Local' ? (
+            <>
+              <span className={styles.loadingSpinner} />
+            </>
+          ) : isInstalled ? (
+            '已安装'
+          ) : (
+            '未安装'
+          )}
+        </span>
       </button>
     </li>
   )
