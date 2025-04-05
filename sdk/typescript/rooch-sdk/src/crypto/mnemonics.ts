@@ -28,6 +28,10 @@ export function isValidBIP32Path(path: string): boolean {
   return !/^m\/(54|74)'\/784'\/[0-9]+'\/[0-9]+\/[0-9]+$/.test(path)
 }
 
+export function isValidBIP86Path(path: string): boolean {
+  return !/^m\/86'\/[0-9]+\/[0-9]+'\/[0-9]+\/[0-9]+$/.test(path)
+}
+
 /**
  * Uses KDF to derive 64 bytes of key data from mnemonic with empty password.
  *
