@@ -8,7 +8,10 @@
 // TODO use the SafeNativeContext
 
 use crate::natives::helpers;
-use move_binary_format::errors::PartialVMResult;
+use crate::natives::moveos_stdlib::event::EmitWithHandleGasParameters;
+use move_binary_format::errors::{PartialVMError, PartialVMResult};
+use move_core_types::identifier::Identifier;
+use move_core_types::vm_status::StatusCode;
 use move_core_types::{
     gas_algebra::{InternalGas, InternalGasPerByte, NumBytes},
     language_storage::{StructTag, TypeTag},
@@ -20,6 +23,7 @@ use move_vm_types::{
     values::{Struct, Value},
 };
 use smallvec::{smallvec, SmallVec};
+use std::str::FromStr;
 use std::{collections::VecDeque, fmt::Write, sync::Arc};
 
 const E_TYPE_MISMATCH: u64 = 1;
@@ -86,6 +90,75 @@ fn native_type_of(
     }
 }
 
+/***************************************************************************************************
+ * native fun type_name_with_type
+ *
+ *   Returns the structs of std::string::String.
+ *
+ *   gas cost: base_cost + unit_cost * type_size
+ *
+ **************************************************************************************************/
+#[derive(Debug, Clone)]
+pub struct TypeNameWithTypeGasParameters {
+    pub base: Option<InternalGas>,
+    pub per_byte_in_str: Option<InternalGasPerByte>,
+}
+
+impl TypeNameWithTypeGasParameters {
+    pub fn zeros() -> Self {
+        Self {
+            base: Some(InternalGas::zero()),
+            per_byte_in_str: Some(InternalGasPerByte::zero()),
+        }
+    }
+
+    pub fn init(base: InternalGas, per_byte: InternalGasPerByte) -> Self {
+        Self {
+            base: Some(base),
+            per_byte_in_str: Some(per_byte),
+        }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.base.is_none() || self.per_byte_in_str.is_none()
+    }
+}
+
+fn native_type_name_with_type(
+    gas_params: &TypeNameWithTypeGasParameters,
+    _context: &mut NativeContext,
+    ty_args: Vec<Type>,
+    mut arguments: VecDeque<Value>,
+) -> PartialVMResult<NativeResult> {
+    debug_assert!(arguments.len() == 1);
+    debug_assert!(ty_args.is_empty());
+
+    let type_arg = arguments.pop_back().unwrap();
+
+    let mut fields = type_arg.value_as::<Struct>()?.unpack()?; // std::string::String;
+    let val = fields.next().ok_or_else(|| {
+        PartialVMError::new(StatusCode::TYPE_RESOLUTION_FAILURE)
+            .with_message("There must have only one field".to_owned())
+    })?;
+    let bytes = val.value_as::<Vec<u8>>()?;
+    let type_str = String::from_utf8(bytes).map_err(|e| {
+        PartialVMError::new(StatusCode::TYPE_RESOLUTION_FAILURE).with_message(e.to_string())
+    })?;
+    let type_tag = TypeTag::from_str(type_str.as_str()).map_err(|e| {
+        PartialVMError::new(StatusCode::TYPE_RESOLUTION_FAILURE).with_message(e.to_string())
+    })?;
+
+    let type_name = type_tag.to_canonical_string();
+    // make a std::string::String
+    let string_val = Value::struct_(Struct::pack(vec![Value::vector_u8(
+        type_name.as_bytes().to_vec(),
+    )]));
+
+    let cost = gas_params.base + gas_params.per_byte_in_str * NumBytes::new(type_name.len() as u64);
+
+    Ok(NativeResult::ok(cost, smallvec![string_val]))
+}
+
 //TODO implement a generic make_native function to replace all make_native_xxx function
 pub fn make_native_type_of(gas_params: TypeOfGasParameters) -> NativeFunction {
     Arc::new(move |context, ty_args, args| native_type_of(&gas_params, context, ty_args, args))
@@ -98,6 +171,7 @@ pub fn make_native_type_of(gas_params: TypeOfGasParameters) -> NativeFunction {
 #[derive(Debug, Clone)]
 pub struct GasParameters {
     pub type_of: TypeOfGasParameters,
+    pub type_name_with_type: TypeNameWithTypeGasParameters,
 }
 impl GasParameters {
     pub fn zeros() -> GasParameters {
@@ -106,15 +180,25 @@ impl GasParameters {
                 base: 0.into(),
                 per_byte_in_str: 0.into(),
             },
+            type_name_with_type: TypeNameWithTypeGasParameters {
+                base: 0.into(),
+                per_byte_in_str: 0.into(),
+            },
         }
     }
 }
 
 pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, NativeFunction)> {
-    let natives = [(
-        "type_of",
-        helpers::make_native(gas_params.type_of, native_type_of),
-    )];
+    let natives = [
+        (
+            "type_of",
+            helpers::make_native(gas_params.type_of, native_type_of),
+        ),
+        (
+            "type_name_with_type",
+            helpers::make_native(gas_params.type_name_with_type, native_type_name_with_type),
+        ),
+    ];
 
     crate::natives::helpers::make_module_natives(natives)
 }
