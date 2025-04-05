@@ -3,7 +3,7 @@
 
 import { splitGenericParameters } from '@mysten/bcs'
 
-import { concatBytes, isBytes, isHex, sha3_256, stringToBytes, toHEX } from "../utils/index.js";
+import { concatBytes, isBytes, isHex, sha3_256, stringToBytes, toHEX } from '../utils/index.js'
 import { canonicalRoochAddress, normalizeRoochAddress, RoochAddress } from '../address/index.js'
 
 import { StructTag, TypeTag, BcsTypeTag } from './types.js'
@@ -22,7 +22,7 @@ export class Serializer {
   static accountNamedObjectID(address: address, structTag: StructTag | string) {
     let addressBytes: Bytes
     if (typeof address === 'string') {
-      const finalAddress = isHex(address) ? normalizeRoochAddress(address): address;
+      const finalAddress = isHex(address) ? normalizeRoochAddress(address) : address
       addressBytes = new RoochAddress(finalAddress).toBytes()
     } else if (isBytes(address)) {
       addressBytes = address
