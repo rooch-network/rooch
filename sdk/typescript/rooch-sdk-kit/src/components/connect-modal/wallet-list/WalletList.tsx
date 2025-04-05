@@ -1,19 +1,25 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { useWallets } from '../../../hooks/wallet/useWallets.js'
 import * as styles from './WalletList.css.js'
 import { WalletListItem } from './WalletListItem.js'
 import { Wallet } from '../../../wellet/wallet.js'
 
 type WalletListProps = {
+  wallets: Wallet[]
   selectedWalletName?: string
   onSelect: (wallet: Wallet) => void
+  walletStatus: Map<string, boolean>
+  isDetecting: boolean
 }
 
-export function WalletList({ selectedWalletName, onSelect }: WalletListProps) {
-  const wallets = useWallets()
-
+export function WalletList({
+  wallets,
+  selectedWalletName,
+  onSelect,
+  walletStatus,
+  isDetecting,
+}: WalletListProps) {
   return (
     <ul className={styles.container}>
       {wallets.map((wallet) => (
@@ -22,6 +28,8 @@ export function WalletList({ selectedWalletName, onSelect }: WalletListProps) {
           name={wallet.getName()}
           icon={wallet.getIcon()}
           isSelected={wallet.getName() === selectedWalletName}
+          isInstalled={walletStatus.get(wallet.getName())}
+          isDetecting={isDetecting}
           onClick={() => onSelect(wallet)}
         />
       ))}

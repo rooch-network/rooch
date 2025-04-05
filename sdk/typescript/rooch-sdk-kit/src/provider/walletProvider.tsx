@@ -21,6 +21,7 @@ import { useWalletChanged } from '../hooks/index.js'
 import { useWalletStore } from '../hooks/wallet/useWalletStore.js'
 
 type WalletProviderProps = {
+  enableLocal?: boolean
   preferredWallets?: SupportWallet[]
 
   chain?: SupportChain
@@ -42,6 +43,7 @@ const DEFAULT_STORAGE_KEY = 'rooch-sdk-kit:wallet-connect-info'
 export const WalletContext = createContext<WalletStore | null>(null)
 
 export function WalletProvider({
+  enableLocal = false,
   preferredWallets = ['UniSat', 'OKX'],
   chain = 'bitcoin',
   storage,
@@ -64,12 +66,16 @@ export function WalletProvider({
 
   useEffect(() => {
     const fetchWallet = async () => {
-      const wallets = await checkWallets(chain)
+      let wallets = await checkWallets(chain)
+      if (!enableLocal) {
+        wallets = wallets.filter((item) => item.getName() !== 'Local')
+      }
+
       getWallets().register(...wallets)
     }
 
     fetchWallet()
-  }, [chain])
+  }, [chain, enableLocal])
 
   return (
     <WalletContext.Provider value={storeRef.current}>

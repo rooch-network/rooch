@@ -57,6 +57,19 @@ describe('Secp256k1 keypair', () => {
     expect(keypair1.getPublicKey().toBase64()).toEqual(pk)
   })
 
+  it('Create secp256k1 keypair from mem', () => {
+    const mm = 'prosper song citizen boy unveil corn lake galaxy actor retreat key rack'
+
+    const keypair = Secp256k1Keypair.deriveKeypair(mm)
+
+    const key1 = Secp256k1Keypair.fromSecretKey(
+      'roochsecretkey1q9e04v2duagrsgs3qrx9w9qjypk4qzcvqtu5y55264x5wc40gr85g6xm873',
+    )
+
+    expect(key1.getBitcoinAddress().toStr()).toEqual(keypair.getBitcoinAddress().toStr())
+    expect(key1.getRoochAddress().toStr()).toEqual(keypair.getRoochAddress().toStr())
+  })
+
   describe('sign', () => {
     it('should sign data', async () => {
       const keypair = new Secp256k1Keypair()
