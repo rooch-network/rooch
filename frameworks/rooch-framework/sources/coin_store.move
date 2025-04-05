@@ -502,10 +502,10 @@ module rooch_framework::coin_store {
 
 
     // Create account coin store
-    // public(friend) fun create_account_coin_store_v2(account: address, coin_type: string::String): ObjectID {
-    public(friend) fun create_account_coin_store_v2<CoinType: key>(account: address): ObjectID {
-        coin::check_coin_info_registered<CoinType>();
-        let coin_type = type_info::type_name<CoinType>();
+    public(friend) fun create_account_coin_store_v2(account: address, coin_type: string::String): ObjectID {
+    // public(friend) fun create_account_coin_store_v2<CoinType: key>(account: address): ObjectID {
+        coin::check_coin_info_registered_with_type(coin_type);
+        // let coin_type = type_info::type_name<CoinType>();
         let coin_store_obj = object::new_account_named_object_with_type(
             account,
             CoinStoreV2 {

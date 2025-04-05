@@ -16,6 +16,7 @@ use moveos::moveos::{MoveOS, MoveOSConfig};
 use moveos_stdlib::natives::moveos_stdlib::base64::EncodeDecodeGasParametersOption;
 use moveos_stdlib::natives::moveos_stdlib::event::EmitWithHandleGasParameters;
 use moveos_stdlib::natives::moveos_stdlib::object::ListFieldsGasParametersOption;
+use moveos_stdlib::natives::moveos_stdlib::type_info::TypeNameWithTypeGasParameters;
 use moveos_store::MoveOSStore;
 use moveos_types::genesis_info::GenesisInfo;
 use moveos_types::h256::H256;
@@ -58,11 +59,12 @@ pub static ROOCH_LOCAL_GENESIS: Lazy<RoochGenesisV2> = Lazy::new(|| {
     let network: RoochNetwork = BuiltinChainID::Local.into();
     RoochGenesisV2::build(network).expect("build rooch genesis failed")
 });
-pub const LATEST_GAS_SCHEDULE_VERSION: u64 = GAS_SCHEDULE_RELEASE_V2;
+pub const LATEST_GAS_SCHEDULE_VERSION: u64 = GAS_SCHEDULE_RELEASE_V3;
 // update the gas config for function calling
 pub const GAS_SCHEDULE_RELEASE_V1: u64 = 1;
 
 pub const GAS_SCHEDULE_RELEASE_V2: u64 = 2;
+pub const GAS_SCHEDULE_RELEASE_V3: u64 = 3;
 
 pub(crate) const STATIC_GENESIS_DIR: Dir = include_dir!("released");
 
@@ -192,8 +194,20 @@ impl FrameworksGasParameters {
         v3_gas_parameter
     }
 
+    pub fn v5() -> Self {
+        let mut v4_gas_parameter = FrameworksGasParameters::v4();
+
+        v4_gas_parameter
+            .rooch_framework_gas_params
+            .moveos_stdlib
+            .type_info
+            .type_name_with_type = TypeNameWithTypeGasParameters::init(1000.into(), 150.into());
+
+        v4_gas_parameter
+    }
+
     pub fn latest() -> Self {
-        FrameworksGasParameters::v4()
+        FrameworksGasParameters::v5()
     }
 
     pub fn to_gas_schedule_config(&self, chain_id: ChainID) -> GasScheduleConfig {

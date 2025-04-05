@@ -70,7 +70,7 @@ module rooch_framework::transfer {
 
 
     /// Forward generic transfers to non-generic system if it's available
-    public fun transfer_coin_v2<CoinType: key + store>(
+    public entry fun transfer_coin_v2<CoinType: key + store>(
         from: &signer,
         to: address,
         amount: u256,
@@ -78,7 +78,7 @@ module rooch_framework::transfer {
         if (is_v2_enabled()) {
             // Use V2 transfer
             let coin_type = type_info::type_name<CoinType>();
-            direct_transfer(from, to, coin_type, amount);
+            transfer_coin_with_type(from, to, coin_type, amount);
         } else {
             // Use original generic transfer
             transfer_coin<CoinType>(from, to, amount);
@@ -93,24 +93,26 @@ module rooch_framework::transfer {
     }
 
     /// Direct transfer by coin type name
-    public entry fun direct_transfer(
+    public entry fun transfer_coin_with_type(
         from: &signer,
         to: address,
         coin_type: String,
         amount: u256,
     ) {
-        // Get coin metadata and info ID
-        let registry = coin::borrow_registry();
-        assert!(object::contains_field(registry, coin_type), ErrorCoinTypeNotRegistered);
-        let metadata: &CoinMetadata = object::borrow_field(registry, coin_type);
-        let coin_info_id = metadata.coin_info_id;
+        // // Get coin metadata and info ID
+        // let registry = coin::borrow_registry();
+        // assert!(object::contains_field(registry, coin_type), ErrorCoinTypeNotRegistered);
+        // let metadata: &CoinMetadata = object::borrow_field(registry, coin_type);
+        // let coin_info_id = metadata.coin_info_id;
+        //
+        // // Get or create coin stores
+        // let from_addr = signer::address_of(from);
+        // let from_store_id = account_coin_store_v2::get_or_create_coin_store(from_addr, coin_info_id, coin_type);
+        // let to_store_id = account_coin_store_v2::get_or_create_coin_store(to, coin_info_id, coin_type);
+        //
+        // // Perform direct transfer
+        // coin_store_v2::direct_transfer(from_store_id, to_store_id, amount);
 
-        // Get or create coin stores
-        let from_addr = signer::address_of(from);
-        let from_store_id = account_coin_store_v2::get_or_create_coin_store(from_addr, coin_info_id, coin_type);
-        let to_store_id = account_coin_store_v2::get_or_create_coin_store(to, coin_info_id, coin_type);
-
-        // Perform direct transfer
-        coin_store_v2::direct_transfer(from_store_id, to_store_id, amount);
+        account_coin_store::transfer_v2(from, to, coin_type, amount);
     }
 }
