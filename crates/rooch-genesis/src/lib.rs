@@ -16,7 +16,7 @@ use moveos::moveos::{MoveOS, MoveOSConfig};
 use moveos_stdlib::natives::moveos_stdlib::base64::EncodeDecodeGasParametersOption;
 use moveos_stdlib::natives::moveos_stdlib::event::EmitWithHandleGasParameters;
 use moveos_stdlib::natives::moveos_stdlib::object::ListFieldsGasParametersOption;
-use moveos_stdlib::natives::moveos_stdlib::type_info::TypeNameWithTypeGasParameters;
+use moveos_stdlib::natives::moveos_stdlib::type_info::TypeNameByTypeGasParameters;
 use moveos_store::MoveOSStore;
 use moveos_types::genesis_info::GenesisInfo;
 use moveos_types::h256::H256;
@@ -201,7 +201,7 @@ impl FrameworksGasParameters {
             .rooch_framework_gas_params
             .moveos_stdlib
             .type_info
-            .type_name_with_type = TypeNameWithTypeGasParameters::init(1000.into(), 150.into());
+            .type_name_by_type = TypeNameByTypeGasParameters::init(1000.into(), 150.into());
 
         v4_gas_parameter
     }

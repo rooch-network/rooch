@@ -377,7 +377,7 @@ module rooch_framework::account_coin_store {
     ): &mut Object<CoinStoreV2> {
         let account_coin_store_id = account_coin_store_id_v2(addr, coin_type);
         if (!object::exists_object_with_type<CoinStoreV2>(account_coin_store_id)) {
-            let coin_info_id = coin::coin_info_id_with_type(coin_type);
+            let coin_info_id = coin::coin_info_id_by_type_name(coin_type);
             coin_store::create_account_coin_store_v2(addr, coin_type);
         };
         object::borrow_mut_object_extend<CoinStoreV2>(account_coin_store_id)
