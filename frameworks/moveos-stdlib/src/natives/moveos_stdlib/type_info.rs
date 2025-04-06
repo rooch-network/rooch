@@ -8,9 +8,7 @@
 // TODO use the SafeNativeContext
 
 use crate::natives::helpers;
-use crate::natives::moveos_stdlib::event::EmitWithHandleGasParameters;
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
-use move_core_types::identifier::Identifier;
 use move_core_types::vm_status::StatusCode;
 use move_core_types::{
     gas_algebra::{InternalGas, InternalGasPerByte, NumBytes},
@@ -91,7 +89,7 @@ fn native_type_of(
 }
 
 /***************************************************************************************************
- * native fun type_name_with_type
+ * native fun type_name_by_type
  *
  *   Returns the structs of std::string::String.
  *
@@ -99,12 +97,12 @@ fn native_type_of(
  *
  **************************************************************************************************/
 #[derive(Debug, Clone)]
-pub struct TypeNameWithTypeGasParameters {
+pub struct TypeNameByTypeGasParameters {
     pub base: Option<InternalGas>,
     pub per_byte_in_str: Option<InternalGasPerByte>,
 }
 
-impl TypeNameWithTypeGasParameters {
+impl TypeNameByTypeGasParameters {
     pub fn zeros() -> Self {
         Self {
             base: Some(InternalGas::zero()),
@@ -124,8 +122,8 @@ impl TypeNameWithTypeGasParameters {
     }
 }
 
-fn native_type_name_with_type(
-    gas_params: &TypeNameWithTypeGasParameters,
+fn native_type_name_by_type(
+    gas_params: &TypeNameByTypeGasParameters,
     _context: &mut NativeContext,
     ty_args: Vec<Type>,
     mut arguments: VecDeque<Value>,
@@ -154,7 +152,11 @@ fn native_type_name_with_type(
         type_name.as_bytes().to_vec(),
     )]));
 
-    let cost = gas_params.base + gas_params.per_byte_in_str * NumBytes::new(type_name.len() as u64);
+    let cost = gas_params.base.unwrap_or_else(InternalGas::zero)
+        + gas_params
+            .per_byte_in_str
+            .unwrap_or_else(InternalGasPerByte::zero)
+            * NumBytes::new(type_name.len() as u64);
 
     Ok(NativeResult::ok(cost, smallvec![string_val]))
 }
@@ -171,7 +173,7 @@ pub fn make_native_type_of(gas_params: TypeOfGasParameters) -> NativeFunction {
 #[derive(Debug, Clone)]
 pub struct GasParameters {
     pub type_of: TypeOfGasParameters,
-    pub type_name_with_type: TypeNameWithTypeGasParameters,
+    pub type_name_by_type: TypeNameByTypeGasParameters,
 }
 impl GasParameters {
     pub fn zeros() -> GasParameters {
@@ -180,9 +182,9 @@ impl GasParameters {
                 base: 0.into(),
                 per_byte_in_str: 0.into(),
             },
-            type_name_with_type: TypeNameWithTypeGasParameters {
-                base: 0.into(),
-                per_byte_in_str: 0.into(),
+            type_name_by_type: TypeNameByTypeGasParameters {
+                base: Some(0.into()),
+                per_byte_in_str: Some(0.into()),
             },
         }
     }
@@ -195,8 +197,8 @@ pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, Nati
             helpers::make_native(gas_params.type_of, native_type_of),
         ),
         (
-            "type_name_with_type",
-            helpers::make_native(gas_params.type_name_with_type, native_type_name_with_type),
+            "type_name_by_type",
+            helpers::make_native(gas_params.type_name_by_type, native_type_name_by_type),
         ),
     ];
 

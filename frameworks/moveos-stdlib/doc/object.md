@@ -18,6 +18,7 @@ For more details, please refer to https://rooch.network/docs/developer-guides/ob
 -  [Function `is_root`](#0x2_object_is_root)
 -  [Function `address_to_object_id`](#0x2_object_address_to_object_id)
 -  [Function `named_object_id`](#0x2_object_named_object_id)
+-  [Function `named_object_id_with_type`](#0x2_object_named_object_id_with_type)
 -  [Function `account_named_object_id`](#0x2_object_account_named_object_id)
 -  [Function `account_named_object_id_with_type`](#0x2_object_account_named_object_id_with_type)
 -  [Function `custom_object_id`](#0x2_object_custom_object_id)
@@ -388,7 +389,7 @@ Check if the <code>parent</code> is the parent of the <code>child</code>
 Generate a new ObjectID from an address
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_address_to_object_id">address_to_object_id</a>(<b>address</b>: <b>address</b>): <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_address_to_object_id">address_to_object_id</a>(<b>address</b>: <b>address</b>): <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>
 </code></pre>
 
 
@@ -400,6 +401,17 @@ Generate a new ObjectID from an address
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_named_object_id">named_object_id</a>&lt;T&gt;(): <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>
+</code></pre>
+
+
+
+<a name="0x2_object_named_object_id_with_type"></a>
+
+## Function `named_object_id_with_type`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_named_object_id_with_type">named_object_id_with_type</a>&lt;T&gt;(type: <a href="_String">string::String</a>): <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>
 </code></pre>
 
 
@@ -421,7 +433,7 @@ Generate a new ObjectID from an address
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_account_named_object_id_with_type">account_named_object_id_with_type</a>&lt;T: key&gt;(<a href="account.md#0x2_account">account</a>: <b>address</b>, type: <a href="_String">string::String</a>): <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_account_named_object_id_with_type">account_named_object_id_with_type</a>&lt;T&gt;(<a href="account.md#0x2_account">account</a>: <b>address</b>, type: <a href="_String">string::String</a>): <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>
 </code></pre>
 
 

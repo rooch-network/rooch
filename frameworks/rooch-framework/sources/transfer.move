@@ -78,7 +78,7 @@ module rooch_framework::transfer {
         if (is_v2_enabled()) {
             // Use V2 transfer
             let coin_type = type_info::type_name<CoinType>();
-            transfer_coin_with_type(from, to, coin_type, amount);
+            transfer_coin_by_type_name(from, to, coin_type, amount);
         } else {
             // Use original generic transfer
             transfer_coin<CoinType>(from, to, amount);
@@ -93,7 +93,7 @@ module rooch_framework::transfer {
     }
 
     /// Direct transfer by coin type name
-    public entry fun transfer_coin_with_type(
+    public entry fun transfer_coin_by_type_name(
         from: &signer,
         to: address,
         coin_type: String,
