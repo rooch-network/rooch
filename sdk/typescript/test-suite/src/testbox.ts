@@ -18,7 +18,6 @@ import { logConsumer } from './container/debug/log_consumer.js'
 
 const ordNetworkAlias = 'ord'
 const bitcoinNetworkAlias = 'bitcoind'
-let _defaultCmdAddress = ''
 
 export class TestBox {
   tmpDir: DirResult
@@ -30,11 +29,13 @@ export class TestBox {
 
   roochPort?: number
   private miningIntervalId: NodeJS.Timeout | null = null
+  _defaultCmdAddress = ''
 
   constructor() {
     tmp.setGracefulCleanup()
     this.tmpDir = tmp.dirSync({ unsafeCleanup: true })
     this.roochDir = path.join(this.tmpDir.name, '.rooch_test')
+    console.log('New TestBox rooch dir:', this.roochDir)
     fs.mkdirSync(this.roochDir, { recursive: true })
     this.roochCommand(['init', '--config-dir', `${this.roochDir}`, '--skip-password'])
     this.roochCommand(['env', 'switch', '--config-dir', `${this.roochDir}`, '--alias', 'local'])
@@ -173,7 +174,7 @@ export class TestBox {
     this.roochContainer = await container.start()
 
     const rpcURL = this.roochContainer.getConnectionAddress()
-    console.log('container rooch rpc:', rpcURL)
+    console.log('container rooch rpc:', rpcURL, 'roochDir:', this.roochDir)
     this.roochCommand([
       'env',
       'add',
@@ -286,6 +287,8 @@ export class TestBox {
   ) {
     // let addr = await this.defaultCmdAddress()
     // let fixedNamedAddresses = options.namedAddresses.replace('default', addr)
+    console.log('publish package:', packagePath, 'rooch Dir:', this.roochDir)
+
     const result = this.roochCommand(
       `move publish -p ${packagePath} --config-dir ${this.roochDir} --named-addresses ${options.namedAddresses} --json`,
     )
@@ -304,7 +307,7 @@ export class TestBox {
    * @throws {Error} When no active account address is found.
    */
   async defaultCmdAddress(): Promise<string> {
-    if (!_defaultCmdAddress) {
+    if (!this._defaultCmdAddress) {
       const accounts = JSON.parse(
         this.roochCommand(['account', 'list', '--config-dir', this.roochDir, '--json']),
       )
@@ -312,20 +315,20 @@ export class TestBox {
       if (Array.isArray(accounts)) {
         for (const account of accounts) {
           if (account.active) {
-            _defaultCmdAddress = account.local_account.hex_address
+            this._defaultCmdAddress = account.local_account.hex_address
           }
         }
       } else {
         const defaultAddr = accounts['default']
-        _defaultCmdAddress = defaultAddr.hex_address
+        this._defaultCmdAddress = defaultAddr.hex_address
       }
 
-      if (!_defaultCmdAddress) {
+      if (!this._defaultCmdAddress) {
         throw new Error('No active account address')
       }
     }
 
-    return _defaultCmdAddress
+    return this._defaultCmdAddress
   }
 
   private async getNetwork() {

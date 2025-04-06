@@ -767,19 +767,15 @@ export class RoochClient {
   }
 
   private resubscribeAll(): void {
+    console.log('Re-subscribing to all subscriptions...')
+
     if (!this.subscriptionTransport) {
       return
     }
 
     for (const [_id, options] of this.subscriptions) {
-      const method =
-        options.type === 'event' ? 'rooch_subscribeEvents' : 'rooch_subscribeTransactions'
-      const params = options.filter ? [options.filter] : ['all']
-      const request = {
-        method,
-        params,
-      }
-      this.subscriptionTransport.subscribe(request)
+      console.log(`Re-subscribing to ${options.type} with ID: ${_id}`)
+      this.subscribe(options)
     }
   }
 

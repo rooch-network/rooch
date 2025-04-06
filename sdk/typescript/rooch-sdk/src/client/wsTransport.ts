@@ -16,6 +16,8 @@ export interface RoochWebSocketTransportOptions {
   maxReconnectAttempts?: number
   requestTimeout?: number
   connectionReadyTimeout?: number
+  heartbeatInterval?: number // Interval between ping frames in ms
+  heartbeatTimeout?: number // Time to wait for pong response in ms
 }
 
 interface WsRequest {
@@ -32,13 +34,18 @@ export class RoochWebSocketTransport implements RoochTransport, RoochSubscriptio
   #options: RoochWebSocketTransportOptions
   #pendingRequests = new Map<number, WsRequest>()
   #reconnectAttempts = 0
-  #subscriptions = new Map<string, { request: JsonRpcRequest; id: string }>()
   #eventEmitter = new EventEmitter()
+  #heartbeatTimer: NodeJS.Timeout | null = null
+  #awaitingPong: boolean = false
+  #pongTimeoutTimer: NodeJS.Timeout | null = null
+  #isDestroying: boolean = false
   readonly #maxReconnectAttempts: number
   readonly #reconnectDelay: number
   readonly #requestTimeout: number
   readonly #connectionReadyTimeout: number
   readonly #WebSocketImpl: typeof WebSocket
+  readonly #heartbeatInterval: number
+  readonly #heartbeatTimeout: number
 
   constructor(options: RoochWebSocketTransportOptions) {
     this.#options = options
@@ -49,6 +56,8 @@ export class RoochWebSocketTransport implements RoochTransport, RoochSubscriptio
     this.#requestTimeout = options.requestTimeout ?? 30000
     this.#connectionReadyTimeout = options.connectionReadyTimeout ?? 5000
     this.#WebSocketImpl = options.WebSocket ?? WebSocket
+    this.#heartbeatInterval = options.heartbeatInterval ?? 30000
+    this.#heartbeatTimeout = options.heartbeatTimeout ?? 5000
     this.#connect()
   }
 
@@ -68,14 +77,21 @@ export class RoochWebSocketTransport implements RoochTransport, RoochSubscriptio
     this.#ws.onopen = () => {
       this.#reconnectAttempts = 0
       this.#eventEmitter.emit('reconnected')
-      this.#resubscribeAll()
+      this.#startHeartbeat()
     }
+
+    // Add pong handler to reset awaiting state
+    this.#ws.on('pong', () => {
+      this.#awaitingPong = false
+      if (this.#pongTimeoutTimer) {
+        clearTimeout(this.#pongTimeoutTimer)
+        this.#pongTimeoutTimer = null
+      }
+    })
 
     this.#ws.onmessage = (event: any) => {
       try {
         const data = JSON.parse(event.data)
-
-        console.log('onmessage data:', data)
 
         // Handle subscription events
         if (data.method && data.method.startsWith('rooch_subscribe') && data.params) {
@@ -98,17 +114,28 @@ export class RoochWebSocketTransport implements RoochTransport, RoochSubscriptio
       }
     }
 
-    this.#ws.onclose = () => {
+    this.#ws.onclose = (event: WebSocket.CloseEvent) => {
+      console.error(`websocket_close:`, event.code, event.reason)
+      this.#stopHeartbeat()
       this.#handleReconnect()
     }
 
     this.#ws.onerror = (event: WebSocket.ErrorEvent) => {
-      console.error(`websocket_error:`, event)
+      console.error(`websocket_error:`, event.message, event.error)
+      this.#stopHeartbeat()
       this.#handleReconnect()
     }
   }
 
   #handleReconnect(): void {
+    console.error(`handleReconnect: reconnecting...`)
+
+    // Skip reconnection if we're intentionally destroying the transport
+    if (this.#isDestroying) {
+      console.log('Skipping reconnect during intentional shutdown')
+      return
+    }
+
     if (this.#reconnectAttempts >= this.#maxReconnectAttempts) {
       this.#rejectAllPending(
         new Error('WebSocket connection failed after maximum reconnection attempts'),
@@ -120,6 +147,11 @@ export class RoochWebSocketTransport implements RoochTransport, RoochSubscriptio
       return
     }
 
+    // Ensure WebSocket is cleaned up before reconnecting
+    if (this.#ws) {
+      this.#cleanupWebSocket()
+    }
+
     this.#reconnectAttempts++
     setTimeout(() => this.#connect(), this.#reconnectDelay * this.#reconnectAttempts)
   }
@@ -129,16 +161,6 @@ export class RoochWebSocketTransport implements RoochTransport, RoochSubscriptio
       request.reject(error)
     }
     this.#pendingRequests.clear()
-  }
-
-  #resubscribeAll(): void {
-    for (const [subscriptionId, { request }] of this.#subscriptions.entries()) {
-      // Don't wait for the promise since we're just restoring subscriptions
-      this.subscribe(request).catch((error) => {
-        console.error(`Failed to resubscribe to ${subscriptionId}:`, error)
-        this.#eventEmitter.emit('error', error)
-      })
-    }
   }
 
   async #ensureConnection(): Promise<void> {
@@ -208,10 +230,6 @@ export class RoochWebSocketTransport implements RoochTransport, RoochSubscriptio
         const wsRequest: WsRequest = {
           resolve: (result) => {
             const subscriptionId = result
-            this.#subscriptions.set(subscriptionId, {
-              request,
-              id: subscriptionId,
-            })
 
             resolve({
               id: subscriptionId,
@@ -249,8 +267,6 @@ export class RoochWebSocketTransport implements RoochTransport, RoochSubscriptio
   }
 
   unsubscribe(subscriptionId: string): void {
-    if (!this.#subscriptions.has(subscriptionId)) return
-
     if (this.#ws?.readyState === WebSocket.OPEN) {
       const id = ++this.#requestId
       this.#ws.send(
@@ -262,8 +278,76 @@ export class RoochWebSocketTransport implements RoochTransport, RoochSubscriptio
         }),
       )
     }
+  }
 
-    this.#subscriptions.delete(subscriptionId)
+  // Add heartbeat methods
+  #startHeartbeat(): void {
+    if (this.#heartbeatInterval <= 0) return
+
+    this.#stopHeartbeat() // Clear any existing timers
+
+    this.#heartbeatTimer = setInterval(() => {
+      if (this.#ws?.readyState === WebSocket.OPEN) {
+        // If we're still waiting for a pong from previous ping, connection might be dead
+        if (this.#awaitingPong) {
+          console.warn('No pong received within timeout, triggering reconnection')
+          this.#ws.terminate() // Force close the connection to trigger reconnect
+          return
+        }
+
+        try {
+          this.#awaitingPong = true
+          this.#ws.ping()
+
+          // Set timeout for pong response
+          this.#pongTimeoutTimer = setTimeout(() => {
+            if (this.#awaitingPong && this.#ws?.readyState === WebSocket.OPEN) {
+              console.warn('Pong timeout reached, terminating connection')
+              this.#ws.terminate() // Force close to trigger reconnect
+            }
+          }, this.#heartbeatTimeout)
+        } catch (error) {
+          console.error('Failed to send ping:', error)
+          this.#handleReconnect()
+        }
+      }
+    }, this.#heartbeatInterval)
+  }
+
+  #stopHeartbeat(): void {
+    if (this.#heartbeatTimer) {
+      clearInterval(this.#heartbeatTimer)
+      this.#heartbeatTimer = null
+    }
+
+    if (this.#pongTimeoutTimer) {
+      clearTimeout(this.#pongTimeoutTimer)
+      this.#pongTimeoutTimer = null
+    }
+
+    this.#awaitingPong = false
+  }
+
+  // Add a helper method to properly clean up the WebSocket instance
+  #cleanupWebSocket(): void {
+    if (this.#ws) {
+      try {
+        // Remove all listeners to avoid memory leaks
+        this.#ws.onopen = null
+        this.#ws.onclose = null
+        this.#ws.onerror = null
+        this.#ws.onmessage = null
+        this.#ws.removeAllListeners('pong')
+
+        // Force close the connection
+        this.#ws.terminate()
+      } catch (error) {
+        console.error('Error while cleaning up WebSocket:', error)
+      } finally {
+        // Always set the WebSocket to null to ensure it's garbage collected
+        this.#ws = null
+      }
+    }
   }
 
   onMessage(callback: (msg: any) => void): void {
@@ -279,6 +363,11 @@ export class RoochWebSocketTransport implements RoochTransport, RoochSubscriptio
   }
 
   destroy(): void {
+    // Set flag to prevent reconnection
+    this.#isDestroying = true
+
+    this.#stopHeartbeat()
+
     if (this.#ws) {
       this.#ws.close()
       this.#ws = null
@@ -286,7 +375,6 @@ export class RoochWebSocketTransport implements RoochTransport, RoochSubscriptio
 
     this.#rejectAllPending(new Error('WebSocket disconnected'))
     this.#eventEmitter.removeAllListeners()
-    this.#subscriptions.clear()
     this.#pendingRequests.clear()
   }
 }
