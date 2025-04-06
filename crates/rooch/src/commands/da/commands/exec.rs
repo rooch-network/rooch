@@ -62,8 +62,8 @@ use tracing::{info, warn};
 pub struct ExecCommand {
     #[clap(
         long = "mode",
-        default_value = "all",
-        help = "Execution mode: exec, seq, all, sync. Default is all"
+        default_value = "sync",
+        help = "Execution mode: exec, seq, all, sync, sync-exec. Default is sync"
     )]
     pub mode: ExecMode,
     #[clap(long = "segment-dir")]
@@ -96,6 +96,8 @@ pub struct ExecCommand {
     pub force_align: bool,
     #[clap(long = "max-block-number", help = "Max block number to exec")]
     pub max_block_number: Option<u128>,
+    #[clap(long = "bypass-verify", help = "bypass verification of state root")]
+    pub bypass_verify: bool,
 
     #[clap(long = "btc-rpc-url")]
     pub btc_rpc_url: String,
@@ -139,6 +141,8 @@ pub enum ExecMode {
     All,
     /// Sync from DA automatically and `All` mode
     Sync,
+    /// Sync from DA automatically and `Exec` mode
+    SyncExec,
 }
 
 impl PartialEq for ExecMode {
@@ -150,10 +154,11 @@ impl PartialEq for ExecMode {
 impl ExecMode {
     pub fn as_bits(&self) -> u8 {
         match self {
-            ExecMode::Exec => 0b10,  // Execute
-            ExecMode::Seq => 0b01,   // Sequence
-            ExecMode::All => 0b11,   // All
-            ExecMode::Sync => 0b111, // Sync
+            ExecMode::Exec => 0b10,
+            ExecMode::Seq => 0b01,
+            ExecMode::All => 0b11,
+            ExecMode::Sync => 0b111,
+            ExecMode::SyncExec => 0b110,
         }
     }
 
@@ -169,14 +174,23 @@ impl ExecMode {
         self.as_bits() & 0b11 == 0b11
     }
 
-    pub fn get_verify_targets(&self) -> String {
-        match self {
+    pub fn get_verify_targets_str(&self, bypass_verify: bool) -> Option<String> {
+        let raw_targets = match self {
             ExecMode::Exec => "state root",
             ExecMode::Seq => "accumulator root",
             ExecMode::All => "state+accumulator root",
             ExecMode::Sync => "state+accumulator root",
+            ExecMode::SyncExec => "state root",
+        };
+        if bypass_verify {
+            if raw_targets == "state root" {
+                return None;
+            }
+            if raw_targets == "state+accumulator root" {
+                return Some("accumulator root".to_string());
+            }
         }
-        .to_string()
+        Some(raw_targets.to_string())
     }
 }
 
@@ -276,6 +290,7 @@ impl ExecCommand {
 
         Ok(ExecInner {
             mode: self.mode,
+            bypass_verify: self.bypass_verify,
             force_align: self.force_align,
             ledger_tx_getter: ledger_tx_loader,
             tx_meta_store,
@@ -294,6 +309,7 @@ impl ExecCommand {
 
 struct ExecInner {
     mode: ExecMode,
+    bypass_verify: bool,
     force_align: bool,
 
     ledger_tx_getter: LedgerTxGetter,
@@ -695,11 +711,13 @@ impl ExecInner {
                 Self::print_tx_cost_stats(&hist_l2tx, "L2Tx", false);
             }
         }
-        info!(
-            "All transactions {} are strictly equal to RoochNetwork: [0, {}]",
-            self.mode.get_verify_targets(),
-            executed_tx_order
-        );
+        if let Some(verify_targets) = self.mode.get_verify_targets_str(self.bypass_verify) {
+            info!(
+                "All transactions {} are strictly equal to RoochNetwork: [0, {}]",
+                verify_targets, executed_tx_order
+            );
+        }
+
         Self::print_tx_cost_stats(&hist_l1block, "L1Block", true);
         Self::print_tx_cost_stats(&hist_l1tx, "L1Tx", true);
         Self::print_tx_cost_stats(&hist_l2tx, "L2Tx", true);
@@ -715,7 +733,11 @@ impl ExecInner {
         let tx_hash = ledger_tx.tx_hash();
         let is_l2_tx = ledger_tx.data.is_l2_tx();
 
-        let exp_state_root = self.tx_meta_store.get_exp_state_root(tx_order).await;
+        let exp_state_root = if self.bypass_verify {
+            None
+        } else {
+            self.tx_meta_store.get_exp_state_root(tx_order).await
+        };
 
         let mut bypass_execution = false;
         if let Some(tx_anomalies) = &self.tx_anomalies {
@@ -954,5 +976,10 @@ mod tests {
         assert!(mode.need_exec());
         assert!(mode.need_seq());
         assert!(mode.need_all());
+
+        let mode = ExecMode::SyncExec;
+        assert!(mode.need_exec());
+        assert!(!mode.need_seq());
+        assert!(!mode.need_all());
     }
 }
