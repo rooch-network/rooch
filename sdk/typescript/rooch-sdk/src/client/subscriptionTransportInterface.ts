@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { JsonRpcRequest } from './types/jsonRpc'
+import { JsonRpcRequest } from './types/index.js'
 
 export interface Subscription {
   id: string // Subscription ID

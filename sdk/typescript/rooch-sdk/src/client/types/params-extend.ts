@@ -23,3 +23,24 @@ export type SessionInfoView = {
   lastActiveTime: number
   maxInactiveInterval: number
 }
+
+export interface AnnotatedMoveStructView {
+  abilities: number
+  type: string
+  value: {
+    [key: string]: AnnotatedMoveValueView
+  }
+}
+
+export type AnnotatedMoveValueView =
+  | number
+  | string
+  | string
+  | boolean
+  | string
+  | AnnotatedMoveValueView[]
+  | string
+  | AnnotatedMoveStructView
+  | number
+  | number
+  | string

@@ -3,7 +3,7 @@
 
 import WebSocket from 'ws'
 import { EventEmitter } from 'events'
-import { JsonRpcRequest } from './types/jsonRpc.js'
+import { JsonRpcRequest } from './types/index.js'
 import { Subscription, RoochSubscriptionTransport } from './subscriptionTransportInterface.js'
 import { RoochTransport, RoochTransportRequestOptions } from './transportInterface.js'
 import { JsonRpcError } from './error.js'
