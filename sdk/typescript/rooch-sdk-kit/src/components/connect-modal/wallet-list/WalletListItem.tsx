@@ -51,9 +51,9 @@ export function WalletListItem({
               <span className={styles.loadingSpinner} />
             </>
           ) : isInstalled ? (
-            '已安装'
+            'Installed'
           ) : (
-            '未安装'
+            'Uninstalled'
           )}
         </span>
       </button>
