@@ -347,7 +347,7 @@ export class RoochClient {
     }
 
     return this.transport.request({
-      method: 'rooch_getFieldStates',
+      method: 'rooch_listFieldStates',
       params: [input.objectId, input.cursor, input.limit, opt],
     })
   }

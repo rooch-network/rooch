@@ -156,4 +156,12 @@ describe('Checkpoints Reading API', () => {
 
     expect(result.data.length).toBeGreaterThan(0)
   })
+
+  it('list field object states should be ok', async () => {
+    const result = await testBox.getClient().listFieldStates({
+      objectId: '0x3',
+    })
+
+    expect(result.data.length).toBeGreaterThan(0)
+  })
 })
