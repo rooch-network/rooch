@@ -8,7 +8,6 @@ use codespan_reporting::diagnostic::Severity;
 use move_cli::{base::test, Move};
 use move_command_line_common::address::NumericalAddress;
 use move_command_line_common::parser::NumberFormat;
-use move_resource_viewer::MoveValueAnnotator;
 use move_unit_test::extensions::{set_after_execution_hook, set_extension_hook};
 use move_vm_runtime::native_extensions::NativeContextExtensions;
 use moveos::vm::data_cache;
@@ -153,9 +152,9 @@ impl CommandAction<Option<Value>> for TestCommand {
                     .map(
                         |(index, (type_tag, event_handle_id, event_data))| TransactionEvent {
                             event_type: type_tag,
-                            event_data: event_data,
+                            event_data,
                             event_index: index as u64,
-                            event_handle_id: event_handle_id,
+                            event_handle_id,
                         },
                     )
                     .map(|tx_event| {
@@ -259,7 +258,7 @@ impl TestResults {
             if !change_set.changes.is_empty() {
                 writeln!(writer, "\nObject changes:").unwrap();
                 for change in &change_set.changes {
-                    self.write_object_change(writer, change, 0);
+                    Self::write_object_change(writer, change, 0);
                 }
             }
 
@@ -269,7 +268,6 @@ impl TestResults {
 
     /// Recursively write object changes in text format
     fn write_object_change<W: std::io::Write + ?Sized>(
-        &self,
         writer: &mut W,
         change: &ObjectChangeView,
         depth: usize,
@@ -309,7 +307,7 @@ impl TestResults {
         if !change.fields.is_empty() {
             writeln!(writer, "{}  Child objects:", indent).unwrap();
             for child_change in &change.fields {
-                self.write_object_change(writer, child_change, depth + 2);
+                Self::write_object_change(writer, child_change, depth + 2);
             }
         }
     }
