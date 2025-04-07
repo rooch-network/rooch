@@ -3,16 +3,29 @@
 
 import { SupportChain } from '../feature/index.js'
 import { Wallet, UniSatWallet, OkxWallet, OnekeyWallet } from '../wellet/index.js'
+import { LocalWallet } from '../wellet/local.js'
 
 const unisatWallet = new UniSatWallet()
 const okxWallet = new OkxWallet()
 const onekeyWallet = new OnekeyWallet()
-const supportedWallets = [unisatWallet, okxWallet, onekeyWallet]
+const localWallet = new LocalWallet()
+export const supportedWallets = [unisatWallet, okxWallet, onekeyWallet, localWallet]
 
 export async function checkWallets(filter?: SupportChain) {
   const wallets: Wallet[] = supportedWallets.filter(
     (wallet) => wallet.getChain() === filter || !filter,
   )
 
-  return await Promise.all(wallets.filter(async (w) => await w.checkInstalled()))
+  return wallets
+
+  // const checkedWallets = await Promise.all(
+  //   wallets.map(async (w) => ({
+  //     wallet: w,
+  //     isInstalled: await w.checkInstalled(),
+  //   })),
+  // )
+  //
+  // return checkedWallets
+  //   .sort((a, b) => Number(b.isInstalled) - Number(a.isInstalled))
+  //   .map((item) => item.wallet)
 }

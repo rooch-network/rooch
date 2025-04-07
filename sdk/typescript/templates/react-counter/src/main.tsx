@@ -25,7 +25,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
                 maxInactiveInterval: 1200
               }
             } defaultNetwork='testnet'>
-              <WalletProvider preferredWallets={['UniSat']} chain={'bitcoin'} autoConnect>
+              <WalletProvider enableLocal preferredWallets={['UniSat']} chain={'bitcoin'} autoConnect>
                 <ErrorGuard/>
                 <App/>
               </WalletProvider>

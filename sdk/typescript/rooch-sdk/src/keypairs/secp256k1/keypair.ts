@@ -4,12 +4,12 @@
 import { HDKey } from '@scure/bip32'
 
 import { schnorr, secp256k1 } from '@noble/curves/secp256k1'
-import { BitcoinAddress, RoochAddress } from '../../address/index.js'
+import { BitcoinAddress, BitcoinNetowkType, RoochAddress } from '../../address/index.js'
 import {
   Authenticator,
   BitcoinSignMessage,
   encodeRoochSercetKey,
-  isValidBIP32Path,
+  isValidBIP86Path,
   Keypair,
   mnemonicToSeed,
   decodeRoochSercetKey,
@@ -20,7 +20,7 @@ import { blake2b, sha256, toHEX } from '../../utils/index.js'
 import { Secp256k1PublicKey } from './publickey.js'
 import { Transaction } from '../../transactions/index.js'
 
-export const DEFAULT_SECP256K1_DERIVATION_PATH = "m/54'/784'/0'/0/0"
+export const DEFAULT_SECP256K1_DERIVATION_PATH = "m/86'/0'/0'/0/1"
 
 /**
  * Secp256k1 Keypair data
@@ -56,6 +56,10 @@ export class Secp256k1Keypair extends Keypair {
 
   getBitcoinAddress(): BitcoinAddress {
     return this.getSchnorrPublicKey().toAddress().bitcoinAddress
+  }
+
+  getBitcoinAddressWith(network: BitcoinNetowkType): BitcoinAddress {
+    return this.getSchnorrPublicKey().toAddressWith(network).bitcoinAddress
   }
 
   getRoochAddress(): RoochAddress {
@@ -172,16 +176,14 @@ export class Secp256k1Keypair extends Keypair {
     if (path == null) {
       path = DEFAULT_SECP256K1_DERIVATION_PATH
     }
-    if (!isValidBIP32Path(path)) {
+    if (!isValidBIP86Path(path)) {
       throw new Error('Invalid derivation path')
     }
     const key = HDKey.fromMasterSeed(mnemonicToSeed(mnemonics)).derive(path)
+
     if (key.publicKey == null || key.privateKey == null) {
       throw new Error('Invalid key')
     }
-    return new Secp256k1Keypair({
-      publicKey: key.publicKey,
-      secretKey: key.privateKey,
-    })
+    return Secp256k1Keypair.fromSecretKey(key.privateKey)
   }
 }
