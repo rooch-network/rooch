@@ -12,7 +12,6 @@
 -  [Function `struct_name`](#0x2_type_info_struct_name)
 -  [Function `type_of`](#0x2_type_info_type_of)
 -  [Function `type_name`](#0x2_type_info_type_name)
--  [Function `type_name_by_type`](#0x2_type_info_type_name_by_type)
 -  [Function `size_of_val`](#0x2_type_info_size_of_val)
 -  [Module Specification](#@Module_Specification_1)
 
@@ -101,17 +100,6 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="">type_name</a>&lt;T&gt;(): <a href="_String">string::String</a>
-</code></pre>
-
-
-
-<a name="0x2_type_info_type_name_by_type"></a>
-
-## Function `type_name_by_type`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="type_info.md#0x2_type_info_type_name_by_type">type_name_by_type</a>(<a href="">type_name</a>: <a href="_String">string::String</a>): <a href="_String">string::String</a>
 </code></pre>
 
 

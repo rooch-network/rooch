@@ -197,11 +197,11 @@ impl FrameworksGasParameters {
     pub fn v5() -> Self {
         let mut v4_gas_parameter = FrameworksGasParameters::v4();
 
-        v4_gas_parameter
-            .rooch_framework_gas_params
-            .moveos_stdlib
-            .type_info
-            .type_name_by_type = TypeNameByTypeGasParameters::init(1000.into(), 150.into());
+        // v4_gas_parameter
+        //     .rooch_framework_gas_params
+        //     .moveos_stdlib
+        //     .type_info
+        //     .type_name_by_type = TypeNameByTypeGasParameters::init(1000.into(), 150.into());
 
         v4_gas_parameter
     }
