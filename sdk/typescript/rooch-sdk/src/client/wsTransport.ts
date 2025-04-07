@@ -72,56 +72,71 @@ export class RoochWebSocketTransport implements RoochTransport, RoochSubscriptio
     if (this.#ws?.readyState === WebSocket.CONNECTING || this.#ws?.readyState === WebSocket.OPEN)
       return
 
-    this.#ws = new this.#WebSocketImpl(this.#options.url, this.#options.protocols)
+    try {
+      this.#ws = new this.#WebSocketImpl(this.#options.url, this.#options.protocols)
 
-    this.#ws.onopen = () => {
-      this.#reconnectAttempts = 0
-      this.#eventEmitter.emit('reconnected')
-      this.#startHeartbeat()
-    }
-
-    // Add pong handler to reset awaiting state
-    this.#ws.on('pong', () => {
-      this.#awaitingPong = false
-      if (this.#pongTimeoutTimer) {
-        clearTimeout(this.#pongTimeoutTimer)
-        this.#pongTimeoutTimer = null
+      this.#ws.onopen = () => {
+        this.#reconnectAttempts = 0
+        this.#eventEmitter.emit('reconnected')
+        this.#startHeartbeat()
       }
-    })
 
-    this.#ws.onmessage = (event: any) => {
-      try {
-        const data = JSON.parse(event.data)
-
-        // Handle subscription events
-        if (data.method && data.method.startsWith('rooch_subscribe') && data.params) {
-          this.#eventEmitter.emit('subscription', data)
-          return
+      // Add pong handler to reset awaiting state
+      this.#ws.on('pong', () => {
+        this.#awaitingPong = false
+        if (this.#pongTimeoutTimer) {
+          clearTimeout(this.#pongTimeoutTimer)
+          this.#pongTimeoutTimer = null
         }
+      })
 
-        // Handle regular RPC responses
-        const request = this.#pendingRequests.get(data.id)
-        if (request) {
-          this.#pendingRequests.delete(data.id)
-          if ('error' in data && data.error != null) {
-            request.reject(new JsonRpcError(data.error.message, data.error.code))
-          } else {
-            request.resolve(data.result)
+      this.#ws.onmessage = (event: any) => {
+        try {
+          const data = JSON.parse(event.data)
+
+          // Handle subscription events
+          if (data.method && data.method.startsWith('rooch_subscribe') && data.params) {
+            this.#eventEmitter.emit('subscription', data)
+            return
           }
+
+          // Handle regular RPC responses
+          const request = this.#pendingRequests.get(data.id)
+          if (request) {
+            this.#pendingRequests.delete(data.id)
+            if ('error' in data && data.error != null) {
+              request.reject(new JsonRpcError(data.error.message, data.error.code))
+            } else {
+              request.resolve(data.result)
+            }
+          }
+        } catch (error) {
+          console.error('Failed to parse WebSocket message:', error)
         }
-      } catch (error) {
-        console.error('Failed to parse WebSocket message:', error)
       }
-    }
 
-    this.#ws.onclose = (event: WebSocket.CloseEvent) => {
-      console.error(`websocket_close:`, event.code, event.reason)
-      this.#stopHeartbeat()
-      this.#handleReconnect()
-    }
+      this.#ws.onclose = (event: WebSocket.CloseEvent) => {
+        console.error(`websocket_close:`, event.code, event.reason)
+        this.#stopHeartbeat()
+        this.#handleReconnect()
+      }
 
-    this.#ws.onerror = (event: WebSocket.ErrorEvent) => {
-      console.error(`websocket_error:`, event.message, event.error)
+      this.#ws.onerror = (event: WebSocket.ErrorEvent) => {
+        console.error(`websocket_error:`, event.message, event.error)
+        this.#stopHeartbeat()
+        this.#handleReconnect()
+      }
+
+      this.#ensureConnection().catch((error) => {
+        console.error(`ensureConnection_error:`, error)
+        this.#stopHeartbeat()
+        this.#handleReconnect()
+      })
+    } catch (error) {
+      // Handle connection creation errors
+      console.error('Failed to create WebSocket connection:', error)
+      // If connection creation itself fails, we should also attempt to reconnect
+      this.#ws = null
       this.#stopHeartbeat()
       this.#handleReconnect()
     }
@@ -328,19 +343,32 @@ export class RoochWebSocketTransport implements RoochTransport, RoochSubscriptio
     this.#awaitingPong = false
   }
 
-  // Add a helper method to properly clean up the WebSocket instance
   #cleanupWebSocket(): void {
     if (this.#ws) {
       try {
-        // Remove all listeners to avoid memory leaks
+        // Remove all event listeners
         this.#ws.onopen = null
         this.#ws.onclose = null
         this.#ws.onerror = null
         this.#ws.onmessage = null
         this.#ws.removeAllListeners('pong')
 
-        // Force close the connection
-        this.#ws.terminate()
+        // Add a one-time error handler specifically for the close operation
+        const handleCloseError = (err: Error) => {
+          console.error('Error during WebSocket close operation:', err)
+        }
+
+        this.#ws.once('error', handleCloseError)
+
+        // Only terminate if the connection is established
+        // For other states, close() is safer
+        if (this.#ws.readyState === WebSocket.OPEN) {
+          this.#ws.terminate()
+        } else if (this.#ws.readyState === WebSocket.CONNECTING) {
+          // For a connecting socket, we should close() rather than terminate()
+          this.#ws.close()
+        }
+        // If it's already CLOSING or CLOSED, no action needed
       } catch (error) {
         console.error('Error while cleaning up WebSocket:', error)
       } finally {

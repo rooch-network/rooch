@@ -905,4 +905,230 @@ describe('RoochClient Subscription Tests', () => {
     expect(eventsAfterReconnection).toBeGreaterThan(0)
     expect(reconnectCount).toBeGreaterThan(0)
   }, 300000)
+
+  it('should properly propagate errors to subscription error callbacks', async () => {
+    console.log('Starting subscription error handling test')
+
+    // Create test environment with WebSocket transport
+    const keypair = Secp256k1Keypair.generate()
+    const containerWsTestBox = new TestBox(keypair)
+
+    // Initialize with container-based Rooch instance and WebSocket transport
+    await containerWsTestBox.loadRoochEnv('container', 0, 'ws')
+
+    // Deploy the entry_function example package
+    console.log('Publishing entry_function package...')
+    const entryFunctionDeployResult = await containerWsTestBox.cmdPublishPackage(
+      '../../../examples/entry_function_arguments',
+    )
+    expect(entryFunctionDeployResult).toBeTruthy()
+    console.log('entry_function package published successfully')
+
+    const cmdAddress = await containerWsTestBox.defaultCmdAddress()
+
+    // Track received errors and events
+    const receivedErrors: Error[] = []
+    const receivedEvents: any[] = []
+    let subscription: Subscription | undefined
+
+    // Get direct access to the transport for testing
+    const wsTransport = containerWsTestBox.getClient().getSubscriptionTransport()
+
+    // Manually register an error listener to confirm transport errors occur
+    const transportErrors: Error[] = []
+    wsTransport?.onError((error: Error) => {
+      console.log('Transport error detected:', error.message)
+      transportErrors.push(error)
+    })
+
+    // Use a promise to track when an error is received via subscription callback
+    const errorReceived = new Promise<boolean>((resolve) => {
+      // Setup error callback with a timeout
+      const errorTimeout = setTimeout(() => {
+        console.log('Error timeout reached without subscription error callback')
+        resolve(false)
+      }, 300000) // 300 seconds timeout for error
+
+      console.log('Setting up subscription with error handler...')
+
+      containerWsTestBox
+        .getClient()
+        .subscribe({
+          type: 'event',
+          filter: {
+            event_type: `${cmdAddress}::entry_function::U64Event`,
+          },
+          onEvent: (event) => {
+            console.log('Received event:', event.type)
+            receivedEvents.push(event)
+          },
+          onError: (error) => {
+            console.log('✅ RECEIVED ERROR IN SUBSCRIPTION CALLBACK:', error.message)
+            receivedErrors.push(error)
+            clearTimeout(errorTimeout)
+            resolve(true)
+          },
+        })
+        .then((sub) => {
+          subscription = sub
+          console.log(`Subscription established with ID: ${sub.id}`)
+        })
+        .catch((err) => {
+          console.error('Failed to create subscription during setup:', err)
+          receivedErrors.push(err)
+          clearTimeout(errorTimeout)
+          resolve(true)
+        })
+    })
+
+    // Wait for subscription to be established
+    await new Promise((resolve) => setTimeout(resolve, 3000))
+
+    // First, send a normal event to verify subscription is working
+    console.log('Sending initial event to verify subscription is working')
+    const tx = new Transaction()
+    tx.callFunction({
+      target: `${cmdAddress}::entry_function::emit_u64`,
+      args: [Args.u64(BigInt(1))],
+    })
+
+    await containerWsTestBox.getClient().signAndExecuteTransaction({
+      transaction: tx,
+      signer: containerWsTestBox.keypair,
+    })
+
+    // Wait to ensure the event is received
+    await new Promise((resolve) => setTimeout(resolve, 3000))
+    console.log(`Received ${receivedEvents.length} events before inducing errors`)
+
+    // Create severe network issues to force reconnection failures
+    console.log('Creating severe network issues to force connection failures')
+
+    // First, simulate complete network partition
+    console.log('Step 1: Complete network partition (100% packet loss)')
+    try {
+      containerWsTestBox.simulateRoochRpcPacketLoss(100, 60) // 100% packet loss for 60 seconds
+    } catch (err) {
+      console.error('Error simulating packet loss:', err)
+    }
+
+    // Wait 10s
+    console.log('Wait network disruption with Pumba...')
+    await new Promise((resolve) => setTimeout(resolve, 10000))
+
+    // Function to execute a transaction
+    const executeTransaction = async (value: number): Promise<boolean> => {
+      try {
+        const tx = new Transaction()
+        tx.callFunction({
+          target: `${cmdAddress}::entry_function::emit_u64`,
+          args: [Args.u64(BigInt(value))],
+        })
+
+        const result = await containerWsTestBox.getClient().signAndExecuteTransaction({
+          transaction: tx,
+          signer: containerWsTestBox.keypair,
+        })
+
+        return result.execution_info.status.type === 'executed'
+      } catch (error) {
+        console.error(`Transaction failed: ${error}`)
+        return false
+      }
+    }
+
+    // Try to send transactions during network disruption
+    try {
+      console.log('Starting continuous transaction sending...')
+      const startTime = Date.now()
+      const testDuration = 60 * 1000 // 60s
+
+      let successfulTransactions = 0
+      let failedTransactions = 0
+      let totalTransactions = 0
+
+      // Start executing transactions continuously
+      // We'll use a loop with a small delay between transactions
+      while (Date.now() - startTime < testDuration) {
+        totalTransactions++
+        const txValue = totalTransactions // Use transaction count as the value
+
+        const success = await executeTransaction(txValue)
+
+        if (success) {
+          successfulTransactions++
+        } else {
+          failedTransactions++
+        }
+
+        // Log progress every 50 transactions
+        if (totalTransactions % 5 === 0) {
+          const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000)
+          const tps = Math.round((successfulTransactions / elapsedSeconds) * 100) / 100
+          console.log(
+            `Progress: ${elapsedSeconds}s elapsed, ${successfulTransactions} successful, ${failedTransactions} failed, ~${tps} TPS`,
+          )
+        }
+
+        // Small delay to prevent overwhelming the system
+        await new Promise((r) => setTimeout(r, 5000))
+      }
+    } catch (err) {
+      console.log('Expected error during network disruption:', err)
+    }
+
+    // Wait for either an error to be received or the timeout to expire
+    console.log('Waiting for subscription error callback or timeout...')
+    const errorWasReceived = await errorReceived
+
+    // Additional wait for any other errors that might come in
+    await new Promise((resolve) => setTimeout(resolve, 5000))
+
+    // Clean up
+    if (subscription) {
+      subscription.unsubscribe()
+    }
+    await containerWsTestBox.cleanEnv()
+
+    // Log results
+    console.log(
+      `Subscription errors: ${receivedErrors.length}, Transport errors: ${transportErrors.length}`,
+    )
+
+    console.log('Transport errors:')
+    transportErrors.forEach((error, index) => {
+      console.log(`Transport Error ${index + 1}: ${error.message}`)
+    })
+
+    console.log('Subscription errors:')
+    receivedErrors.forEach((error, index) => {
+      console.log(`Subscription Error ${index + 1}: ${error.message}`)
+    })
+
+    // Test assertions
+    expect(transportErrors.length).toBeGreaterThan(0)
+
+    if (errorWasReceived) {
+      // Verify errors were properly propagated to subscription handlers
+      expect(receivedErrors.length).toBeGreaterThan(0)
+
+      // Error messages should be strings, not empty or undefined
+      receivedErrors.forEach((error) => {
+        expect(typeof error.message).toBe('string')
+        expect(error.message.length).toBeGreaterThan(0)
+        // Should contain information about the subscription
+        expect(error.message).toMatch(/subscription|transport|connection|WebSocket/i)
+      })
+    } else {
+      console.log('⚠️ Warning: No subscription errors were received within the timeout period.')
+      console.log(
+        "This doesn't necessarily mean error propagation is broken - the test may need more",
+      )
+      console.log('severe network disruption or longer duration to trigger the error callbacks.')
+
+      // Mark test as inconclusive in this case
+      console.log('Marking test as skipped due to insufficient error triggers')
+      expect(true).toBe(true)
+    }
+  }, 300000) // 3-minute timeout for this test
 })

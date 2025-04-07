@@ -54,6 +54,7 @@ export class TestBox extends TestBoxA {
       const wsTransport = new RoochWebSocketTransport({
         url: `http://${roochServerAddress}`,
         requestTimeout: 5000,
+        maxReconnectAttempts: 3,
       })
       this.client = new RoochClient({
         transport: wsTransport,

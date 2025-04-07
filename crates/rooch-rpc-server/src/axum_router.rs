@@ -287,7 +287,7 @@ pub mod ws {
                     if let Some(Ok(message)) = maybe_message {
                         match message {
                             Message::Text(msg) => {
-                                let response = 
+                                let response =
                                     process_raw_request(&service, &msg, bounded_subscriptions.clone(), &sink).await;
                                 if let Some(response) = response {
                                     let _ = sink.try_send(response.to_result());

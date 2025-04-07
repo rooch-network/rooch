@@ -749,9 +749,20 @@ export class RoochClient {
   }
 
   private handleSubscribeMessage(msg: any): void {
-    const subscriptionId = msg.params.subscription
-    const options = this.subscriptions.get(subscriptionId)
-    if (options) {
+    try {
+      const subscriptionId = msg.params.subscription
+      const options = this.subscriptions.get(subscriptionId)
+
+      if (!options) return
+
+      if (msg.params.error) {
+        // Handle subscription-specific error
+        if (options.onError) {
+          options.onError(new Error(msg.params.error.message || 'Subscription error'))
+        }
+        return
+      }
+
       if (msg.method === 'rooch_subscribeEvents') {
         options.onEvent({
           type: 'event',
@@ -763,6 +774,18 @@ export class RoochClient {
           data: msg.params.result,
         })
       }
+    } catch (error) {
+      // Handle processing errors
+      const subscriptionId = msg?.params?.subscription
+      if (subscriptionId) {
+        const options = this.subscriptions.get(subscriptionId)
+        if (options?.onError) {
+          options.onError(
+            error instanceof Error ? error : new Error('Error processing subscription message'),
+          )
+        }
+      }
+      console.error('Error handling subscription message:', error)
     }
   }
 
@@ -781,7 +804,24 @@ export class RoochClient {
 
   private handleError(error: Error): void {
     console.error('Transport error:', error.message)
-    // Custom logic: Notify users, fallback to polling, etc.
+
+    // Notify all subscriptions about the transport error
+    for (const [subscriptionId, options] of this.subscriptions.entries()) {
+      if (options.onError) {
+        // Create a more specific error with subscription details
+        const subscriptionError = new Error(
+          `Transport error for subscription ${subscriptionId}: ${error.message}`,
+        )
+
+        // Pass the error to subscription-specific handler
+        try {
+          options.onError(subscriptionError)
+        } catch (callbackError) {
+          // Prevent callback errors from affecting other subscriptions
+          console.error(`Error in subscription error handler: ${callbackError}`)
+        }
+      }
+    }
   }
 
   /**
