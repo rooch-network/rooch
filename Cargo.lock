@@ -10297,6 +10297,7 @@ dependencies = [
  "move-core-types",
  "move-errmapgen",
  "move-package",
+ "move-resource-viewer",
  "move-stdlib",
  "move-unit-test",
  "move-vm-runtime",

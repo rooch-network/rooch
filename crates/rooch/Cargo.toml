@@ -69,6 +69,7 @@ move-vm-runtime = { workspace = true, features = ["stacktrace", "debugging", "te
 move-vm-test-utils = { workspace = true }
 move-stdlib = { workspace = true }
 move-vm-types = { workspace = true }
+move-resource-viewer = { workspace = true }
 
 moveos-stdlib = { workspace = true }
 moveos-types = { workspace = true }

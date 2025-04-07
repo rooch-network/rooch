@@ -112,6 +112,7 @@ pub fn run_cli(
             move_args.build_config,
             natives,
             Some(cost_table.clone()),
+            &mut std::io::stdout(),
         ),
         Command::Sandbox { storage_dir, cmd } => cmd.handle_command(
             natives,

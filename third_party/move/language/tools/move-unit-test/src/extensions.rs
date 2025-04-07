@@ -20,6 +20,11 @@ static EXTENSION_HOOK: Lazy<
     Mutex<Option<Box<dyn Fn(&mut NativeContextExtensions<'_>) + Send + Sync>>>,
 > = Lazy::new(|| Mutex::new(None));
 
+/// An optional hook that will be called after test execution to report state or events
+static AFTER_EXECUTION_HOOK: Lazy<
+    Mutex<Option<Box<dyn Fn(NativeContextExtensions) + Send + Sync>>>,
+> = Lazy::new(|| Mutex::new(None));
+
 /// Sets a hook which is called to populate additional native extensions. This can be used to
 /// get extensions living outside of the Move repo into the unit testing environment.
 ///
@@ -36,6 +41,12 @@ pub fn set_extension_hook(p: Box<dyn Fn(&mut NativeContextExtensions<'_>) + Send
     *EXTENSION_HOOK.lock().unwrap() = Some(p)
 }
 
+/// Sets a hook which is called after test execution to report state or events
+/// This allows custom extensions to report their state at the end of testing
+pub fn set_after_execution_hook(p: Box<dyn Fn(NativeContextExtensions) + Send + Sync>) {
+    *AFTER_EXECUTION_HOOK.lock().unwrap() = Some(p)
+}
+
 /// Create all available native context extensions.
 #[allow(unused_mut, clippy::let_and_return)]
 pub(crate) fn new_extensions<'a>() -> NativeContextExtensions<'a> {
@@ -50,9 +61,15 @@ pub(crate) fn new_extensions<'a>() -> NativeContextExtensions<'a> {
 
 /// Print the change sets for available native context extensions.
 #[allow(unused)]
-pub(crate) fn print_change_sets<W: Write>(_w: &mut W, mut extensions: NativeContextExtensions) {
+pub(crate) fn print_change_sets<W: Write>(w: &mut W, extensions: &mut NativeContextExtensions) {
     #[cfg(feature = "table-extension")]
-    print_table_extension(_w, &mut extensions);
+    print_table_extension(w, extensions);
+}
+
+pub(crate) fn run_after_execution_hook(extensions: NativeContextExtensions) {
+    if let Some(h) = &*AFTER_EXECUTION_HOOK.lock().unwrap() {
+        (*h)(extensions);
+    }
 }
 
 // =============================================================================================
