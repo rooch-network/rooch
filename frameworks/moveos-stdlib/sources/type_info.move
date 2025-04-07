@@ -50,7 +50,7 @@ module moveos_std::type_info {
     }
 
     // Ensure the return of type_name_by_type(type) is the same as the type_name<T>
-    native public fun type_name_by_type(type_name: string::String): string::String;
+    // native public fun type_name_by_type(type_name: string::String): string::String;
 
     /// Return the BCS size, in bytes, of value at `val_ref`.
     ///
