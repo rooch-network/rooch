@@ -5,7 +5,6 @@ module rooch_framework::transfer {
     
     use std::option;
     use std::string::String;
-    use moveos_std::type_info;
     use moveos_std::object::Object;
     use moveos_std::object;
     use rooch_framework::account_coin_store;
@@ -99,20 +98,6 @@ module rooch_framework::transfer {
         coin_type: String,
         amount: u256,
     ) {
-        // // Get coin metadata and info ID
-        // let registry = coin::borrow_registry();
-        // assert!(object::contains_field(registry, coin_type), ErrorCoinTypeNotRegistered);
-        // let metadata: &CoinMetadata = object::borrow_field(registry, coin_type);
-        // let coin_info_id = metadata.coin_info_id;
-        //
-        // // Get or create coin stores
-        // let from_addr = signer::address_of(from);
-        // let from_store_id = account_coin_store_v2::get_or_create_coin_store(from_addr, coin_info_id, coin_type);
-        // let to_store_id = account_coin_store_v2::get_or_create_coin_store(to, coin_info_id, coin_type);
-        //
-        // // Perform direct transfer
-        // coin_store_v2::direct_transfer(from_store_id, to_store_id, amount);
-
         account_coin_store::transfer_by_type_name(from, to, coin_type, amount);
     }
 }
