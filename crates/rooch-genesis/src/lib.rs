@@ -16,7 +16,6 @@ use moveos::moveos::{MoveOS, MoveOSConfig};
 use moveos_stdlib::natives::moveos_stdlib::base64::EncodeDecodeGasParametersOption;
 use moveos_stdlib::natives::moveos_stdlib::event::EmitWithHandleGasParameters;
 use moveos_stdlib::natives::moveos_stdlib::object::ListFieldsGasParametersOption;
-use moveos_stdlib::natives::moveos_stdlib::type_info::TypeNameByTypeGasParameters;
 use moveos_store::MoveOSStore;
 use moveos_types::genesis_info::GenesisInfo;
 use moveos_types::h256::H256;
@@ -195,7 +194,8 @@ impl FrameworksGasParameters {
     }
 
     pub fn v5() -> Self {
-        let mut v4_gas_parameter = FrameworksGasParameters::v4();
+        // let mut v4_gas_parameter = FrameworksGasParameters::v4();
+        let v4_gas_parameter = FrameworksGasParameters::v4();
 
         // v4_gas_parameter
         //     .rooch_framework_gas_params

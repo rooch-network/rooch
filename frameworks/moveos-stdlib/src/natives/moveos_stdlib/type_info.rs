@@ -8,8 +8,7 @@
 // TODO use the SafeNativeContext
 
 use crate::natives::helpers;
-use move_binary_format::errors::{PartialVMError, PartialVMResult};
-use move_core_types::vm_status::StatusCode;
+use move_binary_format::errors::PartialVMResult;
 use move_core_types::{
     gas_algebra::{InternalGas, InternalGasPerByte, NumBytes},
     language_storage::{StructTag, TypeTag},
@@ -21,7 +20,6 @@ use move_vm_types::{
     values::{Struct, Value},
 };
 use smallvec::{smallvec, SmallVec};
-use std::str::FromStr;
 use std::{collections::VecDeque, fmt::Write, sync::Arc};
 
 const E_TYPE_MISMATCH: u64 = 1;

@@ -247,7 +247,6 @@ module rooch_framework::account_coin_store {
 
     // === Non-generic functions ===
 
-    
     public fun balance_by_type_name(addr: address, coin_type: string::String): u256 {
         if (exist_multi_coin_store(addr)) {
             let coin_store = borrow_multi_coin_store(addr);
@@ -257,10 +256,6 @@ module rooch_framework::account_coin_store {
         }
     }
 
-    // public fun generic_account_coin_store_id(addr: address): ObjectID {
-    //     object::account_named_object_id<GenericAccountCoinStore>(addr)
-    // }
-
     // public fun multi_coin_store_id(addr: address, coin_type: string::String): ObjectID {
     public fun multi_coin_store_id(addr: address): ObjectID {
         // object::account_named_object_id_with_type<MultiCoinStore>(addr, coin_type)
@@ -269,7 +264,7 @@ module rooch_framework::account_coin_store {
         // object::account_named_object_id<CoinStore<CoinType>>(addr)
     }
 
-    public fun is_accept_coin_by_type_name(addr: address, coin_type: string::String): bool {
+    public fun is_accept_coin_by_type_name(addr: address, _coin_type: string::String): bool {
         if (can_auto_accept_coin(addr)) {
             true
         } else {
@@ -283,8 +278,8 @@ module rooch_framework::account_coin_store {
         }
     }
 
-    // /// Add a balance of `Coin` type to the sending account.
-    // /// If user turns off AutoAcceptCoin, call this method to receive the corresponding Coin
+    /// Add a balance of coin type to the sending account.
+    /// If user turns off AutoAcceptCoin, call this method to receive the corresponding Coin
     // public fun do_accept_coin<CoinType: key>(account: &signer) {
     //     let addr = signer::address_of(account);
     //     create_or_borrow_mut_account_coin_store<CoinType>(addr);
@@ -341,27 +336,6 @@ module rooch_framework::account_coin_store {
         }
     }
 
-    // public fun withdraw_extend_by_type_name(
-    //     addr: address,
-    //     coin_type: string::String,
-    //     amount: u256,
-    // ): GenericCoin {
-    //     withdraw_internal_by_type_name(addr, coin_type, amount)
-    // }
-
-    // public fun deposit_extend_by_type_name(addr: address, coin: GenericCoin) {
-    //     deposit_internal_by_type_name(addr, coin);
-    // }
-
-    // public fun transfer_extend_by_type_name(
-    //     from: address,
-    //     to: address,
-    //     coin_type: string::String,
-    //     amount: u256,
-    // ) {
-    //     transfer_internal_by_type_name(from, to, coin_type, amount);
-    // }
-
     public entry fun accept_coin_entry_by_type_name(account: &signer, coin_type: string::String) {
         do_accept_coin_by_type_name(account, coin_type)
     }
@@ -381,35 +355,6 @@ module rooch_framework::account_coin_store {
         multi_coin_store::borrow_mut_coin_store_internal(multi_coin_store_id)
     }
 
-    // // Create account coin store
-    // // public(friend) fun create_account_coin_store(account: address, coin_type: string::String): ObjectID {
-    // fun create_generic_account_coin_store(account: address): ObjectID {
-    //     let generic_account_coin_store_obj = object::new_account_named_object(
-    //         account,
-    //         GenericAccountCoinStore {}
-    //     );
-    //
-    //     let generic_account_coin_store_id = object::id(&generic_account_coin_store_obj);
-    //     object::transfer_extend(generic_account_coin_store_obj, account);
-    //
-    //     event::emit(CreateGenericAccountCoinStoreEvent {
-    //         generic_account_coin_store_id,
-    //         account
-    //     });
-    //
-    //     generic_account_coin_store_id
-    // }
-
-
-    // fun create_or_borrow_mut_account_coin_store<CoinType: key>(
-    //     addr: address
-    // ): &mut Object<CoinStore<CoinType>> {
-    //     let account_coin_store_id = account_coin_store_id<CoinType>(addr);
-    //     if (!object::exists_object_with_type<CoinStore<CoinType>>(account_coin_store_id)) {
-    //         coin_store::create_account_coin_store<CoinType>(addr);
-    //     };
-    //     coin_store::borrow_mut_coin_store_internal<CoinType>(account_coin_store_id)
-    // }
     fun create_or_borrow_mut_multi_coin_store(
         addr: address,
         // coin_type: string::String
@@ -435,25 +380,6 @@ module rooch_framework::account_coin_store {
         };
         multi_coin_store::borrow_mut_coin_store_internal(multi_coin_store_id)
     }
-
-    // fun create_or_borrow_mut_multi_coin_store_field(
-    //     addr: address,
-    //     coin_type: string::String
-    // ): &mut Object<MultiCoinStore> {
-    //     let generic_account_coin_store_id = generic_account_coin_store_id(addr);
-    //     if (!object::exists_object_with_type<GenericAccountCoinStore>(generic_account_coin_store_id)) {
-    //         create_generic_account_coin_store(addr);
-    //     };
-    //     let generic_account_coin_store_obj = object::borrow_mut_object_extend<GenericAccountCoinStore>(generic_account_coin_store_id)
-    //
-    //     // let account_coin_store_id = multi_coin_store_id(addr);
-    //     if (!object::contains_field_with_type<GenericAccountCoinStore, string::String, MultiCoinStore>(generic_account_coin_store_obj, coin_type)) {
-    //         // let coin_info_id = coin::coin_info_id_by_type_name(coin_type);
-    //         multi_coin_store::create_account_coin_store(generic_account_coin_store_obj, coin_type);
-    //     };
-    //     // object::borrow_mut_object_extend<MultiCoinStore>(account_coin_store_id)
-    //     object::borrow_mut_object_extend<MultiCoinStore>(account_coin_store_id)
-    // }
 
     fun withdraw_internal_by_type_name(
         addr: address,
