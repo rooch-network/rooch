@@ -8,7 +8,7 @@ module rooch_framework::multi_coin_store {
     use moveos_std::object::{Self, Object};
     
     use moveos_std::event;
-    use rooch_framework::coin::{Self, GenericCoin};
+    use rooch_framework::coin::{Self, GenericCoin, coin_type};
 
     friend rooch_framework::account_coin_store;
 
@@ -45,35 +45,36 @@ module rooch_framework::multi_coin_store {
 
     /// A holder of a specific coin types.
     /// The non-generic coin store that holds coins by coin_info_id
-    struct MultiCoinStore has key {
+    struct CoinStoreField has key {
         // /// The coin info ID this store is for
         // coin_info_id: ObjectID,
         // /// Coin type name for easy reference
         /// Coin type name, key
-        // coin_type: string::String,
+        coin_type: string::String,
         /// Balance of coin this store has
         balance: Balance,
         /// Whether the store is frozen
         frozen: bool,
     }
 
-    /// The non-generic multi account coin store that holds all coins for every account
-    struct MultiAccountCoinStore has key {}
+    // /// The non-generic account coin store that holds all coins for every account
+    /// The non-generic coin store that holds all coins for every account
+    struct MultiCoinStore has key {}
 
-    /// Event emitted when a multi account coin store is created.
-    struct CreateMultiAccountCoinStoreEvent has drop, store, copy {
-        /// The id of the multi account coin store that was created
-        multi_account_coin_store_id: ObjectID,
-        /// The account that was created
-        account: address,
-    }
+    // /// Event emitted when a account coin store is created.
+    // struct CreateMultiCoinStoreEvent has drop, store, copy {
+    //     /// The id of the account coin store that was created
+    //     coin_store_id: ObjectID,
+    //     /// The account that was created
+    //     account: address,
+    // }
 
     /// Event emitted when a coin store is created.
     struct CreateEvent has drop, store, copy {
         /// The id of the coin store that was created
         coin_store_id: ObjectID,
-        /// The type of the coin that was created
-        coin_type: string::String,
+        // /// The type of the coin that was created
+        // coin_type: string::String,
     }
 
     /// Event emitted when some amount of a coin is deposited into a coin store.
@@ -107,8 +108,8 @@ module rooch_framework::multi_coin_store {
     struct RemoveEvent has drop, store, copy {
         /// The id of the coin store that was removed
         coin_store_id: ObjectID,
-        /// The type of the coin that was removed
-        coin_type: string::String,
+        // /// The type of the coin that was removed
+        // coin_type: string::String,
     }
 
     // //
@@ -327,9 +328,9 @@ module rooch_framework::multi_coin_store {
     /// Create a new CoinStore Object for `CoinType` and return the Object v2
     /// Anyone can create a CoinStore Object for public Coin<CoinType>, the `CoinType` must has `key` and `store` ability
     // public fun create_coin_store<CoinType: key + store>(): Object<MultiCoinStore> {
-    public fun create_coin_store(coin_type: string::String): Object<MultiCoinStore> {
-        create_coin_store_internal(coin_type)
-    }
+    // public fun create_coin_store(coin_type: string::String): Object<MultiCoinStore> {
+    //     create_coin_store_internal(coin_type)
+    // }
 
     // #[private_generics(CoinType)]
     // /// This function is for the `CoinType` module to extend v2
@@ -337,14 +338,21 @@ module rooch_framework::multi_coin_store {
     //     create_coin_store_internal<CoinType>()
     // }
 
+    public fun exist_coin_store_field(coin_store_obj: &Object<MultiCoinStore>, coin_type: string::String): bool {
+        // let account_coin_store_id = account_coin_store_id<CoinType>(addr);
+        // object::exists_object_with_type<CoinStore<CoinType>>(account_coin_store_id)
+
+        object::contains_field(coin_store_obj, coin_type)
+    }
 
     // /// Remove the CoinStore Object, return the Coin<T> in balance
     // public fun remove_coin_store<CoinType: key>(coin_store_object: Object<CoinStore<CoinType>>): Coin<CoinType> {
-    public fun remove_coin_store(coin_store_object: Object<MultiCoinStore>): GenericCoin {
-        let coin_store_id = object::id(&coin_store_object);
-        let coin_store = object::remove(coin_store_object);
+    public fun remove_coin_store_field(coin_store_object: &mut Object<MultiCoinStore>, coin_type: string::String): GenericCoin {
+        let coin_store_id = object::id(coin_store_object);
+        // let coin_store = object::remove(coin_store_object);
+        let coin_store_field = object::remove_field<MultiCoinStore, string::String, CoinStoreField>(coin_store_object, coin_type);
 
-        let MultiCoinStore { coin_type, balance, frozen } = coin_store;
+        let CoinStoreField { coin_type, balance, frozen } = coin_store_field;
         // Cannot remove a frozen CoinStore, because if we allow this, the frozen is meaningless
         assert!(!frozen, ErrorCoinStoreIsFrozen);
         let Balance { value } = balance;
@@ -358,19 +366,32 @@ module rooch_framework::multi_coin_store {
         coin
     }
 
-    public fun balance(coin_store_obj: &Object<MultiCoinStore>): u256 {
-        object::borrow(coin_store_obj).balance.value
+    public fun balance(coin_store_obj: &Object<MultiCoinStore>, coin_type: string::String): u256 {
+        if(object::contains_field(coin_store_obj, coin_type)){
+            let coin_store_field = object::borrow_field<MultiCoinStore, string::String, CoinStoreField>(coin_store_obj, coin_type);
+            coin_store_field.balance.value
+        } else {
+            0
+        }
+        // object::borrow(coin_store_obj).balance.value
     }
 
-    public fun is_frozen(coin_store_obj: &Object<MultiCoinStore>): bool {
-        object::borrow(coin_store_obj).frozen
+    public fun is_frozen(coin_store_obj: &Object<MultiCoinStore>, coin_type: string::String): bool {
+        if(object::contains_field(coin_store_obj, coin_type)){
+            let coin_store_field = object::borrow_field<MultiCoinStore, string::String, CoinStoreField>(coin_store_obj, coin_type);
+            coin_store_field.frozen
+        } else {
+            false
+        }
+        // object::borrow(coin_store_obj).frozen
     }
 
     public fun withdraw(
         coin_store_obj: &mut Object<MultiCoinStore>,
+        coin_type: string::String,
         amount: u256
     ): GenericCoin {
-        withdraw_internal(coin_store_obj, amount)
+        withdraw_internal(coin_store_obj, coin_type, amount)
     }
 
     // #[private_generics(CoinType)]
@@ -495,66 +516,10 @@ module rooch_framework::multi_coin_store {
 
     // Create account coin store
     // public(friend) fun create_account_coin_store(account: address, coin_type: string::String): ObjectID {
-    public(friend) fun create_multi_account_coin_store(account: address): ObjectID {
-        let multi_account_coin_store_obj = object::new_account_named_object(
-            account,
-            MultiAccountCoinStore {}
-        );
-
-        let multi_account_coin_store_id = object::id(&multi_account_coin_store_obj);
-        object::transfer_extend(multi_account_coin_store_obj, account);
-
-        event::emit(CreateMultiAccountCoinStoreEvent {
-            multi_account_coin_store_id,
-            account
-        });
-
-        multi_account_coin_store_id
-    }
-
-    // public(friend) fun create_coin_store_internal(coin_type: string::String): Object<MultiCoinStore> {
-    // public(friend) fun create_coin_store_internal<CoinType: key>(): Object<MultiCoinStore> {
-    public(friend) fun create_multi_coin_store_internal(account: address, coin_type: string::String): Object<MultiCoinStore> {
-        coin::check_coin_info_registered_by_type_name(coin_type);
-        // let coin_info_id = coin::coin_info_id<CoinType>();
-        // let coin_type = type_info::type_name<CoinType>();
-        let coin_store_obj = object::new(MultiCoinStore {
-            // coin_info_id,
-            coin_type,
-            balance: Balance { value: 0 },
-            frozen: false,
-        });
-        event::emit(CreateEvent {
-            coin_store_id: object::id(&coin_store_obj),
-            coin_type,
-        });
-        coin_store_obj
-    }
-
-
-    // Create account coin store
-    // public(friend) fun create_account_coin_store(account: address, coin_type: string::String): ObjectID {
-    public(friend) fun create_account_coin_store(multi_coin_store_obj: address, coin_type: string::String): ObjectID {
-    // public(friend) fun create_account_coin_store<CoinType: key>(account: address): ObjectID {
-    //     coin::check_coin_info_registered_by_type_name(coin_type);
-        // let coin_type = type_info::type_name<CoinType>();
-        // let coin_store_obj = object::new_account_named_object(
-        //     account,
-        //     MultiCoinStore {
-        //         coin_type,
-        //         balance: Balance { value: 0 },
-        //         frozen: false,
-        //     },
-        //     coin_type
-        // );
+    public(friend) fun create_multi_coin_store(account: address): ObjectID {
         let coin_store_obj = object::new_account_named_object(
             account,
-            MultiCoinStore {
-                coin_type,
-                balance: Balance { value: 0 },
-                frozen: false,
-            },
-            coin_type
+            MultiCoinStore {}
         );
 
         let coin_store_id = object::id(&coin_store_obj);
@@ -562,11 +527,78 @@ module rooch_framework::multi_coin_store {
 
         event::emit(CreateEvent {
             coin_store_id,
-            coin_type,
+            // coin_type
         });
 
         coin_store_id
     }
+
+    // // public(friend) fun create_coin_store_internal(coin_type: string::String): Object<MultiCoinStore> {
+    // // public(friend) fun create_coin_store_internal<CoinType: key>(): Object<MultiCoinStore> {
+    // public(friend) fun create_coin_store_internal(coin_type: string::String): Object<MultiCoinStore> {
+    //     coin::check_coin_info_registered_by_type_name(coin_type);
+    //     // let coin_info_id = coin::coin_info_id<CoinType>();
+    //     // let coin_type = type_info::type_name<CoinType>();
+    //     let coin_store_obj = object::new(MultiCoinStore {
+    //         // coin_info_id,
+    //         coin_type,
+    //         balance: Balance { value: 0 },
+    //         frozen: false,
+    //     });
+    //     event::emit(CreateEvent {
+    //         coin_store_id: object::id(&coin_store_obj),
+    //         coin_type,
+    //     });
+    //     coin_store_obj
+    // }
+
+    //
+    // // Create account coin store
+    // // public(friend) fun create_account_coin_store(account: address, coin_type: string::String): ObjectID {
+    // public(friend) fun create_account_coin_store(account: address, coin_type: string::String): ObjectID {
+    // // public(friend) fun create_account_coin_store<CoinType: key>(account: address): ObjectID {
+    // //     coin::check_coin_info_registered_by_type_name(coin_type);
+    //     // let coin_type = type_info::type_name<CoinType>();
+    //     // let coin_store_obj = object::new_account_named_object(
+    //     //     account,
+    //     //     MultiCoinStore {
+    //     //         coin_type,
+    //     //         balance: Balance { value: 0 },
+    //     //         frozen: false,
+    //     //     },
+    //     //     coin_type
+    //     // );
+    //
+    //     let coin_store_id = create_account_coin_store(account);
+    //     let coin_store_obj = object::borrow_mut_object_extend<MultiCoinStore>(coin_store_id);
+    //
+    //     let coin_store_obj = create_coin_store_internal(coin_type);
+    //     let coin_store_id = object::id(&coin_store_obj);
+    //     object::transfer_extend(coin_store_obj, account);
+    //
+    //     object::add_field(coin_store_obj, coin_type, coin_store_id);
+    //     coin_store_id
+    //
+    //     // let coin_store_obj = object::new_account_named_object(
+    //     //     account,
+    //     //     MultiCoinStore {
+    //     //         coin_type,
+    //     //         balance: Balance { value: 0 },
+    //     //         frozen: false,
+    //     //     },
+    //     //     coin_type
+    //     // );
+    //     //
+    //     // let coin_store_id = object::id(&coin_store_obj);
+    //     // object::transfer_extend(coin_store_obj, account);
+    //     //
+    //     // event::emit(CreateEvent {
+    //     //     coin_store_id,
+    //     //     coin_type,
+    //     // });
+    //     //
+    //     // coin_store_id
+    // }
 
     public(friend) fun borrow_mut_coin_store_internal(
         object_id: ObjectID
@@ -574,20 +606,52 @@ module rooch_framework::multi_coin_store {
         assert!(object::exists_object_with_type<MultiCoinStore>(object_id), ErrorCoinStoreNotFound);
         object::borrow_mut_object_extend<MultiCoinStore>(object_id)
     }
+
+    // public(friend) fun create_coin_store_field(coin_store_obj: &mut Object<MultiCoinStore>, coin_type: string::String) {
+    //     let coin_store_field = CoinStoreField {
+    //         coin_type,
+    //         balance: Balance { value: 0},
+    //         frozen: false,
+    //     };
+    //     object::add_field(coin_store_obj, coin_type, coin_store_field);
+    //     // object::borrow_field<MultiCoinStore, string::String, CoinStoreField>(coin_store, coin_type);
+    // }
+
+    public(friend) fun create_coin_store_field_if_not_exist(coin_store_obj: &mut Object<MultiCoinStore>, coin_type: string::String) {
+        if(!object::contains_field(coin_store_obj, coin_type)){
+            let coin_store_field = CoinStoreField {
+                coin_type,
+                balance: Balance { value: 0},
+                frozen: false,
+            };
+            object::add_field(coin_store_obj, coin_type, coin_store_field);
+
+            // create_coin_store_field(coin_store_obj, coin_type)
+        };
+        // object::borrow_field<MultiCoinStore, string::String, CoinStoreField>(coin_store, coin_type);
+    }
     
-    fun check_coin_store_not_frozen(coin_store: &MultiCoinStore) {
-        assert!(!coin_store.frozen, ErrorCoinStoreIsFrozen);
+    fun check_coin_store_not_frozen(coin_store_obj: &Object<MultiCoinStore>, coin_type: string::String) {
+        if(object::contains_field(coin_store_obj, coin_type)){
+            let coin_store_field = object::borrow_field<MultiCoinStore, string::String, CoinStoreField>(coin_store_obj, coin_type);
+            assert!(!coin_store_field.frozen, ErrorCoinStoreIsFrozen);
+        }
     }
 
-    fun extract_from_balance(coin_store: &mut MultiCoinStore, amount: u256): GenericCoin {
-        assert!(coin_store.balance.value >= amount, ErrorInsufficientBalance);
-        coin_store.balance.value = coin_store.balance.value - amount;
-        coin::pack_generic_coin(coin_store.coin_type, amount)
+    fun extract_from_balance(coin_store_obj: &mut Object<MultiCoinStore>, coin_type: string::String, amount: u256): GenericCoin {
+        create_coin_store_field_if_not_exist(coin_store_obj, coin_type);
+        let coin_store_field = object::borrow_mut_field<MultiCoinStore, string::String, CoinStoreField>(coin_store_obj, coin_type);
+        assert!(coin_store_field.balance.value >= amount, ErrorInsufficientBalance);
+        coin_store_field.balance.value = coin_store_field.balance.value - amount;
+        coin::pack_generic_coin(coin_type, amount)
     }
 
-    fun merge_to_balance(coin_store: &mut MultiCoinStore, source_coin: GenericCoin) {
+    fun merge_to_balance(coin_store_obj: &mut Object<MultiCoinStore>, source_coin: GenericCoin) {
+        let coin_type = coin::coin_type(&source_coin);
+        create_coin_store_field_if_not_exist(coin_store_obj, coin_type);
+        let coin_store_field = object::borrow_mut_field<MultiCoinStore, string::String, CoinStoreField>(coin_store_obj, coin_type);
         let value = coin::unpack_generic_coin(source_coin);
-        coin_store.balance.value = coin_store.balance.value + value;
+        coin_store_field.balance.value = coin_store_field.balance.value + value;
     }
 
     // public(friend) fun withdraw_internal<CoinType: key>(
@@ -596,13 +660,14 @@ module rooch_framework::multi_coin_store {
     // ): Coin<CoinType>
     public(friend) fun withdraw_internal(
         coin_store_obj: &mut Object<MultiCoinStore>,
+        coin_type: string::String,
         amount: u256
     ): GenericCoin {
         let object_id = object::id(coin_store_obj);
-        let coin_store = object::borrow_mut(coin_store_obj);
-        check_coin_store_not_frozen(coin_store);
-        let coin_type = coin_store.coin_type;
-        let coin = extract_from_balance(coin_store, amount);
+        // let coin_store = object::borrow_mut(coin_store_obj);
+        check_coin_store_not_frozen(coin_store_obj, coin_type);
+        // let coin_type = coin_store.coin_type;
+        let coin = extract_from_balance(coin_store_obj, coin_type, amount);
         event::emit(WithdrawEvent {
             coin_store_id: object_id,
             coin_type,
@@ -620,11 +685,12 @@ module rooch_framework::multi_coin_store {
         coin: GenericCoin
     ) {
         let object_id = object::id(coin_store_obj);
-        let coin_store = object::borrow_mut(coin_store_obj);
-        check_coin_store_not_frozen(coin_store);
-        let coin_type = coin_store.coin_type;
+        let coin_type = coin::coin_type(&coin);
+        // let coin_store = object::borrow_mut(coin_store_obj);
+        check_coin_store_not_frozen(coin_store_obj, coin_type);
+        // let coin_type = coin_store.coin_type;
         let amount = coin::generic_coin_value(&coin);
-        merge_to_balance(coin_store, coin);
+        merge_to_balance(coin_store_obj, coin);
         event::emit(DepositEvent {
             coin_store_id: object_id,
             coin_type,

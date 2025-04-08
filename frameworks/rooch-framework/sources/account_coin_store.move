@@ -247,43 +247,39 @@ module rooch_framework::account_coin_store {
 
     // === Non-generic functions ===
 
-    /// The non-generic account coin store that holds all coins for every account
-    struct GenericAccountCoinStore has key {}
-
-    /// Event emitted when a generic account coin store is created.
-    struct CreateGenericAccountCoinStoreEvent has drop, store, copy {
-        /// The id of the generic account coin store that was created
-        generic_account_coin_store_id: ObjectID,
-        /// The account that was created
-        account: address,
-    }
-
-    public fun balance_with_type_name(addr: address, coin_type: string::String): u256 {
-        if (exist_account_coin_store_with_type_name(addr, coin_type)) {
-            let coin_store = borrow_account_coin_store_with_type_name(addr, coin_type);
-            multi_coin_store::balance(coin_store)
+    
+    public fun balance_by_type_name(addr: address, coin_type: string::String): u256 {
+        if (exist_multi_coin_store(addr)) {
+            let coin_store = borrow_multi_coin_store(addr);
+            multi_coin_store::balance(coin_store, coin_type)
         } else {
             0
         }
     }
 
-    public fun generic_account_coin_store_id(addr: address): ObjectID {
-        object::account_named_object_id<GenericAccountCoinStore>(addr)
-    }
+    // public fun generic_account_coin_store_id(addr: address): ObjectID {
+    //     object::account_named_object_id<GenericAccountCoinStore>(addr)
+    // }
 
-    // public fun account_multi_coin_store_id(addr: address, coin_type: string::String): ObjectID {
-    public fun account_multi_coin_store_id(addr: address, coin_type: string::String): ObjectID {
+    // public fun multi_coin_store_id(addr: address, coin_type: string::String): ObjectID {
+    public fun multi_coin_store_id(addr: address): ObjectID {
         // object::account_named_object_id_with_type<MultiCoinStore>(addr, coin_type)
 
         object::account_named_object_id<MultiCoinStore>(addr)
         // object::account_named_object_id<CoinStore<CoinType>>(addr)
     }
 
-    public fun is_accept_coin_with_type_name(addr: address, coin_type: string::String): bool {
+    public fun is_accept_coin_by_type_name(addr: address, coin_type: string::String): bool {
         if (can_auto_accept_coin(addr)) {
             true
         } else {
-            exist_account_coin_store_with_type_name(addr, coin_type)
+            if(exist_multi_coin_store(addr)) {
+                true
+                // multi_coin_store::exist_coin_store_field(addr, coin_type)
+            }else {
+                false
+
+            }
         }
     }
 
@@ -293,12 +289,13 @@ module rooch_framework::account_coin_store {
     //     let addr = signer::address_of(account);
     //     create_or_borrow_mut_account_coin_store<CoinType>(addr);
     // }
-    public fun do_accept_coin_with_type_name(account: &signer, coin_type: string::String) {
+    public fun do_accept_coin_by_type_name(account: &signer, coin_type: string::String) {
         let addr = signer::address_of(account);
-        create_or_borrow_mut_account_coin_store_with_type_name(addr, coin_type);
+        let coin_store_obj = create_or_borrow_mut_multi_coin_store(addr);
+        multi_coin_store::create_coin_store_field_if_not_exist(coin_store_obj, coin_type);
 
-        // let coin_info_id = coin::coin_info_id_with_type_name(coin_type);
-        // let account_coin_store_id = account_coin_store_id_with_type_name(addr, coin_type);
+        // let coin_info_id = coin::coin_info_id_by_type_name(coin_type);
+        // let account_coin_store_id = multi_coin_store_id(addr, coin_type);
         // if (!object::exists_object_with_type<MultiCoinStore>(account_coin_store_id)) {
         //     let coin_store = coin_store::create_coin_store<CoinInfo>();
         //     object::transfer_extend(coin_store, addr);
@@ -306,100 +303,102 @@ module rooch_framework::account_coin_store {
         // }
     }
 
-    public fun withdraw_with_type_name(
+    public fun withdraw_by_type_name(
         account: &signer,
         coin_type: string::String,
         amount: u256,
     ): GenericCoin {
         let addr = signer::address_of(account);
-        withdraw_internal_with_type_name(addr, coin_type, amount)
+        withdraw_internal_by_type_name(addr, coin_type, amount)
     }
 
-    public fun deposit_with_type_name(addr: address, coin: GenericCoin) {
-        deposit_internal_with_type_name(addr, coin);
+    public fun deposit_by_type_name(addr: address, coin: GenericCoin) {
+        deposit_internal_by_type_name(addr, coin);
     }
 
-    public fun transfer_with_type_name(
+    public fun transfer_by_type_name(
         from: &signer,
         to: address,
         coin_type: string::String,
         amount: u256,
     ) {
         let from_addr = signer::address_of(from);
-        transfer_internal_with_type_name(from_addr, to, coin_type, amount);
+        transfer_internal_by_type_name(from_addr, to, coin_type, amount);
     }
 
-    public fun exist_account_coin_store_with_type_name(addr: address, coin_type: string::String): bool {
-        let account_coin_store_id = account_coin_store_id_with_type_name(addr, coin_type);
-        object::exists_object_with_type<MultiCoinStore>(account_coin_store_id)
+    // public fun exist_multi_coin_store(addr: address, coin_type: string::String): bool {
+    public fun exist_multi_coin_store(addr: address): bool {
+        let coin_store_id = multi_coin_store_id(addr);
+        object::exists_object_with_type<MultiCoinStore>(coin_store_id)
     }
 
-    public fun is_account_coin_store_frozen_with_type_name(addr: address, coin_type: string::String): bool {
-        if (exist_account_coin_store_with_type_name(addr, coin_type)) {
-            let coin_store = borrow_account_coin_store_with_type_name(addr, coin_type);
-            multi_coin_store::is_frozen(coin_store)
+    public fun is_multi_coin_store_frozen_by_type_name(addr: address, coin_type: string::String): bool {
+        if (exist_multi_coin_store(addr)) {
+            let coin_store_obj = borrow_multi_coin_store(addr);
+            multi_coin_store::is_frozen(coin_store_obj, coin_type)
         } else {
             false
         }
     }
 
-    public fun withdraw_extend_with_type_name(
+    // public fun withdraw_extend_by_type_name(
+    //     addr: address,
+    //     coin_type: string::String,
+    //     amount: u256,
+    // ): GenericCoin {
+    //     withdraw_internal_by_type_name(addr, coin_type, amount)
+    // }
+
+    // public fun deposit_extend_by_type_name(addr: address, coin: GenericCoin) {
+    //     deposit_internal_by_type_name(addr, coin);
+    // }
+
+    // public fun transfer_extend_by_type_name(
+    //     from: address,
+    //     to: address,
+    //     coin_type: string::String,
+    //     amount: u256,
+    // ) {
+    //     transfer_internal_by_type_name(from, to, coin_type, amount);
+    // }
+
+    public entry fun accept_coin_entry_by_type_name(account: &signer, coin_type: string::String) {
+        do_accept_coin_by_type_name(account, coin_type)
+    }
+
+    fun borrow_multi_coin_store(addr: address): &Object<MultiCoinStore> {
+        let multi_coin_store_id = multi_coin_store_id(addr);
+        object::borrow_object<MultiCoinStore>(multi_coin_store_id)
+    }
+
+    fun borrow_mut_multi_coin_store(
         addr: address,
-        coin_type: string::String,
-        amount: u256,
-    ): GenericCoin {
-        withdraw_internal_with_type_name(addr, coin_type, amount)
-    }
-
-    public fun deposit_extend_with_type_name(addr: address, coin: GenericCoin) {
-        deposit_internal_with_type_name(addr, coin);
-    }
-
-    public fun transfer_extend_with_type_name(
-        from: address,
-        to: address,
-        coin_type: string::String,
-        amount: u256,
-    ) {
-        transfer_internal_with_type_name(from, to, coin_type, amount);
-    }
-
-    public entry fun accept_coin_entry_with_type_name(account: &signer, coin_type: string::String) {
-        do_accept_coin_with_type_name(account, coin_type)
-    }
-
-    fun borrow_account_coin_store_with_type_name(addr: address, coin_type: string::String): &Object<MultiCoinStore> {
-        let account_coin_store_id = account_coin_store_id_with_type_name(addr, coin_type);
-        object::borrow_object<MultiCoinStore>(account_coin_store_id)
-    }
-
-    fun borrow_mut_account_multi_coin_store_with_type_name(
-        addr: address,
-        coin_type: string::String
+        // coin_type: string::String
     ): &mut Object<MultiCoinStore> {
-        let generic_coin_store_id = generic_account_coin_store_id(addr);
-        let account_coin_store_id = account_coin_store_id_with_type_name(addr, coin_type);
-        object::borrow_mut_object_extend<MultiCoinStore>(account_coin_store_id)
+        let multi_coin_store_id = multi_coin_store_id(addr);
+        // let account_coin_store_id = multi_coin_store_id(addr, coin_type);
+        // object::borrow_mut_object_extend<MultiCoinStore>(generic_coin_store_id)
+        multi_coin_store::borrow_mut_coin_store_internal(multi_coin_store_id)
     }
 
-    // Create account coin store
-    // public(friend) fun create_account_coin_store(account: address, coin_type: string::String): ObjectID {
-    fun create_generic_account_coin_store(account: address): ObjectID {
-        let generic_account_coin_store_obj = object::new_account_named_object(
-            account,
-            GenericAccountCoinStore {}
-        );
-
-        let generic_account_coin_store_id = object::id(&generic_account_coin_store_obj);
-        object::transfer_extend(generic_account_coin_store_obj, account);
-
-        event::emit(CreateGenericAccountCoinStoreEvent {
-            generic_account_coin_store_id,
-            account
-        });
-
-        generic_account_coin_store_id
-    }
+    // // Create account coin store
+    // // public(friend) fun create_account_coin_store(account: address, coin_type: string::String): ObjectID {
+    // fun create_generic_account_coin_store(account: address): ObjectID {
+    //     let generic_account_coin_store_obj = object::new_account_named_object(
+    //         account,
+    //         GenericAccountCoinStore {}
+    //     );
+    //
+    //     let generic_account_coin_store_id = object::id(&generic_account_coin_store_obj);
+    //     object::transfer_extend(generic_account_coin_store_obj, account);
+    //
+    //     event::emit(CreateGenericAccountCoinStoreEvent {
+    //         generic_account_coin_store_id,
+    //         account
+    //     });
+    //
+    //     generic_account_coin_store_id
+    // }
 
 
     // fun create_or_borrow_mut_account_coin_store<CoinType: key>(
@@ -411,51 +410,77 @@ module rooch_framework::account_coin_store {
     //     };
     //     coin_store::borrow_mut_coin_store_internal<CoinType>(account_coin_store_id)
     // }
-    fun create_or_borrow_mut_account_multi_coin_store(
+    fun create_or_borrow_mut_multi_coin_store(
         addr: address,
-        coin_type: string::String
+        // coin_type: string::String
     ): &mut Object<MultiCoinStore> {
-        let generic_account_coin_store_id = generic_account_coin_store_id(addr);
-        if (!object::exists_object_with_type<GenericAccountCoinStore>(generic_account_coin_store_id)) {
-            create_generic_account_coin_store(addr);
-        };
-        let generic_account_coin_store_obj = object::borrow_mut_object_extend<GenericAccountCoinStore>(generic_account_coin_store_id)
-
-        // let account_coin_store_id = account_multi_coin_store_id(addr);
-        if (!object::contains_field_with_type<GenericAccountCoinStore, string::String, MultiCoinStore>(generic_account_coin_store_obj, coin_type)) {
-            // let coin_info_id = coin::coin_info_id_by_type_name(coin_type);
-            multi_coin_store::create_account_coin_store(generic_account_coin_store_obj, coin_type);
-        };
+        // let generic_account_coin_store_id = generic_account_coin_store_id(addr);
+        // if (!object::exists_object_with_type<GenericAccountCoinStore>(generic_account_coin_store_id)) {
+        //     create_generic_account_coin_store(addr);
+        // };
+        // let generic_account_coin_store_obj = object::borrow_mut_object_extend<GenericAccountCoinStore>(generic_account_coin_store_id)
+        //
+        // // let account_coin_store_id = multi_coin_store_id(addr);
+        // if (!object::contains_field_with_type<GenericAccountCoinStore, string::String, MultiCoinStore>(generic_account_coin_store_obj, coin_type)) {
+        //     // let coin_info_id = coin::coin_info_id_by_type_name(coin_type);
+        //     multi_coin_store::create_account_coin_store(generic_account_coin_store_obj, coin_type);
+        // };
+        // // object::borrow_mut_object_extend<MultiCoinStore>(account_coin_store_id)
         // object::borrow_mut_object_extend<MultiCoinStore>(account_coin_store_id)
-        object::borrow_mut_object_extend<MultiCoinStore>(account_coin_store_id)
+
+
+        let multi_coin_store_id = multi_coin_store_id(addr);
+        if (!object::exists_object_with_type<MultiCoinStore>(multi_coin_store_id)) {
+            multi_coin_store::create_multi_coin_store(addr);
+        };
+        multi_coin_store::borrow_mut_coin_store_internal(multi_coin_store_id)
     }
 
-    fun withdraw_internal_with_type_name(
+    // fun create_or_borrow_mut_multi_coin_store_field(
+    //     addr: address,
+    //     coin_type: string::String
+    // ): &mut Object<MultiCoinStore> {
+    //     let generic_account_coin_store_id = generic_account_coin_store_id(addr);
+    //     if (!object::exists_object_with_type<GenericAccountCoinStore>(generic_account_coin_store_id)) {
+    //         create_generic_account_coin_store(addr);
+    //     };
+    //     let generic_account_coin_store_obj = object::borrow_mut_object_extend<GenericAccountCoinStore>(generic_account_coin_store_id)
+    //
+    //     // let account_coin_store_id = multi_coin_store_id(addr);
+    //     if (!object::contains_field_with_type<GenericAccountCoinStore, string::String, MultiCoinStore>(generic_account_coin_store_obj, coin_type)) {
+    //         // let coin_info_id = coin::coin_info_id_by_type_name(coin_type);
+    //         multi_coin_store::create_account_coin_store(generic_account_coin_store_obj, coin_type);
+    //     };
+    //     // object::borrow_mut_object_extend<MultiCoinStore>(account_coin_store_id)
+    //     object::borrow_mut_object_extend<MultiCoinStore>(account_coin_store_id)
+    // }
+
+    fun withdraw_internal_by_type_name(
         addr: address,
         coin_type: string::String,
         amount: u256,
     ): GenericCoin {
-        let coin_store = borrow_mut_account_coin_store_with_type_name(addr, coin_type);
-        multi_coin_store::withdraw(coin_store, amount)
+        let coin_store = borrow_mut_multi_coin_store(addr);
+        multi_coin_store::withdraw(coin_store, coin_type, amount)
     }
 
-    fun deposit_internal_with_type_name(addr: address, coin: GenericCoin) {
+    fun deposit_internal_by_type_name(addr: address, coin: GenericCoin) {
         let coin_type = coin::coin_type(&coin);
         assert!(
-            is_accept_coin_with_type_name(addr, coin_type),
+            is_accept_coin_by_type_name(addr, coin_type),
             ErrorAccountNotAcceptCoin,
         );
-        let coin_store = create_or_borrow_mut_account_coin_store_with_type_name(addr, coin_type);
+        let coin_store = create_or_borrow_mut_multi_coin_store(addr);
         multi_coin_store::deposit(coin_store, coin)
     }
 
-    fun transfer_internal_with_type_name(
+    fun transfer_internal_by_type_name(
         from: address,
         to: address,
         coin_type: string::String,
         amount: u256,
     ) {
-        let coin = withdraw_internal_with_type_name(from, coin_type, amount);
-        deposit_internal_with_type_name(to, coin);
+        let coin = withdraw_internal_by_type_name(from, coin_type, amount);
+        deposit_internal_by_type_name(to, coin);
     }
 }

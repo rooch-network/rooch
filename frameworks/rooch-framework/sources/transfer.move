@@ -69,21 +69,21 @@ module rooch_framework::transfer {
     }
 
 
-    /// Forward generic transfers to non-generic system if it's available
-    public entry fun transfer_coin_v2<CoinType: key + store>(
-        from: &signer,
-        to: address,
-        amount: u256,
-    ) {
-        if (is_v2_enabled()) {
-            // Use V2 transfer
-            let coin_type = type_info::type_name<CoinType>();
-            transfer_coin_by_type_name(from, to, coin_type, amount);
-        } else {
-            // Use original generic transfer
-            transfer_coin<CoinType>(from, to, amount);
-        }
-    }
+    // /// Forward generic transfers to non-generic system if it's available
+    // public entry fun transfer_coin_v2<CoinType: key + store>(
+    //     from: &signer,
+    //     to: address,
+    //     amount: u256,
+    // ) {
+    //     if (is_v2_enabled()) {
+    //         // Use V2 transfer
+    //         let coin_type = type_info::type_name<CoinType>();
+    //         transfer_coin_by_type_name(from, to, coin_type, amount);
+    //     } else {
+    //         // Use original generic transfer
+    //         transfer_coin<CoinType>(from, to, amount);
+    //     }
+    // }
 
     /// Check if V2 system is enabled
     fun is_v2_enabled(): bool {
@@ -113,6 +113,6 @@ module rooch_framework::transfer {
         // // Perform direct transfer
         // coin_store_v2::direct_transfer(from_store_id, to_store_id, amount);
 
-        account_coin_store::transfer_v2(from, to, coin_type, amount);
+        account_coin_store::transfer_by_type_name(from, to, coin_type, amount);
     }
 }
