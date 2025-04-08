@@ -23,8 +23,9 @@ export const menuContent = style({
   gap: 4,
   borderRadius: themeVars.radii.large,
   backgroundColor: themeVars.backgroundColors.modalPrimary,
-  boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.05)',
+  boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.1)',
   overflow: 'hidden',
+  border: `1px solid ${themeVars.colors.bodyMuted}`,
 })
 
 export const menuItem = style({
@@ -39,10 +40,12 @@ export const menuItem = style({
   cursor: 'pointer',
   width: '100%',
   boxSizing: 'border-box',
+  color: themeVars.colors.body,
   selectors: {
     '&[data-highlighted]': {
       backgroundColor: themeVars.backgroundColors.walletItemHover,
       transform: 'translateY(-1px)',
+      color: themeVars.colors.body,
     },
   },
 })
@@ -53,6 +56,7 @@ export const menuItemText = style({
   textOverflow: 'ellipsis',
   flex: 1,
   fontSize: '0.875rem',
+  color: 'inherit',
 })
 
 export const switchMenuItem = style({
@@ -64,7 +68,7 @@ export const switchMenuItem = style({
 export const separator = style({
   height: 1,
   flexShrink: 0,
-  backgroundColor: themeVars.backgroundColors.dropdownMenuSeparator,
+  backgroundColor: themeVars.colors.bodyMuted,
 })
 
 export const progressBar = style({
@@ -82,5 +86,5 @@ export const addressContainer = style({
 })
 export const rgasBalance = style({
   fontSize: '0.5rem',
-  color: '#666',
+  color: themeVars.colors.bodyMuted,
 })
