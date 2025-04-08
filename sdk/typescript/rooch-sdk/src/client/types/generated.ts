@@ -21,39 +21,9 @@ export interface AnnotatedFunctionResultView {
   vm_status: VMStatusView
 }
 export interface AnnotatedFunctionReturnValueView {
-  decoded_value: AnnotatedMoveValueView
+  decoded_value: unknown
   value: FunctionReturnValueView
 }
-export interface AnnotatedMoveStructVectorView {
-  /** alilities of each element */
-  abilities: number
-  /** field of each element */
-  field: string[]
-  /** type of each element */
-  type: string
-  value: AnnotatedMoveValueView[][]
-}
-export interface AnnotatedMoveStructView {
-  abilities: number
-  type: string
-  value: {
-    [key: string]: AnnotatedMoveValueView
-  }
-}
-export type AnnotatedMoveValueView =
-  | number
-  | string
-  | string
-  | boolean
-  | string
-  | AnnotatedMoveValueView[]
-  | AnnotatedMoveStructVectorView
-  | string
-  | AnnotatedMoveStructView
-  | SpecificStructView
-  | number
-  | number
-  | string
 export interface BalanceInfoView {
   balance: string
   coin_type: string
@@ -91,7 +61,7 @@ export interface DryRunTransactionResponseView {
   vm_error_info: VMErrorInfo
 }
 export type EventFilterView =
-  /** Query by event type with sender */
+  | 'all' /** Query by event type with sender */
   | {
       event_type_with_sender: {
         event_type: string
@@ -100,6 +70,15 @@ export type EventFilterView =
     } /** Query by event type. */
   | {
       event_type: string
+    } /** Query by event handle id with sender */
+  | {
+      event_handle_with_sender: {
+        event_handle_id: string
+        sender: string
+      }
+    } /** Query by event handle id. */
+  | {
+      event_handle: string
     } /** Query by sender address. */
   | {
       sender: string
@@ -134,7 +113,7 @@ export interface EventOptions {
   decode?: boolean
 }
 export interface EventView {
-  decoded_event_data?: AnnotatedMoveStructView | null
+  decoded_event_data?: unknown
   event_data: string
   event_id: EventIDView
   event_index: string
@@ -146,6 +125,11 @@ export interface ExecuteTransactionResponseView {
   output?: TransactionOutputView | null
   sequence_info: TransactionSequenceInfoView
 }
+export type FieldFilterView =
+  /** Query by object ids. */
+  {
+    object_id: string
+  }
 export interface FunctionCallView {
   args: string[]
   function_id: string
@@ -161,7 +145,7 @@ export interface IndexerEventIDView {
 }
 export interface IndexerEventView {
   created_at: string
-  decoded_event_data?: AnnotatedMoveStructView | null
+  decoded_event_data?: unknown
   event_data: string
   event_id: EventIDView
   event_type: string
@@ -169,9 +153,15 @@ export interface IndexerEventView {
   sender: string
   tx_hash: string
 }
+export interface IndexerFieldView {
+  decoded_value?: unknown
+  field_key: string
+  sort_key: string
+  state: ObjectStateView
+}
 export interface IndexerObjectStateView {
   created_at: string
-  decoded_value?: AnnotatedMoveStructView | null
+  decoded_value?: unknown
   display_fields?: DisplayFieldsView | null
   flag: number
   id: string
@@ -274,6 +264,8 @@ export type LedgerTxDataView =
   | {
       action: MoveActionView
       action_type: MoveActionTypeView
+      chain_id: string
+      max_gas_amount: string
       raw: string
       sender: string
       sender_bitcoin_address?: string | null
@@ -297,9 +289,6 @@ export interface MoveActionView {
   module_bundle?: string[] | null
   script_call?: ScriptCallView | null
 }
-export interface MoveAsciiString {
-  bytes: number[]
-}
 /** Move function generic type param */
 export interface MoveFunctionTypeParamView {
   /** Move abilities tied to the generic type param and associated with the function that uses it */
@@ -316,9 +305,6 @@ export interface MoveFunctionView {
   return: string[]
   /** Generic type params associated with the Move function */
   type_params: MoveFunctionTypeParamView[]
-}
-export interface MoveString {
-  bytes: number[]
 }
 /** Move struct field */
 export interface MoveStructFieldView {
@@ -380,7 +366,7 @@ export type ObjectStateFilterView =
 /** Object state view. Used as return type of `getObjectStates`. */
 export interface ObjectStateView {
   created_at: string
-  decoded_value?: AnnotatedMoveStructView | null
+  decoded_value?: unknown
   display_fields?: DisplayFieldsView | null
   flag: number
   id: string
@@ -433,6 +419,16 @@ export interface PaginatedIndexerEventViews {
   data: IndexerEventView[]
   has_next_page: boolean
   next_cursor?: IndexerEventIDView | null
+}
+/**
+ * `next_cursor` points to the last item in the page; Reading with `next_cursor` will start from the
+ * next item after `next_cursor` if `next_cursor` is `Some`, otherwise it will start from the first
+ * item.
+ */
+export interface PaginatedIndexerFieldViews {
+  data: IndexerFieldView[]
+  has_next_page: boolean
+  next_cursor?: string | null
 }
 /**
  * `next_cursor` points to the last item in the page; Reading with `next_cursor` will start from the
@@ -507,7 +503,9 @@ export interface QueryOptions {
 export interface RawTransactionOutputView {
   gas_used: string
   is_upgrade: boolean
+  state_root: string
   status: KeptVMStatusView
+  tx_hash: string
 }
 export type RepairIndexerParamsView =
   /** Repair by owner. */
@@ -539,9 +537,12 @@ export interface SequencerInfoView {
   last_accumulator_info: AccumulatorInfoView
   last_order: string
 }
-export type ServiceStatus = 'active' | 'maintenance' | 'read-only-mode' | 'date-import-mode'
-/** Some specific struct that we want to display in a special way for better readability */
-export type SpecificStructView = MoveString | MoveAsciiString | string
+export type ServiceStatus =
+  | 'active'
+  | 'maintenance'
+  | 'read-only-mode'
+  | 'date-import-mode'
+  | 'sync-mode'
 export interface StateChangeSetView {
   changes: ObjectChangeView[]
   global_size: string
@@ -585,7 +586,7 @@ export interface TransactionExecutionInfoView {
   tx_hash: string
 }
 export type TransactionFilterView =
-  /** Query by sender address. */
+  | 'all' /** Query by sender address. */
   | {
       sender: string
     } /** Query by the given transaction hash. */

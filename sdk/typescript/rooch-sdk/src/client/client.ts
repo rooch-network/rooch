@@ -24,7 +24,6 @@ import {
 } from '../transactions/index.js'
 import {
   AnnotatedFunctionResultView,
-  AnnotatedMoveStructView,
   BalanceInfoView,
   ExecuteTransactionResponseView,
   GetBalanceParams,
@@ -263,13 +262,13 @@ export class RoochClient {
   }
 
   async queryEvents(input: QueryEventsParams): Promise<PaginatedIndexerEventViews> {
-    if ('sender' in input.filter) {
+    if (typeof input.filter === 'object' && 'sender' in input.filter) {
       if (input.filter.sender === '') {
         throw Error('Invalid Address')
       }
     }
 
-    if ('event_type_with_sender' in input.filter) {
+    if (typeof input.filter === 'object' && 'event_type_with_sender' in input.filter) {
       if (input.filter.event_type_with_sender.sender === '') {
         throw Error('Invalid Address')
       }
@@ -398,7 +397,7 @@ export class RoochClient {
   async queryTransactions(
     input: QueryTransactionsParams,
   ): Promise<PaginatedTransactionWithInfoViews> {
-    if ('sender' in input.filter) {
+    if (typeof input.filter === 'object' && 'sender' in input.filter) {
       if (input.filter.sender === '') {
         throw Error('Invalid Address')
       }
@@ -511,12 +510,12 @@ export class RoochClient {
     })
 
     if (result.vm_status === 'Executed' && result.return_values) {
-      const value = (result.return_values?.[0]?.decoded_value as AnnotatedMoveStructView).value
+      const value = (result.return_values?.[0]?.decoded_value as { value: any }).value
 
       const address =
         value && value.vec
           ? //compatible with old option version
-            (((value as any).vec as AnnotatedMoveStructView).value[0] as Array<string>)[0]
+            (((value as any).vec as any).value[0] as Array<string>)[0]
           : ((value as any).bytes as string)
 
       return new BitcoinAddress(address, input.network)
@@ -631,13 +630,9 @@ export class RoochClient {
     }
     // Maybe we should define the type?
     const tableId = (
-      (
-        (
-          (states?.[0]?.decoded_value as AnnotatedMoveStructView).value[
-            'value'
-          ] as AnnotatedMoveStructView
-        ).value['keys'] as AnnotatedMoveStructView
-      ).value['handle'] as AnnotatedMoveStructView
+      (((states?.[0]?.decoded_value as any).value['value'] as any).value['keys'] as any).value[
+        'handle'
+      ] as any
     ).value['id'] as string
 
     const tablePath = `/table/${tableId}`
