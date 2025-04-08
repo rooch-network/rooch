@@ -68,8 +68,11 @@ import {
 } from './types/index.js'
 import { fixedBalance } from '../utils/balance.js'
 import { RoochSubscriptionTransport, Subscription } from './subscriptionTransportInterface.js'
+import { createLogger } from '../logger.js'
 
 const DEFAULT_GAS = 50000000
+
+const logger = createLogger('client')
 
 /**
  * Configuration options for the RoochClient
@@ -785,25 +788,25 @@ export class RoochClient {
           )
         }
       }
-      console.error('Error handling subscription message:', error)
+      logger.error('Error handling subscription message:', error)
     }
   }
 
   private resubscribeAll(): void {
-    console.log('Re-subscribing to all subscriptions...')
+    logger.info('Re-subscribing to all subscriptions...')
 
     if (!this.subscriptionTransport) {
       return
     }
 
     for (const [_id, options] of this.subscriptions) {
-      console.log(`Re-subscribing to ${options.type} with ID: ${_id}`)
+      logger.info(`Re-subscribing to ${options.type} with ID: ${_id}`)
       this.subscribe(options)
     }
   }
 
   private handleError(error: Error): void {
-    console.error('Transport error:', error.message)
+    logger.error('Transport error:', error.message)
 
     // Notify all subscriptions about the transport error
     for (const [subscriptionId, options] of this.subscriptions.entries()) {
@@ -818,7 +821,7 @@ export class RoochClient {
           options.onError(subscriptionError)
         } catch (callbackError) {
           // Prevent callback errors from affecting other subscriptions
-          console.error(`Error in subscription error handler: ${callbackError}`)
+          logger.error(`Error in subscription error handler: ${callbackError}`)
         }
       }
     }

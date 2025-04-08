@@ -7,6 +7,9 @@ import { JsonRpcRequest } from './types/index.js'
 import { Subscription, RoochSubscriptionTransport } from './subscriptionTransportInterface.js'
 import { RoochTransport, RoochTransportRequestOptions } from './transportInterface.js'
 import { JsonRpcError } from './error.js'
+import { createLogger } from '../logger.js'
+
+const logger = createLogger('transport', 'ws')
 
 export interface RoochWebSocketTransportOptions {
   url: string
@@ -111,30 +114,30 @@ export class RoochWebSocketTransport implements RoochTransport, RoochSubscriptio
             }
           }
         } catch (error) {
-          console.error('Failed to parse WebSocket message:', error)
+          logger.error('Failed to parse WebSocket message:', error)
         }
       }
 
       this.#ws.onclose = (event: WebSocket.CloseEvent) => {
-        console.error(`websocket_close:`, event.code, event.reason)
+        logger.error(`websocket_close:`, event.code, event.reason)
         this.#stopHeartbeat()
         this.#handleReconnect()
       }
 
       this.#ws.onerror = (event: WebSocket.ErrorEvent) => {
-        console.error(`websocket_error:`, event.message, event.error)
+        logger.error(`websocket_error:`, event.message, event.error)
         this.#stopHeartbeat()
         this.#handleReconnect()
       }
 
       this.#ensureConnection().catch((error) => {
-        console.error(`ensureConnection_error:`, error)
+        logger.error(`ensureConnection_error:`, error)
         this.#stopHeartbeat()
         this.#handleReconnect()
       })
     } catch (error) {
       // Handle connection creation errors
-      console.error('Failed to create WebSocket connection:', error)
+      logger.error('Failed to create WebSocket connection:', error)
       // If connection creation itself fails, we should also attempt to reconnect
       this.#ws = null
       this.#stopHeartbeat()
@@ -143,11 +146,11 @@ export class RoochWebSocketTransport implements RoochTransport, RoochSubscriptio
   }
 
   #handleReconnect(): void {
-    console.error(`handleReconnect: reconnecting...`)
+    logger.error(`handleReconnect: reconnecting...`)
 
     // Skip reconnection if we're intentionally destroying the transport
     if (this.#isDestroying) {
-      console.log('Skipping reconnect during intentional shutdown')
+      logger.info('Skipping reconnect during intentional shutdown')
       return
     }
 
@@ -305,7 +308,7 @@ export class RoochWebSocketTransport implements RoochTransport, RoochSubscriptio
       if (this.#ws?.readyState === WebSocket.OPEN) {
         // If we're still waiting for a pong from previous ping, connection might be dead
         if (this.#awaitingPong) {
-          console.warn('No pong received within timeout, triggering reconnection')
+          logger.warn('No pong received within timeout, triggering reconnection')
           this.#ws.terminate() // Force close the connection to trigger reconnect
           return
         }
@@ -317,12 +320,12 @@ export class RoochWebSocketTransport implements RoochTransport, RoochSubscriptio
           // Set timeout for pong response
           this.#pongTimeoutTimer = setTimeout(() => {
             if (this.#awaitingPong && this.#ws?.readyState === WebSocket.OPEN) {
-              console.warn('Pong timeout reached, terminating connection')
+              logger.warn('Pong timeout reached, terminating connection')
               this.#ws.terminate() // Force close to trigger reconnect
             }
           }, this.#heartbeatTimeout)
         } catch (error) {
-          console.error('Failed to send ping:', error)
+          logger.error('Failed to send ping:', error)
           this.#handleReconnect()
         }
       }
@@ -355,7 +358,7 @@ export class RoochWebSocketTransport implements RoochTransport, RoochSubscriptio
 
         // Add a one-time error handler specifically for the close operation
         const handleCloseError = (err: Error) => {
-          console.error('Error during WebSocket close operation:', err)
+          logger.error('Error during WebSocket close operation:', err)
         }
 
         this.#ws.once('error', handleCloseError)
@@ -370,7 +373,7 @@ export class RoochWebSocketTransport implements RoochTransport, RoochSubscriptio
         }
         // If it's already CLOSING or CLOSED, no action needed
       } catch (error) {
-        console.error('Error while cleaning up WebSocket:', error)
+        logger.error('Error while cleaning up WebSocket:', error)
       } finally {
         // Always set the WebSocket to null to ensure it's garbage collected
         this.#ws = null

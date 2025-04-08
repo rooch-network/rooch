@@ -469,6 +469,9 @@ importers:
       '@suchipi/femver':
         specifier: ^1.0.0
         version: 1.0.0
+      '@types/debug':
+        specifier: ^4.1.12
+        version: 4.1.12
       '@types/ws':
         specifier: ^8.5.14
         version: 8.5.14

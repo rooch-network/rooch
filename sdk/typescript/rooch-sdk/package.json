@@ -75,6 +75,7 @@
     "@scure/bip32": "^1.5.0",
     "@scure/bip39": "^1.4.0",
     "@suchipi/femver": "^1.0.0",
+    "@types/debug": "^4.1.12",
     "@types/ws": "^8.5.14",
     "bech32": "^2.0.0",
     "bs58check": "4.0.0",
