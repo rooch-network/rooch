@@ -484,6 +484,9 @@ importers:
       buffer:
         specifier: 6.0.3
         version: 6.0.3
+      debug:
+        specifier: ^4.4.0
+        version: 4.4.0
       tweetnacl:
         specifier: ^1.0.3
         version: 1.0.3
@@ -532,7 +535,7 @@ importers:
         version: 2.1.0(@types/node@20.16.5)(happy-dom@15.7.4)(jsdom@25.0.0)(terser@5.32.0)
       wait-on:
         specifier: ^8.0.1
-        version: 8.0.1
+        version: 8.0.1(debug@4.4.0)
 
   sdk/typescript/rooch-sdk-kit:
     dependencies:
@@ -5828,6 +5831,15 @@ packages:
 
   debug@4.3.7:
     resolution: {integrity: sha512-Er2nc/H7RrMXZBFCEim6TCmMk02Z8vLC2Rbi1KEBggpo0fS6l0S1nnapwmIi3yW/+GOJap1Krg4w0Hg80oCqgQ==}
+    engines: {node: '>=6.0'}
+    peerDependencies:
+      supports-color: '*'
+    peerDependenciesMeta:
+      supports-color:
+        optional: true
+
+  debug@4.4.0:
+    resolution: {integrity: sha512-6WTZ/IxCY/T6BALoZHaE4ctp9xm+Z5kY/pzYaCHRFeyVhojxlrm+46y68HA6hr0TcwEssoxNiDEUJQjfPZ/RYA==}
     engines: {node: '>=6.0'}
     peerDependencies:
       supports-color: '*'
@@ -15249,6 +15261,14 @@ snapshots:
     transitivePeerDependencies:
       - debug
 
+  axios@1.7.7(debug@4.4.0):
+    dependencies:
+      follow-redirects: 1.15.9(debug@4.4.0)
+      form-data: 4.0.0
+      proxy-from-env: 1.1.0
+    transitivePeerDependencies:
+      - debug
+
   axobject-query@4.1.0: {}
 
   b4a@1.6.6: {}
@@ -16081,6 +16101,10 @@ snapshots:
     dependencies:
       ms: 2.1.3
 
+  debug@4.4.0:
+    dependencies:
+      ms: 2.1.3
+
   decamelize@1.2.0: {}
 
   decimal.js@10.4.3: {}
@@ -16194,7 +16218,7 @@ snapshots:
 
   docker-modem@3.0.8:
     dependencies:
-      debug: 4.3.7
+      debug: 4.4.0
       readable-stream: 3.6.2
       split-ca: 1.0.1
       ssh2: 1.15.0
@@ -17227,6 +17251,10 @@ snapshots:
   follow-redirects@1.15.9(debug@4.3.7):
     optionalDependencies:
       debug: 4.3.7
+
+  follow-redirects@1.15.9(debug@4.4.0):
+    optionalDependencies:
+      debug: 4.4.0
 
   for-each@0.3.3:
     dependencies:
@@ -20911,7 +20939,7 @@ snapshots:
       archiver: 7.0.1
       async-lock: 1.4.1
       byline: 5.0.0
-      debug: 4.3.7
+      debug: 4.4.0
       docker-compose: 0.24.8
       dockerode: 3.3.5
       get-port: 5.1.1
@@ -21394,7 +21422,7 @@ snapshots:
   vite-node@2.1.0(@types/node@20.16.5)(terser@5.32.0):
     dependencies:
       cac: 6.7.14
-      debug: 4.3.7
+      debug: 4.4.0
       pathe: 1.1.2
       vite: 5.4.4(@types/node@20.16.5)(terser@5.32.0)
     transitivePeerDependencies:
@@ -21411,7 +21439,7 @@ snapshots:
   vite-node@2.1.0(@types/node@22.5.4)(terser@5.32.0):
     dependencies:
       cac: 6.7.14
-      debug: 4.3.7
+      debug: 4.4.0
       pathe: 1.1.2
       vite: 5.4.4(@types/node@22.5.4)(terser@5.32.0)
     transitivePeerDependencies:
@@ -21532,7 +21560,7 @@ snapshots:
       '@vitest/spy': 2.1.0
       '@vitest/utils': 2.1.0
       chai: 5.1.1
-      debug: 4.3.7
+      debug: 4.4.0
       magic-string: 0.30.11
       pathe: 1.1.2
       std-env: 3.7.0
@@ -21568,7 +21596,7 @@ snapshots:
       '@vitest/spy': 2.1.0
       '@vitest/utils': 2.1.0
       chai: 5.1.1
-      debug: 4.3.7
+      debug: 4.4.0
       magic-string: 0.30.11
       pathe: 1.1.2
       std-env: 3.7.0
@@ -21604,9 +21632,9 @@ snapshots:
     dependencies:
       xml-name-validator: 5.0.0
 
-  wait-on@8.0.1:
+  wait-on@8.0.1(debug@4.4.0):
     dependencies:
-      axios: 1.7.7(debug@4.3.7)
+      axios: 1.7.7(debug@4.4.0)
       joi: 17.13.3
       lodash: 4.17.21
       minimist: 1.2.8
