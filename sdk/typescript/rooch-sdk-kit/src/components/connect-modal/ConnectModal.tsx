@@ -3,7 +3,7 @@
 
 import * as Dialog from '@radix-ui/react-dialog'
 import clsx from 'clsx'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 
 import { BackIcon } from '../icons/BackIcon.js'
@@ -48,17 +48,33 @@ export function ConnectModal({
   const [targetNetwork, setTargetNetwork] = useState<WalletNetworkType>()
   const [selectedWallet, setSelectedWallet] = useState<Wallet>()
   const [walletStatus, setWalletStatus] = useState<Map<string, boolean>>(new Map())
-
+  const [isDetecting, setIsDetecting] = useState(false)
   useEffect(() => {
-    wallets.forEach(async (item) => {
-      const result = await item.checkInstalled()
-      setWalletStatus((prev) => {
-        const newS = new Map(prev)
-        newS.set(item.getName(), result)
-        return newS
-      })
-    })
+    setIsDetecting(true)
+    const checkWallets = async () => {
+      for (const item of wallets) {
+        const result = await item.checkInstalled()
+        setWalletStatus((prev) => {
+          const newS = new Map(prev)
+          newS.set(item.getName(), result)
+          return newS
+        })
+      }
+      setIsDetecting(false)
+    }
+    checkWallets()
   }, [wallets, setWalletStatus])
+
+  const sortedWallet = useMemo(() => {
+    return wallets.toSorted((a, b) => {
+      if (a.getName() === 'Local') {
+        walletStatus.set(a.getName(), true)
+        return -1
+      }
+      return Number(walletStatus.get(b.getName())) - Number(walletStatus.get(a.getName()))
+    })
+  }, [wallets, walletStatus])
+
   const resetSelection = () => {
     setSelectedWallet(undefined)
     setCurrentView(undefined)
@@ -164,7 +180,10 @@ export function ConnectModal({
             <Heading as="h2">Connect a Wallet</Heading>
           </Dialog.Title>
           <WalletList
+            walletStatus={walletStatus}
+            wallets={sortedWallet}
             selectedWalletName={selectedWallet?.getName()}
+            isDetecting={isDetecting}
             onSelect={(wallet) => {
               if (selectedWallet?.getName() !== wallet.getName()) {
                 setSelectedWallet(wallet)
