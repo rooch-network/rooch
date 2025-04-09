@@ -778,23 +778,22 @@ importers:
         version: 4.5.3(@types/node@22.5.4)(terser@5.32.0)
 
   sdk/typescript/test-suite:
-    dependencies:
-      '@types/debug':
-        specifier: ^4.1.12
-        version: 4.1.12
-      debug:
-        specifier: ^4.4.0
-        version: 4.4.0
     devDependencies:
       '@roochnetwork/build-scripts':
         specifier: workspace:*
         version: link:../build-scripts
+      '@types/debug':
+        specifier: ^4.1.12
+        version: 4.1.12
       '@types/node':
         specifier: ^20.14.10
         version: 20.16.5
       '@types/tmp':
         specifier: ^0.2.1
         version: 0.2.6
+      debug:
+        specifier: ^4.4.0
+        version: 4.4.0
       testcontainers:
         specifier: 10.11.0
         version: 10.11.0
