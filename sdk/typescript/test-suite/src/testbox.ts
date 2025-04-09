@@ -6,7 +6,7 @@ import * as net from 'net'
 import path from 'node:path'
 import { execSync } from 'child_process'
 import { spawn } from 'child_process'
-
+import debug from 'debug'
 import tmp, { DirResult } from 'tmp'
 import { Network, StartedNetwork } from 'testcontainers'
 
@@ -15,6 +15,8 @@ import { RoochContainer, StartedRoochContainer } from './container/rooch.js'
 import { BitcoinContainer, StartedBitcoinContainer } from './container/bitcoin.js'
 import { PumbaContainer } from './container/pumba.js'
 import { logConsumer } from './container/debug/log_consumer.js'
+
+const log = debug('test-suite:testbox')
 
 const ordNetworkAlias = 'ord'
 const bitcoinNetworkAlias = 'bitcoind'
@@ -35,7 +37,7 @@ export class TestBox {
     tmp.setGracefulCleanup()
     this.tmpDir = tmp.dirSync({ unsafeCleanup: true })
     this.roochDir = path.join(this.tmpDir.name, '.rooch_test')
-    console.log('New TestBox rooch dir:', this.roochDir)
+    log('New TestBox rooch dir:', this.roochDir)
     fs.mkdirSync(this.roochDir, { recursive: true })
     this.roochCommand(['init', '--config-dir', `${this.roochDir}`, '--skip-password'])
     this.roochCommand(['env', 'switch', '--config-dir', `${this.roochDir}`, '--alias', 'local'])
@@ -74,7 +76,7 @@ export class TestBox {
     }
 
     if (!this.bitcoinContainer) {
-      console.log('bitcoin container not init')
+      log('bitcoin container not init')
       return
     }
 
@@ -174,7 +176,7 @@ export class TestBox {
     this.roochContainer = await container.start()
 
     const rpcURL = this.roochContainer.getConnectionAddress()
-    console.log('container rooch rpc:', rpcURL, 'roochDir:', this.roochDir)
+    log('container rooch rpc:', rpcURL, 'roochDir:', this.roochDir)
     this.roochCommand([
       'env',
       'add',
@@ -287,7 +289,7 @@ export class TestBox {
   ) {
     // let addr = await this.defaultCmdAddress()
     // let fixedNamedAddresses = options.namedAddresses.replace('default', addr)
-    console.log('publish package:', packagePath, 'rooch Dir:', this.roochDir)
+    log('publish package:', packagePath, 'rooch Dir:', this.roochDir)
 
     const result = this.roochCommand(
       `move publish -p ${packagePath} --config-dir ${this.roochDir} --named-addresses ${options.namedAddresses} --json`,

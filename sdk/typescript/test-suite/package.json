@@ -49,13 +49,14 @@
     "@roochnetwork/build-scripts": "workspace:*",
     "@types/node": "^20.14.10",
     "@types/tmp": "^0.2.1",
+    "testcontainers": "10.11.0",
+    "tmp": "^0.2.1",
     "typescript": "^5.3.3",
     "vite": "^4.4.4",
     "vitest": "^1.6.0",
-    "tmp": "^0.2.1",
-    "testcontainers": "10.11.0"
+    "@types/debug": "^4.1.12",
+    "debug": "^4.4.0"
   },
-  "dependencies": {},
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"

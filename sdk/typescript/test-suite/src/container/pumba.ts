@@ -1,11 +1,14 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+import debug from 'debug'
 import { GenericContainer } from 'testcontainers'
+
+const log = debug('test-suite:container:pumba')
 
 export class PumbaContainer {
   private static async runPumbaCommand(command: string[]): Promise<void> {
-    console.log(`Executing Pumba command: ${command.join(' ')}`)
+    log(`Executing Pumba command: ${command.join(' ')}`)
 
     const container = await new GenericContainer('gaiaadm/pumba:latest')
       .withBindMounts([{ source: '/var/run/docker.sock', target: '/var/run/docker.sock' }])
@@ -13,17 +16,17 @@ export class PumbaContainer {
       .withStartupTimeout(120_000)
       .start()
 
-    console.log('Pumba command started successfully')
+    log('Pumba command started successfully')
 
     // Wait for the container to stop by itself
     const stream = await container.logs()
     return new Promise<void>((resolve, reject) => {
       stream.on('data', (line) => {
-        console.log(`[Pumba] ${line.toString().trim()}`)
+        log(`[Pumba] ${line.toString().trim()}`)
       })
 
       stream.on('end', () => {
-        console.log('Pumba command completed')
+        log('Pumba command completed')
         resolve()
       })
 
