@@ -90,30 +90,42 @@ curl -H "Content-Type: application/json" -X POST --data '{"jsonrpc":"2.0","metho
 ```shell
 {
   "jsonrpc": "2.0",
+  "id": 1,
   "result": {
     "data": [
       {
-        "key_state": {
-          "key": "0x65303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a6163636f756e745f636f696e5f73746f72653a3a4175746f416363657074436f696e73",
-          "key_type": "0x1::ascii::String",
-          "decoded_key": "0000000000000000000000000000000000000000000000000000000000000003::account_coin_store::AutoAcceptCoins"
-        },
+        "field_key": "0x385f84a2110d6b31412fab278ea8c321d160fdcfa7b745e66e5bf76106280dc5",
         "state": {
-          "value": "0x01b68de0c3a2bbf92087a463bbf7f8a145d918efadafac7c3776a4cc08accfc7b7",
-          "value_type": "0x3::account_coin_store::AutoAcceptCoins",
+          "id": "0x0000000000000000000000000000000000000000000000000000000000000003385f84a2110d6b31412fab278ea8c321d160fdcfa7b745e66e5bf76106280dc5",
+          "owner": "rooch1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqhxqaen",
+          "owner_bitcoin_address": null,
+          "flag": 0,
+          "state_root": "0x5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000",
+          "size": "0",
+          "created_at": "0",
+          "updated_at": "0",
+          "object_type": "0x2::object::DynamicField<0x1::string::String, 0x3::account_coin_store::AutoAcceptCoins>",
+          "value": "0x673078303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a6163636f756e745f636f696e5f73746f72653a3a4175746f416363657074436f696e730134b2b40cb39741176e043b45e629e57a72c3fd904400f134195a5958003c498e",
           "decoded_value": {
             "abilities": 12,
-            "type": "0x3::account_coin_store::AutoAcceptCoins",
+            "type": "0x2::object::DynamicField<0x1::string::String, 0x3::account_coin_store::AutoAcceptCoins>",
             "value": {
-              "auto_accept_coins": {
-                "abilities": 4,
-                "type": "0x2::table::Table<address, bool>",
+              "name": "0x0000000000000000000000000000000000000000000000000000000000000003::account_coin_store::AutoAcceptCoins",
+              "value": {
+                "abilities": 12,
+                "type": "0x3::account_coin_store::AutoAcceptCoins",
                 "value": {
-                  "handle": {
-                    "abilities": 12,
-                    "type": "0x2::object::Object<0x2::table::TablePlaceholder>",
+                  "auto_accept_coins": {
+                    "abilities": 4,
+                    "type": "0x2::table::Table<address, bool>",
                     "value": {
-                      "id": "0xb68de0c3a2bbf92087a463bbf7f8a145d918efadafac7c3776a4cc08accfc7b7"
+                      "handle": {
+                        "abilities": 12,
+                        "type": "0x2::object::Object<0x2::table::TablePlaceholder>",
+                        "value": {
+                          "id": "0x34b2b40cb39741176e043b45e629e57a72c3fd904400f134195a5958003c498e"
+                        }
+                      }
                     }
                   }
                 }
@@ -124,27 +136,38 @@ curl -H "Content-Type: application/json" -X POST --data '{"jsonrpc":"2.0","metho
         }
       },
       {
-        "key_state": {
-          "key": "0x60303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a6163636f756e745f636f696e5f73746f72653a3a436f696e53746f726573",
-          "key_type": "0x1::ascii::String",
-          "decoded_key": "0000000000000000000000000000000000000000000000000000000000000003::account_coin_store::CoinStores"
-        },
+        "field_key": "0x54bd1eae29cf0dc10e42f6addc597a7eaca1669d8eb972ad0771958048876986",
         "state": {
-          "value": "0x01124d1a8b62c543cb04eb62038101f4016bd4a620a23127125431abb241c71eac",
-          "value_type": "0x3::account_coin_store::AutoAcceptCoins",
+          "id": "0x000000000000000000000000000000000000000000000000000000000000000354bd1eae29cf0dc10e42f6addc597a7eaca1669d8eb972ad0771958048876986",
+          "owner": "rooch1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqhxqaen",
+          "owner_bitcoin_address": null,
+          "flag": 0,
+          "state_root": "0x5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000",
+          "size": "0",
+          "created_at": "0",
+          "updated_at": "0",
+          "object_type": "0x2::object::DynamicField<0x1::string::String, 0xa::ethereum::BlockStore>",
+          "value": "0x583078303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030613a3a657468657265756d3a3a426c6f636b53746f7265017d4bc25fb8faa92a47da6527476dc59430a89992a81bafb5d502869e469dd9f1",
           "decoded_value": {
             "abilities": 12,
-            "type": "0x3::account_coin_store::AutoAcceptCoins",
+            "type": "0x2::object::DynamicField<0x1::string::String, 0xa::ethereum::BlockStore>",
             "value": {
-              "coin_stores": {
-                "abilities": 4,
-                "type": "0x2::table::Table<0x1::string::String, 0x2::object::ObjectID>",
+              "name": "0x000000000000000000000000000000000000000000000000000000000000000a::ethereum::BlockStore",
+              "value": {
+                "abilities": 8,
+                "type": "0xa::ethereum::BlockStore",
                 "value": {
-                  "handle": {
-                    "abilities": 12,
-                    "type": "0x2::object::Object<0x2::table::TablePlaceholder>",
+                  "blocks": {
+                    "abilities": 4,
+                    "type": "0x2::table::Table<u64, 0xa::ethereum::BlockHeader>",
                     "value": {
-                      "id": "0x124d1a8b62c543cb04eb62038101f4016bd4a620a23127125431abb241c71eac"
+                      "handle": {
+                        "abilities": 12,
+                        "type": "0x2::object::Object<0x2::table::TablePlaceholder>",
+                        "value": {
+                          "id": "0x7d4bc25fb8faa92a47da6527476dc59430a89992a81bafb5d502869e469dd9f1"
+                        }
+                      }
                     }
                   }
                 }
@@ -155,103 +178,52 @@ curl -H "Content-Type: application/json" -X POST --data '{"jsonrpc":"2.0","metho
         }
       },
       {
-        "key_state": {
-          "key": "0x63303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a657468657265756d5f6c696768745f636c69656e743a3a426c6f636b53746f7265",
-          "key_type": "0x1::ascii::String",
-          "decoded_key": "0000000000000000000000000000000000000000000000000000000000000003::ethereum_light_client::BlockStore"
-        },
+        "field_key": "0xe34f96396959f43bbade77a4a7f0366ee04e4f3e84b609aa440ace4d897f6c15",
         "state": {
-          "value": "0x0193b896cbf29a04a89daebeb57f5c42606f0216827f1be52222ff63e32e9fca5a",
-          "value_type": "0x3::ethereum_light_client::BlockStore",
+          "id": "0x0000000000000000000000000000000000000000000000000000000000000003e34f96396959f43bbade77a4a7f0366ee04e4f3e84b609aa440ace4d897f6c15",
+          "owner": "rooch1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqhxqaen",
+          "owner_bitcoin_address": null,
+          "flag": 0,
+          "state_root": "0x5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000",
+          "size": "0",
+          "created_at": "0",
+          "updated_at": "0",
+          "object_type": "0x2::object::DynamicField<0x1::string::String, 0x3::auth_validator_registry::ValidatorRegistry>",
+          "value": "0x6e3078303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a617574685f76616c696461746f725f72656769737472793a3a56616c696461746f725265676973747279030000000000000001d89ef2bc7683639847319158f2f15b5078c70ed969409d9ac987c62bc4efa07b01c1cb6dd95a9e8a02200541964d474a13cf36e47658688326b1a6f1a1e343056a",
           "decoded_value": {
             "abilities": 12,
-            "type": "0x3::ethereum_light_client::BlockStore",
+            "type": "0x2::object::DynamicField<0x1::string::String, 0x3::auth_validator_registry::ValidatorRegistry>",
             "value": {
-              "blocks": {
-                "abilities": 4,
-                "type": "0x2::table::Table<u64, 0x3::ethereum_light_client::BlockHeader>",
+              "name": "0x0000000000000000000000000000000000000000000000000000000000000003::auth_validator_registry::ValidatorRegistry",
+              "value": {
+                "abilities": 8,
+                "type": "0x3::auth_validator_registry::ValidatorRegistry",
                 "value": {
-                  "handle": {
-                    "abilities": 12,
-                    "type": "0x2::object::Object<0x2::table::TablePlaceholder>",
+                  "validator_num": "3",
+                  "validators": {
+                    "abilities": 4,
+                    "type": "0x2::table::Table<u64, 0x3::auth_validator::AuthValidator>",
                     "value": {
-                      "id": "0x93b896cbf29a04a89daebeb57f5c42606f0216827f1be52222ff63e32e9fca5a"
+                      "handle": {
+                        "abilities": 12,
+                        "type": "0x2::object::Object<0x2::table::TablePlaceholder>",
+                        "value": {
+                          "id": "0xd89ef2bc7683639847319158f2f15b5078c70ed969409d9ac987c62bc4efa07b"
+                        }
+                      }
                     }
-                  }
-                }
-              }
-            }
-          },
-          "display_fields": null
-        }
-      },
-      {
-        "key_state": {
-          "key": "0x6c303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a6163636f756e745f61757468656e7469636174696f6e3a3a41757468656e7469636174696f6e4b657973",
-          "key_type": "0x1::ascii::String",
-          "decoded_key": "0000000000000000000000000000000000000000000000000000000000000003::account_authentication::AuthenticationKeys"
-        },
-        "state": {
-          "value": "0x01b801a955e36647044f729006c0c2e8b09ea4423c5b286e1785b4c8df4eef3056",
-          "value_type": "0x3::account_authentication::AuthenticationKeys",
-          "decoded_value": {
-            "abilities": 12,
-            "type": "0x3::account_authentication::AuthenticationKeys",
-            "value": {
-              "authentication_keys": {
-                "abilities": 4,
-                "type": "0x2::type_table::TypeTable",
-                "value": {
-                  "handle": {
-                    "abilities": 12,
-                    "type": "0x2::object::Object<0x2::type_table::TablePlaceholder>",
+                  },
+                  "validators_with_type": {
+                    "abilities": 4,
+                    "type": "0x2::type_table::TypeTable",
                     "value": {
-                      "id": "0xb801a955e36647044f729006c0c2e8b09ea4423c5b286e1785b4c8df4eef3056"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "display_fields": null
-        }
-      },
-      {
-        "key_state": {
-          "key": "0x6c303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a617574685f76616c696461746f725f72656769737472793a3a56616c696461746f725265676973747279",
-          "key_type": "0x1::ascii::String",
-          "decoded_key": "0000000000000000000000000000000000000000000000000000000000000003::auth_validator_registry::ValidatorRegistry"
-        },
-        "state": {
-          "value": "0x030000000000000001bdbf13310e4988822414bff0ee11b1e29af0ec23e2287e1fd855d3724da512da01958fc1f573a3be908ea659f164e9897174df53d43e1b36ee8b82a6c0a99e9894",
-          "value_type": "0x3::auth_validator_registry::ValidatorRegistry",
-          "decoded_value": {
-            "abilities": 12,
-            "type": "0x3::auth_validator_registry::ValidatorRegistry",
-            "value": {
-              "validator_num": "3",
-              "validators": {
-                "abilities": 4,
-                "type": "0x2::table::Table<u64, 0x3::auth_validator::AuthValidator>",
-                "value": {
-                  "handle": {
-                    "abilities": 12,
-                    "type": "0x2::object::Object<0x2::table::TablePlaceholder>",
-                    "value": {
-                      "id": "0xbdbf13310e4988822414bff0ee11b1e29af0ec23e2287e1fd855d3724da512da"
-                    }
-                  }
-                }
-              },
-              "validators_with_type": {
-                "abilities": 4,
-                "type": "0x2::type_table::TypeTable",
-                "value": {
-                  "handle": {
-                    "abilities": 12,
-                    "type": "0x2::object::Object<0x2::type_table::TablePlaceholder>",
-                    "value": {
-                      "id": "0x958fc1f573a3be908ea659f164e9897174df53d43e1b36ee8b82a6c0a99e9894"
+                      "handle": {
+                        "abilities": 12,
+                        "type": "0x2::object::Object<0x2::type_table::TablePlaceholder>",
+                        "value": {
+                          "id": "0xc1cb6dd95a9e8a02200541964d474a13cf36e47658688326b1a6f1a1e343056a"
+                        }
+                      }
                     }
                   }
                 }
@@ -262,10 +234,9 @@ curl -H "Content-Type: application/json" -X POST --data '{"jsonrpc":"2.0","metho
         }
       }
     ],
-    "next_cursor": "0x6d6c303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a617574685f76616c696461746f725f72656769737472793a3a56616c696461746f72526567697374727907000000000000000000000000000000000000000000000000000000000000000105617363696906537472696e6700",
+    "next_cursor": "0xe34f96396959f43bbade77a4a7f0366ee04e4f3e84b609aa440ace4d897f6c15",
     "has_next_page": false
-  },
-  "id": 1
+  }
 }
 ```
 
@@ -965,7 +936,7 @@ curl --location 'https://dev-seed.rooch.network:443' --header 'Content-Type: app
  "id":101,
  "jsonrpc":"2.0",
  "method":"rooch_queryObjectStates",
- "params":[{"owner":"0xd9858821a52538c99f822d3f90ec798f76466bb7a1e82ebdb42d19b62a030069"}, null, "5", false]
+ "params":[{"owner":"0xd9858821a52538c99f822d3f90ec798f76466bb7a1e82ebdb42d19b62a030069"}, null, "5", {"decode":true,"descending":false}]
 }' | jq
 ```
 
