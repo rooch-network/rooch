@@ -161,6 +161,10 @@ impl ExecMode {
         }
     }
 
+    pub fn need_sync(&self) -> bool {
+        self.as_bits() & 0b100 != 0
+    }
+
     pub fn need_exec(&self) -> bool {
         self.as_bits() & 0b10 != 0
     }
@@ -276,15 +280,16 @@ impl ExecCommand {
 
         let exp_roots = tx_meta_store.get_exp_roots_map();
         let client = self.context_options.build()?.get_client().await?;
-        let ledger_tx_loader = match self.mode {
-            ExecMode::Sync => LedgerTxGetter::new_with_auto_sync(
+        let ledger_tx_loader = if self.mode.need_sync() {
+            LedgerTxGetter::new_with_auto_sync(
                 self.open_da_path.clone().unwrap(),
                 self.segment_dir.clone(),
                 client,
                 exp_roots,
                 shutdown_signal,
-            )?,
-            _ => LedgerTxGetter::new(self.segment_dir.clone())?,
+            )?
+        } else {
+            LedgerTxGetter::new(self.segment_dir.clone())?
         };
 
         Ok(ExecInner {
@@ -970,10 +975,12 @@ mod tests {
         assert!(mode.need_exec());
         assert!(mode.need_seq());
         assert!(mode.need_all());
+        assert!(mode.need_sync());
 
         let mode = ExecMode::SyncExec;
         assert!(mode.need_exec());
         assert!(!mode.need_seq());
         assert!(!mode.need_all());
+        assert!(mode.need_sync())
     }
 }
