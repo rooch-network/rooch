@@ -285,12 +285,25 @@ pub mod ws {
             tokio::select! {
                 maybe_message = socket.recv() => {
                     if let Some(Ok(message)) = maybe_message {
-                        if let Message::Text(msg) = message {
-                            let response =
-                                process_raw_request(&service, &msg, bounded_subscriptions.clone(), &sink).await;
-                            if let Some(response) = response {
-                                let _ = sink.try_send(response.to_result());
-                            }
+                        match message {
+                            Message::Text(msg) => {
+                                let response =
+                                    process_raw_request(&service, &msg, bounded_subscriptions.clone(), &sink).await;
+                                if let Some(response) = response {
+                                    let _ = sink.try_send(response.to_result());
+                                }
+                            },
+                            Message::Ping(payload) => {
+                                // Automatically respond to ping with pong
+                                if socket.send(Message::Pong(payload)).await.is_err() {
+                                    break;
+                                }
+                            },
+                            Message::Close(_) => {
+                                // Client is requesting to close connection
+                                break;
+                            },
+                            _ => {} // Ignore other message types
                         }
                     } else {
                         break;
