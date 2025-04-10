@@ -90,7 +90,8 @@ impl UnpackInner {
             chunks.insert(chunk_id, segment_numbers);
             chunks
         } else {
-            let (chunks, _min_chunk_id, _max_chunk_id) = collect_chunks(self.segment_dir.clone())?;
+            let (chunks, _min_chunk_id, _max_chunk_id) =
+                collect_chunks(self.segment_dir.clone(), false)?;
             chunks
         };
 

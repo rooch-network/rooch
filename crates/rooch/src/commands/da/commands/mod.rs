@@ -175,6 +175,7 @@ pub(crate) fn collect_chunk(segment_dir: PathBuf, chunk_id: u128) -> anyhow::Res
 // we collect all the chunks and their segment numbers to unpack them later.
 pub(crate) fn collect_chunks(
     segment_dir: PathBuf,
+    allow_empty: bool,
 ) -> anyhow::Result<(HashMap<u128, Vec<u64>>, u128, u128)> {
     let mut chunks = HashMap::new();
     let mut max_chunk_id = 0;
@@ -220,8 +221,12 @@ pub(crate) fn collect_chunks(
         return Err(anyhow::anyhow!("Incomplete chunks found"));
     }
 
-    if chunks.is_empty() {
-        return Err(anyhow::anyhow!("No segment found in {:?}", segment_dir));
+    if chunks.is_empty() && !allow_empty {
+        return Err(anyhow::anyhow!(
+            "No segment found in {:?}. allow empty: {}",
+            segment_dir,
+            allow_empty
+        ));
     }
     Ok((chunks, min_chunk_id, max_chunk_id))
 }
@@ -390,8 +395,9 @@ pub(crate) struct LedgerTxGetter {
 }
 
 impl LedgerTxGetter {
-    pub(crate) fn new(segment_dir: PathBuf) -> anyhow::Result<Self> {
-        let (chunks, _min_chunk_id, max_chunk_id) = collect_chunks(segment_dir.clone())?;
+    pub(crate) fn new(segment_dir: PathBuf, allow_empty: bool) -> anyhow::Result<Self> {
+        let (chunks, _min_chunk_id, max_chunk_id) =
+            collect_chunks(segment_dir.clone(), allow_empty)?;
 
         Ok(LedgerTxGetter {
             segment_dir,
@@ -409,7 +415,7 @@ impl LedgerTxGetter {
         exp_roots: Arc<RwLock<HashMap<u64, H256>>>,
         shutdown_signal: watch::Receiver<()>,
     ) -> anyhow::Result<Self> {
-        let (chunks, _min_chunk_id, max_chunk_id) = collect_chunks(segment_dir.clone())?;
+        let (chunks, _min_chunk_id, max_chunk_id) = collect_chunks(segment_dir.clone(), true)?;
 
         let chunks_to_sync = Arc::new(RwLock::new(chunks.clone()));
 
@@ -517,7 +523,7 @@ struct ExpRootsMap {
 impl TxMetaStore {
     pub(crate) async fn new(
         tx_position_indexer_path: PathBuf,
-        exp_roots_path: PathBuf,
+        exp_roots_path: Option<PathBuf>,
         segment_dir: PathBuf,
         transaction_store: TransactionDBStore,
         rooch_store: RoochStore,
@@ -546,11 +552,18 @@ impl TxMetaStore {
         self.exp_roots.clone()
     }
 
-    fn load_exp_roots(exp_roots_path: PathBuf) -> anyhow::Result<ExpRootsMap> {
+    fn load_exp_roots(exp_roots_path: Option<PathBuf>) -> anyhow::Result<ExpRootsMap> {
         let mut exp_roots = HashMap::new();
+        if exp_roots_path.is_none() {
+            return Ok(ExpRootsMap {
+                exp_root: exp_roots,
+                max_verified_tx_order: 0,
+            });
+        }
+
         let mut max_verified_tx_order = 0;
 
-        let mut reader = BufReader::new(File::open(exp_roots_path)?);
+        let mut reader = BufReader::new(File::open(exp_roots_path.unwrap())?);
         for line in reader.by_ref().lines() {
             let line = line?;
             let parts: Vec<&str> = line.split(':').collect();
@@ -921,12 +934,18 @@ impl TxPositionIndexer {
         max_block_number: Option<u128>,
     ) -> anyhow::Result<()> {
         let segment_dir = segment_dir.ok_or_else(|| anyhow!("segment_dir is required"))?;
-        let ledger_tx_loader = LedgerTxGetter::new(segment_dir)?;
+        let ledger_tx_loader = LedgerTxGetter::new(segment_dir, true)?;
         let stop_at = if let Some(max_block_number) = max_block_number {
             min(max_block_number, ledger_tx_loader.get_max_chunk_id())
         } else {
             ledger_tx_loader.get_max_chunk_id()
         };
+
+        if stop_at == 0 {
+            info!("No segments found for tx position indexer, maybe in sync mode");
+            return Ok(());
+        }
+
         let mut block_number = self.last_block_number; // avoiding partial indexing
         let mut expected_tx_order = self.last_tx_order + 1;
         let mut done_block = 0;
