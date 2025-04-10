@@ -175,6 +175,7 @@ pub(crate) fn collect_chunk(segment_dir: PathBuf, chunk_id: u128) -> anyhow::Res
 // we collect all the chunks and their segment numbers to unpack them later.
 pub(crate) fn collect_chunks(
     segment_dir: PathBuf,
+    allow_empty: bool,
 ) -> anyhow::Result<(HashMap<u128, Vec<u64>>, u128, u128)> {
     let mut chunks = HashMap::new();
     let mut max_chunk_id = 0;
@@ -220,7 +221,7 @@ pub(crate) fn collect_chunks(
         return Err(anyhow::anyhow!("Incomplete chunks found"));
     }
 
-    if chunks.is_empty() {
+    if chunks.is_empty() && !allow_empty {
         return Err(anyhow::anyhow!("No segment found in {:?}", segment_dir));
     }
     Ok((chunks, min_chunk_id, max_chunk_id))
@@ -391,7 +392,7 @@ pub(crate) struct LedgerTxGetter {
 
 impl LedgerTxGetter {
     pub(crate) fn new(segment_dir: PathBuf) -> anyhow::Result<Self> {
-        let (chunks, _min_chunk_id, max_chunk_id) = collect_chunks(segment_dir.clone())?;
+        let (chunks, _min_chunk_id, max_chunk_id) = collect_chunks(segment_dir.clone(), false)?;
 
         Ok(LedgerTxGetter {
             segment_dir,
@@ -409,7 +410,7 @@ impl LedgerTxGetter {
         exp_roots: Arc<RwLock<HashMap<u64, H256>>>,
         shutdown_signal: watch::Receiver<()>,
     ) -> anyhow::Result<Self> {
-        let (chunks, _min_chunk_id, max_chunk_id) = collect_chunks(segment_dir.clone())?;
+        let (chunks, _min_chunk_id, max_chunk_id) = collect_chunks(segment_dir.clone(), true)?;
 
         let chunks_to_sync = Arc::new(RwLock::new(chunks.clone()));
 
