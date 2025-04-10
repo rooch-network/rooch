@@ -76,7 +76,7 @@ pub struct ExecCommand {
         long = "exp-root",
         help = "Path to tx_order:state_root:accumulator_root file(results from RoochNetwork), for fast verification avoiding blocking on RPC requests"
     )]
-    pub exp_root_path: PathBuf,
+    pub exp_root_path: Option<PathBuf>,
     #[clap(
         long = "rollback",
         help = "rollback to tx order. If not set or ge executed_tx_order, start from executed_tx_order+1(nothing to do); otherwise, rollback to this order."
@@ -289,9 +289,13 @@ impl ExecCommand {
                 shutdown_signal,
             )?
         } else {
-            LedgerTxGetter::new(self.segment_dir.clone())?
+            LedgerTxGetter::new(self.segment_dir.clone(), false)?
         };
-
+        info!(
+            "auto sync ledger tx getter is: {} with mode: {:?}",
+            self.mode.need_sync(),
+            self.mode
+        );
         Ok(ExecInner {
             mode: self.mode,
             bypass_verify: self.bypass_verify,
@@ -559,7 +563,7 @@ impl ExecInner {
                 .load_ledger_tx_list(next_block_number, false, true) => {
                 let tx_list = result?;
             if tx_list.is_none() {
-                if self.mode == ExecMode::Sync {
+                if self.mode.need_sync() {
                     sleep(Duration::from_secs(5)).await;
                     continue;
                 }
@@ -569,7 +573,7 @@ impl ExecInner {
             let tx_list = tx_list.unwrap();
             for ledger_tx in tx_list {
                 let tx_order = ledger_tx.sequence_info.tx_order;
-                if tx_order > max_verified_tx_order && self.mode != ExecMode::Sync {
+                if tx_order > max_verified_tx_order && !self.mode.need_sync() {
                     reach_end = true;
                     break;
                 }
