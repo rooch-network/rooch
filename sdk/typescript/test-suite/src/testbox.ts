@@ -6,17 +6,20 @@ import * as net from 'net'
 import path from 'node:path'
 import { execSync } from 'child_process'
 import { spawn } from 'child_process'
-
+import debug from 'debug'
 import tmp, { DirResult } from 'tmp'
 import { Network, StartedNetwork } from 'testcontainers'
 
 import { OrdContainer, StartedOrdContainer } from './container/ord.js'
 import { RoochContainer, StartedRoochContainer } from './container/rooch.js'
 import { BitcoinContainer, StartedBitcoinContainer } from './container/bitcoin.js'
+import { PumbaContainer } from './container/pumba.js'
+import { logConsumer } from './container/debug/log_consumer.js'
+
+const log = debug('test-suite:testbox')
 
 const ordNetworkAlias = 'ord'
 const bitcoinNetworkAlias = 'bitcoind'
-let _defaultCmdAddress = ''
 
 export class TestBox {
   tmpDir: DirResult
@@ -28,11 +31,13 @@ export class TestBox {
 
   roochPort?: number
   private miningIntervalId: NodeJS.Timeout | null = null
+  _defaultCmdAddress = ''
 
   constructor() {
     tmp.setGracefulCleanup()
     this.tmpDir = tmp.dirSync({ unsafeCleanup: true })
     this.roochDir = path.join(this.tmpDir.name, '.rooch_test')
+    log('New TestBox rooch dir:', this.roochDir)
     fs.mkdirSync(this.roochDir, { recursive: true })
     this.roochCommand(['init', '--config-dir', `${this.roochDir}`, '--skip-password'])
     this.roochCommand(['env', 'switch', '--config-dir', `${this.roochDir}`, '--alias', 'local'])
@@ -71,7 +76,7 @@ export class TestBox {
     }
 
     if (!this.bitcoinContainer) {
-      console.log('bitcoin container not init')
+      log('bitcoin container not init')
       return
     }
 
@@ -138,13 +143,27 @@ export class TestBox {
       return
     }
 
-    const container = new RoochContainer().withHostConfigPath(`${this.tmpDir.name}/.rooch`)
-    await container.initializeRooch()
+    this.roochCommand(['init', '--config-dir', `${this.roochDir}`, '--skip-password'])
+    const container = new RoochContainer()
+
+    // Find local Rooch binary path as in the 'local' mode
+    const root = this.findRootDir('pnpm-workspace.yaml')
+    const localRoochPath = path.join(root!, 'target', 'debug', 'rooch')
+
+    // Verify local binary exists
+    if (!fs.existsSync(localRoochPath)) {
+      throw new Error(
+        `Local Rooch binary not found at ${localRoochPath}. Make sure to build it first.`,
+      )
+    }
+
+    // Configure container with local binary
+    container.withLocalBinary(localRoochPath).withLogConsumer(logConsumer('rooch'))
 
     container
       .withNetwork(await this.getNetwork())
       .withDataDir('TMP')
-      .withPort(port)
+      .withPort(6767)
 
     if (this.bitcoinContainer) {
       container
@@ -155,6 +174,20 @@ export class TestBox {
     }
 
     this.roochContainer = await container.start()
+
+    const rpcURL = this.roochContainer.getConnectionAddress()
+    log('container rooch rpc:', rpcURL, 'roochDir:', this.roochDir)
+    this.roochCommand([
+      'env',
+      'add',
+      '--config-dir',
+      `${this.roochDir}`,
+      '--alias',
+      'local',
+      '--rpc',
+      'http://' + rpcURL,
+    ])
+    this.roochCommand(['env', 'switch', '--config-dir', `${this.roochDir}`, '--alias', 'local'])
   }
 
   cleanEnv() {
@@ -256,6 +289,8 @@ export class TestBox {
   ) {
     // let addr = await this.defaultCmdAddress()
     // let fixedNamedAddresses = options.namedAddresses.replace('default', addr)
+    log('publish package:', packagePath, 'rooch Dir:', this.roochDir)
+
     const result = this.roochCommand(
       `move publish -p ${packagePath} --config-dir ${this.roochDir} --named-addresses ${options.namedAddresses} --json`,
     )
@@ -274,7 +309,7 @@ export class TestBox {
    * @throws {Error} When no active account address is found.
    */
   async defaultCmdAddress(): Promise<string> {
-    if (!_defaultCmdAddress) {
+    if (!this._defaultCmdAddress) {
       const accounts = JSON.parse(
         this.roochCommand(['account', 'list', '--config-dir', this.roochDir, '--json']),
       )
@@ -282,20 +317,20 @@ export class TestBox {
       if (Array.isArray(accounts)) {
         for (const account of accounts) {
           if (account.active) {
-            _defaultCmdAddress = account.local_account.hex_address
+            this._defaultCmdAddress = account.local_account.hex_address
           }
         }
       } else {
         const defaultAddr = accounts['default']
-        _defaultCmdAddress = defaultAddr.hex_address
+        this._defaultCmdAddress = defaultAddr.hex_address
       }
 
-      if (!_defaultCmdAddress) {
+      if (!this._defaultCmdAddress) {
         throw new Error('No active account address')
       }
     }
 
-    return _defaultCmdAddress
+    return this._defaultCmdAddress
   }
 
   private async getNetwork() {
@@ -336,6 +371,51 @@ export class TestBox {
     }
 
     return null
+  }
+
+  /**
+   * Simulates network delay for the Rooch RPC endpoint.
+   *
+   * @param delayMs Delay in milliseconds to add to network requests
+   * @param durationSec Duration of the simulated delay in seconds
+   */
+  async simulateRoochRpcDelay(delayMs: number, durationSec: number): Promise<void> {
+    if (!(this.roochContainer instanceof StartedRoochContainer)) {
+      throw new Error('This method only works with containerized Rooch instances')
+    }
+
+    const containerName = this.roochContainer.getContainerName()
+    await PumbaContainer.simulateDelay(containerName, delayMs, durationSec)
+  }
+
+  /**
+   * Simulates packet loss for the Rooch RPC endpoint.
+   *
+   * @param lossPercent Percentage of packets to drop (0-100)
+   * @param durationSec Duration of the simulated loss in seconds
+   */
+  async simulateRoochRpcPacketLoss(lossPercent: number, durationSec: number): Promise<void> {
+    if (!(this.roochContainer instanceof StartedRoochContainer)) {
+      throw new Error('This method only works with containerized Rooch instances')
+    }
+
+    const containerName = this.roochContainer.getContainerName()
+    await PumbaContainer.simulateLoss(containerName, lossPercent, durationSec)
+  }
+
+  /**
+   * Simulates bandwidth limitation for the Rooch RPC endpoint.
+   *
+   * @param rate Bandwidth rate (e.g., "1mbit", "500kbit")
+   * @param durationSec Duration of the bandwidth limitation in seconds
+   */
+  async simulateRoochRpcBandwidthLimit(rate: string, durationSec: number): Promise<void> {
+    if (!(this.roochContainer instanceof StartedRoochContainer)) {
+      throw new Error('This method only works with containerized Rooch instances')
+    }
+
+    const containerName = this.roochContainer.getContainerName()
+    await PumbaContainer.simulateBandwidth(containerName, rate, durationSec)
   }
 }
 

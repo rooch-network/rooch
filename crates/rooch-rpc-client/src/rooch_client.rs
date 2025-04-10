@@ -29,7 +29,9 @@ use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, ObjectStateVi
 use rooch_rpc_api::jsonrpc_types::{
     IndexerObjectStatePageView, ObjectStateFilterView, QueryOptions,
 };
-use rooch_rpc_api::jsonrpc_types::{TransactionWithInfoPageView, TxOptions};
+use rooch_rpc_api::jsonrpc_types::{
+    StateChangeSetPageView, StrView, SyncStateFilterView, TransactionWithInfoPageView, TxOptions,
+};
 use rooch_types::address::BitcoinAddress;
 use rooch_types::bitcoin::multisign_account::MultisignAccountInfo;
 use rooch_types::framework::address_mapping::RoochToBitcoinAddressMapping;
@@ -88,6 +90,19 @@ impl RoochRpcClient {
                 access_path.into(),
                 Some(StateOptions::new().state_root(state_root)),
             )
+            .await?)
+    }
+
+    pub async fn sync_states(
+        &self,
+        filter: SyncStateFilterView,
+        cursor: Option<StrView<u64>>,
+        limit: Option<StrView<u64>>,
+        query_option: Option<QueryOptions>,
+    ) -> Result<StateChangeSetPageView> {
+        Ok(self
+            .http
+            .sync_states(filter, cursor, limit, query_option)
             .await?)
     }
 
