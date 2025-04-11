@@ -15,7 +15,7 @@ pub const MODULE_NAME: &IdentStr = ident_str!("coin_store");
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Balance {
-    value: U256,
+    pub value: U256,
 }
 
 impl MoveStructType for Balance {
@@ -132,12 +132,16 @@ pub struct CoinStoreInfo {
 }
 
 impl CoinStoreInfo {
-    pub fn new(coin_type: StructTag, balance: Balance, frozen: bool) -> Self {
+    pub fn new_with_balance(coin_type: StructTag, balance: Balance, frozen: bool) -> Self {
         Self {
             coin_type,
             balance,
             frozen,
         }
+    }
+
+    pub fn new(coin_type: StructTag, value: U256, frozen: bool) -> Self {
+        Self::new_with_balance(coin_type, Balance { value }, frozen)
     }
 
     pub fn coin_type(&self) -> StructTag {
@@ -178,6 +182,10 @@ impl TryFrom<ObjectState> for CoinStoreInfo {
             _ => return Err(anyhow::anyhow!("Invalid CoinType TypeTag")),
         };
         let coin_store = CoinStore::<PlaceholderStruct>::from_bytes(raw_object.value.value)?;
-        Ok(Self::new(coin_type, coin_store.balance, coin_store.frozen))
+        Ok(Self::new_with_balance(
+            coin_type,
+            coin_store.balance,
+            coin_store.frozen,
+        ))
     }
 }

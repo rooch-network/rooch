@@ -12,6 +12,7 @@ module rooch_framework::coin_store {
     use rooch_framework::coin::{Self, Coin};
 
     friend rooch_framework::account_coin_store;
+    friend rooch_framework::multi_coin_store;
 
     // Error codes
 
@@ -287,5 +288,16 @@ module rooch_framework::coin_store {
             coin_type,
             amount,
         });
+    }
+
+    public(friend) fun unpack_balance(balance: Balance): u256 {
+        let Balance { value } = balance;
+        value
+    }
+
+    public(friend) fun pack_balance(value: u256): Balance {
+        Balance {
+            value
+        }
     }
 }
