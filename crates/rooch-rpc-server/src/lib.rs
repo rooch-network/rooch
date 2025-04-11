@@ -47,7 +47,7 @@ use rooch_sequencer::proxy::SequencerProxy;
 use rooch_store::da_store::DAMetaStore;
 use rooch_types::address::RoochAddress;
 use rooch_types::error::{GenesisError, RoochError};
-use rooch_types::rooch_network::{BuiltinChainID, RoochNetwork};
+use rooch_types::rooch_network::BuiltinChainID;
 use rooch_types::service_type::ServiceType;
 use serde_json::json;
 use std::fmt::Debug;
