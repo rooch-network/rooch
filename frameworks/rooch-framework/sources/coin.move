@@ -122,27 +122,6 @@ module rooch_framework::coin {
     /// Placeholder for the CoinType, used for the generic function.
     struct CoinTypePlaceholder has key {}
 
-    // /// Information about a specific coin type. Stored in the global Object storage.
-    // /// The non-generic CoinInfoV2 is a named Object, the `coin_type` is the unique key.
-    // struct CoinInfoV2 has key, store {
-    //     /// Type of the coin: `address::module_name::CoinStructName`, same as `moveos_std::type_info::type_name<CoinType>()`.
-    //     /// The name and symbol can repeat across different coin types, but the coin type must be unique.
-    //     coin_type: string::String,
-    //     /// Name of the coin.
-    //     name: string::String,
-    //     /// Symbol of the coin, usually a shorter version of the name.
-    //     /// For example, Singapore Dollar is SGD.
-    //     symbol: string::String,
-    //     /// Icon url of the coin
-    //     icon_url: Option<string::String>,
-    //     /// Number of decimals used to get its user representation.
-    //     /// For example, if `decimals` equals `2`, a balance of `505` coins should
-    //     /// be displayed to a user as `5.05` (`505 / 10 ** 2`).
-    //     decimals: u8,
-    //     /// The total value for the coin represented by coin type. Mutable.
-    //     supply: u256,
-    // }
-
     /// Coin metadata is copied from CoinInfo, and stored as dynamic field of CoinRegistry
     struct CoinMetadata has key, store {
         coin_info_id: ObjectID,

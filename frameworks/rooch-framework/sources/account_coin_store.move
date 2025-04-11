@@ -3,6 +3,7 @@
 
 module rooch_framework::account_coin_store {
     use std::string;
+    use moveos_std::type_info;
     use rooch_framework::multi_coin_store;
     use rooch_framework::multi_coin_store::MultiCoinStore;
     use rooch_framework::coin;
@@ -49,12 +50,21 @@ module rooch_framework::account_coin_store {
 
     /// Returns the balance of `addr` for provided `CoinType`.
     public fun balance<CoinType: key>(addr: address): u256 {
-        if (exist_account_coin_store<CoinType>(addr)) {
+        let coin_store_balance = if (exist_account_coin_store<CoinType>(addr)) {
             let coin_store = borrow_account_coin_store<CoinType>(addr);
             coin_store::balance(coin_store)
         } else {
             0u256
-        }
+        };
+        let multi_coin_store_balance = if (exist_multi_coin_store(addr)) {
+            let coin_type = type_info::type_name<CoinType>();
+            let coin_store = borrow_multi_coin_store(addr);
+            multi_coin_store::balance(coin_store, coin_type)
+        } else {
+            0u256
+        };
+        let balance = coin_store_balance + multi_coin_store_balance;
+        balance
     }
 
     /// Return the account CoinStore object id for addr
