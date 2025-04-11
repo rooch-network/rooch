@@ -7,3 +7,12 @@
 pub const ROOCH_BATCH_INTERVAL: u64 = 1000 * 60 * 15;
 // 5 seconds, check avail block to propose interval
 pub const PROPOSER_CHECK_INTERVAL: u64 = 5;
+
+/// weather enable multi coin store
+pub const ENABLE_MULTI_COIN_STORE: bool = true;
+
+/// Check if V2 system is enabled
+pub fn is_multi_coin_store_enabled() -> bool {
+    // Logic to check if multi coin store is enabled
+    ENABLE_MULTI_COIN_STORE
+}
