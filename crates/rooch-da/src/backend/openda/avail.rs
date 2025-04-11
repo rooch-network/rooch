@@ -191,7 +191,7 @@ impl AvailTurboClient {
         match response.json::<AvailTurboClientSubmitResponse>().await {
             Ok(submit_response) => {
                 tracing::info!(
-                    "Submitted segment: {} to Avail Turbo, submission_id: {}",
+                    "Submitted segment: {} to avail_turbo_da, submission_id: {}",
                     segment_id,
                     submit_response.submission_id,
                 );
