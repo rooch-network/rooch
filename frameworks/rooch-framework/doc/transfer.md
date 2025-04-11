@@ -11,6 +11,7 @@
 -  [Function `transfer_coin_to_multichain_address`](#0x3_transfer_transfer_coin_to_multichain_address)
 -  [Function `transfer_object`](#0x3_transfer_transfer_object)
 -  [Function `transfer_object_to_bitcoin_address`](#0x3_transfer_transfer_object_to_bitcoin_address)
+-  [Function `transfer_coin_by_type_name`](#0x3_transfer_transfer_coin_by_type_name)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
@@ -97,4 +98,16 @@ Transfer <code>from</code> owned <code>Object&lt;T&gt;</code> to a Bitcoin Addre
 
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="transfer.md#0x3_transfer_transfer_object_to_bitcoin_address">transfer_object_to_bitcoin_address</a>&lt;T: store, key&gt;(<b>to</b>: <a href="_String">string::String</a>, obj: <a href="_Object">object::Object</a>&lt;T&gt;)
+</code></pre>
+
+
+
+<a name="0x3_transfer_transfer_coin_by_type_name"></a>
+
+## Function `transfer_coin_by_type_name`
+
+Direct transfer by coin type name
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="transfer.md#0x3_transfer_transfer_coin_by_type_name">transfer_coin_by_type_name</a>(from: &<a href="">signer</a>, <b>to</b>: <b>address</b>, coin_type: <a href="_String">string::String</a>, amount: <a href="">u256</a>)
 </code></pre>

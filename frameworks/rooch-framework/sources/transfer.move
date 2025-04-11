@@ -66,4 +66,38 @@ module rooch_framework::transfer {
         address_mapping::bind_bitcoin_address_internal(rooch_address, btc_address);
         object::transfer(obj, rooch_address);
     }
+
+
+    // /// Forward generic transfers to non-generic system if it's available
+    // public entry fun transfer_coin_v2<CoinType: key + store>(
+    //     from: &signer,
+    //     to: address,
+    //     amount: u256,
+    // ) {
+    //     if (is_v2_enabled()) {
+    //         // Use V2 transfer
+    //         let coin_type = type_info::type_name<CoinType>();
+    //         transfer_coin_by_type_name(from, to, coin_type, amount);
+    //     } else {
+    //         // Use original generic transfer
+    //         transfer_coin<CoinType>(from, to, amount);
+    //     }
+    // }
+
+    /// Check if V2 system is enabled
+    fun is_v2_enabled(): bool {
+        // Logic to check if V2 system is enabled
+        // This could be a global flag or based on a feature flag
+        true // For simplicity
+    }
+
+    /// Direct transfer by coin type name
+    public entry fun transfer_coin_by_type_name(
+        from: &signer,
+        to: address,
+        coin_type: String,
+        amount: u256,
+    ) {
+        account_coin_store::transfer_by_type_name(from, to, coin_type, amount);
+    }
 }

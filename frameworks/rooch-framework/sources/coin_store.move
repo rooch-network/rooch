@@ -12,6 +12,7 @@ module rooch_framework::coin_store {
     use rooch_framework::coin::{Self, Coin};
 
     friend rooch_framework::account_coin_store;
+    friend rooch_framework::multi_coin_store;
 
     // Error codes
 
@@ -231,7 +232,6 @@ module rooch_framework::coin_store {
     }
 
     public(friend) fun borrow_mut_coin_store_internal<CoinType: key>(
-        
         object_id: ObjectID
     ): &mut Object<CoinStore<CoinType>> {
         assert!(object::exists_object_with_type<CoinStore<CoinType>>(object_id), ErrorCoinStoreNotFound);
@@ -288,5 +288,16 @@ module rooch_framework::coin_store {
             coin_type,
             amount,
         });
+    }
+
+    public(friend) fun unpack_balance(balance: Balance): u256 {
+        let Balance { value } = balance;
+        value
+    }
+
+    public(friend) fun pack_balance(value: u256): Balance {
+        Balance {
+            value
+        }
     }
 }

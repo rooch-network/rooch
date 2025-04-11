@@ -14,6 +14,7 @@ module rooch_framework::coin {
 
     friend rooch_framework::genesis;
     friend rooch_framework::coin_store;
+    friend rooch_framework::multi_coin_store;
 
     //
     // Errors
@@ -49,6 +50,12 @@ module rooch_framework::coin {
     /// The function is deprecated
     const ErrorDeprecated: u64 = 10;
 
+    /// The coin type is not match
+    const ErrorCoinTypeNotMatch: u64 = 11;
+
+    /// The coin type is invalid
+    const ErrorCoinTypeInvalid: u64 = 12;
+
     //
     // Constants
     //
@@ -64,6 +71,20 @@ module rooch_framework::coin {
     /// Otherwise, the `Coin` is a private coin, the user can only operate it by `CoinType` module's function.
     /// The Coin has no ability, it is a hot potato type, only can handle by Coin module.
     struct Coin<phantom CoinType : key> {
+        /// Amount of coin this address has.
+        /// Following the ERC20 standard, both asset balance and supply are expressed in u256
+        value: u256,
+    }
+
+    /// Main structure representing a coin.
+    /// Note the `CoinType` must have `key` ability.
+    /// if the `CoinType` has `store` ability, the `Coin` is a public coin, the user can operate it directly by coin module's function.
+    /// Otherwise, the `Coin` is a private coin, the user can only operate it by `CoinType` module's function.
+    /// The Coin has no ability, it is a hot potato type, only can handle by Coin module.
+    /// TODO how to distinguish between public and private coin?
+    struct GenericCoin {
+        /// Coin type name
+        coin_type: string::String,
         /// Amount of coin this address has.
         /// Following the ERC20 standard, both asset balance and supply are expressed in u256
         value: u256,
@@ -97,6 +118,9 @@ module rooch_framework::coin {
         /// The total value for the coin represented by coin type. Mutable.
         supply: u256,
     }
+
+    /// Placeholder for the CoinType, used for the generic function.
+    struct CoinTypePlaceholder has key {}
 
     /// Coin metadata is copied from CoinInfo, and stored as dynamic field of CoinRegistry
     struct CoinMetadata has key, store {
@@ -165,6 +189,14 @@ module rooch_framework::coin {
     /// Return the ObjectID of Object<CoinInfo<CoinType>>
     public fun coin_info_id<CoinType: key>(): ObjectID {
         object::named_object_id<CoinInfo<CoinType>>()
+    }
+
+    /// Returns the coin info id by the coin type name
+    public fun coin_info_id_by_type_name(coin_type: string::String): ObjectID {
+        let registry = borrow_registry();
+        assert!(object::contains_field(registry, coin_type), ErrorCoinInfoNotRegistered);
+        let coin_metadata: &CoinMetadata = object::borrow_field(registry, coin_type);
+        coin_metadata.coin_info_id
     }
 
     /// Returns the name of the coin.
@@ -477,13 +509,15 @@ module rooch_framework::coin {
 
     fun borrow_mut_coin_metadata<CoinType: key>(coin_info_obj: &Object<CoinInfo<CoinType>>) : &mut CoinMetadata {
         let coin_type = type_info::type_name<CoinType>();
+        // borrow_mut_coin_metadata_v2(coin_type, coin_info_obj)
+
         let registry = borrow_mut_registry();
         let coin_info_id = object::id(coin_info_obj);
         let coin_info = object::borrow(coin_info_obj);
         // If the coin metadata is not initialized, it is the Coin registered before v19
         // We need to initialize the coin metadata here
         if (!object::contains_field(registry, coin_type)){
-            
+
             let coin_metadata = CoinMetadata {
                 coin_info_id,
                 coin_type,
@@ -530,5 +564,40 @@ module rooch_framework::coin {
     #[test_only]
     public fun destroy_for_testing<CoinType: key>(coin: Coin<CoinType>) {
         let Coin { value:_ } = coin;
+    }
+
+
+    // === Non-generic functions ===
+    public fun check_coin_info_registered_by_type_name(coin_type: string::String) {
+        assert!(is_registered_by_type_name(coin_type), ErrorCoinInfoNotRegistered);
+    }
+    //
+    public fun is_registered_by_type_name(coin_type: string::String): bool {
+        let object_id = coin_info_id_by_type_name(coin_type);
+        // object::exists_object_with_type<CoinInfoV2>(object_id)
+        // TODO Have any risk after removing with check CoinInfo<CoinType>
+        object::exists_object(object_id)
+    }
+
+    // public fun value_by_type(coin_type: string::String, coin: &GenericCoin): u256 {
+    public fun generic_coin_value(coin: &GenericCoin): u256 {
+        coin.value
+    }
+
+    public(friend) fun unpack_generic_coin(coin: GenericCoin): u256 {
+        let GenericCoin { coin_type: _, value } = coin;
+        value
+    }
+
+    public(friend) fun pack_generic_coin(coin_type: string::String, value: u256): GenericCoin {
+        GenericCoin {
+            coin_type,
+            value
+        }
+    }
+
+    /// Helper function for getting the coin type name from a GenericCoin
+    public fun coin_type(coin: &GenericCoin): string::String {
+        coin.coin_type
     }
 }
