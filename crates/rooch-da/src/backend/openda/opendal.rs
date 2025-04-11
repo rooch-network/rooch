@@ -15,6 +15,7 @@ pub(crate) const BACK_OFF_MIN_DELAY: Duration = Duration::from_millis(300);
 pub(crate) struct OpenDalAdapter {
     stats: AdapterSubmitStat,
     operator: Operator,
+    scheme: OpenDAScheme,
 }
 
 impl OpenDalAdapter {
@@ -24,7 +25,7 @@ impl OpenDalAdapter {
         max_retries: usize,
         stats: AdapterSubmitStat,
     ) -> anyhow::Result<Self> {
-        let mut op = opendal::Operator::via_iter(Scheme::from(scheme), scheme_config)?;
+        let mut op = opendal::Operator::via_iter(Scheme::from(scheme.clone()), scheme_config)?;
         op = op
             .layer(
                 RetryLayer::new()
@@ -36,6 +37,7 @@ impl OpenDalAdapter {
         Ok(OpenDalAdapter {
             stats,
             operator: op,
+            scheme,
         })
     }
 
@@ -58,6 +60,7 @@ impl OpenDAAdapter for OpenDalAdapter {
     ) -> anyhow::Result<()> {
         match self.submit(segment_id, segment_bytes).await {
             Ok(_) => {
+                tracing::info!("Submitted segment: {} to {:?}", segment_id, self.scheme,);
                 self.stats
                     .add_done_segment(segment_id, is_last_segment)
                     .await;

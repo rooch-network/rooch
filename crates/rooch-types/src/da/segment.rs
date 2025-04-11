@@ -130,7 +130,9 @@ pub fn segment_from_bytes(bytes: &[u8]) -> anyhow::Result<Box<dyn Segment>> {
     match ChunkVersion::from(version) {
         ChunkVersion::V0 => Ok(Box::new(SegmentV0::from_bytes(bytes)?)),
         // ...
-        ChunkVersion::Unknown(_) => Err(anyhow::anyhow!("unsupported segment version")),
+        ChunkVersion::Unknown(_) => Err(anyhow::anyhow!(
+            "failed to deserialize segment from bytes: unsupported segment version"
+        )),
     }
 }
 
