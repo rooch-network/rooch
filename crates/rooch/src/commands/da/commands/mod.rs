@@ -391,6 +391,7 @@ pub(crate) struct LedgerTxGetter {
     chunks: Arc<RwLock<HashMap<u128, Vec<u64>>>>,
     client: Option<Client>,
     exp_roots: Arc<RwLock<HashMap<u64, H256>>>,
+    verify_all: bool,
     max_chunk_id: u128,
 }
 
@@ -404,6 +405,7 @@ impl LedgerTxGetter {
             chunks: Arc::new(RwLock::new(chunks)),
             client: None,
             exp_roots: Arc::new(RwLock::new(HashMap::new())),
+            verify_all: false,
             max_chunk_id,
         })
     }
@@ -414,6 +416,7 @@ impl LedgerTxGetter {
         client: Client,
         exp_roots: Arc<RwLock<HashMap<u64, H256>>>,
         shutdown_signal: watch::Receiver<()>,
+        verify_all: bool,
     ) -> anyhow::Result<Self> {
         let (chunks, _min_chunk_id, max_chunk_id) = collect_chunks(segment_dir.clone(), true)?;
 
@@ -431,6 +434,7 @@ impl LedgerTxGetter {
             chunks: chunks_to_sync,
             client: Some(client),
             exp_roots,
+            verify_all,
             max_chunk_id,
         })
     }
@@ -465,40 +469,58 @@ impl LedgerTxGetter {
                     Ok(Some(tx_list))
                 },
             )?;
-        if let Some(tx_list) = tx_list_opt {
+        if let Some(mut tx_list) = tx_list_opt {
             if let Some(client) = &self.client {
-                let exp_roots = self.exp_roots.clone();
-                let mut last_tx = tx_list.last().unwrap().clone();
-                let tx_order = last_tx.sequence_info.tx_order;
-                let last_tx_hash = last_tx.tx_hash();
-                let resp = client
-                    .rooch
-                    .get_transactions_by_hash(vec![last_tx_hash])
-                    .await?;
-                let tx_info = resp.into_iter().next().flatten().ok_or_else(|| {
-                    anyhow!("No transaction info found for tx: {:?}", last_tx_hash)
-                })?;
-                let tx_order_in_resp = tx_info.transaction.sequence_info.tx_order.0;
-                if tx_order_in_resp != tx_order {
-                    return Err(anyhow!(
-                        "failed to request tx by RPC: Tx order mismatch, expect: {}, actual: {}",
-                        tx_order,
-                        tx_order_in_resp
-                    ));
-                } else {
-                    let execution_info_opt = tx_info.execution_info;
-                    // some txs may not be executed for genesis_namespace: 527d69c3
-                    if let Some(execution_info) = execution_info_opt {
-                        let tx_state_root = execution_info.state_root.0;
-                        let mut exp_roots = exp_roots.write().await;
-                        exp_roots.insert(tx_order, tx_state_root);
+                if self.verify_all {
+                    for tx in &mut tx_list {
+                        let tx_order = tx.sequence_info.tx_order;
+                        let tx_hash = tx.tx_hash();
+                        self.fetch_exp_root(tx_order, tx_hash, client).await?;
                     }
+                } else {
+                    let mut last_tx = tx_list.last().unwrap().clone();
+                    let tx_order = last_tx.sequence_info.tx_order;
+                    let last_tx_hash = last_tx.tx_hash();
+                    self.fetch_exp_root(tx_order, last_tx_hash, client).await?;
                 }
             }
             Ok(Some(tx_list))
         } else {
             Ok(None)
         }
+    }
+
+    async fn fetch_exp_root(
+        &self,
+        tx_order: u64,
+        tx_hash: H256,
+        client: &Client,
+    ) -> anyhow::Result<()> {
+        let exp_roots = self.exp_roots.clone();
+
+        let resp = client.rooch.get_transactions_by_hash(vec![tx_hash]).await?;
+        let tx_info = resp
+            .into_iter()
+            .next()
+            .flatten()
+            .ok_or_else(|| anyhow!("No transaction info found for tx: {:?}", tx_hash))?;
+        let tx_order_in_resp = tx_info.transaction.sequence_info.tx_order.0;
+        if tx_order_in_resp != tx_order {
+            return Err(anyhow!(
+                "failed to request tx by RPC: Tx order mismatch, expect: {}, actual: {}",
+                tx_order,
+                tx_order_in_resp
+            ));
+        } else {
+            let execution_info_opt = tx_info.execution_info;
+            // some txs may not be executed for genesis_namespace: 527d69c3
+            if let Some(execution_info) = execution_info_opt {
+                let tx_state_root = execution_info.state_root.0;
+                let mut exp_roots = exp_roots.write().await;
+                exp_roots.insert(tx_order, tx_state_root);
+            }
+        }
+        Ok(())
     }
 
     // only valid for no segments sync
