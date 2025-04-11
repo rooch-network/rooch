@@ -1,5 +1,5 @@
 
-<a name="0x3_auth_validator"></a>
+<a id="0x3_auth_validator"></a>
 
 # Module `0x3::auth_validator`
 
@@ -45,7 +45,7 @@ public fun validate(authenticator_payload: vector<u8>)
 
 
 
-<a name="0x3_auth_validator_AuthValidator"></a>
+<a id="0x3_auth_validator_AuthValidator"></a>
 
 ## Struct `AuthValidator`
 
@@ -57,7 +57,7 @@ The Authentication Validator
 
 
 
-<a name="0x3_auth_validator_TxValidateResult"></a>
+<a id="0x3_auth_validator_TxValidateResult"></a>
 
 ## Struct `TxValidateResult`
 
@@ -70,12 +70,12 @@ this result will be stored in the TxContext
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x3_auth_validator_ErrorMustExecuteAfterValidate"></a>
+<a id="0x3_auth_validator_ErrorMustExecuteAfterValidate"></a>
 
 The function must be executed after the transaction is validated
 
@@ -85,7 +85,7 @@ The function must be executed after the transaction is validated
 
 
 
-<a name="0x3_auth_validator_ErrorValidateAccountDoesNotExist"></a>
+<a id="0x3_auth_validator_ErrorValidateAccountDoesNotExist"></a>
 
 
 
@@ -94,7 +94,7 @@ The function must be executed after the transaction is validated
 
 
 
-<a name="0x3_auth_validator_ErrorValidateBadChainId"></a>
+<a id="0x3_auth_validator_ErrorValidateBadChainId"></a>
 
 
 
@@ -103,7 +103,7 @@ The function must be executed after the transaction is validated
 
 
 
-<a name="0x3_auth_validator_ErrorValidateCantPayGasDeposit"></a>
+<a id="0x3_auth_validator_ErrorValidateCantPayGasDeposit"></a>
 
 
 
@@ -112,7 +112,7 @@ The function must be executed after the transaction is validated
 
 
 
-<a name="0x3_auth_validator_ErrorValidateFunctionCallBeyondSessionScope"></a>
+<a id="0x3_auth_validator_ErrorValidateFunctionCallBeyondSessionScope"></a>
 
 The function call is beyond the session's scope
 
@@ -122,7 +122,7 @@ The function call is beyond the session's scope
 
 
 
-<a name="0x3_auth_validator_ErrorValidateInvalidAccountAuthKey"></a>
+<a id="0x3_auth_validator_ErrorValidateInvalidAccountAuthKey"></a>
 
 The AuthKey in transaction's authenticator do not match with the sender's account auth key
 
@@ -132,7 +132,7 @@ The AuthKey in transaction's authenticator do not match with the sender's accoun
 
 
 
-<a name="0x3_auth_validator_ErrorValidateInvalidAuthenticator"></a>
+<a id="0x3_auth_validator_ErrorValidateInvalidAuthenticator"></a>
 
 InvalidAuthenticator, include invalid signature
 
@@ -142,7 +142,7 @@ InvalidAuthenticator, include invalid signature
 
 
 
-<a name="0x3_auth_validator_ErrorValidateMaxGasAmountExceeded"></a>
+<a id="0x3_auth_validator_ErrorValidateMaxGasAmountExceeded"></a>
 
 
 
@@ -151,7 +151,7 @@ InvalidAuthenticator, include invalid signature
 
 
 
-<a name="0x3_auth_validator_ErrorValidateNotInstalledAuthValidator"></a>
+<a id="0x3_auth_validator_ErrorValidateNotInstalledAuthValidator"></a>
 
 The authenticator's auth validator id is not installed to the sender's account
 
@@ -161,7 +161,7 @@ The authenticator's auth validator id is not installed to the sender's account
 
 
 
-<a name="0x3_auth_validator_ErrorValidateSequenceNuberTooOld"></a>
+<a id="0x3_auth_validator_ErrorValidateSequenceNuberTooOld"></a>
 
 Validate errors. These are separated out from the other errors in this
 module since they are mapped separately to major VM statuses, and are
@@ -173,7 +173,7 @@ important to the semantics of the system.
 
 
 
-<a name="0x3_auth_validator_ErrorValidateSequenceNumberTooBig"></a>
+<a id="0x3_auth_validator_ErrorValidateSequenceNumberTooBig"></a>
 
 
 
@@ -182,7 +182,7 @@ important to the semantics of the system.
 
 
 
-<a name="0x3_auth_validator_ErrorValidateSequenceNumberTooNew"></a>
+<a id="0x3_auth_validator_ErrorValidateSequenceNumberTooNew"></a>
 
 
 
@@ -191,7 +191,7 @@ important to the semantics of the system.
 
 
 
-<a name="0x3_auth_validator_ErrorValidateSessionIsExpired"></a>
+<a id="0x3_auth_validator_ErrorValidateSessionIsExpired"></a>
 
 The session is expired
 
@@ -201,7 +201,7 @@ The session is expired
 
 
 
-<a name="0x3_auth_validator_ErrorValidateTransactionExpired"></a>
+<a id="0x3_auth_validator_ErrorValidateTransactionExpired"></a>
 
 
 
@@ -210,7 +210,7 @@ The session is expired
 
 
 
-<a name="0x3_auth_validator_error_validate_sequence_number_too_old"></a>
+<a id="0x3_auth_validator_error_validate_sequence_number_too_old"></a>
 
 ## Function `error_validate_sequence_number_too_old`
 
@@ -221,7 +221,7 @@ The session is expired
 
 
 
-<a name="0x3_auth_validator_error_validate_sequence_number_too_new"></a>
+<a id="0x3_auth_validator_error_validate_sequence_number_too_new"></a>
 
 ## Function `error_validate_sequence_number_too_new`
 
@@ -232,7 +232,7 @@ The session is expired
 
 
 
-<a name="0x3_auth_validator_error_validate_account_does_not_exist"></a>
+<a id="0x3_auth_validator_error_validate_account_does_not_exist"></a>
 
 ## Function `error_validate_account_does_not_exist`
 
@@ -243,7 +243,7 @@ The session is expired
 
 
 
-<a name="0x3_auth_validator_error_validate_cant_pay_gas_deposit"></a>
+<a id="0x3_auth_validator_error_validate_cant_pay_gas_deposit"></a>
 
 ## Function `error_validate_cant_pay_gas_deposit`
 
@@ -254,7 +254,7 @@ The session is expired
 
 
 
-<a name="0x3_auth_validator_error_validate_transaction_expired"></a>
+<a id="0x3_auth_validator_error_validate_transaction_expired"></a>
 
 ## Function `error_validate_transaction_expired`
 
@@ -265,7 +265,7 @@ The session is expired
 
 
 
-<a name="0x3_auth_validator_error_validate_bad_chain_id"></a>
+<a id="0x3_auth_validator_error_validate_bad_chain_id"></a>
 
 ## Function `error_validate_bad_chain_id`
 
@@ -276,7 +276,7 @@ The session is expired
 
 
 
-<a name="0x3_auth_validator_error_validate_sequence_number_too_big"></a>
+<a id="0x3_auth_validator_error_validate_sequence_number_too_big"></a>
 
 ## Function `error_validate_sequence_number_too_big`
 
@@ -287,7 +287,7 @@ The session is expired
 
 
 
-<a name="0x3_auth_validator_error_validate_max_gas_amount_exceeded"></a>
+<a id="0x3_auth_validator_error_validate_max_gas_amount_exceeded"></a>
 
 ## Function `error_validate_max_gas_amount_exceeded`
 
@@ -298,7 +298,7 @@ The session is expired
 
 
 
-<a name="0x3_auth_validator_error_validate_invalid_account_auth_key"></a>
+<a id="0x3_auth_validator_error_validate_invalid_account_auth_key"></a>
 
 ## Function `error_validate_invalid_account_auth_key`
 
@@ -309,7 +309,7 @@ The session is expired
 
 
 
-<a name="0x3_auth_validator_error_validate_invalid_authenticator"></a>
+<a id="0x3_auth_validator_error_validate_invalid_authenticator"></a>
 
 ## Function `error_validate_invalid_authenticator`
 
@@ -320,7 +320,7 @@ The session is expired
 
 
 
-<a name="0x3_auth_validator_error_validate_not_installed_auth_validator"></a>
+<a id="0x3_auth_validator_error_validate_not_installed_auth_validator"></a>
 
 ## Function `error_validate_not_installed_auth_validator`
 
@@ -331,7 +331,7 @@ The session is expired
 
 
 
-<a name="0x3_auth_validator_error_validate_session_is_expired"></a>
+<a id="0x3_auth_validator_error_validate_session_is_expired"></a>
 
 ## Function `error_validate_session_is_expired`
 
@@ -342,7 +342,7 @@ The session is expired
 
 
 
-<a name="0x3_auth_validator_error_validate_function_call_beyond_session_scope"></a>
+<a id="0x3_auth_validator_error_validate_function_call_beyond_session_scope"></a>
 
 ## Function `error_validate_function_call_beyond_session_scope`
 
@@ -353,7 +353,7 @@ The session is expired
 
 
 
-<a name="0x3_auth_validator_new_auth_validator"></a>
+<a id="0x3_auth_validator_new_auth_validator"></a>
 
 ## Function `new_auth_validator`
 
@@ -364,7 +364,7 @@ The session is expired
 
 
 
-<a name="0x3_auth_validator_validator_id"></a>
+<a id="0x3_auth_validator_validator_id"></a>
 
 ## Function `validator_id`
 
@@ -375,7 +375,7 @@ The session is expired
 
 
 
-<a name="0x3_auth_validator_validator_module_address"></a>
+<a id="0x3_auth_validator_validator_module_address"></a>
 
 ## Function `validator_module_address`
 
@@ -386,7 +386,7 @@ The session is expired
 
 
 
-<a name="0x3_auth_validator_validator_module_name"></a>
+<a id="0x3_auth_validator_validator_module_name"></a>
 
 ## Function `validator_module_name`
 
@@ -397,7 +397,7 @@ The session is expired
 
 
 
-<a name="0x3_auth_validator_new_tx_validate_result"></a>
+<a id="0x3_auth_validator_new_tx_validate_result"></a>
 
 ## Function `new_tx_validate_result`
 
@@ -408,7 +408,7 @@ The session is expired
 
 
 
-<a name="0x3_auth_validator_get_validate_result_from_ctx"></a>
+<a id="0x3_auth_validator_get_validate_result_from_ctx"></a>
 
 ## Function `get_validate_result_from_ctx`
 
@@ -420,7 +420,7 @@ Get the TxValidateResult from the TxContext, Only can be called after the transa
 
 
 
-<a name="0x3_auth_validator_get_validator_id_from_ctx"></a>
+<a id="0x3_auth_validator_get_validator_id_from_ctx"></a>
 
 ## Function `get_validator_id_from_ctx`
 
@@ -432,7 +432,7 @@ Get the auth validator's id from the TxValidateResult in the TxContext
 
 
 
-<a name="0x3_auth_validator_get_session_key_from_ctx_option"></a>
+<a id="0x3_auth_validator_get_session_key_from_ctx_option"></a>
 
 ## Function `get_session_key_from_ctx_option`
 
@@ -445,7 +445,7 @@ If the TxValidateResult is None or SessionKey is None, return None
 
 
 
-<a name="0x3_auth_validator_is_validate_via_session_key"></a>
+<a id="0x3_auth_validator_is_validate_via_session_key"></a>
 
 ## Function `is_validate_via_session_key`
 
@@ -457,7 +457,7 @@ The current tx is validate via the session key or not
 
 
 
-<a name="0x3_auth_validator_get_session_key_from_ctx"></a>
+<a id="0x3_auth_validator_get_session_key_from_ctx"></a>
 
 ## Function `get_session_key_from_ctx`
 
@@ -470,7 +470,7 @@ Only can be called after the transaction is validated
 
 
 
-<a name="0x3_auth_validator_get_bitcoin_address_from_ctx"></a>
+<a id="0x3_auth_validator_get_bitcoin_address_from_ctx"></a>
 
 ## Function `get_bitcoin_address_from_ctx`
 

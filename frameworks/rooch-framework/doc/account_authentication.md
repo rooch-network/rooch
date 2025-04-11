@@ -1,5 +1,5 @@
 
-<a name="0x3_account_authentication"></a>
+<a id="0x3_account_authentication"></a>
 
 # Module `0x3::account_authentication`
 
@@ -24,7 +24,7 @@ Migrated from the account module for simplyfying the account module.
 
 
 
-<a name="0x3_account_authentication_InstalledAuthValidator"></a>
+<a id="0x3_account_authentication_InstalledAuthValidator"></a>
 
 ## Resource `InstalledAuthValidator`
 
@@ -36,12 +36,12 @@ A resource that holds the auth validator ids for this account has installed.
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x3_account_authentication_ErrorAuthValidatorAlreadyInstalled"></a>
+<a id="0x3_account_authentication_ErrorAuthValidatorAlreadyInstalled"></a>
 
 The authentication validator is already installed
 
@@ -51,7 +51,7 @@ The authentication validator is already installed
 
 
 
-<a name="0x3_account_authentication_is_auth_validator_installed"></a>
+<a id="0x3_account_authentication_is_auth_validator_installed"></a>
 
 ## Function `is_auth_validator_installed`
 
@@ -63,7 +63,7 @@ Return if the authentication validator is installed for the account at <code>acc
 
 
 
-<a name="0x3_account_authentication_install_auth_validator"></a>
+<a id="0x3_account_authentication_install_auth_validator"></a>
 
 ## Function `install_auth_validator`
 
@@ -74,7 +74,7 @@ Return if the authentication validator is installed for the account at <code>acc
 
 
 
-<a name="0x3_account_authentication_install_auth_validator_entry"></a>
+<a id="0x3_account_authentication_install_auth_validator_entry"></a>
 
 ## Function `install_auth_validator_entry`
 

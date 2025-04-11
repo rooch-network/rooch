@@ -1,5 +1,5 @@
 
-<a name="0x4_types"></a>
+<a id="0x4_types"></a>
 
 # Module `0x4::types`
 
@@ -65,7 +65,7 @@
 
 
 
-<a name="0x4_types_Block"></a>
+<a id="0x4_types_Block"></a>
 
 ## Struct `Block`
 
@@ -77,7 +77,7 @@
 
 
 
-<a name="0x4_types_Header"></a>
+<a id="0x4_types_Header"></a>
 
 ## Struct `Header`
 
@@ -89,7 +89,7 @@
 
 
 
-<a name="0x4_types_Transaction"></a>
+<a id="0x4_types_Transaction"></a>
 
 ## Struct `Transaction`
 
@@ -101,7 +101,7 @@
 
 
 
-<a name="0x4_types_TxIn"></a>
+<a id="0x4_types_TxIn"></a>
 
 ## Struct `TxIn`
 
@@ -113,7 +113,7 @@
 
 
 
-<a name="0x4_types_Witness"></a>
+<a id="0x4_types_Witness"></a>
 
 ## Struct `Witness`
 
@@ -125,7 +125,7 @@
 
 
 
-<a name="0x4_types_OutPoint"></a>
+<a id="0x4_types_OutPoint"></a>
 
 ## Struct `OutPoint`
 
@@ -137,7 +137,7 @@
 
 
 
-<a name="0x4_types_TxOut"></a>
+<a id="0x4_types_TxOut"></a>
 
 ## Struct `TxOut`
 
@@ -149,7 +149,7 @@
 
 
 
-<a name="0x4_types_BlockHeightHash"></a>
+<a id="0x4_types_BlockHeightHash"></a>
 
 ## Struct `BlockHeightHash`
 
@@ -161,12 +161,12 @@
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x4_types_LOCK_TIME_THRESHOLD"></a>
+<a id="0x4_types_LOCK_TIME_THRESHOLD"></a>
 
 
 
@@ -175,7 +175,7 @@
 
 
 
-<a name="0x4_types_TAPROOT_ANNEX_PREFIX"></a>
+<a id="0x4_types_TAPROOT_ANNEX_PREFIX"></a>
 
 
 
@@ -184,7 +184,7 @@
 
 
 
-<a name="0x4_types_U32_MAX"></a>
+<a id="0x4_types_U32_MAX"></a>
 
 
 
@@ -193,7 +193,7 @@
 
 
 
-<a name="0x4_types_header"></a>
+<a id="0x4_types_header"></a>
 
 ## Function `header`
 
@@ -204,7 +204,7 @@
 
 
 
-<a name="0x4_types_txdata"></a>
+<a id="0x4_types_txdata"></a>
 
 ## Function `txdata`
 
@@ -215,7 +215,7 @@
 
 
 
-<a name="0x4_types_unpack_block"></a>
+<a id="0x4_types_unpack_block"></a>
 
 ## Function `unpack_block`
 
@@ -226,7 +226,7 @@
 
 
 
-<a name="0x4_types_version"></a>
+<a id="0x4_types_version"></a>
 
 ## Function `version`
 
@@ -237,7 +237,7 @@
 
 
 
-<a name="0x4_types_prev_blockhash"></a>
+<a id="0x4_types_prev_blockhash"></a>
 
 ## Function `prev_blockhash`
 
@@ -248,7 +248,7 @@
 
 
 
-<a name="0x4_types_merkle_root"></a>
+<a id="0x4_types_merkle_root"></a>
 
 ## Function `merkle_root`
 
@@ -259,7 +259,7 @@
 
 
 
-<a name="0x4_types_time"></a>
+<a id="0x4_types_time"></a>
 
 ## Function `time`
 
@@ -270,7 +270,7 @@
 
 
 
-<a name="0x4_types_bits"></a>
+<a id="0x4_types_bits"></a>
 
 ## Function `bits`
 
@@ -281,7 +281,7 @@
 
 
 
-<a name="0x4_types_nonce"></a>
+<a id="0x4_types_nonce"></a>
 
 ## Function `nonce`
 
@@ -292,7 +292,7 @@
 
 
 
-<a name="0x4_types_header_to_bytes"></a>
+<a id="0x4_types_header_to_bytes"></a>
 
 ## Function `header_to_bytes`
 
@@ -303,7 +303,7 @@
 
 
 
-<a name="0x4_types_header_to_hash"></a>
+<a id="0x4_types_header_to_hash"></a>
 
 ## Function `header_to_hash`
 
@@ -314,7 +314,7 @@
 
 
 
-<a name="0x4_types_tx_id"></a>
+<a id="0x4_types_tx_id"></a>
 
 ## Function `tx_id`
 
@@ -325,7 +325,7 @@
 
 
 
-<a name="0x4_types_tx_version"></a>
+<a id="0x4_types_tx_version"></a>
 
 ## Function `tx_version`
 
@@ -336,7 +336,7 @@
 
 
 
-<a name="0x4_types_tx_lock_time"></a>
+<a id="0x4_types_tx_lock_time"></a>
 
 ## Function `tx_lock_time`
 
@@ -347,7 +347,7 @@
 
 
 
-<a name="0x4_types_tx_input"></a>
+<a id="0x4_types_tx_input"></a>
 
 ## Function `tx_input`
 
@@ -358,7 +358,7 @@
 
 
 
-<a name="0x4_types_tx_output"></a>
+<a id="0x4_types_tx_output"></a>
 
 ## Function `tx_output`
 
@@ -369,7 +369,7 @@
 
 
 
-<a name="0x4_types_txin_previous_output"></a>
+<a id="0x4_types_txin_previous_output"></a>
 
 ## Function `txin_previous_output`
 
@@ -380,7 +380,7 @@
 
 
 
-<a name="0x4_types_txin_script_sig"></a>
+<a id="0x4_types_txin_script_sig"></a>
 
 ## Function `txin_script_sig`
 
@@ -391,7 +391,7 @@
 
 
 
-<a name="0x4_types_txin_sequence"></a>
+<a id="0x4_types_txin_sequence"></a>
 
 ## Function `txin_sequence`
 
@@ -402,7 +402,7 @@
 
 
 
-<a name="0x4_types_txin_witness"></a>
+<a id="0x4_types_txin_witness"></a>
 
 ## Function `txin_witness`
 
@@ -413,7 +413,7 @@
 
 
 
-<a name="0x4_types_witness_nth"></a>
+<a id="0x4_types_witness_nth"></a>
 
 ## Function `witness_nth`
 
@@ -424,7 +424,7 @@
 
 
 
-<a name="0x4_types_witness_len"></a>
+<a id="0x4_types_witness_len"></a>
 
 ## Function `witness_len`
 
@@ -435,7 +435,7 @@
 
 
 
-<a name="0x4_types_witness_tapscript"></a>
+<a id="0x4_types_witness_tapscript"></a>
 
 ## Function `witness_tapscript`
 
@@ -452,7 +452,7 @@ bitcoin_script::is_v1_p2tr to check whether this is actually a Taproot witness.
 
 
 
-<a name="0x4_types_new_outpoint"></a>
+<a id="0x4_types_new_outpoint"></a>
 
 ## Function `new_outpoint`
 
@@ -463,7 +463,7 @@ bitcoin_script::is_v1_p2tr to check whether this is actually a Taproot witness.
 
 
 
-<a name="0x4_types_outpoint_txid"></a>
+<a id="0x4_types_outpoint_txid"></a>
 
 ## Function `outpoint_txid`
 
@@ -474,7 +474,7 @@ bitcoin_script::is_v1_p2tr to check whether this is actually a Taproot witness.
 
 
 
-<a name="0x4_types_outpoint_vout"></a>
+<a id="0x4_types_outpoint_vout"></a>
 
 ## Function `outpoint_vout`
 
@@ -485,7 +485,7 @@ bitcoin_script::is_v1_p2tr to check whether this is actually a Taproot witness.
 
 
 
-<a name="0x4_types_unpack_outpoint"></a>
+<a id="0x4_types_unpack_outpoint"></a>
 
 ## Function `unpack_outpoint`
 
@@ -496,7 +496,7 @@ bitcoin_script::is_v1_p2tr to check whether this is actually a Taproot witness.
 
 
 
-<a name="0x4_types_null_outpoint"></a>
+<a id="0x4_types_null_outpoint"></a>
 
 ## Function `null_outpoint`
 
@@ -509,7 +509,7 @@ This value is used for coinbase transactions because they don't have any previou
 
 
 
-<a name="0x4_types_is_null_outpoint"></a>
+<a id="0x4_types_is_null_outpoint"></a>
 
 ## Function `is_null_outpoint`
 
@@ -520,7 +520,7 @@ This value is used for coinbase transactions because they don't have any previou
 
 
 
-<a name="0x4_types_unbound_outpoint"></a>
+<a id="0x4_types_unbound_outpoint"></a>
 
 ## Function `unbound_outpoint`
 
@@ -532,7 +532,7 @@ The Inscription unbound outpoint.
 
 
 
-<a name="0x4_types_txout_value"></a>
+<a id="0x4_types_txout_value"></a>
 
 ## Function `txout_value`
 
@@ -543,7 +543,7 @@ The Inscription unbound outpoint.
 
 
 
-<a name="0x4_types_txout_script_pubkey"></a>
+<a id="0x4_types_txout_script_pubkey"></a>
 
 ## Function `txout_script_pubkey`
 
@@ -554,7 +554,7 @@ The Inscription unbound outpoint.
 
 
 
-<a name="0x4_types_txout_address"></a>
+<a id="0x4_types_txout_address"></a>
 
 ## Function `txout_address`
 
@@ -565,7 +565,7 @@ The Inscription unbound outpoint.
 
 
 
-<a name="0x4_types_txout_object_address"></a>
+<a id="0x4_types_txout_object_address"></a>
 
 ## Function `txout_object_address`
 
@@ -576,7 +576,7 @@ The Inscription unbound outpoint.
 
 
 
-<a name="0x4_types_unpack_txout"></a>
+<a id="0x4_types_unpack_txout"></a>
 
 ## Function `unpack_txout`
 
@@ -587,7 +587,7 @@ The Inscription unbound outpoint.
 
 
 
-<a name="0x4_types_new_block_height_hash"></a>
+<a id="0x4_types_new_block_height_hash"></a>
 
 ## Function `new_block_height_hash`
 
@@ -598,7 +598,7 @@ The Inscription unbound outpoint.
 
 
 
-<a name="0x4_types_unpack_block_height_hash"></a>
+<a id="0x4_types_unpack_block_height_hash"></a>
 
 ## Function `unpack_block_height_hash`
 
@@ -609,7 +609,7 @@ The Inscription unbound outpoint.
 
 
 
-<a name="0x4_types_is_coinbase_tx"></a>
+<a id="0x4_types_is_coinbase_tx"></a>
 
 ## Function `is_coinbase_tx`
 

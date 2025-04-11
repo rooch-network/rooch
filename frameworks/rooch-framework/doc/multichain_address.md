@@ -1,5 +1,5 @@
 
-<a name="0x3_multichain_address"></a>
+<a id="0x3_multichain_address"></a>
 
 # Module `0x3::multichain_address`
 
@@ -35,7 +35,7 @@
 
 
 
-<a name="0x3_multichain_address_MultiChainAddress"></a>
+<a id="0x3_multichain_address_MultiChainAddress"></a>
 
 ## Struct `MultiChainAddress`
 
@@ -47,12 +47,12 @@
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x3_multichain_address_LENGTH"></a>
+<a id="0x3_multichain_address_LENGTH"></a>
 
 
 
@@ -61,7 +61,7 @@
 
 
 
-<a name="0x3_multichain_address_ErrorMultiChainIDMismatch"></a>
+<a id="0x3_multichain_address_ErrorMultiChainIDMismatch"></a>
 
 
 
@@ -70,7 +70,7 @@
 
 
 
-<a name="0x3_multichain_address_MULTICHAIN_ID_BITCOIN"></a>
+<a id="0x3_multichain_address_MULTICHAIN_ID_BITCOIN"></a>
 
 
 
@@ -79,7 +79,7 @@
 
 
 
-<a name="0x3_multichain_address_MULTICHAIN_ID_ETHER"></a>
+<a id="0x3_multichain_address_MULTICHAIN_ID_ETHER"></a>
 
 
 
@@ -88,7 +88,7 @@
 
 
 
-<a name="0x3_multichain_address_MULTICHAIN_ID_NOSTR"></a>
+<a id="0x3_multichain_address_MULTICHAIN_ID_NOSTR"></a>
 
 
 
@@ -97,7 +97,7 @@
 
 
 
-<a name="0x3_multichain_address_MULTICHAIN_ID_ROOCH"></a>
+<a id="0x3_multichain_address_MULTICHAIN_ID_ROOCH"></a>
 
 
 
@@ -106,7 +106,7 @@
 
 
 
-<a name="0x3_multichain_address_multichain_id_bitcoin"></a>
+<a id="0x3_multichain_address_multichain_id_bitcoin"></a>
 
 ## Function `multichain_id_bitcoin`
 
@@ -117,7 +117,7 @@
 
 
 
-<a name="0x3_multichain_address_multichain_id_ether"></a>
+<a id="0x3_multichain_address_multichain_id_ether"></a>
 
 ## Function `multichain_id_ether`
 
@@ -128,7 +128,7 @@
 
 
 
-<a name="0x3_multichain_address_multichain_id_nostr"></a>
+<a id="0x3_multichain_address_multichain_id_nostr"></a>
 
 ## Function `multichain_id_nostr`
 
@@ -139,7 +139,7 @@
 
 
 
-<a name="0x3_multichain_address_multichain_id_rooch"></a>
+<a id="0x3_multichain_address_multichain_id_rooch"></a>
 
 ## Function `multichain_id_rooch`
 
@@ -150,7 +150,7 @@
 
 
 
-<a name="0x3_multichain_address_get_length"></a>
+<a id="0x3_multichain_address_get_length"></a>
 
 ## Function `get_length`
 
@@ -161,7 +161,7 @@
 
 
 
-<a name="0x3_multichain_address_new"></a>
+<a id="0x3_multichain_address_new"></a>
 
 ## Function `new`
 
@@ -172,7 +172,7 @@
 
 
 
-<a name="0x3_multichain_address_from_bytes"></a>
+<a id="0x3_multichain_address_from_bytes"></a>
 
 ## Function `from_bytes`
 
@@ -183,7 +183,7 @@
 
 
 
-<a name="0x3_multichain_address_from_eth"></a>
+<a id="0x3_multichain_address_from_eth"></a>
 
 ## Function `from_eth`
 
@@ -194,7 +194,7 @@
 
 
 
-<a name="0x3_multichain_address_from_bitcoin"></a>
+<a id="0x3_multichain_address_from_bitcoin"></a>
 
 ## Function `from_bitcoin`
 
@@ -205,7 +205,7 @@
 
 
 
-<a name="0x3_multichain_address_multichain_id"></a>
+<a id="0x3_multichain_address_multichain_id"></a>
 
 ## Function `multichain_id`
 
@@ -216,7 +216,7 @@
 
 
 
-<a name="0x3_multichain_address_raw_address"></a>
+<a id="0x3_multichain_address_raw_address"></a>
 
 ## Function `raw_address`
 
@@ -227,7 +227,7 @@
 
 
 
-<a name="0x3_multichain_address_is_rooch_address"></a>
+<a id="0x3_multichain_address_is_rooch_address"></a>
 
 ## Function `is_rooch_address`
 
@@ -238,7 +238,7 @@
 
 
 
-<a name="0x3_multichain_address_is_eth_address"></a>
+<a id="0x3_multichain_address_is_eth_address"></a>
 
 ## Function `is_eth_address`
 
@@ -249,7 +249,7 @@
 
 
 
-<a name="0x3_multichain_address_is_bitcoin_address"></a>
+<a id="0x3_multichain_address_is_bitcoin_address"></a>
 
 ## Function `is_bitcoin_address`
 
@@ -260,7 +260,7 @@
 
 
 
-<a name="0x3_multichain_address_into_rooch_address"></a>
+<a id="0x3_multichain_address_into_rooch_address"></a>
 
 ## Function `into_rooch_address`
 
@@ -271,7 +271,7 @@
 
 
 
-<a name="0x3_multichain_address_into_eth_address"></a>
+<a id="0x3_multichain_address_into_eth_address"></a>
 
 ## Function `into_eth_address`
 
@@ -282,7 +282,7 @@
 
 
 
-<a name="0x3_multichain_address_into_bitcoin_address"></a>
+<a id="0x3_multichain_address_into_bitcoin_address"></a>
 
 ## Function `into_bitcoin_address`
 
@@ -293,7 +293,7 @@
 
 
 
-<a name="0x3_multichain_address_mapping_to_rooch_address"></a>
+<a id="0x3_multichain_address_mapping_to_rooch_address"></a>
 
 ## Function `mapping_to_rooch_address`
 

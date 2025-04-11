@@ -16,7 +16,9 @@ use bitcoin_client::proxy::BitcoinClientProxy;
 use coerce::actor::scheduler::timer::Timer;
 use coerce::actor::{system::ActorSystem, IntoActor};
 use jsonrpsee::RpcModule;
+use moveos::moveos::{new_moveos_global_module_cache, MoveOSCacheManager};
 use moveos_eventbus::bus::EventBus;
+use moveos_types::state_resolver::RootObjectResolver;
 use raw_store::errors::RawStoreError;
 use rooch_config::da_config::derive_namespace_from_genesis;
 use rooch_config::server_config::ServerConfig;
@@ -28,6 +30,7 @@ use rooch_db::RoochDB;
 use rooch_executor::actor::executor::ExecutorActor;
 use rooch_executor::actor::reader_executor::ReaderExecutorActor;
 use rooch_executor::proxy::ExecutorProxy;
+use rooch_genesis::FrameworksGasParameters;
 use rooch_genesis::{RoochGenesis, RoochGenesisV2};
 use rooch_indexer::actor::indexer::IndexerActor;
 use rooch_indexer::actor::reader_indexer::IndexerReaderActor;
@@ -252,6 +255,12 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         root.size()
     );
 
+    let resolver = RootObjectResolver::new(root.clone(), &moveos_store);
+    let gas_parameters = FrameworksGasParameters::load_from_chain(&resolver)?;
+    let global_module_cache = new_moveos_global_module_cache();
+    let global_cache_manager =
+        MoveOSCacheManager::new(gas_parameters.all_natives(), global_module_cache.clone());
+
     let event_bus = EventBus::new();
     let subscription_handle = Arc::new(SubscriptionHandler::new(&prometheus_registry));
     let notify_actor = NotifyActor::new(event_bus.clone(), subscription_handle.clone());
@@ -266,6 +275,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         rooch_store.clone(),
         &prometheus_registry,
         Some(notify_actor_ref.clone()),
+        global_cache_manager.clone(),
     )?;
 
     let executor_actor_ref = executor_actor
@@ -277,6 +287,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         moveos_store.clone(),
         rooch_store.clone(),
         Some(notify_actor_ref.clone()),
+        global_cache_manager.clone(),
     )?;
 
     let read_executor_ref = reader_executor

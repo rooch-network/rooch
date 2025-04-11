@@ -1,5 +1,5 @@
 
-<a name="0xa_bitseed"></a>
+<a id="0xa_bitseed"></a>
 
 # Module `0xa::bitseed`
 
@@ -39,7 +39,7 @@
 
 
 
-<a name="0xa_bitseed_Bitseed"></a>
+<a id="0xa_bitseed_Bitseed"></a>
 
 ## Resource `Bitseed`
 
@@ -51,12 +51,12 @@ Bitseed is a SFT asset type.
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0xa_bitseed_BIT_SEED_DEPLOY"></a>
+<a id="0xa_bitseed_BIT_SEED_DEPLOY"></a>
 
 
 
@@ -65,7 +65,7 @@ Bitseed is a SFT asset type.
 
 
 
-<a name="0xa_bitseed_BIT_SEED_GENERATOR_TICK"></a>
+<a id="0xa_bitseed_BIT_SEED_GENERATOR_TICK"></a>
 
 
 
@@ -74,7 +74,7 @@ Bitseed is a SFT asset type.
 
 
 
-<a name="0xa_bitseed_BIT_SEED_MINT"></a>
+<a id="0xa_bitseed_BIT_SEED_MINT"></a>
 
 
 
@@ -83,7 +83,7 @@ Bitseed is a SFT asset type.
 
 
 
-<a name="0xa_bitseed_ErrorBitseedNotMergeable"></a>
+<a id="0xa_bitseed_ErrorBitseedNotMergeable"></a>
 
 
 
@@ -92,7 +92,7 @@ Bitseed is a SFT asset type.
 
 
 
-<a name="0xa_bitseed_ErrorBitseedNotSplittable"></a>
+<a id="0xa_bitseed_ErrorBitseedNotSplittable"></a>
 
 
 
@@ -101,7 +101,7 @@ Bitseed is a SFT asset type.
 
 
 
-<a name="0xa_bitseed_ErrorInvalidAmount"></a>
+<a id="0xa_bitseed_ErrorInvalidAmount"></a>
 
 
 
@@ -110,7 +110,7 @@ Bitseed is a SFT asset type.
 
 
 
-<a name="0xa_bitseed_METAPROTOCOL"></a>
+<a id="0xa_bitseed_METAPROTOCOL"></a>
 
 
 
@@ -119,7 +119,7 @@ Bitseed is a SFT asset type.
 
 
 
-<a name="0xa_bitseed_default_metaprotocol"></a>
+<a id="0xa_bitseed_default_metaprotocol"></a>
 
 ## Function `default_metaprotocol`
 
@@ -130,7 +130,7 @@ Bitseed is a SFT asset type.
 
 
 
-<a name="0xa_bitseed_new"></a>
+<a id="0xa_bitseed_new"></a>
 
 ## Function `new`
 
@@ -141,7 +141,7 @@ Bitseed is a SFT asset type.
 
 
 
-<a name="0xa_bitseed_is_same_type"></a>
+<a id="0xa_bitseed_is_same_type"></a>
 
 ## Function `is_same_type`
 
@@ -153,7 +153,7 @@ Check if the two bitseeds are the same type.
 
 
 
-<a name="0xa_bitseed_is_mergeable"></a>
+<a id="0xa_bitseed_is_mergeable"></a>
 
 ## Function `is_mergeable`
 
@@ -165,7 +165,7 @@ Check if the two bitseeds are mergeable.
 
 
 
-<a name="0xa_bitseed_merge"></a>
+<a id="0xa_bitseed_merge"></a>
 
 ## Function `merge`
 
@@ -176,7 +176,7 @@ Check if the two bitseeds are mergeable.
 
 
 
-<a name="0xa_bitseed_is_splitable"></a>
+<a id="0xa_bitseed_is_splitable"></a>
 
 ## Function `is_splitable`
 
@@ -188,7 +188,7 @@ Check if the bitseed is splittable.
 
 
 
-<a name="0xa_bitseed_split"></a>
+<a id="0xa_bitseed_split"></a>
 
 ## Function `split`
 
@@ -200,7 +200,7 @@ Split the bitseed and return the new bitseed.
 
 
 
-<a name="0xa_bitseed_burn"></a>
+<a id="0xa_bitseed_burn"></a>
 
 ## Function `burn`
 
@@ -211,7 +211,7 @@ Split the bitseed and return the new bitseed.
 
 
 
-<a name="0xa_bitseed_metaprotocol"></a>
+<a id="0xa_bitseed_metaprotocol"></a>
 
 ## Function `metaprotocol`
 
@@ -222,7 +222,7 @@ Split the bitseed and return the new bitseed.
 
 
 
-<a name="0xa_bitseed_amount"></a>
+<a id="0xa_bitseed_amount"></a>
 
 ## Function `amount`
 
@@ -233,7 +233,7 @@ Split the bitseed and return the new bitseed.
 
 
 
-<a name="0xa_bitseed_tick"></a>
+<a id="0xa_bitseed_tick"></a>
 
 ## Function `tick`
 
@@ -244,7 +244,7 @@ Split the bitseed and return the new bitseed.
 
 
 
-<a name="0xa_bitseed_bid"></a>
+<a id="0xa_bitseed_bid"></a>
 
 ## Function `bid`
 
@@ -255,7 +255,7 @@ Split the bitseed and return the new bitseed.
 
 
 
-<a name="0xa_bitseed_content_type"></a>
+<a id="0xa_bitseed_content_type"></a>
 
 ## Function `content_type`
 
@@ -266,7 +266,7 @@ Split the bitseed and return the new bitseed.
 
 
 
-<a name="0xa_bitseed_body"></a>
+<a id="0xa_bitseed_body"></a>
 
 ## Function `body`
 
@@ -277,7 +277,7 @@ Split the bitseed and return the new bitseed.
 
 
 
-<a name="0xa_bitseed_attributes"></a>
+<a id="0xa_bitseed_attributes"></a>
 
 ## Function `attributes`
 
@@ -288,7 +288,7 @@ Split the bitseed and return the new bitseed.
 
 
 
-<a name="0xa_bitseed_content_attributes_hash"></a>
+<a id="0xa_bitseed_content_attributes_hash"></a>
 
 ## Function `content_attributes_hash`
 
@@ -299,7 +299,7 @@ Split the bitseed and return the new bitseed.
 
 
 
-<a name="0xa_bitseed_seal_metaprotocol_validity"></a>
+<a id="0xa_bitseed_seal_metaprotocol_validity"></a>
 
 ## Function `seal_metaprotocol_validity`
 
@@ -310,7 +310,7 @@ Split the bitseed and return the new bitseed.
 
 
 
-<a name="0xa_bitseed_add_metaprotocol_attachment"></a>
+<a id="0xa_bitseed_add_metaprotocol_attachment"></a>
 
 ## Function `add_metaprotocol_attachment`
 
@@ -321,7 +321,7 @@ Split the bitseed and return the new bitseed.
 
 
 
-<a name="0xa_bitseed_exists_metaprotocol_attachment"></a>
+<a id="0xa_bitseed_exists_metaprotocol_attachment"></a>
 
 ## Function `exists_metaprotocol_attachment`
 
@@ -332,7 +332,7 @@ Split the bitseed and return the new bitseed.
 
 
 
-<a name="0xa_bitseed_remove_metaprotocol_attachment"></a>
+<a id="0xa_bitseed_remove_metaprotocol_attachment"></a>
 
 ## Function `remove_metaprotocol_attachment`
 

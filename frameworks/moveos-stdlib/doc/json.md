@@ -1,5 +1,5 @@
 
-<a name="0x2_json"></a>
+<a id="0x2_json"></a>
 
 # Module `0x2::json`
 
@@ -19,12 +19,12 @@
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x2_json_ErrorTypeNotMatch"></a>
+<a id="0x2_json_ErrorTypeNotMatch"></a>
 
 Error if the <code>T</code> is not a struct
 
@@ -34,7 +34,7 @@ Error if the <code>T</code> is not a struct
 
 
 
-<a name="0x2_json_ErrorInvalidJSONString"></a>
+<a id="0x2_json_ErrorInvalidJSONString"></a>
 
 Error if the json string is invalid
 
@@ -44,7 +44,7 @@ Error if the json string is invalid
 
 
 
-<a name="0x2_json_from_json"></a>
+<a id="0x2_json_from_json"></a>
 
 ## Function `from_json`
 
@@ -58,7 +58,7 @@ The u128 and u256 types must be json String type instead of Number type
 
 
 
-<a name="0x2_json_from_json_option"></a>
+<a id="0x2_json_from_json_option"></a>
 
 ## Function `from_json_option`
 
@@ -72,7 +72,7 @@ If the json string is invalid, it will return None
 
 
 
-<a name="0x2_json_to_map"></a>
+<a id="0x2_json_to_map"></a>
 
 ## Function `to_map`
 
@@ -86,7 +86,7 @@ If the field type is primitive type, it will be parsed to String, array or objec
 
 
 
-<a name="0x2_json_to_json"></a>
+<a id="0x2_json_to_json"></a>
 
 ## Function `to_json`
 

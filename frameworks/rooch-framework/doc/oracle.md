@@ -1,5 +1,5 @@
 
-<a name="0x3_oracle"></a>
+<a id="0x3_oracle"></a>
 
 # Module `0x3::oracle`
 
@@ -34,7 +34,7 @@
 
 
 
-<a name="0x3_oracle_TablePlaceholder"></a>
+<a id="0x3_oracle_TablePlaceholder"></a>
 
 ## Resource `TablePlaceholder`
 
@@ -45,7 +45,7 @@
 
 
 
-<a name="0x3_oracle_SimpleOracle"></a>
+<a id="0x3_oracle_SimpleOracle"></a>
 
 ## Resource `SimpleOracle`
 
@@ -56,7 +56,7 @@
 
 
 
-<a name="0x3_oracle_OracleAdminCap"></a>
+<a id="0x3_oracle_OracleAdminCap"></a>
 
 ## Resource `OracleAdminCap`
 
@@ -67,7 +67,7 @@
 
 
 
-<a name="0x3_oracle_StoredData"></a>
+<a id="0x3_oracle_StoredData"></a>
 
 ## Struct `StoredData`
 
@@ -78,7 +78,7 @@
 
 
 
-<a name="0x3_oracle_NewOracleEvent"></a>
+<a id="0x3_oracle_NewOracleEvent"></a>
 
 ## Struct `NewOracleEvent`
 
@@ -89,12 +89,12 @@
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x3_oracle_ErrorSenderNotOracle"></a>
+<a id="0x3_oracle_ErrorSenderNotOracle"></a>
 
 
 
@@ -103,7 +103,7 @@
 
 
 
-<a name="0x3_oracle_ErrorTickerNotExists"></a>
+<a id="0x3_oracle_ErrorTickerNotExists"></a>
 
 
 
@@ -112,7 +112,7 @@
 
 
 
-<a name="0x3_oracle_get_historical_data"></a>
+<a id="0x3_oracle_get_historical_data"></a>
 
 ## Function `get_historical_data`
 
@@ -123,7 +123,7 @@
 
 
 
-<a name="0x3_oracle_get_latest_data"></a>
+<a id="0x3_oracle_get_latest_data"></a>
 
 ## Function `get_latest_data`
 
@@ -134,7 +134,7 @@
 
 
 
-<a name="0x3_oracle_create_entry"></a>
+<a id="0x3_oracle_create_entry"></a>
 
 ## Function `create_entry`
 
@@ -146,7 +146,7 @@ Create a new shared SimpleOracle object for publishing data.
 
 
 
-<a name="0x3_oracle_create"></a>
+<a id="0x3_oracle_create"></a>
 
 ## Function `create`
 
@@ -158,7 +158,7 @@ Create a new SimpleOracle object for publishing data.
 
 
 
-<a name="0x3_oracle_submit_data"></a>
+<a id="0x3_oracle_submit_data"></a>
 
 ## Function `submit_data`
 
@@ -169,7 +169,7 @@ Create a new SimpleOracle object for publishing data.
 
 
 
-<a name="0x3_oracle_submit_data_with_timestamp"></a>
+<a id="0x3_oracle_submit_data_with_timestamp"></a>
 
 ## Function `submit_data_with_timestamp`
 
@@ -184,7 +184,7 @@ The timestamp is measured in milliseconds.
 
 
 
-<a name="0x3_oracle_submit_decimal_data"></a>
+<a id="0x3_oracle_submit_decimal_data"></a>
 
 ## Function `submit_decimal_data`
 
@@ -195,7 +195,7 @@ The timestamp is measured in milliseconds.
 
 
 
-<a name="0x3_oracle_archive_data"></a>
+<a id="0x3_oracle_archive_data"></a>
 
 ## Function `archive_data`
 

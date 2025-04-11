@@ -1,5 +1,5 @@
 
-<a name="0x4_network"></a>
+<a id="0x4_network"></a>
 
 # Module `0x4::network`
 
@@ -30,7 +30,7 @@
 
 
 
-<a name="0x4_network_BitcoinNetwork"></a>
+<a id="0x4_network_BitcoinNetwork"></a>
 
 ## Resource `BitcoinNetwork`
 
@@ -42,12 +42,12 @@ Bitcoin network onchain configuration.
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x4_network_COIN_VALUE"></a>
+<a id="0x4_network_COIN_VALUE"></a>
 
 How many satoshis are in "one bitcoin".
 
@@ -57,7 +57,7 @@ How many satoshis are in "one bitcoin".
 
 
 
-<a name="0x4_network_ErrorUnknownNetwork"></a>
+<a id="0x4_network_ErrorUnknownNetwork"></a>
 
 
 
@@ -66,7 +66,7 @@ How many satoshis are in "one bitcoin".
 
 
 
-<a name="0x4_network_FIRST_POST_SUBSIDY_EPOCH"></a>
+<a id="0x4_network_FIRST_POST_SUBSIDY_EPOCH"></a>
 
 
 
@@ -75,7 +75,7 @@ How many satoshis are in "one bitcoin".
 
 
 
-<a name="0x4_network_NETWORK_BITCOIN"></a>
+<a id="0x4_network_NETWORK_BITCOIN"></a>
 
 Currently, Move does not support enum types, so we use constants to represent the network type.
 Mainnet Bitcoin.
@@ -86,7 +86,7 @@ Mainnet Bitcoin.
 
 
 
-<a name="0x4_network_NETWORK_REGTEST"></a>
+<a id="0x4_network_NETWORK_REGTEST"></a>
 
 Bitcoin's regtest network.
 
@@ -96,7 +96,7 @@ Bitcoin's regtest network.
 
 
 
-<a name="0x4_network_NETWORK_SIGNET"></a>
+<a id="0x4_network_NETWORK_SIGNET"></a>
 
 Bitcoin's signet network.
 
@@ -106,7 +106,7 @@ Bitcoin's signet network.
 
 
 
-<a name="0x4_network_NETWORK_TESTNET"></a>
+<a id="0x4_network_NETWORK_TESTNET"></a>
 
 Bitcoin's testnet network.
 
@@ -116,7 +116,7 @@ Bitcoin's testnet network.
 
 
 
-<a name="0x4_network_SUBSIDY_HALVING_INTERVAL"></a>
+<a id="0x4_network_SUBSIDY_HALVING_INTERVAL"></a>
 
 How may blocks between halvings.
 
@@ -126,7 +126,7 @@ How may blocks between halvings.
 
 
 
-<a name="0x4_network_genesis_init"></a>
+<a id="0x4_network_genesis_init"></a>
 
 ## Function `genesis_init`
 
@@ -137,7 +137,7 @@ How may blocks between halvings.
 
 
 
-<a name="0x4_network_network"></a>
+<a id="0x4_network_network"></a>
 
 ## Function `network`
 
@@ -149,7 +149,7 @@ Get the current network from the onchain configuration.
 
 
 
-<a name="0x4_network_network_bitcoin"></a>
+<a id="0x4_network_network_bitcoin"></a>
 
 ## Function `network_bitcoin`
 
@@ -160,7 +160,7 @@ Get the current network from the onchain configuration.
 
 
 
-<a name="0x4_network_network_testnet"></a>
+<a id="0x4_network_network_testnet"></a>
 
 ## Function `network_testnet`
 
@@ -171,7 +171,7 @@ Get the current network from the onchain configuration.
 
 
 
-<a name="0x4_network_network_signet"></a>
+<a id="0x4_network_network_signet"></a>
 
 ## Function `network_signet`
 
@@ -182,7 +182,7 @@ Get the current network from the onchain configuration.
 
 
 
-<a name="0x4_network_network_regtest"></a>
+<a id="0x4_network_network_regtest"></a>
 
 ## Function `network_regtest`
 
@@ -193,7 +193,7 @@ Get the current network from the onchain configuration.
 
 
 
-<a name="0x4_network_is_mainnet"></a>
+<a id="0x4_network_is_mainnet"></a>
 
 ## Function `is_mainnet`
 
@@ -204,7 +204,7 @@ Get the current network from the onchain configuration.
 
 
 
-<a name="0x4_network_is_testnet"></a>
+<a id="0x4_network_is_testnet"></a>
 
 ## Function `is_testnet`
 
@@ -215,7 +215,7 @@ Get the current network from the onchain configuration.
 
 
 
-<a name="0x4_network_is_signet"></a>
+<a id="0x4_network_is_signet"></a>
 
 ## Function `is_signet`
 
@@ -226,7 +226,7 @@ Get the current network from the onchain configuration.
 
 
 
-<a name="0x4_network_from_str"></a>
+<a id="0x4_network_from_str"></a>
 
 ## Function `from_str`
 
@@ -237,7 +237,7 @@ Get the current network from the onchain configuration.
 
 
 
-<a name="0x4_network_network_name"></a>
+<a id="0x4_network_network_name"></a>
 
 ## Function `network_name`
 
@@ -248,7 +248,7 @@ Get the current network from the onchain configuration.
 
 
 
-<a name="0x4_network_bech32_hrp"></a>
+<a id="0x4_network_bech32_hrp"></a>
 
 ## Function `bech32_hrp`
 
@@ -259,7 +259,7 @@ Get the current network from the onchain configuration.
 
 
 
-<a name="0x4_network_jubilee_height"></a>
+<a id="0x4_network_jubilee_height"></a>
 
 ## Function `jubilee_height`
 
@@ -272,7 +272,7 @@ https://github.com/ordinals/ord/blob/75bf04b22107155f8f8ab6c77f6eefa8117d9ace/sr
 
 
 
-<a name="0x4_network_first_inscription_height"></a>
+<a id="0x4_network_first_inscription_height"></a>
 
 ## Function `first_inscription_height`
 
@@ -285,7 +285,7 @@ https://github.com/ordinals/ord/blob/75bf04b22107155f8f8ab6c77f6eefa8117d9ace/sr
 
 
 
-<a name="0x4_network_subsidy_by_height"></a>
+<a id="0x4_network_subsidy_by_height"></a>
 
 ## Function `subsidy_by_height`
 

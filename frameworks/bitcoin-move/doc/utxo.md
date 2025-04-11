@@ -1,5 +1,5 @@
 
-<a name="0x4_utxo"></a>
+<a id="0x4_utxo"></a>
 
 # Module `0x4::utxo`
 
@@ -63,7 +63,7 @@
 
 
 
-<a name="0x4_utxo_UTXO"></a>
+<a id="0x4_utxo_UTXO"></a>
 
 ## Resource `UTXO`
 
@@ -75,7 +75,7 @@ The UTXO Object
 
 
 
-<a name="0x4_utxo_UTXOSeal"></a>
+<a id="0x4_utxo_UTXOSeal"></a>
 
 ## Struct `UTXOSeal`
 
@@ -86,7 +86,7 @@ The UTXO Object
 
 
 
-<a name="0x4_utxo_SealOut"></a>
+<a id="0x4_utxo_SealOut"></a>
 
 ## Struct `SealOut`
 
@@ -97,7 +97,7 @@ The UTXO Object
 
 
 
-<a name="0x4_utxo_SpendUTXOEvent"></a>
+<a id="0x4_utxo_SpendUTXOEvent"></a>
 
 ## Struct `SpendUTXOEvent`
 
@@ -113,7 +113,7 @@ However, for simplifying payment scenarios, we define sender and receiver as fol
 
 
 
-<a name="0x4_utxo_ReceiveUTXOEvent"></a>
+<a id="0x4_utxo_ReceiveUTXOEvent"></a>
 
 ## Struct `ReceiveUTXOEvent`
 
@@ -129,7 +129,7 @@ However, for simplifying payment scenarios, we define sender and receiver as fol
 
 
 
-<a name="0x4_utxo_TempStateDropEvent"></a>
+<a id="0x4_utxo_TempStateDropEvent"></a>
 
 ## Struct `TempStateDropEvent`
 
@@ -143,7 +143,7 @@ The event is onchain event, and the event_queue name is type_name of the tempora
 
 
 
-<a name="0x4_utxo_BitcoinUTXOStore"></a>
+<a id="0x4_utxo_BitcoinUTXOStore"></a>
 
 ## Resource `BitcoinUTXOStore`
 
@@ -154,12 +154,12 @@ The event is onchain event, and the event_queue name is type_name of the tempora
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x4_utxo_ErrorDeprecatedFunction"></a>
+<a id="0x4_utxo_ErrorDeprecatedFunction"></a>
 
 
 
@@ -168,7 +168,7 @@ The event is onchain event, and the event_queue name is type_name of the tempora
 
 
 
-<a name="0x4_utxo_TEMPORARY_AREA"></a>
+<a id="0x4_utxo_TEMPORARY_AREA"></a>
 
 
 
@@ -177,7 +177,7 @@ The event is onchain event, and the event_queue name is type_name of the tempora
 
 
 
-<a name="0x4_utxo_genesis_init"></a>
+<a id="0x4_utxo_genesis_init"></a>
 
 ## Function `genesis_init`
 
@@ -188,7 +188,7 @@ The event is onchain event, and the event_queue name is type_name of the tempora
 
 
 
-<a name="0x4_utxo_borrow_utxo_store"></a>
+<a id="0x4_utxo_borrow_utxo_store"></a>
 
 ## Function `borrow_utxo_store`
 
@@ -199,7 +199,7 @@ The event is onchain event, and the event_queue name is type_name of the tempora
 
 
 
-<a name="0x4_utxo_borrow_mut_utxo_store"></a>
+<a id="0x4_utxo_borrow_mut_utxo_store"></a>
 
 ## Function `borrow_mut_utxo_store`
 
@@ -210,7 +210,7 @@ The event is onchain event, and the event_queue name is type_name of the tempora
 
 
 
-<a name="0x4_utxo_new"></a>
+<a id="0x4_utxo_new"></a>
 
 ## Function `new`
 
@@ -221,7 +221,7 @@ The event is onchain event, and the event_queue name is type_name of the tempora
 
 
 
-<a name="0x4_utxo_mock_utxo"></a>
+<a id="0x4_utxo_mock_utxo"></a>
 
 ## Function `mock_utxo`
 
@@ -232,7 +232,7 @@ The event is onchain event, and the event_queue name is type_name of the tempora
 
 
 
-<a name="0x4_utxo_derive_utxo_id"></a>
+<a id="0x4_utxo_derive_utxo_id"></a>
 
 ## Function `derive_utxo_id`
 
@@ -243,7 +243,7 @@ The event is onchain event, and the event_queue name is type_name of the tempora
 
 
 
-<a name="0x4_utxo_value"></a>
+<a id="0x4_utxo_value"></a>
 
 ## Function `value`
 
@@ -255,7 +255,7 @@ Get the UTXO's value
 
 
 
-<a name="0x4_utxo_txid"></a>
+<a id="0x4_utxo_txid"></a>
 
 ## Function `txid`
 
@@ -267,7 +267,7 @@ Get the UTXO's txid
 
 
 
-<a name="0x4_utxo_vout"></a>
+<a id="0x4_utxo_vout"></a>
 
 ## Function `vout`
 
@@ -279,7 +279,7 @@ Get the UTXO's vout
 
 
 
-<a name="0x4_utxo_exists_utxo"></a>
+<a id="0x4_utxo_exists_utxo"></a>
 
 ## Function `exists_utxo`
 
@@ -290,7 +290,7 @@ Get the UTXO's vout
 
 
 
-<a name="0x4_utxo_borrow_utxo"></a>
+<a id="0x4_utxo_borrow_utxo"></a>
 
 ## Function `borrow_utxo`
 
@@ -301,7 +301,7 @@ Get the UTXO's vout
 
 
 
-<a name="0x4_utxo_borrow_mut_utxo"></a>
+<a id="0x4_utxo_borrow_mut_utxo"></a>
 
 ## Function `borrow_mut_utxo`
 
@@ -312,7 +312,7 @@ Get the UTXO's vout
 
 
 
-<a name="0x4_utxo_has_seal"></a>
+<a id="0x4_utxo_has_seal"></a>
 
 ## Function `has_seal`
 
@@ -323,7 +323,7 @@ Get the UTXO's vout
 
 
 
-<a name="0x4_utxo_has_seal_internal"></a>
+<a id="0x4_utxo_has_seal_internal"></a>
 
 ## Function `has_seal_internal`
 
@@ -334,7 +334,7 @@ Get the UTXO's vout
 
 
 
-<a name="0x4_utxo_get_seals"></a>
+<a id="0x4_utxo_get_seals"></a>
 
 ## Function `get_seals`
 
@@ -345,7 +345,7 @@ Get the UTXO's vout
 
 
 
-<a name="0x4_utxo_remove_seals_internal"></a>
+<a id="0x4_utxo_remove_seals_internal"></a>
 
 ## Function `remove_seals_internal`
 
@@ -356,7 +356,7 @@ Get the UTXO's vout
 
 
 
-<a name="0x4_utxo_add_seal_internal"></a>
+<a id="0x4_utxo_add_seal_internal"></a>
 
 ## Function `add_seal_internal`
 
@@ -367,7 +367,7 @@ Get the UTXO's vout
 
 
 
-<a name="0x4_utxo_transfer"></a>
+<a id="0x4_utxo_transfer"></a>
 
 ## Function `transfer`
 
@@ -378,7 +378,7 @@ Get the UTXO's vout
 
 
 
-<a name="0x4_utxo_take"></a>
+<a id="0x4_utxo_take"></a>
 
 ## Function `take`
 
@@ -389,7 +389,7 @@ Get the UTXO's vout
 
 
 
-<a name="0x4_utxo_remove"></a>
+<a id="0x4_utxo_remove"></a>
 
 ## Function `remove`
 
@@ -400,7 +400,7 @@ Get the UTXO's vout
 
 
 
-<a name="0x4_utxo_drop"></a>
+<a id="0x4_utxo_drop"></a>
 
 ## Function `drop`
 
@@ -411,7 +411,7 @@ Get the UTXO's vout
 
 
 
-<a name="0x4_utxo_new_utxo_seal"></a>
+<a id="0x4_utxo_new_utxo_seal"></a>
 
 ## Function `new_utxo_seal`
 
@@ -422,7 +422,7 @@ Get the UTXO's vout
 
 
 
-<a name="0x4_utxo_unpack_utxo_seal"></a>
+<a id="0x4_utxo_unpack_utxo_seal"></a>
 
 ## Function `unpack_utxo_seal`
 
@@ -433,7 +433,7 @@ Get the UTXO's vout
 
 
 
-<a name="0x4_utxo_new_seal_out"></a>
+<a id="0x4_utxo_new_seal_out"></a>
 
 ## Function `new_seal_out`
 
@@ -444,7 +444,7 @@ Get the UTXO's vout
 
 
 
-<a name="0x4_utxo_unpack_seal_out"></a>
+<a id="0x4_utxo_unpack_seal_out"></a>
 
 ## Function `unpack_seal_out`
 
@@ -455,7 +455,7 @@ Get the UTXO's vout
 
 
 
-<a name="0x4_utxo_add_temp_state"></a>
+<a id="0x4_utxo_add_temp_state"></a>
 
 ## Function `add_temp_state`
 
@@ -467,7 +467,7 @@ Get the UTXO's vout
 
 
 
-<a name="0x4_utxo_contains_temp_state"></a>
+<a id="0x4_utxo_contains_temp_state"></a>
 
 ## Function `contains_temp_state`
 
@@ -478,7 +478,7 @@ Get the UTXO's vout
 
 
 
-<a name="0x4_utxo_borrow_temp_state"></a>
+<a id="0x4_utxo_borrow_temp_state"></a>
 
 ## Function `borrow_temp_state`
 
@@ -489,7 +489,7 @@ Get the UTXO's vout
 
 
 
-<a name="0x4_utxo_borrow_mut_temp_state"></a>
+<a id="0x4_utxo_borrow_mut_temp_state"></a>
 
 ## Function `borrow_mut_temp_state`
 
@@ -501,7 +501,7 @@ Get the UTXO's vout
 
 
 
-<a name="0x4_utxo_remove_temp_state"></a>
+<a id="0x4_utxo_remove_temp_state"></a>
 
 ## Function `remove_temp_state`
 
@@ -513,7 +513,7 @@ Get the UTXO's vout
 
 
 
-<a name="0x4_utxo_check_utxo_input"></a>
+<a id="0x4_utxo_check_utxo_input"></a>
 
 ## Function `check_utxo_input`
 
@@ -524,7 +524,7 @@ Get the UTXO's vout
 
 
 
-<a name="0x4_utxo_unpack_spend_utxo_event"></a>
+<a id="0x4_utxo_unpack_spend_utxo_event"></a>
 
 ## Function `unpack_spend_utxo_event`
 
@@ -535,7 +535,7 @@ Get the UTXO's vout
 
 
 
-<a name="0x4_utxo_unpack_receive_utxo_event"></a>
+<a id="0x4_utxo_unpack_receive_utxo_event"></a>
 
 ## Function `unpack_receive_utxo_event`
 
@@ -546,7 +546,7 @@ Get the UTXO's vout
 
 
 
-<a name="0x4_utxo_unpack_temp_state_drop_event"></a>
+<a id="0x4_utxo_unpack_temp_state_drop_event"></a>
 
 ## Function `unpack_temp_state_drop_event`
 

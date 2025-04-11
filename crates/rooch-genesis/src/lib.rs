@@ -12,7 +12,7 @@ use move_core_types::value::MoveTypeLayout;
 use move_core_types::{account_address::AccountAddress, identifier::Identifier};
 use move_vm_runtime::native_functions::NativeFunction;
 use moveos::gas::table::VMGasParameters;
-use moveos::moveos::{MoveOS, MoveOSConfig};
+use moveos::moveos::{new_moveos_global_module_cache, MoveOS, MoveOSCacheManager};
 use moveos_stdlib::natives::moveos_stdlib::base64::EncodeDecodeGasParametersOption;
 use moveos_stdlib::natives::moveos_stdlib::event::EmitWithHandleGasParameters;
 use moveos_stdlib::natives::moveos_stdlib::object::ListFieldsGasParametersOption;
@@ -407,15 +407,12 @@ impl RoochGenesisV2 {
         genesis_moveos_tx.ctx.add(bitcoin_genesis_ctx.clone())?;
         genesis_moveos_tx.ctx.add(gas_config.clone())?;
 
-        let vm_config = MoveOSConfig::default();
+        let global_module_cache = new_moveos_global_module_cache();
+        let global_cache_manager =
+            MoveOSCacheManager::new(gas_parameter.all_natives(), global_module_cache.clone());
+
         let (moveos_store, _temp_dir) = MoveOSStore::mock_moveos_store()?;
-        let moveos = MoveOS::new(
-            moveos_store,
-            gas_parameter.all_natives(),
-            vm_config,
-            vec![],
-            vec![],
-        )?;
+        let moveos = MoveOS::new(moveos_store, vec![], vec![], global_cache_manager)?;
         let output = moveos.init_genesis(
             genesis_moveos_tx.clone(),
             genesis_config.genesis_objects.clone(),
@@ -510,17 +507,24 @@ impl RoochGenesisV2 {
             "Genesis already initialized"
         );
 
+        let global_module_cache = new_moveos_global_module_cache();
+
         //we load the gas parameter from genesis binary, avoid the code change affect the genesis result
         let genesis_gas_parameter = FrameworksGasParameters::load_from_gas_entries(
             self.initial_gas_config.max_gas_amount,
             self.initial_gas_config.entries.clone(),
         )?;
+
+        let global_cache_manager = MoveOSCacheManager::new(
+            genesis_gas_parameter.all_natives(),
+            global_module_cache.clone(),
+        );
+
         let moveos = MoveOS::new(
             rooch_db.moveos_store.clone(),
-            genesis_gas_parameter.all_natives(),
-            MoveOSConfig::default(),
             vec![],
             vec![],
+            global_cache_manager,
         )?;
 
         let genesis_raw_output =
@@ -678,7 +682,7 @@ mod tests {
     use super::*;
     use move_core_types::identifier::Identifier;
     use move_core_types::language_storage::ModuleId;
-    use move_core_types::resolver::{ModuleResolver, MoveResolver};
+    use move_vm_types::resolver::{ModuleResolver, ResourceResolver};
     use moveos_types::moveos_std::module_store::{ModuleStore, Package};
     use moveos_types::state::MoveStructType;
     use moveos_types::state_resolver::{RootObjectResolver, StateResolver};
@@ -779,10 +783,12 @@ mod tests {
             .to_rooch_address();
         let rooch_dao_account = resolver.get_account(rooch_dao_address.into()).unwrap();
         assert!(rooch_dao_account.is_some());
-        let multisign_account_info_data = resolver
-            .get_resource(
+        let (multisign_account_info_data, _size) = resolver
+            .get_resource_bytes_with_metadata_and_layout(
                 &rooch_dao_address.into(),
                 &MultisignAccountInfo::struct_tag(),
+                &[],
+                None,
             )
             .unwrap();
         assert!(multisign_account_info_data.is_some());
