@@ -19,7 +19,7 @@ pub struct VerifyCommand {
 impl VerifyCommand {
     pub async fn execute(self) -> RoochResult<()> {
         let segment_dir = self.segment_dir;
-        let ledger_tx_loader = LedgerTxGetter::new(segment_dir)?;
+        let ledger_tx_loader = LedgerTxGetter::new(segment_dir, false)?;
         let stop_at = ledger_tx_loader.get_max_chunk_id();
         let mut block_number = self.start_from.unwrap_or(0);
 
