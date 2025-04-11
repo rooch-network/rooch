@@ -31,7 +31,7 @@ use rooch_executor::actor::executor::ExecutorActor;
 use rooch_executor::actor::reader_executor::ReaderExecutorActor;
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_genesis::FrameworksGasParameters;
-use rooch_genesis::RoochGenesisV2;
+use rooch_genesis::{RoochGenesis, RoochGenesisV2};
 use rooch_indexer::actor::indexer::IndexerActor;
 use rooch_indexer::actor::reader_indexer::IndexerReaderActor;
 use rooch_indexer::proxy::IndexerProxy;
@@ -313,8 +313,10 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     let sequencer_proxy = SequencerProxy::new(sequencer.into());
 
     // Init DA
-    let genesis_hash = genesis.genesis_hash();
+    let genesis_v1 = RoochGenesis::from(genesis);
+    let genesis_hash = genesis_v1.genesis_hash();
     let genesis_namespace = derive_namespace_from_genesis(genesis_hash);
+    info!("DA genesis_namespace: {:?}", genesis_namespace);
     let last_tx_order = sequencer_proxy.get_sequencer_order().await?;
     let (da_issues, da_fixed) = rooch_store.try_repair_da_meta(
         last_tx_order,

@@ -214,6 +214,13 @@ async fn get_segment(
 ) -> anyhow::Result<Box<dyn Segment>> {
     let segment_url = format!("{}/{}_{}", url, chunk_id, segment_id);
     let res = reqwest::get(segment_url).await?;
+    if res.status() != 200 {
+        return Err(anyhow::anyhow!(
+            "failed to get segment: {:?}; status_code: {}",
+            segment_id,
+            res.status()
+        ));
+    }
     segment_from_bytes(&res.bytes().await?)
 }
 
