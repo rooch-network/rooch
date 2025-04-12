@@ -13,14 +13,19 @@ from .types import RpcError
 class JsonRpcClient:
     """JSON-RPC client for interacting with Rooch RPC server"""
     
-    def __init__(self, endpoint: str = "http://localhost:50051/v1/jsonrpc"):
+    def __init__(self, 
+                 endpoint: str = "http://localhost:50051/v1/jsonrpc",
+                 timeout: float = 30.0,
+                 headers: Optional[Dict[str, str]] = None):
         """Initialize the JSON-RPC client
         
         Args:
             endpoint: URL of the RPC server
+            timeout: Request timeout in seconds
+            headers: Optional custom HTTP headers
         """
         self.endpoint = endpoint
-        self.client = httpx.Client()
+        self.client = httpx.Client(timeout=timeout, headers=headers)
         self.id_counter = 0
     
     def request(self, method: str, params: Any = None) -> Any:
@@ -41,9 +46,11 @@ class JsonRpcClient:
         payload = {
             "jsonrpc": "2.0",
             "method": method,
-            "params": params,
             "id": self.id_counter
         }
+        # Only include params if it's not None
+        if params is not None:
+            payload["params"] = params
         
         try:
             # Send request

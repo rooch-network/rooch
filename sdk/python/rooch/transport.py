@@ -65,6 +65,7 @@ class RoochTransport:
         self.url = url
         self.request_timeout_ms = request_timeout_ms
         self.session = session
+        self._should_close_session = session is None # Track if we created the session
         self.headers = headers or {}
         self.default_headers = {
             "Content-Type": "application/json",
@@ -104,6 +105,7 @@ class RoochTransport:
         if session is None:
             should_close_session = True
             session = aiohttp.ClientSession()
+            self.session = session # Store the created session
         
         try:
             # Make the request
@@ -123,8 +125,14 @@ class RoochTransport:
                 
                 # Check for HTTP errors
                 if response.status >= 400:
+                    # Handle case where data might be None or not a dict
+                    error_detail = "Unknown error"
+                    if isinstance(data, dict):
+                        error_detail = data.get('error', 'Unknown error')
+                    elif data is not None:
+                        error_detail = str(data) # Use string representation if not None or dict
                     raise RoochTransportError(
-                        f"HTTP error {response.status}: {data.get('error', 'Unknown error')}"
+                        f"HTTP error {response.status}: {error_detail}"
                     )
                 
                 # Check for JSON-RPC errors
@@ -137,14 +145,21 @@ class RoochTransport:
                 
                 return data["result"]
         finally:
-            # Close session if we created it
+            # Close session if we created it *within this request*
+            # The client-level close handles the case where the session was created 
+            # during client initialization (if self._should_close_session is True)
             if should_close_session and session:
-                await session.close()
+                 # Avoid closing the session if it was passed externally or managed by the client
+                 if self.session == session: # Check if this is the main session managed by transport/client
+                     pass # Client close will handle it if needed
+                 else:
+                    await session.close() # Close temporary session created just for this request
 
 
 class RoochEnvironment:
     """Predefined Rooch network environments"""
     
     LOCAL = "http://localhost:50051"
-    TESTNET = "https://dev-seed.rooch.network"
-    MAIN = "https://seed.rooch.network"
+    DEV = "https://dev-seed.rooch.network"
+    TEST = "https://test-seed.rooch.network"
+    MAIN = "https://main-seed.rooch.network"

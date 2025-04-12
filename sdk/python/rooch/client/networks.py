@@ -9,9 +9,9 @@ from typing import Dict, Optional
 class RoochNetwork(str, Enum):
     """Predefined Rooch networks"""
     
-    MAINNET = "mainnet"
-    TESTNET = "testnet"
-    LOCALNET = "localnet"
+    MAIN = "main"
+    TEST = "test"
+    LOCAL = "local"
     DEV = "dev"
 
 

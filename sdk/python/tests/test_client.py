@@ -276,9 +276,8 @@ class TestJsonRpcClient:
     @patch('rooch.rpc.client.httpx.Client')
     def test_client_with_headers(self, mock_client_class):
         """Test client with custom headers"""
-        # Setup mock
-        mock_client = MagicMock()
-        mock_client_class.return_value = mock_client
+        # Setup mock client instance behavior (post method)
+        mock_client_instance = MagicMock()
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_response.json.return_value = {
@@ -286,28 +285,33 @@ class TestJsonRpcClient:
             "id": 1,
             "result": {"success": True}
         }
-        mock_client.post.return_value = mock_response
-        
+        mock_client_instance.post.return_value = mock_response
+        # Make the mock class return our instance
+        mock_client_class.return_value = mock_client_instance
+
         # Create client with custom headers
         custom_headers = {
             "Authorization": "Bearer token123",
             "X-Custom-Header": "custom_value"
         }
-        client = JsonRpcClient(headers=custom_headers)
-        
-        # Make request
+        # Also specify a non-default timeout to check both params are passed
+        custom_timeout = 60.0 
+        client = JsonRpcClient(headers=custom_headers, timeout=custom_timeout)
+
+        # Check if httpx.Client was initialized correctly
+        # httpx default timeout might be different, so capture it if needed
+        # For now, let's assume we want to verify the passed headers and timeout
+        mock_client_class.assert_called_once_with(headers=custom_headers, timeout=custom_timeout)
+
+        # Make a request to ensure the post call happens
         client.request("test_method", {"param": "value"})
-        
-        # Check that the post request was made with the correct headers
-        mock_client.post.assert_called_once()
-        args, kwargs = mock_client.post.call_args
-        
-        # Default headers should be included
-        assert kwargs["headers"]["Content-Type"] == "application/json"
-        
-        # Custom headers should be included
-        assert kwargs["headers"]["Authorization"] == "Bearer token123"
-        assert kwargs["headers"]["X-Custom-Header"] == "custom_value"
+
+        # Check that the post request was made (we don't need to check headers here anymore)
+        mock_client_instance.post.assert_called_once()
+        # args, kwargs = mock_client_instance.post.call_args
+        # assert "headers" not in kwargs # Or check specific headers if needed via mock_client_instance.headers
+        # Example: Check if the underlying client has the headers set (requires mock setup)
+        # assert mock_client_instance.headers["Authorization"] == "Bearer token123"
     
     @patch('rooch.rpc.client.httpx.Client.post')
     def test_malformed_json_response(self, mock_post):

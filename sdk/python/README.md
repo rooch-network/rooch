@@ -56,7 +56,7 @@ async def main():
         result = await client.execute_move_call(
             signer=signer,
             function_id="0x1::coin::transfer",
-            type_args=["0x1::coin::ROOCH"],
+            type_args=["0x3::gas_coin::RGas"],
             args=[["0x123...456", "100"]],
             max_gas_amount=10_000_000
         )

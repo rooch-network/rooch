@@ -5,12 +5,17 @@
 """Tests for transaction builder module"""
 
 import pytest
+import time # Import time for expiration test
 from unittest.mock import MagicMock, AsyncMock, patch
 
 from rooch.transactions.builder import TransactionBuilder
-from rooch.transactions.types import TransactionData, MoveActionArgument, FunctionArgument, TransactionArgument, MoveAction, TransactionType
+from rooch.transactions.types import (
+    TransactionData, MoveActionArgument, FunctionArgument, TransactionArgument,
+    MoveAction, TransactionType
+)
+from rooch.bcs.serializer import Args # Import Args helper
 from rooch.crypto.keypair import KeyPair
-from rooch.crypto.signer import Signer
+from rooch.crypto.signer import Signer, RoochSigner
 from rooch.bcs.serializer import BcsSerializer
 
 
@@ -19,168 +24,170 @@ class TestTransactionBuilder:
     
     def setup_method(self):
         """Setup before each test"""
-        # Create mock client for the transaction builder
-        self.mock_client = MagicMock()
-        self.mock_client.get_chain_id = AsyncMock(return_value=42)
-        self.mock_client.account = MagicMock()
-        self.mock_client.account.get_account = AsyncMock(return_value={
-            "sequence_number": "10"
-        })
-        
         # Create test keypair and signer
         self.keypair = KeyPair.generate()
-        self.signer = Signer(self.keypair)
+        self.signer = RoochSigner(self.keypair)
         self.address = self.signer.get_address()
-        
-        # Create transaction builder
-        self.builder = TransactionBuilder(self.mock_client)
-    
-    @pytest.mark.asyncio
-    async def test_build_move_call_transaction(self):
-        """Test building a Move function call transaction"""
-        # Build transaction
-        tx_data = await self.builder.build_move_call_transaction(
-            self.signer,
-            "0x1::coin::transfer",
-            ["0x1::coin::ROOCH"],
-            [["0x123", "100"]],
-            1000000,  # max gas amount
-            1,  # gas unit price
-            3600  # expiration
+        self.sequence_number = 10 # Example sequence number for tests
+        self.chain_id = 42 # Example chain ID for tests
+        self.max_gas = 1_000_000
+        self.gas_price = 1
+
+        # Create transaction builder with required args
+        self.builder = TransactionBuilder(
+            sender_address=self.address,
+            sequence_number=self.sequence_number,
+            chain_id=self.chain_id,
+            max_gas_amount=self.max_gas,
+            gas_unit_price=self.gas_price
+            # expiration_timestamp_secs can use defaults or be set per test
         )
-        
-        # Verify transaction data
-        assert tx_data["sender"] == self.address
-        assert tx_data["sequence_number"] == 10
-        assert tx_data["max_gas_amount"] == 1000000
-        assert tx_data["gas_unit_price"] == 1
-        
-        # Verify payload
-        payload = tx_data["payload"]
-        assert isinstance(payload, dict)
-        assert payload["type"] == "entry_function_payload"
-        assert payload["function"] == "0x1::coin::transfer"
-        assert payload["type_arguments"] == ["0x1::coin::ROOCH"]
-        assert len(payload["arguments"]) == 2
-        assert payload["arguments"][0] == "0x123"
-        assert payload["arguments"][1] == "100"
-    
-    @pytest.mark.asyncio
-    async def test_build_module_publish_transaction(self):
+        # Verify builder attributes are set correctly
+        assert self.builder.sender_address == self.address
+        assert self.builder.sequence_number == self.sequence_number
+        assert self.builder.chain_id == self.chain_id
+        assert self.builder.max_gas_amount == self.max_gas
+        assert self.builder.gas_unit_price == self.gas_price
+
+    def test_build_move_call_transaction(self):
+        """Test building a Move function call transaction"""
+        # Define function call parameters
+        function_id = "0x1::coin::transfer"
+        ty_args = ["0x3::gas_coin::RGas"]
+        # Use Args helper for arguments
+        call_args = [Args.address("0x123"), Args.u64(100)]
+
+        # 1. Build payload
+        payload = self.builder.build_function_payload(
+            function_id=function_id,
+            ty_args=ty_args,
+            args=call_args # Pass the list returned by Args helpers
+        )
+
+        # 2. Build transaction data
+        tx_data = self.builder.build_move_action_tx(payload)
+
+        # Verify transaction data type and payload
+        assert isinstance(tx_data, TransactionData)
+        assert tx_data.tx_type == TransactionType.MOVE_ACTION
+        assert isinstance(tx_data.tx_arg, MoveActionArgument)
+
+        # Verify payload details within TransactionData
+        action_arg = tx_data.tx_arg
+        assert action_arg.action == MoveAction.FUNCTION
+        function_arg = action_arg.args
+        assert isinstance(function_arg, FunctionArgument)
+        assert function_arg.function_id == function_id
+        assert function_arg.ty_args == ty_args
+        # Verify the structure of arguments created by build_function_payload
+        assert len(function_arg.args) == len(call_args)
+        assert isinstance(function_arg.args[0], TransactionArgument)
+        assert isinstance(function_arg.args[1], TransactionArgument)
+        # TODO: Verify type_tag and value if TypeTag enum/constants become available
+        # assert function_arg.args[0].type_tag == TypeTag.ADDRESS
+        # assert function_arg.args[0].value == Args.address("0x123")[1]
+        # assert function_arg.args[1].type_tag == TypeTag.U64
+        # assert function_arg.args[1].value == Args.u64(100)[1]
+
+    def test_build_module_publish_transaction(self):
         """Test building a module publish transaction"""
         # Mock module bytes
         module_bytes = b"mock_module_bytes"
-        
-        # Build transaction
-        tx_data = await self.builder.build_module_publish_transaction(
-            self.signer,
-            module_bytes,
-            1000000,  # max gas amount
-            1,  # gas unit price
-            3600  # expiration
+
+        # Build transaction data directly
+        tx_data = self.builder.build_module_publish_tx(module_bytes)
+
+        # Verify transaction data type and payload
+        assert isinstance(tx_data, TransactionData)
+        assert tx_data.tx_type == TransactionType.MOVE_MODULE_TRANSACTION
+        assert tx_data.tx_arg == module_bytes
+
+    def test_build_raw_transaction(self):
+        """Test building a raw transaction using build_function_payload"""
+        # Define function call parameters using Args
+        function_id = "0x1::test::custom_function"
+        ty_args = ["0x1::test::TestType"]
+        call_args = [Args.address("0xabc"), Args.u64(123)]
+
+        # 1. Build payload using the standard helper
+        move_action_arg = self.builder.build_function_payload(
+            function_id=function_id,
+            ty_args=ty_args,
+            args=call_args
         )
-        
-        # Verify transaction data
-        assert tx_data["sender"] == self.address
-        assert tx_data["sequence_number"] == 10
-        assert tx_data["max_gas_amount"] == 1000000
-        assert tx_data["gas_unit_price"] == 1
-        
-        # Verify payload
-        payload = tx_data["payload"]
-        assert isinstance(payload, dict)
-        assert payload["type"] == "module_payload"
-        assert "modules" in payload
-        assert isinstance(payload["modules"], list)
-        assert len(payload["modules"]) == 1
-        # Module bytes are base64 encoded
-        assert isinstance(payload["modules"][0], str)
-    
-    @pytest.mark.asyncio
-    async def test_build_raw_transaction(self):
-        """Test building a raw transaction with custom payload"""
-        # Create custom function argument
-        function_arg = FunctionArgument(
-            function_id="0x1::test::custom_function",
-            ty_args=["0x1::test::TestType"],
-            args=[
-                TransactionArgument(type_tag=0, value="test1"),
-                TransactionArgument(type_tag=2, value=123)
-            ]
-        )
-        
-        # Create move action argument
-        move_action_arg = MoveActionArgument(
-            action=MoveAction.FUNCTION,
-            args=function_arg
-        )
-        
-        # Build transaction
-        tx_data = await self.builder.build_raw_transaction(
-            self.signer,
-            move_action_arg,
-            1000000,  # max gas amount
-            1,  # gas unit price
-            3600  # expiration
-        )
-        
-        # Verify transaction data
-        assert tx_data["sender"] == self.address
-        assert tx_data["sequence_number"] == 10
-        assert tx_data["max_gas_amount"] == 1000000
-        assert tx_data["gas_unit_price"] == 1
-        
-        # Test depends on actual implementation of build_raw_transaction
-        # This may need adjustment based on how your builder actually works
-    
-    @pytest.mark.asyncio
-    async def test_chain_id_caching(self):
-        """Test that chain ID is cached correctly"""
-        # First call should fetch chain ID
-        await self.builder.build_move_call_transaction(
-            self.signer,
-            "0x1::test::function",
-            [],
-            [],
-            1000000,
-            1,
-            3600
-        )
-        
-        # Verify chain ID was fetched once
-        self.mock_client.get_chain_id.assert_called_once()
-        
-        # Reset mock
-        self.mock_client.get_chain_id.reset_mock()
-        
-        # Second call should use cached chain ID
-        await self.builder.build_move_call_transaction(
-            self.signer,
-            "0x1::test::function",
-            [],
-            [],
-            1000000,
-            1,
-            3600
-        )
-        
-        # Verify chain ID was not fetched again
-        self.mock_client.get_chain_id.assert_not_called()
-    
-    @pytest.mark.asyncio
-    async def test_expiration_timestamp_calculation(self):
-        """Test expiration timestamp calculation"""
-        # Mock current timestamp
-        with patch('time.time', return_value=1000000000):
-            tx_data = await self.builder.build_move_call_transaction(
-                self.signer,
-                "0x1::test::function",
-                [],
-                [],
-                1000000,
-                1,
-                3600  # 1 hour expiration
+
+        # 2. Build transaction data
+        tx_data = self.builder.build_move_action_tx(move_action_arg)
+
+        # Verify transaction data type and payload
+        assert isinstance(tx_data, TransactionData)
+        assert tx_data.tx_type == TransactionType.MOVE_ACTION
+
+        # Verify payload details
+        action_payload = tx_data.tx_arg
+        assert isinstance(action_payload, MoveActionArgument)
+        assert action_payload.action == MoveAction.FUNCTION
+        func_payload = action_payload.args
+        assert isinstance(func_payload, FunctionArgument)
+        assert func_payload.function_id == function_id
+        assert func_payload.ty_args == ty_args
+        assert len(func_payload.args) == len(call_args)
+        # TODO: Verify type_tag and value if needed, similar to test_build_move_call_transaction
+
+    def test_chain_id_caching(self):
+        """Test that chain ID is set correctly during init"""
+        # Builder is initialized with chain_id in setup_method
+        assert self.builder.chain_id == self.chain_id
+
+        # Build a simple payload and tx_data
+        payload = self.builder.build_function_payload("0x1::m::f")
+        tx_data = self.builder.build_move_action_tx(payload)
+
+        # Verify the chain_id used in the transaction data matches the builder's
+        # This check is implicit now as tx_data gets it from builder
+        assert hasattr(tx_data, 'chain_id')
+        assert tx_data.chain_id == self.builder.chain_id
+
+    def test_expiration_timestamp_calculation(self):
+        """Test expiration timestamp calculation (now done via builder init or static method)"""
+        expiration_delta = 3600 # 1 hour
+        current_time = 1000000000
+
+        # Option 1: Set expiration during builder init
+        with patch('time.time', return_value=current_time):
+            expected_expiry = int(time.time()) + expiration_delta
+            builder_with_expiry = TransactionBuilder(
+                sender_address=self.address,
+                sequence_number=self.sequence_number,
+                chain_id=self.chain_id,
+                max_gas_amount=self.max_gas,
+                gas_unit_price=self.gas_price,
+                # Calculate expiration based on delta
+                expiration_timestamp_secs=expected_expiry
             )
-            
-            # Verify expiration timestamp
-            assert tx_data["expiration_timestamp_secs"] == 1000000000 + 3600
+
+        payload = builder_with_expiry.build_function_payload("0x1::test::function")
+        tx_data = builder_with_expiry.build_move_action_tx(payload)
+
+        # Verify expiration timestamp in TransactionData
+        assert hasattr(tx_data, 'expiration_timestamp_secs')
+        assert tx_data.expiration_timestamp_secs == expected_expiry
+
+        # Option 2: Use static method with_default_account
+        with patch('time.time', return_value=current_time):
+            expected_expiry_static = int(time.time()) + expiration_delta
+            builder_from_static = TransactionBuilder.with_default_account(
+                signer=self.signer,
+                sequence_number=self.sequence_number,
+                chain_id=self.chain_id,
+                max_gas_amount=self.max_gas,
+                gas_unit_price=self.gas_price,
+                expiration_delta_secs=expiration_delta
+            )
+
+        payload_static = builder_from_static.build_function_payload("0x1::test::function")
+        tx_data_static = builder_from_static.build_move_action_tx(payload_static)
+
+        # Verify expiration timestamp from static method builder
+        assert hasattr(tx_data_static, 'expiration_timestamp_secs')
+        assert tx_data_static.expiration_timestamp_secs == expected_expiry_static

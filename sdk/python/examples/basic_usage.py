@@ -91,7 +91,7 @@ async def transfer_coins(
     signer: Signer,
     recipient_address: str,
     amount: int,
-    coin_type: str = "0x1::coin::ROOCH"
+    coin_type: str = "0x3::gas_coin::RGas"
 ) -> Dict[str, Any]:
     """Transfer coins to a recipient
     
@@ -159,7 +159,7 @@ async def main() -> None:
             await execute_view_function(
                 client,
                 "0x1::coin::total_supply",
-                ["0x1::coin::ROOCH"],
+                ["0x3::gas_coin::RGas"],
                 []
             )
             
@@ -177,7 +177,7 @@ async def main() -> None:
                 signer,
                 recipient_address,
                 100,  # Amount to transfer
-                "0x1::coin::ROOCH"  # Coin type
+                "0x3::gas_coin::RGas"  # Coin type
             )
             
     except Exception as e:

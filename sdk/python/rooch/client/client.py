@@ -13,9 +13,16 @@ from .transaction import TransactionClient
 from ..crypto.signer import Signer
 from ..transactions.builder import TransactionBuilder
 from ..transactions.types import (
+    AuthenticatorType,
+    FunctionArgument,
+    MoveAction,
     MoveActionArgument,
     SignedTransaction,
     TransactionData,
+    TransactionType,
+    ModuleId,
+    FunctionId,
+    TypeTag,
 )
 
 
@@ -55,7 +62,10 @@ class RoochClient:
         Returns:
             Chain ID
         """
-        return await self._transport.request("rooch_getChainId")
+        # Use the correct RPC method name from openrpc.json
+        result = await self._transport.request("rooch_getChainID")
+        # The result seems to be a string representation of u64
+        return int(result)
     
     async def get_states(self, cursor: int = 0, limit: int = 25) -> Dict[str, Any]:
         """Get global states with pagination
@@ -162,10 +172,8 @@ class RoochClient:
         return TransactionBuilder(
             sender_address=sender_address,
             sequence_number=sequence_number,
-            max_gas_amount=max_gas_amount,
-            gas_unit_price=gas_unit_price,
-            expiration_timestamp_secs=expiration_delta_secs,
-            chain_id=chain_id
+            chain_id=chain_id,
+            max_gas_amount=max_gas_amount
         )
     
     async def submit_and_wait(
@@ -194,6 +202,56 @@ class RoochClient:
             poll_interval_ms=poll_interval_ms
         )
     
+    async def _prepare_move_call_tx_data(
+        self,
+        signer: Signer,
+        function_id: str,
+        type_args: List[TypeTag],
+        args: List[Any],
+        max_gas_amount: Optional[int] = None,
+    ) -> TransactionData:
+        """Helper to prepare TransactionData for a Move function call."""
+        # ... (get sender_addr, seq_num, chain_id, gas) ...
+        
+        # Parse function_id string into FunctionId object
+        try:
+            parts = function_id.split("::")
+            if len(parts) != 3:
+                 raise ValueError("Invalid function_id format. Expected 'address::module::function'")
+            addr_str, module_name, func_name = parts
+            # Basic validation for short addresses before creating ModuleId
+            if addr_str.startswith('0x') and len(addr_str) < 66:
+                try:
+                    int(addr_str[2:], 16)
+                except ValueError:
+                    raise ValueError(f"Invalid short hex address: {addr_str}")
+            # Add more robust validation if needed
+            
+            mod_id = ModuleId(address=addr_str, name=module_name)
+            func_id_obj = FunctionId(module_id=mod_id, function_name=func_name)
+        except Exception as e:
+            raise ValueError(f"Failed to parse function_id '{function_id}': {e}") from e
+            
+        # Validate type_args are TypeTag objects
+        if not all(isinstance(arg, TypeTag) for arg in type_args):
+            raise TypeError("type_args must be a list of TypeTag objects")
+
+        action_args = FunctionArgument(
+            function_id=func_id_obj,
+            ty_args=type_args,
+            args=args
+        )
+        action = MoveActionArgument(MoveAction.FUNCTION, action_args)
+
+        tx_data = TransactionData(
+            sender=sender_addr,
+            sequence_number=seq_num,
+            chain_id=self.chain_id,
+            max_gas_amount=gas,
+            action=action
+        )
+        return tx_data
+        
     async def execute_move_call(
         self,
         signer: Signer,
@@ -282,15 +340,20 @@ class RoochClient:
         return await self.submit_and_wait(signed_tx)
     
     async def close(self):
-        """Close the client session if it exists"""
-        if hasattr(self._transport, "session") and self._transport.session is not None:
-            if not self._transport.session.closed:
-                await self._transport.session.close()
+        """Close the underlying transport session if it was created by the client."""
+        # Access the underlying transport session
+        session = self._transport.session
+        should_close = self._transport._should_close_session # Assuming transport tracks this
+
+        if session and should_close:
+            await session.close()
     
     async def __aenter__(self):
-        """Context manager entry"""
+        """Enter context manager"""
+        # The transport is initialized in __init__.
+        # No specific action needed here unless we defer session creation.
         return self
     
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        """Context manager exit"""
+        """Exit context manager and close session"""
         await self.close()

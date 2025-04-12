@@ -12,86 +12,95 @@ from rooch.address.bitcoin import BitcoinAddress
 class TestRoochAddress:
     """Tests for RoochAddress class"""
     
+    # Use a known valid address from Rust codebase
+    VALID_ADDRESS_STR_PREFIX = "0x0c71415a4e19ac8705e1817091a17a1a4a6a895c5f040627bf2a062607700f67"
+    VALID_ADDRESS_STR_NOPREFIX = "0c71415a4e19ac8705e1817091a17a1a4a6a895c5f040627bf2a062607700f67"
+    INVALID_ADDRESS_SHORT = "0x1234"
+    # Ensure LONG address is actually longer than 64 hex chars
+    INVALID_ADDRESS_LONG = VALID_ADDRESS_STR_PREFIX + "00"
+    # Ensure invalid chars address contains non-hex chars
+    INVALID_ADDRESS_CHARS = "0x0c71415a4e19ac8705e1817091a17a1a4a6a895c5f040627bf2a062607700f6g" # 'g' is invalid
+
     def test_validate_address(self):
         """Test address validation"""
         # Valid address
-        valid_addr = "0x123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
-        assert RoochAddress.validate_address(valid_addr) is True
+        assert RoochAddress.validate_address(self.VALID_ADDRESS_STR_PREFIX) is True
+        assert RoochAddress.validate_address(self.VALID_ADDRESS_STR_NOPREFIX) is True
+        assert RoochAddress.validate_address(self.VALID_ADDRESS_STR_PREFIX.upper()) is True
         
-        # Invalid prefix
-        invalid_prefix = "123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
-        assert RoochAddress.validate_address(invalid_prefix) is False
-        
-        # Invalid length (too short)
-        short_addr = "0x123456"
-        assert RoochAddress.validate_address(short_addr) is False
-        
-        # Invalid length (too long)
-        long_addr = "0x123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef00"
-        assert RoochAddress.validate_address(long_addr) is False
-        
-        # Invalid characters
-        invalid_chars = "0x123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdeg"
-        assert RoochAddress.validate_address(invalid_chars) is False
-    
+        # Invalid addresses
+        assert RoochAddress.validate_address(self.INVALID_ADDRESS_SHORT) is False
+        assert RoochAddress.validate_address(self.INVALID_ADDRESS_LONG) is False
+        assert RoochAddress.validate_address(self.INVALID_ADDRESS_CHARS) is False
+        assert RoochAddress.validate_address("0x") is False
+        assert RoochAddress.validate_address("") is False
+        assert RoochAddress.validate_address(None) is False
+        assert RoochAddress.validate_address(123) is False
+
     def test_normalize_address(self):
         """Test address normalization"""
         # Standard format
-        std_addr = "0x123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
-        assert RoochAddress.normalize_address(std_addr) == std_addr
+        assert RoochAddress.normalize_address(self.VALID_ADDRESS_STR_PREFIX) == self.VALID_ADDRESS_STR_PREFIX
         
-        # Missing 0x prefix
-        no_prefix = "123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
-        assert RoochAddress.normalize_address(no_prefix) == "0x" + no_prefix
+        # No prefix
+        assert RoochAddress.normalize_address(self.VALID_ADDRESS_STR_NOPREFIX) == self.VALID_ADDRESS_STR_PREFIX
+        
+        # Uppercase
+        assert RoochAddress.normalize_address(self.VALID_ADDRESS_STR_PREFIX.upper()) == self.VALID_ADDRESS_STR_PREFIX
         
         # Mixed case
-        mixed_case = "0x123456789AbCdEf0123456789aBcDeF0123456789abcdef0123456789abcdef"
-        assert RoochAddress.normalize_address(mixed_case) == mixed_case.lower()
+        mixed_case = "0x1234ABCD" + "e" * 56
+        assert RoochAddress.normalize_address(mixed_case) == "0x1234abcd" + "e" * 56
         
-        # Both missing prefix and mixed case
-        mixed_no_prefix = "123456789AbCdEf0123456789aBcDeF0123456789abcdef0123456789abcdef"
-        expected = "0x" + mixed_no_prefix.lower()
-        assert RoochAddress.normalize_address(mixed_no_prefix) == expected
-        
-        # Invalid address should raise exception
-        with pytest.raises(Exception):
-            RoochAddress.normalize_address("0x123")  # Too short
-    
+        # Invalid addresses
+        with pytest.raises(ValueError): RoochAddress.normalize_address(self.INVALID_ADDRESS_SHORT)
+        with pytest.raises(ValueError): RoochAddress.normalize_address(self.INVALID_ADDRESS_CHARS)
+        with pytest.raises(ValueError): RoochAddress.normalize_address("")
+
     def test_from_hex(self):
         """Test creating address from hex string"""
-        # Valid hex string
-        valid_hex = "123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
-        address = RoochAddress.from_hex(valid_hex)
-        assert address.to_hex() == "0x" + valid_hex
+        # Valid hex string with prefix
+        address_prefix = RoochAddress.from_hex(self.VALID_ADDRESS_STR_PREFIX)
+        assert str(address_prefix) == self.VALID_ADDRESS_STR_PREFIX
         
-        # With 0x prefix
-        with_prefix = "0x123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
-        address = RoochAddress.from_hex(with_prefix)
-        assert address.to_hex() == with_prefix
+        # Valid hex string without prefix
+        address_noprefix = RoochAddress.from_hex(self.VALID_ADDRESS_STR_NOPREFIX)
+        assert str(address_noprefix) == self.VALID_ADDRESS_STR_PREFIX
         
-        # Invalid length
-        with pytest.raises(Exception):
-            RoochAddress.from_hex("0x123")
-    
+        # Valid uppercase
+        address_upper = RoochAddress.from_hex(self.VALID_ADDRESS_STR_PREFIX.upper())
+        assert str(address_upper) == self.VALID_ADDRESS_STR_PREFIX
+
+        # Invalid hex strings
+        with pytest.raises(ValueError): RoochAddress.from_hex(self.INVALID_ADDRESS_SHORT)
+        with pytest.raises(ValueError): RoochAddress.from_hex(self.INVALID_ADDRESS_LONG)
+        with pytest.raises(ValueError): RoochAddress.from_hex(self.INVALID_ADDRESS_CHARS)
+        with pytest.raises(ValueError): RoochAddress.from_hex("0x")
+        with pytest.raises(ValueError): RoochAddress.from_hex("")
+
     def test_to_hex(self):
         """Test converting address to hex string"""
-        # Create from hex
-        hex_str = "0x123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
-        address = RoochAddress.from_hex(hex_str)
-        
-        # Convert back to hex
-        assert address.to_hex() == hex_str
-    
+        address = RoochAddress.from_hex(self.VALID_ADDRESS_STR_PREFIX)
+        assert address.to_hex() == self.VALID_ADDRESS_STR_PREFIX
+        assert address.to_hex_no_prefix() == self.VALID_ADDRESS_STR_NOPREFIX
+
     def test_to_bytes(self):
         """Test converting address to bytes"""
-        # Create from hex
-        hex_str = "0x123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
-        address = RoochAddress.from_hex(hex_str)
+        address = RoochAddress.from_hex(self.VALID_ADDRESS_STR_PREFIX)
+        expected_bytes = bytes.fromhex(self.VALID_ADDRESS_STR_NOPREFIX)
+        assert address.to_bytes() == expected_bytes
+        assert len(address.to_bytes()) == 32
+
+    def test_comparison(self):
+        """Test address comparison"""
+        addr1 = RoochAddress.from_hex(self.VALID_ADDRESS_STR_PREFIX)
+        addr2 = RoochAddress.from_hex(self.VALID_ADDRESS_STR_NOPREFIX)
+        addr3 = RoochAddress.from_hex("0x" + "0"*64)
         
-        # Convert to bytes
-        address_bytes = address.to_bytes()
-        assert len(address_bytes) == 32  # 32 bytes
-        assert address_bytes.hex() == hex_str[2:]  # excluding 0x prefix
+        assert addr1 == addr2
+        assert addr1 != addr3
+        assert hash(addr1) == hash(addr2)
+        assert hash(addr1) != hash(addr3)
 
 
 class TestBitcoinAddress:
@@ -123,11 +132,11 @@ class TestBitcoinAddress:
         """Test P2PKH address validation"""
         # Valid mainnet address
         valid_mainnet = "1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2"
-        assert BitcoinAddress.validate_address(valid_mainnet) is True
+        assert BitcoinAddress.validate_address(valid_mainnet, network="mainnet") is True
         
-        # Valid testnet address
+        # Valid testnet address - must specify network
         valid_testnet = "mipcBbFg9gMiCh81Kj8tqqdgoZub1ZJRfn"
-        assert BitcoinAddress.validate_address(valid_testnet) is True
+        assert BitcoinAddress.validate_address(valid_testnet, network="testnet") is True
         
         # Invalid address (wrong checksum)
         invalid_addr = "1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN3"

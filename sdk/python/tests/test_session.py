@@ -10,7 +10,7 @@ import time
 
 from rooch.client.client import RoochClient
 from rooch.crypto.keypair import KeyPair
-from rooch.crypto.signer import Signer
+from rooch.crypto.signer import Signer, RoochSigner
 
 
 class TestSession:
@@ -60,7 +60,7 @@ class TestSession:
     @pytest.fixture
     def test_signer(self, test_keypair):
         """Create a test signer"""
-        return Signer(test_keypair)
+        return RoochSigner(test_keypair)
     
     @pytest.mark.asyncio
     async def test_create_session(self, mock_client, test_signer):
@@ -132,7 +132,7 @@ class TestSession:
         tx_hash = await mock_client.execute_move_call(
             signer=test_signer,
             function_id="0x1::coin::transfer",
-            type_args=["0x1::coin::ROOCH"],
+            type_args=["0x3::gas_coin::RGas"],
             args=[["0x456", "100"]],
             max_gas_amount=1000000,
             session_id=session_result["session_id"]
@@ -146,7 +146,7 @@ class TestSession:
         call_args = mock_client.execute_move_call.call_args[1]
         assert call_args["signer"] == test_signer
         assert call_args["function_id"] == "0x1::coin::transfer"
-        assert call_args["type_args"] == ["0x1::coin::ROOCH"]
+        assert call_args["type_args"] == ["0x3::gas_coin::RGas"]
         assert call_args["args"] == [["0x456", "100"]]
         assert call_args["max_gas_amount"] == 1000000
         assert call_args["session_id"] == session_result["session_id"]

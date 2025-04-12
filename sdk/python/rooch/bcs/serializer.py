@@ -180,6 +180,29 @@ class BcsSerializer:
         return BcsSerializer.serialize_len(len(value)) + bytes(value)
     
     @staticmethod
+    def serialize_address(address: str) -> bytes:
+        """Serialize a Rooch address (32 bytes)
+        
+        Args:
+            address: Rooch address string
+            
+        Returns:
+            Serialized bytes (32 bytes)
+            
+        Raises:
+            ValueError: If the address is invalid
+            BcsSerializationError: If serialization fails
+        """
+        try:
+            # Import here to avoid circular dependency if Address uses Serializer
+            from ..address.rooch import RoochAddress 
+            return RoochAddress(address).to_bytes()
+        except ValueError as e:
+            raise BcsSerializationError(f"Invalid address for BCS serialization: {str(e)}")
+        except Exception as e:
+            raise BcsSerializationError(f"Failed to serialize address: {str(e)}")
+    
+    @staticmethod
     def serialize_len(value: int) -> bytes:
         """Serialize a length (ULEB128 encoding)
         
@@ -276,6 +299,125 @@ class BcsSerializer:
             result += key_serializer(k)
             result += value_serializer(v)
         return result
+
+    @staticmethod
+    def serialize_struct_tag(tag: 'StructTag') -> bytes:
+        """Serialize a StructTag
+
+        Args:
+            tag: StructTag object
+
+        Returns:
+            Serialized bytes
+
+        Raises:
+            BcsSerializationError: If serialization fails
+        """
+        # Assumes StructTag type is imported or available
+        from ..address.rooch import RoochAddress # Correct import needed
+        from ..transactions.types import StructTag, TypeTag # For type hint checking
+        
+        if not isinstance(tag, StructTag):
+             raise BcsSerializationError(f"Expected StructTag, got {type(tag)}")
+             
+        # Sequence: address, module_name, name, type_params
+        try:
+            # Assuming RoochAddress is the correct 32-byte address representation
+            # Use from_hex_literal to handle short addresses
+            addr = RoochAddress.from_hex_literal(tag.address)
+            result = BcsSerializer.serialize_fixed_bytes(addr.to_bytes())
+            result += BcsSerializer.serialize_string(tag.module)
+            result += BcsSerializer.serialize_string(tag.name)
+            result += BcsSerializer.serialize_vector(tag.type_params, BcsSerializer.serialize_type_tag)
+            return result
+        except Exception as e:
+            raise BcsSerializationError(f"Failed to serialize StructTag: {e}") from e
+
+    @staticmethod
+    def serialize_type_tag(tag: 'TypeTag') -> bytes:
+        """Serialize a TypeTag
+
+        Args:
+            tag: TypeTag object
+
+        Returns:
+            Serialized bytes
+
+        Raises:
+            BcsSerializationError: If serialization fails
+        """
+        # Assumes TypeTag, TypeTagCode types are imported or available
+        from ..transactions.types import TypeTag, TypeTagCode, StructTag
+
+        if not isinstance(tag, TypeTag):
+            raise BcsSerializationError(f"Expected TypeTag, got {type(tag)}")
+            
+        # Serialize the variant index (enum value)
+        # Use serialize_u8 as TypeTag codes fit in u8
+        result = BcsSerializer.serialize_u8(tag.type_code.value)
+
+        try:
+            if tag.type_code == TypeTagCode.VECTOR:
+                if not isinstance(tag.value, TypeTag):
+                     raise BcsSerializationError("Vector TypeTag value must be another TypeTag")
+                result += BcsSerializer.serialize_type_tag(tag.value)
+            elif tag.type_code == TypeTagCode.STRUCT:
+                if not isinstance(tag.value, StructTag):
+                     raise BcsSerializationError("Struct TypeTag value must be a StructTag")
+                result += BcsSerializer.serialize_struct_tag(tag.value)
+            # Other types (bool, u8, u64, etc.) only have the index
+            return result
+        except Exception as e:
+             raise BcsSerializationError(f"Failed to serialize TypeTag {tag.type_code.name}: {e}") from e
+
+    @staticmethod
+    def serialize_module_id(module_id: 'ModuleId') -> bytes:
+        """Serialize a ModuleId
+
+        Args:
+            module_id: ModuleId object
+
+        Returns:
+            Serialized bytes
+        """
+        from ..address.rooch import RoochAddress
+        from ..transactions.types import ModuleId
+        
+        if not isinstance(module_id, ModuleId):
+             raise BcsSerializationError(f"Expected ModuleId, got {type(module_id)}")
+        
+        # Sequence: address, name
+        try:
+            # Use from_hex_literal to handle short addresses like 0x1, 0x2, 0x3
+            addr = RoochAddress.from_hex_literal(module_id.address)
+            result = BcsSerializer.serialize_fixed_bytes(addr.to_bytes())
+            result += BcsSerializer.serialize_string(module_id.name)
+            return result
+        except Exception as e:
+            raise BcsSerializationError(f"Failed to serialize ModuleId: {e}") from e
+
+    @staticmethod
+    def serialize_function_id(function_id: 'FunctionId') -> bytes:
+        """Serialize a FunctionId
+
+        Args:
+            function_id: FunctionId object
+
+        Returns:
+            Serialized bytes
+        """
+        from ..transactions.types import FunctionId
+        
+        if not isinstance(function_id, FunctionId):
+            raise BcsSerializationError(f"Expected FunctionId, got {type(function_id)}")
+            
+        # Sequence: module_id, function_name
+        try:
+            result = BcsSerializer.serialize_module_id(function_id.module_id)
+            result += BcsSerializer.serialize_string(function_id.function_name)
+            return result
+        except Exception as e:
+            raise BcsSerializationError(f"Failed to serialize FunctionId: {e}") from e
 
 
 class BcsDeserializer:

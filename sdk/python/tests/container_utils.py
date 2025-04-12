@@ -143,41 +143,64 @@ class RoochNodeContainer:
         # Wait for server to be ready
         self._wait_for_server()
         
-        # Return the URL for RPC client
-        return f"http://localhost:{self.mapped_port}/v1/jsonrpc"
+        # Return the base URL for RPC client (consistent with TS SDK behavior)
+        return f"http://localhost:{self.mapped_port}"
     
     def _wait_for_server(self, timeout=120, interval=1):
         """Wait for the server to be ready"""
-        endpoint = f"http://localhost:{self.mapped_port}/v1/jsonrpc"
+        # Use the base URL for the readiness check endpoint
+        endpoint = f"http://localhost:{self.mapped_port}"
         start_time = time.time()
-        
+
         while time.time() - start_time < timeout:
-            # Check if server is ready by tailing logs
-            logs_cmd = ["docker", "logs", self.container_id]
-            result = subprocess.run(logs_cmd, capture_output=True, text=True)
-            if "JSON-RPC HTTP Server start listening" in result.stdout:
-                return
-            
-            # Alternative: try to connect to the server
+            # Check if server is ready by tailing logs (optional first check)
+            # logs_cmd = ["docker", "logs", self.container_id]
+            # result = subprocess.run(logs_cmd, capture_output=True, text=True)
+            # if "JSON-RPC HTTP Server start listening" in result.stdout:
+            #     # Give a moment for socket to be fully ready even after log message
+            #     time.sleep(0.5)
+            #     # return # Consider returning early based on logs if reliable
+
+            # Primary check: try to connect to the server and call a valid method
             try:
                 response = requests.post(
-                    endpoint, 
+                    endpoint,
                     json={
                         "jsonrpc": "2.0",
-                        "method": "rooch_getInfo",
+                        "method": "rpc.discover", # Use rpc.discover
                         "params": [],
                         "id": 1
                     },
-                    timeout=2
+                    timeout=2 # Use a short timeout for the check
                 )
+                # Check for HTTP success and valid JSON RPC response structure
                 if response.status_code == 200:
-                    return
-            except:
-                pass
-                
+                    try:
+                        data = response.json()
+                        if isinstance(data, dict) and "result" in data:
+                            print(f"Server ready at {endpoint}.")
+                            return # Server is up and responded correctly
+                        else:
+                            print(f"Server responded 200 OK but unexpected JSON structure: {data}")
+                    except requests.exceptions.JSONDecodeError:
+                        print(f"Server responded 200 OK but with invalid JSON: {response.text}")
+                # Log other status codes for debugging
+                # else:
+                #    print(f"Readiness check failed with status {response.status_code}")
+
+            except requests.exceptions.ConnectionError:
+                # print("Connection refused, waiting...")
+                pass # Server not yet accepting connections
+            except requests.exceptions.Timeout:
+                # print("Connection timeout during wait...")
+                pass # Timeout likely means server is slow/not ready
+            except Exception as e:
+                # Catch other potential errors during check
+                print(f"Error during readiness check: {e}")
+
             time.sleep(interval)
-            
-        raise TimeoutError(f"Server did not start within {timeout} seconds")
+
+        raise TimeoutError(f"Server did not become ready at {endpoint} within {timeout} seconds")
     
     def stop(self):
         """Stop the container"""

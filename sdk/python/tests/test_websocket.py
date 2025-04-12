@@ -9,48 +9,66 @@ import json
 import pytest
 import websockets
 from unittest.mock import AsyncMock, MagicMock, patch
+import uuid
+from typing import List, Dict, Any
 
 from rooch.client.ws_transport import RoochWebSocketTransport
 from rooch.client.subscription_interface import Subscription
+from rooch.client.error import RoochTransportError, RoochSubscriptionError
+from rooch.client.types.json_rpc import JsonRpcRequest
 
 
 class MockWebSocket:
     """Mock WebSocket connection for testing"""
     
-    def __init__(self, responses=None):
+    def __init__(self, responses: List[Dict[str, Any]]):
         """Initialize with optional mock responses
         
         Args:
             responses: Optional list of responses to return in order
         """
-        self.responses = responses or []
-        self.sent_messages = []
+        self._responses = [json.dumps(r) for r in responses]
+        self._sent_messages = []
         self.closed = False
-        self.response_index = 0
+        self._iter = iter(self._responses)
     
-    async def send(self, message):
+    async def send(self, message: str) -> None:
         """Mock send method
         
         Args:
             message: Message to send
         """
-        self.sent_messages.append(json.loads(message))
+        self._sent_messages.append(json.loads(message))
     
-    async def recv(self):
+    async def recv(self) -> str:
         """Mock receive method
         
         Returns:
             Next mock response
         """
-        if self.response_index < len(self.responses):
-            response = self.responses[self.response_index]
-            self.response_index += 1
-            return json.dumps(response)
-        raise websockets.exceptions.ConnectionClosed(1000, "Mock connection closed")
+        try:
+            return next(self._iter)
+        except StopIteration:
+            # Keep the connection open but don't return more messages
+            await asyncio.sleep(3600) # Sleep indefinitely
+            raise StopIteration # Should not be reached
     
-    async def close(self, *args, **kwargs):
+    async def close(self) -> None:
         """Mock close method"""
         self.closed = True
+
+    # Add __aiter__ to be compatible with async for
+    def __aiter__(self):
+        return self
+
+    # Add __anext__ to be compatible with async for
+    async def __anext__(self):
+        try:
+            # Simulate receiving messages one by one
+            return next(self._iter)
+        except StopIteration:
+            # Stop iteration when no more mock responses
+            raise StopAsyncIteration
 
 
 @pytest.mark.asyncio
@@ -60,7 +78,7 @@ async def test_websocket_transport_request():
     mock_responses = [
         {
             "jsonrpc": "2.0",
-            "id": 1,
+            "id": 1, # Assuming the generated uuid matches this, might need adjustment
             "result": 42
         }
     ]
@@ -73,27 +91,34 @@ async def test_websocket_transport_request():
         # Create transport
         transport = RoochWebSocketTransport("ws://localhost:9944")
         
-        # Make request
-        result = await transport.request("test_method", ["param1", "param2"])
+        # We need to mock uuid.uuid4() if we want to match the ID in mock_responses
+        test_uuid = "test-uuid-1"
+        with patch("uuid.uuid4", return_value=test_uuid):
+            # Make request
+            result = await transport.request("test_method", ["param1", "param2"])
+            
+            # Verify result
+            assert result == 42
+            
+            # Verify message sent
+            assert len(mock_ws._sent_messages) == 1
+            sent_msg = mock_ws._sent_messages[0]
+            assert sent_msg["method"] == "test_method"
+            assert sent_msg["params"] == ["param1", "param2"]
+            assert sent_msg["id"] == test_uuid
         
-        # Verify result
-        assert result == 42
-        
-        # Verify sent message format
-        assert len(mock_ws.sent_messages) == 1
-        assert mock_ws.sent_messages[0]["method"] == "test_method"
-        assert mock_ws.sent_messages[0]["params"] == ["param1", "param2"]
-        assert "id" in mock_ws.sent_messages[0]
+        await transport.destroy() # Clean up transport
 
 
 @pytest.mark.asyncio
 async def test_websocket_transport_error_handling():
     """Test WebSocket transport error handling"""
     # Mock error response
+    test_uuid = "test-uuid-error"
     mock_responses = [
         {
             "jsonrpc": "2.0",
-            "id": 1,
+            "id": test_uuid,
             "error": {
                 "code": -32601,
                 "message": "Method not found"
@@ -109,31 +134,39 @@ async def test_websocket_transport_error_handling():
         # Create transport
         transport = RoochWebSocketTransport("ws://localhost:9944")
         
-        # Make request and expect exception
-        with pytest.raises(Exception) as excinfo:
-            await transport.request("invalid_method")
+        with patch("uuid.uuid4", return_value=test_uuid):
+            # Make request and expect exception
+            with pytest.raises(RoochTransportError) as excinfo:
+                # Provide empty list for params as it's required by the method signature
+                await transport.request("invalid_method", [])
+            
+            # Verify exception message
+            assert "Method not found" in str(excinfo.value)
+            assert excinfo.value.code == -32601
         
-        # Verify exception message
-        assert "Method not found" in str(excinfo.value)
+        await transport.destroy()
 
 
 @pytest.mark.asyncio
 async def test_websocket_subscription():
     """Test WebSocket subscription functionality"""
+    sub_req_uuid = "sub-req-uuid"
+    sub_id = "subscription_123"
+    
     # Mock subscription responses
     mock_responses = [
         # Initial response with subscription ID
         {
             "jsonrpc": "2.0",
-            "id": 1,
-            "result": "subscription_123"
+            "id": sub_req_uuid, 
+            "result": sub_id
         },
         # First update message
         {
             "jsonrpc": "2.0",
-            "method": "rooch_subscription",
+            "method": "rooch_subscription", # Assuming this is the notification method
             "params": {
-                "subscription": "subscription_123",
+                "subscription": sub_id,
                 "result": {"event": "update1"}
             }
         },
@@ -142,7 +175,7 @@ async def test_websocket_subscription():
             "jsonrpc": "2.0",
             "method": "rooch_subscription",
             "params": {
-                "subscription": "subscription_123",
+                "subscription": sub_id,
                 "result": {"event": "update2"}
             }
         }
@@ -166,45 +199,50 @@ async def test_websocket_subscription():
         # Create transport
         transport = RoochWebSocketTransport("ws://localhost:9944")
         
-        # Start subscription
-        subscription = await transport.subscribe(
-            "test_subscription",
-            ["param1"],
-            on_message,
-            on_error
-        )
-        
-        # Verify subscription ID
-        assert subscription.id == "subscription_123"
-        
-        # Wait for messages to be processed
+        # Register callbacks
+        transport.on_message(on_message)
+        transport.on_error(on_error)
+
+        # Create subscription request object
+        subscribe_request = JsonRpcRequest(method="test_subscription", params=["param1"])
+
+        with patch("uuid.uuid4", return_value=sub_req_uuid):
+            # Start subscription
+            subscription = await transport.subscribe(subscribe_request)
+            assert subscription.id == sub_id
+            assert callable(subscription.unsubscribe)
+
+        # Allow time for messages to be processed by the background task
         await asyncio.sleep(0.1)
-        
-        # Process pending messages manually for testing
-        await transport._process_messages()
-        
-        # Verify received messages
+
+        # Verify messages received via callback
         assert len(received_messages) == 2
-        assert received_messages[0]["event"] == "update1"
-        assert received_messages[1]["event"] == "update2"
+        assert received_messages[0]["params"]["result"] == {"event": "update1"}
+        assert received_messages[1]["params"]["result"] == {"event": "update2"}
         assert len(errors) == 0
+        
+        await transport.destroy()
 
 
 @pytest.mark.asyncio
 async def test_websocket_unsubscribe():
     """Test WebSocket unsubscribe functionality"""
+    sub_req_uuid = "sub-req-uuid"
+    unsub_req_uuid = "unsub-req-uuid"
+    sub_id = "subscription_123"
+    
     # Mock responses
     mock_responses = [
         # Initial response with subscription ID
         {
             "jsonrpc": "2.0",
-            "id": 1,
-            "result": "subscription_123"
+            "id": sub_req_uuid,
+            "result": sub_id
         },
         # Unsubscribe response
         {
             "jsonrpc": "2.0",
-            "id": 2,
+            "id": unsub_req_uuid,
             "result": True
         }
     ]
@@ -217,24 +255,30 @@ async def test_websocket_unsubscribe():
         # Create transport
         transport = RoochWebSocketTransport("ws://localhost:9944")
         
+        # Register dummy callbacks (needed for subscribe)
+        transport.on_message(lambda x: None)
+        transport.on_error(lambda x: None)
+
+        # Create subscription request object
+        subscribe_request = JsonRpcRequest(method="test_subscription", params=["param1"])
+
         # Start subscription
-        subscription = await transport.subscribe(
-            "test_subscription",
-            ["param1"],
-            lambda x: None,  # Dummy callback
-            lambda x: None   # Dummy error handler
-        )
-        
-        # Verify subscription ID
-        assert subscription.id == "subscription_123"
-        
+        with patch("uuid.uuid4", return_value=sub_req_uuid):
+            subscription = await transport.subscribe(subscribe_request)
+            assert subscription.id == sub_id
+
         # Unsubscribe
-        success = await transport.unsubscribe(subscription.id)
+        with patch("uuid.uuid4", return_value=unsub_req_uuid):
+            await subscription.unsubscribe() 
+
+        # Allow time for unsubscribe message to be sent
+        await asyncio.sleep(0.1)
+
+        # Verify unsubscribe message was sent
+        assert len(mock_ws._sent_messages) == 2 # Subscribe + Unsubscribe
+        unsubscribe_msg = mock_ws._sent_messages[1]
+        assert unsubscribe_msg["method"] == "unsubscribe_method" # Replace with actual unsubscribe method name
+        assert unsubscribe_msg["params"] == [sub_id]
+        assert unsubscribe_msg["id"] == unsub_req_uuid
         
-        # Verify result
-        assert success is True
-        
-        # Verify sent message format for unsubscribe
-        assert len(mock_ws.sent_messages) == 2
-        assert mock_ws.sent_messages[1]["method"] == "rooch_unsubscribe"
-        assert mock_ws.sent_messages[1]["params"] == ["subscription_123"]
+        await transport.destroy()

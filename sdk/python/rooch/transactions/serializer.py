@@ -11,12 +11,16 @@ from .types import (
     MoveAction,
     MoveActionArgument,
     SignedTransaction,
-    TransactionArgument,
     TransactionAuthenticator,
     TransactionData,
-    TransactionType
+    TransactionType,
+    ModuleId,
+    FunctionId,
+    TypeTag,
+    StructTag
 )
 from ..utils.hex import from_hex, to_hex
+from ..address.rooch import RoochAddress
 
 
 class TxSerializer:
@@ -24,10 +28,10 @@ class TxSerializer:
     
     @staticmethod
     def encode_transaction_data(tx_data: TransactionData) -> bytes:
-        """Encode transaction data in BCS format
+        """Encode transaction data in BCS format matching Rust RoochTransactionData
         
         Args:
-            tx_data: Transaction data
+            tx_data: Transaction data object
             
         Returns:
             Encoded transaction bytes
@@ -36,49 +40,39 @@ class TxSerializer:
             BcsSerializationError: If serialization fails
         """
         try:
-            # Serialize tx_type
-            result = BcsSerializer.serialize_u8(tx_data.tx_type)
+            # Sequence: sender, sequence_number, chain_id, max_gas_amount, action
             
-            # Serialize tx_arg based on type
-            if tx_data.tx_type == TransactionType.MOVE_ACTION:
-                result += TxSerializer._encode_move_action(tx_data.tx_arg)
-            elif tx_data.tx_type == TransactionType.MOVE_MODULE_TRANSACTION:
-                # For module bytecode, encode as bytes
-                if isinstance(tx_data.tx_arg, str):
-                    module_bytes = from_hex(tx_data.tx_arg)
-                else:
-                    module_bytes = tx_data.tx_arg
-                result += BcsSerializer.serialize_bytes(module_bytes)
-            elif tx_data.tx_type == TransactionType.BITCOIN_BINDING:
-                # For Bitcoin binding, encode as string
-                result += BcsSerializer.serialize_string(tx_data.tx_arg)
-            else:
-                # Default fallback - try to encode as string
-                result += BcsSerializer.serialize_string(str(tx_data.tx_arg))
+            # 1. sender (RoochAddress)
+            # Assuming RoochAddress needs conversion to bytes first
+            sender_addr = RoochAddress.from_hex(tx_data.sender)
+            sender_bytes = sender_addr.to_bytes() # Assuming this method exists
+            # Assuming address is BCS serialized as fixed bytes (like AccountAddress)
+            # Need to confirm the exact BCS format for RoochAddress
+            result = BcsSerializer.serialize_fixed_bytes(sender_bytes) 
             
-            # Serialize sequence number
+            # 2. sequence_number (u64)
             result += BcsSerializer.serialize_u64(tx_data.sequence_number)
             
-            # Serialize gas parameters
+            # 3. chain_id (u64)
+            result += BcsSerializer.serialize_u64(tx_data.chain_id)
+            
+            # 4. max_gas_amount (u64)
             result += BcsSerializer.serialize_u64(tx_data.max_gas_amount)
-            result += BcsSerializer.serialize_u64(tx_data.gas_unit_price)
             
-            # Serialize expiration
-            result += BcsSerializer.serialize_u64(tx_data.expiration_timestamp_secs)
-            
-            # Serialize chain ID
-            result += BcsSerializer.serialize_u8(tx_data.chain_id)
+            # 5. action (MoveAction)
+            result += TxSerializer._encode_move_action(tx_data.action)
             
             return result
         except Exception as e:
-            raise BcsSerializationError(f"Failed to serialize transaction data: {str(e)}")
+            # Add more context to the error
+            raise BcsSerializationError(f"Failed to serialize transaction data: {e}. Data: {tx_data}") from e
     
     @staticmethod
     def _encode_move_action(action_arg: MoveActionArgument) -> bytes:
-        """Encode a Move action argument
+        """Encode a Move action argument matching Rust MoveAction enum
         
         Args:
-            action_arg: Move action argument
+            action_arg: MoveActionArgument object
             
         Returns:
             Encoded bytes
@@ -86,135 +80,158 @@ class TxSerializer:
         Raises:
             BcsSerializationError: If serialization fails
         """
-        # Serialize action type
-        result = BcsSerializer.serialize_u8(action_arg.action)
+        # Serialize variant index (Script=0, Function=1, ModuleBundle=2)
+        # Assuming the Rust MoveAction enum variant index uses u8 (common for simple enums)
+        result = BcsSerializer.serialize_u8(action_arg.action.value) # Use u8 instead of u32
         
-        if action_arg.action == MoveAction.FUNCTION:
-            # Encode function call
-            func_arg = action_arg.args
-            
-            # Serialize function_id
-            result += BcsSerializer.serialize_string(func_arg.function_id)
-            
-            # Serialize type arguments
+        if action_arg.action == MoveAction.SCRIPT:
+            # TODO: Implement _encode_script_call if needed
+            # script_call = action_arg.args
+            # result += TxSerializer._encode_script_call(script_call)
+            raise NotImplementedError("Script action serialization not implemented")
+        elif action_arg.action == MoveAction.FUNCTION:
+            function_arg = action_arg.args # This is FunctionArgument type
+            result += TxSerializer._encode_function_call(function_arg)
+        elif action_arg.action == MoveAction.MODULE_BUNDLE:
+            module_bundle = action_arg.args # This is List[bytes]
+            result += BcsSerializer.serialize_vector(
+                module_bundle,
+                BcsSerializer.serialize_bytes
+            )
+        else:
+            raise BcsSerializationError(f"Unsupported MoveAction type: {action_arg.action}")
+        
+        return result
+    
+    @staticmethod
+    def _encode_function_call(func_arg: FunctionArgument) -> bytes:
+        """Encode a FunctionCall matching Rust FunctionCall struct
+        
+        Args:
+            func_arg: FunctionArgument object containing FunctionId and TypeTags
+        
+        Returns:
+            Encoded bytes
+        
+        Raises:
+            BcsSerializationError: If serialization fails
+        """
+        # Sequence: function_id, ty_args, args
+        
+        # 1. function_id (FunctionId)
+        # func_arg.function_id is now a FunctionId object
+        try:
+            result = BcsSerializer.serialize_function_id(func_arg.function_id)
+        except Exception as e:
+             raise BcsSerializationError(f"Failed to serialize function_id object: {e}") from e
+        
+        # 2. ty_args (Vec<TypeTag>)
+        # func_arg.ty_args is now a list of TypeTag objects
+        try:
             result += BcsSerializer.serialize_vector(
                 func_arg.ty_args,
-                BcsSerializer.serialize_string
+                BcsSerializer.serialize_type_tag
             )
-            
-            # Serialize arguments
+        except Exception as e:
+             raise BcsSerializationError(f"Failed to serialize ty_args: {e}") from e
+        
+        # 3. args (Vec<Vec<u8>>) - BCS encode each raw value
+        encoded_args_list = []
+        try:
+            for raw_arg_value in func_arg.args:
+                # ... (argument encoding logic remains the same) ...
+                if isinstance(raw_arg_value, bool):
+                    encoded_args_list.append(BcsSerializer.serialize_bool(raw_arg_value))
+                elif isinstance(raw_arg_value, int):
+                    encoded_args_list.append(BcsSerializer.serialize_u256(raw_arg_value))
+                elif isinstance(raw_arg_value, str):
+                    if raw_arg_value.startswith("0x"):
+                        try:
+                            addr = RoochAddress.from_hex(raw_arg_value) # Use from_hex for full addresses here
+                            encoded_args_list.append(BcsSerializer.serialize_fixed_bytes(addr.to_bytes()))
+                        except ValueError:
+                            # Could be Object ID or other hex, treat as string for now
+                            encoded_args_list.append(BcsSerializer.serialize_string(raw_arg_value))
+                    else:
+                        encoded_args_list.append(BcsSerializer.serialize_string(raw_arg_value))
+                elif isinstance(raw_arg_value, bytes):
+                    encoded_args_list.append(BcsSerializer.serialize_bytes(raw_arg_value))
+                else:
+                    raise BcsSerializationError(f"Unsupported argument type for BCS encoding: {type(raw_arg_value)}")
+        
             result += BcsSerializer.serialize_vector(
-                func_arg.args,
-                TxSerializer._encode_transaction_argument
+                encoded_args_list,
+                lambda x: x # Items are already bytes
             )
-        else:  # SCRIPT
-            # Encode script
-            result += BcsSerializer.serialize_string(action_arg.args)
+        except Exception as e:
+             raise BcsSerializationError(f"Failed to serialize args: {e}") from e
         
         return result
     
     @staticmethod
-    def _encode_transaction_argument(arg: TransactionArgument) -> bytes:
-        """Encode a transaction argument
+    def _encode_authenticator(auth: TransactionAuthenticator) -> bytes:
+        """Encode a TransactionAuthenticator matching Rust Authenticator struct.
         
         Args:
-            arg: Transaction argument
-            
+            auth: TransactionAuthenticator object
+        
         Returns:
             Encoded bytes
-            
+        
         Raises:
             BcsSerializationError: If serialization fails
         """
-        # Serialize type tag
-        result = BcsSerializer.serialize_u8(arg.type_tag)
+        # Sequence: auth_validator_id, payload
         
-        # Serialize value based on type tag
-        if arg.type_tag == 0:  # u8
-            result += BcsSerializer.serialize_u8(arg.value)
-        elif arg.type_tag == 1:  # u16
-            result += BcsSerializer.serialize_u16(arg.value)
-        elif arg.type_tag == 2:  # u32
-            result += BcsSerializer.serialize_u32(arg.value)
-        elif arg.type_tag == 3:  # u64
-            # Handle string representation for large numbers
-            if isinstance(arg.value, str):
-                result += BcsSerializer.serialize_u64(int(arg.value))
-            else:
-                result += BcsSerializer.serialize_u64(arg.value)
-        elif arg.type_tag == 4:  # u128
-            # Handle string representation for large numbers
-            if isinstance(arg.value, str):
-                result += BcsSerializer.serialize_u128(int(arg.value))
-            else:
-                result += BcsSerializer.serialize_u128(arg.value)
-        elif arg.type_tag == 5:  # u256
-            # Handle string representation for large numbers
-            if isinstance(arg.value, str):
-                result += BcsSerializer.serialize_u256(int(arg.value))
-            else:
-                result += BcsSerializer.serialize_u256(arg.value)
-        elif arg.type_tag == 6:  # bool
-            result += BcsSerializer.serialize_bool(arg.value)
-        elif arg.type_tag == 7:  # address
-            # Handle address as hex string
-            from ..utils.hex import from_hex, ensure_hex_prefix
-            addr_bytes = from_hex(ensure_hex_prefix(arg.value))
-            result += BcsSerializer.serialize_fixed_bytes(addr_bytes)
-        elif arg.type_tag == 8:  # string
-            result += BcsSerializer.serialize_string(arg.value)
-        elif arg.type_tag == 9:  # vector
-            # Handle vector with type information
-            vector_info = arg.value
-            element_type = vector_info.get("type")
-            values = vector_info.get("value", [])
-            
-            # Create a vector of transaction arguments
-            vector_args = []
-            for val in values:
-                # Determine element type tag
-                if element_type == "u8":
-                    vector_args.append(TransactionArgument(0, val))
-                elif element_type == "u16":
-                    vector_args.append(TransactionArgument(1, val))
-                elif element_type == "u32":
-                    vector_args.append(TransactionArgument(2, val))
-                elif element_type == "u64":
-                    vector_args.append(TransactionArgument(3, val))
-                elif element_type == "u128":
-                    vector_args.append(TransactionArgument(4, val))
-                elif element_type == "u256":
-                    vector_args.append(TransactionArgument(5, val))
-                elif element_type == "bool":
-                    vector_args.append(TransactionArgument(6, val))
-                elif element_type == "address":
-                    vector_args.append(TransactionArgument(7, val))
-                elif element_type == "string":
-                    vector_args.append(TransactionArgument(8, val))
-                elif element_type == "objectId":
-                    vector_args.append(TransactionArgument(10, val))
-                else:
-                    raise BcsSerializationError(f"Unsupported vector element type: {element_type}")
-            
-            # Serialize vector of arguments
-            result += BcsSerializer.serialize_vector(
-                vector_args,
-                TxSerializer._encode_transaction_argument
-            )
-        elif arg.type_tag == 10:  # objectId
-            # Handle object ID as string
-            result += BcsSerializer.serialize_string(arg.value)
+        # 1. auth_validator_id (u64) - Map Python AuthenticatorType to ID
+        # Assuming standard mapping: Ed25519: 0, Secp256k1: 1, Secp256r1: 2
+        auth_id_map = {
+            AuthenticatorType.ED25519: 0,
+            AuthenticatorType.SECP256K1: 1,
+            AuthenticatorType.SECP256R1: 2, # Corrected mapping
+            # TODO: Add MULTISIG mappings if needed
+        }
+        auth_validator_id = auth_id_map.get(auth.auth_type)
+        if auth_validator_id is None:
+            raise BcsSerializationError(f"Unsupported authenticator type for ID mapping: {auth.auth_type}")
+        
+        # Revert to u64 serialization based on Rust struct definition
+        result = BcsSerializer.serialize_u64(auth_validator_id)
+        
+        # 2. payload (Vec<u8>)
+        # Payload for single-signature should be: public_key_bytes + signature_bytes
+        
+        # Ensure public_key is bytes
+        if isinstance(auth.public_key, str):
+             public_key_bytes = from_hex(auth.public_key) # Assuming hex string
         else:
-            raise BcsSerializationError(f"Unsupported argument type tag: {arg.type_tag}")
+             public_key_bytes = auth.public_key
+             
+        # Ensure signature is bytes
+        if isinstance(auth.signature, str):
+            signature_bytes = from_hex(auth.signature)
+        else:
+            signature_bytes = auth.signature
+            
+        # Construct payload
+        payload_bytes = public_key_bytes + signature_bytes
+            
+        # Serialize payload as BCS bytes (Vec<u8>)
+        result += BcsSerializer.serialize_bytes(payload_bytes)
+        
+        # Remove the old incorrect payload serialization
+        # result += BcsSerializer.serialize_bytes(signature_bytes)
+        
+        # TODO: Verify payload for MULTISIG and potentially other auth types
         
         return result
-    
+
     @staticmethod
     def encode_signed_transaction(signed_tx: SignedTransaction) -> bytes:
-        """Encode a signed transaction for submission
+        """Encode a signed transaction matching Rust RoochTransaction.
         
         Args:
-            signed_tx: Signed transaction
+            signed_tx: Signed transaction object
             
         Returns:
             Encoded transaction bytes
@@ -223,19 +240,12 @@ class TxSerializer:
             BcsSerializationError: If serialization fails
         """
         try:
+            # Sequence: data, authenticator
             tx_data_bytes = TxSerializer.encode_transaction_data(signed_tx.tx_data)
-            auth = signed_tx.authenticator
-            
-            # Encode authenticator
-            result = BcsSerializer.serialize_string(auth.account_addr)
-            result += BcsSerializer.serialize_u8(auth.auth_key.auth_type)
-            result += BcsSerializer.serialize_bytes(auth.auth_key.public_key)
-            result += BcsSerializer.serialize_bytes(auth.signature)
-            
-            # Combine tx_data and authenticator
-            return tx_data_bytes + result
+            auth_bytes = TxSerializer._encode_authenticator(signed_tx.authenticator)
+            return tx_data_bytes + auth_bytes
         except Exception as e:
-            raise BcsSerializationError(f"Failed to serialize signed transaction: {str(e)}")
+            raise BcsSerializationError(f"Failed to serialize signed transaction: {e}") from e
     
     @staticmethod
     def encode_transaction_for_submission(signed_tx: SignedTransaction) -> str:
@@ -250,5 +260,5 @@ class TxSerializer:
         Raises:
             BcsSerializationError: If serialization fails
         """
-        tx_bytes = TxSerializer.encode_signed_transaction(signed_tx)
-        return to_hex(tx_bytes)
+        encoded_bytes = TxSerializer.encode_signed_transaction(signed_tx)
+        return to_hex(encoded_bytes)

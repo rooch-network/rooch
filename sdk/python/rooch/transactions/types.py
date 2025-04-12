@@ -4,6 +4,7 @@
 
 from enum import Enum, IntEnum
 from typing import Any, Dict, List, Optional, Tuple, Union
+from dataclasses import dataclass
 
 from ..utils.hex import ensure_hex_prefix
 
@@ -32,58 +33,20 @@ class TransactionType(IntEnum):
 class MoveAction(IntEnum):
     """Types of Move actions"""
     
-    FUNCTION = 0
-    SCRIPT = 1
-
-
-class TransactionArgument:
-    """Transaction argument for Move function calls"""
-    
-    def __init__(self, type_tag: int, value: Any):
-        """
-        Args:
-            type_tag: Type tag (0-10)
-            value: Argument value
-        """
-        self.type_tag = type_tag
-        self.value = value
-    
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary
-        
-        Returns:
-            Dictionary representation
-        """
-        return {
-            "type_tag": self.type_tag,
-            "value": self.value
-        }
-    
-    @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'TransactionArgument':
-        """Create from dictionary
-        
-        Args:
-            data: Dictionary representation
-            
-        Returns:
-            TransactionArgument instance
-        """
-        return cls(
-            type_tag=data.get("type_tag", 0),
-            value=data.get("value")
-        )
+    SCRIPT = 0
+    FUNCTION = 1
+    MODULE_BUNDLE = 2
 
 
 class FunctionArgument:
     """Function argument for Move function calls"""
     
-    def __init__(self, function_id: str, ty_args: List[str], args: List[TransactionArgument]):
+    def __init__(self, function_id: 'FunctionId', ty_args: List['TypeTag'], args: List[Any]):
         """
         Args:
-            function_id: Function ID (module::function)
-            ty_args: Type arguments
-            args: Function arguments
+            function_id: FunctionId object
+            ty_args: List of TypeTag objects
+            args: Function arguments (raw values)
         """
         self.function_id = function_id
         self.ty_args = ty_args
@@ -96,9 +59,9 @@ class FunctionArgument:
             Dictionary representation
         """
         return {
-            "function_id": self.function_id,
-            "ty_args": self.ty_args,
-            "args": [arg.to_dict() for arg in self.args]
+            "function_id": f"{self.function_id.module_id.address}::{self.function_id.module_id.name}::{self.function_id.function_name}",
+            "ty_args": [str(tag) for tag in self.ty_args],
+            "args": self.args
         }
     
     @classmethod
@@ -111,21 +74,17 @@ class FunctionArgument:
         Returns:
             FunctionArgument instance
         """
-        return cls(
-            function_id=data.get("function_id", ""),
-            ty_args=data.get("ty_args", []),
-            args=[TransactionArgument.from_dict(arg) for arg in data.get("args", [])]
-        )
+        raise NotImplementedError("from_dict for updated FunctionArgument not implemented")
 
 
 class MoveActionArgument:
     """Move action argument for transactions"""
     
-    def __init__(self, action: int, args: Union[FunctionArgument, str]):
+    def __init__(self, action: MoveAction, args: Union[FunctionArgument, bytes, List[bytes]]):
         """
         Args:
-            action: Move action type (0=FUNCTION, 1=SCRIPT)
-            args: Function arguments or script
+            action: Move action type (SCRIPT, FUNCTION, MODULE_BUNDLE)
+            args: Function arguments, script bytecode, or list of module bytecodes
         """
         self.action = action
         self.args = args
@@ -141,10 +100,15 @@ class MoveActionArgument:
                 "action": self.action,
                 "args": self.args.to_dict()
             }
-        else:  # SCRIPT
+        elif self.action == MoveAction.SCRIPT:
             return {
                 "action": self.action,
                 "args": self.args
+            }
+        elif self.action == MoveAction.MODULE_BUNDLE:
+            return {
+                "action": self.action,
+                "args": [to_hex(arg) for arg in self.args]
             }
     
     @classmethod
@@ -162,6 +126,10 @@ class MoveActionArgument:
         
         if action == MoveAction.FUNCTION:
             args = FunctionArgument.from_dict(args)
+        elif action == MoveAction.SCRIPT:
+            args = args
+        elif action == MoveAction.MODULE_BUNDLE:
+            args = [from_hex(arg) for arg in args]
         
         return cls(action=action, args=args)
 
@@ -171,31 +139,25 @@ class TransactionData:
     
     def __init__(
         self,
-        tx_type: int,
-        tx_arg: Union[MoveActionArgument, Dict[str, Any], str, bytes],
+        sender: str,
         sequence_number: int,
-        max_gas_amount: int = 10_000_000,
-        gas_unit_price: int = 1,
-        expiration_timestamp_secs: int = 0,
-        chain_id: int = 1
+        chain_id: int,
+        max_gas_amount: int,
+        action: MoveActionArgument
     ):
         """
         Args:
-            tx_type: Transaction type
-            tx_arg: Transaction arguments
-            sequence_number: Transaction sequence number
-            max_gas_amount: Maximum gas amount
-            gas_unit_price: Gas unit price
-            expiration_timestamp_secs: Expiration timestamp in seconds
-            chain_id: Chain ID
+            sender: Sender account address (RoochAddress string)
+            sequence_number: Transaction sequence number (u64)
+            chain_id: Chain ID (u64)
+            max_gas_amount: Maximum gas amount (u64)
+            action: The MoveActionArgument to execute
         """
-        self.tx_type = tx_type
-        self.tx_arg = tx_arg
+        self.sender = sender
         self.sequence_number = sequence_number
-        self.max_gas_amount = max_gas_amount
-        self.gas_unit_price = gas_unit_price
-        self.expiration_timestamp_secs = expiration_timestamp_secs
         self.chain_id = chain_id
+        self.max_gas_amount = max_gas_amount
+        self.action = action
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary
@@ -204,27 +166,12 @@ class TransactionData:
             Dictionary representation
         """
         result = {
-            "tx_type": self.tx_type,
+            "sender": self.sender,
             "sequence_number": str(self.sequence_number),
-            "max_gas_amount": str(self.max_gas_amount),
-            "gas_unit_price": str(self.gas_unit_price),
-            "expiration_timestamp_secs": str(self.expiration_timestamp_secs),
             "chain_id": self.chain_id,
+            "max_gas_amount": str(self.max_gas_amount),
+            "action": self.action.to_dict()
         }
-        
-        # Handle different tx_arg types
-        if self.tx_type == TransactionType.MOVE_ACTION:
-            result["tx_arg"] = self.tx_arg.to_dict() if isinstance(self.tx_arg, MoveActionArgument) else self.tx_arg
-        elif self.tx_type == TransactionType.MOVE_MODULE_TRANSACTION:
-            if isinstance(self.tx_arg, bytes):
-                from ..utils.hex import to_hex
-                result["tx_arg"] = to_hex(self.tx_arg)
-            else:
-                result["tx_arg"] = self.tx_arg
-        elif self.tx_type == TransactionType.BITCOIN_BINDING:
-            result["tx_arg"] = self.tx_arg
-        else:
-            result["tx_arg"] = self.tx_arg
         
         return result
     
@@ -238,44 +185,18 @@ class TransactionData:
         Returns:
             TransactionData instance
         """
-        tx_type = data.get("tx_type", 0)
-        tx_arg = data.get("tx_arg")
-        
-        # Parse sequence number (can be str or int)
+        sender = data.get("sender", "")
         sequence_number = data.get("sequence_number", 0)
-        if isinstance(sequence_number, str):
-            sequence_number = int(sequence_number)
-        
-        # Parse gas amounts (can be str or int)
+        chain_id = data.get("chain_id", 1)
         max_gas_amount = data.get("max_gas_amount", 10_000_000)
-        if isinstance(max_gas_amount, str):
-            max_gas_amount = int(max_gas_amount)
-            
-        gas_unit_price = data.get("gas_unit_price", 1)
-        if isinstance(gas_unit_price, str):
-            gas_unit_price = int(gas_unit_price)
-            
-        expiration_timestamp_secs = data.get("expiration_timestamp_secs", 0)
-        if isinstance(expiration_timestamp_secs, str):
-            expiration_timestamp_secs = int(expiration_timestamp_secs)
-        
-        # Handle different tx_arg types
-        if tx_type == TransactionType.MOVE_ACTION:
-            if isinstance(tx_arg, dict):
-                tx_arg = MoveActionArgument.from_dict(tx_arg)
-        elif tx_type == TransactionType.MOVE_MODULE_TRANSACTION:
-            if isinstance(tx_arg, str) and tx_arg.startswith("0x"):
-                from ..utils.hex import from_hex
-                tx_arg = from_hex(tx_arg)
+        action = MoveActionArgument.from_dict(data.get("action", {}))
         
         return cls(
-            tx_type=tx_type,
-            tx_arg=tx_arg,
+            sender=sender,
             sequence_number=sequence_number,
+            chain_id=chain_id,
             max_gas_amount=max_gas_amount,
-            gas_unit_price=gas_unit_price,
-            expiration_timestamp_secs=expiration_timestamp_secs,
-            chain_id=data.get("chain_id", 1)
+            action=action
         )
 
 
@@ -328,14 +249,20 @@ class TransactionAuthenticator:
             auth_type: Authentication type
         """
         self.account_addr = account_addr
-        self.auth_key = AuthenticationKey(auth_type, public_key)
-        
-        # Normalize signature
+        # Restore the public_key assignment
+        if isinstance(public_key, str):
+            from ..utils.hex import from_hex, ensure_hex_prefix
+            self.public_key = from_hex(ensure_hex_prefix(public_key))
+        else:
+            self.public_key = public_key
+        # Normalize and store signature
         if isinstance(signature, str):
             from ..utils.hex import from_hex
             self.signature = from_hex(ensure_hex_prefix(signature))
         else:
             self.signature = signature
+        # Store the auth_type
+        self.auth_type = auth_type
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary
@@ -370,6 +297,76 @@ class TransactionAuthenticator:
             signature=data.get("signature", ""),
             auth_type=auth_type
         )
+
+
+# --- TypeTag Definitions ---
+from dataclasses import dataclass
+
+# Assuming Address type is available or needs import
+# from ..address.rooch import RoochAddress
+
+class TypeTagCode(IntEnum):
+    BOOL = 0
+    U8 = 1
+    U64 = 2
+    U128 = 3
+    ADDRESS = 4
+    # SIGNER = 5 # Cannot be passed as type arg
+    VECTOR = 6
+    STRUCT = 7
+    U16 = 8
+    U32 = 9
+    U256 = 10
+    # Add other types if needed
+
+@dataclass
+class StructTag:
+    # Assuming address string format is acceptable here, BCS will handle conversion
+    address: str
+    module: str
+    name: str
+    type_params: List['TypeTag']
+
+@dataclass
+class TypeTag:
+    type_code: TypeTagCode
+    # value holds inner type for Vector, or StructTag for Struct
+    value: Optional[Union['TypeTag', StructTag]] = None
+
+    @classmethod
+    def bool(cls): return cls(TypeTagCode.BOOL)
+    @classmethod
+    def u8(cls): return cls(TypeTagCode.U8)
+    @classmethod
+    def u16(cls): return cls(TypeTagCode.U16)
+    @classmethod
+    def u32(cls): return cls(TypeTagCode.U32)
+    @classmethod
+    def u64(cls): return cls(TypeTagCode.U64)
+    @classmethod
+    def u128(cls): return cls(TypeTagCode.U128)
+    @classmethod
+    def u256(cls): return cls(TypeTagCode.U256)
+    @classmethod
+    def address(cls): return cls(TypeTagCode.ADDRESS)
+    @classmethod
+    def vector(cls, element_type: 'TypeTag'): return cls(TypeTagCode.VECTOR, element_type)
+    @classmethod
+    def struct(cls, struct_tag: StructTag): return cls(TypeTagCode.STRUCT, struct_tag)
+
+# --- End TypeTag Definitions ---
+
+# --- ModuleId and FunctionId Definitions ---
+@dataclass
+class ModuleId:
+    address: str # Hex string address
+    name: str    # Module name
+
+@dataclass
+class FunctionId:
+    module_id: ModuleId
+    function_name: str
+# --- End ModuleId and FunctionId Definitions ---
 
 
 class SignedTransaction:

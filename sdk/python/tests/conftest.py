@@ -10,50 +10,16 @@ import os
 import pytest
 import socket
 from typing import Dict, Any, Callable, List, Iterator
+from unittest.mock import MagicMock, AsyncMock
+import pytest_asyncio
 
 from rooch.client.client import RoochClient
-from rooch.transport import RoochEnvironment, RoochTransport
 from rooch.crypto.keypair import KeyPair
-from rooch.crypto.signer import Signer
+from rooch.crypto.signer import RoochSigner
 from .container_utils import RoochNodeContainer
 from rooch.rpc.client import JsonRpcClient
-
-
-class MockTransport(RoochTransport):
-    """Mock transport for testing"""
-    
-    def __init__(self, responses: Dict[str, Any] = None):
-        """Initialize with mock responses
-        
-        Args:
-            responses: Dictionary mapping method names to mock responses
-        """
-        super().__init__(url="mock://localhost")
-        self.responses = responses or {}
-        self.requests = []
-        
-    async def request(self, method: str, params: List = None) -> Any:
-        """Mock request implementation
-        
-        Args:
-            method: JSON-RPC method name
-            params: Method parameters
-            
-        Returns:
-            Mock response
-        
-        Raises:
-            Exception: If method is not mocked
-        """
-        self.requests.append({"method": method, "params": params})
-        
-        if method in self.responses:
-            response = self.responses[method]
-            if callable(response):
-                return response(params)
-            return response
-            
-        raise Exception(f"Mock response not defined for method: {method}")
+from rooch.bcs.serializer import BcsSerializer
+from rooch.utils.hex import to_hex
 
 
 @pytest.fixture
@@ -86,7 +52,7 @@ def mock_responses():
         "rooch_getBalances": {
             "balances": [
                 {
-                    "coin_type": "0x1::coin::ROOCH",
+                    "coin_type": "0x3::gas_coin::RGas",
                     "amount": "1000000000"
                 }
             ]
@@ -115,35 +81,70 @@ def mock_transport(mock_responses):
     return MockTransport(mock_responses)
 
 
-@pytest.fixture
-def mock_client(mock_transport):
-    """Create a client with mock transport"""
-    return RoochClient(transport=mock_transport)
+@pytest_asyncio.fixture(scope="function")
+async def rooch_client(rooch_server_url: str) -> RoochClient:
+    """Create a RoochClient connected to the local Rooch node for a single test function."""
+    client = RoochClient(url_or_env=rooch_server_url)
+    async with client:
+        yield client
 
 
-@pytest.fixture
-def test_keypair():
-    """Create a deterministic keypair for testing"""
-    # Use a fixed seed for deterministic results
-    # In real tests, you might want to use a fixed private key instead
-    keypair = KeyPair.from_seed(b"rooch_test_seed_for_deterministic_results")
-    return keypair
+@pytest.fixture(scope="session")
+def test_keypair() -> KeyPair:
+    """Create a deterministic test keypair"""
+    # Use a fixed seed for deterministic keys
+    seed = bytes([i % 256 for i in range(32)])
+    return KeyPair.from_seed(seed)
 
 
-@pytest.fixture
-def test_signer(test_keypair):
-    """Create a test signer"""
-    return Signer(test_keypair)
+@pytest.fixture(scope="session")
+def test_signer(test_keypair: KeyPair) -> RoochSigner:
+    """Create a deterministic test signer"""
+    return RoochSigner(test_keypair)
+
+
+@pytest_asyncio.fixture(scope="function")
+async def setup_integration_test_account(rooch_client: RoochClient, test_signer: RoochSigner):
+    """Fixture to ensure the test signer account exists and has Gas for a single test function."""
+    print(f"\nAttempting to fund test account: {test_signer.get_address()} for test")
+    try:
+        # Define the faucet call parameters
+        faucet_amount = 100_000_000_000 # Request a significant amount of Gas (e.g., 100 RGas)
+        # Removed TransactionArgument, pass raw value
+        faucet_arg = faucet_amount 
+
+        # Call the faucet function
+        result = await rooch_client.execute_move_call(
+            signer=test_signer, 
+            function_id="0x3::gas_coin::faucet_entry",
+            type_args=[],
+            # Pass the raw value in a list
+            args=[faucet_arg], 
+            max_gas_amount=1_000_000 
+        )
+        print(f"Faucet call result for {test_signer.get_address()}: {result}")
+        # Check if the faucet call itself was successful
+        if "execution_info" not in result or result["execution_info"]["status"]["type"] != "executed":
+             print(f"Warning: Faucet call might have failed for {test_signer.get_address()}: {result}")
+        else:
+             print(f"Successfully requested funds for {test_signer.get_address()}")
+             # Wait a bit for the state to potentially update after faucet call
+             await asyncio.sleep(2)
+
+    except Exception as e:
+        # Log the error but don't fail the setup, as the account might already exist
+        print(f"Warning: Failed to execute faucet call for {test_signer.get_address()}: {e}")
+        print("Proceeding with tests, assuming account might already exist or other tests handle creation.")
+
+    # No yield needed for setup-only fixture if called explicitly
 
 
 # Local RPC client for integration tests
-@pytest.fixture
-def local_client():
-    """Create a client connected to local RPC endpoint
-    
-    Note: This requires a local Rooch node running
-    """
-    return RoochClient(RoochEnvironment.LOCAL)
+# This fixture might be redundant now if tests directly use rooch_client
+# @pytest.fixture
+# def local_client(rooch_client: RoochClient): 
+#     """Return the function-scoped client for integration tests"""
+#     return rooch_client
 
 
 @pytest.fixture
@@ -198,9 +199,3 @@ def rooch_server_url(rooch_local_port: int) -> Iterator[str]:
         yield server_url
     finally:
         container.stop()
-
-
-@pytest.fixture(scope="session")
-def rooch_client(rooch_server_url: str) -> JsonRpcClient:
-    """Create a JsonRpcClient connected to the local Rooch node"""
-    return JsonRpcClient(endpoint=rooch_server_url)

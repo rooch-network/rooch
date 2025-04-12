@@ -29,13 +29,19 @@ class RoochAddress:
             self._str = to_hex(address)
         else:
             normalized_address = ensure_hex_prefix(address.lower())
-            # For direct string construction, just check format
             if not bool(RoochAddress.ADDRESS_REGEX.match(normalized_address)):
-                raise ValueError(f"Invalid Rooch address: {address}")
+                raise ValueError(f"Invalid Rooch address format: {address}")
             
             self._str = normalized_address
-            # Convert to bytes without the 0x prefix
-            self._bytes = to_bytes(strip_hex_prefix(self._str))
+            # Decode the hex string (without prefix) into bytes
+            try:
+                self._bytes = bytes.fromhex(strip_hex_prefix(self._str))
+                if len(self._bytes) != 32:
+                    # This check should ideally be redundant due to regex, but good for safety
+                    raise ValueError(f"Invalid address byte length ({len(self._bytes)}), expected 32: {address}")
+            except ValueError as e:
+                # Catch potential non-hex characters error from fromhex
+                raise ValueError(f"Invalid hex characters in address: {address}, Error: {e}")
     
     @staticmethod
     def is_valid_address(address: str) -> bool:
@@ -97,25 +103,72 @@ class RoochAddress:
         Raises:
             ValueError: If the hex string is invalid
         """
+        original_hex_str = hex_str # Keep original for error messages
+        is_prefixed = False
         # Remove 0x prefix if present
         clean_hex = hex_str
         if clean_hex.startswith("0x") or clean_hex.startswith("0X"):
+            is_prefixed = True
             clean_hex = clean_hex[2:]
             
-        # Check length - should be exactly 64 hex chars (32 bytes) for a valid address
+        # Check length - should be exactly 64 hex chars
         if len(clean_hex) != 64:
+            # Provide more context in the error message
+            prefix_msg = "(after removing prefix)" if is_prefixed else "(no prefix)"
             if len(clean_hex) > 64:
-                raise ValueError(f"Hex string too long: {hex_str}")
+                raise ValueError(f"Hex string too long ({len(clean_hex)} chars {prefix_msg}): {original_hex_str}")
             else:
-                raise ValueError(f"Hex string too short: {hex_str}")
+                raise ValueError(f"Hex string too short ({len(clean_hex)} chars {prefix_msg}): {original_hex_str}")
         
-        # Ensure the hex string is valid
+        # Ensure the hex string contains only valid hex characters
         if not is_hex_string(clean_hex):
             raise ValueError(f"Invalid hex string: {hex_str}")
             
         # Add 0x prefix if it was not present
         normalized_hex = f"0x{clean_hex}"
         return RoochAddress(normalized_hex)
+    
+    @staticmethod
+    def from_hex_literal(literal: str) -> 'RoochAddress':
+        """Create a RoochAddress from a hex literal (e.g., "0x1", "0xabc").
+        Handles padding short addresses to the full 32-byte length.
+
+        Args:
+            literal: Hex literal string, must start with "0x"
+
+        Returns:
+            RoochAddress instance
+
+        Raises:
+            ValueError: If the literal is invalid or too long
+        """
+        if not isinstance(literal, str) or not literal.startswith("0x"):
+            raise ValueError('Hex literal must start with "0x"')
+
+        # Ensure no non-hex characters after 0x
+        hex_part = literal[2:]
+        if not is_hex_string(hex_part):
+             raise ValueError(f"Invalid characters in hex literal: {literal}")
+             
+        hex_len = len(hex_part)
+        expected_hex_len = 64 # 32 bytes * 2 hex chars/byte
+
+        if hex_len == 0:
+             raise ValueError("Hex literal cannot be empty (0x)")
+             
+        if hex_len > expected_hex_len:
+            raise ValueError(
+                f"Hex literal too long ({hex_len} chars > {expected_hex_len}): {literal}"
+            )
+
+        # Pad with leading zeros if shorter than expected length
+        if hex_len < expected_hex_len:
+            padded_hex = '0' * (expected_hex_len - hex_len) + hex_part
+        else:
+            padded_hex = hex_part
+
+        # Call the existing from_hex method with the full-length hex string
+        return RoochAddress.from_hex(f"0x{padded_hex}")
     
     def __str__(self) -> str:
         """Return the address as a string with 0x prefix"""

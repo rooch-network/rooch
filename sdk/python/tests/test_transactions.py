@@ -69,13 +69,13 @@ class TestFunctionArgument:
         # Create function argument
         func_arg = FunctionArgument(
             function_id="0x1::coin::transfer",
-            ty_args=["0x1::coin::ROOCH"],
+            ty_args=["0x3::gas_coin::RGas"],
             args=args
         )
         
         assert func_arg.function_id == "0x1::coin::transfer"
         assert len(func_arg.ty_args) == 1
-        assert func_arg.ty_args[0] == "0x1::coin::ROOCH"
+        assert func_arg.ty_args[0] == "0x3::gas_coin::RGas"
         assert len(func_arg.args) == 2
         assert func_arg.args[0].value == "0x123"
         assert func_arg.args[1].value == 100
@@ -85,7 +85,7 @@ class TestFunctionArgument:
         # Create function argument
         func_arg = FunctionArgument(
             function_id="0x1::coin::transfer",
-            ty_args=["0x1::coin::ROOCH"],
+            ty_args=["0x3::gas_coin::RGas"],
             args=[
                 TransactionArgument(type_tag=0, value="0x123"),
                 TransactionArgument(type_tag=2, value=100)
@@ -98,7 +98,7 @@ class TestFunctionArgument:
         assert isinstance(func_dict, dict)
         assert func_dict["function_id"] == "0x1::coin::transfer"
         assert len(func_dict["ty_args"]) == 1
-        assert func_dict["ty_args"][0] == "0x1::coin::ROOCH"
+        assert func_dict["ty_args"][0] == "0x3::gas_coin::RGas"
         assert len(func_dict["args"]) == 2
         assert func_dict["args"][0]["value"] == "0x123"
         assert func_dict["args"][1]["value"] == 100
@@ -107,7 +107,7 @@ class TestFunctionArgument:
         """Test creating function argument from dictionary"""
         func_dict = {
             "function_id": "0x1::coin::transfer",
-            "ty_args": ["0x1::coin::ROOCH"],
+            "ty_args": ["0x3::gas_coin::RGas"],
             "args": [
                 {"type_tag": 0, "value": "0x123"},
                 {"type_tag": 2, "value": 100}
@@ -118,7 +118,7 @@ class TestFunctionArgument:
         
         assert func_arg.function_id == "0x1::coin::transfer"
         assert len(func_arg.ty_args) == 1
-        assert func_arg.ty_args[0] == "0x1::coin::ROOCH"
+        assert func_arg.ty_args[0] == "0x3::gas_coin::RGas"
         assert len(func_arg.args) == 2
         assert func_arg.args[0].type_tag == 0
         assert func_arg.args[0].value == "0x123"
@@ -139,7 +139,7 @@ class TestMoveActionArgument:
         # Create function argument
         func_arg = FunctionArgument(
             function_id="0x1::coin::transfer",
-            ty_args=["0x1::coin::ROOCH"],
+            ty_args=["0x3::gas_coin::RGas"],
             args=[
                 TransactionArgument(type_tag=0, value="0x123"),
                 TransactionArgument(type_tag=2, value=100)
@@ -225,7 +225,7 @@ class TestTransactionData:
         # Create function argument
         func_arg = FunctionArgument(
             function_id="0x1::coin::transfer",
-            ty_args=["0x1::coin::ROOCH"],
+            ty_args=["0x3::gas_coin::RGas"],
             args=[
                 TransactionArgument(type_tag=0, value="0x123"),
                 TransactionArgument(type_tag=2, value=100)
