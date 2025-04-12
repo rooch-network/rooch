@@ -2,16 +2,21 @@
 # Copyright (c) Rooch Network
 # SPDX-License-Identifier: Apache-2.0
 
+"""Test fixtures for Rooch testing"""
+
 import asyncio
 import json
 import os
 import pytest
-from typing import Dict, Any, Callable, List
+import socket
+from typing import Dict, Any, Callable, List, Iterator
 
 from rooch.client.client import RoochClient
 from rooch.transport import RoochEnvironment, RoochTransport
 from rooch.crypto.keypair import KeyPair
 from rooch.crypto.signer import Signer
+from .container_utils import RoochNodeContainer
+from rooch.rpc.client import JsonRpcClient
 
 
 class MockTransport(RoochTransport):
@@ -147,3 +152,55 @@ def run_async():
     def _run_async(coro):
         return asyncio.get_event_loop().run_until_complete(coro)
     return _run_async
+
+
+def is_port_in_use(port: int) -> bool:
+    """Check if a port is in use"""
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        return s.connect_ex(('localhost', port)) == 0
+
+
+def find_available_port(start_port: int = 6767) -> int:
+    """Find an available port starting from start_port"""
+    port = start_port
+    while is_port_in_use(port):
+        port += 1
+    return port
+
+
+@pytest.fixture(scope="session")
+def rooch_local_port() -> int:
+    """Get an available port for the local Rooch node"""
+    return find_available_port()
+
+
+@pytest.fixture(scope="session")
+def rooch_server_url(rooch_local_port: int) -> Iterator[str]:
+    """Start a local Rooch node and return the server URL"""
+    # Check if we should skip the container (for CI environment that already has a node running)
+    if os.environ.get("SKIP_ROOCH_CONTAINER") == "1":
+        yield os.environ.get("ROOCH_SERVER_URL", "http://localhost:50051/v1/jsonrpc")
+        return
+
+    # Determine if we should use local binary
+    local_binary = os.environ.get("ROOCH_LOCAL_BINARY")
+    
+    # Start container
+    container = RoochNodeContainer(
+        port=rooch_local_port,
+        local_binary_path=local_binary if local_binary else None,
+        image=os.environ.get("ROOCH_CONTAINER_IMAGE", "ghcr.io/rooch-network/rooch:main_debug")
+    )
+    
+    server_url = container.start()
+    
+    try:
+        yield server_url
+    finally:
+        container.stop()
+
+
+@pytest.fixture(scope="session")
+def rooch_client(rooch_server_url: str) -> JsonRpcClient:
+    """Create a JsonRpcClient connected to the local Rooch node"""
+    return JsonRpcClient(endpoint=rooch_server_url)

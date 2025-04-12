@@ -53,6 +53,145 @@ class BitcoinAddress:
         if not self.is_valid():
             raise ValueError(f"Invalid Bitcoin address: {address} for network: {self._network}")
     
+    @staticmethod
+    def validate_address(address: str, network: Union[BitcoinNetworkType, str] = BitcoinNetworkType.MAINNET) -> bool:
+        """Check if a string is a valid Bitcoin address
+        
+        Args:
+            address: Address string to check
+            network: Bitcoin network type
+            
+        Returns:
+            True if the address is valid
+        """
+        # Convert string network type to enum if needed
+        if isinstance(network, str):
+            try:
+                network = BitcoinNetworkType(network)
+            except ValueError:
+                return False
+        
+        # Check basic format first based on patterns
+        if network == BitcoinNetworkType.MAINNET:
+            # Check mainnet patterns
+            is_pattern_match = (
+                BitcoinAddress.P2PKH_MAINNET_PATTERN.match(address) or
+                BitcoinAddress.P2SH_MAINNET_PATTERN.match(address) or
+                BitcoinAddress.P2WPKH_MAINNET_PATTERN.match(address)
+            )
+        else:  # TESTNET or REGTEST
+            # Check testnet patterns
+            is_pattern_match = (
+                BitcoinAddress.P2PKH_TESTNET_PATTERN.match(address) or
+                BitcoinAddress.P2SH_TESTNET_PATTERN.match(address) or
+                BitcoinAddress.P2WPKH_TESTNET_PATTERN.match(address)
+            )
+        
+        if not is_pattern_match:
+            return False
+            
+        # For Base58 addresses (P2PKH, P2SH), validate checksum
+        # Bech32 addresses would need a separate validation
+        try:
+            if (network == BitcoinNetworkType.MAINNET and 
+                (BitcoinAddress.P2PKH_MAINNET_PATTERN.match(address) or 
+                 BitcoinAddress.P2SH_MAINNET_PATTERN.match(address))):
+                # Validate checksum for mainnet addresses
+                return BitcoinAddress._validate_checksum_static(address)
+            
+            elif (network != BitcoinNetworkType.MAINNET and 
+                  (BitcoinAddress.P2PKH_TESTNET_PATTERN.match(address) or 
+                   BitcoinAddress.P2SH_TESTNET_PATTERN.match(address))):
+                # Validate checksum for testnet addresses
+                return BitcoinAddress._validate_checksum_static(address)
+                
+            # For Bech32 addresses, we've already validated the pattern
+            return True
+        except Exception:
+            return False
+            
+    @staticmethod
+    def _validate_checksum_static(address: str) -> bool:
+        """Validate the checksum of a base58-encoded address
+        
+        Args:
+            address: Address to validate
+            
+        Returns:
+            True if the checksum is valid
+        """
+        try:
+            # Decode the address
+            decoded = base58.b58decode(address)
+            
+            # Check the length (address data + 4-byte checksum)
+            if len(decoded) < 5:
+                return False
+            
+            # Split the address data and checksum
+            addr_data = decoded[:-4]
+            checksum = decoded[-4:]
+            
+            # Compute the checksum
+            h = hashlib.sha256(hashlib.sha256(addr_data).digest()).digest()
+            computed_checksum = h[:4]
+            
+            # Compare the checksums
+            return checksum == computed_checksum
+        except Exception:
+            return False
+    
+    @staticmethod
+    def from_public_key(public_key: Union[str, bytes], mainnet: bool = True) -> 'BitcoinAddress':
+        """Create a Bitcoin address from a public key
+        
+        Args:
+            public_key: Public key as hex string or bytes
+            mainnet: True for mainnet, False for testnet
+            
+        Returns:
+            BitcoinAddress instance
+            
+        Raises:
+            ValueError: If the public key is invalid
+        """
+        import hashlib
+        import base58
+        
+        # Convert hex string to bytes if needed
+        if isinstance(public_key, str):
+            if public_key.startswith("0x"):
+                public_key = public_key[2:]
+            public_key = bytes.fromhex(public_key)
+        
+        # Hash the public key (RIPEMD160 of SHA256)
+        sha256_hash = hashlib.sha256(public_key).digest()
+        ripemd160_hash = hashlib.new('ripemd160')
+        ripemd160_hash.update(sha256_hash)
+        hash160 = ripemd160_hash.digest()
+        
+        # Add network version byte (0x00 for mainnet, 0x6f for testnet)
+        version_byte = b'\x00' if mainnet else b'\x6f'
+        payload = version_byte + hash160
+        
+        # Calculate checksum (first 4 bytes of double SHA256)
+        checksum = hashlib.sha256(hashlib.sha256(payload).digest()).digest()[:4]
+        
+        # Combine payload and checksum and encode as base58
+        address_bytes = payload + checksum
+        address = base58.b58encode(address_bytes).decode('utf-8')
+        
+        network = BitcoinNetworkType.MAINNET if mainnet else BitcoinNetworkType.TESTNET
+        return BitcoinAddress(address, network)
+    
+    def to_string(self) -> str:
+        """Return the address as a string
+        
+        Returns:
+            Address string
+        """
+        return self._address
+    
     def is_valid(self) -> bool:
         """Check if the Bitcoin address is valid for the specified network
         

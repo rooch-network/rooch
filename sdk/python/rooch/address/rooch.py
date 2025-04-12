@@ -13,7 +13,7 @@ class RoochAddress:
     """Class for handling Rooch addresses"""
     
     # Rooch address regex pattern
-    ADDRESS_REGEX = re.compile(r"^(0x)?[a-fA-F0-9]{1,64}$")
+    ADDRESS_REGEX = re.compile(r"^(0x)?[a-fA-F0-9]{64}$")
     
     def __init__(self, address: Union[str, bytes]):
         """Initialize a Rooch address
@@ -28,12 +28,14 @@ class RoochAddress:
             self._bytes = address
             self._str = to_hex(address)
         else:
-            # Validate and normalize the address
-            if not self.is_valid_address(address):
+            normalized_address = ensure_hex_prefix(address.lower())
+            # For direct string construction, just check format
+            if not bool(RoochAddress.ADDRESS_REGEX.match(normalized_address)):
                 raise ValueError(f"Invalid Rooch address: {address}")
             
-            self._str = ensure_hex_prefix(address.lower())
-            self._bytes = to_bytes(self._str)
+            self._str = normalized_address
+            # Convert to bytes without the 0x prefix
+            self._bytes = to_bytes(strip_hex_prefix(self._str))
     
     @staticmethod
     def is_valid_address(address: str) -> bool:
@@ -48,8 +50,72 @@ class RoochAddress:
         if not isinstance(address, str):
             return False
         
-        # Check address format
-        return bool(RoochAddress.ADDRESS_REGEX.match(address))
+        # Check address format - must be 0x followed by exactly 64 hex chars
+        normalized_address = ensure_hex_prefix(address.lower())
+        return bool(RoochAddress.ADDRESS_REGEX.match(normalized_address))
+    
+    @staticmethod
+    def validate_address(address: str) -> bool:
+        """Check if a string is a valid Rooch address (alias for is_valid_address)
+        
+        Args:
+            address: Address string to validate
+            
+        Returns:
+            True if the address is valid
+        """
+        return RoochAddress.is_valid_address(address)
+    
+    @staticmethod
+    def normalize_address(address: str) -> str:
+        """Normalize a Rooch address (lowercase with 0x prefix)
+        
+        Args:
+            address: Address to normalize
+            
+        Returns:
+            Normalized address
+            
+        Raises:
+            ValueError: If the address is invalid
+        """
+        if not RoochAddress.is_valid_address(address):
+            raise ValueError(f"Invalid Rooch address: {address}")
+        
+        return ensure_hex_prefix(address.lower())
+    
+    @staticmethod
+    def from_hex(hex_str: str) -> 'RoochAddress':
+        """Create a RoochAddress from a hex string
+        
+        Args:
+            hex_str: Hex string with or without 0x prefix
+            
+        Returns:
+            RoochAddress instance
+            
+        Raises:
+            ValueError: If the hex string is invalid
+        """
+        # Remove 0x prefix if present
+        clean_hex = hex_str
+        if clean_hex.startswith("0x") or clean_hex.startswith("0X"):
+            clean_hex = clean_hex[2:]
+            
+        # Check length - should be exactly 64 hex chars (32 bytes) for a valid address
+        if len(clean_hex) != 64:
+            if len(clean_hex) > 64:
+                raise ValueError(f"Hex string too long: {hex_str}")
+            else:
+                raise ValueError(f"Hex string too short: {hex_str}")
+        
+        # Ensure the hex string is valid
+        if not is_hex_string(clean_hex):
+            raise ValueError(f"Invalid hex string: {hex_str}")
+            
+        # Add 0x prefix if it was not present
+        normalized_hex = f"0x{clean_hex}"
+        return RoochAddress(normalized_hex)
     
     def __str__(self) -> str:
         """Return the address as a string with 0x prefix"""
