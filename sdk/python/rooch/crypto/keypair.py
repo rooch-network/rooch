@@ -9,8 +9,9 @@ from typing import Dict, Optional, Tuple, Union
 
 from Crypto.PublicKey import ECC
 from Crypto.Hash import SHA256
-from Crypto.Signature import DSS
-from Crypto.Util.number import bytes_to_long
+from Crypto.Util.number import bytes_to_long, long_to_bytes
+
+from ecdsa import SigningKey, VerifyingKey, NIST256p, util
 
 from ..address.rooch import RoochAddress
 from ..utils.hex import ensure_hex_prefix, from_hex, to_hex
@@ -42,6 +43,22 @@ class KeyPair:
                 self._key = ECC.import_key(private_key)
             except (ValueError, TypeError) as e:
                 raise ValueError(f"Invalid private key: {str(e)}")
+
+        # Create corresponding ecdsa keys using the private scalar 'd'
+        try:
+            # Ensure the key has the private component 'd'
+            if not hasattr(self._key, 'd'):
+                 raise ValueError("Cannot create ecdsa key from public key")
+                 
+            # Use from_secret_exponent with the integer d
+            self._ecdsa_signing_key = SigningKey.from_secret_exponent(self._key.d, curve=NIST256p)
+            self._ecdsa_verifying_key = self._ecdsa_signing_key.verifying_key
+        except ValueError as ve:
+             # Re-raise specific ValueError if needed
+             raise ve
+        except Exception as e:
+            # Catch potential errors during ecdsa key creation
+            raise RuntimeError(f"Failed to create ecdsa key from secret exponent: {e}") from e
     
     @classmethod
     def from_private_key(cls, private_key: Union[str, bytes]) -> 'KeyPair':
@@ -77,11 +94,20 @@ class KeyPair:
             ecc_key = ECC.construct(curve='P-256', d=d)
             # Create an instance without calling the default __init__ logic for private_key
             instance = cls.__new__(cls) # Create instance without calling __init__
-            instance._key = ecc_key      # Set the key directly
+            instance._key = ecc_key      # Set the pycryptodome key directly
+            
+            # Manually add the ecdsa key initialization here, as __init__ is skipped
+            try:
+                # Use the derived scalar 'd' directly to create the ecdsa key
+                instance._ecdsa_signing_key = SigningKey.from_secret_exponent(d, curve=NIST256p)
+                instance._ecdsa_verifying_key = instance._ecdsa_signing_key.verifying_key
+            except Exception as e_ecdsa:
+                raise RuntimeError(f"Failed to create ecdsa key within from_seed using secret exponent: {e_ecdsa}") from e_ecdsa
+                
             return instance
-        except ValueError as e:
+        except ValueError as e_ecc:
             # Handle cases where d might be invalid for the curve (e.g., 0 or >= curve order)
-            raise ValueError(f"Failed to construct key from seed: {e}")
+            raise ValueError(f"Failed to construct ECC key from seed: {e_ecc}") from e_ecc
     
     @classmethod
     def generate(cls) -> 'KeyPair':
@@ -94,14 +120,13 @@ class KeyPair:
     
     def get_public_key(self) -> bytes:
         """Get the public key in uncompressed format (65 bytes: 0x04 + X + Y)
+        using the ecdsa library.
         
         Returns:
             Public key as bytes (uncompressed format)
         """
-        # export_key(format='raw') for P-256 gives 64 bytes (X || Y)
-        raw_key = self._key.public_key().export_key(format='raw')
-        # Prepend the 0x04 byte to indicate uncompressed format
-        return b'\x04' + raw_key
+        # Use ecdsa's verifying_key to get the uncompressed format
+        return self._ecdsa_verifying_key.to_string('uncompressed')
     
     def get_public_key_hex(self) -> str:
         """Get the public key as hex
@@ -128,74 +153,42 @@ class KeyPair:
         return to_hex(self.get_private_key())
     
     def sign_digest(self, digest: bytes) -> bytes:
-        """Sign a pre-computed digest (hash).
+        """Sign a pre-computed digest (hash) using the ecdsa library.
 
         Args:
             digest: The 32-byte digest to sign.
 
         Returns:
-            Signature as raw bytes (R || S).
+            Signature as raw bytes (R || S, 64 bytes for P-256).
 
         Raises:
             ValueError: If digest length is not 32 bytes.
-            ImportError: If pycryptodome is not installed correctly.
         """
         if len(digest) != 32:
-             # Or perhaps hash length of the curve? P-256 uses SHA-256 (32 bytes)
-             # SHA3-256 is also 32 bytes. So this check should be fine.
              raise ValueError(f"Digest must be 32 bytes long, got {len(digest)}")
         
-        # Need to wrap the raw digest in a hash object structure for DSS
-        # Since the hash is already computed, we create a dummy hash object
-        # Note: This is a slight workaround. Ideally, DSS would take raw digest.
-        class DummyHash:
-            def __init__(self, data):
-                self.digest_size = len(data)
-                self._digest = data
-                # Pretend to be SHA256 to satisfy DSS check
-                self.name = 'sha256' 
-            def update(self, data): # pragma: no cover
-                pass # No-op
-            def digest(self): # pragma: no cover
-                return self._digest
-            def new(self, data=None): # pragma: no cover
-                # Required by some internal checks? Return a new instance if needed.
-                return DummyHash(data if data is not None else self._digest)
-
-        dummy_hash_obj = DummyHash(digest)
-        
+        # Use ecdsa SigningKey to sign the raw digest.
+        # sigencode_string ensures the output is raw R || S bytes.
         try:
-            signer = DSS.new(self._key, 'fips-186-3')
-            signature = signer.sign(dummy_hash_obj) # Pass the dummy hash object
-            # DSS.sign returns DER encoded signature. We need raw R || S (64 bytes for P-256)
-            # We need to decode DER to get R and S.
-            from Crypto.Util.asn1 import DerSequence
-            from Crypto.Util.number import bytes_to_long, long_to_bytes
-
-            der_seq = DerSequence()
-            der_seq.decode(signature)
-            r = der_seq[0]
-            s = der_seq[1]
-
-            # Convert R and S to fixed 32-byte big-endian representation
-            # P-256 curve order is 256 bits (32 bytes)
-            n_bytes = 32 # Curve order / 8
-            r_bytes = long_to_bytes(r, n_bytes)
-            s_bytes = long_to_bytes(s, n_bytes)
-
-            return r_bytes + s_bytes
-        except (ImportError, ValueError, TypeError, IndexError) as e:
-            # Catch potential errors during signing or DER decoding
-            raise RuntimeError(f"Failed to sign digest or decode signature: {e}") from e
+            signature = self._ecdsa_signing_key.sign_digest(
+                digest,
+                sigencode=util.sigencode_string
+            )
+            # NIST256p (P-256) uses 32-byte R and 32-byte S
+            assert len(signature) == 64, "Signature should be 64 bytes (R || S)"
+            return signature
+        except Exception as e:
+             # Catch potential errors during signing
+             raise RuntimeError(f"Failed to sign digest using ecdsa: {e}") from e
 
     def sign(self, message: Union[str, bytes]) -> bytes:
-        """Sign a message
-        
+        """Sign a message (hashes with SHA256 first). Returns DER encoded signature.
+           NOTE: For Rooch transactions, use sign_digest with SHA3-256 hash.
         Args:
             message: Message to sign
             
         Returns:
-            Signature as bytes
+            Signature as DER encoded bytes
         """
         if isinstance(message, str):
             if message.startswith('0x'):
@@ -203,9 +196,14 @@ class KeyPair:
             else:
                 message = message.encode('utf-8')
         
+        # This method inherently uses SHA256 due to pycryptodome DSS limitations
         h = SHA256.new(message)
-        signer = DSS.new(self._key, 'fips-186-3')
-        return signer.sign(h)
+        try:
+            from Crypto.Signature import DSS # Local import if keeping method
+            signer = DSS.new(self._key, 'fips-186-3')
+            return signer.sign(h)
+        except ImportError:
+            raise RuntimeError("pycryptodome is required for the legacy sign() method.")
     
     def sign_hex(self, message: Union[str, bytes]) -> str:
         """Sign a message and return the signature as hex
@@ -219,12 +217,13 @@ class KeyPair:
         return to_hex(self.sign(message))
     
     def verify(self, message: Union[str, bytes], signature: Union[str, bytes]) -> bool:
-        """Verify a signature
-        
+        """Verify a signature against the original message using ecdsa.
+           NOTE: This uses SHA256 for hashing, matching the legacy sign() method.
+
         Args:
             message: Original message
-            signature: Signature to verify
-            
+            signature: Signature to verify (DER encoded or raw R||S bytes)
+
         Returns:
             True if the signature is valid
         """
@@ -233,29 +232,43 @@ class KeyPair:
                 message = from_hex(message)
             else:
                 message = message.encode('utf-8')
-        
-        if isinstance(signature, str):
-            signature = from_hex(ensure_hex_prefix(signature))
-        
+
+        # Hash the message using SHA256 (to match legacy sign method)
         h = SHA256.new(message)
-        verifier = DSS.new(self._key.public_key(), 'fips-186-3')
-        
+        digest = h.digest()
+
+        if isinstance(signature, str):
+            signature_bytes = from_hex(ensure_hex_prefix(signature))
+        else:
+            signature_bytes = signature
+
         try:
-            verifier.verify(h, signature)
-            return True
-        except ValueError:
-            return False
+            # Try verifying assuming raw R||S format first
+            if len(signature_bytes) == 64:
+                return self._ecdsa_verifying_key.verify_digest(
+                    signature_bytes,
+                    digest,
+                    sigdecode=util.sigdecode_string
+                )
+            else:
+                # Assume DER format if not raw bytes
+                return self._ecdsa_verifying_key.verify_digest(
+                    signature_bytes,
+                    digest,
+                    sigdecode=util.sigdecode_der
+                )
+        except (ImportError, ecdsa.BadSignatureError, ValueError, TypeError, IndexError):
+             # Catch errors from ecdsa or hex decoding
+             return False
     
     def get_rooch_address(self) -> RoochAddress:
-        """Get the Rooch address associated with this key pair
-        
-        Returns:
-            RoochAddress instance (32 bytes from SHA256 hash of public key)
+        """Get the Rooch address associated with this key pair.
+        Note: Uses SHA256 hash of the uncompressed public key.
         """
+        # Ensure we use the updated get_public_key() which uses ecdsa
         public_key = self.get_public_key()
-        # Hash the public key using SHA256 and use the full 32 bytes for the address
+        # Rooch address generation seems to use SHA256 of the public key bytes
         address_bytes = hashlib.sha256(public_key).digest()
-        # Ensure address_bytes is 32 bytes long (SHA256 produces 32 bytes)
         assert len(address_bytes) == 32, "SHA256 hash should be 32 bytes"
         return RoochAddress(address_bytes)
     
