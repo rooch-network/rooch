@@ -51,6 +51,7 @@ use rooch_types::transaction::{LedgerTransaction, LedgerTxData};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
+use moveos_stdlib::natives::moveos_stdlib::ability::GetAbilitiesGasParameters;
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::{fs::File, io::Write, path::Path};
@@ -195,17 +196,15 @@ impl FrameworksGasParameters {
     }
 
     pub fn v5() -> Self {
-        FrameworksGasParameters::v4()
-        // let mut v4_gas_parameter = FrameworksGasParameters::v4();
-        // let v4_gas_parameter = FrameworksGasParameters::v4();
+        let mut v4_gas_parameter = FrameworksGasParameters::v4();
 
-        // v4_gas_parameter
-        //     .rooch_framework_gas_params
-        //     .moveos_stdlib
-        //     .type_info
-        //     .type_name_by_type = TypeNameByTypeGasParameters::init(1000.into(), 150.into());
+        v4_gas_parameter
+            .rooch_framework_gas_params
+            .moveos_stdlib
+            .ability
+            .get_abilities = GetAbilitiesGasParameters::init(1000.into(), 150.into());
 
-        // v4_gas_parameter
+        v4_gas_parameter
     }
 
     pub fn latest() -> Self {

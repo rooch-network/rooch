@@ -21,6 +21,7 @@
 -  [Function `withdraw`](#0x3_multi_coin_store_withdraw)
 -  [Function `deposit`](#0x3_multi_coin_store_deposit)
 -  [Function `transfer`](#0x3_multi_coin_store_transfer)
+-  [Function `ensure_coin_type_has_key_and_store_ability`](#0x3_multi_coin_store_ensure_coin_type_has_key_and_store_ability)
 -  [Function `create_multi_coin_store`](#0x3_multi_coin_store_create_multi_coin_store)
 -  [Function `borrow_mut_coin_store_internal`](#0x3_multi_coin_store_borrow_mut_coin_store_internal)
 -  [Function `create_coin_store_field_if_not_exist`](#0x3_multi_coin_store_create_coin_store_field_if_not_exist)
@@ -29,6 +30,7 @@
 
 
 <pre><code><b>use</b> <a href="">0x1::string</a>;
+<b>use</b> <a href="">0x2::ability</a>;
 <b>use</b> <a href="">0x2::event</a>;
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="coin.md#0x3_coin">0x3::coin</a>;
@@ -188,6 +190,16 @@ The CoinType parameter and CoinType in CoinStore do not match
 
 
 
+<a name="0x3_multi_coin_store_ErrorCoinTypeShouldHaveKeyAndStoreAbility"></a>
+
+Coin type should have key and store ability
+
+
+<pre><code><b>const</b> <a href="multi_coin_store.md#0x3_multi_coin_store_ErrorCoinTypeShouldHaveKeyAndStoreAbility">ErrorCoinTypeShouldHaveKeyAndStoreAbility</a>: u64 = 6;
+</code></pre>
+
+
+
 <a name="0x3_multi_coin_store_exist_coin_store_field"></a>
 
 ## Function `exist_coin_store_field`
@@ -261,6 +273,17 @@ The CoinType parameter and CoinType in CoinStore do not match
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="transfer.md#0x3_transfer">transfer</a>(_coin_store_obj: <a href="_Object">object::Object</a>&lt;<a href="multi_coin_store.md#0x3_multi_coin_store_MultiCoinStore">multi_coin_store::MultiCoinStore</a>&gt;, _owner: <b>address</b>)
+</code></pre>
+
+
+
+<a name="0x3_multi_coin_store_ensure_coin_type_has_key_and_store_ability"></a>
+
+## Function `ensure_coin_type_has_key_and_store_ability`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="multi_coin_store.md#0x3_multi_coin_store_ensure_coin_type_has_key_and_store_ability">ensure_coin_type_has_key_and_store_ability</a>(coin_type: <a href="_String">string::String</a>)
 </code></pre>
 
 
