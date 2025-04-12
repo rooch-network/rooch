@@ -368,6 +368,16 @@ class FunctionId:
     function_name: str
 # --- End ModuleId and FunctionId Definitions ---
 
+# --- AuthPayload Definition (for Bitcoin Authenticator) ---
+@dataclass
+class AuthPayload:
+    signature: bytes
+    message_prefix: bytes # Includes varint length of following message
+    message_info: bytes   # Includes the tx_hash hex appended
+    public_key: bytes     # Uncompressed secp256k1 public key (65 bytes)
+    from_address: str      # Bitcoin address string representation
+# --- End AuthPayload Definition ---
+
 
 class SignedTransaction:
     """Signed transaction ready for submission"""

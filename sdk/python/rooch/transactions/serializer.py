@@ -21,6 +21,8 @@ from .types import (
 )
 from ..utils.hex import from_hex, to_hex
 from ..address.rooch import RoochAddress
+from ..transactions.types import AuthPayload
+from ..utils.bytes import varint_byte_num
 
 
 class TxSerializer:
@@ -199,30 +201,81 @@ class TxSerializer:
         result = BcsSerializer.serialize_u64(auth_validator_id)
         
         # 2. payload (Vec<u8>)
-        # Payload for single-signature should be: public_key_bytes + signature_bytes
-        
-        # Ensure public_key is bytes
-        if isinstance(auth.public_key, str):
-             public_key_bytes = from_hex(auth.public_key) # Assuming hex string
-        else:
-             public_key_bytes = auth.public_key
-             
-        # Ensure signature is bytes
-        if isinstance(auth.signature, str):
-            signature_bytes = from_hex(auth.signature)
-        else:
-            signature_bytes = auth.signature
+        # Payload structure depends on auth_validator_id
+        payload_final_bytes: bytes
+        if auth_validator_id == 0: # Ed25519 (Session)
+            # Payload is just the signature bytes (assuming Ed25519)
+            # This might need adjustment if Session keys use a different scheme
+            if isinstance(auth.signature, str):
+                 signature_bytes = from_hex(auth.signature)
+            else:
+                 signature_bytes = auth.signature
+            payload_final_bytes = BcsSerializer.serialize_bytes(signature_bytes)
+        elif auth_validator_id == 1: # Secp256k1 (Bitcoin)
+            # Payload is the BCS encoding of the AuthPayload struct
+            from ..transactions.types import AuthPayload
+            from ..utils.bytes import varint_byte_num # Need this helper
             
-        # Construct payload
-        payload_bytes = public_key_bytes + signature_bytes
+            # Reconstruct AuthPayload data (This needs access to original tx_hash_hex?)
+            # FIXME: _encode_authenticator doesn't have tx_hash readily available.
+            # This indicates a structural problem. We might need to pass tx_hash 
+            # or the pre-hashed SignData into TransactionAuthenticator or here.
+            # For now, create dummy/placeholder values to check structure.
             
-        # Serialize payload as BCS bytes (Vec<u8>)
-        result += BcsSerializer.serialize_bytes(payload_bytes)
-        
-        # Remove the old incorrect payload serialization
-        # result += BcsSerializer.serialize_bytes(signature_bytes)
-        
-        # TODO: Verify payload for MULTISIG and potentially other auth types
+            # Ensure pubkey and signature are bytes
+            if isinstance(auth.public_key, str):
+                 public_key_bytes = from_hex(auth.public_key)
+            else:
+                 public_key_bytes = auth.public_key
+            if isinstance(auth.signature, str):
+                 signature_bytes = from_hex(auth.signature)
+            else:
+                 signature_bytes = auth.signature
+                 
+            # Placeholder/Dummy values - NEED TO BE REPLACED WITH REAL DATA
+            # These prefixes and messages should ideally come from a configurable source
+            # or be constructed similarly to the Rust side SignData logic.
+            MESSAGE_PREFIX = b"Bitcoin Signed Message:\n"
+            MESSAGE_INFO = b"Rooch Transaction:\n" 
+            tx_hash_hex_placeholder = b'f' * 64 # Placeholder for actual tx_hash hex
+            
+            message_info_full = MESSAGE_INFO + tx_hash_hex_placeholder
+            message_length = len(message_info_full)
+            message_prefix_full = MESSAGE_PREFIX + varint_byte_num(message_length)
+            
+            # Placeholder Bitcoin address - NEED TO DERIVE FROM PUBKEY
+            # This requires bitcoin address generation logic (e.g., from bech32 or similar)
+            bitcoin_address_placeholder = "bc1q...".format(auth.account_addr) # Simplistic placeholder
+            
+            auth_payload_obj = AuthPayload(
+                 signature=signature_bytes,
+                 message_prefix=message_prefix_full,
+                 message_info=message_info_full,
+                 public_key=public_key_bytes,
+                 from_address=bitcoin_address_placeholder
+            )
+            payload_bytes = BcsSerializer.serialize_auth_payload(auth_payload_obj)
+            # The payload for Authenticator is Vec<u8>, so serialize the BCS(AuthPayload) as bytes
+            payload_final_bytes = BcsSerializer.serialize_bytes(payload_bytes)
+            
+        elif auth_validator_id == 2: # Secp256r1 (ID 2)
+             # Current assumption: Payload is pubkey + signature (like Session? Or custom?)
+             # Let's stick to pubkey + signature for now, but this is uncertain.
+             if isinstance(auth.public_key, str):
+                 public_key_bytes = from_hex(auth.public_key)
+             else:
+                 public_key_bytes = auth.public_key
+             if isinstance(auth.signature, str):
+                 signature_bytes = from_hex(auth.signature)
+             else:
+                 signature_bytes = auth.signature
+             payload_inner_bytes = public_key_bytes + signature_bytes
+             payload_final_bytes = BcsSerializer.serialize_bytes(payload_inner_bytes)
+        else:
+            # Handle MULTISIG or other custom types later
+            raise BcsSerializationError(f"Payload construction for auth_validator_id {auth_validator_id} not implemented.")
+
+        result += payload_final_bytes
         
         return result
 

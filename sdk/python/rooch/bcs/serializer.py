@@ -419,6 +419,25 @@ class BcsSerializer:
         except Exception as e:
             raise BcsSerializationError(f"Failed to serialize FunctionId: {e}") from e
 
+    @staticmethod
+    def serialize_auth_payload(payload: 'AuthPayload') -> bytes:
+        """Serialize an AuthPayload structure (for BitcoinAuthenticator)."""
+        # Assumes AuthPayload type is imported
+        from ..transactions.types import AuthPayload
+        if not isinstance(payload, AuthPayload):
+             raise BcsSerializationError(f"Expected AuthPayload, got {type(payload)}")
+             
+        # Sequence: signature, message_prefix, message_info, public_key, from_address
+        try:
+            result = BcsSerializer.serialize_bytes(payload.signature)
+            result += BcsSerializer.serialize_bytes(payload.message_prefix)
+            result += BcsSerializer.serialize_bytes(payload.message_info)
+            result += BcsSerializer.serialize_bytes(payload.public_key)
+            result += BcsSerializer.serialize_string(payload.from_address)
+            return result
+        except Exception as e:
+            raise BcsSerializationError(f"Failed to serialize AuthPayload: {e}") from e
+
 
 class BcsDeserializer:
     """Deserializer for BCS encoded data"""

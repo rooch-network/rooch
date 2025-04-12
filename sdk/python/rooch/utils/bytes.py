@@ -121,3 +121,21 @@ def bytes_to_str(data: bytes, encoding: str = "utf-8") -> str:
         UnicodeDecodeError: If the bytes cannot be decoded using the specified encoding
     """
     return data.decode(encoding)
+
+
+def varint_byte_num(value: int) -> bytes:
+    """ULEB128 encode an integer (same as BCS serialize_len)."""
+    if value < 0:
+        raise ValueError("Length cannot be negative for varint encoding")
+    
+    result = []
+    while True:
+        byte = value & 0x7F
+        value >>= 7
+        if value == 0:
+            result.append(byte)
+            break
+        else:
+            result.append(byte | 0x80)
+    
+    return bytes(result)

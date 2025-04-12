@@ -151,13 +151,12 @@ class TransactionBuilder:
         if not isinstance(signer, RoochSigner):
              # We might need a more generic way if other Signer types exist
              raise TypeError("Expected RoochSigner to access KeyPair")
-        keypair = signer.get_keypair() # Assuming get_keypair() exists on RoochSigner
-        signature_bytes = keypair.sign_digest(tx_hash_bytes) # Use sign_digest
+        keypair = signer.get_keypair()
+        signature_bytes = keypair.sign_digest(tx_hash_bytes)
 
         # 4. Determine AuthenticatorType based on KeyPair/Signer scheme
-        # Assuming KeyPair uses P-256 which corresponds to SECP256R1
-        # TODO: Add a get_scheme() method to KeyPair/Signer later if needed
-        auth_type = AuthenticatorType.SECP256R1 
+        # Assuming KeyPair now defaults to SECP256K1
+        auth_type = AuthenticatorType.SECP256K1 
 
         # 5. Create TransactionAuthenticator
         auth = TransactionAuthenticator(
