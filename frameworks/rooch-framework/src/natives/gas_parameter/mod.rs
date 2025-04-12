@@ -1,5 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
+mod ability;
 mod account;
 mod base58;
 mod base64;

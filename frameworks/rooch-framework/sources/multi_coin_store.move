@@ -4,6 +4,7 @@
 module rooch_framework::multi_coin_store {
 
     use std::string;
+    use moveos_std::ability;
     use moveos_std::object::ObjectID;
     use moveos_std::object::{Self, Object};
     
@@ -28,6 +29,9 @@ module rooch_framework::multi_coin_store {
 
     /// Transfer is not supported for CoinStore
     const ErrorCoinStoreTransferNotSupported: u64 = 5;
+
+    /// Coin type should have key and store ability
+    const ErrorCoinTypeShouldHaveKeyAndStoreAbility: u64 = 6;
 
     // Data structures
 
@@ -150,15 +154,24 @@ module rooch_framework::multi_coin_store {
         coin_type: string::String,
         amount: u256
     ): GenericCoin {
+        ensure_coin_type_has_key_and_store_ability(coin_type);
         withdraw_internal(coin_store_obj, coin_type, amount)
     }
 
     public fun deposit(coin_store_obj: &mut Object<MultiCoinStore>, coin: GenericCoin) {
+        let coin_type = coin::coin_type(&coin);
+        ensure_coin_type_has_key_and_store_ability(coin_type);
         deposit_internal(coin_store_obj, coin)
     }
 
     public fun transfer(_coin_store_obj: Object<MultiCoinStore>, _owner: address) {
         abort ErrorCoinStoreTransferNotSupported
+    }
+
+    public fun ensure_coin_type_has_key_and_store_ability(coin_type: string::String) {
+        let coin_type_abilities = ability::native_get_abilities(coin_type);
+        assert!(ability::has_key(coin_type_abilities), ErrorCoinTypeShouldHaveKeyAndStoreAbility);
+        assert!(ability::has_store(coin_type_abilities), ErrorCoinTypeShouldHaveKeyAndStoreAbility);
     }
 
     // Internal functions
@@ -190,6 +203,7 @@ module rooch_framework::multi_coin_store {
 
 
     public(friend) fun create_coin_store_field_if_not_exist(coin_store_obj: &mut Object<MultiCoinStore>, coin_type: string::String) {
+        ensure_coin_type_has_key_and_store_ability(coin_type);
         if(!object::contains_field(coin_store_obj, coin_type)){
             let coin_store_field = CoinStoreField {
                 coin_type,
@@ -204,6 +218,7 @@ module rooch_framework::multi_coin_store {
     }
     
     fun check_coin_store_not_frozen(coin_store_obj: &Object<MultiCoinStore>, coin_type: string::String) {
+        ensure_coin_type_has_key_and_store_ability(coin_type);
         if(object::contains_field(coin_store_obj, coin_type)){
             let coin_store_field = object::borrow_field<MultiCoinStore, string::String, CoinStoreField>(coin_store_obj, coin_type);
             assert!(!coin_store_field.frozen, ErrorCoinStoreIsFrozen);
