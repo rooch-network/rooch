@@ -7,7 +7,6 @@ from typing import Any, Dict, List, Optional, Union
 import hashlib
 
 from ..address.rooch import RoochAddress
-from ..bcs.serializer import Args
 from ..crypto.signer import Signer
 from ..crypto.signer import RoochSigner
 from .serializer import TxSerializer

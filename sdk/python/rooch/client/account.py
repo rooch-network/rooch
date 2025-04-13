@@ -61,23 +61,24 @@ class AccountClient:
     async def get_account_sequence_number(self, address: str) -> int:
         """Get account sequence number using a view function call. Returns 0 if the account does not exist."""
 
-        # Encode the address argument using BcsSerializer and convert to hex
+        # Validate and potentially normalize the address format
         try:
-            rooch_address = RoochAddress.from_hex(address)
-            # Note: The argument should be the raw address bytes, BCS encoded.
-            # For view functions, typically arguments are passed as hex-encoded BCS bytes.
-            address_arg_bytes = BcsSerializer.serialize_bytes(rooch_address.to_bytes())
-            address_arg_hex = to_hex(address_arg_bytes)
+            # Ensure the address is in the correct hex format (e.g., 0x...)
+            # RoochAddress constructor might handle this, but explicit check is good.
+            # We don't need the RoochAddress object itself here, just its hex string.
+            # Let's assume the input 'address' is already the correct hex string.
+            # TODO: Consider adding validation if needed: RoochAddress.validate_address(address)
+            address_hex = address # Directly use the input hex string
         except Exception as e:
-            raise ValueError(f"Failed to encode address {address}: {e}") from e
+            raise ValueError(f"Invalid address format {address}: {e}") from e
 
         # Construct the function call as a dictionary
         function_call = {
             "function_id": FUNC_SEQUENCE_NUMBER,
             "ty_args": [],
             "args": [
-                # Pass hex encoded BCS bytes directly
-                address_arg_hex
+                # Pass the address hex string directly
+                address_hex
             ]
         }
 

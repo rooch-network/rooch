@@ -6,7 +6,8 @@ from enum import Enum, IntEnum
 from typing import Any, Dict, List, Optional, Tuple, Union
 from dataclasses import dataclass
 
-from ..utils.hex import ensure_hex_prefix
+from ..utils.hex import ensure_hex_prefix, to_hex
+from ..bcs.serializer import BcsSerializer, Serializable, BcsDeserializer, Deserializable, BcsSerializationError, BcsDeserializationError
 
 
 class AuthenticatorType(IntEnum):
@@ -320,18 +321,73 @@ class TypeTagCode(IntEnum):
     # Add other types if needed
 
 @dataclass
-class StructTag:
+class StructTag(Serializable, Deserializable):
     # Assuming address string format is acceptable here, BCS will handle conversion
     address: str
     module: str
     name: str
     type_params: List['TypeTag']
 
+    # --- BCS Implementation ---
+    def serialize(self, serializer: BcsSerializer):
+        # Sequence: address, module_name, name, type_params
+        from ..address.rooch import RoochAddress # Import locally if needed
+        addr = RoochAddress.from_hex_literal(self.address) # Use literal to handle short forms
+        serializer.struct(addr) # RoochAddress is Serializable
+        serializer.str(self.module)
+        serializer.str(self.name)
+        # Serialize list of TypeTags (assuming TypeTag becomes Serializable)
+        serializer.sequence(self.type_params, BcsSerializer.struct)
+
+    @staticmethod
+    def deserialize(deserializer: BcsDeserializer) -> 'StructTag':
+        from ..address.rooch import RoochAddress # Import locally
+        # Sequence: address, module_name, name, type_params
+        addr = RoochAddress.deserialize(deserializer) # RoochAddress is Deserializable
+        module = deserializer.str()
+        name = deserializer.str()
+        # Deserialize list of TypeTags (assuming TypeTag becomes Deserializable)
+        # Need the TypeTag class itself for the type hint in sequence
+        type_params = deserializer.sequence(lambda d: TypeTag.deserialize(d))
+        return StructTag(address=addr.to_hex(), module=module, name=name, type_params=type_params)
+    # --- End BCS Implementation ---
+
+
 @dataclass
-class TypeTag:
+class TypeTag(Serializable, Deserializable):
     type_code: TypeTagCode
     # value holds inner type for Vector, or StructTag for Struct
     value: Optional[Union['TypeTag', StructTag]] = None
+
+    # --- BCS Implementation ---
+    def serialize(self, serializer: BcsSerializer):
+        serializer.u8(self.type_code.value) # Serialize the variant index
+        if self.type_code == TypeTagCode.VECTOR:
+            if not isinstance(self.value, TypeTag):
+                raise TypeError("Vector TypeTag value must be another TypeTag")
+            serializer.struct(self.value) # Inner TypeTag is Serializable
+        elif self.type_code == TypeTagCode.STRUCT:
+            if not isinstance(self.value, StructTag):
+                raise TypeError("Struct TypeTag value must be a StructTag")
+            serializer.struct(self.value) # StructTag is Serializable
+        # Other types only need the index, which was already written
+
+    @staticmethod
+    def deserialize(deserializer: BcsDeserializer) -> 'TypeTag':
+        type_code_val = deserializer.u8()
+        try:
+            type_code = TypeTagCode(type_code_val)
+        except ValueError:
+            raise BcsDeserializationError(f"Invalid TypeTagCode value: {type_code_val}")
+
+        value = None
+        if type_code == TypeTagCode.VECTOR:
+            value = TypeTag.deserialize(deserializer) # Deserialize inner TypeTag
+        elif type_code == TypeTagCode.STRUCT:
+            value = StructTag.deserialize(deserializer) # Deserialize inner StructTag
+        
+        return TypeTag(type_code=type_code, value=value)
+    # --- End BCS Implementation ---
 
     @classmethod
     def bool(cls): return cls(TypeTagCode.BOOL)
@@ -354,29 +410,96 @@ class TypeTag:
     @classmethod
     def struct(cls, struct_tag: StructTag): return cls(TypeTagCode.STRUCT, struct_tag)
 
+    def __str__(self) -> str:
+        if self.type_code == TypeTagCode.VECTOR:
+            return f"vector<{self.value}>"
+        elif self.type_code == TypeTagCode.STRUCT:
+            s_tag: StructTag = self.value
+            params = ", ".join(map(str, s_tag.type_params))
+            return f"{s_tag.address}::{s_tag.module}::{s_tag.name}<{params}>"
+        else:
+            return self.type_code.name.lower()
+
 # --- End TypeTag Definitions ---
 
 # --- ModuleId and FunctionId Definitions ---
 @dataclass
-class ModuleId:
+class ModuleId(Serializable, Deserializable):
     address: str # Hex string address
     name: str    # Module name
 
+    # --- BCS Implementation ---
+    def serialize(self, serializer: BcsSerializer):
+        # Sequence: address, name
+        from ..address.rooch import RoochAddress # Import locally if needed
+        addr = RoochAddress.from_hex_literal(self.address) # Handle short form addresses
+        serializer.struct(addr) # RoochAddress is Serializable
+        serializer.str(self.name)
+
+    @staticmethod
+    def deserialize(deserializer: BcsDeserializer) -> 'ModuleId':
+        from ..address.rooch import RoochAddress # Import locally
+        # Sequence: address, name
+        addr = RoochAddress.deserialize(deserializer) # RoochAddress is Deserializable
+        name = deserializer.str()
+        return ModuleId(address=addr.to_hex(), name=name)
+    # --- End BCS Implementation ---
+
+
 @dataclass
-class FunctionId:
+class FunctionId(Serializable, Deserializable):
     module_id: ModuleId
     function_name: str
-# --- End ModuleId and FunctionId Definitions ---
+
+    # --- BCS Implementation ---
+    def serialize(self, serializer: BcsSerializer):
+        # Sequence: module_id, function_name
+        serializer.struct(self.module_id) # ModuleId is now Serializable
+        serializer.str(self.function_name)
+
+    @staticmethod
+    def deserialize(deserializer: BcsDeserializer) -> 'FunctionId':
+        # Sequence: module_id, function_name
+        mod_id = ModuleId.deserialize(deserializer) # ModuleId is now Deserializable
+        func_name = deserializer.str()
+        return FunctionId(module_id=mod_id, function_name=func_name)
+    # --- End BCS Implementation ---
+
 
 # --- AuthPayload Definition (for Bitcoin Authenticator) ---
 @dataclass
-class AuthPayload:
+class AuthPayload(Serializable, Deserializable):
     signature: bytes
     message_prefix: bytes # Includes varint length of following message
     message_info: bytes   # Includes the tx_hash hex appended
     public_key: bytes     # Uncompressed secp256k1 public key (65 bytes)
     from_address: str      # Bitcoin address string representation
-# --- End AuthPayload Definition ---
+
+    # --- BCS Implementation ---
+    def serialize(self, serializer: BcsSerializer):
+        # Sequence matches struct definition
+        serializer.bytes(self.signature)
+        serializer.bytes(self.message_prefix)
+        serializer.bytes(self.message_info)
+        serializer.bytes(self.public_key)
+        serializer.str(self.from_address)
+
+    @staticmethod
+    def deserialize(deserializer: BcsDeserializer) -> 'AuthPayload':
+        # Sequence matches struct definition
+        signature = deserializer.bytes()
+        message_prefix = deserializer.bytes()
+        message_info = deserializer.bytes()
+        public_key = deserializer.bytes()
+        from_address = deserializer.str()
+        return AuthPayload(
+            signature=signature,
+            message_prefix=message_prefix,
+            message_info=message_info,
+            public_key=public_key,
+            from_address=from_address
+        )
+    # --- End BCS Implementation ---
 
 
 class SignedTransaction:

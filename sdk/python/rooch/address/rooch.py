@@ -7,27 +7,32 @@ from typing import Optional, Union
 
 from ..utils.hex import ensure_hex_prefix, is_hex_string, strip_hex_prefix, to_hex
 from ..utils.bytes import to_bytes
+# Import BCS classes and protocols
+from ..bcs.serializer import BcsSerializer, Serializable, BcsDeserializer, Deserializable
 
 
-class RoochAddress:
-    """Class for handling Rooch addresses"""
+class RoochAddress(Serializable, Deserializable):
+    """Class for handling Rooch addresses, implementing BCS protocols."""
     
     # Rooch address regex pattern
     ADDRESS_REGEX = re.compile(r"^(0x)?[a-fA-F0-9]{64}$")
+    ADDRESS_LENGTH = 32 # Address length in bytes
     
     def __init__(self, address: Union[str, bytes]):
         """Initialize a Rooch address
         
         Args:
-            address: Address as a string or bytes
+            address: Address as a 32-byte byte array or 64-char hex string
             
         Raises:
             ValueError: If the address is invalid
         """
         if isinstance(address, bytes):
+            if len(address) != RoochAddress.ADDRESS_LENGTH:
+                raise ValueError(f"Invalid address byte length ({len(address)}), expected {RoochAddress.ADDRESS_LENGTH}")
             self._bytes = address
             self._str = to_hex(address)
-        else:
+        elif isinstance(address, str):
             normalized_address = ensure_hex_prefix(address.lower())
             if not bool(RoochAddress.ADDRESS_REGEX.match(normalized_address)):
                 raise ValueError(f"Invalid Rooch address format: {address}")
@@ -36,13 +41,26 @@ class RoochAddress:
             # Decode the hex string (without prefix) into bytes
             try:
                 self._bytes = bytes.fromhex(strip_hex_prefix(self._str))
-                if len(self._bytes) != 32:
-                    # This check should ideally be redundant due to regex, but good for safety
-                    raise ValueError(f"Invalid address byte length ({len(self._bytes)}), expected 32: {address}")
+                # Redundant length check already covered by regex, but safe
+                if len(self._bytes) != RoochAddress.ADDRESS_LENGTH:
+                    raise ValueError(f"Internal error: Decoded address byte length mismatch: {address}")
             except ValueError as e:
-                # Catch potential non-hex characters error from fromhex
                 raise ValueError(f"Invalid hex characters in address: {address}, Error: {e}")
+        else:
+             raise TypeError("Address must be initialized with str or bytes")
     
+    # --- BCS Implementation ---
+    def serialize(self, serializer: BcsSerializer):
+        """Serialize the address as fixed 32 bytes."""
+        serializer.fixed_bytes(self.to_bytes())
+        
+    @staticmethod
+    def deserialize(deserializer: BcsDeserializer) -> 'RoochAddress':
+        """Deserialize the address by reading fixed 32 bytes."""
+        addr_bytes = deserializer.fixed_bytes(RoochAddress.ADDRESS_LENGTH)
+        return RoochAddress(addr_bytes)
+    # --- End BCS Implementation ---
+
     @staticmethod
     def is_valid_address(address: str) -> bool:
         """Check if a string is a valid Rooch address
