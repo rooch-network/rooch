@@ -33,7 +33,7 @@ class TransactionClient:
         """
         # Serialize the transaction for raw submission (usually hex string)
         tx_hex = TxSerializer.encode_transaction_for_submission(transaction)
-        
+        print(f"tx_hex: {tx_hex}")
         # Submit the transaction using the correct RPC method
         # Note: The return type might be different for executeRawTransaction (e.g., ExecuteTransactionResponseView)
         # Adjust return type annotation and handling if necessary based on actual RPC response.

@@ -127,6 +127,7 @@ class TransactionBuilder:
             gas_unit_price=self.gas_unit_price,
             expiration_timestamp_secs=self.expiration_timestamp_secs,
             chain_id=self.chain_id,
+            sender=RoochAddress.from_hex(self.sender_address)
         )
     
     def build_module_publish_tx(self, module_bytes: Union[bytes, str]) -> TransactionData:
@@ -151,6 +152,7 @@ class TransactionBuilder:
             gas_unit_price=self.gas_unit_price,
             expiration_timestamp_secs=self.expiration_timestamp_secs,
             chain_id=self.chain_id,
+            sender=RoochAddress.from_hex(self.sender_address)
         )
     
     def sign(self, tx_data: TransactionData, signer: Signer) -> SignedTransaction:

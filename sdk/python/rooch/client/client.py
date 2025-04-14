@@ -182,25 +182,18 @@ class RoochClient:
         timeout_secs: int = 60,
         poll_interval_ms: int = 1000
     ) -> Dict[str, Any]:
-        """Submit a transaction and wait for confirmation
+        """Submit a transaction and get the execution result
         
         Args:
             transaction: Signed transaction
-            timeout_secs: Wait timeout in seconds
-            poll_interval_ms: Polling interval in milliseconds
+            timeout_secs: Wait timeout in seconds (not used, kept for backward compatibility)
+            poll_interval_ms: Polling interval in milliseconds (not used, kept for backward compatibility)
             
         Returns:
-            Transaction information when confirmed
+            Transaction execution result
         """
-        # Submit transaction
-        tx_hash = await self.transaction.submit_transaction(transaction)
-        
-        # Wait for confirmation
-        return await self.transaction.wait_for_transaction(
-            tx_hash,
-            timeout_secs=timeout_secs,
-            poll_interval_ms=poll_interval_ms
-        )
+        # Submit transaction and get immediate execution result
+        return await self.transaction.submit_transaction(transaction)
     
     async def _prepare_move_call_tx_data(
         self,
@@ -298,8 +291,8 @@ class RoochClient:
         # Sign transaction
         signed_tx = tx_builder.sign(tx_data, signer)
         
-        # Submit and wait for confirmation
-        return await self.submit_and_wait(signed_tx)
+        # Submit transaction and get immediate execution result
+        return await self.transaction.submit_transaction(signed_tx)
     
     async def publish_module(
         self,

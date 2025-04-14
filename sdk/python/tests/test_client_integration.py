@@ -69,6 +69,15 @@ class TestClientIntegration:
         amount = 100
         move_call_args = [recipient_address_str, amount]
 
+        print(f"\nDebug info for test_execute_move_call:")
+        print(f"Sender address: {test_signer.get_address()}")
+        print(f"Recipient address: {recipient_address_str}")
+        print(f"Transfer amount: {amount}")
+
+        # Check chain_id
+        chain_id = await rooch_client.get_chain_id()
+        print(f"Current chain_id: {chain_id}")
+
         # Re-add the TypeTag construction logic
         gas_coin_struct_tag = StructTag(
             address="0x3", module="gas_coin", name="GasCoin", type_params=[]
@@ -76,20 +85,46 @@ class TestClientIntegration:
         gas_coin_type_tag = TypeTag.struct(gas_coin_struct_tag)
         type_args_tags = [gas_coin_type_tag]
 
-        result = await rooch_client.execute_move_call(
-            signer=test_signer,
-            function_id="0x3::transfer::transfer_coin",
-            type_args=type_args_tags,
-            args=move_call_args,
-            max_gas_amount=10_000_000
-        )
+        print(f"Type args: {type_args_tags}")
+        print(f"Move call args: {move_call_args}")
 
-        assert result is not None
-        assert "execution_info" in result
-        assert result["execution_info"]["tx_hash"].startswith("0x")
-        assert "status" in result["execution_info"]
-        assert result["execution_info"]["status"]["type"] == "executed"
-        print(f"Move call execution result: {result}")
+        try:
+            result = await rooch_client.execute_move_call(
+                signer=test_signer,
+                function_id="0x3::transfer::transfer_coin",
+                type_args=type_args_tags,
+                args=move_call_args,
+                max_gas_amount=10_000_000
+            )
+
+            print(f"\nMove call execution result:")
+            print(f"Raw result: {result}")
+            if isinstance(result, dict):
+                for key, value in result.items():
+                    print(f"{key}: {value}")
+                if "execution_info" in result:
+                    print("\nExecution info details:")
+                    for key, value in result["execution_info"].items():
+                        print(f"  {key}: {value}")
+                if "error" in result:
+                    print("\nError details:")
+                    print(f"  Error: {result['error']}")
+                    if hasattr(result['error'], '__dict__'):
+                        print(f"  Error attributes: {result['error'].__dict__}")
+
+            assert result is not None
+            assert "execution_info" in result
+            assert result["execution_info"]["tx_hash"].startswith("0x")
+            assert "status" in result["execution_info"]
+            assert result["execution_info"]["status"]["type"] == "executed"
+
+        except Exception as e:
+            print(f"\nException during move call execution:")
+            print(f"Exception type: {type(e)}")
+            print(f"Exception message: {str(e)}")
+            if hasattr(e, '__dict__'):
+                print(f"Exception attributes: {e.__dict__}")
+            raise e
 
     @pytest.mark.asyncio
     # Request the faucet setup fixture

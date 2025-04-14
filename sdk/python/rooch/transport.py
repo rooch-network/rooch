@@ -40,7 +40,7 @@ class RoochTransportError(Exception):
         message = error.get("message", "Unknown error")
         code = error.get("code")
         data = error.get("data")
-        
+        print(f"RoochTransportError: {response}")
         return cls(message, code, data)
 
 

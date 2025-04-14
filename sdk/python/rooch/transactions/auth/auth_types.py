@@ -7,6 +7,7 @@ from typing import Any, Dict, Optional, Union
 
 from ...utils.hex import ensure_hex_prefix, to_hex, from_hex
 from ...bcs.serializer import BcsSerializer, Serializable, BcsDeserializer, Deserializable
+from ...address.rooch import RoochAddress
 
 
 class AuthenticatorType(IntEnum):
@@ -89,16 +90,18 @@ class TransactionAuthenticator(Serializable, Deserializable):
 
     def serialize(self, serializer: BcsSerializer):
         """Serialize the transaction authenticator."""
+        serializer.str(self.account_addr)
         serializer.struct(self.auth_key)
         serializer.bytes(self.signature)
 
     @staticmethod
     def deserialize(deserializer: BcsDeserializer) -> 'TransactionAuthenticator':
         """Deserialize a transaction authenticator."""
+        account_addr = deserializer.str()
         auth_key = AuthenticationKey.deserialize(deserializer)
         signature = deserializer.bytes()
         return TransactionAuthenticator(
-            account_addr="",  # We don't serialize/deserialize account_addr
+            account_addr=account_addr,
             public_key=auth_key.public_key,
             signature=signature,
             auth_type=auth_key.auth_type
@@ -131,14 +134,14 @@ class TransactionAuthenticator(Serializable, Deserializable):
             account_addr=data.get("account_addr", ""),
             public_key=auth_key_data.get("public_key", ""),
             signature=data.get("signature", ""),
-            auth_type=auth_key_data.get("auth_type", AuthenticatorType.ED25519)
+            auth_type=AuthenticatorType(auth_key_data.get("auth_type", AuthenticatorType.ED25519.value))
         )
 
 
-class AuthPayload:
+class AuthPayload(Serializable, Deserializable):
     """Authentication payload for transaction signatures"""
     
-    def __init__(self, public_key: Union[str, bytes], message: Union[str, bytes], signature: Union[str, bytes], address: Optional[str] = None):
+    def __init__(self, public_key: Union[str, bytes], message: Union[str, bytes], signature: Union[str, bytes], address: Optional[Union[str, RoochAddress]] = None):
         """
         Args:
             public_key: Public key (hex string or bytes)
@@ -164,7 +167,37 @@ class AuthPayload:
         else:
             self.signature = signature
             
-        self.address = address
+        # Normalize address
+        if isinstance(address, RoochAddress):
+            self.address = str(address)
+        else:
+            self.address = address
+    
+    def serialize(self, serializer: BcsSerializer):
+        """Serialize the authentication payload."""
+        serializer.bytes(self.public_key)
+        serializer.bytes(self.message)
+        serializer.bytes(self.signature)
+        if self.address:
+            serializer.bool(True)
+            serializer.str(self.address)
+        else:
+            serializer.bool(False)
+
+    @staticmethod
+    def deserialize(deserializer: BcsDeserializer) -> 'AuthPayload':
+        """Deserialize an authentication payload."""
+        public_key = deserializer.bytes()
+        message = deserializer.bytes()
+        signature = deserializer.bytes()
+        has_address = deserializer.bool()
+        address = deserializer.str() if has_address else None
+        return AuthPayload(
+            public_key=public_key,
+            message=message,
+            signature=signature,
+            address=address
+        )
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary

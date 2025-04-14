@@ -168,8 +168,16 @@ class FunctionArgument(Serializable, Deserializable):
             if isinstance(arg, TransactionArgument):
                 self.args.append(arg)
             else:
-                # Default to string type (0)
-                self.args.append(TransactionArgument(type_tag=0, value=arg))
+                # Determine type tag based on value type
+                if isinstance(arg, bool):
+                    type_tag = TypeTagCode.BOOL
+                elif isinstance(arg, int):
+                    type_tag = TypeTagCode.U64  # Default to U64 for integers
+                elif isinstance(arg, str) and arg.startswith("0x"):
+                    type_tag = TypeTagCode.ADDRESS
+                else:
+                    type_tag = TypeTagCode.BOOL  # Default to BOOL for other types
+                self.args.append(TransactionArgument(type_tag=type_tag, value=arg))
 
     def serialize(self, serializer: BcsSerializer):
         """Serialize the function argument."""

@@ -3,12 +3,13 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from enum import IntEnum
-from typing import Any, Dict, Union
+from typing import Any, Dict, Union, Optional
 
 from ..utils.hex import from_hex, to_hex
 from .move.move_types import MoveActionArgument, MoveAction
 from .auth.auth_types import TransactionAuthenticator
 from ..bcs.serializer import BcsSerializer, Serializable, BcsDeserializer, Deserializable
+from ..address.rooch import RoochAddress
 
 
 class TransactionType(IntEnum):
@@ -32,7 +33,8 @@ class TransactionData(Serializable, Deserializable):
         max_gas_amount: Union[int, str] = 1000000,
         gas_unit_price: Union[int, str] = 1,
         expiration_timestamp_secs: Union[int, str] = 0,
-        chain_id: int = 42
+        chain_id: int = 42,
+        sender: Optional[RoochAddress] = None
     ):
         """
         Args:
@@ -43,6 +45,7 @@ class TransactionData(Serializable, Deserializable):
             gas_unit_price: Gas unit price
             expiration_timestamp_secs: Expiration timestamp in seconds
             chain_id: Chain ID
+            sender: Sender's address
         """
         self.tx_type = tx_type
         self.tx_arg = tx_arg
@@ -51,6 +54,7 @@ class TransactionData(Serializable, Deserializable):
         self.gas_unit_price = int(gas_unit_price)
         self.expiration_timestamp_secs = int(expiration_timestamp_secs)
         self.chain_id = chain_id
+        self.sender = sender
 
     def serialize(self, serializer: BcsSerializer):
         """Serialize the transaction data."""
@@ -64,6 +68,8 @@ class TransactionData(Serializable, Deserializable):
         serializer.u64(self.gas_unit_price)
         serializer.u64(self.expiration_timestamp_secs)
         serializer.u8(self.chain_id)
+        if self.sender:
+            serializer.struct(self.sender)
 
     @staticmethod
     def deserialize(deserializer: BcsDeserializer) -> 'TransactionData':
@@ -78,6 +84,9 @@ class TransactionData(Serializable, Deserializable):
         gas_unit_price = deserializer.u64()
         expiration_timestamp_secs = deserializer.u64()
         chain_id = deserializer.u8()
+        sender = None
+        if deserializer.has_remaining():
+            sender = RoochAddress.deserialize(deserializer)
         return TransactionData(
             tx_type=tx_type,
             tx_arg=tx_arg,
@@ -85,7 +94,8 @@ class TransactionData(Serializable, Deserializable):
             max_gas_amount=max_gas_amount,
             gas_unit_price=gas_unit_price,
             expiration_timestamp_secs=expiration_timestamp_secs,
-            chain_id=chain_id
+            chain_id=chain_id,
+            sender=sender
         )
     
     def to_dict(self) -> Dict[str, Any]:
@@ -103,6 +113,9 @@ class TransactionData(Serializable, Deserializable):
             "chain_id": self.chain_id
         }
         
+        if self.sender:
+            result["sender"] = self.sender.to_hex_literal()
+            
         if isinstance(self.tx_arg, MoveActionArgument):
             result["tx_arg"] = self.tx_arg.to_dict()
         else:
@@ -128,6 +141,10 @@ class TransactionData(Serializable, Deserializable):
         else:
             tx_arg = from_hex(tx_arg_data)
         
+        sender = None
+        if "sender" in data:
+            sender = RoochAddress.from_hex_literal(data["sender"])
+        
         return cls(
             tx_type=tx_type,
             tx_arg=tx_arg,
@@ -135,7 +152,8 @@ class TransactionData(Serializable, Deserializable):
             max_gas_amount=data.get("max_gas_amount", "1000000"),
             gas_unit_price=data.get("gas_unit_price", "1"),
             expiration_timestamp_secs=data.get("expiration_timestamp_secs", "0"),
-            chain_id=data.get("chain_id", 42)
+            chain_id=data.get("chain_id", 42),
+            sender=sender
         )
 
 

@@ -114,22 +114,38 @@ async def setup_integration_test_account(rooch_client: RoochClient, test_signer:
         faucet_arg = faucet_amount 
 
         # Call the faucet function
-        result = await rooch_client.execute_move_call(
-            signer=test_signer, 
-            function_id="0x3::gas_coin::faucet_entry",
-            type_args=[],
-            # Pass the raw value in a list
-            args=[faucet_arg], 
-            max_gas_amount=1_000_000 
-        )
-        print(f"Faucet call result for {test_signer.get_address()}: {result}")
-        # Check if the faucet call itself was successful
-        if "execution_info" not in result or result["execution_info"]["status"]["type"] != "executed":
-             print(f"Warning: Faucet call might have failed for {test_signer.get_address()}: {result}")
-        else:
-             print(f"Successfully requested funds for {test_signer.get_address()}")
-             # Wait a bit for the state to potentially update after faucet call
-             await asyncio.sleep(2)
+        print(f"Attempting faucet call with signer address: {test_signer.get_address()}")
+        print(f"Faucet amount: {faucet_arg}")
+        try:
+            result = await rooch_client.execute_move_call(
+                signer=test_signer, 
+                function_id="0x3::gas_coin::faucet_entry",
+                type_args=[],
+                args=[faucet_arg], 
+                max_gas_amount=1_000_000 
+            )
+            print(f"Faucet call result for {test_signer.get_address()}: {result}")
+            # Check if the faucet call itself was successful
+            if "execution_info" not in result or result["execution_info"]["status"]["type"] != "executed":
+                print(f"Warning: Faucet call might have failed for {test_signer.get_address()}: {result}")
+                if "error" in result:
+                    print(f"Error details: {result['error']}")
+                    print(f"Error type: {type(result['error'])}")
+                    if hasattr(result['error'], '__dict__'):
+                        print(f"Error attributes: {result['error'].__dict__}")
+                if "execution_info" in result:
+                    print(f"Execution info: {result['execution_info']}")
+                    if "error" in result["execution_info"]:
+                        print(f"Execution error: {result['execution_info']['error']}")
+            else:
+                print(f"Successfully requested funds for {test_signer.get_address()}")
+                # Wait a bit for the state to potentially update after faucet call
+                await asyncio.sleep(2)
+
+        except Exception as e:
+            # Log the error but don't fail the setup, as the account might already exist
+            print(f"Warning: Failed to execute faucet call for {test_signer.get_address()}: {e}")
+            print("Proceeding with tests, assuming account might already exist or other tests handle creation.")
 
     except Exception as e:
         # Log the error but don't fail the setup, as the account might already exist
