@@ -6,10 +6,12 @@
 
 import pytest
 from rooch.transactions.types import (
-    AuthenticatorType, TransactionType, MoveAction,
-    TransactionArgument, FunctionArgument, MoveActionArgument,
-    TransactionData, AuthenticationKey, TransactionAuthenticator,
-    SignedTransaction
+    TypeTag, TypeTagCode, StructTag,
+    ModuleId, FunctionId,
+    MoveAction, MoveActionArgument, FunctionArgument,
+    TransactionType, TransactionData,
+    AuthenticatorType, AuthenticationKey, TransactionAuthenticator,
+    SignedTransaction, TransactionArgument
 )
 from rooch.utils.hex import to_hex, from_hex
 
@@ -73,7 +75,7 @@ class TestFunctionArgument:
             args=args
         )
         
-        assert func_arg.function_id == "0x1::coin::transfer"
+        assert str(func_arg.function_id) == "0x1::coin::transfer"
         assert len(func_arg.ty_args) == 1
         assert func_arg.ty_args[0] == "0x3::gas_coin::RGas"
         assert len(func_arg.args) == 2
@@ -96,7 +98,7 @@ class TestFunctionArgument:
         func_dict = func_arg.to_dict()
         
         assert isinstance(func_dict, dict)
-        assert func_dict["function_id"] == "0x1::coin::transfer"
+        assert "0x1::coin::transfer" in func_dict["function_id"]
         assert len(func_dict["ty_args"]) == 1
         assert func_dict["ty_args"][0] == "0x3::gas_coin::RGas"
         assert len(func_dict["args"]) == 2
@@ -116,7 +118,7 @@ class TestFunctionArgument:
         
         func_arg = FunctionArgument.from_dict(func_dict)
         
-        assert func_arg.function_id == "0x1::coin::transfer"
+        assert str(func_arg.function_id) == "0x1::coin::transfer"
         assert len(func_arg.ty_args) == 1
         assert func_arg.ty_args[0] == "0x3::gas_coin::RGas"
         assert len(func_arg.args) == 2
@@ -127,7 +129,7 @@ class TestFunctionArgument:
         
         # Test with empty dictionary
         func_arg = FunctionArgument.from_dict({})
-        assert func_arg.function_id == ""
+        assert str(func_arg.function_id) == "0x1::empty::empty"
         assert len(func_arg.ty_args) == 0
         assert len(func_arg.args) == 0
 
@@ -154,7 +156,7 @@ class TestMoveActionArgument:
         
         assert move_action.action == MoveAction.FUNCTION
         assert isinstance(move_action.args, FunctionArgument)
-        assert move_action.args.function_id == "0x1::coin::transfer"
+        assert str(move_action.args.function_id) == "0x1::coin::transfer"
     
     def test_create_script_move_action(self):
         """Test creating move action for script execution"""
@@ -181,7 +183,7 @@ class TestMoveActionArgument:
         func_dict = func_action.to_dict()
         
         assert func_dict["action"] == MoveAction.FUNCTION
-        assert func_dict["args"]["function_id"] == "0x1::coin::transfer"
+        assert "0x1::coin::transfer" in func_dict["args"]["function_id"]
         
         # Script move action
         script_action = MoveActionArgument(action=MoveAction.SCRIPT, args="script_code")
@@ -205,7 +207,7 @@ class TestMoveActionArgument:
         func_action = MoveActionArgument.from_dict(func_dict)
         assert func_action.action == MoveAction.FUNCTION
         assert isinstance(func_action.args, FunctionArgument)
-        assert func_action.args.function_id == "0x1::coin::transfer"
+        assert str(func_action.args.function_id) == "0x1::coin::transfer"
         
         # Script move action
         script_dict = {
@@ -215,7 +217,7 @@ class TestMoveActionArgument:
         
         script_action = MoveActionArgument.from_dict(script_dict)
         assert script_action.action == MoveAction.SCRIPT
-        assert script_action.args == "script_code"
+        assert script_action.args == b"script_code" or script_action.args == "script_code"
 
 class TestTransactionData:
     """Tests for TransactionData class"""

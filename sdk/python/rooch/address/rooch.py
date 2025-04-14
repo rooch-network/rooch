@@ -18,36 +18,29 @@ class RoochAddress(Serializable, Deserializable):
     ADDRESS_REGEX = re.compile(r"^(0x)?[a-fA-F0-9]{64}$")
     ADDRESS_LENGTH = 32 # Address length in bytes
     
-    def __init__(self, address: Union[str, bytes]):
-        """Initialize a Rooch address
-        
+    def __init__(self, addr: Union[str, bytes]):
+        """
         Args:
-            address: Address as a 32-byte byte array or 64-char hex string
+            addr: Address in hex string (with or without 0x prefix) or bytes
             
         Raises:
             ValueError: If the address is invalid
         """
-        if isinstance(address, bytes):
-            if len(address) != RoochAddress.ADDRESS_LENGTH:
-                raise ValueError(f"Invalid address byte length ({len(address)}), expected {RoochAddress.ADDRESS_LENGTH}")
-            self._bytes = address
-            self._str = to_hex(address)
-        elif isinstance(address, str):
-            normalized_address = ensure_hex_prefix(address.lower())
-            if not bool(RoochAddress.ADDRESS_REGEX.match(normalized_address)):
-                raise ValueError(f"Invalid Rooch address format: {address}")
-            
-            self._str = normalized_address
-            # Decode the hex string (without prefix) into bytes
+        if isinstance(addr, str):
+            # Remove 0x prefix if present
+            addr = addr.removeprefix("0x")
+            # Check length before converting to bytes
+            if len(addr) != self.ADDRESS_LENGTH * 2:
+                raise ValueError(f"Address must be {self.ADDRESS_LENGTH * 2} hex characters")
             try:
-                self._bytes = bytes.fromhex(strip_hex_prefix(self._str))
-                # Redundant length check already covered by regex, but safe
-                if len(self._bytes) != RoochAddress.ADDRESS_LENGTH:
-                    raise ValueError(f"Internal error: Decoded address byte length mismatch: {address}")
+                self._bytes = bytes.fromhex(addr)
             except ValueError as e:
-                raise ValueError(f"Invalid hex characters in address: {address}, Error: {e}")
+                raise ValueError(f"Invalid hex characters in address: {e}")
         else:
-             raise TypeError("Address must be initialized with str or bytes")
+            self._bytes = addr
+            
+        if len(self._bytes) != self.ADDRESS_LENGTH:
+            raise ValueError(f"Address must be {self.ADDRESS_LENGTH} bytes")
     
     # --- BCS Implementation ---
     def serialize(self, serializer: BcsSerializer):
@@ -110,41 +103,16 @@ class RoochAddress(Serializable, Deserializable):
     
     @staticmethod
     def from_hex(hex_str: str) -> 'RoochAddress':
-        """Create a RoochAddress from a hex string
+        """Create from hex string
         
         Args:
             hex_str: Hex string with or without 0x prefix
             
         Returns:
             RoochAddress instance
-            
-        Raises:
-            ValueError: If the hex string is invalid
         """
-        original_hex_str = hex_str # Keep original for error messages
-        is_prefixed = False
-        # Remove 0x prefix if present
-        clean_hex = hex_str
-        if clean_hex.startswith("0x") or clean_hex.startswith("0X"):
-            is_prefixed = True
-            clean_hex = clean_hex[2:]
-            
-        # Check length - should be exactly 64 hex chars
-        if len(clean_hex) != 64:
-            # Provide more context in the error message
-            prefix_msg = "(after removing prefix)" if is_prefixed else "(no prefix)"
-            if len(clean_hex) > 64:
-                raise ValueError(f"Hex string too long ({len(clean_hex)} chars {prefix_msg}): {original_hex_str}")
-            else:
-                raise ValueError(f"Hex string too short ({len(clean_hex)} chars {prefix_msg}): {original_hex_str}")
-        
-        # Ensure the hex string contains only valid hex characters
-        if not is_hex_string(clean_hex):
-            raise ValueError(f"Invalid hex string: {hex_str}")
-            
-        # Add 0x prefix if it was not present
-        normalized_hex = f"0x{clean_hex}"
-        return RoochAddress(normalized_hex)
+        # Convert to lowercase before creating address
+        return RoochAddress(hex_str.lower())
     
     @staticmethod
     def from_hex_literal(literal: str) -> 'RoochAddress':
@@ -189,22 +157,19 @@ class RoochAddress(Serializable, Deserializable):
         return RoochAddress.from_hex(f"0x{padded_hex}")
     
     def __str__(self) -> str:
-        """Return the address as a string with 0x prefix"""
-        return self._str
+        """Convert to 0x-prefixed hex string"""
+        return "0x" + self._bytes.hex()
     
     def __repr__(self) -> str:
-        """Return the string representation of the address"""
-        return f"RoochAddress('{self._str}')"
+        return f"RoochAddress({str(self)})"
     
     def __eq__(self, other: object) -> bool:
-        """Check if two addresses are equal"""
         if not isinstance(other, RoochAddress):
-            return False
-        return self.to_hex() == other.to_hex()
+            return NotImplemented
+        return self._bytes == other._bytes
     
     def __hash__(self) -> int:
-        """Return hash value for the address"""
-        return hash(self._str)
+        return hash(self._bytes)
     
     def to_bytes(self) -> bytes:
         """Convert the address to bytes
@@ -218,9 +183,30 @@ class RoochAddress(Serializable, Deserializable):
         """Convert the address to hex string with 0x prefix
         
         Returns:
-            Address as hex string
+            Address as hex string with full length (64 characters + 0x prefix)
         """
-        return self._str
+        return self.to_hex_full()
+    
+    def to_hex_full(self) -> str:
+        """Convert the address to hex string with 0x prefix and full length
+        
+        Returns:
+            Address as hex string with full length (64 characters + 0x prefix)
+        """
+        return "0x" + self._bytes.hex()
+    
+    def to_hex_literal(self) -> str:
+        """Convert the address to short hex string with 0x prefix
+        
+        Returns:
+            Address as short hex string (without leading zeros)
+        """
+        # Remove leading zeros and add 0x prefix
+        hex_str = self._bytes.hex()
+        hex_str = hex_str.lstrip('0')
+        if not hex_str:
+            hex_str = '0'
+        return "0x" + hex_str
     
     def to_hex_no_prefix(self) -> str:
         """Convert the address to hex string without 0x prefix
@@ -228,7 +214,7 @@ class RoochAddress(Serializable, Deserializable):
         Returns:
             Address as hex string without 0x prefix
         """
-        return strip_hex_prefix(self._str)
+        return self._bytes.hex()
 
 
 def is_rooch_address(value: str) -> bool:

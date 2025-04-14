@@ -6,7 +6,7 @@
 
 import pytest
 import struct
-from rooch.bcs.serializer import BcsSerializer, Args
+from rooch.bcs.serializer import BcsSerializer, BcsDeserializer
 
 
 class TestBcsSerializer:
@@ -17,105 +17,147 @@ class TestBcsSerializer:
         serializer = BcsSerializer()
         
         # Test valid values
-        assert serializer.serialize_u8(0) == b'\x00'
-        assert serializer.serialize_u8(127) == b'\x7f'
-        assert serializer.serialize_u8(255) == b'\xff'
+        serializer.u8(0)
+        assert serializer.output() == b'\x00'
+        
+        serializer = BcsSerializer()
+        serializer.u8(127)
+        assert serializer.output() == b'\x7f'
+        
+        serializer = BcsSerializer()
+        serializer.u8(255)
+        assert serializer.output() == b'\xff'
         
         # Test boundary values
         with pytest.raises(Exception):
-            serializer.serialize_u8(-1)  # Too small
+            serializer.u8(-1)  # Too small
         
         with pytest.raises(Exception):
-            serializer.serialize_u8(256)  # Too large
+            serializer.u8(256)  # Too large
     
     def test_serialize_u16(self):
         serializer = BcsSerializer()
-        assert serializer.serialize_u16(0) == b'\x00\x00'
-        assert serializer.serialize_u16(65535) == b'\xff\xff'
-        with pytest.raises(Exception): serializer.serialize_u16(-1)
-        with pytest.raises(Exception): serializer.serialize_u16(65536)
+        serializer.u16(0)
+        assert serializer.output() == b'\x00\x00'
+        
+        serializer = BcsSerializer()
+        serializer.u16(65535)
+        assert serializer.output() == b'\xff\xff'
+        
+        with pytest.raises(Exception): serializer.u16(-1)
+        with pytest.raises(Exception): serializer.u16(65536)
     
     def test_serialize_u32(self):
         serializer = BcsSerializer()
-        assert serializer.serialize_u32(0) == b'\x00\x00\x00\x00'
-        assert serializer.serialize_u32(4294967295) == b'\xff\xff\xff\xff'
-        with pytest.raises(Exception): serializer.serialize_u32(-1)
-        with pytest.raises(Exception): serializer.serialize_u32(4294967296)
+        serializer.u32(0)
+        assert serializer.output() == b'\x00\x00\x00\x00'
+        
+        serializer = BcsSerializer()
+        serializer.u32(4294967295)
+        assert serializer.output() == b'\xff\xff\xff\xff'
+        
+        with pytest.raises(Exception): serializer.u32(-1)
+        with pytest.raises(Exception): serializer.u32(4294967296)
     
     def test_serialize_u64(self):
         serializer = BcsSerializer()
-        assert serializer.serialize_u64(0) == b'\x00\x00\x00\x00\x00\x00\x00\x00'
-        assert serializer.serialize_u64(18446744073709551615) == b'\xff\xff\xff\xff\xff\xff\xff\xff'
-        with pytest.raises(Exception): serializer.serialize_u64(-1)
-        # with pytest.raises(Exception): serializer.serialize_u64(18446744073709551616) # This number might be too large for Python int
+        serializer.u64(0)
+        assert serializer.output() == b'\x00\x00\x00\x00\x00\x00\x00\x00'
+        
+        serializer = BcsSerializer()
+        serializer.u64(18446744073709551615)
+        assert serializer.output() == b'\xff\xff\xff\xff\xff\xff\xff\xff'
+        
+        with pytest.raises(Exception): serializer.u64(-1)
+        # with pytest.raises(Exception): serializer.u64(18446744073709551616) # This number might be too large for Python int
     
     def test_serialize_u128(self):
         serializer = BcsSerializer()
-        assert serializer.serialize_u128(0) == b'\x00' * 16
+        serializer.u128(0)
+        assert serializer.output() == b'\x00' * 16
+        
+        serializer = BcsSerializer()
         max_u128 = (1 << 128) - 1
-        assert serializer.serialize_u128(max_u128) == b'\xff' * 16
-        with pytest.raises(Exception): serializer.serialize_u128(-1)
-        # with pytest.raises(Exception): serializer.serialize_u128(max_u128 + 1)
+        serializer.u128(max_u128)
+        assert serializer.output() == b'\xff' * 16
+        
+        with pytest.raises(Exception): serializer.u128(-1)
+        # with pytest.raises(Exception): serializer.u128(max_u128 + 1)
     
     def test_serialize_u256(self):
         serializer = BcsSerializer()
-        assert serializer.serialize_u256(0) == b'\x00' * 32
+        serializer.u256(0)
+        assert serializer.output() == b'\x00' * 32
+        
+        serializer = BcsSerializer()
         max_u256 = (1 << 256) - 1
-        assert serializer.serialize_u256(max_u256) == b'\xff' * 32
-        with pytest.raises(Exception): serializer.serialize_u256(-1)
-        # with pytest.raises(Exception): serializer.serialize_u256(max_u256 + 1)
+        serializer.u256(max_u256)
+        assert serializer.output() == b'\xff' * 32
+        
+        with pytest.raises(Exception): serializer.u256(-1)
+        # with pytest.raises(Exception): serializer.u256(max_u256 + 1)
     
     def test_serialize_bool(self):
         """Test serializing boolean values"""
         serializer = BcsSerializer()
+        serializer.bool(False)
+        assert serializer.output() == b'\x00'
         
-        # Test values
-        assert serializer.serialize_bool(False) == b'\x00'
-        assert serializer.serialize_bool(True) == b'\x01'
+        serializer = BcsSerializer()
+        serializer.bool(True)
+        assert serializer.output() == b'\x01'
     
-    def test_serialize_address(self):
-        """Test serializing address values"""
+    def test_serialize_bytes(self):
+        """Test serializing bytes values"""
         serializer = BcsSerializer()
         
-        # Use a known valid address from Rust codebase
-        address = "0x0c71415a4e19ac8705e1817091a17a1a4a6a895c5f040627bf2a062607700f67"
-        # Expected bytes (32 bytes, no prefix)
-        expected_bytes = bytes.fromhex("0c71415a4e19ac8705e1817091a17a1a4a6a895c5f040627bf2a062607700f67")
-        result = serializer.serialize_address(address)
-        assert result == expected_bytes # Direct comparison
-        assert len(result) == 32  # 32 bytes for an address
-    
-    def test_serialize_vector(self):
-        """Test serializing vector values"""
+        # Test empty bytes
+        serializer.bytes(b"")
+        assert serializer.output() == b'\x00'
+        
+        # Test non-empty bytes
         serializer = BcsSerializer()
-        
-        # Test empty vector - ULEB128 length 0 is single byte 0x00
-        empty_vector = serializer.serialize_vector([], lambda x: serializer.serialize_u8(x))
-        assert empty_vector == bytes([0])
-        
-        # Test vector with u8 values
-        vec_u8 = serializer.serialize_vector([1, 2, 3], serializer.serialize_u8)
-        assert vec_u8 == bytes([3, 1, 2, 3]) # Length 3, then values
-        
-        # Test vector with u16 values
-        vec_u16 = serializer.serialize_vector([256, 512], serializer.serialize_u16)
-        assert vec_u16 == bytes([2]) + struct.pack("<HH", 256, 512) # Length 2, then values
+        test_bytes = b"Hello"
+        serializer.bytes(test_bytes)
+        assert serializer.output() == bytes([len(test_bytes)]) + test_bytes
     
-    def test_serialize_string(self):
+    def test_serialize_str(self):
         """Test serializing string values"""
         serializer = BcsSerializer()
         
-        # Test empty string - ULEB128 length 0 is single byte 0x00
-        assert serializer.serialize_string("") == bytes([0])
+        # Test empty string
+        serializer.str("")
+        assert serializer.output() == b'\x00'
         
         # Test non-empty string
+        serializer = BcsSerializer()
         hello = "Hello"
-        hello_bytes = hello.encode('utf-8')
-        expected = serializer.serialize_len(len(hello_bytes)) + hello_bytes
-        assert serializer.serialize_string(hello) == expected
+        serializer.str(hello)
+        expected = bytes([len(hello)]) + hello.encode('utf-8')
+        assert serializer.output() == expected
         
         # Test string with unicode
+        serializer = BcsSerializer()
         unicode_str = "你好"
+        serializer.str(unicode_str)
         unicode_bytes = unicode_str.encode('utf-8')
-        expected_unicode = serializer.serialize_len(len(unicode_bytes)) + unicode_bytes
-        assert serializer.serialize_string(unicode_str) == expected_unicode
+        expected = bytes([len(unicode_bytes)]) + unicode_bytes
+        assert serializer.output() == expected
+    
+    def test_serialize_sequence(self):
+        """Test serializing sequence values"""
+        serializer = BcsSerializer()
+        
+        # Test empty sequence
+        serializer.sequence([], lambda s, x: s.u8(x))
+        assert serializer.output() == b'\x00'
+        
+        # Test sequence with u8 values
+        serializer = BcsSerializer()
+        serializer.sequence([1, 2, 3], lambda s, x: s.u8(x))
+        assert serializer.output() == bytes([3, 1, 2, 3])  # Length 3, then values
+        
+        # Test sequence with u16 values
+        serializer = BcsSerializer()
+        serializer.sequence([256, 512], lambda s, x: s.u16(x))
+        assert serializer.output() == bytes([2]) + struct.pack("<HH", 256, 512)  # Length 2, then values

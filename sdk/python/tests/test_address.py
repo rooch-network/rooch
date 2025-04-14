@@ -71,12 +71,30 @@ class TestRoochAddress:
         address_upper = RoochAddress.from_hex(self.VALID_ADDRESS_STR_PREFIX.upper())
         assert str(address_upper) == self.VALID_ADDRESS_STR_PREFIX
 
-        # Invalid hex strings
-        with pytest.raises(ValueError): RoochAddress.from_hex(self.INVALID_ADDRESS_SHORT)
+        # Invalid hex strings should raise ValueError
+        with pytest.raises(ValueError): RoochAddress.from_hex(self.INVALID_ADDRESS_SHORT)  # Short address should use from_hex_literal
         with pytest.raises(ValueError): RoochAddress.from_hex(self.INVALID_ADDRESS_LONG)
         with pytest.raises(ValueError): RoochAddress.from_hex(self.INVALID_ADDRESS_CHARS)
         with pytest.raises(ValueError): RoochAddress.from_hex("0x")
         with pytest.raises(ValueError): RoochAddress.from_hex("")
+
+    def test_from_hex_literal(self):
+        """Test creating address from hex literal"""
+        # Short addresses
+        address_short = RoochAddress.from_hex_literal("0x1")
+        assert address_short.to_hex_literal() == "0x1"
+        assert len(address_short.to_hex_no_prefix()) == 64
+
+        # Another short address
+        address_abc = RoochAddress.from_hex_literal("0xabc")
+        assert address_abc.to_hex_literal() == "0xabc"
+        assert len(address_abc.to_hex_no_prefix()) == 64
+
+        # Invalid literals should raise ValueError
+        with pytest.raises(ValueError): RoochAddress.from_hex_literal("1")  # Must start with 0x
+        with pytest.raises(ValueError): RoochAddress.from_hex_literal("0x" + "f" * 65)  # Too long
+        with pytest.raises(ValueError): RoochAddress.from_hex_literal("0xg")  # Invalid hex
+        with pytest.raises(ValueError): RoochAddress.from_hex_literal("0x")  # Empty
 
     def test_to_hex(self):
         """Test converting address to hex string"""

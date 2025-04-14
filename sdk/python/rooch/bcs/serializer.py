@@ -387,3 +387,76 @@ def bcs_decode(data: bytes, cls: Type[DeserializableT]) -> DeserializableT:
     if not issubclass(cls, Deserializable):
         raise TypeError(f"Class {cls.__name__} is not Deserializable")
     return cls.from_bytes(data)
+
+class Args:
+    """Helper class for creating transaction arguments with proper BCS serialization"""
+    
+    @staticmethod
+    def u8(value: int) -> int:
+        """Create a u8 argument"""
+        if not 0 <= value <= MAX_U8:
+            raise BcsSerializationError(f"Value {value} out of range for u8")
+        return value
+
+    @staticmethod
+    def u16(value: int) -> int:
+        """Create a u16 argument"""
+        if not 0 <= value <= MAX_U16:
+            raise BcsSerializationError(f"Value {value} out of range for u16")
+        return value
+
+    @staticmethod
+    def u32(value: int) -> int:
+        """Create a u32 argument"""
+        if not 0 <= value <= MAX_U32:
+            raise BcsSerializationError(f"Value {value} out of range for u32")
+        return value
+
+    @staticmethod
+    def u64(value: int) -> int:
+        """Create a u64 argument"""
+        if not 0 <= value <= MAX_U64:
+            raise BcsSerializationError(f"Value {value} out of range for u64")
+        return value
+
+    @staticmethod
+    def u128(value: int) -> int:
+        """Create a u128 argument"""
+        if not 0 <= value <= MAX_U128:
+            raise BcsSerializationError(f"Value {value} out of range for u128")
+        return value
+
+    @staticmethod
+    def u256(value: int) -> int:
+        """Create a u256 argument"""
+        if not 0 <= value <= MAX_U256:
+            raise BcsSerializationError(f"Value {value} out of range for u256")
+        return value
+
+    @staticmethod
+    def bool(value: bool) -> bool:
+        """Create a boolean argument"""
+        return bool(value)
+
+    @staticmethod
+    def address(value: str) -> str:
+        """Create an address argument"""
+        # Ensure the address has 0x prefix
+        if not value.startswith("0x"):
+            value = "0x" + value
+        return value
+
+    @staticmethod
+    def vector_u8(value: Union[bytes, bytearray, List[int]]) -> bytes:
+        """Create a vector<u8> argument"""
+        if isinstance(value, (bytes, bytearray)):
+            return bytes(value)
+        elif isinstance(value, list):
+            return bytes(value)
+        else:
+            raise BcsSerializationError(f"Cannot convert {type(value)} to vector<u8>")
+
+    @staticmethod
+    def string(value: str) -> str:
+        """Create a string argument"""
+        return str(value)
