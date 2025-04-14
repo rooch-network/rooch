@@ -8,6 +8,7 @@ from typing import Any, Dict, Union
 from ..utils.hex import from_hex, to_hex
 from .move.move_types import MoveActionArgument, MoveAction
 from .auth.auth_types import TransactionAuthenticator
+from ..bcs.serializer import BcsSerializer, Serializable, BcsDeserializer, Deserializable
 
 
 class TransactionType(IntEnum):
@@ -20,7 +21,7 @@ class TransactionType(IntEnum):
     BITCOIN_BINDING = 4
 
 
-class TransactionData:
+class TransactionData(Serializable, Deserializable):
     """Transaction data for Rooch transactions"""
     
     def __init__(
@@ -50,6 +51,42 @@ class TransactionData:
         self.gas_unit_price = int(gas_unit_price)
         self.expiration_timestamp_secs = int(expiration_timestamp_secs)
         self.chain_id = chain_id
+
+    def serialize(self, serializer: BcsSerializer):
+        """Serialize the transaction data."""
+        serializer.u8(self.tx_type.value)
+        if isinstance(self.tx_arg, MoveActionArgument):
+            serializer.struct(self.tx_arg)
+        else:
+            serializer.bytes(self.tx_arg)
+        serializer.u64(self.sequence_number)
+        serializer.u64(self.max_gas_amount)
+        serializer.u64(self.gas_unit_price)
+        serializer.u64(self.expiration_timestamp_secs)
+        serializer.u8(self.chain_id)
+
+    @staticmethod
+    def deserialize(deserializer: BcsDeserializer) -> 'TransactionData':
+        """Deserialize a transaction data."""
+        tx_type = TransactionType(deserializer.u8())
+        if tx_type == TransactionType.MOVE_ACTION:
+            tx_arg = MoveActionArgument.deserialize(deserializer)
+        else:
+            tx_arg = deserializer.bytes()
+        sequence_number = deserializer.u64()
+        max_gas_amount = deserializer.u64()
+        gas_unit_price = deserializer.u64()
+        expiration_timestamp_secs = deserializer.u64()
+        chain_id = deserializer.u8()
+        return TransactionData(
+            tx_type=tx_type,
+            tx_arg=tx_arg,
+            sequence_number=sequence_number,
+            max_gas_amount=max_gas_amount,
+            gas_unit_price=gas_unit_price,
+            expiration_timestamp_secs=expiration_timestamp_secs,
+            chain_id=chain_id
+        )
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary
@@ -102,7 +139,7 @@ class TransactionData:
         )
 
 
-class SignedTransaction:
+class SignedTransaction(Serializable, Deserializable):
     """Signed transaction ready for submission"""
     
     def __init__(self, tx_data: TransactionData, authenticator: TransactionAuthenticator):
@@ -113,6 +150,18 @@ class SignedTransaction:
         """
         self.tx_data = tx_data
         self.authenticator = authenticator
+
+    def serialize(self, serializer: BcsSerializer):
+        """Serialize the signed transaction."""
+        serializer.struct(self.tx_data)
+        serializer.struct(self.authenticator)
+
+    @staticmethod
+    def deserialize(deserializer: BcsDeserializer) -> 'SignedTransaction':
+        """Deserialize a signed transaction."""
+        tx_data = TransactionData.deserialize(deserializer)
+        authenticator = TransactionAuthenticator.deserialize(deserializer)
+        return SignedTransaction(tx_data=tx_data, authenticator=authenticator)
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary

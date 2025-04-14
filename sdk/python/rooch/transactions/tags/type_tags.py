@@ -27,7 +27,7 @@ class TypeTagCode(IntEnum):
 
 
 @dataclass
-class StructTag:
+class StructTag(Serializable, Deserializable):
     """Represents a Move struct type tag."""
     address: RoochAddress  # Changed from str to RoochAddress
     module: str
@@ -75,7 +75,7 @@ class StructTag:
 
 
 @dataclass
-class TypeTag:
+class TypeTag(Serializable, Deserializable):
     type_code: TypeTagCode
     # value holds inner type for Vector, or StructTag for Struct
     value: Optional[Union['TypeTag', StructTag]] = None

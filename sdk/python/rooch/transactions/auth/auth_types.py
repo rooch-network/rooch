@@ -6,6 +6,7 @@ from enum import IntEnum
 from typing import Any, Dict, Optional, Union
 
 from ...utils.hex import ensure_hex_prefix, to_hex, from_hex
+from ...bcs.serializer import BcsSerializer, Serializable, BcsDeserializer, Deserializable
 
 
 class AuthenticatorType(IntEnum):
@@ -19,7 +20,7 @@ class AuthenticatorType(IntEnum):
     MULTI_SECP256R1 = 5
 
 
-class AuthenticationKey:
+class AuthenticationKey(Serializable, Deserializable):
     """Authentication key for transactions"""
     
     def __init__(self, auth_type: AuthenticatorType, public_key: Union[str, bytes]):
@@ -35,6 +36,18 @@ class AuthenticationKey:
             self.public_key = from_hex(ensure_hex_prefix(public_key))
         else:
             self.public_key = public_key
+
+    def serialize(self, serializer: BcsSerializer):
+        """Serialize the authentication key."""
+        serializer.u8(self.auth_type.value)
+        serializer.bytes(self.public_key)
+
+    @staticmethod
+    def deserialize(deserializer: BcsDeserializer) -> 'AuthenticationKey':
+        """Deserialize an authentication key."""
+        auth_type = AuthenticatorType(deserializer.u8())
+        public_key = deserializer.bytes()
+        return AuthenticationKey(auth_type=auth_type, public_key=public_key)
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary
@@ -48,7 +61,7 @@ class AuthenticationKey:
         }
 
 
-class TransactionAuthenticator:
+class TransactionAuthenticator(Serializable, Deserializable):
     """Authentication data for transactions"""
     
     def __init__(
@@ -73,6 +86,23 @@ class TransactionAuthenticator:
             self.signature = from_hex(ensure_hex_prefix(signature))
         else:
             self.signature = signature
+
+    def serialize(self, serializer: BcsSerializer):
+        """Serialize the transaction authenticator."""
+        serializer.struct(self.auth_key)
+        serializer.bytes(self.signature)
+
+    @staticmethod
+    def deserialize(deserializer: BcsDeserializer) -> 'TransactionAuthenticator':
+        """Deserialize a transaction authenticator."""
+        auth_key = AuthenticationKey.deserialize(deserializer)
+        signature = deserializer.bytes()
+        return TransactionAuthenticator(
+            account_addr="",  # We don't serialize/deserialize account_addr
+            public_key=auth_key.public_key,
+            signature=signature,
+            auth_type=auth_key.auth_type
+        )
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary

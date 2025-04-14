@@ -6,8 +6,9 @@ from enum import IntEnum
 from typing import Any, Dict, List, Optional, Union
 
 from ...utils.hex import to_hex, from_hex, ensure_hex_prefix
-from ..tags.type_tags import TypeTagCode
+from ..tags.type_tags import TypeTagCode, TypeTag
 from .module_id import ModuleId, FunctionId
+from ...bcs.serializer import BcsSerializer, Serializable, BcsDeserializer, Deserializable
 
 
 class MoveAction(IntEnum):
@@ -18,7 +19,7 @@ class MoveAction(IntEnum):
     MODULE_BUNDLE = 2
 
 
-class TransactionArgument:
+class TransactionArgument(Serializable, Deserializable):
     """Transaction argument for Move function calls"""
     
     def __init__(self, type_tag: Union[int, TypeTagCode], value: Any):
@@ -30,6 +31,78 @@ class TransactionArgument:
         self.type_tag = type_tag if isinstance(type_tag, TypeTagCode) else TypeTagCode(type_tag)
         self.value = value
     
+    def __eq__(self, other: 'TransactionArgument') -> bool:
+        """Compare two TransactionArgument objects for equality."""
+        if not isinstance(other, TransactionArgument):
+            print(f"Other object is not a TransactionArgument: {type(other)}")
+            return False
+        print(f"\nComparing TransactionArgument objects:")
+        print(f"Self: type_tag={self.type_tag}, value={self.value}")
+        print(f"Other: type_tag={other.type_tag}, value={other.value}")
+        return self.type_tag == other.type_tag and self.value == other.value
+
+    def serialize(self, serializer: BcsSerializer):
+        """Serialize the transaction argument."""
+        serializer.u8(self.type_tag.value)
+        if isinstance(self.value, str):
+            if self.type_tag == TypeTagCode.BOOL:
+                serializer.bool(self.value.lower() == "true")
+            elif self.type_tag in [TypeTagCode.U8, TypeTagCode.U16, TypeTagCode.U32, TypeTagCode.U64]:
+                serializer.u64(int(self.value))
+            elif self.type_tag == TypeTagCode.U128:
+                serializer.u128(int(self.value))
+            elif self.type_tag == TypeTagCode.U256:
+                serializer.u256(int(self.value))
+            elif self.type_tag == TypeTagCode.ADDRESS:
+                serializer.str(self.value)
+            else:
+                serializer.str(self.value)
+        elif isinstance(self.value, bytes):
+            serializer.bytes(self.value)
+        elif isinstance(self.value, bool):
+            serializer.bool(self.value)
+        elif isinstance(self.value, int):
+            if self.type_tag == TypeTagCode.U8:
+                serializer.u8(self.value)
+            elif self.type_tag == TypeTagCode.U16:
+                serializer.u16(self.value)
+            elif self.type_tag == TypeTagCode.U32:
+                serializer.u32(self.value)
+            elif self.type_tag == TypeTagCode.U64:
+                serializer.u64(self.value)
+            elif self.type_tag == TypeTagCode.U128:
+                serializer.u128(self.value)
+            elif self.type_tag == TypeTagCode.U256:
+                serializer.u256(self.value)
+            else:
+                raise ValueError(f"Unsupported integer type tag: {self.type_tag}")
+        else:
+            raise ValueError(f"Unsupported value type: {type(self.value)}")
+
+    @staticmethod
+    def deserialize(deserializer: BcsDeserializer) -> 'TransactionArgument':
+        """Deserialize a transaction argument."""
+        type_tag = TypeTagCode(deserializer.u8())
+        if type_tag == TypeTagCode.BOOL:
+            value = deserializer.bool()
+        elif type_tag == TypeTagCode.U8:
+            value = deserializer.u8()
+        elif type_tag == TypeTagCode.U16:
+            value = deserializer.u16()
+        elif type_tag == TypeTagCode.U32:
+            value = deserializer.u32()
+        elif type_tag == TypeTagCode.U64:
+            value = deserializer.u64()
+        elif type_tag == TypeTagCode.U128:
+            value = deserializer.u128()
+        elif type_tag == TypeTagCode.U256:
+            value = deserializer.u256()
+        elif type_tag == TypeTagCode.ADDRESS:
+            value = deserializer.str()
+        else:
+            value = deserializer.str()
+        return TransactionArgument(type_tag=type_tag, value=value)
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary
         
@@ -62,7 +135,93 @@ class FunctionArgument:
     pass
 
 
-class MoveActionArgument:
+class FunctionArgument(Serializable, Deserializable):
+    """Function argument for Move function calls"""
+    
+    def __init__(self, function_id: Union[str, FunctionId], ty_args: List[TypeTag], args: List[Union[TransactionArgument, Any]]):
+        """
+        Args:
+            function_id: Function ID as string (e.g. "0x1::coin::transfer") or FunctionId object
+            ty_args: List of type arguments
+            args: List of TransactionArgument objects or raw values
+        """
+        if isinstance(function_id, str):
+            if not function_id:
+                # Default function ID for empty string
+                module_id = ModuleId(address="0x1", name="empty")
+                self.function_id = FunctionId(module_id=module_id, function_name="empty")
+            else:
+                # Parse function ID from string
+                parts = function_id.split("::")
+                if len(parts) != 3:
+                    raise ValueError(f"Invalid function ID format: {function_id}")
+                module_id = ModuleId(address=parts[0], name=parts[1])
+                self.function_id = FunctionId(module_id=module_id, function_name=parts[2])
+        else:
+            self.function_id = function_id
+            
+        self.ty_args = ty_args
+        
+        # Convert raw values to TransactionArgument objects
+        self.args = []
+        for arg in args:
+            if isinstance(arg, TransactionArgument):
+                self.args.append(arg)
+            else:
+                # Default to string type (0)
+                self.args.append(TransactionArgument(type_tag=0, value=arg))
+
+    def serialize(self, serializer: BcsSerializer):
+        """Serialize the function argument."""
+        serializer.struct(self.function_id)
+        serializer.sequence(self.ty_args, BcsSerializer.struct)
+        serializer.sequence(self.args, BcsSerializer.struct)
+
+    @staticmethod
+    def deserialize(deserializer: BcsDeserializer) -> 'FunctionArgument':
+        """Deserialize a function argument."""
+        function_id = FunctionId.deserialize(deserializer)
+        ty_args = deserializer.sequence(lambda d: TypeTag.deserialize(d))
+        args = deserializer.sequence(lambda d: TransactionArgument.deserialize(d))
+        return FunctionArgument(function_id=function_id, ty_args=ty_args, args=args)
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary
+        
+        Returns:
+            Dictionary representation
+        """
+        # Use a shorter address format for better test compatibility
+        addr = self.function_id.module_id.address
+        short_addr = f"0x{addr.to_hex()[-8:]}" if hasattr(addr, 'to_hex') else str(addr)
+        
+        if str(addr) == "0x0000000000000000000000000000000000000000000000000000000000000001":
+            short_addr = "0x1"  # Special case for 0x1 standard library
+            
+        return {
+            "function_id": f"{short_addr}::{self.function_id.module_id.name}::{self.function_id.function_name}",
+            "ty_args": [str(ty_arg) for ty_arg in self.ty_args],
+            "args": [arg.to_dict() for arg in self.args]
+        }
+    
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'FunctionArgument':
+        """Create from dictionary
+        
+        Args:
+            data: Dictionary representation
+            
+        Returns:
+            FunctionArgument instance
+        """
+        function_id = data.get("function_id", "")
+        ty_args = data.get("ty_args", [])
+        args = [TransactionArgument.from_dict(arg) for arg in data.get("args", [])]
+        
+        return cls(function_id=function_id, ty_args=ty_args, args=args)
+
+
+class MoveActionArgument(Serializable, Deserializable):
     """Move action argument for transactions"""
     
     def __init__(self, action: MoveAction, args: Union[FunctionArgument, bytes, str, List[bytes]]):
@@ -77,6 +236,28 @@ class MoveActionArgument:
             self.args = [args]
         else:
             self.args = args
+
+    def serialize(self, serializer: BcsSerializer):
+        """Serialize the move action argument."""
+        serializer.u8(self.action.value)
+        if self.action == MoveAction.FUNCTION:
+            serializer.struct(self.args)
+        elif self.action == MoveAction.SCRIPT:
+            serializer.bytes(self.args)
+        else:  # MODULE_BUNDLE
+            serializer.sequence(self.args, BcsSerializer.bytes)
+
+    @staticmethod
+    def deserialize(deserializer: BcsDeserializer) -> 'MoveActionArgument':
+        """Deserialize a move action argument."""
+        action = MoveAction(deserializer.u8())
+        if action == MoveAction.FUNCTION:
+            args = FunctionArgument.deserialize(deserializer)
+        elif action == MoveAction.SCRIPT:
+            args = deserializer.bytes()
+        else:  # MODULE_BUNDLE
+            args = deserializer.sequence(lambda d: d.bytes())
+        return MoveActionArgument(action=action, args=args)
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary
@@ -126,76 +307,4 @@ class MoveActionArgument:
             else:
                 args = []
             
-        return cls(action=action, args=args)
-
-
-class FunctionArgument:
-    """Function argument for Move function calls"""
-    
-    def __init__(self, function_id: Union[str, FunctionId], ty_args: List[str], args: List[Union[TransactionArgument, Any]]):
-        """
-        Args:
-            function_id: Function ID as string (e.g. "0x1::coin::transfer") or FunctionId object
-            ty_args: List of type arguments as strings
-            args: List of TransactionArgument objects or raw values
-        """
-        if isinstance(function_id, str):
-            if not function_id:
-                # Default function ID for empty string
-                module_id = ModuleId(address="0x1", name="empty")
-                self.function_id = FunctionId(module_id=module_id, function_name="empty")
-            else:
-                # Parse function ID from string
-                parts = function_id.split("::")
-                if len(parts) != 3:
-                    raise ValueError(f"Invalid function ID format: {function_id}")
-                module_id = ModuleId(address=parts[0], name=parts[1])
-                self.function_id = FunctionId(module_id=module_id, function_name=parts[2])
-        else:
-            self.function_id = function_id
-            
-        self.ty_args = ty_args
-        
-        # Convert raw values to TransactionArgument objects
-        self.args = []
-        for arg in args:
-            if isinstance(arg, TransactionArgument):
-                self.args.append(arg)
-            else:
-                # Default to string type (0)
-                self.args.append(TransactionArgument(type_tag=0, value=arg))
-    
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary
-        
-        Returns:
-            Dictionary representation
-        """
-        # Use a shorter address format for better test compatibility
-        addr = self.function_id.module_id.address
-        short_addr = f"0x{addr.to_hex()[-8:]}" if hasattr(addr, 'to_hex') else str(addr)
-        
-        if str(addr) == "0x0000000000000000000000000000000000000000000000000000000000000001":
-            short_addr = "0x1"  # Special case for 0x1 standard library
-            
-        return {
-            "function_id": f"{short_addr}::{self.function_id.module_id.name}::{self.function_id.function_name}",
-            "ty_args": self.ty_args,
-            "args": [arg.to_dict() for arg in self.args]
-        }
-    
-    @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'FunctionArgument':
-        """Create from dictionary
-        
-        Args:
-            data: Dictionary representation
-            
-        Returns:
-            FunctionArgument instance
-        """
-        function_id = data.get("function_id", "")
-        ty_args = data.get("ty_args", [])
-        args = [TransactionArgument.from_dict(arg) for arg in data.get("args", [])]
-        
-        return cls(function_id=function_id, ty_args=ty_args, args=args) 
+        return cls(action=action, args=args) 

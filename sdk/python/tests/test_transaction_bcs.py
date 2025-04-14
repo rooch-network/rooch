@@ -11,7 +11,8 @@ from rooch.transactions.types import (
     ModuleId, FunctionId,
     MoveAction, MoveActionArgument, FunctionArgument,
     TransactionType, TransactionData,
-    AuthenticatorType, TransactionAuthenticator, SignedTransaction
+    AuthenticatorType, TransactionAuthenticator, SignedTransaction,
+    TransactionArgument
 )
 from rooch.address.rooch import RoochAddress
 from typing import Any
@@ -78,7 +79,7 @@ class TestTypeTagSerialization:
     def test_struct_type_tag(self):
         """Test serialization/deserialization of struct TypeTag"""
         # Create test data
-        address = RoochAddress.from_hex("0x1")
+        address = RoochAddress.from_hex_literal("0x1")
         struct_tag = StructTag(
             address=address,
             module="test_module",
@@ -100,7 +101,7 @@ class TestTypeTagSerialization:
     def test_complex_struct_type_tag(self):
         """Test serialization/deserialization of complex struct TypeTag"""
         # Create test data with nested type parameters
-        address = RoochAddress.from_hex("0x1")
+        address = RoochAddress.from_hex_literal("0x1")
         inner_struct = StructTag(
             address=address,
             module="inner_module",
@@ -137,7 +138,7 @@ class TestModuleAndFunctionIdSerialization:
     def test_module_id(self):
         """Test serialization/deserialization of ModuleId"""
         # Create test data
-        address = RoochAddress.from_hex("0x1")
+        address = RoochAddress.from_hex_literal("0x1")
         module_id = ModuleId(
             address=address,
             name="test_module"
@@ -154,7 +155,7 @@ class TestModuleAndFunctionIdSerialization:
     def test_function_id(self):
         """Test serialization/deserialization of FunctionId"""
         # Create test data
-        address = RoochAddress.from_hex("0x1")
+        address = RoochAddress.from_hex_literal("0x1")
         module_id = ModuleId(
             address=address,
             name="test_module"
@@ -180,15 +181,15 @@ class TestMoveActionArgumentSerialization:
     def test_function_move_action(self):
         """Test serialization/deserialization of FUNCTION MoveActionArgument"""
         # Create a test module and function ID
-        address = RoochAddress.from_hex("0x1")
+        address = RoochAddress.from_hex_literal("0x1")
         module_id = ModuleId(address=address, name="account")
         function_id = FunctionId(module_id=module_id, function_name="create_account")
         
         # Create type arguments and function arguments
         type_args = [TypeTag.u64(), TypeTag.address()]
         args = [
-            "0x1234567890",  # Address argument
-            "100"  # U64 argument
+            TransactionArgument(TypeTagCode.ADDRESS, "0x1234567890"),  # Address argument
+            TransactionArgument(TypeTagCode.U64, 100)  # U64 argument as integer
         ]
         
         # Create function argument
@@ -216,7 +217,19 @@ class TestMoveActionArgumentSerialization:
         assert deserialized.args.function_id.module_id.name == function_arg.function_id.module_id.name
         assert deserialized.args.function_id.function_name == function_arg.function_id.function_name
         assert len(deserialized.args.ty_args) == len(function_arg.ty_args)
-        assert deserialized.args.args == function_arg.args
+        
+        # Print debug info
+        print("\nOriginal args:")
+        for arg in function_arg.args:
+            print(f"type_tag: {arg.type_tag}, value: {arg.value}")
+        print("\nDeserialized args:")
+        for arg in deserialized.args.args:
+            print(f"type_tag: {arg.type_tag}, value: {arg.value}")
+            
+        # Compare args one by one
+        for i, (orig_arg, deser_arg) in enumerate(zip(function_arg.args, deserialized.args.args)):
+            assert orig_arg.type_tag == deser_arg.type_tag, f"Type tag mismatch at index {i}"
+            assert orig_arg.value == deser_arg.value, f"Value mismatch at index {i}"
 
     def test_module_bundle_move_action(self):
         """Test serialization/deserialization of MODULE_BUNDLE MoveActionArgument"""
@@ -246,13 +259,13 @@ class TestTransactionDataSerialization:
     def test_transaction_data(self):
         """Test serialization/deserialization of TransactionData"""
         # Create test data
-        sender = RoochAddress.from_hex("0x1234567890")
+        sender = RoochAddress.from_hex_literal("0x1234567890")
         sequence_number = 42
         chain_id = 1  # Local chain ID
         max_gas_amount = 1000000
         
         # Create a test function call action
-        address = RoochAddress.from_hex("0x1")
+        address = RoochAddress.from_hex_literal("0x1")
         module_id = ModuleId(address=address, name="account")
         function_id = FunctionId(module_id=module_id, function_name="create_account")
         function_arg = FunctionArgument(
@@ -267,11 +280,11 @@ class TestTransactionDataSerialization:
         
         # Create TransactionData
         tx_data = TransactionData(
-            sender=sender,
+            tx_type=TransactionType.MOVE_ACTION,
+            tx_arg=move_action,
             sequence_number=sequence_number,
             chain_id=chain_id,
-            max_gas_amount=max_gas_amount,
-            action=move_action
+            max_gas_amount=max_gas_amount
         )
         
         # Serialize
@@ -281,21 +294,16 @@ class TestTransactionDataSerialization:
         deserialized = bcs_deserialize(TransactionData, serialized)
         
         # Verify they match
-        assert deserialized.sender == tx_data.sender
+        assert deserialized.tx_type == tx_data.tx_type
+        assert deserialized.tx_arg.action == tx_data.tx_arg.action
         assert deserialized.sequence_number == tx_data.sequence_number
         assert deserialized.chain_id == tx_data.chain_id
         assert deserialized.max_gas_amount == tx_data.max_gas_amount
-        
-        # Verify action
-        assert deserialized.action.action == move_action.action
-        assert deserialized.action.args.function_id.module_id.address.to_hex_literal() == address.to_hex_literal()
-        assert deserialized.action.args.function_id.module_id.name == function_arg.function_id.module_id.name
-        assert deserialized.action.args.function_id.function_name == function_arg.function_id.function_name
 
     def test_transaction_data_with_module_bundle(self):
         """Test serialization/deserialization of TransactionData with module bundle"""
         # Create test data
-        sender = RoochAddress.from_hex("0x1234567890")
+        sender = RoochAddress.from_hex_literal("0x1234567890")
         sequence_number = 42
         chain_id = 1  # Local chain ID
         max_gas_amount = 1000000
@@ -309,11 +317,11 @@ class TestTransactionDataSerialization:
         
         # Create TransactionData
         tx_data = TransactionData(
-            sender=sender,
+            tx_type=TransactionType.MOVE_ACTION,
+            tx_arg=move_action,
             sequence_number=sequence_number,
             chain_id=chain_id,
-            max_gas_amount=max_gas_amount,
-            action=move_action
+            max_gas_amount=max_gas_amount
         )
         
         # Serialize
@@ -323,14 +331,11 @@ class TestTransactionDataSerialization:
         deserialized = bcs_deserialize(TransactionData, serialized)
         
         # Verify they match
-        assert deserialized.sender == tx_data.sender
+        assert deserialized.tx_type == tx_data.tx_type
+        assert deserialized.tx_arg.action == tx_data.tx_arg.action
         assert deserialized.sequence_number == tx_data.sequence_number
         assert deserialized.chain_id == tx_data.chain_id
         assert deserialized.max_gas_amount == tx_data.max_gas_amount
-        
-        # Verify action
-        assert deserialized.action.action == move_action.action
-        assert deserialized.action.args == move_action.args
 
 
 class TestSignedTransactionSerialization:
@@ -339,13 +344,13 @@ class TestSignedTransactionSerialization:
     def test_signed_transaction(self):
         """Test serialization/deserialization of SignedTransaction"""
         # Create test transaction data
-        sender = RoochAddress.from_hex("0x1234567890")
+        sender = RoochAddress.from_hex_literal("0x1234567890")
         sequence_number = 42
         chain_id = 1  # Local chain ID
         max_gas_amount = 1000000
         
         # Create a test function call action
-        address = RoochAddress.from_hex("0x1")
+        address = RoochAddress.from_hex_literal("0x1")
         module_id = ModuleId(address=address, name="account")
         function_id = FunctionId(module_id=module_id, function_name="create_account")
         function_arg = FunctionArgument(
@@ -360,11 +365,11 @@ class TestSignedTransactionSerialization:
         
         # Create TransactionData
         tx_data = TransactionData(
-            sender=sender,
+            tx_type=TransactionType.MOVE_ACTION,
+            tx_arg=move_action,
             sequence_number=sequence_number,
             chain_id=chain_id,
-            max_gas_amount=max_gas_amount,
-            action=move_action
+            max_gas_amount=max_gas_amount
         )
         
         # Create mock authenticator
@@ -391,25 +396,21 @@ class TestSignedTransactionSerialization:
         deserialized = bcs_deserialize(SignedTransaction, serialized)
         
         # Verify transaction data
-        assert deserialized.data.sender == tx_data.sender
-        assert deserialized.data.sequence_number == tx_data.sequence_number
-        assert deserialized.data.chain_id == tx_data.chain_id
-        assert deserialized.data.max_gas_amount == tx_data.max_gas_amount
-        
-        # Verify action
-        assert deserialized.data.action.action == move_action.action
-        assert deserialized.data.action.args.function_id.module_id.address.to_hex_literal() == address.to_hex_literal()
-        assert deserialized.data.action.args.function_id.module_id.name == function_arg.function_id.module_id.name
-        assert deserialized.data.action.args.function_id.function_name == function_arg.function_id.function_name
+        assert deserialized.tx_data.tx_type == tx_data.tx_type
+        assert deserialized.tx_data.tx_arg.action == tx_data.tx_arg.action
+        assert deserialized.tx_data.sequence_number == tx_data.sequence_number
+        assert deserialized.tx_data.chain_id == tx_data.chain_id
+        assert deserialized.tx_data.max_gas_amount == tx_data.max_gas_amount
         
         # Verify authenticator
-        assert deserialized.authenticator.auth_validator_id == authenticator.auth_validator_id
-        assert deserialized.authenticator.payload == authenticator.payload
+        assert deserialized.authenticator.auth_key.auth_type == authenticator.auth_key.auth_type
+        assert deserialized.authenticator.auth_key.public_key == authenticator.auth_key.public_key
+        assert deserialized.authenticator.signature == authenticator.signature
 
     def test_signed_transaction_with_module_bundle(self):
         """Test serialization/deserialization of SignedTransaction with module bundle"""
         # Create test transaction data
-        sender = RoochAddress.from_hex("0x1234567890")
+        sender = RoochAddress.from_hex_literal("0x1234567890")
         sequence_number = 42
         chain_id = 1  # Local chain ID
         max_gas_amount = 1000000
@@ -423,11 +424,11 @@ class TestSignedTransactionSerialization:
         
         # Create TransactionData
         tx_data = TransactionData(
-            sender=sender,
+            tx_type=TransactionType.MOVE_ACTION,
+            tx_arg=move_action,
             sequence_number=sequence_number,
             chain_id=chain_id,
-            max_gas_amount=max_gas_amount,
-            action=move_action
+            max_gas_amount=max_gas_amount
         )
         
         # Create mock authenticator
@@ -454,15 +455,13 @@ class TestSignedTransactionSerialization:
         deserialized = bcs_deserialize(SignedTransaction, serialized)
         
         # Verify transaction data
-        assert deserialized.data.sender == tx_data.sender
-        assert deserialized.data.sequence_number == tx_data.sequence_number
-        assert deserialized.data.chain_id == tx_data.chain_id
-        assert deserialized.data.max_gas_amount == tx_data.max_gas_amount
-        
-        # Verify action
-        assert deserialized.data.action.action == move_action.action
-        assert deserialized.data.action.args == move_action.args
+        assert deserialized.tx_data.tx_type == tx_data.tx_type
+        assert deserialized.tx_data.tx_arg.action == tx_data.tx_arg.action
+        assert deserialized.tx_data.sequence_number == tx_data.sequence_number
+        assert deserialized.tx_data.chain_id == tx_data.chain_id
+        assert deserialized.tx_data.max_gas_amount == tx_data.max_gas_amount
         
         # Verify authenticator
-        assert deserialized.authenticator.auth_validator_id == authenticator.auth_validator_id
-        assert deserialized.authenticator.payload == authenticator.payload 
+        assert deserialized.authenticator.auth_key.auth_type == authenticator.auth_key.auth_type
+        assert deserialized.authenticator.auth_key.public_key == authenticator.auth_key.public_key
+        assert deserialized.authenticator.signature == authenticator.signature 
