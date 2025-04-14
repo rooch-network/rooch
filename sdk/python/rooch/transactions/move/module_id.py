@@ -33,6 +33,15 @@ class ModuleId(Serializable, Deserializable):
         """String representation of the module ID."""
         return f"{self.address.to_hex_literal()}::{self.name}"
 
+    def __eq__(self, other: Union[str, 'ModuleId']) -> bool:
+        """Compare with another ModuleId or string."""
+        if isinstance(other, str):
+            return str(self) == other
+        elif isinstance(other, ModuleId):
+            return (self.address == other.address and
+                   self.name == other.name)
+        return False
+
     def serialize(self, serializer: BcsSerializer):
         """Serialize the module ID."""
         serializer.struct(self.address)
@@ -55,6 +64,15 @@ class FunctionId(Serializable, Deserializable):
     def __str__(self) -> str:
         """String representation of the function ID."""
         return f"{self.module_id}::{self.function_name}"
+
+    def __eq__(self, other: Union[str, 'FunctionId']) -> bool:
+        """Compare with another FunctionId or string."""
+        if isinstance(other, str):
+            return str(self) == other
+        elif isinstance(other, FunctionId):
+            return (self.module_id == other.module_id and
+                   self.function_name == other.function_name)
+        return False
 
     def serialize(self, serializer: BcsSerializer):
         """Serialize the function ID."""

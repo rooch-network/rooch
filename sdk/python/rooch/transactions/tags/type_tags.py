@@ -51,6 +51,32 @@ class StructTag(Serializable, Deserializable):
         self.name = name
         self.type_params = type_params
 
+    def __str__(self) -> str:
+        """String representation of the struct tag."""
+        if self.type_params:
+            params = ", ".join(map(str, self.type_params))
+            return f"{self.address.to_hex_literal()}::{self.module}::{self.name}<{params}>"
+        return f"{self.address.to_hex_literal()}::{self.module}::{self.name}"
+
+    def __eq__(self, other: Union[str, 'StructTag']) -> bool:
+        """Compare with another StructTag or string."""
+        if isinstance(other, str):
+            # Parse string like "0x3::gas_coin::RGas"
+            parts = other.split("::")
+            if len(parts) != 3:
+                return False
+            addr_str, module, name = parts
+            # Compare each part
+            return (self.address.to_hex_literal() == addr_str and
+                   self.module == module and
+                   self.name == name)
+        elif isinstance(other, StructTag):
+            return (self.address == other.address and
+                   self.module == other.module and
+                   self.name == other.name and
+                   self.type_params == other.type_params)
+        return False
+
     # --- BCS Implementation ---
     def serialize(self, serializer: BcsSerializer):
         # Sequence: address, module_name, name, type_params
@@ -67,11 +93,6 @@ class StructTag(Serializable, Deserializable):
         name = deserializer.str()
         type_params = deserializer.sequence(lambda d: TypeTag.deserialize(d))
         return StructTag(address=addr, module=module, name=name, type_params=type_params)
-
-    def __str__(self) -> str:
-        """String representation of the struct tag."""
-        params = ", ".join(map(str, self.type_params))
-        return f"{self.address.to_hex_literal()}::{self.module}::{self.name}<{params}>"
 
 
 @dataclass
@@ -92,6 +113,20 @@ class TypeTag(Serializable, Deserializable):
                 raise TypeError("Struct TypeTag value must be a StructTag")
             serializer.struct(self.value) # StructTag is Serializable
         # Other types only need the index, which was already written
+
+    def __eq__(self, other: Union[str, 'TypeTag']) -> bool:
+        """Compare with another TypeTag or string."""
+        if isinstance(other, str):
+            if self.type_code == TypeTagCode.STRUCT:
+                return str(self.value) == other
+            return str(self) == other
+        elif isinstance(other, TypeTag):
+            if self.type_code != other.type_code:
+                return False
+            if self.type_code in (TypeTagCode.VECTOR, TypeTagCode.STRUCT):
+                return self.value == other.value
+            return True
+        return False
 
     @staticmethod
     def deserialize(deserializer: BcsDeserializer) -> 'TypeTag':

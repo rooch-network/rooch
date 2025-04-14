@@ -80,16 +80,10 @@ class TestTransactionBuilder:
         function_arg = action_arg.args
         assert isinstance(function_arg, FunctionArgument)
         assert function_arg.function_id == function_id
-        assert function_arg.ty_args == ty_args
-        # Verify the structure of arguments created by build_function_payload
-        assert len(function_arg.args) == len(call_args)
-        assert isinstance(function_arg.args[0], TransactionArgument)
-        assert isinstance(function_arg.args[1], TransactionArgument)
-        # TODO: Verify type_tag and value if TypeTag enum/constants become available
-        # assert function_arg.args[0].type_tag == TypeTag.ADDRESS
-        # assert function_arg.args[0].value == Args.address("0x123")[1]
-        # assert function_arg.args[1].type_tag == TypeTag.U64
-        # assert function_arg.args[1].value == Args.u64(100)[1]
+        # Compare each type argument individually
+        assert len(function_arg.ty_args) == len(ty_args)
+        for actual, expected in zip(function_arg.ty_args, ty_args):
+            assert actual == expected
 
     def test_build_module_publish_transaction(self):
         """Test building a module publish transaction"""
@@ -132,9 +126,10 @@ class TestTransactionBuilder:
         func_payload = action_payload.args
         assert isinstance(func_payload, FunctionArgument)
         assert func_payload.function_id == function_id
-        assert func_payload.ty_args == ty_args
-        assert len(func_payload.args) == len(call_args)
-        # TODO: Verify type_tag and value if needed, similar to test_build_move_call_transaction
+        # Compare each type argument individually
+        assert len(func_payload.ty_args) == len(ty_args)
+        for actual, expected in zip(func_payload.ty_args, ty_args):
+            assert actual == expected
 
     def test_chain_id_caching(self):
         """Test that chain ID is set correctly during init"""

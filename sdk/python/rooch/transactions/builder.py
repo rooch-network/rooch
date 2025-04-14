@@ -21,7 +21,8 @@ from .types import (
     TransactionType,
     ModuleId,
     FunctionId,
-    TypeTag
+    TypeTag,
+    StructTag
 )
 
 
@@ -34,6 +35,8 @@ class TransactionBuilder:
         sequence_number: int,
         chain_id: int,
         max_gas_amount: int = 10_000_000,
+        gas_unit_price: int = 1,
+        expiration_timestamp_secs: int = 0,
     ):
         """Initialize a transaction builder based on new TransactionData fields
         
@@ -42,23 +45,27 @@ class TransactionBuilder:
             sequence_number: Transaction sequence number
             chain_id: Chain ID
             max_gas_amount: Maximum gas amount
+            gas_unit_price: Gas unit price
+            expiration_timestamp_secs: Expiration timestamp in seconds
         """
         self.sender_address = sender_address
         self.sequence_number = sequence_number
         self.chain_id = chain_id
         self.max_gas_amount = max_gas_amount
+        self.gas_unit_price = gas_unit_price
+        self.expiration_timestamp_secs = expiration_timestamp_secs
     
     def build_function_payload(
         self,
         function_id: str,
-        ty_args: Optional[List[TypeTag]] = None,
+        ty_args: Optional[List[Union[str, TypeTag]]] = None,
         args: Optional[List[Any]] = None
     ) -> MoveActionArgument:
         """Build a function payload for MoveAction
         
         Args:
             function_id: Function ID (module::function)
-            ty_args: Optional type arguments
+            ty_args: Optional type arguments (can be strings or TypeTag objects)
             args: Optional list of raw argument values
             
         Returns:
@@ -67,9 +74,22 @@ class TransactionBuilder:
         ty_args = ty_args or []
         args = args or []
         
-        if not all(isinstance(arg, TypeTag) for arg in ty_args):
-            raise TypeError("ty_args must be a list of TypeTag objects")
-
+        # Convert string type args to TypeTag objects
+        converted_ty_args = []
+        for ty_arg in ty_args:
+            if isinstance(ty_arg, str):
+                # Parse string like "0x3::gas_coin::RGas"
+                parts = ty_arg.split("::")
+                if len(parts) != 3:
+                    raise ValueError(f"Invalid type argument format: {ty_arg}")
+                addr_str, module, name = parts
+                struct_tag = StructTag(address=addr_str, module=module, name=name, type_params=[])
+                converted_ty_args.append(TypeTag.struct(struct_tag))
+            elif isinstance(ty_arg, TypeTag):
+                converted_ty_args.append(ty_arg)
+            else:
+                raise TypeError(f"Invalid type argument: {ty_arg}")
+        
         try:
             parts = function_id.split("::")
             if len(parts) != 3:
@@ -86,7 +106,7 @@ class TransactionBuilder:
         except Exception as e:
             raise ValueError(f"Failed to parse function_id '{function_id}': {e}") from e
             
-        func_arg = FunctionArgument(function_id=func_id_obj, ty_args=ty_args, args=args)
+        func_arg = FunctionArgument(function_id=func_id_obj, ty_args=converted_ty_args, args=args)
         
         return MoveActionArgument(MoveAction.FUNCTION, func_arg)
     
@@ -100,41 +120,37 @@ class TransactionBuilder:
             TransactionData for the action
         """
         return TransactionData(
-            sender=self.sender_address,
+            tx_type=TransactionType.MOVE_ACTION,
+            tx_arg=action_arg,
             sequence_number=self.sequence_number,
-            chain_id=self.chain_id,
             max_gas_amount=self.max_gas_amount,
-            action=action_arg,
+            gas_unit_price=self.gas_unit_price,
+            expiration_timestamp_secs=self.expiration_timestamp_secs,
+            chain_id=self.chain_id,
         )
     
     def build_module_publish_tx(self, module_bytes: Union[bytes, str]) -> TransactionData:
         """Build a module publish transaction
         
         Args:
-            module_bytes: Move module bytecode (list of bytes)
+            module_bytes: Move module bytecode (bytes or hex string)
             
         Returns:
             TransactionData for the module publish
         """
         if isinstance(module_bytes, str):
-            module_bytes_list = [from_hex(module_bytes)]
-        elif isinstance(module_bytes, bytes):
-             module_bytes_list = [module_bytes]
-        elif isinstance(module_bytes, list):
-            module_bytes_list = [
-                from_hex(b) if isinstance(b, str) else b for b in module_bytes
-            ]
-        else:
-            raise TypeError("module_bytes must be bytes, hex string, list of bytes, or list of hex strings")
+            module_bytes = from_hex(module_bytes)
+        elif not isinstance(module_bytes, bytes):
+            raise TypeError("module_bytes must be bytes or hex string")
 
-        action_arg = MoveActionArgument(MoveAction.MODULE_BUNDLE, module_bytes_list)
-        
         return TransactionData(
-            sender=self.sender_address,
+            tx_type=TransactionType.MOVE_MODULE_TRANSACTION,
+            tx_arg=module_bytes,
             sequence_number=self.sequence_number,
-            chain_id=self.chain_id,
             max_gas_amount=self.max_gas_amount,
-            action=action_arg,
+            gas_unit_price=self.gas_unit_price,
+            expiration_timestamp_secs=self.expiration_timestamp_secs,
+            chain_id=self.chain_id,
         )
     
     def sign(self, tx_data: TransactionData, signer: Signer) -> SignedTransaction:
@@ -176,3 +192,36 @@ class TransactionBuilder:
         # ... existing logic ...
         tx_data = self.build_move_action_tx(payload)
         return self.sign(tx_data, signer)
+
+    @classmethod
+    def with_default_account(
+        cls,
+        signer: Signer,
+        sequence_number: int,
+        chain_id: int,
+        max_gas_amount: int = 10_000_000,
+        gas_unit_price: int = 1,
+        expiration_delta_secs: int = 3600,
+    ) -> 'TransactionBuilder':
+        """Create a transaction builder with default account settings
+        
+        Args:
+            signer: Transaction signer
+            sequence_number: Transaction sequence number
+            chain_id: Chain ID
+            max_gas_amount: Maximum gas amount
+            gas_unit_price: Gas unit price
+            expiration_delta_secs: Expiration delta in seconds
+            
+        Returns:
+            TransactionBuilder instance
+        """
+        expiration_timestamp_secs = int(time.time()) + expiration_delta_secs
+        return cls(
+            sender_address=signer.get_address(),
+            sequence_number=sequence_number,
+            chain_id=chain_id,
+            max_gas_amount=max_gas_amount,
+            gas_unit_price=gas_unit_price,
+            expiration_timestamp_secs=expiration_timestamp_secs,
+        )
