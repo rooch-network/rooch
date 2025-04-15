@@ -1,5 +1,5 @@
 
-<a name="0x2_base64"></a>
+<a id="0x2_base64"></a>
 
 # Module `0x2::base64`
 
@@ -15,12 +15,12 @@ Module which defines base64 functions.
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x2_base64_E_DECODE_FAILED"></a>
+<a id="0x2_base64_E_DECODE_FAILED"></a>
 
 
 
@@ -29,7 +29,7 @@ Module which defines base64 functions.
 
 
 
-<a name="0x2_base64_encode"></a>
+<a id="0x2_base64_encode"></a>
 
 ## Function `encode`
 
@@ -42,7 +42,7 @@ Encode the input bytes with Base64 algorithm and returns an encoded base64 strin
 
 
 
-<a name="0x2_base64_decode"></a>
+<a id="0x2_base64_decode"></a>
 
 ## Function `decode`
 

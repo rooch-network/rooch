@@ -1,5 +1,5 @@
 
-<a name="@MoveOS_standard_library_0"></a>
+<a id="@MoveOS_standard_library_0"></a>
 
 # MoveOS standard library
 
@@ -7,7 +7,7 @@
 This is the reference documentation of the MoveOS standard library.
 
 
-<a name="@Index_1"></a>
+<a id="@Index_1"></a>
 
 ## Index
 
@@ -61,7 +61,7 @@ This is the reference documentation of the MoveOS standard library.
 
 
 
-<a name="@Reference_2"></a>
+<a id="@Reference_2"></a>
 
 ## Reference
 

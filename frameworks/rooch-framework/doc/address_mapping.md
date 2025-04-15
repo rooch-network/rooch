@@ -1,5 +1,5 @@
 
-<a name="0x3_address_mapping"></a>
+<a id="0x3_address_mapping"></a>
 
 # Module `0x3::address_mapping`
 
@@ -28,7 +28,7 @@
 
 
 
-<a name="0x3_address_mapping_MultiChainAddressMapping"></a>
+<a id="0x3_address_mapping_MultiChainAddressMapping"></a>
 
 ## Resource `MultiChainAddressMapping`
 
@@ -42,7 +42,7 @@ The mapping record is the object field, key is the multi-chain address, value is
 
 
 
-<a name="0x3_address_mapping_RoochToBitcoinAddressMapping"></a>
+<a id="0x3_address_mapping_RoochToBitcoinAddressMapping"></a>
 
 ## Resource `RoochToBitcoinAddressMapping`
 
@@ -55,12 +55,12 @@ The mapping record is the object field, key is the rooch address, value is the B
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x3_address_mapping_ErrorMultiChainAddressInvalid"></a>
+<a id="0x3_address_mapping_ErrorMultiChainAddressInvalid"></a>
 
 
 
@@ -69,7 +69,7 @@ The mapping record is the object field, key is the rooch address, value is the B
 
 
 
-<a name="0x3_address_mapping_ErrorUnsupportedAddress"></a>
+<a id="0x3_address_mapping_ErrorUnsupportedAddress"></a>
 
 
 
@@ -78,7 +78,7 @@ The mapping record is the object field, key is the rooch address, value is the B
 
 
 
-<a name="0x3_address_mapping_NAMED_MAPPING_INDEX"></a>
+<a id="0x3_address_mapping_NAMED_MAPPING_INDEX"></a>
 
 
 
@@ -87,7 +87,7 @@ The mapping record is the object field, key is the rooch address, value is the B
 
 
 
-<a name="0x3_address_mapping_NAMED_REVERSE_MAPPING_INDEX"></a>
+<a id="0x3_address_mapping_NAMED_REVERSE_MAPPING_INDEX"></a>
 
 
 
@@ -96,7 +96,7 @@ The mapping record is the object field, key is the rooch address, value is the B
 
 
 
-<a name="0x3_address_mapping_genesis_init"></a>
+<a id="0x3_address_mapping_genesis_init"></a>
 
 ## Function `genesis_init`
 
@@ -107,7 +107,7 @@ The mapping record is the object field, key is the rooch address, value is the B
 
 
 
-<a name="0x3_address_mapping_resolve"></a>
+<a id="0x3_address_mapping_resolve"></a>
 
 ## Function `resolve`
 
@@ -119,7 +119,7 @@ Resolve a multi-chain address to a rooch address
 
 
 
-<a name="0x3_address_mapping_resolve_bitcoin"></a>
+<a id="0x3_address_mapping_resolve_bitcoin"></a>
 
 ## Function `resolve_bitcoin`
 
@@ -131,7 +131,7 @@ Resolve a rooch address to a bitcoin address
 
 
 
-<a name="0x3_address_mapping_resolve_bitcoin_batch"></a>
+<a id="0x3_address_mapping_resolve_bitcoin_batch"></a>
 
 ## Function `resolve_bitcoin_batch`
 
@@ -143,7 +143,7 @@ Resolve a batch rooch addresses to bitcoin addresses
 
 
 
-<a name="0x3_address_mapping_exists_mapping"></a>
+<a id="0x3_address_mapping_exists_mapping"></a>
 
 ## Function `exists_mapping`
 
@@ -155,7 +155,7 @@ Check if a multi-chain address is bound to a rooch address
 
 
 
-<a name="0x3_address_mapping_bind_bitcoin_address_internal"></a>
+<a id="0x3_address_mapping_bind_bitcoin_address_internal"></a>
 
 ## Function `bind_bitcoin_address_internal`
 
@@ -166,7 +166,7 @@ Check if a multi-chain address is bound to a rooch address
 
 
 
-<a name="0x3_address_mapping_bind_bitcoin_address_by_system"></a>
+<a id="0x3_address_mapping_bind_bitcoin_address_by_system"></a>
 
 ## Function `bind_bitcoin_address_by_system`
 
@@ -177,7 +177,7 @@ Check if a multi-chain address is bound to a rooch address
 
 
 
-<a name="0x3_address_mapping_bind_bitcoin_address"></a>
+<a id="0x3_address_mapping_bind_bitcoin_address"></a>
 
 ## Function `bind_bitcoin_address`
 

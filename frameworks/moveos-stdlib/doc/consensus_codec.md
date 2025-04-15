@@ -1,5 +1,5 @@
 
-<a name="0x2_consensus_codec"></a>
+<a id="0x2_consensus_codec"></a>
 
 # Module `0x2::consensus_codec`
 
@@ -34,7 +34,7 @@ This module implements the Bitcoin consensus encode/decode functions
 
 
 
-<a name="0x2_consensus_codec_Encoder"></a>
+<a id="0x2_consensus_codec_Encoder"></a>
 
 ## Struct `Encoder`
 
@@ -45,7 +45,7 @@ This module implements the Bitcoin consensus encode/decode functions
 
 
 
-<a name="0x2_consensus_codec_Decoder"></a>
+<a id="0x2_consensus_codec_Decoder"></a>
 
 ## Struct `Decoder`
 
@@ -56,12 +56,12 @@ This module implements the Bitcoin consensus encode/decode functions
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x2_consensus_codec_ErrorInvalidLength"></a>
+<a id="0x2_consensus_codec_ErrorInvalidLength"></a>
 
 
 
@@ -70,7 +70,7 @@ This module implements the Bitcoin consensus encode/decode functions
 
 
 
-<a name="0x2_consensus_codec_ErrorOutOfRange"></a>
+<a id="0x2_consensus_codec_ErrorOutOfRange"></a>
 
 
 
@@ -79,7 +79,7 @@ This module implements the Bitcoin consensus encode/decode functions
 
 
 
-<a name="0x2_consensus_codec_ErrorNonMinimalVarInt"></a>
+<a id="0x2_consensus_codec_ErrorNonMinimalVarInt"></a>
 
 
 
@@ -88,7 +88,7 @@ This module implements the Bitcoin consensus encode/decode functions
 
 
 
-<a name="0x2_consensus_codec_encoder"></a>
+<a id="0x2_consensus_codec_encoder"></a>
 
 ## Function `encoder`
 
@@ -99,7 +99,7 @@ This module implements the Bitcoin consensus encode/decode functions
 
 
 
-<a name="0x2_consensus_codec_decoder"></a>
+<a id="0x2_consensus_codec_decoder"></a>
 
 ## Function `decoder`
 
@@ -110,7 +110,7 @@ This module implements the Bitcoin consensus encode/decode functions
 
 
 
-<a name="0x2_consensus_codec_unpack_encoder"></a>
+<a id="0x2_consensus_codec_unpack_encoder"></a>
 
 ## Function `unpack_encoder`
 
@@ -121,7 +121,7 @@ This module implements the Bitcoin consensus encode/decode functions
 
 
 
-<a name="0x2_consensus_codec_unpack_decoder"></a>
+<a id="0x2_consensus_codec_unpack_decoder"></a>
 
 ## Function `unpack_decoder`
 
@@ -132,7 +132,7 @@ This module implements the Bitcoin consensus encode/decode functions
 
 
 
-<a name="0x2_consensus_codec_emit_u64"></a>
+<a id="0x2_consensus_codec_emit_u64"></a>
 
 ## Function `emit_u64`
 
@@ -143,7 +143,7 @@ This module implements the Bitcoin consensus encode/decode functions
 
 
 
-<a name="0x2_consensus_codec_emit_u32"></a>
+<a id="0x2_consensus_codec_emit_u32"></a>
 
 ## Function `emit_u32`
 
@@ -154,7 +154,7 @@ This module implements the Bitcoin consensus encode/decode functions
 
 
 
-<a name="0x2_consensus_codec_emit_u16"></a>
+<a id="0x2_consensus_codec_emit_u16"></a>
 
 ## Function `emit_u16`
 
@@ -165,7 +165,7 @@ This module implements the Bitcoin consensus encode/decode functions
 
 
 
-<a name="0x2_consensus_codec_emit_u8"></a>
+<a id="0x2_consensus_codec_emit_u8"></a>
 
 ## Function `emit_u8`
 
@@ -176,7 +176,7 @@ This module implements the Bitcoin consensus encode/decode functions
 
 
 
-<a name="0x2_consensus_codec_emit_bool"></a>
+<a id="0x2_consensus_codec_emit_bool"></a>
 
 ## Function `emit_bool`
 
@@ -187,7 +187,7 @@ This module implements the Bitcoin consensus encode/decode functions
 
 
 
-<a name="0x2_consensus_codec_emit_var_int"></a>
+<a id="0x2_consensus_codec_emit_var_int"></a>
 
 ## Function `emit_var_int`
 
@@ -198,7 +198,7 @@ This module implements the Bitcoin consensus encode/decode functions
 
 
 
-<a name="0x2_consensus_codec_emit_var_slice"></a>
+<a id="0x2_consensus_codec_emit_var_slice"></a>
 
 ## Function `emit_var_slice`
 
@@ -210,7 +210,7 @@ Emit a slice of bytes to the encoder with a varint length
 
 
 
-<a name="0x2_consensus_codec_peel_var_int"></a>
+<a id="0x2_consensus_codec_peel_var_int"></a>
 
 ## Function `peel_var_int`
 
@@ -221,7 +221,7 @@ Emit a slice of bytes to the encoder with a varint length
 
 
 
-<a name="0x2_consensus_codec_peel_var_slice"></a>
+<a id="0x2_consensus_codec_peel_var_slice"></a>
 
 ## Function `peel_var_slice`
 
@@ -233,7 +233,7 @@ Peel a slice of bytes from the decoder with a varint length
 
 
 
-<a name="0x2_consensus_codec_peel_bool"></a>
+<a id="0x2_consensus_codec_peel_bool"></a>
 
 ## Function `peel_bool`
 
@@ -244,7 +244,7 @@ Peel a slice of bytes from the decoder with a varint length
 
 
 
-<a name="0x2_consensus_codec_peel_u64"></a>
+<a id="0x2_consensus_codec_peel_u64"></a>
 
 ## Function `peel_u64`
 
@@ -255,7 +255,7 @@ Peel a slice of bytes from the decoder with a varint length
 
 
 
-<a name="0x2_consensus_codec_peel_u32"></a>
+<a id="0x2_consensus_codec_peel_u32"></a>
 
 ## Function `peel_u32`
 
@@ -266,7 +266,7 @@ Peel a slice of bytes from the decoder with a varint length
 
 
 
-<a name="0x2_consensus_codec_peel_u16"></a>
+<a id="0x2_consensus_codec_peel_u16"></a>
 
 ## Function `peel_u16`
 
@@ -277,7 +277,7 @@ Peel a slice of bytes from the decoder with a varint length
 
 
 
-<a name="0x2_consensus_codec_peel_u8"></a>
+<a id="0x2_consensus_codec_peel_u8"></a>
 
 ## Function `peel_u8`
 

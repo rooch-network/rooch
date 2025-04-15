@@ -1,5 +1,5 @@
 
-<a name="0x4_bbn_updater"></a>
+<a id="0x4_bbn_updater"></a>
 
 # Module `0x4::bbn_updater`
 
@@ -22,12 +22,12 @@
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x4_bbn_updater_ErrorTransactionNotFound"></a>
+<a id="0x4_bbn_updater_ErrorTransactionNotFound"></a>
 
 
 
@@ -36,7 +36,7 @@
 
 
 
-<a name="0x4_bbn_updater_is_possible_bbn_tx"></a>
+<a id="0x4_bbn_updater_is_possible_bbn_tx"></a>
 
 ## Function `is_possible_bbn_tx`
 
@@ -49,7 +49,7 @@ If the transaction contains an OP_RETURN output with the correct tag, it is cons
 
 
 
-<a name="0x4_bbn_updater_process_bbn_tx_entry"></a>
+<a id="0x4_bbn_updater_process_bbn_tx_entry"></a>
 
 ## Function `process_bbn_tx_entry`
 
@@ -60,7 +60,7 @@ If the transaction contains an OP_RETURN output with the correct tag, it is cons
 
 
 
-<a name="0x4_bbn_updater_is_expired"></a>
+<a id="0x4_bbn_updater_is_expired"></a>
 
 ## Function `is_expired`
 
@@ -71,7 +71,7 @@ If the transaction contains an OP_RETURN output with the correct tag, it is cons
 
 
 
-<a name="0x4_bbn_updater_clear_unbonded_stakes"></a>
+<a id="0x4_bbn_updater_clear_unbonded_stakes"></a>
 
 ## Function `clear_unbonded_stakes`
 

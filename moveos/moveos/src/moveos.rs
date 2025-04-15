@@ -5,13 +5,16 @@ use crate::gas::table::{
     get_gas_schedule_entries, initial_cost_schedule, CostTable, MoveOSGasMeter,
 };
 use crate::vm::data_cache::MoveosDataCache;
+use crate::vm::module_cache::{GlobalModuleCache, RoochModuleExtension};
 use crate::vm::moveos_vm::{MoveOSSession, MoveOSVM};
 use anyhow::{bail, format_err, Error, Result};
 use move_binary_format::binary_views::BinaryIndexedView;
+use move_binary_format::deserializer::DeserializerConfig;
 use move_binary_format::errors::VMError;
 use move_binary_format::errors::{vm_status_of_result, Location, PartialVMError, VMResult};
 use move_binary_format::file_format::FunctionDefinitionIndex;
 use move_binary_format::CompiledModule;
+use move_bytecode_verifier::VerifierConfig;
 use move_core_types::identifier::IdentStr;
 use move_core_types::language_storage::ModuleId;
 use move_core_types::value::MoveTypeLayout;
@@ -19,9 +22,11 @@ use move_core_types::vm_status::{KeptVMStatus, VMStatus};
 use move_core_types::{
     account_address::AccountAddress, ident_str, identifier::Identifier, vm_status::StatusCode,
 };
-use move_vm_runtime::config::VMConfig;
+use move_vm_runtime::config::{VMConfig, DEFAULT_MAX_VALUE_NEST_DEPTH};
 use move_vm_runtime::data_cache::TransactionCache;
 use move_vm_runtime::native_functions::NativeFunction;
+use move_vm_runtime::{Module, RuntimeEnvironment};
+use move_vm_types::loaded_data::runtime_types::TypeBuilder;
 use moveos_common::types::ClassifiedGasMeter;
 use moveos_store::config_store::ConfigDBStore;
 use moveos_store::event_store::EventDBStore;
@@ -82,10 +87,6 @@ impl std::fmt::Debug for MoveOSConfig {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("MoveOSConfig")
             .field(
-                "vm_config.max_binary_format_version",
-                &self.vm_config.max_binary_format_version,
-            )
-            .field(
                 "vm_config.paranoid_type_checks",
                 &self.vm_config.paranoid_type_checks,
             )
@@ -98,13 +99,46 @@ impl Clone for MoveOSConfig {
     fn clone(&self) -> Self {
         Self {
             vm_config: VMConfig {
-                verifier: self.vm_config.verifier.clone(),
-                max_binary_format_version: self.vm_config.max_binary_format_version,
-                paranoid_type_checks: self.vm_config.paranoid_type_checks,
-                enable_invariant_violation_check_in_swap_loc: false,
-                type_size_limit: false,
-                max_value_nest_depth: None,
+                verifier_config: VerifierConfig::default(),
+                deserializer_config: DeserializerConfig::default(),
+                paranoid_type_checks: false,
+                check_invariant_in_swap_loc: true,
+                max_value_nest_depth: Some(DEFAULT_MAX_VALUE_NEST_DEPTH),
+                type_max_cost: 0,
+                type_base_cost: 0,
+                type_byte_cost: 0,
+                delayed_field_optimization_enabled: false,
+                ty_builder: TypeBuilder::with_limits(128, 20),
+                disallow_dispatch_for_native: true,
+                use_compatibility_checker_v2: true,
+                use_loader_v2: true,
             },
+        }
+    }
+}
+
+pub type MoveOSGlobalModuleCache =
+    Arc<RwLock<GlobalModuleCache<ModuleId, CompiledModule, Module, RoochModuleExtension>>>;
+
+pub fn new_moveos_global_module_cache() -> MoveOSGlobalModuleCache {
+    Arc::new(RwLock::new(GlobalModuleCache::empty()))
+}
+
+#[derive(Clone)]
+pub struct MoveOSCacheManager {
+    pub runtime_environment: Arc<RwLock<RuntimeEnvironment>>,
+    pub global_module_cache:
+        Arc<RwLock<GlobalModuleCache<ModuleId, CompiledModule, Module, RoochModuleExtension>>>,
+}
+
+impl MoveOSCacheManager {
+    pub fn new(
+        all_natives: Vec<(AccountAddress, Identifier, Identifier, NativeFunction)>,
+        global_module_cache: MoveOSGlobalModuleCache,
+    ) -> Self {
+        Self {
+            runtime_environment: Arc::new(RwLock::new(RuntimeEnvironment::new(all_natives))),
+            global_module_cache,
         }
     }
 }
@@ -118,25 +152,25 @@ pub struct MoveOS {
     cost_table: Arc<RwLock<Option<CostTable>>>,
     system_pre_execute_functions: Vec<FunctionCall>,
     system_post_execute_functions: Vec<FunctionCall>,
+    cache_manager: MoveOSCacheManager,
 }
 
 impl MoveOS {
     pub fn new(
         db: MoveOSStore,
-        natives: impl IntoIterator<Item = (AccountAddress, Identifier, Identifier, NativeFunction)>,
-        config: MoveOSConfig,
         system_pre_execute_functions: Vec<FunctionCall>,
         system_post_execute_functions: Vec<FunctionCall>,
+        global_cache_manager: MoveOSCacheManager,
     ) -> Result<Self> {
-        //TODO load the gas table from argument, and remove the cost_table lock.
+        let vm = MoveOSVM::new(global_cache_manager.clone())?;
 
-        let vm = MoveOSVM::new(natives, config.vm_config)?;
         Ok(Self {
             vm,
             db,
             cost_table: Arc::new(RwLock::new(None)),
             system_pre_execute_functions,
             system_post_execute_functions,
+            cache_manager: global_cache_manager.clone(),
         })
     }
 
@@ -156,7 +190,15 @@ impl MoveOS {
         let MoveOSTransaction { root, ctx, action } = tx;
         assert!(root.is_genesis());
         let resolver = GenesisResolver::default();
-        let mut session = self.vm.new_genesis_session(&resolver, ctx, genesis_objects);
+        let runtime_environment = self.cache_manager.runtime_environment.read();
+        let global_module_cache = self.cache_manager.global_module_cache.clone();
+        let mut session = self.vm.new_genesis_session(
+            &resolver,
+            ctx,
+            genesis_objects,
+            global_module_cache,
+            &runtime_environment,
+        );
 
         let verified_action = session.verify_move_action(action).map_err(|e| {
             tracing::error!("verify_genesis_tx error:{:?}", e);
@@ -235,20 +277,19 @@ impl MoveOS {
     pub fn verify(&self, tx: MoveOSTransaction) -> VMResult<VerifiedMoveOSTransaction> {
         let MoveOSTransaction { root, ctx, action } = tx;
         let cost_table = self.load_cost_table(&root)?;
-        let mut gas_meter = MoveOSGasMeter::new(cost_table, ctx.max_gas_amount, true);
+        let mut gas_meter = MoveOSGasMeter::new(cost_table, ctx.max_gas_amount, false);
         gas_meter.set_metering(false);
 
-        // Check if the gas fee for the transaction size is sufficient during transaction validation.
-        let tx_size = ctx.tx_size;
-        let io_writes_gas = gas_meter.calculate_io_writes_gas(tx_size);
-        if ctx.max_gas_amount < io_writes_gas {
-            return Err(PartialVMError::new(StatusCode::OUT_OF_GAS).finish(Location::Undefined));
-        }
-
         let resolver = RootObjectResolver::new(root.clone(), &self.db);
-        let session = self
-            .vm
-            .new_readonly_session(&resolver, ctx.clone(), gas_meter);
+        let runtime_environment = self.cache_manager.runtime_environment.read();
+        let global_module_cache = self.cache_manager.global_module_cache.clone();
+        let mut session = self.vm.new_readonly_session(
+            &resolver,
+            ctx.clone(),
+            gas_meter,
+            global_module_cache,
+            &runtime_environment,
+        );
 
         let verified_action = session.verify_move_action(action)?;
         let (_, _) = session.finish_with_extensions(KeptVMStatus::Executed)?;
@@ -263,11 +304,11 @@ impl MoveOS {
         &self,
         tx: VerifiedMoveOSTransaction,
     ) -> Result<(RawTransactionOutput, Option<VMErrorInfo>)> {
-        let VerifiedMoveOSTransaction { root, ctx, action } = tx;
+        let VerifiedMoveOSTransaction { root, ctx, action } = tx.clone();
         let tx_hash = ctx.tx_hash();
         if tracing::enabled!(tracing::Level::DEBUG) {
             tracing::debug!(
-                "execute tx(sender:{}, hash:{:?}, action:{})",
+                "execute tx(sender:{}, hash:{}, action:{})",
                 ctx.sender(),
                 tx_hash,
                 action
@@ -288,12 +329,20 @@ impl MoveOS {
         };
 
         let cost_table = self.load_cost_table(&root)?;
-        let gas_meter =
+        let mut gas_meter =
             MoveOSGasMeter::new(cost_table, ctx.max_gas_amount, has_io_tired_write_feature);
-        let tx_size = ctx.tx_size;
+        gas_meter.charge_io_write(ctx.tx_size)?;
 
         let resolver = RootObjectResolver::new(root, &self.db);
-        let mut session = self.vm.new_session(&resolver, ctx, gas_meter);
+        let runtime_environment = self.cache_manager.runtime_environment.read();
+        let global_module_cache = self.cache_manager.global_module_cache.clone();
+        let mut session = self.vm.new_session(
+            &resolver,
+            ctx,
+            gas_meter,
+            global_module_cache,
+            &runtime_environment,
+        );
 
         //We do not execute pre_execute and post_execute functions for system call
         if !is_system_call {
@@ -310,12 +359,12 @@ impl MoveOS {
             }
         }
 
-        match self.execute_action(&mut session, action.clone(), tx_size) {
+        match self.execute_action(&mut session, action.clone()) {
             Ok(_) => {
                 let status = VMStatus::Executed;
                 if tracing::enabled!(tracing::Level::DEBUG) {
                     tracing::debug!(
-                        "execute_action ok tx(hash:{:?}) vm_status:{:?}",
+                        "execute_action ok tx(hash:{}) vm_status:{:?}",
                         tx_hash,
                         status
                     );
@@ -325,7 +374,7 @@ impl MoveOS {
             Err(vm_err) => {
                 if tracing::enabled!(tracing::Level::WARN) {
                     tracing::warn!(
-                        "execute_action error tx(hash:{:?}) vm_err:{:?} need respawn session.",
+                        "execute_action error tx(hash:{}) vm_err:{:?} need respawn session.",
                         tx_hash,
                         vm_err
                     );
@@ -415,9 +464,15 @@ impl MoveOS {
         );
         gas_meter.set_metering(true);
         let resolver = RootObjectResolver::new(root, &self.db);
-        let mut session = self
-            .vm
-            .new_readonly_session(&resolver, tx_context.clone(), gas_meter);
+        let runtime_environment = self.cache_manager.runtime_environment.read();
+        let global_module_cache = self.cache_manager.global_module_cache.clone();
+        let mut session = self.vm.new_readonly_session(
+            &resolver,
+            tx_context.clone(),
+            gas_meter,
+            global_module_cache,
+            &runtime_environment,
+        );
 
         let result = session.execute_function_bypass_visibility(function_call);
         match result {
@@ -444,14 +499,7 @@ impl MoveOS {
         &self,
         session: &mut MoveOSSession<'_, '_, RootObjectResolver<MoveOSStore>, MoveOSGasMeter>,
         action: VerifiedMoveAction,
-        tx_size: u64,
     ) -> Result<(), VMError> {
-        match session.gas_meter.charge_io_write(tx_size) {
-            Ok(_) => {}
-            Err(e) => {
-                return Err(e.finish(Location::Undefined));
-            }
-        }
         session.execute_move_action(action)
     }
 
@@ -524,7 +572,8 @@ impl MoveOS {
 
     pub fn flush_module_cache(&self, is_upgrade: bool) -> Result<()> {
         if is_upgrade {
-            self.vm.mark_loader_cache_as_invalid();
+            // the V1 calling of Loader must be disabled
+            // self.vm.mark_loader_cache_as_invalid();
         };
         Ok(())
     }
@@ -563,7 +612,7 @@ fn func_name_from_db(
     data_cache: &MoveosDataCache<RootObjectResolver<MoveOSStore>>,
 ) -> Result<String> {
     let module_bytes = data_cache.load_module(module_id)?;
-    let compiled_module = CompiledModule::deserialize(module_bytes.as_slice())?;
+    let compiled_module = CompiledModule::deserialize(module_bytes.as_ref())?;
     let module_bin_view = BinaryIndexedView::Module(&compiled_module);
     let func_def = module_bin_view.function_def_at(*func_idx)?;
     Ok(module_bin_view

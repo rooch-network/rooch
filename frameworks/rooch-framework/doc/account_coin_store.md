@@ -1,5 +1,5 @@
 
-<a name="0x3_account_coin_store"></a>
+<a id="0x3_account_coin_store"></a>
 
 # Module `0x3::account_coin_store`
 
@@ -39,7 +39,7 @@
 
 
 
-<a name="0x3_account_coin_store_AutoAcceptCoins"></a>
+<a id="0x3_account_coin_store_AutoAcceptCoins"></a>
 
 ## Resource `AutoAcceptCoins`
 
@@ -52,7 +52,7 @@ The main scenario is that the user can actively turn off the AutoAcceptCoin sett
 
 
 
-<a name="0x3_account_coin_store_AcceptCoinEvent"></a>
+<a id="0x3_account_coin_store_AcceptCoinEvent"></a>
 
 ## Struct `AcceptCoinEvent`
 
@@ -64,12 +64,12 @@ Event for auto accept coin set
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x3_account_coin_store_ErrorAccountNotAcceptCoin"></a>
+<a id="0x3_account_coin_store_ErrorAccountNotAcceptCoin"></a>
 
 Account hasn't accept <code>CoinType</code>
 
@@ -79,7 +79,7 @@ Account hasn't accept <code>CoinType</code>
 
 
 
-<a name="0x3_account_coin_store_genesis_init"></a>
+<a id="0x3_account_coin_store_genesis_init"></a>
 
 ## Function `genesis_init`
 
@@ -90,7 +90,7 @@ Account hasn't accept <code>CoinType</code>
 
 
 
-<a name="0x3_account_coin_store_balance"></a>
+<a id="0x3_account_coin_store_balance"></a>
 
 ## Function `balance`
 
@@ -102,7 +102,7 @@ Returns the balance of <code>addr</code> for provided <code>CoinType</code>.
 
 
 
-<a name="0x3_account_coin_store_account_coin_store_id"></a>
+<a id="0x3_account_coin_store_account_coin_store_id"></a>
 
 ## Function `account_coin_store_id`
 
@@ -115,7 +115,7 @@ the account CoinStore is a account named object, the id is determinate for each 
 
 
 
-<a name="0x3_account_coin_store_is_accept_coin"></a>
+<a id="0x3_account_coin_store_is_accept_coin"></a>
 
 ## Function `is_accept_coin`
 
@@ -127,7 +127,7 @@ Return whether the account at <code>addr</code> accept <code>Coin</code> type co
 
 
 
-<a name="0x3_account_coin_store_can_auto_accept_coin"></a>
+<a id="0x3_account_coin_store_can_auto_accept_coin"></a>
 
 ## Function `can_auto_accept_coin`
 
@@ -140,7 +140,7 @@ Default is true if absent
 
 
 
-<a name="0x3_account_coin_store_do_accept_coin"></a>
+<a id="0x3_account_coin_store_do_accept_coin"></a>
 
 ## Function `do_accept_coin`
 
@@ -153,7 +153,7 @@ If user turns off AutoAcceptCoin, call this method to receive the corresponding 
 
 
 
-<a name="0x3_account_coin_store_set_auto_accept_coin"></a>
+<a id="0x3_account_coin_store_set_auto_accept_coin"></a>
 
 ## Function `set_auto_accept_coin`
 
@@ -165,7 +165,7 @@ Configure whether auto-accept coins.
 
 
 
-<a name="0x3_account_coin_store_withdraw"></a>
+<a id="0x3_account_coin_store_withdraw"></a>
 
 ## Function `withdraw`
 
@@ -178,7 +178,7 @@ This public entry function requires the <code>CoinType</code> to have <code>key<
 
 
 
-<a name="0x3_account_coin_store_deposit"></a>
+<a id="0x3_account_coin_store_deposit"></a>
 
 ## Function `deposit`
 
@@ -191,7 +191,7 @@ This public entry function requires the <code>CoinType</code> to have <code>key<
 
 
 
-<a name="0x3_account_coin_store_transfer"></a>
+<a id="0x3_account_coin_store_transfer"></a>
 
 ## Function `transfer`
 
@@ -204,7 +204,7 @@ Any account and module can call this function to transfer coins, the <code>CoinT
 
 
 
-<a name="0x3_account_coin_store_exist_account_coin_store"></a>
+<a id="0x3_account_coin_store_exist_account_coin_store"></a>
 
 ## Function `exist_account_coin_store`
 
@@ -215,7 +215,7 @@ Any account and module can call this function to transfer coins, the <code>CoinT
 
 
 
-<a name="0x3_account_coin_store_is_account_coin_store_frozen"></a>
+<a id="0x3_account_coin_store_is_account_coin_store_frozen"></a>
 
 ## Function `is_account_coin_store_frozen`
 
@@ -226,7 +226,7 @@ Any account and module can call this function to transfer coins, the <code>CoinT
 
 
 
-<a name="0x3_account_coin_store_withdraw_extend"></a>
+<a id="0x3_account_coin_store_withdraw_extend"></a>
 
 ## Function `withdraw_extend`
 
@@ -240,7 +240,7 @@ This function is only called by the <code>CoinType</code> module, for the develo
 
 
 
-<a name="0x3_account_coin_store_deposit_extend"></a>
+<a id="0x3_account_coin_store_deposit_extend"></a>
 
 ## Function `deposit_extend`
 
@@ -254,7 +254,7 @@ This function is only called by the <code>CoinType</code> module, for the develo
 
 
 
-<a name="0x3_account_coin_store_transfer_extend"></a>
+<a id="0x3_account_coin_store_transfer_extend"></a>
 
 ## Function `transfer_extend`
 
@@ -268,7 +268,7 @@ This function is only called by the <code>CoinType</code> module, for the develo
 
 
 
-<a name="0x3_account_coin_store_accept_coin_entry"></a>
+<a id="0x3_account_coin_store_accept_coin_entry"></a>
 
 ## Function `accept_coin_entry`
 
@@ -281,7 +281,7 @@ Required if user wants to start accepting deposits of <code>CoinType</code> in h
 
 
 
-<a name="0x3_account_coin_store_enable_auto_accept_coin_entry"></a>
+<a id="0x3_account_coin_store_enable_auto_accept_coin_entry"></a>
 
 ## Function `enable_auto_accept_coin_entry`
 
@@ -294,7 +294,7 @@ The script function is reenterable.
 
 
 
-<a name="0x3_account_coin_store_disable_auto_accept_coin_entry"></a>
+<a id="0x3_account_coin_store_disable_auto_accept_coin_entry"></a>
 
 ## Function `disable_auto_accept_coin_entry`
 

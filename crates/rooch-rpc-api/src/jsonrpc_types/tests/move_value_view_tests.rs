@@ -153,7 +153,7 @@ fn test_annotated_move_value_view_struct() {
         address: AccountAddress::from_hex_literal("0x1").unwrap(),
         module: Identifier::new("test").unwrap(),
         name: Identifier::new("TestStruct").unwrap(),
-        type_params: vec![],
+        type_args: vec![],
     };
 
     let fields = vec![
@@ -173,7 +173,8 @@ fn test_annotated_move_value_view_struct() {
 
     let move_struct = AnnotatedMoveStruct {
         abilities: AbilitySet::PRIMITIVES,
-        type_: struct_tag.clone(),
+        ty_tag: struct_tag.clone(),
+        variant_info: None,
         value: fields,
     };
 
@@ -225,7 +226,8 @@ fn test_annotated_move_value_view_specific_structs_string() {
 
     let move_string_struct = AnnotatedMoveStruct {
         abilities: AbilitySet::PRIMITIVES,
-        type_: MoveString::struct_tag(),
+        ty_tag: MoveString::struct_tag(),
+        variant_info: None,
         value: vec![(
             Identifier::new("bytes").unwrap(),
             AnnotatedMoveValue::Bytes(move_string.as_bytes().to_vec()),
@@ -252,7 +254,8 @@ fn test_annotated_move_value_view_specific_structs_decimal() {
 
     let decimal_value_struct = AnnotatedMoveStruct {
         abilities: AbilitySet::PRIMITIVES,
-        type_: DecimalValue::struct_tag(),
+        ty_tag: DecimalValue::struct_tag(),
+        variant_info: None,
         value: vec![
             (
                 Identifier::new("value").unwrap(),
@@ -285,7 +288,7 @@ fn test_annotated_move_value_view_struct_vector() {
         address: AccountAddress::from_hex_literal("0x1").unwrap(),
         module: Identifier::new("test").unwrap(),
         name: Identifier::new("TestStruct").unwrap(),
-        type_params: vec![],
+        type_args: vec![],
     };
 
     let mut structs = Vec::new();
@@ -301,7 +304,8 @@ fn test_annotated_move_value_view_struct_vector() {
 
     structs.push(AnnotatedMoveValue::Struct(AnnotatedMoveStruct {
         abilities: AbilitySet::PRIMITIVES,
-        type_: struct_tag.clone(),
+        ty_tag: struct_tag.clone(),
+        variant_info: None,
         value: fields1,
     }));
 
@@ -316,7 +320,8 @@ fn test_annotated_move_value_view_struct_vector() {
 
     structs.push(AnnotatedMoveValue::Struct(AnnotatedMoveStruct {
         abilities: AbilitySet::PRIMITIVES,
-        type_: struct_tag.clone(),
+        ty_tag: struct_tag.clone(),
+        variant_info: None,
         value: fields2,
     }));
 
@@ -359,7 +364,7 @@ fn test_json_serialization() {
         address: AccountAddress::from_hex_literal("0x1").unwrap(),
         module: Identifier::new("test").unwrap(),
         name: Identifier::new("ComplexStruct").unwrap(),
-        type_params: vec![],
+        type_args: vec![],
     };
 
     let mut fields = vec![
@@ -398,21 +403,23 @@ fn test_json_serialization() {
         address: AccountAddress::from_hex_literal("0x1").unwrap(),
         module: Identifier::new("test").unwrap(),
         name: Identifier::new("NestedStruct").unwrap(),
-        type_params: vec![],
+        type_args: vec![],
     };
 
     fields.push((
         Identifier::new("nested_struct").unwrap(),
         AnnotatedMoveValue::Struct(AnnotatedMoveStruct {
             abilities: AbilitySet::ALL,
-            type_: nested_struct_tag,
+            ty_tag: nested_struct_tag,
+            variant_info: None,
             value: nested_fields,
         }),
     ));
 
     let complex_struct = AnnotatedMoveStruct {
         abilities: AbilitySet::PRIMITIVES,
-        type_: struct_tag,
+        ty_tag: struct_tag,
+        variant_info: None,
         value: fields,
     };
 

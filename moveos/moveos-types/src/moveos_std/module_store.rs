@@ -48,7 +48,7 @@ impl MoveStructType for ModuleStore {
             address: Self::ADDRESS,
             module: Self::MODULE_NAME.to_owned(),
             name: Self::STRUCT_NAME.to_owned(),
-            type_params: vec![],
+            type_args: vec![],
         }
     }
 }
@@ -88,7 +88,7 @@ impl MoveStructType for Package {
             address: Self::ADDRESS,
             module: Self::MODULE_NAME.to_owned(),
             name: Self::STRUCT_NAME.to_owned(),
-            type_params: vec![],
+            type_args: vec![],
         }
     }
 }
@@ -148,7 +148,7 @@ impl MoveStructType for PackageData {
             address: Self::ADDRESS,
             module: Self::MODULE_NAME.to_owned(),
             name: Self::STRUCT_NAME.to_owned(),
-            type_params: vec![],
+            type_args: vec![],
         }
     }
 }

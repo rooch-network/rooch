@@ -1,5 +1,5 @@
 
-<a name="0x3_core_addresses"></a>
+<a id="0x3_core_addresses"></a>
 
 # Module `0x3::core_addresses`
 
@@ -19,12 +19,12 @@
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x3_core_addresses_ErrorNotGenesisAddress"></a>
+<a id="0x3_core_addresses_ErrorNotGenesisAddress"></a>
 
 The address/account did not correspond to the genesis address
 
@@ -34,7 +34,7 @@ The address/account did not correspond to the genesis address
 
 
 
-<a name="0x3_core_addresses_ErrorNotRoochFrameworkAddress"></a>
+<a id="0x3_core_addresses_ErrorNotRoochFrameworkAddress"></a>
 
 The address/account did not correspond to the core framework address
 
@@ -44,7 +44,7 @@ The address/account did not correspond to the core framework address
 
 
 
-<a name="0x3_core_addresses_assert_rooch_genesis"></a>
+<a id="0x3_core_addresses_assert_rooch_genesis"></a>
 
 ## Function `assert_rooch_genesis`
 
@@ -55,7 +55,7 @@ The address/account did not correspond to the core framework address
 
 
 
-<a name="0x3_core_addresses_assert_rooch_genesis_address"></a>
+<a id="0x3_core_addresses_assert_rooch_genesis_address"></a>
 
 ## Function `assert_rooch_genesis_address`
 
@@ -66,7 +66,7 @@ The address/account did not correspond to the core framework address
 
 
 
-<a name="0x3_core_addresses_is_rooch_genesis_address"></a>
+<a id="0x3_core_addresses_is_rooch_genesis_address"></a>
 
 ## Function `is_rooch_genesis_address`
 
@@ -77,7 +77,7 @@ The address/account did not correspond to the core framework address
 
 
 
-<a name="0x3_core_addresses_assert_rooch_framework"></a>
+<a id="0x3_core_addresses_assert_rooch_framework"></a>
 
 ## Function `assert_rooch_framework`
 
@@ -88,7 +88,7 @@ The address/account did not correspond to the core framework address
 
 
 
-<a name="0x3_core_addresses_is_rooch_framework_address"></a>
+<a id="0x3_core_addresses_is_rooch_framework_address"></a>
 
 ## Function `is_rooch_framework_address`
 
@@ -100,7 +100,7 @@ Return true if <code>addr</code> is 0x3.
 
 
 
-<a name="0x3_core_addresses_genesis_address"></a>
+<a id="0x3_core_addresses_genesis_address"></a>
 
 ## Function `genesis_address`
 

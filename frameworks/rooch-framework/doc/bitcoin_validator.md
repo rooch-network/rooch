@@ -1,5 +1,5 @@
 
-<a name="0x3_bitcoin_validator"></a>
+<a id="0x3_bitcoin_validator"></a>
 
 # Module `0x3::bitcoin_validator`
 
@@ -23,7 +23,7 @@ This module implements Bitcoin validator with the ECDSA recoverable signature ov
 
 
 
-<a name="0x3_bitcoin_validator_BitcoinValidator"></a>
+<a id="0x3_bitcoin_validator_BitcoinValidator"></a>
 
 ## Struct `BitcoinValidator`
 
@@ -34,12 +34,12 @@ This module implements Bitcoin validator with the ECDSA recoverable signature ov
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x3_bitcoin_validator_BITCOIN_AUTH_VALIDATOR_ID"></a>
+<a id="0x3_bitcoin_validator_BITCOIN_AUTH_VALIDATOR_ID"></a>
 
 there defines auth validator id for each auth validator
 
@@ -49,7 +49,7 @@ there defines auth validator id for each auth validator
 
 
 
-<a name="0x3_bitcoin_validator_auth_validator_id"></a>
+<a id="0x3_bitcoin_validator_auth_validator_id"></a>
 
 ## Function `auth_validator_id`
 
@@ -60,7 +60,7 @@ there defines auth validator id for each auth validator
 
 
 
-<a name="0x3_bitcoin_validator_validate"></a>
+<a id="0x3_bitcoin_validator_validate"></a>
 
 ## Function `validate`
 

@@ -1,5 +1,5 @@
 
-<a name="0x4_genesis"></a>
+<a id="0x4_genesis"></a>
 
 # Module `0x4::genesis`
 
@@ -26,7 +26,7 @@
 
 
 
-<a name="0x4_genesis_BitcoinGenesisContext"></a>
+<a id="0x4_genesis_BitcoinGenesisContext"></a>
 
 ## Struct `BitcoinGenesisContext`
 
@@ -38,7 +38,7 @@ BitcoinGenesisContext is a genesis init config in the TxContext.
 
 
 
-<a name="0x4_genesis_MultisignAccountConfig"></a>
+<a id="0x4_genesis_MultisignAccountConfig"></a>
 
 ## Struct `MultisignAccountConfig`
 
@@ -49,12 +49,12 @@ BitcoinGenesisContext is a genesis init config in the TxContext.
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x4_genesis_ErrorGenesisInit"></a>
+<a id="0x4_genesis_ErrorGenesisInit"></a>
 
 
 
@@ -63,7 +63,7 @@ BitcoinGenesisContext is a genesis init config in the TxContext.
 
 
 
-<a name="0x4_genesis_ErrorInvalidRoochDaoAddress"></a>
+<a id="0x4_genesis_ErrorInvalidRoochDaoAddress"></a>
 
 
 

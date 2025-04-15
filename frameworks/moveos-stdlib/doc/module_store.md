@@ -1,5 +1,5 @@
 
-<a name="0x2_module_store"></a>
+<a id="0x2_module_store"></a>
 
 # Module `0x2::module_store`
 
@@ -48,7 +48,7 @@
 
 
 
-<a name="0x2_module_store_Allowlist"></a>
+<a id="0x2_module_store_Allowlist"></a>
 
 ## Resource `Allowlist`
 
@@ -60,7 +60,7 @@ Allowlist for module function invocation
 
 
 
-<a name="0x2_module_store_ModuleStore"></a>
+<a id="0x2_module_store_ModuleStore"></a>
 
 ## Resource `ModuleStore`
 
@@ -74,7 +74,7 @@ Packages are child objects of ModuleStore.
 
 
 
-<a name="0x2_module_store_Package"></a>
+<a id="0x2_module_store_Package"></a>
 
 ## Resource `Package`
 
@@ -87,7 +87,7 @@ Modules are the Package's dynamic fields, with the module name as the key.
 
 
 
-<a name="0x2_module_store_PackageData"></a>
+<a id="0x2_module_store_PackageData"></a>
 
 ## Struct `PackageData`
 
@@ -102,7 +102,7 @@ we then deserialize package in Move.
 
 
 
-<a name="0x2_module_store_UpgradeCap"></a>
+<a id="0x2_module_store_UpgradeCap"></a>
 
 ## Resource `UpgradeCap`
 
@@ -114,7 +114,7 @@ Package upgrade capability
 
 
 
-<a name="0x2_module_store_UpgradeEvent"></a>
+<a id="0x2_module_store_UpgradeEvent"></a>
 
 ## Struct `UpgradeEvent`
 
@@ -126,12 +126,12 @@ Event for package upgrades. New published modules will also trigger this event.
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x2_module_store_ErrorNoUpgradePermission"></a>
+<a id="0x2_module_store_ErrorNoUpgradePermission"></a>
 
 Have no permission to upgrade package
 
@@ -141,7 +141,7 @@ Have no permission to upgrade package
 
 
 
-<a name="0x2_module_store_ErrorNotAllowToPublish"></a>
+<a id="0x2_module_store_ErrorNotAllowToPublish"></a>
 
 Not allow to publish module
 
@@ -151,7 +151,7 @@ Not allow to publish module
 
 
 
-<a name="0x2_module_store_ErrorUpgradeCapIssued"></a>
+<a id="0x2_module_store_ErrorUpgradeCapIssued"></a>
 
 Upgrade cap issued already
 
@@ -161,7 +161,7 @@ Upgrade cap issued already
 
 
 
-<a name="0x2_module_store_module_store_id"></a>
+<a id="0x2_module_store_module_store_id"></a>
 
 ## Function `module_store_id`
 
@@ -172,7 +172,7 @@ Upgrade cap issued already
 
 
 
-<a name="0x2_module_store_init_module_store"></a>
+<a id="0x2_module_store_init_module_store"></a>
 
 ## Function `init_module_store`
 
@@ -184,7 +184,7 @@ Create a new module object space
 
 
 
-<a name="0x2_module_store_issue_upgrade_cap_by_system"></a>
+<a id="0x2_module_store_issue_upgrade_cap_by_system"></a>
 
 ## Function `issue_upgrade_cap_by_system`
 
@@ -196,7 +196,7 @@ Issue an UpgradeCap for any package by the system accounts.
 
 
 
-<a name="0x2_module_store_issue_upgrade_cap"></a>
+<a id="0x2_module_store_issue_upgrade_cap"></a>
 
 ## Function `issue_upgrade_cap`
 
@@ -209,7 +209,7 @@ This is used to issue an upgrade cap before first publishing.
 
 
 
-<a name="0x2_module_store_is_upgrade_cap_issued"></a>
+<a id="0x2_module_store_is_upgrade_cap_issued"></a>
 
 ## Function `is_upgrade_cap_issued`
 
@@ -220,7 +220,7 @@ This is used to issue an upgrade cap before first publishing.
 
 
 
-<a name="0x2_module_store_borrow_module_store"></a>
+<a id="0x2_module_store_borrow_module_store"></a>
 
 ## Function `borrow_module_store`
 
@@ -231,7 +231,7 @@ This is used to issue an upgrade cap before first publishing.
 
 
 
-<a name="0x2_module_store_borrow_mut_module_store"></a>
+<a id="0x2_module_store_borrow_mut_module_store"></a>
 
 ## Function `borrow_mut_module_store`
 
@@ -242,7 +242,7 @@ This is used to issue an upgrade cap before first publishing.
 
 
 
-<a name="0x2_module_store_package_obj_id"></a>
+<a id="0x2_module_store_package_obj_id"></a>
 
 ## Function `package_obj_id`
 
@@ -253,7 +253,7 @@ This is used to issue an upgrade cap before first publishing.
 
 
 
-<a name="0x2_module_store_exists_package"></a>
+<a id="0x2_module_store_exists_package"></a>
 
 ## Function `exists_package`
 
@@ -264,7 +264,7 @@ This is used to issue an upgrade cap before first publishing.
 
 
 
-<a name="0x2_module_store_exists_module"></a>
+<a id="0x2_module_store_exists_module"></a>
 
 ## Function `exists_module`
 
@@ -278,7 +278,7 @@ name: the name of the module
 
 
 
-<a name="0x2_module_store_publish_package_entry"></a>
+<a id="0x2_module_store_publish_package_entry"></a>
 
 ## Function `publish_package_entry`
 
@@ -291,7 +291,7 @@ The order of modules must be sorted by dependency order.
 
 
 
-<a name="0x2_module_store_package_version"></a>
+<a id="0x2_module_store_package_version"></a>
 
 ## Function `package_version`
 
@@ -302,7 +302,7 @@ The order of modules must be sorted by dependency order.
 
 
 
-<a name="0x2_module_store_publish_modules_internal"></a>
+<a id="0x2_module_store_publish_modules_internal"></a>
 
 ## Function `publish_modules_internal`
 
@@ -315,18 +315,18 @@ Return true if the modules are upgraded
 
 
 
-<a name="0x2_module_store_freeze_package"></a>
+<a id="0x2_module_store_freeze_package"></a>
 
 ## Function `freeze_package`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="module_store.md#0x2_module_store_freeze_package">freeze_package</a>(package: <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="module_store.md#0x2_module_store_Package">module_store::Package</a>&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="module_store.md#0x2_module_store_freeze_package">freeze_package</a>(<b>package</b>: <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="module_store.md#0x2_module_store_Package">module_store::Package</a>&gt;)
 </code></pre>
 
 
 
-<a name="0x2_module_store_add_to_allowlist"></a>
+<a id="0x2_module_store_add_to_allowlist"></a>
 
 ## Function `add_to_allowlist`
 
@@ -339,7 +339,7 @@ This is only valid when module_publishing_allowlist_enabled feature is enabled.
 
 
 
-<a name="0x2_module_store_remove_from_allowlist"></a>
+<a id="0x2_module_store_remove_from_allowlist"></a>
 
 ## Function `remove_from_allowlist`
 
@@ -351,7 +351,7 @@ Remove a package id from the allowlist.
 
 
 
-<a name="0x2_module_store_is_in_allowlist"></a>
+<a id="0x2_module_store_is_in_allowlist"></a>
 
 ## Function `is_in_allowlist`
 
@@ -363,7 +363,7 @@ Check if a package id is in the allowlist.
 
 
 
-<a name="0x2_module_store_has_upgrade_permission"></a>
+<a id="0x2_module_store_has_upgrade_permission"></a>
 
 ## Function `has_upgrade_permission`
 
@@ -375,7 +375,7 @@ Check if the account has the permission to upgrade the package with the package_
 
 
 
-<a name="0x2_module_store_ensure_upgrade_permission"></a>
+<a id="0x2_module_store_ensure_upgrade_permission"></a>
 
 ## Function `ensure_upgrade_permission`
 

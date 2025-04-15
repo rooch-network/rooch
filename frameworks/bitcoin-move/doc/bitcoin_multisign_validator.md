@@ -1,5 +1,5 @@
 
-<a name="0x4_bitcoin_multisign_validator"></a>
+<a id="0x4_bitcoin_multisign_validator"></a>
 
 # Module `0x4::bitcoin_multisign_validator`
 
@@ -26,7 +26,7 @@ Bitcoin multisign auth validator
 
 
 
-<a name="0x4_bitcoin_multisign_validator_BitcoinMultisignValidator"></a>
+<a id="0x4_bitcoin_multisign_validator_BitcoinMultisignValidator"></a>
 
 ## Struct `BitcoinMultisignValidator`
 
@@ -37,12 +37,12 @@ Bitcoin multisign auth validator
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x4_bitcoin_multisign_validator_BITCOIN_MULTISIGN_VALIDATOR_ID"></a>
+<a id="0x4_bitcoin_multisign_validator_BITCOIN_MULTISIGN_VALIDATOR_ID"></a>
 
 there defines auth validator id for each auth validator
 
@@ -52,7 +52,7 @@ there defines auth validator id for each auth validator
 
 
 
-<a name="0x4_bitcoin_multisign_validator_ErrorGenesisInitError"></a>
+<a id="0x4_bitcoin_multisign_validator_ErrorGenesisInitError"></a>
 
 
 
@@ -61,7 +61,7 @@ there defines auth validator id for each auth validator
 
 
 
-<a name="0x4_bitcoin_multisign_validator_auth_validator_id"></a>
+<a id="0x4_bitcoin_multisign_validator_auth_validator_id"></a>
 
 ## Function `auth_validator_id`
 
@@ -72,7 +72,7 @@ there defines auth validator id for each auth validator
 
 
 
-<a name="0x4_bitcoin_multisign_validator_genesis_init"></a>
+<a id="0x4_bitcoin_multisign_validator_genesis_init"></a>
 
 ## Function `genesis_init`
 
@@ -83,7 +83,7 @@ there defines auth validator id for each auth validator
 
 
 
-<a name="0x4_bitcoin_multisign_validator_init_for_upgrade"></a>
+<a id="0x4_bitcoin_multisign_validator_init_for_upgrade"></a>
 
 ## Function `init_for_upgrade`
 
@@ -96,7 +96,7 @@ When rest the genesis, we can remove this function.
 
 
 
-<a name="0x4_bitcoin_multisign_validator_validate"></a>
+<a id="0x4_bitcoin_multisign_validator_validate"></a>
 
 ## Function `validate`
 
