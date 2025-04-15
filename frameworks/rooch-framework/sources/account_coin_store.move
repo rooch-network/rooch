@@ -3,10 +3,11 @@
 
 module rooch_framework::account_coin_store {
     use std::string;
+    use rooch_framework::coin::{Coin, GenericCoin};
+    use rooch_framework::coin;
     use moveos_std::type_info;
     use rooch_framework::multi_coin_store;
     use rooch_framework::multi_coin_store::MultiCoinStore;
-    use rooch_framework::coin;
     use moveos_std::account;
     use moveos_std::object::{Self, ObjectID, Object};
     use moveos_std::table;
@@ -14,7 +15,6 @@ module rooch_framework::account_coin_store {
     use moveos_std::event;
     use moveos_std::signer;
 
-    use rooch_framework::coin::{Coin, GenericCoin};
     use rooch_framework::coin_store::{Self, CoinStore};
 
     friend rooch_framework::genesis;
@@ -238,7 +238,7 @@ module rooch_framework::account_coin_store {
         amount: u256,
     ): Coin<CoinType> {
         // Check CoinType-specific coin store first
-        let generic_amount = 0;
+        // let generic_amount = 0;
         let coin_type = type_info::type_name<CoinType>();
         
         // Get the total balance from both stores
@@ -265,7 +265,7 @@ module rooch_framework::account_coin_store {
         
         // If we need more from the multi coin store
         if (coin_store_balance < amount) {
-            generic_amount = amount - coin_store_balance;
+            let generic_amount = amount - coin_store_balance;
             if (generic_amount > 0) {
                 let generic_store = borrow_mut_multi_coin_store(addr);
                 let generic_coin = multi_coin_store::withdraw(generic_store, coin_type, generic_amount);
@@ -283,35 +283,23 @@ module rooch_framework::account_coin_store {
     }
 
     fun deposit_internal<CoinType: key>(addr: address, coin: Coin<CoinType>) {
-        // try to write multi coin store first
-        let coin_type = type_info::type_name<CoinType>();
-        let multi_coin_store = create_or_borrow_mut_multi_coin_store(addr);
+        // // try to write multi coin store first
+        // let coin_type = type_info::type_name<CoinType>();
+        // let multi_coin_store = create_or_borrow_mut_multi_coin_store(addr);
+        // assert!(
+        //     is_accept_coin_by_type_name(addr, coin_type),
+        //     ErrorAccountNotAcceptCoin,
+        // );
+        //
+        // let generic_coin = coin::convert_coin_to_generic_coin(coin);
+        // multi_coin_store::deposit_internal(multi_coin_store, generic_coin);
+
         assert!(
-            is_accept_coin_by_type_name(addr, coin_type),
+            is_accept_coin<CoinType>(addr),
             ErrorAccountNotAcceptCoin,
         );
-
-        let generic_coin = coin::convert_coin_to_generic_coin(coin);
-        let generic_coin = multi_coin_store::deposit_internal(multi_coin_store, generic_coin);
-
-        // if(exist_multi_coin_store(addr)){
-        //     let coin_type = type_info::type_name<CoinType>();
-        //     assert!(
-        //         is_accept_coin_by_type_name(addr, coin_type),
-        //         ErrorAccountNotAcceptCoin,
-        //     );
-        //
-        //     let generic_coin = coin::convert_coin_to_generic_coin(coin);
-        //     let multi_coin_store = create_or_borrow_mut_multi_coin_store(addr);
-        //     let generic_coin = multi_coin_store::deposit_internal(multi_coin_store, generic_coin);
-        // } else {
-        //     assert!(
-        //         is_accept_coin<CoinType>(addr),
-        //         ErrorAccountNotAcceptCoin,
-        //     );
-        //     let coin_store = create_or_borrow_mut_account_coin_store<CoinType>(addr);
-        //     coin_store::deposit_internal<CoinType>(coin_store, coin)
-        // }
+        let coin_store = create_or_borrow_mut_account_coin_store<CoinType>(addr);
+        coin_store::deposit_internal<CoinType>(coin_store, coin)
     }
 
     fun transfer_internal<CoinType: key>(

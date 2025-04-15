@@ -82,6 +82,26 @@ Event for auto accept coin set
 ## Constants
 
 
+<a name="0x3_account_coin_store_ErrorCoinTypeNotMatch"></a>
+
+The coin type is not match
+
+
+<pre><code><b>const</b> <a href="account_coin_store.md#0x3_account_coin_store_ErrorCoinTypeNotMatch">ErrorCoinTypeNotMatch</a>: u64 = 2;
+</code></pre>
+
+
+
+<a name="0x3_account_coin_store_ErrorInsufficientBalance"></a>
+
+Not enough coins to extract
+
+
+<pre><code><b>const</b> <a href="account_coin_store.md#0x3_account_coin_store_ErrorInsufficientBalance">ErrorInsufficientBalance</a>: u64 = 3;
+</code></pre>
+
+
+
 <a name="0x3_account_coin_store_ErrorAccountNotAcceptCoin"></a>
 
 Account hasn't accept <code>CoinType</code>
