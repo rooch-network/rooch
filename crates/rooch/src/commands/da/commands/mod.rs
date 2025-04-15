@@ -391,7 +391,6 @@ pub(crate) struct LedgerTxGetter {
     chunks: Arc<RwLock<HashMap<u128, Vec<u64>>>>,
     client: Option<Client>,
     exp_roots: Arc<RwLock<HashMap<u64, H256>>>,
-    verify_all: bool,
     max_chunk_id: u128,
 }
 
@@ -405,7 +404,6 @@ impl LedgerTxGetter {
             chunks: Arc::new(RwLock::new(chunks)),
             client: None,
             exp_roots: Arc::new(RwLock::new(HashMap::new())),
-            verify_all: false,
             max_chunk_id,
         })
     }
@@ -416,7 +414,6 @@ impl LedgerTxGetter {
         client: Client,
         exp_roots: Arc<RwLock<HashMap<u64, H256>>>,
         shutdown_signal: watch::Receiver<()>,
-        verify_all: bool,
     ) -> anyhow::Result<Self> {
         let (chunks, _min_chunk_id, max_chunk_id) = collect_chunks(segment_dir.clone(), true)?;
 
@@ -434,7 +431,6 @@ impl LedgerTxGetter {
             chunks: chunks_to_sync,
             client: Some(client),
             exp_roots,
-            verify_all,
             max_chunk_id,
         })
     }
@@ -469,20 +465,12 @@ impl LedgerTxGetter {
                     Ok(Some(tx_list))
                 },
             )?;
-        if let Some(mut tx_list) = tx_list_opt {
+        if let Some(tx_list) = tx_list_opt {
             if let Some(client) = &self.client {
-                if self.verify_all {
-                    for tx in &mut tx_list {
-                        let tx_order = tx.sequence_info.tx_order;
-                        let tx_hash = tx.tx_hash();
-                        self.fetch_exp_root(tx_order, tx_hash, client).await?;
-                    }
-                } else {
-                    let mut last_tx = tx_list.last().unwrap().clone();
-                    let tx_order = last_tx.sequence_info.tx_order;
-                    let last_tx_hash = last_tx.tx_hash();
-                    self.fetch_exp_root(tx_order, last_tx_hash, client).await?;
-                }
+                let mut last_tx = tx_list.last().unwrap().clone();
+                let tx_order = last_tx.sequence_info.tx_order;
+                let last_tx_hash = last_tx.tx_hash();
+                self.fetch_exp_root(tx_order, last_tx_hash, client).await?;
             }
             Ok(Some(tx_list))
         } else {

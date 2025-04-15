@@ -97,8 +97,6 @@ pub struct ExecCommand {
     pub max_block_number: Option<u128>,
     #[clap(long = "bypass-verify", help = "bypass verification of state root")]
     pub bypass_verify: bool,
-    #[clap(long = "verify-all", help = "verify all transactions state root")]
-    pub verify_all: bool,
 
     #[clap(long = "btc-rpc-url")]
     pub btc_rpc_url: String,
@@ -289,7 +287,6 @@ impl ExecCommand {
                 client,
                 exp_roots,
                 shutdown_signal,
-                self.verify_all,
             )?
         } else {
             LedgerTxGetter::new(self.segment_dir.clone(), false)?
