@@ -237,7 +237,8 @@ module rooch_framework::multi_coin_store {
         let coin_type = coin::coin_type(&source_coin);
         create_coin_store_field_if_not_exist(coin_store_obj, coin_type);
         let coin_store_field = object::borrow_mut_field<MultiCoinStore, string::String, CoinStoreField>(coin_store_obj, coin_type);
-        let value = coin::unpack_generic_coin(source_coin);
+        let (source_coin_type, value) = coin::unpack_generic_coin(source_coin);
+        assert!(coin_type == source_coin_type, ErrorCoinTypeAndStoreMismatch);
         coin_store_field.balance.value = coin_store_field.balance.value + value;
     }
 
@@ -283,5 +284,10 @@ module rooch_framework::multi_coin_store {
             coin_type,
             amount,
         });
+    }
+
+    #[test_only]
+    public fun create_multi_coin_store_for_test(new_address: address): ObjectID {
+        create_multi_coin_store(new_address)
     }
 }

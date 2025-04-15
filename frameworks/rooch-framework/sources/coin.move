@@ -15,6 +15,7 @@ module rooch_framework::coin {
     friend rooch_framework::genesis;
     friend rooch_framework::coin_store;
     friend rooch_framework::multi_coin_store;
+    friend rooch_framework::account_coin_store;
 
     //
     // Errors
@@ -118,9 +119,6 @@ module rooch_framework::coin {
         /// The total value for the coin represented by coin type. Mutable.
         supply: u256,
     }
-
-    /// Placeholder for the CoinType, used for the generic function.
-    struct CoinTypePlaceholder has key {}
 
     /// Coin metadata is copied from CoinInfo, and stored as dynamic field of CoinRegistry
     struct CoinMetadata has key, store {
@@ -567,16 +565,22 @@ module rooch_framework::coin {
     }
 
 
+    // === Migration functions ===
+
+    public(friend) fun convert_coin_to_generic_coin<CoinType: key>(coin: Coin<CoinType>): GenericCoin{
+        let value = unpack(coin);
+        let coin_type = type_info::type_name<CoinType>();
+        GenericCoin { coin_type, value }
+    }
+
     // === Non-generic functions ===
     public fun check_coin_info_registered_by_type_name(coin_type: string::String) {
         assert!(is_registered_by_type_name(coin_type), ErrorCoinInfoNotRegistered);
     }
     //
     public fun is_registered_by_type_name(coin_type: string::String): bool {
-        let object_id = coin_info_id_by_type_name(coin_type);
-        // object::exists_object_with_type<CoinInfoV2>(object_id)
-        // TODO Have any risk after removing with check CoinInfo<CoinType>
-        object::exists_object(object_id)
+        let registry = borrow_registry();
+        object::contains_field(registry, coin_type)
     }
 
     // public fun value_by_type(coin_type: string::String, coin: &GenericCoin): u256 {
@@ -584,9 +588,9 @@ module rooch_framework::coin {
         coin.value
     }
 
-    public(friend) fun unpack_generic_coin(coin: GenericCoin): u256 {
-        let GenericCoin { coin_type: _, value } = coin;
-        value
+    public(friend) fun unpack_generic_coin(coin: GenericCoin): (string::String, u256){
+        let GenericCoin { coin_type, value } = coin;
+        (coin_type, value)
     }
 
     public(friend) fun pack_generic_coin(coin_type: string::String, value: u256): GenericCoin {
