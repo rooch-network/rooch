@@ -27,6 +27,12 @@ module rooch_framework::account_coin_store {
     /// Account hasn't accept `CoinType`
     const ErrorAccountNotAcceptCoin: u64 = 1;
 
+    /// The coin type is not match
+    const ErrorCoinTypeNotMatch: u64 = 2;
+
+    /// Not enough coins to extract
+    const ErrorInsufficientBalance: u64 = 3;
+
     /// A resource that holds the AutoAcceptCoin config for all accounts.
     /// The main scenario is that the user can actively turn off the AutoAcceptCoin setting to avoid automatically receiving Coin
     struct AutoAcceptCoins has key,store {
@@ -50,19 +56,9 @@ module rooch_framework::account_coin_store {
 
     /// Returns the balance of `addr` for provided `CoinType`.
     public fun balance<CoinType: key>(addr: address): u256 {
-        let coin_store_balance = if (exist_account_coin_store<CoinType>(addr)) {
-            let coin_store = borrow_account_coin_store<CoinType>(addr);
-            coin_store::balance(coin_store)
-        } else {
-            0u256
-        };
-        let multi_coin_store_balance = if (exist_multi_coin_store(addr)) {
-            let coin_type = type_info::type_name<CoinType>();
-            let coin_store = borrow_multi_coin_store(addr);
-            multi_coin_store::balance(coin_store, coin_type)
-        } else {
-            0u256
-        };
+        let coin_type = type_info::type_name<CoinType>();
+        let coin_store_balance = balance_of<CoinType>(addr);
+        let multi_coin_store_balance = balance_by_type_name(addr, coin_type);
         let balance = coin_store_balance + multi_coin_store_balance;
         balance
     }
@@ -227,22 +223,95 @@ module rooch_framework::account_coin_store {
         coin_store::borrow_mut_coin_store_internal<CoinType>(account_coin_store_id)
     }
 
+    fun balance_of<CoinType: key>(addr: address): u256 {
+        let coin_store_balance = if (exist_account_coin_store<CoinType>(addr)) {
+            let coin_store = borrow_account_coin_store<CoinType>(addr);
+            coin_store::balance(coin_store)
+        } else {
+            0u256
+        };
+        coin_store_balance
+    }
 
     fun withdraw_internal<CoinType: key>(
         addr: address,
         amount: u256,
     ): Coin<CoinType> {
-        let coin_store = borrow_mut_account_coin_store<CoinType>(addr);
-        coin_store::withdraw_internal(coin_store, amount)
+        // Check CoinType-specific coin store first
+        let generic_amount = 0;
+        let coin_type = type_info::type_name<CoinType>();
+        
+        // Get the total balance from both stores
+        let coin_store_balance = balance_of<CoinType>(addr);
+        let generic_balance = balance_of_by_type_name(addr, coin_type);
+        
+        // Ensure we have enough total balance
+        let total_balance = coin_store_balance + generic_balance;
+        assert!(total_balance >= amount, ErrorInsufficientBalance);
+        
+        // If we have enough in the coin store, use it first
+        let coin_store_coin = if (coin_store_balance > 0) {
+            let withdraw_amount = if (coin_store_balance >= amount) {
+                amount
+            } else {
+                coin_store_balance
+            };
+            
+            let coin_store = borrow_mut_account_coin_store<CoinType>(addr);
+            coin_store::withdraw_internal(coin_store, withdraw_amount)
+        } else {
+            coin::zero<CoinType>()
+        };
+        
+        // If we need more from the multi coin store
+        if (coin_store_balance < amount) {
+            generic_amount = amount - coin_store_balance;
+            if (generic_amount > 0) {
+                let generic_store = borrow_mut_multi_coin_store(addr);
+                let generic_coin = multi_coin_store::withdraw(generic_store, coin_type, generic_amount);
+                
+                // Convert GenericCoin to Coin<CoinType> and merge with coin_store_coin
+                let (generic_coin_type, value) = coin::unpack_generic_coin(generic_coin);
+                assert!(coin_type == generic_coin_type, ErrorCoinTypeNotMatch);
+                
+                let generic_coin_store_coin = coin::pack<CoinType>(value);
+                coin::merge(&mut coin_store_coin, generic_coin_store_coin);
+            }
+        };
+
+        coin_store_coin
     }
 
     fun deposit_internal<CoinType: key>(addr: address, coin: Coin<CoinType>) {
+        // try to write multi coin store first
+        let coin_type = type_info::type_name<CoinType>();
+        let multi_coin_store = create_or_borrow_mut_multi_coin_store(addr);
         assert!(
-            is_accept_coin<CoinType>(addr),
+            is_accept_coin_by_type_name(addr, coin_type),
             ErrorAccountNotAcceptCoin,
         );
-        let coin_store = create_or_borrow_mut_account_coin_store<CoinType>(addr);
-        coin_store::deposit_internal<CoinType>(coin_store, coin)
+
+        let generic_coin = coin::convert_coin_to_generic_coin(coin);
+        let generic_coin = multi_coin_store::deposit_internal(multi_coin_store, generic_coin);
+
+        // if(exist_multi_coin_store(addr)){
+        //     let coin_type = type_info::type_name<CoinType>();
+        //     assert!(
+        //         is_accept_coin_by_type_name(addr, coin_type),
+        //         ErrorAccountNotAcceptCoin,
+        //     );
+        //
+        //     let generic_coin = coin::convert_coin_to_generic_coin(coin);
+        //     let multi_coin_store = create_or_borrow_mut_multi_coin_store(addr);
+        //     let generic_coin = multi_coin_store::deposit_internal(multi_coin_store, generic_coin);
+        // } else {
+        //     assert!(
+        //         is_accept_coin<CoinType>(addr),
+        //         ErrorAccountNotAcceptCoin,
+        //     );
+        //     let coin_store = create_or_borrow_mut_account_coin_store<CoinType>(addr);
+        //     coin_store::deposit_internal<CoinType>(coin_store, coin)
+        // }
     }
 
     fun transfer_internal<CoinType: key>(
@@ -389,6 +458,16 @@ module rooch_framework::account_coin_store {
             multi_coin_store::create_multi_coin_store(addr);
         };
         multi_coin_store::borrow_mut_coin_store_internal(multi_coin_store_id)
+    }
+
+    fun balance_of_by_type_name(addr: address, coin_type: string::String): u256 {
+        let multi_coin_store_balance = if (exist_multi_coin_store(addr)) {
+            let coin_store = borrow_multi_coin_store(addr);
+            multi_coin_store::balance(coin_store, coin_type)
+        } else {
+            0u256
+        };
+        multi_coin_store_balance
     }
 
     fun withdraw_internal_by_type_name(
