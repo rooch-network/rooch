@@ -222,7 +222,7 @@ impl ExecCommand {
             }
         });
 
-        let mut exec_inner = self.build_exec_inner(shutdown_rx.clone()).await?;
+        let exec_inner = self.build_exec_inner(shutdown_rx.clone()).await?;
         exec_inner.run(shutdown_rx).await?;
 
         let _ = shutdown_tx.send(());
@@ -402,7 +402,7 @@ impl ExecInner {
         }
     }
 
-    async fn run(&mut self, shutdown_signal: watch::Receiver<()>) -> anyhow::Result<()> {
+    async fn run(&self, shutdown_signal: watch::Receiver<()>) -> anyhow::Result<()> {
         self.start_logging_task(shutdown_signal.clone());
 
         // larger buffer size to avoid rx starving caused by consumer has to access disks and request btc block.
@@ -667,6 +667,9 @@ impl ExecInner {
         let mut hist_l1tx = Histogram::<u64>::new_with_bounds(256, 1 << 30, 3)?;
         let mut hist_l2tx = Histogram::<u64>::new_with_bounds(256, 1 << 30, 3)?;
 
+        // for auto b-search first mismatched tx_order as start point
+        let mut last_eq_tx_order = None;
+
         loop {
             let exec_msg_opt = rx.recv().await;
             if exec_msg_opt.is_none() {
@@ -682,12 +685,14 @@ impl ExecInner {
             };
 
             let elapsed = std::time::Instant::now();
-            self.execute(exec_msg).await.with_context(|| {
-                format!(
-                    "Error occurs: tx_order: {}, executed_tx_order: {}",
-                    tx_order, executed_tx_order
-                )
-            })?;
+            self.execute(exec_msg, &mut last_eq_tx_order)
+                .await
+                .with_context(|| {
+                    format!(
+                        "Error occurs: tx_order: {}, executed_tx_order: {}",
+                        tx_order, executed_tx_order
+                    )
+                })?;
             let tx_cost = elapsed.elapsed().as_micros() as u64;
             interval_cost += tx_cost;
 
@@ -735,7 +740,11 @@ impl ExecInner {
         Ok(())
     }
 
-    async fn execute(&self, msg: ExecMsg) -> anyhow::Result<()> {
+    async fn execute(
+        &self,
+        msg: ExecMsg,
+        last_eq_tx_order: &mut Option<u64>,
+    ) -> anyhow::Result<()> {
         let ExecMsg {
             tx_order,
             mut ledger_tx,
@@ -768,7 +777,7 @@ impl ExecInner {
                 .validate_ledger_transaction(ledger_tx, l1_block_with_body)
                 .await?;
             if let Err(err) = self
-                .execute_moveos_tx(tx_order, moveos_tx, exp_state_root)
+                .execute_moveos_tx(tx_order, moveos_tx, exp_state_root, last_eq_tx_order)
                 .await
             {
                 self.handle_execution_error(err, is_l2_tx, tx_order)?;
@@ -849,6 +858,7 @@ impl ExecInner {
         tx_order: u64,
         moveos_tx: VerifiedMoveOSTransaction,
         exp_state_root_opt: Option<H256>,
+        last_eq_tx_order: &mut Option<u64>,
     ) -> anyhow::Result<()> {
         let executor = self.executor.clone();
 
@@ -865,9 +875,10 @@ impl ExecInner {
                     ));
                 }
                 info!(
-                    "Execution state root is equal to RoochNetwork: tx_order: {}",
-                    tx_order
+                    "Execution state root is equal to RoochNetwork: tx_order: {}; last_eq_tx_order: {:?}",
+                    tx_order, last_eq_tx_order
                 );
+                *last_eq_tx_order = Some(tx_order);
                 Ok(())
             }
             None => Ok(()),
