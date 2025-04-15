@@ -74,9 +74,9 @@ pub struct ExecCommand {
     pub tx_position_path: PathBuf,
     #[clap(
         long = "exp-root",
-        help = "Path to tx_order:state_root:accumulator_root file(results from RoochNetwork), for fast verification avoiding blocking on RPC requests"
+        help = "Path to tx_order:state_root:accumulator_root file(results from RoochNetwork), for caching expected roots avoiding blocking on RPC requests"
     )]
-    pub exp_root_path: Option<PathBuf>,
+    pub exp_root_path: PathBuf,
     #[clap(
         long = "rollback",
         help = "rollback to tx order. If not set or ge executed_tx_order, start from executed_tx_order+1(nothing to do); otherwise, rollback to this order."

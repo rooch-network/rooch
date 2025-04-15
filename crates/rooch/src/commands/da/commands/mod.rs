@@ -545,7 +545,7 @@ struct ExpRootsMap {
 impl TxMetaStore {
     pub(crate) async fn new(
         tx_position_indexer_path: PathBuf,
-        exp_roots_path: Option<PathBuf>,
+        exp_roots_path: PathBuf,
         segment_dir: PathBuf,
         transaction_store: TransactionDBStore,
         rooch_store: RoochStore,
@@ -574,18 +574,12 @@ impl TxMetaStore {
         self.exp_roots.clone()
     }
 
-    fn load_exp_roots(exp_roots_path: Option<PathBuf>) -> anyhow::Result<ExpRootsMap> {
+    fn load_exp_roots(exp_roots_path: PathBuf) -> anyhow::Result<ExpRootsMap> {
         let mut exp_roots = HashMap::new();
-        if exp_roots_path.is_none() {
-            return Ok(ExpRootsMap {
-                exp_root: exp_roots,
-                max_verified_tx_order: 0,
-            });
-        }
 
         let mut max_verified_tx_order = 0;
 
-        let mut reader = BufReader::new(File::open(exp_roots_path.unwrap())?);
+        let mut reader = BufReader::new(File::open(exp_roots_path)?);
         for line in reader.by_ref().lines() {
             let line = line?;
             let parts: Vec<&str> = line.split(':').collect();
