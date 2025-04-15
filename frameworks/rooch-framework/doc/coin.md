@@ -9,7 +9,6 @@ This module provides the foundation for typesafe Coins.
 -  [Struct `Coin`](#0x3_coin_Coin)
 -  [Struct `GenericCoin`](#0x3_coin_GenericCoin)
 -  [Resource `CoinInfo`](#0x3_coin_CoinInfo)
--  [Resource `CoinTypePlaceholder`](#0x3_coin_CoinTypePlaceholder)
 -  [Resource `CoinMetadata`](#0x3_coin_CoinMetadata)
 -  [Resource `CoinRegistry`](#0x3_coin_CoinRegistry)
 -  [Struct `MintEvent`](#0x3_coin_MintEvent)
@@ -55,6 +54,7 @@ This module provides the foundation for typesafe Coins.
 -  [Function `burn_extend`](#0x3_coin_burn_extend)
 -  [Function `unpack`](#0x3_coin_unpack)
 -  [Function `pack`](#0x3_coin_pack)
+-  [Function `convert_coin_to_generic_coin`](#0x3_coin_convert_coin_to_generic_coin)
 -  [Function `check_coin_info_registered_by_type_name`](#0x3_coin_check_coin_info_registered_by_type_name)
 -  [Function `is_registered_by_type_name`](#0x3_coin_is_registered_by_type_name)
 -  [Function `generic_coin_value`](#0x3_coin_generic_coin_value)
@@ -114,18 +114,6 @@ CoinInfo<CoinType> is a named Object, the <code>coin_type</code> is the unique k
 
 
 <pre><code><b>struct</b> <a href="coin.md#0x3_coin_CoinInfo">CoinInfo</a>&lt;CoinType: key&gt; <b>has</b> store, key
-</code></pre>
-
-
-
-<a name="0x3_coin_CoinTypePlaceholder"></a>
-
-## Resource `CoinTypePlaceholder`
-
-Placeholder for the CoinType, used for the generic function.
-
-
-<pre><code><b>struct</b> <a href="coin.md#0x3_coin_CoinTypePlaceholder">CoinTypePlaceholder</a> <b>has</b> key
 </code></pre>
 
 
@@ -836,6 +824,17 @@ This function is only called by the <code>CoinType</code> module, for the develo
 
 
 
+<a name="0x3_coin_convert_coin_to_generic_coin"></a>
+
+## Function `convert_coin_to_generic_coin`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_convert_coin_to_generic_coin">convert_coin_to_generic_coin</a>&lt;CoinType: key&gt;(<a href="coin.md#0x3_coin">coin</a>: <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;): <a href="coin.md#0x3_coin_GenericCoin">coin::GenericCoin</a>
+</code></pre>
+
+
+
 <a name="0x3_coin_check_coin_info_registered_by_type_name"></a>
 
 ## Function `check_coin_info_registered_by_type_name`
@@ -875,7 +874,7 @@ This function is only called by the <code>CoinType</code> module, for the develo
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="coin.md#0x3_coin_unpack_generic_coin">unpack_generic_coin</a>(<a href="coin.md#0x3_coin">coin</a>: <a href="coin.md#0x3_coin_GenericCoin">coin::GenericCoin</a>): <a href="">u256</a>
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="coin.md#0x3_coin_unpack_generic_coin">unpack_generic_coin</a>(<a href="coin.md#0x3_coin">coin</a>: <a href="coin.md#0x3_coin_GenericCoin">coin::GenericCoin</a>): (<a href="_String">string::String</a>, <a href="">u256</a>)
 </code></pre>
 
 

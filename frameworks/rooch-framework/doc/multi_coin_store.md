@@ -22,6 +22,7 @@
 -  [Function `deposit`](#0x3_multi_coin_store_deposit)
 -  [Function `transfer`](#0x3_multi_coin_store_transfer)
 -  [Function `ensure_coin_type_has_key_and_store_ability`](#0x3_multi_coin_store_ensure_coin_type_has_key_and_store_ability)
+-  [Function `freeze_coin_store`](#0x3_multi_coin_store_freeze_coin_store)
 -  [Function `create_multi_coin_store`](#0x3_multi_coin_store_create_multi_coin_store)
 -  [Function `borrow_mut_coin_store_internal`](#0x3_multi_coin_store_borrow_mut_coin_store_internal)
 -  [Function `create_coin_store_field_if_not_exist`](#0x3_multi_coin_store_create_coin_store_field_if_not_exist)
@@ -284,6 +285,18 @@ Coin type should have key and store ability
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="multi_coin_store.md#0x3_multi_coin_store_ensure_coin_type_has_key_and_store_ability">ensure_coin_type_has_key_and_store_ability</a>(coin_type: <a href="_String">string::String</a>)
+</code></pre>
+
+
+
+<a name="0x3_multi_coin_store_freeze_coin_store"></a>
+
+## Function `freeze_coin_store`
+
+Freeze or Unfreeze a CoinStore to prevent withdraw and desposit
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="multi_coin_store.md#0x3_multi_coin_store_freeze_coin_store">freeze_coin_store</a>(coin_store_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="multi_coin_store.md#0x3_multi_coin_store_MultiCoinStore">multi_coin_store::MultiCoinStore</a>&gt;, coin_type: <a href="_String">string::String</a>, frozen: bool)
 </code></pre>
 
 
