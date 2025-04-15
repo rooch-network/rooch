@@ -387,24 +387,32 @@ impl SegmentDownloader {
 }
 
 pub(crate) struct LedgerTxGetter {
+    is_auto_sync: bool,
     segment_dir: PathBuf,
     chunks: Arc<RwLock<HashMap<u128, Vec<u64>>>>,
     client: Option<Client>,
     exp_roots: Arc<RwLock<HashMap<u64, H256>>>,
     max_chunk_id: u128,
+    tx_anomalies: Option<TxAnomalies>,
 }
 
 impl LedgerTxGetter {
-    pub(crate) fn new(segment_dir: PathBuf, allow_empty: bool) -> anyhow::Result<Self> {
+    pub(crate) fn new(
+        segment_dir: PathBuf,
+        allow_empty: bool,
+        tx_anomalies: Option<TxAnomalies>,
+    ) -> anyhow::Result<Self> {
         let (chunks, _min_chunk_id, max_chunk_id) =
             collect_chunks(segment_dir.clone(), allow_empty)?;
 
         Ok(LedgerTxGetter {
+            is_auto_sync: false,
             segment_dir,
             chunks: Arc::new(RwLock::new(chunks)),
             client: None,
             exp_roots: Arc::new(RwLock::new(HashMap::new())),
             max_chunk_id,
+            tx_anomalies,
         })
     }
 
@@ -414,6 +422,7 @@ impl LedgerTxGetter {
         client: Client,
         exp_roots: Arc<RwLock<HashMap<u64, H256>>>,
         shutdown_signal: watch::Receiver<()>,
+        tx_anomalies: Option<TxAnomalies>,
     ) -> anyhow::Result<Self> {
         let (chunks, _min_chunk_id, max_chunk_id) = collect_chunks(segment_dir.clone(), true)?;
 
@@ -427,11 +436,13 @@ impl LedgerTxGetter {
         )?;
         downloader.run_in_background(shutdown_signal)?;
         Ok(LedgerTxGetter {
+            is_auto_sync: true,
             segment_dir,
             chunks: chunks_to_sync,
             client: Some(client),
             exp_roots,
             max_chunk_id,
+            tx_anomalies,
         })
     }
 
@@ -466,11 +477,11 @@ impl LedgerTxGetter {
                 },
             )?;
         if let Some(tx_list) = tx_list_opt {
-            if let Some(client) = &self.client {
+            if self.is_auto_sync {
                 let mut last_tx = tx_list.last().unwrap().clone();
                 let tx_order = last_tx.sequence_info.tx_order;
                 let last_tx_hash = last_tx.tx_hash();
-                self.fetch_exp_root(tx_order, last_tx_hash, client).await?;
+                self.fetch_exp_root(tx_order, last_tx_hash).await?;
             }
             Ok(Some(tx_list))
         } else {
@@ -478,20 +489,24 @@ impl LedgerTxGetter {
         }
     }
 
-    async fn fetch_exp_root(
-        &self,
-        tx_order: u64,
-        tx_hash: H256,
-        client: &Client,
-    ) -> anyhow::Result<()> {
+    pub(crate) async fn fetch_exp_root(&self, tx_order: u64, tx_hash: H256) -> anyhow::Result<()> {
+        if self.client.is_none() {
+            return Err(anyhow!(
+                "Auto sync is enabled, but client is not set. Please set client first."
+            ));
+        }
+        let client = self.client.as_ref().unwrap();
+
         let exp_roots = self.exp_roots.clone();
 
         let resp = client.rooch.get_transactions_by_hash(vec![tx_hash]).await?;
-        let tx_info = resp
-            .into_iter()
-            .next()
-            .flatten()
-            .ok_or_else(|| anyhow!("No transaction info found for tx: {:?}", tx_hash))?;
+        let tx_info = resp.into_iter().next().flatten().ok_or_else(|| {
+            anyhow!(
+                "No transaction info found by RPC. tx_order: {}, tx_hash: {:?}",
+                tx_order,
+                tx_hash
+            )
+        })?;
         let tx_order_in_resp = tx_info.transaction.sequence_info.tx_order.0;
         if tx_order_in_resp != tx_order {
             return Err(anyhow!(
@@ -501,11 +516,18 @@ impl LedgerTxGetter {
             ));
         } else {
             let execution_info_opt = tx_info.execution_info;
-            // some txs may not be executed for genesis_namespace: 527d69c3
             if let Some(execution_info) = execution_info_opt {
                 let tx_state_root = execution_info.state_root.0;
                 let mut exp_roots = exp_roots.write().await;
                 exp_roots.insert(tx_order, tx_state_root);
+            } else if let Some(tx_anomalies) = self.tx_anomalies.as_ref() {
+                if !tx_anomalies.has_no_execution_info(&tx_hash) {
+                    return Err(anyhow!(
+                        "No state_root found by PRC. tx_order: {}, tx_hash: {:?}",
+                        tx_order,
+                        tx_hash
+                    ));
+                }
             }
         }
         Ok(())
@@ -938,7 +960,7 @@ impl TxPositionIndexer {
         max_block_number: Option<u128>,
     ) -> anyhow::Result<()> {
         let segment_dir = segment_dir.ok_or_else(|| anyhow!("segment_dir is required"))?;
-        let ledger_tx_loader = LedgerTxGetter::new(segment_dir, true)?;
+        let ledger_tx_loader = LedgerTxGetter::new(segment_dir, true, None)?;
         let stop_at = if let Some(max_block_number) = max_block_number {
             min(max_block_number, ledger_tx_loader.get_max_chunk_id())
         } else {

@@ -287,9 +287,10 @@ impl ExecCommand {
                 client,
                 exp_roots,
                 shutdown_signal,
+                tx_anomalies.clone(),
             )?
         } else {
-            LedgerTxGetter::new(self.segment_dir.clone(), false)?
+            LedgerTxGetter::new(self.segment_dir.clone(), false, tx_anomalies.clone())?
         };
         info!(
             "auto sync ledger tx getter is: {} with mode: {:?}",

@@ -47,7 +47,7 @@ impl RepairCommand {
         let sequencer_keypair =
             get_sequencer_keypair(self.context_options, self.sequencer_account)?;
         let segment_dir = self.segment_dir;
-        let ledger_tx_loader = LedgerTxGetter::new(segment_dir, false)?;
+        let ledger_tx_loader = LedgerTxGetter::new(segment_dir, false, None)?;
         let (_root, rooch_db, _start_time) = open_rooch_db(self.base_data_dir, self.chain_id);
         let rooch_store = rooch_db.rooch_store.clone();
         let tx_list = ledger_tx_loader
