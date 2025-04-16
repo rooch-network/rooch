@@ -307,4 +307,12 @@ module rooch_framework::coin_store {
             value
         }
     }
+
+    #[test_only]
+    public fun freeze_coin_store_for_test<CoinType: key>(
+        coin_store_obj: &mut Object<CoinStore<CoinType>>,
+        frozen: bool,
+    ) {
+        freeze_coin_store_internal(coin_store_obj, frozen)
+    }
 }
