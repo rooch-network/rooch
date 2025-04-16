@@ -23,6 +23,7 @@
 -  [Function `withdraw_extend`](#0x3_account_coin_store_withdraw_extend)
 -  [Function `deposit_extend`](#0x3_account_coin_store_deposit_extend)
 -  [Function `transfer_extend`](#0x3_account_coin_store_transfer_extend)
+-  [Function `freeze_extend`](#0x3_account_coin_store_freeze_extend)
 -  [Function `accept_coin_entry`](#0x3_account_coin_store_accept_coin_entry)
 -  [Function `enable_auto_accept_coin_entry`](#0x3_account_coin_store_enable_auto_accept_coin_entry)
 -  [Function `disable_auto_accept_coin_entry`](#0x3_account_coin_store_disable_auto_accept_coin_entry)
@@ -34,6 +35,7 @@
 -  [Function `deposit_by_type_name`](#0x3_account_coin_store_deposit_by_type_name)
 -  [Function `transfer_by_type_name`](#0x3_account_coin_store_transfer_by_type_name)
 -  [Function `exist_multi_coin_store`](#0x3_account_coin_store_exist_multi_coin_store)
+-  [Function `exist_multi_coin_store_field`](#0x3_account_coin_store_exist_multi_coin_store_field)
 -  [Function `is_multi_coin_store_frozen_by_type_name`](#0x3_account_coin_store_is_multi_coin_store_frozen_by_type_name)
 -  [Function `accept_coin_entry_by_type_name`](#0x3_account_coin_store_accept_coin_entry_by_type_name)
 
@@ -301,6 +303,21 @@ This function is only called by the <code>CoinType</code> module, for the develo
 
 
 
+<a name="0x3_account_coin_store_freeze_extend"></a>
+
+## Function `freeze_extend`
+
+Freeze or Unfreeze a CoinStore to prevent withdraw and desposit
+This function is for he <code>CoinType</code> module to extend,
+Only the <code>CoinType</code> module can freeze or unfreeze a CoinStore by the coin store id
+
+
+<pre><code>#[private_generics(#[CoinType])]
+<b>public</b> <b>fun</b> <a href="account_coin_store.md#0x3_account_coin_store_freeze_extend">freeze_extend</a>&lt;CoinType: key&gt;(addr: <b>address</b>, frozen: bool)
+</code></pre>
+
+
+
 <a name="0x3_account_coin_store_accept_coin_entry"></a>
 
 ## Function `accept_coin_entry`
@@ -368,7 +385,7 @@ The script function is reenterable.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account_coin_store.md#0x3_account_coin_store_is_accept_coin_by_type_name">is_accept_coin_by_type_name</a>(addr: <b>address</b>, _coin_type: <a href="_String">string::String</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="account_coin_store.md#0x3_account_coin_store_is_accept_coin_by_type_name">is_accept_coin_by_type_name</a>(addr: <b>address</b>, coin_type: <a href="_String">string::String</a>): bool
 </code></pre>
 
 
@@ -377,8 +394,6 @@ The script function is reenterable.
 
 ## Function `do_accept_coin_by_type_name`
 
-Add a balance of coin type to the sending account.
-If user turns off AutoAcceptCoin, call this method to receive the corresponding Coin
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="account_coin_store.md#0x3_account_coin_store_do_accept_coin_by_type_name">do_accept_coin_by_type_name</a>(<a href="">account</a>: &<a href="">signer</a>, coin_type: <a href="_String">string::String</a>)
@@ -426,6 +441,17 @@ If user turns off AutoAcceptCoin, call this method to receive the corresponding 
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="account_coin_store.md#0x3_account_coin_store_exist_multi_coin_store">exist_multi_coin_store</a>(addr: <b>address</b>): bool
+</code></pre>
+
+
+
+<a name="0x3_account_coin_store_exist_multi_coin_store_field"></a>
+
+## Function `exist_multi_coin_store_field`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="account_coin_store.md#0x3_account_coin_store_exist_multi_coin_store_field">exist_multi_coin_store_field</a>(addr: <b>address</b>, coin_type: <a href="_String">string::String</a>): bool
 </code></pre>
 
 
