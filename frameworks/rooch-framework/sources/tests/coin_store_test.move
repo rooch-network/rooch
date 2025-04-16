@@ -19,7 +19,6 @@ module rooch_framework::coin_store_test{
 
     #[test_only]
     fun register_fake_coin(
-        
         decimals: u8,
     ) : Object<CoinInfo<FakeCoin>> {
         coin::register_extend<FakeCoin>(
@@ -38,13 +37,10 @@ module rooch_framework::coin_store_test{
 
     #[test_only]
     fun freeze_account_coin_store(
-        
         addr: address,
         frozen: bool,
     ) {
-        let coin_store_id = account_coin_store::account_coin_store_id<FakeCoin>(addr);
-        let coin_store_obj = coin_store::borrow_mut_coin_store_extend<FakeCoin>(coin_store_id);
-        coin_store::freeze_coin_store_extend<FakeCoin>(coin_store_obj, frozen);
+        account_coin_store::freeze_extend<FakeCoin>(addr, frozen);
     }
 
     #[test]
@@ -100,7 +96,7 @@ module rooch_framework::coin_store_test{
     }
 
     #[test(account = @0x42)]
-    #[expected_failure(abort_code = 2, location = rooch_framework::coin_store)]
+    #[expected_failure(abort_code = 2, location = rooch_framework::multi_coin_store)]
     fun test_withdraw_from_account_frozen(account: signer) {
         rooch_framework::genesis::init_for_test();
         let account_addr = signer::address_of(&account);
@@ -116,7 +112,7 @@ module rooch_framework::coin_store_test{
     }
 
     #[test(account = @0x42)]
-    #[expected_failure(abort_code = 2, location = rooch_framework::coin_store)]
+    #[expected_failure(abort_code = 2, location = rooch_framework::multi_coin_store)]
     fun test_deposit_to_account_frozen(account: signer) {
         rooch_framework::genesis::init_for_test();
         let account_addr = signer::address_of(&account);

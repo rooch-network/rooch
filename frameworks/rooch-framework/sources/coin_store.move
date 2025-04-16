@@ -188,15 +188,7 @@ module rooch_framework::coin_store {
         coin_store_obj: &mut Object<CoinStore<CoinType>>,
         frozen: bool,
     ) {
-        let coin_store_id = object::id(coin_store_obj);
-        let coin_store = object::borrow_mut(coin_store_obj);
-        coin_store.frozen = frozen;
-        let coin_type = type_info::type_name<CoinType>();
-        event::emit(FreezeEvent {
-            coin_store_id,
-            coin_type,
-            frozen,
-        });
+        freeze_coin_store_internal(coin_store_obj, frozen)
     }
 
     // Internal functions
@@ -287,6 +279,21 @@ module rooch_framework::coin_store {
             coin_store_id: object_id,
             coin_type,
             amount,
+        });
+    }
+
+    public(friend) fun freeze_coin_store_internal<CoinType: key>(
+        coin_store_obj: &mut Object<CoinStore<CoinType>>,
+        frozen: bool,
+    ) {
+        let coin_store_id = object::id(coin_store_obj);
+        let coin_store = object::borrow_mut(coin_store_obj);
+        coin_store.frozen = frozen;
+        let coin_type = type_info::type_name<CoinType>();
+        event::emit(FreezeEvent {
+            coin_store_id,
+            coin_type,
+            frozen,
         });
     }
 

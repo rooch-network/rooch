@@ -30,6 +30,7 @@
 -  [Function `borrow_mut_coin_store_internal`](#0x3_coin_store_borrow_mut_coin_store_internal)
 -  [Function `withdraw_internal`](#0x3_coin_store_withdraw_internal)
 -  [Function `deposit_internal`](#0x3_coin_store_deposit_internal)
+-  [Function `freeze_coin_store_internal`](#0x3_coin_store_freeze_coin_store_internal)
 -  [Function `unpack_balance`](#0x3_coin_store_unpack_balance)
 -  [Function `pack_balance`](#0x3_coin_store_pack_balance)
 
@@ -389,6 +390,17 @@ Deposit <code>amount</code> Coin<CoinType> to the balance of the passed-in <code
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="coin_store.md#0x3_coin_store_deposit_internal">deposit_internal</a>&lt;CoinType: key&gt;(coin_store_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">coin_store::CoinStore</a>&lt;CoinType&gt;&gt;, <a href="coin.md#0x3_coin">coin</a>: <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;)
+</code></pre>
+
+
+
+<a name="0x3_coin_store_freeze_coin_store_internal"></a>
+
+## Function `freeze_coin_store_internal`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="coin_store.md#0x3_coin_store_freeze_coin_store_internal">freeze_coin_store_internal</a>&lt;CoinType: key&gt;(coin_store_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">coin_store::CoinStore</a>&lt;CoinType&gt;&gt;, frozen: bool)
 </code></pre>
 
 
