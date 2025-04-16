@@ -377,40 +377,7 @@ module rooch_framework::coin {
         icon_url: Option<string::String>,
         decimals: u8,
     ): Object<CoinInfo<CoinType>> {
-        assert!(
-            !is_registered<CoinType>(),
-            ErrorCoinInfoAlreadyRegistered,
-        );
-
-        let coin_type = type_info::type_name<CoinType>();
-
-        assert!(string::length(&name) <= MAX_COIN_NAME_LENGTH, ErrorCoinNameTooLong);
-        assert!(string::length(&symbol) <= MAX_COIN_SYMBOL_LENGTH, ErrorCoinSymbolTooLong);
-
-        let coin_info = CoinInfo<CoinType> {
-            coin_type,
-            name,
-            symbol,
-            icon_url,
-            decimals,
-            supply: 0u256,
-        };
-        let coin_info_obj = object::new_named_object(coin_info);
-        let coin_info_id = object::id(&coin_info_obj);
-
-        let coin_metadata = CoinMetadata {
-            coin_info_id,
-            coin_type,
-            name,
-            symbol,
-            icon_url,
-            decimals,
-            supply: 0u256,
-        };
-        let coin_registry = borrow_mut_registry();
-        object::add_field(coin_registry, coin_type, coin_metadata);
-
-        coin_info_obj
+        register_internal<CoinType>(name, symbol, icon_url, decimals)
     }
 
     /// This function for the old code to initialize the CoinMetadata
@@ -449,6 +416,48 @@ module rooch_framework::coin {
     //
     // Internal functions
     //
+
+    fun register_internal<CoinType: key>(
+        name: string::String,
+        symbol: string::String,
+        icon_url: Option<string::String>,
+        decimals: u8,
+    ): Object<CoinInfo<CoinType>> {
+        assert!(
+            !is_registered<CoinType>(),
+            ErrorCoinInfoAlreadyRegistered,
+        );
+
+        let coin_type = type_info::type_name<CoinType>();
+
+        assert!(string::length(&name) <= MAX_COIN_NAME_LENGTH, ErrorCoinNameTooLong);
+        assert!(string::length(&symbol) <= MAX_COIN_SYMBOL_LENGTH, ErrorCoinSymbolTooLong);
+
+        let coin_info = CoinInfo<CoinType> {
+            coin_type,
+            name,
+            symbol,
+            icon_url,
+            decimals,
+            supply: 0u256,
+        };
+        let coin_info_obj = object::new_named_object(coin_info);
+        let coin_info_id = object::id(&coin_info_obj);
+
+        let coin_metadata = CoinMetadata {
+            coin_info_id,
+            coin_type,
+            name,
+            symbol,
+            icon_url,
+            decimals,
+            supply: 0u256,
+        };
+        let coin_registry = borrow_mut_registry();
+        object::add_field(coin_registry, coin_type, coin_metadata);
+
+        coin_info_obj
+    }
 
     fun mint_internal<CoinType: key>(coin_info_obj: &mut Object<CoinInfo<CoinType>>, amount: u256): Coin<CoinType> {
         let coin_type = type_info::type_name<CoinType>();
@@ -604,18 +613,28 @@ module rooch_framework::coin {
         coin.coin_type
     }
 
-    // #[test_only]
-    // public fun unpack_for_test<CoinType: key>(coin: Coin<CoinType>): u256 {
-    //     unpack(coin)
-    // }
-    //
-    // #[test_only]
-    // public fun pack_generic_coin_for_test(coin_type: string::String, value: u256): GenericCoin {
-    //     pack_generic_coin(coin_type, value)
-    // }
+    #[test_only]
+    public fun pack_for_test<CoinType: key>(value: u256): Coin<CoinType> {
+        pack<CoinType>(value)
+    }
+
+    #[test_only]
+    public fun unpack_for_test<CoinType: key>(coin: Coin<CoinType>): u256 {
+        unpack(coin)
+    }
 
     #[test_only]
     public fun unpack_generic_coin_for_test(coin: GenericCoin): (string::String, u256) {
         unpack_generic_coin(coin)
+    }
+
+    #[test_only]
+    public fun register_for_test<CoinType: key>(
+        name: string::String,
+        symbol: string::String,
+        icon_url: Option<string::String>,
+        decimals: u8,
+    ): Object<CoinInfo<CoinType>> {
+        register_internal<CoinType>(name, symbol, icon_url, decimals)
     }
 }
