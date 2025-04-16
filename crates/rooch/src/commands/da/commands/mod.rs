@@ -451,6 +451,10 @@ impl ExpRoots {
         })
     }
 
+    pub(crate) async fn contains(&self, tx_order: u64) -> bool {
+        self.inner.read().await.exp_roots.contains_key(&tx_order)
+    }
+
     /// Insert a new exp root for the given tx_order
     /// Updates both the in-memory map and the file
     pub(crate) async fn insert(&self, tx_order: u64, state_root: H256) -> anyhow::Result<()> {
@@ -588,9 +592,14 @@ impl LedgerTxGetter {
                 "Auto sync is enabled, but client is not set. Please set client first."
             ));
         }
-        let client = self.client.as_ref().unwrap();
 
         let exp_roots = self.exp_roots.clone().unwrap();
+
+        if exp_roots.contains(tx_order).await {
+            return Ok(()); // already has the exp root
+        }
+
+        let client = self.client.as_ref().unwrap();
 
         let resp = client.rooch.get_transactions_by_hash(vec![tx_hash]).await?;
         let tx_info = resp.into_iter().next().flatten().ok_or_else(|| {
