@@ -278,7 +278,7 @@ impl ExecCommand {
         )
         .await?;
 
-        let exp_roots = tx_meta_store.get_exp_roots_map();
+        let exp_roots = tx_meta_store.get_exp_roots();
         let client = self.context_options.build()?.get_client().await?;
         let ledger_tx_loader = if self.mode.need_sync() {
             LedgerTxGetter::new_with_auto_sync(
@@ -867,9 +867,9 @@ impl ExecInner {
             Some(expected_root) => {
                 if root.state_root.unwrap() != expected_root {
                     return Err(anyhow::anyhow!(
-                        "Execution state root is not equal to RoochNetwork: tx_order: {}, exp: {:?}, act: {:?}; act_execution_info: {:?}",
+                        "Execution state root is not equal to RoochNetwork: tx_order: {}, exp: {:?}, act: {:?}; act_execution_info: {:?}. Please rollback to last_eq_tx_order: {:?}",
                         tx_order,
-                        expected_root, root.state_root.unwrap(), execution_info
+                        expected_root, root.state_root.unwrap(), execution_info, last_eq_tx_order
                     ));
                 }
                 info!(

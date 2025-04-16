@@ -29,7 +29,7 @@ use serde::{Deserialize, Serialize};
 use std::cmp::min;
 use std::collections::HashMap;
 use std::fs;
-use std::fs::File;
+use std::fs::{File, OpenOptions};
 use std::io::{BufRead, BufReader, BufWriter, Read, Write};
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -386,12 +386,105 @@ impl SegmentDownloader {
     }
 }
 
+pub(crate) struct ExpRoots {
+    inner: Arc<RwLock<ExpRootsInner>>,
+}
+
+impl Clone for ExpRoots {
+    fn clone(&self) -> Self {
+        ExpRoots {
+            inner: Arc::clone(&self.inner),
+        }
+    }
+}
+
+struct ExpRootsInner {
+    exp_roots: HashMap<u64, H256>,
+    exp_roots_file: File,
+    max_tx_order: u64,
+}
+
+impl ExpRoots {
+    pub(crate) async fn get_max_tx_order(&self) -> u64 {
+        self.inner.read().await.max_tx_order
+    }
+
+    pub(crate) async fn new(exp_roots_path: PathBuf) -> anyhow::Result<Self> {
+        let mut exp_roots = HashMap::new();
+        let file: File;
+        let mut max_tx_order = 0;
+
+        if exp_roots_path.exists() {
+            let mut reader = BufReader::new(File::open(&exp_roots_path)?);
+            for line in reader.by_ref().lines() {
+                let line = line?;
+                let parts: Vec<&str> = line.split(':').collect();
+                let tx_order = parts[0].parse::<u64>()?;
+                let state_root_raw = parts[1];
+                if state_root_raw == "null" {
+                    continue;
+                }
+                let state_root = H256::from_str(state_root_raw)?;
+                exp_roots.insert(tx_order, state_root);
+
+                if tx_order > max_tx_order {
+                    max_tx_order = tx_order;
+                }
+            }
+            file = File::options()
+                .append(true)
+                .create(true)
+                .open(&exp_roots_path)?;
+        } else {
+            file = OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(&exp_roots_path)?;
+        }
+
+        Ok(ExpRoots {
+            inner: Arc::new(RwLock::new(ExpRootsInner {
+                exp_roots,
+                exp_roots_file: file,
+                max_tx_order,
+            })),
+        })
+    }
+
+    /// Insert a new exp root for the given tx_order
+    /// Updates both the in-memory map and the file
+    pub(crate) async fn insert(&self, tx_order: u64, state_root: H256) -> anyhow::Result<()> {
+        let mut inner = self.inner.write().await;
+
+        // Update in-memory map
+        inner.exp_roots.insert(tx_order, state_root);
+
+        // Update max_tx_order if necessary
+        if tx_order > inner.max_tx_order {
+            inner.max_tx_order = tx_order;
+        }
+
+        // Update file
+        let entry = format!("{}:{:?}\n", tx_order, state_root);
+        inner.exp_roots_file.write_all(entry.as_bytes())?;
+        inner.exp_roots_file.flush()?;
+
+        Ok(())
+    }
+
+    /// Get the exp root for the given tx_order
+    /// Returns None if no exp root exists for the tx_order
+    pub(crate) async fn get(&self, tx_order: u64) -> Option<H256> {
+        self.inner.read().await.exp_roots.get(&tx_order).copied()
+    }
+}
+
 pub(crate) struct LedgerTxGetter {
     is_auto_sync: bool,
     segment_dir: PathBuf,
     chunks: Arc<RwLock<HashMap<u128, Vec<u64>>>>,
     client: Option<Client>,
-    exp_roots: Arc<RwLock<HashMap<u64, H256>>>,
+    exp_roots: Option<ExpRoots>,
     max_chunk_id: u128,
     tx_anomalies: Option<TxAnomalies>,
 }
@@ -410,7 +503,7 @@ impl LedgerTxGetter {
             segment_dir,
             chunks: Arc::new(RwLock::new(chunks)),
             client: None,
-            exp_roots: Arc::new(RwLock::new(HashMap::new())),
+            exp_roots: None,
             max_chunk_id,
             tx_anomalies,
         })
@@ -420,7 +513,7 @@ impl LedgerTxGetter {
         open_da_path: String,
         segment_dir: PathBuf,
         client: Client,
-        exp_roots: Arc<RwLock<HashMap<u64, H256>>>,
+        exp_roots: ExpRoots,
         shutdown_signal: watch::Receiver<()>,
         tx_anomalies: Option<TxAnomalies>,
     ) -> anyhow::Result<Self> {
@@ -440,7 +533,7 @@ impl LedgerTxGetter {
             segment_dir,
             chunks: chunks_to_sync,
             client: Some(client),
-            exp_roots,
+            exp_roots: Some(exp_roots),
             max_chunk_id,
             tx_anomalies,
         })
@@ -497,7 +590,7 @@ impl LedgerTxGetter {
         }
         let client = self.client.as_ref().unwrap();
 
-        let exp_roots = self.exp_roots.clone();
+        let exp_roots = self.exp_roots.clone().unwrap();
 
         let resp = client.rooch.get_transactions_by_hash(vec![tx_hash]).await?;
         let tx_info = resp.into_iter().next().flatten().ok_or_else(|| {
@@ -518,8 +611,7 @@ impl LedgerTxGetter {
             let execution_info_opt = tx_info.execution_info;
             if let Some(execution_info) = execution_info_opt {
                 let tx_state_root = execution_info.state_root.0;
-                let mut exp_roots = exp_roots.write().await;
-                exp_roots.insert(tx_order, tx_state_root);
+                exp_roots.insert(tx_order, tx_state_root).await?;
             } else if let Some(tx_anomalies) = self.tx_anomalies.as_ref() {
                 if !tx_anomalies.has_no_execution_info(&tx_hash) {
                     return Err(anyhow!(
@@ -541,15 +633,10 @@ impl LedgerTxGetter {
 
 pub(crate) struct TxMetaStore {
     tx_position_indexer: TxPositionIndexer,
-    exp_roots: Arc<RwLock<HashMap<u64, H256>>>, // tx_order -> (state_root, accumulator_root)
-    max_verified_tx_order: u64,
+    exp_roots: ExpRoots, // tx_order -> (state_root, accumulator_root)
+    max_exp_tx_order_from_file: u64,
     transaction_store: TransactionDBStore,
     rooch_store: RoochStore,
-}
-
-struct ExpRootsMap {
-    exp_root: HashMap<u64, H256>,
-    max_verified_tx_order: u64,
 }
 
 impl TxMetaStore {
@@ -568,54 +655,28 @@ impl TxMetaStore {
             max_block_number,
         )
         .await?;
-        let exp_roots_map = Self::load_exp_roots(exp_roots_path)?;
-        let max_verified_tx_order = exp_roots_map.max_verified_tx_order;
+        let exp_roots = ExpRoots::new(exp_roots_path).await?;
+        let max_exp_tx_order_from_file = exp_roots.get_max_tx_order().await;
 
         Ok(TxMetaStore {
             tx_position_indexer,
-            exp_roots: Arc::new(RwLock::new(exp_roots_map.exp_root)),
-            max_verified_tx_order,
+            exp_roots,
+            max_exp_tx_order_from_file,
             transaction_store,
             rooch_store,
         })
     }
 
-    pub(crate) fn get_exp_roots_map(&self) -> Arc<RwLock<HashMap<u64, H256>>> {
+    pub(crate) fn get_exp_roots(&self) -> ExpRoots {
         self.exp_roots.clone()
     }
 
-    fn load_exp_roots(exp_roots_path: PathBuf) -> anyhow::Result<ExpRootsMap> {
-        let mut exp_roots = HashMap::new();
-
-        let mut max_verified_tx_order = 0;
-
-        let mut reader = BufReader::new(File::open(exp_roots_path)?);
-        for line in reader.by_ref().lines() {
-            let line = line?;
-            let parts: Vec<&str> = line.split(':').collect();
-            let tx_order = parts[0].parse::<u64>()?;
-            let state_root_raw = parts[1];
-            if state_root_raw == "null" {
-                continue;
-            }
-            let state_root = H256::from_str(state_root_raw)?;
-            exp_roots.insert(tx_order, state_root);
-            if tx_order > max_verified_tx_order {
-                max_verified_tx_order = tx_order;
-            }
-        }
-        Ok(ExpRootsMap {
-            exp_root: exp_roots,
-            max_verified_tx_order,
-        })
-    }
-
     pub(crate) async fn get_exp_state_root(&self, tx_order: u64) -> Option<H256> {
-        self.exp_roots.read().await.get(&tx_order).cloned()
+        self.exp_roots.get(tx_order).await
     }
 
     pub(crate) fn get_max_verified_tx_order(&self) -> u64 {
-        self.max_verified_tx_order
+        self.max_exp_tx_order_from_file
     }
 
     pub(crate) fn get_tx_hash(&self, tx_order: u64) -> Option<H256> {
