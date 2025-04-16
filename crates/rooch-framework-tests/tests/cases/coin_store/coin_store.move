@@ -20,15 +20,16 @@ script {
 //# run rooch_framework::gas_coin::faucet_entry --signers test --args u256:100000000000
 
 //Transfer via coin store
-//# run --signers test --args object:0x562409111a2ca55814e56eb42186470c4adda4a04a4a84140690f4d68e8e1c06
+// # run --signers test --args object:0x562409111a2ca55814e56eb42186470c4adda4a04a4a84140690f4d68e8e1c06
 script {
     use moveos_std::object::{Object};
     
-    use rooch_framework::coin_store::{Self, CoinStore};
-    use rooch_framework::gas_coin::{Self, RGas};
+    use rooch_framework::gas_coin::{Self};
+    use rooch_framework::account_coin_store;
 
-    fun main(coin_store: &mut Object<CoinStore<RGas>>) {
-        let gas_coin = coin_store::withdraw(coin_store, 100);
+    // After compatible with the multi coin store, auto store coin to multi coin store, not coin store.
+    fun main(sender: &signer) {
+        let gas_coin = account_coin_store::withdraw(sender, 100);
         gas_coin::burn(gas_coin);
     }
 }
