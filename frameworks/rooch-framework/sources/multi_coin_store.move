@@ -12,6 +12,7 @@ module rooch_framework::multi_coin_store {
     use rooch_framework::coin::{Self, GenericCoin};
 
     friend rooch_framework::account_coin_store;
+    friend rooch_framework::coin_migration;
 
     // Error codes
 
