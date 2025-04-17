@@ -13,6 +13,7 @@ module rooch_framework::coin_store {
 
     friend rooch_framework::account_coin_store;
     friend rooch_framework::multi_coin_store;
+    friend rooch_framework::coin_migration;
 
     // Error codes
 
