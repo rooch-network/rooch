@@ -27,6 +27,7 @@ module nostr::inner {
     const ErrorKindOutOfRange: u64 = 1002;
 
     // TODO: TagIndex for the internal data struct from a-z to A-Z
+    // TODO: SimpleMultiMap<String, String> can't be applied to inner struct
     // #[data_struct]
     // struct TagIndex has key, copy, drop {
     //     alphabet: SimpleMultiMap<String, String>
