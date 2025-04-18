@@ -102,9 +102,10 @@ fn setup_test_storage<'a>(
 
 /// Print the updates to storage represented by `cs` in the context of the starting storage state
 /// `storage`.
+#[allow(unused)]
 fn print_resources_and_extensions(
     cs: &ChangeSet,
-    extensions: NativeContextExtensions,
+    extensions: &mut NativeContextExtensions,
     storage: &InMemoryStorage,
 ) -> Result<String> {
     use std::fmt::Write;
@@ -330,16 +331,20 @@ impl SharedTestingConfig {
 
             let save_session_state = || {
                 if self.save_storage_state_on_failure {
-                    cs_result.ok().and_then(|changeset| {
-                        ext_result.ok().and_then(|extensions| {
-                            print_resources_and_extensions(
-                                &changeset,
-                                extensions,
-                                &self.starting_storage_state,
-                            )
-                            .ok()
-                        })
-                    })
+                    //Do nothing, because we don't save the state in changeset,
+                    //we need to get the changeset from ObjectRuntime,
+                    //TODO provide a hook to save the state
+                    // cs_result.ok().and_then(|changeset| {
+                    //     ext_result.ok().and_then(|mut extensions| {
+                    //         print_resources_and_extensions(
+                    //             &changeset,
+                    //             &mut extensions,
+                    //             &self.starting_storage_state,
+                    //         )
+                    //         .ok()
+                    //     })
+                    // })
+                    None
                 } else {
                     None
                 }
@@ -443,6 +448,7 @@ impl SharedTestingConfig {
                     }
                 }
             }
+            extensions::run_after_execution_hook(ext_result.unwrap());
         }
 
         stats
