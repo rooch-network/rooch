@@ -5,17 +5,11 @@
 /// There's no relay as handlers deal with all client messages and redirect them to third party applications using http/https proxies.
 module nostr::handlers {
     use std::string::{Self, String};
-    use std::option;
-    use std::u256;
-    use std::vector;
     use moveos_std::bcs;
     use moveos_std::json;
-    use moveos_std::object::{Self, ObjectID};
+    use moveos_std::object;
     use moveos_std::simple_map::{Self, SimpleMap};
     use moveos_std::simple_multimap::{Self, SimpleMultiMap};
-    use moveos_std::account;
-    use rooch_framework::account_coin_store;
-    use rooch_framework::gas_coin::RGas;
     use nostr::event::{Self, Event};
     use nostr::inner::{Self, Tags};
     use nostr::requests;
@@ -73,7 +67,7 @@ module nostr::handlers {
         let pubkey_str = string::utf8(pubkey);
         let sig_str = string::utf8(sig);
         let event_request = requests::new_event_request(id_str, pubkey_str, created_at, kind, tags, content, sig_str);
-        let event_request_json = requests::event_request_json(&event_request);
+        let _event_request_json = requests::event_request_json(&event_request);
     }
 
     /// TODO: NIP-01: index the a single alphabet letter tag with the first value returned to be used with tag filter from the client
