@@ -106,7 +106,7 @@ module nostr::inner {
     }
 
     /// build string tags to inner struct tags
-    fun build_tags(tags_str: vector<vector<String>>): vector<Tags> {
+    public fun build_tags(tags_str: vector<vector<String>>): vector<Tags> {
         // init tags list
         let tags_list = vector::empty<Tags>();
         // perform build
@@ -252,5 +252,94 @@ module nostr::inner {
             i = i + 1;
         };
         tags_list
+    }
+
+    /// flatten inner struct tags into string tags
+    public fun flatten_tags(tags: vector<Tags>): vector<vector<String>> {
+        // init tags string list
+        let tags_string_list = vector::empty<vector<String>>();
+        // init tags string
+        let tags_string = vector::empty<String>();
+
+        let i = 0;
+        let tags_len = vector::length(&tags);
+        while (i < tags_len) {
+            let inner_tags = vector::borrow_mut(&mut tags, i);
+            // event tag
+            if (option::is_some(&inner_tags.event)) {
+                let event = option::extract(&mut inner_tags.event);
+                // key e for the event tag
+                let event_tag_key = event_tag_key_string();
+                vector::push_back(&mut tags_string, event_tag_key);
+                // event id
+                let id = string::utf8(event.id);
+                vector::push_back(&mut tags_string, id);
+                // event url
+                if (option::is_some(&event.url)) {
+                    let url = option::extract(&mut event.url);
+                    vector::push_back(&mut tags_string, url);
+                };
+                // event pubkey
+                if (option::is_some(&event.pubkey)) {
+                    let pubkey = option::extract(&mut event.pubkey);
+                    let pubkey_str = string::utf8(pubkey);
+                    vector::push_back(&mut tags_string, pubkey_str);
+                };
+                vector::push_back(&mut tags_string_list, tags_string);
+            };
+            // user tag
+            if (option::is_some(&inner_tags.user)) {
+                let user = option::extract(&mut inner_tags.user);
+                // key p for the user tag
+                let user_tag_key = user_tag_key_string();
+                vector::push_back(&mut tags_string, user_tag_key);
+                // user pubkey
+                let pubkey = string::utf8(user.pubkey);
+                vector::push_back(&mut tags_string, pubkey);
+                // user url
+                if (option::is_some(&user.url)) {
+                    let url = option::extract(&mut user.url);
+                    vector::push_back(&mut tags_string, url);
+                };
+                vector::push_back(&mut tags_string_list, tags_string);
+            };
+            // addressable replaceable tag
+            if (option::is_some(&inner_tags.addressable_replaceable)) {
+                let addressable_replaceable = option::extract(&mut inner_tags.addressable_replaceable);
+                // key a for the addressable replaceable tag
+                let addressable_replaceable_tag_key = addressable_replaceable_tag_key_string();
+                vector::push_back(&mut tags_string, addressable_replaceable_tag_key);
+                // init kind:pubkey:d string
+                let kind_pubkey_d_str = string::utf8(vector::empty<u8>());
+                // addressable replaceable kind
+                let kind = string_utils::to_string_u16(addressable_replaceable.kind);
+                string::append(&mut kind_pubkey_d_str, kind);
+                string::append(&mut kind_pubkey_d_str, colon_string());
+                // addressable replaceable pubkey
+                let pubkey = string::utf8(addressable_replaceable.pubkey);
+                string::append(&mut kind_pubkey_d_str, pubkey);
+                string::append(&mut kind_pubkey_d_str, colon_string());
+                // addressable replaceable d
+                if (option::is_some(&addressable_replaceable.d)) {
+                    let d = option::extract(&mut addressable_replaceable.d);
+                    string::append(&mut kind_pubkey_d_str, d);
+                };
+                vector::push_back(&mut tags_string, kind_pubkey_d_str);
+                // addressable replaceable url
+                if (option::is_some(&addressable_replaceable.url)) {
+                    let url = option::extract(&mut addressable_replaceable.url);
+                    vector::push_back(&mut tags_string, url);
+                };
+                vector::push_back(&mut tags_string_list, tags_string);
+            };
+            // strings list tag
+            if (option::is_some(&inner_tags.strings_list)) {
+                let strings_list = option::extract(&mut inner_tags.strings_list);
+                // strings list strings
+                vector::push_back(&mut tags_string_list, strings_list.strings);
+            };
+            i = i + 1;
+        };
+        tags_string_list
     }
 }
