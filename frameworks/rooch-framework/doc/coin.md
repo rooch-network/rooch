@@ -97,7 +97,6 @@ Note the <code>CoinType</code> must have <code>key</code> ability.
 if the <code>CoinType</code> has <code>store</code> ability, the <code><a href="coin.md#0x3_coin_Coin">Coin</a></code> is a public coin, the user can operate it directly by coin module's function.
 Otherwise, the <code><a href="coin.md#0x3_coin_Coin">Coin</a></code> is a private coin, the user can only operate it by <code>CoinType</code> module's function.
 The Coin has no ability, it is a hot potato type, only can handle by Coin module.
-TODO how to distinguish between public and private coin?
 
 
 <pre><code><b>struct</b> <a href="coin.md#0x3_coin_GenericCoin">GenericCoin</a>

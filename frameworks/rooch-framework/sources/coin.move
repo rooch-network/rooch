@@ -82,7 +82,6 @@ module rooch_framework::coin {
     /// if the `CoinType` has `store` ability, the `Coin` is a public coin, the user can operate it directly by coin module's function.
     /// Otherwise, the `Coin` is a private coin, the user can only operate it by `CoinType` module's function.
     /// The Coin has no ability, it is a hot potato type, only can handle by Coin module.
-    /// TODO how to distinguish between public and private coin?
     struct GenericCoin {
         /// Coin type name
         coin_type: string::String,

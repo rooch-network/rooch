@@ -152,7 +152,7 @@ module rooch_framework::coin_migration {
         let balance = coin_store::balance(coin_store);
 
         // Withdraw all coins from the source
-        let coin = coin_store::withdraw_skip_check_internal<CoinType>(coin_store, balance);
+        let coin = coin_store::withdraw_uncheck_internal<CoinType>(coin_store, balance);
 
         // Convert to GenericCoin
         let generic_coin = convert_coin_to_generic_coin(coin);
