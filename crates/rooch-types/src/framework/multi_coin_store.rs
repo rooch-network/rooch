@@ -104,13 +104,9 @@ impl TryFrom<ObjectState> for CoinStoreField {
     type Error = anyhow::Error;
 
     fn try_from(state: ObjectState) -> Result<Self, Self::Error> {
-        let raw_object = state.into_raw_object()?;
-        ensure!(
-            CoinStoreField::struct_tag_match_without_type_param(&raw_object.value.struct_tag),
-            "Expected CoinStoreField struct tag"
-        );
-        let coin_store_field = CoinStoreField::from_bytes(raw_object.value.value)?;
-        Ok(coin_store_field)
+        ensure!(state.is_dynamic_field(), "Expected Dynamic field");
+        let dynamic_field = state.value_as_df::<MoveString, CoinStoreField>()?;
+        Ok(dynamic_field.value)
     }
 }
 

@@ -252,7 +252,6 @@ module rooch_framework::account_coin_store {
         amount: u256,
     ): Coin<CoinType> {
         // Check CoinType-specific coin store first
-        // let generic_amount = 0;
         let coin_type = type_info::type_name<CoinType>();
         
         // Get the total balance from both stores
@@ -312,13 +311,6 @@ module rooch_framework::account_coin_store {
         if(is_accept_coin<CoinType>(addr)){
             let _coin_store = create_or_borrow_mut_account_coin_store<CoinType>(addr);
         };
-
-        // assert!(
-        //     is_accept_coin<CoinType>(addr),
-        //     ErrorAccountNotAcceptCoin,
-        // );
-        // let coin_store = create_or_borrow_mut_account_coin_store<CoinType>(addr);
-        // coin_store::deposit_internal<CoinType>(coin_store, coin)
     }
 
     fun transfer_internal<CoinType: key>(

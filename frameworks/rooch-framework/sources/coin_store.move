@@ -266,7 +266,7 @@ module rooch_framework::coin_store {
     }
 
     /// the withdraw function only for the `CoinType` for migration to skip the frozen check
-    public(friend) fun withdraw_skip_check_internal<CoinType: key>(
+    public(friend) fun withdraw_uncheck_internal<CoinType: key>(
         coin_store_obj: &mut Object<CoinStore<CoinType>>,
         amount: u256
     ): Coin<CoinType> {

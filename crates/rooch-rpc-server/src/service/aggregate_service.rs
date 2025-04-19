@@ -265,7 +265,8 @@ impl AggregateService {
                         .filter_map(|(coin_type, coin_store_info_opt)| {
                             coin_store_info_opt.map(|info| (coin_type, info))
                         })
-                        .collect()
+                        // .collect()
+                        .collect::<HashMap<_, _>>()
                 } else {
                     HashMap::new()
                 }
