@@ -1,14 +1,14 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use super::coin_store::CoinStore;
 use crate::addresses::ROOCH_FRAMEWORK_ADDRESS;
+use crate::framework::multi_coin_store::MultiCoinStore;
 use move_core_types::language_storage::StructTag;
 use move_core_types::{account_address::AccountAddress, ident_str, identifier::IdentStr};
 use moveos_types::module_binding::{ModuleBinding, MoveFunctionCaller};
 use moveos_types::moveos_std::object::{self, ObjectID};
-use moveos_types::state::PlaceholderStruct;
-
-use super::coin_store::CoinStore;
+use moveos_types::state::{MoveStructType, PlaceholderStruct};
 
 pub const MODULE_NAME: &IdentStr = ident_str!("account_coin_store");
 
@@ -23,6 +23,11 @@ impl<'a> AccountCoinStoreModule<'a> {
     pub fn account_coin_store_id(addr: AccountAddress, coin_type: StructTag) -> ObjectID {
         let coin_store_struct_tag =
             CoinStore::<PlaceholderStruct>::struct_tag_with_coin_type(coin_type);
+        object::account_named_object_id(addr, &coin_store_struct_tag)
+    }
+
+    pub fn multi_coin_store_id(addr: AccountAddress) -> ObjectID {
+        let coin_store_struct_tag = MultiCoinStore::struct_tag();
         object::account_named_object_id(addr, &coin_store_struct_tag)
     }
 }

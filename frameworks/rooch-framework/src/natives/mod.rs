@@ -93,6 +93,7 @@ impl FromOnChainGasSchedule for MoveOSStdlibGasParameters {
                 gas_schedule,
             )
             .unwrap(),
+            ability: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
         })
     }
 }
@@ -121,6 +122,7 @@ impl ToOnChainGasSchedule for MoveOSStdlibGasParameters {
         entires.extend(self.evm.to_on_chain_gas_schedule());
         entires.extend(self.groth16.to_on_chain_gas_schedule());
         entires.extend(self.object_list_field_keys.to_on_chain_gas_schedule());
+        entires.extend(self.ability.to_on_chain_gas_schedule());
         entires
     }
 }
@@ -150,6 +152,7 @@ impl InitialGasSchedule for MoveOSStdlibGasParameters {
             evm: InitialGasSchedule::initial(),
             groth16: InitialGasSchedule::initial(),
             object_list_field_keys: InitialGasSchedule::initial(),
+            ability: InitialGasSchedule::initial(),
         }
     }
 }
