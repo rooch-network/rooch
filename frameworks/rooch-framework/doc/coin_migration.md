@@ -12,7 +12,6 @@ It helps migrate coin stores, balances, frozen states, and accept data.
 -  [Struct `CoinStoreMigrationEvent`](#0x3_coin_migration_CoinStoreMigrationEvent)
 -  [Resource `MigrationState`](#0x3_coin_migration_MigrationState)
 -  [Constants](#@Constants_0)
--  [Function `init_migration`](#0x3_coin_migration_init_migration)
 -  [Function `migrate_account_entry`](#0x3_coin_migration_migrate_account_entry)
 -  [Function `update_migration_state_entry`](#0x3_coin_migration_update_migration_state_entry)
 -  [Function `migration_state_id`](#0x3_coin_migration_migration_state_id)
@@ -94,27 +93,16 @@ Nothing to migrate for the account
 
 
 
-<a name="0x3_coin_migration_init_migration"></a>
-
-## Function `init_migration`
-
-Initialize the migration module, called during genesis or framework upgrade
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="coin_migration.md#0x3_coin_migration_init_migration">init_migration</a>(framework: &<a href="">signer</a>)
-</code></pre>
-
-
-
 <a name="0x3_coin_migration_migrate_account_entry"></a>
 
 ## Function `migrate_account_entry`
 
 Entry function to migrate a specific account's coin stores
+The coin type must be only key to compatiable with both the public(key+store) and private(key) coins
 Need to limit to only called by the admin to migrate their own coin stores ?
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="coin_migration.md#0x3_coin_migration_migrate_account_entry">migrate_account_entry</a>&lt;CoinType: store, key&gt;(_admin: &<a href="">signer</a>, addr: <b>address</b>)
+<pre><code><b>public</b> entry <b>fun</b> <a href="coin_migration.md#0x3_coin_migration_migrate_account_entry">migrate_account_entry</a>&lt;CoinType: key&gt;(_admin: &<a href="">signer</a>, addr: <b>address</b>)
 </code></pre>
 
 

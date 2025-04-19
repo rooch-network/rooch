@@ -22,18 +22,22 @@
 -  [Function `deposit`](#0x3_multi_coin_store_deposit)
 -  [Function `transfer`](#0x3_multi_coin_store_transfer)
 -  [Function `ensure_coin_type_has_key_and_store_ability`](#0x3_multi_coin_store_ensure_coin_type_has_key_and_store_ability)
--  [Function `freeze_coin_store`](#0x3_multi_coin_store_freeze_coin_store)
+-  [Function `withdraw_extend`](#0x3_multi_coin_store_withdraw_extend)
+-  [Function `deposit_extend`](#0x3_multi_coin_store_deposit_extend)
+-  [Function `freeze_coin_store_extend`](#0x3_multi_coin_store_freeze_coin_store_extend)
 -  [Function `create_multi_coin_store`](#0x3_multi_coin_store_create_multi_coin_store)
 -  [Function `borrow_mut_coin_store_internal`](#0x3_multi_coin_store_borrow_mut_coin_store_internal)
 -  [Function `create_coin_store_field_if_not_exist`](#0x3_multi_coin_store_create_coin_store_field_if_not_exist)
 -  [Function `withdraw_internal`](#0x3_multi_coin_store_withdraw_internal)
 -  [Function `deposit_internal`](#0x3_multi_coin_store_deposit_internal)
+-  [Function `freeze_coin_store_internal`](#0x3_multi_coin_store_freeze_coin_store_internal)
 
 
 <pre><code><b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x2::ability</a>;
 <b>use</b> <a href="">0x2::event</a>;
 <b>use</b> <a href="">0x2::object</a>;
+<b>use</b> <a href="">0x2::type_info</a>;
 <b>use</b> <a href="coin.md#0x3_coin">0x3::coin</a>;
 </code></pre>
 
@@ -289,14 +293,45 @@ Coin type should have key and store ability
 
 
 
-<a name="0x3_multi_coin_store_freeze_coin_store"></a>
+<a name="0x3_multi_coin_store_withdraw_extend"></a>
 
-## Function `freeze_coin_store`
+## Function `withdraw_extend`
 
-Freeze or Unfreeze a CoinStore to prevent withdraw and desposit
+Withdraw <code>amount</code> Coin<CoinType> from the balance of the passed-in <code><a href="multi_coin_store.md#0x3_multi_coin_store">multi_coin_store</a></code>
+This function is for the <code>CoinType</code> module to extend
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="multi_coin_store.md#0x3_multi_coin_store_freeze_coin_store">freeze_coin_store</a>(coin_store_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="multi_coin_store.md#0x3_multi_coin_store_MultiCoinStore">multi_coin_store::MultiCoinStore</a>&gt;, coin_type: <a href="_String">string::String</a>, frozen: bool)
+<pre><code>#[private_generics(#[CoinType])]
+<b>public</b> <b>fun</b> <a href="multi_coin_store.md#0x3_multi_coin_store_withdraw_extend">withdraw_extend</a>&lt;CoinType: key&gt;(coin_store_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="multi_coin_store.md#0x3_multi_coin_store_MultiCoinStore">multi_coin_store::MultiCoinStore</a>&gt;, amount: <a href="">u256</a>): <a href="coin.md#0x3_coin_GenericCoin">coin::GenericCoin</a>
+</code></pre>
+
+
+
+<a name="0x3_multi_coin_store_deposit_extend"></a>
+
+## Function `deposit_extend`
+
+Deposit <code>amount</code> Coin<CoinType> to the balance of the passed-in <code><a href="multi_coin_store.md#0x3_multi_coin_store">multi_coin_store</a></code>
+This function is for the <code>CoinType</code> module to extend
+
+
+<pre><code>#[private_generics(#[CoinType])]
+<b>public</b> <b>fun</b> <a href="multi_coin_store.md#0x3_multi_coin_store_deposit_extend">deposit_extend</a>&lt;CoinType: key&gt;(coin_store_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="multi_coin_store.md#0x3_multi_coin_store_MultiCoinStore">multi_coin_store::MultiCoinStore</a>&gt;, <a href="coin.md#0x3_coin">coin</a>: <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;)
+</code></pre>
+
+
+
+<a name="0x3_multi_coin_store_freeze_coin_store_extend"></a>
+
+## Function `freeze_coin_store_extend`
+
+Freeze or Unfreeze a MultiCoinStore field to prevent withdraw and desposit
+This function is for he <code>CoinType</code> module to extend,
+Only the <code>CoinType</code> module can freeze or unfreeze a MultiCoinStore field by the coin store id
+
+
+<pre><code>#[private_generics(#[CoinType])]
+<b>public</b> <b>fun</b> <a href="multi_coin_store.md#0x3_multi_coin_store_freeze_coin_store_extend">freeze_coin_store_extend</a>&lt;CoinType: key&gt;(coin_store_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="multi_coin_store.md#0x3_multi_coin_store_MultiCoinStore">multi_coin_store::MultiCoinStore</a>&gt;, frozen: bool)
 </code></pre>
 
 
@@ -352,4 +387,15 @@ Freeze or Unfreeze a CoinStore to prevent withdraw and desposit
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="multi_coin_store.md#0x3_multi_coin_store_deposit_internal">deposit_internal</a>(coin_store_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="multi_coin_store.md#0x3_multi_coin_store_MultiCoinStore">multi_coin_store::MultiCoinStore</a>&gt;, <a href="coin.md#0x3_coin">coin</a>: <a href="coin.md#0x3_coin_GenericCoin">coin::GenericCoin</a>)
+</code></pre>
+
+
+
+<a name="0x3_multi_coin_store_freeze_coin_store_internal"></a>
+
+## Function `freeze_coin_store_internal`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="multi_coin_store.md#0x3_multi_coin_store_freeze_coin_store_internal">freeze_coin_store_internal</a>(coin_store_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="multi_coin_store.md#0x3_multi_coin_store_MultiCoinStore">multi_coin_store::MultiCoinStore</a>&gt;, coin_type: <a href="_String">string::String</a>, frozen: bool)
 </code></pre>

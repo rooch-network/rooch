@@ -265,6 +265,24 @@ module rooch_framework::coin_store {
         coin
     }
 
+    /// the withdraw function only for the `CoinType` for migration to skip the frozen check
+    public(friend) fun withdraw_skip_check_internal<CoinType: key>(
+        coin_store_obj: &mut Object<CoinStore<CoinType>>,
+        amount: u256
+    ): Coin<CoinType> {
+        let object_id = object::id(coin_store_obj);
+        let coin_store = object::borrow_mut(coin_store_obj);
+        // check_coin_store_not_frozen(coin_store);
+        let coin = extract_from_balance<CoinType>(coin_store, amount);
+        let coin_type = type_info::type_name<CoinType>();
+        event::emit(WithdrawEvent {
+            coin_store_id: object_id,
+            coin_type,
+            amount,
+        });
+        coin
+    }
+
     /// Deposit `amount` Coin<CoinType> to the balance of the passed-in `coin_store`
     public(friend) fun deposit_internal<CoinType: key>(
         coin_store_obj: &mut Object<CoinStore<CoinType>>,
@@ -311,9 +329,25 @@ module rooch_framework::coin_store {
 
     #[test_only]
     public fun freeze_coin_store_for_test<CoinType: key>(
-        coin_store_obj: &mut Object<CoinStore<CoinType>>,
+        coin_store_id: ObjectID,
         frozen: bool,
     ) {
+        let coin_store_obj = borrow_mut_coin_store_internal<CoinType>(coin_store_id);
         freeze_coin_store_internal(coin_store_obj, frozen)
+    }
+
+    #[test_only]
+    public fun deposit_for_test<CoinType: key>(
+        coin_store_id: ObjectID,
+        coin: Coin<CoinType>
+    ) {
+        let coin_store_obj = borrow_mut_coin_store_internal<CoinType>(coin_store_id);
+        deposit_internal(coin_store_obj, coin)
+    }
+
+    #[test_only]
+    public fun balance_for_test<CoinType: key>(coin_store_id: ObjectID): u256 {
+        let coin_store1 = object::borrow_object<CoinStore<CoinType>>(coin_store_id);
+        balance(coin_store1)
     }
 }

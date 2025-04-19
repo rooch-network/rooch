@@ -162,7 +162,7 @@ module rooch_framework::multi_coin_store_tests {
         multi_coin_store::create_coin_store_field_if_not_exist_for_test(store_obj_mut, btc_type);
         
         // freeze the coin store field
-        multi_coin_store::freeze_coin_store(store_obj_mut, btc_type, true);
+        multi_coin_store::freeze_coin_store_extend<BTC>(store_obj_mut, true);
         
         // Try to deposit - should fail because store is frozen
         let btc_coin = mint_coin<BTC>(&mut btc_info, 100);

@@ -29,6 +29,7 @@
 -  [Function `create_account_coin_store`](#0x3_coin_store_create_account_coin_store)
 -  [Function `borrow_mut_coin_store_internal`](#0x3_coin_store_borrow_mut_coin_store_internal)
 -  [Function `withdraw_internal`](#0x3_coin_store_withdraw_internal)
+-  [Function `withdraw_skip_check_internal`](#0x3_coin_store_withdraw_skip_check_internal)
 -  [Function `deposit_internal`](#0x3_coin_store_deposit_internal)
 -  [Function `freeze_coin_store_internal`](#0x3_coin_store_freeze_coin_store_internal)
 -  [Function `unpack_balance`](#0x3_coin_store_unpack_balance)
@@ -378,6 +379,18 @@ Only the <code>CoinType</code> module can freeze or unfreeze a CoinStore by the 
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="coin_store.md#0x3_coin_store_withdraw_internal">withdraw_internal</a>&lt;CoinType: key&gt;(coin_store_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">coin_store::CoinStore</a>&lt;CoinType&gt;&gt;, amount: <a href="">u256</a>): <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;
+</code></pre>
+
+
+
+<a name="0x3_coin_store_withdraw_skip_check_internal"></a>
+
+## Function `withdraw_skip_check_internal`
+
+the withdraw function only for the <code>CoinType</code> for migration to skip the frozen check
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="coin_store.md#0x3_coin_store_withdraw_skip_check_internal">withdraw_skip_check_internal</a>&lt;CoinType: key&gt;(coin_store_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">coin_store::CoinStore</a>&lt;CoinType&gt;&gt;, amount: <a href="">u256</a>): <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;
 </code></pre>
 
 

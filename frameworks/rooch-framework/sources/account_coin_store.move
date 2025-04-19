@@ -340,7 +340,7 @@ module rooch_framework::account_coin_store {
         // Compatiable multi coin store
         let coin_type = type_info::type_name<CoinType>();
         let multi_coin_store = borrow_mut_multi_coin_store(addr);
-        multi_coin_store::freeze_coin_store(multi_coin_store, coin_type, frozen);
+        multi_coin_store::freeze_coin_store_internal(multi_coin_store, coin_type, frozen);
     }
 
     // === Non-generic functions ===
@@ -485,5 +485,12 @@ module rooch_framework::account_coin_store {
     ) {
         let coin = withdraw_internal_by_type_name(from, coin_type, amount);
         deposit_internal_by_type_name(to, coin);
+    }
+
+
+    #[test_only]
+    public fun do_accept_coin_only_for_coin_store_for_test<CoinType: key>(account: &signer) {
+        let addr = signer::address_of(account);
+        create_or_borrow_mut_account_coin_store<CoinType>(addr);
     }
 }
