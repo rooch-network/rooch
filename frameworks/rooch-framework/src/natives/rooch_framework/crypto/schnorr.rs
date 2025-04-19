@@ -28,17 +28,17 @@ pub fn native_verify(
     debug_assert!(args.len() == 3);
 
     let msg = pop_arg!(args, VectorRef);
-    let verifying_key_bytes = pop_arg!(args, VectorRef);
-    let signature_bytes = pop_arg!(args, VectorRef);
+    let verifying_key = pop_arg!(args, VectorRef);
+    let signature = pop_arg!(args, VectorRef);
 
-    let msg_ref = msg.as_bytes_ref();
-    let signature_bytes_ref = signature_bytes.as_bytes_ref();
-    let verifying_key_bytes_ref = verifying_key_bytes.as_bytes_ref();
+    let msg_bytes_ref = msg.as_bytes_ref();
+    let verifying_key_bytes_ref = verifying_key.as_bytes_ref();
+    let signature_bytes_ref = signature.as_bytes_ref();
 
     let cost = gas_params.base
-        + gas_params.per_byte * NumBytes::new(msg_ref.len() as u64)
-        + gas_params.per_byte * NumBytes::new(signature_bytes_ref.len() as u64)
-        + gas_params.per_byte * NumBytes::new(verifying_key_bytes_ref.len() as u64);
+        + gas_params.per_byte * NumBytes::new(msg_bytes_ref.len() as u64)
+        + gas_params.per_byte * NumBytes::new(verifying_key_bytes_ref.len() as u64)
+        + gas_params.per_byte * NumBytes::new(signature_bytes_ref.len() as u64);
 
     let Ok(sig) = Signature::try_from(signature_bytes_ref.to_vec().as_slice()) else {
         return Ok(NativeResult::err(cost, E_INVALID_SIGNATURE));
@@ -48,7 +48,7 @@ pub fn native_verify(
         return Ok(NativeResult::err(cost, E_INVALID_VERIFYING_KEY));
     };
 
-    let result = verifying_key.verify_raw(&msg_ref, &sig).is_ok();
+    let result = verifying_key.verify_raw(&msg_bytes_ref, &sig).is_ok();
 
     Ok(NativeResult::ok(cost, smallvec![Value::bool(result)]))
 }
