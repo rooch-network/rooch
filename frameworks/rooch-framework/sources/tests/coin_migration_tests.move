@@ -69,33 +69,31 @@ module rooch_framework::coin_migration_tests {
         
         // Register coin types
         let coin1_info = register_coin<TestCoin1>(rooch_framework, b"TestCoin1", b"TC1", 8);
-        
+
         // Create coin store and deposit coins
-        account_coin_store::do_accept_coin<TestCoin1>(&alice);
-        
+        account_coin_store::do_accept_coin_only_for_coin_store_for_test<TestCoin1>(&alice);
+
         // Mint and deposit some coins
         let coin1 = mint_coin<TestCoin1>(&mut coin1_info, 500);
-        account_coin_store::deposit<TestCoin1>(ALICE, coin1);
-        
+        let coin_store_id1 = account_coin_store::account_coin_store_id<TestCoin1>(ALICE);
+        coin_store::deposit_for_test<TestCoin1>(coin_store_id1, coin1);
+
         // Verify coin store exists before migration
-        let coin_store_id = account_coin_store::account_coin_store_id<TestCoin1>(ALICE);
-        assert!(object::exists_object(coin_store_id), 1);
+        assert!(object::exists_object(coin_store_id1), 1);
         
         // Verify balance in coin store
-        // assert!(account_coin_store::balance<TestCoin1>(ALICE) == 500, 2);
-        let coin_store = coin_store::borrow_mut_coin_store_extend<>()
-        assert!(coin_store::balance<TestCoin1>(ALICE) == 500, 2);
+        assert!(coin_store::balance_for_test<TestCoin1>(coin_store_id1) == 500, 2);
 
         // Migrate the specific coin type
         coin_migration::migrate_account_entry<TestCoin1>(rooch_framework, ALICE);
-        
+
         // Verify migration moved balance to multi coin store
         let coin_type = type_info::type_name<TestCoin1>();
         assert!(account_coin_store::balance_by_type_name(ALICE, coin_type) == 500, 3);
-        
+
         // Update migration state
         coin_migration::update_migration_state_entry(rooch_framework, ALICE);
-        
+
         // Account should be marked as migrated
         assert!(coin_migration::is_account_migrated(ALICE), 4);
 
@@ -116,23 +114,25 @@ module rooch_framework::coin_migration_tests {
         let coin2_info = register_coin<TestCoin2>(rooch_framework, b"TestCoin2", b"TC2", 6);
         
         // Create coin stores
-        account_coin_store::do_accept_coin<TestCoin1>(&alice);
-        account_coin_store::do_accept_coin<TestCoin2>(&alice);
+        account_coin_store::do_accept_coin_only_for_coin_store_for_test<TestCoin1>(&alice);
+        account_coin_store::do_accept_coin_only_for_coin_store_for_test<TestCoin2>(&alice);
         
         // Mint and deposit some coins
         let coin1 = mint_coin<TestCoin1>(&mut coin1_info, 1000);
-        account_coin_store::deposit<TestCoin1>(ALICE, coin1);
+        let coin_store_id1 = account_coin_store::account_coin_store_id<TestCoin1>(ALICE);
+        coin_store::deposit_for_test<TestCoin1>(coin_store_id1, coin1);
         
         let coin2 = mint_coin<TestCoin2>(&mut coin2_info, 2000);
-        account_coin_store::deposit<TestCoin2>(ALICE, coin2);
+        let coin_store_id2 = account_coin_store::account_coin_store_id<TestCoin2>(ALICE);
+        coin_store::deposit_for_test<TestCoin2>(coin_store_id2, coin2);
         
         // Freeze one of the coin stores
-        account_coin_store::freeze_extend<TestCoin1>(ALICE, true);
-        
+        coin_store::freeze_coin_store_for_test<TestCoin1>(coin_store_id1, true);
+
         // Initial balances - verify data structures before migration
         let balance1_before = account_coin_store::balance<TestCoin1>(ALICE);
         let balance2_before = account_coin_store::balance<TestCoin2>(ALICE);
-        
+
         assert!(balance1_before == 1000, 1);
         assert!(balance2_before == 2000, 2);
         

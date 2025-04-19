@@ -69,8 +69,9 @@ module rooch_framework::coin_migration {
     }
 
     /// Entry function to migrate a specific account's coin stores
+    /// The coin type must be only key to compatiable with both the public(key+store) and private(key) coins
     /// Need to limit to only called by the admin to migrate their own coin stores ?
-    public entry fun migrate_account_entry<CoinType: key + store>(_admin: &signer, addr: address) {
+    public entry fun migrate_account_entry<CoinType: key>(_admin: &signer, addr: address) {
         // let addr = signer::address_of(account);
         migrate_account<CoinType>(addr);
     }
@@ -120,9 +121,10 @@ module rooch_framework::coin_migration {
         });
     }
 
-    /// Migrate a specific coin type for an account
+    /// Migrate a specific coin type for an
+    /// The coin type must be only key to compatiable with both the public(key+store) and private(key) coins
     /// Returns whether migration was performed and the balance migrated
-    fun migrate_account<CoinType: key + store>(
+    fun migrate_account<CoinType: key>(
         addr: address, 
     ): (bool, u256) {
         // Check if there's a coin store for this coin type
@@ -139,16 +141,18 @@ module rooch_framework::coin_migration {
             multi_coin_store::create_multi_coin_store(addr);
         };
 
-        let multi_coin_store = multi_coin_store::borrow_mut_coin_store_internal(multi_coin_store_id);
         if (!account_coin_store::exist_multi_coin_store_field(addr, coin_type)) {
-            multi_coin_store::create_coin_store_field_if_not_exist(multi_coin_store, coin_type);
+            // TO avoid he object or field multi coin store is already borrowed
+            let tmp_multi_coin_store = multi_coin_store::borrow_mut_coin_store_internal(multi_coin_store_id);
+            multi_coin_store::create_coin_store_field_if_not_exist(tmp_multi_coin_store, coin_type);
         };
+        let multi_coin_store = multi_coin_store::borrow_mut_coin_store_internal(multi_coin_store_id);
         // Check if frozen and get balance
         let was_frozen = coin_store::is_frozen(coin_store);
         let balance = coin_store::balance(coin_store);
-        
+
         // Withdraw all coins from the source
-        let coin = coin_store::withdraw_internal<CoinType>(coin_store, balance);
+        let coin = coin_store::withdraw_skip_check_internal<CoinType>(coin_store, balance);
 
         // Convert to GenericCoin
         let generic_coin = convert_coin_to_generic_coin(coin);
@@ -158,7 +162,7 @@ module rooch_framework::coin_migration {
 
         // Set frozen state if needed
         if (was_frozen) {
-            multi_coin_store::freeze_coin_store(multi_coin_store, coin_type, true);
+            multi_coin_store::freeze_coin_store_internal(multi_coin_store, coin_type, true);
         };
         
         // Emit event
