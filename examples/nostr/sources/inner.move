@@ -25,6 +25,7 @@ module nostr::inner {
     const ErrorMalformedOtherEventId: u64 = 1000;
     const ErrorMalformedPublicKey: u64 = 1001;
     const ErrorKindOutOfRange: u64 = 1002;
+    const ErrorEmptyTagString: u64 = 1003;
 
     // TODO: TagIndex for the internal data struct from a-z to A-Z
     // TODO: SimpleMultiMap<String, String> can't be applied to inner struct
@@ -120,6 +121,7 @@ module nostr::inner {
             let tag_str_list_len = vector::length(tag_str_list);
             while (o < tag_str_list_len) {
                 let tag_str = vector::borrow(tag_str_list, o);
+                assert!(!string::is_empty(tag_str), ErrorEmptyTagString);
                 // take special circumstance for the NIP-01 defined tag keys
                 if (o == 0) {
                     let tag_value_index = o + 1;
@@ -254,7 +256,7 @@ module nostr::inner {
         tags_list
     }
 
-    /// flatten inner struct tags into string tags
+    /// flatten inner struct tags into non-null string tags
     public fun flatten_tags(tags: vector<Tags>): vector<vector<String>> {
         // init tags string list
         let tags_string_list = vector::empty<vector<String>>();

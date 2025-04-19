@@ -14,7 +14,6 @@ module nostr::event {
     use moveos_std::event;
     use moveos_std::json;
     use rooch_framework::schnorr;
-    use rooch_nursery::wasm;
     use nostr::inner;
 
     // Kind of the event
@@ -37,8 +36,7 @@ module nostr::event {
     const ErrorMalformedId: u64 = 1001;
     const ErrorSignatureValidationFailure: u64 = 1002;
     const ErrorMalformedPublicKey: u64 = 1003;
-    const ErrorEmptyTags: u64 = 1004;
-    const ErrorUtf8Encoding: u64 = 1005;
+    const ErrorUtf8Encoding: u64 = 1004;
 
     #[data_struct]
     /// Event
@@ -66,6 +64,7 @@ module nostr::event {
         picture: String
     }
 
+    /// TODO: serialize matching the standard
     /// Serialize to byte arrays, which could be sha256 hashed and hex-encoded with lowercase to 32 byte arrays
     fun serialize(pubkey: String, created_at: u64, kind: u16, tags: vector<vector<String>>, content: String): vector<u8> {
         let serialized = vector::empty<vector<u8>>();
@@ -75,8 +74,8 @@ module nostr::event {
         vector::push_back(&mut serialized, version);
 
         // pubkey
+        assert!(string::length(&pubkey) == 65, ErrorMalformedPublicKey); // 64 characters including @ as the first character
         let pubkey_bytes = bcs::to_bytes(&pubkey);
-        assert!(vector::length(&pubkey_bytes) == 32, ErrorMalformedPublicKey);
         vector::push_back(&mut serialized, pubkey_bytes);
 
         // created_at
@@ -88,17 +87,12 @@ module nostr::event {
         vector::push_back(&mut serialized, kind_bytes);
 
         // tags
-        assert!(!vector::is_empty(&tags), ErrorEmptyTags);
         let tags_bytes = bcs::to_bytes(&tags);
-        // check UTF-8 encoding
-        assert!(string::internal_check_utf8(&tags_bytes), ErrorUtf8Encoding);
         vector::push_back(&mut serialized, tags_bytes);
 
         // content
         let content_bytes = bcs::to_bytes(&content);
-        // check UTF-8 encoding
-        assert!(string::internal_check_utf8(&content_bytes), ErrorUtf8Encoding);
-        // escape some characters
+        // escape some characters of the content field
         while (vector::contains(&content_bytes, &LF)) {
             vector::remove_value(&mut content_bytes, &LF);
         };
@@ -122,22 +116,28 @@ module nostr::event {
         };
         vector::push_back(&mut serialized, content_bytes);
 
-        // flatten to CBOR format
-        let serialized_cbor = wasm::create_cbor_values(serialized);
+        // serialize the bytes to json string bytes
+        let serialized_json = json::to_json(&serialized);
 
         // remove whitespace and line breaks from output JSON
-        while (vector::contains(&serialized_cbor, &SPACE)) {
-            vector::remove_value(&mut serialized_cbor, &SPACE);
+        while (vector::contains(&serialized_json, &SPACE)) {
+            vector::remove_value(&mut serialized_json, &SPACE);
         };
-        while (vector::contains(&serialized_cbor, &LF)) {
-            vector::remove_value(&mut serialized_cbor, &LF);
+        while (vector::contains(&serialized_json, &LF)) {
+            vector::remove_value(&mut serialized_json, &LF);
         };
 
-        serialized_cbor
+        // check UTF-8 encoding
+        assert!(string::internal_check_utf8(&serialized_json), ErrorUtf8Encoding);
+
+        serialized_json
     }
 
     /// Check signature with public key, id and signature for schnorr
     fun check_signature(public_key: vector<u8>, id: vector<u8>, signature: vector<u8>) {
+        std::debug::print(&string::utf8(public_key));
+        std::debug::print(&string::utf8(id));
+        std::debug::print(&bcs::from_bytes<String>(signature));
         assert!(schnorr::verify(
             &signature,
             &public_key,
@@ -162,8 +162,8 @@ module nostr::event {
         // encode with lowercase hex
         let id = hex::encode(hashed_data);
 
-        // verify the length of the hex bytes to 32 bytes
-        assert!(vector::length(&id) == 32, ErrorMalformedId);
+        // verify the length of the hex bytes to 32 bytes (64 characters)
+        assert!(vector::length(&id) == 64, ErrorMalformedId);
 
         // check the signature
         check_signature(public_key, id, signature);
@@ -210,8 +210,80 @@ module nostr::event {
         event_json
     }
 
-    public entry fun create_event_entry(public_key: vector<u8>, kind: u16, tags: vector<vector<String>>, content: String, signature: vector<u8>) {
-        let _event_json = create_event(public_key, kind, tags, content, signature);
+    /// Entry function to create an Event
+    public entry fun create_event_entry(public_key: String, kind: u16, tags: vector<vector<String>>, content: String, signature: String) {
+        let public_key_bytes = bcs::to_bytes(&public_key);
+        let signature_bytes = bcs::to_bytes(&signature);
+        let _event_json = create_event(public_key_bytes, kind, tags, content, signature_bytes);
+    }
+
+    /// Save an Event
+    public fun save_event(public_key: vector<u8>, created_at: u64, kind: u16, tags: vector<vector<String>>, content: String, signature: vector<u8>): vector<u8> {
+        assert!(string::length(&content) <= 1000, ErrorContentTooLarge);
+        let pubkey = string::utf8(public_key);
+
+        // serialize input to bytes for an Event id
+        let serialized = serialize(pubkey, created_at, kind, tags, content);
+
+        // hash with sha256
+        let hashed_data = hash::sha2_256(serialized);
+
+        // encode with lowercase hex
+        let id = hex::encode(hashed_data);
+
+        // verify the length of the hex bytes to 32 bytes (64 characters)
+        assert!(vector::length(&id) == 64, ErrorMalformedId);
+
+        // check the signature
+        check_signature(public_key, id, signature);
+
+        // derive a rooch address
+        let rooch_address = inner::derive_rooch_address(public_key);
+
+        // handle a range of different kinds of an Event
+        if (kind == EVENT_KIND_USER_METADATA) {
+            // check the content integrity
+            let content_bytes = string::bytes(&content);
+            let _ = json::from_json<UserMetadata>(*content_bytes);
+            // clear past user metadata events from the user with the same rooch address from the public key
+            let event_object_id = object::account_named_object_id<Event>(rooch_address);
+            let event_object = object::take_object_extend<Event>(event_object_id);
+            let event = object::remove(event_object);
+            drop_event(event);
+        };
+
+        // save the event to the rooch address mapped to the public key
+        let event = Event {
+            id,
+            pubkey: public_key,
+            created_at,
+            kind: kind,
+            tags: tags,
+            content,
+            sig: signature
+        };
+        let event_object = object::new_account_named_object(rooch_address, event);
+
+        // emit a move event nofitication
+        let event_object_id = object::id(&event_object);
+        let move_event = MoveEventNotification {
+            id: event_object_id
+        };
+        event::emit(move_event);
+
+        // transfer event object to the rooch address
+        object::transfer_extend(event_object, rooch_address);
+
+        // return the event object as JSON
+        let event_json = json::to_json<Event>(&event);
+        event_json
+    }
+
+    /// Entry function to save an Event
+    public entry fun save_event_entry(public_key: String, created_at: u64, kind: u16, tags: vector<vector<String>>, content: String, signature: String) {
+        let public_key_bytes = bcs::to_bytes(&public_key);
+        let signature_bytes = bcs::to_bytes(&signature);
+        let _event_json = save_event(public_key_bytes, created_at, kind, tags, content, signature_bytes);
     }
 
     /// drop an event
