@@ -451,17 +451,24 @@ impl ExpRoots {
         })
     }
 
-    pub(crate) async fn contains(&self, tx_order: u64) -> bool {
-        self.inner.read().await.exp_roots.contains_key(&tx_order)
-    }
-
     /// Insert a new exp root for the given tx_order
     /// Updates both the in-memory map and the file
     pub(crate) async fn insert(&self, tx_order: u64, state_root: H256) -> anyhow::Result<()> {
         let mut inner = self.inner.write().await;
 
+        let mut update_file = true;
         // Update in-memory map
-        inner.exp_roots.insert(tx_order, state_root);
+        let old_state = inner.exp_roots.insert(tx_order, state_root);
+        if let Some(old) = old_state {
+            if old != state_root {
+                warn!(
+                    "Overwriting existing exp root for tx_order {}: {:?} -> {:?}",
+                    tx_order, old, state_root
+                );
+            } else {
+                update_file = false; // No need to update file if the state root is the same
+            }
+        }
 
         // Update max_tx_order if necessary
         if tx_order > inner.max_tx_order {
@@ -469,6 +476,9 @@ impl ExpRoots {
         }
 
         // Update file
+        if !update_file {
+            return Ok(());
+        }
         let entry = format!("{}:{:?}\n", tx_order, state_root);
         inner.exp_roots_file.write_all(entry.as_bytes())?;
         inner.exp_roots_file.flush()?;
@@ -484,42 +494,27 @@ impl ExpRoots {
 }
 
 pub(crate) struct LedgerTxGetter {
-    is_auto_sync: bool,
     segment_dir: PathBuf,
     chunks: Arc<RwLock<HashMap<u128, Vec<u64>>>>,
-    client: Option<Client>,
-    exp_roots: Option<ExpRoots>,
     max_chunk_id: u128,
-    tx_anomalies: Option<TxAnomalies>,
 }
 
 impl LedgerTxGetter {
-    pub(crate) fn new(
-        segment_dir: PathBuf,
-        allow_empty: bool,
-        tx_anomalies: Option<TxAnomalies>,
-    ) -> anyhow::Result<Self> {
+    pub(crate) fn new(segment_dir: PathBuf, allow_empty: bool) -> anyhow::Result<Self> {
         let (chunks, _min_chunk_id, max_chunk_id) =
             collect_chunks(segment_dir.clone(), allow_empty)?;
 
         Ok(LedgerTxGetter {
-            is_auto_sync: false,
             segment_dir,
             chunks: Arc::new(RwLock::new(chunks)),
-            client: None,
-            exp_roots: None,
             max_chunk_id,
-            tx_anomalies,
         })
     }
 
     pub(crate) fn new_with_auto_sync(
         open_da_path: String,
         segment_dir: PathBuf,
-        client: Client,
-        exp_roots: ExpRoots,
         shutdown_signal: watch::Receiver<()>,
-        tx_anomalies: Option<TxAnomalies>,
     ) -> anyhow::Result<Self> {
         let (chunks, _min_chunk_id, max_chunk_id) = collect_chunks(segment_dir.clone(), true)?;
 
@@ -533,13 +528,9 @@ impl LedgerTxGetter {
         )?;
         downloader.run_in_background(shutdown_signal)?;
         Ok(LedgerTxGetter {
-            is_auto_sync: true,
             segment_dir,
             chunks: chunks_to_sync,
-            client: Some(client),
-            exp_roots: Some(exp_roots),
             max_chunk_id,
-            tx_anomalies,
         })
     }
 
@@ -573,70 +564,79 @@ impl LedgerTxGetter {
                     Ok(Some(tx_list))
                 },
             )?;
-        if let Some(tx_list) = tx_list_opt {
-            if self.is_auto_sync {
-                let mut last_tx = tx_list.last().unwrap().clone();
-                let tx_order = last_tx.sequence_info.tx_order;
-                let last_tx_hash = last_tx.tx_hash();
-                self.fetch_exp_root(tx_order, last_tx_hash).await?;
-            }
-            Ok(Some(tx_list))
-        } else {
-            Ok(None)
-        }
-    }
 
-    pub(crate) async fn fetch_exp_root(&self, tx_order: u64, tx_hash: H256) -> anyhow::Result<()> {
-        if self.client.is_none() {
-            return Err(anyhow!(
-                "Auto sync is enabled, but client is not set. Please set client first."
-            ));
-        }
-
-        let exp_roots = self.exp_roots.clone().unwrap();
-
-        if exp_roots.contains(tx_order).await {
-            return Ok(()); // already has the exp root
-        }
-
-        let client = self.client.as_ref().unwrap();
-
-        let resp = client.rooch.get_transactions_by_hash(vec![tx_hash]).await?;
-        let tx_info = resp.into_iter().next().flatten().ok_or_else(|| {
-            anyhow!(
-                "No transaction info found by RPC. tx_order: {}, tx_hash: {:?}",
-                tx_order,
-                tx_hash
-            )
-        })?;
-        let tx_order_in_resp = tx_info.transaction.sequence_info.tx_order.0;
-        if tx_order_in_resp != tx_order {
-            return Err(anyhow!(
-                "failed to request tx by RPC: Tx order mismatch, expect: {}, actual: {}",
-                tx_order,
-                tx_order_in_resp
-            ));
-        } else {
-            let execution_info_opt = tx_info.execution_info;
-            if let Some(execution_info) = execution_info_opt {
-                let tx_state_root = execution_info.state_root.0;
-                exp_roots.insert(tx_order, tx_state_root).await?;
-            } else if let Some(tx_anomalies) = self.tx_anomalies.as_ref() {
-                if !tx_anomalies.has_no_execution_info(&tx_hash) {
-                    return Err(anyhow!(
-                        "No state_root found by PRC. tx_order: {}, tx_hash: {:?}",
-                        tx_order,
-                        tx_hash
-                    ));
-                }
-            }
-        }
-        Ok(())
+        Ok(tx_list_opt)
     }
 
     // only valid for no segments sync
     pub(crate) fn get_max_chunk_id(&self) -> u128 {
         self.max_chunk_id
+    }
+}
+
+pub(crate) struct StateRootFetcher {
+    client: Client,
+    exp_roots: ExpRoots,
+    tx_anomalies: Option<TxAnomalies>,
+}
+
+impl StateRootFetcher {
+    pub(crate) fn new(
+        client: Client,
+        exp_roots: ExpRoots,
+        tx_anomalies: Option<TxAnomalies>,
+    ) -> Self {
+        StateRootFetcher {
+            client,
+            exp_roots,
+            tx_anomalies,
+        }
+    }
+
+    pub(crate) async fn fetch_and_add(&self, tx_order: u64) -> anyhow::Result<()> {
+        let state_root = self.fetch(tx_order).await?;
+        if let Some(state_root) = state_root {
+            self.exp_roots.insert(tx_order, state_root).await?;
+        }
+        Ok(())
+    }
+
+    pub(crate) async fn fetch(&self, tx_order: u64) -> anyhow::Result<Option<H256>> {
+        let resp = self
+            .client
+            .rooch
+            .get_transactions_by_order(Some(tx_order - 1), Some(1), Some(false))
+            .await?;
+        let resp_date = resp.data;
+        if resp_date.is_empty() {
+            return Err(anyhow!(
+                "No transaction found by RPC. tx_order: {}",
+                tx_order,
+            ));
+        }
+        let tx_info = resp_date[0].clone();
+        let tx_order_in_resp = tx_info.transaction.sequence_info.tx_order.0;
+        if tx_order_in_resp != tx_order {
+            Err(anyhow!(
+                "failed to request tx by RPC: Tx order mismatch, expect: {}, actual: {}",
+                tx_order,
+                tx_order_in_resp
+            ))
+        } else {
+            let execution_info_opt = tx_info.execution_info;
+            if let Some(execution_info) = execution_info_opt {
+                let tx_state_root = execution_info.state_root.0;
+                return Ok(Some(tx_state_root));
+            } else if let Some(tx_anomalies) = self.tx_anomalies.as_ref() {
+                if tx_anomalies.has_no_execution_info_for_order(tx_order) {
+                    return Ok(None);
+                };
+            }
+            Err(anyhow!(
+                "No state_root found by PRC. tx_order: {}",
+                tx_order,
+            ))
+        }
     }
 }
 
@@ -1030,7 +1030,7 @@ impl TxPositionIndexer {
         max_block_number: Option<u128>,
     ) -> anyhow::Result<()> {
         let segment_dir = segment_dir.ok_or_else(|| anyhow!("segment_dir is required"))?;
-        let ledger_tx_loader = LedgerTxGetter::new(segment_dir, true, None)?;
+        let ledger_tx_loader = LedgerTxGetter::new(segment_dir, true)?;
         let stop_at = if let Some(max_block_number) = max_block_number {
             min(max_block_number, ledger_tx_loader.get_max_chunk_id())
         } else {

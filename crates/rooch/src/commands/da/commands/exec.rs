@@ -3,7 +3,7 @@
 
 use crate::cli_types::WalletContextOptions;
 use crate::commands::da::commands::{
-    build_rooch_db, LedgerTxGetter, SequencedTxStore, TxMetaStore,
+    build_rooch_db, LedgerTxGetter, SequencedTxStore, StateRootFetcher, TxMetaStore,
 };
 use crate::utils::derive_builtin_genesis_namespace;
 use anyhow::Context;
@@ -19,7 +19,6 @@ use moveos_common::utils::to_bytes;
 use moveos_eventbus::bus::EventBus;
 use moveos_store::config_store::STARTUP_INFO_KEY;
 use moveos_store::{MoveOSStore, CONFIG_STARTUP_INFO_COLUMN_FAMILY_NAME};
-use moveos_types::h256::H256;
 use moveos_types::startup_info;
 use moveos_types::transaction::{TransactionExecutionInfo, VerifiedMoveOSTransaction};
 use raw_store::rocks::batch::WriteBatch;
@@ -280,17 +279,17 @@ impl ExecCommand {
 
         let exp_roots = tx_meta_store.get_exp_roots();
         let client = self.context_options.build()?.get_client().await?;
+        let state_root_fetcher =
+            StateRootFetcher::new(client, exp_roots.clone(), tx_anomalies.clone());
+
         let ledger_tx_loader = if self.mode.need_sync() {
             LedgerTxGetter::new_with_auto_sync(
                 self.open_da_path.clone().unwrap(),
                 self.segment_dir.clone(),
-                client,
-                exp_roots,
                 shutdown_signal,
-                tx_anomalies.clone(),
             )?
         } else {
-            LedgerTxGetter::new(self.segment_dir.clone(), false, tx_anomalies.clone())?
+            LedgerTxGetter::new(self.segment_dir.clone(), false)?
         };
         info!(
             "auto sync ledger tx getter is: {} with mode: {:?}",
@@ -312,6 +311,7 @@ impl ExecCommand {
             rollback: self.rollback,
             rooch_db,
             tx_anomalies,
+            state_root_fetcher,
         })
     }
 }
@@ -335,6 +335,8 @@ struct ExecInner {
     produced: Arc<AtomicU64>,
     done: Arc<AtomicU64>,
     executed_tx_order: Arc<AtomicU64>,
+
+    state_root_fetcher: StateRootFetcher,
 
     tx_anomalies: Option<TxAnomalies>,
 }
@@ -572,6 +574,8 @@ impl ExecInner {
                 break;
             }
             let tx_list = tx_list.unwrap();
+            let last_tx_order_in_list = tx_list.last().map(|tx| tx.sequence_info.tx_order).unwrap();
+            self.state_root_fetcher.fetch_and_add(last_tx_order_in_list).await?;
             for ledger_tx in tx_list {
                 let tx_order = ledger_tx.sequence_info.tx_order;
                 if tx_order > max_verified_tx_order && !self.mode.need_sync() {
@@ -751,12 +755,6 @@ impl ExecInner {
         let tx_hash = ledger_tx.tx_hash();
         let is_l2_tx = ledger_tx.data.is_l2_tx();
 
-        let exp_state_root = if self.bypass_verify {
-            None
-        } else {
-            self.tx_meta_store.get_exp_state_root(tx_order).await
-        };
-
         let mut bypass_execution = false;
         if let Some(tx_anomalies) = &self.tx_anomalies {
             if tx_anomalies.has_no_execution_info(&tx_hash) {
@@ -775,7 +773,7 @@ impl ExecInner {
                 .validate_ledger_transaction(ledger_tx, l1_block_with_body)
                 .await?;
             if let Err(err) = self
-                .execute_moveos_tx(tx_order, moveos_tx, exp_state_root, last_eq_tx_order)
+                .execute_moveos_tx(tx_order, moveos_tx, last_eq_tx_order)
                 .await
             {
                 self.handle_execution_error(err, is_l2_tx, tx_order)?;
@@ -855,17 +853,28 @@ impl ExecInner {
         &self,
         tx_order: u64,
         moveos_tx: VerifiedMoveOSTransaction,
-        exp_state_root_opt: Option<H256>,
         last_eq_tx_order: &mut Option<u64>,
     ) -> anyhow::Result<()> {
         let executor = self.executor.clone();
 
         let (_output, execution_info) = executor.execute_transaction(moveos_tx.clone()).await?;
 
+        let exp_state_root = if self.bypass_verify {
+            None
+        } else {
+            self.tx_meta_store.get_exp_state_root(tx_order).await
+        };
+
         let root = execution_info.root_metadata();
-        match exp_state_root_opt {
+        match exp_state_root {
             Some(expected_root) => {
                 if root.state_root.unwrap() != expected_root {
+                    if let Some(last_eq_value) = last_eq_tx_order {
+                        let mid_tx_order = (*last_eq_value + tx_order) / 2;
+                        self.state_root_fetcher.fetch_and_add(mid_tx_order).await?;
+                        info!("state root of tx_order: {} fetched, it's in the middle of last_eq_tx_order: {} and first not_eq_tx_order: {}", mid_tx_order, *last_eq_value, tx_order);
+                    }
+
                     return Err(anyhow::anyhow!(
                         "Execution state root is not equal to RoochNetwork: tx_order: {}, exp: {:?}, act: {:?}; act_execution_info: {:?}. Please rollback to last_eq_tx_order: {:?}",
                         tx_order,
