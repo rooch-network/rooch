@@ -7,12 +7,12 @@ module nostr::event {
     use std::string::{Self, String};
     use moveos_std::signer;
     use moveos_std::object::{Self, ObjectID};
-    use moveos_std::bcs;
     use moveos_std::hash;
     use moveos_std::hex;
-    use moveos_std::timestamp;
+    // use moveos_std::timestamp;
     use moveos_std::event;
     use moveos_std::json;
+    use moveos_std::string_utils;
     use rooch_framework::schnorr;
     use nostr::inner;
 
@@ -37,6 +37,7 @@ module nostr::event {
     const ErrorSignatureValidationFailure: u64 = 1002;
     const ErrorMalformedPublicKey: u64 = 1003;
     const ErrorUtf8Encoding: u64 = 1004;
+    const ErrorMalformedSignature: u64 = 1005;
 
     #[data_struct]
     /// Event
@@ -52,7 +53,7 @@ module nostr::event {
 
     #[data_struct]
     /// Event create notification for Move events
-    struct MoveEventNotification has copy, drop {
+    struct NostrEventCreatedEvent has copy, drop {
         id: ObjectID
     }
 
@@ -67,77 +68,85 @@ module nostr::event {
     /// TODO: serialize matching the standard
     /// Serialize to byte arrays, which could be sha256 hashed and hex-encoded with lowercase to 32 byte arrays
     fun serialize(pubkey: String, created_at: u64, kind: u16, tags: vector<vector<String>>, content: String): vector<u8> {
-        let serialized = vector::empty<vector<u8>>();
+        let serialized = string::utf8(b"");
+        let left = string::utf8(b"[");
+        let right = string::utf8(b"]");
+        let coma = string::utf8(b",");
 
         // version 0, as described in NIP-01
-        let version = vector::singleton<u8>(0);
-        vector::push_back(&mut serialized, version);
+        let version = 0;
+        let version_str = string_utils::to_string_u8(version);
+        string::append(&mut serialized, left);
+        string::append(&mut serialized, version_str);
+        string::append(&mut serialized, coma);
 
         // pubkey
-        assert!(string::length(&pubkey) == 65, ErrorMalformedPublicKey); // 64 characters including @ as the first character
-        let pubkey_bytes = bcs::to_bytes(&pubkey);
-        vector::push_back(&mut serialized, pubkey_bytes);
+        assert!(string::length(&pubkey) == 64, ErrorMalformedPublicKey);
+        string::append(&mut serialized, pubkey);
+        string::append(&mut serialized, coma);
 
         // created_at
-        let created_at_bytes = bcs::to_bytes(&created_at);
-        vector::push_back(&mut serialized, created_at_bytes);
+        let created_at_str = string_utils::to_string_u64(created_at);
+        string::append(&mut serialized, created_at_str);
+        string::append(&mut serialized, coma);
 
         // kind
-        let kind_bytes = bcs::to_bytes(&kind);
-        vector::push_back(&mut serialized, kind_bytes);
+        let kind_str = string_utils::to_string_u16(kind);
+        string::append(&mut serialized, kind_str);
+        string::append(&mut serialized, coma);
 
         // tags
-        let tags_bytes = bcs::to_bytes(&tags);
-        vector::push_back(&mut serialized, tags_bytes);
+        let tags_str = string::utf8(json::to_json(&tags));
+        string::append(&mut serialized, tags_str);
+        string::append(&mut serialized, coma);
 
         // content
-        let content_bytes = bcs::to_bytes(&content);
+        let content_json = json::to_json(&content);
         // escape some characters of the content field
-        while (vector::contains(&content_bytes, &LF)) {
-            vector::remove_value(&mut content_bytes, &LF);
+        while (vector::contains(&content_json, &LF)) {
+            vector::remove_value(&mut content_json, &LF);
         };
-        while (vector::contains(&content_bytes, &DOUBLEQUOTE)) {
-            vector::remove_value(&mut content_bytes, &DOUBLEQUOTE);
+        while (vector::contains(&content_json, &DOUBLEQUOTE)) {
+            vector::remove_value(&mut content_json, &DOUBLEQUOTE);
         };
-        while (vector::contains(&content_bytes, &BACKSLASH)) {
-            vector::remove_value(&mut content_bytes, &BACKSLASH);
+        while (vector::contains(&content_json, &BACKSLASH)) {
+            vector::remove_value(&mut content_json, &BACKSLASH);
         };
-        while (vector::contains(&content_bytes, &CR)) {
-            vector::remove_value(&mut content_bytes, &CR);
+        while (vector::contains(&content_json, &CR)) {
+            vector::remove_value(&mut content_json, &CR);
         };
-        while (vector::contains(&content_bytes, &TAB)) {
-            vector::remove_value(&mut content_bytes, &TAB);
+        while (vector::contains(&content_json, &TAB)) {
+            vector::remove_value(&mut content_json, &TAB);
         };
-        while (vector::contains(&content_bytes, &BS)) {
-            vector::remove_value(&mut content_bytes, &BS);
+        while (vector::contains(&content_json, &BS)) {
+            vector::remove_value(&mut content_json, &BS);
         };
-        while (vector::contains(&content_bytes, &FF)) {
-            vector::remove_value(&mut content_bytes, &FF);
+        while (vector::contains(&content_json, &FF)) {
+            vector::remove_value(&mut content_json, &FF);
         };
-        vector::push_back(&mut serialized, content_bytes);
+        let content_str = string::utf8(content_json);
+        string::append(&mut serialized, content_str);
+        string::append(&mut serialized, right);
 
-        // serialize the bytes to json string bytes
-        let serialized_json = json::to_json(&serialized);
+        // get the serialized string bytes
+        let serialized_bytes = string::into_bytes(serialized);
 
         // remove whitespace and line breaks from output JSON
-        while (vector::contains(&serialized_json, &SPACE)) {
-            vector::remove_value(&mut serialized_json, &SPACE);
+        while (vector::contains(&serialized_bytes, &SPACE)) {
+            vector::remove_value(&mut serialized_bytes, &SPACE);
         };
-        while (vector::contains(&serialized_json, &LF)) {
-            vector::remove_value(&mut serialized_json, &LF);
+        while (vector::contains(&serialized_bytes, &LF)) {
+            vector::remove_value(&mut serialized_bytes, &LF);
         };
 
         // check UTF-8 encoding
-        assert!(string::internal_check_utf8(&serialized_json), ErrorUtf8Encoding);
+        assert!(string::internal_check_utf8(&serialized_bytes), ErrorUtf8Encoding);
 
-        serialized_json
+        serialized_bytes
     }
 
     /// Check signature with public key, id and signature for schnorr
-    fun check_signature(public_key: vector<u8>, id: vector<u8>, signature: vector<u8>) {
-        std::debug::print(&string::utf8(public_key));
-        std::debug::print(&string::utf8(id));
-        std::debug::print(&bcs::from_bytes<String>(signature));
+    fun check_signature(id: vector<u8>, public_key: vector<u8>, signature: vector<u8>) {
         assert!(schnorr::verify(
             &signature,
             &public_key,
@@ -146,12 +155,12 @@ module nostr::event {
     }
 
     /// Create an Event
-    public fun create_event(public_key: vector<u8>, kind: u16, tags: vector<vector<String>>, content: String, signature: vector<u8>): vector<u8> {
+    public fun create_event(public_key: vector<u8>, created_at: u64, kind: u16, tags: vector<vector<String>>, content: String, signature: vector<u8>): vector<u8> {
         assert!(string::length(&content) <= 1000, ErrorContentTooLarge);
         let pubkey = string::utf8(public_key);
 
-        // get now timestamp by seconds
-        let created_at = timestamp::now_seconds();
+        // TODO: get now timestamp by seconds
+        // let created_at = timestamp::now_seconds();
 
         // serialize input to bytes for an Event id
         let serialized = serialize(pubkey, created_at, kind, tags, content);
@@ -166,7 +175,7 @@ module nostr::event {
         assert!(vector::length(&id) == 64, ErrorMalformedId);
 
         // check the signature
-        check_signature(public_key, id, signature);
+        check_signature(id, public_key, signature);
 
         // derive a rooch address
         let rooch_address = inner::derive_rooch_address(public_key);
@@ -178,9 +187,11 @@ module nostr::event {
             let _ = json::from_json<UserMetadata>(*content_bytes);
             // clear past user metadata events from the user with the same rooch address from the public key
             let event_object_id = object::account_named_object_id<Event>(rooch_address);
-            let event_object = object::take_object_extend<Event>(event_object_id);
-            let event = object::remove(event_object);
-            drop_event(event);
+            if (object::exists_object_with_type<Event>(event_object_id)) {
+                let event_object = object::take_object_extend<Event>(event_object_id);
+                let event = object::remove(event_object);
+                drop_event(event);
+            };
         };
 
         // save the event to the rooch address mapped to the public key
@@ -197,7 +208,7 @@ module nostr::event {
 
         // emit a move event nofitication
         let event_object_id = object::id(&event_object);
-        let move_event = MoveEventNotification {
+        let move_event = NostrEventCreatedEvent {
             id: event_object_id
         };
         event::emit(move_event);
@@ -211,34 +222,34 @@ module nostr::event {
     }
 
     /// Entry function to create an Event
-    public entry fun create_event_entry(public_key: String, kind: u16, tags: vector<vector<String>>, content: String, signature: String) {
-        let public_key_bytes = bcs::to_bytes(&public_key);
-        let signature_bytes = bcs::to_bytes(&signature);
-        let _event_json = create_event(public_key_bytes, kind, tags, content, signature_bytes);
+    public entry fun create_event_entry(public_key: String, created_at: u64, kind: u16, tags: vector<vector<String>>, content: String, signature: String) {
+        let public_key_bytes = string::into_bytes(public_key);
+        let signature_bytes = string::into_bytes(signature);
+        let _event_json = create_event(public_key_bytes, created_at, kind, tags, content, signature_bytes);
     }
 
     /// Save an Event
-    public fun save_event(public_key: vector<u8>, created_at: u64, kind: u16, tags: vector<vector<String>>, content: String, signature: vector<u8>): vector<u8> {
-        assert!(string::length(&content) <= 1000, ErrorContentTooLarge);
-        let pubkey = string::utf8(public_key);
+    /// TODO: check content integrity by doing serialization to id and remove id field here
+    public fun save_event(id: String, public_key: String, created_at: u64, kind: u16, tags: vector<vector<String>>, content: String, signature: String): vector<u8> {
+        // check id length
+        assert!(string::length(&id) == 64, ErrorMalformedId);
 
-        // serialize input to bytes for an Event id
-        let serialized = serialize(pubkey, created_at, kind, tags, content);
+        // check public key length
+        assert!(string::length(&public_key) == 64, ErrorMalformedPublicKey);
 
-        // hash with sha256
-        let hashed_data = hash::sha2_256(serialized);
+        // check signature length
+        assert!(string::length(&signature) == 128, ErrorMalformedSignature);
 
-        // encode with lowercase hex
-        let id = hex::encode(hashed_data);
-
-        // verify the length of the hex bytes to 32 bytes (64 characters)
-        assert!(vector::length(&id) == 64, ErrorMalformedId);
+        // convert to byte arrays
+        let id_bytes = hex::decode(&string::into_bytes(id));
+        let public_key_bytes = hex::decode(&string::into_bytes(public_key));
+        let signature_bytes = hex::decode(&string::into_bytes(signature));
 
         // check the signature
-        check_signature(public_key, id, signature);
+        check_signature(id_bytes, public_key_bytes, signature_bytes);
 
         // derive a rooch address
-        let rooch_address = inner::derive_rooch_address(public_key);
+        let rooch_address = inner::derive_rooch_address(public_key_bytes);
 
         // handle a range of different kinds of an Event
         if (kind == EVENT_KIND_USER_METADATA) {
@@ -247,26 +258,28 @@ module nostr::event {
             let _ = json::from_json<UserMetadata>(*content_bytes);
             // clear past user metadata events from the user with the same rooch address from the public key
             let event_object_id = object::account_named_object_id<Event>(rooch_address);
-            let event_object = object::take_object_extend<Event>(event_object_id);
-            let event = object::remove(event_object);
-            drop_event(event);
+            if (object::exists_object_with_type<Event>(event_object_id)) {
+                let event_object = object::take_object_extend<Event>(event_object_id);
+                let event = object::remove(event_object);
+                drop_event(event);
+            };
         };
 
         // save the event to the rooch address mapped to the public key
         let event = Event {
-            id,
-            pubkey: public_key,
+            id: id_bytes,
+            pubkey: public_key_bytes,
             created_at,
-            kind: kind,
-            tags: tags,
+            kind,
+            tags,
             content,
-            sig: signature
+            sig: signature_bytes
         };
         let event_object = object::new_account_named_object(rooch_address, event);
 
         // emit a move event nofitication
         let event_object_id = object::id(&event_object);
-        let move_event = MoveEventNotification {
+        let move_event = NostrEventCreatedEvent {
             id: event_object_id
         };
         event::emit(move_event);
@@ -280,10 +293,8 @@ module nostr::event {
     }
 
     /// Entry function to save an Event
-    public entry fun save_event_entry(public_key: String, created_at: u64, kind: u16, tags: vector<vector<String>>, content: String, signature: String) {
-        let public_key_bytes = bcs::to_bytes(&public_key);
-        let signature_bytes = bcs::to_bytes(&signature);
-        let _event_json = save_event(public_key_bytes, created_at, kind, tags, content, signature_bytes);
+    public entry fun save_event_entry(id: String, public_key: String, created_at: u64, kind: u16, tags: vector<vector<String>>, content: String, signature: String) {
+        let _event_json = save_event(id, public_key, created_at, kind, tags, content, signature);
     }
 
     /// drop an event
