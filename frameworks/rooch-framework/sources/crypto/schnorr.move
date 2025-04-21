@@ -3,42 +3,33 @@
 
 module rooch_framework::schnorr {
     /// constant codes
-    const SCHNORR_PUBKEY_LENGTH: u64 = 32;
-    const SCHNORR_SIG_LENGTH: u64 = 64;
-
-    /// Hash function name that are valid for verify.
-    const SHA256: u8 = 0;
+    const SCHNORR_VERIFYING_KEY_LENGTH: u64 = 32;
+    const SCHNORR_SIGNATURE_LENGTH: u64 = 64;
 
     /// Error if the signature is invalid.
     const ErrorInvalidSignature: u64 = 1;
 
-    /// Error if the public key is invalid.
-    const ErrorInvalidPubKey: u64 = 2;
+    /// Error if the verifying key is invalid.
+    const ErrorInvalidVerifyingKey: u64 = 2;
 
     /// built-in functions
-    public fun public_key_length(): u64 {
-        SCHNORR_PUBKEY_LENGTH
+    public fun verifying_key_length(): u64 {
+        SCHNORR_VERIFYING_KEY_LENGTH
     }
 
     public fun signature_length(): u64 {
-        SCHNORR_SIG_LENGTH
+        SCHNORR_SIGNATURE_LENGTH
     }
 
-    public fun sha256(): u8 {
-        SHA256
-    }
-
-    /// @param signature: A 64-bytes signature that is signed using Schnorr over Secpk256k1 key pairs.
-    /// @param public_key: A 32-bytes public key that is used to sign messages.
+    /// @param signature: A 64-bytes signature that is signed using schnorr over secpk256k1 key pairs.
+    /// @param verifying_key: A 32-bytes verifying key that is used to verify messages.
     /// @param msg: The message that the signature is signed against.
-    /// @param hash: The hash function used to hash the message when signing.
     ///
-    /// If the signature is valid to the pubkey and hashed message, return true. Else false.
+    /// If the signature and message are valid to the verifying key, return true. Else false.
     native public fun verify(
         signature: &vector<u8>,
-        public_key: &vector<u8>,
+        verifying_key: &vector<u8>,
         msg: &vector<u8>,
-        hash: u8
     ): bool;
 
     #[test]
@@ -58,7 +49,7 @@ module rooch_framework::schnorr {
         let invalid_vk = x"5e99a541db69bd32040dfe5037fbf5210dafa8151a71e21c5204b05d95ce0a62";
         let sig = x"6c2565ceabff153609aa9ccdeb13421a1181a54d0ca4fe10cd074b0c2da44c641c98992701c9a4d3e24391db3e358eff190510be46e73d0e517d5e5b13bb06fd";
 
-        verify(&sig, &invalid_pk, &msg, SHA256);
+        verify(&sig, &invalid_vk, &msg);
     }
 
     #[test]

@@ -19,11 +19,16 @@ smallvec = { workspace = true }
 hex = { workspace = true }
 tracing = { workspace = true }
 bitcoin = { workspace = true }
+k256 = { workspace = true }
 
 move-binary-format = { workspace = true }
 move-core-types = { workspace = true }
 move-stdlib = { workspace = true }
-move-vm-runtime = { workspace = true, features = ["stacktrace", "debugging", "testing"] }
+move-vm-runtime = { workspace = true, features = [
+    "stacktrace",
+    "debugging",
+    "testing",
+] }
 move-vm-types = { workspace = true }
 
 

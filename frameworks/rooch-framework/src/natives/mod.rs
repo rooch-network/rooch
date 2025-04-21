@@ -29,7 +29,7 @@ pub struct NativeGasParameters {
     pub ed25519: rooch_framework::crypto::ed25519::GasParameters,
     pub ecdsa_k1: rooch_framework::crypto::ecdsa_k1::GasParameters,
     pub bitcoin_address: rooch_framework::bitcoin_address::GasParameters,
-    pub schnorr: rooch_framework::crypto::schnorr::GasParameters,
+    pub schnorr: rooch_framework::crypto::schnorr::VerifyGasParameters,
 }
 
 impl FromOnChainGasSchedule for NativeGasParameters {
@@ -168,7 +168,7 @@ impl NativeGasParameters {
             ed25519: rooch_framework::crypto::ed25519::GasParameters::zeros(),
             ecdsa_k1: rooch_framework::crypto::ecdsa_k1::GasParameters::zeros(),
             bitcoin_address: rooch_framework::bitcoin_address::GasParameters::zeros(),
-            schnorr: rooch_framework::crypto::schnorr::GasParameters::zeros(),
+            schnorr: rooch_framework::crypto::schnorr::VerifyGasParameters::zeros(),
         }
     }
 }

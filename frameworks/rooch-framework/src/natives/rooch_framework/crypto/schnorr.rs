@@ -15,23 +15,21 @@ use move_vm_types::{
 use smallvec::smallvec;
 use std::collections::VecDeque;
 
-pub const SHA256: u8 = 0;
-
 pub const E_INVALID_SIGNATURE: u64 = 1;
-pub const E_INVALID_PUBKEY: u64 = 2;
+pub const E_INVALID_VERIFYING_KEY: u64 = 2;
 
+// optional function
+/// verify schnorr signature
 pub fn native_verify(
-    gas_params: &FromBytesGasParameters,
+    gas_params: &VerifyGasParametersOption,
     _context: &mut NativeContext,
     ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
     debug_assert!(ty_args.is_empty());
-    debug_assert!(args.len() == 4);
+    debug_assert!(args.len() == 3);
 
-    let hash = pop_arg!(args, u8);
     let msg = pop_arg!(args, VectorRef);
-
     let verifying_key = pop_arg!(args, VectorRef);
     let signature = pop_arg!(args, VectorRef);
 
@@ -39,12 +37,15 @@ pub fn native_verify(
     let verifying_key_bytes_ref = verifying_key.as_bytes_ref();
     let signature_bytes_ref = signature.as_bytes_ref();
 
-    let cost = gas_params.base
-        + gas_params.per_byte * NumBytes::new(msg_bytes_ref.len() as u64)
-        + gas_params.per_byte * NumBytes::new(verifying_key_bytes_ref.len() as u64)
-        + gas_params.per_byte * NumBytes::new(signature_bytes_ref.len() as u64);
+    let cost = gas_params.base.unwrap_or_else(InternalGas::zero)
+        + gas_params.per_byte.unwrap_or_else(InternalGasPerByte::zero)
+            * NumBytes::new(msg_bytes_ref.len() as u64)
+        + gas_params.per_byte.unwrap_or_else(InternalGasPerByte::zero)
+            * NumBytes::new(verifying_key_bytes_ref.len() as u64)
+        + gas_params.per_byte.unwrap_or_else(InternalGasPerByte::zero)
+            * NumBytes::new(signature_bytes_ref.len() as u64);
 
-    let Ok(sign) = SchnorrSignature::from_bytes(&signature_bytes_ref) else {
+    let Ok(sig) = Signature::try_from(signature_bytes_ref.to_vec().as_slice()) else {
         return Ok(NativeResult::err(cost, E_INVALID_SIGNATURE));
     };
 
@@ -58,17 +59,21 @@ pub fn native_verify(
 }
 
 #[derive(Debug, Clone)]
-pub struct FromBytesGasParameters {
-    pub base: InternalGas,
-    pub per_byte: InternalGasPerByte,
+pub struct VerifyGasParametersOption {
+    pub base: Option<InternalGas>,
+    pub per_byte: Option<InternalGasPerByte>,
 }
 
-impl FromBytesGasParameters {
+impl VerifyGasParametersOption {
     pub fn zeros() -> Self {
         Self {
-            base: 0.into(),
-            per_byte: 0.into(),
+            base: Some(0.into()),
+            per_byte: Some(0.into()),
         }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.base.is_none() || self.per_byte.is_none()
     }
 }
 
@@ -77,20 +82,28 @@ impl FromBytesGasParameters {
  **************************************************************************************************/
 
 #[derive(Debug, Clone)]
-pub struct GasParameters {
-    pub verify: FromBytesGasParameters,
+pub struct VerifyGasParameters {
+    pub verify: VerifyGasParametersOption,
 }
 
-impl GasParameters {
+impl VerifyGasParameters {
     pub fn zeros() -> Self {
         Self {
-            verify: FromBytesGasParameters::zeros(),
+            verify: VerifyGasParametersOption::zeros(),
         }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.verify.is_empty()
     }
 }
 
-pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, NativeFunction)> {
-    let natives = [("verify", make_native(gas_params.verify, native_verify))];
+pub fn make_all(gas_params: VerifyGasParameters) -> impl Iterator<Item = (String, NativeFunction)> {
+    let mut natives = Vec::new();
+
+    if !gas_params.is_empty() {
+        natives.push(("verify", make_native(gas_params.verify, native_verify)));
+    }
 
     make_module_natives(natives)
 }
