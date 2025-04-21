@@ -155,6 +155,7 @@ module nostr::event {
     }
 
     /// Create an Event
+    /// TODO: remove signature and use private key to sign id
     public fun create_event(public_key: vector<u8>, created_at: u64, kind: u16, tags: vector<vector<String>>, content: String, signature: vector<u8>): vector<u8> {
         assert!(string::length(&content) <= 1000, ErrorContentTooLarge);
         let pubkey = string::utf8(public_key);
