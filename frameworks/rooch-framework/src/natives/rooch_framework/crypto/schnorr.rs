@@ -75,6 +75,13 @@ impl VerifyGasParametersOption {
     pub fn is_empty(&self) -> bool {
         self.base.is_none() || self.per_byte.is_none()
     }
+
+    pub fn init(base: InternalGas, per_byte: InternalGasPerByte) -> Self {
+        Self {
+            base: Some(base),
+            per_byte: Some(per_byte),
+        }
+    }
 }
 
 /***************************************************************************************************
