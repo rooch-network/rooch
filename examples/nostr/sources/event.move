@@ -38,6 +38,18 @@ module nostr::event {
     const ErrorMalformedPublicKey: u64 = 1003;
     const ErrorUtf8Encoding: u64 = 1004;
     const ErrorMalformedSignature: u64 = 1005;
+    const ErrorPreEventNotExist: u64 = 1006;
+
+    #[data_struct]
+    /// PreEvent
+    struct PreEvent has key {
+        id: vector<u8>, // 32-bytes lowercase hex-encoded sha256 of the serialized event data
+        pubkey: vector<u8>, // 32-bytes lowercase hex-encoded public key of the event creator
+        created_at: u64, // unix timestamp in seconds
+        kind: u16, // integer between 0 and 65535
+        tags: vector<vector<String>>, // arbitrary string
+        content: String, // arbitrary string
+    }
 
     #[data_struct]
     /// Event
@@ -49,6 +61,12 @@ module nostr::event {
         tags: vector<vector<String>>, // arbitrary string
         content: String, // arbitrary string
         sig: vector<u8> // 64-bytes lowercase hex of the signature of the sha256 hash of the serialized event data, which is the same as the "id" field
+    }
+
+    #[data_struct]
+    /// PreEvent create notification for Move events
+    struct NostrPreEventCreatedEvent has copy, drop {
+        id: ObjectID
     }
 
     #[data_struct]
@@ -154,14 +172,13 @@ module nostr::event {
         ), ErrorSignatureValidationFailure);
     }
 
-    /// Create an Event
-    /// TODO: remove signature and use private key to sign id
-    public fun create_event(public_key: vector<u8>, created_at: u64, kind: u16, tags: vector<vector<String>>, content: String, signature: vector<u8>): vector<u8> {
+    /// Create a pre Event
+    public fun create_pre_event(public_key: vector<u8>, kind: u16, tags: vector<vector<String>>, content: String) {
         assert!(string::length(&content) <= 1000, ErrorContentTooLarge);
         let pubkey = string::utf8(public_key);
 
-        // TODO: get now timestamp by seconds
-        // let created_at = timestamp::now_seconds();
+        // get now timestamp by seconds
+        let created_at = timestamp::now_seconds();
 
         // serialize input to bytes for an Event id
         let serialized = serialize(pubkey, created_at, kind, tags, content);
@@ -175,11 +192,55 @@ module nostr::event {
         // verify the length of the hex bytes to 32 bytes (64 characters)
         assert!(vector::length(&id) == 64, ErrorMalformedId);
 
-        // check the signature
-        check_signature(id, public_key, signature);
+        // save the pre event to the rooch address mapped to the public key
+        let pre_event = PreEvent {
+            id,
+            pubkey: public_key,
+            created_at,
+            kind,
+            tags,
+            content,
+        };
+        let pre_event_object = object::new_account_named_object<PreEvent>(rooch_address, pre_event);
 
+        // emit a move event nofitication
+        let pre_event_object_id = object::id(&pre_event_object);
+        let move_pre_event = NostrPreEventCreatedEvent {
+            id: pre_event_object_id
+        };
+        event::emit(move_pre_event);
+
+        // transfer pre event object to the rooch address
+        object::transfer_extend(pre_event_object, rooch_address);
+    }
+
+    /// Entry function to create a pre Event
+    public entry fun create_pre_event_entry(public_key: vector<u8>, kind: u16, tags: vector<vector<String>>, content: String) {
+        create_pre_event(public_key, kind, tags, content);
+    }
+
+    /// Create an Event
+    public fun create_event(signature: vector<u8>) {
         // derive a rooch address
         let rooch_address = inner::derive_rooch_address(public_key);
+
+        // get the pre event object id from the address
+        let pre_event_object_id = object::account_named_object_id<PreEvent>(rooch_address);
+
+        // check the pre event object id if it exists
+        assert!(object::exists_object_with_type<PreEvent>(pre_event_object_id), ErrorPreEventNotExist);
+
+        // take the pre event object from the object store
+        let pre_event_object = object::borrow_object<PreEvent>(pre_event_object_id);
+
+        // borrow the pre event
+        let pre_event = object::borrow<PreEvent>(pre_event_object);
+
+        // flatten the elements
+        let PreEvent { id, pubkey, created_at, kind, tags, content } = pre_event;
+
+        // check the signature
+        check_signature(id, pubkey, signature);
 
         // handle a range of different kinds of an Event
         if (kind == EVENT_KIND_USER_METADATA) {
@@ -198,14 +259,84 @@ module nostr::event {
         // save the event to the rooch address mapped to the public key
         let event = Event {
             id,
-            pubkey: public_key,
+            pubkey,
             created_at,
-            kind: kind,
-            tags: tags,
+            kind,
+            tags,
             content,
             sig: signature
         };
-        let event_object = object::new_account_named_object(rooch_address, event);
+        let event_object = object::new_account_named_object<Event>(rooch_address, event);
+
+        // emit a move event nofitication
+        let event_object_id = object::id(&event_object);
+        let move_event = NostrEventCreatedEvent {
+            id: event_object_id
+        };
+        event::emit(move_event);
+
+        // transfer event object to the rooch address
+        object::transfer_extend(event_object, rooch_address);
+    }
+
+    /// Entry function to create an Event
+    public entry fun create_event_entry(signature: vector<u8>) {
+        create_event(signature);
+    }
+
+    /// Save an Event
+    public fun save_event(public_key: String, created_at: u64, kind: u16, tags: vector<vector<String>>, content: String, signature: String): vector<u8> {
+        // check public key length
+        assert!(string::length(&public_key) == 64, ErrorMalformedPublicKey);
+
+        // convert to bytes
+        let pubkey = string::utf8(public_key);
+
+        // serialize input to bytes for an Event id
+        let serialized = serialize(pubkey, created_at, kind, tags, content);
+
+        // check id length
+        assert!(string::length(&id) == 64, ErrorMalformedId);
+
+        // check signature length
+        assert!(string::length(&signature) == 128, ErrorMalformedSignature);
+
+        // convert to byte arrays
+        let id_bytes = hex::decode(&string::into_bytes(id));
+        let public_key_bytes = hex::decode(&string::into_bytes(public_key));
+        let signature_bytes = hex::decode(&string::into_bytes(signature));
+
+        // check the signature
+        check_signature(id_bytes, public_key_bytes, signature_bytes);
+
+        // derive a rooch address
+        let rooch_address = inner::derive_rooch_address(public_key_bytes);
+
+        // handle a range of different kinds of an Event
+        if (kind == EVENT_KIND_USER_METADATA) {
+            // check the content integrity
+            let content_bytes = string::bytes(&content);
+            let _ = json::from_json<UserMetadata>(*content_bytes);
+            // clear past user metadata events from the user with the same rooch address from the public key
+            let event_object_id = object::account_named_object_id<Event>(rooch_address);
+            if (object::exists_object_with_type<Event>(event_object_id)) {
+                let event_object = object::take_object_extend<Event>(event_object_id);
+                let event = object::remove(event_object);
+                drop_event(event);
+            };
+        };
+
+        // save the event to the rooch address mapped to the public key
+        let event = Event {
+            id: id_bytes,
+            pubkey: public_key_bytes,
+            created_at,
+            kind,
+            tags,
+            content,
+            sig: signature_bytes
+        };
+        let event_object = object::new_account_named_object<Event>(rooch_address, event);
 
         // emit a move event nofitication
         let event_object_id = object::id(&event_object);
@@ -222,16 +353,13 @@ module nostr::event {
         event_json
     }
 
-    /// Entry function to create an Event
-    public entry fun create_event_entry(public_key: String, created_at: u64, kind: u16, tags: vector<vector<String>>, content: String, signature: String) {
-        let public_key_bytes = string::into_bytes(public_key);
-        let signature_bytes = string::into_bytes(signature);
-        let _event_json = create_event(public_key_bytes, created_at, kind, tags, content, signature_bytes);
+    /// Entry function to save an Event
+    public entry fun save_event_entry(public_key: String, created_at: u64, kind: u16, tags: vector<vector<String>>, content: String, signature: String) {
+        let _event_json = save_event(public_key, created_at, kind, tags, content, signature);
     }
 
-    /// Save an Event
-    /// TODO: check content integrity by doing serialization to id and remove id field here
-    public fun save_event(id: String, public_key: String, created_at: u64, kind: u16, tags: vector<vector<String>>, content: String, signature: String): vector<u8> {
+    /// Save an Event with plaintext. Do not check integrity of created_at, kind, tags and content with id.
+    public fun save_event_plaintext(id: String, public_key: String, created_at: u64, kind: u16, tags: vector<vector<String>>, content: String, signature: String): vector<u8> {
         // check id length
         assert!(string::length(&id) == 64, ErrorMalformedId);
 
@@ -276,7 +404,7 @@ module nostr::event {
             content,
             sig: signature_bytes
         };
-        let event_object = object::new_account_named_object(rooch_address, event);
+        let event_object = object::new_account_named_object<Event>(rooch_address, event);
 
         // emit a move event nofitication
         let event_object_id = object::id(&event_object);
@@ -293,9 +421,9 @@ module nostr::event {
         event_json
     }
 
-    /// Entry function to save an Event
-    public entry fun save_event_entry(id: String, public_key: String, created_at: u64, kind: u16, tags: vector<vector<String>>, content: String, signature: String) {
-        let _event_json = save_event(id, public_key, created_at, kind, tags, content, signature);
+    /// Entry function to save an Event with plaintext
+    public entry fun save_event_plaintext_entry(id: String, public_key: String, created_at: u64, kind: u16, tags: vector<vector<String>>, content: String, signature: String) {
+        let _event_json = save_event_plaintext(id, public_key, created_at, kind, tags, content, signature);
     }
 
     /// drop an event
@@ -306,11 +434,6 @@ module nostr::event {
     public fun unpack_event(event: Event): (vector<u8>, vector<u8>, u64, u16, vector<vector<String>>, String, vector<u8>) {
         let Event { id, pubkey, created_at, kind, tags, content, sig } = event;
         (id, pubkey, created_at, kind, tags, content, sig)
-    }
-
-    public fun module_signer(): signer {
-        let module_signer = signer::module_signer<Event>();
-        module_signer
     }
 
     /// getter functions
