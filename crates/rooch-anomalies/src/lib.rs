@@ -62,6 +62,10 @@ impl TxAnomalies {
         self.no_execution_info.contains_key(hash)
     }
 
+    pub fn has_no_execution_info_for_order(&self, order: u64) -> bool {
+        self.no_execution_info.iter().any(|(_, o)| *o == order) // won't be many, so linear search is ok
+    }
+
     pub fn get_genesis_namespace(&self) -> String {
         self.genesis_namespace.clone()
     }

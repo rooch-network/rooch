@@ -175,7 +175,11 @@ export function FaucetView({ inviter, swapRGas }: FaucetViewProps) {
       },
     })
 
-    if (result && result.data.length > 0 && result.data[0].decoded_value?.value.is_open === true) {
+    if (
+      result &&
+      result.data.length > 0 &&
+      (result.data[0].decoded_value as { value: { is_open: boolean } })?.value.is_open === true
+    ) {
       const pk = wallet!.getPublicKey().toBytes()
       const signMsg = 'Welcome to use Rooch! Hold BTC Claim your RGas.'
       const sign = await wallet!.sign(stringToBytes('utf8', signMsg))

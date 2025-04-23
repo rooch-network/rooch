@@ -3,7 +3,7 @@
 
 use crate::cli_types::WalletContextOptions;
 use crate::commands::da::commands::{
-    build_rooch_db, LedgerTxGetter, SequencedTxStore, TxMetaStore,
+    build_rooch_db, LedgerTxGetter, SequencedTxStore, StateRootFetcher, TxMetaStore,
 };
 use crate::utils::derive_builtin_genesis_namespace;
 use anyhow::Context;
@@ -19,7 +19,6 @@ use moveos_common::utils::to_bytes;
 use moveos_eventbus::bus::EventBus;
 use moveos_store::config_store::STARTUP_INFO_KEY;
 use moveos_store::{MoveOSStore, CONFIG_STARTUP_INFO_COLUMN_FAMILY_NAME};
-use moveos_types::h256::H256;
 use moveos_types::startup_info;
 use moveos_types::transaction::{TransactionExecutionInfo, VerifiedMoveOSTransaction};
 use raw_store::rocks::batch::WriteBatch;
@@ -61,8 +60,8 @@ use tracing::{info, warn};
 pub struct ExecCommand {
     #[clap(
         long = "mode",
-        default_value = "all",
-        help = "Execution mode: exec, seq, all, sync. Default is all"
+        default_value = "sync",
+        help = "Execution mode: exec, seq, all, sync, sync-exec. Default is sync"
     )]
     pub mode: ExecMode,
     #[clap(long = "segment-dir")]
@@ -74,7 +73,7 @@ pub struct ExecCommand {
     pub tx_position_path: PathBuf,
     #[clap(
         long = "exp-root",
-        help = "Path to tx_order:state_root:accumulator_root file(results from RoochNetwork), for fast verification avoiding blocking on RPC requests"
+        help = "Path to tx_order:state_root:accumulator_root file(results from RoochNetwork), for caching expected roots avoiding blocking on RPC requests"
     )]
     pub exp_root_path: PathBuf,
     #[clap(
@@ -95,6 +94,8 @@ pub struct ExecCommand {
     pub force_align: bool,
     #[clap(long = "max-block-number", help = "Max block number to exec")]
     pub max_block_number: Option<u128>,
+    #[clap(long = "bypass-verify", help = "bypass verification of state root")]
+    pub bypass_verify: bool,
 
     #[clap(long = "btc-rpc-url")]
     pub btc_rpc_url: String,
@@ -138,6 +139,8 @@ pub enum ExecMode {
     All,
     /// Sync from DA automatically and `All` mode
     Sync,
+    /// Sync from DA automatically and `Exec` mode
+    SyncExec,
 }
 
 impl PartialEq for ExecMode {
@@ -149,11 +152,16 @@ impl PartialEq for ExecMode {
 impl ExecMode {
     pub fn as_bits(&self) -> u8 {
         match self {
-            ExecMode::Exec => 0b10,  // Execute
-            ExecMode::Seq => 0b01,   // Sequence
-            ExecMode::All => 0b11,   // All
-            ExecMode::Sync => 0b111, // Sync
+            ExecMode::Exec => 0b10,
+            ExecMode::Seq => 0b01,
+            ExecMode::All => 0b11,
+            ExecMode::Sync => 0b111,
+            ExecMode::SyncExec => 0b110,
         }
+    }
+
+    pub fn need_sync(&self) -> bool {
+        self.as_bits() & 0b100 != 0
     }
 
     pub fn need_exec(&self) -> bool {
@@ -168,14 +176,23 @@ impl ExecMode {
         self.as_bits() & 0b11 == 0b11
     }
 
-    pub fn get_verify_targets(&self) -> String {
-        match self {
+    pub fn get_verify_targets_str(&self, bypass_verify: bool) -> Option<String> {
+        let raw_targets = match self {
             ExecMode::Exec => "state root",
             ExecMode::Seq => "accumulator root",
             ExecMode::All => "state+accumulator root",
             ExecMode::Sync => "state+accumulator root",
+            ExecMode::SyncExec => "state root",
+        };
+        if bypass_verify {
+            if raw_targets == "state root" {
+                return None;
+            }
+            if raw_targets == "state+accumulator root" {
+                return Some("accumulator root".to_string());
+            }
         }
-        .to_string()
+        Some(raw_targets.to_string())
     }
 }
 
@@ -202,7 +219,7 @@ impl ExecCommand {
             }
         });
 
-        let mut exec_inner = self.build_exec_inner(shutdown_rx.clone()).await?;
+        let exec_inner = self.build_exec_inner(shutdown_rx.clone()).await?;
         exec_inner.run(shutdown_rx).await?;
 
         let _ = shutdown_tx.send(());
@@ -260,21 +277,28 @@ impl ExecCommand {
         )
         .await?;
 
-        let exp_roots = tx_meta_store.get_exp_roots_map();
+        let exp_roots = tx_meta_store.get_exp_roots();
         let client = self.context_options.build()?.get_client().await?;
-        let ledger_tx_loader = match self.mode {
-            ExecMode::Sync => LedgerTxGetter::new_with_auto_sync(
+        let state_root_fetcher =
+            StateRootFetcher::new(client, exp_roots.clone(), tx_anomalies.clone());
+
+        let ledger_tx_loader = if self.mode.need_sync() {
+            LedgerTxGetter::new_with_auto_sync(
                 self.open_da_path.clone().unwrap(),
                 self.segment_dir.clone(),
-                client,
-                exp_roots,
                 shutdown_signal,
-            )?,
-            _ => LedgerTxGetter::new(self.segment_dir.clone())?,
+            )?
+        } else {
+            LedgerTxGetter::new(self.segment_dir.clone(), false)?
         };
-
+        info!(
+            "auto sync ledger tx getter is: {} with mode: {:?}",
+            self.mode.need_sync(),
+            self.mode
+        );
         Ok(ExecInner {
             mode: self.mode,
+            bypass_verify: self.bypass_verify,
             force_align: self.force_align,
             ledger_tx_getter: ledger_tx_loader,
             tx_meta_store,
@@ -287,12 +311,14 @@ impl ExecCommand {
             rollback: self.rollback,
             rooch_db,
             tx_anomalies,
+            state_root_fetcher,
         })
     }
 }
 
 struct ExecInner {
     mode: ExecMode,
+    bypass_verify: bool,
     force_align: bool,
 
     ledger_tx_getter: LedgerTxGetter,
@@ -309,6 +335,8 @@ struct ExecInner {
     produced: Arc<AtomicU64>,
     done: Arc<AtomicU64>,
     executed_tx_order: Arc<AtomicU64>,
+
+    state_root_fetcher: StateRootFetcher,
 
     tx_anomalies: Option<TxAnomalies>,
 }
@@ -374,7 +402,7 @@ impl ExecInner {
         }
     }
 
-    async fn run(&mut self, shutdown_signal: watch::Receiver<()>) -> anyhow::Result<()> {
+    async fn run(&self, shutdown_signal: watch::Receiver<()>) -> anyhow::Result<()> {
         self.start_logging_task(shutdown_signal.clone());
 
         // larger buffer size to avoid rx starving caused by consumer has to access disks and request btc block.
@@ -538,7 +566,7 @@ impl ExecInner {
                 .load_ledger_tx_list(next_block_number, false, true) => {
                 let tx_list = result?;
             if tx_list.is_none() {
-                if self.mode == ExecMode::Sync {
+                if self.mode.need_sync() {
                     sleep(Duration::from_secs(5)).await;
                     continue;
                 }
@@ -546,9 +574,11 @@ impl ExecInner {
                 break;
             }
             let tx_list = tx_list.unwrap();
+            let last_tx_order_in_list = tx_list.last().map(|tx| tx.sequence_info.tx_order).unwrap();
+            self.state_root_fetcher.fetch_and_add(last_tx_order_in_list).await?;
             for ledger_tx in tx_list {
                 let tx_order = ledger_tx.sequence_info.tx_order;
-                if tx_order > max_verified_tx_order && self.mode != ExecMode::Sync {
+                if tx_order > max_verified_tx_order && !self.mode.need_sync() {
                     reach_end = true;
                     break;
                 }
@@ -639,6 +669,9 @@ impl ExecInner {
         let mut hist_l1tx = Histogram::<u64>::new_with_bounds(256, 1 << 30, 3)?;
         let mut hist_l2tx = Histogram::<u64>::new_with_bounds(256, 1 << 30, 3)?;
 
+        // for auto b-search first mismatched tx_order as start point
+        let mut last_eq_tx_order = None;
+
         loop {
             let exec_msg_opt = rx.recv().await;
             if exec_msg_opt.is_none() {
@@ -654,12 +687,14 @@ impl ExecInner {
             };
 
             let elapsed = std::time::Instant::now();
-            self.execute(exec_msg).await.with_context(|| {
-                format!(
-                    "Error occurs: tx_order: {}, executed_tx_order: {}",
-                    tx_order, executed_tx_order
-                )
-            })?;
+            self.execute(exec_msg, &mut last_eq_tx_order)
+                .await
+                .with_context(|| {
+                    format!(
+                        "Error occurs: tx_order: {}, executed_tx_order: {}",
+                        tx_order, executed_tx_order
+                    )
+                })?;
             let tx_cost = elapsed.elapsed().as_micros() as u64;
             interval_cost += tx_cost;
 
@@ -694,18 +729,24 @@ impl ExecInner {
                 Self::print_tx_cost_stats(&hist_l2tx, "L2Tx", false);
             }
         }
-        info!(
-            "All transactions {} are strictly equal to RoochNetwork: [0, {}]",
-            self.mode.get_verify_targets(),
-            executed_tx_order
-        );
+        if let Some(verify_targets) = self.mode.get_verify_targets_str(self.bypass_verify) {
+            info!(
+                "All transactions {} are strictly equal to RoochNetwork: [0, {}]",
+                verify_targets, executed_tx_order
+            );
+        }
+
         Self::print_tx_cost_stats(&hist_l1block, "L1Block", true);
         Self::print_tx_cost_stats(&hist_l1tx, "L1Tx", true);
         Self::print_tx_cost_stats(&hist_l2tx, "L2Tx", true);
         Ok(())
     }
 
-    async fn execute(&self, msg: ExecMsg) -> anyhow::Result<()> {
+    async fn execute(
+        &self,
+        msg: ExecMsg,
+        last_eq_tx_order: &mut Option<u64>,
+    ) -> anyhow::Result<()> {
         let ExecMsg {
             tx_order,
             mut ledger_tx,
@@ -713,8 +754,6 @@ impl ExecInner {
         } = msg;
         let tx_hash = ledger_tx.tx_hash();
         let is_l2_tx = ledger_tx.data.is_l2_tx();
-
-        let exp_state_root = self.tx_meta_store.get_exp_state_root(tx_order).await;
 
         let mut bypass_execution = false;
         if let Some(tx_anomalies) = &self.tx_anomalies {
@@ -734,7 +773,7 @@ impl ExecInner {
                 .validate_ledger_transaction(ledger_tx, l1_block_with_body)
                 .await?;
             if let Err(err) = self
-                .execute_moveos_tx(tx_order, moveos_tx, exp_state_root)
+                .execute_moveos_tx(tx_order, moveos_tx, last_eq_tx_order)
                 .await
             {
                 self.handle_execution_error(err, is_l2_tx, tx_order)?;
@@ -814,26 +853,39 @@ impl ExecInner {
         &self,
         tx_order: u64,
         moveos_tx: VerifiedMoveOSTransaction,
-        exp_state_root_opt: Option<H256>,
+        last_eq_tx_order: &mut Option<u64>,
     ) -> anyhow::Result<()> {
         let executor = self.executor.clone();
 
         let (_output, execution_info) = executor.execute_transaction(moveos_tx.clone()).await?;
 
+        let exp_state_root = if self.bypass_verify {
+            None
+        } else {
+            self.tx_meta_store.get_exp_state_root(tx_order).await
+        };
+
         let root = execution_info.root_metadata();
-        match exp_state_root_opt {
+        match exp_state_root {
             Some(expected_root) => {
                 if root.state_root.unwrap() != expected_root {
+                    if let Some(last_eq_value) = last_eq_tx_order {
+                        let mid_tx_order = (*last_eq_value + tx_order) / 2;
+                        self.state_root_fetcher.fetch_and_add(mid_tx_order).await?;
+                        info!("state root of tx_order: {} fetched, it's in the middle of last_eq_tx_order: {} and first not_eq_tx_order: {}", mid_tx_order, *last_eq_value, tx_order);
+                    }
+
                     return Err(anyhow::anyhow!(
-                        "Execution state root is not equal to RoochNetwork: tx_order: {}, exp: {:?}, act: {:?}; act_execution_info: {:?}",
+                        "Execution state root is not equal to RoochNetwork: tx_order: {}, exp: {:?}, act: {:?}; act_execution_info: {:?}. Please rollback to last_eq_tx_order: {:?}",
                         tx_order,
-                        expected_root, root.state_root.unwrap(), execution_info
+                        expected_root, root.state_root.unwrap(), execution_info, last_eq_tx_order
                     ));
                 }
                 info!(
-                    "Execution state root is equal to RoochNetwork: tx_order: {}",
-                    tx_order
+                    "Execution state root is equal to RoochNetwork: tx_order: {}; last_eq_tx_order: {:?}",
+                    tx_order, last_eq_tx_order
                 );
+                *last_eq_tx_order = Some(tx_order);
                 Ok(())
             }
             None => Ok(()),
@@ -948,5 +1000,12 @@ mod tests {
         assert!(mode.need_exec());
         assert!(mode.need_seq());
         assert!(mode.need_all());
+        assert!(mode.need_sync());
+
+        let mode = ExecMode::SyncExec;
+        assert!(mode.need_exec());
+        assert!(!mode.need_seq());
+        assert!(!mode.need_all());
+        assert!(mode.need_sync())
     }
 }

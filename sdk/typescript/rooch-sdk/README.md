@@ -134,6 +134,128 @@ const result = await client.executeViewFunction(
 )
 ```
 
+## Subscriptions
+
+The SDK supports real-time subscriptions to events and transactions using WebSocket connections. Subscriptions allow your application to receive updates in real-time without polling.
+
+### Setting up a Subscription
+
+To use subscriptions, you must initialize your `RoochClient` with a WebSocket transport:
+
+```typescript
+import { RoochClient, RoochWebSocketTransport, getRoochNodeUrl } from '@roochnetwork/rooch-sdk'
+
+// Create WebSocket transport
+const wsTransport = new RoochWebSocketTransport({
+  url: getRoochNodeUrl('testnet'),
+})
+
+// Create client with WebSocket transport
+const client = new RoochClient({
+  transport: wsTransport,
+  subscriptionTransport: wsTransport, // Use the same transport for subscriptions
+})
+
+// Now you can use subscriptions
+```
+
+### Subscribing to Events
+
+```typescript
+// Subscribe to all events
+const eventSubscription = await client.subscribe({
+  type: 'event',
+  onEvent: (event) => {
+    console.log('Received event:', event.data)
+  },
+  onError: (error) => {
+    console.error('Subscription error:', error)
+  },
+})
+
+// Subscribe to events with a filter
+const filteredEventSubscription = await client.subscribe({
+  type: 'event',
+  filter: {
+    sender: '0x123...', // Filter events by sender
+  },
+  onEvent: (event) => {
+    console.log('Received filtered event:', event.data)
+  },
+})
+
+// Later, unsubscribe when no longer needed
+client.unsubscribe(eventSubscription.id)
+```
+
+### Subscribing to Transactions
+
+```typescript
+// Subscribe to all transactions
+const txSubscription = await client.subscribe({
+  type: 'transaction',
+  onEvent: (event) => {
+    console.log('Received transaction:', event.data)
+  },
+  onError: (error) => {
+    console.error('Subscription error:', error)
+  },
+})
+
+// Subscribe to transactions with a filter
+const filteredTxSubscription = await client.subscribe({
+  type: 'transaction',
+  filter: {
+    sender: '0x123...', // Filter transactions by sender
+  },
+  onEvent: (event) => {
+    console.log('Received filtered transaction:', event.data)
+  },
+})
+
+// Later, unsubscribe when no longer needed
+client.unsubscribe(txSubscription.id)
+```
+
+### Subscription Events
+
+The
+
+onEvent
+
+callback receives an object with:
+
+-
+
+type
+
+: Either 'event' or 'transaction'
+
+-
+
+data
+
+: The event or transaction data
+
+### Handling Connection Issues
+
+The WebSocket transport automatically handles reconnection on connection loss. You can configure its behavior using the options described in the WebSocket Connection section above.
+
+When reconnection happens, subscriptions are automatically re-established.
+
+### Cleaning Up
+
+Always clean up resources when done:
+
+```typescript
+// Unsubscribe from all subscriptions
+client.unsubscribe(subscription1.id)
+client.unsubscribe(subscription2.id)
+
+// Destroy the client to free resources
+client.destroy()
+```
+
 ## Building Locally
 
 To get started you need to install [pnpm](https://pnpm.io/), then run the following command:

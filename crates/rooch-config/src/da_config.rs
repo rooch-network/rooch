@@ -300,7 +300,7 @@ pub struct DABackendConfig {
 }
 
 impl DABackendConfig {
-    const DEFAULT_SUBMIT_STRATEGY: DASubmitStrategy = DASubmitStrategy::Number(1);
+    const DEFAULT_SUBMIT_STRATEGY: DASubmitStrategy = DASubmitStrategy::All;
 
     pub fn calculate_submit_threshold(&mut self) -> usize {
         self.adjust_submit_strategy(); // Make sure submit_strategy is adjusted before calling this function.
@@ -432,7 +432,7 @@ mod tests {
         assert_eq!(da_backend_config.calculate_submit_threshold(), 2);
 
         da_backend_config.submit_strategy = None;
-        assert_eq!(da_backend_config.calculate_submit_threshold(), 1);
+        assert_eq!(da_backend_config.calculate_submit_threshold(), 2);
     }
 
     #[test]

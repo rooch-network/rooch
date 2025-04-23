@@ -112,10 +112,36 @@ impl Chunk for ChunkV0 {
     }
 }
 
-pub fn chunk_from_segments(segments: Vec<Box<dyn Segment>>) -> anyhow::Result<Box<dyn Chunk>> {
+pub fn chunk_from_segments(mut segments: Vec<Box<dyn Segment>>) -> anyhow::Result<Box<dyn Chunk>> {
     if segments.is_empty() {
         return Err(anyhow::anyhow!("empty segments"));
     }
+
+    segments.sort_by(|a, b| a.get_id().segment_number.cmp(&b.get_id().segment_number));
+
+    let first_segment = segments.first().unwrap();
+    let last_segment = segments.last().unwrap();
+
+    // check last segment.is_last == true, others must be false
+    if !last_segment.is_last() {
+        return Err(anyhow::anyhow!(
+            "missing last segments: {:?}",
+            last_segment.get_id()
+        ));
+    }
+
+    // check all segments have the same chunk_id, segment_number starts from 0 and increments by 1
+    let chunk_id = first_segment.get_id().chunk_id;
+    if segments.iter().enumerate().any(|(i, segment)| {
+        segment.get_id()
+            != SegmentID {
+                chunk_id,
+                segment_number: i as u64,
+            }
+    }) {
+        return Err(anyhow::anyhow!("not continuous segments"));
+    }
+
     // check all segments have the same version
     let versions = segments
         .iter()
@@ -124,31 +150,6 @@ pub fn chunk_from_segments(segments: Vec<Box<dyn Segment>>) -> anyhow::Result<Bo
     let version = versions.first().unwrap();
     if versions.iter().any(|seg_version| *seg_version != *version) {
         return Err(anyhow::anyhow!("inconsistent segment versions"));
-    }
-    // check last segment.is_last == true, others must be false
-    if let Some(last_segment) = segments.last() {
-        if last_segment.is_last() {
-            if segments
-                .iter()
-                .take(segments.len() - 1)
-                .any(|segment| segment.is_last())
-            {
-                return Err(anyhow::anyhow!("inconsistent is_last"));
-            }
-        } else {
-            return Err(anyhow::anyhow!("missing last segments"));
-        }
-    }
-    // check all segments have the same chunk_id, segment_number starts from 0 and increments by 1
-    let chunk_id = segments.first().unwrap().get_id().chunk_id;
-    if segments.iter().enumerate().any(|(i, segment)| {
-        segment.get_id()
-            != SegmentID {
-                chunk_id,
-                segment_number: i as u64,
-            }
-    }) {
-        return Err(anyhow::anyhow!("inconsistent segment ids"));
     }
 
     match version {

@@ -29,7 +29,7 @@ use serde::{Deserialize, Serialize};
 use std::cmp::min;
 use std::collections::HashMap;
 use std::fs;
-use std::fs::File;
+use std::fs::{File, OpenOptions};
 use std::io::{BufRead, BufReader, BufWriter, Read, Write};
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -175,6 +175,7 @@ pub(crate) fn collect_chunk(segment_dir: PathBuf, chunk_id: u128) -> anyhow::Res
 // we collect all the chunks and their segment numbers to unpack them later.
 pub(crate) fn collect_chunks(
     segment_dir: PathBuf,
+    allow_empty: bool,
 ) -> anyhow::Result<(HashMap<u128, Vec<u64>>, u128, u128)> {
     let mut chunks = HashMap::new();
     let mut max_chunk_id = 0;
@@ -220,8 +221,12 @@ pub(crate) fn collect_chunks(
         return Err(anyhow::anyhow!("Incomplete chunks found"));
     }
 
-    if chunks.is_empty() {
-        return Err(anyhow::anyhow!("No segment found in {:?}", segment_dir));
+    if chunks.is_empty() && !allow_empty {
+        return Err(anyhow::anyhow!(
+            "No segment found in {:?}. allow empty: {}",
+            segment_dir,
+            allow_empty
+        ));
     }
     Ok((chunks, min_chunk_id, max_chunk_id))
 }
@@ -381,23 +386,127 @@ impl SegmentDownloader {
     }
 }
 
+pub(crate) struct ExpRoots {
+    inner: Arc<RwLock<ExpRootsInner>>,
+}
+
+impl Clone for ExpRoots {
+    fn clone(&self) -> Self {
+        ExpRoots {
+            inner: Arc::clone(&self.inner),
+        }
+    }
+}
+
+struct ExpRootsInner {
+    exp_roots: HashMap<u64, H256>,
+    exp_roots_file: File,
+    max_tx_order: u64,
+}
+
+impl ExpRoots {
+    pub(crate) async fn get_max_tx_order(&self) -> u64 {
+        self.inner.read().await.max_tx_order
+    }
+
+    pub(crate) async fn new(exp_roots_path: PathBuf) -> anyhow::Result<Self> {
+        let mut exp_roots = HashMap::new();
+        let file: File;
+        let mut max_tx_order = 0;
+
+        if exp_roots_path.exists() {
+            let mut reader = BufReader::new(File::open(&exp_roots_path)?);
+            for line in reader.by_ref().lines() {
+                let line = line?;
+                let parts: Vec<&str> = line.split(':').collect();
+                let tx_order = parts[0].parse::<u64>()?;
+                let state_root_raw = parts[1];
+                if state_root_raw == "null" {
+                    continue;
+                }
+                let state_root = H256::from_str(state_root_raw)?;
+                exp_roots.insert(tx_order, state_root);
+
+                if tx_order > max_tx_order {
+                    max_tx_order = tx_order;
+                }
+            }
+            file = File::options()
+                .append(true)
+                .create(true)
+                .open(&exp_roots_path)?;
+        } else {
+            file = OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(&exp_roots_path)?;
+        }
+
+        Ok(ExpRoots {
+            inner: Arc::new(RwLock::new(ExpRootsInner {
+                exp_roots,
+                exp_roots_file: file,
+                max_tx_order,
+            })),
+        })
+    }
+
+    /// Insert a new exp root for the given tx_order
+    /// Updates both the in-memory map and the file
+    pub(crate) async fn insert(&self, tx_order: u64, state_root: H256) -> anyhow::Result<()> {
+        let mut inner = self.inner.write().await;
+
+        let mut update_file = true;
+        // Update in-memory map
+        let old_state = inner.exp_roots.insert(tx_order, state_root);
+        if let Some(old) = old_state {
+            if old != state_root {
+                warn!(
+                    "Overwriting existing exp root for tx_order {}: {:?} -> {:?}",
+                    tx_order, old, state_root
+                );
+            } else {
+                update_file = false; // No need to update file if the state root is the same
+            }
+        }
+
+        // Update max_tx_order if necessary
+        if tx_order > inner.max_tx_order {
+            inner.max_tx_order = tx_order;
+        }
+
+        // Update file
+        if !update_file {
+            return Ok(());
+        }
+        let entry = format!("{}:{:?}\n", tx_order, state_root);
+        inner.exp_roots_file.write_all(entry.as_bytes())?;
+        inner.exp_roots_file.flush()?;
+
+        Ok(())
+    }
+
+    /// Get the exp root for the given tx_order
+    /// Returns None if no exp root exists for the tx_order
+    pub(crate) async fn get(&self, tx_order: u64) -> Option<H256> {
+        self.inner.read().await.exp_roots.get(&tx_order).copied()
+    }
+}
+
 pub(crate) struct LedgerTxGetter {
     segment_dir: PathBuf,
     chunks: Arc<RwLock<HashMap<u128, Vec<u64>>>>,
-    client: Option<Client>,
-    exp_roots: Arc<RwLock<HashMap<u64, H256>>>,
     max_chunk_id: u128,
 }
 
 impl LedgerTxGetter {
-    pub(crate) fn new(segment_dir: PathBuf) -> anyhow::Result<Self> {
-        let (chunks, _min_chunk_id, max_chunk_id) = collect_chunks(segment_dir.clone())?;
+    pub(crate) fn new(segment_dir: PathBuf, allow_empty: bool) -> anyhow::Result<Self> {
+        let (chunks, _min_chunk_id, max_chunk_id) =
+            collect_chunks(segment_dir.clone(), allow_empty)?;
 
         Ok(LedgerTxGetter {
             segment_dir,
             chunks: Arc::new(RwLock::new(chunks)),
-            client: None,
-            exp_roots: Arc::new(RwLock::new(HashMap::new())),
             max_chunk_id,
         })
     }
@@ -405,11 +514,9 @@ impl LedgerTxGetter {
     pub(crate) fn new_with_auto_sync(
         open_da_path: String,
         segment_dir: PathBuf,
-        client: Client,
-        exp_roots: Arc<RwLock<HashMap<u64, H256>>>,
         shutdown_signal: watch::Receiver<()>,
     ) -> anyhow::Result<Self> {
-        let (chunks, _min_chunk_id, max_chunk_id) = collect_chunks(segment_dir.clone())?;
+        let (chunks, _min_chunk_id, max_chunk_id) = collect_chunks(segment_dir.clone(), true)?;
 
         let chunks_to_sync = Arc::new(RwLock::new(chunks.clone()));
 
@@ -423,8 +530,6 @@ impl LedgerTxGetter {
         Ok(LedgerTxGetter {
             segment_dir,
             chunks: chunks_to_sync,
-            client: Some(client),
-            exp_roots,
             max_chunk_id,
         })
     }
@@ -459,40 +564,8 @@ impl LedgerTxGetter {
                     Ok(Some(tx_list))
                 },
             )?;
-        if let Some(tx_list) = tx_list_opt {
-            if let Some(client) = &self.client {
-                let exp_roots = self.exp_roots.clone();
-                let mut last_tx = tx_list.last().unwrap().clone();
-                let tx_order = last_tx.sequence_info.tx_order;
-                let last_tx_hash = last_tx.tx_hash();
-                let resp = client
-                    .rooch
-                    .get_transactions_by_hash(vec![last_tx_hash])
-                    .await?;
-                let tx_info = resp.into_iter().next().flatten().ok_or_else(|| {
-                    anyhow!("No transaction info found for tx: {:?}", last_tx_hash)
-                })?;
-                let tx_order_in_resp = tx_info.transaction.sequence_info.tx_order.0;
-                if tx_order_in_resp != tx_order {
-                    return Err(anyhow!(
-                        "failed to request tx by RPC: Tx order mismatch, expect: {}, actual: {}",
-                        tx_order,
-                        tx_order_in_resp
-                    ));
-                } else {
-                    let execution_info_opt = tx_info.execution_info;
-                    // some txs may not be executed for genesis_namespace: 527d69c3
-                    if let Some(execution_info) = execution_info_opt {
-                        let tx_state_root = execution_info.state_root.0;
-                        let mut exp_roots = exp_roots.write().await;
-                        exp_roots.insert(tx_order, tx_state_root);
-                    }
-                }
-            }
-            Ok(Some(tx_list))
-        } else {
-            Ok(None)
-        }
+
+        Ok(tx_list_opt)
     }
 
     // only valid for no segments sync
@@ -501,17 +574,78 @@ impl LedgerTxGetter {
     }
 }
 
-pub(crate) struct TxMetaStore {
-    tx_position_indexer: TxPositionIndexer,
-    exp_roots: Arc<RwLock<HashMap<u64, H256>>>, // tx_order -> (state_root, accumulator_root)
-    max_verified_tx_order: u64,
-    transaction_store: TransactionDBStore,
-    rooch_store: RoochStore,
+pub(crate) struct StateRootFetcher {
+    client: Client,
+    exp_roots: ExpRoots,
+    tx_anomalies: Option<TxAnomalies>,
 }
 
-struct ExpRootsMap {
-    exp_root: HashMap<u64, H256>,
-    max_verified_tx_order: u64,
+impl StateRootFetcher {
+    pub(crate) fn new(
+        client: Client,
+        exp_roots: ExpRoots,
+        tx_anomalies: Option<TxAnomalies>,
+    ) -> Self {
+        StateRootFetcher {
+            client,
+            exp_roots,
+            tx_anomalies,
+        }
+    }
+
+    pub(crate) async fn fetch_and_add(&self, tx_order: u64) -> anyhow::Result<()> {
+        let state_root = self.fetch(tx_order).await?;
+        if let Some(state_root) = state_root {
+            self.exp_roots.insert(tx_order, state_root).await?;
+        }
+        Ok(())
+    }
+
+    pub(crate) async fn fetch(&self, tx_order: u64) -> anyhow::Result<Option<H256>> {
+        let resp = self
+            .client
+            .rooch
+            .get_transactions_by_order(Some(tx_order - 1), Some(1), Some(false))
+            .await?;
+        let resp_date = resp.data;
+        if resp_date.is_empty() {
+            return Err(anyhow!(
+                "No transaction found by RPC. tx_order: {}",
+                tx_order,
+            ));
+        }
+        let tx_info = resp_date[0].clone();
+        let tx_order_in_resp = tx_info.transaction.sequence_info.tx_order.0;
+        if tx_order_in_resp != tx_order {
+            Err(anyhow!(
+                "failed to request tx by RPC: Tx order mismatch, expect: {}, actual: {}",
+                tx_order,
+                tx_order_in_resp
+            ))
+        } else {
+            let execution_info_opt = tx_info.execution_info;
+            if let Some(execution_info) = execution_info_opt {
+                let tx_state_root = execution_info.state_root.0;
+                return Ok(Some(tx_state_root));
+            } else if let Some(tx_anomalies) = self.tx_anomalies.as_ref() {
+                if tx_anomalies.has_no_execution_info_for_order(tx_order) {
+                    return Ok(None);
+                };
+            }
+            Err(anyhow!(
+                "No state_root found by PRC. tx_order: {}",
+                tx_order,
+            ))
+        }
+    }
+}
+
+pub(crate) struct TxMetaStore {
+    tx_position_indexer: TxPositionIndexer,
+    exp_roots: ExpRoots, // tx_order -> (state_root, accumulator_root)
+    max_exp_tx_order_from_file: u64,
+    transaction_store: TransactionDBStore,
+    rooch_store: RoochStore,
 }
 
 impl TxMetaStore {
@@ -530,53 +664,28 @@ impl TxMetaStore {
             max_block_number,
         )
         .await?;
-        let exp_roots_map = Self::load_exp_roots(exp_roots_path)?;
-        let max_verified_tx_order = exp_roots_map.max_verified_tx_order;
+        let exp_roots = ExpRoots::new(exp_roots_path).await?;
+        let max_exp_tx_order_from_file = exp_roots.get_max_tx_order().await;
 
         Ok(TxMetaStore {
             tx_position_indexer,
-            exp_roots: Arc::new(RwLock::new(exp_roots_map.exp_root)),
-            max_verified_tx_order,
+            exp_roots,
+            max_exp_tx_order_from_file,
             transaction_store,
             rooch_store,
         })
     }
 
-    pub(crate) fn get_exp_roots_map(&self) -> Arc<RwLock<HashMap<u64, H256>>> {
+    pub(crate) fn get_exp_roots(&self) -> ExpRoots {
         self.exp_roots.clone()
     }
 
-    fn load_exp_roots(exp_roots_path: PathBuf) -> anyhow::Result<ExpRootsMap> {
-        let mut exp_roots = HashMap::new();
-        let mut max_verified_tx_order = 0;
-
-        let mut reader = BufReader::new(File::open(exp_roots_path)?);
-        for line in reader.by_ref().lines() {
-            let line = line?;
-            let parts: Vec<&str> = line.split(':').collect();
-            let tx_order = parts[0].parse::<u64>()?;
-            let state_root_raw = parts[1];
-            if state_root_raw == "null" {
-                continue;
-            }
-            let state_root = H256::from_str(state_root_raw)?;
-            exp_roots.insert(tx_order, state_root);
-            if tx_order > max_verified_tx_order {
-                max_verified_tx_order = tx_order;
-            }
-        }
-        Ok(ExpRootsMap {
-            exp_root: exp_roots,
-            max_verified_tx_order,
-        })
-    }
-
     pub(crate) async fn get_exp_state_root(&self, tx_order: u64) -> Option<H256> {
-        self.exp_roots.read().await.get(&tx_order).cloned()
+        self.exp_roots.get(tx_order).await
     }
 
     pub(crate) fn get_max_verified_tx_order(&self) -> u64 {
-        self.max_verified_tx_order
+        self.max_exp_tx_order_from_file
     }
 
     pub(crate) fn get_tx_hash(&self, tx_order: u64) -> Option<H256> {
@@ -921,12 +1030,18 @@ impl TxPositionIndexer {
         max_block_number: Option<u128>,
     ) -> anyhow::Result<()> {
         let segment_dir = segment_dir.ok_or_else(|| anyhow!("segment_dir is required"))?;
-        let ledger_tx_loader = LedgerTxGetter::new(segment_dir)?;
+        let ledger_tx_loader = LedgerTxGetter::new(segment_dir, true)?;
         let stop_at = if let Some(max_block_number) = max_block_number {
             min(max_block_number, ledger_tx_loader.get_max_chunk_id())
         } else {
             ledger_tx_loader.get_max_chunk_id()
         };
+
+        if stop_at == 0 {
+            info!("No segments found for tx position indexer, maybe in sync mode");
+            return Ok(());
+        }
+
         let mut block_number = self.last_block_number; // avoiding partial indexing
         let mut expected_tx_order = self.last_tx_order + 1;
         let mut done_block = 0;

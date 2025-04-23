@@ -32,6 +32,12 @@ export interface QueryUTXOsParams {
   limit?: string | null | undefined
   descendingOrder?: boolean | null | undefined
 }
+/** Check change sets from sync states */
+export interface CheckChangeSetsParams {
+  cursor?: string | null | undefined
+  limit?: string | null | undefined
+  queryOption?: RpcTypes.QueryOptions | null | undefined
+}
 export interface DryRunRawTransactionParams {
   txBcsHex: string
 }
@@ -59,7 +65,7 @@ export interface GetBalancesParams {
   limit?: string | null | undefined
 }
 export interface GetChainIDParams {}
-/** Get the events by event handle id */
+/** Get the events by event handle type or event handle id */
 export interface GetEventsByEventHandleParams {
   eventHandle: string
   cursor?: string | null | undefined
@@ -123,6 +129,13 @@ export interface QueryEventsParams {
   limit?: string | null | undefined
   queryOption?: RpcTypes.QueryOptions | null | undefined
 }
+/** Query the fields indexer by field filter */
+export interface QueryFieldsParams {
+  filter: RpcTypes.FieldFilterView
+  page?: string | null | undefined
+  limit?: string | null | undefined
+  queryOption?: RpcTypes.QueryOptions | null | undefined
+}
 /** Query the object states indexer by state filter */
 export interface QueryObjectStatesParams {
   filter: RpcTypes.ObjectStateFilterView
@@ -151,6 +164,14 @@ export interface SendRawTransactionParams {
 }
 /** Get the chain and service status */
 export interface StatusParams {}
+/** Subscribe to a stream of event */
+export interface SubscribeEventsParams {
+  filter: RpcTypes.EventFilterView
+}
+/** Subscribe to a stream of transaction with execution info */
+export interface SubscribeTransactionsParams {
+  filter: RpcTypes.TransactionFilterView
+}
 /** Sync state change sets */
 export interface SyncStatesParams {
   filter: RpcTypes.SyncStateFilterView
