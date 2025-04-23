@@ -12,7 +12,7 @@ module nostr::event {
     use moveos_std::event;
     use moveos_std::json;
     use moveos_std::string_utils;
-    use rooch_framework::schnorr;
+    use rooch_framework::ecdsa_k1;
     use nostr::inner;
 
     // Kind of the event
@@ -164,10 +164,11 @@ module nostr::event {
 
     /// Check signature with public key, id and signature for schnorr
     fun check_signature(id: vector<u8>, public_key: vector<u8>, signature: vector<u8>) {
-        assert!(schnorr::verify(
+        assert!(ecdsa_k1::verify(
             &signature,
             &public_key,
             &id,
+            ecdsa_k1::sha256()
         ), ErrorSignatureValidationFailure);
     }
 
