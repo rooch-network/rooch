@@ -10574,7 +10574,6 @@ dependencies = [
  "bitcoin 0.32.5",
  "fastcrypto",
  "hex",
- "k256 0.13.4",
  "move-binary-format",
  "move-core-types",
  "move-stdlib",

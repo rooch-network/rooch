@@ -360,7 +360,6 @@ tikv-jemallocator = { version = "0.6.0", features = [
     "profiling",
 ] }
 mimalloc = { version = "0.1.46" }
-k256 = { version = "0.13.4", features = ["schnorr"] }
 
 # Note: the BEGIN and END comments below are required for external tooling. Do not remove.
 # BEGIN MOVE DEPENDENCIES

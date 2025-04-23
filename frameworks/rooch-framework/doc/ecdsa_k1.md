@@ -10,6 +10,8 @@
 -  [Function `uncompressed_public_key_length`](#0x3_ecdsa_k1_uncompressed_public_key_length)
 -  [Function `keccak256`](#0x3_ecdsa_k1_keccak256)
 -  [Function `sha256`](#0x3_ecdsa_k1_sha256)
+-  [Function `ecdsa`](#0x3_ecdsa_k1_ecdsa)
+-  [Function `schnorr`](#0x3_ecdsa_k1_schnorr)
 -  [Function `ecrecover`](#0x3_ecdsa_k1_ecrecover)
 -  [Function `decompress_pubkey`](#0x3_ecdsa_k1_decompress_pubkey)
 -  [Function `verify`](#0x3_ecdsa_k1_verify)
@@ -25,12 +27,12 @@
 ## Constants
 
 
-<a name="0x3_ecdsa_k1_ErrorInvalidSignature"></a>
+<a name="0x3_ecdsa_k1_ECDSA"></a>
 
-Error if the signature is invalid.
+Signature types that are valid for verify.
 
 
-<pre><code><b>const</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_ErrorInvalidSignature">ErrorInvalidSignature</a>: u64 = 2;
+<pre><code><b>const</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_ECDSA">ECDSA</a>: u8 = 0;
 </code></pre>
 
 
@@ -75,10 +77,20 @@ Error if the public key cannot be recovered from the signature.
 
 <a name="0x3_ecdsa_k1_ErrorInvalidHashType"></a>
 
-Invalid hash function
+Invalid hash function.
 
 
 <pre><code><b>const</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_ErrorInvalidHashType">ErrorInvalidHashType</a>: u64 = 4;
+</code></pre>
+
+
+
+<a name="0x3_ecdsa_k1_ErrorInvalidMessage"></a>
+
+Error if the message is invalid.
+
+
+<pre><code><b>const</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_ErrorInvalidMessage">ErrorInvalidMessage</a>: u64 = 6;
 </code></pre>
 
 
@@ -93,12 +105,51 @@ Error if the public key is invalid.
 
 
 
+<a name="0x3_ecdsa_k1_ErrorInvalidSchnorrSignature"></a>
+
+Error if the schnorr signature is invalid.
+
+
+<pre><code><b>const</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_ErrorInvalidSchnorrSignature">ErrorInvalidSchnorrSignature</a>: u64 = 7;
+</code></pre>
+
+
+
+<a name="0x3_ecdsa_k1_ErrorInvalidSignature"></a>
+
+Error if the signature is invalid.
+
+
+<pre><code><b>const</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_ErrorInvalidSignature">ErrorInvalidSignature</a>: u64 = 2;
+</code></pre>
+
+
+
+<a name="0x3_ecdsa_k1_ErrorInvalidXOnlyPubKey"></a>
+
+Error if the x only public key is invalid.
+
+
+<pre><code><b>const</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_ErrorInvalidXOnlyPubKey">ErrorInvalidXOnlyPubKey</a>: u64 = 5;
+</code></pre>
+
+
+
 <a name="0x3_ecdsa_k1_KECCAK256"></a>
 
 Hash function name that are valid for ecrecover and verify.
 
 
 <pre><code><b>const</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_KECCAK256">KECCAK256</a>: u8 = 0;
+</code></pre>
+
+
+
+<a name="0x3_ecdsa_k1_SCHNORR"></a>
+
+
+
+<pre><code><b>const</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_SCHNORR">SCHNORR</a>: u8 = 1;
 </code></pre>
 
 
@@ -157,6 +208,28 @@ built-in functions
 
 
 
+<a name="0x3_ecdsa_k1_ecdsa"></a>
+
+## Function `ecdsa`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_ecdsa">ecdsa</a>(): u8
+</code></pre>
+
+
+
+<a name="0x3_ecdsa_k1_schnorr"></a>
+
+## Function `schnorr`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_schnorr">schnorr</a>(): u8
+</code></pre>
+
+
+
 <a name="0x3_ecdsa_k1_ecrecover"></a>
 
 ## Function `ecrecover`
@@ -200,6 +273,7 @@ Ecdsa. This is an non-recoverable signature without recovery id.
 @param public_key: A 33-bytes public key that is used to sign messages.
 @param msg: The message that the signature is signed against.
 @param hash: The hash function used to hash the message when signing.
+TODO: @param sigtype: The signature type used to distinguish which signature to be used when verifying.
 
 If the signature is valid to the pubkey and hashed message, return true. Else false.
 

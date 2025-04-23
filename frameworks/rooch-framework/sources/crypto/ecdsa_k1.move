@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+// TODO: rename ecdsa_k1 to secp256k1 due to signature types change
 module rooch_framework::ecdsa_k1 {
 
     /// constant codes
@@ -12,6 +13,10 @@ module rooch_framework::ecdsa_k1 {
     const KECCAK256: u8 = 0;
     const SHA256: u8 = 1;
 
+    /// Signature types that are valid for verify.
+    const ECDSA: u8 = 0;
+    const SCHNORR: u8 = 1;
+
     /// Error if the public key cannot be recovered from the signature.
     const ErrorFailToRecoverPubKey: u64 = 1;
 
@@ -21,8 +26,17 @@ module rooch_framework::ecdsa_k1 {
     /// Error if the public key is invalid.
     const ErrorInvalidPubKey: u64 = 3;
 
-    /// Invalid hash function
+    /// Invalid hash function.
     const ErrorInvalidHashType: u64 = 4;
+
+    /// Error if the x only public key is invalid.
+    const ErrorInvalidXOnlyPubKey: u64 = 5;
+
+    /// Error if the message is invalid.
+    const ErrorInvalidMessage: u64 = 6;
+
+    /// Error if the schnorr signature is invalid.
+    const ErrorInvalidSchnorrSignature: u64 = 7;
 
     /// built-in functions
     public fun public_key_length(): u64 {
@@ -39,6 +53,14 @@ module rooch_framework::ecdsa_k1 {
 
     public fun sha256(): u8 {
         SHA256
+    }
+
+    public fun ecdsa(): u8 {
+        ECDSA
+    }
+
+    public fun schnorr(): u8 {
+        SCHNORR
     }
 
     /// @param signature: A 65-bytes signature in form (r, s, v) that is signed using
@@ -62,17 +84,18 @@ module rooch_framework::ecdsa_k1 {
     /// @param public_key: A 33-bytes public key that is used to sign messages.
     /// @param msg: The message that the signature is signed against.
     /// @param hash: The hash function used to hash the message when signing.
+    /// TODO: @param sigtype: The signature type used to distinguish which signature to be used when verifying.
     ///
     /// If the signature is valid to the pubkey and hashed message, return true. Else false.
     native public fun verify(
         signature: &vector<u8>,
         public_key: &vector<u8>,
         msg: &vector<u8>,
-        hash: u8
+        hash: u8,
     ): bool;
 
     #[test]
-    fun test_verify_success() {
+    fun test_verify_ecdsa_success() {
         let msg = x"00010203";
         let pubkey = x"033e99a541db69bd32040dfe5037fbf5210dafa8151a71e21c5204b05d95ce0a62";
         let sig = x"416a21d50b3c838328d4f03213f8ef0c3776389a972ba1ecd37b56243734eba208ea6aaa6fc076ad7accd71d355f693a6fe54fe69b3c168eace9803827bc9046";
@@ -81,8 +104,17 @@ module rooch_framework::ecdsa_k1 {
     }
 
     #[test]
+    fun test_verify_schnorr_success() {
+        let msg = x"f08285dc969c9cdfa65a5a29dc592371acb80534ae301965f38b0583817ea33f";
+        let pubkey = x"cddcc4a1d4a94d627e7808f904d0477cf16ae9d4fafa1eb883ab7a498bdda777";
+        let sig = x"6c2565ceabff153609aa9ccdeb13421a1181a54d0ca4fe10cd074b0c2da44c641c98992701c9a4d3e24391db3e358eff190510be46e73d0e517d5e5b13bb06fd";
+        let result = verify(&sig, &pubkey, &msg, SHA256);
+        assert!(result, 1)
+    }
+
+    #[test]
     #[expected_failure(location=Self, abort_code = ErrorInvalidSignature)]
-    fun test_verify_fails_invalid_sig() {
+    fun test_verify_ecdsa_fails_invalid_sig() {
         let msg = x"00010203";
         let pubkey = x"033e99a541db69bd32040dfe5037fbf5210dafa8151a71e21c5204b05d95ce0a62";
         let sig = x"";
@@ -91,10 +123,37 @@ module rooch_framework::ecdsa_k1 {
 
     #[test]
     #[expected_failure(location=Self, abort_code = ErrorInvalidPubKey)]
-    fun test_verify_fails_invalid_pubkey() {
+    fun test_verify_ecdsa_fails_invalid_pubkey() {
         let msg = x"00010203";
-        let pubkey = x"";
+        let pubkey = x"133e99a541db69bd32040dfe5037fbf5210dafa8151a71e21c5204b05d95ce0a62";
         let sig = x"416a21d50b3c838328d4f03213f8ef0c3776389a972ba1ecd37b56243734eba208ea6aaa6fc076ad7accd71d355f693a6fe54fe69b3c168eace9803827bc9046";
+        verify(&sig, &pubkey, &msg, SHA256);
+    }
+
+    #[test]
+    #[expected_failure(location=Self, abort_code = ErrorInvalidSchnorrSignature)]
+    fun test_verify_schnorr_fails_invalid_sig() {
+        let msg = x"f08285dc969c9cdfa65a5a29dc592371acb80534ae301965f38b0583817ea33f";
+        let pubkey = x"cddcc4a1d4a94d627e7808f904d0477cf16ae9d4fafa1eb883ab7a498bdda777";
+        let sig = x"0c2565ceabff153609aa9ccdeb13421a1181a54d0ca4fe10cd074b0c2da44c641c98992701c9a4d3e24391db3e358eff190510be46e73d0e517d5e5b13bb06fd12";
+        verify(&sig, &pubkey, &msg, SHA256);
+    }
+
+    #[test]
+    #[expected_failure(location=Self, abort_code = ErrorInvalidMessage)]
+    fun test_verify_schnorr_fails_invalid_message() {
+        let msg = x"00010203";
+        let pubkey = x"cddcc4a1d4a94d627e7808f904d0477cf16ae9d4fafa1eb883ab7a498bdda777";
+        let sig = x"6c2565ceabff153609aa9ccdeb13421a1181a54d0ca4fe10cd074b0c2da44c641c98992701c9a4d3e24391db3e358eff190510be46e73d0e517d5e5b13bb06fd";
+        verify(&sig, &pubkey, &msg, SHA256);
+    }
+
+    #[test]
+    #[expected_failure(location=Self, abort_code = ErrorInvalidXOnlyPubKey)]
+    fun test_verify_schnorr_fails_invalid_x_only_pubkey() {
+        let msg = x"f08285dc969c9cdfa65a5a29dc592371acb80534ae301965f38b0583817ea33f";
+        let pubkey = x"5e99a541db69bd32040dfe5037fbf5210dafa8151a71e21c5204b05d95ce0a62";
+        let sig = x"6c2565ceabff153609aa9ccdeb13421a1181a54d0ca4fe10cd074b0c2da44c641c98992701c9a4d3e24391db3e358eff190510be46e73d0e517d5e5b13bb06fd";
         verify(&sig, &pubkey, &msg, SHA256);
     }
 

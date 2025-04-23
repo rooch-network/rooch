@@ -32,7 +32,6 @@ use rooch_db::RoochDB;
 use rooch_framework::natives::gas_parameter::gas_member::{
     FromOnChainGasSchedule, InitialGasSchedule, ToOnChainGasSchedule,
 };
-use rooch_framework::natives::rooch_framework::crypto::schnorr::VerifyGasParametersOption;
 use rooch_framework::ROOCH_FRAMEWORK_ADDRESS;
 use rooch_indexer::store::traits::IndexerStoreTrait;
 use rooch_store::state_store::StateStore;
@@ -61,13 +60,11 @@ pub static ROOCH_LOCAL_GENESIS: Lazy<RoochGenesisV2> = Lazy::new(|| {
     let network: RoochNetwork = BuiltinChainID::Local.into();
     RoochGenesisV2::build(network).expect("build rooch genesis failed")
 });
-pub const LATEST_GAS_SCHEDULE_VERSION: u64 = GAS_SCHEDULE_RELEASE_V3;
+pub const LATEST_GAS_SCHEDULE_VERSION: u64 = GAS_SCHEDULE_RELEASE_V2;
 // update the gas config for function calling
 pub const GAS_SCHEDULE_RELEASE_V1: u64 = 1;
 
 pub const GAS_SCHEDULE_RELEASE_V2: u64 = 2;
-pub const GAS_SCHEDULE_RELEASE_V3: u64 = 3;
-
 pub const GAS_SCHEDULE_RELEASE_V3: u64 = 3;
 
 pub(crate) const STATIC_GENESIS_DIR: Dir = include_dir!("released");
@@ -211,7 +208,7 @@ impl FrameworksGasParameters {
     }
 
     pub fn latest() -> Self {
-        FrameworksGasParameters::v5()
+        FrameworksGasParameters::v4()
     }
 
     pub fn to_gas_schedule_config(&self, chain_id: ChainID) -> GasScheduleConfig {

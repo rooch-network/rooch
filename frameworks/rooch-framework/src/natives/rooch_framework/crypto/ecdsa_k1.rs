@@ -1,7 +1,16 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+// TODO: rename ecdsa_k1 to secp256k1 due to signature types change
 use crate::natives::helpers::{make_module_natives, make_native};
+use bitcoin::{
+    secp256k1::{
+        constants::{PUBLIC_KEY_SIZE, SCHNORR_PUBLIC_KEY_SIZE},
+        schnorr::Signature,
+        Message,
+    },
+    XOnlyPublicKey,
+};
 use fastcrypto::{
     hash::{Keccak256, Sha256},
     secp256k1::{
@@ -21,13 +30,22 @@ use move_vm_types::{
 use smallvec::smallvec;
 use std::collections::VecDeque;
 
+// error codes
 pub const E_FAIL_TO_RECOVER_PUBKEY: u64 = 1;
 pub const E_INVALID_SIGNATURE: u64 = 2;
 pub const E_INVALID_PUBKEY: u64 = 3;
 pub const E_INVALID_HASH_TYPE: u64 = 4;
+pub const E_INVALID_X_ONLY_PUBKEY: u64 = 5;
+pub const E_INVALID_MESSAGE: u64 = 6;
+pub const E_INVALID_SCHNORR_SIGNATURE: u64 = 7;
 
+// hash functions
 pub const KECCAK256: u8 = 0;
 pub const SHA256: u8 = 1;
+
+// signature types
+pub const ECDSA: u8 = 0;
+pub const SCHNORR: u8 = 1;
 
 pub fn native_ecrecover(
     gas_params: &FromBytesGasParameters,
@@ -95,6 +113,7 @@ pub fn native_decompress_pubkey(
     }
 }
 
+// TODO: break: add a sigtype to distinguish the signature types
 pub fn native_verify(
     gas_params: &FromBytesGasParameters,
     _context: &mut NativeContext,
@@ -104,8 +123,8 @@ pub fn native_verify(
     debug_assert!(ty_args.is_empty());
     debug_assert!(args.len() == 4);
 
+    // let sigtype = pop_arg!(args, u8);
     let hash = pop_arg!(args, u8);
-
     let msg = pop_arg!(args, VectorRef);
     let public_key_bytes = pop_arg!(args, VectorRef);
     let signature_bytes = pop_arg!(args, VectorRef);
@@ -119,22 +138,53 @@ pub fn native_verify(
         + gas_params.per_byte * NumBytes::new(signature_bytes_ref.len() as u64)
         + gas_params.per_byte * NumBytes::new(public_key_bytes_ref.len() as u64);
 
-    let Ok(sig) = <Secp256k1Signature as ToFromBytes>::from_bytes(&signature_bytes_ref) else {
-        return Ok(NativeResult::err(cost, E_INVALID_SIGNATURE));
-    };
-
-    let Ok(public_key) = <Secp256k1PublicKey as ToFromBytes>::from_bytes(&public_key_bytes_ref)
-    else {
-        return Ok(NativeResult::err(cost, E_INVALID_PUBKEY));
-    };
-
     let result = match hash {
-        KECCAK256 => public_key
-            .verify_with_hash::<Keccak256>(&msg_ref, &sig)
-            .is_ok(),
-        SHA256 => public_key
-            .verify_with_hash::<Sha256>(&msg_ref, &sig)
-            .is_ok(),
+        KECCAK256 => {
+            let Ok(sig) = <Secp256k1Signature as ToFromBytes>::from_bytes(&signature_bytes_ref)
+            else {
+                return Ok(NativeResult::err(cost, E_INVALID_SIGNATURE));
+            };
+            let Ok(public_key) =
+                <Secp256k1PublicKey as ToFromBytes>::from_bytes(&public_key_bytes_ref)
+            else {
+                return Ok(NativeResult::err(cost, E_INVALID_PUBKEY));
+            };
+            public_key
+                .verify_with_hash::<Keccak256>(&msg_ref, &sig)
+                .is_ok()
+        }
+        SHA256 => {
+            // Use key size to distinguish signature types without a break change
+            if public_key_bytes_ref.len() == PUBLIC_KEY_SIZE {
+                let Ok(secp256k1_sig) =
+                    <Secp256k1Signature as ToFromBytes>::from_bytes(&signature_bytes_ref)
+                else {
+                    return Ok(NativeResult::err(cost, E_INVALID_SIGNATURE));
+                };
+                let Ok(secp256k1_public_key) =
+                    <Secp256k1PublicKey as ToFromBytes>::from_bytes(&public_key_bytes_ref)
+                else {
+                    return Ok(NativeResult::err(cost, E_INVALID_PUBKEY));
+                };
+                secp256k1_public_key
+                    .verify_with_hash::<Sha256>(&msg_ref, &secp256k1_sig)
+                    .is_ok()
+            } else if public_key_bytes_ref.len() == SCHNORR_PUBLIC_KEY_SIZE {
+                let Ok(x_only_public_key) = XOnlyPublicKey::from_slice(&public_key_bytes_ref)
+                else {
+                    return Ok(NativeResult::err(cost, E_INVALID_X_ONLY_PUBKEY));
+                };
+                let Ok(message) = Message::from_digest_slice(&msg_ref) else {
+                    return Ok(NativeResult::err(cost, E_INVALID_MESSAGE));
+                };
+                let Ok(schnorr_sig) = Signature::from_slice(&signature_bytes_ref) else {
+                    return Ok(NativeResult::err(cost, E_INVALID_SCHNORR_SIGNATURE));
+                };
+                schnorr_sig.verify(&message, &x_only_public_key).is_ok()
+            } else {
+                false
+            }
+        }
         _ => false,
     };
 

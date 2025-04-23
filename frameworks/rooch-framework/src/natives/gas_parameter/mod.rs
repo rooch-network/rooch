@@ -24,7 +24,6 @@ pub mod nursery;
 mod object;
 mod object_list_field_keys;
 mod rlp;
-mod schnorr;
 mod signer;
 mod test_helper;
 mod tx_context;

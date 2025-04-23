@@ -19,7 +19,6 @@ smallvec = { workspace = true }
 hex = { workspace = true }
 tracing = { workspace = true }
 bitcoin = { workspace = true }
-k256 = { workspace = true }
 
 move-binary-format = { workspace = true }
 move-core-types = { workspace = true }
