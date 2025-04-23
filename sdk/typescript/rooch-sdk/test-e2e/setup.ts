@@ -3,7 +3,7 @@
 
 import * as fs from 'fs'
 import { RoochAddress } from '../src/address/index.js'
-import { getRoochNodeUrl, RoochClient, RoochWebSocketTransport } from '../src/client/index.js'
+import { getRoochNodeUrl, RoochClient } from '../src/client/index.js'
 import { Secp256k1Keypair } from '../src/keypairs/index.js'
 import { Transaction } from '../src/transactions/index.js'
 import { Args } from '../src/bcs/args.js'
@@ -12,57 +12,31 @@ import { TestBox as TestBoxA, RoochContainer } from '@roochnetwork/test-suite'
 
 export const DEFAULT_NODE_URL = import.meta.env.VITE_FULLNODE_URL ?? getRoochNodeUrl('localnet')
 
-type TransportType = 'http' | 'ws'
-
 export class TestBox extends TestBoxA {
   private client: RoochClient
   keypair: Secp256k1Keypair
 
-  constructor(keypair: Secp256k1Keypair, url?: string, transportType: TransportType = 'http') {
+  constructor(keypair: Secp256k1Keypair, url?: string) {
     super()
     this.keypair = keypair
-
-    if (transportType === 'http') {
-      this.client = new RoochClient({ url: url || DEFAULT_NODE_URL })
-    } else {
-      const wsTransport = new RoochWebSocketTransport({ url: url || DEFAULT_NODE_URL })
-      this.client = new RoochClient({
-        transport: wsTransport,
-        subscriptionTransport: wsTransport,
-      })
-    }
+    this.client = new RoochClient({ url: url || DEFAULT_NODE_URL })
   }
 
-  static setup(url?: string, transportType: TransportType = 'http'): TestBox {
+  static setup(url?: string): TestBox {
     const kp = Secp256k1Keypair.generate()
-    return new TestBox(kp, url, transportType)
+    return new TestBox(kp, url)
   }
 
   async loadRoochEnv(
     target: RoochContainer | 'local' | 'container' = 'local',
     port: number = 6768,
-    transportType: TransportType = 'http',
   ): Promise<void> {
     await super.loadRoochEnv(target, port)
     const roochServerAddress = super.getRoochServerAddress()
 
-    if (transportType === 'http') {
-      this.client = new RoochClient({
-        url: `http://${roochServerAddress}`,
-      })
-    } else {
-      const wsTransport = new RoochWebSocketTransport({
-        url: `http://${roochServerAddress}`,
-        requestTimeout: 5000,
-        maxReconnectAttempts: 3,
-      })
-      this.client = new RoochClient({
-        transport: wsTransport,
-        subscriptionTransport: wsTransport,
-      })
-    }
-
-    return
+    this.client = new RoochClient({
+      url: `http://${roochServerAddress}`,
+    })
   }
 
   async cleanEnv() {

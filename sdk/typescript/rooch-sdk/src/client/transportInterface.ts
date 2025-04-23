@@ -6,6 +6,13 @@ export interface RoochTransportRequestOptions {
   params: unknown[]
 }
 
+export interface RoochTransportSubscribeOptions<T> {
+  method: string
+  params: unknown[]
+  onMessage: (event: T) => void
+  signal?: AbortSignal
+}
+
 export interface RoochTransport {
   /**
    * Send a request to the Rooch node
@@ -13,6 +20,8 @@ export interface RoochTransport {
    * @returns Promise resolving to the response
    */
   request<T = unknown>(input: RoochTransportRequestOptions): Promise<T>
+
+  subscribe<T = unknown>(input: RoochTransportSubscribeOptions<T>): Promise<() => Promise<boolean>>
 
   /**
    * Clean up resources and close connections

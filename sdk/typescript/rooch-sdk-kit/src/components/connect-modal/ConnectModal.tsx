@@ -20,12 +20,14 @@ import { useCurrentNetwork, useWallets } from '../../hooks/index.js'
 import { ControlledModalProps, Modal } from '../ui/Modal.js'
 import { SwitchNetworkView } from '../switch-network-modal/views/SwitchNetworkView.js'
 import { checkWalletNetwork } from '../util/wallet.js'
+import { LocalWalletConnectView } from '../local-wallet-modal/views/ConnectView.js'
 
 type ConnectModalView =
   | 'what-is-a-wallet'
   | 'switch-network'
   | 'connection-status'
   | 'install-status'
+  | 'local-wallet'
 
 type ConnectModalProps = {
   /** The trigger button that opens the dialog. */
@@ -102,6 +104,11 @@ export function ConnectModal({
       return
     }
 
+    if (wallet.getName() === 'Local') {
+      setCurrentView('local-wallet')
+      return
+    }
+
     const target = await checkWalletNetwork(wallet, roochNetwork)
     if (target) {
       setTargetNetwork(target)
@@ -158,6 +165,15 @@ export function ConnectModal({
       break
     case 'install-status':
       modalContent = <InstallStatus selectedWallet={selectedWallet!} />
+      break
+    case 'local-wallet':
+      modalContent = (
+        <LocalWalletConnectView
+          onConnect={() => {
+            connectWallet(wallets.find((item) => item.getName() === 'Local')!)
+          }}
+        />
+      )
       break
     default:
       modalContent = <WhatIsAWallet />

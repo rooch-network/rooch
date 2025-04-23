@@ -18,6 +18,16 @@ describe('Secp256k1 keypair', () => {
     expect(kp.getPublicKey().toBytes()).toHaveLength(33)
   })
 
+  it('Create secp256k1 keypair with mnemonic', () => {
+    const { mnemonic, keypair } = Secp256k1Keypair.generateWithMnemonic()
+    expect(keypair.getPublicKey().toBytes()).toHaveLength(33)
+
+    const kp = Secp256k1Keypair.deriveKeypair(mnemonic)
+
+    expect(keypair.getPublicKey().toString()).eq(kp.getPublicKey().toString())
+    expect(keypair.getRoochAddress().toStr()).eq(kp.getRoochAddress().toStr())
+  })
+
   it('Export secp256k1 keypair', () => {
     const kp = Secp256k1Keypair.generate()
     const secret = kp.getSecretKey()

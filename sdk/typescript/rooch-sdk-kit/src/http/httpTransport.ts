@@ -12,6 +12,7 @@ export type requestCallbackType = (
   error?: {
     code: number
     message: string
+    location?: string
   },
 ) => void
 export class HTTPTransport extends RoochHTTPTransport {
@@ -32,7 +33,17 @@ export class HTTPTransport extends RoochHTTPTransport {
       result = await super.request(input)
 
       if (input.method === 'rooch_executeRawTransaction') {
-        this.requestCallback('success')
+        const tmp = result as any
+
+        if (tmp.execution_info.status.type !== 'executed') {
+          this.requestCallback('error', {
+            code: tmp.execution_info.status.abort_code,
+            message: tmp.execution_info.status.type,
+            location: tmp.execution_info.status.location,
+          })
+        } else {
+          this.requestCallback('success')
+        }
       }
 
       return result
