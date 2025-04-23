@@ -14,6 +14,7 @@ import {
 
 import { NetworkConfig } from '../hooks/index.js'
 import { useDefaultClient } from './useDefaultClient.js'
+// import { useDefaultWSClient } from './useDefaultWSClient.js'
 
 export type NetworkConfigs<T extends NetworkConfig | RoochClient = NetworkConfig | RoochClient> =
   Record<string, T>
@@ -56,10 +57,12 @@ export function RoochClientProvider<T extends NetworkConfigs>(props: RoochClient
   const currentNetwork = props.network ?? selectedNetwork
 
   const client = useDefaultClient({ currentNetwork, networks })
+  // const wsClient = useDefaultWSClient({ currentNetwork, networks })
 
   const ctx = useMemo((): ClientProviderContext => {
     return {
       client,
+      // wsClient,
       network: currentNetwork as NetworkType,
       networks,
       config:

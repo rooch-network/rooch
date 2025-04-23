@@ -1,33 +1,48 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { ReactNode, useState } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
+import { useState } from 'react'
+import type { ReactNode } from 'react'
 
-import * as styles from './Modal.css.js'
-
-import { StyleMarker } from '../styling/StyleMarker.js'
-import { ProgressProvider } from '../ProgressProvider.js'
-import { IconButton } from './IconButton.js'
 import { CloseIcon } from '../icons/CloseIcon.js'
+import { StyleMarker } from '../styling/StyleMarker.js'
+import { IconButton } from '../ui/IconButton.js'
+import * as styles from './LocalWalletModal.css.js'
+// import { FaucetView } from './views/FaucetView.js'
+import { ProgressProvider } from '../ProgressProvider.js'
+import { LocalWalletManagerView } from './views/ManagerView.js'
 
-export type ControlledModalProps = {
+type ControlledModalProps = {
   /** The controlled open state of the dialog. */
-  open?: boolean
+  open: boolean
 
   /** Event handler called when the open state of the dialog changes. */
-  onOpenChange?: (open: boolean) => void
+  onOpenChange: (open: boolean) => void
 
+  defaultOpen?: never
+}
+
+type UncontrolledModalProps = {
+  open?: never
+
+  onOpenChange?: never
+
+  /** The open state of the dialog when it is initially rendered. Use when you do not need to control its open state. */
   defaultOpen?: boolean
 }
 
-export type ModalProps = {
+type LocalWalletModalProps = {
   /** The trigger button that opens the dialog. */
   trigger: NonNullable<ReactNode>
-  children: ReactNode
-} & ControlledModalProps
+} & (ControlledModalProps | UncontrolledModalProps)
 
-export function Modal({ trigger, children, open, defaultOpen, onOpenChange }: ModalProps) {
+export function LocalWalletModal({
+  trigger,
+  open,
+  defaultOpen,
+  onOpenChange,
+}: LocalWalletModalProps) {
   const [isModalOpen, setModalOpen] = useState(open ?? defaultOpen)
 
   const handleOpenChange = (open: boolean) => {
@@ -43,7 +58,9 @@ export function Modal({ trigger, children, open, defaultOpen, onOpenChange }: Mo
           <Dialog.Overlay className={styles.overlay}>
             <Dialog.Content className={styles.content} aria-describedby={undefined}>
               <Dialog.Title />
-              <ProgressProvider>{children}</ProgressProvider>
+              <ProgressProvider>
+                <LocalWalletManagerView />
+              </ProgressProvider>
               <Dialog.Close className={styles.closeButtonContainer} asChild>
                 <IconButton type="button" aria-label="Close">
                   <CloseIcon />

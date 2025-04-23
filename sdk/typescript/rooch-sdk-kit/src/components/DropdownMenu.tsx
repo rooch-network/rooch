@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import clsx from 'clsx'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { ErrorValidateCantPayGasDeposit } from '@roochnetwork/rooch-sdk'
 
@@ -16,20 +16,27 @@ import { SessionModal } from './session-modal/SessionModal.js'
 import { FaucetModal } from './fauct-modal/FaucetModal.js'
 import { SwapGasModal } from './swap-gas-modal/SwapGasModal.js'
 import { SwitchNetworkModal } from './switch-network-modal/SwitchNetworkModal.js'
-import { useCurrentAddress, useRoochClient } from '../hooks/index.js'
+import { useCurrentAddress, useCurrentWallet, useRoochClient } from '../hooks/index.js'
 import { useSubscribeOnError, useSubscribeOnRequest } from '../provider/globalProvider.js'
+import { LocalWalletModal } from './local-wallet-modal/LocalWalletModal.js'
 
 export function ActionDropdownMenu() {
   const address = useCurrentAddress()
   const [sessionOpen, setSessionOpen] = useState(false)
   const [faucetOpen, setFaucetOpen] = useState(false)
   const [swapGasOpen, setSwapGasOpen] = useState(false)
+  const [localWalletOpen, setLocalWalletOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [progress, setProgress] = useState(0)
   const subscribeOnRequest = useSubscribeOnRequest()
   const subscribeOnError = useSubscribeOnError()
   const client = useRoochClient()
   const [rGasBalance, setRGasBalance] = useState(0)
+  const currnetWallet = useCurrentWallet()
+
+  const isLocal = useMemo(() => {
+    return currnetWallet.wallet?.getName() === 'Local'
+  }, [currnetWallet])
 
   const getBalance = useCallback(() => {
     if (!address) {
@@ -103,6 +110,11 @@ export function ActionDropdownMenu() {
           setSwapGasOpen(true)
         }}
       />
+      <LocalWalletModal
+        trigger={<></>}
+        open={localWalletOpen}
+        onOpenChange={(v) => setLocalWalletOpen(v)}
+      />
       <SwapGasModal trigger={<></>} open={swapGasOpen} onOpenChange={(v) => setSwapGasOpen(v)} />
       <DropdownMenu.Root modal={false}>
         <StyleMarker>
@@ -154,6 +166,18 @@ export function ActionDropdownMenu() {
                   Sessions Manager
                 </Text>
               </DropdownMenu.Item>
+              {isLocal && (
+                <DropdownMenu.Item
+                  className={clsx(styles.menuItem, styles.switchMenuItem)}
+                  onSelect={() => {
+                    setLocalWalletOpen(true)
+                  }}
+                >
+                  <Text mono className={styles.menuItemText}>
+                    Accounts
+                  </Text>
+                </DropdownMenu.Item>
+              )}
               <DropdownMenu.Item
                 className={clsx(styles.menuItem, styles.switchMenuItem)}
                 onSelect={() => {

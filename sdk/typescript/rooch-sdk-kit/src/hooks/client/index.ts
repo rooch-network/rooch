@@ -3,6 +3,7 @@
 
 export * from './useCurrentNetwork.js'
 export * from './useRoochClient.js'
+// export * from './useRoochWSClient.js'
 export * from './useRoochClientQuery.js'
 export * from './useRoochContext.js'
 export * from './useSwitchNetwork.js'
