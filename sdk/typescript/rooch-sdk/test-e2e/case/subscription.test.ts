@@ -17,6 +17,8 @@ describe('RoochClient Subscription Tests', () => {
     // Deploy the event example package
     const result = await wsTestBox.cmdPublishPackage('../../../examples/event')
     expect(result).toBeTruthy()
+    const result1 = await wsTestBox.cmdPublishPackage('../../../examples/entry_function_arguments/')
+    expect(result1).toBeTruthy()
   })
 
   afterAll(async () => {
@@ -164,14 +166,6 @@ describe('RoochClient Subscription Tests', () => {
   it('should subscribe to events with filter and only receive matching events', async () => {
     logger.info('Starting filtered event subscription test')
 
-    // Deploy the entry_function example package first
-    logger.info('Publishing entry_function package...')
-    const entryFunctionDeployResult = await wsTestBox.cmdPublishPackage(
-      '../../../examples/entry_function_arguments',
-    )
-    expect(entryFunctionDeployResult).toBeTruthy()
-    logger.info('entry_function package published successfully')
-
     let receivedEvents = new Array<any>()
     const cmdAddress = await wsTestBox.defaultCmdAddress()
 
@@ -270,20 +264,9 @@ describe('RoochClient Subscription Tests', () => {
     // We should have received only the event matching our filter
     logger.info(`Total filtered events received: ${receivedEvents.length}`)
 
-    if (receivedEvents.length > 0) {
-      logger.info('Event types received:')
-      receivedEvents.forEach((evt, i) => {
-        if (evt.type === 'event') {
-          logger.info(`Event ${i}: ${evt.data.event_type}`)
-        } else {
-          logger.info(`Event ${i}: ${evt.type}`)
-        }
-      })
-    }
-
     // Only events matching our filter should be received
     const nonMatchingEvents = receivedEvents.filter(
-      (evt) => evt.type === 'event' && !evt.data.event_type.includes('entry_function::U64Event'),
+      (evt) => !evt.event_type.includes('entry_function::U64Event'),
     )
 
     logger.info(`Number of non-matching events received: ${nonMatchingEvents.length}`)
