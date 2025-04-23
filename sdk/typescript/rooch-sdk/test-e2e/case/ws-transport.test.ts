@@ -28,7 +28,6 @@ describe('WebSocket1 Transport Tests', () => {
         .getClient()
         .subscribeEvent({
           onMessage(event) {
-            // console.log('Message received:', event)
             if (event.event_type.includes('event_test::WithdrawEvent')) {
               unsubscribe()
               resolve(true)
