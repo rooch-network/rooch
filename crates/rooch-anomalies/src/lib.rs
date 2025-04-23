@@ -32,6 +32,8 @@ pub struct TxAnomalies {
     pub no_execution_info: HashMap<H256, u64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub accumulator_should_revert: Option<HashMap<u64, H256>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub check_l1_tx_executed_start_from: Option<u64>,
 }
 
 impl TxAnomalies {
@@ -43,8 +45,8 @@ impl TxAnomalies {
             .as_ref()
             .map_or(0, |map| map.len());
         format!(
-            "Namespace: {}, Dup count: {}, No execution count: {}, Accumulator Should Revert count: {}",
-            self.genesis_namespace, dup_count, no_execution_count, revert_count
+            "Namespace: {}, Dup count: {}, No execution count: {}, Accumulator Should Revert count: {}, check_l1_tx_executed_start_from: {:?}",
+            self.genesis_namespace, dup_count, no_execution_count, revert_count, self.check_l1_tx_executed_start_from
         )
     }
 
@@ -71,7 +73,19 @@ impl TxAnomalies {
     }
 
     pub fn decode(bytes: &[u8]) -> anyhow::Result<Self> {
-        bcs::from_bytes(bytes).map_err(Into::into)
+        let anomalies_from_bcs_ret = bcs::from_bytes(bytes);
+        let anomalies: TxAnomalies = match anomalies_from_bcs_ret {
+            Ok(anomalies_from_bcs) => anomalies_from_bcs,
+            Err(_) => {
+                let anomalies_from_json_ret = serde_json::from_slice(bytes);
+                match anomalies_from_json_ret {
+                    Ok(anomalies_from_json) => anomalies_from_json,
+                    Err(_) => return Err(anyhow::anyhow!("Failed to load anomalies from file")),
+                }
+            }
+        };
+
+        Ok(anomalies)
     }
 
     pub fn encode(&self) -> Vec<u8> {
@@ -80,21 +94,8 @@ impl TxAnomalies {
 
     pub fn load_from<P: AsRef<Path>>(anomalies_file: P) -> anyhow::Result<Self> {
         let file_path = anomalies_file.as_ref();
-        let anomalies_from_bcs_ret = bcs::from_bytes(&std::fs::read(file_path)?);
-        let anomalies: TxAnomalies = match anomalies_from_bcs_ret {
-            Ok(anomalies_from_bcs) => anomalies_from_bcs,
-            Err(_) => {
-                let anomalies_from_json_ret = serde_json::from_slice(&std::fs::read(file_path)?);
-                match anomalies_from_json_ret {
-                    Ok(anomalies_from_json) => anomalies_from_json,
-                    Err(_) => return Err(anyhow::anyhow!("Failed to load anomalies from file")),
-                }
-            }
-        };
-
-        info!("Loaded tx anomalies: {}", anomalies.summary());
-
-        Ok(anomalies)
+        let bytes = std::fs::read(file_path)?;
+        Self::decode(&bytes)
     }
 
     pub fn save_to<P: AsRef<Path>>(&self, anomalies_file: P) -> anyhow::Result<()> {
@@ -186,6 +187,7 @@ mod tests {
             dup_hash: HashMap::new(),
             no_execution_info: HashMap::new(),
             accumulator_should_revert: Some(accumulator_should_revert),
+            check_l1_tx_executed_start_from: None,
         }
     }
 
@@ -286,6 +288,7 @@ mod tests {
             dup_hash: HashMap::new(),
             no_execution_info: HashMap::new(),
             accumulator_should_revert: Some(accumulator_should_revert),
+            check_l1_tx_executed_start_from: None,
         };
 
         let mapper = AccumulatorIndexMapper::new(Some(anomalies));

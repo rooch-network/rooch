@@ -331,7 +331,7 @@ impl PipelineProcessorActor {
             .with_label_values(&[fn_name])
             .start_timer();
 
-        let moveos_tx = self.executor.validate_l1_tx(l1_tx.clone()).await?;
+        let moveos_tx = self.executor.validate_l1_tx(l1_tx.clone(), false).await?;
         let mut ledger_tx: LedgerTransaction = if let Some(tx_hash) = sequenced_tx_hash {
             self.rooch_db
                 .rooch_store

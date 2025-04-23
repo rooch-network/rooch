@@ -230,7 +230,11 @@ impl ExecutorActor {
     }
 
     #[named]
-    pub fn validate_l1_tx(&self, l1_tx: L1Transaction) -> Result<VerifiedMoveOSTransaction> {
+    pub fn validate_l1_tx(
+        &self,
+        l1_tx: L1Transaction,
+        bypass_executed_check: bool,
+    ) -> Result<VerifiedMoveOSTransaction> {
         let fn_name = function_name!();
         let _timer = self
             .metrics
@@ -242,13 +246,15 @@ impl ExecutorActor {
         let result = match RoochMultiChainID::try_from(l1_tx.chain_id.id())? {
             RoochMultiChainID::Bitcoin => {
                 // Validate the l1 tx before execution via contract
-                let readonly_ctx = TxContext::new_readonly_ctx(AccountAddress::ZERO);
-                let l1_tx_validator = self.as_module_binding::<L1TransactionValidator>();
-                let tx_validator_result =
-                    l1_tx_validator.validate_l1_tx(&readonly_ctx, tx_hash, vec![])?;
-                // If the l1 tx already execute, skip the tx.
-                if !tx_validator_result {
-                    return Err(RoochError::L1TxAlreadyExecuted.into());
+                if !bypass_executed_check {
+                    let readonly_ctx = TxContext::new_readonly_ctx(AccountAddress::ZERO);
+                    let l1_tx_validator = self.as_module_binding::<L1TransactionValidator>();
+                    let tx_validator_result =
+                        l1_tx_validator.validate_l1_tx(&readonly_ctx, tx_hash, vec![])?;
+                    // If the l1 tx already execute, skip the tx.
+                    if !tx_validator_result {
+                        return Err(RoochError::L1TxAlreadyExecuted.into());
+                    }
                 }
 
                 let action = VerifiedMoveAction::Function {
@@ -489,7 +495,7 @@ impl Handler<ValidateL1TxMessage> for ExecutorActor {
         msg: ValidateL1TxMessage,
         _ctx: &mut ActorContext,
     ) -> Result<VerifiedMoveOSTransaction> {
-        self.validate_l1_tx(msg.l1_tx)
+        self.validate_l1_tx(msg.l1_tx, msg.bypass_executed_check)
     }
 }
 

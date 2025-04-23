@@ -255,7 +255,7 @@ impl RustBindingTest {
     }
 
     pub fn execute_l1_tx(&mut self, l1_tx: L1Transaction) -> Result<ExecuteTransactionResult> {
-        let verified_tx = self.executor.validate_l1_tx(l1_tx)?;
+        let verified_tx = self.executor.validate_l1_tx(l1_tx, false)?;
         self.execute_verified_tx(verified_tx)
     }
 
