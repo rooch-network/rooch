@@ -12,7 +12,7 @@ use moveos_types::move_types::FunctionId;
 use moveos_types::state::MoveState;
 use moveos_types::transaction::MoveAction;
 use rooch_framework::natives::gas_parameter::gas_member::ToOnChainGasSchedule;
-use rooch_genesis::{FrameworksGasParameters, LATEST_GAS_SCHEDULE_VERSION};
+use rooch_genesis::FrameworksGasParameters;
 use rooch_types::error::{RoochError, RoochResult};
 use rooch_types::rooch_network::BuiltinChainID;
 use std::collections::BTreeMap;
@@ -82,12 +82,13 @@ impl CommandAction<Option<FileOutput>> for UpgradeGasConfigCommand {
                         .to_on_chain_gas_schedule(),
                 );
 
-                if LATEST_GAS_SCHEDULE_VERSION < onchain_gas_schedule_version {
-                    return Err(RoochError::InvalidLocalGasVersion(
-                        LATEST_GAS_SCHEDULE_VERSION,
-                        onchain_gas_schedule_version,
-                    ));
-                }
+                // The last gas schedule version on the testnet allows to be inconsistent with onchain gas schedule version
+                // if LATEST_GAS_SCHEDULE_VERSION < onchain_gas_schedule_version {
+                //     return Err(RoochError::InvalidLocalGasVersion(
+                //         LATEST_GAS_SCHEDULE_VERSION,
+                //         onchain_gas_schedule_version,
+                //     ));
+                // }
 
                 let local_gas_schedule_map: BTreeMap<String, u64> =
                     local_gas_entries.into_iter().collect();
