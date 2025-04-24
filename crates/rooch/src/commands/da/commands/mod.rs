@@ -41,6 +41,7 @@ use tracing::{error, info, warn};
 
 pub mod accumulator_anomaly;
 pub mod exec;
+pub mod find_first;
 pub mod index;
 pub mod namespace;
 pub mod pack;

@@ -255,6 +255,11 @@ impl ExecCommand {
         let genesis_namespace = derive_builtin_genesis_namespace(self.chain_id)?;
         let tx_anomalies = load_tx_anomalies(genesis_namespace.clone())?;
 
+        let check_l1_tx_executed_start_from = tx_anomalies
+            .as_ref()
+            .and_then(|anomalies| anomalies.check_l1_tx_executed_start_from)
+            .unwrap_or(0);
+
         let sequenced_tx_store =
             SequencedTxStore::new(rooch_db.rooch_store.clone(), tx_anomalies.clone())?;
 
@@ -312,6 +317,7 @@ impl ExecCommand {
             rooch_db,
             tx_anomalies,
             state_root_fetcher,
+            check_l1_tx_executed_start_from,
         })
     }
 }
@@ -339,6 +345,7 @@ struct ExecInner {
     state_root_fetcher: StateRootFetcher,
 
     tx_anomalies: Option<TxAnomalies>,
+    check_l1_tx_executed_start_from: u64,
 }
 
 struct ExecMsg {
@@ -823,13 +830,20 @@ impl ExecInner {
         ledger_tx: LedgerTransaction,
         l1block_with_body: Option<L1BlockWithBody>,
     ) -> anyhow::Result<VerifiedMoveOSTransaction> {
+        let tx_order = ledger_tx.sequence_info.tx_order;
+        let bypass_l1_executed_check = tx_order < self.check_l1_tx_executed_start_from;
+
         let moveos_tx_result = match &ledger_tx.data {
             LedgerTxData::L1Block(_block) => {
                 self.executor
                     .validate_l1_block(l1block_with_body.unwrap())
                     .await
             }
-            LedgerTxData::L1Tx(l1_tx) => self.executor.validate_l1_tx(l1_tx.clone()).await,
+            LedgerTxData::L1Tx(l1_tx) => {
+                self.executor
+                    .validate_l1_tx(l1_tx.clone(), bypass_l1_executed_check)
+                    .await
+            }
             LedgerTxData::L2Tx(l2_tx) => self.executor.validate_l2_tx(l2_tx.clone()).await,
         };
 
