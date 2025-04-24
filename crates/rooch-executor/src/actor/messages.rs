@@ -42,6 +42,7 @@ impl Message for ValidateL1BlockMessage {
 #[derive(Debug)]
 pub struct ValidateL1TxMessage {
     pub l1_tx: L1Transaction,
+    pub bypass_executed_check: bool,
 }
 
 impl Message for ValidateL1TxMessage {

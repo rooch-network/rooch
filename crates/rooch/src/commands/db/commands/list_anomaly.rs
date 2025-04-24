@@ -111,6 +111,7 @@ impl ListAnomaly {
             dup_hash,
             no_execution_info,
             accumulator_should_revert: None,
+            check_l1_tx_executed_start_from: None,
         };
 
         if self.pretty {

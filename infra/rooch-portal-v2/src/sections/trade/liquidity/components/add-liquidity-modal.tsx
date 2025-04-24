@@ -60,6 +60,8 @@ export default function AddLiquidityModal({
   const [customSlippage, setCustomSlippage] = useState('');
   const [activeStep, setActiveStep] = useState(0);
   const [yLabelError, setYLabelError] = useState<string>();
+  const [xLabelError, setXLabelError] = useState<string>();
+  const [editingField, setEditingField] = useState<'x' | 'y' | null>(null);
   const router = useRouter();
 
   const { data: lpTotalSupply } = useRoochClientQuery('queryObjectStates', {
@@ -189,7 +191,7 @@ export default function AddLiquidityModal({
   };
 
   const fetchY = useCallback(() => {
-    if (xAmount === '' || xAmount === '0' || !reserveX || !reserveY || !xCoinInfo || !yCoinInfo) {
+    if (editingField !== 'x' || xAmount === '' || xAmount === '0' || !reserveX || !reserveY || !xCoinInfo || !yCoinInfo) {
       return;
     }
 
@@ -208,9 +210,31 @@ export default function AddLiquidityModal({
       setYLabelError(undefined);
     }
     setYAmount(formatByIntl(fromDust(y.toFixed(0, 1), yCoinInfo.decimals || 0).toString()));
-  }, [xAmount, reserveX, reserveY, xCoinInfo, yCoinInfo]);
+  }, [xAmount, reserveX, reserveY, xCoinInfo, yCoinInfo, editingField]);
 
   useDebounce(fetchY, 500, [fetchY]);
+
+  const fetchX = useCallback(() => {
+    if (editingField !== 'y' || yAmount === '' || yAmount === '0' || !reserveX || !reserveY || !xCoinInfo || !yCoinInfo) {
+      return;
+    }
+    const xBalance = (reserveX.data[0].decoded_value!.value.balance as AnnotatedMoveStructView)
+      .value.value as string;
+    const yBalance = (reserveY.data[0].decoded_value!.value.balance as AnnotatedMoveStructView)
+      .value.value as string;
+    const fixedY = toDust(yAmount.replaceAll(',', ''), yCoinInfo.decimals || 0);
+    const yRate = BigNumber(fixedY.toString()).div(yBalance);
+    const x = BigNumber(xBalance).multipliedBy(yRate);
+  
+    if (x.toNumber() > Number(xCoinInfo.balance || 0)) {
+      setXLabelError('Insufficient');
+    } else {
+      setXLabelError(undefined);
+    }
+    setXAmount(formatByIntl(fromDust(x.toFixed(0, 1), xCoinInfo.decimals || 0).toString()));
+  }, [yAmount, reserveX, reserveY, xCoinInfo, yCoinInfo, editingField]);
+
+  useDebounce(fetchX, 500, [fetchX]);
 
   const getStepContent = (step: number) => {
     switch (step) {
@@ -235,15 +259,20 @@ export default function AddLiquidityModal({
             <Stack justifyContent="center" spacing={2} direction="column" sx={{ pt: 1 }}>
               <FormControl>
                 <TextField
-                  label="Amount"
+                  label={xLabelError || 'Amount'}
                   placeholder=""
                   value={xAmount}
                   inputMode="decimal"
                   autoComplete="off"
+                  InputLabelProps={{ style: { color: xLabelError ? 'red' : 'inherit' } }}
                   onChange={(e) => {
+                    setEditingField('x');
                     const value = e.target.value.replaceAll(',', '');
                     if (value === '') {
                       setXAmount('');
+                      setYAmount('');
+                      setXLabelError(undefined);
+                      setYLabelError(undefined);
                       return;
                     }
                     if (/^\d*\.?\d*$/.test(value) === false) {
@@ -254,11 +283,25 @@ export default function AddLiquidityModal({
                       setXAmount(formatByIntl(xBalance));
                     } else {
                       setXAmount(formatByIntl(value));
+                      setXLabelError(undefined);
                     }
                   }}
                   InputProps={{
                     endAdornment: (
                       <InputAdornment position="end">
+                        {xLabelError ? (
+                        <Stack direction="row" spacing={0.5}>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            onClick={() => {
+                              router.push('./swap');
+                            }}
+                          >
+                            Go to Swap
+                          </Button>
+                        </Stack>
+                      ) : (
                         <Stack direction="row" spacing={0.5}>
                           <Button
                             size="small"
@@ -269,6 +312,8 @@ export default function AddLiquidityModal({
                                   new BigNumber(xCoinInfo?.fixedBalance || 0).div(2).toString()
                                 )
                               );
+                              setEditingField('x');
+                              setXLabelError(undefined);
                             }}
                           >
                             Half
@@ -278,11 +323,14 @@ export default function AddLiquidityModal({
                             variant="outlined"
                             onClick={() => {
                               setXAmount(formatByIntl((xCoinInfo?.fixedBalance || 0).toString()));
+                              setEditingField('x');
+                              setXLabelError(undefined);
                             }}
                           >
                             Max
                           </Button>
                         </Stack>
+                        )}
                       </InputAdornment>
                     ),
                   }}
@@ -304,19 +352,38 @@ export default function AddLiquidityModal({
                 </Stack>
               </Stack>
               <FormControl>
-                <TextField
-                  label={yLabelError || 'Automatic calculation'}
-                  placeholder=""
-                  value={yAmount}
-                  inputMode="decimal"
-                  autoComplete="off"
-                  InputLabelProps={{ style: { color: yLabelError ? 'red' : 'inherit' } }}
-                  onChange={(e) => {
-                    setYAmount(e.target.value);
-                  }}
-                  InputProps={{
-                    endAdornment: yLabelError && (
-                      <InputAdornment position="end">
+              <TextField
+                label={yLabelError || 'Automatic calculation'}
+                placeholder=""
+                value={yAmount}
+                inputMode="decimal"
+                autoComplete="off"
+                InputLabelProps={{ style: { color: yLabelError ? 'red' : 'inherit' } }}
+                onChange={(e) => {
+                  setEditingField('y');
+                  const value = e.target.value.replaceAll(',', '');
+                  if (value === '') {
+                    setXAmount('');
+                    setYAmount('');
+                    setXLabelError(undefined);
+                    setYLabelError(undefined);
+                    return;
+                  }
+                  if (/^\d*\.?\d*$/.test(value) === false) {
+                    return;
+                  }
+                  const yBalance = yCoinInfo?.fixedBalance || 0;
+                  if (Number(value) > yBalance) {
+                    setYAmount(formatByIntl(yBalance));
+                  } else {
+                    setYAmount(formatByIntl(value));
+                    setYLabelError(undefined);
+                  }
+                }}
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      {yLabelError ? (
                         <Stack direction="row" spacing={0.5}>
                           <Button
                             size="small"
@@ -328,10 +395,40 @@ export default function AddLiquidityModal({
                             Go to Swap
                           </Button>
                         </Stack>
-                      </InputAdornment>
-                    ),
-                  }}
-                />
+                      ) : (
+                        <Stack direction="row" spacing={0.5}>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            onClick={() => {
+                              setYAmount(
+                                formatByIntl(
+                                  new BigNumber(yCoinInfo?.fixedBalance || 0).div(2).toString()
+                                )
+                              );
+                              setYLabelError(undefined);
+                              setEditingField('y');
+                            }}
+                          >
+                            Half
+                          </Button>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            onClick={() => {
+                              setYAmount(formatByIntl((yCoinInfo?.fixedBalance || 0).toString()));
+                              setYLabelError(undefined);
+                              setEditingField('y');
+                            }}
+                          >
+                            Max
+                          </Button>
+                        </Stack>
+                      )}
+                    </InputAdornment>
+                  ),
+                }}
+              />
               </FormControl>
             </Stack>
 
