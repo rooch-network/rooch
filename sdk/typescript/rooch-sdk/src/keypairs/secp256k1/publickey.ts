@@ -1,19 +1,21 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { secp256k1 } from '@noble/curves/secp256k1'
+import { secp256k1, schnorr } from '@noble/curves/secp256k1'
 
 import { AddressView, BitcoinNetowkType } from '../../address/index.js'
 import { PublicKey, PublicKeyInitData, SIGNATURE_SCHEME_TO_FLAG } from '../../crypto/index.js'
 import { fromB64, sha256, toHEX } from '../../utils/index.js'
 
 const SCHNORR_PUBLIC_KEY_SIZE = 32
+const ECDSA_PUBLIC_KEY_SIZE = 33
 
 /**
  * A Secp256k1 public key
  */
 export class Secp256k1PublicKey extends PublicKey<AddressView> {
-  static SIZE = SCHNORR_PUBLIC_KEY_SIZE
+  static SCHNORR_PUBKEY_SIZE = SCHNORR_PUBLIC_KEY_SIZE
+  static ECDSA_PUBKEY_SIZE = ECDSA_PUBLIC_KEY_SIZE
 
   private readonly data: Uint8Array
 
@@ -32,9 +34,12 @@ export class Secp256k1PublicKey extends PublicKey<AddressView> {
       this.data = Uint8Array.from(value)
     }
 
-    if (this.data.length !== SCHNORR_PUBLIC_KEY_SIZE && this.data.length !== 33) {
+    if (
+      this.data.length !== SCHNORR_PUBLIC_KEY_SIZE &&
+      this.data.length !== ECDSA_PUBLIC_KEY_SIZE
+    ) {
       throw new Error(
-        `Invalid public key input. Expected ${SCHNORR_PUBLIC_KEY_SIZE} bytes, got ${this.data.length}`,
+        `Invalid public key input. Expected ${SCHNORR_PUBLIC_KEY_SIZE} or ${ECDSA_PUBLIC_KEY_SIZE} bytes, got ${this.data.length}`,
       )
     }
   }
@@ -76,7 +81,7 @@ export class Secp256k1PublicKey extends PublicKey<AddressView> {
   }
 
   /**
-   * Verifies that the signature is valid for the provided message
+   * Verifies that the ecdsa signature is valid for the provided sha256 hashed message with 33 bytes public key
    */
   async verify(message: Uint8Array, signature: Uint8Array): Promise<boolean> {
     return secp256k1.verify(
@@ -84,5 +89,12 @@ export class Secp256k1PublicKey extends PublicKey<AddressView> {
       sha256(message),
       this.toBytes(),
     )
+  }
+
+  /**
+   * Verifies that the schnorr signature is valid for the provided message with 32 bytes public key
+   */
+  async verify_schnorr(message: Uint8Array, signature: Uint8Array): Promise<boolean> {
+    return schnorr.verify(signature, message, this.toBytes())
   }
 }
