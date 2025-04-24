@@ -21,3 +21,5 @@ generated/
 
 # yarn error
 yarn-error.log
+
+deno.lock

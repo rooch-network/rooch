@@ -79,6 +79,14 @@ describe('Secp256k1 keypair', () => {
       expect(isValid).toBeTruthy()
     })
 
+    it('should sign data with schnorr signature', async () => {
+      const keypair = new Secp256k1Keypair()
+      const message = new TextEncoder().encode('hello world')
+      const signature = await keypair.sign_schnorr(message)
+      const isValid = await keypair.getSchnorrPublicKey().verify_schnorr(message, signature)
+      expect(isValid).toBeTruthy()
+    })
+
     it('Sign data same as rooch cli', async () => {
       // TODO:
     })

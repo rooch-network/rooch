@@ -147,7 +147,7 @@ export class Secp256k1Keypair extends Keypair {
   }
 
   /**
-   * Return the signature for the provided data.
+   * Return the ecdsa signature for the provided data.
    */
   async sign(input: Bytes) {
     const msgHash = sha256(input)
@@ -156,6 +156,15 @@ export class Secp256k1Keypair extends Keypair {
     })
 
     return sig.toCompactRawBytes()
+  }
+
+  /**
+   * Return the schnorr signature for the provided data.
+   */
+  async sign_schnorr(input: Bytes, auxRand?: Bytes) {
+    const sig = schnorr.sign(input, this.keypair.secretKey, auxRand)
+
+    return sig
   }
 
   async signTransaction(input: Transaction): Promise<Authenticator> {

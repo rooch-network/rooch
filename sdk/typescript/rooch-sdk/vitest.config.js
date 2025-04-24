@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import * as path from 'path'
+import * as path from 'node:path'
 import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
