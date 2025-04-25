@@ -279,17 +279,10 @@ module rooch_framework::account_coin_store {
         // If we need more from the multi coin store
         if (coin_store_balance < amount) {
             let generic_amount = amount - coin_store_balance;
-            if (generic_amount > 0) {
-                let generic_store = borrow_mut_multi_coin_store(addr);
-                let generic_coin = multi_coin_store::withdraw(generic_store, coin_type, generic_amount);
-                
-                // Convert GenericCoin to Coin<CoinType> and merge with coin_store_coin
-                let (generic_coin_type, value) = coin::unpack_generic_coin(generic_coin);
-                assert!(coin_type == generic_coin_type, ErrorCoinTypeNotMatch);
-                
-                let generic_coin_store_coin = coin::pack<CoinType>(value);
-                coin::merge(&mut coin_store_coin, generic_coin_store_coin);
-            }
+            let generic_store = borrow_mut_multi_coin_store(addr);
+            let generic_coin = multi_coin_store::withdraw(generic_store, coin_type, generic_amount);
+            let generic_coin_store_coin = coin::convert_generic_coin_to_coin<CoinType>(generic_coin);
+            coin::merge(&mut coin_store_coin, generic_coin_store_coin);
         };
 
         coin_store_coin

@@ -55,11 +55,13 @@ This module provides the foundation for typesafe Coins.
 -  [Function `unpack`](#0x3_coin_unpack)
 -  [Function `pack`](#0x3_coin_pack)
 -  [Function `convert_coin_to_generic_coin`](#0x3_coin_convert_coin_to_generic_coin)
+-  [Function `convert_generic_coin_to_coin`](#0x3_coin_convert_generic_coin_to_coin)
 -  [Function `check_coin_info_registered_by_type_name`](#0x3_coin_check_coin_info_registered_by_type_name)
 -  [Function `is_registered_by_type_name`](#0x3_coin_is_registered_by_type_name)
 -  [Function `generic_coin_value`](#0x3_coin_generic_coin_value)
 -  [Function `unpack_generic_coin`](#0x3_coin_unpack_generic_coin)
 -  [Function `pack_generic_coin`](#0x3_coin_pack_generic_coin)
+-  [Function `merge_generic`](#0x3_coin_merge_generic)
 -  [Function `coin_type`](#0x3_coin_coin_type)
 
 
@@ -834,6 +836,17 @@ This function is only called by the <code>CoinType</code> module, for the develo
 
 
 
+<a name="0x3_coin_convert_generic_coin_to_coin"></a>
+
+## Function `convert_generic_coin_to_coin`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_convert_generic_coin_to_coin">convert_generic_coin_to_coin</a>&lt;CoinType: key&gt;(<a href="coin.md#0x3_coin">coin</a>: <a href="coin.md#0x3_coin_GenericCoin">coin::GenericCoin</a>): <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;
+</code></pre>
+
+
+
 <a name="0x3_coin_check_coin_info_registered_by_type_name"></a>
 
 ## Function `check_coin_info_registered_by_type_name`
@@ -885,6 +898,19 @@ This function is only called by the <code>CoinType</code> module, for the develo
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="coin.md#0x3_coin_pack_generic_coin">pack_generic_coin</a>(coin_type: <a href="_String">string::String</a>, value: <a href="">u256</a>): <a href="coin.md#0x3_coin_GenericCoin">coin::GenericCoin</a>
+</code></pre>
+
+
+
+<a name="0x3_coin_merge_generic"></a>
+
+## Function `merge_generic`
+
+"Merges" the two given generic coins.  The coin passed in as <code>dst_coin</code> will have a value equal
+to the sum of the two generic coins (<code>dst_coin</code> and <code>source_coin</code>).
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_merge_generic">merge_generic</a>(dst_coin: &<b>mut</b> <a href="coin.md#0x3_coin_GenericCoin">coin::GenericCoin</a>, source_coin: <a href="coin.md#0x3_coin_GenericCoin">coin::GenericCoin</a>)
 </code></pre>
 
 

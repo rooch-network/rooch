@@ -6,6 +6,8 @@
 /// It helps migrate coin stores, balances, frozen states, and accept data.
 module rooch_framework::coin_migration {
     use std::string;
+    use rooch_framework::onchain_config;
+    use moveos_std::signer;
     use moveos_std::type_info;
     use moveos_std::event;
     use moveos_std::object::{Self, ObjectID};
@@ -27,6 +29,8 @@ module rooch_framework::coin_migration {
 
     /// Nothing to migrate for the account
     const ErrorNothingToMigrate: u64 = 2;
+
+    const ErrorNotAdmin: u64 = 3;
 
     //
     // Events
@@ -56,8 +60,10 @@ module rooch_framework::coin_migration {
         migrated_accounts: table::Table<address, bool>,
     }
 
+    /// MigrationUpdateCap is the capability for admin operations, such as update migration state.
+    struct MigrationUpdateCap has key, store {}
+
     /// Initialize the migration module, called during genesis or framework upgrade
-    // public(friend) fun init_migration(_framework: &signer) {
     fun init() {
         let migration_state_id = object::named_object_id<MigrationState>();
         if(!object::exists_object(migration_state_id)){
@@ -66,20 +72,34 @@ module rooch_framework::coin_migration {
             });
             object::transfer_extend(migration_state, @rooch_framework);
         };
+
+        let rooch_dao = onchain_config::rooch_dao();
+        let admin_cap = object::new_named_object(MigrationUpdateCap{});
+        object::transfer(admin_cap, rooch_dao);
+    }
+
+    public fun ensure_admin(account: &signer) {
+        let sender = signer::address_of(account);
+        assert!(sender == admin(), ErrorNotAdmin);
+    }
+
+    public fun admin(): address {
+        let object_id = object::named_object_id<MigrationUpdateCap>();
+        let obj = object::borrow_object<MigrationUpdateCap>(object_id);
+        object::owner(obj)
     }
 
     /// Entry function to migrate a specific account's coin stores
     /// The coin type must be only key to compatiable with both the public(key+store) and private(key) coins
-    /// Need to limit to only called by the admin to migrate their own coin stores ?
+    /// Can be called by arbitrary user
     public entry fun migrate_account_entry<CoinType: key>(_admin: &signer, addr: address) {
-        // let addr = signer::address_of(account);
         migrate_account<CoinType>(addr);
     }
 
     /// Entry function to update migration state for a specific account
-    /// Need to limit to only called by the admin to migrate their own coin stores ?
-    public entry fun update_migration_state_entry(_admin: &signer, addr: address) {
-        // let addr = signer::address_of(account);
+    /// Only called by the admin to update migrate states
+    public entry fun update_migration_state_entry(admin: &signer, addr: address) {
+        ensure_admin(admin);
         update_migration_state(addr);
     }
 

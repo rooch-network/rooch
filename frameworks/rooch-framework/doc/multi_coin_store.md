@@ -21,7 +21,6 @@
 -  [Function `withdraw`](#0x3_multi_coin_store_withdraw)
 -  [Function `deposit`](#0x3_multi_coin_store_deposit)
 -  [Function `transfer`](#0x3_multi_coin_store_transfer)
--  [Function `ensure_coin_type_has_key_and_store_ability`](#0x3_multi_coin_store_ensure_coin_type_has_key_and_store_ability)
 -  [Function `withdraw_extend`](#0x3_multi_coin_store_withdraw_extend)
 -  [Function `deposit_extend`](#0x3_multi_coin_store_deposit_extend)
 -  [Function `freeze_coin_store_extend`](#0x3_multi_coin_store_freeze_coin_store_extend)
@@ -195,6 +194,16 @@ The CoinType parameter and CoinType in CoinStore do not match
 
 
 
+<a name="0x3_multi_coin_store_ErrorCoinTypeShouldHaveKeyAbility"></a>
+
+Coin type should have key ability
+
+
+<pre><code><b>const</b> <a href="multi_coin_store.md#0x3_multi_coin_store_ErrorCoinTypeShouldHaveKeyAbility">ErrorCoinTypeShouldHaveKeyAbility</a>: u64 = 7;
+</code></pre>
+
+
+
 <a name="0x3_multi_coin_store_ErrorCoinTypeShouldHaveKeyAndStoreAbility"></a>
 
 Coin type should have key and store ability
@@ -278,17 +287,6 @@ Coin type should have key and store ability
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="transfer.md#0x3_transfer">transfer</a>(_coin_store_obj: <a href="_Object">object::Object</a>&lt;<a href="multi_coin_store.md#0x3_multi_coin_store_MultiCoinStore">multi_coin_store::MultiCoinStore</a>&gt;, _owner: <b>address</b>)
-</code></pre>
-
-
-
-<a name="0x3_multi_coin_store_ensure_coin_type_has_key_and_store_ability"></a>
-
-## Function `ensure_coin_type_has_key_and_store_ability`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="multi_coin_store.md#0x3_multi_coin_store_ensure_coin_type_has_key_and_store_ability">ensure_coin_type_has_key_and_store_ability</a>(coin_type: <a href="_String">string::String</a>)
 </code></pre>
 
 

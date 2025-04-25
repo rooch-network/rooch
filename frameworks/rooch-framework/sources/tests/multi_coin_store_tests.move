@@ -147,10 +147,8 @@ module rooch_framework::multi_coin_store_tests {
         let _test_account = account::create_account_for_testing(addr);
         
         // Register coin type
-        // let btc_info = register_extend<BTC>(string::utf8(b"Bitcoin"), string::utf8(b"BTC"), option::none(), 8);
         let btc_info = register_extend<BTC>(string::utf8(b"Bitcoin"), string::utf8(b"BTC"), option::none(), 8);
-        // object::transfer(btc_info, @rooch_framework);
-        
+
         // Create multi coin store
         let store_id = multi_coin_store::create_multi_coin_store_for_test(addr);
         let store_obj_mut = object::borrow_mut_object<MultiCoinStore>(account, store_id);
@@ -178,6 +176,9 @@ module rooch_framework::multi_coin_store_tests {
         genesis::init_for_test();
         let addr = signer::address_of(account);
         let _test_account = account::create_account_for_testing(addr);
+
+        // Register coin type
+        let private_coin_info = register_extend<PrivateCoin>(string::utf8(b"PrivateCoin"), string::utf8(b"PC"), option::none(), 8);
         
         // Create multi coin store
         let store_id = multi_coin_store::create_multi_coin_store_for_test(addr);
@@ -185,9 +186,14 @@ module rooch_framework::multi_coin_store_tests {
         
         // Try to operate with a coin type that doesn't have store ability
         let private_coin_type = string::utf8(b"0x0000000000000000000000000000000000000000000000000000000000000003::multi_coin_store_tests::PrivateCoin");
-        
-        // This should fail because PrivateCoin doesn't have the store ability
         multi_coin_store::create_coin_store_field_if_not_exist_for_test(store_obj_mut, private_coin_type);
+
+        let private_coin = coin::mint_extend<PrivateCoin>(&mut private_coin_info, 100);
+        let private_coin_generic = coin::convert_coin_to_generic_coin(private_coin);
+        // This should fail because PrivateCoin doesn't have the store ability
+        multi_coin_store::deposit(store_obj_mut, private_coin_generic);
+
+        object::transfer(private_coin_info, @rooch_framework);
     }
 
     #[test(account = @0x42)]

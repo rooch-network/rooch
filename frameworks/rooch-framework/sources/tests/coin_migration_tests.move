@@ -5,6 +5,7 @@
 module rooch_framework::coin_migration_tests {
     use std::string;
     use std::option;
+    use rooch_framework::onchain_config;
     use rooch_framework::coin_store;
     use moveos_std::account;
     use moveos_std::object;
@@ -39,8 +40,7 @@ module rooch_framework::coin_migration_tests {
         assert!(coin_migration::get_migration_stats() == 0, 2);
     }
 
-    #[test(rooch_framework = @rooch_framework)]
-    fun test_account_migration_status(rooch_framework: &signer) {
+    fun test_account_migration_status() {
         genesis::init_for_test();
         coin_migration::init_for_test();
         
@@ -50,7 +50,8 @@ module rooch_framework::coin_migration_tests {
         assert!(!coin_migration::is_account_migrated(ALICE), 1);
         
         // Update migration state for the account
-        coin_migration::update_migration_state_entry(rooch_framework, ALICE);
+        let admin = account::create_account_for_testing(onchain_config::rooch_dao());
+        coin_migration::update_migration_state_entry(&admin, ALICE);
         
         // Now account should be marked as migrated
         assert!(coin_migration::is_account_migrated(ALICE), 2);
@@ -92,7 +93,8 @@ module rooch_framework::coin_migration_tests {
         assert!(account_coin_store::balance_by_type_name(ALICE, coin_type) == 500, 3);
 
         // Update migration state
-        coin_migration::update_migration_state_entry(rooch_framework, ALICE);
+        let admin = account::create_account_for_testing(onchain_config::rooch_dao());
+        coin_migration::update_migration_state_entry(&admin, ALICE);
 
         // Account should be marked as migrated
         assert!(coin_migration::is_account_migrated(ALICE), 4);
@@ -159,7 +161,8 @@ module rooch_framework::coin_migration_tests {
         coin_migration::migrate_account_entry<TestCoin2>(rooch_framework, ALICE);
         
         // Update migration state
-        coin_migration::update_migration_state_entry(rooch_framework, ALICE);
+        let admin = account::create_account_for_testing(onchain_config::rooch_dao());
+        coin_migration::update_migration_state_entry(&admin, ALICE);
         
         // Verify balances after migration - combined from both stores
         let balance1_after = account_coin_store::balance<TestCoin1>(ALICE);

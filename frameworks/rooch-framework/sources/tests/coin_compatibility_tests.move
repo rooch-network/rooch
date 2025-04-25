@@ -5,18 +5,21 @@
 module rooch_framework::coin_compatibility_tests {
     use std::string;
     use std::option;
+    use moveos_std::signer;
     use rooch_framework::coin;
     use rooch_framework::account_coin_store;
+    use rooch_framework::multi_coin_store;
     use moveos_std::account;
     use moveos_std::object;
     use moveos_std::type_info;
-    
+
     use rooch_framework::genesis;
 
     // Test coin types
     struct TestCoin1 has key, store {}
     struct TestCoin2 has key, store {}
     struct TestCoin3 has key, store {}
+    struct TestCoin4 has key {} // Coin with only key ability, no store
 
     // Addresses for testing
     const ALICE: address = @0x42;
@@ -349,9 +352,68 @@ module rooch_framework::coin_compatibility_tests {
         object::transfer(coin1_info, @rooch_framework);
     }
 
+    #[test(account = @0x40)]
+    #[expected_failure(abort_code = multi_coin_store::ErrorCoinTypeShouldHaveKeyAndStoreAbility)]
+    fun test_coin_has_only_key_compatibility_should_fail(account: &signer) {
+        genesis::init_for_test();
+        let alice = account::create_account_for_testing(ALICE);
+        
+        // Register TestCoin4 which only has key ability
+        // We need to use a different register function since the helper requires key+store
+        let coin4_info = register_coin<TestCoin4>(account, b"TestCoin4", b"TC4", 8);
+        
+        // Accept the coin - this should work with private_generics
+        account_coin_store::do_accept_coin<TestCoin4>(&alice);
+        
+        // Verify stores are created correctly
+        assert!(account_coin_store::exist_account_coin_store<TestCoin4>(ALICE), 1);
+        assert!(account_coin_store::exist_multi_coin_store(ALICE), 2);
+        
+        // Get coin type string representation
+        let coin_type = type_info::type_name<TestCoin4>();
+        assert!(account_coin_store::exist_multi_coin_store_field(ALICE, coin_type), 3);
+        
+        // Mint coins using the extend variant which allows key-only types
+        let amount = 1000;
+        let coin4 = coin::mint_extend<TestCoin4>(&mut coin4_info, amount);
+        
+        // Deposit using extend variant
+        account_coin_store::deposit_extend<TestCoin4>(ALICE, coin4);
+        
+        // Verify balance
+        let alice_balance = account_coin_store::balance<TestCoin4>(ALICE);
+        assert!(alice_balance == amount, 4);
+        
+        // Withdraw using extend variant
+        let withdraw_amount = 500;
+        let coin4 = account_coin_store::withdraw_extend<TestCoin4>(signer::address_of(&alice), withdraw_amount);
+        
+        // Verify balance after withdrawal
+        alice_balance = account_coin_store::balance<TestCoin4>(ALICE);
+        assert!(alice_balance == amount - withdraw_amount, 5);
+        
+        // Test freezing with key-only coin
+        account_coin_store::freeze_extend<TestCoin4>(ALICE, true);
+        assert!(account_coin_store::is_account_coin_store_frozen<TestCoin4>(ALICE), 6);
+        assert!(account_coin_store::is_multi_coin_store_frozen_by_type_name(ALICE, coin_type), 7);
+
+        // Unfreeze for cleanup
+        account_coin_store::freeze_extend<TestCoin4>(ALICE, false);
+        
+        // Test deposit after unfreezing
+        account_coin_store::deposit_extend<TestCoin4>(ALICE, coin4);
+        
+        // Verify final balance
+        alice_balance = account_coin_store::balance<TestCoin4>(ALICE);
+        assert!(alice_balance == amount, 8);
+
+        // cleanup
+        object::transfer(coin4_info, @rooch_framework);
+    }
+
     // Helper functions for testing
 
-    fun register_coin<CoinType: key + store>(
+    fun register_coin<CoinType: key>(
         _admin: &signer,
         name: vector<u8>,
         symbol: vector<u8>,

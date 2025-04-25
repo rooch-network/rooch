@@ -35,6 +35,9 @@ module rooch_framework::multi_coin_store {
     /// Coin type should have key and store ability
     const ErrorCoinTypeShouldHaveKeyAndStoreAbility: u64 = 6;
 
+    /// Coin type should have key ability
+    const ErrorCoinTypeShouldHaveKeyAbility: u64 = 7;
+
     // Data structures
 
     /// The Balance resource that stores the balance of a specific coin type.
@@ -109,6 +112,7 @@ module rooch_framework::multi_coin_store {
 
     // /// Remove the MultiCoinStore field, return the GenericCoin in balance
     public fun remove_coin_store_field(coin_store_object: &mut Object<MultiCoinStore>, coin_type: string::String): GenericCoin {
+        ensure_coin_type_has_key_ability(coin_type);
         let coin_store_id = object::id(coin_store_object);
         let coin_store_field = object::remove_field<MultiCoinStore, string::String, CoinStoreField>(coin_store_object, coin_type);
 
@@ -163,10 +167,15 @@ module rooch_framework::multi_coin_store {
         abort ErrorCoinStoreTransferNotSupported
     }
 
-    public fun ensure_coin_type_has_key_and_store_ability(coin_type: string::String) {
+    fun ensure_coin_type_has_key_and_store_ability(coin_type: string::String) {
         let coin_type_abilities = ability::native_get_abilities(coin_type);
         assert!(ability::has_key(coin_type_abilities), ErrorCoinTypeShouldHaveKeyAndStoreAbility);
         assert!(ability::has_store(coin_type_abilities), ErrorCoinTypeShouldHaveKeyAndStoreAbility);
+    }
+
+    fun ensure_coin_type_has_key_ability(coin_type: string::String) {
+        let coin_type_abilities = ability::native_get_abilities(coin_type);
+        assert!(ability::has_key(coin_type_abilities), ErrorCoinTypeShouldHaveKeyAbility);
     }
 
     #[private_generics(CoinType)]
@@ -228,7 +237,6 @@ module rooch_framework::multi_coin_store {
 
 
     public(friend) fun create_coin_store_field_if_not_exist(coin_store_obj: &mut Object<MultiCoinStore>, coin_type: string::String) {
-        ensure_coin_type_has_key_and_store_ability(coin_type);
         if(!object::contains_field(coin_store_obj, coin_type)){
             let coin_store_field = CoinStoreField {
                 coin_type,
@@ -240,7 +248,6 @@ module rooch_framework::multi_coin_store {
     }
     
     fun check_coin_store_not_frozen(coin_store_obj: &Object<MultiCoinStore>, coin_type: string::String) {
-        ensure_coin_type_has_key_and_store_ability(coin_type);
         if(object::contains_field(coin_store_obj, coin_type)){
             let coin_store_field = object::borrow_field<MultiCoinStore, string::String, CoinStoreField>(coin_store_obj, coin_type);
             assert!(!coin_store_field.frozen, ErrorCoinStoreIsFrozen);

@@ -10,7 +10,7 @@ module rooch_framework::coin {
     use moveos_std::object::{Self, ObjectID, Object};
 
     use moveos_std::event;
-    use moveos_std::type_info::Self;
+    use moveos_std::type_info::{Self};
 
     friend rooch_framework::genesis;
     friend rooch_framework::coin_store;
@@ -514,7 +514,6 @@ module rooch_framework::coin {
 
     fun borrow_mut_coin_metadata<CoinType: key>(coin_info_obj: &Object<CoinInfo<CoinType>>): &mut CoinMetadata {
         let coin_type = type_info::type_name<CoinType>();
-        // borrow_mut_coin_metadata_v2(coin_type, coin_info_obj)
 
         let registry = borrow_mut_registry();
         let coin_info_id = object::id(coin_info_obj);
@@ -572,11 +571,17 @@ module rooch_framework::coin {
 
 
     // === Migration functions ===
-
     public fun convert_coin_to_generic_coin<CoinType: key>(coin: Coin<CoinType>): GenericCoin {
         let value = unpack(coin);
         let coin_type = type_info::type_name<CoinType>();
         GenericCoin { coin_type, value }
+    }
+
+    public fun convert_generic_coin_to_coin<CoinType: key>(coin: GenericCoin): Coin<CoinType> {
+        let generic_coin_type = type_info::type_name<CoinType>();
+        let GenericCoin { coin_type, value } = coin;
+        assert!(generic_coin_type == coin_type, ErrorCoinTypeNotMatch);
+        pack<CoinType>(value)
     }
 
     // === Non-generic functions ===
@@ -605,6 +610,14 @@ module rooch_framework::coin {
             coin_type,
             value
         }
+    }
+
+    /// "Merges" the two given generic coins.  The coin passed in as `dst_coin` will have a value equal
+    /// to the sum of the two generic coins (`dst_coin` and `source_coin`).
+    public fun merge_generic(dst_coin: &mut GenericCoin, source_coin: GenericCoin) {
+        let GenericCoin { coin_type: source_coin_type, value: source_value } = source_coin;
+        assert!(dst_coin.coin_type == source_coin_type, ErrorCoinTypeNotMatch);
+        dst_coin.value = dst_coin.value + source_value;
     }
 
     /// Helper function for getting the coin type name from a GenericCoin

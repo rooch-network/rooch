@@ -11,7 +11,10 @@ It helps migrate coin stores, balances, frozen states, and accept data.
 -  [Struct `AccountMigrationEvent`](#0x3_coin_migration_AccountMigrationEvent)
 -  [Struct `CoinStoreMigrationEvent`](#0x3_coin_migration_CoinStoreMigrationEvent)
 -  [Resource `MigrationState`](#0x3_coin_migration_MigrationState)
+-  [Resource `MigrationUpdateCap`](#0x3_coin_migration_MigrationUpdateCap)
 -  [Constants](#@Constants_0)
+-  [Function `ensure_admin`](#0x3_coin_migration_ensure_admin)
+-  [Function `admin`](#0x3_coin_migration_admin)
 -  [Function `migrate_account_entry`](#0x3_coin_migration_migrate_account_entry)
 -  [Function `update_migration_state_entry`](#0x3_coin_migration_update_migration_state_entry)
 -  [Function `migration_state_id`](#0x3_coin_migration_migration_state_id)
@@ -22,12 +25,14 @@ It helps migrate coin stores, balances, frozen states, and accept data.
 <pre><code><b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x2::event</a>;
 <b>use</b> <a href="">0x2::object</a>;
+<b>use</b> <a href="">0x2::signer</a>;
 <b>use</b> <a href="">0x2::table</a>;
 <b>use</b> <a href="">0x2::type_info</a>;
 <b>use</b> <a href="account_coin_store.md#0x3_account_coin_store">0x3::account_coin_store</a>;
 <b>use</b> <a href="coin.md#0x3_coin">0x3::coin</a>;
 <b>use</b> <a href="coin_store.md#0x3_coin_store">0x3::coin_store</a>;
 <b>use</b> <a href="multi_coin_store.md#0x3_multi_coin_store">0x3::multi_coin_store</a>;
+<b>use</b> <a href="onchain_config.md#0x3_onchain_config">0x3::onchain_config</a>;
 </code></pre>
 
 
@@ -68,9 +73,30 @@ State tracking for migration progress
 
 
 
+<a name="0x3_coin_migration_MigrationUpdateCap"></a>
+
+## Resource `MigrationUpdateCap`
+
+MigrationUpdateCap is the capability for admin operations, such as update migration state.
+
+
+<pre><code><b>struct</b> <a href="coin_migration.md#0x3_coin_migration_MigrationUpdateCap">MigrationUpdateCap</a> <b>has</b> store, key
+</code></pre>
+
+
+
 <a name="@Constants_0"></a>
 
 ## Constants
+
+
+<a name="0x3_coin_migration_ErrorNotAdmin"></a>
+
+
+
+<pre><code><b>const</b> <a href="coin_migration.md#0x3_coin_migration_ErrorNotAdmin">ErrorNotAdmin</a>: u64 = 3;
+</code></pre>
+
 
 
 <a name="0x3_coin_migration_ErrorMigrationAlreadyDone"></a>
@@ -93,13 +119,35 @@ Nothing to migrate for the account
 
 
 
+<a name="0x3_coin_migration_ensure_admin"></a>
+
+## Function `ensure_admin`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="coin_migration.md#0x3_coin_migration_ensure_admin">ensure_admin</a>(<a href="">account</a>: &<a href="">signer</a>)
+</code></pre>
+
+
+
+<a name="0x3_coin_migration_admin"></a>
+
+## Function `admin`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="coin_migration.md#0x3_coin_migration_admin">admin</a>(): <b>address</b>
+</code></pre>
+
+
+
 <a name="0x3_coin_migration_migrate_account_entry"></a>
 
 ## Function `migrate_account_entry`
 
 Entry function to migrate a specific account's coin stores
 The coin type must be only key to compatiable with both the public(key+store) and private(key) coins
-Need to limit to only called by the admin to migrate their own coin stores ?
+Can be called by arbitrary user
 
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="coin_migration.md#0x3_coin_migration_migrate_account_entry">migrate_account_entry</a>&lt;CoinType: key&gt;(_admin: &<a href="">signer</a>, addr: <b>address</b>)
@@ -112,10 +160,10 @@ Need to limit to only called by the admin to migrate their own coin stores ?
 ## Function `update_migration_state_entry`
 
 Entry function to update migration state for a specific account
-Need to limit to only called by the admin to migrate their own coin stores ?
+Only called by the admin to update migrate states
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="coin_migration.md#0x3_coin_migration_update_migration_state_entry">update_migration_state_entry</a>(_admin: &<a href="">signer</a>, addr: <b>address</b>)
+<pre><code><b>public</b> entry <b>fun</b> <a href="coin_migration.md#0x3_coin_migration_update_migration_state_entry">update_migration_state_entry</a>(admin: &<a href="">signer</a>, addr: <b>address</b>)
 </code></pre>
 
 
