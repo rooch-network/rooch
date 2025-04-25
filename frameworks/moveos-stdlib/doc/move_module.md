@@ -1,5 +1,5 @@
 
-<a name="0x2_move_module"></a>
+<a id="0x2_move_module"></a>
 
 # Module `0x2::move_module`
 
@@ -41,7 +41,7 @@
 
 
 
-<a name="0x2_move_module_MoveModule"></a>
+<a id="0x2_move_module_MoveModule"></a>
 
 ## Struct `MoveModule`
 
@@ -52,12 +52,12 @@
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x2_move_module_ErrorAddressNotMatchWithSigner"></a>
+<a id="0x2_move_module_ErrorAddressNotMatchWithSigner"></a>
 
 Module address is not the same as the signer
 
@@ -67,7 +67,7 @@ Module address is not the same as the signer
 
 
 
-<a name="0x2_move_module_ErrorLengthNotMatch"></a>
+<a id="0x2_move_module_ErrorLengthNotMatch"></a>
 
 Vector length not match
 
@@ -77,7 +77,7 @@ Vector length not match
 
 
 
-<a name="0x2_move_module_ErrorModuleIncompatible"></a>
+<a id="0x2_move_module_ErrorModuleIncompatible"></a>
 
 Module incompatible with the old ones.
 
@@ -87,7 +87,7 @@ Module incompatible with the old ones.
 
 
 
-<a name="0x2_move_module_ErrorModuleVerificationError"></a>
+<a id="0x2_move_module_ErrorModuleVerificationError"></a>
 
 Module verification error
 
@@ -97,7 +97,7 @@ Module verification error
 
 
 
-<a name="0x2_move_module_new"></a>
+<a id="0x2_move_module_new"></a>
 
 ## Function `new`
 
@@ -108,7 +108,7 @@ Module verification error
 
 
 
-<a name="0x2_move_module_new_batch"></a>
+<a id="0x2_move_module_new_batch"></a>
 
 ## Function `new_batch`
 
@@ -119,7 +119,7 @@ Module verification error
 
 
 
-<a name="0x2_move_module_into_byte_codes_batch"></a>
+<a id="0x2_move_module_into_byte_codes_batch"></a>
 
 ## Function `into_byte_codes_batch`
 
@@ -130,7 +130,7 @@ Module verification error
 
 
 
-<a name="0x2_move_module_module_id"></a>
+<a id="0x2_move_module_module_id"></a>
 
 ## Function `module_id`
 
@@ -141,7 +141,7 @@ Module verification error
 
 
 
-<a name="0x2_move_module_sort_and_verify_modules"></a>
+<a id="0x2_move_module_sort_and_verify_modules"></a>
 
 ## Function `sort_and_verify_modules`
 
@@ -159,7 +159,7 @@ Return
 
 
 
-<a name="0x2_move_module_check_comatibility"></a>
+<a id="0x2_move_module_check_comatibility"></a>
 
 ## Function `check_comatibility`
 
@@ -172,7 +172,7 @@ Abort if the new module is not compatible with the old module.
 
 
 
-<a name="0x2_move_module_binding_module_address"></a>
+<a id="0x2_move_module_binding_module_address"></a>
 
 ## Function `binding_module_address`
 
@@ -184,7 +184,7 @@ Binding given module's address to the new address
 
 
 
-<a name="0x2_move_module_replace_module_identiner"></a>
+<a id="0x2_move_module_replace_module_identiner"></a>
 
 ## Function `replace_module_identiner`
 
@@ -196,7 +196,7 @@ Replace given module's identifier to the new ones
 
 
 
-<a name="0x2_move_module_replace_struct_identifier"></a>
+<a id="0x2_move_module_replace_struct_identifier"></a>
 
 ## Function `replace_struct_identifier`
 
@@ -208,7 +208,7 @@ Replace given struct's identifier to the new ones
 
 
 
-<a name="0x2_move_module_replace_constant_string"></a>
+<a id="0x2_move_module_replace_constant_string"></a>
 
 ## Function `replace_constant_string`
 
@@ -220,7 +220,7 @@ Replace given string constant to the new ones
 
 
 
-<a name="0x2_move_module_replace_constant_address"></a>
+<a id="0x2_move_module_replace_constant_address"></a>
 
 ## Function `replace_constant_address`
 
@@ -232,7 +232,7 @@ Replace given address constant to the new ones
 
 
 
-<a name="0x2_move_module_replace_constant_u8"></a>
+<a id="0x2_move_module_replace_constant_u8"></a>
 
 ## Function `replace_constant_u8`
 
@@ -244,7 +244,7 @@ Replace given u8 constant to the new ones
 
 
 
-<a name="0x2_move_module_replace_constant_u64"></a>
+<a id="0x2_move_module_replace_constant_u64"></a>
 
 ## Function `replace_constant_u64`
 
@@ -256,7 +256,7 @@ Replace given u64 constant to the new ones
 
 
 
-<a name="0x2_move_module_replace_constant_u256"></a>
+<a id="0x2_move_module_replace_constant_u256"></a>
 
 ## Function `replace_constant_u256`
 
@@ -268,7 +268,7 @@ Replace given u256 constant to the new ones
 
 
 
-<a name="0x2_move_module_module_id_from_name"></a>
+<a id="0x2_move_module_module_id_from_name"></a>
 
 ## Function `module_id_from_name`
 
@@ -279,7 +279,7 @@ Replace given u256 constant to the new ones
 
 
 
-<a name="0x2_move_module_sort_and_verify_modules_inner"></a>
+<a id="0x2_move_module_sort_and_verify_modules_inner"></a>
 
 ## Function `sort_and_verify_modules_inner`
 
@@ -295,7 +295,7 @@ The third vector is the indices in input modules of each sorted modules.
 
 
 
-<a name="0x2_move_module_request_init_functions"></a>
+<a id="0x2_move_module_request_init_functions"></a>
 
 ## Function `request_init_functions`
 
@@ -308,7 +308,7 @@ module_ids: ids of modules which have a init function
 
 
 
-<a name="0x2_move_module_replace_address_identifiers"></a>
+<a id="0x2_move_module_replace_address_identifiers"></a>
 
 ## Function `replace_address_identifiers`
 
@@ -321,7 +321,7 @@ Native function to replace addresses identifier in module binary where the lengt
 
 
 
-<a name="0x2_move_module_replace_identifiers"></a>
+<a id="0x2_move_module_replace_identifiers"></a>
 
 ## Function `replace_identifiers`
 
@@ -333,7 +333,7 @@ Native function to replace the name identifier <code>old_name</code> to <code>ne
 
 
 
-<a name="0x2_move_module_replace_addresses_constant"></a>
+<a id="0x2_move_module_replace_addresses_constant"></a>
 
 ## Function `replace_addresses_constant`
 
@@ -346,7 +346,7 @@ Native function to replace constant addresses in module binary where the length 
 
 
 
-<a name="0x2_move_module_replace_bytes_constant"></a>
+<a id="0x2_move_module_replace_bytes_constant"></a>
 
 ## Function `replace_bytes_constant`
 
@@ -359,7 +359,7 @@ Native function to replace constant bytes in module binary where the length of
 
 
 
-<a name="0x2_move_module_replace_u8_constant"></a>
+<a id="0x2_move_module_replace_u8_constant"></a>
 
 ## Function `replace_u8_constant`
 
@@ -372,7 +372,7 @@ Native function to replace constant u8 in module binary where the length of
 
 
 
-<a name="0x2_move_module_replace_u64_constant"></a>
+<a id="0x2_move_module_replace_u64_constant"></a>
 
 ## Function `replace_u64_constant`
 
@@ -385,7 +385,7 @@ Native function to replace constant u64 in module binary where the length of
 
 
 
-<a name="0x2_move_module_replace_u256_constant"></a>
+<a id="0x2_move_module_replace_u256_constant"></a>
 
 ## Function `replace_u256_constant`
 

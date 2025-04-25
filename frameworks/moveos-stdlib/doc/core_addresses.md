@@ -1,5 +1,5 @@
 
-<a name="0x2_core_addresses"></a>
+<a id="0x2_core_addresses"></a>
 
 # Module `0x2::core_addresses`
 
@@ -21,12 +21,12 @@
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x2_core_addresses_ErrorNotSystemReservedAddress"></a>
+<a id="0x2_core_addresses_ErrorNotSystemReservedAddress"></a>
 
 The address is not rooch reserved address
 
@@ -36,7 +36,7 @@ The address is not rooch reserved address
 
 
 
-<a name="0x2_core_addresses_ErrorNotVM"></a>
+<a id="0x2_core_addresses_ErrorNotVM"></a>
 
 The operation can only be performed by the VM
 
@@ -46,7 +46,7 @@ The operation can only be performed by the VM
 
 
 
-<a name="0x2_core_addresses_assert_vm"></a>
+<a id="0x2_core_addresses_assert_vm"></a>
 
 ## Function `assert_vm`
 
@@ -58,7 +58,7 @@ Assert that the signer has the VM reserved address.
 
 
 
-<a name="0x2_core_addresses_is_vm"></a>
+<a id="0x2_core_addresses_is_vm"></a>
 
 ## Function `is_vm`
 
@@ -70,7 +70,7 @@ Return true if <code>addr</code> is a reserved address for the VM to call system
 
 
 
-<a name="0x2_core_addresses_is_vm_address"></a>
+<a id="0x2_core_addresses_is_vm_address"></a>
 
 ## Function `is_vm_address`
 
@@ -82,7 +82,7 @@ Return true if <code>addr</code> is a reserved address for the VM to call system
 
 
 
-<a name="0x2_core_addresses_assert_system_reserved"></a>
+<a id="0x2_core_addresses_assert_system_reserved"></a>
 
 ## Function `assert_system_reserved`
 
@@ -93,7 +93,7 @@ Return true if <code>addr</code> is a reserved address for the VM to call system
 
 
 
-<a name="0x2_core_addresses_assert_system_reserved_address"></a>
+<a id="0x2_core_addresses_assert_system_reserved_address"></a>
 
 ## Function `assert_system_reserved_address`
 
@@ -104,7 +104,7 @@ Return true if <code>addr</code> is a reserved address for the VM to call system
 
 
 
-<a name="0x2_core_addresses_is_system_reserved_address"></a>
+<a id="0x2_core_addresses_is_system_reserved_address"></a>
 
 ## Function `is_system_reserved_address`
 
@@ -116,7 +116,7 @@ Return true if <code>addr</code> is 0x0 or under the on chain governance's contr
 
 
 
-<a name="0x2_core_addresses_is_reserved_address"></a>
+<a id="0x2_core_addresses_is_reserved_address"></a>
 
 ## Function `is_reserved_address`
 
@@ -128,7 +128,7 @@ Return true if <code>addr</code> is either the VM address or an Rooch system add
 
 
 
-<a name="0x2_core_addresses_list_system_reserved_addresses"></a>
+<a id="0x2_core_addresses_list_system_reserved_addresses"></a>
 
 ## Function `list_system_reserved_addresses`
 

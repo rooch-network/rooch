@@ -60,11 +60,11 @@ module moveos_std::result {
     }
 
     /// Convert an error Result<T, String> to error Result<U, String>.
-    public fun as_err<U, T>(self: Result<T, String>): Result<U, String> {
+    public fun as_err<U, T>(result: Result<T, String>): Result<U, String> {
         let Result {
             value,
             err,
-        } = self;
+        } = result;
         assert!(option::is_none(&value), ErrorExpectErr);
         option::destroy_none(value);
         err(std::option::destroy_some(err))

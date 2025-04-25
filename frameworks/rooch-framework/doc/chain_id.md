@@ -1,5 +1,5 @@
 
-<a name="0x3_chain_id"></a>
+<a id="0x3_chain_id"></a>
 
 # Module `0x3::chain_id`
 
@@ -23,7 +23,7 @@
 
 
 
-<a name="0x3_chain_id_ChainID"></a>
+<a id="0x3_chain_id_ChainID"></a>
 
 ## Resource `ChainID`
 
@@ -35,12 +35,12 @@ The ChainID in the global storage
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x3_chain_id_CHAIN_ID_DEV"></a>
+<a id="0x3_chain_id_CHAIN_ID_DEV"></a>
 
 
 
@@ -49,7 +49,7 @@ The ChainID in the global storage
 
 
 
-<a name="0x3_chain_id_CHAIN_ID_LOCAL"></a>
+<a id="0x3_chain_id_CHAIN_ID_LOCAL"></a>
 
 
 
@@ -58,7 +58,7 @@ The ChainID in the global storage
 
 
 
-<a name="0x3_chain_id_CHAIN_ID_MAIN"></a>
+<a id="0x3_chain_id_CHAIN_ID_MAIN"></a>
 
 
 
@@ -67,7 +67,7 @@ The ChainID in the global storage
 
 
 
-<a name="0x3_chain_id_CHAIN_ID_TEST"></a>
+<a id="0x3_chain_id_CHAIN_ID_TEST"></a>
 
 
 
@@ -76,7 +76,7 @@ The ChainID in the global storage
 
 
 
-<a name="0x3_chain_id_genesis_init"></a>
+<a id="0x3_chain_id_genesis_init"></a>
 
 ## Function `genesis_init`
 
@@ -87,7 +87,7 @@ The ChainID in the global storage
 
 
 
-<a name="0x3_chain_id_id"></a>
+<a id="0x3_chain_id_id"></a>
 
 ## Function `id`
 
@@ -98,7 +98,7 @@ The ChainID in the global storage
 
 
 
-<a name="0x3_chain_id_borrow"></a>
+<a id="0x3_chain_id_borrow"></a>
 
 ## Function `borrow`
 
@@ -109,7 +109,7 @@ The ChainID in the global storage
 
 
 
-<a name="0x3_chain_id_chain_id"></a>
+<a id="0x3_chain_id_chain_id"></a>
 
 ## Function `chain_id`
 
@@ -120,7 +120,7 @@ The ChainID in the global storage
 
 
 
-<a name="0x3_chain_id_is_local"></a>
+<a id="0x3_chain_id_is_local"></a>
 
 ## Function `is_local`
 
@@ -131,7 +131,7 @@ The ChainID in the global storage
 
 
 
-<a name="0x3_chain_id_is_dev"></a>
+<a id="0x3_chain_id_is_dev"></a>
 
 ## Function `is_dev`
 
@@ -142,7 +142,7 @@ The ChainID in the global storage
 
 
 
-<a name="0x3_chain_id_is_local_or_dev"></a>
+<a id="0x3_chain_id_is_local_or_dev"></a>
 
 ## Function `is_local_or_dev`
 
@@ -153,7 +153,7 @@ The ChainID in the global storage
 
 
 
-<a name="0x3_chain_id_is_test"></a>
+<a id="0x3_chain_id_is_test"></a>
 
 ## Function `is_test`
 
@@ -164,7 +164,7 @@ The ChainID in the global storage
 
 
 
-<a name="0x3_chain_id_is_main"></a>
+<a id="0x3_chain_id_is_main"></a>
 
 ## Function `is_main`
 

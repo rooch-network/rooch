@@ -1,5 +1,5 @@
 
-<a name="0x3_account"></a>
+<a id="0x3_account"></a>
 
 # Module `0x3::account`
 
@@ -18,7 +18,7 @@
 
 
 
-<a name="0x3_account_AccountPlaceholder"></a>
+<a id="0x3_account_AccountPlaceholder"></a>
 
 ## Struct `AccountPlaceholder`
 
@@ -30,12 +30,12 @@ Just using to get Account module signer
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x3_account_ErrorAddressReserved"></a>
+<a id="0x3_account_ErrorAddressReserved"></a>
 
 Cannot create account because address is reserved
 
@@ -45,7 +45,7 @@ Cannot create account because address is reserved
 
 
 
-<a name="0x3_account_ErrorAddressNotReserved"></a>
+<a id="0x3_account_ErrorAddressNotReserved"></a>
 
 
 
@@ -54,7 +54,7 @@ Cannot create account because address is reserved
 
 
 
-<a name="0x3_account_create_account"></a>
+<a id="0x3_account_create_account"></a>
 
 ## Function `create_account`
 
@@ -66,7 +66,7 @@ Create a new account with the given address, the address must not be reserved
 
 
 
-<a name="0x3_account_create_system_account"></a>
+<a id="0x3_account_create_system_account"></a>
 
 ## Function `create_system_account`
 

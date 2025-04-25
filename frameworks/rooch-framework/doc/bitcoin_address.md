@@ -1,5 +1,5 @@
 
-<a name="0x3_bitcoin_address"></a>
+<a id="0x3_bitcoin_address"></a>
 
 # Module `0x3::bitcoin_address`
 
@@ -39,7 +39,7 @@
 
 
 
-<a name="0x3_bitcoin_address_BitcoinAddress"></a>
+<a id="0x3_bitcoin_address_BitcoinAddress"></a>
 
 ## Struct `BitcoinAddress`
 
@@ -53,12 +53,12 @@ We just keep the raw bytes of the address and do care about the network.
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x3_bitcoin_address_ErrorDeprecated"></a>
+<a id="0x3_bitcoin_address_ErrorDeprecated"></a>
 
 
 
@@ -67,7 +67,7 @@ We just keep the raw bytes of the address and do care about the network.
 
 
 
-<a name="0x3_bitcoin_address_ErrorArgNotVectorU8"></a>
+<a id="0x3_bitcoin_address_ErrorArgNotVectorU8"></a>
 
 
 
@@ -76,7 +76,7 @@ We just keep the raw bytes of the address and do care about the network.
 
 
 
-<a name="0x3_bitcoin_address_ErrorInvalidAddress"></a>
+<a id="0x3_bitcoin_address_ErrorInvalidAddress"></a>
 
 
 
@@ -85,7 +85,7 @@ We just keep the raw bytes of the address and do care about the network.
 
 
 
-<a name="0x3_bitcoin_address_ErrorInvalidKeyEggContext"></a>
+<a id="0x3_bitcoin_address_ErrorInvalidKeyEggContext"></a>
 
 
 
@@ -94,7 +94,7 @@ We just keep the raw bytes of the address and do care about the network.
 
 
 
-<a name="0x3_bitcoin_address_ErrorInvalidPublicKey"></a>
+<a id="0x3_bitcoin_address_ErrorInvalidPublicKey"></a>
 
 
 
@@ -103,7 +103,7 @@ We just keep the raw bytes of the address and do care about the network.
 
 
 
-<a name="0x3_bitcoin_address_ErrorInvalidThreshold"></a>
+<a id="0x3_bitcoin_address_ErrorInvalidThreshold"></a>
 
 
 
@@ -112,7 +112,7 @@ We just keep the raw bytes of the address and do care about the network.
 
 
 
-<a name="0x3_bitcoin_address_P2PKH_ADDR_BYTE_LEN"></a>
+<a id="0x3_bitcoin_address_P2PKH_ADDR_BYTE_LEN"></a>
 
 
 
@@ -121,7 +121,7 @@ We just keep the raw bytes of the address and do care about the network.
 
 
 
-<a name="0x3_bitcoin_address_P2PKH_ADDR_DECIMAL_PREFIX_MAIN"></a>
+<a id="0x3_bitcoin_address_P2PKH_ADDR_DECIMAL_PREFIX_MAIN"></a>
 
 
 
@@ -130,7 +130,7 @@ We just keep the raw bytes of the address and do care about the network.
 
 
 
-<a name="0x3_bitcoin_address_P2PKH_ADDR_DECIMAL_PREFIX_TEST"></a>
+<a id="0x3_bitcoin_address_P2PKH_ADDR_DECIMAL_PREFIX_TEST"></a>
 
 
 
@@ -139,7 +139,7 @@ We just keep the raw bytes of the address and do care about the network.
 
 
 
-<a name="0x3_bitcoin_address_P2SH_ADDR_BYTE_LEN"></a>
+<a id="0x3_bitcoin_address_P2SH_ADDR_BYTE_LEN"></a>
 
 
 
@@ -148,7 +148,7 @@ We just keep the raw bytes of the address and do care about the network.
 
 
 
-<a name="0x3_bitcoin_address_P2SH_ADDR_DECIMAL_PREFIX_MAIN"></a>
+<a id="0x3_bitcoin_address_P2SH_ADDR_DECIMAL_PREFIX_MAIN"></a>
 
 
 
@@ -157,7 +157,7 @@ We just keep the raw bytes of the address and do care about the network.
 
 
 
-<a name="0x3_bitcoin_address_P2SH_ADDR_DECIMAL_PREFIX_TEST"></a>
+<a id="0x3_bitcoin_address_P2SH_ADDR_DECIMAL_PREFIX_TEST"></a>
 
 
 
@@ -166,7 +166,7 @@ We just keep the raw bytes of the address and do care about the network.
 
 
 
-<a name="0x3_bitcoin_address_PAY_LOAD_TYPE_PUBKEY_HASH"></a>
+<a id="0x3_bitcoin_address_PAY_LOAD_TYPE_PUBKEY_HASH"></a>
 
 
 
@@ -175,7 +175,7 @@ We just keep the raw bytes of the address and do care about the network.
 
 
 
-<a name="0x3_bitcoin_address_PAY_LOAD_TYPE_SCRIPT_HASH"></a>
+<a id="0x3_bitcoin_address_PAY_LOAD_TYPE_SCRIPT_HASH"></a>
 
 
 
@@ -184,7 +184,7 @@ We just keep the raw bytes of the address and do care about the network.
 
 
 
-<a name="0x3_bitcoin_address_PAY_LOAD_TYPE_WITNESS_PROGRAM"></a>
+<a id="0x3_bitcoin_address_PAY_LOAD_TYPE_WITNESS_PROGRAM"></a>
 
 
 
@@ -193,7 +193,7 @@ We just keep the raw bytes of the address and do care about the network.
 
 
 
-<a name="0x3_bitcoin_address_PUBKEY_HASH_LEN"></a>
+<a id="0x3_bitcoin_address_PUBKEY_HASH_LEN"></a>
 
 
 
@@ -202,7 +202,7 @@ We just keep the raw bytes of the address and do care about the network.
 
 
 
-<a name="0x3_bitcoin_address_SCRIPT_HASH_LEN"></a>
+<a id="0x3_bitcoin_address_SCRIPT_HASH_LEN"></a>
 
 
 
@@ -211,7 +211,7 @@ We just keep the raw bytes of the address and do care about the network.
 
 
 
-<a name="0x3_bitcoin_address_pay_load_type_pubkey_hash"></a>
+<a id="0x3_bitcoin_address_pay_load_type_pubkey_hash"></a>
 
 ## Function `pay_load_type_pubkey_hash`
 
@@ -222,7 +222,7 @@ We just keep the raw bytes of the address and do care about the network.
 
 
 
-<a name="0x3_bitcoin_address_pay_load_type_script_hash"></a>
+<a id="0x3_bitcoin_address_pay_load_type_script_hash"></a>
 
 ## Function `pay_load_type_script_hash`
 
@@ -233,7 +233,7 @@ We just keep the raw bytes of the address and do care about the network.
 
 
 
-<a name="0x3_bitcoin_address_pay_load_type_witness_program"></a>
+<a id="0x3_bitcoin_address_pay_load_type_witness_program"></a>
 
 ## Function `pay_load_type_witness_program`
 
@@ -244,7 +244,7 @@ We just keep the raw bytes of the address and do care about the network.
 
 
 
-<a name="0x3_bitcoin_address_p2pkh"></a>
+<a id="0x3_bitcoin_address_p2pkh"></a>
 
 ## Function `p2pkh`
 
@@ -255,7 +255,7 @@ We just keep the raw bytes of the address and do care about the network.
 
 
 
-<a name="0x3_bitcoin_address_p2sh"></a>
+<a id="0x3_bitcoin_address_p2sh"></a>
 
 ## Function `p2sh`
 
@@ -266,7 +266,7 @@ We just keep the raw bytes of the address and do care about the network.
 
 
 
-<a name="0x3_bitcoin_address_p2tr"></a>
+<a id="0x3_bitcoin_address_p2tr"></a>
 
 ## Function `p2tr`
 
@@ -279,7 +279,7 @@ The internal public key is a secp256k1 public key or x-only public key.
 
 
 
-<a name="0x3_bitcoin_address_new"></a>
+<a id="0x3_bitcoin_address_new"></a>
 
 ## Function `new`
 
@@ -290,7 +290,7 @@ The internal public key is a secp256k1 public key or x-only public key.
 
 
 
-<a name="0x3_bitcoin_address_empty"></a>
+<a id="0x3_bitcoin_address_empty"></a>
 
 ## Function `empty`
 
@@ -301,7 +301,7 @@ The internal public key is a secp256k1 public key or x-only public key.
 
 
 
-<a name="0x3_bitcoin_address_pay_load_type"></a>
+<a id="0x3_bitcoin_address_pay_load_type"></a>
 
 ## Function `pay_load_type`
 
@@ -312,7 +312,7 @@ The internal public key is a secp256k1 public key or x-only public key.
 
 
 
-<a name="0x3_bitcoin_address_pay_load"></a>
+<a id="0x3_bitcoin_address_pay_load"></a>
 
 ## Function `pay_load`
 
@@ -323,7 +323,7 @@ The internal public key is a secp256k1 public key or x-only public key.
 
 
 
-<a name="0x3_bitcoin_address_is_p2pkh"></a>
+<a id="0x3_bitcoin_address_is_p2pkh"></a>
 
 ## Function `is_p2pkh`
 
@@ -334,7 +334,7 @@ The internal public key is a secp256k1 public key or x-only public key.
 
 
 
-<a name="0x3_bitcoin_address_is_p2sh"></a>
+<a id="0x3_bitcoin_address_is_p2sh"></a>
 
 ## Function `is_p2sh`
 
@@ -345,7 +345,7 @@ The internal public key is a secp256k1 public key or x-only public key.
 
 
 
-<a name="0x3_bitcoin_address_is_witness_program"></a>
+<a id="0x3_bitcoin_address_is_witness_program"></a>
 
 ## Function `is_witness_program`
 
@@ -356,7 +356,7 @@ The internal public key is a secp256k1 public key or x-only public key.
 
 
 
-<a name="0x3_bitcoin_address_is_empty"></a>
+<a id="0x3_bitcoin_address_is_empty"></a>
 
 ## Function `is_empty`
 
@@ -368,7 +368,7 @@ Empty address is a special address that is used to if we parse address failed fr
 
 
 
-<a name="0x3_bitcoin_address_as_bytes"></a>
+<a id="0x3_bitcoin_address_as_bytes"></a>
 
 ## Function `as_bytes`
 
@@ -379,7 +379,7 @@ Empty address is a special address that is used to if we parse address failed fr
 
 
 
-<a name="0x3_bitcoin_address_into_bytes"></a>
+<a id="0x3_bitcoin_address_into_bytes"></a>
 
 ## Function `into_bytes`
 
@@ -390,7 +390,7 @@ Empty address is a special address that is used to if we parse address failed fr
 
 
 
-<a name="0x3_bitcoin_address_from_string"></a>
+<a id="0x3_bitcoin_address_from_string"></a>
 
 ## Function `from_string`
 
@@ -401,7 +401,7 @@ Empty address is a special address that is used to if we parse address failed fr
 
 
 
-<a name="0x3_bitcoin_address_verify_with_public_key"></a>
+<a id="0x3_bitcoin_address_verify_with_public_key"></a>
 
 ## Function `verify_with_public_key`
 
@@ -412,7 +412,7 @@ Empty address is a special address that is used to if we parse address failed fr
 
 
 
-<a name="0x3_bitcoin_address_to_rooch_address"></a>
+<a id="0x3_bitcoin_address_to_rooch_address"></a>
 
 ## Function `to_rooch_address`
 
@@ -423,7 +423,7 @@ Empty address is a special address that is used to if we parse address failed fr
 
 
 
-<a name="0x3_bitcoin_address_verify_bitcoin_address_with_public_key"></a>
+<a id="0x3_bitcoin_address_verify_bitcoin_address_with_public_key"></a>
 
 ## Function `verify_bitcoin_address_with_public_key`
 
@@ -435,7 +435,7 @@ verify bitcoin address according to the pk bytes, the pk is Secp256k1 public key
 
 
 
-<a name="0x3_bitcoin_address_derive_bitcoin_taproot_address_from_pubkey"></a>
+<a id="0x3_bitcoin_address_derive_bitcoin_taproot_address_from_pubkey"></a>
 
 ## Function `derive_bitcoin_taproot_address_from_pubkey`
 

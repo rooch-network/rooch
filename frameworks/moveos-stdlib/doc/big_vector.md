@@ -1,5 +1,5 @@
 
-<a name="0x2_big_vector"></a>
+<a id="0x2_big_vector"></a>
 
 # Module `0x2::big_vector`
 
@@ -33,7 +33,7 @@
 
 
 
-<a name="0x2_big_vector_BigVector"></a>
+<a id="0x2_big_vector_BigVector"></a>
 
 ## Struct `BigVector`
 
@@ -46,12 +46,12 @@ Each bucket has a capacity of <code>bucket_size</code> elements.
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x2_big_vector_ErrorBucketSizeIllegal"></a>
+<a id="0x2_big_vector_ErrorBucketSizeIllegal"></a>
 
 bucket_size cannot be 0
 
@@ -61,7 +61,7 @@ bucket_size cannot be 0
 
 
 
-<a name="0x2_big_vector_ErrorIndexOutOfBound"></a>
+<a id="0x2_big_vector_ErrorIndexOutOfBound"></a>
 
 Vector index is out of bounds
 
@@ -71,7 +71,7 @@ Vector index is out of bounds
 
 
 
-<a name="0x2_big_vector_ErrorVectorEmpty"></a>
+<a id="0x2_big_vector_ErrorVectorEmpty"></a>
 
 Cannot pop back from an empty vector
 
@@ -81,7 +81,7 @@ Cannot pop back from an empty vector
 
 
 
-<a name="0x2_big_vector_ErrorVectorNotEmpty"></a>
+<a id="0x2_big_vector_ErrorVectorNotEmpty"></a>
 
 Cannot destroy a non-empty vector
 
@@ -91,7 +91,7 @@ Cannot destroy a non-empty vector
 
 
 
-<a name="0x2_big_vector_empty"></a>
+<a id="0x2_big_vector_empty"></a>
 
 ## Function `empty`
 
@@ -104,7 +104,7 @@ Create an empty vector.
 
 
 
-<a name="0x2_big_vector_singleton"></a>
+<a id="0x2_big_vector_singleton"></a>
 
 ## Function `singleton`
 
@@ -116,7 +116,7 @@ Create a vector of length 1 containing the passed in element.
 
 
 
-<a name="0x2_big_vector_destroy_empty"></a>
+<a id="0x2_big_vector_destroy_empty"></a>
 
 ## Function `destroy_empty`
 
@@ -129,7 +129,7 @@ Aborts if <code>v</code> is not empty.
 
 
 
-<a name="0x2_big_vector_destroy"></a>
+<a id="0x2_big_vector_destroy"></a>
 
 ## Function `destroy`
 
@@ -141,7 +141,7 @@ Destroy the vector <code>v</code> if T has <code>drop</code>
 
 
 
-<a name="0x2_big_vector_borrow"></a>
+<a id="0x2_big_vector_borrow"></a>
 
 ## Function `borrow`
 
@@ -154,7 +154,7 @@ Aborts if <code>i</code> is out of bounds.
 
 
 
-<a name="0x2_big_vector_borrow_mut"></a>
+<a id="0x2_big_vector_borrow_mut"></a>
 
 ## Function `borrow_mut`
 
@@ -167,7 +167,7 @@ Aborts if <code>i</code> is out of bounds.
 
 
 
-<a name="0x2_big_vector_append"></a>
+<a id="0x2_big_vector_append"></a>
 
 ## Function `append`
 
@@ -181,7 +181,7 @@ Disclaimer: This function is costly. Use it at your own discretion.
 
 
 
-<a name="0x2_big_vector_push_back"></a>
+<a id="0x2_big_vector_push_back"></a>
 
 ## Function `push_back`
 
@@ -194,7 +194,7 @@ This operation will cost more gas when it adds new bucket.
 
 
 
-<a name="0x2_big_vector_pop_back"></a>
+<a id="0x2_big_vector_pop_back"></a>
 
 ## Function `pop_back`
 
@@ -208,7 +208,7 @@ Aborts if <code>v</code> is empty.
 
 
 
-<a name="0x2_big_vector_remove"></a>
+<a id="0x2_big_vector_remove"></a>
 
 ## Function `remove`
 
@@ -222,7 +222,7 @@ Disclaimer: This function is costly. Use it at your own discretion.
 
 
 
-<a name="0x2_big_vector_swap_remove"></a>
+<a id="0x2_big_vector_swap_remove"></a>
 
 ## Function `swap_remove`
 
@@ -236,7 +236,7 @@ Aborts if <code>i</code> is out of bounds.
 
 
 
-<a name="0x2_big_vector_swap"></a>
+<a id="0x2_big_vector_swap"></a>
 
 ## Function `swap`
 
@@ -249,7 +249,7 @@ for v.
 
 
 
-<a name="0x2_big_vector_reverse"></a>
+<a id="0x2_big_vector_reverse"></a>
 
 ## Function `reverse`
 
@@ -262,7 +262,7 @@ Disclaimer: This function is costly. Use it at your own discretion.
 
 
 
-<a name="0x2_big_vector_index_of"></a>
+<a id="0x2_big_vector_index_of"></a>
 
 ## Function `index_of`
 
@@ -276,7 +276,7 @@ Disclaimer: This function is costly. Use it at your own discretion.
 
 
 
-<a name="0x2_big_vector_contains"></a>
+<a id="0x2_big_vector_contains"></a>
 
 ## Function `contains`
 
@@ -289,7 +289,7 @@ Disclaimer: This function is costly. Use it at your own discretion.
 
 
 
-<a name="0x2_big_vector_to_vector"></a>
+<a id="0x2_big_vector_to_vector"></a>
 
 ## Function `to_vector`
 
@@ -303,7 +303,7 @@ Disclaimer: This function may be costly as the big vector may be huge in size. U
 
 
 
-<a name="0x2_big_vector_length"></a>
+<a id="0x2_big_vector_length"></a>
 
 ## Function `length`
 
@@ -315,7 +315,7 @@ Return the length of the vector.
 
 
 
-<a name="0x2_big_vector_is_empty"></a>
+<a id="0x2_big_vector_is_empty"></a>
 
 ## Function `is_empty`
 

@@ -1,5 +1,5 @@
 
-<a name="0x3_session_validator"></a>
+<a id="0x3_session_validator"></a>
 
 # Module `0x3::session_validator`
 
@@ -23,7 +23,7 @@ This module implements the session auth validator.
 
 
 
-<a name="0x3_session_validator_SessionValidator"></a>
+<a id="0x3_session_validator_SessionValidator"></a>
 
 ## Struct `SessionValidator`
 
@@ -34,12 +34,12 @@ This module implements the session auth validator.
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x3_session_validator_SESSION_VALIDATOR_ID"></a>
+<a id="0x3_session_validator_SESSION_VALIDATOR_ID"></a>
 
 there defines auth validator id for each auth validator
 
@@ -49,7 +49,7 @@ there defines auth validator id for each auth validator
 
 
 
-<a name="0x3_session_validator_SIGNATURE_SCHEME_ED25519"></a>
+<a id="0x3_session_validator_SIGNATURE_SCHEME_ED25519"></a>
 
 
 
@@ -58,7 +58,7 @@ there defines auth validator id for each auth validator
 
 
 
-<a name="0x3_session_validator_auth_validator_id"></a>
+<a id="0x3_session_validator_auth_validator_id"></a>
 
 ## Function `auth_validator_id`
 
@@ -69,7 +69,7 @@ there defines auth validator id for each auth validator
 
 
 
-<a name="0x3_session_validator_validate"></a>
+<a id="0x3_session_validator_validate"></a>
 
 ## Function `validate`
 

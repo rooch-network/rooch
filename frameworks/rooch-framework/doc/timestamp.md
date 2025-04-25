@@ -1,5 +1,5 @@
 
-<a name="0x3_timestamp"></a>
+<a id="0x3_timestamp"></a>
 
 # Module `0x3::timestamp`
 
@@ -17,7 +17,7 @@
 
 
 
-<a name="0x3_timestamp_TimestampPlaceholder"></a>
+<a id="0x3_timestamp_TimestampPlaceholder"></a>
 
 ## Resource `TimestampPlaceholder`
 
@@ -29,12 +29,12 @@ Just using to get module signer
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x3_timestamp_ErrorUnsupportedChain"></a>
+<a id="0x3_timestamp_ErrorUnsupportedChain"></a>
 
 
 
@@ -43,7 +43,7 @@ Just using to get module signer
 
 
 
-<a name="0x3_timestamp_fast_forward_seconds_for_local"></a>
+<a id="0x3_timestamp_fast_forward_seconds_for_local"></a>
 
 ## Function `fast_forward_seconds_for_local`
 

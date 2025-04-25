@@ -1,5 +1,5 @@
 
-<a name="0xa_genesis"></a>
+<a id="0xa_genesis"></a>
 
 # Module `0xa::genesis`
 
@@ -16,7 +16,7 @@
 
 
 
-<a name="0xa_genesis_GenesisContext"></a>
+<a id="0xa_genesis_GenesisContext"></a>
 
 ## Struct `GenesisContext`
 
@@ -27,12 +27,12 @@
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0xa_genesis_ErrorInvalidChainId"></a>
+<a id="0xa_genesis_ErrorInvalidChainId"></a>
 
 
 

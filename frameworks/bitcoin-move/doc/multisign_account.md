@@ -1,5 +1,5 @@
 
-<a name="0x4_multisign_account"></a>
+<a id="0x4_multisign_account"></a>
 
 # Module `0x4::multisign_account`
 
@@ -43,7 +43,7 @@ Bitcoin multisign account module
 
 
 
-<a name="0x4_multisign_account_MultisignAccountInfo"></a>
+<a id="0x4_multisign_account_MultisignAccountInfo"></a>
 
 ## Resource `MultisignAccountInfo`
 
@@ -54,7 +54,7 @@ Bitcoin multisign account module
 
 
 
-<a name="0x4_multisign_account_ParticipantInfo"></a>
+<a id="0x4_multisign_account_ParticipantInfo"></a>
 
 ## Struct `ParticipantInfo`
 
@@ -65,12 +65,12 @@ Bitcoin multisign account module
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x4_multisign_account_ErrorInvalidPublicKey"></a>
+<a id="0x4_multisign_account_ErrorInvalidPublicKey"></a>
 
 
 
@@ -79,7 +79,7 @@ Bitcoin multisign account module
 
 
 
-<a name="0x4_multisign_account_ErrorInvalidThreshold"></a>
+<a id="0x4_multisign_account_ErrorInvalidThreshold"></a>
 
 
 
@@ -88,7 +88,7 @@ Bitcoin multisign account module
 
 
 
-<a name="0x4_multisign_account_ErrorInvalidSignature"></a>
+<a id="0x4_multisign_account_ErrorInvalidSignature"></a>
 
 
 
@@ -97,7 +97,7 @@ Bitcoin multisign account module
 
 
 
-<a name="0x4_multisign_account_BITCOIN_COMPRESSED_PUBLIC_KEY_LEN"></a>
+<a id="0x4_multisign_account_BITCOIN_COMPRESSED_PUBLIC_KEY_LEN"></a>
 
 
 
@@ -106,7 +106,7 @@ Bitcoin multisign account module
 
 
 
-<a name="0x4_multisign_account_ErrorInvalidParticipant"></a>
+<a id="0x4_multisign_account_ErrorInvalidParticipant"></a>
 
 
 
@@ -115,7 +115,7 @@ Bitcoin multisign account module
 
 
 
-<a name="0x4_multisign_account_ErrorInvalidProposal"></a>
+<a id="0x4_multisign_account_ErrorInvalidProposal"></a>
 
 
 
@@ -124,7 +124,7 @@ Bitcoin multisign account module
 
 
 
-<a name="0x4_multisign_account_ErrorInvalidProposalStatus"></a>
+<a id="0x4_multisign_account_ErrorInvalidProposalStatus"></a>
 
 
 
@@ -133,7 +133,7 @@ Bitcoin multisign account module
 
 
 
-<a name="0x4_multisign_account_ErrorMultisignAccountNotFound"></a>
+<a id="0x4_multisign_account_ErrorMultisignAccountNotFound"></a>
 
 
 
@@ -142,7 +142,7 @@ Bitcoin multisign account module
 
 
 
-<a name="0x4_multisign_account_ErrorParticipantAlreadyJoined"></a>
+<a id="0x4_multisign_account_ErrorParticipantAlreadyJoined"></a>
 
 
 
@@ -151,7 +151,7 @@ Bitcoin multisign account module
 
 
 
-<a name="0x4_multisign_account_ErrorParticipantMustHasBitcoinAddress"></a>
+<a id="0x4_multisign_account_ErrorParticipantMustHasBitcoinAddress"></a>
 
 
 
@@ -160,7 +160,7 @@ Bitcoin multisign account module
 
 
 
-<a name="0x4_multisign_account_ErrorProposalAlreadySigned"></a>
+<a id="0x4_multisign_account_ErrorProposalAlreadySigned"></a>
 
 
 
@@ -169,7 +169,7 @@ Bitcoin multisign account module
 
 
 
-<a name="0x4_multisign_account_PROPOSAL_STATUS_APPROVED"></a>
+<a id="0x4_multisign_account_PROPOSAL_STATUS_APPROVED"></a>
 
 
 
@@ -178,7 +178,7 @@ Bitcoin multisign account module
 
 
 
-<a name="0x4_multisign_account_PROPOSAL_STATUS_PENDING"></a>
+<a id="0x4_multisign_account_PROPOSAL_STATUS_PENDING"></a>
 
 
 
@@ -187,7 +187,7 @@ Bitcoin multisign account module
 
 
 
-<a name="0x4_multisign_account_PROPOSAL_STATUS_REJECTED"></a>
+<a id="0x4_multisign_account_PROPOSAL_STATUS_REJECTED"></a>
 
 
 
@@ -196,7 +196,7 @@ Bitcoin multisign account module
 
 
 
-<a name="0x4_multisign_account_X_ONLY_PUBLIC_KEY_LEN"></a>
+<a id="0x4_multisign_account_X_ONLY_PUBLIC_KEY_LEN"></a>
 
 
 
@@ -205,7 +205,7 @@ Bitcoin multisign account module
 
 
 
-<a name="0x4_multisign_account_initialize_multisig_account_entry"></a>
+<a id="0x4_multisign_account_initialize_multisig_account_entry"></a>
 
 ## Function `initialize_multisig_account_entry`
 
@@ -218,7 +218,7 @@ If the multisign account already exists, we will init the MultisignAccountInfo i
 
 
 
-<a name="0x4_multisign_account_initialize_multisig_account"></a>
+<a id="0x4_multisign_account_initialize_multisig_account"></a>
 
 ## Function `initialize_multisig_account`
 
@@ -229,7 +229,7 @@ If the multisign account already exists, we will init the MultisignAccountInfo i
 
 
 
-<a name="0x4_multisign_account_generate_multisign_address"></a>
+<a id="0x4_multisign_account_generate_multisign_address"></a>
 
 ## Function `generate_multisign_address`
 
@@ -240,7 +240,7 @@ If the multisign account already exists, we will init the MultisignAccountInfo i
 
 
 
-<a name="0x4_multisign_account_is_participant"></a>
+<a id="0x4_multisign_account_is_participant"></a>
 
 ## Function `is_participant`
 
@@ -251,7 +251,7 @@ If the multisign account already exists, we will init the MultisignAccountInfo i
 
 
 
-<a name="0x4_multisign_account_is_participant_via_public_key"></a>
+<a id="0x4_multisign_account_is_participant_via_public_key"></a>
 
 ## Function `is_participant_via_public_key`
 
@@ -262,7 +262,7 @@ If the multisign account already exists, we will init the MultisignAccountInfo i
 
 
 
-<a name="0x4_multisign_account_is_multisign_account"></a>
+<a id="0x4_multisign_account_is_multisign_account"></a>
 
 ## Function `is_multisign_account`
 
@@ -273,7 +273,7 @@ If the multisign account already exists, we will init the MultisignAccountInfo i
 
 
 
-<a name="0x4_multisign_account_bitcoin_address"></a>
+<a id="0x4_multisign_account_bitcoin_address"></a>
 
 ## Function `bitcoin_address`
 
@@ -284,7 +284,7 @@ If the multisign account already exists, we will init the MultisignAccountInfo i
 
 
 
-<a name="0x4_multisign_account_threshold"></a>
+<a id="0x4_multisign_account_threshold"></a>
 
 ## Function `threshold`
 
@@ -295,7 +295,7 @@ If the multisign account already exists, we will init the MultisignAccountInfo i
 
 
 
-<a name="0x4_multisign_account_participants"></a>
+<a id="0x4_multisign_account_participants"></a>
 
 ## Function `participants`
 
@@ -306,7 +306,7 @@ If the multisign account already exists, we will init the MultisignAccountInfo i
 
 
 
-<a name="0x4_multisign_account_participant"></a>
+<a id="0x4_multisign_account_participant"></a>
 
 ## Function `participant`
 
@@ -317,7 +317,7 @@ If the multisign account already exists, we will init the MultisignAccountInfo i
 
 
 
-<a name="0x4_multisign_account_participant_public_key"></a>
+<a id="0x4_multisign_account_participant_public_key"></a>
 
 ## Function `participant_public_key`
 
@@ -328,7 +328,7 @@ If the multisign account already exists, we will init the MultisignAccountInfo i
 
 
 
-<a name="0x4_multisign_account_participant_bitcoin_address"></a>
+<a id="0x4_multisign_account_participant_bitcoin_address"></a>
 
 ## Function `participant_bitcoin_address`
 
@@ -339,7 +339,7 @@ If the multisign account already exists, we will init the MultisignAccountInfo i
 
 
 
-<a name="0x4_multisign_account_participant_address"></a>
+<a id="0x4_multisign_account_participant_address"></a>
 
 ## Function `participant_address`
 

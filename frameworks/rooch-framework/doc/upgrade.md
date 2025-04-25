@@ -1,5 +1,5 @@
 
-<a name="0x3_upgrade"></a>
+<a id="0x3_upgrade"></a>
 
 # Module `0x3::upgrade`
 
@@ -18,7 +18,7 @@
 
 
 
-<a name="0x3_upgrade_GasUpgradeEvent"></a>
+<a id="0x3_upgrade_GasUpgradeEvent"></a>
 
 ## Struct `GasUpgradeEvent`
 
@@ -30,12 +30,12 @@ Event for framework upgrades
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x3_upgrade_MoveosStdAccount"></a>
+<a id="0x3_upgrade_MoveosStdAccount"></a>
 
 
 
@@ -44,7 +44,7 @@ Event for framework upgrades
 
 
 
-<a name="0x3_upgrade_upgrade_gas_schedule"></a>
+<a id="0x3_upgrade_upgrade_gas_schedule"></a>
 
 ## Function `upgrade_gas_schedule`
 

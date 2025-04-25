@@ -1,5 +1,5 @@
 
-<a name="0x2_base58"></a>
+<a id="0x2_base58"></a>
 
 # Module `0x2::base58`
 
@@ -17,12 +17,12 @@ Module which defines base58 functions.
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x2_base58_E_DECODE_FAILED"></a>
+<a id="0x2_base58_E_DECODE_FAILED"></a>
 
 
 
@@ -31,7 +31,7 @@ Module which defines base58 functions.
 
 
 
-<a name="0x2_base58_encoding"></a>
+<a id="0x2_base58_encoding"></a>
 
 ## Function `encoding`
 
@@ -44,7 +44,7 @@ Encode the address bytes with Base58 algorithm and returns an encoded base58 byt
 
 
 
-<a name="0x2_base58_checksum_encoding"></a>
+<a id="0x2_base58_checksum_encoding"></a>
 
 ## Function `checksum_encoding`
 
@@ -58,7 +58,7 @@ Encode the address bytes with Base58Check algorithm and returns an encoded base5
 
 
 
-<a name="0x2_base58_decoding"></a>
+<a id="0x2_base58_decoding"></a>
 
 ## Function `decoding`
 
@@ -71,7 +71,7 @@ Decode the base58 address bytes with Base58 algorithm and returns a raw base58 a
 
 
 
-<a name="0x2_base58_checksum_decoding"></a>
+<a id="0x2_base58_checksum_decoding"></a>
 
 ## Function `checksum_decoding`
 

@@ -1,5 +1,5 @@
 
-<a name="0x2_gas_schedule"></a>
+<a id="0x2_gas_schedule"></a>
 
 # Module `0x2::gas_schedule`
 
@@ -32,7 +32,7 @@
 
 
 
-<a name="0x2_gas_schedule_GasScheduleUpdated"></a>
+<a id="0x2_gas_schedule_GasScheduleUpdated"></a>
 
 ## Struct `GasScheduleUpdated`
 
@@ -43,7 +43,7 @@
 
 
 
-<a name="0x2_gas_schedule_GasEntry"></a>
+<a id="0x2_gas_schedule_GasEntry"></a>
 
 ## Struct `GasEntry`
 
@@ -55,7 +55,7 @@
 
 
 
-<a name="0x2_gas_schedule_GasSchedule"></a>
+<a id="0x2_gas_schedule_GasSchedule"></a>
 
 ## Resource `GasSchedule`
 
@@ -66,7 +66,7 @@
 
 
 
-<a name="0x2_gas_schedule_GasScheduleConfig"></a>
+<a id="0x2_gas_schedule_GasScheduleConfig"></a>
 
 ## Struct `GasScheduleConfig`
 
@@ -78,12 +78,12 @@
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x2_gas_schedule_ErrorInvalidGasScheduleEntries"></a>
+<a id="0x2_gas_schedule_ErrorInvalidGasScheduleEntries"></a>
 
 
 
@@ -92,7 +92,7 @@
 
 
 
-<a name="0x2_gas_schedule_InitialMaxGasAmount"></a>
+<a id="0x2_gas_schedule_InitialMaxGasAmount"></a>
 
 The initial max gas amount from genesis.
 
@@ -102,7 +102,7 @@ The initial max gas amount from genesis.
 
 
 
-<a name="0x2_gas_schedule_MaxGasAmount"></a>
+<a id="0x2_gas_schedule_MaxGasAmount"></a>
 
 The max gas amount of the transaction.
 This const can be changed via framework upgrade.
@@ -114,7 +114,7 @@ We use const other than the GasScheduleConfig for the performance.
 
 
 
-<a name="0x2_gas_schedule_initial_max_gas_amount"></a>
+<a id="0x2_gas_schedule_initial_max_gas_amount"></a>
 
 ## Function `initial_max_gas_amount`
 
@@ -125,7 +125,7 @@ We use const other than the GasScheduleConfig for the performance.
 
 
 
-<a name="0x2_gas_schedule_max_gas_amount"></a>
+<a id="0x2_gas_schedule_max_gas_amount"></a>
 
 ## Function `max_gas_amount`
 
@@ -136,7 +136,7 @@ We use const other than the GasScheduleConfig for the performance.
 
 
 
-<a name="0x2_gas_schedule_genesis_init"></a>
+<a id="0x2_gas_schedule_genesis_init"></a>
 
 ## Function `genesis_init`
 
@@ -147,7 +147,7 @@ We use const other than the GasScheduleConfig for the performance.
 
 
 
-<a name="0x2_gas_schedule_new_gas_schedule_config"></a>
+<a id="0x2_gas_schedule_new_gas_schedule_config"></a>
 
 ## Function `new_gas_schedule_config`
 
@@ -158,7 +158,7 @@ We use const other than the GasScheduleConfig for the performance.
 
 
 
-<a name="0x2_gas_schedule_new_gas_entry"></a>
+<a id="0x2_gas_schedule_new_gas_entry"></a>
 
 ## Function `new_gas_entry`
 
@@ -169,7 +169,7 @@ We use const other than the GasScheduleConfig for the performance.
 
 
 
-<a name="0x2_gas_schedule_update_gas_schedule"></a>
+<a id="0x2_gas_schedule_update_gas_schedule"></a>
 
 ## Function `update_gas_schedule`
 
@@ -180,7 +180,7 @@ We use const other than the GasScheduleConfig for the performance.
 
 
 
-<a name="0x2_gas_schedule_gas_schedule"></a>
+<a id="0x2_gas_schedule_gas_schedule"></a>
 
 ## Function `gas_schedule`
 
@@ -191,7 +191,7 @@ We use const other than the GasScheduleConfig for the performance.
 
 
 
-<a name="0x2_gas_schedule_gas_schedule_max_gas_amount"></a>
+<a id="0x2_gas_schedule_gas_schedule_max_gas_amount"></a>
 
 ## Function `gas_schedule_max_gas_amount`
 
@@ -203,7 +203,7 @@ This function will deprecated in the future, please use <code><a href="gas_sched
 
 
 
-<a name="0x2_gas_schedule_gas_schedule_version"></a>
+<a id="0x2_gas_schedule_gas_schedule_version"></a>
 
 ## Function `gas_schedule_version`
 
@@ -214,7 +214,7 @@ This function will deprecated in the future, please use <code><a href="gas_sched
 
 
 
-<a name="0x2_gas_schedule_gas_schedule_entries"></a>
+<a id="0x2_gas_schedule_gas_schedule_entries"></a>
 
 ## Function `gas_schedule_entries`
 

@@ -1,5 +1,5 @@
 
-<a name="0x2_tx_meta"></a>
+<a id="0x2_tx_meta"></a>
 
 # Module `0x2::tx_meta`
 
@@ -27,7 +27,7 @@
 
 
 
-<a name="0x2_tx_meta_TxMeta"></a>
+<a id="0x2_tx_meta_TxMeta"></a>
 
 ## Struct `TxMeta`
 
@@ -40,7 +40,7 @@ We can not define MoveAction in Move, so we define a simple meta data struct to 
 
 
 
-<a name="0x2_tx_meta_FunctionCallMeta"></a>
+<a id="0x2_tx_meta_FunctionCallMeta"></a>
 
 ## Struct `FunctionCallMeta`
 
@@ -52,12 +52,12 @@ The FunctionCall Meta data
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x2_tx_meta_MoveActionFunctionType"></a>
+<a id="0x2_tx_meta_MoveActionFunctionType"></a>
 
 
 
@@ -66,7 +66,7 @@ The FunctionCall Meta data
 
 
 
-<a name="0x2_tx_meta_MoveActionModuleBundleType"></a>
+<a id="0x2_tx_meta_MoveActionModuleBundleType"></a>
 
 
 
@@ -75,7 +75,7 @@ The FunctionCall Meta data
 
 
 
-<a name="0x2_tx_meta_MoveActionScriptType"></a>
+<a id="0x2_tx_meta_MoveActionScriptType"></a>
 
 
 
@@ -84,7 +84,7 @@ The FunctionCall Meta data
 
 
 
-<a name="0x2_tx_meta_move_action_script_type"></a>
+<a id="0x2_tx_meta_move_action_script_type"></a>
 
 ## Function `move_action_script_type`
 
@@ -95,7 +95,7 @@ The FunctionCall Meta data
 
 
 
-<a name="0x2_tx_meta_move_action_function_type"></a>
+<a id="0x2_tx_meta_move_action_function_type"></a>
 
 ## Function `move_action_function_type`
 
@@ -106,7 +106,7 @@ The FunctionCall Meta data
 
 
 
-<a name="0x2_tx_meta_move_action_module_bundle_type"></a>
+<a id="0x2_tx_meta_move_action_module_bundle_type"></a>
 
 ## Function `move_action_module_bundle_type`
 
@@ -117,7 +117,7 @@ The FunctionCall Meta data
 
 
 
-<a name="0x2_tx_meta_action_type"></a>
+<a id="0x2_tx_meta_action_type"></a>
 
 ## Function `action_type`
 
@@ -128,7 +128,7 @@ The FunctionCall Meta data
 
 
 
-<a name="0x2_tx_meta_is_script_call"></a>
+<a id="0x2_tx_meta_is_script_call"></a>
 
 ## Function `is_script_call`
 
@@ -139,7 +139,7 @@ The FunctionCall Meta data
 
 
 
-<a name="0x2_tx_meta_is_function_call"></a>
+<a id="0x2_tx_meta_is_function_call"></a>
 
 ## Function `is_function_call`
 
@@ -150,7 +150,7 @@ The FunctionCall Meta data
 
 
 
-<a name="0x2_tx_meta_is_module_publish"></a>
+<a id="0x2_tx_meta_is_module_publish"></a>
 
 ## Function `is_module_publish`
 
@@ -161,7 +161,7 @@ The FunctionCall Meta data
 
 
 
-<a name="0x2_tx_meta_function_meta"></a>
+<a id="0x2_tx_meta_function_meta"></a>
 
 ## Function `function_meta`
 
@@ -172,7 +172,7 @@ The FunctionCall Meta data
 
 
 
-<a name="0x2_tx_meta_function_meta_module_address"></a>
+<a id="0x2_tx_meta_function_meta_module_address"></a>
 
 ## Function `function_meta_module_address`
 
@@ -183,7 +183,7 @@ The FunctionCall Meta data
 
 
 
-<a name="0x2_tx_meta_function_meta_module_name"></a>
+<a id="0x2_tx_meta_function_meta_module_name"></a>
 
 ## Function `function_meta_module_name`
 
@@ -194,7 +194,7 @@ The FunctionCall Meta data
 
 
 
-<a name="0x2_tx_meta_function_meta_function_name"></a>
+<a id="0x2_tx_meta_function_meta_function_name"></a>
 
 ## Function `function_meta_function_name`
 

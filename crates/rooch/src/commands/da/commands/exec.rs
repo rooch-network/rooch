@@ -15,6 +15,7 @@ use coerce::actor::system::ActorSystem;
 use coerce::actor::IntoActor;
 use hdrhistogram::Histogram;
 use metrics::RegistryService;
+use moveos::moveos::{new_moveos_global_module_cache, MoveOSCacheManager};
 use moveos_common::utils::to_bytes;
 use moveos_eventbus::bus::EventBus;
 use moveos_store::config_store::STARTUP_INFO_KEY;
@@ -54,6 +55,8 @@ use tokio::sync::watch;
 use tokio::time;
 use tokio::time::sleep;
 use tracing::{info, warn};
+use moveos_types::state_resolver::RootObjectResolver;
+use rooch_genesis::FrameworksGasParameters;
 
 /// exec LedgerTransaction List for verification.
 #[derive(Debug, Parser)]
@@ -956,12 +959,20 @@ async fn build_executor_and_store(
         .into_actor(Some("NotifyActor"), actor_system)
         .await?;
 
+    let resolver = RootObjectResolver::new(root.clone(), &moveos_store);
+    let gas_parameters = FrameworksGasParameters::load_from_chain(&resolver)?;
+
+    let global_module_cache = new_moveos_global_module_cache();
+    let global_cache_manager =
+        MoveOSCacheManager::new(gas_parameters.all_natives(), global_module_cache);
+
     let executor_actor = ExecutorActor::new(
         root.clone(),
         moveos_store.clone(),
         rooch_store.clone(),
         &registry_service.default_registry(),
         Some(notify_actor_ref.clone()),
+        global_cache_manager.clone(),
     )?;
 
     let executor_actor_ref = executor_actor
@@ -973,6 +984,7 @@ async fn build_executor_and_store(
         moveos_store.clone(),
         rooch_store.clone(),
         None,
+        global_cache_manager,
     )?;
 
     let read_executor_ref = reader_executor

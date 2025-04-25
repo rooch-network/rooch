@@ -1,5 +1,5 @@
 
-<a name="0x4_ord"></a>
+<a id="0x4_ord"></a>
 
 # Module `0x4::ord`
 
@@ -148,7 +148,7 @@
 
 
 
-<a name="0x4_ord_InscriptionID"></a>
+<a id="0x4_ord_InscriptionID"></a>
 
 ## Struct `InscriptionID`
 
@@ -159,7 +159,7 @@
 
 
 
-<a name="0x4_ord_SatPoint"></a>
+<a id="0x4_ord_SatPoint"></a>
 
 ## Struct `SatPoint`
 
@@ -170,7 +170,7 @@
 
 
 
-<a name="0x4_ord_Inscription"></a>
+<a id="0x4_ord_Inscription"></a>
 
 ## Resource `Inscription`
 
@@ -181,7 +181,7 @@
 
 
 
-<a name="0x4_ord_Envelope"></a>
+<a id="0x4_ord_Envelope"></a>
 
 ## Struct `Envelope`
 
@@ -192,7 +192,7 @@
 
 
 
-<a name="0x4_ord_InscriptionRecord"></a>
+<a id="0x4_ord_InscriptionRecord"></a>
 
 ## Struct `InscriptionRecord`
 
@@ -203,7 +203,7 @@
 
 
 
-<a name="0x4_ord_InvalidInscriptionEvent"></a>
+<a id="0x4_ord_InvalidInscriptionEvent"></a>
 
 ## Struct `InvalidInscriptionEvent`
 
@@ -214,7 +214,7 @@
 
 
 
-<a name="0x4_ord_MetaprotocolRegistry"></a>
+<a id="0x4_ord_MetaprotocolRegistry"></a>
 
 ## Resource `MetaprotocolRegistry`
 
@@ -225,7 +225,7 @@
 
 
 
-<a name="0x4_ord_MetaprotocolValidity"></a>
+<a id="0x4_ord_MetaprotocolValidity"></a>
 
 ## Struct `MetaprotocolValidity`
 
@@ -236,7 +236,7 @@
 
 
 
-<a name="0x4_ord_InscriptionStore"></a>
+<a id="0x4_ord_InscriptionStore"></a>
 
 ## Resource `InscriptionStore`
 
@@ -247,7 +247,7 @@
 
 
 
-<a name="0x4_ord_InscriptionEvent"></a>
+<a id="0x4_ord_InscriptionEvent"></a>
 
 ## Struct `InscriptionEvent`
 
@@ -270,7 +270,7 @@ Compared to the events in inscription_updater, the main differences are:
 
 
 
-<a name="0x4_ord_TempStateDropEvent"></a>
+<a id="0x4_ord_TempStateDropEvent"></a>
 
 ## Struct `TempStateDropEvent`
 
@@ -284,7 +284,7 @@ The event is onchain event, and the event_queue name is type_name of the tempora
 
 
 
-<a name="0x4_ord_InscriptionCharm"></a>
+<a id="0x4_ord_InscriptionCharm"></a>
 
 ## Struct `InscriptionCharm`
 
@@ -296,12 +296,12 @@ A struct to represent the Inscription Charm
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x4_ord_TEMPORARY_AREA"></a>
+<a id="0x4_ord_TEMPORARY_AREA"></a>
 
 
 
@@ -310,7 +310,7 @@ A struct to represent the Inscription Charm
 
 
 
-<a name="0x4_ord_CHARM_BURNED_FLAG"></a>
+<a id="0x4_ord_CHARM_BURNED_FLAG"></a>
 
 
 
@@ -319,7 +319,7 @@ A struct to represent the Inscription Charm
 
 
 
-<a name="0x4_ord_CHARM_COIN_FLAG"></a>
+<a id="0x4_ord_CHARM_COIN_FLAG"></a>
 
 
 
@@ -328,7 +328,7 @@ A struct to represent the Inscription Charm
 
 
 
-<a name="0x4_ord_CHARM_CURSED_FLAG"></a>
+<a id="0x4_ord_CHARM_CURSED_FLAG"></a>
 
 
 
@@ -337,7 +337,7 @@ A struct to represent the Inscription Charm
 
 
 
-<a name="0x4_ord_CHARM_EPIC_FLAG"></a>
+<a id="0x4_ord_CHARM_EPIC_FLAG"></a>
 
 
 
@@ -346,7 +346,7 @@ A struct to represent the Inscription Charm
 
 
 
-<a name="0x4_ord_CHARM_LEGENDARY_FLAG"></a>
+<a id="0x4_ord_CHARM_LEGENDARY_FLAG"></a>
 
 
 
@@ -355,7 +355,7 @@ A struct to represent the Inscription Charm
 
 
 
-<a name="0x4_ord_CHARM_LOST_FLAG"></a>
+<a id="0x4_ord_CHARM_LOST_FLAG"></a>
 
 
 
@@ -364,7 +364,7 @@ A struct to represent the Inscription Charm
 
 
 
-<a name="0x4_ord_CHARM_MYTHIC_FLAG"></a>
+<a id="0x4_ord_CHARM_MYTHIC_FLAG"></a>
 
 
 
@@ -373,7 +373,7 @@ A struct to represent the Inscription Charm
 
 
 
-<a name="0x4_ord_CHARM_NINEBALL_FLAG"></a>
+<a id="0x4_ord_CHARM_NINEBALL_FLAG"></a>
 
 
 
@@ -382,7 +382,7 @@ A struct to represent the Inscription Charm
 
 
 
-<a name="0x4_ord_CHARM_RARE_FLAG"></a>
+<a id="0x4_ord_CHARM_RARE_FLAG"></a>
 
 
 
@@ -391,7 +391,7 @@ A struct to represent the Inscription Charm
 
 
 
-<a name="0x4_ord_CHARM_REINSCRIPTION_FLAG"></a>
+<a id="0x4_ord_CHARM_REINSCRIPTION_FLAG"></a>
 
 
 
@@ -400,7 +400,7 @@ A struct to represent the Inscription Charm
 
 
 
-<a name="0x4_ord_CHARM_UNBOUND_FLAG"></a>
+<a id="0x4_ord_CHARM_UNBOUND_FLAG"></a>
 
 
 
@@ -409,7 +409,7 @@ A struct to represent the Inscription Charm
 
 
 
-<a name="0x4_ord_CHARM_UNCOMMON_FLAG"></a>
+<a id="0x4_ord_CHARM_UNCOMMON_FLAG"></a>
 
 
 
@@ -418,7 +418,7 @@ A struct to represent the Inscription Charm
 
 
 
-<a name="0x4_ord_CHARM_VINDICATED_FLAG"></a>
+<a id="0x4_ord_CHARM_VINDICATED_FLAG"></a>
 
 
 
@@ -427,7 +427,7 @@ A struct to represent the Inscription Charm
 
 
 
-<a name="0x4_ord_ErrorInscriptionNotExists"></a>
+<a id="0x4_ord_ErrorInscriptionNotExists"></a>
 
 
 
@@ -436,7 +436,7 @@ A struct to represent the Inscription Charm
 
 
 
-<a name="0x4_ord_ErrorMetaprotocolAlreadyRegistered"></a>
+<a id="0x4_ord_ErrorMetaprotocolAlreadyRegistered"></a>
 
 
 
@@ -445,7 +445,7 @@ A struct to represent the Inscription Charm
 
 
 
-<a name="0x4_ord_ErrorMetaprotocolProtocolMismatch"></a>
+<a id="0x4_ord_ErrorMetaprotocolProtocolMismatch"></a>
 
 
 
@@ -454,7 +454,7 @@ A struct to represent the Inscription Charm
 
 
 
-<a name="0x4_ord_InscriptionEventTypeBurn"></a>
+<a id="0x4_ord_InscriptionEventTypeBurn"></a>
 
 
 
@@ -463,7 +463,7 @@ A struct to represent the Inscription Charm
 
 
 
-<a name="0x4_ord_InscriptionEventTypeNew"></a>
+<a id="0x4_ord_InscriptionEventTypeNew"></a>
 
 
 
@@ -472,7 +472,7 @@ A struct to represent the Inscription Charm
 
 
 
-<a name="0x4_ord_METAPROTOCOL_VALIDITY"></a>
+<a id="0x4_ord_METAPROTOCOL_VALIDITY"></a>
 
 
 
@@ -481,7 +481,7 @@ A struct to represent the Inscription Charm
 
 
 
-<a name="0x4_ord_PERMANENT_AREA"></a>
+<a id="0x4_ord_PERMANENT_AREA"></a>
 
 
 
@@ -490,7 +490,7 @@ A struct to represent the Inscription Charm
 
 
 
-<a name="0x4_ord_genesis_init"></a>
+<a id="0x4_ord_genesis_init"></a>
 
 ## Function `genesis_init`
 
@@ -501,7 +501,7 @@ A struct to represent the Inscription Charm
 
 
 
-<a name="0x4_ord_borrow_mut_inscription_store"></a>
+<a id="0x4_ord_borrow_mut_inscription_store"></a>
 
 ## Function `borrow_mut_inscription_store`
 
@@ -512,7 +512,7 @@ A struct to represent the Inscription Charm
 
 
 
-<a name="0x4_ord_borrow_inscription_store"></a>
+<a id="0x4_ord_borrow_inscription_store"></a>
 
 ## Function `borrow_inscription_store`
 
@@ -523,7 +523,7 @@ A struct to represent the Inscription Charm
 
 
 
-<a name="0x4_ord_blessed_inscription_count"></a>
+<a id="0x4_ord_blessed_inscription_count"></a>
 
 ## Function `blessed_inscription_count`
 
@@ -534,7 +534,7 @@ A struct to represent the Inscription Charm
 
 
 
-<a name="0x4_ord_cursed_inscription_count"></a>
+<a id="0x4_ord_cursed_inscription_count"></a>
 
 ## Function `cursed_inscription_count`
 
@@ -545,7 +545,7 @@ A struct to represent the Inscription Charm
 
 
 
-<a name="0x4_ord_unbound_inscription_count"></a>
+<a id="0x4_ord_unbound_inscription_count"></a>
 
 ## Function `unbound_inscription_count`
 
@@ -556,7 +556,7 @@ A struct to represent the Inscription Charm
 
 
 
-<a name="0x4_ord_lost_sats"></a>
+<a id="0x4_ord_lost_sats"></a>
 
 ## Function `lost_sats`
 
@@ -567,7 +567,7 @@ A struct to represent the Inscription Charm
 
 
 
-<a name="0x4_ord_next_sequence_number"></a>
+<a id="0x4_ord_next_sequence_number"></a>
 
 ## Function `next_sequence_number`
 
@@ -578,7 +578,7 @@ A struct to represent the Inscription Charm
 
 
 
-<a name="0x4_ord_update_cursed_inscription_count"></a>
+<a id="0x4_ord_update_cursed_inscription_count"></a>
 
 ## Function `update_cursed_inscription_count`
 
@@ -589,7 +589,7 @@ A struct to represent the Inscription Charm
 
 
 
-<a name="0x4_ord_update_blessed_inscription_count"></a>
+<a id="0x4_ord_update_blessed_inscription_count"></a>
 
 ## Function `update_blessed_inscription_count`
 
@@ -600,7 +600,7 @@ A struct to represent the Inscription Charm
 
 
 
-<a name="0x4_ord_update_next_sequence_number"></a>
+<a id="0x4_ord_update_next_sequence_number"></a>
 
 ## Function `update_next_sequence_number`
 
@@ -611,7 +611,7 @@ A struct to represent the Inscription Charm
 
 
 
-<a name="0x4_ord_update_unbound_inscription_count"></a>
+<a id="0x4_ord_update_unbound_inscription_count"></a>
 
 ## Function `update_unbound_inscription_count`
 
@@ -622,7 +622,7 @@ A struct to represent the Inscription Charm
 
 
 
-<a name="0x4_ord_update_lost_sats"></a>
+<a id="0x4_ord_update_lost_sats"></a>
 
 ## Function `update_lost_sats`
 
@@ -633,7 +633,7 @@ A struct to represent the Inscription Charm
 
 
 
-<a name="0x4_ord_new_inscription_id"></a>
+<a id="0x4_ord_new_inscription_id"></a>
 
 ## Function `new_inscription_id`
 
@@ -644,7 +644,7 @@ A struct to represent the Inscription Charm
 
 
 
-<a name="0x4_ord_derive_inscription_id"></a>
+<a id="0x4_ord_derive_inscription_id"></a>
 
 ## Function `derive_inscription_id`
 
@@ -655,7 +655,7 @@ A struct to represent the Inscription Charm
 
 
 
-<a name="0x4_ord_parse_inscription_id"></a>
+<a id="0x4_ord_parse_inscription_id"></a>
 
 ## Function `parse_inscription_id`
 
@@ -667,7 +667,7 @@ Prase InscriptionID from String
 
 
 
-<a name="0x4_ord_inscription_id_to_string"></a>
+<a id="0x4_ord_inscription_id_to_string"></a>
 
 ## Function `inscription_id_to_string`
 
@@ -678,7 +678,7 @@ Prase InscriptionID from String
 
 
 
-<a name="0x4_ord_get_inscription_id_by_sequence_number"></a>
+<a id="0x4_ord_get_inscription_id_by_sequence_number"></a>
 
 ## Function `get_inscription_id_by_sequence_number`
 
@@ -689,7 +689,7 @@ Prase InscriptionID from String
 
 
 
-<a name="0x4_ord_get_inscription_next_sequence_number"></a>
+<a id="0x4_ord_get_inscription_next_sequence_number"></a>
 
 ## Function `get_inscription_next_sequence_number`
 
@@ -700,7 +700,7 @@ Prase InscriptionID from String
 
 
 
-<a name="0x4_ord_create_object"></a>
+<a id="0x4_ord_create_object"></a>
 
 ## Function `create_object`
 
@@ -711,7 +711,7 @@ Prase InscriptionID from String
 
 
 
-<a name="0x4_ord_transfer_object"></a>
+<a id="0x4_ord_transfer_object"></a>
 
 ## Function `transfer_object`
 
@@ -722,7 +722,7 @@ Prase InscriptionID from String
 
 
 
-<a name="0x4_ord_take_object"></a>
+<a id="0x4_ord_take_object"></a>
 
 ## Function `take_object`
 
@@ -733,7 +733,7 @@ Prase InscriptionID from String
 
 
 
-<a name="0x4_ord_borrow_object"></a>
+<a id="0x4_ord_borrow_object"></a>
 
 ## Function `borrow_object`
 
@@ -744,7 +744,7 @@ Prase InscriptionID from String
 
 
 
-<a name="0x4_ord_exists_inscription"></a>
+<a id="0x4_ord_exists_inscription"></a>
 
 ## Function `exists_inscription`
 
@@ -755,7 +755,7 @@ Prase InscriptionID from String
 
 
 
-<a name="0x4_ord_borrow_inscription"></a>
+<a id="0x4_ord_borrow_inscription"></a>
 
 ## Function `borrow_inscription`
 
@@ -766,7 +766,7 @@ Prase InscriptionID from String
 
 
 
-<a name="0x4_ord_txid"></a>
+<a id="0x4_ord_txid"></a>
 
 ## Function `txid`
 
@@ -777,7 +777,7 @@ Prase InscriptionID from String
 
 
 
-<a name="0x4_ord_index"></a>
+<a id="0x4_ord_index"></a>
 
 ## Function `index`
 
@@ -788,7 +788,7 @@ Prase InscriptionID from String
 
 
 
-<a name="0x4_ord_location"></a>
+<a id="0x4_ord_location"></a>
 
 ## Function `location`
 
@@ -799,7 +799,7 @@ Prase InscriptionID from String
 
 
 
-<a name="0x4_ord_sequence_number"></a>
+<a id="0x4_ord_sequence_number"></a>
 
 ## Function `sequence_number`
 
@@ -810,7 +810,7 @@ Prase InscriptionID from String
 
 
 
-<a name="0x4_ord_inscription_number"></a>
+<a id="0x4_ord_inscription_number"></a>
 
 ## Function `inscription_number`
 
@@ -821,7 +821,7 @@ Prase InscriptionID from String
 
 
 
-<a name="0x4_ord_is_cursed"></a>
+<a id="0x4_ord_is_cursed"></a>
 
 ## Function `is_cursed`
 
@@ -832,7 +832,7 @@ Prase InscriptionID from String
 
 
 
-<a name="0x4_ord_charms"></a>
+<a id="0x4_ord_charms"></a>
 
 ## Function `charms`
 
@@ -843,7 +843,7 @@ Prase InscriptionID from String
 
 
 
-<a name="0x4_ord_offset"></a>
+<a id="0x4_ord_offset"></a>
 
 ## Function `offset`
 
@@ -854,7 +854,7 @@ Prase InscriptionID from String
 
 
 
-<a name="0x4_ord_body"></a>
+<a id="0x4_ord_body"></a>
 
 ## Function `body`
 
@@ -865,7 +865,7 @@ Prase InscriptionID from String
 
 
 
-<a name="0x4_ord_content_encoding"></a>
+<a id="0x4_ord_content_encoding"></a>
 
 ## Function `content_encoding`
 
@@ -876,7 +876,7 @@ Prase InscriptionID from String
 
 
 
-<a name="0x4_ord_content_type"></a>
+<a id="0x4_ord_content_type"></a>
 
 ## Function `content_type`
 
@@ -887,7 +887,7 @@ Prase InscriptionID from String
 
 
 
-<a name="0x4_ord_metadata"></a>
+<a id="0x4_ord_metadata"></a>
 
 ## Function `metadata`
 
@@ -898,7 +898,7 @@ Prase InscriptionID from String
 
 
 
-<a name="0x4_ord_metaprotocol"></a>
+<a id="0x4_ord_metaprotocol"></a>
 
 ## Function `metaprotocol`
 
@@ -909,7 +909,7 @@ Prase InscriptionID from String
 
 
 
-<a name="0x4_ord_parents"></a>
+<a id="0x4_ord_parents"></a>
 
 ## Function `parents`
 
@@ -920,7 +920,7 @@ Prase InscriptionID from String
 
 
 
-<a name="0x4_ord_pointer"></a>
+<a id="0x4_ord_pointer"></a>
 
 ## Function `pointer`
 
@@ -931,7 +931,7 @@ Prase InscriptionID from String
 
 
 
-<a name="0x4_ord_id"></a>
+<a id="0x4_ord_id"></a>
 
 ## Function `id`
 
@@ -942,7 +942,7 @@ Prase InscriptionID from String
 
 
 
-<a name="0x4_ord_inscription_id_txid"></a>
+<a id="0x4_ord_inscription_id_txid"></a>
 
 ## Function `inscription_id_txid`
 
@@ -953,7 +953,7 @@ Prase InscriptionID from String
 
 
 
-<a name="0x4_ord_inscription_id_index"></a>
+<a id="0x4_ord_inscription_id_index"></a>
 
 ## Function `inscription_id_index`
 
@@ -964,7 +964,7 @@ Prase InscriptionID from String
 
 
 
-<a name="0x4_ord_new_satpoint"></a>
+<a id="0x4_ord_new_satpoint"></a>
 
 ## Function `new_satpoint`
 
@@ -975,7 +975,7 @@ Prase InscriptionID from String
 
 
 
-<a name="0x4_ord_unpack_satpoint"></a>
+<a id="0x4_ord_unpack_satpoint"></a>
 
 ## Function `unpack_satpoint`
 
@@ -986,7 +986,7 @@ Prase InscriptionID from String
 
 
 
-<a name="0x4_ord_satpoint_offset"></a>
+<a id="0x4_ord_satpoint_offset"></a>
 
 ## Function `satpoint_offset`
 
@@ -998,7 +998,7 @@ Get the SatPoint's offset
 
 
 
-<a name="0x4_ord_satpoint_outpoint"></a>
+<a id="0x4_ord_satpoint_outpoint"></a>
 
 ## Function `satpoint_outpoint`
 
@@ -1010,7 +1010,7 @@ Get the SatPoint's outpoint
 
 
 
-<a name="0x4_ord_satpoint_vout"></a>
+<a id="0x4_ord_satpoint_vout"></a>
 
 ## Function `satpoint_vout`
 
@@ -1021,7 +1021,7 @@ Get the SatPoint's outpoint
 
 
 
-<a name="0x4_ord_parse_inscription_from_tx"></a>
+<a id="0x4_ord_parse_inscription_from_tx"></a>
 
 ## Function `parse_inscription_from_tx`
 
@@ -1032,7 +1032,7 @@ Get the SatPoint's outpoint
 
 
 
-<a name="0x4_ord_envelope_input"></a>
+<a id="0x4_ord_envelope_input"></a>
 
 ## Function `envelope_input`
 
@@ -1043,7 +1043,7 @@ Get the SatPoint's outpoint
 
 
 
-<a name="0x4_ord_envelope_offset"></a>
+<a id="0x4_ord_envelope_offset"></a>
 
 ## Function `envelope_offset`
 
@@ -1054,7 +1054,7 @@ Get the SatPoint's outpoint
 
 
 
-<a name="0x4_ord_envelope_payload"></a>
+<a id="0x4_ord_envelope_payload"></a>
 
 ## Function `envelope_payload`
 
@@ -1065,7 +1065,7 @@ Get the SatPoint's outpoint
 
 
 
-<a name="0x4_ord_envelope_pushnum"></a>
+<a id="0x4_ord_envelope_pushnum"></a>
 
 ## Function `envelope_pushnum`
 
@@ -1076,7 +1076,7 @@ Get the SatPoint's outpoint
 
 
 
-<a name="0x4_ord_envelope_stutter"></a>
+<a id="0x4_ord_envelope_stutter"></a>
 
 ## Function `envelope_stutter`
 
@@ -1087,7 +1087,7 @@ Get the SatPoint's outpoint
 
 
 
-<a name="0x4_ord_inscription_record_pointer"></a>
+<a id="0x4_ord_inscription_record_pointer"></a>
 
 ## Function `inscription_record_pointer`
 
@@ -1098,7 +1098,7 @@ Get the SatPoint's outpoint
 
 
 
-<a name="0x4_ord_inscription_record_parents"></a>
+<a id="0x4_ord_inscription_record_parents"></a>
 
 ## Function `inscription_record_parents`
 
@@ -1109,7 +1109,7 @@ Get the SatPoint's outpoint
 
 
 
-<a name="0x4_ord_inscription_record_unrecognized_even_field"></a>
+<a id="0x4_ord_inscription_record_unrecognized_even_field"></a>
 
 ## Function `inscription_record_unrecognized_even_field`
 
@@ -1120,7 +1120,7 @@ Get the SatPoint's outpoint
 
 
 
-<a name="0x4_ord_inscription_record_duplicate_field"></a>
+<a id="0x4_ord_inscription_record_duplicate_field"></a>
 
 ## Function `inscription_record_duplicate_field`
 
@@ -1131,7 +1131,7 @@ Get the SatPoint's outpoint
 
 
 
-<a name="0x4_ord_inscription_record_incomplete_field"></a>
+<a id="0x4_ord_inscription_record_incomplete_field"></a>
 
 ## Function `inscription_record_incomplete_field`
 
@@ -1142,7 +1142,7 @@ Get the SatPoint's outpoint
 
 
 
-<a name="0x4_ord_inscription_record_metaprotocol"></a>
+<a id="0x4_ord_inscription_record_metaprotocol"></a>
 
 ## Function `inscription_record_metaprotocol`
 
@@ -1153,7 +1153,7 @@ Get the SatPoint's outpoint
 
 
 
-<a name="0x4_ord_inscription_record_rune"></a>
+<a id="0x4_ord_inscription_record_rune"></a>
 
 ## Function `inscription_record_rune`
 
@@ -1164,7 +1164,7 @@ Get the SatPoint's outpoint
 
 
 
-<a name="0x4_ord_inscription_record_metadata"></a>
+<a id="0x4_ord_inscription_record_metadata"></a>
 
 ## Function `inscription_record_metadata`
 
@@ -1175,7 +1175,7 @@ Get the SatPoint's outpoint
 
 
 
-<a name="0x4_ord_inscription_record_content_type"></a>
+<a id="0x4_ord_inscription_record_content_type"></a>
 
 ## Function `inscription_record_content_type`
 
@@ -1186,7 +1186,7 @@ Get the SatPoint's outpoint
 
 
 
-<a name="0x4_ord_inscription_record_content_encoding"></a>
+<a id="0x4_ord_inscription_record_content_encoding"></a>
 
 ## Function `inscription_record_content_encoding`
 
@@ -1197,7 +1197,7 @@ Get the SatPoint's outpoint
 
 
 
-<a name="0x4_ord_inscription_record_body"></a>
+<a id="0x4_ord_inscription_record_body"></a>
 
 ## Function `inscription_record_body`
 
@@ -1208,7 +1208,7 @@ Get the SatPoint's outpoint
 
 
 
-<a name="0x4_ord_add_permanent_state"></a>
+<a id="0x4_ord_add_permanent_state"></a>
 
 ## Function `add_permanent_state`
 
@@ -1220,7 +1220,7 @@ Get the SatPoint's outpoint
 
 
 
-<a name="0x4_ord_contains_permanent_state"></a>
+<a id="0x4_ord_contains_permanent_state"></a>
 
 ## Function `contains_permanent_state`
 
@@ -1231,7 +1231,7 @@ Get the SatPoint's outpoint
 
 
 
-<a name="0x4_ord_borrow_permanent_state"></a>
+<a id="0x4_ord_borrow_permanent_state"></a>
 
 ## Function `borrow_permanent_state`
 
@@ -1242,7 +1242,7 @@ Get the SatPoint's outpoint
 
 
 
-<a name="0x4_ord_borrow_mut_permanent_state"></a>
+<a id="0x4_ord_borrow_mut_permanent_state"></a>
 
 ## Function `borrow_mut_permanent_state`
 
@@ -1254,7 +1254,7 @@ Get the SatPoint's outpoint
 
 
 
-<a name="0x4_ord_remove_permanent_state"></a>
+<a id="0x4_ord_remove_permanent_state"></a>
 
 ## Function `remove_permanent_state`
 
@@ -1266,7 +1266,7 @@ Get the SatPoint's outpoint
 
 
 
-<a name="0x4_ord_destroy_permanent_area"></a>
+<a id="0x4_ord_destroy_permanent_area"></a>
 
 ## Function `destroy_permanent_area`
 
@@ -1278,7 +1278,7 @@ Destroy permanent area if it's empty. Aborts if it's not empty.
 
 
 
-<a name="0x4_ord_add_temp_state"></a>
+<a id="0x4_ord_add_temp_state"></a>
 
 ## Function `add_temp_state`
 
@@ -1290,7 +1290,7 @@ Destroy permanent area if it's empty. Aborts if it's not empty.
 
 
 
-<a name="0x4_ord_contains_temp_state"></a>
+<a id="0x4_ord_contains_temp_state"></a>
 
 ## Function `contains_temp_state`
 
@@ -1301,7 +1301,7 @@ Destroy permanent area if it's empty. Aborts if it's not empty.
 
 
 
-<a name="0x4_ord_borrow_temp_state"></a>
+<a id="0x4_ord_borrow_temp_state"></a>
 
 ## Function `borrow_temp_state`
 
@@ -1312,7 +1312,7 @@ Destroy permanent area if it's empty. Aborts if it's not empty.
 
 
 
-<a name="0x4_ord_borrow_mut_temp_state"></a>
+<a id="0x4_ord_borrow_mut_temp_state"></a>
 
 ## Function `borrow_mut_temp_state`
 
@@ -1324,7 +1324,7 @@ Destroy permanent area if it's empty. Aborts if it's not empty.
 
 
 
-<a name="0x4_ord_remove_temp_state"></a>
+<a id="0x4_ord_remove_temp_state"></a>
 
 ## Function `remove_temp_state`
 
@@ -1336,7 +1336,7 @@ Destroy permanent area if it's empty. Aborts if it's not empty.
 
 
 
-<a name="0x4_ord_drop_temp_area"></a>
+<a id="0x4_ord_drop_temp_area"></a>
 
 ## Function `drop_temp_area`
 
@@ -1348,7 +1348,7 @@ Drop the bag, whether it's empty or not
 
 
 
-<a name="0x4_ord_register_metaprotocol_via_system"></a>
+<a id="0x4_ord_register_metaprotocol_via_system"></a>
 
 ## Function `register_metaprotocol_via_system`
 
@@ -1361,7 +1361,7 @@ We need to find a way to allow the user to register metaprotocol.
 
 
 
-<a name="0x4_ord_is_metaprotocol_register"></a>
+<a id="0x4_ord_is_metaprotocol_register"></a>
 
 ## Function `is_metaprotocol_register`
 
@@ -1372,7 +1372,7 @@ We need to find a way to allow the user to register metaprotocol.
 
 
 
-<a name="0x4_ord_seal_metaprotocol_validity"></a>
+<a id="0x4_ord_seal_metaprotocol_validity"></a>
 
 ## Function `seal_metaprotocol_validity`
 
@@ -1385,7 +1385,7 @@ Seal the metaprotocol validity for the given inscription_id.
 
 
 
-<a name="0x4_ord_add_metaprotocol_attachment"></a>
+<a id="0x4_ord_add_metaprotocol_attachment"></a>
 
 ## Function `add_metaprotocol_attachment`
 
@@ -1397,7 +1397,7 @@ Seal the metaprotocol validity for the given inscription_id.
 
 
 
-<a name="0x4_ord_remove_metaprotocol_attachment"></a>
+<a id="0x4_ord_remove_metaprotocol_attachment"></a>
 
 ## Function `remove_metaprotocol_attachment`
 
@@ -1409,7 +1409,7 @@ Seal the metaprotocol validity for the given inscription_id.
 
 
 
-<a name="0x4_ord_exists_metaprotocol_attachment"></a>
+<a id="0x4_ord_exists_metaprotocol_attachment"></a>
 
 ## Function `exists_metaprotocol_attachment`
 
@@ -1420,7 +1420,7 @@ Seal the metaprotocol validity for the given inscription_id.
 
 
 
-<a name="0x4_ord_exists_metaprotocol_validity"></a>
+<a id="0x4_ord_exists_metaprotocol_validity"></a>
 
 ## Function `exists_metaprotocol_validity`
 
@@ -1432,7 +1432,7 @@ Returns true if Inscription <code><a href="">object</a></code> contains metaprot
 
 
 
-<a name="0x4_ord_borrow_metaprotocol_validity"></a>
+<a id="0x4_ord_borrow_metaprotocol_validity"></a>
 
 ## Function `borrow_metaprotocol_validity`
 
@@ -1444,7 +1444,7 @@ Borrow the metaprotocol validity for the given inscription_id.
 
 
 
-<a name="0x4_ord_metaprotocol_validity_protocol_match"></a>
+<a id="0x4_ord_metaprotocol_validity_protocol_match"></a>
 
 ## Function `metaprotocol_validity_protocol_match`
 
@@ -1456,7 +1456,7 @@ Check the MetaprotocolValidity's protocol_type whether match
 
 
 
-<a name="0x4_ord_metaprotocol_validity_protocol_type"></a>
+<a id="0x4_ord_metaprotocol_validity_protocol_type"></a>
 
 ## Function `metaprotocol_validity_protocol_type`
 
@@ -1468,7 +1468,7 @@ Get the MetaprotocolValidity's protocol_type
 
 
 
-<a name="0x4_ord_metaprotocol_validity_is_valid"></a>
+<a id="0x4_ord_metaprotocol_validity_is_valid"></a>
 
 ## Function `metaprotocol_validity_is_valid`
 
@@ -1480,7 +1480,7 @@ Get the MetaprotocolValidity's is_valid
 
 
 
-<a name="0x4_ord_metaprotocol_validity_invalid_reason"></a>
+<a id="0x4_ord_metaprotocol_validity_invalid_reason"></a>
 
 ## Function `metaprotocol_validity_invalid_reason`
 
@@ -1492,7 +1492,7 @@ Get the MetaprotocolValidity's invalid_reason
 
 
 
-<a name="0x4_ord_view_validity"></a>
+<a id="0x4_ord_view_validity"></a>
 
 ## Function `view_validity`
 
@@ -1503,7 +1503,7 @@ Get the MetaprotocolValidity's invalid_reason
 
 
 
-<a name="0x4_ord_unpack_inscription_event"></a>
+<a id="0x4_ord_unpack_inscription_event"></a>
 
 ## Function `unpack_inscription_event`
 
@@ -1514,7 +1514,7 @@ Get the MetaprotocolValidity's invalid_reason
 
 
 
-<a name="0x4_ord_inscription_event_type_new"></a>
+<a id="0x4_ord_inscription_event_type_new"></a>
 
 ## Function `inscription_event_type_new`
 
@@ -1525,7 +1525,7 @@ Get the MetaprotocolValidity's invalid_reason
 
 
 
-<a name="0x4_ord_inscription_event_type_burn"></a>
+<a id="0x4_ord_inscription_event_type_burn"></a>
 
 ## Function `inscription_event_type_burn`
 
@@ -1536,7 +1536,7 @@ Get the MetaprotocolValidity's invalid_reason
 
 
 
-<a name="0x4_ord_unpack_temp_state_drop_event"></a>
+<a id="0x4_ord_unpack_temp_state_drop_event"></a>
 
 ## Function `unpack_temp_state_drop_event`
 
@@ -1547,7 +1547,7 @@ Get the MetaprotocolValidity's invalid_reason
 
 
 
-<a name="0x4_ord_charm_coin_flag"></a>
+<a id="0x4_ord_charm_coin_flag"></a>
 
 ## Function `charm_coin_flag`
 
@@ -1558,7 +1558,7 @@ Get the MetaprotocolValidity's invalid_reason
 
 
 
-<a name="0x4_ord_charm_cursed_flag"></a>
+<a id="0x4_ord_charm_cursed_flag"></a>
 
 ## Function `charm_cursed_flag`
 
@@ -1569,7 +1569,7 @@ Get the MetaprotocolValidity's invalid_reason
 
 
 
-<a name="0x4_ord_charm_epic_flag"></a>
+<a id="0x4_ord_charm_epic_flag"></a>
 
 ## Function `charm_epic_flag`
 
@@ -1580,7 +1580,7 @@ Get the MetaprotocolValidity's invalid_reason
 
 
 
-<a name="0x4_ord_charm_legendary_flag"></a>
+<a id="0x4_ord_charm_legendary_flag"></a>
 
 ## Function `charm_legendary_flag`
 
@@ -1591,7 +1591,7 @@ Get the MetaprotocolValidity's invalid_reason
 
 
 
-<a name="0x4_ord_charm_lost_flag"></a>
+<a id="0x4_ord_charm_lost_flag"></a>
 
 ## Function `charm_lost_flag`
 
@@ -1602,7 +1602,7 @@ Get the MetaprotocolValidity's invalid_reason
 
 
 
-<a name="0x4_ord_charm_nineball_flag"></a>
+<a id="0x4_ord_charm_nineball_flag"></a>
 
 ## Function `charm_nineball_flag`
 
@@ -1613,7 +1613,7 @@ Get the MetaprotocolValidity's invalid_reason
 
 
 
-<a name="0x4_ord_charm_rare_flag"></a>
+<a id="0x4_ord_charm_rare_flag"></a>
 
 ## Function `charm_rare_flag`
 
@@ -1624,7 +1624,7 @@ Get the MetaprotocolValidity's invalid_reason
 
 
 
-<a name="0x4_ord_charm_reinscription_flag"></a>
+<a id="0x4_ord_charm_reinscription_flag"></a>
 
 ## Function `charm_reinscription_flag`
 
@@ -1635,7 +1635,7 @@ Get the MetaprotocolValidity's invalid_reason
 
 
 
-<a name="0x4_ord_charm_unbound_flag"></a>
+<a id="0x4_ord_charm_unbound_flag"></a>
 
 ## Function `charm_unbound_flag`
 
@@ -1646,7 +1646,7 @@ Get the MetaprotocolValidity's invalid_reason
 
 
 
-<a name="0x4_ord_charm_uncommon_flag"></a>
+<a id="0x4_ord_charm_uncommon_flag"></a>
 
 ## Function `charm_uncommon_flag`
 
@@ -1657,7 +1657,7 @@ Get the MetaprotocolValidity's invalid_reason
 
 
 
-<a name="0x4_ord_charm_vindicated_flag"></a>
+<a id="0x4_ord_charm_vindicated_flag"></a>
 
 ## Function `charm_vindicated_flag`
 
@@ -1668,7 +1668,7 @@ Get the MetaprotocolValidity's invalid_reason
 
 
 
-<a name="0x4_ord_charm_mythic_flag"></a>
+<a id="0x4_ord_charm_mythic_flag"></a>
 
 ## Function `charm_mythic_flag`
 
@@ -1679,7 +1679,7 @@ Get the MetaprotocolValidity's invalid_reason
 
 
 
-<a name="0x4_ord_charm_burned_flag"></a>
+<a id="0x4_ord_charm_burned_flag"></a>
 
 ## Function `charm_burned_flag`
 
@@ -1690,7 +1690,7 @@ Get the MetaprotocolValidity's invalid_reason
 
 
 
-<a name="0x4_ord_set_charm"></a>
+<a id="0x4_ord_set_charm"></a>
 
 ## Function `set_charm`
 
@@ -1701,7 +1701,7 @@ Get the MetaprotocolValidity's invalid_reason
 
 
 
-<a name="0x4_ord_is_set_charm"></a>
+<a id="0x4_ord_is_set_charm"></a>
 
 ## Function `is_set_charm`
 
@@ -1712,7 +1712,7 @@ Get the MetaprotocolValidity's invalid_reason
 
 
 
-<a name="0x4_ord_view_inscription_charm"></a>
+<a id="0x4_ord_view_inscription_charm"></a>
 
 ## Function `view_inscription_charm`
 

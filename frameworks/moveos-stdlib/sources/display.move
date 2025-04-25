@@ -36,38 +36,38 @@ module moveos_std::display {
 
     /// Set the key-value pair for the display object
     /// If the key already exists, the value will be updated, otherwise a new key-value pair will be created.
-    public fun set_value<T>(self: &mut Object<Display<T>>, key: String, value: String) {
-        let display_ref = object::borrow_mut(self);
+    public fun set_value<T>(obj: &mut Object<Display<T>>, key: String, value: String) {
+        let display_ref = object::borrow_mut(obj);
         simple_map::upsert(&mut display_ref.sample_map, key, value);
     }
 
-    public fun borrow_value<T>(self: & Object<Display<T>>, key: &String): &String {
-        let display_ref = object::borrow(self);
+    public fun borrow_value<T>(obj: & Object<Display<T>>, key: &String): &String {
+        let display_ref = object::borrow(obj);
         simple_map::borrow(&display_ref.sample_map, key)
     }
 
-    public fun borrow_mut_value<T>(self: &mut Object<Display<T>>, key: &String): &mut String {
-        let display_ref = object::borrow_mut(self);
+    public fun borrow_mut_value<T>(obj: &mut Object<Display<T>>, key: &String): &mut String {
+        let display_ref = object::borrow_mut(obj);
         simple_map::borrow_mut(&mut display_ref.sample_map, key)
     }
 
-    public fun remove_value<T>(self: &mut Object<Display<T>>, key: &String) {
-        let display_ref = object::borrow_mut(self);
+    public fun remove_value<T>(obj: &mut Object<Display<T>>, key: &String) {
+        let display_ref = object::borrow_mut(obj);
         simple_map::remove(&mut display_ref.sample_map, key);
     }
 
-    public fun keys<T>(self: & Object<Display<T>>): vector<String> {
-        let display_ref = object::borrow(self);
+    public fun keys<T>(obj: & Object<Display<T>>): vector<String> {
+        let display_ref = object::borrow(obj);
         simple_map::keys(&display_ref.sample_map)
     }
 
-    public fun values<T>(self: & Object<Display<T>>): vector<String> {
-        let display_ref = object::borrow(self);
+    public fun values<T>(obj: & Object<Display<T>>): vector<String> {
+        let display_ref = object::borrow(obj);
         simple_map::values(&display_ref.sample_map)
     }
 
-    public fun contains_key<T>(self: & Object<Display<T>>, key: &String): bool {
-        let display_ref = object::borrow(self);
+    public fun contains_key<T>(obj: & Object<Display<T>>, key: &String): bool {
+        let display_ref = object::borrow(obj);
         simple_map::contains_key(&display_ref.sample_map, key)
     }
 }

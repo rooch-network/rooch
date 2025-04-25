@@ -1,5 +1,5 @@
 
-<a name="0x2_type_info"></a>
+<a id="0x2_type_info"></a>
 
 # Module `0x2::type_info`
 
@@ -24,7 +24,7 @@
 
 
 
-<a name="0x2_type_info_TypeInfo"></a>
+<a id="0x2_type_info_TypeInfo"></a>
 
 ## Struct `TypeInfo`
 
@@ -35,12 +35,12 @@
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x2_type_info_ErrorTypeMismatch"></a>
+<a id="0x2_type_info_ErrorTypeMismatch"></a>
 
 
 
@@ -49,7 +49,7 @@
 
 
 
-<a name="0x2_type_info_account_address"></a>
+<a id="0x2_type_info_account_address"></a>
 
 ## Function `account_address`
 
@@ -60,7 +60,7 @@
 
 
 
-<a name="0x2_type_info_module_name"></a>
+<a id="0x2_type_info_module_name"></a>
 
 ## Function `module_name`
 
@@ -71,7 +71,7 @@
 
 
 
-<a name="0x2_type_info_struct_name"></a>
+<a id="0x2_type_info_struct_name"></a>
 
 ## Function `struct_name`
 
@@ -82,7 +82,7 @@
 
 
 
-<a name="0x2_type_info_type_of"></a>
+<a id="0x2_type_info_type_of"></a>
 
 ## Function `type_of`
 
@@ -93,7 +93,7 @@
 
 
 
-<a name="0x2_type_info_type_name"></a>
+<a id="0x2_type_info_type_name"></a>
 
 ## Function `type_name`
 
@@ -104,7 +104,7 @@
 
 
 
-<a name="0x2_type_info_size_of_val"></a>
+<a id="0x2_type_info_size_of_val"></a>
 
 ## Function `size_of_val`
 
@@ -122,6 +122,6 @@ analysis of vector size dynamism.
 
 
 
-<a name="@Module_Specification_1"></a>
+<a id="@Module_Specification_1"></a>
 
 ## Module Specification

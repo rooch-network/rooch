@@ -73,7 +73,7 @@ where
             address: Self::ADDRESS,
             module: Self::MODULE_NAME.to_owned(),
             name: Self::STRUCT_NAME.to_owned(),
-            type_params: vec![T::struct_tag().into()],
+            type_args: vec![T::struct_tag().into()],
         }
     }
 }
@@ -113,7 +113,7 @@ where
             address: Self::ADDRESS,
             module: Self::MODULE_NAME.to_owned(),
             name: Self::STRUCT_NAME.to_owned(),
-            type_params: vec![CoinType::struct_tag().into()],
+            type_args: vec![CoinType::struct_tag().into()],
         }
     }
 }
@@ -143,7 +143,7 @@ where
             address: Self::ADDRESS,
             module: Self::MODULE_NAME.to_owned(),
             name: Self::STRUCT_NAME.to_owned(),
-            type_params: vec![coin_type.into()],
+            type_args: vec![coin_type.into()],
         }
     }
 }
@@ -153,7 +153,7 @@ static INVALID_COIN_TYPE: Lazy<StructTag> = Lazy::new(|| StructTag {
     address: ROOCH_FRAMEWORK_ADDRESS,
     module: MODULE_NAME.to_owned(),
     name: ident_str!("InvalidCoinType").to_owned(),
-    type_params: vec![],
+    type_args: vec![],
 });
 
 impl<CoinType> CoinInfo<CoinType> {

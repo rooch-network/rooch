@@ -1,5 +1,5 @@
 
-<a name="0xa_brc20"></a>
+<a id="0xa_brc20"></a>
 
 # Module `0xa::brc20`
 
@@ -34,7 +34,7 @@
 
 
 
-<a name="0xa_brc20_BRC20CoinInfo"></a>
+<a id="0xa_brc20_BRC20CoinInfo"></a>
 
 ## Struct `BRC20CoinInfo`
 
@@ -45,7 +45,7 @@
 
 
 
-<a name="0xa_brc20_BRC20Balance"></a>
+<a id="0xa_brc20_BRC20Balance"></a>
 
 ## Struct `BRC20Balance`
 
@@ -56,7 +56,7 @@
 
 
 
-<a name="0xa_brc20_BRC20Store"></a>
+<a id="0xa_brc20_BRC20Store"></a>
 
 ## Resource `BRC20Store`
 
@@ -67,7 +67,7 @@
 
 
 
-<a name="0xa_brc20_Op"></a>
+<a id="0xa_brc20_Op"></a>
 
 ## Struct `Op`
 
@@ -79,7 +79,7 @@ The brc20 operation
 
 
 
-<a name="0xa_brc20_DeployOp"></a>
+<a id="0xa_brc20_DeployOp"></a>
 
 ## Struct `DeployOp`
 
@@ -101,7 +101,7 @@ https://domo-2.gitbook.io/brc-20-experiment/
 
 
 
-<a name="0xa_brc20_MintOp"></a>
+<a id="0xa_brc20_MintOp"></a>
 
 ## Struct `MintOp`
 
@@ -122,7 +122,7 @@ https://domo-2.gitbook.io/brc-20-experiment/
 
 
 
-<a name="0xa_brc20_TransferOp"></a>
+<a id="0xa_brc20_TransferOp"></a>
 
 ## Struct `TransferOp`
 
@@ -143,7 +143,7 @@ https://domo-2.gitbook.io/brc-20-experiment/
 
 
 
-<a name="0xa_brc20_genesis_init"></a>
+<a id="0xa_brc20_genesis_init"></a>
 
 ## Function `genesis_init`
 
@@ -154,7 +154,7 @@ https://domo-2.gitbook.io/brc-20-experiment/
 
 
 
-<a name="0xa_brc20_new_op"></a>
+<a id="0xa_brc20_new_op"></a>
 
 ## Function `new_op`
 
@@ -165,7 +165,7 @@ https://domo-2.gitbook.io/brc-20-experiment/
 
 
 
-<a name="0xa_brc20_clone_op"></a>
+<a id="0xa_brc20_clone_op"></a>
 
 ## Function `clone_op`
 
@@ -176,7 +176,7 @@ https://domo-2.gitbook.io/brc-20-experiment/
 
 
 
-<a name="0xa_brc20_drop_op"></a>
+<a id="0xa_brc20_drop_op"></a>
 
 ## Function `drop_op`
 
@@ -187,7 +187,7 @@ https://domo-2.gitbook.io/brc-20-experiment/
 
 
 
-<a name="0xa_brc20_is_brc20"></a>
+<a id="0xa_brc20_is_brc20"></a>
 
 ## Function `is_brc20`
 
@@ -198,7 +198,7 @@ https://domo-2.gitbook.io/brc-20-experiment/
 
 
 
-<a name="0xa_brc20_process_utxo_op"></a>
+<a id="0xa_brc20_process_utxo_op"></a>
 
 ## Function `process_utxo_op`
 
@@ -209,7 +209,7 @@ https://domo-2.gitbook.io/brc-20-experiment/
 
 
 
-<a name="0xa_brc20_process_inscribe_op"></a>
+<a id="0xa_brc20_process_inscribe_op"></a>
 
 ## Function `process_inscribe_op`
 
@@ -220,7 +220,7 @@ https://domo-2.gitbook.io/brc-20-experiment/
 
 
 
-<a name="0xa_brc20_get_tick_info"></a>
+<a id="0xa_brc20_get_tick_info"></a>
 
 ## Function `get_tick_info`
 
@@ -231,7 +231,7 @@ https://domo-2.gitbook.io/brc-20-experiment/
 
 
 
-<a name="0xa_brc20_get_balance"></a>
+<a id="0xa_brc20_get_balance"></a>
 
 ## Function `get_balance`
 

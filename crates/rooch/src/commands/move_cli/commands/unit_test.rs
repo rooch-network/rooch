@@ -9,6 +9,8 @@ use codespan_reporting::diagnostic::Severity;
 use move_cli::{base::test, Move};
 use move_command_line_common::address::NumericalAddress;
 use move_command_line_common::parser::NumberFormat;
+use move_core_types::effects::ChangeSet;
+use move_model::metadata::{CompilerVersion, LanguageVersion};
 use move_unit_test::extensions::set_extension_hook;
 use move_vm_runtime::native_extensions::NativeContextExtensions;
 use moveos_config::DataDirPath;
@@ -67,6 +69,9 @@ impl CommandAction<Option<Value>> for TestCommand {
             .additional_named_addresses
             .extend(context.parse_and_resolve_addresses(self.named_addresses)?);
 
+        build_config.compiler_config.language_version = Some(LanguageVersion::V2_1);
+        build_config.compiler_config.compiler_version = Some(CompilerVersion::V2_1);
+
         let root_path = self
             .move_args
             .package_path
@@ -115,6 +120,7 @@ impl CommandAction<Option<Value>> for TestCommand {
             self.move_args.package_path,
             build_config,
             natives,
+            ChangeSet::new(),
             Some(cost_table),
         )?;
 

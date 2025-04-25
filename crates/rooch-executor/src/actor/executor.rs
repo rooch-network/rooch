@@ -13,7 +13,7 @@ use coerce::actor::{context::ActorContext, message::Handler, Actor, LocalActorRe
 use function_name::named;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::vm_status::VMStatus;
-use moveos::moveos::{MoveOS, MoveOSConfig};
+use moveos::moveos::{MoveOS, MoveOSCacheManager};
 use moveos::vm::vm_status_explainer::explain_vm_status;
 use moveos_eventbus::bus::EventData;
 use moveos_store::MoveOSStore;
@@ -28,7 +28,6 @@ use moveos_types::state_resolver::RootObjectResolver;
 use moveos_types::transaction::{FunctionCall, MoveOSTransaction, VerifiedMoveAction};
 use moveos_types::transaction::{MoveAction, VerifiedMoveOSTransaction};
 use prometheus::Registry;
-use rooch_genesis::FrameworksGasParameters;
 use rooch_notify::actor::NotifyActor;
 use rooch_notify::event::GasUpgradeEvent;
 use rooch_notify::messages::{GasUpgradeMessage, NotifyActorSubscribeMessage};
@@ -60,6 +59,7 @@ pub struct ExecutorActor {
     rooch_store: RoochStore,
     metrics: Arc<ExecutorMetrics>,
     notify_actor: Option<LocalActorRef<NotifyActor>>,
+    global_cache_manager: MoveOSCacheManager,
 }
 
 type ValidateAuthenticatorResult = Result<TxValidateResult, VMStatus>;
@@ -71,16 +71,13 @@ impl ExecutorActor {
         rooch_store: RoochStore,
         registry: &Registry,
         notify_actor: Option<LocalActorRef<NotifyActor>>,
+        global_cache_manager: MoveOSCacheManager,
     ) -> Result<Self> {
-        let resolver = RootObjectResolver::new(root.clone(), &moveos_store);
-        let gas_parameters = FrameworksGasParameters::load_from_chain(&resolver)?;
-
         let moveos = MoveOS::new(
             moveos_store.clone(),
-            gas_parameters.all_natives(),
-            MoveOSConfig::default(),
             system_pre_execute_functions(),
             system_post_execute_functions(),
+            global_cache_manager.clone(),
         )?;
 
         Ok(Self {
@@ -90,6 +87,7 @@ impl ExecutorActor {
             rooch_store,
             metrics: Arc::new(ExecutorMetrics::new(registry)),
             notify_actor,
+            global_cache_manager,
         })
     }
 
@@ -546,15 +544,11 @@ impl Handler<EventData> for ExecutorActor {
         if let Ok(_gas_upgrade_msg) = message.data.downcast::<GasUpgradeEvent>() {
             tracing::info!("ExecutorActor: Reload the MoveOS instance...");
 
-            let resolver = RootObjectResolver::new(self.root.clone(), &self.moveos_store);
-            let gas_parameters = FrameworksGasParameters::load_from_chain(&resolver)?;
-
             self.moveos = MoveOS::new(
                 self.moveos_store.clone(),
-                gas_parameters.all_natives(),
-                MoveOSConfig::default(),
                 system_pre_execute_functions(),
                 system_post_execute_functions(),
+                self.global_cache_manager.clone(),
             )?;
         }
         Ok(())

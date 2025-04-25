@@ -85,7 +85,7 @@ fn export_rooch_types_yaml(file_path: &String) -> RoochResult<()> {
         address: AccountAddress::random(),
         module: Identifier::new("Module").unwrap(),
         name: Identifier::new("Name").unwrap(),
-        type_params: vec![TypeTag::Bool],
+        type_args: vec![TypeTag::Bool],
     };
     tracer
         .trace_value(&mut samples, &example_struct_tag)

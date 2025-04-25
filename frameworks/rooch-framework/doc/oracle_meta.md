@@ -1,5 +1,5 @@
 
-<a name="0x3_oracle_meta"></a>
+<a id="0x3_oracle_meta"></a>
 
 # Module `0x3::oracle_meta`
 
@@ -31,7 +31,7 @@
 
 
 
-<a name="0x3_oracle_meta_MetaOracle"></a>
+<a id="0x3_oracle_meta_MetaOracle"></a>
 
 ## Struct `MetaOracle`
 
@@ -42,7 +42,7 @@
 
 
 
-<a name="0x3_oracle_meta_TrustedData"></a>
+<a id="0x3_oracle_meta_TrustedData"></a>
 
 ## Struct `TrustedData`
 
@@ -53,12 +53,12 @@
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x3_oracle_meta_ErrorUnsupportedDataType"></a>
+<a id="0x3_oracle_meta_ErrorUnsupportedDataType"></a>
 
 
 
@@ -67,7 +67,7 @@
 
 
 
-<a name="0x3_oracle_meta_ErrorValidDataSizeLessThanThreshold"></a>
+<a id="0x3_oracle_meta_ErrorValidDataSizeLessThanThreshold"></a>
 
 
 
@@ -76,7 +76,7 @@
 
 
 
-<a name="0x3_oracle_meta_new"></a>
+<a id="0x3_oracle_meta_new"></a>
 
 ## Function `new`
 
@@ -87,7 +87,7 @@
 
 
 
-<a name="0x3_oracle_meta_add_simple_oracle"></a>
+<a id="0x3_oracle_meta_add_simple_oracle"></a>
 
 ## Function `add_simple_oracle`
 
@@ -98,7 +98,7 @@
 
 
 
-<a name="0x3_oracle_meta_median"></a>
+<a id="0x3_oracle_meta_median"></a>
 
 ## Function `median`
 
@@ -110,7 +110,7 @@ take the median value
 
 
 
-<a name="0x3_oracle_meta_data"></a>
+<a id="0x3_oracle_meta_data"></a>
 
 ## Function `data`
 
@@ -121,7 +121,7 @@ take the median value
 
 
 
-<a name="0x3_oracle_meta_threshold"></a>
+<a id="0x3_oracle_meta_threshold"></a>
 
 ## Function `threshold`
 
@@ -132,7 +132,7 @@ take the median value
 
 
 
-<a name="0x3_oracle_meta_time_window_ms"></a>
+<a id="0x3_oracle_meta_time_window_ms"></a>
 
 ## Function `time_window_ms`
 
@@ -143,7 +143,7 @@ take the median value
 
 
 
-<a name="0x3_oracle_meta_ticker"></a>
+<a id="0x3_oracle_meta_ticker"></a>
 
 ## Function `ticker`
 
@@ -154,7 +154,7 @@ take the median value
 
 
 
-<a name="0x3_oracle_meta_max_timestamp"></a>
+<a id="0x3_oracle_meta_max_timestamp"></a>
 
 ## Function `max_timestamp`
 
@@ -165,7 +165,7 @@ take the median value
 
 
 
-<a name="0x3_oracle_meta_value"></a>
+<a id="0x3_oracle_meta_value"></a>
 
 ## Function `value`
 
@@ -176,7 +176,7 @@ take the median value
 
 
 
-<a name="0x3_oracle_meta_oracles"></a>
+<a id="0x3_oracle_meta_oracles"></a>
 
 ## Function `oracles`
 

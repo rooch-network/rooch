@@ -2,6 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::data_cache::{into_change_set, MoveosDataCache};
+use crate::moveos::MoveOSCacheManager;
+use crate::vm::module_cache::{
+    GlobalModuleCache, MoveOSCodeCache, RoochModuleExtension, StateValue,
+};
+use bytes::Bytes;
 use move_binary_format::compatibility::Compatibility;
 use move_binary_format::file_format::CompiledScript;
 use move_binary_format::{
@@ -11,29 +16,27 @@ use move_binary_format::{
     CompiledModule, IndexKind,
 };
 use move_core_types::{
-    account_address::AccountAddress,
-    identifier::Identifier,
     language_storage::{ModuleId, TypeTag},
     value::MoveTypeLayout,
     vm_status::{KeptVMStatus, StatusCode},
 };
 use move_model::script_into_module;
 use move_vm_runtime::data_cache::TransactionCache;
+use move_vm_runtime::module_traversal::{TraversalContext, TraversalStorage};
 use move_vm_runtime::{
-    config::VMConfig,
-    move_vm::MoveVM,
-    native_extensions::NativeContextExtensions,
-    native_functions::NativeFunction,
-    session::{LoadedFunctionInstantiation, Session},
+    move_vm::MoveVM, native_extensions::NativeContextExtensions, session::Session, LoadedFunction,
+    Module, ModuleStorage, RuntimeEnvironment,
 };
+use move_vm_types::code::ModuleCache;
 use move_vm_types::gas::UnmeteredGasMeter;
-use move_vm_types::loaded_data::runtime_types::{CachedStructIndex, StructType, Type};
+use move_vm_types::loaded_data::runtime_types::{StructNameIndex, StructType, Type};
 use moveos_common::types::{ClassifiedGasMeter, SwitchableGasMeter};
 use moveos_object_runtime::runtime::{ObjectRuntime, ObjectRuntimeContext};
 use moveos_stdlib::natives::moveos_stdlib::{
     event::NativeEventContext, move_module::NativeModuleContext,
 };
 use moveos_store::load_feature_store_object;
+use moveos_types::moveos_std::module_store::PackageData;
 use moveos_types::state::ObjectState;
 use moveos_types::{addresses, transaction::RawTransactionOutput};
 use moveos_types::{
@@ -59,12 +62,10 @@ pub struct MoveOSVM {
 }
 
 impl MoveOSVM {
-    pub fn new(
-        natives: impl IntoIterator<Item = (AccountAddress, Identifier, Identifier, NativeFunction)>,
-        vm_config: VMConfig,
-    ) -> VMResult<Self> {
+    pub fn new(moveos_cache_manager: MoveOSCacheManager) -> VMResult<Self> {
+        let env = moveos_cache_manager.runtime_environment.read();
         Ok(Self {
-            inner: MoveVM::new_with_config(natives, vm_config)?,
+            inner: MoveVM::new_with_runtime_environment(&env),
         })
     }
 
@@ -77,10 +78,22 @@ impl MoveOSVM {
         remote: &'r S,
         ctx: TxContext,
         gas_meter: G,
+        global_module_cache: Arc<
+            RwLock<GlobalModuleCache<ModuleId, CompiledModule, Module, RoochModuleExtension>>,
+        >,
+        runtime_environment: &'r RuntimeEnvironment,
     ) -> MoveOSSession<'r, '_, S, G> {
         let root = remote.root();
         let object_runtime = Rc::new(RwLock::new(ObjectRuntime::new(ctx, root.clone(), remote)));
-        MoveOSSession::new(&self.inner, remote, object_runtime, gas_meter, false)
+        MoveOSSession::new(
+            &self.inner,
+            remote,
+            object_runtime,
+            gas_meter,
+            false,
+            global_module_cache.clone(),
+            runtime_environment,
+        )
     }
 
     pub fn new_genesis_session<'r, S: MoveOSResolver>(
@@ -88,6 +101,10 @@ impl MoveOSVM {
         remote: &'r S,
         ctx: TxContext,
         genesis_objects: Vec<(ObjectState, MoveTypeLayout)>,
+        global_module_cache: Arc<
+            RwLock<GlobalModuleCache<ModuleId, CompiledModule, Module, RoochModuleExtension>>,
+        >,
+        runtime_environment: &'r RuntimeEnvironment,
     ) -> MoveOSSession<'r, '_, S, UnmeteredGasMeter> {
         let root = remote.root();
         let object_runtime = Rc::new(RwLock::new(ObjectRuntime::genesis(
@@ -104,6 +121,8 @@ impl MoveOSVM {
             object_runtime,
             UnmeteredGasMeter,
             false,
+            global_module_cache.clone(),
+            runtime_environment,
         )
     }
 
@@ -116,20 +135,59 @@ impl MoveOSVM {
         remote: &'r S,
         ctx: TxContext,
         gas_meter: G,
+        global_module_cache: Arc<
+            RwLock<GlobalModuleCache<ModuleId, CompiledModule, Module, RoochModuleExtension>>,
+        >,
+        runtime_environment: &'r RuntimeEnvironment,
     ) -> MoveOSSession<'r, '_, S, G> {
         let root = remote.root();
         let object_runtime = Rc::new(RwLock::new(ObjectRuntime::new(ctx, root.clone(), remote)));
-        MoveOSSession::new(&self.inner, remote, object_runtime, gas_meter, true)
+        MoveOSSession::new(
+            &self.inner,
+            remote,
+            object_runtime,
+            gas_meter,
+            true,
+            global_module_cache.clone(),
+            runtime_environment,
+        )
     }
 
     pub fn mark_loader_cache_as_invalid(&self) {
-        self.inner.mark_loader_cache_as_invalid()
+        //self.inner.mark_loader_cache_as_invalid()
     }
 
     pub fn inner(&self) -> &MoveVM {
         &self.inner
     }
 }
+
+/*
+fn into_module_cache_iterator(
+    compiled_modules: &Vec<CompiledModule>,
+    module_bundle: &Vec<Vec<u8>>,
+    _runtime_environment: &RuntimeEnvironment,
+) -> impl Iterator<
+    Item = (
+        ModuleId,
+        Arc<ModuleCode<CompiledModule, Module, RoochModuleExtension>>,
+    ),
+> {
+    let mut module_code_list = vec![];
+    for (idx, m) in compiled_modules.iter().enumerate() {
+        let bytes = module_bundle[idx].clone();
+        let extension = Arc::new(RoochModuleExtension::new(StateValue::new_legacy(
+            Bytes::copy_from_slice(bytes.as_slice()),
+        )));
+        let module = ModuleCode::from_deserialized(m.clone(), extension);
+        let module_code = Arc::new(module);
+
+        module_code_list.push((m.self_id(), module_code));
+    }
+
+    module_code_list.into_iter()
+}
+ */
 
 /// MoveOSSession is a wrapper of MoveVM session with MoveOS specific features.
 /// It is used to execute a transaction, every transaction should be executed in a new session.
@@ -140,6 +198,7 @@ pub struct MoveOSSession<'r, 'l, S, G> {
     pub(crate) session: Session<'r, 'l, MoveosDataCache<'r, 'l, S>>,
     pub(crate) object_runtime: Rc<RwLock<ObjectRuntime<'r>>>,
     pub(crate) gas_meter: G,
+    pub(crate) code_cache: MoveOSCodeCache<'r, S>,
     pub(crate) read_only: bool,
 }
 
@@ -155,13 +214,28 @@ where
         object_runtime: Rc<RwLock<ObjectRuntime<'r>>>,
         gas_meter: G,
         read_only: bool,
+        global_module_cache: Arc<
+            RwLock<GlobalModuleCache<ModuleId, CompiledModule, Module, RoochModuleExtension>>,
+        >,
+        runtime_environment: &'r RuntimeEnvironment,
     ) -> Self {
         Self {
             vm,
             remote,
-            session: Self::new_inner_session(vm, remote, object_runtime.clone()),
+            session: Self::new_inner_session(
+                vm,
+                remote,
+                object_runtime.clone(),
+                global_module_cache.clone(),
+                runtime_environment,
+            ),
             object_runtime,
             gas_meter,
+            code_cache: MoveOSCodeCache::new(
+                global_module_cache.clone(),
+                runtime_environment,
+                remote,
+            ),
             read_only,
         }
     }
@@ -174,7 +248,13 @@ where
         let root = self.remote.root().clone();
         let object_runtime = Rc::new(RwLock::new(ObjectRuntime::new(new_ctx, root, self.remote)));
         Self {
-            session: Self::new_inner_session(self.vm, self.remote, object_runtime.clone()),
+            session: Self::new_inner_session(
+                self.vm,
+                self.remote,
+                object_runtime.clone(),
+                self.code_cache.global_module_cache.clone(),
+                self.code_cache.runtime_environment,
+            ),
             object_runtime,
             ..self
         }
@@ -184,6 +264,10 @@ where
         vm: &'l MoveVM,
         remote: &'r S,
         object_runtime: Rc<RwLock<ObjectRuntime<'r>>>,
+        global_module_cache: Arc<
+            RwLock<GlobalModuleCache<ModuleId, CompiledModule, Module, RoochModuleExtension>>,
+        >,
+        runtime_environment: &'r RuntimeEnvironment,
     ) -> Session<'r, 'l, MoveosDataCache<'r, 'l, S>> {
         let mut extensions = NativeContextExtensions::default();
 
@@ -198,11 +282,15 @@ where
         // The VM code loader has bugs around module upgrade. After a module upgrade, the internal
         // cache needs to be flushed to work around those bugs.
         // vm.mark_loader_cache_as_invalid();
-        vm.flush_loader_cache_if_invalidated();
+        // vm.flush_loader_cache_if_invalidated();
         let loader = vm.runtime.loader();
-        let data_store: MoveosDataCache<'r, 'l, S> =
-            MoveosDataCache::new(remote, loader, object_runtime);
-        vm.new_session_with_cache_and_extensions(data_store, extensions)
+        let data_store: MoveosDataCache<'r, 'l, S> = MoveosDataCache::new(
+            remote,
+            loader,
+            object_runtime,
+            MoveOSCodeCache::new(global_module_cache.clone(), runtime_environment, remote),
+        );
+        vm.new_session_with_extensions_legacy(data_store, extensions)
     }
 
     pub(crate) fn tx_context(&self) -> TxContext {
@@ -212,24 +300,36 @@ where
     /// Verify a move action.
     /// The caller should call this function when validate a transaction.
     /// If the result is error, the transaction should be rejected.
-    pub fn verify_move_action(&self, action: MoveAction) -> VMResult<VerifiedMoveAction> {
+    pub fn verify_move_action(&mut self, action: MoveAction) -> VMResult<VerifiedMoveAction> {
         match action {
             MoveAction::Script(call) => {
-                let loaded_function = self
-                    .session
-                    .load_script(call.code.as_slice(), call.ty_args.clone())?;
+                let loaded_function = self.session.load_script(
+                    &self.code_cache,
+                    call.code.as_slice(),
+                    call.ty_args.as_slice(),
+                )?;
                 let location = Location::Script;
-                moveos_verifier::verifier::verify_entry_function(&loaded_function, &self.session)
-                    .map_err(|e| e.finish(location.clone()))?;
-                let _serialized_args =
-                    self.resolve_argument(&loaded_function, call.args.clone(), location, false)?;
+                moveos_verifier::verifier::verify_entry_function(
+                    &loaded_function,
+                    &self.session,
+                    &self.code_cache,
+                )
+                .map_err(|e| e.finish(location.clone()))?;
+                let _serialized_args = self.resolve_argument(
+                    &loaded_function,
+                    call.args.clone(),
+                    location,
+                    false,
+                    &self.code_cache,
+                )?;
 
                 let compiled_script_opt = CompiledScript::deserialize(call.code.as_slice());
                 let compiled_script = match compiled_script_opt {
                     Ok(v) => v,
                     Err(err) => return Err(err.finish(Location::Undefined)),
                 };
-                let script_module = script_into_module(compiled_script);
+                let script_module =
+                    script_into_module(compiled_script, "__temp_module_from_script");
                 let modules = vec![script_module];
                 let result = moveos_verifier::verifier::verify_modules(&modules, self.remote);
                 match result {
@@ -241,15 +341,25 @@ where
             }
             MoveAction::Function(call) => {
                 let loaded_function = self.session.load_function(
+                    &self.code_cache,
                     &call.function_id.module_id,
                     &call.function_id.function_name,
                     call.ty_args.as_slice(),
                 )?;
                 let location = Location::Module(call.function_id.module_id.clone());
-                moveos_verifier::verifier::verify_entry_function(&loaded_function, &self.session)
-                    .map_err(|e| e.finish(location.clone()))?;
-                let _resolved_args =
-                    self.resolve_argument(&loaded_function, call.args.clone(), location, false)?;
+                moveos_verifier::verifier::verify_entry_function(
+                    &loaded_function,
+                    &self.session,
+                    &self.code_cache,
+                )
+                .map_err(|e| e.finish(location.clone()))?;
+                let _resolved_args = self.resolve_argument(
+                    &loaded_function,
+                    call.args.clone(),
+                    location,
+                    false,
+                    &self.code_cache,
+                )?;
                 Ok(VerifiedMoveAction::Function {
                     call,
                     bypass_visibility: false,
@@ -273,6 +383,7 @@ where
                     Err(err) => return Err(err),
                 }
 
+                /*
                 self.vm
                     .runtime
                     .loader()
@@ -280,6 +391,7 @@ where
                         compiled_modules.as_slice(),
                         &self.session.data_cache,
                     )?;
+                 */
 
                 let mut init_function_modules = vec![];
 
@@ -308,40 +420,104 @@ where
     /// Once we start executing transactions, we must ensure that the transaction execution has a result, regardless of success or failure,
     /// and we need to save the result and deduct gas
     pub fn execute_move_action(&mut self, action: VerifiedMoveAction) -> VMResult<()> {
+        let traversal_storage = TraversalStorage::new();
+        let mut traversal_context = TraversalContext::new(&traversal_storage);
+
         let action_result = match action {
             VerifiedMoveAction::Script { call } => {
-                let loaded_function = self
-                    .session
-                    .load_script(call.code.as_slice(), call.ty_args.clone())?;
+                let loaded_function = self.session.load_script(
+                    &self.code_cache,
+                    call.code.as_slice(),
+                    call.ty_args.as_slice(),
+                )?;
                 let location: Location = Location::Script;
-                let serialized_args =
-                    self.resolve_argument(&loaded_function, call.args, location, true)?;
-                self.session
-                    .execute_script(
-                        call.code,
-                        call.ty_args,
-                        serialized_args,
-                        &mut self.gas_meter,
-                    )
-                    .map(|ret| {
-                        debug_assert!(
-                            ret.return_values.is_empty(),
-                            "Script function should not return values"
-                        );
-                    })
+                let serialized_args = self.resolve_argument(
+                    &loaded_function,
+                    call.args,
+                    location,
+                    true,
+                    &self.code_cache,
+                )?;
+
+                self.session.execute_script(
+                    call.code,
+                    call.ty_args,
+                    serialized_args,
+                    &mut self.gas_meter,
+                    &mut traversal_context,
+                    &self.code_cache,
+                )
             }
             VerifiedMoveAction::Function {
                 call,
                 bypass_visibility,
             } => {
+                let full_fn_name = format!(
+                    "{}::{}",
+                    call.function_id.module_id.short_str_lossless(),
+                    call.function_id.function_name
+                );
+                if full_fn_name == "0x2::module_store::publish_package_entry" {
+                    let first_arg_bytes = match call.args.first() {
+                        Some(arg) => arg,
+                        None => {
+                            return Err(PartialVMError::new(StatusCode::ABORTED)
+                                .with_message("Missing first argument".to_string())
+                                .finish(Location::Module(call.function_id.module_id.clone())))
+                        }
+                    };
+                    let pkg_bytes: Vec<u8> = match bcs_sys::from_bytes(first_arg_bytes) {
+                        Ok(v) => v,
+                        Err(_) => {
+                            return Err(PartialVMError::new(StatusCode::ABORTED)
+                                .with_message("Invalid package bytes data".to_string())
+                                .finish(Location::Module(call.function_id.module_id.clone())))
+                        }
+                    };
+                    let pkg_data: PackageData = match bcs_sys::from_bytes(pkg_bytes.as_slice()) {
+                        Ok(v) => v,
+                        Err(_) => {
+                            return Err(PartialVMError::new(StatusCode::ABORTED)
+                                .with_message("Invalid package data".to_string())
+                                .finish(Location::Module(call.function_id.module_id.clone())))
+                        }
+                    };
+
+                    for module_bytes in pkg_data.modules {
+                        let module = match CompiledModule::deserialize(&module_bytes) {
+                            Ok(v) => v,
+                            Err(_) => {
+                                return Err(PartialVMError::new(StatusCode::ABORTED)
+                                    .with_message("Invalid module data".to_string())
+                                    .finish(Location::Module(call.function_id.module_id.clone())))
+                            }
+                        };
+                        let extension = Arc::new(RoochModuleExtension::new(
+                            StateValue::new_legacy(Bytes::copy_from_slice(module_bytes.as_slice())),
+                        ));
+                        self.code_cache.module_cache.insert_deserialized_module(
+                            module.self_id(),
+                            module.clone(),
+                            extension,
+                            Some(1),
+                        )?
+                    }
+                }
+
                 let loaded_function = self.session.load_function(
+                    &self.code_cache,
                     &call.function_id.module_id,
                     &call.function_id.function_name,
                     call.ty_args.as_slice(),
                 )?;
                 let location = Location::Module(call.function_id.module_id.clone());
-                let serialized_args =
-                    self.resolve_argument(&loaded_function, call.args, location, true)?;
+                let serialized_args = self.resolve_argument(
+                    &loaded_function,
+                    call.args.clone(),
+                    location,
+                    true,
+                    &self.code_cache,
+                )?;
                 if bypass_visibility {
                     // bypass visibility call is system call, such as execute L1 block transaction
                     self.session
@@ -351,6 +527,8 @@ where
                             call.ty_args.clone(),
                             serialized_args,
                             &mut self.gas_meter,
+                            &mut traversal_context,
+                            &self.code_cache,
                         )
                         .map(|ret| {
                             debug_assert!(
@@ -359,20 +537,19 @@ where
                             );
                         })
                 } else {
-                    self.session
-                        .execute_entry_function(
-                            &call.function_id.module_id,
-                            &call.function_id.function_name,
-                            call.ty_args.clone(),
-                            serialized_args,
-                            &mut self.gas_meter,
-                        )
-                        .map(|ret| {
-                            debug_assert!(
-                                ret.return_values.is_empty(),
-                                "Entry function should not return values"
-                            );
-                        })
+                    let loaded_function = self.session.load_function(
+                        &self.code_cache,
+                        &call.function_id.module_id,
+                        &call.function_id.function_name,
+                        call.ty_args.as_slice(),
+                    )?;
+                    self.session.execute_entry_function(
+                        loaded_function,
+                        serialized_args,
+                        &mut self.gas_meter,
+                        &mut traversal_context,
+                        &self.code_cache,
+                    )
                 }
             }
             VerifiedMoveAction::ModuleBundle {
@@ -428,6 +605,29 @@ where
                     }
                 }
 
+                for (idx, m) in compiled_modules.iter().enumerate() {
+                    let bytes = module_bundle[idx].clone();
+                    let extension = Arc::new(RoochModuleExtension::new(StateValue::new_legacy(
+                        Bytes::copy_from_slice(bytes.as_slice()),
+                    )));
+                    self.code_cache.module_cache.insert_deserialized_module(
+                        m.self_id(),
+                        m.clone(),
+                        extension,
+                        Some(1),
+                    )?
+                }
+
+                /*
+                let module_code_list = into_module_cache_iterator(
+                    &compiled_modules,
+                    &module_bundle,
+                    self.code_cache.runtime_environment,
+                );
+                self.insert_global_module_cache(module_code_list)?;
+
+                 */
+
                 // Collect ids for modules that are published together
                 let mut bundle_unverified = BTreeSet::new();
 
@@ -438,7 +638,30 @@ where
                     let module_id = module.self_id();
 
                     if data_store.exists_module(&module_id)? && compat.need_check_compat() {
-                        let old_module = self.vm.load_module(&module_id, &self.remote)?;
+                        let old_module_bytes = match self.remote.get_module(&module_id) {
+                            Ok(Some(v)) => v,
+                            Ok(None) => {
+                                return Err(PartialVMError::new(
+                                    StatusCode::RESOURCE_DOES_NOT_EXIST,
+                                )
+                                .finish(Location::Module(module_id)))
+                            }
+                            Err(e) => {
+                                return Err(PartialVMError::new(
+                                    StatusCode::RESOURCE_DOES_NOT_EXIST,
+                                )
+                                .with_message(e.to_string())
+                                .finish(Location::Module(module_id)))
+                            }
+                        };
+                        let old_module = match CompiledModule::deserialize(&old_module_bytes) {
+                            Ok(v) => v,
+                            Err(_) => {
+                                return Err(PartialVMError::new(StatusCode::ABORTED)
+                                    .with_message("CompiledModule::deserialize failed".to_string())
+                                    .finish(Location::Module(module_id)))
+                            }
+                        };
                         compat
                             .check(&old_module, module)
                             .map_err(|e| e.finish(Location::Undefined))?;
@@ -449,18 +672,36 @@ where
                     }
                 }
 
-                // Perform bytecode and loading verification. Modules must be sorted in topological order.
-                self.vm
-                    .runtime
-                    .loader()
-                    .verify_module_bundle_for_publication(&compiled_modules, data_store)?;
+                // Perform bytecode and move verifier verification.
+                // Modules must be sorted in topological order.
+                for module in &compiled_modules {
+                    let module_address = module.address();
+                    let module_name = module.name();
+                    match &self
+                        .code_cache
+                        .fetch_verified_module(module_address, module_name)
+                    {
+                        Ok(_) => {}
+                        Err(e) => {
+                            tracing::info!(
+                                "execute_move_action module verification error: {:?}",
+                                e
+                            );
+                            return Err(PartialVMError::new(StatusCode::ABORTED)
+                                .with_message(e.to_string())
+                                .finish(Location::Module(module.self_id())));
+                        }
+                    }
+                }
 
                 for (module, blob) in compiled_modules.into_iter().zip(module_bundle.into_iter()) {
                     let is_republishing = data_store.exists_module(&module.self_id())?;
                     if is_republishing {
                         // This is an upgrade, so invalidate the loader cache, which still contains the
                         // old module.
-                        self.vm.mark_loader_cache_as_invalid();
+
+                        // #TODO: Should the newly deployed module be cleared from the module_cache?
+                        // self.vm.mark_loader_cache_as_invalid();
                     }
                     data_store.publish_module(&module.self_id(), blob, is_republishing)?;
                 }
@@ -470,6 +711,7 @@ where
         };
 
         if action_result.is_ok() {
+            self.save_module_to_cache()?;
             self.resolve_pending_init_functions()?;
             // Check if there are modules upgrading
             let module_flag = self.tx_context().get::<ModuleUpgradeFlag>().map_err(|e| {
@@ -479,12 +721,32 @@ where
             })?;
             let is_upgrade = module_flag.map_or(false, |flag| flag.is_upgrade);
             if is_upgrade {
-                self.vm.mark_loader_cache_as_invalid();
+                // the V1 calling of Loader must be disabled
+                //self.vm.mark_loader_cache_as_invalid();
             };
         }
 
         action_result
     }
+
+    /*
+    fn insert_global_module_cache(
+        &mut self,
+        modules: impl Iterator<
+            Item = (
+                ModuleId,
+                Arc<ModuleCode<CompiledModule, Module, RoochModuleExtension>>,
+            ),
+        >,
+    ) -> VMResult<()> {
+        let mut write_guard = self.code_cache.global_module_cache.write();
+        write_guard
+            .insert_verified(modules)
+            .expect("write_guard.insert_verified failed");
+
+        Ok(())
+    }
+     */
 
     /// Resolve pending init functions request registered via the NativeModuleContext.
     fn resolve_pending_init_functions(&mut self) -> VMResult<()> {
@@ -500,28 +762,71 @@ where
         }
     }
 
+    pub fn save_module_to_cache(&mut self) -> VMResult<()> {
+        let ctx = self
+            .session
+            .get_native_extensions_mut()
+            .get_mut::<NativeModuleContext>();
+        let published_functions = ctx.publish_modules.clone();
+
+        for (m_id, m) in published_functions.iter() {
+            let mut module_bytes = Vec::new();
+            match m.serialize(&mut module_bytes) {
+                Ok(_) => (),
+                Err(_) => {
+                    return Err(PartialVMError::new(StatusCode::UNKNOWN_SERIALIZED_TYPE)
+                        .with_message("module serialization failed".to_string())
+                        .finish(Location::Module(m_id.clone())))
+                }
+            };
+            let bytes = Bytes::copy_from_slice(module_bytes.as_slice());
+
+            let extension = Arc::new(RoochModuleExtension::new(StateValue::new_legacy(bytes)));
+            self.code_cache.module_cache.insert_deserialized_module(
+                m_id.clone(),
+                m.clone(),
+                extension,
+                Some(1),
+            )?
+        }
+
+        Ok(())
+    }
+
     pub fn execute_function_bypass_visibility(
         &mut self,
         call: FunctionCall,
     ) -> VMResult<Vec<FunctionReturnValue>> {
+        let traversal_storage = TraversalStorage::new();
+        let mut traversal_context = TraversalContext::new(&traversal_storage);
+
         let loaded_function = self.session.load_function(
+            &self.code_cache,
             &call.function_id.module_id,
             &call.function_id.function_name,
             call.ty_args.as_slice(),
         )?;
         let location = Location::Module(call.function_id.module_id.clone());
-        let serialized_args = self.resolve_argument(&loaded_function, call.args, location, true)?;
+        let serialized_args = self.resolve_argument(
+            &loaded_function,
+            call.args,
+            location,
+            true,
+            &self.code_cache,
+        )?;
         let return_values = self.session.execute_function_bypass_visibility(
             &call.function_id.module_id,
-            &call.function_id.function_name,
+            call.function_id.function_name.as_ident_str(),
             call.ty_args,
             serialized_args,
             &mut self.gas_meter,
+            &mut traversal_context,
+            &self.code_cache,
         )?;
         return_values
             .return_values
             .into_iter()
-            .zip(loaded_function.return_.iter())
+            .zip(loaded_function.return_tys().iter())
             .map(|((v, _layout), ty)| {
                 // We can not use
                 // let type_tag :TypeTag = TryInto::try_into(&layout)?
@@ -530,9 +835,9 @@ where
 
                 let type_tag = match ty {
                     Type::Reference(ty) | Type::MutableReference(ty) => {
-                        self.session.get_type_tag(ty)?
+                        self.session.get_type_tag(ty, &self.code_cache)?
                     }
-                    _ => self.session.get_type_tag(ty)?,
+                    _ => self.session.get_type_tag(ty, &self.code_cache)?,
                 };
 
                 Ok(FunctionReturnValue::new(type_tag, v))
@@ -575,14 +880,15 @@ where
             object_runtime,
             gas_meter: _,
             read_only,
+            code_cache: _,
         } = self;
-        let (changeset, raw_events, mut extensions) = session.finish_with_extensions()?;
+        let (changeset, mut extensions) = session.finish_with_extensions(&self.code_cache)?;
         //We do not use the event API from data_cache. Instead, we use the NativeEventContext
-        debug_assert!(raw_events.is_empty());
+        //debug_assert!(raw_events.is_empty());
         //We do not use the account, resource, and module API from data_cache. Instead, we use the ObjectRuntimeContext
         debug_assert!(changeset.accounts().is_empty());
         drop(changeset);
-        drop(raw_events);
+        //drop(raw_events);
 
         let event_context = extensions.remove::<NativeEventContext>();
         let raw_events = event_context.into_events();
@@ -722,20 +1028,22 @@ where
 
     /// Load a script and all of its types into cache
     pub fn load_script(
-        &self,
+        &mut self,
         script: impl Borrow<[u8]>,
         ty_args: Vec<TypeTag>,
-    ) -> VMResult<LoadedFunctionInstantiation> {
-        self.session.load_script(script, ty_args)
+    ) -> VMResult<LoadedFunction> {
+        self.session
+            .load_script(&self.code_cache, script, ty_args.as_slice())
     }
 
     /// Load a module, a function, and all of its types into cache
     pub fn load_function(
-        &self,
+        &mut self,
         function_id: &FunctionId,
         type_arguments: &[TypeTag],
-    ) -> VMResult<LoadedFunctionInstantiation> {
+    ) -> VMResult<LoadedFunction> {
         self.session.load_function(
+            &self.code_cache,
             &function_id.module_id,
             &function_id.function_name,
             type_arguments,
@@ -746,7 +1054,12 @@ where
     /// This function also support struct reference and mutable reference
     pub fn get_type_tag_option(&self, t: &Type) -> Option<TypeTag> {
         match t {
-            Type::Struct(_) | Type::StructInstantiation(_, _) => self.session.get_type_tag(t).ok(),
+            Type::Struct { idx: _, ability: _ }
+            | Type::StructInstantiation {
+                idx: _,
+                ty_args: _,
+                ability: _,
+            } => self.session.get_type_tag(t, &self.code_cache).ok(),
             Type::Reference(r) => self.get_type_tag_option(r),
             Type::MutableReference(r) => self.get_type_tag_option(r),
             _ => None,
@@ -754,23 +1067,30 @@ where
     }
 
     pub fn get_type_tag(&self, ty: &Type) -> VMResult<TypeTag> {
-        self.session.get_type_tag(ty)
+        self.session.get_type_tag(ty, &self.code_cache)
     }
 
-    pub fn load_type(&self, type_tag: &TypeTag) -> VMResult<Type> {
-        self.session.load_type(type_tag)
+    pub fn load_type(&mut self, type_tag: &TypeTag) -> VMResult<Type> {
+        self.session.load_type(type_tag, &self.code_cache)
     }
 
-    pub fn get_fully_annotated_type_layout(&self, type_tag: &TypeTag) -> VMResult<MoveTypeLayout> {
-        self.session.get_fully_annotated_type_layout(type_tag)
+    pub fn get_fully_annotated_type_layout(
+        &mut self,
+        type_tag: &TypeTag,
+    ) -> VMResult<MoveTypeLayout> {
+        self.session
+            .get_fully_annotated_type_layout(type_tag, &self.code_cache)
     }
 
-    pub fn get_struct_type(&self, index: CachedStructIndex) -> Option<Arc<StructType>> {
-        self.session.get_struct_type(index)
+    pub fn get_struct_type(&self, index: StructNameIndex) -> Option<Arc<StructType>> {
+        self.session.fetch_struct_ty_by_idx(index, &self.code_cache)
     }
 
     pub fn get_type_abilities(&self, ty: &Type) -> VMResult<AbilitySet> {
-        self.session.get_type_abilities(ty)
+        match ty.abilities() {
+            Ok(v) => Ok(v),
+            Err(e) => Err(e.finish(Location::Undefined)),
+        }
     }
 
     pub fn get_data_store(&mut self) -> &mut dyn TransactionCache {

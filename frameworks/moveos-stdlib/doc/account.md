@@ -1,5 +1,5 @@
 
-<a name="0x2_account"></a>
+<a id="0x2_account"></a>
 
 # Module `0x2::account`
 
@@ -47,7 +47,7 @@
 
 
 
-<a name="0x2_account_Account"></a>
+<a id="0x2_account_Account"></a>
 
 ## Resource `Account`
 
@@ -59,7 +59,7 @@ Account is a struct that holds the sequence number for an address
 
 
 
-<a name="0x2_account_AccountCap"></a>
+<a id="0x2_account_AccountCap"></a>
 
 ## Resource `AccountCap`
 
@@ -72,12 +72,12 @@ The contract that has AccountCap can access the Account object
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x2_account_MAX_U64"></a>
+<a id="0x2_account_MAX_U64"></a>
 
 
 
@@ -86,7 +86,7 @@ The contract that has AccountCap can access the Account object
 
 
 
-<a name="0x2_account_ErrorAccountAlreadyExists"></a>
+<a id="0x2_account_ErrorAccountAlreadyExists"></a>
 
 Account already exists
 
@@ -96,7 +96,7 @@ Account already exists
 
 
 
-<a name="0x2_account_ErrorAddressReserved"></a>
+<a id="0x2_account_ErrorAddressReserved"></a>
 
 Cannot create account because address is reserved
 
@@ -106,7 +106,7 @@ Cannot create account because address is reserved
 
 
 
-<a name="0x2_account_ErrorDeprecateFunction"></a>
+<a id="0x2_account_ErrorDeprecateFunction"></a>
 
 The function is deprecated
 
@@ -116,7 +116,7 @@ The function is deprecated
 
 
 
-<a name="0x2_account_ErrorNotValidSystemReservedAddress"></a>
+<a id="0x2_account_ErrorNotValidSystemReservedAddress"></a>
 
 Address to create is not a valid reserved address
 
@@ -126,7 +126,7 @@ Address to create is not a valid reserved address
 
 
 
-<a name="0x2_account_ErrorResourceAlreadyExists"></a>
+<a id="0x2_account_ErrorResourceAlreadyExists"></a>
 
 The resource with the given type already exists
 
@@ -136,7 +136,7 @@ The resource with the given type already exists
 
 
 
-<a name="0x2_account_ErrorResourceNotExists"></a>
+<a id="0x2_account_ErrorResourceNotExists"></a>
 
 The resource with the given type not exists
 
@@ -146,7 +146,7 @@ The resource with the given type not exists
 
 
 
-<a name="0x2_account_ErrorSequenceNumberTooBig"></a>
+<a id="0x2_account_ErrorSequenceNumberTooBig"></a>
 
 Sequence number exceeds the maximum value for a u64
 
@@ -156,7 +156,7 @@ Sequence number exceeds the maximum value for a u64
 
 
 
-<a name="0x2_account_create_account_by_system"></a>
+<a id="0x2_account_create_account_by_system"></a>
 
 ## Function `create_account_by_system`
 
@@ -168,7 +168,7 @@ Create a new account for the given address, only callable by the system account
 
 
 
-<a name="0x2_account_create_account"></a>
+<a id="0x2_account_create_account"></a>
 
 ## Function `create_account`
 
@@ -180,7 +180,7 @@ This function is deprecated, please use <code>create_account_and_return_cap</cod
 
 
 
-<a name="0x2_account_create_account_and_return_cap"></a>
+<a id="0x2_account_create_account_and_return_cap"></a>
 
 ## Function `create_account_and_return_cap`
 
@@ -192,7 +192,7 @@ Create a new account and return the AccountCap
 
 
 
-<a name="0x2_account_sequence_number"></a>
+<a id="0x2_account_sequence_number"></a>
 
 ## Function `sequence_number`
 
@@ -204,7 +204,7 @@ Return the current sequence number at <code>addr</code>
 
 
 
-<a name="0x2_account_increment_sequence_number_for_system"></a>
+<a id="0x2_account_increment_sequence_number_for_system"></a>
 
 ## Function `increment_sequence_number_for_system`
 
@@ -215,7 +215,7 @@ Return the current sequence number at <code>addr</code>
 
 
 
-<a name="0x2_account_exists_at"></a>
+<a id="0x2_account_exists_at"></a>
 
 ## Function `exists_at`
 
@@ -226,7 +226,7 @@ Return the current sequence number at <code>addr</code>
 
 
 
-<a name="0x2_account_create_signer_for_system"></a>
+<a id="0x2_account_create_signer_for_system"></a>
 
 ## Function `create_signer_for_system`
 
@@ -237,7 +237,7 @@ Return the current sequence number at <code>addr</code>
 
 
 
-<a name="0x2_account_create_signer_with_account"></a>
+<a id="0x2_account_create_signer_with_account"></a>
 
 ## Function `create_signer_with_account`
 
@@ -248,7 +248,7 @@ Return the current sequence number at <code>addr</code>
 
 
 
-<a name="0x2_account_create_signer_with_account_cap"></a>
+<a id="0x2_account_create_signer_with_account_cap"></a>
 
 ## Function `create_signer_with_account_cap`
 
@@ -260,7 +260,7 @@ Create a signer with the given account capability
 
 
 
-<a name="0x2_account_account_object_id"></a>
+<a id="0x2_account_account_object_id"></a>
 
 ## Function `account_object_id`
 
@@ -271,98 +271,98 @@ Create a signer with the given account capability
 
 
 
-<a name="0x2_account_account_address"></a>
+<a id="0x2_account_account_address"></a>
 
 ## Function `account_address`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_account_address">account_address</a>(self: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="account.md#0x2_account_Account">account::Account</a>&gt;): <b>address</b>
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_account_address">account_address</a>(obj: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="account.md#0x2_account_Account">account::Account</a>&gt;): <b>address</b>
 </code></pre>
 
 
 
-<a name="0x2_account_account_cap_address"></a>
+<a id="0x2_account_account_cap_address"></a>
 
 ## Function `account_cap_address`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_account_cap_address">account_cap_address</a>(self: &<a href="account.md#0x2_account_AccountCap">account::AccountCap</a>): <b>address</b>
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_account_cap_address">account_cap_address</a>(obj: &<a href="account.md#0x2_account_AccountCap">account::AccountCap</a>): <b>address</b>
 </code></pre>
 
 
 
-<a name="0x2_account_account_sequence_number"></a>
+<a id="0x2_account_account_sequence_number"></a>
 
 ## Function `account_sequence_number`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_account_sequence_number">account_sequence_number</a>(self: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="account.md#0x2_account_Account">account::Account</a>&gt;): u64
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_account_sequence_number">account_sequence_number</a>(obj: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="account.md#0x2_account_Account">account::Account</a>&gt;): u64
 </code></pre>
 
 
 
-<a name="0x2_account_account_borrow_resource"></a>
+<a id="0x2_account_account_borrow_resource"></a>
 
 ## Function `account_borrow_resource`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_account_borrow_resource">account_borrow_resource</a>&lt;T: key&gt;(self: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="account.md#0x2_account_Account">account::Account</a>&gt;): &T
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_account_borrow_resource">account_borrow_resource</a>&lt;T: key&gt;(obj: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="account.md#0x2_account_Account">account::Account</a>&gt;): &T
 </code></pre>
 
 
 
-<a name="0x2_account_account_borrow_mut_resource"></a>
+<a id="0x2_account_account_borrow_mut_resource"></a>
 
 ## Function `account_borrow_mut_resource`
 
 
 
 <pre><code>#[private_generics(#[T])]
-<b>public</b> <b>fun</b> <a href="account.md#0x2_account_account_borrow_mut_resource">account_borrow_mut_resource</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="account.md#0x2_account_Account">account::Account</a>&gt;): &<b>mut</b> T
+<b>public</b> <b>fun</b> <a href="account.md#0x2_account_account_borrow_mut_resource">account_borrow_mut_resource</a>&lt;T: key&gt;(obj: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="account.md#0x2_account_Account">account::Account</a>&gt;): &<b>mut</b> T
 </code></pre>
 
 
 
-<a name="0x2_account_account_move_resource_to"></a>
+<a id="0x2_account_account_move_resource_to"></a>
 
 ## Function `account_move_resource_to`
 
 
 
 <pre><code>#[private_generics(#[T])]
-<b>public</b> <b>fun</b> <a href="account.md#0x2_account_account_move_resource_to">account_move_resource_to</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="account.md#0x2_account_Account">account::Account</a>&gt;, resource: T)
+<b>public</b> <b>fun</b> <a href="account.md#0x2_account_account_move_resource_to">account_move_resource_to</a>&lt;T: key&gt;(obj: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="account.md#0x2_account_Account">account::Account</a>&gt;, resource: T)
 </code></pre>
 
 
 
-<a name="0x2_account_account_move_resource_from"></a>
+<a id="0x2_account_account_move_resource_from"></a>
 
 ## Function `account_move_resource_from`
 
 
 
 <pre><code>#[private_generics(#[T])]
-<b>public</b> <b>fun</b> <a href="account.md#0x2_account_account_move_resource_from">account_move_resource_from</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="account.md#0x2_account_Account">account::Account</a>&gt;): T
+<b>public</b> <b>fun</b> <a href="account.md#0x2_account_account_move_resource_from">account_move_resource_from</a>&lt;T: key&gt;(obj: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="account.md#0x2_account_Account">account::Account</a>&gt;): T
 </code></pre>
 
 
 
-<a name="0x2_account_account_exists_resource"></a>
+<a id="0x2_account_account_exists_resource"></a>
 
 ## Function `account_exists_resource`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_account_exists_resource">account_exists_resource</a>&lt;T: key&gt;(self: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="account.md#0x2_account_Account">account::Account</a>&gt;): bool
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_account_exists_resource">account_exists_resource</a>&lt;T: key&gt;(obj: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="account.md#0x2_account_Account">account::Account</a>&gt;): bool
 </code></pre>
 
 
 
-<a name="0x2_account_destroy_account"></a>
+<a id="0x2_account_destroy_account"></a>
 
 ## Function `destroy_account`
 
@@ -374,7 +374,7 @@ Deprecated: Direct destruction of account objects is not allowed.
 
 
 
-<a name="0x2_account_destroy_account_cap"></a>
+<a id="0x2_account_destroy_account_cap"></a>
 
 ## Function `destroy_account_cap`
 
@@ -386,7 +386,7 @@ Destroy the account capability
 
 
 
-<a name="0x2_account_borrow_account"></a>
+<a id="0x2_account_borrow_account"></a>
 
 ## Function `borrow_account`
 
@@ -397,7 +397,7 @@ Destroy the account capability
 
 
 
-<a name="0x2_account_borrow_mut_account"></a>
+<a id="0x2_account_borrow_mut_account"></a>
 
 ## Function `borrow_mut_account`
 
@@ -408,7 +408,7 @@ Destroy the account capability
 
 
 
-<a name="0x2_account_borrow_resource"></a>
+<a id="0x2_account_borrow_resource"></a>
 
 ## Function `borrow_resource`
 
@@ -422,7 +422,7 @@ But we remove the restriction of the caller must be the module of T
 
 
 
-<a name="0x2_account_borrow_mut_resource"></a>
+<a id="0x2_account_borrow_mut_resource"></a>
 
 ## Function `borrow_mut_resource`
 
@@ -436,7 +436,7 @@ This function equates to <code><b>borrow_global_mut</b>&lt;T&gt;(<b>address</b>)
 
 
 
-<a name="0x2_account_move_resource_to"></a>
+<a id="0x2_account_move_resource_to"></a>
 
 ## Function `move_resource_to`
 
@@ -450,7 +450,7 @@ This function equates to <code><b>move_to</b>&lt;T&gt;(&<a href="">signer</a>, r
 
 
 
-<a name="0x2_account_move_resource_from"></a>
+<a id="0x2_account_move_resource_from"></a>
 
 ## Function `move_resource_from`
 
@@ -464,7 +464,7 @@ This function equates to <code><b>move_from</b>&lt;T&gt;(<b>address</b>)</code> 
 
 
 
-<a name="0x2_account_exists_resource"></a>
+<a id="0x2_account_exists_resource"></a>
 
 ## Function `exists_resource`
 

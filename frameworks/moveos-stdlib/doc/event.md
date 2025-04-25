@@ -1,5 +1,5 @@
 
-<a name="0x2_event"></a>
+<a id="0x2_event"></a>
 
 # Module `0x2::event`
 
@@ -16,7 +16,7 @@
 
 
 
-<a name="0x2_event_named_event_handle_id"></a>
+<a id="0x2_event_named_event_handle_id"></a>
 
 ## Function `named_event_handle_id`
 
@@ -27,7 +27,7 @@
 
 
 
-<a name="0x2_event_custom_event_handle_id"></a>
+<a id="0x2_event_custom_event_handle_id"></a>
 
 ## Function `custom_event_handle_id`
 
@@ -38,7 +38,7 @@
 
 
 
-<a name="0x2_event_emit"></a>
+<a id="0x2_event_emit"></a>
 
 ## Function `emit`
 
@@ -57,7 +57,7 @@ phantom parameters, eg. emit(MyEvent<phantom T>).
 
 
 
-<a name="0x2_event_emit_with_handle"></a>
+<a id="0x2_event_emit_with_handle"></a>
 
 ## Function `emit_with_handle`
 

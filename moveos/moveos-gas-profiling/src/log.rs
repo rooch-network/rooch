@@ -4,7 +4,7 @@
 use move_binary_format::file_format::CodeOffset;
 use move_binary_format::file_format_common::Opcodes;
 use move_core_types::account_address::AccountAddress;
-use move_core_types::gas_algebra::InternalGas;
+use move_core_types::gas_algebra::{InternalGas, NumBytes};
 use move_core_types::identifier::Identifier;
 use move_core_types::language_storage::{ModuleId, TypeTag};
 use smallvec::{smallvec, SmallVec};
@@ -76,6 +76,15 @@ impl CallFrame {
             events: vec![],
         }
     }
+}
+
+#[derive(Debug, Clone)]
+/// Struct representing the cost of a dependency.
+pub struct Dependency {
+    pub is_new: bool,
+    pub id: ModuleId,
+    pub size: NumBytes,
+    pub cost: InternalGas,
 }
 
 #[derive(Debug, Clone)]

@@ -1,5 +1,5 @@
 
-<a name="0x3_genesis"></a>
+<a id="0x3_genesis"></a>
 
 # Module `0x3::genesis`
 
@@ -31,7 +31,7 @@
 
 
 
-<a name="0x3_genesis_GenesisContext"></a>
+<a id="0x3_genesis_GenesisContext"></a>
 
 ## Struct `GenesisContext`
 
@@ -43,12 +43,12 @@ GenesisContext is a genesis init parameters in the TxContext.
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x3_genesis_ErrorGenesisInit"></a>
+<a id="0x3_genesis_ErrorGenesisInit"></a>
 
 
 
@@ -57,7 +57,7 @@ GenesisContext is a genesis init parameters in the TxContext.
 
 
 
-<a name="0x3_genesis_GENESIS_INIT_GAS_AMOUNT"></a>
+<a id="0x3_genesis_GENESIS_INIT_GAS_AMOUNT"></a>
 
 
 

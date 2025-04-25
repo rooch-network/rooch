@@ -9,6 +9,7 @@ use crate::commands::move_cli::serialized_success;
 use async_trait::async_trait;
 use clap::Parser;
 use move_cli::{base::disassemble::Disassemble, Move};
+use move_model::metadata::{CompilerVersion, LanguageVersion};
 use rooch_types::error::RoochResult;
 use serde_json::Value;
 
@@ -31,7 +32,9 @@ pub struct DisassembleCommand {
 impl CommandAction<Option<Value>> for DisassembleCommand {
     async fn execute(self) -> RoochResult<Option<Value>> {
         let path = self.move_args.package_path;
-        let config = self.move_args.build_config;
+        let mut config = self.move_args.build_config;
+        config.compiler_config.language_version = Some(LanguageVersion::V2_1);
+        config.compiler_config.compiler_version = Some(CompilerVersion::V2_1);
         self.disassemble.execute(path, config)?;
 
         serialized_success(self.json)

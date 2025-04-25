@@ -1,5 +1,5 @@
 
-<a name="0x2_hex"></a>
+<a id="0x2_hex"></a>
 
 # Module `0x2::hex`
 
@@ -19,12 +19,12 @@ HEX (Base16) encoding utility.
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x2_hex_ErrorInvalidHexLength"></a>
+<a id="0x2_hex_ErrorInvalidHexLength"></a>
 
 
 
@@ -33,7 +33,7 @@ HEX (Base16) encoding utility.
 
 
 
-<a name="0x2_hex_ErrorNotValidHexCharacter"></a>
+<a id="0x2_hex_ErrorNotValidHexCharacter"></a>
 
 
 
@@ -42,7 +42,7 @@ HEX (Base16) encoding utility.
 
 
 
-<a name="0x2_hex_HEX"></a>
+<a id="0x2_hex_HEX"></a>
 
 Vector of Base16 values from <code>00</code> to <code>FF</code>
 
@@ -52,7 +52,7 @@ Vector of Base16 values from <code>00</code> to <code>FF</code>
 
 
 
-<a name="0x2_hex_encode"></a>
+<a id="0x2_hex_encode"></a>
 
 ## Function `encode`
 
@@ -64,7 +64,7 @@ Encode <code>bytes</code> in lowercase hex
 
 
 
-<a name="0x2_hex_decode"></a>
+<a id="0x2_hex_decode"></a>
 
 ## Function `decode`
 
@@ -81,7 +81,7 @@ Aborts if the hex string contains non-valid hex characters (valid characters are
 
 
 
-<a name="0x2_hex_decode_option"></a>
+<a id="0x2_hex_decode_option"></a>
 
 ## Function `decode_option`
 
@@ -96,6 +96,6 @@ or <code>None</code> if the input string is not a valid hexadecimal string or ha
 
 
 
-<a name="@Module_Specification_1"></a>
+<a id="@Module_Specification_1"></a>
 
 ## Module Specification

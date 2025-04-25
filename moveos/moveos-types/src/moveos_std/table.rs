@@ -33,7 +33,7 @@ impl MoveStructType for TablePlaceholder {
             address: Self::ADDRESS,
             module: Self::MODULE_NAME.to_owned(),
             name: Self::STRUCT_NAME.to_owned(),
-            type_params: vec![],
+            type_args: vec![],
         }
     }
 }

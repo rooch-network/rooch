@@ -1,5 +1,5 @@
 
-<a name="0x1_acl"></a>
+<a id="0x1_acl"></a>
 
 # Module `0x1::acl`
 
@@ -24,7 +24,7 @@ use a "set" instead when it's available in the language in the future.
 
 
 
-<a name="0x1_acl_ACL"></a>
+<a id="0x1_acl_ACL"></a>
 
 ## Struct `ACL`
 
@@ -35,12 +35,12 @@ use a "set" instead when it's available in the language in the future.
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x1_acl_ECONTAIN"></a>
+<a id="0x1_acl_ECONTAIN"></a>
 
 The ACL already contains the address.
 
@@ -50,7 +50,7 @@ The ACL already contains the address.
 
 
 
-<a name="0x1_acl_ENOT_CONTAIN"></a>
+<a id="0x1_acl_ENOT_CONTAIN"></a>
 
 The ACL does not contain the address.
 
@@ -60,7 +60,7 @@ The ACL does not contain the address.
 
 
 
-<a name="0x1_acl_empty"></a>
+<a id="0x1_acl_empty"></a>
 
 ## Function `empty`
 
@@ -72,7 +72,7 @@ Return an empty ACL.
 
 
 
-<a name="0x1_acl_add"></a>
+<a id="0x1_acl_add"></a>
 
 ## Function `add`
 
@@ -84,7 +84,7 @@ Add the address to the ACL.
 
 
 
-<a name="0x1_acl_remove"></a>
+<a id="0x1_acl_remove"></a>
 
 ## Function `remove`
 
@@ -96,7 +96,7 @@ Remove the address from the ACL.
 
 
 
-<a name="0x1_acl_contains"></a>
+<a id="0x1_acl_contains"></a>
 
 ## Function `contains`
 
@@ -108,7 +108,7 @@ Return true iff the ACL contains the address.
 
 
 
-<a name="0x1_acl_assert_contains"></a>
+<a id="0x1_acl_assert_contains"></a>
 
 ## Function `assert_contains`
 

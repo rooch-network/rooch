@@ -697,6 +697,16 @@ impl<'a> ExtendedChecker<'a> {
                     | Bytecode::VecPushBack(_)
                     | Bytecode::VecPopBack(_)
                     | Bytecode::VecUnpack(_, _)
+                    | Bytecode::PackVariant(_)
+                    | Bytecode::PackVariantGeneric(_)
+                    | Bytecode::UnpackVariant(_)
+                    | Bytecode::UnpackVariantGeneric(_)
+                    | Bytecode::TestVariant(_)
+                    | Bytecode::TestVariantGeneric(_)
+                    | Bytecode::MutBorrowVariantField(_)
+                    | Bytecode::MutBorrowVariantFieldGeneric(_)
+                    | Bytecode::ImmBorrowVariantField(_)
+                    | Bytecode::ImmBorrowVariantFieldGeneric(_)
                     | Bytecode::VecSwap(_) => {}
                 }
             }
@@ -1636,8 +1646,6 @@ pub fn check_metadata_format(module: &CompiledModule) -> Result<(), MalformedErr
                 bcs::from_bytes::<RuntimeModuleMetadataV1>(&data.value)
                     .map_err(|e| MalformedError::DeserializedError(data.key.clone(), e.clone()))?;
             }
-        } else {
-            return Err(MalformedError::UnknownKey(data.key.clone()));
         }
     }
 

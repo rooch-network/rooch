@@ -1,5 +1,5 @@
 
-<a name="0x2_tx_context"></a>
+<a id="0x2_tx_context"></a>
 
 # Module `0x2::tx_context`
 
@@ -40,7 +40,7 @@
 
 
 
-<a name="0x2_tx_context_TxContext"></a>
+<a id="0x2_tx_context_TxContext"></a>
 
 ## Struct `TxContext`
 
@@ -52,7 +52,7 @@ Information about the transaction currently being executed.
 
 
 
-<a name="0x2_tx_context_ModuleUpgradeFlag"></a>
+<a id="0x2_tx_context_ModuleUpgradeFlag"></a>
 
 ## Struct `ModuleUpgradeFlag`
 
@@ -63,12 +63,12 @@ Information about the transaction currently being executed.
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x2_tx_context_ErrorInvalidContext"></a>
+<a id="0x2_tx_context_ErrorInvalidContext"></a>
 
 
 
@@ -77,7 +77,7 @@ Information about the transaction currently being executed.
 
 
 
-<a name="0x2_tx_context_sender"></a>
+<a id="0x2_tx_context_sender"></a>
 
 ## Function `sender`
 
@@ -89,7 +89,7 @@ Return the address of the user that signed the current transaction
 
 
 
-<a name="0x2_tx_context_sequence_number"></a>
+<a id="0x2_tx_context_sequence_number"></a>
 
 ## Function `sequence_number`
 
@@ -101,7 +101,7 @@ Return the sequence number of the current transaction
 
 
 
-<a name="0x2_tx_context_max_gas_amount"></a>
+<a id="0x2_tx_context_max_gas_amount"></a>
 
 ## Function `max_gas_amount`
 
@@ -113,7 +113,7 @@ Return the max gas to be used
 
 
 
-<a name="0x2_tx_context_fresh_address"></a>
+<a id="0x2_tx_context_fresh_address"></a>
 
 ## Function `fresh_address`
 
@@ -125,7 +125,7 @@ Generate a new unique address,
 
 
 
-<a name="0x2_tx_context_derive_id"></a>
+<a id="0x2_tx_context_derive_id"></a>
 
 ## Function `derive_id`
 
@@ -136,7 +136,7 @@ Generate a new unique address,
 
 
 
-<a name="0x2_tx_context_tx_hash"></a>
+<a id="0x2_tx_context_tx_hash"></a>
 
 ## Function `tx_hash`
 
@@ -148,7 +148,7 @@ Return the hash of the current transaction
 
 
 
-<a name="0x2_tx_context_add_attribute_via_system"></a>
+<a id="0x2_tx_context_add_attribute_via_system"></a>
 
 ## Function `add_attribute_via_system`
 
@@ -160,7 +160,7 @@ Add a value to the context map via system reserved address
 
 
 
-<a name="0x2_tx_context_get_attribute"></a>
+<a id="0x2_tx_context_get_attribute"></a>
 
 ## Function `get_attribute`
 
@@ -172,7 +172,7 @@ Get attribute value from the context map
 
 
 
-<a name="0x2_tx_context_contains_attribute"></a>
+<a id="0x2_tx_context_contains_attribute"></a>
 
 ## Function `contains_attribute`
 
@@ -184,7 +184,7 @@ Check if the key is in the context map
 
 
 
-<a name="0x2_tx_context_tx_meta"></a>
+<a id="0x2_tx_context_tx_meta"></a>
 
 ## Function `tx_meta`
 
@@ -198,7 +198,7 @@ The meta data is only available when executing or validating a transaction, othe
 
 
 
-<a name="0x2_tx_context_tx_gas_payment_account"></a>
+<a id="0x2_tx_context_tx_gas_payment_account"></a>
 
 ## Function `tx_gas_payment_account`
 
@@ -212,7 +212,7 @@ In the future, the gas payment account may be different from the sender.
 
 
 
-<a name="0x2_tx_context_tx_result"></a>
+<a id="0x2_tx_context_tx_result"></a>
 
 ## Function `tx_result`
 
@@ -224,7 +224,7 @@ The result is only available in the <code>post_execute</code> function.
 
 
 
-<a name="0x2_tx_context_is_system_call"></a>
+<a id="0x2_tx_context_is_system_call"></a>
 
 ## Function `is_system_call`
 
@@ -237,7 +237,7 @@ The system call is a special transaction initiated by the system.
 
 
 
-<a name="0x2_tx_context_set_module_upgrade_flag"></a>
+<a id="0x2_tx_context_set_module_upgrade_flag"></a>
 
 ## Function `set_module_upgrade_flag`
 
@@ -248,7 +248,7 @@ The system call is a special transaction initiated by the system.
 
 
 
-<a name="0x2_tx_context_drop"></a>
+<a id="0x2_tx_context_drop"></a>
 
 ## Function `drop`
 

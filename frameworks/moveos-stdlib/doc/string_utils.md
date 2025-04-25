@@ -1,5 +1,5 @@
 
-<a name="0x2_string_utils"></a>
+<a id="0x2_string_utils"></a>
 
 # Module `0x2::string_utils`
 
@@ -43,12 +43,12 @@
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x2_string_utils_ErrorInvalidStringNumber"></a>
+<a id="0x2_string_utils_ErrorInvalidStringNumber"></a>
 
 
 
@@ -57,7 +57,7 @@
 
 
 
-<a name="0x2_string_utils_SPACE_CHAR"></a>
+<a id="0x2_string_utils_SPACE_CHAR"></a>
 
 
 
@@ -66,7 +66,7 @@
 
 
 
-<a name="0x2_string_utils_parse_u8_option"></a>
+<a id="0x2_string_utils_parse_u8_option"></a>
 
 ## Function `parse_u8_option`
 
@@ -77,7 +77,7 @@
 
 
 
-<a name="0x2_string_utils_parse_u8"></a>
+<a id="0x2_string_utils_parse_u8"></a>
 
 ## Function `parse_u8`
 
@@ -88,7 +88,7 @@
 
 
 
-<a name="0x2_string_utils_parse_u64_option"></a>
+<a id="0x2_string_utils_parse_u64_option"></a>
 
 ## Function `parse_u64_option`
 
@@ -99,7 +99,7 @@
 
 
 
-<a name="0x2_string_utils_parse_u64"></a>
+<a id="0x2_string_utils_parse_u64"></a>
 
 ## Function `parse_u64`
 
@@ -110,7 +110,7 @@
 
 
 
-<a name="0x2_string_utils_parse_u128_option"></a>
+<a id="0x2_string_utils_parse_u128_option"></a>
 
 ## Function `parse_u128_option`
 
@@ -121,7 +121,7 @@
 
 
 
-<a name="0x2_string_utils_parse_u128"></a>
+<a id="0x2_string_utils_parse_u128"></a>
 
 ## Function `parse_u128`
 
@@ -132,7 +132,7 @@
 
 
 
-<a name="0x2_string_utils_parse_u256_option"></a>
+<a id="0x2_string_utils_parse_u256_option"></a>
 
 ## Function `parse_u256_option`
 
@@ -143,7 +143,7 @@
 
 
 
-<a name="0x2_string_utils_parse_u256"></a>
+<a id="0x2_string_utils_parse_u256"></a>
 
 ## Function `parse_u256`
 
@@ -154,7 +154,7 @@
 
 
 
-<a name="0x2_string_utils_parse_u16_option"></a>
+<a id="0x2_string_utils_parse_u16_option"></a>
 
 ## Function `parse_u16_option`
 
@@ -166,7 +166,7 @@ Parse a string into a u16, returning an option
 
 
 
-<a name="0x2_string_utils_parse_u16"></a>
+<a id="0x2_string_utils_parse_u16"></a>
 
 ## Function `parse_u16`
 
@@ -178,7 +178,7 @@ Parse a string into a u16, aborting if the string is not a valid number
 
 
 
-<a name="0x2_string_utils_parse_u32_option"></a>
+<a id="0x2_string_utils_parse_u32_option"></a>
 
 ## Function `parse_u32_option`
 
@@ -190,7 +190,7 @@ Parse a string into a u32, returning an option
 
 
 
-<a name="0x2_string_utils_parse_u32"></a>
+<a id="0x2_string_utils_parse_u32"></a>
 
 ## Function `parse_u32`
 
@@ -202,7 +202,7 @@ Parse a string into a u32, aborting if the string is not a valid number
 
 
 
-<a name="0x2_string_utils_parse_decimal_option"></a>
+<a id="0x2_string_utils_parse_decimal_option"></a>
 
 ## Function `parse_decimal_option`
 
@@ -213,7 +213,7 @@ Parse a string into a u32, aborting if the string is not a valid number
 
 
 
-<a name="0x2_string_utils_parse_decimal"></a>
+<a id="0x2_string_utils_parse_decimal"></a>
 
 ## Function `parse_decimal`
 
@@ -224,7 +224,7 @@ Parse a string into a u32, aborting if the string is not a valid number
 
 
 
-<a name="0x2_string_utils_to_lower_case"></a>
+<a id="0x2_string_utils_to_lower_case"></a>
 
 ## Function `to_lower_case`
 
@@ -235,7 +235,7 @@ Parse a string into a u32, aborting if the string is not a valid number
 
 
 
-<a name="0x2_string_utils_to_upper_case"></a>
+<a id="0x2_string_utils_to_upper_case"></a>
 
 ## Function `to_upper_case`
 
@@ -246,7 +246,7 @@ Parse a string into a u32, aborting if the string is not a valid number
 
 
 
-<a name="0x2_string_utils_to_string_u256"></a>
+<a id="0x2_string_utils_to_string_u256"></a>
 
 ## Function `to_string_u256`
 
@@ -257,7 +257,7 @@ Parse a string into a u32, aborting if the string is not a valid number
 
 
 
-<a name="0x2_string_utils_to_string_u128"></a>
+<a id="0x2_string_utils_to_string_u128"></a>
 
 ## Function `to_string_u128`
 
@@ -268,7 +268,7 @@ Parse a string into a u32, aborting if the string is not a valid number
 
 
 
-<a name="0x2_string_utils_to_string_u64"></a>
+<a id="0x2_string_utils_to_string_u64"></a>
 
 ## Function `to_string_u64`
 
@@ -279,7 +279,7 @@ Parse a string into a u32, aborting if the string is not a valid number
 
 
 
-<a name="0x2_string_utils_to_string_u32"></a>
+<a id="0x2_string_utils_to_string_u32"></a>
 
 ## Function `to_string_u32`
 
@@ -290,7 +290,7 @@ Parse a string into a u32, aborting if the string is not a valid number
 
 
 
-<a name="0x2_string_utils_to_string_u16"></a>
+<a id="0x2_string_utils_to_string_u16"></a>
 
 ## Function `to_string_u16`
 
@@ -301,7 +301,7 @@ Parse a string into a u32, aborting if the string is not a valid number
 
 
 
-<a name="0x2_string_utils_to_string_u8"></a>
+<a id="0x2_string_utils_to_string_u8"></a>
 
 ## Function `to_string_u8`
 
@@ -312,7 +312,7 @@ Parse a string into a u32, aborting if the string is not a valid number
 
 
 
-<a name="0x2_string_utils_starts_with"></a>
+<a id="0x2_string_utils_starts_with"></a>
 
 ## Function `starts_with`
 
@@ -323,7 +323,7 @@ Parse a string into a u32, aborting if the string is not a valid number
 
 
 
-<a name="0x2_string_utils_contains"></a>
+<a id="0x2_string_utils_contains"></a>
 
 ## Function `contains`
 
@@ -334,7 +334,7 @@ Parse a string into a u32, aborting if the string is not a valid number
 
 
 
-<a name="0x2_string_utils_split"></a>
+<a id="0x2_string_utils_split"></a>
 
 ## Function `split`
 
@@ -346,7 +346,7 @@ Split a string by a delimiter
 
 
 
-<a name="0x2_string_utils_trim"></a>
+<a id="0x2_string_utils_trim"></a>
 
 ## Function `trim`
 
@@ -358,7 +358,7 @@ Trim leading and trailing whitespace from a string
 
 
 
-<a name="0x2_string_utils_strip_prefix"></a>
+<a id="0x2_string_utils_strip_prefix"></a>
 
 ## Function `strip_prefix`
 

@@ -1,5 +1,5 @@
 
-<a name="0xa_inscribe_factory"></a>
+<a id="0xa_inscribe_factory"></a>
 
 # Module `0xa::inscribe_factory`
 
@@ -41,7 +41,7 @@ Bitseed inscribe inscription factory
 
 
 
-<a name="0xa_inscribe_factory_MergeState"></a>
+<a id="0xa_inscribe_factory_MergeState"></a>
 
 ## Struct `MergeState`
 
@@ -52,7 +52,7 @@ Bitseed inscribe inscription factory
 
 
 
-<a name="0xa_inscribe_factory_BitseedEventStore"></a>
+<a id="0xa_inscribe_factory_BitseedEventStore"></a>
 
 ## Resource `BitseedEventStore`
 
@@ -63,7 +63,7 @@ Bitseed inscribe inscription factory
 
 
 
-<a name="0xa_inscribe_factory_InscribeGenerateArgs"></a>
+<a id="0xa_inscribe_factory_InscribeGenerateArgs"></a>
 
 ## Struct `InscribeGenerateArgs`
 
@@ -75,7 +75,7 @@ Bitseed inscribe inscription factory
 
 
 
-<a name="0xa_inscribe_factory_InscribeGenerateOutput"></a>
+<a id="0xa_inscribe_factory_InscribeGenerateOutput"></a>
 
 ## Struct `InscribeGenerateOutput`
 
@@ -86,12 +86,12 @@ Bitseed inscribe inscription factory
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0xa_inscribe_factory_BIT_SEED_DEPLOY"></a>
+<a id="0xa_inscribe_factory_BIT_SEED_DEPLOY"></a>
 
 
 
@@ -100,7 +100,7 @@ Bitseed inscribe inscription factory
 
 
 
-<a name="0xa_inscribe_factory_BIT_SEED_GENERATOR_TICK"></a>
+<a id="0xa_inscribe_factory_BIT_SEED_GENERATOR_TICK"></a>
 
 
 
@@ -109,7 +109,7 @@ Bitseed inscribe inscription factory
 
 
 
-<a name="0xa_inscribe_factory_BIT_SEED_MINT"></a>
+<a id="0xa_inscribe_factory_BIT_SEED_MINT"></a>
 
 
 
@@ -118,7 +118,7 @@ Bitseed inscribe inscription factory
 
 
 
-<a name="0xa_inscribe_factory_genesis_init"></a>
+<a id="0xa_inscribe_factory_genesis_init"></a>
 
 ## Function `genesis_init`
 
@@ -129,7 +129,7 @@ Bitseed inscribe inscription factory
 
 
 
-<a name="0xa_inscribe_factory_bitseed_deploy_key"></a>
+<a id="0xa_inscribe_factory_bitseed_deploy_key"></a>
 
 ## Function `bitseed_deploy_key`
 
@@ -140,7 +140,7 @@ Bitseed inscribe inscription factory
 
 
 
-<a name="0xa_inscribe_factory_bitseed_mint_key"></a>
+<a id="0xa_inscribe_factory_bitseed_mint_key"></a>
 
 ## Function `bitseed_mint_key`
 
@@ -151,7 +151,7 @@ Bitseed inscribe inscription factory
 
 
 
-<a name="0xa_inscribe_factory_inscribe_verify"></a>
+<a id="0xa_inscribe_factory_inscribe_verify"></a>
 
 ## Function `inscribe_verify`
 
@@ -162,7 +162,7 @@ Bitseed inscribe inscription factory
 
 
 
-<a name="0xa_inscribe_factory_process_bitseed_event"></a>
+<a id="0xa_inscribe_factory_process_bitseed_event"></a>
 
 ## Function `process_bitseed_event`
 

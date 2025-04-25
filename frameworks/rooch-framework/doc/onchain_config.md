@@ -1,5 +1,5 @@
 
-<a name="0x3_onchain_config"></a>
+<a id="0x3_onchain_config"></a>
 
 # Module `0x3::onchain_config`
 
@@ -30,7 +30,7 @@
 
 
 
-<a name="0x3_onchain_config_OnchainConfig"></a>
+<a id="0x3_onchain_config_OnchainConfig"></a>
 
 ## Resource `OnchainConfig`
 
@@ -42,7 +42,7 @@ OnchainConfig is framework configurations stored on chain.
 
 
 
-<a name="0x3_onchain_config_ConfigUpdateCap"></a>
+<a id="0x3_onchain_config_ConfigUpdateCap"></a>
 
 ## Resource `ConfigUpdateCap`
 
@@ -54,12 +54,12 @@ ConfigUpdateCap is the capability for admin operations, such as update onchain c
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x3_onchain_config_ErrorNotAdmin"></a>
+<a id="0x3_onchain_config_ErrorNotAdmin"></a>
 
 
 
@@ -68,7 +68,7 @@ ConfigUpdateCap is the capability for admin operations, such as update onchain c
 
 
 
-<a name="0x3_onchain_config_genesis_init"></a>
+<a id="0x3_onchain_config_genesis_init"></a>
 
 ## Function `genesis_init`
 
@@ -79,7 +79,7 @@ ConfigUpdateCap is the capability for admin operations, such as update onchain c
 
 
 
-<a name="0x3_onchain_config_admin"></a>
+<a id="0x3_onchain_config_admin"></a>
 
 ## Function `admin`
 
@@ -90,7 +90,7 @@ ConfigUpdateCap is the capability for admin operations, such as update onchain c
 
 
 
-<a name="0x3_onchain_config_ensure_admin"></a>
+<a id="0x3_onchain_config_ensure_admin"></a>
 
 ## Function `ensure_admin`
 
@@ -101,7 +101,7 @@ ConfigUpdateCap is the capability for admin operations, such as update onchain c
 
 
 
-<a name="0x3_onchain_config_sequencer"></a>
+<a id="0x3_onchain_config_sequencer"></a>
 
 ## Function `sequencer`
 
@@ -112,7 +112,7 @@ ConfigUpdateCap is the capability for admin operations, such as update onchain c
 
 
 
-<a name="0x3_onchain_config_rooch_dao"></a>
+<a id="0x3_onchain_config_rooch_dao"></a>
 
 ## Function `rooch_dao`
 
@@ -123,7 +123,7 @@ ConfigUpdateCap is the capability for admin operations, such as update onchain c
 
 
 
-<a name="0x3_onchain_config_update_framework_version"></a>
+<a id="0x3_onchain_config_update_framework_version"></a>
 
 ## Function `update_framework_version`
 
@@ -134,7 +134,7 @@ ConfigUpdateCap is the capability for admin operations, such as update onchain c
 
 
 
-<a name="0x3_onchain_config_framework_version"></a>
+<a id="0x3_onchain_config_framework_version"></a>
 
 ## Function `framework_version`
 
@@ -145,7 +145,7 @@ ConfigUpdateCap is the capability for admin operations, such as update onchain c
 
 
 
-<a name="0x3_onchain_config_onchain_config"></a>
+<a id="0x3_onchain_config_onchain_config"></a>
 
 ## Function `onchain_config`
 
@@ -156,7 +156,7 @@ ConfigUpdateCap is the capability for admin operations, such as update onchain c
 
 
 
-<a name="0x3_onchain_config_add_to_publishing_allowlist"></a>
+<a id="0x3_onchain_config_add_to_publishing_allowlist"></a>
 
 ## Function `add_to_publishing_allowlist`
 
@@ -169,7 +169,7 @@ Add <code>package_id</code> to publishing allowlist.
 
 
 
-<a name="0x3_onchain_config_remove_from_publishing_allowlist"></a>
+<a id="0x3_onchain_config_remove_from_publishing_allowlist"></a>
 
 ## Function `remove_from_publishing_allowlist`
 
@@ -181,7 +181,7 @@ Remove <code>package_id</code> from publishing allowlist.
 
 
 
-<a name="0x3_onchain_config_change_feature_flags"></a>
+<a id="0x3_onchain_config_change_feature_flags"></a>
 
 ## Function `change_feature_flags`
 

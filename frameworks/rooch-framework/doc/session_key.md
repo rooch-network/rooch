@@ -1,5 +1,5 @@
 
-<a name="0x3_session_key"></a>
+<a id="0x3_session_key"></a>
 
 # Module `0x3::session_key`
 
@@ -40,7 +40,7 @@
 
 
 
-<a name="0x3_session_key_SessionScope"></a>
+<a id="0x3_session_key_SessionScope"></a>
 
 ## Struct `SessionScope`
 
@@ -52,7 +52,7 @@ The session's scope
 
 
 
-<a name="0x3_session_key_SessionKey"></a>
+<a id="0x3_session_key_SessionKey"></a>
 
 ## Struct `SessionKey`
 
@@ -63,7 +63,7 @@ The session's scope
 
 
 
-<a name="0x3_session_key_SessionKeys"></a>
+<a id="0x3_session_key_SessionKeys"></a>
 
 ## Resource `SessionKeys`
 
@@ -74,12 +74,12 @@ The session's scope
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x3_session_key_ErrorInvalidMaxInactiveInterval"></a>
+<a id="0x3_session_key_ErrorInvalidMaxInactiveInterval"></a>
 
 The max inactive interval is invalid
 
@@ -89,7 +89,7 @@ The max inactive interval is invalid
 
 
 
-<a name="0x3_session_key_ErrorSessionKeyAlreadyExists"></a>
+<a id="0x3_session_key_ErrorSessionKeyAlreadyExists"></a>
 
 The session key already exists
 
@@ -99,7 +99,7 @@ The session key already exists
 
 
 
-<a name="0x3_session_key_ErrorSessionKeyCreatePermissionDenied"></a>
+<a id="0x3_session_key_ErrorSessionKeyCreatePermissionDenied"></a>
 
 Create session key in this context is not allowed
 
@@ -109,7 +109,7 @@ Create session key in this context is not allowed
 
 
 
-<a name="0x3_session_key_ErrorSessionKeyIsInvalid"></a>
+<a id="0x3_session_key_ErrorSessionKeyIsInvalid"></a>
 
 The session key is invalid
 
@@ -119,7 +119,7 @@ The session key is invalid
 
 
 
-<a name="0x3_session_key_ErrorSessionScopePartLengthNotMatch"></a>
+<a id="0x3_session_key_ErrorSessionScopePartLengthNotMatch"></a>
 
 The lengths of the parts of the session's scope do not match.
 
@@ -129,7 +129,7 @@ The lengths of the parts of the session's scope do not match.
 
 
 
-<a name="0x3_session_key_MAX_INACTIVE_INTERVAL"></a>
+<a id="0x3_session_key_MAX_INACTIVE_INTERVAL"></a>
 
 
 
@@ -138,7 +138,7 @@ The lengths of the parts of the session's scope do not match.
 
 
 
-<a name="0x3_session_key_new_session_scope"></a>
+<a id="0x3_session_key_new_session_scope"></a>
 
 ## Function `new_session_scope`
 
@@ -149,7 +149,7 @@ The lengths of the parts of the session's scope do not match.
 
 
 
-<a name="0x3_session_key_is_expired"></a>
+<a id="0x3_session_key_is_expired"></a>
 
 ## Function `is_expired`
 
@@ -160,7 +160,7 @@ The lengths of the parts of the session's scope do not match.
 
 
 
-<a name="0x3_session_key_is_expired_session_key"></a>
+<a id="0x3_session_key_is_expired_session_key"></a>
 
 ## Function `is_expired_session_key`
 
@@ -171,7 +171,7 @@ The lengths of the parts of the session's scope do not match.
 
 
 
-<a name="0x3_session_key_has_session_key"></a>
+<a id="0x3_session_key_has_session_key"></a>
 
 ## Function `has_session_key`
 
@@ -182,7 +182,7 @@ The lengths of the parts of the session's scope do not match.
 
 
 
-<a name="0x3_session_key_exists_session_key"></a>
+<a id="0x3_session_key_exists_session_key"></a>
 
 ## Function `exists_session_key`
 
@@ -193,7 +193,7 @@ The lengths of the parts of the session's scope do not match.
 
 
 
-<a name="0x3_session_key_get_session_key"></a>
+<a id="0x3_session_key_get_session_key"></a>
 
 ## Function `get_session_key`
 
@@ -205,7 +205,7 @@ Get the session key of the account_address by the authentication key
 
 
 
-<a name="0x3_session_key_create_session_key"></a>
+<a id="0x3_session_key_create_session_key"></a>
 
 ## Function `create_session_key`
 
@@ -216,7 +216,7 @@ Get the session key of the account_address by the authentication key
 
 
 
-<a name="0x3_session_key_create_session_key_entry"></a>
+<a id="0x3_session_key_create_session_key_entry"></a>
 
 ## Function `create_session_key_entry`
 
@@ -227,7 +227,7 @@ Get the session key of the account_address by the authentication key
 
 
 
-<a name="0x3_session_key_create_session_key_with_multi_scope_entry"></a>
+<a id="0x3_session_key_create_session_key_with_multi_scope_entry"></a>
 
 ## Function `create_session_key_with_multi_scope_entry`
 
@@ -238,7 +238,7 @@ Get the session key of the account_address by the authentication key
 
 
 
-<a name="0x3_session_key_in_session_scope"></a>
+<a id="0x3_session_key_in_session_scope"></a>
 
 ## Function `in_session_scope`
 
@@ -250,7 +250,7 @@ Check the current tx is in the session scope or not
 
 
 
-<a name="0x3_session_key_active_session_key"></a>
+<a id="0x3_session_key_active_session_key"></a>
 
 ## Function `active_session_key`
 
@@ -261,7 +261,7 @@ Check the current tx is in the session scope or not
 
 
 
-<a name="0x3_session_key_remove_session_key"></a>
+<a id="0x3_session_key_remove_session_key"></a>
 
 ## Function `remove_session_key`
 
@@ -272,7 +272,7 @@ Check the current tx is in the session scope or not
 
 
 
-<a name="0x3_session_key_remove_session_key_entry"></a>
+<a id="0x3_session_key_remove_session_key_entry"></a>
 
 ## Function `remove_session_key_entry`
 
@@ -283,7 +283,7 @@ Check the current tx is in the session scope or not
 
 
 
-<a name="0x3_session_key_get_session_keys_handle"></a>
+<a id="0x3_session_key_get_session_keys_handle"></a>
 
 ## Function `get_session_keys_handle`
 

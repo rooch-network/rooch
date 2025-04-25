@@ -1,5 +1,5 @@
 
-<a name="0x3_coin"></a>
+<a id="0x3_coin"></a>
 
 # Module `0x3::coin`
 
@@ -63,7 +63,7 @@ This module provides the foundation for typesafe Coins.
 
 
 
-<a name="0x3_coin_Coin"></a>
+<a id="0x3_coin_Coin"></a>
 
 ## Struct `Coin`
 
@@ -79,7 +79,7 @@ The Coin has no ability, it is a hot potato type, only can handle by Coin module
 
 
 
-<a name="0x3_coin_CoinInfo"></a>
+<a id="0x3_coin_CoinInfo"></a>
 
 ## Resource `CoinInfo`
 
@@ -92,7 +92,7 @@ CoinInfo<CoinType> is a named Object, the <code>coin_type</code> is the unique k
 
 
 
-<a name="0x3_coin_CoinMetadata"></a>
+<a id="0x3_coin_CoinMetadata"></a>
 
 ## Resource `CoinMetadata`
 
@@ -104,7 +104,7 @@ Coin metadata is copied from CoinInfo, and stored as dynamic field of CoinRegist
 
 
 
-<a name="0x3_coin_CoinRegistry"></a>
+<a id="0x3_coin_CoinRegistry"></a>
 
 ## Resource `CoinRegistry`
 
@@ -116,7 +116,7 @@ The registry of all coin types.
 
 
 
-<a name="0x3_coin_MintEvent"></a>
+<a id="0x3_coin_MintEvent"></a>
 
 ## Struct `MintEvent`
 
@@ -128,7 +128,7 @@ Event emitted when coin minted.
 
 
 
-<a name="0x3_coin_BurnEvent"></a>
+<a id="0x3_coin_BurnEvent"></a>
 
 ## Struct `BurnEvent`
 
@@ -140,12 +140,12 @@ Event emitted when coin burned.
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x3_coin_MAX_U64"></a>
+<a id="0x3_coin_MAX_U64"></a>
 
 Maximum possible aggregatable coin value.
 
@@ -155,7 +155,7 @@ Maximum possible aggregatable coin value.
 
 
 
-<a name="0x3_coin_MAX_U128"></a>
+<a id="0x3_coin_MAX_U128"></a>
 
 Maximum possible coin supply.
 
@@ -165,7 +165,7 @@ Maximum possible coin supply.
 
 
 
-<a name="0x3_coin_MAX_U256"></a>
+<a id="0x3_coin_MAX_U256"></a>
 
 
 
@@ -174,7 +174,7 @@ Maximum possible coin supply.
 
 
 
-<a name="0x3_coin_ErrorCoinInfoAlreadyRegistered"></a>
+<a id="0x3_coin_ErrorCoinInfoAlreadyRegistered"></a>
 
 <code>CoinType</code> is already registered as a coin
 
@@ -184,7 +184,7 @@ Maximum possible coin supply.
 
 
 
-<a name="0x3_coin_ErrorCoinInfoNotRegistered"></a>
+<a id="0x3_coin_ErrorCoinInfoNotRegistered"></a>
 
 <code>CoinType</code> is not registered as a coin
 
@@ -194,7 +194,7 @@ Maximum possible coin supply.
 
 
 
-<a name="0x3_coin_ErrorCoinInfosNotFound"></a>
+<a id="0x3_coin_ErrorCoinInfosNotFound"></a>
 
 Global CoinInfos should exist
 
@@ -204,7 +204,7 @@ Global CoinInfos should exist
 
 
 
-<a name="0x3_coin_ErrorCoinNameTooLong"></a>
+<a id="0x3_coin_ErrorCoinNameTooLong"></a>
 
 Name of the coin is too long
 
@@ -214,7 +214,7 @@ Name of the coin is too long
 
 
 
-<a name="0x3_coin_ErrorCoinRegisterAlreadyInitialized"></a>
+<a id="0x3_coin_ErrorCoinRegisterAlreadyInitialized"></a>
 
 CoinRegister is already initialized
 
@@ -224,7 +224,7 @@ CoinRegister is already initialized
 
 
 
-<a name="0x3_coin_ErrorCoinSymbolTooLong"></a>
+<a id="0x3_coin_ErrorCoinSymbolTooLong"></a>
 
 Symbol of the coin is too long
 
@@ -234,7 +234,7 @@ Symbol of the coin is too long
 
 
 
-<a name="0x3_coin_ErrorDeprecated"></a>
+<a id="0x3_coin_ErrorDeprecated"></a>
 
 The function is deprecated
 
@@ -244,7 +244,7 @@ The function is deprecated
 
 
 
-<a name="0x3_coin_ErrorDestroyOfNonZeroCoin"></a>
+<a id="0x3_coin_ErrorDestroyOfNonZeroCoin"></a>
 
 Cannot destroy non-zero coins
 
@@ -254,7 +254,7 @@ Cannot destroy non-zero coins
 
 
 
-<a name="0x3_coin_ErrorInsufficientBalance"></a>
+<a id="0x3_coin_ErrorInsufficientBalance"></a>
 
 Not enough coins to extract
 
@@ -264,7 +264,7 @@ Not enough coins to extract
 
 
 
-<a name="0x3_coin_ErrorZeroCoinAmount"></a>
+<a id="0x3_coin_ErrorZeroCoinAmount"></a>
 
 Coin amount cannot be zero
 
@@ -274,7 +274,7 @@ Coin amount cannot be zero
 
 
 
-<a name="0x3_coin_MAX_COIN_NAME_LENGTH"></a>
+<a id="0x3_coin_MAX_COIN_NAME_LENGTH"></a>
 
 
 
@@ -283,7 +283,7 @@ Coin amount cannot be zero
 
 
 
-<a name="0x3_coin_MAX_COIN_SYMBOL_LENGTH"></a>
+<a id="0x3_coin_MAX_COIN_SYMBOL_LENGTH"></a>
 
 
 
@@ -292,7 +292,7 @@ Coin amount cannot be zero
 
 
 
-<a name="0x3_coin_genesis_init"></a>
+<a id="0x3_coin_genesis_init"></a>
 
 ## Function `genesis_init`
 
@@ -303,7 +303,7 @@ Coin amount cannot be zero
 
 
 
-<a name="0x3_coin_init_coin_registry"></a>
+<a id="0x3_coin_init_coin_registry"></a>
 
 ## Function `init_coin_registry`
 
@@ -315,7 +315,7 @@ Initialize the CoinRegistry, this function is for framework upgrade.
 
 
 
-<a name="0x3_coin_coin_address"></a>
+<a id="0x3_coin_coin_address"></a>
 
 ## Function `coin_address`
 
@@ -327,7 +327,7 @@ A helper function that returns the address of CoinType.
 
 
 
-<a name="0x3_coin_check_coin_info_registered"></a>
+<a id="0x3_coin_check_coin_info_registered"></a>
 
 ## Function `check_coin_info_registered`
 
@@ -339,7 +339,7 @@ A helper function that check the <code>CoinType</code> is registered, if not, ab
 
 
 
-<a name="0x3_coin_is_registered"></a>
+<a id="0x3_coin_is_registered"></a>
 
 ## Function `is_registered`
 
@@ -351,7 +351,7 @@ Returns <code><b>true</b></code> if the type <code>CoinType</code> is an registe
 
 
 
-<a name="0x3_coin_coin_info_id"></a>
+<a id="0x3_coin_coin_info_id"></a>
 
 ## Function `coin_info_id`
 
@@ -363,7 +363,7 @@ Return the ObjectID of Object<CoinInfo<CoinType>>
 
 
 
-<a name="0x3_coin_name"></a>
+<a id="0x3_coin_name"></a>
 
 ## Function `name`
 
@@ -375,7 +375,7 @@ Returns the name of the coin.
 
 
 
-<a name="0x3_coin_name_by_type"></a>
+<a id="0x3_coin_name_by_type"></a>
 
 ## Function `name_by_type`
 
@@ -387,7 +387,7 @@ Returns the name of the coin by the type <code>CoinType</code>
 
 
 
-<a name="0x3_coin_name_by_type_name"></a>
+<a id="0x3_coin_name_by_type_name"></a>
 
 ## Function `name_by_type_name`
 
@@ -399,7 +399,7 @@ Returns the name of the coin by the coin type name
 
 
 
-<a name="0x3_coin_symbol"></a>
+<a id="0x3_coin_symbol"></a>
 
 ## Function `symbol`
 
@@ -411,7 +411,7 @@ Returns the symbol of the coin, usually a shorter version of the name.
 
 
 
-<a name="0x3_coin_symbol_by_type"></a>
+<a id="0x3_coin_symbol_by_type"></a>
 
 ## Function `symbol_by_type`
 
@@ -423,7 +423,7 @@ Returns the symbol of the coin by the type <code>CoinType</code>
 
 
 
-<a name="0x3_coin_symbol_by_type_name"></a>
+<a id="0x3_coin_symbol_by_type_name"></a>
 
 ## Function `symbol_by_type_name`
 
@@ -435,7 +435,7 @@ Returns the symbol of the coin by the coin type name
 
 
 
-<a name="0x3_coin_decimals"></a>
+<a id="0x3_coin_decimals"></a>
 
 ## Function `decimals`
 
@@ -449,7 +449,7 @@ be displayed to a user as <code>5.05</code> (<code>505 / 10 ** 2</code>).
 
 
 
-<a name="0x3_coin_decimals_by_type"></a>
+<a id="0x3_coin_decimals_by_type"></a>
 
 ## Function `decimals_by_type`
 
@@ -461,7 +461,7 @@ Returns the decimals of the coin by the type <code>CoinType</code>
 
 
 
-<a name="0x3_coin_decimals_by_type_name"></a>
+<a id="0x3_coin_decimals_by_type_name"></a>
 
 ## Function `decimals_by_type_name`
 
@@ -473,7 +473,7 @@ Returns the decimals of the coin by the coin type name
 
 
 
-<a name="0x3_coin_supply"></a>
+<a id="0x3_coin_supply"></a>
 
 ## Function `supply`
 
@@ -485,7 +485,7 @@ Returns the amount of coin in existence.
 
 
 
-<a name="0x3_coin_supply_by_type"></a>
+<a id="0x3_coin_supply_by_type"></a>
 
 ## Function `supply_by_type`
 
@@ -497,7 +497,7 @@ Returns the amount of coin in existence by the type <code>CoinType</code>
 
 
 
-<a name="0x3_coin_supply_by_type_name"></a>
+<a id="0x3_coin_supply_by_type_name"></a>
 
 ## Function `supply_by_type_name`
 
@@ -509,7 +509,7 @@ Returns the amount of coin in existence by the coin type name
 
 
 
-<a name="0x3_coin_icon_url"></a>
+<a id="0x3_coin_icon_url"></a>
 
 ## Function `icon_url`
 
@@ -521,7 +521,7 @@ Returns the icon url of coin.
 
 
 
-<a name="0x3_coin_icon_url_by_type"></a>
+<a id="0x3_coin_icon_url_by_type"></a>
 
 ## Function `icon_url_by_type`
 
@@ -533,7 +533,7 @@ Returns the icon url of coin by the type <code>CoinType</code>
 
 
 
-<a name="0x3_coin_icon_url_by_type_name"></a>
+<a id="0x3_coin_icon_url_by_type_name"></a>
 
 ## Function `icon_url_by_type_name`
 
@@ -545,7 +545,7 @@ Returns the icon url of the coin by the coin type name
 
 
 
-<a name="0x3_coin_is_same_coin"></a>
+<a id="0x3_coin_is_same_coin"></a>
 
 ## Function `is_same_coin`
 
@@ -557,7 +557,7 @@ Return true if the type <code>CoinType1</code> is same with <code>CoinType2</cod
 
 
 
-<a name="0x3_coin_destroy_zero"></a>
+<a id="0x3_coin_destroy_zero"></a>
 
 ## Function `destroy_zero`
 
@@ -570,7 +570,7 @@ so it is impossible to "burn" any non-zero amount of <code><a href="coin.md#0x3_
 
 
 
-<a name="0x3_coin_extract"></a>
+<a id="0x3_coin_extract"></a>
 
 ## Function `extract`
 
@@ -582,7 +582,7 @@ Extracts <code>amount</code> from the passed-in <code><a href="coin.md#0x3_coin"
 
 
 
-<a name="0x3_coin_extract_all"></a>
+<a id="0x3_coin_extract_all"></a>
 
 ## Function `extract_all`
 
@@ -594,7 +594,7 @@ Extracts the entire amount from the passed-in <code><a href="coin.md#0x3_coin">c
 
 
 
-<a name="0x3_coin_merge"></a>
+<a id="0x3_coin_merge"></a>
 
 ## Function `merge`
 
@@ -607,7 +607,7 @@ to the sum of the two coins (<code>dst_coin</code> and <code>source_coin</code>)
 
 
 
-<a name="0x3_coin_value"></a>
+<a id="0x3_coin_value"></a>
 
 ## Function `value`
 
@@ -619,7 +619,7 @@ Returns the <code>value</code> passed in <code><a href="coin.md#0x3_coin">coin</
 
 
 
-<a name="0x3_coin_zero"></a>
+<a id="0x3_coin_zero"></a>
 
 ## Function `zero`
 
@@ -631,7 +631,7 @@ Create a new <code><a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt;</cod
 
 
 
-<a name="0x3_coin_coin_info"></a>
+<a id="0x3_coin_coin_info"></a>
 
 ## Function `coin_info`
 
@@ -643,7 +643,7 @@ Borrow the CoinInfo<CoinType>
 
 
 
-<a name="0x3_coin_get_coin_info_by_type_name"></a>
+<a id="0x3_coin_get_coin_info_by_type_name"></a>
 
 ## Function `get_coin_info_by_type_name`
 
@@ -654,7 +654,7 @@ Borrow the CoinInfo<CoinType>
 
 
 
-<a name="0x3_coin_upsert_icon_url"></a>
+<a id="0x3_coin_upsert_icon_url"></a>
 
 ## Function `upsert_icon_url`
 
@@ -667,7 +667,7 @@ This function is protected by <code>private_generics</code>, so it can only be c
 
 
 
-<a name="0x3_coin_register_extend"></a>
+<a id="0x3_coin_register_extend"></a>
 
 ## Function `register_extend`
 
@@ -681,7 +681,7 @@ This function is protected by <code>private_generics</code>, so it can only be c
 
 
 
-<a name="0x3_coin_init_metadata"></a>
+<a id="0x3_coin_init_metadata"></a>
 
 ## Function `init_metadata`
 
@@ -693,7 +693,7 @@ This function for the old code to initialize the CoinMetadata
 
 
 
-<a name="0x3_coin_mint"></a>
+<a id="0x3_coin_mint"></a>
 
 ## Function `mint`
 
@@ -705,7 +705,7 @@ Public coin can mint by anyone with the mutable Object<CoinInfo<CoinType>>
 
 
 
-<a name="0x3_coin_mint_extend"></a>
+<a id="0x3_coin_mint_extend"></a>
 
 ## Function `mint_extend`
 
@@ -718,7 +718,7 @@ Mint new <code><a href="coin.md#0x3_coin_Coin">Coin</a></code>, this function is
 
 
 
-<a name="0x3_coin_burn"></a>
+<a id="0x3_coin_burn"></a>
 
 ## Function `burn`
 
@@ -730,7 +730,7 @@ Public coin can burn by anyone with the mutable Object<CoinInfo<CoinType>>
 
 
 
-<a name="0x3_coin_burn_extend"></a>
+<a id="0x3_coin_burn_extend"></a>
 
 ## Function `burn_extend`
 
@@ -744,7 +744,7 @@ This function is only called by the <code>CoinType</code> module, for the develo
 
 
 
-<a name="0x3_coin_unpack"></a>
+<a id="0x3_coin_unpack"></a>
 
 ## Function `unpack`
 
@@ -755,7 +755,7 @@ This function is only called by the <code>CoinType</code> module, for the develo
 
 
 
-<a name="0x3_coin_pack"></a>
+<a id="0x3_coin_pack"></a>
 
 ## Function `pack`
 

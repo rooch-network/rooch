@@ -121,6 +121,34 @@ fn serialize_field_inst_index(
     write_as_uleb128(binary, idx.0, FIELD_INST_INDEX_MAX)
 }
 
+fn serialize_variant_field_handle_index(
+    binary: &mut BinaryData,
+    idx: &VariantFieldHandleIndex,
+) -> Result<()> {
+    write_as_uleb128(binary, idx.0, VARIANT_FIELD_HANDLE_INDEX_MAX)
+}
+
+fn serialize_variant_field_inst_index(
+    binary: &mut BinaryData,
+    idx: &VariantFieldInstantiationIndex,
+) -> Result<()> {
+    write_as_uleb128(binary, idx.0, VARIANT_FIELD_INST_INDEX_MAX)
+}
+
+fn serialize_struct_variant_handle_index(
+    binary: &mut BinaryData,
+    idx: &StructVariantHandleIndex,
+) -> Result<()> {
+    write_as_uleb128(binary, idx.0, STRUCT_VARIANT_HANDLE_INDEX_MAX)
+}
+
+fn serialize_struct_variant_inst_index(
+    binary: &mut BinaryData,
+    idx: &StructVariantInstantiationIndex,
+) -> Result<()> {
+    write_as_uleb128(binary, idx.0, STRUCT_VARIANT_INST_INDEX_MAX)
+}
+
 fn serialize_function_inst_index(
     binary: &mut BinaryData,
     idx: &FunctionInstantiationIndex,
@@ -827,6 +855,22 @@ fn serialize_instruction_inner(
             binary.push(Opcodes::IMM_BORROW_FIELD_GENERIC as u8)?;
             serialize_field_inst_index(binary, field_idx)
         }
+        Bytecode::MutBorrowVariantField(field_idx) => {
+            binary.push(Opcodes::MUT_BORROW_VARIANT_FIELD as u8)?;
+            serialize_variant_field_handle_index(binary, field_idx)
+        }
+        Bytecode::MutBorrowVariantFieldGeneric(field_idx) => {
+            binary.push(Opcodes::MUT_BORROW_VARIANT_FIELD_GENERIC as u8)?;
+            serialize_variant_field_inst_index(binary, field_idx)
+        }
+        Bytecode::ImmBorrowVariantField(field_idx) => {
+            binary.push(Opcodes::IMM_BORROW_VARIANT_FIELD as u8)?;
+            serialize_variant_field_handle_index(binary, field_idx)
+        }
+        Bytecode::ImmBorrowVariantFieldGeneric(field_idx) => {
+            binary.push(Opcodes::IMM_BORROW_VARIANT_FIELD_GENERIC as u8)?;
+            serialize_variant_field_inst_index(binary, field_idx)
+        }
         Bytecode::Call(method_idx) => {
             binary.push(Opcodes::CALL as u8)?;
             serialize_function_handle_index(binary, method_idx)
@@ -850,6 +894,30 @@ fn serialize_instruction_inner(
         Bytecode::UnpackGeneric(class_idx) => {
             binary.push(Opcodes::UNPACK_GENERIC as u8)?;
             serialize_struct_def_inst_index(binary, class_idx)
+        }
+        Bytecode::UnpackVariant(class_idx) => {
+            binary.push(Opcodes::UNPACK_VARIANT as u8)?;
+            serialize_struct_variant_handle_index(binary, class_idx)
+        }
+        Bytecode::PackVariant(class_idx) => {
+            binary.push(Opcodes::PACK_VARIANT as u8)?;
+            serialize_struct_variant_handle_index(binary, class_idx)
+        }
+        Bytecode::UnpackVariantGeneric(class_idx) => {
+            binary.push(Opcodes::UNPACK_VARIANT_GENERIC as u8)?;
+            serialize_struct_variant_inst_index(binary, class_idx)
+        }
+        Bytecode::PackVariantGeneric(class_idx) => {
+            binary.push(Opcodes::PACK_VARIANT_GENERIC as u8)?;
+            serialize_struct_variant_inst_index(binary, class_idx)
+        }
+        Bytecode::TestVariant(class_idx) => {
+            binary.push(Opcodes::TEST_VARIANT as u8)?;
+            serialize_struct_variant_handle_index(binary, class_idx)
+        }
+        Bytecode::TestVariantGeneric(class_idx) => {
+            binary.push(Opcodes::TEST_VARIANT_GENERIC as u8)?;
+            serialize_struct_variant_inst_index(binary, class_idx)
         }
         Bytecode::ReadRef => binary.push(Opcodes::READ_REF as u8),
         Bytecode::WriteRef => binary.push(Opcodes::WRITE_REF as u8),

@@ -22,6 +22,6 @@ error[E03002]: unbound module
    ┌─ /tmp/tempfile:18:9
    │
 18 │         test::publish_foo<Foo>(&s);
-   │         ^^^^ Unbound module alias 'test'
+   │         ^^^^ Unbound module or type alias 'test'
 
 

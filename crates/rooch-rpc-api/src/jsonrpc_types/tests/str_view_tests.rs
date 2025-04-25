@@ -114,7 +114,7 @@ fn test_account_address_view() {
     );
 
     let address_result = AccountAddressView::from_str("11");
-    assert!(address_result.is_err());
+    assert!(address_result.is_ok());
 }
 
 #[test]

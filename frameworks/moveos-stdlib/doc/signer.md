@@ -1,5 +1,5 @@
 
-<a name="0x2_signer"></a>
+<a id="0x2_signer"></a>
 
 # Module `0x2::signer`
 
@@ -14,7 +14,7 @@
 
 
 
-<a name="0x2_signer_module_signer"></a>
+<a id="0x2_signer_module_signer"></a>
 
 ## Function `module_signer`
 
@@ -28,7 +28,7 @@ This is safe because the generic type <code>T</code> is private, meaning it can 
 
 
 
-<a name="0x2_signer_address_of"></a>
+<a id="0x2_signer_address_of"></a>
 
 ## Function `address_of`
 

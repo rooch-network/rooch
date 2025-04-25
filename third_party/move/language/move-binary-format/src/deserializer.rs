@@ -240,6 +240,42 @@ fn load_struct_def_inst_index(
     )?))
 }
 
+fn load_variant_field_handle_index(
+    cursor: &mut VersionedCursor,
+) -> BinaryLoaderResult<VariantFieldHandleIndex> {
+    Ok(VariantFieldHandleIndex(read_uleb_internal(
+        cursor,
+        TABLE_INDEX_MAX,
+    )?))
+}
+
+fn load_variant_field_inst_index(
+    cursor: &mut VersionedCursor,
+) -> BinaryLoaderResult<VariantFieldInstantiationIndex> {
+    Ok(VariantFieldInstantiationIndex(read_uleb_internal(
+        cursor,
+        TABLE_INDEX_MAX,
+    )?))
+}
+
+fn load_struct_variant_handle_index(
+    cursor: &mut VersionedCursor,
+) -> BinaryLoaderResult<StructVariantHandleIndex> {
+    Ok(StructVariantHandleIndex(read_uleb_internal(
+        cursor,
+        TABLE_INDEX_MAX,
+    )?))
+}
+
+fn load_struct_variant_inst_index(
+    cursor: &mut VersionedCursor,
+) -> BinaryLoaderResult<StructVariantInstantiationIndex> {
+    Ok(StructVariantInstantiationIndex(read_uleb_internal(
+        cursor,
+        TABLE_INDEX_MAX,
+    )?))
+}
+
 fn load_constant_pool_index(cursor: &mut VersionedCursor) -> BinaryLoaderResult<ConstantPoolIndex> {
     Ok(ConstantPoolIndex(read_uleb_internal(
         cursor,
@@ -1520,12 +1556,42 @@ fn load_code(cursor: &mut VersionedCursor, code: &mut Vec<Bytecode>) -> BinaryLo
             Opcodes::IMM_BORROW_FIELD_GENERIC => {
                 Bytecode::ImmBorrowFieldGeneric(load_field_inst_index(cursor)?)
             }
+            Opcodes::MUT_BORROW_VARIANT_FIELD => {
+                Bytecode::MutBorrowVariantField(load_variant_field_handle_index(cursor)?)
+            }
+            Opcodes::MUT_BORROW_VARIANT_FIELD_GENERIC => {
+                Bytecode::MutBorrowVariantFieldGeneric(load_variant_field_inst_index(cursor)?)
+            }
+            Opcodes::IMM_BORROW_VARIANT_FIELD => {
+                Bytecode::ImmBorrowVariantField(load_variant_field_handle_index(cursor)?)
+            }
+            Opcodes::IMM_BORROW_VARIANT_FIELD_GENERIC => {
+                Bytecode::ImmBorrowVariantFieldGeneric(load_variant_field_inst_index(cursor)?)
+            }
             Opcodes::CALL => Bytecode::Call(load_function_handle_index(cursor)?),
             Opcodes::CALL_GENERIC => Bytecode::CallGeneric(load_function_inst_index(cursor)?),
             Opcodes::PACK => Bytecode::Pack(load_struct_def_index(cursor)?),
             Opcodes::PACK_GENERIC => Bytecode::PackGeneric(load_struct_def_inst_index(cursor)?),
             Opcodes::UNPACK => Bytecode::Unpack(load_struct_def_index(cursor)?),
             Opcodes::UNPACK_GENERIC => Bytecode::UnpackGeneric(load_struct_def_inst_index(cursor)?),
+            Opcodes::PACK_VARIANT => {
+                Bytecode::PackVariant(load_struct_variant_handle_index(cursor)?)
+            }
+            Opcodes::UNPACK_VARIANT => {
+                Bytecode::UnpackVariant(load_struct_variant_handle_index(cursor)?)
+            }
+            Opcodes::PACK_VARIANT_GENERIC => {
+                Bytecode::PackVariantGeneric(load_struct_variant_inst_index(cursor)?)
+            }
+            Opcodes::UNPACK_VARIANT_GENERIC => {
+                Bytecode::UnpackVariantGeneric(load_struct_variant_inst_index(cursor)?)
+            }
+            Opcodes::TEST_VARIANT => {
+                Bytecode::TestVariant(load_struct_variant_handle_index(cursor)?)
+            }
+            Opcodes::TEST_VARIANT_GENERIC => {
+                Bytecode::TestVariantGeneric(load_struct_variant_inst_index(cursor)?)
+            }
             Opcodes::READ_REF => Bytecode::ReadRef,
             Opcodes::WRITE_REF => Bytecode::WriteRef,
             Opcodes::ADD => Bytecode::Add,

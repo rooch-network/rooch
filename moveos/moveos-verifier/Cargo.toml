@@ -33,4 +33,5 @@ move-vm-runtime = { workspace = true, features = ["stacktrace", "debugging", "te
 move-vm-types = { workspace = true }
 move-symbol-pool = { workspace = true }
 move-ir-types = { workspace = true }
+move-compiler-v2 = { workspace = true }
 

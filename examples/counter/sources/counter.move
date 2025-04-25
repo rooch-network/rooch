@@ -5,7 +5,8 @@ module rooch_examples::counter {
 
    use moveos_std::account;
 
-   struct Counter has key {
+   #[data_struct]
+   struct Counter has key,copy,drop {
       value:u64,
    }
 

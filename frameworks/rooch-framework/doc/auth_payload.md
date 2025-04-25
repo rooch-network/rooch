@@ -1,5 +1,5 @@
 
-<a name="0x3_auth_payload"></a>
+<a id="0x3_auth_payload"></a>
 
 # Module `0x3::auth_payload`
 
@@ -34,7 +34,7 @@
 
 
 
-<a name="0x3_auth_payload_AuthPayload"></a>
+<a id="0x3_auth_payload_AuthPayload"></a>
 
 ## Struct `AuthPayload`
 
@@ -46,7 +46,7 @@
 
 
 
-<a name="0x3_auth_payload_MultisignAuthPayload"></a>
+<a id="0x3_auth_payload_MultisignAuthPayload"></a>
 
 ## Struct `MultisignAuthPayload`
 
@@ -58,7 +58,7 @@
 
 
 
-<a name="0x3_auth_payload_SignData"></a>
+<a id="0x3_auth_payload_SignData"></a>
 
 ## Struct `SignData`
 
@@ -70,12 +70,12 @@
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x3_auth_payload_ErrorInvalidSignature"></a>
+<a id="0x3_auth_payload_ErrorInvalidSignature"></a>
 
 
 
@@ -84,7 +84,7 @@
 
 
 
-<a name="0x3_auth_payload_MessageInfoPrefix"></a>
+<a id="0x3_auth_payload_MessageInfoPrefix"></a>
 
 
 
@@ -93,7 +93,7 @@
 
 
 
-<a name="0x3_auth_payload_MessagePrefix"></a>
+<a id="0x3_auth_payload_MessagePrefix"></a>
 
 
 
@@ -102,7 +102,7 @@
 
 
 
-<a name="0x3_auth_payload_new_sign_data"></a>
+<a id="0x3_auth_payload_new_sign_data"></a>
 
 ## Function `new_sign_data`
 
@@ -113,7 +113,7 @@
 
 
 
-<a name="0x3_auth_payload_from_bytes"></a>
+<a id="0x3_auth_payload_from_bytes"></a>
 
 ## Function `from_bytes`
 
@@ -124,7 +124,7 @@
 
 
 
-<a name="0x3_auth_payload_encode_full_message"></a>
+<a id="0x3_auth_payload_encode_full_message"></a>
 
 ## Function `encode_full_message`
 
@@ -135,7 +135,7 @@
 
 
 
-<a name="0x3_auth_payload_signature"></a>
+<a id="0x3_auth_payload_signature"></a>
 
 ## Function `signature`
 
@@ -146,7 +146,7 @@
 
 
 
-<a name="0x3_auth_payload_message_prefix"></a>
+<a id="0x3_auth_payload_message_prefix"></a>
 
 ## Function `message_prefix`
 
@@ -157,7 +157,7 @@
 
 
 
-<a name="0x3_auth_payload_message_info"></a>
+<a id="0x3_auth_payload_message_info"></a>
 
 ## Function `message_info`
 
@@ -168,7 +168,7 @@
 
 
 
-<a name="0x3_auth_payload_public_key"></a>
+<a id="0x3_auth_payload_public_key"></a>
 
 ## Function `public_key`
 
@@ -179,7 +179,7 @@
 
 
 
-<a name="0x3_auth_payload_from_address"></a>
+<a id="0x3_auth_payload_from_address"></a>
 
 ## Function `from_address`
 
@@ -190,7 +190,7 @@
 
 
 
-<a name="0x3_auth_payload_multisign_from_bytes"></a>
+<a id="0x3_auth_payload_multisign_from_bytes"></a>
 
 ## Function `multisign_from_bytes`
 
@@ -201,7 +201,7 @@
 
 
 
-<a name="0x3_auth_payload_multisign_signatures"></a>
+<a id="0x3_auth_payload_multisign_signatures"></a>
 
 ## Function `multisign_signatures`
 
@@ -212,7 +212,7 @@
 
 
 
-<a name="0x3_auth_payload_multisign_message_prefix"></a>
+<a id="0x3_auth_payload_multisign_message_prefix"></a>
 
 ## Function `multisign_message_prefix`
 
@@ -223,7 +223,7 @@
 
 
 
-<a name="0x3_auth_payload_multisign_message_info"></a>
+<a id="0x3_auth_payload_multisign_message_info"></a>
 
 ## Function `multisign_message_info`
 
@@ -234,7 +234,7 @@
 
 
 
-<a name="0x3_auth_payload_multisign_public_keys"></a>
+<a id="0x3_auth_payload_multisign_public_keys"></a>
 
 ## Function `multisign_public_keys`
 
@@ -245,7 +245,7 @@
 
 
 
-<a name="0x3_auth_payload_multisign_encode_full_message"></a>
+<a id="0x3_auth_payload_multisign_encode_full_message"></a>
 
 ## Function `multisign_encode_full_message`
 

@@ -36,7 +36,7 @@ impl TestEvent {
             address: AccountAddress::from_hex_literal("0x42").unwrap(),
             module: ident_str!("test").to_owned(),
             name: ident_str!("test_event").to_owned(),
-            type_params: vec![],
+            type_args: vec![],
         }
     }
 

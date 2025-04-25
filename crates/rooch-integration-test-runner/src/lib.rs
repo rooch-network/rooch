@@ -11,6 +11,7 @@ use move_command_line_common::{
     files::verify_and_create_named_address_mapping,
     values::ParsableValue,
 };
+use move_compiler::shared::known_attributes::KnownAttribute;
 use move_compiler::shared::PackagePaths;
 use move_compiler::FullyCompiledProgram;
 use move_core_types::{identifier::Identifier, language_storage::ModuleId};
@@ -20,7 +21,7 @@ use move_transactional_test_runner::{
     vm_test_harness::view_resource_in_move_storage,
 };
 use move_vm_runtime::session::SerializedReturnValues;
-use moveos::moveos::{MoveOS, MoveOSConfig};
+use moveos::moveos::{new_moveos_global_module_cache, MoveOS, MoveOSCacheManager};
 use moveos::moveos_test_runner::{CompiledState, MoveOSTestAdapter, TaskInput};
 use moveos_config::DataDirPath;
 use moveos_store::MoveOSStore;
@@ -112,17 +113,23 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
             }
             None => BTreeMap::new(),
         };
+        let global_module_cache = new_moveos_global_module_cache();
         let temp_dir = moveos_config::temp_dir();
         let registry = prometheus::Registry::new();
         let moveos_store = MoveOSStore::new(temp_dir.path(), &registry).unwrap();
         let genesis_gas_parameter = FrameworksGasParameters::initial();
         let genesis: &RoochGenesisV2 = &rooch_genesis::ROOCH_LOCAL_GENESIS;
+
+        let global_cache_manager = MoveOSCacheManager::new(
+            genesis_gas_parameter.all_natives(),
+            global_module_cache.clone(),
+        );
+
         let moveos = MoveOS::new(
             moveos_store.clone(),
-            genesis_gas_parameter.all_natives(),
-            MoveOSConfig::default(),
             rooch_types::framework::system_pre_execute_functions(),
             rooch_types::framework::system_post_execute_functions(),
+            global_cache_manager,
         )
         .unwrap();
 
@@ -304,7 +311,7 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
         type_args: Vec<move_core_types::language_storage::TypeTag>,
     ) -> anyhow::Result<String> {
         let resolver = RootObjectResolver::new(self.root.clone(), self.moveos.moveos_store());
-        view_resource_in_move_storage(&resolver, address, module, resource, type_args)
+        view_resource_in_move_storage(&resolver, &resolver, address, module, resource, type_args)
     }
 
     fn handle_subcommand(
@@ -522,6 +529,7 @@ pub fn all_pre_compiled_libs() -> Option<FullyCompiledProgram> {
         ],
         None,
         move_compiler::Flags::empty(),
+        KnownAttribute::get_all_attribute_names(),
     )
     .unwrap();
     match program_res {

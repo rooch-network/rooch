@@ -327,7 +327,7 @@ where
             address: Self::ADDRESS,
             module: Self::MODULE_NAME.to_owned(),
             name: Self::STRUCT_NAME.to_owned(),
-            type_params: vec![T::struct_tag().into()],
+            type_args: vec![T::struct_tag().into()],
         }
     }
 }

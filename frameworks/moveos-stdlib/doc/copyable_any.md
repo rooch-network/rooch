@@ -1,5 +1,5 @@
 
-<a name="0x2_copyable_any"></a>
+<a id="0x2_copyable_any"></a>
 
 # Module `0x2::copyable_any`
 
@@ -21,7 +21,7 @@ Source from https://github.com/aptos-labs/aptos-core/blob/main/aptos-move/framew
 
 
 
-<a name="0x2_copyable_any_Any"></a>
+<a id="0x2_copyable_any_Any"></a>
 
 ## Struct `Any`
 
@@ -33,12 +33,12 @@ The same as <code><a href="any.md#0x2_any_Any">any::Any</a></code> but with the 
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x2_copyable_any_ErrorInvalidBytes"></a>
+<a id="0x2_copyable_any_ErrorInvalidBytes"></a>
 
 
 
@@ -47,7 +47,7 @@ The same as <code><a href="any.md#0x2_any_Any">any::Any</a></code> but with the 
 
 
 
-<a name="0x2_copyable_any_ErrorTypeMismatch"></a>
+<a id="0x2_copyable_any_ErrorTypeMismatch"></a>
 
 The type provided for <code>unpack</code> is not the same as was given for <code>pack</code>.
 
@@ -57,7 +57,7 @@ The type provided for <code>unpack</code> is not the same as was given for <code
 
 
 
-<a name="0x2_copyable_any_pack"></a>
+<a id="0x2_copyable_any_pack"></a>
 
 ## Function `pack`
 
@@ -70,7 +70,7 @@ also required from <code>T</code>.
 
 
 
-<a name="0x2_copyable_any_unpack"></a>
+<a id="0x2_copyable_any_unpack"></a>
 
 ## Function `unpack`
 
@@ -82,7 +82,7 @@ Unpack a value from the <code><a href="copyable_any.md#0x2_copyable_any_Any">Any
 
 
 
-<a name="0x2_copyable_any_type_name"></a>
+<a id="0x2_copyable_any_type_name"></a>
 
 ## Function `type_name`
 

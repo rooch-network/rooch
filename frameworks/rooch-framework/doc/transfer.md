@@ -1,5 +1,5 @@
 
-<a name="0x3_transfer"></a>
+<a id="0x3_transfer"></a>
 
 # Module `0x3::transfer`
 
@@ -24,12 +24,12 @@
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x3_transfer_ErrorAddressMappingNotExists"></a>
+<a id="0x3_transfer_ErrorAddressMappingNotExists"></a>
 
 
 
@@ -38,7 +38,7 @@
 
 
 
-<a name="0x3_transfer_transfer_coin"></a>
+<a id="0x3_transfer_transfer_coin"></a>
 
 ## Function `transfer_coin`
 
@@ -51,7 +51,7 @@ This public entry function requires the <code>CoinType</code> to have <code>key<
 
 
 
-<a name="0x3_transfer_transfer_coin_to_bitcoin_address"></a>
+<a id="0x3_transfer_transfer_coin_to_bitcoin_address"></a>
 
 ## Function `transfer_coin_to_bitcoin_address`
 
@@ -63,7 +63,7 @@ Transfer <code>amount</code> of coins <code>CoinType</code> from <code>from</cod
 
 
 
-<a name="0x3_transfer_transfer_coin_to_multichain_address"></a>
+<a id="0x3_transfer_transfer_coin_to_multichain_address"></a>
 
 ## Function `transfer_coin_to_multichain_address`
 
@@ -77,7 +77,7 @@ This public entry function requires the <code>CoinType</code> to have <code>key<
 
 
 
-<a name="0x3_transfer_transfer_object"></a>
+<a id="0x3_transfer_transfer_object"></a>
 
 ## Function `transfer_object`
 
@@ -89,7 +89,7 @@ Transfer <code>from</code> owned <code>Object&lt;T&gt;</code> to <code><b>to</b>
 
 
 
-<a name="0x3_transfer_transfer_object_to_bitcoin_address"></a>
+<a id="0x3_transfer_transfer_object_to_bitcoin_address"></a>
 
 ## Function `transfer_object_to_bitcoin_address`
 

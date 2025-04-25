@@ -1,5 +1,5 @@
 
-<a name="0x3_ethereum_address"></a>
+<a id="0x3_ethereum_address"></a>
 
 # Module `0x3::ethereum_address`
 
@@ -19,7 +19,7 @@
 
 
 
-<a name="0x3_ethereum_address_ETHAddress"></a>
+<a id="0x3_ethereum_address_ETHAddress"></a>
 
 ## Struct `ETHAddress`
 
@@ -31,12 +31,12 @@
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x3_ethereum_address_ETHEREUM_ADDR_LENGTH"></a>
+<a id="0x3_ethereum_address_ETHEREUM_ADDR_LENGTH"></a>
 
 Ethereum addresses are always 20 bytes
 
@@ -46,7 +46,7 @@ Ethereum addresses are always 20 bytes
 
 
 
-<a name="0x3_ethereum_address_ErrorDecompressPublicKey"></a>
+<a id="0x3_ethereum_address_ErrorDecompressPublicKey"></a>
 
 
 
@@ -55,7 +55,7 @@ Ethereum addresses are always 20 bytes
 
 
 
-<a name="0x3_ethereum_address_ErrorInvaidAddressBytes"></a>
+<a id="0x3_ethereum_address_ErrorInvaidAddressBytes"></a>
 
 
 
@@ -64,7 +64,7 @@ Ethereum addresses are always 20 bytes
 
 
 
-<a name="0x3_ethereum_address_ErrorMalformedPublicKey"></a>
+<a id="0x3_ethereum_address_ErrorMalformedPublicKey"></a>
 
 
 
@@ -73,7 +73,7 @@ Ethereum addresses are always 20 bytes
 
 
 
-<a name="0x3_ethereum_address_new"></a>
+<a id="0x3_ethereum_address_new"></a>
 
 ## Function `new`
 
@@ -84,7 +84,7 @@ Ethereum addresses are always 20 bytes
 
 
 
-<a name="0x3_ethereum_address_from_bytes"></a>
+<a id="0x3_ethereum_address_from_bytes"></a>
 
 ## Function `from_bytes`
 
@@ -95,7 +95,7 @@ Ethereum addresses are always 20 bytes
 
 
 
-<a name="0x3_ethereum_address_as_bytes"></a>
+<a id="0x3_ethereum_address_as_bytes"></a>
 
 ## Function `as_bytes`
 
@@ -106,7 +106,7 @@ Ethereum addresses are always 20 bytes
 
 
 
-<a name="0x3_ethereum_address_into_bytes"></a>
+<a id="0x3_ethereum_address_into_bytes"></a>
 
 ## Function `into_bytes`
 

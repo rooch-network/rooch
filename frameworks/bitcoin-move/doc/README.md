@@ -1,5 +1,5 @@
 
-<a name="@Bitcoin_Move_Framework_0"></a>
+<a id="@Bitcoin_Move_Framework_0"></a>
 
 # Bitcoin Move Framework
 
@@ -7,7 +7,7 @@
 This is the reference documentation of the Bitcoin Move Framework.
 
 
-<a name="@Index_1"></a>
+<a id="@Index_1"></a>
 
 ## Index
 
@@ -33,7 +33,7 @@ This is the reference documentation of the Bitcoin Move Framework.
 
 
 
-<a name="@Reference_2"></a>
+<a id="@Reference_2"></a>
 
 ## Reference
 

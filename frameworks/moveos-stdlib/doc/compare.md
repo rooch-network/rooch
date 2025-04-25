@@ -1,5 +1,5 @@
 
-<a name="0x2_compare"></a>
+<a id="0x2_compare"></a>
 
 # Module `0x2::compare`
 
@@ -26,12 +26,12 @@ Utilities for comparing Move values
 
 
 
-<a name="@Constants_0"></a>
+<a id="@Constants_0"></a>
 
 ## Constants
 
 
-<a name="0x2_compare_EQUAL"></a>
+<a id="0x2_compare_EQUAL"></a>
 
 
 
@@ -40,7 +40,7 @@ Utilities for comparing Move values
 
 
 
-<a name="0x2_compare_GREATER_THAN"></a>
+<a id="0x2_compare_GREATER_THAN"></a>
 
 
 
@@ -49,7 +49,7 @@ Utilities for comparing Move values
 
 
 
-<a name="0x2_compare_LESS_THAN"></a>
+<a id="0x2_compare_LESS_THAN"></a>
 
 
 
@@ -58,7 +58,7 @@ Utilities for comparing Move values
 
 
 
-<a name="0x2_compare_result_equal"></a>
+<a id="0x2_compare_result_equal"></a>
 
 ## Function `result_equal`
 
@@ -69,7 +69,7 @@ Utilities for comparing Move values
 
 
 
-<a name="0x2_compare_result_less_than"></a>
+<a id="0x2_compare_result_less_than"></a>
 
 ## Function `result_less_than`
 
@@ -80,7 +80,7 @@ Utilities for comparing Move values
 
 
 
-<a name="0x2_compare_result_greater_than"></a>
+<a id="0x2_compare_result_greater_than"></a>
 
 ## Function `result_greater_than`
 
@@ -91,7 +91,7 @@ Utilities for comparing Move values
 
 
 
-<a name="0x2_compare_compare"></a>
+<a id="0x2_compare_compare"></a>
 
 ## Function `compare`
 
@@ -105,7 +105,7 @@ If the type is numeric, it will compare the numeric value, otherwise it will com
 
 
 
-<a name="0x2_compare_compare_vector_u8"></a>
+<a id="0x2_compare_compare_vector_u8"></a>
 
 ## Function `compare_vector_u8`
 
@@ -119,7 +119,7 @@ But this function compares the vector contents from left to right.
 
 
 
-<a name="0x2_compare_cmp_bcs_bytes"></a>
+<a id="0x2_compare_cmp_bcs_bytes"></a>
 
 ## Function `cmp_bcs_bytes`
 

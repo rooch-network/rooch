@@ -163,12 +163,36 @@ define_index! {
     doc: "Index into the `FunctionDefinition` table.",
 }
 
+// Since bytecode version 7
+define_index! {
+    name: StructVariantHandleIndex,
+    kind: StructVariantHandle,
+    doc: "Index into the `StructVariantHandle` table.",
+}
+define_index! {
+    name: StructVariantInstantiationIndex,
+    kind: StructVariantInstantiation,
+    doc: "Index into the `StructVariantInstantiation` table.",
+}
+define_index! {
+    name: VariantFieldHandleIndex,
+    kind: VariantFieldHandle,
+    doc: "Index into the `VariantFieldHandle` table.",
+}
+define_index! {
+    name: VariantFieldInstantiationIndex,
+    kind: VariantFieldInstantiation,
+    doc: "Index into the `VariantFieldInstantiation` table.",
+}
+
 /// Index of a local variable in a function.
 ///
 /// Bytecodes that operate on locals carry indexes to the locals of a function.
 pub type LocalIndex = u8;
 /// Max number of fields in a `StructDefinition`.
 pub type MemberCount = u16;
+/// Max number of variants in a `StructDefinition`, as well as index for variants.
+pub type VariantIndex = u16;
 /// Index into the code stream for a jump. The offset is relative to the beginning of
 /// the instruction stream.
 pub type CodeOffset = u16;
@@ -310,6 +334,31 @@ pub struct FieldHandle {
     pub field: MemberCount,
 }
 
+/// A variant field access info
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+#[cfg_attr(any(test, feature = "fuzzing"), derive(proptest_derive::Arbitrary))]
+#[cfg_attr(any(test, feature = "fuzzing"), proptest(no_params))]
+#[cfg_attr(feature = "fuzzing", derive(arbitrary::Arbitrary))]
+pub struct VariantFieldHandle {
+    /// The structure which defines the variant.
+    pub struct_index: StructDefinitionIndex,
+    /// The sequence of variants which share the field at the given
+    /// field offset.
+    pub variants: Vec<VariantIndex>,
+    /// The field offset.
+    pub field: MemberCount,
+}
+
+/// A struct variant access info
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+#[cfg_attr(any(test, feature = "fuzzing"), derive(proptest_derive::Arbitrary))]
+#[cfg_attr(any(test, feature = "fuzzing"), proptest(no_params))]
+#[cfg_attr(feature = "fuzzing", derive(arbitrary::Arbitrary))]
+pub struct StructVariantHandle {
+    pub struct_index: StructDefinitionIndex,
+    pub variant: VariantIndex,
+}
+
 // DEFINITIONS:
 // Definitions are the module code. So the set of types and functions in the module.
 
@@ -341,6 +390,15 @@ pub struct StructDefInstantiation {
     pub type_parameters: SignatureIndex,
 }
 
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+#[cfg_attr(any(test, feature = "fuzzing"), derive(proptest_derive::Arbitrary))]
+#[cfg_attr(any(test, feature = "fuzzing"), proptest(no_params))]
+#[cfg_attr(feature = "fuzzing", derive(arbitrary::Arbitrary))]
+pub struct StructVariantInstantiation {
+    pub handle: StructVariantHandleIndex,
+    pub type_parameters: SignatureIndex,
+}
+
 /// A complete or partial instantiation of a function
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 #[cfg_attr(any(test, feature = "fuzzing"), derive(proptest_derive::Arbitrary))]
@@ -363,6 +421,15 @@ pub struct FunctionInstantiation {
 #[cfg_attr(feature = "fuzzing", derive(arbitrary::Arbitrary))]
 pub struct FieldInstantiation {
     pub handle: FieldHandleIndex,
+    pub type_parameters: SignatureIndex,
+}
+
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+#[cfg_attr(any(test, feature = "fuzzing"), derive(proptest_derive::Arbitrary))]
+#[cfg_attr(any(test, feature = "fuzzing"), proptest(no_params))]
+#[cfg_attr(feature = "fuzzing", derive(arbitrary::Arbitrary))]
+pub struct VariantFieldInstantiation {
+    pub handle: VariantFieldHandleIndex,
     pub type_parameters: SignatureIndex,
 }
 
@@ -1657,6 +1724,17 @@ pub enum Bytecode {
     ///
     /// ```..., integer_value -> ..., u256_value```
     CastU256,
+    /// Variant Instruction
+    PackVariant(StructVariantHandleIndex),
+    PackVariantGeneric(StructVariantInstantiationIndex),
+    UnpackVariant(StructVariantHandleIndex),
+    UnpackVariantGeneric(StructVariantInstantiationIndex),
+    TestVariant(StructVariantHandleIndex),
+    TestVariantGeneric(StructVariantInstantiationIndex),
+    MutBorrowVariantField(VariantFieldHandleIndex),
+    MutBorrowVariantFieldGeneric(VariantFieldInstantiationIndex),
+    ImmBorrowVariantField(VariantFieldHandleIndex),
+    ImmBorrowVariantFieldGeneric(VariantFieldInstantiationIndex),
 }
 
 impl ::std::fmt::Debug for Bytecode {
@@ -1689,8 +1767,14 @@ impl ::std::fmt::Debug for Bytecode {
             Bytecode::CallGeneric(a) => write!(f, "CallGeneric({})", a),
             Bytecode::Pack(a) => write!(f, "Pack({})", a),
             Bytecode::PackGeneric(a) => write!(f, "PackGeneric({})", a),
+            Bytecode::PackVariant(a) => write!(f, "PackVariant({})", a),
+            Bytecode::TestVariant(a) => write!(f, "TestVariant({})", a),
+            Bytecode::PackVariantGeneric(a) => write!(f, "PackVariantGeneric({})", a),
+            Bytecode::TestVariantGeneric(a) => write!(f, "TestVariantGeneric({})", a),
             Bytecode::Unpack(a) => write!(f, "Unpack({})", a),
             Bytecode::UnpackGeneric(a) => write!(f, "UnpackGeneric({})", a),
+            Bytecode::UnpackVariant(a) => write!(f, "UnpackVariant({})", a),
+            Bytecode::UnpackVariantGeneric(a) => write!(f, "UnpackVariantGeneric({})", a),
             Bytecode::ReadRef => write!(f, "ReadRef"),
             Bytecode::WriteRef => write!(f, "WriteRef"),
             Bytecode::FreezeRef => write!(f, "FreezeRef"),
@@ -1698,8 +1782,16 @@ impl ::std::fmt::Debug for Bytecode {
             Bytecode::ImmBorrowLoc(a) => write!(f, "ImmBorrowLoc({})", a),
             Bytecode::MutBorrowField(a) => write!(f, "MutBorrowField({:?})", a),
             Bytecode::MutBorrowFieldGeneric(a) => write!(f, "MutBorrowFieldGeneric({:?})", a),
+            Bytecode::MutBorrowVariantField(a) => write!(f, "MutBorrowVariantField({:?})", a),
+            Bytecode::MutBorrowVariantFieldGeneric(a) => {
+                write!(f, "MutBorrowVariantFieldGeneric({:?})", a)
+            }
             Bytecode::ImmBorrowField(a) => write!(f, "ImmBorrowField({:?})", a),
             Bytecode::ImmBorrowFieldGeneric(a) => write!(f, "ImmBorrowFieldGeneric({:?})", a),
+            Bytecode::ImmBorrowVariantField(a) => write!(f, "ImmBorrowVariantField({:?})", a),
+            Bytecode::ImmBorrowVariantFieldGeneric(a) => {
+                write!(f, "ImmBorrowVariantFieldGeneric({:?})", a)
+            }
             Bytecode::MutBorrowGlobal(a) => write!(f, "MutBorrowGlobal({:?})", a),
             Bytecode::MutBorrowGlobalGeneric(a) => write!(f, "MutBorrowGlobalGeneric({:?})", a),
             Bytecode::ImmBorrowGlobal(a) => write!(f, "ImmBorrowGlobal({:?})", a),
@@ -1893,6 +1985,12 @@ pub struct CompiledModule {
     pub struct_defs: Vec<StructDefinition>,
     /// Function defined in this module.
     pub function_defs: Vec<FunctionDefinition>,
+
+    /// Since bytecode version 7: variant related handle tables
+    pub struct_variant_handles: Vec<StructVariantHandle>,
+    pub struct_variant_instantiations: Vec<StructVariantInstantiation>,
+    pub variant_field_handles: Vec<VariantFieldHandle>,
+    pub variant_field_instantiations: Vec<VariantFieldInstantiation>,
 }
 
 // Need a custom implementation of Arbitrary because as of proptest-derive 0.1.1, the derivation
@@ -2003,6 +2101,10 @@ impl Arbitrary for CompiledModule {
                         metadata: vec![],
                         struct_defs,
                         function_defs,
+                        struct_variant_handles: vec![],
+                        struct_variant_instantiations: vec![],
+                        variant_field_handles: vec![],
+                        variant_field_instantiations: vec![],
                     }
                 },
             )
@@ -2030,16 +2132,26 @@ impl CompiledModule {
             IndexKind::StructDefInstantiation => self.struct_def_instantiations.len(),
             IndexKind::FunctionInstantiation => self.function_instantiations.len(),
             IndexKind::FieldInstantiation => self.field_instantiations.len(),
+            IndexKind::StructDefInstantiation => self.struct_def_instantiations.len(),
+            IndexKind::FunctionInstantiation => self.function_instantiations.len(),
+            IndexKind::FieldInstantiation => self.field_instantiations.len(),
             IndexKind::StructDefinition => self.struct_defs.len(),
             IndexKind::FunctionDefinition => self.function_defs.len(),
             IndexKind::Signature => self.signatures.len(),
             IndexKind::Identifier => self.identifiers.len(),
             IndexKind::AddressIdentifier => self.address_identifiers.len(),
             IndexKind::ConstantPool => self.constant_pool.len(),
+            // Since bytecode version 7
+            IndexKind::VariantFieldHandle => self.variant_field_handles.len(),
+            IndexKind::VariantFieldInstantiation => self.variant_field_instantiations.len(),
+            IndexKind::StructVariantHandle => self.struct_variant_handles.len(),
+            IndexKind::StructVariantInstantiation => self.struct_variant_instantiations.len(),
+
             // XXX these two don't seem to belong here
             other @ IndexKind::LocalPool
             | other @ IndexKind::CodeDefinition
             | other @ IndexKind::FieldDefinition
+            | other @ IndexKind::VariantDefinition
             | other @ IndexKind::TypeParameter
             | other @ IndexKind::MemberCount => unreachable!("invalid kind for count: {:?}", other),
         }
@@ -2082,6 +2194,10 @@ pub fn empty_module() -> CompiledModule {
         function_instantiations: vec![],
         field_instantiations: vec![],
         signatures: vec![Signature(vec![])],
+        struct_variant_handles: vec![],
+        struct_variant_instantiations: vec![],
+        variant_field_handles: vec![],
+        variant_field_instantiations: vec![],
     }
 }
 

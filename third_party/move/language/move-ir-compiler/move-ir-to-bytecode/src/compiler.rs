@@ -485,6 +485,12 @@ pub fn compile_module<'a>(
         metadata: vec![],
         struct_defs,
         function_defs,
+        // TODO(#13806): Move IR does not support enums and it is likely be retired. Decide
+        //    whether we want to support this here.
+        struct_variant_handles: vec![],
+        struct_variant_instantiations: vec![],
+        variant_field_handles: vec![],
+        variant_field_instantiations: vec![],
     };
     Ok((module, source_map))
 }
@@ -564,6 +570,10 @@ fn compile_explicit_dependency_declarations(
             metadata: vec![],
             struct_defs: vec![],
             function_defs: vec![],
+            struct_variant_handles: vec![],
+            struct_variant_instantiations: vec![],
+            variant_field_handles: vec![],
+            variant_field_instantiations: vec![],
         };
         dependencies_acc = compiled_deps;
         dependencies_acc.insert(

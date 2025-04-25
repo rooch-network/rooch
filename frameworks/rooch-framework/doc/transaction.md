@@ -1,5 +1,5 @@
 
-<a name="0x3_transaction"></a>
+<a id="0x3_transaction"></a>
 
 # Module `0x3::transaction`
 
@@ -16,7 +16,7 @@
 
 
 
-<a name="0x3_transaction_TransactionSequenceInfo"></a>
+<a id="0x3_transaction_TransactionSequenceInfo"></a>
 
 ## Struct `TransactionSequenceInfo`
 
@@ -28,7 +28,7 @@
 
 
 
-<a name="0x3_transaction_tx_order"></a>
+<a id="0x3_transaction_tx_order"></a>
 
 ## Function `tx_order`
 
@@ -39,7 +39,7 @@
 
 
 
-<a name="0x3_transaction_tx_order_signature"></a>
+<a id="0x3_transaction_tx_order_signature"></a>
 
 ## Function `tx_order_signature`
 
@@ -50,7 +50,7 @@
 
 
 
-<a name="0x3_transaction_tx_accumulator_root"></a>
+<a id="0x3_transaction_tx_accumulator_root"></a>
 
 ## Function `tx_accumulator_root`
 
@@ -61,7 +61,7 @@
 
 
 
-<a name="0x3_transaction_tx_timestamp"></a>
+<a id="0x3_transaction_tx_timestamp"></a>
 
 ## Function `tx_timestamp`
 
