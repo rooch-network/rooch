@@ -6,6 +6,7 @@
 /// It helps migrate coin stores, balances, frozen states, and accept data.
 module rooch_framework::coin_migration {
     use std::string;
+    use rooch_framework::genesis;
     use rooch_framework::onchain_config;
     use moveos_std::signer;
     use moveos_std::type_info;
@@ -17,8 +18,6 @@ module rooch_framework::coin_migration {
     use rooch_framework::coin_store::{Self};
     use rooch_framework::multi_coin_store::{Self};
     use rooch_framework::account_coin_store;
-
-    friend rooch_framework::genesis;
 
     //
     // Errors
@@ -73,7 +72,7 @@ module rooch_framework::coin_migration {
             object::transfer_extend(migration_state, @rooch_framework);
         };
 
-        let rooch_dao = onchain_config::rooch_dao();
+        let rooch_dao = rooch_dao();
         let admin_cap = object::new_named_object(MigrationUpdateCap{});
         object::transfer(admin_cap, rooch_dao);
     }
@@ -87,6 +86,16 @@ module rooch_framework::coin_migration {
         let object_id = object::named_object_id<MigrationUpdateCap>();
         let obj = object::borrow_object<MigrationUpdateCap>(object_id);
         object::owner(obj)
+    }
+
+    public fun rooch_dao(): address {
+        if(onchain_config::exist_onchain_config()) {
+            onchain_config::rooch_dao()
+        } else {
+            // Resolve could not get rooch dao if it's not mainnet or testnet before genesis init executed
+            // Because of some init() function may executed earlier than genesis init()
+            genesis::rooch_dao()
+        }
     }
 
     /// Entry function to migrate a specific account's coin stores

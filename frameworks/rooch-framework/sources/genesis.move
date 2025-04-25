@@ -79,6 +79,13 @@ module rooch_framework::genesis {
         }
     }
 
+    public fun rooch_dao(): address{
+        let genesis_context_option = tx_context::get_attribute<GenesisContext>();
+        assert!(option::is_some(&genesis_context_option), ErrorGenesisInit);
+        let genesis_context = option::extract(&mut genesis_context_option);
+        let rooch_dao_address = bitcoin_address::to_rooch_address(&genesis_context.rooch_dao);
+        rooch_dao_address
+    }
 
     #[test_only]
     use moveos_std::genesis;

@@ -15,6 +15,7 @@ It helps migrate coin stores, balances, frozen states, and accept data.
 -  [Constants](#@Constants_0)
 -  [Function `ensure_admin`](#0x3_coin_migration_ensure_admin)
 -  [Function `admin`](#0x3_coin_migration_admin)
+-  [Function `rooch_dao`](#0x3_coin_migration_rooch_dao)
 -  [Function `migrate_account_entry`](#0x3_coin_migration_migrate_account_entry)
 -  [Function `update_migration_state_entry`](#0x3_coin_migration_update_migration_state_entry)
 -  [Function `migration_state_id`](#0x3_coin_migration_migration_state_id)
@@ -31,6 +32,7 @@ It helps migrate coin stores, balances, frozen states, and accept data.
 <b>use</b> <a href="account_coin_store.md#0x3_account_coin_store">0x3::account_coin_store</a>;
 <b>use</b> <a href="coin.md#0x3_coin">0x3::coin</a>;
 <b>use</b> <a href="coin_store.md#0x3_coin_store">0x3::coin_store</a>;
+<b>use</b> <a href="genesis.md#0x3_genesis">0x3::genesis</a>;
 <b>use</b> <a href="multi_coin_store.md#0x3_multi_coin_store">0x3::multi_coin_store</a>;
 <b>use</b> <a href="onchain_config.md#0x3_onchain_config">0x3::onchain_config</a>;
 </code></pre>
@@ -137,6 +139,17 @@ Nothing to migrate for the account
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="coin_migration.md#0x3_coin_migration_admin">admin</a>(): <b>address</b>
+</code></pre>
+
+
+
+<a name="0x3_coin_migration_rooch_dao"></a>
+
+## Function `rooch_dao`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="coin_migration.md#0x3_coin_migration_rooch_dao">rooch_dao</a>(): <b>address</b>
 </code></pre>
 
 

@@ -7,6 +7,7 @@
 
 -  [Struct `GenesisContext`](#0x3_genesis_GenesisContext)
 -  [Constants](#@Constants_0)
+-  [Function `rooch_dao`](#0x3_genesis_rooch_dao)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
@@ -62,4 +63,15 @@ GenesisContext is a genesis init parameters in the TxContext.
 
 
 <pre><code><b>const</b> <a href="genesis.md#0x3_genesis_GENESIS_INIT_GAS_AMOUNT">GENESIS_INIT_GAS_AMOUNT</a>: <a href="">u256</a> = 50000000000000000;
+</code></pre>
+
+
+
+<a name="0x3_genesis_rooch_dao"></a>
+
+## Function `rooch_dao`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="genesis.md#0x3_genesis_rooch_dao">rooch_dao</a>(): <b>address</b>
 </code></pre>

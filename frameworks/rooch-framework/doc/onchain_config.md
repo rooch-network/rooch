@@ -16,6 +16,7 @@
 -  [Function `update_framework_version`](#0x3_onchain_config_update_framework_version)
 -  [Function `framework_version`](#0x3_onchain_config_framework_version)
 -  [Function `onchain_config`](#0x3_onchain_config_onchain_config)
+-  [Function `exist_onchain_config`](#0x3_onchain_config_exist_onchain_config)
 -  [Function `add_to_publishing_allowlist`](#0x3_onchain_config_add_to_publishing_allowlist)
 -  [Function `remove_from_publishing_allowlist`](#0x3_onchain_config_remove_from_publishing_allowlist)
 -  [Function `change_feature_flags`](#0x3_onchain_config_change_feature_flags)
@@ -152,6 +153,17 @@ ConfigUpdateCap is the capability for admin operations, such as update onchain c
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="onchain_config.md#0x3_onchain_config">onchain_config</a>(): &<a href="onchain_config.md#0x3_onchain_config_OnchainConfig">onchain_config::OnchainConfig</a>
+</code></pre>
+
+
+
+<a name="0x3_onchain_config_exist_onchain_config"></a>
+
+## Function `exist_onchain_config`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="onchain_config.md#0x3_onchain_config_exist_onchain_config">exist_onchain_config</a>(): bool
 </code></pre>
 
 
