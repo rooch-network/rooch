@@ -13,7 +13,7 @@ import {
   StateKVView,
 } from '../../src'
 
-describe('Checkpoints Transfer API', () => {
+describe('Checkpoints grow API', () => {
   let testBox: TestBox
 
   beforeAll(async () => {
@@ -108,7 +108,7 @@ describe('Checkpoints Transfer API', () => {
 
     const json = JSON.stringify(warpWith1000)
 
-    console.log(json)
+    // console.log(json)
   })
 
   it('export all register', async () => {
@@ -167,6 +167,6 @@ describe('Checkpoints Transfer API', () => {
 
     const json = JSON.stringify(finalVotes)
 
-    console.log(json)
+    // console.log(json)
   })
 })

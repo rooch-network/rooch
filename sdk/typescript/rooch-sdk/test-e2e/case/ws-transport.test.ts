@@ -4,126 +4,74 @@
 import { beforeAll, describe, expect, it, afterAll } from 'vitest'
 import { TestBox } from '../setup.js'
 import { Transaction } from '../../src/transactions/index.js'
+import { Unsubscribe } from '../../src/client/client.js'
+import { Args } from '../../src/index.js'
 
 describe('WebSocket Transport Tests', () => {
   let wsTestBox: TestBox
 
   beforeAll(async () => {
-    wsTestBox = TestBox.setup(undefined, 'ws')
+    wsTestBox = TestBox.setup()
+    const result = await wsTestBox.cmdPublishPackage('../../../examples/event')
+    expect(result).toBeTruthy()
   })
 
   afterAll(async () => {
     await wsTestBox.cleanEnv()
   })
 
-  describe('Basic Operations', () => {
-    it('should execute single transaction successfully', async () => {
-      const tx = new Transaction()
-      tx.callFunction({
-        target: '0x3::empty::empty_with_signer',
-      })
+  it('should execute single transaction successfully', async () => {
+    let unsubscribe: Unsubscribe
 
-      const result = await wsTestBox.getClient().signAndExecuteTransaction({
-        transaction: tx,
-        signer: wsTestBox.keypair,
-      })
-
-      expect(result.execution_info.status.type).eq('executed')
-    })
-
-    it('should query transaction history', async () => {
-      const tx = new Transaction()
-      tx.callFunction({
-        target: '0x3::empty::empty_with_signer',
-      })
-
-      expect(await wsTestBox.signAndExecuteTransaction(tx)).toBeTruthy()
-
-      const result = await wsTestBox.getClient().queryTransactions({
-        filter: {
-          sender: wsTestBox.address().toHexAddress(),
-        },
-      })
-
-      expect(result.data.length).toBeGreaterThan(0)
-    })
-  })
-
-  describe('WebSocket Specific Features', () => {
-    it('should handle sequential transactions', async () => {
-      const numSequentialTx = 5
-      const results = []
-
-      for (let i = 0; i < numSequentialTx; i++) {
-        const tx = new Transaction()
-        tx.callFunction({
-          target: '0x3::empty::empty_with_signer',
+    const eventReceived = new Promise<boolean>((resolve) => {
+      wsTestBox
+        .getClient()
+        .subscribeEvent({
+          onMessage(event) {
+            if (event.event_type.includes('event_test::WithdrawEvent')) {
+              unsubscribe()
+              resolve(true)
+            }
+          },
         })
-
-        const result = await wsTestBox.signAndExecuteTransaction(tx)
-        results.push(result)
-      }
-
-      expect(results).toHaveLength(numSequentialTx)
-      expect(results.every((result) => result === true)).toBeTruthy()
-    })
-
-    it('should automatically reconnect after connection loss', async () => {
-      // First transaction to ensure connection is working
-      const tx1 = new Transaction()
-      tx1.callFunction({
-        target: '0x3::empty::empty_with_signer',
-      })
-      await wsTestBox.signAndExecuteTransaction(tx1)
-
-      // Force client to recreate with new connection
-      await wsTestBox.loadRoochEnv('local', 0, 'ws')
-
-      // Second transaction should work after reconnection
-      const tx2 = new Transaction()
-      tx2.callFunction({
-        target: '0x3::empty::empty_with_signer',
-      })
-      const result = await wsTestBox.signAndExecuteTransaction(tx2)
-
-      expect(result).toBeTruthy()
-    })
-  })
-
-  describe('Error Handling', () => {
-    it('should handle invalid transactions gracefully', async () => {
-      const tx = new Transaction()
-      tx.callFunction({
-        target: '0x3::non_existent::function',
-      })
-
-      try {
-        await wsTestBox.signAndExecuteTransaction(tx)
-        expect.fail('Should have thrown an error')
-      } catch (error) {
-        expect(error).toBeDefined()
-      }
-    })
-
-    it('should handle multiple requests during reconnection', async () => {
-      // Force client to recreate with new connection
-      await wsTestBox.loadRoochEnv('local', 0, 'ws')
-
-      const numSequentialTx = 3
-      const results = []
-
-      for (let i = 0; i < numSequentialTx; i++) {
-        const tx = new Transaction()
-        tx.callFunction({
-          target: '0x3::empty::empty_with_signer',
+        .then((sub) => {
+          unsubscribe = sub
         })
-
-        const result = await wsTestBox.signAndExecuteTransaction(tx)
-        results.push(result)
-      }
-
-      expect(results).toHaveLength(numSequentialTx)
-      expect(results.every((result) => result === true)).toBeTruthy()
+        .catch((err) => {
+          console.log(err)
+          resolve(false)
+        })
     })
+
+    await new Promise((resolve) => setTimeout(resolve, 2000))
+
+    const cmdAddress = await wsTestBox.defaultCmdAddress()
+
+    // Execute a transaction that emits an event
+    const tx = new Transaction()
+    const target = `${cmdAddress}::event_test::emit_event`
+
+    tx.callFunction({
+      target: target,
+      args: [Args.u64(BigInt(10))],
+    })
+
+    const txResult = await wsTestBox.getClient().signAndExecuteTransaction({
+      transaction: tx,
+      signer: wsTestBox.keypair,
+    })
+
+    expect(txResult.execution_info.status.type).eq('executed')
+
+    const result = await Promise.race([
+      eventReceived,
+      new Promise<boolean>((resolve) =>
+        setTimeout(() => {
+          resolve(false)
+        }, 15000),
+      ),
+    ])
+
+    expect(result).toBe(true)
   })
 })

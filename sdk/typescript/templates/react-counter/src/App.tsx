@@ -7,7 +7,7 @@ import {
   SessionKeyGuard,
 } from "@roochnetwork/rooch-sdk-kit";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Transaction } from "@roochnetwork/rooch-sdk";
 import { useNetworkVariable } from "./networks.ts";
 
@@ -23,6 +23,19 @@ function App() {
       target: `${devCounterModule}::value`,
     },
   );
+
+  useEffect(() => {
+    client.subscribeEvent({
+      onMessage: (event) => {
+        console.log(event)
+      },
+      onError: (e) => {
+        console.log(e)
+      },
+    }).catch((e) => {
+      console.log(e)
+    })
+  }, [])
 
   const handlerIncrease = async () => {
     if (loading) {

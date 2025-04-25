@@ -65,7 +65,10 @@
     "typescript": "^5.4.4",
     "vite": "^5.4.4",
     "vitest": "^2.0.5",
-    "wait-on": "^8.0.1"
+    "wait-on": "^8.0.1",
+    "@types/debug": "^4.1.12",
+    "@types/ws": "^8.5.14",
+    "ws": "^8.18.0"
   },
   "dependencies": {
     "@mysten/bcs": "1.0.4",
@@ -75,15 +78,13 @@
     "@scure/bip32": "^1.5.0",
     "@scure/bip39": "^1.4.0",
     "@suchipi/femver": "^1.0.0",
-    "@types/debug": "^4.1.12",
-    "@types/ws": "^8.5.14",
     "bech32": "^2.0.0",
     "bs58check": "4.0.0",
     "buffer": "6.0.3",
     "debug": "^4.4.0",
+    "rxjs": "^7.8.2",
     "tweetnacl": "^1.0.3",
-    "valibot": "^0.41.0",
-    "ws": "^8.18.0"
+    "valibot": "^0.41.0"
   },
   "publishConfig": {
     "access": "public",

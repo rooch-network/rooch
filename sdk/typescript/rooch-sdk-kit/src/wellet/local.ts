@@ -12,10 +12,89 @@ import {
 import { BitcoinWallet } from '../wellet/index.js'
 import { WalletNetworkType } from './types.js'
 
+export const LocalKey = 'local-wallet-key'
+export const LocalActiveAddress = 'local-wallet-active-address'
+
+export type LocalAccountType = {
+  mnemonic: string
+  keys: string[]
+}
+
 export class LocalWallet extends BitcoinWallet {
   private keypair?: Secp256k1Keypair
   private onNetworkChange?: (network: string) => void
   private onAccountsChange?: (account: string[]) => void
+
+  static getAccounts(): Map<string, LocalAccountType> {
+    const keyString = window.localStorage.getItem(LocalKey)
+    let accounts = new Map<string, LocalAccountType>()
+    if (keyString) {
+      try {
+        const parsed = JSON.parse(keyString)
+        accounts = new Map(parsed.map(([k, v]: [string, LocalAccountType]) => [k, v]))
+      } catch (e) {
+        console.error('Failed to parse accounts from localStorage:', e)
+        window.localStorage.removeItem(LocalKey)
+      }
+    }
+    return accounts
+  }
+
+  static removeAddress(accountName: string, key: string) {
+    let accounts = LocalWallet.getAccounts()
+    if (accounts.has(accountName)) {
+      const account = accounts.get(accountName)
+      if (account) {
+        account.keys = account.keys.filter((a) => a !== key)
+      }
+    }
+    window.localStorage.setItem(LocalKey, JSON.stringify(Array.from(accounts.entries())))
+    return accounts
+  }
+
+  static removeAccount(accountName: string) {
+    let accounts = LocalWallet.getAccounts()
+    accounts.delete(accountName)
+    window.localStorage.setItem(LocalKey, JSON.stringify(Array.from(accounts.entries())))
+    return accounts
+  }
+
+  static createAddress(accountName: string) {
+    const accounts = LocalWallet.getAccounts()
+    const account = accounts.get(accountName)
+    if (account) {
+      const kp = Secp256k1Keypair.deriveKeypair(
+        account.mnemonic,
+        `m/86'/0'/0'/0/${account.keys.length + 1}`,
+      )
+      account.keys.push(kp.getSecretKey())
+    }
+    window.localStorage.setItem(LocalKey, JSON.stringify(Array.from(accounts.entries())))
+    return accounts
+  }
+
+  static createAccount() {
+    const { mnemonic, keypair } = Secp256k1Keypair.generateWithMnemonic()
+    let accounts = LocalWallet.getAccounts()
+    accounts.set(`Account${accounts.size + 1}`, {
+      mnemonic,
+      keys: [keypair.getSecretKey()],
+    })
+    window.localStorage.setItem(LocalKey, JSON.stringify(Array.from(accounts.entries())))
+    return accounts
+  }
+
+  static importAccount(mnemonic: string) {
+    const accounts = LocalWallet.getAccounts()
+    const newAccount = Secp256k1Keypair.deriveKeypair(mnemonic)
+    accounts.set(`Account${accounts.size + 1}`, {
+      mnemonic,
+      keys: [newAccount.getSecretKey()],
+    })
+    window.localStorage.setItem(LocalKey, JSON.stringify(Array.from(accounts.entries())))
+    return accounts
+  }
+
   getName(): string {
     return 'Local'
   }
@@ -45,21 +124,21 @@ export class LocalWallet extends BitcoinWallet {
   }
 
   async connect(): Promise<ThirdPartyAddress[]> {
-    if (!this.keypair) {
-      const key = window.localStorage.getItem('local-wallet-key')
-      if (!key) {
-        this.keypair = new Secp256k1Keypair()
-        window.localStorage.setItem('local-wallet-key', this.keypair.getSecretKey())
-      } else {
-        this.keypair = Secp256k1Keypair.fromSecretKey(key)
+    const accounts = LocalWallet.getAccounts()
+    const activeAddress = window.localStorage.getItem(LocalActiveAddress)
+    const network = await this.getNetwork()
+    for (const account of accounts.entries()) {
+      for (const key of account[1].keys) {
+        if (activeAddress === key) {
+          this.keypair = Secp256k1Keypair.fromSecretKey(key)
+          break
+        }
       }
     }
 
-    const network = await this.getNetwork()
-    this.currentAddress = this.keypair.getBitcoinAddressWith(this.formatNetwork(network))
-    this.publicKey = this.keypair.getSchnorrPublicKey().toString()
+    this.currentAddress = this.keypair!.getBitcoinAddressWith(this.formatNetwork(network))
+    this.publicKey = this.keypair!.getSchnorrPublicKey().toString()
     this.address = [this.currentAddress]
-    console.log(this.address)
     return this.address
   }
 

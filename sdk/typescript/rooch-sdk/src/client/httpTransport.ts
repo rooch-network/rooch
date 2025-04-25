@@ -4,15 +4,24 @@
 // import { PACKAGE_VERSION, TARGETED_RPC_VERSION } from '../version.js'
 
 import { JsonRpcError, RoochHTTPStatusError } from './error.js'
-import { RoochTransport, RoochTransportRequestOptions } from './transportInterface.js'
+import {
+  RoochTransport,
+  RoochTransportRequestOptions,
+  RoochTransportSubscribeOptions,
+} from './transportInterface.js'
+import { WebsocketClient, WebsocketClientOptions } from './wsTransport.js'
 
 export type HttpHeaders = { [header: string]: string }
 
 export interface RoochHTTPTransportOptions {
   fetch?: typeof fetch
+  WebSocketConstructor?: typeof WebSocket
   url: string
   rpc?: {
     headers?: HttpHeaders
+    url?: string
+  }
+  websocket?: WebsocketClientOptions & {
     url?: string
   }
 }
@@ -20,9 +29,31 @@ export interface RoochHTTPTransportOptions {
 export class RoochHTTPTransport implements RoochTransport {
   #requestId = 0
   #options: RoochHTTPTransportOptions
+  #websocketClient?: WebsocketClient
 
   constructor(options: RoochHTTPTransportOptions) {
     this.#options = options
+  }
+
+  #getWebsocketClient(): WebsocketClient {
+    if (!this.#websocketClient) {
+      const WebSocketConstructor = this.#options.WebSocketConstructor ?? WebSocket
+      if (!WebSocketConstructor) {
+        throw new Error(
+          'The current environment does not support WebSocket, you can provide a WebSocketConstructor in the options for SuiHTTPTransport.',
+        )
+      }
+
+      this.#websocketClient = new WebsocketClient(
+        this.#options.websocket?.url ?? this.#options.url,
+        {
+          WebSocketConstructor,
+          ...this.#options.websocket,
+        },
+      )
+    }
+
+    return this.#websocketClient
   }
 
   fetch(input: RequestInfo, init?: RequestInit): Promise<Response> {
@@ -69,6 +100,19 @@ export class RoochHTTPTransport implements RoochTransport {
     }
 
     return data.result
+  }
+
+  async subscribe<T>(input: RoochTransportSubscribeOptions<T>): Promise<() => Promise<boolean>> {
+    const unsubscribe = await this.#getWebsocketClient().subscribe(input)
+
+    if (input.signal) {
+      input.signal.throwIfAborted()
+      input.signal.addEventListener('abort', () => {
+        unsubscribe()
+      })
+    }
+
+    return async () => !!(await unsubscribe())
   }
 
   destroy(): void {

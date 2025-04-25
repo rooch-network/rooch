@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { HDKey } from '@scure/bip32'
-
+import { generateMnemonic } from '@scure/bip39'
+import { wordlist } from '@scure/bip39/wordlists/english'
 import { schnorr, secp256k1 } from '@noble/curves/secp256k1'
 import { BitcoinAddress, BitcoinNetowkType, RoochAddress } from '../../address/index.js'
 import {
@@ -92,7 +93,6 @@ export class Secp256k1Keypair extends Keypair {
    * @param secretKey secret key byte array
    * @param skipValidation skip secret key validation
    */
-
   static fromSecretKey(secretKey: Uint8Array | string, skipValidation?: boolean): Secp256k1Keypair {
     const decodeSecretKey =
       typeof secretKey === 'string'
@@ -178,8 +178,8 @@ export class Secp256k1Keypair extends Keypair {
    * Derive Secp256k1 keypair from mnemonics and path. The mnemonics must be normalized
    * and validated against the english wordlist.
    *
-   * If path is none, it will default to m/54'/784'/0'/0/0, otherwise the path must
-   * be compliant to BIP-32 in form m/54'/784'/{account_index}'/{change_index}/{address_index}.
+   * If path is none, it will default to m/86'/0'/0'/0/1, otherwise the path must
+   * be compliant to BIP-32 in form m/86'/0'/{account_index}'/{change_index}/{address_index}.
    */
   static deriveKeypair(mnemonics: string, path?: string): Secp256k1Keypair {
     if (path == null) {
@@ -194,5 +194,20 @@ export class Secp256k1Keypair extends Keypair {
       throw new Error('Invalid key')
     }
     return Secp256k1Keypair.fromSecretKey(key.privateKey)
+  }
+
+  /**
+   * Generate a new mnemonic and derive a keypair from it.
+   *
+   * @param path Optional derivation path. If not provided, will use DEFAULT_SECP256K1_DERIVATION_PATH
+   * @returns An object containing the mnemonic and the derived keypair
+   */
+  static generateWithMnemonic(path?: string): {
+    mnemonic: string
+    keypair: Secp256k1Keypair
+  } {
+    const mnemonic = generateMnemonic(wordlist)
+    const keypair = this.deriveKeypair(mnemonic, path)
+    return { mnemonic, keypair }
   }
 }

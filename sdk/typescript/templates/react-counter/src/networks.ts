@@ -26,7 +26,7 @@ const { networkConfig, useNetworkVariable, useNetworkVariables } =
     localnet: {
       url: getRoochNodeUrl("localnet"),
       variables: {
-        counterPackageId: MAINNET_COUNTER_PACKAGE_ID,
+        counterPackageId: DEVNET_COUNTER_PACKAGE_ID,
       },
     },
   })

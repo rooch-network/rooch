@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom/client';
 import "@roochnetwork/rooch-sdk-kit/dist/index.css";
 import '@radix-ui/themes/styles.css';
 
-import { darkTheme, RoochProvider, WalletProvider } from '@roochnetwork/rooch-sdk-kit'
+import { RoochProvider, WalletProvider } from '@roochnetwork/rooch-sdk-kit'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import {Theme} from '@radix-ui/themes';
 import { networkConfig } from "./networks";
@@ -15,16 +15,16 @@ const queryClient = new QueryClient();
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <Theme appearance="dark">
+    <Theme appearance="light">
       <QueryClientProvider client={queryClient}>
-            <RoochProvider theme={darkTheme} networks={networkConfig} sessionConf={
+            <RoochProvider networks={networkConfig} sessionConf={
               {
                 appName: "rooch_test",
                 appUrl: "https://test.com",
                 scopes: [`${DEVNET_COUNTER_PACKAGE_ID}::*::*`],
                 maxInactiveInterval: 1200
               }
-            } defaultNetwork='testnet'>
+            } defaultNetwork='localnet'>
               <WalletProvider enableLocal preferredWallets={['UniSat']} chain={'bitcoin'} autoConnect>
                 <ErrorGuard/>
                 <App/>

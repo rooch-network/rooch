@@ -13,13 +13,6 @@ export {
   RoochHTTPTransport,
 } from './httpTransport.js'
 
-export {
-  type Subscription,
-  type RoochSubscriptionTransport,
-} from './subscriptionTransportInterface.js'
-
-export { type RoochWebSocketTransportOptions, RoochWebSocketTransport } from './wsTransport.js'
-
 export { getRoochNodeUrl } from './networks.js'
 export type { NetworkType } from './networks.js'
 

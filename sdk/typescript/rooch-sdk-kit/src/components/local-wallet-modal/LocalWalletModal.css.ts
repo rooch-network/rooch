@@ -17,33 +17,33 @@ export const title = style({
   paddingLeft: 8,
 })
 
-// export const content = style({
-//   backgroundColor: themeVars.backgroundColors.modalPrimary,
-//   borderRadius: themeVars.radii.xlarge,
-//   color: themeVars.colors.body,
-//   position: 'fixed',
-//   bottom: 16,
-//   left: 16,
-//   right: 16,
-//   display: 'flex',
-//   flexDirection: 'column',
-//   justifyContent: 'space-between',
-//   overflow: 'hidden',
-//   minHeight: '50vh',
-//   maxHeight: '85vh',
-//   maxWidth: 700,
-//   '@media': {
-//     'screen and (min-width: 768px)': {
-//       flexDirection: 'row',
-//       width: '100%',
-//       top: '50%',
-//       left: '50%',
-//       transform: 'translate(-50%, -50%)',
-//     },
-//   },
-// })
+export const content = style({
+  backgroundColor: themeVars.backgroundColors.modalPrimary,
+  borderRadius: themeVars.radii.xlarge,
+  color: themeVars.colors.body,
+  position: 'fixed',
+  bottom: 16,
+  left: 16,
+  right: 16,
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'space-between',
+  overflow: 'hidden',
+  minHeight: '50vh',
+  maxHeight: '85vh',
+  maxWidth: 700,
+  '@media': {
+    'screen and (min-width: 768px)': {
+      flexDirection: 'row',
+      width: '100%',
+      top: '50%',
+      left: '50%',
+      transform: 'translate(-50%, -50%)',
+    },
+  },
+})
 
-export const whatIsAWalletButton = style({
+export const whatIsASessionButton = style({
   backgroundColor: themeVars.backgroundColors.modalSecondary,
   padding: 16,
   '@media': {
@@ -85,7 +85,7 @@ export const closeButtonContainer = style({
   right: 16,
 })
 
-export const walletListContent = style({
+export const sessionListContent = style({
   display: 'flex',
   flexDirection: 'column',
   flexGrow: 1,
@@ -99,7 +99,7 @@ export const walletListContent = style({
   },
 })
 
-export const walletListContainer = style({
+export const sessionListContainer = style({
   display: 'flex',
   justifyContent: 'space-between',
   flexDirection: 'column',
@@ -114,7 +114,7 @@ export const walletListContainer = style({
   },
 })
 
-export const walletListContainerWithViewSelected = style({
+export const sessionListContainerWithViewSelected = style({
   display: 'none',
   '@media': {
     'screen and (min-width: 768px)': {
