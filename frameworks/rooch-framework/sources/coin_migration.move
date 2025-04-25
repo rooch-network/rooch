@@ -72,10 +72,19 @@ module rooch_framework::coin_migration {
         };
     }
 
-    public fun dispatch_cap(account: &signer, cap_address: address) {
+    public entry fun dispatch_cap_entry(account: &signer, cap_address: address) {
         onchain_config::ensure_admin(account);
-        let cap = object::new_named_object(MigrationUpdateCap{});
-        object::transfer(cap, cap_address);
+        dispatch_cap(cap_address)
+    }
+
+    fun dispatch_cap(cap_address: address) {
+        let cap_object_id = object::named_object_id<MigrationUpdateCap>();
+        let cap_obj = if(!object::exists_object(cap_object_id)){
+            object::new_named_object(MigrationUpdateCap{})
+        } else {
+            object::take_object_extend<MigrationUpdateCap>(cap_object_id)
+        };
+        object::transfer(cap_obj, cap_address);
     }
 
     public fun ensure_has_cap(account: &signer) {
@@ -207,5 +216,11 @@ module rooch_framework::coin_migration {
     #[test_only]
     public fun migrate_account_for_test<CoinType: key + store>(addr: address) {
         let (_,_) = migrate_account<CoinType>(addr);
+    }
+
+    #[test_only]
+    public entry fun dispatch_cap_for_test(account: &signer, cap_address: address) {
+        onchain_config::ensure_admin(account);
+        dispatch_cap(cap_address)
     }
 } 

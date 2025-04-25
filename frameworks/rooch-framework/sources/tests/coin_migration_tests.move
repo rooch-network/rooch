@@ -45,7 +45,7 @@ module rooch_framework::coin_migration_tests {
         genesis::init_for_test();
         coin_migration::init_for_test();
         let onchain_config_admin = account::create_account_for_testing(onchain_config::admin());
-        coin_migration::dispatch_cap(&onchain_config_admin, @rooch_framework);
+        coin_migration::dispatch_cap_for_test(&onchain_config_admin, @rooch_framework);
 
         let _alice = account::create_account_for_testing(ALICE);
 
@@ -67,7 +67,7 @@ module rooch_framework::coin_migration_tests {
         genesis::init_for_test();
         coin_migration::init_for_test();
         let onchain_config_admin = account::create_account_for_testing(onchain_config::admin());
-        coin_migration::dispatch_cap(&onchain_config_admin, @rooch_framework);
+        coin_migration::dispatch_cap_for_test(&onchain_config_admin, @rooch_framework);
         
         // Setup test accounts
         let alice = account::create_account_for_testing(ALICE);
@@ -111,7 +111,7 @@ module rooch_framework::coin_migration_tests {
         genesis::init_for_test();
         coin_migration::init_for_test();
         let onchain_config_admin = account::create_account_for_testing(onchain_config::admin());
-        coin_migration::dispatch_cap(&onchain_config_admin, @rooch_framework);
+        coin_migration::dispatch_cap_for_test(&onchain_config_admin, @rooch_framework);
         
         // Setup test accounts with various coin stores
         let alice = account::create_account_for_testing(ALICE);

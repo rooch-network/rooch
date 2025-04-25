@@ -13,7 +13,7 @@ It helps migrate coin stores, balances, frozen states, and accept data.
 -  [Resource `MigrationState`](#0x3_coin_migration_MigrationState)
 -  [Resource `MigrationUpdateCap`](#0x3_coin_migration_MigrationUpdateCap)
 -  [Constants](#@Constants_0)
--  [Function `dispatch_cap`](#0x3_coin_migration_dispatch_cap)
+-  [Function `dispatch_cap_entry`](#0x3_coin_migration_dispatch_cap_entry)
 -  [Function `ensure_has_cap`](#0x3_coin_migration_ensure_has_cap)
 -  [Function `cap_address`](#0x3_coin_migration_cap_address)
 -  [Function `migrate_account_entry`](#0x3_coin_migration_migrate_account_entry)
@@ -120,13 +120,13 @@ Nothing to migrate for the account
 
 
 
-<a name="0x3_coin_migration_dispatch_cap"></a>
+<a name="0x3_coin_migration_dispatch_cap_entry"></a>
 
-## Function `dispatch_cap`
+## Function `dispatch_cap_entry`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin_migration.md#0x3_coin_migration_dispatch_cap">dispatch_cap</a>(<a href="">account</a>: &<a href="">signer</a>, cap_address: <b>address</b>)
+<pre><code><b>public</b> entry <b>fun</b> <a href="coin_migration.md#0x3_coin_migration_dispatch_cap_entry">dispatch_cap_entry</a>(<a href="">account</a>: &<a href="">signer</a>, cap_address: <b>address</b>)
 </code></pre>
 
 
