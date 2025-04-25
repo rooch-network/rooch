@@ -55,6 +55,8 @@ use tokio::sync::watch;
 use tokio::time;
 use tokio::time::sleep;
 use tracing::{info, warn};
+use moveos_types::state_resolver::RootObjectResolver;
+use rooch_genesis::FrameworksGasParameters;
 
 /// exec LedgerTransaction List for verification.
 #[derive(Debug, Parser)]
@@ -957,8 +959,12 @@ async fn build_executor_and_store(
         .into_actor(Some("NotifyActor"), actor_system)
         .await?;
 
+    let resolver = RootObjectResolver::new(root.clone(), &moveos_store);
+    let gas_parameters = FrameworksGasParameters::load_from_chain(&resolver)?;
+
     let global_module_cache = new_moveos_global_module_cache();
-    let global_cache_manager = MoveOSCacheManager::new(vec![], global_module_cache);
+    let global_cache_manager =
+        MoveOSCacheManager::new(gas_parameters.all_natives(), global_module_cache);
 
     let executor_actor = ExecutorActor::new(
         root.clone(),
