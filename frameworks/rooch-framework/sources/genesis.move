@@ -79,7 +79,6 @@ module rooch_framework::genesis {
         }
     }
 
-
     #[test_only]
     use moveos_std::genesis;
 

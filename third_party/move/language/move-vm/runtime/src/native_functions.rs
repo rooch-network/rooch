@@ -9,6 +9,7 @@ use crate::{
 use move_binary_format::errors::{
     ExecutionState, Location, PartialVMError, PartialVMResult, VMResult,
 };
+use move_binary_format::file_format::AbilitySet;
 use move_binary_format::CompiledModule;
 use move_core_types::{
     account_address::AccountAddress,
@@ -226,5 +227,9 @@ impl<'a, 'b> NativeContext<'a, 'b> {
             .loader()
             .verify_module_bundle_for_publication(modules, self.data_store)
             .map_err(|e| e.to_partial())
+    }
+
+    pub fn abilities(&self, ty: &Type) -> PartialVMResult<AbilitySet> {
+        self.resolver.loader().abilities(ty)
     }
 }

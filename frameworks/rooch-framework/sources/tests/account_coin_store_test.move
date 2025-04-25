@@ -64,8 +64,6 @@ module rooch_framework::account_coin_store_test{
         assert!(balance<FakeCoin>(source_addr) == 40, 4);
         assert!(balance<FakeCoin>(destination_addr) == 60, 5);
         object::transfer(coin_info_obj, @rooch_framework);
-        
-        
     }
 
     
@@ -88,7 +86,6 @@ module rooch_framework::account_coin_store_test{
         assert!(balance<FakeCoin>(source_addr) == 90, 2);
         assert!(supply<FakeCoin>(object::borrow(&coin_info_obj)) == 90, 3);
         object::transfer(coin_info_obj, @rooch_framework);
-        
     }
 
 
@@ -102,7 +99,6 @@ module rooch_framework::account_coin_store_test{
         do_accept_coin<FakeCoin>(&framework);
         assert!(is_accept_coin<FakeCoin>(@rooch_framework), 1);
         object::transfer(coin_info_obj, @rooch_framework);
-        
     }
 
     #[test(source1 = @0x33, source2 = @0x66)]
@@ -112,7 +108,6 @@ module rooch_framework::account_coin_store_test{
 
         let source1_addr = signer::address_of(&source1);
         let source2_addr = signer::address_of(&source2);
-        
         
         let coin_info_obj = register_fake_coin(9);
 
@@ -129,7 +124,6 @@ module rooch_framework::account_coin_store_test{
         set_auto_accept_coin(&source2, false);
         deposit(source2_addr, mint_coins2);
         object::transfer(coin_info_obj, @rooch_framework);
-        
     }
 
     #[test(source1 = @0x33, source2 = @0x66)]
@@ -138,7 +132,6 @@ module rooch_framework::account_coin_store_test{
     
         let source1_addr = signer::address_of(&source1);
         let source2_addr = signer::address_of(&source2);
-        
         
         let coin_info_obj = register_fake_coin(9);
 
@@ -159,7 +152,6 @@ module rooch_framework::account_coin_store_test{
         deposit(source2_addr, mint_coins2);
 
         object::transfer(coin_info_obj, @rooch_framework);
-        
     }
 
     #[test(source = @rooch_framework, destination = @0x55)]
@@ -171,7 +163,6 @@ module rooch_framework::account_coin_store_test{
         let source_addr = signer::address_of(&source);
         let destination_addr = signer::address_of(&destination);
         
-
         let coin_info_obj = register_fake_coin(9);
         assert!(supply<FakeCoin>(object::borrow(&coin_info_obj)) == 0, 0);
 
@@ -180,7 +171,5 @@ module rooch_framework::account_coin_store_test{
         transfer<FakeCoin>(&source, destination_addr, 50);
 
         object::transfer(coin_info_obj, @rooch_framework);
-        
-        
     }
 }

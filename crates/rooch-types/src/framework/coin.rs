@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::addresses::ROOCH_FRAMEWORK_ADDRESS;
+use anyhow::Result;
 use move_core_types::language_storage::StructTag;
 use move_core_types::u256::U256;
 use move_core_types::{account_address::AccountAddress, ident_str, identifier::IdentStr};
@@ -13,6 +14,7 @@ use moveos_types::moveos_std::object::{self, ObjectID};
 use moveos_types::state::{MoveState, MoveStructState, MoveStructType, PlaceholderStruct};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
+use std::str::FromStr;
 
 pub const MODULE_NAME: &IdentStr = ident_str!("coin");
 
@@ -30,6 +32,12 @@ impl<'a> CoinModule<'a> {
         let coin_info_struct_tag =
             CoinInfo::<PlaceholderStruct>::struct_tag_with_coin_type(coin_type);
         object::named_object_id(&coin_info_struct_tag)
+    }
+
+    pub fn coin_info_id_by_type_name(coin_type: String) -> Result<ObjectID> {
+        let coin_type_struct_tag = StructTag::from_str(&coin_type)
+            .map_err(|_| anyhow::anyhow!("Invalid coin type string"))?;
+        Ok(Self::coin_info_id(coin_type_struct_tag))
     }
 }
 

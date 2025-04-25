@@ -8,12 +8,14 @@ module rooch_framework::coin {
     use std::string;
     use std::string::String;
     use moveos_std::object::{Self, ObjectID, Object};
-    
+
     use moveos_std::event;
-    use moveos_std::type_info::Self;
+    use moveos_std::type_info::{Self};
 
     friend rooch_framework::genesis;
     friend rooch_framework::coin_store;
+    friend rooch_framework::multi_coin_store;
+    friend rooch_framework::account_coin_store;
 
     //
     // Errors
@@ -49,6 +51,12 @@ module rooch_framework::coin {
     /// The function is deprecated
     const ErrorDeprecated: u64 = 10;
 
+    /// The coin type is not match
+    const ErrorCoinTypeNotMatch: u64 = 11;
+
+    /// The coin type is invalid
+    const ErrorCoinTypeInvalid: u64 = 12;
+
     //
     // Constants
     //
@@ -64,6 +72,19 @@ module rooch_framework::coin {
     /// Otherwise, the `Coin` is a private coin, the user can only operate it by `CoinType` module's function.
     /// The Coin has no ability, it is a hot potato type, only can handle by Coin module.
     struct Coin<phantom CoinType : key> {
+        /// Amount of coin this address has.
+        /// Following the ERC20 standard, both asset balance and supply are expressed in u256
+        value: u256,
+    }
+
+    /// Main structure representing a coin.
+    /// Note the `CoinType` must have `key` ability.
+    /// if the `CoinType` has `store` ability, the `Coin` is a public coin, the user can operate it directly by coin module's function.
+    /// Otherwise, the `Coin` is a private coin, the user can only operate it by `CoinType` module's function.
+    /// The Coin has no ability, it is a hot potato type, only can handle by Coin module.
+    struct GenericCoin {
+        /// Coin type name
+        coin_type: string::String,
         /// Amount of coin this address has.
         /// Following the ERC20 standard, both asset balance and supply are expressed in u256
         value: u256,
@@ -110,8 +131,7 @@ module rooch_framework::coin {
     }
 
     /// The registry of all coin types.
-    struct CoinRegistry has key {
-    }
+    struct CoinRegistry has key {}
 
     /// Event emitted when coin minted.
     struct MintEvent has drop, store, copy {
@@ -165,6 +185,14 @@ module rooch_framework::coin {
     /// Return the ObjectID of Object<CoinInfo<CoinType>>
     public fun coin_info_id<CoinType: key>(): ObjectID {
         object::named_object_id<CoinInfo<CoinType>>()
+    }
+
+    /// Returns the coin info id by the coin type name
+    public fun coin_info_id_by_type_name(coin_type: string::String): ObjectID {
+        let registry = borrow_registry();
+        assert!(object::contains_field(registry, coin_type), ErrorCoinInfoNotRegistered);
+        let coin_metadata: &CoinMetadata = object::borrow_field(registry, coin_type);
+        coin_metadata.coin_info_id
     }
 
     /// Returns the name of the coin.
@@ -334,7 +362,7 @@ module rooch_framework::coin {
 
     #[private_generics(CoinType)]
     /// This function is protected by `private_generics`, so it can only be called by the `CoinType` module.
-    public fun upsert_icon_url<CoinType: key>(coin_info_obj: &mut Object<CoinInfo<CoinType>>, icon_url: String){
+    public fun upsert_icon_url<CoinType: key>(coin_info_obj: &mut Object<CoinInfo<CoinType>>, icon_url: String) {
         upsert_icon_url_internal(coin_info_obj, icon_url);
     }
 
@@ -343,6 +371,52 @@ module rooch_framework::coin {
     /// Creates a new Coin with given `CoinType`
     /// This function is protected by `private_generics`, so it can only be called by the `CoinType` module.
     public fun register_extend<CoinType: key>(
+        name: string::String,
+        symbol: string::String,
+        icon_url: Option<string::String>,
+        decimals: u8,
+    ): Object<CoinInfo<CoinType>> {
+        register_internal<CoinType>(name, symbol, icon_url, decimals)
+    }
+
+    /// This function for the old code to initialize the CoinMetadata
+    public fun init_metadata<CoinType: key>(coin_info: &Object<CoinInfo<CoinType>>) {
+        let _coin_metadata: &mut CoinMetadata = borrow_mut_coin_metadata<CoinType>(coin_info);
+    }
+
+    /// Public coin can mint by anyone with the mutable Object<CoinInfo<CoinType>>
+    public fun mint<CoinType: key + store>(coin_info: &mut Object<CoinInfo<CoinType>>, amount: u256): Coin<CoinType> {
+        mint_internal(coin_info, amount)
+    }
+
+    #[private_generics(CoinType)]
+    /// Mint new `Coin`, this function is only called by the `CoinType` module, for the developer to extend custom mint logic
+    public fun mint_extend<CoinType: key>(coin_info: &mut Object<CoinInfo<CoinType>>, amount: u256): Coin<CoinType> {
+        mint_internal<CoinType>(coin_info, amount)
+    }
+
+    /// Public coin can burn by anyone with the mutable Object<CoinInfo<CoinType>>
+    public fun burn<CoinType: key + store>(coin_info: &mut Object<CoinInfo<CoinType>>, coin: Coin<CoinType>) {
+        burn_internal(coin_info, coin)
+    }
+
+
+    #[private_generics(CoinType)]
+    /// Burn `coin`
+    /// This function is only called by the `CoinType` module, for the developer to extend custom burn logic
+    public fun burn_extend<CoinType: key>(
+        coin_info: &mut Object<CoinInfo<CoinType>>,
+        coin: Coin<CoinType>,
+    ) {
+        burn_internal(coin_info, coin)
+    }
+
+
+    //
+    // Internal functions
+    //
+
+    fun register_internal<CoinType: key>(
         name: string::String,
         symbol: string::String,
         icon_url: Option<string::String>,
@@ -384,49 +458,12 @@ module rooch_framework::coin {
         coin_info_obj
     }
 
-    /// This function for the old code to initialize the CoinMetadata
-    public fun init_metadata<CoinType: key>(coin_info: &Object<CoinInfo<CoinType>>){
-        let _coin_metadata: &mut CoinMetadata = borrow_mut_coin_metadata<CoinType>(coin_info);
-    }
-
-    /// Public coin can mint by anyone with the mutable Object<CoinInfo<CoinType>>
-    public fun mint<CoinType: key + store>(coin_info: &mut Object<CoinInfo<CoinType>>, amount: u256): Coin<CoinType> {
-        mint_internal(coin_info, amount)
-    }
-
-    #[private_generics(CoinType)]
-    /// Mint new `Coin`, this function is only called by the `CoinType` module, for the developer to extend custom mint logic
-    public fun mint_extend<CoinType: key>(coin_info: &mut Object<CoinInfo<CoinType>>, amount: u256): Coin<CoinType> {
-        mint_internal<CoinType>(coin_info, amount)
-    }
-
-    /// Public coin can burn by anyone with the mutable Object<CoinInfo<CoinType>>
-    public fun burn<CoinType: key + store>(coin_info: &mut Object<CoinInfo<CoinType>>, coin: Coin<CoinType>) {
-        burn_internal(coin_info, coin)
-    }
-
-
-    #[private_generics(CoinType)]
-    /// Burn `coin`
-    /// This function is only called by the `CoinType` module, for the developer to extend custom burn logic
-    public fun burn_extend<CoinType: key>(
-        coin_info: &mut Object<CoinInfo<CoinType>>,
-        coin: Coin<CoinType>,
-    ) {
-        burn_internal(coin_info, coin)
-    }
-
-
-    //
-    // Internal functions
-    //
-
     fun mint_internal<CoinType: key>(coin_info_obj: &mut Object<CoinInfo<CoinType>>, amount: u256): Coin<CoinType> {
         let coin_type = type_info::type_name<CoinType>();
 
         let coin_info = object::borrow_mut(coin_info_obj);
         coin_info.supply = coin_info.supply + amount;
-        
+
         let _coin_metadata: &mut CoinMetadata = borrow_mut_coin_metadata<CoinType>(coin_info_obj);
         // We sync the supply with coin info, so we don't need to update the supply here
         // After we remove the sync, we need to update the supply here
@@ -444,7 +481,7 @@ module rooch_framework::coin {
         coin: Coin<CoinType>,
     ) {
         let coin_type = type_info::type_name<CoinType>();
-        
+
         let coin_info = object::borrow_mut(coin_info_obj);
         let Coin { value: amount } = coin;
 
@@ -454,7 +491,7 @@ module rooch_framework::coin {
         // We sync the supply with coin info, so we don't need to update the supply here
         // After we remove the sync, we need to update the supply here
         //coin_metadata.supply = coin_metadata.supply - amount;
-        
+
         event::emit<BurnEvent>(BurnEvent {
             coin_type,
             amount,
@@ -475,15 +512,15 @@ module rooch_framework::coin {
         object::borrow_mut_object_extend<CoinRegistry>(object::named_object_id<CoinRegistry>())
     }
 
-    fun borrow_mut_coin_metadata<CoinType: key>(coin_info_obj: &Object<CoinInfo<CoinType>>) : &mut CoinMetadata {
+    fun borrow_mut_coin_metadata<CoinType: key>(coin_info_obj: &Object<CoinInfo<CoinType>>): &mut CoinMetadata {
         let coin_type = type_info::type_name<CoinType>();
+
         let registry = borrow_mut_registry();
         let coin_info_id = object::id(coin_info_obj);
         let coin_info = object::borrow(coin_info_obj);
         // If the coin metadata is not initialized, it is the Coin registered before v19
         // We need to initialize the coin metadata here
-        if (!object::contains_field(registry, coin_type)){
-            
+        if (!object::contains_field(registry, coin_type)) {
             let coin_metadata = CoinMetadata {
                 coin_info_id,
                 coin_type,
@@ -495,9 +532,9 @@ module rooch_framework::coin {
             };
             object::add_field(registry, coin_type, coin_metadata);
             object::borrow_mut_field(registry, coin_type)
-        }else{
+        }else {
             //sync the coin metadata with coin info
-            let metadata :&mut CoinMetadata = object::borrow_mut_field(registry, coin_type);
+            let metadata: &mut CoinMetadata = object::borrow_mut_field(registry, coin_type);
             metadata.coin_info_id = coin_info_id;
             metadata.icon_url = coin_info.icon_url;
             metadata.name = coin_info.name;
@@ -529,6 +566,87 @@ module rooch_framework::coin {
 
     #[test_only]
     public fun destroy_for_testing<CoinType: key>(coin: Coin<CoinType>) {
-        let Coin { value:_ } = coin;
+        let Coin { value: _ } = coin;
+    }
+
+
+    // === Migration functions ===
+    public fun convert_coin_to_generic_coin<CoinType: key>(coin: Coin<CoinType>): GenericCoin {
+        let value = unpack(coin);
+        let coin_type = type_info::type_name<CoinType>();
+        GenericCoin { coin_type, value }
+    }
+
+    public fun convert_generic_coin_to_coin<CoinType: key>(coin: GenericCoin): Coin<CoinType> {
+        let generic_coin_type = type_info::type_name<CoinType>();
+        let GenericCoin { coin_type, value } = coin;
+        assert!(generic_coin_type == coin_type, ErrorCoinTypeNotMatch);
+        pack<CoinType>(value)
+    }
+
+    // === Non-generic functions ===
+    public fun check_coin_info_registered_by_type_name(coin_type: string::String) {
+        assert!(is_registered_by_type_name(coin_type), ErrorCoinInfoNotRegistered);
+    }
+
+    //
+    public fun is_registered_by_type_name(coin_type: string::String): bool {
+        let registry = borrow_registry();
+        object::contains_field(registry, coin_type)
+    }
+
+    // public fun value_by_type(coin_type: string::String, coin: &GenericCoin): u256 {
+    public fun generic_coin_value(coin: &GenericCoin): u256 {
+        coin.value
+    }
+
+    public(friend) fun unpack_generic_coin(coin: GenericCoin): (string::String, u256) {
+        let GenericCoin { coin_type, value } = coin;
+        (coin_type, value)
+    }
+
+    public(friend) fun pack_generic_coin(coin_type: string::String, value: u256): GenericCoin {
+        GenericCoin {
+            coin_type,
+            value
+        }
+    }
+
+    /// "Merges" the two given generic coins.  The coin passed in as `dst_coin` will have a value equal
+    /// to the sum of the two generic coins (`dst_coin` and `source_coin`).
+    public fun merge_generic(dst_coin: &mut GenericCoin, source_coin: GenericCoin) {
+        let GenericCoin { coin_type: source_coin_type, value: source_value } = source_coin;
+        assert!(dst_coin.coin_type == source_coin_type, ErrorCoinTypeNotMatch);
+        dst_coin.value = dst_coin.value + source_value;
+    }
+
+    /// Helper function for getting the coin type name from a GenericCoin
+    public fun coin_type(coin: &GenericCoin): string::String {
+        coin.coin_type
+    }
+
+    #[test_only]
+    public fun pack_for_test<CoinType: key>(value: u256): Coin<CoinType> {
+        pack<CoinType>(value)
+    }
+
+    #[test_only]
+    public fun unpack_for_test<CoinType: key>(coin: Coin<CoinType>): u256 {
+        unpack(coin)
+    }
+
+    #[test_only]
+    public fun unpack_generic_coin_for_test(coin: GenericCoin): (string::String, u256) {
+        unpack_generic_coin(coin)
+    }
+
+    #[test_only]
+    public fun register_for_test<CoinType: key>(
+        name: string::String,
+        symbol: string::String,
+        icon_url: Option<string::String>,
+        decimals: u8,
+    ): Object<CoinInfo<CoinType>> {
+        register_internal<CoinType>(name, symbol, icon_url, decimals)
     }
 }

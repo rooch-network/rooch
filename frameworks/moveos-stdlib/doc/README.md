@@ -12,6 +12,7 @@ This is the reference documentation of the MoveOS standard library.
 ## Index
 
 
+-  [`0x2::ability`](ability.md#0x2_ability)
 -  [`0x2::account`](account.md#0x2_account)
 -  [`0x2::address`](address.md#0x2_address)
 -  [`0x2::any`](any.md#0x2_any)

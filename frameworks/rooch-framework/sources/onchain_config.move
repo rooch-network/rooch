@@ -75,6 +75,11 @@ module rooch_framework::onchain_config {
         object::borrow(obj)
     }
 
+    public fun exist_onchain_config(): bool {
+        let object_id = object::named_object_id<OnchainConfig>();
+        object::exists_object_with_type<OnchainConfig>(object_id)
+    }
+
     /******  API for update module publishing allowlist. ******/
 
     /// When module_publishing_allowlist_feature is enabled, only packed_id in allowlist can be published.
