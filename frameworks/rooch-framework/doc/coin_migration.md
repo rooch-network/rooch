@@ -13,9 +13,9 @@ It helps migrate coin stores, balances, frozen states, and accept data.
 -  [Resource `MigrationState`](#0x3_coin_migration_MigrationState)
 -  [Resource `MigrationUpdateCap`](#0x3_coin_migration_MigrationUpdateCap)
 -  [Constants](#@Constants_0)
--  [Function `ensure_admin`](#0x3_coin_migration_ensure_admin)
--  [Function `admin`](#0x3_coin_migration_admin)
--  [Function `rooch_dao`](#0x3_coin_migration_rooch_dao)
+-  [Function `dispatch_cap`](#0x3_coin_migration_dispatch_cap)
+-  [Function `ensure_has_cap`](#0x3_coin_migration_ensure_has_cap)
+-  [Function `cap_address`](#0x3_coin_migration_cap_address)
 -  [Function `migrate_account_entry`](#0x3_coin_migration_migrate_account_entry)
 -  [Function `update_migration_state_entry`](#0x3_coin_migration_update_migration_state_entry)
 -  [Function `migration_state_id`](#0x3_coin_migration_migration_state_id)
@@ -32,7 +32,6 @@ It helps migrate coin stores, balances, frozen states, and accept data.
 <b>use</b> <a href="account_coin_store.md#0x3_account_coin_store">0x3::account_coin_store</a>;
 <b>use</b> <a href="coin.md#0x3_coin">0x3::coin</a>;
 <b>use</b> <a href="coin_store.md#0x3_coin_store">0x3::coin_store</a>;
-<b>use</b> <a href="genesis.md#0x3_genesis">0x3::genesis</a>;
 <b>use</b> <a href="multi_coin_store.md#0x3_multi_coin_store">0x3::multi_coin_store</a>;
 <b>use</b> <a href="onchain_config.md#0x3_onchain_config">0x3::onchain_config</a>;
 </code></pre>
@@ -79,7 +78,7 @@ State tracking for migration progress
 
 ## Resource `MigrationUpdateCap`
 
-MigrationUpdateCap is the capability for admin operations, such as update migration state.
+MigrationUpdateCap is the capability for manager operations, such as update migration state.
 
 
 <pre><code><b>struct</b> <a href="coin_migration.md#0x3_coin_migration_MigrationUpdateCap">MigrationUpdateCap</a> <b>has</b> store, key
@@ -92,21 +91,21 @@ MigrationUpdateCap is the capability for admin operations, such as update migrat
 ## Constants
 
 
-<a name="0x3_coin_migration_ErrorNotAdmin"></a>
-
-
-
-<pre><code><b>const</b> <a href="coin_migration.md#0x3_coin_migration_ErrorNotAdmin">ErrorNotAdmin</a>: u64 = 3;
-</code></pre>
-
-
-
 <a name="0x3_coin_migration_ErrorMigrationAlreadyDone"></a>
 
 Migration is already done for an account
 
 
 <pre><code><b>const</b> <a href="coin_migration.md#0x3_coin_migration_ErrorMigrationAlreadyDone">ErrorMigrationAlreadyDone</a>: u64 = 1;
+</code></pre>
+
+
+
+<a name="0x3_coin_migration_ErrorNoCap"></a>
+
+
+
+<pre><code><b>const</b> <a href="coin_migration.md#0x3_coin_migration_ErrorNoCap">ErrorNoCap</a>: u64 = 3;
 </code></pre>
 
 
@@ -121,35 +120,35 @@ Nothing to migrate for the account
 
 
 
-<a name="0x3_coin_migration_ensure_admin"></a>
+<a name="0x3_coin_migration_dispatch_cap"></a>
 
-## Function `ensure_admin`
+## Function `dispatch_cap`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin_migration.md#0x3_coin_migration_ensure_admin">ensure_admin</a>(<a href="">account</a>: &<a href="">signer</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="coin_migration.md#0x3_coin_migration_dispatch_cap">dispatch_cap</a>(<a href="">account</a>: &<a href="">signer</a>, cap_address: <b>address</b>)
 </code></pre>
 
 
 
-<a name="0x3_coin_migration_admin"></a>
+<a name="0x3_coin_migration_ensure_has_cap"></a>
 
-## Function `admin`
+## Function `ensure_has_cap`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin_migration.md#0x3_coin_migration_admin">admin</a>(): <b>address</b>
+<pre><code><b>public</b> <b>fun</b> <a href="coin_migration.md#0x3_coin_migration_ensure_has_cap">ensure_has_cap</a>(<a href="">account</a>: &<a href="">signer</a>)
 </code></pre>
 
 
 
-<a name="0x3_coin_migration_rooch_dao"></a>
+<a name="0x3_coin_migration_cap_address"></a>
 
-## Function `rooch_dao`
+## Function `cap_address`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin_migration.md#0x3_coin_migration_rooch_dao">rooch_dao</a>(): <b>address</b>
+<pre><code><b>public</b> <b>fun</b> <a href="coin_migration.md#0x3_coin_migration_cap_address">cap_address</a>(): <b>address</b>
 </code></pre>
 
 
@@ -163,7 +162,7 @@ The coin type must be only key to compatiable with both the public(key+store) an
 Can be called by arbitrary user
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="coin_migration.md#0x3_coin_migration_migrate_account_entry">migrate_account_entry</a>&lt;CoinType: key&gt;(_admin: &<a href="">signer</a>, addr: <b>address</b>)
+<pre><code><b>public</b> entry <b>fun</b> <a href="coin_migration.md#0x3_coin_migration_migrate_account_entry">migrate_account_entry</a>&lt;CoinType: key&gt;(_account: &<a href="">signer</a>, addr: <b>address</b>)
 </code></pre>
 
 
@@ -173,10 +172,10 @@ Can be called by arbitrary user
 ## Function `update_migration_state_entry`
 
 Entry function to update migration state for a specific account
-Only called by the admin to update migrate states
+Only called by the cap account to update migrate states
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="coin_migration.md#0x3_coin_migration_update_migration_state_entry">update_migration_state_entry</a>(admin: &<a href="">signer</a>, addr: <b>address</b>)
+<pre><code><b>public</b> entry <b>fun</b> <a href="coin_migration.md#0x3_coin_migration_update_migration_state_entry">update_migration_state_entry</a>(<a href="">account</a>: &<a href="">signer</a>, addr: <b>address</b>)
 </code></pre>
 
 

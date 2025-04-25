@@ -6,7 +6,6 @@
 /// It helps migrate coin stores, balances, frozen states, and accept data.
 module rooch_framework::coin_migration {
     use std::string;
-    use rooch_framework::genesis;
     use rooch_framework::onchain_config;
     use moveos_std::signer;
     use moveos_std::type_info;
@@ -29,7 +28,7 @@ module rooch_framework::coin_migration {
     /// Nothing to migrate for the account
     const ErrorNothingToMigrate: u64 = 2;
 
-    const ErrorNotAdmin: u64 = 3;
+    const ErrorNoCap: u64 = 3;
 
     //
     // Events
@@ -59,7 +58,7 @@ module rooch_framework::coin_migration {
         migrated_accounts: table::Table<address, bool>,
     }
 
-    /// MigrationUpdateCap is the capability for admin operations, such as update migration state.
+    /// MigrationUpdateCap is the capability for manager operations, such as update migration state.
     struct MigrationUpdateCap has key, store {}
 
     /// Initialize the migration module, called during genesis or framework upgrade
@@ -71,44 +70,36 @@ module rooch_framework::coin_migration {
             });
             object::transfer_extend(migration_state, @rooch_framework);
         };
-
-        let rooch_dao = rooch_dao();
-        let admin_cap = object::new_named_object(MigrationUpdateCap{});
-        object::transfer(admin_cap, rooch_dao);
     }
 
-    public fun ensure_admin(account: &signer) {
+    public fun dispatch_cap(account: &signer, cap_address: address) {
+        onchain_config::ensure_admin(account);
+        let cap = object::new_named_object(MigrationUpdateCap{});
+        object::transfer(cap, cap_address);
+    }
+
+    public fun ensure_has_cap(account: &signer) {
         let sender = signer::address_of(account);
-        assert!(sender == admin(), ErrorNotAdmin);
+        assert!(sender == cap_address(), ErrorNoCap);
     }
 
-    public fun admin(): address {
+    public fun cap_address(): address {
         let object_id = object::named_object_id<MigrationUpdateCap>();
         let obj = object::borrow_object<MigrationUpdateCap>(object_id);
         object::owner(obj)
     }
 
-    public fun rooch_dao(): address {
-        if(onchain_config::exist_onchain_config()) {
-            onchain_config::rooch_dao()
-        } else {
-            // Resolve could not get rooch dao if it's not mainnet or testnet before genesis init executed
-            // Because of some init() function may executed earlier than genesis init()
-            genesis::rooch_dao()
-        }
-    }
-
     /// Entry function to migrate a specific account's coin stores
     /// The coin type must be only key to compatiable with both the public(key+store) and private(key) coins
     /// Can be called by arbitrary user
-    public entry fun migrate_account_entry<CoinType: key>(_admin: &signer, addr: address) {
+    public entry fun migrate_account_entry<CoinType: key>(_account: &signer, addr: address) {
         migrate_account<CoinType>(addr);
     }
 
     /// Entry function to update migration state for a specific account
-    /// Only called by the admin to update migrate states
-    public entry fun update_migration_state_entry(admin: &signer, addr: address) {
-        ensure_admin(admin);
+    /// Only called by the cap account to update migrate states
+    public entry fun update_migration_state_entry(account: &signer, addr: address) {
+        ensure_has_cap(account);
         update_migration_state(addr);
     }
 
