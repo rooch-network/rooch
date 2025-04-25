@@ -112,7 +112,7 @@ module moveos_std::object {
     }
 
     /// Generate a new ObjectID from an address
-    public fun address_to_object_id(address: address): ObjectID {
+    public(friend) fun address_to_object_id(address: address): ObjectID {
         ObjectID { path: vector::singleton(address) }
     }
 
