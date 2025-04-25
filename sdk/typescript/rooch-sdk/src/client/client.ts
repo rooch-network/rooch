@@ -82,7 +82,7 @@ type NetworkOrTransport =
   | {
       url: string
       transport?: never
-      subscriptionTransport?: never
+      // subscriptionTransport?: never
     }
   | {
       transport: RoochTransport

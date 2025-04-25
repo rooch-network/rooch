@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import * as fs from 'fs'
+import Websocket from 'ws'
 import { RoochAddress } from '../src/address/index.js'
-import { getRoochNodeUrl, RoochClient } from '../src/client/index.js'
+import { getRoochNodeUrl, RoochClient, RoochHTTPTransport } from '../src/client/index.js'
 import { Secp256k1Keypair } from '../src/keypairs/index.js'
 import { Transaction } from '../src/transactions/index.js'
 import { Args } from '../src/bcs/args.js'
@@ -19,7 +20,12 @@ export class TestBox extends TestBoxA {
   constructor(keypair: Secp256k1Keypair, url?: string) {
     super()
     this.keypair = keypair
-    this.client = new RoochClient({ url: url || DEFAULT_NODE_URL })
+    this.client = new RoochClient({
+      transport: new RoochHTTPTransport({
+        url: url || DEFAULT_NODE_URL,
+        WebSocketConstructor: Websocket as any,
+      }),
+    })
   }
 
   static setup(url?: string): TestBox {

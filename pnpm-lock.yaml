@@ -490,9 +490,6 @@ importers:
       valibot:
         specifier: ^0.41.0
         version: 0.41.0(typescript@5.6.2)
-      ws:
-        specifier: ^8.18.0
-        version: 8.18.0
     devDependencies:
       '@iarna/toml':
         specifier: ^2.2.5
@@ -539,6 +536,9 @@ importers:
       wait-on:
         specifier: ^8.0.1
         version: 8.0.1(debug@4.4.0)
+      ws:
+        specifier: ^8.18.0
+        version: 8.18.0
 
   sdk/typescript/rooch-sdk-kit:
     dependencies:

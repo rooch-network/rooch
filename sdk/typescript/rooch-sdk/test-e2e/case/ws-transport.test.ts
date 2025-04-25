@@ -7,7 +7,7 @@ import { Transaction } from '../../src/transactions/index.js'
 import { Unsubscribe } from '../../src/client/client.js'
 import { Args } from '../../src/index.js'
 
-describe('WebSocket1 Transport Tests', () => {
+describe('WebSocket Transport Tests', () => {
   let wsTestBox: TestBox
 
   beforeAll(async () => {
