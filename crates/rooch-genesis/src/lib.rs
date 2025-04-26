@@ -60,7 +60,7 @@ pub static ROOCH_LOCAL_GENESIS: Lazy<RoochGenesisV2> = Lazy::new(|| {
     let network: RoochNetwork = BuiltinChainID::Local.into();
     RoochGenesisV2::build(network).expect("build rooch genesis failed")
 });
-pub const LATEST_GAS_SCHEDULE_VERSION: u64 = GAS_SCHEDULE_RELEASE_V2;
+pub const LATEST_GAS_SCHEDULE_VERSION: u64 = GAS_SCHEDULE_RELEASE_V3;
 // update the gas config for function calling
 pub const GAS_SCHEDULE_RELEASE_V1: u64 = 1;
 
@@ -208,7 +208,7 @@ impl FrameworksGasParameters {
     }
 
     pub fn latest() -> Self {
-        FrameworksGasParameters::v4()
+        FrameworksGasParameters::v5()
     }
 
     pub fn to_gas_schedule_config(&self, chain_id: ChainID) -> GasScheduleConfig {
