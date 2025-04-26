@@ -118,6 +118,18 @@ impl AccountKeystore for BaseKeyStore {
         Ok(Signature::sign(msg, &self.get_key_pair(address, password)?))
     }
 
+    fn sign_schnorr(
+        &self,
+        address: &RoochAddress,
+        msg: &[u8],
+        password: Option<String>,
+    ) -> Result<[u8; 64], anyhow::Error> {
+        Ok(Signature::sign_schnorr(
+            msg,
+            &self.get_key_pair(address, password)?,
+        )?)
+    }
+
     fn sign_secure<T>(
         &self,
         address: &RoochAddress,

@@ -161,6 +161,19 @@ impl AccountKeystore for Keystore {
         }
     }
 
+    fn sign_schnorr(
+        &self,
+        address: &RoochAddress,
+        msg: &[u8],
+        password: Option<String>,
+    ) -> Result<[u8; 64], anyhow::Error> {
+        // Implement this method to sign a plaintext message for the appropriate variant (File or InMem)
+        match self {
+            Keystore::File(file_keystore) => file_keystore.sign_schnorr(address, msg, password),
+            Keystore::InMem(inmem_keystore) => inmem_keystore.sign_schnorr(address, msg, password),
+        }
+    }
+
     fn sign_transaction(
         &self,
         address: &RoochAddress,

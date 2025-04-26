@@ -138,6 +138,13 @@ pub trait AccountKeystore {
         password: Option<String>,
     ) -> Result<Signature, anyhow::Error>;
 
+    fn sign_schnorr(
+        &self,
+        address: &RoochAddress,
+        msg: &[u8],
+        password: Option<String>,
+    ) -> Result<[u8; 64], anyhow::Error>;
+
     fn sign_transaction(
         &self,
         address: &RoochAddress,

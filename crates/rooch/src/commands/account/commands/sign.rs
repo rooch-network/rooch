@@ -3,6 +3,7 @@
 
 use crate::cli_types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
+use bitcoin::key::constants::SCHNORR_PUBLIC_KEY_SIZE;
 use clap::Parser;
 use moveos_types::state::MoveState;
 use rooch_key::keystore::account_keystore::AccountKeystore;
@@ -43,10 +44,25 @@ impl CommandAction<Option<String>> for SignCommand {
             SignData::new_without_tx_hash(MESSAGE_INFO_PREFIX.to_vec(), self.message.to_bytes());
         let encoded_sign_data = sign_data.encode();
 
-        let signature =
-            context
-                .keystore
-                .sign_hashed(&rooch_address, &encoded_sign_data, password)?;
+        let kp = context.keystore.get_key_pair(address, password)?;
+        let pubkey = kp.public();
+        let pubkey_len = pubkey.as_ref().len();
+        let signature;
+        if pubkey.flag() == SignatureScheme::Secp256k1.flag()
+            && pubkey_len == SCHNORR_PUBLIC_KEY_SIZE
+        {
+            // Secp256k1 Schnorr signature
+            signature =
+                context
+                    .keystore
+                    .sign_schnorr(&rooch_address, &encoded_sign_data, password)?;
+        } else {
+            // Secp256k1 Ecdsa or Ed25519 signature
+            signature =
+                context
+                    .keystore
+                    .sign_hashed(&rooch_address, &encoded_sign_data, password)?;
+        }
 
         let signature_bytes = signature.as_ref();
         let signature_hex = hex::encode(signature_bytes);

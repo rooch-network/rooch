@@ -83,6 +83,15 @@ impl AccountKeystore for FileBasedKeystore {
         self.keystore.sign_hashed(address, msg, password)
     }
 
+    fn sign_schnorr(
+        &self,
+        address: &RoochAddress,
+        msg: &[u8],
+        password: Option<String>,
+    ) -> Result<[u8; 64], anyhow::Error> {
+        self.keystore.sign_schnorr(address, msg, password)
+    }
+
     fn sign_transaction(
         &self,
         address: &RoochAddress,
