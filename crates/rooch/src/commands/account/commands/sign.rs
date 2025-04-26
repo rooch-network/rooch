@@ -79,7 +79,7 @@ impl CommandAction<Option<AccountSignView>> for SignCommand {
                 &encoded_sign_data,
                 password.clone(),
             )?;
-            Some(hex::encode(&schnorr_sig))
+            Some(hex::encode(schnorr_sig))
         } else {
             None
         };
