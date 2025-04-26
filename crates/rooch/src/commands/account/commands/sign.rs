@@ -3,15 +3,17 @@
 
 use crate::cli_types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
-use bitcoin::key::constants::SCHNORR_PUBLIC_KEY_SIZE;
 use clap::Parser;
 use moveos_types::state::MoveState;
 use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_types::{
     address::ParsedAddress,
+    crypto::SignatureScheme,
     error::RoochResult,
     framework::auth_payload::{SignData, MESSAGE_INFO_PREFIX},
 };
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
 
 /// Sign a message with a parsed address
 #[derive(Debug, Parser)]
@@ -32,9 +34,24 @@ pub struct SignCommand {
     json: bool,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct AccountSignView {
+    pub signature: String,
+    pub schnorr_signature: Option<String>,
+}
+
+impl AccountSignView {
+    pub fn new(signature: String, schnorr_signature: Option<String>) -> Self {
+        Self {
+            signature,
+            schnorr_signature,
+        }
+    }
+}
+
 #[async_trait]
-impl CommandAction<Option<String>> for SignCommand {
-    async fn execute(self) -> RoochResult<Option<String>> {
+impl CommandAction<Option<AccountSignView>> for SignCommand {
+    async fn execute(self) -> RoochResult<Option<AccountSignView>> {
         let context = self.context_options.build_require_password()?;
         let password = context.get_password();
         let mapping = context.address_mapping();
@@ -44,36 +61,45 @@ impl CommandAction<Option<String>> for SignCommand {
             SignData::new_without_tx_hash(MESSAGE_INFO_PREFIX.to_vec(), self.message.to_bytes());
         let encoded_sign_data = sign_data.encode();
 
-        let kp = context.keystore.get_key_pair(address, password)?;
-        let pubkey = kp.public();
-        let pubkey_len = pubkey.as_ref().len();
-        let signature;
-        if pubkey.flag() == SignatureScheme::Secp256k1.flag()
-            && pubkey_len == SCHNORR_PUBLIC_KEY_SIZE
-        {
-            // Secp256k1 Schnorr signature
-            signature =
-                context
-                    .keystore
-                    .sign_schnorr(&rooch_address, &encoded_sign_data, password)?;
-        } else {
-            // Secp256k1 Ecdsa or Ed25519 signature
-            signature =
-                context
-                    .keystore
-                    .sign_hashed(&rooch_address, &encoded_sign_data, password)?;
-        }
-
-        let signature_bytes = signature.as_ref();
+        // Secp256k1 Ecdsa or Ed25519 signature
+        let sig =
+            context
+                .keystore
+                .sign_hashed(&rooch_address, &encoded_sign_data, password.clone())?;
+        let signature_bytes = sig.as_ref();
         let signature_hex = hex::encode(signature_bytes);
+        // Secp256k1 Schnorr signature
+        let kp = context
+            .keystore
+            .get_key_pair(&rooch_address, password.clone())?;
+        let pubkey = kp.public();
+        let schnorr_signature_hex = if pubkey.flag() == SignatureScheme::Secp256k1.flag() {
+            let schnorr_sig = context.keystore.sign_schnorr(
+                &rooch_address,
+                &encoded_sign_data,
+                password.clone(),
+            )?;
+            Some(hex::encode(&schnorr_sig))
+        } else {
+            None
+        };
+        let account_sign_view = AccountSignView::new(signature_hex, schnorr_signature_hex);
 
         if self.json {
-            Ok(Some(signature_hex))
+            Ok(Some(account_sign_view))
         } else {
-            println!(
-                "Sign message succeeded with the signatue {:?}",
-                signature_hex
-            );
+            if account_sign_view.schnorr_signature.is_some() {
+                println!(
+                    "Sign message succeeded with the signatues {:?} and {:?}",
+                    account_sign_view.signature,
+                    account_sign_view.schnorr_signature.unwrap()
+                );
+            } else {
+                println!(
+                    "Sign message succeeded with the signatue {:?}",
+                    account_sign_view.signature
+                );
+            }
             Ok(None)
         }
     }

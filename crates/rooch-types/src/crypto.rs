@@ -12,10 +12,7 @@ use crate::{
 };
 use anyhow::{anyhow, bail};
 use bech32::{encode, Bech32, EncodeError};
-use bitcoin::{
-    key::Keypair,
-    secp256k1::{constants::SCHNORR_SIGNATURE_SIZE, Message, SecretKey, SECP256K1},
-};
+use bitcoin::secp256k1::{constants::SCHNORR_SIGNATURE_SIZE, Message, SecretKey};
 use derive_more::{AsRef, From};
 pub use enum_dispatch::enum_dispatch;
 use eyre::eyre;
@@ -560,17 +557,18 @@ impl Signature {
         Signer::sign(secret, msg)
     }
 
-    /// Sign the message with the key pair.
-    /// The Secp256k1 will use the plaintext message without using any auxiliary random data.
+    /// Sign the message using schnorr with the key pair.
+    /// The Secp256k1 will use the hashed message
     pub fn sign_schnorr(
         msg: &[u8],
         kp: &RoochKeyPair,
     ) -> Result<[u8; SCHNORR_SIGNATURE_SIZE], RoochError> {
+        let keypair = kp.secp256k1_keypair().ok_or_else(|| {
+            RoochError::KeyConversionError("Failed to get the secp256k1 keypair".to_owned())
+        })?;
         let message =
             Message::from_digest_slice(msg).map_err(|_| RoochError::InvalidlengthError())?;
-        let keypair = Keypair::from_seckey_slice(SECP256K1, kp.private())
-            .map_err(|e| RoochError::KeyConversionError(format!("Failed to convert key {}", e)))?;
-        let signature = SECP256K1.sign_schnorr_no_aux_rand(&message, &keypair);
+        let signature = keypair.sign_schnorr(message);
         Ok(signature.serialize())
     }
 
