@@ -6,7 +6,6 @@ use async_trait::async_trait;
 use clap::Parser;
 use moveos_types::state::MoveState;
 use rooch_types::{
-    crypto::RoochSignature,
     error::RoochResult,
     framework::auth_payload::{SignData, MESSAGE_INFO_PREFIX},
     rooch_signature::ParsedSignature,
@@ -23,6 +22,10 @@ pub struct VerifyCommand {
     #[clap(short = 'm', long)]
     message: String,
 
+    /// A public key to be converted to x only public key to verify schnorr signature
+    #[clap(short = 'p', long)]
+    public_key: Option<String>,
+
     #[clap(flatten)]
     pub context_options: WalletContextOptions,
 
@@ -37,10 +40,11 @@ impl CommandAction<Option<bool>> for VerifyCommand {
         let sign_data =
             SignData::new_without_tx_hash(MESSAGE_INFO_PREFIX.to_vec(), self.message.to_bytes());
         let encoded_sign_data = sign_data.encode();
+
         let verify_result = self
             .signature
             .into_inner()
-            .verify(&encoded_sign_data)
+            .verify(&encoded_sign_data, self.public_key)
             .is_ok();
 
         if self.json {

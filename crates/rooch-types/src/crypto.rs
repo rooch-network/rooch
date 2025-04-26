@@ -778,6 +778,7 @@ impl Signer<Signature> for Secp256k1KeyPair {
 mod tests {
     use super::*;
     use crate::bitcoin::network;
+    use bitcoin::secp256k1::Message;
     use ethers::utils::keccak256;
     use fastcrypto::{
         secp256k1::{Secp256k1KeyPair, Secp256k1PrivateKey},
@@ -857,5 +858,16 @@ mod tests {
         };
         let signature = kp.sign_secure(&value);
         assert!(signature.verify_secure(&value).is_ok());
+    }
+
+    #[test]
+    fn test_schnorr_signature() {
+        let kp = RoochKeyPair::generate_secp256k1()
+            .secp256k1_keypair()
+            .unwrap();
+        let pk = kp.x_only_public_key().0;
+        let message = Message::from_digest_slice(&[0u8; 32]).unwrap();
+        let signature = kp.sign_schnorr(message);
+        assert!(signature.verify(&message, &pk).is_ok());
     }
 }
