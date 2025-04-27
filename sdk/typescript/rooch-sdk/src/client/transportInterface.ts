@@ -6,6 +6,14 @@ export interface RoochTransportRequestOptions {
   params: unknown[]
 }
 
+export interface RoochSSETransportSubscribeOptions<T> {
+  method: string
+  params: unknown
+  onMessage: (event: T) => void
+  onError?: (error: Error) => void
+  signal?: AbortSignal
+}
+
 export interface RoochTransportSubscribeOptions<T> {
   method: string
   params: unknown[]
@@ -20,6 +28,10 @@ export interface RoochTransport {
    * @returns Promise resolving to the response
    */
   request<T = unknown>(input: RoochTransportRequestOptions): Promise<T>
+
+  subscribeWithSSE<T = unknown>(
+    input: RoochSSETransportSubscribeOptions<T>,
+  ): Promise<() => Promise<boolean>>
 
   subscribe<T = unknown>(input: RoochTransportSubscribeOptions<T>): Promise<() => Promise<boolean>>
 
