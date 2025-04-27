@@ -550,22 +550,49 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     match opt.service_type {
         ServiceType::Both => {
             router = router
-                .route("/", axum::routing::post(crate::axum_router::json_rpc_handler))
-                .route("/", axum::routing::get(crate::axum_router::ws::ws_json_rpc_upgrade))
-                .route("/subscribe", axum::routing::get(crate::axum_router::ws::ws_json_rpc_upgrade))
-                .route("/subscribe/sse/events", axum::routing::get(crate::axum_router::sse_events_handler))
-                .route("/subscribe/sse/transactions", axum::routing::get(crate::axum_router::sse_transactions_handler));
+                .route(
+                    "/",
+                    axum::routing::post(crate::axum_router::json_rpc_handler),
+                )
+                .route(
+                    "/",
+                    axum::routing::get(crate::axum_router::ws::ws_json_rpc_upgrade),
+                )
+                .route(
+                    "/subscribe",
+                    axum::routing::get(crate::axum_router::ws::ws_json_rpc_upgrade),
+                )
+                .route(
+                    "/subscribe/sse/events",
+                    axum::routing::get(crate::axum_router::sse_events_handler),
+                )
+                .route(
+                    "/subscribe/sse/transactions",
+                    axum::routing::get(crate::axum_router::sse_transactions_handler),
+                );
         }
         ServiceType::Http => {
             router = router
                 .route("/", axum::routing::post(axum_router::json_rpc_handler))
-                .route("/subscribe/sse/events", axum::routing::get(crate::axum_router::sse_events_handler))
-                .route("/subscribe/sse/transactions", axum::routing::get(crate::axum_router::sse_transactions_handler));
+                .route(
+                    "/subscribe/sse/events",
+                    axum::routing::get(crate::axum_router::sse_events_handler),
+                )
+                .route(
+                    "/subscribe/sse/transactions",
+                    axum::routing::get(crate::axum_router::sse_transactions_handler),
+                );
         }
         ServiceType::WebSocket => {
             router = router
-                .route("/", axum::routing::get(crate::axum_router::ws::ws_json_rpc_upgrade))
-                .route("/subscribe", axum::routing::get(crate::axum_router::ws::ws_json_rpc_upgrade))
+                .route(
+                    "/",
+                    axum::routing::get(crate::axum_router::ws::ws_json_rpc_upgrade),
+                )
+                .route(
+                    "/subscribe",
+                    axum::routing::get(crate::axum_router::ws::ws_json_rpc_upgrade),
+                )
         }
     }
 
