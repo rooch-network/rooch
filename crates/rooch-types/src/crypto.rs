@@ -569,7 +569,8 @@ impl Signature {
         let message =
             Message::from_digest_slice(msg).map_err(|_| RoochError::InvalidlengthError())?;
         let signature = keypair.sign_schnorr(message);
-        Ok(signature.serialize())
+        let signature_bytes = signature.serialize();
+        Ok(signature_bytes)
     }
 
     /// Sign the message with bcs serialization and use Blake2b256 to hash the message.
