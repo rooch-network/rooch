@@ -14,16 +14,16 @@ use std::{result::Result, str::FromStr};
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum InnerSignature {
     Ed25519Signature(Ed25519RoochSignature),
-    Secp256k1Signature(Secp256k1RoochSignature),
-    SchnorrSignature(Signature),
+    Secp256k1EcdsaSignature(Secp256k1RoochSignature),
+    Secp256k1SchnorrSignature(Signature),
 }
 
 impl InnerSignature {
     pub fn verify(self, value: &[u8], public_key: Option<String>) -> Result<(), RoochError> {
         match self {
             Self::Ed25519Signature(sig) => sig.verify(value),
-            Self::Secp256k1Signature(sig) => sig.verify(value),
-            Self::SchnorrSignature(sig) => {
+            Self::Secp256k1EcdsaSignature(sig) => sig.verify(value),
+            Self::Secp256k1SchnorrSignature(sig) => {
                 let public_key = public_key.unwrap_or_else(|| panic!("Unable to parse public key"));
                 let x_only_public_key = PublicKey::from_str(
                     public_key.strip_prefix("0x").unwrap_or(public_key.as_str()),
@@ -63,13 +63,13 @@ impl ParsedSignature {
                 Ed25519RoochSignature::from_bytes(&signature_bytes)?,
             ))
         } else if signature_bytes.len() == Secp256k1RoochSignature::LENGTH {
-            Self::from_signature(InnerSignature::Secp256k1Signature(
+            Self::from_signature(InnerSignature::Secp256k1EcdsaSignature(
                 Secp256k1RoochSignature::from_bytes(&signature_bytes)?,
             ))
         } else {
-            Self::from_signature(InnerSignature::SchnorrSignature(Signature::from_slice(
-                &signature_bytes,
-            )?))
+            Self::from_signature(InnerSignature::Secp256k1SchnorrSignature(
+                Signature::from_slice(&signature_bytes)?,
+            ))
         };
         Ok(signature)
     }
