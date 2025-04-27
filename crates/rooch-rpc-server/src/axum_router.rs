@@ -2,28 +2,28 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::service::metrics::{ServiceMetrics, TransportProtocol};
-use axum::extract::{ConnectInfo, State, Query};
+use axum::extract::{ConnectInfo, Query, State};
 use axum::http::HeaderMap;
+use axum::response::sse::{Event, KeepAlive, Sse};
 use axum::response::Response;
 use axum::Json;
+use futures::{Stream, StreamExt};
 use jsonrpsee::server::RandomIntegerIdProvider;
 use jsonrpsee::types::{ErrorCode, ErrorObject, Id, InvalidRequest, Params, Request};
 use jsonrpsee::{
     core::server::Methods, BoundedSubscriptions, ConnectionId, MethodCallback, MethodKind,
     MethodResponse, MethodSink,
 };
+use rooch_notify::subscription_handler::SubscriptionHandler;
 use rooch_rpc_api::jsonrpc_types::event_view::EventFilterView;
 use rooch_rpc_api::jsonrpc_types::transaction_view::TransactionFilterView;
+use serde::Deserialize;
 use serde_json::value::RawValue;
+use std::convert::Infallible;
 use std::net::SocketAddr;
 use std::sync::Arc;
-use tokio::time::Instant;
-use axum::response::sse::{Event, KeepAlive, Sse};
-use futures::{Stream, StreamExt};
-use std::convert::Infallible;
-use rooch_notify::subscription_handler::SubscriptionHandler;
-use serde::Deserialize;
 use tokio::sync::mpsc;
+use tokio::time::Instant;
 use tokio_stream::wrappers::ReceiverStream;
 
 pub const MAX_RESPONSE_SIZE: u32 = 2 << 30;
@@ -49,7 +49,11 @@ pub struct JsonRpcService {
 }
 
 impl JsonRpcService {
-    pub fn new(methods: Methods, metrics: ServiceMetrics, subscription_handler: Arc<SubscriptionHandler>) -> Self {
+    pub fn new(
+        methods: Methods,
+        metrics: ServiceMetrics,
+        subscription_handler: Arc<SubscriptionHandler>,
+    ) -> Self {
         Self {
             methods,
             metrics,
@@ -493,9 +497,13 @@ where
         Err(e) => {
             tracing::error!("Failed to parse event filter: {:?}", e);
             let (tx, rx) = mpsc::channel::<Event>(1);
-            let _ = tx.send(Event::default()
-                .event("error")
-                .data(format!("Failed to parse event filter: {}", e))).await;
+            let _ = tx
+                .send(
+                    Event::default()
+                        .event("error")
+                        .data(format!("Failed to parse event filter: {}", e)),
+                )
+                .await;
             let stream = ReceiverStream::new(rx).map(Ok);
             return Sse::new(stream).keep_alive(KeepAlive::default());
         }
@@ -509,10 +517,8 @@ where
         let mut event_stream = Box::pin(event_stream);
         while let Some(event) = event_stream.next().await {
             let event_data = serde_json::to_string(&event).unwrap();
-            let sse_event = Event::default()
-                .event("message")
-                .data(event_data);
-            
+            let sse_event = Event::default().event("message").data(event_data);
+
             if tx.send(sse_event).await.is_err() {
                 break;
             }
@@ -534,10 +540,15 @@ macro_rules! create_sse_handler {
                 Query(query),
                 |filter_str| serde_json::from_str::<$filter_type>(filter_str),
                 |handler, filter| handler.$subscribe_method(filter),
-            ).await
+            )
+            .await
         }
     };
 }
 
-create_sse_handler!(sse_transactions_handler, TransactionFilterView, subscribe_transactions);
+create_sse_handler!(
+    sse_transactions_handler,
+    TransactionFilterView,
+    subscribe_transactions
+);
 create_sse_handler!(sse_events_handler, EventFilterView, subscribe_events);
