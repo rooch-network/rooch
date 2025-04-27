@@ -13,6 +13,7 @@ It helps migrate coin stores, balances, frozen states, and accept data.
 -  [Resource `MigrationState`](#0x3_coin_migration_MigrationState)
 -  [Resource `MigrationUpdateCap`](#0x3_coin_migration_MigrationUpdateCap)
 -  [Constants](#@Constants_0)
+-  [Function `initialize_entry`](#0x3_coin_migration_initialize_entry)
 -  [Function `dispatch_cap_entry`](#0x3_coin_migration_dispatch_cap_entry)
 -  [Function `ensure_has_cap`](#0x3_coin_migration_ensure_has_cap)
 -  [Function `cap_address`](#0x3_coin_migration_cap_address)
@@ -116,6 +117,18 @@ Nothing to migrate for the account
 
 
 <pre><code><b>const</b> <a href="coin_migration.md#0x3_coin_migration_ErrorNothingToMigrate">ErrorNothingToMigrate</a>: u64 = 2;
+</code></pre>
+
+
+
+<a name="0x3_coin_migration_initialize_entry"></a>
+
+## Function `initialize_entry`
+
+Initialize the migration module, called after framework upgrade
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="coin_migration.md#0x3_coin_migration_initialize_entry">initialize_entry</a>(_account: &<a href="">signer</a>)
 </code></pre>
 
 
