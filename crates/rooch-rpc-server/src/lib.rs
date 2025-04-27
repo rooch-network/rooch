@@ -440,7 +440,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         processor_proxy,
         bitcoin_client_proxy,
         da_proxy,
-        subscription_handle,
+        subscription_handle.clone(),
         None,
     );
     let aggregate_service = AggregateService::new(rpc_service.clone());
@@ -543,38 +543,29 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     let ser = axum_router::JsonRpcService::new(
         rpc_module_builder.module.clone().into(),
         ServiceMetrics::new(&prometheus_registry, &methods_names),
+        subscription_handle,
     );
 
     let mut router = axum::Router::new();
     match opt.service_type {
         ServiceType::Both => {
             router = router
-                .route(
-                    "/",
-                    axum::routing::post(crate::axum_router::json_rpc_handler),
-                )
-                .route(
-                    "/",
-                    axum::routing::get(crate::axum_router::ws::ws_json_rpc_upgrade),
-                )
-                .route(
-                    "/subscribe",
-                    axum::routing::get(crate::axum_router::ws::ws_json_rpc_upgrade),
-                );
+                .route("/", axum::routing::post(crate::axum_router::json_rpc_handler))
+                .route("/", axum::routing::get(crate::axum_router::ws::ws_json_rpc_upgrade))
+                .route("/subscribe", axum::routing::get(crate::axum_router::ws::ws_json_rpc_upgrade))
+                .route("/subscribe/sse/events", axum::routing::get(crate::axum_router::sse_events_handler))
+                .route("/subscribe/sse/transactions", axum::routing::get(crate::axum_router::sse_transactions_handler));
         }
         ServiceType::Http => {
-            router = router.route("/", axum::routing::post(axum_router::json_rpc_handler));
+            router = router
+                .route("/", axum::routing::post(axum_router::json_rpc_handler))
+                .route("/subscribe/sse/events", axum::routing::get(crate::axum_router::sse_events_handler))
+                .route("/subscribe/sse/transactions", axum::routing::get(crate::axum_router::sse_transactions_handler));
         }
         ServiceType::WebSocket => {
             router = router
-                .route(
-                    "/",
-                    axum::routing::get(crate::axum_router::ws::ws_json_rpc_upgrade),
-                )
-                .route(
-                    "/subscribe",
-                    axum::routing::get(crate::axum_router::ws::ws_json_rpc_upgrade),
-                );
+                .route("/", axum::routing::get(crate::axum_router::ws::ws_json_rpc_upgrade))
+                .route("/subscribe", axum::routing::get(crate::axum_router::ws::ws_json_rpc_upgrade))
         }
     }
 
@@ -583,7 +574,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     let listener = tokio::net::TcpListener::bind(&addr).await?;
     let addr = listener.local_addr()?;
 
-    let mut axum_rx = shutdown_tx.subscribe();
+    let mut rpc_rx = shutdown_tx.subscribe();
     tokio::spawn(async move {
         axum::serve(
             listener,
@@ -592,7 +583,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         .with_graceful_shutdown(async move {
             tokio::select! {
             _ = shutdown_signal() => {},
-            _ = axum_rx.recv() => {
+            _ = rpc_rx.recv() => {
                 info!("shutdown signal received, starting graceful shutdown");
                 },
             }
