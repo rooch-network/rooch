@@ -493,6 +493,12 @@ where
             .get_native_extensions_mut()
             .get_mut::<NativeModuleContext>();
         let init_functions = ctx.init_functions.clone();
+
+        // Since object_runtime does not update promptly when a new module is published
+        // it is necessary to clear the module_cache.
+        self.vm.mark_loader_cache_as_invalid();
+        self.vm.flush_loader_cache_if_invalidated();
+
         if !init_functions.is_empty() {
             self.execute_init_modules(init_functions.into_iter().collect())
         } else {
