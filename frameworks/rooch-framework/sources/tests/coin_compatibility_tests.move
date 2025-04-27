@@ -89,7 +89,7 @@ module rooch_framework::coin_compatibility_tests {
         
         // Deposit to Bob using non-generic interface
         let coin_type = type_info::type_name<TestCoin1>();
-        let generic_coin = coin::convert_coin_to_generic_coin(coin1);
+        let generic_coin = generic_coin::convert_coin_to_generic_coin(coin1);
         account_coin_store::deposit_by_type_name(BOB, generic_coin);
         
         // Verify Bob's balance
@@ -190,7 +190,7 @@ module rooch_framework::coin_compatibility_tests {
         account_coin_store::deposit<TestCoin1>(ALICE, coin1); // Generic deposit
         
         let _coin_type2 = type_info::type_name<TestCoin2>();
-        let generic_coin2 = coin::convert_coin_to_generic_coin(coin2);
+        let generic_coin2 = generic_coin::convert_coin_to_generic_coin(coin2);
         account_coin_store::deposit_by_type_name(ALICE, generic_coin2); // Non-generic deposit
         
         account_coin_store::deposit<TestCoin3>(ALICE, coin3); // Generic deposit
@@ -244,7 +244,7 @@ module rooch_framework::coin_compatibility_tests {
         
         // Second deposit (non-generic)
         let coin2 = mint_coin<TestCoin1>(&mut coin1_info, 700);
-        let generic_coin = coin::convert_coin_to_generic_coin(coin2);
+        let generic_coin = generic_coin::convert_coin_to_generic_coin(coin2);
         account_coin_store::deposit_by_type_name(ALICE, generic_coin);
         
         // Verify total balance

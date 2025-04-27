@@ -7,8 +7,6 @@ module rooch_framework::coin {
     use std::option::Option;
     use std::string;
     use std::string::String;
-    use rooch_framework::generic_coin::GenericCoin;
-    use rooch_framework::generic_coin;
     use moveos_std::object::{Self, ObjectID, Object};
 
     use moveos_std::event;
@@ -18,6 +16,7 @@ module rooch_framework::coin {
     friend rooch_framework::coin_store;
     friend rooch_framework::multi_coin_store;
     friend rooch_framework::account_coin_store;
+    friend rooch_framework::generic_coin;
 
     //
     // Errors
@@ -556,21 +555,6 @@ module rooch_framework::coin {
     #[test_only]
     public fun destroy_for_testing<CoinType: key>(coin: Coin<CoinType>) {
         let Coin { value: _ } = coin;
-    }
-
-
-    // === Migration functions ===
-    public fun convert_coin_to_generic_coin<CoinType: key>(coin: Coin<CoinType>): GenericCoin {
-        let value = unpack(coin);
-        let coin_type = type_info::type_name<CoinType>();
-        generic_coin::pack_generic_coin(coin_type, value)
-    }
-
-    public fun convert_generic_coin_to_coin<CoinType: key>(coin: GenericCoin): Coin<CoinType> {
-        let generic_coin_type = type_info::type_name<CoinType>();
-        let (coin_type, value) = generic_coin::unpack_generic_coin(coin);
-        assert!(generic_coin_type == coin_type, ErrorCoinTypeNotMatch);
-        pack<CoinType>(value)
     }
 
     // === Non-generic functions ===

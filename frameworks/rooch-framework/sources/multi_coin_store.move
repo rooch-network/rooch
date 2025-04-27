@@ -12,7 +12,7 @@ module rooch_framework::multi_coin_store {
     use moveos_std::object::{Self, Object};
     
     use moveos_std::event;
-    use rooch_framework::coin::{Self, Coin};
+    use rooch_framework::coin::{Coin};
 
     friend rooch_framework::account_coin_store;
     friend rooch_framework::coin_migration;
@@ -195,7 +195,7 @@ module rooch_framework::multi_coin_store {
     /// Deposit `amount` Coin<CoinType> to the balance of the passed-in `multi_coin_store`
     /// This function is for the `CoinType` module to extend
     public fun deposit_extend<CoinType: key>(coin_store_obj: &mut Object<MultiCoinStore>, coin: Coin<CoinType>) {
-        let generic_coin = coin::convert_coin_to_generic_coin(coin);
+        let generic_coin = generic_coin::convert_coin_to_generic_coin(coin);
         deposit_internal(coin_store_obj, generic_coin)
     }
 

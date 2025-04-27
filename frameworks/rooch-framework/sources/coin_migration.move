@@ -6,6 +6,7 @@
 /// It helps migrate coin stores, balances, frozen states, and accept data.
 module rooch_framework::coin_migration {
     use std::string;
+    use rooch_framework::generic_coin::convert_coin_to_generic_coin;
     use rooch_framework::onchain_config;
     use moveos_std::signer;
     use moveos_std::type_info;
@@ -13,7 +14,6 @@ module rooch_framework::coin_migration {
     use moveos_std::object::{Self, ObjectID};
     use moveos_std::table;
     
-    use rooch_framework::coin::{convert_coin_to_generic_coin};
     use rooch_framework::coin_store::{Self};
     use rooch_framework::multi_coin_store::{Self};
     use rooch_framework::account_coin_store;

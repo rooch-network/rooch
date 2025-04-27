@@ -5,8 +5,9 @@
 module rooch_framework::multi_coin_store_tests {
     use std::string;
     use std::option;
+    use rooch_framework::generic_coin::convert_coin_to_generic_coin;
     use rooch_framework::generic_coin;
-    use rooch_framework::coin::{convert_coin_to_generic_coin, register_extend};
+    use rooch_framework::coin::{register_extend};
     use rooch_framework::coin;
     use rooch_framework::multi_coin_store::MultiCoinStore;
     use rooch_framework::multi_coin_store;
@@ -87,7 +88,7 @@ module rooch_framework::multi_coin_store_tests {
         // Mint some coins
         let btc_coin = mint_coin<BTC>(&mut btc_info, 100);
         let _btc_value = coin::value(&btc_coin);
-        let btc_generic = coin::convert_coin_to_generic_coin(btc_coin);
+        let btc_generic = generic_coin::convert_coin_to_generic_coin(btc_coin);
 
         // Deposit BTC
         multi_coin_store::deposit(store_obj_mut, btc_generic);
@@ -190,7 +191,7 @@ module rooch_framework::multi_coin_store_tests {
         multi_coin_store::create_coin_store_field_if_not_exist_for_test(store_obj_mut, private_coin_type);
 
         let private_coin = coin::mint_extend<PrivateCoin>(&mut private_coin_info, 100);
-        let private_coin_generic = coin::convert_coin_to_generic_coin(private_coin);
+        let private_coin_generic = generic_coin::convert_coin_to_generic_coin(private_coin);
         // This should fail because PrivateCoin doesn't have the store ability
         multi_coin_store::deposit(store_obj_mut, private_coin_generic);
 

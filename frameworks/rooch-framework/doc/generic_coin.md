@@ -13,9 +13,13 @@ This module provides the foundation for typesafe Generic Coins.
 -  [Function `pack_generic_coin`](#0x3_generic_coin_pack_generic_coin)
 -  [Function `merge_generic`](#0x3_generic_coin_merge_generic)
 -  [Function `coin_type`](#0x3_generic_coin_coin_type)
+-  [Function `convert_coin_to_generic_coin`](#0x3_generic_coin_convert_coin_to_generic_coin)
+-  [Function `convert_generic_coin_to_coin`](#0x3_generic_coin_convert_generic_coin_to_coin)
 
 
 <pre><code><b>use</b> <a href="">0x1::string</a>;
+<b>use</b> <a href="">0x2::type_info</a>;
+<b>use</b> <a href="coin.md#0x3_coin">0x3::coin</a>;
 </code></pre>
 
 
@@ -105,4 +109,26 @@ Helper function for getting the coin type name from a GenericCoin
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="generic_coin.md#0x3_generic_coin_coin_type">coin_type</a>(<a href="coin.md#0x3_coin">coin</a>: &<a href="generic_coin.md#0x3_generic_coin_GenericCoin">generic_coin::GenericCoin</a>): <a href="_String">string::String</a>
+</code></pre>
+
+
+
+<a name="0x3_generic_coin_convert_coin_to_generic_coin"></a>
+
+## Function `convert_coin_to_generic_coin`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="generic_coin.md#0x3_generic_coin_convert_coin_to_generic_coin">convert_coin_to_generic_coin</a>&lt;CoinType: key&gt;(<a href="coin.md#0x3_coin">coin</a>: <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;): <a href="generic_coin.md#0x3_generic_coin_GenericCoin">generic_coin::GenericCoin</a>
+</code></pre>
+
+
+
+<a name="0x3_generic_coin_convert_generic_coin_to_coin"></a>
+
+## Function `convert_generic_coin_to_coin`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="generic_coin.md#0x3_generic_coin_convert_generic_coin_to_coin">convert_generic_coin_to_coin</a>&lt;CoinType: key&gt;(<a href="coin.md#0x3_coin">coin</a>: <a href="generic_coin.md#0x3_generic_coin_GenericCoin">generic_coin::GenericCoin</a>): <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;
 </code></pre>

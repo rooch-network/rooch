@@ -4,8 +4,10 @@
 /// This module provides the foundation for typesafe Generic Coins.
 module rooch_framework::generic_coin {
     use std::string;
+    use rooch_framework::coin::Coin;
+    use moveos_std::type_info;
+    use rooch_framework::coin;
 
-    friend rooch_framework::coin;
     friend rooch_framework::multi_coin_store;
 
     //
@@ -58,6 +60,20 @@ module rooch_framework::generic_coin {
     /// Helper function for getting the coin type name from a GenericCoin
     public fun coin_type(coin: &GenericCoin): string::String {
         coin.coin_type
+    }
+
+    // === Migration functions ===
+    public fun convert_coin_to_generic_coin<CoinType: key>(coin: Coin<CoinType>): GenericCoin {
+        let value = coin::unpack(coin);
+        let coin_type = type_info::type_name<CoinType>();
+        pack_generic_coin(coin_type, value)
+    }
+
+    public fun convert_generic_coin_to_coin<CoinType: key>(coin: GenericCoin): Coin<CoinType> {
+        let generic_coin_type = type_info::type_name<CoinType>();
+        let (coin_type, value) = unpack_generic_coin(coin);
+        assert!(generic_coin_type == coin_type, ErrorCoinTypeNotMatch);
+        coin::pack<CoinType>(value)
     }
 
     #[test_only]

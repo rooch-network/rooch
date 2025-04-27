@@ -283,7 +283,7 @@ module rooch_framework::account_coin_store {
             let generic_amount = amount - coin_store_balance;
             let generic_store = borrow_mut_multi_coin_store(addr);
             let generic_coin = multi_coin_store::withdraw(generic_store, coin_type, generic_amount);
-            let generic_coin_store_coin = coin::convert_generic_coin_to_coin<CoinType>(generic_coin);
+            let generic_coin_store_coin = generic_coin::convert_generic_coin_to_coin<CoinType>(generic_coin);
             coin::merge(&mut coin_store_coin, generic_coin_store_coin);
         };
 
@@ -299,7 +299,7 @@ module rooch_framework::account_coin_store {
         );
 
         let multi_coin_store = create_or_borrow_mut_multi_coin_store(addr);
-        let generic_coin = coin::convert_coin_to_generic_coin(coin);
+        let generic_coin = generic_coin::convert_coin_to_generic_coin(coin);
         multi_coin_store::deposit_internal(multi_coin_store, generic_coin);
 
         // just for compatiable coin store

@@ -53,8 +53,6 @@ This module provides the foundation for typesafe Coins.
 -  [Function `burn_extend`](#0x3_coin_burn_extend)
 -  [Function `unpack`](#0x3_coin_unpack)
 -  [Function `pack`](#0x3_coin_pack)
--  [Function `convert_coin_to_generic_coin`](#0x3_coin_convert_coin_to_generic_coin)
--  [Function `convert_generic_coin_to_coin`](#0x3_coin_convert_generic_coin_to_coin)
 -  [Function `check_coin_info_registered_by_type_name`](#0x3_coin_check_coin_info_registered_by_type_name)
 -  [Function `is_registered_by_type_name`](#0x3_coin_is_registered_by_type_name)
 
@@ -64,7 +62,6 @@ This module provides the foundation for typesafe Coins.
 <b>use</b> <a href="">0x2::event</a>;
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::type_info</a>;
-<b>use</b> <a href="generic_coin.md#0x3_generic_coin">0x3::generic_coin</a>;
 </code></pre>
 
 
@@ -180,16 +177,6 @@ Maximum possible coin supply.
 
 
 
-<a name="0x3_coin_ErrorCoinTypeNotMatch"></a>
-
-The coin type is not match
-
-
-<pre><code><b>const</b> <a href="coin.md#0x3_coin_ErrorCoinTypeNotMatch">ErrorCoinTypeNotMatch</a>: u64 = 11;
-</code></pre>
-
-
-
 <a name="0x3_coin_ErrorCoinInfoAlreadyRegistered"></a>
 
 <code>CoinType</code> is already registered as a coin
@@ -256,6 +243,16 @@ The coin type is invalid
 
 
 <pre><code><b>const</b> <a href="coin.md#0x3_coin_ErrorCoinTypeInvalid">ErrorCoinTypeInvalid</a>: u64 = 12;
+</code></pre>
+
+
+
+<a name="0x3_coin_ErrorCoinTypeNotMatch"></a>
+
+The coin type is not match
+
+
+<pre><code><b>const</b> <a href="coin.md#0x3_coin_ErrorCoinTypeNotMatch">ErrorCoinTypeNotMatch</a>: u64 = 11;
 </code></pre>
 
 
@@ -800,28 +797,6 @@ This function is only called by the <code>CoinType</code> module, for the develo
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="coin.md#0x3_coin_pack">pack</a>&lt;CoinType: key&gt;(value: <a href="">u256</a>): <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;
-</code></pre>
-
-
-
-<a name="0x3_coin_convert_coin_to_generic_coin"></a>
-
-## Function `convert_coin_to_generic_coin`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_convert_coin_to_generic_coin">convert_coin_to_generic_coin</a>&lt;CoinType: key&gt;(<a href="coin.md#0x3_coin">coin</a>: <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;): <a href="generic_coin.md#0x3_generic_coin_GenericCoin">generic_coin::GenericCoin</a>
-</code></pre>
-
-
-
-<a name="0x3_coin_convert_generic_coin_to_coin"></a>
-
-## Function `convert_generic_coin_to_coin`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_convert_generic_coin_to_coin">convert_generic_coin_to_coin</a>&lt;CoinType: key&gt;(<a href="coin.md#0x3_coin">coin</a>: <a href="generic_coin.md#0x3_generic_coin_GenericCoin">generic_coin::GenericCoin</a>): <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;
 </code></pre>
 
 
