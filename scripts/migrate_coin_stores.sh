@@ -1,4 +1,6 @@
 #!/bin/bash
+# Copyright (c) RoochNetwork
+# SPDX-License-Identifier: Apache-2.0
 
 # Check if the input file is provided
 if [ "$#" -ne 1 ]; then
