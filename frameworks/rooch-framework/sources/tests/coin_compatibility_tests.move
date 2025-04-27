@@ -5,6 +5,7 @@
 module rooch_framework::coin_compatibility_tests {
     use std::string;
     use std::option;
+    use rooch_framework::generic_coin;
     use moveos_std::signer;
     use rooch_framework::coin;
     use rooch_framework::account_coin_store;
@@ -104,7 +105,7 @@ module rooch_framework::coin_compatibility_tests {
         assert!(bob_balance == withdraw_amount1 - withdraw_amount2, 5);
         
         // Deposit back to Alice using generic interface
-        let (_, value) = coin::unpack_generic_coin_for_test(generic_coin);
+        let (_, value) = generic_coin::unpack_generic_coin_for_test(generic_coin);
         let typed_coin = coin::pack_for_test<TestCoin1>(value);
         account_coin_store::deposit<TestCoin1>(ALICE, typed_coin);
         
@@ -278,7 +279,7 @@ module rooch_framework::coin_compatibility_tests {
         let generic_coin = account_coin_store::withdraw_by_type_name(&alice, coin_type, 200);
         
         // Verify amount
-        assert!(coin::generic_coin_value(&generic_coin) == 200, 6);
+        assert!(generic_coin::generic_coin_value(&generic_coin) == 200, 6);
         
         // Verify balance is zero
         total_balance = account_coin_store::balance<TestCoin1>(ALICE);
@@ -286,7 +287,7 @@ module rooch_framework::coin_compatibility_tests {
 
         // cleanup
         coin::unpack_for_test(coin4);
-        coin::unpack_generic_coin_for_test(generic_coin);
+        generic_coin::unpack_generic_coin_for_test(generic_coin);
         object::transfer(coin1_info, @rooch_framework);
     }
 

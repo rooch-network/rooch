@@ -49,6 +49,7 @@
 <b>use</b> <a href="">0x2::type_info</a>;
 <b>use</b> <a href="coin.md#0x3_coin">0x3::coin</a>;
 <b>use</b> <a href="coin_store.md#0x3_coin_store">0x3::coin_store</a>;
+<b>use</b> <a href="generic_coin.md#0x3_generic_coin">0x3::generic_coin</a>;
 <b>use</b> <a href="multi_coin_store.md#0x3_multi_coin_store">0x3::multi_coin_store</a>;
 </code></pre>
 
@@ -407,7 +408,7 @@ The script function is reenterable.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account_coin_store.md#0x3_account_coin_store_withdraw_by_type_name">withdraw_by_type_name</a>(<a href="">account</a>: &<a href="">signer</a>, coin_type: <a href="_String">string::String</a>, amount: <a href="">u256</a>): <a href="coin.md#0x3_coin_GenericCoin">coin::GenericCoin</a>
+<pre><code><b>public</b> <b>fun</b> <a href="account_coin_store.md#0x3_account_coin_store_withdraw_by_type_name">withdraw_by_type_name</a>(<a href="">account</a>: &<a href="">signer</a>, coin_type: <a href="_String">string::String</a>, amount: <a href="">u256</a>): <a href="generic_coin.md#0x3_generic_coin_GenericCoin">generic_coin::GenericCoin</a>
 </code></pre>
 
 
@@ -418,7 +419,7 @@ The script function is reenterable.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account_coin_store.md#0x3_account_coin_store_deposit_by_type_name">deposit_by_type_name</a>(addr: <b>address</b>, <a href="coin.md#0x3_coin">coin</a>: <a href="coin.md#0x3_coin_GenericCoin">coin::GenericCoin</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="account_coin_store.md#0x3_account_coin_store_deposit_by_type_name">deposit_by_type_name</a>(addr: <b>address</b>, <a href="coin.md#0x3_coin">coin</a>: <a href="generic_coin.md#0x3_generic_coin_GenericCoin">generic_coin::GenericCoin</a>)
 </code></pre>
 
 

@@ -5,6 +5,7 @@
 module rooch_framework::multi_coin_store_tests {
     use std::string;
     use std::option;
+    use rooch_framework::generic_coin;
     use rooch_framework::coin::{convert_coin_to_generic_coin, register_extend};
     use rooch_framework::coin;
     use rooch_framework::multi_coin_store::MultiCoinStore;
@@ -103,10 +104,10 @@ module rooch_framework::multi_coin_store_tests {
         assert!(multi_coin_store::balance(store_obj_mut, btc_type) == 50, 2);
 
         // Verify withdrawn coin
-        assert!(coin::coin_type(&withdrawn_coin) == btc_type, 3);
-        assert!(coin::generic_coin_value(&withdrawn_coin) == 50, 4);
+        assert!(generic_coin::coin_type(&withdrawn_coin) == btc_type, 3);
+        assert!(generic_coin::generic_coin_value(&withdrawn_coin) == 50, 4);
 
-        coin::unpack_generic_coin_for_test(withdrawn_coin);
+        generic_coin::unpack_generic_coin_for_test(withdrawn_coin);
         object::transfer(btc_info, @rooch_framework);
     }
 
@@ -135,7 +136,7 @@ module rooch_framework::multi_coin_store_tests {
         
         // Try to withdraw more than balance - should fail
         let generic_coin = multi_coin_store::withdraw(store_obj_mut, btc_type, 200);
-        coin::unpack_generic_coin_for_test(generic_coin);
+        generic_coin::unpack_generic_coin_for_test(generic_coin);
         object::transfer(btc_info, @rooch_framework);
     }
 
@@ -235,8 +236,8 @@ module rooch_framework::multi_coin_store_tests {
         assert!(multi_coin_store::balance(store_obj_mut, btc_type) == 50, 4);
         assert!(multi_coin_store::balance(store_obj_mut, fakecoin_type) == 100, 5);
 
-        coin::unpack_generic_coin_for_test(withdrawn_btc);
-        coin::unpack_generic_coin_for_test(withdrawn_fakecoin);
+        generic_coin::unpack_generic_coin_for_test(withdrawn_btc);
+        generic_coin::unpack_generic_coin_for_test(withdrawn_fakecoin);
         object::transfer(btc_info, @rooch_framework);
         object::transfer(fakecoin_info, @rooch_framework);
     }
@@ -269,14 +270,14 @@ module rooch_framework::multi_coin_store_tests {
         let removed_coin = multi_coin_store::remove_coin_store_field(store_obj_mut, btc_type);
         
         // Verify coin returned from removal
-        assert!(coin::coin_type(&removed_coin) == btc_type, 2);
-        assert!(coin::generic_coin_value(&removed_coin) == 100, 3);
+        assert!(generic_coin::coin_type(&removed_coin) == btc_type, 2);
+        assert!(generic_coin::generic_coin_value(&removed_coin) == 100, 3);
         
         // Verify field is removed
         assert!(!multi_coin_store::exist_coin_store_field(store_obj_mut, btc_type), 4);
         assert!(multi_coin_store::balance(store_obj_mut, btc_type) == 0, 5);
 
-        coin::unpack_generic_coin_for_test(removed_coin);
+        generic_coin::unpack_generic_coin_for_test(removed_coin);
         object::transfer(btc_info, @rooch_framework);
     }
 

@@ -3,7 +3,9 @@
 
 module rooch_framework::account_coin_store {
     use std::string;
-    use rooch_framework::coin::{Coin, GenericCoin};
+    use rooch_framework::generic_coin;
+    use rooch_framework::generic_coin::GenericCoin;
+    use rooch_framework::coin::{Coin};
     use rooch_framework::coin;
     use moveos_std::type_info;
     use rooch_framework::multi_coin_store;
@@ -453,7 +455,7 @@ module rooch_framework::account_coin_store {
     }
 
     fun deposit_internal_by_type_name(addr: address, coin: GenericCoin) {
-        let coin_type = coin::coin_type(&coin);
+        let coin_type = generic_coin::coin_type(&coin);
         assert!(
             is_accept_coin_by_type_name(addr, coin_type),
             ErrorAccountNotAcceptCoin,

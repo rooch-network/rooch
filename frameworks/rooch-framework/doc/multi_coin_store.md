@@ -38,6 +38,7 @@
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::type_info</a>;
 <b>use</b> <a href="coin.md#0x3_coin">0x3::coin</a>;
+<b>use</b> <a href="generic_coin.md#0x3_generic_coin">0x3::generic_coin</a>;
 </code></pre>
 
 
@@ -231,7 +232,7 @@ Coin type should have key and store ability
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="multi_coin_store.md#0x3_multi_coin_store_remove_coin_store_field">remove_coin_store_field</a>(coin_store_object: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="multi_coin_store.md#0x3_multi_coin_store_MultiCoinStore">multi_coin_store::MultiCoinStore</a>&gt;, coin_type: <a href="_String">string::String</a>): <a href="coin.md#0x3_coin_GenericCoin">coin::GenericCoin</a>
+<pre><code><b>public</b> <b>fun</b> <a href="multi_coin_store.md#0x3_multi_coin_store_remove_coin_store_field">remove_coin_store_field</a>(coin_store_object: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="multi_coin_store.md#0x3_multi_coin_store_MultiCoinStore">multi_coin_store::MultiCoinStore</a>&gt;, coin_type: <a href="_String">string::String</a>): <a href="generic_coin.md#0x3_generic_coin_GenericCoin">generic_coin::GenericCoin</a>
 </code></pre>
 
 
@@ -264,7 +265,7 @@ Coin type should have key and store ability
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="multi_coin_store.md#0x3_multi_coin_store_withdraw">withdraw</a>(coin_store_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="multi_coin_store.md#0x3_multi_coin_store_MultiCoinStore">multi_coin_store::MultiCoinStore</a>&gt;, coin_type: <a href="_String">string::String</a>, amount: <a href="">u256</a>): <a href="coin.md#0x3_coin_GenericCoin">coin::GenericCoin</a>
+<pre><code><b>public</b> <b>fun</b> <a href="multi_coin_store.md#0x3_multi_coin_store_withdraw">withdraw</a>(coin_store_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="multi_coin_store.md#0x3_multi_coin_store_MultiCoinStore">multi_coin_store::MultiCoinStore</a>&gt;, coin_type: <a href="_String">string::String</a>, amount: <a href="">u256</a>): <a href="generic_coin.md#0x3_generic_coin_GenericCoin">generic_coin::GenericCoin</a>
 </code></pre>
 
 
@@ -275,7 +276,7 @@ Coin type should have key and store ability
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="multi_coin_store.md#0x3_multi_coin_store_deposit">deposit</a>(coin_store_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="multi_coin_store.md#0x3_multi_coin_store_MultiCoinStore">multi_coin_store::MultiCoinStore</a>&gt;, <a href="coin.md#0x3_coin">coin</a>: <a href="coin.md#0x3_coin_GenericCoin">coin::GenericCoin</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="multi_coin_store.md#0x3_multi_coin_store_deposit">deposit</a>(coin_store_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="multi_coin_store.md#0x3_multi_coin_store_MultiCoinStore">multi_coin_store::MultiCoinStore</a>&gt;, <a href="coin.md#0x3_coin">coin</a>: <a href="generic_coin.md#0x3_generic_coin_GenericCoin">generic_coin::GenericCoin</a>)
 </code></pre>
 
 
@@ -300,7 +301,7 @@ This function is for the <code>CoinType</code> module to extend
 
 
 <pre><code>#[private_generics(#[CoinType])]
-<b>public</b> <b>fun</b> <a href="multi_coin_store.md#0x3_multi_coin_store_withdraw_extend">withdraw_extend</a>&lt;CoinType: key&gt;(coin_store_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="multi_coin_store.md#0x3_multi_coin_store_MultiCoinStore">multi_coin_store::MultiCoinStore</a>&gt;, amount: <a href="">u256</a>): <a href="coin.md#0x3_coin_GenericCoin">coin::GenericCoin</a>
+<b>public</b> <b>fun</b> <a href="multi_coin_store.md#0x3_multi_coin_store_withdraw_extend">withdraw_extend</a>&lt;CoinType: key&gt;(coin_store_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="multi_coin_store.md#0x3_multi_coin_store_MultiCoinStore">multi_coin_store::MultiCoinStore</a>&gt;, amount: <a href="">u256</a>): <a href="generic_coin.md#0x3_generic_coin_GenericCoin">generic_coin::GenericCoin</a>
 </code></pre>
 
 
@@ -373,7 +374,7 @@ Only the <code>CoinType</code> module can freeze or unfreeze a MultiCoinStore fi
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="multi_coin_store.md#0x3_multi_coin_store_withdraw_internal">withdraw_internal</a>(coin_store_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="multi_coin_store.md#0x3_multi_coin_store_MultiCoinStore">multi_coin_store::MultiCoinStore</a>&gt;, coin_type: <a href="_String">string::String</a>, amount: <a href="">u256</a>): <a href="coin.md#0x3_coin_GenericCoin">coin::GenericCoin</a>
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="multi_coin_store.md#0x3_multi_coin_store_withdraw_internal">withdraw_internal</a>(coin_store_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="multi_coin_store.md#0x3_multi_coin_store_MultiCoinStore">multi_coin_store::MultiCoinStore</a>&gt;, coin_type: <a href="_String">string::String</a>, amount: <a href="">u256</a>): <a href="generic_coin.md#0x3_generic_coin_GenericCoin">generic_coin::GenericCoin</a>
 </code></pre>
 
 
@@ -384,7 +385,7 @@ Only the <code>CoinType</code> module can freeze or unfreeze a MultiCoinStore fi
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="multi_coin_store.md#0x3_multi_coin_store_deposit_internal">deposit_internal</a>(coin_store_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="multi_coin_store.md#0x3_multi_coin_store_MultiCoinStore">multi_coin_store::MultiCoinStore</a>&gt;, <a href="coin.md#0x3_coin">coin</a>: <a href="coin.md#0x3_coin_GenericCoin">coin::GenericCoin</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="multi_coin_store.md#0x3_multi_coin_store_deposit_internal">deposit_internal</a>(coin_store_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="multi_coin_store.md#0x3_multi_coin_store_MultiCoinStore">multi_coin_store::MultiCoinStore</a>&gt;, <a href="coin.md#0x3_coin">coin</a>: <a href="generic_coin.md#0x3_generic_coin_GenericCoin">generic_coin::GenericCoin</a>)
 </code></pre>
 
 

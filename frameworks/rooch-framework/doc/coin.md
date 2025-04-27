@@ -7,7 +7,6 @@ This module provides the foundation for typesafe Coins.
 
 
 -  [Struct `Coin`](#0x3_coin_Coin)
--  [Struct `GenericCoin`](#0x3_coin_GenericCoin)
 -  [Resource `CoinInfo`](#0x3_coin_CoinInfo)
 -  [Resource `CoinMetadata`](#0x3_coin_CoinMetadata)
 -  [Resource `CoinRegistry`](#0x3_coin_CoinRegistry)
@@ -58,11 +57,6 @@ This module provides the foundation for typesafe Coins.
 -  [Function `convert_generic_coin_to_coin`](#0x3_coin_convert_generic_coin_to_coin)
 -  [Function `check_coin_info_registered_by_type_name`](#0x3_coin_check_coin_info_registered_by_type_name)
 -  [Function `is_registered_by_type_name`](#0x3_coin_is_registered_by_type_name)
--  [Function `generic_coin_value`](#0x3_coin_generic_coin_value)
--  [Function `unpack_generic_coin`](#0x3_coin_unpack_generic_coin)
--  [Function `pack_generic_coin`](#0x3_coin_pack_generic_coin)
--  [Function `merge_generic`](#0x3_coin_merge_generic)
--  [Function `coin_type`](#0x3_coin_coin_type)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
@@ -70,6 +64,7 @@ This module provides the foundation for typesafe Coins.
 <b>use</b> <a href="">0x2::event</a>;
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::type_info</a>;
+<b>use</b> <a href="generic_coin.md#0x3_generic_coin">0x3::generic_coin</a>;
 </code></pre>
 
 
@@ -86,22 +81,6 @@ The Coin has no ability, it is a hot potato type, only can handle by Coin module
 
 
 <pre><code><b>struct</b> <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType: key&gt;
-</code></pre>
-
-
-
-<a name="0x3_coin_GenericCoin"></a>
-
-## Struct `GenericCoin`
-
-Main structure representing a coin.
-Note the <code>CoinType</code> must have <code>key</code> ability.
-if the <code>CoinType</code> has <code>store</code> ability, the <code><a href="coin.md#0x3_coin_Coin">Coin</a></code> is a public coin, the user can operate it directly by coin module's function.
-Otherwise, the <code><a href="coin.md#0x3_coin_Coin">Coin</a></code> is a private coin, the user can only operate it by <code>CoinType</code> module's function.
-The Coin has no ability, it is a hot potato type, only can handle by Coin module.
-
-
-<pre><code><b>struct</b> <a href="coin.md#0x3_coin_GenericCoin">GenericCoin</a>
 </code></pre>
 
 
@@ -201,6 +180,16 @@ Maximum possible coin supply.
 
 
 
+<a name="0x3_coin_ErrorCoinTypeNotMatch"></a>
+
+The coin type is not match
+
+
+<pre><code><b>const</b> <a href="coin.md#0x3_coin_ErrorCoinTypeNotMatch">ErrorCoinTypeNotMatch</a>: u64 = 11;
+</code></pre>
+
+
+
 <a name="0x3_coin_ErrorCoinInfoAlreadyRegistered"></a>
 
 <code>CoinType</code> is already registered as a coin
@@ -267,16 +256,6 @@ The coin type is invalid
 
 
 <pre><code><b>const</b> <a href="coin.md#0x3_coin_ErrorCoinTypeInvalid">ErrorCoinTypeInvalid</a>: u64 = 12;
-</code></pre>
-
-
-
-<a name="0x3_coin_ErrorCoinTypeNotMatch"></a>
-
-The coin type is not match
-
-
-<pre><code><b>const</b> <a href="coin.md#0x3_coin_ErrorCoinTypeNotMatch">ErrorCoinTypeNotMatch</a>: u64 = 11;
 </code></pre>
 
 
@@ -831,7 +810,7 @@ This function is only called by the <code>CoinType</code> module, for the develo
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_convert_coin_to_generic_coin">convert_coin_to_generic_coin</a>&lt;CoinType: key&gt;(<a href="coin.md#0x3_coin">coin</a>: <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;): <a href="coin.md#0x3_coin_GenericCoin">coin::GenericCoin</a>
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_convert_coin_to_generic_coin">convert_coin_to_generic_coin</a>&lt;CoinType: key&gt;(<a href="coin.md#0x3_coin">coin</a>: <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;): <a href="generic_coin.md#0x3_generic_coin_GenericCoin">generic_coin::GenericCoin</a>
 </code></pre>
 
 
@@ -842,7 +821,7 @@ This function is only called by the <code>CoinType</code> module, for the develo
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_convert_generic_coin_to_coin">convert_generic_coin_to_coin</a>&lt;CoinType: key&gt;(<a href="coin.md#0x3_coin">coin</a>: <a href="coin.md#0x3_coin_GenericCoin">coin::GenericCoin</a>): <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_convert_generic_coin_to_coin">convert_generic_coin_to_coin</a>&lt;CoinType: key&gt;(<a href="coin.md#0x3_coin">coin</a>: <a href="generic_coin.md#0x3_generic_coin_GenericCoin">generic_coin::GenericCoin</a>): <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;
 </code></pre>
 
 
@@ -865,62 +844,4 @@ This function is only called by the <code>CoinType</code> module, for the develo
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_is_registered_by_type_name">is_registered_by_type_name</a>(coin_type: <a href="_String">string::String</a>): bool
-</code></pre>
-
-
-
-<a name="0x3_coin_generic_coin_value"></a>
-
-## Function `generic_coin_value`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_generic_coin_value">generic_coin_value</a>(<a href="coin.md#0x3_coin">coin</a>: &<a href="coin.md#0x3_coin_GenericCoin">coin::GenericCoin</a>): <a href="">u256</a>
-</code></pre>
-
-
-
-<a name="0x3_coin_unpack_generic_coin"></a>
-
-## Function `unpack_generic_coin`
-
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="coin.md#0x3_coin_unpack_generic_coin">unpack_generic_coin</a>(<a href="coin.md#0x3_coin">coin</a>: <a href="coin.md#0x3_coin_GenericCoin">coin::GenericCoin</a>): (<a href="_String">string::String</a>, <a href="">u256</a>)
-</code></pre>
-
-
-
-<a name="0x3_coin_pack_generic_coin"></a>
-
-## Function `pack_generic_coin`
-
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="coin.md#0x3_coin_pack_generic_coin">pack_generic_coin</a>(coin_type: <a href="_String">string::String</a>, value: <a href="">u256</a>): <a href="coin.md#0x3_coin_GenericCoin">coin::GenericCoin</a>
-</code></pre>
-
-
-
-<a name="0x3_coin_merge_generic"></a>
-
-## Function `merge_generic`
-
-"Merges" the two given generic coins.  The coin passed in as <code>dst_coin</code> will have a value equal
-to the sum of the two generic coins (<code>dst_coin</code> and <code>source_coin</code>).
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_merge_generic">merge_generic</a>(dst_coin: &<b>mut</b> <a href="coin.md#0x3_coin_GenericCoin">coin::GenericCoin</a>, source_coin: <a href="coin.md#0x3_coin_GenericCoin">coin::GenericCoin</a>)
-</code></pre>
-
-
-
-<a name="0x3_coin_coin_type"></a>
-
-## Function `coin_type`
-
-Helper function for getting the coin type name from a GenericCoin
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_coin_type">coin_type</a>(<a href="coin.md#0x3_coin">coin</a>: &<a href="coin.md#0x3_coin_GenericCoin">coin::GenericCoin</a>): <a href="_String">string::String</a>
 </code></pre>

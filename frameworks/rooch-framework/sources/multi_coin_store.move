@@ -4,13 +4,15 @@
 module rooch_framework::multi_coin_store {
 
     use std::string;
+    use rooch_framework::generic_coin;
+    use rooch_framework::generic_coin::GenericCoin;
     use moveos_std::type_info::type_name;
     use moveos_std::ability;
     use moveos_std::object::ObjectID;
     use moveos_std::object::{Self, Object};
     
     use moveos_std::event;
-    use rooch_framework::coin::{Self, GenericCoin, Coin};
+    use rooch_framework::coin::{Self, Coin};
 
     friend rooch_framework::account_coin_store;
     friend rooch_framework::coin_migration;
@@ -120,7 +122,7 @@ module rooch_framework::multi_coin_store {
         // Cannot remove a frozen CoinStore, because if we allow this, the frozen is meaningless
         assert!(!frozen, ErrorCoinStoreIsFrozen);
         let Balance { value } = balance;
-        let coin = coin::pack_generic_coin(coin_type, value);
+        let coin = generic_coin::pack_generic_coin(coin_type, value);
 
         event::emit(RemoveEvent {
             coin_store_id,
@@ -158,7 +160,7 @@ module rooch_framework::multi_coin_store {
     }
 
     public fun deposit(coin_store_obj: &mut Object<MultiCoinStore>, coin: GenericCoin) {
-        let coin_type = coin::coin_type(&coin);
+        let coin_type = generic_coin::coin_type(&coin);
         ensure_coin_type_has_key_and_store_ability(coin_type);
         deposit_internal(coin_store_obj, coin)
     }
@@ -259,14 +261,14 @@ module rooch_framework::multi_coin_store {
         let coin_store_field = object::borrow_mut_field<MultiCoinStore, string::String, CoinStoreField>(coin_store_obj, coin_type);
         assert!(coin_store_field.balance.value >= amount, ErrorInsufficientBalance);
         coin_store_field.balance.value = coin_store_field.balance.value - amount;
-        coin::pack_generic_coin(coin_type, amount)
+        generic_coin::pack_generic_coin(coin_type, amount)
     }
 
     fun merge_to_balance(coin_store_obj: &mut Object<MultiCoinStore>, source_coin: GenericCoin) {
-        let coin_type = coin::coin_type(&source_coin);
+        let coin_type = generic_coin::coin_type(&source_coin);
         create_coin_store_field_if_not_exist(coin_store_obj, coin_type);
         let coin_store_field = object::borrow_mut_field<MultiCoinStore, string::String, CoinStoreField>(coin_store_obj, coin_type);
-        let (source_coin_type, value) = coin::unpack_generic_coin(source_coin);
+        let (source_coin_type, value) = generic_coin::unpack_generic_coin(source_coin);
         assert!(coin_type == source_coin_type, ErrorCoinTypeAndStoreMismatch);
         coin_store_field.balance.value = coin_store_field.balance.value + value;
     }
@@ -292,9 +294,9 @@ module rooch_framework::multi_coin_store {
         coin: GenericCoin
     ) {
         let object_id = object::id(coin_store_obj);
-        let coin_type = coin::coin_type(&coin);
+        let coin_type = generic_coin::coin_type(&coin);
         check_coin_store_not_frozen(coin_store_obj, coin_type);
-        let amount = coin::generic_coin_value(&coin);
+        let amount = generic_coin::generic_coin_value(&coin);
         merge_to_balance(coin_store_obj, coin);
         event::emit(DepositEvent {
             coin_store_id: object_id,

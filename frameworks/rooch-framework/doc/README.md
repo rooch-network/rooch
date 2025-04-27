@@ -32,6 +32,7 @@ This is the reference documentation of the Rooch Framework.
 -  [`0x3::empty`](empty.md#0x3_empty)
 -  [`0x3::ethereum_address`](ethereum_address.md#0x3_ethereum_address)
 -  [`0x3::gas_coin`](gas_coin.md#0x3_gas_coin)
+-  [`0x3::generic_coin`](generic_coin.md#0x3_generic_coin)
 -  [`0x3::genesis`](genesis.md#0x3_genesis)
 -  [`0x3::indexer`](indexer.md#0x3_indexer)
 -  [`0x3::multi_coin_store`](multi_coin_store.md#0x3_multi_coin_store)

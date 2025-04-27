@@ -32,6 +32,7 @@ It helps migrate coin stores, balances, frozen states, and accept data.
 <b>use</b> <a href="account_coin_store.md#0x3_account_coin_store">0x3::account_coin_store</a>;
 <b>use</b> <a href="coin.md#0x3_coin">0x3::coin</a>;
 <b>use</b> <a href="coin_store.md#0x3_coin_store">0x3::coin_store</a>;
+<b>use</b> <a href="generic_coin.md#0x3_generic_coin">0x3::generic_coin</a>;
 <b>use</b> <a href="multi_coin_store.md#0x3_multi_coin_store">0x3::multi_coin_store</a>;
 <b>use</b> <a href="onchain_config.md#0x3_onchain_config">0x3::onchain_config</a>;
 </code></pre>
