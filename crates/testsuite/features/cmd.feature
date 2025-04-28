@@ -40,7 +40,8 @@ Feature: Rooch CLI integration tests
       # account sign and verify
       Then cmd: "account sign -a {{$.account[-1].account0.address}} -m 'empty' --json"
       Then cmd: "account verify -s {{$.account[-1]}} -m 'empty' --json"
-      Then cmd: "account verify -s {{$.account[-1]}} -m 'empty' -p {{$.account[-2].public_key}} --json"
+      Then assert: "{{$.account[-1]}} == true"
+      Then cmd: "account verify -s {{$.account[-2]}} -m 'empty' -p {{$.account[-3].account0.public_key}} --json"
       Then assert: "{{$.account[-1]}} == true"
       Then cmd: "account list --json"
       Then cmd: "account export"
