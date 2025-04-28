@@ -61,8 +61,9 @@ members = [
     "frameworks/framework-types",
     "frameworks/moveos-stdlib",
     "frameworks/rooch-framework",
-    "frameworks/rooch-nursery", "crates/bitcoin-client",
-    "third_party/move/language/move-compiler-v2"
+    "frameworks/rooch-nursery",
+    "crates/bitcoin-client",
+    "third_party/move/language/move-compiler-v2",
 ]
 
 default-members = [
@@ -70,12 +71,10 @@ default-members = [
     "frameworks/framework-release",
     "crates/rooch",
     "crates/rooch-faucet",
-    "crates/rooch-oracle"
+    "crates/rooch-oracle",
 ]
 
-exclude = [
-    "generator/rust",
-]
+exclude = ["generator/rust"]
 
 # All workspace members should inherit these keys
 # for package declarations.
@@ -192,7 +191,13 @@ hex = "0.4.3"
 heed = "0.21.0"
 itertools = "0.13.0"
 #jsonrpsee = { version = "0.23.2", features = ["full"] }
-jsonrpsee = { version = "0.24.7", features = ["server", "macros", "ws-client", "http-client", "jsonrpsee-core"] }
+jsonrpsee = { version = "0.24.7", features = [
+    "server",
+    "macros",
+    "ws-client",
+    "http-client",
+    "jsonrpsee-core",
+] }
 jpst = "0.1.1"
 lazy_static = "1.5.0"
 more-asserts = "0.3.0"
@@ -249,8 +254,21 @@ include_dir = { version = "0.6.2" }
 serde-reflection = "0.3.6"
 bcs-ext = { path = "moveos/moveos-commons/bcs_ext" }
 http = "1.0.0"
-tower = { version = "0.5.2", features = ["full", "log", "util", "timeout", "load-shed", "limit"] }
-tower-http = { version = "0.5.2", features = ["cors", "full", "trace", "set-header", "propagate-header"] }
+tower = { version = "0.5.2", features = [
+    "full",
+    "log",
+    "util",
+    "timeout",
+    "load-shed",
+    "limit",
+] }
+tower-http = { version = "0.5.2", features = [
+    "cors",
+    "full",
+    "trace",
+    "set-header",
+    "propagate-header",
+] }
 tower_governor = { version = "0.4.3", features = ["tracing"] }
 pin-project = "1.1.10"
 mirai-annotations = "1.12.0"
@@ -307,7 +325,13 @@ wasmer-compiler-singlepass = "4.2.2"
 cosmwasm-vm = { git = "https://github.com/rooch-network/cosmwasm", rev = "597d3e8437d8c4d1afce07e5a676c29c751a8a81" }
 cosmwasm-std = { git = "https://github.com/rooch-network/cosmwasm", rev = "597d3e8437d8c4d1afce07e5a676c29c751a8a81" }
 ciborium = "0.2.1"
-pprof = { version = "0.13.0", features = ["flamegraph", "criterion", "cpp", "frame-pointer", "protobuf-codec"] }
+pprof = { version = "0.13.0", features = [
+    "flamegraph",
+    "criterion",
+    "cpp",
+    "frame-pointer",
+    "protobuf-codec",
+] }
 celestia-rpc = { git = "https://github.com/eigerco/celestia-node-rs.git", rev = "129272e8d926b4c7badf27a26dea915323dd6489" }
 celestia-types = { git = "https://github.com/eigerco/celestia-node-rs.git", rev = "129272e8d926b4c7badf27a26dea915323dd6489" }
 opendal = { version = "0.50.2", features = ["services-fs", "services-gcs"] }
@@ -331,7 +355,10 @@ crossbeam-channel = "0.5.15"
 inferno = "0.11.21"
 handlebars = "4.2.2"
 indexmap = "2.9.0"
-tikv-jemallocator = { version = "0.6.0", features = ["unprefixed_malloc_on_supported_platforms", "profiling"] }
+tikv-jemallocator = { version = "0.6.0", features = [
+    "unprefixed_malloc_on_supported_platforms",
+    "profiling",
+] }
 mimalloc = { version = "0.1.46" }
 
 # Note: the BEGIN and END comments below are required for external tooling. Do not remove.
@@ -356,15 +383,25 @@ move-prover-boogie-backend = { path = "third_party/move/language/move-prover/boo
 move-stackless-bytecode = { path = "third_party/move/language/move-prover/bytecode" }
 move-prover-test-utils = { path = "third_party/move/language/move-prover/test-utils" }
 move-resource-viewer = { path = "third_party/move/language/tools/move-resource-viewer" }
-move-stdlib = { path = "third_party/move/language/move-stdlib", features = ["testing"] }
+move-stdlib = { path = "third_party/move/language/move-stdlib", features = [
+    "testing",
+] }
 move-symbol-pool = { path = "third_party/move/language/move-symbol-pool" }
 move-transactional-test-runner = { path = "third_party/move/language/testing-infra/transactional-test-runner" }
-move-unit-test = { path = "third_party/move/language/tools/move-unit-test", features = ["table-extension"] }
-move-vm-runtime = { path = "third_party/move/language/move-vm/runtime", features = ["stacktrace", "debugging", "testing"] }
-move-vm-test-utils = { path = "third_party/move/language/move-vm/test-utils", features = ["table-extension"] }
+move-unit-test = { path = "third_party/move/language/tools/move-unit-test", features = [
+    "table-extension",
+] }
+move-vm-runtime = { path = "third_party/move/language/move-vm/runtime", features = [
+    "stacktrace",
+    "debugging",
+    "testing",
+] }
+move-vm-test-utils = { path = "third_party/move/language/move-vm/test-utils", features = [
+    "table-extension",
+] }
 move-vm-types = { path = "third_party/move/language/move-vm/types" }
 move-bytecode-source-map = { path = "third_party/move/language/move-ir-compiler/move-bytecode-source-map" }
-move-ir-types = { path = "third_party/move/language/move-ir/types" }# END MOVE DEPENDENCIES
+move-ir-types = { path = "third_party/move/language/move-ir/types" } # END MOVE DEPENDENCIES
 
 # keep this for convenient debug Move in local repo
 # [patch.'https://github.com/rooch-network/move']

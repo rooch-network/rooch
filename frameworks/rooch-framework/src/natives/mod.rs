@@ -23,6 +23,7 @@ pub mod helpers {
 pub mod gas_parameter;
 pub mod rooch_framework;
 
+// TODO: rename ecdsa_k1 to secp256k1 due to signature types change
 #[derive(Debug, Clone)]
 pub struct NativeGasParameters {
     pub moveos_stdlib: MoveOSStdlibGasParameters,

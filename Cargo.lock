@@ -155,7 +155,7 @@ dependencies = [
  "alloy-primitives",
  "alloy-rlp",
  "derive_more 1.0.0",
- "k256 0.13.3",
+ "k256 0.13.4",
  "serde 1.0.219",
 ]
 
@@ -174,7 +174,7 @@ dependencies = [
  "hashbrown 0.15.2",
  "indexmap 2.9.0",
  "itoa",
- "k256 0.13.3",
+ "k256 0.13.4",
  "keccak-asm",
  "paste",
  "proptest",
@@ -2153,7 +2153,7 @@ dependencies = [
  "coins-core",
  "digest 0.10.7",
  "hmac",
- "k256 0.13.3",
+ "k256 0.13.4",
  "serde 1.0.219",
  "sha2 0.10.8",
  "thiserror",
@@ -2391,7 +2391,7 @@ dependencies = [
  "digest 0.10.7",
  "ecdsa 0.16.9",
  "ed25519-zebra",
- "k256 0.13.3",
+ "k256 0.13.4",
  "num-traits 0.2.19",
  "p256",
  "rand_core 0.6.4",
@@ -3652,7 +3652,7 @@ dependencies = [
  "base64 0.21.7",
  "bytes",
  "hex",
- "k256 0.13.3",
+ "k256 0.13.4",
  "log",
  "rand 0.8.5",
  "rlp",
@@ -4003,7 +4003,7 @@ dependencies = [
  "elliptic-curve 0.13.8",
  "ethabi 18.0.0",
  "generic-array",
- "k256 0.13.3",
+ "k256 0.13.4",
  "num_enum",
  "once_cell",
  "open-fastrlp",
@@ -6429,9 +6429,9 @@ dependencies = [
 
 [[package]]
 name = "k256"
-version = "0.13.3"
+version = "0.13.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "956ff9b67e26e1a6a866cb758f12c6f8746208489e3e4a4b5580802f2f0a587b"
+checksum = "f6e3919bbaa2945715f0bb6d3934a173d1e9a59ac23767fbaaef277265a7411b"
 dependencies = [
  "cfg-if",
  "ecdsa 0.16.9",
@@ -10103,7 +10103,7 @@ dependencies = [
  "blst",
  "c-kzg",
  "cfg-if",
- "k256 0.13.3",
+ "k256 0.13.4",
  "once_cell",
  "revm-primitives",
  "ripemd",
