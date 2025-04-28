@@ -61,8 +61,12 @@ module rooch_framework::coin_migration {
     /// MigrationUpdateCap is the capability for manager operations, such as update migration state.
     struct MigrationUpdateCap has key, store {}
 
-    /// Initialize the migration module, called during genesis or framework upgrade
-    fun init() {
+    /// Initialize the migration module, called after framework upgrade
+    public entry fun initialize_entry(_account: &signer) {
+        initialize()
+    }
+
+    fun initialize() {
         let migration_state_id = object::named_object_id<MigrationState>();
         if(!object::exists_object(migration_state_id)){
             let migration_state = object::new_named_object(MigrationState{
@@ -210,7 +214,7 @@ module rooch_framework::coin_migration {
     //
     #[test_only]
     public fun init_for_test() {
-        init();
+        initialize();
     }
 
     #[test_only]
