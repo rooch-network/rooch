@@ -6,13 +6,14 @@
 /// It helps migrate coin stores, balances, frozen states, and accept data.
 module rooch_framework::coin_migration {
     use std::string;
+    use std::vector;
     use rooch_framework::onchain_config;
     use moveos_std::signer;
     use moveos_std::type_info;
     use moveos_std::event;
     use moveos_std::object::{Self, ObjectID};
     use moveos_std::table;
-    
+
     use rooch_framework::coin::{convert_coin_to_generic_coin};
     use rooch_framework::coin_store::{Self};
     use rooch_framework::multi_coin_store::{Self};
@@ -114,6 +115,20 @@ module rooch_framework::coin_migration {
     public entry fun update_migration_state_entry(account: &signer, addr: address) {
         ensure_has_cap(account);
         update_migration_state(addr);
+    }
+
+    /// Entry function to update migration states for multiple accounts from a comma-separated string
+    /// Only called by the cap account to update migration states in batch
+    public entry fun update_migration_states_batch_entry(account: &signer, addresses: vector<address>) {
+        ensure_has_cap(account);
+        
+        let len = vector::length(&addresses);
+        let i = 0;
+        while (i < len) {
+            let addr = *vector::borrow(&addresses, i);
+            update_migration_state(addr);
+            i = i + 1;
+        };
     }
 
     public fun migration_state_id(): ObjectID {
