@@ -43,7 +43,6 @@ impl CommandAction<Option<bool>> for VerifyCommand {
 
         let verify_result = self
             .signature
-            .into_inner()
             .verify(&encoded_sign_data, self.public_key)
             .is_ok();
 
