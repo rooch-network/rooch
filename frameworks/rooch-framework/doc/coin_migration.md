@@ -18,6 +18,7 @@ It helps migrate coin stores, balances, frozen states, and accept data.
 -  [Function `ensure_has_cap`](#0x3_coin_migration_ensure_has_cap)
 -  [Function `cap_address`](#0x3_coin_migration_cap_address)
 -  [Function `migrate_account_entry`](#0x3_coin_migration_migrate_account_entry)
+-  [Function `migrate_accounts_batch_entry`](#0x3_coin_migration_migrate_accounts_batch_entry)
 -  [Function `update_migration_state_entry`](#0x3_coin_migration_update_migration_state_entry)
 -  [Function `update_migration_states_batch_entry`](#0x3_coin_migration_update_migration_states_batch_entry)
 -  [Function `migration_state_id`](#0x3_coin_migration_migration_state_id)
@@ -177,6 +178,19 @@ Can be called by arbitrary user
 
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="coin_migration.md#0x3_coin_migration_migrate_account_entry">migrate_account_entry</a>&lt;CoinType: key&gt;(_account: &<a href="">signer</a>, addr: <b>address</b>)
+</code></pre>
+
+
+
+<a name="0x3_coin_migration_migrate_accounts_batch_entry"></a>
+
+## Function `migrate_accounts_batch_entry`
+
+Entry function to migrate account's coin stores for multiple accounts from a comma-separated string
+Can be called by arbitrary user to update migration coin stores in batch
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="coin_migration.md#0x3_coin_migration_migrate_accounts_batch_entry">migrate_accounts_batch_entry</a>&lt;CoinType: key&gt;(_account: &<a href="">signer</a>, addresses: <a href="">vector</a>&lt;<b>address</b>&gt;)
 </code></pre>
 
 
