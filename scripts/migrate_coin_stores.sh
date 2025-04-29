@@ -3,13 +3,15 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # Check if the input file is provided
-if [ "$#" -ne 1 ]; then
-    echo "Usage: $0 <path_to_coin_stores_file>"
-    echo "Example: $0 ./scripts/coin_stores_testnet.txt"
+if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
+    echo "Usage: $0 <path_to_coin_stores_file> [parallel_jobs]"
+    echo "Example: $0 ./scripts/coin_stores_testnet.txt 10"
+    echo "         (default parallel_jobs is 5 if not specified)"
     exit 1
 fi
 
 INPUT_FILE="$1"
+PARALLEL_JOBS=${2:-2}  # Default to 2 parallel jobs if not specified
 
 # Check if the file exists
 if [ ! -f "$INPUT_FILE" ]; then
@@ -18,14 +20,26 @@ if [ ! -f "$INPUT_FILE" ]; then
     exit 1
 fi
 
+# Check if GNU Parallel is installed
+if ! command -v parallel &> /dev/null; then
+    echo "Error: GNU Parallel is not installed. Please install it first."
+    echo "For macOS: brew install parallel"
+    echo "For Ubuntu/Debian: apt-get install parallel"
+    exit 1
+fi
+
+# Create a temporary file for commands
+TEMP_COMMANDS_FILE=$(mktemp)
+
 # Counter for tracking progress
 total_records=$(wc -l < "$INPUT_FILE")
 current=0
-success=0
-failed=0
+valid=0
+skipped=0
 
-echo "Processing coin store migrations from $INPUT_FILE"
+echo "Processing migration commands from $INPUT_FILE"
 echo "Total records to process: $total_records"
+echo "Will execute in parallel with $PARALLEL_JOBS jobs"
 echo "-------------------------------------------"
 
 # Process each line of the file
@@ -45,8 +59,8 @@ while IFS=$'\t' read -r id owner object_type || [[ -n "$id" ]]; do
     if [[ "$object_type" =~ CoinStore\<(.*)\> ]]; then
         coin_type="${BASH_REMATCH[1]}"
     else
-        echo "Warning: Could not parse coin type from $object_type, skipping..."
-        ((failed++))
+        echo "[$current/$total_records] Warning: Could not parse coin type from $object_type, skipping..."
+        ((skipped++))
         continue
     fi
 
@@ -57,35 +71,37 @@ while IFS=$'\t' read -r id owner object_type || [[ -n "$id" ]]; do
 #    # Skip migration for address 0x0 (it's often a placeholder/dummy address)
 #    if [[ "$address" == "0x0" ]]; then
 #        echo "[$current/$total_records] Skipping address 0x0..."
+#        ((skipped++))
 #        continue
 #    fi
 
-    # Log the command
-    echo "[$current/$total_records] Migrating $coin_type for address $address..."
-
-    # Prepare and execute the migration command
-    migration_cmd="rooch move run --function 0x3::coin_migration::migrate_account_entry --type-args $coin_type --args address:$address --sender default"
-    echo "Executing: $migration_cmd"
-
-    # Execute the command and capture output
-    if output=$(eval "$migration_cmd" 2>&1); then
-        echo "  Success"
-        ((success++))
-    else
-        echo "  Failed: $output"
-        ((failed++))
-    fi
-
-    # Add a separator for readability
-    echo "-------------------------------------------"
-
-    # Optional: add a small delay to prevent overwhelming the system
-    sleep 0.1
+    # Generate the migration command 
+    # Using printf to ensure proper escaping of special characters
+    printf "echo \"Migrating %s for address %s...\"; rooch move run --function 0x3::coin_migration::migrate_account_entry --type-args \"%s\" --args address:%s --sender default; echo \"-------------------------------------------\"\n" "$coin_type" "$address" "$coin_type" "$address" >> "$TEMP_COMMANDS_FILE"
+    
+    echo "[$current/$total_records] Generated command for $coin_type at address $address"
+    ((valid++))
 done < "$INPUT_FILE"
 
-# Print summary
+# Print summary before execution
 echo "-------------------------------------------"
-echo "Migration completed at $(date)"
+echo "Command generation completed"
 echo "Total records processed: $current"
-echo "Successful migrations: $success"
-echo "Failed migrations: $failed"
+echo "Valid migration commands: $valid"
+echo "Skipped records: $skipped"
+echo "-------------------------------------------"
+echo "Starting parallel execution with $PARALLEL_JOBS jobs..."
+echo "-------------------------------------------"
+
+# Execute all commands in parallel
+# Using --bar to show progress bar
+parallel --bar -j "$PARALLEL_JOBS" < "$TEMP_COMMANDS_FILE"
+
+# Clean up temporary file
+#echo "$TEMP_COMMANDS_FILE"
+rm "$TEMP_COMMANDS_FILE"
+
+# Print completion message
+echo "-------------------------------------------"
+echo "Parallel execution completed at $(date)"
+echo "-------------------------------------------" 
