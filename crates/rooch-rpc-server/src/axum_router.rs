@@ -58,7 +58,7 @@ impl JsonRpcService {
             methods,
             metrics,
             id_provider: Arc::new(RandomIntegerIdProvider),
-            subscription_handler: subscription_handler,
+            subscription_handler,
         }
     }
 
