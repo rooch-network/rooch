@@ -6,13 +6,13 @@
 if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
     echo "Usage: $0 <path_to_users_file> [--batch=batch_size]"
     echo "Example: $0 ./scripts/users_test.txt"
-    echo "Example with batch: $0 ./scripts/users_test.txt --batch=10"
-    echo "         (default batch size is 10)"
+    echo "Example with batch: $0 ./scripts/users_test.txt --batch=30"
+    echo "         (default batch size is 30)"
     exit 1
 fi
 
 INPUT_FILE="$1"
-BATCH_SIZE=10
+BATCH_SIZE=30
 
 # Check if batch parameter is provided
 if [ "$#" -eq 2 ]; then

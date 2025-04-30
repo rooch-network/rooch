@@ -110,6 +110,18 @@ module rooch_framework::coin_migration {
         migrate_account<CoinType>(addr);
     }
 
+    /// Entry function to migrate account's coin stores for multiple accounts from a comma-separated string
+    /// Can be called by arbitrary user to update migration coin stores in batch
+    public entry fun migrate_accounts_batch_entry<CoinType: key>(_account: &signer, addresses: vector<address>) {
+        let len = vector::length(&addresses);
+        let i = 0;
+        while (i < len) {
+            let addr = *vector::borrow(&addresses, i);
+            migrate_account<CoinType>(addr);
+            i = i + 1;
+        };
+    }
+
     /// Entry function to update migration state for a specific account
     /// Only called by the cap account to update migrate states
     public entry fun update_migration_state_entry(account: &signer, addr: address) {
