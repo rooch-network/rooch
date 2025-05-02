@@ -34,7 +34,7 @@ pub struct VerifyCommand {
 #[async_trait]
 impl CommandAction<Option<bool>> for VerifyCommand {
     async fn execute(self) -> RoochResult<Option<bool>> {
-        let signature_bytes = self.signature.into_inner();
+        let signature_bytes = self.signature.clone().into_inner();
         let verify_result = if signature_bytes.len() == SCHNORR_SIGNATURE_SIZE {
             // verify secp256k1 schnorr with hex encoded message
             let msg = hex::decode(self.message)?;
