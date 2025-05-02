@@ -3,6 +3,7 @@
 
 use crate::cli_types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
+use bitcoin::key::constants::SCHNORR_SIGNATURE_SIZE;
 use clap::Parser;
 use moveos_types::state::MoveState;
 use rooch_types::{
@@ -22,10 +23,6 @@ pub struct VerifyCommand {
     #[clap(short = 'm', long)]
     message: String,
 
-    /// A public key to be converted to x only public key to verify schnorr signature
-    #[clap(short = 'p', long)]
-    public_key: Option<String>,
-
     #[clap(flatten)]
     pub context_options: WalletContextOptions,
 
@@ -37,14 +34,31 @@ pub struct VerifyCommand {
 #[async_trait]
 impl CommandAction<Option<bool>> for VerifyCommand {
     async fn execute(self) -> RoochResult<Option<bool>> {
-        let sign_data =
-            SignData::new_without_tx_hash(MESSAGE_INFO_PREFIX.to_vec(), self.message.to_bytes());
-        let encoded_sign_data = sign_data.encode();
-
-        let verify_result = self
-            .signature
-            .verify(&encoded_sign_data, self.public_key)
-            .is_ok();
+        let signature_bytes = self.signature.into_inner();
+        let verify_result = if signature_bytes.len() == SCHNORR_SIGNATURE_SIZE {
+            // verify secp256k1 schnorr with hex encoded message
+            let msg = hex::decode(self.message)?;
+            let context = self.context_options.build()?;
+            let active_address = context
+                .client_config
+                .active_address
+                .unwrap_or_else(|| panic!("Unable to get the active address"));
+            let x_only_public_key = context
+                .get_key_pair(&active_address)?
+                .public()
+                .xonly_public_key()?;
+            self.signature
+                .verify_schnorr(&msg, &x_only_public_key)
+                .is_ok()
+        } else {
+            // verify secp256k1 ecdsa with encoded sign data
+            let sign_data = SignData::new_without_tx_hash(
+                MESSAGE_INFO_PREFIX.to_vec(),
+                self.message.to_bytes(),
+            );
+            let encoded_sign_data = sign_data.encode();
+            self.signature.verify(&encoded_sign_data).is_ok()
+        };
 
         if self.json {
             Ok(Some(verify_result))

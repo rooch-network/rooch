@@ -8,10 +8,10 @@ use crate::{
 use anyhow::{Error, Result};
 use bitcoin::{
     key::constants::SCHNORR_SIGNATURE_SIZE,
-    secp256k1::{schnorr::Signature, Message, PublicKey},
+    secp256k1::{schnorr::Signature, Message},
+    XOnlyPublicKey,
 };
 use fastcrypto::traits::ToFromBytes;
-use std::str::FromStr;
 
 // Parsed Rooch Signature, either Ed25519RoochSignature or Secp256k1RoochSignature, or SchnorrSignature
 #[derive(PartialEq, Eq, Debug, Clone)]
@@ -50,12 +50,12 @@ impl ParsedSignature {
         Ok(signature)
     }
 
-    pub fn verify(self, value: &[u8], public_key: Option<String>) -> Result<(), Error> {
+    pub fn verify(self, msg: &[u8]) -> Result<(), Error> {
         let signature_bytes = self.into_inner();
         match signature_bytes.len() {
             Ed25519RoochSignature::LENGTH => {
                 Ed25519RoochSignature::from_bytes(signature_bytes.as_slice())?
-                    .verify(value)
+                    .verify(msg)
                     .map_err(|e| {
                         Error::new(RoochError::InvalidSignature {
                             error: format!("Invalid ed25519 signature {:?}", e),
@@ -64,31 +64,30 @@ impl ParsedSignature {
             }
             Secp256k1RoochSignature::LENGTH => {
                 Secp256k1RoochSignature::from_bytes(signature_bytes.as_slice())?
-                    .verify(value)
+                    .verify(msg)
                     .map_err(|e| {
                         Error::new(RoochError::InvalidSignature {
                             error: format!("Invalid secp256k1 ecdsa signature {:?}", e),
                         })
                     })
             }
-            SCHNORR_SIGNATURE_SIZE => {
-                let public_key = public_key.unwrap_or_else(|| panic!("Unable to parse public key"));
-                let x_only_public_key = PublicKey::from_str(
-                    public_key.strip_prefix("0x").unwrap_or(public_key.as_str()),
-                )
-                .map_err(|_| RoochError::KeyConversionError("Invalid public key".to_owned()))?
-                .x_only_public_key()
-                .0;
-                let message = Message::from_digest_slice(value)
-                    .map_err(|_| RoochError::InvalidlengthError())?;
-                let signature = Signature::from_slice(signature_bytes.as_slice())?;
-                signature.verify(&message, &x_only_public_key).map_err(|e| {
-                    Error::new(RoochError::InvalidSignature {
-                        error: format!("Invalid secp256k1 schnorr signature {:?}", e),
-                    })
-                })
-            }
             _ => Err(RoochError::InvalidlengthError())?,
         }
+    }
+
+    pub fn verify_schnorr(
+        self,
+        msg: &[u8],
+        x_only_public_key: &XOnlyPublicKey,
+    ) -> Result<(), Error> {
+        let signature_bytes = self.into_inner();
+        let message =
+            Message::from_digest_slice(msg).map_err(|_| RoochError::InvalidlengthError())?;
+        let signature = Signature::from_slice(signature_bytes.as_slice())?;
+        signature.verify(&message, x_only_public_key).map_err(|e| {
+            Error::new(RoochError::InvalidSignature {
+                error: format!("Invalid secp256k1 schnorr signature {:?}", e),
+            })
+        })
     }
 }
