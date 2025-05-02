@@ -43,20 +43,21 @@ impl CommandAction<Option<String>> for SignCommand {
         let mapping = context.address_mapping();
         let rooch_address = self.address.into_rooch_address(&mapping)?;
 
-        let sign_data =
-            SignData::new_without_tx_hash(MESSAGE_INFO_PREFIX.to_vec(), self.message.to_bytes());
-        let encoded_sign_data = sign_data.encode();
-
         let signature_hex = if self.schnorr {
             // Secp256k1 Schnorr signature
-            let schnorr_sig = context.keystore.sign_schnorr(
-                &rooch_address,
-                &encoded_sign_data,
-                password.clone(),
-            )?;
+            let msg = hex::decode(self.message)?;
+            let schnorr_sig =
+                context
+                    .keystore
+                    .sign_schnorr(&rooch_address, &msg, password.clone())?;
             hex::encode(schnorr_sig)
         } else {
             // Secp256k1 Ecdsa or Ed25519 signature
+            let sign_data = SignData::new_without_tx_hash(
+                MESSAGE_INFO_PREFIX.to_vec(),
+                self.message.to_bytes(),
+            );
+            let encoded_sign_data = sign_data.encode();
             let sig = context.keystore.sign_hashed(
                 &rooch_address,
                 &encoded_sign_data,
