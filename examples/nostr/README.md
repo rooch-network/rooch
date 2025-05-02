@@ -1,6 +1,6 @@
 # Nostr Move Example
 
-A Nostr (Notes and Other Stuff Transmitted by Relays) example written in Move programming language for reference of on-chain persistant storage.
+A Nostr (Notes and Other Stuff Transmitted by Relays) example written in Move programming language for reference of on-chain persistant storage for Nostr.
 
 ## Protocol Implementation
 
@@ -22,29 +22,45 @@ rooch move publish ./build/nostr/package.rpd
 
 - Save a Nostr Event to Move store with verification of id and signature:
 ```zsh
-rooch move run --function <contract_address>::event::save_event_entry --args "string:<public_key>" --args "u64:<created_at>" --args "u16:<kind>" --args "vector<string>:<tags>" --args 'string:<content>' --args "string:<signature>"
+rooch move run --function <contract_address>::event::save_event_entry --args "string:<public_key>" --args "u64:<created_at>" --args "u16:<kind>" --args "vector<string>:<tags>" --args "string:<content>" --args "string:<signature>"
 ```
 Tags as command line arguments only accept **vector\<string\>**. For **vector\<vector\<string\>\>**, it should be supported in the future.
 - Save a Nostr Event to Move store without verification of id:
 ```zsh
-rooch move run --function <contract_address>::event::save_event_plaintext_entry --args "string:<id>" --args "string:<public_key>" --args "u64:<created_at>" --args "u16:<kind>" --args "vector<string>:<tags>" --args 'string:<content>' --args "string:<signature>"
+rooch move run --function <contract_address>::event::save_event_plaintext_entry --args "string:<id>" --args "string:<public_key>" --args "u64:<created_at>" --args "u16:<kind>" --args "vector<string>:<tags>" --args "string:<content>" --args "string:<signature>"
 ```
 This could be met with the need of saving a draft of or unpublished Nostr Note. For example, save with varying content of Nostr Event in the Move store.
-- Create a Pre Event of Nostr for signing:
+- Create a Nostr Event natively in Move and store in Move's state
+1. Create a Pre Event of Nostr for signing:
 ```zsh
-rooch move run --function <contract_address>::event::create_pre_event_entry --args "string:<public_key>" --args "u16:<kind>" --args "vector<string>:<tags>" --args 'string:<content>'
+rooch move run --function <contract_address>::event::create_pre_event_entry --args "string:<public_key>" --args "u16:<kind>" --args "vector<string>:<tags>" --args "string:<content>"
 ```
-The pre event of Nostr is used with schnorr offline signing environment to generate a signature for a Nostr Event. To view the generated id of the Nostr Event used for signing, run the following command:
+The Pre Event of Nostr is used with schnorr offline signing environment to generate a signature for a Nostr Event. To view the generated id of the Pre Event of Nostr used for signing, run the following command:
 ```zsh
 rooch object -i <pre_event_object_id>
 ```
-- Sign the id of the Nostr Event with schnorr
+2. Sign the id of the Nostr Event with schnorr signature
 
+This step could be done with Rooch TypeScript, Rust or Go SDK, or with `rooch account sign` command.
+```zsh
+rooch account sign -a <nostr_public_key> -m <id> --json
+```
+Here, **nostr_public_key** should start with `npub` and **id** should align with the id of the Pre Event of Nostr without the leading `0x`.
 
+3. Create an Event of Nostr using the previously generated signature
+```zsh
+rooch move run --function <contract_address>::event::create_event_entry --args "string:<public_key>" --args "string:<signature>"
+```
+The public key is required to derive the owner's rooch address for generating an Event of Nostr.
 
-## Troubleshooting
+4. View the Nostr Event in Move's state
+```zsh
+rooch object -i <event_object_id>
+```
 
+## Interoperate Nostr with Bitcoin and Rooch
 
+Since the Nostr public key could be converted to Bitcoin address and Rooch address, there are plenty of scenarios to consider of.
 
 ## Related Links
 

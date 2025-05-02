@@ -213,10 +213,6 @@ module nostr::event {
         // decode signature with hex
         let sig = hex::decode(&string::into_bytes(signature));
 
-        std::debug::print(&id);
-        std::debug::print(&pubkey);
-        std::debug::print(&sig);
-
         // check the signature
         check_signature(id, pubkey, sig);
 
