@@ -148,18 +148,17 @@ module nostr::event {
     }
 
     /// Create a pre Event
-    public fun create_pre_event(public_key: vector<u8>, kind: u16, tags: vector<vector<String>>, content: String) {
+    public fun create_pre_event(public_key: String, kind: u16, tags: vector<vector<String>>, content: String) {
         assert!(string::length(&content) <= 1000, ErrorContentTooLarge);
-        let pubkey_str = string::utf8(public_key);
 
         // get now timestamp by seconds
         let created_at = timestamp::now_seconds();
 
         // create event id
-        let id = create_event_id(pubkey_str, created_at, kind, tags, content);
+        let id = create_event_id(public_key, created_at, kind, tags, content);
 
-        // decode public key with hex
-        let pubkey = hex::decode(&public_key);
+        // get the hex decoded public key bytes
+        let pubkey = hex::decode(&string::into_bytes(public_key));
 
         // derive a rooch address
         let rooch_address = inner::derive_rooch_address(pubkey);
@@ -187,14 +186,14 @@ module nostr::event {
     }
 
     /// Entry function to create a pre Event
-    public entry fun create_pre_event_entry(public_key: vector<u8>, kind: u16, tags: vector<vector<String>>, content: String) {
+    public entry fun create_pre_event_entry(public_key: String, kind: u16, tags: vector<vector<String>>, content: String) {
         create_pre_event(public_key, kind, tags, content);
     }
 
     /// Create an Event
-    public fun create_event(public_key: vector<u8>, signature: vector<u8>) {
+    public fun create_event(public_key: String, signature: String) {
         // derive a rooch address
-        let rooch_address = inner::derive_rooch_address(hex::decode(&public_key));
+        let rooch_address = inner::derive_rooch_address(hex::decode(&string::into_bytes(public_key)));
 
         // get the pre event object id from the address
         let pre_event_object_id = object::account_named_object_id<PreEvent>(rooch_address);
@@ -212,7 +211,11 @@ module nostr::event {
         let PreEvent { id, pubkey, created_at, kind, tags, content } = *pre_event;
 
         // decode signature with hex
-        let sig = hex::decode(&signature);
+        let sig = hex::decode(&string::into_bytes(signature));
+
+        std::debug::print(&id);
+        std::debug::print(&pubkey);
+        std::debug::print(&sig);
 
         // check the signature
         check_signature(id, pubkey, sig);
@@ -255,28 +258,26 @@ module nostr::event {
     }
 
     /// Entry function to create an Event
-    public entry fun create_event_entry(public_key: vector<u8>, signature: vector<u8>) {
+    public entry fun create_event_entry(public_key: String, signature: String) {
         create_event(public_key, signature);
     }
 
     /// Save an Event
-    public fun save_event(public_key: vector<u8>, created_at: u64, kind: u16, tags: vector<vector<String>>, content: String, signature: vector<u8>): vector<u8> {
-        let pubkey_str = string::utf8(public_key);
-
+    public fun save_event(public_key: String, created_at: u64, kind: u16, tags: vector<vector<String>>, content: String, signature: String): vector<u8> {
         // check signature length
-        assert!(vector::length(&signature) == 128, ErrorMalformedSignature);
+        assert!(string::length(&signature) == 128, ErrorMalformedSignature);
 
         // check public key length
-        assert!(vector::length(&public_key) == 64, ErrorMalformedPublicKey);
+        assert!(string::length(&public_key) == 64, ErrorMalformedPublicKey);
 
         // create event id
-        let id = create_event_id(pubkey_str, created_at, kind, tags, content);
+        let id = create_event_id(public_key, created_at, kind, tags, content);
 
-        // decode public key with hex
-        let pubkey = hex::decode(&public_key);
+        // get the hex decoded public key bytes
+        let pubkey = hex::decode(&string::into_bytes(public_key));
 
-        // decode signature with hex
-        let sig = hex::decode(&signature);
+        // get the hex decoded signature bytes
+        let sig = hex::decode(&string::into_bytes(signature));
 
         // check the signature
         check_signature(id, pubkey, sig);
@@ -326,29 +327,29 @@ module nostr::event {
     }
 
     /// Entry function to save an Event
-    public entry fun save_event_entry(public_key: vector<u8>, created_at: u64, kind: u16, tags: vector<vector<String>>, content: String, signature: vector<u8>) {
+    public entry fun save_event_entry(public_key: String, created_at: u64, kind: u16, tags: vector<vector<String>>, content: String, signature: String) {
         let _event_json = save_event(public_key, created_at, kind, tags, content, signature);
     }
 
     /// Save an Event with plaintext. Do not check integrity of created_at, kind, tags and content with id.
-    public fun save_event_plaintext(id_encoded: vector<u8>, public_key: vector<u8>, created_at: u64, kind: u16, tags: vector<vector<String>>, content: String, signature: vector<u8>): vector<u8> {
+    public fun save_event_plaintext(id_encoded: String, public_key: String, created_at: u64, kind: u16, tags: vector<vector<String>>, content: String, signature: String): vector<u8> {
         // check id length
-        assert!(vector::length(&id_encoded) == 64, ErrorMalformedId);
+        assert!(string::length(&id_encoded) == 64, ErrorMalformedId);
 
         // check public key length
-        assert!(vector::length(&public_key) == 64, ErrorMalformedPublicKey);
+        assert!(string::length(&public_key) == 64, ErrorMalformedPublicKey);
 
         // check signature length
-        assert!(vector::length(&signature) == 128, ErrorMalformedSignature);
+        assert!(string::length(&signature) == 128, ErrorMalformedSignature);
 
-        // decode id with hex
-        let id = hex::decode(&id_encoded);
+        // get the hex decoded id bytes
+        let id = hex::decode(&string::into_bytes(id_encoded));
 
-        // decode public key with hex
-        let pubkey = hex::decode(&public_key);
+        // get the hex decoded public key bytes
+        let pubkey = hex::decode(&string::into_bytes(public_key));
 
-        // decode signature with hex
-        let sig = hex::decode(&signature);
+        // get the hex decoded signature bytes
+        let sig = hex::decode(&string::into_bytes(signature));
 
         // check the signature
         check_signature(id, pubkey, sig);
@@ -398,7 +399,7 @@ module nostr::event {
     }
 
     /// Entry function to save an Event with plaintext
-    public entry fun save_event_plaintext_entry(id: vector<u8>, public_key: vector<u8>, created_at: u64, kind: u16, tags: vector<vector<String>>, content: String, signature: vector<u8>) {
+    public entry fun save_event_plaintext_entry(id: String, public_key: String, created_at: u64, kind: u16, tags: vector<vector<String>>, content: String, signature: String) {
         let _event_json = save_event_plaintext(id, public_key, created_at, kind, tags, content, signature);
     }
 
