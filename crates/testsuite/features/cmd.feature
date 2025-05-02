@@ -42,7 +42,7 @@ Feature: Rooch CLI integration tests
       Then cmd: "account verify -s {{$.account[-1]}} -m 'empty' --json"
       Then assert: "{{$.account[-1]}} == true"
       # account sign and verify secp256k1 schnorr
-      Then cmd: "account sign -a {{$.account[-3].account0.address}} -m 'b1e0f0249c9d996f41a6fc0cafe58623573c6d809966b1cd34ce579e99e86131' -s --json"
+      Then cmd: "account sign -a {{$.account[-3].account0.nostr_public_key}} -m 'b1e0f0249c9d996f41a6fc0cafe58623573c6d809966b1cd34ce579e99e86131' --json"
       Then cmd: "account list --json"
       Then cmd: "account export"
       Then cmd: "account export -a {{$.account[-1].account0.address}} --json"
