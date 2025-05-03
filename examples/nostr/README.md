@@ -42,6 +42,18 @@ rooch object -i <pre_event_object_id>
 2. Sign the id of the Nostr Event with schnorr signature
 
 This step could be done with Rooch TypeScript, Rust or Go SDK, or with `rooch account sign` command.
+
+Firstly, import Nostr private key hex to Rooch account using `rooch account import` command:
+```zsh
+rooch account import -k <nostr_private_key> --json
+```
+
+Secondly, switch to the Rooch address returned by the first step:
+```zsh
+rooch account switch -a <rooch_address> --json
+```
+
+Lastly, sign the Nostr Pre Event ID with Rooch SDKs or using `rooch account sign`:
 ```zsh
 rooch account sign -a <nostr_public_key> -m <id> --json
 ```

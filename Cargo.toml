@@ -360,6 +360,7 @@ tikv-jemallocator = { version = "0.6.0", features = [
     "profiling",
 ] }
 mimalloc = { version = "0.1.46" }
+
 # Note: the BEGIN and END comments below are required for external tooling. Do not remove.
 # BEGIN MOVE DEPENDENCIES
 move-abigen = { path = "third_party/move/language/move-prover/move-abigen" }
