@@ -29,6 +29,7 @@ module nostr::event {
     const ErrorPreEventNotExist: u64 = 1006;
 
     #[data_struct]
+    /// TODO: merge PreEvent with Event to save storage cost.
     /// PreEvent
     struct PreEvent has key, copy, drop {
         id: vector<u8>, // 32-bytes lowercase hex-encoded sha256 of the serialized event data
@@ -71,7 +72,6 @@ module nostr::event {
         picture: String
     }
 
-    /// TODO: serialize matching the standard
     /// Serialize to byte arrays, which could be sha256 hashed and hex-encoded with lowercase to 32 byte arrays
     fun serialize(pubkey: String, created_at: u64, kind: u16, tags: vector<vector<String>>, content: String): vector<u8> {
         let serialized = string::utf8(b"");

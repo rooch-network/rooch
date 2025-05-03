@@ -74,10 +74,6 @@ rooch object -i <event_object_id>
 
 - Publish a Nostr Event
 
-1. Generate an Event Message
-
-2. Send the Event Message to a Nostr Relay
-
 ## Interoperation with Bitcoin and Rooch
 
 Since the Nostr public key could be converted to Bitcoin address and Rooch address, there are plenty of scenarios to consider of.
