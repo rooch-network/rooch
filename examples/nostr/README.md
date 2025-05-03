@@ -20,18 +20,18 @@ rooch move publish ./build/nostr/package.rpd
 
 ## Run
 
-- Save a Nostr Event to Move store with verification of id and signature:
+- Save a Nostr Event to Move store with verification of id and signature
 ```zsh
 rooch move run --function <contract_address>::event::save_event_entry --args "string:<public_key>" --args "u64:<created_at>" --args "u16:<kind>" --args "vector<string>:<tags>" --args "string:<content>" --args "string:<signature>"
 ```
 Tags as command line arguments only accept **vector\<string\>**. For **vector\<vector\<string\>\>**, it should be supported in the future.
-- Save a Nostr Event to Move store without verification of id:
+- Save a Nostr Event to Move store without verification of id
 ```zsh
 rooch move run --function <contract_address>::event::save_event_plaintext_entry --args "string:<id>" --args "string:<public_key>" --args "u64:<created_at>" --args "u16:<kind>" --args "vector<string>:<tags>" --args "string:<content>" --args "string:<signature>"
 ```
 This could be met with the need of saving a draft of or unpublished Nostr Note. For example, save with varying content of Nostr Event in the Move store.
 - Create a Nostr Event natively in Move and store in Move's state
-1. Create a Pre Event of Nostr for signing:
+1. Create a Pre Event of Nostr for signing
 ```zsh
 rooch move run --function <contract_address>::event::create_pre_event_entry --args "string:<public_key>" --args "u16:<kind>" --args "vector<string>:<tags>" --args "string:<content>"
 ```
@@ -39,7 +39,7 @@ The Pre Event of Nostr is used with schnorr offline signing environment to gener
 ```zsh
 rooch object -i <pre_event_object_id>
 ```
-2. Sign the id of the Nostr Event with schnorr signature
+2. Sign the id of the Nostr Pre Event with schnorr signature
 
 This step could be done with Rooch TypeScript, Rust or Go SDK, or with `rooch account sign` command.
 
@@ -53,7 +53,7 @@ Secondly, switch to the Rooch address returned by the first step:
 rooch account switch -a <rooch_address> --json
 ```
 
-Lastly, sign the Nostr Pre Event ID with Rooch SDKs or using `rooch account sign`:
+Lastly, sign the Nostr Pre Event id with Rooch SDKs or using `rooch account sign`:
 ```zsh
 rooch account sign -a <nostr_public_key> -m <id> --json
 ```
