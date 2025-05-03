@@ -22,18 +22,18 @@ rooch move publish ./build/nostr/package.rpd
 
 - Save a Nostr Event to Move store with verification of id and signature
 ```zsh
-rooch move run --function <contract_address>::event::save_event_entry --args "string:<public_key>" --args "u64:<created_at>" --args "u16:<kind>" --args "vector<string>:<tags>" --args "string:<content>" --args "string:<signature>"
+rooch move run --function <contract_address>::event::save_event_entry --args "string:<x_only_public_key>" --args "u64:<created_at>" --args "u16:<kind>" --args "vector<string>:<tags>" --args "string:<content>" --args "string:<signature>"
 ```
 Tags as command line arguments only accept **vector\<string\>**. For **vector\<vector\<string\>\>**, it should be supported in the future.
 - Save a Nostr Event to Move store without verification of id
 ```zsh
-rooch move run --function <contract_address>::event::save_event_plaintext_entry --args "string:<id>" --args "string:<public_key>" --args "u64:<created_at>" --args "u16:<kind>" --args "vector<string>:<tags>" --args "string:<content>" --args "string:<signature>"
+rooch move run --function <contract_address>::event::save_event_plaintext_entry --args "string:<id>" --args "string:<x_only_public_key>" --args "u64:<created_at>" --args "u16:<kind>" --args "vector<string>:<tags>" --args "string:<content>" --args "string:<signature>"
 ```
 This could be met with the need of saving a draft of or unpublished Nostr Note. For example, save with varying content of Nostr Event in the Move store.
 - Create a Nostr Event natively in Move and store in Move's state
 1. Create a Pre Event of Nostr for signing
 ```zsh
-rooch move run --function <contract_address>::event::create_pre_event_entry --args "string:<public_key>" --args "u16:<kind>" --args "vector<string>:<tags>" --args "string:<content>"
+rooch move run --function <contract_address>::event::create_pre_event_entry --args "string:<x_only_public_key>" --args "u16:<kind>" --args "vector<string>:<tags>" --args "string:<content>"
 ```
 The Pre Event of Nostr is used with schnorr offline signing environment to generate a signature for a Nostr Event. To view the generated id of the Pre Event of Nostr used for signing, run the following command:
 ```zsh
