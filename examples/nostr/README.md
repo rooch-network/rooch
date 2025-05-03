@@ -41,7 +41,7 @@ rooch object -i <pre_event_object_id>
 ```
 2. Sign the id of the Nostr Pre Event with schnorr signature
 
-This step could be done with Rooch TypeScript, Rust or Go SDK, or with `rooch account sign` command.
+This step could be done with Rooch TypeScript, Rust, Python or Go SDK, or with `rooch account sign` command.
 
 Firstly, import Nostr private key hex to Rooch account using `rooch account import` command:
 ```zsh
@@ -61,16 +61,24 @@ Here, **nostr_public_key** should start with `npub` and **id** should align with
 
 3. Create an Event of Nostr using the previously generated signature
 ```zsh
-rooch move run --function <contract_address>::event::create_event_entry --args "string:<public_key>" --args "string:<signature>"
+rooch move run --function <contract_address>::event::create_event_entry --args "string:<signature>"
 ```
-The public key is required to derive the owner's rooch address for generating an Event of Nostr.
+The signer of the Pre Event of Nostr is required to generate an Event of Nostr under the same context.
 
 4. View the Nostr Event in Move's state
 ```zsh
 rooch object -i <event_object_id>
 ```
 
-## Interoperate Nostr with Bitcoin and Rooch
+## Communication with Nostr Relays
+
+- Publish a Nostr Event
+
+1. Generate an Event Message
+
+2. Send the Event Message to a Nostr Relay
+
+## Interoperation with Bitcoin and Rooch
 
 Since the Nostr public key could be converted to Bitcoin address and Rooch address, there are plenty of scenarios to consider of.
 

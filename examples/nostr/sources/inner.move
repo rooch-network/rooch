@@ -8,7 +8,7 @@ module nostr::inner {
     use std::option::{Self, Option};
     use moveos_std::bcs;
     use moveos_std::string_utils;
-    use rooch_framework::bitcoin_address;
+    use rooch_framework::bitcoin_address::{Self, BitcoinAddress};
 
     // Name of the tag of the event
     const EVENT_TAG_KEY: vector<u8> = b"e";
@@ -26,13 +26,6 @@ module nostr::inner {
     const ErrorMalformedPublicKey: u64 = 1001;
     const ErrorKindOutOfRange: u64 = 1002;
     const ErrorEmptyTagString: u64 = 1003;
-
-    // TODO: TagIndex for the internal data struct from a-z to A-Z
-    // TODO: SimpleMultiMap<String, String> can't be applied to inner struct
-    // #[data_struct]
-    // struct TagIndex has key, copy, drop {
-    //     alphabet: SimpleMultiMap<String, String>
-    // }
 
     #[data_struct]
     /// Tags
@@ -97,10 +90,16 @@ module nostr::inner {
         string::utf8(COLON)
     }
 
+    /// derive a bitcoin taproot address from a x-only public key
+    public fun derive_bitcoin_taproot_address(x_only_public_key: vector<u8>): BitcoinAddress {
+        // derive a bitcoin taproot address from the x only public key
+        let bitcoin_taproot_address = bitcoin_address::derive_bitcoin_taproot_address_from_pubkey(&x_only_public_key);
+        bitcoin_taproot_address
+    }
+
     /// derive a rooch address from a bitcoin taproot address from a x-only public key
-    public fun derive_rooch_address(public_key: vector<u8>): address {
-        // derive a bitcoin taproot address from the public key
-        let bitcoin_taproot_address = bitcoin_address::derive_bitcoin_taproot_address_from_pubkey(&public_key);
+    public fun derive_rooch_address(x_only_public_key: vector<u8>): address {
+        let bitcoin_taproot_address = derive_bitcoin_taproot_address(x_only_public_key);
         // derive a rooch address from the bitcoin taproot address
         let rooch_address = bitcoin_address::to_rooch_address(&bitcoin_taproot_address);
         rooch_address

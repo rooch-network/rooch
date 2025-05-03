@@ -5,6 +5,7 @@
 module nostr::event {
     use std::vector;
     use std::string::{Self, String};
+    use moveos_std::signer;
     use moveos_std::object::{Self, ObjectID};
     use moveos_std::hash;
     use moveos_std::hex;
@@ -124,10 +125,10 @@ module nostr::event {
     }
 
     /// Check signature with public key, id and signature for schnorr
-    fun check_signature(id: vector<u8>, public_key: vector<u8>, signature: vector<u8>) {
+    fun check_signature(id: vector<u8>, x_only_public_key: vector<u8>, signature: vector<u8>) {
         assert!(ecdsa_k1::verify(
             &signature,
-            &public_key,
+            &x_only_public_key,
             &id,
             ecdsa_k1::sha256()
         ), ErrorSignatureValidationFailure);
@@ -148,17 +149,17 @@ module nostr::event {
     }
 
     /// Create a pre Event
-    public fun create_pre_event(public_key: String, kind: u16, tags: vector<vector<String>>, content: String) {
+    public fun create_pre_event(x_only_public_key: String, kind: u16, tags: vector<vector<String>>, content: String) {
         assert!(string::length(&content) <= 1000, ErrorContentTooLarge);
 
         // get now timestamp by seconds
         let created_at = timestamp::now_seconds();
 
         // create event id
-        let id = create_event_id(public_key, created_at, kind, tags, content);
+        let id = create_event_id(x_only_public_key, created_at, kind, tags, content);
 
         // get the hex decoded public key bytes
-        let pubkey = hex::decode(&string::into_bytes(public_key));
+        let pubkey = hex::decode(&string::into_bytes(x_only_public_key));
 
         // derive a rooch address
         let rooch_address = inner::derive_rooch_address(pubkey);
@@ -186,14 +187,14 @@ module nostr::event {
     }
 
     /// Entry function to create a pre Event
-    public entry fun create_pre_event_entry(public_key: String, kind: u16, tags: vector<vector<String>>, content: String) {
-        create_pre_event(public_key, kind, tags, content);
+    public entry fun create_pre_event_entry(x_only_public_key: String, kind: u16, tags: vector<vector<String>>, content: String) {
+        create_pre_event(x_only_public_key, kind, tags, content);
     }
 
     /// Create an Event
-    public fun create_event(public_key: String, signature: String) {
-        // derive a rooch address
-        let rooch_address = inner::derive_rooch_address(hex::decode(&string::into_bytes(public_key)));
+    public fun create_event(signer: &signer, signature: String) {
+        // get the signer's rooch address
+        let rooch_address = signer::address_of(signer);
 
         // get the pre event object id from the address
         let pre_event_object_id = object::account_named_object_id<PreEvent>(rooch_address);
@@ -254,23 +255,23 @@ module nostr::event {
     }
 
     /// Entry function to create an Event
-    public entry fun create_event_entry(public_key: String, signature: String) {
-        create_event(public_key, signature);
+    public entry fun create_event_entry(signer: &signer, signature: String) {
+        create_event(signer, signature);
     }
 
     /// Save an Event
-    public fun save_event(public_key: String, created_at: u64, kind: u16, tags: vector<vector<String>>, content: String, signature: String): vector<u8> {
+    public fun save_event(x_only_public_key: String, created_at: u64, kind: u16, tags: vector<vector<String>>, content: String, signature: String): vector<u8> {
         // check signature length
         assert!(string::length(&signature) == 128, ErrorMalformedSignature);
 
         // check public key length
-        assert!(string::length(&public_key) == 64, ErrorMalformedPublicKey);
+        assert!(string::length(&x_only_public_key) == 64, ErrorMalformedPublicKey);
 
         // create event id
-        let id = create_event_id(public_key, created_at, kind, tags, content);
+        let id = create_event_id(x_only_public_key, created_at, kind, tags, content);
 
         // get the hex decoded public key bytes
-        let pubkey = hex::decode(&string::into_bytes(public_key));
+        let pubkey = hex::decode(&string::into_bytes(x_only_public_key));
 
         // get the hex decoded signature bytes
         let sig = hex::decode(&string::into_bytes(signature));
@@ -323,17 +324,17 @@ module nostr::event {
     }
 
     /// Entry function to save an Event
-    public entry fun save_event_entry(public_key: String, created_at: u64, kind: u16, tags: vector<vector<String>>, content: String, signature: String) {
-        let _event_json = save_event(public_key, created_at, kind, tags, content, signature);
+    public entry fun save_event_entry(x_only_public_key: String, created_at: u64, kind: u16, tags: vector<vector<String>>, content: String, signature: String) {
+        let _event_json = save_event(x_only_public_key, created_at, kind, tags, content, signature);
     }
 
     /// Save an Event with plaintext. Do not check integrity of created_at, kind, tags and content with id.
-    public fun save_event_plaintext(id_encoded: String, public_key: String, created_at: u64, kind: u16, tags: vector<vector<String>>, content: String, signature: String): vector<u8> {
+    public fun save_event_plaintext(id_encoded: String, x_only_public_key: String, created_at: u64, kind: u16, tags: vector<vector<String>>, content: String, signature: String): vector<u8> {
         // check id length
         assert!(string::length(&id_encoded) == 64, ErrorMalformedId);
 
         // check public key length
-        assert!(string::length(&public_key) == 64, ErrorMalformedPublicKey);
+        assert!(string::length(&x_only_public_key) == 64, ErrorMalformedPublicKey);
 
         // check signature length
         assert!(string::length(&signature) == 128, ErrorMalformedSignature);
@@ -342,7 +343,7 @@ module nostr::event {
         let id = hex::decode(&string::into_bytes(id_encoded));
 
         // get the hex decoded public key bytes
-        let pubkey = hex::decode(&string::into_bytes(public_key));
+        let pubkey = hex::decode(&string::into_bytes(x_only_public_key));
 
         // get the hex decoded signature bytes
         let sig = hex::decode(&string::into_bytes(signature));
@@ -395,8 +396,8 @@ module nostr::event {
     }
 
     /// Entry function to save an Event with plaintext
-    public entry fun save_event_plaintext_entry(id: String, public_key: String, created_at: u64, kind: u16, tags: vector<vector<String>>, content: String, signature: String) {
-        let _event_json = save_event_plaintext(id, public_key, created_at, kind, tags, content, signature);
+    public entry fun save_event_plaintext_entry(id: String, x_only_public_key: String, created_at: u64, kind: u16, tags: vector<vector<String>>, content: String, signature: String) {
+        let _event_json = save_event_plaintext(id, x_only_public_key, created_at, kind, tags, content, signature);
     }
 
     /// drop an event
