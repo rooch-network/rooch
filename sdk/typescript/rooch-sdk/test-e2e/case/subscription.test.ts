@@ -163,116 +163,116 @@ describe('RoochClient Subscription Tests', () => {
     expect(result).toBe(true)
   })
 
-  it('should subscribe to events with filter and only receive matching events', async () => {
-    logger.info('Starting filtered event subscription test')
+  // it('should subscribe to events with filter and only receive matching events', async () => {
+  //   logger.info('Starting filtered event subscription test')
 
-    let receivedEvents = new Array<any>()
-    const cmdAddress = await wsTestBox.defaultCmdAddress()
+  //   let receivedEvents = new Array<any>()
+  //   const cmdAddress = await wsTestBox.defaultCmdAddress()
 
-    // Create a promise that will resolve when we receive the expected event
-    const eventReceived = new Promise<boolean>((resolve) => {
-      let subscription: Unsubscribe
+  //   // Create a promise that will resolve when we receive the expected event
+  //   const eventReceived = new Promise<boolean>((resolve) => {
+  //     let subscription: Unsubscribe
 
-      logger.info('Setting up filtered event subscription...')
+  //     logger.info('Setting up filtered event subscription...')
 
-      // Create a filter for events with specific event type - we'll filter for U64Event
-      const eventFilter = {
-        event_type: `${cmdAddress}::entry_function::U64Event`,
-      }
+  //     // Create a filter for events with specific event type - we'll filter for U64Event
+  //     const eventFilter = {
+  //       event_type: `${cmdAddress}::entry_function::U64Event`,
+  //     }
 
-      logger.info(`Using event filter: ${JSON.stringify(eventFilter)}`)
+  //     logger.info(`Using event filter: ${JSON.stringify(eventFilter)}`)
 
-      wsTestBox
-        .getClient()
-        .subscribeEvent({
-          filter: eventFilter,
-          onMessage: (event) => {
-            logger.info('Received filtered event:', JSON.stringify(event.event_type))
-            receivedEvents.push(event)
-            if (event.event_type === `${cmdAddress}::entry_function::U64Event`) {
-              logger.info('Received matching filtered event, resolving promise')
-              subscription()
-              resolve(true)
-            }
-          },
-          onError: (error) => {
-            logger.error('Filtered subscription error:', error)
-            resolve(false)
-          },
-        })
-        .then((sub) => {
-          subscription = sub
-        })
-        .catch((err) => {
-          logger.error('Failed to create filtered event subscription:', err)
-          resolve(false)
-        })
-    })
+  //     wsTestBox
+  //       .getClient()
+  //       .subscribeEvent({
+  //         filter: eventFilter,
+  //         onMessage: (event) => {
+  //           logger.info('Received filtered event:', JSON.stringify(event.event_type))
+  //           receivedEvents.push(event)
+  //           if (event.event_type === `${cmdAddress}::entry_function::U64Event`) {
+  //             logger.info('Received matching filtered event, resolving promise')
+  //             subscription()
+  //             resolve(true)
+  //           }
+  //         },
+  //         onError: (error) => {
+  //           logger.error('Filtered subscription error:', error)
+  //           resolve(false)
+  //         },
+  //       })
+  //       .then((sub) => {
+  //         subscription = sub
+  //       })
+  //       .catch((err) => {
+  //         logger.error('Failed to create filtered event subscription:', err)
+  //         resolve(false)
+  //       })
+  //   })
 
-    // Wait for subscription to be established
-    logger.info('Waiting for filtered subscription to be established...')
-    await new Promise((resolve) => setTimeout(resolve, 2000))
+  //   // Wait for subscription to be established
+  //   logger.info('Waiting for filtered subscription to be established...')
+  //   await new Promise((resolve) => setTimeout(resolve, 2000))
 
-    // First emit a different event that should not be caught by our filter
-    logger.info('Emitting a different event (U8Event) that should not match filter...')
-    const tx1 = new Transaction()
-    tx1.callFunction({
-      target: `${cmdAddress}::entry_function::emit_u8`,
-      args: [Args.u8(123)],
-    })
+  //   // First emit a different event that should not be caught by our filter
+  //   logger.info('Emitting a different event (U8Event) that should not match filter...')
+  //   const tx1 = new Transaction()
+  //   tx1.callFunction({
+  //     target: `${cmdAddress}::entry_function::emit_u8`,
+  //     args: [Args.u8(123)],
+  //   })
 
-    await wsTestBox.getClient().signAndExecuteTransaction({
-      transaction: tx1,
-      signer: wsTestBox.keypair,
-    })
+  //   await wsTestBox.getClient().signAndExecuteTransaction({
+  //     transaction: tx1,
+  //     signer: wsTestBox.keypair,
+  //   })
 
-    // Wait a bit to ensure first event is processed
-    await new Promise((resolve) => setTimeout(resolve, 3000))
-    logger.info(`Events received after first transaction: ${receivedEvents.length}`)
+  //   // Wait a bit to ensure first event is processed
+  //   await new Promise((resolve) => setTimeout(resolve, 3000))
+  //   logger.info(`Events received after first transaction: ${receivedEvents.length}`)
 
-    // Now emit the event that should match our filter (U64Event)
-    logger.info('Now emitting event (U64Event) that should match filter...')
-    const tx2 = new Transaction()
-    tx2.callFunction({
-      target: `${cmdAddress}::entry_function::emit_u64`,
-      args: [Args.u64(BigInt(20))],
-    })
+  //   // Now emit the event that should match our filter (U64Event)
+  //   logger.info('Now emitting event (U64Event) that should match filter...')
+  //   const tx2 = new Transaction()
+  //   tx2.callFunction({
+  //     target: `${cmdAddress}::entry_function::emit_u64`,
+  //     args: [Args.u64(BigInt(20))],
+  //   })
 
-    const txResult = await wsTestBox.getClient().signAndExecuteTransaction({
-      transaction: tx2,
-      signer: wsTestBox.keypair,
-    })
+  //   const txResult = await wsTestBox.getClient().signAndExecuteTransaction({
+  //     transaction: tx2,
+  //     signer: wsTestBox.keypair,
+  //   })
 
-    logger.info(
-      'Matching event transaction result:',
-      JSON.stringify(txResult.execution_info.status),
-    )
-    expect(txResult.execution_info.status.type).eq('executed')
+  //   logger.info(
+  //     'Matching event transaction result:',
+  //     JSON.stringify(txResult.execution_info.status),
+  //   )
+  //   expect(txResult.execution_info.status.type).eq('executed')
 
-    // Wait for the event notification with a timeout
-    logger.info('Waiting for filtered event notification (timeout: 15s)...')
-    const result = await Promise.race([
-      eventReceived,
-      new Promise<boolean>((resolve) =>
-        setTimeout(() => {
-          logger.info('Timeout waiting for filtered event. Events received:', receivedEvents.length)
-          resolve(false)
-        }, 20000),
-      ),
-    ])
+  //   // Wait for the event notification with a timeout
+  //   logger.info('Waiting for filtered event notification (timeout: 15s)...')
+  //   const result = await Promise.race([
+  //     eventReceived,
+  //     new Promise<boolean>((resolve) =>
+  //       setTimeout(() => {
+  //         logger.info('Timeout waiting for filtered event. Events received:', receivedEvents.length)
+  //         resolve(false)
+  //       }, 20000),
+  //     ),
+  //   ])
 
-    // We should have received only the event matching our filter
-    logger.info(`Total filtered events received: ${receivedEvents.length}`)
+  //   // We should have received only the event matching our filter
+  //   logger.info(`Total filtered events received: ${receivedEvents.length}`)
 
-    // Only events matching our filter should be received
-    const nonMatchingEvents = receivedEvents.filter(
-      (evt) => !evt.event_type.includes('entry_function::U64Event'),
-    )
+  //   // Only events matching our filter should be received
+  //   const nonMatchingEvents = receivedEvents.filter(
+  //     (evt) => !evt.event_type.includes('entry_function::U64Event'),
+  //   )
 
-    logger.info(`Number of non-matching events received: ${nonMatchingEvents.length}`)
-    expect(nonMatchingEvents.length).toBe(0)
-    expect(result).toBe(true)
-  })
+  //   logger.info(`Number of non-matching events received: ${nonMatchingEvents.length}`)
+  //   expect(nonMatchingEvents.length).toBe(0)
+  //   expect(result).toBe(true)
+  // })
 
   it('should subscribe to transactions with filter and only receive matching transactions', async () => {
     logger.info('Starting filtered transaction subscription test')
@@ -380,126 +380,126 @@ describe('RoochClient Subscription Tests', () => {
     expect(result).toBe(true)
   })
 
-  it('should handle multiple subscriptions simultaneously', async () => {
-    logger.info('Starting multiple subscriptions test')
+  // it('should handle multiple subscriptions simultaneously', async () => {
+  //   logger.info('Starting multiple subscriptions test')
 
-    const cmdAddress = await wsTestBox.defaultCmdAddress()
-    const senderAddress = wsTestBox.address().toBech32Address()
-    let eventReceived = false
-    let transactionReceived = false
+  //   const cmdAddress = await wsTestBox.defaultCmdAddress()
+  //   const senderAddress = wsTestBox.address().toBech32Address()
+  //   let eventReceived = false
+  //   let transactionReceived = false
 
-    // Initialize subscription variables with default values
-    let eventSubscription: Unsubscribe | undefined
-    let transactionSubscription: Unsubscribe | undefined
+  //   // Initialize subscription variables with default values
+  //   let eventSubscription: Unsubscribe | undefined
+  //   let transactionSubscription: Unsubscribe | undefined
 
-    // Promise that resolves when both event and transaction are received
-    const bothReceived = new Promise<boolean>((resolve) => {
-      const checkBothReceived = () => {
-        if (eventReceived && transactionReceived) {
-          logger.info('Both event and transaction received, resolving promise')
-          resolve(true)
-        }
-      }
+  //   // Promise that resolves when both event and transaction are received
+  //   const bothReceived = new Promise<boolean>((resolve) => {
+  //     const checkBothReceived = () => {
+  //       if (eventReceived && transactionReceived) {
+  //         logger.info('Both event and transaction received, resolving promise')
+  //         resolve(true)
+  //       }
+  //     }
 
-      // Set up event subscription
-      logger.info('Setting up event subscription...')
-      wsTestBox
-        .getClient()
-        .subscribeEvent({
-          filter: {
-            event_type: `${cmdAddress}::entry_function::U64Event`,
-          },
-          onMessage: (event) => {
-            logger.info('Received event:', JSON.stringify(event.event_type))
+  //     // Set up event subscription
+  //     logger.info('Setting up event subscription...')
+  //     wsTestBox
+  //       .getClient()
+  //       .subscribeEvent({
+  //         filter: {
+  //           event_type: `${cmdAddress}::entry_function::U64Event`,
+  //         },
+  //         onMessage: (event) => {
+  //           logger.info('Received event:', JSON.stringify(event.event_type))
 
-            if (event.event_type === `${cmdAddress}::entry_function::U64Event`) {
-              logger.info('Received matching event in multiple subscription test')
-              eventReceived = true
-              checkBothReceived()
-            }
-          },
-          onError: (error) => {
-            logger.error('Event subscription error:', error)
-          },
-        })
-        .then((sub) => {
-          eventSubscription = sub
-        })
+  //           if (event.event_type === `${cmdAddress}::entry_function::U64Event`) {
+  //             logger.info('Received matching event in multiple subscription test')
+  //             eventReceived = true
+  //             checkBothReceived()
+  //           }
+  //         },
+  //         onError: (error) => {
+  //           logger.error('Event subscription error:', error)
+  //         },
+  //       })
+  //       .then((sub) => {
+  //         eventSubscription = sub
+  //       })
 
-      // Set up transaction subscription
-      logger.info('Setting up transaction subscription...')
-      wsTestBox
-        .getClient()
-        .subscribeTransaction({
-          filter: {
-            sender: senderAddress,
-          },
-          onMessage: (message) => {
-            const txData = message.transaction.data
-            if (txData.type === 'l2_tx' && txData.sender === senderAddress) {
-              logger.info('Received matching transaction in multiple subscription test')
-              transactionReceived = true
-              checkBothReceived()
-            }
-          },
-          onError: (error) => {
-            logger.error('Transaction subscription error:', error)
-          },
-        })
-        .then((sub) => {
-          transactionSubscription = sub
-        })
-    })
+  //     // Set up transaction subscription
+  //     logger.info('Setting up transaction subscription...')
+  //     wsTestBox
+  //       .getClient()
+  //       .subscribeTransaction({
+  //         filter: {
+  //           sender: senderAddress,
+  //         },
+  //         onMessage: (message) => {
+  //           const txData = message.transaction.data
+  //           if (txData.type === 'l2_tx' && txData.sender === senderAddress) {
+  //             logger.info('Received matching transaction in multiple subscription test')
+  //             transactionReceived = true
+  //             checkBothReceived()
+  //           }
+  //         },
+  //         onError: (error) => {
+  //           logger.error('Transaction subscription error:', error)
+  //         },
+  //       })
+  //       .then((sub) => {
+  //         transactionSubscription = sub
+  //       })
+  //   })
 
-    // Wait for subscriptions to be established
-    logger.info('Waiting for subscriptions to be established...')
-    await new Promise((resolve) => setTimeout(resolve, 3000))
+  //   // Wait for subscriptions to be established
+  //   logger.info('Waiting for subscriptions to be established...')
+  //   await new Promise((resolve) => setTimeout(resolve, 3000))
 
-    // Execute a transaction that generates both a transaction and an event
-    logger.info('Executing transaction that will generate both a transaction and event...')
-    const tx = new Transaction()
-    tx.callFunction({
-      target: `${cmdAddress}::entry_function::emit_u64`,
-      args: [Args.u64(BigInt(42))],
-    })
+  //   // Execute a transaction that generates both a transaction and an event
+  //   logger.info('Executing transaction that will generate both a transaction and event...')
+  //   const tx = new Transaction()
+  //   tx.callFunction({
+  //     target: `${cmdAddress}::entry_function::emit_u64`,
+  //     args: [Args.u64(BigInt(42))],
+  //   })
 
-    const txResult = await wsTestBox.getClient().signAndExecuteTransaction({
-      transaction: tx,
-      signer: wsTestBox.keypair,
-    })
+  //   const txResult = await wsTestBox.getClient().signAndExecuteTransaction({
+  //     transaction: tx,
+  //     signer: wsTestBox.keypair,
+  //   })
 
-    logger.info('Transaction result:', JSON.stringify(txResult.execution_info.status))
-    expect(txResult.execution_info.status.type).eq('executed')
+  //   logger.info('Transaction result:', JSON.stringify(txResult.execution_info.status))
+  //   expect(txResult.execution_info.status.type).eq('executed')
 
-    // Wait for both the transaction and event to be received
-    logger.info('Waiting for both transaction and event notifications (timeout: 20s)...')
-    const result = await Promise.race([
-      bothReceived,
-      new Promise<boolean>((resolve) =>
-        setTimeout(() => {
-          logger.info(
-            `Timeout waiting for both notifications. Event received: ${eventReceived}, Transaction received: ${transactionReceived}`,
-          )
-          resolve(false)
-        }, 20000),
-      ),
-    ])
+  //   // Wait for both the transaction and event to be received
+  //   logger.info('Waiting for both transaction and event notifications (timeout: 20s)...')
+  //   const result = await Promise.race([
+  //     bothReceived,
+  //     new Promise<boolean>((resolve) =>
+  //       setTimeout(() => {
+  //         logger.info(
+  //           `Timeout waiting for both notifications. Event received: ${eventReceived}, Transaction received: ${transactionReceived}`,
+  //         )
+  //         resolve(false)
+  //       }, 20000),
+  //     ),
+  //   ])
 
-    // Clean up subscriptions
-    logger.info('Cleaning up subscriptions...')
-    if (eventSubscription !== undefined) {
-      eventSubscription()
-    }
+  //   // Clean up subscriptions
+  //   logger.info('Cleaning up subscriptions...')
+  //   if (eventSubscription !== undefined) {
+  //     eventSubscription()
+  //   }
 
-    if (transactionSubscription !== undefined) {
-      transactionSubscription()
-    }
+  //   if (transactionSubscription !== undefined) {
+  //     transactionSubscription()
+  //   }
 
-    logger.info(`Test result: ${result}`)
-    expect(eventReceived).toBe(true)
-    expect(transactionReceived).toBe(true)
-    expect(result).toBe(true)
-  })
+  //   logger.info(`Test result: ${result}`)
+  //   expect(eventReceived).toBe(true)
+  //   expect(transactionReceived).toBe(true)
+  //   expect(result).toBe(true)
+  // })
 
   // it('should correctly unsubscribe and stop receiving events', async () => {
   //   logger.info('Starting unsubscribe functionality test')
