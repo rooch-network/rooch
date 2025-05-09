@@ -581,14 +581,6 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
                 .route(
                     "/subscribe/sse/transactions",
                     axum::routing::get(crate::axum_router::sse_transactions_handler),
-                )
-                .route(
-                    "/subscribe/sse/events",
-                    axum::routing::get(crate::axum_router::sse_events_handler),
-                )
-                .route(
-                    "/subscribe/sse/transactions",
-                    axum::routing::get(crate::axum_router::sse_transactions_handler),
                 );
         }
         ServiceType::WebSocket => {
