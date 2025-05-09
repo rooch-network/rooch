@@ -2,20 +2,29 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::service::metrics::{ServiceMetrics, TransportProtocol};
-use axum::extract::{ConnectInfo, State};
+use axum::extract::{ConnectInfo, Query, State};
 use axum::http::HeaderMap;
+use axum::response::sse::{Event, KeepAlive, Sse};
 use axum::response::Response;
 use axum::Json;
+use futures::{Stream, StreamExt};
 use jsonrpsee::server::RandomIntegerIdProvider;
 use jsonrpsee::types::{ErrorCode, ErrorObject, Id, InvalidRequest, Params, Request};
 use jsonrpsee::{
     core::server::Methods, BoundedSubscriptions, ConnectionId, MethodCallback, MethodKind,
     MethodResponse, MethodSink,
 };
+use rooch_notify::subscription_handler::SubscriptionHandler;
+use rooch_rpc_api::jsonrpc_types::event_view::EventFilterView;
+use rooch_rpc_api::jsonrpc_types::transaction_view::TransactionFilterView;
+use serde::Deserialize;
 use serde_json::value::RawValue;
+use std::convert::Infallible;
 use std::net::SocketAddr;
 use std::sync::Arc;
+use tokio::sync::mpsc;
 use tokio::time::Instant;
+use tokio_stream::wrappers::ReceiverStream;
 
 pub const MAX_RESPONSE_SIZE: u32 = 2 << 30;
 
@@ -30,20 +39,26 @@ pub(crate) struct CallData<'a> {
     max_response_body_size: u32,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct JsonRpcService {
     /// Registered server methods.
     methods: Methods,
     metrics: ServiceMetrics,
     id_provider: Arc<RandomIntegerIdProvider>,
+    subscription_handler: Arc<SubscriptionHandler>,
 }
 
 impl JsonRpcService {
-    pub fn new(methods: Methods, metrics: ServiceMetrics) -> Self {
+    pub fn new(
+        methods: Methods,
+        metrics: ServiceMetrics,
+        subscription_handler: Arc<SubscriptionHandler>,
+    ) -> Self {
         Self {
             methods,
             metrics,
             id_provider: Arc::new(RandomIntegerIdProvider),
+            subscription_handler,
         }
     }
 
@@ -459,3 +474,81 @@ pub mod ws {
         response
     }
 }
+
+#[derive(Debug, Deserialize)]
+pub struct SSEQuery {
+    filter: String,
+}
+
+async fn sse_handler<T, U, S, F>(
+    State(service): State<JsonRpcService>,
+    Query(query): Query<SSEQuery>,
+    parse_filter: impl FnOnce(&str) -> Result<T, serde_json::Error>,
+    subscribe: F,
+) -> Sse<impl Stream<Item = Result<Event, Infallible>>>
+where
+    T: serde::Serialize + Send,
+    U: serde::Serialize + Send,
+    S: Stream<Item = U> + Send + 'static,
+    F: FnOnce(Arc<SubscriptionHandler>, T) -> S + Send,
+{
+    let filter = match parse_filter(query.filter.as_str()) {
+        Ok(filter) => filter,
+        Err(e) => {
+            tracing::error!("Failed to parse event filter: {:?}", e);
+            let (tx, rx) = mpsc::channel::<Event>(1);
+            let _ = tx
+                .send(
+                    Event::default()
+                        .event("error")
+                        .data(format!("Failed to parse event filter: {}", e)),
+                )
+                .await;
+            let stream = ReceiverStream::new(rx).map(Ok);
+            return Sse::new(stream).keep_alive(KeepAlive::default());
+        }
+    };
+
+    let (tx, rx) = mpsc::channel::<Event>(100);
+    let event_stream = subscribe(service.subscription_handler.clone(), filter);
+
+    // Spawn a task to handle the subscription
+    tokio::spawn(async move {
+        let mut event_stream = Box::pin(event_stream);
+        while let Some(event) = event_stream.next().await {
+            let event_data = serde_json::to_string(&event).unwrap();
+            let sse_event = Event::default().event("message").data(event_data);
+
+            if tx.send(sse_event).await.is_err() {
+                break;
+            }
+        }
+    });
+
+    let stream = ReceiverStream::new(rx).map(Ok);
+    Sse::new(stream).keep_alive(KeepAlive::default())
+}
+
+macro_rules! create_sse_handler {
+    ($name:ident, $filter_type:ty, $subscribe_method:ident) => {
+        pub async fn $name(
+            State(service): State<JsonRpcService>,
+            Query(query): Query<SSEQuery>,
+        ) -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
+            sse_handler(
+                State(service),
+                Query(query),
+                |filter_str| serde_json::from_str::<$filter_type>(filter_str),
+                |handler, filter| handler.$subscribe_method(filter),
+            )
+            .await
+        }
+    };
+}
+
+create_sse_handler!(
+    sse_transactions_handler,
+    TransactionFilterView,
+    subscribe_transactions
+);
+create_sse_handler!(sse_events_handler, EventFilterView, subscribe_events);

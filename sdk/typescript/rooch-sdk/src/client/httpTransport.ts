@@ -4,7 +4,9 @@
 // import { PACKAGE_VERSION, TARGETED_RPC_VERSION } from '../version.js'
 
 import { JsonRpcError, RoochHTTPStatusError } from './error.js'
+import { SSEClient } from './sseTransport.js'
 import {
+  RoochSSETransportSubscribeOptions,
   RoochTransport,
   RoochTransportRequestOptions,
   RoochTransportSubscribeOptions,
@@ -30,9 +32,18 @@ export class RoochHTTPTransport implements RoochTransport {
   #requestId = 0
   #options: RoochHTTPTransportOptions
   #websocketClient?: WebsocketClient
+  #sseClient?: SSEClient
 
   constructor(options: RoochHTTPTransportOptions) {
     this.#options = options
+  }
+
+  #getRoochSSETransport(): SSEClient {
+    if (!this.#sseClient) {
+      this.#sseClient = new SSEClient(this.#options.url)
+    }
+
+    return this.#sseClient
   }
 
   #getWebsocketClient(): WebsocketClient {
@@ -100,6 +111,14 @@ export class RoochHTTPTransport implements RoochTransport {
     }
 
     return data.result
+  }
+
+  async subscribeWithSSE<T>(
+    input: RoochSSETransportSubscribeOptions<T>,
+  ): Promise<() => Promise<boolean>> {
+    const unsubscribe = await this.#getRoochSSETransport().subscribe(input)
+
+    return async () => !!(await unsubscribe())
   }
 
   async subscribe<T>(input: RoochTransportSubscribeOptions<T>): Promise<() => Promise<boolean>> {
