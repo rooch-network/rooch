@@ -5,7 +5,6 @@ use crate::service::metrics::{ServiceMetrics, TransportProtocol};
 use axum::extract::{ConnectInfo, Query, State};
 use axum::http::HeaderMap;
 use axum::response::sse::{Event, KeepAlive, Sse};
-use axum::response::sse::{Event, KeepAlive, Sse};
 use axum::response::Response;
 use axum::Json;
 use futures::{Stream, StreamExt};
