@@ -10,7 +10,6 @@ use crate::tree_store::NodeCacheKey;
 use crate::{AccumulatorNode, AccumulatorTreeStore, LeafCount, NodeCount, MAX_CACHE_SIZE};
 use anyhow::{bail, format_err, Result};
 use lru::LruCache;
-use mirai_annotations::*;
 use moveos_types::h256::{ACCUMULATOR_PLACEHOLDER_HASH, H256};
 use std::collections::HashMap;
 use std::num::NonZeroUsize;
@@ -406,9 +405,9 @@ impl AccumulatorTree {
     ///     and the full route from root of that subtree to the accumulator root turns frozen
     ///         height - (log2(num_new_leaves) + 1) < height - 1 = root_level
     fn max_to_freeze(num_new_leaves: usize, root_level: u32) -> usize {
-        precondition!(root_level as usize <= MAX_ACCUMULATOR_PROOF_DEPTH);
-        precondition!(num_new_leaves < (usize::MAX / 2));
-        precondition!(num_new_leaves * 2 <= usize::MAX - root_level as usize);
+        assert!(root_level as usize <= MAX_ACCUMULATOR_PROOF_DEPTH, "Root level exceeds max proof depth");
+        assert!(num_new_leaves < (usize::MAX / 2), "num_new_leaves too large, potential overflow");
+        assert!(num_new_leaves.saturating_mul(2) <= usize::MAX.saturating_sub(root_level as usize), "Calculation may overflow usize");
         num_new_leaves * 2 + root_level as usize
     }
 

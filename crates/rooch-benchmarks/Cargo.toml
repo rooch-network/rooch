@@ -31,7 +31,7 @@ bitcoincore-rpc = { workspace = true }
 bitcoin = { workspace = true }
 toml = { workspace = true }
 [target.'cfg(not(target_env = "msvc"))'.dependencies]
-tikv-jemallocator = { workspace = true }
+# tikv-jemallocator = { workspace = true }
 prometheus = { workspace = true }
 tokio = { workspace = true }
 tracing = { workspace = true }
