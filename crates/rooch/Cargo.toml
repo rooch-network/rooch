@@ -56,6 +56,8 @@ wasmer = { workspace = true }
 tiny-keccak = { workspace = true }
 reqwest = { workspace = true }
 rocksdb = { workspace = true }
+mimalloc = "0.1.39"
+libsqlite3-sys = { version = "0.33.0", features = ["bundled"] }
 
 move-binary-format = { workspace = true }
 move-cli = { workspace = true }
@@ -113,11 +115,11 @@ rooch-oracle = { workspace = true }
 framework-release = { workspace = true }
 framework-builder = { workspace = true }
 
-#We should keep the allocator in the last of the dependencies
-[target.'cfg(not(target_env = "msvc"))'.dependencies]
-tikv-jemallocator = { workspace = true }
-[target.'cfg(target_env = "msvc")'.dependencies]
-mimalloc = { workspace = true }
+# #We should keep the allocator in the last of the dependencies
+# [target.'cfg(not(target_env = "msvc"))'.dependencies]
+# tikv-jemallocator = { workspace = true }
+# [target.'cfg(target_env = "msvc")'.dependencies]
+# mimalloc = { workspace = true }
 
 [build-dependencies]
 anyhow = { workspace = true }

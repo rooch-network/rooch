@@ -135,7 +135,7 @@ impl Loc {
         let mut start = loc.span.start();
         let mut end = loc.span.end();
         for l in locs.iter().skip(1) {
-            if l.file_id() == loc.file_id() {
+            if l.file_id() == loc.file_id {
                 start = std::cmp::min(start, l.span().start());
                 end = std::cmp::max(end, l.span().end());
             }
@@ -3405,12 +3405,12 @@ impl<'env> FunctionEnv<'env> {
     }
 
     /// Returns associated specification.
-    pub fn get_spec(&'env self) -> Ref<Spec> {
+    pub fn get_spec(&'env self) -> Ref<'env, Spec> {
         self.data.spec.borrow()
     }
 
     /// Returns associated mutable reference to specification.
-    pub fn get_mut_spec(&'env self) -> RefMut<Spec> {
+    pub fn get_mut_spec(&'env self) -> RefMut<'env, Spec> {
         self.data.spec.borrow_mut()
     }
 

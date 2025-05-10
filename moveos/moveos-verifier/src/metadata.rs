@@ -30,13 +30,13 @@ use thiserror::Error;
 type GlobalVariableWithRWLocker<T> = Lazy<Arc<RwLock<T>>>;
 // This is only used for local integration testing and compiling multiple Move Packages.
 // When publishing, use FunctionIndex -> ModuleID to read the module from the DB.
-pub static mut GLOBAL_PRIVATE_GENERICS: GlobalVariableWithRWLocker<BTreeMap<String, Vec<usize>>> =
+pub static GLOBAL_PRIVATE_GENERICS: GlobalVariableWithRWLocker<BTreeMap<String, Vec<usize>>> =
     Lazy::new(|| Arc::new(RwLock::new(BTreeMap::new())));
 
-pub static mut GLOBAL_DATA_STRUCT: GlobalVariableWithRWLocker<BTreeMap<String, bool>> =
+pub static GLOBAL_DATA_STRUCT: GlobalVariableWithRWLocker<BTreeMap<String, bool>> =
     Lazy::new(|| Arc::new(RwLock::new(BTreeMap::new())));
 
-pub static mut GLOBAL_DATA_STRUCT_FUNC: GlobalVariableWithRWLocker<BTreeMap<String, Vec<usize>>> =
+pub static GLOBAL_DATA_STRUCT_FUNC: GlobalVariableWithRWLocker<BTreeMap<String, Vec<usize>>> =
     Lazy::new(|| Arc::new(RwLock::new(BTreeMap::new())));
 
 pub static mut GLOBAL_GAS_FREE_RECORDER: Lazy<BTreeMap<String, Vec<usize>>> =
@@ -324,12 +324,10 @@ fn get_type_name_indices(
 
                     type_name_indices.insert(full_func_name.clone(), attribute_type_index.clone());
 
-                    unsafe {
-                        GLOBAL_PRIVATE_GENERICS
-                            .write()
-                            .unwrap()
-                            .insert(full_func_name.clone(), attribute_type_index.clone());
-                    }
+                    GLOBAL_PRIVATE_GENERICS
+                        .write()
+                        .unwrap()
+                        .insert(full_func_name.clone(), attribute_type_index.clone());
 
                     func_loc_map.insert(full_func_name.clone(), fun.get_loc());
                 }
@@ -375,13 +373,11 @@ fn check_call_generics(global_env: &GlobalEnv, module: &ModuleEnv, view: BinaryI
 
                 let func_type_arguments = &view.signature_at(*type_parameters).0;
                 let private_generics_types = {
-                    unsafe {
-                        GLOBAL_PRIVATE_GENERICS
-                            .read()
-                            .unwrap()
-                            .get(full_path_func_name.as_str())
-                            .map(|list| list.clone())
-                    }
+                    GLOBAL_PRIVATE_GENERICS
+                        .read()
+                        .unwrap()
+                        .get(full_path_func_name.as_str())
+                        .map(|list| list.clone())
                 };
 
                 // if the called function have the private_generics information.
@@ -1056,12 +1052,10 @@ fn check_data_struct_fields(
         .to_string();
     let full_struct_name = format!("{}::{}", module_env.get_full_name_str(), struct_name);
     valid_structs.insert(full_struct_name.clone(), true);
-    unsafe {
-        GLOBAL_DATA_STRUCT
-            .write()
-            .unwrap()
-            .insert(full_struct_name, true);
-    }
+    GLOBAL_DATA_STRUCT
+        .write()
+        .unwrap()
+        .insert(full_struct_name, true);
 
     ("".to_string(), true)
 }
@@ -1114,7 +1108,7 @@ fn check_data_struct_fields_type(
 
             check_data_struct_fields(&struct_env, &struct_module, valid_structs);
 
-            let is_allowed_opt = unsafe {
+            let is_allowed_opt = {
                 let data = GLOBAL_DATA_STRUCT.read().unwrap();
                 data.get(full_struct_name.as_str()).map(|_| true)
             };
@@ -1282,12 +1276,10 @@ fn check_data_struct_func(extended_checker: &mut ExtendedChecker, module_env: &M
                     type_name_indices
                         .insert(full_path_func_name.clone(), attribute_type_index.clone());
 
-                    unsafe {
-                        GLOBAL_DATA_STRUCT_FUNC
-                            .write()
-                            .unwrap()
-                            .insert(full_path_func_name, attribute_type_index.clone());
-                    }
+                    GLOBAL_DATA_STRUCT_FUNC
+                        .write()
+                        .unwrap()
+                        .insert(full_path_func_name, attribute_type_index.clone());
 
                     func_loc_map.insert(func_name, fun.get_loc());
                 }
@@ -1360,13 +1352,11 @@ fn check_data_struct_func(extended_checker: &mut ExtendedChecker, module_env: &M
                 let type_arguments = &view.signature_at(*type_parameters).0;
 
                 let data_struct_func_types = {
-                    unsafe {
-                        GLOBAL_DATA_STRUCT_FUNC
-                            .read()
-                            .unwrap()
-                            .get(full_path_func_name.as_str())
-                            .map(|list| list.clone())
-                    }
+                    GLOBAL_DATA_STRUCT_FUNC
+                        .read()
+                        .unwrap()
+                        .get(full_path_func_name.as_str())
+                        .map(|list| list.clone())
                 };
 
                 if let Some(data_struct_func_indicies) = data_struct_func_types {
@@ -1431,7 +1421,7 @@ fn check_func_data_struct(
             //    return (true, "".to_string());
             //}
 
-            let data_struct_opt = unsafe {
+            let data_struct_opt = {
                 let data = GLOBAL_DATA_STRUCT.read().unwrap();
                 data.get(full_struct_name.as_str()).map(|_| true)
             };
