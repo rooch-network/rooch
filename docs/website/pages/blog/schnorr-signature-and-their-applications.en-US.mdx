@@ -18,9 +18,38 @@ Start from May, 2025, Schnorr signature is natively supported in Rooch Framework
 
 A [blog post](./release-231018.en-US.mdx) from the past tries to introduce a new implementation for validation of Schnorr signature in Move programming language. However, later in supporting of Bitcoin network, the signature support was removed.
 
+## Schnorr Signature In Rooch Network
+
+Schnorr signature has two mainstream types of signature scheme:
+
+- Single deterministic Schnorr's signature from a single secp256k1 keypair.
+- Single deterministic Schnorr's signature derived from multiple Schnorr's signature signed by multiple scep256k1 keypairs.
+
+While the second has advantages such as short signature size and improved privacy and efficiency from a verifer's perspective in certain use cases, e.g. multisignatures, the first is primarily used in Rooch Network.
+
+When verifying a message, Rooch Network uses the signer's X Only Public Key with the Schnorr signature in the Move smart contract. The signer's X Only Public Key could be retrieved from the Rooch Network account.
+
+## Use Cases Of Schnorr Signature
+
+Schnorr signature is used by numerous use cases.
+
+### In Bitcoin Transactions
+
+Since the Taproot update of [BIP-340](https://github.com/bitcoin/bips/blob/master/bip-0340.mediawiki), Schnorr signature is used in Bitcoin transactions.
+
+### In Ordinary Messages
+
+Schnorr signature is also used in signing ordinary messages with secp256k1 keypairs, such as signing an ID of a Nostr event.
+
+## Rooch SDK Support For Schnorr Signature
+
+[Rooch TypeScript SDK](../../../../sdk/typescript/rooch-sdk) is supported for signning and verifying Schnorr signature via @noble/curves/secp256k1 JavaScript library under the Pull Request #3560.
+
+Future support for other Rooch SDKs, i.e. Rooch Go SDK and native library, for Schnorr signature is on the way.
+
 ## A Nostr Example Written In Move Programming Language
 
-Schnorr signature is an elliptic signature over the secp256k1 curve with SHA256 hash function which holdes the same proporties as with ECDSA signature. Schnorr signature has been firstly seen in [BIP-340](https://github.com/bitcoin/bips/blob/master/bip-0340.mediawiki) and is widely implemented in Bitcoin and their applications, such as Nostr (Notes and Other Stuff Transmitted by Relays).
+Schnorr signature is an elliptic signature over the secp256k1 curve with SHA256 hash function which holdes the same proporties as with ECDSA signature. Schnorr signature has been firstly seen in BIP-340 and is widely implemented in Bitcoin and their applications, such as Nostr (Notes and Other Stuff Transmitted by Relays).
 
 ### History
 

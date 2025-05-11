@@ -18,9 +18,38 @@ import PostHeader from "/components/blog/postHeader";
 
 从前的一篇[博文](./release-231018.zh-CN.mdx)尝试导入用 Move 编程语言构造的新的 Schnorr 签名的验证方案。但是，后来为了适应比特币网络，这份签名方案被弃用。
 
+## Rooch Network 中的 Schnorr 签名
+
+Schnorr 签名拥有两个主要类型的签名方案：
+
+- 来自单个 scep256k1 密钥对的单个决定性的 Schnorr 的签名。
+- 由多个 scep256k1 密钥对签署的多个 Schnorr 的签名衍生的单个决定性的 Schnorr 的签名。
+
+虽然第二种签名方案在特定使用场景下，如多签，具有诸如签名大小短和在验证者的视角下提升的隐私性和高效性，第一种签名方案主要用于 Rooch Network。
+
+在验证一份消息时，Rooch Network 在 Move 智能合约里使用签名者的 X Only 公钥以及 Schnorr 签名。签名者的 X Only 公钥可以从 Rooch Network 账户中得到。
+
+## Schnorr 签名的使用场景
+
+Schnorr 签名被多种使用场景应用。
+
+### 在比特币交易中
+
+自从 [BIP-340](https://github.com/bitcoin/bips/blob/master/bip-0340.mediawiki) 的 Taproot 更新，Schnorr 签名被使用在比特币的交易里。
+
+### 在普通的消息中
+
+Schnorr 签名也被用于利用 secp256k1 密钥对签署普通消息，例如签署一条 Nostr 事件里的一个 ID。
+
+## Rooch SDK 对于 Schnorr 签名的支持
+
+在 PR #3560 下，[Rooch TypeScript SDK](../../../../sdk/typescript/rooch-sdk) 经由 @noble/curves/secp256k1 JS 库已支持对于 Schnorr 签名的签署和验证。
+
+未来会对其他 Rooch SDK，例如 Rooch Go SDK 和原生库进行 Schnorr 签名的支持。
+
 ## 一个由 Move 编程语言撰写的 Nostr 实例
 
-Schnorr 签名和 ECDSA 一样，是一个从 secp256k1 曲线和 SHA256 哈希函数构造的椭圆签名。Schnorr 签名初次出现于 [BIP-340](https://github.com/bitcoin/bips/blob/master/bip-0340.mediawiki) 内，并在比特币和其应用中广泛使用，例如 Nostr（Notes and Other Stuff Transmitted by Relays）。
+Schnorr 签名和 ECDSA 一样，是一个从 secp256k1 曲线和 SHA256 哈希函数构造的椭圆签名。Schnorr 签名初次出现于 BIP-340 内，并在比特币和其应用中广泛使用，例如 Nostr（Notes and Other Stuff Transmitted by Relays）。
 
 ### 历史
 
