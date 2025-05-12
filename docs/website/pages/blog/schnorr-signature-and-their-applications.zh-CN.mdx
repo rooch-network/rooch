@@ -1,0 +1,70 @@
+---
+title: Schnorr 签名和其应用
+description: "从 2025 年 5 月起，Rooch Framework 已原生支持 Schnorr 签名。从新一版本 Rooch Framework 开始，Schnorr 签名和其应用的例子已能够使用。"
+author: ghpZ54K8ZRwU62zGVSePPs97yAv9swuAY0mVDR4
+category: Developer
+date: 2025/05/07
+---
+
+import PostHeader from "/components/blog/postHeader";
+
+<PostHeader />
+
+# Schnorr 签名和其应用
+
+从 2025 年 5 月起，Rooch Framework 已原生支持 Schnorr 签名。从新一版本 Rooch Framework 开始，Schnorr 签名和其应用的例子已能够使用。
+
+## Rooch Network 中的 Schnorr 签名
+
+Schnorr 签名拥有两个主要类型的签名方案：
+
+- 来自单个 scep256k1 密钥对的单个决定性的 Schnorr 的签名。
+- 由多个 scep256k1 密钥对签署的多个 Schnorr 的签名衍生的单个决定性的 Schnorr 的签名。
+
+虽然第二种签名方案在特定使用场景下，如多签，具有诸如签名大小短和在验证者的视角下提升的隐私性和高效性，第一种签名方案主要用于 Rooch Network。
+
+在验证一份消息时，Rooch Network 在 Move 智能合约里使用签名者的 X Only 公钥以及 Schnorr 签名。签名者的 X Only 公钥可以从 Rooch Network 账户中得到。
+
+## Schnorr 签名的使用场景
+
+Schnorr 签名被多种使用场景应用。
+
+### 在比特币交易中
+
+自从 [BIP-340](https://github.com/bitcoin/bips/blob/master/bip-0340.mediawiki) 的 Taproot 更新，Schnorr 签名被使用在比特币的交易里。
+
+### 在普通的消息中
+
+Schnorr 签名也被用于利用 secp256k1 密钥对签署普通消息，例如签署一条 Nostr 事件里的一个 ID。
+
+## Rooch SDK 对于 Schnorr 签名的支持
+
+在 PR [#3560](https://github.com/rooch-network/rooch/pull/3560) 下，[Rooch TypeScript SDK](https://github.com/rooch-network/rooch/tree/9dddf60639ef37e4f33097f1203cc21e0c86b0ef/sdk/typescript/rooch-sdk) 经由 @noble/curves/secp256k1 JS 库已支持对于 Schnorr 签名的签署和验证。
+
+未来会对其他 Rooch SDK，例如 Rooch Go SDK 和原生库进行 Schnorr 签名的支持。
+
+## 一个由 Move 编程语言撰写的 Nostr 实例
+
+Schnorr 签名和 ECDSA 一样，是一个从 secp256k1 曲线和 SHA256 哈希函数构造的椭圆签名。Schnorr 签名初次出现于 BIP-340 内，并在比特币和其应用中广泛使用，例如 Nostr（Notes and Other Stuff Transmitted by Relays）。
+
+### 历史
+
+[作者](https://github.com/ghpZ54K8ZRwU62zGVSePPs97yAv9swuAY0mVDR4)由从前的一篇[博文](./release-230717.zh-CN.mdx)内的 Web3 博文和论坛的应用启发而导入由 Move 编程语言撰写的 Nostr 实例。多年后，经由 [NIP-01](https://github.com/nostr-protocol/nips/blob/master/01.md) 标准而实现。
+
+### 链上存储对比链下存储
+
+传统 Nostr 事件惯于采用传统存储，如 SQLite，PostgreSQL，或内存数据库。对比传统链下解决方案，使用 Move 智能合约作为数据存储方案的一个优点是可持续的存储性。在这个例子里，Nostr 事件被存储和验证于链上，这代表着经由创作者所拥有的事件的不可篡改的，安全和持久的特性。
+
+### Nostr 例子的方案
+
+作者可以经由 Nostr 客户端在线上发布内容到 Nostr 中继，然后在同样的 Nostr 事件的 JSON 格式下拷贝，并存储它于由作者在 Rooch 网络中发布的 Move 智能合约内。
+
+或者作者也可以从 Move 智能合约里获取 JSON 格式的 Nostr 事件并把该事件发布到 Nostr 中继处，无论该事件是否原生创建于 Move 智能合约内，或者它是来自于其他 Nostr 中继并被存储于 Move 智能合约内。
+
+### 尝试一下
+
+阅读这份由 Move 编程语言撰写的 Nostr 实例的[教程](https://github.com/rooch-network/rooch/blob/058106578825d2e5122136531f017af04b112b43/examples/nostr/README.md)，并尝试它。
+
+## 许可协议
+
+这篇博文由 [CC BY-ND 4.0](https://creativecommons.org/licenses/by-nd/4.0/legalcode.txt) 署名—禁止演绎 4.0 协议国际版下许可。

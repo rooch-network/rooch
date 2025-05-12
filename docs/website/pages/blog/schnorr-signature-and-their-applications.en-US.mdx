@@ -1,0 +1,70 @@
+---
+title: Schnorr Signature And Their Applications
+description: "Start from May, 2025, Schnorr signature is natively supported in Rooch Framework. An example introducing Schnorr signature and their applications was crafted thereafter upon the release of the new Rooch Framework."
+author: ghpZ54K8ZRwU62zGVSePPs97yAv9swuAY0mVDR4
+category: Developer
+date: 2025/05/07
+---
+
+import PostHeader from "/components/blog/postHeader";
+
+<PostHeader />
+
+# Schnorr Signature And Their Applications
+
+Start from May, 2025, Schnorr signature is natively supported in Rooch Framework. An example introducing Schnorr signature and their applications was crafted thereafter upon the release of the new Rooch Framework.
+
+## Schnorr Signature In Rooch Network
+
+Schnorr signature has two mainstream types of signature scheme:
+
+- Single deterministic Schnorr's signature from a single secp256k1 keypair.
+- Single deterministic Schnorr's signature derived from multiple Schnorr's signature signed by multiple scep256k1 keypairs.
+
+While the second has advantages such as short signature size and improved privacy and efficiency from a verifer's perspective in certain use cases, e.g. multisignatures, the first is primarily used in Rooch Network.
+
+When verifying a message, Rooch Network uses the signer's X Only Public Key with the Schnorr signature in the Move smart contract. The signer's X Only Public Key could be retrieved from the Rooch Network account.
+
+## Use Cases Of Schnorr Signature
+
+Schnorr signature is used by numerous use cases.
+
+### In Bitcoin Transactions
+
+Since the Taproot update of [BIP-340](https://github.com/bitcoin/bips/blob/master/bip-0340.mediawiki), Schnorr signature is used in Bitcoin transactions.
+
+### In Ordinary Messages
+
+Schnorr signature is also used in signing ordinary messages with secp256k1 keypairs, such as signing an ID of a Nostr event.
+
+## Rooch SDK Support For Schnorr Signature
+
+[Rooch TypeScript SDK](https://github.com/rooch-network/rooch/tree/9dddf60639ef37e4f33097f1203cc21e0c86b0ef/sdk/typescript/rooch-sdk) is supported for signning and verifying Schnorr signature via @noble/curves/secp256k1 JavaScript library under the Pull Request [#3560](https://github.com/rooch-network/rooch/pull/3560).
+
+Future support for other Rooch SDKs, i.e. Rooch Go SDK and native library, for Schnorr signature is on the way.
+
+## A Nostr Example Written In Move Programming Language
+
+Schnorr signature is an elliptic signature over the secp256k1 curve with SHA256 hash function which holdes the same proporties as with ECDSA signature. Schnorr signature has been firstly seen in BIP-340 and is widely implemented in Bitcoin and their applications, such as Nostr (Notes and Other Stuff Transmitted by Relays).
+
+### History
+
+From a past [blog post](./release-230717.en-US.mdx), a use case of Web3 blogs and forums inspired the [author](https://github.com/ghpZ54K8ZRwU62zGVSePPs97yAv9swuAY0mVDR4) to implement Nostr example in Move programming language. Years later, the implementation was done over the standard of [NIP-01](https://github.com/nostr-protocol/nips/blob/master/01.md).
+
+### On-Chain Storage Versus Off-Chain Storage
+
+Traditional Nostr events tend to use the traditional database, such as SQLite, PostgreSQL, or IMDb. One advantage of using the Move smart contract as data store is the persistant storage over the traditional off-chain solution. In this example, the Nostr event is stored and verified on-chain, meaning the uncorrupted, secured, and persistant nature that brought together with the ownership of the event by the creator.
+
+### Scenarios Of The Nostr Example
+
+An author may post a content online through the Nostr client to a Nostr relay, and copy, store it with same proporties in JSON of the Nostr event to the Move smart contract deployed by the author on Rooch Networks.
+
+Or the author may retrieve the Nostr event in JSON from the Move smart contract and post it to a Nostr relay, regradless of the event is created natively in Move smart contract or it is stored from another Nostr relay to the Move smart contract.
+
+### Try It Out
+
+Read the [tutorial](https://github.com/rooch-network/rooch/blob/058106578825d2e5122136531f017af04b112b43/examples/nostr/README.md) of the Nostr example written in Move programming language, and have a try.
+
+## License
+
+This blog post is licnsed under [CC BY-ND 4.0](https://creativecommons.org/licenses/by-nd/4.0/legalcode.txt) Attribution-NoDerivatives 4.0 International.
