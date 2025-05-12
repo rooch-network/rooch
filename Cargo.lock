@@ -6660,16 +6660,16 @@ dependencies = [
  "libc",
  "libz-sys",
  "lz4-sys",
- "tikv-jemalloc-sys",
  "zstd-sys",
 ]
 
 [[package]]
 name = "libsqlite3-sys"
-version = "0.28.0"
+version = "0.33.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0c10584274047cb335c23d3e61bcef8e323adae7c5c8c760540f73610177fc3f"
+checksum = "947e6816f7825b2b45027c2c32e7085da9934defa535de4a6a46b10a4d5257fa"
 dependencies = [
+ "cc",
  "pkg-config",
  "vcpkg",
 ]
@@ -10288,6 +10288,7 @@ dependencies = [
  "hex",
  "itertools 0.13.0",
  "lazy_static 1.5.0",
+ "libsqlite3-sys",
  "metrics",
  "mimalloc",
  "move-binary-format",
@@ -13053,8 +13054,7 @@ dependencies = [
 [[package]]
 name = "tikv-jemalloc-sys"
 version = "0.6.0+5.3.0-1-ge13ca993e8ccb9ba9847cc330696e02839f328f7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cd3c60906412afa9c2b5b5a48ca6a5abe5736aec9eb48ad05037a677e52e4e2d"
+source = "git+https://github.com/jamesatomc/jemallocator.git#ca48e1b2a424ea9bb3dd79e4b5b95ace90627e6a"
 dependencies = [
  "cc",
  "libc",
@@ -13063,8 +13063,7 @@ dependencies = [
 [[package]]
 name = "tikv-jemallocator"
 version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4cec5ff18518d81584f477e9bfdf957f5bb0979b0bac3af4ca30b5b3ae2d2865"
+source = "git+https://github.com/jamesatomc/jemallocator.git#ca48e1b2a424ea9bb3dd79e4b5b95ace90627e6a"
 dependencies = [
  "libc",
  "tikv-jemalloc-sys",
