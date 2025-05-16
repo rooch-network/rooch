@@ -374,7 +374,7 @@ dependencies = [
  "blake2",
  "derivative",
  "digest 0.10.7",
- "sha2 0.10.8",
+ "sha2 0.10.9",
 ]
 
 [[package]]
@@ -1203,7 +1203,7 @@ dependencies = [
  "pbkdf2 0.11.0",
  "rand_core 0.6.4",
  "ripemd",
- "sha2 0.10.8",
+ "sha2 0.10.9",
  "subtle",
  "zeroize",
 ]
@@ -1630,7 +1630,7 @@ version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bf88ba1141d185c399bee5288d850d63b8369520c1eafc32a0430b5b6c287bf4"
 dependencies = [
- "sha2 0.10.8",
+ "sha2 0.10.9",
  "tinyvec",
 ]
 
@@ -1868,7 +1868,7 @@ dependencies = [
  "ruint",
  "serde 1.0.219",
  "serde_repr",
- "sha2 0.10.8",
+ "sha2 0.10.9",
  "tendermint",
  "tendermint-proto",
  "thiserror",
@@ -2161,7 +2161,7 @@ dependencies = [
  "hmac",
  "k256 0.13.4",
  "serde 1.0.219",
- "sha2 0.10.8",
+ "sha2 0.10.9",
  "thiserror",
 ]
 
@@ -2177,7 +2177,7 @@ dependencies = [
  "once_cell",
  "pbkdf2 0.12.2",
  "rand 0.8.5",
- "sha2 0.10.8",
+ "sha2 0.10.9",
  "thiserror",
 ]
 
@@ -2196,7 +2196,7 @@ dependencies = [
  "ripemd",
  "serde 1.0.219",
  "serde_derive",
- "sha2 0.10.8",
+ "sha2 0.10.9",
  "sha3 0.10.8",
  "thiserror",
 ]
@@ -2402,7 +2402,7 @@ dependencies = [
  "p256",
  "rand_core 0.6.4",
  "rayon",
- "sha2 0.10.8",
+ "sha2 0.10.9",
  "thiserror",
 ]
 
@@ -2433,7 +2433,7 @@ dependencies = [
  "schemars",
  "serde 1.0.219",
  "serde-json-wasm",
- "sha2 0.10.8",
+ "sha2 0.10.9",
  "static_assertions",
  "thiserror",
 ]
@@ -2456,7 +2456,7 @@ dependencies = [
  "schemars",
  "serde 1.0.219",
  "serde_json",
- "sha2 0.10.8",
+ "sha2 0.10.9",
  "strum",
  "thiserror",
  "tracing",
@@ -3576,7 +3576,7 @@ dependencies = [
  "hashbrown 0.14.5",
  "hex",
  "rand_core 0.6.4",
- "sha2 0.10.8",
+ "sha2 0.10.9",
  "zeroize",
 ]
 
@@ -3792,7 +3792,7 @@ dependencies = [
  "scrypt 0.10.0",
  "serde 1.0.219",
  "serde_json",
- "sha2 0.10.8",
+ "sha2 0.10.9",
  "sha3 0.10.8",
  "thiserror",
  "uuid 0.8.2",
@@ -4119,7 +4119,7 @@ dependencies = [
  "eth-keystore",
  "ethers-core",
  "rand 0.8.5",
- "sha2 0.10.8",
+ "sha2 0.10.9",
  "thiserror",
  "tracing",
 ]
@@ -4328,7 +4328,7 @@ dependencies = [
  "serde 1.0.219",
  "serde_json",
  "serde_with 3.9.0",
- "sha2 0.10.8",
+ "sha2 0.10.9",
  "sha3 0.10.8",
  "signature 2.2.0",
  "static_assertions",
@@ -6429,7 +6429,7 @@ dependencies = [
  "cfg-if",
  "ecdsa 0.14.8",
  "elliptic-curve 0.12.3",
- "sha2 0.10.8",
+ "sha2 0.10.9",
  "sha3 0.10.8",
 ]
 
@@ -6443,7 +6443,7 @@ dependencies = [
  "ecdsa 0.16.9",
  "elliptic-curve 0.13.8",
  "once_cell",
- "sha2 0.10.8",
+ "sha2 0.10.9",
  "signature 2.2.0",
 ]
 
@@ -6639,7 +6639,7 @@ dependencies = [
  "hkdf",
  "multihash",
  "quick-protobuf",
- "sha2 0.10.8",
+ "sha2 0.10.9",
  "thiserror",
  "tracing",
 ]
@@ -8077,7 +8077,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e787133eafbd0f386dc4e26828a50f7595d6d7213ea0e8244c1ca6b9a9648c30"
 dependencies = [
  "bytes",
- "sha2 0.10.8",
+ "sha2 0.10.9",
 ]
 
 [[package]]
@@ -8516,7 +8516,7 @@ dependencies = [
  "ecdsa 0.16.9",
  "elliptic-curve 0.13.8",
  "primeorder",
- "sha2 0.10.8",
+ "sha2 0.10.9",
 ]
 
 [[package]]
@@ -8733,7 +8733,7 @@ dependencies = [
  "digest 0.10.7",
  "hmac",
  "password-hash 0.4.2",
- "sha2 0.10.8",
+ "sha2 0.10.9",
 ]
 
 [[package]]
@@ -8858,7 +8858,7 @@ checksum = "d7a240022f37c361ec1878d646fc5b7d7c4d28d5946e1a80ad5a7a4f4ca0bdcd"
 dependencies = [
  "once_cell",
  "pest",
- "sha2 0.10.8",
+ "sha2 0.10.9",
 ]
 
 [[package]]
@@ -9035,7 +9035,7 @@ dependencies = [
  "der 0.7.9",
  "pbkdf2 0.12.2",
  "scrypt 0.11.0",
- "sha2 0.10.8",
+ "sha2 0.10.9",
  "spki 0.7.3",
 ]
 
@@ -10007,7 +10007,7 @@ dependencies = [
  "serde 1.0.219",
  "serde_json",
  "sha1",
- "sha2 0.10.8",
+ "sha2 0.10.9",
 ]
 
 [[package]]
@@ -10123,7 +10123,7 @@ dependencies = [
  "revm-primitives",
  "ripemd",
  "secp256k1 0.29.0",
- "sha2 0.10.8",
+ "sha2 0.10.9",
  "substrate-bn",
 ]
 
@@ -11193,7 +11193,7 @@ dependencies = [
  "pkcs1 0.4.1",
  "pkcs8 0.9.0",
  "rand_core 0.6.4",
- "sha2 0.10.8",
+ "sha2 0.10.9",
  "signature 2.2.0",
  "subtle",
  "zeroize",
@@ -11213,7 +11213,7 @@ dependencies = [
  "pkcs1 0.7.5",
  "pkcs8 0.10.2",
  "rand_core 0.6.4",
- "sha2 0.10.8",
+ "sha2 0.10.9",
  "signature 2.2.0",
  "spki 0.7.3",
  "subtle",
@@ -11609,7 +11609,7 @@ dependencies = [
  "hmac",
  "pbkdf2 0.11.0",
  "salsa20",
- "sha2 0.10.8",
+ "sha2 0.10.9",
 ]
 
 [[package]]
@@ -11620,7 +11620,7 @@ checksum = "0516a385866c09368f0b5bcd1caff3366aace790fcd46e2bb032697bb172fd1f"
 dependencies = [
  "pbkdf2 0.12.2",
  "salsa20",
- "sha2 0.10.8",
+ "sha2 0.10.9",
 ]
 
 [[package]]
@@ -12168,9 +12168,9 @@ dependencies = [
 
 [[package]]
 name = "sha2"
-version = "0.10.8"
+version = "0.10.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "793db75ad2bcafc3ffa7c68b215fee268f537982cd901d132f89c6343f3a3dc8"
+checksum = "a7507d819769d01a365ab707794a4084392c824f54a7a6a7862f8c3d0892b283"
 dependencies = [
  "cfg-if",
  "cpufeatures",
@@ -12637,7 +12637,7 @@ dependencies = [
  "semver 1.0.23",
  "serde 1.0.219",
  "serde_json",
- "sha2 0.10.8",
+ "sha2 0.10.9",
  "thiserror",
  "url",
  "zip",
@@ -12887,7 +12887,7 @@ dependencies = [
  "serde_bytes",
  "serde_json",
  "serde_repr",
- "sha2 0.10.8",
+ "sha2 0.10.9",
  "signature 2.2.0",
  "subtle",
  "subtle-encoding",
@@ -12984,7 +12984,7 @@ dependencies = [
  "rand 0.8.5",
  "serde 1.0.219",
  "serde_json",
- "sha2 0.10.8",
+ "sha2 0.10.9",
 ]
 
 [[package]]
@@ -13008,7 +13008,7 @@ dependencies = [
  "rooch-rpc-server",
  "rooch-types",
  "serde_json",
- "sha2 0.10.8",
+ "sha2 0.10.9",
  "testcontainers",
  "tokio",
  "tracing",
@@ -13145,7 +13145,7 @@ dependencies = [
  "pbkdf2 0.12.2",
  "rand 0.8.5",
  "rustc-hash 1.1.0",
- "sha2 0.10.8",
+ "sha2 0.10.9",
  "thiserror",
  "unicode-normalization",
  "wasm-bindgen",
@@ -14396,7 +14396,7 @@ dependencies = [
  "indexmap 1.9.3",
  "more-asserts 0.2.2",
  "rkyv",
- "sha2 0.10.8",
+ "sha2 0.10.9",
  "target-lexicon",
  "thiserror",
  "webc",
@@ -14492,7 +14492,7 @@ dependencies = [
  "serde 1.0.219",
  "serde_cbor",
  "serde_json",
- "sha2 0.10.8",
+ "sha2 0.10.9",
  "shared-buffer",
  "tar",
  "tempfile",
