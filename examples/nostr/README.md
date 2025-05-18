@@ -67,18 +67,18 @@ When signing id of Nostr pre event with Schnorr signature, make sure the leading
 3. Create an event of Nostr using the previously generated signature
 
 > **Note:** to create an event of Nostr natively in Move, the following steps must be done.
-> 1. Import Nostr private key hex to Rooch account using `rooch account import` command:
+> 1. Import Nostr private key in hex to Rooch account using `rooch account import` command:
 > ```zsh
 > rooch account import -k <nostr_private_key> --json
 > ```
-> The Nostr private key hex could be retrieved from third party applications.
+> The Nostr private key in hex could be retrieved from third party applications.
 >
 > 2. Get the Nostr public key from `rooch account list` command:
 > ```zsh
 > rooch account list --json
 > ```
 >
-> 3. Switch to the Nostr public key returned by the second step:
+> 3. Switch to the Nostr public key returned by the second step using `rooch account switch` command:
 > ```zsh
 > rooch account switch -a <nostr_public_key> --json
 > ```
