@@ -1,10 +1,20 @@
-# Nostr Move Example
+# Nostr In Move
 
-A Nostr (Notes and Other Stuff Transmitted by Relays) example written in Move programming language for reference of on-chain persistant storage for Nostr.
+Nostr in Move, a Nostr referential implementation in Move programming language for reference of on-chain persistant storage of Nostr.
 
 ## Protocol Implementation
 
-The Nostr in Move example implements [NIP-01](https://github.com/nostr-protocol/nips/blob/master/01.md).
+Nostr in Move implements [NIP-01](https://github.com/nostr-protocol/nips/blob/master/01.md).
+
+## Usage
+
+Nostr in Move is a base smart contract written in Move programming language that depends on Rooch Framework's verification package for Schnorr signature. It is based on Rooch, but could be rebuild and reuse in other Move oriented blockchains.
+
+The base smart contract currently functions:
+
+- [Save Nostr event with verification](#save).
+- [Save Nostr event without verification](#save).
+- [Create Nostr event](#create).
 
 ## Build
 
@@ -20,68 +30,107 @@ rooch move publish ./build/nostr/package.rpd
 
 ## Run
 
-- Save a Nostr Event to Move store with verification of id and signature
+### Save
+
+Saves Nostr events into the Move smart contract.
+
+- Save a Nostr event to Move store with verification of id and signature
 ```zsh
 rooch move run --function <contract_address>::event::save_event_entry --args "string:<x_only_public_key>" --args "u64:<created_at>" --args "u16:<kind>" --args "vector<string>:<tags>" --args "string:<content>" --args "string:<signature>"
 ```
 Tags as command line arguments only accept **vector\<string\>**. For **vector\<vector\<string\>\>**, it should be supported in the future.
-- Save a Nostr Event to Move store without verification of id
+- Save a Nostr event to Move store without verification of id
 ```zsh
 rooch move run --function <contract_address>::event::save_event_plaintext_entry --args "string:<id>" --args "string:<x_only_public_key>" --args "u64:<created_at>" --args "u16:<kind>" --args "vector<string>:<tags>" --args "string:<content>" --args "string:<signature>"
 ```
-This could be met with the need of saving a draft of or unpublished Nostr Note. For example, save with varying content of Nostr Event in the Move store.
-- Create a Nostr Event natively in Move and store in Move's state
-1. Create a Pre Event of Nostr for signing
+This could be met with the need of saving a draft of or unpublished Nostr note. For example, save with varying content of Nostr event in the Move store.
+
+### Create
+
+Creates Nostr events in the Move smart contract and moves to the owner of the X Only public key as unpublished events.
+
+- Create a Nostr event natively in Move and store in Move's state
+1. Create a pre event of Nostr for signing
 ```zsh
 rooch move run --function <contract_address>::event::create_pre_event_entry --args "string:<x_only_public_key>" --args "u16:<kind>" --args "vector<string>:<tags>" --args "string:<content>"
 ```
-The Pre Event of Nostr is used with schnorr offline signing environment to generate a signature for a Nostr Event. To view the generated id of the Pre Event of Nostr used for signing, run the following command:
+The pre event of Nostr is used with offline signing environment for Schnorr signature to generate a signature for a Nostr event. To view the generated id of the pre event of Nostr used for signing, run the following command:
 ```zsh
 rooch object -i <pre_event_object_id>
 ```
-2. Sign the id of the Nostr Pre Event with schnorr signature
+2. Sign the id of the Nostr pre event with Schnorr signature
 
-This step could be done with Rooch TypeScript, Rust, Python or Go SDK, or with `rooch account sign` command.
+This step could be done with Rooch TypeScript, Rust, Python or Go SDK, or command-line interfaces that support signing sha256 hashed message with Schnorr signature.
 
-Firstly, import Nostr private key hex to Rooch account using `rooch account import` command:
-```zsh
-rooch account import -k <nostr_private_key> --json
-```
+When signing id of Nostr pre event with Schnorr signature, make sure the leading `0x` of the id is striped.
 
-Secondly, switch to the Rooch address returned by the first step:
-```zsh
-rooch account switch -a <rooch_address> --json
-```
+3. Create an event of Nostr using the previously generated signature
 
-Lastly, sign the Nostr Pre Event id with Rooch SDKs or using `rooch account sign`:
-```zsh
-rooch account sign -a <nostr_public_key> -m <id> --json
-```
-Here, **nostr_public_key** should start with `npub` and **id** should align with the id of the Pre Event of Nostr without the leading `0x`.
+> **Note:** to create an event of Nostr natively in Move, the following steps must be done.
+> 1. Import Nostr private key hex to Rooch account using `rooch account import` command:
+> ```zsh
+> rooch account import -k <nostr_private_key> --json
+> ```
+> The Nostr private key hex could be retrieved from third party applications.
+>
+> 2. Get the Nostr public key from `rooch account list` command:
+> ```zsh
+> rooch account list --json
+> ```
+>
+> 3. Switch to the Nostr public key returned by the second step:
+> ```zsh
+> rooch account switch -a <nostr_public_key> --json
+> ```
 
-3. Create an Event of Nostr using the previously generated signature
+Once switched to the Nostr public key on Rooch, run the following command to insert the signature into the pre event of Nostr and construct an event of Nostr:
+
 ```zsh
 rooch move run --function <contract_address>::event::create_event_entry --args "string:<signature>"
 ```
-The signer of the Pre Event of Nostr is required to generate an Event of Nostr under the same context.
 
-4. View the Nostr Event in Move's state
+The signer of the pre event of Nostr is also required to generate an event of Nostr under the same context to be shared with Nostr public key.
+
+4. View the Nostr event in Move's state
 ```zsh
 rooch object -i <event_object_id>
 ```
 
-## Communication with Nostr Relays
+## Interoperability
 
-- Publish a Nostr Event
+Since the X Only public key used in Nostr could be converted to Bitcoin address and Rooch address, there are plenty of scenarios to consider of.
 
-## Interoperation with Bitcoin and Rooch
+### Bitcoin
 
-Since the Nostr public key could be converted to Bitcoin address and Rooch address, there are plenty of scenarios to consider of.
+[NIP-47](https://github.com/nostr-protocol/nips/blob/master/47.md) defines a basic usage between the lightning wallet and the Nostr apps. Pull the Nostr event type of Bitcoin payments stored in the Move's state, and make use of it.
+
+### Rooch
+
+Rooch for Bitcoin payments could be used to persist Nostr event type of Bitcoin payments on-chain and provide necessary information to third party inquirers.
+
+## Extendability
+
+Developers may extend other NIP capabilities to this base smart contract in Move programming language.
+
+## Terms
+
+- Nostr: notes and other stuff transmitted by relays.
+- Move: a smart contract language from Diem.
+- Diem: the author of the Move programming language.
+- Rooch Framework: a Move library provided by Rooch.
+- Schnorr signature: a signature over secp256k1 elliptic curve.
+- X Only public key: a 32-byte hex strings without the leading `0x`.
+- Rooch: verifiable app container with Move language for Bitcoin ecosystem.
+- SDK: software development kit.
+- Nostr public key: a Nostr public key in bech32 starting from `npub`.
+- Bitcoin: a digital cash system and a decentralized digital currency.
+- NIP: Nostr implementation possibilities.
 
 ## Related Links
 
 - https://github.com/nostr-protocol/nips/blob/master/01.md
+- https://github.com/nostr-protocol/nips/blob/master/47.md
 
 ## License
 
-This example is licensed public domain and Apache-2.0 license inherited from the parent project.
+Nostr in Move is licensed Apache-2.0 license inherited from the parent project.
