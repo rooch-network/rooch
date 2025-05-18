@@ -113,6 +113,9 @@ rooch-oracle = { workspace = true }
 framework-release = { workspace = true }
 framework-builder = { workspace = true }
 
+# we need to use the same version of libsqlite3-sys as the one used in tikv-jemallocator
+libsqlite3-sys.workspace = true
+
 #We should keep the allocator in the last of the dependencies
 [target.'cfg(not(target_env = "msvc"))'.dependencies]
 tikv-jemallocator = { workspace = true }
