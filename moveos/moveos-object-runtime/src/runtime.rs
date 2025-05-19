@@ -87,6 +87,10 @@ impl<'r> ObjectRuntimeContext<'r> {
     pub fn feature_store(&self) -> Option<FeatureStore> {
         self.feature_store.clone()
     }
+
+    pub fn into_inner(self) -> Rc<RwLock<ObjectRuntime<'r>>> {
+        self.object_runtime
+    }
 }
 
 pub(crate) enum RuntimeObjectArg {
