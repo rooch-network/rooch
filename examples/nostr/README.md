@@ -1,6 +1,6 @@
 # Nostr In Move
 
-Nostr in Move, a Nostr referential implementation in Move programming language for reference of on-chain persistant storage of Nostr.
+Nostr in Move, a Nostr referential implementation in Move programming language for reference of on-chain persistent storage of Nostr.
 
 ## Protocol Implementation
 
@@ -8,7 +8,7 @@ Nostr in Move implements [NIP-01](https://github.com/nostr-protocol/nips/blob/ma
 
 ## Usage
 
-Nostr in Move is a base smart contract written in Move programming language that depends on Rooch Framework's verification package for Schnorr signature. It is based on Rooch, but could be rebuild and reuse in other Move oriented blockchains.
+Nostr in Move is a base smart contract written in Move programming language that depends on Rooch Framework's verification package for Schnorr signature. It is based on Rooch, but could be rebuilt and reused in other Move oriented blockchains.
 
 The base smart contract currently functions:
 
@@ -62,7 +62,7 @@ rooch object -i <pre_event_object_id>
 
 This step could be done with Rooch TypeScript, Rust, Python or Go SDK, or command-line interfaces that support signing sha256 hashed message with Schnorr signature.
 
-When signing id of Nostr pre event with Schnorr signature, make sure the leading `0x` of the id is striped.
+When signing id of Nostr pre event with Schnorr signature, make sure the leading `0x` of the id is stripped.
 
 3. Create an event of Nostr using the previously generated signature
 
