@@ -14,6 +14,7 @@ module rooch_framework::did {
     use moveos_std::tx_context::{Self, TxContext};
     use moveos_std::timestamp;
     use moveos_std::core_addresses;
+    use moveos_std::address;
 
     /// DID document does not exist (legacy or general not found)
     const ErrorDIDDocumentNotExist: u64 = 1;
@@ -115,7 +116,6 @@ module rooch_framework::did {
     /// Registry to store mappings. This is a Named Object.
     struct DIDRegistry has key {
         address_to_did: Table<address, DID>,
-        did_method_specific_id_to_object_id: Table<String, ObjectID>,
     }
 
     /// Returns the fixed ObjectID for the DIDRegistry.
@@ -132,7 +132,6 @@ module rooch_framework::did {
         
         let registry_data = DIDRegistry {
             address_to_did: table::new<address, DID>(),
-            did_method_specific_id_to_object_id: table::new<String, ObjectID>(),
         };
         // Named objects are created in the context of the sender, then transferred.
         let registry_object = object::new_named_object(registry_data);
@@ -151,36 +150,33 @@ module rooch_framework::did {
         object::borrow_mut(registry_mut_object_ref)
     }
 
-    /// Helper to get ObjectID of DIDDocument from its unique method-specific identifier string.
-    fun get_did_document_object_id_by_identifier(registry: &DIDRegistry, identifier_str: &String): Option<ObjectID> {
-        if (table::contains(&registry.did_method_specific_id_to_object_id, *identifier_str)) {
-            option::some(*table::borrow(&registry.did_method_specific_id_to_object_id, *identifier_str))
-        } else {
-            option::none()
-        }
+    /// Resolves the ObjectID of a DIDDocument deterministically using its identifier string as a seed.
+    fun resolve_did_object_id(did_identifier_str: &String): ObjectID {
+        object::custom_object_id<String, DIDDocument>(*did_identifier_str)
     }
 
     /// Create a new DID Object.
-    /// This involves creating an Object<DIDDocument>, a new associated Rooch account,
-    /// storing its AccountCap within the DIDDocument, and registering the DID identifier
-    /// to the ObjectID in the DIDRegistry.
+    /// The method is fixed to "rooch".
+    /// The identifier is derived from the newly created associated Rooch account address.
     public fun create_did_object(
         creator_account_signer: &signer,
-        did_method: String,
-        did_identifier: String,
         initial_controllers: vector<DID>,
         initial_vm_type: String,
         initial_vm_pk_multibase: String,
         initial_vm_fragment: String
     ): ObjectID {
         let registry = borrow_mut_did_registry();
-        assert!(!table::contains(&registry.did_method_specific_id_to_object_id, did_identifier), error::already_exists(ErrorDIDAlreadyExists));
         assert!(vector::length(&initial_controllers) > 0, error::invalid_argument(ErrorNoControllersSpecified));
 
         let new_account_cap = account::create_account_and_return_cap();
         let new_rooch_address = account::account_cap_address(&new_account_cap);
+        
+        let did_method_val = string::utf8(b"rooch");
+        let did_identifier = address::to_bech32_string(new_rooch_address);
+        assert!(!table::contains(&registry.address_to_did, new_rooch_address), error::already_exists(ErrorDIDAlreadyExists));
+        
         let did = DID {
-            method: did_method,
+            method: did_method_val,
             identifier: did_identifier,
         };
 
@@ -222,18 +218,15 @@ module rooch_framework::did {
             updated_timestamp: option::some(now),
         };
 
-        let did_object = object::new(did_document_data);
-        let object_id = object::id(&did_object);
+        let new_object_id = resolve_did_object_id(&did_identifier);
+        let did_object = object::new_with_id(new_object_id, did_document_data);
         object::transfer_extend(did_object, new_rooch_address);
-        table::add(&mut registry.did_method_specific_id_to_object_id, did_identifier, object_id);
         
-        object_id
+        new_object_id
     }
 
     public entry fun create_did_object_entry(
         creator_account_signer: &signer,
-        did_method: String,
-        did_identifier: String,
         initial_controller_did_methods: vector<String>,
         initial_controller_did_identifiers: vector<String>,
         initial_vm_type: String,
@@ -256,8 +249,6 @@ module rooch_framework::did {
 
         create_did_object(
             creator_account_signer,
-            did_method,
-            did_identifier,
             initial_controllers,
             initial_vm_type,
             initial_vm_pk_multibase,
@@ -272,11 +263,9 @@ module rooch_framework::did {
         public_key_multibase: String,
         duration_to_expiry_seconds: u64
     ) {
-        let registry = borrow_did_registry();
-        let object_id_opt = get_did_document_object_id_by_identifier(registry, &did_identifier_str);
-        assert!(option::is_some(&object_id_opt), error::not_found(ErrorDIDObjectNotFound));
-        let object_id = option::destroy_some(object_id_opt);
-
+        let object_id = resolve_did_object_id(&did_identifier_str);
+        assert!(object::exists_object_with_type<DIDDocument>(object_id), error::not_found(ErrorDIDObjectNotFound));
+        
         let did_doc_obj_ref_mut = object::borrow_mut_object_extend<DIDDocument>(object_id);
         let did_document_data = object::borrow_mut(did_doc_obj_ref_mut);
 
@@ -312,11 +301,9 @@ module rooch_framework::did {
         did_identifier_str: String,
         fragment: String
     ) {
-        let registry = borrow_did_registry();
-        let object_id_opt = get_did_document_object_id_by_identifier(registry, &did_identifier_str);
-        assert!(option::is_some(&object_id_opt), error::not_found(ErrorDIDObjectNotFound));
-        let object_id = option::destroy_some(object_id_opt);
-
+        let object_id = resolve_did_object_id(&did_identifier_str);
+        assert!(object::exists_object_with_type<DIDDocument>(object_id), error::not_found(ErrorDIDObjectNotFound));
+        
         let did_doc_obj_ref_mut = object::borrow_mut_object_extend<DIDDocument>(object_id);
         let did_document_data = object::borrow_mut(did_doc_obj_ref_mut);
 
@@ -348,11 +335,9 @@ module rooch_framework::did {
         fragment: String,
         relationship_type: u8
     ) {
-        let registry = borrow_did_registry();
-        let object_id_opt = get_did_document_object_id_by_identifier(registry, &did_identifier_str);
-        assert!(option::is_some(&object_id_opt), error::not_found(ErrorDIDObjectNotFound));
-        let object_id = option::destroy_some(object_id_opt);
-
+        let object_id = resolve_did_object_id(&did_identifier_str);
+        assert!(object::exists_object_with_type<DIDDocument>(object_id), error::not_found(ErrorDIDObjectNotFound));
+        
         let did_doc_obj_ref_mut = object::borrow_mut_object_extend<DIDDocument>(object_id);
         let did_document_data = object::borrow_mut(did_doc_obj_ref_mut);
 
@@ -386,10 +371,8 @@ module rooch_framework::did {
         fragment: String,
         relationship_type: u8
     ) {
-        let registry = borrow_did_registry();
-        let object_id_opt = get_did_document_object_id_by_identifier(registry, &did_identifier_str);
-        assert!(option::is_some(&object_id_opt), error::not_found(ErrorDIDObjectNotFound));
-        let object_id = option::destroy_some(object_id_opt);
+        let object_id = resolve_did_object_id(&did_identifier_str);
+        assert!(object::exists_object_with_type<DIDDocument>(object_id), error::not_found(ErrorDIDObjectNotFound));
 
         let did_doc_obj_ref_mut = object::borrow_mut_object_extend<DIDDocument>(object_id);
         let did_document_data = object::borrow_mut(did_doc_obj_ref_mut);
@@ -449,10 +432,8 @@ module rooch_framework::did {
         service_type: String,
         service_endpoint: String
     ) {
-        let registry = borrow_did_registry();
-        let object_id_opt = get_did_document_object_id_by_identifier(registry, &did_identifier_str);
-        assert!(option::is_some(&object_id_opt), error::not_found(ErrorDIDObjectNotFound));
-        let object_id = option::destroy_some(object_id_opt);
+        let object_id = resolve_did_object_id(&did_identifier_str);
+        assert!(object::exists_object_with_type<DIDDocument>(object_id), error::not_found(ErrorDIDObjectNotFound));
 
         let did_doc_obj_ref_mut = object::borrow_mut_object_extend<DIDDocument>(object_id);
         let did_document_data = object::borrow_mut(did_doc_obj_ref_mut);
@@ -482,10 +463,8 @@ module rooch_framework::did {
             i = i + 1;
         };
 
-        let registry = borrow_did_registry();
-        let object_id_opt = get_did_document_object_id_by_identifier(registry, &did_identifier_str);
-        assert!(option::is_some(&object_id_opt), error::not_found(ErrorDIDObjectNotFound));
-        let object_id = option::destroy_some(object_id_opt);
+        let object_id = resolve_did_object_id(&did_identifier_str);
+        assert!(object::exists_object_with_type<DIDDocument>(object_id), error::not_found(ErrorDIDObjectNotFound));
 
         let did_doc_obj_ref_mut = object::borrow_mut_object_extend<DIDDocument>(object_id);
         let did_document_data = object::borrow_mut(did_doc_obj_ref_mut);
@@ -513,10 +492,8 @@ module rooch_framework::did {
             i = i + 1;
         };
 
-        let registry = borrow_did_registry();
-        let object_id_opt = get_did_document_object_id_by_identifier(registry, &did_identifier_str);
-        assert!(option::is_some(&object_id_opt), error::not_found(ErrorDIDObjectNotFound));
-        let object_id = option::destroy_some(object_id_opt);
+        let object_id = resolve_did_object_id(&did_identifier_str);
+        assert!(object::exists_object_with_type<DIDDocument>(object_id), error::not_found(ErrorDIDObjectNotFound));
 
         let did_doc_obj_ref_mut = object::borrow_mut_object_extend<DIDDocument>(object_id);
         let did_document_data = object::borrow_mut(did_doc_obj_ref_mut);
@@ -545,11 +522,9 @@ module rooch_framework::did {
         did_identifier_str: String,
         fragment: String
     ) {
-        let registry = borrow_did_registry();
-        let object_id_opt = get_did_document_object_id_by_identifier(registry, &did_identifier_str);
-        assert!(option::is_some(&object_id_opt), error::not_found(ErrorDIDObjectNotFound));
-        let object_id = option::destroy_some(object_id_opt);
-
+        let object_id = resolve_did_object_id(&did_identifier_str);
+        assert!(object::exists_object_with_type<DIDDocument>(object_id), error::not_found(ErrorDIDObjectNotFound));
+        
         let did_doc_obj_ref_mut = object::borrow_mut_object_extend<DIDDocument>(object_id);
         let did_document_data = object::borrow_mut(did_doc_obj_ref_mut);
 
@@ -585,12 +560,8 @@ module rooch_framework::did {
     }
 
     public fun exists_did_document_by_identifier(identifier_str: String): bool {
-        let registry = borrow_did_registry();
-        let object_id_opt = get_did_document_object_id_by_identifier(registry, &identifier_str);
-        if (option::is_none(&object_id_opt)) {
-            return false
-        };
-        object::exists_object_with_type<DIDDocument>(option::destroy_some(object_id_opt))
+        let object_id = resolve_did_object_id(&identifier_str);
+        object::exists_object_with_type<DIDDocument>(object_id)
     }
 
     public fun exists_did_for_address(addr: address): bool {
