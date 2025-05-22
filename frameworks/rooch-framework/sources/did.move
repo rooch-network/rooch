@@ -15,7 +15,7 @@ module rooch_framework::did {
     use moveos_std::timestamp;
     use moveos_std::core_addresses;
     use moveos_std::address;
-    use rooch_framework::multibase;
+    use moveos_std::multibase;
 
     /// DID document does not exist (legacy or general not found)
     const ErrorDIDDocumentNotExist: u64 = 1;

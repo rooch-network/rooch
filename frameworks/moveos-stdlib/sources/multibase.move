@@ -1,7 +1,50 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-module rooch_framework::multibase {
+/// Defines the `multibase` module, a protocol for self-identifying base encodings
+/// for binary data expressed in text formats. This module allows disambiguation
+/// of the encoding (e.g., base16, base58btc, base64pad) directly from the
+/// encoded string itself by prepending a unique prefix character.
+///
+/// ## Overview
+///
+/// When binary data is encoded into text, various base encodings can be used.
+/// Multibase prepends a single character code to the base-encoded data,
+/// indicating which encoding was used. This allows data to be self-describing
+/// as it travels beyond its original context.
+///
+/// The format is: `<base-encoding-code-point><base-encoded-data>`
+///
+/// ## Supported Encodings
+///
+/// This module currently supports the following encodings, along with their
+/// respective multibase prefixes and standard names:
+///
+/// *   **Base16 (Hexadecimal)**:
+///     *   Prefix: `'f'` (ASCII: 102)
+///     *   Name: `"base16"` (alias: `"hex"`)
+///     *   Standard: RFC4648 (lowercase output)
+/// *   **Base58 Bitcoin (base58btc)**:
+///     *   Prefix: `'z'` (ASCII: 122)
+///     *   Name: `"base58btc"`
+///     *   Standard: Used in Bitcoin, common for cryptographic keys.
+/// *   **Base64 with Padding (base64pad)**:
+///     *   Prefix: `'M'` (ASCII: 77)
+///     *   Name: `"base64pad"`
+///     *   Standard: RFC4648 with padding characters (`=`).
+///
+/// The module is designed to be extensible for other encodings in the future.
+///
+/// ## Error Handling
+///
+/// Functions that can fail (e.g., `decode`, `encode` with an unsupported encoding)
+/// return an `Option` type. Specific error codes are defined for internal assertions
+/// and can be used in tests (e.g., `ErrorInvalidMultibasePrefix`, `ErrorInvalidEd25519KeyLength`).
+/// Test assertions use `ETestAssertionFailed` plus an offset for unique error codes.
+///
+/// For more details on the Multibase standard, see: [https://github.com/multiformats/multibase](https://github.com/multiformats/multibase)
+
+module moveos_std::multibase {
     use std::string::{Self, String, utf8};
     use std::vector;
     use std::option::{Self, Option, some, none};
