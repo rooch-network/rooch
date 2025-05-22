@@ -106,11 +106,10 @@ module rooch_framework::did {
         capability_delegation: vector<String>,
         key_agreement: vector<String>,
         services: SimpleMap<String, Service>,
-        associated_rooch_address: Option<address>,
-        account_cap: Option<AccountCap>,
-        also_known_as: Option<vector<String>>,
-        created_timestamp: Option<u64>,
-        updated_timestamp: Option<u64>,
+        account_cap: AccountCap,
+        also_known_as: vector<String>,
+        created_timestamp: u64,
+        updated_timestamp: u64,
     }
 
     /// Registry to store mappings. This is a Named Object.
@@ -211,11 +210,10 @@ module rooch_framework::did {
             capability_delegation: auth_rels_fragment,
             key_agreement: vector::empty<String>(),
             services: simple_map::new<String, Service>(),
-            associated_rooch_address: option::some(new_rooch_address),
-            account_cap: option::some(new_account_cap),
-            also_known_as: option::none(),
-            created_timestamp: option::some(now),
-            updated_timestamp: option::some(now),
+            account_cap: new_account_cap,
+            also_known_as: vector::empty<String>(),
+            created_timestamp: now,
+            updated_timestamp: now,
         };
 
         let new_object_id = resolve_did_object_id(&did_identifier);
@@ -294,7 +292,7 @@ module rooch_framework::did {
         };
 
         simple_map::add(&mut did_document_data.verification_methods, fragment, verification_method);
-        did_document_data.updated_timestamp = option::some(timestamp::now_seconds());
+        did_document_data.updated_timestamp = timestamp::now_seconds();
     }
 
     public entry fun remove_verification_method_entry(
@@ -319,7 +317,7 @@ module rooch_framework::did {
         remove_from_verification_relationship_internal(&mut did_document_data.key_agreement, &fragment);
 
         simple_map::remove(&mut did_document_data.verification_methods, &fragment);
-        did_document_data.updated_timestamp = option::some(timestamp::now_seconds());
+        did_document_data.updated_timestamp = timestamp::now_seconds();
     }
 
     fun remove_from_verification_relationship_internal(
@@ -362,7 +360,7 @@ module rooch_framework::did {
 
         if (!vector::contains(target_relationship_vec_mut, &fragment)) {
             vector::push_back(target_relationship_vec_mut, fragment);
-            did_document_data.updated_timestamp = option::some(timestamp::now_seconds());
+            did_document_data.updated_timestamp = timestamp::now_seconds();
         }
     }
 
@@ -396,7 +394,7 @@ module rooch_framework::did {
         let original_len = vector::length(target_relationship_vec_mut);
         remove_from_verification_relationship_internal(target_relationship_vec_mut, &fragment);
         if (vector::length(target_relationship_vec_mut) < original_len) {
-            did_document_data.updated_timestamp = option::some(timestamp::now_seconds());
+            did_document_data.updated_timestamp = timestamp::now_seconds();
         }
     }
 
@@ -423,7 +421,7 @@ module rooch_framework::did {
         };
 
         simple_map::add(&mut did_document_data.services, fragment, service);
-        did_document_data.updated_timestamp = option::some(timestamp::now_seconds());
+        did_document_data.updated_timestamp = timestamp::now_seconds();
     }
 
     public entry fun add_service_entry(
@@ -515,7 +513,7 @@ module rooch_framework::did {
         };
 
         let (_,_old_service) = simple_map::upsert(&mut did_document_data.services, fragment, updated_service);
-        did_document_data.updated_timestamp = option::some(timestamp::now_seconds());
+        did_document_data.updated_timestamp = timestamp::now_seconds();
     }
 
     public entry fun remove_service_entry(
@@ -534,7 +532,7 @@ module rooch_framework::did {
             error::not_found(ErrorServiceNotFound));
 
         simple_map::remove(&mut did_document_data.services, &fragment);
-        did_document_data.updated_timestamp = option::some(timestamp::now_seconds());
+        did_document_data.updated_timestamp = timestamp::now_seconds();
     }
 
     public entry fun add_session_key_entry(
