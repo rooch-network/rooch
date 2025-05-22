@@ -29,7 +29,6 @@ module nostr::event {
     const ErrorPreEventNotExist: u64 = 1006;
 
     #[data_struct]
-    /// TODO: merge PreEvent with Event to save storage cost.
     /// PreEvent
     struct PreEvent has key, copy, drop {
         id: vector<u8>, // 32-bytes lowercase hex-encoded sha256 of the serialized event data
