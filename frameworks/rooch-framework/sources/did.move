@@ -15,6 +15,7 @@ module rooch_framework::did {
     use moveos_std::timestamp;
     use moveos_std::core_addresses;
     use moveos_std::address;
+    use rooch_framework::multibase;
 
     /// DID document does not exist (legacy or general not found)
     const ErrorDIDDocumentNotExist: u64 = 1;
@@ -52,6 +53,12 @@ module rooch_framework::did {
     const ErrorInvalidArgument: u64 = 17;
     /// No controllers specified during DID creation or update
     const ErrorNoControllersSpecified: u64 = 18;
+    /// Verification method type is not supported for Rooch session key linkage (e.g., not Ed25519)
+    const ErrorUnsupportedAuthKeyTypeForSessionKey: u64 = 19;
+    /// The format of the publicKeyMultibase string is invalid or cannot be parsed
+    const ErrorInvalidPublicKeyMultibaseFormat: u64 = 20;
+    /// Failed to register key with the Rooch session key module
+    const ErrorSessionKeyRegistrationFailed: u64 = 21;
 
     // Verification relationship types
     const VERIFICATION_RELATIONSHIP_AUTHENTICATION: u8 = 0;
@@ -208,7 +215,7 @@ module rooch_framework::did {
             assertion_method: auth_rels_fragment,
             capability_invocation: auth_rels_fragment,
             capability_delegation: auth_rels_fragment,
-            key_agreement: vector::empty<String>(),
+            key_agreement: auth_rels_fragment,
             services: simple_map::new<String, Service>(),
             account_cap: new_account_cap,
             also_known_as: vector::empty<String>(),
@@ -345,6 +352,13 @@ module rooch_framework::did {
             error::not_found(ErrorVerificationMethodNotFound));
 
         let target_relationship_vec_mut = if (relationship_type == VERIFICATION_RELATIONSHIP_AUTHENTICATION) {
+            // Specific logic for AUTHENTICATION: ensure key type is Ed25519 and register as Rooch session key
+            let vm = simple_map::borrow(&did_document_data.verification_methods, &fragment);
+            assert!(vm.type == string::utf8(b"Ed25519VerificationKey2020"), ErrorUnsupportedAuthKeyTypeForSessionKey);
+            
+            // Attempt to register/ensure this key as a Rooch session key for the associated account
+            internal_ensure_rooch_session_key(did_document_data, vm.type, vm.public_key_multibase, vm.expires);
+
             &mut did_document_data.authentication
         } else if (relationship_type == VERIFICATION_RELATIONSHIP_ASSERTION_METHOD) {
             &mut did_document_data.assertion_method
@@ -535,28 +549,6 @@ module rooch_framework::did {
         did_document_data.updated_timestamp = timestamp::now_seconds();
     }
 
-    public entry fun add_session_key_entry(
-        did_identifier_str: String,
-        fragment: String,
-        public_key_multibase: String,
-        max_inactive_interval_seconds: u64,
-        relationship_type: u8
-    ) {
-        add_verification_method_entry(
-            did_identifier_str,
-            fragment,
-            string::utf8(b"Ed25519VerificationKey2020"),
-            public_key_multibase,
-            max_inactive_interval_seconds
-        );
-
-        add_to_verification_relationship_entry(
-            did_identifier_str,
-            fragment,
-            relationship_type
-        );
-    }
-
     public fun exists_did_document_by_identifier(identifier_str: String): bool {
         let object_id = resolve_did_object_id(&identifier_str);
         object::exists_object_with_type<DIDDocument>(object_id)
@@ -659,5 +651,49 @@ module rooch_framework::did {
         // This placeholder DOES NOT provide any real security.
         // assert!(vector::length(controllers) > 0, error::permission_denied(ErrorControllerPermissionDenied));
         // Remove or replace the above assert with actual logic.
+    }
+
+    // New private helper function to register a VM as a Rooch session key
+    fun internal_ensure_rooch_session_key(
+        did_document_data: &mut DIDDocument,
+        vm_type: String,
+        vm_public_key_multibase: String,
+        vm_expires: Option<u64>
+    ) {
+        // This assertion is a safeguard as the caller should already check this.
+        assert!(vm_type == string::utf8(b"Ed25519VerificationKey2020"), ErrorUnsupportedAuthKeyTypeForSessionKey);
+
+        // 1. Parse publicKeyMultibase to get raw Ed25519 public key bytes.
+        let pk_bytes_opt = multibase::decode_ed25519_key(&vm_public_key_multibase);
+        assert!(option::is_some(&pk_bytes_opt), ErrorInvalidPublicKeyMultibaseFormat);
+        let _pk_bytes = option::destroy_some(pk_bytes_opt); // pk_bytes is now available
+
+        // 2. Get AccountCap and create signer for the associated Rooch account.
+        let _associated_account_signer = account::create_signer_with_account_cap(&mut did_document_data.account_cap);
+
+        // 3. Determine expiration for the session key.
+        let _session_key_expiration_timestamp_opt = vm_expires;
+
+        // 4. Call the Rooch session key module to register the key.
+        // THIS IS A PLACEHOLDER for the actual API call to `rooch_framework::session_key`.
+        // The exact function name, parameters (especially for scopes like "all access" or specific module/function calls),
+        // and return values need to be determined from the `session_key` module.
+        // For example, it might be:
+        // rooch_framework::session_key::register_ed25519_session_key(
+        //     &associated_account_signer,
+        //     pk_bytes,
+        //     string::utf8(b"did_auth_key"), // Example application name
+        //     option::none(), // Example: no specific app URL
+        //     vector::empty(), // Example: all scopes or specific scope needed
+        //     session_key_expiration_timestamp_opt
+        // );
+        // Using a simplified placeholder for now, assuming it returns a boolean for success:
+        // let registration_successful = rooch_framework::session_key::placeholder_register_did_auth_key(
+        //     &associated_account_signer,
+        //     pk_bytes,
+        //     session_key_expiration_timestamp_opt
+        // );
+        // assert!(registration_successful, ErrorSessionKeyRegistrationFailed);
+        // TODO: Re-enable and implement session key registration when session_key module is ready.
     }
 } 
