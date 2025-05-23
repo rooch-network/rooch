@@ -74,6 +74,9 @@ module rooch_framework::did {
     const VERIFICATION_RELATIONSHIP_CAPABILITY_DELEGATION: u8 = 3;
     const VERIFICATION_RELATIONSHIP_KEY_AGREEMENT: u8 = 4;
 
+    // Verification method types
+    const VERIFICATION_METHOD_TYPE_ED25519: vector<u8> = b"Ed25519VerificationKey2020";
+
     /// DID identifier type
     struct DID has store, copy, drop {
         method: String,     // DID method (e.g., "rooch")
@@ -172,7 +175,8 @@ module rooch_framework::did {
     /// The method is fixed to "rooch".
     /// The identifier is derived from the newly created associated Rooch account address.
     public fun create_did_object(
-        creator_account_signer: &signer,
+        // We keep the creator account signer for future use, but it is not used in this function
+        _creator_account_signer: &signer,
         initial_controllers: vector<DID>,
         initial_vm_type: String,
         initial_vm_pk_multibase: String,
@@ -211,28 +215,47 @@ module rooch_framework::did {
             public_key_multibase: initial_vm_pk_multibase,
         };
 
-        let verification_methods = simple_map::new<String, VerificationMethod>();
-        simple_map::add(&mut verification_methods, initial_vm_fragment_value, initial_vm);
-
-        let auth_rels_fragment = vector::singleton(initial_vm_fragment_value);
-        let cap_delegation_rels_fragment = vector::singleton(initial_vm_fragment_value);
-
         let now = timestamp::now_seconds();
 
+        // Create base DIDDocument structure
         let did_document_data = DIDDocument {
             id: did,
             controller: initial_controllers,
-            verification_methods,
-            authentication: auth_rels_fragment,
-            assertion_method: auth_rels_fragment,
-            capability_invocation: auth_rels_fragment,
-            capability_delegation: cap_delegation_rels_fragment,
+            verification_methods: simple_map::new<String, VerificationMethod>(),
+            authentication: vector::empty<String>(),
+            assertion_method: vector::empty<String>(),
+            capability_invocation: vector::empty<String>(),
+            capability_delegation: vector::empty<String>(),
             key_agreement: vector::empty<String>(),
             services: simple_map::new<String, Service>(),
             account_cap: new_account_cap,
             also_known_as: vector::empty<String>(),
             created_timestamp: now,
             updated_timestamp: now,
+        };
+
+        // Populate verification methods and relationships based on type
+        if (initial_vm_type == string::utf8(VERIFICATION_METHOD_TYPE_ED25519)) {
+            // For Ed25519: use specialized function that handles authentication and session key
+            add_ed25519_authentication_method(
+                &mut did_document_data,
+                initial_vm_fragment_value,
+                initial_vm_pk_multibase
+            );
+            
+            // Add to other relationships as needed
+            vector::push_back(&mut did_document_data.assertion_method, initial_vm_fragment_value);
+            vector::push_back(&mut did_document_data.capability_invocation, initial_vm_fragment_value);
+            vector::push_back(&mut did_document_data.capability_delegation, initial_vm_fragment_value);
+        } else {
+            // For non-Ed25519: use standard verification method creation
+            simple_map::add(&mut did_document_data.verification_methods, initial_vm_fragment_value, initial_vm);
+            
+            // Add to all default relationships
+            vector::push_back(&mut did_document_data.authentication, initial_vm_fragment_value);
+            vector::push_back(&mut did_document_data.assertion_method, initial_vm_fragment_value);
+            vector::push_back(&mut did_document_data.capability_invocation, initial_vm_fragment_value);
+            vector::push_back(&mut did_document_data.capability_delegation, initial_vm_fragment_value);
         };
 
         let did_object = object::new_with_id(new_object_id, did_document_data);
@@ -330,19 +353,19 @@ module rooch_framework::did {
 
         if (vector::contains(&did_document_data.authentication, &fragment)) {
             let vm_to_remove = simple_map::borrow(&did_document_data.verification_methods, &fragment);
-            
-            assert!(vm_to_remove.type == string::utf8(b"Ed25519VerificationKey2020"), ErrorUnsupportedAuthKeyTypeForSessionKey);
+            // If the verification method is an Ed25519 key, we need to remove the session key
+            if (vm_to_remove.type == string::utf8(VERIFICATION_METHOD_TYPE_ED25519)) {
+                let pk_bytes_opt = multibase::decode_ed25519_key(&vm_to_remove.public_key_multibase);
+                assert!(option::is_some(&pk_bytes_opt), ErrorInvalidPublicKeyMultibaseFormat);
+                let pk_bytes = option::destroy_some(pk_bytes_opt);
 
-            let pk_bytes_opt = multibase::decode_ed25519_key(&vm_to_remove.public_key_multibase);
-            assert!(option::is_some(&pk_bytes_opt), ErrorInvalidPublicKeyMultibaseFormat);
-            let pk_bytes = option::destroy_some(pk_bytes_opt);
+                // Use the public function from session_key module to derive the auth key
+                let auth_key_for_session = session_key::ed25519_public_key_to_authentication_key(&pk_bytes);
 
-            // Use the public function from session_key module to derive the auth key
-            let auth_key_for_session = session_key::ed25519_public_key_to_authentication_key(&pk_bytes);
-
-            let associated_account_signer = account::create_signer_with_account_cap(&mut did_document_data.account_cap);
-            
-            session_key::remove_session_key(&associated_account_signer, auth_key_for_session);
+                let associated_account_signer = account::create_signer_with_account_cap(&mut did_document_data.account_cap);
+                
+                session_key::remove_session_key(&associated_account_signer, auth_key_for_session);
+            };
         };
 
         remove_from_verification_relationship_internal(&mut did_document_data.authentication, &fragment);
@@ -380,11 +403,19 @@ module rooch_framework::did {
             error::not_found(ErrorVerificationMethodNotFound));
 
         let target_relationship_vec_mut = if (relationship_type == VERIFICATION_RELATIONSHIP_AUTHENTICATION) {
-            // Specific logic for AUTHENTICATION: ensure key type is Ed25519 and register as Rooch session key
-            let vm = simple_map::borrow(&did_document_data.verification_methods, &fragment);
-            assert!(vm.type == string::utf8(b"Ed25519VerificationKey2020"), ErrorUnsupportedAuthKeyTypeForSessionKey);
-            
-            internal_ensure_rooch_session_key(did_document_data, vm.id.fragment, vm.type, vm.public_key_multibase);
+            // Special handling for AUTHENTICATION: if this is an Ed25519 verification method,
+            // use the specialized function that also registers it as a rooch session key
+            let vm = *simple_map::borrow(&did_document_data.verification_methods, &fragment);
+            if (vm.type == string::utf8(VERIFICATION_METHOD_TYPE_ED25519)) {
+                add_ed25519_authentication_method(
+                    did_document_data,
+                    fragment,
+                    vm.public_key_multibase
+                );
+                // Return early since add_ed25519_authentication_method handles the relationship addition
+                did_document_data.updated_timestamp = timestamp::now_seconds();
+                return
+            };
 
             &mut did_document_data.authentication
         } else if (relationship_type == VERIFICATION_RELATIONSHIP_ASSERTION_METHOD) {
@@ -743,7 +774,7 @@ module rooch_framework::did {
         vm_type: String,
         vm_public_key_multibase: String,
     ) {
-        assert!(vm_type == string::utf8(b"Ed25519VerificationKey2020"), ErrorUnsupportedAuthKeyTypeForSessionKey);
+        assert!(vm_type == string::utf8(VERIFICATION_METHOD_TYPE_ED25519), ErrorUnsupportedAuthKeyTypeForSessionKey);
 
         let pk_bytes_opt = multibase::decode_ed25519_key(&vm_public_key_multibase);
         assert!(option::is_some(&pk_bytes_opt), ErrorInvalidPublicKeyMultibaseFormat);
@@ -836,5 +867,44 @@ module rooch_framework::did {
             assert!(controller_pk_bytes == initial_pk_bytes, error::invalid_argument(ErrorDIDKeyControllerPublicKeyMismatch));
         }
         // If did_key_controller_count is 0, no specific validation for did:key is needed here.
+    }
+
+    /// Add an Ed25519 verification method to the authentication relationship
+    /// and automatically register it as a rooch session key.
+    /// This function makes explicit the special property of Ed25519 authentication methods.
+    fun add_ed25519_authentication_method(
+        did_document_data: &mut DIDDocument,
+        fragment: String,
+        public_key_multibase: String
+    ) {
+        // 1. Add the verification method if it doesn't exist
+        if (!simple_map::contains_key(&did_document_data.verification_methods, &fragment)) {
+            let vm_id = VerificationMethodID {
+                did: did_document_data.id,
+                fragment: fragment,
+            };
+            
+            let vm = VerificationMethod {
+                id: vm_id,
+                type: string::utf8(VERIFICATION_METHOD_TYPE_ED25519),
+                controller: did_document_data.id,
+                public_key_multibase,
+            };
+            
+            simple_map::add(&mut did_document_data.verification_methods, fragment, vm);
+        };
+        
+        // 2. Add to authentication relationship if not already present
+        if (!vector::contains(&did_document_data.authentication, &fragment)) {
+            vector::push_back(&mut did_document_data.authentication, fragment);
+        };
+        
+        // 3. Register as rooch session key (special feature of Ed25519 authentication methods)
+        internal_ensure_rooch_session_key(
+            did_document_data,
+            fragment,
+            string::utf8(VERIFICATION_METHOD_TYPE_ED25519),
+            public_key_multibase
+        );
     }
 } 
