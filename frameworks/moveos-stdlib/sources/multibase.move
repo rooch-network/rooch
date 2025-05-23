@@ -70,6 +70,8 @@ module moveos_std::multibase {
 
     /// The length of Ed25519 public keys in bytes
     const ED25519_PUBLIC_KEY_LENGTH: u64 = 32;
+    /// The length of Secp256k1 compressed public keys in bytes
+    const SECP256K1_COMPRESSED_PUBLIC_KEY_LENGTH: u64 = 33;
 
     /// The prefix for Ed25519 public keys in base58btc encoding ('z' in ASCII)
     const BASE58BTC_PREFIX: u8 = 122;
@@ -178,6 +180,15 @@ module moveos_std::multibase {
         encode_base58btc(pubkey)
     }
 
+    /// Encodes a Secp256k1 compressed public key using base58btc with multibase prefix
+    /// 
+    /// @param pubkey - The raw Secp256k1 compressed public key bytes (33 bytes)
+    /// @return - A multibase encoded string with 'z' prefix
+    public fun encode_secp256k1_key(pubkey: &vector<u8>): String {
+        assert!(vector::length(pubkey) == SECP256K1_COMPRESSED_PUBLIC_KEY_LENGTH, ErrorInvalidEd25519KeyLength);
+        encode_base58btc(pubkey)
+    }
+
     /// Decodes a multibase-encoded string to its raw bytes
     /// 
     /// @param encoded_str - The multibase encoded string
@@ -252,6 +263,28 @@ module moveos_std::multibase {
             some(decoded_bytes)
         } else {
             // Decoded key has an invalid length for an Ed25519 public key
+            none()
+        }
+    }
+
+    /// Decodes a multibase-encoded Secp256k1 compressed public key
+    /// 
+    /// @param pk_mb_str - The multibase encoded Secp256k1 public key string
+    /// @return - Option containing the decoded public key bytes, or none if decoding fails
+    public fun decode_secp256k1_key(pk_mb_str: &String): Option<vector<u8>> {
+        let decoded_opt = decode(pk_mb_str);
+        
+        if (option::is_none(&decoded_opt)) {
+            return none()
+        };
+        
+        let decoded_bytes = option::extract(&mut decoded_opt);
+        
+        // Validate the length for Secp256k1 compressed keys
+        if (vector::length(&decoded_bytes) == SECP256K1_COMPRESSED_PUBLIC_KEY_LENGTH) {
+            some(decoded_bytes)
+        } else {
+            // Decoded key has an invalid length for a Secp256k1 public key
             none()
         }
     }

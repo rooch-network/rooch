@@ -36,8 +36,14 @@ module rooch_framework::session_key {
 
     // Signature scheme constant, similar to session_validator.move
     const SIGNATURE_SCHEME_ED25519: u8 = 0;
+    const SIGNATURE_SCHEME_SECP256K1: u8 = 1;
+    
     public fun signature_scheme_ed25519(): u8 {
         SIGNATURE_SCHEME_ED25519
+    }
+
+    public fun signature_scheme_secp256k1(): u8 {
+        SIGNATURE_SCHEME_SECP256K1
     }
 
     /// The session's scope
@@ -350,6 +356,14 @@ module rooch_framework::session_key {
     /// This is consistent with how session_validator derives it.
     public fun ed25519_public_key_to_authentication_key(public_key: &vector<u8>): vector<u8> {
         let bytes_for_hash = vector::singleton(SIGNATURE_SCHEME_ED25519);
+        vector::append(&mut bytes_for_hash, *public_key);
+        hash::blake2b256(&bytes_for_hash)
+    }
+
+    /// Derives the authentication key for a Secp256k1 public key.
+    /// This follows the same pattern as Ed25519 but with a different scheme identifier.
+    public fun secp256k1_public_key_to_authentication_key(public_key: &vector<u8>): vector<u8> {
+        let bytes_for_hash = vector::singleton(SIGNATURE_SCHEME_SECP256K1);
         vector::append(&mut bytes_for_hash, *public_key);
         hash::blake2b256(&bytes_for_hash)
     }
