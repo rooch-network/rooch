@@ -60,6 +60,8 @@ module rooch_framework::did {
     const ErrorInvalidPublicKeyMultibaseFormat: u64 = 20;
     /// Failed to register key with the Rooch session key module
     const ErrorSessionKeyRegistrationFailed: u64 = 21;
+    /// Invalid DID string format (should be "did:method:identifier")
+    const ErrorInvalidDIDStringFormat: u64 = 22;
 
     // Verification relationship types
     const VERIFICATION_RELATIONSHIP_AUTHENTICATION: u8 = 0;
@@ -238,23 +240,19 @@ module rooch_framework::did {
 
     public entry fun create_did_object_entry(
         creator_account_signer: &signer,
-        initial_controller_did_methods: vector<String>,
-        initial_controller_did_identifiers: vector<String>,
+        initial_controller_did_strings: vector<String>,
         initial_vm_type: String,
         initial_vm_pk_multibase: String,
         initial_vm_fragment: String
     ) {
-        assert!(vector::length(&initial_controller_did_methods) == vector::length(&initial_controller_did_identifiers),
-            error::invalid_argument(ErrorPropertyKeysValuesLengthMismatch));
-        assert!(vector::length(&initial_controller_did_methods) > 0, error::invalid_argument(ErrorNoControllersSpecified));
+        assert!(vector::length(&initial_controller_did_strings) > 0, error::invalid_argument(ErrorNoControllersSpecified));
 
         let initial_controllers = vector::empty<DID>();
         let i = 0;
-        while (i < vector::length(&initial_controller_did_methods)) {
-            vector::push_back(&mut initial_controllers, DID {
-                method: *vector::borrow(&initial_controller_did_methods, i),
-                identifier: *vector::borrow(&initial_controller_did_identifiers, i),
-            });
+        while (i < vector::length(&initial_controller_did_strings)) {
+            let did_string = vector::borrow(&initial_controller_did_strings, i);
+            let parsed_did = parse_did_string(did_string);
+            vector::push_back(&mut initial_controllers, parsed_did);
             i = i + 1;
         };
 
@@ -641,6 +639,47 @@ module rooch_framework::did {
     }
 
     public fun create_did_from_parts(method: String, identifier: String): DID {
+        DID {
+            method,
+            identifier,
+        }
+    }
+
+    /// Parse a DID string in the format "did:method:identifier" into a DID struct
+    public fun parse_did_string(did_string: &String): DID {
+        let colon_bytes = b":";
+        let did_bytes = string::bytes(did_string);
+        
+        // Find positions of colons
+        let colon_positions = vector::empty<u64>();
+        let i = 0;
+        while (i < vector::length(did_bytes)) {
+            if (*vector::borrow(did_bytes, i) == *vector::borrow(&colon_bytes, 0)) {
+                vector::push_back(&mut colon_positions, i);
+            };
+            i = i + 1;
+        };
+        
+        // Should have exactly 2 colons: "did:method:identifier"
+        assert!(vector::length(&colon_positions) >= 2, error::invalid_argument(ErrorInvalidDIDStringFormat));
+        
+        let first_colon_pos = *vector::borrow(&colon_positions, 0);
+        let second_colon_pos = *vector::borrow(&colon_positions, 1);
+        
+        // Extract "did" part (should be "did")
+        let did_part = string::sub_string(did_string, 0, first_colon_pos);
+        assert!(did_part == string::utf8(b"did"), error::invalid_argument(ErrorInvalidDIDStringFormat));
+        
+        // Extract method part
+        let method = string::sub_string(did_string, first_colon_pos + 1, second_colon_pos);
+        
+        // Extract identifier part (everything after second colon)
+        let identifier = string::sub_string(did_string, second_colon_pos + 1, string::length(did_string));
+        
+        // Validate that method and identifier are not empty
+        assert!(string::length(&method) > 0, error::invalid_argument(ErrorInvalidDIDStringFormat));
+        assert!(string::length(&identifier) > 0, error::invalid_argument(ErrorInvalidDIDStringFormat));
+        
         DID {
             method,
             identifier,
