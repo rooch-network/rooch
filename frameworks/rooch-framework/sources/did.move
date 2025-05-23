@@ -62,6 +62,10 @@ module rooch_framework::did {
     const ErrorSessionKeyRegistrationFailed: u64 = 21;
     /// Invalid DID string format (should be "did:method:identifier")
     const ErrorInvalidDIDStringFormat: u64 = 22;
+    /// For did:key controllers, the initial verification method public key must match the key in the DID identifier
+    const ErrorDIDKeyControllerPublicKeyMismatch: u64 = 23;
+    /// Multiple did:key controllers are not allowed during initial DID creation with a did:key controller
+    const ErrorMultipleDIDKeyControllersNotAllowed: u64 = 24;
 
     // Verification relationship types
     const VERIFICATION_RELATIONSHIP_AUTHENTICATION: u8 = 0;
@@ -176,6 +180,9 @@ module rooch_framework::did {
     ): ObjectID {
         let registry = borrow_mut_did_registry();
         assert!(vector::length(&initial_controllers) > 0, error::invalid_argument(ErrorNoControllersSpecified));
+
+        // Validate did:key controllers according to NIP-1
+        validate_did_key_controllers(&initial_controllers, &initial_vm_pk_multibase);
 
         let new_account_cap = account::create_account_and_return_cap();
         let new_rooch_address = account::account_cap_address(&new_account_cap);
@@ -775,5 +782,59 @@ module rooch_framework::did {
             scopes_for_sk,
             max_inactive_interval_for_sk
         );
+    }
+
+    /// Validates did:key controllers according to NIP-1 requirements.
+    /// If any controller is did:key, there must be exactly one such controller,
+    /// and its public key must match initial_vm_pk_multibase.
+    fun validate_did_key_controllers(
+        controllers: &vector<DID>,
+        initial_vm_pk_multibase: &String
+    ) {
+        let i = 0;
+        let did_key_controller_count = 0;
+        let did_key_controller_opt = option::none<DID>();
+
+        while (i < vector::length(controllers)) {
+            let controller = vector::borrow(controllers, i);
+            if (controller.method == string::utf8(b"key")) {
+                did_key_controller_count = did_key_controller_count + 1;
+                // Store the first (and should be only) did:key controller found
+                if (option::is_none(&did_key_controller_opt)) {
+                    did_key_controller_opt = option::some(*controller);
+                }
+            };
+            i = i + 1;
+        };
+
+        if (did_key_controller_count > 0) {
+            // If there's any did:key controller, there must be exactly one.
+            assert!(did_key_controller_count == 1, error::invalid_argument(ErrorMultipleDIDKeyControllersNotAllowed));
+            
+            assert!(option::is_some(&did_key_controller_opt), error::internal(0)); // Should be some if count is 1
+            let did_key_controller = option::destroy_some(did_key_controller_opt);
+            
+            // For did:key, the identifier should be the multibase-encoded public key
+            let identifier = &did_key_controller.identifier;
+            let identifier_bytes = string::bytes(identifier);
+            assert!(vector::length(identifier_bytes) > 0, error::invalid_argument(ErrorInvalidDIDStringFormat));
+            
+            let first_byte = *vector::borrow(identifier_bytes, 0);
+            assert!(first_byte == 122, error::invalid_argument(ErrorInvalidDIDStringFormat)); // 'z' for base58btc
+            
+            let controller_pk_multibase = *identifier;
+            
+            let controller_pk_opt = multibase::decode_ed25519_key(&controller_pk_multibase);
+            let initial_pk_opt = multibase::decode_ed25519_key(initial_vm_pk_multibase);
+            
+            assert!(option::is_some(&controller_pk_opt), error::invalid_argument(ErrorInvalidPublicKeyMultibaseFormat));
+            assert!(option::is_some(&initial_pk_opt), error::invalid_argument(ErrorInvalidPublicKeyMultibaseFormat));
+            
+            let controller_pk_bytes = option::destroy_some(controller_pk_opt);
+            let initial_pk_bytes = option::destroy_some(initial_pk_opt);
+            
+            assert!(controller_pk_bytes == initial_pk_bytes, error::invalid_argument(ErrorDIDKeyControllerPublicKeyMismatch));
+        }
+        // If did_key_controller_count is 0, no specific validation for did:key is needed here.
     }
 } 
