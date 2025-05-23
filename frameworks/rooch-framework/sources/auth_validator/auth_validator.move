@@ -187,4 +187,38 @@ module rooch_framework::auth_validator {
         let validate_result = get_validate_result_from_ctx();
         validate_result.bitcoin_address
     }
+
+    #[test_only]
+    /// Create a test TxValidateResult and set it in the context
+    public fun set_tx_validate_result_for_testing(
+        auth_validator_id: u64,
+        auth_validator: Option<AuthValidator>,
+        session_key: Option<vector<u8>>,
+        bitcoin_address: BitcoinAddress,
+    ) {
+        let result = new_tx_validate_result(auth_validator_id, auth_validator, session_key, bitcoin_address);
+        moveos_std::tx_context::set_attribute_for_testing(result);
+    }
+
+    #[test_only]
+    /// Create a simple TxValidateResult for basic testing (with default Bitcoin address)
+    public fun set_simple_tx_validate_result_for_testing(session_key: Option<vector<u8>>) {
+        let bitcoin_address = rooch_framework::bitcoin_address::random_address_for_testing();
+        let auth_validator = option::none<AuthValidator>();
+        set_tx_validate_result_for_testing(0, auth_validator, session_key, bitcoin_address);
+    }
+
+    #[test_only]
+    /// Create a TxValidateResult with a random Bitcoin address for testing
+    public fun set_random_tx_validate_result_for_testing(session_key: Option<vector<u8>>) {
+        let bitcoin_address = rooch_framework::bitcoin_address::random_address_for_testing();
+        let auth_validator = option::none<AuthValidator>();
+        set_tx_validate_result_for_testing(0, auth_validator, session_key, bitcoin_address);
+    }
+
+    #[test_only]
+    /// Create a test AuthValidator
+    public fun create_test_auth_validator(id: u64): AuthValidator {
+        new_auth_validator(id, @0x1, std::string::utf8(b"test_validator"))
+    }
 }

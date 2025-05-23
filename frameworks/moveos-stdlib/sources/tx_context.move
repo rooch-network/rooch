@@ -231,6 +231,13 @@ module moveos_std::tx_context {
     }
 
     #[test_only]
+    /// Set an attribute value in the context map for testing
+    public fun set_attribute_for_testing<T: drop + store + copy>(value: T) {
+        let ctx = borrow_mut();
+        add(ctx, value);
+    }
+
+    #[test_only]
     public fun fresh_address_for_testing(): address {
         fresh_address()
     }

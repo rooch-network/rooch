@@ -158,7 +158,7 @@ module rooch_framework::did {
             controller_to_dids: table::new<DID, vector<ObjectID>>(),
         };
 
-        let registry_object = object::new_with_id(registry_id, registry_data);
+        let registry_object = object::new_named_object(registry_data);
         object::transfer_extend(registry_object, @rooch_framework);
     }
 
@@ -219,17 +219,11 @@ module rooch_framework::did {
         let new_account_cap = account::create_account_and_return_cap();
         let new_rooch_address = account::account_cap_address(&new_account_cap);
         
-        let did_method_val = string::utf8(b"rooch");
-        let did_identifier_string = address::to_bech32_string(new_rooch_address);
+        let did = create_rooch_did_by_address(new_rooch_address);
         
-        let new_object_id = resolve_did_object_id(&did_identifier_string);
+        let new_object_id = resolve_did_object_id(&did.identifier); 
         assert!(!object::exists_object_with_type<DIDDocument>(new_object_id), error::already_exists(ErrorDIDAlreadyExists));
-        
-        let did = DID {
-            method: did_method_val,
-            identifier: did_identifier_string,
-        };
-
+                
         let now = timestamp::now_seconds();
 
         // Create base DIDDocument structure
@@ -322,7 +316,7 @@ module rooch_framework::did {
             vector::push_back(&mut did_document_data.capability_invocation, service_vm_frag);
         };
 
-        let did_object = object::new_with_id(new_object_id, did_document_data);
+        let did_object = object::new_with_id(did.identifier, did_document_data);
         object::transfer_extend(did_object, new_rooch_address);
         
         // Add the new DID to all its controllers' lists in the registry
@@ -347,7 +341,7 @@ module rooch_framework::did {
         creator_account_signer: &signer,        // User's own Rooch account signer
         account_public_key_multibase: String,   // User's account public key (Secp256k1)
     ) {
-        create_did_object_for_self_internal(
+        create_did_object_for_self(
             creator_account_signer,
             account_public_key_multibase
         );
@@ -355,20 +349,16 @@ module rooch_framework::did {
 
     /// Internal function for self DID creation.
     /// Validates that the provided public key matches the creator's account address.
-    fun create_did_object_for_self_internal(
+    public fun create_did_object_for_self(
         creator_account_signer: &signer,
         account_public_key_multibase: String,
-    ) {
+    ) : ObjectID {
         let creator_address = signer::address_of(creator_account_signer);
         
         // Validate that the provided public key corresponds to the creator's account
         verify_public_key_matches_account(creator_address, &account_public_key_multibase);
         
-        let creator_did_identifier = address::to_bech32_string(creator_address);
-        let creator_did = DID {
-            method: string::utf8(b"rooch"),
-            identifier: creator_did_identifier,
-        };
+        let creator_did = create_rooch_did_by_address(creator_address);
         
         let doc_controllers = vector[creator_did];
         
@@ -382,7 +372,7 @@ module rooch_framework::did {
             VERIFICATION_RELATIONSHIP_CAPABILITY_DELEGATION
         ];
 
-        let _ = create_did_object_internal(
+        let did_object_id = create_did_object_internal(
             creator_account_signer,
             doc_controllers,
             account_public_key_multibase,
@@ -394,6 +384,7 @@ module rooch_framework::did {
             option::none<String>(),
             option::none<String>()
         );
+        did_object_id
     }
 
     /// Verify that the provided public key corresponds to the given account address.
@@ -883,16 +874,7 @@ module rooch_framework::did {
         let did_identifier = address::to_bech32_string(addr);
         let object_id = resolve_did_object_id(&did_identifier);
         object::exists_object_with_type<DIDDocument>(object_id)
-    }
-
-    public fun get_did_for_address(addr: address): DID {
-        assert!(exists_did_for_address(addr), error::not_found(ErrorDIDDocumentNotExist));
-        let did_identifier = address::to_bech32_string(addr);
-        DID {
-            method: string::utf8(b"rooch"),
-            identifier: did_identifier,
-        }
-    }
+    } 
 
     /// Get all DID ObjectIDs controlled by a specific controller DID
     public fun get_dids_by_controller(controller_did: DID): vector<ObjectID> {
@@ -974,6 +956,14 @@ module rooch_framework::did {
         DID {
             method,
             identifier,
+        }
+    }
+
+    public fun create_rooch_did_by_address(addr: address): DID {
+        let did_identifier = address::to_bech32_string(addr);
+        DID {
+            method: string::utf8(b"rooch"),
+            identifier: did_identifier,
         }
     }
 
@@ -1324,4 +1314,238 @@ module rooch_framework::did {
             max_inactive_interval_for_sk
         );
     }
+
+    // =================== Document getters ===================
+
+    /// Get DIDDocument by address
+    public fun get_did_document(addr: address): &DIDDocument {
+        let did_identifier = address::to_bech32_string(addr);
+        let object_id = resolve_did_object_id(&did_identifier);
+        assert!(object::exists_object_with_type<DIDDocument>(object_id), error::not_found(ErrorDIDDocumentNotExist));
+        let did_doc_obj_ref = object::borrow_object<DIDDocument>(object_id);
+        object::borrow(did_doc_obj_ref)
+    }
+
+    /// Get DIDDocument by ObjectID
+    public fun get_did_document_by_object_id(object_id: ObjectID): &DIDDocument {
+        assert!(object::exists_object_with_type<DIDDocument>(object_id), error::not_found(ErrorDIDDocumentNotExist));
+        let did_doc_obj_ref = object::borrow_object<DIDDocument>(object_id);
+        object::borrow(did_doc_obj_ref)
+    }
+
+    /// Get DID identifier from DIDDocument
+    public fun get_did_identifier(did_doc: &DIDDocument): &DID {
+        &did_doc.id
+    }
+
+    /// Get controllers from DIDDocument
+    public fun get_controllers(did_doc: &DIDDocument): &vector<DID> {
+        &did_doc.controller
+    }
+
+    /// Get verification methods from DIDDocument
+    public fun get_verification_methods(did_doc: &DIDDocument): &SimpleMap<String, VerificationMethod> {
+        &did_doc.verification_methods
+    }
+
+    /// Get verification method by fragment
+    public fun get_verification_method(did_doc: &DIDDocument, fragment: &String): Option<VerificationMethod> {
+        if (simple_map::contains_key(&did_doc.verification_methods, fragment)) {
+            option::some(*simple_map::borrow(&did_doc.verification_methods, fragment))
+        } else {
+            option::none()
+        }
+    }
+
+    public fun get_verification_method_id(vm: &VerificationMethod): &VerificationMethodID {
+        &vm.id
+    }
+
+    public fun get_verification_method_type(vm: &VerificationMethod): &String {
+        &vm.type
+    }
+
+    public fun get_verification_method_controller(vm: &VerificationMethod): &DID {
+        &vm.controller
+    }
+
+    public fun get_verification_method_public_key_multibase(vm: &VerificationMethod): &String {
+        &vm.public_key_multibase
+    }
+
+    /// Get authentication methods from DIDDocument
+    public fun get_authentication_methods(did_doc: &DIDDocument): &vector<String> {
+        &did_doc.authentication
+    }
+
+    /// Get assertion methods from DIDDocument
+    public fun get_assertion_methods(did_doc: &DIDDocument): &vector<String> {
+        &did_doc.assertion_method
+    }
+
+    /// Get capability invocation methods from DIDDocument
+    public fun get_capability_invocation_methods(did_doc: &DIDDocument): &vector<String> {
+        &did_doc.capability_invocation
+    }
+
+    /// Get capability delegation methods from DIDDocument
+    public fun get_capability_delegation_methods(did_doc: &DIDDocument): &vector<String> {
+        &did_doc.capability_delegation
+    }
+
+    /// Get key agreement methods from DIDDocument
+    public fun get_key_agreement_methods(did_doc: &DIDDocument): &vector<String> {
+        &did_doc.key_agreement
+    }
+
+    /// Get services from DIDDocument
+    public fun get_services(did_doc: &DIDDocument): &SimpleMap<String, Service> {
+        &did_doc.services
+    }
+
+    /// Get service by fragment
+    public fun get_service(did_doc: &DIDDocument, fragment: &String): Option<Service> {
+        if (simple_map::contains_key(&did_doc.services, fragment)) {
+            option::some(*simple_map::borrow(&did_doc.services, fragment))
+        } else {
+            option::none()
+        }
+    }
+
+    public fun get_service_id(service: &Service): &ServiceID {
+        &service.id
+    }
+
+    public fun get_service_type(service: &Service): &String {
+        &service.type
+    }
+
+    public fun get_service_endpoint(service: &Service): &String {
+        &service.service_endpoint
+    }
+
+    public fun get_service_properties(service: &Service): &SimpleMap<String, String> {
+        &service.properties
+    }
+
+    /// Get also known as from DIDDocument
+    public fun get_also_known_as(did_doc: &DIDDocument): &vector<String> {
+        &did_doc.also_known_as
+    }
+
+    /// Get created timestamp from DIDDocument
+    public fun get_created_timestamp(did_doc: &DIDDocument): u64 {
+        did_doc.created_timestamp
+    }
+
+    /// Get updated timestamp from DIDDocument
+    public fun get_updated_timestamp(did_doc: &DIDDocument): u64 {
+        did_doc.updated_timestamp
+    }
+
+    public fun get_did_address(did_doc: &DIDDocument): address {
+        account::account_cap_address(&did_doc.account_cap)
+    }
+
+    // =================== Test-only functions ===================
+
+    #[test_only]
+    /// Test-only function to create DID for self without Bitcoin address verification
+    /// This bypasses the public key verification for testing purposes
+    public fun create_did_object_for_self_entry_test_only(
+        creator_account_signer: &signer,
+        account_public_key_multibase: String,
+    ) {
+        let creator_address = signer::address_of(creator_account_signer);
+        let creator_did = create_rooch_did_by_address(creator_address);
+        
+        let doc_controllers = vector[creator_did];
+        
+        // Primary verification method uses the account's Secp256k1 key
+        let primary_vm_fragment = string::utf8(b"account-key");
+        let account_key_type = string::utf8(VERIFICATION_METHOD_TYPE_SECP256K1);
+        let primary_vm_relationships = vector[
+            VERIFICATION_RELATIONSHIP_AUTHENTICATION,
+            VERIFICATION_RELATIONSHIP_ASSERTION_METHOD,
+            VERIFICATION_RELATIONSHIP_CAPABILITY_INVOCATION,
+            VERIFICATION_RELATIONSHIP_CAPABILITY_DELEGATION
+        ];
+
+        let _ = create_did_object_internal(
+            creator_account_signer,
+            doc_controllers,
+            account_public_key_multibase,
+            account_key_type,
+            primary_vm_fragment,
+            primary_vm_relationships,
+            option::none<DID>(),
+            option::none<String>(),
+            option::none<String>(),
+            option::none<String>()
+        );
+    }
+
+    #[test_only]
+    /// Test-only function to create DID via CADOP without strict validation
+    /// This bypasses certain validations for testing purposes
+    public fun create_did_object_via_cadop_entry_test_only(
+        custodian_signer: &signer,
+        user_did_key_string: String,
+        user_vm_pk_multibase: String,
+        user_vm_type: String,
+        user_vm_fragment: String,
+        custodian_main_did_string: String,
+        custodian_service_pk_multibase: String,
+        custodian_service_vm_type: String,
+        custodian_service_vm_fragment: String
+    ) {
+        // Parse user's did:key
+        let user_did_key = parse_did_string(&user_did_key_string);
+        
+        // Parse custodian's main DID
+        let custodian_main_did = parse_did_string(&custodian_main_did_string);
+
+        let doc_controllers = vector[user_did_key];
+        let user_vm_relationships = vector[
+            VERIFICATION_RELATIONSHIP_AUTHENTICATION,
+            VERIFICATION_RELATIONSHIP_CAPABILITY_DELEGATION
+        ]; // Fixed for NIP-3 requirements
+
+        let _ = create_did_object_internal(
+            custodian_signer,
+            doc_controllers,
+            user_vm_pk_multibase,
+            user_vm_type,
+            user_vm_fragment,
+            user_vm_relationships,
+            option::some(custodian_main_did),
+            option::some(custodian_service_pk_multibase),
+            option::some(custodian_service_vm_type),
+            option::some(custodian_service_vm_fragment)
+        );
+    }
+
+    #[test_only]
+    /// Test-only function to get DID document data for testing
+    /// Returns an immutable reference to DID document
+    public fun get_did_document_for_testing(did_address: address): &DIDDocument {
+        let did_identifier_str = address::to_bech32_string(did_address);
+        let object_id = resolve_did_object_id(&did_identifier_str);
+        let did_doc_obj_ref = object::borrow_object<DIDDocument>(object_id);
+        object::borrow(did_doc_obj_ref)
+    }
+
+    #[test_only]
+    /// Test-only function to check if verification method exists in document
+    public fun test_verification_method_exists(did_document_data: &DIDDocument, fragment: &String): bool {
+        simple_map::contains_key(&did_document_data.verification_methods, fragment)
+    }
+
+    #[test_only]
+    /// Test-only function to check if service exists in document
+    public fun test_service_exists(did_document_data: &DIDDocument, fragment: &String): bool {
+        simple_map::contains_key(&did_document_data.services, fragment)
+    }
+
+    
 } 
