@@ -25,6 +25,7 @@ module moveos_std::tx_context {
     friend moveos_std::module_store;
 
     const ErrorInvalidContext: u64 = 1;
+    const ErrorRepeatedContextKey: u64 = 2;
  
     /// Information about the transaction currently being executed.
     struct TxContext {
@@ -97,6 +98,7 @@ module moveos_std::tx_context {
     fun add<T: drop + store + copy>(self: &mut TxContext, value: T) {
         let any = copyable_any::pack(value);
         let type_name = *copyable_any::type_name(&any);
+        assert!(!simple_map::contains_key(&self.map, &type_name), ErrorRepeatedContextKey);
         simple_map::add(&mut self.map, type_name, any)
     }
 
@@ -134,6 +136,12 @@ module moveos_std::tx_context {
     public fun contains_attribute<T: drop + store + copy>(): bool {
         let ctx = borrow();
         contains<T>(ctx)
+    }
+
+    /// Remove a value from the context map
+    fun remove<T: drop + store + copy>(self: &mut TxContext) {
+        let type_name = type_info::type_name<T>();
+        simple_map::remove(&mut self.map, &type_name);
     }
 
     /// Get the transaction meta data
@@ -228,6 +236,19 @@ module moveos_std::tx_context {
     public fun set_ctx_tx_hash_for_testing(tx_hash: vector<u8>){
         let ctx = borrow_mut();
         ctx.tx_hash = tx_hash;
+    }
+
+    #[test_only]
+    /// Set an attribute value in the context map for testing
+    public fun set_attribute_for_testing<T: drop + store + copy>(value: T) {
+        let ctx = borrow_mut();
+        add(ctx, value);
+    }
+
+    #[test_only]
+    public fun remove_attribute_for_testing<T: drop + store + copy>() {
+        let ctx = borrow_mut();
+        remove<T>(ctx);
     }
 
     #[test_only]

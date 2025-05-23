@@ -440,7 +440,7 @@ Get the session key from the TxValidateResult in the TxContext
 If the TxValidateResult is None or SessionKey is None, return None
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_get_session_key_from_ctx_option">get_session_key_from_ctx_option</a>(): <a href="_Option">option::Option</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_get_session_key_from_ctx_option">get_session_key_from_ctx_option</a>(): <a href="_Option">option::Option</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;
 </code></pre>
 
 
@@ -452,7 +452,7 @@ If the TxValidateResult is None or SessionKey is None, return None
 The current tx is validate via the session key or not
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_is_validate_via_session_key">is_validate_via_session_key</a>(): bool
+<pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_is_validate_via_session_key">is_validate_via_session_key</a>(): bool
 </code></pre>
 
 
@@ -476,5 +476,5 @@ Only can be called after the transaction is validated
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_get_bitcoin_address_from_ctx">get_bitcoin_address_from_ctx</a>(): <a href="bitcoin_address.md#0x3_bitcoin_address_BitcoinAddress">bitcoin_address::BitcoinAddress</a>
+<pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_get_bitcoin_address_from_ctx">get_bitcoin_address_from_ctx</a>(): <a href="bitcoin_address.md#0x3_bitcoin_address_BitcoinAddress">bitcoin_address::BitcoinAddress</a>
 </code></pre>

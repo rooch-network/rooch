@@ -77,6 +77,15 @@ Information about the transaction currently being executed.
 
 
 
+<a name="0x2_tx_context_ErrorRepeatedContextKey"></a>
+
+
+
+<pre><code><b>const</b> <a href="tx_context.md#0x2_tx_context_ErrorRepeatedContextKey">ErrorRepeatedContextKey</a>: u64 = 2;
+</code></pre>
+
+
+
 <a name="0x2_tx_context_sender"></a>
 
 ## Function `sender`

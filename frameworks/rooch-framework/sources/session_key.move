@@ -12,11 +12,16 @@ module rooch_framework::session_key {
     use moveos_std::tx_meta::{Self, FunctionCallMeta};
     use rooch_framework::auth_validator;
     use moveos_std::timestamp;
+    use moveos_std::hash;
 
     friend rooch_framework::transaction_validator;
     friend rooch_framework::session_validator;
+    friend rooch_framework::did;
 
-    const MAX_INACTIVE_INTERVAL: u64 = 3600 * 24 * 30; // 30 days
+    const MAX_INACTIVE_INTERVAL: u64 = 3600 * 24 * 365; // 1 year
+    public fun max_inactive_interval(): u64 {
+        MAX_INACTIVE_INTERVAL
+    }
 
     /// Create session key in this context is not allowed
     const ErrorSessionKeyCreatePermissionDenied: u64 = 1;
@@ -28,6 +33,18 @@ module rooch_framework::session_key {
     const ErrorSessionScopePartLengthNotMatch: u64 = 4;
     /// The max inactive interval is invalid
     const ErrorInvalidMaxInactiveInterval: u64 = 5;
+
+    // Signature scheme constant, similar to session_validator.move
+    const SIGNATURE_SCHEME_ED25519: u8 = 0;
+    const SIGNATURE_SCHEME_SECP256K1: u8 = 1;
+    
+    public fun signature_scheme_ed25519(): u8 {
+        SIGNATURE_SCHEME_ED25519
+    }
+
+    public fun signature_scheme_secp256k1(): u8 {
+        SIGNATURE_SCHEME_SECP256K1
+    }
 
     /// The session's scope
     struct SessionScope has store,copy,drop {
@@ -119,6 +136,19 @@ module rooch_framework::session_key {
 
         //Can not create new session key by the other session key
         assert!(!auth_validator::is_validate_via_session_key(), ErrorSessionKeyCreatePermissionDenied);
+        create_session_key_internal(sender, app_name, app_url, authentication_key, scopes, max_inactive_interval);
+    }
+
+    /// Create session key internal, it is used to create session key for DID document
+    /// It is allowed to create session key by the other session key
+    public(friend) fun create_session_key_internal(
+        sender: &signer,
+        app_name: std::string::String,
+        app_url: std::string::String,
+        authentication_key: vector<u8>,
+        scopes: vector<SessionScope>,
+        max_inactive_interval: u64) {
+
         assert!(max_inactive_interval <= MAX_INACTIVE_INTERVAL, ErrorInvalidMaxInactiveInterval);
 
         let sender_addr = signer::address_of(sender);
@@ -253,13 +283,23 @@ module rooch_framework::session_key {
     public fun active_session_key_for_test(authentication_key: vector<u8>) {
         active_session_key(authentication_key);
     }
+    
+    public fun contains_session_key(sender_addr: address, authentication_key: vector<u8>) : bool {
+        if(!account::exists_resource<SessionKeys>(sender_addr)){
+            return false
+        };
+        let session_keys = account::borrow_resource<SessionKeys>(sender_addr);
+        table::contains(&session_keys.keys, authentication_key)
+    }
 
     public fun remove_session_key(sender: &signer, authentication_key: vector<u8>) {
         let sender_addr = signer::address_of(sender);
         assert!(account::exists_resource<SessionKeys>(sender_addr), ErrorSessionKeyIsInvalid);
         let session_keys = account::borrow_mut_resource<SessionKeys>(sender_addr);
-        assert!(table::contains(&session_keys.keys, authentication_key), ErrorSessionKeyIsInvalid);
-        table::remove(&mut session_keys.keys, authentication_key);
+        // If the session key is not exists, do nothing
+        if (table::contains(&session_keys.keys, authentication_key)){
+            table::remove(&mut session_keys.keys, authentication_key);
+        }
     }
 
     public entry fun remove_session_key_entry(sender: &signer, authentication_key: vector<u8>) {
@@ -310,6 +350,22 @@ module rooch_framework::session_key {
 
         let function_call_meta = tx_meta::new_function_call_meta(@0x1, std::string::utf8(b"test1"), std::string::utf8(b"test"));
         assert!(!check_scope_match(&scope, &function_call_meta), 1004);
+    }
+
+    /// Derives the authentication key for an Ed25519 public key.
+    /// This is consistent with how session_validator derives it.
+    public fun ed25519_public_key_to_authentication_key(public_key: &vector<u8>): vector<u8> {
+        let bytes_for_hash = vector::singleton(SIGNATURE_SCHEME_ED25519);
+        vector::append(&mut bytes_for_hash, *public_key);
+        hash::blake2b256(&bytes_for_hash)
+    }
+
+    /// Derives the authentication key for a Secp256k1 public key.
+    /// This follows the same pattern as Ed25519 but with a different scheme identifier.
+    public fun secp256k1_public_key_to_authentication_key(public_key: &vector<u8>): vector<u8> {
+        let bytes_for_hash = vector::singleton(SIGNATURE_SCHEME_SECP256K1);
+        vector::append(&mut bytes_for_hash, *public_key);
+        hash::blake2b256(&bytes_for_hash)
     }
 
 }

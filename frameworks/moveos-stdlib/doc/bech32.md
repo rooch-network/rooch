@@ -23,20 +23,20 @@ Module which defines bech32 functions.
 ## Constants
 
 
-<a name="0x2_bech32_E_DECODE_FAILED"></a>
-
-
-
-<pre><code><b>const</b> <a href="bech32.md#0x2_bech32_E_DECODE_FAILED">E_DECODE_FAILED</a>: u64 = 2;
-</code></pre>
-
-
-
 <a name="0x2_bech32_BIP350"></a>
 
 
 
 <pre><code><b>const</b> <a href="bech32.md#0x2_bech32_BIP350">BIP350</a>: u16 = 350;
+</code></pre>
+
+
+
+<a name="0x2_bech32_E_DECODE_FAILED"></a>
+
+
+
+<pre><code><b>const</b> <a href="bech32.md#0x2_bech32_E_DECODE_FAILED">E_DECODE_FAILED</a>: u64 = 2;
 </code></pre>
 
 
