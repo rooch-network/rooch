@@ -45,7 +45,7 @@
 /// For more details on the Multibase standard, see: [https://github.com/multiformats/multibase](https://github.com/multiformats/multibase)
 
 module moveos_std::multibase {
-    use std::string::{Self, String, utf8};
+    use std::string::{Self, String};
     use std::vector;
     use std::option::{Self, Option, some, none};
     use moveos_std::base58;
