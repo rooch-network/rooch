@@ -10,8 +10,7 @@ module rooch_framework::did {
     use moveos_std::simple_map::{Self, SimpleMap};
     use moveos_std::table::{Self, Table};
     use moveos_std::account::{Self, AccountCap};
-    use moveos_std::object::{Self, Object, ObjectID};
-    use moveos_std::tx_context::{Self, TxContext};
+    use moveos_std::object::{Self, ObjectID};
     use moveos_std::timestamp;
     use moveos_std::core_addresses;
     use moveos_std::address;
@@ -343,11 +342,15 @@ module rooch_framework::did {
 
     public entry fun add_verification_method_entry(
         did_signer: &signer,
-        did_identifier_str: String,
         fragment: String,
         method_type: String,
-        public_key_multibase: String
+        public_key_multibase: String,
+        verification_relationships: vector<u8> 
     ) {
+        // Derive DID identifier from signer address
+        let signer_address = signer::address_of(did_signer);
+        let did_identifier_str = address::to_bech32_string(signer_address);
+        
         let object_id = resolve_did_object_id(&did_identifier_str);
         assert!(object::exists_object_with_type<DIDDocument>(object_id), error::not_found(ErrorDIDObjectNotFound));
         
@@ -359,6 +362,7 @@ module rooch_framework::did {
         assert!(!simple_map::contains_key(&did_document_data.verification_methods, &fragment),
             error::already_exists(ErrorVerificationMethodAlreadyExists));
 
+        // Create and add the verification method
         let verification_method_id = VerificationMethodID {
             did: did_document_data.id,
             fragment: fragment,
@@ -372,14 +376,61 @@ module rooch_framework::did {
         };
 
         simple_map::add(&mut did_document_data.verification_methods, fragment, verification_method);
+
+        // Add to specified verification relationships
+        let is_ed25519 = method_type == string::utf8(VERIFICATION_METHOD_TYPE_ED25519);
+        
+        let i = 0;
+        while (i < vector::length(&verification_relationships)) {
+            let relationship_type = *vector::borrow(&verification_relationships, i);
+            
+            if (relationship_type == VERIFICATION_RELATIONSHIP_AUTHENTICATION) {
+                // Special handling for authentication relationship with Ed25519
+                if (is_ed25519) {
+                    // For Ed25519, use the specialized method that handles authentication and session key
+                    add_ed25519_authentication_method(
+                        did_document_data,
+                        fragment,
+                        public_key_multibase
+                    );
+                } else {
+                    if (!vector::contains(&did_document_data.authentication, &fragment)) {
+                        vector::push_back(&mut did_document_data.authentication, fragment);
+                    };
+                };
+            } else if (relationship_type == VERIFICATION_RELATIONSHIP_ASSERTION_METHOD) {
+                if (!vector::contains(&did_document_data.assertion_method, &fragment)) {
+                    vector::push_back(&mut did_document_data.assertion_method, fragment);
+                };
+            } else if (relationship_type == VERIFICATION_RELATIONSHIP_CAPABILITY_INVOCATION) {
+                if (!vector::contains(&did_document_data.capability_invocation, &fragment)) {
+                    vector::push_back(&mut did_document_data.capability_invocation, fragment);
+                };
+            } else if (relationship_type == VERIFICATION_RELATIONSHIP_CAPABILITY_DELEGATION) {
+                if (!vector::contains(&did_document_data.capability_delegation, &fragment)) {
+                    vector::push_back(&mut did_document_data.capability_delegation, fragment);
+                };
+            } else if (relationship_type == VERIFICATION_RELATIONSHIP_KEY_AGREEMENT) {
+                if (!vector::contains(&did_document_data.key_agreement, &fragment)) {
+                    vector::push_back(&mut did_document_data.key_agreement, fragment);
+                };
+            };
+            // Note: Invalid relationship types are silently ignored for flexibility
+            
+            i = i + 1;
+        };
+
         did_document_data.updated_timestamp = timestamp::now_seconds();
     }
 
     public entry fun remove_verification_method_entry(
         did_signer: &signer,
-        did_identifier_str: String,
         fragment: String
     ) {
+        // Derive DID identifier from signer address
+        let signer_address = signer::address_of(did_signer);
+        let did_identifier_str = address::to_bech32_string(signer_address);
+        
         let object_id = resolve_did_object_id(&did_identifier_str);
         assert!(object::exists_object_with_type<DIDDocument>(object_id), error::not_found(ErrorDIDObjectNotFound));
         
@@ -428,10 +479,13 @@ module rooch_framework::did {
 
     public entry fun add_to_verification_relationship_entry(
         did_signer: &signer,
-        did_identifier_str: String,
         fragment: String,
         relationship_type: u8
     ) {
+        // Derive DID identifier from signer address
+        let signer_address = signer::address_of(did_signer);
+        let did_identifier_str = address::to_bech32_string(signer_address);
+        
         let object_id = resolve_did_object_id(&did_identifier_str);
         assert!(object::exists_object_with_type<DIDDocument>(object_id), error::not_found(ErrorDIDObjectNotFound));
         
@@ -479,10 +533,13 @@ module rooch_framework::did {
 
     public entry fun remove_from_verification_relationship_entry(
         did_signer: &signer,
-        did_identifier_str: String,
         fragment: String,
         relationship_type: u8
     ) {
+        // Derive DID identifier from signer address
+        let signer_address = signer::address_of(did_signer);
+        let did_identifier_str = address::to_bech32_string(signer_address);
+        
         let object_id = resolve_did_object_id(&did_identifier_str);
         assert!(object::exists_object_with_type<DIDDocument>(object_id), error::not_found(ErrorDIDObjectNotFound));
 
@@ -540,11 +597,14 @@ module rooch_framework::did {
 
     public entry fun add_service_entry(
         did_signer: &signer,
-        did_identifier_str: String,
         fragment: String,
         service_type: String,
         service_endpoint: String
     ) {
+        // Derive DID identifier from signer address
+        let signer_address = signer::address_of(did_signer);
+        let did_identifier_str = address::to_bech32_string(signer_address);
+        
         let object_id = resolve_did_object_id(&did_identifier_str);
         assert!(object::exists_object_with_type<DIDDocument>(object_id), error::not_found(ErrorDIDObjectNotFound));
 
@@ -559,7 +619,6 @@ module rooch_framework::did {
 
     public entry fun add_service_with_properties_entry(
         did_signer: &signer,
-        did_identifier_str: String,
         fragment: String,
         service_type: String,
         service_endpoint: String,
@@ -577,6 +636,10 @@ module rooch_framework::did {
             i = i + 1;
         };
 
+        // Derive DID identifier from signer address
+        let signer_address = signer::address_of(did_signer);
+        let did_identifier_str = address::to_bech32_string(signer_address);
+        
         let object_id = resolve_did_object_id(&did_identifier_str);
         assert!(object::exists_object_with_type<DIDDocument>(object_id), error::not_found(ErrorDIDObjectNotFound));
 
@@ -589,7 +652,6 @@ module rooch_framework::did {
 
     public entry fun update_service_entry(
         did_signer: &signer,
-        did_identifier_str: String,
         fragment: String,
         new_service_type: String,
         new_service_endpoint: String,
@@ -607,6 +669,10 @@ module rooch_framework::did {
             i = i + 1;
         };
 
+        // Derive DID identifier from signer address
+        let signer_address = signer::address_of(did_signer);
+        let did_identifier_str = address::to_bech32_string(signer_address);
+        
         let object_id = resolve_did_object_id(&did_identifier_str);
         assert!(object::exists_object_with_type<DIDDocument>(object_id), error::not_found(ErrorDIDObjectNotFound));
 
@@ -635,9 +701,12 @@ module rooch_framework::did {
 
     public entry fun remove_service_entry(
         did_signer: &signer,
-        did_identifier_str: String,
         fragment: String
     ) {
+        // Derive DID identifier from signer address
+        let signer_address = signer::address_of(did_signer);
+        let did_identifier_str = address::to_bech32_string(signer_address);
+        
         let object_id = resolve_did_object_id(&did_identifier_str);
         assert!(object::exists_object_with_type<DIDDocument>(object_id), error::not_found(ErrorDIDObjectNotFound));
         

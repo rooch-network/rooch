@@ -7,7 +7,6 @@ module rooch_framework::session_validator {
     use std::vector;
     use std::option;
     use moveos_std::tx_context;
-    use moveos_std::hash;
     use rooch_framework::ed25519;
     use rooch_framework::auth_validator;
     use rooch_framework::session_key;
