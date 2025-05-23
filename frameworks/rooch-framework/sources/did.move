@@ -216,9 +216,9 @@ module rooch_framework::did {
         validate_did_key_controllers(&doc_controllers, &user_vm_pk_multibase);
 
         let new_account_cap = account::create_account_and_return_cap();
-        let new_rooch_address = account::account_cap_address(&new_account_cap);
+        let did_address = account::account_cap_address(&new_account_cap);
         
-        let did = create_rooch_did_by_address(new_rooch_address);
+        let did = create_rooch_did_by_address(did_address);
         
         let new_object_id = resolve_did_object_id(&did.identifier); 
         assert!(!object::exists_object_with_type<DIDDocument>(new_object_id), ErrorDIDAlreadyExists);
@@ -316,7 +316,7 @@ module rooch_framework::did {
         };
 
         let did_object = object::new_with_id(did.identifier, did_document_data);
-        object::transfer_extend(did_object, new_rooch_address);
+        object::transfer_extend(did_object, did_address);
         
         // Add the new DID to all its controllers' lists in the registry
         let i = 0;

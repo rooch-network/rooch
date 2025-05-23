@@ -6,6 +6,7 @@
 /// public fun validate(authenticator_payload: vector<u8>)
 
 module rooch_framework::auth_validator {
+    use std::string;
     use std::option::{Self, Option};
     use moveos_std::tx_context;
     use rooch_framework::bitcoin_address::BitcoinAddress;
@@ -197,7 +198,11 @@ module rooch_framework::auth_validator {
         bitcoin_address: BitcoinAddress,
     ) {
         let result = new_tx_validate_result(auth_validator_id, auth_validator, session_key, bitcoin_address);
-        moveos_std::tx_context::set_attribute_for_testing(result);
+        if (tx_context::contains_attribute<TxValidateResult>()) {
+            std::debug::print(&string::utf8(b"Reset TxValidateResult in tx_context\n"));
+            tx_context::remove_attribute_for_testing<TxValidateResult>();
+        };
+        tx_context::set_attribute_for_testing(result);
     }
 
     #[test_only]
