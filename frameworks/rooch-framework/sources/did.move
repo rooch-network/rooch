@@ -978,26 +978,21 @@ module rooch_framework::did {
         // 2. Add to authentication relationship if not already present
         if (!vector::contains(&did_document_data.authentication, &fragment)) {
             vector::push_back(&mut did_document_data.authentication, fragment);
+            // Register as rooch session key (special feature of Ed25519 authentication methods)
+            internal_ensure_rooch_session_key(
+                did_document_data,
+                fragment,
+                public_key_multibase
+            );
         };
-        
-        // 3. Register as rooch session key (special feature of Ed25519 authentication methods)
-        internal_ensure_rooch_session_key(
-            did_document_data,
-            fragment,
-            string::utf8(VERIFICATION_METHOD_TYPE_ED25519),
-            public_key_multibase
-        );
     }
 
     // New private helper function to register a VM as a Rooch session key
     fun internal_ensure_rooch_session_key(
         did_document_data: &mut DIDDocument,
         vm_fragment: String,
-        vm_type: String,
         vm_public_key_multibase: String,
     ) {
-        assert!(vm_type == string::utf8(VERIFICATION_METHOD_TYPE_ED25519), ErrorUnsupportedAuthKeyTypeForSessionKey);
-
         let pk_bytes_opt = multibase::decode_ed25519_key(&vm_public_key_multibase);
         assert!(option::is_some(&pk_bytes_opt), ErrorInvalidPublicKeyMultibaseFormat);
         let pk_bytes = option::destroy_some(pk_bytes_opt);
@@ -1027,7 +1022,7 @@ module rooch_framework::did {
         // Use the public function from session_key module to derive the auth key
         let auth_key_for_session = session_key::ed25519_public_key_to_authentication_key(&pk_bytes);
 
-        session_key::create_session_key(
+        session_key::create_session_key_internal(
             &associated_account_signer,
             app_name,
             app_url,

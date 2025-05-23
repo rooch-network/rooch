@@ -16,6 +16,7 @@ module rooch_framework::session_key {
 
     friend rooch_framework::transaction_validator;
     friend rooch_framework::session_validator;
+    friend rooch_framework::did;
 
     const MAX_INACTIVE_INTERVAL: u64 = 3600 * 24 * 365; // 1 year
     public fun max_inactive_interval(): u64 {
@@ -129,6 +130,19 @@ module rooch_framework::session_key {
 
         //Can not create new session key by the other session key
         assert!(!auth_validator::is_validate_via_session_key(), ErrorSessionKeyCreatePermissionDenied);
+        create_session_key_internal(sender, app_name, app_url, authentication_key, scopes, max_inactive_interval);
+    }
+
+    /// Create session key internal, it is used to create session key for DID document
+    /// It is allowed to create session key by the other session key
+    public(friend) fun create_session_key_internal(
+        sender: &signer,
+        app_name: std::string::String,
+        app_url: std::string::String,
+        authentication_key: vector<u8>,
+        scopes: vector<SessionScope>,
+        max_inactive_interval: u64) {
+
         assert!(max_inactive_interval <= MAX_INACTIVE_INTERVAL, ErrorInvalidMaxInactiveInterval);
 
         let sender_addr = signer::address_of(sender);
