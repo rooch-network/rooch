@@ -17,6 +17,7 @@ module rooch_framework::did {
     use moveos_std::multibase;
     use rooch_framework::session_key;
     use rooch_framework::auth_validator;
+    use rooch_framework::bitcoin_address;
 
     /// DID document does not exist (legacy or general not found)
     const ErrorDIDDocumentNotExist: u64 = 1;
@@ -336,44 +337,29 @@ module rooch_framework::did {
     }
 
     /// Create a DID for oneself using account key only.
-    /// This is suitable when the user's account key type matches their DID needs.
+    /// This function validates that the provided public key corresponds to the creator's account.
+    /// Currently only supports Secp256k1 keys.
     public entry fun create_did_object_for_self_entry(
         creator_account_signer: &signer,        // User's own Rooch account signer
-        account_public_key_multibase: String,   // User's account public key (e.g., Secp256k1 or Ed25519)
-        account_key_type: String,               // Type of account key
+        account_public_key_multibase: String,   // User's account public key (Secp256k1)
     ) {
         create_did_object_for_self_internal(
             creator_account_signer,
-            account_public_key_multibase,
-            account_key_type,
-            option::none<String>()
+            account_public_key_multibase
         );
-    }
+    } 
 
-    /// Create a DID for oneself with additional Ed25519 session key.
-    /// This is useful when the user's account uses Secp256k1 but wants Ed25519 session key functionality.
-    public entry fun create_did_object_for_self_with_session_key_entry(
-        creator_account_signer: &signer,        // User's own Rooch account signer
-        account_public_key_multibase: String,   // User's account public key (e.g., Secp256k1)
-        account_key_type: String,               // Type of account key
-        ed25519_session_key_multibase: String,  // Ed25519 key for session functionality
-    ) {
-        create_did_object_for_self_internal(
-            creator_account_signer,
-            account_public_key_multibase,
-            account_key_type,
-            option::some(ed25519_session_key_multibase)
-        );
-    }
-
-    /// Internal function for self DID creation with hybrid key support.
+    /// Internal function for self DID creation.
+    /// Validates that the provided public key matches the creator's account address.
     fun create_did_object_for_self_internal(
         creator_account_signer: &signer,
         account_public_key_multibase: String,
-        account_key_type: String,
-        ed25519_session_key_multibase: Option<String>,
     ) {
         let creator_address = signer::address_of(creator_account_signer);
+        
+        // Validate that the provided public key corresponds to the creator's account
+        verify_public_key_matches_account(creator_address, &account_public_key_multibase);
+        
         let creator_did_identifier = address::to_bech32_string(creator_address);
         let creator_did = DID {
             method: string::utf8(b"rooch"),
@@ -382,24 +368,15 @@ module rooch_framework::did {
         
         let doc_controllers = vector[creator_did];
         
-        // Primary verification method uses the account's actual key
+        // Primary verification method uses the account's Secp256k1 key
         let primary_vm_fragment = string::utf8(b"account-key");
-        let primary_vm_relationships = if (account_key_type == string::utf8(VERIFICATION_METHOD_TYPE_ED25519)) {
-            // If account is Ed25519, it can be used for all purposes including session keys
-            vector[
-                VERIFICATION_RELATIONSHIP_AUTHENTICATION,
-                VERIFICATION_RELATIONSHIP_ASSERTION_METHOD,
-                VERIFICATION_RELATIONSHIP_CAPABILITY_INVOCATION,
-                VERIFICATION_RELATIONSHIP_CAPABILITY_DELEGATION
-            ]
-        } else {
-            // If account is Secp256k1, it can be used for everything except automatic session key registration
-            vector[
-                VERIFICATION_RELATIONSHIP_ASSERTION_METHOD,
-                VERIFICATION_RELATIONSHIP_CAPABILITY_INVOCATION,
-                VERIFICATION_RELATIONSHIP_CAPABILITY_DELEGATION
-            ]
-        };
+        let account_key_type = string::utf8(VERIFICATION_METHOD_TYPE_SECP256K1);
+        let primary_vm_relationships = vector[
+            VERIFICATION_RELATIONSHIP_AUTHENTICATION,
+            VERIFICATION_RELATIONSHIP_ASSERTION_METHOD,
+            VERIFICATION_RELATIONSHIP_CAPABILITY_INVOCATION,
+            VERIFICATION_RELATIONSHIP_CAPABILITY_DELEGATION
+        ];
 
         let _ = create_did_object_internal(
             creator_account_signer,
@@ -413,27 +390,35 @@ module rooch_framework::did {
             option::none<String>(),
             option::none<String>()
         );
+    }
 
-        // If an Ed25519 session key is provided, add it as an additional verification method
-        if (option::is_some(&ed25519_session_key_multibase)) {
-            let session_key_pk = option::extract(&mut ed25519_session_key_multibase);
-            let session_key_fragment = string::utf8(b"session-key");
-
-            // Get the DID document to add the session key
-            let did_identifier_str = address::to_bech32_string(creator_address);
-            let object_id = resolve_did_object_id(&did_identifier_str);
-            let did_doc_obj_ref_mut = object::borrow_mut_object_extend<DIDDocument>(object_id);
-            let did_document_data = object::borrow_mut(did_doc_obj_ref_mut);
-
-            // Add Ed25519 session key
-            add_ed25519_authentication_method(
-                did_document_data,
-                session_key_fragment,
-                session_key_pk
-            );
-            
-            did_document_data.updated_timestamp = timestamp::now_seconds();
-        };
+    /// Verify that the provided public key corresponds to the given account address.
+    /// This prevents users from providing incorrect public keys during DID creation.
+    fun verify_public_key_matches_account(
+        account_address: address,
+        public_key_multibase: &String
+    ) {
+        // Decode the Secp256k1 public key
+        let pk_bytes_opt = multibase::decode_secp256k1_key(public_key_multibase);
+        assert!(option::is_some(&pk_bytes_opt), error::invalid_argument(ErrorInvalidPublicKeyMultibaseFormat));
+        let pk_bytes = option::destroy_some(pk_bytes_opt);
+        
+        // Get the Bitcoin address from current transaction context
+        // This address was already validated during transaction authentication
+        let bitcoin_address = auth_validator::get_bitcoin_address_from_ctx();
+        
+        // Verify that the provided public key corresponds to the Bitcoin address
+        assert!(
+            bitcoin_address::verify_bitcoin_address_with_public_key(&bitcoin_address, &pk_bytes),
+            error::invalid_argument(ErrorDIDKeyControllerPublicKeyMismatch)
+        );
+        
+        // Verify that the Bitcoin address corresponds to the account address
+        let rooch_address_from_bitcoin = bitcoin_address::to_rooch_address(&bitcoin_address);
+        assert!(
+            rooch_address_from_bitcoin == account_address,
+            error::invalid_argument(ErrorDIDKeyControllerPublicKeyMismatch)
+        );
     }
 
     /// Create a DID via CADOP (Custodian-Assisted DID Onboarding Protocol).
@@ -474,47 +459,7 @@ module rooch_framework::did {
             option::some(custodian_service_vm_type),
             option::some(custodian_service_vm_fragment)
         );
-    }
-
-    public entry fun create_did_object_entry(
-        creator_account_signer: &signer,
-        initial_controller_did_strings: vector<String>,
-        initial_vm_type: String,
-        initial_vm_pk_multibase: String,
-        initial_vm_fragment: String
-    ) {
-        assert!(vector::length(&initial_controller_did_strings) > 0, error::invalid_argument(ErrorNoControllersSpecified));
-
-        let initial_controllers = vector::empty<DID>();
-        let i = 0;
-        while (i < vector::length(&initial_controller_did_strings)) {
-            let did_string = vector::borrow(&initial_controller_did_strings, i);
-            let parsed_did = parse_did_string(did_string);
-            vector::push_back(&mut initial_controllers, parsed_did);
-            i = i + 1;
-        };
-
-        // Default to full permissions for backwards compatibility
-        let user_vm_relationships = vector[
-            VERIFICATION_RELATIONSHIP_AUTHENTICATION,
-            VERIFICATION_RELATIONSHIP_ASSERTION_METHOD,
-            VERIFICATION_RELATIONSHIP_CAPABILITY_INVOCATION,
-            VERIFICATION_RELATIONSHIP_CAPABILITY_DELEGATION
-        ];
-
-        let _ = create_did_object_internal(
-            creator_account_signer,
-            initial_controllers,
-            initial_vm_pk_multibase,
-            initial_vm_type,
-            initial_vm_fragment,
-            user_vm_relationships,
-            option::none<DID>(),
-            option::none<String>(),
-            option::none<String>(),
-            option::none<String>()
-        );
-    }
+    } 
 
     public entry fun add_verification_method_entry(
         did_signer: &signer,

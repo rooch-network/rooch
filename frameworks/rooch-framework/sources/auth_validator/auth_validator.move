@@ -183,7 +183,7 @@ module rooch_framework::auth_validator {
         option::extract(&mut get_session_key_from_ctx_option())
     }
 
-    public(friend) fun get_bitcoin_address_from_ctx(): BitcoinAddress {
+    public fun get_bitcoin_address_from_ctx(): BitcoinAddress {
         let validate_result = get_validate_result_from_ctx();
         validate_result.bitcoin_address
     }
