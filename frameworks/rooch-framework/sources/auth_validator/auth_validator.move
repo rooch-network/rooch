@@ -102,7 +102,7 @@ module rooch_framework::auth_validator {
     public(friend) fun new_auth_validator(
         id: u64,
         module_address: address,
-        module_name: std::string::String
+        module_name: string::String
     ): AuthValidator {
         AuthValidator {
             id: id,
