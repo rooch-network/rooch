@@ -29,13 +29,11 @@ module rooch_framework::did_test{
     use std::vector;
     use std::signer;
     use moveos_std::account;
-    use moveos_std::object;
-    use moveos_std::tx_context;
+    use moveos_std::object::{Self, ObjectID};
     use moveos_std::multibase;
     use rooch_framework::session_key;
     use rooch_framework::auth_validator;
     use rooch_framework::bitcoin_address::{Self, BitcoinAddress};
-    use moveos_std::hash;
     use moveos_std::timestamp;
 
     // ========================================
@@ -61,6 +59,65 @@ module rooch_framework::did_test{
         // The key corresponds to Bitcoin address: bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4
         // Private key (for reference only, not used in tests): 0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
         string::utf8(b"z21pGXTKbEq9G4f4z8qNFXSZvSiQ8B1X3i9Y5v7xK2m1n4")
+    }
+
+    /// Unified setup function for DID tests
+    /// Returns (creator_signer, creator_address, creator_public_key_multibase, did_object_id)
+    fun setup_did_test_with_creation(): (signer, address, string::String, ObjectID) {
+        // Initialize the entire framework including DID registry
+        genesis::init_for_test();
+        timestamp::fast_forward_milliseconds_for_test(1000);
+
+        let (creator_public_key_multibase, creator_bitcoin_address) = generate_secp256k1_public_key_and_bitcoin_address();
+        let creator_address = bitcoin_address::to_rooch_address(&creator_bitcoin_address);
+        let creator_signer = account::create_signer_for_testing(creator_address);
+
+        // Setup mock Bitcoin address and session key for testing
+        let pk_bytes_opt = multibase::decode_secp256k1_key(&creator_public_key_multibase);
+        assert!(option::is_some(&pk_bytes_opt), 9001);
+        let pk_bytes = option::destroy_some(pk_bytes_opt);
+        let auth_key = session_key::secp256k1_public_key_to_authentication_key(&pk_bytes);
+        
+        // Set up mock with the matching Bitcoin address and session key
+        auth_validator::set_tx_validate_result_for_testing(
+            0, // auth_validator_id
+            option::none(), // auth_validator
+            option::some(auth_key), // session_key
+            creator_bitcoin_address // bitcoin_address
+        );
+        
+        // Create DID
+        let did_object_id = did::create_did_object_for_self(&creator_signer, creator_public_key_multibase);
+        
+        (creator_signer, creator_address, creator_public_key_multibase, did_object_id)
+    }
+
+    /// Basic setup function for DID tests without creating DID
+    /// Returns (creator_signer, creator_address, creator_public_key_multibase)
+    fun setup_did_test_basic(): (signer, address, string::String) {
+        // Initialize the entire framework including DID registry
+        genesis::init_for_test();
+        timestamp::fast_forward_milliseconds_for_test(1000);
+
+        let (creator_public_key_multibase, creator_bitcoin_address) = generate_secp256k1_public_key_and_bitcoin_address();
+        let creator_address = bitcoin_address::to_rooch_address(&creator_bitcoin_address);
+        let creator_signer = account::create_signer_for_testing(creator_address);
+
+        // Setup mock Bitcoin address and session key for testing
+        let pk_bytes_opt = multibase::decode_secp256k1_key(&creator_public_key_multibase);
+        assert!(option::is_some(&pk_bytes_opt), 9002);
+        let pk_bytes = option::destroy_some(pk_bytes_opt);
+        let auth_key = session_key::secp256k1_public_key_to_authentication_key(&pk_bytes);
+        
+        // Set up mock with the matching Bitcoin address and session key
+        auth_validator::set_tx_validate_result_for_testing(
+            0, // auth_validator_id
+            option::none(), // auth_validator
+            option::some(auth_key), // session_key
+            creator_bitcoin_address // bitcoin_address
+        );
+        
+        (creator_signer, creator_address, creator_public_key_multibase)
     }
 
     fun generate_secp256k1_public_key_and_bitcoin_address(): (string::String, BitcoinAddress) {
@@ -116,39 +173,14 @@ module rooch_framework::did_test{
     // - [ ] `test_create_did_object_internal_registry_update` - DIDRegistry mapping updates
 
     #[test]
-    /// Test successful DID creation for self using Secp256k1 key
+    /// Test successful DID creation for self using account key only
     /// This test verifies the core DID creation functionality:
     /// 1. DID does not exist before creation
     /// 2. DID creation succeeds with valid parameters
     /// 3. DID exists after creation and can be queried
     /// 4. DID registry is properly updated
     fun test_create_did_for_self_success() {
-        
-        // Initialize the entire framework including DID registry
-        genesis::init_for_test();
-        timestamp::fast_forward_milliseconds_for_test(1000);
-
-        let (creator_public_key_multibase, creator_bitcoin_address) = generate_secp256k1_public_key_and_bitcoin_address();
-        let creator_address = bitcoin_address::to_rooch_address(&creator_bitcoin_address);
-        let test_signer = account::create_signer_for_testing(creator_address);
-
-        // Setup mock Bitcoin address and session key for testing
-        let pk_bytes_opt = multibase::decode_secp256k1_key(&creator_public_key_multibase);
-        assert!(option::is_some(&pk_bytes_opt), 1004);
-        let pk_bytes = option::destroy_some(pk_bytes_opt);
-        let auth_key = session_key::secp256k1_public_key_to_authentication_key(&pk_bytes);
-        
-        
-        // Set up mock with the matching Bitcoin address and session key
-        auth_validator::set_tx_validate_result_for_testing(
-            0, // auth_validator_id
-            option::none(), // auth_validator
-            option::some(auth_key), // session_key
-            creator_bitcoin_address // bitcoin_address
-        );
-        
-        // The actual DID creation
-        let did_object_id = did::create_did_object_for_self(&test_signer, creator_public_key_multibase);
+        let (creator_signer, creator_address, creator_public_key_multibase, did_object_id) = setup_did_test_with_creation();
         
         // Get the actual DID document to find the real DID address
         let did_document = did::get_did_document_by_object_id(did_object_id);
@@ -211,10 +243,10 @@ module rooch_framework::did_test{
         assert!(updated_time == created_time, 1015); // Should be same at creation time
         
         // The did address not creater address
-        let did_address = did::get_did_address(did_document);
         assert!(did_address != creator_address, 1016);
         
-        // Clean up compiler warnings
+        // Clean up compiler warnings - assign each variable separately
+        let _ = creator_signer;
         let _ = did_object_id;
     }
 

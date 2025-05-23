@@ -5,7 +5,6 @@ module rooch_framework::did {
     use std::vector;
     use std::string::{Self, String};
     use std::option::{Self, Option};
-    use std::error;
     use std::signer;
     use moveos_std::simple_map::{Self, SimpleMap};
     use moveos_std::table::{Self, Table};
@@ -211,7 +210,7 @@ module rooch_framework::did {
         service_vm_fragment: Option<String>           // Service VM fragment
     ): ObjectID {
         let registry = borrow_mut_did_registry();
-        assert!(vector::length(&doc_controllers) > 0, error::invalid_argument(ErrorNoControllersSpecified));
+        assert!(vector::length(&doc_controllers) > 0, ErrorNoControllersSpecified);
 
         // Validate did:key controllers according to NIP-1
         validate_did_key_controllers(&doc_controllers, &user_vm_pk_multibase);
@@ -222,7 +221,7 @@ module rooch_framework::did {
         let did = create_rooch_did_by_address(new_rooch_address);
         
         let new_object_id = resolve_did_object_id(&did.identifier); 
-        assert!(!object::exists_object_with_type<DIDDocument>(new_object_id), error::already_exists(ErrorDIDAlreadyExists));
+        assert!(!object::exists_object_with_type<DIDDocument>(new_object_id), ErrorDIDAlreadyExists);
                 
         let now = timestamp::now_seconds();
 
@@ -395,7 +394,7 @@ module rooch_framework::did {
     ) {
         // Decode the Secp256k1 public key
         let pk_bytes_opt = multibase::decode_secp256k1_key(public_key_multibase);
-        assert!(option::is_some(&pk_bytes_opt), error::invalid_argument(ErrorInvalidPublicKeyMultibaseFormat));
+        assert!(option::is_some(&pk_bytes_opt), ErrorInvalidPublicKeyMultibaseFormat);
         let pk_bytes = option::destroy_some(pk_bytes_opt);
         
         // Get the Bitcoin address from current transaction context
@@ -405,14 +404,14 @@ module rooch_framework::did {
         // Verify that the provided public key corresponds to the Bitcoin address
         assert!(
             bitcoin_address::verify_bitcoin_address_with_public_key(&bitcoin_address, &pk_bytes),
-            error::invalid_argument(ErrorDIDKeyControllerPublicKeyMismatch)
+            ErrorDIDKeyControllerPublicKeyMismatch
         );
         
         // Verify that the Bitcoin address corresponds to the account address
         let rooch_address_from_bitcoin = bitcoin_address::to_rooch_address(&bitcoin_address);
         assert!(
             rooch_address_from_bitcoin == account_address,
-            error::invalid_argument(ErrorDIDKeyControllerPublicKeyMismatch)
+            ErrorDIDKeyControllerPublicKeyMismatch
         );
     }
 
@@ -468,7 +467,7 @@ module rooch_framework::did {
         let did_identifier_str = address::to_bech32_string(signer_address);
         
         let object_id = resolve_did_object_id(&did_identifier_str);
-        assert!(object::exists_object_with_type<DIDDocument>(object_id), error::not_found(ErrorDIDObjectNotFound));
+        assert!(object::exists_object_with_type<DIDDocument>(object_id), ErrorDIDObjectNotFound);
         
         let did_doc_obj_ref_mut = object::borrow_mut_object_extend<DIDDocument>(object_id);
         let did_document_data = object::borrow_mut(did_doc_obj_ref_mut);
@@ -476,7 +475,7 @@ module rooch_framework::did {
         assert_authorized_for_capability_delegation(did_document_data, did_signer);
 
         assert!(!simple_map::contains_key(&did_document_data.verification_methods, &fragment),
-            error::already_exists(ErrorVerificationMethodAlreadyExists));
+            ErrorVerificationMethodAlreadyExists);
 
         // Create and add the verification method
         let verification_method_id = VerificationMethodID {
@@ -555,7 +554,7 @@ module rooch_framework::did {
         let did_identifier_str = address::to_bech32_string(signer_address);
         
         let object_id = resolve_did_object_id(&did_identifier_str);
-        assert!(object::exists_object_with_type<DIDDocument>(object_id), error::not_found(ErrorDIDObjectNotFound));
+        assert!(object::exists_object_with_type<DIDDocument>(object_id), ErrorDIDObjectNotFound);
         
         let did_doc_obj_ref_mut = object::borrow_mut_object_extend<DIDDocument>(object_id);
         let did_document_data = object::borrow_mut(did_doc_obj_ref_mut);
@@ -563,7 +562,7 @@ module rooch_framework::did {
         assert_authorized_for_capability_delegation(did_document_data, did_signer);
 
         assert!(simple_map::contains_key(&did_document_data.verification_methods, &fragment),
-            error::not_found(ErrorVerificationMethodNotFound));
+            ErrorVerificationMethodNotFound);
 
         if (vector::contains(&did_document_data.authentication, &fragment)) {
             let vm_to_remove = simple_map::borrow(&did_document_data.verification_methods, &fragment);
@@ -621,7 +620,7 @@ module rooch_framework::did {
         let did_identifier_str = address::to_bech32_string(signer_address);
         
         let object_id = resolve_did_object_id(&did_identifier_str);
-        assert!(object::exists_object_with_type<DIDDocument>(object_id), error::not_found(ErrorDIDObjectNotFound));
+        assert!(object::exists_object_with_type<DIDDocument>(object_id), ErrorDIDObjectNotFound);
         
         let did_doc_obj_ref_mut = object::borrow_mut_object_extend<DIDDocument>(object_id);
         let did_document_data = object::borrow_mut(did_doc_obj_ref_mut);
@@ -629,7 +628,7 @@ module rooch_framework::did {
         assert_authorized_for_capability_delegation(did_document_data, did_signer);
 
         assert!(simple_map::contains_key(&did_document_data.verification_methods, &fragment),
-            error::not_found(ErrorVerificationMethodNotFound));
+            ErrorVerificationMethodNotFound);
 
         let target_relationship_vec_mut = if (relationship_type == VERIFICATION_RELATIONSHIP_AUTHENTICATION) {
             // Special handling for AUTHENTICATION: if this is an Ed25519 or Secp256k1 verification method,
@@ -665,7 +664,7 @@ module rooch_framework::did {
         } else if (relationship_type == VERIFICATION_RELATIONSHIP_KEY_AGREEMENT) {
             &mut did_document_data.key_agreement
         } else {
-            abort error::invalid_argument(ErrorInvalidVerificationRelationship)
+            abort ErrorInvalidVerificationRelationship
         };
 
         if (!vector::contains(target_relationship_vec_mut, &fragment)) {
@@ -684,7 +683,7 @@ module rooch_framework::did {
         let did_identifier_str = address::to_bech32_string(signer_address);
         
         let object_id = resolve_did_object_id(&did_identifier_str);
-        assert!(object::exists_object_with_type<DIDDocument>(object_id), error::not_found(ErrorDIDObjectNotFound));
+        assert!(object::exists_object_with_type<DIDDocument>(object_id), ErrorDIDObjectNotFound);
 
         let did_doc_obj_ref_mut = object::borrow_mut_object_extend<DIDDocument>(object_id);
         let did_document_data = object::borrow_mut(did_doc_obj_ref_mut);
@@ -702,7 +701,7 @@ module rooch_framework::did {
         } else if (relationship_type == VERIFICATION_RELATIONSHIP_KEY_AGREEMENT) {
             &mut did_document_data.key_agreement
         } else {
-            abort error::invalid_argument(ErrorInvalidVerificationRelationship)
+            abort ErrorInvalidVerificationRelationship
         };
 
         let original_len = vector::length(target_relationship_vec_mut);
@@ -720,7 +719,7 @@ module rooch_framework::did {
         properties: SimpleMap<String, String>
     ) {
         assert!(!simple_map::contains_key(&did_document_data.services, &fragment),
-            error::already_exists(ErrorServiceAlreadyExists));
+            ErrorServiceAlreadyExists);
 
         let service_id = ServiceID {
             did: did_document_data.id,
@@ -749,7 +748,7 @@ module rooch_framework::did {
         let did_identifier_str = address::to_bech32_string(signer_address);
         
         let object_id = resolve_did_object_id(&did_identifier_str);
-        assert!(object::exists_object_with_type<DIDDocument>(object_id), error::not_found(ErrorDIDObjectNotFound));
+        assert!(object::exists_object_with_type<DIDDocument>(object_id), ErrorDIDObjectNotFound);
 
         let did_doc_obj_ref_mut = object::borrow_mut_object_extend<DIDDocument>(object_id);
         let did_document_data = object::borrow_mut(did_doc_obj_ref_mut);
@@ -769,7 +768,7 @@ module rooch_framework::did {
         property_values: vector<String>
     ) {
         assert!(vector::length(&property_keys) == vector::length(&property_values),
-            error::invalid_argument(ErrorPropertyKeysValuesLengthMismatch));
+            ErrorPropertyKeysValuesLengthMismatch);
 
         let properties = simple_map::new<String, String>();
         let i = 0;
@@ -784,7 +783,7 @@ module rooch_framework::did {
         let did_identifier_str = address::to_bech32_string(signer_address);
         
         let object_id = resolve_did_object_id(&did_identifier_str);
-        assert!(object::exists_object_with_type<DIDDocument>(object_id), error::not_found(ErrorDIDObjectNotFound));
+        assert!(object::exists_object_with_type<DIDDocument>(object_id), ErrorDIDObjectNotFound);
 
         let did_doc_obj_ref_mut = object::borrow_mut_object_extend<DIDDocument>(object_id);
         let did_document_data = object::borrow_mut(did_doc_obj_ref_mut);
@@ -802,7 +801,7 @@ module rooch_framework::did {
         new_property_values: vector<String>
     ) {
         assert!(vector::length(&new_property_keys) == vector::length(&new_property_values),
-            error::invalid_argument(ErrorPropertyKeysValuesLengthMismatch));
+            ErrorPropertyKeysValuesLengthMismatch);
 
         let new_properties = simple_map::new<String, String>();
         let i = 0;
@@ -817,7 +816,7 @@ module rooch_framework::did {
         let did_identifier_str = address::to_bech32_string(signer_address);
         
         let object_id = resolve_did_object_id(&did_identifier_str);
-        assert!(object::exists_object_with_type<DIDDocument>(object_id), error::not_found(ErrorDIDObjectNotFound));
+        assert!(object::exists_object_with_type<DIDDocument>(object_id), ErrorDIDObjectNotFound);
 
         let did_doc_obj_ref_mut = object::borrow_mut_object_extend<DIDDocument>(object_id);
         let did_document_data = object::borrow_mut(did_doc_obj_ref_mut);
@@ -825,7 +824,7 @@ module rooch_framework::did {
         assert_authorized_for_capability_invocation(did_document_data, did_signer);
 
         assert!(simple_map::contains_key(&did_document_data.services, &fragment),
-            error::not_found(ErrorServiceNotFound));
+            ErrorServiceNotFound);
 
         let service_id = ServiceID {
             did: did_document_data.id,
@@ -851,7 +850,7 @@ module rooch_framework::did {
         let did_identifier_str = address::to_bech32_string(signer_address);
         
         let object_id = resolve_did_object_id(&did_identifier_str);
-        assert!(object::exists_object_with_type<DIDDocument>(object_id), error::not_found(ErrorDIDObjectNotFound));
+        assert!(object::exists_object_with_type<DIDDocument>(object_id), ErrorDIDObjectNotFound);
         
         let did_doc_obj_ref_mut = object::borrow_mut_object_extend<DIDDocument>(object_id);
         let did_document_data = object::borrow_mut(did_doc_obj_ref_mut);
@@ -859,7 +858,7 @@ module rooch_framework::did {
         assert_authorized_for_capability_invocation(did_document_data, did_signer);
 
         assert!(simple_map::contains_key(&did_document_data.services, &fragment),
-            error::not_found(ErrorServiceNotFound));
+            ErrorServiceNotFound);
 
         simple_map::remove(&mut did_document_data.services, &fragment);
         did_document_data.updated_timestamp = timestamp::now_seconds();
@@ -983,14 +982,14 @@ module rooch_framework::did {
         };
         
         // Should have exactly 2 colons: "did:method:identifier"
-        assert!(vector::length(&colon_positions) >= 2, error::invalid_argument(ErrorInvalidDIDStringFormat));
+        assert!(vector::length(&colon_positions) >= 2, ErrorInvalidDIDStringFormat);
         
         let first_colon_pos = *vector::borrow(&colon_positions, 0);
         let second_colon_pos = *vector::borrow(&colon_positions, 1);
         
         // Extract "did" part (should be "did")
         let did_part = string::sub_string(did_string, 0, first_colon_pos);
-        assert!(did_part == string::utf8(b"did"), error::invalid_argument(ErrorInvalidDIDStringFormat));
+        assert!(did_part == string::utf8(b"did"), ErrorInvalidDIDStringFormat);
         
         // Extract method part
         let method = string::sub_string(did_string, first_colon_pos + 1, second_colon_pos);
@@ -999,8 +998,8 @@ module rooch_framework::did {
         let identifier = string::sub_string(did_string, second_colon_pos + 1, string::length(did_string));
         
         // Validate that method and identifier are not empty
-        assert!(string::length(&method) > 0, error::invalid_argument(ErrorInvalidDIDStringFormat));
-        assert!(string::length(&identifier) > 0, error::invalid_argument(ErrorInvalidDIDStringFormat));
+        assert!(string::length(&method) > 0, ErrorInvalidDIDStringFormat);
+        assert!(string::length(&identifier) > 0, ErrorInvalidDIDStringFormat);
         
         DID {
             method,
@@ -1018,24 +1017,24 @@ module rooch_framework::did {
         let did_account_address = account::account_cap_address(&did_document_data.account_cap);
         
         // 1. Verify signer is the DID's associated account
-        assert!(sender == did_account_address, error::permission_denied(ErrorSignerNotDIDAccount));
+        assert!(sender == did_account_address, ErrorSignerNotDIDAccount);
         
         // 2. Get current transaction's session key (authentication_key)
         let session_key_opt = auth_validator::get_session_key_from_ctx_option();
-        assert!(option::is_some(&session_key_opt), error::permission_denied(ErrorNoSessionKeyInContext));
+        assert!(option::is_some(&session_key_opt), ErrorNoSessionKeyInContext);
         
         let session_key = option::extract(&mut session_key_opt);
         
         // 3. Find the verification method corresponding to this session key
         let vm_fragment_opt = find_verification_method_by_session_key(did_document_data, &session_key);
-        assert!(option::is_some(&vm_fragment_opt), error::permission_denied(ErrorSessionKeyNotFound));
+        assert!(option::is_some(&vm_fragment_opt), ErrorSessionKeyNotFound);
         
         let vm_fragment = option::extract(&mut vm_fragment_opt);
         
         // 4. Check if this verification method has capabilityDelegation permission
         assert!(
             vector::contains(&did_document_data.capability_delegation, &vm_fragment),
-            error::permission_denied(ErrorInsufficientPermission)
+            ErrorInsufficientPermission
         );
     }
 
@@ -1048,24 +1047,24 @@ module rooch_framework::did {
         let did_account_address = account::account_cap_address(&did_document_data.account_cap);
         
         // 1. Verify signer is the DID's associated account
-        assert!(sender == did_account_address, error::permission_denied(ErrorSignerNotDIDAccount));
+        assert!(sender == did_account_address, ErrorSignerNotDIDAccount);
         
         // 2. Get current transaction's session key (authentication_key)
         let session_key_opt = auth_validator::get_session_key_from_ctx_option();
-        assert!(option::is_some(&session_key_opt), error::permission_denied(ErrorNoSessionKeyInContext));
+        assert!(option::is_some(&session_key_opt), ErrorNoSessionKeyInContext);
         
         let session_key = option::extract(&mut session_key_opt);
         
         // 3. Find the verification method corresponding to this session key
         let vm_fragment_opt = find_verification_method_by_session_key(did_document_data, &session_key);
-        assert!(option::is_some(&vm_fragment_opt), error::permission_denied(ErrorSessionKeyNotFound));
+        assert!(option::is_some(&vm_fragment_opt), ErrorSessionKeyNotFound);
         
         let vm_fragment = option::extract(&mut vm_fragment_opt);
         
         // 4. Check if this verification method has capabilityInvocation permission
         assert!(
             vector::contains(&did_document_data.capability_invocation, &vm_fragment),
-            error::permission_denied(ErrorInsufficientPermission)
+            ErrorInsufficientPermission
         );
     }
 
@@ -1144,31 +1143,31 @@ module rooch_framework::did {
 
         if (did_key_controller_count > 0) {
             // If there's any did:key controller, there must be exactly one.
-            assert!(did_key_controller_count == 1, error::invalid_argument(ErrorMultipleDIDKeyControllersNotAllowed));
+            assert!(did_key_controller_count == 1, ErrorMultipleDIDKeyControllersNotAllowed);
             
-            assert!(option::is_some(&did_key_controller_opt), error::internal(0)); // Should be some if count is 1
+            assert!(option::is_some(&did_key_controller_opt), ErrorInvalidArgument); // Should be some if count is 1
             let did_key_controller = option::destroy_some(did_key_controller_opt);
             
             // For did:key, the identifier should be the multibase-encoded public key
             let identifier = &did_key_controller.identifier;
             let identifier_bytes = string::bytes(identifier);
-            assert!(vector::length(identifier_bytes) > 0, error::invalid_argument(ErrorInvalidDIDStringFormat));
+            assert!(vector::length(identifier_bytes) > 0, ErrorInvalidDIDStringFormat);
             
             let first_byte = *vector::borrow(identifier_bytes, 0);
-            assert!(first_byte == 122, error::invalid_argument(ErrorInvalidDIDStringFormat)); // 'z' for base58btc
+            assert!(first_byte == 122, ErrorInvalidDIDStringFormat); // 'z' for base58btc
             
             let controller_pk_multibase = *identifier;
             
             let controller_pk_opt = multibase::decode_ed25519_key(&controller_pk_multibase);
             let initial_pk_opt = multibase::decode_ed25519_key(initial_vm_pk_multibase);
             
-            assert!(option::is_some(&controller_pk_opt), error::invalid_argument(ErrorInvalidPublicKeyMultibaseFormat));
-            assert!(option::is_some(&initial_pk_opt), error::invalid_argument(ErrorInvalidPublicKeyMultibaseFormat));
+            assert!(option::is_some(&controller_pk_opt), ErrorInvalidPublicKeyMultibaseFormat);
+            assert!(option::is_some(&initial_pk_opt), ErrorInvalidPublicKeyMultibaseFormat);
             
             let controller_pk_bytes = option::destroy_some(controller_pk_opt);
             let initial_pk_bytes = option::destroy_some(initial_pk_opt);
             
-            assert!(controller_pk_bytes == initial_pk_bytes, error::invalid_argument(ErrorDIDKeyControllerPublicKeyMismatch));
+            assert!(controller_pk_bytes == initial_pk_bytes, ErrorDIDKeyControllerPublicKeyMismatch);
         }
         // If did_key_controller_count is 0, no specific validation for did:key is needed here.
     }
@@ -1321,14 +1320,14 @@ module rooch_framework::did {
     public fun get_did_document(addr: address): &DIDDocument {
         let did_identifier = address::to_bech32_string(addr);
         let object_id = resolve_did_object_id(&did_identifier);
-        assert!(object::exists_object_with_type<DIDDocument>(object_id), error::not_found(ErrorDIDDocumentNotExist));
+        assert!(object::exists_object_with_type<DIDDocument>(object_id), ErrorDIDDocumentNotExist);
         let did_doc_obj_ref = object::borrow_object<DIDDocument>(object_id);
         object::borrow(did_doc_obj_ref)
     }
 
     /// Get DIDDocument by ObjectID
     public fun get_did_document_by_object_id(object_id: ObjectID): &DIDDocument {
-        assert!(object::exists_object_with_type<DIDDocument>(object_id), error::not_found(ErrorDIDDocumentNotExist));
+        assert!(object::exists_object_with_type<DIDDocument>(object_id), ErrorDIDDocumentNotExist);
         let did_doc_obj_ref = object::borrow_object<DIDDocument>(object_id);
         object::borrow(did_doc_obj_ref)
     }
