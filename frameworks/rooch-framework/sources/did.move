@@ -12,12 +12,13 @@ module rooch_framework::did {
     use moveos_std::account::{Self, AccountCap};
     use moveos_std::object::{Self, ObjectID};
     use moveos_std::timestamp;
-    use moveos_std::core_addresses;
     use moveos_std::address;
     use moveos_std::multibase;
     use rooch_framework::session_key;
     use rooch_framework::auth_validator;
     use rooch_framework::bitcoin_address;
+
+    friend rooch_framework::genesis;
 
     /// DID document does not exist (legacy or general not found)
     const ErrorDIDDocumentNotExist: u64 = 1;
@@ -149,19 +150,22 @@ module rooch_framework::did {
         object::named_object_id<DIDRegistry>()
     }
 
-    /// Initialize the DID system - called only once at genesis or by system upgrade.
-    /// The signer must be a system reserved account.
-    public entry fun init_did_registry(system_signer: &signer) {
-        core_addresses::assert_system_reserved(system_signer);
+    public(friend) fun genesis_init(){
         let registry_id = did_registry_id();
         assert!(!object::exists_object_with_type<DIDRegistry>(registry_id), ErrorDIDRegistryAlreadyInitialized);
         
         let registry_data = DIDRegistry {
             controller_to_dids: table::new<DID, vector<ObjectID>>(),
         };
-        // Named objects are created in the context of the sender, then transferred.
-        let registry_object = object::new_named_object(registry_data);
+
+        let registry_object = object::new_with_id(registry_id, registry_data);
         object::transfer_extend(registry_object, @rooch_framework);
+    }
+
+    /// Initialize the DID system
+    /// Any account can call this function to initialize the DID system
+    public entry fun init_did_registry() {
+        genesis_init();
     }
 
     /// Borrows an immutable reference to the global DIDRegistry object's internal state.
