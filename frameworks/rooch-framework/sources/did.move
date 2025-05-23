@@ -174,6 +174,35 @@ module rooch_framework::did {
     /// Create a new DID Object.
     /// The method is fixed to "rooch".
     /// The identifier is derived from the newly created associated Rooch account address.
+    /// 
+    /// ## Parameters
+    /// 
+    /// ### `initial_controllers`
+    /// - Must contain at least one controller DID
+    /// - Controllers have the authority to modify this DID document
+    /// - Special validation for `did:key` controllers per NIP-1:
+    ///   - If any controller is `did:key`, there must be exactly one such controller
+    ///   - The `did:key` controller's public key must match `initial_vm_pk_multibase`
+    /// 
+    /// ### `initial_vm_pk_multibase`
+    /// - The public key for the initial verification method in multibase format
+    /// - For Ed25519 verification methods, this key will be automatically registered
+    ///   as a Rooch session key, enabling the DID to perform transactions
+    /// - For `did:key` controllers, this public key must match the key embedded
+    ///   in the controller's DID identifier
+    /// 
+    /// ## Initial Verification Relationships
+    /// 
+    /// The initial verification method will be added to these relationships:
+    /// - `authentication`: For proving identity (Ed25519 keys become session keys)
+    /// - `assertion_method`: For making assertions and claims
+    /// - `capability_invocation`: For invoking DID document updates
+    /// - `capability_delegation`: For delegating capabilities to other keys
+    /// 
+    /// Note: `key_agreement` is intentionally left empty because it typically
+    /// requires different cryptographic primitives (e.g., X25519 for ECDH) rather
+    /// than the signing keys (e.g., Ed25519) used for authentication and assertions.
+    /// Users should explicitly add appropriate key agreement methods if needed.
     public fun create_did_object(
         // We keep the creator account signer for future use, but it is not used in this function
         _creator_account_signer: &signer,
