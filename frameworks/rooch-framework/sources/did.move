@@ -16,6 +16,7 @@ module rooch_framework::did {
     use moveos_std::core_addresses;
     use moveos_std::address;
     use moveos_std::multibase;
+    use rooch_framework::session_key;
 
     /// DID document does not exist (legacy or general not found)
     const ErrorDIDDocumentNotExist: u64 = 1;
@@ -91,7 +92,6 @@ module rooch_framework::did {
         type: String,      // Type of verification method (e.g., "Ed25519VerificationKey2020")
         controller: DID,   // Controller of this verification method
         public_key_multibase: String, // Public key in multibase format
-        expires: Option<u64>, // Optional expiration timestamp in seconds
     }
 
     /// Service definition
@@ -103,6 +103,7 @@ module rooch_framework::did {
     }
 
     /// DID Document containing all DID information. This is the data part of an Object.
+    /// The DIDDocuemnt only has `key` ability, no `store`, so the user can not transfer it to other accounts.
     struct DIDDocument has key {
         id: DID,
         controller: vector<DID>,
@@ -178,13 +179,17 @@ module rooch_framework::did {
         let new_rooch_address = account::account_cap_address(&new_account_cap);
         
         let did_method_val = string::utf8(b"rooch");
-        let did_identifier = address::to_bech32_string(new_rooch_address);
+        let did_identifier_string = address::to_bech32_string(new_rooch_address);
+        
         assert!(!table::contains(&registry.address_to_did, new_rooch_address), error::already_exists(ErrorDIDAlreadyExists));
         
         let did = DID {
             method: did_method_val,
-            identifier: did_identifier,
+            identifier: did_identifier_string,
         };
+
+        let new_object_id = resolve_did_object_id(&did_identifier_string);
+        assert!(!object::exists_object_with_type<DIDDocument>(new_object_id), error::already_exists(ErrorDIDObjectNotFound));
 
         let initial_vm_fragment_value = initial_vm_fragment;
 
@@ -197,13 +202,13 @@ module rooch_framework::did {
             type: initial_vm_type,
             controller: did,
             public_key_multibase: initial_vm_pk_multibase,
-            expires: option::none<u64>(),
         };
 
         let verification_methods = simple_map::new<String, VerificationMethod>();
         simple_map::add(&mut verification_methods, initial_vm_fragment_value, initial_vm);
 
         let auth_rels_fragment = vector::singleton(initial_vm_fragment_value);
+        let cap_delegation_rels_fragment = vector::singleton(initial_vm_fragment_value);
 
         let now = timestamp::now_seconds();
 
@@ -214,8 +219,8 @@ module rooch_framework::did {
             authentication: auth_rels_fragment,
             assertion_method: auth_rels_fragment,
             capability_invocation: auth_rels_fragment,
-            capability_delegation: auth_rels_fragment,
-            key_agreement: auth_rels_fragment,
+            capability_delegation: cap_delegation_rels_fragment,
+            key_agreement: vector::empty<String>(),
             services: simple_map::new<String, Service>(),
             account_cap: new_account_cap,
             also_known_as: vector::empty<String>(),
@@ -223,9 +228,10 @@ module rooch_framework::did {
             updated_timestamp: now,
         };
 
-        let new_object_id = resolve_did_object_id(&did_identifier);
         let did_object = object::new_with_id(new_object_id, did_document_data);
         object::transfer_extend(did_object, new_rooch_address);
+        
+        table::add(&mut registry.address_to_did, new_rooch_address, did);
         
         new_object_id
     }
@@ -252,7 +258,7 @@ module rooch_framework::did {
             i = i + 1;
         };
 
-        create_did_object(
+        let _ = create_did_object(
             creator_account_signer,
             initial_controllers,
             initial_vm_type,
@@ -265,8 +271,7 @@ module rooch_framework::did {
         did_identifier_str: String,
         fragment: String,
         method_type: String,
-        public_key_multibase: String,
-        duration_to_expiry_seconds: u64
+        public_key_multibase: String
     ) {
         let object_id = resolve_did_object_id(&did_identifier_str);
         assert!(object::exists_object_with_type<DIDDocument>(object_id), error::not_found(ErrorDIDObjectNotFound));
@@ -279,12 +284,6 @@ module rooch_framework::did {
         assert!(!simple_map::contains_key(&did_document_data.verification_methods, &fragment),
             error::already_exists(ErrorVerificationMethodAlreadyExists));
 
-        let expires_opt = if (duration_to_expiry_seconds > 0) {
-            option::some(timestamp::now_seconds() + duration_to_expiry_seconds)
-        } else {
-            option::none()
-        };
-
         let verification_method_id = VerificationMethodID {
             did: did_document_data.id,
             fragment: fragment,
@@ -295,7 +294,6 @@ module rooch_framework::did {
             type: method_type,
             controller: did_document_data.id,
             public_key_multibase,
-            expires: expires_opt,
         };
 
         simple_map::add(&mut did_document_data.verification_methods, fragment, verification_method);
@@ -316,6 +314,23 @@ module rooch_framework::did {
 
         assert!(simple_map::contains_key(&did_document_data.verification_methods, &fragment),
             error::not_found(ErrorVerificationMethodNotFound));
+
+        if (vector::contains(&did_document_data.authentication, &fragment)) {
+            let vm_to_remove = simple_map::borrow(&did_document_data.verification_methods, &fragment);
+            
+            assert!(vm_to_remove.type == string::utf8(b"Ed25519VerificationKey2020"), ErrorUnsupportedAuthKeyTypeForSessionKey);
+
+            let pk_bytes_opt = multibase::decode_ed25519_key(&vm_to_remove.public_key_multibase);
+            assert!(option::is_some(&pk_bytes_opt), ErrorInvalidPublicKeyMultibaseFormat);
+            let pk_bytes = option::destroy_some(pk_bytes_opt);
+
+            // Use the public function from session_key module to derive the auth key
+            let auth_key_for_session = session_key::ed25519_public_key_to_authentication_key(&pk_bytes);
+
+            let associated_account_signer = account::create_signer_with_account_cap(&mut did_document_data.account_cap);
+            
+            session_key::remove_session_key(&associated_account_signer, auth_key_for_session);
+        };
 
         remove_from_verification_relationship_internal(&mut did_document_data.authentication, &fragment);
         remove_from_verification_relationship_internal(&mut did_document_data.assertion_method, &fragment);
@@ -356,8 +371,7 @@ module rooch_framework::did {
             let vm = simple_map::borrow(&did_document_data.verification_methods, &fragment);
             assert!(vm.type == string::utf8(b"Ed25519VerificationKey2020"), ErrorUnsupportedAuthKeyTypeForSessionKey);
             
-            // Attempt to register/ensure this key as a Rooch session key for the associated account
-            internal_ensure_rooch_session_key(did_document_data, vm.type, vm.public_key_multibase, vm.expires);
+            internal_ensure_rooch_session_key(did_document_data, vm.id.fragment, vm.type, vm.public_key_multibase);
 
             &mut did_document_data.authentication
         } else if (relationship_type == VERIFICATION_RELATIONSHIP_ASSERTION_METHOD) {
@@ -601,15 +615,6 @@ module rooch_framework::did {
             return false
         };
 
-        let verification_method = simple_map::borrow(&did_document_data.verification_methods, fragment);
-
-        if (option::is_some(&verification_method.expires)) {
-            let expires_timestamp_ref = option::borrow(&verification_method.expires);
-            let now = timestamp::now_seconds();
-            if (now > *expires_timestamp_ref) {
-                return false
-            };
-        };
         true
     }
 
@@ -647,53 +652,62 @@ module rooch_framework::did {
         let _sender = tx_context::sender(); // Sender is now fetched here for auth logic
         // TODO: Implement full controller and capabilityDelegation check using _sender against controllers.
         // This is a CRITICAL security function.
-        // For now, as a NON-SECURE placeholder, we might just check if the controller list isn't empty.
-        // This placeholder DOES NOT provide any real security.
-        // assert!(vector::length(controllers) > 0, error::permission_denied(ErrorControllerPermissionDenied));
-        // Remove or replace the above assert with actual logic.
+        // For now, this function is a placeholder and DOES NOT provide any real security.
+        // Actual implementation would involve:
+        // 1. For each controller_did in `controllers`:
+        //    a. Resolve the controller_did to its DIDDocument object.
+        //    b. Check if `_sender` corresponds to any verification method in the controller_did's document
+        //       that is listed in its `capabilityDelegation` relationship.
+        //    c. If such a valid, non-expired verification method is found, authorization is granted.
+        // 2. If no controller grants authorization, abort with ErrorControllerPermissionDenied.
+        // assert!(vector::length(controllers) > 0, error::permission_denied(ErrorControllerPermissionDenied)); // Ensure this NON-SECURE placeholder is removed or replaced
     }
 
     // New private helper function to register a VM as a Rooch session key
     fun internal_ensure_rooch_session_key(
         did_document_data: &mut DIDDocument,
+        vm_fragment: String,
         vm_type: String,
         vm_public_key_multibase: String,
-        vm_expires: Option<u64>
     ) {
-        // This assertion is a safeguard as the caller should already check this.
         assert!(vm_type == string::utf8(b"Ed25519VerificationKey2020"), ErrorUnsupportedAuthKeyTypeForSessionKey);
 
-        // 1. Parse publicKeyMultibase to get raw Ed25519 public key bytes.
         let pk_bytes_opt = multibase::decode_ed25519_key(&vm_public_key_multibase);
         assert!(option::is_some(&pk_bytes_opt), ErrorInvalidPublicKeyMultibaseFormat);
-        let _pk_bytes = option::destroy_some(pk_bytes_opt); // pk_bytes is now available
+        let pk_bytes = option::destroy_some(pk_bytes_opt);
 
-        // 2. Get AccountCap and create signer for the associated Rooch account.
-        let _associated_account_signer = account::create_signer_with_account_cap(&mut did_document_data.account_cap);
+        let associated_account_signer = account::create_signer_with_account_cap(&mut did_document_data.account_cap);
 
-        // 3. Determine expiration for the session key.
-        let _session_key_expiration_timestamp_opt = vm_expires;
+        let max_inactive_interval_for_sk = session_key::max_inactive_interval();
 
-        // 4. Call the Rooch session key module to register the key.
-        // THIS IS A PLACEHOLDER for the actual API call to `rooch_framework::session_key`.
-        // The exact function name, parameters (especially for scopes like "all access" or specific module/function calls),
-        // and return values need to be determined from the `session_key` module.
-        // For example, it might be:
-        // rooch_framework::session_key::register_ed25519_session_key(
-        //     &associated_account_signer,
-        //     pk_bytes,
-        //     string::utf8(b"did_auth_key"), // Example application name
-        //     option::none(), // Example: no specific app URL
-        //     vector::empty(), // Example: all scopes or specific scope needed
-        //     session_key_expiration_timestamp_opt
-        // );
-        // Using a simplified placeholder for now, assuming it returns a boolean for success:
-        // let registration_successful = rooch_framework::session_key::placeholder_register_did_auth_key(
-        //     &associated_account_signer,
-        //     pk_bytes,
-        //     session_key_expiration_timestamp_opt
-        // );
-        // assert!(registration_successful, ErrorSessionKeyRegistrationFailed);
-        // TODO: Re-enable and implement session key registration when session_key module is ready.
+        let app_name = string::utf8(b"did_authentication_key:");
+        string::append(&mut app_name, vm_fragment);
+        let app_url = format_did(&did_document_data.id);
+
+        let associated_address = signer::address_of(&associated_account_signer);
+        
+        let did_addr_scope = session_key::new_session_scope(
+            associated_address,       
+            string::utf8(b"*"),        
+            string::utf8(b"*") 
+        );
+        let rooch_framework_scope = session_key::new_session_scope(
+            @rooch_framework,
+            string::utf8(b"*"),       
+            string::utf8(b"*") 
+        );
+        let scopes_for_sk = vector[rooch_framework_scope, did_addr_scope];
+
+        // Use the public function from session_key module to derive the auth key
+        let auth_key_for_session = session_key::ed25519_public_key_to_authentication_key(&pk_bytes);
+
+        session_key::create_session_key(
+            &associated_account_signer,
+            app_name,
+            app_url,
+            auth_key_for_session, // Use the derived auth_key from session_key module
+            scopes_for_sk,
+            max_inactive_interval_for_sk
+        );
     }
 } 

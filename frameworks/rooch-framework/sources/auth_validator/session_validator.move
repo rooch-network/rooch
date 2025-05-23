@@ -17,8 +17,6 @@ module rooch_framework::session_validator {
     /// there defines auth validator id for each auth validator
     const SESSION_VALIDATOR_ID: u64 = 0;
 
-    const SIGNATURE_SCHEME_ED25519: u8 = 0;
-
 
     struct SessionValidator has store, drop {}
 
@@ -29,7 +27,7 @@ module rooch_framework::session_validator {
     /// Validate the authenticator payload, return public key and signature
     fun validate_authenticator_payload(authenticator_payload: &vector<u8>): (vector<u8>, vector<u8>) {
         let scheme = vector::borrow(authenticator_payload, 0);
-        assert!(*scheme == SIGNATURE_SCHEME_ED25519, auth_validator::error_validate_invalid_authenticator());
+        assert!(*scheme == session_key::signature_scheme_ed25519(), auth_validator::error_validate_invalid_authenticator());
 
         let sign = vector::empty<u8>();
         let i = 1;
@@ -51,14 +49,6 @@ module rooch_framework::session_validator {
         (sign, public_key)
     }
 
-    /// Get the authentication key of the given public key.
-    fun public_key_to_authentication_key(signature_scheme: u8, public_key: vector<u8>): vector<u8> {
-        let bytes = vector::singleton(signature_scheme);
-        vector::append(&mut bytes, public_key);
-        hash::blake2b256(&bytes)
-    }
-
-
     // validate the signature of the authenticator payload and return auth key
     fun validate_signature(authenticator_payload: &vector<u8>, tx_hash: &vector<u8>) : vector<u8> {
         let (signature, public_key) = validate_authenticator_payload(authenticator_payload);
@@ -70,7 +60,7 @@ module rooch_framework::session_validator {
             ),
             auth_validator::error_validate_invalid_authenticator()
         );
-        public_key_to_authentication_key(SIGNATURE_SCHEME_ED25519, public_key)
+        session_key::ed25519_public_key_to_authentication_key(&public_key)
     }
 
     public(friend) fun validate(authenticator_payload: vector<u8>) :vector<u8> {
