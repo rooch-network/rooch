@@ -161,7 +161,7 @@ module rooch_framework::auth_validator {
 
     /// Get the session key from the TxValidateResult in the TxContext
     /// If the TxValidateResult is None or SessionKey is None, return None
-    public(friend) fun get_session_key_from_ctx_option(): Option<vector<u8>> {
+    public fun get_session_key_from_ctx_option(): Option<vector<u8>> {
         let validate_result_opt = tx_context::get_attribute<TxValidateResult>();
         if (option::is_some(&validate_result_opt)) {
             let validate_result = option::extract(&mut validate_result_opt);
@@ -172,7 +172,7 @@ module rooch_framework::auth_validator {
     }
 
     /// The current tx is validate via the session key or not
-    public(friend) fun is_validate_via_session_key(): bool {
+    public fun is_validate_via_session_key(): bool {
         option::is_some(&get_session_key_from_ctx_option())
     }
 

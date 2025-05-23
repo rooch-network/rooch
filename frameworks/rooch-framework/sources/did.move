@@ -17,6 +17,7 @@ module rooch_framework::did {
     use moveos_std::address;
     use moveos_std::multibase;
     use rooch_framework::session_key;
+    use rooch_framework::auth_validator;
 
     /// DID document does not exist (legacy or general not found)
     const ErrorDIDDocumentNotExist: u64 = 1;
@@ -66,6 +67,14 @@ module rooch_framework::did {
     const ErrorDIDKeyControllerPublicKeyMismatch: u64 = 23;
     /// Multiple did:key controllers are not allowed during initial DID creation with a did:key controller
     const ErrorMultipleDIDKeyControllersNotAllowed: u64 = 24;
+    /// Session key not found in DID document's authentication methods
+    const ErrorSessionKeyNotFound: u64 = 25;
+    /// Verification method has insufficient permission for the requested operation
+    const ErrorInsufficientPermission: u64 = 26;
+    /// The signer is not the DID's associated account
+    const ErrorSignerNotDIDAccount: u64 = 27;
+    /// No session key found in transaction context - all DID operations must use session keys
+    const ErrorNoSessionKeyInContext: u64 = 28;
 
     // Verification relationship types
     const VERIFICATION_RELATIONSHIP_AUTHENTICATION: u8 = 0;
@@ -333,6 +342,7 @@ module rooch_framework::did {
     }
 
     public entry fun add_verification_method_entry(
+        did_signer: &signer,
         did_identifier_str: String,
         fragment: String,
         method_type: String,
@@ -344,7 +354,7 @@ module rooch_framework::did {
         let did_doc_obj_ref_mut = object::borrow_mut_object_extend<DIDDocument>(object_id);
         let did_document_data = object::borrow_mut(did_doc_obj_ref_mut);
 
-        assert_authorized_controller(&did_document_data.controller);
+        assert_authorized_for_capability_delegation(did_document_data, did_signer);
 
         assert!(!simple_map::contains_key(&did_document_data.verification_methods, &fragment),
             error::already_exists(ErrorVerificationMethodAlreadyExists));
@@ -366,6 +376,7 @@ module rooch_framework::did {
     }
 
     public entry fun remove_verification_method_entry(
+        did_signer: &signer,
         did_identifier_str: String,
         fragment: String
     ) {
@@ -375,7 +386,7 @@ module rooch_framework::did {
         let did_doc_obj_ref_mut = object::borrow_mut_object_extend<DIDDocument>(object_id);
         let did_document_data = object::borrow_mut(did_doc_obj_ref_mut);
 
-        assert_authorized_controller(&did_document_data.controller);
+        assert_authorized_for_capability_delegation(did_document_data, did_signer);
 
         assert!(simple_map::contains_key(&did_document_data.verification_methods, &fragment),
             error::not_found(ErrorVerificationMethodNotFound));
@@ -416,6 +427,7 @@ module rooch_framework::did {
     }
 
     public entry fun add_to_verification_relationship_entry(
+        did_signer: &signer,
         did_identifier_str: String,
         fragment: String,
         relationship_type: u8
@@ -426,7 +438,7 @@ module rooch_framework::did {
         let did_doc_obj_ref_mut = object::borrow_mut_object_extend<DIDDocument>(object_id);
         let did_document_data = object::borrow_mut(did_doc_obj_ref_mut);
 
-        assert_authorized_controller(&did_document_data.controller);
+        assert_authorized_for_capability_delegation(did_document_data, did_signer);
 
         assert!(simple_map::contains_key(&did_document_data.verification_methods, &fragment),
             error::not_found(ErrorVerificationMethodNotFound));
@@ -466,6 +478,7 @@ module rooch_framework::did {
     }
 
     public entry fun remove_from_verification_relationship_entry(
+        did_signer: &signer,
         did_identifier_str: String,
         fragment: String,
         relationship_type: u8
@@ -476,7 +489,7 @@ module rooch_framework::did {
         let did_doc_obj_ref_mut = object::borrow_mut_object_extend<DIDDocument>(object_id);
         let did_document_data = object::borrow_mut(did_doc_obj_ref_mut);
 
-        assert_authorized_controller(&did_document_data.controller);
+        assert_authorized_for_capability_delegation(did_document_data, did_signer);
 
         let target_relationship_vec_mut = if (relationship_type == VERIFICATION_RELATIONSHIP_AUTHENTICATION) {
             &mut did_document_data.authentication
@@ -526,6 +539,7 @@ module rooch_framework::did {
     }
 
     public entry fun add_service_entry(
+        did_signer: &signer,
         did_identifier_str: String,
         fragment: String,
         service_type: String,
@@ -537,13 +551,14 @@ module rooch_framework::did {
         let did_doc_obj_ref_mut = object::borrow_mut_object_extend<DIDDocument>(object_id);
         let did_document_data = object::borrow_mut(did_doc_obj_ref_mut);
 
-        assert_authorized_controller(&did_document_data.controller);
+        assert_authorized_for_capability_invocation(did_document_data, did_signer);
 
         let properties = simple_map::new<String, String>();
         add_service_internal(did_document_data, fragment, service_type, service_endpoint, properties);
     }
 
     public entry fun add_service_with_properties_entry(
+        did_signer: &signer,
         did_identifier_str: String,
         fragment: String,
         service_type: String,
@@ -568,11 +583,12 @@ module rooch_framework::did {
         let did_doc_obj_ref_mut = object::borrow_mut_object_extend<DIDDocument>(object_id);
         let did_document_data = object::borrow_mut(did_doc_obj_ref_mut);
 
-        assert_authorized_controller(&did_document_data.controller);
+        assert_authorized_for_capability_invocation(did_document_data, did_signer);
         add_service_internal(did_document_data, fragment, service_type, service_endpoint, properties);
     }
 
     public entry fun update_service_entry(
+        did_signer: &signer,
         did_identifier_str: String,
         fragment: String,
         new_service_type: String,
@@ -597,7 +613,7 @@ module rooch_framework::did {
         let did_doc_obj_ref_mut = object::borrow_mut_object_extend<DIDDocument>(object_id);
         let did_document_data = object::borrow_mut(did_doc_obj_ref_mut);
 
-        assert_authorized_controller(&did_document_data.controller);
+        assert_authorized_for_capability_invocation(did_document_data, did_signer);
 
         assert!(simple_map::contains_key(&did_document_data.services, &fragment),
             error::not_found(ErrorServiceNotFound));
@@ -618,6 +634,7 @@ module rooch_framework::did {
     }
 
     public entry fun remove_service_entry(
+        did_signer: &signer,
         did_identifier_str: String,
         fragment: String
     ) {
@@ -627,7 +644,7 @@ module rooch_framework::did {
         let did_doc_obj_ref_mut = object::borrow_mut_object_extend<DIDDocument>(object_id);
         let did_document_data = object::borrow_mut(did_doc_obj_ref_mut);
 
-        assert_authorized_controller(&did_document_data.controller);
+        assert_authorized_for_capability_invocation(did_document_data, did_signer);
 
         assert!(simple_map::contains_key(&did_document_data.services, &fragment),
             error::not_found(ErrorServiceNotFound));
@@ -780,68 +797,103 @@ module rooch_framework::did {
         }
     }
 
-    // This is a complex check potentially requiring resolving controller DIDs.
-    fun assert_authorized_controller(controllers: &vector<DID>) {
-        let _sender = tx_context::sender(); // Sender is now fetched here for auth logic
-        // TODO: Implement full controller and capabilityDelegation check using _sender against controllers.
-        // This is a CRITICAL security function.
-        // For now, this function is a placeholder and DOES NOT provide any real security.
-        // Actual implementation would involve:
-        // 1. For each controller_did in `controllers`:
-        //    a. Resolve the controller_did to its DIDDocument object.
-        //    b. Check if `_sender` corresponds to any verification method in the controller_did's document
-        //       that is listed in its `capabilityDelegation` relationship.
-        //    c. If such a valid, non-expired verification method is found, authorization is granted.
-        // 2. If no controller grants authorization, abort with ErrorControllerPermissionDenied.
-        // assert!(vector::length(controllers) > 0, error::permission_denied(ErrorControllerPermissionDenied)); // Ensure this NON-SECURE placeholder is removed or replaced
+    /// Assert that the signer has capabilityDelegation permission for DID document management
+    /// This includes key management and verification relationship modifications
+    fun assert_authorized_for_capability_delegation(
+        did_document_data: &DIDDocument,
+        did_signer: &signer
+    ) {
+        let sender = signer::address_of(did_signer);
+        let did_account_address = account::account_cap_address(&did_document_data.account_cap);
+        
+        // 1. Verify signer is the DID's associated account
+        assert!(sender == did_account_address, error::permission_denied(ErrorSignerNotDIDAccount));
+        
+        // 2. Get current transaction's session key (authentication_key)
+        let session_key_opt = auth_validator::get_session_key_from_ctx_option();
+        assert!(option::is_some(&session_key_opt), error::permission_denied(ErrorNoSessionKeyInContext));
+        
+        let session_key = option::extract(&mut session_key_opt);
+        
+        // 3. Find the verification method corresponding to this session key
+        let vm_fragment_opt = find_verification_method_by_session_key(did_document_data, &session_key);
+        assert!(option::is_some(&vm_fragment_opt), error::permission_denied(ErrorSessionKeyNotFound));
+        
+        let vm_fragment = option::extract(&mut vm_fragment_opt);
+        
+        // 4. Check if this verification method has capabilityDelegation permission
+        assert!(
+            vector::contains(&did_document_data.capability_delegation, &vm_fragment),
+            error::permission_denied(ErrorInsufficientPermission)
+        );
     }
 
-    // New private helper function to register a VM as a Rooch session key
-    fun internal_ensure_rooch_session_key(
-        did_document_data: &mut DIDDocument,
-        vm_fragment: String,
-        vm_type: String,
-        vm_public_key_multibase: String,
+    /// Assert that the signer has capabilityInvocation permission for service management
+    fun assert_authorized_for_capability_invocation(
+        did_document_data: &DIDDocument,
+        did_signer: &signer
     ) {
-        assert!(vm_type == string::utf8(VERIFICATION_METHOD_TYPE_ED25519), ErrorUnsupportedAuthKeyTypeForSessionKey);
-
-        let pk_bytes_opt = multibase::decode_ed25519_key(&vm_public_key_multibase);
-        assert!(option::is_some(&pk_bytes_opt), ErrorInvalidPublicKeyMultibaseFormat);
-        let pk_bytes = option::destroy_some(pk_bytes_opt);
-
-        let associated_account_signer = account::create_signer_with_account_cap(&mut did_document_data.account_cap);
-
-        let max_inactive_interval_for_sk = session_key::max_inactive_interval();
-
-        let app_name = string::utf8(b"did_authentication_key:");
-        string::append(&mut app_name, vm_fragment);
-        let app_url = format_did(&did_document_data.id);
-
-        let associated_address = signer::address_of(&associated_account_signer);
+        let sender = signer::address_of(did_signer);
+        let did_account_address = account::account_cap_address(&did_document_data.account_cap);
         
-        let did_addr_scope = session_key::new_session_scope(
-            associated_address,       
-            string::utf8(b"*"),        
-            string::utf8(b"*") 
+        // 1. Verify signer is the DID's associated account
+        assert!(sender == did_account_address, error::permission_denied(ErrorSignerNotDIDAccount));
+        
+        // 2. Get current transaction's session key (authentication_key)
+        let session_key_opt = auth_validator::get_session_key_from_ctx_option();
+        assert!(option::is_some(&session_key_opt), error::permission_denied(ErrorNoSessionKeyInContext));
+        
+        let session_key = option::extract(&mut session_key_opt);
+        
+        // 3. Find the verification method corresponding to this session key
+        let vm_fragment_opt = find_verification_method_by_session_key(did_document_data, &session_key);
+        assert!(option::is_some(&vm_fragment_opt), error::permission_denied(ErrorSessionKeyNotFound));
+        
+        let vm_fragment = option::extract(&mut vm_fragment_opt);
+        
+        // 4. Check if this verification method has capabilityInvocation permission
+        assert!(
+            vector::contains(&did_document_data.capability_invocation, &vm_fragment),
+            error::permission_denied(ErrorInsufficientPermission)
         );
-        let rooch_framework_scope = session_key::new_session_scope(
-            @rooch_framework,
-            string::utf8(b"*"),       
-            string::utf8(b"*") 
-        );
-        let scopes_for_sk = vector[rooch_framework_scope, did_addr_scope];
+    }
 
-        // Use the public function from session_key module to derive the auth key
-        let auth_key_for_session = session_key::ed25519_public_key_to_authentication_key(&pk_bytes);
-
-        session_key::create_session_key(
-            &associated_account_signer,
-            app_name,
-            app_url,
-            auth_key_for_session, // Use the derived auth_key from session_key module
-            scopes_for_sk,
-            max_inactive_interval_for_sk
-        );
+    /// Find the verification method fragment that corresponds to the given session key
+    /// Returns None if no matching verification method is found
+    fun find_verification_method_by_session_key(
+        did_document_data: &DIDDocument,
+        session_key: &vector<u8>
+    ): Option<String> {
+        // Iterate through all verification methods in the authentication relationship
+        let auth_methods = &did_document_data.authentication;
+        let i = 0;
+        
+        while (i < vector::length(auth_methods)) {
+            let fragment = vector::borrow(auth_methods, i);
+            
+            if (simple_map::contains_key(&did_document_data.verification_methods, fragment)) {
+                let vm = simple_map::borrow(&did_document_data.verification_methods, fragment);
+                
+                // For Ed25519 verification methods, check if the public key matches the session key
+                if (vm.type == string::utf8(VERIFICATION_METHOD_TYPE_ED25519)) {
+                    let pk_bytes_opt = multibase::decode_ed25519_key(&vm.public_key_multibase);
+                    if (option::is_some(&pk_bytes_opt)) {
+                        let pk_bytes = option::destroy_some(pk_bytes_opt);
+                        let derived_auth_key = session_key::ed25519_public_key_to_authentication_key(&pk_bytes);
+                        
+                        // Check if this derived auth_key matches the current session_key
+                        if (derived_auth_key == *session_key) {
+                            return option::some(*fragment)
+                        };
+                    };
+                };
+                // TODO: Add support for other verification method types
+            };
+            
+            i = i + 1;
+        };
+        
+        option::none<String>()
     }
 
     /// Validates did:key controllers according to NIP-1 requirements.
@@ -934,6 +986,54 @@ module rooch_framework::did {
             fragment,
             string::utf8(VERIFICATION_METHOD_TYPE_ED25519),
             public_key_multibase
+        );
+    }
+
+    // New private helper function to register a VM as a Rooch session key
+    fun internal_ensure_rooch_session_key(
+        did_document_data: &mut DIDDocument,
+        vm_fragment: String,
+        vm_type: String,
+        vm_public_key_multibase: String,
+    ) {
+        assert!(vm_type == string::utf8(VERIFICATION_METHOD_TYPE_ED25519), ErrorUnsupportedAuthKeyTypeForSessionKey);
+
+        let pk_bytes_opt = multibase::decode_ed25519_key(&vm_public_key_multibase);
+        assert!(option::is_some(&pk_bytes_opt), ErrorInvalidPublicKeyMultibaseFormat);
+        let pk_bytes = option::destroy_some(pk_bytes_opt);
+
+        let associated_account_signer = account::create_signer_with_account_cap(&mut did_document_data.account_cap);
+
+        let max_inactive_interval_for_sk = session_key::max_inactive_interval();
+
+        let app_name = string::utf8(b"did_authentication_key:");
+        string::append(&mut app_name, vm_fragment);
+        let app_url = format_did(&did_document_data.id);
+
+        let associated_address = signer::address_of(&associated_account_signer);
+        
+        let did_addr_scope = session_key::new_session_scope(
+            associated_address,       
+            string::utf8(b"*"),        
+            string::utf8(b"*") 
+        );
+        let rooch_framework_scope = session_key::new_session_scope(
+            @rooch_framework,
+            string::utf8(b"*"),       
+            string::utf8(b"*") 
+        );
+        let scopes_for_sk = vector[rooch_framework_scope, did_addr_scope];
+
+        // Use the public function from session_key module to derive the auth key
+        let auth_key_for_session = session_key::ed25519_public_key_to_authentication_key(&pk_bytes);
+
+        session_key::create_session_key(
+            &associated_account_signer,
+            app_name,
+            app_url,
+            auth_key_for_session, // Use the derived auth_key from session_key module
+            scopes_for_sk,
+            max_inactive_interval_for_sk
         );
     }
 } 
