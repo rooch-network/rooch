@@ -124,7 +124,7 @@ module rooch_framework::did {
 
     /// Registry to store mappings. This is a Named Object.
     struct DIDRegistry has key {
-        address_to_did: Table<address, DID>,
+        controller_to_dids: Table<DID, vector<ObjectID>>, // Controller DID -> DID Document ObjectIDs it controls
     }
 
     /// Returns the fixed ObjectID for the DIDRegistry.
@@ -140,7 +140,7 @@ module rooch_framework::did {
         assert!(!object::exists_object_with_type<DIDRegistry>(registry_id), ErrorDIDRegistryAlreadyInitialized);
         
         let registry_data = DIDRegistry {
-            address_to_did: table::new<address, DID>(),
+            controller_to_dids: table::new<DID, vector<ObjectID>>(),
         };
         // Named objects are created in the context of the sender, then transferred.
         let registry_object = object::new_named_object(registry_data);
@@ -183,15 +183,13 @@ module rooch_framework::did {
         let did_method_val = string::utf8(b"rooch");
         let did_identifier_string = address::to_bech32_string(new_rooch_address);
         
-        assert!(!table::contains(&registry.address_to_did, new_rooch_address), error::already_exists(ErrorDIDAlreadyExists));
+        let new_object_id = resolve_did_object_id(&did_identifier_string);
+        assert!(!object::exists_object_with_type<DIDDocument>(new_object_id), error::already_exists(ErrorDIDAlreadyExists));
         
         let did = DID {
             method: did_method_val,
             identifier: did_identifier_string,
         };
-
-        let new_object_id = resolve_did_object_id(&did_identifier_string);
-        assert!(!object::exists_object_with_type<DIDDocument>(new_object_id), error::already_exists(ErrorDIDObjectNotFound));
 
         let initial_vm_fragment_value = initial_vm_fragment;
 
@@ -233,7 +231,17 @@ module rooch_framework::did {
         let did_object = object::new_with_id(new_object_id, did_document_data);
         object::transfer_extend(did_object, new_rooch_address);
         
-        table::add(&mut registry.address_to_did, new_rooch_address, did);
+        // Add the new DID to all its controllers' lists in the registry
+        let i = 0;
+        while (i < vector::length(&initial_controllers)) {
+            let controller_did = *vector::borrow(&initial_controllers, i);
+            if (!table::contains(&registry.controller_to_dids, controller_did)) {
+                table::add(&mut registry.controller_to_dids, controller_did, vector::empty<ObjectID>());
+            };
+            let controller_dids = table::borrow_mut(&mut registry.controller_to_dids, controller_did);
+            vector::push_back(controller_dids, new_object_id);
+            i = i + 1;
+        };
         
         new_object_id
     }
@@ -567,17 +575,36 @@ module rooch_framework::did {
     }
 
     public fun exists_did_for_address(addr: address): bool {
-        if (!object::exists_object_with_type<DIDRegistry>(did_registry_id())){
-            return false
-        };
-        let registry = borrow_did_registry();
-        table::contains(&registry.address_to_did, addr)
+        let did_identifier = address::to_bech32_string(addr);
+        let object_id = resolve_did_object_id(&did_identifier);
+        object::exists_object_with_type<DIDDocument>(object_id)
     }
 
     public fun get_did_for_address(addr: address): DID {
         assert!(exists_did_for_address(addr), error::not_found(ErrorDIDDocumentNotExist));
+        let did_identifier = address::to_bech32_string(addr);
+        DID {
+            method: string::utf8(b"rooch"),
+            identifier: did_identifier,
+        }
+    }
+
+    /// Get all DID ObjectIDs controlled by a specific controller DID
+    public fun get_dids_by_controller(controller_did: DID): vector<ObjectID> {
+        if (!object::exists_object_with_type<DIDRegistry>(did_registry_id())){
+            return vector::empty<ObjectID>()
+        };
         let registry = borrow_did_registry();
-        *table::borrow(&registry.address_to_did, addr)
+        if (!table::contains(&registry.controller_to_dids, controller_did)) {
+            vector::empty<ObjectID>()
+        } else {
+            *table::borrow(&registry.controller_to_dids, controller_did)
+        }
+    }
+
+    public fun get_dids_by_controller_string(controller_did_str: String): vector<ObjectID> {
+        let controller_did = parse_did_string(&controller_did_str);
+        get_dids_by_controller(controller_did)
     }
 
     public fun has_verification_relationship_in_doc(
