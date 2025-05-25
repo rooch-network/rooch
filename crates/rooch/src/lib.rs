@@ -12,7 +12,7 @@ use clap::builder::{
 };
 use cli_types::CommandAction;
 use commands::{
-    abi::ABI, account::Account, bitcoin::Bitcoin, bitseed::Bitseed, dynamic_field::DynamicField,
+    abi::ABI, account::Account, bitcoin::Bitcoin, bitseed::Bitseed, did::DID, dynamic_field::DynamicField,
     env::Env, faucet::Faucet, genesis::Genesis, init::Init, move_cli::MoveCli,
     object::ObjectCommand, oracle::Oracle, resource::ResourceCommand, rpc::Rpc, server::Server,
     session_key::SessionKey, state::StateCommand, task::Task, transaction::Transaction,
@@ -76,6 +76,8 @@ pub enum Command {
     Faucet(Faucet),
     Oracle(Oracle),
     DA(DA),
+    #[clap(name = "did")]
+    DID(DID),
 }
 
 pub async fn run_cli(opt: RoochCli) -> RoochResult<String> {
@@ -107,5 +109,6 @@ pub async fn run_cli(opt: RoochCli) -> RoochResult<String> {
         Command::Faucet(faucet) => faucet.execute().await,
         Command::Oracle(oracle) => oracle.execute().await,
         Command::DA(da) => da.execute().await,
+        Command::DID(did) => did.execute().await,
     }
 }
