@@ -12,6 +12,7 @@ module rooch_framework::did {
     use moveos_std::object::{Self, ObjectID};
     use moveos_std::address;
     use moveos_std::multibase;
+    use moveos_std::event;
     use rooch_framework::session_key;
     use rooch_framework::auth_validator;
     use rooch_framework::bitcoin_address;
@@ -169,6 +170,75 @@ module rooch_framework::did {
     /// Registry to store mappings. This is a Named Object.
     struct DIDRegistry has key {
         controller_to_dids: Table<DID, vector<ObjectID>>, // Controller DID -> DID Document ObjectIDs it controls
+    }
+
+    // =================== Event Structures ===================
+
+    #[event] 
+    /// Event emitted when a new DID document is created
+    struct DIDCreatedEvent has drop, copy, store {
+        did: DID,                           // The created DID
+        object_id: ObjectID,                // Object ID of the DID document
+        controller: vector<DID>,            // Controllers of the DID
+        creator_address: address,           // Address of the creator
+        creation_method: String,            // Method used for creation (e.g., "self", "cadop")
+    }
+
+    #[event]
+    /// Event emitted when a verification method is added to a DID document  
+    struct VerificationMethodAddedEvent has drop, copy, store {
+        did: DID,                           // The DID that owns the verification method
+        fragment: String,                   // Fragment identifier of the verification method
+        method_type: String,                // Type of verification method
+        controller: DID,                    // Controller of the verification method
+        verification_relationships: vector<u8>, // Verification relationships assigned
+    }
+
+    #[event]
+    /// Event emitted when a verification method is removed from a DID document
+    struct VerificationMethodRemovedEvent has drop, copy, store {
+        did: DID,                           // The DID that owned the verification method
+        fragment: String,                   // Fragment identifier of the removed verification method
+        method_type: String,                // Type of verification method that was removed
+    }
+
+    #[event]
+    /// Event emitted when a verification relationship is modified
+    struct VerificationRelationshipModifiedEvent has drop, copy, store {
+        did: DID,                           // The DID that owns the verification method
+        fragment: String,                   // Fragment identifier of the verification method
+        relationship_type: u8,              // Type of verification relationship
+        operation: String,                  // Operation performed ("added" or "removed")
+    }
+
+    #[event]
+    /// Event emitted when a service is added to a DID document
+    struct ServiceAddedEvent has drop, copy, store {
+        did: DID,                           // The DID that owns the service
+        fragment: String,                   // Fragment identifier of the service
+        service_type: String,               // Type of service
+        service_endpoint: String,           // Service endpoint URL
+        properties_count: u64,              // Number of additional properties
+    }
+
+    #[event]
+    /// Event emitted when a service is updated in a DID document
+    struct ServiceUpdatedEvent has drop, copy, store {
+        did: DID,                           // The DID that owns the service
+        fragment: String,                   // Fragment identifier of the service
+        old_service_type: String,           // Previous service type
+        new_service_type: String,           // New service type
+        old_service_endpoint: String,       // Previous service endpoint
+        new_service_endpoint: String,       // New service endpoint
+        new_properties_count: u64,          // Number of new additional properties
+    }
+
+    #[event]
+    /// Event emitted when a service is removed from a DID document
+    struct ServiceRemovedEvent has drop, copy, store {
+        did: DID,                           // The DID that owned the service
+        fragment: String,                   // Fragment identifier of the removed service
+        service_type: String,               // Type of service that was removed
     }
 
     /// Returns the fixed ObjectID for the DIDRegistry.
@@ -361,6 +431,29 @@ module rooch_framework::did {
             vector::push_back(controller_dids, new_object_id);
             i = i + 1;
         };
+        
+        // Emit DID creation event
+        let creation_method = if (vector::length(&doc_controllers) == 1) {
+            let controller = vector::borrow(&doc_controllers, 0);
+            if (controller.method == string::utf8(b"rooch")) {
+                string::utf8(b"self")
+            } else if (controller.method == string::utf8(b"key")) {
+                string::utf8(b"cadop")
+            } else {
+                string::utf8(b"other")
+            }
+        } else {
+            string::utf8(b"multi_controller")
+        };
+        
+        let creator_address = signer::address_of(_creator_account_signer);
+        event::emit(DIDCreatedEvent {
+            did: did,
+            object_id: new_object_id,
+            controller: doc_controllers,
+            creator_address,
+            creation_method,
+        });
         
         new_object_id
     }
@@ -647,6 +740,15 @@ module rooch_framework::did {
             
             i = i + 1;
         };
+        
+        // Emit verification method added event
+        event::emit(VerificationMethodAddedEvent {
+            did: did_document_data.id,
+            fragment: fragment,
+            method_type: method_type,
+            controller: did_document_data.id,
+            verification_relationships: verification_relationships,
+        });
     }
 
     public entry fun remove_verification_method_entry(
@@ -659,8 +761,11 @@ module rooch_framework::did {
         assert!(simple_map::contains_key(&did_document_data.verification_methods, &fragment),
             ErrorVerificationMethodNotFound);
 
+        // Store method type before removal for event
+        let vm_to_remove = simple_map::borrow(&did_document_data.verification_methods, &fragment);
+        let removed_method_type = vm_to_remove.type;
+
         if (vector::contains(&did_document_data.authentication, &fragment)) {
-            let vm_to_remove = simple_map::borrow(&did_document_data.verification_methods, &fragment);
             // If the verification method is an Ed25519 or Secp256k1 key, we need to remove the session key
             if (vm_to_remove.type == string::utf8(VERIFICATION_METHOD_TYPE_ED25519)) {
                 let pk_bytes_opt = multibase::decode_ed25519_key(&vm_to_remove.public_key_multibase);
@@ -694,6 +799,13 @@ module rooch_framework::did {
         remove_from_verification_relationship_internal(&mut did_document_data.key_agreement, &fragment);
 
         simple_map::remove(&mut did_document_data.verification_methods, &fragment);
+        
+        // Emit verification method removed event
+        event::emit(VerificationMethodRemovedEvent {
+            did: did_document_data.id,
+            fragment: fragment,
+            method_type: removed_method_type,
+        });
     }
 
     fun remove_from_verification_relationship_internal(
@@ -725,7 +837,13 @@ module rooch_framework::did {
                     fragment,
                     vm.public_key_multibase
                 );
-                // Return early since add_ed25519_authentication_method handles the relationship addition
+                // Emit event and return early since add_ed25519_authentication_method handles the relationship addition
+                event::emit(VerificationRelationshipModifiedEvent {
+                    did: did_document_data.id,
+                    fragment: fragment,
+                    relationship_type: relationship_type,
+                    operation: string::utf8(b"added"),
+                });
                 return
             } else if (vm.type == string::utf8(VERIFICATION_METHOD_TYPE_SECP256K1)) {
                 add_secp256k1_authentication_method(
@@ -733,7 +851,13 @@ module rooch_framework::did {
                     fragment,
                     vm.public_key_multibase
                 );
-                // Return early since add_secp256k1_authentication_method handles the relationship addition
+                // Emit event and return early since add_secp256k1_authentication_method handles the relationship addition
+                event::emit(VerificationRelationshipModifiedEvent {
+                    did: did_document_data.id,
+                    fragment: fragment,
+                    relationship_type: relationship_type,
+                    operation: string::utf8(b"added"),
+                });
                 return
             };
 
@@ -752,7 +876,14 @@ module rooch_framework::did {
 
         if (!vector::contains(target_relationship_vec_mut, &fragment)) {
             vector::push_back(target_relationship_vec_mut, fragment);
-        }
+        };
+        // Emit verification relationship modified event
+        event::emit(VerificationRelationshipModifiedEvent {
+            did: did_document_data.id,
+            fragment: fragment,
+            relationship_type: relationship_type,
+            operation: string::utf8(b"added"),
+        });
     }
 
     public entry fun remove_from_verification_relationship_entry(
@@ -789,6 +920,13 @@ module rooch_framework::did {
         let original_len = vector::length(target_relationship_vec_mut);
         remove_from_verification_relationship_internal(target_relationship_vec_mut, &fragment);
         if (vector::length(target_relationship_vec_mut) < original_len) {
+            // Emit verification relationship modified event only if removal was successful
+            event::emit(VerificationRelationshipModifiedEvent {
+                did: did_document_data.id,
+                fragment: fragment,
+                relationship_type: relationship_type,
+                operation: string::utf8(b"removed"),
+            });
         }
     }
 
@@ -814,7 +952,17 @@ module rooch_framework::did {
             properties,
         };
 
+        let properties_count = (simple_map::length(&properties) as u64);
         simple_map::add(&mut did_document_data.services, fragment, service);
+        
+        // Emit service added event
+        event::emit(ServiceAddedEvent {
+            did: did_document_data.id,
+            fragment: fragment,
+            service_type: service_type,
+            service_endpoint: service_endpoint,
+            properties_count,
+        });
     }
 
     public entry fun add_service_entry(
@@ -897,6 +1045,11 @@ module rooch_framework::did {
         assert!(simple_map::contains_key(&did_document_data.services, &fragment),
             ErrorServiceNotFound);
 
+        // Store old service data for event
+        let old_service = simple_map::borrow(&did_document_data.services, &fragment);
+        let old_service_type = old_service.type;
+        let old_service_endpoint = old_service.service_endpoint;
+
         let service_id = ServiceID {
             did: did_document_data.id,
             fragment: fragment,
@@ -908,7 +1061,19 @@ module rooch_framework::did {
             properties: new_properties,
         };
 
+        let new_properties_count = (simple_map::length(&new_properties) as u64);
         let (_,_old_service) = simple_map::upsert(&mut did_document_data.services, fragment, updated_service);
+        
+        // Emit service updated event
+        event::emit(ServiceUpdatedEvent {
+            did: did_document_data.id,
+            fragment: fragment,
+            old_service_type,
+            new_service_type,
+            old_service_endpoint,
+            new_service_endpoint,
+            new_properties_count,
+        });
     }
 
     public entry fun remove_service_entry(
@@ -921,7 +1086,18 @@ module rooch_framework::did {
         assert!(simple_map::contains_key(&did_document_data.services, &fragment),
             ErrorServiceNotFound);
 
+        // Store service data for event before removal
+        let service_to_remove = simple_map::borrow(&did_document_data.services, &fragment);
+        let removed_service_type = service_to_remove.type;
+
         simple_map::remove(&mut did_document_data.services, &fragment);
+        
+        // Emit service removed event
+        event::emit(ServiceRemovedEvent {
+            did: did_document_data.id,
+            fragment: fragment,
+            service_type: removed_service_type,
+        });
     }
 
     public fun exists_did_document_by_identifier(identifier_str: String): bool {
