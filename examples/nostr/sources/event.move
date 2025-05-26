@@ -5,6 +5,7 @@
 module nostr::event {
     use std::vector;
     use std::string::{Self, String};
+    use std::option;
     use moveos_std::signer;
     use moveos_std::object::{Self, ObjectID};
     use moveos_std::hash;
@@ -27,6 +28,7 @@ module nostr::event {
     const ErrorUtf8Encoding: u64 = 1004;
     const ErrorMalformedSignature: u64 = 1005;
     const ErrorPreEventNotExist: u64 = 1006;
+    const ErrorInvalidUserMetadata: u64 = 1007;
 
     #[data_struct]
     /// PreEvent
@@ -60,6 +62,18 @@ module nostr::event {
     #[data_struct]
     /// Event create notification for Move events
     struct NostrEventCreatedEvent has copy, drop {
+        id: ObjectID
+    }
+
+    #[data_struct]
+    /// Event save notification for Move events
+    struct NostrEventSavedEvent has copy, drop {
+        id: ObjectID
+    }
+
+    #[data_struct]
+    /// Plaintext Event save notification for Move events
+    struct NostrPlaintextEventSavedEvent has copy, drop {
         id: ObjectID
     }
 
@@ -133,6 +147,24 @@ module nostr::event {
         ), ErrorSignatureValidationFailure);
     }
 
+    /// Check the referenced user metadata from content with UserMetadata struct
+    fun check_user_metadata(content: String) {
+        // check the content integrity
+        let content_json = json::to_json<String>(&content);
+        // some bits are stripped for verification
+        let dq = inner::doublequote();
+        vector::remove_value(&mut content_json, &dq);
+        vector::reverse(&mut content_json);
+        vector::remove_value(&mut content_json, &dq);
+        vector::reverse(&mut content_json);
+        let bs = inner::backslash();
+        while (vector::contains(&content_json, &bs)) {
+            vector::remove_value(&mut content_json, &bs);
+        };
+        let user_metadata_option = json::from_json_option<UserMetadata>(content_json);
+        assert!(option::is_some(&user_metadata_option), ErrorInvalidUserMetadata);
+    }
+
     /// Create an Event id
     fun create_event_id(pubkey: String, created_at: u64, kind: u16, tags: vector<vector<String>>, content: String): vector<u8> {
         // serialize input to bytes for an Event id
@@ -162,6 +194,18 @@ module nostr::event {
 
         // derive a rooch address
         let rooch_address = inner::derive_rooch_address(pubkey);
+
+        // handle a range of different kinds of a pre Event
+        if (kind == EVENT_KIND_USER_METADATA) {
+            check_user_metadata(content);
+            // clear past user metadata pre events from the user with the same rooch address from the public key
+            let pre_event_object_id = object::account_named_object_id<PreEvent>(rooch_address);
+            if (object::exists_object_with_type<PreEvent>(pre_event_object_id)) {
+                let pre_event_object = object::take_object_extend<PreEvent>(pre_event_object_id);
+                let pre_event = object::remove(pre_event_object);
+                drop_pre_event(pre_event);
+            };
+        };
 
         // save the pre event to the rooch address mapped to the public key
         let pre_event = PreEvent {
@@ -208,7 +252,7 @@ module nostr::event {
         let pre_event = object::borrow<PreEvent>(pre_event_object);
 
         // flatten the elements
-        let PreEvent { id, pubkey, created_at, kind, tags, content } = *pre_event;
+        let (id, pubkey, created_at, kind, tags, content) = unpack_pre_event(*pre_event);
 
         // decode signature with hex
         let sig = hex::decode(&string::into_bytes(signature));
@@ -218,9 +262,7 @@ module nostr::event {
 
         // handle a range of different kinds of an Event
         if (kind == EVENT_KIND_USER_METADATA) {
-            // check the content integrity
-            let content_bytes = string::bytes(&content);
-            let _ = json::from_json<UserMetadata>(*content_bytes);
+            check_user_metadata(content);
             // clear past user metadata events from the user with the same rooch address from the public key
             let event_object_id = object::account_named_object_id<Event>(rooch_address);
             if (object::exists_object_with_type<Event>(event_object_id)) {
@@ -259,7 +301,7 @@ module nostr::event {
     }
 
     /// Save an Event
-    public fun save_event(x_only_public_key: String, created_at: u64, kind: u16, tags: vector<vector<String>>, content: String, signature: String): vector<u8> {
+    public fun save_event(x_only_public_key: String, created_at: u64, kind: u16, tags: vector<vector<String>>, content: String, signature: String) {
         // check signature length
         assert!(string::length(&signature) == 128, ErrorMalformedSignature);
 
@@ -283,9 +325,7 @@ module nostr::event {
 
         // handle a range of different kinds of an Event
         if (kind == EVENT_KIND_USER_METADATA) {
-            // check the content integrity
-            let content_bytes = string::bytes(&content);
-            let _ = json::from_json<UserMetadata>(*content_bytes);
+            check_user_metadata(content);
             // clear past user metadata events from the user with the same rooch address from the public key
             let event_object_id = object::account_named_object_id<Event>(rooch_address);
             if (object::exists_object_with_type<Event>(event_object_id)) {
@@ -309,26 +349,22 @@ module nostr::event {
 
         // emit a move event nofitication
         let event_object_id = object::id(&event_object);
-        let move_event = NostrEventCreatedEvent {
+        let move_event = NostrEventSavedEvent {
             id: event_object_id
         };
         event::emit(move_event);
 
         // transfer event object to the rooch address
         object::transfer_extend(event_object, rooch_address);
-
-        // return the event object as JSON
-        let event_json = json::to_json<Event>(&event);
-        event_json
     }
 
     /// Entry function to save an Event
     public entry fun save_event_entry(x_only_public_key: String, created_at: u64, kind: u16, tags: vector<vector<String>>, content: String, signature: String) {
-        let _event_json = save_event(x_only_public_key, created_at, kind, tags, content, signature);
+        save_event(x_only_public_key, created_at, kind, tags, content, signature);
     }
 
     /// Save an Event with plaintext. Do not check integrity of created_at, kind, tags and content with id.
-    public fun save_event_plaintext(id_encoded: String, x_only_public_key: String, created_at: u64, kind: u16, tags: vector<vector<String>>, content: String, signature: String): vector<u8> {
+    public fun save_event_plaintext(id_encoded: String, x_only_public_key: String, created_at: u64, kind: u16, tags: vector<vector<String>>, content: String, signature: String) {
         // check id length
         assert!(string::length(&id_encoded) == 64, ErrorMalformedId);
 
@@ -355,9 +391,7 @@ module nostr::event {
 
         // handle a range of different kinds of an Event
         if (kind == EVENT_KIND_USER_METADATA) {
-            // check the content integrity
-            let content_bytes = string::bytes(&content);
-            let _ = json::from_json<UserMetadata>(*content_bytes);
+            check_user_metadata(content);
             // clear past user metadata events from the user with the same rooch address from the public key
             let event_object_id = object::account_named_object_id<Event>(rooch_address);
             if (object::exists_object_with_type<Event>(event_object_id)) {
@@ -381,22 +415,23 @@ module nostr::event {
 
         // emit a move event nofitication
         let event_object_id = object::id(&event_object);
-        let move_event = NostrEventCreatedEvent {
+        let move_event = NostrPlaintextEventSavedEvent {
             id: event_object_id
         };
         event::emit(move_event);
 
         // transfer event object to the rooch address
         object::transfer_extend(event_object, rooch_address);
-
-        // return the event object as JSON
-        let event_json = json::to_json<Event>(&event);
-        event_json
     }
 
     /// Entry function to save an Event with plaintext
     public entry fun save_event_plaintext_entry(id: String, x_only_public_key: String, created_at: u64, kind: u16, tags: vector<vector<String>>, content: String, signature: String) {
-        let _event_json = save_event_plaintext(id, x_only_public_key, created_at, kind, tags, content, signature);
+        save_event_plaintext(id, x_only_public_key, created_at, kind, tags, content, signature);
+    }
+
+    /// drop a pre event
+    fun drop_pre_event(pre_event: PreEvent) {
+        let PreEvent {id: _, pubkey: _, created_at: _, kind: _, tags: _, content: _} = pre_event;
     }
 
     /// drop an event
@@ -404,9 +439,9 @@ module nostr::event {
         let Event {id: _, pubkey: _, created_at: _, kind: _, tags: _, content: _, sig: _} = event;
     }
 
-    public fun unpack_event(event: Event): (vector<u8>, vector<u8>, u64, u16, vector<vector<String>>, String, vector<u8>) {
-        let Event { id, pubkey, created_at, kind, tags, content, sig } = event;
-        (id, pubkey, created_at, kind, tags, content, sig)
+    public fun unpack_pre_event(pre_event: PreEvent): (vector<u8>, vector<u8>, u64, u16, vector<vector<String>>, String) {
+        let PreEvent { id, pubkey, created_at, kind, tags, content } = pre_event;
+        (id, pubkey, created_at, kind, tags, content)
     }
 
     /// getter functions
