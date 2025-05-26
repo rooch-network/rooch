@@ -10,7 +10,6 @@ module rooch_framework::did {
     use moveos_std::table::{Self, Table};
     use moveos_std::account::{Self, AccountCap};
     use moveos_std::object::{Self, ObjectID};
-    use moveos_std::timestamp;
     use moveos_std::address;
     use moveos_std::multibase;
     use rooch_framework::session_key;
@@ -164,8 +163,7 @@ module rooch_framework::did {
         services: SimpleMap<String, Service>,
         account_cap: AccountCap,
         also_known_as: vector<String>,
-        created_timestamp: u64,
-        updated_timestamp: u64,
+        // Note: created_timestamp and updated_timestamp removed - use Object system timestamps instead
     }
 
     /// Registry to store mappings. This is a Named Object.
@@ -261,8 +259,6 @@ module rooch_framework::did {
         let new_object_id = resolve_did_object_id(&did.identifier); 
         assert!(!object::exists_object_with_type<DIDDocument>(new_object_id), ErrorDIDAlreadyExists);
                 
-        let now = timestamp::now_seconds();
-
         // Create base DIDDocument structure
         let did_document_data = DIDDocument {
             id: did,
@@ -276,8 +272,6 @@ module rooch_framework::did {
             services: simple_map::new<String, Service>(),
             account_cap: new_account_cap,
             also_known_as: vector::empty<String>(),
-            created_timestamp: now,
-            updated_timestamp: now,
         };
 
         // Process user's initial verification method
@@ -653,8 +647,6 @@ module rooch_framework::did {
             
             i = i + 1;
         };
-
-        did_document_data.updated_timestamp = timestamp::now_seconds();
     }
 
     public entry fun remove_verification_method_entry(
@@ -702,7 +694,6 @@ module rooch_framework::did {
         remove_from_verification_relationship_internal(&mut did_document_data.key_agreement, &fragment);
 
         simple_map::remove(&mut did_document_data.verification_methods, &fragment);
-        did_document_data.updated_timestamp = timestamp::now_seconds();
     }
 
     fun remove_from_verification_relationship_internal(
@@ -735,7 +726,6 @@ module rooch_framework::did {
                     vm.public_key_multibase
                 );
                 // Return early since add_ed25519_authentication_method handles the relationship addition
-                did_document_data.updated_timestamp = timestamp::now_seconds();
                 return
             } else if (vm.type == string::utf8(VERIFICATION_METHOD_TYPE_SECP256K1)) {
                 add_secp256k1_authentication_method(
@@ -744,7 +734,6 @@ module rooch_framework::did {
                     vm.public_key_multibase
                 );
                 // Return early since add_secp256k1_authentication_method handles the relationship addition
-                did_document_data.updated_timestamp = timestamp::now_seconds();
                 return
             };
 
@@ -763,7 +752,6 @@ module rooch_framework::did {
 
         if (!vector::contains(target_relationship_vec_mut, &fragment)) {
             vector::push_back(target_relationship_vec_mut, fragment);
-            did_document_data.updated_timestamp = timestamp::now_seconds();
         }
     }
 
@@ -801,7 +789,6 @@ module rooch_framework::did {
         let original_len = vector::length(target_relationship_vec_mut);
         remove_from_verification_relationship_internal(target_relationship_vec_mut, &fragment);
         if (vector::length(target_relationship_vec_mut) < original_len) {
-            did_document_data.updated_timestamp = timestamp::now_seconds();
         }
     }
 
@@ -828,7 +815,6 @@ module rooch_framework::did {
         };
 
         simple_map::add(&mut did_document_data.services, fragment, service);
-        did_document_data.updated_timestamp = timestamp::now_seconds();
     }
 
     public entry fun add_service_entry(
@@ -923,7 +909,6 @@ module rooch_framework::did {
         };
 
         let (_,_old_service) = simple_map::upsert(&mut did_document_data.services, fragment, updated_service);
-        did_document_data.updated_timestamp = timestamp::now_seconds();
     }
 
     public entry fun remove_service_entry(
@@ -937,7 +922,6 @@ module rooch_framework::did {
             ErrorServiceNotFound);
 
         simple_map::remove(&mut did_document_data.services, &fragment);
-        did_document_data.updated_timestamp = timestamp::now_seconds();
     }
 
     public fun exists_did_document_by_identifier(identifier_str: String): bool {
@@ -1217,14 +1201,44 @@ module rooch_framework::did {
         &did_doc.also_known_as
     }
 
-    /// Get created timestamp from DIDDocument
-    public fun get_created_timestamp(did_doc: &DIDDocument): u64 {
-        did_doc.created_timestamp
+    /// Get created timestamp from Object system
+    /// This accesses the Object's metadata created_at timestamp
+    public fun get_created_timestamp_by_object_id(object_id: ObjectID): u64 {
+        object::created_at(object_id)
     }
 
-    /// Get updated timestamp from DIDDocument
-    public fun get_updated_timestamp(did_doc: &DIDDocument): u64 {
-        did_doc.updated_timestamp
+    /// Get updated timestamp from Object system  
+    /// This accesses the Object's metadata updated_at timestamp
+    public fun get_updated_timestamp_by_object_id(object_id: ObjectID): u64 {
+        object::updated_at(object_id)
+    }
+
+    /// Get created timestamp for a DID document by address
+    public fun get_created_timestamp(addr: address): u64 {
+        let did_identifier = address::to_bech32_string(addr);
+        let object_id = resolve_did_object_id(&did_identifier);
+        get_created_timestamp_by_object_id(object_id)
+    }
+
+    /// Get updated timestamp for a DID document by address
+    public fun get_updated_timestamp(addr: address): u64 {
+        let did_identifier = address::to_bech32_string(addr);
+        let object_id = resolve_did_object_id(&did_identifier);
+        get_updated_timestamp_by_object_id(object_id)
+    }
+
+    /// Get created timestamp from DIDDocument reference
+    /// This is a convenience function that extracts the address and calls get_created_timestamp
+    public fun get_did_created_timestamp(did_doc: &DIDDocument): u64 {
+        let did_address = account::account_cap_address(&did_doc.account_cap);
+        get_created_timestamp(did_address)
+    }
+
+    /// Get updated timestamp from DIDDocument reference
+    /// This is a convenience function that extracts the address and calls get_updated_timestamp
+    public fun get_did_updated_timestamp(did_doc: &DIDDocument): u64 {
+        let did_address = account::account_cap_address(&did_doc.account_cap);
+        get_updated_timestamp(did_address)
     }
 
     public fun get_did_address(did_doc: &DIDDocument): address {
