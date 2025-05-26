@@ -9,7 +9,6 @@ module rooch_framework::did_query_test {
     use rooch_framework::did_test_common;
     use std::string;
     use std::vector;
-    use moveos_std::account;
 
     // ========================================
     // Test Category 5: Query & Resolution Tests
@@ -138,34 +137,7 @@ module rooch_framework::did_query_test {
         
         // Should have exactly one DID
         assert!(vector::length(&controlled_dids) == 1, 11103);
-    }
-
-    #[test]
-    /// Test multiple DIDs controlled by same controller
-    fun test_get_dids_by_controller_multiple() {
-        // Note: In the current implementation, each address can only have one DID
-        // This test demonstrates the expected behavior if multiple DIDs were allowed
-        
-        // Create first DID using proper setup
-        let (_creator_signer1, creator_address1, _creator_public_key1, did_object_id1) = did_test_common::setup_did_test_with_creation();
-        let did_document1 = did::get_did_document_by_object_id(did_object_id1);
-        let _did_address1 = did::get_did_address(did_document1);
-
-        // Create second DID using different address - avoid re-initializing framework
-        let test_signer2 = account::create_signer_for_testing(@0x999);
-        let test_public_key2 = string::utf8(b"z21pGXTKbEq9G4f4z8qNFXSZvSiQ8B1X3i9Y5v7xK2m1n5");
-        did::create_did_object_for_self_entry_test_only(&test_signer2, test_public_key2);
-        let test_address2 = moveos_std::signer::address_of(&test_signer2);
-
-        // Each should control exactly one DID (themselves)
-        let controller_did1 = did::create_rooch_did_by_address(creator_address1);
-        let controlled_dids1 = did::get_dids_by_controller(controller_did1);
-        assert!(vector::length(&controlled_dids1) == 1, 11201);
-
-        let controller_did2 = did::create_rooch_did_by_address(test_address2);
-        let controlled_dids2 = did::get_dids_by_controller(controller_did2);
-        assert!(vector::length(&controlled_dids2) == 1, 11202);
-    }
+    } 
 
     #[test]
     /// Test DID resolution with deterministic ObjectID generation

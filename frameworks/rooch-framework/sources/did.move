@@ -455,17 +455,7 @@ module rooch_framework::did {
         
         // Derive custodian's DID from signer address
         let custodian_address = signer::address_of(custodian_signer);
-        let custodian_did = create_rooch_did_by_address(custodian_address);
-        
-        // Verify custodian has a CADOP service declared in their DID document
-        // let controlled_dids = get_dids_by_controller(custodian_did);
-        // if (vector::length(&controlled_dids) > 0) {
-        //     // Get the first DID controlled by the custodian
-        //     let custodian_did_object_id = *vector::borrow(&controlled_dids, 0);
-        //     let custodian_did_doc = get_did_document_by_object_id(custodian_did_object_id);
-        //     let has_cadop_service = has_cadop_service_in_doc(custodian_did_doc);
-        //     assert!(has_cadop_service, ErrorInvalidArgument);
-        // };
+        let custodian_did = create_rooch_did_by_address(custodian_address); 
 
         let custodian_did_str = address::to_bech32_string(custodian_address);
         let custodian_did_object_id = resolve_did_object_id(&custodian_did_str);
@@ -1536,100 +1526,7 @@ module rooch_framework::did {
     }
 
     // =================== Test-only functions ===================
-
-    #[test_only]
-    /// Test-only function to create DID for self without Bitcoin address verification
-    /// This bypasses the public key verification for testing purposes
-    public fun create_did_object_for_self_entry_test_only(
-        creator_account_signer: &signer,
-        account_public_key_multibase: String,
-    ) {
-        let creator_address = signer::address_of(creator_account_signer);
-        let creator_did = create_rooch_did_by_address(creator_address);
-        
-        let doc_controllers = vector[creator_did];
-        
-        // Primary verification method uses the account's Secp256k1 key
-        let primary_vm_fragment = string::utf8(b"account-key");
-        let account_key_type = string::utf8(VERIFICATION_METHOD_TYPE_SECP256K1);
-        let primary_vm_relationships = vector[
-            VERIFICATION_RELATIONSHIP_AUTHENTICATION,
-            VERIFICATION_RELATIONSHIP_ASSERTION_METHOD,
-            VERIFICATION_RELATIONSHIP_CAPABILITY_INVOCATION,
-            VERIFICATION_RELATIONSHIP_CAPABILITY_DELEGATION
-        ];
-
-        let _ = create_did_object_internal(
-            creator_account_signer,
-            doc_controllers,
-            account_public_key_multibase,
-            account_key_type,
-            primary_vm_fragment,
-            primary_vm_relationships,
-            option::none<DID>(),
-            option::none<String>(),
-            option::none<String>(),
-            option::none<String>()
-        );
-    }
-
-    #[test_only]
-    /// Test-only function to create DID via CADOP with did:key without strict validation
-    /// This bypasses certain validations for testing purposes
-    public fun create_did_object_via_cadop_with_did_key_test_only(
-        custodian_signer: &signer,
-        user_did_key_string: String,
-        custodian_service_pk_multibase: String,
-        custodian_service_vm_type: String
-    ): ObjectID {
-        // Parse user's did:key
-        let user_did_key = parse_did_string(&user_did_key_string);
-        
-        // Extract public key from did:key identifier
-        // For did:key, the identifier is the multibase-encoded public key
-        assert!(user_did_key.method == string::utf8(b"key"), ErrorInvalidDIDStringFormat);
-        let user_vm_pk_multibase = user_did_key.identifier;
-        
-        // Derive custodian's DID from signer address
-        let custodian_address = signer::address_of(custodian_signer);
-        let custodian_did = create_rooch_did_by_address(custodian_address);
-
-        let doc_controllers = vector[user_did_key];
-        let user_vm_relationships = vector[
-            VERIFICATION_RELATIONSHIP_AUTHENTICATION,
-            VERIFICATION_RELATIONSHIP_CAPABILITY_DELEGATION
-        ]; // Fixed for NIP-3 requirements
-
-        // Standardize user VM to Ed25519 (most common for did:key)
-        let user_vm_type = string::utf8(VERIFICATION_METHOD_TYPE_ED25519);
-        let user_vm_fragment = string::utf8(b"user-key");
-
-        // Generate unique service fragment for this user
-        let custodian_service_vm_fragment = generate_service_fragment_for_user(&user_did_key_string);
-
-        create_did_object_internal(
-            custodian_signer,
-            doc_controllers,
-            user_vm_pk_multibase,
-            user_vm_type,
-            user_vm_fragment,
-            user_vm_relationships,
-            option::some(custodian_did),
-            option::some(custodian_service_pk_multibase),
-            option::some(custodian_service_vm_type),
-            option::some(custodian_service_vm_fragment)
-        )
-    }
-
-    #[test_only]
-    /// Test-only function to get DID document data for testing
-    /// Returns an immutable reference to DID document
-    public fun get_did_document_for_testing(did_address: address): &DIDDocument {
-        let did_identifier_str = address::to_bech32_string(did_address);
-        let object_id = resolve_did_object_id(&did_identifier_str);
-        let did_doc_obj_ref = object::borrow_object<DIDDocument>(object_id);
-        object::borrow(did_doc_obj_ref)
-    }
+ 
 
     #[test_only]
     /// Test-only function to check if verification method exists in document

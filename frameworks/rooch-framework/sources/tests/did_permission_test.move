@@ -178,7 +178,7 @@ module rooch_framework::did_permission_test {
         );
 
         // Verify method was added successfully
-        let did_document_after = did::get_did_document_for_testing(did_address);
+        let did_document_after = did::get_did_document(did_address);
         assert!(did::test_verification_method_exists(did_document_after, &fragment), 10001);
     }
 
@@ -211,7 +211,7 @@ module rooch_framework::did_permission_test {
         did::add_service_entry(&did_signer, fragment, service_type, service_endpoint);
 
         // Verify service was added successfully
-        let did_document_after = did::get_did_document_for_testing(did_address);
+        let did_document_after = did::get_did_document(did_address);
         assert!(did::test_service_exists(did_document_after, &fragment), 10101);
     }
 
@@ -257,7 +257,7 @@ module rooch_framework::did_permission_test {
         auth_validator::set_simple_tx_validate_result_for_testing(option::some(ed25519_auth_key));
 
         // Verify the Ed25519 key can be found by session key
-        let did_document_check = did::get_did_document_for_testing(did_address);
+        let did_document_check = did::get_did_document(did_address);
         assert!(did::has_verification_relationship_in_doc(did_document_check, &ed25519_fragment, 0), 10201); // authentication
     }
 
@@ -287,7 +287,7 @@ module rooch_framework::did_permission_test {
         );
 
         // Verify the Secp256k1 key was added successfully
-        let did_document_check = did::get_did_document_for_testing(did_address);
+        let did_document_check = did::get_did_document(did_address);
         assert!(did::test_verification_method_exists(did_document_check, &secp256k1_fragment), 10301);
         assert!(did::has_verification_relationship_in_doc(did_document_check, &secp256k1_fragment, 0), 10302); // authentication
     }
@@ -328,7 +328,7 @@ module rooch_framework::did_permission_test {
         did::remove_from_verification_relationship_entry(&did_signer, fragment2, 4u8); // key_agreement
 
         // Verify operations completed successfully
-        let did_document_check = did::get_did_document_for_testing(did_address);
+        let did_document_check = did::get_did_document(did_address);
         assert!(did::test_verification_method_exists(did_document_check, &fragment2), 10401);
         assert!(!did::test_verification_method_exists(did_document_check, &fragment1), 10402); // Removed
     }
@@ -373,7 +373,7 @@ module rooch_framework::did_permission_test {
         did::remove_service_entry(&did_signer, service_fragment1);
 
         // Verify service operations completed successfully
-        let did_document_check = did::get_did_document_for_testing(did_address);
+        let did_document_check = did::get_did_document(did_address);
         assert!(!did::test_service_exists(did_document_check, &service_fragment1), 10501); // Service removed
     }
 
@@ -419,7 +419,7 @@ module rooch_framework::did_permission_test {
         );
 
         // Verify all methods were added
-        let did_document_check = did::get_did_document_for_testing(did_address);
+        let did_document_check = did::get_did_document(did_address);
         assert!(did::test_verification_method_exists(did_document_check, &delegation_fragment), 10601);
         assert!(did::test_verification_method_exists(did_document_check, &invocation_fragment), 10602);
 

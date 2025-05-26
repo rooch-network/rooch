@@ -9,8 +9,6 @@ module rooch_framework::did_cadop_test {
     use rooch_framework::did_test_common;
     use std::string;
     use std::vector;
-    use std::signer;
-    use std::option;
     use moveos_std::account;
 
     // ========================================
@@ -187,11 +185,11 @@ module rooch_framework::did_cadop_test {
     }
 
     #[test]
-    #[expected_failure(abort_code = 29, location = rooch_framework::did)] // ErrorCustodianDoesNotHaveCADOPService
+    #[expected_failure(abort_code = did::ErrorCustodianDoesNotHaveCADOPService, location = rooch_framework::did)] 
     /// Test that custodian must have CADOP service declared
     fun test_cadop_custodian_service_validation() {
 
-        let (_creator_signer, _creator_address, _creator_public_key, custodian_did_object_id) = did_test_common::setup_did_test_with_creation();
+        let (_creator_signer, _creator_address, creator_public_key, custodian_did_object_id) = did_test_common::setup_did_test_with_creation();
         
         // Get the DID document and its address
         let custodian_did_document = did::get_did_document_by_object_id(custodian_did_object_id);
@@ -200,27 +198,12 @@ module rooch_framework::did_cadop_test {
         // Create a signer for the DID address (this is the custodian)
         let custodian_signer = account::create_signer_for_testing(custodian_did_address);
 
-        // Create custodian DID but WITHOUT CADOP service
-        let custodian_pk = did_test_common::generate_test_secp256k1_multibase_key();
-        did::create_did_object_for_self_entry_test_only(&custodian_signer, custodian_pk);
-        
-        // Get the custodian DID and find the DID object
-        let custodian_address = signer::address_of(&custodian_signer);
-        let custodian_did = did::create_rooch_did_by_address(custodian_address);
-        let controlled_dids = did::get_dids_by_controller(custodian_did);
-        assert!(vector::length(&controlled_dids) > 0, 99999); // Should have created a DID
-        
-        let custodian_did_object_id = *vector::borrow(&controlled_dids, 0);
-        let custodian_did_doc = did::get_did_document_by_object_id(custodian_did_object_id);
-        let custodian_did_address = did::get_did_address(custodian_did_doc);
-        let custodian_did_signer = account::create_signer_for_testing(custodian_did_address);
-        
         // Set up session key authentication for the DID address
-        did_test_common::setup_secp256k1_session_key_auth(&custodian_pk);
+        did_test_common::setup_secp256k1_session_key_auth(&creator_public_key);
         
         // Add a different service (not CADOP)
         did::add_service_entry(
-            &custodian_did_signer,
+            &custodian_signer,
             string::utf8(b"other-service"),
             string::utf8(b"SomeOtherService"),
             string::utf8(b"https://custodian.example.com/other")
@@ -280,7 +263,7 @@ module rooch_framework::did_cadop_test {
         let custodian_service_pk_multibase = did_test_common::generate_test_secp256k1_multibase_key();
 
         // Create DID with passkey as controller using simplified API
-        did::create_did_object_via_cadop_with_did_key_test_only(
+        did::create_did_object_via_cadop_with_did_key(
             &custodian_signer,
             passkey_did_key_string,
             custodian_service_pk_multibase,
@@ -303,15 +286,14 @@ module rooch_framework::did_cadop_test {
     #[test]
     /// Test CADOP DID document structure validation
     fun test_cadop_did_document_structure() {
-        did_test_common::init_test_framework();
 
-        let custodian_signer = did_test_common::create_test_account_and_signer();
+        let custodian_signer = did_test_common::setup_custodian_with_cadop_service();
         let user_did_key_string = did_test_common::generate_test_did_key_string();
         let custodian_service_pk_multibase = did_test_common::generate_test_secp256k1_multibase_key();
         let custodian_service_vm_type = string::utf8(b"EcdsaSecp256k1VerificationKey2019");
 
         // Create DID via CADOP with simplified API
-        did::create_did_object_via_cadop_with_did_key_test_only(
+        did::create_did_object_via_cadop_with_did_key(
             &custodian_signer,
             user_did_key_string,
             custodian_service_pk_multibase,

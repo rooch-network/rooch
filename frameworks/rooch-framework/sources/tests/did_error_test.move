@@ -53,14 +53,14 @@ module rooch_framework::did_error_test {
     }
 
     #[test]
-    #[expected_failure(abort_code = 2, location = moveos_std::object)] // Object not found error from object module
+    #[expected_failure(abort_code = did::ErrorDIDDocumentNotExist, location = rooch_framework::did)]
     /// Test error when trying to access non-existent DID document
     fun test_error_did_document_not_exist() {
         did_test_common::init_test_framework();
 
         // Try to get DID document for non-existent address
         let nonexistent_address = @0x999999;
-        let _ = did::get_did_document_for_testing(nonexistent_address);
+        let _ = did::get_did_document(nonexistent_address);
     }
 
     #[test]
@@ -109,7 +109,7 @@ module rooch_framework::did_error_test {
         let did_address = did::get_did_address(did_document);
 
         // Test has_verification_relationship_in_doc function with valid relationships - use DID address
-        let did_document_check = did::get_did_document_for_testing(did_address);
+        let did_document_check = did::get_did_document(did_address);
         
         // account-key should have authentication, assertion_method, capability_invocation, capability_delegation
         let account_key_fragment = string::utf8(b"account-key");
@@ -124,37 +124,6 @@ module rooch_framework::did_error_test {
         // Non-existent fragment should return false for any relationship
         let nonexistent_fragment = string::utf8(b"nonexistent");
         assert!(!did::has_verification_relationship_in_doc(did_document_check, &nonexistent_fragment, 0), 13106); // authentication
-    }
-
-    #[test]
-    /// Test security - cannot access other DID's methods without proper authorization
-    fun test_security_cross_did_access() {
-        // Use proper setup to get first DID
-        let (_creator_signer1, _creator_address1, _creator_public_key1, did_object_id1) = did_test_common::setup_did_test_with_creation();
-        let did_document1 = did::get_did_document_by_object_id(did_object_id1);
-        let did_address1 = did::get_did_address(did_document1);
-        let did_signer1 = account::create_signer_for_testing(did_address1);
-
-        // Create second DID using different address - avoid re-initializing framework
-        let signer2 = account::create_signer_for_testing(@0x999);
-        let public_key2 = string::utf8(b"z21pGXTKbEq9G4f4z8qNFXSZvSiQ8B1X3i9Y5v7xK2m1n5"); // Different key
-        did::create_did_object_for_self_entry_test_only(&signer2, public_key2);
-
-        // Verify first DID can modify itself
-        let fragment = string::utf8(b"new-key");
-        let method_type = string::utf8(b"Ed25519VerificationKey2020");
-        let test_key = did_test_common::generate_test_ed25519_multibase_key();
-        let relationships = vector[1u8]; // assertion_method
-
-        did::add_verification_method_entry(&did_signer1, fragment, method_type, test_key, relationships);
-
-        // Verify method was added to first DID - use DID address
-        let did_document1_after = did::get_did_document_for_testing(did_address1);
-        assert!(did::test_verification_method_exists(did_document1_after, &fragment), 13201);
-
-        // Note: Testing cross-DID access would require trying to use signer1 to modify signer2's DID,
-        // but that would fail at the signer validation level (ErrorSignerNotDIDAccount)
-        // This is the correct security behavior - each DID can only be modified by its own account
     }
 
     #[test]
@@ -189,7 +158,7 @@ module rooch_framework::did_error_test {
         did::add_verification_method_entry(&did_signer, fragment, method_type, test_key1, relationships);
 
         // Verify method was added - use DID address
-        let did_document_check = did::get_did_document_for_testing(did_address);
+        let did_document_check = did::get_did_document(did_address);
         assert!(did::test_verification_method_exists(did_document_check, &fragment), 13401);
 
         // Fragment uniqueness is enforced - trying to add duplicate should fail in add_verification_method_already_exists test
@@ -249,7 +218,7 @@ module rooch_framework::did_error_test {
         );
 
         // Verify service was added successfully - use DID address
-        let did_document_check = did::get_did_document_for_testing(did_address);
+        let did_document_check = did::get_did_document(did_address);
         assert!(did::test_service_exists(did_document_check, &fragment), 13601);
     }
 
@@ -292,7 +261,7 @@ module rooch_framework::did_error_test {
         did::add_verification_method_entry(&did_signer, fragment, method_type, test_key, relationships);
 
         // Verify method was added - use DID address
-        let did_document_check = did::get_did_document_for_testing(did_address);
+        let did_document_check = did::get_did_document(did_address);
         assert!(did::test_verification_method_exists(did_document_check, &fragment), 13703);
     }
 

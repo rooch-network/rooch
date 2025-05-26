@@ -51,6 +51,25 @@ module rooch_framework::did_test_common {
         (multibase_key, bitcoin_addr)
     }
 
+    /// Switch to a new account and set up session key authentication
+    /// Returns (signer, address, public_key_multibase, bitcoin_address)
+    public fun switch_to_new_account(): (signer, address, string::String, BitcoinAddress) {
+        let (creator_public_key_multibase, creator_bitcoin_address) = generate_secp256k1_public_key_and_bitcoin_address();
+        let creator_address = bitcoin_address::to_rooch_address(&creator_bitcoin_address);
+        let creator_signer = account::create_signer_for_testing(creator_address);
+        let pk_bytes_opt = multibase::decode_secp256k1_key(&creator_public_key_multibase);
+        assert!(option::is_some(&pk_bytes_opt), 9001);
+        let pk_bytes = option::destroy_some(pk_bytes_opt);
+        let auth_key = session_key::secp256k1_public_key_to_authentication_key(&pk_bytes);
+        auth_validator::set_tx_validate_result_for_testing(
+            0, // auth_validator_id
+            option::none(), // auth_validator
+            option::some(auth_key), // session_key
+            creator_bitcoin_address // bitcoin_address
+        );
+        (creator_signer, creator_address, creator_public_key_multibase, creator_bitcoin_address)
+    }
+
     // ========================================
     // Test Setup Functions
     // ========================================
