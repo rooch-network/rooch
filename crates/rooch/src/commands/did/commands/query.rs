@@ -197,7 +197,7 @@ impl CommandAction<DIDDocumentOutput> for ByDIDCommand {
 
         Ok(DIDDocumentOutput {
             did_document,
-            object_id: object_id,
+            object_id,
             created_at: 0, // TODO: Get from object system
             updated_at: 0, // TODO: Get from object system
         })
