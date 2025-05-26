@@ -661,6 +661,18 @@ module moveos_std::object {
 
     native fun native_list_field_keys(obj_id: ObjectID, cursor: Option<address>, limit: u64): vector<address>;
 
+    // ===== Public Object metadata access functions =====
+
+    /// Get the creation timestamp of an object
+    public fun created_at(object_id: ObjectID): u64 {
+        native_object_created_at(object_id)
+    }
+
+    /// Get the last update timestamp of an object
+    public fun updated_at(object_id: ObjectID): u64 {
+        native_object_updated_at(object_id)
+    }
+
     #[test_only]
     public fun new_object_id_for_test(path: vector<address>): ObjectID {
         ObjectID { path }
