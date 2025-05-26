@@ -45,33 +45,13 @@ pub struct CadopCreateCommand {
     #[clap(long, help = "User's did:key string (e.g., did:key:z6MkpTHR8VNs...)")]
     pub user_did_key: String,
     
-    /// User's public key (consistent with did:key)
-    #[clap(long, help = "User's public key in multibase format")]
-    pub user_public_key: String,
-    
-    /// User's verification method type
-    #[clap(long, default_value = "Ed25519VerificationKey2020", help = "Verification method type")]
-    pub user_key_type: String,
-    
-    /// User's verification method fragment
-    #[clap(long, default_value = "user-key", help = "Verification method fragment")]
-    pub user_fragment: String,
-    
-    /// Custodian's main DID string
-    #[clap(long, help = "Custodian's main DID string")]
-    pub custodian_did: String,
-    
     /// Custodian's service public key
     #[clap(long, help = "Custodian's service public key in multibase format")]
     pub custodian_service_key: String,
     
     /// Custodian's service verification method type
-    #[clap(long, default_value = "EcdsaSecp256k1VerificationKey2019", help = "Custodian service VM type")]
+    #[clap(long, default_value = "Ed25519VerificationKey2020", help = "Custodian service VM type")]
     pub custodian_key_type: String,
-    
-    /// Custodian's service verification method fragment
-    #[clap(long, default_value = "service-key", help = "Custodian service VM fragment")]
-    pub custodian_fragment: String,
 
     #[clap(flatten)]
     pub tx_options: TransactionOptions,
@@ -161,23 +141,13 @@ impl CommandAction<CreateOutput> for CadopCreateCommand {
 
         // Create the CADOP DID creation action
         let user_did_key_string = MoveString::from_str(&self.user_did_key)?;
-        let user_vm_pk_multibase = MoveString::from_str(&self.user_public_key)?;
-        let user_vm_type = MoveString::from_str(&self.user_key_type)?;
-        let user_vm_fragment = MoveString::from_str(&self.user_fragment)?;
-        let custodian_main_did_string = MoveString::from_str(&self.custodian_did)?;
         let custodian_service_pk_multibase = MoveString::from_str(&self.custodian_service_key)?;
         let custodian_service_vm_type = MoveString::from_str(&self.custodian_key_type)?;
-        let custodian_service_vm_fragment = MoveString::from_str(&self.custodian_fragment)?;
 
-        let action = DIDModule::create_did_object_via_cadop_action(
+        let action = DIDModule::create_did_object_via_cadop_with_did_key_action(
             user_did_key_string,
-            user_vm_pk_multibase,
-            user_vm_type,
-            user_vm_fragment,
-            custodian_main_did_string,
             custodian_service_pk_multibase,
             custodian_service_vm_type,
-            custodian_service_vm_fragment,
         );
 
         // Execute the transaction

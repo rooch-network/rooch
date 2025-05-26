@@ -257,8 +257,6 @@ pub struct DIDDocument {
     pub key_agreement: Vec<String>,
     pub services: HashMap<String, Service>,
     pub also_known_as: Vec<String>,
-    pub created_timestamp: u64,
-    pub updated_timestamp: u64,
 }
 
 impl DIDDocument {
@@ -307,8 +305,6 @@ impl MoveStructState for DIDDocument {
                 move_core_types::value::MoveTypeLayout::U8
             )),
             move_core_types::value::MoveTypeLayout::Vector(Box::new(MoveString::type_layout())),
-            move_core_types::value::MoveTypeLayout::U64,
-            move_core_types::value::MoveTypeLayout::U64,
         ])
     }
 }
@@ -418,8 +414,8 @@ impl<'a> DIDModule<'a> {
     // Entry function names from the Move module
     pub const CREATE_DID_OBJECT_FOR_SELF_ENTRY_FUNCTION_NAME: &'static IdentStr = 
         ident_str!("create_did_object_for_self_entry");
-    pub const CREATE_DID_OBJECT_VIA_CADOP_ENTRY_FUNCTION_NAME: &'static IdentStr = 
-        ident_str!("create_did_object_via_cadop_entry");
+    pub const CREATE_DID_OBJECT_VIA_CADOP_WITH_DID_KEY_ENTRY_FUNCTION_NAME: &'static IdentStr = 
+        ident_str!("create_did_object_via_cadop_with_did_key_entry");
     pub const ADD_VERIFICATION_METHOD_ENTRY_FUNCTION_NAME: &'static IdentStr = 
         ident_str!("add_verification_method_entry");
     pub const REMOVE_VERIFICATION_METHOD_ENTRY_FUNCTION_NAME: &'static IdentStr = 
@@ -458,29 +454,19 @@ impl<'a> DIDModule<'a> {
         )
     }
 
-    /// Create DID action via CADOP
-    pub fn create_did_object_via_cadop_action(
+    /// Create DID action via CADOP with did:key
+    pub fn create_did_object_via_cadop_with_did_key_action(
         user_did_key_string: MoveString,
-        user_vm_pk_multibase: MoveString,
-        user_vm_type: MoveString,
-        user_vm_fragment: MoveString,
-        custodian_main_did_string: MoveString,
         custodian_service_pk_multibase: MoveString,
         custodian_service_vm_type: MoveString,
-        custodian_service_vm_fragment: MoveString,
     ) -> MoveAction {
         Self::create_move_action(
-            Self::CREATE_DID_OBJECT_VIA_CADOP_ENTRY_FUNCTION_NAME,
+            Self::CREATE_DID_OBJECT_VIA_CADOP_WITH_DID_KEY_ENTRY_FUNCTION_NAME,
             vec![],
             vec![
                 user_did_key_string.to_move_value(),
-                user_vm_pk_multibase.to_move_value(),
-                user_vm_type.to_move_value(),
-                user_vm_fragment.to_move_value(),
-                custodian_main_did_string.to_move_value(),
                 custodian_service_pk_multibase.to_move_value(),
                 custodian_service_vm_type.to_move_value(),
-                custodian_service_vm_fragment.to_move_value(),
             ],
         )
     }

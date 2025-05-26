@@ -13,11 +13,17 @@
 -  [Resource `DIDDocument`](#0x3_did_DIDDocument)
 -  [Resource `DIDRegistry`](#0x3_did_DIDRegistry)
 -  [Constants](#@Constants_0)
+-  [Function `verification_relationship_authentication`](#0x3_did_verification_relationship_authentication)
+-  [Function `verification_relationship_assertion_method`](#0x3_did_verification_relationship_assertion_method)
+-  [Function `verification_relationship_capability_invocation`](#0x3_did_verification_relationship_capability_invocation)
+-  [Function `verification_relationship_capability_delegation`](#0x3_did_verification_relationship_capability_delegation)
+-  [Function `verification_relationship_key_agreement`](#0x3_did_verification_relationship_key_agreement)
 -  [Function `genesis_init`](#0x3_did_genesis_init)
 -  [Function `init_did_registry`](#0x3_did_init_did_registry)
 -  [Function `create_did_object_for_self_entry`](#0x3_did_create_did_object_for_self_entry)
 -  [Function `create_did_object_for_self`](#0x3_did_create_did_object_for_self)
--  [Function `create_did_object_via_cadop_entry`](#0x3_did_create_did_object_via_cadop_entry)
+-  [Function `create_did_object_via_cadop_with_did_key_entry`](#0x3_did_create_did_object_via_cadop_with_did_key_entry)
+-  [Function `create_did_object_via_cadop_with_did_key`](#0x3_did_create_did_object_via_cadop_with_did_key)
 -  [Function `add_verification_method_entry`](#0x3_did_add_verification_method_entry)
 -  [Function `remove_verification_method_entry`](#0x3_did_remove_verification_method_entry)
 -  [Function `add_to_verification_relationship_entry`](#0x3_did_add_to_verification_relationship_entry)
@@ -35,9 +41,11 @@
 -  [Function `format_did`](#0x3_did_format_did)
 -  [Function `format_verification_method_id`](#0x3_did_format_verification_method_id)
 -  [Function `format_service_id`](#0x3_did_format_service_id)
--  [Function `create_did_from_parts`](#0x3_did_create_did_from_parts)
--  [Function `create_rooch_did_by_address`](#0x3_did_create_rooch_did_by_address)
+-  [Function `new_did_from_parts`](#0x3_did_new_did_from_parts)
+-  [Function `new_rooch_did_by_address`](#0x3_did_new_rooch_did_by_address)
 -  [Function `parse_did_string`](#0x3_did_parse_did_string)
+-  [Function `get_did_identifier_string`](#0x3_did_get_did_identifier_string)
+-  [Function `get_did_method`](#0x3_did_get_did_method)
 -  [Function `get_did_document`](#0x3_did_get_did_document)
 -  [Function `get_did_document_by_object_id`](#0x3_did_get_did_document_by_object_id)
 -  [Function `get_did_identifier`](#0x3_did_get_did_identifier)
@@ -60,8 +68,12 @@
 -  [Function `get_service_endpoint`](#0x3_did_get_service_endpoint)
 -  [Function `get_service_properties`](#0x3_did_get_service_properties)
 -  [Function `get_also_known_as`](#0x3_did_get_also_known_as)
+-  [Function `get_created_timestamp_by_object_id`](#0x3_did_get_created_timestamp_by_object_id)
+-  [Function `get_updated_timestamp_by_object_id`](#0x3_did_get_updated_timestamp_by_object_id)
 -  [Function `get_created_timestamp`](#0x3_did_get_created_timestamp)
 -  [Function `get_updated_timestamp`](#0x3_did_get_updated_timestamp)
+-  [Function `get_did_created_timestamp`](#0x3_did_get_did_created_timestamp)
+-  [Function `get_did_updated_timestamp`](#0x3_did_get_did_updated_timestamp)
 -  [Function `get_did_address`](#0x3_did_get_did_address)
 
 
@@ -75,7 +87,6 @@
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::simple_map</a>;
 <b>use</b> <a href="">0x2::table</a>;
-<b>use</b> <a href="">0x2::timestamp</a>;
 <b>use</b> <a href="auth_validator.md#0x3_auth_validator">0x3::auth_validator</a>;
 <b>use</b> <a href="bitcoin_address.md#0x3_bitcoin_address">0x3::bitcoin_address</a>;
 <b>use</b> <a href="session_key.md#0x3_session_key">0x3::session_key</a>;
@@ -199,6 +210,26 @@ Permission denied based on controller check
 
 
 <pre><code><b>const</b> <a href="did.md#0x3_did_ErrorControllerPermissionDenied">ErrorControllerPermissionDenied</a>: u64 = 15;
+</code></pre>
+
+
+
+<a name="0x3_did_ErrorCustodianDIDNotFound"></a>
+
+Custodian DID document does not exist
+
+
+<pre><code><b>const</b> <a href="did.md#0x3_did_ErrorCustodianDIDNotFound">ErrorCustodianDIDNotFound</a>: u64 = 30;
+</code></pre>
+
+
+
+<a name="0x3_did_ErrorCustodianDoesNotHaveCADOPService"></a>
+
+Custodian does not have CADOP service
+
+
+<pre><code><b>const</b> <a href="did.md#0x3_did_ErrorCustodianDoesNotHaveCADOPService">ErrorCustodianDoesNotHaveCADOPService</a>: u64 = 29;
 </code></pre>
 
 
@@ -516,6 +547,66 @@ Verification method not in the relationship
 
 
 
+<a name="0x3_did_verification_relationship_authentication"></a>
+
+## Function `verification_relationship_authentication`
+
+Get verification relationship constant for authentication
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_verification_relationship_authentication">verification_relationship_authentication</a>(): u8
+</code></pre>
+
+
+
+<a name="0x3_did_verification_relationship_assertion_method"></a>
+
+## Function `verification_relationship_assertion_method`
+
+Get verification relationship constant for assertion method
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_verification_relationship_assertion_method">verification_relationship_assertion_method</a>(): u8
+</code></pre>
+
+
+
+<a name="0x3_did_verification_relationship_capability_invocation"></a>
+
+## Function `verification_relationship_capability_invocation`
+
+Get verification relationship constant for capability invocation
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_verification_relationship_capability_invocation">verification_relationship_capability_invocation</a>(): u8
+</code></pre>
+
+
+
+<a name="0x3_did_verification_relationship_capability_delegation"></a>
+
+## Function `verification_relationship_capability_delegation`
+
+Get verification relationship constant for capability delegation
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_verification_relationship_capability_delegation">verification_relationship_capability_delegation</a>(): u8
+</code></pre>
+
+
+
+<a name="0x3_did_verification_relationship_key_agreement"></a>
+
+## Function `verification_relationship_key_agreement`
+
+Get verification relationship constant for key agreement
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_verification_relationship_key_agreement">verification_relationship_key_agreement</a>(): u8
+</code></pre>
+
+
+
 <a name="0x3_did_genesis_init"></a>
 
 ## Function `genesis_init`
@@ -567,15 +658,30 @@ Validates that the provided public key matches the creator's account address.
 
 
 
-<a name="0x3_did_create_did_object_via_cadop_entry"></a>
+<a name="0x3_did_create_did_object_via_cadop_with_did_key_entry"></a>
 
-## Function `create_did_object_via_cadop_entry`
+## Function `create_did_object_via_cadop_with_did_key_entry`
 
-Create a DID via CADOP (Custodian-Assisted DID Onboarding Protocol).
+Create a DID via CADOP (Custodian-Assisted DID Onboarding Protocol) using did:key.
 The custodian assists in DID creation but the user retains control.
+Each user gets a unique service key from the custodian.
+The user's public key is extracted from their did:key string.
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="did.md#0x3_did_create_did_object_via_cadop_entry">create_did_object_via_cadop_entry</a>(custodian_signer: &<a href="">signer</a>, user_did_key_string: <a href="_String">string::String</a>, user_vm_pk_multibase: <a href="_String">string::String</a>, user_vm_type: <a href="_String">string::String</a>, user_vm_fragment: <a href="_String">string::String</a>, custodian_main_did_string: <a href="_String">string::String</a>, custodian_service_pk_multibase: <a href="_String">string::String</a>, custodian_service_vm_type: <a href="_String">string::String</a>, custodian_service_vm_fragment: <a href="_String">string::String</a>)
+<pre><code><b>public</b> entry <b>fun</b> <a href="did.md#0x3_did_create_did_object_via_cadop_with_did_key_entry">create_did_object_via_cadop_with_did_key_entry</a>(custodian_signer: &<a href="">signer</a>, user_did_key_string: <a href="_String">string::String</a>, custodian_service_pk_multibase: <a href="_String">string::String</a>, custodian_service_vm_type: <a href="_String">string::String</a>)
+</code></pre>
+
+
+
+<a name="0x3_did_create_did_object_via_cadop_with_did_key"></a>
+
+## Function `create_did_object_via_cadop_with_did_key`
+
+Internal function for CADOP DID creation with did:key.
+Returns the ObjectID of the created DID document for testing and verification.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_create_did_object_via_cadop_with_did_key">create_did_object_via_cadop_with_did_key</a>(custodian_signer: &<a href="">signer</a>, user_did_key_string: <a href="_String">string::String</a>, custodian_service_pk_multibase: <a href="_String">string::String</a>, custodian_service_vm_type: <a href="_String">string::String</a>): <a href="_ObjectID">object::ObjectID</a>
 </code></pre>
 
 
@@ -768,24 +874,28 @@ Get all DID ObjectIDs controlled by a specific controller DID
 
 
 
-<a name="0x3_did_create_did_from_parts"></a>
+<a name="0x3_did_new_did_from_parts"></a>
 
-## Function `create_did_from_parts`
+## Function `new_did_from_parts`
+
+Create a DID struct from method and identifier parts
+This function only constructs a DID struct, it does NOT create a DID object on-chain
 
 
-
-<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_create_did_from_parts">create_did_from_parts</a>(method: <a href="_String">string::String</a>, identifier: <a href="_String">string::String</a>): <a href="did.md#0x3_did_DID">did::DID</a>
+<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_new_did_from_parts">new_did_from_parts</a>(method: <a href="_String">string::String</a>, identifier: <a href="_String">string::String</a>): <a href="did.md#0x3_did_DID">did::DID</a>
 </code></pre>
 
 
 
-<a name="0x3_did_create_rooch_did_by_address"></a>
+<a name="0x3_did_new_rooch_did_by_address"></a>
 
-## Function `create_rooch_did_by_address`
+## Function `new_rooch_did_by_address`
+
+Create a Rooch DID struct from an address
+This function only constructs a DID struct, it does NOT create a DID object on-chain
 
 
-
-<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_create_rooch_did_by_address">create_rooch_did_by_address</a>(addr: <b>address</b>): <a href="did.md#0x3_did_DID">did::DID</a>
+<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_new_rooch_did_by_address">new_rooch_did_by_address</a>(addr: <b>address</b>): <a href="did.md#0x3_did_DID">did::DID</a>
 </code></pre>
 
 
@@ -798,6 +908,30 @@ Parse a DID string in the format "did:method:identifier" into a DID struct
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_parse_did_string">parse_did_string</a>(did_string: &<a href="_String">string::String</a>): <a href="did.md#0x3_did_DID">did::DID</a>
+</code></pre>
+
+
+
+<a name="0x3_did_get_did_identifier_string"></a>
+
+## Function `get_did_identifier_string`
+
+Get the identifier from a DID
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_get_did_identifier_string">get_did_identifier_string</a>(<a href="did.md#0x3_did">did</a>: &<a href="did.md#0x3_did_DID">did::DID</a>): <a href="_String">string::String</a>
+</code></pre>
+
+
+
+<a name="0x3_did_get_did_method"></a>
+
+## Function `get_did_method`
+
+Get the method from a DID
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_get_did_method">get_did_method</a>(<a href="did.md#0x3_did">did</a>: &<a href="did.md#0x3_did_DID">did::DID</a>): <a href="_String">string::String</a>
 </code></pre>
 
 
@@ -1058,14 +1192,40 @@ Get also known as from DIDDocument
 
 
 
+<a name="0x3_did_get_created_timestamp_by_object_id"></a>
+
+## Function `get_created_timestamp_by_object_id`
+
+Get created timestamp from Object system
+This accesses the Object's metadata created_at timestamp
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_get_created_timestamp_by_object_id">get_created_timestamp_by_object_id</a>(object_id: <a href="_ObjectID">object::ObjectID</a>): u64
+</code></pre>
+
+
+
+<a name="0x3_did_get_updated_timestamp_by_object_id"></a>
+
+## Function `get_updated_timestamp_by_object_id`
+
+Get updated timestamp from Object system
+This accesses the Object's metadata updated_at timestamp
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_get_updated_timestamp_by_object_id">get_updated_timestamp_by_object_id</a>(object_id: <a href="_ObjectID">object::ObjectID</a>): u64
+</code></pre>
+
+
+
 <a name="0x3_did_get_created_timestamp"></a>
 
 ## Function `get_created_timestamp`
 
-Get created timestamp from DIDDocument
+Get created timestamp for a DID document by address
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_get_created_timestamp">get_created_timestamp</a>(did_doc: &<a href="did.md#0x3_did_DIDDocument">did::DIDDocument</a>): u64
+<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_get_created_timestamp">get_created_timestamp</a>(addr: <b>address</b>): u64
 </code></pre>
 
 
@@ -1074,10 +1234,36 @@ Get created timestamp from DIDDocument
 
 ## Function `get_updated_timestamp`
 
-Get updated timestamp from DIDDocument
+Get updated timestamp for a DID document by address
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_get_updated_timestamp">get_updated_timestamp</a>(did_doc: &<a href="did.md#0x3_did_DIDDocument">did::DIDDocument</a>): u64
+<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_get_updated_timestamp">get_updated_timestamp</a>(addr: <b>address</b>): u64
+</code></pre>
+
+
+
+<a name="0x3_did_get_did_created_timestamp"></a>
+
+## Function `get_did_created_timestamp`
+
+Get created timestamp from DIDDocument reference
+This is a convenience function that extracts the address and calls get_created_timestamp
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_get_did_created_timestamp">get_did_created_timestamp</a>(did_doc: &<a href="did.md#0x3_did_DIDDocument">did::DIDDocument</a>): u64
+</code></pre>
+
+
+
+<a name="0x3_did_get_did_updated_timestamp"></a>
+
+## Function `get_did_updated_timestamp`
+
+Get updated timestamp from DIDDocument reference
+This is a convenience function that extracts the address and calls get_updated_timestamp
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_get_did_updated_timestamp">get_did_updated_timestamp</a>(did_doc: &<a href="did.md#0x3_did_DIDDocument">did::DIDDocument</a>): u64
 </code></pre>
 
 
