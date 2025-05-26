@@ -29,7 +29,7 @@ pub struct InitOutput {
 #[async_trait]
 impl CommandAction<InitOutput> for InitCommand {
     async fn execute(self) -> RoochResult<InitOutput> {
-        let mut context = self.context_options.build_require_password()?;
+        let context = self.context_options.build_require_password()?;
         let sender: RoochAddress = context.resolve_address(self.tx_options.sender)?.into();
         let max_gas_amount: Option<u64> = self.tx_options.max_gas_amount;
 

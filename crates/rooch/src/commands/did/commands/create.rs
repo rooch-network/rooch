@@ -5,6 +5,7 @@ use crate::cli_types::{CommandAction, TransactionOptions, WalletContextOptions};
 use async_trait::async_trait;
 use clap::Parser;
 use moveos_types::move_std::string::MoveString;
+use rooch_rpc_api::jsonrpc_types::{StateChangeSetView, OpView};
 use rooch_types::address::RoochAddress;
 use rooch_types::error::RoochResult;
 use rooch_types::framework::did::DIDModule;
@@ -101,7 +102,7 @@ impl CommandAction<CreateOutput> for CreateCommand {
 #[async_trait]
 impl CommandAction<CreateOutput> for SelfCreateCommand {
     async fn execute(self) -> RoochResult<CreateOutput> {
-        let mut context = self.context_options.build_require_password()?;
+        let context = self.context_options.build_require_password()?;
         let sender: RoochAddress = context.resolve_address(self.tx_options.sender)?.into();
         let max_gas_amount: Option<u64> = self.tx_options.max_gas_amount;
 
@@ -123,12 +124,20 @@ impl CommandAction<CreateOutput> for SelfCreateCommand {
         let result = context.sign_and_execute(sender, tx_data).await?;
         context.assert_execute_success(result.clone())?;
 
-        // Calculate the DID identifier (simplified for now)
+        // Calculate the DID identifier
         let did_identifier = format!("did:rooch:{}", sender.to_bech32());
+
+        // Extract the DID object ID from the changeset
+        let output = result.output.ok_or_else(|| {
+            rooch_types::error::RoochError::CommandArgumentError(
+                "Transaction output not available".to_string(),
+            )
+        })?;
+        let did_object_id = extract_new_did_object_id(&output.changeset, &sender.into())?;
 
         Ok(CreateOutput {
             did: did_identifier,
-            object_id: format!("0x{}", result.execution_info.tx_hash.to_string()),
+            object_id: format!("0x{}", did_object_id),
             transaction_hash: result.execution_info.tx_hash.to_string(),
             gas_used: result.execution_info.gas_used.into(),
             status: "success".to_string(),
@@ -139,7 +148,7 @@ impl CommandAction<CreateOutput> for SelfCreateCommand {
 #[async_trait]
 impl CommandAction<CreateOutput> for CadopCreateCommand {
     async fn execute(self) -> RoochResult<CreateOutput> {
-        let mut context = self.context_options.build_require_password()?;
+        let context = self.context_options.build_require_password()?;
         let sender: RoochAddress = context.resolve_address(self.tx_options.sender)?.into();
         let max_gas_amount: Option<u64> = self.tx_options.max_gas_amount;
 
@@ -178,15 +187,97 @@ impl CommandAction<CreateOutput> for CadopCreateCommand {
         let result = context.sign_and_execute(sender, tx_data).await?;
         context.assert_execute_success(result.clone())?;
 
-        // For CADOP, the DID identifier is derived from the new account created
-        let did_identifier = format!("did:rooch:{}", result.execution_info.tx_hash);
+        // For CADOP, extract the new DID account address from changeset
+        let output = result.output.ok_or_else(|| {
+            rooch_types::error::RoochError::CommandArgumentError(
+                "Transaction output not available".to_string(),
+            )
+        })?;
+        let new_did_account_address = extract_new_account_address_from_changeset(&output.changeset)?;
+        let did_identifier = format!("did:rooch:{}", RoochAddress::from(new_did_account_address).to_bech32());
+        
+        // Extract the DID object ID from the changeset
+        let did_object_id = extract_new_did_object_id(&output.changeset, &new_did_account_address)?;
 
         Ok(CreateOutput {
             did: did_identifier,
-            object_id: format!("0x{}", result.execution_info.tx_hash),
+            object_id: format!("0x{}", did_object_id),
             transaction_hash: result.execution_info.tx_hash.to_string(),
             gas_used: result.execution_info.gas_used.into(),
             status: "success".to_string(),
         })
     }
+}
+
+/// Extract the newly created DID object ID from the changeset
+fn extract_new_did_object_id(
+    changeset: &StateChangeSetView,
+    did_account_address: &move_core_types::account_address::AccountAddress,
+) -> RoochResult<moveos_types::moveos_std::object::ObjectID> {
+    use moveos_types::moveos_std::object::ObjectID;
+    use rooch_types::address::RoochAddress;
+    use moveos_types::state::MoveStructType;
+    
+    // Calculate the expected DID identifier string
+    let did_identifier_str = RoochAddress::from(*did_account_address).to_bech32();
+    
+    // Calculate the expected DID object ID using the same method as in did.move
+    let did_document_struct_tag = rooch_types::framework::did::DIDDocument::struct_tag();
+    let expected_object_id = moveos_types::moveos_std::object::custom_object_id(&did_identifier_str, &did_document_struct_tag);
+    
+    // Look for this object ID in the changeset
+    for object_change in &changeset.changes {
+        if let Some(op) = &object_change.value {
+            if matches!(op, OpView::New(_)) {
+                // Parse the object ID from the metadata
+                if let Ok(object_id) = ObjectID::from_str(&object_change.metadata.id.to_string()) {
+                    if object_id == expected_object_id {
+                        return Ok(expected_object_id);
+                    }
+                }
+            }
+        }
+    }
+    
+    Err(rooch_types::error::RoochError::CommandArgumentError(
+        "Failed to find newly created DID object in changeset".to_string(),
+    ))
+}
+
+/// Extract the new account address created during CADOP from the changeset
+fn extract_new_account_address_from_changeset(
+    changeset: &StateChangeSetView,
+) -> RoochResult<move_core_types::account_address::AccountAddress> {
+    use moveos_types::moveos_std::object::ObjectID;
+    
+    // Look for newly created Account objects in the changeset
+    for object_change in &changeset.changes {
+        if let Some(op) = &object_change.value {
+            if matches!(op, OpView::New(_)) {
+                // Check if this is an Account object by examining the object type
+                if object_change.metadata.object_type.to_string().contains("Account") {
+                    // Parse the object ID and extract the account address
+                    if let Ok(object_id) = ObjectID::from_str(&object_change.metadata.id.to_string()) {
+                        // For account objects, we need to extract the address from the object ID
+                        // Since we can't access the internal path directly, we'll use a different approach
+                        // The object ID string representation contains the address information
+                        let object_id_str = object_id.to_string();
+                        // Remove the "0x" prefix and take the first 32 bytes (64 hex chars) as the address
+                        if let Some(hex_str) = object_id_str.strip_prefix("0x") {
+                            if hex_str.len() >= 64 {
+                                let addr_hex = &hex_str[0..64];
+                                if let Ok(account_address) = move_core_types::account_address::AccountAddress::from_hex_literal(&format!("0x{}", addr_hex)) {
+                                    return Ok(account_address);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    Err(rooch_types::error::RoochError::CommandArgumentError(
+        "Failed to find newly created account in changeset".to_string(),
+    ))
 } 
