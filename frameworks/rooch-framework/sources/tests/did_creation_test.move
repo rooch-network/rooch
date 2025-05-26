@@ -249,4 +249,41 @@ module rooch_framework::did_creation_test {
         let expected_custom = string::utf8(b"did:custom:identifier123");
         assert!(formatted_custom == expected_custom, 14203);
     }
+
+    #[test]
+    /// Test that Object timestamp functions are accessible and work correctly
+    fun test_object_timestamp_access() {
+        // Use the existing setup that creates a DID
+        let (creator_signer, _creator_address, creator_public_key_multibase, did_object_id) = 
+            did_test_common::setup_did_test_with_creation();
+        
+        // Test ObjectID-based timestamp access
+        let created_timestamp_by_id = did::get_created_timestamp_by_object_id(did_object_id);
+        let updated_timestamp_by_id = did::get_updated_timestamp_by_object_id(did_object_id);
+        
+        // Get DID document
+        let did_document = did::get_did_document_by_object_id(did_object_id);
+        let did_address = did::get_did_address(did_document);
+        
+        // Test address-based timestamp access
+        let created_timestamp_by_addr = did::get_created_timestamp(did_address);
+        let updated_timestamp_by_addr = did::get_updated_timestamp(did_address);
+        
+        // Test DIDDocument reference-based access
+        let created_timestamp_by_doc = did::get_did_created_timestamp(did_document);
+        let updated_timestamp_by_doc = did::get_did_updated_timestamp(did_document);
+        
+        // All methods should return the same values
+        assert!(created_timestamp_by_id == created_timestamp_by_addr, 15001);
+        assert!(created_timestamp_by_addr == created_timestamp_by_doc, 15002);
+        assert!(updated_timestamp_by_id == updated_timestamp_by_addr, 15003);
+        assert!(updated_timestamp_by_addr == updated_timestamp_by_doc, 15004);
+        
+        // Updated timestamp should be >= created timestamp
+        assert!(updated_timestamp_by_id >= created_timestamp_by_id, 15005);
+        
+        // Clean up compiler warnings
+        let _ = creator_signer;
+        let _ = creator_public_key_multibase;
+    }
 } 
