@@ -25,25 +25,25 @@ impl CommandAction<String> for DID {
     async fn execute(self) -> RoochResult<String> {
         match self.cmd {
             DIDCommand::Create(create) => create.execute().await.map(|resp| {
-                serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
+                serde_json::to_string_pretty(&resp)?
             }),
             DIDCommand::Manage(manage) => manage.execute().await.map(|resp| {
-                serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
+                serde_json::to_string_pretty(&resp)?
             }),
             DIDCommand::Query(query) => {
                 let json_output = query.execute_serialized().await?;
                 let json_value: Value =
-                    serde_json::from_str(&json_output).expect("Failed to parse JSON");
+                    serde_json::from_str(&json_output)?;
 
                 // For now, just return JSON. Later we can add table formatting
-                Ok(serde_json::to_string_pretty(&json_value).unwrap())
+                Ok(serde_json::to_string_pretty(&json_value)?)
             }
             DIDCommand::Keygen(keygen) => {
                 let json_output = keygen.execute_serialized().await?;
                 let json_value: Value =
-                    serde_json::from_str(&json_output).expect("Failed to parse JSON");
+                    serde_json::from_str(&json_output)?;
 
-                Ok(serde_json::to_string_pretty(&json_value).unwrap())
+                Ok(serde_json::to_string_pretty(&json_value)?)
             }
         }
     }
