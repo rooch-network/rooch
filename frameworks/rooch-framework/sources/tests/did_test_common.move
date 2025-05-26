@@ -153,4 +153,58 @@ module rooch_framework::did_test_common {
         genesis::init_for_test();
         timestamp::fast_forward_milliseconds_for_test(1000);
     }
+
+    // ========================================
+    // CADOP Test Setup Functions
+    // ========================================
+
+    /// Setup function to create a custodian DID with CADOP service
+    /// This allows tests to use the full CADOP API without skipping validations
+    /// Returns the custodian signer for further use in tests
+    public fun setup_custodian_with_cadop_service(): signer {
+        // First create a DID using the standard setup
+        let (_creator_signer, _creator_address, creator_public_key, custodian_did_object_id) = setup_did_test_with_creation();
+        std::debug::print(&custodian_did_object_id);
+        // Get the DID document and its address
+        let custodian_did_document = did::get_did_document_by_object_id(custodian_did_object_id);
+        let custodian_did_address = did::get_did_address(custodian_did_document);
+        
+        // Create a signer for the DID address (this is the custodian)
+        let custodian_signer = account::create_signer_for_testing(custodian_did_address);
+        
+        // Set up session key authentication for the DID address using the creator's key
+        // The DID was created with the creator's Secp256k1 key, so we use that for authentication
+        setup_secp256k1_session_key_auth(&creator_public_key);
+        
+        // Add CADOP custodian service to the DID
+        let service_fragment = string::utf8(b"cadop-custodian");
+        let service_type = string::utf8(b"CadopCustodianService");
+        let service_endpoint = string::utf8(b"https://custodian.example.com/cadop");
+        
+        did::add_service_entry(&custodian_signer, service_fragment, service_type, service_endpoint);
+        
+        custodian_signer
+    }
+
+    /// Setup function for CADOP tests with both custodian and user preparation
+    /// Returns (custodian_signer, user_did_key_string, custodian_service_pk, custodian_service_vm_type)
+    public fun setup_cadop_test_full(): (signer, string::String, string::String, string::String) {
+        
+        // For now, let's use the test-only bypass method since setting up proper
+        // session key authentication for service addition is complex
+        let custodian_signer = setup_custodian_with_cadop_service();
+        let user_did_key_string = generate_test_did_key_string();
+        let custodian_service_pk_multibase = generate_test_secp256k1_multibase_key();
+        let custodian_service_vm_type = string::utf8(b"EcdsaSecp256k1VerificationKey2019");
+        
+        (custodian_signer, user_did_key_string, custodian_service_pk_multibase, custodian_service_vm_type)
+    }
+
+    /// Generate a valid did:key string for testing
+    public fun generate_test_did_key_string(): string::String {
+        let ed25519_key = generate_test_ed25519_multibase_key();
+        let did_key_string = string::utf8(b"did:key:");
+        string::append(&mut did_key_string, ed25519_key);
+        did_key_string
+    }
 } 

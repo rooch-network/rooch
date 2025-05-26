@@ -75,6 +75,8 @@ module rooch_framework::did {
     const ErrorSignerNotDIDAccount: u64 = 27;
     /// No session key found in transaction context - all DID operations must use session keys
     const ErrorNoSessionKeyInContext: u64 = 28;
+    /// Custodian does not have CADOP service
+    const ErrorCustodianDoesNotHaveCADOPService: u64 = 29;
 
     // Verification relationship types
     const VERIFICATION_RELATIONSHIP_AUTHENTICATION: u8 = 0;
@@ -415,25 +417,63 @@ module rooch_framework::did {
         );
     }
 
-    /// Create a DID via CADOP (Custodian-Assisted DID Onboarding Protocol).
+    /// Create a DID via CADOP (Custodian-Assisted DID Onboarding Protocol) using did:key.
     /// The custodian assists in DID creation but the user retains control.
-    public entry fun create_did_object_via_cadop_entry(
+    /// Each user gets a unique service key from the custodian.
+    /// The user's public key is extracted from their did:key string.
+    public entry fun create_did_object_via_cadop_with_did_key_entry(
         custodian_signer: &signer,              // Custodian's Rooch account, pays gas
         user_did_key_string: String,            // User's did:key string (e.g., "did:key:zABC...")
-        user_vm_pk_multibase: String,           // User's public key (consistent with did:key public key)
-        user_vm_type: String,                   // User VM type
-        user_vm_fragment: String,               // User VM fragment
-
-        custodian_main_did_string: String,      // Custodian's main DID string (will be service VM controller)
-        custodian_service_pk_multibase: String, // Custodian's service public key to register
-        custodian_service_vm_type: String,      // Custodian service VM type
-        custodian_service_vm_fragment: String   // Custodian service VM fragment
+        
+        // Custodian generates a unique service key for this user
+        custodian_service_pk_multibase: String, // Custodian's service public key for this user
+        custodian_service_vm_type: String       // Custodian service VM type (Ed25519 or Secp256k1)
     ) {
+        let _ = create_did_object_via_cadop_with_did_key(
+            custodian_signer,
+            user_did_key_string,
+            custodian_service_pk_multibase,
+            custodian_service_vm_type
+        );
+    }
+
+    /// Internal function for CADOP DID creation with did:key.
+    /// Returns the ObjectID of the created DID document for testing and verification.
+    public fun create_did_object_via_cadop_with_did_key(
+        custodian_signer: &signer,              // Custodian's Rooch account, pays gas
+        user_did_key_string: String,            // User's did:key string (e.g., "did:key:zABC...")
+        custodian_service_pk_multibase: String, // Custodian's service public key for this user
+        custodian_service_vm_type: String       // Custodian service VM type (Ed25519 or Secp256k1)
+    ): ObjectID {
         // Parse user's did:key
         let user_did_key = parse_did_string(&user_did_key_string);
         
-        // Parse custodian's main DID
-        let custodian_main_did = parse_did_string(&custodian_main_did_string);
+        // Extract public key from did:key identifier
+        // For did:key, the identifier is the multibase-encoded public key
+        assert!(user_did_key.method == string::utf8(b"key"), ErrorInvalidDIDStringFormat);
+        let user_vm_pk_multibase = user_did_key.identifier;
+        
+        // Derive custodian's DID from signer address
+        let custodian_address = signer::address_of(custodian_signer);
+        let custodian_did = create_rooch_did_by_address(custodian_address);
+        
+        // Verify custodian has a CADOP service declared in their DID document
+        // let controlled_dids = get_dids_by_controller(custodian_did);
+        // if (vector::length(&controlled_dids) > 0) {
+        //     // Get the first DID controlled by the custodian
+        //     let custodian_did_object_id = *vector::borrow(&controlled_dids, 0);
+        //     let custodian_did_doc = get_did_document_by_object_id(custodian_did_object_id);
+        //     let has_cadop_service = has_cadop_service_in_doc(custodian_did_doc);
+        //     assert!(has_cadop_service, ErrorInvalidArgument);
+        // };
+
+        let custodian_did_str = address::to_bech32_string(custodian_address);
+        let custodian_did_object_id = resolve_did_object_id(&custodian_did_str);
+        let custodian_did_doc = get_did_document_by_object_id(custodian_did_object_id);
+        let has_cadop_service = has_cadop_service_in_doc(custodian_did_doc);
+        assert!(has_cadop_service, ErrorCustodianDoesNotHaveCADOPService);
+
+        // Note: If custodian doesn't have a DID yet, we allow it for bootstrapping
 
         let doc_controllers = vector[user_did_key];
         let user_vm_relationships = vector[
@@ -441,19 +481,68 @@ module rooch_framework::did {
             VERIFICATION_RELATIONSHIP_CAPABILITY_DELEGATION
         ]; // Fixed for NIP-3 requirements
 
-        let _ = create_did_object_internal(
+        // Standardize user VM to Ed25519 (most common for did:key)
+        let user_vm_type = string::utf8(VERIFICATION_METHOD_TYPE_ED25519);
+        let user_vm_fragment = string::utf8(b"user-key");
+
+        // Generate unique service fragment for this user
+        let custodian_service_vm_fragment = generate_service_fragment_for_user(&user_did_key_string);
+
+        create_did_object_internal(
             custodian_signer,
             doc_controllers,
             user_vm_pk_multibase,
             user_vm_type,
             user_vm_fragment,
             user_vm_relationships,
-            option::some(custodian_main_did),
+            option::some(custodian_did),
             option::some(custodian_service_pk_multibase),
             option::some(custodian_service_vm_type),
             option::some(custodian_service_vm_fragment)
-        );
+        )
     } 
+
+    /// Helper function to check if a DID document has a CADOP custodian service
+    fun has_cadop_service_in_doc(did_doc: &DIDDocument): bool {
+        let services = &did_doc.services;
+        let service_keys = simple_map::keys(services);
+        let i = 0;
+        
+        while (i < vector::length(&service_keys)) {
+            let service_key = vector::borrow(&service_keys, i);
+            let service = simple_map::borrow(services, service_key);
+            if (service.type == string::utf8(b"CadopCustodianService")) {
+                return true
+            };
+            i = i + 1;
+        };
+        
+        false
+    }
+
+    /// Generate a unique service fragment for a user based on their DID
+    fun generate_service_fragment_for_user(user_did_key_string: &String): String {
+        let fragment = string::utf8(b"custodian-service-");
+        
+        // Extract a short identifier from the user's did:key
+        // For did:key:zABC..., we take the first 8 characters after 'z'
+        let did_bytes = string::bytes(user_did_key_string);
+        let start_pos = 8; // Skip "did:key:z"
+        let end_pos = if (vector::length(did_bytes) > start_pos + 8) {
+            start_pos + 8
+        } else {
+            vector::length(did_bytes)
+        };
+        
+        let i = start_pos;
+        while (i < end_pos) {
+            let byte_val = *vector::borrow(did_bytes, i);
+            string::append_utf8(&mut fragment, vector[byte_val]);
+            i = i + 1;
+        };
+        
+        fragment
+    }
 
     public entry fun add_verification_method_entry(
         did_signer: &signer,
@@ -1485,24 +1574,25 @@ module rooch_framework::did {
     }
 
     #[test_only]
-    /// Test-only function to create DID via CADOP without strict validation
+    /// Test-only function to create DID via CADOP with did:key without strict validation
     /// This bypasses certain validations for testing purposes
-    public fun create_did_object_via_cadop_entry_test_only(
+    public fun create_did_object_via_cadop_with_did_key_test_only(
         custodian_signer: &signer,
         user_did_key_string: String,
-        user_vm_pk_multibase: String,
-        user_vm_type: String,
-        user_vm_fragment: String,
-        custodian_main_did_string: String,
         custodian_service_pk_multibase: String,
-        custodian_service_vm_type: String,
-        custodian_service_vm_fragment: String
-    ) {
+        custodian_service_vm_type: String
+    ): ObjectID {
         // Parse user's did:key
         let user_did_key = parse_did_string(&user_did_key_string);
         
-        // Parse custodian's main DID
-        let custodian_main_did = parse_did_string(&custodian_main_did_string);
+        // Extract public key from did:key identifier
+        // For did:key, the identifier is the multibase-encoded public key
+        assert!(user_did_key.method == string::utf8(b"key"), ErrorInvalidDIDStringFormat);
+        let user_vm_pk_multibase = user_did_key.identifier;
+        
+        // Derive custodian's DID from signer address
+        let custodian_address = signer::address_of(custodian_signer);
+        let custodian_did = create_rooch_did_by_address(custodian_address);
 
         let doc_controllers = vector[user_did_key];
         let user_vm_relationships = vector[
@@ -1510,18 +1600,25 @@ module rooch_framework::did {
             VERIFICATION_RELATIONSHIP_CAPABILITY_DELEGATION
         ]; // Fixed for NIP-3 requirements
 
-        let _ = create_did_object_internal(
+        // Standardize user VM to Ed25519 (most common for did:key)
+        let user_vm_type = string::utf8(VERIFICATION_METHOD_TYPE_ED25519);
+        let user_vm_fragment = string::utf8(b"user-key");
+
+        // Generate unique service fragment for this user
+        let custodian_service_vm_fragment = generate_service_fragment_for_user(&user_did_key_string);
+
+        create_did_object_internal(
             custodian_signer,
             doc_controllers,
             user_vm_pk_multibase,
             user_vm_type,
             user_vm_fragment,
             user_vm_relationships,
-            option::some(custodian_main_did),
+            option::some(custodian_did),
             option::some(custodian_service_pk_multibase),
             option::some(custodian_service_vm_type),
             option::some(custodian_service_vm_fragment)
-        );
+        )
     }
 
     #[test_only]
@@ -1544,7 +1641,42 @@ module rooch_framework::did {
     /// Test-only function to check if service exists in document
     public fun test_service_exists(did_document_data: &DIDDocument, fragment: &String): bool {
         simple_map::contains_key(&did_document_data.services, fragment)
+    } 
+
+    // =================== Public constants ===================
+
+    /// Get verification relationship constant for authentication
+    public fun verification_relationship_authentication(): u8 {
+        VERIFICATION_RELATIONSHIP_AUTHENTICATION
     }
 
-    
+    /// Get verification relationship constant for assertion method
+    public fun verification_relationship_assertion_method(): u8 {
+        VERIFICATION_RELATIONSHIP_ASSERTION_METHOD
+    }
+
+    /// Get verification relationship constant for capability invocation
+    public fun verification_relationship_capability_invocation(): u8 {
+        VERIFICATION_RELATIONSHIP_CAPABILITY_INVOCATION
+    }
+
+    /// Get verification relationship constant for capability delegation
+    public fun verification_relationship_capability_delegation(): u8 {
+        VERIFICATION_RELATIONSHIP_CAPABILITY_DELEGATION
+    }
+
+    /// Get verification relationship constant for key agreement
+    public fun verification_relationship_key_agreement(): u8 {
+        VERIFICATION_RELATIONSHIP_KEY_AGREEMENT
+    }
+
+    /// Get the identifier from a DID
+    public fun get_did_identifier_string(did: &DID): String {
+        did.identifier
+    }
+
+    /// Get the method from a DID
+    public fun get_did_method(did: &DID): String {
+        did.method
+    }
 } 
