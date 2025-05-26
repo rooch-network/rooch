@@ -52,7 +52,7 @@ module rooch_framework::did_creation_test {
         // Verify DID document properties
         let controllers = did::get_controllers(did_document);
         assert!(vector::length(controllers) == 1, 1005);
-        let expected_controller = did::create_rooch_did_by_address(creator_address);
+        let expected_controller = did::new_rooch_did_by_address(creator_address);
         assert!(*vector::borrow(controllers, 0) == expected_controller, 1006);
         
         // Verify account-key verification method exists
@@ -113,7 +113,7 @@ module rooch_framework::did_creation_test {
         // Test creating DID from parts
         let method = string::utf8(b"rooch");
         let identifier = string::utf8(b"bc1qtest123");
-        let created_did = did::create_did_from_parts(method, identifier);
+        let created_did = did::new_did_from_parts(method, identifier);
         let expected_did_string = string::utf8(b"did:rooch:bc1qtest123");
         let formatted_created_did = did::format_did(&created_did);
         assert!(formatted_created_did == expected_did_string, 2003);
@@ -228,7 +228,7 @@ module rooch_framework::did_creation_test {
     fun test_did_formatting_edge_cases() {
         // Test very long identifier
         let long_identifier = string::utf8(b"bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4verylongidentifiertotestlimits123456789");
-        let long_did = did::create_did_from_parts(string::utf8(b"rooch"), long_identifier);
+        let long_did = did::new_did_from_parts(string::utf8(b"rooch"), long_identifier);
         let formatted_long = did::format_did(&long_did);
         let expected_long = string::utf8(b"did:rooch:");
         string::append(&mut expected_long, long_identifier);
@@ -236,7 +236,7 @@ module rooch_framework::did_creation_test {
 
         // Test special characters in identifier (should work)
         let special_identifier = string::utf8(b"bc1q-test_123.identifier");
-        let special_did = did::create_did_from_parts(string::utf8(b"rooch"), special_identifier);
+        let special_did = did::new_did_from_parts(string::utf8(b"rooch"), special_identifier);
         let formatted_special = did::format_did(&special_did);
         let expected_special = string::utf8(b"did:rooch:");
         string::append(&mut expected_special, special_identifier);
@@ -245,7 +245,7 @@ module rooch_framework::did_creation_test {
         // Test different method names
         let custom_method = string::utf8(b"custom");
         let custom_identifier = string::utf8(b"identifier123");
-        let custom_did = did::create_did_from_parts(custom_method, custom_identifier);
+        let custom_did = did::new_did_from_parts(custom_method, custom_identifier);
         let formatted_custom = did::format_did(&custom_did);
         let expected_custom = string::utf8(b"did:custom:identifier123");
         assert!(formatted_custom == expected_custom, 14203);

@@ -74,7 +74,7 @@ module rooch_framework::did_query_test {
         let did_address = did::get_did_address(did_document);
 
         // Get DID by address
-        let retrieved_did = did::create_rooch_did_by_address(did_address);
+        let retrieved_did = did::new_rooch_did_by_address(did_address);
         let formatted_did = did::format_did(&retrieved_did);
         
         // Verify correct DID was retrieved
@@ -95,7 +95,7 @@ module rooch_framework::did_query_test {
         let _did_address = did::get_did_address(did_document);
 
         // Get DIDs controlled by the creator address (not the DID address)
-        let controller_did = did::create_rooch_did_by_address(creator_address);
+        let controller_did = did::new_rooch_did_by_address(creator_address);
         let controlled_dids = did::get_dids_by_controller(controller_did);
         
         // Should have exactly one DID
@@ -108,7 +108,7 @@ module rooch_framework::did_query_test {
         did_test_common::init_test_framework();
 
         // Create a controller DID that doesn't control any DIDs
-        let controller_did = did::create_did_from_parts(
+        let controller_did = did::new_did_from_parts(
             string::utf8(b"rooch"),
             string::utf8(b"bc1qnonexistent123")
         );
@@ -153,8 +153,8 @@ module rooch_framework::did_query_test {
         assert!(did::exists_did_for_address(did_address), 11301);
 
         // Test that the same address always resolves to the same DID
-        let did1 = did::create_rooch_did_by_address(did_address);
-        let did2 = did::create_rooch_did_by_address(did_address);
+        let did1 = did::new_rooch_did_by_address(did_address);
+        let did2 = did::new_rooch_did_by_address(did_address);
         
         let formatted_did1 = did::format_did(&did1);
         let formatted_did2 = did::format_did(&did2);
@@ -177,7 +177,7 @@ module rooch_framework::did_query_test {
         assert!(did::exists_did_document_by_identifier(bech32_identifier), 11401);
 
         // Verify DID document can be retrieved by identifier
-        let retrieved_did = did::create_rooch_did_by_address(did_address);
+        let retrieved_did = did::new_rooch_did_by_address(did_address);
         let expected_did_string = string::utf8(b"did:rooch:");
         string::append(&mut expected_did_string, bech32_identifier);
         let formatted_retrieved = did::format_did(&retrieved_did);
@@ -214,7 +214,7 @@ module rooch_framework::did_query_test {
         let did_address = did::get_did_address(did_document);
 
         // Test rooch DID controller - use creator address as controller
-        let rooch_controller = did::create_rooch_did_by_address(creator_address);
+        let rooch_controller = did::new_rooch_did_by_address(creator_address);
         let controlled_dids = did::get_dids_by_controller(rooch_controller);
         
         // Should control exactly one DID (the created DID)
@@ -228,7 +228,7 @@ module rooch_framework::did_query_test {
         let formatted_controlled = did::format_did(controlled_did_identifier);
         
         // The controlled DID should be the DID at did_address
-        let expected_controlled_did = did::create_rooch_did_by_address(did_address);
+        let expected_controlled_did = did::new_rooch_did_by_address(did_address);
         let formatted_expected = did::format_did(&expected_controlled_did);
         
         assert!(formatted_controlled == formatted_expected, 11602);
@@ -240,7 +240,7 @@ module rooch_framework::did_query_test {
         did_test_common::init_test_framework();
 
         // Test with empty DID registry
-        let nonexistent_controller = did::create_did_from_parts(
+        let nonexistent_controller = did::new_did_from_parts(
             string::utf8(b"rooch"), 
             string::utf8(b"bc1qneverexisted")
         );
@@ -270,7 +270,7 @@ module rooch_framework::did_query_test {
         assert!(did::exists_did_for_address(did_address), 11800);
         
         // Test controller mapping
-        let controller_did = did::create_rooch_did_by_address(creator_address);
+        let controller_did = did::new_rooch_did_by_address(creator_address);
         let controlled_dids = did::get_dids_by_controller(controller_did);
         assert!(vector::length(&controlled_dids) == 1, 11810);
         
@@ -279,7 +279,7 @@ module rooch_framework::did_query_test {
         assert!(did::exists_did_document_by_identifier(identifier), 11801);
         
         // Test DID creation by address
-        let did_by_address = did::create_rooch_did_by_address(did_address);
+        let did_by_address = did::new_rooch_did_by_address(did_address);
         let expected_did_string = string::utf8(b"did:rooch:");
         string::append(&mut expected_did_string, identifier);
         let formatted_did = did::format_did(&did_by_address);
@@ -304,14 +304,14 @@ module rooch_framework::did_query_test {
         assert!(did::exists_did_document_by_identifier(identifier), 11902);
 
         // Method 3: Create DID by address and verify format
-        let did_by_address = did::create_rooch_did_by_address(did_address);
+        let did_by_address = did::new_rooch_did_by_address(did_address);
         let expected_did_string = string::utf8(b"did:rooch:");
         string::append(&mut expected_did_string, identifier);
         let formatted_did = did::format_did(&did_by_address);
         assert!(formatted_did == expected_did_string, 11903);
 
         // Method 4: Controller mapping consistency - use creator address as controller
-        let controller_did = did::create_rooch_did_by_address(creator_address);
+        let controller_did = did::new_rooch_did_by_address(creator_address);
         let controlled_dids = did::get_dids_by_controller(controller_did);
         assert!(vector::length(&controlled_dids) == 1, 11904);
         

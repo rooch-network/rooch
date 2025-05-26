@@ -275,7 +275,7 @@ module rooch_framework::did_error_test {
         assert!(!did::exists_did_document_by_identifier(string::utf8(b"nonexistent")), 13802);
 
         // Test controller queries
-        let nonexistent_controller = did::create_did_from_parts(
+        let nonexistent_controller = did::new_did_from_parts(
             string::utf8(b"test"),
             string::utf8(b"nonexistent")
         );
@@ -287,7 +287,7 @@ module rooch_framework::did_error_test {
         assert!(vector::length(&empty_string_result) == 0, 13804);
 
         // Test DID parsing and formatting edge cases
-        let test_did = did::create_did_from_parts(
+        let test_did = did::new_did_from_parts(
             string::utf8(b"test"),
             string::utf8(b"identifier")
         );
@@ -303,7 +303,7 @@ module rooch_framework::did_error_test {
         
         // Very long identifier
         let long_identifier = string::utf8(b"verylongidentifierthatcontainsmanycharsbutshouldbeparsedcorrectly123456789");
-        let long_did = did::create_did_from_parts(string::utf8(b"test"), long_identifier);
+        let long_did = did::new_did_from_parts(string::utf8(b"test"), long_identifier);
         let formatted_long = did::format_did(&long_did);
         let expected_long = string::utf8(b"did:test:");
         string::append(&mut expected_long, long_identifier);
@@ -311,7 +311,7 @@ module rooch_framework::did_error_test {
 
         // Identifier with special characters
         let special_identifier = string::utf8(b"user-123_test.example");
-        let special_did = did::create_did_from_parts(string::utf8(b"test"), special_identifier);
+        let special_did = did::new_did_from_parts(string::utf8(b"test"), special_identifier);
         let formatted_special = did::format_did(&special_did);
         let expected_special = string::utf8(b"did:test:");
         string::append(&mut expected_special, special_identifier);
@@ -319,7 +319,7 @@ module rooch_framework::did_error_test {
 
         // Multiple colons in identifier (allowed in DID spec)
         let colon_identifier = string::utf8(b"namespace:type:id:version");
-        let colon_did = did::create_did_from_parts(string::utf8(b"test"), colon_identifier);
+        let colon_did = did::new_did_from_parts(string::utf8(b"test"), colon_identifier);
         let formatted_colon = did::format_did(&colon_did);
         let expected_colon = string::utf8(b"did:test:");
         string::append(&mut expected_colon, colon_identifier);

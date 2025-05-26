@@ -104,7 +104,7 @@ module rooch_framework::did_integration_test {
     fun test_did_formatting_edge_cases() {
         // Test very long identifier
         let long_identifier = string::utf8(b"bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4verylongidentifiertotestlimits123456789");
-        let long_did = did::create_did_from_parts(string::utf8(b"rooch"), long_identifier);
+        let long_did = did::new_did_from_parts(string::utf8(b"rooch"), long_identifier);
         let formatted_long = did::format_did(&long_did);
         let expected_long = string::utf8(b"did:rooch:");
         string::append(&mut expected_long, long_identifier);
@@ -112,7 +112,7 @@ module rooch_framework::did_integration_test {
 
         // Test special characters in identifier (should work)
         let special_identifier = string::utf8(b"bc1q-test_123.identifier");
-        let special_did = did::create_did_from_parts(string::utf8(b"rooch"), special_identifier);
+        let special_did = did::new_did_from_parts(string::utf8(b"rooch"), special_identifier);
         let formatted_special = did::format_did(&special_did);
         let expected_special = string::utf8(b"did:rooch:");
         string::append(&mut expected_special, special_identifier);
@@ -121,7 +121,7 @@ module rooch_framework::did_integration_test {
         // Test different method names
         let custom_method = string::utf8(b"custom");
         let custom_identifier = string::utf8(b"identifier123");
-        let custom_did = did::create_did_from_parts(custom_method, custom_identifier);
+        let custom_did = did::new_did_from_parts(custom_method, custom_identifier);
         let formatted_custom = did::format_did(&custom_did);
         let expected_custom = string::utf8(b"did:custom:identifier123");
         assert!(formatted_custom == expected_custom, 14203);
@@ -252,7 +252,7 @@ module rooch_framework::did_integration_test {
         assert!(did::test_service_exists(final_did_document, &service_fragment), 15008);
         
         // 8. Test controller mapping
-        let controller_did = did::create_rooch_did_by_address(_creator_address);
+        let controller_did = did::new_rooch_did_by_address(_creator_address);
         let controlled_dids = did::get_dids_by_controller(controller_did);
         assert!(vector::length(&controlled_dids) == 1, 15009);
 
@@ -353,7 +353,7 @@ module rooch_framework::did_integration_test {
         assert!(formatted_did == test_did_string, 15201);
 
         // Test 2: Controller Mapping Integration
-        let controller_did = did::create_rooch_did_by_address(_creator_address);
+        let controller_did = did::new_rooch_did_by_address(_creator_address);
         let controlled_dids = did::get_dids_by_controller(controller_did);
         assert!(vector::length(&controlled_dids) == 1, 15202);
 
@@ -444,7 +444,7 @@ module rooch_framework::did_integration_test {
         assert!(did::has_verification_relationship_in_doc(did_document_check, &final_fragment, 1), 15304); // assertion_method
 
         // Scenario 4: Controller mapping still works
-        let controller_did = did::create_rooch_did_by_address(_creator_address);
+        let controller_did = did::new_rooch_did_by_address(_creator_address);
         let controlled_dids = did::get_dids_by_controller(controller_did);
         assert!(vector::length(&controlled_dids) == 1, 15305);
     }
@@ -463,27 +463,27 @@ module rooch_framework::did_integration_test {
 
         // Test 3: Very long DID identifiers
         let long_identifier = string::utf8(b"thisisaverylongidentifierthatcontainsmanycharsfortestingpurposes123456789abcdefghijklmnopqrstuvwxyz");
-        let long_did = did::create_did_from_parts(string::utf8(b"test"), long_identifier);
+        let long_did = did::new_did_from_parts(string::utf8(b"test"), long_identifier);
         let formatted_long = did::format_did(&long_did);
         assert!(string::length(&formatted_long) > 100, 15404);
 
         // Test 4: Special characters in identifiers
         let special_chars_identifier = string::utf8(b"user-123_test.example-with-many.special-chars");
-        let special_did = did::create_did_from_parts(string::utf8(b"test"), special_chars_identifier);
+        let special_did = did::new_did_from_parts(string::utf8(b"test"), special_chars_identifier);
         let formatted_special = did::format_did(&special_did);
         let expected_special = string::utf8(b"did:test:user-123_test.example-with-many.special-chars");
         assert!(formatted_special == expected_special, 15405);
 
         // Test 5: Multiple colons in identifiers (valid per DID spec)
         let multi_colon_identifier = string::utf8(b"namespace:type:id:subtype:version:1.0");
-        let multi_colon_did = did::create_did_from_parts(string::utf8(b"test"), multi_colon_identifier);
+        let multi_colon_did = did::new_did_from_parts(string::utf8(b"test"), multi_colon_identifier);
         let formatted_multi_colon = did::format_did(&multi_colon_did);
         let expected_multi_colon = string::utf8(b"did:test:namespace:type:id:subtype:version:1.0");
         assert!(formatted_multi_colon == expected_multi_colon, 15406);
 
         // Test 6: Controller queries with different DID types
-        let rooch_controller = did::create_did_from_parts(string::utf8(b"rooch"), string::utf8(b"test123"));
-        let key_controller = did::create_did_from_parts(string::utf8(b"key"), string::utf8(b"z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK"));
+        let rooch_controller = did::new_did_from_parts(string::utf8(b"rooch"), string::utf8(b"test123"));
+        let key_controller = did::new_did_from_parts(string::utf8(b"key"), string::utf8(b"z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK"));
         
         let rooch_controlled = did::get_dids_by_controller(rooch_controller);
         let key_controlled = did::get_dids_by_controller(key_controller);
