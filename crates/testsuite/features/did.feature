@@ -74,7 +74,7 @@ Feature: Rooch CLI DID integration tests
       
 
       # Test 13: cadop - use generated keys
-      Then cmd: "did create cadop --user-did-key {{$.did[-2].did_key}} --custodian-service-key {{$.did[-1].public_key.raw_multibase}} --custodian-key-type Secp256k1VerificationKey2019 --sender {{$.did[0].did_address}}"
+      Then cmd: "did create cadop --user-did-key {{$.did[-2].did_key}} --custodian-service-key {{$.did[-1].public_key.raw_multibase}} --custodian-key-type EcdsaSecp256k1VerificationKey2019 --sender {{$.did[0].did_address}}"
       Then assert: "{{$.did[-1].execution_info.status.type}} == executed"
 
 

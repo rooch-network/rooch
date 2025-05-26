@@ -59,7 +59,7 @@ pub struct CadopCreateCommand {
     #[clap(
         long,
         default_value = "Ed25519VerificationKey2020",
-        help = "Custodian service VM type: Ed25519VerificationKey2020 or Secp256k1VerificationKey2019"
+        help = "Custodian service VM type: Ed25519VerificationKey2020 or EcdsaSecp256k1VerificationKey2019"
     )]
     pub custodian_key_type: String,
 
