@@ -4,11 +4,12 @@
 use crate::cli_types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
 use clap::Parser;
-use move_core_types::account_address::AccountAddress;
 use moveos_types::module_binding::MoveFunctionCaller;
+use moveos_types::moveos_std::object::ObjectID;
+use moveos_types::state::MoveStructType;
 use rooch_types::address::RoochAddress;
 use rooch_types::error::RoochResult;
-use rooch_types::framework::did::DIDModule;
+use rooch_types::framework::did::{DIDDocument, DIDModule};
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
@@ -21,13 +22,65 @@ pub struct QueryCommand {
 
 #[derive(Debug, Parser)]
 pub enum QueryType {
+    /// Query DID document by DID string
+    #[clap(name = "did")]
+    ByDID(ByDIDCommand),
+
+    /// Query DID document by ObjectID
+    #[clap(name = "object-id")]
+    ByObjectID(ByObjectIDCommand),
+
+    /// Query DID document by address
+    #[clap(name = "address")]
+    ByAddress(ByAddressCommand),
+
+    /// Query DID documents controlled by a specific controller
+    #[clap(name = "controller")]
+    ByController(ByControllerCommand),
+
     /// Check if a DID document exists
     #[clap(name = "exists")]
     Exists(ExistsCommand),
-    
-    /// Query DID documents controlled by a specific controller
-    #[clap(name = "controlled")]
-    Controlled(ControlledCommand),
+}
+
+#[derive(Debug, Parser)]
+pub struct ByDIDCommand {
+    /// DID identifier string
+    #[clap(help = "DID identifier (e.g., did:rooch:bc1q... or did:key:z6MkpTHR8VNs...)")]
+    pub did: String,
+
+    #[clap(flatten)]
+    pub context_options: WalletContextOptions,
+}
+
+#[derive(Debug, Parser)]
+pub struct ByObjectIDCommand {
+    /// Object ID of the DID document
+    #[clap(help = "Object ID of the DID document")]
+    pub object_id: String,
+
+    #[clap(flatten)]
+    pub context_options: WalletContextOptions,
+}
+
+#[derive(Debug, Parser)]
+pub struct ByAddressCommand {
+    /// Rooch address
+    #[clap(help = "Rooch address (e.g., 0x123... or bc1q...)")]
+    pub address: String,
+
+    #[clap(flatten)]
+    pub context_options: WalletContextOptions,
+}
+
+#[derive(Debug, Parser)]
+pub struct ByControllerCommand {
+    /// Controller DID string
+    #[clap(help = "Controller DID string (e.g., did:key:z6MkpTHR8VNs... or did:rooch:bc1q...)")]
+    pub controller_did: String,
+
+    #[clap(flatten)]
+    pub context_options: WalletContextOptions,
 }
 
 #[derive(Debug, Parser)]
@@ -40,14 +93,25 @@ pub struct ExistsCommand {
     pub context_options: WalletContextOptions,
 }
 
-#[derive(Debug, Parser)]
-pub struct ControlledCommand {
-    /// Controller DID string
-    #[clap(help = "Controller DID string (e.g., did:key:z6MkpTHR8VNs... or did:rooch:bc1q...)")]
-    pub controller_did: String,
+#[derive(Debug, Serialize, Deserialize)]
+pub struct DIDDocumentOutput {
+    pub did_document: DIDDocument,
+    pub object_id: ObjectID,
+    pub created_at: u64,
+    pub updated_at: u64,
+}
 
-    #[clap(flatten)]
-    pub context_options: WalletContextOptions,
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ControlledDIDsOutput {
+    pub controller: String,
+    pub controlled_dids: Vec<ControlledDIDInfo>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ControlledDIDInfo {
+    pub object_id: ObjectID,
+    pub did: String,
+    pub address: RoochAddress,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -57,30 +121,185 @@ pub struct ExistsOutput {
     pub query_type: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ControlledOutput {
-    pub controller: String,
-    pub controlled_dids: Vec<ControlledDID>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ControlledDID {
-    pub object_id: String,
-}
-
 #[async_trait]
 impl CommandAction<serde_json::Value> for QueryCommand {
     async fn execute(self) -> RoochResult<serde_json::Value> {
         match self.query_type {
+            QueryType::ByDID(cmd) => {
+                let result = cmd.execute().await?;
+                Ok(serde_json::to_value(result)?)
+            }
+            QueryType::ByObjectID(cmd) => {
+                let result = cmd.execute().await?;
+                Ok(serde_json::to_value(result)?)
+            }
+            QueryType::ByAddress(cmd) => {
+                let result = cmd.execute().await?;
+                Ok(serde_json::to_value(result)?)
+            }
+            QueryType::ByController(cmd) => {
+                let result = cmd.execute().await?;
+                Ok(serde_json::to_value(result)?)
+            }
             QueryType::Exists(cmd) => {
                 let result = cmd.execute().await?;
                 Ok(serde_json::to_value(result)?)
             }
-            QueryType::Controlled(cmd) => {
-                let result = cmd.execute().await?;
-                Ok(serde_json::to_value(result)?)
+        }
+    }
+}
+
+impl QueryCommand {
+    pub async fn execute_serialized(self) -> RoochResult<String> {
+        let result = self.execute().await?;
+        Ok(serde_json::to_string(&result)?)
+    }
+}
+
+#[async_trait]
+impl CommandAction<DIDDocumentOutput> for ByDIDCommand {
+    async fn execute(self) -> RoochResult<DIDDocumentOutput> {
+        let context = self.context_options.build()?;
+        let client = context.get_client().await?;
+        let did_module = client.as_module_binding::<DIDModule>();
+
+        // Parse DID string to extract identifier
+        if !self.did.starts_with("did:") {
+            return Err(rooch_types::error::RoochError::CommandArgumentError(
+                "Invalid DID format, must start with 'did:'".to_string(),
+            ));
+        }
+
+        let parts: Vec<&str> = self.did.split(':').collect();
+        if parts.len() < 3 {
+            return Err(rooch_types::error::RoochError::CommandArgumentError(
+                "Invalid DID format".to_string(),
+            ));
+        }
+
+        let identifier_part = parts[2..].join(":");
+
+        // For rooch DIDs, convert identifier to address
+        let address = if parts[1] == "rooch" {
+            RoochAddress::from_str(&identifier_part)?
+        } else {
+            return Err(rooch_types::error::RoochError::CommandArgumentError(
+                "Only rooch DID method is supported for document retrieval".to_string(),
+            ));
+        };
+
+        let did_document = did_module.get_did_document(address.into())?;
+        let did_identifier = address.to_bech32();
+        let object_id = moveos_types::moveos_std::object::custom_object_id(
+            &did_identifier,
+            &DIDDocument::struct_tag(),
+        );
+
+        Ok(DIDDocumentOutput {
+            did_document,
+            object_id: object_id,
+            created_at: 0, // TODO: Get from object system
+            updated_at: 0, // TODO: Get from object system
+        })
+    }
+}
+
+#[async_trait]
+impl CommandAction<DIDDocumentOutput> for ByObjectIDCommand {
+    async fn execute(self) -> RoochResult<DIDDocumentOutput> {
+        let context = self.context_options.build()?;
+        let client = context.get_client().await?;
+        let did_module = client.as_module_binding::<DIDModule>();
+
+        let object_id = ObjectID::from_str(&self.object_id).map_err(|e| {
+            rooch_types::error::RoochError::CommandArgumentError(format!(
+                "Invalid object ID: {}",
+                e
+            ))
+        })?;
+
+        let did_document = did_module.get_did_document_by_object_id(object_id.clone())?;
+
+        Ok(DIDDocumentOutput {
+            did_document,
+            object_id,
+            created_at: 0, // TODO: Get from object system
+            updated_at: 0, // TODO: Get from object system
+        })
+    }
+}
+
+#[async_trait]
+impl CommandAction<DIDDocumentOutput> for ByAddressCommand {
+    async fn execute(self) -> RoochResult<DIDDocumentOutput> {
+        let context = self.context_options.build()?;
+        let client = context.get_client().await?;
+        let did_module = client.as_module_binding::<DIDModule>();
+
+        let address = RoochAddress::from_str(&self.address)?;
+
+        let did_document = did_module.get_did_document(address.into())?;
+        let did_identifier = address.to_bech32();
+        let object_id = moveos_types::moveos_std::object::custom_object_id(
+            &did_identifier,
+            &DIDDocument::struct_tag(),
+        );
+
+        Ok(DIDDocumentOutput {
+            did_document,
+            object_id,
+            created_at: 0, // TODO: Get from object system
+            updated_at: 0, // TODO: Get from object system
+        })
+    }
+}
+
+#[async_trait]
+impl CommandAction<ControlledDIDsOutput> for ByControllerCommand {
+    async fn execute(self) -> RoochResult<ControlledDIDsOutput> {
+        let context = self.context_options.build()?;
+        let client = context.get_client().await?;
+        let did_module = client.as_module_binding::<DIDModule>();
+
+        // Validate DID format
+        if !self.controller_did.starts_with("did:") {
+            return Err(rooch_types::error::RoochError::CommandArgumentError(
+                "Controller must be a valid DID string".to_string(),
+            ));
+        }
+
+        let object_ids = did_module.get_dids_by_controller_string(&self.controller_did)?;
+
+        let mut controlled_dids = Vec::new();
+        for object_id in object_ids {
+            // Get DID document to extract DID and address information
+            match did_module.get_did_document_by_object_id(object_id.clone()) {
+                Ok(did_doc) => {
+                    let did_identifier = &did_doc.id;
+                    let did_string = format!(
+                        "did:{}:{}",
+                        did_identifier.method, did_identifier.identifier
+                    );
+                    // Get address from account_cap
+                    let address = did_doc.account_cap.addr;
+
+                    controlled_dids.push(ControlledDIDInfo {
+                        object_id: object_id.clone(),
+                        did: did_string,
+                        address: address.into(),
+                    });
+                }
+                Err(_) => {
+                    // Skip if we can't get the document (might be deleted)
+                    continue;
+                }
             }
         }
+
+        Ok(ControlledDIDsOutput {
+            controller: self.controller_did,
+            controlled_dids,
+        })
     }
 }
 
@@ -105,16 +324,8 @@ impl CommandAction<ExistsOutput> for ExistsCommand {
             }
         } else {
             // Try to parse as Rooch address
-            let address = if self.identifier.starts_with("0x") {
-                AccountAddress::from_str(&self.identifier).map_err(|e| {
-                    rooch_types::error::RoochError::CommandArgumentError(format!("Invalid address: {}", e))
-                })?
-            } else {
-                // Try to parse as bech32
-                let rooch_addr = RoochAddress::from_str(&self.identifier)?;
-                rooch_addr.into()
-            };
-            let exists = did_module.exists_did_for_address(address)?;
+            let address = RoochAddress::from_str(&self.identifier)?;
+            let exists = did_module.exists_did_for_address(address.into())?;
             (exists, "rooch_address".to_string())
         };
 
@@ -125,33 +336,3 @@ impl CommandAction<ExistsOutput> for ExistsCommand {
         })
     }
 }
-
-#[async_trait]
-impl CommandAction<ControlledOutput> for ControlledCommand {
-    async fn execute(self) -> RoochResult<ControlledOutput> {
-        let context = self.context_options.build()?;
-        let client = context.get_client().await?;
-        let did_module = client.as_module_binding::<DIDModule>();
-
-        // Validate DID format
-        if !self.controller_did.starts_with("did:") {
-            return Err(rooch_types::error::RoochError::CommandArgumentError(
-                "Controller must be a valid DID string".to_string(),
-            ));
-        }
-
-        let object_ids = did_module.get_dids_by_controller_string(&self.controller_did)?;
-        
-        let controlled_dids = object_ids
-            .into_iter()
-            .map(|id| ControlledDID {
-                object_id: id.to_hex(),
-            })
-            .collect();
-
-        Ok(ControlledOutput {
-            controller: self.controller_did,
-            controlled_dids,
-        })
-    }
-} 

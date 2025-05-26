@@ -53,3 +53,37 @@ impl MoveStructState for Account {
         ])
     }
 }
+
+#[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize)]
+pub struct AccountCap {
+    pub addr: AccountAddress,
+}
+
+impl AccountCap {
+    pub fn new(addr: AccountAddress) -> Self {
+        Self { addr }
+    }
+}
+
+impl MoveStructType for AccountCap {
+    const ADDRESS: AccountAddress = MOVEOS_STD_ADDRESS;
+    const MODULE_NAME: &'static IdentStr = MODULE_NAME;
+    const STRUCT_NAME: &'static IdentStr = ident_str!("AccountCap");
+
+    fn struct_tag() -> StructTag {
+        StructTag {
+            address: Self::ADDRESS,
+            module: Self::MODULE_NAME.to_owned(),
+            name: Self::STRUCT_NAME.to_owned(),
+            type_params: vec![],
+        }
+    }
+}
+
+impl MoveStructState for AccountCap {
+    fn struct_layout() -> move_core_types::value::MoveStructLayout {
+        move_core_types::value::MoveStructLayout::new(vec![
+            move_core_types::value::MoveTypeLayout::Address,
+        ])
+    }
+}

@@ -7,14 +7,14 @@ use move_core_types::{account_address::AccountAddress, ident_str, identifier::Id
 use moveos_types::{
     module_binding::{ModuleBinding, MoveFunctionCaller},
     move_std::string::MoveString,
-    moveos_std::object::ObjectID,
-    moveos_std::tx_context::TxContext,
+    moveos_std::{
+        account::AccountCap, object::ObjectID, simple_map::SimpleMap, tx_context::TxContext,
+    },
     state::{MoveState, MoveStructState, MoveStructType},
     transaction::{FunctionCall, MoveAction},
 };
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
-use std::collections::HashMap;
 use std::fmt::Display;
 use std::str::FromStr;
 
@@ -40,13 +40,12 @@ impl DID {
         if parts.len() < 3 || parts[0] != "did" {
             return Err(anyhow::anyhow!("Invalid DID format: {}", did_string));
         }
-        
+
         let method = parts[1];
         let identifier = parts[2..].join(":");
-        
+
         Self::new(method, &identifier)
     }
-
 }
 
 impl Display for DID {
@@ -92,7 +91,6 @@ impl VerificationMethodID {
             fragment: MoveString::from_str(fragment)?,
         })
     }
-
 }
 
 impl Display for VerificationMethodID {
@@ -130,7 +128,6 @@ impl ServiceID {
             fragment: MoveString::from_str(fragment)?,
         })
     }
-
 }
 
 impl Display for ServiceID {
@@ -202,7 +199,7 @@ pub struct Service {
     pub id: ServiceID,
     pub service_type: MoveString,
     pub service_endpoint: MoveString,
-    pub properties: HashMap<String, String>,
+    pub properties: SimpleMap<MoveString, MoveString>,
 }
 
 impl Service {
@@ -210,7 +207,7 @@ impl Service {
         id: ServiceID,
         service_type: &str,
         service_endpoint: &str,
-        properties: HashMap<String, String>,
+        properties: SimpleMap<MoveString, MoveString>,
     ) -> Result<Self> {
         Ok(Self {
             id,
@@ -227,7 +224,7 @@ impl MoveStructType for Service {
     const STRUCT_NAME: &'static IdentStr = ident_str!("Service");
 }
 
-// Note: Service struct layout is complex due to properties HashMap, 
+// Note: Service struct layout is complex due to properties HashMap,
 // implementing minimal version for now
 impl MoveStructState for Service {
     fn struct_layout() -> move_core_types::value::MoveStructLayout {
@@ -235,10 +232,7 @@ impl MoveStructState for Service {
             ServiceID::type_layout(),
             MoveString::type_layout(),
             MoveString::type_layout(),
-            // SimpleMap layout would be more complex, simplified for now
-            move_core_types::value::MoveTypeLayout::Vector(Box::new(
-                move_core_types::value::MoveTypeLayout::U8
-            )),
+            SimpleMap::<MoveString, MoveString>::type_layout(),
         ])
     }
 }
@@ -249,26 +243,33 @@ impl MoveStructState for Service {
 pub struct DIDDocument {
     pub id: DID,
     pub controller: Vec<DID>,
-    pub verification_methods: HashMap<String, VerificationMethod>,
-    pub authentication: Vec<String>,
-    pub assertion_method: Vec<String>,
-    pub capability_invocation: Vec<String>,
-    pub capability_delegation: Vec<String>,
-    pub key_agreement: Vec<String>,
-    pub services: HashMap<String, Service>,
-    pub also_known_as: Vec<String>,
+    pub verification_methods: SimpleMap<MoveString, VerificationMethod>,
+    pub authentication: Vec<MoveString>,
+    pub assertion_method: Vec<MoveString>,
+    pub capability_invocation: Vec<MoveString>,
+    pub capability_delegation: Vec<MoveString>,
+    pub key_agreement: Vec<MoveString>,
+    pub services: SimpleMap<MoveString, Service>,
+    pub also_known_as: Vec<MoveString>,
+    pub account_cap: AccountCap,
 }
 
 impl DIDDocument {
     pub fn get_verification_method(&self, fragment: &str) -> Option<&VerificationMethod> {
-        self.verification_methods.get(fragment)
+        self.verification_methods
+            .borrow(&MoveString::from_str(fragment).unwrap())
     }
 
     pub fn get_service(&self, fragment: &str) -> Option<&Service> {
-        self.services.get(fragment)
+        self.services
+            .borrow(&MoveString::from_str(fragment).unwrap())
     }
 
-    pub fn has_verification_relationship(&self, fragment: &str, relationship: VerificationRelationship) -> bool {
+    pub fn has_verification_relationship(
+        &self,
+        fragment: &str,
+        relationship: VerificationRelationship,
+    ) -> bool {
         let relationship_vec = match relationship {
             VerificationRelationship::Authentication => &self.authentication,
             VerificationRelationship::AssertionMethod => &self.assertion_method,
@@ -276,7 +277,7 @@ impl DIDDocument {
             VerificationRelationship::CapabilityDelegation => &self.capability_delegation,
             VerificationRelationship::KeyAgreement => &self.key_agreement,
         };
-        relationship_vec.contains(&fragment.to_string())
+        relationship_vec.contains(&MoveString::from_str(fragment).unwrap())
     }
 }
 
@@ -292,19 +293,15 @@ impl MoveStructState for DIDDocument {
         move_core_types::value::MoveStructLayout::new(vec![
             DID::type_layout(),
             move_core_types::value::MoveTypeLayout::Vector(Box::new(DID::type_layout())),
-            // Simplified layouts for complex nested structures
-            move_core_types::value::MoveTypeLayout::Vector(Box::new(
-                move_core_types::value::MoveTypeLayout::U8
-            )),
+            SimpleMap::<MoveString, VerificationMethod>::type_layout(),
             move_core_types::value::MoveTypeLayout::Vector(Box::new(MoveString::type_layout())),
             move_core_types::value::MoveTypeLayout::Vector(Box::new(MoveString::type_layout())),
             move_core_types::value::MoveTypeLayout::Vector(Box::new(MoveString::type_layout())),
             move_core_types::value::MoveTypeLayout::Vector(Box::new(MoveString::type_layout())),
             move_core_types::value::MoveTypeLayout::Vector(Box::new(MoveString::type_layout())),
-            move_core_types::value::MoveTypeLayout::Vector(Box::new(
-                move_core_types::value::MoveTypeLayout::U8
-            )),
+            SimpleMap::<MoveString, Service>::type_layout(),
             move_core_types::value::MoveTypeLayout::Vector(Box::new(MoveString::type_layout())),
+            AccountCap::type_layout(),
         ])
     }
 }
@@ -327,7 +324,10 @@ impl VerificationRelationship {
             2 => Ok(VerificationRelationship::CapabilityInvocation),
             3 => Ok(VerificationRelationship::CapabilityDelegation),
             4 => Ok(VerificationRelationship::KeyAgreement),
-            _ => Err(anyhow::anyhow!("Invalid verification relationship: {}", value)),
+            _ => Err(anyhow::anyhow!(
+                "Invalid verification relationship: {}",
+                value
+            )),
         }
     }
 
@@ -346,7 +346,9 @@ impl VerificationRelationship {
             "authentication" | "auth" => Ok(VerificationRelationship::Authentication),
             "assertionmethod" | "assert" => Ok(VerificationRelationship::AssertionMethod),
             "capabilityinvocation" | "invoke" => Ok(VerificationRelationship::CapabilityInvocation),
-            "capabilitydelegation" | "delegate" => Ok(VerificationRelationship::CapabilityDelegation),
+            "capabilitydelegation" | "delegate" => {
+                Ok(VerificationRelationship::CapabilityDelegation)
+            }
             "keyagreement" | "agreement" => Ok(VerificationRelationship::KeyAgreement),
             _ => Err(anyhow::anyhow!("Invalid verification relationship: {}", s)),
         }
@@ -378,14 +380,20 @@ impl VerificationMethodType {
     pub fn to_string(&self) -> &'static str {
         match self {
             VerificationMethodType::Ed25519VerificationKey2020 => "Ed25519VerificationKey2020",
-            VerificationMethodType::EcdsaSecp256k1VerificationKey2019 => "EcdsaSecp256k1VerificationKey2019",
+            VerificationMethodType::EcdsaSecp256k1VerificationKey2019 => {
+                "EcdsaSecp256k1VerificationKey2019"
+            }
         }
     }
 
     pub fn from_string(s: &str) -> Result<Self> {
         match s {
-            "Ed25519VerificationKey2020" | "ed25519" => Ok(VerificationMethodType::Ed25519VerificationKey2020),
-            "EcdsaSecp256k1VerificationKey2019" | "secp256k1" => Ok(VerificationMethodType::EcdsaSecp256k1VerificationKey2019),
+            "Ed25519VerificationKey2020" | "ed25519" => {
+                Ok(VerificationMethodType::Ed25519VerificationKey2020)
+            }
+            "EcdsaSecp256k1VerificationKey2019" | "secp256k1" => {
+                Ok(VerificationMethodType::EcdsaSecp256k1VerificationKey2019)
+            }
             _ => Err(anyhow::anyhow!("Invalid verification method type: {}", s)),
         }
     }
@@ -412,36 +420,37 @@ pub struct DIDModule<'a> {
 
 impl<'a> DIDModule<'a> {
     // Entry function names from the Move module
-    pub const CREATE_DID_OBJECT_FOR_SELF_ENTRY_FUNCTION_NAME: &'static IdentStr = 
+    pub const CREATE_DID_OBJECT_FOR_SELF_ENTRY_FUNCTION_NAME: &'static IdentStr =
         ident_str!("create_did_object_for_self_entry");
-    pub const CREATE_DID_OBJECT_VIA_CADOP_WITH_DID_KEY_ENTRY_FUNCTION_NAME: &'static IdentStr = 
+    pub const CREATE_DID_OBJECT_VIA_CADOP_WITH_DID_KEY_ENTRY_FUNCTION_NAME: &'static IdentStr =
         ident_str!("create_did_object_via_cadop_with_did_key_entry");
-    pub const ADD_VERIFICATION_METHOD_ENTRY_FUNCTION_NAME: &'static IdentStr = 
+    pub const ADD_VERIFICATION_METHOD_ENTRY_FUNCTION_NAME: &'static IdentStr =
         ident_str!("add_verification_method_entry");
-    pub const REMOVE_VERIFICATION_METHOD_ENTRY_FUNCTION_NAME: &'static IdentStr = 
+    pub const REMOVE_VERIFICATION_METHOD_ENTRY_FUNCTION_NAME: &'static IdentStr =
         ident_str!("remove_verification_method_entry");
-    pub const ADD_TO_VERIFICATION_RELATIONSHIP_ENTRY_FUNCTION_NAME: &'static IdentStr = 
+    pub const ADD_TO_VERIFICATION_RELATIONSHIP_ENTRY_FUNCTION_NAME: &'static IdentStr =
         ident_str!("add_to_verification_relationship_entry");
-    pub const REMOVE_FROM_VERIFICATION_RELATIONSHIP_ENTRY_FUNCTION_NAME: &'static IdentStr = 
+    pub const REMOVE_FROM_VERIFICATION_RELATIONSHIP_ENTRY_FUNCTION_NAME: &'static IdentStr =
         ident_str!("remove_from_verification_relationship_entry");
-    pub const ADD_SERVICE_ENTRY_FUNCTION_NAME: &'static IdentStr = 
-        ident_str!("add_service_entry");
-    pub const ADD_SERVICE_WITH_PROPERTIES_ENTRY_FUNCTION_NAME: &'static IdentStr = 
+    pub const ADD_SERVICE_ENTRY_FUNCTION_NAME: &'static IdentStr = ident_str!("add_service_entry");
+    pub const ADD_SERVICE_WITH_PROPERTIES_ENTRY_FUNCTION_NAME: &'static IdentStr =
         ident_str!("add_service_with_properties_entry");
-    pub const UPDATE_SERVICE_ENTRY_FUNCTION_NAME: &'static IdentStr = 
+    pub const UPDATE_SERVICE_ENTRY_FUNCTION_NAME: &'static IdentStr =
         ident_str!("update_service_entry");
-    pub const REMOVE_SERVICE_ENTRY_FUNCTION_NAME: &'static IdentStr = 
+    pub const REMOVE_SERVICE_ENTRY_FUNCTION_NAME: &'static IdentStr =
         ident_str!("remove_service_entry");
-    pub const INIT_DID_REGISTRY_FUNCTION_NAME: &'static IdentStr = 
-        ident_str!("init_did_registry");
+    pub const INIT_DID_REGISTRY_FUNCTION_NAME: &'static IdentStr = ident_str!("init_did_registry");
 
     // Query function names
-    pub const EXISTS_DID_DOCUMENT_BY_IDENTIFIER_FUNCTION_NAME: &'static IdentStr = 
+    pub const EXISTS_DID_DOCUMENT_BY_IDENTIFIER_FUNCTION_NAME: &'static IdentStr =
         ident_str!("exists_did_document_by_identifier");
-    pub const EXISTS_DID_FOR_ADDRESS_FUNCTION_NAME: &'static IdentStr = 
+    pub const EXISTS_DID_FOR_ADDRESS_FUNCTION_NAME: &'static IdentStr =
         ident_str!("exists_did_for_address");
-    pub const GET_DIDS_BY_CONTROLLER_STRING_FUNCTION_NAME: &'static IdentStr = 
+    pub const GET_DIDS_BY_CONTROLLER_STRING_FUNCTION_NAME: &'static IdentStr =
         ident_str!("get_dids_by_controller_string");
+    pub const GET_DID_DOCUMENT_FUNCTION_NAME: &'static IdentStr = ident_str!("get_did_document");
+    pub const GET_DID_DOCUMENT_BY_OBJECT_ID_FUNCTION_NAME: &'static IdentStr =
+        ident_str!("get_did_document_by_object_id");
 
     /// Create DID action for self
     pub fn create_did_object_for_self_action(
@@ -486,9 +495,10 @@ impl<'a> DIDModule<'a> {
                 method_type.to_move_value(),
                 public_key_multibase.to_move_value(),
                 move_core_types::value::MoveValue::Vector(
-                    verification_relationships.into_iter()
+                    verification_relationships
+                        .into_iter()
                         .map(move_core_types::value::MoveValue::U8)
-                        .collect()
+                        .collect(),
                 ),
             ],
         )
@@ -566,14 +576,47 @@ impl<'a> DIDModule<'a> {
                 service_type.to_move_value(),
                 service_endpoint.to_move_value(),
                 move_core_types::value::MoveValue::Vector(
-                    property_keys.into_iter()
+                    property_keys
+                        .into_iter()
                         .map(|k| k.to_move_value())
-                        .collect()
+                        .collect(),
                 ),
                 move_core_types::value::MoveValue::Vector(
-                    property_values.into_iter()
+                    property_values
+                        .into_iter()
                         .map(|v| v.to_move_value())
-                        .collect()
+                        .collect(),
+                ),
+            ],
+        )
+    }
+
+    /// Update service action
+    pub fn update_service_action(
+        fragment: MoveString,
+        service_type: MoveString,
+        service_endpoint: MoveString,
+        property_keys: Vec<MoveString>,
+        property_values: Vec<MoveString>,
+    ) -> MoveAction {
+        Self::create_move_action(
+            Self::UPDATE_SERVICE_ENTRY_FUNCTION_NAME,
+            vec![],
+            vec![
+                fragment.to_move_value(),
+                service_type.to_move_value(),
+                service_endpoint.to_move_value(),
+                move_core_types::value::MoveValue::Vector(
+                    property_keys
+                        .into_iter()
+                        .map(|k| k.to_move_value())
+                        .collect(),
+                ),
+                move_core_types::value::MoveValue::Vector(
+                    property_values
+                        .into_iter()
+                        .map(|v| v.to_move_value())
+                        .collect(),
                 ),
             ],
         )
@@ -590,22 +633,18 @@ impl<'a> DIDModule<'a> {
 
     /// Initialize DID registry action
     pub fn init_did_registry_action() -> MoveAction {
-        Self::create_move_action(
-            Self::INIT_DID_REGISTRY_FUNCTION_NAME,
-            vec![],
-            vec![],
-        )
+        Self::create_move_action(Self::INIT_DID_REGISTRY_FUNCTION_NAME, vec![], vec![])
     }
 
     /// Check if DID document exists by identifier
-    pub fn exists_did_document_by_identifier(
-        &self,
-        identifier: &str,
-    ) -> Result<bool> {
+    pub fn exists_did_document_by_identifier(&self, identifier: &str) -> Result<bool> {
         let call = FunctionCall::new(
             Self::function_id(Self::EXISTS_DID_DOCUMENT_BY_IDENTIFIER_FUNCTION_NAME),
             vec![],
-            vec![MoveString::from_str(identifier)?.to_move_value().simple_serialize().unwrap()],
+            vec![MoveString::from_str(identifier)?
+                .to_move_value()
+                .simple_serialize()
+                .unwrap()],
         );
         let ctx = TxContext::new_readonly_ctx(AccountAddress::ZERO);
         let exists = self
@@ -614,21 +653,19 @@ impl<'a> DIDModule<'a> {
             .into_result()
             .map(|mut values| {
                 let value = values.pop().expect("should have one return value");
-                bcs::from_bytes::<bool>(&value.value)
-                    .expect("should be a valid bool")
+                bcs::from_bytes::<bool>(&value.value).expect("should be a valid bool")
             })?;
         Ok(exists)
     }
 
     /// Check if DID exists for address
-    pub fn exists_did_for_address(
-        &self,
-        address: AccountAddress,
-    ) -> Result<bool> {
+    pub fn exists_did_for_address(&self, address: AccountAddress) -> Result<bool> {
         let call = FunctionCall::new(
             Self::function_id(Self::EXISTS_DID_FOR_ADDRESS_FUNCTION_NAME),
             vec![],
-            vec![move_core_types::value::MoveValue::Address(address).simple_serialize().unwrap()],
+            vec![move_core_types::value::MoveValue::Address(address)
+                .simple_serialize()
+                .unwrap()],
         );
         let ctx = TxContext::new_readonly_ctx(AccountAddress::ZERO);
         let exists = self
@@ -637,33 +674,74 @@ impl<'a> DIDModule<'a> {
             .into_result()
             .map(|mut values| {
                 let value = values.pop().expect("should have one return value");
-                bcs::from_bytes::<bool>(&value.value)
-                    .expect("should be a valid bool")
+                bcs::from_bytes::<bool>(&value.value).expect("should be a valid bool")
             })?;
         Ok(exists)
     }
 
     /// Get DIDs controlled by a specific controller DID
-    pub fn get_dids_by_controller_string(
-        &self,
-        controller_did_str: &str,
-    ) -> Result<Vec<ObjectID>> {
+    pub fn get_dids_by_controller_string(&self, controller_did_str: &str) -> Result<Vec<ObjectID>> {
         let call = FunctionCall::new(
             Self::function_id(Self::GET_DIDS_BY_CONTROLLER_STRING_FUNCTION_NAME),
             vec![],
-            vec![MoveString::from_str(controller_did_str)?.to_move_value().simple_serialize().unwrap()],
+            vec![MoveString::from_str(controller_did_str)?
+                .to_move_value()
+                .simple_serialize()
+                .unwrap()],
         );
         let ctx = TxContext::new_readonly_ctx(AccountAddress::ZERO);
-        let object_ids = self
-            .caller
-            .call_function(&ctx, call)?
-            .into_result()
-            .map(|mut values| {
-                let value = values.pop().expect("should have one return value");
-                bcs::from_bytes::<Vec<ObjectID>>(&value.value)
-                    .expect("should be a valid Vec<ObjectID>")
-            })?;
+        let object_ids =
+            self.caller
+                .call_function(&ctx, call)?
+                .into_result()
+                .map(|mut values| {
+                    let value = values.pop().expect("should have one return value");
+                    bcs::from_bytes::<Vec<ObjectID>>(&value.value)
+                        .expect("should be a valid Vec<ObjectID>")
+                })?;
         Ok(object_ids)
+    }
+
+    /// Get DID document by address
+    pub fn get_did_document(&self, address: AccountAddress) -> Result<DIDDocument> {
+        let call = FunctionCall::new(
+            Self::function_id(Self::GET_DID_DOCUMENT_FUNCTION_NAME),
+            vec![],
+            vec![move_core_types::value::MoveValue::Address(address)
+                .simple_serialize()
+                .unwrap()],
+        );
+        let ctx = TxContext::new_readonly_ctx(AccountAddress::ZERO);
+        let did_document =
+            self.caller
+                .call_function(&ctx, call)?
+                .into_result()
+                .map(|mut values| {
+                    let value = values.pop().expect("should have one return value");
+                    bcs::from_bytes::<DIDDocument>(&value.value)
+                        .expect("should be a valid DIDDocument")
+                })?;
+        Ok(did_document)
+    }
+
+    /// Get DID document by object ID
+    pub fn get_did_document_by_object_id(&self, object_id: ObjectID) -> Result<DIDDocument> {
+        let call = FunctionCall::new(
+            Self::function_id(Self::GET_DID_DOCUMENT_BY_OBJECT_ID_FUNCTION_NAME),
+            vec![],
+            vec![object_id.to_move_value().simple_serialize().unwrap()],
+        );
+        let ctx = TxContext::new_readonly_ctx(AccountAddress::ZERO);
+        let did_document =
+            self.caller
+                .call_function(&ctx, call)?
+                .into_result()
+                .map(|mut values| {
+                    let value = values.pop().expect("should have one return value");
+                    bcs::from_bytes::<DIDDocument>(&value.value)
+                        .expect("should be a valid DIDDocument")
+                })?;
+        Ok(did_document)
     }
 }
 
@@ -697,7 +775,10 @@ mod tests {
         let did_str = "did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH";
         let did = DID::parse(did_str).unwrap();
         assert_eq!(did.method.as_str(), "key");
-        assert_eq!(did.identifier.as_str(), "z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH");
+        assert_eq!(
+            did.identifier.as_str(),
+            "z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH"
+        );
     }
 
     #[test]

@@ -12,11 +12,11 @@ use clap::builder::{
 };
 use cli_types::CommandAction;
 use commands::{
-    abi::ABI, account::Account, bitcoin::Bitcoin, bitseed::Bitseed, did::DID, dynamic_field::DynamicField,
-    env::Env, faucet::Faucet, genesis::Genesis, init::Init, move_cli::MoveCli,
-    object::ObjectCommand, oracle::Oracle, resource::ResourceCommand, rpc::Rpc, server::Server,
-    session_key::SessionKey, state::StateCommand, task::Task, transaction::Transaction,
-    upgrade::Upgrade, util::Util, version::Version,
+    abi::ABI, account::Account, bitcoin::Bitcoin, bitseed::Bitseed, did::DID,
+    dynamic_field::DynamicField, env::Env, faucet::Faucet, genesis::Genesis, init::Init,
+    move_cli::MoveCli, object::ObjectCommand, oracle::Oracle, resource::ResourceCommand, rpc::Rpc,
+    server::Server, session_key::SessionKey, state::StateCommand, task::Task,
+    transaction::Transaction, upgrade::Upgrade, util::Util, version::Version,
 };
 use once_cell::sync::Lazy;
 use rooch_types::error::RoochResult;

@@ -1,12 +1,13 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use self::commands::create::CreateCommand;
+use self::commands::keygen::KeygenCommand;
+use self::commands::manage::ManageCommand;
+use self::commands::query::QueryCommand;
 use crate::cli_types::CommandAction;
 use async_trait::async_trait;
 use clap::Parser;
-use commands::create::CreateCommand;
-use commands::init::InitCommand;
-use commands::query::QueryCommand;
 use rooch_types::error::RoochResult;
 use serde_json::Value;
 
@@ -23,18 +24,25 @@ pub struct DID {
 impl CommandAction<String> for DID {
     async fn execute(self) -> RoochResult<String> {
         match self.cmd {
-            DIDCommand::Init(init) => init.execute().await.map(|resp| {
+            DIDCommand::Create(create) => create.execute().await.map(|resp| {
                 serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
             }),
-            DIDCommand::Create(create) => create.execute().await.map(|resp| {
-                serde_json::to_string_pretty(&resp).expect("Failed to serialize response") 
+            DIDCommand::Manage(manage) => manage.execute().await.map(|resp| {
+                serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
             }),
             DIDCommand::Query(query) => {
                 let json_output = query.execute_serialized().await?;
-                let json_value: Value = 
+                let json_value: Value =
                     serde_json::from_str(&json_output).expect("Failed to parse JSON");
-                
+
                 // For now, just return JSON. Later we can add table formatting
+                Ok(serde_json::to_string_pretty(&json_value).unwrap())
+            }
+            DIDCommand::Keygen(keygen) => {
+                let json_output = keygen.execute_serialized().await?;
+                let json_value: Value =
+                    serde_json::from_str(&json_output).expect("Failed to parse JSON");
+
                 Ok(serde_json::to_string_pretty(&json_value).unwrap())
             }
         }
@@ -44,15 +52,19 @@ impl CommandAction<String> for DID {
 #[derive(clap::Subcommand)]
 #[clap(name = "did")]
 pub enum DIDCommand {
-    /// Initialize the DID registry
-    #[clap(name = "init")]
-    Init(InitCommand),
-    
     /// Create a new DID
     #[clap(name = "create")]
     Create(CreateCommand),
-    
+
+    /// Manage DID (verification methods, services, etc.)
+    #[clap(name = "manage")]
+    Manage(ManageCommand),
+
     /// Query DID information
     #[clap(name = "query")]
     Query(QueryCommand),
-} 
+
+    /// Generate cryptographic keys for DID operations
+    #[clap(name = "keygen")]
+    Keygen(KeygenCommand),
+}
