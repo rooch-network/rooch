@@ -74,9 +74,15 @@ For more details on the Multibase standard, see: [https://github.com/multiformat
 -  [Function `encode`](#0x2_multibase_encode)
 -  [Function `encode_ed25519_key`](#0x2_multibase_encode_ed25519_key)
 -  [Function `encode_secp256k1_key`](#0x2_multibase_encode_secp256k1_key)
+-  [Function `encode_ed25519_did_key_identifier`](#0x2_multibase_encode_ed25519_did_key_identifier)
+-  [Function `encode_secp256k1_did_key_identifier`](#0x2_multibase_encode_secp256k1_did_key_identifier)
 -  [Function `decode`](#0x2_multibase_decode)
 -  [Function `decode_ed25519_key`](#0x2_multibase_decode_ed25519_key)
 -  [Function `decode_secp256k1_key`](#0x2_multibase_decode_secp256k1_key)
+-  [Function `decode_did_key_identifier`](#0x2_multibase_decode_did_key_identifier)
+-  [Function `generate_ed25519_did_key_string`](#0x2_multibase_generate_ed25519_did_key_string)
+-  [Function `generate_secp256k1_did_key_string`](#0x2_multibase_generate_secp256k1_did_key_string)
+-  [Function `get_key_type_from_did_key_identifier`](#0x2_multibase_get_key_type_from_did_key_identifier)
 -  [Function `get_prefix_for_encoding`](#0x2_multibase_get_prefix_for_encoding)
 -  [Function `get_encoding_from_prefix`](#0x2_multibase_get_encoding_from_prefix)
 -  [Function `extract_prefix`](#0x2_multibase_extract_prefix)
@@ -262,6 +268,26 @@ Error when an unsupported encoding base is used
 
 
 
+<a name="0x2_multibase_MULTICODEC_ED25519_PREFIX"></a>
+
+Ed25519 multicodec prefix (0xed01)
+
+
+<pre><code><b>const</b> <a href="multibase.md#0x2_multibase_MULTICODEC_ED25519_PREFIX">MULTICODEC_ED25519_PREFIX</a>: <a href="">vector</a>&lt;u8&gt; = [237, 1];
+</code></pre>
+
+
+
+<a name="0x2_multibase_MULTICODEC_SECP256K1_PREFIX"></a>
+
+Secp256k1 multicodec prefix (0xe701)
+
+
+<pre><code><b>const</b> <a href="multibase.md#0x2_multibase_MULTICODEC_SECP256K1_PREFIX">MULTICODEC_SECP256K1_PREFIX</a>: <a href="">vector</a>&lt;u8&gt; = [231, 1];
+</code></pre>
+
+
+
 <a name="0x2_multibase_SECP256K1_COMPRESSED_PUBLIC_KEY_LENGTH"></a>
 
 The length of Secp256k1 compressed public keys in bytes
@@ -423,6 +449,36 @@ Encodes a Secp256k1 compressed public key using base58btc with multibase prefix
 
 
 
+<a name="0x2_multibase_encode_ed25519_did_key_identifier"></a>
+
+## Function `encode_ed25519_did_key_identifier`
+
+Encodes an Ed25519 public key as a did:key identifier with multicodec prefix
+
+@param pubkey - The raw Ed25519 public key bytes (32 bytes)
+@return - A did:key identifier string with multicodec prefix (e.g., "z6Mk...")
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="multibase.md#0x2_multibase_encode_ed25519_did_key_identifier">encode_ed25519_did_key_identifier</a>(pubkey: &<a href="">vector</a>&lt;u8&gt;): <a href="_String">string::String</a>
+</code></pre>
+
+
+
+<a name="0x2_multibase_encode_secp256k1_did_key_identifier"></a>
+
+## Function `encode_secp256k1_did_key_identifier`
+
+Encodes a Secp256k1 compressed public key as a did:key identifier with multicodec prefix
+
+@param pubkey - The raw Secp256k1 compressed public key bytes (33 bytes)
+@return - A did:key identifier string with multicodec prefix (e.g., "zQ3s...")
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="multibase.md#0x2_multibase_encode_secp256k1_did_key_identifier">encode_secp256k1_did_key_identifier</a>(pubkey: &<a href="">vector</a>&lt;u8&gt;): <a href="_String">string::String</a>
+</code></pre>
+
+
+
 <a name="0x2_multibase_decode"></a>
 
 ## Function `decode`
@@ -464,6 +520,66 @@ Decodes a multibase-encoded Secp256k1 compressed public key
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="multibase.md#0x2_multibase_decode_secp256k1_key">decode_secp256k1_key</a>(pk_mb_str: &<a href="_String">string::String</a>): <a href="_Option">option::Option</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;
+</code></pre>
+
+
+
+<a name="0x2_multibase_decode_did_key_identifier"></a>
+
+## Function `decode_did_key_identifier`
+
+Decodes a did:key identifier to extract the raw public key bytes
+
+@param did_key_identifier - The did:key identifier (e.g., "z6Mk..." or "zQ3s...")
+@return - Option containing the raw public key bytes, or none if decoding fails
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="multibase.md#0x2_multibase_decode_did_key_identifier">decode_did_key_identifier</a>(did_key_identifier: &<a href="_String">string::String</a>): <a href="_Option">option::Option</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;
+</code></pre>
+
+
+
+<a name="0x2_multibase_generate_ed25519_did_key_string"></a>
+
+## Function `generate_ed25519_did_key_string`
+
+Generate a complete did:key string from an Ed25519 public key
+
+@param pubkey - The raw Ed25519 public key bytes (32 bytes)
+@return - A complete did:key string (e.g., "did:key:z6Mk...")
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="multibase.md#0x2_multibase_generate_ed25519_did_key_string">generate_ed25519_did_key_string</a>(pubkey: &<a href="">vector</a>&lt;u8&gt;): <a href="_String">string::String</a>
+</code></pre>
+
+
+
+<a name="0x2_multibase_generate_secp256k1_did_key_string"></a>
+
+## Function `generate_secp256k1_did_key_string`
+
+Generate a complete did:key string from a Secp256k1 public key
+
+@param pubkey - The raw Secp256k1 compressed public key bytes (33 bytes)
+@return - A complete did:key string (e.g., "did:key:zQ3s...")
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="multibase.md#0x2_multibase_generate_secp256k1_did_key_string">generate_secp256k1_did_key_string</a>(pubkey: &<a href="">vector</a>&lt;u8&gt;): <a href="_String">string::String</a>
+</code></pre>
+
+
+
+<a name="0x2_multibase_get_key_type_from_did_key_identifier"></a>
+
+## Function `get_key_type_from_did_key_identifier`
+
+Extract the key type from a did:key identifier
+
+@param did_key_identifier - The did:key identifier (e.g., "z6Mk..." or "zQ3s...")
+@return - Option containing the key type string ("Ed25519" or "Secp256k1"), or none if unknown
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="multibase.md#0x2_multibase_get_key_type_from_did_key_identifier">get_key_type_from_did_key_identifier</a>(did_key_identifier: &<a href="_String">string::String</a>): <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;
 </code></pre>
 
 

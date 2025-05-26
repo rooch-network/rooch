@@ -9,7 +9,7 @@ module rooch_framework::auth_validator {
     use std::string;
     use std::option::{Self, Option};
     use moveos_std::tx_context;
-    use rooch_framework::bitcoin_address::BitcoinAddress;
+    use rooch_framework::bitcoin_address::{Self, BitcoinAddress};
 
     friend rooch_framework::auth_validator_registry;
     friend rooch_framework::transaction_validator;
@@ -184,9 +184,23 @@ module rooch_framework::auth_validator {
         option::extract(&mut get_session_key_from_ctx_option())
     }
 
-    public fun get_bitcoin_address_from_ctx(): BitcoinAddress {
+    public(friend) fun get_bitcoin_address_from_ctx(): BitcoinAddress {
         let validate_result = get_validate_result_from_ctx();
         validate_result.bitcoin_address
+    }
+
+    public fun get_bitcoin_address_from_ctx_option(): Option<BitcoinAddress> {
+        let validate_result_opt = tx_context::get_attribute<TxValidateResult>();
+        if (option::is_some(&validate_result_opt)) {
+            let validate_result = option::extract(&mut validate_result_opt);
+            if (bitcoin_address::is_empty(&validate_result.bitcoin_address)) {
+                option::none<BitcoinAddress>()
+            }else {
+                option::some(validate_result.bitcoin_address)
+            }
+        }else {
+            option::none<BitcoinAddress>()
+        }
     }
 
     #[test_only]

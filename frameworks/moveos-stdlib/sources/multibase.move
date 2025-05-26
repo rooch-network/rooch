@@ -82,6 +82,12 @@ module moveos_std::multibase {
     /// The prefix for base16 (hex) encoding ('f' in ASCII)
     const BASE16_PREFIX: u8 = 102;
 
+    // Multicodec prefixes for did:key identifiers
+    /// Ed25519 multicodec prefix (0xed01)
+    const MULTICODEC_ED25519_PREFIX: vector<u8> = vector[0xed, 0x01];
+    /// Secp256k1 multicodec prefix (0xe701)
+    const MULTICODEC_SECP256K1_PREFIX: vector<u8> = vector[0xe7, 0x01];
+
     // Encoding name constants
     const ENCODING_BASE58BTC: vector<u8> = b"base58btc";
     const ENCODING_BASE32: vector<u8> = b"base32";
@@ -189,6 +195,36 @@ module moveos_std::multibase {
         encode_base58btc(pubkey)
     }
 
+    /// Encodes an Ed25519 public key as a did:key identifier with multicodec prefix
+    /// 
+    /// @param pubkey - The raw Ed25519 public key bytes (32 bytes)
+    /// @return - A did:key identifier string with multicodec prefix (e.g., "z6Mk...")
+    public fun encode_ed25519_did_key_identifier(pubkey: &vector<u8>): String {
+        assert!(vector::length(pubkey) == ED25519_PUBLIC_KEY_LENGTH, ErrorInvalidEd25519KeyLength);
+        
+        // Prepend multicodec prefix for Ed25519
+        let prefixed_key = MULTICODEC_ED25519_PREFIX;
+        vector::append(&mut prefixed_key, *pubkey);
+        
+        // Encode with base58btc and multibase prefix
+        encode_base58btc(&prefixed_key)
+    }
+
+    /// Encodes a Secp256k1 compressed public key as a did:key identifier with multicodec prefix
+    /// 
+    /// @param pubkey - The raw Secp256k1 compressed public key bytes (33 bytes)
+    /// @return - A did:key identifier string with multicodec prefix (e.g., "zQ3s...")
+    public fun encode_secp256k1_did_key_identifier(pubkey: &vector<u8>): String {
+        assert!(vector::length(pubkey) == SECP256K1_COMPRESSED_PUBLIC_KEY_LENGTH, ErrorInvalidEd25519KeyLength);
+        
+        // Prepend multicodec prefix for Secp256k1
+        let prefixed_key = MULTICODEC_SECP256K1_PREFIX;
+        vector::append(&mut prefixed_key, *pubkey);
+        
+        // Encode with base58btc and multibase prefix
+        encode_base58btc(&prefixed_key)
+    }
+
     /// Decodes a multibase-encoded string to its raw bytes
     /// 
     /// @param encoded_str - The multibase encoded string
@@ -287,6 +323,116 @@ module moveos_std::multibase {
             // Decoded key has an invalid length for a Secp256k1 public key
             none()
         }
+    }
+
+    /// Decodes a did:key identifier to extract the raw public key bytes
+    /// 
+    /// @param did_key_identifier - The did:key identifier (e.g., "z6Mk..." or "zQ3s...")
+    /// @return - Option containing the raw public key bytes, or none if decoding fails
+    public fun decode_did_key_identifier(did_key_identifier: &String): Option<vector<u8>> {
+        // First decode the multibase string
+        let decoded_bytes_opt = decode(did_key_identifier);
+        if (option::is_none(&decoded_bytes_opt)) {
+            return option::none()
+        };
+        
+        let decoded_bytes = option::destroy_some(decoded_bytes_opt);
+        
+        // Check minimum length (at least 2 bytes for multicodec prefix)
+        if (vector::length(&decoded_bytes) < 2) {
+            return option::none()
+        };
+        
+        // Extract multicodec prefix
+        let first_byte = *vector::borrow(&decoded_bytes, 0);
+        let second_byte = *vector::borrow(&decoded_bytes, 1);
+        
+        // Check for Ed25519 multicodec: 0xed01
+        if (first_byte == 0xed && second_byte == 0x01) {
+            // Extract raw Ed25519 public key (32 bytes after 2-byte prefix)
+            if (vector::length(&decoded_bytes) == 34) { // 2 bytes prefix + 32 bytes key
+                let raw_key = vector::empty<u8>();
+                let i = 2;
+                while (i < 34) {
+                    vector::push_back(&mut raw_key, *vector::borrow(&decoded_bytes, i));
+                    i = i + 1;
+                };
+                return option::some(raw_key)
+            }
+        }
+        // Check for Secp256k1 multicodec: 0xe701  
+        else if (first_byte == 0xe7 && second_byte == 0x01) {
+            // Extract raw Secp256k1 public key (33 bytes after 2-byte prefix)
+            if (vector::length(&decoded_bytes) == 35) { // 2 bytes prefix + 33 bytes key
+                let raw_key = vector::empty<u8>();
+                let i = 2;
+                while (i < 35) {
+                    vector::push_back(&mut raw_key, *vector::borrow(&decoded_bytes, i));
+                    i = i + 1;
+                };
+                return option::some(raw_key)
+            }
+        };
+        
+        // Unsupported multicodec or invalid format
+        option::none()
+    }
+
+    /// Generate a complete did:key string from an Ed25519 public key
+    /// 
+    /// @param pubkey - The raw Ed25519 public key bytes (32 bytes)
+    /// @return - A complete did:key string (e.g., "did:key:z6Mk...")
+    public fun generate_ed25519_did_key_string(pubkey: &vector<u8>): String {
+        let identifier = encode_ed25519_did_key_identifier(pubkey);
+        let did_key_string = string::utf8(b"did:key:");
+        string::append(&mut did_key_string, identifier);
+        did_key_string
+    }
+
+    /// Generate a complete did:key string from a Secp256k1 public key
+    /// 
+    /// @param pubkey - The raw Secp256k1 compressed public key bytes (33 bytes)
+    /// @return - A complete did:key string (e.g., "did:key:zQ3s...")
+    public fun generate_secp256k1_did_key_string(pubkey: &vector<u8>): String {
+        let identifier = encode_secp256k1_did_key_identifier(pubkey);
+        let did_key_string = string::utf8(b"did:key:");
+        string::append(&mut did_key_string, identifier);
+        did_key_string
+    }
+
+    /// Extract the key type from a did:key identifier
+    /// 
+    /// @param did_key_identifier - The did:key identifier (e.g., "z6Mk..." or "zQ3s...")
+    /// @return - Option containing the key type string ("Ed25519" or "Secp256k1"), or none if unknown
+    public fun get_key_type_from_did_key_identifier(did_key_identifier: &String): Option<String> {
+        // First decode the multibase string
+        let decoded_bytes_opt = decode(did_key_identifier);
+        if (option::is_none(&decoded_bytes_opt)) {
+            return option::none()
+        };
+        
+        let decoded_bytes = option::destroy_some(decoded_bytes_opt);
+        
+        // Check minimum length (at least 2 bytes for multicodec prefix)
+        if (vector::length(&decoded_bytes) < 2) {
+            return option::none()
+        };
+        
+        // Extract multicodec prefix
+        let first_byte = *vector::borrow(&decoded_bytes, 0);
+        let second_byte = *vector::borrow(&decoded_bytes, 1);
+        
+        // Check for Ed25519 multicodec: 0xed01
+        if (first_byte == 0xed && second_byte == 0x01) {
+            return option::some(string::utf8(b"Ed25519"))
+        }
+        // Check for Secp256k1 multicodec: 0xe701  
+        else if (first_byte == 0xe7 && second_byte == 0x01) {
+            return option::some(string::utf8(b"Secp256k1"))
+        };
+        
+        // Unsupported multicodec
+        option::none()
     }
 
     /// Gets the multibase prefix character for a given encoding
@@ -553,5 +699,180 @@ module moveos_std::multibase {
         let invalid_key = vector::empty<u8>();
         vector::push_back(&mut invalid_key, 1);
         encode_ed25519_key(&invalid_key);
+    }
+
+    #[test]
+    fun test_encode_decode_ed25519_did_key_identifier() {
+        // Create a test Ed25519 public key (32 bytes)
+        let pubkey = vector::empty<u8>();
+        let i = 0;
+        while (i < ED25519_PUBLIC_KEY_LENGTH) {
+            vector::push_back(&mut pubkey, (i as u8));
+            i = i + 1;
+        };
+        
+        let encoded_identifier = encode_ed25519_did_key_identifier(&pubkey);
+        
+        // Verify it starts with 'z' (base58btc prefix)
+        let prefix_opt = extract_prefix(&encoded_identifier);
+        assert!(option::is_some(&prefix_opt), ETestAssertionFailed + 60);
+        assert!(option::extract(&mut prefix_opt) == BASE58BTC_PREFIX, ETestAssertionFailed + 61);
+        
+        // Verify round-trip decoding
+        let decoded_opt = decode_did_key_identifier(&encoded_identifier);
+        assert!(option::is_some(&decoded_opt), ETestAssertionFailed + 62);
+        assert!(option::extract(&mut decoded_opt) == pubkey, ETestAssertionFailed + 63);
+        
+        // Verify key type detection
+        let key_type_opt = get_key_type_from_did_key_identifier(&encoded_identifier);
+        assert!(option::is_some(&key_type_opt), ETestAssertionFailed + 64);
+        assert!(option::extract(&mut key_type_opt) == string::utf8(b"Ed25519"), ETestAssertionFailed + 65);
+    }
+
+    #[test]
+    fun test_encode_decode_secp256k1_did_key_identifier() {
+        // Create a test Secp256k1 public key (33 bytes)
+        let pubkey = vector::empty<u8>();
+        let i = 0;
+        while (i < SECP256K1_COMPRESSED_PUBLIC_KEY_LENGTH) {
+            vector::push_back(&mut pubkey, (i as u8));
+            i = i + 1;
+        };
+        
+        let encoded_identifier = encode_secp256k1_did_key_identifier(&pubkey);
+        
+        // Verify it starts with 'z' (base58btc prefix)
+        let prefix_opt = extract_prefix(&encoded_identifier);
+        assert!(option::is_some(&prefix_opt), ETestAssertionFailed + 66);
+        assert!(option::extract(&mut prefix_opt) == BASE58BTC_PREFIX, ETestAssertionFailed + 67);
+        
+        // Verify round-trip decoding
+        let decoded_opt = decode_did_key_identifier(&encoded_identifier);
+        assert!(option::is_some(&decoded_opt), ETestAssertionFailed + 68);
+        assert!(option::extract(&mut decoded_opt) == pubkey, ETestAssertionFailed + 69);
+        
+        // Verify key type detection
+        let key_type_opt = get_key_type_from_did_key_identifier(&encoded_identifier);
+        assert!(option::is_some(&key_type_opt), ETestAssertionFailed + 70);
+        assert!(option::extract(&mut key_type_opt) == string::utf8(b"Secp256k1"), ETestAssertionFailed + 71);
+    }
+
+    #[test]
+    fun test_generate_ed25519_did_key_string() {
+        // Create a test Ed25519 public key (32 bytes)
+        let pubkey = vector::empty<u8>();
+        let i = 0;
+        while (i < ED25519_PUBLIC_KEY_LENGTH) {
+            vector::push_back(&mut pubkey, (i as u8));
+            i = i + 1;
+        };
+        
+        let did_key_string = generate_ed25519_did_key_string(&pubkey);
+        
+        // Verify it starts with "did:key:"
+        let did_key_prefix = string::utf8(b"did:key:");
+        let did_key_bytes = string::bytes(&did_key_string);
+        let prefix_bytes = string::bytes(&did_key_prefix);
+        
+        assert!(vector::length(did_key_bytes) > vector::length(prefix_bytes), ETestAssertionFailed + 72);
+        
+        let i = 0;
+        while (i < vector::length(prefix_bytes)) {
+            assert!(*vector::borrow(did_key_bytes, i) == *vector::borrow(prefix_bytes, i), ETestAssertionFailed + 73);
+            i = i + 1;
+        };
+        
+        // Extract identifier part and verify it can be decoded
+        let identifier = string::sub_string(&did_key_string, 8, string::length(&did_key_string)); // Skip "did:key:"
+        let decoded_opt = decode_did_key_identifier(&identifier);
+        assert!(option::is_some(&decoded_opt), ETestAssertionFailed + 74);
+        assert!(option::extract(&mut decoded_opt) == pubkey, ETestAssertionFailed + 75);
+    }
+
+    #[test]
+    fun test_generate_secp256k1_did_key_string() {
+        // Create a test Secp256k1 public key (33 bytes)
+        let pubkey = vector::empty<u8>();
+        let i = 0;
+        while (i < SECP256K1_COMPRESSED_PUBLIC_KEY_LENGTH) {
+            vector::push_back(&mut pubkey, (i as u8));
+            i = i + 1;
+        };
+        
+        let did_key_string = generate_secp256k1_did_key_string(&pubkey);
+        
+        // Verify it starts with "did:key:"
+        let did_key_prefix = string::utf8(b"did:key:");
+        let did_key_bytes = string::bytes(&did_key_string);
+        let prefix_bytes = string::bytes(&did_key_prefix);
+        
+        assert!(vector::length(did_key_bytes) > vector::length(prefix_bytes), ETestAssertionFailed + 76);
+        
+        let i = 0;
+        while (i < vector::length(prefix_bytes)) {
+            assert!(*vector::borrow(did_key_bytes, i) == *vector::borrow(prefix_bytes, i), ETestAssertionFailed + 77);
+            i = i + 1;
+        };
+        
+        // Extract identifier part and verify it can be decoded
+        let identifier = string::sub_string(&did_key_string, 8, string::length(&did_key_string)); // Skip "did:key:"
+        let decoded_opt = decode_did_key_identifier(&identifier);
+        assert!(option::is_some(&decoded_opt), ETestAssertionFailed + 78);
+        assert!(option::extract(&mut decoded_opt) == pubkey, ETestAssertionFailed + 79);
+    }
+
+    #[test]
+    fun test_decode_invalid_did_key_identifier() {
+        // Test with invalid multibase prefix
+        let invalid_identifier = string::utf8(b"a123456789"); // 'a' is not base58btc
+        let decoded_opt = decode_did_key_identifier(&invalid_identifier);
+        assert!(option::is_none(&decoded_opt), ETestAssertionFailed + 80);
+        
+        // Test with valid multibase but invalid multicodec
+        let invalid_multicodec = string::utf8(b"z123"); // Valid base58btc but invalid multicodec
+        let decoded_opt2 = decode_did_key_identifier(&invalid_multicodec);
+        assert!(option::is_none(&decoded_opt2), ETestAssertionFailed + 81);
+        
+        // Test with empty string
+        let empty_identifier = string::utf8(b"");
+        let decoded_opt3 = decode_did_key_identifier(&empty_identifier);
+        assert!(option::is_none(&decoded_opt3), ETestAssertionFailed + 82);
+    }
+
+    #[test]
+    fun test_complete_did_key_workflow() {
+        // Test the complete workflow: raw key -> did:key string -> extract raw key
+        
+        // Create a test Ed25519 public key (32 bytes)
+        let original_pubkey = vector::empty<u8>();
+        let i = 0;
+        while (i < ED25519_PUBLIC_KEY_LENGTH) {
+            vector::push_back(&mut original_pubkey, ((i + 42) as u8)); // Use different pattern
+            i = i + 1;
+        };
+        
+        // Step 1: Generate did:key string from raw public key
+        let did_key_string = generate_ed25519_did_key_string(&original_pubkey);
+        
+        // Step 2: Verify the format
+        assert!(string::length(&did_key_string) > 8, ETestAssertionFailed + 83);
+        let prefix_part = string::sub_string(&did_key_string, 0, 8);
+        assert!(prefix_part == string::utf8(b"did:key:"), ETestAssertionFailed + 84);
+        
+        // Step 3: Extract identifier part
+        let identifier_part = string::sub_string(&did_key_string, 8, string::length(&did_key_string));
+        
+        // Step 4: Decode identifier to get raw public key
+        let decoded_pubkey_opt = decode_did_key_identifier(&identifier_part);
+        assert!(option::is_some(&decoded_pubkey_opt), ETestAssertionFailed + 85);
+        let decoded_pubkey = option::destroy_some(decoded_pubkey_opt);
+        
+        // Step 5: Verify round-trip integrity
+        assert!(decoded_pubkey == original_pubkey, ETestAssertionFailed + 86);
+        
+        // Step 6: Verify key type detection
+        let key_type_opt = get_key_type_from_did_key_identifier(&identifier_part);
+        assert!(option::is_some(&key_type_opt), ETestAssertionFailed + 87);
+        assert!(option::extract(&mut key_type_opt) == string::utf8(b"Ed25519"), ETestAssertionFailed + 88);
     }
 }

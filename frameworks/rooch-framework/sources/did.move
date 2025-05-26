@@ -162,8 +162,8 @@ module rooch_framework::did {
         capability_delegation: vector<String>,
         key_agreement: vector<String>,
         services: SimpleMap<String, Service>,
-        account_cap: AccountCap,
         also_known_as: vector<String>,
+        account_cap: AccountCap,
         // Note: created_timestamp and updated_timestamp removed - use Object system timestamps instead
     }
 
@@ -524,7 +524,10 @@ module rooch_framework::did {
         
         // Get the Bitcoin address from current transaction context
         // This address was already validated during transaction authentication
-        let bitcoin_address = auth_validator::get_bitcoin_address_from_ctx();
+        let bitcoin_address_opt = auth_validator::get_bitcoin_address_from_ctx_option();
+
+        assert!(option::is_some(&bitcoin_address_opt), ErrorDIDKeyControllerPublicKeyMismatch);
+        let bitcoin_address = option::destroy_some(bitcoin_address_opt);
         
         // Verify that the provided public key corresponds to the Bitcoin address
         assert!(
@@ -572,9 +575,16 @@ module rooch_framework::did {
         let user_did_key = parse_did_string(&user_did_key_string);
         
         // Extract public key from did:key identifier
-        // For did:key, the identifier is the multibase-encoded public key
+        // For did:key, the identifier contains multicodec prefix + raw public key
         assert!(user_did_key.method == string::utf8(b"key"), ErrorInvalidDIDStringFormat);
-        let user_vm_pk_multibase = user_did_key.identifier;
+        
+        // Extract raw public key from did:key identifier and re-encode as regular multibase
+        let raw_pk_opt = extract_public_key_from_did_key_identifier(&user_did_key.identifier);
+        assert!(option::is_some(&raw_pk_opt), ErrorInvalidPublicKeyMultibaseFormat);
+        let raw_pk_bytes = option::destroy_some(raw_pk_opt);
+        
+        // Re-encode as regular multibase Ed25519 key (without multicodec prefix)
+        let user_vm_pk_multibase = multibase::encode_ed25519_key(&raw_pk_bytes);
         
         // Derive custodian's DID from signer address
         let custodian_address = signer::address_of(custodian_signer);
@@ -1563,6 +1573,10 @@ module rooch_framework::did {
     /// Validates did:key controllers according to NIP-1 requirements.
     /// If any controller is did:key, there must be exactly one such controller,
     /// and its public key must match initial_vm_pk_multibase.
+    /// 
+    /// Note: did:key identifiers contain multicodec prefixes according to W3C DID Key spec:
+    /// - Ed25519: 0xed01 prefix, resulting in z6Mk... format
+    /// - Secp256k1: 0xe701 prefix, resulting in zQ3s... format
     fun validate_did_key_controllers(
         controllers: &vector<DID>,
         initial_vm_pk_multibase: &String
@@ -1590,7 +1604,7 @@ module rooch_framework::did {
             assert!(option::is_some(&did_key_controller_opt), ErrorInvalidArgument); // Should be some if count is 1
             let did_key_controller = option::destroy_some(did_key_controller_opt);
             
-            // For did:key, the identifier should be the multibase-encoded public key
+            // For did:key, the identifier contains multicodec prefix + raw public key
             let identifier = &did_key_controller.identifier;
             let identifier_bytes = string::bytes(identifier);
             assert!(vector::length(identifier_bytes) > 0, ErrorInvalidDIDStringFormat);
@@ -1598,20 +1612,41 @@ module rooch_framework::did {
             let first_byte = *vector::borrow(identifier_bytes, 0);
             assert!(first_byte == 122, ErrorInvalidDIDStringFormat); // 'z' for base58btc
             
-            let controller_pk_multibase = *identifier;
-            
-            let controller_pk_opt = multibase::decode_ed25519_key(&controller_pk_multibase);
-            let initial_pk_opt = multibase::decode_ed25519_key(initial_vm_pk_multibase);
-            
+            // Extract raw public key from did:key identifier by decoding multicodec format
+            let controller_pk_opt = extract_public_key_from_did_key_identifier(identifier);
             assert!(option::is_some(&controller_pk_opt), ErrorInvalidPublicKeyMultibaseFormat);
-            assert!(option::is_some(&initial_pk_opt), ErrorInvalidPublicKeyMultibaseFormat);
-            
             let controller_pk_bytes = option::destroy_some(controller_pk_opt);
-            let initial_pk_bytes = option::destroy_some(initial_pk_opt);
+            
+            // Try to decode initial_vm_pk_multibase as both regular multibase and did:key identifier
+            let initial_pk_bytes = if (string::length(initial_vm_pk_multibase) > 8 && 
+                                      string::sub_string(initial_vm_pk_multibase, 0, 8) == string::utf8(b"did:key:")) {
+                // If it's a full did:key string, extract the identifier part and decode
+                let identifier_part = string::sub_string(initial_vm_pk_multibase, 8, string::length(initial_vm_pk_multibase));
+                let pk_opt = extract_public_key_from_did_key_identifier(&identifier_part);
+                assert!(option::is_some(&pk_opt), ErrorInvalidPublicKeyMultibaseFormat);
+                option::destroy_some(pk_opt)
+            } else {
+                // Otherwise, try to decode as regular multibase Ed25519 key
+                let pk_opt = multibase::decode_ed25519_key(initial_vm_pk_multibase);
+                assert!(option::is_some(&pk_opt), ErrorInvalidPublicKeyMultibaseFormat);
+                option::destroy_some(pk_opt)
+            };
             
             assert!(controller_pk_bytes == initial_pk_bytes, ErrorDIDKeyControllerPublicKeyMismatch);
         }
         // If did_key_controller_count is 0, no specific validation for did:key is needed here.
+    }
+
+    /// Extract raw public key bytes from a did:key identifier.
+    /// This function now delegates to the multibase module for consistency.
+    /// The identifier format is: MULTIBASE(base58-btc, MULTICODEC(key-type, raw-key-bytes))
+    /// 
+    /// Supported multicodec prefixes:
+    /// - 0xed01: Ed25519 public key (results in z6Mk... format)
+    /// - 0xe701: Secp256k1 public key (results in zQ3s... format)
+    fun extract_public_key_from_did_key_identifier(identifier: &String): Option<vector<u8>> {
+        // Delegate to the multibase module's decode function
+        multibase::decode_did_key_identifier(identifier)
     }
 
     /// Add a verification method to the authentication relationship and register it as a session key.

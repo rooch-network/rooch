@@ -219,11 +219,12 @@ module rooch_framework::did_test_common {
         (custodian_signer, user_did_key_string, custodian_service_pk_multibase, custodian_service_vm_type)
     }
 
-    /// Generate a valid did:key string for testing
+    /// Generate a valid did:key string for testing with proper multicodec prefix
     public fun generate_test_did_key_string(): string::String {
-        let ed25519_key = generate_test_ed25519_multibase_key();
-        let did_key_string = string::utf8(b"did:key:");
-        string::append(&mut did_key_string, ed25519_key);
-        did_key_string
+        // Generate a test Ed25519 public key (32 bytes)
+        let pk = bcs::to_bytes(&tx_context::fresh_address());
+        
+        // Use the new multibase function that includes multicodec prefix
+        multibase::generate_ed25519_did_key_string(&pk)
     }
 } 

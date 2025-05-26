@@ -192,12 +192,17 @@ module rooch_framework::did_creation_test {
         assert!(retrieved_session_key == auth_key, 5003);
         
         // Verify Bitcoin address can be retrieved
-        let _bitcoin_address = auth_validator::get_bitcoin_address_from_ctx();
+        let bitcoin_address_opt = auth_validator::get_bitcoin_address_from_ctx_option();
+        assert!(option::is_some(&bitcoin_address_opt), 5004);
+        let bitcoin_address = option::extract(&mut bitcoin_address_opt);
+        assert!(!rooch_framework::bitcoin_address::is_empty(&bitcoin_address), 5005);
         
         // Test with random Bitcoin address
         auth_validator::set_random_tx_validate_result_for_testing(option::some(auth_key));
-        let random_bitcoin_address = auth_validator::get_bitcoin_address_from_ctx();
-        assert!(!rooch_framework::bitcoin_address::is_empty(&random_bitcoin_address), 5005);
+        let random_bitcoin_address_opt = auth_validator::get_bitcoin_address_from_ctx_option();
+        assert!(option::is_some(&random_bitcoin_address_opt), 5006);
+        let random_bitcoin_address = option::extract(&mut random_bitcoin_address_opt);
+        assert!(!rooch_framework::bitcoin_address::is_empty(&random_bitcoin_address), 5007);
     }
 
     #[test]

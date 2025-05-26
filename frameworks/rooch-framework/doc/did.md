@@ -12,6 +12,13 @@
 -  [Struct `Service`](#0x3_did_Service)
 -  [Resource `DIDDocument`](#0x3_did_DIDDocument)
 -  [Resource `DIDRegistry`](#0x3_did_DIDRegistry)
+-  [Struct `DIDCreatedEvent`](#0x3_did_DIDCreatedEvent)
+-  [Struct `VerificationMethodAddedEvent`](#0x3_did_VerificationMethodAddedEvent)
+-  [Struct `VerificationMethodRemovedEvent`](#0x3_did_VerificationMethodRemovedEvent)
+-  [Struct `VerificationRelationshipModifiedEvent`](#0x3_did_VerificationRelationshipModifiedEvent)
+-  [Struct `ServiceAddedEvent`](#0x3_did_ServiceAddedEvent)
+-  [Struct `ServiceUpdatedEvent`](#0x3_did_ServiceUpdatedEvent)
+-  [Struct `ServiceRemovedEvent`](#0x3_did_ServiceRemovedEvent)
 -  [Constants](#@Constants_0)
 -  [Function `verification_relationship_authentication`](#0x3_did_verification_relationship_authentication)
 -  [Function `verification_relationship_assertion_method`](#0x3_did_verification_relationship_assertion_method)
@@ -83,6 +90,7 @@
 <b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="">0x2::account</a>;
 <b>use</b> <a href="">0x2::address</a>;
+<b>use</b> <a href="">0x2::event</a>;
 <b>use</b> <a href="">0x2::multibase</a>;
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::simple_map</a>;
@@ -175,6 +183,97 @@ Registry to store mappings. This is a Named Object.
 
 
 <pre><code><b>struct</b> <a href="did.md#0x3_did_DIDRegistry">DIDRegistry</a> <b>has</b> key
+</code></pre>
+
+
+
+<a name="0x3_did_DIDCreatedEvent"></a>
+
+## Struct `DIDCreatedEvent`
+
+Event emitted when a new DID document is created
+
+
+<pre><code>#[<a href="">event</a>]
+<b>struct</b> <a href="did.md#0x3_did_DIDCreatedEvent">DIDCreatedEvent</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
+<a name="0x3_did_VerificationMethodAddedEvent"></a>
+
+## Struct `VerificationMethodAddedEvent`
+
+Event emitted when a verification method is added to a DID document
+
+
+<pre><code>#[<a href="">event</a>]
+<b>struct</b> <a href="did.md#0x3_did_VerificationMethodAddedEvent">VerificationMethodAddedEvent</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
+<a name="0x3_did_VerificationMethodRemovedEvent"></a>
+
+## Struct `VerificationMethodRemovedEvent`
+
+Event emitted when a verification method is removed from a DID document
+
+
+<pre><code>#[<a href="">event</a>]
+<b>struct</b> <a href="did.md#0x3_did_VerificationMethodRemovedEvent">VerificationMethodRemovedEvent</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
+<a name="0x3_did_VerificationRelationshipModifiedEvent"></a>
+
+## Struct `VerificationRelationshipModifiedEvent`
+
+Event emitted when a verification relationship is modified
+
+
+<pre><code>#[<a href="">event</a>]
+<b>struct</b> <a href="did.md#0x3_did_VerificationRelationshipModifiedEvent">VerificationRelationshipModifiedEvent</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
+<a name="0x3_did_ServiceAddedEvent"></a>
+
+## Struct `ServiceAddedEvent`
+
+Event emitted when a service is added to a DID document
+
+
+<pre><code>#[<a href="">event</a>]
+<b>struct</b> <a href="did.md#0x3_did_ServiceAddedEvent">ServiceAddedEvent</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
+<a name="0x3_did_ServiceUpdatedEvent"></a>
+
+## Struct `ServiceUpdatedEvent`
+
+Event emitted when a service is updated in a DID document
+
+
+<pre><code>#[<a href="">event</a>]
+<b>struct</b> <a href="did.md#0x3_did_ServiceUpdatedEvent">ServiceUpdatedEvent</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
+<a name="0x3_did_ServiceRemovedEvent"></a>
+
+## Struct `ServiceRemovedEvent`
+
+Event emitted when a service is removed from a DID document
+
+
+<pre><code>#[<a href="">event</a>]
+<b>struct</b> <a href="did.md#0x3_did_ServiceRemovedEvent">ServiceRemovedEvent</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
