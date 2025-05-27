@@ -32,6 +32,11 @@ template Sha256Partial(maxBitsPadded) {
     inBlockIndex <-- (in_len_padded_bits >> 9);
     in_len_padded_bits === inBlockIndex * 512;
 
+    // range check for LessEqThan and QuinSelector:
+    // constraining in_len_padded_bits to be less than 2^maxBitsPaddedBits
+    component lenBits = Num2Bits(maxBitsPaddedBits);
+    lenBits.in <== in_len_padded_bits;
+
     // These verify we pass in a valid number of bits to the SHA256 compression circuit.
     component bitLengthVerifier = LessEqThan(maxBitsPaddedBits); // todo verify the length passed in is less than nbits. note that maxBitsPaddedBits can likely be lowered or made it a fn of maxbits
     bitLengthVerifier.in[0] <== in_len_padded_bits;
