@@ -16,7 +16,6 @@ build/
 *.mvcov
 
 # 3rdparty configure files
-.vscode/
 .fleet/
 .idea/
 
