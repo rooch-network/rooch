@@ -133,6 +133,7 @@ module rooch_framework::bitcoin_address {
     }
 
     public fun to_rooch_address(addr: &BitcoinAddress): address{
+        assert!(!is_empty(addr), ErrorInvalidAddress);
         let hash = moveos_std::hash::blake2b256(&addr.bytes);
         moveos_std::bcs::to_address(hash)
     }

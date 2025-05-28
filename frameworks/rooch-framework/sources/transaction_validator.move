@@ -26,6 +26,7 @@ module rooch_framework::transaction_validator {
     use rooch_framework::builtin_validators;
     use rooch_framework::onchain_config;
     use rooch_framework::coin;
+    use rooch_framework::bitcoin_address;
 
     const MAX_U64: u128 = 18446744073709551615;
 
@@ -90,7 +91,7 @@ module rooch_framework::transaction_validator {
         // === validate the authenticator ===
 
         // Try the built-in auth validator first
-        let (bitcoin_address, session_key, auth_validator)= if (auth_validator_id == session_validator::auth_validator_id()){
+        let (bitcoin_address_opt, session_key, auth_validator)= if (auth_validator_id == session_validator::auth_validator_id()){
             let session_key = session_validator::validate(authenticator_payload);
             let bitcoin_address = address_mapping::resolve_bitcoin(sender);
             (bitcoin_address, option::some(session_key), option::none())
@@ -106,9 +107,13 @@ module rooch_framework::transaction_validator {
             let bitcoin_address = address_mapping::resolve_bitcoin(sender);
             (bitcoin_address, option::none(), option::some(*auth_validator))
         };
-        //The bitcoin address must exist
-        assert!(option::is_some(&bitcoin_address), auth_validator::error_validate_account_does_not_exist());
-        let bitcoin_address = option::destroy_some(bitcoin_address);
+        // We enable the smart contract account(DID account) to send transaction via session key, and the smart contract account does not have a bitcoin address.
+        // But for compatibility, we still need to return a empty bitcoin address in the TxValidateResult.
+        let bitcoin_address = if (option::is_some(&bitcoin_address_opt)) {
+            option::destroy_some(bitcoin_address_opt)
+        }else {
+            bitcoin_address::empty()
+        };
         auth_validator::new_tx_validate_result(auth_validator_id, auth_validator, session_key, bitcoin_address)
     }
 
@@ -122,15 +127,18 @@ module rooch_framework::transaction_validator {
         //Auto create account if not exist
         if (!account::exists_at(sender)) {
             account_entry::create_account(sender);
-            //if the chain is local or dev, give the sender some RGAS
-            if (chain_id::is_local_or_dev()) {
-                //10000 RGAS
-                let init_gas = 1000_000_000_000u256;
-                gas_coin::faucet(sender, init_gas); 
-            };
         };
-        let bitcoin_addr = auth_validator::get_bitcoin_address_from_ctx();
-        address_mapping::bind_bitcoin_address_internal(sender, bitcoin_addr); 
+        //if the chain is local or dev, give the sender some RGAS
+        if (chain_id::is_local_or_dev() && gas_coin::balance(sender) == 0) {
+            //10000 RGAS
+            let init_gas = 1000_000_000_000u256;
+            gas_coin::faucet(sender, init_gas); 
+        };
+        let bitcoin_addr_opt = auth_validator::get_bitcoin_address_from_ctx_option();
+        if (option::is_some(&bitcoin_addr_opt)) {
+            let bitcoin_addr = option::destroy_some(bitcoin_addr_opt);
+            address_mapping::bind_bitcoin_address_internal(sender, bitcoin_addr); 
+        };
         let tx_sequence_info = tx_context::get_attribute<TransactionSequenceInfo>();
         if (option::is_some(&tx_sequence_info)) {
             let tx_sequence_info = option::extract(&mut tx_sequence_info);

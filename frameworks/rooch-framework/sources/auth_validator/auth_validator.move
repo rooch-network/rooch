@@ -6,9 +6,10 @@
 /// public fun validate(authenticator_payload: vector<u8>)
 
 module rooch_framework::auth_validator {
+    use std::string;
     use std::option::{Self, Option};
     use moveos_std::tx_context;
-    use rooch_framework::bitcoin_address::BitcoinAddress;
+    use rooch_framework::bitcoin_address::{Self, BitcoinAddress};
 
     friend rooch_framework::auth_validator_registry;
     friend rooch_framework::transaction_validator;
@@ -101,7 +102,7 @@ module rooch_framework::auth_validator {
     public(friend) fun new_auth_validator(
         id: u64,
         module_address: address,
-        module_name: std::string::String
+        module_name: string::String
     ): AuthValidator {
         AuthValidator {
             id: id,
@@ -161,7 +162,7 @@ module rooch_framework::auth_validator {
 
     /// Get the session key from the TxValidateResult in the TxContext
     /// If the TxValidateResult is None or SessionKey is None, return None
-    public(friend) fun get_session_key_from_ctx_option(): Option<vector<u8>> {
+    public fun get_session_key_from_ctx_option(): Option<vector<u8>> {
         let validate_result_opt = tx_context::get_attribute<TxValidateResult>();
         if (option::is_some(&validate_result_opt)) {
             let validate_result = option::extract(&mut validate_result_opt);
@@ -172,7 +173,7 @@ module rooch_framework::auth_validator {
     }
 
     /// The current tx is validate via the session key or not
-    public(friend) fun is_validate_via_session_key(): bool {
+    public fun is_validate_via_session_key(): bool {
         option::is_some(&get_session_key_from_ctx_option())
     }
 
@@ -186,5 +187,57 @@ module rooch_framework::auth_validator {
     public(friend) fun get_bitcoin_address_from_ctx(): BitcoinAddress {
         let validate_result = get_validate_result_from_ctx();
         validate_result.bitcoin_address
+    }
+
+    public fun get_bitcoin_address_from_ctx_option(): Option<BitcoinAddress> {
+        let validate_result_opt = tx_context::get_attribute<TxValidateResult>();
+        if (option::is_some(&validate_result_opt)) {
+            let validate_result = option::extract(&mut validate_result_opt);
+            if (bitcoin_address::is_empty(&validate_result.bitcoin_address)) {
+                option::none<BitcoinAddress>()
+            }else {
+                option::some(validate_result.bitcoin_address)
+            }
+        }else {
+            option::none<BitcoinAddress>()
+        }
+    }
+
+    #[test_only]
+    /// Create a test TxValidateResult and set it in the context
+    public fun set_tx_validate_result_for_testing(
+        auth_validator_id: u64,
+        auth_validator: Option<AuthValidator>,
+        session_key: Option<vector<u8>>,
+        bitcoin_address: BitcoinAddress,
+    ) {
+        let result = new_tx_validate_result(auth_validator_id, auth_validator, session_key, bitcoin_address);
+        if (tx_context::contains_attribute<TxValidateResult>()) {
+            std::debug::print(&string::utf8(b"Reset TxValidateResult in tx_context\n"));
+            tx_context::remove_attribute_for_testing<TxValidateResult>();
+        };
+        tx_context::set_attribute_for_testing(result);
+    }
+
+    #[test_only]
+    /// Create a simple TxValidateResult for basic testing (with default Bitcoin address)
+    public fun set_simple_tx_validate_result_for_testing(session_key: Option<vector<u8>>) {
+        let bitcoin_address = rooch_framework::bitcoin_address::random_address_for_testing();
+        let auth_validator = option::none<AuthValidator>();
+        set_tx_validate_result_for_testing(0, auth_validator, session_key, bitcoin_address);
+    }
+
+    #[test_only]
+    /// Create a TxValidateResult with a random Bitcoin address for testing
+    public fun set_random_tx_validate_result_for_testing(session_key: Option<vector<u8>>) {
+        let bitcoin_address = rooch_framework::bitcoin_address::random_address_for_testing();
+        let auth_validator = option::none<AuthValidator>();
+        set_tx_validate_result_for_testing(0, auth_validator, session_key, bitcoin_address);
+    }
+
+    #[test_only]
+    /// Create a test AuthValidator
+    public fun create_test_auth_validator(id: u64): AuthValidator {
+        new_auth_validator(id, @0x1, std::string::utf8(b"test_validator"))
     }
 }

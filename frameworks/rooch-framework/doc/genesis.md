@@ -24,6 +24,7 @@
 <b>use</b> <a href="builtin_validators.md#0x3_builtin_validators">0x3::builtin_validators</a>;
 <b>use</b> <a href="chain_id.md#0x3_chain_id">0x3::chain_id</a>;
 <b>use</b> <a href="coin.md#0x3_coin">0x3::coin</a>;
+<b>use</b> <a href="did.md#0x3_did">0x3::did</a>;
 <b>use</b> <a href="gas_coin.md#0x3_gas_coin">0x3::gas_coin</a>;
 <b>use</b> <a href="onchain_config.md#0x3_onchain_config">0x3::onchain_config</a>;
 <b>use</b> <a href="transaction_fee.md#0x3_transaction_fee">0x3::transaction_fee</a>;

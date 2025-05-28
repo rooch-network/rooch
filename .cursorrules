@@ -1,0 +1,158 @@
+# Rooch Move Development Rules for Cursor AI
+
+## 1. Project Overview
+This is a Rooch blockchain project with Move smart contracts. Rooch is a Bitcoin-focused Layer 2 solution with unique DID (Decentralized Identity) capabilities.
+This file provides guidance for AI-assisted development. For a comprehensive developer guide, refer to `docs/dev-guide/rooch_move_guid.md`.
+
+## 2. Language and Communication (for AI Code Generation)
+- Always use English in code, comments, and technical terms.
+- **Code comments must be in English and ASCII characters only** (Move compiler requirement).
+
+## 3. Core Rooch Move Development Rules for AI
+
+### 3.1. Build and Test Commands
+- **Preferred Method**: Use the project `Makefile`. Key targets for AI:
+    - `make build`: Build Rust (release) and all Move components.
+    - `make test`: Run all Rust and Move tests.
+    - `make lint`: Run all linters (includes non-ASCII comment check).
+    - `make quick-check`: Quick compilation check (Rust debug, rooch-framework).
+    - `make build-move`: Build all core Move frameworks.
+    - `make test-move`: Run all Move framework and example tests.
+- **Direct Rooch CLI (if Makefile is not applicable for a specific sub-task)**:
+    - Compile: `cargo run --profile optci --bin rooch -- move build -p <package_path>`
+    - Test: `cargo run --profile optci --bin rooch -- move test -p <package_path> [options]`
+- **Working Directory**: Assume all commands are run from the project root (`${workspaceFolder}`).
+- **Verification**: Always compile/check code after changes.
+
+### 3.2. Key `rooch move test` CLI Options (when using direct CLI)
+- Filter: `-f <filter_string>`
+- List: `--list`
+- Verbose: `--verbose`
+- State on error: `--state_on_error`
+- For more options, AI can consult `rooch move test --help` or the main guide.
+
+### 3.3. Move Language Best Practices for AI
+- **ASCII Only**: All comments must be ASCII. Enforced by `make lint`.
+- **Entry Functions**: Parameters cannot use `Option<T>`. See `rooch_move_guid.md` for patterns.
+- **Friend Functions**: Use `public(friend)` for controlled module access. Declare friendship in module header.
+- **Error Handling**: 
+    - Define error constants: `const MyErrorName: u64 = ERROR_CODE;`
+    - Use directly in asserts: `assert!(condition, MyErrorName);`
+    - See `rooch_move_guid.md` (Section 6) for error constant patterns and categories.
+
+### 3.4. Rooch Address System - CRITICAL AI Directives
+(Full architecture in `docs/dev-guide/rooch_move_guid.md` Section 4.1)
+- **Primary Address Source**: Rooch account addresses are ALWAYS derived from Bitcoin addresses.
+- **Derivation API**: Use `rooch_framework::bitcoin_address::to_rooch_address(&bitcoin_addr)`.
+- **Transaction Context**: ALWAYS get the sender's validated Bitcoin address via `rooch_framework::auth_validator::get_bitcoin_address_from_ctx_option()`.
+    - **NEVER trust Bitcoin addresses passed as arguments without this contextual validation.**
+- **Public Key Validation**: If a public key is provided, verify it against the context-derived Bitcoin address: `rooch_framework::bitcoin_address::verify_bitcoin_address_with_public_key(&bitcoin_address_from_ctx, &user_pk_bytes)`.
+- **Address Mismatch Check**: If necessary, ensure derived Rooch address matches an expected one: `assert!(bitcoin_address::to_rooch_address(&bitcoin_address_from_ctx) == expected_rooch_addr, ErrorRoochAddressMismatch);`
+- **CRITICAL: Do NOT derive a primary Rooch account address directly from an `AuthenticationKey` (e.g., from a session key).** This is a common pitfall.
+
+### 3.5. Code Editing and Structure
+- **Editing**: Use `// ... existing code ...` for unchanged sections. Provide sufficient context.
+- **Project Structure**: AI should be aware of main source directories:
+    - Core framework: `frameworks/rooch-framework/sources/`
+    - MoveOS stdlib: `frameworks/moveos-stdlib/sources/`
+- **Dependencies**: Standard `use` statements at module level.
+- **Friend Declarations**: `friend <module_address>::<module_name>;`
+
+### 3.6. Session Key Architecture - Key AI Directives
+(Full architecture in `docs/dev-guide/rooch_move_guid.md` Section 4.2.2 and relevant DID sections)
+- **Derivation API**: Use `rooch_framework::session_key::*_public_key_to_authentication_key(&pk_bytes)`.
+- **Context**: Session key (if present and validated) can be retrieved from `auth_validator`.
+
+### 3.7. DID System Patterns - Key AI Directives
+(Full architecture and patterns in `docs/dev-guide/rooch_move_guid.md` Section 4.2 and specific DID guides if provided)
+- **ObjectID**: Used for DID document references.
+- **Permissions & Verification Methods**: AI should look up specific functions for permission checks (e.g., capability delegation, invocation) based on DID document structure and verification methods associated with session keys from context. Refer to existing code and DID modules for exact function names and patterns.
+
+### 3.8. Error Constants Pattern for AI
+```move
+// In your_module.move
+// All error messages must be in English and ASCII.
+
+/// A descriptive error message for ErrorCodeOne.
+const ErrorCodeOne: u64 = 1; // Start from 1 in each module
+/// Another descriptive error message for ErrorCodeTwo.
+const ErrorCodeTwo: u64 = 2;
+// ... increment sequentially within the module.
+```
+- Use descriptive names prefixed with `Error`.
+
+### 3.9. Testing Approach - Key AI Directives
+(Full testing guide in `docs/dev-guide/rooch_move_guid.md` Section 7)
+- **Initialization**: ALWAYS call `rooch_framework::genesis::init_for_test()` at the start of test functions or in a `#[test_only]` setup function.
+- **Test Attributes**: `#[test]`, `#[test_only]`. For expected failures: `#[expected_failure(abort_code = MODULE_NAME::MyErrorName, location = Self)]` or other specific abort conditions.
+- **Mocking (Auth Context)**:
+    - Session Key: `rooch_framework::auth_validator::set_simple_tx_validate_result_for_testing(option::some(auth_key))`
+    - Bitcoin Address: `rooch_framework::auth_validator::set_tx_validate_result_for_testing(option::none(), option::some(bitcoin_address_object))` OR `set_random_tx_validate_result_for_testing(...)`.
+    - Always retrieve via `rooch_framework::auth_validator::get_bitcoin_address_from_ctx()` in tested code.
+- **Test Naming**: Descriptive, e.g., `test_action_succeeds_with_valid_inputs()`, `test_action_fails_if_unauthorized()`.
+- Test both success and failure paths rigorously.
+
+### 3.10. Multibase and Cryptography - Key AI Directives
+(Details in `docs/dev-guide/rooch_move_guid.md` Section 5)
+- **Encoding API**: `rooch_framework::multibase::encode_*_key(&pk_bytes)`.
+- **Decoding API**: `rooch_framework::multibase::decode_*_key(&multibase_string)` (returns `Option<vector<u8>>`).
+- **Key Lengths**: Ed25519 (32 bytes), Secp256k1 compressed (33 bytes). ALWAYS validate decoded key lengths.
+
+## 4. General Code Quality Standards for AI
+- Prefer composition over inheritance-like patterns.
+- Use clear, descriptive English names for all identifiers.
+- Document non-trivial logic with English ASCII comments.
+- Implement robust error handling for all potential failure points.
+- Adhere strictly to Move's ownership and borrowing rules.
+
+## 5. Common Code Patterns for AI to Reuse (Focus on APIs)
+
+### 5.1. Permission Verification (Conceptual - check specific DID module for actual APIs)
+```move
+// This is a conceptual guide. AI must find the actual function in the relevant DID module.
+// Example: Given a DIDObject<DIDData>, and an auth_key from auth_validator,
+// the DID module should provide a function like:
+// did_module::assert_has_capability(&did_object_data, &auth_key_from_context, CAPABILITY_DELEGATION_FLAG);
+```
+
+### 5.2. Object Operations (from `moveos_std::object`)
+```move
+// Borrow mutable object (extend allows dynamic fields, often used)
+let obj_ref_mut = moveos_std::object::borrow_mut_object_extend<MyObjectType>(object_id);
+let data_mut = moveos_std::object::borrow_mut(obj_ref_mut);
+// ... modify data_mut ...
+
+// Borrow immutable object
+let obj_ref = moveos_std::object::borrow_object<MyObjectType>(object_id);
+let data_immut = moveos_std::object::borrow(obj_ref);
+// ... read data_immut ...
+```
+
+### 5.3. Bitcoin Address and Public Key Validation Pattern (Key APIs)
+```move
+// 1. Get Bitcoin address from transaction context (validated by system)
+let bitcoin_address_from_ctx = rooch_framework::auth_validator::get_bitcoin_address_from_ctx();
+
+// 2. If a public key is provided by the user (e.g., for DID registration)
+// let user_pk_bytes = ... // decoded from multibase and length-checked
+assert!(
+    rooch_framework::bitcoin_address::verify_bitcoin_address_with_public_key(&bitcoin_address_from_ctx, &user_pk_bytes),
+    ErrorInvalidPublicKeyForBitcoinAddress // Use a specific, defined error code
+);
+
+// 3. If needing to ensure this Bitcoin address corresponds to a specific Rooch account
+let derived_rooch_address = rooch_framework::bitcoin_address::to_rooch_address(&bitcoin_address_from_ctx);
+assert!(derived_rooch_address == expected_target_rooch_address, ErrorRoochAddressMismatch); // Use a specific, defined error code
+```
+
+## 6. Development Workflow Reminder for AI
+1.  **Understand Requirements**: Clarify the task. If design details are needed, ask to consult `docs/dev-guide/rooch_move_guid.md` or other relevant documentation.
+2.  **Locate Relevant Code**: Use file search, codebase search. Identify existing modules and patterns.
+3.  **Implement Changes**: Follow Move patterns and these AI rules strictly.
+4.  **Compile/Check**: Use `make quick-check` or `make build-move` (or specific `make` targets) frequently.
+5.  **Write Tests**: Cover success and failure cases. Use mocking as per directives.
+6.  **Run Tests**: Use `make test-move` or more specific `make` targets.
+7.  **Documentation**: AI does not need to update main guide, but should describe its changes clearly if they impact public APIs or core logic.
+8.  **Review and Refactor**: Ensure code is clean, efficient, and adheres to standards. Static analysis via `make lint` will check for non-ASCII comments and other issues.
+
+This ruleset is intended to make AI a more effective collaborator. AI should prioritize these rules and refer to `docs/dev-guide/rooch_move_guid.md` for broader context and detailed explanations when needed.

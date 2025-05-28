@@ -230,6 +230,15 @@ impl WalletContext {
             .generate_session_key(address, self.password.clone())
     }
 
+    pub fn get_session_key(
+        &self,
+        address: &RoochAddress,
+        authentication_key: &AuthenticationKey,
+    ) -> Result<Option<RoochKeyPair>> {
+        self.keystore
+            .get_session_key(address, authentication_key, self.password.clone())
+    }
+
     pub fn sign_transaction_via_session_key(
         &self,
         signer: &RoochAddress,

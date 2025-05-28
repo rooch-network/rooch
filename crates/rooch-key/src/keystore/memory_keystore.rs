@@ -112,6 +112,16 @@ impl AccountKeystore for InMemKeystore {
         self.keystore.binding_session_key(address, session_key)
     }
 
+    fn get_session_key(
+        &self,
+        address: &RoochAddress,
+        authentication_key: &AuthenticationKey,
+        password: Option<String>,
+    ) -> Result<Option<RoochKeyPair>, anyhow::Error> {
+        self.keystore
+            .get_session_key(address, authentication_key, password)
+    }
+
     fn sign_transaction_via_session_key(
         &self,
         address: &RoochAddress,
