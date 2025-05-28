@@ -8,21 +8,40 @@ Nostr in Move implements [NIP-01](https://github.com/nostr-protocol/nips/blob/ma
 
 ## Usage
 
-Nostr in Move is a base smart contract written in Move programming language that depends on Rooch Framework's verification package for Schnorr signature. It is based on Rooch, but could be rebuilt and reused in other Move oriented blockchains.
+Nostr in Move consists of base smart contracts written in Move programming language that depends on Rooch Framework's verification package for Schnorr signature. It is based on Rooch, but could be rebuilt and reused in other Move oriented blockchains.
 
-The base smart contract currently functions:
+The base smart contracts currently functions:
 
 - [Save Nostr event with verification](#save).
 - [Save Nostr event without verification](#save).
 - [Create Nostr event](#create).
 
+## Prerequisites
+
+- [Rooch command line interface](https://rooch.network/build/reference/rooch-cli).
+- Knowledge of [Move on Rooch](https://rooch.network/learn/core-concepts/move-contracts/move-on-rooch).
+
+## Install
+
+Follow the [installation guide](https://rooch.network/build/getting-started/installation) to install Rooch command line interface.
+
 ## Build
+
+Build the smart contracts by using a default Rooch address:
 
 ```zsh
 rooch move build --named-addresses nostr=default
 ```
 
+Or assign a specific one:
+
+```zsh
+rooch move build --named-addresses nostr=<contract_address>
+```
+
 ## Publish
+
+Publish the smart contracts to Rooch:
 
 ```zsh
 rooch move publish ./build/nostr/package.rpd
@@ -32,7 +51,7 @@ rooch move publish ./build/nostr/package.rpd
 
 ### Save
 
-Saves Nostr events into the Move smart contract.
+Saves Nostr events into the Move event smart contract.
 
 - Save a Nostr event to Move store with verification of id and signature
 ```zsh
@@ -47,7 +66,7 @@ This could be met with the need of saving a draft of or unpublished Nostr note. 
 
 ### Create
 
-Creates Nostr events in the Move smart contract and moves to the owner of the X Only public key as unpublished events.
+Creates Nostr events in the Move event smart contract and moves to the owner of the X Only public key as unpublished events.
 
 - Create a Nostr event natively in Move and store in Move's state
 1. Create a pre event of Nostr for signing
@@ -110,7 +129,7 @@ Rooch for Bitcoin payments could be used to persist Nostr event type of Bitcoin 
 
 ## Extendability
 
-Developers may extend other NIP capabilities to this base smart contract in Move programming language.
+Developers may extend other NIP capabilities to this base smart contracts in Move programming language.
 
 ## Terms
 
@@ -128,8 +147,11 @@ Developers may extend other NIP capabilities to this base smart contract in Move
 
 ## Related Links
 
-- https://github.com/nostr-protocol/nips/blob/master/01.md
-- https://github.com/nostr-protocol/nips/blob/master/47.md
+- https://github.com/nostr-protocol/nips/blob/master/01.md.
+- https://rooch.network/build/reference/rooch-cli.
+- https://rooch.network/learn/core-concepts/move-contracts/move-on-rooch.
+- https://rooch.network/build/getting-started/installation.
+- https://github.com/nostr-protocol/nips/blob/master/47.md.
 
 ## License
 
