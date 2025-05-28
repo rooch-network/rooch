@@ -10,7 +10,7 @@ Nostr in Move implements [NIP-01](https://github.com/nostr-protocol/nips/blob/ma
 
 Nostr in Move consists of base smart contracts written in Move programming language that depends on Rooch Framework's verification package for Schnorr signature. It is based on Rooch, but could be rebuilt and reused in other Move oriented blockchains.
 
-The base smart contracts currently functions:
+The base smart contracts currently function:
 
 - [Save Nostr event with verification](#save).
 - [Save Nostr event without verification](#save).
@@ -129,7 +129,7 @@ Rooch for Bitcoin payments could be used to persist Nostr event type of Bitcoin 
 
 ## Extendability
 
-Developers may extend other NIP capabilities to this base smart contracts in Move programming language.
+Developers may extend other NIP capabilities to the base smart contracts in Move programming language.
 
 ## Terms
 
