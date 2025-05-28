@@ -5,6 +5,8 @@ include "circomlib/circuits/sha256/sha256compression.circom";
 include "circomlib/circuits/comparators.circom";
 include "./utils.circom";
 
+include "circomlib/circuits/bitify.circom"; // needed for Num2Bits
+
 // Completing the sha256 hash given a pre-computed state and additional data
 template Sha256Partial(maxBitsPadded) {
     // maxBitsPadded must be a multiple of 512, and the bit circuits in this file are limited to 15 so must be raised if the message is longer.
