@@ -71,6 +71,8 @@ For more details, please refer to https://rooch.network/docs/developer-guides/ob
 -  [Function `contains_field_with_type`](#0x2_object_contains_field_with_type)
 -  [Function `field_size`](#0x2_object_field_size)
 -  [Function `list_field_keys`](#0x2_object_list_field_keys)
+-  [Function `created_at`](#0x2_object_created_at)
+-  [Function `updated_at`](#0x2_object_updated_at)
 
 
 <pre><code><b>use</b> <a href="">0x1::hash</a>;
@@ -1056,4 +1058,28 @@ List all field names of the object
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_list_field_keys">list_field_keys</a>&lt;T: key, Name: <b>copy</b>, drop, store&gt;(obj: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;, name: <a href="_Option">option::Option</a>&lt;Name&gt;, limit: u64): <a href="">vector</a>&lt;<b>address</b>&gt;
+</code></pre>
+
+
+
+<a name="0x2_object_created_at"></a>
+
+## Function `created_at`
+
+Get the creation timestamp of an object
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_created_at">created_at</a>(object_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): u64
+</code></pre>
+
+
+
+<a name="0x2_object_updated_at"></a>
+
+## Function `updated_at`
+
+Get the last update timestamp of an object
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_updated_at">updated_at</a>(object_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): u64
 </code></pre>

@@ -37,6 +37,7 @@ use fastcrypto::{
     hash::{Blake2b256, HashFunction},
     secp256k1::{Secp256k1PublicKey, Secp256k1Signature, Secp256k1SignatureAsBytes},
 };
+use multibase;
 use schemars::JsonSchema;
 use serde::ser::Serializer;
 use serde::{Deserialize, Deserializer, Serialize};
@@ -183,6 +184,73 @@ impl RoochKeyPair {
         let bech32_encoded = encode::<Bech32>(*ROOCH_SECRET_KEY_HRP, &priv_key_bytes)?;
         Ok(bech32_encoded)
     }
+
+    /// Encode the public key to multibase format using base58btc encoding
+    /// This is a convenience method that delegates to the public key's multibase encoding
+    pub fn public_key_to_multibase(&self) -> String {
+        self.public().to_multibase()
+    }
+
+    /// Encode only the raw public key bytes (without flag) to multibase
+    /// This is useful for DID verification methods
+    pub fn raw_public_key_to_multibase(&self) -> String {
+        self.public().raw_to_multibase()
+    }
+
+    /// Get the signature scheme of this keypair
+    pub fn scheme(&self) -> SignatureScheme {
+        match self {
+            RoochKeyPair::Ed25519(_) => SignatureScheme::Ed25519,
+            RoochKeyPair::Secp256k1(_) => SignatureScheme::Secp256k1,
+        }
+    }
+
+    /// Create a keypair from a multibase-encoded public key string and private key bytes
+    /// This is primarily used for testing and key reconstruction
+    pub fn from_private_key_and_multibase_public_key(
+        private_key_bytes: &[u8],
+        multibase_public_key: &str,
+    ) -> Result<Self, anyhow::Error> {
+        // First decode the public key to determine the scheme
+        let public_key = PublicKey::from_multibase(multibase_public_key)?;
+
+        match public_key.scheme() {
+            SignatureScheme::Ed25519 => {
+                let keypair = Ed25519KeyPair::from_bytes(private_key_bytes)
+                    .map_err(|e| anyhow!("Failed to create Ed25519 keypair: {}", e))?;
+
+                // Verify that the public key matches
+                let derived_public = PublicKey::Ed25519(keypair.public().into());
+                if derived_public != public_key {
+                    return Err(anyhow!(
+                        "Private key does not match the provided public key"
+                    ));
+                }
+
+                Ok(RoochKeyPair::Ed25519(keypair))
+            }
+            SignatureScheme::Secp256k1 => {
+                let keypair = Secp256k1KeyPair::from_bytes(private_key_bytes)
+                    .map_err(|e| anyhow!("Failed to create Secp256k1 keypair: {}", e))?;
+
+                // Verify that the public key matches
+                let derived_public = PublicKey::Secp256k1(keypair.public().into());
+                if derived_public != public_key {
+                    return Err(anyhow!(
+                        "Private key does not match the provided public key"
+                    ));
+                }
+
+                Ok(RoochKeyPair::Secp256k1(keypair))
+            }
+        }
+    }
+
+    /// Generate a complete did:key string from the public key
+    /// Format: "did:key:z6Mk..." or "did:key:zQ3s..."
+    pub fn to_did_key_string(&self) -> String {
+        self.public().to_did_key_string()
+    }
 }
 
 impl Signer<Signature> for RoochKeyPair {
@@ -264,6 +332,12 @@ impl<'de> Deserialize<'de> for RoochKeyPair {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, JsonSchema)]
+pub struct MultibasePublicKey {
+    pub verification_method_type: String,
+    pub multibase_str: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, JsonSchema)]
 pub enum PublicKey {
     Ed25519(Ed25519PublicKeyAsBytes),
     Secp256k1(Secp256k1PublicKeyAsBytes),
@@ -339,6 +413,13 @@ impl PublicKey {
         match self {
             PublicKey::Ed25519(_) => Ed25519RoochSignature::SCHEME,
             PublicKey::Secp256k1(_) => Secp256k1RoochSignature::SCHEME,
+        }
+    }
+
+    pub fn did_verification_method_type(&self) -> String {
+        match self {
+            PublicKey::Ed25519(_) => "Ed25519VerificationKey2020".to_string(),
+            PublicKey::Secp256k1(_) => "EcdsaSecp256k1VerificationKey2019".to_string(),
         }
     }
 
@@ -425,6 +506,158 @@ impl PublicKey {
         let bytes = pk.to_bytes();
         let pk = Secp256k1PublicKey::from_bytes(&bytes)?;
         Ok(PublicKey::Secp256k1((&pk).into()))
+    }
+
+    /// Encode the public key to multibase format using DID standard multicodec prefixes
+    /// Ed25519: 0xed01 prefix -> z6Mk... format
+    /// Secp256k1: 0xe701 prefix -> zQ3s... format
+    pub fn to_multibase(&self) -> String {
+        let mut prefixed_key = match self {
+            PublicKey::Ed25519(_) => vec![0xed, 0x01], // Ed25519 multicodec prefix
+            PublicKey::Secp256k1(_) => vec![0xe7, 0x01], // Secp256k1 multicodec prefix
+        };
+        prefixed_key.extend_from_slice(self.raw_public_key_bytes());
+        multibase::encode(multibase::Base::Base58Btc, &prefixed_key)
+    }
+
+    /// Decode a multibase-encoded public key string with DID standard multicodec prefixes
+    /// Supports Ed25519 (z6Mk...) and Secp256k1 (zQ3s...) formats
+    pub fn from_multibase(multibase_str: &str) -> Result<Self, anyhow::Error> {
+        let (base, decoded_bytes) = multibase::decode(multibase_str)
+            .map_err(|e| anyhow!("Failed to decode multibase string: {}", e))?;
+
+        // Verify base58btc encoding (DID standard)
+        if base != multibase::Base::Base58Btc {
+            return Err(anyhow!("Multibase public key must use base58btc encoding"));
+        }
+
+        // Check minimum length (at least 2 bytes for multicodec prefix)
+        if decoded_bytes.len() < 2 {
+            return Err(anyhow!("Invalid multibase public key: too short"));
+        }
+
+        // Extract multicodec prefix
+        let first_byte = decoded_bytes[0];
+        let second_byte = decoded_bytes[1];
+
+        match (first_byte, second_byte) {
+            (0xed, 0x01) => {
+                // Ed25519 multicodec
+                if decoded_bytes.len() != 34 {
+                    // 2 bytes prefix + 32 bytes key
+                    return Err(anyhow!("Invalid Ed25519 multibase public key length"));
+                }
+                let raw_key = &decoded_bytes[2..];
+                let pk = Ed25519PublicKey::from_bytes(raw_key)?;
+                Ok(PublicKey::Ed25519((&pk).into()))
+            }
+            (0xe7, 0x01) => {
+                // Secp256k1 multicodec
+                if decoded_bytes.len() != 35 {
+                    // 2 bytes prefix + 33 bytes key
+                    return Err(anyhow!("Invalid Secp256k1 multibase public key length"));
+                }
+                let raw_key = &decoded_bytes[2..];
+                let pk = Secp256k1PublicKey::from_bytes(raw_key)?;
+                Ok(PublicKey::Secp256k1((&pk).into()))
+            }
+            _ => Err(anyhow!(
+                "Unsupported multicodec prefix: 0x{:02x}{:02x}",
+                first_byte,
+                second_byte
+            )),
+        }
+    }
+
+    /// Get the raw public key bytes without the flag
+    /// For Ed25519: 32 bytes
+    /// For Secp256k1: 33 bytes (compressed)
+    pub fn raw_public_key_bytes(&self) -> &[u8] {
+        self.as_ref()
+    }
+
+    /// Encode only the raw public key bytes (without flag) to multibase
+    /// This is useful for DID verification methods
+    pub fn raw_to_multibase(&self) -> String {
+        multibase::encode(multibase::Base::Base58Btc, self.raw_public_key_bytes())
+    }
+
+    /// Decode raw public key bytes from multibase and create PublicKey with specified scheme
+    pub fn from_raw_multibase(
+        multibase_str: &str,
+        scheme: SignatureScheme,
+    ) -> Result<Self, anyhow::Error> {
+        let (base, decoded_bytes) = multibase::decode(multibase_str)
+            .map_err(|e| anyhow!("Failed to decode multibase string: {}", e))?;
+
+        // Verify the encoding is supported
+        match base {
+            multibase::Base::Base58Btc
+            | multibase::Base::Base64Pad
+            | multibase::Base::Base16Lower => {
+                // These are supported encodings
+            }
+            _ => {
+                return Err(anyhow!("Unsupported multibase encoding: {:?}", base));
+            }
+        }
+
+        // Validate key length based on scheme
+        match scheme {
+            SignatureScheme::Ed25519 => {
+                if decoded_bytes.len() != 32 {
+                    return Err(anyhow!(
+                        "Invalid Ed25519 public key length: expected 32 bytes, got {}",
+                        decoded_bytes.len()
+                    ));
+                }
+                let pk = Ed25519PublicKey::from_bytes(&decoded_bytes)?;
+                Ok(PublicKey::Ed25519((&pk).into()))
+            }
+            SignatureScheme::Secp256k1 => {
+                if decoded_bytes.len() != 33 {
+                    return Err(anyhow!(
+                        "Invalid Secp256k1 public key length: expected 33 bytes, got {}",
+                        decoded_bytes.len()
+                    ));
+                }
+                let pk = Secp256k1PublicKey::from_bytes(&decoded_bytes)?;
+                Ok(PublicKey::Secp256k1((&pk).into()))
+            }
+        }
+    }
+
+    pub fn to_multibase_public_key(&self) -> MultibasePublicKey {
+        MultibasePublicKey {
+            verification_method_type: self.did_verification_method_type(),
+            multibase_str: self.raw_to_multibase(),
+        }
+    }
+
+    /// Generate a complete did:key string from the public key
+    /// Format: "did:key:" + multibase_identifier
+    pub fn to_did_key_string(&self) -> String {
+        format!("did:key:{}", self.to_multibase())
+    }
+
+    /// Parse a complete did:key string and extract the public key
+    /// Format: "did:key:z6Mk..." or "did:key:zQ3s..."
+    pub fn from_did_key_string(did_key_string: &str) -> Result<Self, anyhow::Error> {
+        if !did_key_string.starts_with("did:key:") {
+            return Err(anyhow!("Invalid did:key string format"));
+        }
+
+        let identifier = &did_key_string[8..]; // Skip "did:key:"
+        Self::from_multibase(identifier)
+    }
+
+    /// Get the multicodec prefix for this public key type
+    /// Returns the 2-byte multicodec prefix used in did:key identifiers
+    pub fn multicodec_prefix(&self) -> Vec<u8> {
+        match self {
+            PublicKey::Ed25519(_) => vec![0xed, 0x01],
+            PublicKey::Secp256k1(_) => vec![0xe7, 0x01],
+        }
     }
 }
 
@@ -857,5 +1090,197 @@ mod tests {
         };
         let signature = kp.sign_secure(&value);
         assert!(signature.verify_secure(&value).is_ok());
+    }
+
+    #[test]
+    fn test_multibase_public_key_encoding_decoding() {
+        // Test Ed25519 public key
+        let ed25519_kp = RoochKeyPair::generate_ed25519();
+        let ed25519_public = ed25519_kp.public();
+
+        // Test full public key encoding (with flag)
+        let ed25519_multibase = ed25519_public.to_multibase();
+        assert!(ed25519_multibase.starts_with('z')); // base58btc prefix
+
+        let decoded_ed25519 = PublicKey::from_multibase(&ed25519_multibase).unwrap();
+        assert_eq!(ed25519_public, decoded_ed25519);
+
+        // Test raw public key encoding (without flag)
+        let ed25519_raw_multibase = ed25519_public.raw_to_multibase();
+        assert!(ed25519_raw_multibase.starts_with('z')); // base58btc prefix
+
+        let decoded_ed25519_raw =
+            PublicKey::from_raw_multibase(&ed25519_raw_multibase, SignatureScheme::Ed25519)
+                .unwrap();
+        assert_eq!(ed25519_public, decoded_ed25519_raw);
+
+        // Test Secp256k1 public key
+        let secp256k1_kp = RoochKeyPair::generate_secp256k1();
+        let secp256k1_public = secp256k1_kp.public();
+
+        // Test full public key encoding (with flag)
+        let secp256k1_multibase = secp256k1_public.to_multibase();
+        assert!(secp256k1_multibase.starts_with('z')); // base58btc prefix
+
+        let decoded_secp256k1 = PublicKey::from_multibase(&secp256k1_multibase).unwrap();
+        assert_eq!(secp256k1_public, decoded_secp256k1);
+
+        // Test raw public key encoding (without flag)
+        let secp256k1_raw_multibase = secp256k1_public.raw_to_multibase();
+        assert!(secp256k1_raw_multibase.starts_with('z')); // base58btc prefix
+
+        let decoded_secp256k1_raw =
+            PublicKey::from_raw_multibase(&secp256k1_raw_multibase, SignatureScheme::Secp256k1)
+                .unwrap();
+        assert_eq!(secp256k1_public, decoded_secp256k1_raw);
+    }
+
+    #[test]
+    fn test_keypair_multibase_methods() {
+        // Test Ed25519 keypair
+        let ed25519_kp = RoochKeyPair::generate_ed25519();
+
+        let public_multibase = ed25519_kp.public_key_to_multibase();
+        let raw_public_multibase = ed25519_kp.raw_public_key_to_multibase();
+
+        assert!(public_multibase.starts_with('z'));
+        assert!(raw_public_multibase.starts_with('z'));
+        assert_ne!(public_multibase, raw_public_multibase); // Should be different due to flag
+
+        // Test Secp256k1 keypair
+        let secp256k1_kp = RoochKeyPair::generate_secp256k1();
+
+        let public_multibase = secp256k1_kp.public_key_to_multibase();
+        let raw_public_multibase = secp256k1_kp.raw_public_key_to_multibase();
+
+        assert!(public_multibase.starts_with('z'));
+        assert!(raw_public_multibase.starts_with('z'));
+        assert_ne!(public_multibase, raw_public_multibase); // Should be different due to flag
+    }
+
+    #[test]
+    fn test_multibase_error_handling() {
+        // Test invalid multibase string
+        let result = PublicKey::from_multibase("invalid_multibase");
+        assert!(result.is_err());
+
+        // Test empty multibase string
+        let result = PublicKey::from_multibase("");
+        assert!(result.is_err());
+
+        // Test wrong key length for Ed25519
+        let result = PublicKey::from_raw_multibase("z1234", SignatureScheme::Ed25519);
+        assert!(result.is_err());
+
+        // Test wrong key length for Secp256k1
+        let result = PublicKey::from_raw_multibase("z1234", SignatureScheme::Secp256k1);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_multibase_compatibility_with_move() {
+        // This test ensures our multibase encoding is compatible with the Move implementation
+        // Generate a test key
+        let kp = RoochKeyPair::generate_ed25519();
+        let public_key = kp.public();
+
+        // Get raw bytes (32 bytes for Ed25519)
+        let raw_bytes = public_key.raw_public_key_bytes();
+        assert_eq!(raw_bytes.len(), 32);
+
+        // Encode to multibase
+        let multibase_str = public_key.raw_to_multibase();
+
+        // Should start with 'z' (base58btc prefix)
+        assert!(multibase_str.starts_with('z'));
+
+        // Decode back and verify
+        let decoded =
+            PublicKey::from_raw_multibase(&multibase_str, SignatureScheme::Ed25519).unwrap();
+        assert_eq!(public_key, decoded);
+
+        // Test with Secp256k1
+        let secp_kp = RoochKeyPair::generate_secp256k1();
+        let secp_public = secp_kp.public();
+
+        // Get raw bytes (33 bytes for Secp256k1 compressed)
+        let secp_raw_bytes = secp_public.raw_public_key_bytes();
+        assert_eq!(secp_raw_bytes.len(), 33);
+
+        // Encode to multibase
+        let secp_multibase_str = secp_public.raw_to_multibase();
+
+        // Should start with 'z' (base58btc prefix)
+        assert!(secp_multibase_str.starts_with('z'));
+
+        // Decode back and verify
+        let secp_decoded =
+            PublicKey::from_raw_multibase(&secp_multibase_str, SignatureScheme::Secp256k1).unwrap();
+        assert_eq!(secp_public, secp_decoded);
+    }
+
+    #[test]
+    fn test_did_key_multicodec_encoding() {
+        // Test Ed25519 with DID standard multicodec
+        let ed25519_kp = RoochKeyPair::generate_ed25519();
+        let ed25519_public = ed25519_kp.public();
+
+        // Test multibase encoding with multicodec prefix
+        let ed25519_multibase = ed25519_public.to_multibase();
+        assert!(ed25519_multibase.starts_with("z6Mk")); // Ed25519 multicodec results in z6Mk prefix
+
+        // Test round-trip
+        let decoded_ed25519 = PublicKey::from_multibase(&ed25519_multibase).unwrap();
+        assert_eq!(ed25519_public, decoded_ed25519);
+
+        // Test did:key string generation
+        let ed25519_did_key = ed25519_public.to_did_key_string();
+        assert!(ed25519_did_key.starts_with("did:key:z6Mk"));
+
+        // Test did:key string parsing
+        let parsed_ed25519 = PublicKey::from_did_key_string(&ed25519_did_key).unwrap();
+        assert_eq!(ed25519_public, parsed_ed25519);
+
+        // Test Secp256k1 with DID standard multicodec
+        let secp256k1_kp = RoochKeyPair::generate_secp256k1();
+        let secp256k1_public = secp256k1_kp.public();
+
+        // Test multibase encoding with multicodec prefix
+        let secp256k1_multibase = secp256k1_public.to_multibase();
+        assert!(secp256k1_multibase.starts_with("zQ3s")); // Secp256k1 multicodec results in zQ3s prefix
+
+        // Test round-trip
+        let decoded_secp256k1 = PublicKey::from_multibase(&secp256k1_multibase).unwrap();
+        assert_eq!(secp256k1_public, decoded_secp256k1);
+
+        // Test did:key string generation
+        let secp256k1_did_key = secp256k1_public.to_did_key_string();
+        assert!(secp256k1_did_key.starts_with("did:key:zQ3s"));
+
+        // Test did:key string parsing
+        let parsed_secp256k1 = PublicKey::from_did_key_string(&secp256k1_did_key).unwrap();
+        assert_eq!(secp256k1_public, parsed_secp256k1);
+    }
+
+    #[test]
+    fn test_multicodec_prefix() {
+        let ed25519_kp = RoochKeyPair::generate_ed25519();
+        let ed25519_public = ed25519_kp.public();
+        assert_eq!(ed25519_public.multicodec_prefix(), vec![0xed, 0x01]);
+
+        let secp256k1_kp = RoochKeyPair::generate_secp256k1();
+        let secp256k1_public = secp256k1_kp.public();
+        assert_eq!(secp256k1_public.multicodec_prefix(), vec![0xe7, 0x01]);
+    }
+
+    #[test]
+    fn test_keypair_did_key_methods() {
+        let ed25519_kp = RoochKeyPair::generate_ed25519();
+        let ed25519_did_key = ed25519_kp.to_did_key_string();
+        assert!(ed25519_did_key.starts_with("did:key:z6Mk"));
+
+        let secp256k1_kp = RoochKeyPair::generate_secp256k1();
+        let secp256k1_did_key = secp256k1_kp.to_did_key_string();
+        assert!(secp256k1_did_key.starts_with("did:key:zQ3s"));
     }
 }

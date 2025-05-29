@@ -56,6 +56,7 @@ wasmer = { workspace = true }
 tiny-keccak = { workspace = true }
 reqwest = { workspace = true }
 rocksdb = { workspace = true }
+multibase = { workspace = true }
 
 move-binary-format = { workspace = true }
 move-cli = { workspace = true }

@@ -52,7 +52,6 @@ impl SessionAuthenticator {
     }
 
     pub fn sign(kp: &RoochKeyPair, tx_data: &RoochTransactionData) -> Self {
-        assert_eq!(kp.public().scheme(), SignatureScheme::Ed25519);
         let data_hash = tx_data.tx_hash();
         let signature = kp.sign(data_hash.as_bytes());
         Self { signature }

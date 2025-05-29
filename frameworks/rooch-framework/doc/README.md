@@ -27,6 +27,7 @@ This is the reference documentation of the Rooch Framework.
 -  [`0x3::coin_migration`](coin_migration.md#0x3_coin_migration)
 -  [`0x3::coin_store`](coin_store.md#0x3_coin_store)
 -  [`0x3::core_addresses`](core_addresses.md#0x3_core_addresses)
+-  [`0x3::did`](did.md#0x3_did)
 -  [`0x3::ecdsa_k1`](ecdsa_k1.md#0x3_ecdsa_k1)
 -  [`0x3::ed25519`](ed25519.md#0x3_ed25519)
 -  [`0x3::empty`](empty.md#0x3_empty)

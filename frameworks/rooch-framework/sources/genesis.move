@@ -20,6 +20,7 @@ module rooch_framework::genesis {
     use rooch_framework::address_mapping;
     use rooch_framework::onchain_config;
     use rooch_framework::bitcoin_address::{Self, BitcoinAddress};
+    use rooch_framework::did;
 
     const ErrorGenesisInit: u64 = 1;
 
@@ -76,7 +77,9 @@ module rooch_framework::genesis {
         // give initial gas to the sequencer if it's not mainnet
         if(!chain_id::is_main()){
             gas_coin::faucet(sequencer_addr, GENESIS_INIT_GAS_AMOUNT);
-        }
+        };
+
+        did::genesis_init();
     }
 
     #[test_only]
