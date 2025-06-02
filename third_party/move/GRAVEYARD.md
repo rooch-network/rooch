@@ -30,10 +30,10 @@ Bring back support for native structs in the VM. They can use a simple uniform r
 ## Signer relaxation for `move_to`
 
 ### Decision
-Tables and framework-specific workarounds like `ResourceAccount` make this unneccessary.
+Tables and framework-specific workarounds like `ResourceAccount` make this unnecessary.
 
 ### Rationale
-In some usage scenarios of Move, it does not make sense to only allow move_to<R>(s, x) with s a signer. For instance, when Move is running on the EVM, storage is not owned and paid for by the account owner, but by the contract caller, which manages the accounts on behalf of owners. In general, the signer requirement allows one to only create new resources at addresses for which the transaction has a signer, which disables the capability to manage resource collections on behalf of others.
+In some usage scenarios of Move, it does not make sense to only allow move_to<R>(s, x) with s as a signer. For instance, when Move is running on the EVM, storage is not owned and paid for by the account owner, but by the contract caller, which manages the accounts on behalf of owners. In general, the signer requirement allows one to only create new resources at addresses for which the transaction has a signer, which disables the capability to manage resource collections on behalf of others.
 
 ## Design (Option A)
 Drop the requirement of passing a signer to move-to all together. For downwards compatibility reasons, the compiler allows passing either a signer or an address. Rationale for this quite radical step is that in-real world contracts (e.g. the Diem Payment Network) more complex access control patterns than enabled by signer/move_to are needed anyway. Moreover, since only modules which declare a resource R can call move_to<R>, preventing publishing without a signer can still be modeled by modular encapsulation.

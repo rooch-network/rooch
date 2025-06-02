@@ -257,7 +257,7 @@ module bitcoin_move::bitcoin{
     }
 
 
-    /// The the sequencer submit a new Bitcoin block to execute
+    /// The sequencer submit a new Bitcoin block to execute
     /// This function is a system function, is the execute_l1_block entry point
     fun execute_l1_block(block_height: u64, block_hash: address, block_bytes: vector<u8>){
         let btc_block_store_obj = borrow_block_store();

@@ -303,7 +303,7 @@ impl<'env, 'translator, 'module_translator> ExpTranslator<'env, 'translator, 'mo
         }
     }
 
-    /// Finalize the the given type, producing an error if it is not complete, or if
+    /// Finalize the given type, producing an error if it is not complete, or if
     /// invalid type instantiations are found.
     fn finalize_type(&mut self, node_id: NodeId, ty: &Type) -> Type {
         let ty = self.subs.specialize_with_defaults(ty);

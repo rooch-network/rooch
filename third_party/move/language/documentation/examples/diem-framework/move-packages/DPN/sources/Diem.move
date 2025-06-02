@@ -882,7 +882,7 @@ module DiemFramework::Diem {
     /// `PreburnQueue` resource under `preburn_address` that has a `to_burn`
     /// value of `amount` and updates the market cap accordingly.
     /// This function can only be called by the holder of a `BurnCapability<CoinType>`.
-    /// Calls to this function will fail if the there is no `PreburnQueue<CoinType>`
+    /// Calls to this function will fail if there is no `PreburnQueue<CoinType>`
     /// resource under `preburn_address`, or, if there is no preburn request in
     /// the preburn queue with a `to_burn` amount equal to `amount`.
     public(friend) fun burn_with_capability<CoinType>(
@@ -1723,7 +1723,7 @@ module DiemFramework::Diem {
             ==> spec_currency_info<CoinType>().preburn_value <= old(spec_currency_info<CoinType>().preburn_value);
     }
     spec schema PreburnValueNotDecrease<CoinType> {
-        /// The the preburn value of currency does not decrease.
+        /// The preburn value of currency does not decrease.
         ensures old(spec_is_currency<CoinType>())
             ==> spec_currency_info<CoinType>().preburn_value >= old(spec_currency_info<CoinType>().preburn_value);
     }
