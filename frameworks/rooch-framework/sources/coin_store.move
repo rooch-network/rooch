@@ -167,7 +167,7 @@ module rooch_framework::coin_store {
 
     // We do not allow to transfer a CoinStore to another account, this function will abort directly.
     // Because we need to ensure one Account only has one CoinStore for one CoinType
-    // If you want tranfer a CoinStore to another account, you can call `coin_store::remove(Object<CoinStore<CoinType>>)` and deposit the Coin<CoinType> to another account.
+    // If you want to transfer a CoinStore to another account, you can call `coin_store::remove(Object<CoinStore<CoinType>>)` and deposit the Coin<CoinType> to another account.
     public fun transfer<CoinType: key>(_coin_store_obj: Object<CoinStore<CoinType>>, _owner: address) {
         abort ErrorCoinStoreTransferNotSupported
     }

@@ -22,7 +22,7 @@ module test::m {
         object::transfer(obj2, moveos_std::tx_context::sender());
     }
 
-    public fun unpack_and_tranfer(){
+    public fun unpack_and_transfer(){
         let obj = object::take_object_extend<TestContainer>(object::named_object_id<TestContainer>());
         let TestContainer{inner_obj} = object::remove(obj);
         let inner_obj_id = object::id(&inner_obj);
@@ -38,6 +38,6 @@ script {
     use test::m;
 
     fun main() {
-        m::unpack_and_tranfer();
+        m::unpack_and_transfer();
     }
 }

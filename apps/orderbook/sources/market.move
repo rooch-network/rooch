@@ -1040,9 +1040,9 @@ module orderbook::market_v2 {
         list(&account_list, &mut market_obj, (10 * u64::pow(10, quote_decimal) as u256), (10 * UNIT_PRICE_SCALE as u64) / u64::pow(10, quote_decimal));
         buy(&account_buy, &mut market_obj, MIN_ASK_ORDER_ID, address_list, true, address_buy);
         to_shared(market_obj);
-        // list account will recieve 10 * 10 = 100 base coin
+        // list account will receive 10 * 10 = 100 base coin
         assert!(account_coin_store::balance<TestBaseCoin>(address_list) == 100, 0);
-        // buy account will recieve 10 quote coin
+        // buy account will receive 10 quote coin
         assert!(account_coin_store::balance<TestQuoteCoin>(address_buy) == 10, 1);
         // list account will pay 10 quote coin
         assert!(account_coin_store::balance<TestQuoteCoin>(address_list) == 990, 2);
@@ -1066,9 +1066,9 @@ module orderbook::market_v2 {
         list(&account_list, &mut market_obj, (10 * u64::pow(10, quote_decimal) as u256), ((UNIT_PRICE_SCALE as u64) / u64::pow(10, quote_decimal)) * (10 * u64::pow(10, base_decimal)));
         buy(&account_buy, &mut market_obj, MIN_ASK_ORDER_ID, address_list, true, address_buy);
         to_shared(market_obj);
-        // list account will recieve 10 * 10 = 100.0000000000 base coin
+        // list account will receive 10 * 10 = 100.0000000000 base coin
         assert!(account_coin_store::balance<TestBaseCoin>(address_list) == 100_00000000, 0);
-        // buy account will recieve 10 quote coin
+        // buy account will receive 10 quote coin
         assert!(account_coin_store::balance<TestQuoteCoin>(address_buy) == 10, 1);
         // list account will pay 10 quote coin
         assert!(account_coin_store::balance<TestQuoteCoin>(address_list) == 990, 2);
@@ -1093,9 +1093,9 @@ module orderbook::market_v2 {
         list(&account_list, &mut market_obj, (10 * u64::pow(10, quote_decimal) as u256), ((UNIT_PRICE_SCALE as u64) / u64::pow(10, quote_decimal) * 10 * u64::pow(10, base_decimal)));
         buy(&account_buy, &mut market_obj, MIN_ASK_ORDER_ID, address_list, true, address_buy);
         to_shared(market_obj);
-        // list account will recieve 10 * 10 = 100.0000000000 base coin
+        // list account will receive 10 * 10 = 100.0000000000 base coin
         assert!(account_coin_store::balance<TestBaseCoin>(address_list) == 100_0000000000, 0);
-        // buy account will recieve 10.000 quote coin
+        // buy account will receive 10.000 quote coin
         assert!(account_coin_store::balance<TestQuoteCoin>(address_buy) == 10000, 1);
         // list account will pay 10.000 quote coin
         assert!(account_coin_store::balance<TestQuoteCoin>(address_list) == 990_000, 2);
@@ -1122,9 +1122,9 @@ module orderbook::market_v2 {
         list(&account_list, &mut market_obj, (10 * u64::pow(10, quote_decimal) as u256), ((UNIT_PRICE_SCALE as u64) * 10 * u64::pow(10, base_decimal) / u64::pow(10, quote_decimal) ));
         buy(&account_buy, &mut market_obj, MIN_ASK_ORDER_ID, address_list, true, address_buy);
         to_shared(market_obj);
-        // list account will recieve 10 * 10 = 100.00000000 base coin
+        // list account will receive 10 * 10 = 100.00000000 base coin
         assert!(account_coin_store::balance<TestBaseCoin>(address_list) == 100_00000000, 0);
-        // buy account will recieve 10.0000000000 quote coin
+        // buy account will receive 10.0000000000 quote coin
         assert!(account_coin_store::balance<TestQuoteCoin>(address_buy) == 10_0000000000, 1);
         // list account will pay 10.0000000000 quote coin
         assert!(account_coin_store::balance<TestQuoteCoin>(address_list) == 990_0000000000, 2);
@@ -1148,9 +1148,9 @@ module orderbook::market_v2 {
         list(&account_list, &mut market_obj, (10 * u64::pow(10, quote_decimal) as u256), ((UNIT_PRICE_SCALE as u64) * 10 * u64::pow(10, base_decimal) / u64::pow(10, quote_decimal) ));
         buy_from_origin(&account_buy, &mut market_obj, MIN_ASK_ORDER_ID,
             (5 * u64::pow(10, quote_decimal) as u256), address_list, true, address_buy);
-        // list account will recieve 10 * 5 = 50.00000000 base coin
+        // list account will receive 10 * 5 = 50.00000000 base coin
         assert!(account_coin_store::balance<TestBaseCoin>(address_list) == 50_00000000, 0);
-        // buy account will recieve 5.0000000000 quote coin
+        // buy account will receive 5.0000000000 quote coin
         assert!(account_coin_store::balance<TestQuoteCoin>(address_buy) == 5_0000000000, 1);
         // list account will pay 10.0000000000 quote coin
         assert!(account_coin_store::balance<TestQuoteCoin>(address_list) == 990_0000000000, 2);
@@ -1177,9 +1177,9 @@ module orderbook::market_v2 {
         create_bid(&account_create_bid, &mut market_obj,((UNIT_PRICE_SCALE as u64) * 10 * u64::pow(10, base_decimal) / u64::pow(10, quote_decimal) ), (10 * u64::pow(10, quote_decimal) as u256), );
         accept_bid_from_origin(&account_accept_bid, &mut market_obj, MIN_BID_ORDER_ID,
             (5 * u64::pow(10, quote_decimal) as u256), address_create_bid, true, address_accept_bid);
-        // accept bid account will recieve 10 * 5 = 50.00000000 base coin
+        // accept bid account will receive 10 * 5 = 50.00000000 base coin
         assert!(account_coin_store::balance<TestBaseCoin>(address_accept_bid) == 50_00000000, 0);
-        // create bid account will recieve 5.0000000000 quote coin
+        // create bid account will receive 5.0000000000 quote coin
         assert!(account_coin_store::balance<TestQuoteCoin>(address_create_bid) == 5_0000000000, 1);
         // accept bid account will pay 5.0000000000 quote coin
         assert!(account_coin_store::balance<TestQuoteCoin>(address_accept_bid) == 995_0000000000, 2);
