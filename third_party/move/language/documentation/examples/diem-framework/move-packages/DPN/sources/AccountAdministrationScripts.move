@@ -647,7 +647,7 @@ module DiemFramework::AccountAdministrationScripts {
     /// | Name        | Type     | Description                                           |
     /// | ------      | ------   | -------------                                         |
     /// | `account`   | `signer` | The signer of the sending account of the transaction. |
-    /// | `crsn_size` | `u64`    | The number of slots the published CRSN will have.     |
+    /// | `crsn_size` | `u64`    | The the number of slots the published CRSN will have. |
     ///
     /// # Common Abort Conditions
     /// | Error Category             | Error Reason            | Description                                                    |
