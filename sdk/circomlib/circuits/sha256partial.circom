@@ -5,6 +5,8 @@ include "circomlib/circuits/sha256/sha256compression.circom";
 include "circomlib/circuits/comparators.circom";
 include "./utils.circom";
 
+include "circomlib/circuits/bitify.circom"; // needed for Num2Bits
+
 // Completing the sha256 hash given a pre-computed state and additional data
 template Sha256Partial(maxBitsPadded) {
     // maxBitsPadded must be a multiple of 512, and the bit circuits in this file are limited to 15 so must be raised if the message is longer.
@@ -31,6 +33,11 @@ template Sha256Partial(maxBitsPadded) {
 
     inBlockIndex <-- (in_len_padded_bits >> 9);
     in_len_padded_bits === inBlockIndex * 512;
+
+    // range check for LessEqThan and QuinSelector:
+    // constraining in_len_padded_bits to be less than 2^maxBitsPaddedBits
+    component lenBits = Num2Bits(maxBitsPaddedBits);
+    lenBits.in <== in_len_padded_bits;
 
     // These verify we pass in a valid number of bits to the SHA256 compression circuit.
     component bitLengthVerifier = LessEqThan(maxBitsPaddedBits); // todo verify the length passed in is less than nbits. note that maxBitsPaddedBits can likely be lowered or made it a fn of maxbits
