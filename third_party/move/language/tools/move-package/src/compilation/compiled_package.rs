@@ -696,7 +696,7 @@ impl CompiledPackage {
         let errs = insensitive_mapping
             .into_iter()
             .filter_map(|(insensitive_name, occurence_infos)| {
-                if occurrence_infos.len() > 1 {
+                if occurence_infos.len() > 1 {
                     let name_conflict_error_msg = occurence_infos
                         .into_iter()
                         .map(|(name, is_module, fpath)| {
