@@ -20,7 +20,7 @@ export class UniSatWallet extends BitcoinWallet {
   }
 
   getInstallUrl(): string {
-    return ''
+    return 'https://chrome.google.com/webstore/detail/unisat/ppbibelpcjmhbdihakflkdcoccbgbkpo'
   }
 
   getTarget(): any {
