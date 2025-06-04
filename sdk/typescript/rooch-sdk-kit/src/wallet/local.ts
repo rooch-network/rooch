@@ -9,7 +9,7 @@ import {
   ThirdPartyAddress,
   Transaction,
 } from '@roochnetwork/rooch-sdk'
-import { BitcoinWallet } from '../wellet/index.js'
+import { BitcoinWallet } from '../wallet/index.js'
 import { WalletNetworkType } from './types.js'
 
 export const LocalKey = 'local-wallet-key'
