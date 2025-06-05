@@ -26,17 +26,13 @@ jobs:
             target: aarch64-apple-darwin
             binary_names: ['rooch']
             artifact_names: ['rooch-macos-arm64']
-          - os: windows-latest
-            target: x86_64-pc-windows-msvc
-            binary_names: ['rooch.exe']
-            artifact_names: ['rooch-windows-x64']
 
     runs-on: ${{ matrix.os }}
 
     steps:
     - uses: actions/checkout@v4
       with:
-        submodules: 'recursive'  # Add this to fetch submodules
+        submodules: 'recursive'
         
     - name: Cache Rust dependencies
       uses: actions/cache@v3
@@ -70,53 +66,6 @@ jobs:
         brew install protobuf
         which protoc
         protoc --version
-        
-    - name: Install Windows dependencies
-      if: matrix.os == 'windows-latest'
-      shell: powershell
-      run: |
-        # Install Scoop package manager
-        Invoke-Expression (New-Object System.Net.WebClient).DownloadString('https://get.scoop.sh')
-        
-        # Add necessary buckets
-        scoop bucket add main
-        scoop bucket add extras
-        
-        # Install LLVM, MinGW, Protobuf, and CMake using Scoop
-        scoop install llvm
-        scoop install mingw
-        scoop install protobuf
-        scoop install cmake
-        
-        # Add protoc to path for the current session and make it available for subsequent steps
-        $env:PATH += ";$env:USERPROFILE\scoop\apps\protobuf\current\bin"
-        echo "PATH=$env:PATH" >> $env:GITHUB_ENV
-        
-        # Explicitly set PROTOC environment variable
-        $protocPath = "$env:USERPROFILE\scoop\apps\protobuf\current\bin\protoc.exe"
-        echo "PROTOC=$protocPath" >> $env:GITHUB_ENV
-        
-        # Install OpenSSL
-        scoop install openssl
-        
-        # Set environment variables for OpenSSL
-        $opensslPath = "$env:USERPROFILE\scoop\apps\openssl\current"
-        echo "OPENSSL_DIR=$opensslPath" >> $env:GITHUB_ENV
-        echo "OPENSSL_LIB_DIR=$opensslPath\lib" >> $env:GITHUB_ENV
-        echo "OPENSSL_INCLUDE_DIR=$opensslPath\include" >> $env:GITHUB_ENV
-
-        # Append required Windows libraries to RUSTFLAGS
-        # Adding all necessary libraries for libgit2 to resolve missing symbols
-        $extraFlags = "-C link-arg=advapi32.lib -C link-arg=userenv.lib -C link-arg=crypt32.lib -C link-arg=secur32.lib -C link-arg=ole32.lib -C link-arg=rpcrt4.lib"
-        if ($env:RUSTFLAGS) {
-          echo "RUSTFLAGS=$env:RUSTFLAGS $extraFlags" >> $env:GITHUB_ENV
-        } else {
-          echo "RUSTFLAGS=$extraFlags" >> $env:GITHUB_ENV
-        }
-
-        # Verify protoc is available
-        Get-Command protoc
-        protoc --version
 
     - name: Install Rust toolchain
       uses: actions-rs/toolchain@v1
@@ -129,73 +78,29 @@ jobs:
       shell: bash
       run: |
         if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
-          # Prevent using lld on Ubuntu if not properly configured
           echo "RUSTFLAGS=-C link-arg=-fuse-ld=gold" >> $GITHUB_ENV
         fi
 
     - name: Set Protoc Environment Variables
       run: |
-        if [ "${{ matrix.os }}" = "macos-latest" ]; then
-          echo "PROTOC=$(which protoc)" >> $GITHUB_ENV
-        elif [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
-          echo "PROTOC=$(which protoc)" >> $GITHUB_ENV
-        fi
+        echo "PROTOC=$(which protoc)" >> $GITHUB_ENV
       shell: bash
-      if: matrix.os != 'windows-latest'
       
-    - name: Set Protoc Environment Variables (Windows)
-      if: matrix.os == 'windows-latest'
-      shell: powershell
-      run: |
-        # Verify protoc path is correctly set
-        if (Test-Path $env:PROTOC) {
-          echo "PROTOC environment variable is correctly set to: $env:PROTOC"
-        } else {
-          echo "PROTOC environment variable is set but file not found at: $env:PROTOC"
-          echo "Looking for protoc in PATH..."
-          $protocInPath = Get-Command protoc -ErrorAction SilentlyContinue
-          if ($protocInPath) {
-            echo "Found protoc at: $($protocInPath.Source)"
-            echo "PROTOC=$($protocInPath.Source)" >> $env:GITHUB_ENV
-          } else {
-            echo "protoc not found in PATH, trying to locate it manually..."
-            $possiblePath = "$env:USERPROFILE\scoop\apps\protobuf\current\bin\protoc.exe"
-            if (Test-Path $possiblePath) {
-              echo "Found protoc at: $possiblePath"
-              echo "PROTOC=$possiblePath" >> $env:GITHUB_ENV
-            } else {
-              echo "Could not locate protoc, build may fail."
-            }
-          }
-        }
-        
-        # Display the full PATH for debugging
-        echo "Current PATH: $env:PATH"
-
     - name: Build
       run: cargo build --release --target ${{ matrix.target }} --verbose
       env:
-        OPENSSL_DIR: ${{ matrix.os == 'macos-latest' && '/usr/local/opt/openssl@3' || (matrix.os == 'ubuntu-latest' && '/usr' || '') }}
-        OPENSSL_LIB_DIR: ${{ matrix.os == 'macos-latest' && '/usr/local/opt/openssl@3/lib' || (matrix.os == 'ubuntu-latest' && '/usr/lib/x86_64-linux-gnu' || '') }}
-        OPENSSL_INCLUDE_DIR: ${{ matrix.os == 'macos-latest' && '/usr/local/opt/openssl@3/include' || (matrix.os == 'ubuntu-latest' && '/usr/include' || '') }}
-        RUSTFLAGS: ${{ env.RUSTFLAGS }}
-        LIBGIT2_SYS_USE_PKG_CONFIG: ${{ matrix.os != 'windows-latest' && '1' || '0' }}
+        OPENSSL_DIR: ${{ matrix.os == 'macos-latest' && '/usr/local/opt/openssl@3' || '/usr' }}
+        OPENSSL_LIB_DIR: ${{ matrix.os == 'macos-latest' && '/usr/local/opt/openssl@3/lib' || '/usr/lib/x86_64-linux-gnu' }}
+        OPENSSL_INCLUDE_DIR: ${{ matrix.os == 'macos-latest' && '/usr/local/opt/openssl@3/include' || '/usr/include' }}
+        LIBGIT2_SYS_USE_PKG_CONFIG: 1
 
     - name: Debug binary location
       run: ls -la target/${{ matrix.target }}/release/
 
-    - name: Compress artifacts (Unix)
-      if: matrix.os != 'windows-latest'
+    - name: Compress artifacts
       run: |
         cd target/${{ matrix.target }}/release
         tar -czf ${{ matrix.artifact_names[0] }}.tar.gz ${{ matrix.binary_names[0] }}
-        
-    - name: Compress artifacts (Windows)
-      if: matrix.os == 'windows-latest'
-      shell: powershell
-      run: |
-        cd target\${{ matrix.target }}\release
-        Compress-Archive -Path ${{ matrix.binary_names[0] }} -DestinationPath "${{ matrix.artifact_names[0] }}.zip"
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
@@ -222,6 +127,5 @@ jobs:
           files: |
             artifacts/rooch-linux-x64.tar.gz
             artifacts/rooch-macos-arm64.tar.gz
-            artifacts/rooch-windows-x64.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

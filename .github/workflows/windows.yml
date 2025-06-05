@@ -1,0 +1,122 @@
+name: Windows Build and Release
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+  LIBGIT2_SYS_USE_PKG_CONFIG: 0
+  LIBGIT2_SYS_USE_VCPKG: 0
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Windows Build
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+        fetch-depth: 0
+
+    - name: Install Rust toolchain
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        components: rustfmt, clippy
+        target: x86_64-pc-windows-msvc
+
+    - name: Cache Cargo dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/bin/
+          ~/.cargo/registry/index/
+          ~/.cargo/registry/cache/
+          ~/.cargo/git/db/
+          target/
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-
+
+    - name: Install system dependencies
+      shell: powershell
+      run: |
+        # Install Scoop package manager
+        Set-ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
+        Invoke-Expression (New-Object System.Net.WebClient).DownloadString('https://get.scoop.sh')
+        
+        # Add Scoop to PATH for current session
+        $env:PATH += ";$env:USERPROFILE\scoop\shims"
+        
+        scoop bucket add main
+        scoop bucket add extras
+        
+        # Install LLVM, MinGW, Protobuf, and CMake using Scoop
+        scoop install llvm
+        scoop install mingw
+        scoop install protobuf
+        scoop install cmake
+        
+        # Update PATH for subsequent steps
+        echo "$env:USERPROFILE\scoop\shims" >> $env:GITHUB_PATH
+        echo "$env:USERPROFILE\scoop\apps\protobuf\current\bin" >> $env:GITHUB_PATH
+        echo "$env:USERPROFILE\scoop\apps\llvm\current\bin" >> $env:GITHUB_PATH
+        echo "$env:USERPROFILE\scoop\apps\mingw\current\bin" >> $env:GITHUB_PATH
+        echo "$env:USERPROFILE\scoop\apps\cmake\current\bin" >> $env:GITHUB_PATH
+
+    - name: Verify installations
+      run: |
+        protoc --version
+        cmake --version
+        clang --version
+
+    - name: Build rooch binary
+      run: cargo build --release --bin rooch
+      env:
+        RUSTFLAGS: -C link-arg=advapi32.lib -C link-arg=secur32.lib -C link-arg=userenv.lib
+        SKIP_STDLIB_BUILD: "1"
+
+    - name: Create release archive
+      run: |
+        $archive_name = "rooch-windows-x64.zip"
+        Compress-Archive -Path target/release/rooch.exe -DestinationPath $archive_name
+        echo "ARCHIVE_NAME=$archive_name" >> $env:GITHUB_ENV
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: rooch-windows-x64
+        path: ${{ env.ARCHIVE_NAME }}
+        retention-days: 30
+
+  release:
+    name: Create Release
+    needs: build
+    runs-on: windows-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    
+    steps:
+    - name: Download artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: rooch-windows-x64
+        path: ./artifacts
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: ./artifacts/rooch-windows-x64.zip
+        draft: false
+        prerelease: false
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
