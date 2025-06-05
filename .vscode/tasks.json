@@ -1,0 +1,165 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Make: Build All (Rust Release + Move)",
+            "type": "shell",
+            "command": "make",
+            "args": ["build"],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": true
+            },
+            "problemMatcher": [],
+            "detail": "Runs 'make build' - Builds all Rust (release profile) and Move components."
+        },
+        {
+            "label": "Make: Test All (Rust + Move)",
+            "type": "shell",
+            "command": "make",
+            "args": ["test"],
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": true
+            },
+            "problemMatcher": [],
+            "detail": "Runs 'make test' - Runs all Rust and Move tests."
+        },
+        {
+            "label": "Make: Lint All",
+            "type": "shell",
+            "command": "make",
+            "args": ["lint"],
+            "group": "none",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": true
+            },
+            "problemMatcher": [],
+            "detail": "Runs 'make lint' - Runs all linters (Rust and Move)."
+        },
+        {
+            "label": "Make: Quick Check (Rust Debug + Move Framework)",
+            "type": "shell",
+            "command": "make",
+            "args": ["quick-check"],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": true
+            },
+            "problemMatcher": [],
+            "detail": "Runs 'make quick-check' - Quick compilation for Rust (debug) and rooch-framework (Move)."
+        },
+        {
+            "label": "Make: Clean All",
+            "type": "shell",
+            "command": "make",
+            "args": ["clean-all"],
+            "group": "none",
+            "presentation": {
+                "echo": true,
+                "reveal": "silent",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "problemMatcher": [],
+            "detail": "Runs 'make clean-all' - Cleans all Rust and Move build artifacts."
+        },
+        {
+            "label": "Make: Build Move (Core Frameworks)",
+            "type": "shell",
+            "command": "make",
+            "args": ["build-move"],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": true
+            },
+            "problemMatcher": [],
+            "detail": "Runs 'make build-move' - Builds all core Move frameworks."
+        },
+        {
+            "label": "Make: Test Move (Frameworks & Examples)",
+            "type": "shell",
+            "command": "make",
+            "args": ["test-move"],
+            "group": "test",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": true
+            },
+            "problemMatcher": [],
+            "detail": "Runs 'make test-move' - Runs all Move framework and example tests."
+        },
+        {
+            "label": "Make: Test Move DID",
+            "type": "shell",
+            "command": "make",
+            "args": ["test-move-did"],
+            "group": "test",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": true
+            },
+            "problemMatcher": [],
+            "detail": "Runs 'make test-move-did' - Runs Move DID module tests."
+        },
+        {
+            "label": "Make: Test Move Examples",
+            "type": "shell",
+            "command": "make",
+            "args": ["test-move-examples"],
+            "group": "test",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": true
+            },
+            "problemMatcher": [],
+            "detail": "Runs 'make test-move-examples' - Builds and runs all Move example tests."
+        }
+    ],
+    "inputs": []
+} 

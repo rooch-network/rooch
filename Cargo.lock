@@ -4158,9 +4158,9 @@ dependencies = [
 
 [[package]]
 name = "ethnum"
-version = "1.5.1"
+version = "1.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0939f82868b77ef93ce3c3c3daf2b3c526b456741da5a1a4559e590965b6026b"
+checksum = "ca81e6b4777c89fd810c25a4be2b1bd93ea034fbe58e6a75216a34c6b82c539b"
 
 [[package]]
 name = "event-listener"
@@ -10329,6 +10329,7 @@ dependencies = [
  "moveos-store",
  "moveos-types",
  "moveos-verifier",
+ "multibase",
  "once_cell",
  "parking_lot 0.12.3",
  "rand 0.8.5",
@@ -11145,6 +11146,7 @@ dependencies = [
  "move-resource-viewer",
  "move-vm-types",
  "moveos-types",
+ "multibase",
  "once_cell",
  "proptest",
  "proptest-derive",
@@ -13198,9 +13200,9 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 
 [[package]]
 name = "tokio"
-version = "1.45.0"
+version = "1.45.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2513ca694ef9ede0fb23fe71a4ee4107cb102b9dc1930f6d0fd77aae068ae165"
+checksum = "75ef51a33ef1da925cea3e4eb122833cb377c61439ca401b770f54902b806779"
 dependencies = [
  "backtrace",
  "bytes",

@@ -1,0 +1,3 @@
+[submodule "deps/nips"]
+	path = deps/nips
+	url = git@github.com:nuwa-protocol/NIPs.git

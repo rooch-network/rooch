@@ -7,8 +7,8 @@ module rooch_framework::session_validator {
     use std::vector;
     use std::option;
     use moveos_std::tx_context;
-    use moveos_std::hash;
     use rooch_framework::ed25519;
+    use rooch_framework::ecdsa_k1;
     use rooch_framework::auth_validator;
     use rooch_framework::session_key;
 
@@ -16,8 +16,6 @@ module rooch_framework::session_validator {
 
     /// there defines auth validator id for each auth validator
     const SESSION_VALIDATOR_ID: u64 = 0;
-
-    const SIGNATURE_SCHEME_ED25519: u8 = 0;
 
 
     struct SessionValidator has store, drop {}
@@ -27,50 +25,88 @@ module rooch_framework::session_validator {
     }
 
     /// Validate the authenticator payload, return public key and signature
+    /// Now supports both Ed25519 and Secp256k1 schemes
     fun validate_authenticator_payload(authenticator_payload: &vector<u8>): (vector<u8>, vector<u8>) {
         let scheme = vector::borrow(authenticator_payload, 0);
-        assert!(*scheme == SIGNATURE_SCHEME_ED25519, auth_validator::error_validate_invalid_authenticator());
+        
+        if (*scheme == session_key::signature_scheme_ed25519()) {
+            // Ed25519 scheme
+            let sign = vector::empty<u8>();
+            let i = 1;
+            let signature_position = ed25519::signature_length() + 1;
+            while (i < signature_position) {
+                let value = vector::borrow(authenticator_payload, i);
+                vector::push_back(&mut sign, *value);
+                i = i + 1;
+            };
 
-        let sign = vector::empty<u8>();
-        let i = 1;
-        let signature_position = ed25519::signature_length() + 1;
-        while (i < signature_position) {
-            let value = vector::borrow(authenticator_payload, i);
-            vector::push_back(&mut sign, *value);
-            i = i + 1;
-        };
+            let public_key = vector::empty<u8>();
+            let i = 1 + ed25519::signature_length();
+            let public_key_position = 1 + ed25519::signature_length() + ed25519::public_key_length();
+            while (i < public_key_position) {
+                let value = vector::borrow(authenticator_payload, i);
+                vector::push_back(&mut public_key, *value);
+                i = i + 1;
+            };
+            (sign, public_key)
+        } else if (*scheme == session_key::signature_scheme_secp256k1()) {
+            // Secp256k1 scheme  
+            let sign = vector::empty<u8>();
+            let i = 1;
+            let signature_position = 64 + 1; // Secp256k1 signature is 64 bytes (r + s)
+            while (i < signature_position) {
+                let value = vector::borrow(authenticator_payload, i);
+                vector::push_back(&mut sign, *value);
+                i = i + 1;
+            };
 
-        let public_key = vector::empty<u8>();
-        let i = 1 + ed25519::signature_length();
-        let public_key_position = 1 + ed25519::signature_length() + ed25519::public_key_length();
-        while (i < public_key_position) {
-            let value = vector::borrow(authenticator_payload, i);
-            vector::push_back(&mut public_key, *value);
-            i = i + 1;
-        };
-        (sign, public_key)
+            let public_key = vector::empty<u8>();
+            let i = 1 + 64; // Skip scheme + signature
+            let public_key_position = 1 + 64 + ecdsa_k1::public_key_length(); // 33 bytes for compressed Secp256k1
+            while (i < public_key_position) {
+                let value = vector::borrow(authenticator_payload, i);
+                vector::push_back(&mut public_key, *value);
+                i = i + 1;
+            };
+            (sign, public_key)
+        } else {
+            // Unsupported scheme
+            abort auth_validator::error_validate_invalid_authenticator()
+        }
     }
-
-    /// Get the authentication key of the given public key.
-    fun public_key_to_authentication_key(signature_scheme: u8, public_key: vector<u8>): vector<u8> {
-        let bytes = vector::singleton(signature_scheme);
-        vector::append(&mut bytes, public_key);
-        hash::blake2b256(&bytes)
-    }
-
 
     // validate the signature of the authenticator payload and return auth key
     fun validate_signature(authenticator_payload: &vector<u8>, tx_hash: &vector<u8>) : vector<u8> {
+        let scheme = vector::borrow(authenticator_payload, 0);
         let (signature, public_key) = validate_authenticator_payload(authenticator_payload);
-        assert!(
-            ed25519::verify(
-                &signature,
-                &public_key,
-                tx_hash
-            ),
-            auth_validator::error_validate_invalid_authenticator()
-        );
-        public_key_to_authentication_key(SIGNATURE_SCHEME_ED25519, public_key)
+        
+        if (*scheme == session_key::signature_scheme_ed25519()) {
+            // Ed25519 verification
+            assert!(
+                ed25519::verify(
+                    &signature,
+                    &public_key,
+                    tx_hash
+                ),
+                auth_validator::error_validate_invalid_authenticator()
+            );
+            session_key::ed25519_public_key_to_authentication_key(&public_key)
+        } else if (*scheme == session_key::signature_scheme_secp256k1()) {
+            // Secp256k1 verification
+            assert!(
+                ecdsa_k1::verify(
+                    &signature,
+                    &public_key,
+                    tx_hash,
+                    ecdsa_k1::sha256()
+                ),
+                auth_validator::error_validate_invalid_authenticator()
+            );
+            session_key::secp256k1_public_key_to_authentication_key(&public_key)
+        } else {
+            // This should not happen as validate_authenticator_payload already checks
+            abort auth_validator::error_validate_invalid_authenticator()
+        }
     }
 
     public(friend) fun validate(authenticator_payload: vector<u8>) :vector<u8> {

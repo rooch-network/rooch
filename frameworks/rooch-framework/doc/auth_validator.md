@@ -35,6 +35,7 @@ public fun validate(authenticator_payload: vector<u8>)
 -  [Function `is_validate_via_session_key`](#0x3_auth_validator_is_validate_via_session_key)
 -  [Function `get_session_key_from_ctx`](#0x3_auth_validator_get_session_key_from_ctx)
 -  [Function `get_bitcoin_address_from_ctx`](#0x3_auth_validator_get_bitcoin_address_from_ctx)
+-  [Function `get_bitcoin_address_from_ctx_option`](#0x3_auth_validator_get_bitcoin_address_from_ctx_option)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
@@ -440,7 +441,7 @@ Get the session key from the TxValidateResult in the TxContext
 If the TxValidateResult is None or SessionKey is None, return None
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_get_session_key_from_ctx_option">get_session_key_from_ctx_option</a>(): <a href="_Option">option::Option</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_get_session_key_from_ctx_option">get_session_key_from_ctx_option</a>(): <a href="_Option">option::Option</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;
 </code></pre>
 
 
@@ -452,7 +453,7 @@ If the TxValidateResult is None or SessionKey is None, return None
 The current tx is validate via the session key or not
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_is_validate_via_session_key">is_validate_via_session_key</a>(): bool
+<pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_is_validate_via_session_key">is_validate_via_session_key</a>(): bool
 </code></pre>
 
 
@@ -477,4 +478,15 @@ Only can be called after the transaction is validated
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_get_bitcoin_address_from_ctx">get_bitcoin_address_from_ctx</a>(): <a href="bitcoin_address.md#0x3_bitcoin_address_BitcoinAddress">bitcoin_address::BitcoinAddress</a>
+</code></pre>
+
+
+
+<a name="0x3_auth_validator_get_bitcoin_address_from_ctx_option"></a>
+
+## Function `get_bitcoin_address_from_ctx_option`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_get_bitcoin_address_from_ctx_option">get_bitcoin_address_from_ctx_option</a>(): <a href="_Option">option::Option</a>&lt;<a href="bitcoin_address.md#0x3_bitcoin_address_BitcoinAddress">bitcoin_address::BitcoinAddress</a>&gt;
 </code></pre>

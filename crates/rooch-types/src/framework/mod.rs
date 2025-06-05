@@ -16,6 +16,7 @@ pub mod bitcoin_validator;
 pub mod chain_id;
 pub mod coin;
 pub mod coin_store;
+pub mod did;
 pub mod empty;
 pub mod ethereum;
 pub mod ethereum_address;

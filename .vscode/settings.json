@@ -1,0 +1,48 @@
+{
+    // Move language support
+    "move.compiler.path": "rooch",
+    "move.compiler.arguments": ["move", "build"],
+    
+    // File associations
+    "files.associations": {
+        "*.move": "move"
+    },
+    
+    // Editor settings for Move files
+    "[move]": {
+        "editor.tabSize": 4,
+        "editor.insertSpaces": true,
+        "editor.formatOnSave": true,
+        "editor.rulers": [100],
+        "files.encoding": "ascii"
+    },
+    
+    // Exclude patterns for better performance
+    "files.exclude": {
+        "**/build/": true,
+        "**/target/": true,
+        "**/.git": true
+    },
+    
+    // Search settings
+    "search.exclude": {
+        "**/build/": true,
+        "**/target/": true
+    },
+    
+    // Terminal settings
+    "terminal.integrated.defaultProfile.osx": "zsh",
+    "terminal.integrated.cwd": "${workspaceFolder}",
+    
+    // Cursor AI specific settings
+    "cursor.ai.codeReview.enabled": true,
+    "cursor.ai.autoComplete.enabled": true,
+    
+    // Custom snippets for common patterns
+    "editor.quickSuggestions": {
+        "other": true,
+        "comments": false,
+        "strings": true
+    },
+    "makefile.configureOnOpen": false
+} 

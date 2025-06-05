@@ -7,6 +7,7 @@ pub mod bitcoin;
 pub mod bitseed;
 pub mod da;
 pub mod db;
+pub mod did;
 pub mod dynamic_field;
 pub mod env;
 pub mod event;
