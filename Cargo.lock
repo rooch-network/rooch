@@ -13071,7 +13071,7 @@ dependencies = [
 [[package]]
 name = "tikv-jemalloc-sys"
 version = "0.6.0+5.3.0-1-ge13ca993e8ccb9ba9847cc330696e02839f328f7"
-source = "git+https://github.com/jamesatomc/jemallocator.git#49db433eb9620bdad0bc88a35bf7af28c1cabcf4"
+source = "git+https://github.com/jamesatomc/jemallocator.git?rev=49db433eb9620bdad0bc88a35bf7af28c1cabcf4#49db433eb9620bdad0bc88a35bf7af28c1cabcf4"
 dependencies = [
  "cc",
  "libc",
@@ -13081,7 +13081,7 @@ dependencies = [
 [[package]]
 name = "tikv-jemallocator"
 version = "0.6.0"
-source = "git+https://github.com/jamesatomc/jemallocator.git#49db433eb9620bdad0bc88a35bf7af28c1cabcf4"
+source = "git+https://github.com/jamesatomc/jemallocator.git?rev=49db433eb9620bdad0bc88a35bf7af28c1cabcf4#49db433eb9620bdad0bc88a35bf7af28c1cabcf4"
 dependencies = [
  "libc",
  "tikv-jemalloc-sys",
