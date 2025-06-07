@@ -15,7 +15,7 @@ import {
 } from '@roochnetwork/rooch-sdk'
 
 import { SupportChain } from '../feature/index.js'
-import { Wallet } from '../wellet/index.js'
+import { Wallet } from '../wallet/index.js'
 
 export abstract class BitcoinWallet extends Wallet {
   async signTransaction(input: Transaction): Promise<Authenticator> {
