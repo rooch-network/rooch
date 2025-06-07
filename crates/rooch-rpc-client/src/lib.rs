@@ -46,7 +46,7 @@ impl ClientBuilder {
     }
 
     pub async fn build(self, http: impl AsRef<str>) -> Result<Client> {
-        // TODO: add verison info
+        // TODO: add version info
 
         let http_client = Arc::new(
             HttpClientBuilder::default()
