@@ -3,7 +3,7 @@
 
 import { BitcoinAddress, Bytes, ThirdPartyAddress, str, bytes } from '@roochnetwork/rooch-sdk'
 
-import { BitcoinWallet } from '../wellet/index.js'
+import { BitcoinWallet } from '../wallet/index.js'
 import { All_NETWORK, WalletNetworkType } from './types.js'
 
 export class UniSatWallet extends BitcoinWallet {
@@ -20,7 +20,7 @@ export class UniSatWallet extends BitcoinWallet {
   }
 
   getInstallUrl(): string {
-    return ''
+    return 'https://chrome.google.com/webstore/detail/unisat/ppbibelpcjmhbdihakflkdcoccbgbkpo'
   }
 
   getTarget(): any {

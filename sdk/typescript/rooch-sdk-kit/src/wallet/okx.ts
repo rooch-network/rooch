@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { BitcoinAddress, Bytes, ThirdPartyAddress, str, bytes } from '@roochnetwork/rooch-sdk'
-import { BitcoinWallet } from '../wellet/index.js'
+import { BitcoinWallet } from '../wallet/index.js'
 import { WalletNetworkType } from './types.js'
 
 export class OkxWallet extends BitcoinWallet {
