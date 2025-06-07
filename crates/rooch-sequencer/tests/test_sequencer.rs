@@ -68,7 +68,7 @@ async fn test_sequencer() -> Result<()> {
     }
     // load from db again
     {
-        // To aviod AlreadyReg for re init the same db
+        // To avoid AlreadyReg for re init the same db
         let new_registry = prometheus::Registry::new();
         let rooch_db = RoochDB::init(opt.store_config(), &new_registry)?;
         let sequencer_key = RoochKeyPair::generate_secp256k1();
