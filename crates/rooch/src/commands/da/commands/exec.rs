@@ -56,7 +56,7 @@ use tokio::sync::mpsc::Sender;
 use tokio::sync::watch;
 use tokio::time;
 use tokio::time::sleep;
-use tracing::{info, warn};
+use tracing::{info, warn, error};
 
 /// exec LedgerTransaction List for verification.
 #[derive(Debug, Parser)]
