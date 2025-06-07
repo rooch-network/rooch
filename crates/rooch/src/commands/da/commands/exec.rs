@@ -226,9 +226,14 @@ impl ExecCommand {
             
             #[cfg(not(unix))]
             {
-                if let Ok(()) = ctrl_c().await {
-                    info!("Ctrl+C received, shutting down...");
-                    let _ = shutdown_tx_clone.send(());
+                match ctrl_c().await {
+                    Ok(()) => {
+                        info!("Ctrl+C received, shutting down...");
+                        let _ = shutdown_tx_clone.send(());
+                    }
+                    Err(e) => {
+                        error!("Failed to listen for Ctrl+C: {}", e);
+                    }
                 }
             }
         });
