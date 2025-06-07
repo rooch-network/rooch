@@ -10,6 +10,7 @@
 [![Check-Build-Test](https://github.com/rooch-network/rooch/actions/workflows/check_build_test.yml/badge.svg)](https://github.com/rooch-network/rooch/actions/workflows/check_build_test.yml)
 [![Release](https://img.shields.io/github/v/release/rooch-network/rooch)](https://github.com/rooch-network/rooch/releases)
 [![License](https://img.shields.io/badge/license-Apache-green.svg)](LICENSE)
+[![Twitter](https://img.shields.io/twitter/follow/RoochNetwork)](https://x.com/RoochNetwork)
 <!-- [![LoC](https://tokei.rs/b1/github/rooch-network/rooch?category=lines)](https://github.com/rooch-network/rooch) -->
 
 **[VApp](https://rooch.network/learn/core-concepts/vapp)** stands for Verifiable Application. A Verifiable Application aims to ensure the verifiability of both computations and states within the application, thereby guaranteeing the transparency and reliability of its operations.
