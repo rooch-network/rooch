@@ -29,8 +29,9 @@ jobs:
         fetch-depth: 0
 
     - name: Install Rust toolchain
-      uses: dtolnay/rust-toolchain@stable
+      uses: actions-rs/toolchain@v1
       with:
+        toolchain: stable
         components: rustfmt, clippy
         target: x86_64-pc-windows-msvc
 
