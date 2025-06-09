@@ -4,7 +4,7 @@ Feature: Rooch CLI integration tests
     Scenario: rooch rpc test
       Given a server for rooch_rpc_test
       Then cmd: "rpc request --method rooch_getStates --params '["/resource/0x3/0x3::account_coin_store::AutoAcceptCoins", {"decode":true}]' --json"
-      #The object_type contians blank space, so, we should quote it
+      #The object_type contains blank space, so, we should quote it
       Then assert: "'{{$.rpc[-1][0].object_type}}' == '0x2::object::DynamicField<0x1::string::String, 0x3::account_coin_store::AutoAcceptCoins>'"
       Then cmd: "rpc request --method rooch_getStates --params '["/object/0x3", {"decode":true}]' --json"
       Then assert: "{{$.rpc[-1][0].object_type}} == '0x2::account::Account'"
