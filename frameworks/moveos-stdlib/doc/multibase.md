@@ -261,6 +261,16 @@ Error when an invalid multibase prefix is provided
 
 
 
+<a name="0x2_multibase_ErrorInvalidSecp256r1KeyLength"></a>
+
+Error when the Secp256r1 key length is invalid
+
+
+<pre><code><b>const</b> <a href="multibase.md#0x2_multibase_ErrorInvalidSecp256r1KeyLength">ErrorInvalidSecp256r1KeyLength</a>: u64 = 7;
+</code></pre>
+
+
+
 <a name="0x2_multibase_ErrorUnsupportedBase"></a>
 
 Error when an unsupported encoding base is used

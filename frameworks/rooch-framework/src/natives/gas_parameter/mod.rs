@@ -10,6 +10,7 @@ mod bitcoin_address;
 pub mod bls12381;
 mod cbor;
 mod ecdsa_k1;
+mod ecdsa_r1;
 mod ed25519;
 mod events;
 pub mod evm;

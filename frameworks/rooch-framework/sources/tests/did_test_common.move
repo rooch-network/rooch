@@ -44,7 +44,8 @@ module rooch_framework::did_test_common {
     /// Generate a test ECDSA R1 (P-256) public key in multibase format
     public fun generate_test_ecdsa_r1_multibase_key(): string::String {
         // Generate a test ECDSA R1 public key (33 bytes) in base58btc multibase format
-        let pk = bcs::to_bytes(&tx_context::fresh_address());
+        let pk = b"0";
+        vector::append(&mut pk, bcs::to_bytes(&tx_context::fresh_address())); 
         multibase::encode_ecdsa_r1_key(&pk)
     }
 

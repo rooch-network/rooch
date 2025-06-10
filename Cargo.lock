@@ -11151,6 +11151,7 @@ dependencies = [
  "moveos-types",
  "multibase",
  "once_cell",
+ "p256",
  "proptest",
  "proptest-derive",
  "rand 0.8.5",

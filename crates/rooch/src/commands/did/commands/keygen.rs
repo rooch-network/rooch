@@ -25,6 +25,10 @@ pub enum KeygenType {
     #[clap(name = "secp256k1")]
     Secp256k1(Secp256k1KeygenCommand),
 
+    /// Generate an ECDSA R1 (P-256) key pair
+    #[clap(name = "ecdsa-r1")]
+    EcdsaR1(EcdsaR1KeygenCommand),
+
     /// Generate a did:key identifier from a multibase public key
     #[clap(name = "did-key")]
     DidKey(DidKeyCommand),
@@ -91,6 +95,36 @@ pub struct Secp256k1KeygenCommand {
 }
 
 #[derive(Debug, Parser)]
+pub struct EcdsaR1KeygenCommand {
+    /// Output format
+    #[clap(
+        long,
+        default_value = "multibase",
+        help = "Output format: multibase, hex, base64"
+    )]
+    pub format: String,
+
+    /// Include private key in output
+    #[clap(
+        long,
+        help = "Include private key in output (use with caution)",
+        default_value = "true"
+    )]
+    pub include_private: bool,
+
+    /// Generate raw public key without scheme flag
+    #[clap(
+        long,
+        help = "Generate raw public key bytes without scheme flag",
+        default_value = "true"
+    )]
+    pub raw: bool,
+
+    #[clap(flatten)]
+    pub context_options: WalletContextOptions,
+}
+
+#[derive(Debug, Parser)]
 pub struct DidKeyCommand {
     /// Multibase-encoded public key or did:key identifier
     #[clap(
@@ -98,8 +132,12 @@ pub struct DidKeyCommand {
     )]
     pub multibase_public_key: String,
 
-    /// Key type (ed25519 or secp256k1)
-    #[clap(long, default_value = "ed25519", help = "Key type: ed25519, secp256k1")]
+    /// Key type (ed25519, secp256k1, or ecdsa-r1)
+    #[clap(
+        long,
+        default_value = "ed25519",
+        help = "Key type: ed25519, secp256k1, ecdsa-r1"
+    )]
     pub key_type: String,
 
     #[clap(flatten)]
@@ -142,6 +180,7 @@ impl CommandAction<KeygenOutput> for KeygenCommand {
         match self.keygen_type {
             KeygenType::Ed25519(cmd) => cmd.execute().await,
             KeygenType::Secp256k1(cmd) => cmd.execute().await,
+            KeygenType::EcdsaR1(cmd) => cmd.execute().await,
             KeygenType::DidKey(cmd) => {
                 let result = cmd.execute().await?;
                 Ok(KeygenOutput {
@@ -249,12 +288,57 @@ impl CommandAction<KeygenOutput> for Secp256k1KeygenCommand {
 }
 
 #[async_trait]
+impl CommandAction<KeygenOutput> for EcdsaR1KeygenCommand {
+    async fn execute(self) -> RoochResult<KeygenOutput> {
+        let keypair = RoochKeyPair::generate_ecdsa_r1();
+        let public_key = keypair.public();
+
+        let public_key_output = PublicKeyOutput {
+            multibase: public_key.to_multibase(),
+            hex: public_key.to_hex_literal(),
+            base64: public_key.encode_base64(),
+            raw_multibase: if self.raw {
+                Some(public_key.raw_to_multibase())
+            } else {
+                None
+            },
+        };
+
+        let private_key_output = if self.include_private {
+            Some(PrivateKeyOutput {
+                hex: format!("0x{}", hex::encode(keypair.private())),
+                base64: keypair.encode_base64(),
+                bech32: keypair.export_private_key().map_err(|e| {
+                    rooch_types::error::RoochError::CommandArgumentError(format!(
+                        "Failed to export private key: {}",
+                        e
+                    ))
+                })?,
+            })
+        } else {
+            None
+        };
+
+        // Generate did:key identifier
+        let did_key = generate_did_key(&public_key.raw_to_multibase(), "ecdsa-r1")?;
+
+        Ok(KeygenOutput {
+            key_type: "EcdsaR1".to_string(),
+            public_key: public_key_output,
+            private_key: private_key_output,
+            did_key: Some(did_key),
+        })
+    }
+}
+
+#[async_trait]
 impl CommandAction<DidKeyOutput> for DidKeyCommand {
     async fn execute(self) -> RoochResult<DidKeyOutput> {
         // Validate key type
         let scheme = match self.key_type.to_lowercase().as_str() {
             "ed25519" => SignatureScheme::Ed25519,
             "secp256k1" => SignatureScheme::Secp256k1,
+            "ecdsa-r1" => SignatureScheme::EcdsaR1,
             _ => {
                 return Err(rooch_types::error::RoochError::CommandArgumentError(
                     format!("Unsupported key type: {}", self.key_type),
@@ -412,6 +496,24 @@ fn generate_did_key(multibase_public_key: &str, key_type: &str) -> RoochResult<S
 
             // For Secp256k1, prepend the multicodec identifier 0xe701
             let mut full_key_bytes = vec![0xe7, 0x01];
+            full_key_bytes.extend_from_slice(&raw_key_bytes);
+
+            let did_key_multibase = multibase::encode(multibase::Base::Base58Btc, &full_key_bytes);
+            format!("did:key:{}", did_key_multibase)
+        }
+        "ecdsa-r1" => {
+            // Validate ECDSA R1 key length (32 bytes)
+            if raw_key_bytes.len() != 32 {
+                return Err(rooch_types::error::RoochError::CommandArgumentError(
+                    format!(
+                        "Invalid ECDSA R1 key length: expected 32 bytes, got {}",
+                        raw_key_bytes.len()
+                    ),
+                ));
+            }
+
+            // For ECDSA R1, prepend the multicodec identifier 0x1201
+            let mut full_key_bytes = vec![0x12, 0x01];
             full_key_bytes.extend_from_slice(&raw_key_bytes);
 
             let did_key_multibase = multibase::encode(multibase::Base::Base58Btc, &full_key_bytes);

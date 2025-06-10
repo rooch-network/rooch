@@ -36,6 +36,10 @@ use fastcrypto::{
 use fastcrypto::{
     hash::{Blake2b256, HashFunction},
     secp256k1::{Secp256k1PublicKey, Secp256k1Signature, Secp256k1SignatureAsBytes},
+    secp256r1::{
+        Secp256r1KeyPair, Secp256r1PublicKey, Secp256r1PublicKeyAsBytes, Secp256r1Signature,
+        Secp256r1SignatureAsBytes,
+    },
 };
 use multibase;
 use schemars::JsonSchema;
@@ -50,6 +54,7 @@ pub type DefaultHash = Blake2b256;
 pub enum SignatureScheme {
     Ed25519,
     Secp256k1,
+    EcdsaR1,
 }
 
 impl SignatureScheme {
@@ -57,6 +62,7 @@ impl SignatureScheme {
         match self {
             SignatureScheme::Ed25519 => 0,
             SignatureScheme::Secp256k1 => 1,
+            SignatureScheme::EcdsaR1 => 2,
         }
     }
 
@@ -64,6 +70,7 @@ impl SignatureScheme {
         match byte_int {
             0 => Ok(SignatureScheme::Ed25519),
             1 => Ok(SignatureScheme::Secp256k1),
+            2 => Ok(SignatureScheme::EcdsaR1),
             _ => Err(RoochError::InvalidSignatureScheme),
         }
     }
@@ -76,6 +83,8 @@ pub enum RoochKeyPair {
     Ed25519(Ed25519KeyPair),
     ///For Bitcoin
     Secp256k1(Secp256k1KeyPair),
+    ///For WebAuthn
+    EcdsaR1(Secp256r1KeyPair),
 }
 
 impl RoochKeyPair {
@@ -91,6 +100,12 @@ impl RoochKeyPair {
         RoochKeyPair::Secp256k1(secp256k1_keypair)
     }
 
+    pub fn generate_ecdsa_r1() -> Self {
+        let rng = &mut rand::thread_rng();
+        let ecdsa_r1_keypair = Secp256r1KeyPair::generate(rng);
+        RoochKeyPair::EcdsaR1(ecdsa_r1_keypair)
+    }
+
     pub fn from_ed25519_bytes(bytes: &[u8]) -> Result<Self, FastCryptoError> {
         Ok(RoochKeyPair::Ed25519(Ed25519KeyPair::from_bytes(bytes)?))
     }
@@ -99,6 +114,10 @@ impl RoochKeyPair {
         Ok(RoochKeyPair::Secp256k1(Secp256k1KeyPair::from_bytes(
             bytes,
         )?))
+    }
+
+    pub fn from_ecdsa_r1_bytes(bytes: &[u8]) -> Result<Self, FastCryptoError> {
+        Ok(RoochKeyPair::EcdsaR1(Secp256r1KeyPair::from_bytes(bytes)?))
     }
 
     pub fn sign(&self, msg: &[u8]) -> Signature {
@@ -116,6 +135,7 @@ impl RoochKeyPair {
         match self {
             RoochKeyPair::Ed25519(kp) => PublicKey::Ed25519(kp.public().into()),
             RoochKeyPair::Secp256k1(kp) => PublicKey::Secp256k1(kp.public().into()),
+            RoochKeyPair::EcdsaR1(kp) => PublicKey::EcdsaR1(kp.public().into()),
         }
     }
 
@@ -132,6 +152,7 @@ impl RoochKeyPair {
         match self {
             RoochKeyPair::Ed25519(kp) => kp.as_bytes(),
             RoochKeyPair::Secp256k1(kp) => kp.as_bytes(),
+            RoochKeyPair::EcdsaR1(kp) => kp.as_bytes(),
         }
     }
 
@@ -152,12 +173,7 @@ impl RoochKeyPair {
     /// Get the secp256k1 private key
     pub fn secp256k1_secret_key(&self) -> Option<SecretKey> {
         match self {
-            RoochKeyPair::Secp256k1(kp) => {
-                SecretKey::from_slice(kp.secret.as_bytes()).ok()
-                //The bitcoin and fastcrypto dependent on different version secp256k1 library
-                //So we cannot directly return the private key
-                //Some(&kp.secret.privkey)
-            }
+            RoochKeyPair::Secp256k1(kp) => SecretKey::from_slice(kp.secret.as_bytes()).ok(),
             _ => None,
         }
     }
@@ -171,6 +187,7 @@ impl RoochKeyPair {
         match self {
             RoochKeyPair::Ed25519(kp) => RoochKeyPair::Ed25519(kp.copy()),
             RoochKeyPair::Secp256k1(kp) => RoochKeyPair::Secp256k1(kp.copy()),
+            RoochKeyPair::EcdsaR1(kp) => RoochKeyPair::EcdsaR1(kp.copy()),
         }
     }
 
@@ -202,47 +219,7 @@ impl RoochKeyPair {
         match self {
             RoochKeyPair::Ed25519(_) => SignatureScheme::Ed25519,
             RoochKeyPair::Secp256k1(_) => SignatureScheme::Secp256k1,
-        }
-    }
-
-    /// Create a keypair from a multibase-encoded public key string and private key bytes
-    /// This is primarily used for testing and key reconstruction
-    pub fn from_private_key_and_multibase_public_key(
-        private_key_bytes: &[u8],
-        multibase_public_key: &str,
-    ) -> Result<Self, anyhow::Error> {
-        // First decode the public key to determine the scheme
-        let public_key = PublicKey::from_multibase(multibase_public_key)?;
-
-        match public_key.scheme() {
-            SignatureScheme::Ed25519 => {
-                let keypair = Ed25519KeyPair::from_bytes(private_key_bytes)
-                    .map_err(|e| anyhow!("Failed to create Ed25519 keypair: {}", e))?;
-
-                // Verify that the public key matches
-                let derived_public = PublicKey::Ed25519(keypair.public().into());
-                if derived_public != public_key {
-                    return Err(anyhow!(
-                        "Private key does not match the provided public key"
-                    ));
-                }
-
-                Ok(RoochKeyPair::Ed25519(keypair))
-            }
-            SignatureScheme::Secp256k1 => {
-                let keypair = Secp256k1KeyPair::from_bytes(private_key_bytes)
-                    .map_err(|e| anyhow!("Failed to create Secp256k1 keypair: {}", e))?;
-
-                // Verify that the public key matches
-                let derived_public = PublicKey::Secp256k1(keypair.public().into());
-                if derived_public != public_key {
-                    return Err(anyhow!(
-                        "Private key does not match the provided public key"
-                    ));
-                }
-
-                Ok(RoochKeyPair::Secp256k1(keypair))
-            }
+            RoochKeyPair::EcdsaR1(_) => SignatureScheme::EcdsaR1,
         }
     }
 
@@ -258,6 +235,7 @@ impl Signer<Signature> for RoochKeyPair {
         match self {
             RoochKeyPair::Ed25519(kp) => kp.sign(msg),
             RoochKeyPair::Secp256k1(kp) => kp.sign(msg),
+            RoochKeyPair::EcdsaR1(kp) => kp.sign(msg),
         }
     }
 }
@@ -284,6 +262,9 @@ impl EncodeDecodeBase64 for RoochKeyPair {
             RoochKeyPair::Secp256k1(kp) => {
                 bytes.extend_from_slice(kp.as_bytes());
             }
+            RoochKeyPair::EcdsaR1(kp) => {
+                bytes.extend_from_slice(kp.as_bytes());
+            }
         }
         Base64::encode(&bytes[..])
     }
@@ -300,6 +281,11 @@ impl EncodeDecodeBase64 for RoochKeyPair {
                 )?)),
                 SignatureScheme::Secp256k1 => {
                     Ok(RoochKeyPair::Secp256k1(Secp256k1KeyPair::from_bytes(
+                        bytes.get(1..).ok_or(FastCryptoError::InvalidInput)?,
+                    )?))
+                }
+                SignatureScheme::EcdsaR1 => {
+                    Ok(RoochKeyPair::EcdsaR1(Secp256r1KeyPair::from_bytes(
                         bytes.get(1..).ok_or(FastCryptoError::InvalidInput)?,
                     )?))
                 }
@@ -341,6 +327,7 @@ pub struct MultibasePublicKey {
 pub enum PublicKey {
     Ed25519(Ed25519PublicKeyAsBytes),
     Secp256k1(Secp256k1PublicKeyAsBytes),
+    EcdsaR1(Secp256r1PublicKeyAsBytes),
 }
 
 impl AsRef<[u8]> for PublicKey {
@@ -348,6 +335,7 @@ impl AsRef<[u8]> for PublicKey {
         match self {
             PublicKey::Ed25519(pk) => &pk.0,
             PublicKey::Secp256k1(pk) => &pk.0,
+            PublicKey::EcdsaR1(pk) => &pk.0,
         }
     }
 }
@@ -376,6 +364,12 @@ impl EncodeDecodeBase64 for PublicKey {
                         bytes.get(1..).ok_or(FastCryptoError::InvalidInput)?,
                     )?;
                     Ok(PublicKey::Secp256k1((&pk).into()))
+                }
+                SignatureScheme::EcdsaR1 => {
+                    let pk = Secp256r1PublicKey::from_bytes(
+                        bytes.get(1..).ok_or(FastCryptoError::InvalidInput)?,
+                    )?;
+                    Ok(PublicKey::EcdsaR1((&pk).into()))
                 }
             },
             Err(_) => Err(FastCryptoError::InvalidInput),
@@ -413,6 +407,7 @@ impl PublicKey {
         match self {
             PublicKey::Ed25519(_) => Ed25519RoochSignature::SCHEME,
             PublicKey::Secp256k1(_) => Secp256k1RoochSignature::SCHEME,
+            PublicKey::EcdsaR1(_) => EcdsaR1RoochSignature::SCHEME,
         }
     }
 
@@ -420,6 +415,7 @@ impl PublicKey {
         match self {
             PublicKey::Ed25519(_) => "Ed25519VerificationKey2020".to_string(),
             PublicKey::Secp256k1(_) => "EcdsaSecp256k1VerificationKey2019".to_string(),
+            PublicKey::EcdsaR1(_) => "EcdsaSecp256r1VerificationKey2019".to_string(),
         }
     }
 
@@ -497,6 +493,14 @@ impl PublicKey {
                     )?;
                     Ok(PublicKey::Secp256k1((&pk).into()))
                 }
+                SignatureScheme::EcdsaR1 => {
+                    let pk = Secp256r1PublicKey::from_bytes(
+                        bytes
+                            .get(1..)
+                            .ok_or_else(|| anyhow!("Invalid public key length"))?,
+                    )?;
+                    Ok(PublicKey::EcdsaR1((&pk).into()))
+                }
             },
             Err(e) => Err(anyhow!("Invalid bytes :{}", e)),
         }
@@ -515,6 +519,7 @@ impl PublicKey {
         let mut prefixed_key = match self {
             PublicKey::Ed25519(_) => vec![0xed, 0x01], // Ed25519 multicodec prefix
             PublicKey::Secp256k1(_) => vec![0xe7, 0x01], // Secp256k1 multicodec prefix
+            PublicKey::EcdsaR1(_) => vec![0x12, 0x00], // P-256 multicodec prefix
         };
         prefixed_key.extend_from_slice(self.raw_public_key_bytes());
         multibase::encode(multibase::Base::Base58Btc, &prefixed_key)
@@ -523,48 +528,41 @@ impl PublicKey {
     /// Decode a multibase-encoded public key string with DID standard multicodec prefixes
     /// Supports Ed25519 (z6Mk...) and Secp256k1 (zQ3s...) formats
     pub fn from_multibase(multibase_str: &str) -> Result<Self, anyhow::Error> {
-        let (base, decoded_bytes) = multibase::decode(multibase_str)
-            .map_err(|e| anyhow!("Failed to decode multibase string: {}", e))?;
-
-        // Verify base58btc encoding (DID standard)
+        let (base, data) = multibase::decode(multibase_str)?;
         if base != multibase::Base::Base58Btc {
-            return Err(anyhow!("Multibase public key must use base58btc encoding"));
+            return Err(anyhow!("Unsupported multibase encoding: {:?}", base));
         }
-
-        // Check minimum length (at least 2 bytes for multicodec prefix)
-        if decoded_bytes.len() < 2 {
-            return Err(anyhow!("Invalid multibase public key: too short"));
+        if data.len() < 2 {
+            return Err(anyhow!("Multibase data too short"));
         }
-
-        // Extract multicodec prefix
-        let first_byte = decoded_bytes[0];
-        let second_byte = decoded_bytes[1];
-
-        match (first_byte, second_byte) {
-            (0xed, 0x01) => {
-                // Ed25519 multicodec
-                if decoded_bytes.len() != 34 {
-                    // 2 bytes prefix + 32 bytes key
+        let prefix = &data[0..2];
+        let decoded_bytes = &data[2..];
+        match prefix {
+            [0xed, 0x01] => {
+                if decoded_bytes.len() != 32 {
                     return Err(anyhow!("Invalid Ed25519 multibase public key length"));
                 }
-                let raw_key = &decoded_bytes[2..];
-                let pk = Ed25519PublicKey::from_bytes(raw_key)?;
+                let pk = Ed25519PublicKey::from_bytes(decoded_bytes)?;
                 Ok(PublicKey::Ed25519((&pk).into()))
             }
-            (0xe7, 0x01) => {
-                // Secp256k1 multicodec
-                if decoded_bytes.len() != 35 {
-                    // 2 bytes prefix + 33 bytes key
+            [0xe7, 0x01] => {
+                if decoded_bytes.len() != 33 {
                     return Err(anyhow!("Invalid Secp256k1 multibase public key length"));
                 }
-                let raw_key = &decoded_bytes[2..];
-                let pk = Secp256k1PublicKey::from_bytes(raw_key)?;
+                let pk = Secp256k1PublicKey::from_bytes(decoded_bytes)?;
                 Ok(PublicKey::Secp256k1((&pk).into()))
+            }
+            [0x12, 0x00] => {
+                if decoded_bytes.len() != 33 {
+                    return Err(anyhow!("Invalid ECDSA R1 multibase public key length"));
+                }
+                let pk = Secp256r1PublicKey::from_bytes(decoded_bytes)?;
+                Ok(PublicKey::EcdsaR1((&pk).into()))
             }
             _ => Err(anyhow!(
                 "Unsupported multicodec prefix: 0x{:02x}{:02x}",
-                first_byte,
-                second_byte
+                prefix[0],
+                prefix[1]
             )),
         }
     }
@@ -572,6 +570,7 @@ impl PublicKey {
     /// Get the raw public key bytes without the flag
     /// For Ed25519: 32 bytes
     /// For Secp256k1: 33 bytes (compressed)
+    /// For EcdsaR1: 33 bytes (compressed)
     pub fn raw_public_key_bytes(&self) -> &[u8] {
         self.as_ref()
     }
@@ -624,6 +623,16 @@ impl PublicKey {
                 let pk = Secp256k1PublicKey::from_bytes(&decoded_bytes)?;
                 Ok(PublicKey::Secp256k1((&pk).into()))
             }
+            SignatureScheme::EcdsaR1 => {
+                if decoded_bytes.len() != 33 {
+                    return Err(anyhow!(
+                        "Invalid ECDSA R1 public key length: expected 33 bytes, got {}",
+                        decoded_bytes.len()
+                    ));
+                }
+                let pk = Secp256r1PublicKey::from_bytes(&decoded_bytes)?;
+                Ok(PublicKey::EcdsaR1((&pk).into()))
+            }
         }
     }
 
@@ -657,6 +666,7 @@ impl PublicKey {
         match self {
             PublicKey::Ed25519(_) => vec![0xed, 0x01],
             PublicKey::Secp256k1(_) => vec![0xe7, 0x01],
+            PublicKey::EcdsaR1(_) => vec![0x12, 0x00], // P-256 multicodec prefix
         }
     }
 }
@@ -745,6 +755,7 @@ pub trait RoochSignatureInner: Sized + ToFromBytes + PartialEq + Eq + Hash {
 pub enum Signature {
     Ed25519RoochSignature,
     Secp256k1RoochSignature,
+    EcdsaR1RoochSignature,
 }
 
 impl Serialize for Signature {
@@ -820,6 +831,14 @@ impl Signature {
                 })?)
                     .into(),
             )),
+            Signature::EcdsaR1RoochSignature(sig) => Ok(CompressedSignature::EcdsaR1(
+                (&Secp256r1Signature::from_bytes(sig.signature_bytes()).map_err(|_| {
+                    RoochError::InvalidSignature {
+                        error: "Cannot parse sig".to_owned(),
+                    }
+                })?)
+                    .into(),
+            )),
         }
     }
 
@@ -841,6 +860,7 @@ impl AsRef<[u8]> for Signature {
         match self {
             Signature::Ed25519RoochSignature(sig) => sig.as_ref(),
             Signature::Secp256k1RoochSignature(sig) => sig.as_ref(),
+            Signature::EcdsaR1RoochSignature(sig) => sig.as_ref(),
         }
     }
 }
@@ -853,6 +873,8 @@ impl ToFromBytes for Signature {
                     Ok(<Ed25519RoochSignature as ToFromBytes>::from_bytes(bytes)?.into())
                 } else if x == &Secp256k1RoochSignature::SCHEME.flag() {
                     Ok(<Secp256k1RoochSignature as ToFromBytes>::from_bytes(bytes)?.into())
+                } else if x == &EcdsaR1RoochSignature::SCHEME.flag() {
+                    Ok(<EcdsaR1RoochSignature as ToFromBytes>::from_bytes(bytes)?.into())
                 } else {
                     Err(FastCryptoError::InvalidInput)
                 }
@@ -867,6 +889,7 @@ impl ToFromBytes for Signature {
 pub enum CompressedSignature {
     Ed25519(Ed25519SignatureAsBytes),
     Secp256k1(Secp256k1SignatureAsBytes),
+    EcdsaR1(Secp256r1SignatureAsBytes),
 }
 
 impl AsRef<[u8]> for CompressedSignature {
@@ -874,6 +897,7 @@ impl AsRef<[u8]> for CompressedSignature {
         match self {
             CompressedSignature::Ed25519(sig) => &sig.0,
             CompressedSignature::Secp256k1(sig) => &sig.0,
+            CompressedSignature::EcdsaR1(sig) => &sig.0,
         }
     }
 }
@@ -1007,6 +1031,43 @@ impl Signer<Signature> for Secp256k1KeyPair {
     }
 }
 
+#[serde_as]
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema, PartialEq, Eq, Hash, AsRef)]
+#[as_ref(forward)]
+pub struct EcdsaR1RoochSignature(
+    #[schemars(with = "Base64")]
+    #[serde_as(as = "serde_with::base64::Base64")]
+    [u8; Secp256r1PublicKey::LENGTH + Secp256r1Signature::LENGTH + 1],
+);
+
+impl RoochSignatureInner for EcdsaR1RoochSignature {
+    type Sig = Secp256r1Signature;
+    type PubKey = Secp256r1PublicKey;
+    type KeyPair = Secp256r1KeyPair;
+    const LENGTH: usize = Secp256r1PublicKey::LENGTH + Secp256r1Signature::LENGTH + 1;
+}
+
+impl RoochPublicKey for Secp256r1PublicKey {
+    const SIGNATURE_SCHEME: SignatureScheme = SignatureScheme::EcdsaR1;
+}
+
+impl ToFromBytes for EcdsaR1RoochSignature {
+    fn from_bytes(bytes: &[u8]) -> Result<Self, FastCryptoError> {
+        if bytes.len() != Self::LENGTH {
+            return Err(FastCryptoError::InputLengthWrong(Self::LENGTH));
+        }
+        let mut sig_bytes = [0; Self::LENGTH];
+        sig_bytes.copy_from_slice(bytes);
+        Ok(Self(sig_bytes))
+    }
+}
+
+impl Signer<Signature> for Secp256r1KeyPair {
+    fn sign(&self, msg: &[u8]) -> Signature {
+        EcdsaR1RoochSignature::new(self, msg).into()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1047,7 +1108,7 @@ mod tests {
     // this test is to ensure that the ECDSA recoverable algorithm works for Ethereum public key to address
     #[test]
     fn test_ethereum_public_key_to_address() {
-        let private_key = Secp256k1PrivateKey::from_bytes(&[1u8; 32]).unwrap(); // use 1u8.
+        let private_key = Secp256k1PrivateKey::from_bytes(&[1u8; 32]).unwrap();
         let keypair: Secp256k1KeyPair = private_key.into();
         let public_key = keypair.public();
         let uncompressed = public_key.pubkey.serialize_uncompressed();
@@ -1093,194 +1154,94 @@ mod tests {
     }
 
     #[test]
-    fn test_multibase_public_key_encoding_decoding() {
-        // Test Ed25519 public key
-        let ed25519_kp = RoochKeyPair::generate_ed25519();
-        let ed25519_public = ed25519_kp.public();
+    fn test_ecdsa_r1_signature() {
+        let kp = RoochKeyPair::generate_ecdsa_r1();
+        let message = b"hello world";
+        let signature = kp.sign(message);
+        println!("pubkey: {:?}", kp.public().to_hex());
+        println!("signature: {:?}", hex::encode(signature.signature_bytes()));
+        assert!(signature.verify(message).is_ok());
 
-        // Test full public key encoding (with flag)
-        let ed25519_multibase = ed25519_public.to_multibase();
-        assert!(ed25519_multibase.starts_with('z')); // base58btc prefix
-
-        let decoded_ed25519 = PublicKey::from_multibase(&ed25519_multibase).unwrap();
-        assert_eq!(ed25519_public, decoded_ed25519);
-
-        // Test raw public key encoding (without flag)
-        let ed25519_raw_multibase = ed25519_public.raw_to_multibase();
-        assert!(ed25519_raw_multibase.starts_with('z')); // base58btc prefix
-
-        let decoded_ed25519_raw =
-            PublicKey::from_raw_multibase(&ed25519_raw_multibase, SignatureScheme::Ed25519)
-                .unwrap();
-        assert_eq!(ed25519_public, decoded_ed25519_raw);
-
-        // Test Secp256k1 public key
-        let secp256k1_kp = RoochKeyPair::generate_secp256k1();
-        let secp256k1_public = secp256k1_kp.public();
-
-        // Test full public key encoding (with flag)
-        let secp256k1_multibase = secp256k1_public.to_multibase();
-        assert!(secp256k1_multibase.starts_with('z')); // base58btc prefix
-
-        let decoded_secp256k1 = PublicKey::from_multibase(&secp256k1_multibase).unwrap();
-        assert_eq!(secp256k1_public, decoded_secp256k1);
-
-        // Test raw public key encoding (without flag)
-        let secp256k1_raw_multibase = secp256k1_public.raw_to_multibase();
-        assert!(secp256k1_raw_multibase.starts_with('z')); // base58btc prefix
-
-        let decoded_secp256k1_raw =
-            PublicKey::from_raw_multibase(&secp256k1_raw_multibase, SignatureScheme::Secp256k1)
-                .unwrap();
-        assert_eq!(secp256k1_public, decoded_secp256k1_raw);
+        let value = SignData {
+            value: message.to_vec(),
+        };
+        let signature = kp.sign_secure(&value);
+        assert!(signature.verify_secure(&value).is_ok());
     }
 
     #[test]
-    fn test_keypair_multibase_methods() {
-        // Test Ed25519 keypair
-        let ed25519_kp = RoochKeyPair::generate_ed25519();
-
-        let public_multibase = ed25519_kp.public_key_to_multibase();
-        let raw_public_multibase = ed25519_kp.raw_public_key_to_multibase();
-
-        assert!(public_multibase.starts_with('z'));
-        assert!(raw_public_multibase.starts_with('z'));
-        assert_ne!(public_multibase, raw_public_multibase); // Should be different due to flag
-
-        // Test Secp256k1 keypair
-        let secp256k1_kp = RoochKeyPair::generate_secp256k1();
-
-        let public_multibase = secp256k1_kp.public_key_to_multibase();
-        let raw_public_multibase = secp256k1_kp.raw_public_key_to_multibase();
-
-        assert!(public_multibase.starts_with('z'));
-        assert!(raw_public_multibase.starts_with('z'));
-        assert_ne!(public_multibase, raw_public_multibase); // Should be different due to flag
+    fn test_ecdsa_r1_keypair_serialization() {
+        let kp = RoochKeyPair::generate_ecdsa_r1();
+        let serialized = kp.encode_base64();
+        let deserialized = RoochKeyPair::decode_base64(&serialized).unwrap();
+        assert_eq!(kp.public(), deserialized.public());
     }
 
     #[test]
-    fn test_multibase_error_handling() {
-        // Test invalid multibase string
-        let result = PublicKey::from_multibase("invalid_multibase");
-        assert!(result.is_err());
-
-        // Test empty multibase string
-        let result = PublicKey::from_multibase("");
-        assert!(result.is_err());
-
-        // Test wrong key length for Ed25519
-        let result = PublicKey::from_raw_multibase("z1234", SignatureScheme::Ed25519);
-        assert!(result.is_err());
-
-        // Test wrong key length for Secp256k1
-        let result = PublicKey::from_raw_multibase("z1234", SignatureScheme::Secp256k1);
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn test_multibase_compatibility_with_move() {
-        // This test ensures our multibase encoding is compatible with the Move implementation
-        // Generate a test key
-        let kp = RoochKeyPair::generate_ed25519();
+    fn test_ecdsa_r1_public_key_serialization() {
+        let kp = RoochKeyPair::generate_ecdsa_r1();
         let public_key = kp.public();
 
-        // Get raw bytes (32 bytes for Ed25519)
-        let raw_bytes = public_key.raw_public_key_bytes();
-        assert_eq!(raw_bytes.len(), 32);
+        // Test Base64 serialization
+        let serialized = public_key.encode_base64();
+        let deserialized = PublicKey::decode_base64(&serialized).unwrap();
+        assert_eq!(public_key, deserialized);
 
-        // Encode to multibase
-        let multibase_str = public_key.raw_to_multibase();
-
-        // Should start with 'z' (base58btc prefix)
-        assert!(multibase_str.starts_with('z'));
-
-        // Decode back and verify
-        let decoded =
-            PublicKey::from_raw_multibase(&multibase_str, SignatureScheme::Ed25519).unwrap();
+        // Test multibase serialization
+        let multibase = public_key.to_multibase();
+        let decoded = PublicKey::from_multibase(&multibase).unwrap();
         assert_eq!(public_key, decoded);
 
-        // Test with Secp256k1
-        let secp_kp = RoochKeyPair::generate_secp256k1();
-        let secp_public = secp_kp.public();
-
-        // Get raw bytes (33 bytes for Secp256k1 compressed)
-        let secp_raw_bytes = secp_public.raw_public_key_bytes();
-        assert_eq!(secp_raw_bytes.len(), 33);
-
-        // Encode to multibase
-        let secp_multibase_str = secp_public.raw_to_multibase();
-
-        // Should start with 'z' (base58btc prefix)
-        assert!(secp_multibase_str.starts_with('z'));
-
-        // Decode back and verify
-        let secp_decoded =
-            PublicKey::from_raw_multibase(&secp_multibase_str, SignatureScheme::Secp256k1).unwrap();
-        assert_eq!(secp_public, secp_decoded);
+        // Test raw multibase serialization
+        let raw_multibase = public_key.raw_to_multibase();
+        let decoded_raw =
+            PublicKey::from_raw_multibase(&raw_multibase, SignatureScheme::EcdsaR1).unwrap();
+        assert_eq!(public_key, decoded_raw);
     }
 
     #[test]
-    fn test_did_key_multicodec_encoding() {
-        // Test Ed25519 with DID standard multicodec
-        let ed25519_kp = RoochKeyPair::generate_ed25519();
-        let ed25519_public = ed25519_kp.public();
+    fn test_ecdsa_r1_did_key() {
+        let kp = RoochKeyPair::generate_ecdsa_r1();
+        let did_key = kp.to_did_key_string();
+        assert!(did_key.starts_with("did:key:"));
 
-        // Test multibase encoding with multicodec prefix
-        let ed25519_multibase = ed25519_public.to_multibase();
-        assert!(ed25519_multibase.starts_with("z6Mk")); // Ed25519 multicodec results in z6Mk prefix
-
-        // Test round-trip
-        let decoded_ed25519 = PublicKey::from_multibase(&ed25519_multibase).unwrap();
-        assert_eq!(ed25519_public, decoded_ed25519);
-
-        // Test did:key string generation
-        let ed25519_did_key = ed25519_public.to_did_key_string();
-        assert!(ed25519_did_key.starts_with("did:key:z6Mk"));
-
-        // Test did:key string parsing
-        let parsed_ed25519 = PublicKey::from_did_key_string(&ed25519_did_key).unwrap();
-        assert_eq!(ed25519_public, parsed_ed25519);
-
-        // Test Secp256k1 with DID standard multicodec
-        let secp256k1_kp = RoochKeyPair::generate_secp256k1();
-        let secp256k1_public = secp256k1_kp.public();
-
-        // Test multibase encoding with multicodec prefix
-        let secp256k1_multibase = secp256k1_public.to_multibase();
-        assert!(secp256k1_multibase.starts_with("zQ3s")); // Secp256k1 multicodec results in zQ3s prefix
-
-        // Test round-trip
-        let decoded_secp256k1 = PublicKey::from_multibase(&secp256k1_multibase).unwrap();
-        assert_eq!(secp256k1_public, decoded_secp256k1);
-
-        // Test did:key string generation
-        let secp256k1_did_key = secp256k1_public.to_did_key_string();
-        assert!(secp256k1_did_key.starts_with("did:key:zQ3s"));
-
-        // Test did:key string parsing
-        let parsed_secp256k1 = PublicKey::from_did_key_string(&secp256k1_did_key).unwrap();
-        assert_eq!(secp256k1_public, parsed_secp256k1);
+        let public_key = PublicKey::from_did_key_string(&did_key).unwrap();
+        assert_eq!(kp.public(), public_key);
     }
 
     #[test]
-    fn test_multicodec_prefix() {
-        let ed25519_kp = RoochKeyPair::generate_ed25519();
-        let ed25519_public = ed25519_kp.public();
-        assert_eq!(ed25519_public.multicodec_prefix(), vec![0xed, 0x01]);
-
-        let secp256k1_kp = RoochKeyPair::generate_secp256k1();
-        let secp256k1_public = secp256k1_kp.public();
-        assert_eq!(secp256k1_public.multicodec_prefix(), vec![0xe7, 0x01]);
+    fn test_ecdsa_r1_verification_method_type() {
+        let kp = RoochKeyPair::generate_ecdsa_r1();
+        let public_key = kp.public();
+        assert_eq!(
+            public_key.did_verification_method_type(),
+            "EcdsaSecp256r1VerificationKey2019"
+        );
     }
 
     #[test]
-    fn test_keypair_did_key_methods() {
-        let ed25519_kp = RoochKeyPair::generate_ed25519();
-        let ed25519_did_key = ed25519_kp.to_did_key_string();
-        assert!(ed25519_did_key.starts_with("did:key:z6Mk"));
+    fn test_ecdsa_r1_multibase_public_key() {
+        let kp = RoochKeyPair::generate_ecdsa_r1();
+        let public_key = kp.public();
+        let multibase_pk = public_key.to_multibase_public_key();
 
-        let secp256k1_kp = RoochKeyPair::generate_secp256k1();
-        let secp256k1_did_key = secp256k1_kp.to_did_key_string();
-        assert!(secp256k1_did_key.starts_with("did:key:zQ3s"));
+        assert_eq!(
+            multibase_pk.verification_method_type,
+            "EcdsaSecp256r1VerificationKey2019"
+        );
+        assert!(multibase_pk.multibase_str.starts_with('z'));
+    }
+
+    #[test]
+    fn test_ecdsa_r1_compressed_signature() {
+        let kp = RoochKeyPair::generate_ecdsa_r1();
+        let message = b"hello world";
+        let signature = kp.sign(message);
+
+        let compressed = signature.to_compressed().unwrap();
+        match compressed {
+            CompressedSignature::EcdsaR1(_) => (),
+            _ => panic!("Expected EcdsaR1 compressed signature"),
+        }
     }
 }

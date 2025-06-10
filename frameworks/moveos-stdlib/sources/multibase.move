@@ -63,6 +63,8 @@ module moveos_std::multibase {
     const ErrorBase58DecodingFailed: u64 = 4;
     /// Error when the Ed25519 key length is invalid
     const ErrorInvalidEd25519KeyLength: u64 = 5;
+    /// Error when the Secp256r1 key length is invalid
+    const ErrorInvalidSecp256r1KeyLength: u64 = 7;
     /// Error when the encoding process fails
     const ErrorEncodingFailed: u64 = 6;
     // General test failure code for asserts
@@ -202,7 +204,7 @@ module moveos_std::multibase {
     /// @param pubkey - The raw Secp256r1 compressed public key bytes (33 bytes)
     /// @return - A multibase encoded string with 'z' prefix
     public fun encode_secp256r1_key(pubkey: &vector<u8>): String {
-        assert!(vector::length(pubkey) == SECP256R1_COMPRESSED_PUBLIC_KEY_LENGTH, ErrorInvalidEd25519KeyLength);
+        assert!(vector::length(pubkey) == SECP256R1_COMPRESSED_PUBLIC_KEY_LENGTH, ErrorInvalidSecp256r1KeyLength);
         encode_base58btc(pubkey)
     }
 
