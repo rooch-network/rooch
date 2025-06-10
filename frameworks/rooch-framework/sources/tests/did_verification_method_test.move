@@ -392,4 +392,106 @@ module rooch_framework::did_verification_method_test {
         assert!(did::test_verification_method_exists(did_document_check, &string::utf8(b"test-key-1")), 14302);
         assert!(did::test_verification_method_exists(did_document_check, &string::utf8(b"test-key-2")), 14303);
     }
+
+    #[test]
+    /// Test adding ECDSA R1 verification method successfully
+    fun test_add_verification_method_ecdsa_r1() {
+        // Use proper setup to get creator info and DID object ID
+        let (_creator_signer, _creator_address, _creator_public_key_multibase, did_object_id) = did_test_common::setup_did_test_with_creation();
+        
+        // Get the actual DID document and its address
+        let did_document = did::get_did_document_by_object_id(did_object_id);
+        let did_address = did::get_did_address(did_document);
+        let did_signer = account::create_signer_for_testing(did_address);
+
+        // Add new ECDSA R1 verification method
+        let new_ecdsa_r1_key = did_test_common::generate_test_ecdsa_r1_multibase_key();
+        let fragment = string::utf8(b"ecdsa-r1-key-1");
+        let method_type = string::utf8(b"EcdsaSecp256r1VerificationKey2019");
+        let relationships = vector[0u8, 1u8, 2u8]; // authentication, assertion_method, capability_invocation
+
+        did::add_verification_method_entry(
+            &did_signer,
+            fragment,
+            method_type,
+            new_ecdsa_r1_key,
+            relationships
+        );
+
+        // Verify method was added - use DID address
+        let did_document_after = did::get_did_document(did_address);
+        assert!(did::test_verification_method_exists(did_document_after, &fragment), 15001);
+        assert!(did::has_verification_relationship_in_doc(did_document_after, &fragment, 0), 15002); // authentication
+        assert!(did::has_verification_relationship_in_doc(did_document_after, &fragment, 1), 15003); // assertion_method
+        assert!(did::has_verification_relationship_in_doc(did_document_after, &fragment, 2), 15004); // capability_invocation
+    }
+
+    #[test]
+    /// Test mixed key types including ECDSA R1 in DID document
+    fun test_mixed_key_types_with_ecdsa_r1() {
+        // Use proper setup to get creator info and DID object ID
+        let (_creator_signer, _creator_address, _creator_public_key_multibase, did_object_id) = did_test_common::setup_did_test_with_creation();
+        
+        // Get the actual DID document and its address
+        let did_document = did::get_did_document_by_object_id(did_object_id);
+        let did_address = did::get_did_address(did_document);
+        let did_signer = account::create_signer_for_testing(did_address);
+
+        // Add Ed25519 verification method
+        let ed25519_fragment = string::utf8(b"ed25519-key");
+        let ed25519_type = string::utf8(b"Ed25519VerificationKey2020");
+        let ed25519_key = did_test_common::generate_test_ed25519_multibase_key();
+        let ed25519_relationships = vector[1u8, 4u8]; // assertion_method, key_agreement
+
+        did::add_verification_method_entry(
+            &did_signer,
+            ed25519_fragment,
+            ed25519_type,
+            ed25519_key,
+            ed25519_relationships
+        );
+
+        // Add Secp256k1 verification method
+        let secp256k1_fragment = string::utf8(b"secp256k1-key");
+        let secp256k1_type = string::utf8(b"EcdsaSecp256k1VerificationKey2019");
+        let secp256k1_key = did_test_common::generate_test_secp256k1_multibase_key();
+        let secp256k1_relationships = vector[2u8, 3u8]; // capability_invocation, capability_delegation
+
+        did::add_verification_method_entry(
+            &did_signer,
+            secp256k1_fragment,
+            secp256k1_type,
+            secp256k1_key,
+            secp256k1_relationships
+        );
+
+        // Add ECDSA R1 verification method
+        let ecdsa_r1_fragment = string::utf8(b"ecdsa-r1-key");
+        let ecdsa_r1_type = string::utf8(b"EcdsaSecp256r1VerificationKey2019");
+        let ecdsa_r1_key = did_test_common::generate_test_ecdsa_r1_multibase_key();
+        let ecdsa_r1_relationships = vector[0u8, 1u8]; // authentication, assertion_method
+
+        did::add_verification_method_entry(
+            &did_signer,
+            ecdsa_r1_fragment,
+            ecdsa_r1_type,
+            ecdsa_r1_key,
+            ecdsa_r1_relationships
+        );
+
+        // Verify all methods exist - use DID address
+        let did_document_check = did::get_did_document(did_address);
+        assert!(did::test_verification_method_exists(did_document_check, &string::utf8(b"account-key")), 16001); // Original
+        assert!(did::test_verification_method_exists(did_document_check, &ed25519_fragment), 16002); // Ed25519
+        assert!(did::test_verification_method_exists(did_document_check, &secp256k1_fragment), 16003); // Secp256k1
+        assert!(did::test_verification_method_exists(did_document_check, &ecdsa_r1_fragment), 16004); // ECDSA R1
+
+        // Verify correct relationships for each method
+        assert!(did::has_verification_relationship_in_doc(did_document_check, &ed25519_fragment, 1), 16005); // assertion_method
+        assert!(did::has_verification_relationship_in_doc(did_document_check, &ed25519_fragment, 4), 16006); // key_agreement
+        assert!(did::has_verification_relationship_in_doc(did_document_check, &secp256k1_fragment, 2), 16007); // capability_invocation
+        assert!(did::has_verification_relationship_in_doc(did_document_check, &secp256k1_fragment, 3), 16008); // capability_delegation
+        assert!(did::has_verification_relationship_in_doc(did_document_check, &ecdsa_r1_fragment, 0), 16009); // authentication
+        assert!(did::has_verification_relationship_in_doc(did_document_check, &ecdsa_r1_fragment, 1), 16010); // assertion_method
+    }
 } 

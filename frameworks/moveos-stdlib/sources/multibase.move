@@ -72,6 +72,8 @@ module moveos_std::multibase {
     const ED25519_PUBLIC_KEY_LENGTH: u64 = 32;
     /// The length of Secp256k1 compressed public keys in bytes
     const SECP256K1_COMPRESSED_PUBLIC_KEY_LENGTH: u64 = 33;
+    /// The length of Secp256r1 compressed public keys in bytes
+    const SECP256R1_COMPRESSED_PUBLIC_KEY_LENGTH: u64 = 33;
 
     /// The prefix for Ed25519 public keys in base58btc encoding ('z' in ASCII)
     const BASE58BTC_PREFIX: u8 = 122;
@@ -193,6 +195,23 @@ module moveos_std::multibase {
     public fun encode_secp256k1_key(pubkey: &vector<u8>): String {
         assert!(vector::length(pubkey) == SECP256K1_COMPRESSED_PUBLIC_KEY_LENGTH, ErrorInvalidEd25519KeyLength);
         encode_base58btc(pubkey)
+    }
+
+    /// Encodes a Secp256r1 compressed public key using base58btc with multibase prefix
+    /// 
+    /// @param pubkey - The raw Secp256r1 compressed public key bytes (33 bytes)
+    /// @return - A multibase encoded string with 'z' prefix
+    public fun encode_secp256r1_key(pubkey: &vector<u8>): String {
+        assert!(vector::length(pubkey) == SECP256R1_COMPRESSED_PUBLIC_KEY_LENGTH, ErrorInvalidEd25519KeyLength);
+        encode_base58btc(pubkey)
+    }
+
+    /// Alias for encode_secp256r1_key, encodes an ECDSA R1 (P-256) compressed public key using base58btc with multibase prefix
+    /// 
+    /// @param pubkey - The raw ECDSA R1 compressed public key bytes (33 bytes)
+    /// @return - A multibase encoded string with 'z' prefix
+    public fun encode_ecdsa_r1_key(pubkey: &vector<u8>): String {
+        encode_secp256r1_key(pubkey)
     }
 
     /// Encodes an Ed25519 public key as a did:key identifier with multicodec prefix
@@ -323,6 +342,36 @@ module moveos_std::multibase {
             // Decoded key has an invalid length for a Secp256k1 public key
             none()
         }
+    }
+
+    /// Decodes a Secp256r1 public key from a multibase encoded string
+    /// 
+    /// @param multibase_str - The multibase encoded string
+    /// @return - Option containing the raw Secp256r1 public key bytes, or none if decoding fails
+    public fun decode_secp256r1_key(multibase_str: &String): Option<vector<u8>> {
+        let bytes = *string::bytes(multibase_str);
+        if (vector::length(&bytes) == 0) {
+            return none()
+        };
+
+        let prefix = vector::borrow(&bytes, 0);
+        if (*prefix != BASE58BTC_PREFIX) {
+            return none()
+        };
+
+        let encoded_bytes = vector::empty<u8>();
+        let i = 1;
+        while (i < vector::length(&bytes)) {
+            vector::push_back(&mut encoded_bytes, *vector::borrow(&bytes, i));
+            i = i + 1;
+        };
+
+        let decoded_bytes = base58::decoding(&encoded_bytes);
+        if (vector::length(&decoded_bytes) != SECP256R1_COMPRESSED_PUBLIC_KEY_LENGTH) {
+            return none()
+        };
+
+        some(decoded_bytes)
     }
 
     /// Decodes a did:key identifier to extract the raw public key bytes

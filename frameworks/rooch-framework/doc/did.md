@@ -601,6 +601,15 @@ Verification method not in the relationship
 
 
 
+<a name="0x3_did_VERIFICATION_METHOD_TYPE_SECP256R1"></a>
+
+
+
+<pre><code><b>const</b> <a href="did.md#0x3_did_VERIFICATION_METHOD_TYPE_SECP256R1">VERIFICATION_METHOD_TYPE_SECP256R1</a>: <a href="">vector</a>&lt;u8&gt; = [69, 99, 100, 115, 97, 83, 101, 99, 112, 50, 53, 54, 114, 49, 86, 101, 114, 105, 102, 105, 99, 97, 116, 105, 111, 110, 75, 101, 121, 50, 48, 49, 57];
+</code></pre>
+
+
+
 <a name="0x3_did_VERIFICATION_RELATIONSHIP_ASSERTION_METHOD"></a>
 
 

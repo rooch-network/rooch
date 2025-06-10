@@ -41,6 +41,13 @@ module rooch_framework::did_test_common {
         multibase::encode_ed25519_key(&pk)
     }
 
+    /// Generate a test ECDSA R1 (P-256) public key in multibase format
+    public fun generate_test_ecdsa_r1_multibase_key(): string::String {
+        // Generate a test ECDSA R1 public key (33 bytes) in base58btc multibase format
+        let pk = bcs::to_bytes(&tx_context::fresh_address());
+        multibase::encode_ecdsa_r1_key(&pk)
+    }
+
     /// Generate a Secp256k1 public key and corresponding Bitcoin address for testing
     public fun generate_secp256k1_public_key_and_bitcoin_address(): (string::String, BitcoinAddress) {
         let pubkey = x"034cdb7426f6cebd2e69630c5214fac8dee6a999b43b22907d1d8e4a9363a96a14";

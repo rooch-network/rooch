@@ -115,6 +115,7 @@ module rooch_framework::did {
     // Verification method types
     const VERIFICATION_METHOD_TYPE_ED25519: vector<u8> = b"Ed25519VerificationKey2020";
     const VERIFICATION_METHOD_TYPE_SECP256K1: vector<u8> = b"EcdsaSecp256k1VerificationKey2019";
+    const VERIFICATION_METHOD_TYPE_SECP256R1: vector<u8> = b"EcdsaSecp256r1VerificationKey2019";
 
     /// DID identifier type
     struct DID has store, copy, drop {
@@ -374,6 +375,13 @@ module rooch_framework::did {
                 } else if (user_vm_type == string::utf8(VERIFICATION_METHOD_TYPE_SECP256K1)) {
                     // For Secp256k1: use specialized function that handles authentication and session key
                     add_secp256k1_authentication_method(
+                        &mut did_document_data,
+                        user_vm_fragment,
+                        user_vm_pk_multibase
+                    );
+                } else if (user_vm_type == string::utf8(VERIFICATION_METHOD_TYPE_SECP256R1)) {
+                    // For Secp256r1: use specialized function that handles authentication and session key
+                    add_secp256r1_authentication_method(
                         &mut did_document_data,
                         user_vm_fragment,
                         user_vm_pk_multibase
@@ -703,13 +711,15 @@ module rooch_framework::did {
 
         // Add to specified verification relationships
         let is_ed25519 = method_type == string::utf8(VERIFICATION_METHOD_TYPE_ED25519);
+        let is_secp256k1 = method_type == string::utf8(VERIFICATION_METHOD_TYPE_SECP256K1);
+        let is_secp256r1 = method_type == string::utf8(VERIFICATION_METHOD_TYPE_SECP256R1);
         
         let i = 0;
         while (i < vector::length(&verification_relationships)) {
             let relationship_type = *vector::borrow(&verification_relationships, i);
             
             if (relationship_type == VERIFICATION_RELATIONSHIP_AUTHENTICATION) {
-                // Special handling for authentication relationship with Ed25519 and Secp256k1
+                // Special handling for authentication relationship with Ed25519, Secp256k1, and Secp256r1
                 if (is_ed25519) {
                     // For Ed25519, use the specialized method that handles authentication and session key
                     add_ed25519_authentication_method(
@@ -717,9 +727,16 @@ module rooch_framework::did {
                         fragment,
                         public_key_multibase
                     );
-                } else if (method_type == string::utf8(VERIFICATION_METHOD_TYPE_SECP256K1)) {
+                } else if (is_secp256k1) {
                     // For Secp256k1, use the specialized method that handles authentication and session key
                     add_secp256k1_authentication_method(
+                        did_document_data,
+                        fragment,
+                        public_key_multibase
+                    );
+                } else if (is_secp256r1) {
+                    // For Secp256r1, use the specialized method that handles authentication and session key
+                    add_secp256r1_authentication_method(
                         did_document_data,
                         fragment,
                         public_key_multibase
@@ -776,7 +793,7 @@ module rooch_framework::did {
         let removed_method_type = vm_to_remove.type;
 
         if (vector::contains(&did_document_data.authentication, &fragment)) {
-            // If the verification method is an Ed25519 or Secp256k1 key, we need to remove the session key
+            // If the verification method is an Ed25519, Secp256k1, or Secp256r1 key, we need to remove the session key
             if (vm_to_remove.type == string::utf8(VERIFICATION_METHOD_TYPE_ED25519)) {
                 let pk_bytes_opt = multibase::decode_ed25519_key(&vm_to_remove.public_key_multibase);
                 assert!(option::is_some(&pk_bytes_opt), ErrorInvalidPublicKeyMultibaseFormat);
@@ -795,6 +812,17 @@ module rooch_framework::did {
 
                 // Use the public function from session_key module to derive the auth key
                 let auth_key_for_session = session_key::secp256k1_public_key_to_authentication_key(&pk_bytes);
+
+                let associated_account_signer = account::create_signer_with_account_cap(&mut did_document_data.account_cap);
+                
+                session_key::remove_session_key(&associated_account_signer, auth_key_for_session);
+            } else if (vm_to_remove.type == string::utf8(VERIFICATION_METHOD_TYPE_SECP256R1)) {
+                let pk_bytes_opt = multibase::decode_secp256r1_key(&vm_to_remove.public_key_multibase);
+                assert!(option::is_some(&pk_bytes_opt), ErrorInvalidPublicKeyMultibaseFormat);
+                let pk_bytes = option::destroy_some(pk_bytes_opt);
+
+                // Use the public function from session_key module to derive the auth key
+                let auth_key_for_session = session_key::secp256r1_public_key_to_authentication_key(&pk_bytes);
 
                 let associated_account_signer = account::create_signer_with_account_cap(&mut did_document_data.account_cap);
                 
@@ -838,7 +866,7 @@ module rooch_framework::did {
             ErrorVerificationMethodNotFound);
 
         let target_relationship_vec_mut = if (relationship_type == VERIFICATION_RELATIONSHIP_AUTHENTICATION) {
-            // Special handling for AUTHENTICATION: if this is an Ed25519 or Secp256k1 verification method,
+            // Special handling for AUTHENTICATION: if this is an Ed25519, Secp256k1, or Secp256r1 verification method,
             // use the specialized function that also registers it as a rooch session key
             let vm = *simple_map::borrow(&did_document_data.verification_methods, &fragment);
             if (vm.type == string::utf8(VERIFICATION_METHOD_TYPE_ED25519)) {
@@ -869,6 +897,20 @@ module rooch_framework::did {
                     operation: string::utf8(b"added"),
                 });
                 return
+            } else if (vm.type == string::utf8(VERIFICATION_METHOD_TYPE_SECP256R1)) {
+                add_secp256r1_authentication_method(
+                    did_document_data,
+                    fragment,
+                    vm.public_key_multibase
+                );
+                // Emit event and return early since the specialized method handles the relationship addition
+                event::emit(VerificationRelationshipModifiedEvent {
+                    did: did_document_data.id,
+                    fragment: fragment,
+                    relationship_type: relationship_type,
+                    operation: string::utf8(b"added"),
+                });
+                return
             };
 
             &mut did_document_data.authentication
@@ -884,10 +926,12 @@ module rooch_framework::did {
             abort ErrorInvalidVerificationRelationship
         };
 
+        // Add to the relationship if not already present
         if (!vector::contains(target_relationship_vec_mut, &fragment)) {
             vector::push_back(target_relationship_vec_mut, fragment);
         };
-        // Emit verification relationship modified event
+
+        // Emit relationship modified event
         event::emit(VerificationRelationshipModifiedEvent {
             did: did_document_data.id,
             fragment: fragment,
@@ -1650,7 +1694,7 @@ module rooch_framework::did {
     }
 
     /// Add a verification method to the authentication relationship and register it as a session key.
-    /// This function supports both Ed25519 and Secp256k1 verification methods.
+    /// This function supports Ed25519, Secp256k1 and Secp256r1 verification methods.
     fun add_authentication_method_with_session_key(
         did_document_data: &mut DIDDocument,
         fragment: String,
@@ -1679,14 +1723,10 @@ module rooch_framework::did {
             vector::push_back(&mut did_document_data.authentication, fragment);
             
             // 3. Register as session key based on the method type
-            if (method_type == string::utf8(VERIFICATION_METHOD_TYPE_ED25519)) {
-                internal_ensure_session_key(
-                    did_document_data,
-                    fragment,
-                    public_key_multibase,
-                    method_type
-                );
-            } else if (method_type == string::utf8(VERIFICATION_METHOD_TYPE_SECP256K1)) {
+            if (method_type == string::utf8(VERIFICATION_METHOD_TYPE_ED25519) ||
+                method_type == string::utf8(VERIFICATION_METHOD_TYPE_SECP256K1) ||
+                method_type == string::utf8(VERIFICATION_METHOD_TYPE_SECP256R1)
+            ) {
                 internal_ensure_session_key(
                     did_document_data,
                     fragment,
@@ -1699,8 +1739,6 @@ module rooch_framework::did {
     }
 
     /// Add an Ed25519 verification method to the authentication relationship
-    /// and automatically register it as a rooch session key.
-    /// This function makes explicit the special property of Ed25519 authentication methods.
     fun add_ed25519_authentication_method(
         did_document_data: &mut DIDDocument,
         fragment: String,
@@ -1715,7 +1753,6 @@ module rooch_framework::did {
     }
 
     /// Add a Secp256k1 verification method to the authentication relationship
-    /// and automatically register it as a rooch session key.
     fun add_secp256k1_authentication_method(
         did_document_data: &mut DIDDocument,
         fragment: String,
@@ -1725,6 +1762,21 @@ module rooch_framework::did {
             did_document_data,
             fragment,
             string::utf8(VERIFICATION_METHOD_TYPE_SECP256K1),
+            public_key_multibase
+        );
+    }
+
+    /// Add a Secp256r1 verification method to the authentication relationship
+    /// and automatically register it as a rooch session key.
+    fun add_secp256r1_authentication_method(
+        did_document_data: &mut DIDDocument,
+        fragment: String,
+        public_key_multibase: String
+    ) {
+        add_authentication_method_with_session_key(
+            did_document_data,
+            fragment,
+            string::utf8(VERIFICATION_METHOD_TYPE_SECP256R1),
             public_key_multibase
         );
     }
@@ -1744,6 +1796,10 @@ module rooch_framework::did {
             option::destroy_some(pk_bytes_opt)
         } else if (vm_type == string::utf8(VERIFICATION_METHOD_TYPE_SECP256K1)) {
             let pk_bytes_opt = multibase::decode_secp256k1_key(&vm_public_key_multibase);
+            assert!(option::is_some(&pk_bytes_opt), ErrorInvalidPublicKeyMultibaseFormat);
+            option::destroy_some(pk_bytes_opt)
+        } else if (vm_type == string::utf8(VERIFICATION_METHOD_TYPE_SECP256R1)) {
+            let pk_bytes_opt = multibase::decode_secp256r1_key(&vm_public_key_multibase);
             assert!(option::is_some(&pk_bytes_opt), ErrorInvalidPublicKeyMultibaseFormat);
             option::destroy_some(pk_bytes_opt)
         } else {
@@ -1778,9 +1834,10 @@ module rooch_framework::did {
         // Generate the authentication key based on the verification method type
         let auth_key_for_session = if (vm_type == string::utf8(VERIFICATION_METHOD_TYPE_ED25519)) {
             session_key::ed25519_public_key_to_authentication_key(&pk_bytes)
-        } else {
-            // Must be SECP256K1 since we checked above
+        } else if (vm_type == string::utf8(VERIFICATION_METHOD_TYPE_SECP256K1)) {
             session_key::secp256k1_public_key_to_authentication_key(&pk_bytes)
+        } else { // Must be SECP256R1
+            session_key::secp256r1_public_key_to_authentication_key(&pk_bytes)
         };
 
         session_key::create_session_key_internal(
