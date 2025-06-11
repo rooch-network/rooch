@@ -320,7 +320,7 @@ module rooch_framework::did {
         assert!(vector::length(&doc_controllers) > 0, ErrorNoControllersSpecified);
 
         // Validate did:key controllers according to NIP-1
-        validate_did_key_controllers(&doc_controllers, &user_vm_pk_multibase);
+        validate_did_key_controllers(&doc_controllers, &user_vm_pk_multibase, &user_vm_type);
 
         let new_account_cap = account::create_account_and_return_cap();
         let did_address = account::account_cap_address(&new_account_cap);
@@ -587,12 +587,17 @@ module rooch_framework::did {
         assert!(user_did_key.method == string::utf8(b"key"), ErrorInvalidDIDStringFormat);
         
         // Extract raw public key from did:key identifier and re-encode as regular multibase
-        let raw_pk_opt = extract_public_key_from_did_key_identifier(&user_did_key.identifier);
-        assert!(option::is_some(&raw_pk_opt), ErrorInvalidPublicKeyMultibaseFormat);
-        let raw_pk_bytes = option::destroy_some(raw_pk_opt);
+        let (key_type, raw_pk_bytes) = extract_public_key_from_did_key_identifier(&user_did_key.identifier);
         
-        // Re-encode as regular multibase Ed25519 key (without multicodec prefix)
-        let user_vm_pk_multibase = multibase::encode_ed25519_key(&raw_pk_bytes);
+        let (user_vm_type, user_vm_pk_multibase) = if (key_type == multibase::key_type_ed25519()) {
+            (string::utf8(VERIFICATION_METHOD_TYPE_ED25519), multibase::encode_ed25519_key(&raw_pk_bytes))
+        } else if (key_type == multibase::key_type_secp256k1()) {
+            (string::utf8(VERIFICATION_METHOD_TYPE_SECP256K1), multibase::encode_secp256k1_key(&raw_pk_bytes))
+        } else if (key_type == multibase::key_type_ecdsar1()) {
+            (string::utf8(VERIFICATION_METHOD_TYPE_SECP256R1), multibase::encode_ecdsar1_key(&raw_pk_bytes))
+        } else {
+            abort ErrorUnsupportedAuthKeyTypeForSessionKey
+        };
         
         // Derive custodian's DID from signer address
         let custodian_address = signer::address_of(custodian_signer);
@@ -619,7 +624,6 @@ module rooch_framework::did {
         ]; 
 
         // Standardize user VM to Ed25519 (most common for did:key)
-        let user_vm_type = string::utf8(VERIFICATION_METHOD_TYPE_ED25519);
         let user_vm_fragment = string::utf8(b"user-key");
 
         // Generate unique service fragment for this user
@@ -1566,7 +1570,7 @@ module rooch_framework::did {
 
     /// Find the verification method fragment that corresponds to the given session key
     /// Returns None if no matching verification method is found
-    fun find_verification_method_by_session_key(
+    public fun find_verification_method_by_session_key(
         did_document_data: &DIDDocument,
         session_key: &vector<u8>
     ): Option<String> {
@@ -1604,6 +1608,15 @@ module rooch_framework::did {
                             return option::some(*fragment)
                         };
                     };
+                } else if (vm.type == string::utf8(VERIFICATION_METHOD_TYPE_SECP256R1)) {
+                    let pk_bytes_opt = multibase::decode_secp256r1_key(&vm.public_key_multibase);
+                    if (option::is_some(&pk_bytes_opt)) {
+                        let pk_bytes = option::destroy_some(pk_bytes_opt);
+                        let derived_auth_key = session_key::secp256r1_public_key_to_authentication_key(&pk_bytes);
+                        if (derived_auth_key == *session_key) {
+                            return option::some(*fragment)
+                        };
+                    };
                 };
                 // TODO: Add support for other verification method types
             };
@@ -1621,9 +1634,11 @@ module rooch_framework::did {
     /// Note: did:key identifiers contain multicodec prefixes according to W3C DID Key spec:
     /// - Ed25519: 0xed01 prefix, resulting in z6Mk... format
     /// - Secp256k1: 0xe701 prefix, resulting in zQ3s... format
+    /// - ECDSA R1: 0x1200 prefix, resulting in zQ3s... format
     fun validate_did_key_controllers(
         controllers: &vector<DID>,
-        initial_vm_pk_multibase: &String
+        initial_vm_pk_multibase: &String,
+        initial_vm_type: &String
     ) {
         let i = 0;
         let did_key_controller_count = 0;
@@ -1657,25 +1672,23 @@ module rooch_framework::did {
             assert!(first_byte == 122, ErrorInvalidDIDStringFormat); // 'z' for base58btc
             
             // Extract raw public key from did:key identifier by decoding multicodec format
-            let controller_pk_opt = extract_public_key_from_did_key_identifier(identifier);
-            assert!(option::is_some(&controller_pk_opt), ErrorInvalidPublicKeyMultibaseFormat);
-            let controller_pk_bytes = option::destroy_some(controller_pk_opt);
+            let (_key_type, controller_pk_bytes) = extract_public_key_from_did_key_identifier(identifier);
             
-            // Try to decode initial_vm_pk_multibase as both regular multibase and did:key identifier
-            let initial_pk_bytes = if (string::length(initial_vm_pk_multibase) > 8 && 
-                                      string::sub_string(initial_vm_pk_multibase, 0, 8) == string::utf8(b"did:key:")) {
-                // If it's a full did:key string, extract the identifier part and decode
-                let identifier_part = string::sub_string(initial_vm_pk_multibase, 8, string::length(initial_vm_pk_multibase));
-                let pk_opt = extract_public_key_from_did_key_identifier(&identifier_part);
-                assert!(option::is_some(&pk_opt), ErrorInvalidPublicKeyMultibaseFormat);
-                option::destroy_some(pk_opt)
-            } else {
-                // Otherwise, try to decode as regular multibase Ed25519 key
+            let initial_pk_bytes = if (initial_vm_type == &string::utf8(VERIFICATION_METHOD_TYPE_ED25519)) {
                 let pk_opt = multibase::decode_ed25519_key(initial_vm_pk_multibase);
                 assert!(option::is_some(&pk_opt), ErrorInvalidPublicKeyMultibaseFormat);
                 option::destroy_some(pk_opt)
+            } else if (initial_vm_type == &string::utf8(VERIFICATION_METHOD_TYPE_SECP256K1)) {
+                let pk_opt = multibase::decode_secp256k1_key(initial_vm_pk_multibase);
+                assert!(option::is_some(&pk_opt), ErrorInvalidPublicKeyMultibaseFormat);
+                option::destroy_some(pk_opt)
+            } else if (initial_vm_type == &string::utf8(VERIFICATION_METHOD_TYPE_SECP256R1)) {
+                let pk_opt = multibase::decode_secp256r1_key(initial_vm_pk_multibase);
+                assert!(option::is_some(&pk_opt), ErrorInvalidPublicKeyMultibaseFormat);
+                option::destroy_some(pk_opt)
+            } else {
+                abort ErrorUnsupportedAuthKeyTypeForSessionKey
             };
-            
             assert!(controller_pk_bytes == initial_pk_bytes, ErrorDIDKeyControllerPublicKeyMismatch);
         }
         // If did_key_controller_count is 0, no specific validation for did:key is needed here.
@@ -1688,7 +1701,7 @@ module rooch_framework::did {
     /// Supported multicodec prefixes:
     /// - 0xed01: Ed25519 public key (results in z6Mk... format)
     /// - 0xe701: Secp256k1 public key (results in zQ3s... format)
-    fun extract_public_key_from_did_key_identifier(identifier: &String): Option<vector<u8>> {
+    fun extract_public_key_from_did_key_identifier(identifier: &String): (u8, vector<u8>) {
         // Delegate to the multibase module's decode function
         multibase::decode_did_key_identifier(identifier)
     }

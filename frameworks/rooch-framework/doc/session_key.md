@@ -12,7 +12,7 @@
 -  [Function `max_inactive_interval`](#0x3_session_key_max_inactive_interval)
 -  [Function `signature_scheme_ed25519`](#0x3_session_key_signature_scheme_ed25519)
 -  [Function `signature_scheme_secp256k1`](#0x3_session_key_signature_scheme_secp256k1)
--  [Function `signature_scheme_secp256r1`](#0x3_session_key_signature_scheme_secp256r1)
+-  [Function `signature_scheme_ecdsar1`](#0x3_session_key_signature_scheme_ecdsar1)
 -  [Function `new_session_scope`](#0x3_session_key_new_session_scope)
 -  [Function `is_expired`](#0x3_session_key_is_expired)
 -  [Function `is_expired_session_key`](#0x3_session_key_is_expired_session_key)
@@ -148,6 +148,15 @@ The lengths of the parts of the session's scope do not match.
 
 
 
+<a name="0x3_session_key_SIGNATURE_SCHEME_ECDSAR1"></a>
+
+
+
+<pre><code><b>const</b> <a href="session_key.md#0x3_session_key_SIGNATURE_SCHEME_ECDSAR1">SIGNATURE_SCHEME_ECDSAR1</a>: u8 = 2;
+</code></pre>
+
+
+
 <a name="0x3_session_key_SIGNATURE_SCHEME_ED25519"></a>
 
 
@@ -162,15 +171,6 @@ The lengths of the parts of the session's scope do not match.
 
 
 <pre><code><b>const</b> <a href="session_key.md#0x3_session_key_SIGNATURE_SCHEME_SECP256K1">SIGNATURE_SCHEME_SECP256K1</a>: u8 = 1;
-</code></pre>
-
-
-
-<a name="0x3_session_key_SIGNATURE_SCHEME_SECP256R1"></a>
-
-
-
-<pre><code><b>const</b> <a href="session_key.md#0x3_session_key_SIGNATURE_SCHEME_SECP256R1">SIGNATURE_SCHEME_SECP256R1</a>: u8 = 2;
 </code></pre>
 
 
@@ -208,13 +208,13 @@ The lengths of the parts of the session's scope do not match.
 
 
 
-<a name="0x3_session_key_signature_scheme_secp256r1"></a>
+<a name="0x3_session_key_signature_scheme_ecdsar1"></a>
 
-## Function `signature_scheme_secp256r1`
+## Function `signature_scheme_ecdsar1`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="session_key.md#0x3_session_key_signature_scheme_secp256r1">signature_scheme_secp256r1</a>(): u8
+<pre><code><b>public</b> <b>fun</b> <a href="session_key.md#0x3_session_key_signature_scheme_ecdsar1">signature_scheme_ecdsar1</a>(): u8
 </code></pre>
 
 

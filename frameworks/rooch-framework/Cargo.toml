@@ -19,7 +19,6 @@ smallvec = { workspace = true }
 hex = { workspace = true }
 tracing = { workspace = true }
 bitcoin = { workspace = true }
-p256 = { version = "0.13", features = ["ecdsa"] }
 sha2 = "0.10.6"
 signature = "2.2.0"
 generic-array = "0.14"

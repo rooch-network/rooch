@@ -46,7 +46,7 @@ module rooch_framework::did_test_common {
         // Generate a test ECDSA R1 public key (33 bytes) in base58btc multibase format
         let pk = b"0";
         vector::append(&mut pk, bcs::to_bytes(&tx_context::fresh_address())); 
-        multibase::encode_ecdsa_r1_key(&pk)
+        multibase::encode_ecdsar1_key(&pk)
     }
 
     /// Generate a Secp256k1 public key and corresponding Bitcoin address for testing
@@ -191,7 +191,7 @@ module rooch_framework::did_test_common {
     public fun setup_custodian_with_cadop_service(): signer {
         // First create a DID using the standard setup
         let (_creator_signer, _creator_address, creator_public_key, custodian_did_object_id) = setup_did_test_with_creation();
-        std::debug::print(&custodian_did_object_id);
+        //std::debug::print(&custodian_did_object_id);
         // Get the DID document and its address
         let custodian_did_document = did::get_did_document_by_object_id(custodian_did_object_id);
         let custodian_did_address = did::get_did_address(custodian_did_document);
@@ -229,10 +229,11 @@ module rooch_framework::did_test_common {
 
     /// Generate a valid did:key string for testing with proper multicodec prefix
     public fun generate_test_did_key_string(): string::String {
-        // Generate a test Ed25519 public key (32 bytes)
-        let pk = bcs::to_bytes(&tx_context::fresh_address());
+        
+        let pk = b"0";
+        vector::append(&mut pk, bcs::to_bytes(&tx_context::fresh_address()));
         
         // Use the new multibase function that includes multicodec prefix
-        multibase::generate_ed25519_did_key_string(&pk)
+        multibase::generate_ecdsar1_did_key_string(&pk)
     }
 } 

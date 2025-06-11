@@ -82,6 +82,7 @@
 -  [Function `get_did_created_timestamp`](#0x3_did_get_did_created_timestamp)
 -  [Function `get_did_updated_timestamp`](#0x3_did_get_did_updated_timestamp)
 -  [Function `get_did_address`](#0x3_did_get_did_address)
+-  [Function `find_verification_method_by_session_key`](#0x3_did_find_verification_method_by_session_key)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
@@ -1383,4 +1384,17 @@ This is a convenience function that extracts the address and calls get_updated_t
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_get_did_address">get_did_address</a>(did_doc: &<a href="did.md#0x3_did_DIDDocument">did::DIDDocument</a>): <b>address</b>
+</code></pre>
+
+
+
+<a name="0x3_did_find_verification_method_by_session_key"></a>
+
+## Function `find_verification_method_by_session_key`
+
+Find the verification method fragment that corresponds to the given session key
+Returns None if no matching verification method is found
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_find_verification_method_by_session_key">find_verification_method_by_session_key</a>(did_document_data: &<a href="did.md#0x3_did_DIDDocument">did::DIDDocument</a>, <a href="session_key.md#0x3_session_key">session_key</a>: &<a href="">vector</a>&lt;u8&gt;): <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;
 </code></pre>

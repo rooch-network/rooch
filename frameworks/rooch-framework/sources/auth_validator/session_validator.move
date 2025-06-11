@@ -70,7 +70,7 @@ module rooch_framework::session_validator {
                 i = i + 1;
             };
             (sign, public_key)
-        } else if (*scheme == session_key::signature_scheme_secp256r1()) {
+        } else if (*scheme == session_key::signature_scheme_ecdsar1()) {
             // Secp256r1 scheme
             let sign = vector::empty<u8>();
             let i = 1;
@@ -124,7 +124,7 @@ module rooch_framework::session_validator {
                 auth_validator::error_validate_invalid_authenticator()
             );
             session_key::secp256k1_public_key_to_authentication_key(&public_key)
-        } else if (*scheme == session_key::signature_scheme_secp256r1()) {
+        } else if (*scheme == session_key::signature_scheme_ecdsar1()) {
             // Secp256r1 verification
             assert!(
                 ecdsa_r1::verify(

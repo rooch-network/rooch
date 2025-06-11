@@ -30,7 +30,7 @@ module bitcoin_move::bitcoin_multisign_validator{
 
     public(friend) fun genesis_init(){
         let system = signer::module_signer<BitcoinMultisignValidator>();
-        let id = auth_validator_registry::register_by_system<BitcoinMultisignValidator>(&system);
+        let id = auth_validator_registry::register_by_system_with_id<BitcoinMultisignValidator>(&system, BITCOIN_MULTISIGN_VALIDATOR_ID);
         assert!(id == BITCOIN_MULTISIGN_VALIDATOR_ID, ErrorGenesisInitError);
     }
 

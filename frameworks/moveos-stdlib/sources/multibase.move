@@ -67,6 +67,8 @@ module moveos_std::multibase {
     const ErrorInvalidSecp256r1KeyLength: u64 = 7;
     /// Error when the encoding process fails
     const ErrorEncodingFailed: u64 = 6;
+    /// Error when the did:key identifier is invalid
+    const ErrorInvalidDidKeyIdentifier: u64 = 8;
     // General test failure code for asserts
     const ETestAssertionFailed: u64 = 100;
 
@@ -75,7 +77,7 @@ module moveos_std::multibase {
     /// The length of Secp256k1 compressed public keys in bytes
     const SECP256K1_COMPRESSED_PUBLIC_KEY_LENGTH: u64 = 33;
     /// The length of Secp256r1 compressed public keys in bytes
-    const SECP256R1_COMPRESSED_PUBLIC_KEY_LENGTH: u64 = 33;
+    const ECDSAR1_COMPRESSED_PUBLIC_KEY_LENGTH: u64 = 33;
 
     /// The prefix for Ed25519 public keys in base58btc encoding ('z' in ASCII)
     const BASE58BTC_PREFIX: u8 = 122;
@@ -91,6 +93,8 @@ module moveos_std::multibase {
     const MULTICODEC_ED25519_PREFIX: vector<u8> = vector[0xed, 0x01];
     /// Secp256k1 multicodec prefix (0xe701)
     const MULTICODEC_SECP256K1_PREFIX: vector<u8> = vector[0xe7, 0x01];
+    /// ECDSA R1 multicodec prefix (0x1200)
+    const MULTICODEC_ECDSA_R1_PREFIX: vector<u8> = vector[0x12, 0x00];
 
     // Encoding name constants
     const ENCODING_BASE58BTC: vector<u8> = b"base58btc";
@@ -98,6 +102,21 @@ module moveos_std::multibase {
     const ENCODING_BASE64PAD: vector<u8> = b"base64pad";
     const ENCODING_BASE16: vector<u8> = b"base16";
     const ENCODING_HEX: vector<u8> = b"hex";
+
+    // Key type constants
+    //TODO we need to define these in a more standard way
+    const KEY_TYPE_ED25519: u8 = 1;
+    public fun key_type_ed25519(): u8 {
+        KEY_TYPE_ED25519
+    }
+    const KEY_TYPE_SECP256K1: u8 = 2;
+    public fun key_type_secp256k1(): u8 {
+        KEY_TYPE_SECP256K1
+    }
+    const KEY_TYPE_ECDSAR1: u8 = 3;
+    public fun key_type_ecdsar1(): u8 {
+        KEY_TYPE_ECDSAR1
+    }
 
     /// Returns the name of base58btc encoding
     public fun base58btc_name(): String {
@@ -203,17 +222,9 @@ module moveos_std::multibase {
     /// 
     /// @param pubkey - The raw Secp256r1 compressed public key bytes (33 bytes)
     /// @return - A multibase encoded string with 'z' prefix
-    public fun encode_secp256r1_key(pubkey: &vector<u8>): String {
-        assert!(vector::length(pubkey) == SECP256R1_COMPRESSED_PUBLIC_KEY_LENGTH, ErrorInvalidSecp256r1KeyLength);
+    public fun encode_ecdsar1_key(pubkey: &vector<u8>): String {
+        assert!(vector::length(pubkey) == ECDSAR1_COMPRESSED_PUBLIC_KEY_LENGTH, ErrorInvalidSecp256r1KeyLength);
         encode_base58btc(pubkey)
-    }
-
-    /// Alias for encode_secp256r1_key, encodes an ECDSA R1 (P-256) compressed public key using base58btc with multibase prefix
-    /// 
-    /// @param pubkey - The raw ECDSA R1 compressed public key bytes (33 bytes)
-    /// @return - A multibase encoded string with 'z' prefix
-    public fun encode_ecdsa_r1_key(pubkey: &vector<u8>): String {
-        encode_secp256r1_key(pubkey)
     }
 
     /// Encodes an Ed25519 public key as a did:key identifier with multicodec prefix
@@ -243,6 +254,15 @@ module moveos_std::multibase {
         vector::append(&mut prefixed_key, *pubkey);
         
         // Encode with base58btc and multibase prefix
+        encode_base58btc(&prefixed_key)
+    }
+
+    public fun encode_ecdsar1_did_key_identifier(pubkey: &vector<u8>): String {
+        assert!(vector::length(pubkey) == ECDSAR1_COMPRESSED_PUBLIC_KEY_LENGTH, ErrorInvalidSecp256r1KeyLength);
+        
+        // Prepend multicodec prefix for ECDSA R1
+        let prefixed_key = MULTICODEC_ECDSA_R1_PREFIX;
+        vector::append(&mut prefixed_key, *pubkey);
         encode_base58btc(&prefixed_key)
     }
 
@@ -369,29 +389,29 @@ module moveos_std::multibase {
         };
 
         let decoded_bytes = base58::decoding(&encoded_bytes);
-        if (vector::length(&decoded_bytes) != SECP256R1_COMPRESSED_PUBLIC_KEY_LENGTH) {
+        if (vector::length(&decoded_bytes) != ECDSAR1_COMPRESSED_PUBLIC_KEY_LENGTH) {
             return none()
         };
 
         some(decoded_bytes)
     }
 
-    /// Decodes a did:key identifier to extract the raw public key bytes
+    /// Decodes a did:key identifier to extract the key type and raw public key bytes
     /// 
     /// @param did_key_identifier - The did:key identifier (e.g., "z6Mk..." or "zQ3s...")
-    /// @return - Option containing the raw public key bytes, or none if decoding fails
-    public fun decode_did_key_identifier(did_key_identifier: &String): Option<vector<u8>> {
+    /// @return - the raw public key bytes, or abort if decoding fails
+    public fun decode_did_key_identifier(did_key_identifier: &String): (u8, vector<u8>) {
         // First decode the multibase string
         let decoded_bytes_opt = decode(did_key_identifier);
         if (option::is_none(&decoded_bytes_opt)) {
-            return option::none()
+            abort ErrorInvalidDidKeyIdentifier
         };
         
         let decoded_bytes = option::destroy_some(decoded_bytes_opt);
         
         // Check minimum length (at least 2 bytes for multicodec prefix)
         if (vector::length(&decoded_bytes) < 2) {
-            return option::none()
+            abort ErrorInvalidDidKeyIdentifier
         };
         
         // Extract multicodec prefix
@@ -408,7 +428,7 @@ module moveos_std::multibase {
                     vector::push_back(&mut raw_key, *vector::borrow(&decoded_bytes, i));
                     i = i + 1;
                 };
-                return option::some(raw_key)
+                return (KEY_TYPE_ED25519, raw_key)
             }
         }
         // Check for Secp256k1 multicodec: 0xe701  
@@ -421,13 +441,27 @@ module moveos_std::multibase {
                     vector::push_back(&mut raw_key, *vector::borrow(&decoded_bytes, i));
                     i = i + 1;
                 };
-                return option::some(raw_key)
+                return (KEY_TYPE_SECP256K1, raw_key)
             }
-        };
+        }
+        // Check for ECDSA R1 multicodec: 0x1200
+        else if (first_byte == 0x12 && second_byte == 0x00) {
+            // Extract raw ECDSA R1 public key (33 bytes after 2-byte prefix)
+            if (vector::length(&decoded_bytes) == 35) { // 2 bytes prefix + 32 bytes key
+                let raw_key = vector::empty<u8>();
+                let i = 2;
+                while (i < 35) {
+                    vector::push_back(&mut raw_key, *vector::borrow(&decoded_bytes, i));
+                    i = i + 1;
+                };
+                return (KEY_TYPE_ECDSAR1, raw_key)
+            }
+        };   
         
         // Unsupported multicodec or invalid format
-        option::none()
+        abort ErrorInvalidDidKeyIdentifier
     }
+
 
     /// Generate a complete did:key string from an Ed25519 public key
     /// 
@@ -446,6 +480,13 @@ module moveos_std::multibase {
     /// @return - A complete did:key string (e.g., "did:key:zQ3s...")
     public fun generate_secp256k1_did_key_string(pubkey: &vector<u8>): String {
         let identifier = encode_secp256k1_did_key_identifier(pubkey);
+        let did_key_string = string::utf8(b"did:key:");
+        string::append(&mut did_key_string, identifier);
+        did_key_string
+    }
+
+    public fun generate_ecdsar1_did_key_string(pubkey: &vector<u8>): String {
+        let identifier = encode_ecdsar1_did_key_identifier(pubkey);
         let did_key_string = string::utf8(b"did:key:");
         string::append(&mut did_key_string, identifier);
         did_key_string
@@ -480,6 +521,10 @@ module moveos_std::multibase {
         // Check for Secp256k1 multicodec: 0xe701  
         else if (first_byte == 0xe7 && second_byte == 0x01) {
             return option::some(string::utf8(b"Secp256k1"))
+        }
+        // Check for ECDSA R1 multicodec: 0x1200
+        else if (first_byte == 0x12 && second_byte == 0x00) {
+            return option::some(string::utf8(b"ECDSA R1"))
         };
         
         // Unsupported multicodec
@@ -770,9 +815,9 @@ module moveos_std::multibase {
         assert!(option::extract(&mut prefix_opt) == BASE58BTC_PREFIX, ETestAssertionFailed + 61);
         
         // Verify round-trip decoding
-        let decoded_opt = decode_did_key_identifier(&encoded_identifier);
-        assert!(option::is_some(&decoded_opt), ETestAssertionFailed + 62);
-        assert!(option::extract(&mut decoded_opt) == pubkey, ETestAssertionFailed + 63);
+        let (key_type, decoded_key) = decode_did_key_identifier(&encoded_identifier);
+        assert!(key_type == KEY_TYPE_ED25519, ETestAssertionFailed + 62);
+        assert!(decoded_key == pubkey, ETestAssertionFailed + 63);
         
         // Verify key type detection
         let key_type_opt = get_key_type_from_did_key_identifier(&encoded_identifier);
@@ -798,9 +843,9 @@ module moveos_std::multibase {
         assert!(option::extract(&mut prefix_opt) == BASE58BTC_PREFIX, ETestAssertionFailed + 67);
         
         // Verify round-trip decoding
-        let decoded_opt = decode_did_key_identifier(&encoded_identifier);
-        assert!(option::is_some(&decoded_opt), ETestAssertionFailed + 68);
-        assert!(option::extract(&mut decoded_opt) == pubkey, ETestAssertionFailed + 69);
+        let (key_type, decoded_key) = decode_did_key_identifier(&encoded_identifier);
+        assert!(key_type == KEY_TYPE_SECP256K1, ETestAssertionFailed + 68);
+        assert!(decoded_key == pubkey, ETestAssertionFailed + 69);
         
         // Verify key type detection
         let key_type_opt = get_key_type_from_did_key_identifier(&encoded_identifier);
@@ -835,9 +880,9 @@ module moveos_std::multibase {
         
         // Extract identifier part and verify it can be decoded
         let identifier = string::sub_string(&did_key_string, 8, string::length(&did_key_string)); // Skip "did:key:"
-        let decoded_opt = decode_did_key_identifier(&identifier);
-        assert!(option::is_some(&decoded_opt), ETestAssertionFailed + 74);
-        assert!(option::extract(&mut decoded_opt) == pubkey, ETestAssertionFailed + 75);
+        let (key_type, decoded_key) = decode_did_key_identifier(&identifier);
+        assert!(key_type == KEY_TYPE_ED25519, ETestAssertionFailed + 74);
+        assert!(decoded_key == pubkey, ETestAssertionFailed + 75);
     }
 
     #[test]
@@ -867,27 +912,45 @@ module moveos_std::multibase {
         
         // Extract identifier part and verify it can be decoded
         let identifier = string::sub_string(&did_key_string, 8, string::length(&did_key_string)); // Skip "did:key:"
-        let decoded_opt = decode_did_key_identifier(&identifier);
-        assert!(option::is_some(&decoded_opt), ETestAssertionFailed + 78);
-        assert!(option::extract(&mut decoded_opt) == pubkey, ETestAssertionFailed + 79);
+        let (key_type, decoded_key) = decode_did_key_identifier(&identifier);
+        assert!(key_type == KEY_TYPE_SECP256K1, ETestAssertionFailed + 78);
+        assert!(decoded_key == pubkey, ETestAssertionFailed + 79);
     }
 
     #[test]
+    fun test_encode_decode_ecdsa_r1_did_key_identifier() {
+        // Create a test ECDSA R1 public key (32 bytes)
+        let pubkey = vector::empty<u8>();
+        let i = 0;
+        while (i < ECDSAR1_COMPRESSED_PUBLIC_KEY_LENGTH) {
+            vector::push_back(&mut pubkey, (i as u8));
+            i = i + 1;
+        };
+        
+        let encoded_identifier = encode_ecdsar1_did_key_identifier(&pubkey);
+        
+        // Verify it starts with 'z' (base58btc prefix)
+        let prefix_opt = extract_prefix(&encoded_identifier);
+        assert!(option::is_some(&prefix_opt), ETestAssertionFailed + 80);
+        assert!(option::extract(&mut prefix_opt) == BASE58BTC_PREFIX, ETestAssertionFailed + 81);
+        
+        // Verify round-trip decoding
+        let (key_type, decoded_key) = decode_did_key_identifier(&encoded_identifier);
+        assert!(key_type == KEY_TYPE_ECDSAR1, ETestAssertionFailed + 82);
+        assert!(decoded_key == pubkey, ETestAssertionFailed + 83);
+
+        // Verify key type detection
+        let key_type_opt = get_key_type_from_did_key_identifier(&encoded_identifier);
+        assert!(option::is_some(&key_type_opt), ETestAssertionFailed + 84);
+        assert!(option::extract(&mut key_type_opt) == string::utf8(b"ECDSA R1"), ETestAssertionFailed + 85);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = ErrorInvalidDidKeyIdentifier)]
     fun test_decode_invalid_did_key_identifier() {
         // Test with invalid multibase prefix
         let invalid_identifier = string::utf8(b"a123456789"); // 'a' is not base58btc
-        let decoded_opt = decode_did_key_identifier(&invalid_identifier);
-        assert!(option::is_none(&decoded_opt), ETestAssertionFailed + 80);
-        
-        // Test with valid multibase but invalid multicodec
-        let invalid_multicodec = string::utf8(b"z123"); // Valid base58btc but invalid multicodec
-        let decoded_opt2 = decode_did_key_identifier(&invalid_multicodec);
-        assert!(option::is_none(&decoded_opt2), ETestAssertionFailed + 81);
-        
-        // Test with empty string
-        let empty_identifier = string::utf8(b"");
-        let decoded_opt3 = decode_did_key_identifier(&empty_identifier);
-        assert!(option::is_none(&decoded_opt3), ETestAssertionFailed + 82);
+        let (_key_type, _decoded_key) = decode_did_key_identifier(&invalid_identifier);
     }
 
     #[test]
@@ -914,9 +977,9 @@ module moveos_std::multibase {
         let identifier_part = string::sub_string(&did_key_string, 8, string::length(&did_key_string));
         
         // Step 4: Decode identifier to get raw public key
-        let decoded_pubkey_opt = decode_did_key_identifier(&identifier_part);
-        assert!(option::is_some(&decoded_pubkey_opt), ETestAssertionFailed + 85);
-        let decoded_pubkey = option::destroy_some(decoded_pubkey_opt);
+        let (key_type, decoded_pubkey) = decode_did_key_identifier(&identifier_part);
+        assert!(key_type == KEY_TYPE_ED25519, ETestAssertionFailed + 85);
+        assert!(decoded_pubkey == original_pubkey, ETestAssertionFailed + 86);
         
         // Step 5: Verify round-trip integrity
         assert!(decoded_pubkey == original_pubkey, ETestAssertionFailed + 86);

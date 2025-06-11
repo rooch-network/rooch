@@ -77,10 +77,10 @@ module rooch_framework::ecdsa_r1 {
 ### 3.5. `session_key` & `session_validator` 模块更新
 
 *   **`session_key.move`**:
-    *   新增签名方案常量：`const SIGNATURE_SCHEME_SECP256R1: u8 = 2;` (假设值为2)。
-    *   新增函数 `secp256r1_public_key_to_authentication_key`。它接收 `r1` 公钥，通过 `sha2-256` 哈希后，在前面加上 `SIGNATURE_SCHEME_SECP256R1` 作为 scheme 字节，生成最终的 `authentication_key`。
+    *   新增签名方案常量：`const SIGNATURE_SCHEME_ECDSAR1: u8 = 2;` (假设值为2)。
+    *   新增函数 `secp256r1_public_key_to_authentication_key`。它接收 `r1` 公钥，通过 `sha2-256` 哈希后，在前面加上 `SIGNATURE_SCHEME_ECDSAR1` 作为 scheme 字节，生成最终的 `authentication_key`。
 *   **`auth_validator/session_validator.move`**:
-    *   在 `validate_authenticator_payload` 和 `validate_signature` 函数中增加新的 `else if` 分支来处理 `SIGNATURE_SCHEME_SECP256R1`。
+    *   在 `validate_authenticator_payload` 和 `validate_signature` 函数中增加新的 `else if` 分支来处理 `SIGNATURE_SCHEME_ECDSAR1`。
     *   当 `scheme` 匹配时：
         *   调用 `ecdsa_r1::verify` 进行验签。
         *   调用 `session_key::secp256r1_public_key_to_authentication_key` 生成 `auth_key`。

@@ -63,6 +63,9 @@ For more details on the Multibase standard, see: [https://github.com/multiformat
     -  [Supported Encodings](#@Supported_Encodings_1)
     -  [Error Handling](#@Error_Handling_2)
 -  [Constants](#@Constants_3)
+-  [Function `key_type_ed25519`](#0x2_multibase_key_type_ed25519)
+-  [Function `key_type_secp256k1`](#0x2_multibase_key_type_secp256k1)
+-  [Function `key_type_ecdsar1`](#0x2_multibase_key_type_ecdsar1)
 -  [Function `base58btc_name`](#0x2_multibase_base58btc_name)
 -  [Function `base32_name`](#0x2_multibase_base32_name)
 -  [Function `base64pad_name`](#0x2_multibase_base64pad_name)
@@ -74,10 +77,10 @@ For more details on the Multibase standard, see: [https://github.com/multiformat
 -  [Function `encode`](#0x2_multibase_encode)
 -  [Function `encode_ed25519_key`](#0x2_multibase_encode_ed25519_key)
 -  [Function `encode_secp256k1_key`](#0x2_multibase_encode_secp256k1_key)
--  [Function `encode_secp256r1_key`](#0x2_multibase_encode_secp256r1_key)
--  [Function `encode_ecdsa_r1_key`](#0x2_multibase_encode_ecdsa_r1_key)
+-  [Function `encode_ecdsar1_key`](#0x2_multibase_encode_ecdsar1_key)
 -  [Function `encode_ed25519_did_key_identifier`](#0x2_multibase_encode_ed25519_did_key_identifier)
 -  [Function `encode_secp256k1_did_key_identifier`](#0x2_multibase_encode_secp256k1_did_key_identifier)
+-  [Function `encode_ecdsar1_did_key_identifier`](#0x2_multibase_encode_ecdsar1_did_key_identifier)
 -  [Function `decode`](#0x2_multibase_decode)
 -  [Function `decode_ed25519_key`](#0x2_multibase_decode_ed25519_key)
 -  [Function `decode_secp256k1_key`](#0x2_multibase_decode_secp256k1_key)
@@ -85,6 +88,7 @@ For more details on the Multibase standard, see: [https://github.com/multiformat
 -  [Function `decode_did_key_identifier`](#0x2_multibase_decode_did_key_identifier)
 -  [Function `generate_ed25519_did_key_string`](#0x2_multibase_generate_ed25519_did_key_string)
 -  [Function `generate_secp256k1_did_key_string`](#0x2_multibase_generate_secp256k1_did_key_string)
+-  [Function `generate_ecdsar1_did_key_string`](#0x2_multibase_generate_ecdsar1_did_key_string)
 -  [Function `get_key_type_from_did_key_identifier`](#0x2_multibase_get_key_type_from_did_key_identifier)
 -  [Function `get_prefix_for_encoding`](#0x2_multibase_get_prefix_for_encoding)
 -  [Function `get_encoding_from_prefix`](#0x2_multibase_get_encoding_from_prefix)
@@ -143,6 +147,16 @@ The prefix for base64pad encoding ('M' in ASCII)
 
 
 <pre><code><b>const</b> <a href="multibase.md#0x2_multibase_BASE64PAD_PREFIX">BASE64PAD_PREFIX</a>: u8 = 77;
+</code></pre>
+
+
+
+<a name="0x2_multibase_ECDSAR1_COMPRESSED_PUBLIC_KEY_LENGTH"></a>
+
+The length of Secp256r1 compressed public keys in bytes
+
+
+<pre><code><b>const</b> <a href="multibase.md#0x2_multibase_ECDSAR1_COMPRESSED_PUBLIC_KEY_LENGTH">ECDSAR1_COMPRESSED_PUBLIC_KEY_LENGTH</a>: u64 = 33;
 </code></pre>
 
 
@@ -241,6 +255,16 @@ Error when an invalid base58 character is encountered
 
 
 
+<a name="0x2_multibase_ErrorInvalidDidKeyIdentifier"></a>
+
+Error when the did:key identifier is invalid
+
+
+<pre><code><b>const</b> <a href="multibase.md#0x2_multibase_ErrorInvalidDidKeyIdentifier">ErrorInvalidDidKeyIdentifier</a>: u64 = 8;
+</code></pre>
+
+
+
 <a name="0x2_multibase_ErrorInvalidEd25519KeyLength"></a>
 
 Error when the Ed25519 key length is invalid
@@ -281,6 +305,43 @@ Error when an unsupported encoding base is used
 
 
 
+<a name="0x2_multibase_KEY_TYPE_ECDSAR1"></a>
+
+
+
+<pre><code><b>const</b> <a href="multibase.md#0x2_multibase_KEY_TYPE_ECDSAR1">KEY_TYPE_ECDSAR1</a>: u8 = 3;
+</code></pre>
+
+
+
+<a name="0x2_multibase_KEY_TYPE_ED25519"></a>
+
+
+
+<pre><code><b>const</b> <a href="multibase.md#0x2_multibase_KEY_TYPE_ED25519">KEY_TYPE_ED25519</a>: u8 = 1;
+</code></pre>
+
+
+
+<a name="0x2_multibase_KEY_TYPE_SECP256K1"></a>
+
+
+
+<pre><code><b>const</b> <a href="multibase.md#0x2_multibase_KEY_TYPE_SECP256K1">KEY_TYPE_SECP256K1</a>: u8 = 2;
+</code></pre>
+
+
+
+<a name="0x2_multibase_MULTICODEC_ECDSA_R1_PREFIX"></a>
+
+ECDSA R1 multicodec prefix (0x1200)
+
+
+<pre><code><b>const</b> <a href="multibase.md#0x2_multibase_MULTICODEC_ECDSA_R1_PREFIX">MULTICODEC_ECDSA_R1_PREFIX</a>: <a href="">vector</a>&lt;u8&gt; = [18, 0];
+</code></pre>
+
+
+
 <a name="0x2_multibase_MULTICODEC_ED25519_PREFIX"></a>
 
 Ed25519 multicodec prefix (0xed01)
@@ -311,12 +372,35 @@ The length of Secp256k1 compressed public keys in bytes
 
 
 
-<a name="0x2_multibase_SECP256R1_COMPRESSED_PUBLIC_KEY_LENGTH"></a>
+<a name="0x2_multibase_key_type_ed25519"></a>
 
-The length of Secp256r1 compressed public keys in bytes
+## Function `key_type_ed25519`
 
 
-<pre><code><b>const</b> <a href="multibase.md#0x2_multibase_SECP256R1_COMPRESSED_PUBLIC_KEY_LENGTH">SECP256R1_COMPRESSED_PUBLIC_KEY_LENGTH</a>: u64 = 33;
+
+<pre><code><b>public</b> <b>fun</b> <a href="multibase.md#0x2_multibase_key_type_ed25519">key_type_ed25519</a>(): u8
+</code></pre>
+
+
+
+<a name="0x2_multibase_key_type_secp256k1"></a>
+
+## Function `key_type_secp256k1`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="multibase.md#0x2_multibase_key_type_secp256k1">key_type_secp256k1</a>(): u8
+</code></pre>
+
+
+
+<a name="0x2_multibase_key_type_ecdsar1"></a>
+
+## Function `key_type_ecdsar1`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="multibase.md#0x2_multibase_key_type_ecdsar1">key_type_ecdsar1</a>(): u8
 </code></pre>
 
 
@@ -472,9 +556,9 @@ Encodes a Secp256k1 compressed public key using base58btc with multibase prefix
 
 
 
-<a name="0x2_multibase_encode_secp256r1_key"></a>
+<a name="0x2_multibase_encode_ecdsar1_key"></a>
 
-## Function `encode_secp256r1_key`
+## Function `encode_ecdsar1_key`
 
 Encodes a Secp256r1 compressed public key using base58btc with multibase prefix
 
@@ -482,22 +566,7 @@ Encodes a Secp256r1 compressed public key using base58btc with multibase prefix
 @return - A multibase encoded string with 'z' prefix
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="multibase.md#0x2_multibase_encode_secp256r1_key">encode_secp256r1_key</a>(pubkey: &<a href="">vector</a>&lt;u8&gt;): <a href="_String">string::String</a>
-</code></pre>
-
-
-
-<a name="0x2_multibase_encode_ecdsa_r1_key"></a>
-
-## Function `encode_ecdsa_r1_key`
-
-Alias for encode_secp256r1_key, encodes an ECDSA R1 (P-256) compressed public key using base58btc with multibase prefix
-
-@param pubkey - The raw ECDSA R1 compressed public key bytes (33 bytes)
-@return - A multibase encoded string with 'z' prefix
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="multibase.md#0x2_multibase_encode_ecdsa_r1_key">encode_ecdsa_r1_key</a>(pubkey: &<a href="">vector</a>&lt;u8&gt;): <a href="_String">string::String</a>
+<pre><code><b>public</b> <b>fun</b> <a href="multibase.md#0x2_multibase_encode_ecdsar1_key">encode_ecdsar1_key</a>(pubkey: &<a href="">vector</a>&lt;u8&gt;): <a href="_String">string::String</a>
 </code></pre>
 
 
@@ -528,6 +597,17 @@ Encodes a Secp256k1 compressed public key as a did:key identifier with multicode
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="multibase.md#0x2_multibase_encode_secp256k1_did_key_identifier">encode_secp256k1_did_key_identifier</a>(pubkey: &<a href="">vector</a>&lt;u8&gt;): <a href="_String">string::String</a>
+</code></pre>
+
+
+
+<a name="0x2_multibase_encode_ecdsar1_did_key_identifier"></a>
+
+## Function `encode_ecdsar1_did_key_identifier`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="multibase.md#0x2_multibase_encode_ecdsar1_did_key_identifier">encode_ecdsar1_did_key_identifier</a>(pubkey: &<a href="">vector</a>&lt;u8&gt;): <a href="_String">string::String</a>
 </code></pre>
 
 
@@ -596,13 +676,13 @@ Decodes a Secp256r1 public key from a multibase encoded string
 
 ## Function `decode_did_key_identifier`
 
-Decodes a did:key identifier to extract the raw public key bytes
+Decodes a did:key identifier to extract the key type and raw public key bytes
 
 @param did_key_identifier - The did:key identifier (e.g., "z6Mk..." or "zQ3s...")
-@return - Option containing the raw public key bytes, or none if decoding fails
+@return - the raw public key bytes, or abort if decoding fails
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="multibase.md#0x2_multibase_decode_did_key_identifier">decode_did_key_identifier</a>(did_key_identifier: &<a href="_String">string::String</a>): <a href="_Option">option::Option</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="multibase.md#0x2_multibase_decode_did_key_identifier">decode_did_key_identifier</a>(did_key_identifier: &<a href="_String">string::String</a>): (u8, <a href="">vector</a>&lt;u8&gt;)
 </code></pre>
 
 
@@ -633,6 +713,17 @@ Generate a complete did:key string from a Secp256k1 public key
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="multibase.md#0x2_multibase_generate_secp256k1_did_key_string">generate_secp256k1_did_key_string</a>(pubkey: &<a href="">vector</a>&lt;u8&gt;): <a href="_String">string::String</a>
+</code></pre>
+
+
+
+<a name="0x2_multibase_generate_ecdsar1_did_key_string"></a>
+
+## Function `generate_ecdsar1_did_key_string`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="multibase.md#0x2_multibase_generate_ecdsar1_did_key_string">generate_ecdsar1_did_key_string</a>(pubkey: &<a href="">vector</a>&lt;u8&gt;): <a href="_String">string::String</a>
 </code></pre>
 
 
