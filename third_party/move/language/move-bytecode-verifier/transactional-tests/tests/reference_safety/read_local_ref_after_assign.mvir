@@ -10,7 +10,7 @@ label b0:
     assign_ref = copy(read_ref);
     *copy(assign_ref) = 0;
     assert(*copy(assign_ref) == 0, 42);
-    no = *move(read_ref); // valid to read reference after assiging a copy!
+    no = *move(read_ref); // valid to read reference after assigning a copy!
     _ = move(assign_ref);
     return;
 }
