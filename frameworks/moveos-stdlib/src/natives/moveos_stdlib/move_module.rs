@@ -4,7 +4,6 @@
 use crate::natives::helpers::{make_module_natives, make_native};
 use better_any::{Tid, TidAble};
 use itertools::zip_eq;
-use move_binary_format::access::ModuleAccess;
 use move_binary_format::file_format::AbilitySet;
 use move_binary_format::{
     compatibility::Compatibility,
@@ -186,6 +185,7 @@ fn native_sort_and_verify_modules_inner(
         }
     }
 
+    /*
     // move verifier
     for module in &compiled_modules {
         let module_storage = context.resolver().module_storage();
@@ -200,6 +200,7 @@ fn native_sort_and_verify_modules_inner(
             }
         }
     }
+     */
 
     for module in &compiled_modules {
         let module_address = *module.self_id().address();

@@ -611,7 +611,7 @@ impl<'a, S> ModuleCache for MoveOSCodeCache<'a, S> {
         let read_guard = self.global_module_cache.read();
 
         if let Some(module) = read_guard.get(key) {
-            return Ok(Some((module, Self::Version::default())));
+            return Ok(Some((module, Some(1))));
         }
 
         let read = self.module_cache.get_module_or_build_with(key, builder)?;

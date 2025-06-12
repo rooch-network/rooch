@@ -499,7 +499,7 @@ where
                             module.self_id(),
                             module.clone(),
                             extension,
-                            Some(1),
+                            Some(0),
                         )?
                     }
                 }
@@ -725,6 +725,13 @@ where
                 //self.vm.mark_loader_cache_as_invalid();
             };
         }
+
+        self.code_cache.global_module_cache.write().flush();
+        self.code_cache
+            .module_cache
+            .module_cache
+            .borrow_mut()
+            .clear();
 
         action_result
     }
