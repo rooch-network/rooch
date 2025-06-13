@@ -25,6 +25,9 @@ pub struct ShowCommand {
     #[clap(flatten)]
     pub context_options: WalletContextOptions,
 
+    #[clap(short = 'l', long = "limit", default_value = "50")]
+    limit: u64,
+
     /// Return command outputs in json format
     #[clap(long, default_value = "false")]
     json: bool,
