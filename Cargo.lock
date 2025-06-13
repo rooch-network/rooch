@@ -10589,7 +10589,6 @@ version = "0.9.6"
 dependencies = [
  "bitcoin 0.32.5",
  "fastcrypto",
- "generic-array",
  "hex",
  "move-binary-format",
  "move-core-types",
@@ -10600,8 +10599,6 @@ dependencies = [
  "moveos-stdlib",
  "moveos-types",
  "rooch-types",
- "sha2 0.10.9",
- "signature 2.2.0",
  "smallvec",
  "tracing",
 ]
