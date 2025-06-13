@@ -164,7 +164,7 @@ impl HumanReadableDisplay for StateChangeSetView {
         format!(
             r#"{indent}New objects:
 {indent}{}
-            
+
 {indent}Modified objects:
 {indent}{}
 
