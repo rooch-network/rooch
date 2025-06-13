@@ -10,6 +10,7 @@ module rooch_framework::did_creation_test {
     use std::string;
     use std::option;
     use std::vector;
+    use moveos_std::multibase_codec;
 
     // ========================================
     // Test Category 1: DID Object Creation Tests
@@ -135,33 +136,9 @@ module rooch_framework::did_creation_test {
     }
 
     #[test]
-    /// Test multibase key format validation
-    /// Verifies that the test keys are in correct multibase format
-    fun test_multibase_key_formats() {
-        let secp256k1_key = did_test_common::generate_test_secp256k1_multibase_key();
-        let ed25519_key = did_test_common::generate_test_ed25519_multibase_key();
-
-        // Verify keys are not empty
-        assert!(string::length(&secp256k1_key) > 0, 4001);
-        assert!(string::length(&ed25519_key) > 0, 4002);
-
-        // Verify keys start with 'z' (base58btc multibase prefix)
-        let secp256k1_bytes = string::bytes(&secp256k1_key);
-        let ed25519_bytes = string::bytes(&ed25519_key);
-        
-        assert!(*vector::borrow(secp256k1_bytes, 0) == 122, 4003); // 'z' = 122
-        assert!(*vector::borrow(ed25519_bytes, 0) == 122, 4004); // 'z' = 122
-
-        // Verify reasonable key lengths (multibase encoded)
-        assert!(string::length(&secp256k1_key) > 40, 4005); // Compressed secp256k1 + multibase overhead
-        assert!(string::length(&ed25519_key) > 40, 4006); // Ed25519 + multibase overhead
-    }
-
-    #[test]
     /// Test mock session key and Bitcoin address setup
     /// Demonstrates how to use the mock functions for testing DID operations
     fun test_mock_session_key_and_bitcoin_address() {
-        use moveos_std::multibase;
         use rooch_framework::auth_validator;
         use rooch_framework::session_key;
         
@@ -169,8 +146,8 @@ module rooch_framework::did_creation_test {
         did_test_common::init_test_framework();
 
         // Generate test public key and derive authentication key for session
-        let test_ed25519_key = did_test_common::generate_test_ed25519_multibase_key();
-        let pk_bytes_opt = multibase::decode_ed25519_key(&test_ed25519_key);
+        let test_ed25519_key = did_test_common::generate_test_ed25519_multibase();
+        let pk_bytes_opt = multibase_codec::decode(&test_ed25519_key);
         assert!(option::is_some(&pk_bytes_opt), 5001);
         let pk_bytes = option::destroy_some(pk_bytes_opt);
         

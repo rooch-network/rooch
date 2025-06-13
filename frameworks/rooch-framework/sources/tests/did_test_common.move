@@ -11,13 +11,14 @@ module rooch_framework::did_test_common {
     use std::option;
     use moveos_std::account;
     use moveos_std::object::ObjectID;
-    use moveos_std::multibase;
+    use moveos_std::did_key;
     use rooch_framework::session_key;
     use rooch_framework::auth_validator;
     use rooch_framework::bitcoin_address::{Self, BitcoinAddress};
     use moveos_std::timestamp;
     use moveos_std::tx_context;
     use moveos_std::bcs;
+    use moveos_std::multibase_codec;
     use std::vector;
 
     // ========================================
@@ -26,27 +27,27 @@ module rooch_framework::did_test_common {
 
     /// Generate a test Secp256k1 public key in multibase format
     /// This is a valid compressed Secp256k1 public key for testing purposes
-    public fun generate_test_secp256k1_multibase_key(): string::String {
+    public fun generate_test_secp256k1_multibase(): string::String {
         //let pubkey = x"033e99a541db69bd32040dfe5037fbf5210dafa8151a71e21c5204b05d95ce0a62";
         let pk = b"0";
         vector::append(&mut pk, bcs::to_bytes(&tx_context::fresh_address())); 
-        multibase::encode_secp256k1_key(&pk)
+        multibase_codec::encode_base58btc(&pk)
     }
 
     /// Generate a test Ed25519 public key in multibase format  
-    public fun generate_test_ed25519_multibase_key(): string::String {
+    public fun generate_test_ed25519_multibase(): string::String {
         // This is a test Ed25519 public key (32 bytes) in base58btc multibase format
         //let pk = x"cc62332e34bb2d5cd69f60efbb2a36cb916c7eb458301ea36636c4dbb012bd88";
         let pk = bcs::to_bytes(&tx_context::fresh_address());
-        multibase::encode_ed25519_key(&pk)
+        multibase_codec::encode_base58btc(&pk)
     }
 
     /// Generate a test ECDSA R1 (P-256) public key in multibase format
-    public fun generate_test_ecdsa_r1_multibase_key(): string::String {
+    public fun generate_test_ecdsa_r1_multibase(): string::String {
         // Generate a test ECDSA R1 public key (33 bytes) in base58btc multibase format
         let pk = b"0";
         vector::append(&mut pk, bcs::to_bytes(&tx_context::fresh_address())); 
-        multibase::encode_ecdsar1_key(&pk)
+        multibase_codec::encode_base58btc(&pk)
     }
 
     /// Generate a Secp256k1 public key and corresponding Bitcoin address for testing
@@ -55,7 +56,7 @@ module rooch_framework::did_test_common {
 
         let bitcoin_addr = bitcoin_address::derive_bitcoin_taproot_address_from_pubkey(&pubkey);
         //the address is bc1p72fvqwm9w4wcsd205maky9qejf6dwa6qeku5f5vnu4phpp3vvpws0p2f4g
-        let multibase_key = multibase::encode_secp256k1_key(&pubkey);
+        let multibase_key = multibase_codec::encode_base58btc(&pubkey);
         (multibase_key, bitcoin_addr)
     }
 
@@ -65,7 +66,7 @@ module rooch_framework::did_test_common {
         let (creator_public_key_multibase, creator_bitcoin_address) = generate_secp256k1_public_key_and_bitcoin_address();
         let creator_address = bitcoin_address::to_rooch_address(&creator_bitcoin_address);
         let creator_signer = account::create_signer_for_testing(creator_address);
-        let pk_bytes_opt = multibase::decode_secp256k1_key(&creator_public_key_multibase);
+        let pk_bytes_opt = multibase_codec::decode(&creator_public_key_multibase);
         assert!(option::is_some(&pk_bytes_opt), 9001);
         let pk_bytes = option::destroy_some(pk_bytes_opt);
         let auth_key = session_key::secp256k1_public_key_to_authentication_key(&pk_bytes);
@@ -94,7 +95,7 @@ module rooch_framework::did_test_common {
         let creator_signer = account::create_signer_for_testing(creator_address);
 
         // Setup mock Bitcoin address and session key for testing
-        let pk_bytes_opt = multibase::decode_secp256k1_key(&creator_public_key_multibase);
+        let pk_bytes_opt = multibase_codec::decode(&creator_public_key_multibase);
         assert!(option::is_some(&pk_bytes_opt), 9001);
         let pk_bytes = option::destroy_some(pk_bytes_opt);
         let auth_key = session_key::secp256k1_public_key_to_authentication_key(&pk_bytes);
@@ -125,7 +126,7 @@ module rooch_framework::did_test_common {
         let creator_signer = account::create_signer_for_testing(creator_address);
 
         // Setup mock Bitcoin address and session key for testing
-        let pk_bytes_opt = multibase::decode_secp256k1_key(&creator_public_key_multibase);
+        let pk_bytes_opt = multibase_codec::decode(&creator_public_key_multibase);
         assert!(option::is_some(&pk_bytes_opt), 9002);
         let pk_bytes = option::destroy_some(pk_bytes_opt);
         let auth_key = session_key::secp256k1_public_key_to_authentication_key(&pk_bytes);
@@ -155,7 +156,7 @@ module rooch_framework::did_test_common {
 
     /// Setup session key authentication for Secp256k1 key
     public fun setup_secp256k1_session_key_auth(public_key_multibase: &string::String) {
-        let pk_bytes_opt = multibase::decode_secp256k1_key(public_key_multibase);
+        let pk_bytes_opt = multibase_codec::decode(public_key_multibase);
         assert!(option::is_some(&pk_bytes_opt), 9003);
         let pk_bytes = option::destroy_some(pk_bytes_opt);
         let auth_key = session_key::secp256k1_public_key_to_authentication_key(&pk_bytes);
@@ -164,7 +165,7 @@ module rooch_framework::did_test_common {
 
     /// Setup session key authentication for Ed25519 key
     public fun setup_ed25519_session_key_auth(public_key_multibase: &string::String) {
-        let pk_bytes_opt = multibase::decode_ed25519_key(public_key_multibase);
+        let pk_bytes_opt = multibase_codec::decode(public_key_multibase);
         assert!(option::is_some(&pk_bytes_opt), 9004);
         let pk_bytes = option::destroy_some(pk_bytes_opt);
         let auth_key = session_key::ed25519_public_key_to_authentication_key(&pk_bytes);
@@ -221,7 +222,7 @@ module rooch_framework::did_test_common {
         // session key authentication for service addition is complex
         let custodian_signer = setup_custodian_with_cadop_service();
         let user_did_key_string = generate_test_did_key_string();
-        let custodian_service_pk_multibase = generate_test_secp256k1_multibase_key();
+        let custodian_service_pk_multibase = generate_test_secp256k1_multibase();
         let custodian_service_vm_type = string::utf8(b"EcdsaSecp256k1VerificationKey2019");
         
         (custodian_signer, user_did_key_string, custodian_service_pk_multibase, custodian_service_vm_type)
@@ -233,7 +234,7 @@ module rooch_framework::did_test_common {
         let pk = b"0";
         vector::append(&mut pk, bcs::to_bytes(&tx_context::fresh_address()));
         
-        // Use the new multibase function that includes multicodec prefix
-        multibase::generate_ecdsar1_did_key_string(&pk)
+        // Use the did_key module to generate a did:key string
+        did_key::generate_secp256r1(&pk)
     }
 } 

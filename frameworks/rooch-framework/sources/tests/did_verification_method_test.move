@@ -28,7 +28,7 @@ module rooch_framework::did_verification_method_test {
         let did_signer = account::create_signer_for_testing(did_address);
 
         // Add new Ed25519 verification method - use a different working Ed25519 key
-        let new_ed25519_key = did_test_common::generate_test_ed25519_multibase_key();
+        let new_ed25519_key = did_test_common::generate_test_ed25519_multibase();
         let fragment = string::utf8(b"ed25519-key-1");
         let method_type = string::utf8(b"Ed25519VerificationKey2020");
         let relationships = vector[0u8, 1u8]; // assertion_method only (not authentication to avoid session key registration)
@@ -59,7 +59,7 @@ module rooch_framework::did_verification_method_test {
         let did_signer = account::create_signer_for_testing(did_address);
 
         // Add new Secp256k1 verification method
-        let new_secp256k1_key = did_test_common::generate_test_secp256k1_multibase_key(); // Different key
+        let new_secp256k1_key = did_test_common::generate_test_secp256k1_multibase(); // Different key
         let fragment = string::utf8(b"secp256k1-key-1");
         let method_type = string::utf8(b"EcdsaSecp256k1VerificationKey2019");
         let relationships = vector[0u8, 2u8, 3u8]; // capability_invocation, capability_delegation
@@ -94,7 +94,7 @@ module rooch_framework::did_verification_method_test {
         // Try to add method with same fragment as existing account-key
         let fragment = string::utf8(b"account-key"); // This already exists from DID creation
         let method_type = string::utf8(b"Ed25519VerificationKey2020");
-        let new_key = did_test_common::generate_test_ed25519_multibase_key();
+        let new_key = did_test_common::generate_test_ed25519_multibase();
         let relationships = vector[0u8]; // authentication
 
         did::add_verification_method_entry(
@@ -120,7 +120,7 @@ module rooch_framework::did_verification_method_test {
         // Add a verification method first
         let fragment = string::utf8(b"test-key");
         let method_type = string::utf8(b"Ed25519VerificationKey2020");
-        let test_key = did_test_common::generate_test_ed25519_multibase_key();
+        let test_key = did_test_common::generate_test_ed25519_multibase();
         let relationships = vector[1u8]; // assertion_method
 
         did::add_verification_method_entry(
@@ -174,7 +174,7 @@ module rooch_framework::did_verification_method_test {
         // Add a verification method first without key_agreement relationship
         let fragment = string::utf8(b"test-key");
         let method_type = string::utf8(b"Ed25519VerificationKey2020");
-        let test_key = did_test_common::generate_test_ed25519_multibase_key();
+        let test_key = did_test_common::generate_test_ed25519_multibase();
         let relationships = vector[1u8]; // assertion_method only
 
         did::add_verification_method_entry(
@@ -211,7 +211,7 @@ module rooch_framework::did_verification_method_test {
         // Add a verification method with multiple relationships
         let fragment = string::utf8(b"test-key");
         let method_type = string::utf8(b"Ed25519VerificationKey2020");
-        let test_key = did_test_common::generate_test_ed25519_multibase_key();
+        let test_key = did_test_common::generate_test_ed25519_multibase();
         let relationships = vector[1u8, 4u8]; // assertion_method, key_agreement
 
         did::add_verification_method_entry(
@@ -315,7 +315,7 @@ module rooch_framework::did_verification_method_test {
         // Add Ed25519 verification method - use a working Ed25519 key and avoid authentication relationship
         let ed25519_fragment = string::utf8(b"ed25519-key");
         let ed25519_type = string::utf8(b"Ed25519VerificationKey2020");
-        let ed25519_key = did_test_common::generate_test_ed25519_multibase_key();
+        let ed25519_key = did_test_common::generate_test_ed25519_multibase();
         let ed25519_relationships = vector[0u8, 1u8, 4u8]; // assertion_method, key_agreement (avoid authentication)
 
         did::add_verification_method_entry(
@@ -329,7 +329,7 @@ module rooch_framework::did_verification_method_test {
         // Add another Secp256k1 verification method
         let secp256k1_fragment = string::utf8(b"secp256k1-key");
         let secp256k1_type = string::utf8(b"EcdsaSecp256k1VerificationKey2019");
-        let secp256k1_key = did_test_common::generate_test_secp256k1_multibase_key(); // Different key
+        let secp256k1_key = did_test_common::generate_test_secp256k1_multibase(); // Different key
         let secp256k1_relationships = vector[0u8, 1u8, 2u8]; // assertion_method, capability_invocation
 
         did::add_verification_method_entry(
@@ -407,7 +407,7 @@ module rooch_framework::did_verification_method_test {
         // Add ECDSA R1 verification method
         let fragment = string::utf8(b"ecdsa-r1-key");
         let method_type = string::utf8(b"EcdsaSecp256r1VerificationKey2019");
-        let ecdsa_r1_key = did_test_common::generate_test_ecdsa_r1_multibase_key();
+        let ecdsa_r1_key = did_test_common::generate_test_ecdsa_r1_multibase();
         let relationships = vector[1u8, 2u8]; // assertion_method, capability_invocation
 
         did::add_verification_method_entry(
@@ -440,7 +440,7 @@ module rooch_framework::did_verification_method_test {
         // Add first ECDSA R1 verification method
         let fragment = string::utf8(b"ecdsa-r1-key");
         let method_type = string::utf8(b"EcdsaSecp256r1VerificationKey2019");
-        let ecdsa_r1_key = did_test_common::generate_test_ecdsa_r1_multibase_key();
+        let ecdsa_r1_key = did_test_common::generate_test_ecdsa_r1_multibase();
         let relationships = vector[1u8]; // assertion_method
 
         did::add_verification_method_entry(
@@ -475,7 +475,7 @@ module rooch_framework::did_verification_method_test {
         // Add ECDSA R1 verification method
         let fragment = string::utf8(b"ecdsa-r1-key");
         let method_type = string::utf8(b"EcdsaSecp256r1VerificationKey2019");
-        let ecdsa_r1_key = did_test_common::generate_test_ecdsa_r1_multibase_key();
+        let ecdsa_r1_key = did_test_common::generate_test_ecdsa_r1_multibase();
         let relationships = vector[1u8, 2u8]; // assertion_method, capability_invocation
 
         did::add_verification_method_entry(
@@ -512,7 +512,7 @@ module rooch_framework::did_verification_method_test {
         // Add ECDSA R1 verification method with initial relationships
         let fragment = string::utf8(b"ecdsa-r1-key");
         let method_type = string::utf8(b"EcdsaSecp256r1VerificationKey2019");
-        let ecdsa_r1_key = did_test_common::generate_test_ecdsa_r1_multibase_key();
+        let ecdsa_r1_key = did_test_common::generate_test_ecdsa_r1_multibase();
         let relationships = vector[1u8]; // assertion_method only
 
         did::add_verification_method_entry(

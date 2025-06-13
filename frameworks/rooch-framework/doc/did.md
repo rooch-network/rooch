@@ -89,7 +89,8 @@
 <b>use</b> <a href="">0x2::account</a>;
 <b>use</b> <a href="">0x2::address</a>;
 <b>use</b> <a href="">0x2::event</a>;
-<b>use</b> <a href="">0x2::multibase</a>;
+<b>use</b> <a href="">0x2::multibase_codec</a>;
+<b>use</b> <a href="">0x2::multibase_key</a>;
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::simple_map</a>;
 <b>use</b> <a href="">0x2::table</a>;
@@ -281,6 +282,16 @@ Event emitted when a service is removed from a DID document
 ## Constants
 
 
+<a name="0x3_did_ErrorInvalidPublicKeyMultibaseFormat"></a>
+
+The format of the publicKeyMultibase string is invalid or cannot be parsed
+
+
+<pre><code><b>const</b> <a href="did.md#0x3_did_ErrorInvalidPublicKeyMultibaseFormat">ErrorInvalidPublicKeyMultibaseFormat</a>: u64 = 20;
+</code></pre>
+
+
+
 <a name="0x3_did_ErrorInvalidSignature"></a>
 
 Invalid signature (can be reused or made more specific)
@@ -407,16 +418,6 @@ Invalid DID string format (should be "did:method:identifier")
 
 
 <pre><code><b>const</b> <a href="did.md#0x3_did_ErrorInvalidDIDStringFormat">ErrorInvalidDIDStringFormat</a>: u64 = 22;
-</code></pre>
-
-
-
-<a name="0x3_did_ErrorInvalidPublicKeyMultibaseFormat"></a>
-
-The format of the publicKeyMultibase string is invalid or cannot be parsed
-
-
-<pre><code><b>const</b> <a href="did.md#0x3_did_ErrorInvalidPublicKeyMultibaseFormat">ErrorInvalidPublicKeyMultibaseFormat</a>: u64 = 20;
 </code></pre>
 
 

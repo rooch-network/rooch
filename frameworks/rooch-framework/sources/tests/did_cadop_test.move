@@ -95,7 +95,7 @@ module rooch_framework::did_cadop_test {
         );
         
         let user_did_key_string = did_test_common::generate_test_did_key_string();
-        let custodian_service_pk_multibase = did_test_common::generate_test_secp256k1_multibase_key();
+        let custodian_service_pk_multibase = did_test_common::generate_test_secp256k1_multibase();
         let custodian_service_vm_type = string::utf8(b"EcdsaSecp256k1VerificationKey2019");
 
         // This should fail because custodian doesn't have CadopCustodianService
