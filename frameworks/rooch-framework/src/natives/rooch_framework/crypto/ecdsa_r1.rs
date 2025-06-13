@@ -3,8 +3,9 @@
 
 use crate::natives::helpers::{make_module_natives, make_native};
 use fastcrypto::{
+    hash::Sha256,
     secp256r1::{Secp256r1PublicKey, Secp256r1Signature},
-    traits::{ToFromBytes, VerifyingKey},
+    traits::{ToFromBytes},
 };
 use move_binary_format::errors::PartialVMResult;
 use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte, NumBytes};
@@ -21,6 +22,10 @@ use std::collections::VecDeque;
 // Error codes
 const E_INVALID_SIGNATURE: u64 = 1;
 const E_INVALID_PUBKEY: u64 = 2;
+const E_INVALID_HASH_TYPE: u64 = 3;
+
+// Hash type
+const HASH_TYPE_SHA256: u8 = 1;
 
 #[derive(Debug, Clone)]
 pub struct FromBytesGasParameters {
@@ -63,9 +68,11 @@ pub fn native_verify(
     debug_assert!(_ty_args.is_empty());
     debug_assert!(args.len() == 3);
 
+    let hash_type = pop_arg!(args, u8);
     let msg = pop_arg!(args, VectorRef);
     let public_key = pop_arg!(args, VectorRef);
     let signature = pop_arg!(args, VectorRef);
+
 
     let msg_ref = msg.as_bytes_ref();
     let signature_bytes_ref = signature.as_bytes_ref();
@@ -95,7 +102,11 @@ pub fn native_verify(
     };
 
     // Verify the signature
-    let result = verifying_key.verify(msg_ref.as_slice(), &sig).is_ok();
+    let result = if hash_type == HASH_TYPE_SHA256 {
+        verifying_key.verify_with_hash::<Sha256>(msg_ref.as_slice(), &sig).is_ok()
+    } else {
+        return Ok(NativeResult::err(cost, E_INVALID_HASH_TYPE));
+    };
 
     Ok(NativeResult::ok(cost, smallvec![Value::bool(result)]))
 }

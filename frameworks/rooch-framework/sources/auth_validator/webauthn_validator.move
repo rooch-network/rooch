@@ -92,10 +92,10 @@ module rooch_framework::webauthn_validator {
         let sender = tx_context::sender();
 
         // 1. Session key exists under account
-        assert!(session_key::contains_session_key(sender, auth_key), 10005);
+        assert!(session_key::contains_session_key(sender, auth_key), auth_validator::error_validate_invalid_authenticator());
 
         // 2. Session key is also declared in the sender's DID document
-        assert!(verify_did_auth_key(sender, &auth_key), 10006);
+        assert!(verify_did_auth_key(sender, &auth_key), auth_validator::error_validate_invalid_authenticator());
 
         auth_key
     }

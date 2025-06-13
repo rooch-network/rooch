@@ -12,6 +12,7 @@
 -  [Function `register`](#0x3_auth_validator_registry_register)
 -  [Function `register_by_system`](#0x3_auth_validator_registry_register_by_system)
 -  [Function `register_by_system_with_id`](#0x3_auth_validator_registry_register_by_system_with_id)
+-  [Function `register_internal_with_id`](#0x3_auth_validator_registry_register_internal_with_id)
 -  [Function `register_internal`](#0x3_auth_validator_registry_register_internal)
 -  [Function `is_registered`](#0x3_auth_validator_registry_is_registered)
 -  [Function `borrow_validator`](#0x3_auth_validator_registry_borrow_validator)
@@ -119,6 +120,17 @@ Register a new validator by system. This function is only called by system.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry_register_by_system_with_id">register_by_system_with_id</a>&lt;ValidatorType: store&gt;(system: &<a href="">signer</a>, id: u64): u64
+</code></pre>
+
+
+
+<a name="0x3_auth_validator_registry_register_internal_with_id"></a>
+
+## Function `register_internal_with_id`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry_register_internal_with_id">register_internal_with_id</a>&lt;ValidatorType: store&gt;(id: u64): u64
 </code></pre>
 
 

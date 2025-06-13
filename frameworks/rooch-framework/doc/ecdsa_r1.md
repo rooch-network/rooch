@@ -20,6 +20,15 @@
 ## Constants
 
 
+<a name="0x3_ecdsa_r1_ErrorInvalidHashType"></a>
+
+
+
+<pre><code><b>const</b> <a href="ecdsa_r1.md#0x3_ecdsa_r1_ErrorInvalidHashType">ErrorInvalidHashType</a>: u64 = 3;
+</code></pre>
+
+
+
 <a name="0x3_ecdsa_r1_ErrorInvalidPubKey"></a>
 
 
@@ -58,12 +67,21 @@ Signature length (r, s)
 
 
 
+<a name="0x3_ecdsa_r1_HASH_TYPE_SHA256"></a>
+
+
+
+<pre><code><b>const</b> <a href="ecdsa_r1.md#0x3_ecdsa_r1_HASH_TYPE_SHA256">HASH_TYPE_SHA256</a>: u8 = 1;
+</code></pre>
+
+
+
 <a name="0x3_ecdsa_r1_verify"></a>
 
 ## Function `verify`
 
 Verifies an ECDSA signature over the secp256r1 (P-256) curve.
-The message is hashed with SHA256 before verification.
+The message will be hashed with SHA256 before verification.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ecdsa_r1.md#0x3_ecdsa_r1_verify">verify</a>(signature: &<a href="">vector</a>&lt;u8&gt;, public_key: &<a href="">vector</a>&lt;u8&gt;, msg: &<a href="">vector</a>&lt;u8&gt;): bool

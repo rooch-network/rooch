@@ -57,7 +57,7 @@ module rooch_framework::auth_validator_registry {
         register_internal_with_id<ValidatorType>(id)
     }
 
-    fun register_internal_with_id<ValidatorType: store>(id: u64) : u64{
+    public(friend) fun register_internal_with_id<ValidatorType: store>(id: u64) : u64{
         let type_info = type_info::type_of<ValidatorType>();
         let module_address = type_info::account_address(&type_info);
         let module_name = type_info::module_name(&type_info);

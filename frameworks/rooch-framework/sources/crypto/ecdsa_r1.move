@@ -12,9 +12,13 @@ module rooch_framework::ecdsa_r1 {
     // Error codes
     const ErrorInvalidSignature: u64 = 1;
     const ErrorInvalidPubKey: u64 = 2;
+    const ErrorInvalidHashType: u64 = 3;
+
+    // Hash type
+    const HASH_TYPE_SHA256: u8 = 1;
 
     /// Verifies an ECDSA signature over the secp256r1 (P-256) curve.
-    /// The message is hashed with SHA256 before verification.
+    /// The message will be hashed with SHA256 before verification.
     public fun verify(
         signature: &vector<u8>,
         public_key: &vector<u8>,
@@ -22,13 +26,14 @@ module rooch_framework::ecdsa_r1 {
     ): bool {
         assert!(vector::length(signature) == ECDSA_R1_RAW_SIGNATURE_LENGTH, ErrorInvalidSignature);
         assert!(vector::length(public_key) == ECDSA_R1_COMPRESSED_PUBKEY_LENGTH, ErrorInvalidPubKey);
-        native_verify(signature, public_key, msg)
+        native_verify(signature, public_key, msg, HASH_TYPE_SHA256)
     }
 
     native fun native_verify(
         signature: &vector<u8>,
         public_key: &vector<u8>,
-        msg: &vector<u8>
+        msg: &vector<u8>,
+        hash_type: u8
     ): bool;
 
     public fun public_key_length(): u64 {
