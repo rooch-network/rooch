@@ -119,7 +119,7 @@ module rooch_framework::webauthn_validator {
         assert!(scheme == session_key::signature_scheme_ecdsar1(), auth_validator::error_validate_invalid_authenticator());
 
         // Length sanity checks
-        assert!(vector::length(&signature) == ecdsa_r1::signature_length(), auth_validator::error_validate_invalid_authenticator());
+        assert!(vector::length(&signature) == ecdsa_r1::raw_signature_length(), auth_validator::error_validate_invalid_authenticator());
         assert!(vector::length(&public_key) == ecdsa_r1::public_key_length(), auth_validator::error_validate_invalid_authenticator());
 
         // ---------- 2. Reconstruct message ----------

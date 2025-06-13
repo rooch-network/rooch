@@ -7,7 +7,7 @@ module rooch_framework::ecdsa_r1 {
     /// Compressed public key length for P-256
     const ECDSA_R1_COMPRESSED_PUBKEY_LENGTH: u64 = 33;
     /// Signature length (r, s)
-    const ECDSA_R1_SIGNATURE_LENGTH: u64 = 64;
+    const ECDSA_R1_RAW_SIGNATURE_LENGTH: u64 = 64;
 
     // Error codes
     const ErrorInvalidSignature: u64 = 1;
@@ -20,7 +20,7 @@ module rooch_framework::ecdsa_r1 {
         public_key: &vector<u8>,
         msg: &vector<u8>
     ): bool {
-        assert!(vector::length(signature) == ECDSA_R1_SIGNATURE_LENGTH, ErrorInvalidSignature);
+        assert!(vector::length(signature) == ECDSA_R1_RAW_SIGNATURE_LENGTH, ErrorInvalidSignature);
         assert!(vector::length(public_key) == ECDSA_R1_COMPRESSED_PUBKEY_LENGTH, ErrorInvalidPubKey);
         native_verify(signature, public_key, msg)
     }
@@ -35,8 +35,8 @@ module rooch_framework::ecdsa_r1 {
         ECDSA_R1_COMPRESSED_PUBKEY_LENGTH
     }
 
-    public fun signature_length(): u64 {
-        ECDSA_R1_SIGNATURE_LENGTH
+    public fun raw_signature_length(): u64 {
+        ECDSA_R1_RAW_SIGNATURE_LENGTH
     }
 
     #[test]

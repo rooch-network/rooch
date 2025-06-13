@@ -1510,8 +1510,10 @@ module rooch_framework::did {
             session_key::ed25519_public_key_to_authentication_key(&pk_bytes)
         } else if (vm_type == &string::utf8(VERIFICATION_METHOD_TYPE_SECP256K1)) {
             session_key::secp256k1_public_key_to_authentication_key(&pk_bytes)
-        } else { // Must be SECP256R1
+        } else if (vm_type == &string::utf8(VERIFICATION_METHOD_TYPE_SECP256R1)) {
             session_key::secp256r1_public_key_to_authentication_key(&pk_bytes)
+        } else {
+            abort ErrorUnsupportedAuthKeyTypeForSessionKey
         };
 
         session_key::remove_session_key(account_signer, auth_key_for_session);

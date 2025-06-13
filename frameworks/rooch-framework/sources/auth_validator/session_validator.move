@@ -32,12 +32,12 @@ module rooch_framework::session_validator {
         
         if (*scheme == session_key::signature_scheme_ed25519()) {
             // Ed25519 scheme
-            let sign = vector::empty<u8>();
+            let signature = vector::empty<u8>();
             let i = 1;
             let signature_position = ed25519::signature_length() + 1;
             while (i < signature_position) {
                 let value = vector::borrow(authenticator_payload, i);
-                vector::push_back(&mut sign, *value);
+                vector::push_back(&mut signature, *value);
                 i = i + 1;
             };
 
@@ -49,15 +49,15 @@ module rooch_framework::session_validator {
                 vector::push_back(&mut public_key, *value);
                 i = i + 1;
             };
-            (sign, public_key)
+            (signature, public_key)
         } else if (*scheme == session_key::signature_scheme_secp256k1()) {
             // Secp256k1 scheme  
-            let sign = vector::empty<u8>();
+            let signature = vector::empty<u8>();
             let i = 1;
             let signature_position = 64 + 1; // Secp256k1 signature is 64 bytes (r + s)
             while (i < signature_position) {
                 let value = vector::borrow(authenticator_payload, i);
-                vector::push_back(&mut sign, *value);
+                vector::push_back(&mut signature, *value);
                 i = i + 1;
             };
 
@@ -69,27 +69,27 @@ module rooch_framework::session_validator {
                 vector::push_back(&mut public_key, *value);
                 i = i + 1;
             };
-            (sign, public_key)
+            (signature, public_key)
         } else if (*scheme == session_key::signature_scheme_ecdsar1()) {
             // Secp256r1 scheme
-            let sign = vector::empty<u8>();
+            let signature = vector::empty<u8>();
             let i = 1;
-            let signature_position = ecdsa_r1::signature_length() + 1;
+            let signature_position = ecdsa_r1::raw_signature_length() + 1;
             while (i < signature_position) {
                 let value = vector::borrow(authenticator_payload, i);
-                vector::push_back(&mut sign, *value);
+                vector::push_back(&mut signature, *value);
                 i = i + 1;
             };
 
             let public_key = vector::empty<u8>();
-            let i = 1 + ecdsa_r1::signature_length();
-            let public_key_position = 1 + ecdsa_r1::signature_length() + ecdsa_r1::public_key_length();
+            let i = 1 + ecdsa_r1::raw_signature_length();
+            let public_key_position = 1 + ecdsa_r1::raw_signature_length() + ecdsa_r1::public_key_length();
             while (i < public_key_position) {
                 let value = vector::borrow(authenticator_payload, i);
                 vector::push_back(&mut public_key, *value);
                 i = i + 1;
             };
-            (sign, public_key)
+            (signature, public_key)
         } else {
             // Unsupported scheme
             abort auth_validator::error_validate_invalid_authenticator()

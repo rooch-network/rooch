@@ -8,7 +8,7 @@
 -  [Constants](#@Constants_0)
 -  [Function `verify`](#0x3_ecdsa_r1_verify)
 -  [Function `public_key_length`](#0x3_ecdsa_r1_public_key_length)
--  [Function `signature_length`](#0x3_ecdsa_r1_signature_length)
+-  [Function `raw_signature_length`](#0x3_ecdsa_r1_raw_signature_length)
 
 
 <pre><code></code></pre>
@@ -48,12 +48,12 @@ Compressed public key length for P-256
 
 
 
-<a name="0x3_ecdsa_r1_ECDSA_R1_SIGNATURE_LENGTH"></a>
+<a name="0x3_ecdsa_r1_ECDSA_R1_RAW_SIGNATURE_LENGTH"></a>
 
 Signature length (r, s)
 
 
-<pre><code><b>const</b> <a href="ecdsa_r1.md#0x3_ecdsa_r1_ECDSA_R1_SIGNATURE_LENGTH">ECDSA_R1_SIGNATURE_LENGTH</a>: u64 = 64;
+<pre><code><b>const</b> <a href="ecdsa_r1.md#0x3_ecdsa_r1_ECDSA_R1_RAW_SIGNATURE_LENGTH">ECDSA_R1_RAW_SIGNATURE_LENGTH</a>: u64 = 64;
 </code></pre>
 
 
@@ -82,11 +82,11 @@ The message is hashed with SHA256 before verification.
 
 
 
-<a name="0x3_ecdsa_r1_signature_length"></a>
+<a name="0x3_ecdsa_r1_raw_signature_length"></a>
 
-## Function `signature_length`
+## Function `raw_signature_length`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_r1.md#0x3_ecdsa_r1_signature_length">signature_length</a>(): u64
+<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_r1.md#0x3_ecdsa_r1_raw_signature_length">raw_signature_length</a>(): u64
 </code></pre>
