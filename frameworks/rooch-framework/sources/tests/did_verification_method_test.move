@@ -42,7 +42,7 @@ module rooch_framework::did_verification_method_test {
         );
 
         // Verify method was added - use DID address
-        let did_document_after = did::get_did_document(did_address);
+        let did_document_after = did::get_did_document_by_address(did_address);
         assert!(did::test_verification_method_exists(did_document_after, &fragment), 8001);
         assert!(did::has_verification_relationship_in_doc(did_document_after, &fragment, 1), 8003); // assertion_method
     }
@@ -73,7 +73,7 @@ module rooch_framework::did_verification_method_test {
         );
 
         // Verify method was added - use DID address
-        let did_document_after = did::get_did_document(did_address);
+        let did_document_after = did::get_did_document_by_address(did_address);
         assert!(did::test_verification_method_exists(did_document_after, &fragment), 8101);
         assert!(did::has_verification_relationship_in_doc(did_document_after, &fragment, 2), 8102); // capability_invocation
         assert!(did::has_verification_relationship_in_doc(did_document_after, &fragment, 3), 8103); // capability_delegation
@@ -132,14 +132,14 @@ module rooch_framework::did_verification_method_test {
         );
 
         // Verify method exists - use DID address
-        let did_document_check = did::get_did_document(did_address);
+        let did_document_check = did::get_did_document_by_address(did_address);
         assert!(did::test_verification_method_exists(did_document_check, &fragment), 8201);
 
         // Remove the verification method
         did::remove_verification_method_entry(&did_signer, fragment);
 
         // Verify method was removed - use DID address
-        let did_document_after = did::get_did_document(did_address);
+        let did_document_after = did::get_did_document_by_address(did_address);
         assert!(!did::test_verification_method_exists(did_document_after, &fragment), 8202);
     }
 
@@ -186,14 +186,14 @@ module rooch_framework::did_verification_method_test {
         );
 
         // Verify key_agreement is not set initially - use DID address
-        let did_document_check = did::get_did_document(did_address);
+        let did_document_check = did::get_did_document_by_address(did_address);
         assert!(!did::has_verification_relationship_in_doc(did_document_check, &fragment, 4), 8301); // key_agreement
 
         // Add to key_agreement relationship
         did::add_to_verification_relationship_entry(&did_signer, fragment, 4u8); // key_agreement
 
         // Verify key_agreement relationship was added - use DID address
-        let did_document_after = did::get_did_document(did_address);
+        let did_document_after = did::get_did_document_by_address(did_address);
         assert!(did::has_verification_relationship_in_doc(did_document_after, &fragment, 4), 8302); // key_agreement
     }
 
@@ -223,7 +223,7 @@ module rooch_framework::did_verification_method_test {
         );
 
         // Verify both relationships exist - use DID address
-        let did_document_check = did::get_did_document(did_address);
+        let did_document_check = did::get_did_document_by_address(did_address);
         assert!(did::has_verification_relationship_in_doc(did_document_check, &fragment, 1), 8401); // assertion_method
         assert!(did::has_verification_relationship_in_doc(did_document_check, &fragment, 4), 8402); // key_agreement
 
@@ -231,7 +231,7 @@ module rooch_framework::did_verification_method_test {
         did::remove_from_verification_relationship_entry(&did_signer, fragment, 4u8); // key_agreement
 
         // Verify key_agreement was removed but assertion_method remains - use DID address
-        let did_document_after = did::get_did_document(did_address);
+        let did_document_after = did::get_did_document_by_address(did_address);
         assert!(did::has_verification_relationship_in_doc(did_document_after, &fragment, 1), 8403); // assertion_method still exists
         assert!(!did::has_verification_relationship_in_doc(did_document_after, &fragment, 4), 8404); // key_agreement removed
     }
@@ -264,7 +264,7 @@ module rooch_framework::did_verification_method_test {
         let did_address = did::get_did_address(did_document);
 
         // Test has_verification_relationship_in_doc function with valid relationships - use DID address
-        let did_document_check = did::get_did_document(did_address);
+        let did_document_check = did::get_did_document_by_address(did_address);
         
         // account-key should have authentication, assertion_method, capability_invocation, capability_delegation
         let account_key_fragment = string::utf8(b"account-key");
@@ -291,7 +291,7 @@ module rooch_framework::did_verification_method_test {
         let did_document = did::get_did_document_by_object_id(did_object_id);
         let did_address = did::get_did_address(did_document);
 
-        let did_document_check = did::get_did_document(did_address);
+        let did_document_check = did::get_did_document_by_address(did_address);
 
         // Test is_verification_method_valid_in_doc
         let account_key_fragment = string::utf8(b"account-key");
@@ -341,7 +341,7 @@ module rooch_framework::did_verification_method_test {
         );
 
         // Verify all methods exist - use DID address
-        let did_document_check = did::get_did_document(did_address);
+        let did_document_check = did::get_did_document_by_address(did_address);
         assert!(did::test_verification_method_exists(did_document_check, &string::utf8(b"account-key")), 14001); // Original
         assert!(did::test_verification_method_exists(did_document_check, &ed25519_fragment), 14002); // Ed25519
         assert!(did::test_verification_method_exists(did_document_check, &secp256k1_fragment), 14003); // Secp256k1
@@ -385,7 +385,7 @@ module rooch_framework::did_verification_method_test {
         };
 
         // Verify all methods exist - use DID address
-        let did_document_check = did::get_did_document(did_address);
+        let did_document_check = did::get_did_document_by_address(did_address);
         
         // Check verification methods
         assert!(did::test_verification_method_exists(did_document_check, &string::utf8(b"test-key-0")), 14301);
@@ -419,7 +419,7 @@ module rooch_framework::did_verification_method_test {
         );
 
         // Verify method was added
-        let did_document_after = did::get_did_document(did_address);
+        let did_document_after = did::get_did_document_by_address(did_address);
         assert!(did::test_verification_method_exists(did_document_after, &fragment), 15001);
         assert!(did::has_verification_relationship_in_doc(did_document_after, &fragment, 1), 15002); // assertion_method
         assert!(did::has_verification_relationship_in_doc(did_document_after, &fragment, 2), 15003); // capability_invocation
@@ -487,14 +487,14 @@ module rooch_framework::did_verification_method_test {
         );
 
         // Verify method exists
-        let did_document_check = did::get_did_document(did_address);
+        let did_document_check = did::get_did_document_by_address(did_address);
         assert!(did::test_verification_method_exists(did_document_check, &fragment), 16001);
 
         // Remove the verification method
         did::remove_verification_method_entry(&did_signer, fragment);
 
         // Verify method was removed
-        let did_document_after = did::get_did_document(did_address);
+        let did_document_after = did::get_did_document_by_address(did_address);
         assert!(!did::test_verification_method_exists(did_document_after, &fragment), 16002);
     }
 
@@ -524,7 +524,7 @@ module rooch_framework::did_verification_method_test {
         );
 
         // Verify initial relationships
-        let did_document_check = did::get_did_document(did_address);
+        let did_document_check = did::get_did_document_by_address(did_address);
         assert!(did::has_verification_relationship_in_doc(did_document_check, &fragment, 1), 17001); // assertion_method
         assert!(!did::has_verification_relationship_in_doc(did_document_check, &fragment, 2), 17002); // capability_invocation
 
@@ -532,14 +532,14 @@ module rooch_framework::did_verification_method_test {
         did::add_to_verification_relationship_entry(&did_signer, fragment, 2u8);
 
         // Verify new relationship was added
-        let did_document_after_add = did::get_did_document(did_address);
+        let did_document_after_add = did::get_did_document_by_address(did_address);
         assert!(did::has_verification_relationship_in_doc(did_document_after_add, &fragment, 2), 17003); // capability_invocation
 
         // Remove capability_invocation relationship
         did::remove_from_verification_relationship_entry(&did_signer, fragment, 2u8);
 
         // Verify relationship was removed
-        let did_document_after_remove = did::get_did_document(did_address);
+        let did_document_after_remove = did::get_did_document_by_address(did_address);
         assert!(!did::has_verification_relationship_in_doc(did_document_after_remove, &fragment, 2), 17004); // capability_invocation
     }
 } 

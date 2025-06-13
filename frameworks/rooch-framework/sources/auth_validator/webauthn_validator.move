@@ -144,7 +144,7 @@ module rooch_framework::webauthn_validator {
     fun verify_did_auth_key(sender: address, auth_key: &vector<u8>): bool {
         let did_exists = did::exists_did_for_address(sender);
         assert!(did_exists, auth_validator::error_validate_invalid_authenticator());
-        let did_doc = did::get_did_document(sender);
+        let did_doc = did::get_did_document_by_address(sender);
         let vm_opt = did::find_verification_method_by_session_key(did_doc, auth_key);
         let find_vm = option::is_some(&vm_opt);
         find_vm

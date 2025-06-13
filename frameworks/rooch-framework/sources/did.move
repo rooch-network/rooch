@@ -170,7 +170,8 @@ module rooch_framework::did {
 
     /// Registry to store mappings. This is a Named Object.
     struct DIDRegistry has key {
-        controller_to_dids: Table<DID, vector<ObjectID>>, // Controller DID -> DID Document ObjectIDs it controls
+        /// Controller DID -> DID Document DID it controls
+        controller_to_dids: Table<String, vector<String>>, 
     }
 
     // =================== Event Structures ===================
@@ -178,27 +179,26 @@ module rooch_framework::did {
     #[event] 
     /// Event emitted when a new DID document is created
     struct DIDCreatedEvent has drop, copy, store {
-        did: DID,                           // The created DID
+        did: String,                           // The created DID
         object_id: ObjectID,                // Object ID of the DID document
-        controller: vector<DID>,            // Controllers of the DID
+        controller: vector<String>,            // Controllers of the DID
         creator_address: address,           // Address of the creator
-        creation_method: String,            // Method used for creation (e.g., "self", "cadop")
     }
 
     #[event]
     /// Event emitted when a verification method is added to a DID document  
     struct VerificationMethodAddedEvent has drop, copy, store {
-        did: DID,                           // The DID that owns the verification method
+        did: String,                           // The DID that owns the verification method
         fragment: String,                   // Fragment identifier of the verification method
         method_type: String,                // Type of verification method
-        controller: DID,                    // Controller of the verification method
+        controller: String,                    // Controller of the verification method
         verification_relationships: vector<u8>, // Verification relationships assigned
     }
 
     #[event]
     /// Event emitted when a verification method is removed from a DID document
     struct VerificationMethodRemovedEvent has drop, copy, store {
-        did: DID,                           // The DID that owned the verification method
+        did: String,                           // The DID that owned the verification method
         fragment: String,                   // Fragment identifier of the removed verification method
         method_type: String,                // Type of verification method that was removed
     }
@@ -206,7 +206,7 @@ module rooch_framework::did {
     #[event]
     /// Event emitted when a verification relationship is modified
     struct VerificationRelationshipModifiedEvent has drop, copy, store {
-        did: DID,                           // The DID that owns the verification method
+        did: String,                           // The DID that owns the verification method
         fragment: String,                   // Fragment identifier of the verification method
         relationship_type: u8,              // Type of verification relationship
         operation: String,                  // Operation performed ("added" or "removed")
@@ -215,7 +215,7 @@ module rooch_framework::did {
     #[event]
     /// Event emitted when a service is added to a DID document
     struct ServiceAddedEvent has drop, copy, store {
-        did: DID,                           // The DID that owns the service
+        did: String,                           // The DID that owns the service
         fragment: String,                   // Fragment identifier of the service
         service_type: String,               // Type of service
         service_endpoint: String,           // Service endpoint URL
@@ -225,7 +225,7 @@ module rooch_framework::did {
     #[event]
     /// Event emitted when a service is updated in a DID document
     struct ServiceUpdatedEvent has drop, copy, store {
-        did: DID,                           // The DID that owns the service
+        did: String,                           // The DID that owns the service
         fragment: String,                   // Fragment identifier of the service
         old_service_type: String,           // Previous service type
         new_service_type: String,           // New service type
@@ -237,7 +237,7 @@ module rooch_framework::did {
     #[event]
     /// Event emitted when a service is removed from a DID document
     struct ServiceRemovedEvent has drop, copy, store {
-        did: DID,                           // The DID that owned the service
+        did: String,                           // The DID that owned the service
         fragment: String,                   // Fragment identifier of the removed service
         service_type: String,               // Type of service that was removed
     }
@@ -252,7 +252,7 @@ module rooch_framework::did {
         assert!(!object::exists_object_with_type<DIDRegistry>(registry_id), ErrorDIDRegistryAlreadyInitialized);
         
         let registry_data = DIDRegistry {
-            controller_to_dids: table::new<DID, vector<ObjectID>>(),
+            controller_to_dids: table::new<String, vector<String>>(),
         };
 
         let registry_object = object::new_named_object(registry_data);
@@ -295,8 +295,8 @@ module rooch_framework::did {
     /// This function contains the core logic for DID creation and is called by
     /// the specialized public entry functions.
     fun create_did_object_internal(
-        _creator_account_signer: &signer,    // The Rooch account signer creating this DID Object (pays gas)
-        doc_controllers: vector<DID>,        // DID Document controller field value (NIP-1)
+        creator_account_signer: &signer,    // The Rooch account signer creating this DID Object (pays gas)
+        doc_controller: DID,        // DID Document controller field value (NIP-1)
                                              // e.g.: User self-creation: ["did:rooch:<user_addr>"]
                                              // CADOP scenario: ["did:key:<user_pk_multibase>"]
 
@@ -317,15 +317,13 @@ module rooch_framework::did {
         service_vm_fragment: Option<String>           // Service VM fragment
     ): ObjectID {
         let registry = borrow_mut_did_registry();
-        assert!(vector::length(&doc_controllers) > 0, ErrorNoControllersSpecified);
 
-        // Validate did:key controllers according to NIP-1
-        validate_did_key_controllers(&doc_controllers, &user_vm_pk_multibase, &user_vm_type);
 
         let new_account_cap = account::create_account_and_return_cap();
         let did_address = account::account_cap_address(&new_account_cap);
         
         let did = new_rooch_did_by_address(did_address);
+        let did_str = format_did(&did);
         
         let new_object_id = resolve_did_object_id(&did.identifier); 
         assert!(!object::exists_object_with_type<DIDDocument>(new_object_id), ErrorDIDAlreadyExists);
@@ -333,7 +331,7 @@ module rooch_framework::did {
         // Create base DIDDocument structure
         let did_document_data = DIDDocument {
             id: did,
-            controller: doc_controllers,
+            controller: vector[doc_controller],
             verification_methods: simple_map::new<String, VerificationMethod>(),
             authentication: vector::empty<String>(),
             assertion_method: vector::empty<String>(),
@@ -350,10 +348,11 @@ module rooch_framework::did {
             did: did,
             fragment: user_vm_fragment,
         };
+        //The first verification method is the primary verification method, the controller is the doc_controller
         let user_vm = VerificationMethod {
             id: user_vm_id,
             type: user_vm_type,
-            controller: did, // User VM controlled by the DID itself
+            controller: doc_controller, 
             public_key_multibase: user_vm_pk_multibase,
         };
 
@@ -428,39 +427,23 @@ module rooch_framework::did {
         let did_object = object::new_with_id(did.identifier, did_document_data);
         object::transfer_extend(did_object, did_address);
         
+        let doc_controller_did_str = format_did(&doc_controller);
+
         // Add the new DID to all its controllers' lists in the registry
-        let i = 0;
-        while (i < vector::length(&doc_controllers)) {
-            let controller_did = *vector::borrow(&doc_controllers, i);
-            if (!table::contains(&registry.controller_to_dids, controller_did)) {
-                table::add(&mut registry.controller_to_dids, controller_did, vector::empty<ObjectID>());
-            };
-            let controller_dids = table::borrow_mut(&mut registry.controller_to_dids, controller_did);
-            vector::push_back(controller_dids, new_object_id);
-            i = i + 1;
+
+        if (!table::contains(&registry.controller_to_dids, doc_controller_did_str)) {
+            table::add(&mut registry.controller_to_dids, doc_controller_did_str, vector::empty<String>());
         };
+        let controller_dids = table::borrow_mut(&mut registry.controller_to_dids, doc_controller_did_str);
+        vector::push_back(controller_dids, did_str);
         
-        // Emit DID creation event
-        let creation_method = if (vector::length(&doc_controllers) == 1) {
-            let controller = vector::borrow(&doc_controllers, 0);
-            if (controller.method == string::utf8(b"rooch")) {
-                string::utf8(b"self")
-            } else if (controller.method == string::utf8(b"key")) {
-                string::utf8(b"cadop")
-            } else {
-                string::utf8(b"other")
-            }
-        } else {
-            string::utf8(b"multi_controller")
-        };
         
-        let creator_address = signer::address_of(_creator_account_signer);
+        let creator_address = signer::address_of(creator_account_signer);
         event::emit(DIDCreatedEvent {
-            did: did,
+            did: did_str,
             object_id: new_object_id,
-            controller: doc_controllers,
+            controller: vector[doc_controller_did_str],
             creator_address,
-            creation_method,
         });
         
         new_object_id
@@ -492,7 +475,6 @@ module rooch_framework::did {
         
         let creator_did = new_rooch_did_by_address(creator_address);
         
-        let doc_controllers = vector[creator_did];
         
         // Primary verification method uses the account's Secp256k1 key
         let primary_vm_fragment = string::utf8(b"account-key");
@@ -506,7 +488,7 @@ module rooch_framework::did {
 
         let did_object_id = create_did_object_internal(
             creator_account_signer,
-            doc_controllers,
+            creator_did,
             account_public_key_multibase,
             account_key_type,
             primary_vm_fragment,
@@ -617,21 +599,21 @@ module rooch_framework::did {
         let has_cadop_service = has_cadop_service_in_doc(custodian_did_doc);
         assert!(has_cadop_service, ErrorCustodianDoesNotHaveCADOPService);
 
-        let doc_controllers = vector[user_did_key];
+        let doc_controller = user_did_key;
         let user_vm_relationships = vector[
             VERIFICATION_RELATIONSHIP_AUTHENTICATION,
             VERIFICATION_RELATIONSHIP_CAPABILITY_DELEGATION
         ]; 
 
         // Standardize user VM to Ed25519 (most common for did:key)
-        let user_vm_fragment = string::utf8(b"user-key");
+        let user_vm_fragment = string::utf8(b"account-key");
 
         // Generate unique service fragment for this user
         let custodian_service_vm_fragment = generate_service_fragment_for_user(&user_did_key_string);
 
         create_did_object_internal(
             custodian_signer,
-            doc_controllers,
+            doc_controller,
             user_vm_pk_multibase,
             user_vm_type,
             user_vm_fragment,
@@ -774,10 +756,10 @@ module rooch_framework::did {
         
         // Emit verification method added event
         event::emit(VerificationMethodAddedEvent {
-            did: did_document_data.id,
+            did: format_did(&did_document_data.id),
             fragment: fragment,
             method_type: method_type,
-            controller: did_document_data.id,
+            controller: format_did(&did_document_data.id),
             verification_relationships: verification_relationships,
         });
     }
@@ -844,7 +826,7 @@ module rooch_framework::did {
         
         // Emit verification method removed event
         event::emit(VerificationMethodRemovedEvent {
-            did: did_document_data.id,
+            did: format_did(&did_document_data.id),
             fragment: fragment,
             method_type: removed_method_type,
         });
@@ -881,7 +863,7 @@ module rooch_framework::did {
                 );
                 // Emit event and return early since add_ed25519_authentication_method handles the relationship addition
                 event::emit(VerificationRelationshipModifiedEvent {
-                    did: did_document_data.id,
+                    did: format_did(&did_document_data.id),
                     fragment: fragment,
                     relationship_type: relationship_type,
                     operation: string::utf8(b"added"),
@@ -895,7 +877,7 @@ module rooch_framework::did {
                 );
                 // Emit event and return early since add_secp256k1_authentication_method handles the relationship addition
                 event::emit(VerificationRelationshipModifiedEvent {
-                    did: did_document_data.id,
+                    did: format_did(&did_document_data.id),
                     fragment: fragment,
                     relationship_type: relationship_type,
                     operation: string::utf8(b"added"),
@@ -909,7 +891,7 @@ module rooch_framework::did {
                 );
                 // Emit event and return early since the specialized method handles the relationship addition
                 event::emit(VerificationRelationshipModifiedEvent {
-                    did: did_document_data.id,
+                    did: format_did(&did_document_data.id),
                     fragment: fragment,
                     relationship_type: relationship_type,
                     operation: string::utf8(b"added"),
@@ -937,7 +919,7 @@ module rooch_framework::did {
 
         // Emit relationship modified event
         event::emit(VerificationRelationshipModifiedEvent {
-            did: did_document_data.id,
+            did: format_did(&did_document_data.id),
             fragment: fragment,
             relationship_type: relationship_type,
             operation: string::utf8(b"added"),
@@ -980,7 +962,7 @@ module rooch_framework::did {
         if (vector::length(target_relationship_vec_mut) < original_len) {
             // Emit verification relationship modified event only if removal was successful
             event::emit(VerificationRelationshipModifiedEvent {
-                did: did_document_data.id,
+                did: format_did(&did_document_data.id),
                 fragment: fragment,
                 relationship_type: relationship_type,
                 operation: string::utf8(b"removed"),
@@ -1015,7 +997,7 @@ module rooch_framework::did {
         
         // Emit service added event
         event::emit(ServiceAddedEvent {
-            did: did_document_data.id,
+            did: format_did(&did_document_data.id),
             fragment: fragment,
             service_type: service_type,
             service_endpoint: service_endpoint,
@@ -1124,7 +1106,7 @@ module rooch_framework::did {
         
         // Emit service updated event
         event::emit(ServiceUpdatedEvent {
-            did: did_document_data.id,
+            did: format_did(&did_document_data.id),
             fragment: fragment,
             old_service_type,
             new_service_type,
@@ -1152,7 +1134,7 @@ module rooch_framework::did {
         
         // Emit service removed event
         event::emit(ServiceRemovedEvent {
-            did: did_document_data.id,
+            did: format_did(&did_document_data.id),
             fragment: fragment,
             service_type: removed_service_type,
         });
@@ -1170,21 +1152,21 @@ module rooch_framework::did {
     } 
 
     /// Get all DID ObjectIDs controlled by a specific controller DID
-    public fun get_dids_by_controller(controller_did: DID): vector<ObjectID> {
-        if (!object::exists_object_with_type<DIDRegistry>(did_registry_id())){
-            return vector::empty<ObjectID>()
-        };
-        let registry = borrow_did_registry();
-        if (!table::contains(&registry.controller_to_dids, controller_did)) {
-            vector::empty<ObjectID>()
-        } else {
-            *table::borrow(&registry.controller_to_dids, controller_did)
-        }
+    public fun get_dids_by_controller(controller_did: DID): vector<String> {
+        let controller_did_str = format_did(&controller_did);
+        get_dids_by_controller_string(controller_did_str)
     }
 
-    public fun get_dids_by_controller_string(controller_did_str: String): vector<ObjectID> {
-        let controller_did = parse_did_string(&controller_did_str);
-        get_dids_by_controller(controller_did)
+    public fun get_dids_by_controller_string(controller_did_str: String): vector<String> {
+        if (!object::exists_object_with_type<DIDRegistry>(did_registry_id())){
+            return vector::empty<String>()
+        };
+        let registry = borrow_did_registry();
+        if (!table::contains(&registry.controller_to_dids, controller_did_str)) {
+            vector::empty<String>()
+        } else {
+            *table::borrow(&registry.controller_to_dids, controller_did_str)
+        }
     }
 
     public fun has_verification_relationship_in_doc(
@@ -1319,13 +1301,17 @@ module rooch_framework::did {
 
     // =================== Document getters ===================
 
+    public fun get_did_document(did_str: String): &DIDDocument {
+        let did = parse_did_string(&did_str);
+        let object_id = resolve_did_object_id(&did.identifier);
+        get_did_document_by_object_id(object_id)
+    }
+
     /// Get DIDDocument by address
-    public fun get_did_document(addr: address): &DIDDocument {
+    public fun get_did_document_by_address(addr: address): &DIDDocument {
         let did_identifier = address::to_bech32_string(addr);
         let object_id = resolve_did_object_id(&did_identifier);
-        assert!(object::exists_object_with_type<DIDDocument>(object_id), ErrorDIDDocumentNotExist);
-        let did_doc_obj_ref = object::borrow_object<DIDDocument>(object_id);
-        object::borrow(did_doc_obj_ref)
+        get_did_document_by_object_id(object_id)
     }
 
     /// Get DIDDocument by ObjectID
@@ -1335,23 +1321,23 @@ module rooch_framework::did {
         object::borrow(did_doc_obj_ref)
     }
 
-    /// Get DID identifier from DIDDocument
-    public fun get_did_identifier(did_doc: &DIDDocument): &DID {
+    /// Get id from DIDDocument
+    public fun doc_id(did_doc: &DIDDocument): &DID {
         &did_doc.id
     }
 
     /// Get controllers from DIDDocument
-    public fun get_controllers(did_doc: &DIDDocument): &vector<DID> {
+    public fun doc_controllers(did_doc: &DIDDocument): &vector<DID> {
         &did_doc.controller
     }
 
     /// Get verification methods from DIDDocument
-    public fun get_verification_methods(did_doc: &DIDDocument): &SimpleMap<String, VerificationMethod> {
+    public fun doc_verification_methods(did_doc: &DIDDocument): &SimpleMap<String, VerificationMethod> {
         &did_doc.verification_methods
     }
 
     /// Get verification method by fragment
-    public fun get_verification_method(did_doc: &DIDDocument, fragment: &String): Option<VerificationMethod> {
+    public fun doc_verification_method(did_doc: &DIDDocument, fragment: &String): Option<VerificationMethod> {
         if (simple_map::contains_key(&did_doc.verification_methods, fragment)) {
             option::some(*simple_map::borrow(&did_doc.verification_methods, fragment))
         } else {
@@ -1359,54 +1345,54 @@ module rooch_framework::did {
         }
     }
 
-    public fun get_verification_method_id(vm: &VerificationMethod): &VerificationMethodID {
+    public fun verification_method_id(vm: &VerificationMethod): &VerificationMethodID {
         &vm.id
     }
 
-    public fun get_verification_method_type(vm: &VerificationMethod): &String {
+    public fun verification_method_type(vm: &VerificationMethod): &String {
         &vm.type
     }
 
-    public fun get_verification_method_controller(vm: &VerificationMethod): &DID {
+    public fun verification_method_controller(vm: &VerificationMethod): &DID {
         &vm.controller
     }
 
-    public fun get_verification_method_public_key_multibase(vm: &VerificationMethod): &String {
+    public fun verification_method_public_key_multibase(vm: &VerificationMethod): &String {
         &vm.public_key_multibase
     }
 
     /// Get authentication methods from DIDDocument
-    public fun get_authentication_methods(did_doc: &DIDDocument): &vector<String> {
+    public fun doc_authentication_methods(did_doc: &DIDDocument): &vector<String> {
         &did_doc.authentication
     }
 
     /// Get assertion methods from DIDDocument
-    public fun get_assertion_methods(did_doc: &DIDDocument): &vector<String> {
+    public fun doc_assertion_methods(did_doc: &DIDDocument): &vector<String> {
         &did_doc.assertion_method
     }
 
     /// Get capability invocation methods from DIDDocument
-    public fun get_capability_invocation_methods(did_doc: &DIDDocument): &vector<String> {
+    public fun doc_capability_invocation_methods(did_doc: &DIDDocument): &vector<String> {
         &did_doc.capability_invocation
     }
 
     /// Get capability delegation methods from DIDDocument
-    public fun get_capability_delegation_methods(did_doc: &DIDDocument): &vector<String> {
+    public fun doc_capability_delegation_methods(did_doc: &DIDDocument): &vector<String> {
         &did_doc.capability_delegation
     }
 
     /// Get key agreement methods from DIDDocument
-    public fun get_key_agreement_methods(did_doc: &DIDDocument): &vector<String> {
+    public fun doc_key_agreement_methods(did_doc: &DIDDocument): &vector<String> {
         &did_doc.key_agreement
     }
 
     /// Get services from DIDDocument
-    public fun get_services(did_doc: &DIDDocument): &SimpleMap<String, Service> {
+    public fun doc_services(did_doc: &DIDDocument): &SimpleMap<String, Service> {
         &did_doc.services
     }
 
     /// Get service by fragment
-    public fun get_service(did_doc: &DIDDocument, fragment: &String): Option<Service> {
+    public fun doc_service(did_doc: &DIDDocument, fragment: &String): Option<Service> {
         if (simple_map::contains_key(&did_doc.services, fragment)) {
             option::some(*simple_map::borrow(&did_doc.services, fragment))
         } else {
@@ -1414,24 +1400,24 @@ module rooch_framework::did {
         }
     }
 
-    public fun get_service_id(service: &Service): &ServiceID {
+    public fun service_id(service: &Service): &ServiceID {
         &service.id
     }
 
-    public fun get_service_type(service: &Service): &String {
+    public fun service_type(service: &Service): &String {
         &service.type
     }
 
-    public fun get_service_endpoint(service: &Service): &String {
+    public fun service_endpoint(service: &Service): &String {
         &service.service_endpoint
     }
 
-    public fun get_service_properties(service: &Service): &SimpleMap<String, String> {
+    public fun service_properties(service: &Service): &SimpleMap<String, String> {
         &service.properties
     }
 
     /// Get also known as from DIDDocument
-    public fun get_also_known_as(did_doc: &DIDDocument): &vector<String> {
+    public fun doc_also_known_as(did_doc: &DIDDocument): &vector<String> {
         &did_doc.also_known_as
     }
 
@@ -1447,33 +1433,6 @@ module rooch_framework::did {
         object::updated_at(object_id)
     }
 
-    /// Get created timestamp for a DID document by address
-    public fun get_created_timestamp(addr: address): u64 {
-        let did_identifier = address::to_bech32_string(addr);
-        let object_id = resolve_did_object_id(&did_identifier);
-        get_created_timestamp_by_object_id(object_id)
-    }
-
-    /// Get updated timestamp for a DID document by address
-    public fun get_updated_timestamp(addr: address): u64 {
-        let did_identifier = address::to_bech32_string(addr);
-        let object_id = resolve_did_object_id(&did_identifier);
-        get_updated_timestamp_by_object_id(object_id)
-    }
-
-    /// Get created timestamp from DIDDocument reference
-    /// This is a convenience function that extracts the address and calls get_created_timestamp
-    public fun get_did_created_timestamp(did_doc: &DIDDocument): u64 {
-        let did_address = account::account_cap_address(&did_doc.account_cap);
-        get_created_timestamp(did_address)
-    }
-
-    /// Get updated timestamp from DIDDocument reference
-    /// This is a convenience function that extracts the address and calls get_updated_timestamp
-    public fun get_did_updated_timestamp(did_doc: &DIDDocument): u64 {
-        let did_address = account::account_cap_address(&did_doc.account_cap);
-        get_updated_timestamp(did_address)
-    }
 
     public fun get_did_address(did_doc: &DIDDocument): address {
         account::account_cap_address(&did_doc.account_cap)
@@ -1627,72 +1586,6 @@ module rooch_framework::did {
         option::none<String>()
     }
 
-    /// Validates did:key controllers according to NIP-1 requirements.
-    /// If any controller is did:key, there must be exactly one such controller,
-    /// and its public key must match initial_vm_pk_multibase.
-    /// 
-    /// Note: did:key identifiers contain multicodec prefixes according to W3C DID Key spec:
-    /// - Ed25519: 0xed01 prefix, resulting in z6Mk... format
-    /// - Secp256k1: 0xe701 prefix, resulting in zQ3s... format
-    /// - ECDSA R1: 0x1200 prefix, resulting in zQ3s... format
-    fun validate_did_key_controllers(
-        controllers: &vector<DID>,
-        initial_vm_pk_multibase: &String,
-        initial_vm_type: &String
-    ) {
-        let i = 0;
-        let did_key_controller_count = 0;
-        let did_key_controller_opt = option::none<DID>();
-
-        while (i < vector::length(controllers)) {
-            let controller = vector::borrow(controllers, i);
-            if (controller.method == string::utf8(b"key")) {
-                did_key_controller_count = did_key_controller_count + 1;
-                // Store the first (and should be only) did:key controller found
-                if (option::is_none(&did_key_controller_opt)) {
-                    did_key_controller_opt = option::some(*controller);
-                }
-            };
-            i = i + 1;
-        };
-
-        if (did_key_controller_count > 0) {
-            // If there's any did:key controller, there must be exactly one.
-            assert!(did_key_controller_count == 1, ErrorMultipleDIDKeyControllersNotAllowed);
-            
-            assert!(option::is_some(&did_key_controller_opt), ErrorInvalidArgument); // Should be some if count is 1
-            let did_key_controller = option::destroy_some(did_key_controller_opt);
-            
-            // For did:key, the identifier contains multicodec prefix + raw public key
-            let identifier = &did_key_controller.identifier;
-            let identifier_bytes = string::bytes(identifier);
-            assert!(vector::length(identifier_bytes) > 0, ErrorInvalidDIDStringFormat);
-            
-            let first_byte = *vector::borrow(identifier_bytes, 0);
-            assert!(first_byte == 122, ErrorInvalidDIDStringFormat); // 'z' for base58btc
-            
-            // Extract raw public key from did:key identifier by decoding multicodec format
-            let (_key_type, controller_pk_bytes) = extract_public_key_from_did_key_identifier(identifier);
-            
-            let initial_pk_bytes = if (initial_vm_type == &string::utf8(VERIFICATION_METHOD_TYPE_ED25519)) {
-                let pk_opt = multibase::decode_ed25519_key(initial_vm_pk_multibase);
-                assert!(option::is_some(&pk_opt), ErrorInvalidPublicKeyMultibaseFormat);
-                option::destroy_some(pk_opt)
-            } else if (initial_vm_type == &string::utf8(VERIFICATION_METHOD_TYPE_SECP256K1)) {
-                let pk_opt = multibase::decode_secp256k1_key(initial_vm_pk_multibase);
-                assert!(option::is_some(&pk_opt), ErrorInvalidPublicKeyMultibaseFormat);
-                option::destroy_some(pk_opt)
-            } else if (initial_vm_type == &string::utf8(VERIFICATION_METHOD_TYPE_SECP256R1)) {
-                let pk_opt = multibase::decode_secp256r1_key(initial_vm_pk_multibase);
-                assert!(option::is_some(&pk_opt), ErrorInvalidPublicKeyMultibaseFormat);
-                option::destroy_some(pk_opt)
-            } else {
-                abort ErrorUnsupportedAuthKeyTypeForSessionKey
-            };
-            assert!(controller_pk_bytes == initial_pk_bytes, ErrorDIDKeyControllerPublicKeyMismatch);
-        }
-        // If did_key_controller_count is 0, no specific validation for did:key is needed here.
-    }
 
     /// Extract raw public key bytes from a did:key identifier.
     /// This function now delegates to the multibase module for consistency.

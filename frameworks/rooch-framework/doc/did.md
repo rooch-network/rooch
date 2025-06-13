@@ -54,33 +54,30 @@
 -  [Function `get_did_identifier_string`](#0x3_did_get_did_identifier_string)
 -  [Function `get_did_method`](#0x3_did_get_did_method)
 -  [Function `get_did_document`](#0x3_did_get_did_document)
+-  [Function `get_did_document_by_address`](#0x3_did_get_did_document_by_address)
 -  [Function `get_did_document_by_object_id`](#0x3_did_get_did_document_by_object_id)
--  [Function `get_did_identifier`](#0x3_did_get_did_identifier)
--  [Function `get_controllers`](#0x3_did_get_controllers)
--  [Function `get_verification_methods`](#0x3_did_get_verification_methods)
--  [Function `get_verification_method`](#0x3_did_get_verification_method)
--  [Function `get_verification_method_id`](#0x3_did_get_verification_method_id)
--  [Function `get_verification_method_type`](#0x3_did_get_verification_method_type)
--  [Function `get_verification_method_controller`](#0x3_did_get_verification_method_controller)
--  [Function `get_verification_method_public_key_multibase`](#0x3_did_get_verification_method_public_key_multibase)
--  [Function `get_authentication_methods`](#0x3_did_get_authentication_methods)
--  [Function `get_assertion_methods`](#0x3_did_get_assertion_methods)
--  [Function `get_capability_invocation_methods`](#0x3_did_get_capability_invocation_methods)
--  [Function `get_capability_delegation_methods`](#0x3_did_get_capability_delegation_methods)
--  [Function `get_key_agreement_methods`](#0x3_did_get_key_agreement_methods)
--  [Function `get_services`](#0x3_did_get_services)
--  [Function `get_service`](#0x3_did_get_service)
--  [Function `get_service_id`](#0x3_did_get_service_id)
--  [Function `get_service_type`](#0x3_did_get_service_type)
--  [Function `get_service_endpoint`](#0x3_did_get_service_endpoint)
--  [Function `get_service_properties`](#0x3_did_get_service_properties)
--  [Function `get_also_known_as`](#0x3_did_get_also_known_as)
+-  [Function `doc_id`](#0x3_did_doc_id)
+-  [Function `doc_controllers`](#0x3_did_doc_controllers)
+-  [Function `doc_verification_methods`](#0x3_did_doc_verification_methods)
+-  [Function `doc_verification_method`](#0x3_did_doc_verification_method)
+-  [Function `verification_method_id`](#0x3_did_verification_method_id)
+-  [Function `verification_method_type`](#0x3_did_verification_method_type)
+-  [Function `verification_method_controller`](#0x3_did_verification_method_controller)
+-  [Function `verification_method_public_key_multibase`](#0x3_did_verification_method_public_key_multibase)
+-  [Function `doc_authentication_methods`](#0x3_did_doc_authentication_methods)
+-  [Function `doc_assertion_methods`](#0x3_did_doc_assertion_methods)
+-  [Function `doc_capability_invocation_methods`](#0x3_did_doc_capability_invocation_methods)
+-  [Function `doc_capability_delegation_methods`](#0x3_did_doc_capability_delegation_methods)
+-  [Function `doc_key_agreement_methods`](#0x3_did_doc_key_agreement_methods)
+-  [Function `doc_services`](#0x3_did_doc_services)
+-  [Function `doc_service`](#0x3_did_doc_service)
+-  [Function `service_id`](#0x3_did_service_id)
+-  [Function `service_type`](#0x3_did_service_type)
+-  [Function `service_endpoint`](#0x3_did_service_endpoint)
+-  [Function `service_properties`](#0x3_did_service_properties)
+-  [Function `doc_also_known_as`](#0x3_did_doc_also_known_as)
 -  [Function `get_created_timestamp_by_object_id`](#0x3_did_get_created_timestamp_by_object_id)
 -  [Function `get_updated_timestamp_by_object_id`](#0x3_did_get_updated_timestamp_by_object_id)
--  [Function `get_created_timestamp`](#0x3_did_get_created_timestamp)
--  [Function `get_updated_timestamp`](#0x3_did_get_updated_timestamp)
--  [Function `get_did_created_timestamp`](#0x3_did_get_did_created_timestamp)
--  [Function `get_did_updated_timestamp`](#0x3_did_get_did_updated_timestamp)
 -  [Function `get_did_address`](#0x3_did_get_did_address)
 -  [Function `find_verification_method_by_session_key`](#0x3_did_find_verification_method_by_session_key)
 
@@ -912,7 +909,7 @@ Returns the ObjectID of the created DID document for testing and verification.
 Get all DID ObjectIDs controlled by a specific controller DID
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_get_dids_by_controller">get_dids_by_controller</a>(controller_did: <a href="did.md#0x3_did_DID">did::DID</a>): <a href="">vector</a>&lt;<a href="_ObjectID">object::ObjectID</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_get_dids_by_controller">get_dids_by_controller</a>(controller_did: <a href="did.md#0x3_did_DID">did::DID</a>): <a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;
 </code></pre>
 
 
@@ -923,7 +920,7 @@ Get all DID ObjectIDs controlled by a specific controller DID
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_get_dids_by_controller_string">get_dids_by_controller_string</a>(controller_did_str: <a href="_String">string::String</a>): <a href="">vector</a>&lt;<a href="_ObjectID">object::ObjectID</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_get_dids_by_controller_string">get_dids_by_controller_string</a>(controller_did_str: <a href="_String">string::String</a>): <a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;
 </code></pre>
 
 
@@ -1049,10 +1046,21 @@ Get the method from a DID
 
 ## Function `get_did_document`
 
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_get_did_document">get_did_document</a>(did_str: <a href="_String">string::String</a>): &<a href="did.md#0x3_did_DIDDocument">did::DIDDocument</a>
+</code></pre>
+
+
+
+<a name="0x3_did_get_did_document_by_address"></a>
+
+## Function `get_did_document_by_address`
+
 Get DIDDocument by address
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_get_did_document">get_did_document</a>(addr: <b>address</b>): &<a href="did.md#0x3_did_DIDDocument">did::DIDDocument</a>
+<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_get_did_document_by_address">get_did_document_by_address</a>(addr: <b>address</b>): &<a href="did.md#0x3_did_DIDDocument">did::DIDDocument</a>
 </code></pre>
 
 
@@ -1069,234 +1077,234 @@ Get DIDDocument by ObjectID
 
 
 
-<a name="0x3_did_get_did_identifier"></a>
+<a name="0x3_did_doc_id"></a>
 
-## Function `get_did_identifier`
+## Function `doc_id`
 
-Get DID identifier from DIDDocument
+Get id from DIDDocument
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_get_did_identifier">get_did_identifier</a>(did_doc: &<a href="did.md#0x3_did_DIDDocument">did::DIDDocument</a>): &<a href="did.md#0x3_did_DID">did::DID</a>
+<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_doc_id">doc_id</a>(did_doc: &<a href="did.md#0x3_did_DIDDocument">did::DIDDocument</a>): &<a href="did.md#0x3_did_DID">did::DID</a>
 </code></pre>
 
 
 
-<a name="0x3_did_get_controllers"></a>
+<a name="0x3_did_doc_controllers"></a>
 
-## Function `get_controllers`
+## Function `doc_controllers`
 
 Get controllers from DIDDocument
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_get_controllers">get_controllers</a>(did_doc: &<a href="did.md#0x3_did_DIDDocument">did::DIDDocument</a>): &<a href="">vector</a>&lt;<a href="did.md#0x3_did_DID">did::DID</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_doc_controllers">doc_controllers</a>(did_doc: &<a href="did.md#0x3_did_DIDDocument">did::DIDDocument</a>): &<a href="">vector</a>&lt;<a href="did.md#0x3_did_DID">did::DID</a>&gt;
 </code></pre>
 
 
 
-<a name="0x3_did_get_verification_methods"></a>
+<a name="0x3_did_doc_verification_methods"></a>
 
-## Function `get_verification_methods`
+## Function `doc_verification_methods`
 
 Get verification methods from DIDDocument
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_get_verification_methods">get_verification_methods</a>(did_doc: &<a href="did.md#0x3_did_DIDDocument">did::DIDDocument</a>): &<a href="_SimpleMap">simple_map::SimpleMap</a>&lt;<a href="_String">string::String</a>, <a href="did.md#0x3_did_VerificationMethod">did::VerificationMethod</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_doc_verification_methods">doc_verification_methods</a>(did_doc: &<a href="did.md#0x3_did_DIDDocument">did::DIDDocument</a>): &<a href="_SimpleMap">simple_map::SimpleMap</a>&lt;<a href="_String">string::String</a>, <a href="did.md#0x3_did_VerificationMethod">did::VerificationMethod</a>&gt;
 </code></pre>
 
 
 
-<a name="0x3_did_get_verification_method"></a>
+<a name="0x3_did_doc_verification_method"></a>
 
-## Function `get_verification_method`
+## Function `doc_verification_method`
 
 Get verification method by fragment
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_get_verification_method">get_verification_method</a>(did_doc: &<a href="did.md#0x3_did_DIDDocument">did::DIDDocument</a>, fragment: &<a href="_String">string::String</a>): <a href="_Option">option::Option</a>&lt;<a href="did.md#0x3_did_VerificationMethod">did::VerificationMethod</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_doc_verification_method">doc_verification_method</a>(did_doc: &<a href="did.md#0x3_did_DIDDocument">did::DIDDocument</a>, fragment: &<a href="_String">string::String</a>): <a href="_Option">option::Option</a>&lt;<a href="did.md#0x3_did_VerificationMethod">did::VerificationMethod</a>&gt;
 </code></pre>
 
 
 
-<a name="0x3_did_get_verification_method_id"></a>
+<a name="0x3_did_verification_method_id"></a>
 
-## Function `get_verification_method_id`
+## Function `verification_method_id`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_get_verification_method_id">get_verification_method_id</a>(vm: &<a href="did.md#0x3_did_VerificationMethod">did::VerificationMethod</a>): &<a href="did.md#0x3_did_VerificationMethodID">did::VerificationMethodID</a>
+<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_verification_method_id">verification_method_id</a>(vm: &<a href="did.md#0x3_did_VerificationMethod">did::VerificationMethod</a>): &<a href="did.md#0x3_did_VerificationMethodID">did::VerificationMethodID</a>
 </code></pre>
 
 
 
-<a name="0x3_did_get_verification_method_type"></a>
+<a name="0x3_did_verification_method_type"></a>
 
-## Function `get_verification_method_type`
+## Function `verification_method_type`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_get_verification_method_type">get_verification_method_type</a>(vm: &<a href="did.md#0x3_did_VerificationMethod">did::VerificationMethod</a>): &<a href="_String">string::String</a>
+<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_verification_method_type">verification_method_type</a>(vm: &<a href="did.md#0x3_did_VerificationMethod">did::VerificationMethod</a>): &<a href="_String">string::String</a>
 </code></pre>
 
 
 
-<a name="0x3_did_get_verification_method_controller"></a>
+<a name="0x3_did_verification_method_controller"></a>
 
-## Function `get_verification_method_controller`
+## Function `verification_method_controller`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_get_verification_method_controller">get_verification_method_controller</a>(vm: &<a href="did.md#0x3_did_VerificationMethod">did::VerificationMethod</a>): &<a href="did.md#0x3_did_DID">did::DID</a>
+<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_verification_method_controller">verification_method_controller</a>(vm: &<a href="did.md#0x3_did_VerificationMethod">did::VerificationMethod</a>): &<a href="did.md#0x3_did_DID">did::DID</a>
 </code></pre>
 
 
 
-<a name="0x3_did_get_verification_method_public_key_multibase"></a>
+<a name="0x3_did_verification_method_public_key_multibase"></a>
 
-## Function `get_verification_method_public_key_multibase`
+## Function `verification_method_public_key_multibase`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_get_verification_method_public_key_multibase">get_verification_method_public_key_multibase</a>(vm: &<a href="did.md#0x3_did_VerificationMethod">did::VerificationMethod</a>): &<a href="_String">string::String</a>
+<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_verification_method_public_key_multibase">verification_method_public_key_multibase</a>(vm: &<a href="did.md#0x3_did_VerificationMethod">did::VerificationMethod</a>): &<a href="_String">string::String</a>
 </code></pre>
 
 
 
-<a name="0x3_did_get_authentication_methods"></a>
+<a name="0x3_did_doc_authentication_methods"></a>
 
-## Function `get_authentication_methods`
+## Function `doc_authentication_methods`
 
 Get authentication methods from DIDDocument
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_get_authentication_methods">get_authentication_methods</a>(did_doc: &<a href="did.md#0x3_did_DIDDocument">did::DIDDocument</a>): &<a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_doc_authentication_methods">doc_authentication_methods</a>(did_doc: &<a href="did.md#0x3_did_DIDDocument">did::DIDDocument</a>): &<a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;
 </code></pre>
 
 
 
-<a name="0x3_did_get_assertion_methods"></a>
+<a name="0x3_did_doc_assertion_methods"></a>
 
-## Function `get_assertion_methods`
+## Function `doc_assertion_methods`
 
 Get assertion methods from DIDDocument
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_get_assertion_methods">get_assertion_methods</a>(did_doc: &<a href="did.md#0x3_did_DIDDocument">did::DIDDocument</a>): &<a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_doc_assertion_methods">doc_assertion_methods</a>(did_doc: &<a href="did.md#0x3_did_DIDDocument">did::DIDDocument</a>): &<a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;
 </code></pre>
 
 
 
-<a name="0x3_did_get_capability_invocation_methods"></a>
+<a name="0x3_did_doc_capability_invocation_methods"></a>
 
-## Function `get_capability_invocation_methods`
+## Function `doc_capability_invocation_methods`
 
 Get capability invocation methods from DIDDocument
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_get_capability_invocation_methods">get_capability_invocation_methods</a>(did_doc: &<a href="did.md#0x3_did_DIDDocument">did::DIDDocument</a>): &<a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_doc_capability_invocation_methods">doc_capability_invocation_methods</a>(did_doc: &<a href="did.md#0x3_did_DIDDocument">did::DIDDocument</a>): &<a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;
 </code></pre>
 
 
 
-<a name="0x3_did_get_capability_delegation_methods"></a>
+<a name="0x3_did_doc_capability_delegation_methods"></a>
 
-## Function `get_capability_delegation_methods`
+## Function `doc_capability_delegation_methods`
 
 Get capability delegation methods from DIDDocument
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_get_capability_delegation_methods">get_capability_delegation_methods</a>(did_doc: &<a href="did.md#0x3_did_DIDDocument">did::DIDDocument</a>): &<a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_doc_capability_delegation_methods">doc_capability_delegation_methods</a>(did_doc: &<a href="did.md#0x3_did_DIDDocument">did::DIDDocument</a>): &<a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;
 </code></pre>
 
 
 
-<a name="0x3_did_get_key_agreement_methods"></a>
+<a name="0x3_did_doc_key_agreement_methods"></a>
 
-## Function `get_key_agreement_methods`
+## Function `doc_key_agreement_methods`
 
 Get key agreement methods from DIDDocument
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_get_key_agreement_methods">get_key_agreement_methods</a>(did_doc: &<a href="did.md#0x3_did_DIDDocument">did::DIDDocument</a>): &<a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_doc_key_agreement_methods">doc_key_agreement_methods</a>(did_doc: &<a href="did.md#0x3_did_DIDDocument">did::DIDDocument</a>): &<a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;
 </code></pre>
 
 
 
-<a name="0x3_did_get_services"></a>
+<a name="0x3_did_doc_services"></a>
 
-## Function `get_services`
+## Function `doc_services`
 
 Get services from DIDDocument
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_get_services">get_services</a>(did_doc: &<a href="did.md#0x3_did_DIDDocument">did::DIDDocument</a>): &<a href="_SimpleMap">simple_map::SimpleMap</a>&lt;<a href="_String">string::String</a>, <a href="did.md#0x3_did_Service">did::Service</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_doc_services">doc_services</a>(did_doc: &<a href="did.md#0x3_did_DIDDocument">did::DIDDocument</a>): &<a href="_SimpleMap">simple_map::SimpleMap</a>&lt;<a href="_String">string::String</a>, <a href="did.md#0x3_did_Service">did::Service</a>&gt;
 </code></pre>
 
 
 
-<a name="0x3_did_get_service"></a>
+<a name="0x3_did_doc_service"></a>
 
-## Function `get_service`
+## Function `doc_service`
 
 Get service by fragment
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_get_service">get_service</a>(did_doc: &<a href="did.md#0x3_did_DIDDocument">did::DIDDocument</a>, fragment: &<a href="_String">string::String</a>): <a href="_Option">option::Option</a>&lt;<a href="did.md#0x3_did_Service">did::Service</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_doc_service">doc_service</a>(did_doc: &<a href="did.md#0x3_did_DIDDocument">did::DIDDocument</a>, fragment: &<a href="_String">string::String</a>): <a href="_Option">option::Option</a>&lt;<a href="did.md#0x3_did_Service">did::Service</a>&gt;
 </code></pre>
 
 
 
-<a name="0x3_did_get_service_id"></a>
+<a name="0x3_did_service_id"></a>
 
-## Function `get_service_id`
+## Function `service_id`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_get_service_id">get_service_id</a>(service: &<a href="did.md#0x3_did_Service">did::Service</a>): &<a href="did.md#0x3_did_ServiceID">did::ServiceID</a>
+<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_service_id">service_id</a>(service: &<a href="did.md#0x3_did_Service">did::Service</a>): &<a href="did.md#0x3_did_ServiceID">did::ServiceID</a>
 </code></pre>
 
 
 
-<a name="0x3_did_get_service_type"></a>
+<a name="0x3_did_service_type"></a>
 
-## Function `get_service_type`
+## Function `service_type`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_get_service_type">get_service_type</a>(service: &<a href="did.md#0x3_did_Service">did::Service</a>): &<a href="_String">string::String</a>
+<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_service_type">service_type</a>(service: &<a href="did.md#0x3_did_Service">did::Service</a>): &<a href="_String">string::String</a>
 </code></pre>
 
 
 
-<a name="0x3_did_get_service_endpoint"></a>
+<a name="0x3_did_service_endpoint"></a>
 
-## Function `get_service_endpoint`
+## Function `service_endpoint`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_get_service_endpoint">get_service_endpoint</a>(service: &<a href="did.md#0x3_did_Service">did::Service</a>): &<a href="_String">string::String</a>
+<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_service_endpoint">service_endpoint</a>(service: &<a href="did.md#0x3_did_Service">did::Service</a>): &<a href="_String">string::String</a>
 </code></pre>
 
 
 
-<a name="0x3_did_get_service_properties"></a>
+<a name="0x3_did_service_properties"></a>
 
-## Function `get_service_properties`
+## Function `service_properties`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_get_service_properties">get_service_properties</a>(service: &<a href="did.md#0x3_did_Service">did::Service</a>): &<a href="_SimpleMap">simple_map::SimpleMap</a>&lt;<a href="_String">string::String</a>, <a href="_String">string::String</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_service_properties">service_properties</a>(service: &<a href="did.md#0x3_did_Service">did::Service</a>): &<a href="_SimpleMap">simple_map::SimpleMap</a>&lt;<a href="_String">string::String</a>, <a href="_String">string::String</a>&gt;
 </code></pre>
 
 
 
-<a name="0x3_did_get_also_known_as"></a>
+<a name="0x3_did_doc_also_known_as"></a>
 
-## Function `get_also_known_as`
+## Function `doc_also_known_as`
 
 Get also known as from DIDDocument
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_get_also_known_as">get_also_known_as</a>(did_doc: &<a href="did.md#0x3_did_DIDDocument">did::DIDDocument</a>): &<a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_doc_also_known_as">doc_also_known_as</a>(did_doc: &<a href="did.md#0x3_did_DIDDocument">did::DIDDocument</a>): &<a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;
 </code></pre>
 
 
@@ -1323,56 +1331,6 @@ This accesses the Object's metadata updated_at timestamp
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_get_updated_timestamp_by_object_id">get_updated_timestamp_by_object_id</a>(object_id: <a href="_ObjectID">object::ObjectID</a>): u64
-</code></pre>
-
-
-
-<a name="0x3_did_get_created_timestamp"></a>
-
-## Function `get_created_timestamp`
-
-Get created timestamp for a DID document by address
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_get_created_timestamp">get_created_timestamp</a>(addr: <b>address</b>): u64
-</code></pre>
-
-
-
-<a name="0x3_did_get_updated_timestamp"></a>
-
-## Function `get_updated_timestamp`
-
-Get updated timestamp for a DID document by address
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_get_updated_timestamp">get_updated_timestamp</a>(addr: <b>address</b>): u64
-</code></pre>
-
-
-
-<a name="0x3_did_get_did_created_timestamp"></a>
-
-## Function `get_did_created_timestamp`
-
-Get created timestamp from DIDDocument reference
-This is a convenience function that extracts the address and calls get_created_timestamp
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_get_did_created_timestamp">get_did_created_timestamp</a>(did_doc: &<a href="did.md#0x3_did_DIDDocument">did::DIDDocument</a>): u64
-</code></pre>
-
-
-
-<a name="0x3_did_get_did_updated_timestamp"></a>
-
-## Function `get_did_updated_timestamp`
-
-Get updated timestamp from DIDDocument reference
-This is a convenience function that extracts the address and calls get_updated_timestamp
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_get_did_updated_timestamp">get_did_updated_timestamp</a>(did_doc: &<a href="did.md#0x3_did_DIDDocument">did::DIDDocument</a>): u64
 </code></pre>
 
 

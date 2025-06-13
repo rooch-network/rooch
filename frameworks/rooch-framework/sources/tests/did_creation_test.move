@@ -38,7 +38,7 @@ module rooch_framework::did_creation_test {
         assert!(vector::length(&empty_dids) == 0, 1003);
 
         // Verify DID identifier format
-        let did_identifier = did::get_did_identifier(did_document);
+        let did_identifier = did::doc_id(did_document);
         let formatted_did = did::format_did(did_identifier);
         
         // Build expected DID string using the actual DID address
@@ -50,40 +50,35 @@ module rooch_framework::did_creation_test {
         assert!(formatted_did == expected_did_string, 1004);
         
         // Verify DID document properties
-        let controllers = did::get_controllers(did_document);
+        let controllers = did::doc_controllers(did_document);
         assert!(vector::length(controllers) == 1, 1005);
         let expected_controller = did::new_rooch_did_by_address(creator_address);
         assert!(*vector::borrow(controllers, 0) == expected_controller, 1006);
         
         // Verify account-key verification method exists
         let account_key_fragment = string::utf8(b"account-key");
-        let vm_opt = did::get_verification_method(did_document, &account_key_fragment);
+        let vm_opt = did::doc_verification_method(did_document, &account_key_fragment);
         assert!(option::is_some(&vm_opt), 1007);
         
         let vm = option::destroy_some(vm_opt);
-        let vm_type = did::get_verification_method_type(&vm);
+        let vm_type = did::verification_method_type(&vm);
         assert!(*vm_type == string::utf8(b"EcdsaSecp256k1VerificationKey2019"), 1008);
         
-        let vm_pubkey = did::get_verification_method_public_key_multibase(&vm);
+        let vm_pubkey = did::verification_method_public_key_multibase(&vm);
         assert!(*vm_pubkey == creator_public_key_multibase, 1009);
         
         // Verify verification relationships
-        let auth_methods = did::get_authentication_methods(did_document);
+        let auth_methods = did::doc_authentication_methods(did_document);
         assert!(vector::contains(auth_methods, &account_key_fragment), 1010);
         
-        let assertion_methods = did::get_assertion_methods(did_document);
+        let assertion_methods = did::doc_assertion_methods(did_document);
         assert!(vector::contains(assertion_methods, &account_key_fragment), 1011);
         
-        let capability_invocation = did::get_capability_invocation_methods(did_document);
+        let capability_invocation = did::doc_capability_invocation_methods(did_document);
         assert!(vector::contains(capability_invocation, &account_key_fragment), 1012);
         
-        let capability_delegation = did::get_capability_delegation_methods(did_document);
+        let capability_delegation = did::doc_capability_delegation_methods(did_document);
         assert!(vector::contains(capability_delegation, &account_key_fragment), 1013);
-        
-        // Verify timestamps are accessible (values may be 0 in test environment)
-        let created_time = did::get_did_created_timestamp(did_document);
-        let updated_time = did::get_did_updated_timestamp(did_document);
-        assert!(updated_time >= created_time, 1015); // Updated time should be >= created time
         
         // The did address not creator address
         assert!(did_address != creator_address, 1016);
@@ -265,24 +260,6 @@ module rooch_framework::did_creation_test {
         // Test ObjectID-based timestamp access
         let created_timestamp_by_id = did::get_created_timestamp_by_object_id(did_object_id);
         let updated_timestamp_by_id = did::get_updated_timestamp_by_object_id(did_object_id);
-        
-        // Get DID document
-        let did_document = did::get_did_document_by_object_id(did_object_id);
-        let did_address = did::get_did_address(did_document);
-        
-        // Test address-based timestamp access
-        let created_timestamp_by_addr = did::get_created_timestamp(did_address);
-        let updated_timestamp_by_addr = did::get_updated_timestamp(did_address);
-        
-        // Test DIDDocument reference-based access
-        let created_timestamp_by_doc = did::get_did_created_timestamp(did_document);
-        let updated_timestamp_by_doc = did::get_did_updated_timestamp(did_document);
-        
-        // All methods should return the same values
-        assert!(created_timestamp_by_id == created_timestamp_by_addr, 15001);
-        assert!(created_timestamp_by_addr == created_timestamp_by_doc, 15002);
-        assert!(updated_timestamp_by_id == updated_timestamp_by_addr, 15003);
-        assert!(updated_timestamp_by_addr == updated_timestamp_by_doc, 15004);
         
         // Updated timestamp should be >= created timestamp
         assert!(updated_timestamp_by_id >= created_timestamp_by_id, 15005);

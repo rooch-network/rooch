@@ -60,7 +60,7 @@ module rooch_framework::did_error_test {
 
         // Try to get DID document for non-existent address
         let nonexistent_address = @0x999999;
-        let _ = did::get_did_document(nonexistent_address);
+        let _ = did::get_did_document_by_address(nonexistent_address);
     }
 
     #[test]
@@ -109,7 +109,7 @@ module rooch_framework::did_error_test {
         let did_address = did::get_did_address(did_document);
 
         // Test has_verification_relationship_in_doc function with valid relationships - use DID address
-        let did_document_check = did::get_did_document(did_address);
+        let did_document_check = did::get_did_document_by_address(did_address);
         
         // account-key should have authentication, assertion_method, capability_invocation, capability_delegation
         let account_key_fragment = string::utf8(b"account-key");
@@ -158,7 +158,7 @@ module rooch_framework::did_error_test {
         did::add_verification_method_entry(&did_signer, fragment, method_type, test_key1, relationships);
 
         // Verify method was added - use DID address
-        let did_document_check = did::get_did_document(did_address);
+        let did_document_check = did::get_did_document_by_address(did_address);
         assert!(did::test_verification_method_exists(did_document_check, &fragment), 13401);
 
         // Fragment uniqueness is enforced - trying to add duplicate should fail in add_verification_method_already_exists test
@@ -218,7 +218,7 @@ module rooch_framework::did_error_test {
         );
 
         // Verify service was added successfully - use DID address
-        let did_document_check = did::get_did_document(did_address);
+        let did_document_check = did::get_did_document_by_address(did_address);
         assert!(did::test_service_exists(did_document_check, &fragment), 13601);
     }
 
@@ -261,7 +261,7 @@ module rooch_framework::did_error_test {
         did::add_verification_method_entry(&did_signer, fragment, method_type, test_key, relationships);
 
         // Verify method was added - use DID address
-        let did_document_check = did::get_did_document(did_address);
+        let did_document_check = did::get_did_document_by_address(did_address);
         assert!(did::test_verification_method_exists(did_document_check, &fragment), 13703);
     }
 
