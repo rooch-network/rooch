@@ -270,7 +270,7 @@ impl CommandAction<ManageOutput> for AddVerificationMethodCommand {
         let did_address = RoochAddress::from_str(&did_address_str)?;
 
         // Get DID document to find controller
-        let did_document = did_module.get_did_document(did_address.into())?;
+        let did_document = did_module.get_did_document_by_address(did_address.into())?;
 
         let controllers = did_document.controller;
         if controllers.is_empty() {
@@ -361,7 +361,7 @@ impl CommandAction<ManageOutput> for RemoveVerificationMethodCommand {
         })?;
         let did_address = RoochAddress::from_str(&did_address_str)?;
 
-        let did_document = did_module.get_did_document(did_address.into())?;
+        let did_document = did_module.get_did_document_by_address(did_address.into())?;
         let controllers = did_document.controller;
         if controllers.is_empty() {
             return Err(rooch_types::error::RoochError::CommandArgumentError(
@@ -419,7 +419,7 @@ impl CommandAction<ManageOutput> for AddToRelationshipCommand {
         })?;
         let did_address = RoochAddress::from_str(&did_address_str)?;
 
-        let did_document = did_module.get_did_document(did_address.into())?;
+        let did_document = did_module.get_did_document_by_address(did_address.into())?;
         let controllers = did_document.controller;
         if controllers.is_empty() {
             return Err(rooch_types::error::RoochError::CommandArgumentError(
@@ -480,7 +480,7 @@ impl CommandAction<ManageOutput> for RemoveFromRelationshipCommand {
         })?;
         let did_address = RoochAddress::from_str(&did_address_str)?;
 
-        let did_document = did_module.get_did_document(did_address.into())?;
+        let did_document = did_module.get_did_document_by_address(did_address.into())?;
         let controllers = did_document.controller;
         if controllers.is_empty() {
             return Err(rooch_types::error::RoochError::CommandArgumentError(
@@ -541,7 +541,7 @@ impl CommandAction<ManageOutput> for AddServiceCommand {
         })?;
         let did_address = RoochAddress::from_str(&did_address_str)?;
 
-        let did_document = did_module.get_did_document(did_address.into())?;
+        let did_document = did_module.get_did_document_by_address(did_address.into())?;
         let controllers = did_document.controller;
         if controllers.is_empty() {
             return Err(rooch_types::error::RoochError::CommandArgumentError(
@@ -613,7 +613,7 @@ impl CommandAction<ManageOutput> for UpdateServiceCommand {
         })?;
         let did_address = RoochAddress::from_str(&did_address_str)?;
 
-        let did_document = did_module.get_did_document(did_address.into())?;
+        let did_document = did_module.get_did_document_by_address(did_address.into())?;
         let controllers = did_document.controller;
         if controllers.is_empty() {
             return Err(rooch_types::error::RoochError::CommandArgumentError(
@@ -681,7 +681,7 @@ impl CommandAction<ManageOutput> for RemoveServiceCommand {
         })?;
         let did_address = RoochAddress::from_str(&did_address_str)?;
 
-        let did_document = did_module.get_did_document(did_address.into())?;
+        let did_document = did_module.get_did_document_by_address(did_address.into())?;
         let controllers = did_document.controller;
         if controllers.is_empty() {
             return Err(rooch_types::error::RoochError::CommandArgumentError(

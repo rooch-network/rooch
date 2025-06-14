@@ -48,6 +48,10 @@ use serde::{Deserialize, Deserializer, Serialize};
 use serde_with::serde_as;
 use std::{hash::Hash, str::FromStr};
 
+pub use fastcrypto::ed25519::ED25519_PUBLIC_KEY_LENGTH;
+pub use fastcrypto::secp256k1::SECP256K1_PUBLIC_KEY_LENGTH;
+pub use fastcrypto::secp256r1::SECP256R1_PUBLIC_KEY_LENGTH;
+
 pub type DefaultHash = Blake2b256;
 
 #[derive(Debug, PartialEq)]

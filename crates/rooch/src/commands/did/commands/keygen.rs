@@ -4,7 +4,7 @@
 use crate::cli_types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
 use clap::Parser;
-use rooch_types::crypto::{EncodeDecodeBase64, RoochKeyPair, SignatureScheme};
+use rooch_types::crypto::{self, EncodeDecodeBase64, RoochKeyPair, SignatureScheme};
 use rooch_types::error::RoochResult;
 use serde::{Deserialize, Serialize};
 
@@ -467,10 +467,11 @@ fn generate_did_key(multibase_public_key: &str, key_type: &str) -> RoochResult<S
     let did_key = match key_type.to_lowercase().as_str() {
         "ed25519" => {
             // Validate Ed25519 key length (32 bytes)
-            if raw_key_bytes.len() != 32 {
+            if raw_key_bytes.len() != crypto::ED25519_PUBLIC_KEY_LENGTH {
                 return Err(rooch_types::error::RoochError::CommandArgumentError(
                     format!(
-                        "Invalid Ed25519 key length: expected 32 bytes, got {}",
+                        "Invalid Ed25519 key length: expected {} bytes, got {}",
+                        crypto::ED25519_PUBLIC_KEY_LENGTH,
                         raw_key_bytes.len()
                     ),
                 ));
@@ -485,10 +486,11 @@ fn generate_did_key(multibase_public_key: &str, key_type: &str) -> RoochResult<S
         }
         "secp256k1" => {
             // Validate Secp256k1 compressed key length (33 bytes)
-            if raw_key_bytes.len() != 33 {
+            if raw_key_bytes.len() != crypto::SECP256K1_PUBLIC_KEY_LENGTH {
                 return Err(rooch_types::error::RoochError::CommandArgumentError(
                     format!(
-                        "Invalid Secp256k1 key length: expected 33 bytes, got {}",
+                        "Invalid Secp256k1 key length: expected {} bytes, got {}",
+                        crypto::SECP256K1_PUBLIC_KEY_LENGTH,
                         raw_key_bytes.len()
                     ),
                 ));
@@ -502,11 +504,12 @@ fn generate_did_key(multibase_public_key: &str, key_type: &str) -> RoochResult<S
             format!("did:key:{}", did_key_multibase)
         }
         "ecdsa-r1" => {
-            // Validate ECDSA R1 key length (32 bytes)
-            if raw_key_bytes.len() != 32 {
+            // Validate ECDSA R1 key length (33 bytes)
+            if raw_key_bytes.len() != crypto::SECP256R1_PUBLIC_KEY_LENGTH {
                 return Err(rooch_types::error::RoochError::CommandArgumentError(
                     format!(
-                        "Invalid ECDSA R1 key length: expected 32 bytes, got {}",
+                        "Invalid ECDSA R1 key length: expected {} bytes, got {}",
+                        crypto::SECP256R1_PUBLIC_KEY_LENGTH,
                         raw_key_bytes.len()
                     ),
                 ));
