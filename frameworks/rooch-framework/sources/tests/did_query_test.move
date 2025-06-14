@@ -223,8 +223,8 @@ module rooch_framework::did_query_test {
         // Verify the controlled DID matches expectation
         let controlled_did = *vector::borrow(&controlled_dids, 0);
         // Note: controlled_did is ObjectID, we need to get the actual DID document
-        let controlled_did_doc = did::get_did_document_by_object_id(controlled_did);
-        let controlled_did_identifier = did::get_did_identifier(controlled_did_doc);
+        let controlled_did_doc = did::get_did_document(controlled_did);
+        let controlled_did_identifier = did::doc_id(controlled_did_doc);
         let formatted_controlled = did::format_did(controlled_did_identifier);
         
         // The controlled DID should be the DID at did_address
@@ -317,8 +317,8 @@ module rooch_framework::did_query_test {
         
         let controlled_did = *vector::borrow(&controlled_dids, 0);
         // Note: controlled_did is ObjectID, we need to get the actual DID document  
-        let controlled_did_doc = did::get_did_document_by_object_id(controlled_did);
-        let controlled_did_identifier = did::get_did_identifier(controlled_did_doc);
+        let controlled_did_doc = did::get_did_document(controlled_did);
+        let controlled_did_identifier = did::doc_id(controlled_did_doc);
         let formatted_controlled = did::format_did(controlled_did_identifier);
         assert!(formatted_controlled == formatted_did, 11905);
     }

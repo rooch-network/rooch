@@ -217,7 +217,7 @@ test-move-examples:
 			name_addr=$$(basename "$$dir"); \
 			echo "Building and Testing Move example: $$dir (named address: $$name_addr)"; \
 			$(ROOCH_CMD) move build -p "$$dir" --named-addresses rooch_examples=default,$$name_addr=default && \
-			$(ROOCH_CMD) move test -p "$$dir" --named-addresses rooch_examples=default,$$name_addr=default || exit 1; \
+			$(ROOCH_CMD) move test -p "$$dir"|| exit 1; \
 		fi \
 	done
 	@echo "✅ All Move example tests passed."

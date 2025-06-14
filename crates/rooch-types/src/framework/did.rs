@@ -439,7 +439,6 @@ impl<'a> DIDModule<'a> {
         ident_str!("update_service_entry");
     pub const REMOVE_SERVICE_ENTRY_FUNCTION_NAME: &'static IdentStr =
         ident_str!("remove_service_entry");
-    pub const INIT_DID_REGISTRY_FUNCTION_NAME: &'static IdentStr = ident_str!("init_did_registry");
 
     // Query function names
     pub const EXISTS_DID_DOCUMENT_BY_IDENTIFIER_FUNCTION_NAME: &'static IdentStr =
@@ -449,6 +448,8 @@ impl<'a> DIDModule<'a> {
     pub const GET_DIDS_BY_CONTROLLER_STRING_FUNCTION_NAME: &'static IdentStr =
         ident_str!("get_dids_by_controller_string");
     pub const GET_DID_DOCUMENT_FUNCTION_NAME: &'static IdentStr = ident_str!("get_did_document");
+    pub const GET_DID_DOCUMENT_BY_ADDRESS_FUNCTION_NAME: &'static IdentStr =
+        ident_str!("get_did_document_by_address");
     pub const GET_DID_DOCUMENT_BY_OBJECT_ID_FUNCTION_NAME: &'static IdentStr =
         ident_str!("get_did_document_by_object_id");
 
@@ -631,11 +632,6 @@ impl<'a> DIDModule<'a> {
         )
     }
 
-    /// Initialize DID registry action
-    pub fn init_did_registry_action() -> MoveAction {
-        Self::create_move_action(Self::INIT_DID_REGISTRY_FUNCTION_NAME, vec![], vec![])
-    }
-
     /// Check if DID document exists by identifier
     pub fn exists_did_document_by_identifier(&self, identifier: &str) -> Result<bool> {
         let call = FunctionCall::new(
@@ -680,7 +676,7 @@ impl<'a> DIDModule<'a> {
     }
 
     /// Get DIDs controlled by a specific controller DID
-    pub fn get_dids_by_controller_string(&self, controller_did_str: &str) -> Result<Vec<ObjectID>> {
+    pub fn get_dids_by_controller_string(&self, controller_did_str: &str) -> Result<Vec<String>> {
         let call = FunctionCall::new(
             Self::function_id(Self::GET_DIDS_BY_CONTROLLER_STRING_FUNCTION_NAME),
             vec![],
@@ -690,22 +686,44 @@ impl<'a> DIDModule<'a> {
                 .unwrap()],
         );
         let ctx = TxContext::new_readonly_ctx(AccountAddress::ZERO);
-        let object_ids =
+        let dids = self
+            .caller
+            .call_function(&ctx, call)?
+            .into_result()
+            .map(|mut values| {
+                let value = values.pop().expect("should have one return value");
+                bcs::from_bytes::<Vec<MoveString>>(&value.value)
+                    .expect("should be a valid Vec<MoveString>")
+            })?;
+        Ok(dids.into_iter().map(|did| did.to_string()).collect())
+    }
+
+    pub fn get_did_document(&self, did: &str) -> Result<DIDDocument> {
+        let call = FunctionCall::new(
+            Self::function_id(Self::GET_DID_DOCUMENT_FUNCTION_NAME),
+            vec![],
+            vec![MoveString::from_str(did)?
+                .to_move_value()
+                .simple_serialize()
+                .unwrap()],
+        );
+        let ctx = TxContext::new_readonly_ctx(AccountAddress::ZERO);
+        let did_document =
             self.caller
                 .call_function(&ctx, call)?
                 .into_result()
                 .map(|mut values| {
                     let value = values.pop().expect("should have one return value");
-                    bcs::from_bytes::<Vec<ObjectID>>(&value.value)
-                        .expect("should be a valid Vec<ObjectID>")
+                    bcs::from_bytes::<DIDDocument>(&value.value)
+                        .expect("should be a valid DIDDocument")
                 })?;
-        Ok(object_ids)
+        Ok(did_document)
     }
 
     /// Get DID document by address
-    pub fn get_did_document(&self, address: AccountAddress) -> Result<DIDDocument> {
+    pub fn get_did_document_by_address(&self, address: AccountAddress) -> Result<DIDDocument> {
         let call = FunctionCall::new(
-            Self::function_id(Self::GET_DID_DOCUMENT_FUNCTION_NAME),
+            Self::function_id(Self::GET_DID_DOCUMENT_BY_ADDRESS_FUNCTION_NAME),
             vec![],
             vec![move_core_types::value::MoveValue::Address(address)
                 .simple_serialize()

@@ -11,6 +11,7 @@ module rooch_framework::did_integration_test {
     use std::option;
     use std::vector;
     use moveos_std::account;
+    use moveos_std::multibase_codec;
 
     // ========================================
     // Test Category 10: Integration & Comprehensive Tests
@@ -30,7 +31,7 @@ module rooch_framework::did_integration_test {
         // Add Ed25519 verification method
         let ed25519_fragment = string::utf8(b"ed25519-key");
         let ed25519_type = string::utf8(b"Ed25519VerificationKey2020");
-        let ed25519_key = did_test_common::generate_test_ed25519_multibase_key();
+        let ed25519_key = did_test_common::generate_test_ed25519_multibase();
         let ed25519_relationships = vector[1u8, 4u8]; // assertion_method, key_agreement (avoid authentication)
 
         did::add_verification_method_entry(
@@ -44,7 +45,7 @@ module rooch_framework::did_integration_test {
         // Add another Secp256k1 verification method
         let secp256k1_fragment = string::utf8(b"secp256k1-key");
         let secp256k1_type = string::utf8(b"EcdsaSecp256k1VerificationKey2019");
-        let secp256k1_key = did_test_common::generate_test_secp256k1_multibase_key(); // Different key
+        let secp256k1_key = did_test_common::generate_test_secp256k1_multibase(); // Different key
         let secp256k1_relationships = vector[1u8, 2u8]; // assertion_method, capability_invocation
 
         did::add_verification_method_entry(
@@ -56,7 +57,7 @@ module rooch_framework::did_integration_test {
         );
 
         // Verify all methods exist - use DID address
-        let did_document_after = did::get_did_document(did_address);
+        let did_document_after = did::get_did_document_by_address(did_address);
         assert!(did::test_verification_method_exists(did_document_after, &string::utf8(b"account-key")), 14001); // Original
         assert!(did::test_verification_method_exists(did_document_after, &ed25519_fragment), 14002); // Ed25519
         assert!(did::test_verification_method_exists(did_document_after, &secp256k1_fragment), 14003); // Secp256k1
@@ -94,7 +95,7 @@ module rooch_framework::did_integration_test {
         did::add_service_entry(&did_signer, service_fragment, service_type, service_endpoint);
 
         // Test service existence - use DID address
-        let did_document_after = did::get_did_document(did_address);
+        let did_document_after = did::get_did_document_by_address(did_address);
         assert!(did::test_service_exists(did_document_after, &service_fragment), 14103);
         assert!(!did::test_service_exists(did_document_after, &nonexistent_fragment), 14104);
     }
@@ -178,7 +179,7 @@ module rooch_framework::did_integration_test {
         };
 
         // Verify all methods and services exist - use DID address
-        let did_document_check = did::get_did_document(did_address);
+        let did_document_check = did::get_did_document_by_address(did_address);
         
         // Check verification methods
         assert!(did::test_verification_method_exists(did_document_check, &string::utf8(b"test-key-0")), 14301);
@@ -208,7 +209,7 @@ module rooch_framework::did_integration_test {
         // 2. Add verification method
         let vm_fragment = string::utf8(b"backup-key");
         let vm_type = string::utf8(b"Ed25519VerificationKey2020");
-        let vm_key = did_test_common::generate_test_ed25519_multibase_key();
+        let vm_key = did_test_common::generate_test_ed25519_multibase();
         let vm_relationships = vector[1u8]; // assertion_method (avoid authentication)
 
         did::add_verification_method_entry(&did_signer, vm_fragment, vm_type, vm_key, vm_relationships);
@@ -221,7 +222,7 @@ module rooch_framework::did_integration_test {
         did::add_service_entry(&did_signer, service_fragment, service_type, service_endpoint);
 
         // 4. Verify all components exist - use DID address
-        let did_document_check = did::get_did_document(did_address);
+        let did_document_check = did::get_did_document_by_address(did_address);
         assert!(did::test_verification_method_exists(did_document_check, &vm_fragment), 15003);
         assert!(did::test_service_exists(did_document_check, &service_fragment), 15004);
         assert!(did::has_verification_relationship_in_doc(did_document_check, &vm_fragment, 1), 15006); // assertion_method
@@ -229,7 +230,7 @@ module rooch_framework::did_integration_test {
         // 5. Modify verification relationships
         did::add_to_verification_relationship_entry(&did_signer, vm_fragment, 4u8); // key_agreement
         
-        let did_document_after = did::get_did_document(did_address);
+        let did_document_after = did::get_did_document_by_address(did_address);
         assert!(did::has_verification_relationship_in_doc(did_document_after, &vm_fragment, 4), 15007); // key_agreement
 
         // 6. Update service
@@ -248,7 +249,7 @@ module rooch_framework::did_integration_test {
         );
 
         // 7. Query and verify final state - use DID address
-        let final_did_document = did::get_did_document(did_address);
+        let final_did_document = did::get_did_document_by_address(did_address);
         assert!(did::test_service_exists(final_did_document, &service_fragment), 15008);
         
         // 8. Test controller mapping
@@ -262,7 +263,7 @@ module rooch_framework::did_integration_test {
         did::remove_service_entry(&did_signer, service_fragment);
 
         // 10. Verify cleanup - use DID address
-        let final_did_document_cleaned = did::get_did_document(did_address);
+        let final_did_document_cleaned = did::get_did_document_by_address(did_address);
         assert!(!did::test_verification_method_exists(final_did_document_cleaned, &vm_fragment), 15010);
         assert!(!did::test_service_exists(final_did_document_cleaned, &service_fragment), 15011);
     }
@@ -311,7 +312,7 @@ module rooch_framework::did_integration_test {
         };
 
         // Verify all methods were added - use DID address
-        let did_document_check = did::get_did_document(did_address);
+        let did_document_check = did::get_did_document_by_address(did_address);
         let j = 0;
         while (j < method_count) {
             let fragment = string::utf8(b"perf-key-");
@@ -331,7 +332,6 @@ module rooch_framework::did_integration_test {
     #[test]
     /// Test cross-cutting functionality integration
     fun test_cross_cutting_integration() {
-        use moveos_std::multibase;
         use rooch_framework::session_key;
         use rooch_framework::auth_validator;
         
@@ -360,7 +360,7 @@ module rooch_framework::did_integration_test {
         // Test 3: Verification Method and Service Integration
         let vm_fragment = string::utf8(b"integration-key");
         let vm_type = string::utf8(b"Ed25519VerificationKey2020");
-        let vm_key = did_test_common::generate_test_ed25519_multibase_key();
+        let vm_key = did_test_common::generate_test_ed25519_multibase();
         let vm_relationships = vector[0u8, 1u8, 2u8]; // authentication, assertion_method, capability_invocation
 
         did::add_verification_method_entry(&did_signer, vm_fragment, vm_type, vm_key, vm_relationships);
@@ -372,7 +372,7 @@ module rooch_framework::did_integration_test {
         did::add_service_entry(&did_signer, service_fragment, service_type, service_endpoint);
 
         // Test 4: Permission Integration - Switch to new verification method for capability_invocation
-        let vm_pk_bytes_opt = multibase::decode_ed25519_key(&vm_key);
+        let vm_pk_bytes_opt = multibase_codec::decode(&vm_key);
         let vm_pk_bytes = option::destroy_some(vm_pk_bytes_opt);
         let vm_auth_key = session_key::ed25519_public_key_to_authentication_key(&vm_pk_bytes);
         auth_validator::set_simple_tx_validate_result_for_testing(option::some(vm_auth_key));
@@ -385,7 +385,7 @@ module rooch_framework::did_integration_test {
         did::add_service_entry(&did_signer, service2_fragment, service2_type, service2_endpoint);
 
         // Test 5: Query Integration - Verify all components - use DID address
-        let final_did_document = did::get_did_document(did_address);
+        let final_did_document = did::get_did_document_by_address(did_address);
         assert!(did::test_verification_method_exists(final_did_document, &vm_fragment), 15203);
         assert!(did::test_service_exists(final_did_document, &service_fragment), 15204);
         assert!(did::test_service_exists(final_did_document, &service2_fragment), 15205);
@@ -438,7 +438,7 @@ module rooch_framework::did_integration_test {
         did::add_verification_method_entry(&did_signer, final_fragment, final_type, final_key, final_relationships);
 
         // Scenario 3: Verify DID document integrity - use DID address
-        let did_document_check = did::get_did_document(did_address);
+        let did_document_check = did::get_did_document_by_address(did_address);
         assert!(did::test_verification_method_exists(did_document_check, &final_fragment), 15301);
         assert!(did::test_verification_method_exists(did_document_check, &string::utf8(b"account-key")), 15302); // Original still exists
         assert!(did::has_verification_relationship_in_doc(did_document_check, &final_fragment, 1), 15304); // assertion_method

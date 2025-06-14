@@ -28,7 +28,7 @@ module rooch_framework::did_verification_method_test {
         let did_signer = account::create_signer_for_testing(did_address);
 
         // Add new Ed25519 verification method - use a different working Ed25519 key
-        let new_ed25519_key = did_test_common::generate_test_ed25519_multibase_key();
+        let new_ed25519_key = did_test_common::generate_test_ed25519_multibase();
         let fragment = string::utf8(b"ed25519-key-1");
         let method_type = string::utf8(b"Ed25519VerificationKey2020");
         let relationships = vector[0u8, 1u8]; // assertion_method only (not authentication to avoid session key registration)
@@ -42,7 +42,7 @@ module rooch_framework::did_verification_method_test {
         );
 
         // Verify method was added - use DID address
-        let did_document_after = did::get_did_document(did_address);
+        let did_document_after = did::get_did_document_by_address(did_address);
         assert!(did::test_verification_method_exists(did_document_after, &fragment), 8001);
         assert!(did::has_verification_relationship_in_doc(did_document_after, &fragment, 1), 8003); // assertion_method
     }
@@ -59,7 +59,7 @@ module rooch_framework::did_verification_method_test {
         let did_signer = account::create_signer_for_testing(did_address);
 
         // Add new Secp256k1 verification method
-        let new_secp256k1_key = did_test_common::generate_test_secp256k1_multibase_key(); // Different key
+        let new_secp256k1_key = did_test_common::generate_test_secp256k1_multibase(); // Different key
         let fragment = string::utf8(b"secp256k1-key-1");
         let method_type = string::utf8(b"EcdsaSecp256k1VerificationKey2019");
         let relationships = vector[0u8, 2u8, 3u8]; // capability_invocation, capability_delegation
@@ -73,7 +73,7 @@ module rooch_framework::did_verification_method_test {
         );
 
         // Verify method was added - use DID address
-        let did_document_after = did::get_did_document(did_address);
+        let did_document_after = did::get_did_document_by_address(did_address);
         assert!(did::test_verification_method_exists(did_document_after, &fragment), 8101);
         assert!(did::has_verification_relationship_in_doc(did_document_after, &fragment, 2), 8102); // capability_invocation
         assert!(did::has_verification_relationship_in_doc(did_document_after, &fragment, 3), 8103); // capability_delegation
@@ -94,7 +94,7 @@ module rooch_framework::did_verification_method_test {
         // Try to add method with same fragment as existing account-key
         let fragment = string::utf8(b"account-key"); // This already exists from DID creation
         let method_type = string::utf8(b"Ed25519VerificationKey2020");
-        let new_key = did_test_common::generate_test_ed25519_multibase_key();
+        let new_key = did_test_common::generate_test_ed25519_multibase();
         let relationships = vector[0u8]; // authentication
 
         did::add_verification_method_entry(
@@ -120,7 +120,7 @@ module rooch_framework::did_verification_method_test {
         // Add a verification method first
         let fragment = string::utf8(b"test-key");
         let method_type = string::utf8(b"Ed25519VerificationKey2020");
-        let test_key = did_test_common::generate_test_ed25519_multibase_key();
+        let test_key = did_test_common::generate_test_ed25519_multibase();
         let relationships = vector[1u8]; // assertion_method
 
         did::add_verification_method_entry(
@@ -132,14 +132,14 @@ module rooch_framework::did_verification_method_test {
         );
 
         // Verify method exists - use DID address
-        let did_document_check = did::get_did_document(did_address);
+        let did_document_check = did::get_did_document_by_address(did_address);
         assert!(did::test_verification_method_exists(did_document_check, &fragment), 8201);
 
         // Remove the verification method
         did::remove_verification_method_entry(&did_signer, fragment);
 
         // Verify method was removed - use DID address
-        let did_document_after = did::get_did_document(did_address);
+        let did_document_after = did::get_did_document_by_address(did_address);
         assert!(!did::test_verification_method_exists(did_document_after, &fragment), 8202);
     }
 
@@ -174,7 +174,7 @@ module rooch_framework::did_verification_method_test {
         // Add a verification method first without key_agreement relationship
         let fragment = string::utf8(b"test-key");
         let method_type = string::utf8(b"Ed25519VerificationKey2020");
-        let test_key = did_test_common::generate_test_ed25519_multibase_key();
+        let test_key = did_test_common::generate_test_ed25519_multibase();
         let relationships = vector[1u8]; // assertion_method only
 
         did::add_verification_method_entry(
@@ -186,14 +186,14 @@ module rooch_framework::did_verification_method_test {
         );
 
         // Verify key_agreement is not set initially - use DID address
-        let did_document_check = did::get_did_document(did_address);
+        let did_document_check = did::get_did_document_by_address(did_address);
         assert!(!did::has_verification_relationship_in_doc(did_document_check, &fragment, 4), 8301); // key_agreement
 
         // Add to key_agreement relationship
         did::add_to_verification_relationship_entry(&did_signer, fragment, 4u8); // key_agreement
 
         // Verify key_agreement relationship was added - use DID address
-        let did_document_after = did::get_did_document(did_address);
+        let did_document_after = did::get_did_document_by_address(did_address);
         assert!(did::has_verification_relationship_in_doc(did_document_after, &fragment, 4), 8302); // key_agreement
     }
 
@@ -211,7 +211,7 @@ module rooch_framework::did_verification_method_test {
         // Add a verification method with multiple relationships
         let fragment = string::utf8(b"test-key");
         let method_type = string::utf8(b"Ed25519VerificationKey2020");
-        let test_key = did_test_common::generate_test_ed25519_multibase_key();
+        let test_key = did_test_common::generate_test_ed25519_multibase();
         let relationships = vector[1u8, 4u8]; // assertion_method, key_agreement
 
         did::add_verification_method_entry(
@@ -223,7 +223,7 @@ module rooch_framework::did_verification_method_test {
         );
 
         // Verify both relationships exist - use DID address
-        let did_document_check = did::get_did_document(did_address);
+        let did_document_check = did::get_did_document_by_address(did_address);
         assert!(did::has_verification_relationship_in_doc(did_document_check, &fragment, 1), 8401); // assertion_method
         assert!(did::has_verification_relationship_in_doc(did_document_check, &fragment, 4), 8402); // key_agreement
 
@@ -231,7 +231,7 @@ module rooch_framework::did_verification_method_test {
         did::remove_from_verification_relationship_entry(&did_signer, fragment, 4u8); // key_agreement
 
         // Verify key_agreement was removed but assertion_method remains - use DID address
-        let did_document_after = did::get_did_document(did_address);
+        let did_document_after = did::get_did_document_by_address(did_address);
         assert!(did::has_verification_relationship_in_doc(did_document_after, &fragment, 1), 8403); // assertion_method still exists
         assert!(!did::has_verification_relationship_in_doc(did_document_after, &fragment, 4), 8404); // key_agreement removed
     }
@@ -264,7 +264,7 @@ module rooch_framework::did_verification_method_test {
         let did_address = did::get_did_address(did_document);
 
         // Test has_verification_relationship_in_doc function with valid relationships - use DID address
-        let did_document_check = did::get_did_document(did_address);
+        let did_document_check = did::get_did_document_by_address(did_address);
         
         // account-key should have authentication, assertion_method, capability_invocation, capability_delegation
         let account_key_fragment = string::utf8(b"account-key");
@@ -291,7 +291,7 @@ module rooch_framework::did_verification_method_test {
         let did_document = did::get_did_document_by_object_id(did_object_id);
         let did_address = did::get_did_address(did_document);
 
-        let did_document_check = did::get_did_document(did_address);
+        let did_document_check = did::get_did_document_by_address(did_address);
 
         // Test is_verification_method_valid_in_doc
         let account_key_fragment = string::utf8(b"account-key");
@@ -315,7 +315,7 @@ module rooch_framework::did_verification_method_test {
         // Add Ed25519 verification method - use a working Ed25519 key and avoid authentication relationship
         let ed25519_fragment = string::utf8(b"ed25519-key");
         let ed25519_type = string::utf8(b"Ed25519VerificationKey2020");
-        let ed25519_key = did_test_common::generate_test_ed25519_multibase_key();
+        let ed25519_key = did_test_common::generate_test_ed25519_multibase();
         let ed25519_relationships = vector[0u8, 1u8, 4u8]; // assertion_method, key_agreement (avoid authentication)
 
         did::add_verification_method_entry(
@@ -329,7 +329,7 @@ module rooch_framework::did_verification_method_test {
         // Add another Secp256k1 verification method
         let secp256k1_fragment = string::utf8(b"secp256k1-key");
         let secp256k1_type = string::utf8(b"EcdsaSecp256k1VerificationKey2019");
-        let secp256k1_key = did_test_common::generate_test_secp256k1_multibase_key(); // Different key
+        let secp256k1_key = did_test_common::generate_test_secp256k1_multibase(); // Different key
         let secp256k1_relationships = vector[0u8, 1u8, 2u8]; // assertion_method, capability_invocation
 
         did::add_verification_method_entry(
@@ -341,7 +341,7 @@ module rooch_framework::did_verification_method_test {
         );
 
         // Verify all methods exist - use DID address
-        let did_document_check = did::get_did_document(did_address);
+        let did_document_check = did::get_did_document_by_address(did_address);
         assert!(did::test_verification_method_exists(did_document_check, &string::utf8(b"account-key")), 14001); // Original
         assert!(did::test_verification_method_exists(did_document_check, &ed25519_fragment), 14002); // Ed25519
         assert!(did::test_verification_method_exists(did_document_check, &secp256k1_fragment), 14003); // Secp256k1
@@ -385,11 +385,161 @@ module rooch_framework::did_verification_method_test {
         };
 
         // Verify all methods exist - use DID address
-        let did_document_check = did::get_did_document(did_address);
+        let did_document_check = did::get_did_document_by_address(did_address);
         
         // Check verification methods
         assert!(did::test_verification_method_exists(did_document_check, &string::utf8(b"test-key-0")), 14301);
         assert!(did::test_verification_method_exists(did_document_check, &string::utf8(b"test-key-1")), 14302);
         assert!(did::test_verification_method_exists(did_document_check, &string::utf8(b"test-key-2")), 14303);
+    }
+
+    #[test]
+    /// Test adding ECDSA R1 verification method successfully
+    fun test_add_verification_method_ecdsa_r1() {
+        // Use proper setup to get creator info and DID object ID
+        let (_creator_signer, _creator_address, _creator_public_key_multibase, did_object_id) = did_test_common::setup_did_test_with_creation();
+        
+        // Get the actual DID document and its address
+        let did_document = did::get_did_document_by_object_id(did_object_id);
+        let did_address = did::get_did_address(did_document);
+        let did_signer = account::create_signer_for_testing(did_address);
+
+        // Add ECDSA R1 verification method
+        let fragment = string::utf8(b"ecdsa-r1-key");
+        let method_type = string::utf8(b"EcdsaSecp256r1VerificationKey2019");
+        let ecdsa_r1_key = did_test_common::generate_test_ecdsa_r1_multibase();
+        let relationships = vector[1u8, 2u8]; // assertion_method, capability_invocation
+
+        did::add_verification_method_entry(
+            &did_signer,
+            fragment,
+            method_type,
+            ecdsa_r1_key,
+            relationships
+        );
+
+        // Verify method was added
+        let did_document_after = did::get_did_document_by_address(did_address);
+        assert!(did::test_verification_method_exists(did_document_after, &fragment), 15001);
+        assert!(did::has_verification_relationship_in_doc(did_document_after, &fragment, 1), 15002); // assertion_method
+        assert!(did::has_verification_relationship_in_doc(did_document_after, &fragment, 2), 15003); // capability_invocation
+    }
+
+    #[test]
+    #[expected_failure(abort_code = did::ErrorVerificationMethodAlreadyExists, location = rooch_framework::did)] // ErrorVerificationMethodAlreadyExists
+    /// Test adding duplicate ECDSA R1 verification method fails
+    fun test_add_duplicate_ecdsa_r1_verification_method() {
+        // Use proper setup to get creator info and DID object ID
+        let (_creator_signer, _creator_address, _creator_public_key_multibase, did_object_id) = did_test_common::setup_did_test_with_creation();
+        
+        // Get the actual DID document and its address
+        let did_document = did::get_did_document_by_object_id(did_object_id);
+        let did_address = did::get_did_address(did_document);
+        let did_signer = account::create_signer_for_testing(did_address);
+
+        // Add first ECDSA R1 verification method
+        let fragment = string::utf8(b"ecdsa-r1-key");
+        let method_type = string::utf8(b"EcdsaSecp256r1VerificationKey2019");
+        let ecdsa_r1_key = did_test_common::generate_test_ecdsa_r1_multibase();
+        let relationships = vector[1u8]; // assertion_method
+
+        did::add_verification_method_entry(
+            &did_signer,
+            fragment,
+            method_type,
+            ecdsa_r1_key,
+            relationships
+        );
+
+        // Try to add the same verification method again
+        did::add_verification_method_entry(
+            &did_signer,
+            fragment,
+            method_type,
+            ecdsa_r1_key,
+            relationships
+        );
+    }
+
+    #[test]
+    /// Test removing ECDSA R1 verification method
+    fun test_remove_ecdsa_r1_verification_method() {
+        // Use proper setup to get creator info and DID object ID
+        let (_creator_signer, _creator_address, _creator_public_key_multibase, did_object_id) = did_test_common::setup_did_test_with_creation();
+        
+        // Get the actual DID document and its address
+        let did_document = did::get_did_document_by_object_id(did_object_id);
+        let did_address = did::get_did_address(did_document);
+        let did_signer = account::create_signer_for_testing(did_address);
+
+        // Add ECDSA R1 verification method
+        let fragment = string::utf8(b"ecdsa-r1-key");
+        let method_type = string::utf8(b"EcdsaSecp256r1VerificationKey2019");
+        let ecdsa_r1_key = did_test_common::generate_test_ecdsa_r1_multibase();
+        let relationships = vector[1u8, 2u8]; // assertion_method, capability_invocation
+
+        did::add_verification_method_entry(
+            &did_signer,
+            fragment,
+            method_type,
+            ecdsa_r1_key,
+            relationships
+        );
+
+        // Verify method exists
+        let did_document_check = did::get_did_document_by_address(did_address);
+        assert!(did::test_verification_method_exists(did_document_check, &fragment), 16001);
+
+        // Remove the verification method
+        did::remove_verification_method_entry(&did_signer, fragment);
+
+        // Verify method was removed
+        let did_document_after = did::get_did_document_by_address(did_address);
+        assert!(!did::test_verification_method_exists(did_document_after, &fragment), 16002);
+    }
+
+    #[test]
+    /// Test adding and removing ECDSA R1 verification method from relationships
+    fun test_ecdsa_r1_verification_relationships() {
+        // Use proper setup to get creator info and DID object ID
+        let (_creator_signer, _creator_address, _creator_public_key_multibase, did_object_id) = did_test_common::setup_did_test_with_creation();
+        
+        // Get the actual DID document and its address
+        let did_document = did::get_did_document_by_object_id(did_object_id);
+        let did_address = did::get_did_address(did_document);
+        let did_signer = account::create_signer_for_testing(did_address);
+
+        // Add ECDSA R1 verification method with initial relationships
+        let fragment = string::utf8(b"ecdsa-r1-key");
+        let method_type = string::utf8(b"EcdsaSecp256r1VerificationKey2019");
+        let ecdsa_r1_key = did_test_common::generate_test_ecdsa_r1_multibase();
+        let relationships = vector[1u8]; // assertion_method only
+
+        did::add_verification_method_entry(
+            &did_signer,
+            fragment,
+            method_type,
+            ecdsa_r1_key,
+            relationships
+        );
+
+        // Verify initial relationships
+        let did_document_check = did::get_did_document_by_address(did_address);
+        assert!(did::has_verification_relationship_in_doc(did_document_check, &fragment, 1), 17001); // assertion_method
+        assert!(!did::has_verification_relationship_in_doc(did_document_check, &fragment, 2), 17002); // capability_invocation
+
+        // Add capability_invocation relationship
+        did::add_to_verification_relationship_entry(&did_signer, fragment, 2u8);
+
+        // Verify new relationship was added
+        let did_document_after_add = did::get_did_document_by_address(did_address);
+        assert!(did::has_verification_relationship_in_doc(did_document_after_add, &fragment, 2), 17003); // capability_invocation
+
+        // Remove capability_invocation relationship
+        did::remove_from_verification_relationship_entry(&did_signer, fragment, 2u8);
+
+        // Verify relationship was removed
+        let did_document_after_remove = did::get_did_document_by_address(did_address);
+        assert!(!did::has_verification_relationship_in_doc(did_document_after_remove, &fragment, 2), 17004); // capability_invocation
     }
 } 

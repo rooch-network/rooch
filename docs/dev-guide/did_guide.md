@@ -16,10 +16,12 @@ The Rooch DID system employs a layered architecture, primarily comprising:
   - Management of verification methods and services.
   - Permission validation and access control.
   - Integration with the Rooch session key system.
-- **Multibase Module** (`frameworks/moveos-stdlib/sources/multibase.move`):
-  - Support for multiple encoding formats (base58btc, base64pad, base16).
-  - Handling of multicodec prefixes for the DID:Key standard.
-  - Key encoding/decoding utility functions.
+- **Multibase Key Module** (`frameworks/moveos-stdlib/sources/multibase_key.move`):
+  - **Handles `did:key` identifiers only.** It provides key-type aware decoding for cryptographic keys (Ed25519, Secp256k1, Secp256r1) by parsing their respective multicodec prefixes from a `did:key` string. The primary function is `decode_with_type`.
+- **Multibase Codec Module** (`frameworks/moveos-stdlib/sources/multibase_codec.move`):
+  - **Handles standard multibase strings.** It implements the basic multibase encoding/decoding logic (e.g., base58btc, base64pad) for raw byte vectors, such as those found in the `publicKeyMultibase` field of a verification method. It has no knowledge of key types or multicodec prefixes. Key functions are `encode_base58btc` and `decode`.
+- **DID Key Module** (`frameworks/moveos-stdlib/sources/did_key.move`):
+  - A utility module built on top of `multibase_key` that provides helper functions to generate `did:key` method identifiers from raw public keys.
 
 ### Application Layer (Rust CLI)
 - **DID Command Module** (`crates/rooch/src/commands/did/`):
@@ -48,12 +50,16 @@ Rooch primarily focuses on the `did:key` representation for the following public
 #### Multicodec Prefixes and Encoding
 - **Ed25519**:
   - Multicodec name: `ed25519-pub`
-  - Multicodec value (varint): `0xed01` (includes `0xed` for Ed25519 public key, `0x01` for identity transformation)
+  - Multicodec value (varint): `0xed01`
   - Typically encoded using Base58BTC (multibase prefix `z`), resulting in identifiers like `z6Mk...`.
 - **Secp256k1**:
   - Multicodec name: `secp256k1-pub`
-  - Multicodec value (varint): `0xe701` (includes `0xe7` for Secp256k1 public key, `0x01` for identity transformation)
+  - Multicodec value (varint): `0xe701`
   - Typically encoded using Base58BTC (multibase prefix `z`), resulting in identifiers like `zQ3s...`.
+- **Secp256r1 (P-256)**:
+  - Multicodec name: `p256-pub`
+  - Multicodec value (varint): `0x1200`
+  - Typically encoded using Base58BTC (multibase prefix `z`), resulting in identifiers like `z2...`.
 
 #### Examples
 ```
@@ -62,8 +68,11 @@ did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH
 
 # Secp256k1 (compressed format, 33-byte public key)
 did:key:zQ3shokFTS3brHcDQrn82RUDfCZESWL1ZdCEJwekUDPQiYBme
+
+# Secp256r1 / P-256 (compressed format, 33-byte public key)
+did:key:z28d1ZBinrPjY86bK9tA1wH3n5GfT8GDU1s2gX3H4WA2v3S6B
 ```
-The `extract_public_key_from_did_key_identifier` function in `did.move` is responsible for parsing these `did:key` identifiers.
+The `did.move` module uses `multibase_key::decode_with_type` to parse these `did:key` identifiers.
 
 ## 2. Rooch DID Contract (`did.move`) Design
 
@@ -71,7 +80,7 @@ The `extract_public_key_from_did_key_identifier` function in `did.move` is respo
 
 - **DID as Object**: The core data of each DID (DID document) is stored and managed as a Move Object.
 - **Single Primary Identity**: Each agent has one primary DID (represented by the ID of `Object<DIDDocument>`), signifying its unique identity.
-- **Independent Account Association**: Each `Object<DIDDocument>` can be associated with a newly generated Rooch smart contract account upon creation, enabling it to initiate transactions and hold assets. Control of this account belongs to this DID.
+- **Independent Account Association**: Each `Object<DIDDocument>` is associated with a newly generated Rooch smart contract account upon creation, enabling it to initiate transactions and hold assets. Control of this account belongs to this DID.
 - **Key-Controlled Account**: Verification methods in the `authentication` relationship of the DID document are automatically registered as `session_key`s for the associated Rooch account, allowing DID keys to authorize and initiate transactions on behalf of that DID.
 - **Controller Authorization**: Modifications to `Object<DIDDocument>` (e.g., key management, service updates) are authorized by DIDs specified in its `controller` field, using keys with `capabilityDelegation` permission.
 - **Multiple Operational Keys & Fine-Grained Permissions**: Supports various verification methods and relationships for flexible permission control.
@@ -103,7 +112,7 @@ The `extract_public_key_from_did_key_identifier` function in `did.move` is respo
 - `DIDRegistry` is a global **named object**.
 - **Main Function**: Used to discover and manage metadata of `Object<DIDDocument>`, particularly the mapping from controllers to the list of DIDs they control.
 - **Core Mapping**:
-    *   `controller_to_dids: Table<DID, vector<ObjectID>>`: Maps a Controller DID to a list of DID Document ObjectIDs it controls.
+    *   `controller_to_dids: Table<String, vector<String>>`: Maps a Controller DID (as a string) to a list of DID strings it controls.
 - *Note 1: The `ObjectID` of a `DIDDocument` object is deterministically generated using `object::custom_object_id` with its unique string identifier (e.g., the Bech32 address of the associated account) as a seed. This eliminates the need for an explicit mapping table from identifier to `ObjectID` in `DIDRegistry`.*
 - *Note 2: Regarding service providers (e.g., custodians) tracking the DIDs they manage: For scalability, we do not maintain a `service_registrations` mapping on-chain. Service providers like custodians should track the DIDs they service through off-chain mechanisms (e.g., listening to contract events, maintaining their own index databases).*
 
@@ -122,6 +131,7 @@ const VERIFICATION_RELATIONSHIP_KEY_AGREEMENT: u8 = 4;
 // Verification method types
 const VERIFICATION_METHOD_TYPE_ED25519: vector<u8> = b"Ed25519VerificationKey2020";
 const VERIFICATION_METHOD_TYPE_SECP256K1: vector<u8> = b"EcdsaSecp256k1VerificationKey2019";
+const VERIFICATION_METHOD_TYPE_SECP256R1: vector<u8> = b"EcdsaSecp256r1VerificationKey2019";
 ```
 
 #### DID Identifier (`DID` struct)
@@ -155,7 +165,6 @@ struct VerificationMethod has store, copy, drop {
     type: String,      // Verification method type (e.g., "Ed25519VerificationKey2020")
     controller: DID,   // Controller of this verification method
     public_key_multibase: String, // Public key in multibase format (string type)
-    // expires: Option<u64>, // Optional expiration timestamp (seconds) - expiry logic not currently enabled
 }
 ```
 
@@ -190,7 +199,8 @@ struct DIDDocument has key {
 #### DID Registry (`DIDRegistry` struct - Core data of the named object)
 ```move
 struct DIDRegistry has key {
-    controller_to_dids: Table<DID, vector<ObjectID>>, // Controller DID -> DID Document ObjectIDs it controls
+    /// Controller DID string -> vector of DID strings it controls
+    controller_to_dids: Table<String, vector<String>>,
 }
 ```
 
@@ -202,8 +212,8 @@ struct DIDRegistry has key {
 This function is central to all DID object creation logic.
 ```move
 fun create_did_object_internal(
-    _creator_account_signer: &signer,    // The Rooch account signer creating this DID Object (pays gas)
-    doc_controllers: vector<DID>,        // DID Document controller field value (NIP-1)
+    creator_account_signer: &signer,    // The Rooch account signer creating this DID Object (pays gas)
+    doc_controller: DID,                // DID Document controller field value (e.g., the user's did:key)
     user_vm_pk_multibase: String,       // User public key (multibase format)
     user_vm_type: String,               // VM type, e.g., "Ed25519VerificationKey2020"
     user_vm_fragment: String,           // VM fragment, e.g., "key-1"
@@ -215,15 +225,14 @@ fun create_did_object_internal(
 ): ObjectID
 ```
 **Logic**:
-1.  Validate parameters, including rules for did:key controllers.
-2.  Create a new Rooch account and get its `AccountCap`.
-3.  Generate a `DID` in the format `did:rooch:<address>` based on the new account address.
-4.  Create the base `DIDDocument` structure.
-5.  Process the user's initial verification method (VM), setting its controller to the newly created DID itself, and add it to the appropriate relationship lists based on `user_vm_relationships`. If the type is Ed25519 or Secp256k1 and includes `VERIFICATION_RELATIONSHIP_AUTHENTICATION`, automatically handle Rooch session key registration.
-6.  If service provider information is provided, create a service VM with its controller as `service_provider_controller_did`, and add its fragment to the `capability_invocation` relationship.
-7.  Encapsulate `DIDDocument` as an Object, transferring ownership to the new account.
-8.  Update the `controller_to_dids` mapping in `DIDRegistry`.
-9.  Emit a `DIDCreatedEvent`.
+1.  Create a new Rooch account and get its `AccountCap`.
+2.  Generate a `DID` in the format `did:rooch:<address>` based on the new account address.
+3.  Create the base `DIDDocument` structure with the specified `doc_controller`.
+4.  Process the user's initial verification method (VM), setting its controller to `doc_controller`, and add it to the appropriate relationship lists based on `user_vm_relationships`. If a key type supports session keys and is added to `VERIFICATION_RELATIONSHIP_AUTHENTICATION`, it will automatically be registered as a Rooch session key.
+5.  If service provider information is provided, create a service VM with its controller as `service_provider_controller_did`, and add its fragment to the `capability_invocation` relationship.
+6.  Encapsulate `DIDDocument` as an Object, transferring ownership to the new account.
+7.  Update the `controller_to_dids` mapping in `DIDRegistry`.
+8.  Emit a `DIDCreatedEvent`.
 
 ##### User Self-Creation of DID (`create_did_object_for_self_entry` and `create_did_object_for_self`)
 ```move
@@ -240,12 +249,12 @@ public fun create_did_object_for_self(
 **Features**:
 -   User creates a DID using their own Rooch account and associated Secp256k1 public key.
 -   Automatically verifies that the provided public key corresponds to the creator's account (via `verify_public_key_matches_account`).
--   `doc_controllers` is `vector[did:rooch:<creator_address>]`.
+-   The `doc_controller` is set to the newly created `did:rooch:<new_did_address>`.
 -   `user_vm_relationships` include all major permissions (`AuthN`, `AssertM`, `CapInv`, `CapDel`).
 -   No third-party service provider VM involved.
 
 Public Key Verification Mechanism (`verify_public_key_matches_account`):
-1.  Decode the incoming `account_public_key_multibase` (Secp256k1).
+1.  Decode the incoming `account_public_key_multibase` using `multibase_codec::decode`.
 2.  Get the validated Bitcoin address from the transaction context using `auth_validator::get_bitcoin_address_from_ctx_option()`.
 3.  Verify that the decoded public key matches this Bitcoin address (`bitcoin_address::verify_bitcoin_address_with_public_key`).
 4.  Verify that the Rooch address derived from this Bitcoin address (`bitcoin_address::to_rooch_address`) matches the address of `creator_account_signer`.
@@ -256,7 +265,7 @@ public entry fun create_did_object_via_cadop_with_did_key_entry(
     custodian_signer: &signer,              // Custodian's Rooch account, pays gas
     user_did_key_string: String,            // User's did:key string (e.g., "did:key:zABC...")
     custodian_service_pk_multibase: String, // Custodian's service public key for this user
-    custodian_service_vm_type: String       // Custodian service VM type (Ed25519 or Secp256k1)
+    custodian_service_vm_type: String       // Custodian service VM type
 )
 // Calls internal:
 public fun create_did_object_via_cadop_with_did_key(
@@ -268,14 +277,16 @@ public fun create_did_object_via_cadop_with_did_key(
 ```
 **Features** (following NIP-3 CADOP principles):
 -   The custodian (`custodian_signer`) pays gas for creation assistance.
--   The user's identity is represented by `user_did_key_string` (a `did:key` string).
--   `doc_controllers` is `vector[user_did_key]`, so the user retains control via `did:key`.
--   The user's initial VM (public key extracted from `user_did_key_string`, defaults to Ed25519 type) gets `AuthN` and `CapDel` permissions.
--   The custodian's service VM (using `custodian_service_pk_multibase`) is added, its controller being the custodian's own DID (derived from `custodian_signer` address). This service VM only gets `CapabilityInvocation` permission.
+-   The user's identity is represented by `user_did_key_string` (a `did:key` string). The `doc_controller` is set to this `did:key`, so the user retains control.
+-   **Key Parsing Logic**:
+    1.  The identifier part of `user_did_key_string` is parsed using `multibase_key::decode_with_type` to extract the raw public key bytes and key type.
+    2.  The raw public key bytes are then re-encoded using `multibase_codec::encode_base58btc` to create a standard `publicKeyMultibase` string for the user's initial verification method.
+-   The user's initial VM gets `AuthN`, `CapDel`, `AssertM`, and `CapInv` permissions.
+-   The custodian's service VM (using `custodian_service_pk_multibase`) is added, its controller being the custodian's own DID. This service VM only gets `CapabilityInvocation` permission.
 -   The custodian's DID must exist and have a service of type "CadopCustodianService".
 
-#### Multi-Key Type Support (Ed25519 and Secp256k1)
-The contract uniformly handles Ed25519 and Secp256k1 keys through the `VERIFICATION_METHOD_TYPE_ED25519` and `VERIFICATION_METHOD_TYPE_SECP256K1` constants, corresponding `multibase` decoding functions, and public key to authentication key conversion functions from the `session_key` module.
+#### Multi-Key Type Support (Ed25519, Secp256k1, and Secp256r1)
+The contract uniformly handles Ed25519, Secp256k1, and Secp256r1 keys through the `VERIFICATION_METHOD_TYPE_*` constants, `multibase_codec::decode` for standard multibase strings, and `multibase_key::decode_with_type` for `did:key` identifiers.
 
 `internal_ensure_session_key` is the core helper function for session key registration:
 ```move
@@ -286,7 +297,12 @@ fun internal_ensure_session_key(
     vm_type: String,
 )
 ```
-It decodes the public key based on `vm_type`, then generates an authentication key using `session_key::ed25519_public_key_to_authentication_key` or `session_key::secp256k1_public_key_to_authentication_key`, and calls `session_key::create_session_key_internal` to register the session key for the DID's associated account. The scope of the session key (`scopes_for_sk`) is set to allow operations on the DID's own account and modules under `rooch_framework`.
+It decodes the public key from `vm_public_key_multibase` using `multibase_codec::decode`, then generates an authentication key based on `vm_type`, and calls `session_key::create_session_key_internal` to register the session key for the DID's associated account.
+
+- **For Ed25519 and Secp256k1**, it uses `session_key::ed25519_public_key_to_authentication_key` or `session_key::secp256k1_public_key_to_authentication_key`. Both of these functions derive the authentication key via `blake2b256(scheme_byte || public_key)`.
+- **For Secp256r1**, it uses `session_key::secp256r1_public_key_to_authentication_key`. Note the different derivation logic: `scheme_byte || sha2_256(public_key)`.
+
+The scope of the session key (`scopes_for_sk`) is set to allow operations on the DID's own account and modules under `rooch_framework`.
 
 #### Bitcoin Address System Integration
 Rooch's address system is based on Bitcoin addresses: Bitcoin private key → Bitcoin public key → Bitcoin address → Rooch address.
@@ -320,13 +336,13 @@ These assertion functions are used to protect entry functions like verification 
 #### Mapping Authentication Key to Verification Method (`find_verification_method_by_session_key`)
 This function iterates through all verification method fragments in `did_document_data.authentication`:
 1.  Get the corresponding `VerificationMethod` object.
-2.  Decode `public_key_multibase` based on its type (Ed25519 or Secp256k1).
-3.  Convert the decoded public key to an `authentication_key`.
+2.  Decode `public_key_multibase` using `multibase_codec::decode`.
+3.  Convert the decoded public key to an `authentication_key` based on the VM's type (Ed25519, Secp256k1, or Secp256r1).
 4.  If this `authentication_key` matches the current transaction's session key, return the fragment.
 
 #### Key Security Points
 1.  **Controller Permission Validation**: Ensures modifications to the DID document are authorized by a legitimate Controller via the correct verification method.
-2.  **Session Key Management**: Ed25519 and Secp256k1 `authentication` methods automatically register as session keys. Their permission scope needs to be reasonably set. The current scope is broad, allowing operations on the associated DID account and `rooch_framework`.
+2.  **Session Key Management**: Ed25519, Secp256k1, and Secp256r1 `authentication` methods automatically register as session keys. Their permission scope needs to be reasonably set. The current scope is broad, allowing operations on the associated DID account and `rooch_framework`.
 3.  **`AccountCap` Protection**: Although `DIDDocument` holds the `AccountCap`, its use is subject to internal logic and permission controls, preventing arbitrary use.
 4.  **Address Validation Security**: A dual verification mechanism based on Bitcoin addresses prevents public key forgery.
 5.  **Input Security**:
@@ -353,7 +369,6 @@ rooch did
 ├── query             # DID query functions
 └── keygen            # Key generation for DID operations
 ```
-*Note: The `rooch did init` command mentioned in `rooch-did-cli-design.md` for initializing the DID registry (calling `did::init_did_registry()`) is not directly listed as a subcommand in the current `mod.rs`. It might be invoked through other means or added in a future version.*
 
 ### 3.2 Detailed Command Design
 
@@ -369,65 +384,54 @@ rooch did
     -   Parameters:
         -   `--user-did-key <USER_DID_KEY_STRING>`: (Required) User's did:key string.
         -   `--custodian-service-key <CUSTODIAN_SERVICE_PK_MULTIBASE>`: (Required) Custodian's service public key for this user (multibase).
-        -   `--custodian-key-type <TYPE_STRING>`: (Required) Custodian service key type (e.g., "Ed25519VerificationKey2020" or "EcdsaSecp256k1VerificationKey2019").
+        -   `--custodian-key-type <TYPE_STRING>`: (Required) Custodian service key type (e.g., "Ed25519VerificationKey2020").
         -   Custodian account (sender) specified via wallet or `--sender`.
     -   Example: `rooch did create cadop --user-did-key "did:key:zExampleUser..." --custodian-service-key "zExampleServiceKey..." --custodian-key-type Ed25519VerificationKey2020 --sender <custodian_address>`
 
 #### `rooch did manage`
-Used for managing verification methods and services of a DID document. All management operations require `--did-address <DID_ROOCH_ADDRESS>` (or similar identifier) to specify the DID to operate on, and authorization via the current wallet or session key.
+Used for managing verification methods and services of a DID document. All management operations require identifying the DID to operate on, and authorization via the current wallet or session key.
 
 -   **`rooch did manage add-vm`**: Add a verification method.
     -   Calls `did::add_verification_method_entry`.
-    -   Parameters: `--did-address <ADDR>`, `--fragment <FRAG>`, `--method-type <TYPE>`, `--public-key <PK_MULTIBASE>`, `--relationships <REL_LIST>` (comma-separated, e.g., `auth,assert,invoke,delegate,agree`).
-    -   Example: `rooch did manage add-vm --did-address rooch1... --fragment key-2 --method-type Ed25519VerificationKey2020 --public-key z... --relationships auth,assert`
+    -   Parameters: `--fragment <FRAG>`, `--method-type <TYPE>`, `--public-key <PK_MULTIBASE>`, `--relationships <REL_LIST>` (comma-separated, e.g., `auth,assert,invoke,delegate,agree`).
+    -   Example: `rooch did manage add-vm --fragment key-2 --method-type Ed25519VerificationKey2020 --public-key z... --relationships auth,assert`
 -   **`rooch did manage remove-vm`**: Remove a verification method.
     -   Calls `did::remove_verification_method_entry`.
-    -   Parameters: `--did-address <ADDR>`, `--fragment <FRAG>`.
-    -   Example: `rooch did manage remove-vm --did-address rooch1... --fragment key-2`
+    -   Parameters: `--fragment <FRAG>`.
 -   **`rooch did manage add-relationship`**: Add an existing verification method to a specified relationship.
     -   Calls `did::add_to_verification_relationship_entry`.
-    -   Parameters: `--did-address <ADDR>`, `--fragment <FRAG>`, `--relationship <REL_TYPE>` (single relationship type: `auth`, `assert`, `invoke`, `delegate`, `agree`).
-    -   Example: `rooch did manage add-relationship --did-address rooch1... --fragment key-2 --relationship invoke`
+    -   Parameters: `--fragment <FRAG>`, `--relationship <REL_TYPE>` (single relationship type).
 -   **`rooch did manage remove-relationship`**: Remove a verification method from a specified relationship.
     -   Calls `did::remove_from_verification_relationship_entry`.
-    -   Parameters: `--did-address <ADDR>`, `--fragment <FRAG>`, `--relationship <REL_TYPE>`.
-    -   Example: `rooch did manage remove-relationship --did-address rooch1... --fragment key-2 --relationship assert`
+    -   Parameters: `--fragment <FRAG>`, `--relationship <REL_TYPE>`.
 -   **`rooch did manage add-service`**: Add a service.
     -   Calls `did::add_service_entry` or `did::add_service_with_properties_entry`.
-    -   Parameters: `--did-address <ADDR>`, `--fragment <FRAG>`, `--service-type <TYPE>`, `--endpoint <URL>`, `[--properties key1=val1,key2=val2]`.
-    -   Example: `rooch did manage add-service --did-address rooch1... --fragment test-service --service-type Messaging --endpoint https://example.com/msg --properties priority=high`
+    -   Parameters: `--fragment <FRAG>`, `--service-type <TYPE>`, `--endpoint <URL>`, `[--properties key1=val1,key2=val2]`.
 -   **`rooch did manage update-service`**: Update a service.
     -   Calls `did::update_service_entry`.
-    -   Parameters: `--did-address <ADDR>`, `--fragment <FRAG>`, `--new-service-type <TYPE>`, `--new-endpoint <URL>`, `[--new-properties key1=val1]`.
-    -   Example: `rooch did manage update-service --did-address rooch1... --fragment test-service --new-service-type SecureMessaging --new-endpoint https://secure.example.com/msg`
+    -   Parameters: `--fragment <FRAG>`, `--new-service-type <TYPE>`, `--new-endpoint <URL>`, `[--new-properties key1=val1]`.
 -   **`rooch did manage remove-service`**: Remove a service.
     -   Calls `did::remove_service_entry`.
-    -   Parameters: `--did-address <ADDR>`, `--fragment <FRAG>`.
-    -   Example: `rooch did manage remove-service --did-address rooch1... --fragment test-service`
+    -   Parameters: `--fragment <FRAG>`.
 
 #### `rooch did query`
 -   **`rooch did query address <ROOCH_ADDRESS>`**: Query the DID document associated with a Rooch address.
-    -   Reads the object returned by `did::get_did_document(address)`.
+    -   Reads the object returned by `did::get_did_document_by_address(address)`.
 -   **`rooch did query did <DID_STRING>`**: Query the DID document corresponding to a DID string.
-    -   Parses the DID string, gets the Rooch address part, then proceeds as above.
+    -   Reads the object returned by `did::get_did_document(did_str)`.
 -   **`rooch did query object-id <OBJECT_ID>`**: Query the DID document corresponding to an ObjectID.
-    -   Reads `did::get_did_document_by_object_id(object_id)`.
+    -   Reads the object returned by `did::get_did_document_by_object_id(object_id)`.
 -   **`rooch did query exists <IDENTIFIER>`**: Check if a DID exists (can be a Rooch address or DID string).
-    -   Calls `did::exists_did_for_address(address)` or `did::exists_did_document_by_identifier(identifier_str)`.
--   **`rooch did query controller <CONTROLLER_DID_STRING>`**: Query all DID ObjectIDs controlled by a specific DID.
+-   **`rooch did query controller <CONTROLLER_DID_STRING>`**: Query all DID strings controlled by a specific DID.
     -   Calls `did::get_dids_by_controller_string(controller_did_str)`.
 
 #### `rooch did keygen`
 -   **`rooch did keygen ed25519`**: Generate an Ed25519 key pair.
-    -   Outputs private key (optional), public key (multibase `z...` format, raw hex `0x...` format), and corresponding `did:key` string.
+    -   Outputs private key, public key (multibase `z...` format), and corresponding `did:key` string.
 -   **`rooch did keygen secp256k1`**: Generate a Secp256k1 key pair.
-    -   Outputs private key (optional), public key (multibase `z...` format, raw hex `0x...` format), and corresponding `did:key` string.
-
-**Supported Key Format Outputs (CLI `keygen`):**
-- **Multibase**: Full public key string, including multibase prefix (e.g., `z` for base58btc) and multicodec prefix, e.g., `z6Mk...` (Ed25519) or `zQ3s...` (Secp256k1). This is the standard format for the `publicKeyMultibase` field in DID verification methods.
-- **Hex**: Hexadecimal representation of raw public key bytes, usually prefixed with `0x`.
-- **DID:Key**: The `did:key` string generated from the public key.
-- Private keys are also provided in corresponding formats (e.g., hex).
+    -   Outputs private key, public key (multibase `z...` format), and corresponding `did:key` string.
+-   **`rooch did keygen secp256r1`**: Generate a Secp256r1 (P-256) key pair.
+    -   Outputs private key, public key (multibase `z...` format), and corresponding `did:key` string.
 
 ### 3.3 Usage Examples (Partial)
 (Refer to `did.feature` and the command designs above)
@@ -440,12 +444,11 @@ rooch did create self --account-public-key z<Secp256k1_PK_Multibase_For_Current_
 rooch did query address rooch1example...
 
 # Add an Ed25519 verification method for authentication and assertion
-rooch did manage add-vm --did-address rooch1example... --fragment key-ed25519 --method-type Ed25519VerificationKey2020 --public-key z<Ed25519_PK_Multibase> --relationships auth,assert
+rooch did manage add-vm --fragment key-ed25519 --method-type Ed25519VerificationKey2020 --public-key z<Ed25519_PK_Multibase> --relationships auth,assert
 
 # Generate Ed25519 keys for CADOP
 rooch did keygen ed25519
-# (Assume output user_did_key: did:key:zUserKey..., user_pk_multibase: zUserKey...)
-# (Assume output custodian_service_pk_multibase: zServiceKey...)
+# (Assume output user_did_key: did:key:zUserKey...)
 
 # Use another account as custodian for CADOP creation
 rooch did create cadop --user-did-key did:key:zUserKey... --custodian-service-key zServiceKey... --custodian-key-type Ed25519VerificationKey2020 --sender <custodian_rooch_address>
@@ -453,59 +456,15 @@ rooch did create cadop --user-did-key did:key:zUserKey... --custodian-service-ke
 
 ### 3.4 Output Format
 All commands typically output results in JSON format for programmatic processing and user readability.
-For example, creating a DID might output:
-```json
-{
-  "did": "did:rooch:bc1q2dmjktatkwyf", // or rooch1...
-  "object_id": "0x1234567890abcdef...",
-  "execution_info": {
-    "tx_hash": "0xabcdef1234567890...",
-    "status": {"type": "executed"},
-    "gas_used": "100000"
-  },
-  // ... other command-specific fields
-}
-```
-Query operations return the content of the queried DID document or related information.
-
-### 3.5 Error Handling
-The CLI tool should handle:
--   Parameter validation errors (e.g., incorrectly formatted public keys, DID strings).
--   Network communication errors with the Rooch node.
--   Transaction execution failures (e.g., insufficient gas, insufficient permissions, assertion failures), displaying error messages from the Move contract.
 
 ## 4. Testing and Mocking Guide
 
 In testing the Rooch DID system, especially for unit and integration tests of `did.move`, it's necessary to mock the retrieval behavior of `session key` and `Bitcoin address`. In a real environment, this data comes from the transaction validation process; in a test environment, mock methods must be provided.
 
-### 4.1 Overview and Necessity
-Permission validation for DID operations relies on the `session_key` (i.e., `authentication_key`) and the validated `bitcoin_address` obtained from the transaction context (`TxContext`). Without these mocks, many core logics cannot be correctly executed in tests.
+### 4.1 Mock Method Details in `auth_validator.move`
 
-### 4.2 Mock Method Details
+The `auth_validator` module provides several `#[test_only]` functions to set a mock `TxValidateResult` into the transaction context. This result contains the `session_key` and `bitcoin_address` needed for DID function tests.
 
-#### `tx_context.move`
-```move
-#[test_only]
-/// Set an attribute value in the context map for testing
-public fun set_attribute_for_testing<T: drop + store + copy>(value: T) {
-    let ctx = borrow_mut();
-    add(ctx, value);
-}
-```
-**Purpose**: Allows directly adding attributes of any type to `TxContext` in tests. This is fundamental for setting `TxValidateResult`.
-
-#### `auth_validator.move`
-The `TxValidateResult` struct is key, containing `session_key` and `bitcoin_address`:
-```move
-struct TxValidateResult has copy, store, drop {
-    auth_validator_id: u64,
-    auth_validator: Option<AuthValidator>,
-    session_key: Option<vector<u8>>, // Session Key (authentication_key)
-    bitcoin_address: BitcoinAddress, // Bitcoin address
-}
-```
-
-Provided Mock Functions:
 ```move
 #[test_only]
 public fun set_tx_validate_result_for_testing(
@@ -513,28 +472,19 @@ public fun set_tx_validate_result_for_testing(
     auth_validator: Option<AuthValidator>,
     session_key: Option<vector<u8>>,
     bitcoin_address: BitcoinAddress,
-) {
-    let result = new_tx_validate_result(auth_validator_id, auth_validator, session_key, bitcoin_address);
-    moveos_std::tx_context::set_attribute_for_testing(result);
-}
+)
 
 #[test_only]
-public fun set_simple_tx_validate_result_for_testing(session_key: Option<vector<u8>>) {
-    let bitcoin_address = rooch_framework::bitcoin_address::empty(); // or a default test address
-    let auth_validator = option::none<AuthValidator>();
-    set_tx_validate_result_for_testing(0, auth_validator, session_key, bitcoin_address);
-}
+/// Create a simple TxValidateResult for basic testing (with a random Bitcoin address)
+public fun set_simple_tx_validate_result_for_testing(session_key: Option<vector<u8>>)
 
 #[test_only]
-public fun set_random_tx_validate_result_for_testing(session_key: Option<vector<u8>>) {
-    let bitcoin_address = rooch_framework::bitcoin_address::random_address_for_testing();
-    let auth_validator = option::none<AuthValidator>();
-    set_tx_validate_result_for_testing(0, auth_validator, session_key, bitcoin_address);
-}
+/// Create a TxValidateResult with a random Bitcoin address for testing
+public fun set_random_tx_validate_result_for_testing(session_key: Option<vector<u8>>)
 ```
 **Purpose**: These functions allow test code to easily construct a `TxValidateResult` (containing the required `session_key` and `bitcoin_address`) and set it into the transaction context for functions in `did.move` to read.
 
-### 4.3 Usage Examples
+### 4.2 Usage Examples
 
 #### Basic Mock Setup (Simulating Session Key)
 ```move
@@ -542,15 +492,15 @@ public fun set_random_tx_validate_result_for_testing(session_key: Option<vector<
 fun test_mock_session_key_setup() {
     use rooch_framework::auth_validator;
     use rooch_framework::session_key;
-    use moveos_std::multibase;
+    use moveos_std::multibase_codec;
     use std::option;
-    use rooch_framework::genesis; // Assuming genesis provides init_for_test
+    use rooch_framework::genesis;
 
     genesis::init_for_test(); // Initialize framework for testing
 
     // Generate a test Ed25519 key and its authentication_key
     let test_ed25519_multibase_key = string::utf8(b"z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK"); // Example key
-    let pk_bytes = option::destroy_some(multibase::decode_ed25519_key(&test_ed25519_multibase_key));
+    let pk_bytes = option::destroy_some(multibase_codec::decode(&test_ed25519_multibase_key));
     let auth_key = session_key::ed25519_public_key_to_authentication_key(&pk_bytes);
 
     // Set this authentication_key as the session_key in the context
@@ -568,7 +518,7 @@ Before testing DID operations requiring specific permissions (e.g., `add_verific
 1.  Create a test DID object.
 2.  Ensure this DID object has a verification method in the `authentication` relationship, and this method has `capabilityDelegation` permission.
 3.  Convert this verification method's public key to an `authentication_key`.
-4.  Use `auth_validator::set_simple_tx_validate_result_for_testing` (or related functions) to set this `authentication_key` as the current transaction's `session_key`.
+4.  Use `auth_validator::set_simple_tx_validate_result_for_testing` to set this `authentication_key` as the current transaction's `session_key`.
 5.  Create a `signer` representing this DID's associated account.
 6.  Call the DID entry function under test.
 
@@ -583,108 +533,121 @@ fun test_mock_bitcoin_address_setup() {
 
     genesis::init_for_test();
 
-    // Scenario 1: Mock a specific Bitcoin address
-    let specific_btc_addr_bytes = std::bcs::to_bytes(&bitcoin_address::random_address_for_testing()); // Example
-    let specific_btc_addr = bitcoin_address::from_bytes(specific_btc_addr_bytes);
+    let btc_addr = bitcoin_address::random_address_for_testing();
+    let btc_addr_clone = btc_addr;
 
     auth_validator::set_tx_validate_result_for_testing(
         0,
         option::none(),
-        option::none(), // No session key needed for this specific test part
-        specific_btc_addr
+        option::none(), // No session key needed
+        btc_addr
     );
 
-    let retrieved_btc_addr = auth_validator::get_bitcoin_address_from_ctx();
-    assert!(retrieved_btc_addr == specific_btc_addr, 2001);
-
-    // Scenario 2: Use random address mock
-    auth_validator::set_random_tx_validate_result_for_testing(option::none());
-    let random_addr = auth_validator::get_bitcoin_address_from_ctx();
-    assert!(!bitcoin_address::is_empty(&random_addr), 2002); // random_address_for_testing should not be empty
+    let retrieved_btc_addr_opt = auth_validator::get_bitcoin_address_from_ctx_option();
+    assert!(option::is_some(&retrieved_btc_addr_opt), 2001);
+    assert!(option::destroy_some(retrieved_btc_addr_opt) == btc_addr_clone, 2002);
 }
 ```
 This mock is crucial for testing functions like `did::verify_public_key_matches_account` that depend on fetching the Bitcoin address from the context.
 
-#### Support for Different Key Types (Ed25519 / Secp256k1 for Session Key)
-The mock setup process is similar for Ed25519 and Secp256k1:
-1.  Get the public key of the respective type (multibase string).
-2.  Decode using `multibase::decode_ed25519_key` or `multibase::decode_secp256k1_key`.
-3.  Generate `authentication_key` using `session_key::ed25519_public_key_to_authentication_key` or `session_key::secp256k1_public_key_to_authentication_key`.
-4.  Set this `authentication_key` into `TxValidateResult`.
+#### Support for Different Key Types (Ed25519 / Secp256k1 / Secp256r1 for Session Key)
+The mock setup process is similar for all supported key types:
+1.  Get the public key (as a multibase string).
+2.  Decode using `multibase_codec::decode`.
+3.  Generate `authentication_key` using the corresponding function from the `session_key` module (`ed25519_...`, `secp256k1_...`, or `secp256r1_...`).
+4.  Set this `authentication_key` into `TxValidateResult` using the mock functions.
 
-### 4.4 Best Practices
+### 4.3 Best Practices
 -   **Independent Initialization**: Each test function should start with `genesis::init_for_test()`.
--   **Explicit Setup**: Clearly set the required `session_key` and `bitcoin_address`.
--   **Common Helper Functions**: Test-specific helper functions can be created to encapsulate common mock setup logic.
+-   **Explicit Setup**: Clearly set the required `session_key` and `bitcoin_address` for each test case.
 -   **Test Error Cases**: Test `#[expected_failure]` scenarios (like `ErrorNoSessionKeyInContext`, `ErrorSessionKeyNotFound`, `ErrorInsufficientPermission`) by not setting `session_key` or setting a mismatched `session_key`.
 
-### 4.5 Broader Testing Strategy
+## 5. Security Considerations
 
-In addition to Move contract unit tests and mocking mechanisms, testing of the Rooch DID system also includes:
+### 5.1 Key Security
+1.  **Private Key Protection**: Private keys generated by the CLI should be securely stored by the user. It is not recommended to pass private keys directly in command-line arguments in a production environment. Prefer using the Rooch keystore or external signers.
+2.  **Session Keys**:
+    *   The `did.move` contract automatically registers session keys for Ed25519, Secp256k1, and Secp256r1 keys in the `authentication` relationship. Their current scope is set to the DID's own account and `rooch_framework`; this scope should be periodically reviewed for appropriateness.
+3.  **Permission Minimization**: Assign only the necessary verification relationships to verification methods for their tasks. Avoid over-authorization.
 
-#### Unit Tests
-- **Move Contract Tests**: Written directly in `frameworks/rooch-framework/sources/did.move` (and other relevant modules) using `#[test]` and `#[test_only]` functions.
-  ```bash
-  rooch move test -p frameworks/rooch-framework
-  # Or for specific modules or test cases
-  rooch move test -p frameworks/rooch-framework did_test::test_create_did_for_self_success
-  ```
-- **Rust Unit Tests**: Primarily target type definitions, serialization/deserialization logic, and bindings with Move structures in `crates/rooch-types/src/framework/did.rs`.
-  ```bash
-  cargo test -p rooch-types -- --test-threads=1 # (Adjust test threads as needed)
-  ```
+### 5.2 Access Control
+1.  **On-Chain Validation**: All core permission validation logic for DID operations is executed in the `did.move` contract, ensuring on-chain enforcement.
+2.  **Controller Importance**: The `controller` field of `DIDDocument` is crucial. Only DIDs listed as controllers can manage the DID document using keys with `capabilityDelegation` permission.
+3.  **Event Auditing**: All significant changes to a DID document (e.g., creation, VM addition/removal, service addition/removal, relationship changes) emit events. Monitoring these events can be used for auditing and anomaly detection.
 
-#### Integration Tests
-- **Functional Tests (Cucumber)**: Feature files written in Gherkin language, located in `crates/testsuite/features/did.feature`. These tests are executed via the `rooch test` command and cover end-to-end CLI command flows.
-  ```bash
-  rooch test crates/testsuite/features/did.feature
-  ```
-- **End-to-End Tests**: Integration tests validate the complete flow from CLI invocation to Move contract execution and result return, ensuring correct interaction between layers.
+### 5.3 Standard Compliance and Interoperability
+1.  **Adherence to W3C Specifications**: Strict adherence to W3C DID Core and DID Key Method specifications helps ensure compatibility with other DID ecosystems.
+2.  **Input Validation**: Perform strict format and validity checks on all external inputs (e.g., public key multibase strings, DID strings, fragment formats) to prevent injection or parsing errors.
 
-#### Test Coverage (Main Aspects)
-- DID creation (self-creation, CADOP-assisted creation)
-- Verification method management (add, remove, relationship management)
-- Service management (add, update, remove)
-- Permission validation (operations under different permission levels)
-- Key generation and format conversion (CLI `keygen`)
-- DID standard compliance (e.g., `did:key` parsing)
-- Error handling and edge cases
+### 5.4 Gas and State Management
+1.  **Gas Consumption**: Be mindful of the gas consumption of complex operations (e.g., functions involving multiple Table operations or extensive vector manipulations) to avoid potential out-of-gas issues.
+2.  **State Bloat**: While DID documents can contain multiple verification methods and services, be aware of state bloat. For large amounts of data, consider off-chain storage with on-chain hashes/anchors.
 
-## 5. Summary and Outlook
+## 6. Troubleshooting
 
-The Rooch DID system, by implementing DIDs as on-chain objects and deeply integrating with Rooch accounts and session key mechanisms, offers a robust and flexible decentralized identity solution. Its design is compatible with NIP-1 and NIP-3 (CADOP) specifications and supports multiple key types and the Bitcoin address system.
+### 6.1 Common Errors and Solutions
 
-The `rooch did` command-line tool provides users and developers with a convenient interface to interact with this system, covering core functionalities like DID creation, management, and querying.
+1.  **`ErrorSignerNotDIDAccount`**:
+    *   **Cause**: The transaction signer's address does not match the Rooch account address associated with the target DID document. DID operations must be initiated by their own account.
+    *   **Solution**: Ensure the transaction is signed using a key corresponding to the DID's associated account (usually authorized via a session key).
 
-Detailed testing and mocking guidelines ensure that contract logic can be thoroughly validated in various simulated scenarios, enhancing system robustness.
+2.  **`ErrorNoSessionKeyInContext`**:
+    *   **Cause**: A session key (`authentication_key`) could not be found in the current transaction context. All authorized DID operations rely on session keys.
+    *   **Solution**: Ensure the transaction is sent via a valid session key registered to the DID's account.
 
-Future work could involve extending advanced permission features, DID rotation, version control, and compatibility with other Layer 2 protocols.
+3.  **`ErrorSessionKeyNotFound`**:
+    *   **Cause**: The session key from the transaction context does not correspond to any public key of a verification method in the DID document's `authentication` relationship.
+    *   **Solution**: Ensure the session key used corresponds to a verification method that is part of the `authentication` relationship.
 
-## 6. Development Guide
+4.  **`ErrorInsufficientPermission`**:
+    *   **Cause**: The session key (and its associated verification method) used for authorization does not have the required permission for the operation (e.g., `capabilityDelegation` or `capabilityInvocation`).
+    *   **Solution**: Check the DID document to ensure the verification method fragment used for signing is present in the correct verification relationship list.
+
+5.  **`ErrorInvalidPublicKeyMultibaseFormat`**:
+    *   **Cause**: The provided public key multibase string is invalid or cannot be decoded by `multibase_codec::decode`.
+    *   **Solution**: Verify that the public key string conforms to a valid multibase encoding (e.g., base58btc starting with `z`).
+
+### 6.2 Debugging Tips
+
+1.  **View DID Document**: Use `rooch did query address <ADDRESS>` or `rooch did query did <DID_STRING>` to inspect the current state of the DID document.
+2.  **Verify Permissions**: Manually check the `capability_delegation` and `capability_invocation` lists in the DID document.
+3.  **Test Keys**: Use `rooch did keygen` to generate test keys and use their `did:key` or multibase public keys for operations.
+4.  **View Transaction Events**: Checking events for a specific transaction hash can reveal events emitted by the `did.move` contract.
+
+## 7. References
+
+- [W3C DID Core Specification v1.0](https://www.w3.org/TR/did-core/)
+- [W3C DID Key Method v1.0](https://w3c-ccg.github.io/did-method-key/)
+- [Multibase Data Format Specification](https://datatracker.ietf.org/doc/html/draft-multiformats-multibase-03)
+- [Multicodec Table](https://github.com/multiformats/multicodec/blob/master/table.csv)
+- [NIP-1: Rooch DID Method Specification (Draft)](https://raw.githubusercontent.com/nuwa-protocol/NIPs/refs/heads/main/nips/nip-1.md) (as an important reference for Rooch DID design)
+- [Rooch Network Documentation](https://rooch.network/docs)
+
+## 8. Development Guide
 
 This section provides guidance for developers wishing to extend the Rooch DID system.
 
-### 6.1 Adding a New Verification Method Type
+### 8.1 Adding a New Verification Method Type
 
 1.  **Move Contract (`did.move`)**:
     *   Add the new verification method type string in the constant definitions:
       ```move
       // const VERIFICATION_METHOD_TYPE_NEW_KEY_STANDARD: vector<u8> = b"NewKeyStandard2024";
       ```
-    *   Update `internal_ensure_session_key` (if the new type needs to be automatically registered as a session key):
-        *   Add public key decoding logic for the new type (may require `multibase` module support).
-        *   Add logic to convert the new type's public key to an `authentication_key` (may require `session_key` module support).
+    *   Update `add_authentication_method` and `internal_ensure_session_key` if the new type needs to be automatically registered as a session key. This will likely involve:
+        *   Adding a new branch to handle the type.
+        *   Calling a new function in the `session_key` module to convert its public key to an `authentication_key`.
     *   Update `find_verification_method_by_session_key`: If the new type is used for session keys, ensure it can be correctly matched.
-    *   Update `validate_did_key_controllers` or related functions: If the new type affects `did:key` parsing or validation.
 
-2.  **Multibase Module (`multibase.move`)** (if new decoding support is needed):
-    *   Add a new public key decoding function, e.g., `decode_new_key_type_key(&String): Option<vector<u8>>`.
+2.  **Multibase Modules** (if new `did:key` support is needed):
+    *   If the new key type needs a new multicodec prefix for `did:key`, it must be added to `multibase_key.move`.
+    *   `multibase_codec.move` is generic and likely does not need changes unless a new base encoding (like base32) is required.
 
 3.  **Session Key Module (`session_key.move`)** (if new authentication key derivation logic is needed):
     *   Add a new `new_key_type_public_key_to_authentication_key(&vector<u8>): vector<u8>` function.
 
 4.  **Rust Type Definitions (`rooch-types`)**:
-    *   Add support for the new type in `VerificationMethodType` (or similar enum/struct), ensuring consistency with the Move side.
+    *   Add support for the new type in Rust representations, ensuring consistency with the Move side.
 
 5.  **CLI Tool (`rooch` commands)**:
     *   Update commands like `rooch did manage add-vm` to accept and process the new method type.
@@ -693,25 +656,7 @@ This section provides guidance for developers wishing to extend the Rooch DID sy
 6.  **Testing**:
     *   Add unit and integration tests covering the creation, usage, and permission validation of the new verification method type.
 
-### 6.2 Adding a New Service Type
-
-1.  **Move Contract (`did.move`)**:
-    *   (Optional) Define a new service type constant if specific logic is needed within the contract for this type.
-      ```move
-      // const SERVICE_TYPE_NEW_SERVICE: vector<u8> = b"NewCustomService2024";
-      ```
-    *   If the new service type has specific property validation rules, consider adding helper functions.
-
-2.  **Rust Type Definitions (`rooch-types`)**:
-    *   (Optional) If special handling for the specific service type is needed on the Rust side, update relevant structures.
-
-3.  **CLI Tool (`rooch` commands)**:
-    *   Ensure `rooch did manage add-service` and `update-service` commands can accept arbitrary strings as service types, or add validation for specific types as needed.
-
-4.  **Testing**:
-    *   Test adding, updating, and removing services using the new service type.
-
-### 6.3 Extending the Permission Model
+### 8.2 Extending the Permission Model
 
 1.  **Move Contract (`did.move`)**:
     *   If a new verification relationship is needed, define it in the constants section:
@@ -719,9 +664,7 @@ This section provides guidance for developers wishing to extend the Rooch DID sy
       // const VERIFICATION_RELATIONSHIP_NEW_PERMISSION: u8 = 5;
       ```
     *   Add a new `vector<String>` field to the `DIDDocument` struct to store the verification method fragments for this relationship.
-    *   Update `add_verification_method_entry` (or `create_did_object_internal`) to handle adding to the new relationship.
-    *   Update `remove_verification_method_entry` to handle removal from the new relationship.
-    *   Update `add_to_verification_relationship_entry` and `remove_from_verification_relationship_entry` to support the new relationship.
+    *   Update entry functions (`add_verification_method_entry`, `add_to_verification_relationship_entry`, etc.) to handle adding/removing from the new relationship.
     *   Create new permission assertion functions, e.g., `assert_authorized_for_new_operation(&DIDDocument, &signer)`, to implement validation logic for the new permission.
 
 2.  **Rust Type Definitions (`rooch-types`)**:
@@ -732,77 +675,3 @@ This section provides guidance for developers wishing to extend the Rooch DID sy
 
 4.  **Testing**:
     *   Thoroughly test operations involving the new permission, including success and failure scenarios.
-
-## 7. Security Considerations
-
-### 7.1 Key Security
-1.  **Private Key Protection**: Private keys generated by the CLI should be securely stored by the user. It is not recommended to pass private keys directly in command-line arguments in a production environment. Prefer using the Rooch keystore or external signers.
-2.  **Session Keys**:
-    *   Make full use of the session key mechanism to grant temporary, limited-scope permissions for specific operations, thereby reducing the exposure risk of main keys (especially those with `capabilityDelegation` permission).
-    *   The `did.move` contract automatically registers session keys for Ed25519 and Secp256k1 keys in the `authentication` relationship. Their current scope is set to the DID's own account and `rooch_framework`; this scope should be periodically reviewed for appropriateness.
-3.  **Permission Minimization**: Assign only the necessary verification relationships to verification methods for their tasks. Avoid over-authorization.
-
-### 7.2 Access Control
-1.  **On-Chain Validation**: All core permission validation logic for DID operations is executed in the `did.move` contract, ensuring on-chain enforcement.
-2.  **Controller Importance**: The `controller` field of `DIDDocument` is crucial. Only DIDs listed as controllers can manage the DID document using keys with `capabilityDelegation` permission.
-3.  **Event Auditing**: All significant changes to a DID document (e.g., creation, VM addition/removal, service addition/removal, relationship changes) emit events. Monitoring these events can be used for auditing and anomaly detection.
-
-### 7.3 Standard Compliance and Interoperability
-1.  **Adherence to W3C Specifications**: Strict adherence to W3C DID Core and DID Key Method specifications helps ensure compatibility with other DID ecosystems.
-2.  **Input Validation**: Perform strict format and validity checks on all external inputs (e.g., public key multibase strings, DID strings, fragment formats) to prevent injection or parsing errors. Examples: `parse_did_string`, `validate_did_key_controllers`.
-3.  **Forward Compatibility**: When designing extensions, consider the impact on existing DIDs and applications, striving to maintain forward compatibility.
-
-### 7.4 Gas and State Management
-1.  **Gas Consumption**: Be mindful of the gas consumption of complex operations (e.g., functions involving multiple Table operations or extensive vector manipulations) to avoid potential out-of-gas issues.
-2.  **State Bloat**: While DID documents can contain multiple verification methods and services, be aware of state bloat. For large amounts of data, consider off-chain storage with on-chain hashes/anchors.
-
-## 8. Troubleshooting
-
-### 8.1 Common Errors and Solutions
-
-1.  **`ErrorSignerNotDIDAccount` (did.move)**:
-    *   **Cause**: The transaction signer's address does not match the Rooch account address associated with the target DID document. DID operations must be initiated by their own account.
-    *   **Solution**: Ensure the transaction is signed using the key corresponding to the DID's associated account (usually authorized via a session key).
-
-2.  **`ErrorNoSessionKeyInContext` (did.move)**:
-    *   **Cause**: A session key (`authentication_key`) could not be found in the current transaction context. All authorized DID operations rely on session keys.
-    *   **Solution**: Ensure the transaction is sent via a valid session key registered to the DID's account. Check CLI session management or wallet session key configuration.
-
-3.  **`ErrorSessionKeyNotFound` (did.move)**:
-    *   **Cause**: The session key from the transaction context does not correspond to any public key of a verification method in the DID document's `authentication` relationship.
-    *   **Solution**: Ensure the session key used corresponds to a verification method that is part of the `authentication` relationship in the DID document.
-
-4.  **`ErrorInsufficientPermission` (did.move)**:
-    *   **Cause**: The session key (and its associated verification method) used for authorization does not have the required permission for the operation (e.g., `capabilityDelegation` or `capabilityInvocation`).
-    *   **Solution**: Check the DID document to ensure the verification method fragment used for signing is present in the correct verification relationship list (e.g., `capability_delegation`).
-
-5.  **`ErrorDIDKeyControllerPublicKeyMismatch` (did.move)**:
-    *   **Cause**: When creating a DID with a `did:key` as a controller, the public key in the `did:key` identifier does not match the provided initial verification method public key.
-    *   **Solution**: Carefully check the `did:key` string and the `user_vm_pk_multibase` parameter to ensure they represent the same public key.
-
-6.  **`ErrorInvalidPublicKeyMultibaseFormat` (did.move / multibase.move)**:
-    *   **Cause**: The provided public key multibase string is invalid or cannot be decoded.
-    *   **Solution**: Verify that the public key string conforms to a valid multibase encoding (e.g., base58btc starting with `z`) and that the key type matches the decoding function.
-
-7.  **CLI Parameter Errors**:
-    *   **Cause**: Incorrect command-line arguments, e.g., wrong format for `--did-address`, invalid value for `--relationships`.
-    *   **Solution**: Consult `rooch did <subcommand> --help` for correct parameter formats and options.
-
-### 8.2 Debugging Tips
-
-1.  **View DID Document**: Use `rooch did query address <ADDRESS>` or `rooch did query did <DID_STRING>` to inspect the current state of the DID document, including verification methods, relationships, and services.
-2.  **Verify Permissions**: Manually check the `capability_delegation` and `capability_invocation` lists in the DID document to confirm if the key fragment required for the operation is listed.
-3.  **Test Keys**: Use `rooch did keygen ed25519` or `secp256k1` to generate test keys and use their `did:key` or multibase public keys for operations to validate key formats and handling logic.
-4.  **View Transaction Events**: Rooch transactions emit events upon execution. Checking events for a specific transaction hash can reveal events emitted by the `did.move` contract (e.g., `DIDCreatedEvent`, `VerificationMethodAddedEvent`), helping to understand the operation's outcome. Use `rooch move view-events --tx-hash <HASH>` (or a similar command).
-5.  **Add In-Contract Debug Output (During Testing)**: Use `#[test_only]` functions or `std::debug::print` (in a test environment) to output intermediate states.
-
-## 9. References
-
-- [W3C DID Core Specification v1.0](https://www.w3.org/TR/did-core/)
-- [W3C DID Key Method v1.0](https://w3c-ccg.github.io/did-method-key/)
-- [Multibase Data Format Specification](https://datatracker.ietf.org/doc/html/draft-multiformats-multibase-03)
-- [Multicodec Table](https://github.com/multiformats/multicodec/blob/master/table.csv)
-- [NIP-1: Rooch DID Method Specification (Draft)](https://raw.githubusercontent.com/nuwa-protocol/NIPs/refs/heads/main/nips/nip-1.md) (as an important reference for Rooch DID design)
-- [Rooch Network Documentation](https://rooch.network/docs) (may include a published version of this document in the future)
-
-</rewritten_file> 

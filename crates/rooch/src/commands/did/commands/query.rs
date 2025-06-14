@@ -7,6 +7,7 @@ use clap::Parser;
 use moveos_types::module_binding::MoveFunctionCaller;
 use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::state::MoveStructType;
+use rooch_rpc_client::Client;
 use rooch_types::address::RoochAddress;
 use rooch_types::error::RoochResult;
 use rooch_types::framework::did::{DIDDocument, DIDModule};
@@ -104,14 +105,7 @@ pub struct DIDDocumentOutput {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ControlledDIDsOutput {
     pub controller: String,
-    pub controlled_dids: Vec<ControlledDIDInfo>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ControlledDIDInfo {
-    pub object_id: ObjectID,
-    pub did: String,
-    pub address: RoochAddress,
+    pub controlled_dids: Vec<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -161,7 +155,6 @@ impl CommandAction<DIDDocumentOutput> for ByDIDCommand {
     async fn execute(self) -> RoochResult<DIDDocumentOutput> {
         let context = self.context_options.build()?;
         let client = context.get_client().await?;
-        let did_module = client.as_module_binding::<DIDModule>();
 
         // Parse DID string to extract identifier
         if !self.did.starts_with("did:") {
@@ -176,31 +169,28 @@ impl CommandAction<DIDDocumentOutput> for ByDIDCommand {
                 "Invalid DID format".to_string(),
             ));
         }
+        let method = parts[1];
 
-        let identifier_part = parts[2..].join(":");
-
-        // For rooch DIDs, convert identifier to address
-        let address = if parts[1] == "rooch" {
-            RoochAddress::from_str(&identifier_part)?
-        } else {
+        if method != "rooch" {
             return Err(rooch_types::error::RoochError::CommandArgumentError(
                 "Only rooch DID method is supported for document retrieval".to_string(),
             ));
-        };
+        }
 
-        let did_document = did_module.get_did_document(address.into())?;
-        let did_identifier = address.to_bech32();
+        let identifier_part = parts[2..].join(":");
+
+        //Check if the identifier is a Rooch address
+        let rooch_address = RoochAddress::from_str(&identifier_part)?;
+        let did_identifier = rooch_address.to_bech32();
+
         let object_id = moveos_types::moveos_std::object::custom_object_id(
             &did_identifier,
             &DIDDocument::struct_tag(),
         );
 
-        Ok(DIDDocumentOutput {
-            did_document,
-            object_id,
-            created_at: 0, // TODO: Get from object system
-            updated_at: 0, // TODO: Get from object system
-        })
+        let did_document_output = get_did_document_by_object_id(&client, object_id).await?;
+
+        Ok(did_document_output)
     }
 }
 
@@ -209,7 +199,6 @@ impl CommandAction<DIDDocumentOutput> for ByObjectIDCommand {
     async fn execute(self) -> RoochResult<DIDDocumentOutput> {
         let context = self.context_options.build()?;
         let client = context.get_client().await?;
-        let did_module = client.as_module_binding::<DIDModule>();
 
         let object_id = ObjectID::from_str(&self.object_id).map_err(|e| {
             rooch_types::error::RoochError::CommandArgumentError(format!(
@@ -218,14 +207,9 @@ impl CommandAction<DIDDocumentOutput> for ByObjectIDCommand {
             ))
         })?;
 
-        let did_document = did_module.get_did_document_by_object_id(object_id.clone())?;
+        let did_document_output = get_did_document_by_object_id(&client, object_id).await?;
 
-        Ok(DIDDocumentOutput {
-            did_document,
-            object_id,
-            created_at: 0, // TODO: Get from object system
-            updated_at: 0, // TODO: Get from object system
-        })
+        Ok(did_document_output)
     }
 }
 
@@ -234,23 +218,18 @@ impl CommandAction<DIDDocumentOutput> for ByAddressCommand {
     async fn execute(self) -> RoochResult<DIDDocumentOutput> {
         let context = self.context_options.build()?;
         let client = context.get_client().await?;
-        let did_module = client.as_module_binding::<DIDModule>();
 
         let address = RoochAddress::from_str(&self.address)?;
 
-        let did_document = did_module.get_did_document(address.into())?;
         let did_identifier = address.to_bech32();
         let object_id = moveos_types::moveos_std::object::custom_object_id(
             &did_identifier,
             &DIDDocument::struct_tag(),
         );
 
-        Ok(DIDDocumentOutput {
-            did_document,
-            object_id,
-            created_at: 0, // TODO: Get from object system
-            updated_at: 0, // TODO: Get from object system
-        })
+        let did_document_output = get_did_document_by_object_id(&client, object_id).await?;
+
+        Ok(did_document_output)
     }
 }
 
@@ -268,37 +247,11 @@ impl CommandAction<ControlledDIDsOutput> for ByControllerCommand {
             ));
         }
 
-        let object_ids = did_module.get_dids_by_controller_string(&self.controller_did)?;
-
-        let mut controlled_dids = Vec::new();
-        for object_id in object_ids {
-            // Get DID document to extract DID and address information
-            match did_module.get_did_document_by_object_id(object_id.clone()) {
-                Ok(did_doc) => {
-                    let did_identifier = &did_doc.id;
-                    let did_string = format!(
-                        "did:{}:{}",
-                        did_identifier.method, did_identifier.identifier
-                    );
-                    // Get address from account_cap
-                    let address = did_doc.account_cap.addr;
-
-                    controlled_dids.push(ControlledDIDInfo {
-                        object_id: object_id.clone(),
-                        did: did_string,
-                        address: address.into(),
-                    });
-                }
-                Err(_) => {
-                    // Skip if we can't get the document (might be deleted)
-                    continue;
-                }
-            }
-        }
+        let dids = did_module.get_dids_by_controller_string(&self.controller_did)?;
 
         Ok(ControlledDIDsOutput {
             controller: self.controller_did,
-            controlled_dids,
+            controlled_dids: dids,
         })
     }
 }
@@ -335,4 +288,32 @@ impl CommandAction<ExistsOutput> for ExistsCommand {
             query_type,
         })
     }
+}
+
+async fn get_did_document_by_object_id(
+    client: &Client,
+    object_id: ObjectID,
+) -> RoochResult<DIDDocumentOutput> {
+    let mut did_object_views = client
+        .rooch
+        .get_object_states(vec![object_id.clone()], None)
+        .await?;
+    if did_object_views.is_empty() || did_object_views.first().unwrap().is_none() {
+        return Err(rooch_types::error::RoochError::CommandArgumentError(
+            format!("DID document with object ID {} not found", object_id),
+        ));
+    }
+    let did_object_view = did_object_views.pop().unwrap().unwrap();
+    let did_document = bcs::from_bytes::<DIDDocument>(&did_object_view.value.0).map_err(|_| {
+        rooch_types::error::RoochError::CommandArgumentError(format!(
+            "Failed to deserialize DID document with object ID {}",
+            object_id
+        ))
+    })?;
+    Ok(DIDDocumentOutput {
+        did_document,
+        object_id,
+        created_at: did_object_view.metadata.created_at.0,
+        updated_at: did_object_view.metadata.updated_at.0,
+    })
 }

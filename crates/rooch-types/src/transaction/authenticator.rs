@@ -198,6 +198,7 @@ impl Authenticator {
         match kp.public().scheme() {
             SignatureScheme::Ed25519 => Self::session(kp, tx_data),
             SignatureScheme::Secp256k1 => Self::bitcoin(kp, tx_data),
+            SignatureScheme::EcdsaR1 => Self::session(kp, tx_data),
         }
     }
 

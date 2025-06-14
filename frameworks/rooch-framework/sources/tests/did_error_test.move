@@ -11,7 +11,7 @@ module rooch_framework::did_error_test {
     use std::option;
     use std::vector;
     use moveos_std::account;
-
+    use moveos_std::multibase_codec;
     // ========================================
     // Test Category 9: Error Handling & Security Tests
     // ========================================
@@ -60,20 +60,7 @@ module rooch_framework::did_error_test {
 
         // Try to get DID document for non-existent address
         let nonexistent_address = @0x999999;
-        let _ = did::get_did_document(nonexistent_address);
-    }
-
-    #[test]
-    /// Test error for invalid multibase public key format - this should not fail in decode
-    fun test_error_invalid_public_key_multibase_format() {
-        use moveos_std::multibase;
-        
-        // Try to decode invalid multibase key - this returns None instead of aborting
-        let invalid_multibase_key = string::utf8(b"invalid_multibase_key");
-        let result = multibase::decode_ed25519_key(&invalid_multibase_key);
-        
-        // Should return None for invalid format
-        assert!(std::option::is_none(&result), 13801);
+        let _ = did::get_did_document_by_address(nonexistent_address);
     }
 
     #[test]
@@ -109,7 +96,7 @@ module rooch_framework::did_error_test {
         let did_address = did::get_did_address(did_document);
 
         // Test has_verification_relationship_in_doc function with valid relationships - use DID address
-        let did_document_check = did::get_did_document(did_address);
+        let did_document_check = did::get_did_document_by_address(did_address);
         
         // account-key should have authentication, assertion_method, capability_invocation, capability_delegation
         let account_key_fragment = string::utf8(b"account-key");
@@ -152,43 +139,18 @@ module rooch_framework::did_error_test {
         // Add first verification method
         let fragment = string::utf8(b"unique-key");
         let method_type = string::utf8(b"Ed25519VerificationKey2020");
-        let test_key1 = did_test_common::generate_test_ed25519_multibase_key();
+        let test_key1 = did_test_common::generate_test_ed25519_multibase();
         let relationships = vector[1u8]; // assertion_method
 
         did::add_verification_method_entry(&did_signer, fragment, method_type, test_key1, relationships);
 
         // Verify method was added - use DID address
-        let did_document_check = did::get_did_document(did_address);
+        let did_document_check = did::get_did_document_by_address(did_address);
         assert!(did::test_verification_method_exists(did_document_check, &fragment), 13401);
 
         // Fragment uniqueness is enforced - trying to add duplicate should fail in add_verification_method_already_exists test
     }
 
-    #[test]
-    /// Test multibase format validation for different key types
-    fun test_multibase_format_validation() {
-        use moveos_std::multibase;
-        
-        // Test valid Ed25519 key decoding
-        let valid_ed25519_key = did_test_common::generate_test_ed25519_multibase_key();
-        let ed25519_bytes_opt = multibase::decode_ed25519_key(&valid_ed25519_key);
-        assert!(std::option::is_some(&ed25519_bytes_opt), 13501);
-
-        // Test valid Secp256k1 key decoding
-        let valid_secp256k1_key = did_test_common::generate_test_secp256k1_multibase_key();
-        let secp256k1_bytes_opt = multibase::decode_secp256k1_key(&valid_secp256k1_key);
-        assert!(std::option::is_some(&secp256k1_bytes_opt), 13502);
-
-        // Test that keys have reasonable lengths
-        let ed25519_bytes = std::option::destroy_some(ed25519_bytes_opt);
-        let secp256k1_bytes = std::option::destroy_some(secp256k1_bytes_opt);
-        
-        // Ed25519 public keys should be 32 bytes
-        assert!(std::vector::length(&ed25519_bytes) == 32, 13503);
-        
-        // Secp256k1 compressed public keys should be 33 bytes
-        assert!(std::vector::length(&secp256k1_bytes) == 33, 13504);
-    }
 
     #[test]
     /// Test error handling for malformed service properties
@@ -218,19 +180,18 @@ module rooch_framework::did_error_test {
         );
 
         // Verify service was added successfully - use DID address
-        let did_document_check = did::get_did_document(did_address);
+        let did_document_check = did::get_did_document_by_address(did_address);
         assert!(did::test_service_exists(did_document_check, &fragment), 13601);
     }
 
     #[test]
     /// Test security boundary for session key scope validation
     fun test_security_session_key_scope() {
-        use moveos_std::multibase;
         use rooch_framework::session_key;
         use rooch_framework::auth_validator;
         
         // Use proper setup to get creator info and DID object ID
-        let (_creator_signer, _creator_address, _creator_public_key_multibase, did_object_id) = did_test_common::setup_did_test_with_creation();
+        let (_creator_signer, _creator_address, creator_public_key_multibase, did_object_id) = did_test_common::setup_did_test_with_creation();
         
         // Get the actual DID document and its address
         let did_document = did::get_did_document_by_object_id(did_object_id);
@@ -238,7 +199,7 @@ module rooch_framework::did_error_test {
         let did_signer = account::create_signer_for_testing(did_address);
 
         // Setup session key for authorization (reuse the creator's key)
-        let pk_bytes_opt = multibase::decode_secp256k1_key(&_creator_public_key_multibase);
+        let pk_bytes_opt = multibase_codec::decode(&creator_public_key_multibase);
         let pk_bytes = option::destroy_some(pk_bytes_opt);
         let auth_key = session_key::secp256k1_public_key_to_authentication_key(&pk_bytes);
         
@@ -255,13 +216,13 @@ module rooch_framework::did_error_test {
         // Add verification method - should succeed with valid session key
         let fragment = string::utf8(b"scoped-key");
         let method_type = string::utf8(b"Ed25519VerificationKey2020");
-        let test_key = did_test_common::generate_test_ed25519_multibase_key();
+        let test_key = did_test_common::generate_test_ed25519_multibase();
         let relationships = vector[1u8]; // assertion_method
 
         did::add_verification_method_entry(&did_signer, fragment, method_type, test_key, relationships);
 
         // Verify method was added - use DID address
-        let did_document_check = did::get_did_document(did_address);
+        let did_document_check = did::get_did_document_by_address(did_address);
         assert!(did::test_verification_method_exists(did_document_check, &fragment), 13703);
     }
 
@@ -342,7 +303,7 @@ module rooch_framework::did_error_test {
         // Try to modify DID with wrong signer - should fail
         let fragment = string::utf8(b"new-key");
         let method_type = string::utf8(b"Ed25519VerificationKey2020");
-        let test_key = did_test_common::generate_test_ed25519_multibase_key();
+        let test_key = did_test_common::generate_test_ed25519_multibase();
         let relationships = vector[1u8]; // assertion_method
 
         did::add_verification_method_entry(
