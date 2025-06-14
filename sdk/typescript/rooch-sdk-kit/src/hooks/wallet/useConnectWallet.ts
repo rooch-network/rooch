@@ -7,7 +7,7 @@ import { ThirdPartyAddress, Session } from '@roochnetwork/rooch-sdk'
 
 import { useWalletStore } from './useWalletStore.js'
 import { walletMutationKeys } from '../../constants/index.js'
-import { Wallet } from '../../wellet/index.js'
+import { Wallet } from '../../wallet/index.js'
 import { useSessionStore } from '../useSessionsStore.js'
 import { useSessions } from '../useSessions.js'
 import { useTriggerError } from '../../provider/globalProvider.js'

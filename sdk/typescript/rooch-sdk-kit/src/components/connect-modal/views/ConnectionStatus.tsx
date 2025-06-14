@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import type { Wallet } from '../../../wellet/wallet.js'
+import type { Wallet } from '../../../wallet/wallet.js'
 
 import { Button } from '../../ui/Button.js'
 import { Heading } from '../../ui/Heading.js'
