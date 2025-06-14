@@ -5,7 +5,7 @@ use crate::natives::helpers::{make_module_natives, make_native};
 use fastcrypto::{
     hash::Sha256,
     secp256r1::{Secp256r1PublicKey, Secp256r1Signature},
-    traits::{ToFromBytes},
+    traits::ToFromBytes,
 };
 use move_binary_format::errors::PartialVMResult;
 use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte, NumBytes};
@@ -73,7 +73,6 @@ pub fn native_verify(
     let public_key = pop_arg!(args, VectorRef);
     let signature = pop_arg!(args, VectorRef);
 
-
     let msg_ref = msg.as_bytes_ref();
     let signature_bytes_ref = signature.as_bytes_ref();
     let public_key_bytes_ref = public_key.as_bytes_ref();
@@ -103,7 +102,9 @@ pub fn native_verify(
 
     // Verify the signature
     let result = if hash_type == HASH_TYPE_SHA256 {
-        verifying_key.verify_with_hash::<Sha256>(msg_ref.as_slice(), &sig).is_ok()
+        verifying_key
+            .verify_with_hash::<Sha256>(msg_ref.as_slice(), &sig)
+            .is_ok()
     } else {
         return Ok(NativeResult::err(cost, E_INVALID_HASH_TYPE));
     };
