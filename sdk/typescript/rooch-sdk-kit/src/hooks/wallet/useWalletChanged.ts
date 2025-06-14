@@ -1,11 +1,11 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { Wallet } from '../../wellet/index.js'
+import { Wallet } from '../../wallet/index.js'
 import { useWalletStore } from './useWalletStore.js'
 import { useEffect } from 'react'
-import { getWallets } from '../../wellet/wallets.js'
-import { getRegisteredWallets } from '../../wellet/util.js'
+import { getWallets } from '../../wallet/wallets.js'
+import { getRegisteredWallets } from '../../wallet/util.js'
 
 /**
  * Retrieves all wallets

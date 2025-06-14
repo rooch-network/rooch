@@ -6,7 +6,7 @@ import { Modal } from '../ui/Modal.js'
 import { checkWalletNetwork } from '../util/wallet.js'
 import { SwitchNetworkView } from './views/SwitchNetworkView.js'
 import { useCurrentAddress, useCurrentNetwork, useCurrentWallet } from '../../hooks/index.js'
-import { Wallet, WalletNetworkType } from '../../wellet/index.js'
+import { Wallet, WalletNetworkType } from '../../wallet/index.js'
 
 export function SwitchNetworkModal() {
   const { wallet } = useCurrentWallet()

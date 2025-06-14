@@ -15,8 +15,8 @@ import {
 import { useSessionStore } from '../hooks/useSessionsStore.js'
 import { getDefaultStorage, StorageType, checkWallets } from '../utils/index.js'
 import { SupportChain, SupportWallet } from '../feature/index.js'
-import { getRegisteredWallets } from '../wellet/util.js'
-import { getWallets } from '../wellet/wallets.js'
+import { getRegisteredWallets } from '../wallet/util.js'
+import { getWallets } from '../wallet/wallets.js'
 import { useWalletChanged } from '../hooks/index.js'
 import { useWalletStore } from '../hooks/wallet/useWalletStore.js'
 

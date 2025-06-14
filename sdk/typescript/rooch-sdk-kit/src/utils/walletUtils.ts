@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { SupportChain } from '../feature/index.js'
-import { Wallet, UniSatWallet, OkxWallet, OnekeyWallet } from '../wellet/index.js'
-import { LocalWallet } from '../wellet/local.js'
+import { Wallet, UniSatWallet, OkxWallet, OnekeyWallet } from '../wallet/index.js'
+import { LocalWallet } from '../wallet/local.js'
 
 const unisatWallet = new UniSatWallet()
 const okxWallet = new OkxWallet()

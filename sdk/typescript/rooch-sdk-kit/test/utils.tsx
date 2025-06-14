@@ -7,7 +7,7 @@ import { RoochClient, getRoochNodeUrl } from '@roochnetwork/rooch-sdk'
 
 import { RoochProvider, WalletProvider } from '../src/provider/index.js'
 import { MockBitcoinWallet } from './mocks/mock-wallet.js'
-import { getWallets } from '../src/wellet/wallets.js'
+import { getWallets } from '../src/wallet/wallets.js'
 
 export function createRoochClientContextWrapper(client: RoochClient) {
   return function RoochClientContextWrapper({ children }: { children: React.ReactNode }) {
