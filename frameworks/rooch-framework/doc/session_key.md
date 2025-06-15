@@ -12,6 +12,7 @@
 -  [Function `max_inactive_interval`](#0x3_session_key_max_inactive_interval)
 -  [Function `signature_scheme_ed25519`](#0x3_session_key_signature_scheme_ed25519)
 -  [Function `signature_scheme_secp256k1`](#0x3_session_key_signature_scheme_secp256k1)
+-  [Function `signature_scheme_ecdsar1`](#0x3_session_key_signature_scheme_ecdsar1)
 -  [Function `new_session_scope`](#0x3_session_key_new_session_scope)
 -  [Function `is_expired`](#0x3_session_key_is_expired)
 -  [Function `is_expired_session_key`](#0x3_session_key_is_expired_session_key)
@@ -30,6 +31,7 @@
 -  [Function `get_session_keys_handle`](#0x3_session_key_get_session_keys_handle)
 -  [Function `ed25519_public_key_to_authentication_key`](#0x3_session_key_ed25519_public_key_to_authentication_key)
 -  [Function `secp256k1_public_key_to_authentication_key`](#0x3_session_key_secp256k1_public_key_to_authentication_key)
+-  [Function `secp256r1_public_key_to_authentication_key`](#0x3_session_key_secp256r1_public_key_to_authentication_key)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
@@ -146,6 +148,15 @@ The lengths of the parts of the session's scope do not match.
 
 
 
+<a name="0x3_session_key_SIGNATURE_SCHEME_ECDSAR1"></a>
+
+
+
+<pre><code><b>const</b> <a href="session_key.md#0x3_session_key_SIGNATURE_SCHEME_ECDSAR1">SIGNATURE_SCHEME_ECDSAR1</a>: u8 = 2;
+</code></pre>
+
+
+
 <a name="0x3_session_key_SIGNATURE_SCHEME_ED25519"></a>
 
 
@@ -193,6 +204,17 @@ The lengths of the parts of the session's scope do not match.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="session_key.md#0x3_session_key_signature_scheme_secp256k1">signature_scheme_secp256k1</a>(): u8
+</code></pre>
+
+
+
+<a name="0x3_session_key_signature_scheme_ecdsar1"></a>
+
+## Function `signature_scheme_ecdsar1`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="session_key.md#0x3_session_key_signature_scheme_ecdsar1">signature_scheme_ecdsar1</a>(): u8
 </code></pre>
 
 
@@ -399,4 +421,17 @@ This follows the same pattern as Ed25519 but with a different scheme identifier.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="session_key.md#0x3_session_key_secp256k1_public_key_to_authentication_key">secp256k1_public_key_to_authentication_key</a>(public_key: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;
+</code></pre>
+
+
+
+<a name="0x3_session_key_secp256r1_public_key_to_authentication_key"></a>
+
+## Function `secp256r1_public_key_to_authentication_key`
+
+Derives the authentication key for a Secp256r1 public key.
+This follows the same pattern as Ed25519 but with a different scheme identifier.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="session_key.md#0x3_session_key_secp256r1_public_key_to_authentication_key">secp256r1_public_key_to_authentication_key</a>(public_key: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;
 </code></pre>
