@@ -42,6 +42,7 @@ This is the reference documentation of the Rooch Framework.
 -  [`0x3::oracle`](oracle.md#0x3_oracle)
 -  [`0x3::oracle_data`](oracle_data.md#0x3_oracle_data)
 -  [`0x3::oracle_meta`](oracle_meta.md#0x3_oracle_meta)
+-  [`0x3::rs256`](rs256.md#0x3_rs256)
 -  [`0x3::session_key`](session_key.md#0x3_session_key)
 -  [`0x3::session_validator`](session_validator.md#0x3_session_validator)
 -  [`0x3::simple_rng`](simple_rng.md#0x3_simple_rng)
