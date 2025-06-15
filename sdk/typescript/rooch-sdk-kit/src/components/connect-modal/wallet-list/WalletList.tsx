@@ -3,7 +3,7 @@
 
 import * as styles from './WalletList.css.js'
 import { WalletListItem } from './WalletListItem.js'
-import { Wallet } from '../../../wellet/wallet.js'
+import { Wallet } from '../../../wallet/wallet.js'
 
 type WalletListProps = {
   wallets: Wallet[]

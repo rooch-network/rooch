@@ -11,7 +11,8 @@ module rooch_framework::did {
     use moveos_std::account::{Self, AccountCap};
     use moveos_std::object::{Self, ObjectID};
     use moveos_std::address;
-    use moveos_std::multibase;
+    use moveos_std::multibase_key;
+    use moveos_std::multibase_codec;
     use moveos_std::event;
     use rooch_framework::session_key;
     use rooch_framework::auth_validator;
@@ -115,6 +116,8 @@ module rooch_framework::did {
     // Verification method types
     const VERIFICATION_METHOD_TYPE_ED25519: vector<u8> = b"Ed25519VerificationKey2020";
     const VERIFICATION_METHOD_TYPE_SECP256K1: vector<u8> = b"EcdsaSecp256k1VerificationKey2019";
+    const VERIFICATION_METHOD_TYPE_SECP256R1: vector<u8> = b"EcdsaSecp256r1VerificationKey2019";
+
 
     /// DID identifier type
     struct DID has store, copy, drop {
@@ -169,7 +172,8 @@ module rooch_framework::did {
 
     /// Registry to store mappings. This is a Named Object.
     struct DIDRegistry has key {
-        controller_to_dids: Table<DID, vector<ObjectID>>, // Controller DID -> DID Document ObjectIDs it controls
+        /// Controller DID -> DID Document DID it controls
+        controller_to_dids: Table<String, vector<String>>, 
     }
 
     // =================== Event Structures ===================
@@ -177,27 +181,26 @@ module rooch_framework::did {
     #[event] 
     /// Event emitted when a new DID document is created
     struct DIDCreatedEvent has drop, copy, store {
-        did: DID,                           // The created DID
+        did: String,                           // The created DID
         object_id: ObjectID,                // Object ID of the DID document
-        controller: vector<DID>,            // Controllers of the DID
+        controller: vector<String>,            // Controllers of the DID
         creator_address: address,           // Address of the creator
-        creation_method: String,            // Method used for creation (e.g., "self", "cadop")
     }
 
     #[event]
     /// Event emitted when a verification method is added to a DID document  
     struct VerificationMethodAddedEvent has drop, copy, store {
-        did: DID,                           // The DID that owns the verification method
+        did: String,                           // The DID that owns the verification method
         fragment: String,                   // Fragment identifier of the verification method
         method_type: String,                // Type of verification method
-        controller: DID,                    // Controller of the verification method
+        controller: String,                    // Controller of the verification method
         verification_relationships: vector<u8>, // Verification relationships assigned
     }
 
     #[event]
     /// Event emitted when a verification method is removed from a DID document
     struct VerificationMethodRemovedEvent has drop, copy, store {
-        did: DID,                           // The DID that owned the verification method
+        did: String,                           // The DID that owned the verification method
         fragment: String,                   // Fragment identifier of the removed verification method
         method_type: String,                // Type of verification method that was removed
     }
@@ -205,7 +208,7 @@ module rooch_framework::did {
     #[event]
     /// Event emitted when a verification relationship is modified
     struct VerificationRelationshipModifiedEvent has drop, copy, store {
-        did: DID,                           // The DID that owns the verification method
+        did: String,                           // The DID that owns the verification method
         fragment: String,                   // Fragment identifier of the verification method
         relationship_type: u8,              // Type of verification relationship
         operation: String,                  // Operation performed ("added" or "removed")
@@ -214,7 +217,7 @@ module rooch_framework::did {
     #[event]
     /// Event emitted when a service is added to a DID document
     struct ServiceAddedEvent has drop, copy, store {
-        did: DID,                           // The DID that owns the service
+        did: String,                           // The DID that owns the service
         fragment: String,                   // Fragment identifier of the service
         service_type: String,               // Type of service
         service_endpoint: String,           // Service endpoint URL
@@ -224,7 +227,7 @@ module rooch_framework::did {
     #[event]
     /// Event emitted when a service is updated in a DID document
     struct ServiceUpdatedEvent has drop, copy, store {
-        did: DID,                           // The DID that owns the service
+        did: String,                           // The DID that owns the service
         fragment: String,                   // Fragment identifier of the service
         old_service_type: String,           // Previous service type
         new_service_type: String,           // New service type
@@ -236,7 +239,7 @@ module rooch_framework::did {
     #[event]
     /// Event emitted when a service is removed from a DID document
     struct ServiceRemovedEvent has drop, copy, store {
-        did: DID,                           // The DID that owned the service
+        did: String,                           // The DID that owned the service
         fragment: String,                   // Fragment identifier of the removed service
         service_type: String,               // Type of service that was removed
     }
@@ -251,7 +254,7 @@ module rooch_framework::did {
         assert!(!object::exists_object_with_type<DIDRegistry>(registry_id), ErrorDIDRegistryAlreadyInitialized);
         
         let registry_data = DIDRegistry {
-            controller_to_dids: table::new<DID, vector<ObjectID>>(),
+            controller_to_dids: table::new<String, vector<String>>(),
         };
 
         let registry_object = object::new_named_object(registry_data);
@@ -294,8 +297,8 @@ module rooch_framework::did {
     /// This function contains the core logic for DID creation and is called by
     /// the specialized public entry functions.
     fun create_did_object_internal(
-        _creator_account_signer: &signer,    // The Rooch account signer creating this DID Object (pays gas)
-        doc_controllers: vector<DID>,        // DID Document controller field value (NIP-1)
+        creator_account_signer: &signer,    // The Rooch account signer creating this DID Object (pays gas)
+        doc_controller: DID,        // DID Document controller field value (NIP-1)
                                              // e.g.: User self-creation: ["did:rooch:<user_addr>"]
                                              // CADOP scenario: ["did:key:<user_pk_multibase>"]
 
@@ -316,15 +319,13 @@ module rooch_framework::did {
         service_vm_fragment: Option<String>           // Service VM fragment
     ): ObjectID {
         let registry = borrow_mut_did_registry();
-        assert!(vector::length(&doc_controllers) > 0, ErrorNoControllersSpecified);
 
-        // Validate did:key controllers according to NIP-1
-        validate_did_key_controllers(&doc_controllers, &user_vm_pk_multibase);
 
         let new_account_cap = account::create_account_and_return_cap();
         let did_address = account::account_cap_address(&new_account_cap);
         
         let did = new_rooch_did_by_address(did_address);
+        let did_str = format_did(&did);
         
         let new_object_id = resolve_did_object_id(&did.identifier); 
         assert!(!object::exists_object_with_type<DIDDocument>(new_object_id), ErrorDIDAlreadyExists);
@@ -332,7 +333,7 @@ module rooch_framework::did {
         // Create base DIDDocument structure
         let did_document_data = DIDDocument {
             id: did,
-            controller: doc_controllers,
+            controller: vector[doc_controller],
             verification_methods: simple_map::new<String, VerificationMethod>(),
             authentication: vector::empty<String>(),
             assertion_method: vector::empty<String>(),
@@ -349,10 +350,11 @@ module rooch_framework::did {
             did: did,
             fragment: user_vm_fragment,
         };
+        //The first verification method is the primary verification method, the controller is the doc_controller
         let user_vm = VerificationMethod {
             id: user_vm_id,
             type: user_vm_type,
-            controller: did, // User VM controlled by the DID itself
+            controller: doc_controller, 
             public_key_multibase: user_vm_pk_multibase,
         };
 
@@ -364,23 +366,13 @@ module rooch_framework::did {
             let relationship_type = *vector::borrow(&user_vm_relationships, i);
             
             if (relationship_type == VERIFICATION_RELATIONSHIP_AUTHENTICATION) {
-                if (user_vm_type == string::utf8(VERIFICATION_METHOD_TYPE_ED25519)) {
-                    // For Ed25519: use specialized function that handles authentication and session key
-                    add_ed25519_authentication_method(
-                        &mut did_document_data,
-                        user_vm_fragment,
-                        user_vm_pk_multibase
-                    );
-                } else if (user_vm_type == string::utf8(VERIFICATION_METHOD_TYPE_SECP256K1)) {
-                    // For Secp256k1: use specialized function that handles authentication and session key
-                    add_secp256k1_authentication_method(
-                        &mut did_document_data,
-                        user_vm_fragment,
-                        user_vm_pk_multibase
-                    );
-                } else {
-                    vector::push_back(&mut did_document_data.authentication, user_vm_fragment);
-                };
+                // Use the general authentication method that handles session key registration
+                add_authentication_method(
+                    &mut did_document_data,
+                    user_vm_fragment,
+                    user_vm_type,
+                    user_vm_pk_multibase
+                );
             } else if (relationship_type == VERIFICATION_RELATIONSHIP_ASSERTION_METHOD) {
                 vector::push_back(&mut did_document_data.assertion_method, user_vm_fragment);
             } else if (relationship_type == VERIFICATION_RELATIONSHIP_CAPABILITY_INVOCATION) {
@@ -420,39 +412,23 @@ module rooch_framework::did {
         let did_object = object::new_with_id(did.identifier, did_document_data);
         object::transfer_extend(did_object, did_address);
         
+        let doc_controller_did_str = format_did(&doc_controller);
+
         // Add the new DID to all its controllers' lists in the registry
-        let i = 0;
-        while (i < vector::length(&doc_controllers)) {
-            let controller_did = *vector::borrow(&doc_controllers, i);
-            if (!table::contains(&registry.controller_to_dids, controller_did)) {
-                table::add(&mut registry.controller_to_dids, controller_did, vector::empty<ObjectID>());
-            };
-            let controller_dids = table::borrow_mut(&mut registry.controller_to_dids, controller_did);
-            vector::push_back(controller_dids, new_object_id);
-            i = i + 1;
+
+        if (!table::contains(&registry.controller_to_dids, doc_controller_did_str)) {
+            table::add(&mut registry.controller_to_dids, doc_controller_did_str, vector::empty<String>());
         };
+        let controller_dids = table::borrow_mut(&mut registry.controller_to_dids, doc_controller_did_str);
+        vector::push_back(controller_dids, did_str);
         
-        // Emit DID creation event
-        let creation_method = if (vector::length(&doc_controllers) == 1) {
-            let controller = vector::borrow(&doc_controllers, 0);
-            if (controller.method == string::utf8(b"rooch")) {
-                string::utf8(b"self")
-            } else if (controller.method == string::utf8(b"key")) {
-                string::utf8(b"cadop")
-            } else {
-                string::utf8(b"other")
-            }
-        } else {
-            string::utf8(b"multi_controller")
-        };
         
-        let creator_address = signer::address_of(_creator_account_signer);
+        let creator_address = signer::address_of(creator_account_signer);
         event::emit(DIDCreatedEvent {
-            did: did,
+            did: did_str,
             object_id: new_object_id,
-            controller: doc_controllers,
+            controller: vector[doc_controller_did_str],
             creator_address,
-            creation_method,
         });
         
         new_object_id
@@ -478,13 +454,15 @@ module rooch_framework::did {
         account_public_key_multibase: String,
     ) : ObjectID {
         let creator_address = signer::address_of(creator_account_signer);
-        
+        let public_key_opt = multibase_codec::decode(&account_public_key_multibase);
+        assert!(option::is_some(&public_key_opt), ErrorInvalidPublicKeyMultibaseFormat);
+        let public_key = option::destroy_some(public_key_opt);
+
         // Validate that the provided public key corresponds to the creator's account
-        verify_public_key_matches_account(creator_address, &account_public_key_multibase);
+        verify_public_key_matches_account(creator_address, &public_key);
         
         let creator_did = new_rooch_did_by_address(creator_address);
         
-        let doc_controllers = vector[creator_did];
         
         // Primary verification method uses the account's Secp256k1 key
         let primary_vm_fragment = string::utf8(b"account-key");
@@ -498,7 +476,7 @@ module rooch_framework::did {
 
         let did_object_id = create_did_object_internal(
             creator_account_signer,
-            doc_controllers,
+            creator_did,
             account_public_key_multibase,
             account_key_type,
             primary_vm_fragment,
@@ -515,13 +493,8 @@ module rooch_framework::did {
     /// This prevents users from providing incorrect public keys during DID creation.
     fun verify_public_key_matches_account(
         account_address: address,
-        public_key_multibase: &String
+        pk_bytes: &vector<u8>
     ) {
-        // Decode the Secp256k1 public key
-        let pk_bytes_opt = multibase::decode_secp256k1_key(public_key_multibase);
-        assert!(option::is_some(&pk_bytes_opt), ErrorInvalidPublicKeyMultibaseFormat);
-        let pk_bytes = option::destroy_some(pk_bytes_opt);
-        
         // Get the Bitcoin address from current transaction context
         // This address was already validated during transaction authentication
         let bitcoin_address_opt = auth_validator::get_bitcoin_address_from_ctx_option();
@@ -531,7 +504,7 @@ module rooch_framework::did {
         
         // Verify that the provided public key corresponds to the Bitcoin address
         assert!(
-            bitcoin_address::verify_bitcoin_address_with_public_key(&bitcoin_address, &pk_bytes),
+            bitcoin_address::verify_bitcoin_address_with_public_key(&bitcoin_address, pk_bytes),
             ErrorDIDKeyControllerPublicKeyMismatch
         );
         
@@ -579,12 +552,17 @@ module rooch_framework::did {
         assert!(user_did_key.method == string::utf8(b"key"), ErrorInvalidDIDStringFormat);
         
         // Extract raw public key from did:key identifier and re-encode as regular multibase
-        let raw_pk_opt = extract_public_key_from_did_key_identifier(&user_did_key.identifier);
-        assert!(option::is_some(&raw_pk_opt), ErrorInvalidPublicKeyMultibaseFormat);
-        let raw_pk_bytes = option::destroy_some(raw_pk_opt);
+        let (key_type, raw_pk_bytes) = multibase_key::decode_with_type(&user_did_key.identifier);
         
-        // Re-encode as regular multibase Ed25519 key (without multicodec prefix)
-        let user_vm_pk_multibase = multibase::encode_ed25519_key(&raw_pk_bytes);
+        let (user_vm_type, user_vm_pk_multibase) = if (key_type == multibase_key::key_type_ed25519()) {
+            (string::utf8(VERIFICATION_METHOD_TYPE_ED25519), multibase_codec::encode_base58btc(&raw_pk_bytes))
+        } else if (key_type == multibase_key::key_type_secp256k1()) {
+            (string::utf8(VERIFICATION_METHOD_TYPE_SECP256K1), multibase_codec::encode_base58btc(&raw_pk_bytes))
+        } else if (key_type == multibase_key::key_type_ecdsar1()) {
+            (string::utf8(VERIFICATION_METHOD_TYPE_SECP256R1), multibase_codec::encode_base58btc(&raw_pk_bytes))
+        } else {
+            abort ErrorUnsupportedAuthKeyTypeForSessionKey
+        };
         
         // Derive custodian's DID from signer address
         let custodian_address = signer::address_of(custodian_signer);
@@ -604,22 +582,23 @@ module rooch_framework::did {
         let has_cadop_service = has_cadop_service_in_doc(custodian_did_doc);
         assert!(has_cadop_service, ErrorCustodianDoesNotHaveCADOPService);
 
-        let doc_controllers = vector[user_did_key];
+        let doc_controller = user_did_key;
         let user_vm_relationships = vector[
             VERIFICATION_RELATIONSHIP_AUTHENTICATION,
-            VERIFICATION_RELATIONSHIP_CAPABILITY_DELEGATION
+            VERIFICATION_RELATIONSHIP_CAPABILITY_DELEGATION,
+            VERIFICATION_RELATIONSHIP_ASSERTION_METHOD,
+            VERIFICATION_RELATIONSHIP_CAPABILITY_INVOCATION,
         ]; 
 
         // Standardize user VM to Ed25519 (most common for did:key)
-        let user_vm_type = string::utf8(VERIFICATION_METHOD_TYPE_ED25519);
-        let user_vm_fragment = string::utf8(b"user-key");
+        let user_vm_fragment = string::utf8(b"account-key");
 
         // Generate unique service fragment for this user
         let custodian_service_vm_fragment = generate_service_fragment_for_user(&user_did_key_string);
 
         create_did_object_internal(
             custodian_signer,
-            doc_controllers,
+            doc_controller,
             user_vm_pk_multibase,
             user_vm_type,
             user_vm_fragment,
@@ -702,33 +681,18 @@ module rooch_framework::did {
         simple_map::add(&mut did_document_data.verification_methods, fragment, verification_method);
 
         // Add to specified verification relationships
-        let is_ed25519 = method_type == string::utf8(VERIFICATION_METHOD_TYPE_ED25519);
-        
         let i = 0;
         while (i < vector::length(&verification_relationships)) {
             let relationship_type = *vector::borrow(&verification_relationships, i);
             
             if (relationship_type == VERIFICATION_RELATIONSHIP_AUTHENTICATION) {
-                // Special handling for authentication relationship with Ed25519 and Secp256k1
-                if (is_ed25519) {
-                    // For Ed25519, use the specialized method that handles authentication and session key
-                    add_ed25519_authentication_method(
-                        did_document_data,
-                        fragment,
-                        public_key_multibase
-                    );
-                } else if (method_type == string::utf8(VERIFICATION_METHOD_TYPE_SECP256K1)) {
-                    // For Secp256k1, use the specialized method that handles authentication and session key
-                    add_secp256k1_authentication_method(
-                        did_document_data,
-                        fragment,
-                        public_key_multibase
-                    );
-                } else {
-                    if (!vector::contains(&did_document_data.authentication, &fragment)) {
-                        vector::push_back(&mut did_document_data.authentication, fragment);
-                    };
-                };
+                // Use the general authentication method that handles all key types
+                add_authentication_method(
+                    did_document_data,
+                    fragment,
+                    method_type,
+                    public_key_multibase
+                );
             } else if (relationship_type == VERIFICATION_RELATIONSHIP_ASSERTION_METHOD) {
                 if (!vector::contains(&did_document_data.assertion_method, &fragment)) {
                     vector::push_back(&mut did_document_data.assertion_method, fragment);
@@ -753,10 +717,10 @@ module rooch_framework::did {
         
         // Emit verification method added event
         event::emit(VerificationMethodAddedEvent {
-            did: did_document_data.id,
+            did: format_did(&did_document_data.id),
             fragment: fragment,
             method_type: method_type,
-            controller: did_document_data.id,
+            controller: format_did(&did_document_data.id),
             verification_relationships: verification_relationships,
         });
     }
@@ -776,30 +740,7 @@ module rooch_framework::did {
         let removed_method_type = vm_to_remove.type;
 
         if (vector::contains(&did_document_data.authentication, &fragment)) {
-            // If the verification method is an Ed25519 or Secp256k1 key, we need to remove the session key
-            if (vm_to_remove.type == string::utf8(VERIFICATION_METHOD_TYPE_ED25519)) {
-                let pk_bytes_opt = multibase::decode_ed25519_key(&vm_to_remove.public_key_multibase);
-                assert!(option::is_some(&pk_bytes_opt), ErrorInvalidPublicKeyMultibaseFormat);
-                let pk_bytes = option::destroy_some(pk_bytes_opt);
-
-                // Use the public function from session_key module to derive the auth key
-                let auth_key_for_session = session_key::ed25519_public_key_to_authentication_key(&pk_bytes);
-
-                let associated_account_signer = account::create_signer_with_account_cap(&mut did_document_data.account_cap);
-                
-                session_key::remove_session_key(&associated_account_signer, auth_key_for_session);
-            } else if (vm_to_remove.type == string::utf8(VERIFICATION_METHOD_TYPE_SECP256K1)) {
-                let pk_bytes_opt = multibase::decode_secp256k1_key(&vm_to_remove.public_key_multibase);
-                assert!(option::is_some(&pk_bytes_opt), ErrorInvalidPublicKeyMultibaseFormat);
-                let pk_bytes = option::destroy_some(pk_bytes_opt);
-
-                // Use the public function from session_key module to derive the auth key
-                let auth_key_for_session = session_key::secp256k1_public_key_to_authentication_key(&pk_bytes);
-
-                let associated_account_signer = account::create_signer_with_account_cap(&mut did_document_data.account_cap);
-                
-                session_key::remove_session_key(&associated_account_signer, auth_key_for_session);
-            };
+            internal_remove_session_key(did_signer, &vm_to_remove.public_key_multibase, &vm_to_remove.type);
         };
 
         remove_from_verification_relationship_internal(&mut did_document_data.authentication, &fragment);
@@ -812,7 +753,7 @@ module rooch_framework::did {
         
         // Emit verification method removed event
         event::emit(VerificationMethodRemovedEvent {
-            did: did_document_data.id,
+            did: format_did(&did_document_data.id),
             fragment: fragment,
             method_type: removed_method_type,
         });
@@ -837,59 +778,37 @@ module rooch_framework::did {
         assert!(simple_map::contains_key(&did_document_data.verification_methods, &fragment),
             ErrorVerificationMethodNotFound);
 
-        let target_relationship_vec_mut = if (relationship_type == VERIFICATION_RELATIONSHIP_AUTHENTICATION) {
-            // Special handling for AUTHENTICATION: if this is an Ed25519 or Secp256k1 verification method,
-            // use the specialized function that also registers it as a rooch session key
+        if (relationship_type == VERIFICATION_RELATIONSHIP_AUTHENTICATION) {
+            // Use the general authentication method that also registers it as a rooch session key
             let vm = *simple_map::borrow(&did_document_data.verification_methods, &fragment);
-            if (vm.type == string::utf8(VERIFICATION_METHOD_TYPE_ED25519)) {
-                add_ed25519_authentication_method(
-                    did_document_data,
-                    fragment,
-                    vm.public_key_multibase
-                );
-                // Emit event and return early since add_ed25519_authentication_method handles the relationship addition
-                event::emit(VerificationRelationshipModifiedEvent {
-                    did: did_document_data.id,
-                    fragment: fragment,
-                    relationship_type: relationship_type,
-                    operation: string::utf8(b"added"),
-                });
-                return
-            } else if (vm.type == string::utf8(VERIFICATION_METHOD_TYPE_SECP256K1)) {
-                add_secp256k1_authentication_method(
-                    did_document_data,
-                    fragment,
-                    vm.public_key_multibase
-                );
-                // Emit event and return early since add_secp256k1_authentication_method handles the relationship addition
-                event::emit(VerificationRelationshipModifiedEvent {
-                    did: did_document_data.id,
-                    fragment: fragment,
-                    relationship_type: relationship_type,
-                    operation: string::utf8(b"added"),
-                });
-                return
+            add_authentication_method(
+                did_document_data,
+                fragment,
+                vm.type,
+                vm.public_key_multibase
+            );
+        } else {
+            let target_relationship_vec_mut = if (relationship_type == VERIFICATION_RELATIONSHIP_ASSERTION_METHOD) {
+                &mut did_document_data.assertion_method
+            } else if (relationship_type == VERIFICATION_RELATIONSHIP_CAPABILITY_INVOCATION) {
+                &mut did_document_data.capability_invocation
+            } else if (relationship_type == VERIFICATION_RELATIONSHIP_CAPABILITY_DELEGATION) {
+                &mut did_document_data.capability_delegation
+            } else if (relationship_type == VERIFICATION_RELATIONSHIP_KEY_AGREEMENT) {
+                &mut did_document_data.key_agreement
+            } else {
+                abort ErrorInvalidVerificationRelationship
             };
 
-            &mut did_document_data.authentication
-        } else if (relationship_type == VERIFICATION_RELATIONSHIP_ASSERTION_METHOD) {
-            &mut did_document_data.assertion_method
-        } else if (relationship_type == VERIFICATION_RELATIONSHIP_CAPABILITY_INVOCATION) {
-            &mut did_document_data.capability_invocation
-        } else if (relationship_type == VERIFICATION_RELATIONSHIP_CAPABILITY_DELEGATION) {
-            &mut did_document_data.capability_delegation
-        } else if (relationship_type == VERIFICATION_RELATIONSHIP_KEY_AGREEMENT) {
-            &mut did_document_data.key_agreement
-        } else {
-            abort ErrorInvalidVerificationRelationship
+            // Add to the relationship if not already present
+            if (!vector::contains(target_relationship_vec_mut, &fragment)) {
+                vector::push_back(target_relationship_vec_mut, fragment);
+            };
         };
 
-        if (!vector::contains(target_relationship_vec_mut, &fragment)) {
-            vector::push_back(target_relationship_vec_mut, fragment);
-        };
-        // Emit verification relationship modified event
+        // Emit relationship modified event
         event::emit(VerificationRelationshipModifiedEvent {
-            did: did_document_data.id,
+            did: format_did(&did_document_data.id),
             fragment: fragment,
             relationship_type: relationship_type,
             operation: string::utf8(b"added"),
@@ -932,7 +851,7 @@ module rooch_framework::did {
         if (vector::length(target_relationship_vec_mut) < original_len) {
             // Emit verification relationship modified event only if removal was successful
             event::emit(VerificationRelationshipModifiedEvent {
-                did: did_document_data.id,
+                did: format_did(&did_document_data.id),
                 fragment: fragment,
                 relationship_type: relationship_type,
                 operation: string::utf8(b"removed"),
@@ -967,7 +886,7 @@ module rooch_framework::did {
         
         // Emit service added event
         event::emit(ServiceAddedEvent {
-            did: did_document_data.id,
+            did: format_did(&did_document_data.id),
             fragment: fragment,
             service_type: service_type,
             service_endpoint: service_endpoint,
@@ -1076,7 +995,7 @@ module rooch_framework::did {
         
         // Emit service updated event
         event::emit(ServiceUpdatedEvent {
-            did: did_document_data.id,
+            did: format_did(&did_document_data.id),
             fragment: fragment,
             old_service_type,
             new_service_type,
@@ -1104,7 +1023,7 @@ module rooch_framework::did {
         
         // Emit service removed event
         event::emit(ServiceRemovedEvent {
-            did: did_document_data.id,
+            did: format_did(&did_document_data.id),
             fragment: fragment,
             service_type: removed_service_type,
         });
@@ -1122,21 +1041,21 @@ module rooch_framework::did {
     } 
 
     /// Get all DID ObjectIDs controlled by a specific controller DID
-    public fun get_dids_by_controller(controller_did: DID): vector<ObjectID> {
-        if (!object::exists_object_with_type<DIDRegistry>(did_registry_id())){
-            return vector::empty<ObjectID>()
-        };
-        let registry = borrow_did_registry();
-        if (!table::contains(&registry.controller_to_dids, controller_did)) {
-            vector::empty<ObjectID>()
-        } else {
-            *table::borrow(&registry.controller_to_dids, controller_did)
-        }
+    public fun get_dids_by_controller(controller_did: DID): vector<String> {
+        let controller_did_str = format_did(&controller_did);
+        get_dids_by_controller_string(controller_did_str)
     }
 
-    public fun get_dids_by_controller_string(controller_did_str: String): vector<ObjectID> {
-        let controller_did = parse_did_string(&controller_did_str);
-        get_dids_by_controller(controller_did)
+    public fun get_dids_by_controller_string(controller_did_str: String): vector<String> {
+        if (!object::exists_object_with_type<DIDRegistry>(did_registry_id())){
+            return vector::empty<String>()
+        };
+        let registry = borrow_did_registry();
+        if (!table::contains(&registry.controller_to_dids, controller_did_str)) {
+            vector::empty<String>()
+        } else {
+            *table::borrow(&registry.controller_to_dids, controller_did_str)
+        }
     }
 
     public fun has_verification_relationship_in_doc(
@@ -1271,13 +1190,17 @@ module rooch_framework::did {
 
     // =================== Document getters ===================
 
+    public fun get_did_document(did_str: String): &DIDDocument {
+        let did = parse_did_string(&did_str);
+        let object_id = resolve_did_object_id(&did.identifier);
+        get_did_document_by_object_id(object_id)
+    }
+
     /// Get DIDDocument by address
-    public fun get_did_document(addr: address): &DIDDocument {
+    public fun get_did_document_by_address(addr: address): &DIDDocument {
         let did_identifier = address::to_bech32_string(addr);
         let object_id = resolve_did_object_id(&did_identifier);
-        assert!(object::exists_object_with_type<DIDDocument>(object_id), ErrorDIDDocumentNotExist);
-        let did_doc_obj_ref = object::borrow_object<DIDDocument>(object_id);
-        object::borrow(did_doc_obj_ref)
+        get_did_document_by_object_id(object_id)
     }
 
     /// Get DIDDocument by ObjectID
@@ -1287,23 +1210,23 @@ module rooch_framework::did {
         object::borrow(did_doc_obj_ref)
     }
 
-    /// Get DID identifier from DIDDocument
-    public fun get_did_identifier(did_doc: &DIDDocument): &DID {
+    /// Get id from DIDDocument
+    public fun doc_id(did_doc: &DIDDocument): &DID {
         &did_doc.id
     }
 
     /// Get controllers from DIDDocument
-    public fun get_controllers(did_doc: &DIDDocument): &vector<DID> {
+    public fun doc_controllers(did_doc: &DIDDocument): &vector<DID> {
         &did_doc.controller
     }
 
     /// Get verification methods from DIDDocument
-    public fun get_verification_methods(did_doc: &DIDDocument): &SimpleMap<String, VerificationMethod> {
+    public fun doc_verification_methods(did_doc: &DIDDocument): &SimpleMap<String, VerificationMethod> {
         &did_doc.verification_methods
     }
 
     /// Get verification method by fragment
-    public fun get_verification_method(did_doc: &DIDDocument, fragment: &String): Option<VerificationMethod> {
+    public fun doc_verification_method(did_doc: &DIDDocument, fragment: &String): Option<VerificationMethod> {
         if (simple_map::contains_key(&did_doc.verification_methods, fragment)) {
             option::some(*simple_map::borrow(&did_doc.verification_methods, fragment))
         } else {
@@ -1311,54 +1234,54 @@ module rooch_framework::did {
         }
     }
 
-    public fun get_verification_method_id(vm: &VerificationMethod): &VerificationMethodID {
+    public fun verification_method_id(vm: &VerificationMethod): &VerificationMethodID {
         &vm.id
     }
 
-    public fun get_verification_method_type(vm: &VerificationMethod): &String {
+    public fun verification_method_type(vm: &VerificationMethod): &String {
         &vm.type
     }
 
-    public fun get_verification_method_controller(vm: &VerificationMethod): &DID {
+    public fun verification_method_controller(vm: &VerificationMethod): &DID {
         &vm.controller
     }
 
-    public fun get_verification_method_public_key_multibase(vm: &VerificationMethod): &String {
+    public fun verification_method_public_key_multibase(vm: &VerificationMethod): &String {
         &vm.public_key_multibase
     }
 
     /// Get authentication methods from DIDDocument
-    public fun get_authentication_methods(did_doc: &DIDDocument): &vector<String> {
+    public fun doc_authentication_methods(did_doc: &DIDDocument): &vector<String> {
         &did_doc.authentication
     }
 
     /// Get assertion methods from DIDDocument
-    public fun get_assertion_methods(did_doc: &DIDDocument): &vector<String> {
+    public fun doc_assertion_methods(did_doc: &DIDDocument): &vector<String> {
         &did_doc.assertion_method
     }
 
     /// Get capability invocation methods from DIDDocument
-    public fun get_capability_invocation_methods(did_doc: &DIDDocument): &vector<String> {
+    public fun doc_capability_invocation_methods(did_doc: &DIDDocument): &vector<String> {
         &did_doc.capability_invocation
     }
 
     /// Get capability delegation methods from DIDDocument
-    public fun get_capability_delegation_methods(did_doc: &DIDDocument): &vector<String> {
+    public fun doc_capability_delegation_methods(did_doc: &DIDDocument): &vector<String> {
         &did_doc.capability_delegation
     }
 
     /// Get key agreement methods from DIDDocument
-    public fun get_key_agreement_methods(did_doc: &DIDDocument): &vector<String> {
+    public fun doc_key_agreement_methods(did_doc: &DIDDocument): &vector<String> {
         &did_doc.key_agreement
     }
 
     /// Get services from DIDDocument
-    public fun get_services(did_doc: &DIDDocument): &SimpleMap<String, Service> {
+    public fun doc_services(did_doc: &DIDDocument): &SimpleMap<String, Service> {
         &did_doc.services
     }
 
     /// Get service by fragment
-    public fun get_service(did_doc: &DIDDocument, fragment: &String): Option<Service> {
+    public fun doc_service(did_doc: &DIDDocument, fragment: &String): Option<Service> {
         if (simple_map::contains_key(&did_doc.services, fragment)) {
             option::some(*simple_map::borrow(&did_doc.services, fragment))
         } else {
@@ -1366,24 +1289,24 @@ module rooch_framework::did {
         }
     }
 
-    public fun get_service_id(service: &Service): &ServiceID {
+    public fun service_id(service: &Service): &ServiceID {
         &service.id
     }
 
-    public fun get_service_type(service: &Service): &String {
+    public fun service_type(service: &Service): &String {
         &service.type
     }
 
-    public fun get_service_endpoint(service: &Service): &String {
+    public fun service_endpoint(service: &Service): &String {
         &service.service_endpoint
     }
 
-    public fun get_service_properties(service: &Service): &SimpleMap<String, String> {
+    public fun service_properties(service: &Service): &SimpleMap<String, String> {
         &service.properties
     }
 
     /// Get also known as from DIDDocument
-    public fun get_also_known_as(did_doc: &DIDDocument): &vector<String> {
+    public fun doc_also_known_as(did_doc: &DIDDocument): &vector<String> {
         &did_doc.also_known_as
     }
 
@@ -1399,33 +1322,6 @@ module rooch_framework::did {
         object::updated_at(object_id)
     }
 
-    /// Get created timestamp for a DID document by address
-    public fun get_created_timestamp(addr: address): u64 {
-        let did_identifier = address::to_bech32_string(addr);
-        let object_id = resolve_did_object_id(&did_identifier);
-        get_created_timestamp_by_object_id(object_id)
-    }
-
-    /// Get updated timestamp for a DID document by address
-    public fun get_updated_timestamp(addr: address): u64 {
-        let did_identifier = address::to_bech32_string(addr);
-        let object_id = resolve_did_object_id(&did_identifier);
-        get_updated_timestamp_by_object_id(object_id)
-    }
-
-    /// Get created timestamp from DIDDocument reference
-    /// This is a convenience function that extracts the address and calls get_created_timestamp
-    public fun get_did_created_timestamp(did_doc: &DIDDocument): u64 {
-        let did_address = account::account_cap_address(&did_doc.account_cap);
-        get_created_timestamp(did_address)
-    }
-
-    /// Get updated timestamp from DIDDocument reference
-    /// This is a convenience function that extracts the address and calls get_updated_timestamp
-    public fun get_did_updated_timestamp(did_doc: &DIDDocument): u64 {
-        let did_address = account::account_cap_address(&did_doc.account_cap);
-        get_updated_timestamp(did_address)
-    }
 
     public fun get_did_address(did_doc: &DIDDocument): address {
         account::account_cap_address(&did_doc.account_cap)
@@ -1522,7 +1418,7 @@ module rooch_framework::did {
 
     /// Find the verification method fragment that corresponds to the given session key
     /// Returns None if no matching verification method is found
-    fun find_verification_method_by_session_key(
+    public fun find_verification_method_by_session_key(
         did_document_data: &DIDDocument,
         session_key: &vector<u8>
     ): Option<String> {
@@ -1535,128 +1431,44 @@ module rooch_framework::did {
             
             if (simple_map::contains_key(&did_document_data.verification_methods, fragment)) {
                 let vm = simple_map::borrow(&did_document_data.verification_methods, fragment);
-                
-                // For Ed25519 verification methods, check if the public key matches the session key
-                if (vm.type == string::utf8(VERIFICATION_METHOD_TYPE_ED25519)) {
-                    let pk_bytes_opt = multibase::decode_ed25519_key(&vm.public_key_multibase);
-                    if (option::is_some(&pk_bytes_opt)) {
-                        let pk_bytes = option::destroy_some(pk_bytes_opt);
-                        let derived_auth_key = session_key::ed25519_public_key_to_authentication_key(&pk_bytes);
-                        
-                        // Check if this derived auth_key matches the current session_key
-                        if (derived_auth_key == *session_key) {
-                            return option::some(*fragment)
-                        };
-                    };
+                let pk_bytes_opt = multibase_codec::decode(&vm.public_key_multibase);
+                //This should never happen, but just in case
+                assert!(option::is_some(&pk_bytes_opt), ErrorInvalidPublicKeyMultibaseFormat);
+                let pk_bytes = option::destroy_some(pk_bytes_opt);
+
+                let derived_auth_key = if (vm.type == string::utf8(VERIFICATION_METHOD_TYPE_ED25519)) {
+                    session_key::ed25519_public_key_to_authentication_key(&pk_bytes)
                 } else if (vm.type == string::utf8(VERIFICATION_METHOD_TYPE_SECP256K1)) {
-                    // For Secp256k1 verification methods, check if the public key matches the session key
-                    let pk_bytes_opt = multibase::decode_secp256k1_key(&vm.public_key_multibase);
-                    if (option::is_some(&pk_bytes_opt)) {
-                        let pk_bytes = option::destroy_some(pk_bytes_opt);
-                        let derived_auth_key = session_key::secp256k1_public_key_to_authentication_key(&pk_bytes);
-                        
-                        // Check if this derived auth_key matches the current session_key
-                        if (derived_auth_key == *session_key) {
-                            return option::some(*fragment)
-                        };
-                    };
+                    session_key::secp256k1_public_key_to_authentication_key(&pk_bytes)
+                } else {
+                    session_key::secp256r1_public_key_to_authentication_key(&pk_bytes)
                 };
-                // TODO: Add support for other verification method types
+                if (derived_auth_key == *session_key) {
+                    return option::some(*fragment)
+                };
             };
-            
             i = i + 1;
         };
-        
         option::none<String>()
     }
 
-    /// Validates did:key controllers according to NIP-1 requirements.
-    /// If any controller is did:key, there must be exactly one such controller,
-    /// and its public key must match initial_vm_pk_multibase.
-    /// 
-    /// Note: did:key identifiers contain multicodec prefixes according to W3C DID Key spec:
-    /// - Ed25519: 0xed01 prefix, resulting in z6Mk... format
-    /// - Secp256k1: 0xe701 prefix, resulting in zQ3s... format
-    fun validate_did_key_controllers(
-        controllers: &vector<DID>,
-        initial_vm_pk_multibase: &String
-    ) {
-        let i = 0;
-        let did_key_controller_count = 0;
-        let did_key_controller_opt = option::none<DID>();
-
-        while (i < vector::length(controllers)) {
-            let controller = vector::borrow(controllers, i);
-            if (controller.method == string::utf8(b"key")) {
-                did_key_controller_count = did_key_controller_count + 1;
-                // Store the first (and should be only) did:key controller found
-                if (option::is_none(&did_key_controller_opt)) {
-                    did_key_controller_opt = option::some(*controller);
-                }
-            };
-            i = i + 1;
-        };
-
-        if (did_key_controller_count > 0) {
-            // If there's any did:key controller, there must be exactly one.
-            assert!(did_key_controller_count == 1, ErrorMultipleDIDKeyControllersNotAllowed);
-            
-            assert!(option::is_some(&did_key_controller_opt), ErrorInvalidArgument); // Should be some if count is 1
-            let did_key_controller = option::destroy_some(did_key_controller_opt);
-            
-            // For did:key, the identifier contains multicodec prefix + raw public key
-            let identifier = &did_key_controller.identifier;
-            let identifier_bytes = string::bytes(identifier);
-            assert!(vector::length(identifier_bytes) > 0, ErrorInvalidDIDStringFormat);
-            
-            let first_byte = *vector::borrow(identifier_bytes, 0);
-            assert!(first_byte == 122, ErrorInvalidDIDStringFormat); // 'z' for base58btc
-            
-            // Extract raw public key from did:key identifier by decoding multicodec format
-            let controller_pk_opt = extract_public_key_from_did_key_identifier(identifier);
-            assert!(option::is_some(&controller_pk_opt), ErrorInvalidPublicKeyMultibaseFormat);
-            let controller_pk_bytes = option::destroy_some(controller_pk_opt);
-            
-            // Try to decode initial_vm_pk_multibase as both regular multibase and did:key identifier
-            let initial_pk_bytes = if (string::length(initial_vm_pk_multibase) > 8 && 
-                                      string::sub_string(initial_vm_pk_multibase, 0, 8) == string::utf8(b"did:key:")) {
-                // If it's a full did:key string, extract the identifier part and decode
-                let identifier_part = string::sub_string(initial_vm_pk_multibase, 8, string::length(initial_vm_pk_multibase));
-                let pk_opt = extract_public_key_from_did_key_identifier(&identifier_part);
-                assert!(option::is_some(&pk_opt), ErrorInvalidPublicKeyMultibaseFormat);
-                option::destroy_some(pk_opt)
-            } else {
-                // Otherwise, try to decode as regular multibase Ed25519 key
-                let pk_opt = multibase::decode_ed25519_key(initial_vm_pk_multibase);
-                assert!(option::is_some(&pk_opt), ErrorInvalidPublicKeyMultibaseFormat);
-                option::destroy_some(pk_opt)
-            };
-            
-            assert!(controller_pk_bytes == initial_pk_bytes, ErrorDIDKeyControllerPublicKeyMismatch);
-        }
-        // If did_key_controller_count is 0, no specific validation for did:key is needed here.
-    }
-
-    /// Extract raw public key bytes from a did:key identifier.
-    /// This function now delegates to the multibase module for consistency.
-    /// The identifier format is: MULTIBASE(base58-btc, MULTICODEC(key-type, raw-key-bytes))
-    /// 
-    /// Supported multicodec prefixes:
-    /// - 0xed01: Ed25519 public key (results in z6Mk... format)
-    /// - 0xe701: Secp256k1 public key (results in zQ3s... format)
-    fun extract_public_key_from_did_key_identifier(identifier: &String): Option<vector<u8>> {
-        // Delegate to the multibase module's decode function
-        multibase::decode_did_key_identifier(identifier)
-    }
-
     /// Add a verification method to the authentication relationship and register it as a session key.
-    /// This function supports both Ed25519 and Secp256k1 verification methods.
-    fun add_authentication_method_with_session_key(
+    /// This function supports only verification method types that can be registered as session keys:
+    /// Ed25519, Secp256k1 and Secp256r1 verification methods.
+    fun add_authentication_method(
         did_document_data: &mut DIDDocument,
         fragment: String,
         method_type: String,
         public_key_multibase: String
     ) {
+        // Ensure the method type is supported for session keys
+        assert!(
+            method_type == string::utf8(VERIFICATION_METHOD_TYPE_ED25519) ||
+            method_type == string::utf8(VERIFICATION_METHOD_TYPE_SECP256K1) ||
+            method_type == string::utf8(VERIFICATION_METHOD_TYPE_SECP256R1),
+            ErrorUnsupportedAuthKeyTypeForSessionKey
+        );
+        
         // 1. Add the verification method if it doesn't exist
         if (!simple_map::contains_key(&did_document_data.verification_methods, &fragment)) {
             let vm_id = VerificationMethodID {
@@ -1678,55 +1490,33 @@ module rooch_framework::did {
         if (!vector::contains(&did_document_data.authentication, &fragment)) {
             vector::push_back(&mut did_document_data.authentication, fragment);
             
-            // 3. Register as session key based on the method type
-            if (method_type == string::utf8(VERIFICATION_METHOD_TYPE_ED25519)) {
-                internal_ensure_session_key(
-                    did_document_data,
-                    fragment,
-                    public_key_multibase,
-                    method_type
-                );
-            } else if (method_type == string::utf8(VERIFICATION_METHOD_TYPE_SECP256K1)) {
-                internal_ensure_session_key(
-                    did_document_data,
-                    fragment,
-                    public_key_multibase,
-                    method_type
-                );
-            };
-            // Note: Other method types won't be registered as session keys
+            // 3. Register as session key
+            internal_ensure_session_key(
+                did_document_data,
+                fragment,
+                public_key_multibase,
+                method_type
+            );
         };
     }
 
-    /// Add an Ed25519 verification method to the authentication relationship
-    /// and automatically register it as a rooch session key.
-    /// This function makes explicit the special property of Ed25519 authentication methods.
-    fun add_ed25519_authentication_method(
-        did_document_data: &mut DIDDocument,
-        fragment: String,
-        public_key_multibase: String
-    ) {
-        add_authentication_method_with_session_key(
-            did_document_data,
-            fragment,
-            string::utf8(VERIFICATION_METHOD_TYPE_ED25519),
-            public_key_multibase
-        );
-    }
 
-    /// Add a Secp256k1 verification method to the authentication relationship
-    /// and automatically register it as a rooch session key.
-    fun add_secp256k1_authentication_method(
-        did_document_data: &mut DIDDocument,
-        fragment: String,
-        public_key_multibase: String
-    ) {
-        add_authentication_method_with_session_key(
-            did_document_data,
-            fragment,
-            string::utf8(VERIFICATION_METHOD_TYPE_SECP256K1),
-            public_key_multibase
-        );
+    fun internal_remove_session_key(account_signer: &signer, vm_public_key_multibase: &String, vm_type: &String) {
+        let pk_bytes_opt = multibase_codec::decode(vm_public_key_multibase);
+        assert!(option::is_some(&pk_bytes_opt), ErrorInvalidPublicKeyMultibaseFormat);
+        let pk_bytes = option::destroy_some(pk_bytes_opt);
+
+        let auth_key_for_session = if (vm_type == &string::utf8(VERIFICATION_METHOD_TYPE_ED25519)) {
+            session_key::ed25519_public_key_to_authentication_key(&pk_bytes)
+        } else if (vm_type == &string::utf8(VERIFICATION_METHOD_TYPE_SECP256K1)) {
+            session_key::secp256k1_public_key_to_authentication_key(&pk_bytes)
+        } else if (vm_type == &string::utf8(VERIFICATION_METHOD_TYPE_SECP256R1)) {
+            session_key::secp256r1_public_key_to_authentication_key(&pk_bytes)
+        } else {
+            abort ErrorUnsupportedAuthKeyTypeForSessionKey
+        };
+
+        session_key::remove_session_key(account_signer, auth_key_for_session);
     }
 
     /// Private helper function to register a verification method as a Rooch session key.
@@ -1737,19 +1527,10 @@ module rooch_framework::did {
         vm_public_key_multibase: String,
         vm_type: String,
     ) {
-        // Decode the public key based on the verification method type
-        let pk_bytes = if (vm_type == string::utf8(VERIFICATION_METHOD_TYPE_ED25519)) {
-            let pk_bytes_opt = multibase::decode_ed25519_key(&vm_public_key_multibase);
-            assert!(option::is_some(&pk_bytes_opt), ErrorInvalidPublicKeyMultibaseFormat);
-            option::destroy_some(pk_bytes_opt)
-        } else if (vm_type == string::utf8(VERIFICATION_METHOD_TYPE_SECP256K1)) {
-            let pk_bytes_opt = multibase::decode_secp256k1_key(&vm_public_key_multibase);
-            assert!(option::is_some(&pk_bytes_opt), ErrorInvalidPublicKeyMultibaseFormat);
-            option::destroy_some(pk_bytes_opt)
-        } else {
-            // Unsupported verification method type for session key
-            abort ErrorUnsupportedAuthKeyTypeForSessionKey
-        };
+        // Decode the raw public key (no multicodec prefix)
+        let pk_bytes_opt = multibase_codec::decode(&vm_public_key_multibase);
+        assert!(option::is_some(&pk_bytes_opt), ErrorInvalidPublicKeyMultibaseFormat);
+        let pk_bytes = option::destroy_some(pk_bytes_opt);
 
         let associated_account_signer = account::create_signer_with_account_cap(&mut did_document_data.account_cap);
 
@@ -1778,9 +1559,10 @@ module rooch_framework::did {
         // Generate the authentication key based on the verification method type
         let auth_key_for_session = if (vm_type == string::utf8(VERIFICATION_METHOD_TYPE_ED25519)) {
             session_key::ed25519_public_key_to_authentication_key(&pk_bytes)
-        } else {
-            // Must be SECP256K1 since we checked above
+        } else if (vm_type == string::utf8(VERIFICATION_METHOD_TYPE_SECP256K1)) {
             session_key::secp256k1_public_key_to_authentication_key(&pk_bytes)
+        } else { // Must be SECP256R1
+            session_key::secp256r1_public_key_to_authentication_key(&pk_bytes)
         };
 
         session_key::create_session_key_internal(

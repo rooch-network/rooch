@@ -29,6 +29,7 @@ This is the reference documentation of the Rooch Framework.
 -  [`0x3::core_addresses`](core_addresses.md#0x3_core_addresses)
 -  [`0x3::did`](did.md#0x3_did)
 -  [`0x3::ecdsa_k1`](ecdsa_k1.md#0x3_ecdsa_k1)
+-  [`0x3::ecdsa_r1`](ecdsa_r1.md#0x3_ecdsa_r1)
 -  [`0x3::ed25519`](ed25519.md#0x3_ed25519)
 -  [`0x3::empty`](empty.md#0x3_empty)
 -  [`0x3::ethereum_address`](ethereum_address.md#0x3_ethereum_address)
@@ -50,6 +51,7 @@ This is the reference documentation of the Rooch Framework.
 -  [`0x3::transaction_validator`](transaction_validator.md#0x3_transaction_validator)
 -  [`0x3::transfer`](transfer.md#0x3_transfer)
 -  [`0x3::upgrade`](upgrade.md#0x3_upgrade)
+-  [`0x3::webauthn_validator`](webauthn_validator.md#0x3_webauthn_validator)
 
 
 

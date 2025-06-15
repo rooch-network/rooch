@@ -52,7 +52,7 @@ module rooch_framework::did_service_test {
         );
 
         // Verify service was added using the correct DID address
-        let did_document_after = did::get_did_document(did_address);
+        let did_document_after = did::get_did_document_by_address(did_address);
         assert!(did::test_service_exists(did_document_after, &fragment), 9101);
     }
 
@@ -126,7 +126,7 @@ module rooch_framework::did_service_test {
         did::add_service_entry(&did_signer, fragment, service_type, service_endpoint);
 
         // Verify service exists
-        let did_document_check = did::get_did_document(did_address);
+        let did_document_check = did::get_did_document_by_address(did_address);
         assert!(did::test_service_exists(did_document_check, &fragment), 9201);
 
         // Update service
@@ -145,7 +145,7 @@ module rooch_framework::did_service_test {
         );
 
         // Verify service still exists (update doesn't remove it)
-        let did_document_after = did::get_did_document(did_address);
+        let did_document_after = did::get_did_document_by_address(did_address);
         assert!(did::test_service_exists(did_document_after, &fragment), 9202);
     }
 
@@ -195,14 +195,14 @@ module rooch_framework::did_service_test {
         did::add_service_entry(&did_signer, fragment, service_type, service_endpoint);
 
         // Verify service exists
-        let did_document_check = did::get_did_document(did_address);
+        let did_document_check = did::get_did_document_by_address(did_address);
         assert!(did::test_service_exists(did_document_check, &fragment), 9301);
 
         // Remove service
         did::remove_service_entry(&did_signer, fragment);
 
         // Verify service was removed
-        let did_document_after = did::get_did_document(did_address);
+        let did_document_after = did::get_did_document_by_address(did_address);
         assert!(!did::test_service_exists(did_document_after, &fragment), 9302);
     }
 
@@ -252,7 +252,7 @@ module rooch_framework::did_service_test {
         };
 
         // Verify all services exist
-        let did_document_check = did::get_did_document(did_address);
+        let did_document_check = did::get_did_document_by_address(did_address);
         assert!(did::test_service_exists(did_document_check, &string::utf8(b"service-0")), 9401);
         assert!(did::test_service_exists(did_document_check, &string::utf8(b"service-1")), 9402);
         assert!(did::test_service_exists(did_document_check, &string::utf8(b"service-2")), 9403);
@@ -285,7 +285,7 @@ module rooch_framework::did_service_test {
         );
 
         // Verify service was added
-        let did_document_check = did::get_did_document(did_address);
+        let did_document_check = did::get_did_document_by_address(did_address);
         assert!(did::test_service_exists(did_document_check, &fragment), 9501);
     }
 
@@ -337,7 +337,7 @@ module rooch_framework::did_service_test {
         );
 
         // Verify service still exists after update
-        let did_document_check = did::get_did_document(did_address);
+        let did_document_check = did::get_did_document_by_address(did_address);
         assert!(did::test_service_exists(did_document_check, &fragment), 9601);
     }
 } 

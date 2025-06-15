@@ -8,7 +8,7 @@ import { ThirdPartyAddress } from '@roochnetwork/rooch-sdk'
 
 import { SupportChain } from '../feature/index.js'
 
-import { Wallet } from '../wellet/index.js'
+import { Wallet } from '../wallet/index.js'
 
 type WalletConnectionStatus = 'disconnected' | 'connecting' | 'connected'
 

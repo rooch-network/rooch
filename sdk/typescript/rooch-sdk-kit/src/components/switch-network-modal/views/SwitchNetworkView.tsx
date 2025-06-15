@@ -1,13 +1,13 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { Wallet } from '../../../wellet/wallet.js'
+import { Wallet } from '../../../wallet/wallet.js'
 
 import { Button } from '../../ui/Button.js'
 import { Heading } from '../../ui/Heading.js'
 import { Text } from '../../ui/Text.js'
 import * as styles from './SwitchNetworkView.css.js'
-import { WalletNetworkType } from '../../../wellet/index.js'
+import { WalletNetworkType } from '../../../wallet/index.js'
 import { useProgress } from '../../ProgressProvider.js'
 import { useState } from 'react'
 import { checkWalletNetwork } from '../../util/wallet.js'

@@ -155,7 +155,7 @@ impl CommandAction<CreateOutput> for CadopCreateCommand {
         let client = context.get_client().await?;
         let did_module = client.as_module_binding::<DIDModule>();
 
-        let did_document = did_module.get_did_document(sender.into())?;
+        let did_document = did_module.get_did_document_by_address(sender.into())?;
         let controllers = did_document.controller;
         if controllers.is_empty() {
             return Err(rooch_types::error::RoochError::CommandArgumentError(

@@ -371,8 +371,10 @@ function install_cargo_sort {
 }
 
 function install_cargo_nextest {
-  if ! command -v cargo-nextext &> /dev/null; then
-    cargo install cargo-nextest --locked
+  # Install cargo-nextest with a version compatible with the Rust toolchain (>=1.81, <1.85).
+  # Also fix typo in detection command.
+  if ! command -v cargo-nextest &>/dev/null; then
+    cargo install cargo-nextest --locked --version 0.9.97-b.2
   fi
 }
 

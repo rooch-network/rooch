@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { NetworkType } from '@roochnetwork/rooch-sdk'
-import { Wallet, WalletNetworkType } from '../../wellet/index.js'
+import { Wallet, WalletNetworkType } from '../../wallet/index.js'
 
 const NETWORK_MAP: Record<NetworkType, WalletNetworkType | undefined> = {
   mainnet: 'livenet',

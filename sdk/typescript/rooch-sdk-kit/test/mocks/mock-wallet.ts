@@ -16,7 +16,7 @@ import {
   BitcoinSignMessage,
 } from '@roochnetwork/rooch-sdk'
 import { SupportChain } from '../../src/feature/index.js'
-import { Wallet } from '../../src/wellet/wallet.js'
+import { Wallet } from '../../src/wallet/wallet.js'
 import { Mock, vi } from 'vitest'
 import { WalletNetworkType } from '../../src/index.js'
 
