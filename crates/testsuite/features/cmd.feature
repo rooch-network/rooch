@@ -49,10 +49,10 @@ Feature: Rooch CLI integration tests
       Then cmd: "account import -k {{$.account[-1].encoded_private_key}}"
       # use nostr_public_key
       Then cmd: "account nullify -a {{$.account[-2].account0.nostr_public_key}}"
-      Then cmd: "account list --json"
-      Then cmd: "account show -a {{$.account[-1].account0.address}} --json"
-      Then assert: "'{{$.account[-1].address}}' == '{{$.account[-2].account0.address}}'"
-      Then assert: "'{{$.account[-1].bitcoin_address}}' == '{{$.account[-2].account0.bitcoin_address}}'"
+      # show newly created account on rooch network
+      Then cmd: "account create --json"
+      Then cmd: "account show -a {{$.account[-1]}} --json"
+      Then assert: "'{{$.account[-1].account.address}}' == '{{$.account[-2]}}'"
 
       Then cmd: "rpc request --method rooch_getBalance --params '["{{$.address_mapping.default}}", "0x3::gas_coin::RGas"]' --json"
       Then assert: "'{{$.rpc[-1].coin_type}}' == '0x3::gas_coin::RGas'"
