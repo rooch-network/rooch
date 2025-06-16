@@ -40,6 +40,13 @@ impl FromBytesGasParameters {
             per_byte: Some(0.into()),
         }
     }
+
+    pub fn init(base: InternalGas, per_byte: InternalGasPerByte) -> Self {
+        Self {
+            base: Some(base),
+            per_byte: Some(per_byte),
+        }
+    }
 }
 
 /***************************************************************************************************
@@ -66,7 +73,7 @@ pub fn native_verify(
     mut args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
     debug_assert!(_ty_args.is_empty());
-    debug_assert!(args.len() == 3);
+    debug_assert!(args.len() == 4);
 
     let hash_type = pop_arg!(args, u8);
     let msg = pop_arg!(args, VectorRef);
