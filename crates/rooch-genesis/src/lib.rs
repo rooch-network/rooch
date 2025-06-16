@@ -207,8 +207,18 @@ impl FrameworksGasParameters {
         v4_gas_parameter
     }
 
+    pub fn v6() -> Self {
+        let mut v5_gas_parameter = FrameworksGasParameters::v5();
+
+        v5_gas_parameter
+            .rooch_framework_gas_params
+            .ecdsa_r1
+            .verify = rooch_framework::natives::rooch_framework::crypto::ecdsa_r1::FromBytesGasParameters::init(1000.into(), 30.into());
+        v5_gas_parameter
+    }
+
     pub fn latest() -> Self {
-        FrameworksGasParameters::v5()
+        FrameworksGasParameters::v6()
     }
 
     pub fn to_gas_schedule_config(&self, chain_id: ChainID) -> GasScheduleConfig {
