@@ -40,6 +40,13 @@ impl FromBytesGasParameters {
             per_byte: Some(0.into()),
         }
     }
+
+    pub fn init(base: InternalGas, per_byte: InternalGasPerByte) -> Self {
+        Self {
+            base: Some(base),
+            per_byte: Some(per_byte),
+        }
+    }
 }
 
 /***************************************************************************************************
