@@ -39,6 +39,7 @@ pub mod genesis_verify;
 pub mod re_genesis;
 
 mod inscription;
+pub mod prune;
 mod utxo;
 
 pub const GLOBAL_STATE_TYPE_PREFIX: &str = "states";

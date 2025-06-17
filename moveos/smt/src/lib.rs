@@ -171,6 +171,29 @@ where
         Ok(result)
     }
 
+    /// Batch removes multiple keys from the tree at a given state root
+    /// Returns a TreeChangeSet containing the new state root and node changes
+    #[named]
+    pub fn batch_removes(&self, state_root: H256, key: Vec<K>) -> Result<TreeChangeSet> {
+        let fn_name = function_name!();
+        let _timer = self
+            .metrics
+            .smt_batch_removes_latency_seconds
+            .with_label_values(&[fn_name])
+            .start_timer();
+        let mut update_set = UpdateSet::new();
+        for (_idx, k) in key.into_iter().enumerate() {
+            update_set.remove(k);
+        }
+        let result = self.puts(state_root, update_set)?;
+        let size = result.nodes.values().map(|v| v.len()).sum::<usize>();
+        self.metrics
+            .smt_batch_removes_bytes
+            .with_label_values(&[fn_name])
+            .observe(size as f64);
+        Ok(result)
+    }
+
     /// Get the value of the key from the tree.
     #[named]
     pub fn get(&self, state_root: H256, key: K) -> Result<Option<V>> {

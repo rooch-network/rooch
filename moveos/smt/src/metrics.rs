@@ -22,6 +22,8 @@ pub struct SMTMetrics {
     pub smt_iter_latency_seconds: HistogramVec,
     pub smt_puts_latency_seconds: HistogramVec,
     pub smt_puts_bytes: HistogramVec,
+    pub smt_batch_removes_latency_seconds: HistogramVec,
+    pub smt_batch_removes_bytes: HistogramVec,
 }
 
 impl SMTMetrics {
@@ -143,6 +145,24 @@ impl SMTMetrics {
                 registry,
             )
             .unwrap(),
+            smt_batch_removes_latency_seconds: register_histogram_vec_with_registry!(
+                "smt_batch_remove_latency_seconds",
+                "SMT batch removes latency in seconds",
+                &["fn_name"],
+                LATENCY_SEC_BUCKETS.to_vec(),
+                registry,
+            )
+                .unwrap(),
+            smt_batch_removes_bytes: register_histogram_vec_with_registry!(
+                "smt_batch_remove_bytes",
+                "SMT batch removes size in bytes",
+                &["fn_name"],
+                prometheus::exponential_buckets(1.0, 4.0, 15)
+                    .unwrap()
+                    .to_vec(),
+                registry
+            )
+                .unwrap(),
         }
     }
 }
