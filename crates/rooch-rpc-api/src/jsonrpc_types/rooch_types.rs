@@ -58,12 +58,12 @@ where
     fn to_human_readable_string(&self, verbose: bool, indent: usize) -> String {
         let _ = verbose;
         format!(
-            r#"{indent}Data: 
+            r#"{indent}Data:
 {indent}{}
-    
-{indent}Next cursor: 
+
+{indent}Next cursor:
 {indent}    {}
-    
+
 {indent}Has next page: {:?}"#,
             self.data.to_human_readable_string(verbose, 4),
             self.next_cursor
