@@ -6,7 +6,7 @@ use anyhow::Result;
 use bitcoin::XOnlyPublicKey;
 use move_core_types::account_address::AccountAddress;
 use rooch_types::{
-    address::{BitcoinAddress, NostrPublicKey, RoochAddress},
+    address::{BitcoinAddress, NetworkAddress, NostrPublicKey, RoochAddress},
     bitcoin::network::Network,
     to_bech32::FromBech32,
 };
@@ -64,6 +64,27 @@ impl From<AccountAddress> for RoochAddressView {
 impl From<RoochAddressView> for AccountAddress {
     fn from(value: RoochAddressView) -> Self {
         value.0.into()
+    }
+}
+
+pub type NetworkAddressView = StrView<NetworkAddress>;
+
+impl std::fmt::Display for NetworkAddressView {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl FromStr for NetworkAddressView {
+    type Err = anyhow::Error;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(StrView(NetworkAddress::from_str(s)?))
+    }
+}
+
+impl From<NetworkAddressView> for NetworkAddress {
+    fn from(value: NetworkAddressView) -> Self {
+        value.0
     }
 }
 

@@ -60,7 +60,8 @@ Feature: Rooch CLI integration tests
       # show newly created account on rooch network
       Then cmd: "account create --json"
       Then cmd: "account show -a {{$.account[-1]}} --json"
-      Then assert: "'{{$.account[-1].account.address}}' == '{{$.account[-2]}}'"
+      Then assert: "'{{$.account[-1].network_address}}' == '{{$.account[-2]}}:0'"
+      Then assert: "'{{$.account[-1].bitcoin_address}}' == null"
 
       Then cmd: "rpc request --method rooch_getBalance --params '["{{$.address_mapping.default}}", "0x3::gas_coin::RGas"]' --json"
       Then assert: "'{{$.rpc[-1].coin_type}}' == '0x3::gas_coin::RGas'"

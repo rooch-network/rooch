@@ -209,6 +209,41 @@ impl MoveStructState for MultiChainAddress {
     }
 }
 
+/// NetworkAddress type
+#[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize)]
+pub struct NetworkAddress {
+    pub rooch_address: RoochAddress,
+    pub sequence_number: u64,
+}
+
+// Use rooch_address:sequence_number to represent network address
+impl std::fmt::Display for NetworkAddress {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}:{}", self.rooch_address, self.sequence_number)
+    }
+}
+
+impl FromStr for NetworkAddress {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let rooch_address = RoochAddress::from_str(s)?;
+        Ok(Self {
+            rooch_address,
+            sequence_number: 0,
+        })
+    }
+}
+
+impl NetworkAddress {
+    pub fn new(rooch_address: RoochAddress, sequence_number: u64) -> Self {
+        Self {
+            rooch_address,
+            sequence_number,
+        }
+    }
+}
+
 /// Rooch address type
 #[derive(Copy, Clone, Ord, PartialOrd, PartialEq, Eq, Hash)]
 pub struct RoochAddress(pub H256);
