@@ -65,16 +65,18 @@ export class BitcoinSignMessage {
 }
 
 export enum BuiltinAuthValidator {
+  // ROOCH is a alias of SESSION, for backward compatibility
   ROOCH = 0x00,
+  SESSION = 0x00,
   BITCOIN = 0x01,
-  // ETHEREUM= 0x02
+  BITCOIN_MULTISIGN = 0x02,
 }
 
 export class Authenticator {
   readonly authValidatorId: number
   readonly payload: Bytes
 
-  private constructor(authValidatorId: number, payload: Bytes) {
+  public constructor(authValidatorId: number, payload: Bytes) {
     this.authValidatorId = authValidatorId
     this.payload = payload
   }
@@ -87,6 +89,10 @@ export class Authenticator {
   }
 
   static async rooch(input: Bytes, signer: Signer) {
+    return this.session(input, signer)
+  }
+
+  static async session(input: Bytes, signer: Signer) {
     const signature = await signer.sign(input)
     const pubKeyBytes = signer.getPublicKey().toBytes()
     const serializedSignature = new Uint8Array(1 + signature.length + pubKeyBytes.length)
@@ -94,7 +100,7 @@ export class Authenticator {
     serializedSignature.set(signature, 1)
     serializedSignature.set(signer.getPublicKey().toBytes(), 1 + signature.length)
 
-    return new Authenticator(BuiltinAuthValidator.ROOCH, serializedSignature)
+    return new Authenticator(BuiltinAuthValidator.SESSION, serializedSignature)
   }
 
   static async bitcoin(
