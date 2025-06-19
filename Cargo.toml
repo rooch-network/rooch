@@ -365,7 +365,7 @@ tikv-jemallocator = { git = "https://github.com/jamesatomc/jemallocator.git", fe
     "unprefixed_malloc_on_supported_platforms",
     "profiling",
 ], rev = "49db433eb9620bdad0bc88a35bf7af28c1cabcf4" }
-mimalloc = { version = "0.1.46" }
+mimalloc = { version = "0.1.47" }
 multibase = "0.9.0"
 
 # Note: the BEGIN and END comments below are required for external tooling. Do not remove.
