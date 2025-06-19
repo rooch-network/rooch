@@ -3,34 +3,15 @@
 
 #[test_only]
 module rooch_framework::rs256_test {
-    use std::vector;
     use rooch_framework::rs256::{ verify };
     use moveos_std::base64::{ decode };
-
-    // Base64 URL identifiers
-    const MINUS: u8 = 45; // minus in ASCII. 62nd of Value Encoding.
-    const UNDERLINE: u8 = 95; // underline in ASCII. 63rd of Value Encoding.
-
-    // Base64 identifiers
-    const PLUS: u8 = 43; // plus in ASCII. 62nd of Value Encoding.
-    const SLASH: u8 = 47; // slash in ASCII. 63rd or Value Encoding.
 
     // Error codes
     const ErrorVerificationFailure: u64 = 0;
 
     // From https://www.rfc-editor.org/rfc/rfc4648#page-7
     fun decode_base64url(base64url: vector<u8>): vector<u8> {
-        while (vector::contains(&base64url, &MINUS)) {
-            let (_, minus_index) = vector::index_of(&base64url, &MINUS);
-            vector::remove(&mut base64url, minus_index);
-            vector::insert(&mut base64url, minus_index, PLUS);
-        };
-        while (vector::contains(&base64url, &UNDERLINE)) {
-            let (_, underline_index) = vector::index_of(&base64url, &UNDERLINE);
-            vector::remove(&mut base64url, underline_index);
-            vector::insert(&mut base64url, underline_index, SLASH);
-        };
-
+        // moveos base64 already supports base64url decode.
         decode(&base64url)
     }
 
@@ -40,13 +21,11 @@ module rooch_framework::rs256_test {
         let msg = b"eyJhbGciOiJSUzI1NiJ9.eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9leGFtcGxlLmNvbS9pc19yb290Ijp0cnVlfQ";
         let n_base64url = b"ofgWCuLjybRlzo0tZWJjNiuSfb4p4fAkd_wWJcyQoTbji9k0l8W26mPddxHmfHQp-Vaw-4qPCJrcS2mJPMEzP1Pt0Bm4d4QlL-yRT-SFd2lZS-pCgNMsD1W_YpRPEwOWvG6b32690r2jZ47soMZo9wGzjb_7OMg0LOL-bSf63kpaSHSXndS5z5rexMdbBYUsLA9e-KXBdQOS-UTo7WTBEMa2R2CapHg665xsmtdVMTBQY4uDZlxvb3qCo5ZwKh9kG4LT6_I5IhlJH7aGhyxXFvUK-DWNmoudF8NAco9_h9iaGNj8q2ethFkMLs91kzk2PAcDTW9gb54h4FRWyuXpoQ";
         let n_bytes = decode_base64url(n_base64url);
-        std::debug::print(&n_bytes);
         let e_base64url = b"AQAB";
         let e_bytes = decode_base64url(e_base64url);
-        std::debug::print(&e_bytes);
         let signature_base64url = b"cC4hiUPoj9Eetdgtv3hF80EGrhuB__dzERat0XF9g2VtQgr9PJbu3XOiZj5RZmh7AAuHIm4Bh-0Qc_lF5YKt_O8W2Fp5jujGbds9uJdbF9CUAr7t1dnZcAcQjbKBYNX4BAynRFdiuB--f_nZLgrnbyTyWzO75vRK5h6xBArLIARNPvkSjtQBMHlb1L07Qe7K0GarZRmB_eSN9383LcOLn6_dO--xi12jzDwusC-eOkHWEsqtFZESc6BfI7noOPqvhJ1phCnvWh6IeYI2w9QOYEUipUTI8np6LbgGY9Fs98rqVt5AXLIhWkWywlVmtVrBp0igcN_IoypGlUPQGe77Rw";
         let signature_bytes = decode_base64url(signature_base64url);
-        std::debug::print(&signature_bytes);
+        // TODO: resolve missing dependency issue (code 1021).
         let result = verify(&signature_bytes, &n_bytes, &e_bytes, &msg);
         assert!(result, ErrorVerificationFailure);
     }
