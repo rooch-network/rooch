@@ -78,7 +78,7 @@ pub fn native_verify(
     let n = pop_arg!(args, VectorRef);
     let signature = pop_arg!(args, VectorRef);
 
-    let msg_ref = msg.as_bytes_ref();
+    let msg_bytes_ref = msg.as_bytes_ref();
     let e_bytes_ref = e.as_bytes_ref();
     let n_bytes_ref = n.as_bytes_ref();
     let signature_bytes_ref = signature.as_bytes_ref();
@@ -89,7 +89,7 @@ pub fn native_verify(
         .expect("gas parameter should initialize");
 
     let cost = base
-        + per_byte * NumBytes::new(msg_ref.len() as u64)
+        + per_byte * NumBytes::new(msg_bytes_ref.len() as u64)
         + per_byte * NumBytes::new(e_bytes_ref.len() as u64)
         + per_byte * NumBytes::new(n_bytes_ref.len() as u64)
         + per_byte * NumBytes::new(signature_bytes_ref.len() as u64);
@@ -110,7 +110,7 @@ pub fn native_verify(
         };
 
     // Verify the signature
-    let result = pubkey.verify(msg_ref.as_slice(), &sig).is_ok();
+    let result = pubkey.verify(msg_bytes_ref.as_slice(), &sig).is_ok();
 
     Ok(NativeResult::ok(cost, smallvec![Value::bool(result)]))
 }
@@ -130,7 +130,7 @@ pub fn native_verify_prehash(
     let n = pop_arg!(args, VectorRef);
     let signature = pop_arg!(args, VectorRef);
 
-    let hashed_msg_ref = hashed_msg.as_bytes_ref();
+    let hashed_msg_bytes_ref = hashed_msg.as_bytes_ref();
     let e_bytes_ref = e.as_bytes_ref();
     let n_bytes_ref = n.as_bytes_ref();
     let signature_bytes_ref = signature.as_bytes_ref();
@@ -141,7 +141,7 @@ pub fn native_verify_prehash(
         .expect("gas parameter should initialize");
 
     let cost = base
-        + per_byte * NumBytes::new(hashed_msg_ref.len() as u64)
+        + per_byte * NumBytes::new(hashed_msg_bytes_ref.len() as u64)
         + per_byte * NumBytes::new(e_bytes_ref.len() as u64)
         + per_byte * NumBytes::new(n_bytes_ref.len() as u64)
         + per_byte * NumBytes::new(signature_bytes_ref.len() as u64);
@@ -164,7 +164,7 @@ pub fn native_verify_prehash(
     // Verify the signature with sha256 hash type
     let result = if hash_type == SHA256 {
         pubkey
-            .verify_prehash(hashed_msg_ref.as_slice(), &sig)
+            .verify_prehash(hashed_msg_bytes_ref.as_slice(), &sig)
             .is_ok()
     } else {
         return Ok(NativeResult::err(cost, E_INVALID_HASH_TYPE));
