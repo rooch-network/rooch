@@ -217,8 +217,29 @@ impl FrameworksGasParameters {
         v5_gas_parameter
     }
 
+    pub fn v7() -> Self {
+        let mut v6_gas_parameter = FrameworksGasParameters::v6();
+
+        v6_gas_parameter.rooch_framework_gas_params.rs256.verify =
+            rooch_framework::natives::rooch_framework::crypto::rs256::VerifyGasParameters::init(
+                1000.into(),
+                30.into(),
+            );
+
+        v6_gas_parameter
+            .rooch_framework_gas_params
+            .rs256
+            .verify_prehash =
+            rooch_framework::natives::rooch_framework::crypto::rs256::VerifyGasParameters::init(
+                1000.into(),
+                30.into(),
+            );
+
+        v6_gas_parameter
+    }
+
     pub fn latest() -> Self {
-        FrameworksGasParameters::v6()
+        FrameworksGasParameters::v7()
     }
 
     pub fn to_gas_schedule_config(&self, chain_id: ChainID) -> GasScheduleConfig {
