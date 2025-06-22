@@ -87,12 +87,13 @@ pub struct Test {
 }
 
 impl Test {
-    pub fn execute(
+    pub fn execute<W: Write + Send>(
         self,
         path: Option<PathBuf>,
         config: BuildConfig,
         natives: Vec<NativeFunctionRecord>,
         cost_table: Option<CostTable>,
+        writer: &mut W,
     ) -> anyhow::Result<()> {
         let rerooted_path = reroot_path(path)?;
         let Self {
@@ -131,7 +132,7 @@ impl Test {
             natives,
             cost_table,
             compute_coverage,
-            &mut std::io::stdout(),
+            writer,
         )?;
 
         // Return a non-zero exit code if any test failed
