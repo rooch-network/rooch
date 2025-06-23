@@ -76,7 +76,7 @@ impl std::fmt::Display for AccountView {
             f,
             "{}:{}",
             self.0.addr.to_canonical_string(),
-            self.0.sequence_number.to_string()
+            self.0.sequence_number
         )
     }
 }
