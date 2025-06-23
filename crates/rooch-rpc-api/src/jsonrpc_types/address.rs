@@ -4,9 +4,10 @@
 use crate::jsonrpc_types::StrView;
 use anyhow::Result;
 use bitcoin::XOnlyPublicKey;
-use move_core_types::account_address::AccountAddress;
+use move_core_types::account_address::{AccountAddress, AccountAddressParseError};
+use moveos_types::moveos_std::account::Account;
 use rooch_types::{
-    address::{BitcoinAddress, NetworkAddress, NostrPublicKey, RoochAddress},
+    address::{BitcoinAddress, NostrPublicKey, RoochAddress},
     bitcoin::network::Network,
     to_bech32::FromBech32,
 };
@@ -67,23 +68,28 @@ impl From<RoochAddressView> for AccountAddress {
     }
 }
 
-pub type NetworkAddressView = StrView<NetworkAddress>;
+pub type AccountView = StrView<Account>;
 
-impl std::fmt::Display for NetworkAddressView {
+impl std::fmt::Display for AccountView {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.0)
+        write!(
+            f,
+            "{}:{}",
+            self.0.addr.to_canonical_string(),
+            self.0.sequence_number.to_string()
+        )
     }
 }
 
-impl FromStr for NetworkAddressView {
-    type Err = anyhow::Error;
+impl FromStr for AccountView {
+    type Err = AccountAddressParseError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(StrView(NetworkAddress::from_str(s)?))
+        Ok(StrView(Account::new(AccountAddress::from_str(s)?, 0))) // it may get sequence number from the account address
     }
 }
 
-impl From<NetworkAddressView> for NetworkAddress {
-    fn from(value: NetworkAddressView) -> Self {
+impl From<AccountView> for Account {
+    fn from(value: AccountView) -> Self {
         value.0
     }
 }
