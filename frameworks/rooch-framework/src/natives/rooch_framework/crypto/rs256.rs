@@ -19,6 +19,7 @@ use std::collections::VecDeque;
 const E_INVALID_SIGNATURE: u64 = 1;
 const E_INVALID_PUBKEY: u64 = 2;
 const E_INVALID_HASH_TYPE: u64 = 3;
+const E_INVALID_MESSAGE_LENGTH: u64 = 4;
 
 // Hash type
 const SHA256: u8 = 0;
@@ -163,6 +164,9 @@ pub fn native_verify_prehash(
 
     // Verify the signature with sha256 hash type
     let result = if hash_type == SHA256 {
+        if hashed_msg_bytes_ref.len() != 32 {
+            return Ok(NativeResult::err(cost, E_INVALID_MESSAGE_LENGTH));
+        }
         pubkey
             .verify_prehash(hashed_msg_bytes_ref.as_slice(), &sig)
             .is_ok()

@@ -10,11 +10,14 @@ module rooch_framework::rs256 {
     const RSASSA_PKCS1_V1_5_MINIMUM_EXPONENT_LENGTH: u64 = 1;
     /// Maximum exponent (e) length (bytes) for RSASSA-PKCS1-V1_5 with SHA-256 (RS256)
     const RSASSA_PKCS1_V1_5_MAXIMUM_EXPONENT_LENGTH: u64 = 512;
+    /// Message length for the Sha2-256 hash function
+    const SHA256_MESSAGE_LENGTH: u64 = 32;
 
     // Error codes
     const ErrorInvalidSignature: u64 = 1;
     const ErrorInvalidPubKey: u64 = 2;
     const ErrorInvalidHashType: u64 = 3;
+    const ErrorInvalidMessageLength: u64 = 4;
 
     // Hash type
     const SHA256: u8 = 0;
@@ -55,7 +58,7 @@ module rooch_framework::rs256 {
         hash_type: u8
     ): bool {
         // check conditions for verify prehash function
-        check_conditions_verify_prehash(signature, n, e, hash_type);
+        check_conditions_verify_prehash(signature, n, e, msg, hash_type);
         // call native_verify
         native_verify_prehash(signature, n, e, msg, hash_type)
     }
@@ -79,9 +82,10 @@ module rooch_framework::rs256 {
         assert!(vector::length(e) <= RSASSA_PKCS1_V1_5_MAXIMUM_EXPONENT_LENGTH, ErrorInvalidPubKey);
     }
 
-    fun check_conditions_verify_prehash(signature: &vector<u8>, n: &vector<u8>, e: &vector<u8>, hash_type: u8) {
+    fun check_conditions_verify_prehash(signature: &vector<u8>, n: &vector<u8>, e: &vector<u8>, msg: &vector<u8>, hash_type: u8) {
         // include all verify conditions
         check_conditions_verify(signature, n, e);
         assert!(hash_type == SHA256, ErrorInvalidHashType);
+        assert!(vector::length(msg) == SHA256_MESSAGE_LENGTH, ErrorInvalidMessageLength);
     }
 }
