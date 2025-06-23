@@ -6,9 +6,9 @@ module rooch_framework::rs256 {
 
     /// Minimum modulus (n) length (bits) for RSASSA-PKCS1-V1_5 with SHA-256 (RS256)
     const RSASSA_PKCS1_V1_5_MINIMUM_MODULUS_LENGTH: u64 = 2048;
-    /// Minimum exponent (e) length (bytes) for for RSASSA-PKCS1-V1_5 with SHA-256 (RS256)
+    /// Minimum exponent (e) length (bytes) for RSASSA-PKCS1-V1_5 with SHA-256 (RS256)
     const RSASSA_PKCS1_V1_5_MINIMUM_EXPONENT_LENGTH: u64 = 1;
-    /// Maximum exponent (e) length (bytes) for for RSASSA-PKCS1-V1_5 with SHA-256 (RS256)
+    /// Maximum exponent (e) length (bytes) for RSASSA-PKCS1-V1_5 with SHA-256 (RS256)
     const RSASSA_PKCS1_V1_5_MAXIMUM_EXPONENT_LENGTH: u64 = 512;
 
     // Error codes
