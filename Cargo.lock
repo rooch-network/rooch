@@ -10527,6 +10527,8 @@ dependencies = [
  "rooch-indexer",
  "rooch-store",
  "rooch-types",
+ "tokio",
+ "tokio-stream",
  "tracing",
 ]
 

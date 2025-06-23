@@ -1,6 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+pub mod state_pruner;
+
 use std::collections::{HashMap, HashSet};
 
 use accumulator::accumulator_info::AccumulatorInfo;

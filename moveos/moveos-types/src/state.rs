@@ -853,6 +853,22 @@ impl ObjectState {
     pub fn to_bytes(&self) -> Result<Vec<u8>> {
         bcs::to_bytes(self).map_err(|e| anyhow::anyhow!("Serialize the State error: {:?}", e))
     }
+
+    pub fn to_prune_hash(&self) -> Result<H256> {
+        // hash(object_id || object_type || value)
+        let mut buffer = Vec::new();
+        buffer.extend_from_slice(self.metadata.id.clone().to_bytes().as_slice());
+        buffer.extend_from_slice(
+            self.metadata
+                .object_type
+                .clone()
+                .to_canonical_string()
+                .as_bytes(),
+        );
+        buffer.extend_from_slice(self.value.clone().as_slice());
+        let hash = h256::sha3_256_of(&buffer);
+        Ok(hash)
+    }
 }
 
 impl std::fmt::Display for ObjectState {

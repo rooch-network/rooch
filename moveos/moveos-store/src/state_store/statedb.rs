@@ -23,6 +23,7 @@ use smt::{SMTIterator, TreeChangeSet};
 use smt::{SMTree, UpdateSet};
 use std::collections::BTreeMap;
 use std::sync::Arc;
+use moveos_types::test_utils::random_state_change_set;
 
 pub const STATEDB_DUMP_BATCH_SIZE: usize = 5000;
 
@@ -200,6 +201,23 @@ impl StateDBStore {
         let nodes = self.change_set_to_nodes(state_change_set)?;
         self.node_store.write_nodes(nodes)?;
         Ok(())
+    }
+
+    // &self, state_root: H256, key: Vec<K>
+    pub fn batch_removes(&self, state_root: H256, key: Vec<FieldKey>) -> Result<()> {
+        let nodes = self.change_set_to_nodes(state_change_set)?;
+        self.node_store.write_nodes(nodes)?;
+        Ok(())
+
+        let mut change_set = StateChangeSet::new(state_root);
+
+        Op::Delete => {
+            //TODO clean up the removed object fields
+            update_set.remove(field_key);
+            let pre_state_root = obj_change.metadata.state_root();
+            self.cache.remove(&(pre_state_root, field_key));
+            return Ok(());
+        }
     }
 
     #[named]

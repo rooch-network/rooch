@@ -3,6 +3,7 @@
 
 pub mod metrics;
 pub mod statedb;
+pub mod state_pruner;
 
 use crate::STATE_NODE_COLUMN_FAMILY_NAME;
 use anyhow::Result;
