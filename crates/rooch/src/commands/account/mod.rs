@@ -6,7 +6,8 @@ use async_trait::async_trait;
 use commands::{
     balance::BalanceCommand, create::CreateCommand, create_multisign::CreateMultisignCommand,
     export::ExportCommand, import::ImportCommand, list::ListCommand, nullify::NullifyCommand,
-    sign::SignCommand, switch::SwitchCommand, transfer::TransferCommand, tx::TxCommand,
+    tx::TxCommand,
+    object::ObjectCommand, sign::SignCommand, switch::SwitchCommand, transfer::TransferCommand,
     verify::VerifyCommand,
 };
 use rooch_rpc_api::jsonrpc_types::json_to_table_display::json_to_table;
@@ -54,6 +55,7 @@ impl CommandAction<String> for Account {
             AccountCommand::Sign(sign) => sign.execute_serialized().await,
             AccountCommand::Verify(verify) => verify.execute_serialized().await,
             AccountCommand::Tx(tx) => tx.execute_serialized().await,
+            AccountCommand::Object(object) => object.execute_serialized().await,
         }
     }
 }
@@ -73,4 +75,5 @@ pub enum AccountCommand {
     Sign(SignCommand),
     Verify(VerifyCommand),
     Tx(TxCommand),
+    Object(ObjectCommand),
 }
