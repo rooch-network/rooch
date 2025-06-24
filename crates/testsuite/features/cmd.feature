@@ -29,8 +29,8 @@ Feature: Rooch CLI integration tests
       Then assert: "{{$.rpc[-1].has_next_page}} == true"
       Then cmd: "rpc request --method rooch_getModuleABI --params '["0x2", "display"]'"
       Then assert: "{{$.rpc[-1].name}} == 'display'"
-      Then stop the server 
-    
+      Then stop the server
+
     @serial
     Scenario: account
       Given a server for account
@@ -49,6 +49,10 @@ Feature: Rooch CLI integration tests
       Then cmd: "account import -k {{$.account[-1].encoded_private_key}}"
       # use nostr_public_key
       Then cmd: "account nullify -a {{$.account[-2].account0.nostr_public_key}}"
+      # list transactions of newly created address
+      Then cmd: "account create --json"
+      Then cmd: "account tx -a {{$.account[-1]}} --json"
+      Then assert: "'{{$.account[-1]}}' == '{}'"
 
       Then cmd: "rpc request --method rooch_getBalance --params '["{{$.address_mapping.default}}", "0x3::gas_coin::RGas"]' --json"
       Then assert: "'{{$.rpc[-1].coin_type}}' == '0x3::gas_coin::RGas'"
@@ -102,7 +106,7 @@ Feature: Rooch CLI integration tests
     @serial
     Scenario: state
       Given a server for state
-      Then cmd: "object -i 0x3" 
+      Then cmd: "object -i 0x3"
       Then cmd: "object -i 0x2::timestamp::Timestamp"
       Then cmd: "dynamic-field list-field-states --object-id 0x3"
       Then cmd: "dynamic-field get-field-states --object-id 0x3 --field-keys 0x385f84a2110d6b31412fab278ea8c321d160fdcfa7b745e66e5bf76106280dc5"
@@ -153,7 +157,7 @@ Feature: Rooch CLI integration tests
     Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
     Then cmd: "move run --function default::event_test::emit_event  --args 11u64 --json"
     Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-    
+
     # because the indexer is async update, so sleep 5 seconds to wait indexer update.
     Then sleep: "5"
 
@@ -193,22 +197,22 @@ Feature: Rooch CLI integration tests
       # First publish and create the object counter
       Then cmd: "move publish -p ../../examples/quick_start_object_counter --named-addresses quick_start_object_counter=default --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-      
+
       # Get the Counter object ID from event
       Then cmd: "event get-events-by-event-handle -t default::quick_start_object_counter::UserCounterCreatedEvent"
       Then assert: "{{$.event[-1].data[0].event_id.event_seq}} == 0"
-      
+
       # Increase counter to generate state change
       Then cmd: "move run --function default::quick_start_object_counter::increase --args object:{{$.event[-1].data[0].decoded_event_data.value.id}} --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-      
+
       # because the indexer is async update, so sleep 2 seconds to wait indexer update.
       Then sleep: "2"
-      
+
       # Test sync_states with object_id filter - should get changes for the counter object
       Then cmd: "rpc request --method rooch_syncStates --params '[{\"object_i_d\":\"{{$.event[-1].data[0].decoded_event_data.value.id}}\"}, null, \"10\", {\"descending\":false}]' --json"
       Then assert: "'{{$.rpc[-1].data[0].state_change_set.changes[0].metadata.id}}' == '{{$.event[-1].data[0].decoded_event_data.value.id}}'"
-      
+
       # Test with a non-existent object ID - should return empty result
       Then cmd: "rpc request --method rooch_syncStates --params '[{\"object_i_d\":\"0x1234567890123456789012345678901234567890123456789012345678901234\"}, null, \"10\", {\"descending\":false}]' --json"
       Then assert: "'{{$.rpc[-1].data}}' == '[]'"
@@ -340,7 +344,7 @@ Feature: Rooch CLI integration tests
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       Then cmd: "move run --function default::fixed_supply_coin::faucet --args object:default::fixed_supply_coin::Treasury --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-      
+
       Then cmd: "account list --json"
 
       Then cmd: "rpc request --method rooch_getBalance --params '["{{$.account[-1].default.bitcoin_address}}", "{{$.account[-1].default.hex_address}}::fixed_supply_coin::FSC"]' --json"
@@ -361,7 +365,7 @@ Feature: Rooch CLI integration tests
     Given a server for issue_coin
     Then cmd: "move publish -p ../../examples/module_template/  --named-addresses rooch_examples=default --json"
     Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-    
+
     #TODO: uncomment this once move_module::binding_module_address is ready
     #Then cmd: "move run --function default::coin_factory::issue_fixed_supply_coin --args string:my_coin  --args string:"My first coin" --args string:MyCoin --args 1010101u256 --args 8u8   --json"
     #Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
@@ -374,7 +378,7 @@ Feature: Rooch CLI integration tests
     #Then assert: "'{{$.rpc[-1].coin_type}}' == '{{$.address_mapping.default}}::my_coin::MyCoin'"
     #Then assert: "'{{$.rpc[-1].balance}}' != '0'"
     Then stop the server
-  
+
   @serial
   Scenario: basic_object example
       Given a server for basic_object
@@ -382,7 +386,7 @@ Feature: Rooch CLI integration tests
       Then cmd: "account list --json"
       Then cmd: "move publish -p ../../examples/basic_object  --named-addresses basic_object=default --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-      
+
       #object pub transfer
       Then cmd: "move run --function default::third_party_module::create_and_pub_transfer --args u64:1 --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
@@ -393,18 +397,18 @@ Feature: Rooch CLI integration tests
       Then sleep: "2"
       Then cmd: "object -t default::pub_transfer::Pub"
       Then assert: "{{$.object[-1].data[0].owner}} == {{$.account[-1].account0.address}}"
-      
+
       #child object
       Then cmd: "move run --function default::third_party_module_for_child_object::create_child --args string:alice --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-      
+
       Then cmd: "event get-events-by-event-handle -t default::child_object::NewChildEvent"
       Then cmd: "state --access-path /object/{{$.event[-1].data[0].decoded_event_data.value.id}}"
       Then assert: "{{$.state[-1][0].decoded_value.value.name}} == alice"
 
       Then cmd: "move run --function default::third_party_module_for_child_object::update_child_name --args object:{{$.event[-1].data[0].decoded_event_data.value.id}} --args string:bob --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-      
+
       Then cmd: "state --access-path /object/{{$.event[-1].data[0].decoded_event_data.value.id}}"
       Then assert: "{{$.state[-1][0].decoded_value.value.name}} == bob"
 
@@ -419,8 +423,8 @@ Feature: Rooch CLI integration tests
 
       Then cmd: "move view --function default::child_object::get_age --args object:{{$.event[-1].data[0].decoded_event_data.value.id}}"
       Then assert: "{{$.move[-1].vm_status}} == Executed"
-      Then assert: "{{$.move[-1].return_values[0].decoded_value}} == 10" 
-       
+      Then assert: "{{$.move[-1].return_values[0].decoded_value}} == 10"
+
       Then cmd: "move run --function default::third_party_module_for_child_object::remove_child --args object:{{$.event[-1].data[0].decoded_event_data.value.id}} --json"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
@@ -434,7 +438,7 @@ Feature: Rooch CLI integration tests
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       Then cmd: "move run --function default::display::create_object --sender default --args 'string:test_object' --args 'address:default' --args 'string:test object description' --json"
-      
+
       Then cmd: "event get-events-by-event-handle -t default::display::NewObjectEvent"
       Then cmd: "state --access-path /object/{{$.event[-1].data[0].decoded_event_data.value.id}}"
       Then assert: "{{$.state[-1][0].object_type}} == '{{$.address_mapping.default}}::display::ObjectType'"
@@ -452,9 +456,9 @@ Feature: Rooch CLI integration tests
       Then cmd: "rpc request --method rooch_getObjectStates --params '["{{$.event[-1].data[0].decoded_event_data.value.id}}", {"decode": false, "showDisplay": true}]' --json"
       Then assert: "{{$.rpc[-1][0].display_fields.fields.name}} == test_object"
 
-      
+
       Then stop the server
-    
+
     @serial
     Scenario: wasm test
       # prepare servers

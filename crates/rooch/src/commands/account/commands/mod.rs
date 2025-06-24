@@ -11,4 +11,5 @@ pub mod nullify;
 pub mod sign;
 pub mod switch;
 pub mod transfer;
+pub mod tx;
 pub mod verify;

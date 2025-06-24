@@ -57,6 +57,7 @@ tiny-keccak = { workspace = true }
 reqwest = { workspace = true }
 rocksdb = { workspace = true }
 multibase = { workspace = true }
+terminal_size = { workspace = true }
 
 move-binary-format = { workspace = true }
 move-cli = { workspace = true }
@@ -66,7 +67,11 @@ move-core-types = { workspace = true }
 move-errmapgen = { workspace = true }
 move-package = { workspace = true }
 move-unit-test = { workspace = true }
-move-vm-runtime = { workspace = true, features = ["stacktrace", "debugging", "testing"] }
+move-vm-runtime = { workspace = true, features = [
+    "stacktrace",
+    "debugging",
+    "testing",
+] }
 move-vm-test-utils = { workspace = true }
 move-stdlib = { workspace = true }
 move-vm-types = { workspace = true }
