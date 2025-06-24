@@ -64,7 +64,7 @@ impl CommandAction<Option<TransactionResultView>> for TxCommand {
             } else {
                 transaction.transaction.sequence_info.tx_accumulator_root
             };
-            transaction_result_view.insert(key.clone(), transaction.clone());
+            transaction_result_view.insert(key, transaction.clone());
         }
 
         if self.json {
