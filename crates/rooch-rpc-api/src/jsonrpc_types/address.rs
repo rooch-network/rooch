@@ -70,21 +70,10 @@ impl From<RoochAddressView> for AccountAddress {
 
 pub type AccountView = StrView<Account>;
 
-impl std::fmt::Display for AccountView {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}:{}",
-            self.0.addr.to_canonical_string(),
-            self.0.sequence_number
-        )
-    }
-}
-
 impl FromStr for AccountView {
     type Err = AccountAddressParseError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(StrView(Account::new(AccountAddress::from_str(s)?, 0))) // it may get sequence number from the account address
+        Ok(StrView(Account::new(AccountAddress::from_str(s)?, 0))) // it may get the sequence number from the rooch address
     }
 }
 

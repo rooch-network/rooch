@@ -21,9 +21,9 @@ use rooch_rpc_api::jsonrpc_types::{
     Status, StructTagOrObjectIDView, UTXOPageView,
 };
 use rooch_rpc_api::jsonrpc_types::{
-    AccessPathView, AnnotatedFunctionResultView, BalanceInfoPageView, BytesView, EventOptions,
-    EventPageView, FieldKeyView, ObjectIDVecView, ObjectIDView, RoochAddressView, StateOptions,
-    StatePageView, StructTagView,
+    AccessPathView, AccountView, AnnotatedFunctionResultView, BalanceInfoPageView, BytesView,
+    EventOptions, EventPageView, FieldKeyView, ObjectIDVecView, ObjectIDView, RoochAddressView,
+    StateOptions, StatePageView, StructTagView,
 };
 use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, ObjectStateView};
 use rooch_rpc_api::jsonrpc_types::{
@@ -177,7 +177,7 @@ impl RoochRpcClient {
             .await?)
     }
 
-    pub async fn get_sequence_number(&self, sender: RoochAddress) -> Result<u64> {
+    pub async fn get_account_states(&self, sender: RoochAddress) -> Result<AccountView> {
         Ok(self
             .get_states(
                 AccessPath::object(Account::account_object_id(sender.into())),
@@ -188,10 +188,17 @@ impl RoochRpcClient {
             .flatten()
             .map(|state_view| {
                 let state = ObjectState::from(state_view);
-                state.into_object_uncheck::<Account>()
+                state.into_object_uncheck::<AccountView>()
             })
             .transpose()?
-            .map_or(0, |account| account.value.sequence_number))
+            .map_or(
+                AccountView::from_str(sender.to_hex_literal().as_str())?,
+                |account| account.value,
+            ))
+    }
+
+    pub async fn get_sequence_number(&self, sender: RoochAddress) -> Result<u64> {
+        Ok(self.get_account_states(sender).await?.0.sequence_number)
     }
 
     pub async fn get_events_by_event_handle(
