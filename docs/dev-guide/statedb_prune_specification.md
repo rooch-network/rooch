@@ -1,8 +1,27 @@
 # Rooch StateDB Pruning Specification
 
+> Last-update 2025-06-24    
+---
+
+## 0  Why we prune
+
+* 24 × 7 production nodes accumulate almost **10TB** of SMT nodes and
+  quick-cache entries every day.
+* We must keep every state-root younger than *30 days* **fully verifiable**,
+  yet recycle RAM and (optionally) disk used by roots that are
+  provably unreachable.
+
+The design below achieves this with:
+* **zero downtime**,
+* **restart-safe** checkpoints,
+* **no changes** to existing RocksDB format.
+
+---
+
+
 ## 1  Sparse-Merkle-Tree (SMT) – Detailed Design
 
-### 1.1 Core node types
+### 1.1 Core node types
 
 | Variant | Tag | Stored fields | Role |
 |---------|-----|---------------|------|
@@ -17,7 +36,7 @@ leaf_hash     = Keccak256(0x00 │ key_hash │ value_hash)
 internal_hash = Keccak256(0x01 │ child₀ │ … │ child₁₅)
 ```
 
-### 1.2 Insertion path
+### 1.2 Insertion path
 
 ```
 SMTree::puts(prev_root, UpdateSet)
@@ -31,17 +50,17 @@ SMTree::puts(prev_root, UpdateSet)
 
 `node_batch : BTreeMap<NodeHash, Vec<u8>>` is written to RocksDB (`cf_smt_nodes`) in one atomic batch.
 
-### 1.3 Query path
+### 1.3 Query path
 
 *Single key* — `get_with_proof()` walks from root, obtains value + sibling list.  
 *Range* — `SMTIterator` (DFS) yields each Leaf in **hash order**.
 
-### 1.4 Update / Delete
+### 1.4 Update / Delete
 
 Identical algorithm; `Option<V>::None` means delete (leaf → Null).  
 Only nodes on the modified path receive new hashes.
 
-### 1.5 Multi-version storage
+### 1.5 Multi-version storage
 
 *   Old and new state-roots **share every byte-identical subtree**.
 *   Storage growth per commit ≈ `touched_keys × (path_height+1)` nodes.
@@ -51,7 +70,7 @@ Only nodes on the modified path receive new hashes.
 
 ## 2  Object System & Hierarchical Model
 
-### 2.1 Core structures
+### 2.1 Core structures
 
 ```rust
 struct ObjectMeta {
@@ -72,7 +91,7 @@ struct ObjectState {
 
 `ObjectID.child_id(FieldKey)` deterministically derives a field-object id.
 
-### 2.2 Two-layer storage layout
+### 2.2 Two-layer storage layout
 
 ```
 GLOBAL-SMT  (root stored in block header)
@@ -110,7 +129,7 @@ Because NodeHash is the content hash, presence in `Reachable` is sufficient live
 
 ## 4  Building the Global Reachable-StateRoot Set
 
-### 4.1 Live-root enumeration
+### 4.1 Live-root enumeration
 
 ```
 cutoff = now − 30d
@@ -119,7 +138,7 @@ live_roots = cf_state_roots
              .map(value → H256)
 ```
 
-### 4.2 Algorithm (two layers)
+### 4.2 Algorithm (two layers)
 
 ```
 Reachable = ∅                // HashSet<NodeHash>
@@ -299,7 +318,7 @@ fn build_reachable(
 
 ## 5  State Pruning Procedure
 
-### 5.1 Build –and maintain– the **prune set**
+### 5.1 Build –and maintain– the **prune set**
 
 For each **expired** global root (`ts < cutoff`):
 
@@ -318,7 +337,7 @@ for field_root in Q_field
 
 Each `(state_root, leaf_hash)` identifies one cache entry.
 
-### 5.2 Execute prune
+### 5.2 Execute prune
 
 ```rust
 for (root, hash) in prune_pairs {
@@ -329,7 +348,7 @@ for (root, hash) in prune_pairs {
 
 
 
-### 5.3 Scanning one SMT with **StateDBStore::iter**
+### 5.3 Scanning one SMT with **StateDBStore::iter**
 
 ```rust
 /// Scan every (FieldKey, ObjectState) under `state_root` using
@@ -374,7 +393,7 @@ we merely reconstruct the leaf hash locally.*
 
 ---
 
-### 5.4 Building the prune-set for **one expired root**
+### 5.4 Building the prune-set for **one expired root**
 
 ```rust
 fn build_prune_for_root(
