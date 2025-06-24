@@ -58,17 +58,13 @@ impl CommandAction<Option<TransactionResultView>> for TxCommand {
         // transaction result view with transaction hash view or transaction accumulator root view and transaction with info view
         let mut transaction_result_view: HashMap<H256View, TransactionWithInfoView> =
             HashMap::new();
-        for transaction in transactions.clone() {
-            let key = if transaction.clone().execution_info.is_some() {
-                transaction.clone().execution_info.unwrap().tx_hash
+        for transaction in &transactions {
+            let key = if transaction.execution_info.is_some() {
+                transaction.execution_info.as_ref().unwrap().tx_hash
             } else {
-                transaction
-                    .clone()
-                    .transaction
-                    .sequence_info
-                    .tx_accumulator_root
+                transaction.transaction.sequence_info.tx_accumulator_root
             };
-            transaction_result_view.insert(key, transaction);
+            transaction_result_view.insert(key.clone(), transaction.clone());
         }
 
         if self.json {
