@@ -10023,7 +10023,7 @@ dependencies = [
  "percent-encoding",
  "rand 0.8.5",
  "reqwest 0.12.7",
- "rsa 0.9.6",
+ "rsa 0.9.8",
  "serde 1.0.219",
  "serde_json",
  "sha1",
@@ -11172,6 +11172,7 @@ dependencies = [
  "proptest",
  "proptest-derive",
  "rand 0.8.5",
+ "rsa 0.9.8",
  "schemars",
  "serde 1.0.219",
  "serde_json",
@@ -11225,9 +11226,9 @@ dependencies = [
 
 [[package]]
 name = "rsa"
-version = "0.9.6"
+version = "0.9.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5d0e5124fcb30e76a7e79bfee683a2746db83784b86289f6251b54b7950a0dfc"
+checksum = "78928ac1ed176a5ca1d17e578a1825f3d81ca54cf41053a592584b020cfd691b"
 dependencies = [
  "const-oid",
  "digest 0.10.7",
