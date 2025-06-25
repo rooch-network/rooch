@@ -21,9 +21,9 @@ use rooch_rpc_api::jsonrpc_types::{
     Status, StructTagOrObjectIDView, UTXOPageView,
 };
 use rooch_rpc_api::jsonrpc_types::{
-    AccessPathView, AccountView, AnnotatedFunctionResultView, BalanceInfoPageView, BytesView,
-    EventOptions, EventPageView, FieldKeyView, ObjectIDVecView, ObjectIDView, RoochAddressView,
-    StateOptions, StatePageView, StructTagView,
+    AccessPathView, AnnotatedFunctionResultView, BalanceInfoPageView, BytesView, EventOptions,
+    EventPageView, FieldKeyView, ObjectIDVecView, ObjectIDView, RoochAddressView, StateOptions,
+    StatePageView, StructTagView,
 };
 use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, ObjectStateView};
 use rooch_rpc_api::jsonrpc_types::{
@@ -177,7 +177,23 @@ impl RoochRpcClient {
             .await?)
     }
 
-    pub async fn get_account_states(&self, sender: RoochAddress) -> Result<AccountView> {
+    pub async fn resolve_account_address(
+        &self,
+        address: RoochAddress,
+    ) -> Result<Option<AccountAddress>> {
+        let object_id = Account::account_object_id(address.into());
+        let access_path = AccessPath::object(object_id);
+        let mut states = self.get_states(access_path, None).await?;
+        let state_obj = states.pop().flatten();
+        let account_address = state_obj.map(|state_view| {
+            let state = ObjectState::from(state_view);
+            let account_object = state.into_object_uncheck::<Account>()?;
+            Ok(account_object.value.addr)
+        });
+        account_address.transpose()
+    }
+
+    pub async fn get_sequence_number(&self, sender: RoochAddress) -> Result<u64> {
         Ok(self
             .get_states(
                 AccessPath::object(Account::account_object_id(sender.into())),
@@ -188,17 +204,10 @@ impl RoochRpcClient {
             .flatten()
             .map(|state_view| {
                 let state = ObjectState::from(state_view);
-                state.into_object_uncheck::<AccountView>()
+                state.into_object_uncheck::<Account>()
             })
             .transpose()?
-            .map_or(
-                AccountView::from_str(sender.to_hex_literal().as_str())?,
-                |account| account.value,
-            ))
-    }
-
-    pub async fn get_sequence_number(&self, sender: RoochAddress) -> Result<u64> {
-        Ok(self.get_account_states(sender).await?.0.sequence_number)
+            .map_or(0, |account| account.value.sequence_number))
     }
 
     pub async fn get_events_by_event_handle(

@@ -32,15 +32,15 @@ pub struct ShowCommand {
 
 #[derive(Serialize, Deserialize, Debug, Clone, JsonSchema)]
 pub struct ShowResultView {
-    pub account_address: AccountAddressView,
-    pub sequence_number: StrView<u64>,
+    pub account_address: Option<AccountAddressView>,
+    pub sequence_number: Option<StrView<u64>>,
     pub bitcoin_address: Option<BitcoinAddressView>,
 }
 
 impl ShowResultView {
     pub fn new(
-        account_address: AccountAddressView,
-        sequence_number: StrView<u64>,
+        account_address: Option<AccountAddressView>,
+        sequence_number: Option<StrView<u64>>,
         bitcoin_address: Option<BitcoinAddressView>,
     ) -> Self {
         // show result view with account (account address and sequence number) and bitcoin address
@@ -59,55 +59,74 @@ impl CommandAction<Option<ShowResultView>> for ShowCommand {
         let client = context.get_client().await?;
         let mapping = context.address_mapping();
         let rooch_address = self.address.into_rooch_address(&mapping)?;
-        let account_states = client.rooch.get_account_states(rooch_address).await?;
+        let account_address_opt = client.rooch.resolve_account_address(rooch_address).await?;
         let bitcoin_address_opt = client.rooch.resolve_bitcoin_address(rooch_address).await?;
-        let show_result_view = if bitcoin_address_opt.clone().is_some() {
-            let bitcoin_address = bitcoin_address_opt.clone().unwrap();
-            let bitcoin_address_view = BitcoinAddressView::from(bitcoin_address);
-            ShowResultView::new(
-                account_states.0.addr.into(),
-                account_states.0.sequence_number.into(),
-                Some(bitcoin_address_view),
-            )
+        let account_address_view = if account_address_opt.is_some() {
+            Some(AccountAddressView::from(account_address_opt.unwrap()))
         } else {
-            ShowResultView::new(
-                account_states.0.addr.into(),
-                account_states.0.sequence_number.into(),
-                None,
-            )
+            None
         };
+        let sequence_number_view = if account_address_opt.is_some() {
+            Some(StrView::from(
+                client.rooch.get_sequence_number(rooch_address).await?,
+            ))
+        } else {
+            None
+        };
+        let bitcoin_address_view = if bitcoin_address_opt.clone().is_some() {
+            Some(BitcoinAddressView::from(
+                bitcoin_address_opt.clone().unwrap(),
+            ))
+        } else {
+            None
+        };
+        let show_result_view = ShowResultView::new(
+            account_address_view,
+            sequence_number_view,
+            bitcoin_address_view,
+        );
 
         if self.json {
             Ok(Some(show_result_view))
         } else {
-            // vectors
-            let mut formatted_account_header = vec![];
-            let mut formatted_account = vec![];
-
             // terminal
             let (width, height) = get_terminal_size();
 
             // account
-            let mut account_builder = Builder::default();
-            formatted_account_header.push("Account Address".to_owned());
-            formatted_account.push(account_states.0.addr.to_canonical_string());
-            formatted_account_header.push("Sequence Number".to_owned());
-            formatted_account.push(account_states.0.sequence_number.to_string());
-            account_builder.push_record(formatted_account_header);
-            account_builder.push_record(formatted_account);
-            let mut account_table = account_builder.build();
-            let styled_account_table = account_table
-                .with(Panel::header("Account"))
-                .with(Style::rounded())
-                .with(Width::wrap(width).priority(PriorityRight::new()))
-                .with(Width::increase(width))
-                .with(Height::limit(height))
-                .with(Height::increase(height))
-                .to_string();
-            println!("{}", styled_account_table);
+            if account_address_opt.is_some() {
+                // vectors
+                let mut formatted_account_header = vec![];
+                let mut formatted_account = vec![];
+                let mut account_builder = Builder::default();
+
+                formatted_account_header.push("Account Address".to_owned());
+                formatted_account.push(account_address_opt.unwrap().to_canonical_string());
+                formatted_account_header.push("Sequence Number".to_owned());
+                formatted_account.push(
+                    client
+                        .rooch
+                        .get_sequence_number(rooch_address)
+                        .await?
+                        .to_string(),
+                );
+
+                account_builder.push_record(formatted_account_header);
+                account_builder.push_record(formatted_account);
+
+                let mut account_table = account_builder.build();
+                let styled_account_table = account_table
+                    .with(Panel::header("Account"))
+                    .with(Style::rounded())
+                    .with(Width::wrap(width).priority(PriorityRight::new()))
+                    .with(Width::increase(width))
+                    .with(Height::limit(height))
+                    .with(Height::increase(height))
+                    .to_string();
+                println!("{}", styled_account_table);
+            }
 
             // bitcoin address
-            if bitcoin_address_opt.clone().is_some() {
+            if bitcoin_address_opt.is_some() {
                 let mut formatted_bitcoin_address = vec![];
                 let mut bitcoin_address_builder = Builder::default();
                 formatted_bitcoin_address.push(bitcoin_address_opt.unwrap().to_string());

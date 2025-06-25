@@ -4,8 +4,7 @@
 use crate::jsonrpc_types::StrView;
 use anyhow::Result;
 use bitcoin::XOnlyPublicKey;
-use move_core_types::account_address::{AccountAddress, AccountAddressParseError};
-use moveos_types::moveos_std::account::Account;
+use move_core_types::account_address::AccountAddress;
 use rooch_types::{
     address::{BitcoinAddress, NostrPublicKey, RoochAddress},
     bitcoin::network::Network,
@@ -65,21 +64,6 @@ impl From<AccountAddress> for RoochAddressView {
 impl From<RoochAddressView> for AccountAddress {
     fn from(value: RoochAddressView) -> Self {
         value.0.into()
-    }
-}
-
-pub type AccountView = StrView<Account>;
-
-impl FromStr for AccountView {
-    type Err = AccountAddressParseError;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(StrView(Account::new(AccountAddress::from_str(s)?, 0))) // it may get the sequence number from the rooch address
-    }
-}
-
-impl From<AccountView> for Account {
-    fn from(value: AccountView) -> Self {
-        value.0
     }
 }
 
