@@ -6,9 +6,8 @@ use async_trait::async_trait;
 use commands::{
     balance::BalanceCommand, create::CreateCommand, create_multisign::CreateMultisignCommand,
     export::ExportCommand, import::ImportCommand, list::ListCommand, nullify::NullifyCommand,
-    tx::TxCommand,
     object::ObjectCommand, sign::SignCommand, switch::SwitchCommand, transfer::TransferCommand,
-    verify::VerifyCommand,
+    tx::TxCommand, verify::VerifyCommand,
 };
 use rooch_rpc_api::jsonrpc_types::json_to_table_display::json_to_table;
 use rooch_types::error::RoochResult;
