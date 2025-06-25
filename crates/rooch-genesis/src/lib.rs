@@ -214,6 +214,22 @@ impl FrameworksGasParameters {
             .rooch_framework_gas_params
             .ecdsa_r1
             .verify = rooch_framework::natives::rooch_framework::crypto::ecdsa_r1::FromBytesGasParameters::init(1000.into(), 30.into());
+
+        v5_gas_parameter.rooch_framework_gas_params.rs256.verify =
+            rooch_framework::natives::rooch_framework::crypto::rs256::VerifyGasParameters::init(
+                1000.into(),
+                30.into(),
+            );
+
+        v5_gas_parameter
+            .rooch_framework_gas_params
+            .rs256
+            .verify_prehash =
+            rooch_framework::natives::rooch_framework::crypto::rs256::VerifyGasParameters::init(
+                1000.into(),
+                30.into(),
+            );
+
         v5_gas_parameter
     }
 

@@ -2060,7 +2060,7 @@ dependencies = [
  "anstyle",
  "clap_lex 0.7.0",
  "strsim 0.11.1",
- "terminal_size",
+ "terminal_size 0.3.0",
 ]
 
 [[package]]
@@ -3266,9 +3266,9 @@ checksum = "339544cc9e2c4dc3fc7149fd630c5f22263a4fdf18a98afd0075784968b5cf00"
 
 [[package]]
 name = "diesel"
-version = "2.2.10"
+version = "2.2.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ff3e1edb1f37b4953dd5176916347289ed43d7119cc2e6c7c3f7849ff44ea506"
+checksum = "a917a9209950404d5be011c81d081a2692a822f73c3d6af586f0cab5ff50f614"
 dependencies = [
  "chrono",
  "diesel_derives",
@@ -10377,6 +10377,7 @@ dependencies = [
  "tabled",
  "tempfile",
  "termcolor",
+ "terminal_size 0.4.2",
  "tikv-jemallocator",
  "tiny-keccak",
  "tokio",
@@ -12975,6 +12976,16 @@ checksum = "21bebf2b7c9e0a515f6e0f8c51dc0f8e4696391e6f1ff30379559f8365fb0df7"
 dependencies = [
  "rustix 0.38.40",
  "windows-sys 0.48.0",
+]
+
+[[package]]
+name = "terminal_size"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "45c6481c4829e4cc63825e62c49186a34538b7b2750b73b266581ffb612fb5ed"
+dependencies = [
+ "rustix 1.0.1",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
