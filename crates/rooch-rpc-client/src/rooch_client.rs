@@ -177,22 +177,6 @@ impl RoochRpcClient {
             .await?)
     }
 
-    pub async fn resolve_account_address(
-        &self,
-        address: RoochAddress,
-    ) -> Result<Option<AccountAddress>> {
-        let object_id = Account::account_object_id(address.into());
-        let access_path = AccessPath::object(object_id);
-        let mut states = self.get_states(access_path, None).await?;
-        let state_obj = states.pop().flatten();
-        let account_address = state_obj.map(|state_view| {
-            let state = ObjectState::from(state_view);
-            let account_object = state.into_object_uncheck::<Account>()?;
-            Ok(account_object.value.addr)
-        });
-        account_address.transpose()
-    }
-
     pub async fn get_sequence_number(&self, sender: RoochAddress) -> Result<u64> {
         Ok(self
             .get_states(

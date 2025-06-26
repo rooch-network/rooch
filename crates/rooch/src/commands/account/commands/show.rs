@@ -4,6 +4,9 @@
 use crate::cli_types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
 use clap::Parser;
+use moveos_types::access_path::AccessPath;
+use moveos_types::moveos_std::account::Account;
+use moveos_types::state::ObjectState;
 use rooch_rpc_api::jsonrpc_types::{AccountAddressView, BitcoinAddressView, StrView};
 use rooch_types::{address::ParsedAddress, error::RoochResult};
 use schemars::JsonSchema;
@@ -58,8 +61,23 @@ impl CommandAction<Option<ShowResultView>> for ShowCommand {
         let context = self.context_options.build()?;
         let client = context.get_client().await?;
         let mapping = context.address_mapping();
-        let rooch_address = self.address.into_rooch_address(&mapping)?;
-        let account_address_opt = client.rooch.resolve_account_address(rooch_address).await?;
+        let rooch_address = self.address.clone().into_rooch_address(&mapping)?;
+        let account_address = self.address.clone().into_account_address(&mapping)?;
+        let account_address_opt = client
+            .rooch
+            .get_states(
+                AccessPath::object(Account::account_object_id(account_address)),
+                None,
+            )
+            .await?
+            .pop()
+            .flatten()
+            .map(|state_view| {
+                let state = ObjectState::from(state_view);
+                state.into_object_uncheck::<Account>()
+            })
+            .transpose()?
+            .map_or(None, |account| Some(account.value.addr));
         let bitcoin_address_opt = client.rooch.resolve_bitcoin_address(rooch_address).await?;
         let account_address_view = if account_address_opt.is_some() {
             Some(AccountAddressView::from(account_address_opt.unwrap()))
