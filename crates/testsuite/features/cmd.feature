@@ -52,7 +52,11 @@ Feature: Rooch CLI integration tests
       # list transactions of newly created address
       Then cmd: "account create --json"
       Then cmd: "account tx -a {{$.account[-1]}} --json"
-      Then assert: "'{{$.account[-1]}}' == '{}'"
+      Then assert: "{{$.account[-1]}} == {}"
+      # account objects for newly created account
+      Then cmd: "account create --json"
+      Then cmd: "account object -a {{$.account[-1]}} --json"
+      Then assert: "{{$.account[-1]}} == {}"
 
       Then cmd: "rpc request --method rooch_getBalance --params '["{{$.address_mapping.default}}", "0x3::gas_coin::RGas"]' --json"
       Then assert: "'{{$.rpc[-1].coin_type}}' == '0x3::gas_coin::RGas'"
