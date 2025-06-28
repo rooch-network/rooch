@@ -63,7 +63,7 @@ impl CommandAction<Option<ShowResultView>> for ShowCommand {
         let mapping = context.address_mapping();
         let rooch_address = self.address.clone().into_rooch_address(&mapping)?;
         let account_address = self.address.clone().into_account_address(&mapping)?;
-        let account_address_opt = client
+        let account_opt = client
             .rooch
             .get_states(
                 AccessPath::object(Account::account_object_id(account_address)),
@@ -77,27 +77,15 @@ impl CommandAction<Option<ShowResultView>> for ShowCommand {
                 state.into_object_uncheck::<Account>()
             })
             .transpose()?
-            .map_or(None, |account| Some(account.value.addr));
+            .map(|account| account.value);
         let bitcoin_address_opt = client.rooch.resolve_bitcoin_address(rooch_address).await?;
-        let account_address_view = if account_address_opt.is_some() {
-            Some(AccountAddressView::from(account_address_opt.unwrap()))
-        } else {
-            None
-        };
-        let sequence_number_view = if account_address_opt.is_some() {
-            Some(StrView::from(
-                client.rooch.get_sequence_number(rooch_address).await?,
-            ))
-        } else {
-            None
-        };
-        let bitcoin_address_view = if bitcoin_address_opt.clone().is_some() {
-            Some(BitcoinAddressView::from(
-                bitcoin_address_opt.clone().unwrap(),
-            ))
-        } else {
-            None
-        };
+        let account_address_view = account_opt
+            .clone()
+            .map(|account| AccountAddressView::from(account.addr));
+        let sequence_number_view = account_opt
+            .clone()
+            .map(|account| StrView::from(account.sequence_number));
+        let bitcoin_address_view = bitcoin_address_opt.clone().map(BitcoinAddressView::from);
         let show_result_view = ShowResultView::new(
             account_address_view,
             sequence_number_view,
@@ -111,22 +99,16 @@ impl CommandAction<Option<ShowResultView>> for ShowCommand {
             let (width, height) = get_terminal_size();
 
             // account
-            if account_address_opt.is_some() {
+            if account_opt.is_some() {
                 // vectors
                 let mut formatted_account_header = vec![];
                 let mut formatted_account = vec![];
                 let mut account_builder = Builder::default();
 
                 formatted_account_header.push("Account Address".to_owned());
-                formatted_account.push(account_address_opt.unwrap().to_canonical_string());
+                formatted_account.push(account_opt.clone().unwrap().addr.to_canonical_string());
                 formatted_account_header.push("Sequence Number".to_owned());
-                formatted_account.push(
-                    client
-                        .rooch
-                        .get_sequence_number(rooch_address)
-                        .await?
-                        .to_string(),
-                );
+                formatted_account.push(account_opt.clone().unwrap().sequence_number.to_string());
 
                 account_builder.push_record(formatted_account_header);
                 account_builder.push_record(formatted_account);
