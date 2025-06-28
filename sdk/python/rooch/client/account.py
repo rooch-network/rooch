@@ -102,18 +102,19 @@ class AccountClient:
             
             # If no VM error, proceed to extract the sequence number from the result
             if result and result.get("return_values") and len(result["return_values"]) > 0:
-                # Assuming the sequence number is the first return value
                 return_value = result["return_values"][0]
-                if return_value and return_value.get("decoded_value"):
-                    # decoded_value is likely a dict like {'value': '123', 'type': 'u64'}
+                if return_value and isinstance(return_value, dict) and "decoded_value" in return_value:
                     decoded_value = return_value["decoded_value"]
-                    if isinstance(decoded_value, dict):
-                        seq_num_str = decoded_value.get("value")
-                        if seq_num_str is not None:
-                            try:
-                                return int(seq_num_str)
-                            except ValueError:
-                                raise ValueError(f"Could not parse sequence number as integer: {seq_num_str}")
+                    if isinstance(decoded_value, dict) and "value" in decoded_value:
+                        seq_num_str = decoded_value["value"]
+                        try:
+                            return int(seq_num_str)
+                        except ValueError:
+                            raise ValueError(f"Could not parse sequence number as integer: {seq_num_str}")
+                    else:
+                        raise ValueError(f"Unexpected 'decoded_value' format: {decoded_value}")
+                else:
+                    raise ValueError(f"Unexpected 'return_value' format: {return_value}")
 
             # If parsing fails or result structure is unexpected after ruling out known VM errors
             raise ValueError(f"Could not extract sequence number from view function result: {result}")

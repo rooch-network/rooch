@@ -158,7 +158,13 @@ class KeyPair:
              raise RuntimeError(f"Failed to sign digest using ecdsa (secp256k1): {e}") from e
 
     def sign(self, message: Union[str, bytes]) -> bytes:
-        raise NotImplementedError("Legacy sign() method not compatible with SECP256k1 setup. Use sign_digest.")
+        """Sign a message by hashing it with SHA3-256 and then signing the digest.
+        Returns raw R || S format (64 bytes).
+        """
+        if isinstance(message, str):
+            message = message.encode('utf-8')
+        digest = hashlib.sha3_256(message).digest()
+        return self.sign_digest(digest)
     
     def sign_hex(self, message: Union[str, bytes]) -> str:
         """Sign a message and return the signature as hex
@@ -172,7 +178,27 @@ class KeyPair:
         return to_hex(self.sign(message))
     
     def verify(self, message: Union[str, bytes], signature: Union[str, bytes]) -> bool:
-        raise NotImplementedError("Verify method needs update for secp256k1 and SHA3 hash.")
+        """Verify a message signature.
+        
+        Args:
+            message: The original message (str or bytes).
+            signature: The signature to verify (str or bytes, hex or raw bytes).
+            
+        Returns:
+            True if the signature is valid, False otherwise.
+        """
+        if isinstance(message, str):
+            message = message.encode('utf-8')
+        if isinstance(signature, str):
+            signature = from_hex(signature)
+
+        digest = hashlib.sha3_256(message).digest()
+        
+        try:
+            # Verify the signature using the public key and the digest
+            return self._ecdsa_verifying_key.verify(signature, digest, sigdecode=util.sigdecode_string)
+        except Exception:
+            return False
     
     def get_rooch_address(self) -> RoochAddress:
         """Get the Rooch address. ASSUMPTION: Uses SHA256 hash of uncompressed pubkey."""

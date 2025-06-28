@@ -460,3 +460,14 @@ class Args:
     def string(value: str) -> str:
         """Create a string argument"""
         return str(value)
+
+    @staticmethod
+    def vector_address(values: List[str]) -> List[str]:
+        """Create a vector<address> argument"""
+        from ..address.rooch import RoochAddress # Import here to avoid circular dependency
+        return [RoochAddress.normalize_address(v) for v in values]
+
+    @staticmethod
+    def vector_string(values: List[str]) -> List[str]:
+        """Create a vector<string> argument"""
+        return [str(v) for v in values]

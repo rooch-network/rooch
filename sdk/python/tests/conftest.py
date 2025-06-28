@@ -17,7 +17,7 @@ from rooch.client.client import RoochClient
 from rooch.crypto.keypair import KeyPair
 from rooch.crypto.signer import RoochSigner
 from .container_utils import RoochNodeContainer
-from rooch.rpc.client import JsonRpcClient
+
 from rooch.bcs.serializer import BcsSerializer
 from rooch.utils.hex import to_hex
 

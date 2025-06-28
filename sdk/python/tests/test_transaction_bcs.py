@@ -377,7 +377,7 @@ class TestSignedTransactionSerialization:
         public_key = b"mock public key"
         signature = b"mock signature"
         authenticator = TransactionAuthenticator(
-            account_addr="0x1234567890",
+            account_addr="0x0000000000000000000000000000000000000000000000000000000000000001",
             public_key=public_key,
             signature=signature,
             auth_type=auth_type
@@ -436,7 +436,7 @@ class TestSignedTransactionSerialization:
         public_key = b"mock public key"
         signature = b"mock signature"
         authenticator = TransactionAuthenticator(
-            account_addr="0x1234567890",
+            account_addr="0x0000000000000000000000000000000000000000000000000000000000000001",
             public_key=public_key,
             signature=signature,
             auth_type=auth_type

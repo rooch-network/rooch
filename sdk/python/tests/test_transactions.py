@@ -397,7 +397,7 @@ class TestTransactionAuthenticator:
         """Test creating transaction authenticator"""
         # From hex strings
         auth = TransactionAuthenticator(
-            account_addr="0x123456",
+            account_addr="0x0000000000000000000000000000000000000000000000000000000000000001",
             public_key="0xabcdef12",
             signature="0x9876fedc",
             auth_type=AuthenticatorType.ED25519
@@ -410,7 +410,7 @@ class TestTransactionAuthenticator:
         
         # From bytes
         auth2 = TransactionAuthenticator(
-            account_addr="0x123456",
+            account_addr="0x0000000000000000000000000000000000000000000000000000000000000001",
             public_key=b"\x12\x34\x56",
             signature=b"\x98\x76\xfe",
             auth_type=AuthenticatorType.SECP256K1
@@ -424,7 +424,7 @@ class TestTransactionAuthenticator:
     def test_transaction_authenticator_to_dict(self):
         """Test converting transaction authenticator to dictionary"""
         auth = TransactionAuthenticator(
-            account_addr="0x123456",
+            account_addr="0x0000000000000000000000000000000000000000000000000000000000000001",
             public_key="0xabcdef12",
             signature="0x9876fedc"
         )
@@ -476,7 +476,7 @@ class TestSignedTransaction:
         
         # Create authenticator
         auth = TransactionAuthenticator(
-            account_addr="0x123456",
+            account_addr="0x0000000000000000000000000000000000000000000000000000000000000001",
             public_key="0xabcdef12",
             signature="0x9876fedc"
         )
@@ -497,7 +497,7 @@ class TestSignedTransaction:
         )
         
         auth = TransactionAuthenticator(
-            account_addr="0x123456",
+            account_addr="0x0000000000000000000000000000000000000000000000000000000000000001",
             public_key="0xabcdef12",
             signature="0x9876fedc"
         )

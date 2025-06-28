@@ -24,6 +24,7 @@ from ..transactions.types import (
     FunctionId,
     TypeTag,
 )
+from ..session.session import Session, CreateSessionArgs
 
 
 class RoochClient:
@@ -195,55 +196,7 @@ class RoochClient:
         # Submit transaction and get immediate execution result
         return await self.transaction.submit_transaction(transaction)
     
-    async def _prepare_move_call_tx_data(
-        self,
-        signer: Signer,
-        function_id: str,
-        type_args: List[TypeTag],
-        args: List[Any],
-        max_gas_amount: Optional[int] = None,
-    ) -> TransactionData:
-        """Helper to prepare TransactionData for a Move function call."""
-        # ... (get sender_addr, seq_num, chain_id, gas) ...
-        
-        # Parse function_id string into FunctionId object
-        try:
-            parts = function_id.split("::")
-            if len(parts) != 3:
-                 raise ValueError("Invalid function_id format. Expected 'address::module::function'")
-            addr_str, module_name, func_name = parts
-            # Basic validation for short addresses before creating ModuleId
-            if addr_str.startswith('0x') and len(addr_str) < 66:
-                try:
-                    int(addr_str[2:], 16)
-                except ValueError:
-                    raise ValueError(f"Invalid short hex address: {addr_str}")
-            # Add more robust validation if needed
-            
-            mod_id = ModuleId(address=addr_str, name=module_name)
-            func_id_obj = FunctionId(module_id=mod_id, function_name=func_name)
-        except Exception as e:
-            raise ValueError(f"Failed to parse function_id '{function_id}': {e}") from e
-            
-        # Validate type_args are TypeTag objects
-        if not all(isinstance(arg, TypeTag) for arg in type_args):
-            raise TypeError("type_args must be a list of TypeTag objects")
-
-        action_args = FunctionArgument(
-            function_id=func_id_obj,
-            ty_args=type_args,
-            args=args
-        )
-        action = MoveActionArgument(MoveAction.FUNCTION, action_args)
-
-        tx_data = TransactionData(
-            sender=sender_addr,
-            sequence_number=seq_num,
-            chain_id=self.chain_id,
-            max_gas_amount=gas,
-            action=action
-        )
-        return tx_data
+    
         
     async def execute_move_call(
         self,
@@ -331,6 +284,18 @@ class RoochClient:
         
         # Submit and wait for confirmation
         return await self.submit_and_wait(signed_tx)
+
+    async def create_session(self, session_args: CreateSessionArgs, signer: Signer) -> Session:
+        """Create a new session key on the Rooch network.
+
+        Args:
+            session_args: Arguments for creating the session.
+            signer: The signer to authorize the session creation.
+
+        Returns:
+            A Session object representing the newly created session.
+        """
+        return await Session.create(client=self, signer=signer, session_args=session_args)
     
     async def close(self):
         """Close the underlying transport session if it was created by the client."""

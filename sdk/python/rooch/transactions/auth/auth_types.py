@@ -67,19 +67,23 @@ class TransactionAuthenticator(Serializable, Deserializable):
     
     def __init__(
         self,
-        account_addr: str,
+        account_addr: Union[str, RoochAddress],
         public_key: Union[str, bytes],
         signature: Union[str, bytes],
         auth_type: AuthenticatorType = AuthenticatorType.ED25519
     ):
         """
         Args:
-            account_addr: Account address
+            account_addr: Account address (hex string or RoochAddress object)
             public_key: Public key (hex string or bytes)
             signature: Signature (hex string or bytes)
             auth_type: Authentication type
         """
-        self.account_addr = account_addr
+        if isinstance(account_addr, str):
+            self.account_addr = RoochAddress.from_hex(account_addr)
+        else:
+            self.account_addr = account_addr
+        
         self.auth_key = AuthenticationKey(auth_type=auth_type, public_key=public_key)
         
         # Normalize signature
@@ -90,14 +94,14 @@ class TransactionAuthenticator(Serializable, Deserializable):
 
     def serialize(self, serializer: BcsSerializer):
         """Serialize the transaction authenticator."""
-        serializer.str(self.account_addr)
+        serializer.struct(self.account_addr)
         serializer.struct(self.auth_key)
         serializer.bytes(self.signature)
 
     @staticmethod
     def deserialize(deserializer: BcsDeserializer) -> 'TransactionAuthenticator':
         """Deserialize a transaction authenticator."""
-        account_addr = deserializer.str()
+        account_addr = RoochAddress.deserialize(deserializer)
         auth_key = AuthenticationKey.deserialize(deserializer)
         signature = deserializer.bytes()
         return TransactionAuthenticator(
@@ -114,7 +118,7 @@ class TransactionAuthenticator(Serializable, Deserializable):
             Dictionary representation
         """
         return {
-            "account_addr": self.account_addr,
+            "account_addr": str(self.account_addr),
             "auth_key": self.auth_key.to_dict(),
             "signature": to_hex(self.signature)
         }
@@ -131,7 +135,7 @@ class TransactionAuthenticator(Serializable, Deserializable):
         """
         auth_key_data = data.get("auth_key", {})
         return cls(
-            account_addr=data.get("account_addr", ""),
+            account_addr=data.get("account_addr", "0x0"),
             public_key=auth_key_data.get("public_key", ""),
             signature=data.get("signature", ""),
             auth_type=AuthenticatorType(auth_key_data.get("auth_type", AuthenticatorType.ED25519.value))

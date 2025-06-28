@@ -24,6 +24,7 @@ dependencies = [
     "pycryptodome>=3.15.0",
     "base58>=2.1.1",
     "typing-extensions>=4.3.0",
+    "ecdsa>=0.18.0",
 ]
 
 [project.optional-dependencies]

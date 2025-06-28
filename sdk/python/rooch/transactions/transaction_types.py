@@ -78,6 +78,8 @@ class TransactionData(Serializable, Deserializable):
         if tx_type == TransactionType.MOVE_ACTION:
             tx_arg = MoveActionArgument.deserialize(deserializer)
         else:
+            # For other transaction types, assume tx_arg is raw bytes.
+            # This might need to be extended if other structured types are introduced for tx_arg.
             tx_arg = deserializer.bytes()
         sequence_number = deserializer.u64()
         max_gas_amount = deserializer.u64()
@@ -85,7 +87,7 @@ class TransactionData(Serializable, Deserializable):
         expiration_timestamp_secs = deserializer.u64()
         chain_id = deserializer.u8()
         sender = None
-        if deserializer.has_remaining():
+        if deserializer.remaining() > 0:
             sender = RoochAddress.deserialize(deserializer)
         return TransactionData(
             tx_type=tx_type,
