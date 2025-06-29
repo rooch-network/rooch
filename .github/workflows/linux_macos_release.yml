@@ -39,7 +39,7 @@ jobs:
         with:
           path: |
             ~/.cargo/registry
-            ~/.cargo/git
+            ~/.cargo/git/db
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
