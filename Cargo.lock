@@ -14,7 +14,7 @@ dependencies = [
 
 [[package]]
 name = "accumulator"
-version = "0.9.6"
+version = "0.9.7"
 dependencies = [
  "anyhow 1.0.95",
  "bcs",
@@ -1272,7 +1272,7 @@ dependencies = [
 
 [[package]]
 name = "bitcoin-client"
-version = "0.9.6"
+version = "0.9.7"
 dependencies = [
  "anyhow 1.0.95",
  "async-trait",
@@ -1302,7 +1302,7 @@ checksum = "340e09e8399c7bd8912f495af6aa58bea0c9214773417ffaa8f6460f93aaee56"
 
 [[package]]
 name = "bitcoin-move"
-version = "0.9.6"
+version = "0.9.7"
 dependencies = [
  "anyhow 1.0.95",
  "axum",
@@ -3058,7 +3058,7 @@ dependencies = [
 
 [[package]]
 name = "data-verify"
-version = "0.9.6"
+version = "0.9.7"
 dependencies = [
  "anyhow 1.0.95",
  "rooch-rpc-api",
@@ -4590,7 +4590,7 @@ dependencies = [
 
 [[package]]
 name = "framework-builder"
-version = "0.9.6"
+version = "0.9.7"
 dependencies = [
  "anyhow 1.0.95",
  "bcs",
@@ -4614,7 +4614,7 @@ dependencies = [
 
 [[package]]
 name = "framework-release"
-version = "0.9.6"
+version = "0.9.7"
 dependencies = [
  "anyhow 1.0.95",
  "bcs",
@@ -4630,7 +4630,7 @@ dependencies = [
 
 [[package]]
 name = "framework-types"
-version = "0.9.6"
+version = "0.9.7"
 dependencies = [
  "move-core-types",
  "moveos-stdlib",
@@ -6666,16 +6666,16 @@ dependencies = [
  "libc",
  "libz-sys",
  "lz4-sys",
- "tikv-jemalloc-sys",
  "zstd-sys",
 ]
 
 [[package]]
 name = "libsqlite3-sys"
-version = "0.28.0"
+version = "0.33.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0c10584274047cb335c23d3e61bcef8e323adae7c5c8c760540f73610177fc3f"
+checksum = "947e6816f7825b2b45027c2c32e7085da9934defa535de4a6a46b10a4d5257fa"
 dependencies = [
+ "cc",
  "pkg-config",
  "vcpkg",
 ]
@@ -6867,7 +6867,7 @@ dependencies = [
 
 [[package]]
 name = "metrics"
-version = "0.9.6"
+version = "0.9.7"
 dependencies = [
  "anyhow 1.0.95",
  "async-trait",
@@ -7720,7 +7720,7 @@ dependencies = [
 
 [[package]]
 name = "moveos"
-version = "0.9.6"
+version = "0.9.7"
 dependencies = [
  "anyhow 1.0.95",
  "clap 4.5.17",
@@ -7759,7 +7759,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-common"
-version = "0.9.6"
+version = "0.9.7"
 dependencies = [
  "anyhow 1.0.95",
  "bcs",
@@ -7774,7 +7774,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-compiler"
-version = "0.9.6"
+version = "0.9.7"
 dependencies = [
  "anyhow 1.0.95",
  "move-binary-format",
@@ -7783,7 +7783,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-config"
-version = "0.9.6"
+version = "0.9.7"
 dependencies = [
  "clap 4.5.17",
  "serde 1.0.219",
@@ -7792,7 +7792,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-eventbus"
-version = "0.9.6"
+version = "0.9.7"
 dependencies = [
  "anyhow 1.0.95",
  "coerce",
@@ -7803,7 +7803,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-gas-profiling"
-version = "0.9.6"
+version = "0.9.7"
 dependencies = [
  "anyhow 1.0.95",
  "handlebars",
@@ -7820,7 +7820,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-object-runtime"
-version = "0.9.6"
+version = "0.9.7"
 dependencies = [
  "bcs",
  "better_any",
@@ -7836,7 +7836,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-stdlib"
-version = "0.9.6"
+version = "0.9.7"
 dependencies = [
  "anyhow 1.0.95",
  "base64 0.22.1",
@@ -7869,7 +7869,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-store"
-version = "0.9.6"
+version = "0.9.7"
 dependencies = [
  "accumulator",
  "anyhow 1.0.95",
@@ -7892,7 +7892,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-types"
-version = "0.9.6"
+version = "0.9.7"
 dependencies = [
  "anyhow 1.0.95",
  "bcs",
@@ -7920,7 +7920,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-verifier"
-version = "0.9.6"
+version = "0.9.7"
 dependencies = [
  "anyhow 1.0.95",
  "bcs",
@@ -7945,7 +7945,7 @@ dependencies = [
 
 [[package]]
 name = "moveos-wasm"
-version = "0.9.6"
+version = "0.9.7"
 dependencies = [
  "anyhow 1.0.95",
  "once_cell",
@@ -9819,7 +9819,7 @@ dependencies = [
 
 [[package]]
 name = "raw-store"
-version = "0.9.6"
+version = "0.9.7"
 dependencies = [
  "anyhow 1.0.95",
  "metrics",
@@ -10289,7 +10289,7 @@ dependencies = [
 
 [[package]]
 name = "rooch"
-version = "0.9.6"
+version = "0.9.7"
 dependencies = [
  "accumulator",
  "anyhow 1.0.95",
@@ -10312,6 +10312,7 @@ dependencies = [
  "hex",
  "itertools 0.13.0",
  "lazy_static 1.5.0",
+ "libsqlite3-sys",
  "metrics",
  "mimalloc",
  "move-binary-format",
@@ -10391,7 +10392,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-anomalies"
-version = "0.9.6"
+version = "0.9.7"
 dependencies = [
  "anyhow 1.0.95",
  "bcs",
@@ -10405,7 +10406,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-benchmarks"
-version = "0.9.6"
+version = "0.9.7"
 dependencies = [
  "anyhow 1.0.76",
  "anyhow 1.0.93",
@@ -10460,7 +10461,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-common"
-version = "0.9.6"
+version = "0.9.7"
 dependencies = [
  "anyhow 1.0.95",
  "libc",
@@ -10468,7 +10469,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-config"
-version = "0.9.6"
+version = "0.9.7"
 dependencies = [
  "anyhow 1.0.95",
  "clap 4.5.17",
@@ -10487,7 +10488,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-cosmwasm-vm"
-version = "0.9.6"
+version = "0.9.7"
 dependencies = [
  "cosmwasm-std",
  "cosmwasm-vm",
@@ -10499,7 +10500,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-da"
-version = "0.9.6"
+version = "0.9.7"
 dependencies = [
  "anyhow 1.0.95",
  "async-trait",
@@ -10523,7 +10524,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-db"
-version = "0.9.6"
+version = "0.9.7"
 dependencies = [
  "accumulator",
  "anyhow 1.0.95",
@@ -10542,7 +10543,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-executor"
-version = "0.9.6"
+version = "0.9.7"
 dependencies = [
  "anyhow 1.0.95",
  "async-trait",
@@ -10567,7 +10568,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-faucet"
-version = "0.9.6"
+version = "0.9.7"
 dependencies = [
  "anyhow 1.0.95",
  "async-trait",
@@ -10595,7 +10596,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-framework"
-version = "0.9.6"
+version = "0.9.7"
 dependencies = [
  "bitcoin 0.32.5",
  "fastcrypto",
@@ -10615,7 +10616,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-framework-tests"
-version = "0.9.6"
+version = "0.9.7"
 dependencies = [
  "anyhow 1.0.95",
  "bcs",
@@ -10653,7 +10654,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-genesis"
-version = "0.9.6"
+version = "0.9.7"
 dependencies = [
  "accumulator",
  "anyhow 1.0.95",
@@ -10685,7 +10686,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-indexer"
-version = "0.9.6"
+version = "0.9.7"
 dependencies = [
  "anyhow 1.0.95",
  "async-trait",
@@ -10714,7 +10715,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-integration-test-runner"
-version = "0.9.6"
+version = "0.9.7"
 dependencies = [
  "anyhow 1.0.95",
  "bcs",
@@ -10747,7 +10748,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-key"
-version = "0.9.6"
+version = "0.9.7"
 dependencies = [
  "anyhow 1.0.95",
  "argon2",
@@ -10766,7 +10767,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-notify"
-version = "0.9.6"
+version = "0.9.7"
 dependencies = [
  "anyhow 1.0.95",
  "async-trait",
@@ -10788,7 +10789,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-nursery"
-version = "0.9.6"
+version = "0.9.7"
 dependencies = [
  "ciborium",
  "cosmwasm-std",
@@ -10813,7 +10814,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-open-rpc"
-version = "0.9.6"
+version = "0.9.7"
 dependencies = [
  "anyhow 1.0.95",
  "clap 4.5.17",
@@ -10828,7 +10829,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-open-rpc-macros"
-version = "0.9.6"
+version = "0.9.7"
 dependencies = [
  "derive-syn-parse",
  "itertools 0.13.0",
@@ -10840,7 +10841,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-open-rpc-spec"
-version = "0.9.6"
+version = "0.9.7"
 dependencies = [
  "clap 4.5.17",
  "pretty_assertions",
@@ -10851,7 +10852,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-open-rpc-spec-builder"
-version = "0.9.6"
+version = "0.9.7"
 dependencies = [
  "anyhow 1.0.95",
  "clap 4.5.17",
@@ -10864,7 +10865,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-oracle"
-version = "0.9.6"
+version = "0.9.7"
 dependencies = [
  "anyhow 1.0.95",
  "async-trait",
@@ -10889,7 +10890,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-ord"
-version = "0.9.6"
+version = "0.9.7"
 dependencies = [
  "anyhow 1.0.95",
  "ordinals",
@@ -10903,7 +10904,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-pipeline-processor"
-version = "0.9.6"
+version = "0.9.7"
 dependencies = [
  "anyhow 1.0.95",
  "async-trait",
@@ -10929,7 +10930,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-proposer"
-version = "0.9.6"
+version = "0.9.7"
 dependencies = [
  "anyhow 1.0.95",
  "async-trait",
@@ -10946,7 +10947,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-relayer"
-version = "0.9.6"
+version = "0.9.7"
 dependencies = [
  "anyhow 1.0.95",
  "async-trait",
@@ -10973,7 +10974,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-rpc-api"
-version = "0.9.6"
+version = "0.9.7"
 dependencies = [
  "accumulator",
  "anyhow 1.0.95",
@@ -10998,7 +10999,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-rpc-client"
-version = "0.9.6"
+version = "0.9.7"
 dependencies = [
  "anyhow 1.0.95",
  "bcs",
@@ -11020,7 +11021,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-rpc-server"
-version = "0.9.6"
+version = "0.9.7"
 dependencies = [
  "anyhow 1.0.95",
  "axum",
@@ -11071,7 +11072,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-sequencer"
-version = "0.9.6"
+version = "0.9.7"
 dependencies = [
  "accumulator",
  "anyhow 1.0.95",
@@ -11096,7 +11097,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-store"
-version = "0.9.6"
+version = "0.9.7"
 dependencies = [
  "accumulator",
  "anyhow 1.0.95",
@@ -11113,7 +11114,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-test-transaction-builder"
-version = "0.9.6"
+version = "0.9.7"
 dependencies = [
  "anyhow 1.0.95",
  "bcs",
@@ -11127,7 +11128,7 @@ dependencies = [
 
 [[package]]
 name = "rooch-types"
-version = "0.9.6"
+version = "0.9.7"
 dependencies = [
  "accumulator",
  "anyhow 1.0.95",
@@ -12414,7 +12415,7 @@ checksum = "b7c388c1b5e93756d0c740965c41e8822f866621d41acbdf6336a6a168f8840c"
 
 [[package]]
 name = "smt"
-version = "0.9.6"
+version = "0.9.7"
 dependencies = [
  "anyhow 1.0.95",
  "backtrace",
@@ -13011,7 +13012,7 @@ dependencies = [
 
 [[package]]
 name = "testsuite"
-version = "0.9.6"
+version = "0.9.7"
 dependencies = [
  "anyhow 1.0.95",
  "assert_cmd",
@@ -13090,18 +13091,17 @@ dependencies = [
 [[package]]
 name = "tikv-jemalloc-sys"
 version = "0.6.0+5.3.0-1-ge13ca993e8ccb9ba9847cc330696e02839f328f7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cd3c60906412afa9c2b5b5a48ca6a5abe5736aec9eb48ad05037a677e52e4e2d"
+source = "git+https://github.com/jamesatomc/jemallocator.git?rev=49db433eb9620bdad0bc88a35bf7af28c1cabcf4#49db433eb9620bdad0bc88a35bf7af28c1cabcf4"
 dependencies = [
  "cc",
  "libc",
+ "winapi",
 ]
 
 [[package]]
 name = "tikv-jemallocator"
 version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4cec5ff18518d81584f477e9bfdf957f5bb0979b0bac3af4ca30b5b3ae2d2865"
+source = "git+https://github.com/jamesatomc/jemallocator.git?rev=49db433eb9620bdad0bc88a35bf7af28c1cabcf4#49db433eb9620bdad0bc88a35bf7af28c1cabcf4"
 dependencies = [
  "libc",
  "tikv-jemalloc-sys",
@@ -13142,7 +13142,7 @@ dependencies = [
 
 [[package]]
 name = "timeout-join-handler"
-version = "0.9.6"
+version = "0.9.7"
 dependencies = [
  "anyhow 1.0.95",
  "thiserror",

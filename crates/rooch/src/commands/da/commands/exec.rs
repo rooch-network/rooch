@@ -47,13 +47,16 @@ use std::path::PathBuf;
 use std::sync::atomic::AtomicU64;
 use std::sync::Arc;
 use std::time::Duration;
+#[cfg(unix)]
 use tokio::signal::unix::{signal, SignalKind};
+#[cfg(not(unix))]
+use tokio::signal::ctrl_c;
 use tokio::sync::mpsc::Receiver;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::watch;
 use tokio::time;
 use tokio::time::sleep;
-use tracing::{info, warn};
+use tracing::{info, warn, error};
 
 /// exec LedgerTransaction List for verification.
 #[derive(Debug, Parser)]
@@ -203,18 +206,34 @@ impl ExecCommand {
         let shutdown_tx_clone = shutdown_tx.clone();
 
         tokio::spawn(async move {
-            let mut sigterm =
-                signal(SignalKind::terminate()).expect("Failed to listen for SIGTERM");
-            let mut sigint = signal(SignalKind::interrupt()).expect("Failed to listen for SIGINT");
+            #[cfg(unix)]
+            {
+                let mut sigterm =
+                    signal(SignalKind::terminate()).expect("Failed to listen for SIGTERM");
+                let mut sigint = signal(SignalKind::interrupt()).expect("Failed to listen for SIGINT");
 
-            tokio::select! {
-                _ = sigterm.recv() => {
-                    info!("SIGTERM received, shutting down...");
-                    let _ = shutdown_tx_clone.send(());
+                tokio::select! {
+                    _ = sigterm.recv() => {
+                        info!("SIGTERM received, shutting down...");
+                        let _ = shutdown_tx_clone.send(());
+                    }
+                    _ = sigint.recv() => {
+                        info!("SIGINT received (Ctrl+C), shutting down...");
+                        let _ = shutdown_tx_clone.send(());
+                    }
                 }
-                _ = sigint.recv() => {
-                    info!("SIGINT received (Ctrl+C), shutting down...");
-                    let _ = shutdown_tx_clone.send(());
+            }
+            
+            #[cfg(not(unix))]
+            {
+                match ctrl_c().await {
+                    Ok(()) => {
+                        info!("Ctrl+C received, shutting down...");
+                        let _ = shutdown_tx_clone.send(());
+                    }
+                    Err(e) => {
+                        error!("Failed to listen for Ctrl+C: {}", e);
+                    }
                 }
             }
         });
