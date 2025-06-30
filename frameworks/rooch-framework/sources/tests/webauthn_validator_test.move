@@ -11,14 +11,25 @@ module rooch_framework::webauthn_validator_test {
     use rooch_framework::webauthn_validator::{Self, WebauthnAuthPayload, ClientData};
 
 
-    // Helper function to create test payload
-    fun create_test_payload(
+    // Helper function to create test payload for ECDSA R1
+    fun create_test_payload_ecdsa_r1(
         signature: vector<u8>,
         public_key: vector<u8>,
         authenticator_data: vector<u8>,
         client_data_json: vector<u8>
     ): WebauthnAuthPayload {
-        let payload = webauthn_validator::create_auth_payload_for_test(signature, public_key, authenticator_data, client_data_json);
+        let payload = webauthn_validator::create_auth_payload_for_test_ecdsa_r1(signature, public_key, authenticator_data, client_data_json);
+        payload
+    }
+
+    // Helper function to create test payload for RS256
+    fun create_test_payload_rs256(
+        signature: vector<u8>,
+        public_key: vector<u8>,
+        authenticator_data: vector<u8>,
+        client_data_json: vector<u8>
+    ): WebauthnAuthPayload {
+        let payload = webauthn_validator::create_auth_payload_for_test_rs256(signature, public_key, authenticator_data, client_data_json);
         payload
     }
 
