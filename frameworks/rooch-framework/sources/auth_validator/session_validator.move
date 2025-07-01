@@ -93,26 +93,26 @@ module rooch_framework::session_validator {
             };
             (signature, public_key)
         } else if (*scheme == session_key::signature_scheme_rs256()) {
-            // TODO: divide signature and public key position if they are variables
             // Rs256 scheme
-            // let signature = vector::empty<u8>();
-            // let i = 1;
-            // let signature_position = ecdsa_r1::raw_signature_length() + 1;
-            // while (i < signature_position) {
-            //     let value = vector::borrow(authenticator_payload, i);
-            //     vector::push_back(&mut signature, *value);
-            //     i = i + 1;
-            // };
+            let signature = vector::empty<u8>();
+            let i = 1;
+            // signature length and public key modulus length are equal, so divide payload by 2
+            let signature_position = vector::length(authenticator_payload) / 2 + 1;
+            while (i < signature_position) {
+                let value = vector::borrow(authenticator_payload, i);
+                vector::push_back(&mut signature, *value);
+                i = i + 1;
+            };
 
-            // let public_key = vector::empty<u8>();
-            // let i = 1 + ecdsa_r1::raw_signature_length();
-            // let public_key_position = 1 + ecdsa_r1::raw_signature_length() + ecdsa_r1::public_key_length();
-            // while (i < public_key_position) {
-            //     let value = vector::borrow(authenticator_payload, i);
-            //     vector::push_back(&mut public_key, *value);
-            //     i = i + 1;
-            // };
-            // (signature, public_key)
+            let public_key = vector::empty<u8>();
+            let i = 1 + vector::length(authenticator_payload) / 2;
+            let public_key_position = 1 + vector::length(authenticator_payload);
+            while (i < public_key_position) {
+                let value = vector::borrow(authenticator_payload, i);
+                vector::push_back(&mut public_key, *value);
+                i = i + 1;
+            };
+            (signature, public_key)
         } else {
             // Unsupported scheme
             abort auth_validator::error_validate_invalid_authenticator()
