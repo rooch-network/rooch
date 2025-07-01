@@ -80,16 +80,19 @@ fun validate_webauthn(auth_payload: &vector<u8>, expected_tx_hash: &vector<u8>):
     // 4. 组成 WebAuthn message
     let msg = vector::concat(&ad, &cd_hash);
 
-    // 5. 调用 ecdsa_r1 验证
+    // 5. 调用 ecdsa_r1 或 rs256 验证
     assert!(ecdsa_r1::verify(&sig, &pubkey, &msg), ERR_SIG_INVALID);
+    let pubexpo = x"10001";
+    assert!(rs256::verify(&sig, &pubkey, &pubexpo, &msg), ERR_SIG_INVALID);
 
     // 6. 解析 clientDataJSON 并比对 challenge（可选）
     // 确保 challenge == base64url(expected_tx_hash)
 
     // 7. 更新 signCount （重放保护，可选）
 
-    // 8. 返回 auth_key 供后续逻辑使用
+    // 8. 返回 auth_key 供后续逻辑使用 (secp256r1 或 rs256)
     session_key::secp256r1_public_key_to_authentication_key(&pubkey)
+    session_key::rs256_public_key_to_authentication_key(pubkey, pubexpo)
 }
 ```
 

@@ -105,7 +105,7 @@ module rooch_framework::rs256 {
 
 ### 3.6. `did.move` 模块更新
 
-*   新增验证方法类型常量 `const VERIFICATION_METHOD_TYPE_RS256: vector<u8> = b"RsaVerificationKey2018";`。
+*   新增验证方法类型常量 `const VERIFICATION_METHOD_TYPE_RS256: vector<u8> = b"Rs256VerificationKey2018";`。
 *   更新 `internal_ensure_session_key`（或创建一个新的通用函数 `internal_ensure_session_key_generic`），以处理新的密钥类型。这将涉及：
     *   新增 `multibase::decode_rs256_key` (如果需要)。
     *   根据密钥类型调用对应的 `session_key::*_public_key_to_authentication_key` 函数。
