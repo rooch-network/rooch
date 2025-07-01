@@ -9,7 +9,7 @@
 /// This module builds on top of `multibase_codec` to provide specialized encoding/decoding
 /// for cryptographic keys. It handles:
 ///
-/// 1. Key type enumeration (Ed25519, Secp256k1, Secp256r1)
+/// 1. Key type enumeration (Ed25519, Secp256k1, Secp256r1, Rs256)
 /// 2. Multicodec prefixes for different key types
 /// 3. Key length validation
 /// 4. Encoding/decoding with type information
@@ -19,6 +19,7 @@
 /// * Ed25519: KEY_TYPE_ED25519 = 1, multicodec prefix = 0xed01
 /// * Secp256k1: KEY_TYPE_SECP256K1 = 2, multicodec prefix = 0xe701
 /// * Secp256r1 (ECDSA P-256): KEY_TYPE_ECDSAR1 = 3, multicodec prefix = 0x1200
+//  * Rs256 (RSASSA-PKCS-v1_5): KEY_TYPE_RS256 = 4, multicodec prefix = // TODO
 ///
 /// The encoding process adds the appropriate multicodec prefix to the raw key bytes
 /// before applying base58btc encoding.
@@ -35,12 +36,14 @@ module moveos_std::multibase_key {
     const ErrorInvalidSecp256k1KeyLength: u64 = 2;
     /// Error when the Secp256r1 key length is invalid
     const ErrorInvalidSecp256r1KeyLength: u64 = 3;
+    /// Error when the Rs256 key length is invalid
+    const ErrorInvalidRs256KeyLength: u64 = 4;
     /// Error when the did:key identifier is invalid
-    const ErrorInvalidDidKeyIdentifier: u64 = 4;
+    const ErrorInvalidDidKeyIdentifier: u64 = 5;
     /// Error when an unsupported key type is used
-    const ErrorUnsupportedKeyType: u64 = 5;
+    const ErrorUnsupportedKeyType: u64 = 6;
     /// Error when the format of the publicKeyMultibase string is invalid or cannot be parsed
-    const ErrorInvalidPublicKeyMultibaseFormat: u64 = 6;
+    const ErrorInvalidPublicKeyMultibaseFormat: u64 = 7;
     // General test failure code for asserts
     const ETestAssertionFailed: u64 = 100;
 
@@ -50,16 +53,23 @@ module moveos_std::multibase_key {
     const SECP256K1_COMPRESSED_PUBLIC_KEY_LENGTH: u64 = 33;
     /// The length of Secp256r1 compressed public keys in bytes
     const ECDSAR1_COMPRESSED_PUBLIC_KEY_LENGTH: u64 = 33;
+    /// The minimum length of RSASSA-PKCS1-v1_5 public key modulus in bits
+    const RS256_PUBLIC_KEY_MODULUS_MINIMUM_LENGTH: u64 = 2048;
+    /// The maximum length of RSASSA-PKCS1-v1_5 public key modulus in bits
+    const RS256_PUBLIC_KEY_MODULUS_MAXIMUM_LENGTH: u64 = 4096;
 
     // Key type constants as u8 values for efficient storage and comparison
     const KEY_TYPE_ED25519: u8 = 1;
     const KEY_TYPE_SECP256K1: u8 = 2;
     const KEY_TYPE_ECDSAR1: u8 = 3;
+    const KEY_TYPE_RS256: u8 = 4;
 
     // Multicodec prefixes for key types
     const MULTICODEC_ED25519_PREFIX: vector<u8> = vector[0xed, 0x01];
     const MULTICODEC_SECP256K1_PREFIX: vector<u8> = vector[0xe7, 0x01];
     const MULTICODEC_ECDSA_R1_PREFIX: vector<u8> = vector[0x12, 0x00];
+    // TODO RS256 multicodec prefix
+    const MULTICODEC_RS256_PREFIX: vector<u8> = vector[0x12, 0x00]; // TODO
 
     /// A struct to hold the key type and raw key bytes
     /// Used as a workaround for Move's lack of support for tuple types in Option
@@ -93,9 +103,14 @@ module moveos_std::multibase_key {
         KEY_TYPE_ECDSAR1
     }
 
+    /// Returns the key type constant for Rs256 (RSASSA-PKCS1-v1_5)
+    public fun key_type_rs256(): u8 {
+        KEY_TYPE_RS256
+    }
+
     /// Get the multicodec prefix for a given key type
-    /// 
-    /// @param key_type - The key type (1=Ed25519, 2=Secp256k1, 3=Secp256r1)
+    ///
+    /// @param key_type - The key type (1=Ed25519, 2=Secp256k1, 3=Secp256r1, 4=Rs256)
     /// @return - The multicodec prefix bytes
     public fun multicodec_prefix_for_type(key_type: u8): vector<u8> {
         if (key_type == KEY_TYPE_ED25519) {
@@ -104,13 +119,15 @@ module moveos_std::multibase_key {
             MULTICODEC_SECP256K1_PREFIX
         } else if (key_type == KEY_TYPE_ECDSAR1) {
             MULTICODEC_ECDSA_R1_PREFIX
+        } else if (key_type == KEY_TYPE_RS256) {
+            MULTICODEC_RS256_PREFIX
         } else {
             abort ErrorUnsupportedKeyType
         }
     }
 
     /// Validate key length based on key type
-    /// 
+    ///
     /// @param key_bytes - The raw key bytes
     /// @param key_type - The key type
     fun validate_key_length(key_bytes: &vector<u8>, key_type: u8) {
@@ -120,32 +137,34 @@ module moveos_std::multibase_key {
             assert!(vector::length(key_bytes) == SECP256K1_COMPRESSED_PUBLIC_KEY_LENGTH, ErrorInvalidSecp256k1KeyLength);
         } else if (key_type == KEY_TYPE_ECDSAR1) {
             assert!(vector::length(key_bytes) == ECDSAR1_COMPRESSED_PUBLIC_KEY_LENGTH, ErrorInvalidSecp256r1KeyLength);
+        } else if (key_type == KEY_TYPE_RS256) {
+            assert!(vector::length(key_bytes) >= RS256_PUBLIC_KEY_MODULUS_MINIMUM_LENGTH / 8 && vector::length(key_bytes) <= RS256_PUBLIC_KEY_MODULUS_MAXIMUM_LENGTH / 8, ErrorInvalidRs256KeyLength); // convert to bytes
         } else {
             abort ErrorUnsupportedKeyType
         }
     }
 
     /// Encodes a public key with multicodec prefix and multibase encoding
-    /// 
+    ///
     /// @param pubkey - The raw public key bytes
-    /// @param key_type - The key type (1=Ed25519, 2=Secp256k1, 3=Secp256r1)
+    /// @param key_type - The key type (1=Ed25519, 2=Secp256k1, 3=Secp256r1, 4=Rs256)
     /// @return - A multibase encoded string with appropriate prefix
     public fun encode_with_type(pubkey: &vector<u8>, key_type: u8): String {
         // Validate key length based on type
         validate_key_length(pubkey, key_type);
-        
+
         // Get multicodec prefix for this key type
         let prefixed_key = multicodec_prefix_for_type(key_type);
-        
+
         // Append raw key bytes to prefix
         vector::append(&mut prefixed_key, *pubkey);
-        
+
         // Encode with base58btc
         multibase_codec::encode_base58btc(&prefixed_key)
     }
 
     /// Decodes a multibase-encoded key string with multicodec prefix
-    /// 
+    ///
     /// @param encoded_str - The multibase encoded key string
     /// @return - A tuple of (key_type, raw_key_bytes), or abort if invalid
     public fun decode_with_type(encoded_str: &String): (u8, vector<u8>) {
@@ -154,18 +173,18 @@ module moveos_std::multibase_key {
         if (option::is_none(&decoded_bytes_opt)) {
             abort ErrorInvalidPublicKeyMultibaseFormat
         };
-        
+
         let decoded_bytes = option::extract(&mut decoded_bytes_opt);
-        
+
         // Check minimum length (at least 2 bytes for multicodec prefix)
         if (vector::length(&decoded_bytes) < 2) {
             abort ErrorInvalidDidKeyIdentifier
         };
-        
+
         // Extract multicodec prefix
         let first_byte = *vector::borrow(&decoded_bytes, 0);
         let second_byte = *vector::borrow(&decoded_bytes, 1);
-        
+
         // Check for Ed25519 multicodec: 0xed01
         if (first_byte == 0xed && second_byte == 0x01) {
             // Extract raw Ed25519 public key (32 bytes after 2-byte prefix)
@@ -179,7 +198,7 @@ module moveos_std::multibase_key {
                 return (KEY_TYPE_ED25519, raw_key)
             }
         }
-        // Check for Secp256k1 multicodec: 0xe701  
+        // Check for Secp256k1 multicodec: 0xe701
         else if (first_byte == 0xe7 && second_byte == 0x01) {
             // Extract raw Secp256k1 public key (33 bytes after 2-byte prefix)
             if (vector::length(&decoded_bytes) == 35) { // 2 bytes prefix + 33 bytes key
@@ -204,14 +223,28 @@ module moveos_std::multibase_key {
                 };
                 return (KEY_TYPE_ECDSAR1, raw_key)
             }
-        };   
-        
+        }
+        // TODO: Check for RS256 multicodec:
+        else if (first_byte == && second_byte ==) { // TODO
+            // Extract raw RS256 public key modulus (from 2048 bits to 4096 bits after 2-byte prefix)
+            if (vector::length(&decoded_bytes) >= 2 + RS256_PUBLIC_KEY_MODULUS_MINIMUM_LENGTH / 8 && vector::length(&decoded_bytes) <= RS256_PUBLIC_KEY_MODULUS_MAXIMUM_LENGTH / 8 + 2) { // 2 bytes prefix + key modulus bytes
+                let raw_key = vector::empty<u8>();
+                let i = 2;
+                while (i < vector::length(&decoded_bytes) + 2) {
+                    vector::push_back(&mut raw_key, *vector::borrow(&decoded_bytes, i));
+                    i = i + 1;
+                };
+                return (KEY_TYPE_RS256, raw_key)
+            }
+        }
         // Unsupported multicodec or invalid format
-        abort ErrorInvalidDidKeyIdentifier
+        else {
+            abort ErrorInvalidDidKeyIdentifier
+        }
     }
 
     /// Encodes an Ed25519 public key using base58btc with multibase prefix
-    /// 
+    ///
     /// @param pubkey - The raw Ed25519 public key bytes
     /// @return - A multibase encoded string with 'z' prefix
     public fun encode_ed25519_key(pubkey: &vector<u8>): String {
@@ -219,7 +252,7 @@ module moveos_std::multibase_key {
     }
 
     /// Encodes a Secp256k1 compressed public key using base58btc with multibase prefix
-    /// 
+    ///
     /// @param pubkey - The raw Secp256k1 compressed public key bytes (33 bytes)
     /// @return - A multibase encoded string with 'z' prefix
     public fun encode_secp256k1_key(pubkey: &vector<u8>): String {
@@ -227,26 +260,34 @@ module moveos_std::multibase_key {
     }
 
     /// Encodes a Secp256r1 compressed public key using base58btc with multibase prefix
-    /// 
+    ///
     /// @param pubkey - The raw Secp256r1 compressed public key bytes (33 bytes)
     /// @return - A multibase encoded string with 'z' prefix
     public fun encode_ecdsar1_key(pubkey: &vector<u8>): String {
         encode_with_type(pubkey, KEY_TYPE_ECDSAR1)
     }
 
+    /// Encodes a Rs256 public key modulus using base58btc with multibase prefix
+    ///
+    /// @param pubkey - The raw Rs256 public key modulus bytes (variant bytes)
+    /// @return - A multibase encoded string with 'z' prefix
+    public fun encode_rs256_key(pubkey: &vector<u8>): String {
+        encode_with_type(pubkey, KEY_TYPE_RS256)
+    }
+
     /// Decodes a multibase-encoded Ed25519 public key
-    /// 
+    ///
     /// @param pk_mb_str - The multibase encoded Ed25519 public key string
     /// @return - Option containing the decoded public key bytes, or none if decoding fails
     public fun decode_ed25519_key(pk_mb_str: &String): Option<vector<u8>> {
         let decoded_result = decode_with_type_option(pk_mb_str);
-        
+
         if (option::is_none(&decoded_result)) {
             return option::none()
         };
-        
+
         let key_info = option::extract(&mut decoded_result);
-        
+
         if (key_info.key_type == KEY_TYPE_ED25519) {
             option::some(key_info.key_bytes)
         } else {
@@ -255,18 +296,18 @@ module moveos_std::multibase_key {
     }
 
     /// Decodes a multibase-encoded Secp256k1 compressed public key
-    /// 
+    ///
     /// @param pk_mb_str - The multibase encoded Secp256k1 public key string
     /// @return - Option containing the decoded public key bytes, or none if decoding fails
     public fun decode_secp256k1_key(pk_mb_str: &String): Option<vector<u8>> {
         let decoded_result = decode_with_type_option(pk_mb_str);
-        
+
         if (option::is_none(&decoded_result)) {
             return option::none()
         };
-        
+
         let key_info = option::extract(&mut decoded_result);
-        
+
         if (key_info.key_type == KEY_TYPE_SECP256K1) {
             option::some(key_info.key_bytes)
         } else {
@@ -275,19 +316,39 @@ module moveos_std::multibase_key {
     }
 
     /// Decodes a Secp256r1 public key from a multibase encoded string
-    /// 
+    ///
     /// @param pk_mb_str - The multibase encoded string
     /// @return - Option containing the raw Secp256r1 public key bytes, or none if decoding fails
     public fun decode_secp256r1_key(pk_mb_str: &String): Option<vector<u8>> {
         let decoded_result = decode_with_type_option(pk_mb_str);
-        
+
         if (option::is_none(&decoded_result)) {
             return option::none()
         };
-        
+
         let key_info = option::extract(&mut decoded_result);
-        
+
         if (key_info.key_type == KEY_TYPE_ECDSAR1) {
+            option::some(key_info.key_bytes)
+        } else {
+            option::none()
+        }
+    }
+
+    /// Decodes a Rs256 public key modulus from a multibase encoded string
+    ///
+    /// @param pk_mb_str - The multibase encoded string
+    /// @return - Option containing the raw Rs256 public key modulus bytes, or none if decoding fails
+    public fun decode_rs256_key(pk_mb_str: &String): Option<vector<u8>> {
+        let decoded_result = decode_with_type_option(pk_mb_str);
+
+        if (option::is_none(&decoded_result)) {
+            return option::none()
+        };
+
+        let key_info = option::extract(&mut decoded_result);
+
+        if (key_info.key_type == KEY_TYPE_RS256) {
             option::some(key_info.key_bytes)
         } else {
             option::none()
@@ -296,7 +357,7 @@ module moveos_std::multibase_key {
 
     /// Helper function to decode a multibase-encoded key string with multicodec prefix,
     /// returning an Option instead of aborting on failure
-    /// 
+    ///
     /// @param encoded_str - The multibase encoded key string
     /// @return - Option containing a KeyInfo struct with key_type and key_bytes, or none if invalid
     public fun decode_with_type_option(encoded_str: &String): Option<KeyInfo> {
@@ -305,18 +366,18 @@ module moveos_std::multibase_key {
         if (option::is_none(&decoded_bytes_opt)) {
             return option::none()
         };
-        
+
         let decoded_bytes = option::extract(&mut decoded_bytes_opt);
-        
+
         // Check minimum length (at least 2 bytes for multicodec prefix)
         if (vector::length(&decoded_bytes) < 2) {
             return option::none()
         };
-        
+
         // Extract multicodec prefix
         let first_byte = *vector::borrow(&decoded_bytes, 0);
         let second_byte = *vector::borrow(&decoded_bytes, 1);
-        
+
         // Check for Ed25519 multicodec: 0xed01
         if (first_byte == 0xed && second_byte == 0x01) {
             // Extract raw Ed25519 public key (32 bytes after 2-byte prefix)
@@ -330,7 +391,7 @@ module moveos_std::multibase_key {
                 return option::some(KeyInfo { key_type: KEY_TYPE_ED25519, key_bytes: raw_key })
             }
         }
-        // Check for Secp256k1 multicodec: 0xe701  
+        // Check for Secp256k1 multicodec: 0xe701
         else if (first_byte == 0xe7 && second_byte == 0x01) {
             // Extract raw Secp256k1 public key (33 bytes after 2-byte prefix)
             if (vector::length(&decoded_bytes) == 35) { // 2 bytes prefix + 33 bytes key
@@ -355,10 +416,24 @@ module moveos_std::multibase_key {
                 };
                 return option::some(KeyInfo { key_type: KEY_TYPE_ECDSAR1, key_bytes: raw_key })
             }
-        };   
-        
+        }
+        // TODO Check for RS256 multicodec
+        else if (first_byte == && second_byte ==) { // TODO
+            // Extract raw RS256 public key modulus (from 2048 bits to 4096 bits after 2-byte prefix)
+            if (vector::length(&decoded_bytes) >= 2 + RS256_PUBLIC_KEY_MODULUS_MINIMUM_LENGTH / 8 && vector::length(&decoded_bytes) <= RS256_PUBLIC_KEY_MODULUS_MAXIMUM_LENGTH / 8 + 2) { // 2 bytes prefix + key bytes
+                let raw_key = vector::empty<u8>();
+                let i = 2;
+                while (i < vector::length(&decoded_bytes) + 2) {
+                    vector::push_back(&mut raw_key, *vector::borrow(&decoded_bytes, i));
+                    i = i + 1;
+                };
+                return option::some(KeyInfo { key_type: KEY_TYPE_RS256, key_bytes: raw_key })
+            }
+        }
         // Unsupported multicodec or invalid format
-        option::none()
+        else {
+            return option::none()
+        }
     }
 
     #[test]
@@ -370,17 +445,17 @@ module moveos_std::multibase_key {
             vector::push_back(&mut pubkey, (i as u8));
             i = i + 1;
         };
-        
+
         let encoded = encode_ed25519_key(&pubkey);
         let decoded_opt = decode_ed25519_key(&encoded);
-        
+
         assert!(option::is_some(&decoded_opt), ETestAssertionFailed + 1);
         assert!(option::extract(&mut decoded_opt) == pubkey, ETestAssertionFailed + 2);
-        
+
         // Test with generic encode/decode
         let encoded2 = encode_with_type(&pubkey, KEY_TYPE_ED25519);
         assert!(encoded == encoded2, ETestAssertionFailed + 3);
-        
+
         let (key_type, raw_key) = decode_with_type(&encoded);
         assert!(key_type == KEY_TYPE_ED25519, ETestAssertionFailed + 4);
         assert!(raw_key == pubkey, ETestAssertionFailed + 5);
@@ -395,17 +470,17 @@ module moveos_std::multibase_key {
             vector::push_back(&mut pubkey, (i as u8));
             i = i + 1;
         };
-        
+
         let encoded = encode_secp256k1_key(&pubkey);
         let decoded_opt = decode_secp256k1_key(&encoded);
-        
+
         assert!(option::is_some(&decoded_opt), ETestAssertionFailed + 6);
         assert!(option::extract(&mut decoded_opt) == pubkey, ETestAssertionFailed + 7);
-        
+
         // Test with generic encode/decode
         let encoded2 = encode_with_type(&pubkey, KEY_TYPE_SECP256K1);
         assert!(encoded == encoded2, ETestAssertionFailed + 8);
-        
+
         let (key_type, raw_key) = decode_with_type(&encoded);
         assert!(key_type == KEY_TYPE_SECP256K1, ETestAssertionFailed + 9);
         assert!(raw_key == pubkey, ETestAssertionFailed + 10);
@@ -420,20 +495,45 @@ module moveos_std::multibase_key {
             vector::push_back(&mut pubkey, (i as u8));
             i = i + 1;
         };
-        
+
         let encoded = encode_ecdsar1_key(&pubkey);
         let decoded_opt = decode_secp256r1_key(&encoded);
-        
+
         assert!(option::is_some(&decoded_opt), ETestAssertionFailed + 11);
         assert!(option::extract(&mut decoded_opt) == pubkey, ETestAssertionFailed + 12);
-        
+
         // Test with generic encode/decode
         let encoded2 = encode_with_type(&pubkey, KEY_TYPE_ECDSAR1);
         assert!(encoded == encoded2, ETestAssertionFailed + 13);
-        
+
         let (key_type, raw_key) = decode_with_type(&encoded);
         assert!(key_type == KEY_TYPE_ECDSAR1, ETestAssertionFailed + 14);
         assert!(raw_key == pubkey, ETestAssertionFailed + 15);
+    }
+
+    #[test]
+    fun test_encode_decode_rs256_key() {
+        // Create a test Rs256 public key (2048 bits)
+        let pubkey = vector::empty<u8>();
+        let i = 0;
+        while (i < RS256_PUBLIC_KEY_MODULUS_MINIMUM_LENGTH / 8) { // convert to bytes
+            vector::push_back(&mut pubkey, (i as u8));
+            i = i + 1;
+        };
+
+        let encoded = encode_rs256_key(&pubkey);
+        let decoded_opt = decode_rs256_key(&encoded);
+
+        assert!(option::is_some(&decoded_opt), ETestAssertionFailed + 16);
+        assert!(option::extract(&mut decoded_opt) == pubkey, ETestAssertionFailed + 17);
+
+        // Test with generic encode/decode
+        let encoded2 = encode_with_type(&pubkey, KEY_TYPE_RS256);
+        assert!(encoded == encoded2, ETestAssertionFailed + 18);
+
+        let (key_type, raw_key) = decode_with_type(&encoded);
+        assert!(key_type == KEY_TYPE_RS256, ETestAssertionFailed + 19);
+        assert!(raw_key == pubkey, ETestAssertionFailed + 20);
     }
 
     #[test]
@@ -464,6 +564,15 @@ module moveos_std::multibase_key {
     }
 
     #[test]
+    #[expected_failure(abort_code = ErrorInvalidRs256KeyLength)]
+    fun test_invalid_rs256_key_length() {
+        // Try to encode a key with invalid length
+        let invalid_key = vector::empty<u8>();
+        vector::push_back(&mut invalid_key, 1);
+        encode_rs256_key(&invalid_key);
+    }
+
+    #[test]
     #[expected_failure(abort_code = ErrorUnsupportedKeyType)]
     fun test_unsupported_key_type() {
         // Try to encode with unsupported key type
@@ -478,7 +587,7 @@ module moveos_std::multibase_key {
         let invalid_str = std::string::utf8(b"not-a-valid-multibase");
         let decoded_opt = decode_ed25519_key(&invalid_str);
         assert!(option::is_none(&decoded_opt), ETestAssertionFailed + 16);
-        
+
         // Test with valid multibase but wrong key type
         let ed25519_key = vector::empty<u8>();
         let i = 0;
@@ -486,9 +595,9 @@ module moveos_std::multibase_key {
             vector::push_back(&mut ed25519_key, (i as u8));
             i = i + 1;
         };
-        
+
         let encoded_ed25519 = encode_ed25519_key(&ed25519_key);
-        
+
         // Try to decode as Secp256k1
         let decoded_secp256k1_opt = decode_secp256k1_key(&encoded_ed25519);
         assert!(option::is_none(&decoded_secp256k1_opt), ETestAssertionFailed + 17);
