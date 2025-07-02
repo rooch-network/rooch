@@ -25,6 +25,7 @@ dependencies = [
     "base58>=2.1.1",
     "typing-extensions>=4.3.0",
     "ecdsa>=0.18.0",
+    "bech32>=1.2.0",
 ]
 
 [project.optional-dependencies]
