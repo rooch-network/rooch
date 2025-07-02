@@ -13,8 +13,6 @@ from .transaction_types import (
 
 # Auth types
 from .auth.auth_types import (
-    AuthenticatorType,
-    AuthenticationKey,
     TransactionAuthenticator,
     AuthPayload
 )
@@ -45,8 +43,6 @@ __all__ = [
     'TransactionType',
     'TransactionData',
     'SignedTransaction',
-    'AuthenticatorType',
-    'AuthenticationKey',
     'TransactionAuthenticator',
     'AuthPayload',
     'MoveAction',

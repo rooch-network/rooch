@@ -11,7 +11,7 @@ from rooch.transactions.types import (
     ModuleId, FunctionId,
     MoveAction, MoveActionArgument, FunctionArgument,
     TransactionType, TransactionData,
-    AuthenticatorType, TransactionAuthenticator, SignedTransaction,
+    TransactionAuthenticator, SignedTransaction,
     TransactionArgument
 )
 from rooch.address.rooch import RoochAddress
@@ -20,11 +20,14 @@ from typing import Any
 def bcs_serialize(value: Serializable) -> bytes:
     """Helper function to serialize a value using BCS"""
     serializer = BcsSerializer()
-    serializer.struct(value)
-    return serializer.output()
+    value.serialize(serializer)
+    raw = serializer.output()
+    print(f"[DEBUG] BCS serialized bytes: {raw.hex()}")
+    return raw
 
 def bcs_deserialize(cls: type, data: bytes) -> Any:
     """Helper function to deserialize a value using BCS"""
+    print(f"[DEBUG] BCS deserializing bytes: {data.hex()}")
     deserializer = BcsDeserializer(data)
     return cls.deserialize(deserializer)
 
@@ -284,7 +287,8 @@ class TestTransactionDataSerialization:
             tx_arg=move_action,
             sequence_number=sequence_number,
             chain_id=chain_id,
-            max_gas_amount=max_gas_amount
+            max_gas_amount=max_gas_amount,
+            sender=sender
         )
         
         # Serialize
@@ -321,7 +325,8 @@ class TestTransactionDataSerialization:
             tx_arg=move_action,
             sequence_number=sequence_number,
             chain_id=chain_id,
-            max_gas_amount=max_gas_amount
+            max_gas_amount=max_gas_amount,
+            sender=sender
         )
         
         # Serialize
@@ -369,26 +374,19 @@ class TestSignedTransactionSerialization:
             tx_arg=move_action,
             sequence_number=sequence_number,
             chain_id=chain_id,
-            max_gas_amount=max_gas_amount
+            max_gas_amount=max_gas_amount,
+            sender=sender
         )
         
         # Create mock authenticator
-        auth_type = AuthenticatorType.ED25519
-        public_key = b"mock public key"
-        signature = b"mock signature"
-        authenticator = TransactionAuthenticator(
-            account_addr="0x0000000000000000000000000000000000000000000000000000000000000001",
-            public_key=public_key,
-            signature=signature,
-            auth_type=auth_type
-        )
-        
+        # Use a 32-byte signature for BCS compatibility
+        signature = b"s" * 32
+        authenticator = TransactionAuthenticator.session(signature)
         # Create SignedTransaction
         signed_tx = SignedTransaction(
             tx_data=tx_data,
             authenticator=authenticator
         )
-        
         # Serialize
         serialized = bcs_serialize(signed_tx)
         
@@ -403,9 +401,8 @@ class TestSignedTransactionSerialization:
         assert deserialized.tx_data.max_gas_amount == tx_data.max_gas_amount
         
         # Verify authenticator
-        assert deserialized.authenticator.auth_key.auth_type == authenticator.auth_key.auth_type
-        assert deserialized.authenticator.auth_key.public_key == authenticator.auth_key.public_key
-        assert deserialized.authenticator.signature == authenticator.signature
+        assert deserialized.authenticator.auth_validator_id == authenticator.auth_validator_id
+        assert deserialized.authenticator.payload == authenticator.payload
 
     def test_signed_transaction_with_module_bundle(self):
         """Test serialization/deserialization of SignedTransaction with module bundle"""
@@ -428,26 +425,18 @@ class TestSignedTransactionSerialization:
             tx_arg=move_action,
             sequence_number=sequence_number,
             chain_id=chain_id,
-            max_gas_amount=max_gas_amount
+            max_gas_amount=max_gas_amount,
+            sender=sender
         )
         
         # Create mock authenticator
-        auth_type = AuthenticatorType.ED25519
-        public_key = b"mock public key"
-        signature = b"mock signature"
-        authenticator = TransactionAuthenticator(
-            account_addr="0x0000000000000000000000000000000000000000000000000000000000000001",
-            public_key=public_key,
-            signature=signature,
-            auth_type=auth_type
-        )
-        
+        signature = b"s" * 32
+        authenticator = TransactionAuthenticator.session(signature)
         # Create SignedTransaction
         signed_tx = SignedTransaction(
             tx_data=tx_data,
             authenticator=authenticator
         )
-        
         # Serialize
         serialized = bcs_serialize(signed_tx)
         
@@ -462,6 +451,5 @@ class TestSignedTransactionSerialization:
         assert deserialized.tx_data.max_gas_amount == tx_data.max_gas_amount
         
         # Verify authenticator
-        assert deserialized.authenticator.auth_key.auth_type == authenticator.auth_key.auth_type
-        assert deserialized.authenticator.auth_key.public_key == authenticator.auth_key.public_key
-        assert deserialized.authenticator.signature == authenticator.signature 
+        assert deserialized.authenticator.auth_validator_id == authenticator.auth_validator_id
+        assert deserialized.authenticator.payload == authenticator.payload

@@ -6,7 +6,6 @@ from typing import Any, Dict, List, Optional, Union
 
 from ..bcs.serializer import BcsSerializer, BcsSerializationError, Serializable, BcsDeserializer, Deserializable
 from .types import (
-    AuthenticatorType,
     FunctionArgument,
     MoveAction,
     MoveActionArgument,
@@ -187,65 +186,11 @@ class TxSerializer:
         """
         if not isinstance(auth, TransactionAuthenticator):
             raise TypeError("Expected TransactionAuthenticator object")
-
         ser = BcsSerializer()
         try:
-            # Sequence: auth_validator_id, payload
-            
-            # 1. auth_validator_id (u64)
-            auth_id_map = {
-                AuthenticatorType.ED25519: 0,
-                AuthenticatorType.SECP256K1: 1,
-                AuthenticatorType.SECP256R1: 2,
-            }
-            auth_validator_id = auth_id_map.get(auth.auth_key.auth_type)
-            if auth_validator_id is None:
-                raise BcsSerializationError(f"Unsupported authenticator type for ID mapping: {auth.auth_key.auth_type}")
-            ser.u64(auth_validator_id)
-            
-            # 2. payload (Vec<u8>)
-            # Payload structure depends on auth_validator_id
-            if auth_validator_id == 0: # Ed25519 (Session)
-                # Payload is Vec<u8> containing only the signature bytes
-                if isinstance(auth.signature, str):
-                    signature_bytes = from_hex(auth.signature)
-                else:
-                    signature_bytes = auth.signature
-                ser.bytes(signature_bytes)
-            elif auth_validator_id == 1: # Secp256k1 (Bitcoin)
-                # Payload is the BCS encoding of the AuthPayload struct
-                if isinstance(auth.auth_key.public_key, str):
-                    public_key_bytes = from_hex(auth.auth_key.public_key)
-                else:
-                    public_key_bytes = auth.auth_key.public_key
-                if isinstance(auth.signature, str):
-                    signature_bytes = from_hex(auth.signature)
-                else:
-                    signature_bytes = auth.signature
-
-                auth_payload_obj = AuthPayload(
-                    public_key=public_key_bytes,
-                    message=b"",  # Empty message for now
-                    signature=signature_bytes,
-                    address=auth.account_addr
-                )
-
-                # Serialize the AuthPayload struct
-                auth_payload_ser = BcsSerializer()
-                auth_payload_obj.serialize(auth_payload_ser)
-                auth_payload_bytes = auth_payload_ser.output()
-                ser.bytes(auth_payload_bytes)
-            elif auth_validator_id == 2: # Secp256r1 (WebAuthn? Passkey?)
-                # Payload is Vec<u8> containing only the signature bytes
-                # Similar to Ed25519 for now
-                if isinstance(auth.signature, str):
-                    signature_bytes = from_hex(auth.signature)
-                else:
-                    signature_bytes = auth.signature
-                ser.bytes(signature_bytes)
-            else:
-                raise BcsSerializationError(f"Payload construction for auth_validator_id {auth_validator_id} not implemented.")
-
+            # Directly use the new TransactionAuthenticator fields
+            ser.u64(auth.auth_validator_id)
+            ser.bytes(auth.payload)
             return ser.output()
         except Exception as e:
             raise BcsSerializationError(f"Failed to serialize authenticator: {e}. Authenticator: {auth}") from e
@@ -303,55 +248,9 @@ class TxSerializer:
             BcsSerializationError: If deserialization fails
         """
         try:
-            # 1. Read auth_validator_id (u64)
             auth_validator_id = deserializer.u64()
-            
-            # Map auth_validator_id back to AuthenticatorType
-            auth_type_map = {
-                0: AuthenticatorType.ED25519,
-                1: AuthenticatorType.SECP256K1,
-                2: AuthenticatorType.SECP256R1,
-            }
-            auth_type = auth_type_map.get(auth_validator_id)
-            if auth_type is None:
-                raise BcsSerializationError(f"Unsupported auth_validator_id: {auth_validator_id}")
-            
-            # 2. Read payload (Vec<u8>)
-            if auth_validator_id == 0:  # Ed25519
-                signature = deserializer.bytes()
-                # For Ed25519, we need to reconstruct the auth key from the signature
-                public_key = signature[:32]  # First 32 bytes are public key
-                return TransactionAuthenticator(
-                    account_addr="",  # Will be filled by the caller
-                    public_key=public_key,
-                    signature=signature[32:],  # Rest is the actual signature
-                    auth_type=auth_type
-                )
-            elif auth_validator_id == 1:  # Secp256k1
-                # Deserialize AuthPayload
-                payload_bytes = deserializer.bytes()
-                payload_deserializer = BcsDeserializer(payload_bytes)
-                auth_payload = AuthPayload.deserialize(payload_deserializer)
-                if payload_deserializer.remaining() > 0:
-                    raise BcsSerializationError(f"Remaining bytes after deserializing AuthPayload: {payload_deserializer.remaining()}")
-                return TransactionAuthenticator(
-                    account_addr=auth_payload.address or "",
-                    public_key=auth_payload.public_key,
-                    signature=auth_payload.signature,
-                    auth_type=auth_type
-                )
-            elif auth_validator_id == 2:  # Secp256r1
-                signature = deserializer.bytes()
-                # Similar to Ed25519 for now
-                public_key = signature[:32]
-                return TransactionAuthenticator(
-                    account_addr="",
-                    public_key=public_key,
-                    signature=signature[32:],
-                    auth_type=auth_type
-                )
-            else:
-                raise BcsSerializationError(f"Payload deserialization for auth_validator_id {auth_validator_id} not implemented.")
+            payload = deserializer.bytes()
+            return TransactionAuthenticator(auth_validator_id, payload)
         except Exception as e:
             raise BcsSerializationError(f"Failed to deserialize authenticator: {e}") from e
 

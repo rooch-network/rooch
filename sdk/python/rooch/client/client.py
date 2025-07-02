@@ -13,16 +13,20 @@ from .transaction import TransactionClient
 from ..crypto.signer import Signer
 from ..transactions.builder import TransactionBuilder
 from ..transactions.types import (
-    AuthenticatorType,
-    FunctionArgument,
-    MoveAction,
-    MoveActionArgument,
-    SignedTransaction,
-    TransactionData,
     TransactionType,
+    TransactionData,
+    SignedTransaction,
+    TransactionAuthenticator,
+    AuthPayload,
+    MoveAction,
+    TransactionArgument,
+    MoveActionArgument,
+    FunctionArgument,
     ModuleId,
     FunctionId,
+    TypeTagCode,
     TypeTag,
+    StructTag
 )
 from ..session.session import Session, CreateSessionArgs
 

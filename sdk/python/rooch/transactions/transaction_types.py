@@ -60,25 +60,29 @@ class TransactionData(Serializable, Deserializable):
         serializer.u64(self.sequence_number)
         serializer.u64(self.max_gas_amount)
         serializer.u8(self.chain_id)
-        if self.sender:
-            serializer.struct(self.sender)
+        # Always serialize sender (must not be None)
+        if self.sender is None:
+            raise ValueError("TransactionData.sender must not be None for serialization")
+        serializer.struct(self.sender)
 
     @staticmethod
     def deserialize(deserializer: BcsDeserializer) -> 'TransactionData':
         """Deserialize a transaction data."""
+        start_offset = deserializer._input.tell() if hasattr(deserializer._input, 'tell') else None
         tx_type = TransactionType(deserializer.u8())
         if tx_type == TransactionType.MOVE_ACTION:
+            print(f"[DEBUG] TransactionData.deserialize: tx_type MOVE_ACTION at offset {deserializer._input.tell() if hasattr(deserializer._input, 'tell') else '?'}")
             tx_arg = MoveActionArgument.deserialize(deserializer)
         else:
-            # For other transaction types, assume tx_arg is raw bytes.
-            # This might need to be extended if other structured types are introduced for tx_arg.
             tx_arg = deserializer.bytes()
         sequence_number = deserializer.u64()
         max_gas_amount = deserializer.u64()
         chain_id = deserializer.u8()
-        sender = None
-        if deserializer.remaining() > 0:
-            sender = RoochAddress.deserialize(deserializer)
+        # Always deserialize sender
+        print(f"[DEBUG] TransactionData.deserialize: deserializing sender at offset {deserializer._input.tell() if hasattr(deserializer._input, 'tell') else '?'}")
+        sender = RoochAddress.deserialize(deserializer)
+        end_offset = deserializer._input.tell() if hasattr(deserializer._input, 'tell') else None
+        print(f"[DEBUG] TransactionData.deserialize: consumed bytes {start_offset}->{end_offset}, remaining={deserializer.remaining()}")
         return TransactionData(
             tx_type=tx_type,
             tx_arg=tx_arg,
@@ -158,13 +162,13 @@ class SignedTransaction(Serializable, Deserializable):
     def serialize(self, serializer: BcsSerializer):
         """Serialize the signed transaction."""
         serializer.struct(self.tx_data)
-        serializer.struct(self.authenticator)
+        self.authenticator.serialize(serializer)  # Directly serialize authenticator fields
 
     @staticmethod
     def deserialize(deserializer: BcsDeserializer) -> 'SignedTransaction':
         """Deserialize a signed transaction."""
         tx_data = TransactionData.deserialize(deserializer)
-        authenticator = TransactionAuthenticator.deserialize(deserializer)
+        authenticator = TransactionAuthenticator.deserialize(deserializer)  # Directly deserialize authenticator fields
         return SignedTransaction(tx_data=tx_data, authenticator=authenticator)
     
     def to_dict(self) -> Dict[str, Any]:
@@ -190,5 +194,8 @@ class SignedTransaction(Serializable, Deserializable):
         """
         return cls(
             tx_data=TransactionData.from_dict(data.get("tx_data", {})),
-            authenticator=TransactionAuthenticator.from_dict(data.get("authenticator", {}))
-        ) 
+            authenticator=TransactionAuthenticator(
+                data.get("authenticator", {}).get("auth_validator_id", 0),
+                from_hex(data.get("authenticator", {}).get("payload", "0x"))
+            )
+        )

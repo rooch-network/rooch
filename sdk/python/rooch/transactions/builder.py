@@ -11,7 +11,6 @@ from ..crypto.signer import Signer
 from ..crypto.signer import RoochSigner
 from .serializer import TxSerializer
 from .types import (
-    AuthenticatorType,
     FunctionArgument,
     MoveAction,
     MoveActionArgument,
@@ -161,18 +160,11 @@ class TransactionBuilder:
         keypair = signer.get_keypair()
         signature_bytes = keypair.sign_digest(tx_hash_bytes)
 
-        # 4. Determine AuthenticatorType based on KeyPair/Signer scheme
-        # Assuming KeyPair now defaults to SECP256K1
-        auth_type = AuthenticatorType.SECP256K1 
-
-        # 5. Create TransactionAuthenticator
-        auth = TransactionAuthenticator(
-            account_addr=tx_data.sender, # Sender from TransactionData
-            public_key=keypair.get_public_key(), # Get uncompressed pubkey
-            signature=signature_bytes, # Use raw signature bytes
-            auth_type=auth_type 
-        )
-        
+        # 4. Determine Authenticator type and build payload
+        # For now, only SessionAuthenticator (Ed25519/Secp256k1) is supported
+        # TODO: Add BitcoinAuthenticator support if needed
+        # Use the new TransactionAuthenticator.session factory
+        auth = TransactionAuthenticator.session(signature_bytes)
         # 6. Return SignedTransaction
         return SignedTransaction(tx_data, auth)
 

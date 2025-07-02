@@ -10,136 +10,45 @@ from ...bcs.serializer import BcsSerializer, Serializable, BcsDeserializer, Dese
 from ...address.rooch import RoochAddress
 
 
-class AuthenticatorType(IntEnum):
-    """Types of transaction authenticators"""
-    
-    ED25519 = 0
-    SECP256K1 = 1
-    SECP256R1 = 2
-    MULTI_ED25519 = 3
-    MULTI_SECP256K1 = 4
-    MULTI_SECP256R1 = 5
-
-
-class AuthenticationKey(Serializable, Deserializable):
-    """Authentication key for transactions"""
-    
-    def __init__(self, auth_type: AuthenticatorType, public_key: Union[str, bytes]):
-        """
-        Args:
-            auth_type: Authentication type
-            public_key: Public key (hex string or bytes)
-        """
-        self.auth_type = auth_type
-        
-        # Normalize public key
-        if isinstance(public_key, str):
-            self.public_key = from_hex(ensure_hex_prefix(public_key))
-        else:
-            self.public_key = public_key
-
-    def serialize(self, serializer: BcsSerializer):
-        """Serialize the authentication key."""
-        serializer.u8(self.auth_type.value)
-        serializer.bytes(self.public_key)
-
-    @staticmethod
-    def deserialize(deserializer: BcsDeserializer) -> 'AuthenticationKey':
-        """Deserialize an authentication key."""
-        auth_type = AuthenticatorType(deserializer.u8())
-        public_key = deserializer.bytes()
-        return AuthenticationKey(auth_type=auth_type, public_key=public_key)
-    
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary
-        
-        Returns:
-            Dictionary representation
-        """
-        return {
-            "auth_type": self.auth_type,
-            "public_key": to_hex(self.public_key)
-        }
+# AuthValidator IDs (should match Rust BuiltinAuthValidator flags)
+SESSION_AUTH_VALIDATOR_ID = 0  # Example, update as per Rust
+BITCOIN_AUTH_VALIDATOR_ID = 1  # Example, update as per Rust
+# Add more as needed
 
 
 class TransactionAuthenticator(Serializable, Deserializable):
-    """Authentication data for transactions"""
-    
-    def __init__(
-        self,
-        account_addr: Union[str, RoochAddress],
-        public_key: Union[str, bytes],
-        signature: Union[str, bytes],
-        auth_type: AuthenticatorType = AuthenticatorType.ED25519
-    ):
-        """
-        Args:
-            account_addr: Account address (hex string or RoochAddress object)
-            public_key: Public key (hex string or bytes)
-            signature: Signature (hex string or bytes)
-            auth_type: Authentication type
-        """
-        if isinstance(account_addr, str):
-            self.account_addr = RoochAddress.from_hex(account_addr)
-        else:
-            self.account_addr = account_addr
-        
-        self.auth_key = AuthenticationKey(auth_type=auth_type, public_key=public_key)
-        
-        # Normalize signature
+    """Authentication data for transactions, compatible with Rust Authenticator struct"""
+    def __init__(self, auth_validator_id: int, payload: bytes):
+        self.auth_validator_id = auth_validator_id
+        self.payload = payload
+
+    @classmethod
+    def session(cls, signature: Union[str, bytes]):
         if isinstance(signature, str):
-            self.signature = from_hex(ensure_hex_prefix(signature))
+            sig_bytes = from_hex(ensure_hex_prefix(signature))
         else:
-            self.signature = signature
+            sig_bytes = signature
+        return cls(auth_validator_id=SESSION_AUTH_VALIDATOR_ID, payload=sig_bytes)
+
+    @classmethod
+    def bitcoin(cls, payload: bytes):
+        return cls(auth_validator_id=BITCOIN_AUTH_VALIDATOR_ID, payload=payload)
 
     def serialize(self, serializer: BcsSerializer):
-        """Serialize the transaction authenticator."""
-        serializer.struct(self.account_addr)
-        serializer.struct(self.auth_key)
-        serializer.bytes(self.signature)
+        serializer.u64(self.auth_validator_id)
+        serializer.bytes(self.payload)
 
     @staticmethod
     def deserialize(deserializer: BcsDeserializer) -> 'TransactionAuthenticator':
-        """Deserialize a transaction authenticator."""
-        account_addr = RoochAddress.deserialize(deserializer)
-        auth_key = AuthenticationKey.deserialize(deserializer)
-        signature = deserializer.bytes()
-        return TransactionAuthenticator(
-            account_addr=account_addr,
-            public_key=auth_key.public_key,
-            signature=signature,
-            auth_type=auth_key.auth_type
-        )
-    
+        auth_validator_id = deserializer.u64()
+        payload = deserializer.bytes()
+        return TransactionAuthenticator(auth_validator_id, payload)
+
     def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary
-        
-        Returns:
-            Dictionary representation
-        """
         return {
-            "account_addr": str(self.account_addr),
-            "auth_key": self.auth_key.to_dict(),
-            "signature": to_hex(self.signature)
+            "auth_validator_id": self.auth_validator_id,
+            "payload": to_hex(self.payload)
         }
-    
-    @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'TransactionAuthenticator':
-        """Create from dictionary
-        
-        Args:
-            data: Dictionary representation
-            
-        Returns:
-            TransactionAuthenticator instance
-        """
-        auth_key_data = data.get("auth_key", {})
-        return cls(
-            account_addr=data.get("account_addr", "0x0"),
-            public_key=auth_key_data.get("public_key", ""),
-            signature=data.get("signature", ""),
-            auth_type=AuthenticatorType(auth_key_data.get("auth_type", AuthenticatorType.ED25519.value))
-        )
 
 
 class AuthPayload(Serializable, Deserializable):
@@ -231,4 +140,4 @@ class AuthPayload(Serializable, Deserializable):
             message=data.get("message", ""),
             signature=data.get("signature", ""),
             address=data.get("address")
-        ) 
+        )
