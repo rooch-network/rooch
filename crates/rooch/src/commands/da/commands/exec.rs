@@ -222,7 +222,7 @@ impl ExecCommand {
 
             #[cfg(not(unix))]
             let shutdown_signal = async {
-                ctrl_c().await.unwrap();
+                ctrl_c().await.expect("Failed to listen for Ctrl+C signal");
             };
 
             shutdown_signal.await;
