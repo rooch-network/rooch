@@ -56,7 +56,7 @@ use tokio::sync::mpsc::Sender;
 use tokio::sync::watch;
 use tokio::time;
 use tokio::time::sleep;
-use tracing::{info, warn, error};
+use tracing::{info, warn};
 
 /// exec LedgerTransaction List for verification.
 #[derive(Debug, Parser)]
@@ -206,39 +206,19 @@ impl ExecCommand {
         let shutdown_tx_clone = shutdown_tx.clone();
 
         tokio::spawn(async move {
-
-            // Unix signal handling
             #[cfg(unix)]
-            {
-                let mut sigterm =
-                    signal(SignalKind::terminate()).expect("Failed to listen for SIGTERM");
-                let mut sigint = signal(SignalKind::interrupt()).expect("Failed to listen for SIGINT");
+            let shutdown_signal = async {
+                let mut signal = signal(SignalKind::terminate()).unwrap();
+                signal.recv().await;
+            };
 
-                tokio::select! {
-                    _ = sigterm.recv() => {
-                        info!("SIGTERM received, shutting down...");
-                        let _ = shutdown_tx_clone.send(());
-                    }
-                    _ = sigint.recv() => {
-                        info!("SIGINT received (Ctrl+C), shutting down...");
-                        let _ = shutdown_tx_clone.send(());
-                    }
-                }
-            }
-
-            // Windows support: handle Ctrl+C shutdown
             #[cfg(not(unix))]
-            {
-                match ctrl_c().await {
-                    Ok(()) => {
-                        info!("Ctrl+C received, shutting down...");
-                        let _ = shutdown_tx_clone.send(());
-                    }
-                    Err(e) => {
-                        error!("Failed to listen for Ctrl+C: {}", e);
-                    }
-                }
-            }
+            let shutdown_signal = async {
+                ctrl_c().await.unwrap();
+            };
+
+            shutdown_signal.await;
+            shutdown_tx_clone.send(()).unwrap();
         });
 
         let exec_inner = self.build_exec_inner(shutdown_rx.clone()).await?;
