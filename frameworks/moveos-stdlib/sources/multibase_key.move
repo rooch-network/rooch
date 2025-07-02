@@ -14,12 +14,12 @@
 /// 3. Key length validation
 /// 4. Encoding/decoding with type information
 ///
-/// ## Key Types and Multicodec Prefixes
+/// ## Key Types and Multicodec Prefixes. Source: https://github.com/multiformats/multicodec/blob/master/table.csv.
 ///
 /// * Ed25519: KEY_TYPE_ED25519 = 1, multicodec prefix = 0xed01
 /// * Secp256k1: KEY_TYPE_SECP256K1 = 2, multicodec prefix = 0xe701
 /// * Secp256r1 (ECDSA P-256): KEY_TYPE_ECDSAR1 = 3, multicodec prefix = 0x1200
-//  * Rs256 (RSASSA-PKCS-v1_5): KEY_TYPE_RS256 = 4, multicodec prefix = // TODO
+//  * Rs256 (RSASSA-PKCS-v1_5): KEY_TYPE_RS256 = 4, multicodec prefix = 0x1205
 ///
 /// The encoding process adds the appropriate multicodec prefix to the raw key bytes
 /// before applying base58btc encoding.
@@ -68,8 +68,7 @@ module moveos_std::multibase_key {
     const MULTICODEC_ED25519_PREFIX: vector<u8> = vector[0xed, 0x01];
     const MULTICODEC_SECP256K1_PREFIX: vector<u8> = vector[0xe7, 0x01];
     const MULTICODEC_ECDSA_R1_PREFIX: vector<u8> = vector[0x12, 0x00];
-    // TODO RS256 multicodec prefix
-    const MULTICODEC_RS256_PREFIX: vector<u8> = vector[0x12, 0x00]; // TODO
+    const MULTICODEC_RS256_PREFIX: vector<u8> = vector[0x12, 0x05];
 
     /// A struct to hold the key type and raw key bytes
     /// Used as a workaround for Move's lack of support for tuple types in Option
@@ -224,8 +223,8 @@ module moveos_std::multibase_key {
                 return (KEY_TYPE_ECDSAR1, raw_key)
             }
         }
-        // TODO: Check for RS256 multicodec:
-        else if (first_byte == && second_byte ==) { // TODO
+        // Check for RS256 multicodec: 0x1205
+        else if (first_byte == 0x12 && second_byte == 0x05) {
             // Extract raw RS256 public key modulus (from 2048 bits to 4096 bits after 2-byte prefix)
             if (vector::length(&decoded_bytes) >= 2 + RS256_PUBLIC_KEY_MODULUS_MINIMUM_LENGTH / 8 && vector::length(&decoded_bytes) <= RS256_PUBLIC_KEY_MODULUS_MAXIMUM_LENGTH / 8 + 2) { // 2 bytes prefix + key modulus bytes
                 let raw_key = vector::empty<u8>();
@@ -417,8 +416,8 @@ module moveos_std::multibase_key {
                 return option::some(KeyInfo { key_type: KEY_TYPE_ECDSAR1, key_bytes: raw_key })
             }
         }
-        // TODO Check for RS256 multicodec
-        else if (first_byte == && second_byte ==) { // TODO
+        // Check for RS256 multicodec
+        else if (first_byte == 0x12 && second_byte == 0x05) {
             // Extract raw RS256 public key modulus (from 2048 bits to 4096 bits after 2-byte prefix)
             if (vector::length(&decoded_bytes) >= 2 + RS256_PUBLIC_KEY_MODULUS_MINIMUM_LENGTH / 8 && vector::length(&decoded_bytes) <= RS256_PUBLIC_KEY_MODULUS_MAXIMUM_LENGTH / 8 + 2) { // 2 bytes prefix + key bytes
                 let raw_key = vector::empty<u8>();
