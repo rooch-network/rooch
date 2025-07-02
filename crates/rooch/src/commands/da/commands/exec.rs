@@ -211,8 +211,12 @@ impl ExecCommand {
                 let mut sigterm = signal(SignalKind::terminate()).unwrap();
                 let mut sigint = signal(SignalKind::interrupt()).unwrap();
                 tokio::select! {
-                    _ = sigterm.recv() => {},
-                    _ = sigint.recv() => {},
+                    _ = sigterm.recv() => {
+                        info!("Received SIGTERM signal");
+                    },
+                    _ = sigint.recv() => {
+                        info!("Received SIGINT signal");
+                    },
                 }
             };
 
