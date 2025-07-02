@@ -16,6 +16,9 @@ use bitcoin::secp256k1::SecretKey;
 use derive_more::{AsRef, From};
 pub use enum_dispatch::enum_dispatch;
 use eyre::eyre;
+use fastcrypto::generate_bytes_representation;
+use fastcrypto::serde_helpers::BytesRepresentation;
+use fastcrypto::serialize_deserialize_with_to_from_bytes;
 pub use fastcrypto::traits::KeyPair as KeypairTraits;
 pub use fastcrypto::traits::Signer;
 pub use fastcrypto::traits::{
@@ -43,7 +46,12 @@ use fastcrypto::{
     },
 };
 use multibase;
-use rsa::{pkcs1::DecodeRsaPrivateKey, traits::PublicKeyParts, RsaPrivateKey, RsaPublicKey};
+use once_cell::sync::OnceCell;
+use rsa::{
+    pkcs1::{DecodeRsaPrivateKey, DecodeRsaPublicKey, EncodeRsaPrivateKey, EncodeRsaPublicKey},
+    traits::PublicKeyParts,
+    RsaPrivateKey, RsaPublicKey,
+};
 use schemars::JsonSchema;
 use serde::ser::Serializer;
 use serde::{Deserialize, Deserializer, Serialize};
@@ -61,6 +69,7 @@ pub enum SignatureScheme {
     Ed25519,
     Secp256k1,
     EcdsaR1,
+    Rs256,
 }
 
 impl SignatureScheme {
@@ -69,6 +78,7 @@ impl SignatureScheme {
             SignatureScheme::Ed25519 => 0,
             SignatureScheme::Secp256k1 => 1,
             SignatureScheme::EcdsaR1 => 2,
+            SignatureScheme::Rs256 => 3,
         }
     }
 
@@ -77,8 +87,47 @@ impl SignatureScheme {
             0 => Ok(SignatureScheme::Ed25519),
             1 => Ok(SignatureScheme::Secp256k1),
             2 => Ok(SignatureScheme::EcdsaR1),
+            3 => Ok(SignatureScheme::Rs256),
             _ => Err(RoochError::InvalidSignatureScheme),
         }
+    }
+}
+
+/// Rs256 public/private key pair.
+#[derive(Debug, PartialEq, Eq)]
+pub struct Rs256KeyPair {
+    pub public: RsaPublicKey,
+    pub secret: RsaPrivateKey,
+}
+
+impl KeypairTraits for Rs256KeyPair {
+    type PubKey = Rs256PublicKey;
+    type PrivKey = Rs256PrivateKey;
+    type Sig = RsaRoochSignature;
+
+    fn public(&'_ self) -> &'_ Self::PubKey {
+        &self.public
+    }
+
+    fn private(self) -> Self::PrivKey {
+        Secp256r1PrivateKey::from_bytes(self.secret.as_ref()).unwrap()
+    }
+
+    // #[cfg(feature = "copy_key")]
+    fn copy(&self) -> Self {
+        Rs256KeyPair {
+            public: self.public.clone(),
+            secret: self.secret.clone(),
+        }
+    }
+
+    fn generate<R: AllowedRng>(rng: &mut R, bit_size: usize) -> Self {
+        let privkey = RsaPrivateKey::new(rng, bit_size);
+        Rs256PrivateKey {
+            privkey,
+            bytes: OnceCell::new(),
+        }
+        .into()
     }
 }
 
@@ -92,7 +141,7 @@ pub enum RoochKeyPair {
     ///For WebAuthn
     EcdsaR1(Secp256r1KeyPair),
     ///For WebAuthn
-    Rsa(RSAPublicKey),
+    Rs256(Rs256KeyPair),
 }
 
 impl RoochKeyPair {
@@ -114,16 +163,10 @@ impl RoochKeyPair {
         RoochKeyPair::EcdsaR1(ecdsa_r1_keypair)
     }
 
-    pub fn generate_rsassa_pkcs1_v1_5(bits: usize) -> Self {
+    pub fn generate_rs256(bit_size: usize) -> Self {
         let rng = &mut rand::thread_rng();
-        let priv_key =
-            RsaPrivateKey::new(rng, bits).expect("failed to generate an rsa private key");
-        let rsassa_pkcs1_v1_5_keypair = RSAPublicKey::from_raw_components(
-            priv_key.n().to_bytes_be().as_ref(),
-            priv_key.e().to_bytes_be().as_ref(),
-        )
-        .expect("failed to generate an rsa public key");
-        RoochKeyPair::Rsa(rsassa_pkcs1_v1_5_keypair)
+        let rs256_keypair = Rs256KeyPair::generate(rng, bit_size);
+        RoochKeyPair::Rs256(rs256_keypair)
     }
 
     pub fn from_ed25519_bytes(bytes: &[u8]) -> Result<Self, FastCryptoError> {
@@ -140,14 +183,8 @@ impl RoochKeyPair {
         Ok(RoochKeyPair::EcdsaR1(Secp256r1KeyPair::from_bytes(bytes)?))
     }
 
-    pub fn from_rsassa_pkcs1_v1_5_bytes(bytes: &[u8]) -> Result<Self, FastCryptoError> {
-        let private_key =
-            RsaPrivateKey::from_pkcs1_der(bytes).map_err(|_| FastCryptoError::InvalidInput)?;
-        let public_key = RSAPublicKey::from_raw_components(
-            private_key.n().to_bytes_be().as_ref(),
-            private_key.e().to_bytes_be().as_ref(),
-        )?;
-        Ok(RoochKeyPair::Rsa(public_key))
+    pub fn from_rs256_bytes(bytes: &[u8]) -> Result<Self, FastCryptoError> {
+        Ok(RoochKeyPair::Rs256(Rs256KeyPair::from_bytes(bytes)?))
     }
 
     pub fn sign(&self, msg: &[u8]) -> Signature {
@@ -166,7 +203,7 @@ impl RoochKeyPair {
             RoochKeyPair::Ed25519(kp) => PublicKey::Ed25519(kp.public().into()),
             RoochKeyPair::Secp256k1(kp) => PublicKey::Secp256k1(kp.public().into()),
             RoochKeyPair::EcdsaR1(kp) => PublicKey::EcdsaR1(kp.public().into()),
-            RoochKeyPair::Rsa(kp) => PublicKey::Rsa(kp.public().into()),
+            RoochKeyPair::Rs256(kp) => PublicKey::Rs256(kp.public().into()),
         }
     }
 
@@ -184,7 +221,7 @@ impl RoochKeyPair {
             RoochKeyPair::Ed25519(kp) => kp.as_bytes(),
             RoochKeyPair::Secp256k1(kp) => kp.as_bytes(),
             RoochKeyPair::EcdsaR1(kp) => kp.as_bytes(),
-            RoochKeyPair::Rsa(kp) => kp.as_bytes(),
+            RoochKeyPair::Rs256(kp) => kp.as_bytes(),
         }
     }
 
@@ -220,7 +257,7 @@ impl RoochKeyPair {
             RoochKeyPair::Ed25519(kp) => RoochKeyPair::Ed25519(kp.copy()),
             RoochKeyPair::Secp256k1(kp) => RoochKeyPair::Secp256k1(kp.copy()),
             RoochKeyPair::EcdsaR1(kp) => RoochKeyPair::EcdsaR1(kp.copy()),
-            RoochKeyPair::Rsa(kp) => RoochKeyPair::Rsa(kp.copy()),
+            RoochKeyPair::Rs256(kp) => RoochKeyPair::Rs256(kp.copy()),
         }
     }
 
@@ -253,7 +290,7 @@ impl RoochKeyPair {
             RoochKeyPair::Ed25519(_) => SignatureScheme::Ed25519,
             RoochKeyPair::Secp256k1(_) => SignatureScheme::Secp256k1,
             RoochKeyPair::EcdsaR1(_) => SignatureScheme::EcdsaR1,
-            RoochKeyPair::Rsa(_) => SignatureScheme::Rsa,
+            RoochKeyPair::Rs256(_) => SignatureScheme::Rs256,
         }
     }
 
@@ -270,7 +307,7 @@ impl Signer<Signature> for RoochKeyPair {
             RoochKeyPair::Ed25519(kp) => kp.sign(msg),
             RoochKeyPair::Secp256k1(kp) => kp.sign(msg),
             RoochKeyPair::EcdsaR1(kp) => kp.sign(msg),
-            RoochKeyPair::Rsa(kp) => kp.sign(msg),
+            RoochKeyPair::Rs256(kp) => kp.sign(msg),
         }
     }
 }
@@ -300,7 +337,7 @@ impl EncodeDecodeBase64 for RoochKeyPair {
             RoochKeyPair::EcdsaR1(kp) => {
                 bytes.extend_from_slice(kp.as_bytes());
             }
-            RoochKeyPair::Rsa(kp) => {
+            RoochKeyPair::Rs256(kp) => {
                 bytes.extend_from_slice(kp.as_bytes());
             }
         }
@@ -327,19 +364,8 @@ impl EncodeDecodeBase64 for RoochKeyPair {
                         bytes.get(1..).ok_or(FastCryptoError::InvalidInput)?,
                     )?))
                 }
-                SignatureScheme::Rsa => Ok(RoochKeyPair::Rsa(RSAPublicKey::from_raw_components(
-                    RsaPrivateKey::from_pkcs1_der(
-                        bytes.get(1..).ok_or(FastCryptoError::InvalidInput)?,
-                    )?
-                    .n()
-                    .to_bytes_be()
-                    .as_ref(),
-                    RsaPrivateKey::from_pkcs1_der(
-                        bytes.get(1..).ok_or(FastCryptoError::InvalidInput)?,
-                    )?
-                    .e()
-                    .to_bytes_be()
-                    .as_ref(),
+                SignatureScheme::Rs256 => Ok(RoochKeyPair::Rs256(Rs256KeyPair::from_bytes(
+                    bytes.get(1..).ok_or(FastCryptoError::InvalidInput)?,
                 )?)),
             },
             _ => Err(FastCryptoError::InvalidInput),
@@ -375,13 +401,57 @@ pub struct MultibasePublicKey {
     pub multibase_str: String,
 }
 
+/// Rs256 public key.
+#[derive(Debug, Clone)]
+pub struct Rs256PublicKey {
+    pub pubkey: RsaPublicKey,
+    pub bytes: OnceCell<[u8; RS256_PUBLIC_KEY_MINIMUM_LENGTH]>,
+}
+
+// TODO: rsa public key length varies
+pub const RS256_PUBLIC_KEY_MINIMUM_LENGTH: usize = 2048 / 8;
+
+serialize_deserialize_with_to_from_bytes!(Rs256PublicKey, RS256_PUBLIC_KEY_MINIMUM_LENGTH);
+generate_bytes_representation!(
+    Rs256PublicKey,
+    RS256_PUBLIC_KEY_MINIMUM_LENGTH,
+    Rs256PublicKeyAsBytes
+);
+
+impl AsRef<[u8]> for Rs256PublicKey {
+    fn as_ref(&self) -> &[u8] {
+        self.bytes.get_or_init::<_>(|| {
+            self.pubkey
+                .clone()
+                .to_pkcs1_der()
+                .expect("failed to convert to pkcs1 der.")
+                .as_bytes()
+                .into()
+        })
+    }
+}
+
+impl ToFromBytes for Rs256PublicKey {
+    fn from_bytes(bytes: &[u8]) -> Result<Self, FastCryptoError> {
+        match RsaPublicKey::from_pkcs1_der(bytes) {
+            Ok(pubkey) => Ok(Rs256PublicKey {
+                pubkey,
+                bytes: match <[u8; RS256_PUBLIC_KEY_MINIMUM_LENGTH]>::try_from(bytes) {
+                    Ok(result) => OnceCell::with_value(result),
+                    Err(_) => OnceCell::new(),
+                },
+            }),
+            Err(_) => Err(FastCryptoError::InvalidInput),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, JsonSchema)]
 pub enum PublicKey {
     Ed25519(Ed25519PublicKeyAsBytes),
     Secp256k1(Secp256k1PublicKeyAsBytes),
     EcdsaR1(Secp256r1PublicKeyAsBytes),
-    // TODO: rsa public key length varies
-    Rsa(),
+    Rs256(Rs256PublicKeyAsBytes),
 }
 
 impl AsRef<[u8]> for PublicKey {
@@ -390,7 +460,7 @@ impl AsRef<[u8]> for PublicKey {
             PublicKey::Ed25519(pk) => &pk.0,
             PublicKey::Secp256k1(pk) => &pk.0,
             PublicKey::EcdsaR1(pk) => &pk.0,
-            PublicKey::Rsa(pk) => &pk.0,
+            PublicKey::Rs256(pk) => &pk.0,
         }
     }
 }
@@ -426,11 +496,11 @@ impl EncodeDecodeBase64 for PublicKey {
                     )?;
                     Ok(PublicKey::EcdsaR1((&pk).into()))
                 }
-                SignatureScheme::Rsa => {
-                    let pk = RSAPublicKey::from_der(
+                SignatureScheme::Rs256 => {
+                    let pk = Rs256PublicKey::from_bytes(
                         bytes.get(1..).ok_or(FastCryptoError::InvalidInput)?,
                     )?;
-                    Ok(PublicKey::Rsa((&pk).into()))
+                    Ok(PublicKey::Rs256((&pk).into()))
                 }
             },
             Err(_) => Err(FastCryptoError::InvalidInput),
@@ -469,7 +539,7 @@ impl PublicKey {
             PublicKey::Ed25519(_) => Ed25519RoochSignature::SCHEME,
             PublicKey::Secp256k1(_) => Secp256k1RoochSignature::SCHEME,
             PublicKey::EcdsaR1(_) => EcdsaR1RoochSignature::SCHEME,
-            PublicKey::Rsa(_) => RsaRoochSignature::SCHEME,
+            PublicKey::Rs256(_) => Rs256RoochSignature::SCHEME,
         }
     }
 
@@ -478,6 +548,7 @@ impl PublicKey {
             PublicKey::Ed25519(_) => "Ed25519VerificationKey2020".to_string(),
             PublicKey::Secp256k1(_) => "EcdsaSecp256k1VerificationKey2019".to_string(),
             PublicKey::EcdsaR1(_) => "EcdsaSecp256r1VerificationKey2019".to_string(),
+            PublicKey::Rs256(_) => "Rs256VerificationKey2018".to_string(),
         }
     }
 
@@ -563,6 +634,14 @@ impl PublicKey {
                     )?;
                     Ok(PublicKey::EcdsaR1((&pk).into()))
                 }
+                SignatureScheme::Rs256 => {
+                    let pk = Rs256PublicKey::from_bytes(
+                        bytes
+                            .get(1..)
+                            .ok_or_else(|| anyhow!("Invalid public key modulus length"))?,
+                    )?;
+                    Ok(PublicKey::Rs256((&pk).into()))
+                }
             },
             Err(e) => Err(anyhow!("Invalid bytes :{}", e)),
         }
@@ -577,11 +656,13 @@ impl PublicKey {
     /// Encode the public key to multibase format using DID standard multicodec prefixes
     /// Ed25519: 0xed01 prefix -> z6Mk... format
     /// Secp256k1: 0xe701 prefix -> zQ3s... format
+    /// Rs256: 0x1205 prefix -> ... format
     pub fn to_multibase(&self) -> String {
         let mut prefixed_key = match self {
             PublicKey::Ed25519(_) => vec![0xed, 0x01], // Ed25519 multicodec prefix
             PublicKey::Secp256k1(_) => vec![0xe7, 0x01], // Secp256k1 multicodec prefix
             PublicKey::EcdsaR1(_) => vec![0x12, 0x00], // P-256 multicodec prefix
+            PublicKey::Rs256(_) => vec![0x12, 0x05],   // RS256 multicodec prefix
         };
         prefixed_key.extend_from_slice(self.raw_public_key_bytes());
         multibase::encode(multibase::Base::Base58Btc, &prefixed_key)
@@ -621,6 +702,13 @@ impl PublicKey {
                 let pk = Secp256r1PublicKey::from_bytes(decoded_bytes)?;
                 Ok(PublicKey::EcdsaR1((&pk).into()))
             }
+            [0x12, 0x05] => {
+                if decoded_bytes.len() >= 2048 / 8 && decoded_bytes.len() <= 4096 / 8 {
+                    return Err(anyhow!("Invalid RS256 multibase public key modulus length"));
+                }
+                let pk = Rs256PublicKey::from_bytes(decoded_bytes)?;
+                Ok(PublicKey::Rs256((&pk).into()))
+            }
             _ => Err(anyhow!(
                 "Unsupported multicodec prefix: 0x{:02x}{:02x}",
                 prefix[0],
@@ -633,6 +721,7 @@ impl PublicKey {
     /// For Ed25519: 32 bytes
     /// For Secp256k1: 33 bytes (compressed)
     /// For EcdsaR1: 33 bytes (compressed)
+    /// For Rs256: 2048 bits (compressed)
     pub fn raw_public_key_bytes(&self) -> &[u8] {
         self.as_ref()
     }
@@ -695,6 +784,16 @@ impl PublicKey {
                 let pk = Secp256r1PublicKey::from_bytes(&decoded_bytes)?;
                 Ok(PublicKey::EcdsaR1((&pk).into()))
             }
+            SignatureScheme::Rs256 => {
+                if decoded_bytes.len() >= 2048 / 8 && decoded_bytes.len() <= 4096 / 8 {
+                    return Err(anyhow!(
+                        "Invalid RS256 public key modulus length: expected 2048 to 4096 bits, got {} bits",
+                        decoded_bytes.len() * 8
+                    ));
+                }
+                let pk = Rs256PublicKey::from_bytes(&decoded_bytes)?;
+                Ok(PublicKey::Rs256((&pk).into()))
+            }
         }
     }
 
@@ -729,6 +828,7 @@ impl PublicKey {
             PublicKey::Ed25519(_) => vec![0xed, 0x01],
             PublicKey::Secp256k1(_) => vec![0xe7, 0x01],
             PublicKey::EcdsaR1(_) => vec![0x12, 0x00], // P-256 multicodec prefix
+            PublicKey::Rs256(_) => vec![0x12, 0x05],   // RS256 multicodec prefix
         }
     }
 }
@@ -818,6 +918,7 @@ pub enum Signature {
     Ed25519RoochSignature,
     Secp256k1RoochSignature,
     EcdsaR1RoochSignature,
+    Rs256RoochSignature,
 }
 
 impl Serialize for Signature {
@@ -901,6 +1002,14 @@ impl Signature {
                 })?)
                     .into(),
             )),
+            Signature::Rs256RoochSignature(sig) => Ok(CompressedSignature::Rs256(
+                (&Rs256Signature::from_bytes(sig.signature_bytes()).map_err(|_| {
+                    RoochError::InvalidSignature {
+                        error: "Cannot parse sig".to_owned(),
+                    }
+                })?)
+                    .into(),
+            )),
         }
     }
 
@@ -923,6 +1032,7 @@ impl AsRef<[u8]> for Signature {
             Signature::Ed25519RoochSignature(sig) => sig.as_ref(),
             Signature::Secp256k1RoochSignature(sig) => sig.as_ref(),
             Signature::EcdsaR1RoochSignature(sig) => sig.as_ref(),
+            Signature::Rs256RoochSignature(sig) => sig.as_ref(),
         }
     }
 }
@@ -937,6 +1047,8 @@ impl ToFromBytes for Signature {
                     Ok(<Secp256k1RoochSignature as ToFromBytes>::from_bytes(bytes)?.into())
                 } else if x == &EcdsaR1RoochSignature::SCHEME.flag() {
                     Ok(<EcdsaR1RoochSignature as ToFromBytes>::from_bytes(bytes)?.into())
+                } else if x == &Rs256RoochSignature::SCHEME.flag() {
+                    Ok(<Rs256RoochSignature as ToFromBytes>::from_bytes(bytes)?.into())
                 } else {
                     Err(FastCryptoError::InvalidInput)
                 }
@@ -946,12 +1058,26 @@ impl ToFromBytes for Signature {
     }
 }
 
+/// Rs256 signature.
+#[derive(Debug, Clone)]
+pub struct Rs256Signature {
+    pub sig: RSASignature,
+    pub bytes: OnceCell<[u8; RS256_SIGNATURE_LENTH]>,
+}
+
+/// TODO: signature length varies
+pub const RS256_SIGNATURE_LENTH: usize = 2048 / 8;
+
+serialize_deserialize_with_to_from_bytes!(Rs256Signature, RS256_SIGNATURE_LENTH);
+generate_bytes_representation!(Rs256Signature, RS256_SIGNATURE_LENTH, Rs256SignatureAsBytes);
+
 /// Unlike [enum Signature], [enum CompressedSignature] does not contain public key.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, JsonSchema)]
 pub enum CompressedSignature {
     Ed25519(Ed25519SignatureAsBytes),
     Secp256k1(Secp256k1SignatureAsBytes),
     EcdsaR1(Secp256r1SignatureAsBytes),
+    Rs256(Rs256SignatureAsBytes),
 }
 
 impl AsRef<[u8]> for CompressedSignature {
@@ -960,6 +1086,7 @@ impl AsRef<[u8]> for CompressedSignature {
             CompressedSignature::Ed25519(sig) => &sig.0,
             CompressedSignature::Secp256k1(sig) => &sig.0,
             CompressedSignature::EcdsaR1(sig) => &sig.0,
+            CompressedSignature::Rs256(sig) => &sig.0,
         }
     }
 }
@@ -1133,24 +1260,24 @@ impl Signer<Signature> for Secp256r1KeyPair {
 #[serde_as]
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema, PartialEq, Eq, Hash, AsRef)]
 #[as_ref(forward)]
-pub struct RsaRoochSignature(
+pub struct Rs256RoochSignature(
     #[schemars(with = "Base64")]
     #[serde_as(as = "serde_with::base64::Base64")]
-    [u8; RSAPublicKey::LENGTH + RSASignature::LENGTH + 1],
+    [u8; Rs256PublicKey::LENGTH + RSASignature::LENGTH + 1],
 );
 
-impl RoochSignatureInner for RsaRoochSignature {
+impl RoochSignatureInner for Rs256RoochSignature {
     type Sig = RSASignature;
-    type PubKey = RSAPublicKey;
-    type KeyPair = RsaPrivateKey;
+    type PubKey = Rs256PublicKey;
+    type KeyPair = Rs256KeyPair;
     const LENGTH: usize = RSAPublicKey::LENGTH + RSASignature::LENGTH + 1;
 }
 
-impl RoochPublicKey for RSAPublicKey {
-    const SIGNATURE_SCHEME: SignatureScheme = SignatureScheme::Rsa;
+impl RoochPublicKey for Rs256PublicKey {
+    const SIGNATURE_SCHEME: SignatureScheme = SignatureScheme::Rs256;
 }
 
-impl ToFromBytes for RsaRoochSignature {
+impl ToFromBytes for Rs256RoochSignature {
     fn from_bytes(bytes: &[u8]) -> Result<Self, FastCryptoError> {
         if bytes.len() != Self::LENGTH {
             return Err(FastCryptoError::InputLengthWrong(Self::LENGTH));
@@ -1161,9 +1288,9 @@ impl ToFromBytes for RsaRoochSignature {
     }
 }
 
-impl Signer<Signature> for RsaPrivateKey {
+impl Signer<Signature> for Rs256PrivateKey {
     fn sign(&self, msg: &[u8]) -> Signature {
-        RsaRoochSignature::new(self, msg).into()
+        Rs256RoochSignature::new(self, msg).into()
     }
 }
 
