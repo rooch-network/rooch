@@ -29,9 +29,8 @@ jobs:
         fetch-depth: 0
 
     - name: Install Rust toolchain
-      uses: actions-rs/toolchain@v1
+      uses: dtolnay/rust-toolchain@stable
       with:
-        toolchain: stable
         components: rustfmt, clippy
         target: x86_64-pc-windows-msvc
 
@@ -39,6 +38,7 @@ jobs:
       uses: actions/cache@v4
       with:
         path: |
+          ~/.cargo/bin/
           ~/.cargo/registry/index/
           ~/.cargo/registry/cache/
           ~/.cargo/git/db/
