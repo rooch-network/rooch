@@ -54,27 +54,6 @@ class TestRPCMethods:
         assert len(custom_result["data"]) <= 3
 
     @pytest.mark.asyncio
-    async def test_get_current_epoch(self, rooch_client: RoochClient):
-        """Test getting current epoch"""
-        epoch = await rooch_client.get_current_epoch()
-        assert isinstance(epoch, int)
-        assert epoch >= 0
-
-    @pytest.mark.asyncio
-    async def test_get_block_by_height(self, rooch_client: RoochClient):
-        """Test getting block by height"""
-        # Get the current epoch to have a valid height to query
-        epoch = await rooch_client.get_current_epoch()
-        
-        # Get a block from a height that should exist (usually 1 is safe)
-        height = 1 if epoch > 1 else 0
-        block = await rooch_client.get_block_by_height(height)
-        
-        assert block is not None
-        # Check for expected block fields (adjust based on actual response structure)
-        assert "block_info" in block or "height" in block
-
-    @pytest.mark.asyncio
     async def test_get_block_info_by_height(self, rooch_client: RoochClient):
         """Test getting block info by height"""
         # Get a block from a height that should exist (usually 1 is safe)

@@ -109,14 +109,6 @@ class RoochClient:
         """
         return await self._transport.request("rooch_getStatesByPrefix", [prefix, cursor, limit])
     
-    async def get_current_epoch(self) -> int:
-        """Get current epoch
-        
-        Returns:
-            Current epoch number
-        """
-        return await self._transport.request("rooch_getCurrentEpoch")
-    
     async def get_block_by_height(self, height: int) -> Dict[str, Any]:
         """Get block by height
         
