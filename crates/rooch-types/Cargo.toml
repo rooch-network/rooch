@@ -46,6 +46,7 @@ lz4 = { workspace = true }
 coerce = { workspace = true }
 multibase = { workspace = true }
 rsa = { workspace = true }
+bincode = { workspace = true }
 
 move-core-types = { workspace = true }
 move-vm-types = { workspace = true }
