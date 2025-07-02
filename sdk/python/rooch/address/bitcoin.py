@@ -166,7 +166,15 @@ class BitcoinAddress:
         
         # Hash the public key (RIPEMD160 of SHA256)
         sha256_hash = hashlib.sha256(public_key).digest()
-        ripemd160_hash = hashlib.new('ripemd160')
+        try:
+            ripemd160_hash = hashlib.new('ripemd160')
+        except (ValueError, TypeError):
+            # Fallback to pycryptodome if ripemd160 is not available in hashlib
+            try:
+                from Crypto.Hash import RIPEMD160
+                ripemd160_hash = RIPEMD160.new()
+            except ImportError:
+                raise ValueError('ripemd160 hash not supported: please install pycryptodome')
         ripemd160_hash.update(sha256_hash)
         hash160 = ripemd160_hash.digest()
         

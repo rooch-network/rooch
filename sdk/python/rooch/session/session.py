@@ -103,7 +103,7 @@ class Session(RoochSigner):
             args=[
                 Args.string(session_args.app_name),
                 Args.string(session_args.app_url),
-                Args.vector_u8(from_hex(session_keypair.get_rooch_address().to_hex_no_prefix())),
+                Args.vector_u8(from_hex(session_keypair.get_rooch_address().to_hex())),
                 Args.vector_address(addrs),
                 Args.vector_string(mods),
                 Args.vector_string(fns),

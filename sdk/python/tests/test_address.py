@@ -71,8 +71,10 @@ class TestRoochAddress:
         address_upper = RoochAddress.from_hex(self.VALID_ADDRESS_STR_PREFIX.upper())
         assert str(address_upper) == self.VALID_ADDRESS_STR_PREFIX
 
+        address_from_short = RoochAddress.from_hex(self.INVALID_ADDRESS_SHORT)
+        assert address_from_short == RoochAddress.from_hex_literal(self.INVALID_ADDRESS_SHORT)
+
         # Invalid hex strings should raise ValueError
-        with pytest.raises(ValueError): RoochAddress.from_hex(self.INVALID_ADDRESS_SHORT)  # Short address should use from_hex_literal
         with pytest.raises(ValueError): RoochAddress.from_hex(self.INVALID_ADDRESS_LONG)
         with pytest.raises(ValueError): RoochAddress.from_hex(self.INVALID_ADDRESS_CHARS)
         with pytest.raises(ValueError): RoochAddress.from_hex("0x")
@@ -83,12 +85,12 @@ class TestRoochAddress:
         # Short addresses
         address_short = RoochAddress.from_hex_literal("0x1")
         assert address_short.to_hex_literal() == "0x1"
-        assert len(address_short.to_hex_no_prefix()) == 64
+        assert len(address_short.to_hex()) == 64
 
         # Another short address
         address_abc = RoochAddress.from_hex_literal("0xabc")
         assert address_abc.to_hex_literal() == "0xabc"
-        assert len(address_abc.to_hex_no_prefix()) == 64
+        assert len(address_abc.to_hex()) == 64
 
         # Invalid literals should raise ValueError
         with pytest.raises(ValueError): RoochAddress.from_hex_literal("1")  # Must start with 0x
@@ -99,8 +101,8 @@ class TestRoochAddress:
     def test_to_hex(self):
         """Test converting address to hex string"""
         address = RoochAddress.from_hex(self.VALID_ADDRESS_STR_PREFIX)
-        assert address.to_hex() == self.VALID_ADDRESS_STR_PREFIX
-        assert address.to_hex_no_prefix() == self.VALID_ADDRESS_STR_NOPREFIX
+        assert address.to_hex_full() == self.VALID_ADDRESS_STR_PREFIX
+        assert address.to_hex() == self.VALID_ADDRESS_STR_NOPREFIX
 
     def test_to_bytes(self):
         """Test converting address to bytes"""
