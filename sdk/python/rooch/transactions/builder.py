@@ -35,8 +35,6 @@ class TransactionBuilder:
         sequence_number: int,
         chain_id: int,
         max_gas_amount: int = 10_000_000,
-        gas_unit_price: int = 1,
-        expiration_timestamp_secs: int = 0,
     ):
         """Initialize a transaction builder based on new TransactionData fields
         
@@ -45,15 +43,11 @@ class TransactionBuilder:
             sequence_number: Transaction sequence number
             chain_id: Chain ID
             max_gas_amount: Maximum gas amount
-            gas_unit_price: Gas unit price
-            expiration_timestamp_secs: Expiration timestamp in seconds
         """
         self.sender_address = sender_address
         self.sequence_number = sequence_number
         self.chain_id = chain_id
         self.max_gas_amount = max_gas_amount
-        self.gas_unit_price = gas_unit_price
-        self.expiration_timestamp_secs = expiration_timestamp_secs
     
     def build_function_payload(
         self,
@@ -124,8 +118,6 @@ class TransactionBuilder:
             tx_arg=action_arg,
             sequence_number=self.sequence_number,
             max_gas_amount=self.max_gas_amount,
-            gas_unit_price=self.gas_unit_price,
-            expiration_timestamp_secs=self.expiration_timestamp_secs,
             chain_id=self.chain_id,
             sender=RoochAddress.from_hex(self.sender_address)
         )
@@ -149,8 +141,6 @@ class TransactionBuilder:
             tx_arg=module_bytes,
             sequence_number=self.sequence_number,
             max_gas_amount=self.max_gas_amount,
-            gas_unit_price=self.gas_unit_price,
-            expiration_timestamp_secs=self.expiration_timestamp_secs,
             chain_id=self.chain_id,
             sender=RoochAddress.from_hex(self.sender_address)
         )
@@ -202,8 +192,6 @@ class TransactionBuilder:
         sequence_number: int,
         chain_id: int,
         max_gas_amount: int = 10_000_000,
-        gas_unit_price: int = 1,
-        expiration_delta_secs: int = 3600,
     ) -> 'TransactionBuilder':
         """Create a transaction builder with default account settings
         
@@ -212,18 +200,13 @@ class TransactionBuilder:
             sequence_number: Transaction sequence number
             chain_id: Chain ID
             max_gas_amount: Maximum gas amount
-            gas_unit_price: Gas unit price
-            expiration_delta_secs: Expiration delta in seconds
             
         Returns:
             TransactionBuilder instance
         """
-        expiration_timestamp_secs = int(time.time()) + expiration_delta_secs
         return cls(
             sender_address=signer.get_address(),
             sequence_number=sequence_number,
             chain_id=chain_id,
             max_gas_amount=max_gas_amount,
-            gas_unit_price=gas_unit_price,
-            expiration_timestamp_secs=expiration_timestamp_secs,
         )

@@ -41,15 +41,12 @@ class TestTransactionBuilder:
             sequence_number=self.sequence_number,
             chain_id=self.chain_id,
             max_gas_amount=self.max_gas,
-            gas_unit_price=self.gas_price
-            # expiration_timestamp_secs can use defaults or be set per test
         )
         # Verify builder attributes are set correctly
         assert self.builder.sender_address == self.address
         assert self.builder.sequence_number == self.sequence_number
         assert self.builder.chain_id == self.chain_id
         assert self.builder.max_gas_amount == self.max_gas
-        assert self.builder.gas_unit_price == self.gas_price
 
     def test_build_move_call_transaction(self):
         """Test building a Move function call transaction"""
@@ -144,47 +141,3 @@ class TestTransactionBuilder:
         # This check is implicit now as tx_data gets it from builder
         assert hasattr(tx_data, 'chain_id')
         assert tx_data.chain_id == self.builder.chain_id
-
-    def test_expiration_timestamp_calculation(self):
-        """Test expiration timestamp calculation (now done via builder init or static method)"""
-        expiration_delta = 3600 # 1 hour
-        current_time = 1000000000
-
-        # Option 1: Set expiration during builder init
-        with patch('time.time', return_value=current_time):
-            expected_expiry = int(time.time()) + expiration_delta
-            builder_with_expiry = TransactionBuilder(
-                sender_address=self.address,
-                sequence_number=self.sequence_number,
-                chain_id=self.chain_id,
-                max_gas_amount=self.max_gas,
-                gas_unit_price=self.gas_price,
-                # Calculate expiration based on delta
-                expiration_timestamp_secs=expected_expiry
-            )
-
-        payload = builder_with_expiry.build_function_payload("0x1::test::function")
-        tx_data = builder_with_expiry.build_move_action_tx(payload)
-
-        # Verify expiration timestamp in TransactionData
-        assert hasattr(tx_data, 'expiration_timestamp_secs')
-        assert tx_data.expiration_timestamp_secs == expected_expiry
-
-        # Option 2: Use static method with_default_account
-        with patch('time.time', return_value=current_time):
-            expected_expiry_static = int(time.time()) + expiration_delta
-            builder_from_static = TransactionBuilder.with_default_account(
-                signer=self.signer,
-                sequence_number=self.sequence_number,
-                chain_id=self.chain_id,
-                max_gas_amount=self.max_gas,
-                gas_unit_price=self.gas_price,
-                expiration_delta_secs=expiration_delta
-            )
-
-        payload_static = builder_from_static.build_function_payload("0x1::test::function")
-        tx_data_static = builder_from_static.build_move_action_tx(payload_static)
-
-        # Verify expiration timestamp from static method builder
-        assert hasattr(tx_data_static, 'expiration_timestamp_secs')
-        assert tx_data_static.expiration_timestamp_secs == expected_expiry_static

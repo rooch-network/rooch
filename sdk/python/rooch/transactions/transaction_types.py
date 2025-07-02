@@ -31,8 +31,6 @@ class TransactionData(Serializable, Deserializable):
         tx_arg: Union[MoveActionArgument, bytes],
         sequence_number: Union[int, str],
         max_gas_amount: Union[int, str] = 1000000,
-        gas_unit_price: Union[int, str] = 1,
-        expiration_timestamp_secs: Union[int, str] = 0,
         chain_id: int = 42,
         sender: Optional[RoochAddress] = None
     ):
@@ -42,8 +40,6 @@ class TransactionData(Serializable, Deserializable):
             tx_arg: Move action argument or module bytes
             sequence_number: Transaction sequence number
             max_gas_amount: Maximum gas amount
-            gas_unit_price: Gas unit price
-            expiration_timestamp_secs: Expiration timestamp in seconds
             chain_id: Chain ID
             sender: Sender's address
         """
@@ -51,8 +47,6 @@ class TransactionData(Serializable, Deserializable):
         self.tx_arg = tx_arg
         self.sequence_number = int(sequence_number)
         self.max_gas_amount = int(max_gas_amount)
-        self.gas_unit_price = int(gas_unit_price)
-        self.expiration_timestamp_secs = int(expiration_timestamp_secs)
         self.chain_id = chain_id
         self.sender = sender
 
@@ -65,8 +59,6 @@ class TransactionData(Serializable, Deserializable):
             serializer.bytes(self.tx_arg)
         serializer.u64(self.sequence_number)
         serializer.u64(self.max_gas_amount)
-        serializer.u64(self.gas_unit_price)
-        serializer.u64(self.expiration_timestamp_secs)
         serializer.u8(self.chain_id)
         if self.sender:
             serializer.struct(self.sender)
@@ -83,8 +75,6 @@ class TransactionData(Serializable, Deserializable):
             tx_arg = deserializer.bytes()
         sequence_number = deserializer.u64()
         max_gas_amount = deserializer.u64()
-        gas_unit_price = deserializer.u64()
-        expiration_timestamp_secs = deserializer.u64()
         chain_id = deserializer.u8()
         sender = None
         if deserializer.remaining() > 0:
@@ -94,8 +84,6 @@ class TransactionData(Serializable, Deserializable):
             tx_arg=tx_arg,
             sequence_number=sequence_number,
             max_gas_amount=max_gas_amount,
-            gas_unit_price=gas_unit_price,
-            expiration_timestamp_secs=expiration_timestamp_secs,
             chain_id=chain_id,
             sender=sender
         )
@@ -110,8 +98,6 @@ class TransactionData(Serializable, Deserializable):
             "tx_type": self.tx_type,
             "sequence_number": str(self.sequence_number),
             "max_gas_amount": str(self.max_gas_amount),
-            "gas_unit_price": str(self.gas_unit_price),
-            "expiration_timestamp_secs": str(self.expiration_timestamp_secs),
             "chain_id": self.chain_id
         }
         
@@ -152,8 +138,6 @@ class TransactionData(Serializable, Deserializable):
             tx_arg=tx_arg,
             sequence_number=data.get("sequence_number", "0"),
             max_gas_amount=data.get("max_gas_amount", "1000000"),
-            gas_unit_price=data.get("gas_unit_price", "1"),
-            expiration_timestamp_secs=data.get("expiration_timestamp_secs", "0"),
             chain_id=data.get("chain_id", 42),
             sender=sender
         )

@@ -64,8 +64,6 @@ def mock_responses():
                 "sender": "0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
                 "sequence_number": "0",
                 "max_gas_amount": "10000000",
-                "gas_unit_price": "1",
-                "expiration_timestamp_secs": "1680000000",
             },
             "status": {
                 "status": "executed"

@@ -246,8 +246,6 @@ class TestTransactionData:
             tx_arg=move_action,
             sequence_number=10,
             max_gas_amount=1000000,
-            gas_unit_price=1,
-            expiration_timestamp_secs=1650000000,
             chain_id=42
         )
         
@@ -255,8 +253,6 @@ class TestTransactionData:
         assert isinstance(tx_data.tx_arg, MoveActionArgument)
         assert tx_data.sequence_number == 10
         assert tx_data.max_gas_amount == 1000000
-        assert tx_data.gas_unit_price == 1
-        assert tx_data.expiration_timestamp_secs == 1650000000
         assert tx_data.chain_id == 42
     
     def test_create_module_transaction(self):
@@ -270,8 +266,6 @@ class TestTransactionData:
             tx_arg=module_bytes,
             sequence_number=10,
             max_gas_amount=1000000,
-            gas_unit_price=1,
-            expiration_timestamp_secs=1650000000,
             chain_id=42
         )
         
@@ -330,8 +324,6 @@ class TestTransactionData:
             },
             "sequence_number": "10",
             "max_gas_amount": "1000000",
-            "gas_unit_price": "1",
-            "expiration_timestamp_secs": "1650000000",
             "chain_id": 42
         }
         

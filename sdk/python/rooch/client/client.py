@@ -63,81 +63,46 @@ class RoochClient:
         Returns:
             Chain ID
         """
-        # Use the correct RPC method name from openrpc.json
         result = await self._transport.request("rooch_getChainID")
-        # The result seems to be a string representation of u64
         return int(result)
-    
-    async def get_states(self, cursor: int = 0, limit: int = 25) -> Dict[str, Any]:
-        """Get global states with pagination
-        
+
+    async def get_states(self, access_path: str, state_option: Optional[dict] = None) -> List[Optional[dict]]:
+        """Get the states by access_path (see Rust RoochAPI)
         Args:
-            cursor: Starting cursor
-            limit: Maximum number of states to return
-            
+            access_path: The access path string (required)
+            state_option: Optional state options dict
         Returns:
-            List of states and pagination info
+            List of state objects or None
         """
-        return await self._transport.request("rooch_getStates", [cursor, limit])
-    
-    async def get_state_by_state_key(self, state_key: str) -> Dict[str, Any]:
-        """Get state by state key
-        
+        if not access_path:
+            raise ValueError("access_path is required for get_states (see RoochAPI)")
+        params = [access_path]
+        if state_option is not None:
+            params.append(state_option)
+        return await self._transport.request("rooch_getStates", params)
+
+    async def list_states(self, access_path: str, cursor: Optional[str] = None, limit: Optional[int] = None, state_option: Optional[dict] = None) -> dict:
+        """List the states by access_path (see Rust RoochAPI)
         Args:
-            state_key: State key
-            
+            access_path: The access path string
+            cursor: Optional cursor string
+            limit: Optional limit (int)
+            state_option: Optional state options dict
         Returns:
-            State information
+            State page dict
         """
-        return await self._transport.request("rooch_getStateByStateKey", [state_key])
-    
-    async def get_states_by_prefix(
-        self, 
-        prefix: str, 
-        cursor: int = 0, 
-        limit: int = 25
-    ) -> Dict[str, Any]:
-        """Get states by prefix with pagination
-        
-        Args:
-            prefix: Key prefix
-            cursor: Starting cursor
-            limit: Maximum number of states to return
-            
-        Returns:
-            List of states and pagination info
-        """
-        return await self._transport.request("rooch_getStatesByPrefix", [prefix, cursor, limit])
-    
-    async def get_block_by_height(self, height: int) -> Dict[str, Any]:
-        """Get block by height
-        
-        Args:
-            height: Block height
-            
-        Returns:
-            Block information
-        """
+        params = [access_path, cursor, limit, state_option]
+        return await self._transport.request("rooch_listStates", params)
+
+    async def get_block_by_height(self, height: int) -> dict:
+        """Get block by height (Rust: getBlockByHeight)"""
         return await self._transport.request("rooch_getBlockByHeight", [height])
-    
-    async def get_block_info_by_height(self, height: int) -> Dict[str, Any]:
-        """Get block info by height
-        
-        Args:
-            height: Block height
-            
-        Returns:
-            Block info
-        """
-        return await self._transport.request("rooch_getBlockInfoByHeight", [height])
-    
+
     async def get_transaction_builder(
         self, 
         sender_address: str,
         signer: Optional[Signer] = None,
         max_gas_amount: int = 10_000_000,
-        gas_unit_price: int = 1,
-        expiration_delta_secs: int = 600  # 10 minutes
     ) -> TransactionBuilder:
         """Get a transaction builder for the sender
         
@@ -145,8 +110,6 @@ class RoochClient:
             sender_address: Sender account address
             signer: Optional signer (if provided, will use the address from it)
             max_gas_amount: Maximum gas amount
-            gas_unit_price: Gas unit price
-            expiration_delta_secs: Expiration time delta in seconds
             
         Returns:
             Configured TransactionBuilder
@@ -166,7 +129,7 @@ class RoochClient:
             sender_address=sender_address,
             sequence_number=sequence_number,
             chain_id=chain_id,
-            max_gas_amount=max_gas_amount
+            max_gas_amount=max_gas_amount,
         )
     
     async def submit_and_wait(
@@ -197,10 +160,8 @@ class RoochClient:
         type_args: Optional[List[str]] = None,
         args: Optional[List[List[Any]]] = None,
         max_gas_amount: int = 10_000_000,
-        gas_unit_price: int = 1,
-        expiration_delta_secs: int = 600
     ) -> Dict[str, Any]:
-        """Execute a Move function call
+        """Execute a Move function call (Rust: executeRawTransaction, but Python builds and signs tx)
         
         Args:
             signer: Transaction signer
@@ -208,8 +169,6 @@ class RoochClient:
             type_args: Type arguments
             args: Function arguments
             max_gas_amount: Maximum gas amount
-            gas_unit_price: Gas unit price
-            expiration_delta_secs: Expiration time delta in seconds
             
         Returns:
             Transaction execution result
@@ -217,10 +176,7 @@ class RoochClient:
         # Create a transaction builder
         tx_builder = await self.get_transaction_builder(
             sender_address=signer.get_address(),
-            signer=None,  # We already have the address
             max_gas_amount=max_gas_amount,
-            gas_unit_price=gas_unit_price,
-            expiration_delta_secs=expiration_delta_secs
         )
         
         # Build function payload
@@ -244,28 +200,21 @@ class RoochClient:
         signer: Signer,
         module_bytes: Union[bytes, str],
         max_gas_amount: int = 10_000_000,
-        gas_unit_price: int = 1,
-        expiration_delta_secs: int = 600
-    ) -> Dict[str, Any]:
-        """Publish a Move module
+    ) -> dict:
+        """Publish a Move module (Rust: executeRawTransaction with module publish payload)
         
         Args:
             signer: Transaction signer
             module_bytes: Module bytecode (bytes or hex string)
             max_gas_amount: Maximum gas amount
-            gas_unit_price: Gas unit price
-            expiration_delta_secs: Expiration time delta in seconds
-            
+
         Returns:
             Transaction execution result
         """
         # Create a transaction builder
         tx_builder = await self.get_transaction_builder(
             sender_address=signer.get_address(),
-            signer=None,  # We already have the address
             max_gas_amount=max_gas_amount,
-            gas_unit_price=gas_unit_price,
-            expiration_delta_secs=expiration_delta_secs
         )
         
         # Build transaction
@@ -278,7 +227,7 @@ class RoochClient:
         return await self.submit_and_wait(signed_tx)
 
     async def create_session(self, session_args: CreateSessionArgs, signer: Signer) -> Session:
-        """Create a new session key on the Rooch network.
+        """Create a new session key (Rust: session key logic is on-chain, Python builds tx and calls)
 
         Args:
             session_args: Arguments for creating the session.
