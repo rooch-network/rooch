@@ -206,6 +206,8 @@ impl ExecCommand {
         let shutdown_tx_clone = shutdown_tx.clone();
 
         tokio::spawn(async move {
+
+            // Unix signal handling
             #[cfg(unix)]
             {
                 let mut sigterm =
@@ -223,7 +225,8 @@ impl ExecCommand {
                     }
                 }
             }
-            
+
+            // Windows support: handle Ctrl+C shutdown
             #[cfg(not(unix))]
             {
                 match ctrl_c().await {
@@ -512,7 +515,7 @@ impl ExecInner {
                 last_executed_tx_order,
                 last_sequenced_tx,
                 last_full_executed_tx_order
-            }
+            };
 
             if rollback_to.is_none() {
                 rollback_to = Some(last_full_executed_tx_order);
