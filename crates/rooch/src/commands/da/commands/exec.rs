@@ -208,8 +208,12 @@ impl ExecCommand {
         tokio::spawn(async move {
             #[cfg(unix)]
             let shutdown_signal = async {
-                let mut signal = signal(SignalKind::terminate()).unwrap();
-                signal.recv().await;
+                let mut sigterm = signal(SignalKind::terminate()).unwrap();
+                let mut sigint = signal(SignalKind::interrupt()).unwrap();
+                tokio::select! {
+                    _ = sigterm.recv() => {},
+                    _ = sigint.recv() => {},
+                }
             };
 
             #[cfg(not(unix))]
@@ -495,7 +499,7 @@ impl ExecInner {
                 last_executed_tx_order,
                 last_sequenced_tx,
                 last_full_executed_tx_order
-            };
+            }
 
             if rollback_to.is_none() {
                 rollback_to = Some(last_full_executed_tx_order);
