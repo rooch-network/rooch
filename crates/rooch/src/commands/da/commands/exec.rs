@@ -47,10 +47,10 @@ use std::path::PathBuf;
 use std::sync::atomic::AtomicU64;
 use std::sync::Arc;
 use std::time::Duration;
-#[cfg(unix)]
-use tokio::signal::unix::{signal, SignalKind};
 #[cfg(not(unix))]
 use tokio::signal::ctrl_c;
+#[cfg(unix)]
+use tokio::signal::unix::{signal, SignalKind};
 use tokio::sync::mpsc::Receiver;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::watch;
