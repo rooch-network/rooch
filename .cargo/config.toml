@@ -26,7 +26,11 @@ rustflags = [
     "-Clink-args=/NODEFAULTLIB:msvcrtd.lib",
     "-Clink-args=/NODEFAULTLIB:libcmtd.lib",
     "-Clink-args=/NODEFAULTLIB:vcruntime.lib",
-    "-Clink-args=/NODEFAULTLIB:vcruntimed.lib"
+    "-Clink-args=/NODEFAULTLIB:vcruntimed.lib",
+    # Add missing Windows system libraries for libgit2
+    "-Clink-args=advapi32.lib",
+    "-Clink-args=secur32.lib",
+    "-Clink-args=crypt32.lib"
 ]
 
 [alias]
