@@ -7,7 +7,7 @@ module rooch_framework::session_key {
     use std::signer;
     use moveos_std::object::ObjectID;
     use moveos_std::account;
-    use moveos_std::tx_context; 
+    use moveos_std::tx_context;
     use moveos_std::table::{Self, Table};
     use moveos_std::tx_meta::{Self, FunctionCallMeta};
     use rooch_framework::auth_validator;
@@ -38,7 +38,8 @@ module rooch_framework::session_key {
     const SIGNATURE_SCHEME_ED25519: u8 = 0;
     const SIGNATURE_SCHEME_SECP256K1: u8 = 1;
     const SIGNATURE_SCHEME_ECDSAR1: u8 = 2;
-    
+    const SIGNATURE_SCHEME_RS256: u8 = 3;
+
     public fun signature_scheme_ed25519(): u8 {
         SIGNATURE_SCHEME_ED25519
     }
@@ -49,6 +50,10 @@ module rooch_framework::session_key {
 
     public fun signature_scheme_ecdsar1(): u8 {
         SIGNATURE_SCHEME_ECDSAR1
+    }
+
+    public fun signature_scheme_rs256(): u8 {
+        SIGNATURE_SCHEME_RS256
     }
 
     /// The session's scope
@@ -197,17 +202,17 @@ module rooch_framework::session_key {
         sender: &signer,
         app_name: std::string::String,
         app_url: std::string::String,
-        authentication_key: vector<u8>, 
-        scope_module_addresses: vector<address>, 
-        scope_module_names: vector<std::string::String>, 
-        scope_function_names: vector<std::string::String>, 
+        authentication_key: vector<u8>,
+        scope_module_addresses: vector<address>,
+        scope_module_names: vector<std::string::String>,
+        scope_function_names: vector<std::string::String>,
         max_inactive_interval: u64) {
         assert!(
             vector::length<address>(&scope_module_addresses) == vector::length<std::string::String>(&scope_module_names) &&
             vector::length<std::string::String>(&scope_module_names) == vector::length<std::string::String>(&scope_function_names),
             ErrorSessionScopePartLengthNotMatch
         );
-        
+
         let idx = 0;
         let scopes = vector::empty<SessionScope>();
 
@@ -221,7 +226,7 @@ module rooch_framework::session_key {
                 module_name: *scope_module_name,
                 function_name: *scope_function_name,
             });
-            
+
             idx = idx + 1;
         };
 
@@ -232,7 +237,7 @@ module rooch_framework::session_key {
     public(friend) fun in_session_scope(session_key: &SessionKey): bool{
         let idx = 0;
         let tx_meta = tx_context::tx_meta();
-        
+
         let function_call_meta_option = tx_meta::function_meta(&tx_meta);
         // session key can not be used to execute script or publish module
         // only support function call now
@@ -288,7 +293,7 @@ module rooch_framework::session_key {
     public fun active_session_key_for_test(authentication_key: vector<u8>) {
         active_session_key(authentication_key);
     }
-    
+
     public fun contains_session_key(sender_addr: address, authentication_key: vector<u8>) : bool {
         if(!account::exists_resource<SessionKeys>(sender_addr)){
             return false
@@ -324,7 +329,7 @@ module rooch_framework::session_key {
         let scope = new_session_scope(@0x1, std::string::utf8(b"test"), std::string::utf8(b"test"));
         let function_call_meta = tx_meta::new_function_call_meta(@0x1, std::string::utf8(b"test"), std::string::utf8(b"test"));
         assert!(check_scope_match(&scope, &function_call_meta), 1000);
-        
+
         let function_call_meta = tx_meta::new_function_call_meta(@0x2, std::string::utf8(b"test"), std::string::utf8(b"test"));
         assert!(!check_scope_match(&scope, &function_call_meta), 1001);
 
@@ -338,13 +343,13 @@ module rooch_framework::session_key {
      #[test]
     fun test_check_scope_match_asterisk() {
         let scope = new_session_scope(@0x1, std::string::utf8(b"*"), std::string::utf8(b"*"));
-        
+
         let function_call_meta = tx_meta::new_function_call_meta(@0x1, std::string::utf8(b"test"), std::string::utf8(b"test"));
         assert!(check_scope_match(&scope, &function_call_meta), 1000);
 
         let function_call_meta = tx_meta::new_function_call_meta(@0x1, std::string::utf8(b"test2"), std::string::utf8(b"test2"));
         assert!(check_scope_match(&scope, &function_call_meta), 1001);
-        
+
         let function_call_meta = tx_meta::new_function_call_meta(@0x2, std::string::utf8(b"test"), std::string::utf8(b"test"));
         assert!(!check_scope_match(&scope, &function_call_meta), 1002);
 
@@ -382,4 +387,12 @@ module rooch_framework::session_key {
         auth_key
     }
 
+    /// Derives the authentication key for a RSASSA-PKCS1-v1_5 public key modulus and exponent.
+    public fun rs256_public_key_to_authentication_key(n: vector<u8>, e: vector<u8>): vector<u8> {
+        let auth_key = vector::empty<u8>();
+        vector::append(&mut auth_key, vector::singleton(SIGNATURE_SCHEME_RS256));
+        vector::append(&mut auth_key, hash::sha2_256(n));
+        vector::append(&mut auth_key, hash::sha2_256(e));
+        auth_key
+    }
 }
