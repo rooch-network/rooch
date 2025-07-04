@@ -12,10 +12,11 @@ use crate::{
 };
 use anyhow::{anyhow, bail};
 use bech32::{encode, Bech32, EncodeError};
-use bitcoin::secp256k1::SecretKey;
+use bitcoin::{hex::DisplayHex, secp256k1::SecretKey};
 use derive_more::{AsRef, From};
 pub use enum_dispatch::enum_dispatch;
 use eyre::eyre;
+use fastcrypto::generate_bytes_representation;
 pub use fastcrypto::traits::KeyPair as KeypairTraits;
 pub use fastcrypto::traits::Signer;
 pub use fastcrypto::traits::{
@@ -28,13 +29,13 @@ use fastcrypto::{
         Ed25519SignatureAsBytes,
     },
     encoding::{Base64, Encoding},
-    rsa::{RSAPublicKey, RSASignature},
+    rsa::RSASignature,
+    traits::AllowedRng,
 };
 use fastcrypto::{
     error::FastCryptoError,
     secp256k1::{Secp256k1KeyPair, Secp256k1PublicKeyAsBytes},
 };
-use fastcrypto::{generate_bytes_representation, hash::Hash};
 use fastcrypto::{hash::Sha256, serde_helpers::BytesRepresentation};
 use fastcrypto::{
     hash::{Blake2b256, HashFunction},
@@ -45,21 +46,18 @@ use fastcrypto::{
     },
 };
 use fastcrypto::{impl_base64_display_fmt, serialize_deserialize_with_to_from_bytes};
-use multibase;
+use fastcrypto_derive::{SilentDebug, SilentDisplay};
 use once_cell::sync::OnceCell;
 use rsa::{
-    pkcs1::{DecodeRsaPrivateKey, DecodeRsaPublicKey, EncodeRsaPrivateKey, EncodeRsaPublicKey},
-    pkcs1v15,
-    pkcs8::der::zeroize,
-    sha2,
-    traits::PublicKeyParts,
-    Pkcs1v15Sign, RsaPrivateKey, RsaPublicKey,
+    pkcs1::DecodeRsaPrivateKey, pkcs8::der::zeroize, traits::PublicKeyParts, BigUint, Pkcs1v15Sign,
+    RsaPrivateKey, RsaPublicKey,
 };
 use schemars::JsonSchema;
 use serde::ser::Serializer;
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_with::serde_as;
-use std::{hash::Hash, str::FromStr};
+use std::fmt;
+use std::{fmt::Formatter, str::FromStr};
 
 pub use fastcrypto::ed25519::ED25519_PUBLIC_KEY_LENGTH;
 pub use fastcrypto::secp256k1::SECP256K1_PUBLIC_KEY_LENGTH;
@@ -104,10 +102,27 @@ pub struct Rs256KeyPair {
 }
 
 impl Rs256KeyPair {
+    /// Sign a message using the given hash function and return the signature
+    fn sign_common<H: HashFunction<32>>(&self, msg: &[u8]) -> RSASignature {
+        // Hash message
+        let digest_in = &H::digest(msg).digest;
+
+        // Padding
+        let padding = Pkcs1v15Sign::new::<sha2::Sha256>();
+
+        RSASignature::from_bytes(
+            self.secret
+                .privkey
+                .sign(padding, digest_in)
+                .expect("failed to sign rs256.")
+                .as_ref(),
+        )
+        .expect("failed to convert to rsa signature.")
+    }
+
     /// Create a new signature using the given hash function to hash the message.
     pub fn sign_with_hash<H: HashFunction<32>>(&self, msg: &[u8]) -> Rs256Signature {
-        let signature_bytes = self.secret.sign(Pkcs1v15Sign::new::<H>(), msg)?;
-        let signature = RSASignature::from_bytes(signature_bytes)?;
+        let signature = self.sign_common::<H>(msg);
 
         Rs256Signature {
             sig: signature,
@@ -119,7 +134,7 @@ impl Rs256KeyPair {
 impl KeypairTraits for Rs256KeyPair {
     type PubKey = Rs256PublicKey;
     type PrivKey = Rs256PrivateKey;
-    type Sig = Rs256RoochSignature;
+    type Sig = Rs256Signature;
 
     fn public(&'_ self) -> &'_ Self::PubKey {
         &self.public
@@ -132,13 +147,15 @@ impl KeypairTraits for Rs256KeyPair {
     fn copy(&self) -> Self {
         Rs256KeyPair {
             public: self.public.clone(),
-            secret: self.secret.clone(),
+            secret: Rs256PrivateKey::from_bytes(self.secret.as_ref()).unwrap(),
         }
     }
 
     fn generate<R: AllowedRng>(rng: &mut R) -> Self {
         let default_bit_size = 2048;
-        let privkey = RsaPrivateKey::new(rng, default_bit_size);
+        let privkey =
+            RsaPrivateKey::new(rng, default_bit_size).expect("failed to create rsa private key.");
+        println!("{:?}", privkey.to_public_key().n().to_bytes_be().as_hex());
         Rs256PrivateKey {
             privkey,
             bytes: OnceCell::new(),
@@ -204,6 +221,7 @@ impl SigningKey for Rs256PrivateKey {
 serialize_deserialize_with_to_from_bytes!(Rs256PrivateKey, RS256_PRIVATE_KEY_MINIMUM_LENGTH);
 
 impl ToFromBytes for Rs256PrivateKey {
+    // TODO: rebuild the RsaPrivateKey from other than pkcs1_der.
     fn from_bytes(bytes: &[u8]) -> Result<Self, FastCryptoError> {
         match RsaPrivateKey::from_pkcs1_der(bytes) {
             Ok(privkey) => Ok(Rs256PrivateKey {
@@ -230,7 +248,14 @@ impl Eq for Rs256PrivateKey {}
 impl AsRef<[u8]> for Rs256PrivateKey {
     fn as_ref(&self) -> &[u8] {
         self.bytes
-            .get_or_init::<_>(|| zeroize::Zeroizing::new(self.privkey.as_ref().into()))
+            .get_or_init::<_>(|| {
+                zeroize::Zeroizing::new(
+                    <[u8; RS256_PRIVATE_KEY_MINIMUM_LENGTH]>::try_from(
+                        self.privkey.n().to_bytes_be().as_slice(),
+                    )
+                    .unwrap(),
+                )
+            })
             .as_ref()
     }
 }
@@ -510,6 +535,7 @@ pub struct MultibasePublicKey {
 }
 
 /// Rs256 public key.
+#[readonly::make]
 #[derive(Debug, Clone)]
 pub struct Rs256PublicKey {
     pub pubkey: RsaPublicKey,
@@ -526,25 +552,48 @@ generate_bytes_representation!(
     Rs256PublicKeyAsBytes
 );
 
+impl Rs256PublicKey {
+    /// Verify the signature using the given hash function to hash the message.
+    pub fn verify_with_hash<H: HashFunction<32>>(
+        &self,
+        msg: &[u8],
+        signature: &Rs256Signature,
+    ) -> Result<(), FastCryptoError> {
+        println!("{:?}", H::digest(msg).as_ref().as_hex());
+        println!("{:?}", signature.sig.0.as_ref().as_hex());
+        println!("{:?}", self.pubkey.n().to_bytes_be().as_hex());
+        let result = self
+            .pubkey
+            .verify(
+                Pkcs1v15Sign::new::<sha2::Sha256>(),
+                H::digest(msg).as_ref(),
+                signature.sig.0.as_ref(),
+            )
+            .map_err(|_| FastCryptoError::InvalidInput);
+        println!("{:?}", result.clone().unwrap());
+        result
+    }
+}
+
 impl AsRef<[u8]> for Rs256PublicKey {
     fn as_ref(&self) -> &[u8] {
         self.bytes.get_or_init::<_>(|| {
-            self.pubkey
-                .clone()
-                .to_pkcs1_der()
-                .expect("failed to convert to pkcs1 der.")
-                .as_bytes()
-                .into()
+            <[u8; RS256_PUBLIC_KEY_MINIMUM_LENGTH]>::try_from(
+                self.pubkey.n().to_bytes_be().as_slice(),
+            )
+            .unwrap()
         })
     }
 }
 
 impl ToFromBytes for Rs256PublicKey {
-    fn from_bytes(bytes: &[u8]) -> Result<Self, FastCryptoError> {
-        match RsaPublicKey::from_pkcs1_der(bytes) {
+    fn from_bytes(n_bytes: &[u8]) -> Result<Self, FastCryptoError> {
+        let n = BigUint::from_bytes_be(n_bytes);
+        let e = BigUint::from(65537 as u64); // default exponent.
+        match RsaPublicKey::new(n, e) {
             Ok(pubkey) => Ok(Rs256PublicKey {
                 pubkey,
-                bytes: match <[u8; RS256_PUBLIC_KEY_MINIMUM_LENGTH]>::try_from(bytes) {
+                bytes: match <[u8; RS256_PUBLIC_KEY_MINIMUM_LENGTH]>::try_from(n_bytes) {
                     Ok(result) => OnceCell::with_value(result),
                     Err(_) => OnceCell::new(),
                 },
@@ -568,7 +617,7 @@ impl PartialOrd for Rs256PublicKey {
 
 impl Ord for Rs256PublicKey {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.pubkey.cmp(&other.pubkey)
+        self.pubkey.n().cmp(&other.pubkey.n())
     }
 }
 
@@ -586,8 +635,9 @@ impl VerifyingKey for Rs256PublicKey {
     const LENGTH: usize = RS256_PUBLIC_KEY_MINIMUM_LENGTH;
 
     fn verify(&self, msg: &[u8], signature: &Rs256Signature) -> Result<(), FastCryptoError> {
-        self.pubkey
-            .verify(Pkcs1v15Sign::new::<sha2::Sha256>(), msg, signature.bytes)
+        println!("{:?}", msg.as_hex());
+        println!("{:?}", signature.sig.0.as_ref().as_hex());
+        self.verify_with_hash::<Sha256>(msg, signature)
     }
 }
 
@@ -1029,7 +1079,7 @@ impl From<&PublicKey> for AuthenticationKey {
 //
 // This struct exists due to the limitations of the `enum_dispatch` library.
 //
-pub trait RoochSignatureInner: Sized + ToFromBytes + PartialEq + Eq + Hash {
+pub trait RoochSignatureInner: Sized + ToFromBytes + PartialEq + Eq {
     type Sig: Authenticator<PubKey = Self::PubKey>;
     type PubKey: VerifyingKey<Sig = Self::Sig> + RoochPublicKey;
     type KeyPair: KeypairTraits<PubKey = Self::PubKey, Sig = Self::Sig>;
@@ -1215,10 +1265,18 @@ impl ToFromBytes for Signature {
 }
 
 /// Rs256 signature.
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Rs256Signature {
     pub sig: RSASignature,
-    pub bytes: OnceCell<[u8; RS256_SIGNATURE_LENTH]>,
+    pub bytes: OnceCell<[u8; RS256_SIGNATURE_MINIMUM_LENTH]>,
+}
+
+impl core::fmt::Debug for Rs256Signature {
+    fn fmt(&self, fmt: &mut Formatter<'_>) -> core::result::Result<(), core::fmt::Error> {
+        fmt.debug_list()
+            .entries(self.sig.0.as_ref().iter())
+            .finish()
+    }
 }
 
 pub const RS256_SIGNATURE_MINIMUM_LENTH: usize = 2048 / 8;
@@ -1507,6 +1565,7 @@ impl Signer<Signature> for Rs256KeyPair {
 mod tests {
     use super::*;
     use crate::bitcoin::network;
+    use bitcoin::hex::DisplayHex;
     use ethers::utils::keccak256;
     use fastcrypto::{
         secp256k1::{Secp256k1KeyPair, Secp256k1PrivateKey},
@@ -1611,6 +1670,8 @@ mod tests {
         let signature = kp.sign(message);
         println!("pubkey: {:?}", kp.public().to_hex());
         println!("signature: {:?}", hex::encode(signature.signature_bytes()));
+        println!("message: {:?}", Sha256::digest(message).digest.as_hex());
+        // TODO: ensure verify is success.
         assert!(signature.verify(message).is_ok());
 
         let value = SignData {
