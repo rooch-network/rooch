@@ -183,6 +183,7 @@ ethers = { version = "2.0.7", features = ["legacy"] }
 eyre = "0.6.8"
 fastcrypto = { git = "https://github.com/rooch-network/fastcrypto.git", rev = "863a6b9194787ad366f2d980ebe9c26b1649e25e" }
 fastcrypto-zkp = { git = "https://github.com/rooch-network/fastcrypto.git", rev = "863a6b9194787ad366f2d980ebe9c26b1649e25e" }
+fastcrypto-derive = { git = "https://github.com/rooch-network/fastcrypto.git", rev = "0acf0ff1a163c60e0dec1e16e4fbad4a4cf853bd" }
 futures = "0.3.31"
 futures-util = "0.3.31"
 futures-core = "0.3.21"
@@ -369,7 +370,8 @@ mimalloc = { version = "0.1.47" }
 multibase = "0.9.0"
 terminal_size = "0.4.2"
 rsa = "0.9.8"
-bincode = "2.0.1"
+bincode = "1.3.3"
+readonly = "0.2.13"
 
 # Note: the BEGIN and END comments below are required for external tooling. Do not remove.
 # BEGIN MOVE DEPENDENCIES
