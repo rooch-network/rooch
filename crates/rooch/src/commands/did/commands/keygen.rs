@@ -129,7 +129,7 @@ pub struct EcdsaR1KeygenCommand {
 }
 
 #[derive(Debug, Parser)]
-pub struct RsaKeygenCommand {
+pub struct Rs256KeygenCommand {
     /// Output format
     #[clap(
         long,
@@ -153,14 +153,6 @@ pub struct RsaKeygenCommand {
         default_value = "true"
     )]
     pub raw: bool,
-
-    /// Generate keypair with defined length
-    #[clap(
-        long,
-        help = " Generate keypair with defined length",
-        default_value = "2048"
-    )]
-    pub length: u64,
 
     #[clap(flatten)]
     pub context_options: WalletContextOptions,
@@ -375,9 +367,9 @@ impl CommandAction<KeygenOutput> for EcdsaR1KeygenCommand {
 }
 
 #[async_trait]
-impl CommandAction<KeygenOutput> for RsaKeygenCommand {
+impl CommandAction<KeygenOutput> for Rs256KeygenCommand {
     async fn execute(self) -> RoochResult<KeygenOutput> {
-        let keypair = RoochKeyPair::generate_rsassa_pkcs1_v1_5(self.length);
+        let keypair = RoochKeyPair::generate_rs256();
         let public_key = keypair.public();
 
         let public_key_output = PublicKeyOutput {
@@ -407,7 +399,7 @@ impl CommandAction<KeygenOutput> for RsaKeygenCommand {
         };
 
         // Generate did:key identifier
-        let did_key = generate_did_key(&public_key.raw_to_multibase(), "rsassa-pkcs1-v1_5")?;
+        let did_key = generate_did_key(&public_key.raw_to_multibase(), "rs256")?;
 
         Ok(KeygenOutput {
             key_type: "Rs256".to_string(),
