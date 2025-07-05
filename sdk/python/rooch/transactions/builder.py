@@ -9,6 +9,7 @@ import hashlib
 from ..address.rooch import RoochAddress
 from ..crypto.signer import Signer
 from ..crypto.signer import RoochSigner
+from ..utils.hex import from_hex
 from .serializer import TxSerializer
 from .types import (
     FunctionArgument,
@@ -158,13 +159,54 @@ class TransactionBuilder:
              # We might need a more generic way if other Signer types exist
              raise TypeError("Expected RoochSigner to access KeyPair")
         keypair = signer.get_keypair()
-        signature_bytes = keypair.sign_digest(tx_hash_bytes)
 
-        # 4. Determine Authenticator type and build payload
-        # For now, only SessionAuthenticator (Ed25519/Secp256k1) is supported
-        # TODO: Add BitcoinAuthenticator support if needed
-        # Use the new TransactionAuthenticator.session factory
-        auth = TransactionAuthenticator.session(signature_bytes)
+        # In Bitcoin signing, the message is first prefixed and then hashed (twice).
+        # The prefix is "Bitcoin Signed Message:" + length_of_message
+        prefix = b"Bitcoin Signed Message:\n"
+        message_len = len(tx_hash_bytes)
+        
+        # The length is encoded as a single byte for messages up to 252 bytes.
+        # ref: https://en.bitcoin.it/wiki/Protocol_documentation#Variable_length_integer
+        if message_len <= 252:
+            len_bytes = bytes([message_len])
+        else:
+            # Note: This part is simplified. For larger messages, a multi-byte varint is needed.
+            # However, transaction hashes are fixed-size and small, so this is sufficient.
+            raise ValueError("Message length exceeds 252 bytes, which is not supported by this simplified varint encoding.")
+
+        full_message = prefix + len_bytes + tx_hash_bytes
+        
+        # Double SHA256 hash
+        digest = hashlib.sha256(full_message).digest()
+        digest = hashlib.sha256(digest).digest()
+
+        # Sign the final hash
+        signature_bytes = keypair.sign(digest)
+
+        # 4. Create Bitcoin authenticator instead of Session authenticator
+        # Bitcoin authenticator uses secp256k1 keys and is the primary authentication method
+        # Session authenticator requires pre-created session keys
+        
+        # Get public key and generate Bitcoin address
+        public_key_bytes = keypair.get_public_key()
+        from ..address.bitcoin import BitcoinAddress
+        bitcoin_address = BitcoinAddress.from_public_key(public_key_bytes, mainnet=True)
+        bitcoin_address_str = str(bitcoin_address)
+        
+        # Create AuthPayload structure for Bitcoin authenticator
+        # Based on Rust AuthPayload::new implementation
+        from ..bcs.serializer import BcsSerializer
+        auth_payload_serializer = BcsSerializer()
+        
+        # Serialize AuthPayload fields: signature, message_prefix, message_info, public_key, from_address
+        auth_payload_serializer.bytes(signature_bytes)  # signature
+        auth_payload_serializer.bytes(b"Bitcoin Signed Message:\n")  # message_prefix (default)
+        auth_payload_serializer.bytes(b"Rooch Transaction:\n")  # message_info (default, without tx hash)
+        auth_payload_serializer.bytes(public_key_bytes)  # public_key
+        auth_payload_serializer.bytes(bitcoin_address_str.encode('utf-8'))  # from_address
+        
+        auth_payload_bytes = auth_payload_serializer.output()
+        auth = TransactionAuthenticator.bitcoin(auth_payload_bytes)
         # 6. Return SignedTransaction
         return SignedTransaction(tx_data, auth)
 

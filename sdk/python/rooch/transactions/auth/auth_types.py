@@ -4,10 +4,12 @@
 
 from enum import IntEnum
 from typing import Any, Dict, Optional, Union
+import hashlib
 
 from ...utils.hex import ensure_hex_prefix, to_hex, from_hex
 from ...bcs.serializer import BcsSerializer, Serializable, BcsDeserializer, Deserializable
 from ...address.rooch import RoochAddress
+from ...crypto import KeyPair
 
 
 # AuthValidator IDs (should match Rust BuiltinAuthValidator flags)
@@ -23,12 +25,32 @@ class TransactionAuthenticator(Serializable, Deserializable):
         self.payload = payload
 
     @classmethod
-    def session(cls, signature: Union[str, bytes]):
+    def session(cls, signature: Union[str, bytes], public_key: Union[str, bytes]):
+        """Create a SessionAuthenticator with signature and public key.
+        
+        Args:
+            signature: Raw signature bytes (64 bytes for secp256k1)
+            public_key: Public key bytes (65 bytes uncompressed for secp256k1)
+        
+        Returns:
+            TransactionAuthenticator instance
+        """
         if isinstance(signature, str):
             sig_bytes = from_hex(ensure_hex_prefix(signature))
         else:
             sig_bytes = signature
-        return cls(auth_validator_id=SESSION_AUTH_VALIDATOR_ID, payload=sig_bytes)
+            
+        if isinstance(public_key, str):
+            pk_bytes = from_hex(ensure_hex_prefix(public_key))
+        else:
+            pk_bytes = public_key
+            
+        # For secp256k1, the format is: flag (1 byte) + signature (64 bytes) + public key (65 bytes)
+        # TODO: Support other signature schemes (Ed25519, etc.)
+        scheme_flag = 1  # Secp256k1 flag
+        payload = bytes([scheme_flag]) + sig_bytes + pk_bytes
+        
+        return cls(auth_validator_id=SESSION_AUTH_VALIDATOR_ID, payload=payload)
 
     @classmethod
     def bitcoin(cls, payload: bytes):
@@ -141,3 +163,11 @@ class AuthPayload(Serializable, Deserializable):
             signature=data.get("signature", ""),
             address=data.get("address")
         )
+    
+    def sign(self, private_key: KeyPair) -> bytes:
+        message = self.get_message()
+        message_hash = hashlib.sha256(message).digest()
+        message_hash = hashlib.sha256(message_hash).digest()
+        
+        sig = private_key.sign_recoverable(message_hash, hasher=None)
+        return sig

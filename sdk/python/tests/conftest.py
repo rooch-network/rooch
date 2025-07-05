@@ -107,7 +107,7 @@ async def setup_integration_test_account(rooch_client: RoochClient, test_signer:
     print(f"\nAttempting to fund test account: {test_signer.get_address()} for test")
     try:
         # Define the faucet call parameters
-        faucet_amount = 100_000_000_000 # Request a significant amount of Gas (e.g., 100 RGas)
+        faucet_amount = 100_00_000_000 # Request a significant amount of Gas
         # Removed TransactionArgument, pass raw value
         faucet_arg = faucet_amount 
 
@@ -120,7 +120,7 @@ async def setup_integration_test_account(rooch_client: RoochClient, test_signer:
                 function_id="0x3::gas_coin::faucet_entry",
                 type_args=[],
                 args=[faucet_arg], 
-                max_gas_amount=1_000_000 
+                max_gas_amount=100_000_000 
             )
             print(f"Faucet call result for {test_signer.get_address()}: {result}")
             # Check if the faucet call itself was successful
@@ -191,25 +191,42 @@ def rooch_local_port() -> int:
 
 @pytest.fixture(scope="session")
 def rooch_server_url(rooch_local_port: int) -> Iterator[str]:
-    """Start a local Rooch node and return the server URL"""
-    # Check if we should skip the container (for CI environment that already has a node running)
-    if os.environ.get("SKIP_ROOCH_CONTAINER") == "1":
-        yield os.environ.get("ROOCH_SERVER_URL", "http://localhost:50051/v1/jsonrpc")
+    """
+    Start a local Rooch node for testing or use an external one if specified.
+
+    This fixture provides a Rooch server URL for integration tests.
+    It checks for the `ROOCH_EXTERNAL_URL` environment variable.
+    - If set, it yields that URL, allowing tests to run against a pre-existing Rooch node.
+    - If not set, it starts a new, temporary Rooch node (either from a local binary
+      if `ROOCH_LOCAL_BINARY` is set, or from a Docker container) and yields its URL.
+    The temporary node is automatically stopped at the end of the test session.
+    """
+    # Check if an external Rooch node URL is provided
+    external_url = os.environ.get("ROOCH_EXTERNAL_URL")
+    if external_url:
+        print(f"\nUsing external Rooch node at: {external_url}")
+        yield external_url
         return
 
-    # Determine if we should use local binary
+    # Determine if we should use a local binary instead of a container
     local_binary = os.environ.get("ROOCH_LOCAL_BINARY")
-    
-    # Start container
+    if local_binary:
+        print(f"\nUsing local Rooch binary from: {local_binary}")
+    else:
+        print("\nStarting Rooch node from Docker container...")
+
+    # Start a managed Rooch node (container or local binary)
     container = RoochNodeContainer(
         port=rooch_local_port,
         local_binary_path=local_binary if local_binary else None,
         image=os.environ.get("ROOCH_CONTAINER_IMAGE", "ghcr.io/rooch-network/rooch:main_debug")
     )
     
-    server_url = container.start()
-    
     try:
+        server_url = container.start()
+        print(f"Rooch node started at: {server_url}")
         yield server_url
     finally:
+        print("\nStopping Rooch node...")
         container.stop()
+        print("Rooch node stopped.")

@@ -20,7 +20,7 @@ from .container_utils import RoochNodeContainer
 class TestBox:
     """
     TestBox provides a testing environment for Rooch tests.
-    It can run a Rooch node in either local binary mode or container mode.
+    It can run a Rooch node in either local binary mode, container mode, or external mode.
     """
     
     def __init__(
@@ -37,7 +37,8 @@ class TestBox:
         btc_rpc_password: Optional[str] = None,
         btc_end_block_height: Optional[int] = None,
         btc_sync_block_interval: Optional[int] = None,
-        log_level: str = "info"
+        log_level: str = "info",
+        external_url: Optional[str] = None, # Only used in 'external' mode
     ):
         """Initialize TestBox
         
@@ -55,10 +56,11 @@ class TestBox:
             btc_end_block_height: Bitcoin end block height
             btc_sync_block_interval: Bitcoin sync block interval
             log_level: Logging level
+            external_url: If mode is 'external', use this url directly
         """
         self.mode = mode
-        if mode not in ["local", "container"]:
-            raise ValueError(f"Invalid mode: {mode}. Must be 'local' or 'container'")
+        if mode not in ["local", "container", "external"]:
+            raise ValueError(f"Invalid mode: {mode}. Must be 'local', 'container', or 'external'")
         
         self.network_name = network_name
         self.port = port
@@ -93,6 +95,7 @@ class TestBox:
         self.url = None
         self.process = None
         self.container = None
+        self.external_url = external_url
         
         # Setup logging
         logging.basicConfig(
@@ -112,7 +115,12 @@ class TestBox:
         if self.url:
             self.logger.warning("TestBox is already started")
             return self.url
-        
+        if self.mode == "external":
+            if not self.external_url:
+                raise ValueError("external_url must be provided for mode='external'")
+            self.url = self.external_url
+            self.logger.info(f"Using external Rooch node at {self.url}")
+            return self.url
         if self.mode == "local":
             return self._start_local()
         else:  # container mode
