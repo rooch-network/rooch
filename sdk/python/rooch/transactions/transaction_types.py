@@ -1,0 +1,201 @@
+#!/usr/bin/env python3
+# Copyright (c) Rooch Network
+# SPDX-License-Identifier: Apache-2.0
+
+from enum import IntEnum
+from typing import Any, Dict, Union, Optional
+
+from ..utils.hex import from_hex, to_hex
+from .move.move_types import MoveActionArgument, MoveAction
+from .auth.auth_types import TransactionAuthenticator
+from ..bcs.serializer import BcsSerializer, Serializable, BcsDeserializer, Deserializable
+from ..address.rooch import RoochAddress
+
+
+class TransactionType(IntEnum):
+    """Types of Rooch transactions"""
+    
+    BITCOIN_MOVE_ACTION = 0
+    ETHEREUM_MOVE_ACTION = 1
+    MOVE_ACTION = 2
+    MOVE_MODULE_TRANSACTION = 3
+    BITCOIN_BINDING = 4
+
+
+class TransactionData(Serializable, Deserializable):
+    """Transaction data for Rooch transactions"""
+    
+    def __init__(
+        self,
+        tx_type: TransactionType,
+        tx_arg: Union[MoveActionArgument, bytes],
+        sequence_number: Union[int, str],
+        max_gas_amount: Union[int, str] = 1000000,
+        chain_id: int = 42,
+        sender: Optional[RoochAddress] = None
+    ):
+        """
+        Args:
+            tx_type: Transaction type
+            tx_arg: Move action argument or module bytes
+            sequence_number: Transaction sequence number
+            max_gas_amount: Maximum gas amount
+            chain_id: Chain ID
+            sender: Sender's address
+        """
+        self.tx_type = tx_type
+        self.tx_arg = tx_arg
+        self.sequence_number = int(sequence_number)
+        self.max_gas_amount = int(max_gas_amount)
+        self.chain_id = chain_id
+        self.sender = sender
+
+    def serialize(self, serializer: BcsSerializer):
+        """Serialize the transaction data."""
+        serializer.u8(self.tx_type.value)
+        if isinstance(self.tx_arg, MoveActionArgument):
+            serializer.struct(self.tx_arg)
+        else:
+            serializer.bytes(self.tx_arg)
+        serializer.u64(self.sequence_number)
+        serializer.u64(self.max_gas_amount)
+        serializer.u8(self.chain_id)
+        # Always serialize sender (must not be None)
+        if self.sender is None:
+            raise ValueError("TransactionData.sender must not be None for serialization")
+        serializer.struct(self.sender)
+
+    @staticmethod
+    def deserialize(deserializer: BcsDeserializer) -> 'TransactionData':
+        """Deserialize a transaction data."""
+        start_offset = deserializer._input.tell() if hasattr(deserializer._input, 'tell') else None
+        tx_type = TransactionType(deserializer.u8())
+        if tx_type == TransactionType.MOVE_ACTION:
+            print(f"[DEBUG] TransactionData.deserialize: tx_type MOVE_ACTION at offset {deserializer._input.tell() if hasattr(deserializer._input, 'tell') else '?'}")
+            tx_arg = MoveActionArgument.deserialize(deserializer)
+        else:
+            tx_arg = deserializer.bytes()
+        sequence_number = deserializer.u64()
+        max_gas_amount = deserializer.u64()
+        chain_id = deserializer.u8()
+        # Always deserialize sender
+        print(f"[DEBUG] TransactionData.deserialize: deserializing sender at offset {deserializer._input.tell() if hasattr(deserializer._input, 'tell') else '?'}")
+        sender = RoochAddress.deserialize(deserializer)
+        end_offset = deserializer._input.tell() if hasattr(deserializer._input, 'tell') else None
+        print(f"[DEBUG] TransactionData.deserialize: consumed bytes {start_offset}->{end_offset}, remaining={deserializer.remaining()}")
+        return TransactionData(
+            tx_type=tx_type,
+            tx_arg=tx_arg,
+            sequence_number=sequence_number,
+            max_gas_amount=max_gas_amount,
+            chain_id=chain_id,
+            sender=sender
+        )
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary
+        
+        Returns:
+            Dictionary representation
+        """
+        result = {
+            "tx_type": self.tx_type,
+            "sequence_number": str(self.sequence_number),
+            "max_gas_amount": str(self.max_gas_amount),
+            "chain_id": self.chain_id
+        }
+        
+        if self.sender:
+            result["sender"] = self.sender.to_hex_literal()
+            
+        if isinstance(self.tx_arg, MoveActionArgument):
+            result["tx_arg"] = self.tx_arg.to_dict()
+        else:
+            result["tx_arg"] = to_hex(self.tx_arg)
+            
+        return result
+    
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'TransactionData':
+        """Create from dictionary
+        
+        Args:
+            data: Dictionary representation
+            
+        Returns:
+            TransactionData instance
+        """
+        tx_type = data.get("tx_type", TransactionType.MOVE_ACTION)
+        tx_arg_data = data.get("tx_arg", {})
+        
+        if tx_type == TransactionType.MOVE_ACTION:
+            tx_arg = MoveActionArgument.from_dict(tx_arg_data)
+        else:
+            tx_arg = from_hex(tx_arg_data)
+        
+        sender = None
+        if "sender" in data:
+            sender = RoochAddress.from_hex_literal(data["sender"])
+        
+        return cls(
+            tx_type=tx_type,
+            tx_arg=tx_arg,
+            sequence_number=data.get("sequence_number", "0"),
+            max_gas_amount=data.get("max_gas_amount", "1000000"),
+            chain_id=data.get("chain_id", 42),
+            sender=sender
+        )
+
+
+class SignedTransaction(Serializable, Deserializable):
+    """Signed transaction ready for submission"""
+    
+    def __init__(self, tx_data: TransactionData, authenticator: TransactionAuthenticator):
+        """
+        Args:
+            tx_data: Transaction data
+            authenticator: Transaction authenticator
+        """
+        self.tx_data = tx_data
+        self.authenticator = authenticator
+
+    def serialize(self, serializer: BcsSerializer):
+        """Serialize the signed transaction."""
+        serializer.struct(self.tx_data)
+        self.authenticator.serialize(serializer)  # Directly serialize authenticator fields
+
+    @staticmethod
+    def deserialize(deserializer: BcsDeserializer) -> 'SignedTransaction':
+        """Deserialize a signed transaction."""
+        tx_data = TransactionData.deserialize(deserializer)
+        authenticator = TransactionAuthenticator.deserialize(deserializer)  # Directly deserialize authenticator fields
+        return SignedTransaction(tx_data=tx_data, authenticator=authenticator)
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary
+        
+        Returns:
+            Dictionary representation
+        """
+        return {
+            "tx_data": self.tx_data.to_dict(),
+            "authenticator": self.authenticator.to_dict()
+        }
+    
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'SignedTransaction':
+        """Create from dictionary
+        
+        Args:
+            data: Dictionary representation
+            
+        Returns:
+            SignedTransaction instance
+        """
+        return cls(
+            tx_data=TransactionData.from_dict(data.get("tx_data", {})),
+            authenticator=TransactionAuthenticator(
+                data.get("authenticator", {}).get("auth_validator_id", 0),
+                from_hex(data.get("authenticator", {}).get("payload", "0x"))
+            )
+        )
