@@ -135,25 +135,42 @@ class TxSerializer:
                 # Create a temporary serializer for each argument
                 arg_ser = BcsSerializer()
                 if isinstance(raw_arg_value, bool):
+                    # MoveValue::Bool -> BCS serialization
                     arg_ser.bool(raw_arg_value)
                 elif isinstance(raw_arg_value, int):
-                    # Assuming large integers should be u256 based on previous code?
-                    # Or should this depend on the function signature?
-                    # For now, sticking with u256 assumption.
-                    arg_ser.u256(raw_arg_value)
+                    # For most Move functions, use u64 (MoveValue::U64)
+                    # This matches Rooch CLI behavior
+                    if raw_arg_value < 0:
+                        raise ValueError(f"Negative integers not supported: {raw_arg_value}")
+                    elif raw_arg_value <= 0xFFFFFFFFFFFFFFFF:  # Max u64
+                        arg_ser.u64(raw_arg_value)
+                        print(f"Debug: Serialized integer {raw_arg_value} as u64: {arg_ser.output().hex()}")
+                    else:
+                        # For very large numbers, use u256 (MoveValue::U256)
+                        arg_ser.u256(raw_arg_value)
+                        print(f"Debug: Serialized integer {raw_arg_value} as u256: {arg_ser.output().hex()}")
                 elif isinstance(raw_arg_value, str):
                     # Handle addresses vs other strings
                     if raw_arg_value.startswith("0x"):
                         try:
                             # Try parsing as RoochAddress
                             addr = RoochAddress.from_hex(raw_arg_value)
-                            # Serialize RoochAddress (assuming it becomes Serializable)
-                            arg_ser.struct(addr)
-                        except ValueError:
-                            # If not a valid address, treat as a plain string
+                            # For MoveValue::Address, we need the raw 32-byte address
+                            # without any length prefix or additional encoding
+                            addr_bytes = addr.to_bytes()
+                            if len(addr_bytes) != 32:
+                                raise ValueError(f"Address must be exactly 32 bytes, got {len(addr_bytes)}")
+                            # Serialize as raw 32 bytes (like MoveValue::Address in BCS)
+                            arg_ser.fixed_bytes(addr_bytes)
+                            print(f"Debug: Serialized address {raw_arg_value} as fixed_bytes: {arg_ser.output().hex()}")
+                        except ValueError as e:
+                            # If not a valid address, treat as a plain string (MoveValue::Vector<u8>)
                             arg_ser.str(raw_arg_value)
+                            print(f"Debug: Failed to parse address {raw_arg_value}, treating as string: {e}")
                     else:
+                        # Plain string -> MoveValue::Vector<u8> -> BCS
                         arg_ser.str(raw_arg_value)
+                        print(f"Debug: Serialized string {raw_arg_value} as str: {arg_ser.output().hex()}")
                 elif isinstance(raw_arg_value, bytes):
                     # Serialize as variable-length bytes (Vec<u8>)
                     arg_ser.bytes(raw_arg_value)

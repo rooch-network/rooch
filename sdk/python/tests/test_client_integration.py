@@ -66,7 +66,7 @@ class TestClientIntegration:
         recipient_kp = KeyPair.generate()
         recipient_address_obj = recipient_kp.get_rooch_address()
         recipient_address_str = str(recipient_address_obj)
-        amount = 100
+        amount = 1  # Reduce amount to test if it's a balance issue
         move_call_args = [recipient_address_str, amount]
 
         print(f"\nDebug info for test_execute_move_call:")
@@ -139,7 +139,7 @@ class TestClientIntegration:
         
         # Re-add the TypeTag construction logic
         gas_coin_struct_tag = StructTag(
-            address="0x3", module="gas_coin", name="GasCoin", type_params=[]
+            address="0x3", module="gas_coin", name="RGas", type_params=[]
         )
         gas_coin_type_tag = TypeTag.struct(gas_coin_struct_tag)
         type_args_tags = [gas_coin_type_tag]

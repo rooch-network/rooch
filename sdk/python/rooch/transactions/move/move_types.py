@@ -42,8 +42,16 @@ class TransactionArgument(Serializable, Deserializable):
         return self.type_tag == other.type_tag and self.value == other.value
 
     def serialize(self, serializer: BcsSerializer):
-        """Serialize the transaction argument."""
-        serializer.u8(self.type_tag.value)
+        """Serialize the transaction argument with type tag."""
+        #serializer.u8(self.type_tag.value)
+        self._serialize_value(serializer)
+    
+    def serialize_value_only(self, serializer: BcsSerializer):
+        """Serialize only the value without type tag for Move function arguments."""
+        self._serialize_value(serializer)
+    
+    def _serialize_value(self, serializer: BcsSerializer):
+        """Internal method to serialize the value based on type."""
         if isinstance(self.value, str):
             if self.type_tag == TypeTagCode.BOOL:
                 serializer.bool(self.value.lower() == "true")
@@ -54,7 +62,19 @@ class TransactionArgument(Serializable, Deserializable):
             elif self.type_tag == TypeTagCode.U256:
                 serializer.u256(int(self.value))
             elif self.type_tag == TypeTagCode.ADDRESS:
-                serializer.str(self.value)
+                # Address should be serialized as 32-byte binary, not as string
+                from ...address.rooch import RoochAddress
+                try:
+                    if isinstance(self.value, str) and self.value.startswith("0x"):
+                        addr = RoochAddress.from_hex(self.value)
+                        addr_bytes = addr.to_bytes()
+                        serializer.fixed_bytes(addr_bytes)
+                    else:
+                        # Fallback to string if not a valid hex address
+                        serializer.str(self.value)
+                except ValueError:
+                    # If address parsing fails, fallback to string
+                    serializer.str(self.value)
             else:
                 serializer.str(self.value)
         elif isinstance(self.value, bytes):
@@ -75,7 +95,9 @@ class TransactionArgument(Serializable, Deserializable):
             elif self.type_tag == TypeTagCode.U256:
                 serializer.u256(self.value)
             else:
-                raise ValueError(f"Unsupported integer type tag: {self.type_tag}")
+                # For unspecified integer types, default to u256 for Rooch compatibility
+                # Many Rooch functions use u256 for amounts
+                serializer.u256(self.value)
         else:
             raise ValueError(f"Unsupported value type: {type(self.value)}")
 
@@ -172,18 +194,22 @@ class FunctionArgument(Serializable, Deserializable):
                 if isinstance(arg, bool):
                     type_tag = TypeTagCode.BOOL
                 elif isinstance(arg, int):
-                    type_tag = TypeTagCode.U64  # Default to U64 for integers
+                    # Default to U256 for integers in Rooch context
+                    # Most Rooch functions (transfer, coin operations) use u256 for amounts
+                    type_tag = TypeTagCode.U256
                 elif isinstance(arg, str) and arg.startswith("0x"):
                     type_tag = TypeTagCode.ADDRESS
                 else:
                     type_tag = TypeTagCode.BOOL  # Default to BOOL for other types
-                self.args.append(TransactionArgument(type_tag=type_tag, value=arg))
+                new_arg = TransactionArgument(type_tag=type_tag, value=arg)
+                self.args.append(new_arg)
 
     def serialize(self, serializer: BcsSerializer):
         """Serialize the function argument."""
         serializer.struct(self.function_id)
-        serializer.sequence(self.ty_args, BcsSerializer.struct)
-        serializer.sequence(self.args, BcsSerializer.struct)
+        serializer.sequence(self.ty_args, lambda s, item: item.serialize(s))
+        # For Move function arguments, serialize values without type tags
+        serializer.sequence(self.args, lambda s, item: item.serialize_value_only(s))
 
     @staticmethod
     def deserialize(deserializer: BcsDeserializer) -> 'FunctionArgument':

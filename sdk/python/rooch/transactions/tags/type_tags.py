@@ -80,10 +80,12 @@ class StructTag(Serializable, Deserializable):
     # --- BCS Implementation ---
     def serialize(self, serializer: BcsSerializer):
         # Sequence: address, module_name, name, type_params
-        serializer.struct(self.address)
+        # Use the address's own serialize method for correct BCS formatting
+        self.address.serialize(serializer)
         serializer.str(self.module)
         serializer.str(self.name)
-        serializer.sequence(self.type_params, BcsSerializer.struct)
+        # Serialize type_params as a sequence, each element using its own serialize method
+        serializer.sequence(self.type_params, lambda ser, item: item.serialize(ser))
 
     @staticmethod
     def deserialize(deserializer: BcsDeserializer) -> 'StructTag':
