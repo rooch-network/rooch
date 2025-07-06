@@ -43,6 +43,7 @@ module rooch_framework::did_permission_test {
             fragment,
             method_type,
             test_key,
+            1000000u256, // 1M amount limit
             relationships
         );
 
@@ -63,7 +64,8 @@ module rooch_framework::did_permission_test {
             another_fragment,
             another_method_type,
             another_test_key,
-            another_relationships
+            1000000u256, // 1M amount limit
+            relationships
         );
     }
 
@@ -94,6 +96,7 @@ module rooch_framework::did_permission_test {
             fragment,
             method_type,
             test_key,
+            1000000u256, // 1M amount limit
             relationships
         );
 
@@ -144,6 +147,7 @@ module rooch_framework::did_permission_test {
             fragment,
             method_type,
             test_key,
+            1000000u256, // 1M amount limit
             relationships
         );
     }
@@ -172,6 +176,7 @@ module rooch_framework::did_permission_test {
             fragment,
             method_type,
             test_key,
+            1000000u256, // 1M amount limit
             relationships
         );
 
@@ -243,7 +248,8 @@ module rooch_framework::did_permission_test {
             ed25519_fragment,
             ed25519_type,
             ed25519_key,
-            ed25519_relationships
+            1000000u256, // 1M amount limit
+            relationships
         );
 
         // Now test using the Ed25519 key as session key
@@ -289,7 +295,8 @@ module rooch_framework::did_permission_test {
             secp256k1_fragment,
             secp256k1_type,
             secp256k1_key,
-            secp256k1_relationships
+            1000000u256, // 1M amount limit
+            relationships
         );
 
         // Now test using the Secp256k1 key as session key
@@ -324,7 +331,7 @@ module rooch_framework::did_permission_test {
         let test_key1 = did_test_common::generate_test_ed25519_multibase();
         let relationships = vector[1u8]; // assertion_method
 
-        did::add_verification_method_entry(&did_signer, fragment1, method_type, test_key1, relationships);
+        did::add_verification_method_entry(&did_signer, fragment1, method_type, test_key1, 1000000u256, relationships); // 1M amount limit
 
         // 2. Remove verification method - requires capabilityDelegation
         did::remove_verification_method_entry(&did_signer, fragment1);
@@ -332,7 +339,7 @@ module rooch_framework::did_permission_test {
         // 3. Add to verification relationship - requires capabilityDelegation
         let fragment2 = string::utf8(b"test-key-2");
         let test_key2 = string::utf8(b"z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doL");
-        did::add_verification_method_entry(&did_signer, fragment2, method_type, test_key2, relationships);
+        did::add_verification_method_entry(&did_signer, fragment2, method_type, test_key2, 1000000u256, relationships); // 1M amount limit
         
         did::add_to_verification_relationship_entry(&did_signer, fragment2, 4u8); // key_agreement
 
@@ -413,6 +420,7 @@ module rooch_framework::did_permission_test {
             delegation_fragment,
             delegation_type,
             delegation_key,
+            1000000u256, // 1M amount limit
             delegation_relationships
         );
 
@@ -427,6 +435,7 @@ module rooch_framework::did_permission_test {
             invocation_fragment,
             invocation_type,
             invocation_key,
+            1000000u256, // 1M amount limit
             invocation_relationships
         );
 
