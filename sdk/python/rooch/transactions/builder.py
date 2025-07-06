@@ -122,6 +122,59 @@ class TransactionBuilder:
             sender=RoochAddress.from_hex(self.sender_address)
         )
     
+    def build_move_action_tx_with_bitcoin_auth(self, action_arg: MoveActionArgument, signer: Signer) -> TransactionData:
+        """Build a Move action transaction with Bitcoin-derived sender address
+        
+        This method calculates the correct sender address for Bitcoin authentication
+        by deriving it from the Bitcoin Taproot address (not the KeyPair directly).
+        
+        Args:
+            action_arg: Move action argument
+            signer: Signer to derive Bitcoin address from
+            
+        Returns:
+            TransactionData for the action
+        """
+        return TransactionData(
+            tx_type=TransactionType.MOVE_ACTION,
+            tx_arg=action_arg,
+            sequence_number=self.sequence_number,
+            max_gas_amount=self.max_gas_amount,
+            chain_id=self.chain_id,
+            sender=RoochAddress.from_hex(self.sender_address)
+        )
+    
+    def _get_bitcoin_rooch_address(self, signer: Signer) -> str:
+        """Get the Rooch address derived from Bitcoin Taproot address
+        
+        Args:
+            signer: Signer to derive Bitcoin address from
+            
+        Returns:
+            Rooch address as hex string
+        """
+        if not isinstance(signer, RoochSigner):
+            raise TypeError("Expected RoochSigner to access KeyPair")
+        
+        keypair = signer.get_keypair()
+        public_key_bytes = keypair.get_public_key()  # 65 bytes uncompressed
+        
+        # Create compressed public key (33 bytes) for Bitcoin auth
+        x_coord = public_key_bytes[1:33]  # Extract x coordinate
+        y_coord = public_key_bytes[33:65]  # Extract y coordinate
+        
+        # Determine if y is even or odd to set the prefix
+        y_int = int.from_bytes(y_coord, byteorder='big')
+        if y_int % 2 == 0:
+            compressed_public_key = b'\x02' + x_coord
+        else:
+            compressed_public_key = b'\x03' + x_coord
+        
+        from ..address.bitcoin import BitcoinAddress
+        
+        # Get the Rooch address derived from Bitcoin Taproot address
+        return BitcoinAddress.get_rooch_address_from_public_key(compressed_public_key, mainnet=True)
+    
     def build_module_publish_tx(self, module_bytes: Union[bytes, str]) -> TransactionData:
         """Build a module publish transaction
         
@@ -147,6 +200,7 @@ class TransactionBuilder:
     
     def sign(self, tx_data: TransactionData, signer: Signer) -> SignedTransaction:
         """Sign transaction data and create a signed transaction"""
+        
         # 1. Serialize TransactionData
         serialized_tx_data = TxSerializer.encode_transaction_data(tx_data)
 
@@ -174,7 +228,11 @@ class TransactionBuilder:
             compressed_public_key = b'\x03' + x_coord
         
         from ..address.bitcoin import BitcoinAddress
-        bitcoin_address = BitcoinAddress.from_public_key(public_key_bytes, mainnet=True)
+        
+        # Generate Taproot address (P2TR) instead of Legacy address
+        # For Taproot, we need to derive the address from the compressed public key
+        # This should match Move's derive_bitcoin_taproot_address_from_pubkey function
+        bitcoin_address = BitcoinAddress.from_taproot_public_key(compressed_public_key, mainnet=True)
         bitcoin_address_str = str(bitcoin_address)
         
         # Debug info

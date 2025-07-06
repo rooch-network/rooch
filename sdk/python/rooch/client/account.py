@@ -12,7 +12,7 @@ from ..utils.hex import to_hex
 from rooch.transport import RoochTransportError
 
 # Constants for view function
-FUNC_SEQUENCE_NUMBER = "0x3::account::sequence_number"
+FUNC_SEQUENCE_NUMBER = "0x2::account::sequence_number"
 
 class AccountClient:
     """Client for Rooch account operations"""
@@ -61,14 +61,14 @@ class AccountClient:
     async def get_account_sequence_number(self, address: str) -> int:
         """Get account sequence number using a view function call. Returns 0 if the account does not exist."""
 
-        # Validate and potentially normalize the address format
+        # Convert address to the format expected by the view function (raw address bytes as hex)
         try:
-            # Ensure the address is in the correct hex format (e.g., 0x...)
-            # RoochAddress constructor might handle this, but explicit check is good.
-            # We don't need the RoochAddress object itself here, just its hex string.
-            # Let's assume the input 'address' is already the correct hex string.
-            # TODO: Consider adding validation if needed: RoochAddress.validate_address(address)
-            address_hex = address # Directly use the input hex string
+            from ..address.rooch import RoochAddress
+            from ..utils.hex import to_hex
+            
+            # Convert address to RoochAddress and get raw bytes
+            rooch_address = RoochAddress.from_str(address)
+            address_arg_hex = rooch_address.to_hex_full()
         except Exception as e:
             raise ValueError(f"Invalid address format {address}: {e}") from e
 
@@ -77,8 +77,8 @@ class AccountClient:
             "function_id": FUNC_SEQUENCE_NUMBER,
             "ty_args": [],
             "args": [
-                # Pass the address hex string directly
-                address_hex
+                # Pass the raw address bytes as hex string (not the full address)
+                address_arg_hex
             ]
         }
 
@@ -86,7 +86,7 @@ class AccountClient:
             # Call the view function with the dictionary payload
             result = await self._transport.request(
                 "rooch_executeViewFunction",
-                [function_call] # Pass the dictionary directly inside a list
+                [function_call, {"decode": True}] # Pass the dictionary directly inside a list
             )
 
             # Check for VM errors first (e.g., account not found)
@@ -103,16 +103,23 @@ class AccountClient:
             # If no VM error, proceed to extract the sequence number from the result
             if result and result.get("return_values") and len(result["return_values"]) > 0:
                 return_value = result["return_values"][0]
-                if return_value and isinstance(return_value, dict) and "decoded_value" in return_value:
-                    decoded_value = return_value["decoded_value"]
-                    if isinstance(decoded_value, dict) and "value" in decoded_value:
-                        seq_num_str = decoded_value["value"]
+                if return_value and isinstance(return_value, dict):
+                    # Check if decoded_value exists and get its value
+                    if "decoded_value" in return_value:
+                        decoded_value = return_value["decoded_value"]
+                        # decoded_value can be either a dict with "value" key or a direct value
+                        if isinstance(decoded_value, dict) and "value" in decoded_value:
+                            seq_num_str = decoded_value["value"]
+                        else:
+                            # decoded_value is the direct value
+                            seq_num_str = str(decoded_value)
+                        
                         try:
                             return int(seq_num_str)
                         except ValueError:
                             raise ValueError(f"Could not parse sequence number as integer: {seq_num_str}")
                     else:
-                        raise ValueError(f"Unexpected 'decoded_value' format: {decoded_value}")
+                        raise ValueError(f"No 'decoded_value' in return_value: {return_value}")
                 else:
                     raise ValueError(f"Unexpected 'return_value' format: {return_value}")
 

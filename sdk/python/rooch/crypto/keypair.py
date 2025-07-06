@@ -256,11 +256,34 @@ class KeyPair:
             return False
     
     def get_rooch_address(self) -> RoochAddress:
-        """Get the Rooch address. ASSUMPTION: Uses SHA256 hash of uncompressed pubkey."""
-        public_key = self.get_public_key()
-        address_bytes = hashlib.sha256(public_key).digest()
-        assert len(address_bytes) == 32
-        return RoochAddress(address_bytes)
+        """Get the Rooch address using the correct PublicKey -> BitcoinAddress -> RoochAddress flow.
+        This ensures consistency with Rust and TypeScript SDKs.
+        """
+        from ..address.bitcoin import BitcoinAddress
+        
+        # Get compressed public key for Bitcoin address generation
+        public_key_uncompressed = self.get_public_key()
+        
+        # Convert to compressed format (33 bytes: 0x02/0x03 + X coordinate)
+        # Extract X coordinate (bytes 1-32 from uncompressed format)
+        x_coord = public_key_uncompressed[1:33]
+        
+        # Determine Y coordinate parity from full uncompressed key
+        y_coord = public_key_uncompressed[33:65]
+        y_int = int.from_bytes(y_coord, byteorder='big')
+        
+        # Compressed public key: 0x02 if Y is even, 0x03 if Y is odd
+        if y_int % 2 == 0:
+            compressed_public_key = b'\x02' + x_coord
+        else:
+            compressed_public_key = b'\x03' + x_coord
+        
+        # Generate Bitcoin address from compressed public key (Taproot P2TR)
+        bitcoin_address = BitcoinAddress.from_taproot_public_key(compressed_public_key)
+        
+        # Convert Bitcoin address to Rooch address string, then to RoochAddress object
+        rooch_address_str = bitcoin_address.to_rooch_address()
+        return RoochAddress.from_hex(rooch_address_str)
     
     def to_dict(self) -> Dict[str, str]:
         """Convert the key pair to a dictionary

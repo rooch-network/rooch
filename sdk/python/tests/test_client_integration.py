@@ -44,7 +44,7 @@ class TestClientIntegration:
         address_arg_hex = to_hex(address_arg_bytes)
 
         result = await rooch_client.transaction.execute_view_function(
-            function_id="0x3::account::sequence_number",
+            function_id="0x2::account::sequence_number",
             type_args=[],
             args=[address_arg_hex] # Pass raw address bytes as hex string
         )
@@ -80,7 +80,7 @@ class TestClientIntegration:
 
         # Re-add the TypeTag construction logic
         gas_coin_struct_tag = StructTag(
-            address="0x3", module="gas_coin", name="GasCoin", type_params=[]
+            address="0x3", module="gas_coin", name="RGas", type_params=[]
         )
         gas_coin_type_tag = TypeTag.struct(gas_coin_struct_tag)
         type_args_tags = [gas_coin_type_tag]
