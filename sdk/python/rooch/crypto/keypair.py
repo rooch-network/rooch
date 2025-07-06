@@ -141,21 +141,76 @@ class KeyPair:
     def sign_digest(self, digest: bytes) -> bytes:
         """Sign a pre-computed digest (hash) using the ecdsa library (SECP256k1).
            Returns raw R || S format (64 bytes).
+           Uses deterministic signatures with canonical (low-S) form for Bitcoin compatibility.
         """
         if len(digest) != 32:
              raise ValueError(f"Digest must be 32 bytes long, got {len(digest)}")
         
         try:
-            # SECP256k1 uses recoverable signatures by default, but sign_digest is non-recoverable.
-            # Ensure we get the standard R||S format.
-            signature = self._ecdsa_signing_key.sign_digest(
+            # Use deterministic signatures for Bitcoin compatibility and consistency
+            signature = self._ecdsa_signing_key.sign_digest_deterministic(
                 digest,
                 sigencode=util.sigencode_string
             )
             assert len(signature) == 64
+            
+            # Ensure canonical signature (low-S value) for Bitcoin compatibility
+            # Extract R and S values (each 32 bytes)
+            r_bytes = signature[:32]
+            s_bytes = signature[32:]
+            
+            # Convert S to integer
+            s = int.from_bytes(s_bytes, byteorder='big')
+            
+            # SECP256k1 order (n)
+            n = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141
+            
+            # If S > n/2, use n - S (canonical form)
+            if s > n // 2:
+                s = n - s
+                s_bytes = s.to_bytes(32, byteorder='big')
+                signature = r_bytes + s_bytes
+            
             return signature
         except Exception as e:
-             raise RuntimeError(f"Failed to sign digest using ecdsa (secp256k1): {e}") from e
+            raise RuntimeError(f"Failed to sign digest using ecdsa (secp256k1): {e}") from e
+
+    def sign_raw_data(self, data: bytes) -> bytes:
+        """Sign raw data directly using SHA256 hash, compatible with Move's ecdsa_k1::verify.
+           This method uses SHA256 (not SHA3) and returns raw R || S format (64 bytes).
+           Uses deterministic signatures with canonical (low-S) format for Bitcoin compatibility.
+        """
+        try:
+            # Hash the data with SHA256 (compatible with Move's ecdsa_k1::verify)
+            digest = hashlib.sha256(data).digest()
+            
+            # Always use deterministic signatures for consistency with Rust/Move
+            signature = self._ecdsa_signing_key.sign_digest_deterministic(
+                digest,
+                sigencode=util.sigencode_string
+            )
+            assert len(signature) == 64
+            
+            # Ensure canonical signature (low-S value) for Bitcoin compatibility
+            # Extract R and S values (each 32 bytes)
+            r_bytes = signature[:32]
+            s_bytes = signature[32:]
+            
+            # Convert S to integer
+            s = int.from_bytes(s_bytes, byteorder='big')
+            
+            # SECP256k1 order (n)
+            n = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141
+            
+            # If S > n/2, use n - S (canonical form)
+            if s > n // 2:
+                s = n - s
+                s_bytes = s.to_bytes(32, byteorder='big')
+                signature = r_bytes + s_bytes
+            
+            return signature
+        except Exception as e:
+            raise RuntimeError(f"Failed to sign raw data using ecdsa (secp256k1): {e}") from e
 
     def sign(self, message: Union[str, bytes]) -> bytes:
         """Sign a message by hashing it with SHA3-256 and then signing the digest.
@@ -196,7 +251,7 @@ class KeyPair:
         
         try:
             # Verify the signature using the public key and the digest
-            return self._ecdsa_verifying_key.verify(signature, digest, sigdecode=util.sigdecode_string)
+            return self._ecdsa_verifying_key.verify_digest(signature, digest, sigdecode=util.sigdecode_string)
         except Exception:
             return False
     

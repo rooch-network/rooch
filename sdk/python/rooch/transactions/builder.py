@@ -153,59 +153,128 @@ class TransactionBuilder:
         # 2. Calculate SHA3-256 hash of serialized data
         tx_hash_bytes = hashlib.sha3_256(serialized_tx_data).digest()
         
-        # 3. Sign the hash using KeyPair's sign_digest method
-        # Access the KeyPair from the Signer (assuming RoochSigner)
+        # 3. Access the KeyPair from the Signer (assuming RoochSigner)
         if not isinstance(signer, RoochSigner):
              # We might need a more generic way if other Signer types exist
              raise TypeError("Expected RoochSigner to access KeyPair")
         keypair = signer.get_keypair()
-
-        # In Bitcoin signing, the message is first prefixed and then hashed (twice).
-        # The prefix is "Bitcoin Signed Message:" + length_of_message
-        prefix = b"Bitcoin Signed Message:\n"
-        message_len = len(tx_hash_bytes)
-        
-        # The length is encoded as a single byte for messages up to 252 bytes.
-        # ref: https://en.bitcoin.it/wiki/Protocol_documentation#Variable_length_integer
-        if message_len <= 252:
-            len_bytes = bytes([message_len])
-        else:
-            # Note: This part is simplified. For larger messages, a multi-byte varint is needed.
-            # However, transaction hashes are fixed-size and small, so this is sufficient.
-            raise ValueError("Message length exceeds 252 bytes, which is not supported by this simplified varint encoding.")
-
-        full_message = prefix + len_bytes + tx_hash_bytes
-        
-        # Double SHA256 hash
-        digest = hashlib.sha256(full_message).digest()
-        digest = hashlib.sha256(digest).digest()
-
-        # Sign the final hash
-        signature_bytes = keypair.sign(digest)
-
-        # 4. Create Bitcoin authenticator instead of Session authenticator
-        # Bitcoin authenticator uses secp256k1 keys and is the primary authentication method
-        # Session authenticator requires pre-created session keys
         
         # Get public key and generate Bitcoin address
-        public_key_bytes = keypair.get_public_key()
+        public_key_bytes = keypair.get_public_key()  # 65 bytes uncompressed
+        
+        # Create compressed public key (33 bytes) for Bitcoin auth
+        x_coord = public_key_bytes[1:33]  # Extract x coordinate
+        y_coord = public_key_bytes[33:65]  # Extract y coordinate
+        
+        # Determine if y is even or odd to set the prefix
+        y_int = int.from_bytes(y_coord, byteorder='big')
+        if y_int % 2 == 0:
+            compressed_public_key = b'\x02' + x_coord
+        else:
+            compressed_public_key = b'\x03' + x_coord
+        
         from ..address.bitcoin import BitcoinAddress
         bitcoin_address = BitcoinAddress.from_public_key(public_key_bytes, mainnet=True)
         bitcoin_address_str = str(bitcoin_address)
         
-        # Create AuthPayload structure for Bitcoin authenticator
-        # Based on Rust AuthPayload::new implementation
-        from ..bcs.serializer import BcsSerializer
-        auth_payload_serializer = BcsSerializer()
+        # Debug info
+        print(f"Debug - Public key: {public_key_bytes.hex()}")
+        print(f"Debug - Compressed public key: {compressed_public_key.hex()}")
+        print(f"Debug - Bitcoin address: {bitcoin_address_str}")
+        print(f"Debug - TX hash: {tx_hash_bytes.hex()}")
         
-        # Serialize AuthPayload fields: signature, message_prefix, message_info, public_key, from_address
-        auth_payload_serializer.bytes(signature_bytes)  # signature
-        auth_payload_serializer.bytes(b"Bitcoin Signed Message:\n")  # message_prefix (default)
-        auth_payload_serializer.bytes(b"Rooch Transaction:\n")  # message_info (default, without tx hash)
-        auth_payload_serializer.bytes(public_key_bytes)  # public_key
-        auth_payload_serializer.bytes(bitcoin_address_str.encode('utf-8'))  # from_address
+        # Create SignData following Rust implementation
+        # Rust constants: MESSAGE_INFO_PREFIX = b"Bitcoin Signed Message:\n" (NO \x18!), MESSAGE_INFO = b"Rooch Transaction:\n"
+        # Note: Rust removes \x18 because consensus codec already includes length info
+        message_prefix = b"Bitcoin Signed Message:\n"  # NO \x18 prefix
+        message_info_without_tx_hash = b"Rooch Transaction:\n"
         
-        auth_payload_bytes = auth_payload_serializer.output()
+        # Create SignData with tx_hash appended (like Rust SignData::new())
+        tx_hash_hex = tx_hash_bytes.hex().encode('utf-8')  # Convert to bytes
+        message_info = message_info_without_tx_hash + tx_hash_hex
+        
+        # Encode varint for Bitcoin consensus encoding (matching Move consensus_codec)
+        def encode_varint(n):
+            if n <= 0xFC:  # Move/Bitcoin uses 0xFC (252) as threshold
+                return bytes([n])
+            elif n <= 0xFFFF:
+                return b'\xfd' + n.to_bytes(2, 'little')
+            elif n <= 0xFFFFFFFF:
+                return b'\xfe' + n.to_bytes(4, 'little')
+            else:
+                return b'\xff' + n.to_bytes(8, 'little')
+        
+        # Bitcoin consensus encoding format (like Rust SignData::consensus_encode)
+        # Each vector is encoded as: varint(length) + data
+        prefix_encoded = encode_varint(len(message_prefix)) + message_prefix
+        info_encoded = encode_varint(len(message_info)) + message_info
+        sign_data_encoded = prefix_encoded + info_encoded
+        
+        # Move does: hash::sha2_256(message) - first SHA256
+        first_hash = hashlib.sha256(sign_data_encoded).digest()
+        
+        # Rust ecdsa_k1::verify does verify_with_hash::<Sha256> - second SHA256
+        # So we need to sign the double SHA256 hash
+        sign_data_hash = hashlib.sha256(first_hash).digest()
+        
+        # Debug info for signing
+        print(f"Debug - Sign data encoded length: {len(sign_data_encoded)}")
+        print(f"Debug - Sign data encoded: {sign_data_encoded.hex()}")
+        print(f"Debug - First SHA256: {first_hash.hex()}")
+        print(f"Debug - Second SHA256 (final hash): {sign_data_hash.hex()}")
+
+        # IMPORTANT: Sign the double-hashed data to match Rust verify_with_hash::<Sha256>
+        signature_bytes = keypair.sign_digest(sign_data_hash)
+        
+        # Debug: verify signature locally using compressed public key (like Move does)
+        try:
+            from ecdsa import VerifyingKey, SECP256k1
+            from ecdsa.util import sigdecode_string
+            # Use UNCOMPRESSED public key for local verification first 
+            vk = VerifyingKey.from_string(public_key_bytes[1:], curve=SECP256k1)  # Remove 0x04 prefix
+            # Use verify_digest with the SAME double-hashed data that we signed
+            is_valid = vk.verify_digest(signature_bytes, sign_data_hash, sigdecode=sigdecode_string)
+            print(f"Debug - Local signature verification (uncompressed key): {is_valid}")
+        except Exception as e:
+            print(f"Debug - Local verification failed: {e}")
+
+        print(f"Debug - Signature: {signature_bytes.hex()}")
+
+        # Create AuthPayload structure as a proper struct (following Rust AuthPayload)
+        # Rust struct fields: signature, message_prefix, message_info, public_key, from_address
+        from ..bcs.serializer import BcsSerializer, Serializable
+        
+        class BitcoinAuthPayload(Serializable):
+            """Bitcoin AuthPayload structure matching Rust implementation"""
+            def __init__(self, signature: bytes, message_prefix: bytes, message_info: bytes, 
+                        public_key: bytes, from_address: bytes):
+                self.signature = signature
+                self.message_prefix = message_prefix
+                self.message_info = message_info
+                self.public_key = public_key
+                self.from_address = from_address
+            
+            def serialize(self, serializer: BcsSerializer):
+                """Serialize using BCS struct protocol"""
+                serializer.bytes(self.signature)
+                serializer.bytes(self.message_prefix)
+                serializer.bytes(self.message_info)
+                serializer.bytes(self.public_key)
+                serializer.bytes(self.from_address)
+        
+        # Create the AuthPayload struct
+        auth_payload = BitcoinAuthPayload(
+            signature=signature_bytes,
+            message_prefix=message_prefix,  # raw prefix without varint
+            message_info=message_info_without_tx_hash,  # without tx hash
+            public_key=compressed_public_key,  # Use compressed public key (33 bytes)
+            from_address=bitcoin_address_str.encode('utf-8')
+        )
+        
+        # Serialize the entire struct using BCS struct protocol
+        serializer = BcsSerializer()
+        serializer.struct(auth_payload)
+        auth_payload_bytes = serializer.output()
         auth = TransactionAuthenticator.bitcoin(auth_payload_bytes)
         # 6. Return SignedTransaction
         return SignedTransaction(tx_data, auth)
