@@ -143,6 +143,7 @@ module rooch_framework::did {
         type: String,      // Type of verification method (e.g., "Ed25519VerificationKey2020")
         controller: DID,   // Controller of this verification method
         public_key_multibase: String, // Public key in multibase format
+        amount_limit: u256, // Maximum amount that can be controlled by this verification method
     }
 
     /// Service definition
@@ -306,6 +307,7 @@ module rooch_framework::did {
         user_vm_pk_multibase: String,       // User public key (multibase format)
         user_vm_type: String,               // VM type, e.g., "Ed25519VerificationKey2020"
         user_vm_fragment: String,           // VM fragment, e.g., "key-1"
+        user_vm_amount_limit: u256,         // Amount limit for user verification method
         user_vm_relationships: vector<u8>,  // Verification relationships this VM should have
                                              // e.g.: User self-creation: [AuthN, AssertM, CapInv, CapDel]
                                              // CADOP scenario per NIP-3: [AuthN, CapDel]
@@ -316,7 +318,8 @@ module rooch_framework::did {
         service_provider_controller_did: Option<DID>, // Service provider (e.g., custodian) DID
         service_vm_pk_multibase: Option<String>,      // Service VM public key
         service_vm_type: Option<String>,              // Service VM type
-        service_vm_fragment: Option<String>           // Service VM fragment
+        service_vm_fragment: Option<String>,          // Service VM fragment
+        service_vm_amount_limit: Option<u256>         // Amount limit for service verification method
     ): ObjectID {
         let registry = borrow_mut_did_registry();
 
@@ -356,6 +359,7 @@ module rooch_framework::did {
             type: user_vm_type,
             controller: doc_controller, 
             public_key_multibase: user_vm_pk_multibase,
+            amount_limit: user_vm_amount_limit,
         };
 
         simple_map::add(&mut did_document_data.verification_methods, user_vm_fragment, user_vm);
@@ -371,7 +375,8 @@ module rooch_framework::did {
                     &mut did_document_data,
                     user_vm_fragment,
                     user_vm_type,
-                    user_vm_pk_multibase
+                    user_vm_pk_multibase,
+                    user_vm_amount_limit
                 );
             } else if (relationship_type == VERIFICATION_RELATIONSHIP_ASSERTION_METHOD) {
                 vector::push_back(&mut did_document_data.assertion_method, user_vm_fragment);
@@ -393,6 +398,7 @@ module rooch_framework::did {
             let service_vm_pk = option::extract(&mut service_vm_pk_multibase);
             let service_vm_type_val = option::extract(&mut service_vm_type);
             let service_vm_frag = option::extract(&mut service_vm_fragment);
+            let service_vm_amount_limit_val = option::extract(&mut service_vm_amount_limit);
 
             let service_vm_id = VerificationMethodID {
                 did: did,
@@ -403,6 +409,7 @@ module rooch_framework::did {
                 type: service_vm_type_val,
                 controller: service_provider_did, // Service VM controlled by the service provider
                 public_key_multibase: service_vm_pk,
+                amount_limit: service_vm_amount_limit_val,
             };
 
             simple_map::add(&mut did_document_data.verification_methods, service_vm_frag, service_vm);
@@ -440,10 +447,12 @@ module rooch_framework::did {
     public entry fun create_did_object_for_self_entry(
         creator_account_signer: &signer,        // User's own Rooch account signer
         account_public_key_multibase: String,   // User's account public key (Secp256k1)
+        user_vm_amount_limit: u256,             // Amount limit for user verification method
     ) {
         create_did_object_for_self(
             creator_account_signer,
-            account_public_key_multibase
+            account_public_key_multibase,
+            user_vm_amount_limit
         );
     } 
 
@@ -452,6 +461,7 @@ module rooch_framework::did {
     public fun create_did_object_for_self(
         creator_account_signer: &signer,
         account_public_key_multibase: String,
+        user_vm_amount_limit: u256,
     ) : ObjectID {
         let creator_address = signer::address_of(creator_account_signer);
         let public_key_opt = multibase_codec::decode(&account_public_key_multibase);
@@ -480,11 +490,13 @@ module rooch_framework::did {
             account_public_key_multibase,
             account_key_type,
             primary_vm_fragment,
+            user_vm_amount_limit,
             primary_vm_relationships,
             option::none<DID>(),
             option::none<String>(),
             option::none<String>(),
-            option::none<String>()
+            option::none<String>(),
+            option::none<u256>()
         );
         did_object_id
     }
@@ -526,13 +538,17 @@ module rooch_framework::did {
         
         // Custodian generates a unique service key for this user
         custodian_service_pk_multibase: String, // Custodian's service public key for this user
-        custodian_service_vm_type: String       // Custodian service VM type (Ed25519 or Secp256k1)
+        custodian_service_vm_type: String,      // Custodian service VM type (Ed25519 or Secp256k1)
+        user_vm_amount_limit: u256,             // Amount limit for user verification method
+        service_vm_amount_limit: u256           // Amount limit for service verification method
     ) {
         let _ = create_did_object_via_cadop_with_did_key(
             custodian_signer,
             user_did_key_string,
             custodian_service_pk_multibase,
-            custodian_service_vm_type
+            custodian_service_vm_type,
+            user_vm_amount_limit,
+            service_vm_amount_limit
         );
     }
 
@@ -542,7 +558,9 @@ module rooch_framework::did {
         custodian_signer: &signer,              // Custodian's Rooch account, pays gas
         user_did_key_string: String,            // User's did:key string (e.g., "did:key:zABC...")
         custodian_service_pk_multibase: String, // Custodian's service public key for this user
-        custodian_service_vm_type: String       // Custodian service VM type (Ed25519 or Secp256k1)
+        custodian_service_vm_type: String,      // Custodian service VM type (Ed25519 or Secp256k1)
+        user_vm_amount_limit: u256,             // Amount limit for user verification method
+        service_vm_amount_limit: u256           // Amount limit for service verification method
     ): ObjectID {
         // Parse user's did:key
         let user_did_key = parse_did_string(&user_did_key_string);
@@ -602,11 +620,13 @@ module rooch_framework::did {
             user_vm_pk_multibase,
             user_vm_type,
             user_vm_fragment,
+            user_vm_amount_limit,
             user_vm_relationships,
             option::some(custodian_did),
             option::some(custodian_service_pk_multibase),
             option::some(custodian_service_vm_type),
-            option::some(custodian_service_vm_fragment)
+            option::some(custodian_service_vm_fragment),
+            option::some(service_vm_amount_limit)
         )
     } 
 
@@ -657,6 +677,7 @@ module rooch_framework::did {
         fragment: String,
         method_type: String,
         public_key_multibase: String,
+        amount_limit: u256,
         verification_relationships: vector<u8> 
     ) {
         // Use helper function to get authorized DID document
@@ -676,6 +697,7 @@ module rooch_framework::did {
             type: method_type,
             controller: did_document_data.id,
             public_key_multibase,
+            amount_limit,
         };
 
         simple_map::add(&mut did_document_data.verification_methods, fragment, verification_method);
@@ -691,7 +713,8 @@ module rooch_framework::did {
                     did_document_data,
                     fragment,
                     method_type,
-                    public_key_multibase
+                    public_key_multibase,
+                    amount_limit
                 );
             } else if (relationship_type == VERIFICATION_RELATIONSHIP_ASSERTION_METHOD) {
                 if (!vector::contains(&did_document_data.assertion_method, &fragment)) {
@@ -785,7 +808,8 @@ module rooch_framework::did {
                 did_document_data,
                 fragment,
                 vm.type,
-                vm.public_key_multibase
+                vm.public_key_multibase,
+                vm.amount_limit
             );
         } else {
             let target_relationship_vec_mut = if (relationship_type == VERIFICATION_RELATIONSHIP_ASSERTION_METHOD) {
@@ -1459,7 +1483,8 @@ module rooch_framework::did {
         did_document_data: &mut DIDDocument,
         fragment: String,
         method_type: String,
-        public_key_multibase: String
+        public_key_multibase: String,
+        amount_limit: u256
     ) {
         // Ensure the method type is supported for session keys
         assert!(
@@ -1481,6 +1506,7 @@ module rooch_framework::did {
                 type: method_type,
                 controller: did_document_data.id,
                 public_key_multibase,
+                amount_limit,
             };
             
             simple_map::add(&mut did_document_data.verification_methods, fragment, vm);

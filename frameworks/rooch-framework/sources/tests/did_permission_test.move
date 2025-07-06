@@ -25,7 +25,7 @@ module rooch_framework::did_permission_test {
         
         // Use basic setup to avoid session key conflicts
         let (creator_signer, _creator_address, creator_public_key_multibase) = did_test_common::setup_did_test_basic();
-        let did_object_id = did::create_did_object_for_self(&creator_signer, creator_public_key_multibase);
+        let did_object_id = did::create_did_object_for_self(&creator_signer, creator_public_key_multibase, 10000000u256); // 10M amount limit
         
         // Get the actual DID document and its address
         let did_document = did::get_did_document_by_object_id(did_object_id);
@@ -76,7 +76,7 @@ module rooch_framework::did_permission_test {
         
         // Use basic setup to avoid session key conflicts
         let (creator_signer, _creator_address, creator_public_key_multibase) = did_test_common::setup_did_test_basic();
-        let did_object_id = did::create_did_object_for_self(&creator_signer, creator_public_key_multibase);
+        let did_object_id = did::create_did_object_for_self(&creator_signer, creator_public_key_multibase, 10000000u256); // 10M amount limit
         
         // Get the actual DID document and its address
         let did_document = did::get_did_document_by_object_id(did_object_id);
