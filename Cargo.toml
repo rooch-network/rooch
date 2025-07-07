@@ -229,7 +229,7 @@ smallvec = "1.15.1"
 thiserror = "1.0.69"
 tiny-keccak = { version = "2", features = ["keccak", "sha3"] }
 tiny-bip39 = "2.0.0"
-tokio = { version = "1.45.1", features = ["full"] }
+tokio = { version = "1.46.0", features = ["full"] }
 tokio-tungstenite = { version = "0.24.0", features = ["native-tls"] }
 tokio-stream = "0.1.17"
 tracing = "0.1.41"
@@ -360,7 +360,7 @@ vergen-pretty = "0.3.9"
 crossbeam-channel = "0.5.15"
 inferno = "0.11.21"
 handlebars = "4.2.2"
-indexmap = "2.9.0"
+indexmap = "2.10.0"
 tikv-jemallocator = { git = "https://github.com/jamesatomc/jemallocator.git", features = [
     "unprefixed_malloc_on_supported_platforms",
     "profiling",
