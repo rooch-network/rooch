@@ -47,6 +47,9 @@ use std::path::PathBuf;
 use std::sync::atomic::AtomicU64;
 use std::sync::Arc;
 use std::time::Duration;
+#[cfg(not(unix))]
+use tokio::signal::ctrl_c;
+#[cfg(unix)]
 use tokio::signal::unix::{signal, SignalKind};
 use tokio::sync::mpsc::Receiver;
 use tokio::sync::mpsc::Sender;
@@ -203,20 +206,27 @@ impl ExecCommand {
         let shutdown_tx_clone = shutdown_tx.clone();
 
         tokio::spawn(async move {
-            let mut sigterm =
-                signal(SignalKind::terminate()).expect("Failed to listen for SIGTERM");
-            let mut sigint = signal(SignalKind::interrupt()).expect("Failed to listen for SIGINT");
+            #[cfg(unix)]
+            let shutdown_signal = async {
+                let mut sigterm = signal(SignalKind::terminate()).unwrap();
+                let mut sigint = signal(SignalKind::interrupt()).unwrap();
+                tokio::select! {
+                    _ = sigterm.recv() => {
+                        info!("Received SIGTERM signal");
+                    },
+                    _ = sigint.recv() => {
+                        info!("Received SIGINT signal");
+                    },
+                }
+            };
 
-            tokio::select! {
-                _ = sigterm.recv() => {
-                    info!("SIGTERM received, shutting down...");
-                    let _ = shutdown_tx_clone.send(());
-                }
-                _ = sigint.recv() => {
-                    info!("SIGINT received (Ctrl+C), shutting down...");
-                    let _ = shutdown_tx_clone.send(());
-                }
-            }
+            #[cfg(not(unix))]
+            let shutdown_signal = async {
+                ctrl_c().await.expect("Failed to listen for Ctrl+C signal");
+            };
+
+            shutdown_signal.await;
+            shutdown_tx_clone.send(()).unwrap();
         });
 
         let exec_inner = self.build_exec_inner(shutdown_rx.clone()).await?;
