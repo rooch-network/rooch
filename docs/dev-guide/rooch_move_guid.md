@@ -230,7 +230,7 @@ fun verify_pk_for_did_account(
 ) {
     // 1. Decode user-provided public key
     let pk_bytes_opt = multibase::decode_secp256k1_key(user_provided_public_key_multibase); // Or Ed25519
-    assert!(option::is_some(&pk_bytes_opt), error::invalid_argument(ErrorInvalidPublicKeyMultibaseFormat));
+    assert!(option::is_some(&pk_bytes_opt), ErrorInvalidPublicKeyMultibaseFormat);
     let pk_bytes = option::destroy_some(pk_bytes_opt);
 
     // 2. Get validated Bitcoin address from transaction context
@@ -239,14 +239,13 @@ fun verify_pk_for_did_account(
     // 3. Verify that the user-provided public key corresponds to the Bitcoin address from context
     assert!(
         bitcoin_address::verify_bitcoin_address_with_public_key(&bitcoin_address_from_ctx, &pk_bytes),
-        error::permission_denied(ErrorPublicKeyMismatchWithContextAddress) // Example error
+        ErrorPublicKeyMismatchWithContextAddress // Example error
     );
 
     // 4. Verify that the Bitcoin address from context maps to the target DID's Rooch account address
     let derived_rooch_address = bitcoin_address::to_rooch_address(&bitcoin_address_from_ctx);
-    assert!(derived_rooch_address == did_account_address, error::permission_denied(ErrorAddressMismatchWithDIDAccount));
+    assert!(derived_rooch_address == did_account_address, ErrorAddressMismatchWithDIDAccount);
 }
-```
 
 #### 4.1.4. Supported Bitcoin Address Types
 
@@ -301,22 +300,22 @@ fun assert_authorized_for_capability_delegation(
 ) {
     let sender_address = signer::address_of(did_signer);
     let did_account_address = account::account_address_from_capability(&did_document_data.account_cap); // Example
-    assert!(sender_address == did_account_address, error::permission_denied(ErrorSignerNotDIDAccount));
+    assert!(sender_address == did_account_address, ErrorSignerNotDIDAccount);
 
     // If using session keys:
     let session_key_auth_key_opt = auth_validator::get_session_key_from_ctx_option();
-    assert!(option::is_some(&session_key_auth_key_opt), error::unauthenticated(ErrorNoSessionKeyInContext));
+    assert!(option::is_some(&session_key_auth_key_opt), ErrorNoSessionKeyInContext);
     let session_key_auth_key = option::destroy_some(session_key_auth_key_opt);
     
     // Find the verification method associated with the session key
     let vm_fragment_opt = find_verification_method_by_auth_key(did_document_data, &session_key_auth_key);
-    assert!(option::is_some(&vm_fragment_opt), error::not_found(ErrorSessionKeyNotFoundInDID));
+    assert!(option::is_some(&vm_fragment_opt), ErrorSessionKeyNotFoundInDID);
     let vm_fragment = option::destroy_some(vm_fragment_opt); // This is an identifier/fragment like "#key-1"
 
     // Check if this verification method has capabilityDelegation permission
     assert!(
         vector::contains(&did_document_data.capability_delegation, &vm_fragment),
-        error::permission_denied(ErrorInsufficientPermissionForDelegation)
+        ErrorInsufficientPermissionForDelegation
     );
 }
 ```
@@ -377,13 +376,18 @@ const ErrorDIDAlreadyExists: u64 = 2;
 ```
 
 ### 6.2. Assertion Pattern
-Use standard `error` module functions for assertions.
+Use `assert!` with the defined error code directly. The `error` module is not used.
 ```move
-assert!(condition, error::invalid_argument(ErrorCode));      // e.g., ErrorDocumentNotFound
-assert!(condition, error::not_found(ErrorCode));
-assert!(condition, error::permission_denied(ErrorCode));
-assert!(condition, error::already_exists(ErrorCode));
-assert!(condition, error::aborted(ErrorCode)); // Generic abort
+assert!(condition, ErrorCode); // e.g., ErrorDocumentNotFound
+
+// Example from did.move
+assert!(
+    option::is_some(&pk_bytes_opt), 
+    ErrorInvalidPublicKeyMultibaseFormat
+);
+
+// For generic aborts, use the abort keyword directly
+abort ErrorCode; // e.g., abort ErrorUnauthorizedAccess
 ```
 
 ## 7. Testing
