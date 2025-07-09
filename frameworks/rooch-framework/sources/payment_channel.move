@@ -58,6 +58,8 @@ module rooch_framework::payment_channel {
     const ErrorVMAuthorizeOnlySender: u64 = 16;
     /// The verification method already exists for this sub-channel.
     const ErrorVerificationMethodAlreadyExists: u64 = 17;
+    /// A channel between this sender and receiver already exists for this coin type.
+    const ErrorChannelAlreadyExists: u64 = 18;
 
     // === Constants ===
     const STATUS_ACTIVE: u8 = 0;
@@ -134,6 +136,13 @@ module rooch_framework::payment_channel {
     }
 
     // === Structs ===
+    /// Unique key for identifying a unidirectional payment channel
+    /// Used to generate deterministic ObjectID for channels
+    struct ChannelKey has copy, drop, store {
+        sender: address,
+        receiver: address,
+    }
+
     /// A central, user-owned object for managing payments.
     /// It contains a MultiCoinStore to support various coin types.
     /// Every account can only have one payment hub, and the hub can not be transferred.
@@ -200,6 +209,13 @@ module rooch_framework::payment_channel {
 
     // === Public Functions ===
 
+    /// Calculate the deterministic ObjectID for a payment channel
+    /// This allows anyone to derive the channel ID from sender, receiver, and coin type
+    public fun calc_channel_object_id<CoinType: store>(sender: address, receiver: address): ObjectID {
+        let key = ChannelKey { sender, receiver };
+        object::custom_object_id<ChannelKey, PaymentChannel<CoinType>>(key)
+    }
+
     fun borrow_or_create_payment_hub(owner: address) : &mut Object<PaymentHub> {
         let hub_obj_id = object::account_named_object_id<PaymentHub>(owner);
         if (!object::exists_object_with_type<PaymentHub>(hub_obj_id)) {
@@ -265,14 +281,47 @@ module rooch_framework::payment_channel {
     }
 
     /// Opens a new payment channel linked to a payment hub.
+    /// If a channel already exists and is closed, it will be reactivated.
+    /// If a channel already exists and is active, it will return an error.
     public fun open_channel<CoinType: key + store>(
         sender: &signer,
         receiver: address,
     ) : ObjectID {
         let sender_addr = signer::address_of(sender);
+        let channel_id = calc_channel_object_id<CoinType>(sender_addr, receiver);
+        
+        // Check if channel already exists
+        if (object::exists_object_with_type<PaymentChannel<CoinType>>(channel_id)) {
+            // Channel exists, check if it can be reused
+            let channel_obj = object::borrow_mut_object_extend<PaymentChannel<CoinType>>(channel_id);
+            let channel = object::borrow_mut(channel_obj);
+            
+            // Only allow reuse if channel is closed
+            assert!(channel.status == STATUS_CLOSED, ErrorChannelAlreadyExists);
+            
+            // Reactivate the channel
+            channel.status = STATUS_ACTIVE;
+            channel.cancellation_info = option::none();
+            // Note: sub_channels table is preserved, so previously authorized VMs remain valid
+            
+            // Emit event for channel reactivation
+            event::emit(PaymentChannelOpenedEvent {
+                channel_id,
+                sender: sender_addr,
+                receiver,
+                payment_hub_id: channel.payment_hub_id,
+                coin_type: type_info::type_name<CoinType>(),
+            });
+            
+            return channel_id
+        };
+        
+        // Create new channel
         let payment_hub_obj = borrow_or_create_payment_hub(sender_addr);
         let payment_hub_id = object::id(payment_hub_obj);
-        let channel_obj = object::new<PaymentChannel<CoinType>>(PaymentChannel<CoinType> {
+        
+        let key = ChannelKey { sender: sender_addr, receiver };
+        let channel_obj = object::new_with_id(key, PaymentChannel<CoinType> {
             sender: sender_addr,
             receiver,
             payment_hub_id,
@@ -280,10 +329,9 @@ module rooch_framework::payment_channel {
             status: STATUS_ACTIVE,
             cancellation_info: option::none(),
         });
-        let channel_id = object::id(&channel_obj);
         object::transfer_extend(channel_obj, sender_addr);
         
-        // Emit event for channel opening
+        // Emit event for new channel creation
         event::emit(PaymentChannelOpenedEvent {
             channel_id,
             sender: sender_addr,
@@ -858,6 +906,17 @@ module rooch_framework::payment_channel {
     public fun payment_hub_exists(owner: address): bool {
         let hub_id = get_payment_hub_id(owner);
         object::exists_object_with_type<PaymentHub>(hub_id)
+    }
+
+    /// Check if a payment channel exists between sender and receiver for the given coin type
+    public fun channel_exists<CoinType: store>(sender: address, receiver: address): bool {
+        let channel_id = calc_channel_object_id<CoinType>(sender, receiver);
+        object::exists_object_with_type<PaymentChannel<CoinType>>(channel_id)
+    }
+
+    /// Get channel ID for a given sender, receiver, and coin type
+    public fun get_channel_id<CoinType: store>(sender: address, receiver: address): ObjectID {
+        calc_channel_object_id<CoinType>(sender, receiver)
     }
 
     /// Get channel information
