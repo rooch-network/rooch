@@ -135,6 +135,13 @@ module rooch_framework::payment_channel {
         method_type: String,
     }
 
+    /// Event emitted when a sub-channel is closed (permanently closed)
+    struct SubChannelClosedEvent has copy, drop {
+        channel_id: ObjectID,
+        receiver: address,
+        vm_id_fragment: String,
+    }
+
     // === Structs ===
     /// Unique key for identifying a unidirectional payment channel
     /// Used to generate deterministic ObjectID for channels
@@ -552,9 +559,9 @@ module rooch_framework::payment_channel {
         // Get the sub-channel state.
         let sub_channel = table::borrow_mut(&mut channel.sub_channels, sender_vm_id_fragment);
         
-        // Validate amount and nonce are strictly increasing.
-        assert!(sub_accumulated_amount > sub_channel.last_claimed_amount, ErrorInvalidAmount);
-        assert!(sub_nonce > sub_channel.last_confirmed_nonce, ErrorInvalidNonce);
+        // Validate amount and nonce are >= (allow equal amounts for idempotent calls)
+        assert!(sub_accumulated_amount >= sub_channel.last_claimed_amount, ErrorInvalidAmount);
+        assert!(sub_nonce >= sub_channel.last_confirmed_nonce, ErrorInvalidNonce);
         
         let incremental_amount = sub_accumulated_amount - sub_channel.last_claimed_amount;
         
@@ -562,14 +569,17 @@ module rooch_framework::payment_channel {
         sub_channel.last_claimed_amount = sub_accumulated_amount;
         sub_channel.last_confirmed_nonce = sub_nonce;
         
-        // Withdraw funds from the payment hub and transfer to the receiver.
-        let hub_obj = borrow_or_create_payment_hub(channel.sender);
-        let hub = object::borrow_mut(hub_obj);
-        let coin_type_name = type_info::type_name<CoinType>();
-        let generic_payment = multi_coin_store::withdraw(&mut hub.multi_coin_store, coin_type_name, incremental_amount);
+        // Only transfer funds if there's an incremental amount
+        if (incremental_amount > 0) {
+            // Withdraw funds from the payment hub and transfer to the receiver.
+            let hub_obj = borrow_or_create_payment_hub(channel.sender);
+            let hub = object::borrow_mut(hub_obj);
+            let coin_type_name = type_info::type_name<CoinType>();
+            let generic_payment = multi_coin_store::withdraw(&mut hub.multi_coin_store, coin_type_name, incremental_amount);
 
-        // Deposit the coin directly into the receiver's payment hub
-        deposit_to_hub_generic(channel.receiver, generic_payment);
+            // Deposit the coin directly into the receiver's payment hub
+            deposit_to_hub_generic(channel.receiver, generic_payment);
+        };
         
         // Emit claim event
         event::emit(ChannelClaimedEvent {
@@ -611,59 +621,37 @@ module rooch_framework::payment_channel {
         sender_signature: vector<u8>
     ) {
         let receiver = signer::address_of(account);
+        
+        // First, perform the final claim operation (this handles all validation and fund transfer)
+        // This will emit a ChannelClaimedEvent if there are funds to claim
+        claim_from_channel<CoinType>(
+            account,
+            channel_id,
+            sender_vm_id_fragment,
+            final_accumulated_amount,
+            final_nonce,
+            sender_signature
+        );
+        
+        // After successful claim, remove the sub-channel record
         let channel_obj = object::borrow_mut_object_extend<PaymentChannel<CoinType>>(channel_id);
         let channel = object::borrow_mut(channel_obj);
         
-        // Verify the transaction sender is the receiver
-        assert!(channel.receiver == receiver, ErrorNotReceiver);
-        assert!(channel.status == STATUS_ACTIVE, ErrorChannelNotActive);
+        // Remove the sub-channel record since it's permanently closed
+        // This indicates that this VM will no longer send new RAVs
+        let sub_channel = table::remove(&mut channel.sub_channels, sender_vm_id_fragment);
+        let SubChannel {
+            pk_multibase: _,
+            method_type: _,
+            last_claimed_amount: _,
+            last_confirmed_nonce: _,
+        } = sub_channel;
         
-        // Verify the sub-channel has been opened
-        assert!(table::contains(&channel.sub_channels, sender_vm_id_fragment), ErrorSubChannelNotOpened);
-        
-        // Verify the sender's signature on the final SubRAV
-        assert!(
-            verify_sender_signature(
-                channel,
-                channel_id,
-                sender_vm_id_fragment,
-                final_accumulated_amount,
-                final_nonce,
-                sender_signature
-            ),
-            ErrorInvalidSenderSignature
-        );
-        
-        // Get the sub-channel state
-        let sub_channel = table::borrow_mut(&mut channel.sub_channels, sender_vm_id_fragment);
-        
-        // Validate final amounts
-        assert!(final_accumulated_amount >= sub_channel.last_claimed_amount, ErrorInvalidAmount);
-        assert!(final_nonce >= sub_channel.last_confirmed_nonce, ErrorInvalidNonce);
-        
-        let final_payment_amount = final_accumulated_amount - sub_channel.last_claimed_amount;
-        
-        if (final_payment_amount > 0) {
-            // Transfer final payment
-            let hub_obj = borrow_or_create_payment_hub(channel.sender);
-            let hub = object::borrow_mut(hub_obj);
-            let coin_type_name = type_info::type_name<CoinType>();
-            let generic_payment = multi_coin_store::withdraw(&mut hub.multi_coin_store, coin_type_name, final_payment_amount);
-            deposit_to_hub_generic(channel.receiver, generic_payment);
-        };
-        
-        // Update final state for this sub-channel
-        sub_channel.last_claimed_amount = final_accumulated_amount;
-        sub_channel.last_confirmed_nonce = final_nonce;
-        
-        // Emit sub-channel close event
-        event::emit(ChannelClaimedEvent {
+        // Emit sub-channel close event (separate from the claim event)
+        event::emit(SubChannelClosedEvent {
             channel_id,
             receiver,
             vm_id_fragment: sender_vm_id_fragment,
-            amount: final_payment_amount,
-            sub_accumulated_amount: final_accumulated_amount,
-            sub_nonce: final_nonce,
         });
     }
 
