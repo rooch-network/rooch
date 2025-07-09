@@ -234,14 +234,14 @@ module rooch_framework::payment_channel {
         ensure_payment_hub_exists(sender);
     }
 
-    /// Deposits a specific type of coin from the account coin store into the payment hub
+    /// Deposits a specific type of coin from the sender's account coin store into the receiver's payment hub
     public entry fun deposit_to_hub_entry<CoinType: key + store>(
-        account: &signer,
+        sender: &signer,
+        receiver: address,
         amount: u256,
     ) {
-        let account_addr = signer::address_of(account);
-        let coin = account_coin_store::withdraw<CoinType>(account, amount);
-        deposit_to_hub<CoinType>(account_addr, coin);
+        let coin = account_coin_store::withdraw<CoinType>(sender, amount);
+        deposit_to_hub<CoinType>(receiver, coin);
     }
 
     /// Deposits a specific type of coin into the payment hub of the account
