@@ -793,40 +793,51 @@ module rooch_framework::payment_channel {
         
         // Get sub-channels count for processing
         let sub_channels_count = table::length(&channel.sub_channels);
-        // Sender can provide partial proofs, receiver can dispute missing ones during challenge period
         
-        let total_pending_amount = 0u256;
-        
-        // Process each cancellation proof (if any)
-        if (sub_channels_count > 0) {
-            let i = 0;
-            let proofs_len = vector::length(&proofs);
+        // If no sub-channels exist, close the channel immediately
+        if (sub_channels_count == 0) {
+            // No active sub-channels means no pending amounts or disputes possible
+            channel.status = STATUS_CLOSED;
             
-            while (i < proofs_len) {
-                let proof = vector::borrow(&proofs, i);
-                let vm_id_fragment = proof.vm_id_fragment;
-                
-                // Get the existing sub-channel state (must exist)
-                assert!(table::contains(&channel.sub_channels, vm_id_fragment), ErrorSubChannelNotOpened);
-                let sub_channel_state = table::borrow_mut(&mut channel.sub_channels, vm_id_fragment);
-                
-                // Validate amount and nonce progression
-                assert!(proof.accumulated_amount >= sub_channel_state.last_claimed_amount, ErrorInvalidAmount);
-                assert!(proof.nonce >= sub_channel_state.last_confirmed_nonce, ErrorInvalidNonce);
-                
-                // Calculate incremental amount for this sub-channel
-                let incremental_amount = proof.accumulated_amount - sub_channel_state.last_claimed_amount;
-                total_pending_amount = total_pending_amount + incremental_amount;
-                
-                // Update sub-channel state to new baseline to prevent double counting in disputes
-                sub_channel_state.last_claimed_amount = proof.accumulated_amount;
-                sub_channel_state.last_confirmed_nonce = proof.nonce;
-                
-                i = i + 1;
-            };
+            // Emit immediate closure event (no funds to transfer)
+            event::emit(ChannelCancellationFinalizedEvent {
+                channel_id,
+                sender: sender_addr,
+                final_amount: 0u256,
+            });
+            
+            return
         };
         
-        // Set channel to cancelling state
+        // Process sub-channels that require challenge period
+        let total_pending_amount = 0u256;
+        let i = 0;
+        let proofs_len = vector::length(&proofs);
+        
+        while (i < proofs_len) {
+            let proof = vector::borrow(&proofs, i);
+            let vm_id_fragment = proof.vm_id_fragment;
+            
+            // Get the existing sub-channel state (must exist)
+            assert!(table::contains(&channel.sub_channels, vm_id_fragment), ErrorSubChannelNotOpened);
+            let sub_channel_state = table::borrow_mut(&mut channel.sub_channels, vm_id_fragment);
+            
+            // Validate amount and nonce progression
+            assert!(proof.accumulated_amount >= sub_channel_state.last_claimed_amount, ErrorInvalidAmount);
+            assert!(proof.nonce >= sub_channel_state.last_confirmed_nonce, ErrorInvalidNonce);
+            
+            // Calculate incremental amount for this sub-channel
+            let incremental_amount = proof.accumulated_amount - sub_channel_state.last_claimed_amount;
+            total_pending_amount = total_pending_amount + incremental_amount;
+            
+            // Update sub-channel state to new baseline to prevent double counting in disputes
+            sub_channel_state.last_claimed_amount = proof.accumulated_amount;
+            sub_channel_state.last_confirmed_nonce = proof.nonce;
+            
+            i = i + 1;
+        };
+        
+        // Set channel to cancelling state (requires challenge period)
         channel.status = STATUS_CANCELLING;
         let current_time = timestamp::now_milliseconds();
         channel.cancellation_info = option::some(CancellationInfo {
