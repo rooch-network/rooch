@@ -605,6 +605,27 @@ module rooch_framework::payment_channel {
         sub_nonce: u64,
         sender_signature: vector<u8>
     ) {
+        internal_claim_from_channel<CoinType>(
+            channel_receiver,
+            channel_id,
+            sender_vm_id_fragment,
+            sub_accumulated_amount,
+            sub_nonce,
+            sender_signature,
+            false
+        );
+    }
+
+    /// The receiver claims funds from a specific sub-channel.
+    fun internal_claim_from_channel<CoinType: key + store>(
+        channel_receiver: &signer,
+        channel_id: ObjectID,
+        sender_vm_id_fragment: String,
+        sub_accumulated_amount: u256,
+        sub_nonce: u64,
+        sender_signature: vector<u8>,
+        skip_signature_verification: bool
+    ) {
         let receiver = signer::address_of(channel_receiver);
         let channel_obj = object::borrow_mut_object_extend<PaymentChannel<CoinType>>(channel_id);
         let channel = object::borrow_mut(channel_obj);
@@ -617,7 +638,8 @@ module rooch_framework::payment_channel {
         assert!(table::contains(&channel.sub_channels, sender_vm_id_fragment), ErrorSubChannelNotOpened);
         
         // Verify the sender's signature on the off-chain proof (SubRAV).
-        assert!(
+        if (!skip_signature_verification) {
+            assert!(
             verify_sender_signature(
                 channel,
                 channel_id,
@@ -625,9 +647,10 @@ module rooch_framework::payment_channel {
                 sub_accumulated_amount,
                 sub_nonce,
                 sender_signature
-            ),
-            ErrorInvalidSenderSignature
-        );
+                ),
+                ErrorInvalidSenderSignature
+            );
+        };
         
         // Get the sub-channel state.
         let sub_channel = table::borrow_mut(&mut channel.sub_channels, sender_vm_id_fragment);
@@ -682,7 +705,7 @@ module rooch_framework::payment_channel {
             sub_nonce,
             sender_signature
         );
-    }
+    } 
 
     /// Close a specific sub-channel with final state from receiver
     public fun close_sub_channel<CoinType: key + store>(
@@ -693,19 +716,40 @@ module rooch_framework::payment_channel {
         final_nonce: u64,
         sender_signature: vector<u8>
     ) {
-        let receiver = signer::address_of(channel_receiver);
-        
-        // First, perform the final claim operation (this handles all validation and fund transfer)
-        // This will emit a ChannelClaimedEvent if there are funds to claim
-        claim_from_channel<CoinType>(
+        internal_close_sub_channel<CoinType>(
             channel_receiver,
             channel_id,
             sender_vm_id_fragment,
             final_accumulated_amount,
             final_nonce,
-            sender_signature
+            sender_signature,
+            false
+        );
+    }
+
+    fun internal_close_sub_channel<CoinType: key + store>(
+        channel_receiver: &signer,
+        channel_id: ObjectID,
+        sender_vm_id_fragment: String,
+        final_accumulated_amount: u256,
+        final_nonce: u64,
+        sender_signature: vector<u8>,
+        skip_signature_verification: bool
+    ) {
+        
+        // First, perform the final claim operation (this handles all validation and fund transfer)
+        // This will emit a ChannelClaimedEvent if there are funds to claim
+        internal_claim_from_channel<CoinType>(
+            channel_receiver,
+            channel_id,
+            sender_vm_id_fragment,
+            final_accumulated_amount,
+            final_nonce,
+            sender_signature,
+            skip_signature_verification
         );
         
+        let receiver = signer::address_of(channel_receiver);
         // After successful claim, remove the sub-channel record
         let channel_obj = object::borrow_mut_object_extend<PaymentChannel<CoinType>>(channel_id);
         let channel = object::borrow_mut(channel_obj);
@@ -953,6 +997,26 @@ module rooch_framework::payment_channel {
         dispute_nonce: u64,
         sender_signature: vector<u8>
     ) {
+        internal_dispute_cancellation<CoinType>(
+            channel_receiver,
+            channel_id,
+            sender_vm_id_fragment,
+            dispute_accumulated_amount,
+            dispute_nonce,
+            sender_signature,
+            false
+        );
+    }
+
+    fun internal_dispute_cancellation<CoinType: key + store>(
+        channel_receiver: &signer,
+        channel_id: ObjectID,
+        sender_vm_id_fragment: String,
+        dispute_accumulated_amount: u256,
+        dispute_nonce: u64,
+        sender_signature: vector<u8>,
+        skip_signature_verification: bool
+    ) {
         let receiver = signer::address_of(channel_receiver);
         let channel_obj = object::borrow_mut_object_extend<PaymentChannel<CoinType>>(channel_id);
         let channel = object::borrow_mut(channel_obj);
@@ -964,18 +1028,20 @@ module rooch_framework::payment_channel {
         // Verify the sub-channel has been opened
         assert!(table::contains(&channel.sub_channels, sender_vm_id_fragment), ErrorSubChannelNotOpened);
         
-        // Verify signature
-        assert!(
-            verify_sender_signature(
-                channel,
-                channel_id,
-                sender_vm_id_fragment,
-                dispute_accumulated_amount,
-                dispute_nonce,
-                sender_signature
-            ),
-            ErrorInvalidSenderSignature
-        );
+        if (!skip_signature_verification) {
+            // Verify signature
+            assert!(
+                verify_sender_signature(
+                    channel,
+                    channel_id,
+                    sender_vm_id_fragment,
+                    dispute_accumulated_amount,
+                    dispute_nonce,
+                    sender_signature
+                    ),
+                ErrorInvalidSenderSignature
+            );
+        };
         
         // Get the sub-channel state
         let sub_channel = table::borrow_mut(&mut channel.sub_channels, sender_vm_id_fragment);
@@ -1254,5 +1320,64 @@ module rooch_framework::payment_channel {
         did::verify_signature_by_type(msg_hash, signature, &sub_channel.pk_multibase, &sub_channel.method_type)
     }
 
+    #[test_only]
+    /// Test-only version of claim_from_channel that uses the test signature verification
+    public fun claim_from_channel_for_test<CoinType: key + store>(
+        channel_receiver: &signer,
+        channel_id: ObjectID,
+        sender_vm_id_fragment: String,
+        sub_accumulated_amount: u256,
+        sub_nonce: u64,
+        sender_signature: vector<u8>
+    ) {
+        internal_claim_from_channel<CoinType>(
+            channel_receiver,
+            channel_id,
+            sender_vm_id_fragment,
+            sub_accumulated_amount,
+            sub_nonce,
+            sender_signature,
+            true
+        );
+    }
 
+    #[test_only]
+    public fun close_sub_channel_for_test<CoinType: key + store>(
+        channel_receiver: &signer,
+        channel_id: ObjectID,
+        sender_vm_id_fragment: String,
+        final_accumulated_amount: u256,
+        final_nonce: u64,
+        sender_signature: vector<u8>
+    ) {
+        internal_close_sub_channel<CoinType>(
+            channel_receiver,
+            channel_id,
+            sender_vm_id_fragment,
+            final_accumulated_amount,
+            final_nonce,
+            sender_signature,
+            true
+        );
+    }
+
+    #[test_only]
+    public fun dispute_cancellation_for_test<CoinType: key + store>(
+        channel_receiver: &signer,
+        channel_id: ObjectID,
+        sender_vm_id_fragment: String,
+        dispute_accumulated_amount: u256,
+        dispute_nonce: u64,
+        sender_signature: vector<u8>
+    ) {
+        internal_dispute_cancellation<CoinType>(
+            channel_receiver,
+            channel_id,
+            sender_vm_id_fragment,
+            dispute_accumulated_amount,
+            dispute_nonce,
+            sender_signature,
+            true
+        );
+    }
 }

@@ -20,6 +20,7 @@
 -  [Function `balance`](#0x3_multi_coin_store_balance)
 -  [Function `is_frozen`](#0x3_multi_coin_store_is_frozen)
 -  [Function `withdraw`](#0x3_multi_coin_store_withdraw)
+-  [Function `withdraw_by_type`](#0x3_multi_coin_store_withdraw_by_type)
 -  [Function `deposit`](#0x3_multi_coin_store_deposit)
 -  [Function `deposit_by_type`](#0x3_multi_coin_store_deposit_by_type)
 -  [Function `transfer`](#0x3_multi_coin_store_transfer)
@@ -280,6 +281,17 @@ Remove the MultiCoinStore field, return the GenericCoin in balance
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="multi_coin_store.md#0x3_multi_coin_store_withdraw">withdraw</a>(coin_store_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="multi_coin_store.md#0x3_multi_coin_store_MultiCoinStore">multi_coin_store::MultiCoinStore</a>&gt;, coin_type: <a href="_String">string::String</a>, amount: <a href="">u256</a>): <a href="coin.md#0x3_coin_GenericCoin">coin::GenericCoin</a>
+</code></pre>
+
+
+
+<a name="0x3_multi_coin_store_withdraw_by_type"></a>
+
+## Function `withdraw_by_type`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="multi_coin_store.md#0x3_multi_coin_store_withdraw_by_type">withdraw_by_type</a>&lt;CoinType: store, key&gt;(coin_store_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="multi_coin_store.md#0x3_multi_coin_store_MultiCoinStore">multi_coin_store::MultiCoinStore</a>&gt;, amount: <a href="">u256</a>): <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;
 </code></pre>
 
 
