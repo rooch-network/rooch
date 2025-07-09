@@ -17,13 +17,11 @@ module rooch_framework::payment_channel {
     use moveos_std::timestamp;
     use moveos_std::event;
     use moveos_std::hash;
-    use std::u256;
     use std::string::{Self, String};
-    use rooch_framework::coin::{Self, Coin, GenericCoin};
+    use rooch_framework::coin::{Coin, GenericCoin};
     use rooch_framework::multi_coin_store::{Self, MultiCoinStore};
     use rooch_framework::did;
     use rooch_framework::account_coin_store;
-    use rooch_framework::session_key;
 
     // === Error Constants ===
     /// The signer is not the designated receiver of the channel.
@@ -54,6 +52,8 @@ module rooch_framework::payment_channel {
     const ErrorInsufficientBalance: u64 = 13;
     /// The signer is not the sender of the channel.
     const ErrorNotSender: u64 = 14;
+    /// The number of closure proofs does not match the number of sub-channels.
+    const ErrorMismatchedProofCount: u64 = 15;
 
     // === Constants ===
     const STATUS_ACTIVE: u8 = 0;
@@ -119,6 +119,15 @@ module rooch_framework::payment_channel {
         final_amount: u256,
     }
 
+    /// Event emitted when a channel is fully closed with all sub-channels settled
+    struct ChannelFullyClosedEvent has copy, drop {
+        channel_id: ObjectID,
+        sender: address,
+        receiver: address,
+        total_paid: u256,
+        sub_channels_count: u64,
+    }
+
     // === Structs ===
     /// A central, user-owned object for managing payments.
     /// It contains a MultiCoinStore to support various coin types.
@@ -129,7 +138,7 @@ module rooch_framework::payment_channel {
     }
 
     /// A lightweight object representing a payment relationship, linked to a PaymentHub.
-    struct PaymentChannel<CoinType: store> has key, store {
+    struct PaymentChannel<phantom CoinType: store> has key, store {
         sender: address,
         receiver: address,
         payment_hub_id: ObjectID, // Links to a PaymentHub object
@@ -148,6 +157,16 @@ module rooch_framework::payment_channel {
     struct CancellationInfo has copy, drop, store {
         initiated_time: u64,
         pending_amount: u256,
+    }
+
+    
+    #[data_struct]
+    /// Proof for closing a sub-channel with final state
+    struct ClosureProof has copy, drop, store {
+        vm_id_fragment: String,
+        accumulated_amount: u256,
+        nonce: u64,
+        sender_signature: vector<u8>,
     }
 
     // === Public Functions ===
@@ -345,8 +364,8 @@ module rooch_framework::payment_channel {
         );
     }
 
-    /// Close the channel cooperatively with final state from receiver
-    public fun close_channel<CoinType: key + store>(
+    /// Close a specific sub-channel with final state from receiver
+    public fun close_sub_channel<CoinType: key + store>(
         account: &signer,
         channel_id: ObjectID,
         sender_vm_id_fragment: String,
@@ -401,20 +420,23 @@ module rooch_framework::payment_channel {
             deposit_to_hub_generic(channel.receiver, generic_payment);
         };
         
-        // Mark channel as closed
-        channel.status = STATUS_CLOSED;
+        // Update final state for this sub-channel
+        sub_channel_state.last_claimed_amount = final_accumulated_amount;
+        sub_channel_state.last_confirmed_nonce = final_nonce;
         
-        // Emit close event
-        event::emit(ChannelClosedEvent {
+        // Emit sub-channel close event
+        event::emit(ChannelClaimedEvent {
             channel_id,
-            sender: channel.sender,
             receiver,
-            final_amount: final_payment_amount,
+            vm_id_fragment: sender_vm_id_fragment,
+            amount: final_payment_amount,
+            sub_accumulated_amount: final_accumulated_amount,
+            sub_nonce: final_nonce,
         });
     }
 
-    /// Entry function for closing channel
-    public entry fun close_channel_entry<CoinType: key + store>(
+    /// Entry function for closing a sub-channel
+    public entry fun close_sub_channel_entry<CoinType: key + store>(
         account: &signer,
         channel_id: ObjectID,
         sender_vm_id_fragment: String,
@@ -422,7 +444,7 @@ module rooch_framework::payment_channel {
         final_nonce: u64,
         sender_signature: vector<u8>
     ) {
-        close_channel<CoinType>(
+        close_sub_channel<CoinType>(
             account,
             channel_id,
             sender_vm_id_fragment,
@@ -430,6 +452,102 @@ module rooch_framework::payment_channel {
             final_nonce,
             sender_signature
         );
+    }
+
+    /// Close the entire channel with final settlement of all sub-channels
+    /// Called by receiver with proofs of final state from all sub-channels
+    public fun close_channel_completely_with_proofs<CoinType: key + store>(
+        receiver: &signer,
+        channel_id: ObjectID,
+        proofs: vector<ClosureProof>,
+    ) {
+        let receiver_addr = signer::address_of(receiver);
+        let channel_obj = object::borrow_mut_object_extend<PaymentChannel<CoinType>>(channel_id);
+        let channel = object::borrow_mut(channel_obj);
+        
+        // Verify receiver is the channel receiver and channel is active
+        assert!(channel.receiver == receiver_addr, ErrorNotReceiver);
+        assert!(channel.status == STATUS_ACTIVE, ErrorChannelNotActive);
+        
+        // Verify that proofs cover all existing sub-channels
+        let sub_channels_count = table::length(&channel.sub_channels);
+        assert!(vector::length(&proofs) == sub_channels_count, ErrorMismatchedProofCount);
+        
+        let total_incremental_amount = 0u256;
+        
+        // Process each closure proof (if any)
+        if (sub_channels_count > 0) {
+            let i = 0;
+            let proofs_len = vector::length(&proofs);
+            
+            while (i < proofs_len) {
+            let proof = vector::borrow(&proofs, i);
+            let vm_id_fragment = proof.vm_id_fragment;
+            
+            // Verify the sender's signature on this final SubRAV
+            assert!(
+                verify_sender_signature(
+                    channel_id,
+                    channel.sender,
+                    vm_id_fragment,
+                    proof.accumulated_amount,
+                    proof.nonce,
+                    proof.sender_signature
+                ),
+                ErrorInvalidSenderSignature
+            );
+            
+            // Get the existing sub-channel state (must exist)
+            assert!(table::contains(&channel.sub_channels, vm_id_fragment), ErrorInvalidAmount);
+            let sub_channel_state = table::borrow_mut(&mut channel.sub_channels, vm_id_fragment);
+            
+            // Validate amount and nonce progression
+            assert!(proof.accumulated_amount >= sub_channel_state.last_claimed_amount, ErrorInvalidAmount);
+            assert!(proof.nonce >= sub_channel_state.last_confirmed_nonce, ErrorInvalidNonce);
+            
+            // Calculate incremental amount for this sub-channel
+            let incremental_amount = proof.accumulated_amount - sub_channel_state.last_claimed_amount;
+            total_incremental_amount = total_incremental_amount + incremental_amount;
+            
+            // Update sub-channel state to final values
+            sub_channel_state.last_claimed_amount = proof.accumulated_amount;
+            sub_channel_state.last_confirmed_nonce = proof.nonce;
+            
+                i = i + 1;
+            };
+        };
+        
+        // Transfer total incremental amount from sender's hub to receiver's hub
+        if (total_incremental_amount > 0) {
+            let hub_obj = borrow_or_create_payment_hub(channel.sender);
+            let hub = object::borrow_mut(hub_obj);
+            let coin_type_name = type_info::type_name<CoinType>();
+            let generic_payment = multi_coin_store::withdraw(&mut hub.multi_coin_store, coin_type_name, total_incremental_amount);
+            deposit_to_hub_generic(channel.receiver, generic_payment);
+        };
+        
+        // Mark channel as closed
+        channel.status = STATUS_CLOSED;
+        
+        // Emit full closure event
+        event::emit(ChannelFullyClosedEvent {
+            channel_id,
+            sender: channel.sender,
+            receiver: receiver_addr,
+            total_paid: total_incremental_amount,
+            sub_channels_count,
+        });
+    }
+
+    /// Entry function for closing the entire channel with settlement
+    /// Takes serialized closure proofs and deserializes them
+    public entry fun close_channel_completely_with_proofs_entry<CoinType: key + store>(
+        receiver: &signer,
+        channel_id: ObjectID,
+        serialized_proofs: vector<u8>,
+    ) {
+        let proofs = bcs::from_bytes<vector<ClosureProof>>(serialized_proofs);
+        close_channel_completely_with_proofs<CoinType>(receiver, channel_id, proofs);
     }
 
     /// Sender initiates unilateral channel cancellation
@@ -616,6 +734,20 @@ module rooch_framework::payment_channel {
         } else {
             (0u256, 0u64)
         }
+    }
+
+    /// Check if a sub-channel exists
+    public fun sub_channel_exists<CoinType: store>(channel_id: ObjectID, vm_id_fragment: String): bool {
+        let channel_obj = object::borrow_object<PaymentChannel<CoinType>>(channel_id);
+        let channel = object::borrow(channel_obj);
+        table::contains(&channel.sub_channels, vm_id_fragment)
+    }
+
+    /// Get the number of sub-channels in a payment channel
+    public fun get_sub_channel_count<CoinType: store>(channel_id: ObjectID): u64 {
+        let channel_obj = object::borrow_object<PaymentChannel<CoinType>>(channel_id);
+        let channel = object::borrow(channel_obj);
+        table::length(&channel.sub_channels)
     }
 
     /// Get cancellation info
