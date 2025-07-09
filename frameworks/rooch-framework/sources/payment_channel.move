@@ -52,6 +52,12 @@ module rooch_framework::payment_channel {
     const ErrorInsufficientBalance: u64 = 13;
     /// The signer is not the sender of the channel.
     const ErrorNotSender: u64 = 14;
+    /// The sub-channel has not been opened yet.
+    const ErrorSubChannelNotOpened: u64 = 15;
+    /// Only the sender can authorize verification methods for the channel.
+    const ErrorVMAuthorizeOnlySender: u64 = 16;
+    /// The verification method already exists for this sub-channel.
+    const ErrorVerificationMethodAlreadyExists: u64 = 17;
 
     // === Constants ===
     const STATUS_ACTIVE: u8 = 0;
@@ -118,6 +124,15 @@ module rooch_framework::payment_channel {
         final_amount: u256,
     }
 
+    /// Event emitted when a sub-channel is opened
+    struct SubChannelOpenedEvent has copy, drop {
+        channel_id: ObjectID,
+        sender: address,
+        vm_id_fragment: String,
+        pk_multibase: String,
+        method_type: String,
+    }
+
     // === Structs ===
     /// A central, user-owned object for managing payments.
     /// It contains a MultiCoinStore to support various coin types.
@@ -133,13 +148,19 @@ module rooch_framework::payment_channel {
         sender: address,
         receiver: address,
         payment_hub_id: ObjectID, // Links to a PaymentHub object
-        sub_channels: Table<String, SubChannelState>,
+        sub_channels: Table<String, SubChannel>,
         status: u8,
         cancellation_info: Option<CancellationInfo>,
     }
     
-    /// The on-chain state for a specific sub-channel.
-    struct SubChannelState has store {
+    /// The on-chain state for a specific sub-channel, including authorization metadata.
+    struct SubChannel has store {
+        // --- Authorization metadata (set once during open_sub_channel) ---
+        // We store the public key and method type to avoid the sender removing the verification method after the sub-channel is opened
+        pk_multibase: String,
+        method_type: String,
+        
+        // --- State data (evolves with claim/close operations) ---
         last_claimed_amount: u256,
         last_confirmed_nonce: u64,
     }
@@ -282,6 +303,68 @@ module rooch_framework::payment_channel {
         let _channel_id = open_channel<CoinType>(sender, receiver);
     }
 
+    /// Opens a sub-channel by authorizing a verification method for the payment channel.
+    /// This function must be called by the sender before using any vm_id_fragment for payments.
+    public fun open_sub_channel<CoinType: key + store>(
+        sender: &signer,
+        channel_id: ObjectID,
+        vm_id_fragment: String,
+    ) {
+        let sender_addr = signer::address_of(sender);
+        let channel_obj = object::borrow_mut_object_extend<PaymentChannel<CoinType>>(channel_id);
+        let channel = object::borrow_mut(channel_obj);
+        
+        // Verify the transaction sender is the channel sender
+        assert!(channel.sender == sender_addr, ErrorVMAuthorizeOnlySender);
+        assert!(channel.status == STATUS_ACTIVE, ErrorChannelNotActive);
+        
+        // Check if sub-channel is already opened
+        assert!(!table::contains(&channel.sub_channels, vm_id_fragment), ErrorVerificationMethodAlreadyExists);
+        
+        // Get DID document and verify the verification method
+        let did_doc = did::get_did_document_by_address(sender_addr);
+        let vm_opt = did::doc_verification_method(did_doc, &vm_id_fragment);
+        assert!(option::is_some(&vm_opt), ErrorVerificationMethodNotFound);
+        
+        let vm = option::extract(&mut vm_opt);
+        
+        // Check if verification method has authentication permission
+        assert!(
+            did::has_verification_relationship_in_doc(did_doc, &vm_id_fragment, did::verification_relationship_authentication()),
+            ErrorInsufficientPermission
+        );
+        
+        // Extract metadata from verification method
+        let pk_multibase = *did::verification_method_public_key_multibase(&vm);
+        let method_type = *did::verification_method_type(&vm);
+        
+        // Create and store the sub-channel with authorization metadata
+        table::add(&mut channel.sub_channels, vm_id_fragment, SubChannel {
+            pk_multibase,
+            method_type,
+            last_claimed_amount: 0u256,
+            last_confirmed_nonce: 0,
+        });
+        
+        // Emit sub-channel opened event
+        event::emit(SubChannelOpenedEvent {
+            channel_id,
+            sender: sender_addr,
+            vm_id_fragment,
+            pk_multibase,
+            method_type,
+        });
+    }
+
+    /// Entry function for opening a sub-channel
+    public entry fun open_sub_channel_entry<CoinType: key + store>(
+        sender: &signer,
+        channel_id: ObjectID,
+        vm_id_fragment: String,
+    ) {
+        open_sub_channel<CoinType>(sender, channel_id, vm_id_fragment);
+    }
+
     /// The receiver claims funds from a specific sub-channel.
     public fun claim_from_channel<CoinType: key + store>(
         account: &signer,
@@ -299,11 +382,14 @@ module rooch_framework::payment_channel {
         assert!(channel.receiver == receiver, ErrorNotReceiver);
         assert!(channel.status == STATUS_ACTIVE, ErrorChannelNotActive);
         
+        // Verify the sub-channel has been opened
+        assert!(table::contains(&channel.sub_channels, sender_vm_id_fragment), ErrorSubChannelNotOpened);
+        
         // Verify the sender's signature on the off-chain proof (SubRAV).
         assert!(
             verify_sender_signature(
+                channel,
                 channel_id,
-                channel.sender,
                 sender_vm_id_fragment,
                 sub_accumulated_amount,
                 sub_nonce,
@@ -312,26 +398,18 @@ module rooch_framework::payment_channel {
             ErrorInvalidSenderSignature
         );
         
-        // Get or create the sub-channel state.
-        let sub_channel_state = if (table::contains(&channel.sub_channels, sender_vm_id_fragment)) {
-            table::borrow_mut(&mut channel.sub_channels, sender_vm_id_fragment)
-        } else {
-            table::add(&mut channel.sub_channels, sender_vm_id_fragment, SubChannelState {
-                last_claimed_amount: 0u256,
-                last_confirmed_nonce: 0,
-            });
-            table::borrow_mut(&mut channel.sub_channels, sender_vm_id_fragment)
-        };
+        // Get the sub-channel state.
+        let sub_channel = table::borrow_mut(&mut channel.sub_channels, sender_vm_id_fragment);
         
         // Validate amount and nonce are strictly increasing.
-        assert!(sub_accumulated_amount > sub_channel_state.last_claimed_amount, ErrorInvalidAmount);
-        assert!(sub_nonce > sub_channel_state.last_confirmed_nonce, ErrorInvalidNonce);
+        assert!(sub_accumulated_amount > sub_channel.last_claimed_amount, ErrorInvalidAmount);
+        assert!(sub_nonce > sub_channel.last_confirmed_nonce, ErrorInvalidNonce);
         
-        let incremental_amount = sub_accumulated_amount - sub_channel_state.last_claimed_amount;
+        let incremental_amount = sub_accumulated_amount - sub_channel.last_claimed_amount;
         
         // Update the sub-channel state on-chain.
-        sub_channel_state.last_claimed_amount = sub_accumulated_amount;
-        sub_channel_state.last_confirmed_nonce = sub_nonce;
+        sub_channel.last_claimed_amount = sub_accumulated_amount;
+        sub_channel.last_confirmed_nonce = sub_nonce;
         
         // Withdraw funds from the payment hub and transfer to the receiver.
         let hub_obj = borrow_or_create_payment_hub(channel.sender);
@@ -389,11 +467,14 @@ module rooch_framework::payment_channel {
         assert!(channel.receiver == receiver, ErrorNotReceiver);
         assert!(channel.status == STATUS_ACTIVE, ErrorChannelNotActive);
         
+        // Verify the sub-channel has been opened
+        assert!(table::contains(&channel.sub_channels, sender_vm_id_fragment), ErrorSubChannelNotOpened);
+        
         // Verify the sender's signature on the final SubRAV
         assert!(
             verify_sender_signature(
+                channel,
                 channel_id,
-                channel.sender,
                 sender_vm_id_fragment,
                 final_accumulated_amount,
                 final_nonce,
@@ -403,21 +484,13 @@ module rooch_framework::payment_channel {
         );
         
         // Get the sub-channel state
-        let sub_channel_state = if (table::contains(&channel.sub_channels, sender_vm_id_fragment)) {
-            table::borrow_mut(&mut channel.sub_channels, sender_vm_id_fragment)
-        } else {
-            table::add(&mut channel.sub_channels, sender_vm_id_fragment, SubChannelState {
-                last_claimed_amount: 0u256,
-                last_confirmed_nonce: 0,
-            });
-            table::borrow_mut(&mut channel.sub_channels, sender_vm_id_fragment)
-        };
+        let sub_channel = table::borrow_mut(&mut channel.sub_channels, sender_vm_id_fragment);
         
         // Validate final amounts
-        assert!(final_accumulated_amount >= sub_channel_state.last_claimed_amount, ErrorInvalidAmount);
-        assert!(final_nonce >= sub_channel_state.last_confirmed_nonce, ErrorInvalidNonce);
+        assert!(final_accumulated_amount >= sub_channel.last_claimed_amount, ErrorInvalidAmount);
+        assert!(final_nonce >= sub_channel.last_confirmed_nonce, ErrorInvalidNonce);
         
-        let final_payment_amount = final_accumulated_amount - sub_channel_state.last_claimed_amount;
+        let final_payment_amount = final_accumulated_amount - sub_channel.last_claimed_amount;
         
         if (final_payment_amount > 0) {
             // Transfer final payment
@@ -429,8 +502,8 @@ module rooch_framework::payment_channel {
         };
         
         // Update final state for this sub-channel
-        sub_channel_state.last_claimed_amount = final_accumulated_amount;
-        sub_channel_state.last_confirmed_nonce = final_nonce;
+        sub_channel.last_claimed_amount = final_accumulated_amount;
+        sub_channel.last_confirmed_nonce = final_nonce;
         
         // Emit sub-channel close event
         event::emit(ChannelClaimedEvent {
@@ -494,8 +567,8 @@ module rooch_framework::payment_channel {
             // Verify the sender's signature on this final SubRAV
             assert!(
                 verify_sender_signature(
+                    channel,
                     channel_id,
-                    channel.sender,
                     vm_id_fragment,
                     proof.accumulated_amount,
                     proof.nonce,
@@ -595,7 +668,7 @@ module rooch_framework::payment_channel {
                 let vm_id_fragment = proof.vm_id_fragment;
                 
                 // Get the existing sub-channel state (must exist)
-                assert!(table::contains(&channel.sub_channels, vm_id_fragment), ErrorInvalidAmount);
+                assert!(table::contains(&channel.sub_channels, vm_id_fragment), ErrorSubChannelNotOpened);
                 let sub_channel_state = table::borrow_mut(&mut channel.sub_channels, vm_id_fragment);
                 
                 // Validate amount and nonce progression
@@ -659,11 +732,14 @@ module rooch_framework::payment_channel {
         assert!(channel.receiver == receiver, ErrorNotReceiver);
         assert!(channel.status == STATUS_CANCELLING, ErrorChannelNotActive);
         
+        // Verify the sub-channel has been opened
+        assert!(table::contains(&channel.sub_channels, sender_vm_id_fragment), ErrorSubChannelNotOpened);
+        
         // Verify signature
         assert!(
             verify_sender_signature(
+                channel,
                 channel_id,
-                channel.sender,
                 sender_vm_id_fragment,
                 dispute_accumulated_amount,
                 dispute_nonce,
@@ -672,23 +748,15 @@ module rooch_framework::payment_channel {
             ErrorInvalidSenderSignature
         );
         
-        // Get or create the sub-channel state
-        let sub_channel_state = if (table::contains(&channel.sub_channels, sender_vm_id_fragment)) {
-            table::borrow_mut(&mut channel.sub_channels, sender_vm_id_fragment)
-        } else {
-            table::add(&mut channel.sub_channels, sender_vm_id_fragment, SubChannelState {
-                last_claimed_amount: 0u256,
-                last_confirmed_nonce: 0,
-            });
-            table::borrow_mut(&mut channel.sub_channels, sender_vm_id_fragment)
-        };
+        // Get the sub-channel state
+        let sub_channel = table::borrow_mut(&mut channel.sub_channels, sender_vm_id_fragment);
         
         // Validate dispute amount and nonce
-        assert!(dispute_accumulated_amount >= sub_channel_state.last_claimed_amount, ErrorInvalidAmount);
-        assert!(dispute_nonce >= sub_channel_state.last_confirmed_nonce, ErrorInvalidNonce);
+        assert!(dispute_accumulated_amount >= sub_channel.last_claimed_amount, ErrorInvalidAmount);
+        assert!(dispute_nonce >= sub_channel.last_confirmed_nonce, ErrorInvalidNonce);
         
         // Calculate the additional incremental amount from this dispute
-        let old_claimed_amount = sub_channel_state.last_claimed_amount;
+        let old_claimed_amount = sub_channel.last_claimed_amount;
         let new_claimed_amount = dispute_accumulated_amount;
         let additional_amount = new_claimed_amount - old_claimed_amount;
         
@@ -698,8 +766,8 @@ module rooch_framework::payment_channel {
             cancellation_info.pending_amount = cancellation_info.pending_amount + additional_amount;
             
             // Update the sub-channel state to reflect this dispute
-            sub_channel_state.last_claimed_amount = dispute_accumulated_amount;
-            sub_channel_state.last_confirmed_nonce = dispute_nonce;
+            sub_channel.last_claimed_amount = dispute_accumulated_amount;
+            sub_channel.last_confirmed_nonce = dispute_nonce;
         };
         
         // Emit dispute event
@@ -839,6 +907,34 @@ module rooch_framework::payment_channel {
         }
     }
 
+
+
+    /// Get sub-channel public key multibase if exists
+    public fun get_sub_channel_public_key<CoinType: store>(channel_id: ObjectID, vm_id_fragment: String): Option<String> {
+        let channel_obj = object::borrow_object<PaymentChannel<CoinType>>(channel_id);
+        let channel = object::borrow(channel_obj);
+        
+        if (table::contains(&channel.sub_channels, vm_id_fragment)) {
+            let sub_channel = table::borrow(&channel.sub_channels, vm_id_fragment);
+            option::some(sub_channel.pk_multibase)
+        } else {
+            option::none()
+        }
+    }
+
+    /// Get sub-channel method type if exists
+    public fun get_sub_channel_method_type<CoinType: store>(channel_id: ObjectID, vm_id_fragment: String): Option<String> {
+        let channel_obj = object::borrow_object<PaymentChannel<CoinType>>(channel_id);
+        let channel = object::borrow(channel_obj);
+        
+        if (table::contains(&channel.sub_channels, vm_id_fragment)) {
+            let sub_channel = table::borrow(&channel.sub_channels, vm_id_fragment);
+            option::some(sub_channel.method_type)
+        } else {
+            option::none()
+        }
+    }
+
     // === Internal Helper Functions ===
 
     fun get_sub_rav_hash(
@@ -858,9 +954,9 @@ module rooch_framework::payment_channel {
         hash::sha3_256(serialized_bytes)
     }
 
-    fun verify_sender_signature(
+    fun verify_sender_signature<CoinType: key + store>(
+        channel: &PaymentChannel<CoinType>,
         channel_id: ObjectID,
-        sender_address: address,
         vm_id_fragment: String,
         accumulated_amount: u256,
         nonce: u64,
@@ -868,24 +964,11 @@ module rooch_framework::payment_channel {
     ): bool {
         let msg_hash = get_sub_rav_hash(channel_id, vm_id_fragment, accumulated_amount, nonce);
         
-        // Get DID document for sender
-        let did_doc = did::get_did_document_by_address(sender_address);
-        let vm_opt = did::doc_verification_method(did_doc, &vm_id_fragment);
-        assert!(option::is_some(&vm_opt), ErrorVerificationMethodNotFound);
+        // Get the sub-channel to access stored public key information
+        let sub_channel = table::borrow(&channel.sub_channels, vm_id_fragment);
         
-        let vm = option::extract(&mut vm_opt);
-        
-        // Check if verification method has authentication permission
-        assert!(
-            did::has_verification_relationship_in_doc(did_doc, &vm_id_fragment, did::verification_relationship_authentication()),
-            ErrorInsufficientPermission
-        );
-        
-        // Verify signature based on verification method type
-        let public_key_multibase = did::verification_method_public_key_multibase(&vm);
-        let method_type = did::verification_method_type(&vm);
-        
-        verify_signature_by_type(msg_hash, signature, public_key_multibase, method_type)
+        // Verify signature using the stored public key and method type
+        verify_signature_by_type(msg_hash, signature, &sub_channel.pk_multibase, &sub_channel.method_type)
     }
 
     fun verify_signature_by_type(
