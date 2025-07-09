@@ -17,6 +17,9 @@ module rooch_framework::did {
     use rooch_framework::session_key;
     use rooch_framework::auth_validator;
     use rooch_framework::bitcoin_address;
+    use rooch_framework::ed25519;
+    use rooch_framework::ecdsa_k1;
+    use rooch_framework::ecdsa_r1;
 
     friend rooch_framework::genesis;
 
@@ -117,6 +120,48 @@ module rooch_framework::did {
     const VERIFICATION_METHOD_TYPE_ED25519: vector<u8> = b"Ed25519VerificationKey2020";
     const VERIFICATION_METHOD_TYPE_SECP256K1: vector<u8> = b"EcdsaSecp256k1VerificationKey2019";
     const VERIFICATION_METHOD_TYPE_SECP256R1: vector<u8> = b"EcdsaSecp256r1VerificationKey2019";
+
+    /// Get verification method type constant for Ed25519
+    public fun verification_method_type_ed25519(): String {
+        string::utf8(VERIFICATION_METHOD_TYPE_ED25519)
+    }
+
+    /// Get verification method type constant for Secp256k1
+    public fun verification_method_type_secp256k1(): String {
+        string::utf8(VERIFICATION_METHOD_TYPE_SECP256K1)
+    }
+
+    /// Get verification method type constant for Secp256r1
+    public fun verification_method_type_secp256r1(): String {
+        string::utf8(VERIFICATION_METHOD_TYPE_SECP256R1)
+    }
+
+    /// Verify a signature using the specified verification method type and public key.
+    /// This is a generic signature verification function that can be used across different modules.
+    public fun verify_signature_by_type(
+        message: vector<u8>,
+        signature: vector<u8>,
+        public_key_multibase: &String,
+        method_type: &String
+    ): bool {
+        // Decode public key from multibase
+        let pk_bytes_opt = multibase_codec::decode(public_key_multibase);
+        if (option::is_none(&pk_bytes_opt)) {
+            return false
+        };
+        let pk_bytes = option::destroy_some(pk_bytes_opt);
+        
+        // Verify signature based on method type
+        if (*method_type == string::utf8(VERIFICATION_METHOD_TYPE_ED25519)) {
+            ed25519::verify(&signature, &pk_bytes, &message)
+        } else if (*method_type == string::utf8(VERIFICATION_METHOD_TYPE_SECP256K1)) {
+            ecdsa_k1::verify(&signature, &pk_bytes, &message, ecdsa_k1::sha256())
+        } else if (*method_type == string::utf8(VERIFICATION_METHOD_TYPE_SECP256R1)) {
+            ecdsa_r1::verify(&signature, &pk_bytes, &message)
+        } else {
+            false
+        }
+    }
 
 
     /// DID identifier type

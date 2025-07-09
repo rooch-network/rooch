@@ -17,7 +17,7 @@ module rooch_framework::payment_channel {
     use moveos_std::timestamp;
     use moveos_std::event;
     use moveos_std::hash;
-    use std::string::{Self, String};
+    use std::string::String;
     use rooch_framework::coin::{Coin, GenericCoin};
     use rooch_framework::multi_coin_store::{Self, MultiCoinStore};
     use rooch_framework::did;
@@ -1130,34 +1130,8 @@ module rooch_framework::payment_channel {
         let sub_channel = table::borrow(&channel.sub_channels, vm_id_fragment);
         
         // Verify signature using the stored public key and method type
-        verify_signature_by_type(msg_hash, signature, &sub_channel.pk_multibase, &sub_channel.method_type)
+        did::verify_signature_by_type(msg_hash, signature, &sub_channel.pk_multibase, &sub_channel.method_type)
     }
 
-    fun verify_signature_by_type(
-        message: vector<u8>,
-        signature: vector<u8>,
-        public_key_multibase: &String,
-        method_type: &String
-    ): bool {
-        use moveos_std::multibase_codec;
-        use rooch_framework::ed25519;
-        use rooch_framework::ecdsa_k1;
-        use rooch_framework::ecdsa_r1;
-        
-        // Decode public key from multibase
-        let pk_bytes_opt = multibase_codec::decode(public_key_multibase);
-        assert!(option::is_some(&pk_bytes_opt), ErrorInvalidSenderSignature);
-        let pk_bytes = option::destroy_some(pk_bytes_opt);
-        
-        // Verify signature based on method type
-        if (*method_type == string::utf8(b"Ed25519VerificationKey2020")) {
-            ed25519::verify(&signature, &pk_bytes, &message)
-        } else if (*method_type == string::utf8(b"EcdsaSecp256k1VerificationKey2019")) {
-            ecdsa_k1::verify(&signature, &pk_bytes, &message, ecdsa_k1::sha256())
-        } else if (*method_type == string::utf8(b"EcdsaSecp256r1VerificationKey2019")) {
-            ecdsa_r1::verify(&signature, &pk_bytes, &message)
-        } else {
-            false
-        }
-    }
+
 }
