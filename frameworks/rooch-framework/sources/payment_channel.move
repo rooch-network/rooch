@@ -413,6 +413,109 @@ module rooch_framework::payment_channel {
         open_sub_channel<CoinType>(sender, channel_id, vm_id_fragment);
     }
 
+    /// Convenience function to open a channel and sub-channel in one step.
+    /// This function will:
+    /// 1. Create a new channel if none exists
+    /// 2. Reactivate a closed channel if one exists
+    /// 3. Authorize the specified verification method for the channel
+    /// Returns the channel ID for reference.
+    public fun open_channel_with_sub_channel<CoinType: key + store>(
+        sender: &signer,
+        receiver: address,
+        vm_id_fragment: String,
+    ): ObjectID {
+        let sender_addr = signer::address_of(sender);
+        let channel_id = calc_channel_object_id<CoinType>(sender_addr, receiver);
+        
+        // Step 1: Ensure channel exists and is active
+        if (!object::exists_object_with_type<PaymentChannel<CoinType>>(channel_id)) {
+            // Channel doesn't exist, create it
+            let _ = open_channel<CoinType>(sender, receiver);
+        } else {
+            // Channel exists, check if it needs reactivation
+            let channel_obj = object::borrow_object<PaymentChannel<CoinType>>(channel_id);
+            let channel = object::borrow(channel_obj);
+            if (channel.status == STATUS_CLOSED) {
+                // Reactivate closed channel
+                let _ = open_channel<CoinType>(sender, receiver);
+            };
+            // If already active, do nothing for the channel itself
+        };
+        
+        // Step 2: Ensure sub-channel is opened (authorize VM if not already done)
+        let channel_obj = object::borrow_object<PaymentChannel<CoinType>>(channel_id);
+        let channel = object::borrow(channel_obj);
+        if (!table::contains(&channel.sub_channels, vm_id_fragment)) {
+            // Sub-channel not opened yet, authorize it
+            open_sub_channel<CoinType>(sender, channel_id, vm_id_fragment);
+        };
+        // If sub-channel already exists, it means VM was already authorized
+        
+        channel_id
+    }
+
+    /// Entry function for opening a channel and sub-channel in one step
+    public entry fun open_channel_with_sub_channel_entry<CoinType: key + store>(
+        sender: &signer,
+        receiver: address,
+        vm_id_fragment: String,
+    ) {
+        let _channel_id = open_channel_with_sub_channel<CoinType>(sender, receiver, vm_id_fragment);
+    }
+
+    /// Convenience function to open a channel and authorize multiple verification methods at once.
+    /// This is useful when the sender wants to authorize multiple VMs for different use cases.
+    public fun open_channel_with_multiple_sub_channels<CoinType: key + store>(
+        sender: &signer,
+        receiver: address,
+        vm_id_fragments: vector<String>,
+    ): ObjectID {
+        let sender_addr = signer::address_of(sender);
+        let channel_id = calc_channel_object_id<CoinType>(sender_addr, receiver);
+        
+        // Step 1: Ensure channel exists and is active
+        if (!object::exists_object_with_type<PaymentChannel<CoinType>>(channel_id)) {
+            // Channel doesn't exist, create it
+            let _ = open_channel<CoinType>(sender, receiver);
+        } else {
+            // Channel exists, check if it needs reactivation
+            let channel_obj = object::borrow_object<PaymentChannel<CoinType>>(channel_id);
+            let channel = object::borrow(channel_obj);
+            if (channel.status == STATUS_CLOSED) {
+                // Reactivate closed channel
+                let _ = open_channel<CoinType>(sender, receiver);
+            };
+        };
+        
+        // Step 2: Authorize all specified VMs
+        let i = 0;
+        let len = vector::length(&vm_id_fragments);
+        while (i < len) {
+            let vm_id_fragment = *vector::borrow(&vm_id_fragments, i);
+            
+            // Check if this VM is already authorized
+            let channel_obj = object::borrow_object<PaymentChannel<CoinType>>(channel_id);
+            let channel = object::borrow(channel_obj);
+            if (!table::contains(&channel.sub_channels, vm_id_fragment)) {
+                // Not authorized yet, authorize it
+                open_sub_channel<CoinType>(sender, channel_id, vm_id_fragment);
+            };
+            
+            i = i + 1;
+        };
+        
+        channel_id
+    }
+
+    /// Entry function for opening a channel and authorizing multiple verification methods
+    public entry fun open_channel_with_multiple_sub_channels_entry<CoinType: key + store>(
+        sender: &signer,
+        receiver: address,
+        vm_id_fragments: vector<String>,
+    ) {
+        let _channel_id = open_channel_with_multiple_sub_channels<CoinType>(sender, receiver, vm_id_fragments);
+    }
+
     /// The receiver claims funds from a specific sub-channel.
     public fun claim_from_channel<CoinType: key + store>(
         account: &signer,
