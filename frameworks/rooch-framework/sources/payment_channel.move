@@ -52,8 +52,6 @@ module rooch_framework::payment_channel {
     const ErrorInsufficientBalance: u64 = 13;
     /// The signer is not the sender of the channel.
     const ErrorNotSender: u64 = 14;
-    /// The number of closure proofs does not match the number of sub-channels.
-    const ErrorMismatchedProofCount: u64 = 15;
 
     // === Constants ===
     const STATUS_ACTIVE: u8 = 0;
@@ -88,12 +86,13 @@ module rooch_framework::payment_channel {
         sub_nonce: u64,
     }
 
-    /// Event emitted when a channel is cooperatively closed
+    /// Event emitted when a channel is closed
     struct ChannelClosedEvent has copy, drop {
         channel_id: ObjectID,
         sender: address,
         receiver: address,
-        final_amount: u256,
+        total_paid: u256,
+        sub_channels_count: u64,
     }
 
     /// Event emitted when channel cancellation is initiated
@@ -119,15 +118,6 @@ module rooch_framework::payment_channel {
         final_amount: u256,
     }
 
-    /// Event emitted when a channel is fully closed with all sub-channels settled
-    struct ChannelFullyClosedEvent has copy, drop {
-        channel_id: ObjectID,
-        sender: address,
-        receiver: address,
-        total_paid: u256,
-        sub_channels_count: u64,
-    }
-
     // === Structs ===
     /// A central, user-owned object for managing payments.
     /// It contains a MultiCoinStore to support various coin types.
@@ -138,7 +128,8 @@ module rooch_framework::payment_channel {
     }
 
     /// A lightweight object representing a payment relationship, linked to a PaymentHub.
-    struct PaymentChannel<phantom CoinType: store> has key, store {
+    /// The PaymentChannel has no store, it can not be transferred.
+    struct PaymentChannel<phantom CoinType: store> has key {
         sender: address,
         receiver: address,
         payment_hub_id: ObjectID, // Links to a PaymentHub object
@@ -162,7 +153,7 @@ module rooch_framework::payment_channel {
     
     #[data_struct]
     /// Proof for closing a sub-channel with final state
-    struct ClosureProof has copy, drop, store {
+    struct CloseProof has copy, drop, store {
         vm_id_fragment: String,
         accumulated_amount: u256,
         nonce: u64,
@@ -171,7 +162,7 @@ module rooch_framework::payment_channel {
 
     #[data_struct]
     /// Proof for initiating cancellation of a sub-channel (no signature needed from sender)
-    struct CancellationProof has copy, drop, store {
+    struct CancelProof has copy, drop, store {
         vm_id_fragment: String,
         accumulated_amount: u256,
         nonce: u64,
@@ -464,10 +455,10 @@ module rooch_framework::payment_channel {
 
     /// Close the entire channel with final settlement of all sub-channels
     /// Called by receiver with proofs of final state from all sub-channels
-    public fun close_channel_completely_with_proofs<CoinType: key + store>(
+    public fun close_channel<CoinType: key + store>(
         receiver: &signer,
         channel_id: ObjectID,
-        proofs: vector<ClosureProof>,
+        proofs: vector<CloseProof>,
     ) {
         let receiver_addr = signer::address_of(receiver);
         let channel_obj = object::borrow_mut_object_extend<PaymentChannel<CoinType>>(channel_id);
@@ -477,9 +468,8 @@ module rooch_framework::payment_channel {
         assert!(channel.receiver == receiver_addr, ErrorNotReceiver);
         assert!(channel.status == STATUS_ACTIVE, ErrorChannelNotActive);
         
-        // Verify that proofs cover all existing sub-channels
+        // Get sub-channels count for processing
         let sub_channels_count = table::length(&channel.sub_channels);
-        assert!(vector::length(&proofs) == sub_channels_count, ErrorMismatchedProofCount);
         
         let total_incremental_amount = 0u256;
         
@@ -537,8 +527,8 @@ module rooch_framework::payment_channel {
         // Mark channel as closed
         channel.status = STATUS_CLOSED;
         
-        // Emit full closure event
-        event::emit(ChannelFullyClosedEvent {
+        // Emit channel closed event
+        event::emit(ChannelClosedEvent {
             channel_id,
             sender: channel.sender,
             receiver: receiver_addr,
@@ -549,13 +539,13 @@ module rooch_framework::payment_channel {
 
     /// Entry function for closing the entire channel with settlement
     /// Takes serialized closure proofs and deserializes them
-    public entry fun close_channel_completely_with_proofs_entry<CoinType: key + store>(
+    public entry fun close_channel_entry<CoinType: key + store>(
         receiver: &signer,
         channel_id: ObjectID,
         serialized_proofs: vector<u8>,
     ) {
-        let proofs = bcs::from_bytes<vector<ClosureProof>>(serialized_proofs);
-        close_channel_completely_with_proofs<CoinType>(receiver, channel_id, proofs);
+        let proofs = bcs::from_bytes<vector<CloseProof>>(serialized_proofs);
+        close_channel<CoinType>(receiver, channel_id, proofs);
     } 
 
     /// Entry function for initiating cancellation
@@ -563,14 +553,14 @@ module rooch_framework::payment_channel {
         sender: &signer,
         channel_id: ObjectID,
     ) {
-        initiate_cancellation_with_proofs<CoinType>(sender, channel_id, vector::empty());
+        initiate_cancellation<CoinType>(sender, channel_id, vector::empty());
     }
 
-    /// Sender initiates unilateral channel cancellation with proofs for all sub-channels
-    public fun initiate_cancellation_with_proofs<CoinType: key + store>(
+    /// Sender initiates unilateral channel cancellation with proofs for sub-channels
+    public fun initiate_cancellation<CoinType: key + store>(
         sender: &signer,
         channel_id: ObjectID,
-        proofs: vector<CancellationProof>,
+        proofs: vector<CancelProof>,
     ) {
         let sender_addr = signer::address_of(sender);
         let channel_obj = object::borrow_mut_object_extend<PaymentChannel<CoinType>>(channel_id);
@@ -580,10 +570,9 @@ module rooch_framework::payment_channel {
         assert!(channel.sender == sender_addr, ErrorNotSender);
         assert!(channel.status == STATUS_ACTIVE, ErrorChannelNotActive);
         
-        // Verify that proofs cover all existing sub-channels
+        // Get sub-channels count for processing
         let sub_channels_count = table::length(&channel.sub_channels);
-        // Consider the sender can not collect all proofs, so we allow the proofs to be less than the sub-channels count
-        assert!(vector::length(&proofs) <= sub_channels_count, ErrorMismatchedProofCount);
+        // Sender can provide partial proofs, receiver can dispute missing ones during challenge period
         
         let total_pending_amount = 0u256;
         
@@ -640,8 +629,8 @@ module rooch_framework::payment_channel {
         channel_id: ObjectID,
         serialized_proofs: vector<u8>,
     ) {
-        let proofs = bcs::from_bytes<vector<CancellationProof>>(serialized_proofs);
-        initiate_cancellation_with_proofs<CoinType>(sender, channel_id, proofs);
+        let proofs = bcs::from_bytes<vector<CancelProof>>(serialized_proofs);
+        initiate_cancellation<CoinType>(sender, channel_id, proofs);
     }
 
     /// Receiver disputes cancellation with newer state
