@@ -60,6 +60,8 @@ module rooch_framework::payment_channel {
     const ErrorVerificationMethodAlreadyExists: u64 = 17;
     /// A channel between this sender and receiver already exists for this coin type.
     const ErrorChannelAlreadyExists: u64 = 18;
+    /// There are still active channels for this coin type.
+    const ErrorActiveChannelExists: u64 = 19;
 
     // === Constants ===
     const STATUS_ACTIVE: u8 = 0;
@@ -142,6 +144,14 @@ module rooch_framework::payment_channel {
         vm_id_fragment: String,
     }
 
+    /// Event emitted when funds are withdrawn from a payment hub
+    struct PaymentHubWithdrawEvent has copy, drop {
+        hub_id: ObjectID,
+        owner: address,
+        coin_type: String,
+        amount: u256,
+    }
+
     // === Structs ===
     /// Unique key for identifying a unidirectional payment channel
     /// Used to generate deterministic ObjectID for channels
@@ -155,6 +165,8 @@ module rooch_framework::payment_channel {
     /// Every account can only have one payment hub, and the hub can not be transferred.
     struct PaymentHub has key {
         multi_coin_store: Object<MultiCoinStore>,
+        // Record the number of active channels for each coin type
+        active_channels: Table<String, u64>,
         //TODO add more settings to channel
     }
 
@@ -229,6 +241,7 @@ module rooch_framework::payment_channel {
             let multi_coin_store = multi_coin_store::create();
             let hub = PaymentHub {
                 multi_coin_store,
+                active_channels: table::new(),
             };
             // Every account can only have one payment hub
             let hub_obj = object::new_account_named_object(
@@ -287,6 +300,45 @@ module rooch_framework::payment_channel {
         multi_coin_store::deposit(&mut hub.multi_coin_store, coin);
     }
 
+    /// Withdraws funds from the payment hub to the owner's account coin store
+    /// Will fail if there are active channels for this coin type
+    public fun withdraw_from_hub<CoinType: key + store>(
+        owner: &signer,
+        amount: u256,
+    ) {
+        let owner_addr = signer::address_of(owner);
+        let hub_obj = borrow_or_create_payment_hub(owner_addr);
+        let hub = object::borrow_mut(hub_obj);
+        
+        // Check if there are active channels for this coin type
+        let coin_type_name = type_info::type_name<CoinType>();
+        if (table::contains(&hub.active_channels, coin_type_name)) {
+            let count = table::borrow(&hub.active_channels, coin_type_name);
+            assert!(*count == 0, ErrorActiveChannelExists);
+        };
+        
+        // Withdraw from multi_coin_store and deposit to account coin store
+        let coin = multi_coin_store::withdraw_by_type<CoinType>(&mut hub.multi_coin_store, amount);
+        account_coin_store::deposit<CoinType>(owner_addr, coin);
+        
+        // Emit withdrawal event
+        let hub_id = object::id(hub_obj);
+        event::emit(PaymentHubWithdrawEvent {
+            hub_id,
+            owner: owner_addr,
+            coin_type: coin_type_name,
+            amount,
+        });
+    }
+
+    /// Entry function for withdrawing from payment hub
+    public entry fun withdraw_from_hub_entry<CoinType: key + store>(
+        owner: &signer,
+        amount: u256,
+    ) {
+        withdraw_from_hub<CoinType>(owner, amount);
+    }
+
     /// Opens a new payment channel linked to a payment hub.
     /// If a channel already exists and is closed, it will be reactivated.
     /// If a channel already exists and is active, it will return an error.
@@ -311,6 +363,17 @@ module rooch_framework::payment_channel {
             channel.cancellation_info = option::none();
             // Note: sub_channels table is preserved, so previously authorized VMs remain valid
             
+            // Increment active channel count for this coin type
+            let payment_hub_obj = borrow_or_create_payment_hub(sender_addr);
+            let payment_hub = object::borrow_mut(payment_hub_obj);
+            let coin_type_name = type_info::type_name<CoinType>();
+            if (table::contains(&payment_hub.active_channels, coin_type_name)) {
+                let count = table::borrow_mut(&mut payment_hub.active_channels, coin_type_name);
+                *count = *count + 1;
+            } else {
+                table::add(&mut payment_hub.active_channels, coin_type_name, 1);
+            };
+            
             // Emit event for channel reactivation
             event::emit(PaymentChannelOpenedEvent {
                 channel_id,
@@ -326,6 +389,16 @@ module rooch_framework::payment_channel {
         // Create new channel
         let payment_hub_obj = borrow_or_create_payment_hub(sender_addr);
         let payment_hub_id = object::id(payment_hub_obj);
+        
+        // Increment active channel count for this coin type
+        let payment_hub = object::borrow_mut(payment_hub_obj);
+        let coin_type_name = type_info::type_name<CoinType>();
+        if (table::contains(&payment_hub.active_channels, coin_type_name)) {
+            let count = table::borrow_mut(&mut payment_hub.active_channels, coin_type_name);
+            *count = *count + 1;
+        } else {
+            table::add(&mut payment_hub.active_channels, coin_type_name, 1);
+        };
         
         let key = ChannelKey { sender: sender_addr, receiver };
         let channel_obj = object::new_with_id(key, PaymentChannel<CoinType> {
@@ -748,6 +821,9 @@ module rooch_framework::payment_channel {
         // Mark channel as closed
         channel.status = STATUS_CLOSED;
         
+        // Decrease active channel count
+        decrease_active_channel_count<CoinType>(channel.sender);
+        
         // Emit channel closed event
         event::emit(ChannelClosedEvent {
             channel_id,
@@ -798,6 +874,9 @@ module rooch_framework::payment_channel {
         if (sub_channels_count == 0) {
             // No active sub-channels means no pending amounts or disputes possible
             channel.status = STATUS_CLOSED;
+            
+            // Decrease active channel count
+            decrease_active_channel_count<CoinType>(sender_addr);
             
             // Emit immediate closure event (no funds to transfer)
             event::emit(ChannelCancellationFinalizedEvent {
@@ -982,6 +1061,9 @@ module rooch_framework::payment_channel {
         // Mark channel as closed
         channel.status = STATUS_CLOSED;
         
+        // Decrease active channel count
+        decrease_active_channel_count<CoinType>(channel.sender);
+        
         // Emit finalization event
         event::emit(ChannelCancellationFinalizedEvent {
             channel_id,
@@ -1096,7 +1178,47 @@ module rooch_framework::payment_channel {
         }
     }
 
+    /// Get the number of active channels for a specific coin type
+    public fun get_active_channel_count<CoinType: store>(owner: address): u64 {
+        let hub_id = get_payment_hub_id(owner);
+        if (!object::exists_object_with_type<PaymentHub>(hub_id)) {
+            return 0
+        };
+        
+        let hub_obj = object::borrow_object<PaymentHub>(hub_id);
+        let hub = object::borrow(hub_obj);
+        let coin_type_name = type_info::type_name<CoinType>();
+        
+        if (table::contains(&hub.active_channels, coin_type_name)) {
+            *table::borrow(&hub.active_channels, coin_type_name)
+        } else {
+            0
+        }
+    }
+
+    /// Check if withdrawal is allowed for a specific coin type
+    public fun can_withdraw_from_hub<CoinType: store>(owner: address): bool {
+        get_active_channel_count<CoinType>(owner) == 0
+    }
+
     // === Internal Helper Functions ===
+
+    /// Decrease active channel count for a specific coin type
+    fun decrease_active_channel_count<CoinType: store>(sender_addr: address) {
+        let payment_hub_obj = borrow_or_create_payment_hub(sender_addr);
+        let payment_hub = object::borrow_mut(payment_hub_obj);
+        let coin_type_name = type_info::type_name<CoinType>();
+        
+        if (table::contains(&payment_hub.active_channels, coin_type_name)) {
+            let count = table::borrow_mut(&mut payment_hub.active_channels, coin_type_name);
+            *count = *count - 1;
+            
+            // If count reaches zero, remove the entry to save gas
+            if (*count == 0) {
+                table::remove(&mut payment_hub.active_channels, coin_type_name);
+            };
+        };
+    }
 
     fun get_sub_rav_hash(
         channel_id: ObjectID,

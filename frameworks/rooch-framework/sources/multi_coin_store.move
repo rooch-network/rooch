@@ -162,6 +162,14 @@ module rooch_framework::multi_coin_store {
         withdraw_internal(coin_store_obj, coin_type, amount)
     }
 
+    public fun withdraw_by_type<CoinType: key + store>(
+        coin_store_obj: &mut Object<MultiCoinStore>,
+        amount: u256
+    ): Coin<CoinType> {
+        let generic_coin = withdraw_internal(coin_store_obj, type_name<CoinType>(), amount);
+        coin::convert_generic_coin_to_coin<CoinType>(generic_coin)
+    }
+
     public fun deposit(coin_store_obj: &mut Object<MultiCoinStore>, coin: GenericCoin) {
         let coin_type = coin::coin_type(&coin);
         ensure_coin_type_has_key_and_store_ability(coin_type);
