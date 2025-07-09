@@ -169,6 +169,14 @@ module rooch_framework::payment_channel {
         sender_signature: vector<u8>,
     }
 
+    #[data_struct]
+    /// Proof for initiating cancellation of a sub-channel (no signature needed from sender)
+    struct CancellationProof has copy, drop, store {
+        vm_id_fragment: String,
+        accumulated_amount: u256,
+        nonce: u64,
+    }
+
     // === Public Functions ===
 
     fun borrow_or_create_payment_hub(owner: address) : &mut Object<PaymentHub> {
@@ -548,28 +556,72 @@ module rooch_framework::payment_channel {
     ) {
         let proofs = bcs::from_bytes<vector<ClosureProof>>(serialized_proofs);
         close_channel_completely_with_proofs<CoinType>(receiver, channel_id, proofs);
-    }
+    } 
 
-    /// Sender initiates unilateral channel cancellation
-    public fun initiate_cancellation<CoinType: key + store>(
+    /// Entry function for initiating cancellation
+    public entry fun initiate_cancellation_entry<CoinType: key + store>(
         sender: &signer,
         channel_id: ObjectID,
-        pending_amount: u256,
+    ) {
+        initiate_cancellation_with_proofs<CoinType>(sender, channel_id, vector::empty());
+    }
+
+    /// Sender initiates unilateral channel cancellation with proofs for all sub-channels
+    public fun initiate_cancellation_with_proofs<CoinType: key + store>(
+        sender: &signer,
+        channel_id: ObjectID,
+        proofs: vector<CancellationProof>,
     ) {
         let sender_addr = signer::address_of(sender);
         let channel_obj = object::borrow_mut_object_extend<PaymentChannel<CoinType>>(channel_id);
         let channel = object::borrow_mut(channel_obj);
         
-        // Verify sender is the channel sender
+        // Verify sender is the channel sender and channel is active
         assert!(channel.sender == sender_addr, ErrorNotSender);
         assert!(channel.status == STATUS_ACTIVE, ErrorChannelNotActive);
+        
+        // Verify that proofs cover all existing sub-channels
+        let sub_channels_count = table::length(&channel.sub_channels);
+        // Consider the sender can not collect all proofs, so we allow the proofs to be less than the sub-channels count
+        assert!(vector::length(&proofs) <= sub_channels_count, ErrorMismatchedProofCount);
+        
+        let total_pending_amount = 0u256;
+        
+        // Process each cancellation proof (if any)
+        if (sub_channels_count > 0) {
+            let i = 0;
+            let proofs_len = vector::length(&proofs);
+            
+            while (i < proofs_len) {
+                let proof = vector::borrow(&proofs, i);
+                let vm_id_fragment = proof.vm_id_fragment;
+                
+                // Get the existing sub-channel state (must exist)
+                assert!(table::contains(&channel.sub_channels, vm_id_fragment), ErrorInvalidAmount);
+                let sub_channel_state = table::borrow_mut(&mut channel.sub_channels, vm_id_fragment);
+                
+                // Validate amount and nonce progression
+                assert!(proof.accumulated_amount >= sub_channel_state.last_claimed_amount, ErrorInvalidAmount);
+                assert!(proof.nonce >= sub_channel_state.last_confirmed_nonce, ErrorInvalidNonce);
+                
+                // Calculate incremental amount for this sub-channel
+                let incremental_amount = proof.accumulated_amount - sub_channel_state.last_claimed_amount;
+                total_pending_amount = total_pending_amount + incremental_amount;
+                
+                // Update sub-channel state to new baseline to prevent double counting in disputes
+                sub_channel_state.last_claimed_amount = proof.accumulated_amount;
+                sub_channel_state.last_confirmed_nonce = proof.nonce;
+                
+                i = i + 1;
+            };
+        };
         
         // Set channel to cancelling state
         channel.status = STATUS_CANCELLING;
         let current_time = timestamp::now_milliseconds();
         channel.cancellation_info = option::some(CancellationInfo {
             initiated_time: current_time,
-            pending_amount,
+            pending_amount: total_pending_amount,
         });
         
         // Emit cancellation event
@@ -577,17 +629,19 @@ module rooch_framework::payment_channel {
             channel_id,
             sender: sender_addr,
             initiated_time: current_time,
-            pending_amount,
+            pending_amount: total_pending_amount,
         });
     }
 
-    /// Entry function for initiating cancellation
-    public entry fun initiate_cancellation_entry<CoinType: key + store>(
+    /// Entry function for initiating cancellation with proofs
+    /// Takes serialized cancellation proofs and deserializes them
+    public entry fun initiate_cancellation_with_proofs_entry<CoinType: key + store>(
         sender: &signer,
         channel_id: ObjectID,
-        pending_amount: u256,
+        serialized_proofs: vector<u8>,
     ) {
-        initiate_cancellation<CoinType>(sender, channel_id, pending_amount);
+        let proofs = bcs::from_bytes<vector<CancellationProof>>(serialized_proofs);
+        initiate_cancellation_with_proofs<CoinType>(sender, channel_id, proofs);
     }
 
     /// Receiver disputes cancellation with newer state
@@ -620,10 +674,34 @@ module rooch_framework::payment_channel {
             ErrorInvalidSenderSignature
         );
         
-        // Update cancellation info with disputed amount
-        let cancellation_info = option::borrow_mut(&mut channel.cancellation_info);
-        if (dispute_accumulated_amount > cancellation_info.pending_amount) {
-            cancellation_info.pending_amount = dispute_accumulated_amount;
+        // Get or create the sub-channel state
+        let sub_channel_state = if (table::contains(&channel.sub_channels, sender_vm_id_fragment)) {
+            table::borrow_mut(&mut channel.sub_channels, sender_vm_id_fragment)
+        } else {
+            table::add(&mut channel.sub_channels, sender_vm_id_fragment, SubChannelState {
+                last_claimed_amount: 0u256,
+                last_confirmed_nonce: 0,
+            });
+            table::borrow_mut(&mut channel.sub_channels, sender_vm_id_fragment)
+        };
+        
+        // Validate dispute amount and nonce
+        assert!(dispute_accumulated_amount >= sub_channel_state.last_claimed_amount, ErrorInvalidAmount);
+        assert!(dispute_nonce >= sub_channel_state.last_confirmed_nonce, ErrorInvalidNonce);
+        
+        // Calculate the additional incremental amount from this dispute
+        let old_claimed_amount = sub_channel_state.last_claimed_amount;
+        let new_claimed_amount = dispute_accumulated_amount;
+        let additional_amount = new_claimed_amount - old_claimed_amount;
+        
+        // Update the pending amount if this dispute increases the total
+        if (additional_amount > 0) {
+            let cancellation_info = option::borrow_mut(&mut channel.cancellation_info);
+            cancellation_info.pending_amount = cancellation_info.pending_amount + additional_amount;
+            
+            // Update the sub-channel state to reflect this dispute
+            sub_channel_state.last_claimed_amount = dispute_accumulated_amount;
+            sub_channel_state.last_confirmed_nonce = dispute_nonce;
         };
         
         // Emit dispute event
