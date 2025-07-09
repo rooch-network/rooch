@@ -168,6 +168,15 @@ module rooch_framework::payment_channel {
         nonce: u64,
     }
 
+    #[data_struct]
+    /// Structure representing a Sub-RAV (Sub-channel Receipts and Vouchers) for hashing
+    struct SubRAV has copy, drop, store {
+        channel_id: ObjectID,
+        vm_id_fragment: String,
+        accumulated_amount: u256,
+        nonce: u64,
+    }
+
     // === Public Functions ===
 
     fun borrow_or_create_payment_hub(owner: address) : &mut Object<PaymentHub> {
@@ -838,17 +847,15 @@ module rooch_framework::payment_channel {
         accumulated_amount: u256,
         nonce: u64
     ): vector<u8> {
-        // Serialize each field and concatenate for hash
-        let bytes = vector::empty<u8>();
-        let id_bytes = bcs::to_bytes(&channel_id);
-        let frag_bytes = bcs::to_bytes(&vm_id_fragment);
-        let amt_bytes = bcs::to_bytes(&accumulated_amount);
-        let nonce_bytes = bcs::to_bytes(&nonce);
-        vector::append(&mut bytes, id_bytes);
-        vector::append(&mut bytes, frag_bytes);
-        vector::append(&mut bytes, amt_bytes);
-        vector::append(&mut bytes, nonce_bytes);
-        hash::sha3_256(bytes)
+        // Create SubRAV struct and serialize it with BCS
+        let sub_rav = SubRAV {
+            channel_id,
+            vm_id_fragment,
+            accumulated_amount,
+            nonce,
+        };
+        let serialized_bytes = bcs::to_bytes(&sub_rav);
+        hash::sha3_256(serialized_bytes)
     }
 
     fun verify_sender_signature(
