@@ -53,6 +53,10 @@ pub const EVENT_COLUMN_FAMILY_NAME: ColumnFamilyName = "event";
 pub const EVENT_HANDLE_COLUMN_FAMILY_NAME: ColumnFamilyName = "event_handle";
 pub const CONFIG_STARTUP_INFO_COLUMN_FAMILY_NAME: ColumnFamilyName = "config_startup_info";
 pub const CONFIG_GENESIS_COLUMN_FAMILY_NAME: ColumnFamilyName = "config_genesis";
+pub const REACH_SEEN_COLUMN_FAMILY_NAME: ColumnFamilyName = "reach_seen";
+pub const PRUNE_META_COLUMN_FAMILY_NAME: ColumnFamilyName = "prune_meta";
+pub const SMT_STALE_INDEX_COLUMN_FAMILY_NAME: ColumnFamilyName = "smt_stale";
+pub const NODE_REFCOUNT_COLUMN_FAMILY_NAME: ColumnFamilyName = "node_refcount";
 
 /// db store use cf_name vec to init
 /// Please note that adding a column family needs to be added in vec simultaneously, remember！！
@@ -64,6 +68,10 @@ static VEC_COLUMN_FAMILY_NAME: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
         EVENT_HANDLE_COLUMN_FAMILY_NAME,
         CONFIG_STARTUP_INFO_COLUMN_FAMILY_NAME,
         CONFIG_GENESIS_COLUMN_FAMILY_NAME,
+        REACH_SEEN_COLUMN_FAMILY_NAME,
+        PRUNE_META_COLUMN_FAMILY_NAME,
+        SMT_STALE_INDEX_COLUMN_FAMILY_NAME,
+        NODE_REFCOUNT_COLUMN_FAMILY_NAME,
     ]
 });
 
