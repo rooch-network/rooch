@@ -21,7 +21,9 @@
 -  [Struct `SubChannel`](#0x3_payment_channel_SubChannel)
 -  [Struct `CancellationInfo`](#0x3_payment_channel_CancellationInfo)
 -  [Struct `CloseProof`](#0x3_payment_channel_CloseProof)
+-  [Struct `CloseProofs`](#0x3_payment_channel_CloseProofs)
 -  [Struct `CancelProof`](#0x3_payment_channel_CancelProof)
+-  [Struct `CancelProofs`](#0x3_payment_channel_CancelProofs)
 -  [Struct `SubRAV`](#0x3_payment_channel_SubRAV)
 -  [Constants](#@Constants_0)
 -  [Function `calc_channel_object_id`](#0x3_payment_channel_calc_channel_object_id)
@@ -284,6 +286,18 @@ Proof for closing a sub-channel with final state
 
 
 
+<a name="0x3_payment_channel_CloseProofs"></a>
+
+## Struct `CloseProofs`
+
+
+
+<pre><code>#[data_struct]
+<b>struct</b> <a href="payment_channel.md#0x3_payment_channel_CloseProofs">CloseProofs</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
 <a name="0x3_payment_channel_CancelProof"></a>
 
 ## Struct `CancelProof`
@@ -293,6 +307,18 @@ Proof for initiating cancellation of a sub-channel (no signature needed from sen
 
 <pre><code>#[data_struct]
 <b>struct</b> <a href="payment_channel.md#0x3_payment_channel_CancelProof">CancelProof</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
+<a name="0x3_payment_channel_CancelProofs"></a>
+
+## Struct `CancelProofs`
+
+
+
+<pre><code>#[data_struct]
+<b>struct</b> <a href="payment_channel.md#0x3_payment_channel_CancelProofs">CancelProofs</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 

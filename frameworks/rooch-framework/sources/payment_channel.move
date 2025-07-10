@@ -210,11 +210,21 @@ module rooch_framework::payment_channel {
     }
 
     #[data_struct]
+    struct CloseProofs has copy, drop, store {
+        proofs: vector<CloseProof>,
+    }
+
+    #[data_struct]
     /// Proof for initiating cancellation of a sub-channel (no signature needed from sender)
     struct CancelProof has copy, drop, store {
         vm_id_fragment: String,
         accumulated_amount: u256,
         nonce: u64,
+    }
+
+    #[data_struct]
+    struct CancelProofs has copy, drop, store {
+        proofs: vector<CancelProof>,
     }
 
     #[data_struct]
@@ -885,8 +895,8 @@ module rooch_framework::payment_channel {
         channel_id: ObjectID,
         serialized_proofs: vector<u8>,
     ) {
-        let proofs = bcs::from_bytes<vector<CloseProof>>(serialized_proofs);
-        close_channel<CoinType>(channel_receiver, channel_id, proofs);
+        let proofs = bcs::from_bytes<CloseProofs>(serialized_proofs);
+        close_channel<CoinType>(channel_receiver, channel_id, proofs.proofs);
     } 
 
     /// Entry function for initiating cancellation
@@ -984,8 +994,8 @@ module rooch_framework::payment_channel {
         channel_id: ObjectID,
         serialized_proofs: vector<u8>,
     ) {
-        let proofs = bcs::from_bytes<vector<CancelProof>>(serialized_proofs);
-        initiate_cancellation<CoinType>(channel_sender, channel_id, proofs);
+        let proofs = bcs::from_bytes<CancelProofs>(serialized_proofs);
+        initiate_cancellation<CoinType>(channel_sender, channel_id, proofs.proofs);
     }
 
     /// Receiver disputes cancellation with newer state
