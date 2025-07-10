@@ -10,6 +10,12 @@ from ..tags.type_tags import TypeTagCode, TypeTag
 from .module_id import ModuleId, FunctionId
 from ...bcs.serializer import BcsSerializer, Serializable, BcsDeserializer, Deserializable
 
+# Import for new Args system compatibility
+try:
+    from ...bcs.raw_bytes import RawBytesArgument as NewRawBytesArgument
+except ImportError:
+    NewRawBytesArgument = None
+
 
 class MoveAction(IntEnum):
     """Types of Move actions"""
@@ -17,6 +23,17 @@ class MoveAction(IntEnum):
     SCRIPT = 0
     FUNCTION = 1
     MODULE_BUNDLE = 2
+
+
+class RawBytesArgument(Serializable):
+    """Container for raw bytes arguments that bypasses type tag serialization."""
+    
+    def __init__(self, data: bytes):
+        self.data = data
+    
+    def serialize(self, serializer: BcsSerializer):
+        """Serialize raw bytes directly without type information."""
+        serializer.fixed_bytes(self.data)
 
 
 class TransactionArgument(Serializable, Deserializable):
@@ -34,20 +51,13 @@ class TransactionArgument(Serializable, Deserializable):
     def __eq__(self, other: 'TransactionArgument') -> bool:
         """Compare two TransactionArgument objects for equality."""
         if not isinstance(other, TransactionArgument):
-            print(f"Other object is not a TransactionArgument: {type(other)}")
             return False
-        print(f"\nComparing TransactionArgument objects:")
-        print(f"Self: type_tag={self.type_tag}, value={self.value}")
-        print(f"Other: type_tag={other.type_tag}, value={other.value}")
         return self.type_tag == other.type_tag and self.value == other.value
 
     def serialize(self, serializer: BcsSerializer):
-        """Serialize the transaction argument with type tag."""
-        #serializer.u8(self.type_tag.value)
-        self._serialize_value(serializer)
-    
-    def serialize_value_only(self, serializer: BcsSerializer):
-        """Serialize only the value without type tag for Move function arguments."""
+        """Serialize the transaction argument without type tag for Move function calls."""
+        # Note: Type tag is not serialized for Move function arguments to match Rust implementation
+        # where FunctionCall.args is Vec<Vec<u8>> (raw bytes without type information)
         self._serialize_value(serializer)
     
     def _serialize_value(self, serializer: BcsSerializer):
@@ -160,12 +170,12 @@ class FunctionArgument:
 class FunctionArgument(Serializable, Deserializable):
     """Function argument for Move function calls"""
     
-    def __init__(self, function_id: Union[str, FunctionId], ty_args: List[TypeTag], args: List[Union[TransactionArgument, Any]]):
+    def __init__(self, function_id: Union[str, FunctionId], ty_args: List[TypeTag], args: List[Union[TransactionArgument, RawBytesArgument, bytes, Any]]):
         """
         Args:
             function_id: Function ID as string (e.g. "0x1::coin::transfer") or FunctionId object
             ty_args: List of type arguments
-            args: List of TransactionArgument objects or raw values
+            args: List of TransactionArgument objects, RawBytesArgument objects, raw bytes, or values that need type inference
         """
         if isinstance(function_id, str):
             if not function_id:
@@ -184,13 +194,21 @@ class FunctionArgument(Serializable, Deserializable):
             
         self.ty_args = ty_args
         
-        # Convert raw values to TransactionArgument objects
+        # Handle different argument types
         self.args = []
         for arg in args:
-            if isinstance(arg, TransactionArgument):
+            # Check for new Args system first (RawBytesArgument has an encode() method)
+            if hasattr(arg, 'encode') and callable(arg.encode):
+                # This is from the new Args system - convert to RawBytesArgument
+                raw_bytes = arg.encode()
+                self.args.append(RawBytesArgument(raw_bytes))
+            elif isinstance(arg, bytes):
+                # Raw bytes - create a simple container that just serializes the bytes directly
+                self.args.append(RawBytesArgument(arg))
+            elif isinstance(arg, (RawBytesArgument, TransactionArgument)):
                 self.args.append(arg)
             else:
-                # Determine type tag based on value type
+                # Determine type tag based on value type (legacy support)
                 if isinstance(arg, bool):
                     type_tag = TypeTagCode.BOOL
                 elif isinstance(arg, int):
@@ -208,8 +226,8 @@ class FunctionArgument(Serializable, Deserializable):
         """Serialize the function argument."""
         serializer.struct(self.function_id)
         serializer.sequence(self.ty_args, lambda s, item: item.serialize(s))
-        # For Move function arguments, serialize values without type tags
-        serializer.sequence(self.args, lambda s, item: item.serialize_value_only(s))
+        # Serialize function arguments as raw values (matches Rust FunctionCall.args: Vec<Vec<u8>>)
+        serializer.sequence(self.args, lambda s, item: item.serialize(s))
 
     @staticmethod
     def deserialize(deserializer: BcsDeserializer) -> 'FunctionArgument':
