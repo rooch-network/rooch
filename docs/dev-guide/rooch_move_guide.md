@@ -30,7 +30,7 @@ rooch/
 │   ├── settings.json              # Editor settings
 │   └── tasks.json                 # Build tasks
 ├── docs/                          # Project documentation
-│   ├── rooch_move_guid.md         # This guide
+│   ├── rooch_move_guide.md         # This guide
 │   └── ...                        # Other relevant documents
 ├── frameworks/
 │   ├── rooch-framework/sources/   # Core framework modules
