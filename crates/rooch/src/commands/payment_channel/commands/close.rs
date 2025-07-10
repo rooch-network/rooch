@@ -45,10 +45,12 @@ impl CommandAction<CloseOutput> for CloseCommand {
         let max_gas_amount: Option<u64> = self.tx_options.max_gas_amount;
 
         // Decode proofs from hex
-        let proofs_bytes = hex::decode(&self.proofs)
-            .map_err(|e| rooch_types::error::RoochError::CommandArgumentError(
-                format!("Invalid hex proofs: {}", e)
-            ))?;
+        let proofs_bytes = hex::decode(&self.proofs).map_err(|e| {
+            rooch_types::error::RoochError::CommandArgumentError(format!(
+                "Invalid hex proofs: {}",
+                e
+            ))
+        })?;
 
         // Create the close channel action
         let coin_type = RGas::struct_tag();
@@ -59,11 +61,13 @@ impl CommandAction<CloseOutput> for CloseCommand {
         );
 
         // Execute transaction using DID account signing
-        let result = context.sign_and_execute_as_did(sender, action, max_gas_amount).await?;
+        let result = context
+            .sign_and_execute_as_did(sender, action, max_gas_amount)
+            .await?;
 
         Ok(CloseOutput {
             channel_id: self.channel_id,
             execution_info: result.execution_info,
         })
     }
-} 
+}

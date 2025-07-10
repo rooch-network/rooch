@@ -48,11 +48,13 @@ impl CommandAction<FinalizeCancellationOutput> for FinalizeCancellationCommand {
         );
 
         // Execute transaction using DID account signing
-        let result = context.sign_and_execute_as_did(sender, action, max_gas_amount).await?;
+        let result = context
+            .sign_and_execute_as_did(sender, action, max_gas_amount)
+            .await?;
 
         Ok(FinalizeCancellationOutput {
             channel_id: self.channel_id,
             execution_info: result.execution_info,
         })
     }
-} 
+}

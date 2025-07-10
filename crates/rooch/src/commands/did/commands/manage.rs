@@ -296,7 +296,9 @@ impl CommandAction<ManageOutput> for AddVerificationMethodCommand {
         );
 
         // Execute transaction using DID account signing
-        let result = context.sign_and_execute_as_did(did_address, action, self.tx_options.max_gas_amount).await?;
+        let result = context
+            .sign_and_execute_as_did(did_address, action, self.tx_options.max_gas_amount)
+            .await?;
 
         Ok(ManageOutput {
             operation: "add_verification_method".to_string(),
@@ -324,7 +326,9 @@ impl CommandAction<ManageOutput> for RemoveVerificationMethodCommand {
         let action = DIDModule::remove_verification_method_action(fragment);
 
         // Execute transaction using DID account signing
-        let result = context.sign_and_execute_as_did(did_address, action, self.tx_options.max_gas_amount).await?;
+        let result = context
+            .sign_and_execute_as_did(did_address, action, self.tx_options.max_gas_amount)
+            .await?;
 
         Ok(ManageOutput {
             operation: "remove_verification_method".to_string(),
@@ -355,7 +359,9 @@ impl CommandAction<ManageOutput> for AddToRelationshipCommand {
             DIDModule::add_to_verification_relationship_action(fragment, relationship as u8);
 
         // Execute transaction using DID account signing
-        let result = context.sign_and_execute_as_did(did_address, action, self.tx_options.max_gas_amount).await?;
+        let result = context
+            .sign_and_execute_as_did(did_address, action, self.tx_options.max_gas_amount)
+            .await?;
 
         Ok(ManageOutput {
             operation: format!("add_to_{}", self.relationship),
@@ -386,7 +392,9 @@ impl CommandAction<ManageOutput> for RemoveFromRelationshipCommand {
             DIDModule::remove_from_verification_relationship_action(fragment, relationship as u8);
 
         // Execute transaction using DID account signing
-        let result = context.sign_and_execute_as_did(did_address, action, self.tx_options.max_gas_amount).await?;
+        let result = context
+            .sign_and_execute_as_did(did_address, action, self.tx_options.max_gas_amount)
+            .await?;
 
         Ok(ManageOutput {
             operation: format!("remove_from_{}", self.relationship),
@@ -428,7 +436,9 @@ impl CommandAction<ManageOutput> for AddServiceCommand {
         };
 
         // Execute transaction using DID account signing
-        let result = context.sign_and_execute_as_did(did_address, action, self.tx_options.max_gas_amount).await?;
+        let result = context
+            .sign_and_execute_as_did(did_address, action, self.tx_options.max_gas_amount)
+            .await?;
 
         Ok(ManageOutput {
             operation: "add_service".to_string(),
@@ -466,7 +476,9 @@ impl CommandAction<ManageOutput> for UpdateServiceCommand {
             DIDModule::update_service_action(fragment, service_type, endpoint, keys, values);
 
         // Execute transaction using DID account signing
-        let result = context.sign_and_execute_as_did(did_address, action, self.tx_options.max_gas_amount).await?;
+        let result = context
+            .sign_and_execute_as_did(did_address, action, self.tx_options.max_gas_amount)
+            .await?;
 
         Ok(ManageOutput {
             operation: "update_service".to_string(),
@@ -494,7 +506,9 @@ impl CommandAction<ManageOutput> for RemoveServiceCommand {
         let action = DIDModule::remove_service_action(fragment);
 
         // Execute transaction using DID account signing
-        let result = context.sign_and_execute_as_did(did_address, action, self.tx_options.max_gas_amount).await?;
+        let result = context
+            .sign_and_execute_as_did(did_address, action, self.tx_options.max_gas_amount)
+            .await?;
 
         Ok(ManageOutput {
             operation: "remove_service".to_string(),

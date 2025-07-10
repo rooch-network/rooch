@@ -368,14 +368,15 @@ impl WalletContext {
                 if element.key.as_str() == specified_fragment {
                     let vm = &element.value;
                     // Check if we have the corresponding controller key in our keystore
-                    let controller_addr = RoochAddress::from_str(vm.controller.identifier.as_str())?;
+                    let controller_addr =
+                        RoochAddress::from_str(vm.controller.identifier.as_str())?;
                     if self.keystore.contains_address(&controller_addr) {
                         let kp = self.get_key_pair(&controller_addr)?;
                         return Ok((specified_fragment.to_string(), controller_addr, kp));
                     }
                 }
             }
-            
+
             Err(RoochError::CommandArgumentError(format!(
                 "Verification method '{}' not found or corresponding key not available in keystore",
                 specified_fragment
@@ -395,7 +396,7 @@ impl WalletContext {
                     }
                 }
             }
-            
+
             Err(RoochError::CommandArgumentError(format!(
                 "No verification method available for signing. No controller key found in local keystore for DID {}",
                 did_address

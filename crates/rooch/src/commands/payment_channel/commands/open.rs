@@ -1,18 +1,18 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::cli_types::{CommandAction, TransactionOptions, WalletContextOptions};
 use async_trait::async_trait;
 use clap::Parser;
 use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::state::MoveStructType;
 use rooch_rpc_api::jsonrpc_types::TransactionExecutionInfoView;
+use rooch_types::address::ParsedAddress;
 use rooch_types::address::RoochAddress;
 use rooch_types::error::RoochResult;
 use rooch_types::framework::gas_coin::RGas;
 use rooch_types::framework::payment_channel::PaymentChannelModule;
 use serde::{Deserialize, Serialize};
-use rooch_types::address::ParsedAddress;
-use crate::cli_types::{CommandAction, TransactionOptions, WalletContextOptions};
 
 #[derive(Debug, Parser)]
 pub struct OpenCommand {
@@ -21,7 +21,10 @@ pub struct OpenCommand {
     pub receiver: ParsedAddress,
 
     /// Comma-separated list of VM ID fragments for sub-channels
-    #[clap(long, help = "Comma-separated list of VM ID fragments for sub-channels")]
+    #[clap(
+        long,
+        help = "Comma-separated list of VM ID fragments for sub-channels"
+    )]
     pub vm_id_fragments: String,
 
     #[clap(flatten)]
@@ -57,7 +60,8 @@ impl CommandAction<OpenOutput> for OpenCommand {
         }
 
         // Parse VM ID fragments
-        let vm_id_fragments: Vec<String> = self.vm_id_fragments
+        let vm_id_fragments: Vec<String> = self
+            .vm_id_fragments
             .split(',')
             .map(|s| s.trim().to_string())
             .filter(|s| !s.is_empty())
@@ -78,7 +82,9 @@ impl CommandAction<OpenOutput> for OpenCommand {
         );
 
         // Execute the transaction using DID account signing
-        let result = context.sign_and_execute_as_did(sender, action, max_gas_amount).await?;
+        let result = context
+            .sign_and_execute_as_did(sender, action, max_gas_amount)
+            .await?;
 
         // Calculate deterministic channel ID using the same logic as Move code
         let channel_id = PaymentChannelModule::calc_channel_object_id(
@@ -94,4 +100,4 @@ impl CommandAction<OpenOutput> for OpenCommand {
             execution_info: result.execution_info,
         })
     }
-} 
+}

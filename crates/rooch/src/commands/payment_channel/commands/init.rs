@@ -5,12 +5,12 @@ use async_trait::async_trait;
 use clap::Parser;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::u256::U256;
+use moveos_types::state::MoveStructType;
 use rooch_rpc_api::jsonrpc_types::TransactionExecutionInfoView;
 use rooch_types::address::RoochAddress;
 use rooch_types::error::RoochResult;
 use rooch_types::framework::gas_coin::RGas;
 use rooch_types::framework::payment_channel::PaymentChannelModule;
-use moveos_types::state::MoveStructType;
 use serde::{Deserialize, Serialize};
 
 use crate::cli_types::{CommandAction, TransactionOptions, WalletContextOptions};
@@ -63,14 +63,13 @@ impl CommandAction<InitOutput> for InitCommand {
 
         // Create the deposit action
         let coin_type = RGas::struct_tag();
-        let action = PaymentChannelModule::deposit_to_hub_entry_action(
-            coin_type,
-            receiver,
-            self.amount,
-        );
+        let action =
+            PaymentChannelModule::deposit_to_hub_entry_action(coin_type, receiver, self.amount);
 
         // Execute transaction using DID account signing
-        let result = context.sign_and_execute_as_did(sender, action, max_gas_amount).await?;
+        let result = context
+            .sign_and_execute_as_did(sender, action, max_gas_amount)
+            .await?;
 
         Ok(InitOutput {
             receiver,
@@ -79,4 +78,4 @@ impl CommandAction<InitOutput> for InitCommand {
             execution_info: result.execution_info,
         })
     }
-} 
+}

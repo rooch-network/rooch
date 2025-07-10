@@ -1,14 +1,14 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use self::commands::init::InitCommand;
-use self::commands::open::OpenCommand;
-use self::commands::create_rav::CreateRavCommand;
+use self::commands::cancel::CancelCommand;
 use self::commands::claim::ClaimCommand;
 use self::commands::close::CloseCommand;
-use self::commands::cancel::CancelCommand;
+use self::commands::create_rav::CreateRavCommand;
 use self::commands::dispute::DisputeCommand;
 use self::commands::finalize_cancellation::FinalizeCancellationCommand;
+use self::commands::init::InitCommand;
+use self::commands::open::OpenCommand;
 use self::commands::query::QueryCommand;
 use crate::cli_types::CommandAction;
 use async_trait::async_trait;
@@ -108,4 +108,4 @@ pub enum PaymentChannelCommand {
     /// Query payment hub or channel state
     #[clap(name = "query")]
     Query(QueryCommand),
-} 
+}

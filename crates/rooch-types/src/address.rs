@@ -1026,19 +1026,24 @@ impl ParsedAddress {
     pub fn parse(s: &str) -> anyhow::Result<Self> {
         if s.starts_with("did:rooch:") {
             // Parse DID format: did:rooch:address
-            let addr_part = s.strip_prefix("did:rooch:").ok_or_else(|| {
-                anyhow::anyhow!("Invalid DID format: {}", s)
-            })?;
-            
+            let addr_part = s
+                .strip_prefix("did:rooch:")
+                .ok_or_else(|| anyhow::anyhow!("Invalid DID format: {}", s))?;
+
             // Parse the address part (could be hex or bech32)
             let rooch_address = if addr_part.starts_with("0x") {
                 RoochAddress::from_hex_literal(addr_part)?
-            } else if addr_part.starts_with(ROOCH_HRP.as_str()) && addr_part.len() == RoochAddress::LENGTH_BECH32 {
+            } else if addr_part.starts_with(ROOCH_HRP.as_str())
+                && addr_part.len() == RoochAddress::LENGTH_BECH32
+            {
                 RoochAddress::from_bech32(addr_part)?
             } else {
-                return Err(anyhow::anyhow!("Invalid address format in DID: {}", addr_part));
+                return Err(anyhow::anyhow!(
+                    "Invalid address format in DID: {}",
+                    addr_part
+                ));
             };
-            
+
             Ok(Self::DID(rooch_address))
         } else if s.starts_with("0x") {
             Ok(Self::Numerical(RoochAddress::from_hex_literal(s)?))
@@ -1457,11 +1462,14 @@ mod test {
             ParsedAddress::DID(addr) => {
                 assert_eq!(addr.to_hex_literal(), hex_addr);
                 // Test that Display shows DID format with the address's default format (bech32)
-                assert_eq!(parsed.to_string(), format!("did:rooch:{}", addr.to_bech32()));
+                assert_eq!(
+                    parsed.to_string(),
+                    format!("did:rooch:{}", addr.to_bech32())
+                );
             }
             _ => panic!("Expected DID variant"),
         }
-        
+
         // Test bech32 address in DID format
         let rooch_addr = RoochAddress::random();
         let bech32_addr = rooch_addr.to_bech32();
@@ -1475,7 +1483,7 @@ mod test {
             }
             _ => panic!("Expected DID variant"),
         }
-        
+
         // Test round-trip: parse hex DID and verify it can be displayed and parsed back
         let original_addr = RoochAddress::from_hex_literal(hex_addr).unwrap();
         let did_display = format!("did:rooch:{}", original_addr);
@@ -1486,7 +1494,7 @@ mod test {
             }
             _ => panic!("Expected DID variant after reparse"),
         }
-        
+
         // Test invalid DID formats
         assert!(ParsedAddress::parse("did:rooch:invalid").is_err());
         assert!(ParsedAddress::parse("did:rooch:").is_err());

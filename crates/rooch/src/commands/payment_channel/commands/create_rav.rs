@@ -1,16 +1,15 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::cli_types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
 use clap::Parser;
 use move_core_types::u256::U256;
 use moveos_types::moveos_std::object::ObjectID;
-use rooch_types::error::RoochResult;
-use serde::{Deserialize, Serialize};
-use crate::cli_types::{CommandAction, WalletContextOptions};
 use rooch_types::address::ParsedAddress;
+use rooch_types::error::RoochResult;
 use rooch_types::framework::payment_channel::SubRAV;
-
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Parser)]
 pub struct CreateRavCommand {
@@ -82,4 +81,4 @@ impl CommandAction<CreateRavOutput> for CreateRavCommand {
             signer_address: signer_address.to_string(),
         })
     }
-} 
+}

@@ -61,10 +61,12 @@ impl CommandAction<DisputeOutput> for DisputeCommand {
         let max_gas_amount: Option<u64> = self.tx_options.max_gas_amount;
 
         // Decode signature from hex
-        let signature_bytes = hex::decode(&self.signature)
-            .map_err(|e| rooch_types::error::RoochError::CommandArgumentError(
-                format!("Invalid hex signature: {}", e)
-            ))?;
+        let signature_bytes = hex::decode(&self.signature).map_err(|e| {
+            rooch_types::error::RoochError::CommandArgumentError(format!(
+                "Invalid hex signature: {}",
+                e
+            ))
+        })?;
 
         // Create the dispute action
         let coin_type = RGas::struct_tag();
@@ -78,7 +80,9 @@ impl CommandAction<DisputeOutput> for DisputeCommand {
         );
 
         // Execute transaction using DID account signing
-        let result = context.sign_and_execute_as_did(sender, action, max_gas_amount).await?;
+        let result = context
+            .sign_and_execute_as_did(sender, action, max_gas_amount)
+            .await?;
 
         Ok(DisputeOutput {
             channel_id: self.channel_id,
@@ -88,4 +92,4 @@ impl CommandAction<DisputeOutput> for DisputeCommand {
             execution_info: result.execution_info,
         })
     }
-} 
+}

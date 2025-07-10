@@ -135,3 +135,114 @@ Here are the detailed specifications for each subcommand.
   - `--channel-id`: The object ID of the payment channel.
 - **Workflow**:
   1. Calls the appropriate view functions (e.g., `get_payment_hub_id`, `get_channel_info`) and displays the results.
+
+#### Query Implementation Plan  
+*(v3 – Off-chain Aggregation via `listFieldStates`)*
+
+> 更新点：
+> 1. 利用现有 RPC `listFieldStates`（而不是自定义 list_object_field_keys）遍历 object / table fields。
+> 2. 重新整理 CLI `query` 子命令，只保留最核心且易用的几个。其余信息可以用 flags 控制。如下设计替换 v2 方案。
+
+---
+
+#### 1. RPC 侧能力复用
+
+* **字段遍历**：`rooch.listFieldStates(object_id, cursor, limit, option)` 已能一次返回 `(key, value)` BCS bytes 列表，支持游标翻页。
+* **表遍历**：`Table` 本质也是 `Object`（其 `handle` 为 ObjectID），因此同样使用 `listFieldStates(handle, ..)` 即可列出所有 `key → value`。
+* **无需新增 RPC 接口**，仅在 CLI 端循环调用即可。
+
+---
+
+#### 2. CLI 子命令（最终稿）
+
+```
+rooch payment-channel query hub     --owner <ADDRESS> [--page-size <N>]
+rooch payment-channel query channel --channel-id <OBJECT_ID> [--list-sub-channels] [--page-size <N>] [--vm-id <FRAGMENT>]
+```
+
+说明：
+* `hub`  —— 输出 PaymentHub 的 `balances` 和 `active_channels` 信息。
+* `channel` —— 始终输出基本信息（sender/receiver/status/coin_type/payment_hub_id/cancellation_info）。
+  * `--list-sub-channels`  ⇒ 列出全部 sub-channels（分页）。
+  * `--vm-id <FRAGMENT>`  ⇒ 仅查询指定 sub-channel 状态。
+* `--page-size` 控制 `listFieldStates` 每次拉取数量，默认 100。
+
+（如需查询更细粒度信息 —— 例如 cancellation details、active channel count —— 均可由上述输出字段直接获得，无需额外命令。）
+
+---
+
+#### 3. CLI 实现细节 (`crates/rooch/src/commands/payment_channel/commands/query.rs`)
+
+1. **对象定位**
+   * Hub ObjectID：完全在 **Rust 端** 计算。算法等同于 Move 的 `object::account_named_object_id<PaymentHub>(owner)`（即 *Account-Named ObjectID*）。无需额外 RPC。  
+      → 在 `rooch` CLI 侧已有 `ObjectID::account_named_for::<PaymentHub>(owner)`（若缺失，则补充一个 util）。
+   * Channel ObjectID：若用户只传 `channel-id` 就直接用；若未来需要通过 sender/receiver 计算，可调用 `payment_channel::calc_channel_object_id<CoinType>`。
+
+2. **核心步骤（Hub 查询）**
+   ```rust
+   // 1. 直接计算 hub_id = account_named_object_id::<PaymentHub>(owner)
+   // 2. get_object_states([hub_id])  → 反序列化 PaymentHub
+   // 3. balances: listFieldStates(hub.multi_coin_store, ..) 每条 value 反序列化为 Balance
+   // 4. active_channels: listFieldStates(hub.active_channels, ..) → (coin_type, count)
+   ```
+
+3. **核心步骤（Channel 查询）**
+   ```rust
+   // 1. get_object_states([channel_id]) → PaymentChannel
+   // 2. 如 --list-sub-channels:
+   //    listFieldStates(channel.sub_channels, ..) → (fragment, SubChannel)
+   // 3. 如 --vm-id:   listFieldStates(channel.sub_channels, Some(fragment_key), 1)
+   ```
+
+4. **分页处理**：循环调用 `listFieldStates` 直到 `next_cursor == None` 或记录数达到用户期望。
+
+5. **输出**：整合为 `serde_json`；Hub 与 Channel 均定义各自的 Output struct，方便 `serde_json::to_value`。
+
+---
+
+#### 4. 示例输出
+
+Hub：
+```json
+{
+  "hub_id": "0x…",
+  "owner": "0x…",
+  "balances": [
+    { "coin_type": "0x3::gas_coin::RGas", "amount": "100000000" },
+    { "coin_type": "0x3::USDC", "amount": "25000000" }
+  ],
+  "active_channels": [
+    { "coin_type": "0x3::gas_coin::RGas", "count": 2 }
+  ]
+}
+```
+
+Channel：
+```json
+{
+  "channel_id": "0x…",
+  "sender": "0x…",
+  "receiver": "0x…",
+  "coin_type": "0x3::gas_coin::RGas",
+  "status": "Active",
+  "cancellation_info": null,
+  "sub_channels_count": 3,
+  "sub_channels": [
+    { "fragment": "key-1", "pk_multibase": "z...", "method_type": "Ed25519", "last_amount": "10000", "last_nonce": 3 }
+  ]
+}
+```
+
+---
+
+#### 5. 依赖与测试
+
+* 无额外链上改动。
+* 仅需确保 `rooch-rpc-server` 暴露的 `listFieldStates` 支持 Object + Table Handle（二者都是 ObjectID）。
+* 新增 Rust integration test：开本地节点 → 建立简单 hub / channel → 调用 CLI → 比对 JSON snapshot。
+
+---
+
+> **下一步**：
+> 1. 更新 `crates/rooch/src/commands/payment_channel/commands/query.rs` 按此命令结构重写（当前 placeholder 实现需改动）。
+> 2. 如有缺失的 RPC helper（例如直接通过 Move view 取 `get_payment_hub_id`），补充 Rust module binding。
