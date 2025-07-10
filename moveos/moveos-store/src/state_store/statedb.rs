@@ -3,6 +3,7 @@
 
 use crate::state_store::metrics::StateDBMetrics;
 use crate::state_store::NodeDBStore;
+use crate::state_store::NodeRefcountStore;
 use anyhow::{Error, Ok, Result};
 use function_name::named;
 use move_core_types::account_address::AccountAddress;
@@ -19,6 +20,7 @@ use moveos_types::state_resolver::StateResolver;
 use moveos_types::state_resolver::StatelessResolver;
 use prometheus::Registry;
 use quick_cache::sync::Cache;
+use raw_store::SchemaStore;
 use smt::{SMTIterator, TreeChangeSet};
 use smt::{SMTree, UpdateSet};
 use std::collections::BTreeMap;
@@ -157,6 +159,7 @@ impl StateDBStore {
 
         let mut update_set = UpdateSet::new();
         let mut nodes = BTreeMap::new();
+        let mut stale_indices_acc: Vec<(H256, H256)> = Vec::new();
         for (field_key, obj_change) in &mut state_change_set.changes {
             self.apply_object_change(
                 &resolver,
@@ -179,6 +182,7 @@ impl StateDBStore {
         let mut tree_change_set = self.update_fields(pre_state_root, update_set)?;
         let new_state_root = tree_change_set.state_root;
         nodes.append(&mut tree_change_set.nodes);
+        stale_indices_acc.extend(tree_change_set.stale_indices);
         if tracing::enabled!(tracing::Level::DEBUG) {
             tracing::debug!(
                 "apply_change_set new_state_root: {:?}, smt nodes: {}, new_global_size: {}",
@@ -193,6 +197,13 @@ impl StateDBStore {
             .state_change_set_to_nodes_bytes
             .with_label_values(&[fn_name])
             .observe(size as f64);
+
+        // Maintain refcount & stale indices
+        for (hash, _) in &nodes {
+            let _ = NodeRefcountStore::new(self.node_store.get_store().store().clone()).inc(*hash);
+        }
+        self.node_store.write_stale_indices(&stale_indices_acc)?;
+
         Ok(nodes)
     }
 

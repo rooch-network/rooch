@@ -33,3 +33,14 @@ moveos-config = { workspace = true }
 accumulator = { workspace = true }
 metrics = { workspace = true }
 quick_cache = { workspace = true }
+
+rooch-common = { workspace = true }
+rooch-config = { workspace = true }
+
+rayon = { workspace = true }
+
+num_cpus = "*"
+
+parking_lot = { workspace = true }
+primitive-types = { workspace = true }
+serde = { version = "1", features=["derive"] }
