@@ -11,8 +11,18 @@ use moveos_types::{
     state::MoveState,
     transaction::MoveAction,
 };
+use moveos_types::moveos_std::object::{custom_object_id, ObjectID};
+use serde::Serialize;
 
 pub const MODULE_NAME: &IdentStr = ident_str!("payment_channel");
+
+/// Key structure for identifying a unidirectional payment channel
+/// Must match the ChannelKey struct in payment_channel.move
+#[derive(Serialize)]
+struct ChannelKey {
+    sender: AccountAddress,
+    receiver: AccountAddress,
+}
 
 /// Rust bindings for rooch_framework::payment_channel module
 pub struct PaymentChannelModule<'a> {
@@ -31,6 +41,28 @@ impl<'a> PaymentChannelModule<'a> {
     pub const INITIATE_CANCELLATION_ENTRY_FUNCTION_NAME: &'static IdentStr = ident_str!("initiate_cancellation_entry");
     pub const DISPUTE_CANCELLATION_ENTRY_FUNCTION_NAME: &'static IdentStr = ident_str!("dispute_cancellation_entry");
     pub const FINALIZE_CANCELLATION_ENTRY_FUNCTION_NAME: &'static IdentStr = ident_str!("finalize_cancellation_entry");
+
+    /// Calculate the deterministic ObjectID for a payment channel
+    /// This replicates the logic from payment_channel.move::calc_channel_object_id
+    pub fn calc_channel_object_id(
+        coin_type: &StructTag,
+        sender: AccountAddress,
+        receiver: AccountAddress,
+    ) -> ObjectID {
+        // Create the ChannelKey (matches Move struct)
+        let key = ChannelKey { sender, receiver };
+        
+        // Create the PaymentChannel<CoinType> struct tag
+        let channel_struct_tag = StructTag {
+            address: ROOCH_FRAMEWORK_ADDRESS,
+            module: ident_str!("payment_channel").to_owned(),
+            name: ident_str!("PaymentChannel").to_owned(),
+            type_params: vec![TypeTag::Struct(Box::new(coin_type.clone()))],
+        };
+        
+        // Use MoveOS custom_object_id function (same as Move VM implementation)
+        custom_object_id(&key, &channel_struct_tag)
+    }
 
     pub fn create_payment_hub_action() -> MoveAction {
         Self::create_move_action(
