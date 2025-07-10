@@ -2,7 +2,7 @@
 
 ## 1. Project Overview
 This is a Rooch blockchain project with Move smart contracts. Rooch is a Bitcoin-focused Layer 2 solution with unique DID (Decentralized Identity) capabilities.
-This file provides guidance for AI-assisted development. For a comprehensive developer guide, refer to `docs/dev-guide/rooch_move_guid.md`.
+This file provides guidance for AI-assisted development. For a comprehensive developer guide, refer to `docs/dev-guide/rooch_move_guide.md`.
 
 ## 2. Language and Communication (for AI Code Generation)
 - Always use English in code, comments, and technical terms.
@@ -19,29 +19,29 @@ This file provides guidance for AI-assisted development. For a comprehensive dev
     - `make build-move`: Build all core Move frameworks.
     - `make test-move`: Run all Move framework and example tests.
 - **Direct Rooch CLI (if Makefile is not applicable for a specific sub-task)**:
-    - Compile: `cargo run --profile optci --bin rooch -- move build -p <package_path>`
-    - Test: `cargo run --profile optci --bin rooch -- move test -p <package_path> [options]`
+    - Compile: `cargo run --bin rooch -- move build -p <package_path>`
+    - Test: `cargo run --bin rooch -- move test -p <package_path> [options]`
 - **Working Directory**: Assume all commands are run from the project root (`${workspaceFolder}`).
 - **Verification**: Always compile/check code after changes.
 
 ### 3.2. Key `rooch move test` CLI Options (when using direct CLI)
-- Filter: `-f <filter_string>`
+- Filter: `[filter]` (as a positional argument, not with `-f`)
 - List: `--list`
 - Verbose: `--verbose`
-- State on error: `--state_on_error`
+- Ignore compile warnings: `--ignore_compile_warnings` (Ignore compiler's warning, and continue run tests)
 - For more options, AI can consult `rooch move test --help` or the main guide.
 
 ### 3.3. Move Language Best Practices for AI
 - **ASCII Only**: All comments must be ASCII. Enforced by `make lint`.
-- **Entry Functions**: Parameters cannot use `Option<T>`. See `rooch_move_guid.md` for patterns.
+- **Entry Functions**: Parameters cannot use `Option<T>`. See `rooch_move_guide.md` for patterns.
 - **Friend Functions**: Use `public(friend)` for controlled module access. Declare friendship in module header.
 - **Error Handling**: 
     - Define error constants: `const MyErrorName: u64 = ERROR_CODE;`
     - Use directly in asserts: `assert!(condition, MyErrorName);`
-    - See `rooch_move_guid.md` (Section 6) for error constant patterns and categories.
+    - See `rooch_move_guide.md` (Section 6) for error constant patterns and categories.
 
 ### 3.4. Rooch Address System - CRITICAL AI Directives
-(Full architecture in `docs/dev-guide/rooch_move_guid.md` Section 4.1)
+(Full architecture in `docs/dev-guide/rooch_move_guide.md` Section 4.1)
 - **Primary Address Source**: Rooch account addresses are ALWAYS derived from Bitcoin addresses.
 - **Derivation API**: Use `rooch_framework::bitcoin_address::to_rooch_address(&bitcoin_addr)`.
 - **Transaction Context**: ALWAYS get the sender's validated Bitcoin address via `rooch_framework::auth_validator::get_bitcoin_address_from_ctx_option()`.
@@ -59,12 +59,12 @@ This file provides guidance for AI-assisted development. For a comprehensive dev
 - **Friend Declarations**: `friend <module_address>::<module_name>;`
 
 ### 3.6. Session Key Architecture - Key AI Directives
-(Full architecture in `docs/dev-guide/rooch_move_guid.md` Section 4.2.2 and relevant DID sections)
+(Full architecture in `docs/dev-guide/rooch_move_guide.md` Section 4.2.2 and relevant DID sections)
 - **Derivation API**: Use `rooch_framework::session_key::*_public_key_to_authentication_key(&pk_bytes)`.
 - **Context**: Session key (if present and validated) can be retrieved from `auth_validator`.
 
 ### 3.7. DID System Patterns - Key AI Directives
-(Full architecture and patterns in `docs/dev-guide/rooch_move_guid.md` Section 4.2 and specific DID guides if provided)
+(Full architecture and patterns in `docs/dev-guide/rooch_move_guide.md` Section 4.2 and specific DID guides if provided)
 - **ObjectID**: Used for DID document references.
 - **Permissions & Verification Methods**: AI should look up specific functions for permission checks (e.g., capability delegation, invocation) based on DID document structure and verification methods associated with session keys from context. Refer to existing code and DID modules for exact function names and patterns.
 
@@ -82,7 +82,7 @@ const ErrorCodeTwo: u64 = 2;
 - Use descriptive names prefixed with `Error`.
 
 ### 3.9. Testing Approach - Key AI Directives
-(Full testing guide in `docs/dev-guide/rooch_move_guid.md` Section 7)
+(Full testing guide in `docs/dev-guide/rooch_move_guide.md` Section 7)
 - **Initialization**: ALWAYS call `rooch_framework::genesis::init_for_test()` at the start of test functions or in a `#[test_only]` setup function.
 - **Test Attributes**: `#[test]`, `#[test_only]`. For expected failures: `#[expected_failure(abort_code = MODULE_NAME::MyErrorName, location = Self)]` or other specific abort conditions.
 - **Mocking (Auth Context)**:
@@ -93,7 +93,7 @@ const ErrorCodeTwo: u64 = 2;
 - Test both success and failure paths rigorously.
 
 ### 3.10. Multibase and Cryptography - Key AI Directives
-(Details in `docs/dev-guide/rooch_move_guid.md` Section 5)
+(Details in `docs/dev-guide/rooch_move_guide.md` Section 5)
 - **Encoding API**: `rooch_framework::multibase::encode_*_key(&pk_bytes)`.
 - **Decoding API**: `rooch_framework::multibase::decode_*_key(&multibase_string)` (returns `Option<vector<u8>>`).
 - **Key Lengths**: Ed25519 (32 bytes), Secp256k1 compressed (33 bytes). ALWAYS validate decoded key lengths.
@@ -146,7 +146,7 @@ assert!(derived_rooch_address == expected_target_rooch_address, ErrorRoochAddres
 ```
 
 ## 6. Development Workflow Reminder for AI
-1.  **Understand Requirements**: Clarify the task. If design details are needed, ask to consult `docs/dev-guide/rooch_move_guid.md` or other relevant documentation.
+1.  **Understand Requirements**: Clarify the task. If design details are needed, ask to consult `docs/dev-guide/rooch_move_guide.md` or other relevant documentation.
 2.  **Locate Relevant Code**: Use file search, codebase search. Identify existing modules and patterns.
 3.  **Implement Changes**: Follow Move patterns and these AI rules strictly.
 4.  **Compile/Check**: Use `make quick-check` or `make build-move` (or specific `make` targets) frequently.
@@ -155,4 +155,4 @@ assert!(derived_rooch_address == expected_target_rooch_address, ErrorRoochAddres
 7.  **Documentation**: AI does not need to update main guide, but should describe its changes clearly if they impact public APIs or core logic.
 8.  **Review and Refactor**: Ensure code is clean, efficient, and adheres to standards. Static analysis via `make lint` will check for non-ASCII comments and other issues.
 
-This ruleset is intended to make AI a more effective collaborator. AI should prioritize these rules and refer to `docs/dev-guide/rooch_move_guid.md` for broader context and detailed explanations when needed.
+This ruleset is intended to make AI a more effective collaborator. AI should prioritize these rules and refer to `docs/dev-guide/rooch_move_guide.md` for broader context and detailed explanations when needed.

@@ -65,13 +65,15 @@ help:
 	@echo "      Move tasks use an optimized Rooch binary (built with '$(RUST_PROFILE_RELEASE)' profile)."
 
 # Variables
-RUST_PROFILE_DEFAULT = debug
+RUST_PROFILE_DEFAULT = dev
 RUST_PROFILE_RELEASE = optci # Profile for optimized/CI builds, as used in pr.sh
 
 # Determine the profile for building the rooch CLI used for Move tasks
 # Always use the release profile for the rooch binary when interacting with Move packages
-ROOCH_BINARY_BUILD_PROFILE = $(RUST_PROFILE_RELEASE)
-ROOCH_CMD = cargo run --profile $(ROOCH_BINARY_BUILD_PROFILE) --bin rooch --
+# If you want to use the default (dev) profile, the binary is in target/debug, not target/dev
+ROOCH_BINARY_BUILD_PROFILE = debug
+ROOCH_BIN_PATH = target/$(ROOCH_BINARY_BUILD_PROFILE)/rooch
+ROOCH_CMD = $(ROOCH_BIN_PATH)
 
 # Default Rust build alias
 build-rust: build-rust-debug
@@ -155,22 +157,22 @@ MOVE_FRAMEWORK_PATHS = \
   frameworks/rooch-nursery
 
 build-move: move-stdlib move-framework move-bitcoin-framework move-nursery
-	@echo "✅ All core Move frameworks built successfully using optimized Rooch CLI."
+	@echo "✅ All core Move frameworks built successfully using Rooch CLI."
 
 move-framework:
-	@echo "🔨 Building rooch-framework using optimized Rooch CLI..."
+	@echo "🔨 Building rooch-framework using Rooch CLI..."
 	$(ROOCH_CMD) move build -p frameworks/rooch-framework
 
 move-stdlib:
-	@echo "🔨 Building moveos-stdlib using optimized Rooch CLI..."
+	@echo "🔨 Building moveos-stdlib using Rooch CLI..."
 	$(ROOCH_CMD) move build -p frameworks/moveos-stdlib
 
 move-nursery:
-	@echo "🔨 Building rooch-nursery using optimized Rooch CLI..."
+	@echo "🔨 Building rooch-nursery using Rooch CLI..."
 	$(ROOCH_CMD) move build -p frameworks/rooch-nursery
 
 move-bitcoin-framework:
-	@echo "🔨 Building bitcoin-move using optimized Rooch CLI..."
+	@echo "🔨 Building bitcoin-move using Rooch CLI..."
 	$(ROOCH_CMD) move build -p frameworks/bitcoin-move
 
 lint-move:
@@ -189,7 +191,7 @@ lint-move:
 	fi
 
 test-move-frameworks:
-	@echo "🧪 Running tests for all Move frameworks using optimized Rooch CLI..."
+	@echo "🧪 Running tests for all Move frameworks using Rooch CLI..."
 	@for crate_path in $(MOVE_FRAMEWORK_PATHS); do \
 		echo "Testing Move framework: $$crate_path"; \
 		$(ROOCH_CMD) move test -p $$crate_path || exit 1; \
@@ -197,11 +199,11 @@ test-move-frameworks:
 	@echo "✅ All Move framework tests passed."
 
 test-move-did: # Kept for specific DID testing as in original Makefile
-	@echo "🧪 Running Move DID module tests (in rooch-framework) using optimized Rooch CLI..."
+	@echo "🧪 Running Move DID module tests (in rooch-framework) using Rooch CLI..."
 	$(ROOCH_CMD) move test -p frameworks/rooch-framework -f did
 
 move-examples: # Generic build for all examples
-	@echo "🔨 Building all Move example projects using optimized Rooch CLI..."
+	@echo "🔨 Building all Move example projects using Rooch CLI..."
 	@for dir in examples/*/; do \
 		if [ -f "$$dir/Move.toml" ]; then \
 			echo "Building Move example: $$dir"; \
@@ -211,7 +213,7 @@ move-examples: # Generic build for all examples
 	@echo "✅ All Move examples built successfully (generic build)."
 
 test-move-examples:
-	@echo "🧪 Building and running tests for all Move examples using optimized Rooch CLI..."
+	@echo "🧪 Building and running tests for all Move examples using Rooch CLI..."
 	@for dir in examples/*/; do \
 		if [ -f "$$dir/Move.toml" ]; then \
 			name_addr=$$(basename "$$dir"); \
@@ -258,4 +260,4 @@ quick-check: build-rust-debug move-framework
 # The original 'framework' is move-framework.
 # The original 'stdlib' is move-stdlib.
 # The original 'test' only tested rooch-framework, now test-move-frameworks is more comprehensive.
-# The original 'examples' target is move-examples. 
+# The original 'examples' target is move-examples.

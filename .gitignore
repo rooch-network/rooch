@@ -41,3 +41,5 @@ sdk/typescript/src/generated/
 
 rooch-book
 sdk-examples
+
+__pycache__
