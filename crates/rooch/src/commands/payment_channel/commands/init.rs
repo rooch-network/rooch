@@ -69,12 +69,8 @@ impl CommandAction<InitOutput> for InitCommand {
             self.amount,
         );
 
-        // Execute the transaction
-        let tx_data = context
-            .build_tx_data(sender, action, max_gas_amount)
-            .await?;
-        let result = context.sign_and_execute(sender, tx_data).await?;
-        context.assert_execute_success(result.clone())?;
+        // Execute transaction using DID account signing
+        let result = context.sign_and_execute_as_did(sender, action, max_gas_amount).await?;
 
         Ok(InitOutput {
             receiver,

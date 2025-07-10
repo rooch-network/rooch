@@ -77,12 +77,8 @@ impl CommandAction<ClaimOutput> for ClaimCommand {
             signature_bytes,
         );
 
-        // Execute the transaction
-        let tx_data = context
-            .build_tx_data(sender, action, max_gas_amount)
-            .await?;
-        let result = context.sign_and_execute(sender, tx_data).await?;
-        context.assert_execute_success(result.clone())?;
+        // Execute transaction using DID account signing
+        let result = context.sign_and_execute_as_did(sender, action, max_gas_amount).await?;
 
         Ok(ClaimOutput {
             channel_id: self.channel_id,
