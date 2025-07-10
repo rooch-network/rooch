@@ -12,7 +12,7 @@ use moveos_types::{
     transaction::MoveAction,
 };
 use moveos_types::moveos_std::object::{custom_object_id, ObjectID};
-use serde::Serialize;
+use serde::{Serialize, Deserialize};
 
 pub const MODULE_NAME: &IdentStr = ident_str!("payment_channel");
 
@@ -22,6 +22,15 @@ pub const MODULE_NAME: &IdentStr = ident_str!("payment_channel");
 struct ChannelKey {
     sender: AccountAddress,
     receiver: AccountAddress,
+}
+
+/// SubRAV data structure for BCS serialization
+#[derive(Serialize, Deserialize)]
+pub struct SubRAV {
+    pub channel_id: ObjectID,
+    pub vm_id_fragment: String,
+    pub amount: U256,
+    pub nonce: u64,
 }
 
 /// Rust bindings for rooch_framework::payment_channel module

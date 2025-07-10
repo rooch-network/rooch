@@ -127,6 +127,7 @@ impl WalletContext {
                     RoochError::CommandArgumentError(format!("Unknown named address: {}", name))
                 }),
             ParsedAddress::Bitcoin(address) => Ok(address.to_rooch_address()),
+            ParsedAddress::DID(address) => Ok(address),
         }
     }
 

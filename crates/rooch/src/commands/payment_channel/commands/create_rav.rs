@@ -7,18 +7,10 @@ use move_core_types::u256::U256;
 use moveos_types::moveos_std::object::ObjectID;
 use rooch_types::error::RoochResult;
 use serde::{Deserialize, Serialize};
-
 use crate::cli_types::{CommandAction, WalletContextOptions};
 use rooch_types::address::ParsedAddress;
+use rooch_types::framework::payment_channel::SubRAV;
 
-/// SubRAV data structure for BCS serialization
-#[derive(Serialize, Deserialize)]
-struct SubRAV {
-    channel_id: ObjectID,
-    vm_id_fragment: String,
-    amount: U256,
-    nonce: u64,
-}
 
 #[derive(Debug, Parser)]
 pub struct CreateRavCommand {
@@ -39,7 +31,7 @@ pub struct CreateRavCommand {
     pub nonce: u64,
 
     /// Sender DID address (the DID document address to use for signing)
-    #[clap(long, value_parser=ParsedAddress::parse, default_value = "default", help = "Sender DID address")]
+    #[clap(long, value_parser=ParsedAddress::parse, help = "Sender DID address")]
     pub sender: ParsedAddress,
 
     #[clap(flatten)]
