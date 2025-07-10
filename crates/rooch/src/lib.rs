@@ -14,9 +14,10 @@ use cli_types::CommandAction;
 use commands::{
     abi::ABI, account::Account, bitcoin::Bitcoin, bitseed::Bitseed, did::DID,
     dynamic_field::DynamicField, env::Env, faucet::Faucet, genesis::Genesis, init::Init,
-    move_cli::MoveCli, object::ObjectCommand, oracle::Oracle, resource::ResourceCommand, rpc::Rpc,
-    server::Server, session_key::SessionKey, state::StateCommand, task::Task,
-    transaction::Transaction, upgrade::Upgrade, util::Util, version::Version,
+    move_cli::MoveCli, object::ObjectCommand, oracle::Oracle, payment_channel::PaymentChannel,
+    resource::ResourceCommand, rpc::Rpc, server::Server, session_key::SessionKey,
+    state::StateCommand, task::Task, transaction::Transaction, upgrade::Upgrade, util::Util,
+    version::Version,
 };
 use once_cell::sync::Lazy;
 use rooch_types::error::RoochResult;
@@ -78,6 +79,8 @@ pub enum Command {
     DA(DA),
     #[clap(name = "did")]
     DID(DID),
+    #[clap(name = "payment-channel")]
+    PaymentChannel(PaymentChannel),
 }
 
 pub async fn run_cli(opt: RoochCli) -> RoochResult<String> {
@@ -110,5 +113,6 @@ pub async fn run_cli(opt: RoochCli) -> RoochResult<String> {
         Command::Oracle(oracle) => oracle.execute().await,
         Command::DA(da) => da.execute().await,
         Command::DID(did) => did.execute().await,
+        Command::PaymentChannel(payment_channel) => payment_channel.execute().await,
     }
 }

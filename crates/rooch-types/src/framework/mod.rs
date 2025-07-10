@@ -27,6 +27,7 @@ pub mod indexer;
 pub mod multi_coin_store;
 pub mod onchain_config;
 pub mod oracle;
+pub mod payment_channel;
 pub mod session_key;
 pub mod session_validator;
 pub mod timestamp;
