@@ -9,6 +9,7 @@ use bitcoin::psbt::{GetKey, KeyRequest};
 use bitcoin::secp256k1::Signing;
 use bitcoin::PrivateKey;
 use move_core_types::account_address::AccountAddress;
+use moveos_types::module_binding::MoveFunctionCaller;
 use moveos_types::moveos_std::gas_schedule::GasScheduleConfig;
 use moveos_types::transaction::MoveAction;
 use rooch_config::config::{Config, PersistedConfig};
@@ -23,11 +24,14 @@ use rooch_types::authentication_key::AuthenticationKey;
 use rooch_types::bitcoin::network::Network;
 use rooch_types::crypto::RoochKeyPair;
 use rooch_types::error::{RoochError, RoochResult};
+use rooch_types::framework::did::DIDModule;
 use rooch_types::rooch_network::{BuiltinChainID, RoochNetwork};
+use rooch_types::transaction::authenticator::SessionAuthenticator;
 use rooch_types::transaction::rooch::{RoochTransaction, RoochTransactionData};
 use rooch_types::{addresses, crypto};
 use std::collections::BTreeMap;
 use std::path::PathBuf;
+use std::str::FromStr;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::RwLock;
@@ -290,6 +294,53 @@ impl WalletContext {
     ) -> RoochResult<ExecuteTransactionResponseView> {
         let tx = self.sign_transaction(sender, tx_data)?;
         self.execute(tx).await
+    }
+
+    /// Sign and execute a transaction **on behalf of a DID account**.
+    /// 1) sender must be the DID's associated account address
+    /// 2) Automatically selects a controller key available in the local keystore
+    pub async fn sign_and_execute_as_did(
+        &self,
+        did_address: RoochAddress,
+        action: MoveAction,
+        max_gas_amount: Option<u64>,
+    ) -> RoochResult<ExecuteTransactionResponseView> {
+        // ---------- 1. Query DIDDocument ----------
+        let client = self.get_client().await?;
+        let did_module = client.as_module_binding::<DIDModule>();
+        let did_doc = did_module.get_did_document_by_address(did_address.into())?;
+
+        // ---------- 2. Find first controller key available in local keystore ----------
+        let (_controller_addr, keypair) = {
+            let mut found = None;
+            for controller in &did_doc.controller {
+                let addr = RoochAddress::from_str(controller.identifier.as_str())?;
+                if self.keystore.contains_address(&addr) {
+                    let kp = self.get_key_pair(&addr)?;
+                    found = Some((addr, kp));
+                    break;
+                }
+            }
+            found.ok_or_else(|| {
+                RoochError::CommandArgumentError(format!(
+                    "No controller key of DID {} found in local keystore",
+                    did_address
+                ))
+            })?
+        };
+
+        // ---------- 3. Build tx_data ----------
+        let tx_data = self
+            .build_tx_data(did_address, action, max_gas_amount)
+            .await?;
+
+        // ---------- 4. Sign with controller key ----------
+        let authenticator = SessionAuthenticator::sign(&keypair, &tx_data);
+        let tx = RoochTransaction::new(tx_data, authenticator.into());
+
+        // ---------- 5. Execute ----------
+        let result = self.execute(tx).await?;
+        self.assert_execute_success(result)
     }
 
     pub fn get_key_pair(&self, address: &RoochAddress) -> Result<RoochKeyPair> {

@@ -3,7 +3,6 @@
 
 use async_trait::async_trait;
 use clap::Parser;
-use move_core_types::account_address::AccountAddress;
 use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::state::MoveStructType;
 use rooch_rpc_api::jsonrpc_types::TransactionExecutionInfoView;
@@ -12,7 +11,6 @@ use rooch_types::error::RoochResult;
 use rooch_types::framework::gas_coin::RGas;
 use rooch_types::framework::payment_channel::PaymentChannelModule;
 use serde::{Deserialize, Serialize};
-use std::str::FromStr;
 use rooch_types::address::ParsedAddress;
 use crate::cli_types::{CommandAction, TransactionOptions, WalletContextOptions};
 
@@ -79,12 +77,8 @@ impl CommandAction<OpenOutput> for OpenCommand {
             vm_id_fragments.clone(),
         );
 
-        // Execute the transaction
-        let tx_data = context
-            .build_tx_data(sender, action, max_gas_amount)
-            .await?;
-        let result = context.sign_and_execute(sender, tx_data).await?;
-        context.assert_execute_success(result.clone())?;
+        // Execute the transaction using DID account signing
+        let result = context.sign_and_execute_as_did(sender, action, max_gas_amount).await?;
 
         // Calculate deterministic channel ID using the same logic as Move code
         let channel_id = PaymentChannelModule::calc_channel_object_id(
