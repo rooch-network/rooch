@@ -9,6 +9,7 @@ use rooch_types::error::RoochResult;
 use serde::{Deserialize, Serialize};
 
 use crate::cli_types::{CommandAction, WalletContextOptions};
+use rooch_types::address::ParsedAddress;
 
 /// SubRAV data structure for BCS serialization
 #[derive(Serialize, Deserialize)]
@@ -25,9 +26,9 @@ pub struct CreateRavCommand {
     #[clap(long, help = "Channel ID for the RAV")]
     pub channel_id: ObjectID,
 
-    /// VM ID fragment for the sub-channel
-    #[clap(long, help = "VM ID fragment for the sub-channel")]
-    pub vm_id_fragment: String,
+    /// Verification method ID fragment (optional, if not provided, will find the first available key)
+    #[clap(long, help = "Verification method ID fragment")]
+    pub vm_id_fragment: Option<String>,
 
     /// Amount for the RAV
     #[clap(long, help = "Amount for the RAV")]
@@ -37,52 +38,56 @@ pub struct CreateRavCommand {
     #[clap(long, help = "Nonce for the RAV")]
     pub nonce: u64,
 
+    /// Sender DID address (the DID document address to use for signing)
+    #[clap(long, value_parser=ParsedAddress::parse, default_value = "default", help = "Sender DID address")]
+    pub sender: ParsedAddress,
+
     #[clap(flatten)]
     pub context_options: WalletContextOptions,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct CreateRavOutput {
     pub channel_id: ObjectID,
     pub vm_id_fragment: String,
     pub amount: U256,
     pub nonce: u64,
-    pub rav_data: String,
     pub signature: String,
+    pub signer_address: String,
 }
 
 #[async_trait]
 impl CommandAction<CreateRavOutput> for CreateRavCommand {
     async fn execute(self) -> RoochResult<CreateRavOutput> {
+        let context = self.context_options.build_require_password()?;
 
-        // Create SubRAV structure
+        // Resolve the sender DID address from the provided parameter
+        let did_address = context.resolve_rooch_address(self.sender)?;
+
+        // Find the appropriate verification method and keypair using the abstracted method
+        let (vm_id_fragment, signer_address, keypair) = context
+            .find_did_verification_method_keypair(did_address, self.vm_id_fragment.as_deref())
+            .await?;
+
+        // Create SubRAV structure for signing
         let sub_rav = SubRAV {
             channel_id: self.channel_id.clone(),
-            vm_id_fragment: self.vm_id_fragment.clone(),
+            vm_id_fragment: vm_id_fragment.clone(),
             amount: self.amount,
             nonce: self.nonce,
         };
 
-        // Serialize SubRAV to BCS format
-        let serialized_rav = bcs::to_bytes(&sub_rav)
-            .map_err(|e| rooch_types::error::RoochError::BcsError(e.to_string()))?;
-
-        // For this simplified implementation, we'll create a placeholder signature
-        // In a real implementation, this would:
-        // 1. Hash the serialized RAV data
-        // 2. Sign with the appropriate key from wallet context
-        // 3. Return the actual signature
-        let signature_placeholder = "0x1234567890abcdef"; // Placeholder
-
-        let rav_data_hex = hex::encode(&serialized_rav);
+        // Sign with the found keypair
+        let signature = keypair.sign(&bcs::to_bytes(&sub_rav)?);
+        let signature_hex = hex::encode(signature.as_ref());
 
         Ok(CreateRavOutput {
             channel_id: self.channel_id,
-            vm_id_fragment: self.vm_id_fragment,
+            vm_id_fragment,
             amount: self.amount,
             nonce: self.nonce,
-            rav_data: rav_data_hex,
-            signature: signature_placeholder.to_string(),
+            signature: signature_hex,
+            signer_address: signer_address.to_string(),
         })
     }
 } 

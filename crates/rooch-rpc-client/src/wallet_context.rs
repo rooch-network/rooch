@@ -305,42 +305,101 @@ impl WalletContext {
         action: MoveAction,
         max_gas_amount: Option<u64>,
     ) -> RoochResult<ExecuteTransactionResponseView> {
-        // ---------- 1. Query DIDDocument ----------
-        let client = self.get_client().await?;
-        let did_module = client.as_module_binding::<DIDModule>();
-        let did_doc = did_module.get_did_document_by_address(did_address.into())?;
+        // Find a controller key available in local keystore
+        let (_controller_addr, keypair) = self.find_did_controller_keypair(did_address).await?;
 
-        // ---------- 2. Find first controller key available in local keystore ----------
-        let (_controller_addr, keypair) = {
-            let mut found = None;
-            for controller in &did_doc.controller {
-                let addr = RoochAddress::from_str(controller.identifier.as_str())?;
-                if self.keystore.contains_address(&addr) {
-                    let kp = self.get_key_pair(&addr)?;
-                    found = Some((addr, kp));
-                    break;
-                }
-            }
-            found.ok_or_else(|| {
-                RoochError::CommandArgumentError(format!(
-                    "No controller key of DID {} found in local keystore",
-                    did_address
-                ))
-            })?
-        };
-
-        // ---------- 3. Build tx_data ----------
+        // Build tx_data
         let tx_data = self
             .build_tx_data(did_address, action, max_gas_amount)
             .await?;
 
-        // ---------- 4. Sign with controller key ----------
+        // Sign with controller key
         let authenticator = SessionAuthenticator::sign(&keypair, &tx_data);
         let tx = RoochTransaction::new(tx_data, authenticator.into());
 
-        // ---------- 5. Execute ----------
+        // Execute
         let result = self.execute(tx).await?;
         self.assert_execute_success(result)
+    }
+
+    /// Find a controller keypair for the given DID address.
+    /// Returns the first controller address and its corresponding keypair found in the local keystore.
+    pub async fn find_did_controller_keypair(
+        &self,
+        did_address: RoochAddress,
+    ) -> RoochResult<(RoochAddress, RoochKeyPair)> {
+        // Query DID document
+        let client = self.get_client().await?;
+        let did_module = client.as_module_binding::<DIDModule>();
+        let did_doc = did_module.get_did_document_by_address(did_address.into())?;
+
+        // Find first controller key available in local keystore
+        for controller in &did_doc.controller {
+            let addr = RoochAddress::from_str(controller.identifier.as_str())?;
+            if self.keystore.contains_address(&addr) {
+                let kp = self.get_key_pair(&addr)?;
+                return Ok((addr, kp));
+            }
+        }
+
+        Err(RoochError::CommandArgumentError(format!(
+            "No controller key of DID {} found in local keystore",
+            did_address
+        )))
+    }
+
+    /// Find a specific verification method keypair for the given DID address.
+    /// If vm_id_fragment is provided, find the keypair for that specific verification method.
+    /// If vm_id_fragment is None, find the first available verification method keypair.
+    pub async fn find_did_verification_method_keypair(
+        &self,
+        did_address: RoochAddress,
+        vm_id_fragment: Option<&str>,
+    ) -> RoochResult<(String, RoochAddress, RoochKeyPair)> {
+        // Query DID document
+        let client = self.get_client().await?;
+        let did_module = client.as_module_binding::<DIDModule>();
+        let did_doc = did_module.get_did_document_by_address(did_address.into())?;
+
+        if let Some(specified_fragment) = vm_id_fragment {
+            // User specified a verification method fragment
+            for element in &did_doc.verification_methods.data {
+                if element.key.as_str() == specified_fragment {
+                    let vm = &element.value;
+                    // Check if we have the corresponding controller key in our keystore
+                    let controller_addr = RoochAddress::from_str(vm.controller.identifier.as_str())?;
+                    if self.keystore.contains_address(&controller_addr) {
+                        let kp = self.get_key_pair(&controller_addr)?;
+                        return Ok((specified_fragment.to_string(), controller_addr, kp));
+                    }
+                }
+            }
+            
+            Err(RoochError::CommandArgumentError(format!(
+                "Verification method '{}' not found or corresponding key not available in keystore",
+                specified_fragment
+            )))
+        } else {
+            // Auto-find the first available verification method
+            for controller in &did_doc.controller {
+                let addr = RoochAddress::from_str(controller.identifier.as_str())?;
+                if self.keystore.contains_address(&addr) {
+                    // Find a verification method that belongs to this controller
+                    for element in &did_doc.verification_methods.data {
+                        let vm = &element.value;
+                        if vm.controller.identifier.as_str() == controller.identifier.as_str() {
+                            let kp = self.get_key_pair(&addr)?;
+                            return Ok((element.key.as_str().to_string(), addr, kp));
+                        }
+                    }
+                }
+            }
+            
+            Err(RoochError::CommandArgumentError(format!(
+                "No verification method available for signing. No controller key found in local keystore for DID {}",
+                did_address
+            )))
+        }
     }
 
     pub fn get_key_pair(&self, address: &RoochAddress) -> Result<RoochKeyPair> {
