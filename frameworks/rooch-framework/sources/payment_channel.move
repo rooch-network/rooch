@@ -3,7 +3,6 @@
 
 // PaymentHub and PaymentChannel implementation for unidirectional payment channel protocol
 // See: docs/dev-guide/unidirectional-payment-channel-protocol.md
-// All comments must be in English (ASCII only) per Rooch Move guide.
 
 module rooch_framework::payment_channel {
     use std::option::{Self, Option};
@@ -62,6 +61,8 @@ module rooch_framework::payment_channel {
     const ErrorChannelAlreadyExists: u64 = 18;
     /// There are still active channels for this coin type.
     const ErrorActiveChannelExists: u64 = 19;
+    /// The sender must have a DID document to open a channel.
+    const ErrorSenderMustIsDID: u64 = 20;
 
     // === Constants ===
     const STATUS_ACTIVE: u8 = 0;
@@ -357,6 +358,8 @@ module rooch_framework::payment_channel {
         channel_receiver: address,
     ) : ObjectID {
         let sender_addr = signer::address_of(channel_sender);
+        assert!(sender_addr != channel_receiver, ErrorNotReceiver);
+        assert!(did::exists_did_for_address(sender_addr), ErrorSenderMustIsDID);
         let channel_id = calc_channel_object_id<CoinType>(sender_addr, channel_receiver);
         
         // Check if channel already exists

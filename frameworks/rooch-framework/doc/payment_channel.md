@@ -520,6 +520,16 @@ The signer is not the sender of the channel.
 
 
 
+<a name="0x3_payment_channel_ErrorSenderMustIsDID"></a>
+
+The sender must have a DID document to open a channel.
+
+
+<pre><code><b>const</b> <a href="payment_channel.md#0x3_payment_channel_ErrorSenderMustIsDID">ErrorSenderMustIsDID</a>: u64 = 20;
+</code></pre>
+
+
+
 <a name="0x3_payment_channel_ErrorSubChannelNotOpened"></a>
 
 The sub-channel has not been opened yet.
