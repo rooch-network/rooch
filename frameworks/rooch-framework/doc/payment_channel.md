@@ -784,10 +784,11 @@ Entry function for opening a channel and authorizing multiple verification metho
 
 ## Function `claim_from_channel`
 
-The receiver claims funds from a specific sub-channel.
+Anyone can claim funds from a specific sub-channel on behalf of the receiver.
+The funds will always be transferred to the channel receiver regardless of who calls this function.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_claim_from_channel">claim_from_channel</a>&lt;CoinType: store, key&gt;(channel_receiver: &<a href="">signer</a>, channel_id: <a href="_ObjectID">object::ObjectID</a>, sender_vm_id_fragment: <a href="_String">string::String</a>, sub_accumulated_amount: <a href="">u256</a>, sub_nonce: u64, sender_signature: <a href="">vector</a>&lt;u8&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_claim_from_channel">claim_from_channel</a>&lt;CoinType: store, key&gt;(claimer: &<a href="">signer</a>, channel_id: <a href="_ObjectID">object::ObjectID</a>, sender_vm_id_fragment: <a href="_String">string::String</a>, sub_accumulated_amount: <a href="">u256</a>, sub_nonce: u64, sender_signature: <a href="">vector</a>&lt;u8&gt;)
 </code></pre>
 
 
@@ -799,7 +800,7 @@ The receiver claims funds from a specific sub-channel.
 Entry function for claiming from channel
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_claim_from_channel_entry">claim_from_channel_entry</a>&lt;CoinType: store, key&gt;(channel_receiver: &<a href="">signer</a>, channel_id: <a href="_ObjectID">object::ObjectID</a>, sender_vm_id_fragment: <a href="_String">string::String</a>, sub_accumulated_amount: <a href="">u256</a>, sub_nonce: u64, sender_signature: <a href="">vector</a>&lt;u8&gt;)
+<pre><code><b>public</b> entry <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_claim_from_channel_entry">claim_from_channel_entry</a>&lt;CoinType: store, key&gt;(claimer: &<a href="">signer</a>, channel_id: <a href="_ObjectID">object::ObjectID</a>, sender_vm_id_fragment: <a href="_String">string::String</a>, sub_accumulated_amount: <a href="">u256</a>, sub_nonce: u64, sender_signature: <a href="">vector</a>&lt;u8&gt;)
 </code></pre>
 
 
@@ -809,6 +810,8 @@ Entry function for claiming from channel
 ## Function `close_sub_channel`
 
 Close a specific sub-channel with final state from receiver
+Only the channel receiver can close a sub-channel.
+This performs a final claim and then permanently closes the sub-channel.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_close_sub_channel">close_sub_channel</a>&lt;CoinType: store, key&gt;(channel_receiver: &<a href="">signer</a>, channel_id: <a href="_ObjectID">object::ObjectID</a>, sender_vm_id_fragment: <a href="_String">string::String</a>, final_accumulated_amount: <a href="">u256</a>, final_nonce: u64, sender_signature: <a href="">vector</a>&lt;u8&gt;)

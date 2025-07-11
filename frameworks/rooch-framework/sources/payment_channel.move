@@ -609,9 +609,10 @@ module rooch_framework::payment_channel {
         let _channel_id = open_channel_with_multiple_sub_channels<CoinType>(channel_sender, channel_receiver, vm_id_fragments);
     }
 
-    /// The receiver claims funds from a specific sub-channel.
+    /// Anyone can claim funds from a specific sub-channel on behalf of the receiver.
+    /// The funds will always be transferred to the channel receiver regardless of who calls this function.
     public fun claim_from_channel<CoinType: key + store>(
-        channel_receiver: &signer,
+        claimer: &signer,
         channel_id: ObjectID,
         sender_vm_id_fragment: String,
         sub_accumulated_amount: u256,
@@ -619,7 +620,7 @@ module rooch_framework::payment_channel {
         sender_signature: vector<u8>
     ) {
         internal_claim_from_channel<CoinType>(
-            channel_receiver,
+            claimer,
             channel_id,
             sender_vm_id_fragment,
             sub_accumulated_amount,
@@ -631,7 +632,7 @@ module rooch_framework::payment_channel {
 
     /// The receiver claims funds from a specific sub-channel.
     fun internal_claim_from_channel<CoinType: key + store>(
-        channel_receiver: &signer,
+        _claimer: &signer,
         channel_id: ObjectID,
         sender_vm_id_fragment: String,
         sub_accumulated_amount: u256,
@@ -639,12 +640,11 @@ module rooch_framework::payment_channel {
         sender_signature: vector<u8>,
         skip_signature_verification: bool
     ) {
-        let receiver = signer::address_of(channel_receiver);
         let channel_obj = object::borrow_mut_object_extend<PaymentChannel<CoinType>>(channel_id);
         let channel = object::borrow_mut(channel_obj);
         
-        // Verify the transaction sender is the receiver
-        assert!(channel.receiver == receiver, ErrorNotReceiver);
+        // Note: Anyone can execute claim on behalf of the receiver
+        // The funds will always go to the channel.receiver regardless of who calls this function
         assert!(channel.status == STATUS_ACTIVE, ErrorChannelNotActive);
         
         // Verify the sub-channel has been opened
@@ -693,7 +693,7 @@ module rooch_framework::payment_channel {
         // Emit claim event
         event::emit(ChannelClaimedEvent {
             channel_id,
-            receiver,
+            receiver: channel.receiver,
             vm_id_fragment: sender_vm_id_fragment,
             amount: incremental_amount,
             sub_accumulated_amount,
@@ -703,7 +703,7 @@ module rooch_framework::payment_channel {
 
     /// Entry function for claiming from channel
     public entry fun claim_from_channel_entry<CoinType: key + store>(
-        channel_receiver: &signer,
+        claimer: &signer,
         channel_id: ObjectID,
         sender_vm_id_fragment: String,
         sub_accumulated_amount: u256,
@@ -711,7 +711,7 @@ module rooch_framework::payment_channel {
         sender_signature: vector<u8>
     ) {
         claim_from_channel<CoinType>(
-            channel_receiver,
+            claimer,
             channel_id,
             sender_vm_id_fragment,
             sub_accumulated_amount,
@@ -721,6 +721,8 @@ module rooch_framework::payment_channel {
     } 
 
     /// Close a specific sub-channel with final state from receiver
+    /// Only the channel receiver can close a sub-channel.
+    /// This performs a final claim and then permanently closes the sub-channel.
     public fun close_sub_channel<CoinType: key + store>(
         channel_receiver: &signer,
         channel_id: ObjectID,
@@ -749,6 +751,14 @@ module rooch_framework::payment_channel {
         sender_signature: vector<u8>,
         skip_signature_verification: bool
     ) {
+        let receiver = signer::address_of(channel_receiver);
+        // use a block to control the scope of the borrow_object
+        {
+            // Verify the transaction sender is the channel receiver
+            let channel_obj = object::borrow_object<PaymentChannel<CoinType>>(channel_id);
+            let channel = object::borrow(channel_obj);
+            assert!(channel.receiver == receiver, ErrorNotReceiver);
+        };
         
         // First, perform the final claim operation (this handles all validation and fund transfer)
         // This will emit a ChannelClaimedEvent if there are funds to claim
@@ -762,7 +772,6 @@ module rooch_framework::payment_channel {
             skip_signature_verification
         );
         
-        let receiver = signer::address_of(channel_receiver);
         // After successful claim, remove the sub-channel record
         let channel_obj = object::borrow_mut_object_extend<PaymentChannel<CoinType>>(channel_id);
         let channel = object::borrow_mut(channel_obj);
@@ -780,7 +789,7 @@ module rooch_framework::payment_channel {
         // Emit sub-channel close event (separate from the claim event)
         event::emit(SubChannelClosedEvent {
             channel_id,
-            receiver,
+            receiver: channel.receiver,
             vm_id_fragment: sender_vm_id_fragment,
         });
     }
@@ -1336,7 +1345,7 @@ module rooch_framework::payment_channel {
     #[test_only]
     /// Test-only version of claim_from_channel that uses the test signature verification
     public fun claim_from_channel_for_test<CoinType: key + store>(
-        channel_receiver: &signer,
+        claimer: &signer,
         channel_id: ObjectID,
         sender_vm_id_fragment: String,
         sub_accumulated_amount: u256,
@@ -1344,7 +1353,7 @@ module rooch_framework::payment_channel {
         sender_signature: vector<u8>
     ) {
         internal_claim_from_channel<CoinType>(
-            channel_receiver,
+            claimer,
             channel_id,
             sender_vm_id_fragment,
             sub_accumulated_amount,

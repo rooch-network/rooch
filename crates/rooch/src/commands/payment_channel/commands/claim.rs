@@ -6,7 +6,7 @@ use clap::Parser;
 use move_core_types::u256::U256;
 use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::state::MoveStructType;
-use rooch_rpc_api::jsonrpc_types::TransactionExecutionInfoView;
+use rooch_rpc_api::jsonrpc_types::{StrView, TransactionExecutionInfoView};
 use rooch_types::address::RoochAddress;
 use rooch_types::error::RoochResult;
 use rooch_types::framework::gas_coin::RGas;
@@ -48,8 +48,9 @@ pub struct ClaimCommand {
 pub struct ClaimOutput {
     pub channel_id: ObjectID,
     pub vm_id_fragment: String,
-    pub amount: U256,
+    pub amount: StrView<U256>,
     pub nonce: u64,
+    pub claimer: RoochAddress,
     pub execution_info: TransactionExecutionInfoView,
 }
 
@@ -57,7 +58,7 @@ pub struct ClaimOutput {
 impl CommandAction<ClaimOutput> for ClaimCommand {
     async fn execute(self) -> RoochResult<ClaimOutput> {
         let context = self.context_options.build_require_password()?;
-        let sender: RoochAddress = context.resolve_address(self.tx_options.sender)?.into();
+        let claimer: RoochAddress = context.resolve_address(self.tx_options.sender)?.into();
         let max_gas_amount: Option<u64> = self.tx_options.max_gas_amount;
 
         // Decode signature from hex
@@ -79,16 +80,17 @@ impl CommandAction<ClaimOutput> for ClaimCommand {
             signature_bytes,
         );
 
-        // Execute transaction using DID account signing
+        // Execute transaction - anyone can claim on behalf of the receiver
         let result = context
-            .sign_and_execute_as_did(sender, action, max_gas_amount)
+            .sign_and_execute_action(claimer, action, max_gas_amount)
             .await?;
 
         Ok(ClaimOutput {
             channel_id: self.channel_id,
             vm_id_fragment: self.vm_id_fragment,
-            amount: self.amount,
+            amount: self.amount.into(),
             nonce: self.nonce,
+            claimer,
             execution_info: result.execution_info,
         })
     }
