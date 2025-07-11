@@ -14,6 +14,7 @@ module rooch_framework::payment_channel_test {
     use moveos_std::timestamp;
     use moveos_std::tx_context;
     use moveos_std::multibase_codec;
+    use moveos_std::type_info;
     use rooch_framework::genesis;
     use rooch_framework::payment_channel::{Self, PaymentHub};
     use rooch_framework::gas_coin::{Self, RGas};
@@ -218,15 +219,16 @@ module rooch_framework::payment_channel_test {
         payment_channel::open_channel_entry<RGas>(&alice_signer, bob_addr);
         
         // Assertion: Channel status = STATUS_ACTIVE; PaymentHub active_channels[RGas]=1
-        let channel_id = payment_channel::get_channel_id<RGas>(alice_addr, bob_addr);
-        assert!(payment_channel::channel_exists<RGas>(alice_addr, bob_addr), 2001);
+        let coin_type = type_info::type_name<RGas>();
+        let channel_id = payment_channel::get_channel_id(alice_addr, bob_addr, coin_type);
+        assert!(payment_channel::channel_exists(alice_addr, bob_addr, coin_type), 2001);
         
-        let (sender, receiver, _hub_id, status) = payment_channel::get_channel_info<RGas>(channel_id);
+        let (sender, receiver, _coin_type_ret, status) = payment_channel::get_channel_info(channel_id);
         assert!(sender == alice_addr, 2002);
         assert!(receiver == bob_addr, 2003);
         assert!(status == 0, 2004); // STATUS_ACTIVE = 0
         
-        let active_count = payment_channel::get_active_channel_count<RGas>(alice_addr);
+        let active_count = payment_channel::get_active_channel_count(alice_addr, coin_type);
         assert!(active_count == 1, 2005);
         
         // No event checking available
@@ -254,10 +256,10 @@ module rooch_framework::payment_channel_test {
         let channel_id = payment_channel::open_channel<RGas>(&alice_signer, bob_addr);
         
         // Test: open_sub_channel_entry first authorization
-        payment_channel::open_sub_channel_entry<RGas>(&alice_signer, channel_id, vm_id);
+        payment_channel::open_sub_channel_entry(&alice_signer, channel_id, vm_id);
         
         // Assertion: SubChannel record exists
-        assert!(payment_channel::sub_channel_exists<RGas>(channel_id, vm_id), 2007);
+        assert!(payment_channel::sub_channel_exists(channel_id, vm_id), 2007);
         
         // No event checking available
     }
@@ -270,10 +272,10 @@ module rooch_framework::payment_channel_test {
         // Setup: Deposit, open channel and sub-channel
         payment_channel::deposit_to_hub_entry<RGas>(&alice_signer, alice_addr, TEST_AMOUNT_100);
         let channel_id = payment_channel::open_channel<RGas>(&alice_signer, bob_addr);
-        payment_channel::open_sub_channel_entry<RGas>(&alice_signer, channel_id, vm_id);
+        payment_channel::open_sub_channel_entry(&alice_signer, channel_id, vm_id);
         
         // Test: Repeat authorization for same VM - should abort
-        payment_channel::open_sub_channel_entry<RGas>(&alice_signer, channel_id, vm_id);
+        payment_channel::open_sub_channel_entry(&alice_signer, channel_id, vm_id);
     }
 
     // === Test Group 3: Claim & Close Sub-Channel ===
@@ -285,14 +287,14 @@ module rooch_framework::payment_channel_test {
         // Setup: Deposit, open channel and sub-channel
         payment_channel::deposit_to_hub_entry<RGas>(&alice_signer, alice_addr, TEST_AMOUNT_100);
         let channel_id = payment_channel::open_channel<RGas>(&alice_signer, bob_addr);
-        payment_channel::open_sub_channel_entry<RGas>(&alice_signer, channel_id, vm_id);
+        payment_channel::open_sub_channel_entry(&alice_signer, channel_id, vm_id);
         
         // Get Bob's initial account balance
         let initial_bob_balance = account_coin_store::balance<RGas>(bob_addr);
         
         // Test: First claim_from_channel (acc=10, nonce=1)
         let signature = generate_test_signature();
-        payment_channel::claim_from_channel_for_test<RGas>(&bob_signer, channel_id, vm_id, TEST_AMOUNT_10, TEST_NONCE_1, signature);
+        payment_channel::claim_from_channel_for_test(&bob_signer, channel_id, vm_id, TEST_AMOUNT_10, TEST_NONCE_1, signature);
         
         // Verify the claim by checking if Bob can withdraw the funds from his hub
         payment_channel::withdraw_from_hub_entry<RGas>(&bob_signer, TEST_AMOUNT_10);
@@ -300,7 +302,7 @@ module rooch_framework::payment_channel_test {
         assert!(final_bob_balance == initial_bob_balance + TEST_AMOUNT_10, 3001);
         
         // Check sub-channel state updated
-        let (last_claimed, last_nonce) = payment_channel::get_sub_channel_state<RGas>(channel_id, vm_id);
+        let (last_claimed, last_nonce) = payment_channel::get_sub_channel_state(channel_id, vm_id);
         assert!(last_claimed == TEST_AMOUNT_10, 3002);
         assert!(last_nonce == TEST_NONCE_1, 3003);
         
@@ -314,19 +316,19 @@ module rooch_framework::payment_channel_test {
         // Setup: Complete first claim
         payment_channel::deposit_to_hub_entry<RGas>(&alice_signer, alice_addr, TEST_AMOUNT_100);
         let channel_id = payment_channel::open_channel<RGas>(&alice_signer, bob_addr);
-        payment_channel::open_sub_channel_entry<RGas>(&alice_signer, channel_id, vm_id);
+        payment_channel::open_sub_channel_entry(&alice_signer, channel_id, vm_id);
         
         let signature = generate_test_signature();
-        payment_channel::claim_from_channel_for_test<RGas>(&bob_signer, channel_id, vm_id, TEST_AMOUNT_10, TEST_NONCE_1, signature);
+        payment_channel::claim_from_channel_for_test(&bob_signer, channel_id, vm_id, TEST_AMOUNT_10, TEST_NONCE_1, signature);
         
         // Test: Repeat same claim (10, 1) - should be idempotent
         let signature2 = generate_test_signature();
-        payment_channel::claim_from_channel_for_test<RGas>(&bob_signer, channel_id, vm_id, TEST_AMOUNT_10, TEST_NONCE_1, signature2);
+        payment_channel::claim_from_channel_for_test(&bob_signer, channel_id, vm_id, TEST_AMOUNT_10, TEST_NONCE_1, signature2);
         
         // Assertion: Idempotent success verified by sub-channel state remaining unchanged
         
         // State should remain the same
-        let (last_claimed, last_nonce) = payment_channel::get_sub_channel_state<RGas>(channel_id, vm_id);
+        let (last_claimed, last_nonce) = payment_channel::get_sub_channel_state(channel_id, vm_id);
         assert!(last_claimed == TEST_AMOUNT_10, 3006);
         assert!(last_nonce == TEST_NONCE_1, 3007);
     }
@@ -339,14 +341,14 @@ module rooch_framework::payment_channel_test {
         // Setup: Complete first claim with amount 10
         payment_channel::deposit_to_hub_entry<RGas>(&alice_signer, alice_addr, TEST_AMOUNT_100);
         let channel_id = payment_channel::open_channel<RGas>(&alice_signer, bob_addr);
-        payment_channel::open_sub_channel_entry<RGas>(&alice_signer, channel_id, vm_id);
+        payment_channel::open_sub_channel_entry(&alice_signer, channel_id, vm_id);
         
         let signature = generate_test_signature();
-        payment_channel::claim_from_channel_for_test<RGas>(&bob_signer, channel_id, vm_id, TEST_AMOUNT_10, TEST_NONCE_1, signature);
+        payment_channel::claim_from_channel_for_test(&bob_signer, channel_id, vm_id, TEST_AMOUNT_10, TEST_NONCE_1, signature);
         
         // Test: Attempt claim with lower amount (5, 2) - should abort
         let signature2 = generate_test_signature();
-        payment_channel::claim_from_channel_for_test<RGas>(&bob_signer, channel_id, vm_id, TEST_AMOUNT_5, TEST_NONCE_2, signature2);
+        payment_channel::claim_from_channel_for_test(&bob_signer, channel_id, vm_id, TEST_AMOUNT_5, TEST_NONCE_2, signature2);
     }
 
     #[test]
@@ -356,14 +358,14 @@ module rooch_framework::payment_channel_test {
         // Setup: Complete first claim with amount 10
         payment_channel::deposit_to_hub_entry<RGas>(&alice_signer, alice_addr, TEST_AMOUNT_100);
         let channel_id = payment_channel::open_channel<RGas>(&alice_signer, bob_addr);
-        payment_channel::open_sub_channel_entry<RGas>(&alice_signer, channel_id, vm_id);
+        payment_channel::open_sub_channel_entry(&alice_signer, channel_id, vm_id);
         
         let signature = generate_test_signature();
-        payment_channel::claim_from_channel_for_test<RGas>(&bob_signer, channel_id, vm_id, TEST_AMOUNT_10, TEST_NONCE_1, signature);
+        payment_channel::claim_from_channel_for_test(&bob_signer, channel_id, vm_id, TEST_AMOUNT_10, TEST_NONCE_1, signature);
         
         // Test: close_sub_channel with final settlement (acc=15, nonce=3)
         let signature_close = generate_test_signature();
-        payment_channel::close_sub_channel_for_test<RGas>(&bob_signer, channel_id, vm_id, TEST_AMOUNT_15, TEST_NONCE_3, signature_close);
+        payment_channel::close_sub_channel_for_test(&bob_signer, channel_id, vm_id, TEST_AMOUNT_15, TEST_NONCE_3, signature_close);
         
         // Assertion: Additional 5 transferred verified by successful withdrawal
         let initial_account_balance = account_coin_store::balance<RGas>(bob_addr);
@@ -372,7 +374,7 @@ module rooch_framework::payment_channel_test {
         assert!(final_account_balance == initial_account_balance + TEST_AMOUNT_15, 3008);
         
         // SubChannel should be deleted
-        assert!(!payment_channel::sub_channel_exists<RGas>(channel_id, vm_id), 3009);
+        assert!(!payment_channel::sub_channel_exists(channel_id, vm_id), 3009);
         
         // No event checking available
     }
@@ -386,19 +388,20 @@ module rooch_framework::payment_channel_test {
         // Setup: Complete sub-channel operations
         payment_channel::deposit_to_hub_entry<RGas>(&alice_signer, alice_addr, TEST_AMOUNT_100);
         let channel_id = payment_channel::open_channel<RGas>(&alice_signer, bob_addr);
-        payment_channel::open_sub_channel_entry<RGas>(&alice_signer, channel_id, vm_id);
+        payment_channel::open_sub_channel_entry(&alice_signer, channel_id, vm_id);
         
         let signature = generate_test_signature();
-        payment_channel::claim_from_channel_for_test<RGas>(&bob_signer, channel_id, vm_id, TEST_AMOUNT_10, TEST_NONCE_1, signature);
+        payment_channel::claim_from_channel_for_test(&bob_signer, channel_id, vm_id, TEST_AMOUNT_10, TEST_NONCE_1, signature);
         
         // Test: Receiver close_channel with final proof
-        payment_channel::close_channel<RGas>(&bob_signer, channel_id, vector::empty());
+        payment_channel::close_channel(&bob_signer, channel_id, vector::empty());
         
         // Assertion: Channel status changed to STATUS_CLOSED; PaymentHub active_channels-1
-        let (_sender, _receiver, _hub_id, status) = payment_channel::get_channel_info<RGas>(channel_id);
+        let (_sender, _receiver, _coin_type, status) = payment_channel::get_channel_info(channel_id);
         assert!(status == 2, 4001); // STATUS_CLOSED = 2
         
-        let active_count = payment_channel::get_active_channel_count<RGas>(alice_addr);
+        let coin_type = type_info::type_name<RGas>();
+        let active_count = payment_channel::get_active_channel_count(alice_addr, coin_type);
         assert!(active_count == 0, 4002);
         
         // No event checking available
@@ -412,13 +415,13 @@ module rooch_framework::payment_channel_test {
         // Setup: Close channel
         payment_channel::deposit_to_hub_entry<RGas>(&alice_signer, alice_addr, TEST_AMOUNT_100);
         let channel_id = payment_channel::open_channel<RGas>(&alice_signer, bob_addr);
-        payment_channel::open_sub_channel_entry<RGas>(&alice_signer, channel_id, vm_id);
+        payment_channel::open_sub_channel_entry(&alice_signer, channel_id, vm_id);
         
-        payment_channel::close_channel<RGas>(&bob_signer, channel_id, vector::empty());
+        payment_channel::close_channel(&bob_signer, channel_id, vector::empty());
         
         // Test: Attempt claim after close - should abort
         let signature = generate_test_signature();
-        payment_channel::claim_from_channel_for_test<RGas>(&bob_signer, channel_id, vm_id, TEST_AMOUNT_10, TEST_NONCE_1, signature);
+        payment_channel::claim_from_channel_for_test(&bob_signer, channel_id, vm_id, TEST_AMOUNT_10, TEST_NONCE_1, signature);
     }
 
     // === Test Group 5: Cancellation Flow ===
@@ -432,13 +435,14 @@ module rooch_framework::payment_channel_test {
         let channel_id = payment_channel::open_channel<RGas>(&alice_signer, bob_addr);
         
         // Test: initiate_cancellation with no SubChannels
-        payment_channel::initiate_cancellation_entry<RGas>(&alice_signer, channel_id);
+        payment_channel::initiate_cancellation_entry(&alice_signer, channel_id);
         
         // Assertion: Immediately STATUS_CLOSED; ChannelCancellationFinalizedEvent; count-1
-        let (_sender, _receiver, _hub_id, status) = payment_channel::get_channel_info<RGas>(channel_id);
+        let (_sender, _receiver, _coin_type, status) = payment_channel::get_channel_info(channel_id);
         assert!(status == 2, 5001); // STATUS_CLOSED
         
-        let active_count = payment_channel::get_active_channel_count<RGas>(alice_addr);
+        let coin_type = type_info::type_name<RGas>();
+        let active_count = payment_channel::get_active_channel_count(alice_addr, coin_type);
         assert!(active_count == 0, 5002);
         
         // No event checking available
@@ -451,16 +455,16 @@ module rooch_framework::payment_channel_test {
         // Setup: Open channel with sub-channels
         payment_channel::deposit_to_hub_entry<RGas>(&alice_signer, alice_addr, TEST_AMOUNT_100);
         let channel_id = payment_channel::open_channel<RGas>(&alice_signer, bob_addr);
-        payment_channel::open_sub_channel_entry<RGas>(&alice_signer, channel_id, vm_id);
+        payment_channel::open_sub_channel_entry(&alice_signer, channel_id, vm_id);
         
         // Test: initiate_cancellation with SubChannels
-        payment_channel::initiate_cancellation_entry<RGas>(&alice_signer, channel_id);
+        payment_channel::initiate_cancellation_entry(&alice_signer, channel_id);
         
         // Assertion: STATUS_CANCELLING; cancellation_info saved; ChannelCancellationInitiatedEvent
-        let (_sender, _receiver, _hub_id, status) = payment_channel::get_channel_info<RGas>(channel_id);
+        let (_sender, _receiver, _coin_type, status) = payment_channel::get_channel_info(channel_id);
         assert!(status == 1, 5004); // STATUS_CANCELLING
         
-        let cancellation_info = payment_channel::get_cancellation_info<RGas>(channel_id);
+        let cancellation_info = payment_channel::get_cancellation_info(channel_id);
         assert!(option::is_some(&cancellation_info), 5005);
         
         // No event checking available
@@ -473,15 +477,15 @@ module rooch_framework::payment_channel_test {
         // Setup: Initiate cancellation
         payment_channel::deposit_to_hub_entry<RGas>(&alice_signer, alice_addr, TEST_AMOUNT_100);
         let channel_id = payment_channel::open_channel<RGas>(&alice_signer, bob_addr);
-        payment_channel::open_sub_channel_entry<RGas>(&alice_signer, channel_id, vm_id);
-        payment_channel::initiate_cancellation_entry<RGas>(&alice_signer, channel_id);
+        payment_channel::open_sub_channel_entry(&alice_signer, channel_id, vm_id);
+        payment_channel::initiate_cancellation_entry(&alice_signer, channel_id);
         
         // Test: Receiver dispute_cancellation with higher amount
         let signature = generate_test_signature();
-        payment_channel::dispute_cancellation_for_test<RGas>(&bob_signer, channel_id, vm_id, TEST_AMOUNT_15, TEST_NONCE_2, signature);
+        payment_channel::dispute_cancellation_for_test(&bob_signer, channel_id, vm_id, TEST_AMOUNT_15, TEST_NONCE_2, signature);
         
         // Assertion: pending_amount increased; ChannelDisputeEvent
-        let cancellation_info = payment_channel::get_cancellation_info<RGas>(channel_id);
+        let cancellation_info = payment_channel::get_cancellation_info(channel_id);
         assert!(option::is_some(&cancellation_info), 5007);
         
         // No event checking available
@@ -495,11 +499,11 @@ module rooch_framework::payment_channel_test {
         // Setup: Initiate cancellation
         payment_channel::deposit_to_hub_entry<RGas>(&alice_signer, alice_addr, TEST_AMOUNT_100);
         let channel_id = payment_channel::open_channel<RGas>(&alice_signer, bob_addr);
-        payment_channel::open_sub_channel_entry<RGas>(&alice_signer, channel_id, vm_id);
-        payment_channel::initiate_cancellation_entry<RGas>(&alice_signer, channel_id);
+        payment_channel::open_sub_channel_entry(&alice_signer, channel_id, vm_id);
+        payment_channel::initiate_cancellation_entry(&alice_signer, channel_id);
         
         // Test: Attempt finalize_cancellation before challenge period - should abort
-        payment_channel::finalize_cancellation_entry<RGas>(channel_id);
+        payment_channel::finalize_cancellation_entry(channel_id);
     }
 
     #[test]
@@ -509,20 +513,21 @@ module rooch_framework::payment_channel_test {
         // Setup: Initiate cancellation
         payment_channel::deposit_to_hub_entry<RGas>(&alice_signer, alice_addr, TEST_AMOUNT_100);
         let channel_id = payment_channel::open_channel<RGas>(&alice_signer, bob_addr);
-        payment_channel::open_sub_channel_entry<RGas>(&alice_signer, channel_id, vm_id);
-        payment_channel::initiate_cancellation_entry<RGas>(&alice_signer, channel_id);
+        payment_channel::open_sub_channel_entry(&alice_signer, channel_id, vm_id);
+        payment_channel::initiate_cancellation_entry(&alice_signer, channel_id);
         
         // Fast forward time past challenge period
         timestamp::fast_forward_milliseconds_for_test(ONE_DAY_MILLISECONDS + 1000);
         
         // Test: finalize_cancellation after challenge period
-        payment_channel::finalize_cancellation_entry<RGas>(channel_id);
+        payment_channel::finalize_cancellation_entry(channel_id);
         
         // Assertion: Channel closed; balance settled; count-1
-        let (_sender, _receiver, _hub_id, status) = payment_channel::get_channel_info<RGas>(channel_id);
+        let (_sender, _receiver, _coin_type, status) = payment_channel::get_channel_info(channel_id);
         assert!(status == 2, 5009); // STATUS_CLOSED
         
-        let active_count = payment_channel::get_active_channel_count<RGas>(alice_addr);
+        let coin_type = type_info::type_name<RGas>();
+        let active_count = payment_channel::get_active_channel_count(alice_addr, coin_type);
         assert!(active_count == 0, 5010);
         
         // No event checking available
@@ -537,18 +542,19 @@ module rooch_framework::payment_channel_test {
         // Setup: Close channel
         payment_channel::deposit_to_hub_entry<RGas>(&alice_signer, alice_addr, TEST_AMOUNT_100);
         let channel_id = payment_channel::open_channel<RGas>(&alice_signer, bob_addr);
-        payment_channel::open_sub_channel_entry<RGas>(&alice_signer, channel_id, vm_id);
+        payment_channel::open_sub_channel_entry(&alice_signer, channel_id, vm_id);
         
-        payment_channel::close_channel<RGas>(&bob_signer, channel_id, vector::empty());
+        payment_channel::close_channel(&bob_signer, channel_id, vector::empty());
         
         // Test: Reopen closed channel
         payment_channel::open_channel_entry<RGas>(&alice_signer, bob_addr);
         
         // Assertion: Status back to STATUS_ACTIVE; count +1; old SubChannel table still exists
-        let (_sender, _receiver, _hub_id, status) = payment_channel::get_channel_info<RGas>(channel_id);
+        let (_sender, _receiver, _coin_type, status) = payment_channel::get_channel_info(channel_id);
         assert!(status == 0, 6001); // STATUS_ACTIVE
         
-        let active_count = payment_channel::get_active_channel_count<RGas>(alice_addr);
+        let coin_type = type_info::type_name<RGas>();
+        let active_count = payment_channel::get_active_channel_count(alice_addr, coin_type);
         assert!(active_count == 1, 6002);
     }
 
@@ -559,17 +565,17 @@ module rooch_framework::payment_channel_test {
         // Setup: Close and reopen channel
         payment_channel::deposit_to_hub_entry<RGas>(&alice_signer, alice_addr, TEST_AMOUNT_100);
         let channel_id = payment_channel::open_channel<RGas>(&alice_signer, bob_addr);
-        payment_channel::open_sub_channel_entry<RGas>(&alice_signer, channel_id, vm_id);
+        payment_channel::open_sub_channel_entry(&alice_signer, channel_id, vm_id);
         
-        payment_channel::close_channel<RGas>(&bob_signer, channel_id, vector::empty());
+        payment_channel::close_channel(&bob_signer, channel_id, vector::empty());
         payment_channel::open_channel_entry<RGas>(&alice_signer, bob_addr);
         
         // Test: Old VM can still claim (sub-channel record preserved)
         let signature = generate_test_signature();
-        payment_channel::claim_from_channel_for_test<RGas>(&bob_signer, channel_id, vm_id, TEST_AMOUNT_10, TEST_NONCE_1, signature);
+        payment_channel::claim_from_channel_for_test(&bob_signer, channel_id, vm_id, TEST_AMOUNT_10, TEST_NONCE_1, signature);
         
         // Assertion: Claim works normally
-        let (last_claimed, last_nonce) = payment_channel::get_sub_channel_state<RGas>(channel_id, vm_id);
+        let (last_claimed, last_nonce) = payment_channel::get_sub_channel_state(channel_id, vm_id);
         assert!(last_claimed == TEST_AMOUNT_10, 6003);
         assert!(last_nonce == TEST_NONCE_1, 6004);
     }
@@ -596,9 +602,9 @@ module rooch_framework::payment_channel_test {
         // Setup: Open and close channel
         payment_channel::deposit_to_hub_entry<RGas>(&alice_signer, alice_addr, TEST_AMOUNT_100);
         let channel_id = payment_channel::open_channel<RGas>(&alice_signer, bob_addr);
-        payment_channel::open_sub_channel_entry<RGas>(&alice_signer, channel_id, vm_id);
+        payment_channel::open_sub_channel_entry(&alice_signer, channel_id, vm_id);
         
-        payment_channel::close_channel<RGas>(&bob_signer, channel_id, vector::empty());
+        payment_channel::close_channel(&bob_signer, channel_id, vector::empty());
         
         // Get initial account balance
         let initial_balance = account_coin_store::balance<RGas>(alice_addr);
@@ -626,26 +632,26 @@ module rooch_framework::payment_channel_test {
         let channel_id = payment_channel::open_channel<RGas>(&alice_signer, bob_addr);
         
         // 3. Open sub-channel
-        payment_channel::open_sub_channel_entry<RGas>(&alice_signer, channel_id, vm_id);
+        payment_channel::open_sub_channel_entry(&alice_signer, channel_id, vm_id);
         
         // 4. Multiple claims
         let signature1 = generate_test_signature();
-        payment_channel::claim_from_channel_for_test<RGas>(&bob_signer, channel_id, vm_id, TEST_AMOUNT_10, TEST_NONCE_1, signature1);
+        payment_channel::claim_from_channel_for_test(&bob_signer, channel_id, vm_id, TEST_AMOUNT_10, TEST_NONCE_1, signature1);
         
         let signature2 = generate_test_signature();
-        payment_channel::claim_from_channel_for_test<RGas>(&bob_signer, channel_id, vm_id, TEST_AMOUNT_15, TEST_NONCE_2, signature2);
+        payment_channel::claim_from_channel_for_test(&bob_signer, channel_id, vm_id, TEST_AMOUNT_15, TEST_NONCE_2, signature2);
         
         // 5. Close sub-channel
         let signature_close = generate_test_signature();
-        payment_channel::close_sub_channel_for_test<RGas>(&bob_signer, channel_id, vm_id, TEST_AMOUNT_15, TEST_NONCE_2, signature_close);
+        payment_channel::close_sub_channel_for_test(&bob_signer, channel_id, vm_id, TEST_AMOUNT_15, TEST_NONCE_2, signature_close);
         
         // 6. Close channel
-        payment_channel::close_channel<RGas>(&bob_signer, channel_id, vector::empty());
+        payment_channel::close_channel(&bob_signer, channel_id, vector::empty());
         
         // 7. Verify final state
-        let (_sender, _receiver, _hub_id, status) = payment_channel::get_channel_info<RGas>(channel_id);
+        let (_sender, _receiver, _coin_type, status) = payment_channel::get_channel_info(channel_id);
         assert!(status == 2, 8001); // STATUS_CLOSED
-        assert!(!payment_channel::sub_channel_exists<RGas>(channel_id, vm_id), 8002);
+        assert!(!payment_channel::sub_channel_exists(channel_id, vm_id), 8002);
         
         // 8. Verify funds transferred by checking withdrawal capability
         let initial_bob_account_balance = account_coin_store::balance<RGas>(bob_addr);
