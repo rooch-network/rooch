@@ -15,7 +15,6 @@ module rooch_framework::payment_channel {
     use moveos_std::tx_context;
     use moveos_std::timestamp;
     use moveos_std::event;
-    use moveos_std::hash;
     use std::string::String;
     use rooch_framework::coin::{Coin, GenericCoin};
     use rooch_framework::multi_coin_store::{Self, MultiCoinStore};
@@ -601,13 +600,17 @@ module rooch_framework::payment_channel {
         
         // Verify the sender's signature on the off-chain proof (SubRAV).
         if (!skip_signature_verification) {
+            let sub_rav = SubRAV {
+                channel_id,
+                vm_id_fragment: sender_vm_id_fragment,
+                accumulated_amount: sub_accumulated_amount,
+                nonce: sub_nonce,
+            };
+
             assert!(
             verify_sender_signature(
                 channel,
-                channel_id,
-                sender_vm_id_fragment,
-                sub_accumulated_amount,
-                sub_nonce,
+                sub_rav,
                 sender_signature
                 ),
                 ErrorInvalidSenderSignature
@@ -789,13 +792,17 @@ module rooch_framework::payment_channel {
             let vm_id_fragment = proof.vm_id_fragment;
             
             // Verify the sender's signature on this final SubRAV
+            let sub_rav = SubRAV {
+                channel_id,
+                vm_id_fragment,
+                accumulated_amount: proof.accumulated_amount,
+                nonce: proof.nonce,
+            };
+
             assert!(
                 verify_sender_signature(
                     channel,
-                    channel_id,
-                    vm_id_fragment,
-                    proof.accumulated_amount,
-                    proof.nonce,
+                    sub_rav,
                     proof.sender_signature
                 ),
                 ErrorInvalidSenderSignature
@@ -997,14 +1004,18 @@ module rooch_framework::payment_channel {
         assert!(table::contains(&channel.sub_channels, sender_vm_id_fragment), ErrorSubChannelNotOpened);
         
         if (!skip_signature_verification) {
+            let sub_rav = SubRAV {
+                channel_id,
+                vm_id_fragment: sender_vm_id_fragment,
+                accumulated_amount: dispute_accumulated_amount,
+                nonce: dispute_nonce,
+            };
+
             // Verify signature
             assert!(
                 verify_sender_signature(
                     channel,
-                    channel_id,
-                    sender_vm_id_fragment,
-                    dispute_accumulated_amount,
-                    dispute_nonce,
+                    sub_rav,
                     sender_signature
                     ),
                 ErrorInvalidSenderSignature
@@ -1252,38 +1263,26 @@ module rooch_framework::payment_channel {
         };
     }
 
-    fun get_sub_rav_hash(
-        channel_id: ObjectID,
-        vm_id_fragment: String,
-        accumulated_amount: u256,
-        nonce: u64
-    ): vector<u8> {
-        // Create SubRAV struct and serialize it with BCS
-        let sub_rav = SubRAV {
-            channel_id,
-            vm_id_fragment,
-            accumulated_amount,
-            nonce,
-        };
-        let serialized_bytes = bcs::to_bytes(&sub_rav);
-        hash::sha3_256(serialized_bytes)
-    }
-
     fun verify_sender_signature(
         channel: &PaymentChannel,
-        channel_id: ObjectID,
-        vm_id_fragment: String,
-        accumulated_amount: u256,
-        nonce: u64,
+        sub_rav: SubRAV,
         signature: vector<u8>
     ): bool {
-        let msg_hash = get_sub_rav_hash(channel_id, vm_id_fragment, accumulated_amount, nonce);
-        
         // Get the sub-channel to access stored public key information
-        let sub_channel = table::borrow(&channel.sub_channels, vm_id_fragment);
+        let sub_channel = table::borrow(&channel.sub_channels, sub_rav.vm_id_fragment);
         
+        verify_rav_signature(sub_rav, signature, sub_channel.pk_multibase, sub_channel.method_type)
+    }
+
+    fun verify_rav_signature(
+        sub_rav: SubRAV,
+        signature: vector<u8>,
+        pk_multibase: String,
+        method_type: String
+    ): bool {
+        let msg = bcs::to_bytes(&sub_rav);
         // Verify signature using the stored public key and method type
-        did::verify_signature_by_type(msg_hash, signature, &sub_channel.pk_multibase, &sub_channel.method_type)
+        did::verify_signature_by_type(msg, signature, &pk_multibase, &method_type)
     }
 
     #[test_only]
@@ -1345,5 +1344,23 @@ module rooch_framework::payment_channel {
             sender_signature,
             true
         );
+    }
+
+    #[test]
+    fun test_sub_rav_hash() {
+        let sub_rav = bcs::from_bytes<SubRAV>(x"0135df6e58502089ed640382c477e4b6f99e5e90d881678d37ed774a737fd3797c0b6163636f756e742d6b657910270000000000000000000000000000000000000000000000000000000000000100000000000000");
+        assert!(sub_rav.channel_id == object::from_string(&std::string::utf8(b"0x35df6e58502089ed640382c477e4b6f99e5e90d881678d37ed774a737fd3797c")), 1);
+        assert!(sub_rav.vm_id_fragment == std::string::utf8(b"account-key"), 2);
+        assert!(sub_rav.accumulated_amount == 10000, 3);
+        assert!(sub_rav.nonce == 1, 4);
+    }
+
+    #[test]
+    fun test_sub_rav_signature() {
+        let sub_rav = bcs::from_bytes<SubRAV>(x"0135df6e58502089ed640382c477e4b6f99e5e90d881678d37ed774a737fd3797c0b6163636f756e742d6b657910270000000000000000000000000000000000000000000000000000000000000100000000000000");
+        let signature = x"03b5dbe8ba7733b9acec78a6e146ebf74d13046f80129c6869f1a389e29a9f9373aaf7e1ba0a83463954851cf7eef4b9942dfba113ab2cad240a89651d024be6";
+        let pk_multibase = std::string::utf8(b"zwvRask8Xx7oi3Aw6PvvmmBvdYbHqsJPkvCZYxDFZMwZa");
+        let method_type = std::string::utf8(b"EcdsaSecp256k1VerificationKey2019");
+        assert!(verify_rav_signature(sub_rav, signature, pk_multibase, method_type), 1);
     }
 }

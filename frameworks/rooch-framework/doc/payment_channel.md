@@ -73,7 +73,6 @@
 <b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x2::bcs</a>;
 <b>use</b> <a href="">0x2::event</a>;
-<b>use</b> <a href="">0x2::hash</a>;
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::table</a>;
 <b>use</b> <a href="">0x2::timestamp</a>;
