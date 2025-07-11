@@ -6,6 +6,7 @@ use async_trait::async_trait;
 use clap::Parser;
 use move_core_types::u256::U256;
 use moveos_types::moveos_std::object::ObjectID;
+use rooch_rpc_api::jsonrpc_types::StrView;
 use rooch_types::address::ParsedAddress;
 use rooch_types::error::RoochResult;
 use rooch_types::framework::payment_channel::SubRAV;
@@ -41,7 +42,7 @@ pub struct CreateRavCommand {
 pub struct CreateRavOutput {
     pub channel_id: ObjectID,
     pub vm_id_fragment: String,
-    pub amount: U256,
+    pub amount: StrView<U256>,
     pub nonce: u64,
     pub signature: String,
     pub signer_address: String,
@@ -75,7 +76,7 @@ impl CommandAction<CreateRavOutput> for CreateRavCommand {
         Ok(CreateRavOutput {
             channel_id: self.channel_id,
             vm_id_fragment,
-            amount: self.amount,
+            amount: self.amount.into(),
             nonce: self.nonce,
             signature: signature_hex,
             signer_address: signer_address.to_string(),

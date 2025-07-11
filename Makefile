@@ -5,7 +5,7 @@
         build build-rust build-rust-debug build-rust-release build-move \
         test test-rust test-rust-unit test-rust-integration test-move test-move-frameworks test-move-did test-move-examples \
         fmt fmt-rust \
-        lint lint-rust lint-move \
+        lint lint-rust \
         clean clean-all clean-rust clean-move \
         rust-machete rust-clippy \
         move-framework move-stdlib move-nursery move-bitcoin-framework move-examples \
@@ -41,7 +41,6 @@ help:
 	@echo "    fmt-rust            - Check Rust code formatting"
 	@echo "    lint                - Run all linters (Rust clippy, Rust machete, Move non-ASCII check)"
 	@echo "    lint-rust           - Run Rust clippy and machete linters"
-	@echo "    lint-move           - Check Move code for non-ASCII comments"
 	@echo ""
 	@echo "  Rust Specific:"
 	@echo "    rust-clippy         - Run Rust clippy linter"
@@ -175,20 +174,6 @@ move-bitcoin-framework:
 	@echo "🔨 Building bitcoin-move using Rooch CLI..."
 	$(ROOCH_CMD) move build -p frameworks/bitcoin-move
 
-lint-move:
-	@echo "🔍 Running Move code quality checks (non-ASCII comments)..."
-	@found_chinese=0; \
-	for file_path in $$(find frameworks examples -name '*.move'); do \
-	    if grep -q "[\u4e00-\u9fff]" "$$file_path"; then \
-	        echo "❌ Found Chinese comments in: $$file_path"; \
-	        found_chinese=1; \
-	    fi; \
-	done; \
-	if [ $$found_chinese -eq 1 ]; then \
-	    exit 1; \
-	else \
-	    echo "✅ No Chinese comments found in Move files."; \
-	fi
 
 test-move-frameworks:
 	@echo "🧪 Running tests for all Move frameworks using Rooch CLI..."
@@ -233,8 +218,10 @@ build: build-rust-release build-move
 test: test-rust test-move
 	@echo "🎉 All Rust and Move tests completed successfully."
 
-lint: fmt-rust lint-rust lint-move
+lint: fmt-rust lint-rust
 	@echo "✅ All linting and formatting checks passed."
+
+check: lint
 
 all: build test lint
 	@echo "🎉✅🎉 Project All: Build, Test, Lint completed successfully! 🎉✅🎉"

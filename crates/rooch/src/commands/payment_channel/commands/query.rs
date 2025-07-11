@@ -6,7 +6,8 @@ use async_trait::async_trait;
 use clap::Parser;
 use move_core_types::account_address::AccountAddress;
 use moveos_types::move_std::option::MoveOption;
-use moveos_types::moveos_std::object::ObjectID;
+use moveos_types::moveos_std::object::{DynamicField, ObjectID};
+use rooch_types::address::{ParsedAddress, RoochAddress};
 use rooch_types::error::RoochResult;
 use rooch_types::framework::multi_coin_store::CoinStoreField;
 use rooch_types::framework::payment_channel::{
@@ -36,7 +37,7 @@ pub enum QueryType {
 pub struct HubCommand {
     /// Address of the hub owner
     #[clap(long, help = "Address of the hub owner")]
-    pub owner: AccountAddress,
+    pub owner: ParsedAddress,
 
     /// Page size for listing fields
     #[clap(long, default_value = "100", help = "Page size for listing fields")]
@@ -84,7 +85,7 @@ struct PaymentChannelData {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct HubOutput {
     pub hub_id: ObjectID,
-    pub owner: AccountAddress,
+    pub owner: RoochAddress,
     pub balances: Vec<BalanceInfo>,
     pub active_channels: Vec<ActiveChannelInfo>,
 }
@@ -156,9 +157,9 @@ impl CommandAction<HubOutput> for HubCommand {
     async fn execute(self) -> RoochResult<HubOutput> {
         let context = self.context_options.build()?;
         let client = context.get_client().await?;
-
+        let owner = context.resolve_address(self.owner.into())?;
         // 1. Calculate hub_id directly in Rust
-        let hub_id = PaymentChannelModule::payment_hub_id(self.owner);
+        let hub_id = PaymentChannelModule::payment_hub_id(owner);
 
         // 2. Get PaymentHub object state
         let mut hub_object_views = client
@@ -168,7 +169,7 @@ impl CommandAction<HubOutput> for HubCommand {
 
         if hub_object_views.is_empty() || hub_object_views.first().unwrap().is_none() {
             return Err(rooch_types::error::RoochError::CommandArgumentError(
-                format!("Payment hub for address {} not found", self.owner),
+                format!("Payment hub for address {} not found", owner),
             ));
         }
 
@@ -198,25 +199,21 @@ impl CommandAction<HubOutput> for HubCommand {
                 .await?;
 
             for state in &field_states.data {
-                // The key is coin_type (String), value is CoinStoreField
-                let coin_type = match bcs::from_bytes::<String>(state.field_key.0.as_ref()) {
-                    Ok(ct) => ct,
-                    Err(_) => continue,
-                };
+                let field =
+                    bcs::from_bytes::<DynamicField<String, CoinStoreField>>(&state.state.value.0)
+                        .map_err(|_| {
+                        rooch_types::error::RoochError::CommandArgumentError(
+                            "Failed to deserialize CoinStoreField".to_string(),
+                        )
+                    })?;
 
-                // Deserialize CoinStoreField to get balance
-                match bcs::from_bytes::<CoinStoreField>(&state.state.value.0) {
-                    Ok(coin_store_field) => {
-                        balances.push(BalanceInfo {
-                            coin_type,
-                            amount: coin_store_field.balance().to_string(),
-                        });
-                    }
-                    Err(_) => continue,
-                }
+                balances.push(BalanceInfo {
+                    coin_type: field.name,
+                    amount: field.value.balance().to_string(),
+                });
             }
 
-            if field_states.next_cursor.is_none() {
+            if !field_states.has_next_page {
                 break;
             }
             cursor = field_states.next_cursor;
@@ -241,21 +238,20 @@ impl CommandAction<HubOutput> for HubCommand {
 
             for state in &field_states.data {
                 // The key is coin_type (String), value is count (u64)
-                let coin_type = match bcs::from_bytes::<String>(state.field_key.0.as_ref()) {
-                    Ok(ct) => ct,
-                    Err(_) => continue,
-                };
+                let field = bcs::from_bytes::<DynamicField<String, u64>>(&state.state.value.0)
+                    .map_err(|_| {
+                        rooch_types::error::RoochError::CommandArgumentError(
+                            "Failed to deserialize u64".to_string(),
+                        )
+                    })?;
 
-                // Deserialize count (u64)
-                match bcs::from_bytes::<u64>(&state.state.value.0) {
-                    Ok(count) => {
-                        active_channels.push(ActiveChannelInfo { coin_type, count });
-                    }
-                    Err(_) => continue,
-                }
+                active_channels.push(ActiveChannelInfo {
+                    coin_type: field.name,
+                    count: field.value,
+                });
             }
 
-            if field_states.next_cursor.is_none() {
+            if !field_states.has_next_page {
                 break;
             }
             cursor = field_states.next_cursor;
@@ -263,7 +259,7 @@ impl CommandAction<HubOutput> for HubCommand {
 
         Ok(HubOutput {
             hub_id,
-            owner: self.owner,
+            owner: owner.into(),
             balances,
             active_channels,
         })
@@ -329,16 +325,24 @@ impl CommandAction<ChannelOutput> for ChannelCommand {
                     .await?;
 
                 for state in field_states.into_iter().flatten() {
-                    if let Ok(sub_channel) = bcs::from_bytes::<SubChannel>(&state.value.0) {
-                        sub_channels_info.push(SubChannelInfo {
-                            fragment: vm_id.clone(),
-                            pk_multibase: sub_channel.pk_multibase(),
-                            method_type: sub_channel.method_type(),
-                            last_claimed_amount: sub_channel.last_claimed_amount().to_string(),
-                            last_confirmed_nonce: sub_channel.last_confirmed_nonce(),
-                        });
-                        sub_channels_count += 1;
-                    }
+                    let sub_channel_field =
+                        bcs::from_bytes::<DynamicField<String, SubChannel>>(&state.value.0)
+                            .map_err(|_| {
+                                rooch_types::error::RoochError::CommandArgumentError(
+                                    "Failed to deserialize SubChannel".to_string(),
+                                )
+                            })?;
+                    sub_channels_info.push(SubChannelInfo {
+                        fragment: vm_id.clone(),
+                        pk_multibase: sub_channel_field.value.pk_multibase(),
+                        method_type: sub_channel_field.value.method_type(),
+                        last_claimed_amount: sub_channel_field
+                            .value
+                            .last_claimed_amount()
+                            .to_string(),
+                        last_confirmed_nonce: sub_channel_field.value.last_confirmed_nonce(),
+                    });
+                    sub_channels_count += 1;
                 }
             } else if self.list_sub_channels {
                 // List all sub-channels with pagination
@@ -355,25 +359,29 @@ impl CommandAction<ChannelOutput> for ChannelCommand {
                         .await?;
 
                     for state in &field_states.data {
-                        let fragment = match bcs::from_bytes::<String>(state.field_key.0.as_ref()) {
-                            Ok(f) => f,
-                            Err(_) => continue,
-                        };
-
-                        if let Ok(sub_channel) = bcs::from_bytes::<SubChannel>(&state.state.value.0)
-                        {
-                            sub_channels_info.push(SubChannelInfo {
-                                fragment,
-                                pk_multibase: sub_channel.pk_multibase(),
-                                method_type: sub_channel.method_type(),
-                                last_claimed_amount: sub_channel.last_claimed_amount().to_string(),
-                                last_confirmed_nonce: sub_channel.last_confirmed_nonce(),
-                            });
-                            sub_channels_count += 1;
-                        }
+                        let sub_channel_field =
+                            bcs::from_bytes::<DynamicField<String, SubChannel>>(
+                                &state.state.value.0,
+                            )
+                            .map_err(|_| {
+                                rooch_types::error::RoochError::CommandArgumentError(
+                                    "Failed to deserialize SubChannel".to_string(),
+                                )
+                            })?;
+                        sub_channels_info.push(SubChannelInfo {
+                            fragment: sub_channel_field.name,
+                            pk_multibase: sub_channel_field.value.pk_multibase(),
+                            method_type: sub_channel_field.value.method_type(),
+                            last_claimed_amount: sub_channel_field
+                                .value
+                                .last_claimed_amount()
+                                .to_string(),
+                            last_confirmed_nonce: sub_channel_field.value.last_confirmed_nonce(),
+                        });
+                        sub_channels_count += 1;
                     }
 
-                    if field_states.next_cursor.is_none() {
+                    if !field_states.has_next_page {
                         break;
                     }
                     cursor = field_states.next_cursor;
@@ -382,12 +390,24 @@ impl CommandAction<ChannelOutput> for ChannelCommand {
 
             Some(sub_channels_info)
         } else {
-            // If not listing sub-channels, still count them
-            let field_states = client
+            let mut sub_channels_table_object = client
                 .rooch
-                .list_field_states(payment_channel.sub_channels.into(), None, None, None)
+                .get_object_states(vec![payment_channel.sub_channels], None)
                 .await?;
-            sub_channels_count = field_states.data.len() as u64;
+            if sub_channels_table_object.is_empty()
+                || sub_channels_table_object.first().unwrap().is_none()
+            {
+                return Err(rooch_types::error::RoochError::CommandArgumentError(
+                    format!(
+                        "Sub-channels table for channel {} not found",
+                        self.channel_id
+                    ),
+                ));
+            }
+            let sub_channels_table_object_view = sub_channels_table_object.pop().unwrap().unwrap();
+            let sub_channels_table_size = sub_channels_table_object_view.metadata.size;
+
+            sub_channels_count = sub_channels_table_size.0;
             None
         };
 

@@ -20,12 +20,13 @@ pub struct OpenCommand {
     #[clap(long, help = "Channel receiver address")]
     pub receiver: ParsedAddress,
 
-    /// Comma-separated list of VM ID fragments for sub-channels
+    /// Comma-separated list of VM ID fragments for sub-channels.
+    /// If not provided, will query DID document for available verification methods.
     #[clap(
         long,
-        help = "Comma-separated list of VM ID fragments for sub-channels"
+        help = "Comma-separated list of VM ID fragments for sub-channels (optional, auto-discovered from DID if not provided)"
     )]
-    pub vm_id_fragments: String,
+    pub vm_id_fragments: Option<String>,
 
     #[clap(flatten)]
     pub tx_options: TransactionOptions,
@@ -38,6 +39,7 @@ pub struct OpenCommand {
 pub struct OpenOutput {
     pub receiver: RoochAddress,
     pub vm_id_fragments: Vec<String>,
+    pub fragments_source: String, // "provided" or "auto_discovered"
     pub channel_id: ObjectID,
     pub execution_info: TransactionExecutionInfoView,
 }
@@ -59,13 +61,31 @@ impl CommandAction<OpenOutput> for OpenCommand {
             ));
         }
 
-        // Parse VM ID fragments
-        let vm_id_fragments: Vec<String> = self
-            .vm_id_fragments
-            .split(',')
-            .map(|s| s.trim().to_string())
-            .filter(|s| !s.is_empty())
-            .collect();
+        // Parse or discover VM ID fragments
+        let vm_id_fragments: Vec<String> = if let Some(fragments_str) = &self.vm_id_fragments {
+            // User provided fragments
+            fragments_str
+                .split(',')
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty())
+                .collect()
+        } else {
+            // Auto-discover from DID document - only include fragments with available keys
+            // Try to find any available verification method
+            match context
+                .find_did_verification_method_keypair(sender, None)
+                .await
+            {
+                Ok((fragment, _controller_addr, _keypair)) => {
+                    vec![fragment]
+                }
+                Err(_) => {
+                    return Err(rooch_types::error::RoochError::CommandArgumentError(
+                        "No verification methods with available keys found in DID document and no VM ID fragments provided".to_string(),
+                    ));
+                }
+            }
+        };
 
         if vm_id_fragments.is_empty() {
             return Err(rooch_types::error::RoochError::CommandArgumentError(
@@ -93,9 +113,16 @@ impl CommandAction<OpenOutput> for OpenCommand {
             receiver.into(),
         );
 
+        let fragments_source = if self.vm_id_fragments.is_some() {
+            "provided".to_string()
+        } else {
+            "auto_discovered".to_string()
+        };
+
         Ok(OpenOutput {
             receiver,
             vm_id_fragments,
+            fragments_source,
             channel_id,
             execution_info: result.execution_info,
         })

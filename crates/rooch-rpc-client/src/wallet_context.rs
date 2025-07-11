@@ -297,6 +297,16 @@ impl WalletContext {
         self.execute(tx).await
     }
 
+    pub async fn sign_and_execute_action(
+        &self,
+        sender: RoochAddress,
+        action: MoveAction,
+        max_gas_amount: Option<u64>,
+    ) -> RoochResult<ExecuteTransactionResponseView> {
+        let tx_data = self.build_tx_data(sender, action, max_gas_amount).await?;
+        self.sign_and_execute(sender, tx_data).await
+    }
+
     /// Sign and execute a transaction **on behalf of a DID account**.
     /// 1) sender must be the DID's associated account address
     /// 2) Automatically selects a controller key available in the local keystore

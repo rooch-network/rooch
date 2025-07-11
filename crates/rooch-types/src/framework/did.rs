@@ -3,7 +3,12 @@
 
 use crate::addresses::ROOCH_FRAMEWORK_ADDRESS;
 use anyhow::Result;
-use move_core_types::{account_address::AccountAddress, ident_str, identifier::IdentStr};
+use move_core_types::{
+    account_address::AccountAddress,
+    ident_str,
+    identifier::IdentStr,
+    vm_status::{AbortLocation, VMStatus},
+};
 use moveos_types::{
     module_binding::{ModuleBinding, MoveFunctionCaller},
     move_std::string::MoveString,
@@ -19,6 +24,8 @@ use std::fmt::Display;
 use std::str::FromStr;
 
 pub const MODULE_NAME: &IdentStr = ident_str!("did");
+
+pub const ERROR_DID_DOCUMENT_NOT_EXIST: u64 = 1;
 
 /// DID identifier type
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq, Hash)]
@@ -730,15 +737,15 @@ impl<'a> DIDModule<'a> {
                 .unwrap()],
         );
         let ctx = TxContext::new_readonly_ctx(AccountAddress::ZERO);
-        let did_document =
-            self.caller
-                .call_function(&ctx, call)?
-                .into_result()
-                .map(|mut values| {
-                    let value = values.pop().expect("should have one return value");
-                    bcs::from_bytes::<DIDDocument>(&value.value)
-                        .expect("should be a valid DIDDocument")
-                })?;
+        let did_document = self
+            .caller
+            .call_function(&ctx, call)?
+            .into_result()
+            .map(|mut values| {
+                let value = values.pop().expect("should have one return value");
+                bcs::from_bytes::<DIDDocument>(&value.value).expect("should be a valid DIDDocument")
+            })
+            .map_err(Self::handle_vm_status_error)?;
         Ok(did_document)
     }
 
@@ -760,6 +767,30 @@ impl<'a> DIDModule<'a> {
                         .expect("should be a valid DIDDocument")
                 })?;
         Ok(did_document)
+    }
+
+    //TODO: handle other error codes
+    fn handle_vm_status_error(status: VMStatus) -> anyhow::Error {
+        match &status {
+            VMStatus::MoveAbort(location, code) => match location {
+                AbortLocation::Module(module_id) => {
+                    if module_id.address() == &Self::MODULE_ADDRESS
+                        && module_id.name() == Self::MODULE_NAME
+                    {
+                        match *code {
+                            ERROR_DID_DOCUMENT_NOT_EXIST => {
+                                anyhow::anyhow!("DID document not found")
+                            }
+                            _ => anyhow::anyhow!("Failed to get DID document: {:?}", status),
+                        }
+                    } else {
+                        anyhow::anyhow!("Failed to get DID document: {:?}", status)
+                    }
+                }
+                _ => anyhow::anyhow!("Failed to get DID document: {:?}", status),
+            },
+            _ => anyhow::anyhow!("Failed to get DID document: {:?}", status),
+        }
     }
 }
 
