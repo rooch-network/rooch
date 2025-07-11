@@ -17,7 +17,7 @@ use serde::{Deserialize, Serialize};
 #[clap(group(
     ArgGroup::new("rav_input")
         .required(true)
-        .args(&["rav_encoded", "individual_params"])
+        .args(&["rav", "individual_params"])
 ))]
 pub struct ClaimCommand {
     /// Multibase encoded signed RAV string (alternative to individual parameters)
@@ -26,10 +26,11 @@ pub struct ClaimCommand {
         help = "Multibase encoded signed RAV string from create-rav command",
         group = "rav_input"
     )]
-    pub rav_encoded: Option<String>,
+    pub rav: Option<String>,
 
     /// Use individual parameters instead of encoded RAV string
     #[clap(
+        short = 'i',
         long,
         help = "Use individual parameters (requires all individual params)",
         group = "rav_input"
@@ -102,7 +103,7 @@ impl CommandAction<ClaimOutput> for ClaimCommand {
 
         // Parse RAV data either from encoded string or individual parameters
         let (channel_id, vm_id_fragment, amount, nonce, signature_bytes) =
-            if let Some(encoded) = &self.rav_encoded {
+            if let Some(encoded) = &self.rav {
                 // Decode from multibase encoded string
                 let signed_rav: SignedSubRav = SignedSubRav::decode_from_multibase(encoded)?;
 
@@ -158,7 +159,7 @@ impl CommandAction<ClaimOutput> for ClaimCommand {
                 (channel_id, vm_id_fragment, amount, nonce, signature_bytes)
             } else {
                 return Err(rooch_types::error::RoochError::CommandArgumentError(
-                    "Either --rav-encoded or --individual-params must be provided".to_string(),
+                    "Either --rav or --individual-params must be provided".to_string(),
                 ));
             };
 

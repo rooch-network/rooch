@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{address::RoochAddress, addresses::ROOCH_FRAMEWORK_ADDRESS};
+use crate::addresses::ROOCH_FRAMEWORK_ADDRESS;
 use anyhow::Result;
 use move_core_types::language_storage::{StructTag, TypeTag};
 use move_core_types::u256::U256;
@@ -41,7 +41,6 @@ pub struct SignedSubRav {
     pub sub_rav: SubRAV,
     /// signature is the compressed signature bytes in hex format
     pub signature: String,
-    pub signer_address: RoochAddress,
 }
 
 impl SignedSubRav {
@@ -106,8 +105,9 @@ impl PaymentHub {
 pub struct PaymentChannel {
     pub sender: AccountAddress,
     pub receiver: AccountAddress,
-    pub coin_type: String,
+    pub coin_type: MoveString,
     // sub_channels: Table<String, SubChannel> - we'll handle this separately via field access
+    pub sub_channels: ObjectID,
     pub status: u8,
     pub cancellation_info: MoveOption<CancellationInfo>,
 }
@@ -150,8 +150,12 @@ impl PaymentChannel {
         self.receiver
     }
 
-    pub fn coin_type(&self) -> &str {
-        &self.coin_type
+    pub fn coin_type(&self) -> String {
+        self.coin_type.to_string()
+    }
+
+    pub fn sub_channels(&self) -> ObjectID {
+        self.sub_channels.clone()
     }
 
     pub fn status(&self) -> u8 {

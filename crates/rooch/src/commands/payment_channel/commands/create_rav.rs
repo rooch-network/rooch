@@ -6,7 +6,8 @@ use async_trait::async_trait;
 use clap::Parser;
 use move_core_types::u256::U256;
 use moveos_types::moveos_std::object::ObjectID;
-use rooch_types::address::ParsedAddress;
+use rooch_rpc_api::jsonrpc_types::StrView;
+use rooch_types::address::{ParsedAddress, RoochAddress};
 use rooch_types::crypto::CompressedSignature;
 use rooch_types::error::RoochResult;
 use rooch_types::framework::payment_channel::{SignedSubRav, SubRAV};
@@ -39,10 +40,47 @@ pub struct CreateRavCommand {
 }
 
 #[derive(Serialize, Deserialize)]
+pub struct SubRavView {
+    pub channel_id: ObjectID,
+    pub vm_id_fragment: String,
+    pub amount: StrView<U256>,
+    pub nonce: u64,
+}
+
+impl From<SubRAV> for SubRavView {
+    fn from(sub_rav: SubRAV) -> Self {
+        SubRavView {
+            channel_id: sub_rav.channel_id,
+            vm_id_fragment: sub_rav.vm_id_fragment,
+            amount: sub_rav.amount.into(),
+            nonce: sub_rav.nonce,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct SignedSubRavView {
+    pub sub_rav: SubRavView,
+    pub signature: String,
+}
+
+impl From<SignedSubRav> for SignedSubRavView {
+    fn from(signed_rav: SignedSubRav) -> Self {
+        SignedSubRavView {
+            sub_rav: signed_rav.sub_rav.into(),
+            signature: signed_rav.signature,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize)]
 pub struct SignedSubRavOutput {
-    pub signed_rav: SignedSubRav,
+    pub rav_hex: String,
+    pub signed_rav: SignedSubRavView,
     /// Multibase encoded string containing the entire SignedSubRAV for easy copy-paste
     pub encoded: String,
+    /// The local address that holds the did verification method private key for signing
+    pub signer_address: RoochAddress,
 }
 
 #[async_trait]
@@ -66,9 +104,11 @@ impl CommandAction<SignedSubRavOutput> for CreateRavCommand {
             nonce: self.nonce,
         };
 
+        let sub_rav_bytes = bcs::to_bytes(&sub_rav)?;
+
         // Sign with the found keypair and export **compressed** raw signature bytes (no scheme flag or public key)
         // The on-chain Move verifier expects a 64-byte ECDSA signature (r||s).
-        let signature = keypair.sign(&bcs::to_bytes(&sub_rav)?);
+        let signature = keypair.sign(&sub_rav_bytes);
 
         // Convert to compressed form to strip scheme flag and embedded public key
         let compressed: CompressedSignature = signature.to_compressed()?;
@@ -77,14 +117,15 @@ impl CommandAction<SignedSubRavOutput> for CreateRavCommand {
         let signed_rav = SignedSubRav {
             sub_rav,
             signature: signature_hex,
-            signer_address: signer_address,
         };
 
         let encoded = signed_rav.encode_to_multibase()?;
 
         let output = SignedSubRavOutput {
-            signed_rav,
+            rav_hex: hex::encode(sub_rav_bytes),
+            signed_rav: signed_rav.into(),
             encoded,
+            signer_address: signer_address,
         };
 
         Ok(output)
