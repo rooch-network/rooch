@@ -6,11 +6,9 @@ use async_trait::async_trait;
 use clap::{ArgGroup, Parser};
 use move_core_types::u256::U256;
 use moveos_types::moveos_std::object::ObjectID;
-use moveos_types::state::MoveStructType;
 use rooch_rpc_api::jsonrpc_types::{StrView, TransactionExecutionInfoView};
 use rooch_types::address::RoochAddress;
 use rooch_types::error::RoochResult;
-use rooch_types::framework::gas_coin::RGas;
 use rooch_types::framework::payment_channel::PaymentChannelModule;
 use rooch_types::framework::payment_channel::SignedSubRav;
 use serde::{Deserialize, Serialize};
@@ -165,9 +163,7 @@ impl CommandAction<ClaimOutput> for ClaimCommand {
             };
 
         // Create the claim action
-        let coin_type = RGas::struct_tag();
         let action = PaymentChannelModule::claim_from_channel_entry_action(
-            coin_type,
             channel_id.clone(),
             vm_id_fragment.clone(),
             amount,

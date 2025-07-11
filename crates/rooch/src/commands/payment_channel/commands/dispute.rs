@@ -5,11 +5,9 @@ use async_trait::async_trait;
 use clap::Parser;
 use move_core_types::u256::U256;
 use moveos_types::moveos_std::object::ObjectID;
-use moveos_types::state::MoveStructType;
 use rooch_rpc_api::jsonrpc_types::TransactionExecutionInfoView;
 use rooch_types::address::RoochAddress;
 use rooch_types::error::RoochResult;
-use rooch_types::framework::gas_coin::RGas;
 use rooch_types::framework::payment_channel::PaymentChannelModule;
 use serde::{Deserialize, Serialize};
 
@@ -69,9 +67,7 @@ impl CommandAction<DisputeOutput> for DisputeCommand {
         })?;
 
         // Create the dispute action
-        let coin_type = RGas::struct_tag();
         let action = PaymentChannelModule::dispute_cancellation_entry_action(
-            coin_type,
             self.channel_id.clone(),
             self.vm_id_fragment.clone(),
             self.dispute_amount,
@@ -79,13 +75,13 @@ impl CommandAction<DisputeOutput> for DisputeCommand {
             signature_bytes,
         );
 
-        // Execute transaction using DID account signing
+        // Execute the transaction
         let result = context
-            .sign_and_execute_as_did(sender, action, max_gas_amount)
+            .sign_and_execute_action(sender, action, max_gas_amount)
             .await?;
 
         Ok(DisputeOutput {
-            channel_id: self.channel_id,
+            channel_id: self.channel_id.clone(),
             vm_id_fragment: self.vm_id_fragment,
             dispute_amount: self.dispute_amount,
             dispute_nonce: self.dispute_nonce,

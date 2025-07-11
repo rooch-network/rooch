@@ -1,7 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::addresses::ROOCH_FRAMEWORK_ADDRESS;
+use crate::{address::RoochAddress, addresses::ROOCH_FRAMEWORK_ADDRESS};
+use anyhow::Result;
 use move_core_types::language_storage::{StructTag, TypeTag};
 use move_core_types::u256::U256;
 use move_core_types::value::MoveValue;
@@ -22,6 +23,7 @@ pub const MODULE_NAME: &IdentStr = ident_str!("payment_channel");
 struct ChannelKey {
     sender: AccountAddress,
     receiver: AccountAddress,
+    coin_type: String,
 }
 
 /// SubRAV data structure for BCS serialization
@@ -31,6 +33,27 @@ pub struct SubRAV {
     pub vm_id_fragment: String,
     pub amount: U256,
     pub nonce: u64,
+}
+
+/// Structure for deserializing signed RAV from multibase encoded string
+#[derive(Serialize, Deserialize)]
+pub struct SignedSubRav {
+    pub sub_rav: SubRAV,
+    /// signature is the compressed signature bytes in hex format
+    pub signature: String,
+    pub signer_address: RoochAddress,
+}
+
+impl SignedSubRav {
+    pub fn encode_to_multibase(&self) -> Result<String> {
+        let json_bytes = serde_json::to_vec(&self)?;
+        Ok(multibase::encode(multibase::Base::Base58Btc, &json_bytes))
+    }
+
+    pub fn decode_from_multibase(encoded: &str) -> Result<Self> {
+        let json_bytes = multibase::decode(encoded)?.1;
+        Ok(serde_json::from_slice(&json_bytes)?)
+    }
 }
 
 /// PaymentHub structure for Rust binding
@@ -78,22 +101,18 @@ impl PaymentHub {
 }
 
 /// PaymentChannel structure for Rust binding
-/// Matches the PaymentChannel<CoinType> struct in payment_channel.move
+/// Matches the PaymentChannel struct in payment_channel.move
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PaymentChannel<CoinType> {
+pub struct PaymentChannel {
     pub sender: AccountAddress,
     pub receiver: AccountAddress,
-    pub payment_hub_id: ObjectID,
+    pub coin_type: String,
     // sub_channels: Table<String, SubChannel> - we'll handle this separately via field access
     pub status: u8,
     pub cancellation_info: MoveOption<CancellationInfo>,
-    pub phantom: std::marker::PhantomData<CoinType>,
 }
 
-impl<CoinType> MoveStructType for PaymentChannel<CoinType>
-where
-    CoinType: MoveStructType,
-{
+impl MoveStructType for PaymentChannel {
     const ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
     const MODULE_NAME: &'static IdentStr = MODULE_NAME;
     const STRUCT_NAME: &'static IdentStr = ident_str!("PaymentChannel");
@@ -103,33 +122,26 @@ where
             address: Self::ADDRESS,
             module: Self::MODULE_NAME.to_owned(),
             name: Self::STRUCT_NAME.to_owned(),
-            type_params: vec![CoinType::struct_tag().into()],
+            type_params: vec![],
         }
     }
 }
 
-impl<CoinType> MoveStructState for PaymentChannel<CoinType>
-where
-    CoinType: MoveStructType,
-{
+impl MoveStructState for PaymentChannel {
     fn struct_layout() -> move_core_types::value::MoveStructLayout {
         move_core_types::value::MoveStructLayout::new(vec![
             move_core_types::value::MoveTypeLayout::Address, // sender
             move_core_types::value::MoveTypeLayout::Address, // receiver
-            move_core_types::value::MoveTypeLayout::Address, // payment_hub_id (ObjectID)
+            MoveString::type_layout(),                       // coin_type
             // sub_channels: Table<String, SubChannel>
-            move_core_types::value::MoveTypeLayout::Struct(
-                move_core_types::value::MoveStructLayout::new(vec![
-                    move_core_types::value::MoveTypeLayout::Address, // Table handle (ObjectID)
-                ]),
-            ),
+            ObjectID::type_layout(),
             move_core_types::value::MoveTypeLayout::U8, // status
             MoveOption::<CancellationInfo>::type_layout(), // cancellation_info
         ])
     }
 }
 
-impl<CoinType> PaymentChannel<CoinType> {
+impl PaymentChannel {
     pub fn sender(&self) -> AccountAddress {
         self.sender
     }
@@ -138,8 +150,8 @@ impl<CoinType> PaymentChannel<CoinType> {
         self.receiver
     }
 
-    pub fn payment_hub_id(&self) -> ObjectID {
-        self.payment_hub_id.clone()
+    pub fn coin_type(&self) -> &str {
+        &self.coin_type
     }
 
     pub fn status(&self) -> u8 {
@@ -275,8 +287,6 @@ impl<'a> PaymentChannelModule<'a> {
         ident_str!("open_sub_channel_entry");
     pub const OPEN_CHANNEL_WITH_SUB_CHANNEL_ENTRY_FUNCTION_NAME: &'static IdentStr =
         ident_str!("open_channel_with_sub_channel_entry");
-    pub const OPEN_CHANNEL_WITH_MULTIPLE_SUB_CHANNELS_ENTRY_FUNCTION_NAME: &'static IdentStr =
-        ident_str!("open_channel_with_multiple_sub_channels_entry");
     pub const CLAIM_FROM_CHANNEL_ENTRY_FUNCTION_NAME: &'static IdentStr =
         ident_str!("claim_from_channel_entry");
     pub const CLOSE_CHANNEL_ENTRY_FUNCTION_NAME: &'static IdentStr =
@@ -302,15 +312,14 @@ impl<'a> PaymentChannelModule<'a> {
         receiver: AccountAddress,
     ) -> ObjectID {
         // Create the ChannelKey (matches Move struct)
-        let key = ChannelKey { sender, receiver };
-
-        // Create the PaymentChannel<CoinType> struct tag
-        let channel_struct_tag = StructTag {
-            address: ROOCH_FRAMEWORK_ADDRESS,
-            module: ident_str!("payment_channel").to_owned(),
-            name: ident_str!("PaymentChannel").to_owned(),
-            type_params: vec![TypeTag::Struct(Box::new(coin_type.clone()))],
+        let key = ChannelKey {
+            sender,
+            receiver,
+            coin_type: coin_type.to_canonical_string(),
         };
+
+        // Create the PaymentChannel struct tag (no longer generic)
+        let channel_struct_tag = PaymentChannel::struct_tag();
 
         // Use MoveOS custom_object_id function (same as Move VM implementation)
         custom_object_id(&key, &channel_struct_tag)
@@ -343,28 +352,22 @@ impl<'a> PaymentChannelModule<'a> {
         )
     }
 
-    pub fn open_channel_with_multiple_sub_channels_entry_action(
+    pub fn open_channel_with_sub_channel_entry_action(
         coin_type: StructTag,
         channel_receiver: AccountAddress,
-        vm_id_fragments: Vec<String>,
+        vm_id_fragment: String,
     ) -> MoveAction {
-        let vm_fragments_move: Vec<MoveValue> = vm_id_fragments
-            .into_iter()
-            .map(|s| MoveValue::vector_u8(s.into_bytes()))
-            .collect();
-
         Self::create_move_action(
-            Self::OPEN_CHANNEL_WITH_MULTIPLE_SUB_CHANNELS_ENTRY_FUNCTION_NAME,
+            Self::OPEN_CHANNEL_WITH_SUB_CHANNEL_ENTRY_FUNCTION_NAME,
             vec![TypeTag::Struct(Box::new(coin_type))],
             vec![
                 MoveValue::Address(channel_receiver),
-                MoveValue::Vector(vm_fragments_move),
+                MoveValue::vector_u8(vm_id_fragment.into_bytes()),
             ],
         )
     }
 
     pub fn claim_from_channel_entry_action(
-        coin_type: StructTag,
         channel_id: moveos_types::moveos_std::object::ObjectID,
         sender_vm_id_fragment: String,
         sub_accumulated_amount: U256,
@@ -373,7 +376,7 @@ impl<'a> PaymentChannelModule<'a> {
     ) -> MoveAction {
         Self::create_move_action(
             Self::CLAIM_FROM_CHANNEL_ENTRY_FUNCTION_NAME,
-            vec![TypeTag::Struct(Box::new(coin_type))],
+            vec![],
             vec![
                 channel_id.to_move_value(),
                 MoveValue::vector_u8(sender_vm_id_fragment.into_bytes()),
@@ -385,13 +388,12 @@ impl<'a> PaymentChannelModule<'a> {
     }
 
     pub fn close_channel_entry_action(
-        coin_type: StructTag,
         channel_id: moveos_types::moveos_std::object::ObjectID,
         serialized_proofs: Vec<u8>,
     ) -> MoveAction {
         Self::create_move_action(
             Self::CLOSE_CHANNEL_ENTRY_FUNCTION_NAME,
-            vec![TypeTag::Struct(Box::new(coin_type))],
+            vec![],
             vec![
                 channel_id.to_move_value(),
                 MoveValue::Vector(serialized_proofs.into_iter().map(MoveValue::U8).collect()),
@@ -400,18 +402,16 @@ impl<'a> PaymentChannelModule<'a> {
     }
 
     pub fn initiate_cancellation_entry_action(
-        coin_type: StructTag,
         channel_id: moveos_types::moveos_std::object::ObjectID,
     ) -> MoveAction {
         Self::create_move_action(
             Self::INITIATE_CANCELLATION_ENTRY_FUNCTION_NAME,
-            vec![TypeTag::Struct(Box::new(coin_type))],
+            vec![],
             vec![channel_id.to_move_value()],
         )
     }
 
     pub fn dispute_cancellation_entry_action(
-        coin_type: StructTag,
         channel_id: moveos_types::moveos_std::object::ObjectID,
         sender_vm_id_fragment: String,
         dispute_accumulated_amount: U256,
@@ -420,7 +420,7 @@ impl<'a> PaymentChannelModule<'a> {
     ) -> MoveAction {
         Self::create_move_action(
             Self::DISPUTE_CANCELLATION_ENTRY_FUNCTION_NAME,
-            vec![TypeTag::Struct(Box::new(coin_type))],
+            vec![],
             vec![
                 channel_id.to_move_value(),
                 MoveValue::vector_u8(sender_vm_id_fragment.into_bytes()),
@@ -432,12 +432,11 @@ impl<'a> PaymentChannelModule<'a> {
     }
 
     pub fn finalize_cancellation_entry_action(
-        coin_type: StructTag,
         channel_id: moveos_types::moveos_std::object::ObjectID,
     ) -> MoveAction {
         Self::create_move_action(
             Self::FINALIZE_CANCELLATION_ENTRY_FUNCTION_NAME,
-            vec![TypeTag::Struct(Box::new(coin_type))],
+            vec![],
             vec![channel_id.to_move_value()],
         )
     }

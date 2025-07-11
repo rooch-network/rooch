@@ -40,8 +40,6 @@
 -  [Function `open_sub_channel_entry`](#0x3_payment_channel_open_sub_channel_entry)
 -  [Function `open_channel_with_sub_channel`](#0x3_payment_channel_open_channel_with_sub_channel)
 -  [Function `open_channel_with_sub_channel_entry`](#0x3_payment_channel_open_channel_with_sub_channel_entry)
--  [Function `open_channel_with_multiple_sub_channels`](#0x3_payment_channel_open_channel_with_multiple_sub_channels)
--  [Function `open_channel_with_multiple_sub_channels_entry`](#0x3_payment_channel_open_channel_with_multiple_sub_channels_entry)
 -  [Function `claim_from_channel`](#0x3_payment_channel_claim_from_channel)
 -  [Function `claim_from_channel_entry`](#0x3_payment_channel_claim_from_channel_entry)
 -  [Function `close_sub_channel`](#0x3_payment_channel_close_sub_channel)
@@ -244,7 +242,7 @@ A lightweight object representing a payment relationship, linked to a PaymentHub
 The PaymentChannel has no store, it can not be transferred.
 
 
-<pre><code><b>struct</b> <a href="payment_channel.md#0x3_payment_channel_PaymentChannel">PaymentChannel</a>&lt;CoinType: store&gt; <b>has</b> key
+<pre><code><b>struct</b> <a href="payment_channel.md#0x3_payment_channel_PaymentChannel">PaymentChannel</a> <b>has</b> key
 </code></pre>
 
 
@@ -500,6 +498,16 @@ The provided signature from the sender is invalid.
 
 
 
+<a name="0x3_payment_channel_ErrorMismatchedCoinType"></a>
+
+The coin type provided does not match the channel's coin type.
+
+
+<pre><code><b>const</b> <a href="payment_channel.md#0x3_payment_channel_ErrorMismatchedCoinType">ErrorMismatchedCoinType</a>: u64 = 21;
+</code></pre>
+
+
+
 <a name="0x3_payment_channel_ErrorNotReceiver"></a>
 
 The signer is not the designated receiver of the channel.
@@ -585,7 +593,7 @@ Calculate the deterministic ObjectID for a payment channel
 This allows anyone to derive the channel ID from sender, receiver, and coin type
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_calc_channel_object_id">calc_channel_object_id</a>&lt;CoinType: store&gt;(sender: <b>address</b>, receiver: <b>address</b>): <a href="_ObjectID">object::ObjectID</a>
+<pre><code><b>public</b> <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_calc_channel_object_id">calc_channel_object_id</a>(sender: <b>address</b>, receiver: <b>address</b>, coin_type: <a href="_String">string::String</a>): <a href="_ObjectID">object::ObjectID</a>
 </code></pre>
 
 
@@ -709,7 +717,7 @@ Opens a sub-channel by authorizing a verification method for the payment channel
 This function must be called by the sender before using any vm_id_fragment for payments.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_open_sub_channel">open_sub_channel</a>&lt;CoinType: store, key&gt;(channel_sender: &<a href="">signer</a>, channel_id: <a href="_ObjectID">object::ObjectID</a>, vm_id_fragment: <a href="_String">string::String</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_open_sub_channel">open_sub_channel</a>(channel_sender: &<a href="">signer</a>, channel_id: <a href="_ObjectID">object::ObjectID</a>, vm_id_fragment: <a href="_String">string::String</a>)
 </code></pre>
 
 
@@ -721,7 +729,7 @@ This function must be called by the sender before using any vm_id_fragment for p
 Entry function for opening a sub-channel
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_open_sub_channel_entry">open_sub_channel_entry</a>&lt;CoinType: store, key&gt;(channel_sender: &<a href="">signer</a>, channel_id: <a href="_ObjectID">object::ObjectID</a>, vm_id_fragment: <a href="_String">string::String</a>)
+<pre><code><b>public</b> entry <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_open_sub_channel_entry">open_sub_channel_entry</a>(channel_sender: &<a href="">signer</a>, channel_id: <a href="_ObjectID">object::ObjectID</a>, vm_id_fragment: <a href="_String">string::String</a>)
 </code></pre>
 
 
@@ -755,31 +763,6 @@ Entry function for opening a channel and sub-channel in one step
 
 
 
-<a name="0x3_payment_channel_open_channel_with_multiple_sub_channels"></a>
-
-## Function `open_channel_with_multiple_sub_channels`
-
-Convenience function to open a channel and authorize multiple verification methods at once.
-This is useful when the sender wants to authorize multiple VMs for different use cases.
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_open_channel_with_multiple_sub_channels">open_channel_with_multiple_sub_channels</a>&lt;CoinType: store, key&gt;(channel_sender: &<a href="">signer</a>, channel_receiver: <b>address</b>, vm_id_fragments: <a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;): <a href="_ObjectID">object::ObjectID</a>
-</code></pre>
-
-
-
-<a name="0x3_payment_channel_open_channel_with_multiple_sub_channels_entry"></a>
-
-## Function `open_channel_with_multiple_sub_channels_entry`
-
-Entry function for opening a channel and authorizing multiple verification methods
-
-
-<pre><code><b>public</b> entry <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_open_channel_with_multiple_sub_channels_entry">open_channel_with_multiple_sub_channels_entry</a>&lt;CoinType: store, key&gt;(channel_sender: &<a href="">signer</a>, channel_receiver: <b>address</b>, vm_id_fragments: <a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;)
-</code></pre>
-
-
-
 <a name="0x3_payment_channel_claim_from_channel"></a>
 
 ## Function `claim_from_channel`
@@ -788,7 +771,7 @@ Anyone can claim funds from a specific sub-channel on behalf of the receiver.
 The funds will always be transferred to the channel receiver regardless of who calls this function.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_claim_from_channel">claim_from_channel</a>&lt;CoinType: store, key&gt;(claimer: &<a href="">signer</a>, channel_id: <a href="_ObjectID">object::ObjectID</a>, sender_vm_id_fragment: <a href="_String">string::String</a>, sub_accumulated_amount: <a href="">u256</a>, sub_nonce: u64, sender_signature: <a href="">vector</a>&lt;u8&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_claim_from_channel">claim_from_channel</a>(claimer: &<a href="">signer</a>, channel_id: <a href="_ObjectID">object::ObjectID</a>, sender_vm_id_fragment: <a href="_String">string::String</a>, sub_accumulated_amount: <a href="">u256</a>, sub_nonce: u64, sender_signature: <a href="">vector</a>&lt;u8&gt;)
 </code></pre>
 
 
@@ -800,7 +783,7 @@ The funds will always be transferred to the channel receiver regardless of who c
 Entry function for claiming from channel
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_claim_from_channel_entry">claim_from_channel_entry</a>&lt;CoinType: store, key&gt;(claimer: &<a href="">signer</a>, channel_id: <a href="_ObjectID">object::ObjectID</a>, sender_vm_id_fragment: <a href="_String">string::String</a>, sub_accumulated_amount: <a href="">u256</a>, sub_nonce: u64, sender_signature: <a href="">vector</a>&lt;u8&gt;)
+<pre><code><b>public</b> entry <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_claim_from_channel_entry">claim_from_channel_entry</a>(claimer: &<a href="">signer</a>, channel_id: <a href="_ObjectID">object::ObjectID</a>, sender_vm_id_fragment: <a href="_String">string::String</a>, sub_accumulated_amount: <a href="">u256</a>, sub_nonce: u64, sender_signature: <a href="">vector</a>&lt;u8&gt;)
 </code></pre>
 
 
@@ -814,7 +797,7 @@ Only the channel receiver can close a sub-channel.
 This performs a final claim and then permanently closes the sub-channel.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_close_sub_channel">close_sub_channel</a>&lt;CoinType: store, key&gt;(channel_receiver: &<a href="">signer</a>, channel_id: <a href="_ObjectID">object::ObjectID</a>, sender_vm_id_fragment: <a href="_String">string::String</a>, final_accumulated_amount: <a href="">u256</a>, final_nonce: u64, sender_signature: <a href="">vector</a>&lt;u8&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_close_sub_channel">close_sub_channel</a>(channel_receiver: &<a href="">signer</a>, channel_id: <a href="_ObjectID">object::ObjectID</a>, sender_vm_id_fragment: <a href="_String">string::String</a>, final_accumulated_amount: <a href="">u256</a>, final_nonce: u64, sender_signature: <a href="">vector</a>&lt;u8&gt;)
 </code></pre>
 
 
@@ -826,7 +809,7 @@ This performs a final claim and then permanently closes the sub-channel.
 Entry function for closing a sub-channel
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_close_sub_channel_entry">close_sub_channel_entry</a>&lt;CoinType: store, key&gt;(channel_receiver: &<a href="">signer</a>, channel_id: <a href="_ObjectID">object::ObjectID</a>, sender_vm_id_fragment: <a href="_String">string::String</a>, final_accumulated_amount: <a href="">u256</a>, final_nonce: u64, sender_signature: <a href="">vector</a>&lt;u8&gt;)
+<pre><code><b>public</b> entry <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_close_sub_channel_entry">close_sub_channel_entry</a>(channel_receiver: &<a href="">signer</a>, channel_id: <a href="_ObjectID">object::ObjectID</a>, sender_vm_id_fragment: <a href="_String">string::String</a>, final_accumulated_amount: <a href="">u256</a>, final_nonce: u64, sender_signature: <a href="">vector</a>&lt;u8&gt;)
 </code></pre>
 
 
@@ -839,7 +822,7 @@ Close the entire channel with final settlement of all sub-channels
 Called by receiver with proofs of final state from all sub-channels
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_close_channel">close_channel</a>&lt;CoinType: store, key&gt;(channel_receiver: &<a href="">signer</a>, channel_id: <a href="_ObjectID">object::ObjectID</a>, proofs: <a href="">vector</a>&lt;<a href="payment_channel.md#0x3_payment_channel_CloseProof">payment_channel::CloseProof</a>&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_close_channel">close_channel</a>(channel_receiver: &<a href="">signer</a>, channel_id: <a href="_ObjectID">object::ObjectID</a>, proofs: <a href="">vector</a>&lt;<a href="payment_channel.md#0x3_payment_channel_CloseProof">payment_channel::CloseProof</a>&gt;)
 </code></pre>
 
 
@@ -852,7 +835,7 @@ Entry function for closing the entire channel with settlement
 Takes serialized closure proofs and deserializes them
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_close_channel_entry">close_channel_entry</a>&lt;CoinType: store, key&gt;(channel_receiver: &<a href="">signer</a>, channel_id: <a href="_ObjectID">object::ObjectID</a>, serialized_proofs: <a href="">vector</a>&lt;u8&gt;)
+<pre><code><b>public</b> entry <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_close_channel_entry">close_channel_entry</a>(channel_receiver: &<a href="">signer</a>, channel_id: <a href="_ObjectID">object::ObjectID</a>, serialized_proofs: <a href="">vector</a>&lt;u8&gt;)
 </code></pre>
 
 
@@ -864,7 +847,7 @@ Takes serialized closure proofs and deserializes them
 Entry function for initiating cancellation
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_initiate_cancellation_entry">initiate_cancellation_entry</a>&lt;CoinType: store, key&gt;(channel_sender: &<a href="">signer</a>, channel_id: <a href="_ObjectID">object::ObjectID</a>)
+<pre><code><b>public</b> entry <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_initiate_cancellation_entry">initiate_cancellation_entry</a>(channel_sender: &<a href="">signer</a>, channel_id: <a href="_ObjectID">object::ObjectID</a>)
 </code></pre>
 
 
@@ -876,7 +859,7 @@ Entry function for initiating cancellation
 Sender initiates unilateral channel cancellation with proofs for sub-channels
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_initiate_cancellation">initiate_cancellation</a>&lt;CoinType: store, key&gt;(channel_sender: &<a href="">signer</a>, channel_id: <a href="_ObjectID">object::ObjectID</a>, proofs: <a href="">vector</a>&lt;<a href="payment_channel.md#0x3_payment_channel_CancelProof">payment_channel::CancelProof</a>&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_initiate_cancellation">initiate_cancellation</a>(channel_sender: &<a href="">signer</a>, channel_id: <a href="_ObjectID">object::ObjectID</a>, proofs: <a href="">vector</a>&lt;<a href="payment_channel.md#0x3_payment_channel_CancelProof">payment_channel::CancelProof</a>&gt;)
 </code></pre>
 
 
@@ -889,7 +872,7 @@ Entry function for initiating cancellation with proofs
 Takes serialized cancellation proofs and deserializes them
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_initiate_cancellation_with_proofs_entry">initiate_cancellation_with_proofs_entry</a>&lt;CoinType: store, key&gt;(channel_sender: &<a href="">signer</a>, channel_id: <a href="_ObjectID">object::ObjectID</a>, serialized_proofs: <a href="">vector</a>&lt;u8&gt;)
+<pre><code><b>public</b> entry <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_initiate_cancellation_with_proofs_entry">initiate_cancellation_with_proofs_entry</a>(channel_sender: &<a href="">signer</a>, channel_id: <a href="_ObjectID">object::ObjectID</a>, serialized_proofs: <a href="">vector</a>&lt;u8&gt;)
 </code></pre>
 
 
@@ -901,7 +884,7 @@ Takes serialized cancellation proofs and deserializes them
 Receiver disputes cancellation with newer state
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_dispute_cancellation">dispute_cancellation</a>&lt;CoinType: store, key&gt;(channel_receiver: &<a href="">signer</a>, channel_id: <a href="_ObjectID">object::ObjectID</a>, sender_vm_id_fragment: <a href="_String">string::String</a>, dispute_accumulated_amount: <a href="">u256</a>, dispute_nonce: u64, sender_signature: <a href="">vector</a>&lt;u8&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_dispute_cancellation">dispute_cancellation</a>(channel_receiver: &<a href="">signer</a>, channel_id: <a href="_ObjectID">object::ObjectID</a>, sender_vm_id_fragment: <a href="_String">string::String</a>, dispute_accumulated_amount: <a href="">u256</a>, dispute_nonce: u64, sender_signature: <a href="">vector</a>&lt;u8&gt;)
 </code></pre>
 
 
@@ -913,7 +896,7 @@ Receiver disputes cancellation with newer state
 Entry function for disputing cancellation
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_dispute_cancellation_entry">dispute_cancellation_entry</a>&lt;CoinType: store, key&gt;(channel_receiver: &<a href="">signer</a>, channel_id: <a href="_ObjectID">object::ObjectID</a>, sender_vm_id_fragment: <a href="_String">string::String</a>, dispute_accumulated_amount: <a href="">u256</a>, dispute_nonce: u64, sender_signature: <a href="">vector</a>&lt;u8&gt;)
+<pre><code><b>public</b> entry <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_dispute_cancellation_entry">dispute_cancellation_entry</a>(channel_receiver: &<a href="">signer</a>, channel_id: <a href="_ObjectID">object::ObjectID</a>, sender_vm_id_fragment: <a href="_String">string::String</a>, dispute_accumulated_amount: <a href="">u256</a>, dispute_nonce: u64, sender_signature: <a href="">vector</a>&lt;u8&gt;)
 </code></pre>
 
 
@@ -925,7 +908,7 @@ Entry function for disputing cancellation
 Finalize cancellation after challenge period
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_finalize_cancellation">finalize_cancellation</a>&lt;CoinType: store, key&gt;(channel_id: <a href="_ObjectID">object::ObjectID</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_finalize_cancellation">finalize_cancellation</a>(channel_id: <a href="_ObjectID">object::ObjectID</a>)
 </code></pre>
 
 
@@ -937,7 +920,7 @@ Finalize cancellation after challenge period
 Entry function for finalizing cancellation
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_finalize_cancellation_entry">finalize_cancellation_entry</a>&lt;CoinType: store, key&gt;(channel_id: <a href="_ObjectID">object::ObjectID</a>)
+<pre><code><b>public</b> entry <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_finalize_cancellation_entry">finalize_cancellation_entry</a>(channel_id: <a href="_ObjectID">object::ObjectID</a>)
 </code></pre>
 
 
@@ -973,7 +956,7 @@ Check if payment hub exists for an address
 Check if a payment channel exists between sender and receiver for the given coin type
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_channel_exists">channel_exists</a>&lt;CoinType: store&gt;(sender: <b>address</b>, receiver: <b>address</b>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_channel_exists">channel_exists</a>(sender: <b>address</b>, receiver: <b>address</b>, coin_type: <a href="_String">string::String</a>): bool
 </code></pre>
 
 
@@ -985,7 +968,7 @@ Check if a payment channel exists between sender and receiver for the given coin
 Get channel ID for a given sender, receiver, and coin type
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_get_channel_id">get_channel_id</a>&lt;CoinType: store&gt;(sender: <b>address</b>, receiver: <b>address</b>): <a href="_ObjectID">object::ObjectID</a>
+<pre><code><b>public</b> <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_get_channel_id">get_channel_id</a>(sender: <b>address</b>, receiver: <b>address</b>, coin_type: <a href="_String">string::String</a>): <a href="_ObjectID">object::ObjectID</a>
 </code></pre>
 
 
@@ -997,7 +980,7 @@ Get channel ID for a given sender, receiver, and coin type
 Get channel information
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_get_channel_info">get_channel_info</a>&lt;CoinType: store&gt;(channel_id: <a href="_ObjectID">object::ObjectID</a>): (<b>address</b>, <b>address</b>, <a href="_ObjectID">object::ObjectID</a>, u8)
+<pre><code><b>public</b> <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_get_channel_info">get_channel_info</a>(channel_id: <a href="_ObjectID">object::ObjectID</a>): (<b>address</b>, <b>address</b>, <a href="_String">string::String</a>, u8)
 </code></pre>
 
 
@@ -1009,7 +992,7 @@ Get channel information
 Get sub-channel state
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_get_sub_channel_state">get_sub_channel_state</a>&lt;CoinType: store&gt;(channel_id: <a href="_ObjectID">object::ObjectID</a>, vm_id_fragment: <a href="_String">string::String</a>): (<a href="">u256</a>, u64)
+<pre><code><b>public</b> <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_get_sub_channel_state">get_sub_channel_state</a>(channel_id: <a href="_ObjectID">object::ObjectID</a>, vm_id_fragment: <a href="_String">string::String</a>): (<a href="">u256</a>, u64)
 </code></pre>
 
 
@@ -1021,7 +1004,7 @@ Get sub-channel state
 Check if a sub-channel exists
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_sub_channel_exists">sub_channel_exists</a>&lt;CoinType: store&gt;(channel_id: <a href="_ObjectID">object::ObjectID</a>, vm_id_fragment: <a href="_String">string::String</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_sub_channel_exists">sub_channel_exists</a>(channel_id: <a href="_ObjectID">object::ObjectID</a>, vm_id_fragment: <a href="_String">string::String</a>): bool
 </code></pre>
 
 
@@ -1033,7 +1016,7 @@ Check if a sub-channel exists
 Get the number of sub-channels in a payment channel
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_get_sub_channel_count">get_sub_channel_count</a>&lt;CoinType: store&gt;(channel_id: <a href="_ObjectID">object::ObjectID</a>): u64
+<pre><code><b>public</b> <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_get_sub_channel_count">get_sub_channel_count</a>(channel_id: <a href="_ObjectID">object::ObjectID</a>): u64
 </code></pre>
 
 
@@ -1045,7 +1028,7 @@ Get the number of sub-channels in a payment channel
 Get cancellation info
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_get_cancellation_info">get_cancellation_info</a>&lt;CoinType: store&gt;(channel_id: <a href="_ObjectID">object::ObjectID</a>): <a href="_Option">option::Option</a>&lt;<a href="payment_channel.md#0x3_payment_channel_CancellationInfo">payment_channel::CancellationInfo</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_get_cancellation_info">get_cancellation_info</a>(channel_id: <a href="_ObjectID">object::ObjectID</a>): <a href="_Option">option::Option</a>&lt;<a href="payment_channel.md#0x3_payment_channel_CancellationInfo">payment_channel::CancellationInfo</a>&gt;
 </code></pre>
 
 
@@ -1057,7 +1040,7 @@ Get cancellation info
 Get sub-channel public key multibase if exists
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_get_sub_channel_public_key">get_sub_channel_public_key</a>&lt;CoinType: store&gt;(channel_id: <a href="_ObjectID">object::ObjectID</a>, vm_id_fragment: <a href="_String">string::String</a>): <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_get_sub_channel_public_key">get_sub_channel_public_key</a>(channel_id: <a href="_ObjectID">object::ObjectID</a>, vm_id_fragment: <a href="_String">string::String</a>): <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;
 </code></pre>
 
 
@@ -1069,7 +1052,7 @@ Get sub-channel public key multibase if exists
 Get sub-channel method type if exists
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_get_sub_channel_method_type">get_sub_channel_method_type</a>&lt;CoinType: store&gt;(channel_id: <a href="_ObjectID">object::ObjectID</a>, vm_id_fragment: <a href="_String">string::String</a>): <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_get_sub_channel_method_type">get_sub_channel_method_type</a>(channel_id: <a href="_ObjectID">object::ObjectID</a>, vm_id_fragment: <a href="_String">string::String</a>): <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;
 </code></pre>
 
 
@@ -1081,7 +1064,7 @@ Get sub-channel method type if exists
 Get the number of active channels for a specific coin type
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_get_active_channel_count">get_active_channel_count</a>&lt;CoinType: store&gt;(owner: <b>address</b>): u64
+<pre><code><b>public</b> <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_get_active_channel_count">get_active_channel_count</a>(owner: <b>address</b>, coin_type: <a href="_String">string::String</a>): u64
 </code></pre>
 
 
@@ -1093,5 +1076,5 @@ Get the number of active channels for a specific coin type
 Check if withdrawal is allowed for a specific coin type
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_can_withdraw_from_hub">can_withdraw_from_hub</a>&lt;CoinType: store&gt;(owner: <b>address</b>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_can_withdraw_from_hub">can_withdraw_from_hub</a>(owner: <b>address</b>, coin_type: <a href="_String">string::String</a>): bool
 </code></pre>

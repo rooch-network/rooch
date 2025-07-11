@@ -4,11 +4,9 @@
 use async_trait::async_trait;
 use clap::Parser;
 use moveos_types::moveos_std::object::ObjectID;
-use moveos_types::state::MoveStructType;
 use rooch_rpc_api::jsonrpc_types::TransactionExecutionInfoView;
 use rooch_types::address::RoochAddress;
 use rooch_types::error::RoochResult;
-use rooch_types::framework::gas_coin::RGas;
 use rooch_types::framework::payment_channel::PaymentChannelModule;
 use serde::{Deserialize, Serialize};
 
@@ -53,16 +51,11 @@ impl CommandAction<CloseOutput> for CloseCommand {
         })?;
 
         // Create the close channel action
-        let coin_type = RGas::struct_tag();
-        let action = PaymentChannelModule::close_channel_entry_action(
-            coin_type,
-            self.channel_id.clone(),
-            proofs_bytes,
-        );
+        let action =
+            PaymentChannelModule::close_channel_entry_action(self.channel_id.clone(), proofs_bytes);
 
-        // Execute transaction using DID account signing
         let result = context
-            .sign_and_execute_as_did(sender, action, max_gas_amount)
+            .sign_and_execute_action(sender, action, max_gas_amount)
             .await?;
 
         Ok(CloseOutput {

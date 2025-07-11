@@ -4,13 +4,12 @@
 use crate::cli_types::{CommandAction, TransactionOptions, WalletContextOptions};
 use async_trait::async_trait;
 use clap::Parser;
+use move_command_line_common::types::ParsedStructType;
 use moveos_types::moveos_std::object::ObjectID;
-use moveos_types::state::MoveStructType;
 use rooch_rpc_api::jsonrpc_types::TransactionExecutionInfoView;
 use rooch_types::address::ParsedAddress;
 use rooch_types::address::RoochAddress;
 use rooch_types::error::RoochResult;
-use rooch_types::framework::gas_coin::RGas;
 use rooch_types::framework::payment_channel::PaymentChannelModule;
 use serde::{Deserialize, Serialize};
 
@@ -20,13 +19,19 @@ pub struct OpenCommand {
     #[clap(long, help = "Channel receiver address")]
     pub receiver: ParsedAddress,
 
-    /// Comma-separated list of VM ID fragments for sub-channels.
-    /// If not provided, will query DID document for available verification methods.
     #[clap(
         long,
-        help = "Comma-separated list of VM ID fragments for sub-channels (optional, auto-discovered from DID if not provided)"
+        help = "Coin type to use for the channel",
+        value_parser=ParsedStructType::parse,
+        default_value = "0x3::gas_coin::RGas"
     )]
-    pub vm_id_fragments: Option<String>,
+    pub coin_type: ParsedStructType,
+
+    #[clap(
+        long,
+        help = "DID verification method ID fragment for sub-channels (optional, auto-discovered from DID if not provided)"
+    )]
+    pub vm_id_fragment: Option<String>,
 
     #[clap(flatten)]
     pub tx_options: TransactionOptions,
@@ -38,7 +43,7 @@ pub struct OpenCommand {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OpenOutput {
     pub receiver: RoochAddress,
-    pub vm_id_fragments: Vec<String>,
+    pub vm_id_fragment: String,
     pub fragments_source: String, // "provided" or "auto_discovered"
     pub channel_id: ObjectID,
     pub execution_info: TransactionExecutionInfoView,
@@ -62,13 +67,9 @@ impl CommandAction<OpenOutput> for OpenCommand {
         }
 
         // Parse or discover VM ID fragments
-        let vm_id_fragments: Vec<String> = if let Some(fragments_str) = &self.vm_id_fragments {
+        let vm_id_fragment: String = if let Some(fragments_str) = &self.vm_id_fragment {
             // User provided fragments
-            fragments_str
-                .split(',')
-                .map(|s| s.trim().to_string())
-                .filter(|s| !s.is_empty())
-                .collect()
+            fragments_str.clone()
         } else {
             // Auto-discover from DID document - only include fragments with available keys
             // Try to find any available verification method
@@ -76,9 +77,7 @@ impl CommandAction<OpenOutput> for OpenCommand {
                 .find_did_verification_method_keypair(sender, None)
                 .await
             {
-                Ok((fragment, _controller_addr, _keypair)) => {
-                    vec![fragment]
-                }
+                Ok((fragment, _controller_addr, _keypair)) => fragment,
                 Err(_) => {
                     return Err(rooch_types::error::RoochError::CommandArgumentError(
                         "No verification methods with available keys found in DID document and no VM ID fragments provided".to_string(),
@@ -87,18 +86,20 @@ impl CommandAction<OpenOutput> for OpenCommand {
             }
         };
 
-        if vm_id_fragments.is_empty() {
-            return Err(rooch_types::error::RoochError::CommandArgumentError(
-                "At least one VM ID fragment is required".to_string(),
-            ));
-        }
+        let coin_type = self.coin_type.into_struct_tag(&context.address_mapping())?;
 
-        // Create the action to open channel with multiple sub-channels
-        let coin_type = RGas::struct_tag();
-        let action = PaymentChannelModule::open_channel_with_multiple_sub_channels_entry_action(
+        // Create the open channel action with multiple sub-channels
+        let action = PaymentChannelModule::open_channel_with_sub_channel_entry_action(
             coin_type.clone(),
             receiver.into(),
-            vm_id_fragments.clone(),
+            vm_id_fragment.clone(),
+        );
+
+        // Calculate the expected channel ID for output
+        let channel_id = PaymentChannelModule::calc_channel_object_id(
+            &coin_type,
+            sender.into(),
+            receiver.into(),
         );
 
         // Execute the transaction using DID account signing
@@ -106,22 +107,15 @@ impl CommandAction<OpenOutput> for OpenCommand {
             .sign_and_execute_as_did(sender, action, max_gas_amount)
             .await?;
 
-        // Calculate deterministic channel ID using the same logic as Move code
-        let channel_id = PaymentChannelModule::calc_channel_object_id(
-            &coin_type,
-            sender.into(),
-            receiver.into(),
-        );
-
-        let fragments_source = if self.vm_id_fragments.is_some() {
+        let fragments_source = if self.vm_id_fragment.is_some() {
             "provided".to_string()
         } else {
             "auto_discovered".to_string()
         };
 
         Ok(OpenOutput {
-            receiver,
-            vm_id_fragments,
+            receiver: receiver,
+            vm_id_fragment: vm_id_fragment.clone(),
             fragments_source,
             channel_id,
             execution_info: result.execution_info,
