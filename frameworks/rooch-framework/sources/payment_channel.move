@@ -63,6 +63,8 @@ module rooch_framework::payment_channel {
     const ErrorActiveChannelExists: u64 = 19;
     /// The sender must have a DID document to open a channel.
     const ErrorSenderMustIsDID: u64 = 20;
+    /// The coin type provided does not match the channel's coin type.
+    const ErrorMismatchedCoinType: u64 = 21;
 
     // === Constants ===
     const STATUS_ACTIVE: u8 = 0;
@@ -83,7 +85,6 @@ module rooch_framework::payment_channel {
         channel_id: ObjectID,
         sender: address,
         receiver: address,
-        payment_hub_id: ObjectID,
         coin_type: String,
     }
 
@@ -159,6 +160,7 @@ module rooch_framework::payment_channel {
     struct ChannelKey has copy, drop, store {
         sender: address,
         receiver: address,
+        coin_type: String,
     }
 
     /// A central, user-owned object for managing payments.
@@ -173,10 +175,10 @@ module rooch_framework::payment_channel {
 
     /// A lightweight object representing a payment relationship, linked to a PaymentHub.
     /// The PaymentChannel has no store, it can not be transferred.
-    struct PaymentChannel<phantom CoinType: store> has key {
+    struct PaymentChannel has key {
         sender: address,
         receiver: address,
-        payment_hub_id: ObjectID, // Links to a PaymentHub object
+        coin_type: String, // The type of coin used in this channel
         sub_channels: Table<String, SubChannel>,
         status: u8,
         cancellation_info: Option<CancellationInfo>,
@@ -241,9 +243,9 @@ module rooch_framework::payment_channel {
 
     /// Calculate the deterministic ObjectID for a payment channel
     /// This allows anyone to derive the channel ID from sender, receiver, and coin type
-    public fun calc_channel_object_id<CoinType: store>(sender: address, receiver: address): ObjectID {
-        let key = ChannelKey { sender, receiver };
-        object::custom_object_id<ChannelKey, PaymentChannel<CoinType>>(key)
+    public fun calc_channel_object_id(sender: address, receiver: address, coin_type: String): ObjectID {
+        let key = ChannelKey { sender, receiver, coin_type };
+        object::custom_object_id<ChannelKey, PaymentChannel>(key)
     }
 
     fun borrow_or_create_payment_hub(owner: address) : &mut Object<PaymentHub> {
@@ -360,16 +362,20 @@ module rooch_framework::payment_channel {
         let sender_addr = signer::address_of(channel_sender);
         assert!(sender_addr != channel_receiver, ErrorNotReceiver);
         assert!(did::exists_did_for_address(sender_addr), ErrorSenderMustIsDID);
-        let channel_id = calc_channel_object_id<CoinType>(sender_addr, channel_receiver);
+        let coin_type = type_info::type_name<CoinType>();
+        let channel_id = calc_channel_object_id(sender_addr, channel_receiver, coin_type);
         
         // Check if channel already exists
-        if (object::exists_object_with_type<PaymentChannel<CoinType>>(channel_id)) {
+        if (object::exists_object_with_type<PaymentChannel>(channel_id)) {
             // Channel exists, check if it can be reused
-            let channel_obj = object::borrow_mut_object_extend<PaymentChannel<CoinType>>(channel_id);
+            let channel_obj = object::borrow_mut_object_extend<PaymentChannel>(channel_id);
             let channel = object::borrow_mut(channel_obj);
             
             // Only allow reuse if channel is closed
             assert!(channel.status == STATUS_CLOSED, ErrorChannelAlreadyExists);
+            
+            // Verify coin type matches
+            assert!(channel.coin_type == coin_type, ErrorMismatchedCoinType);
             
             // Reactivate the channel
             channel.status = STATUS_ACTIVE;
@@ -379,12 +385,11 @@ module rooch_framework::payment_channel {
             // Increment active channel count for this coin type
             let payment_hub_obj = borrow_or_create_payment_hub(sender_addr);
             let payment_hub = object::borrow_mut(payment_hub_obj);
-            let coin_type_name = type_info::type_name<CoinType>();
-            if (table::contains(&payment_hub.active_channels, coin_type_name)) {
-                let count = table::borrow_mut(&mut payment_hub.active_channels, coin_type_name);
+            if (table::contains(&payment_hub.active_channels, coin_type)) {
+                let count = table::borrow_mut(&mut payment_hub.active_channels, coin_type);
                 *count = *count + 1;
             } else {
-                table::add(&mut payment_hub.active_channels, coin_type_name, 1);
+                table::add(&mut payment_hub.active_channels, coin_type, 1);
             };
             
             // Emit event for channel reactivation
@@ -392,8 +397,7 @@ module rooch_framework::payment_channel {
                 channel_id,
                 sender: sender_addr,
                 receiver: channel_receiver,
-                payment_hub_id: channel.payment_hub_id,
-                coin_type: type_info::type_name<CoinType>(),
+                coin_type,
             });
             
             return channel_id
@@ -401,23 +405,21 @@ module rooch_framework::payment_channel {
         
         // Create new channel
         let payment_hub_obj = borrow_or_create_payment_hub(sender_addr);
-        let payment_hub_id = object::id(payment_hub_obj);
         
         // Increment active channel count for this coin type
         let payment_hub = object::borrow_mut(payment_hub_obj);
-        let coin_type_name = type_info::type_name<CoinType>();
-        if (table::contains(&payment_hub.active_channels, coin_type_name)) {
-            let count = table::borrow_mut(&mut payment_hub.active_channels, coin_type_name);
+        if (table::contains(&payment_hub.active_channels, coin_type)) {
+            let count = table::borrow_mut(&mut payment_hub.active_channels, coin_type);
             *count = *count + 1;
         } else {
-            table::add(&mut payment_hub.active_channels, coin_type_name, 1);
+            table::add(&mut payment_hub.active_channels, coin_type, 1);
         };
         
-        let key = ChannelKey { sender: sender_addr, receiver: channel_receiver };
-        let channel_obj = object::new_with_id(key, PaymentChannel<CoinType> {
+        let key = ChannelKey { sender: sender_addr, receiver: channel_receiver, coin_type };
+        let channel_obj = object::new_with_id(key, PaymentChannel {
             sender: sender_addr,
             receiver: channel_receiver,
-            payment_hub_id,
+            coin_type,
             sub_channels: table::new(),
             status: STATUS_ACTIVE,
             cancellation_info: option::none(),
@@ -429,8 +431,7 @@ module rooch_framework::payment_channel {
             channel_id,
             sender: sender_addr,
             receiver: channel_receiver,
-            payment_hub_id,
-            coin_type: type_info::type_name<CoinType>(),
+            coin_type,
         });
         
         channel_id
@@ -446,13 +447,13 @@ module rooch_framework::payment_channel {
 
     /// Opens a sub-channel by authorizing a verification method for the payment channel.
     /// This function must be called by the sender before using any vm_id_fragment for payments.
-    public fun open_sub_channel<CoinType: key + store>(
+    public fun open_sub_channel(
         channel_sender: &signer,
         channel_id: ObjectID,
         vm_id_fragment: String,
     ) {
         let sender_addr = signer::address_of(channel_sender);
-        let channel_obj = object::borrow_mut_object_extend<PaymentChannel<CoinType>>(channel_id);
+        let channel_obj = object::borrow_mut_object_extend<PaymentChannel>(channel_id);
         let channel = object::borrow_mut(channel_obj);
         
         // Verify the transaction sender is the channel sender
@@ -498,12 +499,12 @@ module rooch_framework::payment_channel {
     }
 
     /// Entry function for opening a sub-channel
-    public entry fun open_sub_channel_entry<CoinType: key + store>(
+    public entry fun open_sub_channel_entry(
         channel_sender: &signer,
         channel_id: ObjectID,
         vm_id_fragment: String,
     ) {
-        open_sub_channel<CoinType>(channel_sender, channel_id, vm_id_fragment);
+        open_sub_channel(channel_sender, channel_id, vm_id_fragment);
     }
 
     /// Convenience function to open a channel and sub-channel in one step.
@@ -518,15 +519,16 @@ module rooch_framework::payment_channel {
         vm_id_fragment: String,
     ): ObjectID {
         let sender_addr = signer::address_of(channel_sender);
-        let channel_id = calc_channel_object_id<CoinType>(sender_addr, channel_receiver);
+        let coin_type = type_info::type_name<CoinType>();
+        let channel_id = calc_channel_object_id(sender_addr, channel_receiver, coin_type);
         
         // Step 1: Ensure channel exists and is active
-        if (!object::exists_object_with_type<PaymentChannel<CoinType>>(channel_id)) {
+        if (!object::exists_object_with_type<PaymentChannel>(channel_id)) {
             // Channel doesn't exist, create it
             let _ = open_channel<CoinType>(channel_sender, channel_receiver);
         } else {
             // Channel exists, check if it needs reactivation
-            let channel_obj = object::borrow_object<PaymentChannel<CoinType>>(channel_id);
+            let channel_obj = object::borrow_object<PaymentChannel>(channel_id);
             let channel = object::borrow(channel_obj);
             if (channel.status == STATUS_CLOSED) {
                 // Reactivate closed channel
@@ -536,11 +538,11 @@ module rooch_framework::payment_channel {
         };
         
         // Step 2: Ensure sub-channel is opened (authorize VM if not already done)
-        let channel_obj = object::borrow_object<PaymentChannel<CoinType>>(channel_id);
+        let channel_obj = object::borrow_object<PaymentChannel>(channel_id);
         let channel = object::borrow(channel_obj);
         if (!table::contains(&channel.sub_channels, vm_id_fragment)) {
             // Sub-channel not opened yet, authorize it
-            open_sub_channel<CoinType>(channel_sender, channel_id, vm_id_fragment);
+            open_sub_channel(channel_sender, channel_id, vm_id_fragment);
         };
         // If sub-channel already exists, it means VM was already authorized
         
@@ -556,62 +558,9 @@ module rooch_framework::payment_channel {
         let _channel_id = open_channel_with_sub_channel<CoinType>(channel_sender, channel_receiver, vm_id_fragment);
     }
 
-    /// Convenience function to open a channel and authorize multiple verification methods at once.
-    /// This is useful when the sender wants to authorize multiple VMs for different use cases.
-    public fun open_channel_with_multiple_sub_channels<CoinType: key + store>(
-        channel_sender: &signer,
-        channel_receiver: address,
-        vm_id_fragments: vector<String>,
-    ): ObjectID {
-        let sender_addr = signer::address_of(channel_sender);
-        let channel_id = calc_channel_object_id<CoinType>(sender_addr, channel_receiver);
-        
-        // Step 1: Ensure channel exists and is active
-        if (!object::exists_object_with_type<PaymentChannel<CoinType>>(channel_id)) {
-            // Channel doesn't exist, create it
-            let _ = open_channel<CoinType>(channel_sender, channel_receiver);
-        } else {
-            // Channel exists, check if it needs reactivation
-            let channel_obj = object::borrow_object<PaymentChannel<CoinType>>(channel_id);
-            let channel = object::borrow(channel_obj);
-            if (channel.status == STATUS_CLOSED) {
-                // Reactivate closed channel
-                let _ = open_channel<CoinType>(channel_sender, channel_receiver);
-            };
-        };
-        
-        // Step 2: Authorize all specified VMs
-        let i = 0;
-        let len = vector::length(&vm_id_fragments);
-        while (i < len) {
-            let vm_id_fragment = *vector::borrow(&vm_id_fragments, i);
-            
-            // Check if this VM is already authorized
-            let channel_obj = object::borrow_object<PaymentChannel<CoinType>>(channel_id);
-            let channel = object::borrow(channel_obj);
-            if (!table::contains(&channel.sub_channels, vm_id_fragment)) {
-                // Not authorized yet, authorize it
-                open_sub_channel<CoinType>(channel_sender, channel_id, vm_id_fragment);
-            };
-            
-            i = i + 1;
-        };
-        
-        channel_id
-    }
-
-    /// Entry function for opening a channel and authorizing multiple verification methods
-    public entry fun open_channel_with_multiple_sub_channels_entry<CoinType: key + store>(
-        channel_sender: &signer,
-        channel_receiver: address,
-        vm_id_fragments: vector<String>,
-    ) {
-        let _channel_id = open_channel_with_multiple_sub_channels<CoinType>(channel_sender, channel_receiver, vm_id_fragments);
-    }
-
     /// Anyone can claim funds from a specific sub-channel on behalf of the receiver.
     /// The funds will always be transferred to the channel receiver regardless of who calls this function.
-    public fun claim_from_channel<CoinType: key + store>(
+    public fun claim_from_channel(
         claimer: &signer,
         channel_id: ObjectID,
         sender_vm_id_fragment: String,
@@ -619,7 +568,7 @@ module rooch_framework::payment_channel {
         sub_nonce: u64,
         sender_signature: vector<u8>
     ) {
-        internal_claim_from_channel<CoinType>(
+        internal_claim_from_channel(
             claimer,
             channel_id,
             sender_vm_id_fragment,
@@ -631,7 +580,7 @@ module rooch_framework::payment_channel {
     }
 
     /// The receiver claims funds from a specific sub-channel.
-    fun internal_claim_from_channel<CoinType: key + store>(
+    fun internal_claim_from_channel(
         _claimer: &signer,
         channel_id: ObjectID,
         sender_vm_id_fragment: String,
@@ -640,7 +589,7 @@ module rooch_framework::payment_channel {
         sender_signature: vector<u8>,
         skip_signature_verification: bool
     ) {
-        let channel_obj = object::borrow_mut_object_extend<PaymentChannel<CoinType>>(channel_id);
+        let channel_obj = object::borrow_mut_object_extend<PaymentChannel>(channel_id);
         let channel = object::borrow_mut(channel_obj);
         
         // Note: Anyone can execute claim on behalf of the receiver
@@ -683,8 +632,7 @@ module rooch_framework::payment_channel {
             // Withdraw funds from the payment hub and transfer to the receiver.
             let hub_obj = borrow_or_create_payment_hub(channel.sender);
             let hub = object::borrow_mut(hub_obj);
-            let coin_type_name = type_info::type_name<CoinType>();
-            let generic_payment = multi_coin_store::withdraw(&mut hub.multi_coin_store, coin_type_name, incremental_amount);
+            let generic_payment = multi_coin_store::withdraw(&mut hub.multi_coin_store, channel.coin_type, incremental_amount);
 
             // Deposit the coin directly into the receiver's payment hub
             deposit_to_hub_generic(channel.receiver, generic_payment);
@@ -702,7 +650,7 @@ module rooch_framework::payment_channel {
     }
 
     /// Entry function for claiming from channel
-    public entry fun claim_from_channel_entry<CoinType: key + store>(
+    public entry fun claim_from_channel_entry(
         claimer: &signer,
         channel_id: ObjectID,
         sender_vm_id_fragment: String,
@@ -710,7 +658,7 @@ module rooch_framework::payment_channel {
         sub_nonce: u64,
         sender_signature: vector<u8>
     ) {
-        claim_from_channel<CoinType>(
+        claim_from_channel(
             claimer,
             channel_id,
             sender_vm_id_fragment,
@@ -723,7 +671,7 @@ module rooch_framework::payment_channel {
     /// Close a specific sub-channel with final state from receiver
     /// Only the channel receiver can close a sub-channel.
     /// This performs a final claim and then permanently closes the sub-channel.
-    public fun close_sub_channel<CoinType: key + store>(
+    public fun close_sub_channel(
         channel_receiver: &signer,
         channel_id: ObjectID,
         sender_vm_id_fragment: String,
@@ -731,7 +679,7 @@ module rooch_framework::payment_channel {
         final_nonce: u64,
         sender_signature: vector<u8>
     ) {
-        internal_close_sub_channel<CoinType>(
+        internal_close_sub_channel(
             channel_receiver,
             channel_id,
             sender_vm_id_fragment,
@@ -742,7 +690,7 @@ module rooch_framework::payment_channel {
         );
     }
 
-    fun internal_close_sub_channel<CoinType: key + store>(
+    fun internal_close_sub_channel(
         channel_receiver: &signer,
         channel_id: ObjectID,
         sender_vm_id_fragment: String,
@@ -752,17 +700,15 @@ module rooch_framework::payment_channel {
         skip_signature_verification: bool
     ) {
         let receiver = signer::address_of(channel_receiver);
-        // use a block to control the scope of the borrow_object
-        {
-            // Verify the transaction sender is the channel receiver
-            let channel_obj = object::borrow_object<PaymentChannel<CoinType>>(channel_id);
-            let channel = object::borrow(channel_obj);
-            assert!(channel.receiver == receiver, ErrorNotReceiver);
-        };
+        
+        // Verify the transaction sender is the channel receiver
+        let channel_obj = object::borrow_object<PaymentChannel>(channel_id);
+        let channel = object::borrow(channel_obj);
+        assert!(channel.receiver == receiver, ErrorNotReceiver);
         
         // First, perform the final claim operation (this handles all validation and fund transfer)
         // This will emit a ChannelClaimedEvent if there are funds to claim
-        internal_claim_from_channel<CoinType>(
+        internal_claim_from_channel(
             channel_receiver,
             channel_id,
             sender_vm_id_fragment,
@@ -773,7 +719,7 @@ module rooch_framework::payment_channel {
         );
         
         // After successful claim, remove the sub-channel record
-        let channel_obj = object::borrow_mut_object_extend<PaymentChannel<CoinType>>(channel_id);
+        let channel_obj = object::borrow_mut_object_extend<PaymentChannel>(channel_id);
         let channel = object::borrow_mut(channel_obj);
         
         // Remove the sub-channel record since it's permanently closed
@@ -795,7 +741,7 @@ module rooch_framework::payment_channel {
     }
 
     /// Entry function for closing a sub-channel
-    public entry fun close_sub_channel_entry<CoinType: key + store>(
+    public entry fun close_sub_channel_entry(
         channel_receiver: &signer,
         channel_id: ObjectID,
         sender_vm_id_fragment: String,
@@ -803,7 +749,7 @@ module rooch_framework::payment_channel {
         final_nonce: u64,
         sender_signature: vector<u8>
     ) {
-        close_sub_channel<CoinType>(
+        close_sub_channel(
             channel_receiver,
             channel_id,
             sender_vm_id_fragment,
@@ -815,13 +761,13 @@ module rooch_framework::payment_channel {
 
     /// Close the entire channel with final settlement of all sub-channels
     /// Called by receiver with proofs of final state from all sub-channels
-    public fun close_channel<CoinType: key + store>(
+    public fun close_channel(
         channel_receiver: &signer,
         channel_id: ObjectID,
         proofs: vector<CloseProof>,
     ) {
         let receiver_addr = signer::address_of(channel_receiver);
-        let channel_obj = object::borrow_mut_object_extend<PaymentChannel<CoinType>>(channel_id);
+        let channel_obj = object::borrow_mut_object_extend<PaymentChannel>(channel_id);
         let channel = object::borrow_mut(channel_obj);
         
         // Verify receiver is the channel receiver and channel is active
@@ -879,7 +825,7 @@ module rooch_framework::payment_channel {
         if (total_incremental_amount > 0) {
             let hub_obj = borrow_or_create_payment_hub(channel.sender);
             let hub = object::borrow_mut(hub_obj);
-            let coin_type_name = type_info::type_name<CoinType>();
+            let coin_type_name = channel.coin_type;
             let generic_payment = multi_coin_store::withdraw(&mut hub.multi_coin_store, coin_type_name, total_incremental_amount);
             deposit_to_hub_generic(channel.receiver, generic_payment);
         };
@@ -888,7 +834,7 @@ module rooch_framework::payment_channel {
         channel.status = STATUS_CLOSED;
         
         // Decrease active channel count
-        decrease_active_channel_count<CoinType>(channel.sender);
+        decrease_active_channel_count(channel.sender, channel.coin_type);
         
         // Emit channel closed event
         event::emit(ChannelClosedEvent {
@@ -902,31 +848,31 @@ module rooch_framework::payment_channel {
 
     /// Entry function for closing the entire channel with settlement
     /// Takes serialized closure proofs and deserializes them
-    public entry fun close_channel_entry<CoinType: key + store>(
+    public entry fun close_channel_entry(
         channel_receiver: &signer,
         channel_id: ObjectID,
         serialized_proofs: vector<u8>,
     ) {
         let proofs = bcs::from_bytes<CloseProofs>(serialized_proofs);
-        close_channel<CoinType>(channel_receiver, channel_id, proofs.proofs);
+        close_channel(channel_receiver, channel_id, proofs.proofs);
     } 
 
     /// Entry function for initiating cancellation
-    public entry fun initiate_cancellation_entry<CoinType: key + store>(
+    public entry fun initiate_cancellation_entry(
         channel_sender: &signer,
         channel_id: ObjectID,
     ) {
-        initiate_cancellation<CoinType>(channel_sender, channel_id, vector::empty());
+        initiate_cancellation(channel_sender, channel_id, vector::empty());
     }
 
     /// Sender initiates unilateral channel cancellation with proofs for sub-channels
-    public fun initiate_cancellation<CoinType: key + store>(
+    public fun initiate_cancellation(
         channel_sender: &signer,
         channel_id: ObjectID,
         proofs: vector<CancelProof>,
     ) {
         let sender_addr = signer::address_of(channel_sender);
-        let channel_obj = object::borrow_mut_object_extend<PaymentChannel<CoinType>>(channel_id);
+        let channel_obj = object::borrow_mut_object_extend<PaymentChannel>(channel_id);
         let channel = object::borrow_mut(channel_obj);
         
         // Verify sender is the channel sender and channel is active
@@ -942,7 +888,7 @@ module rooch_framework::payment_channel {
             channel.status = STATUS_CLOSED;
             
             // Decrease active channel count
-            decrease_active_channel_count<CoinType>(sender_addr);
+            decrease_active_channel_count(sender_addr, channel.coin_type);
             
             // Emit immediate closure event (no funds to transfer)
             event::emit(ChannelCancellationFinalizedEvent {
@@ -1001,17 +947,17 @@ module rooch_framework::payment_channel {
 
     /// Entry function for initiating cancellation with proofs
     /// Takes serialized cancellation proofs and deserializes them
-    public entry fun initiate_cancellation_with_proofs_entry<CoinType: key + store>(
+    public entry fun initiate_cancellation_with_proofs_entry(
         channel_sender: &signer,
         channel_id: ObjectID,
         serialized_proofs: vector<u8>,
     ) {
         let proofs = bcs::from_bytes<CancelProofs>(serialized_proofs);
-        initiate_cancellation<CoinType>(channel_sender, channel_id, proofs.proofs);
+        initiate_cancellation(channel_sender, channel_id, proofs.proofs);
     }
 
     /// Receiver disputes cancellation with newer state
-    public fun dispute_cancellation<CoinType: key + store>(
+    public fun dispute_cancellation(
         channel_receiver: &signer,
         channel_id: ObjectID,
         sender_vm_id_fragment: String,
@@ -1019,7 +965,7 @@ module rooch_framework::payment_channel {
         dispute_nonce: u64,
         sender_signature: vector<u8>
     ) {
-        internal_dispute_cancellation<CoinType>(
+        internal_dispute_cancellation(
             channel_receiver,
             channel_id,
             sender_vm_id_fragment,
@@ -1030,7 +976,7 @@ module rooch_framework::payment_channel {
         );
     }
 
-    fun internal_dispute_cancellation<CoinType: key + store>(
+    fun internal_dispute_cancellation(
         channel_receiver: &signer,
         channel_id: ObjectID,
         sender_vm_id_fragment: String,
@@ -1040,7 +986,7 @@ module rooch_framework::payment_channel {
         skip_signature_verification: bool
     ) {
         let receiver = signer::address_of(channel_receiver);
-        let channel_obj = object::borrow_mut_object_extend<PaymentChannel<CoinType>>(channel_id);
+        let channel_obj = object::borrow_mut_object_extend<PaymentChannel>(channel_id);
         let channel = object::borrow_mut(channel_obj);
         
         // Verify receiver and channel state
@@ -1097,7 +1043,7 @@ module rooch_framework::payment_channel {
     }
 
     /// Entry function for disputing cancellation
-    public entry fun dispute_cancellation_entry<CoinType: key + store>(
+    public entry fun dispute_cancellation_entry(
         channel_receiver: &signer,
         channel_id: ObjectID,
         sender_vm_id_fragment: String,
@@ -1105,7 +1051,7 @@ module rooch_framework::payment_channel {
         dispute_nonce: u64,
         sender_signature: vector<u8>
     ) {
-        dispute_cancellation<CoinType>(
+        dispute_cancellation(
             channel_receiver,
             channel_id,
             sender_vm_id_fragment,
@@ -1116,10 +1062,10 @@ module rooch_framework::payment_channel {
     }
 
     /// Finalize cancellation after challenge period
-    public fun finalize_cancellation<CoinType: key + store>(
+    public fun finalize_cancellation(
         channel_id: ObjectID,
     ) {
-        let channel_obj = object::borrow_mut_object_extend<PaymentChannel<CoinType>>(channel_id);
+        let channel_obj = object::borrow_mut_object_extend<PaymentChannel>(channel_id);
         let channel = object::borrow_mut(channel_obj);
         
         // Verify channel is in cancelling state
@@ -1141,7 +1087,7 @@ module rooch_framework::payment_channel {
             // Transfer final payment to receiver
             let hub_obj = borrow_or_create_payment_hub(channel.sender);
             let hub = object::borrow_mut(hub_obj);
-            let coin_type_name = type_info::type_name<CoinType>();
+            let coin_type_name = channel.coin_type;
             let generic_payment = multi_coin_store::withdraw(&mut hub.multi_coin_store, coin_type_name, final_amount);
             deposit_to_hub_generic(channel.receiver, generic_payment);
         };
@@ -1150,7 +1096,7 @@ module rooch_framework::payment_channel {
         channel.status = STATUS_CLOSED;
         
         // Decrease active channel count
-        decrease_active_channel_count<CoinType>(channel.sender);
+        decrease_active_channel_count(channel.sender, channel.coin_type);
         
         // Emit finalization event
         event::emit(ChannelCancellationFinalizedEvent {
@@ -1161,10 +1107,10 @@ module rooch_framework::payment_channel {
     }
 
     /// Entry function for finalizing cancellation
-    public entry fun finalize_cancellation_entry<CoinType: key + store>(
+    public entry fun finalize_cancellation_entry(
         channel_id: ObjectID,
     ) {
-        finalize_cancellation<CoinType>(channel_id);
+        finalize_cancellation(channel_id);
     }
 
     // === View Functions ===
@@ -1181,26 +1127,26 @@ module rooch_framework::payment_channel {
     }
 
     /// Check if a payment channel exists between sender and receiver for the given coin type
-    public fun channel_exists<CoinType: store>(sender: address, receiver: address): bool {
-        let channel_id = calc_channel_object_id<CoinType>(sender, receiver);
-        object::exists_object_with_type<PaymentChannel<CoinType>>(channel_id)
+    public fun channel_exists(sender: address, receiver: address, coin_type: String): bool {
+        let channel_id = calc_channel_object_id(sender, receiver, coin_type);
+        object::exists_object_with_type<PaymentChannel>(channel_id)
     }
 
     /// Get channel ID for a given sender, receiver, and coin type
-    public fun get_channel_id<CoinType: store>(sender: address, receiver: address): ObjectID {
-        calc_channel_object_id<CoinType>(sender, receiver)
+    public fun get_channel_id(sender: address, receiver: address, coin_type: String): ObjectID {
+        calc_channel_object_id(sender, receiver, coin_type)
     }
 
     /// Get channel information
-    public fun get_channel_info<CoinType: store>(channel_id: ObjectID): (address, address, ObjectID, u8) {
-        let channel_obj = object::borrow_object<PaymentChannel<CoinType>>(channel_id);
+    public fun get_channel_info(channel_id: ObjectID): (address, address, String, u8) {
+        let channel_obj = object::borrow_object<PaymentChannel>(channel_id);
         let channel = object::borrow(channel_obj);
-        (channel.sender, channel.receiver, channel.payment_hub_id, channel.status)
+        (channel.sender, channel.receiver, channel.coin_type, channel.status)
     }
 
     /// Get sub-channel state
-    public fun get_sub_channel_state<CoinType: store>(channel_id: ObjectID, vm_id_fragment: String): (u256, u64) {
-        let channel_obj = object::borrow_object<PaymentChannel<CoinType>>(channel_id);
+    public fun get_sub_channel_state(channel_id: ObjectID, vm_id_fragment: String): (u256, u64) {
+        let channel_obj = object::borrow_object<PaymentChannel>(channel_id);
         let channel = object::borrow(channel_obj);
         
         if (table::contains(&channel.sub_channels, vm_id_fragment)) {
@@ -1212,22 +1158,22 @@ module rooch_framework::payment_channel {
     }
 
     /// Check if a sub-channel exists
-    public fun sub_channel_exists<CoinType: store>(channel_id: ObjectID, vm_id_fragment: String): bool {
-        let channel_obj = object::borrow_object<PaymentChannel<CoinType>>(channel_id);
+    public fun sub_channel_exists(channel_id: ObjectID, vm_id_fragment: String): bool {
+        let channel_obj = object::borrow_object<PaymentChannel>(channel_id);
         let channel = object::borrow(channel_obj);
         table::contains(&channel.sub_channels, vm_id_fragment)
     }
 
     /// Get the number of sub-channels in a payment channel
-    public fun get_sub_channel_count<CoinType: store>(channel_id: ObjectID): u64 {
-        let channel_obj = object::borrow_object<PaymentChannel<CoinType>>(channel_id);
+    public fun get_sub_channel_count(channel_id: ObjectID): u64 {
+        let channel_obj = object::borrow_object<PaymentChannel>(channel_id);
         let channel = object::borrow(channel_obj);
         table::length(&channel.sub_channels)
     }
 
     /// Get cancellation info
-    public fun get_cancellation_info<CoinType: store>(channel_id: ObjectID): Option<CancellationInfo> {
-        let channel_obj = object::borrow_object<PaymentChannel<CoinType>>(channel_id);
+    public fun get_cancellation_info(channel_id: ObjectID): Option<CancellationInfo> {
+        let channel_obj = object::borrow_object<PaymentChannel>(channel_id);
         let channel = object::borrow(channel_obj);
         
         if (option::is_some(&channel.cancellation_info)) {
@@ -1241,8 +1187,8 @@ module rooch_framework::payment_channel {
 
 
     /// Get sub-channel public key multibase if exists
-    public fun get_sub_channel_public_key<CoinType: store>(channel_id: ObjectID, vm_id_fragment: String): Option<String> {
-        let channel_obj = object::borrow_object<PaymentChannel<CoinType>>(channel_id);
+    public fun get_sub_channel_public_key(channel_id: ObjectID, vm_id_fragment: String): Option<String> {
+        let channel_obj = object::borrow_object<PaymentChannel>(channel_id);
         let channel = object::borrow(channel_obj);
         
         if (table::contains(&channel.sub_channels, vm_id_fragment)) {
@@ -1254,8 +1200,8 @@ module rooch_framework::payment_channel {
     }
 
     /// Get sub-channel method type if exists
-    public fun get_sub_channel_method_type<CoinType: store>(channel_id: ObjectID, vm_id_fragment: String): Option<String> {
-        let channel_obj = object::borrow_object<PaymentChannel<CoinType>>(channel_id);
+    public fun get_sub_channel_method_type(channel_id: ObjectID, vm_id_fragment: String): Option<String> {
+        let channel_obj = object::borrow_object<PaymentChannel>(channel_id);
         let channel = object::borrow(channel_obj);
         
         if (table::contains(&channel.sub_channels, vm_id_fragment)) {
@@ -1267,7 +1213,7 @@ module rooch_framework::payment_channel {
     }
 
     /// Get the number of active channels for a specific coin type
-    public fun get_active_channel_count<CoinType: store>(owner: address): u64 {
+    public fun get_active_channel_count(owner: address, coin_type: String): u64 {
         let hub_id = get_payment_hub_id(owner);
         if (!object::exists_object_with_type<PaymentHub>(hub_id)) {
             return 0
@@ -1275,27 +1221,25 @@ module rooch_framework::payment_channel {
         
         let hub_obj = object::borrow_object<PaymentHub>(hub_id);
         let hub = object::borrow(hub_obj);
-        let coin_type_name = type_info::type_name<CoinType>();
         
-        if (table::contains(&hub.active_channels, coin_type_name)) {
-            *table::borrow(&hub.active_channels, coin_type_name)
+        if (table::contains(&hub.active_channels, coin_type)) {
+            *table::borrow(&hub.active_channels, coin_type)
         } else {
             0
         }
     }
 
     /// Check if withdrawal is allowed for a specific coin type
-    public fun can_withdraw_from_hub<CoinType: store>(owner: address): bool {
-        get_active_channel_count<CoinType>(owner) == 0
+    public fun can_withdraw_from_hub(owner: address, coin_type: String): bool {
+        get_active_channel_count(owner, coin_type) == 0
     }
 
     // === Internal Helper Functions ===
 
     /// Decrease active channel count for a specific coin type
-    fun decrease_active_channel_count<CoinType: store>(sender_addr: address) {
+    fun decrease_active_channel_count(sender_addr: address, coin_type_name: String) {
         let payment_hub_obj = borrow_or_create_payment_hub(sender_addr);
         let payment_hub = object::borrow_mut(payment_hub_obj);
-        let coin_type_name = type_info::type_name<CoinType>();
         
         if (table::contains(&payment_hub.active_channels, coin_type_name)) {
             let count = table::borrow_mut(&mut payment_hub.active_channels, coin_type_name);
@@ -1325,8 +1269,8 @@ module rooch_framework::payment_channel {
         hash::sha3_256(serialized_bytes)
     }
 
-    fun verify_sender_signature<CoinType: key + store>(
-        channel: &PaymentChannel<CoinType>,
+    fun verify_sender_signature(
+        channel: &PaymentChannel,
         channel_id: ObjectID,
         vm_id_fragment: String,
         accumulated_amount: u256,
@@ -1344,7 +1288,7 @@ module rooch_framework::payment_channel {
 
     #[test_only]
     /// Test-only version of claim_from_channel that uses the test signature verification
-    public fun claim_from_channel_for_test<CoinType: key + store>(
+    public fun claim_from_channel_for_test(
         claimer: &signer,
         channel_id: ObjectID,
         sender_vm_id_fragment: String,
@@ -1352,7 +1296,7 @@ module rooch_framework::payment_channel {
         sub_nonce: u64,
         sender_signature: vector<u8>
     ) {
-        internal_claim_from_channel<CoinType>(
+        internal_claim_from_channel(
             claimer,
             channel_id,
             sender_vm_id_fragment,
@@ -1364,7 +1308,7 @@ module rooch_framework::payment_channel {
     }
 
     #[test_only]
-    public fun close_sub_channel_for_test<CoinType: key + store>(
+    public fun close_sub_channel_for_test(
         channel_receiver: &signer,
         channel_id: ObjectID,
         sender_vm_id_fragment: String,
@@ -1372,7 +1316,7 @@ module rooch_framework::payment_channel {
         final_nonce: u64,
         sender_signature: vector<u8>
     ) {
-        internal_close_sub_channel<CoinType>(
+        internal_close_sub_channel(
             channel_receiver,
             channel_id,
             sender_vm_id_fragment,
@@ -1384,7 +1328,7 @@ module rooch_framework::payment_channel {
     }
 
     #[test_only]
-    public fun dispute_cancellation_for_test<CoinType: key + store>(
+    public fun dispute_cancellation_for_test(
         channel_receiver: &signer,
         channel_id: ObjectID,
         sender_vm_id_fragment: String,
@@ -1392,7 +1336,7 @@ module rooch_framework::payment_channel {
         dispute_nonce: u64,
         sender_signature: vector<u8>
     ) {
-        internal_dispute_cancellation<CoinType>(
+        internal_dispute_cancellation(
             channel_receiver,
             channel_id,
             sender_vm_id_fragment,
