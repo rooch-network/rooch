@@ -8,6 +8,7 @@ use move_core_types::u256::U256;
 use moveos_types::moveos_std::object::ObjectID;
 use rooch_rpc_api::jsonrpc_types::StrView;
 use rooch_types::address::ParsedAddress;
+use rooch_types::crypto::CompressedSignature;
 use rooch_types::error::RoochResult;
 use rooch_types::framework::payment_channel::SubRAV;
 use serde::{Deserialize, Serialize};
@@ -69,9 +70,13 @@ impl CommandAction<CreateRavOutput> for CreateRavCommand {
             nonce: self.nonce,
         };
 
-        // Sign with the found keypair
+        // Sign with the found keypair and export **compressed** raw signature bytes (no scheme flag or public key)
+        // The on-chain Move verifier expects a 64-byte ECDSA signature (r||s).
         let signature = keypair.sign(&bcs::to_bytes(&sub_rav)?);
-        let signature_hex = hex::encode(signature.as_ref());
+
+        // Convert to compressed form to strip scheme flag and embedded public key
+        let compressed: CompressedSignature = signature.to_compressed()?;
+        let signature_hex = hex::encode(compressed.as_ref());
 
         Ok(CreateRavOutput {
             channel_id: self.channel_id,
