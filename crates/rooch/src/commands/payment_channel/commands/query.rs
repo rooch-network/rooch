@@ -5,8 +5,10 @@ use crate::cli_types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
 use clap::Parser;
 use move_core_types::account_address::AccountAddress;
+use move_core_types::u256::U256;
 use moveos_types::move_std::option::MoveOption;
 use moveos_types::moveos_std::object::{DynamicField, ObjectID};
+use rooch_rpc_api::jsonrpc_types::StrView;
 use rooch_types::address::{ParsedAddress, RoochAddress};
 use rooch_types::error::RoochResult;
 use rooch_types::framework::multi_coin_store::CoinStoreField;
@@ -60,7 +62,7 @@ pub struct ChannelCommand {
 
     /// Query specific sub-channel by VM ID fragment
     #[clap(long, help = "Query specific sub-channel by VM ID fragment")]
-    pub vm_id: Option<String>,
+    pub vm_id_fragment: Option<String>,
 
     /// Page size for listing fields
     #[clap(long, default_value = "100", help = "Page size for listing fields")]
@@ -105,8 +107,8 @@ pub struct ActiveChannelInfo {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ChannelOutput {
     pub channel_id: ObjectID,
-    pub sender: AccountAddress,
-    pub receiver: AccountAddress,
+    pub sender: RoochAddress,
+    pub receiver: RoochAddress,
     pub payment_hub_id: ObjectID,
     pub status: String,
     pub cancellation_info: Option<CancellationInfoOutput>,
@@ -125,8 +127,20 @@ pub struct SubChannelInfo {
     pub fragment: String,
     pub pk_multibase: String,
     pub method_type: String,
-    pub last_claimed_amount: String, // Use string to handle u256
+    pub last_claimed_amount: StrView<U256>,
     pub last_confirmed_nonce: u64,
+}
+
+impl From<DynamicField<String, SubChannel>> for SubChannelInfo {
+    fn from(field: DynamicField<String, SubChannel>) -> Self {
+        Self {
+            fragment: field.name,
+            pk_multibase: field.value.pk_multibase.to_string(),
+            method_type: field.value.method_type.to_string(),
+            last_claimed_amount: field.value.last_claimed_amount.into(),
+            last_confirmed_nonce: field.value.last_confirmed_nonce,
+        }
+    }
 }
 
 #[async_trait]
@@ -311,12 +325,12 @@ impl CommandAction<ChannelOutput> for ChannelCommand {
 
         // 5. Get sub-channels if requested
         let mut sub_channels_count = 0u64;
-        let sub_channels = if self.list_sub_channels || self.vm_id.is_some() {
+        let sub_channels = if self.list_sub_channels || self.vm_id_fragment.is_some() {
             let mut sub_channels_info = Vec::new();
             let sub_channels_table_id = payment_channel.sub_channels;
 
             // Query specific sub-channel by vm_id
-            if let Some(vm_id) = &self.vm_id {
+            if let Some(vm_id) = &self.vm_id_fragment {
                 // Query specific field by key
                 let field_key = moveos_types::state::FieldKey::derive_from_string(vm_id);
                 let field_states = client
@@ -332,16 +346,7 @@ impl CommandAction<ChannelOutput> for ChannelCommand {
                                     "Failed to deserialize SubChannel".to_string(),
                                 )
                             })?;
-                    sub_channels_info.push(SubChannelInfo {
-                        fragment: vm_id.clone(),
-                        pk_multibase: sub_channel_field.value.pk_multibase(),
-                        method_type: sub_channel_field.value.method_type(),
-                        last_claimed_amount: sub_channel_field
-                            .value
-                            .last_claimed_amount()
-                            .to_string(),
-                        last_confirmed_nonce: sub_channel_field.value.last_confirmed_nonce(),
-                    });
+                    sub_channels_info.push(sub_channel_field.into());
                     sub_channels_count += 1;
                 }
             } else if self.list_sub_channels {
@@ -368,16 +373,7 @@ impl CommandAction<ChannelOutput> for ChannelCommand {
                                     "Failed to deserialize SubChannel".to_string(),
                                 )
                             })?;
-                        sub_channels_info.push(SubChannelInfo {
-                            fragment: sub_channel_field.name,
-                            pk_multibase: sub_channel_field.value.pk_multibase(),
-                            method_type: sub_channel_field.value.method_type(),
-                            last_claimed_amount: sub_channel_field
-                                .value
-                                .last_claimed_amount()
-                                .to_string(),
-                            last_confirmed_nonce: sub_channel_field.value.last_confirmed_nonce(),
-                        });
+                        sub_channels_info.push(sub_channel_field.into());
                         sub_channels_count += 1;
                     }
 
@@ -413,8 +409,8 @@ impl CommandAction<ChannelOutput> for ChannelCommand {
 
         Ok(ChannelOutput {
             channel_id: self.channel_id,
-            sender: payment_channel.sender,
-            receiver: payment_channel.receiver,
+            sender: payment_channel.sender.into(),
+            receiver: payment_channel.receiver.into(),
             payment_hub_id: payment_channel.payment_hub_id,
             status: status.to_string(),
             cancellation_info,
