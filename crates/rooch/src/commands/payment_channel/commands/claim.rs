@@ -186,7 +186,15 @@ impl CommandAction<ClaimOutput> for ClaimCommand {
                     ))
                 })?;
 
-                (channel_id, chain_id, channel_epoch, vm_id_fragment, amount, nonce, signature_bytes)
+                (
+                    channel_id,
+                    chain_id,
+                    channel_epoch,
+                    vm_id_fragment,
+                    amount,
+                    nonce,
+                    signature_bytes,
+                )
             } else {
                 return Err(rooch_types::error::RoochError::CommandArgumentError(
                     "Either --rav or --individual-params must be provided".to_string(),

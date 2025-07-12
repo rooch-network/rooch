@@ -114,7 +114,7 @@ impl CommandAction<OpenOutput> for OpenCommand {
         };
 
         Ok(OpenOutput {
-            receiver: receiver,
+            receiver,
             vm_id_fragment: vm_id_fragment.clone(),
             fragments_source,
             channel_id,

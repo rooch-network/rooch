@@ -10,7 +10,7 @@ use rooch_rpc_api::jsonrpc_types::StrView;
 use rooch_types::address::{ParsedAddress, RoochAddress};
 use rooch_types::crypto::CompressedSignature;
 use rooch_types::error::RoochResult;
-use rooch_types::framework::payment_channel::{SignedSubRav, SubRAV, PaymentChannel};
+use rooch_types::framework::payment_channel::{PaymentChannel, SignedSubRav, SubRAV};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Parser)]
@@ -20,11 +20,17 @@ pub struct CreateRavCommand {
     pub channel_id: ObjectID,
 
     /// Channel epoch for the RAV (optional, if not provided, will query from chain)
-    #[clap(long, help = "Channel epoch for the RAV (optional, auto-queried if not provided)")]
+    #[clap(
+        long,
+        help = "Channel epoch for the RAV (optional, auto-queried if not provided)"
+    )]
     pub channel_epoch: Option<u64>,
 
     /// Chain ID for the RAV (optional, if not provided, will query from chain)
-    #[clap(long, help = "Chain ID for the RAV (optional, auto-queried if not provided)")]
+    #[clap(
+        long,
+        help = "Chain ID for the RAV (optional, auto-queried if not provided)"
+    )]
     pub chain_id: Option<u64>,
 
     /// Verification method ID fragment (optional, if not provided, will find the first available key)
@@ -123,10 +129,10 @@ impl CommandAction<SignedSubRavOutput> for CreateRavCommand {
             let channel_object_view = channel_object_views.pop().unwrap().unwrap();
             let payment_channel = bcs::from_bytes::<PaymentChannel>(&channel_object_view.value.0)
                 .map_err(|_| {
-                    rooch_types::error::RoochError::CommandArgumentError(
-                        "Failed to deserialize PaymentChannel".to_string(),
-                    )
-                })?;
+                rooch_types::error::RoochError::CommandArgumentError(
+                    "Failed to deserialize PaymentChannel".to_string(),
+                )
+            })?;
 
             payment_channel.channel_epoch()
         };
@@ -137,7 +143,7 @@ impl CommandAction<SignedSubRavOutput> for CreateRavCommand {
         } else {
             // Query the chain_id from chain
             let client = context.get_client().await?;
-            client.rooch.get_chain_id().await?.into()
+            client.rooch.get_chain_id().await?
         };
 
         // Find the appropriate verification method and keypair using the abstracted method
@@ -176,7 +182,7 @@ impl CommandAction<SignedSubRavOutput> for CreateRavCommand {
             rav_hex: hex::encode(sub_rav_bytes),
             signed_rav: signed_rav.into(),
             encoded,
-            signer_address: signer_address,
+            signer_address,
         };
 
         Ok(output)

@@ -159,7 +159,7 @@ impl CommandAction<HubOutput> for HubCommand {
     async fn execute(self) -> RoochResult<HubOutput> {
         let context = self.context_options.build()?;
         let client = context.get_client().await?;
-        let owner = context.resolve_address(self.owner.into())?;
+        let owner = context.resolve_address(self.owner)?;
         // 1. Calculate hub_id directly in Rust
         let hub_id = PaymentChannelModule::payment_hub_id(owner);
 

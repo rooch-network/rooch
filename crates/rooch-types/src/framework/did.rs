@@ -772,23 +772,20 @@ impl<'a> DIDModule<'a> {
     //TODO: handle other error codes
     fn handle_vm_status_error(status: VMStatus) -> anyhow::Error {
         match &status {
-            VMStatus::MoveAbort(location, code) => match location {
-                AbortLocation::Module(module_id) => {
-                    if module_id.address() == &Self::MODULE_ADDRESS
-                        && module_id.name() == Self::MODULE_NAME
-                    {
-                        match *code {
-                            ERROR_DID_DOCUMENT_NOT_EXIST => {
-                                anyhow::anyhow!("DID document not found")
-                            }
-                            _ => anyhow::anyhow!("Failed to get DID document: {:?}", status),
+            VMStatus::MoveAbort(AbortLocation::Module(module_id), code) => {
+                if module_id.address() == &Self::MODULE_ADDRESS
+                    && module_id.name() == Self::MODULE_NAME
+                {
+                    match *code {
+                        ERROR_DID_DOCUMENT_NOT_EXIST => {
+                            anyhow::anyhow!("DID document not found")
                         }
-                    } else {
-                        anyhow::anyhow!("Failed to get DID document: {:?}", status)
+                        _ => anyhow::anyhow!("Failed to get DID document: {:?}", status),
                     }
+                } else {
+                    anyhow::anyhow!("Failed to get DID document: {:?}", status)
                 }
-                _ => anyhow::anyhow!("Failed to get DID document: {:?}", status),
-            },
+            }
             _ => anyhow::anyhow!("Failed to get DID document: {:?}", status),
         }
     }
