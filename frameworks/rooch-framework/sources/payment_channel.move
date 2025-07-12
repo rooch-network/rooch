@@ -64,19 +64,14 @@ module rooch_framework::payment_channel {
     const ErrorSenderMustIsDID: u64 = 20;
     /// The coin type provided does not match the channel's coin type.
     const ErrorMismatchedCoinType: u64 = 21;
-    /// The sub-channel is disabled.
-    const ErrorSubChannelDisabled: u64 = 22;
     /// The channel epoch in the SubRAV does not match the current channel epoch.
-    const ErrorInvalidChannelEpoch: u64 = 23;
+    const ErrorInvalidChannelEpoch: u64 = 22;
 
     // === Constants ===
     const STATUS_ACTIVE: u8 = 0;
     const STATUS_CANCELLING: u8 = 1;
     const STATUS_CLOSED: u8 = 2;
 
-    // SubChannel status
-    const SUB_STATUS_ENABLED: u8 = 0;
-    const SUB_STATUS_DISABLED: u8 = 1;
     const CHALLENGE_PERIOD_MILLISECONDS: u64 = 86400000; // 1 day
 
     // === Events ===
@@ -146,13 +141,6 @@ module rooch_framework::payment_channel {
         method_type: String,
     }
 
-    /// Event emitted when a sub-channel is closed (permanently closed)
-    struct SubChannelClosedEvent has copy, drop {
-        channel_id: ObjectID,
-        receiver: address,
-        vm_id_fragment: String,
-    }
-
     /// Event emitted when funds are withdrawn from a payment hub
     struct PaymentHubWithdrawEvent has copy, drop {
         hub_id: ObjectID,
@@ -202,9 +190,6 @@ module rooch_framework::payment_channel {
         // --- State data (evolves with claim/close operations) ---
         last_claimed_amount: u256,
         last_confirmed_nonce: u64,
-        
-        // --- Availability status ---
-        status: u8, // 0 = Enabled, 1 = Disabled
     }
 
     /// Information stored when a channel cancellation is initiated.
@@ -491,27 +476,16 @@ module rooch_framework::payment_channel {
         let pk_multibase = *did::verification_method_public_key_multibase(&vm);
         let method_type = *did::verification_method_type(&vm);
         
-        // If sub-channel exists, allow re-activation when status is Disabled
-        if (table::contains(&channel.sub_channels, vm_id_fragment)) {
-            let sub_ch_mut = table::borrow_mut(&mut channel.sub_channels, vm_id_fragment);
-            // If it is currently enabled, treat as duplicate
-            assert!(sub_ch_mut.status == SUB_STATUS_DISABLED, ErrorVerificationMethodAlreadyExists);
-
-            // Reactivate: overwrite stored key info and enable
-            sub_ch_mut.pk_multibase = pk_multibase;
-            sub_ch_mut.method_type  = method_type;
-            sub_ch_mut.status = SUB_STATUS_ENABLED;
-
-        } else {
-            // Create and store the sub-channel with authorization metadata
-            table::add(&mut channel.sub_channels, vm_id_fragment, SubChannel {
-                pk_multibase,
-                method_type,
-                last_claimed_amount: 0u256,
-                last_confirmed_nonce: 0,
-                status: SUB_STATUS_ENABLED,
-            });
-        };
+        // A sub-channel can only be opened once.
+        assert!(!table::contains(&channel.sub_channels, vm_id_fragment), ErrorVerificationMethodAlreadyExists);
+        
+        // Create and store the sub-channel with authorization metadata
+        table::add(&mut channel.sub_channels, vm_id_fragment, SubChannel {
+            pk_multibase,
+            method_type,
+            last_claimed_amount: 0u256,
+            last_confirmed_nonce: 0,
+        });
  
         // Emit sub-channel opened event
         event::emit(SubChannelOpenedEvent {
@@ -697,89 +671,6 @@ module rooch_framework::payment_channel {
             sender_signature
         );
     } 
-
-    /// Close a specific sub-channel with final state from receiver
-    /// Only the channel receiver can close a sub-channel.
-    /// This performs a final claim and then permanently closes the sub-channel.
-    public fun close_sub_channel(
-        channel_receiver: &signer,
-        channel_id: ObjectID,
-        sender_vm_id_fragment: String,
-        final_accumulated_amount: u256,
-        final_nonce: u64,
-        sender_signature: vector<u8>
-    ) {
-        internal_close_sub_channel(
-            channel_receiver,
-            channel_id,
-            sender_vm_id_fragment,
-            final_accumulated_amount,
-            final_nonce,
-            sender_signature,
-            false
-        );
-    }
-
-    fun internal_close_sub_channel(
-        channel_receiver: &signer,
-        channel_id: ObjectID,
-        sender_vm_id_fragment: String,
-        final_accumulated_amount: u256,
-        final_nonce: u64,
-        sender_signature: vector<u8>,
-        skip_signature_verification: bool
-    ) {
-        let receiver = signer::address_of(channel_receiver);
-        
-        // Verify the transaction sender is the channel receiver
-        let channel_obj = object::borrow_object<PaymentChannel>(channel_id);
-        let channel = object::borrow(channel_obj);
-        assert!(channel.receiver == receiver, ErrorNotReceiver);
-        
-        // First, perform the final claim operation (this handles all validation and fund transfer)
-        // This will emit a ChannelClaimedEvent if there are funds to claim
-        internal_claim_from_channel(
-            channel_receiver,
-            channel_id,
-            sender_vm_id_fragment,
-            final_accumulated_amount,
-            final_nonce,
-            sender_signature,
-            skip_signature_verification
-        );
-        
-        // After successful claim, mark the sub-channel as disabled
-        let channel_obj = object::borrow_mut_object_extend<PaymentChannel>(channel_id);
-        let channel = object::borrow_mut(channel_obj);
-        let sub_channel_mut = table::borrow_mut(&mut channel.sub_channels, sender_vm_id_fragment);
-        sub_channel_mut.status = SUB_STATUS_DISABLED;
-        
-        // Emit sub-channel close event (separate from the claim event)
-        event::emit(SubChannelClosedEvent {
-            channel_id,
-            receiver: channel.receiver,
-            vm_id_fragment: sender_vm_id_fragment,
-        });
-    }
-
-    /// Entry function for closing a sub-channel
-    public entry fun close_sub_channel_entry(
-        channel_receiver: &signer,
-        channel_id: ObjectID,
-        sender_vm_id_fragment: String,
-        final_accumulated_amount: u256,
-        final_nonce: u64,
-        sender_signature: vector<u8>
-    ) {
-        close_sub_channel(
-            channel_receiver,
-            channel_id,
-            sender_vm_id_fragment,
-            final_accumulated_amount,
-            final_nonce,
-            sender_signature
-        );
-    }
 
     /// Close the entire channel with final settlement of all sub-channels
     /// Called by receiver with proofs of final state from all sub-channels
@@ -1315,10 +1206,6 @@ module rooch_framework::payment_channel {
         
         // Get the sub-channel to access stored public key information
         let sub_channel = table::borrow(&channel.sub_channels, sub_rav.vm_id_fragment);
-        // Reject if the sub-channel is disabled
-        if (sub_channel.status != SUB_STATUS_ENABLED) {
-            return false
-        };        
         
         verify_rav_signature(sub_rav, signature, sub_channel.pk_multibase, sub_channel.method_type)
     }
@@ -1350,26 +1237,6 @@ module rooch_framework::payment_channel {
             sender_vm_id_fragment,
             sub_accumulated_amount,
             sub_nonce,
-            sender_signature,
-            true
-        );
-    }
-
-    #[test_only]
-    public fun close_sub_channel_for_test(
-        channel_receiver: &signer,
-        channel_id: ObjectID,
-        sender_vm_id_fragment: String,
-        final_accumulated_amount: u256,
-        final_nonce: u64,
-        sender_signature: vector<u8>
-    ) {
-        internal_close_sub_channel(
-            channel_receiver,
-            channel_id,
-            sender_vm_id_fragment,
-            final_accumulated_amount,
-            final_nonce,
             sender_signature,
             true
         );

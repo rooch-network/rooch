@@ -13,7 +13,6 @@
 -  [Struct `ChannelDisputeEvent`](#0x3_payment_channel_ChannelDisputeEvent)
 -  [Struct `ChannelCancellationFinalizedEvent`](#0x3_payment_channel_ChannelCancellationFinalizedEvent)
 -  [Struct `SubChannelOpenedEvent`](#0x3_payment_channel_SubChannelOpenedEvent)
--  [Struct `SubChannelClosedEvent`](#0x3_payment_channel_SubChannelClosedEvent)
 -  [Struct `PaymentHubWithdrawEvent`](#0x3_payment_channel_PaymentHubWithdrawEvent)
 -  [Struct `ChannelKey`](#0x3_payment_channel_ChannelKey)
 -  [Resource `PaymentHub`](#0x3_payment_channel_PaymentHub)
@@ -42,8 +41,6 @@
 -  [Function `open_channel_with_sub_channel_entry`](#0x3_payment_channel_open_channel_with_sub_channel_entry)
 -  [Function `claim_from_channel`](#0x3_payment_channel_claim_from_channel)
 -  [Function `claim_from_channel_entry`](#0x3_payment_channel_claim_from_channel_entry)
--  [Function `close_sub_channel`](#0x3_payment_channel_close_sub_channel)
--  [Function `close_sub_channel_entry`](#0x3_payment_channel_close_sub_channel_entry)
 -  [Function `close_channel`](#0x3_payment_channel_close_channel)
 -  [Function `close_channel_entry`](#0x3_payment_channel_close_channel_entry)
 -  [Function `initiate_cancellation_entry`](#0x3_payment_channel_initiate_cancellation_entry)
@@ -179,18 +176,6 @@ Event emitted when a sub-channel is opened
 
 
 <pre><code><b>struct</b> <a href="payment_channel.md#0x3_payment_channel_SubChannelOpenedEvent">SubChannelOpenedEvent</a> <b>has</b> <b>copy</b>, drop
-</code></pre>
-
-
-
-<a name="0x3_payment_channel_SubChannelClosedEvent"></a>
-
-## Struct `SubChannelClosedEvent`
-
-Event emitted when a sub-channel is closed (permanently closed)
-
-
-<pre><code><b>struct</b> <a href="payment_channel.md#0x3_payment_channel_SubChannelClosedEvent">SubChannelClosedEvent</a> <b>has</b> <b>copy</b>, drop
 </code></pre>
 
 
@@ -473,7 +458,7 @@ The claimed amount is less than or equal to the already claimed amount.
 The channel epoch in the SubRAV does not match the current channel epoch.
 
 
-<pre><code><b>const</b> <a href="payment_channel.md#0x3_payment_channel_ErrorInvalidChannelEpoch">ErrorInvalidChannelEpoch</a>: u64 = 23;
+<pre><code><b>const</b> <a href="payment_channel.md#0x3_payment_channel_ErrorInvalidChannelEpoch">ErrorInvalidChannelEpoch</a>: u64 = 22;
 </code></pre>
 
 
@@ -548,16 +533,6 @@ The sender must have a DID document to open a channel.
 
 
 
-<a name="0x3_payment_channel_ErrorSubChannelDisabled"></a>
-
-The sub-channel is disabled.
-
-
-<pre><code><b>const</b> <a href="payment_channel.md#0x3_payment_channel_ErrorSubChannelDisabled">ErrorSubChannelDisabled</a>: u64 = 22;
-</code></pre>
-
-
-
 <a name="0x3_payment_channel_ErrorSubChannelNotOpened"></a>
 
 The sub-channel has not been opened yet.
@@ -601,24 +576,6 @@ Only the sender can authorize verification methods for the channel.
 
 
 <pre><code><b>const</b> <a href="payment_channel.md#0x3_payment_channel_STATUS_CLOSED">STATUS_CLOSED</a>: u8 = 2;
-</code></pre>
-
-
-
-<a name="0x3_payment_channel_SUB_STATUS_DISABLED"></a>
-
-
-
-<pre><code><b>const</b> <a href="payment_channel.md#0x3_payment_channel_SUB_STATUS_DISABLED">SUB_STATUS_DISABLED</a>: u8 = 1;
-</code></pre>
-
-
-
-<a name="0x3_payment_channel_SUB_STATUS_ENABLED"></a>
-
-
-
-<pre><code><b>const</b> <a href="payment_channel.md#0x3_payment_channel_SUB_STATUS_ENABLED">SUB_STATUS_ENABLED</a>: u8 = 0;
 </code></pre>
 
 
@@ -822,32 +779,6 @@ Entry function for claiming from channel
 
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_claim_from_channel_entry">claim_from_channel_entry</a>(claimer: &<a href="">signer</a>, channel_id: <a href="_ObjectID">object::ObjectID</a>, sender_vm_id_fragment: <a href="_String">string::String</a>, sub_accumulated_amount: <a href="">u256</a>, sub_nonce: u64, sender_signature: <a href="">vector</a>&lt;u8&gt;)
-</code></pre>
-
-
-
-<a name="0x3_payment_channel_close_sub_channel"></a>
-
-## Function `close_sub_channel`
-
-Close a specific sub-channel with final state from receiver
-Only the channel receiver can close a sub-channel.
-This performs a final claim and then permanently closes the sub-channel.
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_close_sub_channel">close_sub_channel</a>(channel_receiver: &<a href="">signer</a>, channel_id: <a href="_ObjectID">object::ObjectID</a>, sender_vm_id_fragment: <a href="_String">string::String</a>, final_accumulated_amount: <a href="">u256</a>, final_nonce: u64, sender_signature: <a href="">vector</a>&lt;u8&gt;)
-</code></pre>
-
-
-
-<a name="0x3_payment_channel_close_sub_channel_entry"></a>
-
-## Function `close_sub_channel_entry`
-
-Entry function for closing a sub-channel
-
-
-<pre><code><b>public</b> entry <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_close_sub_channel_entry">close_sub_channel_entry</a>(channel_receiver: &<a href="">signer</a>, channel_id: <a href="_ObjectID">object::ObjectID</a>, sender_vm_id_fragment: <a href="_String">string::String</a>, final_accumulated_amount: <a href="">u256</a>, final_nonce: u64, sender_signature: <a href="">vector</a>&lt;u8&gt;)
 </code></pre>
 
 

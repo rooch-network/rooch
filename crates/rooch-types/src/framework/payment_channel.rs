@@ -30,6 +30,7 @@ struct ChannelKey {
 #[derive(Serialize, Deserialize)]
 pub struct SubRAV {
     pub channel_id: ObjectID,
+    pub channel_epoch: u64,
     pub vm_id_fragment: String,
     pub amount: U256,
     pub nonce: u64,
@@ -138,6 +139,7 @@ pub struct PaymentChannel {
     // sub_channels: Table<String, SubChannel> - we'll handle this separately via field access
     pub sub_channels: ObjectID,
     pub status: u8,
+    pub channel_epoch: u64,
     pub cancellation_info: MoveOption<CancellationInfo>,
 }
 
@@ -165,6 +167,7 @@ impl MoveStructState for PaymentChannel {
             // sub_channels: Table<String, SubChannel>
             ObjectID::type_layout(),
             move_core_types::value::MoveTypeLayout::U8, // status
+            move_core_types::value::MoveTypeLayout::U64, // channel_epoch
             MoveOption::<CancellationInfo>::type_layout(), // cancellation_info
         ])
     }
@@ -206,6 +209,10 @@ impl PaymentChannel {
     pub fn cancellation_info(&self) -> Option<&CancellationInfo> {
         self.cancellation_info.as_ref()
     }
+
+    pub fn channel_epoch(&self) -> u64 {
+        self.channel_epoch
+    }
 }
 
 /// SubChannel structure for Rust binding
@@ -216,7 +223,6 @@ pub struct SubChannel {
     pub method_type: MoveString,
     pub last_claimed_amount: U256,
     pub last_confirmed_nonce: u64,
-    pub status: u8,
 }
 
 impl MoveStructType for SubChannel {
@@ -241,7 +247,6 @@ impl MoveStructState for SubChannel {
             MoveString::type_layout(),                    // method_type
             move_core_types::value::MoveTypeLayout::U256, // last_claimed_amount
             move_core_types::value::MoveTypeLayout::U64,  // last_confirmed_nonce
-            move_core_types::value::MoveTypeLayout::U8,     // status
         ])
     }
 }
@@ -261,10 +266,6 @@ impl SubChannel {
 
     pub fn last_confirmed_nonce(&self) -> u64 {
         self.last_confirmed_nonce
-    }
-
-    pub fn status(&self) -> u8 {
-        self.status
     }
 }
 

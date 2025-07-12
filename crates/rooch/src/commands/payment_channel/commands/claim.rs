@@ -53,6 +53,14 @@ pub struct ClaimCommand {
     )]
     pub vm_id_fragment: Option<String>,
 
+    /// Channel epoch for the claim
+    #[clap(
+        long,
+        help = "Channel epoch for the claim",
+        required_if_eq("individual_params", "true")
+    )]
+    pub channel_epoch: Option<u64>,
+
     /// Amount to claim
     #[clap(
         long,
@@ -87,6 +95,7 @@ pub struct ClaimCommand {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ClaimOutput {
     pub channel_id: ObjectID,
+    pub channel_epoch: u64,
     pub vm_id_fragment: String,
     pub amount: StrView<U256>,
     pub nonce: u64,
@@ -102,7 +111,7 @@ impl CommandAction<ClaimOutput> for ClaimCommand {
         let max_gas_amount: Option<u64> = self.tx_options.max_gas_amount;
 
         // Parse RAV data either from encoded string or individual parameters
-        let (channel_id, vm_id_fragment, amount, nonce, signature_bytes) =
+        let (channel_id, channel_epoch, vm_id_fragment, amount, nonce, signature_bytes) =
             if let Some(encoded) = &self.rav {
                 // Decode from multibase encoded string
                 let signed_rav: SignedSubRav = SignedSubRav::decode_from_multibase(encoded)?;
@@ -116,6 +125,7 @@ impl CommandAction<ClaimOutput> for ClaimCommand {
 
                 (
                     signed_rav.sub_rav.channel_id,
+                    signed_rav.sub_rav.channel_epoch,
                     signed_rav.sub_rav.vm_id_fragment,
                     signed_rav.sub_rav.amount,
                     signed_rav.sub_rav.nonce,
@@ -126,6 +136,11 @@ impl CommandAction<ClaimOutput> for ClaimCommand {
                 let channel_id = self.channel_id.ok_or_else(|| {
                     rooch_types::error::RoochError::CommandArgumentError(
                         "Channel ID is required when using individual parameters".to_string(),
+                    )
+                })?;
+                let channel_epoch = self.channel_epoch.ok_or_else(|| {
+                    rooch_types::error::RoochError::CommandArgumentError(
+                        "Channel epoch is required when using individual parameters".to_string(),
                     )
                 })?;
                 let vm_id_fragment = self.vm_id_fragment.ok_or_else(|| {
@@ -156,7 +171,7 @@ impl CommandAction<ClaimOutput> for ClaimCommand {
                     ))
                 })?;
 
-                (channel_id, vm_id_fragment, amount, nonce, signature_bytes)
+                (channel_id, channel_epoch, vm_id_fragment, amount, nonce, signature_bytes)
             } else {
                 return Err(rooch_types::error::RoochError::CommandArgumentError(
                     "Either --rav or --individual-params must be provided".to_string(),
@@ -179,6 +194,7 @@ impl CommandAction<ClaimOutput> for ClaimCommand {
 
         Ok(ClaimOutput {
             channel_id,
+            channel_epoch,
             vm_id_fragment,
             amount: amount.into(),
             nonce,

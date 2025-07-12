@@ -10,7 +10,7 @@ use rooch_rpc_api::jsonrpc_types::StrView;
 use rooch_types::address::{ParsedAddress, RoochAddress};
 use rooch_types::crypto::CompressedSignature;
 use rooch_types::error::RoochResult;
-use rooch_types::framework::payment_channel::{SignedSubRav, SubRAV};
+use rooch_types::framework::payment_channel::{SignedSubRav, SubRAV, PaymentChannel};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Parser)]
@@ -18,6 +18,10 @@ pub struct CreateRavCommand {
     /// Channel ID for the RAV
     #[clap(long, help = "Channel ID for the RAV")]
     pub channel_id: ObjectID,
+
+    /// Channel epoch for the RAV (optional, if not provided, will query from chain)
+    #[clap(long, help = "Channel epoch for the RAV (optional, auto-queried if not provided)")]
+    pub channel_epoch: Option<u64>,
 
     /// Verification method ID fragment (optional, if not provided, will find the first available key)
     #[clap(long, help = "Verification method ID fragment")]
@@ -42,6 +46,7 @@ pub struct CreateRavCommand {
 #[derive(Serialize, Deserialize)]
 pub struct SubRavView {
     pub channel_id: ObjectID,
+    pub channel_epoch: u64,
     pub vm_id_fragment: String,
     pub amount: StrView<U256>,
     pub nonce: u64,
@@ -51,6 +56,7 @@ impl From<SubRAV> for SubRavView {
     fn from(sub_rav: SubRAV) -> Self {
         SubRavView {
             channel_id: sub_rav.channel_id,
+            channel_epoch: sub_rav.channel_epoch,
             vm_id_fragment: sub_rav.vm_id_fragment,
             amount: sub_rav.amount.into(),
             nonce: sub_rav.nonce,
@@ -91,6 +97,34 @@ impl CommandAction<SignedSubRavOutput> for CreateRavCommand {
         // Resolve the sender DID address from the provided parameter
         let did_address = context.resolve_rooch_address(self.sender)?;
 
+        // Query channel_epoch from chain if not provided
+        let channel_epoch = if let Some(epoch) = self.channel_epoch {
+            epoch
+        } else {
+            // Query the channel from chain to get current epoch
+            let client = context.get_client().await?;
+            let mut channel_object_views = client
+                .rooch
+                .get_object_states(vec![self.channel_id.clone()], None)
+                .await?;
+
+            if channel_object_views.is_empty() || channel_object_views.first().unwrap().is_none() {
+                return Err(rooch_types::error::RoochError::CommandArgumentError(
+                    format!("Payment channel {} not found", self.channel_id),
+                ));
+            }
+
+            let channel_object_view = channel_object_views.pop().unwrap().unwrap();
+            let payment_channel = bcs::from_bytes::<PaymentChannel>(&channel_object_view.value.0)
+                .map_err(|_| {
+                    rooch_types::error::RoochError::CommandArgumentError(
+                        "Failed to deserialize PaymentChannel".to_string(),
+                    )
+                })?;
+
+            payment_channel.channel_epoch()
+        };
+
         // Find the appropriate verification method and keypair using the abstracted method
         let (vm_id_fragment, signer_address, keypair) = context
             .find_did_verification_method_keypair(did_address, self.vm_id_fragment.as_deref())
@@ -99,6 +133,7 @@ impl CommandAction<SignedSubRavOutput> for CreateRavCommand {
         // Create SubRAV structure for signing
         let sub_rav = SubRAV {
             channel_id: self.channel_id.clone(),
+            channel_epoch,
             vm_id_fragment: vm_id_fragment.clone(),
             amount: self.amount,
             nonce: self.nonce,

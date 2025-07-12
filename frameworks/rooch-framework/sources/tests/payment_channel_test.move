@@ -352,7 +352,7 @@ module rooch_framework::payment_channel_test {
     }
 
     #[test]
-    fun test_3_4_close_sub_channel_final_settlement() {
+    fun test_3_4_incremental_claim_progression() {
         let (alice_signer, alice_addr, bob_signer, bob_addr, vm_id) = setup_payment_channel_test();
         
         // Setup: Complete first claim with amount 10
@@ -363,9 +363,9 @@ module rooch_framework::payment_channel_test {
         let signature = generate_test_signature();
         payment_channel::claim_from_channel_for_test(&bob_signer, channel_id, vm_id, TEST_AMOUNT_10, TEST_NONCE_1, signature);
         
-        // Test: close_sub_channel with final settlement (acc=15, nonce=3)
-        let signature_close = generate_test_signature();
-        payment_channel::close_sub_channel_for_test(&bob_signer, channel_id, vm_id, TEST_AMOUNT_15, TEST_NONCE_3, signature_close);
+        // Test: Make another claim with higher amount (acc=15, nonce=3)
+        let signature2 = generate_test_signature();
+        payment_channel::claim_from_channel_for_test(&bob_signer, channel_id, vm_id, TEST_AMOUNT_15, TEST_NONCE_3, signature2);
         
         // Assertion: Additional 5 transferred verified by successful withdrawal
         let initial_account_balance = account_coin_store::balance<RGas>(bob_addr);
@@ -373,8 +373,13 @@ module rooch_framework::payment_channel_test {
         let final_account_balance = account_coin_store::balance<RGas>(bob_addr);
         assert!(final_account_balance == initial_account_balance + TEST_AMOUNT_15, 3008);
         
-        // SubChannel should still exist but be disabled (status changed to disabled)
+        // SubChannel should still exist and be active
         assert!(payment_channel::sub_channel_exists(channel_id, vm_id), 3009);
+        
+        // Check final state
+        let (last_claimed, last_nonce) = payment_channel::get_sub_channel_state(channel_id, vm_id);
+        assert!(last_claimed == TEST_AMOUNT_15, 3010);
+        assert!(last_nonce == TEST_NONCE_3, 3011);
         
         // No event checking available
     }
@@ -580,6 +585,72 @@ module rooch_framework::payment_channel_test {
         assert!(last_nonce == TEST_NONCE_1, 6004);
     }
 
+    #[test]
+    fun test_6_3_channel_epoch_increments_on_close() {
+        let (alice_signer, alice_addr, bob_signer, bob_addr, vm_id) = setup_payment_channel_test();
+        
+        // Setup: Open channel and sub-channel
+        payment_channel::deposit_to_hub_entry<RGas>(&alice_signer, alice_addr, TEST_AMOUNT_100);
+        let channel_id = payment_channel::open_channel<RGas>(&alice_signer, bob_addr);
+        payment_channel::open_sub_channel_entry(&alice_signer, channel_id, vm_id);
+        
+        // Verify initial epoch is 0
+        let initial_epoch = payment_channel::get_channel_epoch(channel_id);
+        assert!(initial_epoch == 0, 6005);
+        
+        // Close channel
+        payment_channel::close_channel(&bob_signer, channel_id, vector::empty());
+        
+        // Verify epoch incremented to 1
+        let epoch_after_close = payment_channel::get_channel_epoch(channel_id);
+        assert!(epoch_after_close == 1, 6006);
+        
+        // Reopen channel
+        payment_channel::open_channel_entry<RGas>(&alice_signer, bob_addr);
+        
+        // Verify epoch remains 1 after reopen (epoch only increments on close)
+        let epoch_after_reopen = payment_channel::get_channel_epoch(channel_id);
+        assert!(epoch_after_reopen == 1, 6007);
+        
+        // Close again
+        payment_channel::close_channel(&bob_signer, channel_id, vector::empty());
+        
+        // Verify epoch incremented to 2
+        let epoch_after_second_close = payment_channel::get_channel_epoch(channel_id);
+        assert!(epoch_after_second_close == 2, 6008);
+    }
+
+    #[test]
+    fun test_6_4_channel_epoch_increments_on_cancellation_finalize() {
+        let (alice_signer, alice_addr, _bob_signer, bob_addr, vm_id) = setup_payment_channel_test();
+        
+        // Setup: Open channel and sub-channel
+        payment_channel::deposit_to_hub_entry<RGas>(&alice_signer, alice_addr, TEST_AMOUNT_100);
+        let channel_id = payment_channel::open_channel<RGas>(&alice_signer, bob_addr);
+        payment_channel::open_sub_channel_entry(&alice_signer, channel_id, vm_id);
+        
+        // Verify initial epoch is 0
+        let initial_epoch = payment_channel::get_channel_epoch(channel_id);
+        assert!(initial_epoch == 0, 6009);
+        
+        // Initiate cancellation
+        payment_channel::initiate_cancellation_entry(&alice_signer, channel_id);
+        
+        // Verify epoch remains 0 during cancellation
+        let epoch_during_cancellation = payment_channel::get_channel_epoch(channel_id);
+        assert!(epoch_during_cancellation == 0, 6010);
+        
+        // Fast forward time past challenge period
+        timestamp::fast_forward_milliseconds_for_test(ONE_DAY_MILLISECONDS + 1000);
+        
+        // Finalize cancellation
+        payment_channel::finalize_cancellation_entry(channel_id);
+        
+        // Verify epoch incremented to 1 after finalization
+        let epoch_after_finalize = payment_channel::get_channel_epoch(channel_id);
+        assert!(epoch_after_finalize == 1, 6011);
+    }
+
     // === Test Group 7: Withdrawal Security ===
 
     #[test]
@@ -641,26 +712,22 @@ module rooch_framework::payment_channel_test {
         let signature2 = generate_test_signature();
         payment_channel::claim_from_channel_for_test(&bob_signer, channel_id, vm_id, TEST_AMOUNT_15, TEST_NONCE_2, signature2);
         
-        // 5. Close sub-channel
-        let signature_close = generate_test_signature();
-        payment_channel::close_sub_channel_for_test(&bob_signer, channel_id, vm_id, TEST_AMOUNT_15, TEST_NONCE_2, signature_close);
-        
-        // 6. Close channel
+        // 5. Close channel (no need to close sub-channel separately since it's removed)
         payment_channel::close_channel(&bob_signer, channel_id, vector::empty());
         
-        // 7. Verify final state
+        // 6. Verify final state
         let (_sender, _receiver, _coin_type, status) = payment_channel::get_channel_info(channel_id);
         assert!(status == 2, 8001); // STATUS_CLOSED
-        // SubChannel still exists but is disabled, and channel_epoch has been incremented
+        // SubChannel still exists, and channel_epoch has been incremented
         assert!(payment_channel::sub_channel_exists(channel_id, vm_id), 8002);
         
-        // 8. Verify funds transferred by checking withdrawal capability
+        // 7. Verify funds transferred by checking withdrawal capability
         let initial_bob_account_balance = account_coin_store::balance<RGas>(bob_addr);
         payment_channel::withdraw_from_hub_entry<RGas>(&bob_signer, TEST_AMOUNT_15);
         let final_bob_account_balance = account_coin_store::balance<RGas>(bob_addr);
         assert!(final_bob_account_balance == initial_bob_account_balance + TEST_AMOUNT_15, 8003);
         
-        // 9. Alice can now withdraw remaining funds
+        // 8. Alice can now withdraw remaining funds
         payment_channel::withdraw_from_hub_entry<RGas>(&alice_signer, TEST_AMOUNT_100 - TEST_AMOUNT_15);
     }
 } 
