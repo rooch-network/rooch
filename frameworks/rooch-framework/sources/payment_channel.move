@@ -1300,10 +1300,9 @@ module rooch_framework::payment_channel {
             accumulated_amount: 10000,
             nonce: 1,
         };
-        // Note: This test is disabled since we changed the SubRAV structure to include channel_epoch
-        // The old signature is no longer valid. In practice, signatures would be generated with the new structure.
-        // For testing purposes, we just verify the structure is correct.
-        assert!(sub_rav.channel_epoch == 0, 1);
-        assert!(sub_rav.accumulated_amount == 10000, 2);
+        let signature = x"9c520eeef94d4c69912619d2a34358c106cd6f941b67316208470116227e095728a0ae489d9430fda5751e6c6b0c1fef01568db18a0da97450031fd59a768aa7";
+        let pk_multibase = std::string::utf8(b"zwvRask8Xx7oi3Aw6PvvmmBvdYbHqsJPkvCZYxDFZMwZa");
+        let method_type = std::string::utf8(b"EcdsaSecp256k1VerificationKey2019");
+        assert!(verify_rav_signature(sub_rav, signature, pk_multibase, method_type), 3);    
     }
 }

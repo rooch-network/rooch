@@ -3,7 +3,7 @@
 .PHONY: help \
         all \
         build build-rust build-rust-debug build-rust-release build-move \
-        test test-rust test-rust-unit test-rust-integration test-move test-move-frameworks test-move-did test-move-examples \
+        test test-rust test-rust-unit test-rust-integration test-integration test-move test-move-frameworks test-move-did test-move-examples \
         fmt fmt-rust \
         lint lint-rust \
         clean clean-all clean-rust clean-move \
@@ -36,6 +36,7 @@ help:
 	@echo "    test-move-frameworks- Run tests for all core Move frameworks"
 	@echo "    test-move-did       - Run Move DID module tests (within rooch-framework)"
 	@echo "    test-move-examples  - Build and run Move example tests"
+	@echo "    test-integration    - Run Cucumber integration tests (testsuite only)"
 	@echo ""
 	@echo "  Linting and Formatting:"
 	@echo "    fmt-rust            - Check Rust code formatting"
@@ -210,6 +211,10 @@ test-move-examples:
 	@echo "✅ All Move example tests passed."
 
 test-move: test-move-frameworks test-move-examples
+
+test-integration:
+	@echo "🧪 Running Cucumber integration tests (testsuite only, profile: $(RUST_PROFILE_RELEASE))..."
+	RUST_LOG=warn cargo test --profile $(RUST_PROFILE_RELEASE) -p testsuite --test integration -- --test-threads=1
 
 # Overarching targets
 build: build-rust-release build-move
