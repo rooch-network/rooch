@@ -58,6 +58,7 @@
 -  [Function `channel_exists`](#0x3_payment_channel_channel_exists)
 -  [Function `get_channel_id`](#0x3_payment_channel_get_channel_id)
 -  [Function `get_channel_info`](#0x3_payment_channel_get_channel_info)
+-  [Function `get_channel_epoch`](#0x3_payment_channel_get_channel_epoch)
 -  [Function `get_sub_channel_state`](#0x3_payment_channel_get_sub_channel_state)
 -  [Function `sub_channel_exists`](#0x3_payment_channel_sub_channel_exists)
 -  [Function `get_sub_channel_count`](#0x3_payment_channel_get_sub_channel_count)
@@ -324,7 +325,7 @@ Proof for initiating cancellation of a sub-channel (no signature needed from sen
 
 ## Struct `SubRAV`
 
-Structure representing a Sub-RAV (Sub-channel Receipts and Vouchers) for hashing
+Structure representing a Sub-RAV (Sub-channel Receipts and Vouchers) for off-chain signature verification
 
 
 <pre><code>#[data_struct]
@@ -467,6 +468,16 @@ The claimed amount is less than or equal to the already claimed amount.
 
 
 
+<a name="0x3_payment_channel_ErrorInvalidChannelEpoch"></a>
+
+The channel epoch in the SubRAV does not match the current channel epoch.
+
+
+<pre><code><b>const</b> <a href="payment_channel.md#0x3_payment_channel_ErrorInvalidChannelEpoch">ErrorInvalidChannelEpoch</a>: u64 = 23;
+</code></pre>
+
+
+
 <a name="0x3_payment_channel_ErrorInvalidNonce"></a>
 
 The nonce for the sub-channel is not greater than the last confirmed nonce.
@@ -537,6 +548,16 @@ The sender must have a DID document to open a channel.
 
 
 
+<a name="0x3_payment_channel_ErrorSubChannelDisabled"></a>
+
+The sub-channel is disabled.
+
+
+<pre><code><b>const</b> <a href="payment_channel.md#0x3_payment_channel_ErrorSubChannelDisabled">ErrorSubChannelDisabled</a>: u64 = 22;
+</code></pre>
+
+
+
 <a name="0x3_payment_channel_ErrorSubChannelNotOpened"></a>
 
 The sub-channel has not been opened yet.
@@ -580,6 +601,24 @@ Only the sender can authorize verification methods for the channel.
 
 
 <pre><code><b>const</b> <a href="payment_channel.md#0x3_payment_channel_STATUS_CLOSED">STATUS_CLOSED</a>: u8 = 2;
+</code></pre>
+
+
+
+<a name="0x3_payment_channel_SUB_STATUS_DISABLED"></a>
+
+
+
+<pre><code><b>const</b> <a href="payment_channel.md#0x3_payment_channel_SUB_STATUS_DISABLED">SUB_STATUS_DISABLED</a>: u8 = 1;
+</code></pre>
+
+
+
+<a name="0x3_payment_channel_SUB_STATUS_ENABLED"></a>
+
+
+
+<pre><code><b>const</b> <a href="payment_channel.md#0x3_payment_channel_SUB_STATUS_ENABLED">SUB_STATUS_ENABLED</a>: u8 = 0;
 </code></pre>
 
 
@@ -980,6 +1019,18 @@ Get channel information
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_get_channel_info">get_channel_info</a>(channel_id: <a href="_ObjectID">object::ObjectID</a>): (<b>address</b>, <b>address</b>, <a href="_String">string::String</a>, u8)
+</code></pre>
+
+
+
+<a name="0x3_payment_channel_get_channel_epoch"></a>
+
+## Function `get_channel_epoch`
+
+Get channel epoch
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_get_channel_epoch">get_channel_epoch</a>(channel_id: <a href="_ObjectID">object::ObjectID</a>): u64
 </code></pre>
 
 

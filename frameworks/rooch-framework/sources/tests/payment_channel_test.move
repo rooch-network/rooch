@@ -373,8 +373,8 @@ module rooch_framework::payment_channel_test {
         let final_account_balance = account_coin_store::balance<RGas>(bob_addr);
         assert!(final_account_balance == initial_account_balance + TEST_AMOUNT_15, 3008);
         
-        // SubChannel should be deleted
-        assert!(!payment_channel::sub_channel_exists(channel_id, vm_id), 3009);
+        // SubChannel should still exist but be disabled (status changed to disabled)
+        assert!(payment_channel::sub_channel_exists(channel_id, vm_id), 3009);
         
         // No event checking available
     }
@@ -651,7 +651,8 @@ module rooch_framework::payment_channel_test {
         // 7. Verify final state
         let (_sender, _receiver, _coin_type, status) = payment_channel::get_channel_info(channel_id);
         assert!(status == 2, 8001); // STATUS_CLOSED
-        assert!(!payment_channel::sub_channel_exists(channel_id, vm_id), 8002);
+        // SubChannel still exists but is disabled, and channel_epoch has been incremented
+        assert!(payment_channel::sub_channel_exists(channel_id, vm_id), 8002);
         
         // 8. Verify funds transferred by checking withdrawal capability
         let initial_bob_account_balance = account_coin_store::balance<RGas>(bob_addr);
