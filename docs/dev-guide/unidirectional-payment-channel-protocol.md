@@ -238,3 +238,73 @@ module rooch_framework::payment_channel {
 *   **条件支付与可锁签名 (Conditional Payments & Lockable Signatures)**: 虽然在当前的双边单向模型中不是必需的，但可锁签名是实现网络化支付（如 A->B->C 多跳支付）和原子互换的关键。通过引入基于哈希时间锁（HTLC）的逻辑，可以将该协议从一个双边工具升级为一个网络化的支付基础设施，极大地扩展其应用场景。
 
 *   **哈希链与支付计量 (Hash Chains & Payment Metering)**: 作为当前 `u64` nonce 的一种替代方案，哈希链可以为按次计费的场景提供更精细的支付计量。支付方可以预先生成一条哈希链，每次支付消费链上的一个哈希，为服务提供一种“即用即付”的精确凭证。虽然这会增加链下管理的复杂性，但为特定应用场景提供了额外的灵活性。
+
+## VI. 子通道停用（整通道重置）方案
+
+> 场景：某台设备或其私钥丢失，Sender 希望立即阻止该设备继续支付；接受“暂停整条通道再重新开启”带来的中断。
+
+### A. 核心思想
+
+1. **通道世代 (channel_epoch)** —— 在 `PaymentChannel` 里维护 `channel_epoch: u64` 字段。  
+2. **关闭时 +1** —— 每次 `close_channel` 或 `finalize_cancellation` 结束时执行 `channel.channel_epoch += 1` 并把 `status` 设为 `Closed`。  
+3. **重开通道** —— 调 `open_channel`(或 `open_channel_with_sub_channel`) 把 `status` 改回 `Active`；新通道仍使用相同 `channel_id`，但 `channel_epoch` 已是新值。  
+4. **RAV 带世代** —— `SubRAV` 新增字段 `channel_epoch`；验签时要求 `sub_rav.channel_epoch == channel.channel_epoch`，否则直接拒绝。  
+5. **清空子通道表** —— 关闭通道时直接 `table::destroy(channel.sub_channels)`，重开后需要重新 `open_sub_channel` 进行授权。
+
+### B. 数据结构变更 (概念)
+
+```move
+struct PaymentChannel has key {
+    sender: address,
+    receiver: address,
+    coin_type: String,
+    sub_channels: Table<String, SubChannel>,
+    status: u8,        // 0 Active, 1 Cancelling, 2 Closed
+    channel_epoch: u64,   // 每次整通道关闭后 +1
+    cancellation_info: Option<CancellationInfo>,
+}
+
+struct SubChannel has store {
+    pk_multibase: String,
+    method_type: String,
+    last_claimed_amount: u256,
+    last_confirmed_nonce: u64,
+    // 无 status 字段 —— 一刀切停止后须重新授权
+}
+
+struct SubRAV has copy, drop, store {
+    channel_id: ObjectID,
+    channel_epoch: u64,          // 新增
+    vm_id_fragment: String,
+    accumulated_amount: u256,
+    nonce: u64,
+}
+```
+
+### C. 操作流程
+
+| 步骤 | 调用者 | 关键动作 |
+|------|--------|---------|
+| `open_channel` / `open_channel_with_sub_channel` | Sender | 若不存在则创建，`channel_epoch = 0` |
+| 正常支付 | 双方 | RAV 必须携带 `channel_epoch=0` |
+| **整通道取消** `initiate_cancellation` → `finalize_cancellation` *或* `close_channel` | Sender / Receiver | 结算后 `channel_epoch += 1` ，`status = Closed` ，`table::destroy(sub_channels)` |
+| **重新开启** | Sender | `status = Active`，`channel_epoch` 保持新值；需要重新 `open_sub_channel` 授权设备 |
+| 后续支付 | 双方 | RAV 必须携带 **新的** `channel_epoch` |
+
+### D. 安全与特性
+
+1. **阻断旧私钥** 旧设备签出的 RAV 携带过期 `channel_epoch`，合约直接拒绝，无需遍历或存额外状态。  
+2. **重放防护** `nonce` 仍单调递增；`channel_epoch` + `nonce` 双层保护。  
+3. **实现简单** 关闭时仅两步：`channel_epoch += 1`；`destroy(sub_channels)`，O(1) 写操作。  
+4. **重新授权** Sender 在重开后选择性为仍有效的设备重新 `open_sub_channel`，灵活且显式。  
+5. **客户端代价** RAV 结构多 8 bytes；签名与 CLI 逻辑需携带 `channel_epoch` 字段。
+
+### E. 何时选择该方案
+
+* 业务接受“所有设备暂时断流再重新授权”的停机窗口；  
+* 更在意合约逻辑简单、Gas 成本低，而非单设备不停机；  
+* 客户端尚未上线，统一升级 RAV 结构与签名流程没有历史负担。
+
+---
+
+若将来需要“停用单台设备而不中断其它设备”，可以在此方案之上再为 `SubChannel` 引入 `status` 和 `disable_sub_channel_entry`，与 `generation` 机制并存，两者并不冲突。

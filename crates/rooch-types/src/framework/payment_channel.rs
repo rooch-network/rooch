@@ -43,6 +43,35 @@ pub struct SignedSubRav {
     pub signature: String,
 }
 
+/// Proof for closing a sub-channel with final state
+#[derive(Serialize, Deserialize)]
+pub struct CloseProof {
+    pub vm_id_fragment: String,
+    pub accumulated_amount: U256,
+    pub nonce: u64,
+    pub sender_signature: Vec<u8>,
+}
+
+/// Container for multiple close proofs
+#[derive(Serialize, Deserialize)]
+pub struct CloseProofs {
+    pub proofs: Vec<CloseProof>,
+}
+
+/// Proof for initiating cancellation of a sub-channel (no signature needed from sender)
+#[derive(Serialize, Deserialize)]
+pub struct CancelProof {
+    pub vm_id_fragment: String,
+    pub accumulated_amount: U256,
+    pub nonce: u64,
+}
+
+/// Container for multiple cancel proofs
+#[derive(Serialize, Deserialize)]
+pub struct CancelProofs {
+    pub proofs: Vec<CancelProof>,
+}
+
 impl SignedSubRav {
     pub fn encode_to_multibase(&self) -> Result<String> {
         let json_bytes = serde_json::to_vec(&self)?;
@@ -187,6 +216,7 @@ pub struct SubChannel {
     pub method_type: MoveString,
     pub last_claimed_amount: U256,
     pub last_confirmed_nonce: u64,
+    pub status: u8,
 }
 
 impl MoveStructType for SubChannel {
@@ -211,6 +241,7 @@ impl MoveStructState for SubChannel {
             MoveString::type_layout(),                    // method_type
             move_core_types::value::MoveTypeLayout::U256, // last_claimed_amount
             move_core_types::value::MoveTypeLayout::U64,  // last_confirmed_nonce
+            move_core_types::value::MoveTypeLayout::U8,     // status
         ])
     }
 }
@@ -230,6 +261,10 @@ impl SubChannel {
 
     pub fn last_confirmed_nonce(&self) -> u64 {
         self.last_confirmed_nonce
+    }
+
+    pub fn status(&self) -> u8 {
+        self.status
     }
 }
 
@@ -301,6 +336,8 @@ impl<'a> PaymentChannelModule<'a> {
         ident_str!("dispute_cancellation_entry");
     pub const FINALIZE_CANCELLATION_ENTRY_FUNCTION_NAME: &'static IdentStr =
         ident_str!("finalize_cancellation_entry");
+    pub const INITIATE_CANCELLATION_WITH_PROOFS_ENTRY_FUNCTION_NAME: &'static IdentStr =
+        ident_str!("initiate_cancellation_with_proofs_entry");
 
     /// Calculate the ObjectID for a payment hub
     /// This replicates the logic from payment_channel.move::get_payment_hub_id
@@ -442,6 +479,20 @@ impl<'a> PaymentChannelModule<'a> {
             Self::FINALIZE_CANCELLATION_ENTRY_FUNCTION_NAME,
             vec![],
             vec![channel_id.to_move_value()],
+        )
+    }
+
+    pub fn initiate_cancellation_with_proofs_entry_action(
+        channel_id: moveos_types::moveos_std::object::ObjectID,
+        serialized_proofs: Vec<u8>,
+    ) -> MoveAction {
+        Self::create_move_action(
+            Self::INITIATE_CANCELLATION_WITH_PROOFS_ENTRY_FUNCTION_NAME,
+            vec![],
+            vec![
+                channel_id.to_move_value(),
+                MoveValue::Vector(serialized_proofs.into_iter().map(MoveValue::U8).collect()),
+            ],
         )
     }
 }
