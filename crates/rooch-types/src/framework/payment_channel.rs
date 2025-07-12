@@ -29,6 +29,7 @@ struct ChannelKey {
 /// SubRAV data structure for BCS serialization
 #[derive(Serialize, Deserialize)]
 pub struct SubRAV {
+    pub chain_id: u64,
     pub channel_id: ObjectID,
     pub channel_epoch: u64,
     pub vm_id_fragment: String,

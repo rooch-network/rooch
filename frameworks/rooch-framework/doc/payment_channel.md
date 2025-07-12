@@ -77,6 +77,7 @@
 <b>use</b> <a href="">0x2::tx_context</a>;
 <b>use</b> <a href="">0x2::type_info</a>;
 <b>use</b> <a href="account_coin_store.md#0x3_account_coin_store">0x3::account_coin_store</a>;
+<b>use</b> <a href="chain_id.md#0x3_chain_id">0x3::chain_id</a>;
 <b>use</b> <a href="coin.md#0x3_coin">0x3::coin</a>;
 <b>use</b> <a href="did.md#0x3_did">0x3::did</a>;
 <b>use</b> <a href="multi_coin_store.md#0x3_multi_coin_store">0x3::multi_coin_store</a>;
@@ -449,6 +450,16 @@ The claimed amount is less than or equal to the already claimed amount.
 
 
 <pre><code><b>const</b> <a href="payment_channel.md#0x3_payment_channel_ErrorInvalidAmount">ErrorInvalidAmount</a>: u64 = 8;
+</code></pre>
+
+
+
+<a name="0x3_payment_channel_ErrorInvalidChainId"></a>
+
+The chain_id in the SubRAV does not match the current chain_id.
+
+
+<pre><code><b>const</b> <a href="payment_channel.md#0x3_payment_channel_ErrorInvalidChainId">ErrorInvalidChainId</a>: u64 = 23;
 </code></pre>
 
 

@@ -20,6 +20,7 @@ module rooch_framework::payment_channel {
     use rooch_framework::multi_coin_store::{Self, MultiCoinStore};
     use rooch_framework::did;
     use rooch_framework::account_coin_store;
+    use rooch_framework::chain_id;
 
     // === Error Constants ===
     /// The signer is not the designated receiver of the channel.
@@ -66,6 +67,8 @@ module rooch_framework::payment_channel {
     const ErrorMismatchedCoinType: u64 = 21;
     /// The channel epoch in the SubRAV does not match the current channel epoch.
     const ErrorInvalidChannelEpoch: u64 = 22;
+    /// The chain_id in the SubRAV does not match the current chain_id.
+    const ErrorInvalidChainId: u64 = 23;
 
     // === Constants ===
     const STATUS_ACTIVE: u8 = 0;
@@ -229,7 +232,7 @@ module rooch_framework::payment_channel {
     #[data_struct]
     /// Structure representing a Sub-RAV (Sub-channel Receipts and Vouchers) for off-chain signature verification
     struct SubRAV has copy, drop, store {
-        //TODO add chain id to sub-rav
+        chain_id: u64,
         channel_id: ObjectID,
         channel_epoch: u64,
         vm_id_fragment: String,
@@ -601,6 +604,7 @@ module rooch_framework::payment_channel {
         // Verify the sender's signature on the off-chain proof (SubRAV).
         if (!skip_signature_verification) {
             let sub_rav = SubRAV {
+                chain_id: chain_id::chain_id(),
                 channel_id,
                 channel_epoch: channel.channel_epoch,
                 vm_id_fragment: sender_vm_id_fragment,
@@ -703,6 +707,7 @@ module rooch_framework::payment_channel {
             
             // Verify the sender's signature on this final SubRAV
             let sub_rav = SubRAV {
+                chain_id: chain_id::chain_id(),
                 channel_id,
                 channel_epoch: channel.channel_epoch,
                 vm_id_fragment,
@@ -924,6 +929,7 @@ module rooch_framework::payment_channel {
         
         if (!skip_signature_verification) {
             let sub_rav = SubRAV {
+                chain_id: chain_id::chain_id(),
                 channel_id,
                 channel_epoch: channel.channel_epoch,
                 vm_id_fragment: sender_vm_id_fragment,
@@ -1199,6 +1205,11 @@ module rooch_framework::payment_channel {
         sub_rav: SubRAV,
         signature: vector<u8>
     ): bool {
+        // Verify chain_id matches current chain
+        if (sub_rav.chain_id != chain_id::chain_id()) {
+            return false
+        };
+        
         // Verify channel epoch matches
         if (sub_rav.channel_epoch != channel.channel_epoch) {
             return false
@@ -1265,6 +1276,7 @@ module rooch_framework::payment_channel {
     #[test]
     fun test_sub_rav_hash() {
         let sub_rav = SubRAV {
+            chain_id: 4, // CHAIN_ID_LOCAL for test
             channel_id: object::from_string(&std::string::utf8(b"0x35df6e58502089ed640382c477e4b6f99e5e90d881678d37ed774a737fd3797c")),
             channel_epoch: 0,
             vm_id_fragment: std::string::utf8(b"account-key"),
@@ -1281,6 +1293,7 @@ module rooch_framework::payment_channel {
     #[test]
     fun test_sub_rav_signature() {
         let sub_rav = SubRAV {
+            chain_id: 4, // CHAIN_ID_LOCAL for test
             channel_id: object::from_string(&std::string::utf8(b"0x35df6e58502089ed640382c477e4b6f99e5e90d881678d37ed774a737fd3797c")),
             channel_epoch: 0,
             vm_id_fragment: std::string::utf8(b"account-key"),

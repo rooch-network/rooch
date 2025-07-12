@@ -23,6 +23,10 @@ pub struct CreateRavCommand {
     #[clap(long, help = "Channel epoch for the RAV (optional, auto-queried if not provided)")]
     pub channel_epoch: Option<u64>,
 
+    /// Chain ID for the RAV (optional, if not provided, will query from chain)
+    #[clap(long, help = "Chain ID for the RAV (optional, auto-queried if not provided)")]
+    pub chain_id: Option<u64>,
+
     /// Verification method ID fragment (optional, if not provided, will find the first available key)
     #[clap(long, help = "Verification method ID fragment")]
     pub vm_id_fragment: Option<String>,
@@ -45,6 +49,7 @@ pub struct CreateRavCommand {
 
 #[derive(Serialize, Deserialize)]
 pub struct SubRavView {
+    pub chain_id: u64,
     pub channel_id: ObjectID,
     pub channel_epoch: u64,
     pub vm_id_fragment: String,
@@ -55,6 +60,7 @@ pub struct SubRavView {
 impl From<SubRAV> for SubRavView {
     fn from(sub_rav: SubRAV) -> Self {
         SubRavView {
+            chain_id: sub_rav.chain_id,
             channel_id: sub_rav.channel_id,
             channel_epoch: sub_rav.channel_epoch,
             vm_id_fragment: sub_rav.vm_id_fragment,
@@ -125,6 +131,15 @@ impl CommandAction<SignedSubRavOutput> for CreateRavCommand {
             payment_channel.channel_epoch()
         };
 
+        // Query chain_id from chain if not provided
+        let chain_id = if let Some(id) = self.chain_id {
+            id
+        } else {
+            // Query the chain_id from chain
+            let client = context.get_client().await?;
+            client.rooch.get_chain_id().await?.into()
+        };
+
         // Find the appropriate verification method and keypair using the abstracted method
         let (vm_id_fragment, signer_address, keypair) = context
             .find_did_verification_method_keypair(did_address, self.vm_id_fragment.as_deref())
@@ -132,6 +147,7 @@ impl CommandAction<SignedSubRavOutput> for CreateRavCommand {
 
         // Create SubRAV structure for signing
         let sub_rav = SubRAV {
+            chain_id,
             channel_id: self.channel_id.clone(),
             channel_epoch,
             vm_id_fragment: vm_id_fragment.clone(),
