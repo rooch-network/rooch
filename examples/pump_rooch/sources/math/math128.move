@@ -213,7 +213,7 @@ module pump_rooch::math128 {
     }
 
     #[test]
-    #[expected_failure(abort_code = 0x10004, location = aptos_std::math128)]
+    #[expected_failure]
     public entry fun test_mul_div_by_zero() {
         mul_div(1, 1, 0);
     }

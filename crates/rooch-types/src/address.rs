@@ -986,12 +986,13 @@ impl fmt::Display for NostrPublicKey {
     }
 }
 
-// Parsed Address, either a name or a numerical address, or Bitcoin Address
+// Parsed Address, either a name or a numerical address, or Bitcoin Address, or DID
 #[derive(Eq, PartialEq, Debug, Clone)]
 pub enum ParsedAddress {
     Named(String),
     Numerical(RoochAddress),
     Bitcoin(BitcoinAddress),
+    DID(RoochAddress),
 }
 
 impl Default for ParsedAddress {
@@ -1011,6 +1012,7 @@ impl ParsedAddress {
                 .ok_or_else(|| anyhow::anyhow!("Unbound named address: '{}'", n)),
             Self::Numerical(a) => Ok(a),
             Self::Bitcoin(a) => Ok(a.to_rooch_address()),
+            Self::DID(a) => Ok(a),
         }
     }
 
@@ -1022,7 +1024,28 @@ impl ParsedAddress {
     }
 
     pub fn parse(s: &str) -> anyhow::Result<Self> {
-        if s.starts_with("0x") {
+        if s.starts_with("did:rooch:") {
+            // Parse DID format: did:rooch:address
+            let addr_part = s
+                .strip_prefix("did:rooch:")
+                .ok_or_else(|| anyhow::anyhow!("Invalid DID format: {}", s))?;
+
+            // Parse the address part (could be hex or bech32)
+            let rooch_address = if addr_part.starts_with("0x") {
+                RoochAddress::from_hex_literal(addr_part)?
+            } else if addr_part.starts_with(ROOCH_HRP.as_str())
+                && addr_part.len() == RoochAddress::LENGTH_BECH32
+            {
+                RoochAddress::from_bech32(addr_part)?
+            } else {
+                return Err(anyhow::anyhow!(
+                    "Invalid address format in DID: {}",
+                    addr_part
+                ));
+            };
+
+            Ok(Self::DID(rooch_address))
+        } else if s.starts_with("0x") {
             Ok(Self::Numerical(RoochAddress::from_hex_literal(s)?))
         } else if s.starts_with(ROOCH_HRP.as_str()) && s.len() == RoochAddress::LENGTH_BECH32 {
             Ok(Self::Numerical(RoochAddress::from_bech32(s)?))
@@ -1036,6 +1059,17 @@ impl ParsedAddress {
                 Ok(a) => Ok(Self::Bitcoin(a)),
                 Err(_) => Ok(Self::Named(s.to_string())),
             }
+        }
+    }
+}
+
+impl fmt::Display for ParsedAddress {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Named(name) => write!(f, "{}", name),
+            Self::Numerical(addr) => write!(f, "{}", addr),
+            Self::Bitcoin(addr) => write!(f, "{}", addr),
+            Self::DID(addr) => write!(f, "did:rooch:{}", addr),
         }
     }
 }
@@ -1416,5 +1450,54 @@ mod test {
         assert_eq!(addr.pay_load_type(), BitcoinAddressPayloadType::PubkeyHash);
         let payload = addr.pay_load();
         println!("test_p2pkh payload len: {}", payload.len());
+    }
+
+    #[test]
+    fn test_parsed_address_did_format() {
+        // Test hex address in DID format
+        let hex_addr = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
+        let did_hex = format!("did:rooch:{}", hex_addr);
+        let parsed = ParsedAddress::parse(&did_hex).unwrap();
+        match parsed {
+            ParsedAddress::DID(addr) => {
+                assert_eq!(addr.to_hex_literal(), hex_addr);
+                // Test that Display shows DID format with the address's default format (bech32)
+                assert_eq!(
+                    parsed.to_string(),
+                    format!("did:rooch:{}", addr.to_bech32())
+                );
+            }
+            _ => panic!("Expected DID variant"),
+        }
+
+        // Test bech32 address in DID format
+        let rooch_addr = RoochAddress::random();
+        let bech32_addr = rooch_addr.to_bech32();
+        let did_bech32 = format!("did:rooch:{}", bech32_addr);
+        let parsed_bech32 = ParsedAddress::parse(&did_bech32).unwrap();
+        match parsed_bech32 {
+            ParsedAddress::DID(addr) => {
+                assert_eq!(addr, rooch_addr);
+                // Test Display shows DID format with bech32
+                assert_eq!(parsed_bech32.to_string(), did_bech32);
+            }
+            _ => panic!("Expected DID variant"),
+        }
+
+        // Test round-trip: parse hex DID and verify it can be displayed and parsed back
+        let original_addr = RoochAddress::from_hex_literal(hex_addr).unwrap();
+        let did_display = format!("did:rooch:{}", original_addr);
+        let reparsed = ParsedAddress::parse(&did_display).unwrap();
+        match reparsed {
+            ParsedAddress::DID(addr) => {
+                assert_eq!(addr, original_addr);
+            }
+            _ => panic!("Expected DID variant after reparse"),
+        }
+
+        // Test invalid DID formats
+        assert!(ParsedAddress::parse("did:rooch:invalid").is_err());
+        assert!(ParsedAddress::parse("did:rooch:").is_err());
+        assert!(ParsedAddress::parse("did:ethereum:0x123").is_ok()); // Should fallback to Named
     }
 }

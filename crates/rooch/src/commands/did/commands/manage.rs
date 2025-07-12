@@ -4,15 +4,11 @@
 use crate::cli_types::{CommandAction, TransactionOptions, WalletContextOptions};
 use async_trait::async_trait;
 use clap::Parser;
-use moveos_types::module_binding::MoveFunctionCaller;
 use moveos_types::move_std::string::MoveString;
-use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_rpc_api::jsonrpc_types::TransactionExecutionInfoView;
 use rooch_types::address::RoochAddress;
 use rooch_types::error::RoochResult;
-use rooch_types::framework::did::{DIDModule, VerificationRelationship, DID};
-use rooch_types::transaction::authenticator::SessionAuthenticator;
-use rooch_types::transaction::RoochTransaction;
+use rooch_types::framework::did::{DIDModule, VerificationRelationship};
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
@@ -258,8 +254,6 @@ impl CommandAction<ManageOutput> for ManageCommand {
 impl CommandAction<ManageOutput> for AddVerificationMethodCommand {
     async fn execute(self) -> RoochResult<ManageOutput> {
         let mut context = self.context_options.build_require_password()?;
-        let client = context.get_client().await?;
-        let did_module = client.as_module_binding::<DIDModule>();
 
         // Resolve the DID address to operate on
         let did_address_str = self.did_address.ok_or_else(|| {
@@ -268,29 +262,6 @@ impl CommandAction<ManageOutput> for AddVerificationMethodCommand {
             )
         })?;
         let did_address = RoochAddress::from_str(&did_address_str)?;
-
-        // Get DID document to find controller
-        let did_document = did_module.get_did_document_by_address(did_address.into())?;
-
-        let controllers = did_document.controller;
-        if controllers.is_empty() {
-            return Err(rooch_types::error::RoochError::CommandArgumentError(
-                format!("DID {} has no controllers", did_address_str),
-            ));
-        }
-        // For simplicity, use the first controller. In a real scenario, might need to select one.
-        let controller_did_struct: DID = controllers[0].clone();
-        let controller_address = RoochAddress::from_str(controller_did_struct.identifier.as_str())?;
-
-        // Check if keystore contains the controller's key
-        if !context.keystore.contains_address(&controller_address) {
-            return Err(rooch_types::error::RoochError::CommandArgumentError(
-                format!(
-                    "Keystore does not contain key for controller {}",
-                    controller_address
-                ),
-            ));
-        }
 
         // Parse verification relationships
         let relationships = if let Some(rel_str) = &self.relationships {
@@ -324,18 +295,10 @@ impl CommandAction<ManageOutput> for AddVerificationMethodCommand {
             relationships,
         );
 
-        // Build transaction data with DID address as sender
-        let tx_data = context
-            .build_tx_data(did_address, action, self.tx_options.max_gas_amount)
+        // Execute transaction using DID account signing
+        let result = context
+            .sign_and_execute_as_did(did_address, action, self.tx_options.max_gas_amount)
             .await?;
-
-        // Sign transaction with controller's key
-        let kp = context.get_key_pair(&controller_address)?;
-        let authenticator = SessionAuthenticator::sign(&kp, &tx_data);
-        let tx = RoochTransaction::new(tx_data, authenticator.into());
-        let result = context.execute(tx).await?;
-
-        context.assert_execute_success(result.clone())?;
 
         Ok(ManageOutput {
             operation: "add_verification_method".to_string(),
@@ -351,8 +314,6 @@ impl CommandAction<ManageOutput> for AddVerificationMethodCommand {
 impl CommandAction<ManageOutput> for RemoveVerificationMethodCommand {
     async fn execute(self) -> RoochResult<ManageOutput> {
         let context = self.context_options.build_require_password()?;
-        let client = context.get_client().await?;
-        let did_module = client.as_module_binding::<DIDModule>();
 
         let did_address_str = self.did_address.ok_or_else(|| {
             rooch_types::error::RoochError::CommandArgumentError(
@@ -361,39 +322,13 @@ impl CommandAction<ManageOutput> for RemoveVerificationMethodCommand {
         })?;
         let did_address = RoochAddress::from_str(&did_address_str)?;
 
-        let did_document = did_module.get_did_document_by_address(did_address.into())?;
-        let controllers = did_document.controller;
-        if controllers.is_empty() {
-            return Err(rooch_types::error::RoochError::CommandArgumentError(
-                format!("DID {} has no controllers", did_address_str),
-            ));
-        }
-        let controller_did_struct: DID = controllers[0].clone();
-        let controller_address = RoochAddress::from_str(controller_did_struct.identifier.as_str())?;
-
-        if !context.keystore.contains_address(&controller_address) {
-            return Err(rooch_types::error::RoochError::CommandArgumentError(
-                format!(
-                    "Keystore does not contain key for controller {}",
-                    controller_address
-                ),
-            ));
-        }
-
         let fragment = MoveString::from_str(&self.fragment)?;
         let action = DIDModule::remove_verification_method_action(fragment);
 
-        let tx_data = context
-            .build_tx_data(did_address, action, self.tx_options.max_gas_amount)
+        // Execute transaction using DID account signing
+        let result = context
+            .sign_and_execute_as_did(did_address, action, self.tx_options.max_gas_amount)
             .await?;
-
-        // Sign transaction with controller's key
-        let kp = context.get_key_pair(&controller_address)?;
-        let authenticator = SessionAuthenticator::sign(&kp, &tx_data);
-        let tx = RoochTransaction::new(tx_data, authenticator.into());
-        let result = context.execute(tx).await?;
-
-        context.assert_execute_success(result.clone())?;
 
         Ok(ManageOutput {
             operation: "remove_verification_method".to_string(),
@@ -409,8 +344,6 @@ impl CommandAction<ManageOutput> for RemoveVerificationMethodCommand {
 impl CommandAction<ManageOutput> for AddToRelationshipCommand {
     async fn execute(self) -> RoochResult<ManageOutput> {
         let context = self.context_options.build_require_password()?;
-        let client = context.get_client().await?;
-        let did_module = client.as_module_binding::<DIDModule>();
 
         let did_address_str = self.did_address.ok_or_else(|| {
             rooch_types::error::RoochError::CommandArgumentError(
@@ -419,42 +352,16 @@ impl CommandAction<ManageOutput> for AddToRelationshipCommand {
         })?;
         let did_address = RoochAddress::from_str(&did_address_str)?;
 
-        let did_document = did_module.get_did_document_by_address(did_address.into())?;
-        let controllers = did_document.controller;
-        if controllers.is_empty() {
-            return Err(rooch_types::error::RoochError::CommandArgumentError(
-                format!("DID {} has no controllers", did_address_str),
-            ));
-        }
-        let controller_did_struct: DID = controllers[0].clone();
-        let controller_address = RoochAddress::from_str(controller_did_struct.identifier.as_str())?;
-
-        if !context.keystore.contains_address(&controller_address) {
-            return Err(rooch_types::error::RoochError::CommandArgumentError(
-                format!(
-                    "Keystore does not contain key for controller {}",
-                    controller_address
-                ),
-            ));
-        }
-
         let relationship = VerificationRelationship::from_string(&self.relationship)?;
         let fragment = MoveString::from_str(&self.fragment)?;
 
         let action =
             DIDModule::add_to_verification_relationship_action(fragment, relationship as u8);
 
-        let tx_data = context
-            .build_tx_data(did_address, action, self.tx_options.max_gas_amount)
+        // Execute transaction using DID account signing
+        let result = context
+            .sign_and_execute_as_did(did_address, action, self.tx_options.max_gas_amount)
             .await?;
-
-        // Sign transaction with controller's key
-        let kp = context.get_key_pair(&controller_address)?;
-        let authenticator = SessionAuthenticator::sign(&kp, &tx_data);
-        let tx = RoochTransaction::new(tx_data, authenticator.into());
-        let result = context.execute(tx).await?;
-
-        context.assert_execute_success(result.clone())?;
 
         Ok(ManageOutput {
             operation: format!("add_to_{}", self.relationship),
@@ -470,8 +377,6 @@ impl CommandAction<ManageOutput> for AddToRelationshipCommand {
 impl CommandAction<ManageOutput> for RemoveFromRelationshipCommand {
     async fn execute(self) -> RoochResult<ManageOutput> {
         let context = self.context_options.build_require_password()?;
-        let client = context.get_client().await?;
-        let did_module = client.as_module_binding::<DIDModule>();
 
         let did_address_str = self.did_address.ok_or_else(|| {
             rooch_types::error::RoochError::CommandArgumentError(
@@ -480,42 +385,16 @@ impl CommandAction<ManageOutput> for RemoveFromRelationshipCommand {
         })?;
         let did_address = RoochAddress::from_str(&did_address_str)?;
 
-        let did_document = did_module.get_did_document_by_address(did_address.into())?;
-        let controllers = did_document.controller;
-        if controllers.is_empty() {
-            return Err(rooch_types::error::RoochError::CommandArgumentError(
-                format!("DID {} has no controllers", did_address_str),
-            ));
-        }
-        let controller_did_struct: DID = controllers[0].clone();
-        let controller_address = RoochAddress::from_str(controller_did_struct.identifier.as_str())?;
-
-        if !context.keystore.contains_address(&controller_address) {
-            return Err(rooch_types::error::RoochError::CommandArgumentError(
-                format!(
-                    "Keystore does not contain key for controller {}",
-                    controller_address
-                ),
-            ));
-        }
-
         let relationship = VerificationRelationship::from_string(&self.relationship)?;
         let fragment = MoveString::from_str(&self.fragment)?;
 
         let action =
             DIDModule::remove_from_verification_relationship_action(fragment, relationship as u8);
 
-        let tx_data = context
-            .build_tx_data(did_address, action, self.tx_options.max_gas_amount)
+        // Execute transaction using DID account signing
+        let result = context
+            .sign_and_execute_as_did(did_address, action, self.tx_options.max_gas_amount)
             .await?;
-
-        // Sign transaction with controller's key
-        let kp = context.get_key_pair(&controller_address)?;
-        let authenticator = SessionAuthenticator::sign(&kp, &tx_data);
-        let tx = RoochTransaction::new(tx_data, authenticator.into());
-        let result = context.execute(tx).await?;
-
-        context.assert_execute_success(result.clone())?;
 
         Ok(ManageOutput {
             operation: format!("remove_from_{}", self.relationship),
@@ -531,8 +410,6 @@ impl CommandAction<ManageOutput> for RemoveFromRelationshipCommand {
 impl CommandAction<ManageOutput> for AddServiceCommand {
     async fn execute(self) -> RoochResult<ManageOutput> {
         let context = self.context_options.build_require_password()?;
-        let client = context.get_client().await?;
-        let did_module = client.as_module_binding::<DIDModule>();
 
         let did_address_str = self.did_address.ok_or_else(|| {
             rooch_types::error::RoochError::CommandArgumentError(
@@ -540,25 +417,6 @@ impl CommandAction<ManageOutput> for AddServiceCommand {
             )
         })?;
         let did_address = RoochAddress::from_str(&did_address_str)?;
-
-        let did_document = did_module.get_did_document_by_address(did_address.into())?;
-        let controllers = did_document.controller;
-        if controllers.is_empty() {
-            return Err(rooch_types::error::RoochError::CommandArgumentError(
-                format!("DID {} has no controllers", did_address_str),
-            ));
-        }
-        let controller_did_struct: DID = controllers[0].clone();
-        let controller_address = RoochAddress::from_str(controller_did_struct.identifier.as_str())?;
-
-        if !context.keystore.contains_address(&controller_address) {
-            return Err(rooch_types::error::RoochError::CommandArgumentError(
-                format!(
-                    "Keystore does not contain key for controller {}",
-                    controller_address
-                ),
-            ));
-        }
 
         let fragment = MoveString::from_str(&self.fragment)?;
         let service_type = MoveString::from_str(&self.service_type)?;
@@ -577,17 +435,10 @@ impl CommandAction<ManageOutput> for AddServiceCommand {
             DIDModule::add_service_action(fragment, service_type, endpoint)
         };
 
-        let tx_data = context
-            .build_tx_data(did_address, action, self.tx_options.max_gas_amount)
+        // Execute transaction using DID account signing
+        let result = context
+            .sign_and_execute_as_did(did_address, action, self.tx_options.max_gas_amount)
             .await?;
-
-        // Sign transaction with controller's key
-        let kp = context.get_key_pair(&controller_address)?;
-        let authenticator = SessionAuthenticator::sign(&kp, &tx_data);
-        let tx = RoochTransaction::new(tx_data, authenticator.into());
-        let result = context.execute(tx).await?;
-
-        context.assert_execute_success(result.clone())?;
 
         Ok(ManageOutput {
             operation: "add_service".to_string(),
@@ -603,8 +454,6 @@ impl CommandAction<ManageOutput> for AddServiceCommand {
 impl CommandAction<ManageOutput> for UpdateServiceCommand {
     async fn execute(self) -> RoochResult<ManageOutput> {
         let context = self.context_options.build_require_password()?;
-        let client = context.get_client().await?;
-        let did_module = client.as_module_binding::<DIDModule>();
 
         let did_address_str = self.did_address.ok_or_else(|| {
             rooch_types::error::RoochError::CommandArgumentError(
@@ -612,25 +461,6 @@ impl CommandAction<ManageOutput> for UpdateServiceCommand {
             )
         })?;
         let did_address = RoochAddress::from_str(&did_address_str)?;
-
-        let did_document = did_module.get_did_document_by_address(did_address.into())?;
-        let controllers = did_document.controller;
-        if controllers.is_empty() {
-            return Err(rooch_types::error::RoochError::CommandArgumentError(
-                format!("DID {} has no controllers", did_address_str),
-            ));
-        }
-        let controller_did_struct: DID = controllers[0].clone();
-        let controller_address = RoochAddress::from_str(controller_did_struct.identifier.as_str())?;
-
-        if !context.keystore.contains_address(&controller_address) {
-            return Err(rooch_types::error::RoochError::CommandArgumentError(
-                format!(
-                    "Keystore does not contain key for controller {}",
-                    controller_address
-                ),
-            ));
-        }
 
         let fragment = MoveString::from_str(&self.fragment)?;
         let service_type = MoveString::from_str(&self.service_type)?;
@@ -645,17 +475,10 @@ impl CommandAction<ManageOutput> for UpdateServiceCommand {
         let action =
             DIDModule::update_service_action(fragment, service_type, endpoint, keys, values);
 
-        let tx_data = context
-            .build_tx_data(did_address, action, self.tx_options.max_gas_amount)
+        // Execute transaction using DID account signing
+        let result = context
+            .sign_and_execute_as_did(did_address, action, self.tx_options.max_gas_amount)
             .await?;
-
-        // Sign transaction with controller's key
-        let kp = context.get_key_pair(&controller_address)?;
-        let authenticator = SessionAuthenticator::sign(&kp, &tx_data);
-        let tx = RoochTransaction::new(tx_data, authenticator.into());
-        let result = context.execute(tx).await?;
-
-        context.assert_execute_success(result.clone())?;
 
         Ok(ManageOutput {
             operation: "update_service".to_string(),
@@ -671,8 +494,6 @@ impl CommandAction<ManageOutput> for UpdateServiceCommand {
 impl CommandAction<ManageOutput> for RemoveServiceCommand {
     async fn execute(self) -> RoochResult<ManageOutput> {
         let context = self.context_options.build_require_password()?;
-        let client = context.get_client().await?;
-        let did_module = client.as_module_binding::<DIDModule>();
 
         let did_address_str = self.did_address.ok_or_else(|| {
             rooch_types::error::RoochError::CommandArgumentError(
@@ -681,39 +502,13 @@ impl CommandAction<ManageOutput> for RemoveServiceCommand {
         })?;
         let did_address = RoochAddress::from_str(&did_address_str)?;
 
-        let did_document = did_module.get_did_document_by_address(did_address.into())?;
-        let controllers = did_document.controller;
-        if controllers.is_empty() {
-            return Err(rooch_types::error::RoochError::CommandArgumentError(
-                format!("DID {} has no controllers", did_address_str),
-            ));
-        }
-        let controller_did_struct: DID = controllers[0].clone();
-        let controller_address = RoochAddress::from_str(controller_did_struct.identifier.as_str())?;
-
-        if !context.keystore.contains_address(&controller_address) {
-            return Err(rooch_types::error::RoochError::CommandArgumentError(
-                format!(
-                    "Keystore does not contain key for controller {}",
-                    controller_address
-                ),
-            ));
-        }
-
         let fragment = MoveString::from_str(&self.fragment)?;
         let action = DIDModule::remove_service_action(fragment);
 
-        let tx_data = context
-            .build_tx_data(did_address, action, self.tx_options.max_gas_amount)
+        // Execute transaction using DID account signing
+        let result = context
+            .sign_and_execute_as_did(did_address, action, self.tx_options.max_gas_amount)
             .await?;
-
-        // Sign transaction with controller's key
-        let kp = context.get_key_pair(&controller_address)?;
-        let authenticator = SessionAuthenticator::sign(&kp, &tx_data);
-        let tx = RoochTransaction::new(tx_data, authenticator.into());
-        let result = context.execute(tx).await?;
-
-        context.assert_execute_success(result.clone())?;
 
         Ok(ManageOutput {
             operation: "remove_service".to_string(),

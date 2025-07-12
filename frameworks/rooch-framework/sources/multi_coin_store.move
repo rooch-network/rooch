@@ -106,11 +106,16 @@ module rooch_framework::multi_coin_store {
     // Public functions
     //
 
+    /// Create a new MultiCoinStore object.
+    public fun create(): Object<MultiCoinStore> {
+        object::new(MultiCoinStore {})
+    }
+
     public fun exist_coin_store_field(coin_store_obj: &Object<MultiCoinStore>, coin_type: string::String): bool {
         object::contains_field(coin_store_obj, coin_type)
     }
 
-    // /// Remove the MultiCoinStore field, return the GenericCoin in balance
+    /// Remove the MultiCoinStore field, return the GenericCoin in balance
     public fun remove_coin_store_field(coin_store_object: &mut Object<MultiCoinStore>, coin_type: string::String): GenericCoin {
         ensure_coin_type_has_key_ability(coin_type);
         let coin_store_id = object::id(coin_store_object);
@@ -157,10 +162,26 @@ module rooch_framework::multi_coin_store {
         withdraw_internal(coin_store_obj, coin_type, amount)
     }
 
+    public fun withdraw_by_type<CoinType: key + store>(
+        coin_store_obj: &mut Object<MultiCoinStore>,
+        amount: u256
+    ): Coin<CoinType> {
+        let generic_coin = withdraw_internal(coin_store_obj, type_name<CoinType>(), amount);
+        coin::convert_generic_coin_to_coin<CoinType>(generic_coin)
+    }
+
     public fun deposit(coin_store_obj: &mut Object<MultiCoinStore>, coin: GenericCoin) {
         let coin_type = coin::coin_type(&coin);
         ensure_coin_type_has_key_and_store_ability(coin_type);
         deposit_internal(coin_store_obj, coin)
+    }
+
+    public fun deposit_by_type<CoinType: key + store>(
+        coin_store_obj: &mut Object<MultiCoinStore>,
+        coin: Coin<CoinType>
+    ) {
+        let generic_coin = coin::convert_coin_to_generic_coin(coin);
+        deposit_internal(coin_store_obj, generic_coin)
     }
 
     public fun transfer(_coin_store_obj: Object<MultiCoinStore>, _owner: address) {
@@ -211,7 +232,7 @@ module rooch_framework::multi_coin_store {
 
     // Internal functions
 
-    // Create multi coin store
+    // This function is used to create a MultiCoinStore object for an account.
     public(friend) fun create_multi_coin_store(account: address): ObjectID {
         let coin_store_obj = object::new_account_named_object(
             account,

@@ -18,6 +18,7 @@ pub mod init;
 pub mod move_cli;
 pub mod object;
 pub mod oracle;
+pub mod payment_channel;
 pub mod resource;
 pub mod rpc;
 pub mod server;
