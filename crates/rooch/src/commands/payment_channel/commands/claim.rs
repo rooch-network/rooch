@@ -3,7 +3,7 @@
 
 use crate::cli_types::{CommandAction, TransactionOptions, WalletContextOptions};
 use async_trait::async_trait;
-use clap::{ArgGroup, Parser};
+use clap::Parser;
 use move_core_types::u256::U256;
 use moveos_types::moveos_std::object::ObjectID;
 use rooch_rpc_api::jsonrpc_types::{StrView, TransactionExecutionInfoView};
@@ -14,82 +14,62 @@ use rooch_types::framework::payment_channel::SignedSubRav;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Parser)]
-#[clap(group(
-    ArgGroup::new("rav_input")
-        .required(true)
-        .args(&["rav", "individual_params"])
-))]
 pub struct ClaimCommand {
     /// Multibase encoded signed RAV string (alternative to individual parameters)
     #[clap(
         long,
         help = "Multibase encoded signed RAV string from create-rav command",
-        group = "rav_input"
+        conflicts_with_all = &["channel_id", "vm_id_fragment", "channel_epoch", "chain_id", "amount", "nonce", "signature"]
     )]
     pub rav: Option<String>,
-
-    /// Use individual parameters instead of encoded RAV string
-    #[clap(
-        short = 'i',
-        long,
-        help = "Use individual parameters (requires all individual params)",
-        group = "rav_input"
-    )]
-    pub individual_params: bool,
 
     /// Channel ID to claim from
     #[clap(
         long,
         help = "Channel ID to claim from",
-        required_if_eq("individual_params", "true")
+        requires_all = &["vm_id_fragment", "channel_epoch", "chain_id", "amount", "nonce", "signature"]
     )]
     pub channel_id: Option<ObjectID>,
 
     /// VM ID fragment
     #[clap(
         long,
-        help = "VM ID fragment for the sub-channel",
-        required_if_eq("individual_params", "true")
+        help = "VM ID fragment for the sub-channel"
     )]
     pub vm_id_fragment: Option<String>,
 
     /// Channel epoch for the claim
     #[clap(
         long,
-        help = "Channel epoch for the claim",
-        required_if_eq("individual_params", "true")
+        help = "Channel epoch for the claim"
     )]
     pub channel_epoch: Option<u64>,
 
     /// Chain ID for the claim
     #[clap(
         long,
-        help = "Chain ID for the claim",
-        required_if_eq("individual_params", "true")
+        help = "Chain ID for the claim"
     )]
     pub chain_id: Option<u64>,
 
     /// Amount to claim
     #[clap(
         long,
-        help = "Amount to claim from the channel",
-        required_if_eq("individual_params", "true")
+        help = "Amount to claim from the channel"
     )]
     pub amount: Option<U256>,
 
     /// Nonce for the claim
     #[clap(
         long,
-        help = "Nonce for the claim",
-        required_if_eq("individual_params", "true")
+        help = "Nonce for the claim"
     )]
     pub nonce: Option<u64>,
 
     /// Signature in hex format
     #[clap(
         long,
-        help = "Signature in hex format",
-        required_if_eq("individual_params", "true")
+        help = "Signature in hex format"
     )]
     pub signature: Option<String>,
 
@@ -141,7 +121,7 @@ impl CommandAction<ClaimOutput> for ClaimCommand {
                     signed_rav.sub_rav.nonce,
                     signature_bytes,
                 )
-            } else if self.individual_params {
+            } else {
                 // Use individual parameters
                 let channel_id = self.channel_id.ok_or_else(|| {
                     rooch_types::error::RoochError::CommandArgumentError(
@@ -195,10 +175,6 @@ impl CommandAction<ClaimOutput> for ClaimCommand {
                     nonce,
                     signature_bytes,
                 )
-            } else {
-                return Err(rooch_types::error::RoochError::CommandArgumentError(
-                    "Either --rav or --individual-params must be provided".to_string(),
-                ));
             };
 
         // Create the claim action

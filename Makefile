@@ -37,6 +37,7 @@ help:
 	@echo "    test-move-did       - Run Move DID module tests (within rooch-framework)"
 	@echo "    test-move-examples  - Build and run Move example tests"
 	@echo "    test-integration    - Run Cucumber integration tests (testsuite only)"
+	@echo "    test-integration    - Run Cucumber integration tests (testsuite only, use FILTER=<name> to filter)"
 	@echo ""
 	@echo "  Linting and Formatting:"
 	@echo "    fmt-rust            - Check Rust code formatting"
@@ -53,6 +54,11 @@ help:
 	@echo "    move-nursery        - Build rooch-nursery framework"
 	@echo "    move-bitcoin-framework - Build bitcoin-move framework"
 	@echo "    move-examples       - Build all Move example projects (generic build)"
+	@echo ""
+	@echo "  Optional Parameters:"
+	@echo "    FILTER=<pattern>    - Filter tests by name pattern (works with test-integration, test-move-frameworks)"
+	@echo "                          Examples: make test-integration FILTER=payment_channel"
+	@echo "                                   make test-move-frameworks FILTER=did"
 	@echo ""
 	@echo "  Cleaning Targets:"
 	@echo "    clean-rust          - Clean Rust build artifacts (cargo clean)"
@@ -180,7 +186,12 @@ test-move-frameworks:
 	@echo "🧪 Running tests for all Move frameworks using Rooch CLI..."
 	@for crate_path in $(MOVE_FRAMEWORK_PATHS); do \
 		echo "Testing Move framework: $$crate_path"; \
-		$(ROOCH_CMD) move test -p $$crate_path || exit 1; \
+		if [ -n "$(FILTER)" ]; then \
+			echo "  Filtering tests with: $(FILTER)"; \
+			$(ROOCH_CMD) move test -p $$crate_path -f "$(FILTER)" || exit 1; \
+		else \
+			$(ROOCH_CMD) move test -p $$crate_path || exit 1; \
+		fi \
 	done
 	@echo "✅ All Move framework tests passed."
 
@@ -213,8 +224,13 @@ test-move-examples:
 test-move: test-move-frameworks test-move-examples
 
 test-integration:
-	@echo "🧪 Running Cucumber integration tests (testsuite only, profile: $(RUST_PROFILE_RELEASE))..."
-	RUST_LOG=warn cargo test --profile $(RUST_PROFILE_RELEASE) -p testsuite --test integration -- --test-threads=1
+	@echo "🧪 Running Cucumber integration tests (testsuite only, profile: $(RUST_PROFILE_DEFAULT))..."
+	@if [ -n "$(FILTER)" ]; then \
+		echo "  Filtering tests with: $(FILTER)"; \
+		RUST_LOG=warn cargo test --profile $(RUST_PROFILE_DEFAULT) -p testsuite --test integration -- --name $(FILTER); \
+	else \
+		RUST_LOG=warn cargo test --profile $(RUST_PROFILE_DEFAULT) -p testsuite --test integration; \
+	fi
 
 # Overarching targets
 build: build-rust-release build-move

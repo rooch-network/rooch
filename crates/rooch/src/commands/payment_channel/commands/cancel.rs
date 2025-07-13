@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use async_trait::async_trait;
-use clap::{ArgGroup, Parser};
+use clap::Parser;
 use move_core_types::u256::U256;
 use moveos_types::moveos_std::object::ObjectID;
 use rooch_rpc_api::jsonrpc_types::{StrView, TransactionExecutionInfoView};
@@ -16,10 +16,6 @@ use serde::{Deserialize, Serialize};
 use crate::cli_types::{CommandAction, TransactionOptions, WalletContextOptions};
 
 #[derive(Debug, Parser)]
-#[clap(group(
-    ArgGroup::new("cancellation_input")
-        .args(&["rav", "individual_params"])
-))]
 pub struct CancelCommand {
     /// Channel ID to cancel
     #[clap(long, help = "Channel ID to cancel")]
@@ -29,48 +25,36 @@ pub struct CancelCommand {
     #[clap(
         long,
         help = "Multibase encoded signed RAV string from create-rav command (optional)",
-        group = "cancellation_input"
+        conflicts_with_all = &["vm_id_fragment", "amount", "nonce", "signature"]
     )]
     pub rav: Option<String>,
-
-    /// Use individual parameters for cancellation proof (optional)
-    #[clap(
-        short = 'i',
-        long,
-        help = "Use individual parameters for cancellation proof (requires all individual params)",
-        group = "cancellation_input"
-    )]
-    pub individual_params: bool,
 
     /// VM ID fragment for cancellation proof
     #[clap(
         long,
-        help = "VM ID fragment for the sub-channel (required if using individual params)",
-        required_if_eq("individual_params", "true")
+        help = "VM ID fragment for the sub-channel",
+        requires_all = &["amount", "nonce", "signature"]
     )]
     pub vm_id_fragment: Option<String>,
 
     /// Amount for cancellation proof
     #[clap(
         long,
-        help = "Amount for cancellation proof (required if using individual params)",
-        required_if_eq("individual_params", "true")
+        help = "Amount for cancellation proof"
     )]
     pub amount: Option<U256>,
 
     /// Nonce for cancellation proof
     #[clap(
         long,
-        help = "Nonce for cancellation proof (required if using individual params)",
-        required_if_eq("individual_params", "true")
+        help = "Nonce for cancellation proof"
     )]
     pub nonce: Option<u64>,
 
     /// Signature in hex format for cancellation proof
     #[clap(
         long,
-        help = "Signature in hex format (required if using individual params)",
-        required_if_eq("individual_params", "true")
+        help = "Signature in hex format"
     )]
     pub signature: Option<String>,
 
@@ -152,7 +136,7 @@ impl CommandAction<CancelOutput> for CancelCommand {
                 Some(signed_rav.sub_rav.amount),
                 Some(signed_rav.sub_rav.nonce),
             )
-        } else if self.individual_params {
+        } else if self.vm_id_fragment.is_some() {
             // Use individual parameters
             let vm_id_fragment = self.vm_id_fragment.ok_or_else(|| {
                 rooch_types::error::RoochError::CommandArgumentError(
