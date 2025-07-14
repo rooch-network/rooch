@@ -1319,7 +1319,7 @@ module rooch_framework::payment_channel {
             accumulated_amount: 10000,
             nonce: 1,
         };
-        let signature = x"9c520eeef94d4c69912619d2a34358c106cd6f941b67316208470116227e095728a0ae489d9430fda5751e6c6b0c1fef01568db18a0da97450031fd59a768aa7";
+        let signature = x"178a4171000c67db0be16cef70ae0ba4d43e779a1fa25ee901dd2683ccc8966a7c6b2c2b95b17a0fd77db5ee3099c5d660f4e9811f7257824a731f9eb269d360";
         let pk_multibase = std::string::utf8(b"zwvRask8Xx7oi3Aw6PvvmmBvdYbHqsJPkvCZYxDFZMwZa");
         let method_type = std::string::utf8(b"EcdsaSecp256k1VerificationKey2019");
         assert!(verify_rav_signature(sub_rav, signature, pk_multibase, method_type), 3);    
