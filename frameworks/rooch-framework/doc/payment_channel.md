@@ -554,6 +554,16 @@ The sub-channel has not been authorized yet.
 
 
 
+<a name="0x3_payment_channel_ErrorUnsupportedVersion"></a>
+
+The SubRAV version is not supported.
+
+
+<pre><code><b>const</b> <a href="payment_channel.md#0x3_payment_channel_ErrorUnsupportedVersion">ErrorUnsupportedVersion</a>: u64 = 24;
+</code></pre>
+
+
+
 <a name="0x3_payment_channel_ErrorVMAuthorizeOnlySender"></a>
 
 Only the sender can authorize verification methods for the channel.
@@ -587,6 +597,16 @@ Only the sender can authorize verification methods for the channel.
 
 
 <pre><code><b>const</b> <a href="payment_channel.md#0x3_payment_channel_STATUS_CLOSED">STATUS_CLOSED</a>: u8 = 2;
+</code></pre>
+
+
+
+<a name="0x3_payment_channel_SUB_RAV_VERSION_V1"></a>
+
+Current supported SubRAV version
+
+
+<pre><code><b>const</b> <a href="payment_channel.md#0x3_payment_channel_SUB_RAV_VERSION_V1">SUB_RAV_VERSION_V1</a>: u8 = 1;
 </code></pre>
 
 

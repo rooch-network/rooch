@@ -152,14 +152,14 @@ impl CommandAction<SignedSubRavOutput> for CreateRavCommand {
             .await?;
 
         // Create SubRAV structure for signing
-        let sub_rav = SubRAV {
+        let sub_rav = SubRAV::new(
             chain_id,
-            channel_id: self.channel_id.clone(),
+            self.channel_id.clone(),
             channel_epoch,
-            vm_id_fragment: vm_id_fragment.clone(),
-            amount: self.amount,
-            nonce: self.nonce,
-        };
+            vm_id_fragment.clone(),
+            self.amount,
+            self.nonce,
+        );
 
         let sub_rav_bytes = bcs::to_bytes(&sub_rav)?;
 

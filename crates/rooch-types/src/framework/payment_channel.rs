@@ -17,6 +17,9 @@ use serde::{Deserialize, Serialize};
 
 pub const MODULE_NAME: &IdentStr = ident_str!("payment_channel");
 
+/// Current version of the SubRAV structure - default for new instances
+pub const SUB_RAV_VERSION_V1: u8 = 1;
+
 /// Key structure for identifying a unidirectional payment channel
 /// Must match the ChannelKey struct in payment_channel.move
 #[derive(Serialize)]
@@ -29,6 +32,7 @@ struct ChannelKey {
 /// SubRAV data structure for BCS serialization
 #[derive(Serialize, Deserialize)]
 pub struct SubRAV {
+    pub version: u8,
     pub chain_id: u64,
     pub channel_id: ObjectID,
     pub channel_epoch: u64,
@@ -72,6 +76,59 @@ pub struct CancelProof {
 #[derive(Serialize, Deserialize)]
 pub struct CancelProofs {
     pub proofs: Vec<CancelProof>,
+}
+
+impl SubRAV {
+    /// Create a new SubRAV with the current version
+    pub fn new(
+        chain_id: u64,
+        channel_id: ObjectID,
+        channel_epoch: u64,
+        vm_id_fragment: String,
+        amount: U256,
+        nonce: u64,
+    ) -> Self {
+        Self {
+            version: SUB_RAV_VERSION_V1,
+            chain_id,
+            channel_id,
+            channel_epoch,
+            vm_id_fragment,
+            amount,
+            nonce,
+        }
+    }
+
+    /// Create a SubRAV with a specific version (for testing or migration purposes)
+    pub fn new_with_version(
+        version: u8,
+        chain_id: u64,
+        channel_id: ObjectID,
+        channel_epoch: u64,
+        vm_id_fragment: String,
+        amount: U256,
+        nonce: u64,
+    ) -> Self {
+        Self {
+            version,
+            chain_id,
+            channel_id,
+            channel_epoch,
+            vm_id_fragment,
+            amount,
+            nonce,
+        }
+    }
+
+    /// Check if this SubRAV version is supported
+    pub fn is_version_supported(&self) -> bool {
+        self.version == SUB_RAV_VERSION_V1
+    }
+
+    /// Get the version of this SubRAV
+    pub fn version(&self) -> u8 {
+        self.version
+    }
 }
 
 impl SignedSubRav {

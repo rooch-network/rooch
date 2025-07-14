@@ -69,6 +69,8 @@ module rooch_framework::payment_channel {
     const ErrorInvalidChannelEpoch: u64 = 22;
     /// The chain_id in the SubRAV does not match the current chain_id.
     const ErrorInvalidChainId: u64 = 23;
+    /// The SubRAV version is not supported.
+    const ErrorUnsupportedVersion: u64 = 24;
 
     // === Constants ===
     const STATUS_ACTIVE: u8 = 0;
@@ -76,6 +78,9 @@ module rooch_framework::payment_channel {
     const STATUS_CLOSED: u8 = 2;
 
     const CHALLENGE_PERIOD_MILLISECONDS: u64 = 86400000; // 1 day
+
+    /// Current supported SubRAV version
+    const SUB_RAV_VERSION_V1: u8 = 1;
 
     // === Events ===
     
@@ -232,6 +237,7 @@ module rooch_framework::payment_channel {
     #[data_struct]
     /// Structure representing a Sub-RAV (Sub-channel Receipts and Vouchers) for off-chain signature verification
     struct SubRAV has copy, drop, store {
+        version: u8,
         chain_id: u64,
         channel_id: ObjectID,
         channel_epoch: u64,
@@ -604,6 +610,7 @@ module rooch_framework::payment_channel {
         // Verify the sender's signature on the off-chain proof (SubRAV).
         if (!skip_signature_verification) {
             let sub_rav = SubRAV {
+                version: SUB_RAV_VERSION_V1,
                 chain_id: chain_id::chain_id(),
                 channel_id,
                 channel_epoch: channel.channel_epoch,
@@ -707,6 +714,7 @@ module rooch_framework::payment_channel {
             
             // Verify the sender's signature on this final SubRAV
             let sub_rav = SubRAV {
+                version: SUB_RAV_VERSION_V1,
                 chain_id: chain_id::chain_id(),
                 channel_id,
                 channel_epoch: channel.channel_epoch,
@@ -929,6 +937,7 @@ module rooch_framework::payment_channel {
         
         if (!skip_signature_verification) {
             let sub_rav = SubRAV {
+                version: SUB_RAV_VERSION_V1,
                 chain_id: chain_id::chain_id(),
                 channel_id,
                 channel_epoch: channel.channel_epoch,
@@ -1205,6 +1214,11 @@ module rooch_framework::payment_channel {
         sub_rav: SubRAV,
         signature: vector<u8>
     ): bool {
+        // First validate the version
+        if (sub_rav.version != SUB_RAV_VERSION_V1) {
+            return false
+        };
+
         // Verify chain_id matches current chain
         if (sub_rav.chain_id != chain_id::chain_id()) {
             return false
@@ -1227,6 +1241,9 @@ module rooch_framework::payment_channel {
         pk_multibase: String,
         method_type: String
     ): bool {
+        // First validate the version
+        assert!(sub_rav.version == SUB_RAV_VERSION_V1, ErrorUnsupportedVersion);
+        
         let msg = bcs::to_bytes(&sub_rav);
         // Verify signature using the stored public key and method type
         did::verify_signature_by_type(msg, signature, &pk_multibase, &method_type)
@@ -1276,6 +1293,7 @@ module rooch_framework::payment_channel {
     #[test]
     fun test_sub_rav_hash() {
         let sub_rav = SubRAV {
+            version: SUB_RAV_VERSION_V1,
             chain_id: 4, // CHAIN_ID_LOCAL for test
             channel_id: object::from_string(&std::string::utf8(b"0x35df6e58502089ed640382c477e4b6f99e5e90d881678d37ed774a737fd3797c")),
             channel_epoch: 0,
@@ -1293,6 +1311,7 @@ module rooch_framework::payment_channel {
     #[test]
     fun test_sub_rav_signature() {
         let sub_rav = SubRAV {
+            version: SUB_RAV_VERSION_V1,
             chain_id: 4, // CHAIN_ID_LOCAL for test
             channel_id: object::from_string(&std::string::utf8(b"0x35df6e58502089ed640382c477e4b6f99e5e90d881678d37ed774a737fd3797c")),
             channel_epoch: 0,
