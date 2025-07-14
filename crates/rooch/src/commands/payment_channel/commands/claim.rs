@@ -32,45 +32,27 @@ pub struct ClaimCommand {
     pub channel_id: Option<ObjectID>,
 
     /// VM ID fragment
-    #[clap(
-        long,
-        help = "VM ID fragment for the sub-channel"
-    )]
+    #[clap(long, help = "VM ID fragment for the sub-channel")]
     pub vm_id_fragment: Option<String>,
 
     /// Channel epoch for the claim
-    #[clap(
-        long,
-        help = "Channel epoch for the claim"
-    )]
+    #[clap(long, help = "Channel epoch for the claim")]
     pub channel_epoch: Option<u64>,
 
     /// Chain ID for the claim
-    #[clap(
-        long,
-        help = "Chain ID for the claim"
-    )]
+    #[clap(long, help = "Chain ID for the claim")]
     pub chain_id: Option<u64>,
 
     /// Amount to claim
-    #[clap(
-        long,
-        help = "Amount to claim from the channel"
-    )]
+    #[clap(long, help = "Amount to claim from the channel")]
     pub amount: Option<U256>,
 
     /// Nonce for the claim
-    #[clap(
-        long,
-        help = "Nonce for the claim"
-    )]
+    #[clap(long, help = "Nonce for the claim")]
     pub nonce: Option<u64>,
 
     /// Signature in hex format
-    #[clap(
-        long,
-        help = "Signature in hex format"
-    )]
+    #[clap(long, help = "Signature in hex format")]
     pub signature: Option<String>,
 
     #[clap(flatten)]

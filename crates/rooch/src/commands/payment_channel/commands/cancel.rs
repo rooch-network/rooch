@@ -38,24 +38,15 @@ pub struct CancelCommand {
     pub vm_id_fragment: Option<String>,
 
     /// Amount for cancellation proof
-    #[clap(
-        long,
-        help = "Amount for cancellation proof"
-    )]
+    #[clap(long, help = "Amount for cancellation proof")]
     pub amount: Option<U256>,
 
     /// Nonce for cancellation proof
-    #[clap(
-        long,
-        help = "Nonce for cancellation proof"
-    )]
+    #[clap(long, help = "Nonce for cancellation proof")]
     pub nonce: Option<u64>,
 
     /// Signature in hex format for cancellation proof
-    #[clap(
-        long,
-        help = "Signature in hex format"
-    )]
+    #[clap(long, help = "Signature in hex format")]
     pub signature: Option<String>,
 
     #[clap(flatten)]

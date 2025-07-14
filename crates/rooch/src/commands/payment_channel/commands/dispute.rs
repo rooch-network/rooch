@@ -63,7 +63,10 @@ impl CommandAction<DisputeOutput> for DisputeCommand {
         let max_gas_amount: Option<u64> = self.tx_options.max_gas_amount;
 
         // Parse parameters either from RAV or individual arguments
-        let (vm_id_fragment, dispute_amount, dispute_nonce, signature_bytes) = if let Some(rav_encoded) = self.rav {
+        let (vm_id_fragment, dispute_amount, dispute_nonce, signature_bytes) = if let Some(
+            rav_encoded,
+        ) = self.rav
+        {
             // Decode RAV from multibase encoded string
             let signed_rav: SignedSubRav = SignedSubRav::decode_from_multibase(&rav_encoded)
                 .map_err(|e| {
@@ -131,7 +134,12 @@ impl CommandAction<DisputeOutput> for DisputeCommand {
                 ))
             })?;
 
-            (vm_id_fragment, dispute_amount, dispute_nonce, signature_bytes)
+            (
+                vm_id_fragment,
+                dispute_amount,
+                dispute_nonce,
+                signature_bytes,
+            )
         };
 
         // Create the dispute action
