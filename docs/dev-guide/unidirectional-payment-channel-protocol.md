@@ -34,7 +34,7 @@ Rooch 是一个高性能的模块化区块链网络，旨在为大规模去中�
 *   **通用支付中心**: 用户只需管理一个 `PaymentHub`，即可支持所有币种的支付通道，极大简化了用户操作。
 *   **协议可扩展性**: 可以在 `PaymentHub` 上添加协议级别的策略和限制（如最大通道数、总流出速率等），而无需修改标准的 `MultiCoinStore`。
 *   **类型安全**: `PaymentChannel<CoinType>` 的泛型设计确保了每个通道的账本和链下凭证在编译时就是类型安全的。
-*   **安全的多设备支持**: 通过 `open_sub_channel` 操作，支付方可以显式授权一个 DID 验证方法。合约会将该方法的公钥信息**固化到链上**。后续所有签名验证都基于这个固化信息，**彻底摆脱了对 DID 文档实时状态的依赖**，防止了因用户轮换或删除 DID 密钥而导致通道资金被锁死的问题。
+*   **安全的多设备支持**: 通过 `authorize_sub_channel` 操作，支付方可以显式授权一个 DID 验证方法。合约会将该方法的公钥信息**固化到链上**。后续所有签名验证都基于这个固化信息，**彻底摆脱了对 DID 文档实时状态的依赖**，防止了因用户轮换或删除 DID 密钥而导致通道资金被锁死的问题。
 *   **可发现性**: 通道 ID 可通过 `calc_channel_object_id(sender, receiver)` 预测，客户端可以轻松检查通道是否存在，或重新激活已关闭的通道。
 
 ### B. 链上状态定义
@@ -93,7 +93,7 @@ struct CancellationInfo has copy, drop, store {
     *   如果通道**不存在**，则创建一个新的 `PaymentChannel` 对象。
     *   如果通道**已存在且状态为 `Closed`**，则会**重新激活**该通道，并保留所有已授权的子通道。
     *   如果通道**已存在且为 `Active`**，则报错。
-*   **`open_sub_channel<CoinType>`**: 支付方必须调用此函数来**授权**一个 DID 验证方法 (VM)。
+*   **`authorize_sub_channel<CoinType>`**: 支付方必须调用此函数来**授权**一个 DID 验证方法 (VM)。
     *   合约会验证该 VM 属于调用者且拥有 `authentication` 权限。
     *   然后将该 VM 的公钥和类型固化到 `SubChannel` 结构中，并存入 `sub_channels` 表。
     *   **这是一个必须的步骤**，在此之后，该子通道才能被用于支付。
@@ -111,7 +111,7 @@ struct CancellationInfo has copy, drop, store {
         nonce: u64,
     }
     ```
-*   **链下交互**: 支付方的设备使用其对应的私钥（该私钥与 `open_sub_channel` 授权的公钥对应）对 `bcs::to_bytes(&sub_rav)` 的哈希值进行签名，并与接收方进行高频的状态更新。不同子通道（不同设备）的支付流互不干扰。
+*   **链下交互**: 支付方的设备使用其对应的私钥（该私钥与 `authorize_sub_channel` 授权的公钥对应）对 `bcs::to_bytes(&sub_rav)` 的哈希值进行签名，并与接收方进行高频的状态更新。不同子通道（不同设备）的支付流互不干扰。
 
 #### 4. 中途提款 (`claim_from_channel`)
 
@@ -149,7 +149,7 @@ module rooch_framework::payment_channel {
 
     // --- 通道管理 ---
     public entry fun open_channel_entry<CoinType: key + store>(sender: &signer, receiver: address);
-    public entry fun open_sub_channel_entry<CoinType: key + store>(sender: &signer, channel_id: ObjectID, vm_id_fragment: String);
+    public entry fun authorize_sub_channel_entry<CoinType: key + store>(sender: &signer, channel_id: ObjectID, vm_id_fragment: String);
 
     // --- 便民函数 ---
     public entry fun open_channel_with_sub_channel_entry<CoinType: key + store>(sender: &signer, receiver: address, vm_id_fragment: String);
@@ -249,7 +249,7 @@ module rooch_framework::payment_channel {
 2. **关闭时 +1** —— 每次 `close_channel` 或 `finalize_cancellation` 结束时执行 `channel.channel_epoch += 1` 并把 `status` 设为 `Closed`。  
 3. **重开通道** —— 调 `open_channel`(或 `open_channel_with_sub_channel`) 把 `status` 改回 `Active`；新通道仍使用相同 `channel_id`，但 `channel_epoch` 已是新值。  
 4. **RAV 带世代** —— `SubRAV` 新增字段 `channel_epoch`；验签时要求 `sub_rav.channel_epoch == channel.channel_epoch`，否则直接拒绝。  
-5. **清空子通道表** —— 关闭通道时直接 `table::destroy(channel.sub_channels)`，重开后需要重新 `open_sub_channel` 进行授权。
+5. **清空子通道表** —— 关闭通道时直接 `table::destroy(channel.sub_channels)`，重开后需要重新 `authorize_sub_channel` 进行授权。
 
 ### B. 数据结构变更 (概念)
 
@@ -288,7 +288,7 @@ struct SubRAV has copy, drop, store {
 | `open_channel` / `open_channel_with_sub_channel` | Sender | 若不存在则创建，`channel_epoch = 0` |
 | 正常支付 | 双方 | RAV 必须携带 `channel_epoch=0` |
 | **整通道取消** `initiate_cancellation` → `finalize_cancellation` *或* `close_channel` | Sender / Receiver | 结算后 `channel_epoch += 1` ，`status = Closed` ，`table::destroy(sub_channels)` |
-| **重新开启** | Sender | `status = Active`，`channel_epoch` 保持新值；需要重新 `open_sub_channel` 授权设备 |
+| **重新开启** | Sender | `status = Active`，`channel_epoch` 保持新值；需要重新 `authorize_sub_channel` 授权设备 |
 | 后续支付 | 双方 | RAV 必须携带 **新的** `channel_epoch` |
 
 ### D. 安全与特性
@@ -296,7 +296,7 @@ struct SubRAV has copy, drop, store {
 1. **阻断旧私钥** 旧设备签出的 RAV 携带过期 `channel_epoch`，合约直接拒绝，无需遍历或存额外状态。  
 2. **重放防护** `nonce` 仍单调递增；`channel_epoch` + `nonce` 双层保护。  
 3. **实现简单** 关闭时仅两步：`channel_epoch += 1`；`destroy(sub_channels)`，O(1) 写操作。  
-4. **重新授权** Sender 在重开后选择性为仍有效的设备重新 `open_sub_channel`，灵活且显式。  
+4. **重新授权** Sender 在重开后选择性为仍有效的设备重新 `authorize_sub_channel`，灵活且显式。  
 5. **客户端代价** RAV 结构多 8 bytes；签名与 CLI 逻辑需携带 `channel_epoch` 字段。
 
 ### E. 何时选择该方案

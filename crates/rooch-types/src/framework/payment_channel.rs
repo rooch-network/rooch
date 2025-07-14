@@ -324,8 +324,8 @@ impl<'a> PaymentChannelModule<'a> {
         ident_str!("deposit_to_hub_entry");
     pub const OPEN_CHANNEL_ENTRY_FUNCTION_NAME: &'static IdentStr =
         ident_str!("open_channel_entry");
-    pub const OPEN_SUB_CHANNEL_ENTRY_FUNCTION_NAME: &'static IdentStr =
-        ident_str!("open_sub_channel_entry");
+    pub const AUTHORIZE_SUB_CHANNEL_ENTRY_FUNCTION_NAME: &'static IdentStr =
+        ident_str!("authorize_sub_channel_entry");
     pub const OPEN_CHANNEL_WITH_SUB_CHANNEL_ENTRY_FUNCTION_NAME: &'static IdentStr =
         ident_str!("open_channel_with_sub_channel_entry");
     pub const CLAIM_FROM_CHANNEL_ENTRY_FUNCTION_NAME: &'static IdentStr =

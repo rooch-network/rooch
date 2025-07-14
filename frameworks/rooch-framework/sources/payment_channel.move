@@ -51,8 +51,8 @@ module rooch_framework::payment_channel {
     const ErrorInsufficientBalance: u64 = 13;
     /// The signer is not the sender of the channel.
     const ErrorNotSender: u64 = 14;
-    /// The sub-channel has not been opened yet.
-    const ErrorSubChannelNotOpened: u64 = 15;
+    /// The sub-channel has not been authorized yet.
+    const ErrorSubChannelNotAuthorized: u64 = 15;
     /// Only the sender can authorize verification methods for the channel.
     const ErrorVMAuthorizeOnlySender: u64 = 16;
     /// The verification method already exists for this sub-channel.
@@ -135,8 +135,8 @@ module rooch_framework::payment_channel {
         final_amount: u256,
     }
 
-    /// Event emitted when a sub-channel is opened
-    struct SubChannelOpenedEvent has copy, drop {
+    /// Event emitted when a sub-channel is authorized
+    struct SubChannelAuthorizedEvent has copy, drop {
         channel_id: ObjectID,
         sender: address,
         vm_id_fragment: String,
@@ -185,8 +185,8 @@ module rooch_framework::payment_channel {
     
     /// The on-chain state for a specific sub-channel, including authorization metadata.
     struct SubChannel has store {
-        // --- Authorization metadata (set once during open_sub_channel) ---
-        // We store the public key and method type to avoid the sender removing the verification method after the sub-channel is opened
+        // --- Authorization metadata (set once during authorize_sub_channel) ---
+        // We store the public key and method type to avoid the sender removing the verification method after the sub-channel is authorized
         pk_multibase: String,
         method_type: String,
         
@@ -447,9 +447,9 @@ module rooch_framework::payment_channel {
         let _channel_id = open_channel<CoinType>(channel_sender, channel_receiver);
     }
 
-    /// Opens a sub-channel by authorizing a verification method for the payment channel.
+    /// Authorizes a sub-channel by granting a verification method permission for the payment channel.
     /// This function must be called by the sender before using any vm_id_fragment for payments.
-    public fun open_sub_channel(
+    public fun authorize_sub_channel(
         channel_sender: &signer,
         channel_id: ObjectID,
         vm_id_fragment: String,
@@ -479,7 +479,7 @@ module rooch_framework::payment_channel {
         let pk_multibase = *did::verification_method_public_key_multibase(&vm);
         let method_type = *did::verification_method_type(&vm);
         
-        // A sub-channel can only be opened once.
+        // A sub-channel can only be authorized once.
         assert!(!table::contains(&channel.sub_channels, vm_id_fragment), ErrorVerificationMethodAlreadyExists);
         
         // Create and store the sub-channel with authorization metadata
@@ -490,8 +490,8 @@ module rooch_framework::payment_channel {
             last_confirmed_nonce: 0,
         });
  
-        // Emit sub-channel opened event
-        event::emit(SubChannelOpenedEvent {
+        // Emit sub-channel authorized event
+        event::emit(SubChannelAuthorizedEvent {
             channel_id,
             sender: sender_addr,
             vm_id_fragment,
@@ -500,13 +500,13 @@ module rooch_framework::payment_channel {
         });
     }
 
-    /// Entry function for opening a sub-channel
-    public entry fun open_sub_channel_entry(
+    /// Entry function for authorizing a sub-channel
+    public entry fun authorize_sub_channel_entry(
         channel_sender: &signer,
         channel_id: ObjectID,
         vm_id_fragment: String,
     ) {
-        open_sub_channel(channel_sender, channel_id, vm_id_fragment);
+        authorize_sub_channel(channel_sender, channel_id, vm_id_fragment);
     }
 
     /// Convenience function to open a channel and sub-channel in one step.
@@ -539,12 +539,12 @@ module rooch_framework::payment_channel {
             // If already active, do nothing for the channel itself
         };
         
-        // Step 2: Ensure sub-channel is opened (authorize VM if not already done)
+        // Step 2: Ensure sub-channel is authorized (authorize VM if not already done)
         let channel_obj = object::borrow_object<PaymentChannel>(channel_id);
         let channel = object::borrow(channel_obj);
         if (!table::contains(&channel.sub_channels, vm_id_fragment)) {
-            // Sub-channel not opened yet, authorize it
-            open_sub_channel(channel_sender, channel_id, vm_id_fragment);
+            // Sub-channel not authorized yet, authorize it
+            authorize_sub_channel(channel_sender, channel_id, vm_id_fragment);
         };
         // If sub-channel already exists, it means VM was already authorized
         
@@ -598,8 +598,8 @@ module rooch_framework::payment_channel {
         // The funds will always go to the channel.receiver regardless of who calls this function
         assert!(channel.status == STATUS_ACTIVE, ErrorChannelNotActive);
         
-        // Verify the sub-channel has been opened
-        assert!(table::contains(&channel.sub_channels, sender_vm_id_fragment), ErrorSubChannelNotOpened);
+        // Verify the sub-channel has been authorized
+        assert!(table::contains(&channel.sub_channels, sender_vm_id_fragment), ErrorSubChannelNotAuthorized);
         
         // Verify the sender's signature on the off-chain proof (SubRAV).
         if (!skip_signature_verification) {
@@ -841,7 +841,7 @@ module rooch_framework::payment_channel {
             let vm_id_fragment = proof.vm_id_fragment;
             
             // Get the existing sub-channel state (must exist)
-            assert!(table::contains(&channel.sub_channels, vm_id_fragment), ErrorSubChannelNotOpened);
+            assert!(table::contains(&channel.sub_channels, vm_id_fragment), ErrorSubChannelNotAuthorized);
             let sub_channel_state = table::borrow_mut(&mut channel.sub_channels, vm_id_fragment);
             
             // Validate amount and nonce progression
@@ -924,8 +924,8 @@ module rooch_framework::payment_channel {
         assert!(channel.receiver == receiver, ErrorNotReceiver);
         assert!(channel.status == STATUS_CANCELLING, ErrorChannelNotActive);
         
-        // Verify the sub-channel has been opened
-        assert!(table::contains(&channel.sub_channels, sender_vm_id_fragment), ErrorSubChannelNotOpened);
+        // Verify the sub-channel has been authorized
+        assert!(table::contains(&channel.sub_channels, sender_vm_id_fragment), ErrorSubChannelNotAuthorized);
         
         if (!skip_signature_verification) {
             let sub_rav = SubRAV {

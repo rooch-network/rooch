@@ -12,7 +12,7 @@
 -  [Struct `ChannelCancellationInitiatedEvent`](#0x3_payment_channel_ChannelCancellationInitiatedEvent)
 -  [Struct `ChannelDisputeEvent`](#0x3_payment_channel_ChannelDisputeEvent)
 -  [Struct `ChannelCancellationFinalizedEvent`](#0x3_payment_channel_ChannelCancellationFinalizedEvent)
--  [Struct `SubChannelOpenedEvent`](#0x3_payment_channel_SubChannelOpenedEvent)
+-  [Struct `SubChannelAuthorizedEvent`](#0x3_payment_channel_SubChannelAuthorizedEvent)
 -  [Struct `PaymentHubWithdrawEvent`](#0x3_payment_channel_PaymentHubWithdrawEvent)
 -  [Struct `ChannelKey`](#0x3_payment_channel_ChannelKey)
 -  [Resource `PaymentHub`](#0x3_payment_channel_PaymentHub)
@@ -35,8 +35,8 @@
 -  [Function `withdraw_from_hub_entry`](#0x3_payment_channel_withdraw_from_hub_entry)
 -  [Function `open_channel`](#0x3_payment_channel_open_channel)
 -  [Function `open_channel_entry`](#0x3_payment_channel_open_channel_entry)
--  [Function `open_sub_channel`](#0x3_payment_channel_open_sub_channel)
--  [Function `open_sub_channel_entry`](#0x3_payment_channel_open_sub_channel_entry)
+-  [Function `authorize_sub_channel`](#0x3_payment_channel_authorize_sub_channel)
+-  [Function `authorize_sub_channel_entry`](#0x3_payment_channel_authorize_sub_channel_entry)
 -  [Function `open_channel_with_sub_channel`](#0x3_payment_channel_open_channel_with_sub_channel)
 -  [Function `open_channel_with_sub_channel_entry`](#0x3_payment_channel_open_channel_with_sub_channel_entry)
 -  [Function `claim_from_channel`](#0x3_payment_channel_claim_from_channel)
@@ -169,14 +169,14 @@ Event emitted when channel cancellation is finalized
 
 
 
-<a name="0x3_payment_channel_SubChannelOpenedEvent"></a>
+<a name="0x3_payment_channel_SubChannelAuthorizedEvent"></a>
 
-## Struct `SubChannelOpenedEvent`
+## Struct `SubChannelAuthorizedEvent`
 
-Event emitted when a sub-channel is opened
+Event emitted when a sub-channel is authorized
 
 
-<pre><code><b>struct</b> <a href="payment_channel.md#0x3_payment_channel_SubChannelOpenedEvent">SubChannelOpenedEvent</a> <b>has</b> <b>copy</b>, drop
+<pre><code><b>struct</b> <a href="payment_channel.md#0x3_payment_channel_SubChannelAuthorizedEvent">SubChannelAuthorizedEvent</a> <b>has</b> <b>copy</b>, drop
 </code></pre>
 
 
@@ -544,12 +544,12 @@ The sender must have a DID document to open a channel.
 
 
 
-<a name="0x3_payment_channel_ErrorSubChannelNotOpened"></a>
+<a name="0x3_payment_channel_ErrorSubChannelNotAuthorized"></a>
 
-The sub-channel has not been opened yet.
+The sub-channel has not been authorized yet.
 
 
-<pre><code><b>const</b> <a href="payment_channel.md#0x3_payment_channel_ErrorSubChannelNotOpened">ErrorSubChannelNotOpened</a>: u64 = 15;
+<pre><code><b>const</b> <a href="payment_channel.md#0x3_payment_channel_ErrorSubChannelNotAuthorized">ErrorSubChannelNotAuthorized</a>: u64 = 15;
 </code></pre>
 
 
@@ -715,27 +715,27 @@ Entry function for opening a channel
 
 
 
-<a name="0x3_payment_channel_open_sub_channel"></a>
+<a name="0x3_payment_channel_authorize_sub_channel"></a>
 
-## Function `open_sub_channel`
+## Function `authorize_sub_channel`
 
-Opens a sub-channel by authorizing a verification method for the payment channel.
+Authorizes a sub-channel by granting a verification method permission for the payment channel.
 This function must be called by the sender before using any vm_id_fragment for payments.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_open_sub_channel">open_sub_channel</a>(channel_sender: &<a href="">signer</a>, channel_id: <a href="_ObjectID">object::ObjectID</a>, vm_id_fragment: <a href="_String">string::String</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_authorize_sub_channel">authorize_sub_channel</a>(channel_sender: &<a href="">signer</a>, channel_id: <a href="_ObjectID">object::ObjectID</a>, vm_id_fragment: <a href="_String">string::String</a>)
 </code></pre>
 
 
 
-<a name="0x3_payment_channel_open_sub_channel_entry"></a>
+<a name="0x3_payment_channel_authorize_sub_channel_entry"></a>
 
-## Function `open_sub_channel_entry`
+## Function `authorize_sub_channel_entry`
 
-Entry function for opening a sub-channel
+Entry function for authorizing a sub-channel
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_open_sub_channel_entry">open_sub_channel_entry</a>(channel_sender: &<a href="">signer</a>, channel_id: <a href="_ObjectID">object::ObjectID</a>, vm_id_fragment: <a href="_String">string::String</a>)
+<pre><code><b>public</b> entry <b>fun</b> <a href="payment_channel.md#0x3_payment_channel_authorize_sub_channel_entry">authorize_sub_channel_entry</a>(channel_sender: &<a href="">signer</a>, channel_id: <a href="_ObjectID">object::ObjectID</a>, vm_id_fragment: <a href="_String">string::String</a>)
 </code></pre>
 
 
