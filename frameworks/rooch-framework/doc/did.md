@@ -25,6 +25,10 @@
 -  [Function `verification_relationship_capability_invocation`](#0x3_did_verification_relationship_capability_invocation)
 -  [Function `verification_relationship_capability_delegation`](#0x3_did_verification_relationship_capability_delegation)
 -  [Function `verification_relationship_key_agreement`](#0x3_did_verification_relationship_key_agreement)
+-  [Function `verification_method_type_ed25519`](#0x3_did_verification_method_type_ed25519)
+-  [Function `verification_method_type_secp256k1`](#0x3_did_verification_method_type_secp256k1)
+-  [Function `verification_method_type_secp256r1`](#0x3_did_verification_method_type_secp256r1)
+-  [Function `verify_signature_by_type`](#0x3_did_verify_signature_by_type)
 -  [Function `genesis_init`](#0x3_did_genesis_init)
 -  [Function `init_did_registry`](#0x3_did_init_did_registry)
 -  [Function `create_did_object_for_self_entry`](#0x3_did_create_did_object_for_self_entry)
@@ -96,6 +100,9 @@
 <b>use</b> <a href="">0x2::table</a>;
 <b>use</b> <a href="auth_validator.md#0x3_auth_validator">0x3::auth_validator</a>;
 <b>use</b> <a href="bitcoin_address.md#0x3_bitcoin_address">0x3::bitcoin_address</a>;
+<b>use</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1">0x3::ecdsa_k1</a>;
+<b>use</b> <a href="ecdsa_r1.md#0x3_ecdsa_r1">0x3::ecdsa_r1</a>;
+<b>use</b> <a href="ed25519.md#0x3_ed25519">0x3::ed25519</a>;
 <b>use</b> <a href="session_key.md#0x3_session_key">0x3::session_key</a>;
 </code></pre>
 
@@ -710,6 +717,55 @@ Get verification relationship constant for key agreement
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_verification_relationship_key_agreement">verification_relationship_key_agreement</a>(): u8
+</code></pre>
+
+
+
+<a name="0x3_did_verification_method_type_ed25519"></a>
+
+## Function `verification_method_type_ed25519`
+
+Get verification method type constant for Ed25519
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_verification_method_type_ed25519">verification_method_type_ed25519</a>(): <a href="_String">string::String</a>
+</code></pre>
+
+
+
+<a name="0x3_did_verification_method_type_secp256k1"></a>
+
+## Function `verification_method_type_secp256k1`
+
+Get verification method type constant for Secp256k1
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_verification_method_type_secp256k1">verification_method_type_secp256k1</a>(): <a href="_String">string::String</a>
+</code></pre>
+
+
+
+<a name="0x3_did_verification_method_type_secp256r1"></a>
+
+## Function `verification_method_type_secp256r1`
+
+Get verification method type constant for Secp256r1
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_verification_method_type_secp256r1">verification_method_type_secp256r1</a>(): <a href="_String">string::String</a>
+</code></pre>
+
+
+
+<a name="0x3_did_verify_signature_by_type"></a>
+
+## Function `verify_signature_by_type`
+
+Verify a signature using the specified verification method type and public key.
+This is a generic signature verification function that can be used across different modules.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_verify_signature_by_type">verify_signature_by_type</a>(message: <a href="">vector</a>&lt;u8&gt;, signature: <a href="">vector</a>&lt;u8&gt;, public_key_multibase: &<a href="_String">string::String</a>, method_type: &<a href="_String">string::String</a>): bool
 </code></pre>
 
 

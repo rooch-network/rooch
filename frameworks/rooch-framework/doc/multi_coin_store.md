@@ -14,12 +14,15 @@
 -  [Struct `FreezeEvent`](#0x3_multi_coin_store_FreezeEvent)
 -  [Struct `RemoveEvent`](#0x3_multi_coin_store_RemoveEvent)
 -  [Constants](#@Constants_0)
+-  [Function `create`](#0x3_multi_coin_store_create)
 -  [Function `exist_coin_store_field`](#0x3_multi_coin_store_exist_coin_store_field)
 -  [Function `remove_coin_store_field`](#0x3_multi_coin_store_remove_coin_store_field)
 -  [Function `balance`](#0x3_multi_coin_store_balance)
 -  [Function `is_frozen`](#0x3_multi_coin_store_is_frozen)
 -  [Function `withdraw`](#0x3_multi_coin_store_withdraw)
+-  [Function `withdraw_by_type`](#0x3_multi_coin_store_withdraw_by_type)
 -  [Function `deposit`](#0x3_multi_coin_store_deposit)
+-  [Function `deposit_by_type`](#0x3_multi_coin_store_deposit_by_type)
 -  [Function `transfer`](#0x3_multi_coin_store_transfer)
 -  [Function `withdraw_extend`](#0x3_multi_coin_store_withdraw_extend)
 -  [Function `deposit_extend`](#0x3_multi_coin_store_deposit_extend)
@@ -214,6 +217,18 @@ Coin type should have key and store ability
 
 
 
+<a name="0x3_multi_coin_store_create"></a>
+
+## Function `create`
+
+Create a new MultiCoinStore object.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="multi_coin_store.md#0x3_multi_coin_store_create">create</a>(): <a href="_Object">object::Object</a>&lt;<a href="multi_coin_store.md#0x3_multi_coin_store_MultiCoinStore">multi_coin_store::MultiCoinStore</a>&gt;
+</code></pre>
+
+
+
 <a name="0x3_multi_coin_store_exist_coin_store_field"></a>
 
 ## Function `exist_coin_store_field`
@@ -229,6 +244,7 @@ Coin type should have key and store ability
 
 ## Function `remove_coin_store_field`
 
+Remove the MultiCoinStore field, return the GenericCoin in balance
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="multi_coin_store.md#0x3_multi_coin_store_remove_coin_store_field">remove_coin_store_field</a>(coin_store_object: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="multi_coin_store.md#0x3_multi_coin_store_MultiCoinStore">multi_coin_store::MultiCoinStore</a>&gt;, coin_type: <a href="_String">string::String</a>): <a href="coin.md#0x3_coin_GenericCoin">coin::GenericCoin</a>
@@ -269,6 +285,17 @@ Coin type should have key and store ability
 
 
 
+<a name="0x3_multi_coin_store_withdraw_by_type"></a>
+
+## Function `withdraw_by_type`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="multi_coin_store.md#0x3_multi_coin_store_withdraw_by_type">withdraw_by_type</a>&lt;CoinType: store, key&gt;(coin_store_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="multi_coin_store.md#0x3_multi_coin_store_MultiCoinStore">multi_coin_store::MultiCoinStore</a>&gt;, amount: <a href="">u256</a>): <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;
+</code></pre>
+
+
+
 <a name="0x3_multi_coin_store_deposit"></a>
 
 ## Function `deposit`
@@ -276,6 +303,17 @@ Coin type should have key and store ability
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="multi_coin_store.md#0x3_multi_coin_store_deposit">deposit</a>(coin_store_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="multi_coin_store.md#0x3_multi_coin_store_MultiCoinStore">multi_coin_store::MultiCoinStore</a>&gt;, <a href="coin.md#0x3_coin">coin</a>: <a href="coin.md#0x3_coin_GenericCoin">coin::GenericCoin</a>)
+</code></pre>
+
+
+
+<a name="0x3_multi_coin_store_deposit_by_type"></a>
+
+## Function `deposit_by_type`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="multi_coin_store.md#0x3_multi_coin_store_deposit_by_type">deposit_by_type</a>&lt;CoinType: store, key&gt;(coin_store_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="multi_coin_store.md#0x3_multi_coin_store_MultiCoinStore">multi_coin_store::MultiCoinStore</a>&gt;, <a href="coin.md#0x3_coin">coin</a>: <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;)
 </code></pre>
 
 

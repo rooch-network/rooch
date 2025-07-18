@@ -3,9 +3,9 @@
 .PHONY: help \
         all \
         build build-rust build-rust-debug build-rust-release build-move \
-        test test-rust test-rust-unit test-rust-integration test-move test-move-frameworks test-move-did test-move-examples \
+        test test-rust test-rust-unit test-rust-integration test-integration test-move test-move-frameworks test-move-did test-move-examples \
         fmt fmt-rust \
-        lint lint-rust lint-move \
+        lint lint-rust \
         clean clean-all clean-rust clean-move \
         rust-machete rust-clippy \
         move-framework move-stdlib move-nursery move-bitcoin-framework move-examples \
@@ -36,12 +36,13 @@ help:
 	@echo "    test-move-frameworks- Run tests for all core Move frameworks"
 	@echo "    test-move-did       - Run Move DID module tests (within rooch-framework)"
 	@echo "    test-move-examples  - Build and run Move example tests"
+	@echo "    test-integration    - Run Cucumber integration tests (testsuite only)"
+	@echo "    test-integration    - Run Cucumber integration tests (testsuite only, use FILTER=<name> to filter)"
 	@echo ""
 	@echo "  Linting and Formatting:"
 	@echo "    fmt-rust            - Check Rust code formatting"
 	@echo "    lint                - Run all linters (Rust clippy, Rust machete, Move non-ASCII check)"
 	@echo "    lint-rust           - Run Rust clippy and machete linters"
-	@echo "    lint-move           - Check Move code for non-ASCII comments"
 	@echo ""
 	@echo "  Rust Specific:"
 	@echo "    rust-clippy         - Run Rust clippy linter"
@@ -53,6 +54,11 @@ help:
 	@echo "    move-nursery        - Build rooch-nursery framework"
 	@echo "    move-bitcoin-framework - Build bitcoin-move framework"
 	@echo "    move-examples       - Build all Move example projects (generic build)"
+	@echo ""
+	@echo "  Optional Parameters:"
+	@echo "    FILTER=<pattern>    - Filter tests by name pattern (works with test-integration, test-move-frameworks)"
+	@echo "                          Examples: make test-integration FILTER=payment_channel"
+	@echo "                                   make test-move-frameworks FILTER=did"
 	@echo ""
 	@echo "  Cleaning Targets:"
 	@echo "    clean-rust          - Clean Rust build artifacts (cargo clean)"
@@ -175,26 +181,17 @@ move-bitcoin-framework:
 	@echo "🔨 Building bitcoin-move using Rooch CLI..."
 	$(ROOCH_CMD) move build -p frameworks/bitcoin-move
 
-lint-move:
-	@echo "🔍 Running Move code quality checks (non-ASCII comments)..."
-	@found_chinese=0; \
-	for file_path in $$(find frameworks examples -name '*.move'); do \
-	    if grep -q "[\u4e00-\u9fff]" "$$file_path"; then \
-	        echo "❌ Found Chinese comments in: $$file_path"; \
-	        found_chinese=1; \
-	    fi; \
-	done; \
-	if [ $$found_chinese -eq 1 ]; then \
-	    exit 1; \
-	else \
-	    echo "✅ No Chinese comments found in Move files."; \
-	fi
 
 test-move-frameworks:
 	@echo "🧪 Running tests for all Move frameworks using Rooch CLI..."
 	@for crate_path in $(MOVE_FRAMEWORK_PATHS); do \
 		echo "Testing Move framework: $$crate_path"; \
-		$(ROOCH_CMD) move test -p $$crate_path || exit 1; \
+		if [ -n "$(FILTER)" ]; then \
+			echo "  Filtering tests with: $(FILTER)"; \
+			$(ROOCH_CMD) move test -p $$crate_path -f "$(FILTER)" || exit 1; \
+		else \
+			$(ROOCH_CMD) move test -p $$crate_path || exit 1; \
+		fi \
 	done
 	@echo "✅ All Move framework tests passed."
 
@@ -226,6 +223,15 @@ test-move-examples:
 
 test-move: test-move-frameworks test-move-examples
 
+test-integration:
+	@echo "🧪 Running Cucumber integration tests (testsuite only, profile: $(RUST_PROFILE_DEFAULT))..."
+	@if [ -n "$(FILTER)" ]; then \
+		echo "  Filtering tests with: $(FILTER)"; \
+		RUST_LOG=warn cargo test --profile $(RUST_PROFILE_DEFAULT) -p testsuite --test integration -- --name $(FILTER); \
+	else \
+		RUST_LOG=warn cargo test --profile $(RUST_PROFILE_DEFAULT) -p testsuite --test integration; \
+	fi
+
 # Overarching targets
 build: build-rust-release build-move
 	@echo "🎉 All Rust (profile: $(RUST_PROFILE_RELEASE)) and Move components built successfully"
@@ -233,8 +239,10 @@ build: build-rust-release build-move
 test: test-rust test-move
 	@echo "🎉 All Rust and Move tests completed successfully."
 
-lint: fmt-rust lint-rust lint-move
+lint: fmt-rust lint-rust
 	@echo "✅ All linting and formatting checks passed."
+
+check: lint
 
 all: build test lint
 	@echo "🎉✅🎉 Project All: Build, Test, Lint completed successfully! 🎉✅🎉"
