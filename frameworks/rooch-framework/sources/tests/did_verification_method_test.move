@@ -38,6 +38,7 @@ module rooch_framework::did_verification_method_test {
             fragment,
             method_type,
             new_ed25519_key,
+            1000000u256, // 1M amount limit
             relationships
         );
 
@@ -69,6 +70,7 @@ module rooch_framework::did_verification_method_test {
             fragment,
             method_type,
             new_secp256k1_key,
+            2000000u256, // 2M amount limit
             relationships
         );
 
@@ -102,6 +104,7 @@ module rooch_framework::did_verification_method_test {
             fragment,
             method_type,
             new_key,
+            500000u256, // 500K amount limit
             relationships
         );
     }
@@ -128,6 +131,7 @@ module rooch_framework::did_verification_method_test {
             fragment,
             method_type,
             test_key,
+            1000000u256, // 1M amount limit
             relationships
         );
 
@@ -182,6 +186,7 @@ module rooch_framework::did_verification_method_test {
             fragment,
             method_type,
             test_key,
+            1000000u256, // 1M amount limit
             relationships
         );
 
@@ -219,6 +224,7 @@ module rooch_framework::did_verification_method_test {
             fragment,
             method_type,
             test_key,
+            1000000u256, // 1M amount limit
             relationships
         );
 
@@ -323,6 +329,7 @@ module rooch_framework::did_verification_method_test {
             ed25519_fragment,
             ed25519_type,
             ed25519_key,
+            1000000u256, // 1M amount limit
             ed25519_relationships
         );
 
@@ -337,6 +344,7 @@ module rooch_framework::did_verification_method_test {
             secp256k1_fragment,
             secp256k1_type,
             secp256k1_key,
+            2000000u256, // 2M amount limit
             secp256k1_relationships
         );
 
@@ -380,7 +388,7 @@ module rooch_framework::did_verification_method_test {
                           else { string::utf8(b"z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doM") };
             let relationships = vector[1u8]; // assertion_method
 
-            did::add_verification_method_entry(&did_signer, fragment, method_type, test_key, relationships);
+            did::add_verification_method_entry(&did_signer, fragment, method_type, test_key, 1000000u256, relationships);
             i = i + 1;
         };
 
@@ -415,6 +423,7 @@ module rooch_framework::did_verification_method_test {
             fragment,
             method_type,
             ecdsa_r1_key,
+            1500000u256, // 1.5M amount limit
             relationships
         );
 
@@ -448,6 +457,7 @@ module rooch_framework::did_verification_method_test {
             fragment,
             method_type,
             ecdsa_r1_key,
+            1500000u256, // 1.5M amount limit
             relationships
         );
 
@@ -457,6 +467,7 @@ module rooch_framework::did_verification_method_test {
             fragment,
             method_type,
             ecdsa_r1_key,
+            1500000u256, // 1.5M amount limit
             relationships
         );
     }
@@ -483,6 +494,7 @@ module rooch_framework::did_verification_method_test {
             fragment,
             method_type,
             ecdsa_r1_key,
+            1500000u256, // 1.5M amount limit
             relationships
         );
 
@@ -520,6 +532,7 @@ module rooch_framework::did_verification_method_test {
             fragment,
             method_type,
             ecdsa_r1_key,
+            1500000u256, // 1.5M amount limit
             relationships
         );
 
