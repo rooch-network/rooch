@@ -10,7 +10,7 @@ use primitive_types::H256;
 use raw_store::CodecKVStore;
 use raw_store::SchemaStore;
 use rooch_common::bloom::BloomFilter;
-use rooch_config::PruneConfig;
+use rooch_config::prune_config::PruneConfig;
 use serde::{Deserialize, Serialize};
 use std::sync::{
     atomic::{AtomicBool, Ordering},
