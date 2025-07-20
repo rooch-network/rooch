@@ -23,7 +23,7 @@ pub use jellyfish_merkle::{hash::SPARSE_MERKLE_PLACEHOLDER_HASH, proof::SparseMe
 pub use smt_object::{DecodeToObject, EncodeToObject, Key, SMTObject, Value};
 pub use update_set::UpdateSet;
 
-pub(crate) mod jellyfish_merkle;
+pub mod jellyfish_merkle;
 pub mod metrics;
 mod smt_object;
 #[cfg(test)]
@@ -100,11 +100,20 @@ impl NodeWriter for InMemoryNodeStore {
 pub struct TreeChangeSet {
     pub state_root: H256,
     pub nodes: BTreeMap<H256, Vec<u8>>,
+    pub stale_indices: Vec<(H256, H256)>, // (stale_since_root, node_hash)
 }
 
 impl TreeChangeSet {
-    pub fn new(state_root: H256, nodes: BTreeMap<H256, Vec<u8>>) -> Self {
-        Self { state_root, nodes }
+    pub fn new(
+        state_root: H256,
+        nodes: BTreeMap<H256, Vec<u8>>,
+        stale_indices: Vec<(H256, H256)>,
+    ) -> Self {
+        Self {
+            state_root,
+            nodes,
+            stale_indices,
+        }
     }
 }
 
@@ -293,6 +302,7 @@ where
             return Ok(TreeChangeSet {
                 state_root,
                 nodes: BTreeMap::default(),
+                stale_indices: Vec::new(),
             });
         }
 
@@ -301,9 +311,13 @@ where
             tree.updates(Some(state_root.into()), updates.into_updates()?)?;
 
         let mut node_map: BTreeMap<H256, Vec<u8>> = BTreeMap::new();
+        let mut stale_indices: Vec<(H256, H256)> = Vec::new();
 
         for (nk, n) in change_set.node_batch.into_iter() {
             node_map.insert(nk.into(), n.encode()?);
+            if nk != *SPARSE_MERKLE_PLACEHOLDER_HASH_VALUE {
+                stale_indices.push((state_root, nk.into()));
+            }
         }
 
         let new_state_root: H256 = new_state_root.into();
@@ -311,6 +325,7 @@ where
         Ok(TreeChangeSet {
             state_root: new_state_root,
             nodes: node_map,
+            stale_indices,
         })
     }
 

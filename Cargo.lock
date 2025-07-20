@@ -7891,11 +7891,18 @@ dependencies = [
  "move-core-types",
  "moveos-config",
  "moveos-types",
+ "num_cpus",
  "once_cell",
+ "parking_lot 0.12.4",
+ "primitive-types 0.12.2",
  "prometheus",
  "quick_cache",
  "rand 0.8.5",
  "raw-store",
+ "rayon",
+ "rooch-common",
+ "rooch-config",
+ "serde 1.0.219",
  "smt",
  "tokio",
  "tracing",
@@ -10475,7 +10482,10 @@ name = "rooch-common"
 version = "0.9.7"
 dependencies = [
  "anyhow 1.0.95",
+ "bincode",
  "libc",
+ "primitive-types 0.12.2",
+ "serde 1.0.219",
 ]
 
 [[package]]

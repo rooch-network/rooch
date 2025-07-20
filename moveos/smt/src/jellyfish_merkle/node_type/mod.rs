@@ -45,7 +45,7 @@ pub(crate) type NodeKey = SMTNodeHash;
 /// Each child of [`InternalNode`] encapsulates a nibble forking at this node.
 #[derive(Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
-pub(crate) struct Child {
+pub struct Child {
     // The hash value of this child node.
     pub hash: SMTNodeHash,
     // Whether the child is a leaf node.
@@ -68,7 +68,7 @@ pub(crate) type Children = HashMap<Nibble, Child>;
 /// computation logic is similar to a 4-level sparse Merkle tree except for some customizations. See
 /// the `CryptoHash` trait implementation below for details.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(crate) struct InternalNode {
+pub struct InternalNode {
     // Up to 16 children.
     children: Children,
     //Node's hash cache
@@ -413,7 +413,7 @@ pub(crate) fn get_child_and_sibling_half_start(n: Nibble, height: u8) -> (u8, u8
 
 /// Represents an account.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(crate) struct LeafNode<K, V> {
+pub struct LeafNode<K, V> {
     /// The origin key associated with this leaf node's Value.
     key: K,
     /// The blob value associated with `key`.
@@ -541,7 +541,7 @@ enum NodeTag {
 
 /// The concrete node type of [`JellyfishMerkleTree`](super::JellyfishMerkleTree).
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(crate) enum Node<K, V> {
+pub enum Node<K, V> {
     /// Represents `null`.
     Null,
     /// A wrapper of [`InternalNode`].

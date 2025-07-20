@@ -83,7 +83,10 @@ pub(crate) mod jellyfish_merkle_test;
 pub(crate) mod mock_tree_store;
 pub(crate) mod nibble;
 pub(crate) mod nibble_path;
-pub(crate) mod node_type;
+pub mod node_type;
+
+// Re-export commonly used types
+pub use node_type::Node;
 pub mod proof;
 pub(crate) mod test_helper;
 pub(crate) mod tree_cache;
@@ -93,7 +96,7 @@ use anyhow::{bail, ensure, format_err, Result};
 use backtrace::Backtrace;
 use hash::{Hash, SMTHash, SMTNodeHash};
 use nibble_path::{skip_common_prefix, NibbleIterator, NibblePath};
-use node_type::{Child, Children, InternalNode, LeafNode, Node, NodeKey};
+use node_type::{Child, Children, InternalNode, LeafNode, NodeKey};
 use primitive_types::H256;
 use proof::{SparseMerkleProof, SparseMerkleRangeProof};
 use std::collections::{BTreeMap, BTreeSet};
