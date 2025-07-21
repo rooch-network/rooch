@@ -820,6 +820,42 @@ module rooch_framework::did {
         public_key_multibase: String,
         verification_relationships: vector<u8> 
     ) {
+        add_verification_method(
+            did_signer,
+            fragment,
+            method_type,
+            public_key_multibase,
+            verification_relationships,
+            option::none<vector<String>>()  // Use default scope for existing entry functions
+        );
+    }
+
+    public entry fun add_verification_method_with_scopes_entry(
+        did_signer: &signer,
+        fragment: String,
+        method_type: String,
+        public_key_multibase: String,
+        verification_relationships: vector<u8>,
+        custom_session_scope: vector<String> 
+    ) {
+        add_verification_method(
+            did_signer,
+            fragment,
+            method_type,
+            public_key_multibase,
+            verification_relationships,
+            option::some(custom_session_scope)
+        );
+    }
+
+    fun add_verification_method(
+        did_signer: &signer,
+        fragment: String,
+        method_type: String,
+        public_key_multibase: String,
+        verification_relationships: vector<u8>,
+        custom_session_scope: Option<vector<String>> 
+    ) {
         // Use helper function to get authorized DID document
         let did_document_data = get_authorized_did_document_mut_for_delegation(did_signer);
 
@@ -853,7 +889,7 @@ module rooch_framework::did {
                     fragment,
                     method_type,
                     public_key_multibase,
-                    option::none<vector<String>>()  // Use default scope for existing entry functions
+                    custom_session_scope,
                 );
             } else if (relationship_type == VERIFICATION_RELATIONSHIP_ASSERTION_METHOD) {
                 if (!vector::contains(&did_document_data.assertion_method, &fragment)) {

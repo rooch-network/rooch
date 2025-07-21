@@ -42,6 +42,7 @@
 -  [Function `create_did_object_via_cadop_with_did_key_and_scopes`](#0x3_did_create_did_object_via_cadop_with_did_key_and_scopes)
     -  [Arguments](#@Arguments_2)
 -  [Function `add_verification_method_entry`](#0x3_did_add_verification_method_entry)
+-  [Function `add_verification_method_with_scopes_entry`](#0x3_did_add_verification_method_with_scopes_entry)
 -  [Function `remove_verification_method_entry`](#0x3_did_remove_verification_method_entry)
 -  [Function `add_to_verification_relationship_entry`](#0x3_did_add_to_verification_relationship_entry)
 -  [Function `add_to_verification_relationship_with_scope_entry`](#0x3_did_add_to_verification_relationship_with_scope_entry)
@@ -935,6 +936,17 @@ Returns the ObjectID of the created DID document for testing and verification.
 
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="did.md#0x3_did_add_verification_method_entry">add_verification_method_entry</a>(did_signer: &<a href="">signer</a>, fragment: <a href="_String">string::String</a>, method_type: <a href="_String">string::String</a>, public_key_multibase: <a href="_String">string::String</a>, verification_relationships: <a href="">vector</a>&lt;u8&gt;)
+</code></pre>
+
+
+
+<a name="0x3_did_add_verification_method_with_scopes_entry"></a>
+
+## Function `add_verification_method_with_scopes_entry`
+
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="did.md#0x3_did_add_verification_method_with_scopes_entry">add_verification_method_with_scopes_entry</a>(did_signer: &<a href="">signer</a>, fragment: <a href="_String">string::String</a>, method_type: <a href="_String">string::String</a>, public_key_multibase: <a href="_String">string::String</a>, verification_relationships: <a href="">vector</a>&lt;u8&gt;, custom_session_scope: <a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;)
 </code></pre>
 
 
