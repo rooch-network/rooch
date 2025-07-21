@@ -16,6 +16,8 @@
 -  [Function `from_ascii_string`](#0x2_address_from_ascii_string)
 -  [Function `to_bech32_string`](#0x2_address_to_bech32_string)
 -  [Function `from_bech32_string`](#0x2_address_from_bech32_string)
+-  [Function `from_string_option`](#0x2_address_from_string_option)
+-  [Function `from_string`](#0x2_address_from_string)
 -  [Function `length`](#0x2_address_length)
 -  [Function `max`](#0x2_address_max)
 -  [Function `zero`](#0x2_address_zero)
@@ -28,6 +30,7 @@
 <b>use</b> <a href="bcs.md#0x2_bcs">0x2::bcs</a>;
 <b>use</b> <a href="bech32.md#0x2_bech32">0x2::bech32</a>;
 <b>use</b> <a href="hex.md#0x2_hex">0x2::hex</a>;
+<b>use</b> <a href="string_utils.md#0x2_string_utils">0x2::string_utils</a>;
 </code></pre>
 
 
@@ -169,7 +172,7 @@ Converts an ASCII string to an address, taking the numerical value for each char
 string must be Base16 encoded, and thus exactly 64 characters long.
 For example, the string "00000000000000000000000000000000000000000000000000000000DEADB33F"
 will be converted to the address @0xDEADB33F.
-Aborts with <code>EAddressParseError</code> if the length of <code>s</code> is not 64,
+Aborts with <code><a href="address.md#0x2_address_ErrorAddressParseError">ErrorAddressParseError</a></code> if the length of <code>s</code> is not 64,
 or if an invalid character is encountered.
 
 
@@ -221,6 +224,34 @@ Convert a bech32 string to <code><b>address</b></code>
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="address.md#0x2_address_from_bech32_string">from_bech32_string</a>(str: &<a href="_String">string::String</a>): <b>address</b>
+</code></pre>
+
+
+
+<a name="0x2_address_from_string_option"></a>
+
+## Function `from_string_option`
+
+Convert a string to address, supporting both hex and bech32 formats
+For hex format: supports "0x1", "1", "0x0000...0001" (with or without 0x prefix)
+For bech32 format: "rooch1..." format
+Returns None if the string cannot be parsed as a valid address
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="address.md#0x2_address_from_string_option">from_string_option</a>(str: &<a href="_String">string::String</a>): <a href="_Option">option::Option</a>&lt;<b>address</b>&gt;
+</code></pre>
+
+
+
+<a name="0x2_address_from_string"></a>
+
+## Function `from_string`
+
+Convert a string to address, supporting both hex and bech32 formats
+Aborts if the string cannot be parsed as a valid address
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="address.md#0x2_address_from_string">from_string</a>(str: &<a href="_String">string::String</a>): <b>address</b>
 </code></pre>
 
 
