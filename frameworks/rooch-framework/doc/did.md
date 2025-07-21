@@ -33,11 +33,18 @@
 -  [Function `init_did_registry`](#0x3_did_init_did_registry)
 -  [Function `create_did_object_for_self_entry`](#0x3_did_create_did_object_for_self_entry)
 -  [Function `create_did_object_for_self`](#0x3_did_create_did_object_for_self)
+-  [Function `create_did_object_for_self_with_custom_scopes_entry`](#0x3_did_create_did_object_for_self_with_custom_scopes_entry)
+-  [Function `create_did_object_for_self_with_custom_scopes`](#0x3_did_create_did_object_for_self_with_custom_scopes)
 -  [Function `create_did_object_via_cadop_with_did_key_entry`](#0x3_did_create_did_object_via_cadop_with_did_key_entry)
+-  [Function `create_did_object_via_cadop_with_did_key_and_scopes_entry`](#0x3_did_create_did_object_via_cadop_with_did_key_and_scopes_entry)
+    -  [Arguments](#@Arguments_1)
 -  [Function `create_did_object_via_cadop_with_did_key`](#0x3_did_create_did_object_via_cadop_with_did_key)
+-  [Function `create_did_object_via_cadop_with_did_key_and_scopes`](#0x3_did_create_did_object_via_cadop_with_did_key_and_scopes)
+    -  [Arguments](#@Arguments_2)
 -  [Function `add_verification_method_entry`](#0x3_did_add_verification_method_entry)
 -  [Function `remove_verification_method_entry`](#0x3_did_remove_verification_method_entry)
 -  [Function `add_to_verification_relationship_entry`](#0x3_did_add_to_verification_relationship_entry)
+-  [Function `add_to_verification_relationship_with_scope_entry`](#0x3_did_add_to_verification_relationship_with_scope_entry)
 -  [Function `remove_from_verification_relationship_entry`](#0x3_did_remove_from_verification_relationship_entry)
 -  [Function `add_service_entry`](#0x3_did_add_service_entry)
 -  [Function `add_service_with_properties_entry`](#0x3_did_add_service_with_properties_entry)
@@ -821,6 +828,30 @@ Validates that the provided public key matches the creator's account address.
 
 
 
+<a name="0x3_did_create_did_object_for_self_with_custom_scopes_entry"></a>
+
+## Function `create_did_object_for_self_with_custom_scopes_entry`
+
+Create a DID for oneself with custom session key scopes
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="did.md#0x3_did_create_did_object_for_self_with_custom_scopes_entry">create_did_object_for_self_with_custom_scopes_entry</a>(creator_account_signer: &<a href="">signer</a>, account_public_key_multibase: <a href="_String">string::String</a>, session_scope_strings: <a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;)
+</code></pre>
+
+
+
+<a name="0x3_did_create_did_object_for_self_with_custom_scopes"></a>
+
+## Function `create_did_object_for_self_with_custom_scopes`
+
+Internal function for self DID creation with custom scopes
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_create_did_object_for_self_with_custom_scopes">create_did_object_for_self_with_custom_scopes</a>(creator_account_signer: &<a href="">signer</a>, account_public_key_multibase: <a href="_String">string::String</a>, custom_session_scope_strings: <a href="_Option">option::Option</a>&lt;<a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;&gt;): <a href="_ObjectID">object::ObjectID</a>
+</code></pre>
+
+
+
 <a name="0x3_did_create_did_object_via_cadop_with_did_key_entry"></a>
 
 ## Function `create_did_object_via_cadop_with_did_key_entry`
@@ -836,6 +867,30 @@ The user's public key is extracted from their did:key string.
 
 
 
+<a name="0x3_did_create_did_object_via_cadop_with_did_key_and_scopes_entry"></a>
+
+## Function `create_did_object_via_cadop_with_did_key_and_scopes_entry`
+
+Create a DID Object via CADOP with did:key and custom session key scopes
+This function allows custodians to create DID objects with customized scope permissions
+
+
+<a name="@Arguments_1"></a>
+
+### Arguments
+
+* <code>custodian_signer</code> - Custodian's Rooch account, pays gas
+* <code>user_did_key_string</code> - User's did:key string (e.g., "did:key:zABC...")
+* <code>custodian_service_pk_multibase</code> - Custodian's service public key for this user
+* <code>custodian_service_vm_type</code> - Custodian service VM type (Ed25519 or Secp256k1)
+* <code>custom_scope_strings</code> - Vector of custom scope strings in format "address::module::function"
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="did.md#0x3_did_create_did_object_via_cadop_with_did_key_and_scopes_entry">create_did_object_via_cadop_with_did_key_and_scopes_entry</a>(custodian_signer: &<a href="">signer</a>, user_did_key_string: <a href="_String">string::String</a>, custodian_service_pk_multibase: <a href="_String">string::String</a>, custodian_service_vm_type: <a href="_String">string::String</a>, custom_scope_strings: <a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;)
+</code></pre>
+
+
+
 <a name="0x3_did_create_did_object_via_cadop_with_did_key"></a>
 
 ## Function `create_did_object_via_cadop_with_did_key`
@@ -845,6 +900,30 @@ Returns the ObjectID of the created DID document for testing and verification.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_create_did_object_via_cadop_with_did_key">create_did_object_via_cadop_with_did_key</a>(custodian_signer: &<a href="">signer</a>, user_did_key_string: <a href="_String">string::String</a>, custodian_service_pk_multibase: <a href="_String">string::String</a>, custodian_service_vm_type: <a href="_String">string::String</a>): <a href="_ObjectID">object::ObjectID</a>
+</code></pre>
+
+
+
+<a name="0x3_did_create_did_object_via_cadop_with_did_key_and_scopes"></a>
+
+## Function `create_did_object_via_cadop_with_did_key_and_scopes`
+
+Internal function for CADOP DID creation with did:key and custom scopes.
+Returns the ObjectID of the created DID document for testing and verification.
+
+
+<a name="@Arguments_2"></a>
+
+### Arguments
+
+* <code>custodian_signer</code> - Custodian's Rooch account, pays gas
+* <code>user_did_key_string</code> - User's did:key string (e.g., "did:key:zABC...")
+* <code>custodian_service_pk_multibase</code> - Custodian's service public key for this user
+* <code>custodian_service_vm_type</code> - Custodian service VM type (Ed25519 or Secp256k1)
+* <code>custom_scope_strings</code> - Optional vector of custom scope strings in format "address::module::function"
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="did.md#0x3_did_create_did_object_via_cadop_with_did_key_and_scopes">create_did_object_via_cadop_with_did_key_and_scopes</a>(custodian_signer: &<a href="">signer</a>, user_did_key_string: <a href="_String">string::String</a>, custodian_service_pk_multibase: <a href="_String">string::String</a>, custodian_service_vm_type: <a href="_String">string::String</a>, custom_scope_strings: <a href="_Option">option::Option</a>&lt;<a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;&gt;): <a href="_ObjectID">object::ObjectID</a>
 </code></pre>
 
 
@@ -878,6 +957,17 @@ Returns the ObjectID of the created DID document for testing and verification.
 
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="did.md#0x3_did_add_to_verification_relationship_entry">add_to_verification_relationship_entry</a>(did_signer: &<a href="">signer</a>, fragment: <a href="_String">string::String</a>, relationship_type: u8)
+</code></pre>
+
+
+
+<a name="0x3_did_add_to_verification_relationship_with_scope_entry"></a>
+
+## Function `add_to_verification_relationship_with_scope_entry`
+
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="did.md#0x3_did_add_to_verification_relationship_with_scope_entry">add_to_verification_relationship_with_scope_entry</a>(did_signer: &<a href="">signer</a>, fragment: <a href="_String">string::String</a>, relationship_type: u8, custom_session_scope: <a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;)
 </code></pre>
 
 

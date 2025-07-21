@@ -7,8 +7,8 @@
 module rooch_framework::did_test_common {
     use rooch_framework::did;
     use rooch_framework::genesis;
-    use std::string;
-    use std::option;
+    use std::string::{Self, String};
+    use std::option::{Self, Option};
     use moveos_std::account;
     use moveos_std::object::ObjectID;
     use moveos_std::did_key;
@@ -86,6 +86,10 @@ module rooch_framework::did_test_common {
     /// Unified setup function for DID tests with DID creation
     /// Returns (creator_signer, creator_address, creator_public_key_multibase, did_object_id)
     public fun setup_did_test_with_creation(): (signer, address, string::String, ObjectID) {
+        setup_did_test_with_scope_creation(option::none())
+    }
+
+    public fun setup_did_test_with_scope_creation(session_scope: Option<vector<String>>): (signer, address, string::String, ObjectID) {
         // Initialize the entire framework including DID registry
         genesis::init_for_test();
         timestamp::fast_forward_milliseconds_for_test(1000);
@@ -109,7 +113,7 @@ module rooch_framework::did_test_common {
         );
         
         // Create DID
-        let did_object_id = did::create_did_object_for_self(&creator_signer, creator_public_key_multibase);
+        let did_object_id = did::create_did_object_for_self_with_custom_scopes(&creator_signer, creator_public_key_multibase, session_scope);
         
         (creator_signer, creator_address, creator_public_key_multibase, did_object_id)
     }
