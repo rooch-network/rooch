@@ -14,7 +14,7 @@ module rooch_framework::did {
     use moveos_std::multibase_key;
     use moveos_std::multibase_codec;
     use moveos_std::event;
-    use rooch_framework::session_key;
+    use rooch_framework::session_key::{Self, SessionScope};
     use rooch_framework::auth_validator;
     use rooch_framework::bitcoin_address;
     use rooch_framework::ed25519;
@@ -361,7 +361,9 @@ module rooch_framework::did {
         service_provider_controller_did: Option<DID>, // Service provider (e.g., custodian) DID
         service_vm_pk_multibase: Option<String>,      // Service VM public key
         service_vm_type: Option<String>,              // Service VM type
-        service_vm_fragment: Option<String>           // Service VM fragment
+        service_vm_fragment: Option<String>,          // Service VM fragment
+        // New: custom session key scope string array
+        custom_session_scope_strings: Option<vector<String>>
     ): ObjectID {
         let registry = borrow_mut_did_registry();
 
@@ -416,7 +418,8 @@ module rooch_framework::did {
                     &mut did_document_data,
                     user_vm_fragment,
                     user_vm_type,
-                    user_vm_pk_multibase
+                    user_vm_pk_multibase,
+                    custom_session_scope_strings
                 );
             } else if (relationship_type == VERIFICATION_RELATIONSHIP_ASSERTION_METHOD) {
                 vector::push_back(&mut did_document_data.assertion_method, user_vm_fragment);
@@ -529,7 +532,69 @@ module rooch_framework::did {
             option::none<DID>(),
             option::none<String>(),
             option::none<String>(),
-            option::none<String>()
+            option::none<String>(),
+            option::none<vector<String>>()  // Use default scope for existing functions
+        );
+        did_object_id
+    }
+
+    /// Create a DID for oneself with custom session key scopes
+    public entry fun create_did_object_for_self_with_custom_scopes_entry(
+        creator_account_signer: &signer,
+        account_public_key_multibase: String,
+        session_scope_strings: vector<String>  // Format: "address::module::function"
+    ) {
+        let custom_scopes = if (vector::is_empty(&session_scope_strings)) {
+            option::none<vector<String>>()
+        } else {
+            option::some(session_scope_strings)
+        };
+        
+        let _ = create_did_object_for_self_with_custom_scopes(
+            creator_account_signer,
+            account_public_key_multibase,
+            custom_scopes
+        );
+    }
+
+    /// Internal function for self DID creation with custom scopes
+    public fun create_did_object_for_self_with_custom_scopes(
+        creator_account_signer: &signer,
+        account_public_key_multibase: String,
+        custom_session_scope_strings: Option<vector<String>>
+    ) : ObjectID {
+        let creator_address = signer::address_of(creator_account_signer);
+        let public_key_opt = multibase_codec::decode(&account_public_key_multibase);
+        assert!(option::is_some(&public_key_opt), ErrorInvalidPublicKeyMultibaseFormat);
+        let public_key = option::destroy_some(public_key_opt);
+
+        // Validate that the provided public key corresponds to the creator's account
+        verify_public_key_matches_account(creator_address, &public_key);
+        
+        let creator_did = new_rooch_did_by_address(creator_address);
+        
+        // Primary verification method uses the account's Secp256k1 key
+        let primary_vm_fragment = string::utf8(b"account-key");
+        let account_key_type = string::utf8(VERIFICATION_METHOD_TYPE_SECP256K1);
+        let primary_vm_relationships = vector[
+            VERIFICATION_RELATIONSHIP_AUTHENTICATION,
+            VERIFICATION_RELATIONSHIP_ASSERTION_METHOD,
+            VERIFICATION_RELATIONSHIP_CAPABILITY_INVOCATION,
+            VERIFICATION_RELATIONSHIP_CAPABILITY_DELEGATION
+        ];
+
+        let did_object_id = create_did_object_internal(
+            creator_account_signer,
+            creator_did,
+            account_public_key_multibase,
+            account_key_type,
+            primary_vm_fragment,
+            primary_vm_relationships,
+            option::none<DID>(),
+            option::none<String>(),
+            option::none<String>(),
+            option::none<String>(),
+            custom_session_scope_strings
         );
         did_object_id
     }
@@ -581,6 +646,31 @@ module rooch_framework::did {
         );
     }
 
+    /// Create a DID Object via CADOP with did:key and custom session key scopes
+    /// This function allows custodians to create DID objects with customized scope permissions
+    ///
+    /// # Arguments
+    /// * `custodian_signer` - Custodian's Rooch account, pays gas
+    /// * `user_did_key_string` - User's did:key string (e.g., "did:key:zABC...")
+    /// * `custodian_service_pk_multibase` - Custodian's service public key for this user
+    /// * `custodian_service_vm_type` - Custodian service VM type (Ed25519 or Secp256k1)
+    /// * `custom_scope_strings` - Vector of custom scope strings in format "address::module::function"
+    public entry fun create_did_object_via_cadop_with_did_key_and_scopes_entry(
+        custodian_signer: &signer,
+        user_did_key_string: String,
+        custodian_service_pk_multibase: String,
+        custodian_service_vm_type: String,
+        custom_scope_strings: vector<String>
+    ) {
+        let _ = create_did_object_via_cadop_with_did_key_and_scopes(
+            custodian_signer,
+            user_did_key_string,
+            custodian_service_pk_multibase,
+            custodian_service_vm_type,
+            option::some(custom_scope_strings)
+        );
+    }
+
     /// Internal function for CADOP DID creation with did:key.
     /// Returns the ObjectID of the created DID document for testing and verification.
     public fun create_did_object_via_cadop_with_did_key(
@@ -588,6 +678,31 @@ module rooch_framework::did {
         user_did_key_string: String,            // User's did:key string (e.g., "did:key:zABC...")
         custodian_service_pk_multibase: String, // Custodian's service public key for this user
         custodian_service_vm_type: String       // Custodian service VM type (Ed25519 or Secp256k1)
+    ): ObjectID {
+        create_did_object_via_cadop_with_did_key_and_scopes(
+            custodian_signer,
+            user_did_key_string,
+            custodian_service_pk_multibase,
+            custodian_service_vm_type,
+            option::none<vector<String>>() // Use default scopes for existing functions
+        )
+    } 
+
+    /// Internal function for CADOP DID creation with did:key and custom scopes.
+    /// Returns the ObjectID of the created DID document for testing and verification.
+    ///
+    /// # Arguments  
+    /// * `custodian_signer` - Custodian's Rooch account, pays gas
+    /// * `user_did_key_string` - User's did:key string (e.g., "did:key:zABC...")
+    /// * `custodian_service_pk_multibase` - Custodian's service public key for this user
+    /// * `custodian_service_vm_type` - Custodian service VM type (Ed25519 or Secp256k1)
+    /// * `custom_scope_strings` - Optional vector of custom scope strings in format "address::module::function"
+    public fun create_did_object_via_cadop_with_did_key_and_scopes(
+        custodian_signer: &signer,
+        user_did_key_string: String,
+        custodian_service_pk_multibase: String,
+        custodian_service_vm_type: String,
+        custom_scope_strings: Option<vector<String>>
     ): ObjectID {
         // Parse user's did:key
         let user_did_key = parse_did_string(&user_did_key_string);
@@ -651,7 +766,8 @@ module rooch_framework::did {
             option::some(custodian_did),
             option::some(custodian_service_pk_multibase),
             option::some(custodian_service_vm_type),
-            option::some(custodian_service_vm_fragment)
+            option::some(custodian_service_vm_fragment),
+            custom_scope_strings
         )
     } 
 
@@ -704,6 +820,42 @@ module rooch_framework::did {
         public_key_multibase: String,
         verification_relationships: vector<u8> 
     ) {
+        add_verification_method(
+            did_signer,
+            fragment,
+            method_type,
+            public_key_multibase,
+            verification_relationships,
+            option::none<vector<String>>()  // Use default scope for existing entry functions
+        );
+    }
+
+    public entry fun add_verification_method_with_scopes_entry(
+        did_signer: &signer,
+        fragment: String,
+        method_type: String,
+        public_key_multibase: String,
+        verification_relationships: vector<u8>,
+        custom_session_scope: vector<String> 
+    ) {
+        add_verification_method(
+            did_signer,
+            fragment,
+            method_type,
+            public_key_multibase,
+            verification_relationships,
+            option::some(custom_session_scope)
+        );
+    }
+
+    fun add_verification_method(
+        did_signer: &signer,
+        fragment: String,
+        method_type: String,
+        public_key_multibase: String,
+        verification_relationships: vector<u8>,
+        custom_session_scope: Option<vector<String>> 
+    ) {
         // Use helper function to get authorized DID document
         let did_document_data = get_authorized_did_document_mut_for_delegation(did_signer);
 
@@ -736,7 +888,8 @@ module rooch_framework::did {
                     did_document_data,
                     fragment,
                     method_type,
-                    public_key_multibase
+                    public_key_multibase,
+                    custom_session_scope,
                 );
             } else if (relationship_type == VERIFICATION_RELATIONSHIP_ASSERTION_METHOD) {
                 if (!vector::contains(&did_document_data.assertion_method, &fragment)) {
@@ -817,6 +970,34 @@ module rooch_framework::did {
         fragment: String,
         relationship_type: u8
     ) {
+        add_to_verification_relationship(
+            did_signer,
+            fragment,
+            relationship_type,
+            option::none<vector<String>>()  // Use default scope for existing entry functions
+        );
+    }
+
+    public entry fun add_to_verification_relationship_with_scope_entry(
+        did_signer: &signer,
+        fragment: String,
+        relationship_type: u8,
+        custom_session_scope: vector<String>
+    ) {
+        add_to_verification_relationship(
+            did_signer,
+            fragment,
+            relationship_type,
+            option::some(custom_session_scope)
+        );
+    }
+
+    fun add_to_verification_relationship(
+        did_signer: &signer,
+        fragment: String,
+        relationship_type: u8,
+        custom_session_scope: Option<vector<String>>
+    ) {
         // Use helper function to get authorized DID document
         let did_document_data = get_authorized_did_document_mut_for_delegation(did_signer);
 
@@ -830,7 +1011,8 @@ module rooch_framework::did {
                 did_document_data,
                 fragment,
                 vm.type,
-                vm.public_key_multibase
+                vm.public_key_multibase,
+                custom_session_scope
             );
         } else {
             let target_relationship_vec_mut = if (relationship_type == VERIFICATION_RELATIONSHIP_ASSERTION_METHOD) {
@@ -1504,7 +1686,8 @@ module rooch_framework::did {
         did_document_data: &mut DIDDocument,
         fragment: String,
         method_type: String,
-        public_key_multibase: String
+        public_key_multibase: String,
+        custom_scope_strings: Option<vector<String>>
     ) {
         // Ensure the method type is supported for session keys
         assert!(
@@ -1540,7 +1723,8 @@ module rooch_framework::did {
                 did_document_data,
                 fragment,
                 public_key_multibase,
-                method_type
+                method_type,
+                custom_scope_strings
             );
         };
     }
@@ -1571,6 +1755,7 @@ module rooch_framework::did {
         vm_fragment: String,
         vm_public_key_multibase: String,
         vm_type: String,
+        custom_scope_strings: Option<vector<String>>
     ) {
         // Decode the raw public key (no multicodec prefix)
         let pk_bytes_opt = multibase_codec::decode(&vm_public_key_multibase);
@@ -1587,19 +1772,14 @@ module rooch_framework::did {
 
         let associated_address = signer::address_of(&associated_account_signer);
         
-        // TODO: Consider limiting session key scope to specific modules/functions for better security
-        // Current implementation uses wildcards for maximum flexibility during development
-        let did_addr_scope = session_key::new_session_scope(
-            associated_address,       
-            string::utf8(b"*"),        
-            string::utf8(b"*") 
-        );
-        let rooch_framework_scope = session_key::new_session_scope(
-            @rooch_framework,
-            string::utf8(b"*"),       
-            string::utf8(b"*") 
-        );
-        let scopes_for_sk = vector[rooch_framework_scope, did_addr_scope];
+        // Parse scope strings or use default values
+        let scopes_for_sk = if (option::is_some(&custom_scope_strings)) {
+            let scope_strings = option::destroy_some(custom_scope_strings);
+            parse_scope_strings_to_session_scopes(scope_strings)
+        } else {
+            // Maintain backward compatibility: use current default scope
+            create_default_did_scopes(associated_address)
+        };
 
         // Generate the authentication key based on the verification method type
         let auth_key_for_session = if (vm_type == string::utf8(VERIFICATION_METHOD_TYPE_ED25519)) {
@@ -1618,6 +1798,45 @@ module rooch_framework::did {
             scopes_for_sk,
             max_inactive_interval_for_sk
         );
+    }
+
+    // =================== Scope Helper Functions ===================
+
+    /// Parse string array to SessionScope array
+    fun parse_scope_strings_to_session_scopes(scope_strings: vector<String>): vector<SessionScope> {
+        let scopes = vector::empty<SessionScope>();
+        let i = 0;
+        
+        while (i < vector::length(&scope_strings)) {
+            let scope_str = *vector::borrow(&scope_strings, i);
+            let scope = session_key::parse_scope_string(scope_str);
+            vector::push_back(&mut scopes, scope);
+            i = i + 1;
+        };
+        
+        scopes
+    }
+
+    /// Create default DID scope
+    /// This is useful for session keys that only need basic DID and payment channel access
+    fun create_default_did_scopes(did_address: address): vector<SessionScope> {
+        vector[
+            session_key::new_session_scope(
+                @rooch_framework,
+                string::utf8(b"did"),
+                string::utf8(b"*")
+            ),
+            session_key::new_session_scope(
+                @rooch_framework,
+                string::utf8(b"payment_channel"),
+                string::utf8(b"*")
+            ),
+            session_key::new_session_scope(
+                did_address,
+                string::utf8(b"*"),
+                string::utf8(b"*")
+            )
+        ]
     }
 
     // =================== Test-only functions ===================

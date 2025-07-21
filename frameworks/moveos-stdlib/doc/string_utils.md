@@ -29,6 +29,7 @@
 -  [Function `to_string_u16`](#0x2_string_utils_to_string_u16)
 -  [Function `to_string_u8`](#0x2_string_utils_to_string_u8)
 -  [Function `starts_with`](#0x2_string_utils_starts_with)
+-  [Function `starts_with_bytes`](#0x2_string_utils_starts_with_bytes)
 -  [Function `contains`](#0x2_string_utils_contains)
 -  [Function `split`](#0x2_string_utils_split)
 -  [Function `trim`](#0x2_string_utils_trim)
@@ -319,6 +320,17 @@ Parse a string into a u32, aborting if the string is not a valid number
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="string_utils.md#0x2_string_utils_starts_with">starts_with</a>(haystack_str: &<a href="_String">string::String</a>, needle: &<a href="_String">string::String</a>): bool
+</code></pre>
+
+
+
+<a name="0x2_string_utils_starts_with_bytes"></a>
+
+## Function `starts_with_bytes`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="string_utils.md#0x2_string_utils_starts_with_bytes">starts_with_bytes</a>(haystack: &<a href="_String">string::String</a>, needle: &<a href="">vector</a>&lt;u8&gt;): bool
 </code></pre>
 
 

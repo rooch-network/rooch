@@ -247,6 +247,14 @@ module moveos_std::string_utils {
         sub == *needle
     }
 
+    public fun starts_with_bytes(haystack: &String, needle: &vector<u8>): bool {
+        if (vector::length(needle) > string::length(haystack)) {
+            return false
+        };
+        let sub = string::sub_string(haystack, 0, vector::length(needle));
+        string::bytes(&sub) == needle
+    }
+
     public fun contains(s: &String, sub: &String): bool {
         if (string::length(sub) == 0) {
             return true
@@ -580,6 +588,22 @@ module moveos_std::string_utils {
         assert!(!starts_with(&s, &string::utf8(x"E38184")), 4);
         // Test with empty string
         assert!(starts_with(&s, &string::utf8(b"")), 5);
+    }
+
+    #[test]
+    fun test_utf8_starts_with_bytes() {
+        // Test with two valid UTF-8 characters
+        let s = string::utf8(x"E38182E38183"); // Two Hiragana characters
+        // Test with first character
+        assert!(starts_with_bytes(&s, &x"E38182"), 1);
+        // Test with both characters
+        assert!(starts_with_bytes(&s, &x"E38182E38183"), 2);
+        // Test with second character (should fail)
+        assert!(!starts_with_bytes(&s, &x"E38183"), 3);
+        // Test with non-existing character
+        assert!(!starts_with_bytes(&s, &x"E38184"), 4);
+        // Test with empty string
+        assert!(starts_with_bytes(&s, &b""), 5);
     }
 
     #[test]
