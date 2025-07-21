@@ -197,7 +197,7 @@ test-move-frameworks:
 
 test-move-did: # Kept for specific DID testing as in original Makefile
 	@echo "🧪 Running Move DID module tests (in rooch-framework) using Rooch CLI..."
-	$(ROOCH_CMD) move test -p frameworks/rooch-framework -f did
+	$(ROOCH_CMD) move test -p frameworks/rooch-framework did
 
 move-examples: # Generic build for all examples
 	@echo "🔨 Building all Move example projects using Rooch CLI..."
