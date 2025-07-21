@@ -109,7 +109,7 @@ module rooch_framework::did_test_common {
         );
         
         // Create DID
-        let did_object_id = did::create_did_object_for_self(&creator_signer, creator_public_key_multibase);
+        let did_object_id = did::create_did_object_for_self(&creator_signer, creator_public_key_multibase, 10000000u256); // 10M amount limit
         
         (creator_signer, creator_address, creator_public_key_multibase, did_object_id)
     }

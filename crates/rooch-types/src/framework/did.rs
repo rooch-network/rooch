@@ -17,6 +17,7 @@ use moveos_types::{
     },
     state::{MoveState, MoveStructState, MoveStructType},
     transaction::{FunctionCall, MoveAction},
+    u256::U256,
 };
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
@@ -165,6 +166,7 @@ pub struct VerificationMethod {
     pub method_type: MoveString,
     pub controller: DID,
     pub public_key_multibase: MoveString,
+    pub amount_limit: U256,
 }
 
 impl VerificationMethod {
@@ -173,12 +175,14 @@ impl VerificationMethod {
         method_type: &str,
         controller: DID,
         public_key_multibase: &str,
+        amount_limit: U256,
     ) -> Result<Self> {
         Ok(Self {
             id,
             method_type: MoveString::from_str(method_type)?,
             controller,
             public_key_multibase: MoveString::from_str(public_key_multibase)?,
+            amount_limit,
         })
     }
 }
@@ -196,6 +200,7 @@ impl MoveStructState for VerificationMethod {
             MoveString::type_layout(),
             DID::type_layout(),
             MoveString::type_layout(),
+            U256::type_layout(),
         ])
     }
 }

@@ -165,6 +165,7 @@ struct VerificationMethod has store, copy, drop {
     type: String,      // Verification method type (e.g., "Ed25519VerificationKey2020")
     controller: DID,   // Controller of this verification method
     public_key_multibase: String, // Public key in multibase format (string type)
+    amount_limit: u256, // Maximum amount that can be controlled by this verification method
 }
 ```
 
