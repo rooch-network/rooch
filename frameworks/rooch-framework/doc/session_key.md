@@ -23,6 +23,8 @@
 -  [Function `create_session_key_internal`](#0x3_session_key_create_session_key_internal)
 -  [Function `create_session_key_entry`](#0x3_session_key_create_session_key_entry)
 -  [Function `create_session_key_with_multi_scope_entry`](#0x3_session_key_create_session_key_with_multi_scope_entry)
+-  [Function `parse_scope_string`](#0x3_session_key_parse_scope_string)
+-  [Function `create_session_key_with_scope_strings_entry`](#0x3_session_key_create_session_key_with_scope_strings_entry)
 -  [Function `in_session_scope`](#0x3_session_key_in_session_scope)
 -  [Function `active_session_key`](#0x3_session_key_active_session_key)
 -  [Function `contains_session_key`](#0x3_session_key_contains_session_key)
@@ -39,8 +41,10 @@
 <b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="">0x2::account</a>;
+<b>use</b> <a href="">0x2::address</a>;
 <b>use</b> <a href="">0x2::hash</a>;
 <b>use</b> <a href="">0x2::object</a>;
+<b>use</b> <a href="">0x2::string_utils</a>;
 <b>use</b> <a href="">0x2::table</a>;
 <b>use</b> <a href="">0x2::timestamp</a>;
 <b>use</b> <a href="">0x2::tx_context</a>;
@@ -328,6 +332,33 @@ It is allowed to create session key by the other session key
 
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="session_key.md#0x3_session_key_create_session_key_with_multi_scope_entry">create_session_key_with_multi_scope_entry</a>(sender: &<a href="">signer</a>, app_name: <a href="_String">string::String</a>, app_url: <a href="_String">string::String</a>, authentication_key: <a href="">vector</a>&lt;u8&gt;, scope_module_addresses: <a href="">vector</a>&lt;<b>address</b>&gt;, scope_module_names: <a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;, scope_function_names: <a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;, max_inactive_interval: u64)
+</code></pre>
+
+
+
+<a name="0x3_session_key_parse_scope_string"></a>
+
+## Function `parse_scope_string`
+
+Parse a scope string in the format "address::module::function"
+Example: "0x1::counter::increment" or "0x2::*::*"
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="session_key.md#0x3_session_key_parse_scope_string">parse_scope_string</a>(scope_str: <a href="_String">string::String</a>): <a href="session_key.md#0x3_session_key_SessionScope">session_key::SessionScope</a>
+</code></pre>
+
+
+
+<a name="0x3_session_key_create_session_key_with_scope_strings_entry"></a>
+
+## Function `create_session_key_with_scope_strings_entry`
+
+Create session key with scope strings entry function
+This is a more convenient version that allows passing scope strings directly
+Format: "address::module::function", e.g., "0x1::counter::increment" or "0x2::*::*"
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="session_key.md#0x3_session_key_create_session_key_with_scope_strings_entry">create_session_key_with_scope_strings_entry</a>(sender: &<a href="">signer</a>, app_name: <a href="_String">string::String</a>, app_url: <a href="_String">string::String</a>, authentication_key: <a href="">vector</a>&lt;u8&gt;, scope_strings: <a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;, max_inactive_interval: u64)
 </code></pre>
 
 

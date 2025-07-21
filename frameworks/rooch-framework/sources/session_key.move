@@ -13,6 +13,8 @@ module rooch_framework::session_key {
     use rooch_framework::auth_validator;
     use moveos_std::timestamp;
     use moveos_std::hash;
+    use moveos_std::address;
+    use moveos_std::string_utils;
 
     friend rooch_framework::transaction_validator;
     friend rooch_framework::session_validator;
@@ -228,6 +230,55 @@ module rooch_framework::session_key {
         create_session_key(sender, app_name, app_url, authentication_key, scopes, max_inactive_interval);
     }
 
+    /// Parse a scope string in the format "address::module::function"
+    /// Example: "0x1::counter::increment" or "0x2::*::*"
+    public fun parse_scope_string(scope_str: std::string::String): SessionScope {
+        let delimiter = std::string::utf8(b"::");
+        let parts = string_utils::split(&scope_str, &delimiter);
+        
+        // Should have exactly 3 parts: address, module, function
+        assert!(vector::length(&parts) == 3, ErrorSessionScopePartLengthNotMatch);
+        
+        // Extract address part and parse it
+        let address_str = *vector::borrow(&parts, 0);
+        let module_address =  address::from_string(&address_str);
+        
+        // Extract module name and function name
+        let module_name = *vector::borrow(&parts, 1);
+        let function_name = *vector::borrow(&parts, 2);
+        
+        SessionScope {
+            module_address,
+            module_name,
+            function_name,
+        }
+    }
+
+    /// Create session key with scope strings entry function
+    /// This is a more convenient version that allows passing scope strings directly
+    /// Format: "address::module::function", e.g., "0x1::counter::increment" or "0x2::*::*"
+    public entry fun create_session_key_with_scope_strings_entry(
+        sender: &signer,
+        app_name: std::string::String,
+        app_url: std::string::String,
+        authentication_key: vector<u8>,
+        scope_strings: vector<std::string::String>,
+        max_inactive_interval: u64) {
+        
+        let scopes = vector::empty<SessionScope>();
+        let idx = 0;
+        let scope_count = vector::length(&scope_strings);
+        
+        while (idx < scope_count) {
+            let scope_str = *vector::borrow(&scope_strings, idx);
+            let scope = parse_scope_string(scope_str);
+            vector::push_back(&mut scopes, scope);
+            idx = idx + 1;
+        };
+        
+        create_session_key(sender, app_name, app_url, authentication_key, scopes, max_inactive_interval);
+    }
+
     /// Check the current tx is in the session scope or not
     public(friend) fun in_session_scope(session_key: &SessionKey): bool{
         let idx = 0;
@@ -380,6 +431,37 @@ module rooch_framework::session_key {
         vector::append(&mut auth_key, vector::singleton(SIGNATURE_SCHEME_ECDSAR1));
         vector::append(&mut auth_key, hash::sha2_256(*public_key));
         auth_key
+    }
+
+    #[test]
+    fun test_parse_scope_string() {
+        // Test with hex addresses
+        let scope_str = std::string::utf8(b"0x1::test_module::test_function");
+        let scope = parse_scope_string(scope_str);
+        
+        assert!(scope.module_address == @0x1, 2000);
+        assert!(scope.module_name == std::string::utf8(b"test_module"), 2001);
+        assert!(scope.function_name == std::string::utf8(b"test_function"), 2002);
+
+        // Test with asterisk
+        let scope_str2 = std::string::utf8(b"0x2::*::*");
+        let scope2 = parse_scope_string(scope_str2);
+        
+        assert!(scope2.module_address == @0x2, 2003);
+        assert!(scope2.module_name == std::string::utf8(b"*"), 2004);
+        assert!(scope2.function_name == std::string::utf8(b"*"), 2005);
+
+        // Test with bech32 address format
+        let addr = @0x42;
+        let bech32_addr_str = address::to_bech32_string(addr);
+        let scope_str3 = std::string::utf8(b"");
+        std::string::append(&mut scope_str3, bech32_addr_str);
+        std::string::append(&mut scope_str3, std::string::utf8(b"::counter::increment"));
+        let scope3 = parse_scope_string(scope_str3);
+        
+        assert!(scope3.module_address == @0x42, 2006);
+        assert!(scope3.module_name == std::string::utf8(b"counter"), 2007);
+        assert!(scope3.function_name == std::string::utf8(b"increment"), 2008);
     }
 
 }
