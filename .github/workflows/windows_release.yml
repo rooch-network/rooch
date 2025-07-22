@@ -30,15 +30,15 @@ jobs:
         fetch-depth: 0
 
     - name: Check if release-relevant files changed
-        id: changes
-        uses: dorny/paths-filter@v3
-        with:
-          filters: |
-            release:
-              - 'Cargo.toml'
-              - 'Cargo.lock'
-              - 'crates/**'
-              - '.github/workflows/windows_release.yml'
+      id: changes
+      uses: dorny/paths-filter@v3
+      with:
+        filters: |
+          release:
+            - 'Cargo.toml'
+            - 'Cargo.lock'
+            - 'crates/**'
+            - '.github/workflows/windows_release.yml'
 
     - name: Skip build if only docs or irrelevant files changed
       if: steps.changes.outputs.release != 'true'
