@@ -25,6 +25,8 @@ pub mod revert;
 pub mod rollback;
 pub mod stat_changeset;
 pub mod verify_order;
+pub mod import_state;
+pub mod dump_state;
 
 fn open_rocks(
     base_data_dir: Option<PathBuf>,

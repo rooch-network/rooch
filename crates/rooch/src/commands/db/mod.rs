@@ -20,6 +20,8 @@ use async_trait::async_trait;
 use clap::Parser;
 use commands::rollback::RollbackCommand;
 use rooch_types::error::RoochResult;
+use crate::commands::db::commands::dump_state::DumpStateCommand;
+use crate::commands::db::commands::import_state::ImportStateCommand;
 
 pub mod commands;
 
@@ -88,6 +90,16 @@ impl CommandAction<String> for DB {
                     serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
                 })
             }
+            DBCommand::DumpFromStateDB(dump_state_db) => {
+                dump_state_db.execute().await.map(|resp| {
+                    serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
+                })
+            }
+            DBCommand::ImportToStateDB(import_state) => {
+                import_state.execute().await.map(|resp| {
+                    serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
+                })
+            }
         }
     }
 }
@@ -110,4 +122,6 @@ pub enum DBCommand {
     VerifyOrder(VerifyOrderCommand),
     GetSequencerInfo(GetSequencerInfoCommand),
     GetAccumulatorLeafByIndex(GetAccumulatorLeafByIndexCommand),
+    DumpFromStateDB(DumpStateCommand),
+    ImportToStateDB(ImportStateCommand),
 }
