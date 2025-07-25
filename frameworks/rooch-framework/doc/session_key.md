@@ -13,6 +13,7 @@
 -  [Function `signature_scheme_ed25519`](#0x3_session_key_signature_scheme_ed25519)
 -  [Function `signature_scheme_secp256k1`](#0x3_session_key_signature_scheme_secp256k1)
 -  [Function `signature_scheme_ecdsar1`](#0x3_session_key_signature_scheme_ecdsar1)
+-  [Function `signature_scheme_rs256`](#0x3_session_key_signature_scheme_rs256)
 -  [Function `new_session_scope`](#0x3_session_key_new_session_scope)
 -  [Function `is_expired`](#0x3_session_key_is_expired)
 -  [Function `is_expired_session_key`](#0x3_session_key_is_expired_session_key)
@@ -34,6 +35,7 @@
 -  [Function `ed25519_public_key_to_authentication_key`](#0x3_session_key_ed25519_public_key_to_authentication_key)
 -  [Function `secp256k1_public_key_to_authentication_key`](#0x3_session_key_secp256k1_public_key_to_authentication_key)
 -  [Function `secp256r1_public_key_to_authentication_key`](#0x3_session_key_secp256r1_public_key_to_authentication_key)
+-  [Function `rs256_public_key_to_authentication_key`](#0x3_session_key_rs256_public_key_to_authentication_key)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
@@ -170,6 +172,15 @@ The lengths of the parts of the session's scope do not match.
 
 
 
+<a name="0x3_session_key_SIGNATURE_SCHEME_RS256"></a>
+
+
+
+<pre><code><b>const</b> <a href="session_key.md#0x3_session_key_SIGNATURE_SCHEME_RS256">SIGNATURE_SCHEME_RS256</a>: u8 = 3;
+</code></pre>
+
+
+
 <a name="0x3_session_key_SIGNATURE_SCHEME_SECP256K1"></a>
 
 
@@ -219,6 +230,17 @@ The lengths of the parts of the session's scope do not match.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="session_key.md#0x3_session_key_signature_scheme_ecdsar1">signature_scheme_ecdsar1</a>(): u8
+</code></pre>
+
+
+
+<a name="0x3_session_key_signature_scheme_rs256"></a>
+
+## Function `signature_scheme_rs256`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="session_key.md#0x3_session_key_signature_scheme_rs256">signature_scheme_rs256</a>(): u8
 </code></pre>
 
 
@@ -465,4 +487,16 @@ This follows the same pattern as Ed25519 but with a different scheme identifier.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="session_key.md#0x3_session_key_secp256r1_public_key_to_authentication_key">secp256r1_public_key_to_authentication_key</a>(public_key: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;
+</code></pre>
+
+
+
+<a name="0x3_session_key_rs256_public_key_to_authentication_key"></a>
+
+## Function `rs256_public_key_to_authentication_key`
+
+Derives the authentication key for a RSASSA-PKCS1-v1_5 public key modulus and exponent.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="session_key.md#0x3_session_key_rs256_public_key_to_authentication_key">rs256_public_key_to_authentication_key</a>(n: <a href="">vector</a>&lt;u8&gt;, e: <a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;
 </code></pre>

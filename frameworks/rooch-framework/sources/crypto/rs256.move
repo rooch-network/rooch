@@ -23,6 +23,10 @@ module rooch_framework::rs256 {
     const SHA256: u8 = 0;
 
     // functions to the constants
+    public fun rsassa_pkcs1_v1_5_minimum_modulus_length(): u8 {
+        RSASSA_PKCS1_V1_5_MINIMUM_MODULUS_LENGTH
+    }
+
     public fun sha256(): u8 {
         SHA256
     }
@@ -73,7 +77,7 @@ module rooch_framework::rs256 {
 
     fun check_conditions_verify(signature: &vector<u8>, n: &vector<u8>, e: &vector<u8>) {
         // signature length is modulus (n) length (in bits) / 8
-        assert!(vector::length(signature) == vector::length(n) * 8 / 8, ErrorInvalidSignature); // cast to bytes first
+        assert!(vector::length(signature) == vector::length(n) * 8 / 8, ErrorInvalidSignature); // cast to bits and to bytes
         // ensure modulus (n) length meet the minimum modulus length requirements
         assert!(vector::length(n) >= RSASSA_PKCS1_V1_5_MINIMUM_MODULUS_LENGTH / 8, ErrorInvalidPubKey); // cast to bytes first
         // ensure exponent (e) length meet the minimum exponent length requirements
