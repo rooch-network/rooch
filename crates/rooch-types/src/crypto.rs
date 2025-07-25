@@ -49,19 +49,17 @@ use fastcrypto::{impl_base64_display_fmt, serialize_deserialize_with_to_from_byt
 use fastcrypto_derive::{SilentDebug, SilentDisplay};
 use moveos_types::state::MoveState;
 use once_cell::sync::OnceCell;
-use rsa::pkcs1::EncodeRsaPublicKey;
 use rsa::{
-    pkcs1::{DecodeRsaPrivateKey, EncodeRsaPrivateKey},
-    pkcs8::der::zeroize,
-    traits::PublicKeyParts,
-    Pkcs1v15Sign, RsaPrivateKey,
+    pkcs1::EncodeRsaPrivateKey, pkcs8::der::zeroize, traits::PublicKeyParts, Pkcs1v15Sign,
+    RsaPrivateKey,
 };
+use rsa::{pkcs1::EncodeRsaPublicKey, pkcs8::der::Encode, BigUint};
 use schemars::JsonSchema;
 use serde::ser::Serializer;
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_with::serde_as;
-use std::fmt;
-use std::{fmt::Formatter, str::FromStr};
+use std::fmt::{self, Debug};
+use std::str::FromStr;
 
 pub use fastcrypto::ed25519::ED25519_PUBLIC_KEY_LENGTH;
 pub use fastcrypto::secp256k1::SECP256K1_PUBLIC_KEY_LENGTH;
@@ -239,9 +237,14 @@ impl SigningKey for Rs256PrivateKey {
 serialize_deserialize_with_to_from_bytes!(Rs256PrivateKey, RS256_PRIVATE_KEY_MINIMUM_LENGTH);
 
 impl ToFromBytes for Rs256PrivateKey {
-    // TODO: rebuild the RsaPrivateKey from other than pkcs1_der.
+    // TODO: ensure the d and primes are correct.
     fn from_bytes(bytes: &[u8]) -> Result<Self, FastCryptoError> {
-        match RsaPrivateKey::from_pkcs1_der(bytes) {
+        let n_bytes = BigUint::from_bytes_be(bytes); // n_bytes from bytes
+        let e_bytes = BigUint::from(65537 as u64); // default exponent
+        let d = BigUint::from(1 as u64); // d from e_bytes only (random d)
+        let mut primes = Vec::new();
+        primes.push(BigUint::from(46771 as u64)); // random prime
+        match RsaPrivateKey::from_components(n_bytes, e_bytes, d, primes) {
             Ok(privkey) => Ok(Rs256PrivateKey {
                 privkey,
                 bytes: OnceCell::with_value(zeroize::Zeroizing::new(
@@ -561,12 +564,8 @@ pub struct Rs256PublicKey {
 }
 
 impl std::fmt::Debug for Rs256PublicKey {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "Rs256PublicKey {{ pubkey: {:?}, bytes: {:?} }}",
-            self.pubkey.0, self.bytes
-        )
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> fmt::Result {
+        self.pubkey.0.fmt(f)
     }
 }
 
@@ -596,8 +595,11 @@ impl Rs256PublicKey {
 impl AsRef<[u8]> for Rs256PublicKey {
     fn as_ref(&self) -> &[u8] {
         self.bytes.get_or_init::<_>(|| {
-            <[u8; RS256_PUBLIC_KEY_MINIMUM_LENGTH]>::try_from(self.as_bytes()).unwrap()
-            // TODO: as_ref from n?
+            <[u8; RS256_PUBLIC_KEY_MINIMUM_LENGTH]>::try_from(
+                // TODO: as_ref from n?
+                println!("{}", self).to_der().unwrap().as_slice(),
+            )
+            .unwrap()
         })
     }
 }
@@ -631,7 +633,6 @@ impl PartialOrd for Rs256PublicKey {
     }
 }
 
-// TODO: impl Ord for Rs256PublicKey
 impl Ord for Rs256PublicKey {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.bytes.get().unwrap().cmp(&other.bytes.get().unwrap())
@@ -1291,7 +1292,10 @@ pub struct Rs256Signature {
 }
 
 impl core::fmt::Debug for Rs256Signature {
-    fn fmt(&self, fmt: &mut Formatter<'_>) -> core::result::Result<(), core::fmt::Error> {
+    fn fmt(
+        &self,
+        fmt: &mut core::fmt::Formatter<'_>,
+    ) -> core::result::Result<(), core::fmt::Error> {
         fmt.debug_list()
             .entries(self.sig.0.as_ref().iter())
             .finish()
@@ -1690,7 +1694,7 @@ mod tests {
         let signature = kp.sign(message);
         println!("signature: {}", base64::encode(signature.signature_bytes()));
         println!("message: {}", Sha256::digest(message).digest.as_hex());
-        // TODO: ensure verify is success. (private key, signature, message are correct), public key is wrong?
+        // TODO: ensure verify is success. (private key, signature, message are correct), public key or private key tofrombytes is wrong?
         assert!(signature.verify(message).is_ok());
 
         let value = SignData {
