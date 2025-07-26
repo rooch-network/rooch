@@ -140,6 +140,7 @@ impl StateDBPruner {
                             let _ = meta_store.kv_put(META_KEY_BLOOM.to_string(), bytes);
                         }
                         // after sweep finished once, switch to incremental phase
+                        // TODO Donot set flag when sweep testing
                         save_phase(&meta_store, PrunePhase::Incremental).ok();
                     }
                     PrunePhase::Incremental => {

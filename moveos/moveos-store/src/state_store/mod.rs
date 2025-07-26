@@ -71,13 +71,17 @@ impl NodeDBStore {
         self.write_batch_raw(batch)
     }
 
-    /// Write stale indices to cf_smt_stale and update refcount in one loop (non-atomic across CFs).
+    /// Write stale indices to cf_smt_stale (key = *timestamp-hash*, node_hash)
+    /// and update refcount in one loop (non-atomic across CFs).
     pub fn write_stale_indices(&self, stale: &[(H256, H256)]) -> anyhow::Result<()> {
         let instance = self.get_store().store().clone();
         let stale_store = StaleIndexStore::new(instance.clone());
         let ref_store = NodeRefcountStore::new(instance);
-        for (stale_root, node_hash) in stale {
-            stale_store.kv_put((*stale_root, *node_hash), Vec::new())?;
+        let ts = chrono::Utc::now().timestamp_millis() as u64;
+        // 把 64-bit 时间戳映射到 H256（低 64 位存值，其余填 0）
+        let ts_h256 = H256::from_low_u64_be(ts);
+        for (_root, node_hash) in stale {
+            stale_store.kv_put((ts_h256, *node_hash), Vec::new())?;
             ref_store.dec(*node_hash)?;
         }
         Ok(())
@@ -127,22 +131,34 @@ impl NodeRefcountStore {
     }
 }
 
+// ----------------------------------------------------------------
+//  StaleIndexStore helpers
+// ----------------------------------------------------------------
+
 impl StaleIndexStore {
-    /// List at most `limit` stale indices whose stale_since_root < cutoff_root.
+    /// Fallback implementation: iterate CF and collect the first `limit` keys whose
+    /// leading field (ts or root) is smaller than `cutoff_root`.
+    /// This avoids the costly `self.keys()` (which calls StoreInstance::keys) and
+    /// works without exposing RocksDB in upper layers.
     pub fn list_before(
         &self,
         cutoff_root: H256,
         limit: usize,
     ) -> anyhow::Result<Vec<(H256, H256)>> {
-        let mut res = Vec::new();
-        for key in self.keys()? {
+        let mut out = Vec::with_capacity(limit);
+        let mut iter = self.iter()?;
+        iter.seek_to_first();
+        while let Some(item) = iter.next() {
+            let (key, _): ((H256, H256), Vec<u8>) = item?;
             if key.0 < cutoff_root {
-                res.push(key);
-                if res.len() >= limit {
+                out.push(key);
+                if out.len() >= limit {
                     break;
                 }
             }
         }
-        Ok(res)
+        Ok(out)
     }
 }
+
+// —— 若后续需要按时间范围扫描，可在 raw-store 提供 iterator API 再实现 —— 
