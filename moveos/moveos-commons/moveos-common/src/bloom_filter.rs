@@ -1,10 +1,14 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 use primitive_types::H256;
 use serde::{Deserialize, Serialize};
 
 /// Simple k-hash Bloom filter backed by a byte vector.
 ///
-/// * `bits` 必须是 2 的幂以便快速取模；
-/// * 使用 Keccak256 哈希的 4 个 u64 子段做 4 个哈希函数，误判率约 0.02 当 bits≈4×元素数。
+/// * `bits` must be a power of two so we can apply a fast bit-mask modulo.
+/// * We reuse the 4 u64 words of Keccak256 hash as 4 hash functions.
+///   With `bits ≈ 4 × element_count` this yields a false-positive rate ≈ 2 %.
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct BloomFilter {
     bits: Vec<u8>,
@@ -13,7 +17,7 @@ pub struct BloomFilter {
 }
 
 impl BloomFilter {
-    /// 创建一个大小为 `bits` 的 BloomFilter，bits 必须为 2 的幂。
+    /// Create a Bloom filter of given size. `bits` must be a power of two.
     pub fn new(bits: usize, k: u8) -> Self {
         assert!(bits.is_power_of_two(), "bits must be power of two");
         let bytes = (bits + 7) / 8;
@@ -38,7 +42,7 @@ impl BloomFilter {
         (self.bits[byte] & (1 << bit)) != 0
     }
 
-    /// 将 `hash` 插入 Bloom 中。
+    /// Insert a hash into the Bloom filter.
     pub fn insert(&mut self, hash: &H256) {
         let words: &[u64; 4] =
             unsafe { &*(hash.as_fixed_bytes() as *const [u8; 32] as *const [u64; 4]) };
@@ -49,7 +53,7 @@ impl BloomFilter {
         }
     }
 
-    /// 判断 `hash` 是否可能存在。
+    /// Query whether a hash may exist (returns false if definitely not present).
     pub fn contains(&self, hash: &H256) -> bool {
         let words: &[u64; 4] =
             unsafe { &*(hash.as_fixed_bytes() as *const [u8; 32] as *const [u64; 4]) };
@@ -63,14 +67,17 @@ impl BloomFilter {
         true
     }
 
-    /// 序列化为字节。
+    /// Serialize internal bitmap into bytes.
     pub fn to_bytes(&self) -> Vec<u8> {
-        bincode::serialize(&self.bits).expect("serialize bloom")
+        bcs::to_bytes(&self.bits).expect("BloomFilter to bcs should success")
+        // bincode::serialize(&self.bits).expect("serialize bloom")
     }
 
-    /// 从字节反序列化。
+    /// Deserialize from bytes produced by `to_bytes`.
     pub fn from_bytes(bytes: &[u8], k: u8) -> anyhow::Result<Self> {
-        let bits_vec: Vec<u8> = bincode::deserialize(bytes)?;
+        // Ok(bcs::from_bytes(bytes)?)
+        // let bits_vec: Vec<u8> = bincode::deserialize(bytes)?;
+        let bits_vec: Vec<u8> = bcs::from_bytes(bytes)?;
         let bits = bits_vec.len() * 8;
         let mask = bits - 1;
         Ok(Self {

@@ -3,7 +3,6 @@
 
 use crate::state_store::metrics::StateDBMetrics;
 use crate::state_store::NodeDBStore;
-use crate::state_store::NodeRefcountStore;
 use anyhow::{Error, Ok, Result};
 use function_name::named;
 use move_core_types::account_address::AccountAddress;
@@ -198,11 +197,11 @@ impl StateDBStore {
             .with_label_values(&[fn_name])
             .observe(size as f64);
 
-        // Maintain refcount & stale indices
-        for (hash, _) in &nodes {
-            let _ = NodeRefcountStore::new(self.node_store.get_store().store().clone()).inc(*hash);
-        }
-        self.node_store.write_stale_indices(&stale_indices_acc)?;
+        // // Maintain refcount & stale indices
+        // for (hash, _) in &nodes {
+        //     let _ = NodeRefcountStore::new(self.node_store.get_store().store().clone()).inc(*hash);
+        // }
+        // self.node_store.write_stale_indices(&stale_indices_acc)?;
 
         Ok(nodes)
     }

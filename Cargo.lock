@@ -7779,6 +7779,7 @@ dependencies = [
  "move-binary-format",
  "move-core-types",
  "move-vm-types",
+ "primitive-types 0.12.2",
  "serde 1.0.219",
  "tracing",
 ]
@@ -7889,6 +7890,7 @@ dependencies = [
  "function_name",
  "metrics",
  "move-core-types",
+ "moveos-common",
  "moveos-config",
  "moveos-types",
  "num_cpus",
@@ -7900,9 +7902,6 @@ dependencies = [
  "rand 0.8.5",
  "raw-store",
  "rayon",
- "rooch-common",
- "rooch-config",
- "serde 1.0.219",
  "smt",
  "tokio",
  "tracing",
@@ -10482,10 +10481,7 @@ name = "rooch-common"
 version = "0.9.7"
 dependencies = [
  "anyhow 1.0.95",
- "bincode",
  "libc",
- "primitive-types 0.12.2",
- "serde 1.0.219",
 ]
 
 [[package]]
@@ -10963,6 +10959,37 @@ dependencies = [
  "rooch-config",
  "rooch-store",
  "rooch-types",
+ "tracing",
+]
+
+[[package]]
+name = "rooch-pruner"
+version = "0.9.7"
+dependencies = [
+ "anyhow 1.0.95",
+ "bcs",
+ "chrono",
+ "function_name",
+ "metrics",
+ "move-core-types",
+ "moveos-common",
+ "moveos-config",
+ "moveos-store",
+ "moveos-types",
+ "num_cpus",
+ "once_cell",
+ "parking_lot 0.12.4",
+ "primitive-types 0.12.2",
+ "prometheus",
+ "rand 0.8.5",
+ "rayon",
+ "rooch-common",
+ "rooch-config",
+ "rooch-store",
+ "rooch-types",
+ "serde 1.0.219",
+ "smt",
+ "tokio",
  "tracing",
 ]
 

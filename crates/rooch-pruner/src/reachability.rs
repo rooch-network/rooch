@@ -1,11 +1,12 @@
-use crate::state_store::metrics::StateDBMetrics;
-use crate::state_store::{NodeDBStore, ReachSeenDBStore};
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 use anyhow::Result;
+use moveos_common::bloom_filter::BloomFilter;
+use moveos_store::MoveOSStore;
 use parking_lot::Mutex;
 use primitive_types::H256;
-use raw_store::CodecKVStore;
 use rayon::prelude::*;
-use rooch_common::bloom::BloomFilter;
 use smt::jellyfish_merkle::node_type::Node;
 use smt::NodeReader;
 use std::collections::VecDeque;
@@ -19,36 +20,37 @@ use std::sync::Arc;
 /// * When `bloom` is saturated, overflow hashes are flushed into RocksDB CF `reach_seen`.
 /// * Builder can be resumed by seeding Bloom with hashes already in `reach_seen`.
 pub struct ReachableBuilder {
-    node_store: Arc<NodeDBStore>,
-    reach_seen: Option<Arc<ReachSeenDBStore>>, // optional spill store
+    moveos_store: Arc<MoveOSStore>,
     bloom: Arc<Mutex<BloomFilter>>,
-    metrics: Arc<StateDBMetrics>,
+    // metrics: Arc<StateDBMetrics>,
 }
 
 impl ReachableBuilder {
     pub fn new(
-        node_store: Arc<NodeDBStore>,
-        reach_seen: Option<Arc<ReachSeenDBStore>>,
+        // node_store: Arc<NodeDBStore>,
+        // reach_seen: Option<Arc<ReachSeenDBStore>>,
+        moveos_store: Arc<MoveOSStore>,
         bloom: Arc<Mutex<BloomFilter>>,
-        metrics: Arc<StateDBMetrics>,
+        // metrics: Arc<StateDBMetrics>,
     ) -> Self {
         Self {
-            node_store,
-            reach_seen,
+            // node_store,
+            // reach_seen,
+            moveos_store,
             bloom,
-            metrics,
+            // metrics,
         }
     }
 
     /// Build reachable set starting from `live_roots`.
     /// Returns number of unique reachable nodes scanned.
     pub fn build(&self, live_roots: Vec<H256>, workers: usize) -> Result<u64> {
-        // Seed bloom with previously seen hashes if reach_seen cf is enabled
-        if let Some(reach_store) = &self.reach_seen {
-            // iterate keys (may be large). For first version we skip preloading to keep simple.
-            // TODO: preload if necessary.
-            let _ = reach_store; // silence unused
-        }
+        // // Seed bloom with previously seen hashes if reach_seen cf is enabled
+        // if let Some(reach_store) = &self.reach_seen {
+        //     // iterate keys (may be large). For first version we skip preloading to keep simple.
+        //     // TODO: preload if necessary.
+        //     let _ = reach_store; // silence unused
+        // }
 
         let counter = Arc::new(std::sync::atomic::AtomicU64::new(0));
 
@@ -63,10 +65,10 @@ impl ReachableBuilder {
 
         let scanned = counter.load(std::sync::atomic::Ordering::Relaxed);
         // record metrics
-        self.metrics
-            .pruner_reachable_nodes_scanned
-            .with_label_values(&["build"])
-            .observe(scanned as f64);
+        // self.metrics
+        //     .pruner_reachable_nodes_scanned
+        //     .with_label_values(&["build"])
+        //     .observe(scanned as f64);
 
         Ok(scanned)
     }
@@ -90,14 +92,15 @@ impl ReachableBuilder {
                 bloom_guard.insert(&node_hash);
             }
 
-            // optional spill to reach_seen
-            if let Some(reach_store) = &self.reach_seen {
-                // ignore errors
-                let _ = reach_store.kv_put(node_hash, Vec::new());
-            }
+            // // optional spill to reach_seen
+            // if let Some(reach_store) = &self.reach_seen {
+            //     // ignore errors
+            //     let _ = reach_store.kv_put(node_hash, Vec::new());
+            // }
 
             // fetch node bytes
-            let node_bytes_opt = self.node_store.get(&node_hash)?;
+            // let node_bytes_opt = self.node_store.get(&node_hash)?;
+            let node_bytes_opt = self.moveos_store.node_store.get(&node_hash)?;
             let node_bytes = match node_bytes_opt {
                 Some(b) => b,
                 None => {

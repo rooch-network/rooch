@@ -1,36 +1,35 @@
-use crate::state_store::metrics::StateDBMetrics;
-use crate::state_store::{NodeDBStore, ReachSeenDBStore};
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 use anyhow::Result;
-use parking_lot::Mutex;
+use moveos_common::bloom_filter::BloomFilter;
+use moveos_store::MoveOSStore;
 use primitive_types::H256;
-use raw_store::CodecKVStore;
 use rayon::prelude::*;
-use rooch_common::bloom::BloomFilter;
 use smt::jellyfish_merkle::node_type::Node;
 use smt::NodeReader;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 /// SweepExpired traverses expired roots (< cutoff) and deletes any node hash not present in ReachableSet.
 /// ReachableSet is represented by an in-memory Bloom filter plus optional `reach_seen` CF.
 pub struct SweepExpired {
-    node_store: Arc<NodeDBStore>,
-    reach_seen: Option<Arc<ReachSeenDBStore>>, // spill store for reachable hashes
-    bloom: Arc<Mutex<BloomFilter>>,            // same Bloom used by ReachableBuilder
-    metrics: Arc<StateDBMetrics>,
+    moveos_store: Arc<MoveOSStore>,
+    bloom: Arc<Mutex<BloomFilter>>, // same Bloom used by ReachableBuilder
+                                    // metrics: Arc<StateDBMetrics>,
 }
 
 impl SweepExpired {
     pub fn new(
-        node_store: Arc<NodeDBStore>,
-        reach_seen: Option<Arc<ReachSeenDBStore>>,
+        moveos_store: Arc<MoveOSStore>,
         bloom: Arc<Mutex<BloomFilter>>, // pass the same bloom instance
-        metrics: Arc<StateDBMetrics>,
+                                        // metrics: Arc<StateDBMetrics>,
     ) -> Self {
         Self {
-            node_store,
-            reach_seen,
+            // node_store,
+            // reach_seen,
+            moveos_store,
             bloom,
-            metrics,
+            // metrics,
         }
     }
 
@@ -48,10 +47,10 @@ impl SweepExpired {
             });
 
         let deleted_count = deleted.load(std::sync::atomic::Ordering::Relaxed);
-        self.metrics
-            .pruner_sweep_nodes_deleted
-            .with_label_values(&["sweep"])
-            .observe(deleted_count as f64);
+        // self.metrics
+        //     .pruner_sweep_nodes_deleted
+        //     .with_label_values(&["sweep"])
+        //     .observe(deleted_count as f64);
 
         Ok(deleted_count)
     }
@@ -61,12 +60,14 @@ impl SweepExpired {
         if self.bloom.lock().contains(hash) {
             return true;
         }
-        // fallback to reach_seen CF if enabled
-        if let Some(store) = &self.reach_seen {
-            if let Ok(Some(_)) = store.kv_get(*hash) {
-                return true;
-            }
-        }
+        // The probability of bloomfitler misjudgment will only lead to fewer deletions, not wrong deletions
+
+        // // fallback to reach_seen CF if enabled
+        // if let Some(store) = &self.reach_seen {
+        //     if let Ok(Some(_)) = store.kv_get(*hash) {
+        //         return true;
+        //     }
+        // }
         false
     }
 
@@ -89,7 +90,8 @@ impl SweepExpired {
             to_delete.push(node_hash);
 
             // traverse further to collect subtree nodes for deletion
-            if let Some(bytes) = self.node_store.get(&node_hash)? {
+            // if let Some(bytes) = self.node_store.get(&node_hash)? {
+            if let Some(bytes) = self.moveos_store.node_store.get(&node_hash)? {
                 if let Ok(node) = Node::<H256, Vec<u8>>::decode(&bytes) {
                     if let Node::Internal(internal) = node {
                         for child_hash in internal.all_child() {
@@ -101,7 +103,9 @@ impl SweepExpired {
         }
         if !to_delete.is_empty() {
             // delete in batch
-            self.node_store.delete_nodes(to_delete.clone())?;
+            self.moveos_store
+                .node_store
+                .delete_nodes(to_delete.clone())?;
             deleted.fetch_add(to_delete.len() as u64, std::sync::atomic::Ordering::Relaxed);
         }
         Ok(())
