@@ -626,6 +626,10 @@ where
             None => Err(NodeDecodeError::UnknownTag { unknown_tag: tag }.into()),
         }
     }
+
+    pub fn get_merkle_hash(&self) -> SMTNodeHash {
+        self.merkle_hash()
+    }
 }
 
 impl<K, V> SMTHash for Node<K, V>

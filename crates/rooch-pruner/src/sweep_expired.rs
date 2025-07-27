@@ -4,11 +4,12 @@
 use anyhow::Result;
 use moveos_common::bloom_filter::BloomFilter;
 use moveos_store::MoveOSStore;
+use parking_lot::Mutex;
 use primitive_types::H256;
 use rayon::prelude::*;
 use smt::jellyfish_merkle::node_type::Node;
 use smt::NodeReader;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 /// SweepExpired traverses expired roots (< cutoff) and deletes any node hash not present in ReachableSet.
 /// ReachableSet is represented by an in-memory Bloom filter plus optional `reach_seen` CF.
@@ -25,11 +26,8 @@ impl SweepExpired {
                                         // metrics: Arc<StateDBMetrics>,
     ) -> Self {
         Self {
-            // node_store,
-            // reach_seen,
             moveos_store,
             bloom,
-            // metrics,
         }
     }
 

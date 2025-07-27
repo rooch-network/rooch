@@ -13,7 +13,7 @@ use primitive_types::H256;
 use raw_store::{derive_store, CodecKVStore, StoreInstance};
 
 const META_KEY_PHASE: &str = "phase";
-const META_KEY_CURSOR: &str = "cursor"; // placeholder for future use
+// const META_KEY_CURSOR: &str = "cursor"; // placeholder for future use
 const META_KEY_BLOOM: &str = "bloom_snapshot";
 
 derive_store!(
@@ -55,7 +55,11 @@ pub trait PruneStore {
     fn list_before(&self, cutoff_root: H256, limit: usize) -> Result<Vec<(H256, H256)>>;
     fn inc_node_refcount(&self, key: H256) -> Result<()>;
     fn dec_node_refcount(&self, key: H256) -> Result<()>;
+    fn remove_node_refcount(&self, key: H256) -> Result<()>;
     fn write_stale_indices(&self, stale: &[(H256, H256)]) -> Result<()>;
+
+    fn get_stale_indice(&self, key: (H256, H256)) -> Result<Option<Vec<u8>>> ;
+    fn remove_stale_indice(&self, key: (H256, H256)) -> Result<()>;
 }
 
 #[derive(Clone)]
@@ -144,12 +148,13 @@ impl PruneDBStore {
         Ok(self.node_refcount_store.kv_get(key)?.unwrap_or(0))
     }
 
+    pub fn remove_node_refcount(&self, key: H256) -> Result<()> {
+        self.node_refcount_store.remove(key)
+    }
+
     /// Write stale indices to cf_smt_stale (key = *timestamp-hash*, node_hash)
     /// and update refcount in one loop (non-atomic across CFs).
     pub fn write_stale_indices(&self, stale: &[(H256, H256)]) -> Result<()> {
-        // let instance = self.get_store().store().clone();
-        // let stale_index_store = crate::state_store::StaleIndexStore::new(instance.clone());
-        // let ref_store = crate::state_store::NodeRefcountStore::new(instance);
         let ts = chrono::Utc::now().timestamp_millis() as u64;
         // Map 64-bit timestamp into H256 (low 64 bits store the value, upper bits are zero)
         let ts_h256 = H256::from_low_u64_be(ts);
@@ -159,5 +164,13 @@ impl PruneDBStore {
             self.dec_node_refcount(*node_hash)?;
         }
         Ok(())
+    }
+
+    pub fn get_stale_indice(&self, key: (H256, H256)) -> Result<Option<Vec<u8>>> {
+        self.stale_index_store.kv_get(key)
+    }
+
+    pub fn remove_stale_indice(&self, key: (H256, H256)) -> Result<()> {
+        self.stale_index_store.remove(key)
     }
 }

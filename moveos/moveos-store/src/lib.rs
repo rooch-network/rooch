@@ -390,8 +390,20 @@ impl PruneStore for MoveOSStore {
         self.prune_store.dec_node_refcount(key)
     }
 
+    fn remove_node_refcount(&self, key: H256) -> Result<()> {
+        self.prune_store.remove_node_refcount(key)
+    }
+
     fn write_stale_indices(&self, stale: &[(H256, H256)]) -> Result<()> {
         self.prune_store.write_stale_indices(stale)
+    }
+
+    fn get_stale_indice(&self, key: (H256, H256)) -> Result<Option<Vec<u8>>> {
+        self.prune_store.get_stale_indice(key)
+    }
+
+    fn remove_stale_indice(&self, key: (H256, H256)) -> Result<()> {
+        self.prune_store.remove_stale_indice(key)
     }
 }
 

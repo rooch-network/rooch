@@ -8,7 +8,6 @@ use crate::STATE_NODE_COLUMN_FAMILY_NAME;
 use anyhow::Result;
 use moveos_types::h256::H256;
 use raw_store::rocks::batch::WriteBatch;
-use raw_store::SchemaStore;
 use raw_store::WriteOp;
 use raw_store::{derive_store, CodecKVStore};
 use smt::{NodeReader, NodeWriter};

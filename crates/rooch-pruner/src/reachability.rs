@@ -27,18 +27,12 @@ pub struct ReachableBuilder {
 
 impl ReachableBuilder {
     pub fn new(
-        // node_store: Arc<NodeDBStore>,
-        // reach_seen: Option<Arc<ReachSeenDBStore>>,
         moveos_store: Arc<MoveOSStore>,
         bloom: Arc<Mutex<BloomFilter>>,
-        // metrics: Arc<StateDBMetrics>,
     ) -> Self {
         Self {
-            // node_store,
-            // reach_seen,
             moveos_store,
             bloom,
-            // metrics,
         }
     }
 

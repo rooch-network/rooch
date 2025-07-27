@@ -12,6 +12,10 @@ use moveos_types::prune::PrunePhase;
 use parking_lot::Mutex;
 use rooch_config::prune_config::PruneConfig;
 use rooch_store::RoochStore;
+// Bring trait methods into scope for method-call syntax
+use primitive_types::H256;
+use rooch_store::meta_store::MetaStore;
+use rooch_store::state_store::StateStore;
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc,
@@ -19,29 +23,6 @@ use std::sync::{
 use std::thread::{self, JoinHandle};
 use std::time::Duration;
 // incremental_sweep not currently used but may be enabled later
-
-// #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-// pub enum PrunePhase {
-//     BuildReach,
-//     SweepExpired,
-//     Incremental,
-// }
-
-// const META_KEY_PHASE: &str = "phase";
-// const META_KEY_CURSOR: &str = "cursor"; // placeholder for future use
-// const META_KEY_BLOOM: &str = "bloom_snapshot";
-
-// fn load_phase(meta: &PruneMetaStore) -> Result<PrunePhase> {
-//     if let Some(bytes) = meta.kv_get(META_KEY_PHASE.to_string())? {
-//         Ok(bcs::from_bytes::<PrunePhase>(&bytes)?)
-//     } else {
-//         Ok(PrunePhase::BuildReach)
-//     }
-// }
-//
-// fn save_phase(meta: &PruneMetaStore, phase: PrunePhase) -> Result<()> {
-//     meta.kv_put(META_KEY_PHASE.to_string(), bcs::to_bytes(&phase)?)
-// }
 
 pub struct StatePruner {
     handle: Option<JoinHandle<()>>,
@@ -66,20 +47,6 @@ impl StatePruner {
         let thread_running = running.clone();
 
         let handle = thread::spawn(move || {
-            // let reach_seen_store = Some(Arc::new(moveos_store.get_prune_store());
-            // let prune_meta_store = Arc::new(moveos_store.get_prune_meta_store());
-            // let node_store = Arc::new(moveos_store.get_state_node_store().clone());
-            // Load bloom snapshot if exists
-            // let bloom = if let Ok(Some(bytes)) = meta_store.kv_get(META_KEY_BLOOM.to_string()) {
-            // let bloom = if let Ok(bloom_opt) = moveos_store.load_prune_meta_bloom() {
-            //     match bloom_opt {
-            //         Some(bf) => Arc::new(Mutex::new(bf)),
-            //         None => Arc::new(Mutex::new(BloomFilter::new(cfg.bloom_bits as usize, 4))),
-            //     }
-            // } else {
-            //     Arc::new(Mutex::new(BloomFilter::new(cfg.bloom_bits as usize, 4)))
-            // };
-
             let bloom = moveos_store
                 .load_prune_meta_bloom()
                 .ok()
@@ -118,43 +85,47 @@ impl StatePruner {
                         let _ = builder.build(live_roots, num_cpus::get());
                         // Persist bloom snapshot after reachability phase
                         {
-                            // let bytes = bloom.lock().to_bytes();
-                            // let _ = meta_store.kv_put(META_KEY_BLOOM.to_string(), bytes);
                             let _ = moveos_store.save_prune_meta_bloom(bloom.lock().clone());
                         }
-                        // save_phase(&meta_store, PrunePhase::SweepExpired).ok();
                         moveos_store
                             .save_prune_meta_phase(PrunePhase::SweepExpired)
                             .ok();
                     }
                     PrunePhase::SweepExpired => {
-                        // let stale_store =
-                        //     StaleIndexStore::new(node_store.get_store().store().clone());
-
                         // NOTE: Temporarily disable time-window logic, fall back to zero root; will be restored later
                         // let config_store = ConfigDBStore::new(node_store.as_ref().get_store().store().clone());
                         // let cutoff_root = config_store
                         //     .get_startup_info()
                         //     .ok()
                         //     .and_then(|opt| opt.map(|info| info.state_root))
-                        //     .unwrap_or_else(H256::zero);
+                        //     .unw rap_or_else(H256::zero);
 
-                        // let cutoff_order = latest_order.saturating_sub(cfg.keep_tx); // 或按时间换算
-                        let expired_roots =
-                            scs_store.list_roots_before(cutoff_order, cfg.scan_batch)?;
+                        // Calculate cutoff order based on latest sequenced tx order and `keep_tx` window
+                        let latest_order = rooch_store
+                            .get_sequencer_info()
+                            .ok()
+                            .and_then(|opt| opt.map(|info| info.last_order))
+                            .unwrap_or(0);
 
-                        let sweeper = SweepExpired::new(
-                            // node_store.clone(),
-                            // reach_seen.clone(),
-                            moveos_store.clone(),
-                            bloom.clone(),
-                            // metrics.clone(),
-                        );
+                        // Collect at most `scan_batch` roots starting from the oldest end (latest_order descending)
+                        let mut expired_roots: Vec<H256> = Vec::with_capacity(cfg.scan_batch);
+                        let mut order_cursor = latest_order;
+                        while expired_roots.len() < cfg.scan_batch && order_cursor > 0 {
+                            if let Some(scs) = rooch_store
+                                .get_state_change_set(order_cursor)
+                                .ok()
+                                .flatten()
+                            {
+                                expired_roots.push(scs.state_change_set.state_root);
+                            }
+                            order_cursor -= 1;
+                        }
+
+                        let sweeper = SweepExpired::new(moveos_store.clone(), bloom.clone());
                         let _ = sweeper.sweep(expired_roots, num_cpus::get());
                         // Persist bloom snapshot after sweep phase (in case items added)
                         {
                             let bytes = bloom.lock().to_bytes();
-                            // let _ = meta_store.kv_put(META_KEY_BLOOM.to_string(), bytes);
                             let _ = moveos_store.save_prune_meta_bloom(bloom.lock().clone());
                         }
                         // Instead of entering Incremental phase, jump back to BuildReach so the sweep can repeat and free disk continuously
@@ -165,7 +136,6 @@ impl StatePruner {
                     }
                     PrunePhase::Incremental => {
                         // Incremental phase temporarily disabled; just store BuildReach to be scheduled in next loop
-                        // save_phase(&meta_store, PrunePhase::BuildReach).ok();
                         moveos_store
                             .save_prune_meta_phase(PrunePhase::BuildReach)
                             .ok();

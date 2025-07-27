@@ -47,13 +47,11 @@ impl IncrementalSweep {
                 let _ = self
                     .moveos_store
                     .prune_store
-                    .stale_index_store
-                    .remove((_root, node_hash));
+                    .remove_stale_indice((_root, node_hash));
                 let _ = self
                     .moveos_store
                     .prune_store
-                    .node_refcount_store
-                    .remove(node_hash);
+                    .remove_node_refcount(node_hash);
             }
         }
         Ok(to_delete_nodes.len())

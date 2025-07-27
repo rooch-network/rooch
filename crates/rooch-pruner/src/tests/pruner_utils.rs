@@ -16,23 +16,7 @@ fn test_bloom_filter_basic() {
 
 #[test]
 fn test_refcount_inc_dec() {
-    // let temp_dir = moveos_config::temp_dir();
-    // let registry = prometheus::Registry::new();
-    // DBMetrics::init(&registry);
-
-    // let db_metrics = DBMetrics::get_or_init(&registry).clone();
-    // let instance = StoreInstance::new_db_instance(
-    //     RocksDB::new(
-    //         temp_dir.path(),
-    //         StoreMeta::get_column_family_names().to_vec(),
-    //         RocksdbConfig::default(),
-    //     )
-    //     .unwrap(),
-    //     db_metrics,
-    // );
-
     let (store, _tmpdir) = MoveOSStore::mock_moveos_store().unwrap();
-    // let ref_store = NodeRefcountStore::new(instance.clone());
     let key = H256::random();
     // initial ref == 0
     assert_eq!(store.get_prune_store().get_node_refcount(key).unwrap(), 0);
@@ -48,10 +32,6 @@ fn test_refcount_inc_dec() {
 fn test_write_stale_indices_and_refcount() {
     // Use MoveOSStore helper to get fully configured stores
     let (store, _tmpdir) = MoveOSStore::mock_moveos_store().unwrap();
-    // let node_store = store.get_state_node_store();
-    // let instance = node_store.get_store().store().clone();
-    // let stale_store = StaleIndexStore::new(instance.clone());
-    // let ref_store = NodeRefcountStore::new(instance);
 
     let root = H256::random();
     let node_hash = H256::random();
@@ -86,8 +66,7 @@ fn test_write_stale_indices_and_refcount() {
     // stale index present
     assert!(store
         .get_prune_store()
-        .stale_index_store
-        .kv_get((root, node_hash))
+        .get_stale_indice((root, node_hash))
         .unwrap()
         .is_some());
 }

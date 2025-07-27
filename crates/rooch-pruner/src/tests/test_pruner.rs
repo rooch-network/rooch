@@ -7,9 +7,11 @@ use crate::sweep_expired::SweepExpired;
 use moveos_common::bloom_filter::BloomFilter;
 use moveos_store::MoveOSStore;
 use moveos_types::h256::H256;
+use parking_lot::Mutex;
 use smt::jellyfish_merkle::node_type::Node;
 use smt::NodeReader;
-use std::sync::{Arc, Mutex};
+use smt::SMTObject;
+use std::sync::Arc;
 
 #[tokio::test]
 async fn test_reachable_and_sweep() {
@@ -19,39 +21,33 @@ async fn test_reachable_and_sweep() {
     // create reachable leaf
     let key1 = H256::random();
     let value1: Vec<u8> = b"val1".to_vec();
-    let node1: Node<H256, Vec<u8>> = Node::new_leaf(key1, value1.clone());
-    let hash1: H256 = node1.merkle_hash().into();
+    // let test_value1 = TestValue::from(value1.clone());
+    let node1: Node<H256, Vec<u8>> = Node::new_leaf(
+        key1,
+        SMTObject::<Vec<u8>>::from_origin(value1.clone()).unwrap(),
+    );
+    let hash1: H256 = node1.get_merkle_hash().into();
     node_store.put(hash1, node1.encode().unwrap()).unwrap();
 
     // create unreachable leaf
     let key2 = H256::random();
     let value2: Vec<u8> = b"val2".to_vec();
-    let node2: Node<H256, Vec<u8>> = Node::new_leaf(key2, value2.clone());
-    let hash2: H256 = node2.merkle_hash().into();
+    let node2: Node<H256, Vec<u8>> = Node::new_leaf(
+        key2,
+        SMTObject::<Vec<u8>>::from_origin(value2.clone()).unwrap(),
+    );
+    let hash2: H256 = node2.get_merkle_hash().into();
     node_store.put(hash2, node2.encode().unwrap()).unwrap();
 
-    // let registry = Registry::new();
-    // let metrics = Arc::new(StateDBMetrics::new(&registry));
     let bloom = Arc::new(Mutex::new(BloomFilter::new(1 << 16, 4)));
 
     // Build reachable set with hash1
-    let builder = ReachableBuilder::new(
-        Arc::new(store.clone()),
-        // None,
-        bloom.clone(),
-        // metrics.clone(),
-    );
+    let builder = ReachableBuilder::new(Arc::new(store.clone()), bloom.clone());
     let scanned = builder.build(vec![hash1], 1).unwrap();
     assert_eq!(scanned, 1);
 
     // Sweep expired roots containing both hashes
-    let sweeper = SweepExpired::new(
-        // Arc::new(node_store.clone()),
-        // None,
-        Arc::new(store.clone()),
-        bloom,
-        // metrics.clone(),
-    );
+    let sweeper = SweepExpired::new(Arc::new(store.clone()), bloom);
     let deleted = sweeper.sweep(vec![hash1, hash2], 1).unwrap();
     assert_eq!(deleted, 1);
 
@@ -64,15 +60,15 @@ async fn test_reachable_and_sweep() {
 async fn test_incremental_sweep() {
     let (store, _tmpdir) = MoveOSStore::mock_moveos_store().unwrap();
     let node_store = store.get_state_node_store().clone();
-    // let instance = node_store.get_store().store().clone();
-    // let stale_store = StaleIndexStore::new(instance.clone());
-    // let ref_store = NodeRefcountStore::new(instance.clone());
 
     // Prepare a node
     let key = H256::random();
     let value: Vec<u8> = b"x".to_vec();
-    let node: Node<H256, Vec<u8>> = Node::new_leaf(key, value.clone());
-    let hash: H256 = node.merkle_hash().into();
+    let node: Node<H256, Vec<u8>> = Node::new_leaf(
+        key,
+        SMTObject::<Vec<u8>>::from_origin(value.clone()).unwrap(),
+    );
+    let hash: H256 = node.get_merkle_hash().into();
     node_store.put(hash, node.encode().unwrap()).unwrap();
 
     // refcount ==1 then decrement via write_stale_indices => 0
@@ -91,8 +87,7 @@ async fn test_incremental_sweep() {
     assert!(node_store.get(&hash).unwrap().is_none());
     assert!(store
         .prune_store
-        .stale_index_store
-        .kv_get((root, hash))
+        .get_stale_indice((root, hash))
         .unwrap()
         .is_none());
 }

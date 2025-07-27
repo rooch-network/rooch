@@ -19,7 +19,6 @@ use moveos_types::state_resolver::StateResolver;
 use moveos_types::state_resolver::StatelessResolver;
 use prometheus::Registry;
 use quick_cache::sync::Cache;
-use raw_store::SchemaStore;
 use smt::{SMTIterator, TreeChangeSet};
 use smt::{SMTree, UpdateSet};
 use std::collections::BTreeMap;

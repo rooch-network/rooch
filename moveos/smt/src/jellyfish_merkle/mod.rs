@@ -80,7 +80,7 @@ pub(crate) mod hash;
 pub(crate) mod iterator;
 #[cfg(test)]
 pub(crate) mod jellyfish_merkle_test;
-pub(crate) mod mock_tree_store;
+pub mod mock_tree_store;
 pub(crate) mod nibble;
 pub(crate) mod nibble_path;
 pub mod node_type;
