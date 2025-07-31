@@ -249,7 +249,7 @@ pub fn get_first_ty_as_struct_tag(struct_tag: StructTag) -> Result<StructTag> {
 /// Parse a type tag from a string
 /// This function support parse type tag from TypeTag::to_string() or TypeTag::to_canonical_string()
 /// The default canonical string format with prefix is:
-/// `0x0000000000000000000000000000000a::module_name1::type_name1<0x0000000000000000000000000000000a::module_name2::type_name2<u64>>
+/// `0x0000000000000000000000000000000a::module_name1::type_name1<0x0000000000000000000000000000000a::module_name2::type_name2<u64>>`
 /// The non-canonical string format is:
 /// `0xa::module_name1::type_name1<0xa::module_name2::type_name2<u64>>`
 /// We unify the canonical and non-canonical string format
