@@ -13,6 +13,72 @@ use smt::NodeReader;
 use smt::SMTObject;
 use std::sync::Arc;
 
+#[test]
+fn test_bloom_filter_basic() {
+    let mut bloom = BloomFilter::new(1 << 20, 4);
+    let hash = H256::random();
+    assert!(!bloom.contains(&hash));
+    bloom.insert(&hash);
+    assert!(bloom.contains(&hash));
+}
+
+#[tokio::test]
+async fn test_refcount_inc_dec() {
+    let (store, _tmpdir) = MoveOSStore::mock_moveos_store().unwrap();
+    let key = H256::random();
+    // initial ref == 0
+    assert_eq!(store.get_prune_store().get_node_refcount(key).unwrap(), 0);
+    // inc -> 1
+    store.get_prune_store().inc_node_refcount(key).unwrap();
+    assert_eq!(store.get_prune_store().get_node_refcount(key).unwrap(), 1);
+    // dec -> 0 and removed
+    store.get_prune_store().dec_node_refcount(key).unwrap();
+}
+
+#[tokio::test]
+async fn test_write_stale_indices_and_refcount() {
+    // Use MoveOSStore helper to get fully configured stores
+    let (store, _tmpdir) = MoveOSStore::mock_moveos_store().unwrap();
+
+    let root = H256::random();
+    let node_hash = H256::random();
+
+    // preset refcount to 1
+    store
+        .get_prune_store()
+        .inc_node_refcount(node_hash)
+        .unwrap();
+    assert_eq!(
+        store
+            .get_prune_store()
+            .get_node_refcount(node_hash)
+            .unwrap(),
+        1
+    );
+
+    // write stale index which should dec ref to 0 and create stale entry
+    store
+        .get_prune_store()
+        .write_stale_indices(&[(root, node_hash)])
+        .unwrap();
+
+    // refcount removed -> 0
+    assert_eq!(
+        store
+            .get_prune_store()
+            .get_node_refcount(node_hash)
+            .unwrap(),
+        0
+    );
+    // stale index present (timestamp key internally generated)
+    let cutoff = H256::from_low_u64_be(u64::MAX);
+    let indices = store
+        .get_prune_store()
+        .list_before(cutoff, 100)
+        .unwrap();
+    assert!(indices.iter().any(|(_, nh)| *nh == node_hash));
+}
+
 #[tokio::test]
 async fn test_reachable_and_sweep() {
     let (store, _tmpdir) = MoveOSStore::mock_moveos_store().unwrap();
