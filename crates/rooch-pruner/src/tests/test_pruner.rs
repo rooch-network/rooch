@@ -72,10 +72,7 @@ async fn test_write_stale_indices_and_refcount() {
     );
     // stale index present (timestamp key internally generated)
     let cutoff = H256::from_low_u64_be(u64::MAX);
-    let indices = store
-        .get_prune_store()
-        .list_before(cutoff, 100)
-        .unwrap();
+    let indices = store.get_prune_store().list_before(cutoff, 100).unwrap();
     assert!(indices.iter().any(|(_, nh)| *nh == node_hash));
 }
 

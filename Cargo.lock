@@ -11102,6 +11102,7 @@ dependencies = [
  "rooch-open-rpc-spec-builder",
  "rooch-pipeline-processor",
  "rooch-proposer",
+ "rooch-pruner",
  "rooch-relayer",
  "rooch-rpc-api",
  "rooch-sequencer",

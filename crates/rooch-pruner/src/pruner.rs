@@ -10,7 +10,7 @@ use moveos_store::prune::PruneStore;
 use moveos_store::MoveOSStore;
 use moveos_types::prune::PrunePhase;
 use parking_lot::Mutex;
-use rooch_config::prune_config::PruneConfig;
+pub use rooch_config::prune_config::PruneConfig;
 use rooch_store::RoochStore;
 // Bring trait methods into scope for method-call syntax
 use primitive_types::H256;
@@ -69,19 +69,12 @@ impl StatePruner {
                 match phase {
                     PrunePhase::BuildReach => {
                         // Determine current live root via StartupInfo
-                        // let config_store =
-                        //     ConfigDBStore::new(node_store.get_store().store().clone());
                         let live_roots = moveos_store
                             .get_startup_info()
                             .ok()
                             .and_then(|opt| opt.map(|info| vec![info.state_root]))
                             .unwrap_or_default();
-                        let builder = ReachableBuilder::new(
-                            moveos_store.clone(),
-                            // reach_seen.clone(),
-                            bloom.clone(),
-                            // metrics.clone(),
-                        );
+                        let builder = ReachableBuilder::new(moveos_store.clone(), bloom.clone());
                         let _ = builder.build(live_roots, num_cpus::get());
                         // Persist bloom snapshot after reachability phase
                         {
@@ -109,7 +102,14 @@ impl StatePruner {
 
                         // Collect at most `scan_batch` roots starting from the oldest end (latest_order descending)
                         let mut expired_roots: Vec<H256> = Vec::with_capacity(cfg.scan_batch);
-                        let mut order_cursor = latest_order;
+                        // Start from latest order and skip the first 30k orders to avoid scanning too many roots
+                        let mut order_cursor = if latest_order > 30000 {
+                            latest_order - 30000
+                        } else if latest_order >= 1 {
+                            latest_order - 1
+                        } else {
+                            latest_order
+                        };
                         while expired_roots.len() < cfg.scan_batch && order_cursor > 0 {
                             if let Some(scs) = rooch_store
                                 .get_state_change_set(order_cursor)
@@ -125,7 +125,7 @@ impl StatePruner {
                         let _ = sweeper.sweep(expired_roots, num_cpus::get());
                         // Persist bloom snapshot after sweep phase (in case items added)
                         {
-                            let bytes = bloom.lock().to_bytes();
+                            let _bytes = bloom.lock().to_bytes();
                             let _ = moveos_store.save_prune_meta_bloom(bloom.lock().clone());
                         }
                         // Instead of entering Incremental phase, jump back to BuildReach so the sweep can repeat and free disk continuously

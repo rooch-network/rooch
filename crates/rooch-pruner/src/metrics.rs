@@ -10,7 +10,7 @@ pub struct PrunerMetrics {
 }
 
 impl PrunerMetrics {
-    pub(crate) fn new(registry: &Registry) -> Self {
+    pub fn new(registry: &Registry) -> Self {
         PrunerMetrics {
             pruner_reachable_nodes_scanned: register_histogram_vec_with_registry!(
                 "pruner_reachable_nodes_scanned",
