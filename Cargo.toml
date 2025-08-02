@@ -55,6 +55,7 @@ members = [
     "crates/rooch-cosmwasm-vm",
     "crates/testsuite",
     "crates/rooch-ord",
+    "crates/rooch-pruner",
     "frameworks/bitcoin-move",
     "frameworks/framework-builder",
     "frameworks/framework-release",
@@ -145,6 +146,7 @@ rooch-notify = { path = "crates/rooch-notify" }
 rooch-ord = { path = "crates/rooch-ord" }
 rooch-cosmwasm-vm = { path = "crates/rooch-cosmwasm-vm" }
 rooch-oracle = { path = "crates/rooch-oracle" }
+rooch-pruner = { path = "crates/rooch-pruner" }
 
 # frameworks
 framework-types = { path = "frameworks/framework-types" }
