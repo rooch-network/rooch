@@ -7,12 +7,12 @@ use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
 /// Pruning-related configuration (v1+v2 hybrid)
-#[derive(Clone, Default, Debug, Deserialize, PartialEq, Serialize, Parser)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize, Parser)]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "kebab-case")]
 pub struct PruneConfig {
     /// Enable or disable background pruner.
-    #[clap(long, default_value_t = true)]
+    #[clap(long, default_value_t = false)]
     pub enable: bool,
 
     /// Whether boot cleanup (v1 DFS) already finished.
@@ -33,7 +33,7 @@ pub struct PruneConfig {
     pub interval_s: u64,
 
     /// Bloom filter size in bits (must be power of two for fast modulo).
-    #[clap(long, default_value_t = 4_000_000)]
+    #[clap(long, default_value_t = 4_194_304)]  // 2^22
     pub bloom_bits: usize,
 
     /// Create and use optional cf_reach_seen column family for cold hash spill.
@@ -43,6 +43,21 @@ pub struct PruneConfig {
     /// Window size in days for reachable roots (default 30).
     #[clap(long, default_value_t = 30)]
     pub window_days: u64,
+}
+
+impl Default for PruneConfig {
+    fn default() -> Self {
+        Self {
+            enable: false,
+            boot_cleanup_done: false,
+            scan_batch: 10000,
+            delete_batch: 5000,
+            interval_s: 3600,
+            bloom_bits: 4_194_304,  // 2^22 = 4M
+            enable_reach_seen_cf: false,
+            window_days: 30,
+        }
+    }
 }
 
 impl Config for PruneConfig {}

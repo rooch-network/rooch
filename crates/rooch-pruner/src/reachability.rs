@@ -11,6 +11,7 @@ use smt::jellyfish_merkle::node_type::Node;
 use smt::NodeReader;
 use std::collections::VecDeque;
 use std::sync::Arc;
+use tracing::info;
 
 /// Build reachable set by parallel DFS over live roots.
 /// Writes seen node hashes into optional ReachSeenDBStore to avoid re-traversal on crash resume.
@@ -26,10 +27,7 @@ pub struct ReachableBuilder {
 }
 
 impl ReachableBuilder {
-    pub fn new(
-        moveos_store: Arc<MoveOSStore>,
-        bloom: Arc<Mutex<BloomFilter>>,
-    ) -> Self {
+    pub fn new(moveos_store: Arc<MoveOSStore>, bloom: Arc<Mutex<BloomFilter>>) -> Self {
         Self {
             moveos_store,
             bloom,
@@ -75,6 +73,7 @@ impl ReachableBuilder {
         use std::sync::atomic;
         let mut stack = VecDeque::new();
         stack.push_back(root_hash);
+        let mut curr_count: u32 = 0;
 
         while let Some(node_hash) = stack.pop_back() {
             // bloom check
@@ -113,8 +112,13 @@ impl ReachableBuilder {
                     _ => {}
                 }
             }
+            curr_count = curr_count + 1;
             counter.fetch_add(1, atomic::Ordering::Relaxed);
         }
+        info!(
+            "ReachableBuilder dfs_from_root root_hash {:?} recursive child size {}",
+            root_hash, curr_count
+        );
         Ok(())
     }
 }

@@ -10,6 +10,7 @@ use rayon::prelude::*;
 use smt::jellyfish_merkle::node_type::Node;
 use smt::NodeReader;
 use std::sync::Arc;
+use tracing::info;
 
 /// SweepExpired traverses expired roots (< cutoff) and deletes any node hash not present in ReachableSet.
 /// ReachableSet is represented by an in-memory Bloom filter plus optional `reach_seen` CF.
@@ -101,9 +102,12 @@ impl SweepExpired {
         }
         if !to_delete.is_empty() {
             // delete in batch
-            self.moveos_store
-                .node_store
-                .delete_nodes(to_delete.clone())?;
+            // TODO verify first, then delete
+            // self.moveos_store
+            //     .node_store
+            //     .delete_nodes(to_delete.clone())?;
+            info!("Sweep expired delete nodes size {}", to_delete.len());
+            info!("Sweep expired delete nodes {:?}", to_delete.clone());
             deleted.fetch_add(to_delete.len() as u64, std::sync::atomic::Ordering::Relaxed);
         }
         Ok(())

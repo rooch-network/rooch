@@ -23,6 +23,7 @@ use std::sync::{
 use std::thread::{self, JoinHandle};
 use std::time::Duration;
 // incremental_sweep not currently used but may be enabled later
+use tracing::{info, warn};
 
 pub struct StatePruner {
     handle: Option<JoinHandle<()>>,
@@ -36,6 +37,7 @@ impl StatePruner {
         rooch_store: Arc<RoochStore>,
         // metrics: Arc<StateDBMetrics>,
     ) -> Result<Self> {
+        info!("Starting pruner");
         if !cfg.enable {
             return Ok(Self {
                 handle: None,
@@ -43,10 +45,12 @@ impl StatePruner {
             });
         }
 
+        info!("Starting pruner with config: {:?}", cfg);
         let running = Arc::new(AtomicBool::new(true));
         let thread_running = running.clone();
 
         let handle = thread::spawn(move || {
+            info!("Pruner thread started");
             let bloom = moveos_store
                 .load_prune_meta_bloom()
                 .ok()
@@ -55,9 +59,11 @@ impl StatePruner {
                     cfg.bloom_bits as usize,
                     4,
                 ))));
+            info!("Loaded bloom filter with {} bits", cfg.bloom_bits);
 
             loop {
                 if !thread_running.load(Ordering::Relaxed) {
+                    info!("Pruner thread stopping");
                     break;
                 }
 
@@ -65,44 +71,54 @@ impl StatePruner {
                 let phase = moveos_store
                     .load_prune_meta_phase()
                     .unwrap_or(PrunePhase::BuildReach);
+                info!("Current prune phase: {:?}", phase);
 
                 match phase {
                     PrunePhase::BuildReach => {
+                        info!("Starting BuildReach phase");
                         // Determine current live root via StartupInfo
                         let live_roots = moveos_store
                             .get_startup_info()
                             .ok()
                             .and_then(|opt| opt.map(|info| vec![info.state_root]))
                             .unwrap_or_default();
+                        info!("Found {} live roots", live_roots.len());
+
                         let builder = ReachableBuilder::new(moveos_store.clone(), bloom.clone());
-                        let _ = builder.build(live_roots, num_cpus::get());
+                        // if let Ok(scanned_size) =
+                        match builder.build(live_roots, num_cpus::get()) {
+                            Ok(scanned_size) => info!(
+                                "Completed reachability build, scanned size {}",
+                                scanned_size
+                            ),
+                            Err(e) => warn!("Failed to reachability build: {}", e),
+                        }
+
                         // Persist bloom snapshot after reachability phase
                         {
-                            let _ = moveos_store.save_prune_meta_bloom(bloom.lock().clone());
+                            if let Err(e) = moveos_store.save_prune_meta_bloom(bloom.lock().clone())
+                            {
+                                warn!("Failed to save bloom snapshot: {}", e);
+                            } else {
+                                info!("Saved bloom snapshot");
+                            }
                         }
                         moveos_store
                             .save_prune_meta_phase(PrunePhase::SweepExpired)
                             .ok();
+                        info!("Transitioning to SweepExpired phase");
                     }
                     PrunePhase::SweepExpired => {
-                        // NOTE: Temporarily disable time-window logic, fall back to zero root; will be restored later
-                        // let config_store = ConfigDBStore::new(node_store.as_ref().get_store().store().clone());
-                        // let cutoff_root = config_store
-                        //     .get_startup_info()
-                        //     .ok()
-                        //     .and_then(|opt| opt.map(|info| info.state_root))
-                        //     .unw rap_or_else(H256::zero);
-
-                        // Calculate cutoff order based on latest sequenced tx order and `keep_tx` window
+                        info!("Starting SweepExpired phase");
                         let latest_order = rooch_store
                             .get_sequencer_info()
                             .ok()
                             .and_then(|opt| opt.map(|info| info.last_order))
                             .unwrap_or(0);
+                        info!("Latest sequencer order: {}", latest_order);
 
-                        // Collect at most `scan_batch` roots starting from the oldest end (latest_order descending)
+                        // Collect at most `scan_batch` roots starting from the oldest end
                         let mut expired_roots: Vec<H256> = Vec::with_capacity(cfg.scan_batch);
-                        // Start from latest order and skip the first 30k orders to avoid scanning too many roots
                         let mut order_cursor = if latest_order > 30000 {
                             latest_order - 30000
                         } else if latest_order >= 1 {
@@ -110,6 +126,8 @@ impl StatePruner {
                         } else {
                             latest_order
                         };
+                        info!("Starting scan from order {}", order_cursor);
+
                         while expired_roots.len() < cfg.scan_batch && order_cursor > 0 {
                             if let Some(scs) = rooch_store
                                 .get_state_change_set(order_cursor)
@@ -120,28 +138,36 @@ impl StatePruner {
                             }
                             order_cursor -= 1;
                         }
+                        info!("Found {} expired roots to sweep", expired_roots.len());
 
                         let sweeper = SweepExpired::new(moveos_store.clone(), bloom.clone());
                         let _ = sweeper.sweep(expired_roots, num_cpus::get());
-                        // Persist bloom snapshot after sweep phase (in case items added)
+                        info!("Completed expired roots sweep");
+
+                        // Persist bloom snapshot after sweep phase
                         {
-                            let _bytes = bloom.lock().to_bytes();
-                            let _ = moveos_store.save_prune_meta_bloom(bloom.lock().clone());
+                            if let Err(e) = moveos_store.save_prune_meta_bloom(bloom.lock().clone())
+                            {
+                                warn!("Failed to save bloom snapshot after sweep: {}", e);
+                            } else {
+                                info!("Saved bloom snapshot after sweep");
+                            }
                         }
-                        // Instead of entering Incremental phase, jump back to BuildReach so the sweep can repeat and free disk continuously
-                        // save_phase(&meta_store, PrunePhase::BuildReach).ok();
+
                         moveos_store
                             .save_prune_meta_phase(PrunePhase::BuildReach)
                             .ok();
+                        info!("Transitioning back to BuildReach phase");
                     }
                     PrunePhase::Incremental => {
-                        // Incremental phase temporarily disabled; just store BuildReach to be scheduled in next loop
+                        info!("Incremental phase disabled, transitioning to BuildReach");
                         moveos_store
                             .save_prune_meta_phase(PrunePhase::BuildReach)
                             .ok();
                     }
                 }
 
+                info!("Sleeping for {} seconds", cfg.interval_s);
                 thread::sleep(Duration::from_secs(cfg.interval_s as u64));
             }
         });
@@ -154,8 +180,10 @@ impl StatePruner {
 
     pub fn stop(self) {
         if let Some(h) = self.handle {
+            info!("Stopping pruner thread");
             self.running.store(false, Ordering::Relaxed);
             let _ = h.join();
+            info!("Pruner thread stopped");
         }
     }
 }

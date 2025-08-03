@@ -10967,9 +10967,6 @@ name = "rooch-pruner"
 version = "0.9.7"
 dependencies = [
  "anyhow 1.0.95",
- "bcs",
- "chrono",
- "function_name",
  "metrics",
  "move-core-types",
  "moveos-common",
@@ -10977,11 +10974,9 @@ dependencies = [
  "moveos-store",
  "moveos-types",
  "num_cpus",
- "once_cell",
  "parking_lot 0.12.4",
  "primitive-types 0.12.2",
  "prometheus",
- "rand 0.8.5",
  "rayon",
  "rooch-common",
  "rooch-config",

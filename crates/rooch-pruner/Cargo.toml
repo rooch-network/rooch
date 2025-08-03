@@ -11,14 +11,9 @@ version.workspace = true
 
 [dependencies]
 anyhow = { workspace = true }
-bcs = { workspace = true }
 smt = { workspace = true }
-once_cell = { workspace = true }
-chrono = { version = "0.4", features = ["std"] }
-rand = { workspace = true }
 prometheus = { workspace = true }
 tokio = { workspace = true }
-function_name = { workspace = true }
 tracing = { workspace = true }
 
 move-core-types = { workspace = true }

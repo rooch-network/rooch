@@ -176,6 +176,9 @@ pub struct RoochOpt {
     #[serde(skip)]
     #[clap(skip)]
     base: Option<Arc<BaseConfig>>,
+
+    #[clap(long, default_value_t = false)]
+    pub pruner_enable: bool,
 }
 
 impl std::fmt::Display for RoochOpt {
@@ -213,6 +216,7 @@ impl RoochOpt {
             traffic_burst_size: None,
             base: None,
             service_type: ServiceType::default(),
+            pruner_enable: false,
         };
         opt.init()?;
         Ok(opt)

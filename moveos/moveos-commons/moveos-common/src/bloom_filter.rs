@@ -3,6 +3,7 @@
 
 use primitive_types::H256;
 use serde::{Deserialize, Serialize};
+use tracing::info;
 
 /// Simple k-hash Bloom filter backed by a byte vector.
 ///
@@ -19,6 +20,7 @@ pub struct BloomFilter {
 impl BloomFilter {
     /// Create a Bloom filter of given size. `bits` must be a power of two.
     pub fn new(bits: usize, k: u8) -> Self {
+        info!("BloomFilter new bits: {}, k: {}", bits, k);
         assert!(bits.is_power_of_two(), "bits must be power of two");
         let bytes = (bits + 7) / 8;
         Self {
