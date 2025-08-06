@@ -73,7 +73,7 @@ export function convertToRoochAddressBytes(input: address): Bytes {
           return decode.bytes
         }
       } catch (_) {
-        // Invalid bech32 format, fall through to try as bitcoin address
+        throw new Error(`Invalid Rooch address: ${input}`)
       }
     }
 
