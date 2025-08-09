@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 use crate::prune::PruneStore;
 use crate::MoveOSStore;
 use moveos_common::bloom_filter::BloomFilter;

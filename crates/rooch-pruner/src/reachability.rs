@@ -101,22 +101,24 @@ impl ReachableBuilder {
                     continue;
                 }
             };
-            // decode Node to determine children
-            if let Ok(node) = Node::<H256, Vec<u8>>::decode(&node_bytes) {
-                match node {
-                    Node::Internal(internal) => {
-                        for child_hash in internal.all_child() {
-                            stack.push_back(child_hash.into());
-                        }
-                    }
-                    _ => {}
+            // decode Node and push children if internal node
+            if let Ok(Node::Internal(internal)) = Node::<H256, Vec<u8>>::decode(&node_bytes) {
+                for child_hash in internal.all_child() {
+                    stack.push_back(child_hash.into());
                 }
             }
-            curr_count = curr_count + 1;
+            curr_count += 1;
             counter.fetch_add(1, atomic::Ordering::Relaxed);
+
+            if curr_count % 10000 == 0 {
+                info!(
+                    "ReachableBuilder dfs_from_root looping, curr_count {}",
+                    curr_count
+                );
+            }
         }
         info!(
-            "ReachableBuilder dfs_from_root root_hash {:?} recursive child size {}",
+            "ReachableBuilder dfs_from_root done, root_hash {:?} recursive child size {}",
             root_hash, curr_count
         );
         Ok(())

@@ -55,10 +55,7 @@ impl StatePruner {
                 .load_prune_meta_bloom()
                 .ok()
                 .and_then(|opt| opt.map(|bf| Arc::new(Mutex::new(bf))))
-                .unwrap_or(Arc::new(Mutex::new(BloomFilter::new(
-                    cfg.bloom_bits as usize,
-                    4,
-                ))));
+                .unwrap_or(Arc::new(Mutex::new(BloomFilter::new(cfg.bloom_bits, 4))));
             info!("Loaded bloom filter with {} bits", cfg.bloom_bits);
 
             loop {
@@ -168,7 +165,7 @@ impl StatePruner {
                 }
 
                 info!("Sleeping for {} seconds", cfg.interval_s);
-                thread::sleep(Duration::from_secs(cfg.interval_s as u64));
+                thread::sleep(Duration::from_secs(cfg.interval_s));
             }
         });
 

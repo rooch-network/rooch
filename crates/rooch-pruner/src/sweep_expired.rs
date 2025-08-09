@@ -91,11 +91,9 @@ impl SweepExpired {
             // traverse further to collect subtree nodes for deletion
             // if let Some(bytes) = self.node_store.get(&node_hash)? {
             if let Some(bytes) = self.moveos_store.node_store.get(&node_hash)? {
-                if let Ok(node) = Node::<H256, Vec<u8>>::decode(&bytes) {
-                    if let Node::Internal(internal) = node {
-                        for child_hash in internal.all_child() {
-                            stack.push_back(child_hash.into());
-                        }
+                if let Ok(Node::Internal(internal)) = Node::<H256, Vec<u8>>::decode(&bytes) {
+                    for child_hash in internal.all_child() {
+                        stack.push_back(child_hash.into());
                     }
                 }
             }

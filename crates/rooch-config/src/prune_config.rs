@@ -33,7 +33,8 @@ pub struct PruneConfig {
     pub interval_s: u64,
 
     /// Bloom filter size in bits (must be power of two for fast modulo).
-    #[clap(long, default_value_t = 4_194_304)]  // 2^22
+    // #[clap(long, default_value_t = 4_194_304)]  // 2^22
+    #[clap(long, default_value_t = 4294967296)] // 2^32
     pub bloom_bits: usize,
 
     /// Create and use optional cf_reach_seen column family for cold hash spill.
@@ -53,7 +54,7 @@ impl Default for PruneConfig {
             scan_batch: 10000,
             delete_batch: 5000,
             interval_s: 3600,
-            bloom_bits: 4_194_304,  // 2^22 = 4M
+            bloom_bits: 4_194_304, // 2^22 = 4M
             enable_reach_seen_cf: false,
             window_days: 30,
         }

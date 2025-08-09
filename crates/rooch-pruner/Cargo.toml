@@ -16,24 +16,16 @@ prometheus = { workspace = true }
 tokio = { workspace = true }
 tracing = { workspace = true }
 
-move-core-types = { workspace = true }
-
 rayon = { workspace = true }
 
 num_cpus = "*"
 
 parking_lot = { workspace = true }
 primitive-types = { workspace = true }
-serde = { version = "1", features=["derive"] }
-
 
 rooch-config = { workspace = true }
-rooch-types = { workspace = true }
 rooch-store = { workspace = true }
-rooch-common = { workspace = true }
 
-moveos-config = { workspace = true }
 moveos-common = { workspace = true }
 moveos-store = { workspace = true }
 moveos-types = { workspace = true }
-metrics = { workspace = true }

@@ -58,7 +58,7 @@ pub trait PruneStore {
     fn remove_node_refcount(&self, key: H256) -> Result<()>;
     fn write_stale_indices(&self, stale: &[(H256, H256)]) -> Result<()>;
 
-    fn get_stale_indice(&self, key: (H256, H256)) -> Result<Option<Vec<u8>>> ;
+    fn get_stale_indice(&self, key: (H256, H256)) -> Result<Option<Vec<u8>>>;
     fn remove_stale_indice(&self, key: (H256, H256)) -> Result<()>;
 }
 
@@ -116,7 +116,7 @@ impl PruneDBStore {
         let mut out = Vec::with_capacity(limit);
         let mut iter = self.stale_index_store.iter()?;
         iter.seek_to_first();
-        while let Some(item) = iter.next() {
+        for item in iter {
             let (key, _): ((H256, H256), Vec<u8>) = item?;
             if key.0 < cutoff_root {
                 out.push(key);
