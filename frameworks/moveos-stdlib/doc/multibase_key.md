@@ -15,7 +15,7 @@ operations for cryptographic keys with multicodec prefixes.
 This module builds on top of <code><a href="multibase_codec.md#0x2_multibase_codec">multibase_codec</a></code> to provide specialized encoding/decoding
 for cryptographic keys. It handles:
 
-1. Key type enumeration (Ed25519, Secp256k1, Secp256r1)
+1. Key type enumeration (Ed25519, Secp256k1, Secp256r1, Rs256)
 2. Multicodec prefixes for different key types
 3. Key length validation
 4. Encoding/decoding with type information
@@ -43,6 +43,7 @@ before applying base58btc encoding.
 -  [Function `key_type_ed25519`](#0x2_multibase_key_key_type_ed25519)
 -  [Function `key_type_secp256k1`](#0x2_multibase_key_key_type_secp256k1)
 -  [Function `key_type_ecdsar1`](#0x2_multibase_key_key_type_ecdsar1)
+-  [Function `key_type_rs256`](#0x2_multibase_key_key_type_rs256)
 -  [Function `multicodec_prefix_for_type`](#0x2_multibase_key_multicodec_prefix_for_type)
 -  [Function `encode_with_type`](#0x2_multibase_key_encode_with_type)
 -  [Function `decode_with_type`](#0x2_multibase_key_decode_with_type)
@@ -115,7 +116,7 @@ The length of Ed25519 public keys in bytes
 Error when the did:key identifier is invalid
 
 
-<pre><code><b>const</b> <a href="multibase_key.md#0x2_multibase_key_ErrorInvalidDidKeyIdentifier">ErrorInvalidDidKeyIdentifier</a>: u64 = 4;
+<pre><code><b>const</b> <a href="multibase_key.md#0x2_multibase_key_ErrorInvalidDidKeyIdentifier">ErrorInvalidDidKeyIdentifier</a>: u64 = 5;
 </code></pre>
 
 
@@ -135,7 +136,17 @@ Error when the Ed25519 key length is invalid
 Error when the format of the publicKeyMultibase string is invalid or cannot be parsed
 
 
-<pre><code><b>const</b> <a href="multibase_key.md#0x2_multibase_key_ErrorInvalidPublicKeyMultibaseFormat">ErrorInvalidPublicKeyMultibaseFormat</a>: u64 = 6;
+<pre><code><b>const</b> <a href="multibase_key.md#0x2_multibase_key_ErrorInvalidPublicKeyMultibaseFormat">ErrorInvalidPublicKeyMultibaseFormat</a>: u64 = 7;
+</code></pre>
+
+
+
+<a name="0x2_multibase_key_ErrorInvalidRs256KeyLength"></a>
+
+Error when the Rs256 key length is invalid
+
+
+<pre><code><b>const</b> <a href="multibase_key.md#0x2_multibase_key_ErrorInvalidRs256KeyLength">ErrorInvalidRs256KeyLength</a>: u64 = 4;
 </code></pre>
 
 
@@ -165,7 +176,7 @@ Error when the Secp256r1 key length is invalid
 Error when an unsupported key type is used
 
 
-<pre><code><b>const</b> <a href="multibase_key.md#0x2_multibase_key_ErrorUnsupportedKeyType">ErrorUnsupportedKeyType</a>: u64 = 5;
+<pre><code><b>const</b> <a href="multibase_key.md#0x2_multibase_key_ErrorUnsupportedKeyType">ErrorUnsupportedKeyType</a>: u64 = 6;
 </code></pre>
 
 
@@ -184,6 +195,15 @@ Error when an unsupported key type is used
 
 
 <pre><code><b>const</b> <a href="multibase_key.md#0x2_multibase_key_KEY_TYPE_ED25519">KEY_TYPE_ED25519</a>: u8 = 1;
+</code></pre>
+
+
+
+<a name="0x2_multibase_key_KEY_TYPE_RS256"></a>
+
+
+
+<pre><code><b>const</b> <a href="multibase_key.md#0x2_multibase_key_KEY_TYPE_RS256">KEY_TYPE_RS256</a>: u8 = 4;
 </code></pre>
 
 
@@ -220,6 +240,16 @@ Error when an unsupported key type is used
 
 
 <pre><code><b>const</b> <a href="multibase_key.md#0x2_multibase_key_MULTICODEC_SECP256K1_PREFIX">MULTICODEC_SECP256K1_PREFIX</a>: <a href="">vector</a>&lt;u8&gt; = [231, 1];
+</code></pre>
+
+
+
+<a name="0x2_multibase_key_RS256_PUBLIC_KEY_MODULUS_MINIMUM_LENGTH"></a>
+
+The minimum length of RSASSA-PKCS1-v1_5 public key modulus in bits
+
+
+<pre><code><b>const</b> <a href="multibase_key.md#0x2_multibase_key_RS256_PUBLIC_KEY_MODULUS_MINIMUM_LENGTH">RS256_PUBLIC_KEY_MODULUS_MINIMUM_LENGTH</a>: u64 = 2048;
 </code></pre>
 
 
@@ -294,13 +324,25 @@ Returns the key type constant for Secp256r1 (ECDSA P-256)
 
 
 
+<a name="0x2_multibase_key_key_type_rs256"></a>
+
+## Function `key_type_rs256`
+
+Returns the key type constant for Rs256 (RSASSA-PKCS1-v1_5)
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="multibase_key.md#0x2_multibase_key_key_type_rs256">key_type_rs256</a>(): u8
+</code></pre>
+
+
+
 <a name="0x2_multibase_key_multicodec_prefix_for_type"></a>
 
 ## Function `multicodec_prefix_for_type`
 
 Get the multicodec prefix for a given key type
 
-@param key_type - The key type (1=Ed25519, 2=Secp256k1, 3=Secp256r1)
+@param key_type - The key type (1=Ed25519, 2=Secp256k1, 3=Secp256r1, 4=Rs256)
 @return - The multicodec prefix bytes
 
 

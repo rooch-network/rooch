@@ -30,11 +30,11 @@ module rooch_framework::did_test_common {
     public fun generate_test_secp256k1_multibase(): string::String {
         //let pubkey = x"033e99a541db69bd32040dfe5037fbf5210dafa8151a71e21c5204b05d95ce0a62";
         let pk = b"0";
-        vector::append(&mut pk, bcs::to_bytes(&tx_context::fresh_address())); 
+        vector::append(&mut pk, bcs::to_bytes(&tx_context::fresh_address()));
         multibase_codec::encode_base58btc(&pk)
     }
 
-    /// Generate a test Ed25519 public key in multibase format  
+    /// Generate a test Ed25519 public key in multibase format
     public fun generate_test_ed25519_multibase(): string::String {
         // This is a test Ed25519 public key (32 bytes) in base58btc multibase format
         //let pk = x"cc62332e34bb2d5cd69f60efbb2a36cb916c7eb458301ea36636c4dbb012bd88";
@@ -46,7 +46,15 @@ module rooch_framework::did_test_common {
     public fun generate_test_ecdsa_r1_multibase(): string::String {
         // Generate a test ECDSA R1 public key (33 bytes) in base58btc multibase format
         let pk = b"0";
-        vector::append(&mut pk, bcs::to_bytes(&tx_context::fresh_address())); 
+        vector::append(&mut pk, bcs::to_bytes(&tx_context::fresh_address()));
+        multibase_codec::encode_base58btc(&pk)
+    }
+
+    /// Generate a test RS256 (RSASSA-PKCS1-V1_5) public key in multibase format
+    public fun generate_test_rs256_multibase(): string::String {
+        // Generate a test RS256 public key (2048 bits) in base58btc multibase format
+        let pk = b"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
+        vector::append(&mut pk, bcs::to_bytes(&tx_context::fresh_address()));
         multibase_codec::encode_base58btc(&pk)
     }
 
@@ -103,7 +111,7 @@ module rooch_framework::did_test_common {
         assert!(option::is_some(&pk_bytes_opt), 9001);
         let pk_bytes = option::destroy_some(pk_bytes_opt);
         let auth_key = session_key::secp256k1_public_key_to_authentication_key(&pk_bytes);
-        
+
         // Set up mock with the matching Bitcoin address and session key
         auth_validator::set_tx_validate_result_for_testing(
             0, // auth_validator_id
@@ -111,7 +119,7 @@ module rooch_framework::did_test_common {
             option::some(auth_key), // session_key
             creator_bitcoin_address // bitcoin_address
         );
-        
+
         // Create DID
         let did_object_id = did::create_did_object_for_self_with_custom_scopes(&creator_signer, creator_public_key_multibase, session_scope);
         
@@ -134,7 +142,7 @@ module rooch_framework::did_test_common {
         assert!(option::is_some(&pk_bytes_opt), 9002);
         let pk_bytes = option::destroy_some(pk_bytes_opt);
         let auth_key = session_key::secp256k1_public_key_to_authentication_key(&pk_bytes);
-        
+
         // Set up mock with the matching Bitcoin address and session key
         auth_validator::set_tx_validate_result_for_testing(
             0, // auth_validator_id
@@ -142,7 +150,7 @@ module rooch_framework::did_test_common {
             option::some(auth_key), // session_key
             creator_bitcoin_address // bitcoin_address
         );
-        
+
         (creator_signer, creator_address, creator_public_key_multibase)
     }
 
@@ -200,45 +208,45 @@ module rooch_framework::did_test_common {
         // Get the DID document and its address
         let custodian_did_document = did::get_did_document_by_object_id(custodian_did_object_id);
         let custodian_did_address = did::get_did_address(custodian_did_document);
-        
+
         // Create a signer for the DID address (this is the custodian)
         let custodian_signer = account::create_signer_for_testing(custodian_did_address);
-        
+
         // Set up session key authentication for the DID address using the creator's key
         // The DID was created with the creator's Secp256k1 key, so we use that for authentication
         setup_secp256k1_session_key_auth(&creator_public_key);
-        
+
         // Add CADOP custodian service to the DID
         let service_fragment = string::utf8(b"cadop-custodian");
         let service_type = string::utf8(b"CadopCustodianService");
         let service_endpoint = string::utf8(b"https://custodian.example.com/cadop");
-        
+
         did::add_service_entry(&custodian_signer, service_fragment, service_type, service_endpoint);
-        
+
         custodian_signer
     }
 
     /// Setup function for CADOP tests with both custodian and user preparation
     /// Returns (custodian_signer, user_did_key_string, custodian_service_pk, custodian_service_vm_type)
     public fun setup_cadop_test_full(): (signer, string::String, string::String, string::String) {
-        
+
         // For now, let's use the test-only bypass method since setting up proper
         // session key authentication for service addition is complex
         let custodian_signer = setup_custodian_with_cadop_service();
         let user_did_key_string = generate_test_did_key_string();
         let custodian_service_pk_multibase = generate_test_secp256k1_multibase();
         let custodian_service_vm_type = string::utf8(b"EcdsaSecp256k1VerificationKey2019");
-        
+
         (custodian_signer, user_did_key_string, custodian_service_pk_multibase, custodian_service_vm_type)
     }
 
     /// Generate a valid did:key string for testing with proper multicodec prefix
     public fun generate_test_did_key_string(): string::String {
-        
+
         let pk = b"0";
         vector::append(&mut pk, bcs::to_bytes(&tx_context::fresh_address()));
-        
+
         // Use the did_key module to generate a did:key string
         did_key::generate_secp256r1(&pk)
     }
-} 
+}
