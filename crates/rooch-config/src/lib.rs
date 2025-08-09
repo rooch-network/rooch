@@ -23,6 +23,7 @@ use std::{fmt::Debug, path::Path, path::PathBuf};
 pub mod config;
 pub mod da_config;
 pub mod proposer_config;
+pub mod prune_config;
 pub mod server_config;
 pub mod settings;
 pub mod store_config;
@@ -175,6 +176,9 @@ pub struct RoochOpt {
     #[serde(skip)]
     #[clap(skip)]
     base: Option<Arc<BaseConfig>>,
+
+    #[clap(long, default_value_t = true)]
+    pub pruner_enable: bool,
 }
 
 impl std::fmt::Display for RoochOpt {
@@ -212,6 +216,7 @@ impl RoochOpt {
             traffic_burst_size: None,
             base: None,
             service_type: ServiceType::default(),
+            pruner_enable: false,
         };
         opt.init()?;
         Ok(opt)
@@ -523,3 +528,5 @@ mod tests {
         }
     }
 }
+
+// pub use prune_config::PruneConfig;

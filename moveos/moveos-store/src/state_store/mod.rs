@@ -8,8 +8,8 @@ use crate::STATE_NODE_COLUMN_FAMILY_NAME;
 use anyhow::Result;
 use moveos_types::h256::H256;
 use raw_store::rocks::batch::WriteBatch;
-use raw_store::CodecKVStore;
-use raw_store::{derive_store, WriteOp};
+use raw_store::WriteOp;
+use raw_store::{derive_store, CodecKVStore};
 use smt::{NodeReader, NodeWriter};
 use std::collections::BTreeMap;
 
@@ -25,6 +25,15 @@ impl NodeDBStore {
             nodes
                 .into_iter()
                 .map(|(k, v)| (k.0.to_vec(), WriteOp::Value(v)))
+                .collect(),
+        );
+        self.write_batch_raw(batch)
+    }
+
+    pub fn delete_nodes(&self, keys: Vec<H256>) -> Result<()> {
+        let batch = WriteBatch::new_with_rows(
+            keys.into_iter()
+                .map(|k| (k.0.to_vec(), WriteOp::Deletion))
                 .collect(),
         );
         self.write_batch_raw(batch)

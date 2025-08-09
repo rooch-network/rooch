@@ -7779,6 +7779,7 @@ dependencies = [
  "move-binary-format",
  "move-core-types",
  "move-vm-types",
+ "primitive-types 0.12.2",
  "serde 1.0.219",
  "tracing",
 ]
@@ -7889,9 +7890,11 @@ dependencies = [
  "function_name",
  "metrics",
  "move-core-types",
+ "moveos-common",
  "moveos-config",
  "moveos-types",
  "once_cell",
+ "primitive-types 0.12.2",
  "prometheus",
  "quick_cache",
  "rand 0.8.5",
@@ -10957,6 +10960,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "rooch-pruner"
+version = "0.9.7"
+dependencies = [
+ "anyhow 1.0.95",
+ "moveos-common",
+ "moveos-store",
+ "moveos-types",
+ "num_cpus",
+ "parking_lot 0.12.4",
+ "primitive-types 0.12.2",
+ "prometheus",
+ "rayon",
+ "rooch-config",
+ "rooch-store",
+ "smt",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "rooch-relayer"
 version = "0.9.7"
 dependencies = [
@@ -11065,6 +11088,7 @@ dependencies = [
  "rooch-open-rpc-spec-builder",
  "rooch-pipeline-processor",
  "rooch-proposer",
+ "rooch-pruner",
  "rooch-relayer",
  "rooch-rpc-api",
  "rooch-sequencer",
