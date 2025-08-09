@@ -13,7 +13,7 @@ use parking_lot::Mutex;
 pub use rooch_config::prune_config::PruneConfig;
 use rooch_store::RoochStore;
 // Bring trait methods into scope for method-call syntax
-use primitive_types::H256;
+
 use rooch_store::meta_store::MetaStore;
 use rooch_store::state_store::StateStore;
 use std::sync::{
@@ -114,8 +114,7 @@ impl StatePruner {
                             .unwrap_or(0);
                         info!("Latest sequencer order: {}", latest_order);
 
-                        // Collect at most `scan_batch` roots starting from the oldest end
-                        let mut expired_roots: Vec<H256> = Vec::with_capacity(cfg.scan_batch);
+                        // Stream process expired roots
                         let mut order_cursor = if latest_order > 30000 {
                             latest_order - 30000
                         } else if latest_order >= 1 {
@@ -125,21 +124,45 @@ impl StatePruner {
                         };
                         info!("Starting scan from order {}", order_cursor);
 
-                        while expired_roots.len() < cfg.scan_batch && order_cursor > 0 {
+                        let sweeper = SweepExpired::new(moveos_store.clone(), bloom.clone());
+                        let mut processed_count = 0;
+                        let mut batch_roots = Vec::with_capacity(1000); // Process in smaller batches
+
+                        while processed_count < cfg.scan_batch && order_cursor > 0 {
                             if let Some(scs) = rooch_store
                                 .get_state_change_set(order_cursor)
                                 .ok()
                                 .flatten()
                             {
-                                expired_roots.push(scs.state_change_set.state_root);
+                                batch_roots.push(scs.state_change_set.state_root);
+
+                                // Process in smaller batches to avoid memory pressure
+                                if batch_roots.len() >= 1000 {
+                                    if let Ok(deleted) = sweeper.sweep(batch_roots, num_cpus::get())
+                                    {
+                                        info!("Swept batch of roots, this time deleted {} nodes, total deleted {} nodes", deleted, processed_count);
+                                    }
+                                    processed_count += 1000;
+                                    batch_roots = Vec::with_capacity(1000);
+                                }
                             }
                             order_cursor -= 1;
                         }
-                        info!("Found {} expired roots to sweep", expired_roots.len());
 
-                        let sweeper = SweepExpired::new(moveos_store.clone(), bloom.clone());
-                        let _ = sweeper.sweep(expired_roots, num_cpus::get());
-                        info!("Completed expired roots sweep");
+                        // Process any remaining roots
+                        if !batch_roots.is_empty() {
+                            if let Ok(deleted) = sweeper.sweep(batch_roots, num_cpus::get()) {
+                                info!(
+                                    "Swept final batch of roots, total deleted {} nodes",
+                                    deleted
+                                );
+                            }
+                        }
+
+                        info!(
+                            "Completed expired roots sweep, processed {} roots",
+                            processed_count
+                        );
 
                         // Persist bloom snapshot after sweep phase
                         {
