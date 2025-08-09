@@ -177,7 +177,7 @@ pub struct RoochOpt {
     #[clap(skip)]
     base: Option<Arc<BaseConfig>>,
 
-    #[clap(long, default_value_t = false)]
+    #[clap(long, default_value_t = true)]
     pub pruner_enable: bool,
 }
 
