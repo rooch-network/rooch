@@ -78,18 +78,34 @@ impl SweepExpired {
         use std::collections::VecDeque;
         let mut stack = VecDeque::new();
         stack.push_back(root_hash);
-        let mut to_delete = Vec::new();
+        let mut batch = Vec::with_capacity(1000); // Process deletion in small batches
+        let mut total_deleted: u64 = 0;
 
         while let Some(node_hash) = stack.pop_back() {
             // if node is reachable by other live roots, keep it
             if self.is_reachable(&node_hash) {
                 continue;
             }
-            // candidate for deletion
-            to_delete.push(node_hash);
 
-            // traverse further to collect subtree nodes for deletion
-            // if let Some(bytes) = self.node_store.get(&node_hash)? {
+            // Add to current batch for deletion
+            batch.push(node_hash);
+            total_deleted += 1;
+
+            // Process batch if it reaches the threshold
+            if batch.len() >= 1000 {
+                // TODO verify first, then delete
+                // self.moveos_store.node_store.delete_nodes(batch.clone())?;
+                info!(
+                    "Sweep expired this loop deletes batch size {}, total delete size {}",
+                    batch.len(),
+                    total_deleted
+                );
+                info!("Sweep expired this loop delete batch {:?}", batch);
+                deleted.fetch_add(batch.len() as u64, std::sync::atomic::Ordering::Relaxed);
+                batch.clear();
+            }
+
+            // Traverse children and add to stack
             if let Some(bytes) = self.moveos_store.node_store.get(&node_hash)? {
                 if let Ok(Node::Internal(internal)) = Node::<H256, Vec<u8>>::decode(&bytes) {
                     for child_hash in internal.all_child() {
@@ -98,16 +114,24 @@ impl SweepExpired {
                 }
             }
         }
-        if !to_delete.is_empty() {
-            // delete in batch
+
+        // Process any remaining nodes in the final batch
+        if !batch.is_empty() {
             // TODO verify first, then delete
-            // self.moveos_store
-            //     .node_store
-            //     .delete_nodes(to_delete.clone())?;
-            info!("Sweep expired delete nodes size {}", to_delete.len());
-            info!("Sweep expired delete nodes {:?}", to_delete.clone());
-            deleted.fetch_add(to_delete.len() as u64, std::sync::atomic::Ordering::Relaxed);
+            // self.moveos_store.node_store.delete_nodes(batch.clone())?;
+            info!(
+                "Sweep expired delete final batch size {}, total delete size {}",
+                batch.len(),
+                total_deleted
+            );
+            info!("Sweep expired delete final batch {:?}", batch);
+            deleted.fetch_add(batch.len() as u64, std::sync::atomic::Ordering::Relaxed);
         }
+
+        info!(
+            "Completed sweeping root, total deleted nodes: {}",
+            total_deleted
+        );
         Ok(())
     }
 }

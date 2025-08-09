@@ -150,7 +150,7 @@ impl StatePruner {
                                     }
                                     if let Ok(deleted) = sweeper.sweep(batch_roots, num_cpus::get())
                                     {
-                                        info!("Swept batch of roots, this time deleted {} nodes, total deleted {} nodes", deleted, processed_count);
+                                        info!("Swept batch of roots, this loop deleted {} nodes, total deleted {} nodes", deleted, processed_count);
                                     }
                                     processed_count += 1000;
                                     batch_roots = Vec::with_capacity(1000);
