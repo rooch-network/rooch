@@ -190,7 +190,7 @@ impl StatePruner {
                         info!("Transitioning back to Incremental phase");
                     }
                     PrunePhase::Incremental => {
-                        info!("Incremental phase disabled, transitioning to BuildReach");
+                        info!("Incremental phase disabled, do Nothing");
                         // moveos_store
                         //     .save_prune_meta_phase(PrunePhase::BuildReach)
                         //     .ok();
