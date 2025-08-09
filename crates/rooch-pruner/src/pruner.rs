@@ -129,6 +129,12 @@ impl StatePruner {
                         let mut batch_roots = Vec::with_capacity(1000); // Process in smaller batches
 
                         while processed_count < cfg.scan_batch && order_cursor > 0 {
+                            // Check exit signal frequently
+                            if !thread_running.load(Ordering::Relaxed) {
+                                info!("Pruner thread stopping during sweep");
+                                return;
+                            }
+
                             if let Some(scs) = rooch_store
                                 .get_state_change_set(order_cursor)
                                 .ok()
@@ -138,6 +144,10 @@ impl StatePruner {
 
                                 // Process in smaller batches to avoid memory pressure
                                 if batch_roots.len() >= 1000 {
+                                    if !thread_running.load(Ordering::Relaxed) {
+                                        info!("Pruner thread stopping before batch sweep");
+                                        return;
+                                    }
                                     if let Ok(deleted) = sweeper.sweep(batch_roots, num_cpus::get())
                                     {
                                         info!("Swept batch of roots, this time deleted {} nodes, total deleted {} nodes", deleted, processed_count);
@@ -175,20 +185,29 @@ impl StatePruner {
                         }
 
                         moveos_store
-                            .save_prune_meta_phase(PrunePhase::BuildReach)
+                            .save_prune_meta_phase(PrunePhase::Incremental)
                             .ok();
-                        info!("Transitioning back to BuildReach phase");
+                        info!("Transitioning back to Incremental phase");
                     }
                     PrunePhase::Incremental => {
                         info!("Incremental phase disabled, transitioning to BuildReach");
-                        moveos_store
-                            .save_prune_meta_phase(PrunePhase::BuildReach)
-                            .ok();
+                        // moveos_store
+                        //     .save_prune_meta_phase(PrunePhase::BuildReach)
+                        //     .ok();
                     }
                 }
 
                 info!("Sleeping for {} seconds", cfg.interval_s);
-                thread::sleep(Duration::from_secs(cfg.interval_s));
+                // Sleep in small intervals to respond to exit signal quickly
+                let mut slept = 0;
+                while slept < cfg.interval_s {
+                    if !thread_running.load(Ordering::Relaxed) {
+                        info!("Pruner thread stopping during sleep");
+                        return;
+                    }
+                    thread::sleep(Duration::from_secs(1));
+                    slept += 1;
+                }
             }
         });
 
