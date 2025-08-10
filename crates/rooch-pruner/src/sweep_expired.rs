@@ -12,6 +12,7 @@ use smt::jellyfish_merkle::node_type::Node;
 use smt::NodeReader;
 use std::sync::Arc;
 use tracing::info;
+// no extra high-level imports
 
 /// SweepExpired traverses expired roots (< cutoff) and deletes any node hash not present in ReachableSet.
 /// ReachableSet is represented by an in-memory Bloom filter plus optional `reach_seen` CF.

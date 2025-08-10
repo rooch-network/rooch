@@ -92,23 +92,6 @@ impl ReachableBuilder {
             //     let _ = reach_store.kv_put(node_hash, Vec::new());
             // }
 
-            // // fetch node bytes
-            // // let node_bytes_opt = self.node_store.get(&node_hash)?;
-            // let node_bytes_opt = self.moveos_store.node_store.get(&node_hash)?;
-            // let node_bytes = match node_bytes_opt {
-            //     Some(b) => b,
-            //     None => {
-            //         tracing::warn!(target: "reach_builder", "node {:?} missing", node_hash);
-            //         continue;
-            //     }
-            // };
-            // // decode Node and push children if internal node
-            // if let Ok(Node::Internal(internal)) = Node::<H256, Vec<u8>>::decode(&node_bytes) {
-            //     for child_hash in internal.all_child() {
-            //         stack.push_back(child_hash.into());
-            //     }
-            // }
-
             // Inside dfs loop, traverse children and leaf add to stack
             // Include both Global‐State and Table-State JMT
             if let Some(bytes) = self.moveos_store.node_store.get(&node_hash)? {

@@ -27,28 +27,97 @@ pub fn read_uleb128(bytes: &[u8]) -> Option<(usize, usize)> {
 /// The on-disk layout is: `[tag 0x02][key 32B][ULEB128 len][payload len bytes]`.
 /// We assume the payload is `[32B child_root][4B entry_count]` when `len == 36`.
 pub fn try_extract_child_root(bytes: &[u8]) -> Option<H256> {
-    // Minimal length check: tag (1) + key (32) + len (1) + payload (36)
-    if bytes.len() < 70 {
+    // Ensure node tag indicates Leaf
+    if bytes.first()? != &2u8 {
         return None;
     }
 
-    if bytes[0] != 2 {
-        // Not a leaf node
-        return None;
-    }
-
-    // Skip tag and key
+    // Skip tag (1) + key (32)
     let mut pos = 1 + 32;
 
-    // Parse ULEB128 length
+    // Read payload length
     let (len, leb_len) = read_uleb128(&bytes[pos..])?;
     pos += leb_len;
+    if pos + len > bytes.len() {
+        return None;
+    }
+    let payload = &bytes[pos..pos + len];
 
-    // We only care about the special 36-byte payload case
-    if len != 36 || pos + 36 > bytes.len() {
+    // Fast-parse ObjectState metadata without full BCS
+    let mut p = 0;
+    // 1. ObjectID (32 bytes)
+    if payload.len() < p + 32 {
+        return None;
+    }
+    p += 32;
+    // 2. owner AccountAddress (32 bytes)
+    if payload.len() < p + 32 {
+        return None;
+    }
+    p += 32;
+    // 3. flag (1 byte)
+    if payload.len() < p + 1 {
+        return None;
+    }
+    p += 1;
+
+    // 4. Option<H256> variant for state_root
+    if payload.len() <= p {
+        return None;
+    }
+    let variant = payload[p];
+    p += 1;
+    if variant != 1 {
+        // Option::None => not a table root
+        return None;
+    }
+    if payload.len() < p + 32 {
+        return None;
+    }
+    let hash = H256::from_slice(&payload[p..p + 32]);
+
+    // Skip size (u64) + created_at (u64) + updated_at (u64)
+    if payload.len() < p + 24 {
+        return None;
+    }
+    p += 24;
+
+    // Parse TypeTag to ensure it is TablePlaceholder
+    if payload.len() <= p {
+        return None;
+    }
+    let tt_variant = payload[p]; // 4 == Struct
+    p += 1;
+    if tt_variant != 4 {
+        // not Struct TypeTag
         return None;
     }
 
-    // Take the first 32 bytes as the child root hash
-    Some(H256::from_slice(&bytes[pos..pos + 32]))
+    // Skip address (32 bytes)
+    if payload.len() < p + 32 {
+        return None;
+    }
+    p += 32;
+
+    // Read module name
+    let (mod_len, mod_len_bytes) = read_uleb128(&payload[p..])?;
+    p += mod_len_bytes;
+    if payload.len() < p + mod_len {
+        return None;
+    }
+    let mod_name = &payload[p..p + mod_len];
+    p += mod_len;
+
+    // Read struct name
+    let (struct_len, struct_len_bytes) = read_uleb128(&payload[p..])?;
+    p += struct_len_bytes;
+    if payload.len() < p + struct_len {
+        return None;
+    }
+    let struct_name = &payload[p..p + struct_len];
+
+    if mod_name == b"table" && struct_name == b"TablePlaceholder" {
+        return Some(hash);
+    }
+    None
 }
