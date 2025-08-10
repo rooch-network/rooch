@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::util::try_extract_child_root;
 use anyhow::Result;
 use moveos_common::bloom_filter::BloomFilter;
 use moveos_store::MoveOSStore;
@@ -105,9 +106,13 @@ impl SweepExpired {
                 batch.clear();
             }
 
-            // Traverse children and add to stack
+            // Inside dfs loop, traverse children and leaf add to stack
+            // Include both Global‐State and Table-State JMT
             if let Some(bytes) = self.moveos_store.node_store.get(&node_hash)? {
-                if let Ok(Node::Internal(internal)) = Node::<H256, Vec<u8>>::decode(&bytes) {
+                // If this leaf embeds another table root, push it to the stack for further traversal.
+                if let Some(child_root) = try_extract_child_root(&bytes) {
+                    stack.push_back(child_root);
+                } else if let Ok(Node::Internal(internal)) = Node::<H256, Vec<u8>>::decode(&bytes) {
                     for child_hash in internal.all_child() {
                         stack.push_back(child_hash.into());
                     }

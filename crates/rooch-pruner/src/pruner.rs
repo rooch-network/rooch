@@ -58,6 +58,7 @@ impl StatePruner {
                 .unwrap_or(Arc::new(Mutex::new(BloomFilter::new(cfg.bloom_bits, 4))));
             info!("Loaded bloom filter with {} bits", cfg.bloom_bits);
 
+            let mut phase = PrunePhase::BuildReach;
             loop {
                 if !thread_running.load(Ordering::Relaxed) {
                     info!("Pruner thread stopping");
@@ -65,9 +66,10 @@ impl StatePruner {
                 }
 
                 // load current phase
-                let phase = moveos_store
-                    .load_prune_meta_phase()
-                    .unwrap_or(PrunePhase::BuildReach);
+                // let phase = moveos_store
+                //     .load_prune_meta_phase()
+                //     .unwrap_or(PrunePhase::BuildReach);
+                // let phase = PrunePhase::BuildReach;
                 info!("Current prune phase: {:?}", phase);
 
                 match phase {
@@ -196,6 +198,10 @@ impl StatePruner {
                         //     .ok();
                     }
                 }
+                // reload current phase
+                phase = moveos_store
+                    .load_prune_meta_phase()
+                    .unwrap_or(PrunePhase::BuildReach);
 
                 info!("Sleeping for {} seconds", cfg.interval_s);
                 // Sleep in small intervals to respond to exit signal quickly

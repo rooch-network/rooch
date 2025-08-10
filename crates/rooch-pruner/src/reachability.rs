@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::util::try_extract_child_root;
 use anyhow::Result;
 use moveos_common::bloom_filter::BloomFilter;
 use moveos_store::MoveOSStore;
@@ -91,22 +92,36 @@ impl ReachableBuilder {
             //     let _ = reach_store.kv_put(node_hash, Vec::new());
             // }
 
-            // fetch node bytes
-            // let node_bytes_opt = self.node_store.get(&node_hash)?;
-            let node_bytes_opt = self.moveos_store.node_store.get(&node_hash)?;
-            let node_bytes = match node_bytes_opt {
-                Some(b) => b,
-                None => {
-                    tracing::warn!(target: "reach_builder", "node {:?} missing", node_hash);
-                    continue;
-                }
-            };
-            // decode Node and push children if internal node
-            if let Ok(Node::Internal(internal)) = Node::<H256, Vec<u8>>::decode(&node_bytes) {
-                for child_hash in internal.all_child() {
-                    stack.push_back(child_hash.into());
+            // // fetch node bytes
+            // // let node_bytes_opt = self.node_store.get(&node_hash)?;
+            // let node_bytes_opt = self.moveos_store.node_store.get(&node_hash)?;
+            // let node_bytes = match node_bytes_opt {
+            //     Some(b) => b,
+            //     None => {
+            //         tracing::warn!(target: "reach_builder", "node {:?} missing", node_hash);
+            //         continue;
+            //     }
+            // };
+            // // decode Node and push children if internal node
+            // if let Ok(Node::Internal(internal)) = Node::<H256, Vec<u8>>::decode(&node_bytes) {
+            //     for child_hash in internal.all_child() {
+            //         stack.push_back(child_hash.into());
+            //     }
+            // }
+
+            // Inside dfs loop, traverse children and leaf add to stack
+            // Include both Global‐State and Table-State JMT
+            if let Some(bytes) = self.moveos_store.node_store.get(&node_hash)? {
+                // If this leaf embeds another table root, push it to the stack for further traversal.
+                if let Some(child_root) = try_extract_child_root(&bytes) {
+                    stack.push_back(child_root);
+                } else if let Ok(Node::Internal(internal)) = Node::<H256, Vec<u8>>::decode(&bytes) {
+                    for child_hash in internal.all_child() {
+                        stack.push_back(child_hash.into());
+                    }
                 }
             }
+
             curr_count += 1;
             counter.fetch_add(1, atomic::Ordering::Relaxed);
 
