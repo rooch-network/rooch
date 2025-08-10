@@ -51,6 +51,8 @@ impl StatePruner {
 
         let handle = thread::spawn(move || {
             info!("Pruner thread started");
+            // TODO to be removed, Overwrite the old data first
+            let _ = moveos_store.save_prune_meta_bloom(BloomFilter::new(cfg.bloom_bits, 4));
             let bloom = moveos_store
                 .load_prune_meta_bloom()
                 .ok()
