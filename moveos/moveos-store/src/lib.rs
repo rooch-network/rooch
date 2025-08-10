@@ -22,7 +22,7 @@ use moveos_types::h256::H256;
 use moveos_types::moveos_std::event::{Event, EventID, TransactionEvent};
 use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::moveos_std::onchain_features::FeatureStore;
-use moveos_types::prune::PrunePhase;
+use moveos_types::prune::{PrunePhase, PruneSnapshot};
 use moveos_types::startup_info::StartupInfo;
 use moveos_types::state::{FieldKey, ObjectState};
 use moveos_types::state_resolver::{StateKV, StateResolver, StatelessResolver};
@@ -58,12 +58,12 @@ pub const EVENT_HANDLE_COLUMN_FAMILY_NAME: ColumnFamilyName = "event_handle";
 pub const CONFIG_STARTUP_INFO_COLUMN_FAMILY_NAME: ColumnFamilyName = "config_startup_info";
 pub const CONFIG_GENESIS_COLUMN_FAMILY_NAME: ColumnFamilyName = "config_genesis";
 pub const REACH_SEEN_COLUMN_FAMILY_NAME: ColumnFamilyName = "reach_seen";
-// pub const PRUNE_META_COLUMN_FAMILY_NAME: ColumnFamilyName = "prune_meta_";
 pub const SMT_STALE_INDEX_COLUMN_FAMILY_NAME: ColumnFamilyName = "smt_stale";
 pub const NODE_REFCOUNT_COLUMN_FAMILY_NAME: ColumnFamilyName = "node_refcount";
 
 pub const PRUNE_META_PHASE_COLUMN_FAMILY_NAME: ColumnFamilyName = "prune_meta_phase";
 pub const PRUNE_META_BLOOM_COLUMN_FAMILY_NAME: ColumnFamilyName = "prune_meta_bloom";
+pub const PRUNE_META_SNAPSHOT_COLUMN_FAMILY_NAME: ColumnFamilyName = "prune_meta_snapshot";
 
 // pub const META_KEY_PHASE: &str = "phase";
 // pub const META_KEY_CURSOR: &str = "cursor"; // placeholder for future use
@@ -84,6 +84,7 @@ static VEC_COLUMN_FAMILY_NAME: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
         NODE_REFCOUNT_COLUMN_FAMILY_NAME,
         PRUNE_META_PHASE_COLUMN_FAMILY_NAME,
         PRUNE_META_BLOOM_COLUMN_FAMILY_NAME,
+        PRUNE_META_SNAPSHOT_COLUMN_FAMILY_NAME,
     ]
 });
 
@@ -404,6 +405,14 @@ impl PruneStore for MoveOSStore {
 
     fn remove_stale_indice(&self, key: (H256, H256)) -> Result<()> {
         self.prune_store.remove_stale_indice(key)
+    }
+
+    fn save_prune_meta_snapshot(&self, snap: PruneSnapshot) -> Result<()> {
+        self.prune_store.save_prune_meta_snapshot(snap)
+    }
+
+    fn load_prune_meta_snapshot(&self) -> Result<Option<PruneSnapshot>> {
+        self.prune_store.load_prune_meta_snapshot()
     }
 }
 
