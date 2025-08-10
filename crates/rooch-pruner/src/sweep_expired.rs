@@ -102,7 +102,9 @@ impl SweepExpired {
                     batch.len(),
                     total_deleted
                 );
-                info!("Sweep expired this loop delete batch {:?}", batch);
+                if total_deleted > 10000 && total_deleted % 50000 == 0 {
+                    info!("Sweep expired this loop delete batch {:?}", batch);
+                }
                 deleted.fetch_add(batch.len() as u64, std::sync::atomic::Ordering::Relaxed);
                 batch.clear();
             }
@@ -130,7 +132,9 @@ impl SweepExpired {
                 batch.len(),
                 total_deleted
             );
-            info!("Sweep expired delete final batch {:?}", batch);
+            if total_deleted > 10000 && total_deleted % 50000 == 0 {
+                info!("Sweep expired delete final batch {:?}", batch);
+            }
             deleted.fetch_add(batch.len() as u64, std::sync::atomic::Ordering::Relaxed);
         }
 
