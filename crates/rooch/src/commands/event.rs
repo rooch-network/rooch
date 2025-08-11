@@ -63,7 +63,7 @@ impl CommandAction<EventPageView> for GetEventsByEventHandle {
         let client = context.get_client().await?;
 
         // Parse the event handle as either StructTag or ObjectID
-        // Need handle the adderss mapping, so we can't use StructTagOrObjectID::from_str directly
+        // Need handle the address mapping, so we can't use StructTagOrObjectID::from_str directly
         let event_handle: EnumStructTagOrObjectIDView =
             // Try parsing as StructTag first
             match ParsedStructType::parse(&self.event_handle) {

@@ -46,7 +46,7 @@ pub mod utils;
 /// Type alias to improve readability.
 pub type IndexerResult<T> = Result<T, IndexerError>;
 pub const MAX_LIST_FIELD_SIZE: usize = 200;
-pub const DEFAULT_BUSY_TIMEOUT: u64 = 5000; // millsecond
+pub const DEFAULT_BUSY_TIMEOUT: u64 = 5000; // millisecond
 pub type IndexerTableName = &'static str;
 pub const INDEXER_EVENTS_TABLE_NAME: IndexerTableName = "events";
 pub const INDEXER_OBJECT_STATES_TABLE_NAME: IndexerTableName = "object_states";

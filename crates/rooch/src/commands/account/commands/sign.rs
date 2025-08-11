@@ -55,7 +55,7 @@ impl CommandAction<Option<String>> for SignCommand {
             Ok(Some(signature_hex))
         } else {
             println!(
-                "Sign message succeeded with the signatue {:?}",
+                "Sign message succeeded with the signature {:?}",
                 signature_hex
             );
             Ok(None)

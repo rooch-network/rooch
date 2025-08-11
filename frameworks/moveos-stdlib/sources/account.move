@@ -46,7 +46,7 @@ module moveos_std::account {
    /// This function is deprecated, please use `create_account_and_return_cap` instead
    public fun create_account(): Object<Account> {
       //We shoud not return Object<Account> directly,
-      //Becase if other struct hold the Object<Account>, and the resource functions will not work
+      //Because if other struct hold the Object<Account>, and the resource functions will not work
       abort ErrorDeprecateFunction
    }
 
