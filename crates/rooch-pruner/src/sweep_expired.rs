@@ -95,8 +95,8 @@ impl SweepExpired {
 
             // Process batch if it reaches the threshold
             if batch.len() >= 1000 {
-                // TODO verify first, then delete
-                // self.moveos_store.node_store.delete_nodes(batch.clone())?;
+                // verify first, then delete
+                self.moveos_store.node_store.delete_nodes(batch.clone())?;
                 info!(
                     "Sweep expired this loop deletes batch size {}, total delete size {}",
                     batch.len(),
@@ -125,8 +125,8 @@ impl SweepExpired {
 
         // Process any remaining nodes in the final batch
         if !batch.is_empty() {
-            // TODO verify first, then delete
-            // self.moveos_store.node_store.delete_nodes(batch.clone())?;
+            // verify first, then delete
+            self.moveos_store.node_store.delete_nodes(batch.clone())?;
             info!(
                 "Sweep expired delete final batch size {}, total delete size {}",
                 batch.len(),

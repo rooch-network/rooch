@@ -51,8 +51,6 @@ impl StatePruner {
 
         let handle = thread::spawn(move || {
             info!("Pruner thread started");
-            // TODO to be removed, Overwrite the old data first
-            let _ = moveos_store.save_prune_meta_bloom(BloomFilter::new(cfg.bloom_bits, 4));
             let bloom = moveos_store
                 .load_prune_meta_bloom()
                 .ok()
@@ -152,7 +150,8 @@ impl StatePruner {
                         let mut processed_count = 0;
                         let mut batch_roots = Vec::with_capacity(1000); // Process in smaller batches
 
-                        while processed_count < cfg.scan_batch && order_cursor > 0 {
+                        // while processed_count < cfg.scan_batch && order_cursor > 0 {
+                        while order_cursor > 0 {
                             // Check exit signal frequently
                             if !thread_running.load(Ordering::Relaxed) {
                                 info!("Pruner thread stopping during sweep");
@@ -218,6 +217,11 @@ impl StatePruner {
                         // moveos_store
                         //     .save_prune_meta_phase(PrunePhase::BuildReach)
                         //     .ok();
+                        // Check exit signal frequently
+                        if !thread_running.load(Ordering::Relaxed) {
+                            info!("Pruner thread stopping during sweep");
+                            return;
+                        }
                     }
                 }
                 // reload current phase
