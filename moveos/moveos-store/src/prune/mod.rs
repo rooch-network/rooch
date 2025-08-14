@@ -3,18 +3,19 @@
 
 use crate::{
     NODE_REFCOUNT_COLUMN_FAMILY_NAME, PRUNE_META_BLOOM_COLUMN_FAMILY_NAME,
-    PRUNE_META_PHASE_COLUMN_FAMILY_NAME, REACH_SEEN_COLUMN_FAMILY_NAME,
-    SMT_STALE_INDEX_COLUMN_FAMILY_NAME,
+    PRUNE_META_PHASE_COLUMN_FAMILY_NAME, PRUNE_META_SNAPSHOT_COLUMN_FAMILY_NAME,
+    REACH_SEEN_COLUMN_FAMILY_NAME, SMT_STALE_INDEX_COLUMN_FAMILY_NAME,
 };
 use anyhow::Result;
 use moveos_common::bloom_filter::BloomFilter;
-use moveos_types::prune::PrunePhase;
+use moveos_types::prune::{PrunePhase, PruneSnapshot};
 use primitive_types::H256;
 use raw_store::{derive_store, CodecKVStore, StoreInstance};
 
 const META_KEY_PHASE: &str = "phase";
 // const META_KEY_CURSOR: &str = "cursor"; // placeholder for future use
 const META_KEY_BLOOM: &str = "bloom_snapshot";
+const META_KEY_SNAPSHOT: &str = "meta_snapshot";
 
 derive_store!(
     ReachSeenDBStore,
@@ -46,6 +47,12 @@ derive_store!(
     u32,
     NODE_REFCOUNT_COLUMN_FAMILY_NAME
 );
+derive_store!(
+    PruneMetaSnapshotStore,
+    String,
+    PruneSnapshot,
+    PRUNE_META_SNAPSHOT_COLUMN_FAMILY_NAME
+);
 
 pub trait PruneStore {
     fn load_prune_meta_phase(&self) -> Result<PrunePhase>;
@@ -60,6 +67,10 @@ pub trait PruneStore {
 
     fn get_stale_indice(&self, key: (H256, H256)) -> Result<Option<Vec<u8>>>;
     fn remove_stale_indice(&self, key: (H256, H256)) -> Result<()>;
+
+    fn save_prune_meta_snapshot(&self, snap: PruneSnapshot) -> Result<()>;
+
+    fn load_prune_meta_snapshot(&self) -> Result<Option<PruneSnapshot>>;
 }
 
 #[derive(Clone)]
@@ -67,6 +78,7 @@ pub struct PruneDBStore {
     pub reach_seen_store: ReachSeenDBStore,
     pub prune_meta_phase_store: PruneMetaPhaseStore,
     pub prune_meta_bloom_store: PruneMetaBloomStore,
+    pub prune_meta_snapshot_store: PruneMetaSnapshotStore,
     pub stale_index_store: StaleIndexStore,
     pub node_refcount_store: NodeRefcountStore,
 }
@@ -77,6 +89,7 @@ impl PruneDBStore {
             reach_seen_store: ReachSeenDBStore::new(instance.clone()),
             prune_meta_phase_store: PruneMetaPhaseStore::new(instance.clone()),
             prune_meta_bloom_store: PruneMetaBloomStore::new(instance.clone()),
+            prune_meta_snapshot_store: PruneMetaSnapshotStore::new(instance.clone()),
             stale_index_store: StaleIndexStore::new(instance.clone()),
             node_refcount_store: NodeRefcountStore::new(instance),
         }
@@ -106,6 +119,18 @@ impl PruneDBStore {
     pub fn save_prune_meta_bloom(&self, bloom: BloomFilter) -> Result<()> {
         self.prune_meta_bloom_store
             .kv_put(META_KEY_BLOOM.to_string(), bloom)
+    }
+
+    /// Persist snapshot captured in BuildReach.
+    pub fn save_prune_meta_snapshot(&self, snap: PruneSnapshot) -> Result<()> {
+        self.prune_meta_snapshot_store
+            .kv_put(META_KEY_SNAPSHOT.to_string(), snap)
+    }
+
+    /// Load snapshot for SweepExpired.
+    pub fn load_prune_meta_snapshot(&self) -> Result<Option<PruneSnapshot>> {
+        self.prune_meta_snapshot_store
+            .kv_get(META_KEY_SNAPSHOT.to_string())
     }
 
     /// Fallback implementation: iterate CF and collect the first `limit` keys whose

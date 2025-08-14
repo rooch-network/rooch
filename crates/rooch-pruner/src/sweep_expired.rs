@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::util::try_extract_child_root;
 use anyhow::Result;
 use moveos_common::bloom_filter::BloomFilter;
 use moveos_store::MoveOSStore;
@@ -11,6 +12,7 @@ use smt::jellyfish_merkle::node_type::Node;
 use smt::NodeReader;
 use std::sync::Arc;
 use tracing::info;
+// no extra high-level imports
 
 /// SweepExpired traverses expired roots (< cutoff) and deletes any node hash not present in ReachableSet.
 /// ReachableSet is represented by an in-memory Bloom filter plus optional `reach_seen` CF.
@@ -93,21 +95,27 @@ impl SweepExpired {
 
             // Process batch if it reaches the threshold
             if batch.len() >= 1000 {
-                // TODO verify first, then delete
-                // self.moveos_store.node_store.delete_nodes(batch.clone())?;
+                // verify first, then delete
+                self.moveos_store.node_store.delete_nodes(batch.clone())?;
                 info!(
                     "Sweep expired this loop deletes batch size {}, total delete size {}",
                     batch.len(),
                     total_deleted
                 );
-                info!("Sweep expired this loop delete batch {:?}", batch);
+                if total_deleted <= 5000 || total_deleted % 50000 == 0 {
+                    info!("Sweep expired this loop delete batch {:?}", batch);
+                }
                 deleted.fetch_add(batch.len() as u64, std::sync::atomic::Ordering::Relaxed);
                 batch.clear();
             }
 
-            // Traverse children and add to stack
+            // Inside dfs loop, traverse children and leaf add to stack
+            // Include both Global‐State and Table-State JMT
             if let Some(bytes) = self.moveos_store.node_store.get(&node_hash)? {
-                if let Ok(Node::Internal(internal)) = Node::<H256, Vec<u8>>::decode(&bytes) {
+                // If this leaf embeds another table root, push it to the stack for further traversal.
+                if let Some(child_root) = try_extract_child_root(&bytes) {
+                    stack.push_back(child_root);
+                } else if let Ok(Node::Internal(internal)) = Node::<H256, Vec<u8>>::decode(&bytes) {
                     for child_hash in internal.all_child() {
                         stack.push_back(child_hash.into());
                     }
@@ -117,14 +125,16 @@ impl SweepExpired {
 
         // Process any remaining nodes in the final batch
         if !batch.is_empty() {
-            // TODO verify first, then delete
-            // self.moveos_store.node_store.delete_nodes(batch.clone())?;
+            // verify first, then delete
+            self.moveos_store.node_store.delete_nodes(batch.clone())?;
             info!(
                 "Sweep expired delete final batch size {}, total delete size {}",
                 batch.len(),
                 total_deleted
             );
-            info!("Sweep expired delete final batch {:?}", batch);
+            if total_deleted < 5000 || total_deleted % 50000 == 0 {
+                info!("Sweep expired delete final batch {:?}", batch);
+            }
             deleted.fetch_add(batch.len() as u64, std::sync::atomic::Ordering::Relaxed);
         }
 

@@ -18,8 +18,7 @@ tracing = { workspace = true }
 
 rayon = { workspace = true }
 
-num_cpus = "*"
-
+num_cpus = { workspace = true }
 parking_lot = { workspace = true }
 primitive-types = { workspace = true }
 
