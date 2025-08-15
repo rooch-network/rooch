@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use primitive_types::H256;
+use smt::SPARSE_MERKLE_PLACEHOLDER_HASH;
 
 /// Read unsigned LEB128 from the given byte slice.
 /// Returns the parsed value and the number of bytes consumed.
@@ -77,46 +78,10 @@ pub fn try_extract_child_root(bytes: &[u8]) -> Option<H256> {
     let hash = H256::from_slice(&payload[p..p + 32]);
 
     // Skip size (u64) + created_at (u64) + updated_at (u64)
-    if payload.len() < p + 24 {
-        return None;
-    }
-    p += 24;
+    // We do not need to parse further; presence of a non-placeholder state_root
+    // is a strong indicator the object represents a table.
 
-    // Parse TypeTag to ensure it is TablePlaceholder
-    if payload.len() <= p {
-        return None;
-    }
-    let tt_variant = payload[p]; // 4 == Struct
-    p += 1;
-    if tt_variant != 4 {
-        // not Struct TypeTag
-        return None;
-    }
-
-    // Skip address (32 bytes)
-    if payload.len() < p + 32 {
-        return None;
-    }
-    p += 32;
-
-    // Read module name
-    let (mod_len, mod_len_bytes) = read_uleb128(&payload[p..])?;
-    p += mod_len_bytes;
-    if payload.len() < p + mod_len {
-        return None;
-    }
-    let mod_name = &payload[p..p + mod_len];
-    p += mod_len;
-
-    // Read struct name
-    let (struct_len, struct_len_bytes) = read_uleb128(&payload[p..])?;
-    p += struct_len_bytes;
-    if payload.len() < p + struct_len {
-        return None;
-    }
-    let struct_name = &payload[p..p + struct_len];
-
-    if mod_name == b"table" && struct_name == b"TablePlaceholder" {
+    if hash != *SPARSE_MERKLE_PLACEHOLDER_HASH {
         return Some(hash);
     }
     None
