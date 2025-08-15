@@ -40,12 +40,14 @@ docker image prune -a -f
 docker ps | grep rooch | grep -v faucet | awk '{print $1}' | xargs -r docker stop
 docker ps -a | grep rooch | grep -v faucet | awk '{print $1}' | xargs -r docker rm -f
 docker pull "$IMAGE"
+
+# --btc-sync-block-interval 3 \
+# --btc-rpc-url "$BTC_TEST_RPC_URL" \
+# --btc-rpc-username rooch-test \
+# --btc-rpc-password "$BTC_TEST_RPC_PWD" \
+
 docker run -d --name rooch-testnet --restart unless-stopped -v /data:/root -p 6767:6767 -p 9184:9184 -e RUST_BACKTRACE=full  "$IMAGE" \
     server start -n test \
-    --btc-sync-block-interval 3 \
-    --btc-rpc-url "$BTC_TEST_RPC_URL" \
-    --btc-rpc-username rooch-test \
-    --btc-rpc-password "$BTC_TEST_RPC_PWD" \
     --da "{\"da-min-block-to-submit\":9908, \"da-backend\":{\"backends\":[{\"open-da\":{\"scheme\":\"gcs\",\"config\":{\"bucket\":\"$OPENDA_GCP_TESTNET_BUCKET\",\"credential\":\"$OPENDA_GCP_TESTNET_CREDENTIAL\"}}},{\"open-da\":{\"scheme\":\"avail\",\"config\":{\"turbo_endpoint\":\"$TURBO_DA_TURING_ENDPOINT\",\"turbo_api_key\":\"$TURBO_DA_TURING_API_KEY\"}}}]}}" \
     --traffic-burst-size 200 \
     --traffic-per-second 0.1 \
