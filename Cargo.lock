@@ -7905,6 +7905,7 @@ dependencies = [
  "quick_cache",
  "rand 0.8.5",
  "raw-store",
+ "rocksdb",
  "smt",
  "tokio",
  "tracing",

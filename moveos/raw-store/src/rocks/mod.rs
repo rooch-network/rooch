@@ -230,6 +230,17 @@ impl RocksDB {
         Ok(DB::list_cf(&Options::default(), path)?)
     }
 
+    /// Expose underlying rocksdb::DB, used for advanced operations such as WAL-free batch writes.
+    pub fn inner(&self) -> &rocksdb::DB {
+        &self.db
+    }
+
+    /// Flush write-ahead log. Exposed for pruning tasks to truncate large WAL after massive deletes.
+    pub fn flush_wal(&self, sync: bool) -> Result<()> {
+        self.db.flush_wal(sync)?;
+        Ok(())
+    }
+
     fn db_exists(path: &Path) -> bool {
         let rocksdb_current_file = path.join("CURRENT");
         rocksdb_current_file.is_file()

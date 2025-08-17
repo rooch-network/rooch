@@ -31,19 +31,55 @@ impl NodeDBStore {
     }
 
     pub fn delete_nodes(&self, keys: Vec<H256>) -> Result<()> {
-        let batch = WriteBatch::new_with_rows(
-            keys.into_iter()
-                .map(|k| (k.0.to_vec(), WriteOp::Deletion))
-                .collect(),
-        );
-        // write deletions (will enter WAL)
-        self.write_batch_raw(batch)?;
+        if let Some(wrapper) = self.store.store().db() {
+            use rocksdb::{WriteBatch as RawBatch, WriteOptions};
+            let raw_db = wrapper.inner();
+            let cf = raw_db
+                .cf_handle(STATE_NODE_COLUMN_FAMILY_NAME)
+                .expect("state node cf");
 
-        // Immediately flush WAL so log file does not grow unbounded during pruning
-        if let Some(db) = self.store.store().db() {
-            let _ = db.flush_all();
+            // 1-byte prefix buckets (256 buckets)
+            let mut buckets: Vec<Option<(Vec<u8>, Vec<u8>)>> = vec![None; 256];
+            for h in keys {
+                let prefix = h.0[0] as usize;
+                match &mut buckets[prefix] {
+                    Some((min, max)) => {
+                        if h.0.as_ref() < min.as_slice() {
+                            *min = h.0.to_vec();
+                        }
+                        if h.0.as_ref() > max.as_slice() {
+                            *max = h.0.to_vec();
+                        }
+                    }
+                    None => {
+                        buckets[prefix] = Some((h.0.to_vec(), h.0.to_vec()));
+                    }
+                }
+            }
+
+            // 2. build DeleteRange batch
+            let mut wb = RawBatch::default();
+            for bucket in buckets.into_iter().flatten() {
+                wb.delete_range_cf(&cf, &bucket.0, &bucket.1);
+            }
+
+            // 3. write with WAL disabled
+            let mut opts = WriteOptions::default();
+            opts.disable_wal(true);
+            raw_db.write_opt(wb, &opts)?;
+
+            // 4. flush memtable so tombstone file is generated quickly
+            raw_db.flush_cf(&cf)?;
+            Ok(())
+        } else {
+            // fallback (should not happen in production)
+            let batch = WriteBatch::new_with_rows(
+                keys.into_iter()
+                    .map(|k| (k.0.to_vec(), WriteOp::Deletion))
+                    .collect(),
+            );
+            self.write_batch_raw(batch)
         }
-        Ok(())
     }
 }
 
