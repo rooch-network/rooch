@@ -60,6 +60,8 @@ impl StatePruner {
                 .unwrap_or(Arc::new(Mutex::new(BloomFilter::new(cfg.bloom_bits, 4))));
             info!("Loaded bloom filter with {} bits", cfg.bloom_bits);
 
+            // for test
+            thread::sleep(Duration::from_secs(60));
             let mut phase = PrunePhase::BuildReach;
             loop {
                 if !thread_running.load(Ordering::Relaxed) || shutdown_rx.try_recv().is_ok() {

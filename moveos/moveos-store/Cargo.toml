@@ -35,3 +35,4 @@ accumulator = { workspace = true }
 metrics = { workspace = true }
 quick_cache = { workspace = true }
 primitive-types = { workspace = true }
+rocksdb = { workspace = true }
