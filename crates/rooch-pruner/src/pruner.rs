@@ -67,7 +67,7 @@ impl StatePruner {
                     break;
                 }
 
-                // load current phase
+                // // load current phase
                 // let phase = moveos_store
                 //     .load_prune_meta_phase()
                 //     .unwrap_or(PrunePhase::BuildReach);
