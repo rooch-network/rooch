@@ -36,7 +36,14 @@ impl NodeDBStore {
                 .map(|k| (k.0.to_vec(), WriteOp::Deletion))
                 .collect(),
         );
-        self.write_batch_raw(batch)
+        // write deletions (will enter WAL)
+        self.write_batch_raw(batch)?;
+
+        // Immediately flush WAL so log file does not grow unbounded during pruning
+        if let Some(db) = self.store.store().db() {
+            let _ = db.flush_all();
+        }
+        Ok(())
     }
 }
 
