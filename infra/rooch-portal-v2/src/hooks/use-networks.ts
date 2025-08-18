@@ -93,7 +93,7 @@ const { networkConfig, useNetworkVariable, useNetworkVariables } = createNetwork
       gasMarket: {
         address: ROOCH_MULTI_SIG_ADDRESS,
         recipientBTCAddress: 'tb1prcajaj9n7e29u4dfp33x3hcf52yqeegspdpcd79pqu4fpr6llx4stqqxgy',
-        memPool: 'https://mempool.space/testnet/tx/',
+        memPool: 'https://mempool.space/testnet4/tx/',
       },
       faucet: faucet('test'),
       inviter,
@@ -117,7 +117,7 @@ const { networkConfig, useNetworkVariable, useNetworkVariables } = createNetwork
       gasMarket: {
         address: ROOCH_MULTI_SIG_ADDRESS,
         recipientBTCAddress: 'tb1prcajaj9n7e29u4dfp33x3hcf52yqeegspdpcd79pqu4fpr6llx4stqqxgy',
-        memPool: 'https://mempool.space/testnet/tx/',
+        memPool: 'https://mempool.space/testnet4/tx/',
       },
       faucet: faucet('test'),
       inviter,
