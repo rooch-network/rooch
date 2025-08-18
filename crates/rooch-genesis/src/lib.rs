@@ -726,7 +726,7 @@ mod tests {
     use rooch_config::RoochOpt;
     use rooch_db::RoochDB;
     use rooch_framework::ROOCH_FRAMEWORK_ADDRESS;
-    use rooch_types::bitcoin::multisign_account::{MultisignAccountInfo, MultisignAccountModule};
+    use rooch_types::bitcoin::multisign_account::MultisignAccountInfo;
     use rooch_types::bitcoin::network::BitcoinNetwork;
     use rooch_types::rooch_network::RoochNetwork;
     use state_resolver::StateReaderExt;
@@ -838,16 +838,16 @@ mod tests {
     #[tokio::test]
     async fn test_builtin_genesis_init() {
         let _ = tracing_subscriber::fmt::try_init();
-        // {
-        //     let network: RoochNetwork = BuiltinChainID::Local.into();
-        //     let genesis = RoochGenesisV2::load_or_build(network.clone()).unwrap();
-        //     genesis_init_test_case(network, genesis);
-        // }
-        // {
-        //     let network: RoochNetwork = BuiltinChainID::Dev.into();
-        //     let genesis = RoochGenesisV2::load_or_build(network.clone()).unwrap();
-        //     genesis_init_test_case(network, genesis);
-        // }
+        {
+            let network: RoochNetwork = BuiltinChainID::Local.into();
+            let genesis = RoochGenesisV2::load_or_build(network.clone()).unwrap();
+            genesis_init_test_case(network, genesis);
+        }
+        {
+            let network: RoochNetwork = BuiltinChainID::Dev.into();
+            let genesis = RoochGenesisV2::load_or_build(network.clone()).unwrap();
+            genesis_init_test_case(network, genesis);
+        }
         {
             let network: RoochNetwork = BuiltinChainID::Test.into();
             let genesis = RoochGenesisV2::load_or_build(network.clone()).unwrap();
