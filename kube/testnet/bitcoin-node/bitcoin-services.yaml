@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: bitcoin-testnet4-rpc
+  namespace: testnet
+  labels:
+    app: bitcoin-testnet4
+spec:
+  selector:
+    app: bitcoin-testnet4
+  type: ClusterIP
+  ports:
+  - name: rpc
+    port: 48332
+    targetPort: rpc
+    protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bitcoin-testnet4-p2p
+  namespace: testnet
+  labels:
+    app: bitcoin-testnet4
+spec:
+  selector:
+    app: bitcoin-testnet4
+  type: LoadBalancer
+  externalTrafficPolicy: Local
+  # With MetalLB you can optionally request a specific IP:
+  # loadBalancerIP: <REQUESTED_IP_FROM_POOL>
+  ports:
+  - name: p2p
+    port: 48333
+    targetPort: p2p
+    protocol: TCP
+

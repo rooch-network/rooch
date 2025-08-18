@@ -1,0 +1,134 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: rooch-testnet
+  namespace: testnet
+  labels:
+    app: rooch-testnet
+spec:
+  serviceName: rooch-testnet
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rooch-testnet
+  template:
+    metadata:
+      labels:
+        app: rooch-testnet
+    spec:
+      initContainers:
+      - name: init-rooch
+        image: ghcr.io/rooch-network/rooch:pr-3679
+        command: ["/bin/sh", "-c"]
+        args:
+        - |
+          if [ ! -f /root/.rooch/initialized ]; then
+            /rooch/rooch init -m "${INIT_SECRET}" --skip-password
+            /rooch/rooch env switch --alias test
+            touch /root/.rooch/initialized
+          fi
+        env:
+        - name: INIT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: rooch-testnet-secrets
+              key: init-phrase
+        volumeMounts:
+        - name: rooch-data
+          mountPath: /root
+      containers:
+      - name: rooch
+        image: ghcr.io/rooch-network/rooch:pr-3679
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: RUST_BACKTRACE
+          value: "full"
+        - name: OPENDA_GCP_TESTNET_BUCKET
+          valueFrom:
+            secretKeyRef:
+              name: rooch-testnet-secret
+              key: OPENDA_GCP_TESTNET_BUCKET
+              optional: true
+        - name: OPENDA_GCP_TESTNET_CREDENTIAL
+          valueFrom:
+            secretKeyRef:
+              name: rooch-testnet-secret
+              key: OPENDA_GCP_TESTNET_CREDENTIAL
+              optional: true
+        - name: TURBO_DA_TURING_ENDPOINT
+          valueFrom:
+            secretKeyRef:
+              name: rooch-testnet-secret
+              key: TURBO_DA_TURING_ENDPOINT
+              optional: true
+        - name: TURBO_DA_TURING_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: rooch-testnet-secret
+              key: TURBO_DA_TURING_API_KEY
+              optional: true
+        - name: BTC_RPC_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: rooch-testnet-secret
+              key: BTC_RPC_USERNAME
+              optional: true
+        - name: BTC_RPC_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: rooch-testnet-secret
+              key: BTC_RPC_PASSWORD
+              optional: true
+        args:
+        - server
+        - start
+        - -n
+        - test
+        - --da
+        - |
+          {"da-min-block-to-submit":9908, "da-backend":{"backends":[{"open-da":{"scheme":"gcs","config":{"bucket":"$(OPENDA_GCP_TESTNET_BUCKET)","credential":"$(OPENDA_GCP_TESTNET_CREDENTIAL)"}}},{"open-da":{"scheme":"avail","config":{"turbo_endpoint":"$(TURBO_DA_TURING_ENDPOINT)","turbo_api_key":"$(TURBO_DA_TURING_API_KEY)"}}}]}}
+        - --traffic-burst-size
+        - "200"
+        - --traffic-per-second
+        - "0.1"
+        - --rocksdb-row-cache-size
+        - "1073741824"
+        - --rocksdb-block-cache-size
+        - "12884901888"
+        - --btc-rpc-url
+        - http://bitcoin-testnet4-rpc.testnet.svc.cluster.local:48332
+        - --btc-rpc-username
+        - $(BTC_RPC_USERNAME)
+        - --btc-rpc-password
+        - $(BTC_RPC_PASSWORD)
+        ports:
+        - name: rpc
+          containerPort: 6767
+          protocol: TCP
+        - name: metrics
+          containerPort: 9184
+          protocol: TCP
+        volumeMounts:
+        - name: rooch-data
+          mountPath: /root
+        livenessProbe:
+          tcpSocket:
+            port: rpc
+          initialDelaySeconds: 20
+          periodSeconds: 10
+        readinessProbe:
+          tcpSocket:
+            port: rpc
+          initialDelaySeconds: 20
+          periodSeconds: 10
+      restartPolicy: Always
+  volumeClaimTemplates:
+  - metadata:
+      name: rooch-data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 200Gi
+
+
