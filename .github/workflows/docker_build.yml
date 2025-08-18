@@ -9,8 +9,14 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
 
+permissions:
+  contents: read
+  packages: write
+  pull-requests: write
+
 jobs:
   build-rooch-docker:
+    if: ${{ github.event_name != 'pull_request' }}
     name: Build Rooch Docker
     runs-on: self-hosted
     steps:
@@ -52,6 +58,7 @@ jobs:
           path: docker_tag.txt
 
   build-debug-rooch-docker:
+    if: ${{ github.event_name != 'pull_request' }}
     name: Build and Deploy Debug Rooch Docker
     runs-on: self-hosted
     steps:
@@ -166,3 +173,34 @@ jobs:
           tags: |
             ghcr.io/rooch-network/rooch:pr-${{ steps.vars.outputs.pr_number }}_debug
             ghcr.io/rooch-network/rooch:pr-${{ steps.vars.outputs.pr_number }}-${{ steps.vars.outputs.short_sha }}_debug
+
+  comment-pr-images:
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false }}
+    name: Comment PR with image tags
+    runs-on: ubuntu-latest
+    needs:
+      - build-rooch-docker-pr
+      - build-debug-rooch-docker-pr
+    steps:
+      - name: Set variables
+        id: vars
+        run: |
+          echo "short_sha=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+          echo "pr_number=${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
+      - name: Comment image tags to PR
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: rooch-pr-images
+          message: |
+            Docker images for this PR are available:
+
+            - ghcr.io/rooch-network/rooch:pr-${{ steps.vars.outputs.pr_number }}
+            - ghcr.io/rooch-network/rooch:pr-${{ steps.vars.outputs.pr_number }}-${{ steps.vars.outputs.short_sha }}
+            - ghcr.io/rooch-network/rooch:pr-${{ steps.vars.outputs.pr_number }}_debug
+            - ghcr.io/rooch-network/rooch:pr-${{ steps.vars.outputs.pr_number }}-${{ steps.vars.outputs.short_sha }}_debug
+
+            Pull commands:
+            - docker pull ghcr.io/rooch-network/rooch:pr-${{ steps.vars.outputs.pr_number }}
+            - docker pull ghcr.io/rooch-network/rooch:pr-${{ steps.vars.outputs.pr_number }}-${{ steps.vars.outputs.short_sha }}
+            - docker pull ghcr.io/rooch-network/rooch:pr-${{ steps.vars.outputs.pr_number }}_debug
+            - docker pull ghcr.io/rooch-network/rooch:pr-${{ steps.vars.outputs.pr_number }}-${{ steps.vars.outputs.short_sha }}_debug
