@@ -154,7 +154,7 @@ pub static G_TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         bitcoin_network: crate::bitcoin::network::Network::Testnet.to_num(),
         bitcoin_block_height: TESTNET_GENESIS_HEIGHT_HEADER.0,
         bitcoin_block_hash: TESTNET_GENESIS_HEIGHT_HEADER.1.block_hash(),
-        bitcoin_reorg_block_count: 5,
+        bitcoin_reorg_block_count: 10,
         //Make sure this timestamp is the same as Genesis Object Timestamp
         timestamp: TESTNET_GENESIS_HEIGHT_HEADER.1.time as u64 * 1000,
         sequencer_account: BitcoinAddress::from_str(
@@ -164,14 +164,26 @@ pub static G_TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         .expect("Should be valid"),
         rooch_dao: MultisignAccountConfig {
             multisign_bitcoin_address: BitcoinAddress::from_str(
-                "bc1pg03fj4nhkheterafpysfru5k0r3y05q3qf6944rhexfjxafsygxqmnu49s",
+                "bc1prcajaj9n7e29u4dfp33x3hcf52yqeegspdpcd79pqu4fpr6llx4sugkfjt",
             )
             .unwrap(),
-            threshold: 1,
-            participant_public_keys: vec![hex::decode(
-                "032d4fb9f88a63f52d8bffd1a46ad40411310150a539913203265c3f46b0397f8c",
-            )
-            .unwrap()],
+            threshold: 5,
+            participant_public_keys: vec![
+                hex::decode("032d4fb9f88a63f52d8bffd1a46ad40411310150a539913203265c3f46b0397f8c")
+                    .unwrap(),
+                hex::decode("039c9f399047d1ca911827c8c9b445ea55e84a68dcfe39641bc1f423c6a7cd99d0")
+                    .unwrap(),
+                hex::decode("03ad953cc82a6ed91c8eb3a6400e55965de4735bc5f8a107eabd2e4e7531f64c61")
+                    .unwrap(),
+                hex::decode("0346b64846c11f23ccec99811b476aaf68f421f15762287b872fcb896c92caa677")
+                    .unwrap(),
+                hex::decode("03730cb693e9a1bc6eaec5537c2e317a75bb6c8107a59fda018810c46c270670be")
+                    .unwrap(),
+                hex::decode("0259a40918150bc16ca1852fb55be383ec0fcf2b6058a73a25f0dfd87394dd92db")
+                    .unwrap(),
+                hex::decode("028fd25b727bf77e42d7a99cad4b1fa564d41cdb3bbddaf15219a4529f486a775a")
+                    .unwrap(),
+            ],
         },
         genesis_objects: vec![
             (
