@@ -36,7 +36,12 @@ module rooch_framework::onchain_config {
         object::transfer_extend(obj, @rooch_framework);
 
         let admin_cap = object::new_named_object(ConfigUpdateCap{});
-        object::transfer(admin_cap, rooch_dao);
+        let config_manager_address = if(chain_id::is_main()){
+            rooch_dao
+        } else {
+            sequencer
+        };
+        object::transfer(admin_cap, config_manager_address);
 
         set_code_features(genesis_account);
     }
