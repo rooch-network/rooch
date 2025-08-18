@@ -288,7 +288,13 @@ impl RoochDB {
         inner_store.write_batch_across_cfs(cf_names, write_batch, true)?;
 
         // revert the indexer
-        self.revert_indexer(tx_order, state_change_set_ext_opt)
+        if let Err(e) = self.revert_indexer(tx_order, state_change_set_ext_opt) {
+            warn!(
+                "Revert tx {} indexer failed: {:?}, continue to revert tx",
+                tx_order, e
+            );
+        }
+        Ok(())
     }
 
     fn revert_indexer(
