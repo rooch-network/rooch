@@ -38,7 +38,7 @@ module rooch_framework::account {
 
    #[test_only]
    public fun create_account_for_testing(new_address: address): signer {
-      create_account_internal(new_address)
+      moveos_std::account::create_account_for_testing(new_address)
    }
 
    #[test(sender=@0x0)]
