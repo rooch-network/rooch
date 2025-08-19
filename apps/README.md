@@ -1,6 +1,14 @@
 # Rooch DAO Apps
 
-Package address: 0x701c21bf1c8cd5af8c42983890d8ca55e7a820171b8e744c13f2d9998bf76cc3
+### Package address: 
+
+0x701c21bf1c8cd5af8c42983890d8ca55e7a820171b8e744c13f2d9998bf76cc3
+
+### Rooch DAO address
+
+Bitcoin: bc1prcajaj9n7e29u4dfp33x3hcf52yqeegspdpcd79pqu4fpr6llx4sugkfjt
+Rooch: rooch1wqwzr0cu3n26lrzznqufpkx22hn6sgqhrw88gnqn7tvenzlhdnps9x2j4l
+
 
 * app_admin
 * gas_faucet
@@ -10,9 +18,9 @@ Package address: 0x701c21bf1c8cd5af8c42983890d8ca55e7a820171b8e744c13f2d9998bf76
 ### Publish packages
 
 ```bash
-rooch move publish -p apps/app_admin --named-addresses app_admin=default
-rooch move publish -p apps/gas_faucet --named-addresses app_admin=default,gas_faucet=default
-rooch move publish -p apps/gas_market --named-addresses app_admin=default,gas_market=default
-rooch move publish -p apps/twitter_binding --named-addresses app_admin=default,twitter_binding=default
-rooch move publish -p apps/grow_bitcoin --named-addresses app_admin=default,grow_bitcoin=default
+rooch move publish -p apps/app_admin --named-addresses app_admin=0x701c21bf1c8cd5af8c42983890d8ca55e7a820171b8e744c13f2d9998bf76cc3
+rooch move publish -p apps/gas_faucet --named-addresses app_admin=0x701c21bf1c8cd5af8c42983890d8ca55e7a820171b8e744c13f2d9998bf76cc3,gas_faucet=0x701c21bf1c8cd5af8c42983890d8ca55e7a820171b8e744c13f2d9998bf76cc3
+rooch move publish -p apps/gas_market --named-addresses app_admin=0x701c21bf1c8cd5af8c42983890d8ca55e7a820171b8e744c13f2d9998bf76cc3,gas_market=0x701c21bf1c8cd5af8c42983890d8ca55e7a820171b8e744c13f2d9998bf76cc3
+rooch move publish -p apps/twitter_binding --named-addresses app_admin=0x701c21bf1c8cd5af8c42983890d8ca55e7a820171b8e744c13f2d9998bf76cc3,twitter_binding=0x701c21bf1c8cd5af8c42983890d8ca55e7a820171b8e744c13f2d9998bf76cc3
+rooch move publish -p apps/grow_bitcoin --named-addresses app_admin=0x701c21bf1c8cd5af8c42983890d8ca55e7a820171b8e744c13f2d9998bf76cc3,grow_bitcoin=0x701c21bf1c8cd5af8c42983890d8ca55e7a820171b8e744c13f2d9998bf76cc3
 ```

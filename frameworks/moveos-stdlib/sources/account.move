@@ -297,7 +297,12 @@ module moveos_std::account {
 
    #[test_only]
    public fun create_account_for_testing(new_address: address): signer {
-      create_account_internal(new_address)
+      let exists = exist_account_object(new_address);
+      if (!exists) {
+         create_account_internal(new_address)
+      } else {
+         create_signer_for_testing(new_address)
+      }
    }
 
    #[test]

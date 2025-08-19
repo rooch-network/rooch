@@ -14,7 +14,8 @@ use std::path::PathBuf;
 // curl -sSL "https://mempool.space/api/block/00000000000af0aed4792b1acee3d966af36cf5def14935db8de83d6f9306f2f/raw" > crates/rooch-framework-tests/blocks/bitcoin/91812.blob
 // curl -sSL "https://mempool.space/api/block/00000000000a4d0a398161ffc163c503763b1f4360639393e0e4c8e300e0caec/raw" > crates/rooch-framework-tests/blocks/bitcoin/91842.blob
 // curl -sSL "https://mempool.space/api/block/000000000000000000020750f322f4e72e99c2f0b9738fb4f46607860bd18c13/raw" > crates/rooch-framework-tests/blocks/bitcoin/818677.blob
-// curl -sSL "https://mempool.space/testnet/api/block/0000000016412abe1778a347da773ff8bc087ad1a91ae5daad349bc268285c2d/raw" > crates/rooch-framework-tests/blocks/testnet/2821527.blob
+// For testnet4 samples, prefer exporting from your own bitcoind to avoid third-party changes.
+// Example: bitcoin-cli -testnet4 getblock <hash> 0 | xxd -r -p > crates/rooch-framework-tests/blocks/testnet/HEIGHT.blob
 pub(crate) const STATIC_BLOCK_DIR: Dir = include_dir!("blocks");
 
 pub(crate) fn load_block(network: Network, height: u64) -> Block {

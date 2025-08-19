@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: bitcoin-testnet4
+  namespace: testnet
+  labels:
+    app: bitcoin-testnet4
+spec:
+  serviceName: bitcoin-testnet4
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bitcoin-testnet4
+  template:
+    metadata:
+      labels:
+        app: bitcoin-testnet4
+    spec:
+      containers:
+      - name: bitcoind
+        image: docker.io/bitcoin/bitcoin:28.1
+        imagePullPolicy: IfNotPresent
+        args:
+        - "-conf=/etc/bitcoin/bitcoin.conf"
+        ports:
+        - name: rpc
+          containerPort: 48332
+          protocol: TCP
+        - name: p2p
+          containerPort: 48333
+          protocol: TCP
+        - name: zmq-block
+          containerPort: 28332
+          protocol: TCP
+        - name: zmq-tx
+          containerPort: 28333
+          protocol: TCP
+        volumeMounts:
+        - name: bitcoin-config
+          mountPath: /etc/bitcoin
+        - name: bitcoin-secret
+          mountPath: /etc/bitcoin/secret
+          readOnly: true
+        - name: bitcoin-data
+          mountPath: /home/bitcoin/.bitcoin
+        livenessProbe:
+          tcpSocket:
+            port: rpc
+          initialDelaySeconds: 20
+          periodSeconds: 10
+        readinessProbe:
+          tcpSocket:
+            port: rpc
+          initialDelaySeconds: 45
+          periodSeconds: 10
+      volumes:
+      - name: bitcoin-config
+        configMap:
+          name: bitcoin-testnet4-config
+          items:
+          - key: bitcoin.conf
+            path: bitcoin.conf
+      - name: bitcoin-secret
+        secret:
+          secretName: bitcoin-testnet4-secret
+  volumeClaimTemplates:
+  - metadata:
+      name: bitcoin-data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 300Gi
+

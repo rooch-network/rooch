@@ -234,14 +234,14 @@ async fn get_block_hash_from_btc_rpc(
             if main {
                 "https://mempool.space/api/block-height/"
             } else {
-                "https://mempool.space/testnet/api/block-height/"
+                "https://mempool.space/testnet4/api/block-height/"
             }
         }
         DataSource::Blockstream => {
             if main {
                 "https://blockstream.info/api/block-height/"
             } else {
-                "https://blockstream.info/testnet/api/block-height/"
+                "https://blockstream.info/testnet4/api/block-height/"
             }
         }
     };

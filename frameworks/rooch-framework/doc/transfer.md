@@ -12,6 +12,7 @@
 -  [Function `transfer_object`](#0x3_transfer_transfer_object)
 -  [Function `transfer_object_to_bitcoin_address`](#0x3_transfer_transfer_object_to_bitcoin_address)
 -  [Function `transfer_coin_by_type_name`](#0x3_transfer_transfer_coin_by_type_name)
+-  [Function `transfer_object_batch`](#0x3_transfer_transfer_object_batch)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
@@ -110,4 +111,16 @@ Direct transfer by coin type name
 
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="transfer.md#0x3_transfer_transfer_coin_by_type_name">transfer_coin_by_type_name</a>(from: &<a href="">signer</a>, <b>to</b>: <b>address</b>, coin_type: <a href="_String">string::String</a>, amount: <a href="">u256</a>)
+</code></pre>
+
+
+
+<a name="0x3_transfer_transfer_object_batch"></a>
+
+## Function `transfer_object_batch`
+
+Batch transfer <code>Object&lt;T&gt;</code> from <code>from</code> to <code><b>to</b></code>.
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="transfer.md#0x3_transfer_transfer_object_batch">transfer_object_batch</a>&lt;T: store, key&gt;(from: &<a href="">signer</a>, <b>to</b>: <b>address</b>, object_ids: <a href="">vector</a>&lt;<a href="_ObjectID">object::ObjectID</a>&gt;)
 </code></pre>
