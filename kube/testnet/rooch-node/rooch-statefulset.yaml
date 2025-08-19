@@ -38,7 +38,7 @@ spec:
           mountPath: /root
       containers:
       - name: rooch
-        image: ghcr.io/rooch-network/rooch:pr-3679
+        image: ghcr.io/rooch-network/rooch:pr-3679-507471a
         imagePullPolicy: IfNotPresent
         env:
         - name: RUST_BACKTRACE
@@ -92,9 +92,9 @@ spec:
         - --traffic-per-second
         - "0.1"
         - --rocksdb-row-cache-size
-        - "1073741824"
+        - "67108864"
         - --rocksdb-block-cache-size
-        - "12884901888"
+        - "2147483648"
         - --btc-rpc-url
         - http://bitcoin-testnet4-rpc.testnet.svc.cluster.local:48332
         - --btc-rpc-username
@@ -108,9 +108,21 @@ spec:
         - name: metrics
           containerPort: 9184
           protocol: TCP
+        resources:
+          requests:
+            cpu: "2"
+            memory: "3Gi"
+          limits:
+            cpu: "2"
+            memory: "5Gi"
         volumeMounts:
         - name: rooch-data
           mountPath: /root
+        startupProbe:
+          tcpSocket:
+            port: rpc
+          periodSeconds: 10
+          failureThreshold: 60
         livenessProbe:
           tcpSocket:
             port: rpc
@@ -122,6 +134,7 @@ spec:
           initialDelaySeconds: 20
           periodSeconds: 10
       restartPolicy: Always
+      terminationGracePeriodSeconds: 120
   volumeClaimTemplates:
   - metadata:
       name: rooch-data
