@@ -1253,9 +1253,9 @@ dependencies = [
 
 [[package]]
 name = "bitcoin"
-version = "0.32.5"
+version = "0.32.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ce6bc65742dea50536e35ad42492b234c27904a27f0abdcbce605015cb4ea026"
+checksum = "0fda569d741b895131a88ee5589a467e73e9c4718e958ac9308e4f7dc44b6945"
 dependencies = [
  "base58ck",
  "bech32 0.11.0",
@@ -1276,7 +1276,7 @@ version = "0.10.0"
 dependencies = [
  "anyhow 1.0.95",
  "async-trait",
- "bitcoin 0.32.5",
+ "bitcoin 0.32.7",
  "bitcoincore-rpc",
  "coerce",
  "serde 1.0.219",
@@ -1306,7 +1306,7 @@ version = "0.10.0"
 dependencies = [
  "anyhow 1.0.95",
  "axum",
- "bitcoin 0.32.5",
+ "bitcoin 0.32.7",
  "brotli 3.5.0",
  "hex",
  "move-binary-format",
@@ -1386,7 +1386,7 @@ version = "0.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d8909583c5fab98508e80ef73e5592a651c954993dc6b7739963257d19f0e71a"
 dependencies = [
- "bitcoin 0.32.5",
+ "bitcoin 0.32.7",
  "serde 1.0.219",
  "serde_json",
 ]
@@ -10309,7 +10309,7 @@ dependencies = [
  "anyhow 1.0.95",
  "async-trait",
  "bcs",
- "bitcoin 0.32.5",
+ "bitcoin 0.32.7",
  "bitcoin-client",
  "ciborium",
  "clap 4.5.17",
@@ -10426,7 +10426,7 @@ dependencies = [
  "anyhow 1.0.93",
  "anyhow 1.0.95",
  "bcs",
- "bitcoin 0.32.5",
+ "bitcoin 0.32.7",
  "bitcoincore-rpc",
  "bitcoincore-rpc-json",
  "clap 4.5.17",
@@ -10612,7 +10612,7 @@ dependencies = [
 name = "rooch-framework"
 version = "0.10.0"
 dependencies = [
- "bitcoin 0.32.5",
+ "bitcoin 0.32.7",
  "fastcrypto",
  "hex",
  "move-binary-format",
@@ -10634,7 +10634,7 @@ version = "0.10.0"
 dependencies = [
  "anyhow 1.0.95",
  "bcs",
- "bitcoin 0.32.5",
+ "bitcoin 0.32.7",
  "bitcoin-client",
  "clap 4.5.17",
  "coerce",
@@ -10923,7 +10923,7 @@ dependencies = [
  "anyhow 1.0.95",
  "async-trait",
  "bcs",
- "bitcoin 0.32.5",
+ "bitcoin 0.32.7",
  "bitcoin-client",
  "coerce",
  "function_name",
@@ -10985,7 +10985,7 @@ version = "0.10.0"
 dependencies = [
  "anyhow 1.0.95",
  "async-trait",
- "bitcoin 0.32.5",
+ "bitcoin 0.32.7",
  "bitcoin-client",
  "bitcoincore-rpc",
  "chrono",
@@ -11013,7 +11013,7 @@ dependencies = [
  "accumulator",
  "anyhow 1.0.95",
  "bcs",
- "bitcoin 0.32.5",
+ "bitcoin 0.32.7",
  "ethers",
  "hex",
  "jsonrpsee 0.24.9",
@@ -11037,7 +11037,7 @@ version = "0.10.0"
 dependencies = [
  "anyhow 1.0.95",
  "bcs",
- "bitcoin 0.32.5",
+ "bitcoin 0.32.7",
  "bitcoincore-rpc",
  "futures",
  "jsonrpsee 0.24.9",
@@ -11170,7 +11170,7 @@ dependencies = [
  "argon2",
  "bcs",
  "bech32 0.11.0",
- "bitcoin 0.32.5",
+ "bitcoin 0.32.7",
  "bitcoincore-rpc",
  "bs58 0.5.1",
  "chacha20poly1305",
