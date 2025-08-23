@@ -38,37 +38,22 @@ impl NodeDBStore {
                 .cf_handle(STATE_NODE_COLUMN_FAMILY_NAME)
                 .expect("state node cf");
 
-            // 1-byte prefix buckets (256 buckets)
-            let mut buckets: Vec<Option<(Vec<u8>, Vec<u8>)>> = vec![None; 256];
-            for h in keys {
-                let prefix = h.0[0] as usize;
-                match &mut buckets[prefix] {
-                    Some((min, max)) => {
-                        if h.0.as_ref() < min.as_slice() {
-                            *min = h.0.to_vec();
-                        }
-                        if h.0.as_ref() > max.as_slice() {
-                            *max = h.0.to_vec();
-                        }
-                    }
-                    None => {
-                        buckets[prefix] = Some((h.0.to_vec(), h.0.to_vec()));
-                    }
-                }
-            }
+            // Build per-key delete batch instead of DeleteRange to prevent accidental
+            // deletion of keys that are not explicitly listed. Although this may generate
+            // more individual delete operations, they are still written atomically in one
+            // WriteBatch, so the performance impact is limited while ensuring correctness.
 
-            // 2. build DeleteRange batch
             let mut wb = RawBatch::default();
-            for bucket in buckets.into_iter().flatten() {
-                wb.delete_range_cf(&cf, &bucket.0, &bucket.1);
+            for h in keys {
+                wb.delete_cf(&cf, &h.0);
             }
 
-            // 3. write with WAL disabled
+            // Write with WAL disabled
             let mut opts = WriteOptions::default();
             opts.disable_wal(true);
             raw_db.write_opt(wb, &opts)?;
 
-            // 4. flush memtable so tombstone file is generated quickly
+            // Flush memtable so tombstone file is generated quickly
             raw_db.flush_cf(&cf)?;
             Ok(())
         } else {
