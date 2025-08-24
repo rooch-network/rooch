@@ -45,7 +45,7 @@ impl NodeDBStore {
 
             let mut wb = RawBatch::default();
             for h in keys {
-                wb.delete_cf(&cf, &h.0);
+                wb.delete_cf(&cf, h.0);
             }
 
             // Write with WAL disabled
