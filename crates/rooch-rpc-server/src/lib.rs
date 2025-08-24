@@ -227,6 +227,7 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
         Arc::new(prune_cfg),
         Arc::new(moveos_store.clone()),
         Arc::new(rooch_store.clone()),
+        shutdown_tx.subscribe(),
     )?;
 
     // Check for key pairs

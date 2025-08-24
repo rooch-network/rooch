@@ -31,12 +31,40 @@ impl NodeDBStore {
     }
 
     pub fn delete_nodes(&self, keys: Vec<H256>) -> Result<()> {
-        let batch = WriteBatch::new_with_rows(
-            keys.into_iter()
-                .map(|k| (k.0.to_vec(), WriteOp::Deletion))
-                .collect(),
-        );
-        self.write_batch_raw(batch)
+        if let Some(wrapper) = self.store.store().db() {
+            use rocksdb::{WriteBatch as RawBatch, WriteOptions};
+            let raw_db = wrapper.inner();
+            let cf = raw_db
+                .cf_handle(STATE_NODE_COLUMN_FAMILY_NAME)
+                .expect("state node cf");
+
+            // Build per-key delete batch instead of DeleteRange to prevent accidental
+            // deletion of keys that are not explicitly listed. Although this may generate
+            // more individual delete operations, they are still written atomically in one
+            // WriteBatch, so the performance impact is limited while ensuring correctness.
+
+            let mut wb = RawBatch::default();
+            for h in keys {
+                wb.delete_cf(&cf, h.0);
+            }
+
+            // Write with WAL disabled
+            let mut opts = WriteOptions::default();
+            opts.disable_wal(true);
+            raw_db.write_opt(wb, &opts)?;
+
+            // Flush memtable so tombstone file is generated quickly
+            raw_db.flush_cf(&cf)?;
+            Ok(())
+        } else {
+            // fallback (should not happen in production)
+            let batch = WriteBatch::new_with_rows(
+                keys.into_iter()
+                    .map(|k| (k.0.to_vec(), WriteOp::Deletion))
+                    .collect(),
+            );
+            self.write_batch_raw(batch)
+        }
     }
 }
 
