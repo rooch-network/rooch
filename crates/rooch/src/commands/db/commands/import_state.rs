@@ -5,17 +5,21 @@ use anyhow::{anyhow, Result};
 use clap::Parser;
 use metrics::RegistryService;
 use moveos_types::h256::H256;
+use moveos_types::startup_info::StartupInfo;
 use moveos_types::state::FieldKey;
 use moveos_types::state::ObjectState;
 use rooch_config::RoochOpt;
 use rooch_db::RoochDB;
 use rooch_types::error::RoochResult;
-use smt::UpdateSet;
+use smt::{NodeReader, UpdateSet};
+use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
 use std::str::FromStr;
 use tracing::info;
+use rooch_types::rooch_network::RoochChainID;
+use crate::utils::open_rooch_db;
 
 #[derive(Debug, Parser)]
 pub struct ImportStateCommand {
@@ -25,89 +29,93 @@ pub struct ImportStateCommand {
     #[clap(long)]
     expected_state_root: Option<String>,
 
-    #[clap(flatten)]
-    rooch_opt: RoochOpt,
+    #[clap(long = "data-dir", short = 'd')]
+    pub base_data_dir: Option<PathBuf>,
+
+    #[clap(long, short = 'n')]
+    pub chain_id: Option<RoochChainID>,
 }
 
 impl ImportStateCommand {
     pub async fn execute(self) -> RoochResult<String> {
-        let registry_service = RegistryService::default();
-        let rooch_db = RoochDB::init(
-            self.rooch_opt.store_config(),
-            &registry_service.default_registry(),
-        )
-            .map_err(|e| anyhow!("Failed to initialize RoochDB: {}", e))?;
+        let (_root, rooch_db, _start_time) = open_rooch_db(self.base_data_dir, self.chain_id);
 
-        let root_meta = rooch_db
-            .latest_root()
-            .map_err(|e| anyhow!("Failed to fetch latest state root: {}", e))?;
+        // 1) 必须提供目标根
+        let expected_root_hex = self
+            .expected_state_root
+            .as_ref()
+            .ok_or_else(|| anyhow!("--expected-state-root is required for nodes import"))?;
+        let state_root = H256::from_str(expected_root_hex)
+            .map_err(|e| anyhow!("Invalid expected state root hash: {}", e))?;
 
-        let mut state_root = root_meta.expect("").state_root.expect("");
-        info!("Current state root: {:?}", state_root);
-
-        let state_store = rooch_db.moveos_store.get_state_store();
-        let smt = &state_store.smt;
-
+        // 2) 解析节点文件 <hash_hex>:0x<bytes_hex>
         let file = File::open(&self.input_file)
             .map_err(|e| anyhow!("Failed to open input file: {}", e))?;
         let reader = BufReader::new(file);
 
-        let mut batch = UpdateSet::new();
-        let mut total_count = 0;
+        let mut nodes: BTreeMap<H256, Vec<u8>> = BTreeMap::new();
+        let mut total_nodes = 0usize;
 
         for line in reader.lines() {
             let line = line.map_err(|e| anyhow!("Failed to read line from file: {}", e))?;
             if line.is_empty() || line.starts_with('#') {
                 continue;
             }
-
             let parts: Vec<&str> = line.splitn(2, ':').collect();
             if parts.len() != 2 {
-                return Err(anyhow!("Invalid line format, expected 'key:value': {}", line).into());
+                return Err(anyhow!("Invalid node line, expected 'hash:0xHEX': {}", line).into());
             }
+            let hash_hex = parts[0].trim();
+            let bytes_hex = parts[1]
+                .trim()
+                .strip_prefix("0x")
+                .unwrap_or(parts[1].trim());
 
-            let key_str = parts[0].trim();
-            let value_str = parts[1].trim();
-
-            let field_key = parse_field_key(key_str)
-                .map_err(|e| anyhow!("Failed to parse FieldKey: {}, line: {}", e, line))?;
-            let object_state = parse_object_state(value_str)
-                .map_err(|e| anyhow!("Failed to parse ObjectState: {}, line: {}", e, line))?;
-
-            batch.put(field_key, object_state);
-            total_count += 1;
+            let hash = H256::from_str(hash_hex)
+                .map_err(|e| anyhow!("Invalid node hash '{}': {}", hash_hex, e))?;
+            let bytes = hex::decode(bytes_hex)
+                .map_err(|e| anyhow!("Invalid node hex for {}: {}", hash_hex, e))?;
+            nodes.insert(hash, bytes);
+            total_nodes += 1;
         }
 
-        let change_set = smt
-            .puts(state_root, batch)
-            .map_err(|e| anyhow!("Failed to update state data: {}", e))?;
+        // 3) 批量写节点
+        let state_store = rooch_db.moveos_store.get_state_store();
+        state_store
+            .update_nodes(nodes)
+            .map_err(|e| anyhow!("write_nodes failed: {}", e))?;
 
-        let node_store = rooch_db.moveos_store.node_store;
-        node_store
-            .write_nodes(change_set.nodes)
-            .expect("node_store.write_nodes failed.");
-
-        state_root = change_set.state_root;
-        info!("Imported {} records, new state root: {:?}", total_count, state_root);
-
-        if let Some(expected_state_root) = self.expected_state_root {
-            let expected_root = H256::from_str(&expected_state_root)
-                .map_err(|e| anyhow!("Invalid expected state root hash: {}", e))?;
-
-            if state_root != expected_root {
-                return Err(anyhow!(
-                    "State root validation failed! Expected: {:?}, actual: {:?}",
-                    expected_root,
-                    state_root
-                )
-                    .into());
-            }
-
-            info!("State root validation succeeded!");
+        // 4) 确认根节点已经存在
+        let has_root = state_store
+            .node_store
+            .get(&state_root)
+            .map_err(|e| anyhow!("node_store.get(root) failed: {}", e))?
+            .is_some();
+        if !has_root {
+            return Err(anyhow!(
+                "Root node {:#x} not present after import_nodes. Aborting.",
+                state_root
+            )
+            .into());
         }
 
-        let result = format!("Successfully imported {} records", total_count);
-        Ok(result)
+        // 5) 更新 StartupInfo.state_root（保留原 size；如需更新，可扩展 CLI 参数）
+        let config_store = &rooch_db.moveos_store.config_store;
+        let mut startup_info = config_store
+            .get_startup_info()
+            .map_err(|e| anyhow!("Failed to get startup info: {}", e))?
+            .unwrap_or_else(|| StartupInfo::new(state_root, 0));
+        let keep_size = startup_info.get_size();
+        startup_info.update_state_root(state_root, keep_size);
+        config_store
+            .save_startup_info(startup_info)
+            .map_err(|e| anyhow!("Failed to save startup info: {}", e))?;
+
+        info!(
+            "Imported {} nodes, set latest root to {:#x}",
+            total_nodes, state_root
+        );
+        Ok(format!("Imported {} nodes", total_nodes))
     }
 }
 
