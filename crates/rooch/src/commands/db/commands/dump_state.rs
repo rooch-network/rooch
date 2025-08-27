@@ -8,6 +8,7 @@ use metrics::RegistryService;
 use moveos_store::state_store::statedb::STATEDB_DUMP_BATCH_SIZE;
 use moveos_types::h256::H256;
 use moveos_types::state::{FieldKey, ObjectState};
+use raw_store::{CodecKVStore, SchemaStore};
 use rooch_config::RoochOpt;
 use rooch_db::RoochDB;
 use rooch_types::error::RoochResult;
@@ -19,6 +20,7 @@ use std::fs::File;
 use std::io::Write;
 use std::path::PathBuf;
 use std::str::FromStr;
+use tokio::io::AsyncWriteExt;
 use tracing::info;
 
 #[derive(Debug, Parser)]
@@ -50,14 +52,44 @@ impl DumpStateCommand {
         let (_root, rooch_db, _start_time) = open_rooch_db(self.base_data_dir, self.chain_id);
         let state_store = rooch_db.moveos_store.get_state_store();
         let smt = &state_store.smt;
+        let db = state_store
+            .node_store
+            .get_store()
+            .store()
+            .db()
+            .expect("get db failed");
+        let values = db
+            .iter::<H256, Vec<u8>>("state_node")
+            .expect("db iter values failed");
+        println!("state_db length {:?}", values.count());
+        /*
+        let nodes_result = rooch_db.moveos_store.get_state_node_store().iter();
+        match nodes_result {
+            Ok(nodes) => {
+                for (idx, result) in nodes.enumerate() {
+                    match result {
+                        Ok(node) => {
+                            println!("idx{:} -> {:?}", idx, node);
+                        }
+                        Err(e) => {
+                            println!("idx{:} error -> {:?}", idx, e);
+                        }
+                    }
+                }
+            }
+            Err(e) => {
+                println!("node store iter error {:?}", e);
+            }
+        }
+         */
 
-        // 1) 拿到快照 KV
+        // 1) 拿到快照 KV（该 root 下的全量键值）
         let state_kvs = smt
             .dump(state_root)
             .map_err(|e| anyhow!("Failed to read state data: {}", e))?;
         let total_kv = state_kvs.len();
 
-        // 2) 在内存中用“空树根”重建整棵树，得到完整 nodes
+        // 2) 在内存中用“空树根”重建整棵树，得到完整 nodes（全局 SMTree 的所有内部/叶子节点）
         let registry = RegistryService::default().default_registry();
         let mem_store = InMemoryNodeStore::default();
         let mem_tree: SMTree<FieldKey, ObjectState, InMemoryNodeStore> =
@@ -75,7 +107,7 @@ impl DumpStateCommand {
             .puts(empty_root, updates)
             .map_err(|e| anyhow!("Rebuild tree in-memory failed: {}", e))?;
 
-        // 3) 校验重建结果
+        // 3) 校验重建结果（强一致性保障）
         if change.state_root != state_root {
             return Err(anyhow!(
                 "Rebuilt root mismatch. expected: {:#x}, rebuilt: {:#x}",
@@ -85,7 +117,8 @@ impl DumpStateCommand {
             .into());
         }
 
-        // 4) 导出节点（含根与全树）
+        // 4) 导出节点（包含根与整棵树）
+        //    头部写入 mode/root/nodes/size，供导入端严格校验
         let head = format!(
             "# mode=nodes\n# root={:#x}\n# nodes={}\n# size={}\n",
             state_root,
@@ -97,6 +130,7 @@ impl DumpStateCommand {
             .map_err(|e| anyhow!("Failed to write header: {}", e))?;
 
         for (h, b) in &change.nodes {
+            // 使用小写 16 进制，保持与导入侧一致
             let line = format!("{:x}:0x{}\n", h, hex::encode(b));
             output_file
                 .write_all(line.as_bytes())
