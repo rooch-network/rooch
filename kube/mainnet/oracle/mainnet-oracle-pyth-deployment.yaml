@@ -39,7 +39,7 @@ spec:
           mountPath: /root
       containers:
       - name: rooch-oracle
-        image: ghcr.io/rooch-network/rooch:v0.8.4
+        image: ghcr.io/rooch-network/rooch:v0.10.0
         command: ["/rooch/rooch"]
         args: 
         - "oracle"
@@ -58,7 +58,7 @@ spec:
         - "--aggregate-strategy"
         - "average"
         - "--report-interval"
-        - "10"
+        - "60"
         volumeMounts:
         - name: rooch-data
           mountPath: /root
