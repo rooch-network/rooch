@@ -18,7 +18,7 @@ spec:
     spec:
       initContainers:
       - name: init-rooch
-        image: ghcr.io/rooch-network/rooch:pr-3679
+        image: ghcr.io/rooch-network/rooch:v0.10.0
         command: ["/bin/sh", "-c"]
         args:
         - |
@@ -38,7 +38,7 @@ spec:
           mountPath: /root
       containers:
       - name: rooch
-        image: ghcr.io/rooch-network/rooch:pr-3679-507471a
+        image: ghcr.io/rooch-network/rooch:v0.10.0
         imagePullPolicy: IfNotPresent
         env:
         - name: RUST_BACKTRACE
