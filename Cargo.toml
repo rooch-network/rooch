@@ -370,7 +370,7 @@ tikv-jemallocator = { git = "https://github.com/jamesatomc/jemallocator.git", fe
 mimalloc = { version = "0.1.47" }
 multibase = "0.9.0"
 terminal_size = "0.4.2"
-num_cpus = "1.16.0"
+num_cpus = "1.17.0"
 
 # Note: the BEGIN and END comments below are required for external tooling. Do not remove.
 # BEGIN MOVE DEPENDENCIES
