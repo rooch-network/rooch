@@ -22,6 +22,7 @@ use std::sync::{
 };
 use std::thread::{self, JoinHandle};
 use std::time::Duration;
+use tokio::sync::broadcast::Receiver;
 // incremental_sweep not currently used but may be enabled later
 use tracing::{info, warn};
 
@@ -35,6 +36,7 @@ impl StatePruner {
         cfg: Arc<PruneConfig>,
         moveos_store: Arc<MoveOSStore>,
         rooch_store: Arc<RoochStore>,
+        mut shutdown_rx: Receiver<()>,
         // metrics: Arc<StateDBMetrics>,
     ) -> Result<Self> {
         info!("Starting pruner");
@@ -58,14 +60,16 @@ impl StatePruner {
                 .unwrap_or(Arc::new(Mutex::new(BloomFilter::new(cfg.bloom_bits, 4))));
             info!("Loaded bloom filter with {} bits", cfg.bloom_bits);
 
+            // for test
+            thread::sleep(Duration::from_secs(60));
             let mut phase = PrunePhase::BuildReach;
             loop {
-                if !thread_running.load(Ordering::Relaxed) {
+                if !thread_running.load(Ordering::Relaxed) || shutdown_rx.try_recv().is_ok() {
                     info!("Pruner thread stopping");
                     break;
                 }
 
-                // load current phase
+                // // load current phase
                 // let phase = moveos_store
                 //     .load_prune_meta_phase()
                 //     .unwrap_or(PrunePhase::BuildReach);
@@ -153,7 +157,9 @@ impl StatePruner {
                         // while processed_count < cfg.scan_batch && order_cursor > 0 {
                         while order_cursor > 0 {
                             // Check exit signal frequently
-                            if !thread_running.load(Ordering::Relaxed) {
+                            if !thread_running.load(Ordering::Relaxed)
+                                || shutdown_rx.try_recv().is_ok()
+                            {
                                 info!("Pruner thread stopping during sweep");
                                 return;
                             }
@@ -167,7 +173,9 @@ impl StatePruner {
 
                                 // Process in smaller batches to avoid memory pressure
                                 if batch_roots.len() >= 1000 {
-                                    if !thread_running.load(Ordering::Relaxed) {
+                                    if !thread_running.load(Ordering::Relaxed)
+                                        || shutdown_rx.try_recv().is_ok()
+                                    {
                                         info!("Pruner thread stopping before batch sweep");
                                         return;
                                     }
@@ -218,7 +226,8 @@ impl StatePruner {
                         //     .save_prune_meta_phase(PrunePhase::BuildReach)
                         //     .ok();
                         // Check exit signal frequently
-                        if !thread_running.load(Ordering::Relaxed) {
+                        if !thread_running.load(Ordering::Relaxed) || shutdown_rx.try_recv().is_ok()
+                        {
                             info!("Pruner thread stopping during sweep");
                             return;
                         }
@@ -233,7 +242,7 @@ impl StatePruner {
                 // Sleep in small intervals to respond to exit signal quickly
                 let mut slept = 0;
                 while slept < cfg.interval_s {
-                    if !thread_running.load(Ordering::Relaxed) {
+                    if !thread_running.load(Ordering::Relaxed) || shutdown_rx.try_recv().is_ok() {
                         info!("Pruner thread stopping during sleep");
                         return;
                     }
