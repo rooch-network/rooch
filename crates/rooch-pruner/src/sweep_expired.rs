@@ -98,7 +98,8 @@ impl SweepExpired {
                 // verify first, then delete
                 self.moveos_store.node_store.delete_nodes(batch.clone())?;
                 info!(
-                    "Sweep expired this loop deletes batch size {}, total delete size {}",
+                    "Sweep expired this loop, state root {:?}, deletes batch size {}, total delete size {}",
+                    root_hash,
                     batch.len(),
                     total_deleted
                 );
@@ -128,7 +129,8 @@ impl SweepExpired {
             // verify first, then delete
             self.moveos_store.node_store.delete_nodes(batch.clone())?;
             info!(
-                "Sweep expired delete final batch size {}, total delete size {}",
+                "Sweep expired delete final loop, state root {:?}, final batch size {}, total delete size {}",
+                root_hash,
                 batch.len(),
                 total_deleted
             );

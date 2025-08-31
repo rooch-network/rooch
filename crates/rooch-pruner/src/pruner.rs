@@ -14,6 +14,7 @@ pub use rooch_config::prune_config::PruneConfig;
 use rooch_store::RoochStore;
 // Bring trait methods into scope for method-call syntax
 
+use primitive_types::H256;
 use rooch_store::meta_store::MetaStore;
 use rooch_store::state_store::StateStore;
 use std::sync::{
@@ -85,7 +86,7 @@ impl StatePruner {
                             .ok()
                             .and_then(|opt| opt.map(|info| info.state_root))
                             .unwrap_or_default();
-                        info!("Current startup state root: {}", startup_info_state_root);
+                        info!("Current startup state root: {:?}", startup_info_state_root);
                         let latest_order = rooch_store
                             .get_sequencer_info()
                             .ok()
@@ -179,9 +180,14 @@ impl StatePruner {
                                         info!("Pruner thread stopping before batch sweep");
                                         return;
                                     }
-                                    if let Ok(deleted) = sweeper.sweep(batch_roots, num_cpus::get())
+                                    if let Ok(deleted) =
+                                        sweeper.sweep(batch_roots.clone(), num_cpus::get())
                                     {
-                                        info!("Swept batch of roots, this loop deleted {} nodes, total deleted {} nodes", deleted, processed_count);
+                                        let (from_state_root, to_state_root) = (
+                                            batch_roots.first().cloned().unwrap_or(H256::zero()),
+                                            batch_roots.last().cloned().unwrap_or(H256::zero()),
+                                        );
+                                        info!("Pruner swept this loop at tx_order {}, batch of roots from {:?} to {:?}, deleted {} nodes, total deleted {} nodes", order_cursor, from_state_root, to_state_root, deleted, processed_count);
                                     }
                                     processed_count += 1000;
                                     batch_roots = Vec::with_capacity(1000);
@@ -192,10 +198,15 @@ impl StatePruner {
 
                         // Process any remaining roots
                         if !batch_roots.is_empty() {
-                            if let Ok(deleted) = sweeper.sweep(batch_roots, num_cpus::get()) {
+                            if let Ok(deleted) = sweeper.sweep(batch_roots.clone(), num_cpus::get())
+                            {
+                                let (from_state_root, to_state_root) = (
+                                    batch_roots.first().cloned().unwrap_or(H256::zero()),
+                                    batch_roots.last().cloned().unwrap_or(H256::zero()),
+                                );
                                 info!(
-                                    "Swept final batch of roots, total deleted {} nodes",
-                                    deleted
+                                    "Pruner swept final loop at tx_order {}, batch of roots from {:?} to {:?}, total deleted {} nodes",
+                                     order_cursor, from_state_root, to_state_root, deleted
                                 );
                             }
                         }
