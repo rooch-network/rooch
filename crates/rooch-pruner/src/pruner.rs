@@ -63,18 +63,16 @@ impl StatePruner {
 
             // for test
             thread::sleep(Duration::from_secs(60));
-            let mut phase = PrunePhase::BuildReach;
             loop {
                 if !thread_running.load(Ordering::Relaxed) || shutdown_rx.try_recv().is_ok() {
                     info!("Pruner thread stopping");
                     break;
                 }
 
-                // // load current phase
-                // let phase = moveos_store
-                //     .load_prune_meta_phase()
-                //     .unwrap_or(PrunePhase::BuildReach);
-                // let phase = PrunePhase::BuildReach;
+                // load current phase
+                let phase = moveos_store
+                    .load_prune_meta_phase()
+                    .unwrap_or(PrunePhase::BuildReach);
                 info!("Current prune phase: {:?}", phase);
 
                 match phase {
@@ -102,9 +100,6 @@ impl StatePruner {
                             latest_order,
                         };
                         let _ = moveos_store.save_prune_meta_snapshot(snap);
-                        moveos_store
-                            .save_prune_meta_phase(PrunePhase::SweepExpired)
-                            .ok();
 
                         let builder = ReachableBuilder::new(moveos_store.clone(), bloom.clone());
                         // if let Ok(scanned_size) =
@@ -244,10 +239,6 @@ impl StatePruner {
                         }
                     }
                 }
-                // reload current phase
-                phase = moveos_store
-                    .load_prune_meta_phase()
-                    .unwrap_or(PrunePhase::BuildReach);
 
                 info!("Sleeping for {} seconds", cfg.interval_s);
                 // Sleep in small intervals to respond to exit signal quickly
