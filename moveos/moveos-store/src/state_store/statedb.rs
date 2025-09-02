@@ -30,7 +30,7 @@ pub const STATEDB_DUMP_BATCH_SIZE: usize = 5000;
 #[derive(Clone)]
 pub struct StateDBStore {
     pub node_store: NodeDBStore,
-    smt: SMTree<FieldKey, ObjectState, NodeDBStore>,
+    pub smt: SMTree<FieldKey, ObjectState, NodeDBStore>,
     metrics: Arc<StateDBMetrics>,
     cache: Arc<Cache<(H256, FieldKey), Option<ObjectState>>>,
 }
