@@ -53,4 +53,3 @@ docker run -d --name rooch-testnet --restart unless-stopped -v /data:/root -p 67
     --traffic-per-second 0.1 \
     --rocksdb-row-cache-size 1073741824 \
     --rocksdb-block-cache-size 12884901888 \
-    --pruner-enable
