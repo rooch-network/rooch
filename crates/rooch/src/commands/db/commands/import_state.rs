@@ -6,7 +6,6 @@ use anyhow::anyhow;
 use clap::Parser;
 use moveos_types::h256::H256;
 use moveos_types::startup_info::StartupInfo;
-use raw_store::SchemaStore;
 use rooch_types::error::RoochResult;
 use rooch_types::rooch_network::RoochChainID;
 use smt::NodeReader;
@@ -58,10 +57,6 @@ impl ImportStateCommand {
             } else {
                 header_lines.push(String::new());
                 drop(file);
-                // file = BufReader::new(
-                //    File::open(&self.input_file)
-                //        .map_err(|e| anyhow!("Failed to reopen input file: {}", e))?,
-                // );
                 break;
             }
         }
@@ -153,9 +148,6 @@ impl ImportStateCommand {
             .update_nodes(nodes)
             .map_err(|e| anyhow!("write_nodes failed: {}", e))?;
 
-        let v = rooch_db.moveos_store.node_store.get_store().store();
-        v.db().expect("db 1111").flush_all()?;
-
         let has_root = state_store
             .node_store
             .get(&header_root)
@@ -187,35 +179,3 @@ impl ImportStateCommand {
         Ok(format!("Imported {} nodes", total_nodes))
     }
 }
-
-/*
-fn parse_field_key(key_str: &str) -> Result<FieldKey> {
-    let key_str = key_str.strip_prefix("0x").unwrap_or(key_str);
-
-    let bytes = hex::decode(key_str)
-        .map_err(|e| anyhow!("Failed to decode hex string to FieldKey: {}", e))?;
-
-    if bytes.len() != FieldKey::LENGTH {
-        return Err(anyhow!(
-            "Incorrect FieldKey byte length: expected {}, got {}",
-            FieldKey::LENGTH,
-            bytes.len()
-        ));
-    }
-
-    let mut array = [0u8; FieldKey::LENGTH];
-    array.copy_from_slice(&bytes);
-
-    Ok(FieldKey::new(array))
-}
-
-fn parse_object_state(value_str: &str) -> Result<ObjectState> {
-    let value_str = value_str.strip_prefix("0x").unwrap_or(value_str);
-
-    let bytes = hex::decode(value_str)
-        .map_err(|e| anyhow!("Failed to decode hex string to ObjectState: {}", e))?;
-
-    ObjectState::from_bytes(&bytes)
-        .map_err(|e| anyhow!("Failed to create ObjectState from byte array: {}", e))
-}
- */
