@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::utils::open_rooch_db;
+use crate::utils::open_rooch_db_readonly;
 use anyhow::anyhow;
 use clap::Parser;
 use metrics::RegistryService;
@@ -113,7 +113,7 @@ impl DumpStateCommand {
             .map_err(|e| anyhow!("Failed to create output file: {}", e))?;
 
         let (_root, rooch_db, _start_time) =
-            open_rooch_db(self.base_data_dir.clone(), self.chain_id.clone());
+            open_rooch_db_readonly(self.base_data_dir.clone(), self.chain_id.clone());
         let state_store = rooch_db.moveos_store.get_state_store();
         let smt = &state_store.smt;
 

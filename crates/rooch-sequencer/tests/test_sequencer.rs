@@ -19,7 +19,7 @@ use rooch_types::{
 
 fn init_rooch_db(opt: &RoochOpt, registry: &Registry) -> Result<RoochDB> {
     DBMetrics::init(registry);
-    let store_instance = RoochDB::generate_store_instance(opt.store_config(), registry)?;
+    let store_instance = RoochDB::generate_store_instance(opt.store_config(), registry, false)?;
     init_rooch_db_with_instance(opt, store_instance, registry)
 }
 
@@ -43,6 +43,7 @@ async fn test_sequencer() -> Result<()> {
         let store_instance = RoochDB::generate_store_instance(
             opt.store_config(),
             &registry_service.default_registry(),
+            false,
         )?;
         let rooch_db = init_rooch_db_with_instance(
             &opt,
