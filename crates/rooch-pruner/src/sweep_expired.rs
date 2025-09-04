@@ -82,6 +82,7 @@ impl SweepExpired {
         stack.push_back(root_hash);
         let mut batch = Vec::with_capacity(1000); // Process deletion in small batches
         let mut total_deleted: u64 = 0;
+        let mut since_last_flush: u64 = 0;
 
         while let Some(node_hash) = stack.pop_back() {
             // if node is reachable by other live roots, keep it
@@ -96,17 +97,27 @@ impl SweepExpired {
             // Process batch if it reaches the threshold
             if batch.len() >= 1000 {
                 // verify first, then delete
-                self.moveos_store.node_store.delete_nodes(batch.clone())?;
+                self.moveos_store
+                    .node_store
+                    .delete_nodes_with_flush(batch.clone(), /*flush*/ false)?;
                 info!(
-                    "Sweep expired this loop deletes batch size {}, total delete size {}",
+                    "Sweep expired this loop, state root {:?}, deletes batch size {}, total delete size {}",
+                    root_hash,
                     batch.len(),
                     total_deleted
                 );
-                if total_deleted <= 5000 || total_deleted % 50000 == 0 {
+                if total_deleted <= 1000 || total_deleted % 10000 == 0 {
                     info!("Sweep expired this loop delete batch {:?}", batch);
                 }
                 deleted.fetch_add(batch.len() as u64, std::sync::atomic::Ordering::Relaxed);
                 batch.clear();
+
+                since_last_flush += 1000;
+                if since_last_flush >= 10_000 {
+                    // periodic flush to persist progress and avoid huge memtables
+                    self.moveos_store.node_store.flush_only()?;
+                    since_last_flush = 0;
+                }
             }
 
             // Inside dfs loop, traverse children and leaf add to stack
@@ -126,21 +137,27 @@ impl SweepExpired {
         // Process any remaining nodes in the final batch
         if !batch.is_empty() {
             // verify first, then delete
-            self.moveos_store.node_store.delete_nodes(batch.clone())?;
+            self.moveos_store
+                .node_store
+                .delete_nodes_with_flush(batch.clone(), /*flush*/ false)?;
             info!(
-                "Sweep expired delete final batch size {}, total delete size {}",
+                "Sweep expired delete final loop, state root {:?}, final batch size {}, total delete size {}",
+                root_hash,
                 batch.len(),
                 total_deleted
             );
-            if total_deleted < 5000 || total_deleted % 50000 == 0 {
+            if total_deleted < 1000 || total_deleted % 10000 == 0 {
                 info!("Sweep expired delete final batch {:?}", batch);
             }
             deleted.fetch_add(batch.len() as u64, std::sync::atomic::Ordering::Relaxed);
         }
 
+        // flush after finishing this root to ensure deletions are durable before moving on
+        self.moveos_store.node_store.flush_only()?;
+
         info!(
-            "Completed sweeping root, total deleted nodes: {}",
-            total_deleted
+            "Completed sweeping root {:?}, total deleted nodes: {}",
+            root_hash, total_deleted
         );
         Ok(())
     }

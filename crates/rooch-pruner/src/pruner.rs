@@ -14,6 +14,7 @@ pub use rooch_config::prune_config::PruneConfig;
 use rooch_store::RoochStore;
 // Bring trait methods into scope for method-call syntax
 
+use primitive_types::H256;
 use rooch_store::meta_store::MetaStore;
 use rooch_store::state_store::StateStore;
 use std::sync::{
@@ -22,6 +23,7 @@ use std::sync::{
 };
 use std::thread::{self, JoinHandle};
 use std::time::Duration;
+use tokio::sync::broadcast::Receiver;
 // incremental_sweep not currently used but may be enabled later
 use tracing::{info, warn};
 
@@ -35,6 +37,7 @@ impl StatePruner {
         cfg: Arc<PruneConfig>,
         moveos_store: Arc<MoveOSStore>,
         rooch_store: Arc<RoochStore>,
+        mut shutdown_rx: Receiver<()>,
         // metrics: Arc<StateDBMetrics>,
     ) -> Result<Self> {
         info!("Starting pruner");
@@ -58,18 +61,18 @@ impl StatePruner {
                 .unwrap_or(Arc::new(Mutex::new(BloomFilter::new(cfg.bloom_bits, 4))));
             info!("Loaded bloom filter with {} bits", cfg.bloom_bits);
 
-            let mut phase = PrunePhase::BuildReach;
+            // for test
+            thread::sleep(Duration::from_secs(60));
             loop {
-                if !thread_running.load(Ordering::Relaxed) {
+                if !thread_running.load(Ordering::Relaxed) || shutdown_rx.try_recv().is_ok() {
                     info!("Pruner thread stopping");
                     break;
                 }
 
                 // load current phase
-                // let phase = moveos_store
-                //     .load_prune_meta_phase()
-                //     .unwrap_or(PrunePhase::BuildReach);
-                // let phase = PrunePhase::BuildReach;
+                let phase = moveos_store
+                    .load_prune_meta_phase()
+                    .unwrap_or(PrunePhase::BuildReach);
                 info!("Current prune phase: {:?}", phase);
 
                 match phase {
@@ -81,7 +84,7 @@ impl StatePruner {
                             .ok()
                             .and_then(|opt| opt.map(|info| info.state_root))
                             .unwrap_or_default();
-                        info!("Current startup state root: {}", startup_info_state_root);
+                        info!("Current startup state root: {:?}", startup_info_state_root);
                         let latest_order = rooch_store
                             .get_sequencer_info()
                             .ok()
@@ -97,9 +100,6 @@ impl StatePruner {
                             latest_order,
                         };
                         let _ = moveos_store.save_prune_meta_snapshot(snap);
-                        moveos_store
-                            .save_prune_meta_phase(PrunePhase::SweepExpired)
-                            .ok();
 
                         let builder = ReachableBuilder::new(moveos_store.clone(), bloom.clone());
                         // if let Ok(scanned_size) =
@@ -153,7 +153,9 @@ impl StatePruner {
                         // while processed_count < cfg.scan_batch && order_cursor > 0 {
                         while order_cursor > 0 {
                             // Check exit signal frequently
-                            if !thread_running.load(Ordering::Relaxed) {
+                            if !thread_running.load(Ordering::Relaxed)
+                                || shutdown_rx.try_recv().is_ok()
+                            {
                                 info!("Pruner thread stopping during sweep");
                                 return;
                             }
@@ -167,13 +169,20 @@ impl StatePruner {
 
                                 // Process in smaller batches to avoid memory pressure
                                 if batch_roots.len() >= 1000 {
-                                    if !thread_running.load(Ordering::Relaxed) {
+                                    if !thread_running.load(Ordering::Relaxed)
+                                        || shutdown_rx.try_recv().is_ok()
+                                    {
                                         info!("Pruner thread stopping before batch sweep");
                                         return;
                                     }
-                                    if let Ok(deleted) = sweeper.sweep(batch_roots, num_cpus::get())
+                                    if let Ok(deleted) =
+                                        sweeper.sweep(batch_roots.clone(), num_cpus::get())
                                     {
-                                        info!("Swept batch of roots, this loop deleted {} nodes, total deleted {} nodes", deleted, processed_count);
+                                        let (from_state_root, to_state_root) = (
+                                            batch_roots.first().cloned().unwrap_or(H256::zero()),
+                                            batch_roots.last().cloned().unwrap_or(H256::zero()),
+                                        );
+                                        info!("Pruner swept this loop at tx_order {}, batch of roots from {:?} to {:?}, deleted {} nodes, total deleted {} nodes", order_cursor, from_state_root, to_state_root, deleted, processed_count);
                                     }
                                     processed_count += 1000;
                                     batch_roots = Vec::with_capacity(1000);
@@ -184,10 +193,15 @@ impl StatePruner {
 
                         // Process any remaining roots
                         if !batch_roots.is_empty() {
-                            if let Ok(deleted) = sweeper.sweep(batch_roots, num_cpus::get()) {
+                            if let Ok(deleted) = sweeper.sweep(batch_roots.clone(), num_cpus::get())
+                            {
+                                let (from_state_root, to_state_root) = (
+                                    batch_roots.first().cloned().unwrap_or(H256::zero()),
+                                    batch_roots.last().cloned().unwrap_or(H256::zero()),
+                                );
                                 info!(
-                                    "Swept final batch of roots, total deleted {} nodes",
-                                    deleted
+                                    "Pruner swept final loop at tx_order {}, batch of roots from {:?} to {:?}, total deleted {} nodes",
+                                     order_cursor, from_state_root, to_state_root, deleted
                                 );
                             }
                         }
@@ -218,22 +232,19 @@ impl StatePruner {
                         //     .save_prune_meta_phase(PrunePhase::BuildReach)
                         //     .ok();
                         // Check exit signal frequently
-                        if !thread_running.load(Ordering::Relaxed) {
+                        if !thread_running.load(Ordering::Relaxed) || shutdown_rx.try_recv().is_ok()
+                        {
                             info!("Pruner thread stopping during sweep");
                             return;
                         }
                     }
                 }
-                // reload current phase
-                phase = moveos_store
-                    .load_prune_meta_phase()
-                    .unwrap_or(PrunePhase::BuildReach);
 
                 info!("Sleeping for {} seconds", cfg.interval_s);
                 // Sleep in small intervals to respond to exit signal quickly
                 let mut slept = 0;
                 while slept < cfg.interval_s {
-                    if !thread_running.load(Ordering::Relaxed) {
+                    if !thread_running.load(Ordering::Relaxed) || shutdown_rx.try_recv().is_ok() {
                         info!("Pruner thread stopping during sleep");
                         return;
                     }

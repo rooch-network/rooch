@@ -30,13 +30,77 @@ impl NodeDBStore {
         self.write_batch_raw(batch)
     }
 
+    /// Delete `keys` from the node column family.
+    ///
+    /// * `flush` – if true, the column family is flushed immediately after the deletions are
+    ///   written.  For large-scale bulk deletions (e.g. pruner sweep) passing `false` allows the
+    ///   caller to defer flushing and compaction until the very end, which avoids creating a large
+    ///   number of tiny SST files and the accompanying temporary disk usage spike.
+    pub fn delete_nodes_with_flush(&self, keys: Vec<H256>, flush: bool) -> Result<()> {
+        if let Some(wrapper) = self.store.store().db() {
+            use rocksdb::{WriteBatch as RawBatch, WriteOptions};
+            let raw_db = wrapper.inner();
+            let cf = raw_db
+                .cf_handle(STATE_NODE_COLUMN_FAMILY_NAME)
+                .expect("state node cf");
+
+            // Build per-key delete batch; keeps exact control of which hashes are removed.
+            let mut wb = RawBatch::default();
+            for h in keys {
+                wb.delete_cf(&cf, h.0);
+            }
+
+            // Disable WAL for performance – crash consistency is not critical for pruning.
+            let mut opts = WriteOptions::default();
+            opts.disable_wal(true);
+            raw_db.write_opt(wb, &opts)?;
+
+            if flush {
+                raw_db.flush_cf(&cf)?;
+            }
+            Ok(())
+        } else {
+            // Fallback path (e.g. in-memory DB during tests)
+            let batch = WriteBatch::new_with_rows(
+                keys.into_iter()
+                    .map(|k| (k.0.to_vec(), WriteOp::Deletion))
+                    .collect(),
+            );
+            self.write_batch_raw(batch)
+        }
+    }
+
+    /// Backward-compat helper that preserves the old behaviour (delete then flush)
     pub fn delete_nodes(&self, keys: Vec<H256>) -> Result<()> {
-        let batch = WriteBatch::new_with_rows(
-            keys.into_iter()
-                .map(|k| (k.0.to_vec(), WriteOp::Deletion))
-                .collect(),
-        );
-        self.write_batch_raw(batch)
+        self.delete_nodes_with_flush(keys, /*flush*/ true)
+    }
+
+    /// Flush the state-node column family and trigger a manual compaction.  Call this once after a
+    /// bulk pruning run to quickly reclaim space without generating a huge number of temporary
+    /// files during the run.
+    pub fn flush_and_compact(&self) -> Result<()> {
+        if let Some(wrapper) = self.store.store().db() {
+            let raw_db = wrapper.inner();
+            let cf = raw_db
+                .cf_handle(STATE_NODE_COLUMN_FAMILY_NAME)
+                .expect("state node cf");
+
+            raw_db.flush_cf(&cf)?;
+            raw_db.compact_range_cf(&cf, None::<&[u8]>, None::<&[u8]>);
+        }
+        Ok(())
+    }
+
+    /// Flush the state node column family without triggering compaction.
+    pub fn flush_only(&self) -> Result<()> {
+        if let Some(wrapper) = self.store.store().db() {
+            let raw_db = wrapper.inner();
+            let cf = raw_db
+                .cf_handle(STATE_NODE_COLUMN_FAMILY_NAME)
+                .expect("state node cf");
+            raw_db.flush_cf(&cf)?;
+        }
+        Ok(())
     }
 }
 
