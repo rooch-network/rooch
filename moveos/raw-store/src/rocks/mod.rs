@@ -49,6 +49,14 @@ impl RocksDB {
         Self::open_with_cfs(db_path, column_families, false, rocksdb_config)
     }
 
+    pub fn new_readonly<P: AsRef<Path> + Clone>(
+        db_path: P,
+        column_families: Vec<ColumnFamilyName>,
+        rocksdb_config: RocksdbConfig,
+    ) -> Result<Self> {
+        Self::open_with_cfs(db_path, column_families, true, rocksdb_config)
+    }
+
     pub fn open_with_cfs(
         root_path: impl AsRef<Path>,
         column_families: Vec<ColumnFamilyName>,

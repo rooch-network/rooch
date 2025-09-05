@@ -6,11 +6,13 @@ use crate::commands::db::commands::best_rollback::BestRollbackCommand;
 use crate::commands::db::commands::changeset::ChangesetCommand;
 use crate::commands::db::commands::cp_cf::CpCfCommand;
 use crate::commands::db::commands::drop::DropCommand;
+use crate::commands::db::commands::dump_state::DumpStateCommand;
 use crate::commands::db::commands::get_accumulator_leaf_by_index::GetAccumulatorLeafByIndexCommand;
 use crate::commands::db::commands::get_changeset_by_order::GetChangesetByOrderCommand;
 use crate::commands::db::commands::get_execution_info_by_hash::GetExecutionInfoByHashCommand;
 use crate::commands::db::commands::get_sequencer_info::GetSequencerInfoCommand;
 use crate::commands::db::commands::get_tx_by_order::GetTxByOrderCommand;
+use crate::commands::db::commands::import_state::ImportStateCommand;
 use crate::commands::db::commands::list_anomaly::ListAnomaly;
 use crate::commands::db::commands::repair::RepairCommand;
 use crate::commands::db::commands::revert::RevertCommand;
@@ -88,6 +90,14 @@ impl CommandAction<String> for DB {
                     serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
                 })
             }
+            DBCommand::DumpFromStateDB(dump_state_db) => {
+                dump_state_db.execute().await.map(|resp| {
+                    serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
+                })
+            }
+            DBCommand::ImportToStateDB(import_state) => import_state.execute().await.map(|resp| {
+                serde_json::to_string_pretty(&resp).expect("Failed to serialize response")
+            }),
         }
     }
 }
@@ -110,4 +120,6 @@ pub enum DBCommand {
     VerifyOrder(VerifyOrderCommand),
     GetSequencerInfo(GetSequencerInfoCommand),
     GetAccumulatorLeafByIndex(GetAccumulatorLeafByIndexCommand),
+    DumpFromStateDB(DumpStateCommand),
+    ImportToStateDB(ImportStateCommand),
 }

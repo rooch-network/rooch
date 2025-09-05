@@ -1,0 +1,181 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
+use crate::utils::open_rooch_db;
+use anyhow::anyhow;
+use clap::Parser;
+use moveos_types::h256::H256;
+use moveos_types::startup_info::StartupInfo;
+use rooch_types::error::RoochResult;
+use rooch_types::rooch_network::RoochChainID;
+use smt::NodeReader;
+use std::collections::BTreeMap;
+use std::fs::File;
+use std::io::{BufRead, BufReader};
+use std::path::PathBuf;
+use std::str::FromStr;
+use tracing::info;
+
+#[derive(Debug, Parser)]
+pub struct ImportStateCommand {
+    #[clap(long, short = 'i')]
+    input_file: PathBuf,
+
+    #[clap(long)]
+    expected_state_root: Option<String>,
+
+    #[clap(long = "data-dir", short = 'd')]
+    pub base_data_dir: Option<PathBuf>,
+
+    #[clap(long, short = 'n')]
+    pub chain_id: Option<RoochChainID>,
+}
+
+impl ImportStateCommand {
+    pub async fn execute(self) -> RoochResult<String> {
+        let (_root, rooch_db, _start_time) = open_rooch_db(self.base_data_dir, self.chain_id);
+
+        let mut file = BufReader::new(
+            File::open(&self.input_file)
+                .map_err(|e| anyhow!("Failed to open input file: {}", e))?,
+        );
+
+        let mut header_lines = Vec::new();
+        for _ in 0..4 {
+            let mut line = String::new();
+            let n = file
+                .read_line(&mut line)
+                .map_err(|e| anyhow!("Failed to read header: {}", e))?;
+            if n == 0 {
+                break;
+            }
+            if line.trim().is_empty() {
+                continue;
+            }
+            if line.starts_with('#') {
+                header_lines.push(line);
+            } else {
+                header_lines.push(String::new());
+                drop(file);
+                break;
+            }
+        }
+
+        let lines = BufReader::new(
+            File::open(&self.input_file)
+                .map_err(|e| anyhow!("Failed to open input file: {}", e))?,
+        )
+        .lines();
+
+        let mut header_root: Option<H256> = None;
+        let mut header_nodes_count: Option<usize> = None;
+
+        for l in &header_lines {
+            if l.starts_with("# root=") {
+                let v = l.trim().strip_prefix("# root=").unwrap_or("").trim();
+                if !v.is_empty() {
+                    let root = H256::from_str(v)
+                        .map_err(|e| anyhow!("Invalid root in header '{}': {}", v, e))?;
+                    header_root = Some(root);
+                }
+            }
+            if l.starts_with("# nodes=") {
+                let v = l.trim().strip_prefix("# nodes=").unwrap_or("").trim();
+                if !v.is_empty() {
+                    let n = v
+                        .parse::<usize>()
+                        .map_err(|e| anyhow!("Invalid nodes count in header '{}': {}", v, e))?;
+                    header_nodes_count = Some(n);
+                }
+            }
+        }
+
+        let header_root = header_root.ok_or_else(|| anyhow!("Missing '# root=...' header"))?;
+
+        if let Some(expect_hex) = self.expected_state_root.as_ref() {
+            let expect = H256::from_str(expect_hex)
+                .map_err(|e| anyhow!("Invalid expected state root hash: {}", e))?;
+            if expect != header_root {
+                return Err(anyhow!(
+                    "Expected root {} mismatches file root {}",
+                    expect,
+                    header_root
+                )
+                .into());
+            }
+        }
+
+        let mut nodes: BTreeMap<H256, Vec<u8>> = BTreeMap::new();
+        let mut total_nodes = 0usize;
+
+        for line in lines {
+            let line = line.map_err(|e| anyhow!("Failed to read line from file: {}", e))?;
+            let line = line.trim();
+            if line.is_empty() || line.starts_with('#') {
+                continue;
+            }
+            let parts: Vec<&str> = line.splitn(2, ':').collect();
+            if parts.len() != 2 {
+                return Err(anyhow!("Invalid node line, expected 'hash:0xHEX': {}", line).into());
+            }
+            let hash_hex = parts[0].trim();
+            let bytes_hex = parts[1]
+                .trim()
+                .strip_prefix("0x")
+                .unwrap_or(parts[1].trim());
+
+            let hash = H256::from_str(hash_hex)
+                .map_err(|e| anyhow!("Invalid node hash '{}': {}", hash_hex, e))?;
+            let bytes = hex::decode(bytes_hex)
+                .map_err(|e| anyhow!("Invalid node hex for {}: {}", hash_hex, e))?;
+            nodes.insert(hash, bytes);
+            total_nodes += 1;
+        }
+
+        if let Some(expect_nodes) = header_nodes_count {
+            if expect_nodes != total_nodes {
+                return Err(anyhow!(
+                    "Nodes count mismatch. header={}, actual={}",
+                    expect_nodes,
+                    total_nodes
+                )
+                .into());
+            }
+        }
+
+        let state_store = rooch_db.moveos_store.get_state_store();
+        state_store
+            .update_nodes(nodes)
+            .map_err(|e| anyhow!("write_nodes failed: {}", e))?;
+
+        let has_root = state_store
+            .node_store
+            .get(&header_root)
+            .map_err(|e| anyhow!("node_store.get(root) failed: {}", e))?
+            .is_some();
+        if !has_root {
+            return Err(anyhow!(
+                "Root node {:#x} not present after import_nodes. Aborting.",
+                header_root
+            )
+            .into());
+        }
+
+        let config_store = &rooch_db.moveos_store.config_store;
+        let mut startup_info = config_store
+            .get_startup_info()
+            .map_err(|e| anyhow!("Failed to get startup info: {}", e))?
+            .unwrap_or_else(|| StartupInfo::new(header_root, 0));
+        let keep_size = startup_info.get_size();
+        startup_info.update_state_root(header_root, keep_size);
+        config_store
+            .save_startup_info(startup_info)
+            .map_err(|e| anyhow!("Failed to save startup info: {}", e))?;
+
+        info!(
+            "Imported {} nodes, set latest root to {:#x}",
+            total_nodes, header_root
+        );
+        Ok(format!("Imported {} nodes", total_nodes))
+    }
+}
