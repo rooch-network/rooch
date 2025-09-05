@@ -1,4 +1,6 @@
 #!/bin/bash
+# Copyright (c) RoochNetwork
+# SPDX-License-Identifier: Apache-2.0
 
 # Rooch Testnet Rollback Script
 # This script helps you perform a rollback operation on the rooch testnet node
