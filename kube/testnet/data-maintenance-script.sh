@@ -46,6 +46,32 @@ statefulset_exists() {
     kubectl get statefulset $ss_name -n $namespace >/dev/null 2>&1
 }
 
+# If running in cleanup mode, perform cleanup only and exit early.
+if [ "$1" = "cleanup" ]; then
+    echo "=== Cleanup Phase ==="
+    echo ""
+    echo "Step 1: Deleting data toolbox pod..."
+    kubectl delete pod $TOOLBOX_POD_NAME -n $NAMESPACE --ignore-not-found=true
+    echo "✓ Data toolbox pod deleted (if existed)"
+    
+    echo ""
+    echo "Step 2: Scaling StatefulSet back to 1 replica..."
+    kubectl scale statefulset $STATEFULSET_NAME --replicas=1 -n $NAMESPACE
+    echo "✓ StatefulSet scaled up"
+    
+    echo ""
+    echo "Step 3: Waiting for main pod to be ready..."
+    wait_for_pod $STATEFULSET_NAME-0 $NAMESPACE
+    echo "✓ Main pod is ready"
+    
+    echo ""
+    echo "=== Rollback Complete ==="
+    echo "The rooch testnet node has been restarted and should be running normally."
+    echo "You can check the logs with:"
+    echo "kubectl logs -f $STATEFULSET_NAME-0 -n $NAMESPACE"
+    exit 0
+fi
+
 echo "Step 1: Checking current state..."
 if statefulset_exists $STATEFULSET_NAME $NAMESPACE; then
     echo "✓ StatefulSet $STATEFULSET_NAME found in namespace $NAMESPACE"
@@ -100,27 +126,3 @@ echo "After maintenance is complete, run the following to clean up and restart:"
 echo "./data-maintenance-script.sh cleanup"
 echo ""
 
-# Check if cleanup argument is provided
-if [ "$1" = "cleanup" ]; then
-    echo "=== Cleanup Phase ==="
-    echo ""
-    echo "Step 1: Deleting data toolbox pod..."
-    kubectl delete pod $TOOLBOX_POD_NAME -n $NAMESPACE
-    echo "✓ Data toolbox pod deleted"
-    
-    echo ""
-    echo "Step 2: Scaling StatefulSet back to 1 replica..."
-    kubectl scale statefulset $STATEFULSET_NAME --replicas=1 -n $NAMESPACE
-    echo "✓ StatefulSet scaled up"
-    
-    echo ""
-    echo "Step 3: Waiting for main pod to be ready..."
-    wait_for_pod $STATEFULSET_NAME-0 $NAMESPACE
-    echo "✓ Main pod is ready"
-    
-    echo ""
-    echo "=== Rollback Complete ==="
-    echo "The rooch testnet node has been restarted and should be running normally."
-    echo "You can check the logs with:"
-    echo "kubectl logs -f $STATEFULSET_NAME-0 -n $NAMESPACE"
-fi
