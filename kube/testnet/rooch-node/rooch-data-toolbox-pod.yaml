@@ -1,0 +1,54 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: rooch-data-toolbox
+  namespace: testnet
+  labels:
+    app: rooch-data-toolbox
+spec:
+  containers:
+  - name: rooch-data-toolbox
+    image: ghcr.io/rooch-network/rooch:v0.10.0
+    imagePullPolicy: IfNotPresent
+    command: ["/bin/sh", "-c"]
+    args:
+    - |
+      echo "=========================================="
+      echo "Rooch Data Toolbox Container Started"
+      echo "=========================================="
+      echo ""
+      echo "This container provides tools for data maintenance and troubleshooting:"
+      echo ""
+      echo "Available commands:"
+      echo "  - Rollback transactions: /rooch/rooch db rollback --tx-order <TX_ORDER> -d /root/.rooch -n test"
+      echo "  - Revert transactions:   /rooch/rooch db revert-tx --tx-order <TX_ORDER> -d /root/.rooch -n test"
+      echo "  - Repair database:       /rooch/rooch db repair -d /root/.rooch -n test"
+      echo "  - Get transaction info:  /rooch/rooch db get-tx-by-order --tx-order <ORDER> -d /root/.rooch -n test"
+      echo "  - List anomalies:        /rooch/rooch db list-anomaly -d /root/.rooch -n test"
+      echo "  - Drop column family:    /rooch/rooch db drop --cf-name <CF_NAME> -d /root/.rooch -n test --force true"
+      echo ""
+      echo "To access this toolbox:"
+      echo "kubectl exec -it rooch-data-toolbox -n testnet -- /bin/sh"
+      echo ""
+      echo "Container will keep running until manually deleted..."
+      echo "=========================================="
+      # Keep the container running
+      tail -f /dev/null
+    env:
+    - name: RUST_BACKTRACE
+      value: "full"
+    volumeMounts:
+    - name: rooch-data
+      mountPath: /root
+    resources:
+      requests:
+        cpu: "2"
+        memory: "3Gi"
+      limits:
+        cpu: "3"
+        memory: "5Gi"
+  volumes:
+  - name: rooch-data
+    persistentVolumeClaim:
+      claimName: rooch-data-rooch-testnet-0
+  restartPolicy: Never
