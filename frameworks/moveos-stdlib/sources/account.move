@@ -46,7 +46,7 @@ module moveos_std::account {
    /// This function is deprecated, please use `create_account_and_return_cap` instead
    public fun create_account(): Object<Account> {
       //We shoud not return Object<Account> directly,
-      //Becase if other struct hold the Object<Account>, and the resource functions will not work
+      //Because if other struct hold the Object<Account>, and the resource functions will not work
       abort ErrorDeprecateFunction
    }
 
@@ -297,7 +297,12 @@ module moveos_std::account {
 
    #[test_only]
    public fun create_account_for_testing(new_address: address): signer {
-      create_account_internal(new_address)
+      let exists = exist_account_object(new_address);
+      if (!exists) {
+         create_account_internal(new_address)
+      } else {
+         create_signer_for_testing(new_address)
+      }
    }
 
    #[test]

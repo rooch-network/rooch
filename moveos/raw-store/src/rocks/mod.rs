@@ -49,6 +49,14 @@ impl RocksDB {
         Self::open_with_cfs(db_path, column_families, false, rocksdb_config)
     }
 
+    pub fn new_readonly<P: AsRef<Path> + Clone>(
+        db_path: P,
+        column_families: Vec<ColumnFamilyName>,
+        rocksdb_config: RocksdbConfig,
+    ) -> Result<Self> {
+        Self::open_with_cfs(db_path, column_families, true, rocksdb_config)
+    }
+
     pub fn open_with_cfs(
         root_path: impl AsRef<Path>,
         column_families: Vec<ColumnFamilyName>,
@@ -228,6 +236,17 @@ impl RocksDB {
     /// List cf
     pub fn list_cf(path: impl AsRef<Path>) -> Result<Vec<String>, Error> {
         Ok(DB::list_cf(&Options::default(), path)?)
+    }
+
+    /// Expose underlying rocksdb::DB, used for advanced operations such as WAL-free batch writes.
+    pub fn inner(&self) -> &rocksdb::DB {
+        &self.db
+    }
+
+    /// Flush write-ahead log. Exposed for pruning tasks to truncate large WAL after massive deletes.
+    pub fn flush_wal(&self, sync: bool) -> Result<()> {
+        self.db.flush_wal(sync)?;
+        Ok(())
     }
 
     fn db_exists(path: &Path) -> bool {

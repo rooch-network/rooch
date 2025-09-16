@@ -30,6 +30,9 @@ move-core-types = { workspace = true }
 moveos-types = { workspace = true }
 raw-store = { workspace = true }
 moveos-config = { workspace = true }
+moveos-common = { workspace = true }
 accumulator = { workspace = true }
 metrics = { workspace = true }
 quick_cache = { workspace = true }
+primitive-types = { workspace = true }
+rocksdb = { workspace = true }

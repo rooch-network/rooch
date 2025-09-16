@@ -1,0 +1,20 @@
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: rooch-backendconfig
+  namespace: testnet
+spec:
+  timeoutSec: 120
+  connectionDraining:
+    drainingTimeoutSec: 10
+  healthCheck:
+    checkIntervalSec: 10
+    timeoutSec: 5
+    type: HTTP
+    requestPath: /metrics
+    port: 9184
+  # Optional: attach Cloud Armor policy if needed
+  # securityPolicy:
+  #   name: your-cloud-armor-policy
+
+

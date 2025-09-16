@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: bitcoin-testnet4-config
+  namespace: testnet
+data:
+  bitcoin.conf: |
+    # Bitcoin Core configuration for testnet4
+    # NOTE: Replace rpcuser/rpcpassword with secure values before deploying.
+    chain=testnet4
+    server=1
+    txindex=1
+    rest=1
+    includeconf=/etc/bitcoin/secret/secret.conf
+
+    [testnet4]
+    # RPC settings (network-scoped in v28+)
+    rpcbind=0.0.0.0
+    rpcallowip=0.0.0.0/0
+    rpcport=48332
+
+    # P2P port (explicit; default for testnet4)
+    port=48333
+
+    # ZMQ for block/tx notifications (optional)
+    zmqpubrawblock=tcp://0.0.0.0:28332
+    zmqpubrawtx=tcp://0.0.0.0:28333
+

@@ -64,12 +64,21 @@ module rooch_framework::genesis {
         let rooch_dao_address = bitcoin_address::to_rooch_address(&genesis_context.rooch_dao);
 
         onchain_config::genesis_init(genesis_account, sequencer_addr, rooch_dao_address);
-
+        
+        let framework_upgrade_address = if(chain_id::is_main()){
+            rooch_dao_address
+        } else {
+            //we use sequencer as framework upgrade address in local/dev/test network for easy testing
+            sequencer_addr
+        };
         // issue framework packages upgrade cap to the rooch dao
         let system_addresses = core_addresses::list_system_reserved_addresses();
         vector::for_each(system_addresses, |addr| {
-            module_store::issue_upgrade_cap_by_system(genesis_account, addr, rooch_dao_address);
+            module_store::issue_upgrade_cap_by_system(genesis_account, addr, framework_upgrade_address);
         });
+        
+        // issue rooch dao upgrade cap
+        module_store::issue_upgrade_cap_by_system(genesis_account, rooch_dao_address, framework_upgrade_address);
         
         // give initial gas to the rooch dao
         gas_coin::faucet(rooch_dao_address, GENESIS_INIT_GAS_AMOUNT);

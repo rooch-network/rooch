@@ -158,7 +158,7 @@ impl RelayerActor {
     }
 
     //We migrate this function from Relayer to here
-    //Becase the relayer actor will blocked when sync block
+    //Because the relayer actor will blocked when sync block
     //TODO refactor the relayer, put the sync task in a separate actor
     fn get_ready_l1_txs(&self, relayer: &RelayerProxy) -> Result<Vec<L1Transaction>> {
         if relayer.is_bitcoin() {

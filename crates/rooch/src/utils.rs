@@ -136,6 +136,20 @@ pub fn open_rooch_db(
     (root, rooch_db, start_time)
 }
 
+pub fn open_rooch_db_readonly(
+    base_data_dir: Option<PathBuf>,
+    chain_id: Option<RoochChainID>,
+) -> (ObjectMeta, RoochDB, SystemTime) {
+    let start_time = SystemTime::now();
+
+    let opt = RoochOpt::new_with_default(base_data_dir, chain_id, None).unwrap();
+    let registry_service = RegistryService::default();
+    let rooch_readonly_db =
+        RoochDB::init_readonly(opt.store_config(), &registry_service.default_registry()).unwrap();
+    let root = rooch_readonly_db.latest_root().unwrap().unwrap();
+    (root, rooch_readonly_db, start_time)
+}
+
 pub fn open_inner_rocks(
     path: &str,
     column_families: Vec<String>,

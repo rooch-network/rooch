@@ -6,6 +6,7 @@
 
 use crate::config_store::{ConfigDBStore, ConfigStore, STARTUP_INFO_KEY};
 use crate::event_store::{EventDBStore, EventStore};
+use crate::prune::{PruneDBStore, PruneStore};
 use crate::state_store::statedb::StateDBStore;
 use crate::state_store::{nodes_to_write_batch, NodeDBStore};
 use crate::transaction_store::{TransactionDBStore, TransactionStore};
@@ -13,6 +14,7 @@ use accumulator::inmemory::InMemoryAccumulator;
 use anyhow::{Error, Result};
 use bcs::to_bytes;
 use move_core_types::language_storage::StructTag;
+use moveos_common::bloom_filter::BloomFilter;
 use moveos_config::store_config::{MoveOSStoreConfig, RocksdbConfig};
 use moveos_config::DataDirPath;
 use moveos_types::genesis_info::GenesisInfo;
@@ -20,6 +22,7 @@ use moveos_types::h256::H256;
 use moveos_types::moveos_std::event::{Event, EventID, TransactionEvent};
 use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::moveos_std::onchain_features::FeatureStore;
+use moveos_types::prune::{PrunePhase, PruneSnapshot};
 use moveos_types::startup_info::StartupInfo;
 use moveos_types::state::{FieldKey, ObjectState};
 use moveos_types::state_resolver::{StateKV, StateResolver, StatelessResolver};
@@ -40,6 +43,7 @@ use std::sync::Arc;
 
 pub mod config_store;
 pub mod event_store;
+pub mod prune;
 pub mod state_store;
 #[cfg(test)]
 mod tests;
@@ -53,6 +57,17 @@ pub const EVENT_COLUMN_FAMILY_NAME: ColumnFamilyName = "event";
 pub const EVENT_HANDLE_COLUMN_FAMILY_NAME: ColumnFamilyName = "event_handle";
 pub const CONFIG_STARTUP_INFO_COLUMN_FAMILY_NAME: ColumnFamilyName = "config_startup_info";
 pub const CONFIG_GENESIS_COLUMN_FAMILY_NAME: ColumnFamilyName = "config_genesis";
+pub const REACH_SEEN_COLUMN_FAMILY_NAME: ColumnFamilyName = "reach_seen";
+pub const SMT_STALE_INDEX_COLUMN_FAMILY_NAME: ColumnFamilyName = "smt_stale";
+pub const NODE_REFCOUNT_COLUMN_FAMILY_NAME: ColumnFamilyName = "node_refcount";
+
+pub const PRUNE_META_PHASE_COLUMN_FAMILY_NAME: ColumnFamilyName = "prune_meta_phase";
+pub const PRUNE_META_BLOOM_COLUMN_FAMILY_NAME: ColumnFamilyName = "prune_meta_bloom";
+pub const PRUNE_META_SNAPSHOT_COLUMN_FAMILY_NAME: ColumnFamilyName = "prune_meta_snapshot";
+
+// pub const META_KEY_PHASE: &str = "phase";
+// pub const META_KEY_CURSOR: &str = "cursor"; // placeholder for future use
+// pub const META_KEY_BLOOM: &str = "bloom_snapshot";
 
 /// db store use cf_name vec to init
 /// Please note that adding a column family needs to be added in vec simultaneously, remember！！
@@ -64,6 +79,12 @@ static VEC_COLUMN_FAMILY_NAME: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
         EVENT_HANDLE_COLUMN_FAMILY_NAME,
         CONFIG_STARTUP_INFO_COLUMN_FAMILY_NAME,
         CONFIG_GENESIS_COLUMN_FAMILY_NAME,
+        REACH_SEEN_COLUMN_FAMILY_NAME,
+        SMT_STALE_INDEX_COLUMN_FAMILY_NAME,
+        NODE_REFCOUNT_COLUMN_FAMILY_NAME,
+        PRUNE_META_PHASE_COLUMN_FAMILY_NAME,
+        PRUNE_META_BLOOM_COLUMN_FAMILY_NAME,
+        PRUNE_META_SNAPSHOT_COLUMN_FAMILY_NAME,
     ]
 });
 
@@ -83,6 +104,7 @@ pub struct MoveOSStore {
     pub transaction_store: TransactionDBStore,
     pub config_store: ConfigDBStore,
     pub state_store: StateDBStore,
+    pub prune_store: PruneDBStore,
 }
 
 impl MoveOSStore {
@@ -109,8 +131,9 @@ impl MoveOSStore {
             node_store,
             event_store: EventDBStore::new(instance.clone()),
             transaction_store: TransactionDBStore::new(instance.clone()),
-            config_store: ConfigDBStore::new(instance),
+            config_store: ConfigDBStore::new(instance.clone()),
             state_store,
+            prune_store: PruneDBStore::new(instance),
         };
         Ok(store)
     }
@@ -141,6 +164,10 @@ impl MoveOSStore {
 
     pub fn get_state_store(&self) -> &StateDBStore {
         &self.state_store
+    }
+
+    pub fn get_prune_store(&self) -> &PruneDBStore {
+        &self.prune_store
     }
 
     pub fn handle_tx_output(
@@ -232,6 +259,7 @@ impl Display for MoveOSStore {
         write!(f, "event_store")?;
         write!(f, "transaction_store")?;
         write!(f, "node_store")?;
+        write!(f, "prune_store")?;
         Ok(())
     }
 }
@@ -331,6 +359,60 @@ impl ConfigStore for MoveOSStore {
 
     fn save_genesis(&self, genesis_info: GenesisInfo) -> Result<()> {
         self.get_config_store().save_genesis(genesis_info)
+    }
+}
+
+impl PruneStore for MoveOSStore {
+    fn load_prune_meta_phase(&self) -> Result<PrunePhase> {
+        self.prune_store.load_prune_meta_phase()
+    }
+
+    fn save_prune_meta_phase(&self, phase: PrunePhase) -> Result<()> {
+        self.prune_store.save_prune_meta_phase(phase)
+    }
+
+    fn load_prune_meta_bloom(&self) -> Result<Option<BloomFilter>> {
+        self.prune_store.load_prune_meta_bloom()
+    }
+
+    fn save_prune_meta_bloom(&self, phase: BloomFilter) -> Result<()> {
+        self.prune_store.save_prune_meta_bloom(phase)
+    }
+
+    fn list_before(&self, cutoff_root: H256, limit: usize) -> Result<Vec<(H256, H256)>> {
+        self.prune_store.list_before(cutoff_root, limit)
+    }
+
+    fn inc_node_refcount(&self, key: H256) -> Result<()> {
+        self.prune_store.inc_node_refcount(key)
+    }
+
+    fn dec_node_refcount(&self, key: H256) -> Result<()> {
+        self.prune_store.dec_node_refcount(key)
+    }
+
+    fn remove_node_refcount(&self, key: H256) -> Result<()> {
+        self.prune_store.remove_node_refcount(key)
+    }
+
+    fn write_stale_indices(&self, stale: &[(H256, H256)]) -> Result<()> {
+        self.prune_store.write_stale_indices(stale)
+    }
+
+    fn get_stale_indice(&self, key: (H256, H256)) -> Result<Option<Vec<u8>>> {
+        self.prune_store.get_stale_indice(key)
+    }
+
+    fn remove_stale_indice(&self, key: (H256, H256)) -> Result<()> {
+        self.prune_store.remove_stale_indice(key)
+    }
+
+    fn save_prune_meta_snapshot(&self, snap: PruneSnapshot) -> Result<()> {
+        self.prune_store.save_prune_meta_snapshot(snap)
+    }
+
+    fn load_prune_meta_snapshot(&self) -> Result<Option<PruneSnapshot>> {
+        self.prune_store.load_prune_meta_snapshot()
     }
 }
 

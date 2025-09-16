@@ -55,6 +55,7 @@ members = [
     "crates/rooch-cosmwasm-vm",
     "crates/testsuite",
     "crates/rooch-ord",
+    "crates/rooch-pruner",
     "frameworks/bitcoin-move",
     "frameworks/framework-builder",
     "frameworks/framework-release",
@@ -86,7 +87,7 @@ license = "Apache-2.0"
 publish = false
 repository = "https://github.com/rooch-network/rooch"
 rust-version = "1.82.0"
-version = "0.9.7"
+version = "0.10.0"
 
 [workspace.dependencies]
 # Internal crate dependencies.
@@ -145,6 +146,7 @@ rooch-notify = { path = "crates/rooch-notify" }
 rooch-ord = { path = "crates/rooch-ord" }
 rooch-cosmwasm-vm = { path = "crates/rooch-cosmwasm-vm" }
 rooch-oracle = { path = "crates/rooch-oracle" }
+rooch-pruner = { path = "crates/rooch-pruner" }
 
 # frameworks
 framework-types = { path = "frameworks/framework-types" }
@@ -173,7 +175,7 @@ bip32 = "0.4.0"
 byteorder = "1.4.3"
 clap = { version = "4.5.13", features = ["derive", "env"] }
 brotli = "3.4.0"
-chrono = "0.4.41"
+chrono = { version = "0.4.42", features = ["std"] }
 coerce = "0.8"
 datatest-stable = "0.1.3"
 derive_more = { version = "1.0.0", features = ["as_ref", "from"] }
@@ -210,14 +212,14 @@ petgraph = "0.6.5"
 primitive-types = { version = "0.12.1", features = ["serde", "arbitrary"] }
 proptest = "1.7.0"
 proptest-derive = "0.3.0"
-rayon = "1.5.2"
+rayon = "1.11.0"
 rand = "0.8.5"
 rand_core = { version = "0.9.3", default-features = false }
 reqwest = { version = "0.12", features = ["json", "stream"] }
 schemars = { version = "0.8.22", features = ["either"] }
 serde_bytes = "0.11.17"
-serde = { version = "1.0.219", features = ["derive", "rc"] }
-serde_json = { version = "1.0.141", features = ["preserve_order"] }
+serde = { version = "1.0.224", features = ["derive", "rc"] }
+serde_json = { version = "1.0.143", features = ["preserve_order"] }
 serde_yaml = "0.9"
 serde_with = { version = "2.1.0", features = ["hex", "base64"] }
 signature = "2.2.0"
@@ -229,11 +231,11 @@ smallvec = "1.15.1"
 thiserror = "1.0.69"
 tiny-keccak = { version = "2", features = ["keccak", "sha3"] }
 tiny-bip39 = "2.0.0"
-tokio = { version = "1.46.1", features = ["full"] }
+tokio = { version = "1.47.1", features = ["full"] }
 tokio-tungstenite = { version = "0.24.0", features = ["native-tls"] }
 tokio-stream = "0.1.17"
 tracing = "0.1.41"
-tracing-subscriber = { version = "0.3.19" }
+tracing-subscriber = { version = "0.3.20" }
 codespan-reporting = "0.11.1"
 codespan = "0.11.1"
 termcolor = "1.1.2"
@@ -241,11 +243,11 @@ versions = "4.1.0"
 pretty_assertions = "1.4.1"
 syn = { version = "1.0.104", features = ["full", "extra-traits"] }
 quote = "1.0"
-proc-macro2 = "1.0.95"
+proc-macro2 = "1.0.101"
 derive-syn-parse = "0.1.5"
 unescape = "0.1.0"
-tempfile = "3.20.0"
-regex = "1.11.1"
+tempfile = "3.22.0"
+regex = "1.11.2"
 walkdir = "2.3.3"
 prometheus = "0.13.3"
 hyper = { version = "1.0.0", features = ["full"] }
@@ -273,7 +275,7 @@ tower_governor = { version = "0.4.3", features = ["tracing"] }
 pin-project = "1.1.10"
 mirai-annotations = "1.12.0"
 lru = "0.11.0"
-quick_cache = "0.6.14"
+quick_cache = "0.6.16"
 bs58 = "0.5.1"
 dirs-next = "2.0.0"
 chacha20poly1305 = "0.10.1"
@@ -360,14 +362,15 @@ vergen-pretty = "0.3.9"
 crossbeam-channel = "0.5.15"
 inferno = "0.11.21"
 handlebars = "4.2.2"
-indexmap = "2.10.0"
+indexmap = "2.11.1"
 tikv-jemallocator = { git = "https://github.com/jamesatomc/jemallocator.git", features = [
     "unprefixed_malloc_on_supported_platforms",
     "profiling",
 ], rev = "49db433eb9620bdad0bc88a35bf7af28c1cabcf4" }
-mimalloc = { version = "0.1.47" }
+mimalloc = { version = "0.1.48" }
 multibase = "0.9.0"
 terminal_size = "0.4.2"
+num_cpus = "1.17.0"
 
 # Note: the BEGIN and END comments below are required for external tooling. Do not remove.
 # BEGIN MOVE DEPENDENCIES

@@ -175,7 +175,7 @@ pub(crate) async fn sign_psbt(
                         .map(|p| p.x_only_public_key())
                         .collect::<Result<Vec<_>>>()?;
                     x_only_public_keys.sort();
-                    //Becase the stack is LIFO, we need to reverse the order
+                    //Because the stack is LIFO, we need to reverse the order
                     x_only_public_keys.reverse();
 
                     debug!("Ordered public keys before sign: {:?}", x_only_public_keys);

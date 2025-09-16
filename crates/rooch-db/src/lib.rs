@@ -54,7 +54,12 @@ pub struct RoochDB {
 
 impl RoochDB {
     pub fn init(config: &StoreConfig, registry: &Registry) -> Result<Self> {
-        let instance = Self::generate_store_instance(config, registry)?;
+        let instance = Self::generate_store_instance(config, registry, false)?;
+        Self::init_with_instance(config, instance, registry)
+    }
+
+    pub fn init_readonly(config: &StoreConfig, registry: &Registry) -> Result<Self> {
+        let instance = Self::generate_store_instance(config, registry, true)?;
         Self::init_with_instance(config, instance, registry)
     }
 
@@ -80,6 +85,7 @@ impl RoochDB {
     pub fn generate_store_instance(
         config: &StoreConfig,
         registry: &Registry,
+        read_only: bool,
     ) -> Result<StoreInstance> {
         let store_dir = config.get_store_dir();
         let mut column_families = moveos_store::StoreMeta::get_column_family_names().to_vec();
@@ -95,10 +101,12 @@ impl RoochDB {
         }
 
         let db_metrics = DBMetrics::get_or_init(registry).clone();
-        let instance = StoreInstance::new_db_instance(
-            RocksDB::new(store_dir, column_families, config.rocksdb_config())?,
-            db_metrics,
-        );
+        let db = if read_only {
+            RocksDB::new_readonly(store_dir, column_families, config.rocksdb_config())?
+        } else {
+            RocksDB::new(store_dir, column_families, config.rocksdb_config())?
+        };
+        let instance = StoreInstance::new_db_instance(db, db_metrics);
 
         Ok(instance)
     }
@@ -288,7 +296,13 @@ impl RoochDB {
         inner_store.write_batch_across_cfs(cf_names, write_batch, true)?;
 
         // revert the indexer
-        self.revert_indexer(tx_order, state_change_set_ext_opt)
+        if let Err(e) = self.revert_indexer(tx_order, state_change_set_ext_opt) {
+            warn!(
+                "Revert tx {} indexer failed: {:?}, continue to revert tx",
+                tx_order, e
+            );
+        }
+        Ok(())
     }
 
     fn revert_indexer(
